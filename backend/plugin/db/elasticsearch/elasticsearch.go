@@ -74,7 +74,7 @@ func (scheduler *AddressScheduler) GetNewAddress() string {
 }
 
 func (*Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
-	address := fmt.Sprintf("%s:%s", config.Host, config.Port)
+	address := fmt.Sprintf("%s:%s", config.DataSource.Host, config.DataSource.Port)
 	u, err := url.Parse(address)
 	if err != nil || u.Host == "" {
 		protocol := "http"
@@ -89,7 +89,7 @@ func (*Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionCon
 	}
 
 	esConfig := elasticsearch.Config{
-		Username:  config.Username,
+		Username:  config.DataSource.Username,
 		Password:  config.Password,
 		Addresses: []string{address},
 		Transport: &http.Transport{
@@ -134,7 +134,7 @@ func (*Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionCon
 	}
 
 	// generate basic authentication string for http client.
-	encodedUsrAndPasswd := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s:%s", config.Username, config.Password)))
+	encodedUsrAndPasswd := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s:%s", config.DataSource.Username, config.Password)))
 	basicAuthString := fmt.Sprintf("Basic %s", string(encodedUsrAndPasswd))
 
 	return &Driver{

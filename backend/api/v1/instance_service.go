@@ -140,7 +140,12 @@ func (s *InstanceService) CreateInstance(ctx context.Context, request *v1pb.Crea
 	if request.ValidateOnly {
 		for _, ds := range instanceMessage.Metadata.GetDataSources() {
 			err := func() error {
-				driver, err := s.dbFactory.GetDataSourceDriver(ctx, instanceMessage, ds, "", false /* datashare */, ds.GetType() == storepb.DataSourceType_READ_ONLY, db.ConnectionContext{})
+				driver, err := s.dbFactory.GetDataSourceDriver(
+					ctx, instanceMessage, ds,
+					db.ConnectionContext{
+						ReadOnly: ds.GetType() == storepb.DataSourceType_READ_ONLY,
+					},
+				)
 				if err != nil {
 					return status.Errorf(codes.Internal, "failed to get database driver with error: %v", err.Error())
 				}
@@ -663,7 +668,12 @@ func (s *InstanceService) AddDataSource(ctx context.Context, request *v1pb.AddDa
 	// Test connection.
 	if request.ValidateOnly {
 		err := func() error {
-			driver, err := s.dbFactory.GetDataSourceDriver(ctx, instance, dataSource, "", false /* datashare */, dataSource.GetType() == storepb.DataSourceType_READ_ONLY, db.ConnectionContext{})
+			driver, err := s.dbFactory.GetDataSourceDriver(
+				ctx, instance, dataSource,
+				db.ConnectionContext{
+					ReadOnly: dataSource.GetType() == storepb.DataSourceType_READ_ONLY,
+				},
+			)
 			if err != nil {
 				return status.Errorf(codes.Internal, "failed to get database driver with error: %v", err.Error())
 			}
@@ -838,7 +848,10 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 	// Test connection.
 	if request.ValidateOnly {
 		err := func() error {
-			driver, err := s.dbFactory.GetDataSourceDriver(ctx, instance, dataSource, "", false /* datashare */, dataSource.GetType() == storepb.DataSourceType_READ_ONLY, db.ConnectionContext{})
+			driver, err := s.dbFactory.GetDataSourceDriver(
+				ctx, instance, dataSource,
+				db.ConnectionContext{ReadOnly: dataSource.GetType() == storepb.DataSourceType_READ_ONLY},
+			)
 			if err != nil {
 				return status.Errorf(codes.Internal, "failed to get database driver with error: %v", err.Error())
 			}

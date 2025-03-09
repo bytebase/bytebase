@@ -37,7 +37,7 @@ func (d *Driver) Dump(ctx context.Context, out io.Writer, _ *storepb.DatabaseSch
 	}
 	for _, db := range dumpableDbNames {
 		resp, err := d.dbClient.GetDatabaseDdl(ctx, &databasepb.GetDatabaseDdlRequest{
-			Database: getDSN(d.config.Host, db),
+			Database: getDSN(d.config.DataSource.Host, db),
 		})
 		if err != nil {
 			return err

@@ -43,7 +43,7 @@ func (d *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionC
 	// ref: https://github.com/databricks/databricks-sdk-go?tab=readme-ov-file#databricks-native-authentication
 	// only support token authentication.
 	client, err := databricks.NewWorkspaceClient(&databricks.Config{
-		Host:  config.Host,
+		Host:  config.DataSource.Host,
 		Token: config.AuthenticationPrivateKey,
 	})
 	if err != nil {
@@ -55,7 +55,7 @@ func (d *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionC
 		return nil, errors.New("Warehouse ID must be set")
 	}
 	d.WarehouseID = config.WarehouseID
-	d.curCatalog = config.Database
+	d.curCatalog = config.ConnectionContext.DatabaseName
 	return d, nil
 }
 

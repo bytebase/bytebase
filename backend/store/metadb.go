@@ -9,18 +9,24 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	dbdriver "github.com/bytebase/bytebase/backend/plugin/db"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 // GetEmbeddedConnectionConfig gets the embedded connection config.
 func GetEmbeddedConnectionConfig(datastorePort int, pgUser string) dbdriver.ConnectionConfig {
 	// Even when Postgres opens Unix domain socket only for connection, it still requires a port as ID to differentiate different Postgres instances.
+	// For embedded database, the database name is the same as the user name.
 	return dbdriver.ConnectionConfig{
-		Username: pgUser,
-		Password: "",
-		// For embedded database, the database name is the same as the user name.
-		Database:             pgUser,
-		Host:                 common.GetPostgresSocketDir(),
-		Port:                 fmt.Sprintf("%d", datastorePort),
+		DataSource: &storepb.DataSource{
+			Username: pgUser,
+			Password: "",
+			Host:     common.GetPostgresSocketDir(),
+			Port:     fmt.Sprintf("%d", datastorePort),
+			Database: pgUser,
+		},
+		ConnectionContext: dbdriver.ConnectionContext{
+			DatabaseName: pgUser,
+		},
 		MaximumSQLResultSize: common.DefaultMaximumSQLResultSize,
 	}
 }
@@ -41,18 +47,19 @@ func GetConnectionConfig(pgURL string) (dbdriver.ConnectionConfig, error) {
 	}
 
 	connCfg := dbdriver.ConnectionConfig{
+		DataSource:           &storepb.DataSource{},
 		MaximumSQLResultSize: common.DefaultMaximumSQLResultSize,
 	}
 
 	if u.User != nil {
-		connCfg.Username = u.User.Username()
+		connCfg.DataSource.Username = u.User.Username()
 		connCfg.Password, _ = u.User.Password()
 	}
-	if connCfg.Username == "" {
+	if connCfg.DataSource.Username == "" {
 		return dbdriver.ConnectionConfig{}, errors.Errorf("missing user in the --pg connection string")
 	}
 	if host, port, err := net.SplitHostPort(u.Host); err != nil {
-		connCfg.Host = u.Host
+		connCfg.DataSource.Host = u.Host
 	} else {
 		// There is a hack. PostgreSQL document(https://www.postgresql.org/docs/14/libpq-connect.html)
 		// specifies that a Unix-domain socket connection is chosen if the host part is either empty or **looks like an absolute path name**.
@@ -67,19 +74,19 @@ func GetConnectionConfig(pgURL string) (dbdriver.ConnectionConfig, error) {
 			// In this case, it is impossible to decide whether to use socket or tcp.
 			return dbdriver.ConnectionConfig{}, errors.Errorf("please only using socket or host instead of both")
 		}
-		connCfg.Host = host
+		connCfg.DataSource.Host = host
 		if hostInQuery != "" {
-			connCfg.Host = hostInQuery
+			connCfg.DataSource.Host = hostInQuery
 		}
-		connCfg.Port = port
+		connCfg.DataSource.Port = port
 	}
-	if connCfg.Port == "" {
-		connCfg.Port = "5432"
+	if connCfg.DataSource.Port == "" {
+		connCfg.DataSource.Port = "5432"
 	}
 	if u.Path == "" {
 		return dbdriver.ConnectionConfig{}, errors.Errorf("missing database in the --pg connection string")
 	}
-	connCfg.Database = u.Path[1:]
+	connCfg.ConnectionContext.DatabaseName = u.Path[1:]
 
 	connCfg.TLSConfig = dbdriver.TLSConfig{
 		SslCA:   q.Get("sslrootcert"),

@@ -53,10 +53,10 @@ func (d *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionC
 		return nil, errors.Wrap(err, "redis: failed to get tls config")
 	}
 	db := 0
-	if config.Database != "" {
-		database, err := strconv.Atoi(config.Database)
+	if config.ConnectionContext.DatabaseName != "" {
+		database, err := strconv.Atoi(config.ConnectionContext.DatabaseName)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to convert database %s to int", config.Database)
+			return nil, errors.Wrapf(err, "failed to convert database %s to int", config.ConnectionContext.DatabaseName)
 		}
 		db = database
 	}
@@ -64,8 +64,8 @@ func (d *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionC
 	switch config.RedisType {
 	case storepb.DataSource_REDIS_TYPE_UNSPECIFIED, storepb.DataSource_STANDALONE:
 		options := &redis.Options{
-			Addr:      fmt.Sprintf("%s:%s", config.Host, config.Port),
-			Username:  config.Username,
+			Addr:      fmt.Sprintf("%s:%s", config.DataSource.Host, config.DataSource.Port),
+			Username:  config.DataSource.Username,
 			Password:  config.Password,
 			TLSConfig: tlsConfig,
 			DB:        db,
@@ -90,7 +90,7 @@ func (d *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionC
 		d.rdb = client
 	case storepb.DataSource_SENTINEL:
 		sentinelAddrs := make([]string, 0, 1+len(config.AdditionalAddresses))
-		sentinelAddrs = append(sentinelAddrs, fmt.Sprintf("%s:%s", config.Host, config.Port))
+		sentinelAddrs = append(sentinelAddrs, fmt.Sprintf("%s:%s", config.DataSource.Host, config.DataSource.Port))
 		for _, sentinelAddr := range config.AdditionalAddresses {
 			sentinelAddrs = append(sentinelAddrs, fmt.Sprintf("%s:%s", sentinelAddr.Host, sentinelAddr.Port))
 		}
@@ -98,7 +98,7 @@ func (d *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionC
 			MasterName:       config.MasterName,
 			Username:         config.MasterUsername,
 			Password:         config.MasterPassword,
-			SentinelUsername: config.Username,
+			SentinelUsername: config.DataSource.Username,
 			SentinelPassword: config.Password,
 			SentinelAddrs:    sentinelAddrs,
 			DB:               db,
@@ -124,13 +124,13 @@ func (d *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionC
 		d.rdb = client
 	case storepb.DataSource_CLUSTER:
 		addrs := make([]string, 0, 1+len(config.AdditionalAddresses))
-		addrs = append(addrs, fmt.Sprintf("%s:%s", config.Host, config.Port))
+		addrs = append(addrs, fmt.Sprintf("%s:%s", config.DataSource.Host, config.DataSource.Port))
 		for _, addr := range config.AdditionalAddresses {
 			addrs = append(addrs, fmt.Sprintf("%s:%s", addr.Host, addr.Port))
 		}
 		options := &redis.ClusterOptions{
 			Addrs:     addrs,
-			Username:  config.Username,
+			Username:  config.DataSource.Username,
 			Password:  config.Password,
 			TLSConfig: tlsConfig,
 		}

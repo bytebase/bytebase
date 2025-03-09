@@ -167,11 +167,13 @@ func needSetupSampleDatabase(ctx context.Context, pgUser, port, database string)
 		storepb.Engine_POSTGRES,
 		db.DriverConfig{},
 		db.ConnectionConfig{
-			Username:             pgUser,
-			Password:             "",
-			Host:                 common.GetPostgresSocketDir(),
-			Port:                 port,
-			Database:             database,
+			DataSource: &storepb.DataSource{
+				Username: pgUser,
+				Password: "",
+				Host:     common.GetPostgresSocketDir(),
+				Port:     port,
+				Database: database,
+			},
 			MaximumSQLResultSize: common.DefaultMaximumSQLResultSize,
 		},
 	)
@@ -219,11 +221,13 @@ func prepareSampleDatabaseIfNeeded(ctx context.Context, pgUser, host, port, data
 		storepb.Engine_POSTGRES,
 		db.DriverConfig{},
 		db.ConnectionConfig{
-			Username:             pgUser,
-			Password:             "",
-			Host:                 host,
-			Port:                 port,
-			Database:             database,
+			DataSource: &storepb.DataSource{
+				Username: pgUser,
+				Password: "",
+				Host:     host,
+				Port:     port,
+				Database: database,
+			},
 			MaximumSQLResultSize: common.DefaultMaximumSQLResultSize,
 		},
 	)
@@ -245,11 +249,13 @@ func prepareSampleDatabase(ctx context.Context, pgUser, host, port, database str
 		storepb.Engine_POSTGRES,
 		db.DriverConfig{},
 		db.ConnectionConfig{
-			Username:             pgUser,
-			Password:             "",
-			Host:                 host,
-			Port:                 port,
-			Database:             "postgres",
+			DataSource: &storepb.DataSource{
+				Username: pgUser,
+				Password: "",
+				Host:     host,
+				Port:     port,
+				Database: "postgres",
+			},
 			MaximumSQLResultSize: common.DefaultMaximumSQLResultSize,
 		},
 	)
@@ -273,11 +279,13 @@ func createPGStatStatementsExtension(ctx context.Context, pgUser, host, port, da
 		storepb.Engine_POSTGRES,
 		db.DriverConfig{},
 		db.ConnectionConfig{
-			Username:             pgUser,
-			Password:             "",
-			Host:                 host,
-			Port:                 port,
-			Database:             database,
+			DataSource: &storepb.DataSource{
+				Username: pgUser,
+				Password: "",
+				Host:     host,
+				Port:     port,
+				Database: database,
+			},
 			MaximumSQLResultSize: common.DefaultMaximumSQLResultSize,
 		},
 	)
@@ -299,11 +307,13 @@ func dropDefaultPostgresDatabase(ctx context.Context, pgUser, host, port, connec
 		storepb.Engine_POSTGRES,
 		db.DriverConfig{},
 		db.ConnectionConfig{
-			Username:             pgUser,
-			Password:             "",
-			Host:                 host,
-			Port:                 port,
-			Database:             connectingDb,
+			DataSource: &storepb.DataSource{
+				Username: pgUser,
+				Password: "",
+				Host:     host,
+				Port:     port,
+				Database: connectingDb,
+			},
 			MaximumSQLResultSize: common.DefaultMaximumSQLResultSize,
 		},
 	)

@@ -43,19 +43,19 @@ func newDriver(db.DriverConfig) db.Driver {
 
 func (driver *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
 	databaseName := func() string {
-		if config.Database != "" {
-			return config.Database
+		if config.ConnectionContext.DatabaseName != "" {
+			return config.ConnectionContext.DatabaseName
 		}
-		i := strings.Index(config.Username, "@")
+		i := strings.Index(config.DataSource.Username, "@")
 		if i == -1 {
-			return config.Username
+			return config.DataSource.Username
 		}
-		return config.Username[:i]
+		return config.DataSource.Username[:i]
 	}()
 
 	// Usename format: {user}@{tenant}#{cluster}
 	// User is required, others are optional.
-	dsn := fmt.Sprintf("%s/%s@%s:%s/%s", url.PathEscape(config.Username), url.PathEscape(config.Password), config.Host, config.Port, url.PathEscape(databaseName))
+	dsn := fmt.Sprintf("%s/%s@%s:%s/%s", url.PathEscape(config.DataSource.Username), url.PathEscape(config.Password), config.DataSource.Host, config.DataSource.Port, url.PathEscape(databaseName))
 
 	db, err := sql.Open("oci8", dsn)
 	if err != nil {

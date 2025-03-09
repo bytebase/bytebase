@@ -41,7 +41,7 @@ func newDriver(_ db.DriverConfig) db.Driver {
 
 // Open opens a CosmosDB driver.
 func (driver *Driver) Open(_ context.Context, _ storepb.Engine, connCfg db.ConnectionConfig) (db.Driver, error) {
-	endpoint := connCfg.Host
+	endpoint := connCfg.DataSource.Host
 	var credential azcore.TokenCredential
 	if clientSecretCredential := connCfg.ClientSecretCredential; clientSecretCredential != nil {
 		c, err := azidentity.NewClientSecretCredential(clientSecretCredential.TenantId, clientSecretCredential.ClientId, clientSecretCredential.ClientSecret, nil)
@@ -61,7 +61,7 @@ func (driver *Driver) Open(_ context.Context, _ storepb.Engine, connCfg db.Conne
 		return nil, errors.Wrapf(err, "failed to create CosmosDB client")
 	}
 	driver.client = client
-	driver.databaseName = connCfg.Database
+	driver.databaseName = connCfg.ConnectionContext.DatabaseName
 	driver.connCfg = connCfg
 	return driver, nil
 }

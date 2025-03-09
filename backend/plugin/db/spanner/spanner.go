@@ -57,7 +57,7 @@ func newDriver(_ db.DriverConfig) db.Driver {
 // Open opens a Spanner driver. It must connect to a specific database.
 // If database isn't provided, part of the driver cannot function.
 func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
-	if config.Host == "" {
+	if config.DataSource.Host == "" {
 		return nil, errors.New("host cannot be empty")
 	}
 	d.config = config
@@ -67,9 +67,9 @@ func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.Connectio
 	if config.AuthenticationType != storepb.DataSource_GOOGLE_CLOUD_SQL_IAM {
 		o = append(o, option.WithCredentialsJSON([]byte(config.Password)))
 	}
-	if config.Database != "" {
-		d.databaseName = d.config.Database
-		dsn := getDSN(d.config.Host, d.config.Database)
+	if config.ConnectionContext.DatabaseName != "" {
+		d.databaseName = config.ConnectionContext.DatabaseName
+		dsn := getDSN(d.config.DataSource.Host, config.ConnectionContext.DatabaseName)
 		client, err := spanner.NewClient(
 			ctx,
 			dsn,
@@ -101,7 +101,7 @@ func (d *Driver) Close(_ context.Context) error {
 // Ping pings the instance.
 func (d *Driver) Ping(ctx context.Context) error {
 	iter := d.dbClient.ListDatabases(ctx, &databasepb.ListDatabasesRequest{
-		Parent: d.config.Host,
+		Parent: d.config.DataSource.Host,
 	})
 	_, err := iter.Next()
 	if err == iterator.Done {
@@ -154,7 +154,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 
 	if ddl {
 		op, err := d.dbClient.UpdateDatabaseDdl(ctx, &databasepb.UpdateDatabaseDdlRequest{
-			Database:   getDSN(d.config.Host, d.databaseName),
+			Database:   getDSN(d.config.DataSource.Host, d.databaseName),
 			Statements: stmts,
 		})
 		if err != nil {
@@ -184,7 +184,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 
 func (d *Driver) creataDatabase(ctx context.Context, createStatement string, extraStatement []string) error {
 	op, err := d.dbClient.CreateDatabase(ctx, &databasepb.CreateDatabaseRequest{
-		Parent:          d.config.Host,
+		Parent:          d.config.DataSource.Host,
 		CreateStatement: createStatement,
 		ExtraStatements: extraStatement,
 	})
@@ -279,7 +279,7 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 			}
 			if util.IsDDL(statement) {
 				op, err := d.dbClient.UpdateDatabaseDdl(ctx, &databasepb.UpdateDatabaseDdlRequest{
-					Database:   getDSN(d.config.Host, d.databaseName),
+					Database:   getDSN(d.config.DataSource.Host, d.databaseName),
 					Statements: []string{statement},
 				})
 				if err != nil {

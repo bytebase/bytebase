@@ -68,7 +68,7 @@ func (driver *Driver) Open(ctx context.Context, _ storepb.Engine, connCfg db.Con
 	driver.client = client
 	driver.connectionCtx = connCfg.ConnectionContext
 	driver.connCfg = connCfg
-	driver.databaseName = connCfg.Database
+	driver.databaseName = connCfg.ConnectionContext.DatabaseName
 	return driver, nil
 }
 
@@ -121,7 +121,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ db.Execut
 		} else {
 			// Write the tlsCAFile to a temporary file, and use the temporary file as the value of --tlsCAFile.
 			// The reason is that the --tlsCAFile option of mongosh does not support the value of the certificate directly.
-			caFileName := fmt.Sprintf("mongodb-tls-ca-%s-%s", driver.connCfg.Database, uuid)
+			caFileName := fmt.Sprintf("mongodb-tls-ca-%s-%s", driver.connCfg.ConnectionContext.DatabaseName, uuid)
 			defer func() {
 				// While error occurred in mongosh, the temporary file may not created, so we ignore the error here.
 				_ = os.Remove(caFileName)
@@ -133,7 +133,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ db.Execut
 		}
 
 		if driver.connCfg.TLSConfig.SslKey != "" && driver.connCfg.TLSConfig.SslCert != "" {
-			clientCertName := fmt.Sprintf("mongodb-tls-client-cert-%s-%s", driver.connCfg.Database, uuid)
+			clientCertName := fmt.Sprintf("mongodb-tls-client-cert-%s-%s", driver.connCfg.ConnectionContext.DatabaseName, uuid)
 			defer func() {
 				// While error occurred in mongosh, the temporary file may not created, so we ignore the error here.
 				_ = os.Remove(clientCertName)
@@ -197,12 +197,12 @@ func getBasicMongoDBConnectionURI(connConfig db.ConnectionConfig) string {
 	if connConfig.SRV {
 		u.Scheme = "mongodb+srv"
 	}
-	if connConfig.Username != "" {
-		u.User = url.UserPassword(connConfig.Username, connConfig.Password)
+	if connConfig.DataSource.Username != "" {
+		u.User = url.UserPassword(connConfig.DataSource.Username, connConfig.Password)
 	}
-	u.Host = connConfig.Host
-	if connConfig.Port != "" {
-		u.Host = fmt.Sprintf("%s:%s", u.Host, connConfig.Port)
+	u.Host = connConfig.DataSource.Host
+	if connConfig.DataSource.Port != "" {
+		u.Host = fmt.Sprintf("%s:%s", u.Host, connConfig.DataSource.Port)
 	}
 	for _, additionalAddress := range connConfig.AdditionalAddresses {
 		address := additionalAddress.Host
@@ -211,8 +211,8 @@ func getBasicMongoDBConnectionURI(connConfig db.ConnectionConfig) string {
 		}
 		u.Host = fmt.Sprintf("%s,%s", u.Host, address)
 	}
-	if connConfig.Database != "" {
-		u.Path = connConfig.Database
+	if connConfig.ConnectionContext.DatabaseName != "" {
+		u.Path = connConfig.ConnectionContext.DatabaseName
 	}
 	authDatabase := "admin"
 	if connConfig.AuthenticationDatabase != "" {
@@ -283,7 +283,7 @@ func (driver *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement stri
 		} else {
 			// Write the tlsCAFile to a temporary file, and use the temporary file as the value of --tlsCAFile.
 			// The reason is that the --tlsCAFile option of mongosh does not support the value of the certificate directly.
-			caFileName := fmt.Sprintf("mongodb-tls-ca-%s-%s", driver.connCfg.Database, uuid)
+			caFileName := fmt.Sprintf("mongodb-tls-ca-%s-%s", driver.connCfg.ConnectionContext.DatabaseName, uuid)
 			defer func() {
 				// While error occurred in mongosh, the temporary file may not created, so we ignore the error here.
 				_ = os.Remove(caFileName)
@@ -295,7 +295,7 @@ func (driver *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement stri
 		}
 
 		if driver.connCfg.TLSConfig.SslKey != "" && driver.connCfg.TLSConfig.SslCert != "" {
-			clientCertName := fmt.Sprintf("mongodb-tls-client-cert-%s-%s", driver.connCfg.Database, uuid)
+			clientCertName := fmt.Sprintf("mongodb-tls-client-cert-%s-%s", driver.connCfg.ConnectionContext.DatabaseName, uuid)
 			defer func() {
 				// While error occurred in mongosh, the temporary file may not created, so we ignore the error here.
 				_ = os.Remove(clientCertName)
@@ -317,7 +317,7 @@ func (driver *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement stri
 		}
 	}
 
-	queryResultFileName := fmt.Sprintf("mongodb-query-%s-%s", driver.connCfg.Database, uuid.New().String())
+	queryResultFileName := fmt.Sprintf("mongodb-query-%s-%s", driver.connCfg.ConnectionContext.DatabaseName, uuid.New().String())
 	defer func() {
 		// While error occurred in mongosh, the temporary file may not created, so we ignore the error here.
 		_ = os.Remove(queryResultFileName)

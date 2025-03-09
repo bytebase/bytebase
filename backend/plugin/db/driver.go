@@ -142,21 +142,13 @@ const (
 
 // ConnectionConfig is the configuration for connections.
 type ConnectionConfig struct {
-	Host string
-	Port string
-	// More hosts and ports are required by elasticsearch.
-	MultiHosts []string
-	MultiPorts []string
-	Username   string
-	Password   string
-	Database   string
-	// It's only set for Redshift datashare database.
-	DataShare bool
+	DataSource        *storepb.DataSource
+	ConnectionContext ConnectionContext
+	Password          string
+
 	TLSConfig TLSConfig
 	// Only used for Hive.
 	SASLConfig SASLConfig
-	// ReadOnly is only supported for Postgres at the moment.
-	ReadOnly bool
 	// SRV is only supported for MongoDB now.
 	SRV bool
 	// AuthenticationDatabase is only supported for MongoDB now.
@@ -167,8 +159,6 @@ type ConnectionConfig struct {
 	SSHConfig   SSHConfig
 	// AuthenticationPrivateKey is used by Snowflake and Databricks (databricks access token).
 	AuthenticationPrivateKey string
-
-	ConnectionContext ConnectionContext
 
 	// AuthenticationType is for the database connection, we support normal username & password or Google IAM.
 	AuthenticationType storepb.DataSource_AuthenticationType
@@ -217,6 +207,11 @@ type ConnectionContext struct {
 	EngineVersion string
 	// UseDatabaseOwner is used by Postgres for using role of database owner.
 	UseDatabaseOwner bool
+	DatabaseName     string
+	// It's only set for Redshift datashare database.
+	DataShare bool
+	// ReadOnly is only supported for Postgres at the moment.
+	ReadOnly bool
 }
 
 // QueryContext is the context to query.

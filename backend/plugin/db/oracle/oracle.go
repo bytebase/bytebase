@@ -61,27 +61,27 @@ func (driver *Driver) GetVersion() (*plsqlparser.Version, error) {
 
 // Open opens a Oracle driver.
 func (driver *Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
-	port, err := strconv.Atoi(config.Port)
+	port, err := strconv.Atoi(config.DataSource.Port)
 	if err != nil {
-		return nil, errors.Errorf("invalid port %q", config.Port)
+		return nil, errors.Errorf("invalid port %q", config.DataSource.Port)
 	}
 	options := make(map[string]string)
 	options["CONNECTION TIMEOUT"] = "0"
 	if config.SID != "" {
 		options["SID"] = config.SID
 	}
-	dsn := goora.BuildUrl(config.Host, port, config.ServiceName, config.Username, config.Password, options)
+	dsn := goora.BuildUrl(config.DataSource.Host, port, config.ServiceName, config.DataSource.Username, config.Password, options)
 	db, err := sql.Open("oracle", dsn)
 	if err != nil {
 		return nil, err
 	}
-	if config.Database != "" {
-		if _, err := db.ExecContext(ctx, fmt.Sprintf("ALTER SESSION SET CURRENT_SCHEMA = \"%s\"", config.Database)); err != nil {
-			return nil, errors.Wrapf(err, "failed to set current schema to %q", config.Database)
+	if config.ConnectionContext.DatabaseName != "" {
+		if _, err := db.ExecContext(ctx, fmt.Sprintf("ALTER SESSION SET CURRENT_SCHEMA = \"%s\"", config.ConnectionContext.DatabaseName)); err != nil {
+			return nil, errors.Wrapf(err, "failed to set current schema to %q", config.ConnectionContext.DatabaseName)
 		}
 	}
 	driver.db = db
-	driver.databaseName = config.Database
+	driver.databaseName = config.ConnectionContext.DatabaseName
 	driver.serviceName = config.ServiceName
 	driver.connectionCtx = config.ConnectionContext
 	driver.maximumSQLResultSize = config.MaximumSQLResultSize

@@ -84,7 +84,7 @@ func (driver *Driver) Open(ctx context.Context, _ storepb.Engine, config db.Conn
 		return nil, err
 	}
 	pgxConnConfig.RuntimeParams["application_name"] = "bytebase"
-	if config.ReadOnly {
+	if config.ConnectionContext.ReadOnly {
 		pgxConnConfig.RuntimeParams["default_transaction_read_only"] = "true"
 	}
 
@@ -104,9 +104,9 @@ func (driver *Driver) Open(ctx context.Context, _ storepb.Engine, config db.Conn
 		}
 	}
 
-	driver.databaseName = config.Database
-	if config.Database == "" {
-		databaseName, cfg, err := guessDSN(pgxConnConfig, config.Username)
+	driver.databaseName = config.ConnectionContext.DatabaseName
+	if config.ConnectionContext.DatabaseName == "" {
+		databaseName, cfg, err := guessDSN(pgxConnConfig, config.DataSource.Username)
 		if err != nil {
 			return nil, err
 		}
@@ -137,15 +137,15 @@ func (driver *Driver) Open(ctx context.Context, _ storepb.Engine, config db.Conn
 func getPGConnectionConfig(config db.ConnectionConfig) (*pgx.ConnConfig, error) {
 	// Require username for Postgres, as the guessDSN 1st guess is to use the username as the connecting database
 	// if database name is not explicitly specified.
-	if config.Username == "" {
+	if config.DataSource.Username == "" {
 		return nil, errors.Errorf("user must be set")
 	}
 
-	if config.Host == "" {
+	if config.DataSource.Host == "" {
 		return nil, errors.Errorf("host must be set")
 	}
 
-	if config.Port == "" {
+	if config.DataSource.Port == "" {
 		return nil, errors.Errorf("port must be set")
 	}
 
@@ -154,7 +154,7 @@ func getPGConnectionConfig(config db.ConnectionConfig) (*pgx.ConnConfig, error) 
 		return nil, errors.Errorf("ssl-cert and ssl-key must be both set or unset")
 	}
 
-	connStr := fmt.Sprintf("host=%s port=%s", config.Host, config.Port)
+	connStr := fmt.Sprintf("host=%s port=%s", config.DataSource.Host, config.DataSource.Port)
 	sslMode := getSSLMode(config.TLSConfig, config.SSHConfig)
 	connStr += fmt.Sprintf(" sslmode=%s", sslMode)
 
@@ -169,9 +169,9 @@ func getPGConnectionConfig(config db.ConnectionConfig) (*pgx.ConnConfig, error) 
 	if err != nil {
 		return nil, err
 	}
-	connConfig.Config.User = config.Username
+	connConfig.Config.User = config.DataSource.Username
 	connConfig.Config.Password = config.Password
-	connConfig.Config.Database = config.Database
+	connConfig.Config.Database = config.ConnectionContext.DatabaseName
 
 	cfg, err := config.TLSConfig.GetSslConfig()
 	if err != nil {
@@ -190,9 +190,9 @@ func getRDSConnectionPassword(ctx context.Context, conf db.ConnectionConfig) (st
 		return "", errors.Wrap(err, "load aws config failed")
 	}
 
-	dbEndpoint := fmt.Sprintf("%s:%s", conf.Host, conf.Port)
+	dbEndpoint := fmt.Sprintf("%s:%s", conf.DataSource.Host, conf.DataSource.Port)
 	authenticationToken, err := auth.BuildAuthToken(
-		ctx, dbEndpoint, conf.Region, conf.Username, cfg.Credentials)
+		ctx, dbEndpoint, conf.Region, conf.DataSource.Username, cfg.Credentials)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to create authentication token")
 	}
@@ -209,8 +209,8 @@ func getRDSConnectionConfig(ctx context.Context, conf db.ConnectionConfig) (*pgx
 		return nil, err
 	}
 
-	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s",
-		conf.Host, conf.Port, conf.Username, password, conf.Database,
+	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s",
+		conf.DataSource.Host, conf.DataSource.Port, conf.DataSource.Username, password,
 	)
 	return pgx.ParseConfig(dsn)
 }
@@ -225,13 +225,13 @@ func getCloudSQLConnectionConfig(ctx context.Context, conf db.ConnectionConfig) 
 		return nil, err
 	}
 
-	dsn := fmt.Sprintf("user=%s database=%s", conf.Username, conf.Database)
+	dsn := fmt.Sprintf("user=%s", conf.DataSource.Username)
 	config, err := pgx.ParseConfig(dsn)
 	if err != nil {
 		return nil, err
 	}
 	config.DialFunc = func(ctx context.Context, _, _ string) (net.Conn, error) {
-		return d.Dial(ctx, conf.Host)
+		return d.Dial(ctx, conf.DataSource.Host)
 	}
 
 	return config, nil

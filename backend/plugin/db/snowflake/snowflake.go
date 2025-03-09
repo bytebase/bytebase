@@ -67,7 +67,7 @@ func (driver *Driver) Open(_ context.Context, dbType storepb.Engine, config db.C
 	driver.dbType = dbType
 	driver.db = db
 	driver.connectionCtx = config.ConnectionContext
-	driver.databaseName = config.Database
+	driver.databaseName = config.ConnectionContext.DatabaseName
 	driver.maximumSQLResultSize = config.MaximumSQLResultSize
 
 	return driver, nil
@@ -76,8 +76,8 @@ func (driver *Driver) Open(_ context.Context, dbType storepb.Engine, config db.C
 // buildSnowflakeDSN returns the Snowflake Golang DSN and a redacted version of the DSN.
 func buildSnowflakeDSN(config db.ConnectionConfig) (string, string, error) {
 	snowConfig := &snow.Config{
-		Database: fmt.Sprintf(`"%s"`, config.Database),
-		User:     config.Username,
+		Database: fmt.Sprintf(`"%s"`, config.ConnectionContext.DatabaseName),
+		User:     config.DataSource.Username,
 		Password: config.Password,
 	}
 	if config.AuthenticationPrivateKey != "" {
@@ -90,15 +90,15 @@ func buildSnowflakeDSN(config db.ConnectionConfig) (string, string, error) {
 	}
 
 	// Host can also be account e.g. xma12345, or xma12345@host_ip where host_ip is the proxy server IP.
-	if strings.Contains(config.Host, "@") {
-		parts := strings.Split(config.Host, "@")
+	if strings.Contains(config.DataSource.Host, "@") {
+		parts := strings.Split(config.DataSource.Host, "@")
 		if len(parts) != 2 {
-			return "", "", errors.Errorf("expected one @ in the host at most, got %q", config.Host)
+			return "", "", errors.Errorf("expected one @ in the host at most, got %q", config.DataSource.Host)
 		}
 		snowConfig.Account = parts[0]
 		snowConfig.Host = parts[1]
 	} else {
-		snowConfig.Account = config.Host
+		snowConfig.Account = config.DataSource.Host
 	}
 	dsn, err := snow.DSN(snowConfig)
 	if err != nil {

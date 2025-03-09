@@ -45,14 +45,14 @@ var (
 )
 
 func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
-	if config.Host == "" {
+	if config.DataSource.Host == "" {
 		return nil, errors.Errorf("hostname not set")
 	}
 
 	d.config = config
 	d.ctx = config.ConnectionContext
 
-	port, err := strconv.Atoi(config.Port)
+	port, err := strconv.Atoi(config.DataSource.Port)
 	if err != nil {
 		return nil, errors.Errorf("conversion failure for 'port' [string -> int]")
 	}
@@ -74,15 +74,15 @@ func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.Connectio
 		hiveConfig.Password = t.Password
 	}
 
-	conn, err := gohive.Connect(config.Host, port, authConnParam, hiveConfig)
+	conn, err := gohive.Connect(config.DataSource.Host, port, authConnParam, hiveConfig)
 	if err != nil {
 		return nil, err
 	}
 	d.conn = conn
 
-	if config.Database != "" {
+	if config.ConnectionContext.DatabaseName != "" {
 		cursor := d.conn.Cursor()
-		if err := executeCursor(ctx, cursor, fmt.Sprintf("use %s", config.Database)); err != nil {
+		if err := executeCursor(ctx, cursor, fmt.Sprintf("use %s", config.ConnectionContext.DatabaseName)); err != nil {
 			return nil, multierr.Combine(d.conn.Close(), err)
 		}
 	}

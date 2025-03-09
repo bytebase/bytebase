@@ -59,7 +59,7 @@ func newDriver(db.DriverConfig) db.Driver {
 
 // Open opens a ClickHouse driver.
 func (driver *Driver) Open(_ context.Context, dbType storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
-	addr := fmt.Sprintf("%s:%s", config.Host, config.Port)
+	addr := fmt.Sprintf("%s:%s", config.DataSource.Host, config.DataSource.Port)
 	// Set SSL configuration.
 	tlsConfig, err := config.TLSConfig.GetSslConfig()
 	if err != nil {
@@ -69,8 +69,8 @@ func (driver *Driver) Open(_ context.Context, dbType storepb.Engine, config db.C
 	conn := clickhouse.OpenDB(&clickhouse.Options{
 		Addr: []string{addr},
 		Auth: clickhouse.Auth{
-			Database: config.Database,
-			Username: config.Username,
+			Database: config.ConnectionContext.DatabaseName,
+			Username: config.DataSource.GetUsername(),
 			Password: config.Password,
 		},
 		TLS: tlsConfig,
@@ -90,7 +90,7 @@ func (driver *Driver) Open(_ context.Context, dbType storepb.Engine, config db.C
 
 	driver.dbType = dbType
 	driver.db = conn
-	driver.databaseName = config.Database
+	driver.databaseName = config.ConnectionContext.DatabaseName
 	driver.connectionCtx = config.ConnectionContext
 	driver.maximumSQLResultSize = config.MaximumSQLResultSize
 
