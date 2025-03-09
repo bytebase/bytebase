@@ -66,54 +66,16 @@ func (d *DBFactory) GetDataSourceDriver(ctx context.Context, instance *store.Ins
 		databaseName = dataSource.GetDatabase()
 	}
 
-	secret, err := d.store.GetSecret(ctx)
+	password, err := secretlib.ReplaceExternalSecret(ctx, dataSource.GetPassword(), dataSource.GetExternalSecret())
 	if err != nil {
 		return nil, err
 	}
-	password, err := common.Unobfuscate(dataSource.GetObfuscatedPassword(), secret)
-	if err != nil {
-		return nil, err
-	}
-	sslCA, err := common.Unobfuscate(dataSource.GetObfuscatedSslCa(), secret)
-	if err != nil {
-		return nil, err
-	}
-	sslCert, err := common.Unobfuscate(dataSource.GetObfuscatedSslCert(), secret)
-	if err != nil {
-		return nil, err
-	}
-	sslKey, err := common.Unobfuscate(dataSource.GetObfuscatedSslKey(), secret)
-	if err != nil {
-		return nil, err
-	}
-	sshPassword, err := common.Unobfuscate(dataSource.GetObfuscatedSshPassword(), secret)
-	if err != nil {
-		return nil, err
-	}
-	sshPrivateKey, err := common.Unobfuscate(dataSource.GetObfuscatedSshPrivateKey(), secret)
-	if err != nil {
-		return nil, err
-	}
-	authenticationPrivateKey, err := common.Unobfuscate(dataSource.GetObfuscatedAuthenticationPrivateKey(), secret)
-	if err != nil {
-		return nil, err
-	}
-	masterPassword, err := common.Unobfuscate(dataSource.GetObfuscatedMasterPassword(), secret)
-	if err != nil {
-		return nil, err
-	}
-
-	updatedPassword, err := secretlib.ReplaceExternalSecret(ctx, password, dataSource.GetExternalSecret())
-	if err != nil {
-		return nil, err
-	}
-	password = updatedPassword
 	sshConfig := db.SSHConfig{
 		Host:       dataSource.GetSshHost(),
 		Port:       dataSource.GetSshPort(),
 		User:       dataSource.GetSshUser(),
-		Password:   sshPassword,
-		PrivateKey: sshPrivateKey,
+		Password:   dataSource.GetSshPassword(),
+		PrivateKey: dataSource.GetSshPrivateKey(),
 	}
 	var dbSaslConfig db.SASLConfig
 	switch t := dataSource.GetSaslConfig().GetMechanism().(type) {
@@ -135,16 +97,6 @@ func (d *DBFactory) GetDataSourceDriver(ctx context.Context, instance *store.Ins
 	connectionContext.InstanceID = instance.ResourceID
 	connectionContext.EngineVersion = instance.Metadata.GetVersion()
 
-	var clientSecretCredential *storepb.DataSource_ClientSecretCredential
-	if dataSource.GetClientSecretCredential() != nil {
-		clientSecretCredential = dataSource.GetClientSecretCredential()
-		obfuscatedClientSecret, err := common.Unobfuscate(clientSecretCredential.GetObfuscatedClientSecret(), secret)
-		if err != nil {
-			return nil, err
-		}
-		clientSecretCredential.ClientSecret = obfuscatedClientSecret
-	}
-
 	maximumSQLResultSize := d.store.GetMaximumSQLResultLimit(ctx)
 	driver, err := db.Open(
 		ctx,
@@ -157,9 +109,9 @@ func (d *DBFactory) GetDataSourceDriver(ctx context.Context, instance *store.Ins
 			Password: password,
 			TLSConfig: db.TLSConfig{
 				UseSSL:  dataSource.GetUseSsl(),
-				SslCA:   sslCA,
-				SslCert: sslCert,
-				SslKey:  sslKey,
+				SslCA:   dataSource.GetSslCa(),
+				SslCert: dataSource.GetSslCert(),
+				SslKey:  dataSource.GetSslKey(),
 			},
 			Host:                      dataSource.GetHost(),
 			Port:                      dataSource.GetPort(),
@@ -172,7 +124,7 @@ func (d *DBFactory) GetDataSourceDriver(ctx context.Context, instance *store.Ins
 			SSHConfig:                 sshConfig,
 			ReadOnly:                  readOnly,
 			ConnectionContext:         connectionContext,
-			AuthenticationPrivateKey:  authenticationPrivateKey,
+			AuthenticationPrivateKey:  dataSource.GetAuthenticationPrivateKey(),
 			AuthenticationType:        dataSource.GetAuthenticationType(),
 			SASLConfig:                dbSaslConfig,
 			AdditionalAddresses:       dataSource.GetAdditionalAddresses(),
@@ -183,10 +135,10 @@ func (d *DBFactory) GetDataSourceDriver(ctx context.Context, instance *store.Ins
 			RedisType:                 dataSource.GetRedisType(),
 			MasterName:                dataSource.GetMasterName(),
 			MasterUsername:            dataSource.GetMasterUsername(),
-			MasterPassword:            masterPassword,
+			MasterPassword:            dataSource.GetMasterPassword(),
 			ExtraConnectionParameters: dataSource.GetExtraConnectionParameters(),
 			MaximumSQLResultSize:      maximumSQLResultSize,
-			ClientSecretCredential:    clientSecretCredential,
+			ClientSecretCredential:    dataSource.GetClientSecretCredential(),
 		},
 	)
 	if err != nil {
