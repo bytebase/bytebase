@@ -6,7 +6,6 @@ import "google/api/annotations.proto";
 import "google/api/client.proto";
 import "google/api/field_behavior.proto";
 import "google/api/resource.proto";
-import "google/protobuf/duration.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/field_mask.proto";
 import "google/protobuf/timestamp.proto";
@@ -94,13 +93,6 @@ service DatabaseService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
-  rpc ListSlowQueries(ListSlowQueriesRequest) returns (ListSlowQueriesResponse) {
-    option (google.api.http) = {get: "/v1/{parent=projects/*}/slowQueries"};
-    option (google.api.method_signature) = "parent";
-    option (bytebase.v1.permission) = "bb.slowQueries.list";
-    option (bytebase.v1.auth_method) = IAM;
-  }
-
   rpc ListSecrets(ListSecretsRequest) returns (ListSecretsResponse) {
     option (google.api.http) = {get: "/v1/{parent=instances/*/databases/*}/secrets"};
     option (google.api.method_signature) = "parent";
@@ -123,13 +115,6 @@ service DatabaseService {
     option (bytebase.v1.permission) = "bb.databaseSecrets.delete";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
-  }
-
-  rpc AdviseIndex(AdviseIndexRequest) returns (AdviseIndexResponse) {
-    option (google.api.http) = {post: "/v1/{parent=instances/*/databases/*}:adviseIndex"};
-    option (google.api.method_signature) = "parent";
-    option (bytebase.v1.permission) = "bb.databases.adviseIndex";
-    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc ListRevisions(ListRevisionsRequest) returns (ListRevisionsResponse) {
@@ -1086,118 +1071,6 @@ message DatabaseSchema {
   string schema = 1;
 }
 
-// ListSlowQueriesRequest is the request of listing slow query.
-message ListSlowQueriesRequest {
-  // Format: projects/{project}
-  string parent = 1 [
-    (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference) = {type: "bytebase.com/Project"}
-  ];
-
-  // The filter of the slow query log.
-  // follow the
-  // [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form)
-  // syntax. Support filter by database and start_time in SlowQueryDetails for
-  // now. For example: Search the slow query log of the specific database:
-  //   - the specific database: database =
-  //   "instances/{instance}/databases/{database}"
-  // Search the slow query log that start_time after 2022-01-01T12:00:00.000Z:
-  //   - start_time > "2022-01-01T12:00:00.000Z"
-  //   - Should use [RFC-3339 format](https://www.rfc-editor.org/rfc/rfc3339).
-  //   - Currently we only support filtering down to date granularity.
-  string filter = 2;
-
-  // The order by of the slow query log.
-  // Support order by count, latest_log_time, average_query_time,
-  // maximum_query_time, average_rows_sent, maximum_rows_sent,
-  // average_rows_examined, maximum_rows_examined for now. For example:
-  //  - order by count: order_by = "count"
-  //  - order by latest_log_time desc: order_by = "latest_log_time desc"
-  // Default: order by average_query_time desc.
-  string order_by = 3;
-}
-
-// ListSlowQueriesResponse is the response of listing slow query.
-message ListSlowQueriesResponse {
-  // The slow query logs.
-  repeated SlowQueryLog slow_query_logs = 1;
-}
-
-// SlowQueryLog is the slow query log.
-message SlowQueryLog {
-  // The resource of the slow query log.
-  // The format is "instances/{instance}/databases/{database}".
-  string resource = 1 [(google.api.field_behavior) = REQUIRED];
-
-  // The project of the slow query log.
-  // The format is "projects/{project}".
-  string project = 2;
-
-  // The statistics of the slow query log.
-  SlowQueryStatistics statistics = 3;
-}
-
-// SlowQueryStatistics is the statistics of the slow query log.
-message SlowQueryStatistics {
-  // The fingerprint of the slow query log.
-  string sql_fingerprint = 1;
-
-  // The count of the slow query log.
-  int64 count = 2;
-
-  // The latest log time of the slow query log.
-  google.protobuf.Timestamp latest_log_time = 3;
-
-  // The average query time of the slow query log.
-  google.protobuf.Duration average_query_time = 4;
-
-  // The maximum query time of the slow query log.
-  google.protobuf.Duration maximum_query_time = 5;
-
-  // The average rows sent of the slow query log.
-  int64 average_rows_sent = 6;
-
-  // The maximum rows sent of the slow query log.
-  int64 maximum_rows_sent = 7;
-
-  // The average rows examined of the slow query log.
-  int64 average_rows_examined = 8;
-
-  // The maximum rows examined of the slow query log.
-  int64 maximum_rows_examined = 9;
-
-  // The percentage of the query time.
-  double query_time_percent = 10;
-
-  // The percentage of the count.
-  double count_percent = 11;
-
-  // Samples are details of the sample slow query logs with the same
-  // fingerprint.
-  repeated SlowQueryDetails samples = 12;
-}
-
-// SlowQueryDetails is the details of the slow query log.
-message SlowQueryDetails {
-  // The start time of the slow query log.
-  google.protobuf.Timestamp start_time = 1;
-
-  // The query time of the slow query log.
-  google.protobuf.Duration query_time = 2;
-
-  // The lock time of the slow query log.
-  google.protobuf.Duration lock_time = 3;
-
-  // The rows sent of the slow query log.
-  int64 rows_sent = 4;
-
-  // The rows examined of the slow query log.
-  int64 rows_examined = 5;
-
-  // The sql text of the slow query log.
-  string sql_text = 6;
-}
-
 message ListSecretsRequest {
   // The parent of the secret.
   // Format: instances/{instance}/databases/{database}
@@ -1275,30 +1148,6 @@ message Secret {
 
   // The description of the secret.
   string description = 5;
-}
-
-// AdviseIndexRequest is the request of advising index.
-message AdviseIndexRequest {
-  // Format: instances/{instance}/databases/{database}
-  string parent = 1 [
-    (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference) = {type: "bytebase.com/Database"}
-  ];
-
-  // The statement to be advised.
-  string statement = 2;
-}
-
-// AdviseIndexResponse is the response of advising index.
-message AdviseIndexResponse {
-  // The current index of the statement used.
-  string current_index = 1;
-
-  // The suggested index of the statement.
-  string suggestion = 2;
-
-  // The create index statement of the suggested index.
-  string create_index_statement = 3;
 }
 
 message ChangedResources {

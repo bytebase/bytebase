@@ -1078,10 +1078,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.store.SlowQueryPolicy"><span class="badge">M</span>SlowQueryPolicy</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.store.TagPolicy"><span class="badge">M</span>TagPolicy</a>
                 </li>
               
@@ -1402,29 +1398,6 @@
               
                 <li>
                   <a href="#bytebase.store.SheetPayload"><span class="badge">M</span>SheetPayload</a>
-                </li>
-              
-              
-              
-              
-            </ul>
-          </li>
-        
-          
-          <li>
-            <a href="#store%2fslow_query.proto">store/slow_query.proto</a>
-            <ul>
-              
-                <li>
-                  <a href="#bytebase.store.SlowQueryDetails"><span class="badge">M</span>SlowQueryDetails</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.SlowQueryStatistics"><span class="badge">M</span>SlowQueryStatistics</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.SlowQueryStatisticsItem"><span class="badge">M</span>SlowQueryStatisticsItem</a>
                 </li>
               
               
@@ -9734,30 +9707,6 @@ roles/CREATOR </p></td>
 
         
       
-        <h3 id="bytebase.store.SlowQueryPolicy">SlowQueryPolicy</h3>
-        <p>SlowQueryPolicy is the policy configuration for slow query.</p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>active</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.store.TagPolicy">TagPolicy</h3>
         <p></p>
 
@@ -12030,190 +11979,6 @@ Default to this mode.</p></td>
                   <td><a href="#bytebase.store.SheetCommand">SheetCommand</a></td>
                   <td>repeated</td>
                   <td><p>The start and end position of each command in the sheet statement. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-
-      
-
-      
-
-      
-    
-      
-      <div class="file-heading">
-        <h2 id="store/slow_query.proto">store/slow_query.proto</h2><a href="#title">Top</a>
-      </div>
-      <p></p>
-
-      
-        <h3 id="bytebase.store.SlowQueryDetails">SlowQueryDetails</h3>
-        <p>SlowQueryDetails is the details of a slow query.</p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>start_time</td>
-                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
-                  <td></td>
-                  <td><p>start_time is the start time of the slow query. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>query_time</td>
-                  <td><a href="#google.protobuf.Duration">google.protobuf.Duration</a></td>
-                  <td></td>
-                  <td><p>query_time is the query time of the slow query. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>lock_time</td>
-                  <td><a href="#google.protobuf.Duration">google.protobuf.Duration</a></td>
-                  <td></td>
-                  <td><p>lock_time is the lock time of the slow query. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>rows_sent</td>
-                  <td><a href="#int64">int64</a></td>
-                  <td></td>
-                  <td><p>rows_sent is the number of rows sent by the slow query. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>rows_examined</td>
-                  <td><a href="#int64">int64</a></td>
-                  <td></td>
-                  <td><p>rows_examined is the number of rows examined by the slow query. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>sql_text</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>sql_text is the SQL text of the slow query. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.store.SlowQueryStatistics">SlowQueryStatistics</h3>
-        <p>SlowQueryStatistics is the slow query statistics.</p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>items</td>
-                  <td><a href="#bytebase.store.SlowQueryStatisticsItem">SlowQueryStatisticsItem</a></td>
-                  <td>repeated</td>
-                  <td><p>Items is the list of slow query statistics. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.store.SlowQueryStatisticsItem">SlowQueryStatisticsItem</h3>
-        <p>SlowQueryStatisticsItem is the item of slow query statistics.</p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>sql_fingerprint</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>sql_fingerprint is the fingerprint of the slow query. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>count</td>
-                  <td><a href="#int64">int64</a></td>
-                  <td></td>
-                  <td><p>count is the number of slow queries with the same fingerprint. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>latest_log_time</td>
-                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
-                  <td></td>
-                  <td><p>latest_log_time is the time of the latest slow query with the same fingerprint. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>total_query_time</td>
-                  <td><a href="#google.protobuf.Duration">google.protobuf.Duration</a></td>
-                  <td></td>
-                  <td><p>The total query time of the slow query log. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>maximum_query_time</td>
-                  <td><a href="#google.protobuf.Duration">google.protobuf.Duration</a></td>
-                  <td></td>
-                  <td><p>The maximum query time of the slow query log. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>total_rows_sent</td>
-                  <td><a href="#int64">int64</a></td>
-                  <td></td>
-                  <td><p>The total rows sent of the slow query log. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>maximum_rows_sent</td>
-                  <td><a href="#int64">int64</a></td>
-                  <td></td>
-                  <td><p>The maximum rows sent of the slow query log. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>total_rows_examined</td>
-                  <td><a href="#int64">int64</a></td>
-                  <td></td>
-                  <td><p>The total rows examined of the slow query log. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>maximum_rows_examined</td>
-                  <td><a href="#int64">int64</a></td>
-                  <td></td>
-                  <td><p>The maximum rows examined of the slow query log. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>samples</td>
-                  <td><a href="#bytebase.store.SlowQueryDetails">SlowQueryDetails</a></td>
-                  <td>repeated</td>
-                  <td><p>samples are the details of the sample slow queries with the same fingerprint. </p></td>
                 </tr>
               
             </tbody>

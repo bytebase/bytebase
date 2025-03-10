@@ -3,7 +3,6 @@ package spanner
 import (
 	"context"
 	"sort"
-	"time"
 
 	"cloud.google.com/go/spanner"
 	"cloud.google.com/go/spanner/admin/database/apiv1/databasepb"
@@ -369,14 +368,4 @@ func getView(ctx context.Context, tx *spanner.ReadOnlyTransaction, columnMap map
 		})
 	}
 	return viewMap, nil
-}
-
-// SyncSlowQuery syncs the slow query.
-func (*Driver) SyncSlowQuery(_ context.Context, _ time.Time) (map[string]*storepb.SlowQueryStatistics, error) {
-	return nil, errors.Errorf("not implemented")
-}
-
-// CheckSlowQueryLogEnabled checks if slow query log is enabled.
-func (*Driver) CheckSlowQueryLogEnabled(_ context.Context) error {
-	return errors.Errorf("not implemented")
 }
