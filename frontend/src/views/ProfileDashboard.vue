@@ -504,5 +504,5 @@ const dropDownOptions = computed((): DropdownOption[] => [
   },
 ]);
 
-useTitle(user.value.title);
+useTitle(computed(() => user.value.title));
 </script>
