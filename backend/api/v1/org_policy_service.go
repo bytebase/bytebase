@@ -373,16 +373,6 @@ func (s *OrgPolicyService) convertPolicyPayloadToString(ctx context.Context, pol
 			return "", errors.Wrap(err, "failed to marshal tag policy")
 		}
 		return string(payloadBytes), nil
-	case v1pb.PolicyType_SLOW_QUERY:
-		payload, err := convertToSlowQueryPolicyPayload(policy.GetSlowQueryPolicy())
-		if err != nil {
-			return "", status.Error(codes.InvalidArgument, err.Error())
-		}
-		payloadBytes, err := protojson.Marshal(payload)
-		if err != nil {
-			return "", errors.Wrap(err, "failed to marshal masking policy")
-		}
-		return string(payloadBytes), nil
 	case v1pb.PolicyType_DISABLE_COPY_DATA:
 		if err := s.licenseService.IsFeatureEnabled(api.FeatureAccessControl); err != nil {
 			return "", status.Error(codes.PermissionDenied, err.Error())
@@ -512,13 +502,6 @@ func (s *OrgPolicyService) convertToPolicy(ctx context.Context, policyMessage *s
 		policy.Policy = &v1pb.Policy_TagPolicy{
 			TagPolicy: p,
 		}
-	case api.PolicyTypeSlowQuery:
-		pType = v1pb.PolicyType_SLOW_QUERY
-		payload, err := convertToV1PBSlowQueryPolicy(policyMessage.Payload)
-		if err != nil {
-			return nil, err
-		}
-		policy.Policy = payload
 	case api.PolicyTypeDisableCopyData:
 		pType = v1pb.PolicyType_DISABLE_COPY_DATA
 		payload, err := convertToV1PBDisableCopyDataPolicy(policyMessage.Payload)
@@ -681,24 +664,6 @@ func convertToStorePBRolloutPolicy(policy *v1pb.RolloutPolicy) *storepb.RolloutP
 		Roles:      policy.Roles,
 		IssueRoles: policy.IssueRoles,
 	}
-}
-
-func convertToV1PBSlowQueryPolicy(payloadStr string) (*v1pb.Policy_SlowQueryPolicy, error) {
-	payload := &storepb.SlowQueryPolicy{}
-	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(payloadStr), payload); err != nil {
-		return nil, errors.Wrapf(err, "failed to unmarshal slow query policy payload")
-	}
-	return &v1pb.Policy_SlowQueryPolicy{
-		SlowQueryPolicy: &v1pb.SlowQueryPolicy{
-			Active: payload.Active,
-		},
-	}, nil
-}
-
-func convertToSlowQueryPolicyPayload(policy *v1pb.SlowQueryPolicy) (*storepb.SlowQueryPolicy, error) {
-	return &storepb.SlowQueryPolicy{
-		Active: policy.Active,
-	}, nil
 }
 
 func convertToV1PBDisableCopyDataPolicy(payloadStr string) (*v1pb.Policy_DisableCopyDataPolicy, error) {
@@ -896,8 +861,6 @@ func convertPolicyType(pType string) (api.PolicyType, error) {
 		return api.PolicyTypeMaskingRule, nil
 	case v1pb.PolicyType_MASKING_EXCEPTION.String():
 		return api.PolicyTypeMaskingException, nil
-	case v1pb.PolicyType_SLOW_QUERY.String():
-		return api.PolicyTypeSlowQuery, nil
 	case v1pb.PolicyType_DISABLE_COPY_DATA.String():
 		return api.PolicyTypeDisableCopyData, nil
 	case v1pb.PolicyType_DATA_EXPORT.String():

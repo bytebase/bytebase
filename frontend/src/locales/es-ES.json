@@ -2325,13 +2325,6 @@
       "issue-creators-cannot-approve-their-own-issue": "El creador del problema no puede aprobar su propio problema."
     }
   },
-  "slow-query": {
-    "slow-queries": "Consultas lentas",
-    "advise-index": {
-    },
-    "no-log-placeholder": {
-    }
-  },
   "schema-template": {
     "self": "Plantilla de esquema",
     "field-template": {

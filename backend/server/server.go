@@ -44,11 +44,9 @@ import (
 	"github.com/bytebase/bytebase/backend/resources/mongoutil"
 	"github.com/bytebase/bytebase/backend/resources/postgres"
 	"github.com/bytebase/bytebase/backend/runner/approval"
-	"github.com/bytebase/bytebase/backend/runner/mail"
 	"github.com/bytebase/bytebase/backend/runner/metricreport"
 	"github.com/bytebase/bytebase/backend/runner/plancheck"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
-	"github.com/bytebase/bytebase/backend/runner/slowquerysync"
 	"github.com/bytebase/bytebase/backend/runner/taskrun"
 	"github.com/bytebase/bytebase/backend/store"
 )
@@ -70,8 +68,6 @@ type Server struct {
 	planCheckScheduler *plancheck.Scheduler
 	metricReporter     *metricreport.Reporter
 	schemaSyncer       *schemasync.Syncer
-	slowQuerySyncer    *slowquerysync.Syncer
-	mailSender         *mail.SlowQueryWeeklyMailSender
 	approvalRunner     *approval.Runner
 	runnerWG           sync.WaitGroup
 
@@ -261,8 +257,6 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	s.metricReporter = metricreport.NewReporter(s.store, s.licenseService, s.profile, false)
 	s.schemaSyncer = schemasync.NewSyncer(storeInstance, s.dbFactory, s.stateCfg, profile, s.licenseService)
 	if !profile.Readonly {
-		s.slowQuerySyncer = slowquerysync.NewSyncer(storeInstance, s.dbFactory, s.stateCfg, profile)
-		s.mailSender = mail.NewSender(s.store, s.stateCfg, s.iamManager)
 		s.approvalRunner = approval.NewRunner(storeInstance, s.sheetManager, s.dbFactory, s.stateCfg, s.webhookManager, s.licenseService)
 
 		s.taskSchedulerV2 = taskrun.NewSchedulerV2(storeInstance, s.stateCfg, s.webhookManager, profile, s.licenseService)
@@ -367,10 +361,6 @@ func (s *Server) Run(ctx context.Context, port int) error {
 		go s.taskSchedulerV2.Run(ctx, &s.runnerWG)
 		s.runnerWG.Add(1)
 		go s.schemaSyncer.Run(ctx, &s.runnerWG)
-		s.runnerWG.Add(1)
-		go s.slowQuerySyncer.Run(ctx, &s.runnerWG)
-		s.runnerWG.Add(1)
-		go s.mailSender.Run(ctx, &s.runnerWG)
 		s.runnerWG.Add(1)
 		go s.approvalRunner.Run(ctx, &s.runnerWG)
 
