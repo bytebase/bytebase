@@ -165,7 +165,7 @@
     v-if="state.showCreateUserDrawer"
     :user="state.editingUser"
     @close="state.showCreateUserDrawer = false"
-    @created="() => userPagedTable.value?.refresh()"
+    @created="handleUserCreated"
   />
   <CreateGroupDrawer
     v-if="state.showCreateGroupDrawer"
@@ -432,6 +432,10 @@ const handleUpdateGroup = (group: Group) => {
 const handleCreateUser = () => {
   state.editingUser = undefined;
   state.showCreateUserDrawer = true;
+};
+
+const handleUserCreated = () => {
+  userPagedTable.value?.refresh();
 };
 
 const handleUserUpdated = (_: User) => {
