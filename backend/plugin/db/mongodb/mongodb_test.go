@@ -9,7 +9,6 @@ import (
 	"google.golang.org/protobuf/testing/protocmp"
 	"google.golang.org/protobuf/types/known/durationpb"
 
-	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -40,8 +39,7 @@ func TestGetMongoDBConnectionURL(t *testing.T) {
 					Password:         "",
 					DirectConnection: true,
 				},
-				Password:         "",
-				DirectConnection: true,
+				Password: "",
 			},
 			want: "mongodb://localhost:27017/?appName=bytebase&authSource=admin&directConnection=true",
 		},
@@ -72,9 +70,7 @@ func TestGetMongoDBConnectionURL(t *testing.T) {
 				ConnectionContext: db.ConnectionContext{
 					DatabaseName: "sampleDB",
 				},
-				Password:             "passwd",
-				SRV:                  true,
-				MaximumSQLResultSize: common.DefaultMaximumSQLResultSize,
+				Password: "passwd",
 			},
 			want: "mongodb+srv://bytebase:passwd@cluster0.sample.mongodb.net/sampleDB?appName=bytebase&authSource=admin",
 		},
@@ -91,32 +87,28 @@ func TestGetMongoDBConnectionURL(t *testing.T) {
 				ConnectionContext: db.ConnectionContext{
 					DatabaseName: "sampleDB",
 				},
-				Password:               "passwd",
-				AuthenticationDatabase: "admin",
-				SRV:                    true,
-				MaximumSQLResultSize:   common.DefaultMaximumSQLResultSize,
+				Password: "passwd",
 			},
 			want: "mongodb+srv://bytebase:passwd@cluster0.sample.mongodb.net/sampleDB?appName=bytebase&authSource=admin",
 		},
 		{
 			connConfig: db.ConnectionConfig{
 				DataSource: &storepb.DataSource{
-					Host:                   "node1.cluster0.sample.mongodb.net",
-					Port:                   "27017",
-					Username:               "bytebase",
-					Password:               "passwd",
+					Host:     "node1.cluster0.sample.mongodb.net",
+					Port:     "27017",
+					Username: "bytebase",
+					Password: "passwd",
+					AdditionalAddresses: []*storepb.DataSource_Address{
+						{Host: "node2.cluster0.sample.mongodb.net", Port: "27017"},
+						{Host: "node3.cluster0.sample.mongodb.net", Port: "27017"},
+					},
+					ReplicaSet:             "rs0",
 					AuthenticationDatabase: "admin",
 				},
 				ConnectionContext: db.ConnectionContext{
 					DatabaseName: "sampleDB",
 				},
 				Password: "passwd",
-				AdditionalAddresses: []*storepb.DataSource_Address{
-					{Host: "node2.cluster0.sample.mongodb.net", Port: "27017"},
-					{Host: "node3.cluster0.sample.mongodb.net", Port: "27017"},
-				},
-				ReplicaSet:           "rs0",
-				MaximumSQLResultSize: common.DefaultMaximumSQLResultSize,
 			},
 			want: "mongodb://bytebase:passwd@node1.cluster0.sample.mongodb.net:27017,node2.cluster0.sample.mongodb.net:27017,node3.cluster0.sample.mongodb.net:27017/sampleDB?appName=bytebase&authSource=admin&replicaSet=rs0",
 		},

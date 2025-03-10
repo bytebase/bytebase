@@ -5,23 +5,17 @@ import (
 	"crypto/x509"
 
 	"github.com/pkg/errors"
+
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-// TLSConfig is the configuration for SSL connection.
-type TLSConfig struct {
-	UseSSL  bool
-	SslCA   string
-	SslCert string
-	SslKey  string
-}
-
 // GetSslConfig gets the SSL config for connection.
-func (tc TLSConfig) GetSslConfig() (*tls.Config, error) {
-	if !tc.UseSSL {
+func GetTLSConfig(ds *storepb.DataSource) (*tls.Config, error) {
+	if !ds.GetUseSsl() {
 		return nil, nil
 	}
 	var rootCertPool *x509.CertPool
-	if tc.SslCA == "" {
+	if ds.GetSslCa() == "" {
 		p, err := x509.SystemCertPool()
 		if err != nil {
 			return nil, err
@@ -29,7 +23,7 @@ func (tc TLSConfig) GetSslConfig() (*tls.Config, error) {
 		rootCertPool = p
 	} else {
 		rootCertPool = x509.NewCertPool()
-		if ok := rootCertPool.AppendCertsFromPEM([]byte(tc.SslCA)); !ok {
+		if ok := rootCertPool.AppendCertsFromPEM([]byte(ds.GetSslCa())); !ok {
 			return nil, errors.Errorf("rootCertPool.AppendCertsFromPEM() failed to append server CA pem")
 		}
 	}
@@ -37,12 +31,12 @@ func (tc TLSConfig) GetSslConfig() (*tls.Config, error) {
 	cfg := &tls.Config{
 		RootCAs: rootCertPool,
 	}
-	if (tc.SslCert == "" && tc.SslKey != "") || (tc.SslCert != "" && tc.SslKey == "") {
+	if (ds.GetSslCert() == "" && ds.GetSslKey() != "") || (ds.GetSslCert() != "" && ds.GetSslKey() == "") {
 		return nil, errors.Errorf("ssl-cert and ssl-key must be both set or unset")
 	}
-	if tc.SslCert != "" && tc.SslKey != "" {
+	if ds.GetSslCert() != "" && ds.GetSslKey() != "" {
 		var clientCert []tls.Certificate
-		certs, err := tls.X509KeyPair([]byte(tc.SslCert), []byte(tc.SslKey))
+		certs, err := tls.X509KeyPair([]byte(ds.GetSslCert()), []byte(ds.GetSslKey()))
 		if err != nil {
 			return nil, err
 		}

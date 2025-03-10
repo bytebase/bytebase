@@ -146,57 +146,11 @@ type ConnectionConfig struct {
 	ConnectionContext ConnectionContext
 	Password          string
 
-	TLSConfig TLSConfig
 	// Only used for Hive.
 	SASLConfig SASLConfig
-	// SRV is only supported for MongoDB now.
-	SRV bool
-	// AuthenticationDatabase is only supported for MongoDB now.
-	AuthenticationDatabase string
-	// SID and ServiceName are Oracle only.
-	SID         string
-	ServiceName string
-	SSHConfig   SSHConfig
-	// AuthenticationPrivateKey is used by Snowflake and Databricks (databricks access token).
-	AuthenticationPrivateKey string
-
-	// AuthenticationType is for the database connection, we support normal username & password or Google IAM.
-	AuthenticationType storepb.DataSource_AuthenticationType
-
-	// AdditionalAddresses and ReplicaSet name are used for MongoDB.
-	AdditionalAddresses []*storepb.DataSource_Address
-	ReplicaSet          string
-	DirectConnection    bool
-
-	// Region is the location of where the DB is, works for AWS RDS.
-	Region string
-
-	// WarehouseID is used by Databricks.
-	WarehouseID string
-
-	RedisType      storepb.DataSource_RedisType
-	MasterName     string
-	MasterUsername string
-	MasterPassword string
-
-	// ExtraConnectionParameters contains additional parameters to include in connection strings
-	// For example, "target_session_attrs=read-write" for Postgres HA clusters
-	ExtraConnectionParameters map[string]string
 
 	// The maximum number of bytes for sql results in response body.
 	MaximumSQLResultSize int64
-
-	// At most one of the following could be set.
-	ClientSecretCredential *storepb.DataSource_ClientSecretCredential
-}
-
-// SSHConfig is the configuration for connection over SSH.
-type SSHConfig struct {
-	Host       string
-	Port       string
-	User       string
-	Password   string
-	PrivateKey string
 }
 
 // ConnectionContext is the context for connection.

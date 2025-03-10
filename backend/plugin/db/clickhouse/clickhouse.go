@@ -60,8 +60,7 @@ func newDriver(db.DriverConfig) db.Driver {
 // Open opens a ClickHouse driver.
 func (driver *Driver) Open(_ context.Context, dbType storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
 	addr := fmt.Sprintf("%s:%s", config.DataSource.Host, config.DataSource.Port)
-	// Set SSL configuration.
-	tlsConfig, err := config.TLSConfig.GetSslConfig()
+	tlsConfig, err := db.GetTLSConfig(config.DataSource)
 	if err != nil {
 		return nil, errors.Wrap(err, "sql: tls config error")
 	}
