@@ -10,15 +10,39 @@ import (
 )
 
 var (
-	mux              sync.Mutex
-	getDesignSchemas = make(map[storepb.Engine]getDesignSchema)
-	checkColumnTypes = make(map[storepb.Engine]checkColumnType)
-	stringifyTables  = make(map[storepb.Engine]stringifyTable)
+	mux                    sync.Mutex
+	getDesignSchemas       = make(map[storepb.Engine]getDesignSchema)
+	checkColumnTypes       = make(map[storepb.Engine]checkColumnType)
+	stringifyTables        = make(map[storepb.Engine]stringifyTable)
+	getDatabaseDefinitions = make(map[storepb.Engine]getDatabaseDefinition)
 )
 
 type getDesignSchema func(*storepb.DatabaseSchemaMetadata) (string, error)
 type checkColumnType func(string) bool
 type stringifyTable func(*storepb.TableMetadata) (string, error)
+type getDatabaseDefinition func(GetDefinitionContext, *storepb.DatabaseSchemaMetadata) (string, error)
+
+type GetDefinitionContext struct {
+	SkipBackupSchema bool
+	PrintHeader      bool
+}
+
+func RegisterGetDatabaseDefinition(engine storepb.Engine, f getDatabaseDefinition) {
+	mux.Lock()
+	defer mux.Unlock()
+	if _, dup := getDatabaseDefinitions[engine]; dup {
+		panic(fmt.Sprintf("Register called twice %s", engine))
+	}
+	getDatabaseDefinitions[engine] = f
+}
+
+func GetDatabaseDefinition(engine storepb.Engine, ctx GetDefinitionContext, metadata *storepb.DatabaseSchemaMetadata) (string, error) {
+	f, ok := getDatabaseDefinitions[engine]
+	if !ok {
+		return "", errors.Errorf("engine %s is not supported", engine)
+	}
+	return f(ctx, metadata)
+}
 
 func RegisterGetDesignSchema(engine storepb.Engine, f getDesignSchema) {
 	mux.Lock()
