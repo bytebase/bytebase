@@ -80,8 +80,8 @@ func buildSnowflakeDSN(config db.ConnectionConfig) (string, string, error) {
 		User:     config.DataSource.Username,
 		Password: config.Password,
 	}
-	if config.AuthenticationPrivateKey != "" {
-		rsaPrivKey, err := decodeRSAPrivateKey(config.AuthenticationPrivateKey)
+	if config.DataSource.GetAuthenticationPrivateKey() != "" {
+		rsaPrivKey, err := decodeRSAPrivateKey(config.DataSource.GetAuthenticationPrivateKey())
 		if err != nil {
 			return "", "", errors.Wrapf(err, "failed to decode rsa private key")
 		}

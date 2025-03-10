@@ -72,8 +72,8 @@ func (driver *Driver) Open(_ context.Context, _ storepb.Engine, config db.Connec
 		return nil, errors.Errorf("user must be set")
 	}
 
-	if (config.TLSConfig.SslCert == "" && config.TLSConfig.SslKey != "") ||
-		(config.TLSConfig.SslCert != "" && config.TLSConfig.SslKey == "") {
+	if (config.DataSource.GetSslCert() == "" && config.DataSource.GetSslKey() != "") ||
+		(config.DataSource.GetSslCert() != "" && config.DataSource.GetSslKey() == "") {
 		return nil, errors.Errorf("ssl-cert and ssl-key must be both set or unset")
 	}
 
@@ -85,15 +85,15 @@ func (driver *Driver) Open(_ context.Context, _ storepb.Engine, config db.Connec
 	pgxConnConfig.Config.Password = config.Password
 	pgxConnConfig.Config.Database = config.ConnectionContext.DatabaseName
 
-	if config.TLSConfig.SslCert != "" {
-		cfg, err := config.TLSConfig.GetSslConfig()
+	if config.DataSource.GetSslCert() != "" {
+		tlscfg, err := db.GetTLSConfig(config.DataSource)
 		if err != nil {
 			return nil, err
 		}
-		pgxConnConfig.TLSConfig = cfg
+		pgxConnConfig.TLSConfig = tlscfg
 	}
-	if config.SSHConfig.Host != "" {
-		sshClient, err := util.GetSSHClient(config.SSHConfig)
+	if config.DataSource.GetSshHost() != "" {
+		sshClient, err := util.GetSSHClient(config.DataSource)
 		if err != nil {
 			return nil, err
 		}

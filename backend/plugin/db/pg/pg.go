@@ -72,7 +72,7 @@ func (driver *Driver) Open(ctx context.Context, _ storepb.Engine, config db.Conn
 	var pgxConnConfig *pgx.ConnConfig
 	var err error
 
-	switch config.AuthenticationType {
+	switch config.DataSource.GetAuthenticationType() {
 	case storepb.DataSource_GOOGLE_CLOUD_SQL_IAM:
 		pgxConnConfig, err = getCloudSQLConnectionConfig(ctx, config)
 	case storepb.DataSource_AWS_RDS_IAM:
@@ -88,8 +88,8 @@ func (driver *Driver) Open(ctx context.Context, _ storepb.Engine, config db.Conn
 		pgxConnConfig.RuntimeParams["default_transaction_read_only"] = "true"
 	}
 
-	if config.SSHConfig.Host != "" {
-		sshClient, err := util.GetSSHClient(config.SSHConfig)
+	if config.DataSource.GetSshHost() != "" {
+		sshClient, err := util.GetSSHClient(config.DataSource)
 		if err != nil {
 			return nil, err
 		}
@@ -149,18 +149,18 @@ func getPGConnectionConfig(config db.ConnectionConfig) (*pgx.ConnConfig, error) 
 		return nil, errors.Errorf("port must be set")
 	}
 
-	if (config.TLSConfig.SslCert == "" && config.TLSConfig.SslKey != "") ||
-		(config.TLSConfig.SslCert != "" && config.TLSConfig.SslKey == "") {
+	if (config.DataSource.GetSslCert() == "" && config.DataSource.GetSslKey() != "") ||
+		(config.DataSource.GetSslCert() != "" && config.DataSource.GetSslKey() == "") {
 		return nil, errors.Errorf("ssl-cert and ssl-key must be both set or unset")
 	}
 
 	connStr := fmt.Sprintf("host=%s port=%s", config.DataSource.Host, config.DataSource.Port)
-	sslMode := getSSLMode(config.TLSConfig, config.SSHConfig)
+	sslMode := getSSLMode(config.DataSource)
 	connStr += fmt.Sprintf(" sslmode=%s", sslMode)
 
 	// Add target_session_attrs=read-write if specified in ExtraConnectionParameters
-	if len(config.ExtraConnectionParameters) > 0 {
-		for key, value := range config.ExtraConnectionParameters {
+	if len(config.DataSource.GetExtraConnectionParameters()) > 0 {
+		for key, value := range config.DataSource.GetExtraConnectionParameters() {
 			connStr += fmt.Sprintf(" %s=%s", key, value)
 		}
 	}
@@ -173,12 +173,12 @@ func getPGConnectionConfig(config db.ConnectionConfig) (*pgx.ConnConfig, error) 
 	connConfig.Config.Password = config.Password
 	connConfig.Config.Database = config.ConnectionContext.DatabaseName
 
-	cfg, err := config.TLSConfig.GetSslConfig()
+	tlscfg, err := db.GetTLSConfig(config.DataSource)
 	if err != nil {
 		return nil, err
 	}
-	if cfg != nil {
-		connConfig.TLSConfig = cfg
+	if tlscfg != nil {
+		connConfig.TLSConfig = tlscfg
 	}
 
 	return connConfig, nil
@@ -192,7 +192,7 @@ func getRDSConnectionPassword(ctx context.Context, conf db.ConnectionConfig) (st
 
 	dbEndpoint := fmt.Sprintf("%s:%s", conf.DataSource.Host, conf.DataSource.Port)
 	authenticationToken, err := auth.BuildAuthToken(
-		ctx, dbEndpoint, conf.Region, conf.DataSource.Username, cfg.Credentials)
+		ctx, dbEndpoint, conf.DataSource.GetRegion(), conf.DataSource.Username, cfg.Credentials)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to create authentication token")
 	}

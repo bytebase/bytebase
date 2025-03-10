@@ -52,7 +52,7 @@ func (d *Driver) getInstanceRoles() ([]*storepb.InstanceRole, error) {
 
 func (d *Driver) getUserPrivileges(usrName string) (string, error) {
 	header := http.Header{}
-	header.Add("Authorization", d.config.AuthenticationPrivateKey)
+	header.Add("Authorization", d.config.DataSource.GetAuthenticationPrivateKey())
 	header.Add("es-security-runas-user", usrName)
 	resp, err := esapi.SecurityGetUserPrivilegesRequest{Header: header}.Do(context.Background(), d.typedClient)
 	if err != nil {
