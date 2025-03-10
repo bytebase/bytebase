@@ -49,17 +49,7 @@ var (
 	// 'root/admin@EXAMPLE.COM' or 'root@EXAMPLE.COM'.
 	principalWithoutInstanceFmt = "%s@%s"
 	principalWithInstanceFmt    = "%s/%s@%s"
-	// content format of a krb5.conf file:
-	// [libdefaults]
-	//   default_realm = {realm}
-	// [realms]
-	//   {realm} = {
-	//	   kdc = {transport_protocol}/{host}:{port}
-	// 	 }
-	krbConfLibDftKeyword = "[libdefaults]\n"
-	krbConfDftRealmFmt   = "\tdefault_realm = %s\n"
-	krbConfRealmKeyword  = "[realms]\n"
-	krbConfRealmFmt      = "\t%s = {\n\t\tkdc = %s%s:%s\n\t}\n"
+	krbConfRealmFmt             = "\t%s = {\n\t\tkdc = %s%s:%s\n\t}\n"
 	// We have to specify the path of 'krb5.conf' for the 'kinit' command.
 	dftKrbConfPath = "/tmp/krb5.conf"
 	dftKeytabPath  = "/tmp/tmp.keytab"
@@ -121,36 +111,42 @@ func (e *KerberosEnv) SetRealm(realm Realm) error {
 		return nil
 	}
 
+	// content format of a krb5.conf file:
+	// [libdefaults]
+	//   default_realm = {realm}
+	// [realms]
+	//   {realm} = {
+	//	   kdc = {transport_protocol}/{host}:{port}
+	// 	 }
+
+	protocol := ""
+	// This will force kinit client to communicate with KDC over tcp as Darwin
+	// doesn't has fall-down mechanism if it fails to communicate over udp.
+	// However, Linux doesn't need this.
+	if realm.KDCTransportProtocol == "tcp" && runtime.GOOS == "darwin" {
+		protocol = "tcp/"
+	}
+
+	content := fmt.Sprintf(`[libdefaults]
+	default_realm = %s
+[realms]
+	%s = {
+		kdc = %s%s:%s
+	}
+`,
+		realm.Name,
+		realm.Name,
+		protocol, realm.KDCHost, realm.KDCPort,
+	)
 	// Create a krb5.conf file.
-	file, err := os.Create(singletonEnv.krbConfPath)
+	f, err := os.Create(singletonEnv.krbConfPath)
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+	defer f.Close()
 
-	// Write configurations.
-	if _, err = file.WriteString(krbConfLibDftKeyword); err != nil {
+	if _, err = f.WriteString(content); err != nil {
 		return err
 	}
-	if _, err = file.WriteString(fmt.Sprintf(krbConfDftRealmFmt, realm.Name)); err != nil {
-		return err
-	}
-	if _, err = file.WriteString(krbConfRealmKeyword); err != nil {
-		return err
-	}
-
-	var kdcConnStr string
-	if realm.KDCTransportProtocol == "tcp" && runtime.GOOS == "darwin" {
-		// This will force kinit client to communicate with KDC over tcp as Darwin
-		// doesn't has fall-down mechanism if it fails to communicate over udp.
-		// However, Linux doesn't need this.
-		kdcConnStr = fmt.Sprintf(krbConfRealmFmt, realm.Name, "tcp/", realm.KDCHost, realm.KDCPort)
-	} else {
-		kdcConnStr = fmt.Sprintf(krbConfRealmFmt, realm.Name, "", realm.KDCHost, realm.KDCPort)
-	}
-	if _, err = file.WriteString(kdcConnStr); err != nil {
-		return err
-	}
-
-	return file.Sync()
+	return nil
 }
