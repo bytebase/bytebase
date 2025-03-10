@@ -79,7 +79,6 @@
     "updated-at": "Thời gian cập nhật",
     "statement": "Câu lệnh",
     "statement-size": "Kích thước câu lệnh",
-    "sql-statement": "Câu lệnh SQL",
     "snapshot": "Ảnh chụp nhanh",
     "status": "Trạng thái",
     "stage": "Giai đoạn",
@@ -153,7 +152,6 @@
     "view-doc": "Xem tài liệu",
     "write-only": "chỉ ghi",
     "sync": "Đồng bộ hóa",
-    "sync-now": "Đồng bộ hóa ngay",
     "success": "Thành công",
     "failed": "Thất bại",
     "load-more": "Tải thêm",
@@ -2325,35 +2323,9 @@
   },
   "slow-query": {
     "slow-queries": "Truy vấn chậm",
-    "report": "Báo cáo",
-    "last-query-time": "Thời gian truy vấn cuối cùng",
-    "sql-statement": "Câu lệnh SQL",
-    "total-query-count": "Tổng số truy vấn",
-    "query-count-percent": "Phần trăm số truy vấn",
-    "max-query-time": "Thời gian truy vấn tối đa",
-    "avg-query-time": "Thời gian truy vấn trung bình",
-    "query-time-percent": "Phần trăm thời gian truy vấn",
-    "max-rows-examined": "Số dòng được kiểm tra tối đa",
-    "avg-rows-examined": "Số dòng được kiểm tra trung bình",
-    "max-rows-sent": "Số dòng được gửi tối đa",
-    "avg-rows-sent": "Số dòng được gửi trung bình",
-    "query-start-time": "Thời gian bắt đầu truy vấn",
-    "rows-examined": "Số dòng đã kiểm tra",
-    "rows-sent": "Số dòng đã gửi",
-    "lock-time": "Thời gian khóa",
-    "query-time": "Thời gian truy vấn",
-    "attention-description": "Bytebase định kỳ đồng bộ nhật ký truy vấn chậm từ các phiên bản. Đối với phiên bản MySQL, slow_query phải được bật trước. Đối với phiên bản PostgreSQL, chỉ những cơ sở dữ liệu đã bật pg_stat_statements mới thu thập các truy vấn chậm.",
-    "sync-job-started": "Đã bắt đầu công việc đồng bộ. Vui lòng đợi công việc hoàn thành.",
-    "detail": "Chi tiết truy vấn chậm",
     "advise-index": {
-      "current-index": "Chỉ mục hiện tại",
-      "suggestion": "Đề xuất",
-      "create-index": "Tạo chỉ mục",
-      "setup-openai-key-to-enable": "Thiết lập khóa OpenAI để bật cố vấn chỉ mục"
     },
     "no-log-placeholder": {
-      "admin": "Nhấp vào nút \"Định cấu hình\" để tìm nạp các truy vấn chậm từ các phiên bản cơ sở dữ liệu hoặc nhấp vào nút \"Đồng bộ hóa ngay\" để đồng bộ nhật ký truy vấn chậm ngay lập tức",
-      "developer": "Nhấp vào nút \"Đồng bộ hóa ngay\" để đồng bộ nhật ký truy vấn chậm ngay lập tức hoặc liên hệ với quản trị viên/DBA Bytebase để định cấu hình các truy vấn chậm"
     }
   },
   "schema-template": {

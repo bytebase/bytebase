@@ -79,7 +79,6 @@
     "updated-at": "Updated",
     "statement": "Statement",
     "statement-size": "Statement size",
-    "sql-statement": "SQL statement",
     "snapshot": "Snapshot",
     "status": "Status",
     "stage": "Stage",
@@ -153,7 +152,6 @@
     "view-doc": "View doc",
     "write-only": "write only",
     "sync": "Sync",
-    "sync-now": "Sync Now",
     "success": "Succeed",
     "failed": "Failed",
     "load-more": "Load more",
@@ -2326,35 +2324,9 @@
   },
   "slow-query": {
     "slow-queries": "Slow queries",
-    "report": "Report",
-    "last-query-time": "Last query time",
-    "sql-statement": "SQL statement",
-    "total-query-count": "Total query count",
-    "query-count-percent": "Query count %",
-    "max-query-time": "Max query time",
-    "avg-query-time": "Avg query time",
-    "query-time-percent": "Query time %",
-    "max-rows-examined": "Max rows examined",
-    "avg-rows-examined": "Avg rows examined",
-    "max-rows-sent": "Max rows sent",
-    "avg-rows-sent": "Avg rows sent",
-    "query-start-time": "Query start time",
-    "rows-examined": "Rows examined",
-    "rows-sent": "Rows sent",
-    "lock-time": "Lock time",
-    "query-time": "Query time",
-    "attention-description": "Bytebase periodically syncs slow query logs from instances. For MySQL instance, slow_query must be enabled first. For PostgreSQL instance, only databases with pg_stat_statements enabled will collect slow queries.",
-    "sync-job-started": "Sync jobs started. Please wait for the jobs to complete.",
-    "detail": "Slow Query Detail",
     "advise-index": {
-      "current-index": "Current Index",
-      "suggestion": "Suggestion",
-      "create-index": "Create Index",
-      "setup-openai-key-to-enable": "Setup OpenAI key to enable index advisor"
     },
     "no-log-placeholder": {
-      "admin": "Click the \"Configure\" button to fetch slow queries from the database instances or click the \"Sync Now\" button to sync slow query logs immediately",
-      "developer": "Click the \"Sync Now\" button to sync slow query logs immediately or contact Bytebase admins/DBAs to configure slow queries"
     }
   },
   "schema-template": {
