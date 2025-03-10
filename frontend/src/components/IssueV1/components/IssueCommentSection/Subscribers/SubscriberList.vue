@@ -50,6 +50,7 @@ import { unknownUser } from "@/types";
 import { State, stateToJSON } from "@/types/proto/v1/common";
 import { type User } from "@/types/proto/v1/user_service";
 import { UserType, userTypeToJSON } from "@/types/proto/v1/user_service";
+import { getDefaultPagination } from "@/utils";
 import SubscriberListItem from "./SubscriberListItem.vue";
 
 defineProps<{
@@ -171,7 +172,7 @@ const handleSearch = useDebounceFn(async (search: string) => {
   try {
     const { users } = await userStore.fetchUserList({
       filter: filter.join(" && "),
-      pageSize: 100,
+      pageSize: getDefaultPagination(),
       showDeleted: false,
     });
     state.rawUserList = users;

@@ -40,7 +40,7 @@ import {
   userTypeToJSON,
   type User,
 } from "@/types/proto/v1/user_service";
-import { memberMapToRolesInProjectIAM } from "@/utils";
+import { memberMapToRolesInProjectIAM, getDefaultPagination } from "@/utils";
 import ResourceSelect from "./ResourceSelect.vue";
 
 const props = withDefaults(
@@ -118,7 +118,7 @@ const getFilter = (search: string) => {
 const searchUsers = async (search: string) => {
   const { users } = await userStore.fetchUserList({
     filter: getFilter(search),
-    pageSize: 100,
+    pageSize: getDefaultPagination(),
     showDeleted: props.includeArchived,
   });
   return users;
