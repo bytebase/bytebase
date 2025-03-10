@@ -4,7 +4,6 @@ import (
 	"context"
 	"sort"
 	"strings"
-	"time"
 
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
@@ -155,16 +154,6 @@ func (d *Driver) listAllTables(ctx context.Context) ([]string, error) {
 		exclusiveStartTableName = out.LastEvaluatedTableName
 	}
 	return result, nil
-}
-
-// SyncSlowQuery syncs the slow query.
-func (*Driver) SyncSlowQuery(_ context.Context, _ time.Time) (map[string]*storepb.SlowQueryStatistics, error) {
-	panic("implement me")
-}
-
-// CheckSlowQueryLogEnabled checks if slow query log is enabled.
-func (*Driver) CheckSlowQueryLogEnabled(_ context.Context) error {
-	panic("implement me")
 }
 
 func formatDatabaseName(accountID string, region string) string {

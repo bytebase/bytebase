@@ -5703,7 +5703,6 @@ INSERT INTO public.policy (id, type, payload, resource_type, inherit_from_parent
 INSERT INTO public.policy (id, type, payload, resource_type, inherit_from_parent, updated_at, resource, enforce) VALUES (118, 'bb.policy.tag', '{"tags": {"bb.tag.review_config": "reviewConfigs/prod"}}', 'ENVIRONMENT', true, '2025-02-24 22:35:21.127989-08', 'environments/prod', true) ON CONFLICT DO NOTHING;
 INSERT INTO public.policy (id, type, payload, resource_type, inherit_from_parent, updated_at, resource, enforce) VALUES (122, 'bb.policy.data-source-query', '{"disallowDdl": true, "disallowDml": true, "adminDataSourceRestriction": "FALLBACK"}', 'ENVIRONMENT', false, '2025-02-24 22:35:21.127989-08', 'environments/test', true) ON CONFLICT DO NOTHING;
 INSERT INTO public.policy (id, type, payload, resource_type, inherit_from_parent, updated_at, resource, enforce) VALUES (123, 'bb.policy.data-source-query', '{"disallowDdl": true, "disallowDml": true, "adminDataSourceRestriction": "FALLBACK"}', 'ENVIRONMENT', false, '2025-02-24 22:35:21.127989-08', 'environments/prod', true) ON CONFLICT DO NOTHING;
-INSERT INTO public.policy (id, type, payload, resource_type, inherit_from_parent, updated_at, resource, enforce) VALUES (113, 'bb.policy.slow-query', '{"active": true}', 'INSTANCE', false, '2025-02-24 22:35:21.127989-08', 'instances/prod-sample-instance', true) ON CONFLICT DO NOTHING;
 
 
 --

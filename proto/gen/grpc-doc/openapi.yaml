@@ -440,7 +440,6 @@ paths:
                     enum:
                         - POLICY_TYPE_UNSPECIFIED
                         - ROLLOUT_POLICY
-                        - SLOW_QUERY
                         - DISABLE_COPY_DATA
                         - MASKING_RULE
                         - MASKING_EXCEPTION
@@ -508,7 +507,6 @@ paths:
                     enum:
                         - POLICY_TYPE_UNSPECIFIED
                         - ROLLOUT_POLICY
-                        - SLOW_QUERY
                         - DISABLE_COPY_DATA
                         - MASKING_RULE
                         - MASKING_EXCEPTION
@@ -1730,7 +1728,6 @@ paths:
                     enum:
                         - POLICY_TYPE_UNSPECIFIED
                         - ROLLOUT_POLICY
-                        - SLOW_QUERY
                         - DISABLE_COPY_DATA
                         - MASKING_RULE
                         - MASKING_EXCEPTION
@@ -1804,7 +1801,6 @@ paths:
                     enum:
                         - POLICY_TYPE_UNSPECIFIED
                         - ROLLOUT_POLICY
-                        - SLOW_QUERY
                         - DISABLE_COPY_DATA
                         - MASKING_RULE
                         - MASKING_EXCEPTION
@@ -2351,42 +2347,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
-    /v1/instances/{instance}/databases/{database}:adviseIndex:
-        post:
-            tags:
-                - DatabaseService
-            operationId: DatabaseService_AdviseIndex
-            parameters:
-                - name: instance
-                  in: path
-                  description: The instance id.
-                  required: true
-                  schema:
-                    type: string
-                - name: database
-                  in: path
-                  description: The database id.
-                  required: true
-                  schema:
-                    type: string
-                - name: statement
-                  in: query
-                  description: The statement to be advised.
-                  schema:
-                    type: string
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/AdviseIndexResponse'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
     /v1/instances/{instance}/databases/{database}:diffSchema:
         post:
             tags:
@@ -2584,7 +2544,6 @@ paths:
                     enum:
                         - POLICY_TYPE_UNSPECIFIED
                         - ROLLOUT_POLICY
-                        - SLOW_QUERY
                         - DISABLE_COPY_DATA
                         - MASKING_RULE
                         - MASKING_EXCEPTION
@@ -2652,7 +2611,6 @@ paths:
                     enum:
                         - POLICY_TYPE_UNSPECIFIED
                         - ROLLOUT_POLICY
-                        - SLOW_QUERY
                         - DISABLE_COPY_DATA
                         - MASKING_RULE
                         - MASKING_EXCEPTION
@@ -3191,7 +3149,6 @@ paths:
                     enum:
                         - POLICY_TYPE_UNSPECIFIED
                         - ROLLOUT_POLICY
-                        - SLOW_QUERY
                         - DISABLE_COPY_DATA
                         - MASKING_RULE
                         - MASKING_EXCEPTION
@@ -3263,7 +3220,6 @@ paths:
                     enum:
                         - POLICY_TYPE_UNSPECIFIED
                         - ROLLOUT_POLICY
-                        - SLOW_QUERY
                         - DISABLE_COPY_DATA
                         - MASKING_RULE
                         - MASKING_EXCEPTION
@@ -4951,7 +4907,6 @@ paths:
                     enum:
                         - POLICY_TYPE_UNSPECIFIED
                         - ROLLOUT_POLICY
-                        - SLOW_QUERY
                         - DISABLE_COPY_DATA
                         - MASKING_RULE
                         - MASKING_EXCEPTION
@@ -5019,7 +4974,6 @@ paths:
                     enum:
                         - POLICY_TYPE_UNSPECIFIED
                         - ROLLOUT_POLICY
-                        - SLOW_QUERY
                         - DISABLE_COPY_DATA
                         - MASKING_RULE
                         - MASKING_EXCEPTION
@@ -6074,59 +6028,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/BatchCreateSheetResponse'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
-    /v1/projects/{project}/slowQueries:
-        get:
-            tags:
-                - DatabaseService
-            operationId: DatabaseService_ListSlowQueries
-            parameters:
-                - name: project
-                  in: path
-                  description: The project id.
-                  required: true
-                  schema:
-                    type: string
-                - name: filter
-                  in: query
-                  description: |-
-                    The filter of the slow query log.
-                     follow the
-                     [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form)
-                     syntax. Support filter by database and start_time in SlowQueryDetails for
-                     now. For example: Search the slow query log of the specific database:
-                       - the specific database: database =
-                       "instances/{instance}/databases/{database}"
-                     Search the slow query log that start_time after 2022-01-01T12:00:00.000Z:
-                       - start_time > "2022-01-01T12:00:00.000Z"
-                       - Should use [RFC-3339 format](https://www.rfc-editor.org/rfc/rfc3339).
-                       - Currently we only support filtering down to date granularity.
-                  schema:
-                    type: string
-                - name: orderBy
-                  in: query
-                  description: |-
-                    The order by of the slow query log.
-                     Support order by count, latest_log_time, average_query_time,
-                     maximum_query_time, average_rows_sent, maximum_rows_sent,
-                     average_rows_examined, maximum_rows_examined for now. For example:
-                      - order by count: order_by = "count"
-                      - order by latest_log_time desc: order_by = "latest_log_time desc"
-                     Default: order by average_query_time desc.
-                  schema:
-                    type: string
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/ListSlowQueriesResponse'
                 default:
                     description: Default error response
                     content:
@@ -7966,19 +7867,6 @@ components:
                     description: 1-based positions of the sql statment.
                 endPosition:
                     $ref: '#/components/schemas/Position'
-        AdviseIndexResponse:
-            type: object
-            properties:
-                currentIndex:
-                    type: string
-                    description: The current index of the statement used.
-                suggestion:
-                    type: string
-                    description: The suggested index of the statement.
-                createIndexStatement:
-                    type: string
-                    description: The create index statement of the suggested index.
-            description: AdviseIndexResponse is the response of advising index.
         AgentPluginSetting:
             type: object
             properties:
@@ -10697,15 +10585,6 @@ components:
                     description: |-
                         A token, which can be sent as `page_token` to retrieve the next page.
                          If this field is omitted, there are no subsequent pages.
-        ListSlowQueriesResponse:
-            type: object
-            properties:
-                slowQueryLogs:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/SlowQueryLog'
-                    description: The slow query logs.
-            description: ListSlowQueriesResponse is the response of listing slow query.
         ListTaskRunsResponse:
             type: object
             properties:
@@ -11272,7 +11151,6 @@ components:
                     enum:
                         - POLICY_TYPE_UNSPECIFIED
                         - ROLLOUT_POLICY
-                        - SLOW_QUERY
                         - DISABLE_COPY_DATA
                         - MASKING_RULE
                         - MASKING_EXCEPTION
@@ -11285,8 +11163,6 @@ components:
                     format: enum
                 rolloutPolicy:
                     $ref: '#/components/schemas/RolloutPolicy'
-                slowQueryPolicy:
-                    $ref: '#/components/schemas/SlowQueryPolicy'
                 disableCopyDataPolicy:
                     $ref: '#/components/schemas/DisableCopyDataPolicy'
                 maskingRulePolicy:
@@ -12973,105 +12849,6 @@ components:
                     items:
                         $ref: '#/components/schemas/SheetCommand'
                     description: The start and end position of each command in the sheet statement.
-        SlowQueryDetails:
-            type: object
-            properties:
-                startTime:
-                    type: string
-                    description: The start time of the slow query log.
-                    format: date-time
-                queryTime:
-                    pattern: ^-?(?:0|[1-9][0-9]{0,11})(?:\.[0-9]{1,9})?s$
-                    type: string
-                    description: The query time of the slow query log.
-                lockTime:
-                    pattern: ^-?(?:0|[1-9][0-9]{0,11})(?:\.[0-9]{1,9})?s$
-                    type: string
-                    description: The lock time of the slow query log.
-                rowsSent:
-                    type: string
-                    description: The rows sent of the slow query log.
-                rowsExamined:
-                    type: string
-                    description: The rows examined of the slow query log.
-                sqlText:
-                    type: string
-                    description: The sql text of the slow query log.
-            description: SlowQueryDetails is the details of the slow query log.
-        SlowQueryLog:
-            required:
-                - resource
-            type: object
-            properties:
-                resource:
-                    type: string
-                    description: |-
-                        The resource of the slow query log.
-                         The format is "instances/{instance}/databases/{database}".
-                project:
-                    type: string
-                    description: |-
-                        The project of the slow query log.
-                         The format is "projects/{project}".
-                statistics:
-                    allOf:
-                        - $ref: '#/components/schemas/SlowQueryStatistics'
-                    description: The statistics of the slow query log.
-            description: SlowQueryLog is the slow query log.
-        SlowQueryPolicy:
-            type: object
-            properties:
-                active:
-                    type: boolean
-        SlowQueryStatistics:
-            type: object
-            properties:
-                sqlFingerprint:
-                    type: string
-                    description: The fingerprint of the slow query log.
-                count:
-                    type: string
-                    description: The count of the slow query log.
-                latestLogTime:
-                    type: string
-                    description: The latest log time of the slow query log.
-                    format: date-time
-                averageQueryTime:
-                    pattern: ^-?(?:0|[1-9][0-9]{0,11})(?:\.[0-9]{1,9})?s$
-                    type: string
-                    description: The average query time of the slow query log.
-                maximumQueryTime:
-                    pattern: ^-?(?:0|[1-9][0-9]{0,11})(?:\.[0-9]{1,9})?s$
-                    type: string
-                    description: The maximum query time of the slow query log.
-                averageRowsSent:
-                    type: string
-                    description: The average rows sent of the slow query log.
-                maximumRowsSent:
-                    type: string
-                    description: The maximum rows sent of the slow query log.
-                averageRowsExamined:
-                    type: string
-                    description: The average rows examined of the slow query log.
-                maximumRowsExamined:
-                    type: string
-                    description: The maximum rows examined of the slow query log.
-                queryTimePercent:
-                    type: number
-                    description: The percentage of the query time.
-                    format: double
-                countPercent:
-                    type: number
-                    description: The percentage of the count.
-                    format: double
-                samples:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/SlowQueryDetails'
-                    description: |-
-                        Samples are details of the sample slow query logs with the same
-                         fingerprint.
-            description: SlowQueryStatistics is the statistics of the slow query log.
         Stage:
             type: object
             properties:

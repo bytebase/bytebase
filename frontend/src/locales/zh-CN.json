@@ -2321,13 +2321,6 @@
       "issue-creators-cannot-approve-their-own-issue": "工单创建者不能审批自己的工单"
     }
   },
-  "slow-query": {
-    "slow-queries": "慢查询",
-    "advise-index": {
-    },
-    "no-log-placeholder": {
-    }
-  },
   "schema-template": {
     "self": "Schema 模板",
     "field-template": {

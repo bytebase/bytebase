@@ -280,11 +280,6 @@ export function environmentTierPolicy_EnvironmentTierToNumber(object: Environmen
   }
 }
 
-/** SlowQueryPolicy is the policy configuration for slow query. */
-export interface SlowQueryPolicy {
-  active: boolean;
-}
-
 /** DisableCopyDataPolicy is the policy configuration for disabling copying data. */
 export interface DisableCopyDataPolicy {
   active: boolean;
@@ -1297,64 +1292,6 @@ export const EnvironmentTierPolicy: MessageFns<EnvironmentTierPolicy> = {
     message.environmentTier = object.environmentTier ??
       EnvironmentTierPolicy_EnvironmentTier.ENVIRONMENT_TIER_UNSPECIFIED;
     message.color = object.color ?? "";
-    return message;
-  },
-};
-
-function createBaseSlowQueryPolicy(): SlowQueryPolicy {
-  return { active: false };
-}
-
-export const SlowQueryPolicy: MessageFns<SlowQueryPolicy> = {
-  encode(message: SlowQueryPolicy, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.active !== false) {
-      writer.uint32(8).bool(message.active);
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): SlowQueryPolicy {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseSlowQueryPolicy();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 8) {
-            break;
-          }
-
-          message.active = reader.bool();
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): SlowQueryPolicy {
-    return { active: isSet(object.active) ? globalThis.Boolean(object.active) : false };
-  },
-
-  toJSON(message: SlowQueryPolicy): unknown {
-    const obj: any = {};
-    if (message.active !== false) {
-      obj.active = message.active;
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<SlowQueryPolicy>): SlowQueryPolicy {
-    return SlowQueryPolicy.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<SlowQueryPolicy>): SlowQueryPolicy {
-    const message = createBaseSlowQueryPolicy();
-    message.active = object.active ?? false;
     return message;
   },
 };
