@@ -408,5 +408,5 @@ const environment = computed(() => {
   );
 });
 
-useTitle(database.value.databaseName);
+useTitle(computed(() => database.value.databaseName));
 </script>
