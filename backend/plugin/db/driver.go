@@ -138,7 +138,7 @@ type ConnectionConfig struct {
 	Password          string
 
 	// Only used for Hive.
-	SASLConfig SASLConfig
+	SASLConfig *KerberosConfig
 
 	// The maximum number of bytes for sql results in response body.
 	MaximumSQLResultSize int64

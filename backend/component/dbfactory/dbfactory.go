@@ -50,7 +50,7 @@ func (d *DBFactory) GetDataSourceDriver(ctx context.Context, instance *store.Ins
 	if err != nil {
 		return nil, err
 	}
-	var dbSaslConfig db.SASLConfig
+	var dbSaslConfig *db.KerberosConfig
 	switch t := dataSource.GetSaslConfig().GetMechanism().(type) {
 	case *storepb.SASLConfig_KrbConfig:
 		dbSaslConfig = &db.KerberosConfig{
@@ -64,8 +64,6 @@ func (d *DBFactory) GetDataSourceDriver(ctx context.Context, instance *store.Ins
 			},
 			Keytab: t.KrbConfig.Keytab,
 		}
-	default:
-		dbSaslConfig = nil
 	}
 	connectionContext.InstanceID = instance.ResourceID
 	connectionContext.EngineVersion = instance.Metadata.GetVersion()
