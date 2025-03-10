@@ -117,13 +117,6 @@ service DatabaseService {
     option (bytebase.v1.audit) = true;
   }
 
-  rpc AdviseIndex(AdviseIndexRequest) returns (AdviseIndexResponse) {
-    option (google.api.http) = {post: "/v1/{parent=instances/*/databases/*}:adviseIndex"};
-    option (google.api.method_signature) = "parent";
-    option (bytebase.v1.permission) = "bb.databases.adviseIndex";
-    option (bytebase.v1.auth_method) = IAM;
-  }
-
   rpc ListRevisions(ListRevisionsRequest) returns (ListRevisionsResponse) {
     option (google.api.http) = {get: "/v1/{parent=instances/*/databases/*}/revisions"};
     option (google.api.method_signature) = "parent";
@@ -1155,30 +1148,6 @@ message Secret {
 
   // The description of the secret.
   string description = 5;
-}
-
-// AdviseIndexRequest is the request of advising index.
-message AdviseIndexRequest {
-  // Format: instances/{instance}/databases/{database}
-  string parent = 1 [
-    (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference) = {type: "bytebase.com/Database"}
-  ];
-
-  // The statement to be advised.
-  string statement = 2;
-}
-
-// AdviseIndexResponse is the response of advising index.
-message AdviseIndexResponse {
-  // The current index of the statement used.
-  string current_index = 1;
-
-  // The suggested index of the statement.
-  string suggestion = 2;
-
-  // The create index statement of the suggested index.
-  string create_index_statement = 3;
 }
 
 message ChangedResources {

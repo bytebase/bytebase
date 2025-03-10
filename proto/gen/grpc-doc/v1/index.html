@@ -490,14 +490,6 @@
             <ul>
               
                 <li>
-                  <a href="#bytebase.v1.AdviseIndexRequest"><span class="badge">M</span>AdviseIndexRequest</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.AdviseIndexResponse"><span class="badge">M</span>AdviseIndexResponse</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.BatchUpdateDatabasesRequest"><span class="badge">M</span>BatchUpdateDatabasesRequest</a>
                 </li>
               
@@ -5860,75 +5852,6 @@ Format: instances/{instance} </p></td>
       <p></p>
 
       
-        <h3 id="bytebase.v1.AdviseIndexRequest">AdviseIndexRequest</h3>
-        <p>AdviseIndexRequest is the request of advising index.</p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>parent</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Format: instances/{instance}/databases/{database} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>statement</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The statement to be advised. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.AdviseIndexResponse">AdviseIndexResponse</h3>
-        <p>AdviseIndexResponse is the response of advising index.</p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>current_index</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The current index of the statement used. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>suggestion</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The suggested index of the statement. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>create_index_statement</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The create index statement of the suggested index. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.v1.BatchUpdateDatabasesRequest">BatchUpdateDatabasesRequest</h3>
         <p></p>
 
@@ -9821,13 +9744,6 @@ view, function names.</p></td>
               </tr>
             
               <tr>
-                <td>AdviseIndex</td>
-                <td><a href="#bytebase.v1.AdviseIndexRequest">AdviseIndexRequest</a></td>
-                <td><a href="#bytebase.v1.AdviseIndexResponse">AdviseIndexResponse</a></td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
                 <td>ListRevisions</td>
                 <td><a href="#bytebase.v1.ListRevisionsRequest">ListRevisionsRequest</a></td>
                 <td><a href="#bytebase.v1.ListRevisionsResponse">ListRevisionsResponse</a></td>
@@ -10021,16 +9937,6 @@ view, function names.</p></td>
                 <td>DeleteSecret</td>
                 <td>DELETE</td>
                 <td>/v1/{name=instances/*/databases/*/secrets/*}</td>
-                <td></td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>AdviseIndex</td>
-                <td>POST</td>
-                <td>/v1/{parent=instances/*/databases/*}:adviseIndex</td>
                 <td></td>
               </tr>
               

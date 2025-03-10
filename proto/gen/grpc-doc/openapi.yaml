@@ -2347,42 +2347,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
-    /v1/instances/{instance}/databases/{database}:adviseIndex:
-        post:
-            tags:
-                - DatabaseService
-            operationId: DatabaseService_AdviseIndex
-            parameters:
-                - name: instance
-                  in: path
-                  description: The instance id.
-                  required: true
-                  schema:
-                    type: string
-                - name: database
-                  in: path
-                  description: The database id.
-                  required: true
-                  schema:
-                    type: string
-                - name: statement
-                  in: query
-                  description: The statement to be advised.
-                  schema:
-                    type: string
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/AdviseIndexResponse'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
     /v1/instances/{instance}/databases/{database}:diffSchema:
         post:
             tags:
@@ -7903,19 +7867,6 @@ components:
                     description: 1-based positions of the sql statment.
                 endPosition:
                     $ref: '#/components/schemas/Position'
-        AdviseIndexResponse:
-            type: object
-            properties:
-                currentIndex:
-                    type: string
-                    description: The current index of the statement used.
-                suggestion:
-                    type: string
-                    description: The suggested index of the statement.
-                createIndexStatement:
-                    type: string
-                    description: The create index statement of the suggested index.
-            description: AdviseIndexResponse is the response of advising index.
         AgentPluginSetting:
             type: object
             properties:

@@ -85,8 +85,6 @@
     - [InstanceService](#bytebase-v1-InstanceService)
   
 - [v1/database_service.proto](#v1_database_service-proto)
-    - [AdviseIndexRequest](#bytebase-v1-AdviseIndexRequest)
-    - [AdviseIndexResponse](#bytebase-v1-AdviseIndexResponse)
     - [BatchUpdateDatabasesRequest](#bytebase-v1-BatchUpdateDatabasesRequest)
     - [BatchUpdateDatabasesResponse](#bytebase-v1-BatchUpdateDatabasesResponse)
     - [ChangedResourceDatabase](#bytebase-v1-ChangedResourceDatabase)
@@ -1838,39 +1836,6 @@ The instance&#39;s `name` field is used to identify the instance to update. Form
 
 
 
-<a name="bytebase-v1-AdviseIndexRequest"></a>
-
-### AdviseIndexRequest
-AdviseIndexRequest is the request of advising index.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | Format: instances/{instance}/databases/{database} |
-| statement | [string](#string) |  | The statement to be advised. |
-
-
-
-
-
-
-<a name="bytebase-v1-AdviseIndexResponse"></a>
-
-### AdviseIndexResponse
-AdviseIndexResponse is the response of advising index.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| current_index | [string](#string) |  | The current index of the statement used. |
-| suggestion | [string](#string) |  | The suggested index of the statement. |
-| create_index_statement | [string](#string) |  | The create index statement of the suggested index. |
-
-
-
-
-
-
 <a name="bytebase-v1-BatchUpdateDatabasesRequest"></a>
 
 ### BatchUpdateDatabasesRequest
@@ -3266,7 +3231,6 @@ LIST, HASH (https://www.postgresql.org/docs/current/ddl-partitioning.html)
 | ListSecrets | [ListSecretsRequest](#bytebase-v1-ListSecretsRequest) | [ListSecretsResponse](#bytebase-v1-ListSecretsResponse) |  |
 | UpdateSecret | [UpdateSecretRequest](#bytebase-v1-UpdateSecretRequest) | [Secret](#bytebase-v1-Secret) |  |
 | DeleteSecret | [DeleteSecretRequest](#bytebase-v1-DeleteSecretRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
-| AdviseIndex | [AdviseIndexRequest](#bytebase-v1-AdviseIndexRequest) | [AdviseIndexResponse](#bytebase-v1-AdviseIndexResponse) |  |
 | ListRevisions | [ListRevisionsRequest](#bytebase-v1-ListRevisionsRequest) | [ListRevisionsResponse](#bytebase-v1-ListRevisionsResponse) |  |
 | GetRevision | [GetRevisionRequest](#bytebase-v1-GetRevisionRequest) | [Revision](#bytebase-v1-Revision) |  |
 | CreateRevision | [CreateRevisionRequest](#bytebase-v1-CreateRevisionRequest) | [Revision](#bytebase-v1-Revision) |  |
