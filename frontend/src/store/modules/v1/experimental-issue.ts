@@ -5,7 +5,11 @@ import {
   planServiceClient,
   rolloutServiceClient,
 } from "@/grpcweb";
-import { useProjectV1Store, useUserStore } from "@/store";
+import {
+  useProjectV1Store,
+  useUserStore,
+  batchGetOrFetchDatabases,
+} from "@/store";
 import type { ComposedIssue, ComposedProject, ComposedTaskRun } from "@/types";
 import {
   emptyIssue,
@@ -76,6 +80,12 @@ export const composeIssue = async (
       issue.rolloutEntity = await rolloutServiceClient.getRollout({
         name: issue.rollout,
       });
+      await batchGetOrFetchDatabases(
+        issue.rolloutEntity.stages.reduce((databaseList, stage) => {
+          databaseList.push(...stage.tasks.map((task) => task.target));
+          return databaseList;
+        }, [] as string[])
+      );
     }
     if (hasProjectPermissionV2(projectEntity, "bb.taskRuns.list")) {
       const { taskRuns } = await rolloutServiceClient.listTaskRuns({
