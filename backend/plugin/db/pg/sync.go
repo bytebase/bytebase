@@ -1405,8 +1405,6 @@ func getFunctions(
 	return functionMap, nil
 }
 
-var statPluginVersion = semver.MustParse("1.8.0")
-
 func isAtLeastPG10(version string) bool {
 	v, err := semver.ParseTolerant(version)
 	if err != nil {

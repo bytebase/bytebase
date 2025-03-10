@@ -23,7 +23,6 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -1325,27 +1324,6 @@ func (driver *Driver) getForeignKeyList(ctx context.Context, databaseName string
 		orderedResult[key] = fks
 	}
 	return orderedResult, nil
-}
-
-func extractDatabase(engne storepb.Engine, defaultDB string, sql string) []string {
-	resources, err := base.ExtractResourceList(engne, defaultDB /* currentDatabase */, "" /* currentSchema */, sql)
-	if err != nil {
-		// If we can't extract the database, we just use the default database.
-		slog.Debug("extract database failed", log.BBError(err), slog.String("sql", sql))
-		return []string{defaultDB}
-	}
-	databaseMap := make(map[string]bool)
-	for _, resource := range resources {
-		databaseMap[resource.Database] = true
-	}
-	var databases []string
-	for database := range databaseMap {
-		databases = append(databases, database)
-	}
-	if len(databases) == 0 {
-		databases = append(databases, defaultDB)
-	}
-	return databases
 }
 
 func stripSingleQuote(s string) string {

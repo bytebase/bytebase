@@ -1180,26 +1180,3 @@ func isSecretValid(secret *storepb.Secret) error {
 func isUpperCaseLetter(c rune) bool {
 	return 'A' <= c && c <= 'Z'
 }
-
-func (s *DatabaseService) getOpenAISetting(ctx context.Context) (string, string, string, error) {
-	key, err := s.store.GetSettingV2(ctx, api.SettingPluginOpenAIKey)
-	if err != nil {
-		return "", "", "", status.Errorf(codes.Internal, "Failed to get setting: %v", err)
-	}
-	if key.Value == "" {
-		return "", "", "", status.Errorf(codes.FailedPrecondition, "OpenAI key is not set")
-	}
-	endpointSetting, err := s.store.GetSettingV2(ctx, api.SettingPluginOpenAIEndpoint)
-	if err != nil {
-		return "", "", "", status.Errorf(codes.Internal, "Failed to get setting: %v", err)
-	}
-	var endpoint string
-	if endpointSetting != nil {
-		endpoint = endpointSetting.Value
-	}
-	model, err := s.store.GetSettingV2(ctx, api.SettingPluginOpenAIModel)
-	if err != nil {
-		return "", "", "", status.Errorf(codes.Internal, "Failed to get setting: %v", err)
-	}
-	return key.Value, endpoint, model.Value, nil
-}
