@@ -170,7 +170,7 @@ func getCockroachConnectionConfig(config db.ConnectionConfig) (*pgx.ConnConfig, 
 	connConfig.Config.Password = config.Password
 	connConfig.Config.Database = config.ConnectionContext.DatabaseName
 
-	tlscfg, err := db.GetTlsConfig(config.DataSource)
+	tlscfg, err := db.GetTLSConfig(config.DataSource)
 	if err != nil {
 		return nil, err
 	}

@@ -10,7 +10,7 @@ import (
 )
 
 // GetSslConfig gets the SSL config for connection.
-func GetTlsConfig(ds *storepb.DataSource) (*tls.Config, error) {
+func GetTLSConfig(ds *storepb.DataSource) (*tls.Config, error) {
 	if !ds.GetUseSsl() {
 		return nil, nil
 	}

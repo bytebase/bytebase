@@ -90,7 +90,7 @@ func (driver *Driver) Open(_ context.Context, _ storepb.Engine, config db.Connec
 	pgxConnConfig.Config.Password = config.Password
 	pgxConnConfig.Config.Database = config.ConnectionContext.DatabaseName
 	if config.DataSource.GetSslCert() != "" {
-		tlscfg, err := db.GetTlsConfig(config.DataSource)
+		tlscfg, err := db.GetTLSConfig(config.DataSource)
 		if err != nil {
 			return nil, err
 		}
