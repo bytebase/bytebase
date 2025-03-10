@@ -17,15 +17,6 @@ import (
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
-const (
-	// SlowQueryMaxLen is the max length of slow query.
-	SlowQueryMaxLen = 2048
-	// SlowQueryMaxSamplePerFingerprint is the max number of slow query samples per fingerprint.
-	SlowQueryMaxSamplePerFingerprint = 100
-	// SlowQueryMaxSamplePerDay is the max number of slow query samples per day.
-	SlowQueryMaxSamplePerDay = 10000
-)
-
 // User is the database user.
 type User struct {
 	Name  string
@@ -142,71 +133,15 @@ const (
 
 // ConnectionConfig is the configuration for connections.
 type ConnectionConfig struct {
-	Host string
-	Port string
-	// More hosts and ports are required by elasticsearch.
-	MultiHosts []string
-	MultiPorts []string
-	Username   string
-	Password   string
-	Database   string
-	// It's only set for Redshift datashare database.
-	DataShare bool
-	TLSConfig TLSConfig
+	DataSource        *storepb.DataSource
+	ConnectionContext ConnectionContext
+	Password          string
+
 	// Only used for Hive.
 	SASLConfig SASLConfig
-	// ReadOnly is only supported for Postgres at the moment.
-	ReadOnly bool
-	// SRV is only supported for MongoDB now.
-	SRV bool
-	// AuthenticationDatabase is only supported for MongoDB now.
-	AuthenticationDatabase string
-	// SID and ServiceName are Oracle only.
-	SID         string
-	ServiceName string
-	SSHConfig   SSHConfig
-	// AuthenticationPrivateKey is used by Snowflake and Databricks (databricks access token).
-	AuthenticationPrivateKey string
-
-	ConnectionContext ConnectionContext
-
-	// AuthenticationType is for the database connection, we support normal username & password or Google IAM.
-	AuthenticationType storepb.DataSource_AuthenticationType
-
-	// AdditionalAddresses and ReplicaSet name are used for MongoDB.
-	AdditionalAddresses []*storepb.DataSource_Address
-	ReplicaSet          string
-	DirectConnection    bool
-
-	// Region is the location of where the DB is, works for AWS RDS.
-	Region string
-
-	// WarehouseID is used by Databricks.
-	WarehouseID string
-
-	RedisType      storepb.DataSource_RedisType
-	MasterName     string
-	MasterUsername string
-	MasterPassword string
-
-	// ExtraConnectionParameters contains additional parameters to include in connection strings
-	// For example, "target_session_attrs=read-write" for Postgres HA clusters
-	ExtraConnectionParameters map[string]string
 
 	// The maximum number of bytes for sql results in response body.
 	MaximumSQLResultSize int64
-
-	// At most one of the following could be set.
-	ClientSecretCredential *storepb.DataSource_ClientSecretCredential
-}
-
-// SSHConfig is the configuration for connection over SSH.
-type SSHConfig struct {
-	Host       string
-	Port       string
-	User       string
-	Password   string
-	PrivateKey string
 }
 
 // ConnectionContext is the context for connection.
@@ -217,6 +152,11 @@ type ConnectionContext struct {
 	EngineVersion string
 	// UseDatabaseOwner is used by Postgres for using role of database owner.
 	UseDatabaseOwner bool
+	DatabaseName     string
+	// It's only set for Redshift datashare database.
+	DataShare bool
+	// ReadOnly is only supported for Postgres at the moment.
+	ReadOnly bool
 }
 
 // QueryContext is the context to query.
@@ -281,12 +221,6 @@ type Driver interface {
 	// SyncDBSchema syncs a single database schema.
 	SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetadata, error)
 
-	// Sync slow query logs
-	// SyncSlowQuery syncs the slow query logs.
-	// The returned map is keyed by database name, and the value is list of slow query statistics grouped by query fingerprint.
-	SyncSlowQuery(ctx context.Context, logDateTs time.Time) (map[string]*storepb.SlowQueryStatistics, error)
-	// CheckSlowQueryLogEnabled checks if the slow query log is enabled.
-	CheckSlowQueryLogEnabled(ctx context.Context) error
 	// Dump dumps the schema of database.
 	Dump(ctx context.Context, out io.Writer, dbSchema *storepb.DatabaseSchemaMetadata) error
 }

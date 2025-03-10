@@ -12,7 +12,6 @@ import (
 	secretcomp "github.com/bytebase/bytebase/backend/component/secret"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 
-	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
@@ -193,16 +192,11 @@ func GetUserFlags(flags map[string]string) (*UserFlags, error) {
 }
 
 // NewMigrationContext is the context for gh-ost migration.
-func NewMigrationContext(ctx context.Context, taskID int, database *store.DatabaseMessage, dataSource *storepb.DataSource, secret string, tableName string, tmpTableNameSuffix string, statement string, noop bool, flags map[string]string, serverIDOffset uint) (*base.MigrationContext, error) {
-	password, err := common.Unobfuscate(dataSource.GetObfuscatedPassword(), secret)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get password")
-	}
-	updatedPassword, err := secretcomp.ReplaceExternalSecret(ctx, password, dataSource.GetExternalSecret())
+func NewMigrationContext(ctx context.Context, taskID int, database *store.DatabaseMessage, dataSource *storepb.DataSource, tableName string, tmpTableNameSuffix string, statement string, noop bool, flags map[string]string, serverIDOffset uint) (*base.MigrationContext, error) {
+	password, err := secretcomp.ReplaceExternalSecret(ctx, dataSource.GetPassword(), dataSource.GetExternalSecret())
 	if err != nil {
 		return nil, err
 	}
-	password = updatedPassword
 
 	migrationContext := base.NewMigrationContext()
 	migrationContext.Log = newGhostLogger()
@@ -216,25 +210,10 @@ func NewMigrationContext(ctx context.Context, taskID int, database *store.Databa
 		port = dsPort
 	}
 	if dataSource.GetUseSsl() {
-		ca, err := common.Unobfuscate(dataSource.GetObfuscatedSslCa(), secret)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get ssl ca")
-		}
-
-		cert, err := common.Unobfuscate(dataSource.GetObfuscatedSslCert(), secret)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get ssl cert")
-		}
-
-		key, err := common.Unobfuscate(dataSource.GetObfuscatedSslKey(), secret)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get ssl key")
-		}
-
 		migrationContext.UseTLS = true
-		migrationContext.TLSCACertificate = ca
-		migrationContext.TLSCertificate = cert
-		migrationContext.TLSKey = key
+		migrationContext.TLSCACertificate = dataSource.GetSslCa()
+		migrationContext.TLSCertificate = dataSource.GetSslCert()
+		migrationContext.TLSKey = dataSource.GetSslKey()
 		migrationContext.TLSAllowInsecure = true
 		if err := migrationContext.SetupTLS(); err != nil {
 			return nil, errors.Wrapf(err, "failed to set up tls")

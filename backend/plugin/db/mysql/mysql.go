@@ -79,7 +79,7 @@ func (d *Driver) Open(ctx context.Context, dbType storepb.Engine, connCfg db.Con
 
 	var dsn string
 	var err error
-	switch connCfg.AuthenticationType {
+	switch connCfg.DataSource.GetAuthenticationType() {
 	case storepb.DataSource_GOOGLE_CLOUD_SQL_IAM:
 		dsn, err = getCloudSQLConnection(ctx, connCfg)
 	case storepb.DataSource_AWS_RDS_IAM:
@@ -103,20 +103,20 @@ func (d *Driver) Open(ctx context.Context, dbType storepb.Engine, connCfg db.Con
 	db.SetMaxIdleConns(15)
 	d.connectionCtx = connCfg.ConnectionContext
 	d.connCfg = connCfg
-	d.databaseName = connCfg.Database
+	d.databaseName = connCfg.ConnectionContext.DatabaseName
 
 	return d, nil
 }
 
 func (d *Driver) getMySQLConnection(connCfg db.ConnectionConfig) (string, error) {
 	protocol := "tcp"
-	if strings.HasPrefix(connCfg.Host, "/") {
+	if strings.HasPrefix(connCfg.DataSource.Host, "/") {
 		protocol = "unix"
 	}
 
 	params := []string{"multiStatements=true", "maxAllowedPacket=0"}
-	if connCfg.SSHConfig.Host != "" {
-		sshClient, err := util.GetSSHClient(connCfg.SSHConfig)
+	if connCfg.DataSource.GetSshHost() != "" {
+		sshClient, err := util.GetSSHClient(connCfg.DataSource)
 		if err != nil {
 			return "", err
 		}
@@ -128,13 +128,13 @@ func (d *Driver) getMySQLConnection(connCfg db.ConnectionConfig) (string, error)
 		protocol = "mysql+tcp"
 	}
 
-	tlsConfig, err := connCfg.TLSConfig.GetSslConfig()
+	tlscfg, err := db.GetTLSConfig(connCfg.DataSource)
 	if err != nil {
 		return "", errors.Wrap(err, "sql: tls config error")
 	}
 	tlsKey := uuid.NewString()
-	if tlsConfig != nil {
-		if err := mysql.RegisterTLSConfig(tlsKey, tlsConfig); err != nil {
+	if tlscfg != nil {
+		if err := mysql.RegisterTLSConfig(tlsKey, tlscfg); err != nil {
 			return "", errors.Wrap(err, "sql: failed to register tls config")
 		}
 		// TLS config is only used during sql.Open, so should be safe to deregister afterwards.
@@ -142,7 +142,7 @@ func (d *Driver) getMySQLConnection(connCfg db.ConnectionConfig) (string, error)
 		params = append(params, fmt.Sprintf("tls=%s", tlsKey))
 	}
 
-	return fmt.Sprintf("%s:%s@%s(%s:%s)/%s?%s", connCfg.Username, connCfg.Password, protocol, connCfg.Host, connCfg.Port, connCfg.Database, strings.Join(params, "&")), nil
+	return fmt.Sprintf("%s:%s@%s(%s:%s)/%s?%s", connCfg.DataSource.Username, connCfg.Password, protocol, connCfg.DataSource.Host, connCfg.DataSource.Port, connCfg.ConnectionContext.DatabaseName, strings.Join(params, "&")), nil
 }
 
 // AWS RDS connection with IAM require TLS connection.
@@ -186,14 +186,14 @@ func registerRDSMysqlCerts(ctx context.Context) error {
 // https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/UsingWithRDS.IAMDBAuth.Connecting.Go.html
 // https://repost.aws/knowledge-center/rds-mysql-access-denied
 func getRDSConnection(ctx context.Context, connCfg db.ConnectionConfig) (string, error) {
-	dbEndpoint := fmt.Sprintf("%s:%s", connCfg.Host, connCfg.Port)
+	dbEndpoint := fmt.Sprintf("%s:%s", connCfg.DataSource.Host, connCfg.DataSource.Port)
 	cfg, err := config.LoadDefaultConfig(ctx)
 	if err != nil {
 		return "", errors.Wrap(err, "load aws config failed")
 	}
 
 	authenticationToken, err := auth.BuildAuthToken(
-		ctx, dbEndpoint, connCfg.Region, connCfg.Username, cfg.Credentials)
+		ctx, dbEndpoint, connCfg.DataSource.GetRegion(), connCfg.DataSource.Username, cfg.Credentials)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to create authentication token")
 	}
@@ -204,7 +204,7 @@ func getRDSConnection(ctx context.Context, connCfg db.ConnectionConfig) (string,
 	}
 
 	return fmt.Sprintf("%s:%s@tcp(%s)/%s?tls=rds&allowCleartextPasswords=true",
-		connCfg.Username, authenticationToken, dbEndpoint, connCfg.Database,
+		connCfg.DataSource.Username, authenticationToken, dbEndpoint, connCfg.ConnectionContext.DatabaseName,
 	), nil
 }
 
@@ -215,11 +215,11 @@ func getCloudSQLConnection(ctx context.Context, connCfg db.ConnectionConfig) (st
 	}
 	mysql.RegisterDialContext("cloudsqlconn",
 		func(ctx context.Context, _ string) (net.Conn, error) {
-			return d.Dial(ctx, connCfg.Host)
+			return d.Dial(ctx, connCfg.DataSource.Host)
 		})
 
 	return fmt.Sprintf("%s:empty@cloudsqlconn(localhost:3306)/%s?parseTime=true",
-		connCfg.Username, connCfg.Database), nil
+		connCfg.DataSource.Username, connCfg.ConnectionContext.DatabaseName), nil
 }
 
 // Close closes the driver.

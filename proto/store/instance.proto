@@ -59,11 +59,15 @@ message DataSource {
   string id = 1;
   DataSourceType type = 2;
   string username = 3;
+  string password = 37;
   string obfuscated_password = 4;
   // Use SSL to connect to the data source. By default, we use system default SSL configuration.
   bool use_ssl = 30;
+  string ssl_ca = 38;
   string obfuscated_ssl_ca = 5;
+  string ssl_cert = 39;
   string obfuscated_ssl_cert = 6;
+  string ssl_key = 40;
   string obfuscated_ssl_key = 7;
   string host = 8;
   string port = 9;
@@ -88,12 +92,15 @@ message DataSource {
   // The user to login the server.
   string ssh_user = 17;
   // The password to login the server. If it's empty string, no password is required.
-  string ssh_obfuscated_password = 18;
+  string ssh_password = 41;
+  string obfuscated_ssh_password = 18;
   // The private key to login the server. If it's empty string, we will use the system default private key from os.Getenv("SSH_AUTH_SOCK").
-  string ssh_obfuscated_private_key = 19;
+  string ssh_private_key = 42;
+  string obfuscated_ssh_private_key = 19;
   // PKCS#8 private key in PEM format. If it's empty string, no private key is required.
   // Used for authentication when connecting to the data source.
-  string authentication_private_key_obfuscated = 20;
+  string authentication_private_key = 43;
+  string obfuscated_authentication_private_key = 20;
 
   DataSourceExternalSecret external_secret = 21;
 
@@ -110,6 +117,7 @@ message DataSource {
     string tenant_id = 1;
     string client_id = 2;
     string client_secret = 3;
+    string obfuscated_client_secret = 4;
   }
   oneof iam_extension {
     ClientSecretCredential client_secret_credential = 23;
@@ -138,7 +146,8 @@ message DataSource {
 
   // master_username and master_obfuscated_password are master credentials used by redis sentinel mode.
   string master_username = 32;
-  string master_obfuscated_password = 33;
+  string master_password = 44;
+  string obfuscated_master_password = 33;
 
   enum RedisType {
     REDIS_TYPE_UNSPECIFIED = 0;

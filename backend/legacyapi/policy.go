@@ -25,8 +25,6 @@ const (
 	PolicyTypeEnvironmentTier PolicyType = "bb.policy.environment-tier"
 	// PolicyTypeMaskingException is the masking exception policy type.
 	PolicyTypeMaskingException PolicyType = "bb.policy.masking-exception"
-	// PolicyTypeSlowQuery is the slow query policy type.
-	PolicyTypeSlowQuery PolicyType = "bb.policy.slow-query"
 	// PolicyTypeDisableCopyData is the disable copy data policy type.
 	PolicyTypeDisableCopyData PolicyType = "bb.policy.disable-copy-data"
 	// PolicyTypeExportData is the policy type for data export control.
@@ -75,7 +73,6 @@ var (
 		PolicyTypeRollout:                           {PolicyResourceTypeEnvironment},
 		PolicyTypeEnvironmentTier:                   {PolicyResourceTypeEnvironment},
 		PolicyTypeTag:                               {PolicyResourceTypeEnvironment, PolicyResourceTypeProject},
-		PolicyTypeSlowQuery:                         {PolicyResourceTypeInstance},
 		PolicyTypeDisableCopyData:                   {PolicyResourceTypeEnvironment, PolicyResourceTypeProject},
 		PolicyTypeExportData:                        {PolicyResourceTypeWorkspace},
 		PolicyTypeQueryData:                         {PolicyResourceTypeWorkspace},

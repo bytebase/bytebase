@@ -4,9 +4,6 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/pkg/errors"
-
-	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
@@ -42,11 +39,6 @@ type SchemaBaselineExecutor struct {
 
 // RunOnce will run the schema update (DDL) task executor once.
 func (exec *SchemaBaselineExecutor) RunOnce(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, taskRunUID int) (bool, *storepb.TaskRunResult, error) {
-	payload := &storepb.TaskDatabaseUpdatePayload{}
-	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(task.Payload), payload); err != nil {
-		return true, nil, errors.Wrap(err, "invalid database schema baseline payload")
-	}
-
 	instance, err := exec.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &task.InstanceID})
 	if err != nil {
 		return true, nil, err
@@ -56,7 +48,7 @@ func (exec *SchemaBaselineExecutor) RunOnce(ctx context.Context, driverCtx conte
 		return true, nil, err
 	}
 
-	terminated, result, err := runMigration(ctx, driverCtx, exec.store, exec.dbFactory, exec.stateCfg, exec.schemaSyncer, exec.profile, task, taskRunUID, db.Baseline, "" /* statement */, payload.SchemaVersion, nil /* sheetID */)
+	terminated, result, err := runMigration(ctx, driverCtx, exec.store, exec.dbFactory, exec.stateCfg, exec.schemaSyncer, exec.profile, task, taskRunUID, db.Baseline, "" /* statement */, task.Payload.GetSchemaVersion(), nil /* sheetID */)
 	if err := exec.schemaSyncer.SyncDatabaseSchema(ctx, database); err != nil {
 		slog.Error("failed to sync database schema",
 			slog.String("instanceName", instance.ResourceID),

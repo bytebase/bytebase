@@ -11,18 +11,18 @@ import (
 	"golang.org/x/crypto/ssh/agent"
 
 	"github.com/bytebase/bytebase/backend/common/log"
-	"github.com/bytebase/bytebase/backend/plugin/db"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 // GetSSHClient returns a ssh client.
-func GetSSHClient(cfg db.SSHConfig) (*ssh.Client, error) {
+func GetSSHClient(ds *storepb.DataSource) (*ssh.Client, error) {
 	sshConfig := &ssh.ClientConfig{
-		User:            cfg.User,
+		User:            ds.GetSshUser(),
 		Auth:            []ssh.AuthMethod{},
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 	}
-	if cfg.PrivateKey != "" {
-		signer, err := ssh.ParsePrivateKey([]byte(cfg.PrivateKey))
+	if ds.GetSshPrivateKey() != "" {
+		signer, err := ssh.ParsePrivateKey([]byte(ds.GetSshPrivateKey()))
 		if err != nil {
 			return nil, err
 		}
@@ -41,13 +41,13 @@ func GetSSHClient(cfg db.SSHConfig) (*ssh.Client, error) {
 		}
 	}
 	// When there's a non empty password add the password AuthMethod.
-	if cfg.Password != "" {
+	if ds.GetSshPassword() != "" {
 		sshConfig.Auth = append(sshConfig.Auth, ssh.PasswordCallback(func() (string, error) {
-			return cfg.Password, nil
+			return ds.GetSshPassword(), nil
 		}))
 	}
 	// Connect to the SSH Server
-	sshConn, err := ssh.Dial("tcp", fmt.Sprintf("%s:%s", cfg.Host, cfg.Port), sshConfig)
+	sshConn, err := ssh.Dial("tcp", fmt.Sprintf("%s:%s", ds.GetSshHost(), ds.GetSshPort()), sshConfig)
 	if err != nil {
 		return nil, err
 	}

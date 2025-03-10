@@ -44,11 +44,9 @@ import (
 	"github.com/bytebase/bytebase/backend/resources/mongoutil"
 	"github.com/bytebase/bytebase/backend/resources/postgres"
 	"github.com/bytebase/bytebase/backend/runner/approval"
-	"github.com/bytebase/bytebase/backend/runner/mail"
 	"github.com/bytebase/bytebase/backend/runner/metricreport"
 	"github.com/bytebase/bytebase/backend/runner/plancheck"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
-	"github.com/bytebase/bytebase/backend/runner/slowquerysync"
 	"github.com/bytebase/bytebase/backend/runner/taskrun"
 	"github.com/bytebase/bytebase/backend/store"
 )
@@ -70,8 +68,6 @@ type Server struct {
 	planCheckScheduler *plancheck.Scheduler
 	metricReporter     *metricreport.Reporter
 	schemaSyncer       *schemasync.Syncer
-	slowQuerySyncer    *slowquerysync.Syncer
-	mailSender         *mail.SlowQueryWeeklyMailSender
 	approvalRunner     *approval.Runner
 	runnerWG           sync.WaitGroup
 
@@ -89,19 +85,12 @@ type Server struct {
 	sheetManager *sheet.Manager
 	dbFactory    *dbfactory.DBFactory
 	startedTs    int64
-	secret       string
 
 	// Stubs.
 	planService    *apiv1.PlanService
 	rolloutService *apiv1.RolloutService
 	issueService   *apiv1.IssueService
 
-	// MySQL utility binaries
-	mysqlBinDir string
-	// MongoDB utility binaries
-	mongoBinDir string
-	// Postgres utility binaries
-	pgBinDir string
 	// PG server stoppers.
 	stopper []func()
 
@@ -142,21 +131,21 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	}
 
 	// Install mongoutil.
-	s.mongoBinDir, err = mongoutil.Install(profile.ResourceDir)
+	mongoBinDir, err := mongoutil.Install(profile.ResourceDir)
 	if err != nil {
 		return nil, errors.Wrap(err, "cannot install mongo utility binaries")
 	}
 
 	// Installs the Postgres and utility binaries and creates the 'activeProfile.pgUser' user/database
 	// to store Bytebase's own metadata.
-	s.pgBinDir, err = postgres.Install(profile.ResourceDir)
+	pgBinDir, err := postgres.Install(profile.ResourceDir)
 	if err != nil {
 		return nil, err
 	}
 
 	var connCfg dbdriver.ConnectionConfig
 	if profile.UseEmbedDB() {
-		stopper, err := postgres.StartMetadataInstance(profile.DataDir, profile.ResourceDir, s.pgBinDir, profile.PgUser, profile.DemoName, profile.DatastorePort, profile.Mode)
+		stopper, err := postgres.StartMetadataInstance(profile.DataDir, profile.ResourceDir, pgBinDir, profile.PgUser, profile.DemoName, profile.DatastorePort, profile.Mode)
 		if err != nil {
 			return nil, err
 		}
@@ -169,19 +158,19 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 		}
 		connCfg = cfg
 	}
-	connCfg.ReadOnly = profile.Readonly
+	connCfg.ConnectionContext.ReadOnly = profile.Readonly
 
 	// Start Postgres sample servers. It is used for onboarding users without requiring them to
 	// configure an external instance.
 	if profile.SampleDatabasePort != 0 {
 		// Only create batch sample databases in demo mode. For normal mode, user starts from the free version
 		// and batch databases are useless because batch requires enterprise license.
-		stopper := postgres.StartAllSampleInstances(ctx, s.pgBinDir, profile.DataDir, profile.SampleDatabasePort, profile.DemoName != "")
+		stopper := postgres.StartAllSampleInstances(ctx, pgBinDir, profile.DataDir, profile.SampleDatabasePort, profile.DemoName != "")
 		s.stopper = append(s.stopper, stopper...)
 	}
 
 	// Connect to the instance that stores bytebase's own metadata.
-	storeDB := store.NewDB(connCfg, s.pgBinDir, profile.Readonly, profile.Mode)
+	storeDB := store.NewDB(connCfg, pgBinDir, profile.Readonly, profile.Mode)
 	// For embedded database, we will create the database if it does not exist.
 	if err := storeDB.Open(ctx, profile.UseEmbedDB() /* createDB */); err != nil {
 		// return s so that caller can call s.Close() to shut down the postgres server if embedded.
@@ -220,11 +209,13 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	// Cache the license.
 	s.licenseService.LoadSubscription(ctx)
 
-	secret, err := s.getInitSetting(ctx)
-	if err != nil {
+	if err := s.getInitSetting(ctx); err != nil {
 		return nil, errors.Wrap(err, "failed to init config")
 	}
-	s.secret = secret
+	secret, err := s.store.GetSecret(ctx)
+	if err != nil {
+		return nil, err
+	}
 	s.iamManager, err = iam.NewManager(storeInstance, s.licenseService)
 	if err := s.iamManager.ReloadCache(ctx); err != nil {
 		return nil, err
@@ -233,14 +224,7 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 		return nil, errors.Wrapf(err, "failed to create iam manager")
 	}
 	s.webhookManager = webhook.NewManager(storeInstance, s.iamManager)
-	s.dbFactory = dbfactory.New(
-		s.store,
-		s.mysqlBinDir,
-		s.mongoBinDir,
-		s.pgBinDir,
-		profile.DataDir,
-		s.secret,
-	)
+	s.dbFactory = dbfactory.New(s.store, mongoBinDir)
 
 	// Configure echo server.
 	s.echoServer = echo.New()
@@ -273,25 +257,22 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	s.metricReporter = metricreport.NewReporter(s.store, s.licenseService, s.profile, false)
 	s.schemaSyncer = schemasync.NewSyncer(storeInstance, s.dbFactory, s.stateCfg, profile, s.licenseService)
 	if !profile.Readonly {
-		s.slowQuerySyncer = slowquerysync.NewSyncer(storeInstance, s.dbFactory, s.stateCfg, profile)
-		s.mailSender = mail.NewSender(s.store, s.stateCfg, s.iamManager)
 		s.approvalRunner = approval.NewRunner(storeInstance, s.sheetManager, s.dbFactory, s.stateCfg, s.webhookManager, s.licenseService)
 
 		s.taskSchedulerV2 = taskrun.NewSchedulerV2(storeInstance, s.stateCfg, s.webhookManager, profile, s.licenseService)
 		s.taskSchedulerV2.Register(api.TaskDatabaseCreate, taskrun.NewDatabaseCreateExecutor(storeInstance, s.dbFactory, s.schemaSyncer, s.stateCfg, profile))
 		s.taskSchedulerV2.Register(api.TaskDatabaseSchemaBaseline, taskrun.NewSchemaBaselineExecutor(storeInstance, s.dbFactory, s.licenseService, s.stateCfg, s.schemaSyncer, profile))
 		s.taskSchedulerV2.Register(api.TaskDatabaseSchemaUpdate, taskrun.NewSchemaUpdateExecutor(storeInstance, s.dbFactory, s.licenseService, s.stateCfg, s.schemaSyncer, profile))
-		s.taskSchedulerV2.Register(api.TaskDatabaseSchemaUpdateSDL, taskrun.NewSchemaUpdateSDLExecutor(storeInstance, s.dbFactory, s.licenseService, s.stateCfg, s.schemaSyncer, profile))
 		s.taskSchedulerV2.Register(api.TaskDatabaseDataUpdate, taskrun.NewDataUpdateExecutor(storeInstance, s.dbFactory, s.licenseService, s.stateCfg, s.schemaSyncer, profile))
 		s.taskSchedulerV2.Register(api.TaskDatabaseDataExport, taskrun.NewDataExportExecutor(storeInstance, s.dbFactory, s.licenseService, s.stateCfg, s.schemaSyncer, profile))
-		s.taskSchedulerV2.Register(api.TaskDatabaseSchemaUpdateGhost, taskrun.NewSchemaUpdateGhostExecutor(storeInstance, s.secret, s.dbFactory, s.licenseService, s.stateCfg, s.schemaSyncer, s.profile))
+		s.taskSchedulerV2.Register(api.TaskDatabaseSchemaUpdateGhost, taskrun.NewSchemaUpdateGhostExecutor(storeInstance, s.dbFactory, s.licenseService, s.stateCfg, s.schemaSyncer, s.profile))
 
 		s.planCheckScheduler = plancheck.NewScheduler(storeInstance, s.licenseService, s.stateCfg)
 		databaseConnectExecutor := plancheck.NewDatabaseConnectExecutor(storeInstance, s.dbFactory)
 		s.planCheckScheduler.Register(store.PlanCheckDatabaseConnect, databaseConnectExecutor)
 		statementAdviseExecutor := plancheck.NewStatementAdviseExecutor(storeInstance, s.sheetManager, s.dbFactory, s.licenseService)
 		s.planCheckScheduler.Register(store.PlanCheckDatabaseStatementAdvise, statementAdviseExecutor)
-		ghostSyncExecutor := plancheck.NewGhostSyncExecutor(storeInstance, s.secret, s.dbFactory)
+		ghostSyncExecutor := plancheck.NewGhostSyncExecutor(storeInstance, s.dbFactory)
 		s.planCheckScheduler.Register(store.PlanCheckDatabaseGhostSync, ghostSyncExecutor)
 		statementReportExecutor := plancheck.NewStatementReportExecutor(storeInstance, s.sheetManager, s.dbFactory)
 		s.planCheckScheduler.Register(store.PlanCheckDatabaseStatementSummaryReport, statementReportExecutor)
@@ -301,9 +282,9 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	}
 
 	// Setup the gRPC and grpc-gateway.
-	authProvider := auth.New(s.store, s.secret, s.licenseService, s.stateCfg, s.profile)
+	authProvider := auth.New(s.store, secret, s.licenseService, s.stateCfg, s.profile)
 	auditProvider := apiv1.NewAuditInterceptor(s.store)
-	aclProvider := apiv1.NewACLInterceptor(s.store, s.secret, s.iamManager, s.profile)
+	aclProvider := apiv1.NewACLInterceptor(s.store, secret, s.iamManager, s.profile)
 	debugProvider := apiv1.NewDebugInterceptor(s.metricReporter)
 	onPanic := func(p any) error {
 		stack := stacktrace.TakeStacktrace(20 /* n */, 5 /* skip */)
@@ -356,7 +337,7 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 		}
 		return nil
 	}
-	_, planService, rolloutService, issueService, _, err := configureGrpcRouters(ctx, mux, s.grpcServer, s.store, s.sheetManager, s.dbFactory, s.licenseService, s.profile, s.metricReporter, s.stateCfg, s.schemaSyncer, s.webhookManager, s.iamManager, postCreateUser, s.secret)
+	_, planService, rolloutService, issueService, _, err := configureGrpcRouters(ctx, mux, s.grpcServer, s.store, s.sheetManager, s.dbFactory, s.licenseService, s.profile, s.metricReporter, s.stateCfg, s.schemaSyncer, s.webhookManager, s.iamManager, postCreateUser, secret)
 	if err != nil {
 		return nil, err
 	}
@@ -380,10 +361,6 @@ func (s *Server) Run(ctx context.Context, port int) error {
 		go s.taskSchedulerV2.Run(ctx, &s.runnerWG)
 		s.runnerWG.Add(1)
 		go s.schemaSyncer.Run(ctx, &s.runnerWG)
-		s.runnerWG.Add(1)
-		go s.slowQuerySyncer.Run(ctx, &s.runnerWG)
-		s.runnerWG.Add(1)
-		go s.mailSender.Run(ctx, &s.runnerWG)
 		s.runnerWG.Add(1)
 		go s.approvalRunner.Run(ctx, &s.runnerWG)
 

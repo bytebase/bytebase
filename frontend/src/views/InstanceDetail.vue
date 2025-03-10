@@ -286,7 +286,7 @@ const createDatabase = () => {
   state.showCreateDatabaseModal = true;
 };
 
-useTitle(instance.value.title);
+useTitle(computed(() => instance.value.title));
 
 const handleDatabasesSelectionChanged = (
   selectedDatabaseNameList: Set<string>

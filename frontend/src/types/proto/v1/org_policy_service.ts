@@ -18,7 +18,6 @@ export const protobufPackage = "bytebase.v1";
 export enum PolicyType {
   POLICY_TYPE_UNSPECIFIED = "POLICY_TYPE_UNSPECIFIED",
   ROLLOUT_POLICY = "ROLLOUT_POLICY",
-  SLOW_QUERY = "SLOW_QUERY",
   DISABLE_COPY_DATA = "DISABLE_COPY_DATA",
   MASKING_RULE = "MASKING_RULE",
   MASKING_EXCEPTION = "MASKING_EXCEPTION",
@@ -38,9 +37,6 @@ export function policyTypeFromJSON(object: any): PolicyType {
     case 11:
     case "ROLLOUT_POLICY":
       return PolicyType.ROLLOUT_POLICY;
-    case 7:
-    case "SLOW_QUERY":
-      return PolicyType.SLOW_QUERY;
     case 8:
     case "DISABLE_COPY_DATA":
       return PolicyType.DISABLE_COPY_DATA;
@@ -78,8 +74,6 @@ export function policyTypeToJSON(object: PolicyType): string {
       return "POLICY_TYPE_UNSPECIFIED";
     case PolicyType.ROLLOUT_POLICY:
       return "ROLLOUT_POLICY";
-    case PolicyType.SLOW_QUERY:
-      return "SLOW_QUERY";
     case PolicyType.DISABLE_COPY_DATA:
       return "DISABLE_COPY_DATA";
     case PolicyType.MASKING_RULE:
@@ -108,8 +102,6 @@ export function policyTypeToNumber(object: PolicyType): number {
       return 0;
     case PolicyType.ROLLOUT_POLICY:
       return 11;
-    case PolicyType.SLOW_QUERY:
-      return 7;
     case PolicyType.DISABLE_COPY_DATA:
       return 8;
     case PolicyType.MASKING_RULE:
@@ -382,7 +374,6 @@ export interface Policy {
   inheritFromParent: boolean;
   type: PolicyType;
   rolloutPolicy?: RolloutPolicy | undefined;
-  slowQueryPolicy?: SlowQueryPolicy | undefined;
   disableCopyDataPolicy?: DisableCopyDataPolicy | undefined;
   maskingRulePolicy?: MaskingRulePolicy | undefined;
   maskingExceptionPolicy?: MaskingExceptionPolicy | undefined;
@@ -404,10 +395,6 @@ export interface RolloutPolicy {
    * roles/CREATOR
    */
   issueRoles: string[];
-}
-
-export interface SlowQueryPolicy {
-  active: boolean;
 }
 
 export interface DisableCopyDataPolicy {
@@ -1112,7 +1099,6 @@ function createBasePolicy(): Policy {
     inheritFromParent: false,
     type: PolicyType.POLICY_TYPE_UNSPECIFIED,
     rolloutPolicy: undefined,
-    slowQueryPolicy: undefined,
     disableCopyDataPolicy: undefined,
     maskingRulePolicy: undefined,
     maskingExceptionPolicy: undefined,
@@ -1139,9 +1125,6 @@ export const Policy: MessageFns<Policy> = {
     }
     if (message.rolloutPolicy !== undefined) {
       RolloutPolicy.encode(message.rolloutPolicy, writer.uint32(154).fork()).join();
-    }
-    if (message.slowQueryPolicy !== undefined) {
-      SlowQueryPolicy.encode(message.slowQueryPolicy, writer.uint32(98).fork()).join();
     }
     if (message.disableCopyDataPolicy !== undefined) {
       DisableCopyDataPolicy.encode(message.disableCopyDataPolicy, writer.uint32(130).fork()).join();
@@ -1216,14 +1199,6 @@ export const Policy: MessageFns<Policy> = {
           }
 
           message.rolloutPolicy = RolloutPolicy.decode(reader, reader.uint32());
-          continue;
-        }
-        case 12: {
-          if (tag !== 98) {
-            break;
-          }
-
-          message.slowQueryPolicy = SlowQueryPolicy.decode(reader, reader.uint32());
           continue;
         }
         case 16: {
@@ -1324,7 +1299,6 @@ export const Policy: MessageFns<Policy> = {
       inheritFromParent: isSet(object.inheritFromParent) ? globalThis.Boolean(object.inheritFromParent) : false,
       type: isSet(object.type) ? policyTypeFromJSON(object.type) : PolicyType.POLICY_TYPE_UNSPECIFIED,
       rolloutPolicy: isSet(object.rolloutPolicy) ? RolloutPolicy.fromJSON(object.rolloutPolicy) : undefined,
-      slowQueryPolicy: isSet(object.slowQueryPolicy) ? SlowQueryPolicy.fromJSON(object.slowQueryPolicy) : undefined,
       disableCopyDataPolicy: isSet(object.disableCopyDataPolicy)
         ? DisableCopyDataPolicy.fromJSON(object.disableCopyDataPolicy)
         : undefined,
@@ -1363,9 +1337,6 @@ export const Policy: MessageFns<Policy> = {
     }
     if (message.rolloutPolicy !== undefined) {
       obj.rolloutPolicy = RolloutPolicy.toJSON(message.rolloutPolicy);
-    }
-    if (message.slowQueryPolicy !== undefined) {
-      obj.slowQueryPolicy = SlowQueryPolicy.toJSON(message.slowQueryPolicy);
     }
     if (message.disableCopyDataPolicy !== undefined) {
       obj.disableCopyDataPolicy = DisableCopyDataPolicy.toJSON(message.disableCopyDataPolicy);
@@ -1412,9 +1383,6 @@ export const Policy: MessageFns<Policy> = {
     message.type = object.type ?? PolicyType.POLICY_TYPE_UNSPECIFIED;
     message.rolloutPolicy = (object.rolloutPolicy !== undefined && object.rolloutPolicy !== null)
       ? RolloutPolicy.fromPartial(object.rolloutPolicy)
-      : undefined;
-    message.slowQueryPolicy = (object.slowQueryPolicy !== undefined && object.slowQueryPolicy !== null)
-      ? SlowQueryPolicy.fromPartial(object.slowQueryPolicy)
       : undefined;
     message.disableCopyDataPolicy =
       (object.disableCopyDataPolicy !== undefined && object.disableCopyDataPolicy !== null)
@@ -1541,64 +1509,6 @@ export const RolloutPolicy: MessageFns<RolloutPolicy> = {
     message.automatic = object.automatic ?? false;
     message.roles = object.roles?.map((e) => e) || [];
     message.issueRoles = object.issueRoles?.map((e) => e) || [];
-    return message;
-  },
-};
-
-function createBaseSlowQueryPolicy(): SlowQueryPolicy {
-  return { active: false };
-}
-
-export const SlowQueryPolicy: MessageFns<SlowQueryPolicy> = {
-  encode(message: SlowQueryPolicy, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.active !== false) {
-      writer.uint32(8).bool(message.active);
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): SlowQueryPolicy {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseSlowQueryPolicy();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 8) {
-            break;
-          }
-
-          message.active = reader.bool();
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): SlowQueryPolicy {
-    return { active: isSet(object.active) ? globalThis.Boolean(object.active) : false };
-  },
-
-  toJSON(message: SlowQueryPolicy): unknown {
-    const obj: any = {};
-    if (message.active !== false) {
-      obj.active = message.active;
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<SlowQueryPolicy>): SlowQueryPolicy {
-    return SlowQueryPolicy.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<SlowQueryPolicy>): SlowQueryPolicy {
-    const message = createBaseSlowQueryPolicy();
-    message.active = object.active ?? false;
     return message;
   },
 };

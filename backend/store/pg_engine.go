@@ -50,7 +50,7 @@ func (db *DB) Open(ctx context.Context, createDB bool) error {
 	if createDB {
 		createCfg := db.ConnCfg
 		// connect to the "postgres" as the target database has not been created yet.
-		createCfg.Database = "postgres"
+		createCfg.ConnectionContext.DatabaseName = "postgres"
 		// Create the metadata database.
 		defaultDriver, err := dbdriver.Open(
 			ctx,
@@ -63,7 +63,7 @@ func (db *DB) Open(ctx context.Context, createDB bool) error {
 		}
 		defer defaultDriver.Close(ctx)
 		// Underlying driver handles the case where database already exists.
-		if _, err := defaultDriver.Execute(ctx, fmt.Sprintf("CREATE DATABASE %s", db.ConnCfg.Database), dbdriver.ExecuteOptions{CreateDatabase: true}); err != nil {
+		if _, err := defaultDriver.Execute(ctx, fmt.Sprintf("CREATE DATABASE %s", db.ConnCfg.ConnectionContext.DatabaseName), dbdriver.ExecuteOptions{CreateDatabase: true}); err != nil {
 			return err
 		}
 	}

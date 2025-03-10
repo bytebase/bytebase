@@ -28,11 +28,9 @@ const (
 	DatabaseService_GetDatabaseMetadata_FullMethodName  = "/bytebase.v1.DatabaseService/GetDatabaseMetadata"
 	DatabaseService_GetDatabaseSchema_FullMethodName    = "/bytebase.v1.DatabaseService/GetDatabaseSchema"
 	DatabaseService_DiffSchema_FullMethodName           = "/bytebase.v1.DatabaseService/DiffSchema"
-	DatabaseService_ListSlowQueries_FullMethodName      = "/bytebase.v1.DatabaseService/ListSlowQueries"
 	DatabaseService_ListSecrets_FullMethodName          = "/bytebase.v1.DatabaseService/ListSecrets"
 	DatabaseService_UpdateSecret_FullMethodName         = "/bytebase.v1.DatabaseService/UpdateSecret"
 	DatabaseService_DeleteSecret_FullMethodName         = "/bytebase.v1.DatabaseService/DeleteSecret"
-	DatabaseService_AdviseIndex_FullMethodName          = "/bytebase.v1.DatabaseService/AdviseIndex"
 	DatabaseService_ListRevisions_FullMethodName        = "/bytebase.v1.DatabaseService/ListRevisions"
 	DatabaseService_GetRevision_FullMethodName          = "/bytebase.v1.DatabaseService/GetRevision"
 	DatabaseService_CreateRevision_FullMethodName       = "/bytebase.v1.DatabaseService/CreateRevision"
@@ -54,11 +52,9 @@ type DatabaseServiceClient interface {
 	GetDatabaseMetadata(ctx context.Context, in *GetDatabaseMetadataRequest, opts ...grpc.CallOption) (*DatabaseMetadata, error)
 	GetDatabaseSchema(ctx context.Context, in *GetDatabaseSchemaRequest, opts ...grpc.CallOption) (*DatabaseSchema, error)
 	DiffSchema(ctx context.Context, in *DiffSchemaRequest, opts ...grpc.CallOption) (*DiffSchemaResponse, error)
-	ListSlowQueries(ctx context.Context, in *ListSlowQueriesRequest, opts ...grpc.CallOption) (*ListSlowQueriesResponse, error)
 	ListSecrets(ctx context.Context, in *ListSecretsRequest, opts ...grpc.CallOption) (*ListSecretsResponse, error)
 	UpdateSecret(ctx context.Context, in *UpdateSecretRequest, opts ...grpc.CallOption) (*Secret, error)
 	DeleteSecret(ctx context.Context, in *DeleteSecretRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
-	AdviseIndex(ctx context.Context, in *AdviseIndexRequest, opts ...grpc.CallOption) (*AdviseIndexResponse, error)
 	ListRevisions(ctx context.Context, in *ListRevisionsRequest, opts ...grpc.CallOption) (*ListRevisionsResponse, error)
 	GetRevision(ctx context.Context, in *GetRevisionRequest, opts ...grpc.CallOption) (*Revision, error)
 	CreateRevision(ctx context.Context, in *CreateRevisionRequest, opts ...grpc.CallOption) (*Revision, error)
@@ -156,16 +152,6 @@ func (c *databaseServiceClient) DiffSchema(ctx context.Context, in *DiffSchemaRe
 	return out, nil
 }
 
-func (c *databaseServiceClient) ListSlowQueries(ctx context.Context, in *ListSlowQueriesRequest, opts ...grpc.CallOption) (*ListSlowQueriesResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ListSlowQueriesResponse)
-	err := c.cc.Invoke(ctx, DatabaseService_ListSlowQueries_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *databaseServiceClient) ListSecrets(ctx context.Context, in *ListSecretsRequest, opts ...grpc.CallOption) (*ListSecretsResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ListSecretsResponse)
@@ -190,16 +176,6 @@ func (c *databaseServiceClient) DeleteSecret(ctx context.Context, in *DeleteSecr
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(emptypb.Empty)
 	err := c.cc.Invoke(ctx, DatabaseService_DeleteSecret_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *databaseServiceClient) AdviseIndex(ctx context.Context, in *AdviseIndexRequest, opts ...grpc.CallOption) (*AdviseIndexResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(AdviseIndexResponse)
-	err := c.cc.Invoke(ctx, DatabaseService_AdviseIndex_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -288,11 +264,9 @@ type DatabaseServiceServer interface {
 	GetDatabaseMetadata(context.Context, *GetDatabaseMetadataRequest) (*DatabaseMetadata, error)
 	GetDatabaseSchema(context.Context, *GetDatabaseSchemaRequest) (*DatabaseSchema, error)
 	DiffSchema(context.Context, *DiffSchemaRequest) (*DiffSchemaResponse, error)
-	ListSlowQueries(context.Context, *ListSlowQueriesRequest) (*ListSlowQueriesResponse, error)
 	ListSecrets(context.Context, *ListSecretsRequest) (*ListSecretsResponse, error)
 	UpdateSecret(context.Context, *UpdateSecretRequest) (*Secret, error)
 	DeleteSecret(context.Context, *DeleteSecretRequest) (*emptypb.Empty, error)
-	AdviseIndex(context.Context, *AdviseIndexRequest) (*AdviseIndexResponse, error)
 	ListRevisions(context.Context, *ListRevisionsRequest) (*ListRevisionsResponse, error)
 	GetRevision(context.Context, *GetRevisionRequest) (*Revision, error)
 	CreateRevision(context.Context, *CreateRevisionRequest) (*Revision, error)
@@ -334,9 +308,6 @@ func (UnimplementedDatabaseServiceServer) GetDatabaseSchema(context.Context, *Ge
 func (UnimplementedDatabaseServiceServer) DiffSchema(context.Context, *DiffSchemaRequest) (*DiffSchemaResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DiffSchema not implemented")
 }
-func (UnimplementedDatabaseServiceServer) ListSlowQueries(context.Context, *ListSlowQueriesRequest) (*ListSlowQueriesResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ListSlowQueries not implemented")
-}
 func (UnimplementedDatabaseServiceServer) ListSecrets(context.Context, *ListSecretsRequest) (*ListSecretsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListSecrets not implemented")
 }
@@ -345,9 +316,6 @@ func (UnimplementedDatabaseServiceServer) UpdateSecret(context.Context, *UpdateS
 }
 func (UnimplementedDatabaseServiceServer) DeleteSecret(context.Context, *DeleteSecretRequest) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteSecret not implemented")
-}
-func (UnimplementedDatabaseServiceServer) AdviseIndex(context.Context, *AdviseIndexRequest) (*AdviseIndexResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method AdviseIndex not implemented")
 }
 func (UnimplementedDatabaseServiceServer) ListRevisions(context.Context, *ListRevisionsRequest) (*ListRevisionsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListRevisions not implemented")
@@ -535,24 +503,6 @@ func _DatabaseService_DiffSchema_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
-func _DatabaseService_ListSlowQueries_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ListSlowQueriesRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(DatabaseServiceServer).ListSlowQueries(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: DatabaseService_ListSlowQueries_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(DatabaseServiceServer).ListSlowQueries(ctx, req.(*ListSlowQueriesRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _DatabaseService_ListSecrets_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ListSecretsRequest)
 	if err := dec(in); err != nil {
@@ -603,24 +553,6 @@ func _DatabaseService_DeleteSecret_Handler(srv interface{}, ctx context.Context,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(DatabaseServiceServer).DeleteSecret(ctx, req.(*DeleteSecretRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _DatabaseService_AdviseIndex_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(AdviseIndexRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(DatabaseServiceServer).AdviseIndex(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: DatabaseService_AdviseIndex_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(DatabaseServiceServer).AdviseIndex(ctx, req.(*AdviseIndexRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -791,10 +723,6 @@ var DatabaseService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _DatabaseService_DiffSchema_Handler,
 		},
 		{
-			MethodName: "ListSlowQueries",
-			Handler:    _DatabaseService_ListSlowQueries_Handler,
-		},
-		{
 			MethodName: "ListSecrets",
 			Handler:    _DatabaseService_ListSecrets_Handler,
 		},
@@ -805,10 +733,6 @@ var DatabaseService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DeleteSecret",
 			Handler:    _DatabaseService_DeleteSecret_Handler,
-		},
-		{
-			MethodName: "AdviseIndex",
-			Handler:    _DatabaseService_AdviseIndex_Handler,
 		},
 		{
 			MethodName: "ListRevisions",
