@@ -67,10 +67,10 @@ func (driver *Driver) Open(ctx context.Context, _ storepb.Engine, config db.Conn
 	}
 	options := make(map[string]string)
 	options["CONNECTION TIMEOUT"] = "0"
-	if config.SID != "" {
-		options["SID"] = config.SID
+	if config.DataSource.GetSid() != "" {
+		options["SID"] = config.DataSource.GetSid()
 	}
-	dsn := goora.BuildUrl(config.DataSource.Host, port, config.ServiceName, config.DataSource.Username, config.Password, options)
+	dsn := goora.BuildUrl(config.DataSource.Host, port, config.DataSource.GetServiceName(), config.DataSource.Username, config.Password, options)
 	db, err := sql.Open("oracle", dsn)
 	if err != nil {
 		return nil, err
@@ -82,7 +82,7 @@ func (driver *Driver) Open(ctx context.Context, _ storepb.Engine, config db.Conn
 	}
 	driver.db = db
 	driver.databaseName = config.ConnectionContext.DatabaseName
-	driver.serviceName = config.ServiceName
+	driver.serviceName = config.DataSource.GetServiceName()
 	driver.connectionCtx = config.ConnectionContext
 	driver.maximumSQLResultSize = config.MaximumSQLResultSize
 	return driver, nil

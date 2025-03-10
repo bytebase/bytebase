@@ -66,7 +66,7 @@ func (driver *Driver) Open(_ context.Context, _ storepb.Engine, config db.Connec
 	query.Add("tlsmin", "1.0")
 
 	var err error
-	if config.TLSConfig.UseSSL && config.TLSConfig.SslCA != "" {
+	if config.DataSource.GetUseSsl() && config.DataSource.GetSslCa() != "" {
 		// Due to Golang runtime limitation, x509 package will throw the error of 'certificate relies on legacy Common Name field, use SANs instead.
 		// Driver reads the certificate from file instead of regarding it as certificate content.
 		// https://github.com/microsoft/go-mssqldb/blob/main/msdsn/conn_str.go#L159
@@ -84,7 +84,7 @@ func (driver *Driver) Open(_ context.Context, _ storepb.Engine, config db.Connec
 				driver.certFilePath = fName
 			}
 		}(err)
-		_, err = file.WriteString(config.TLSConfig.SslCA)
+		_, err = file.WriteString(config.DataSource.GetSslCa())
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to write certificate to file %s", fName)
 		}
@@ -97,12 +97,12 @@ func (driver *Driver) Open(_ context.Context, _ storepb.Engine, config db.Connec
 
 	driverName := "sqlserver"
 	password := config.Password
-	if config.AuthenticationType == storepb.DataSource_AZURE_IAM {
+	if config.DataSource.GetAuthenticationType() == storepb.DataSource_AZURE_IAM {
 		driverName = azuread.DriverName
-		if config.ClientSecretCredential != nil {
+		if config.DataSource.GetClientSecretCredential() != nil {
 			query.Add("fedauth", azuread.ActiveDirectoryServicePrincipal)
-			query.Add("user id", fmt.Sprintf("%s@%s", config.ClientSecretCredential.ClientId, config.ClientSecretCredential.TenantId))
-			query.Add("password", config.ClientSecretCredential.ClientSecret)
+			query.Add("user id", fmt.Sprintf("%s@%s", config.DataSource.GetClientSecretCredential().ClientId, config.DataSource.GetClientSecretCredential().TenantId))
+			query.Add("password", config.DataSource.GetClientSecretCredential().ClientSecret)
 			password = ""
 		} else {
 			query.Add("fedauth", azuread.ActiveDirectoryDefault)

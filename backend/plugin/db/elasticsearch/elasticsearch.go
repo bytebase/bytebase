@@ -78,7 +78,7 @@ func (*Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionCon
 	u, err := url.Parse(address)
 	if err != nil || u.Host == "" {
 		protocol := "http"
-		if config.TLSConfig.UseSSL {
+		if config.DataSource.GetUseSsl() {
 			protocol = "https"
 		}
 		address = fmt.Sprintf("%s://%s", protocol, address)
@@ -111,12 +111,12 @@ func (*Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionCon
 		},
 	}
 
-	if config.TLSConfig.SslCert != "" {
+	if config.DataSource.GetSslCert() != "" {
 		certPool := x509.NewCertPool()
-		if ok := certPool.AppendCertsFromPEM([]byte(config.TLSConfig.SslCert)); !ok {
+		if ok := certPool.AppendCertsFromPEM([]byte(config.DataSource.GetSslCert())); !ok {
 			return nil, errors.New("cannot add CA cert to pool")
 		}
-		esConfig.CACert = []byte(config.TLSConfig.SslCert)
+		esConfig.CACert = []byte(config.DataSource.GetSslCert())
 		esConfig.Transport = &http.Transport{
 			MaxIdleConnsPerHost:   10,
 			ResponseHeaderTimeout: time.Second,

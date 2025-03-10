@@ -79,7 +79,7 @@ func (d *Driver) Open(ctx context.Context, dbType storepb.Engine, connCfg db.Con
 
 	var dsn string
 	var err error
-	switch connCfg.AuthenticationType {
+	switch connCfg.DataSource.GetAuthenticationType() {
 	case storepb.DataSource_GOOGLE_CLOUD_SQL_IAM:
 		dsn, err = getCloudSQLConnection(ctx, connCfg)
 	case storepb.DataSource_AWS_RDS_IAM:
@@ -115,8 +115,8 @@ func (d *Driver) getMySQLConnection(connCfg db.ConnectionConfig) (string, error)
 	}
 
 	params := []string{"multiStatements=true", "maxAllowedPacket=0"}
-	if connCfg.SSHConfig.Host != "" {
-		sshClient, err := util.GetSSHClient(connCfg.SSHConfig)
+	if connCfg.DataSource.GetSshHost() != "" {
+		sshClient, err := util.GetSSHClient(connCfg.DataSource)
 		if err != nil {
 			return "", err
 		}
@@ -128,13 +128,13 @@ func (d *Driver) getMySQLConnection(connCfg db.ConnectionConfig) (string, error)
 		protocol = "mysql+tcp"
 	}
 
-	tlsConfig, err := connCfg.TLSConfig.GetSslConfig()
+	tlscfg, err := db.GetTLSConfig(connCfg.DataSource)
 	if err != nil {
 		return "", errors.Wrap(err, "sql: tls config error")
 	}
 	tlsKey := uuid.NewString()
-	if tlsConfig != nil {
-		if err := mysql.RegisterTLSConfig(tlsKey, tlsConfig); err != nil {
+	if tlscfg != nil {
+		if err := mysql.RegisterTLSConfig(tlsKey, tlscfg); err != nil {
 			return "", errors.Wrap(err, "sql: failed to register tls config")
 		}
 		// TLS config is only used during sql.Open, so should be safe to deregister afterwards.
@@ -193,7 +193,7 @@ func getRDSConnection(ctx context.Context, connCfg db.ConnectionConfig) (string,
 	}
 
 	authenticationToken, err := auth.BuildAuthToken(
-		ctx, dbEndpoint, connCfg.Region, connCfg.DataSource.Username, cfg.Credentials)
+		ctx, dbEndpoint, connCfg.DataSource.GetRegion(), connCfg.DataSource.Username, cfg.Credentials)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to create authentication token")
 	}

@@ -1,6 +1,8 @@
 package pg
 
-import "github.com/bytebase/bytebase/backend/plugin/db"
+import (
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
+)
 
 // sslMode is the PGSSLMode type.
 // https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNECT-SSLMODE
@@ -17,12 +19,12 @@ const (
 	SSLModeVerifyFull sslMode = "verify-full"
 )
 
-func getSSLMode(tlsConfig db.TLSConfig, sshConfig db.SSHConfig) sslMode {
+func getSSLMode(ds *storepb.DataSource) sslMode {
 	sslMode := SSLModePrefer
-	if tlsConfig.UseSSL {
+	if ds.GetUseSsl() {
 		sslMode = SSLModeVerifyFull
-		if tlsConfig.SslCA != "" {
-			if sshConfig.Host != "" {
+		if ds.GetSslCa() != "" {
+			if ds.GetSshHost() != "" {
 				sslMode = SSLModeVerifyCA
 			}
 		}

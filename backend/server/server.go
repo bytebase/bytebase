@@ -95,12 +95,6 @@ type Server struct {
 	rolloutService *apiv1.RolloutService
 	issueService   *apiv1.IssueService
 
-	// MySQL utility binaries
-	mysqlBinDir string
-	// MongoDB utility binaries
-	mongoBinDir string
-	// Postgres utility binaries
-	pgBinDir string
 	// PG server stoppers.
 	stopper []func()
 
@@ -141,21 +135,21 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	}
 
 	// Install mongoutil.
-	s.mongoBinDir, err = mongoutil.Install(profile.ResourceDir)
+	mongoBinDir, err := mongoutil.Install(profile.ResourceDir)
 	if err != nil {
 		return nil, errors.Wrap(err, "cannot install mongo utility binaries")
 	}
 
 	// Installs the Postgres and utility binaries and creates the 'activeProfile.pgUser' user/database
 	// to store Bytebase's own metadata.
-	s.pgBinDir, err = postgres.Install(profile.ResourceDir)
+	pgBinDir, err := postgres.Install(profile.ResourceDir)
 	if err != nil {
 		return nil, err
 	}
 
 	var connCfg dbdriver.ConnectionConfig
 	if profile.UseEmbedDB() {
-		stopper, err := postgres.StartMetadataInstance(profile.DataDir, profile.ResourceDir, s.pgBinDir, profile.PgUser, profile.DemoName, profile.DatastorePort, profile.Mode)
+		stopper, err := postgres.StartMetadataInstance(profile.DataDir, profile.ResourceDir, pgBinDir, profile.PgUser, profile.DemoName, profile.DatastorePort, profile.Mode)
 		if err != nil {
 			return nil, err
 		}
@@ -175,12 +169,12 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	if profile.SampleDatabasePort != 0 {
 		// Only create batch sample databases in demo mode. For normal mode, user starts from the free version
 		// and batch databases are useless because batch requires enterprise license.
-		stopper := postgres.StartAllSampleInstances(ctx, s.pgBinDir, profile.DataDir, profile.SampleDatabasePort, profile.DemoName != "")
+		stopper := postgres.StartAllSampleInstances(ctx, pgBinDir, profile.DataDir, profile.SampleDatabasePort, profile.DemoName != "")
 		s.stopper = append(s.stopper, stopper...)
 	}
 
 	// Connect to the instance that stores bytebase's own metadata.
-	storeDB := store.NewDB(connCfg, s.pgBinDir, profile.Readonly, profile.Mode)
+	storeDB := store.NewDB(connCfg, pgBinDir, profile.Readonly, profile.Mode)
 	// For embedded database, we will create the database if it does not exist.
 	if err := storeDB.Open(ctx, profile.UseEmbedDB() /* createDB */); err != nil {
 		// return s so that caller can call s.Close() to shut down the postgres server if embedded.
@@ -234,13 +228,7 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 		return nil, errors.Wrapf(err, "failed to create iam manager")
 	}
 	s.webhookManager = webhook.NewManager(storeInstance, s.iamManager)
-	s.dbFactory = dbfactory.New(
-		s.store,
-		s.mysqlBinDir,
-		s.mongoBinDir,
-		s.pgBinDir,
-		profile.DataDir,
-	)
+	s.dbFactory = dbfactory.New(s.store, mongoBinDir)
 
 	// Configure echo server.
 	s.echoServer = echo.New()

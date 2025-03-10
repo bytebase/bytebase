@@ -44,17 +44,17 @@ func (d *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionC
 	// only support token authentication.
 	client, err := databricks.NewWorkspaceClient(&databricks.Config{
 		Host:  config.DataSource.Host,
-		Token: config.AuthenticationPrivateKey,
+		Token: config.DataSource.GetAuthenticationPrivateKey(),
 	})
 	if err != nil {
 		return nil, err
 	}
 
 	d.Client = client
-	if config.WarehouseID == "" {
+	if config.DataSource.GetWarehouseId() == "" {
 		return nil, errors.New("Warehouse ID must be set")
 	}
-	d.WarehouseID = config.WarehouseID
+	d.WarehouseID = config.DataSource.GetWarehouseId()
 	d.curCatalog = config.ConnectionContext.DatabaseName
 	return d, nil
 }
