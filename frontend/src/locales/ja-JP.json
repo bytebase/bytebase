@@ -79,7 +79,6 @@
     "updated-at": "更新日時",
     "statement": "ステートメント",
     "statement-size": "ステートメントサイズ",
-    "sql-statement": "SQL@:{'common.statement'}",
     "snapshot": "スナップショット",
     "status": "州",
     "stage": "ステージ",
@@ -153,7 +152,6 @@
     "view-doc": "ドキュメントを見る",
     "write-only": "書き込み専用",
     "sync": "同期する",
-    "sync-now": "今すぐ同期する",
     "success": "成功",
     "failed": "失敗",
     "load-more": "もっと読み込む",
@@ -2325,35 +2323,9 @@
   },
   "slow-query": {
     "slow-queries": "遅いクエリ",
-    "report": "報告",
-    "last-query-time": "最終実行時刻",
-    "sql-statement": "SQL文",
-    "total-query-count": "合計実行時間",
-    "query-count-percent": "約定比率",
-    "max-query-time": "最大実行時間",
-    "avg-query-time": "平均実行時間",
-    "query-time-percent": "実行時間比率",
-    "max-rows-examined": "最大走査線数",
-    "avg-rows-examined": "平均スキャンライン数",
-    "max-rows-sent": "返される行の最大数",
-    "avg-rows-sent": "返される平均行数",
-    "query-start-time": "実行開始時刻",
-    "rows-examined": "解析された行数",
-    "rows-sent": "行数を返す",
-    "lock-time": "ロックが保持される時間",
-    "query-time": "実行時間",
-    "attention-description": "Bytebase は、インスタンスからの低速クエリ ログを定期的に同期します。 MySQL インスタンスの場合は、まず、slow_query を有効にする必要があります。 PostgreSQL インスタンスの場合、pg_stat_statements がオンになっているデータベースのみが遅いクエリを収集します。",
-    "sync-job-started": "同期ジョブが開始されました。同期が完了するまでお待ちください。",
-    "detail": "遅いクエリの詳細",
     "advise-index": {
-      "current-index": "現在のインデックス",
-      "suggestion": "提案",
-      "create-index": "インデックスの作成",
-      "setup-openai-key-to-enable": "OpenAI API キーを設定して、インデックス提案機能を有効にします。"
     },
     "no-log-placeholder": {
-      "admin": "[設定] ボタンをクリックしてデータベース インスタンスからスロー クエリ ログを取得するか、[今すぐ同期] ボタンをクリックしてスロー クエリ ログをすぐに同期します。",
-      "developer": "[今すぐ同期] ボタンをクリックしてスロー クエリ ログをすぐに同期するか、ワークスペース管理者または DBA に問い合わせてスロー クエリ機能を設定してください。"
     }
   },
   "schema-template": {
