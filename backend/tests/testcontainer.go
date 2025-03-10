@@ -132,14 +132,18 @@ func getPgContainer(ctx context.Context) (retC *Container, retErr error) {
 }
 
 func waitDBPing(ctx context.Context, db *sql.DB) error {
+	started := time.Now()
 	ticker := time.NewTicker(3 * time.Second)
 	defer ticker.Stop()
-	timeout := time.After(2 * time.Minute)
+	timeout := time.After(10 * time.Minute)
 outerLoop:
 	for {
 		select {
 		case <-ticker.C:
 			if err := db.PingContext(ctx); err == nil {
+				if time.Since(started) > 1*time.Minute {
+					fmt.Printf("Total wait time: %s\n", time.Since(started))
+				}
 				break outerLoop
 			}
 		case <-timeout:

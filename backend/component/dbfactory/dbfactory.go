@@ -50,23 +50,6 @@ func (d *DBFactory) GetDataSourceDriver(ctx context.Context, instance *store.Ins
 	if err != nil {
 		return nil, err
 	}
-	var dbSaslConfig db.SASLConfig
-	switch t := dataSource.GetSaslConfig().GetMechanism().(type) {
-	case *storepb.SASLConfig_KrbConfig:
-		dbSaslConfig = &db.KerberosConfig{
-			Primary:  t.KrbConfig.Primary,
-			Instance: t.KrbConfig.Instance,
-			Realm: db.Realm{
-				Name:                 t.KrbConfig.Realm,
-				KDCHost:              t.KrbConfig.KdcHost,
-				KDCPort:              t.KrbConfig.KdcPort,
-				KDCTransportProtocol: t.KrbConfig.KdcTransportProtocol,
-			},
-			Keytab: t.KrbConfig.Keytab,
-		}
-	default:
-		dbSaslConfig = nil
-	}
 	connectionContext.InstanceID = instance.ResourceID
 	connectionContext.EngineVersion = instance.Metadata.GetVersion()
 
@@ -82,7 +65,6 @@ func (d *DBFactory) GetDataSourceDriver(ctx context.Context, instance *store.Ins
 			ConnectionContext: connectionContext,
 			Password:          password,
 
-			SASLConfig:           dbSaslConfig,
 			MaximumSQLResultSize: maximumSQLResultSize,
 		},
 	)
