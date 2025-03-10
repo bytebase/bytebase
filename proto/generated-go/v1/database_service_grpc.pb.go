@@ -28,7 +28,6 @@ const (
 	DatabaseService_GetDatabaseMetadata_FullMethodName  = "/bytebase.v1.DatabaseService/GetDatabaseMetadata"
 	DatabaseService_GetDatabaseSchema_FullMethodName    = "/bytebase.v1.DatabaseService/GetDatabaseSchema"
 	DatabaseService_DiffSchema_FullMethodName           = "/bytebase.v1.DatabaseService/DiffSchema"
-	DatabaseService_ListSlowQueries_FullMethodName      = "/bytebase.v1.DatabaseService/ListSlowQueries"
 	DatabaseService_ListSecrets_FullMethodName          = "/bytebase.v1.DatabaseService/ListSecrets"
 	DatabaseService_UpdateSecret_FullMethodName         = "/bytebase.v1.DatabaseService/UpdateSecret"
 	DatabaseService_DeleteSecret_FullMethodName         = "/bytebase.v1.DatabaseService/DeleteSecret"
@@ -54,7 +53,6 @@ type DatabaseServiceClient interface {
 	GetDatabaseMetadata(ctx context.Context, in *GetDatabaseMetadataRequest, opts ...grpc.CallOption) (*DatabaseMetadata, error)
 	GetDatabaseSchema(ctx context.Context, in *GetDatabaseSchemaRequest, opts ...grpc.CallOption) (*DatabaseSchema, error)
 	DiffSchema(ctx context.Context, in *DiffSchemaRequest, opts ...grpc.CallOption) (*DiffSchemaResponse, error)
-	ListSlowQueries(ctx context.Context, in *ListSlowQueriesRequest, opts ...grpc.CallOption) (*ListSlowQueriesResponse, error)
 	ListSecrets(ctx context.Context, in *ListSecretsRequest, opts ...grpc.CallOption) (*ListSecretsResponse, error)
 	UpdateSecret(ctx context.Context, in *UpdateSecretRequest, opts ...grpc.CallOption) (*Secret, error)
 	DeleteSecret(ctx context.Context, in *DeleteSecretRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
@@ -150,16 +148,6 @@ func (c *databaseServiceClient) DiffSchema(ctx context.Context, in *DiffSchemaRe
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(DiffSchemaResponse)
 	err := c.cc.Invoke(ctx, DatabaseService_DiffSchema_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *databaseServiceClient) ListSlowQueries(ctx context.Context, in *ListSlowQueriesRequest, opts ...grpc.CallOption) (*ListSlowQueriesResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ListSlowQueriesResponse)
-	err := c.cc.Invoke(ctx, DatabaseService_ListSlowQueries_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -288,7 +276,6 @@ type DatabaseServiceServer interface {
 	GetDatabaseMetadata(context.Context, *GetDatabaseMetadataRequest) (*DatabaseMetadata, error)
 	GetDatabaseSchema(context.Context, *GetDatabaseSchemaRequest) (*DatabaseSchema, error)
 	DiffSchema(context.Context, *DiffSchemaRequest) (*DiffSchemaResponse, error)
-	ListSlowQueries(context.Context, *ListSlowQueriesRequest) (*ListSlowQueriesResponse, error)
 	ListSecrets(context.Context, *ListSecretsRequest) (*ListSecretsResponse, error)
 	UpdateSecret(context.Context, *UpdateSecretRequest) (*Secret, error)
 	DeleteSecret(context.Context, *DeleteSecretRequest) (*emptypb.Empty, error)
@@ -333,9 +320,6 @@ func (UnimplementedDatabaseServiceServer) GetDatabaseSchema(context.Context, *Ge
 }
 func (UnimplementedDatabaseServiceServer) DiffSchema(context.Context, *DiffSchemaRequest) (*DiffSchemaResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DiffSchema not implemented")
-}
-func (UnimplementedDatabaseServiceServer) ListSlowQueries(context.Context, *ListSlowQueriesRequest) (*ListSlowQueriesResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ListSlowQueries not implemented")
 }
 func (UnimplementedDatabaseServiceServer) ListSecrets(context.Context, *ListSecretsRequest) (*ListSecretsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListSecrets not implemented")
@@ -531,24 +515,6 @@ func _DatabaseService_DiffSchema_Handler(srv interface{}, ctx context.Context, d
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(DatabaseServiceServer).DiffSchema(ctx, req.(*DiffSchemaRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _DatabaseService_ListSlowQueries_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ListSlowQueriesRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(DatabaseServiceServer).ListSlowQueries(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: DatabaseService_ListSlowQueries_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(DatabaseServiceServer).ListSlowQueries(ctx, req.(*ListSlowQueriesRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -789,10 +755,6 @@ var DatabaseService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DiffSchema",
 			Handler:    _DatabaseService_DiffSchema_Handler,
-		},
-		{
-			MethodName: "ListSlowQueries",
-			Handler:    _DatabaseService_ListSlowQueries_Handler,
 		},
 		{
 			MethodName: "ListSecrets",

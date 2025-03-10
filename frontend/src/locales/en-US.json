@@ -2322,13 +2322,6 @@
       "issue-creators-cannot-approve-their-own-issue": "Issue creators cannot approve their own issue"
     }
   },
-  "slow-query": {
-    "slow-queries": "Slow queries",
-    "advise-index": {
-    },
-    "no-log-placeholder": {
-    }
-  },
   "schema-template": {
     "self": "Schema Template",
     "field-template": {
