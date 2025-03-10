@@ -79,7 +79,6 @@
     "updated-at": "更新于",
     "statement": "语句",
     "statement-size": "语句大小",
-    "sql-statement": "SQL @:{'common.statement'}",
     "snapshot": "快照",
     "status": "状态",
     "stage": "阶段",
@@ -153,7 +152,6 @@
     "view-doc": "查看文档",
     "write-only": "仅写入",
     "sync": "同步",
-    "sync-now": "现在同步",
     "success": "成功",
     "failed": "失败",
     "load-more": "加载更多",
@@ -2325,35 +2323,9 @@
   },
   "slow-query": {
     "slow-queries": "慢查询",
-    "report": "报告",
-    "last-query-time": "最近执行时间",
-    "sql-statement": "SQL 语句",
-    "total-query-count": "总执行次数",
-    "query-count-percent": "执行次数比例",
-    "max-query-time": "最大执行时长",
-    "avg-query-time": "平均执行时长",
-    "query-time-percent": "执行时长比例",
-    "max-rows-examined": "最大扫描行数",
-    "avg-rows-examined": "平均扫描行数",
-    "max-rows-sent": "最大返回行数",
-    "avg-rows-sent": "平均返回行数",
-    "query-start-time": "执行开始时间",
-    "rows-examined": "解析行数",
-    "rows-sent": "返回行数",
-    "lock-time": "持有锁时长",
-    "query-time": "执行时长",
-    "attention-description": "Bytebase 定期从实例上同步慢查询日志。对 MySQL 实例，需要先开启 slow_query。对 PostgreSQL 实例，只有开启 pg_stat_statements 的数据库才会收集慢查询。",
-    "sync-job-started": "同步作业已启动。请等待同步完成。",
-    "detail": "慢查询详情",
     "advise-index": {
-      "current-index": "当前索引",
-      "suggestion": "建议",
-      "create-index": "创建索引",
-      "setup-openai-key-to-enable": "设置 OpenAI API Key 以开启索引建议功能。"
     },
     "no-log-placeholder": {
-      "admin": "点击「配置」按钮从数据库实例上抓取慢查询日志或点击「立即同步」按钮立即同步慢查询日志",
-      "developer": "点击「立即同步」按钮立即同步慢查询日志或联系工作空间管理员或 DBA 配置慢查询功能"
     }
   },
   "schema-template": {

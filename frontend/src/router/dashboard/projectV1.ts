@@ -19,7 +19,6 @@ export const PROJECT_V1_ROUTE_PLAN_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.plan.
 export const PROJECT_V1_ROUTE_CHANGELISTS = `${PROJECT_V1_ROUTE_DASHBOARD}.changelist`;
 export const PROJECT_V1_ROUTE_CHANGELIST_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.changelist.detail`;
 export const PROJECT_V1_ROUTE_SYNC_SCHEMA = `${PROJECT_V1_ROUTE_DASHBOARD}.sync-schema`;
-export const PROJECT_V1_ROUTE_SLOW_QUERIES = `${PROJECT_V1_ROUTE_DASHBOARD}.slow-queries`;
 export const PROJECT_V1_ROUTE_ANOMALIES = `${PROJECT_V1_ROUTE_DASHBOARD}.anomalies`;
 export const PROJECT_V1_ROUTE_AUDIT_LOGS = `${PROJECT_V1_ROUTE_DASHBOARD}.audit-logs`;
 export const PROJECT_V1_ROUTE_WEBHOOKS = `${PROJECT_V1_ROUTE_DASHBOARD}.webhook`;
@@ -216,20 +215,6 @@ const projectV1Routes: RouteRecordRaw[] = [
         },
         component: () =>
           import("@/views/project/ProjectSyncDatabasePanelV1.vue"),
-        props: true,
-      },
-      {
-        path: "slow-queries",
-        name: PROJECT_V1_ROUTE_SLOW_QUERIES,
-        meta: {
-          overrideTitle: true,
-          requiredProjectPermissionList: () => [
-            "bb.projects.get",
-            "bb.slowQueries.list",
-          ],
-        },
-        component: () =>
-          import("@/views/project/ProjectSlowQueryDashboard.vue"),
         props: true,
       },
       {
