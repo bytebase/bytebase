@@ -37,6 +37,7 @@ import { AuditLog_Severity } from "@/types/proto/v1/audit_log_service";
 import { State, stateToJSON } from "@/types/proto/v1/common";
 import { UserType, userTypeToJSON } from "@/types/proto/v1/user_service";
 import {
+  getDefaultPagination,
   extractProjectResourceName,
   type SearchParams,
   type SearchScope,
@@ -64,7 +65,7 @@ const showTimeRange = ref(false);
 
 const activeUserList = computedAsync(async () => {
   const { users } = await userStore.fetchUserList({
-    pageSize: 100,
+    pageSize: getDefaultPagination(),
     showDeleted: false,
     filter: `state == "${stateToJSON(State.ACTIVE)}" && user_type == "${userTypeToJSON(UserType.USER)}"`,
   });
