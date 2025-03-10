@@ -85,8 +85,6 @@
     - [InstanceService](#bytebase-v1-InstanceService)
   
 - [v1/database_service.proto](#v1_database_service-proto)
-    - [AdviseIndexRequest](#bytebase-v1-AdviseIndexRequest)
-    - [AdviseIndexResponse](#bytebase-v1-AdviseIndexResponse)
     - [BatchUpdateDatabasesRequest](#bytebase-v1-BatchUpdateDatabasesRequest)
     - [BatchUpdateDatabasesResponse](#bytebase-v1-BatchUpdateDatabasesResponse)
     - [ChangedResourceDatabase](#bytebase-v1-ChangedResourceDatabase)
@@ -133,8 +131,6 @@
     - [ListRevisionsResponse](#bytebase-v1-ListRevisionsResponse)
     - [ListSecretsRequest](#bytebase-v1-ListSecretsRequest)
     - [ListSecretsResponse](#bytebase-v1-ListSecretsResponse)
-    - [ListSlowQueriesRequest](#bytebase-v1-ListSlowQueriesRequest)
-    - [ListSlowQueriesResponse](#bytebase-v1-ListSlowQueriesResponse)
     - [MaterializedViewMetadata](#bytebase-v1-MaterializedViewMetadata)
     - [PackageMetadata](#bytebase-v1-PackageMetadata)
     - [ProcedureMetadata](#bytebase-v1-ProcedureMetadata)
@@ -142,9 +138,6 @@
     - [SchemaMetadata](#bytebase-v1-SchemaMetadata)
     - [Secret](#bytebase-v1-Secret)
     - [SequenceMetadata](#bytebase-v1-SequenceMetadata)
-    - [SlowQueryDetails](#bytebase-v1-SlowQueryDetails)
-    - [SlowQueryLog](#bytebase-v1-SlowQueryLog)
-    - [SlowQueryStatistics](#bytebase-v1-SlowQueryStatistics)
     - [StreamMetadata](#bytebase-v1-StreamMetadata)
     - [SyncDatabaseRequest](#bytebase-v1-SyncDatabaseRequest)
     - [SyncDatabaseResponse](#bytebase-v1-SyncDatabaseResponse)
@@ -449,7 +442,6 @@
     - [RestrictIssueCreationForSQLReviewPolicy](#bytebase-v1-RestrictIssueCreationForSQLReviewPolicy)
     - [RolloutPolicy](#bytebase-v1-RolloutPolicy)
     - [SQLReviewRule](#bytebase-v1-SQLReviewRule)
-    - [SlowQueryPolicy](#bytebase-v1-SlowQueryPolicy)
     - [TagPolicy](#bytebase-v1-TagPolicy)
     - [TagPolicy.TagsEntry](#bytebase-v1-TagPolicy-TagsEntry)
     - [UpdatePolicyRequest](#bytebase-v1-UpdatePolicyRequest)
@@ -1844,39 +1836,6 @@ The instance&#39;s `name` field is used to identify the instance to update. Form
 
 
 
-<a name="bytebase-v1-AdviseIndexRequest"></a>
-
-### AdviseIndexRequest
-AdviseIndexRequest is the request of advising index.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | Format: instances/{instance}/databases/{database} |
-| statement | [string](#string) |  | The statement to be advised. |
-
-
-
-
-
-
-<a name="bytebase-v1-AdviseIndexResponse"></a>
-
-### AdviseIndexResponse
-AdviseIndexResponse is the response of advising index.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| current_index | [string](#string) |  | The current index of the statement used. |
-| suggestion | [string](#string) |  | The suggested index of the statement. |
-| create_index_statement | [string](#string) |  | The create index statement of the suggested index. |
-
-
-
-
-
-
 <a name="bytebase-v1-BatchUpdateDatabasesRequest"></a>
 
 ### BatchUpdateDatabasesRequest
@@ -2716,38 +2675,6 @@ When paginating, all other parameters provided to `ListSecrets` must match the c
 
 
 
-<a name="bytebase-v1-ListSlowQueriesRequest"></a>
-
-### ListSlowQueriesRequest
-ListSlowQueriesRequest is the request of listing slow query.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | Format: projects/{project} |
-| filter | [string](#string) |  | The filter of the slow query log. follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax. Support filter by database and start_time in SlowQueryDetails for now. For example: Search the slow query log of the specific database: - the specific database: database = &#34;instances/{instance}/databases/{database}&#34; Search the slow query log that start_time after 2022-01-01T12:00:00.000Z: - start_time &gt; &#34;2022-01-01T12:00:00.000Z&#34; - Should use [RFC-3339 format](https://www.rfc-editor.org/rfc/rfc3339). - Currently we only support filtering down to date granularity. |
-| order_by | [string](#string) |  | The order by of the slow query log. Support order by count, latest_log_time, average_query_time, maximum_query_time, average_rows_sent, maximum_rows_sent, average_rows_examined, maximum_rows_examined for now. For example: - order by count: order_by = &#34;count&#34; - order by latest_log_time desc: order_by = &#34;latest_log_time desc&#34; Default: order by average_query_time desc. |
-
-
-
-
-
-
-<a name="bytebase-v1-ListSlowQueriesResponse"></a>
-
-### ListSlowQueriesResponse
-ListSlowQueriesResponse is the response of listing slow query.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| slow_query_logs | [SlowQueryLog](#bytebase-v1-SlowQueryLog) | repeated | The slow query logs. |
-
-
-
-
-
-
 <a name="bytebase-v1-MaterializedViewMetadata"></a>
 
 ### MaterializedViewMetadata
@@ -2904,69 +2831,6 @@ Secret is the secret of the database now.
 | owner_column | [string](#string) |  | The owner column of the sequence. |
 | comment | [string](#string) |  |  |
 | skip_dump | [bool](#bool) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-SlowQueryDetails"></a>
-
-### SlowQueryDetails
-SlowQueryDetails is the details of the slow query log.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| start_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The start time of the slow query log. |
-| query_time | [google.protobuf.Duration](#google-protobuf-Duration) |  | The query time of the slow query log. |
-| lock_time | [google.protobuf.Duration](#google-protobuf-Duration) |  | The lock time of the slow query log. |
-| rows_sent | [int64](#int64) |  | The rows sent of the slow query log. |
-| rows_examined | [int64](#int64) |  | The rows examined of the slow query log. |
-| sql_text | [string](#string) |  | The sql text of the slow query log. |
-
-
-
-
-
-
-<a name="bytebase-v1-SlowQueryLog"></a>
-
-### SlowQueryLog
-SlowQueryLog is the slow query log.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| resource | [string](#string) |  | The resource of the slow query log. The format is &#34;instances/{instance}/databases/{database}&#34;. |
-| project | [string](#string) |  | The project of the slow query log. The format is &#34;projects/{project}&#34;. |
-| statistics | [SlowQueryStatistics](#bytebase-v1-SlowQueryStatistics) |  | The statistics of the slow query log. |
-
-
-
-
-
-
-<a name="bytebase-v1-SlowQueryStatistics"></a>
-
-### SlowQueryStatistics
-SlowQueryStatistics is the statistics of the slow query log.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| sql_fingerprint | [string](#string) |  | The fingerprint of the slow query log. |
-| count | [int64](#int64) |  | The count of the slow query log. |
-| latest_log_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The latest log time of the slow query log. |
-| average_query_time | [google.protobuf.Duration](#google-protobuf-Duration) |  | The average query time of the slow query log. |
-| maximum_query_time | [google.protobuf.Duration](#google-protobuf-Duration) |  | The maximum query time of the slow query log. |
-| average_rows_sent | [int64](#int64) |  | The average rows sent of the slow query log. |
-| maximum_rows_sent | [int64](#int64) |  | The maximum rows sent of the slow query log. |
-| average_rows_examined | [int64](#int64) |  | The average rows examined of the slow query log. |
-| maximum_rows_examined | [int64](#int64) |  | The maximum rows examined of the slow query log. |
-| query_time_percent | [double](#double) |  | The percentage of the query time. |
-| count_percent | [double](#double) |  | The percentage of the count. |
-| samples | [SlowQueryDetails](#bytebase-v1-SlowQueryDetails) | repeated | Samples are details of the sample slow query logs with the same fingerprint. |
 
 
 
@@ -3364,11 +3228,9 @@ LIST, HASH (https://www.postgresql.org/docs/current/ddl-partitioning.html)
 | GetDatabaseMetadata | [GetDatabaseMetadataRequest](#bytebase-v1-GetDatabaseMetadataRequest) | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) |  |
 | GetDatabaseSchema | [GetDatabaseSchemaRequest](#bytebase-v1-GetDatabaseSchemaRequest) | [DatabaseSchema](#bytebase-v1-DatabaseSchema) |  |
 | DiffSchema | [DiffSchemaRequest](#bytebase-v1-DiffSchemaRequest) | [DiffSchemaResponse](#bytebase-v1-DiffSchemaResponse) |  |
-| ListSlowQueries | [ListSlowQueriesRequest](#bytebase-v1-ListSlowQueriesRequest) | [ListSlowQueriesResponse](#bytebase-v1-ListSlowQueriesResponse) |  |
 | ListSecrets | [ListSecretsRequest](#bytebase-v1-ListSecretsRequest) | [ListSecretsResponse](#bytebase-v1-ListSecretsResponse) |  |
 | UpdateSecret | [UpdateSecretRequest](#bytebase-v1-UpdateSecretRequest) | [Secret](#bytebase-v1-Secret) |  |
 | DeleteSecret | [DeleteSecretRequest](#bytebase-v1-DeleteSecretRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
-| AdviseIndex | [AdviseIndexRequest](#bytebase-v1-AdviseIndexRequest) | [AdviseIndexResponse](#bytebase-v1-AdviseIndexResponse) |  |
 | ListRevisions | [ListRevisionsRequest](#bytebase-v1-ListRevisionsRequest) | [ListRevisionsResponse](#bytebase-v1-ListRevisionsResponse) |  |
 | GetRevision | [GetRevisionRequest](#bytebase-v1-GetRevisionRequest) | [Revision](#bytebase-v1-Revision) |  |
 | CreateRevision | [CreateRevisionRequest](#bytebase-v1-CreateRevisionRequest) | [Revision](#bytebase-v1-Revision) |  |
@@ -7266,7 +7128,6 @@ MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
 | inherit_from_parent | [bool](#bool) |  |  |
 | type | [PolicyType](#bytebase-v1-PolicyType) |  |  |
 | rollout_policy | [RolloutPolicy](#bytebase-v1-RolloutPolicy) |  |  |
-| slow_query_policy | [SlowQueryPolicy](#bytebase-v1-SlowQueryPolicy) |  |  |
 | disable_copy_data_policy | [DisableCopyDataPolicy](#bytebase-v1-DisableCopyDataPolicy) |  |  |
 | masking_rule_policy | [MaskingRulePolicy](#bytebase-v1-MaskingRulePolicy) |  |  |
 | masking_exception_policy | [MaskingExceptionPolicy](#bytebase-v1-MaskingExceptionPolicy) |  |  |
@@ -7343,21 +7204,6 @@ QueryDataPolicy is the policy configuration for querying data.
 | payload | [string](#string) |  |  |
 | engine | [Engine](#bytebase-v1-Engine) |  |  |
 | comment | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-SlowQueryPolicy"></a>
-
-### SlowQueryPolicy
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| active | [bool](#bool) |  |  |
 
 
 
@@ -7467,7 +7313,6 @@ The policy&#39;s `name` field is used to identify the instance to update. Format
 | ---- | ------ | ----------- |
 | POLICY_TYPE_UNSPECIFIED | 0 |  |
 | ROLLOUT_POLICY | 11 |  |
-| SLOW_QUERY | 7 |  |
 | DISABLE_COPY_DATA | 8 |  |
 | MASKING_RULE | 9 |  |
 | MASKING_EXCEPTION | 10 |  |
