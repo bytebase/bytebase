@@ -48,18 +48,18 @@ func newDriver(_ db.DriverConfig) db.Driver {
 // Open opens a BigQuery driver. It must connect to a specific database.
 // If database isn't provided, part of the driver cannot function.
 func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
-	if config.Host == "" {
+	if config.DataSource.Host == "" {
 		return nil, errors.New("host cannot be empty")
 	}
 	d.config = config
 	d.connCtx = config.ConnectionContext
-	d.databaseName = config.Database
+	d.databaseName = config.ConnectionContext.DatabaseName
 
 	var o []option.ClientOption
 	if config.AuthenticationType != storepb.DataSource_GOOGLE_CLOUD_SQL_IAM {
 		o = append(o, option.WithCredentialsJSON([]byte(config.Password)))
 	}
-	client, err := bigquery.NewClient(ctx, config.Host, o...)
+	client, err := bigquery.NewClient(ctx, config.DataSource.Host, o...)
 	if err != nil {
 		return nil, err
 	}
