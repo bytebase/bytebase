@@ -49,7 +49,6 @@ var (
 	// 'root/admin@EXAMPLE.COM' or 'root@EXAMPLE.COM'.
 	principalWithoutInstanceFmt = "%s@%s"
 	principalWithInstanceFmt    = "%s/%s@%s"
-	krbConfRealmFmt             = "\t%s = {\n\t\tkdc = %s%s:%s\n\t}\n"
 	// We have to specify the path of 'krb5.conf' for the 'kinit' command.
 	dftKrbConfPath = "/tmp/krb5.conf"
 	dftKeytabPath  = "/tmp/tmp.keytab"
