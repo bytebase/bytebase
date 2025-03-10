@@ -17,7 +17,6 @@ export * from "./sso";
 export * from "./math";
 export * from "./idp";
 export * from "./workspaceApprovalSetting";
-export * from "./slowQuery";
 export * from "./resource-composer";
 export * from "./TinyTimer";
 export * from "./sheet";
