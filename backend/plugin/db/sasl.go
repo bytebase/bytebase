@@ -15,23 +15,9 @@ import (
 //  1. The 'kinit' command in the subprocess.
 //  2. gohive.Connect() in the same process.
 func init() {
-	if err := os.Setenv("KRB5_CONFIG", DftKrbConfPath); err != nil {
-		panic(fmt.Sprintf("failed to set env %s: %s", "KRB5_CONFIG", DftKrbConfPath))
+	if err := os.Setenv("KRB5_CONFIG", dftKrbConfPath); err != nil {
+		panic(fmt.Sprintf("failed to set env %s: %s", "KRB5_CONFIG", dftKrbConfPath))
 	}
-}
-
-type SASLType string
-
-const (
-	SASLTypeNone     SASLType = "NONE"
-	SASLTypeKerberos SASLType = "KERBEROS"
-)
-
-type SASLConfig interface {
-	InitEnv() error
-	Check() bool
-	// used for gohive.
-	GetTypeName() SASLType
 }
 
 type Realm struct {
@@ -48,54 +34,30 @@ type KerberosConfig struct {
 }
 
 type KerberosEnv struct {
-	krbEnvMutex  *sync.Mutex
-	KrbConfPath  string
-	KeytabPath   string
+	krbConfPath  string
 	KinitBinPath string
 	CurrRealm    *Realm
 }
 
 var (
-	_            SASLConfig = &KerberosConfig{}
-	singletonEnv            = KerberosEnv{
-		KrbConfPath: DftKrbConfPath,
-		KeytabPath:  DftKeytabPath,
-		// be careful of your environment variables.
-		KinitBinPath: DftKinitBinPath,
-		krbEnvMutex:  &sync.Mutex{},
+	lock         = sync.Mutex{}
+	singletonEnv = KerberosEnv{
+		krbConfPath: dftKrbConfPath,
 	}
 
 	// The principal is in {primary}/{instance}@{realm} or {primary}@{realm} format, for example:
 	// 'root/admin@EXAMPLE.COM' or 'root@EXAMPLE.COM'.
-	PrincipalWithoutInstanceFmt = "%s@%s"
-	PrincipalWithInstanceFmt    = "%s/%s@%s"
-	// content format of a krb5.conf file:
-	// [libdefaults]
-	//   default_realm = {realm}
-	// [realms]
-	//   {realm} = {
-	//	   kdc = {transport_protocol}/{host}:{port}
-	// 	 }
-	KrbConfLibDftKeyword = "[libdefaults]\n"
-	KrbConfDftRealmFmt   = "\tdefault_realm = %s\n"
-	KrbConfRealmKeyword  = "[realms]\n"
-	KrbConfRealmFmt      = "\t%s = {\n\t\tkdc = %s%s:%s\n\t}\n"
+	principalWithoutInstanceFmt = "%s@%s"
+	principalWithInstanceFmt    = "%s/%s@%s"
 	// We have to specify the path of 'krb5.conf' for the 'kinit' command.
-	DftKrbConfPath  = "/tmp/krb5.conf"
-	DftKeytabPath   = "/tmp/tmp.keytab"
-	DftKinitBinPath = "kinit"
+	dftKrbConfPath = "/tmp/krb5.conf"
+	dftKeytabPath  = "/tmp/tmp.keytab"
 )
 
-// let users manually solve the resource competition problem.
-func KrbEnvLock() {
-	singletonEnv.krbEnvMutex.Lock()
-}
-
-func KrbEnvUnlock() {
-	singletonEnv.krbEnvMutex.Unlock()
-}
-
 func (krbConfig *KerberosConfig) InitEnv() error {
+	lock.Lock()
+	defer lock.Unlock()
+
 	// Create tmp krb5.conf.
 	if err := singletonEnv.SetRealm(krbConfig.Realm); err != nil {
 		return err
@@ -103,7 +65,7 @@ func (krbConfig *KerberosConfig) InitEnv() error {
 
 	// Save .keytab file as a temporary file.
 	if err := func() error {
-		keytabFile, err := os.Create(singletonEnv.KeytabPath)
+		keytabFile, err := os.Create(dftKeytabPath)
 		if err != nil {
 			return err
 		}
@@ -120,14 +82,14 @@ func (krbConfig *KerberosConfig) InitEnv() error {
 	var cmd *exec.Cmd
 	var principal string
 	if krbConfig.Instance == "" {
-		principal = fmt.Sprintf(PrincipalWithoutInstanceFmt, krbConfig.Primary, krbConfig.Realm.Name)
+		principal = fmt.Sprintf(principalWithoutInstanceFmt, krbConfig.Primary, krbConfig.Realm.Name)
 	} else {
-		principal = fmt.Sprintf(PrincipalWithInstanceFmt, krbConfig.Primary, krbConfig.Instance, krbConfig.Realm.Name)
+		principal = fmt.Sprintf(principalWithInstanceFmt, krbConfig.Primary, krbConfig.Instance, krbConfig.Realm.Name)
 	}
 	args := []string{
-		singletonEnv.KinitBinPath,
+		"kinit",
 		"-kt",
-		singletonEnv.KeytabPath,
+		dftKeytabPath,
 		principal,
 	}
 	cmd = exec.Command("bash", "-c", strings.Join(args, " "))
@@ -148,71 +110,42 @@ func (e *KerberosEnv) SetRealm(realm Realm) error {
 		return nil
 	}
 
+	// content format of a krb5.conf file:
+	// [libdefaults]
+	//   default_realm = {realm}
+	// [realms]
+	//   {realm} = {
+	//	   kdc = {transport_protocol}/{host}:{port}
+	// 	 }
+
+	protocol := ""
+	// This will force kinit client to communicate with KDC over tcp as Darwin
+	// doesn't has fall-down mechanism if it fails to communicate over udp.
+	// However, Linux doesn't need this.
+	if realm.KDCTransportProtocol == "tcp" && runtime.GOOS == "darwin" {
+		protocol = "tcp/"
+	}
+
+	content := fmt.Sprintf(`[libdefaults]
+	default_realm = %s
+[realms]
+	%s = {
+		kdc = %s%s:%s
+	}
+`,
+		realm.Name,
+		realm.Name,
+		protocol, realm.KDCHost, realm.KDCPort,
+	)
 	// Create a krb5.conf file.
-	file, err := os.Create(singletonEnv.KrbConfPath)
+	f, err := os.Create(singletonEnv.krbConfPath)
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+	defer f.Close()
 
-	// Write configurations.
-	if _, err = file.WriteString(KrbConfLibDftKeyword); err != nil {
+	if _, err = f.WriteString(content); err != nil {
 		return err
 	}
-	if _, err = file.WriteString(fmt.Sprintf(KrbConfDftRealmFmt, realm.Name)); err != nil {
-		return err
-	}
-	if _, err = file.WriteString(KrbConfRealmKeyword); err != nil {
-		return err
-	}
-
-	var kdcConnStr string
-	if realm.KDCTransportProtocol == "tcp" && runtime.GOOS == "darwin" {
-		// This will force kinit client to communicate with KDC over tcp as Darwin
-		// doesn't has fall-down mechanism if it fails to communicate over udp.
-		// However, Linux doesn't need this.
-		kdcConnStr = fmt.Sprintf(KrbConfRealmFmt, realm.Name, "tcp/", realm.KDCHost, realm.KDCPort)
-	} else {
-		kdcConnStr = fmt.Sprintf(KrbConfRealmFmt, realm.Name, "", realm.KDCHost, realm.KDCPort)
-	}
-	if _, err = file.WriteString(kdcConnStr); err != nil {
-		return err
-	}
-
-	return file.Sync()
-}
-
-// check whether Kerberos is enabled and its settings are valid.
-func (krbConfig *KerberosConfig) Check() bool {
-	// KDCs can use either 'tcp' or 'udp' as their transport protocol.
-	if krbConfig.Realm.KDCTransportProtocol != "udp" && krbConfig.Realm.KDCTransportProtocol != "tcp" {
-		return false
-	}
-	if krbConfig.Primary == "" || krbConfig.Realm.Name == "" || len(krbConfig.Keytab) == 0 || krbConfig.Realm.KDCTransportProtocol == "" {
-		return false
-	}
-	return true
-}
-
-func (*KerberosConfig) GetTypeName() SASLType {
-	return SASLTypeKerberos
-}
-
-type PlainSASLConfig struct {
-	Username string
-	Password string
-}
-
-var _ SASLConfig = &PlainSASLConfig{}
-
-func (*PlainSASLConfig) Check() bool {
-	return true
-}
-
-func (*PlainSASLConfig) GetTypeName() SASLType {
-	return SASLTypeNone
-}
-
-func (*PlainSASLConfig) InitEnv() error {
 	return nil
 }
