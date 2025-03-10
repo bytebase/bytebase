@@ -168,7 +168,7 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 		}
 		connCfg = cfg
 	}
-	connCfg.ReadOnly = profile.Readonly
+	connCfg.ConnectionContext.ReadOnly = profile.Readonly
 
 	// Start Postgres sample servers. It is used for onboarding users without requiring them to
 	// configure an external instance.
