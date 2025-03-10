@@ -109,10 +109,9 @@ func (s *UserService) StatUsers(ctx context.Context, request *v1pb.StatUsersRequ
 // ListUsers lists all users.
 func (s *UserService) ListUsers(ctx context.Context, request *v1pb.ListUsersRequest) (*v1pb.ListUsersResponse, error) {
 	offset, err := parseLimitAndOffset(&pageSize{
-		token: request.PageToken,
-		limit: int(request.PageSize),
-		// TODO(ed): support pagination.
-		maximum: 100000,
+		token:   request.PageToken,
+		limit:   int(request.PageSize),
+		maximum: 1000,
 	})
 	if err != nil {
 		return nil, err
@@ -194,7 +193,7 @@ func getListUserFilter(filter string) (*store.ListResourceFilter, error) {
 			}
 			positionalArgs = append(positionalArgs, v1pb.State(v1State) == v1pb.State_DELETED)
 			return fmt.Sprintf("principal.deleted = $%d", len(positionalArgs)), nil
-		// TODO(ed): support role filter
+		// TODO(ed): support role/project filter
 		default:
 			return "", status.Errorf(codes.InvalidArgument, "unsupport variable %q", variable)
 		}
