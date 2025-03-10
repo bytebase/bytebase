@@ -136,10 +136,6 @@ type ConnectionConfig struct {
 	DataSource        *storepb.DataSource
 	ConnectionContext ConnectionContext
 	Password          string
-
-	// Only used for Hive.
-	SASLConfig *KerberosConfig
-
 	// The maximum number of bytes for sql results in response body.
 	MaximumSQLResultSize int64
 }
