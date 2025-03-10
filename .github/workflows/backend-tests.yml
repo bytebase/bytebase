@@ -28,7 +28,7 @@ jobs:
           go mod tidy
           git diff --exit-code
       - name: Run all tests
-        run: go test -p=8 -ldflags "-w -s" -v ./backend/... | tee test.log; exit ${PIPESTATUS[0]}
+        run: go test -p=16 -timeout 30m -ldflags "-w -s" -v ./backend/... | tee test.log; exit ${PIPESTATUS[0]}
       - name: Pretty print tests running time
         # grep: filter out lines like "--- PASS: Test (15.04s)"
         # sed: remove unnecessary characters
