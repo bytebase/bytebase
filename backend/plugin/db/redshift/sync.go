@@ -8,7 +8,6 @@ import (
 	"log/slog"
 	"regexp"
 	"strings"
-	"time"
 
 	"github.com/pkg/errors"
 
@@ -744,14 +743,4 @@ func (driver *Driver) getDatabases(ctx context.Context) ([]*storepb.DatabaseSche
 		return nil, err
 	}
 	return databases, nil
-}
-
-// SyncSlowQuery syncs the slow query.
-func (*Driver) SyncSlowQuery(_ context.Context, _ time.Time) (map[string]*storepb.SlowQueryStatistics, error) {
-	return nil, errors.Errorf("not implemented")
-}
-
-// CheckSlowQueryLogEnabled checks if slow query log is enabled.
-func (*Driver) CheckSlowQueryLogEnabled(_ context.Context) error {
-	return errors.Errorf("not implemented")
 }

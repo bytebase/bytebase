@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	"go.uber.org/multierr"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
@@ -23,7 +22,6 @@ import (
 	metricapi "github.com/bytebase/bytebase/backend/metric"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/metric"
-	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 	"github.com/bytebase/bytebase/backend/runner/metricreport"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
@@ -346,168 +344,6 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, request *v1pb.Upda
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 	return convertInstanceMessage(ins)
-}
-
-func (s *InstanceService) syncSlowQueriesForInstance(ctx context.Context, instanceName string) (*emptypb.Empty, error) {
-	instance, err := getInstanceMessage(ctx, s.store, instanceName)
-	if err != nil {
-		return nil, err
-	}
-	if instance.Deleted {
-		return nil, status.Errorf(codes.NotFound, "instance %q has been deleted", instanceName)
-	}
-
-	slowQueryPolicy, err := s.store.GetSlowQueryPolicy(ctx, instance.ResourceID)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-	if slowQueryPolicy == nil || !slowQueryPolicy.Active {
-		return nil, status.Errorf(codes.FailedPrecondition, "slow query policy is not active for instance %q", instanceName)
-	}
-
-	if err := s.syncSlowQueriesImpl(ctx, (*store.ProjectMessage)(nil), instance); err != nil {
-		return nil, err
-	}
-
-	return &emptypb.Empty{}, nil
-}
-
-func (s *InstanceService) syncSlowQueriesImpl(ctx context.Context, project *store.ProjectMessage, instance *store.InstanceMessage) error {
-	switch instance.Metadata.GetEngine() {
-	case storepb.Engine_MYSQL:
-		driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */, db.ConnectionContext{})
-		if err != nil {
-			return err
-		}
-		defer driver.Close(ctx)
-		if err := driver.CheckSlowQueryLogEnabled(ctx); err != nil {
-			slog.Warn("slow query log is not enabled", slog.String("instance", instance.ResourceID), log.BBError(err))
-			return nil
-		}
-
-		// Sync slow queries for instance.
-		message := &state.InstanceSlowQuerySyncMessage{
-			InstanceID: instance.ResourceID,
-		}
-		if project != nil {
-			message.ProjectID = project.ResourceID
-		}
-		s.stateCfg.InstanceSlowQuerySyncChan <- message
-	case storepb.Engine_POSTGRES:
-		findDatabase := &store.FindDatabaseMessage{
-			InstanceID: &instance.ResourceID,
-		}
-		databases, err := s.store.ListDatabases(ctx, findDatabase)
-		if err != nil {
-			return status.Errorf(codes.Internal, "failed to list databases: %s", err.Error())
-		}
-
-		enabled := false
-		for _, database := range databases {
-			if database.Deleted {
-				continue
-			}
-			if pgparser.IsSystemDatabase(database.DatabaseName) {
-				continue
-			}
-			if err := func() error {
-				driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{})
-				if err != nil {
-					return err
-				}
-				defer driver.Close(ctx)
-				return driver.CheckSlowQueryLogEnabled(ctx)
-			}(); err != nil {
-				slog.Warn("slow query log is not enabled", slog.String("database", database.DatabaseName), log.BBError(err))
-				continue
-			}
-
-			enabled = true
-			break
-		}
-
-		if !enabled {
-			return nil
-		}
-
-		// Sync slow queries for instance.
-		message := &state.InstanceSlowQuerySyncMessage{
-			InstanceID: instance.ResourceID,
-		}
-		if project != nil {
-			message.ProjectID = project.ResourceID
-		}
-		s.stateCfg.InstanceSlowQuerySyncChan <- message
-	default:
-		return status.Errorf(codes.InvalidArgument, "unsupported engine %q", instance.Metadata.GetEngine())
-	}
-	return nil
-}
-
-func (s *InstanceService) syncSlowQueriesForProject(ctx context.Context, projectName string) (*emptypb.Empty, error) {
-	project, err := s.getProjectMessage(ctx, projectName)
-	if err != nil {
-		return nil, err
-	}
-	if project.Deleted {
-		return nil, status.Errorf(codes.NotFound, "project %q has been deleted", projectName)
-	}
-	databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{ProjectID: &project.ResourceID})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to list databases: %s", err.Error())
-	}
-
-	instanceMap := make(map[string]bool)
-	var errs error
-	for _, database := range databases {
-		instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to get instance %q: %s", database.InstanceID, err.Error())
-		}
-
-		switch instance.Metadata.GetEngine() {
-		case storepb.Engine_MYSQL, storepb.Engine_POSTGRES:
-			if instance.Deleted {
-				continue
-			}
-
-			slowQueryPolicy, err := s.store.GetSlowQueryPolicy(ctx, instance.ResourceID)
-			if err != nil {
-				return nil, status.Error(codes.Internal, err.Error())
-			}
-			if slowQueryPolicy == nil || !slowQueryPolicy.Active {
-				continue
-			}
-
-			if _, ok := instanceMap[instance.ResourceID]; ok {
-				continue
-			}
-
-			if err := s.syncSlowQueriesImpl(ctx, project, instance); err != nil {
-				errs = multierr.Append(errs, errors.Wrapf(err, "failed to sync slow queries for instance %q", instance.ResourceID))
-			}
-		default:
-			continue
-		}
-	}
-
-	if errs != nil {
-		return nil, status.Errorf(codes.Internal, "failed to sync slow queries for following instances: %s", errs.Error())
-	}
-
-	return &emptypb.Empty{}, nil
-}
-
-// SyncSlowQueries syncs slow queries for an instance.
-func (s *InstanceService) SyncSlowQueries(ctx context.Context, request *v1pb.SyncSlowQueriesRequest) (*emptypb.Empty, error) {
-	switch {
-	case strings.HasPrefix(request.Parent, common.InstanceNamePrefix):
-		return s.syncSlowQueriesForInstance(ctx, request.Parent)
-	case strings.HasPrefix(request.Parent, common.ProjectNamePrefix):
-		return s.syncSlowQueriesForProject(ctx, request.Parent)
-	default:
-		return nil, status.Errorf(codes.InvalidArgument, "invalid parent %q", request.Parent)
-	}
 }
 
 // DeleteInstance deletes an instance.
@@ -924,25 +760,6 @@ func (s *InstanceService) RemoveDataSource(ctx context.Context, request *v1pb.Re
 	}
 
 	return convertInstanceMessage(instance)
-}
-
-func (s *InstanceService) getProjectMessage(ctx context.Context, name string) (*store.ProjectMessage, error) {
-	projectID, err := common.GetProjectID(name)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
-		ResourceID:  &projectID,
-		ShowDeleted: true,
-	})
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-	if project == nil {
-		return nil, status.Errorf(codes.NotFound, "project %q not found", name)
-	}
-
-	return project, nil
 }
 
 func getInstanceMessage(ctx context.Context, stores *store.Store, name string) (*store.InstanceMessage, error) {

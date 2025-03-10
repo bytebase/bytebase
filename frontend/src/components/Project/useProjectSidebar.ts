@@ -1,4 +1,3 @@
-import { startCase } from "lodash-es";
 import {
   Database,
   CircleDot,
@@ -141,10 +140,6 @@ export const useProjectSidebar = (
             path: PROJECT_V1_ROUTE_DATABASE_GROUPS,
             type: "div",
             hide: databaseChangeMode.value === DatabaseChangeMode.EDITOR,
-          },
-          {
-            title: startCase(t("slow-query.slow-queries")),
-            type: "div",
           },
           {
             title: t("common.anomalies"),
