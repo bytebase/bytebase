@@ -34,6 +34,12 @@ SET row_security = off;
 
 func init() {
 	schema.RegisterGetDatabaseDefinition(storepb.Engine_POSTGRES, GetDatabaseDefinition)
+	schema.RegisterGetSchemaDefinition(storepb.Engine_POSTGRES, GetSchemaDefinition)
+	schema.RegisterGetTableDefinition(storepb.Engine_POSTGRES, GetTableDefinition)
+	schema.RegisterGetViewDefinition(storepb.Engine_POSTGRES, GetViewDefinition)
+	schema.RegisterGetMaterializedViewDefinition(storepb.Engine_POSTGRES, GetMaterializedViewDefinition)
+	schema.RegisterGetFunctionDefinition(storepb.Engine_POSTGRES, GetFunctionDefinition)
+	schema.RegisterGetSequenceDefinition(storepb.Engine_POSTGRES, GetSequenceDefinition)
 }
 
 func GetDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *storepb.DatabaseSchemaMetadata) (string, error) {
@@ -244,6 +250,254 @@ func GetDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *storepb.Da
 					return "", err
 				}
 			}
+		}
+	}
+	return buf.String(), nil
+}
+
+func GetSchemaDefinition(schema *storepb.SchemaMetadata) (string, error) {
+	var buf strings.Builder
+	if err := writeSchema(&buf, schema); err != nil {
+		return "", err
+	}
+
+	// Construct enums.
+	for _, enum := range schema.EnumTypes {
+		if enum.SkipDump {
+			continue
+		}
+		if err := writeEnum(&buf, schema.Name, enum); err != nil {
+			return "", err
+		}
+	}
+
+	// Build the graph for topological sort.
+	graph := base.NewGraph()
+	functionMap := make(map[string]*storepb.FunctionMetadata)
+	tableMap := make(map[string]*storepb.TableMetadata)
+	viewMap := make(map[string]*storepb.ViewMetadata)
+	materializedViewMap := make(map[string]*storepb.MaterializedViewMetadata)
+
+	// Construct functions.
+	for _, function := range schema.Functions {
+		if function.SkipDump {
+			continue
+		}
+		funcID := getObjectID(schema.Name, function.Name)
+		functionMap[funcID] = function
+		graph.AddNode(funcID)
+		for _, dependency := range function.DependencyTables {
+			dependencyID := getObjectID(dependency.Schema, dependency.Table)
+			graph.AddEdge(dependencyID, funcID)
+		}
+	}
+
+	// Mapping from table ID to sequence metadata.
+	// Construct none owner column sequences first.
+	sequenceMap := make(map[string][]*storepb.SequenceMetadata)
+	for _, sequence := range schema.Sequences {
+		if sequence.SkipDump {
+			continue
+		}
+		if sequence.OwnerTable == "" || sequence.OwnerColumn == "" {
+			if err := writeCreateSequence(&buf, schema.Name, sequence); err != nil {
+				return "", err
+			}
+			continue
+		}
+		tableID := getObjectID(schema.Name, sequence.OwnerTable)
+		sequenceMap[tableID] = append(sequenceMap[tableID], sequence)
+	}
+
+	// Construct tables, views and materialized views.
+	for _, table := range schema.Tables {
+		if table.SkipDump {
+			continue
+		}
+		tableID := getObjectID(schema.Name, table.Name)
+		tableMap[tableID] = table
+		graph.AddNode(tableID)
+	}
+
+	for _, view := range schema.Views {
+		if view.SkipDump {
+			continue
+		}
+		viewID := getObjectID(schema.Name, view.Name)
+		viewMap[viewID] = view
+		graph.AddNode(viewID)
+		for _, dependency := range view.DependencyColumns {
+			dependencyID := getObjectID(dependency.Schema, dependency.Table)
+			graph.AddEdge(dependencyID, viewID)
+		}
+	}
+
+	for _, view := range schema.MaterializedViews {
+		if view.SkipDump {
+			continue
+		}
+		viewID := getObjectID(schema.Name, view.Name)
+		materializedViewMap[viewID] = view
+		graph.AddNode(viewID)
+		for _, dependency := range view.DependencyColumns {
+			dependencyID := getObjectID(dependency.Schema, dependency.Table)
+			graph.AddEdge(dependencyID, viewID)
+		}
+	}
+
+	orderedList, err := graph.TopologicalSort()
+	if err != nil {
+		return "", errors.Wrap(err, "failed to get topological sort")
+	}
+
+	// Construct functions, tables, views and materialized views in order.
+	for _, objectID := range orderedList {
+		if function, ok := functionMap[objectID]; ok {
+			if err := writeFunction(&buf, getSchemaNameFromID(objectID), function); err != nil {
+				return "", err
+			}
+			continue
+		}
+		if table, ok := tableMap[objectID]; ok {
+			if err := writeTable(&buf, getSchemaNameFromID(objectID), table, sequenceMap[objectID]); err != nil {
+				return "", err
+			}
+		}
+		if view, ok := viewMap[objectID]; ok {
+			if err := writeView(&buf, getSchemaNameFromID(objectID), view); err != nil {
+				return "", err
+			}
+			continue
+		}
+		if view, ok := materializedViewMap[objectID]; ok {
+			if err := writeMaterializedView(&buf, getSchemaNameFromID(objectID), view); err != nil {
+				return "", err
+			}
+		}
+	}
+
+	// Construct triggers.
+	for _, table := range schema.Tables {
+		for _, trigger := range table.Triggers {
+			if trigger.SkipDump {
+				continue
+			}
+			if err := writeTrigger(&buf, schema.Name, table.Name, trigger); err != nil {
+				return "", err
+			}
+		}
+	}
+
+	for _, view := range schema.Views {
+		for _, trigger := range view.Triggers {
+			if trigger.SkipDump {
+				continue
+			}
+			if err := writeTrigger(&buf, schema.Name, view.Name, trigger); err != nil {
+				return "", err
+			}
+		}
+	}
+
+	for _, materializedView := range schema.MaterializedViews {
+		for _, trigger := range materializedView.Triggers {
+			if trigger.SkipDump {
+				continue
+			}
+			if err := writeTrigger(&buf, schema.Name, materializedView.Name, trigger); err != nil {
+				return "", err
+			}
+		}
+	}
+
+	// Construct foreign keys.
+	for _, table := range schema.Tables {
+		if table.SkipDump {
+			continue
+		}
+		for _, fk := range table.ForeignKeys {
+			if err := writeForeignKey(&buf, schema.Name, table.Name, fk); err != nil {
+				return "", err
+			}
+		}
+	}
+
+	return buf.String(), nil
+}
+
+func GetTableDefinition(schema string, table *storepb.TableMetadata, sequences []*storepb.SequenceMetadata) (string, error) {
+	var buf strings.Builder
+	if err := writeTable(&buf, schema, table, sequences); err != nil {
+		return "", err
+	}
+	// Construct triggers.
+	for _, trigger := range table.Triggers {
+		if trigger.SkipDump {
+			continue
+		}
+		if err := writeTrigger(&buf, schema, table.Name, trigger); err != nil {
+			return "", err
+		}
+	}
+	// Construct foreign keys.
+	for _, fk := range table.ForeignKeys {
+		if err := writeForeignKey(&buf, schema, table.Name, fk); err != nil {
+			return "", err
+		}
+	}
+	return buf.String(), nil
+}
+
+func GetViewDefinition(schema string, view *storepb.ViewMetadata) (string, error) {
+	var buf strings.Builder
+	if err := writeView(&buf, schema, view); err != nil {
+		return "", err
+	}
+	// Construct triggers.
+	for _, trigger := range view.Triggers {
+		if trigger.SkipDump {
+			continue
+		}
+		if err := writeTrigger(&buf, schema, view.Name, trigger); err != nil {
+			return "", err
+		}
+	}
+	return buf.String(), nil
+}
+
+func GetMaterializedViewDefinition(schema string, view *storepb.MaterializedViewMetadata) (string, error) {
+	var buf strings.Builder
+	if err := writeMaterializedView(&buf, schema, view); err != nil {
+		return "", err
+	}
+	// Construct triggers.
+	for _, trigger := range view.Triggers {
+		if trigger.SkipDump {
+			continue
+		}
+		if err := writeTrigger(&buf, schema, view.Name, trigger); err != nil {
+			return "", err
+		}
+	}
+	return buf.String(), nil
+}
+
+func GetFunctionDefinition(schema string, function *storepb.FunctionMetadata) (string, error) {
+	var buf strings.Builder
+	if err := writeFunction(&buf, schema, function); err != nil {
+		return "", err
+	}
+	return buf.String(), nil
+}
+
+func GetSequenceDefinition(schema string, sequence *storepb.SequenceMetadata) (string, error) {
+	var buf strings.Builder
+	if err := writeCreateSequence(&buf, schema, sequence); err != nil {
+		return "", err
+	}
+	if sequence.OwnerColumn != "" && sequence.OwnerTable != "" {
+		if err := writeAlterSequenceOwnedBy(&buf, schema, sequence); err != nil {
+			return "", err
 		}
 	}
 	return buf.String(), nil

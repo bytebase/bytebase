@@ -27,6 +27,7 @@ import (
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/transform"
+	"github.com/bytebase/bytebase/backend/plugin/schema"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -1178,4 +1179,128 @@ func isSecretValid(secret *storepb.Secret) error {
 
 func isUpperCaseLetter(c rune) bool {
 	return 'A' <= c && c <= 'Z'
+}
+
+func (s *DatabaseService) GetSchemaString(ctx context.Context, request *v1pb.GetSchemaStringRequest) (*v1pb.GetSchemaStringResponse, error) {
+	instanceID, databaseName, err := common.GetInstanceDatabaseID(request.Name)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	if instance == nil {
+		return nil, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
+	}
+
+	dbSchema, err := s.store.GetDBSchema(ctx, instanceID, databaseName)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "Failed to get database schema: %v", err)
+	}
+
+	switch request.Type {
+	case v1pb.GetSchemaStringRequest_DATABASE:
+		metadata := dbSchema.GetMetadata()
+		s, err := schema.GetDatabaseDefinition(instance.Metadata.Engine, schema.GetDefinitionContext{
+			SkipBackupSchema: false,
+			PrintHeader:      false,
+		}, metadata)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "Failed to get database schema: %v", err)
+		}
+		return &v1pb.GetSchemaStringResponse{SchemaString: s}, nil
+	case v1pb.GetSchemaStringRequest_SCHEMA:
+		schemaMetadata := dbSchema.GetDatabaseMetadata().GetSchema(request.Schema)
+		if schemaMetadata == nil {
+			return nil, status.Errorf(codes.NotFound, "schema %q not found", request.Schema)
+		}
+
+		s, err := schema.GetSchemaDefinition(instance.Metadata.Engine, schemaMetadata.GetProto())
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "Failed to get schema schema: %v", err)
+		}
+		return &v1pb.GetSchemaStringResponse{SchemaString: s}, nil
+	case v1pb.GetSchemaStringRequest_TABLE:
+		schemaMetadata := dbSchema.GetDatabaseMetadata().GetSchema(request.Schema)
+		if schemaMetadata == nil {
+			return nil, status.Errorf(codes.NotFound, "schema %q not found", request.Schema)
+		}
+		tableMetadata := schemaMetadata.GetTable(request.Object)
+		if tableMetadata == nil {
+			return nil, status.Errorf(codes.NotFound, "table %q not found", request.Object)
+		}
+		sequences := schemaMetadata.GetSequencesByOwnerTable(request.Object)
+		var sequencesProto []*storepb.SequenceMetadata
+		for _, sequence := range sequences {
+			sequencesProto = append(sequencesProto, sequence.GetProto())
+		}
+		s, err := schema.GetTableDefinition(instance.Metadata.Engine, request.Schema, tableMetadata.GetProto(), sequencesProto)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "Failed to get table schema: %v", err)
+		}
+		return &v1pb.GetSchemaStringResponse{SchemaString: s}, nil
+	case v1pb.GetSchemaStringRequest_VIEW:
+		schemaMetadata := dbSchema.GetDatabaseMetadata().GetSchema(request.Schema)
+		if schemaMetadata == nil {
+			return nil, status.Errorf(codes.NotFound, "schema %q not found", request.Schema)
+		}
+		viewMetadata := schemaMetadata.GetView(request.Object)
+		if viewMetadata == nil {
+			return nil, status.Errorf(codes.NotFound, "view %q not found", request.Object)
+		}
+		s, err := schema.GetViewDefinition(instance.Metadata.Engine, request.Schema, viewMetadata.GetProto())
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "Failed to get view schema: %v", err)
+		}
+		return &v1pb.GetSchemaStringResponse{SchemaString: s}, nil
+	case v1pb.GetSchemaStringRequest_MATERIALIZED_VIEW:
+		schemaMetadata := dbSchema.GetDatabaseMetadata().GetSchema(request.Schema)
+		if schemaMetadata == nil {
+			return nil, status.Errorf(codes.NotFound, "schema %q not found", request.Schema)
+		}
+		materializedViewMetadata := schemaMetadata.GetMaterializedView(request.Object)
+		if materializedViewMetadata == nil {
+			return nil, status.Errorf(codes.NotFound, "materialized view %q not found", request.Object)
+		}
+		s, err := schema.GetMaterializedViewDefinition(instance.Metadata.Engine, request.Schema, materializedViewMetadata.GetProto())
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "Failed to get materialized view schema: %v", err)
+		}
+		return &v1pb.GetSchemaStringResponse{SchemaString: s}, nil
+	case v1pb.GetSchemaStringRequest_FUNCTION:
+		schemaMetadata := dbSchema.GetDatabaseMetadata().GetSchema(request.Schema)
+		if schemaMetadata == nil {
+			return nil, status.Errorf(codes.NotFound, "schema %q not found", request.Schema)
+		}
+		functionMetadata := schemaMetadata.GetFunction(request.Object)
+		if functionMetadata == nil {
+			return nil, status.Errorf(codes.NotFound, "function %q not found", request.Object)
+		}
+		s, err := schema.GetFunctionDefinition(instance.Metadata.Engine, request.Schema, functionMetadata.GetProto())
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "Failed to get function schema: %v", err)
+		}
+		return &v1pb.GetSchemaStringResponse{SchemaString: s}, nil
+	case v1pb.GetSchemaStringRequest_PROCEDURE:
+		// TODO: implement.
+		return nil, status.Errorf(codes.Unimplemented, "PROCEDURE is not supported yet")
+	case v1pb.GetSchemaStringRequest_SEQUENCE:
+		schemaMetadata := dbSchema.GetDatabaseMetadata().GetSchema(request.Schema)
+		if schemaMetadata == nil {
+			return nil, status.Errorf(codes.NotFound, "schema %q not found", request.Schema)
+		}
+		sequenceMetadata := schemaMetadata.GetSequence(request.Object)
+		if sequenceMetadata == nil {
+			return nil, status.Errorf(codes.NotFound, "sequence %q not found", request.Object)
+		}
+		s, err := schema.GetSequenceDefinition(instance.Metadata.Engine, request.Schema, sequenceMetadata.GetProto())
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "Failed to get sequence schema: %v", err)
+		}
+		return &v1pb.GetSchemaStringResponse{SchemaString: s}, nil
+	default:
+		return nil, status.Errorf(codes.InvalidArgument, "unsupported schema type %v", request.Type)
+	}
 }
