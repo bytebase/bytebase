@@ -14,20 +14,14 @@ import (
 
 // DBFactory is the factory for building database driver.
 type DBFactory struct {
-	mysqlBinDir string
-	pgBinDir    string
 	mongoBinDir string
-	dataDir     string
 	store       *store.Store
 }
 
 // New creates a new database driver factory.
-func New(store *store.Store, mysqlBinDir, mongoBinDir, pgBinDir, dataDir string) *DBFactory {
+func New(store *store.Store, mongoBinDir string) *DBFactory {
 	return &DBFactory{
-		mysqlBinDir: mysqlBinDir,
 		mongoBinDir: mongoBinDir,
-		pgBinDir:    pgBinDir,
-		dataDir:     dataDir,
 		store:       store,
 	}
 }
@@ -48,25 +42,13 @@ func (d *DBFactory) GetAdminDatabaseDriver(ctx context.Context, instance *store.
 // GetDataSourceDriver returns the database driver for a data source.
 func (d *DBFactory) GetDataSourceDriver(ctx context.Context, instance *store.InstanceMessage, dataSource *storepb.DataSource, connectionContext db.ConnectionContext) (db.Driver, error) {
 	dbBinDir := ""
-	switch instance.Metadata.GetEngine() {
-	case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
-		dbBinDir = d.mysqlBinDir
-	case storepb.Engine_POSTGRES, storepb.Engine_RISINGWAVE:
-		dbBinDir = d.pgBinDir
-	case storepb.Engine_MONGODB:
+	if instance.Metadata.GetEngine() == storepb.Engine_MONGODB {
 		dbBinDir = d.mongoBinDir
 	}
 
 	password, err := secretlib.ReplaceExternalSecret(ctx, dataSource.GetPassword(), dataSource.GetExternalSecret())
 	if err != nil {
 		return nil, err
-	}
-	sshConfig := db.SSHConfig{
-		Host:       dataSource.GetSshHost(),
-		Port:       dataSource.GetSshPort(),
-		User:       dataSource.GetSshUser(),
-		Password:   dataSource.GetSshPassword(),
-		PrivateKey: dataSource.GetSshPrivateKey(),
 	}
 	var dbSaslConfig db.SASLConfig
 	switch t := dataSource.GetSaslConfig().GetMechanism().(type) {
@@ -100,32 +82,8 @@ func (d *DBFactory) GetDataSourceDriver(ctx context.Context, instance *store.Ins
 			ConnectionContext: connectionContext,
 			Password:          password,
 
-			TLSConfig: db.TLSConfig{
-				UseSSL:  dataSource.GetUseSsl(),
-				SslCA:   dataSource.GetSslCa(),
-				SslCert: dataSource.GetSslCert(),
-				SslKey:  dataSource.GetSslKey(),
-			},
-			SRV:                       dataSource.GetSrv(),
-			AuthenticationDatabase:    dataSource.GetAuthenticationDatabase(),
-			SID:                       dataSource.GetSid(),
-			ServiceName:               dataSource.ServiceName,
-			SSHConfig:                 sshConfig,
-			AuthenticationPrivateKey:  dataSource.GetAuthenticationPrivateKey(),
-			AuthenticationType:        dataSource.GetAuthenticationType(),
-			SASLConfig:                dbSaslConfig,
-			AdditionalAddresses:       dataSource.GetAdditionalAddresses(),
-			ReplicaSet:                dataSource.GetReplicaSet(),
-			DirectConnection:          dataSource.GetDirectConnection(),
-			Region:                    dataSource.GetRegion(),
-			WarehouseID:               dataSource.GetWarehouseId(),
-			RedisType:                 dataSource.GetRedisType(),
-			MasterName:                dataSource.GetMasterName(),
-			MasterUsername:            dataSource.GetMasterUsername(),
-			MasterPassword:            dataSource.GetMasterPassword(),
-			ExtraConnectionParameters: dataSource.GetExtraConnectionParameters(),
-			MaximumSQLResultSize:      maximumSQLResultSize,
-			ClientSecretCredential:    dataSource.GetClientSecretCredential(),
+			SASLConfig:           dbSaslConfig,
+			MaximumSQLResultSize: maximumSQLResultSize,
 		},
 	)
 	if err != nil {

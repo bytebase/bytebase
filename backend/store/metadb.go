@@ -87,11 +87,8 @@ func GetConnectionConfig(pgURL string) (dbdriver.ConnectionConfig, error) {
 		return dbdriver.ConnectionConfig{}, errors.Errorf("missing database in the --pg connection string")
 	}
 	connCfg.ConnectionContext.DatabaseName = u.Path[1:]
-
-	connCfg.TLSConfig = dbdriver.TLSConfig{
-		SslCA:   q.Get("sslrootcert"),
-		SslKey:  q.Get("sslkey"),
-		SslCert: q.Get("sslcert"),
-	}
+	connCfg.DataSource.SslCa = q.Get("sslrootcert")
+	connCfg.DataSource.SslKey = q.Get("sslkey")
+	connCfg.DataSource.SslCert = q.Get("sslcert")
 	return connCfg, nil
 }

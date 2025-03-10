@@ -70,8 +70,8 @@ func (driver *Driver) Open(ctx context.Context, _ storepb.Engine, config db.Conn
 		return nil, err
 	}
 
-	if config.SSHConfig.Host != "" {
-		sshClient, err := util.GetSSHClient(config.SSHConfig)
+	if config.DataSource.GetSshHost() != "" {
+		sshClient, err := util.GetSSHClient(config.DataSource)
 		if err != nil {
 			return nil, err
 		}
@@ -148,13 +148,13 @@ func getCockroachConnectionConfig(config db.ConnectionConfig) (*pgx.ConnConfig, 
 		return nil, errors.Errorf("port must be set")
 	}
 
-	if (config.TLSConfig.SslCert == "" && config.TLSConfig.SslKey != "") ||
-		(config.TLSConfig.SslCert != "" && config.TLSConfig.SslKey == "") {
+	if (config.DataSource.GetSslCert() == "" && config.DataSource.GetSslKey() != "") ||
+		(config.DataSource.GetSslCert() != "" && config.DataSource.GetSslKey() == "") {
 		return nil, errors.Errorf("ssl-cert and ssl-key must be both set or unset")
 	}
 
 	connStr := fmt.Sprintf("host=%s port=%s", config.DataSource.Host, config.DataSource.Port)
-	sslMode := getSSLMode(config.TLSConfig, config.SSHConfig)
+	sslMode := getSSLMode(config.DataSource)
 	connStr += fmt.Sprintf(" sslmode=%s", sslMode)
 
 	routingID := getRoutingIDFromCockroachCloudURL(config.DataSource.Host)
@@ -170,12 +170,12 @@ func getCockroachConnectionConfig(config db.ConnectionConfig) (*pgx.ConnConfig, 
 	connConfig.Config.Password = config.Password
 	connConfig.Config.Database = config.ConnectionContext.DatabaseName
 
-	cfg, err := config.TLSConfig.GetSslConfig()
+	tlscfg, err := db.GetTLSConfig(config.DataSource)
 	if err != nil {
 		return nil, err
 	}
-	if cfg != nil {
-		connConfig.TLSConfig = cfg
+	if tlscfg != nil {
+		connConfig.TLSConfig = tlscfg
 	}
 	if config.ConnectionContext.ReadOnly {
 		connConfig.RuntimeParams["default_transaction_read_only"] = "true"

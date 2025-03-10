@@ -76,8 +76,8 @@ func (d *Driver) Open(_ context.Context, dbType storepb.Engine, connCfg db.Conne
 		protocol = "unix"
 	}
 	params := []string{"multiStatements=true", "maxAllowedPacket=0"}
-	if connCfg.SSHConfig.Host != "" {
-		sshClient, err := util.GetSSHClient(connCfg.SSHConfig)
+	if connCfg.DataSource.GetSshHost() != "" {
+		sshClient, err := util.GetSSHClient(connCfg.DataSource)
 		if err != nil {
 			return nil, err
 		}
@@ -89,14 +89,13 @@ func (d *Driver) Open(_ context.Context, dbType storepb.Engine, connCfg db.Conne
 		protocol = "mysql+tcp"
 	}
 
-	// TODO(zp): mysql and mysqlbinlog doesn't support SSL yet. We need to write certs to temp files and load them as CLI flags.
-	tlsConfig, err := connCfg.TLSConfig.GetSslConfig()
+	tlscfg, err := db.GetTLSConfig(connCfg.DataSource)
 	if err != nil {
 		return nil, errors.Wrap(err, "sql: tls config error")
 	}
 	tlsKey := uuid.NewString()
-	if tlsConfig != nil {
-		if err := mysql.RegisterTLSConfig(tlsKey, tlsConfig); err != nil {
+	if tlscfg != nil {
+		if err := mysql.RegisterTLSConfig(tlsKey, tlscfg); err != nil {
 			return nil, errors.Wrap(err, "sql: failed to register tls config")
 		}
 		// TLS config is only used during sql.Open, so should be safe to deregister afterwards.
