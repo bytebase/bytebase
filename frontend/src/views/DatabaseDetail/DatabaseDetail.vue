@@ -133,13 +133,6 @@
       >
         <DatabaseRevisionPanel class="mt-2" :database="database" />
       </NTabPane>
-      <NTabPane
-        v-if="allowListSlowQueries"
-        name="slow-query"
-        :tab="$t('slow-query.slow-queries')"
-      >
-        <DatabaseSlowQueryPanel class="mt-2" :database="database" />
-      </NTabPane>
       <NTabPane name="catalog" :tab="$t('common.catalog')">
         <DatabaseSensitiveDataPanel class="mt-2" :database="database" />
       </NTabPane>
@@ -210,7 +203,6 @@ import DatabaseChangelogPanel from "@/components/Database/DatabaseChangelogPanel
 import DatabaseOverviewPanel from "@/components/Database/DatabaseOverviewPanel.vue";
 import DatabaseRevisionPanel from "@/components/Database/DatabaseRevisionPanel.vue";
 import DatabaseSensitiveDataPanel from "@/components/Database/DatabaseSensitiveDataPanel.vue";
-import DatabaseSlowQueryPanel from "@/components/Database/DatabaseSlowQueryPanel.vue";
 import { useDatabaseDetailContext } from "@/components/Database/context";
 import {
   DatabaseSettingsPanel,
@@ -256,7 +248,6 @@ const databaseHashList = [
   "overview",
   "changelog",
   "revision",
-  "slow-query",
   "setting",
   "catalog",
 ] as const;
@@ -298,7 +289,6 @@ const {
   allowChangeData,
   allowAlterSchema,
   allowListChangelogs,
-  allowListSlowQueries,
 } = useDatabaseDetailContext();
 const disableSchemaEditor = useAppFeature(
   "bb.feature.issue.disable-schema-editor"

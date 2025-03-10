@@ -79,7 +79,6 @@
     "updated-at": "Actualizado",
     "statement": "Declaración",
     "statement-size": "Tamaño de la declaración",
-    "sql-statement": "Declaración SQL",
     "snapshot": "Instantánea",
     "status": "Estado",
     "stage": "Etapa",
@@ -153,7 +152,6 @@
     "view-doc": "Ver doc",
     "write-only": "solo escritura",
     "sync": "Sincronizar",
-    "sync-now": "Sincronizar ahora",
     "success": "Éxito",
     "failed": "Falló",
     "load-more": "Cargar más",
@@ -2325,35 +2323,9 @@
   },
   "slow-query": {
     "slow-queries": "Consultas lentas",
-    "report": "Reportar",
-    "last-query-time": "Hora de la última consulta",
-    "sql-statement": "Sentencia SQL",
-    "total-query-count": "Total de consultas",
-    "query-count-percent": "% de consultas",
-    "max-query-time": "Tiempo máximo de consulta",
-    "avg-query-time": "Tiempo promedio de consulta",
-    "query-time-percent": "% de tiempo de consulta",
-    "max-rows-examined": "Máximo de filas examinadas",
-    "avg-rows-examined": "Promedio de filas examinadas",
-    "max-rows-sent": "Máximo de filas enviadas",
-    "avg-rows-sent": "Promedio de filas enviadas",
-    "query-start-time": "Hora de inicio de la consulta",
-    "rows-examined": "Filas examinadas",
-    "rows-sent": "Filas enviadas",
-    "lock-time": "Tiempo de bloqueo",
-    "query-time": "Tiempo de consulta",
-    "attention-description": "Bytebase sincroniza periódicamente los registros de consultas lentas de las instancias. Para una instancia de MySQL, slow_query debe estar habilitado primero. Para una instancia de PostgreSQL, solo se recopilarán las consultas lentas si se habilita pg_stat_statements en la base de datos.",
-    "sync-job-started": "Se iniciaron trabajos de sincronización. Espere a que los trabajos se completen.",
-    "detail": "Detalles de la consulta lenta",
     "advise-index": {
-      "current-index": "Índice actual",
-      "suggestion": "Sugerencia",
-      "create-index": "Crear índice",
-      "setup-openai-key-to-enable": "Configure la clave de OpenAI para habilitar el asesor de índices"
     },
     "no-log-placeholder": {
-      "admin": "Haga clic en el botón \"Configurar\" para obtener consultas lentas de las instancias de la base de datos o haga clic en el botón \"Sincronizar ahora\" para sincronizar los registros de consultas lentas de inmediato",
-      "developer": "Haga clic en el botón \"Sincronizar ahora\" para sincronizar los registros de consultas lentas inmediatamente o comuníquese con los administradors/DBA de Bytebase para configurar consultas lentas"
     }
   },
   "schema-template": {
