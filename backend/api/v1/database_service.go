@@ -307,17 +307,16 @@ func (s *DatabaseService) ListDatabases(ctx context.Context, request *v1pb.ListD
 
 	switch {
 	case strings.HasPrefix(request.Parent, common.ProjectNamePrefix):
-		ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionProjectsGet, user)
+		p, err := common.GetProjectID(request.Parent)
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "invalid parent %q", request.Parent)
+		}
+		ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionProjectsGet, user, p)
 		if err != nil {
 			return nil, err
 		}
 		if !ok {
 			return nil, status.Errorf(codes.PermissionDenied, "user does not have permission %q", iam.PermissionProjectsGet)
-		}
-
-		p, err := common.GetProjectID(request.Parent)
-		if err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "invalid parent %q", request.Parent)
 		}
 		find.ProjectID = &p
 	case strings.HasPrefix(request.Parent, common.WorkspacePrefix):
