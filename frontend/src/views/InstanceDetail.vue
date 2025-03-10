@@ -48,8 +48,14 @@
               :readonly-scopes="readonlyScopes"
             />
           </div>
-          <DatabaseOperations :databases="selectedDatabases" />
+          <DatabaseOperations
+            :databases="selectedDatabases"
+            @refresh="
+              (databases) => pagedDatabaseTableRef?.refreshCache(databases)
+            "
+          />
           <PagedDatabaseTable
+            ref="pagedDatabaseTableRef"
             mode="INSTANCE"
             :footer-class="'pb-4'"
             :show-selection="true"
@@ -79,9 +85,10 @@
 
 <script lang="tsx" setup>
 import { useTitle } from "@vueuse/core";
+import { cloneDeep } from "lodash-es";
 import { PlusIcon } from "lucide-vue-next";
 import { NButton, NTabPane, NTabs } from "naive-ui";
-import { computed, reactive, watch } from "vue";
+import { computed, reactive, watch, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter, useRoute } from "vue-router";
 import AdvancedSearch from "@/components/AdvancedSearch";
@@ -156,6 +163,7 @@ const router = useRouter();
 const instanceV1Store = useInstanceV1Store();
 const databaseStore = useDatabaseV1Store();
 const databaseChangeMode = useAppFeature("bb.feature.database-change-mode");
+const pagedDatabaseTableRef = ref<InstanceType<typeof PagedDatabaseTable>>();
 
 const readonlyScopes = computed((): SearchScope[] => [
   { id: "instance", value: props.instanceId },
@@ -193,9 +201,11 @@ watch(
 watch(
   () => state.selectedTab,
   (tab) => {
+    const query = cloneDeep(route.query);
+    delete query["qs"];
     router.replace({
+      query,
       hash: `#${tab}`,
-      query: route.query,
     });
   },
   { immediate: true }
@@ -276,7 +286,7 @@ const createDatabase = () => {
   state.showCreateDatabaseModal = true;
 };
 
-useTitle(instance.value.title);
+useTitle(computed(() => instance.value.title));
 
 const handleDatabasesSelectionChanged = (
   selectedDatabaseNameList: Set<string>

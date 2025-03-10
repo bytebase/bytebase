@@ -85,8 +85,6 @@
     - [InstanceService](#bytebase-v1-InstanceService)
   
 - [v1/database_service.proto](#v1_database_service-proto)
-    - [AdviseIndexRequest](#bytebase-v1-AdviseIndexRequest)
-    - [AdviseIndexResponse](#bytebase-v1-AdviseIndexResponse)
     - [BatchUpdateDatabasesRequest](#bytebase-v1-BatchUpdateDatabasesRequest)
     - [BatchUpdateDatabasesResponse](#bytebase-v1-BatchUpdateDatabasesResponse)
     - [ChangedResourceDatabase](#bytebase-v1-ChangedResourceDatabase)
@@ -133,8 +131,6 @@
     - [ListRevisionsResponse](#bytebase-v1-ListRevisionsResponse)
     - [ListSecretsRequest](#bytebase-v1-ListSecretsRequest)
     - [ListSecretsResponse](#bytebase-v1-ListSecretsResponse)
-    - [ListSlowQueriesRequest](#bytebase-v1-ListSlowQueriesRequest)
-    - [ListSlowQueriesResponse](#bytebase-v1-ListSlowQueriesResponse)
     - [MaterializedViewMetadata](#bytebase-v1-MaterializedViewMetadata)
     - [PackageMetadata](#bytebase-v1-PackageMetadata)
     - [ProcedureMetadata](#bytebase-v1-ProcedureMetadata)
@@ -142,9 +138,6 @@
     - [SchemaMetadata](#bytebase-v1-SchemaMetadata)
     - [Secret](#bytebase-v1-Secret)
     - [SequenceMetadata](#bytebase-v1-SequenceMetadata)
-    - [SlowQueryDetails](#bytebase-v1-SlowQueryDetails)
-    - [SlowQueryLog](#bytebase-v1-SlowQueryLog)
-    - [SlowQueryStatistics](#bytebase-v1-SlowQueryStatistics)
     - [StreamMetadata](#bytebase-v1-StreamMetadata)
     - [SyncDatabaseRequest](#bytebase-v1-SyncDatabaseRequest)
     - [SyncDatabaseResponse](#bytebase-v1-SyncDatabaseResponse)
@@ -449,7 +442,6 @@
     - [RestrictIssueCreationForSQLReviewPolicy](#bytebase-v1-RestrictIssueCreationForSQLReviewPolicy)
     - [RolloutPolicy](#bytebase-v1-RolloutPolicy)
     - [SQLReviewRule](#bytebase-v1-SQLReviewRule)
-    - [SlowQueryPolicy](#bytebase-v1-SlowQueryPolicy)
     - [TagPolicy](#bytebase-v1-TagPolicy)
     - [TagPolicy.TagsEntry](#bytebase-v1-TagPolicy-TagsEntry)
     - [UpdatePolicyRequest](#bytebase-v1-UpdatePolicyRequest)
@@ -476,6 +468,8 @@
     - [Plan.ChangeDatabaseConfig.GhostFlagsEntry](#bytebase-v1-Plan-ChangeDatabaseConfig-GhostFlagsEntry)
     - [Plan.ChangeDatabaseConfig.PreUpdateBackupDetail](#bytebase-v1-Plan-ChangeDatabaseConfig-PreUpdateBackupDetail)
     - [Plan.CreateDatabaseConfig](#bytebase-v1-Plan-CreateDatabaseConfig)
+    - [Plan.Deployment](#bytebase-v1-Plan-Deployment)
+    - [Plan.Deployment.DatabaseGroupMapping](#bytebase-v1-Plan-Deployment-DatabaseGroupMapping)
     - [Plan.ExportDataConfig](#bytebase-v1-Plan-ExportDataConfig)
     - [Plan.PlanCheckRunStatusCountEntry](#bytebase-v1-Plan-PlanCheckRunStatusCountEntry)
     - [Plan.ReleaseSource](#bytebase-v1-Plan-ReleaseSource)
@@ -1842,39 +1836,6 @@ The instance&#39;s `name` field is used to identify the instance to update. Form
 
 
 
-<a name="bytebase-v1-AdviseIndexRequest"></a>
-
-### AdviseIndexRequest
-AdviseIndexRequest is the request of advising index.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | Format: instances/{instance}/databases/{database} |
-| statement | [string](#string) |  | The statement to be advised. |
-
-
-
-
-
-
-<a name="bytebase-v1-AdviseIndexResponse"></a>
-
-### AdviseIndexResponse
-AdviseIndexResponse is the response of advising index.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| current_index | [string](#string) |  | The current index of the statement used. |
-| suggestion | [string](#string) |  | The suggested index of the statement. |
-| create_index_statement | [string](#string) |  | The create index statement of the suggested index. |
-
-
-
-
-
-
 <a name="bytebase-v1-BatchUpdateDatabasesRequest"></a>
 
 ### BatchUpdateDatabasesRequest
@@ -2714,38 +2675,6 @@ When paginating, all other parameters provided to `ListSecrets` must match the c
 
 
 
-<a name="bytebase-v1-ListSlowQueriesRequest"></a>
-
-### ListSlowQueriesRequest
-ListSlowQueriesRequest is the request of listing slow query.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | Format: projects/{project} |
-| filter | [string](#string) |  | The filter of the slow query log. follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax. Support filter by database and start_time in SlowQueryDetails for now. For example: Search the slow query log of the specific database: - the specific database: database = &#34;instances/{instance}/databases/{database}&#34; Search the slow query log that start_time after 2022-01-01T12:00:00.000Z: - start_time &gt; &#34;2022-01-01T12:00:00.000Z&#34; - Should use [RFC-3339 format](https://www.rfc-editor.org/rfc/rfc3339). - Currently we only support filtering down to date granularity. |
-| order_by | [string](#string) |  | The order by of the slow query log. Support order by count, latest_log_time, average_query_time, maximum_query_time, average_rows_sent, maximum_rows_sent, average_rows_examined, maximum_rows_examined for now. For example: - order by count: order_by = &#34;count&#34; - order by latest_log_time desc: order_by = &#34;latest_log_time desc&#34; Default: order by average_query_time desc. |
-
-
-
-
-
-
-<a name="bytebase-v1-ListSlowQueriesResponse"></a>
-
-### ListSlowQueriesResponse
-ListSlowQueriesResponse is the response of listing slow query.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| slow_query_logs | [SlowQueryLog](#bytebase-v1-SlowQueryLog) | repeated | The slow query logs. |
-
-
-
-
-
-
 <a name="bytebase-v1-MaterializedViewMetadata"></a>
 
 ### MaterializedViewMetadata
@@ -2902,69 +2831,6 @@ Secret is the secret of the database now.
 | owner_column | [string](#string) |  | The owner column of the sequence. |
 | comment | [string](#string) |  |  |
 | skip_dump | [bool](#bool) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-SlowQueryDetails"></a>
-
-### SlowQueryDetails
-SlowQueryDetails is the details of the slow query log.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| start_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The start time of the slow query log. |
-| query_time | [google.protobuf.Duration](#google-protobuf-Duration) |  | The query time of the slow query log. |
-| lock_time | [google.protobuf.Duration](#google-protobuf-Duration) |  | The lock time of the slow query log. |
-| rows_sent | [int64](#int64) |  | The rows sent of the slow query log. |
-| rows_examined | [int64](#int64) |  | The rows examined of the slow query log. |
-| sql_text | [string](#string) |  | The sql text of the slow query log. |
-
-
-
-
-
-
-<a name="bytebase-v1-SlowQueryLog"></a>
-
-### SlowQueryLog
-SlowQueryLog is the slow query log.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| resource | [string](#string) |  | The resource of the slow query log. The format is &#34;instances/{instance}/databases/{database}&#34;. |
-| project | [string](#string) |  | The project of the slow query log. The format is &#34;projects/{project}&#34;. |
-| statistics | [SlowQueryStatistics](#bytebase-v1-SlowQueryStatistics) |  | The statistics of the slow query log. |
-
-
-
-
-
-
-<a name="bytebase-v1-SlowQueryStatistics"></a>
-
-### SlowQueryStatistics
-SlowQueryStatistics is the statistics of the slow query log.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| sql_fingerprint | [string](#string) |  | The fingerprint of the slow query log. |
-| count | [int64](#int64) |  | The count of the slow query log. |
-| latest_log_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The latest log time of the slow query log. |
-| average_query_time | [google.protobuf.Duration](#google-protobuf-Duration) |  | The average query time of the slow query log. |
-| maximum_query_time | [google.protobuf.Duration](#google-protobuf-Duration) |  | The maximum query time of the slow query log. |
-| average_rows_sent | [int64](#int64) |  | The average rows sent of the slow query log. |
-| maximum_rows_sent | [int64](#int64) |  | The maximum rows sent of the slow query log. |
-| average_rows_examined | [int64](#int64) |  | The average rows examined of the slow query log. |
-| maximum_rows_examined | [int64](#int64) |  | The maximum rows examined of the slow query log. |
-| query_time_percent | [double](#double) |  | The percentage of the query time. |
-| count_percent | [double](#double) |  | The percentage of the count. |
-| samples | [SlowQueryDetails](#bytebase-v1-SlowQueryDetails) | repeated | Samples are details of the sample slow query logs with the same fingerprint. |
 
 
 
@@ -3362,11 +3228,9 @@ LIST, HASH (https://www.postgresql.org/docs/current/ddl-partitioning.html)
 | GetDatabaseMetadata | [GetDatabaseMetadataRequest](#bytebase-v1-GetDatabaseMetadataRequest) | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) |  |
 | GetDatabaseSchema | [GetDatabaseSchemaRequest](#bytebase-v1-GetDatabaseSchemaRequest) | [DatabaseSchema](#bytebase-v1-DatabaseSchema) |  |
 | DiffSchema | [DiffSchemaRequest](#bytebase-v1-DiffSchemaRequest) | [DiffSchemaResponse](#bytebase-v1-DiffSchemaResponse) |  |
-| ListSlowQueries | [ListSlowQueriesRequest](#bytebase-v1-ListSlowQueriesRequest) | [ListSlowQueriesResponse](#bytebase-v1-ListSlowQueriesResponse) |  |
 | ListSecrets | [ListSecretsRequest](#bytebase-v1-ListSecretsRequest) | [ListSecretsResponse](#bytebase-v1-ListSecretsResponse) |  |
 | UpdateSecret | [UpdateSecretRequest](#bytebase-v1-UpdateSecretRequest) | [Secret](#bytebase-v1-Secret) |  |
 | DeleteSecret | [DeleteSecretRequest](#bytebase-v1-DeleteSecretRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
-| AdviseIndex | [AdviseIndexRequest](#bytebase-v1-AdviseIndexRequest) | [AdviseIndexResponse](#bytebase-v1-AdviseIndexResponse) |  |
 | ListRevisions | [ListRevisionsRequest](#bytebase-v1-ListRevisionsRequest) | [ListRevisionsResponse](#bytebase-v1-ListRevisionsResponse) |  |
 | GetRevision | [GetRevisionRequest](#bytebase-v1-GetRevisionRequest) | [Revision](#bytebase-v1-Revision) |  |
 | CreateRevision | [CreateRevisionRequest](#bytebase-v1-CreateRevisionRequest) | [Revision](#bytebase-v1-Revision) |  |
@@ -5640,11 +5504,14 @@ Metadata about the request.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| page_size | [int32](#int32) |  | Not used. The maximum number of users to return. The service may return fewer than this value. If unspecified, at most 50 users will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | Not used. A page token, received from a previous `ListUsers` call. Provide this to retrieve the subsequent page.
+| page_size | [int32](#int32) |  | The maximum number of users to return. The service may return fewer than this value. If unspecified, at most 10 users will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | A page token, received from a previous `ListUsers` call. Provide this to retrieve the subsequent page.
 
 When paginating, all other parameters provided to `ListUsers` must match the call that provided the page token. |
 | show_deleted | [bool](#bool) |  | Show deleted users if specified. |
+| filter | [string](#string) |  | Filter is used to filter users returned in the list. Supported filter: - name - email - user_type
+
+For example: name == &#34;ed&#34; name.matches(&#34;ed&#34;) email == &#34;ed@bytebase.com&#34; user_type == &#34;SERVICE_ACCOUNT&#34; user_type in [&#34;SERVICE_ACCOUNT&#34;, &#34;USER&#34;] !(user_type in [&#34;SERVICE_ACCOUNT&#34;, &#34;USER&#34;]) |
 
 
 
@@ -7261,7 +7128,6 @@ MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
 | inherit_from_parent | [bool](#bool) |  |  |
 | type | [PolicyType](#bytebase-v1-PolicyType) |  |  |
 | rollout_policy | [RolloutPolicy](#bytebase-v1-RolloutPolicy) |  |  |
-| slow_query_policy | [SlowQueryPolicy](#bytebase-v1-SlowQueryPolicy) |  |  |
 | disable_copy_data_policy | [DisableCopyDataPolicy](#bytebase-v1-DisableCopyDataPolicy) |  |  |
 | masking_rule_policy | [MaskingRulePolicy](#bytebase-v1-MaskingRulePolicy) |  |  |
 | masking_exception_policy | [MaskingExceptionPolicy](#bytebase-v1-MaskingExceptionPolicy) |  |  |
@@ -7338,21 +7204,6 @@ QueryDataPolicy is the policy configuration for querying data.
 | payload | [string](#string) |  |  |
 | engine | [Engine](#bytebase-v1-Engine) |  |  |
 | comment | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-SlowQueryPolicy"></a>
-
-### SlowQueryPolicy
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| active | [bool](#bool) |  |  |
 
 
 
@@ -7462,7 +7313,6 @@ The policy&#39;s `name` field is used to identify the instance to update. Format
 | ---- | ------ | ----------- |
 | POLICY_TYPE_UNSPECIFIED | 0 |  |
 | ROLLOUT_POLICY | 11 |  |
-| SLOW_QUERY | 7 |  |
 | DISABLE_COPY_DATA | 8 |  |
 | MASKING_RULE | 9 |  |
 | MASKING_EXCEPTION | 10 |  |
@@ -7662,6 +7512,7 @@ When paginating, all other parameters provided to `ListPlans` must match the cal
 | update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | plan_check_run_status_count | [Plan.PlanCheckRunStatusCountEntry](#bytebase-v1-Plan-PlanCheckRunStatusCountEntry) | repeated | The status count of the latest plan check runs. Keys are: - SUCCESS - WARNING - ERROR |
 | release_source | [Plan.ReleaseSource](#bytebase-v1-Plan-ReleaseSource) |  |  |
+| deployment | [Plan.Deployment](#bytebase-v1-Plan-Deployment) |  |  |
 
 
 
@@ -7735,6 +7586,38 @@ When paginating, all other parameters provided to `ListPlans` must match the cal
 | cluster | [string](#string) |  | cluster is the cluster of the database. This is only applicable to ClickHouse for &#34;ON CLUSTER &lt;&lt;cluster&gt;&gt;&#34;. |
 | owner | [string](#string) |  | owner is the owner of the database. This is only applicable to Postgres for &#34;WITH OWNER &lt;&lt;owner&gt;&gt;&#34;. |
 | environment | [string](#string) |  | The environment resource. Format: environments/prod where prod is the environment resource ID. |
+
+
+
+
+
+
+<a name="bytebase-v1-Plan-Deployment"></a>
+
+### Plan.Deployment
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| environments | [string](#string) | repeated | The environments deploy order. |
+| database_group_mappings | [Plan.Deployment.DatabaseGroupMapping](#bytebase-v1-Plan-Deployment-DatabaseGroupMapping) | repeated | The database group mapping. |
+
+
+
+
+
+
+<a name="bytebase-v1-Plan-Deployment-DatabaseGroupMapping"></a>
+
+### Plan.Deployment.DatabaseGroupMapping
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| database_group | [string](#string) |  | Format: projects/{project}/databaseGroups/{databaseGroup}. |
+| databases | [string](#string) | repeated | Format: instances/{instance-id}/databases/{database-name}. |
 
 
 
@@ -8369,7 +8252,9 @@ When paginating, all other parameters provided to `ListProjects` must match the 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | show_deleted | [bool](#bool) |  | Show deleted projects if specified. |
-| query | [string](#string) |  | Filter the project title or resource id by query. |
+| filter | [string](#string) |  | Filter the project. Supported filters: - name - resource_id
+
+For example: name = &#34;project name&#34; name.matches(&#34;project name&#34;) resource_id = &#34;project id&#34; resource_id.matches(&#34;project id&#34;) name = &#34;project name&#34; &amp;&amp; resource_id.matches(&#34;project id&#34;) name.matches(&#34;project name&#34;) || resource_id = &#34;project id&#34; |
 
 
 
@@ -10018,7 +9903,7 @@ When paginating, all other parameters provided to `ListRoles` must match the cal
 | ----- | ---- | ----- | ----------- |
 | parent | [string](#string) |  | The parent project where this rollout will be created. Format: projects/{project} |
 | rollout | [Rollout](#bytebase-v1-Rollout) |  | The rollout to create. |
-| stage_id | [string](#string) | optional | stage_id is the id in the plan deployment_config_snapshot. The rollout is created according to the plan and the stages are created up to the stage_id. If unspecified, all stages are created. If set to &#34;&#34;, no stages are created. |
+| target | [string](#string) | optional | Create the rollout and the stages up to the target stage. Format: environments/{environment} If unspecified, all stages are created. If set to &#34;&#34;, no stages are created. |
 | validate_only | [bool](#bool) |  | If set, validate the request and preview the rollout, but do not actually create it. |
 
 
@@ -10233,7 +10118,7 @@ When paginating, all other parameters provided to `ListTaskRuns` must match the 
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | Format: projects/{project}/rollouts/{rollout}/stages/{stage} |
 | id | [string](#string) |  | The id comes from the deployment config. Format: UUID Empty for legacy stages. |
-| title | [string](#string) |  |  |
+| environment | [string](#string) |  |  |
 | tasks | [Task](#bytebase-v1-Task) | repeated |  |
 
 
@@ -10250,7 +10135,6 @@ When paginating, all other parameters provided to `ListTaskRuns` must match the 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task} |
-| title | [string](#string) |  |  |
 | spec_id | [string](#string) |  | A UUID4 string that uniquely identifies the Spec. Could be empty if the rollout of the task does not have an associating plan. |
 | status | [Task.Status](#bytebase-v1-Task-Status) |  | Status is the status of the task. |
 | skipped_reason | [string](#string) |  |  |
@@ -10365,7 +10249,6 @@ When paginating, all other parameters provided to `ListTaskRuns` must match the 
 | creator | [string](#string) |  | Format: user/hello@world.com |
 | create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
-| title | [string](#string) |  |  |
 | status | [TaskRun.Status](#bytebase-v1-TaskRun-Status) |  |  |
 | detail | [string](#string) |  | Below are the results of a task run. |
 | changelog | [string](#string) |  | The resource name of the changelog. Format: instances/{instance}/databases/{database}/changelogs/{changelog} |

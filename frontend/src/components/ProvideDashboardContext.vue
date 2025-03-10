@@ -67,7 +67,8 @@ onMounted(async () => {
 
   // Then prepare the other resources.
   await Promise.all([
-    useUserStore().fetchUserList(),
+    // TODO(ed): support pagination.
+    useUserStore().fetchUserList({ pageSize: 100000 }),
     useGroupStore().fetchGroupList(),
     useEnvironmentV1Store().fetchEnvironments(),
     prepareProjects(),

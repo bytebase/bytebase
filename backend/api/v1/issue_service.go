@@ -154,7 +154,6 @@ func (s *IssueService) getIssueFind(ctx context.Context, filter string, query st
 			case "DDL":
 				issueFind.TaskTypes = &[]api.TaskType{
 					api.TaskDatabaseSchemaUpdate,
-					api.TaskDatabaseSchemaUpdateSDL,
 					api.TaskDatabaseSchemaUpdateGhost,
 				}
 			case "DML":
@@ -819,7 +818,7 @@ func (s *IssueService) ApproveIssue(ctx context.Context, request *v1pb.ApproveIs
 				Project: webhook.NewProject(issue.Project),
 				IssueRolloutReady: &webhook.EventIssueRolloutReady{
 					RolloutPolicy: policy,
-					StageName:     stages[0].Name,
+					StageName:     stages[0].Environment,
 				},
 			})
 			return nil

@@ -200,9 +200,8 @@
     - [PlanConfig.ChangeDatabaseConfig](#bytebase-store-PlanConfig-ChangeDatabaseConfig)
     - [PlanConfig.ChangeDatabaseConfig.GhostFlagsEntry](#bytebase-store-PlanConfig-ChangeDatabaseConfig-GhostFlagsEntry)
     - [PlanConfig.CreateDatabaseConfig](#bytebase-store-PlanConfig-CreateDatabaseConfig)
-    - [PlanConfig.DeploymentSnapshot](#bytebase-store-PlanConfig-DeploymentSnapshot)
-    - [PlanConfig.DeploymentSnapshot.DatabaseGroupSnapshot](#bytebase-store-PlanConfig-DeploymentSnapshot-DatabaseGroupSnapshot)
-    - [PlanConfig.DeploymentSnapshot.DeploymentConfigSnapshot](#bytebase-store-PlanConfig-DeploymentSnapshot-DeploymentConfigSnapshot)
+    - [PlanConfig.Deployment](#bytebase-store-PlanConfig-Deployment)
+    - [PlanConfig.Deployment.DatabaseGroupMapping](#bytebase-store-PlanConfig-Deployment-DatabaseGroupMapping)
     - [PlanConfig.ExportDataConfig](#bytebase-store-PlanConfig-ExportDataConfig)
     - [PlanConfig.ReleaseSource](#bytebase-store-PlanConfig-ReleaseSource)
     - [PlanConfig.Spec](#bytebase-store-PlanConfig-Spec)
@@ -226,7 +225,6 @@
     - [RestrictIssueCreationForSQLReviewPolicy](#bytebase-store-RestrictIssueCreationForSQLReviewPolicy)
     - [RolloutPolicy](#bytebase-store-RolloutPolicy)
     - [SQLReviewRule](#bytebase-store-SQLReviewRule)
-    - [SlowQueryPolicy](#bytebase-store-SlowQueryPolicy)
     - [TagPolicy](#bytebase-store-TagPolicy)
     - [TagPolicy.TagsEntry](#bytebase-store-TagPolicy-TagsEntry)
   
@@ -305,16 +303,9 @@
     - [SheetCommand](#bytebase-store-SheetCommand)
     - [SheetPayload](#bytebase-store-SheetPayload)
   
-- [store/slow_query.proto](#store_slow_query-proto)
-    - [SlowQueryDetails](#bytebase-store-SlowQueryDetails)
-    - [SlowQueryStatistics](#bytebase-store-SlowQueryStatistics)
-    - [SlowQueryStatisticsItem](#bytebase-store-SlowQueryStatisticsItem)
-  
 - [store/task.proto](#store_task-proto)
-    - [TaskDatabaseCreatePayload](#bytebase-store-TaskDatabaseCreatePayload)
-    - [TaskDatabaseDataExportPayload](#bytebase-store-TaskDatabaseDataExportPayload)
-    - [TaskDatabaseUpdatePayload](#bytebase-store-TaskDatabaseUpdatePayload)
-    - [TaskDatabaseUpdatePayload.FlagsEntry](#bytebase-store-TaskDatabaseUpdatePayload-FlagsEntry)
+    - [TaskPayload](#bytebase-store-TaskPayload)
+    - [TaskPayload.FlagsEntry](#bytebase-store-TaskPayload-FlagsEntry)
     - [TaskReleaseSource](#bytebase-store-TaskReleaseSource)
   
 - [store/task_run.proto](#store_task_run-proto)
@@ -2468,10 +2459,14 @@ OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
 | id | [string](#string) |  |  |
 | type | [DataSourceType](#bytebase-store-DataSourceType) |  |  |
 | username | [string](#string) |  |  |
+| password | [string](#string) |  |  |
 | obfuscated_password | [string](#string) |  |  |
 | use_ssl | [bool](#bool) |  | Use SSL to connect to the data source. By default, we use system default SSL configuration. |
+| ssl_ca | [string](#string) |  |  |
 | obfuscated_ssl_ca | [string](#string) |  |  |
+| ssl_cert | [string](#string) |  |  |
 | obfuscated_ssl_cert | [string](#string) |  |  |
+| ssl_key | [string](#string) |  |  |
 | obfuscated_ssl_key | [string](#string) |  |  |
 | host | [string](#string) |  |  |
 | port | [string](#string) |  |  |
@@ -2484,9 +2479,12 @@ OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
 | ssh_host | [string](#string) |  | SSH related The hostname of the SSH server agent. |
 | ssh_port | [string](#string) |  | The port of the SSH server agent. It&#39;s 22 typically. |
 | ssh_user | [string](#string) |  | The user to login the server. |
-| ssh_obfuscated_password | [string](#string) |  | The password to login the server. If it&#39;s empty string, no password is required. |
-| ssh_obfuscated_private_key | [string](#string) |  | The private key to login the server. If it&#39;s empty string, we will use the system default private key from os.Getenv(&#34;SSH_AUTH_SOCK&#34;). |
-| authentication_private_key_obfuscated | [string](#string) |  | PKCS#8 private key in PEM format. If it&#39;s empty string, no private key is required. Used for authentication when connecting to the data source. |
+| ssh_password | [string](#string) |  | The password to login the server. If it&#39;s empty string, no password is required. |
+| obfuscated_ssh_password | [string](#string) |  |  |
+| ssh_private_key | [string](#string) |  | The private key to login the server. If it&#39;s empty string, we will use the system default private key from os.Getenv(&#34;SSH_AUTH_SOCK&#34;). |
+| obfuscated_ssh_private_key | [string](#string) |  |  |
+| authentication_private_key | [string](#string) |  | PKCS#8 private key in PEM format. If it&#39;s empty string, no private key is required. Used for authentication when connecting to the data source. |
+| obfuscated_authentication_private_key | [string](#string) |  |  |
 | external_secret | [DataSourceExternalSecret](#bytebase-store-DataSourceExternalSecret) |  |  |
 | authentication_type | [DataSource.AuthenticationType](#bytebase-store-DataSource-AuthenticationType) |  |  |
 | client_secret_credential | [DataSource.ClientSecretCredential](#bytebase-store-DataSource-ClientSecretCredential) |  |  |
@@ -2497,7 +2495,8 @@ OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
 | warehouse_id | [string](#string) |  | warehouse_id is used by Databricks. |
 | master_name | [string](#string) |  | master_name is the master name used by connecting redis-master via redis sentinel. |
 | master_username | [string](#string) |  | master_username and master_obfuscated_password are master credentials used by redis sentinel mode. |
-| master_obfuscated_password | [string](#string) |  |  |
+| master_password | [string](#string) |  |  |
+| obfuscated_master_password | [string](#string) |  |  |
 | redis_type | [DataSource.RedisType](#bytebase-store-DataSource-RedisType) |  |  |
 | cluster | [string](#string) |  | Cluster is the cluster name for the data source. Used by CockroachDB. |
 | extra_connection_parameters | [DataSource.ExtraConnectionParametersEntry](#bytebase-store-DataSource-ExtraConnectionParametersEntry) | repeated | Extra connection parameters for the database connection. For PostgreSQL HA, this can be used to set target_session_attrs=read-write |
@@ -2534,6 +2533,7 @@ OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
 | tenant_id | [string](#string) |  |  |
 | client_id | [string](#string) |  |  |
 | client_secret | [string](#string) |  |  |
+| obfuscated_client_secret | [string](#string) |  |  |
 
 
 
@@ -3223,7 +3223,7 @@ InstanceRole is the API message for instance role.
 | ----- | ---- | ----- | ----------- |
 | steps | [PlanConfig.Step](#bytebase-store-PlanConfig-Step) | repeated |  |
 | release_source | [PlanConfig.ReleaseSource](#bytebase-store-PlanConfig-ReleaseSource) |  |  |
-| deployment_snapshot | [PlanConfig.DeploymentSnapshot](#bytebase-store-PlanConfig-DeploymentSnapshot) |  |  |
+| deployment | [PlanConfig.Deployment](#bytebase-store-PlanConfig-Deployment) |  |  |
 
 
 
@@ -3289,49 +3289,32 @@ InstanceRole is the API message for instance role.
 
 
 
-<a name="bytebase-store-PlanConfig-DeploymentSnapshot"></a>
+<a name="bytebase-store-PlanConfig-Deployment"></a>
 
-### PlanConfig.DeploymentSnapshot
+### PlanConfig.Deployment
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| deployment_config_snapshot | [PlanConfig.DeploymentSnapshot.DeploymentConfigSnapshot](#bytebase-store-PlanConfig-DeploymentSnapshot-DeploymentConfigSnapshot) |  |  |
-| database_group_snapshots | [PlanConfig.DeploymentSnapshot.DatabaseGroupSnapshot](#bytebase-store-PlanConfig-DeploymentSnapshot-DatabaseGroupSnapshot) | repeated |  |
+| environments | [string](#string) | repeated | The environments deploy order. |
+| database_group_mappings | [PlanConfig.Deployment.DatabaseGroupMapping](#bytebase-store-PlanConfig-Deployment-DatabaseGroupMapping) | repeated | The database group mapping. |
 
 
 
 
 
 
-<a name="bytebase-store-PlanConfig-DeploymentSnapshot-DatabaseGroupSnapshot"></a>
+<a name="bytebase-store-PlanConfig-Deployment-DatabaseGroupMapping"></a>
 
-### PlanConfig.DeploymentSnapshot.DatabaseGroupSnapshot
-The snapshot of the database group at the time of creation.
+### PlanConfig.Deployment.DatabaseGroupMapping
+
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | database_group | [string](#string) |  | Format: projects/{project}/databaseGroups/{databaseGroup}. |
 | databases | [string](#string) | repeated | Format: instances/{instance-id}/databases/{database-name}. |
-
-
-
-
-
-
-<a name="bytebase-store-PlanConfig-DeploymentSnapshot-DeploymentConfigSnapshot"></a>
-
-### PlanConfig.DeploymentSnapshot.DeploymentConfigSnapshot
-The snapshot of the project deployment config at the time of creation.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  |  |
-| title | [string](#string) |  |  |
-| deployment_config | [DeploymentConfig](#bytebase-store-DeploymentConfig) |  |  |
 
 
 
@@ -3675,21 +3658,6 @@ RestrictIssueCreationForSQLReviewPolicy is the policy configuration for restrict
 | payload | [string](#string) |  |  |
 | engine | [Engine](#bytebase-store-Engine) |  |  |
 | comment | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-store-SlowQueryPolicy"></a>
-
-### SlowQueryPolicy
-SlowQueryPolicy is the policy configuration for slow query.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| active | [bool](#bool) |  |  |
 
 
 
@@ -4774,81 +4742,6 @@ We support three types of SMTP encryption: NONE, STARTTLS, and SSL/TLS.
 
 
 
-<a name="store_slow_query-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## store/slow_query.proto
-
-
-
-<a name="bytebase-store-SlowQueryDetails"></a>
-
-### SlowQueryDetails
-SlowQueryDetails is the details of a slow query.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| start_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | start_time is the start time of the slow query. |
-| query_time | [google.protobuf.Duration](#google-protobuf-Duration) |  | query_time is the query time of the slow query. |
-| lock_time | [google.protobuf.Duration](#google-protobuf-Duration) |  | lock_time is the lock time of the slow query. |
-| rows_sent | [int64](#int64) |  | rows_sent is the number of rows sent by the slow query. |
-| rows_examined | [int64](#int64) |  | rows_examined is the number of rows examined by the slow query. |
-| sql_text | [string](#string) |  | sql_text is the SQL text of the slow query. |
-
-
-
-
-
-
-<a name="bytebase-store-SlowQueryStatistics"></a>
-
-### SlowQueryStatistics
-SlowQueryStatistics is the slow query statistics.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| items | [SlowQueryStatisticsItem](#bytebase-store-SlowQueryStatisticsItem) | repeated | Items is the list of slow query statistics. |
-
-
-
-
-
-
-<a name="bytebase-store-SlowQueryStatisticsItem"></a>
-
-### SlowQueryStatisticsItem
-SlowQueryStatisticsItem is the item of slow query statistics.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| sql_fingerprint | [string](#string) |  | sql_fingerprint is the fingerprint of the slow query. |
-| count | [int64](#int64) |  | count is the number of slow queries with the same fingerprint. |
-| latest_log_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | latest_log_time is the time of the latest slow query with the same fingerprint. |
-| total_query_time | [google.protobuf.Duration](#google-protobuf-Duration) |  | The total query time of the slow query log. |
-| maximum_query_time | [google.protobuf.Duration](#google-protobuf-Duration) |  | The maximum query time of the slow query log. |
-| total_rows_sent | [int64](#int64) |  | The total rows sent of the slow query log. |
-| maximum_rows_sent | [int64](#int64) |  | The maximum rows sent of the slow query log. |
-| total_rows_examined | [int64](#int64) |  | The total rows examined of the slow query log. |
-| maximum_rows_examined | [int64](#int64) |  | The maximum rows examined of the slow query log. |
-| samples | [SlowQueryDetails](#bytebase-store-SlowQueryDetails) | repeated | samples are the details of the sample slow queries with the same fingerprint. |
-
-
-
-
-
- 
-
- 
-
- 
-
- 
-
-
-
 <a name="store_task-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
@@ -4856,10 +4749,10 @@ SlowQueryStatisticsItem is the item of slow query statistics.
 
 
 
-<a name="bytebase-store-TaskDatabaseCreatePayload"></a>
+<a name="bytebase-store-TaskPayload"></a>
 
-### TaskDatabaseCreatePayload
-TaskDatabaseCreatePayload is the task payload for creating databases.
+### TaskPayload
+
 
 
 | Field | Type | Label | Description |
@@ -4867,30 +4760,17 @@ TaskDatabaseCreatePayload is the task payload for creating databases.
 | skipped | [bool](#bool) |  | common fields |
 | skipped_reason | [string](#string) |  |  |
 | spec_id | [string](#string) |  |  |
+| sheet_id | [int32](#int32) |  |  |
+| environment_id | [string](#string) |  | Create database fields. |
 | database_name | [string](#string) |  |  |
 | table_name | [string](#string) |  |  |
-| sheet_id | [int32](#int32) |  |  |
 | character_set | [string](#string) |  |  |
 | collation | [string](#string) |  |  |
-| environment_id | [string](#string) |  |  |
-| labels | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-store-TaskDatabaseDataExportPayload"></a>
-
-### TaskDatabaseDataExportPayload
-TaskDatabaseDataExportPayload is the task payload for database data export.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| spec_id | [string](#string) |  | common fields |
-| sheet_id | [int32](#int32) |  |  |
-| password | [string](#string) |  |  |
+| schema_version | [string](#string) |  | Update database fields. |
+| pre_update_backup_detail | [PreUpdateBackupDetail](#bytebase-store-PreUpdateBackupDetail) |  |  |
+| flags | [TaskPayload.FlagsEntry](#bytebase-store-TaskPayload-FlagsEntry) | repeated | ghost flags. |
+| task_release_source | [TaskReleaseSource](#bytebase-store-TaskReleaseSource) |  |  |
+| password | [string](#string) |  | Export data fields. |
 | format | [ExportFormat](#bytebase-store-ExportFormat) |  |  |
 
 
@@ -4898,31 +4778,9 @@ TaskDatabaseDataExportPayload is the task payload for database data export.
 
 
 
-<a name="bytebase-store-TaskDatabaseUpdatePayload"></a>
+<a name="bytebase-store-TaskPayload-FlagsEntry"></a>
 
-### TaskDatabaseUpdatePayload
-TaskDatabaseUpdatePayload is the task payload for updating database (DDL &amp; DML).
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| skipped | [bool](#bool) |  | common fields |
-| skipped_reason | [string](#string) |  |  |
-| spec_id | [string](#string) |  |  |
-| schema_version | [string](#string) |  |  |
-| sheet_id | [int32](#int32) |  |  |
-| pre_update_backup_detail | [PreUpdateBackupDetail](#bytebase-store-PreUpdateBackupDetail) |  |  |
-| flags | [TaskDatabaseUpdatePayload.FlagsEntry](#bytebase-store-TaskDatabaseUpdatePayload-FlagsEntry) | repeated | flags is used for ghost sync |
-| task_release_source | [TaskReleaseSource](#bytebase-store-TaskReleaseSource) |  |  |
-
-
-
-
-
-
-<a name="bytebase-store-TaskDatabaseUpdatePayload-FlagsEntry"></a>
-
-### TaskDatabaseUpdatePayload.FlagsEntry
+### TaskPayload.FlagsEntry
 
 
 

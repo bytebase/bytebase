@@ -167,4 +167,10 @@ const handleDatabaseClick = (event: MouseEvent, database: ComposedDatabase) => {
     }
   }
 };
+
+defineExpose({
+  refreshCache: (databases: ComposedDatabase[]) => {
+    databasePagedTable.value?.refreshCache(databases);
+  },
+});
 </script>

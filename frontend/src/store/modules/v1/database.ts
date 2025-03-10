@@ -58,6 +58,7 @@ const formatListDatabaseParent = async (
 export const useDatabaseV1Store = defineStore("database_v1", () => {
   const databaseMapByName = reactive(new Map<string, ComposedDatabase>());
   const dbSchemaStore = useDBSchemaV1Store();
+  const databaseRequestCache = new Map<string, Promise<ComposedDatabase>>();
 
   // Getters
   const databaseList = computed(() => {
@@ -139,11 +140,9 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
       await fetchDatabaseByName(database);
     }
   };
+  // TODO(ed): deprecate it.
   const databaseListByProject = (project: string) => {
     return databaseList.value.filter((db) => db.project === project);
-  };
-  const databaseListByInstance = (instance: string) => {
-    return databaseList.value.filter((db) => db.instance === instance);
   };
   const getDatabaseByName = (name: string) => {
     return databaseMapByName.get(name) ?? unknownDatabase();
@@ -162,10 +161,7 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
 
     return composed;
   };
-  // TODO(ed):
-  // 1. make sure using `silent = true`
-  // 2. use batchGetOrFetchDatabases
-  const getOrFetchDatabaseByName = async (name: string, silent = false) => {
+  const getOrFetchDatabaseByName = async (name: string, silent = true) => {
     const existed = databaseMapByName.get(name);
     if (existed) {
       return existed;
@@ -173,7 +169,11 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
     if (!isValidDatabaseName(name)) {
       return unknownDatabase();
     }
-    return await fetchDatabaseByName(name, silent);
+    const cached = databaseRequestCache.get(name);
+    if (cached) return cached;
+    const request = fetchDatabaseByName(name, silent);
+    databaseRequestCache.set(name, request);
+    return request;
   };
   const batchUpdateDatabases = async (params: BatchUpdateDatabasesRequest) => {
     const updated = await databaseServiceClient.batchUpdateDatabases(params);
@@ -197,37 +197,12 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
     return resp;
   };
 
-  const transferDatabases = async (
-    databaseList: Database[],
-    project: string
-  ) => {
-    const updates = databaseList.map((db) => {
-      const databasePatch = {
-        ...db,
-      };
-      databasePatch.project = project;
-      const updateMask = ["project"];
-      return {
-        database: databasePatch,
-        updateMask,
-      } as UpdateDatabaseRequest;
-    });
-
-    const response = await batchUpdateDatabases({
-      parent: "-",
-      requests: updates,
-    });
-    return response;
-  };
-
   return {
     reset,
     removeCacheByInstance,
-    databaseList,
     upsertDatabaseMap,
     syncDatabase,
     databaseListByProject,
-    databaseListByInstance,
     getDatabaseByName,
     fetchDatabaseByName,
     getOrFetchDatabaseByName,
@@ -236,7 +211,6 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
     fetchDatabaseSchema,
     updateDatabaseInstance,
     diffSchema,
-    transferDatabases,
     fetchDatabases,
   };
 });
@@ -264,8 +238,6 @@ export const useDatabaseV1ByName = (name: MaybeRef<string>) => {
   };
 };
 
-const databaseRequestCache = new Map<string, Promise<ComposedDatabase>>();
-
 export const batchGetOrFetchDatabases = async (databaseNames: string[]) => {
   const store = useDatabaseV1Store();
 
@@ -275,15 +247,7 @@ export const batchGetOrFetchDatabases = async (databaseNames: string[]) => {
       if (!databaseName || !isValidDatabaseName(databaseName)) {
         return;
       }
-      const cached = databaseRequestCache.get(databaseName);
-      if (cached) return cached;
-
-      const request = store.getOrFetchDatabaseByName(
-        databaseName,
-        true /* silent */
-      );
-      databaseRequestCache.set(databaseName, request);
-      return request;
+      return store.getOrFetchDatabaseByName(databaseName, true /* silent */);
     })
   );
 };

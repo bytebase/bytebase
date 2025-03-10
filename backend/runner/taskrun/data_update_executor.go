@@ -52,12 +52,7 @@ type DataUpdateExecutor struct {
 
 // RunOnce will run the data update (DML) task executor once.
 func (exec *DataUpdateExecutor) RunOnce(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, taskRunUID int) (bool, *storepb.TaskRunResult, error) {
-	payload := &storepb.TaskDatabaseUpdatePayload{}
-	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(task.Payload), payload); err != nil {
-		return true, nil, errors.Wrap(err, "invalid database data update payload")
-	}
-
-	sheetID := int(payload.SheetId)
+	sheetID := int(task.Payload.GetSheetId())
 	statement, err := exec.store.GetSheetStatementByID(ctx, sheetID)
 	if err != nil {
 		return true, nil, err
@@ -87,7 +82,7 @@ func (exec *DataUpdateExecutor) RunOnce(ctx context.Context, driverCtx context.C
 		PriorBackupStart: &storepb.TaskRunLog_PriorBackupStart{},
 	})
 
-	priorBackupDetail, backupErr := exec.backupData(ctx, driverCtx, statement, payload, task, issueN, instance, database)
+	priorBackupDetail, backupErr := exec.backupData(ctx, driverCtx, statement, task.Payload, task, issueN, instance, database)
 	if backupErr != nil {
 		exec.store.CreateTaskRunLogS(ctx, taskRunUID, time.Now(), exec.profile.DeployID, &storepb.TaskRunLog{
 			Type: storepb.TaskRunLog_PRIOR_BACKUP_END,
@@ -127,7 +122,7 @@ func (exec *DataUpdateExecutor) RunOnce(ctx context.Context, driverCtx context.C
 			},
 		})
 	}
-	terminated, result, err := runMigration(ctx, driverCtx, exec.store, exec.dbFactory, exec.stateCfg, exec.schemaSyncer, exec.profile, task, taskRunUID, db.Data, statement, payload.SchemaVersion, &sheetID)
+	terminated, result, err := runMigration(ctx, driverCtx, exec.store, exec.dbFactory, exec.stateCfg, exec.schemaSyncer, exec.profile, task, taskRunUID, db.Data, statement, task.Payload.GetSchemaVersion(), &sheetID)
 	if result != nil {
 		// Save prior backup detail to task run result.
 		result.PriorBackupDetail = priorBackupDetail
@@ -157,13 +152,13 @@ func (exec *DataUpdateExecutor) backupData(
 	ctx context.Context,
 	driverCtx context.Context,
 	originStatement string,
-	payload *storepb.TaskDatabaseUpdatePayload,
+	payload *storepb.TaskPayload,
 	task *store.TaskMessage,
 	issueN *store.IssueMessage,
 	instance *store.InstanceMessage,
 	database *store.DatabaseMessage,
 ) (*storepb.PriorBackupDetail, error) {
-	if payload.PreUpdateBackupDetail == nil || payload.PreUpdateBackupDetail.Database == "" {
+	if payload.GetPreUpdateBackupDetail().GetDatabase() == "" {
 		return nil, nil
 	}
 

@@ -25,8 +25,10 @@
     <DatabaseOperations
       :project-name="project.name"
       :databases="selectedDatabases"
+      @refresh="(databases) => pagedDatabaseTableRef?.refreshCache(databases)"
     />
     <PagedDatabaseTable
+      ref="pagedDatabaseTableRef"
       mode="PROJECT"
       :show-selection="true"
       :filter="filter"
@@ -50,7 +52,7 @@
 <script lang="ts" setup>
 import { PlusIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
-import { reactive, computed } from "vue";
+import { reactive, computed, ref } from "vue";
 import { CreateDatabasePrepPanel } from "@/components/CreateDatabasePrepForm";
 import { Drawer } from "@/components/v2";
 import { PagedDatabaseTable } from "@/components/v2/Model/DatabaseV1Table";
@@ -95,6 +97,7 @@ const state = reactive<LocalState>({
   },
   showCreateDrawer: false,
 });
+const pagedDatabaseTableRef = ref<InstanceType<typeof PagedDatabaseTable>>();
 
 const allowToCreateDB = computed(() => {
   return (

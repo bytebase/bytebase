@@ -66,14 +66,67 @@ func (s *Store) CreatePipelineAIO(ctx context.Context, planUID int64, pipeline *
 	if err != nil {
 		return 0, errors.Wrapf(err, "failed to list stages")
 	}
-	stagesAlreadyExist := map[string]bool{}
+	oldCreatedStages := map[string]*StageMessage{}
 	for _, stage := range stages {
-		stagesAlreadyExist[stage.DeploymentID] = true
+		oldCreatedStages[stage.Environment] = stage
 	}
 
 	var stagesToCreate []*StageMessage
 	for _, stage := range pipeline.Stages {
-		if !stagesAlreadyExist[stage.DeploymentID] {
+		if createdStage, ok := oldCreatedStages[stage.Environment]; ok {
+			// The stage was created, but we could have tasks to create.
+			tasks, err := s.listTasksTx(ctx, tx, &TaskFind{
+				PipelineID: &createdPipelineUID,
+				StageID:    &createdStage.ID,
+			})
+			if err != nil {
+				return 0, errors.Wrapf(err, "failed to list tasks in a created stage")
+			}
+
+			type taskKey struct {
+				instance string
+				database string
+				sheet    int
+			}
+
+			createdTasks := map[taskKey]struct{}{}
+			for _, task := range tasks {
+				k := taskKey{
+					instance: task.InstanceID,
+					sheet:    int(task.Payload.GetSheetId()),
+				}
+				if task.DatabaseName != nil {
+					k.database = *task.DatabaseName
+				}
+				createdTasks[k] = struct{}{}
+			}
+
+			var taskCreateList []*TaskMessage
+
+			for _, taskCreate := range stage.TaskList {
+				k := taskKey{
+					instance: taskCreate.InstanceID,
+					sheet:    int(taskCreate.Payload.GetSheetId()),
+				}
+				if taskCreate.DatabaseName != nil {
+					k.database = *taskCreate.DatabaseName
+				}
+
+				if _, ok := createdTasks[k]; ok {
+					continue
+				}
+				taskCreate.PipelineID = createdPipelineUID
+				taskCreate.StageID = createdStage.ID
+				taskCreateList = append(taskCreateList, taskCreate)
+			}
+
+			if len(taskCreateList) > 0 {
+				if _, err := s.createTasks(ctx, tx, taskCreateList...); err != nil {
+					return 0, errors.Wrap(err, "failed to create tasks")
+				}
+			}
+		} else {
+			// Create the stage and the tasks.
 			stagesToCreate = append(stagesToCreate, stage)
 		}
 	}
@@ -91,8 +144,10 @@ func (s *Store) CreatePipelineAIO(ctx context.Context, planUID int64, pipeline *
 			c.StageID = stage.ID
 			taskCreateList = append(taskCreateList, c)
 		}
-		if _, err := s.createTasks(ctx, tx, taskCreateList...); err != nil {
-			return 0, errors.Wrap(err, "failed to create tasks")
+		if len(taskCreateList) > 0 {
+			if _, err := s.createTasks(ctx, tx, taskCreateList...); err != nil {
+				return 0, errors.Wrap(err, "failed to create tasks")
+			}
 		}
 	}
 

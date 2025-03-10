@@ -133,13 +133,6 @@
       >
         <DatabaseRevisionPanel class="mt-2" :database="database" />
       </NTabPane>
-      <NTabPane
-        v-if="allowListSlowQueries"
-        name="slow-query"
-        :tab="$t('slow-query.slow-queries')"
-      >
-        <DatabaseSlowQueryPanel class="mt-2" :database="database" />
-      </NTabPane>
       <NTabPane name="catalog" :tab="$t('common.catalog')">
         <DatabaseSensitiveDataPanel class="mt-2" :database="database" />
       </NTabPane>
@@ -198,7 +191,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computedAsync, useTitle } from "@vueuse/core";
+import { useTitle } from "@vueuse/core";
 import dayjs from "dayjs";
 import { ArrowRightLeftIcon } from "lucide-vue-next";
 import { NButton, NTabPane, NTabs } from "naive-ui";
@@ -210,7 +203,6 @@ import DatabaseChangelogPanel from "@/components/Database/DatabaseChangelogPanel
 import DatabaseOverviewPanel from "@/components/Database/DatabaseOverviewPanel.vue";
 import DatabaseRevisionPanel from "@/components/Database/DatabaseRevisionPanel.vue";
 import DatabaseSensitiveDataPanel from "@/components/Database/DatabaseSensitiveDataPanel.vue";
-import DatabaseSlowQueryPanel from "@/components/Database/DatabaseSlowQueryPanel.vue";
 import { useDatabaseDetailContext } from "@/components/Database/context";
 import {
   DatabaseSettingsPanel,
@@ -230,8 +222,8 @@ import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
   useAnomalyV1Store,
   useAppFeature,
-  useDatabaseV1Store,
   useEnvironmentV1Store,
+  useDatabaseV1ByName,
 } from "@/store";
 import {
   databaseNamePrefix,
@@ -240,7 +232,6 @@ import {
 import {
   UNKNOWN_PROJECT_NAME,
   unknownEnvironment,
-  unknownDatabase,
   isValidDatabaseName,
 } from "@/types";
 import type { Anomaly } from "@/types/proto/v1/anomaly_service";
@@ -257,7 +248,6 @@ const databaseHashList = [
   "overview",
   "changelog",
   "revision",
-  "slow-query",
   "setting",
   "catalog",
 ] as const;
@@ -281,7 +271,6 @@ const props = defineProps<{
 }>();
 
 const router = useRouter();
-const databaseV1Store = useDatabaseV1Store();
 
 const state = reactive<LocalState>({
   showTransferDatabaseModal: false,
@@ -300,7 +289,6 @@ const {
   allowChangeData,
   allowAlterSchema,
   allowListChangelogs,
-  allowListSlowQueries,
 } = useDatabaseDetailContext();
 const disableSchemaEditor = useAppFeature(
   "bb.feature.issue.disable-schema-editor"
@@ -329,11 +317,12 @@ watch(
   { immediate: true }
 );
 
-const database = computedAsync(async () => {
-  return databaseV1Store.getOrFetchDatabaseByName(
-    `${instanceNamePrefix}${props.instanceId}/${databaseNamePrefix}${props.databaseName}`
-  );
-}, unknownDatabase());
+const { database } = useDatabaseV1ByName(
+  computed(
+    () =>
+      `${instanceNamePrefix}${props.instanceId}/${databaseNamePrefix}${props.databaseName}`
+  )
+);
 
 const project = computed(() => database.value.projectEntity);
 
@@ -419,5 +408,5 @@ const environment = computed(() => {
   );
 });
 
-useTitle(database.value.databaseName);
+useTitle(computed(() => database.value.databaseName));
 </script>

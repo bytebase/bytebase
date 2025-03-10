@@ -96,6 +96,7 @@ import {
   defaultProject,
   isValidProjectName,
 } from "@/types";
+import { UpdateDatabaseRequest } from "@/types/proto/v1/database_service";
 import type { Environment } from "@/types/proto/v1/environment_service";
 import type { InstanceResource } from "@/types/proto/v1/instance_service";
 import { hasProjectPermissionV2 } from "@/utils";
@@ -114,10 +115,15 @@ interface LocalState {
   fromProjectName: string | undefined;
 }
 
-const props = defineProps<{
-  projectName: string;
-  onSuccess?: (databases: ComposedDatabase[]) => void;
-}>();
+const props = withDefaults(
+  defineProps<{
+    projectName: string;
+    onSuccess?: (databases: ComposedDatabase[]) => void;
+  }>(),
+  {
+    onSuccess: (_: ComposedDatabase[]) => {},
+  }
+);
 
 const emit = defineEmits<{
   (e: "dismiss"): void;
@@ -195,21 +201,26 @@ const transferDatabase = async () => {
   try {
     state.loading = true;
 
-    const updated = await databaseStore.transferDatabases(
-      selectedDatabaseList.value,
-      props.projectName
-    );
+    const updated = await useDatabaseV1Store().batchUpdateDatabases({
+      parent: "-",
+      requests: selectedDatabaseList.value.map((database) => {
+        return UpdateDatabaseRequest.fromPartial({
+          database: {
+            name: database.name,
+            project: props.projectName,
+          },
+          updateMask: ["project"],
+        });
+      }),
+    });
 
     const displayDatabaseName =
       selectedDatabaseList.value.length > 1
         ? `${selectedDatabaseList.value.length} databases`
         : `'${selectedDatabaseList.value[0].databaseName}'`;
 
-    if (props.onSuccess) {
-      props.onSuccess(updated);
-    } else {
-      emit("dismiss");
-    }
+    props.onSuccess(updated);
+    emit("dismiss");
 
     pushNotification({
       module: "bytebase",

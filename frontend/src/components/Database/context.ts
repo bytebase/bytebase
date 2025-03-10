@@ -1,17 +1,15 @@
-import { computedAsync } from "@vueuse/core";
 import type { InjectionKey, Ref } from "vue";
 import { computed, inject, provide, ref } from "vue";
-import { useAppFeature, useDatabaseV1Store } from "@/store";
+import { useAppFeature, useDatabaseV1ByName } from "@/store";
 import {
   databaseNamePrefix,
   instanceNamePrefix,
 } from "@/store/modules/v1/common";
 import type { ComposedDatabase, Permission } from "@/types";
-import { DEFAULT_PROJECT_NAME, unknownDatabase } from "@/types";
+import { DEFAULT_PROJECT_NAME } from "@/types";
 import {
   hasProjectPermissionV2,
   instanceV1HasAlterSchema,
-  instanceV1SupportSlowQuery,
   isArchivedDatabaseV1,
   hasPermissionToCreateChangeDatabaseIssue,
 } from "@/utils";
@@ -30,7 +28,6 @@ export type DatabaseDetailContext = {
   allowUpdateSecrets: Ref<boolean>;
   allowDeleteSecrets: Ref<boolean>;
   allowListChangelogs: Ref<boolean>;
-  allowListSlowQueries: Ref<boolean>;
 };
 
 export const KEY = Symbol(
@@ -47,13 +44,12 @@ export const provideDatabaseDetailContext = (
 ) => {
   const databaseOperations = useAppFeature("bb.feature.databases.operations");
 
-  const databaseV1Store = useDatabaseV1Store();
-
-  const database: Ref<ComposedDatabase> = computedAsync(() => {
-    return databaseV1Store.getOrFetchDatabaseByName(
-      `${instanceNamePrefix}${instanceId.value}/${databaseNamePrefix}${databaseName.value}`
-    );
-  }, unknownDatabase());
+  const { database } = useDatabaseV1ByName(
+    computed(
+      () =>
+        `${instanceNamePrefix}${instanceId.value}/${databaseNamePrefix}${databaseName.value}`
+    )
+  );
 
   const pagedRevisionTableSessionKey = ref(
     `bb.paged-revision-table.${Date.now()}`
@@ -117,11 +113,6 @@ export const provideDatabaseDetailContext = (
   const allowListChangelogs = computed(() =>
     checkPermission("bb.changelogs.list")
   );
-  const allowListSlowQueries = computed(
-    () =>
-      checkPermission("bb.slowQueries.list") &&
-      instanceV1SupportSlowQuery(database.value.instanceResource)
-  );
 
   const context: DatabaseDetailContext = {
     database,
@@ -137,7 +128,6 @@ export const provideDatabaseDetailContext = (
     allowUpdateSecrets,
     allowDeleteSecrets,
     allowListChangelogs,
-    allowListSlowQueries,
   };
 
   provide(KEY, context);

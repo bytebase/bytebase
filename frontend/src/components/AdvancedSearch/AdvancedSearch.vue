@@ -91,12 +91,15 @@ import { NButton, NInput, type InputInst } from "naive-ui";
 import scrollIntoView from "scroll-into-view-if-needed";
 import { zindexable as vZindexable } from "vdirs";
 import { reactive, watch, onMounted, ref, computed, nextTick } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import type { SearchParams, SearchScope, SearchScopeId } from "@/utils";
 import {
   emptySearchParams,
   getValueFromSearchParams,
   minmax,
   upsertScope,
+  buildSearchTextBySearchParams,
+  buildSearchParamsBySearchText,
 } from "@/utils";
 import ScopeMenu from "./ScopeMenu.vue";
 import ScopeTags from "./ScopeTags.vue";
@@ -129,6 +132,9 @@ interface LocalState {
   currentScope?: SearchScopeId;
   menuView?: "value" | "scope";
 }
+
+const route = useRoute();
+const router = useRouter();
 
 const defaultSearchParams = () => {
   const params = emptySearchParams();
@@ -522,7 +528,13 @@ onMounted(() => {
   if (props.autofocus) {
     inputRef.value?.inputElRef?.focus();
   }
+  const { qs } = route.query;
+  if (typeof qs === "string" && qs.length > 0) {
+    const params = buildSearchParamsBySearchText(qs);
+    emit("update:params", params);
+  }
 });
+
 watch(
   () => state.menuView,
   () => {
@@ -567,6 +579,13 @@ watch(
   () => props.params,
   (params) => {
     inputText.value = params.query;
-  }
+    router.replace({
+      query: {
+        ...route.query,
+        qs: buildSearchTextBySearchParams(params),
+      },
+    });
+  },
+  { deep: true }
 );
 </script>

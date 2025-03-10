@@ -24,7 +24,7 @@
           @click="onClickTask(task)"
         >
           <span class="group-hover:underline truncate">
-            {{ task.title }}
+            {{ task.target }}
           </span>
           <span
             class="shrink-0"

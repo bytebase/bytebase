@@ -7,48 +7,30 @@ import "store/plan_check_run.proto";
 
 option go_package = "generated-go/store";
 
-// TaskDatabaseCreatePayload is the task payload for creating databases.
-message TaskDatabaseCreatePayload {
+message TaskPayload {
   // common fields
   bool skipped = 1;
   string skipped_reason = 2;
   string spec_id = 3;
+  int32 sheet_id = 4;
 
-  string database_name = 5;
-  string table_name = 6;
-  int32 sheet_id = 7;
+  // Create database fields.
+  string environment_id = 5;
+  string database_name = 6;
+  string table_name = 7;
   string character_set = 8;
   string collation = 9;
-  string environment_id = 10;
-  string labels = 11;
-}
 
-// TaskDatabaseUpdatePayload is the task payload for updating database (DDL & DML).
-message TaskDatabaseUpdatePayload {
-  // common fields
-  bool skipped = 1;
-  string skipped_reason = 2;
-  string spec_id = 3;
+  // Update database fields.
+  string schema_version = 10;
+  PreUpdateBackupDetail pre_update_backup_detail = 11;
+  // ghost flags.
+  map<string, string> flags = 12;
+  TaskReleaseSource task_release_source = 13;
 
-  string schema_version = 4;
-  int32 sheet_id = 5;
-
-  PreUpdateBackupDetail pre_update_backup_detail = 6;
-
-  // flags is used for ghost sync
-  map<string, string> flags = 7;
-
-  TaskReleaseSource task_release_source = 8;
-}
-
-// TaskDatabaseDataExportPayload is the task payload for database data export.
-message TaskDatabaseDataExportPayload {
-  // common fields
-  string spec_id = 1;
-
-  int32 sheet_id = 2;
-  string password = 3;
-  ExportFormat format = 4;
+  // Export data fields.
+  string password = 14;
+  ExportFormat format = 15;
 }
 
 message TaskReleaseSource {

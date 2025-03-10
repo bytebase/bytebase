@@ -26,10 +26,9 @@ import (
 )
 
 // NewSchemaUpdateGhostExecutor creates a schema update (gh-ost) task executor.
-func NewSchemaUpdateGhostExecutor(s *store.Store, secret string, dbFactory *dbfactory.DBFactory, license enterprise.LicenseService, stateCfg *state.State, schemaSyncer *schemasync.Syncer, profile *config.Profile) Executor {
+func NewSchemaUpdateGhostExecutor(s *store.Store, dbFactory *dbfactory.DBFactory, license enterprise.LicenseService, stateCfg *state.State, schemaSyncer *schemasync.Syncer, profile *config.Profile) Executor {
 	return &SchemaUpdateGhostExecutor{
 		s:            s,
-		secret:       secret,
 		dbFactory:    dbFactory,
 		license:      license,
 		stateCfg:     stateCfg,
@@ -41,7 +40,6 @@ func NewSchemaUpdateGhostExecutor(s *store.Store, secret string, dbFactory *dbfa
 // SchemaUpdateGhostExecutor is the schema update (gh-ost) task executor.
 type SchemaUpdateGhostExecutor struct {
 	s            *store.Store
-	secret       string
 	dbFactory    *dbfactory.DBFactory
 	license      enterprise.LicenseService
 	stateCfg     *state.State
@@ -50,16 +48,12 @@ type SchemaUpdateGhostExecutor struct {
 }
 
 func (exec *SchemaUpdateGhostExecutor) RunOnce(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, taskRunUID int) (bool, *storepb.TaskRunResult, error) {
-	payload := &storepb.TaskDatabaseUpdatePayload{}
-	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(task.Payload), payload); err != nil {
-		return true, nil, errors.Wrap(err, "invalid database schema update gh-ost sync payload")
-	}
-	sheetID := int(payload.SheetId)
-	statement, err := exec.s.GetSheetStatementByID(ctx, int(payload.SheetId))
+	sheetID := int(task.Payload.GetSheetId())
+	statement, err := exec.s.GetSheetStatementByID(ctx, sheetID)
 	if err != nil {
 		return true, nil, err
 	}
-	flags := payload.Flags
+	flags := task.Payload.GetFlags()
 
 	instance, err := exec.s.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &task.InstanceID})
 	if err != nil {
@@ -94,7 +88,7 @@ func (exec *SchemaUpdateGhostExecutor) RunOnce(ctx context.Context, driverCtx co
 			return common.Errorf(common.Internal, "admin data source not found for instance %s", instance.ResourceID)
 		}
 
-		migrationContext, err := ghost.NewMigrationContext(ctx, task.ID, database, adminDataSource, exec.secret, tableName, fmt.Sprintf("_%d", time.Now().Unix()), execStatement, false, flags, 10000000)
+		migrationContext, err := ghost.NewMigrationContext(ctx, task.ID, database, adminDataSource, tableName, fmt.Sprintf("_%d", time.Now().Unix()), execStatement, false, flags, 10000000)
 		if err != nil {
 			return errors.Wrap(err, "failed to init migrationContext for gh-ost")
 		}
@@ -153,7 +147,7 @@ func (exec *SchemaUpdateGhostExecutor) RunOnce(ctx context.Context, driverCtx co
 		}
 	}
 
-	terminated, result, err := runMigrationWithFunc(ctx, driverCtx, exec.s, exec.dbFactory, exec.stateCfg, exec.schemaSyncer, exec.profile, task, taskRunUID, db.Migrate, statement, payload.SchemaVersion, &sheetID, execFunc)
+	terminated, result, err := runMigrationWithFunc(ctx, driverCtx, exec.s, exec.dbFactory, exec.stateCfg, exec.schemaSyncer, exec.profile, task, taskRunUID, db.Migrate, statement, task.Payload.GetSchemaVersion(), &sheetID, execFunc)
 	// sync database schema anyways
 	exec.s.CreateTaskRunLogS(ctx, taskRunUID, time.Now(), exec.profile.DeployID, &storepb.TaskRunLog{
 		Type:              storepb.TaskRunLog_DATABASE_SYNC_START,

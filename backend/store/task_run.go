@@ -20,7 +20,6 @@ type TaskRunMessage struct {
 	TaskUID     int
 	StageUID    int
 	PipelineUID int
-	Name        string
 	Status      api.TaskRunStatus
 	Code        common.Code
 	Result      string
@@ -105,7 +104,6 @@ func (s *Store) ListTaskRunsV2(ctx context.Context, find *FindTaskRunMessage) ([
 			task_run.created_at,
 			task_run.updated_at,
 			task_run.task_id,
-			task_run.name,
 			task_run.status,
 			task_run.started_at,
 			task_run.code,
@@ -137,7 +135,6 @@ func (s *Store) ListTaskRunsV2(ctx context.Context, find *FindTaskRunMessage) ([
 			&taskRun.CreatedAt,
 			&taskRun.UpdatedAt,
 			&taskRun.TaskUID,
-			&taskRun.Name,
 			&taskRun.Status,
 			&startedAt,
 			&taskRun.Code,
@@ -325,16 +322,14 @@ func (*Store) createTaskRunImpl(ctx context.Context, tx *Tx, create *TaskRunMess
 			task_id,
 			sheet_id,
 			attempt,
-			name,
 			status
-		) VALUES ($1, $2, $3, $4, $5, $6)
+		) VALUES ($1, $2, $3, $4, $5)
 	`
 	if _, err := tx.ExecContext(ctx, query,
 		creatorID,
 		create.TaskUID,
 		create.SheetUID,
 		attempt,
-		create.Name,
 		status,
 	); err != nil {
 		return err
@@ -368,7 +363,7 @@ func (*Store) patchTaskRunStatusImpl(ctx context.Context, tx *Tx, patch *TaskRun
 		UPDATE task_run
 		SET `+strings.Join(set, ", ")+`
 		WHERE `+strings.Join(where, " AND ")+`
-		RETURNING id, creator_id, created_at, updated_at, task_id, name, status, code, result
+		RETURNING id, creator_id, created_at, updated_at, task_id, status, code, result
 	`,
 		args...,
 	).Scan(
@@ -377,7 +372,6 @@ func (*Store) patchTaskRunStatusImpl(ctx context.Context, tx *Tx, patch *TaskRun
 		&taskRun.CreatedAt,
 		&taskRun.UpdatedAt,
 		&taskRun.TaskUID,
-		&taskRun.Name,
 		&taskRun.Status,
 		&taskRun.Code,
 		&taskRun.Result,
@@ -438,7 +432,6 @@ func (*Store) findTaskRunImpl(ctx context.Context, tx *Tx, find *TaskRunFind) ([
 			task_run.created_at,
 			task_run.updated_at,
 			task_run.task_id,
-			task_run.name,
 			task_run.status,
 			task_run.code,
 			task_run.result,
@@ -464,7 +457,6 @@ func (*Store) findTaskRunImpl(ctx context.Context, tx *Tx, find *TaskRunFind) ([
 			&taskRun.CreatedAt,
 			&taskRun.UpdatedAt,
 			&taskRun.TaskUID,
-			&taskRun.Name,
 			&taskRun.Status,
 			&taskRun.Code,
 			&taskRun.Result,

@@ -58,7 +58,7 @@ type MaterializedViewDDLOptions struct {
 func (d *Driver) Dump(ctx context.Context, out io.Writer, _ *storepb.DatabaseSchemaMetadata) error {
 	var builder strings.Builder
 
-	databaseName := d.config.Database
+	databaseName := d.config.ConnectionContext.DatabaseName
 	database, err := d.SyncDBSchema(ctx)
 	if err != nil {
 		return err

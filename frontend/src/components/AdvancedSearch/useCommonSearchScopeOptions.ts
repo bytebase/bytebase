@@ -13,7 +13,7 @@ import {
   useEnvironmentV1List,
   useEnvironmentV1Store,
   useInstanceResourceList,
-  useProjectV1Store,
+  useProjectV1List,
 } from "@/store";
 import { UNKNOWN_ID, isValidProjectName, type MaybeRef } from "@/types";
 import { engineToJSON } from "@/types/proto/v1/common";
@@ -34,7 +34,7 @@ export const useCommonSearchScopeOptions = (
   const databaseV1Store = useDatabaseV1Store();
   const environmentStore = useEnvironmentV1Store();
   const environmentList = useEnvironmentV1List();
-  const projectList = useProjectV1Store().getProjectList(false);
+  const { projectList } = useProjectV1List();
 
   const project = computed(() => {
     const { projectId } = route?.params ?? {};
@@ -67,8 +67,7 @@ export const useCommonSearchScopeOptions = (
         id: "project",
         title: t("issue.advanced-search.scope.project.title"),
         description: t("issue.advanced-search.scope.project.description"),
-        // TODO(ed): We need to support search projects asynchronous.
-        options: projectList.map<ValueOption>((project) => {
+        options: projectList.value.map<ValueOption>((project) => {
           const name = extractProjectResourceName(project.name);
           return {
             value: name,

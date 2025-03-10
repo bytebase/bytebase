@@ -12,49 +12,36 @@ import { PreUpdateBackupDetail } from "./plan_check_run";
 
 export const protobufPackage = "bytebase.store";
 
-/** TaskDatabaseCreatePayload is the task payload for creating databases. */
-export interface TaskDatabaseCreatePayload {
+export interface TaskPayload {
   /** common fields */
   skipped: boolean;
   skippedReason: string;
   specId: string;
+  sheetId: number;
+  /** Create database fields. */
+  environmentId: string;
   databaseName: string;
   tableName: string;
-  sheetId: number;
   characterSet: string;
   collation: string;
-  environmentId: string;
-  labels: string;
-}
-
-/** TaskDatabaseUpdatePayload is the task payload for updating database (DDL & DML). */
-export interface TaskDatabaseUpdatePayload {
-  /** common fields */
-  skipped: boolean;
-  skippedReason: string;
-  specId: string;
+  /** Update database fields. */
   schemaVersion: string;
-  sheetId: number;
   preUpdateBackupDetail:
     | PreUpdateBackupDetail
     | undefined;
-  /** flags is used for ghost sync */
+  /** ghost flags. */
   flags: { [key: string]: string };
-  taskReleaseSource: TaskReleaseSource | undefined;
-}
-
-export interface TaskDatabaseUpdatePayload_FlagsEntry {
-  key: string;
-  value: string;
-}
-
-/** TaskDatabaseDataExportPayload is the task payload for database data export. */
-export interface TaskDatabaseDataExportPayload {
-  /** common fields */
-  specId: string;
-  sheetId: number;
+  taskReleaseSource:
+    | TaskReleaseSource
+    | undefined;
+  /** Export data fields. */
   password: string;
   format: ExportFormat;
+}
+
+export interface TaskPayload_FlagsEntry {
+  key: string;
+  value: string;
 }
 
 export interface TaskReleaseSource {
@@ -62,23 +49,28 @@ export interface TaskReleaseSource {
   file: string;
 }
 
-function createBaseTaskDatabaseCreatePayload(): TaskDatabaseCreatePayload {
+function createBaseTaskPayload(): TaskPayload {
   return {
     skipped: false,
     skippedReason: "",
     specId: "",
+    sheetId: 0,
+    environmentId: "",
     databaseName: "",
     tableName: "",
-    sheetId: 0,
     characterSet: "",
     collation: "",
-    environmentId: "",
-    labels: "",
+    schemaVersion: "",
+    preUpdateBackupDetail: undefined,
+    flags: {},
+    taskReleaseSource: undefined,
+    password: "",
+    format: ExportFormat.FORMAT_UNSPECIFIED,
   };
 }
 
-export const TaskDatabaseCreatePayload: MessageFns<TaskDatabaseCreatePayload> = {
-  encode(message: TaskDatabaseCreatePayload, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+export const TaskPayload: MessageFns<TaskPayload> = {
+  encode(message: TaskPayload, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.skipped !== false) {
       writer.uint32(8).bool(message.skipped);
     }
@@ -88,14 +80,17 @@ export const TaskDatabaseCreatePayload: MessageFns<TaskDatabaseCreatePayload> = 
     if (message.specId !== "") {
       writer.uint32(26).string(message.specId);
     }
+    if (message.sheetId !== 0) {
+      writer.uint32(32).int32(message.sheetId);
+    }
+    if (message.environmentId !== "") {
+      writer.uint32(42).string(message.environmentId);
+    }
     if (message.databaseName !== "") {
-      writer.uint32(42).string(message.databaseName);
+      writer.uint32(50).string(message.databaseName);
     }
     if (message.tableName !== "") {
-      writer.uint32(50).string(message.tableName);
-    }
-    if (message.sheetId !== 0) {
-      writer.uint32(56).int32(message.sheetId);
+      writer.uint32(58).string(message.tableName);
     }
     if (message.characterSet !== "") {
       writer.uint32(66).string(message.characterSet);
@@ -103,226 +98,31 @@ export const TaskDatabaseCreatePayload: MessageFns<TaskDatabaseCreatePayload> = 
     if (message.collation !== "") {
       writer.uint32(74).string(message.collation);
     }
-    if (message.environmentId !== "") {
-      writer.uint32(82).string(message.environmentId);
-    }
-    if (message.labels !== "") {
-      writer.uint32(90).string(message.labels);
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): TaskDatabaseCreatePayload {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseTaskDatabaseCreatePayload();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 8) {
-            break;
-          }
-
-          message.skipped = reader.bool();
-          continue;
-        }
-        case 2: {
-          if (tag !== 18) {
-            break;
-          }
-
-          message.skippedReason = reader.string();
-          continue;
-        }
-        case 3: {
-          if (tag !== 26) {
-            break;
-          }
-
-          message.specId = reader.string();
-          continue;
-        }
-        case 5: {
-          if (tag !== 42) {
-            break;
-          }
-
-          message.databaseName = reader.string();
-          continue;
-        }
-        case 6: {
-          if (tag !== 50) {
-            break;
-          }
-
-          message.tableName = reader.string();
-          continue;
-        }
-        case 7: {
-          if (tag !== 56) {
-            break;
-          }
-
-          message.sheetId = reader.int32();
-          continue;
-        }
-        case 8: {
-          if (tag !== 66) {
-            break;
-          }
-
-          message.characterSet = reader.string();
-          continue;
-        }
-        case 9: {
-          if (tag !== 74) {
-            break;
-          }
-
-          message.collation = reader.string();
-          continue;
-        }
-        case 10: {
-          if (tag !== 82) {
-            break;
-          }
-
-          message.environmentId = reader.string();
-          continue;
-        }
-        case 11: {
-          if (tag !== 90) {
-            break;
-          }
-
-          message.labels = reader.string();
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): TaskDatabaseCreatePayload {
-    return {
-      skipped: isSet(object.skipped) ? globalThis.Boolean(object.skipped) : false,
-      skippedReason: isSet(object.skippedReason) ? globalThis.String(object.skippedReason) : "",
-      specId: isSet(object.specId) ? globalThis.String(object.specId) : "",
-      databaseName: isSet(object.databaseName) ? globalThis.String(object.databaseName) : "",
-      tableName: isSet(object.tableName) ? globalThis.String(object.tableName) : "",
-      sheetId: isSet(object.sheetId) ? globalThis.Number(object.sheetId) : 0,
-      characterSet: isSet(object.characterSet) ? globalThis.String(object.characterSet) : "",
-      collation: isSet(object.collation) ? globalThis.String(object.collation) : "",
-      environmentId: isSet(object.environmentId) ? globalThis.String(object.environmentId) : "",
-      labels: isSet(object.labels) ? globalThis.String(object.labels) : "",
-    };
-  },
-
-  toJSON(message: TaskDatabaseCreatePayload): unknown {
-    const obj: any = {};
-    if (message.skipped !== false) {
-      obj.skipped = message.skipped;
-    }
-    if (message.skippedReason !== "") {
-      obj.skippedReason = message.skippedReason;
-    }
-    if (message.specId !== "") {
-      obj.specId = message.specId;
-    }
-    if (message.databaseName !== "") {
-      obj.databaseName = message.databaseName;
-    }
-    if (message.tableName !== "") {
-      obj.tableName = message.tableName;
-    }
-    if (message.sheetId !== 0) {
-      obj.sheetId = Math.round(message.sheetId);
-    }
-    if (message.characterSet !== "") {
-      obj.characterSet = message.characterSet;
-    }
-    if (message.collation !== "") {
-      obj.collation = message.collation;
-    }
-    if (message.environmentId !== "") {
-      obj.environmentId = message.environmentId;
-    }
-    if (message.labels !== "") {
-      obj.labels = message.labels;
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<TaskDatabaseCreatePayload>): TaskDatabaseCreatePayload {
-    return TaskDatabaseCreatePayload.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<TaskDatabaseCreatePayload>): TaskDatabaseCreatePayload {
-    const message = createBaseTaskDatabaseCreatePayload();
-    message.skipped = object.skipped ?? false;
-    message.skippedReason = object.skippedReason ?? "";
-    message.specId = object.specId ?? "";
-    message.databaseName = object.databaseName ?? "";
-    message.tableName = object.tableName ?? "";
-    message.sheetId = object.sheetId ?? 0;
-    message.characterSet = object.characterSet ?? "";
-    message.collation = object.collation ?? "";
-    message.environmentId = object.environmentId ?? "";
-    message.labels = object.labels ?? "";
-    return message;
-  },
-};
-
-function createBaseTaskDatabaseUpdatePayload(): TaskDatabaseUpdatePayload {
-  return {
-    skipped: false,
-    skippedReason: "",
-    specId: "",
-    schemaVersion: "",
-    sheetId: 0,
-    preUpdateBackupDetail: undefined,
-    flags: {},
-    taskReleaseSource: undefined,
-  };
-}
-
-export const TaskDatabaseUpdatePayload: MessageFns<TaskDatabaseUpdatePayload> = {
-  encode(message: TaskDatabaseUpdatePayload, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.skipped !== false) {
-      writer.uint32(8).bool(message.skipped);
-    }
-    if (message.skippedReason !== "") {
-      writer.uint32(18).string(message.skippedReason);
-    }
-    if (message.specId !== "") {
-      writer.uint32(26).string(message.specId);
-    }
     if (message.schemaVersion !== "") {
-      writer.uint32(34).string(message.schemaVersion);
-    }
-    if (message.sheetId !== 0) {
-      writer.uint32(40).int32(message.sheetId);
+      writer.uint32(82).string(message.schemaVersion);
     }
     if (message.preUpdateBackupDetail !== undefined) {
-      PreUpdateBackupDetail.encode(message.preUpdateBackupDetail, writer.uint32(50).fork()).join();
+      PreUpdateBackupDetail.encode(message.preUpdateBackupDetail, writer.uint32(90).fork()).join();
     }
     Object.entries(message.flags).forEach(([key, value]) => {
-      TaskDatabaseUpdatePayload_FlagsEntry.encode({ key: key as any, value }, writer.uint32(58).fork()).join();
+      TaskPayload_FlagsEntry.encode({ key: key as any, value }, writer.uint32(98).fork()).join();
     });
     if (message.taskReleaseSource !== undefined) {
-      TaskReleaseSource.encode(message.taskReleaseSource, writer.uint32(66).fork()).join();
+      TaskReleaseSource.encode(message.taskReleaseSource, writer.uint32(106).fork()).join();
+    }
+    if (message.password !== "") {
+      writer.uint32(114).string(message.password);
+    }
+    if (message.format !== ExportFormat.FORMAT_UNSPECIFIED) {
+      writer.uint32(120).int32(exportFormatToNumber(message.format));
     }
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): TaskDatabaseUpdatePayload {
+  decode(input: BinaryReader | Uint8Array, length?: number): TaskPayload {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseTaskDatabaseUpdatePayload();
+    const message = createBaseTaskPayload();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -351,19 +151,19 @@ export const TaskDatabaseUpdatePayload: MessageFns<TaskDatabaseUpdatePayload> = 
           continue;
         }
         case 4: {
-          if (tag !== 34) {
-            break;
-          }
-
-          message.schemaVersion = reader.string();
-          continue;
-        }
-        case 5: {
-          if (tag !== 40) {
+          if (tag !== 32) {
             break;
           }
 
           message.sheetId = reader.int32();
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.environmentId = reader.string();
           continue;
         }
         case 6: {
@@ -371,7 +171,7 @@ export const TaskDatabaseUpdatePayload: MessageFns<TaskDatabaseUpdatePayload> = 
             break;
           }
 
-          message.preUpdateBackupDetail = PreUpdateBackupDetail.decode(reader, reader.uint32());
+          message.databaseName = reader.string();
           continue;
         }
         case 7: {
@@ -379,10 +179,7 @@ export const TaskDatabaseUpdatePayload: MessageFns<TaskDatabaseUpdatePayload> = 
             break;
           }
 
-          const entry7 = TaskDatabaseUpdatePayload_FlagsEntry.decode(reader, reader.uint32());
-          if (entry7.value !== undefined) {
-            message.flags[entry7.key] = entry7.value;
-          }
+          message.tableName = reader.string();
           continue;
         }
         case 8: {
@@ -390,7 +187,66 @@ export const TaskDatabaseUpdatePayload: MessageFns<TaskDatabaseUpdatePayload> = 
             break;
           }
 
+          message.characterSet = reader.string();
+          continue;
+        }
+        case 9: {
+          if (tag !== 74) {
+            break;
+          }
+
+          message.collation = reader.string();
+          continue;
+        }
+        case 10: {
+          if (tag !== 82) {
+            break;
+          }
+
+          message.schemaVersion = reader.string();
+          continue;
+        }
+        case 11: {
+          if (tag !== 90) {
+            break;
+          }
+
+          message.preUpdateBackupDetail = PreUpdateBackupDetail.decode(reader, reader.uint32());
+          continue;
+        }
+        case 12: {
+          if (tag !== 98) {
+            break;
+          }
+
+          const entry12 = TaskPayload_FlagsEntry.decode(reader, reader.uint32());
+          if (entry12.value !== undefined) {
+            message.flags[entry12.key] = entry12.value;
+          }
+          continue;
+        }
+        case 13: {
+          if (tag !== 106) {
+            break;
+          }
+
           message.taskReleaseSource = TaskReleaseSource.decode(reader, reader.uint32());
+          continue;
+        }
+        case 14: {
+          if (tag !== 114) {
+            break;
+          }
+
+          message.password = reader.string();
+          continue;
+        }
+        case 15: {
+          if (tag !== 120) {
+            break;
+          }
+
+          message.format = exportFormatFromJSON(reader.int32());
           continue;
         }
       }
@@ -402,13 +258,18 @@ export const TaskDatabaseUpdatePayload: MessageFns<TaskDatabaseUpdatePayload> = 
     return message;
   },
 
-  fromJSON(object: any): TaskDatabaseUpdatePayload {
+  fromJSON(object: any): TaskPayload {
     return {
       skipped: isSet(object.skipped) ? globalThis.Boolean(object.skipped) : false,
       skippedReason: isSet(object.skippedReason) ? globalThis.String(object.skippedReason) : "",
       specId: isSet(object.specId) ? globalThis.String(object.specId) : "",
-      schemaVersion: isSet(object.schemaVersion) ? globalThis.String(object.schemaVersion) : "",
       sheetId: isSet(object.sheetId) ? globalThis.Number(object.sheetId) : 0,
+      environmentId: isSet(object.environmentId) ? globalThis.String(object.environmentId) : "",
+      databaseName: isSet(object.databaseName) ? globalThis.String(object.databaseName) : "",
+      tableName: isSet(object.tableName) ? globalThis.String(object.tableName) : "",
+      characterSet: isSet(object.characterSet) ? globalThis.String(object.characterSet) : "",
+      collation: isSet(object.collation) ? globalThis.String(object.collation) : "",
+      schemaVersion: isSet(object.schemaVersion) ? globalThis.String(object.schemaVersion) : "",
       preUpdateBackupDetail: isSet(object.preUpdateBackupDetail)
         ? PreUpdateBackupDetail.fromJSON(object.preUpdateBackupDetail)
         : undefined,
@@ -421,10 +282,12 @@ export const TaskDatabaseUpdatePayload: MessageFns<TaskDatabaseUpdatePayload> = 
       taskReleaseSource: isSet(object.taskReleaseSource)
         ? TaskReleaseSource.fromJSON(object.taskReleaseSource)
         : undefined,
+      password: isSet(object.password) ? globalThis.String(object.password) : "",
+      format: isSet(object.format) ? exportFormatFromJSON(object.format) : ExportFormat.FORMAT_UNSPECIFIED,
     };
   },
 
-  toJSON(message: TaskDatabaseUpdatePayload): unknown {
+  toJSON(message: TaskPayload): unknown {
     const obj: any = {};
     if (message.skipped !== false) {
       obj.skipped = message.skipped;
@@ -435,11 +298,26 @@ export const TaskDatabaseUpdatePayload: MessageFns<TaskDatabaseUpdatePayload> = 
     if (message.specId !== "") {
       obj.specId = message.specId;
     }
-    if (message.schemaVersion !== "") {
-      obj.schemaVersion = message.schemaVersion;
-    }
     if (message.sheetId !== 0) {
       obj.sheetId = Math.round(message.sheetId);
+    }
+    if (message.environmentId !== "") {
+      obj.environmentId = message.environmentId;
+    }
+    if (message.databaseName !== "") {
+      obj.databaseName = message.databaseName;
+    }
+    if (message.tableName !== "") {
+      obj.tableName = message.tableName;
+    }
+    if (message.characterSet !== "") {
+      obj.characterSet = message.characterSet;
+    }
+    if (message.collation !== "") {
+      obj.collation = message.collation;
+    }
+    if (message.schemaVersion !== "") {
+      obj.schemaVersion = message.schemaVersion;
     }
     if (message.preUpdateBackupDetail !== undefined) {
       obj.preUpdateBackupDetail = PreUpdateBackupDetail.toJSON(message.preUpdateBackupDetail);
@@ -456,19 +334,30 @@ export const TaskDatabaseUpdatePayload: MessageFns<TaskDatabaseUpdatePayload> = 
     if (message.taskReleaseSource !== undefined) {
       obj.taskReleaseSource = TaskReleaseSource.toJSON(message.taskReleaseSource);
     }
+    if (message.password !== "") {
+      obj.password = message.password;
+    }
+    if (message.format !== ExportFormat.FORMAT_UNSPECIFIED) {
+      obj.format = exportFormatToJSON(message.format);
+    }
     return obj;
   },
 
-  create(base?: DeepPartial<TaskDatabaseUpdatePayload>): TaskDatabaseUpdatePayload {
-    return TaskDatabaseUpdatePayload.fromPartial(base ?? {});
+  create(base?: DeepPartial<TaskPayload>): TaskPayload {
+    return TaskPayload.fromPartial(base ?? {});
   },
-  fromPartial(object: DeepPartial<TaskDatabaseUpdatePayload>): TaskDatabaseUpdatePayload {
-    const message = createBaseTaskDatabaseUpdatePayload();
+  fromPartial(object: DeepPartial<TaskPayload>): TaskPayload {
+    const message = createBaseTaskPayload();
     message.skipped = object.skipped ?? false;
     message.skippedReason = object.skippedReason ?? "";
     message.specId = object.specId ?? "";
-    message.schemaVersion = object.schemaVersion ?? "";
     message.sheetId = object.sheetId ?? 0;
+    message.environmentId = object.environmentId ?? "";
+    message.databaseName = object.databaseName ?? "";
+    message.tableName = object.tableName ?? "";
+    message.characterSet = object.characterSet ?? "";
+    message.collation = object.collation ?? "";
+    message.schemaVersion = object.schemaVersion ?? "";
     message.preUpdateBackupDetail =
       (object.preUpdateBackupDetail !== undefined && object.preUpdateBackupDetail !== null)
         ? PreUpdateBackupDetail.fromPartial(object.preUpdateBackupDetail)
@@ -482,16 +371,18 @@ export const TaskDatabaseUpdatePayload: MessageFns<TaskDatabaseUpdatePayload> = 
     message.taskReleaseSource = (object.taskReleaseSource !== undefined && object.taskReleaseSource !== null)
       ? TaskReleaseSource.fromPartial(object.taskReleaseSource)
       : undefined;
+    message.password = object.password ?? "";
+    message.format = object.format ?? ExportFormat.FORMAT_UNSPECIFIED;
     return message;
   },
 };
 
-function createBaseTaskDatabaseUpdatePayload_FlagsEntry(): TaskDatabaseUpdatePayload_FlagsEntry {
+function createBaseTaskPayload_FlagsEntry(): TaskPayload_FlagsEntry {
   return { key: "", value: "" };
 }
 
-export const TaskDatabaseUpdatePayload_FlagsEntry: MessageFns<TaskDatabaseUpdatePayload_FlagsEntry> = {
-  encode(message: TaskDatabaseUpdatePayload_FlagsEntry, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+export const TaskPayload_FlagsEntry: MessageFns<TaskPayload_FlagsEntry> = {
+  encode(message: TaskPayload_FlagsEntry, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.key !== "") {
       writer.uint32(10).string(message.key);
     }
@@ -501,10 +392,10 @@ export const TaskDatabaseUpdatePayload_FlagsEntry: MessageFns<TaskDatabaseUpdate
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): TaskDatabaseUpdatePayload_FlagsEntry {
+  decode(input: BinaryReader | Uint8Array, length?: number): TaskPayload_FlagsEntry {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseTaskDatabaseUpdatePayload_FlagsEntry();
+    const message = createBaseTaskPayload_FlagsEntry();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -533,14 +424,14 @@ export const TaskDatabaseUpdatePayload_FlagsEntry: MessageFns<TaskDatabaseUpdate
     return message;
   },
 
-  fromJSON(object: any): TaskDatabaseUpdatePayload_FlagsEntry {
+  fromJSON(object: any): TaskPayload_FlagsEntry {
     return {
       key: isSet(object.key) ? globalThis.String(object.key) : "",
       value: isSet(object.value) ? globalThis.String(object.value) : "",
     };
   },
 
-  toJSON(message: TaskDatabaseUpdatePayload_FlagsEntry): unknown {
+  toJSON(message: TaskPayload_FlagsEntry): unknown {
     const obj: any = {};
     if (message.key !== "") {
       obj.key = message.key;
@@ -551,121 +442,13 @@ export const TaskDatabaseUpdatePayload_FlagsEntry: MessageFns<TaskDatabaseUpdate
     return obj;
   },
 
-  create(base?: DeepPartial<TaskDatabaseUpdatePayload_FlagsEntry>): TaskDatabaseUpdatePayload_FlagsEntry {
-    return TaskDatabaseUpdatePayload_FlagsEntry.fromPartial(base ?? {});
+  create(base?: DeepPartial<TaskPayload_FlagsEntry>): TaskPayload_FlagsEntry {
+    return TaskPayload_FlagsEntry.fromPartial(base ?? {});
   },
-  fromPartial(object: DeepPartial<TaskDatabaseUpdatePayload_FlagsEntry>): TaskDatabaseUpdatePayload_FlagsEntry {
-    const message = createBaseTaskDatabaseUpdatePayload_FlagsEntry();
+  fromPartial(object: DeepPartial<TaskPayload_FlagsEntry>): TaskPayload_FlagsEntry {
+    const message = createBaseTaskPayload_FlagsEntry();
     message.key = object.key ?? "";
     message.value = object.value ?? "";
-    return message;
-  },
-};
-
-function createBaseTaskDatabaseDataExportPayload(): TaskDatabaseDataExportPayload {
-  return { specId: "", sheetId: 0, password: "", format: ExportFormat.FORMAT_UNSPECIFIED };
-}
-
-export const TaskDatabaseDataExportPayload: MessageFns<TaskDatabaseDataExportPayload> = {
-  encode(message: TaskDatabaseDataExportPayload, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.specId !== "") {
-      writer.uint32(10).string(message.specId);
-    }
-    if (message.sheetId !== 0) {
-      writer.uint32(16).int32(message.sheetId);
-    }
-    if (message.password !== "") {
-      writer.uint32(26).string(message.password);
-    }
-    if (message.format !== ExportFormat.FORMAT_UNSPECIFIED) {
-      writer.uint32(32).int32(exportFormatToNumber(message.format));
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): TaskDatabaseDataExportPayload {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseTaskDatabaseDataExportPayload();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.specId = reader.string();
-          continue;
-        }
-        case 2: {
-          if (tag !== 16) {
-            break;
-          }
-
-          message.sheetId = reader.int32();
-          continue;
-        }
-        case 3: {
-          if (tag !== 26) {
-            break;
-          }
-
-          message.password = reader.string();
-          continue;
-        }
-        case 4: {
-          if (tag !== 32) {
-            break;
-          }
-
-          message.format = exportFormatFromJSON(reader.int32());
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): TaskDatabaseDataExportPayload {
-    return {
-      specId: isSet(object.specId) ? globalThis.String(object.specId) : "",
-      sheetId: isSet(object.sheetId) ? globalThis.Number(object.sheetId) : 0,
-      password: isSet(object.password) ? globalThis.String(object.password) : "",
-      format: isSet(object.format) ? exportFormatFromJSON(object.format) : ExportFormat.FORMAT_UNSPECIFIED,
-    };
-  },
-
-  toJSON(message: TaskDatabaseDataExportPayload): unknown {
-    const obj: any = {};
-    if (message.specId !== "") {
-      obj.specId = message.specId;
-    }
-    if (message.sheetId !== 0) {
-      obj.sheetId = Math.round(message.sheetId);
-    }
-    if (message.password !== "") {
-      obj.password = message.password;
-    }
-    if (message.format !== ExportFormat.FORMAT_UNSPECIFIED) {
-      obj.format = exportFormatToJSON(message.format);
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<TaskDatabaseDataExportPayload>): TaskDatabaseDataExportPayload {
-    return TaskDatabaseDataExportPayload.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<TaskDatabaseDataExportPayload>): TaskDatabaseDataExportPayload {
-    const message = createBaseTaskDatabaseDataExportPayload();
-    message.specId = object.specId ?? "";
-    message.sheetId = object.sheetId ?? 0;
-    message.password = object.password ?? "";
-    message.format = object.format ?? ExportFormat.FORMAT_UNSPECIFIED;
     return message;
   },
 };

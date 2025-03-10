@@ -48,13 +48,10 @@ DROP SCHEMA "schema_a";
 	defer ctl.Close(ctx)
 
 	pgContainer, err := getPgContainer(ctx)
-	a.NoError(err)
-
 	defer func() {
-		pgContainer.db.Close()
-		err := pgContainer.container.Terminate(ctx)
-		a.NoError(err)
+		pgContainer.Close(ctx)
 	}()
+	a.NoError(err)
 
 	pgDB := pgContainer.db
 	err = pgDB.Ping()

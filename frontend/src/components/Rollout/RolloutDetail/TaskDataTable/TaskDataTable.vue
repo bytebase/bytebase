@@ -24,6 +24,7 @@ import type { Task } from "@/types/proto/v1/rollout_service";
 import { extractSchemaVersionFromTask } from "@/utils";
 import TaskStatus from "../Panels/kits/TaskStatus.vue";
 import { databaseForTask } from "../utils";
+import { extractEnvironmentResourceName } from "@/utils";
 
 const props = withDefaults(
   defineProps<{
@@ -53,10 +54,13 @@ const columnList = computed(
         key: "stage",
         title: t("common.stage"),
         width: 96,
-        render: (task) =>
-          stages.value.find((stage) =>
-            stage.tasks.find((t) => t.name === task.name)
-          )?.title ?? "-",
+        render: (task) => {
+          const stage = stages.value.find(stage => stage.tasks.find((t) => t.name === task.name));
+          if (stage) {
+            return extractEnvironmentResourceName(stage.environment);
+          }
+          return "-";
+        },
       },
       {
         key: "type",

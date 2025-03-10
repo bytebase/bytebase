@@ -121,22 +121,16 @@ func TestSQLExport(t *testing.T) {
 	defer ctl.Close(ctx)
 
 	mysqlContainer, err := getMySQLContainer(ctx)
-	a.NoError(err)
-
 	defer func() {
-		mysqlContainer.db.Close()
-		err := mysqlContainer.container.Terminate(ctx)
-		a.NoError(err)
+		mysqlContainer.Close(ctx)
 	}()
+	a.NoError(err)
 
 	pgContainer, err := getPgContainer(ctx)
-	a.NoError(err)
-
 	defer func() {
-		pgContainer.db.Close()
-		err := pgContainer.container.Terminate(ctx)
-		a.NoError(err)
+		pgContainer.Close(ctx)
 	}()
+	a.NoError(err)
 
 	mysqlInstance, err := ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("instance", 10),

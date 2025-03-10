@@ -29,6 +29,7 @@ export type AppFeatures = {
     | "EXPORT-DATA"
     | "SYNC-SCHEMA"
     | "EDIT-LABELS"
+    | "EDIT-ENVIRONMENT"
     | "TRANSFER-OUT"
     | "TRANSFER-IN"
   >;
@@ -83,6 +84,7 @@ export const defaultAppProfile = (): AppProfile => ({
       "EXPORT-DATA",
       "SYNC-SCHEMA",
       "EDIT-LABELS",
+      "EDIT-ENVIRONMENT",
       "TRANSFER-OUT",
       "TRANSFER-IN",
     ]),
