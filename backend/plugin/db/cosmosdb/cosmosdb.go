@@ -43,7 +43,7 @@ func newDriver(_ db.DriverConfig) db.Driver {
 func (driver *Driver) Open(_ context.Context, _ storepb.Engine, connCfg db.ConnectionConfig) (db.Driver, error) {
 	endpoint := connCfg.DataSource.Host
 	var credential azcore.TokenCredential
-	if clientSecretCredential := connCfg.ClientSecretCredential; clientSecretCredential != nil {
+	if clientSecretCredential := connCfg.DataSource.GetClientSecretCredential(); clientSecretCredential != nil {
 		c, err := azidentity.NewClientSecretCredential(clientSecretCredential.TenantId, clientSecretCredential.ClientId, clientSecretCredential.ClientSecret, nil)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to create client secret credential")

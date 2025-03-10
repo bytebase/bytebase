@@ -236,10 +236,7 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	s.webhookManager = webhook.NewManager(storeInstance, s.iamManager)
 	s.dbFactory = dbfactory.New(
 		s.store,
-		s.mysqlBinDir,
 		s.mongoBinDir,
-		s.pgBinDir,
-		profile.DataDir,
 	)
 
 	// Configure echo server.
