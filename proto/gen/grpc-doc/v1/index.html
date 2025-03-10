@@ -490,14 +490,6 @@
             <ul>
               
                 <li>
-                  <a href="#bytebase.v1.AdviseIndexRequest"><span class="badge">M</span>AdviseIndexRequest</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.AdviseIndexResponse"><span class="badge">M</span>AdviseIndexResponse</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.BatchUpdateDatabasesRequest"><span class="badge">M</span>BatchUpdateDatabasesRequest</a>
                 </li>
               
@@ -682,14 +674,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.ListSlowQueriesRequest"><span class="badge">M</span>ListSlowQueriesRequest</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.ListSlowQueriesResponse"><span class="badge">M</span>ListSlowQueriesResponse</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.MaterializedViewMetadata"><span class="badge">M</span>MaterializedViewMetadata</a>
                 </li>
               
@@ -715,18 +699,6 @@
               
                 <li>
                   <a href="#bytebase.v1.SequenceMetadata"><span class="badge">M</span>SequenceMetadata</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.SlowQueryDetails"><span class="badge">M</span>SlowQueryDetails</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.SlowQueryLog"><span class="badge">M</span>SlowQueryLog</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.SlowQueryStatistics"><span class="badge">M</span>SlowQueryStatistics</a>
                 </li>
               
                 <li>
@@ -1883,10 +1855,6 @@
               
                 <li>
                   <a href="#bytebase.v1.SQLReviewRule"><span class="badge">M</span>SQLReviewRule</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.SlowQueryPolicy"><span class="badge">M</span>SlowQueryPolicy</a>
                 </li>
               
                 <li>
@@ -5884,75 +5852,6 @@ Format: instances/{instance} </p></td>
       <p></p>
 
       
-        <h3 id="bytebase.v1.AdviseIndexRequest">AdviseIndexRequest</h3>
-        <p>AdviseIndexRequest is the request of advising index.</p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>parent</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Format: instances/{instance}/databases/{database} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>statement</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The statement to be advised. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.AdviseIndexResponse">AdviseIndexResponse</h3>
-        <p>AdviseIndexResponse is the response of advising index.</p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>current_index</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The current index of the statement used. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>suggestion</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The suggested index of the statement. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>create_index_statement</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The create index statement of the suggested index. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.v1.BatchUpdateDatabasesRequest">BatchUpdateDatabasesRequest</h3>
         <p></p>
 
@@ -8103,84 +8002,6 @@ page. If this field is omitted, there are no subsequent pages. </p></td>
 
         
       
-        <h3 id="bytebase.v1.ListSlowQueriesRequest">ListSlowQueriesRequest</h3>
-        <p>ListSlowQueriesRequest is the request of listing slow query.</p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>parent</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Format: projects/{project} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>filter</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The filter of the slow query log.
-follow the
-[ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form)
-syntax. Support filter by database and start_time in SlowQueryDetails for
-now. For example: Search the slow query log of the specific database:
-  - the specific database: database =
-  &#34;instances/{instance}/databases/{database}&#34;
-Search the slow query log that start_time after 2022-01-01T12:00:00.000Z:
-  - start_time &gt; &#34;2022-01-01T12:00:00.000Z&#34;
-  - Should use [RFC-3339 format](https://www.rfc-editor.org/rfc/rfc3339).
-  - Currently we only support filtering down to date granularity. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>order_by</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The order by of the slow query log.
-Support order by count, latest_log_time, average_query_time,
-maximum_query_time, average_rows_sent, maximum_rows_sent,
-average_rows_examined, maximum_rows_examined for now. For example:
- - order by count: order_by = &#34;count&#34;
- - order by latest_log_time desc: order_by = &#34;latest_log_time desc&#34;
-Default: order by average_query_time desc. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.ListSlowQueriesResponse">ListSlowQueriesResponse</h3>
-        <p>ListSlowQueriesResponse is the response of listing slow query.</p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>slow_query_logs</td>
-                  <td><a href="#bytebase.v1.SlowQueryLog">SlowQueryLog</a></td>
-                  <td>repeated</td>
-                  <td><p>The slow query logs. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.v1.MaterializedViewMetadata">MaterializedViewMetadata</h3>
         <p>MaterializedViewMetadata is the metadata for materialized views.</p>
 
@@ -8748,207 +8569,6 @@ instances/{instance}/databases/{database}/secrets/{secret} </p></td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
                   <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.SlowQueryDetails">SlowQueryDetails</h3>
-        <p>SlowQueryDetails is the details of the slow query log.</p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>start_time</td>
-                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
-                  <td></td>
-                  <td><p>The start time of the slow query log. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>query_time</td>
-                  <td><a href="#google.protobuf.Duration">google.protobuf.Duration</a></td>
-                  <td></td>
-                  <td><p>The query time of the slow query log. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>lock_time</td>
-                  <td><a href="#google.protobuf.Duration">google.protobuf.Duration</a></td>
-                  <td></td>
-                  <td><p>The lock time of the slow query log. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>rows_sent</td>
-                  <td><a href="#int64">int64</a></td>
-                  <td></td>
-                  <td><p>The rows sent of the slow query log. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>rows_examined</td>
-                  <td><a href="#int64">int64</a></td>
-                  <td></td>
-                  <td><p>The rows examined of the slow query log. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>sql_text</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The sql text of the slow query log. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.SlowQueryLog">SlowQueryLog</h3>
-        <p>SlowQueryLog is the slow query log.</p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>resource</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The resource of the slow query log.
-The format is &#34;instances/{instance}/databases/{database}&#34;. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>project</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The project of the slow query log.
-The format is &#34;projects/{project}&#34;. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>statistics</td>
-                  <td><a href="#bytebase.v1.SlowQueryStatistics">SlowQueryStatistics</a></td>
-                  <td></td>
-                  <td><p>The statistics of the slow query log. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.SlowQueryStatistics">SlowQueryStatistics</h3>
-        <p>SlowQueryStatistics is the statistics of the slow query log.</p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>sql_fingerprint</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The fingerprint of the slow query log. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>count</td>
-                  <td><a href="#int64">int64</a></td>
-                  <td></td>
-                  <td><p>The count of the slow query log. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>latest_log_time</td>
-                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
-                  <td></td>
-                  <td><p>The latest log time of the slow query log. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>average_query_time</td>
-                  <td><a href="#google.protobuf.Duration">google.protobuf.Duration</a></td>
-                  <td></td>
-                  <td><p>The average query time of the slow query log. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>maximum_query_time</td>
-                  <td><a href="#google.protobuf.Duration">google.protobuf.Duration</a></td>
-                  <td></td>
-                  <td><p>The maximum query time of the slow query log. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>average_rows_sent</td>
-                  <td><a href="#int64">int64</a></td>
-                  <td></td>
-                  <td><p>The average rows sent of the slow query log. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>maximum_rows_sent</td>
-                  <td><a href="#int64">int64</a></td>
-                  <td></td>
-                  <td><p>The maximum rows sent of the slow query log. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>average_rows_examined</td>
-                  <td><a href="#int64">int64</a></td>
-                  <td></td>
-                  <td><p>The average rows examined of the slow query log. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>maximum_rows_examined</td>
-                  <td><a href="#int64">int64</a></td>
-                  <td></td>
-                  <td><p>The maximum rows examined of the slow query log. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>query_time_percent</td>
-                  <td><a href="#double">double</a></td>
-                  <td></td>
-                  <td><p>The percentage of the query time. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>count_percent</td>
-                  <td><a href="#double">double</a></td>
-                  <td></td>
-                  <td><p>The percentage of the count. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>samples</td>
-                  <td><a href="#bytebase.v1.SlowQueryDetails">SlowQueryDetails</a></td>
-                  <td>repeated</td>
-                  <td><p>Samples are details of the sample slow query logs with the same
-fingerprint. </p></td>
                 </tr>
               
             </tbody>
@@ -10103,13 +9723,6 @@ view, function names.</p></td>
               </tr>
             
               <tr>
-                <td>ListSlowQueries</td>
-                <td><a href="#bytebase.v1.ListSlowQueriesRequest">ListSlowQueriesRequest</a></td>
-                <td><a href="#bytebase.v1.ListSlowQueriesResponse">ListSlowQueriesResponse</a></td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
                 <td>ListSecrets</td>
                 <td><a href="#bytebase.v1.ListSecretsRequest">ListSecretsRequest</a></td>
                 <td><a href="#bytebase.v1.ListSecretsResponse">ListSecretsResponse</a></td>
@@ -10127,13 +9740,6 @@ view, function names.</p></td>
                 <td>DeleteSecret</td>
                 <td><a href="#bytebase.v1.DeleteSecretRequest">DeleteSecretRequest</a></td>
                 <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>AdviseIndex</td>
-                <td><a href="#bytebase.v1.AdviseIndexRequest">AdviseIndexRequest</a></td>
-                <td><a href="#bytebase.v1.AdviseIndexResponse">AdviseIndexResponse</a></td>
                 <td><p></p></td>
               </tr>
             
@@ -10308,16 +9914,6 @@ view, function names.</p></td>
               
               
               <tr>
-                <td>ListSlowQueries</td>
-                <td>GET</td>
-                <td>/v1/{parent=projects/*}/slowQueries</td>
-                <td></td>
-              </tr>
-              
-            
-              
-              
-              <tr>
                 <td>ListSecrets</td>
                 <td>GET</td>
                 <td>/v1/{parent=instances/*/databases/*}/secrets</td>
@@ -10341,16 +9937,6 @@ view, function names.</p></td>
                 <td>DeleteSecret</td>
                 <td>DELETE</td>
                 <td>/v1/{name=instances/*/databases/*/secrets/*}</td>
-                <td></td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>AdviseIndex</td>
-                <td>POST</td>
-                <td>/v1/{parent=instances/*/databases/*}:adviseIndex</td>
                 <td></td>
               </tr>
               
@@ -20170,13 +19756,6 @@ Database resource name: instances/instance-id/databases/database-name. </p></td>
                 </tr>
               
                 <tr>
-                  <td>slow_query_policy</td>
-                  <td><a href="#bytebase.v1.SlowQueryPolicy">SlowQueryPolicy</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
                   <td>disable_copy_data_policy</td>
                   <td><a href="#bytebase.v1.DisableCopyDataPolicy">DisableCopyDataPolicy</a></td>
                   <td></td>
@@ -20381,30 +19960,6 @@ roles/CREATOR </p></td>
                 <tr>
                   <td>comment</td>
                   <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.SlowQueryPolicy">SlowQueryPolicy</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>active</td>
-                  <td><a href="#bool">bool</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
@@ -20642,12 +20197,6 @@ In this situation, `update_mask` is ignored. </p></td>
               <tr>
                 <td>ROLLOUT_POLICY</td>
                 <td>11</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>SLOW_QUERY</td>
-                <td>7</td>
                 <td><p></p></td>
               </tr>
             

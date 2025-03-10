@@ -2321,13 +2321,6 @@
       "issue-creators-cannot-approve-their-own-issue": "イシュー作成者は自分の問題を承認できません"
     }
   },
-  "slow-query": {
-    "slow-queries": "遅いクエリ",
-    "advise-index": {
-    },
-    "no-log-placeholder": {
-    }
-  },
   "schema-template": {
     "self": "スキーマテンプレート",
     "field-template": {

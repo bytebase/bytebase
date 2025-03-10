@@ -2321,13 +2321,6 @@
       "issue-creators-cannot-approve-their-own-issue": "Người tạo vấn đề không thể phê duyệt vấn đề của chính họ"
     }
   },
-  "slow-query": {
-    "slow-queries": "Truy vấn chậm",
-    "advise-index": {
-    },
-    "no-log-placeholder": {
-    }
-  },
   "schema-template": {
     "self": "Mẫu lược đồ",
     "field-template": {
