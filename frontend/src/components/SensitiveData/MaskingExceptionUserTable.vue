@@ -181,10 +181,10 @@ const getDatabaseAccessResource = (access: AccessUser): VNodeChild => {
 
 const expirationTimeRegex = /request.time < timestamp\("(.+)?"\)/;
 
-const getAccessUsers = (
+const getAccessUsers = async (
   exception: MaskingExceptionPolicy_MaskingException,
   condition: ConditionExpression
-): AccessUser | undefined => {
+): Promise<AccessUser | undefined> => {
   let expirationTimestamp: number | undefined;
   const expression = exception.condition?.expression ?? "";
   const matches = expirationTimeRegex.exec(expression);
@@ -208,7 +208,7 @@ const getAccessUsers = (
     access.group = groupStore.getGroupByIdentifier(exception.member);
   } else {
     access.type = "user";
-    access.user = userStore.getUserByIdentifier(exception.member);
+    access.user = await userStore.getOrFetchUserByIdentifier(exception.member);
   }
 
   if (!access.group && !access.user) {
@@ -258,7 +258,7 @@ const updateAccessUserList = async () => {
     const exception = maskingExceptions[i];
     const condition = conditionList[i];
 
-    const item = getAccessUsers(exception, condition);
+    const item = await getAccessUsers(exception, condition);
     if (!item) {
       continue;
     }
@@ -562,10 +562,11 @@ const updateExceptionPolicy = async () => {
         ).toISOString()}")`
       );
     }
+    const member = getMemberBinding(accessUser);
     for (const action of accessUser.supportActions) {
       exceptions.push({
         action,
-        member: getMemberBinding(accessUser),
+        member,
         condition: Expr.fromPartial({
           expression: expressions.join(" && "),
         }),

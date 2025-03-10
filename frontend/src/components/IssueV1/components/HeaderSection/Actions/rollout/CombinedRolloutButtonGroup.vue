@@ -82,17 +82,11 @@ const allowUserToSkipTask = asyncComputed(async () => {
     (item) => item.action === "SKIP"
   );
   if (!skip) return false;
-  const allowed = await Promise.all(
-    skip.tasks.map((task) =>
-      allowUserToApplyTaskRolloutAction(
-        issue.value,
-        task,
-        "SKIP",
-        releaserCandidates.value
-      )
-    )
+  return allowUserToApplyTaskRolloutAction(
+    issue.value,
+    "SKIP",
+    releaserCandidates.value
   );
-  return allowed.every((allow) => allow);
 });
 
 const extraActionList = computed(() => {

@@ -61,7 +61,7 @@ const groupList = computedAsync(async () => {
   const project = await projectV1Store.getOrFetchProjectByName(
     props.projectName
   );
-  const memberMap = getMemberBindingsByRole({
+  const memberMap = await getMemberBindingsByRole({
     policies: [
       {
         level: "WORKSPACE",

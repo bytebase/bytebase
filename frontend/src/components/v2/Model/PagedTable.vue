@@ -32,6 +32,7 @@
 </template>
 
 <script lang="ts" setup generic="T extends { name: string }">
+import { useDebounceFn } from "@vueuse/core";
 import { NSelect, NButton } from "naive-ui";
 import { computed, reactive, watch, ref, type Ref } from "vue";
 import { useIsLoggedIn, useCurrentUserV1 } from "@/store";
@@ -58,6 +59,7 @@ const props = withDefaults(
     sessionKey: string;
     hideLoadMore?: boolean;
     footerClass?: string;
+    debounce?: number;
     fetchList: (params: {
       pageSize: number;
       pageToken: string;
@@ -66,6 +68,7 @@ const props = withDefaults(
   {
     hideLoadMore: false,
     footerClass: "",
+    debounce: 500,
   }
 );
 
@@ -123,7 +126,7 @@ const fetchData = async (refresh = false) => {
   const isFirstFetch = state.paginationToken === "";
   const expectedRowCount = isFirstFetch
     ? // Load one or more page for the first fetch to restore the session
-      pageSize.value * 1
+      pageSize.value * sessionState.value.page
     : // Always load one page if NOT the first fetch
       pageSize.value;
 
@@ -162,7 +165,6 @@ const resetSession = () => {
 
 const refresh = async () => {
   state.paginationToken = "";
-  resetSession();
   await fetchData(true);
 };
 
@@ -197,7 +199,9 @@ const refreshCache = (data: T[]) => {
 };
 
 defineExpose({
-  refresh,
+  refresh: useDebounceFn(async () => {
+    await refresh();
+  }, props.debounce),
   refreshCache,
 });
 </script>

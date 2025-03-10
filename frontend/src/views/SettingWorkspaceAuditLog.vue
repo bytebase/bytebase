@@ -54,6 +54,7 @@ import {
   featureToRef,
   useAuditLogStore,
   batchGetOrFetchProjects,
+  batchGetOrFetchUsers,
   pushNotification,
 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
@@ -110,6 +111,7 @@ const fetchAuditLog = async ({
       return `${projectNamePrefix}${projectResourceId}`;
     })
   );
+  await batchGetOrFetchUsers(auditLogs.map((log) => log.user));
   return { nextPageToken, list: auditLogs };
 };
 

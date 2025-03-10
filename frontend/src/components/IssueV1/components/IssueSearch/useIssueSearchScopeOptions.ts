@@ -9,11 +9,11 @@ import YouTag from "@/components/misc/YouTag.vue";
 import {
   useCurrentUserV1,
   useDatabaseV1Store,
-  useUserStore,
   useProjectV1List,
 } from "@/store";
 import { SYSTEM_BOT_USER_NAME, UNKNOWN_ID } from "@/types";
 import { Label } from "@/types/proto/v1/project_service";
+import { User } from "@/types/proto/v1/user_service";
 import type { SearchParams, SearchScopeId } from "@/utils";
 
 export type ScopeOption = {
@@ -52,11 +52,11 @@ const useProjectLabels = (params: Ref<SearchParams>) => {
 
 export const useIssueSearchScopeOptions = (
   params: Ref<SearchParams>,
-  supportOptionIdList: Ref<SearchScopeId[]>
+  supportOptionIdList: Ref<SearchScopeId[]>,
+  activeUserList: Ref<User[]>
 ) => {
   const { t } = useI18n();
   const me = useCurrentUserV1();
-  const userStore = useUserStore();
   const databaseV1Store = useDatabaseV1Store();
 
   const commonScopeOptions = useCommonSearchScopeOptions(
@@ -67,7 +67,7 @@ export const useIssueSearchScopeOptions = (
   const principalSearchValueOptions = computed(() => {
     // Put "you" to the top
     const sortedUsers = orderBy(
-      userStore.activeUserList,
+      activeUserList.value,
       (user) => (user.name === me.value.name ? -1 : 1),
       "asc"
     );
