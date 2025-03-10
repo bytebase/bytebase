@@ -170,32 +170,6 @@ type QueryContext struct {
 	Option        *v1pb.QueryOption
 }
 
-// DatabaseRoleMessage is the API message for database role.
-type DatabaseRoleMessage struct {
-	// The role unique name.
-	Name string
-	// The connection count limit for this role.
-	ConnectionLimit int32
-	// The expiration for the role's password.
-	ValidUntil *string
-	// The role attribute.
-	Attribute *string
-}
-
-// DatabaseRoleUpsertMessage is the API message for upserting a database role.
-type DatabaseRoleUpsertMessage struct {
-	// The role unique name.
-	Name string
-	// A password is only significant if the client authentication method requires the user to supply a password when connecting to the database.
-	Password *string
-	// Connection limit can specify how many concurrent connections a role can make. -1 (the default) means no limit.
-	ConnectionLimit *int32
-	// The VALID UNTIL clause sets a date and time after which the role's password is no longer valid. If this clause is omitted the password will be valid for all time.
-	ValidUntil *string
-	// The role attribute.
-	Attribute *string
-}
-
 // Driver is the interface for database driver.
 type Driver interface {
 	// General execution
