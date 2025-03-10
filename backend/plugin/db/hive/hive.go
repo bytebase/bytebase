@@ -60,20 +60,13 @@ func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.Connectio
 	var authConnParam = "NONE"
 	hiveConfig := gohive.NewConnectConfiguration()
 	if t, ok := config.DataSource.GetSaslConfig().GetMechanism().(*storepb.SASLConfig_KrbConfig); ok {
-		saslConfig := &db.KerberosConfig{
-			Primary:  t.KrbConfig.Primary,
-			Instance: t.KrbConfig.Instance,
-			Realm: db.Realm{
-				Name:                 t.KrbConfig.Realm,
-				KDCHost:              t.KrbConfig.KdcHost,
-				KDCPort:              t.KrbConfig.KdcPort,
-				KDCTransportProtocol: t.KrbConfig.KdcTransportProtocol,
-			},
-			Keytab: t.KrbConfig.Keytab,
-		}
-		hiveConfig.Hostname = saslConfig.Instance
-		hiveConfig.Service = saslConfig.Primary
-		if err := saslConfig.InitEnv(); err != nil {
+		// Kerberos environment mutex.
+		db.Lock.Lock()
+		defer db.Lock.Unlock()
+
+		hiveConfig.Hostname = t.KrbConfig.Instance
+		hiveConfig.Service = t.KrbConfig.Primary
+		if err := db.BootKerberosEnv(t); err != nil {
 			return nil, errors.Wrapf(err, "failed to init SASL environment")
 		}
 		authConnParam = "KERBEROS"
