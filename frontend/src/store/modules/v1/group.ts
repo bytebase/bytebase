@@ -4,11 +4,17 @@ import { computed, reactive } from "vue";
 import { groupServiceClient } from "@/grpcweb";
 import type { Group } from "@/types/proto/v1/group_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
+import { batchGetOrFetchUsers } from "../user";
 import { groupNamePrefix } from "./common";
 
 export const extractGroupEmail = (emailResource: string) => {
   const matches = emailResource.match(/^(?:group:|groups\/)(.+)$/);
   return matches?.[1] ?? emailResource;
+};
+
+const ensureGroupIdentifier = (id: string) => {
+  const email = extractGroupEmail(id);
+  return `${groupNamePrefix}${email}`;
 };
 
 export const useGroupStore = defineStore("group", () => {
@@ -26,15 +32,13 @@ export const useGroupStore = defineStore("group", () => {
     );
   });
 
-  // Actions
-  const getGroupName = (email: string) => `${groupNamePrefix}${email}`;
-
-  const getGroupByEmail = (email: string) => {
-    return groupMapByName.get(getGroupName(email));
+  const composeGroup = async (group: Group) => {
+    await batchGetOrFetchUsers(group.members.map((m) => m.member));
+    groupMapByName.set(group.name, group);
   };
 
   const getGroupByIdentifier = (id: string) => {
-    return getGroupByEmail(extractGroupEmail(id));
+    return groupMapByName.get(ensureGroupIdentifier(id));
   };
 
   const fetchGroupList = async () => {
@@ -45,24 +49,28 @@ export const useGroupStore = defineStore("group", () => {
     const { groups } = await groupServiceClient.listGroups({});
     resetCache();
     for (const group of groups) {
-      groupMapByName.set(group.name, group);
+      await composeGroup(group);
     }
     return groups;
   };
 
-  const getOrFetchGroupByEmail = async (email: string) => {
+  const getOrFetchGroupByIdentifier = async (id: string) => {
     if (!hasWorkspacePermissionV2("bb.groups.get")) {
       return;
     }
 
-    if (getGroupByEmail(email)) {
-      return getGroupByEmail(email);
+    const existed = getGroupByIdentifier(id);
+    if (existed) {
+      return existed;
     }
 
-    const group = await groupServiceClient.getGroup({
-      name: getGroupName(email),
-    });
-    groupMapByName.set(group.name, group);
+    const group = await groupServiceClient.getGroup(
+      {
+        name: ensureGroupIdentifier(id),
+      },
+      { silent: true }
+    );
+    await composeGroup(group);
     return group;
   };
 
@@ -76,7 +84,7 @@ export const useGroupStore = defineStore("group", () => {
       group,
       groupEmail: extractGroupEmail(group.name),
     });
-    groupMapByName.set(resp.name, resp);
+    await composeGroup(resp);
     return resp;
   };
 
@@ -86,16 +94,15 @@ export const useGroupStore = defineStore("group", () => {
       updateMask: ["title", "description", "members"],
       allowMissing: false,
     });
-    groupMapByName.set(updated.name, updated);
+    await composeGroup(updated);
     return updated;
   };
 
   return {
     groupList,
     fetchGroupList,
-    getGroupByEmail,
     getGroupByIdentifier,
-    getOrFetchGroupByEmail,
+    getOrFetchGroupByIdentifier,
     deleteGroup,
     updateGroup,
     createGroup,

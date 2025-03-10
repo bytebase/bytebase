@@ -2,26 +2,48 @@ import { cloneDeep } from "lodash-es";
 import { defineStore } from "pinia";
 import { ref, computed } from "vue";
 import { workspaceServiceClient } from "@/grpcweb";
+import { userNamePrefix } from "@/store/modules/v1/common";
 import { groupBindingPrefix, PresetRoleType } from "@/types";
 import { IamPolicy, Binding } from "@/types/proto/v1/iam_policy";
 import { roleListInIAM, getUserEmailListInBinding } from "@/utils";
-import { extractUserEmail } from "../user";
+import { extractUserId } from "./common";
 import { extractGroupEmail } from "./group";
 
 export const useWorkspaceV1Store = defineStore("workspace_v1", () => {
   const workspaceIamPolicy = ref<IamPolicy>(IamPolicy.fromPartial({}));
 
-  const emailMapToRoles = computed(() => {
-    const map = new Map<string, Set<string>>(); // Map<email, role list>
+  // roleMapToUsers returns Map<roles/{role}, Set<users/{email}>>
+  // the user could includes users/ALL_USERS_USER_EMAIL
+  const roleMapToUsers = computed(() => {
+    const map = new Map<string, Set<string>>();
+    for (const binding of workspaceIamPolicy.value.bindings) {
+      if (!map.has(binding.role)) {
+        map.set(binding.role, new Set());
+      }
+      for (const email of getUserEmailListInBinding({
+        binding,
+        ignoreGroup: false,
+      })) {
+        map.get(binding.role)?.add(`${userNamePrefix}${email}`);
+      }
+    }
+    return map;
+  });
+
+  // userMapToRoles returns Map<users/{email}, Set<roles/{role}>>
+  // the user could includes users/ALL_USERS_USER_EMAIL
+  const userMapToRoles = computed(() => {
+    const map = new Map<string, Set<string>>();
     for (const binding of workspaceIamPolicy.value.bindings) {
       for (const email of getUserEmailListInBinding({
         binding,
         ignoreGroup: false,
       })) {
-        if (!map.has(email)) {
-          map.set(email, new Set());
+        const key = `${userNamePrefix}${email}`;
+        if (!map.has(key)) {
+          map.set(key, new Set());
         }
-        map.get(email)?.add(binding.role);
+        map.get(key)?.add(binding.role);
       }
     }
     return map;
@@ -109,7 +131,7 @@ export const useWorkspaceV1Store = defineStore("workspace_v1", () => {
     if (member.startsWith(groupBindingPrefix)) {
       email = extractGroupEmail(member);
     } else {
-      email = extractUserEmail(member);
+      email = extractUserId(member);
     }
     return roleListInIAM({
       policy: workspaceIamPolicy.value,
@@ -120,7 +142,7 @@ export const useWorkspaceV1Store = defineStore("workspace_v1", () => {
 
   const getWorkspaceRolesByEmail = (email: string) => {
     return (
-      emailMapToRoles.value.get(email) ??
+      userMapToRoles.value.get(`${userNamePrefix}${email}`) ??
       new Set<string>([PresetRoleType.WORKSPACE_MEMBER])
     );
   };
@@ -130,7 +152,8 @@ export const useWorkspaceV1Store = defineStore("workspace_v1", () => {
     fetchIamPolicy,
     patchIamPolicy,
     findRolesByMember,
-    emailMapToRoles,
+    userMapToRoles,
+    roleMapToUsers,
     getWorkspaceRolesByEmail,
   };
 });

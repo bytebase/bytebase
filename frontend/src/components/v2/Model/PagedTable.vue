@@ -32,10 +32,12 @@
 </template>
 
 <script lang="ts" setup generic="T extends { name: string }">
+import { useDebounceFn } from "@vueuse/core";
+import { sortBy, uniq } from "lodash-es";
 import { NSelect, NButton } from "naive-ui";
 import { computed, reactive, watch, ref, type Ref } from "vue";
 import { useIsLoggedIn, useCurrentUserV1 } from "@/store";
-import { useDynamicLocalStorage } from "@/utils";
+import { useDynamicLocalStorage, getDefaultPagination } from "@/utils";
 
 type LocalState = {
   loading: boolean;
@@ -58,6 +60,7 @@ const props = withDefaults(
     sessionKey: string;
     hideLoadMore?: boolean;
     footerClass?: string;
+    debounce?: number;
     fetchList: (params: {
       pageSize: number;
       pageToken: string;
@@ -66,6 +69,7 @@ const props = withDefaults(
   {
     hideLoadMore: false,
     footerClass: "",
+    debounce: 500,
   }
 );
 
@@ -73,8 +77,12 @@ const emit = defineEmits<{
   (event: "list:update", list: T[]): void;
 }>();
 
+const currentUser = useCurrentUserV1();
+
 const options = computed(() => {
-  return [50, 100, 200, 500].map((num) => ({
+  const defaultPageSize = getDefaultPagination();
+  const list = [defaultPageSize, 50, 100, 200, 500];
+  return sortBy(uniq(list)).map((num) => ({
     value: num,
     label: `${num}`,
   }));
@@ -84,7 +92,6 @@ const state = reactive<LocalState>({
   loading: false,
   paginationToken: "",
 });
-const currentUser = useCurrentUserV1();
 
 // https://stackoverflow.com/questions/69813587/vue-unwraprefsimplet-generics-type-cant-assignable-to-t-at-reactive
 const dataList = ref([]) as Ref<T[]>;
@@ -123,7 +130,7 @@ const fetchData = async (refresh = false) => {
   const isFirstFetch = state.paginationToken === "";
   const expectedRowCount = isFirstFetch
     ? // Load one or more page for the first fetch to restore the session
-      pageSize.value * 1
+      pageSize.value * sessionState.value.page
     : // Always load one page if NOT the first fetch
       pageSize.value;
 
@@ -162,7 +169,6 @@ const resetSession = () => {
 
 const refresh = async () => {
   state.paginationToken = "";
-  resetSession();
   await fetchData(true);
 };
 
@@ -197,7 +203,9 @@ const refreshCache = (data: T[]) => {
 };
 
 defineExpose({
-  refresh,
+  refresh: useDebounceFn(async () => {
+    await refresh();
+  }, props.debounce),
   refreshCache,
 });
 </script>

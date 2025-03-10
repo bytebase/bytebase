@@ -184,6 +184,7 @@ export const useProjectV1Store = defineStore("project_v1", () => {
   };
 });
 
+// TODO(ed): deprecate it.
 export const useProjectV1List = (showDeleted: boolean = false) => {
   const listCache = useListCache("project");
   const store = useProjectV1Store();

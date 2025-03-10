@@ -31,6 +31,17 @@ service UserService {
     option (bytebase.v1.auth_method) = CUSTOM;
   }
 
+  // Get user stat.
+  // Any authenticated user can get stat.
+  rpc StatUsers(StatUsersRequest) returns (StatUsersResponse) {
+    option (google.api.http) = {
+      post: "/v1/users:stat"
+      body: "*"
+    };
+    option (google.api.method_signature) = "parent";
+    option (bytebase.v1.auth_method) = CUSTOM;
+  }
+
   // Create a user.
   // When Disallow Signup is enabled, only the caller with bb.users.create on the workspace can create a user.
   // Otherwise, any unauthenticated user can create a user.
@@ -85,6 +96,18 @@ message GetUserRequest {
   ];
 }
 
+message StatUsersRequest {}
+
+message StatUsersResponse {
+  message StatUser {
+    UserType user_type = 1;
+    State state = 2;
+    int32 count = 3;
+  }
+
+  repeated StatUser stats = 1;
+}
+
 message ListUsersRequest {
   // The maximum number of users to return. The service may return fewer than
   // this value.
@@ -107,14 +130,17 @@ message ListUsersRequest {
   // - name
   // - email
   // - user_type
+  // - state
   //
   // For example:
   // name == "ed"
   // name.matches("ed")
   // email == "ed@bytebase.com"
+  // email.matches("ed")
   // user_type == "SERVICE_ACCOUNT"
   // user_type in ["SERVICE_ACCOUNT", "USER"]
   // !(user_type in ["SERVICE_ACCOUNT", "USER"])
+  // state == "DELETED"
   string filter = 4;
 }
 

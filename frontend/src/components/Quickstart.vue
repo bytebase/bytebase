@@ -126,7 +126,7 @@ import {
   pushNotification,
   useUIStateStore,
   useProjectV1Store,
-  useActiveUsers,
+  useUserStore,
 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import type { Permission } from "@/types";
@@ -152,6 +152,7 @@ type IntroItem = {
 const { t } = useI18n();
 const projectStore = useProjectV1Store();
 const uiStateStore = useUIStateStore();
+const userStore = useUserStore();
 
 const show = computed(() => {
   return !uiStateStore.getIntroStateByKey("hidden");
@@ -250,7 +251,9 @@ const introList = computed(() => {
   );
 });
 
-const isFirstUser = computed(() => useActiveUsers().length === 1);
+const isFirstUser = computed(() => {
+  return userStore.activeUserCountWithoutBot === 1;
+});
 
 const showQuickstart = computed(() => {
   // Only show quickstart for the first user.

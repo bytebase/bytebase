@@ -13,7 +13,6 @@ import {
 } from "@/types/v1/issue/plan";
 import {
   extractProjectResourceName,
-  extractUserResourceName,
   getTsRangeFromSearchParams,
   getValueFromSearchParams,
   hasProjectPermissionV2,
@@ -80,7 +79,7 @@ export const composePlan = async (rawPlan: Plan): Promise<ComposedPlan> => {
     await useProjectV1Store().getOrFetchProjectByName(project);
 
   const creatorEntity =
-    userStore.getUserByEmail(extractUserResourceName(rawPlan.creator)) ??
+    (await userStore.getOrFetchUserByIdentifier(rawPlan.creator)) ??
     unknownUser();
 
   const plan: ComposedPlan = {

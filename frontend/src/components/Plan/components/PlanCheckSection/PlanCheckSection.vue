@@ -19,9 +19,9 @@ import {
   databaseForSpec,
 } from "@/components/Plan/logic";
 import PlanCheckRunBar from "@/components/PlanCheckRun/PlanCheckRunBar.vue";
-import { useCurrentUserV1 } from "@/store";
+import { useCurrentUserV1, extractUserId } from "@/store";
 import { EMPTY_ID } from "@/types";
-import { extractUserResourceName, hasProjectPermissionV2 } from "@/utils";
+import { hasProjectPermissionV2 } from "@/utils";
 
 const currentUser = useCurrentUserV1();
 const { plan, selectedSpec } = usePlanContext();
@@ -42,7 +42,7 @@ const allowRunChecks = computed(() => {
   // - the creator of the plan
   // - ones who have bb.planCheckRuns.run permission in the project
   const me = currentUser.value;
-  if (extractUserResourceName(plan.value.creator) === me.email) {
+  if (extractUserId(plan.value.creator) === me.email) {
     return true;
   }
   if (

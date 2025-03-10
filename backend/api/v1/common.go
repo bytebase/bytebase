@@ -455,7 +455,7 @@ func parseLimitAndOffset(size *pageSize) (*pageOffset, error) {
 		if token.Limit < 0 {
 			return nil, status.Errorf(codes.InvalidArgument, "page size cannot be negative")
 		}
-		offset.limit = int(token.Limit)
+		offset.limit = int(size.limit)
 		offset.offset = int(token.Offset)
 	} else {
 		offset.limit = int(size.limit)

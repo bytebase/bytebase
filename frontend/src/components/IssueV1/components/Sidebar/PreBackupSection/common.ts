@@ -13,6 +13,7 @@ import {
   pushNotification,
   useCurrentUserV1,
   useIssueCommentStore,
+  extractUserId,
 } from "@/store";
 import { Engine } from "@/types/proto/v1/common";
 import {
@@ -20,11 +21,7 @@ import {
   Task_Type,
   TaskRun_Status,
 } from "@/types/proto/v1/rollout_service";
-import {
-  extractUserResourceName,
-  hasProjectPermissionV2,
-  isDatabaseChangeRelatedIssue,
-} from "@/utils";
+import { hasProjectPermissionV2, isDatabaseChangeRelatedIssue } from "@/utils";
 
 const PRE_BACKUP_AVAILABLE_ENGINES = [
   Engine.MYSQL,
@@ -34,7 +31,12 @@ const PRE_BACKUP_AVAILABLE_ENGINES = [
   Engine.POSTGRES,
 ];
 
-const ROLLBACK_AVAILABLE_ENGINES = [Engine.MYSQL, Engine.POSTGRES, Engine.MSSQL, Engine.ORACLE];
+const ROLLBACK_AVAILABLE_ENGINES = [
+  Engine.MYSQL,
+  Engine.POSTGRES,
+  Engine.MSSQL,
+  Engine.ORACLE,
+];
 
 export const usePreBackupContext = () => {
   const { t } = useI18n();
@@ -86,9 +88,7 @@ export const usePreBackupContext = () => {
     }
 
     // Allowed to the issue creator.
-    if (
-      currentUserV1.value.email === extractUserResourceName(issue.value.creator)
-    ) {
+    if (currentUserV1.value.email === extractUserId(issue.value.creator)) {
       return true;
     }
 

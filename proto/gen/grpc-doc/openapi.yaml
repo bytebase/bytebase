@@ -7146,14 +7146,17 @@ paths:
                      - name
                      - email
                      - user_type
+                     - state
 
                      For example:
                      name == "ed"
                      name.matches("ed")
                      email == "ed@bytebase.com"
+                     email.matches("ed")
                      user_type == "SERVICE_ACCOUNT"
                      user_type in ["SERVICE_ACCOUNT", "USER"]
                      !(user_type in ["SERVICE_ACCOUNT", "USER"])
+                     state == "DELETED"
                   schema:
                     type: string
             responses:
@@ -7328,6 +7331,33 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/User'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v1/users:stat:
+        post:
+            tags:
+                - UserService
+            description: |-
+                Get user stat.
+                 Any authenticated user can get stat.
+            operationId: UserService_StatUsers
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/StatUsersRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/StatUsersResponse'
                 default:
                     description: Default error response
                     content:
@@ -12868,6 +12898,37 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/Task'
+        StatUsersRequest:
+            type: object
+            properties: {}
+        StatUsersResponse:
+            type: object
+            properties:
+                stats:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/StatUsersResponse_StatUser'
+        StatUsersResponse_StatUser:
+            type: object
+            properties:
+                userType:
+                    enum:
+                        - USER_TYPE_UNSPECIFIED
+                        - USER
+                        - SYSTEM_BOT
+                        - SERVICE_ACCOUNT
+                    type: string
+                    format: enum
+                state:
+                    enum:
+                        - STATE_UNSPECIFIED
+                        - ACTIVE
+                        - DELETED
+                    type: string
+                    format: enum
+                count:
+                    type: integer
+                    format: int32
         Status:
             type: object
             properties:

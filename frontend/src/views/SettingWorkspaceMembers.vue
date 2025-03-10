@@ -78,6 +78,7 @@
 </template>
 
 <script setup lang="ts">
+import { computedAsync } from "@vueuse/core";
 import { NButton, NTabs, NTabPane, useDialog } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
@@ -190,7 +191,7 @@ const revokeMember = async (binding: MemberBinding) => {
   });
 };
 
-const memberBindingsByRole = computed(() => {
+const memberBindingsByRole = computedAsync(() => {
   return getMemberBindingsByRole({
     policies: [
       {
@@ -201,7 +202,7 @@ const memberBindingsByRole = computed(() => {
     searchText: state.searchText,
     ignoreRoles: new Set([PresetRoleType.WORKSPACE_MEMBER]),
   });
-});
+}, new Map());
 
 const memberBindings = computed(() => {
   return getMemberBindings(memberBindingsByRole.value);

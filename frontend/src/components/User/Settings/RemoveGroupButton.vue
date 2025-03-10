@@ -31,7 +31,7 @@ import {
   usePolicyV1Store,
 } from "@/store";
 import { getProjectName } from "@/store/modules/v1/common";
-import { getUserEmailFromIdentifier } from "@/store/modules/v1/common";
+import { extractUserId } from "@/store/modules/v1/common";
 import { getGroupEmailInBinding } from "@/types";
 import { type Group, GroupMember_Role } from "@/types/proto/v1/group_service";
 import { PolicyType } from "@/types/proto/v1/org_policy_service";
@@ -55,8 +55,7 @@ const policyStore = usePolicyV1Store();
 
 const selfMemberInGroup = computed(() => {
   return props.group?.members.find(
-    (member) =>
-      getUserEmailFromIdentifier(member.member) === currentUserV1.value.email
+    (member) => extractUserId(member.member) === currentUserV1.value.email
   );
 });
 

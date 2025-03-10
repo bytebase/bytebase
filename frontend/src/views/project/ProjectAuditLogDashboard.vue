@@ -55,7 +55,12 @@ import DataExportButton from "@/components/DataExportButton.vue";
 import { FeatureAttention } from "@/components/FeatureGuard";
 import NoDataPlaceholder from "@/components/misc/NoDataPlaceholder.vue";
 import PagedTable from "@/components/v2/Model/PagedTable.vue";
-import { featureToRef, useAuditLogStore, pushNotification } from "@/store";
+import {
+  featureToRef,
+  useAuditLogStore,
+  batchGetOrFetchUsers,
+  pushNotification,
+} from "@/store";
 import { type SearchAuditLogsParams } from "@/types";
 import type { AuditLog } from "@/types/proto/v1/audit_log_service";
 import { ExportFormat } from "@/types/proto/v1/common";
@@ -108,6 +113,7 @@ const fetchAuditLog = async ({
     pageToken,
     pageSize,
   });
+  await batchGetOrFetchUsers(auditLogs.map((log) => log.user));
   return { nextPageToken, list: auditLogs };
 };
 

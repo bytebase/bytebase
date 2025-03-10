@@ -18,12 +18,8 @@ import {
   useIssueContext,
 } from "@/components/IssueV1/logic";
 import PlanCheckRunBar from "@/components/PlanCheckRun/PlanCheckRunBar.vue";
-import { useCurrentUserV1 } from "@/store";
-import {
-  extractUserResourceName,
-  hasProjectPermissionV2,
-  isValidTaskName,
-} from "@/utils";
+import { useCurrentUserV1, extractUserId } from "@/store";
+import { hasProjectPermissionV2, isValidTaskName } from "@/utils";
 
 const currentUser = useCurrentUserV1();
 const { issue, selectedTask, getPlanCheckRunsForTask } = useIssueContext();
@@ -45,7 +41,7 @@ const allowRunChecks = computed(() => {
   // - the creator of the issue
   // - ones who have bb.planCheckRuns.run permission in the project
   const me = currentUser.value;
-  if (extractUserResourceName(issue.value.creator) === me.email) {
+  if (extractUserId(issue.value.creator) === me.email) {
     return true;
   }
   if (

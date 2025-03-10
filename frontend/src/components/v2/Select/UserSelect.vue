@@ -1,5 +1,8 @@
 <template>
   <ResourceSelect
+    v-bind="$attrs"
+    :remote="true"
+    :loading="state.loading"
     :multiple="multiple"
     :value="user"
     :values="users"
@@ -10,36 +13,34 @@
     :filter="filterByEmail"
     :show-resource-name="false"
     class="bb-user-select"
+    @search="handleSearch"
     @update:value="(val) => $emit('update:user', val)"
     @update:values="(val) => $emit('update:users', val)"
   />
 </template>
 
 <script lang="tsx" setup>
-import { computedAsync } from "@vueuse/core";
-import { computed, watch, watchEffect } from "vue";
+import { useDebounceFn } from "@vueuse/core";
+import { computed, watch, reactive, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import UserIcon from "~icons/heroicons-outline/user";
-import {
-  getMemberBindingsByRole,
-  getMemberBindings,
-} from "@/components/Member/utils";
 import UserAvatar from "@/components/User/UserAvatar.vue";
 import ServiceAccountTag from "@/components/misc/ServiceAccountTag.vue";
-import { useProjectV1Store, useUserStore, useWorkspaceV1Store } from "@/store";
+import { useProjectV1Store, extractUserId, useUserStore } from "@/store";
+import { userNamePrefix } from "@/store/modules/v1/common";
 import {
   SYSTEM_BOT_USER_NAME,
-  UNKNOWN_ID,
   UNKNOWN_USER_NAME,
   allUsersUser,
-  unknownUser,
-  PresetRoleType,
   isValidProjectName,
-  PRESET_WORKSPACE_ROLES,
+  ALL_USERS_USER_EMAIL,
 } from "@/types";
-import { State } from "@/types/proto/v1/common";
-import { UserType, type User } from "@/types/proto/v1/user_service";
-import { extractUserUID } from "@/utils";
+import {
+  UserType,
+  userTypeToJSON,
+  type User,
+} from "@/types/proto/v1/user_service";
+import { memberMapToRolesInProjectIAM, getDefaultPagination } from "@/utils";
 import ResourceSelect from "./ResourceSelect.vue";
 
 const props = withDefaults(
@@ -48,7 +49,6 @@ const props = withDefaults(
     user?: string;
     users?: string[];
     projectName?: string;
-    includeAll?: boolean;
     // allUsers is a special user that represents all users in the project.
     includeAllUsers?: boolean;
     includeSystemBot?: boolean;
@@ -64,16 +64,10 @@ const props = withDefaults(
     user: undefined,
     users: undefined,
     projectName: undefined,
-    includeAll: false,
     includeAllUsers: false,
     includeSystemBot: false,
     includeServiceAccount: false,
     includeArchived: false,
-    allowedWorkspaceRoleList: () => [
-      PresetRoleType.WORKSPACE_ADMIN,
-      PresetRoleType.WORKSPACE_DBA,
-      PresetRoleType.WORKSPACE_MEMBER,
-    ],
     autoReset: true,
     filter: undefined,
     size: "medium",
@@ -85,123 +79,91 @@ const emit = defineEmits<{
   (event: "update:users", value: string[]): void;
 }>();
 
+interface LocalState {
+  loading: boolean;
+  rawUserList: User[];
+}
+
 const { t } = useI18n();
 const projectV1Store = useProjectV1Store();
 const userStore = useUserStore();
-const workspaceStore = useWorkspaceV1Store();
-
-const prepare = () => {
-  if (props.projectName && isValidProjectName(props.projectName)) {
-    projectV1Store.getOrFetchProjectByName(props.projectName);
-  } else {
-    // Need not to fetch the entire member list since it's done in
-    // root component
-  }
-};
-watchEffect(prepare);
-
-const getUserListFromProject = async (projectName: string) => {
-  const project = await projectV1Store.getOrFetchProjectByName(projectName);
-  const memberMap = getMemberBindingsByRole({
-    policies: [
-      {
-        level: "WORKSPACE",
-        policy: workspaceStore.workspaceIamPolicy,
-      },
-      {
-        level: "PROJECT",
-        policy: project.iamPolicy,
-      },
-    ],
-    searchText: "",
-    ignoreRoles: new Set(PRESET_WORKSPACE_ROLES),
-  });
-
-  return getMemberBindings(memberMap)
-    .map((binding) => binding.user)
-    .filter((u) => u) as User[];
-};
-
-const getUserListFromWorkspace = () => {
-  return userStore.userList
-    .filter((user) => {
-      if (props.includeArchived) return true;
-      return user.state === State.ACTIVE;
-    })
-    .filter((user) => {
-      if (props.allowedWorkspaceRoleList.length === 0) {
-        // Need not to filter by workspace role
-        return true;
-      }
-      return [...workspaceStore.getWorkspaceRolesByEmail(user.email)].some(
-        (role) => props.allowedWorkspaceRoleList.includes(role)
-      );
-    });
-};
-
-const rawUserList = computedAsync(async () => {
-  let list = [];
-  if (props.projectName && isValidProjectName(props.projectName)) {
-    list = await getUserListFromProject(props.projectName);
-  } else {
-    list = getUserListFromWorkspace();
-  }
-
-  return list.filter((user) => {
-    if (
-      user.userType === UserType.SERVICE_ACCOUNT &&
-      !props.includeServiceAccount
-    ) {
-      return false;
-    }
-
-    if (user.userType === UserType.SYSTEM_BOT && !props.includeSystemBot) {
-      return false;
-    }
-
-    return true;
-  });
-}, []);
-
-const combinedUserList = computed(() => {
-  let list = [...rawUserList.value];
-
-  list.sort((a, b) => {
-    return (
-      parseInt(extractUserUID(a.name), 10) -
-      parseInt(extractUserUID(b.name), 10)
-    );
-  });
-
-  if (props.filter) {
-    list = list.filter(props.filter);
-  }
-
-  if (props.includeSystemBot) {
-    const systemBotIndex = list.findIndex(
-      (user) => user.name === SYSTEM_BOT_USER_NAME
-    );
-    if (systemBotIndex >= 0) {
-      const systemBotUser = list[systemBotIndex];
-      list.splice(systemBotIndex, 1);
-      list.unshift(systemBotUser);
-    } else {
-      list.unshift(userStore.getUserByName(SYSTEM_BOT_USER_NAME)!);
-    }
-  }
-  if (props.includeAllUsers) {
-    list.unshift(allUsersUser());
-  }
-  if (props.user === String(UNKNOWN_ID) || props.includeAll) {
-    const dummyAll = {
-      ...unknownUser(),
-      title: t("common.all"),
-    };
-    list.unshift(dummyAll);
-  }
-
-  return list;
+const state = reactive<LocalState>({
+  loading: false,
+  rawUserList: [],
 });
+
+const getFilter = (search: string) => {
+  const filter = [];
+  if (search) {
+    filter.push(`(name.matches("${search}") || email.matches("${search}"))`);
+  }
+  const allowedType = [UserType.USER];
+  if (props.includeServiceAccount) {
+    allowedType.push(UserType.SERVICE_ACCOUNT);
+  }
+  if (props.includeSystemBot) {
+    allowedType.push(UserType.SYSTEM_BOT);
+  }
+  if (allowedType.length === 1) {
+    filter.push(`user_type == "${userTypeToJSON(allowedType[0])}"`);
+  } else {
+    filter.push(
+      `user_type in [${allowedType.map((t) => `"${userTypeToJSON(t)}"`).join(", ")}]`
+    );
+  }
+
+  return filter.join(" && ");
+};
+
+const searchUsers = async (search: string) => {
+  const { users } = await userStore.fetchUserList({
+    filter: getFilter(search),
+    pageSize: getDefaultPagination(),
+    showDeleted: props.includeArchived,
+  });
+  return users;
+};
+
+const handleSearch = useDebounceFn(async (search: string) => {
+  state.loading = true;
+  try {
+    const users = await searchUsers(search);
+    state.rawUserList = users;
+    if (props.projectName && isValidProjectName(props.projectName)) {
+      // TODO(ed): filter by project in the backend.
+      state.rawUserList = await filterUsersByProject(
+        state.rawUserList,
+        props.projectName
+      );
+    }
+    if (!search && props.includeAllUsers) {
+      state.rawUserList.unshift(allUsersUser());
+    }
+  } finally {
+    state.loading = false;
+  }
+}, 500);
+
+onMounted(async () => {
+  await handleSearch("");
+});
+
+const filterUsersByProject = async (
+  users: User[],
+  projectName: string
+): Promise<User[]> => {
+  const project = await projectV1Store.getOrFetchProjectByName(projectName);
+  const memberMap = memberMapToRolesInProjectIAM(project.iamPolicy);
+  if (
+    memberMap.get(`${userNamePrefix}${ALL_USERS_USER_EMAIL}`)?.size ??
+    0 > 0
+  ) {
+    return users;
+  }
+  return users.filter((user) => {
+    return memberMap.get(`${userNamePrefix}${user.email}`)?.size ?? 0 > 0;
+  });
+};
 
 const renderAvatar = (user: User) => {
   if (user.name === UNKNOWN_USER_NAME) {
@@ -243,10 +205,10 @@ const renderLabel = (user: User) => {
 };
 
 const options = computed(() => {
-  return combinedUserList.value.map((user) => {
+  return state.rawUserList.map((user) => {
     return {
       resource: user,
-      value: extractUserUID(user.name),
+      value: extractUserId(user.name),
       label: user.title,
     };
   });
@@ -263,16 +225,14 @@ const resetInvalidSelection = () => {
   if (!props.autoReset) return;
   if (
     props.user &&
-    !combinedUserList.value.find(
-      (user) => extractUserUID(user.name) === props.user
-    )
+    !state.rawUserList.find((user) => extractUserId(user.name) === props.user)
   ) {
     emit("update:user", undefined);
   }
 };
 
 watch(
-  [() => props.user, () => props.users, combinedUserList],
+  [() => props.user, () => props.users, state.rawUserList],
   resetInvalidSelection,
   {
     immediate: true,

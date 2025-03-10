@@ -1,0 +1,43 @@
+<template>
+  <div
+    v-if="candidateUser"
+    class="flex items-center py-1 gap-x-1"
+    :class="[candidateUser.name === currentUser.name && 'font-bold']"
+  >
+    <PrincipalAvatar :user="candidateUser" size="SMALL" />
+    <span class="whitespace-nowrap">{{ candidateUser.title }}</span>
+    <span
+      v-if="currentUser.name === candidateUser.name"
+      class="inline-flex items-center px-1 py-0.5 rounded-lg text-xs font-semibold bg-green-100 text-green-800"
+    >
+      {{ $t("custom-approval.issue-review.you") }}
+    </span>
+  </div>
+</template>
+
+<script lang="tsx" setup>
+import { computedAsync } from "@vueuse/core";
+import PrincipalAvatar from "@/components/PrincipalAvatar.vue";
+import { useCurrentUserV1, useUserStore } from "@/store";
+import { State } from "@/types/proto/v1/common";
+import { UserType } from "@/types/proto/v1/user_service";
+
+const props = defineProps<{
+  // candidate in users/{email} format.
+  candidate: string;
+}>();
+
+const currentUser = useCurrentUserV1();
+const userStore = useUserStore();
+
+const candidateUser = computedAsync(async () => {
+  const user = await userStore.getOrFetchUserByIdentifier(props.candidate);
+  if (!user) {
+    return;
+  }
+  if (user.userType !== UserType.USER || user.state !== State.ACTIVE) {
+    return;
+  }
+  return user;
+});
+</script>

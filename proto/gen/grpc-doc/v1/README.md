@@ -320,6 +320,9 @@
     - [GetUserRequest](#bytebase-v1-GetUserRequest)
     - [ListUsersRequest](#bytebase-v1-ListUsersRequest)
     - [ListUsersResponse](#bytebase-v1-ListUsersResponse)
+    - [StatUsersRequest](#bytebase-v1-StatUsersRequest)
+    - [StatUsersResponse](#bytebase-v1-StatUsersResponse)
+    - [StatUsersResponse.StatUser](#bytebase-v1-StatUsersResponse-StatUser)
     - [UndeleteUserRequest](#bytebase-v1-UndeleteUserRequest)
     - [UpdateUserRequest](#bytebase-v1-UpdateUserRequest)
     - [User](#bytebase-v1-User)
@@ -5509,9 +5512,9 @@ Metadata about the request.
 
 When paginating, all other parameters provided to `ListUsers` must match the call that provided the page token. |
 | show_deleted | [bool](#bool) |  | Show deleted users if specified. |
-| filter | [string](#string) |  | Filter is used to filter users returned in the list. Supported filter: - name - email - user_type
+| filter | [string](#string) |  | Filter is used to filter users returned in the list. Supported filter: - name - email - user_type - state
 
-For example: name == &#34;ed&#34; name.matches(&#34;ed&#34;) email == &#34;ed@bytebase.com&#34; user_type == &#34;SERVICE_ACCOUNT&#34; user_type in [&#34;SERVICE_ACCOUNT&#34;, &#34;USER&#34;] !(user_type in [&#34;SERVICE_ACCOUNT&#34;, &#34;USER&#34;]) |
+For example: name == &#34;ed&#34; name.matches(&#34;ed&#34;) email == &#34;ed@bytebase.com&#34; email.matches(&#34;ed&#34;) user_type == &#34;SERVICE_ACCOUNT&#34; user_type in [&#34;SERVICE_ACCOUNT&#34;, &#34;USER&#34;] !(user_type in [&#34;SERVICE_ACCOUNT&#34;, &#34;USER&#34;]) state == &#34;DELETED&#34; |
 
 
 
@@ -5528,6 +5531,48 @@ For example: name == &#34;ed&#34; name.matches(&#34;ed&#34;) email == &#34;ed@by
 | ----- | ---- | ----- | ----------- |
 | users | [User](#bytebase-v1-User) | repeated | The users from the specified request. |
 | next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
+
+
+
+
+
+
+<a name="bytebase-v1-StatUsersRequest"></a>
+
+### StatUsersRequest
+
+
+
+
+
+
+
+<a name="bytebase-v1-StatUsersResponse"></a>
+
+### StatUsersResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| stats | [StatUsersResponse.StatUser](#bytebase-v1-StatUsersResponse-StatUser) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-StatUsersResponse-StatUser"></a>
+
+### StatUsersResponse.StatUser
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| user_type | [UserType](#bytebase-v1-UserType) |  |  |
+| state | [State](#bytebase-v1-State) |  |  |
+| count | [int32](#int32) |  |  |
 
 
 
@@ -5642,6 +5687,7 @@ The user&#39;s `name` field is used to identify the user to update. Format: user
 | ----------- | ------------ | ------------- | ------------|
 | GetUser | [GetUserRequest](#bytebase-v1-GetUserRequest) | [User](#bytebase-v1-User) | Get the user. Any authenticated user can get the user. |
 | ListUsers | [ListUsersRequest](#bytebase-v1-ListUsersRequest) | [ListUsersResponse](#bytebase-v1-ListUsersResponse) | List all users. Any authenticated user can list users. |
+| StatUsers | [StatUsersRequest](#bytebase-v1-StatUsersRequest) | [StatUsersResponse](#bytebase-v1-StatUsersResponse) | Get user stat. Any authenticated user can get stat. |
 | CreateUser | [CreateUserRequest](#bytebase-v1-CreateUserRequest) | [User](#bytebase-v1-User) | Create a user. When Disallow Signup is enabled, only the caller with bb.users.create on the workspace can create a user. Otherwise, any unauthenticated user can create a user. |
 | UpdateUser | [UpdateUserRequest](#bytebase-v1-UpdateUserRequest) | [User](#bytebase-v1-User) | Only the user itself and the user with bb.users.update permission on the workspace can update the user. |
 | DeleteUser | [DeleteUserRequest](#bytebase-v1-DeleteUserRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Only the user with bb.users.delete permission on the workspace can delete the user. The last remaining workspace admin cannot be deleted. |

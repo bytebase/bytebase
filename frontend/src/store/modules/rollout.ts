@@ -5,9 +5,8 @@ import { rolloutServiceClient } from "@/grpcweb";
 import type { MaybeRef, Pagination, ComposedRollout } from "@/types";
 import { isValidRolloutName, unknownRollout, unknownUser } from "@/types";
 import type { Rollout } from "@/types/proto/v1/rollout_service";
-import { extractUserResourceName } from "@/utils";
 import { DEFAULT_PAGE_SIZE } from "./common";
-import { useUserStore } from "./user";
+import { useUserStore, batchGetOrFetchUsers } from "./user";
 import { useProjectV1Store, batchGetOrFetchProjects } from "./v1";
 import { getProjectNameRolloutId, projectNamePrefix } from "./v1/common";
 
@@ -90,12 +89,13 @@ export const useRolloutByName = (name: MaybeRef<string>) => {
 
 export const batchComposeRollout = async (rolloutList: Rollout[]) => {
   const userStore = useUserStore();
+  await batchGetOrFetchUsers(rolloutList.map((rollout) => rollout.creator));
+
   const composedRolloutList = rolloutList.map((rollout) => {
     const composed = rollout as ComposedRollout;
     composed.project = `${projectNamePrefix}${head(getProjectNameRolloutId(rollout.name))}`;
     composed.creatorEntity =
-      userStore.getUserByEmail(extractUserResourceName(composed.creator)) ??
-      unknownUser();
+      userStore.getUserByIdentifier(composed.creator) ?? unknownUser();
     return composed;
   });
   await batchGetOrFetchProjects(

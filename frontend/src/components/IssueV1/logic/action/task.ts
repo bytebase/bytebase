@@ -7,8 +7,11 @@ import type { ComposedIssue } from "@/types";
 import { IssueStatus, Issue_Type } from "@/types/proto/v1/issue_service";
 import type { Task } from "@/types/proto/v1/rollout_service";
 import { Task_Status, Task_Type } from "@/types/proto/v1/rollout_service";
-import { type User } from "@/types/proto/v1/user_service";
-import { hasProjectPermissionV2, hasWorkspacePermissionV2 } from "@/utils";
+import {
+  hasProjectPermissionV2,
+  hasWorkspacePermissionV2,
+  isUserIncludedInList,
+} from "@/utils";
 
 export type TaskRolloutAction =
   | "ROLLOUT" // NOT_STARTED -> PENDING
@@ -128,9 +131,8 @@ export const taskRolloutActionButtonProps = (
 
 export const allowUserToApplyTaskRolloutAction = (
   issue: ComposedIssue,
-  task: Task,
   action: TaskRolloutAction,
-  releaserCandidates: User[]
+  releaserCandidates: string[]
 ) => {
   const me = useCurrentUserV1();
   // For data export issues, only the creator can take actions.
@@ -146,7 +148,5 @@ export const allowUserToApplyTaskRolloutAction = (
     return true;
   }
 
-  return releaserCandidates.some(
-    (candidate) => candidate.name === me.value.name
-  );
+  return isUserIncludedInList(me.value.email, releaserCandidates);
 };

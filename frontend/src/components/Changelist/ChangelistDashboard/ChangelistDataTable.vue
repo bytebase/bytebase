@@ -25,10 +25,7 @@ import HumanizeDate from "@/components/misc/HumanizeDate.vue";
 import { useUserStore } from "@/store";
 import { getDateForPbTimestamp } from "@/types";
 import type { Changelist } from "@/types/proto/v1/changelist_service";
-import {
-  extractUserResourceName,
-  extractChangelistResourceName,
-} from "@/utils";
+import { extractChangelistResourceName } from "@/utils";
 import { projectForChangelist } from "../ChangelistDetail/common";
 
 type ChangelistDataTableColumn = DataTableColumn<Changelist> & {
@@ -52,6 +49,7 @@ const props = withDefaults(
 
 const { t } = useI18n();
 const router = useRouter();
+const userStore = useUserStore();
 
 const columnList = computed((): ChangelistDataTableColumn[] => {
   return (
@@ -87,7 +85,7 @@ const columnList = computed((): ChangelistDataTableColumn[] => {
         title: t("common.creator"),
         width: 256,
         render: (changelist) => {
-          const creator = getUser(changelist.creator);
+          const creator = userStore.getUserByIdentifier(changelist.creator);
           if (!creator) return null;
           return (
             <div class="flex flex-row items-center overflow-hidden gap-x-1">
@@ -100,11 +98,6 @@ const columnList = computed((): ChangelistDataTableColumn[] => {
     ] as ChangelistDataTableColumn[]
   ).filter((column) => !column.hide);
 });
-
-const getUser = (name: string) => {
-  const email = extractUserResourceName(name);
-  return useUserStore().getUserByEmail(email);
-};
 
 const rowProps = (changelist: Changelist) => {
   return {

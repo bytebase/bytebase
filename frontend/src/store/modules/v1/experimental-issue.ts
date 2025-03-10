@@ -8,6 +8,7 @@ import {
 import {
   useProjectV1Store,
   useUserStore,
+  batchGetOrFetchUsers,
   batchGetOrFetchDatabases,
 } from "@/store";
 import type { ComposedIssue, ComposedProject, ComposedTaskRun } from "@/types";
@@ -22,11 +23,7 @@ import {
 import type { Issue } from "@/types/proto/v1/issue_service";
 import type { Plan } from "@/types/proto/v1/plan_service";
 import { TaskRunLog, type Rollout } from "@/types/proto/v1/rollout_service";
-import {
-  extractProjectResourceName,
-  extractUserResourceName,
-  hasProjectPermissionV2,
-} from "@/utils";
+import { extractProjectResourceName, hasProjectPermissionV2 } from "@/utils";
 import { DEFAULT_PAGE_SIZE } from "../common";
 
 export interface ComposeIssueConfig {
@@ -41,12 +38,13 @@ export const composeIssue = async (
   const userStore = useUserStore();
 
   const project = `projects/${extractProjectResourceName(rawIssue.name)}`;
-  const projectEntity =
-    await useProjectV1Store().getOrFetchProjectByName(project);
-
-  const creatorEntity =
-    userStore.getUserByEmail(extractUserResourceName(rawIssue.creator)) ??
-    unknownUser();
+  const [projectEntity, creatorEntity, _] = await Promise.all([
+    useProjectV1Store().getOrFetchProjectByName(project),
+    userStore
+      .getOrFetchUserByIdentifier(rawIssue.creator)
+      .then((user) => user ?? unknownUser()),
+    batchGetOrFetchUsers(rawIssue.subscribers),
+  ]);
 
   const issue: ComposedIssue = {
     ...rawIssue,

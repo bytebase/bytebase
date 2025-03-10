@@ -70,7 +70,12 @@ import {
 import ErrorList from "@/components/misc/ErrorList.vue";
 import { planServiceClient } from "@/grpcweb";
 import { emitWindowEvent } from "@/plugins";
-import { hasFeature, pushNotification, useCurrentUserV1 } from "@/store";
+import {
+  hasFeature,
+  pushNotification,
+  useCurrentUserV1,
+  extractUserId,
+} from "@/store";
 import { getTimeForPbTimestamp } from "@/types";
 import { Timestamp } from "@/types/proto/google/protobuf/timestamp";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
@@ -83,7 +88,6 @@ import {
 } from "@/types/proto/v1/rollout_service";
 import {
   defer,
-  extractUserResourceName,
   flattenTaskV1List,
   hasProjectPermissionV2,
   isDatabaseChangeRelatedIssue,
@@ -132,9 +136,7 @@ const disallowEditReasons = computed(() => {
 
   let allow = false;
   // Issue creator is allowed to change the rollout time.
-  if (
-    extractUserResourceName(issue.value.creator) === currentUser.value.email
-  ) {
+  if (extractUserId(issue.value.creator) === currentUser.value.email) {
     allow = true;
   }
   if (hasProjectPermissionV2(issue.value.projectEntity, "bb.plans.update")) {

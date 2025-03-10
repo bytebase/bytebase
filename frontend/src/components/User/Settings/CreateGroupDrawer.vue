@@ -58,7 +58,6 @@
                   :multiple="false"
                   :size="'medium'"
                   :include-all="false"
-                  :allowed-workspace-role-list="[]"
                   @update:user="(uid) => updateMemberEmail(i, uid)"
                 />
                 <GroupMemberRoleSelect
@@ -149,18 +148,17 @@ import {
   useUserStore,
   useSettingV1Store,
 } from "@/store";
-import { userNamePrefix, groupNamePrefix } from "@/store/modules/v1/common";
-import { getUserEmailFromIdentifier } from "@/store/modules/v1/common";
+import {
+  userNamePrefix,
+  groupNamePrefix,
+  extractUserId,
+} from "@/store/modules/v1/common";
 import {
   Group,
   GroupMember,
   GroupMember_Role,
 } from "@/types/proto/v1/group_service";
-import {
-  isValidEmail,
-  extractUserUID,
-  hasWorkspacePermissionV2,
-} from "@/utils";
+import { isValidEmail, hasWorkspacePermissionV2 } from "@/utils";
 import RemoveGroupButton from "./RemoveGroupButton.vue";
 import GroupMemberRoleSelect from "./UserDataTableByGroup/cells/GroupMemberRoleSelect.vue";
 
@@ -216,8 +214,7 @@ const disallowEditMember = computed(() => !!props.group?.source);
 const isGroupOwner = computed(() => {
   return (
     props.group?.members.find(
-      (member) =>
-        getUserEmailFromIdentifier(member.member) === currentUserV1.value.email
+      (member) => extractUserId(member.member) === currentUserV1.value.email
     )?.role === GroupMember_Role.OWNER
   );
 });
@@ -299,19 +296,18 @@ const getUserUidForMember = (member: GroupMember) => {
   if (!member.member) {
     return;
   }
-  const email = getUserEmailFromIdentifier(member.member);
-  const user = userStore.getUserByEmail(email);
+  const user = userStore.getUserByIdentifier(member.member);
   if (!user) {
     return;
   }
-  return extractUserUID(user.name);
+  return extractUserId(user.name);
 };
 
 const updateMemberEmail = (index: number, uid: string | undefined) => {
   if (!uid) {
     return;
   }
-  const user = userStore.getUserById(uid);
+  const user = userStore.getUserByIdentifier(uid);
   if (!user) {
     return;
   }

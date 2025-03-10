@@ -4,7 +4,7 @@
       <div class="text-sm text-control-light space-x-1">
         <ActionCreator
           v-if="
-            extractUserResourceName(issueComment.creator) !==
+            extractUserId(issueComment.creator) !==
               userStore.systemBotUser?.email ||
             issueComment.type === IssueCommentType.USER_COMMENT
           "
@@ -55,9 +55,8 @@
 <script lang="ts" setup>
 import HumanizeTs from "@/components/misc/HumanizeTs.vue";
 import { IssueCommentType, type ComposedIssueComment } from "@/store";
-import { useUserStore } from "@/store";
+import { useUserStore, extractUserId } from "@/store";
 import { getTimeForPbTimestamp, type ComposedIssue } from "@/types";
-import { extractUserResourceName } from "@/utils";
 import ActionCreator from "./ActionCreator.vue";
 import ActionSentence from "./ActionSentence.vue";
 

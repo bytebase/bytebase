@@ -22,7 +22,6 @@
 </template>
 
 <script setup lang="tsx">
-import { useDebounceFn } from "@vueuse/core";
 import { ref, watch, computed } from "vue";
 import type { ComponentExposed } from "vue-component-type-helpers";
 import { useRouter } from "vue-router";
@@ -150,9 +149,7 @@ const fetchDatabses = async ({
 
 watch(
   () => [filter.value, props.parent],
-  useDebounceFn(async () => {
-    await databasePagedTable.value?.refresh();
-  }, 500)
+  () => databasePagedTable.value?.refresh()
 );
 
 const handleDatabaseClick = (event: MouseEvent, database: ComposedDatabase) => {
