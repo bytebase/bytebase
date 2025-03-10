@@ -17,15 +17,6 @@ import (
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
-const (
-	// SlowQueryMaxLen is the max length of slow query.
-	SlowQueryMaxLen = 2048
-	// SlowQueryMaxSamplePerFingerprint is the max number of slow query samples per fingerprint.
-	SlowQueryMaxSamplePerFingerprint = 100
-	// SlowQueryMaxSamplePerDay is the max number of slow query samples per day.
-	SlowQueryMaxSamplePerDay = 10000
-)
-
 // User is the database user.
 type User struct {
 	Name  string
@@ -230,12 +221,6 @@ type Driver interface {
 	// SyncDBSchema syncs a single database schema.
 	SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetadata, error)
 
-	// Sync slow query logs
-	// SyncSlowQuery syncs the slow query logs.
-	// The returned map is keyed by database name, and the value is list of slow query statistics grouped by query fingerprint.
-	SyncSlowQuery(ctx context.Context, logDateTs time.Time) (map[string]*storepb.SlowQueryStatistics, error)
-	// CheckSlowQueryLogEnabled checks if the slow query log is enabled.
-	CheckSlowQueryLogEnabled(ctx context.Context) error
 	// Dump dumps the schema of database.
 	Dump(ctx context.Context, out io.Writer, dbSchema *storepb.DatabaseSchemaMetadata) error
 }

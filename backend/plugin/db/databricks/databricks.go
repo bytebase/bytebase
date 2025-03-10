@@ -126,10 +126,6 @@ func (d *Driver) Execute(ctx context.Context, statement string, _ db.ExecuteOpti
 	return 0, err
 }
 
-func (*Driver) CheckSlowQueryLogEnabled(_ context.Context) error {
-	return nil
-}
-
 // Execute SQL statement synchronously and return row data or error.
 func (d *Driver) execSingleSQLSync(ctx context.Context, statement string) ([][]string, []dbsql.ColumnInfo, error) {
 	resp, err := d.Client.StatementExecution.ExecuteAndWait(ctx, dbsql.ExecuteStatementRequest{
