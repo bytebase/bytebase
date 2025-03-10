@@ -41,7 +41,7 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 }
 
 func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetadata, error) {
-	dbName := d.config.Database
+	dbName := d.config.ConnectionContext.DatabaseName
 	if dbName == "" {
 		dbName = "default"
 	}

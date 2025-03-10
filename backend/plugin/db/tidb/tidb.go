@@ -72,7 +72,7 @@ func (d *Driver) Open(_ context.Context, dbType storepb.Engine, connCfg db.Conne
 	}()
 
 	protocol := "tcp"
-	if strings.HasPrefix(connCfg.Host, "/") {
+	if strings.HasPrefix(connCfg.DataSource.Host, "/") {
 		protocol = "unix"
 	}
 	params := []string{"multiStatements=true", "maxAllowedPacket=0"}
@@ -104,7 +104,7 @@ func (d *Driver) Open(_ context.Context, dbType storepb.Engine, connCfg db.Conne
 		params = append(params, fmt.Sprintf("tls=%s", tlsKey))
 	}
 
-	dsn := fmt.Sprintf("%s:%s@%s(%s:%s)/%s?%s", connCfg.Username, connCfg.Password, protocol, connCfg.Host, connCfg.Port, connCfg.Database, strings.Join(params, "&"))
+	dsn := fmt.Sprintf("%s:%s@%s(%s:%s)/%s?%s", connCfg.DataSource.Username, connCfg.Password, protocol, connCfg.DataSource.Host, connCfg.DataSource.Port, connCfg.ConnectionContext.DatabaseName, strings.Join(params, "&"))
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
 		return nil, err
@@ -117,7 +117,7 @@ func (d *Driver) Open(_ context.Context, dbType storepb.Engine, connCfg db.Conne
 	db.SetMaxIdleConns(15)
 	d.connectionCtx = connCfg.ConnectionContext
 	d.connCfg = connCfg
-	d.databaseName = connCfg.Database
+	d.databaseName = connCfg.ConnectionContext.DatabaseName
 
 	return d, nil
 }

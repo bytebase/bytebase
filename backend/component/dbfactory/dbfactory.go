@@ -39,19 +39,14 @@ func (d *DBFactory) GetAdminDatabaseDriver(ctx context.Context, instance *store.
 	if dataSource == nil {
 		return nil, common.Errorf(common.Internal, "admin data source not found for instance %q", instance.ResourceID)
 	}
-	databaseName := ""
 	if database != nil {
-		databaseName = database.DatabaseName
+		connectionContext.DatabaseName = database.DatabaseName
 	}
-	datashare := false
-	if database != nil && database.Metadata.GetDatashare() {
-		datashare = true
-	}
-	return d.GetDataSourceDriver(ctx, instance, dataSource, databaseName, datashare, false /* readOnly */, connectionContext)
+	return d.GetDataSourceDriver(ctx, instance, dataSource, connectionContext)
 }
 
 // GetDataSourceDriver returns the database driver for a data source.
-func (d *DBFactory) GetDataSourceDriver(ctx context.Context, instance *store.InstanceMessage, dataSource *storepb.DataSource, databaseName string, datashare, readOnly bool, connectionContext db.ConnectionContext) (db.Driver, error) {
+func (d *DBFactory) GetDataSourceDriver(ctx context.Context, instance *store.InstanceMessage, dataSource *storepb.DataSource, connectionContext db.ConnectionContext) (db.Driver, error) {
 	dbBinDir := ""
 	switch instance.Metadata.GetEngine() {
 	case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
@@ -60,10 +55,6 @@ func (d *DBFactory) GetDataSourceDriver(ctx context.Context, instance *store.Ins
 		dbBinDir = d.pgBinDir
 	case storepb.Engine_MONGODB:
 		dbBinDir = d.mongoBinDir
-	}
-
-	if databaseName == "" {
-		databaseName = dataSource.GetDatabase()
 	}
 
 	password, err := secretlib.ReplaceExternalSecret(ctx, dataSource.GetPassword(), dataSource.GetExternalSecret())
@@ -105,25 +96,21 @@ func (d *DBFactory) GetDataSourceDriver(ctx context.Context, instance *store.Ins
 			DbBinDir: dbBinDir,
 		},
 		db.ConnectionConfig{
-			Username: dataSource.GetUsername(),
-			Password: password,
+			DataSource:        dataSource,
+			ConnectionContext: connectionContext,
+			Password:          password,
+
 			TLSConfig: db.TLSConfig{
 				UseSSL:  dataSource.GetUseSsl(),
 				SslCA:   dataSource.GetSslCa(),
 				SslCert: dataSource.GetSslCert(),
 				SslKey:  dataSource.GetSslKey(),
 			},
-			Host:                      dataSource.GetHost(),
-			Port:                      dataSource.GetPort(),
-			Database:                  databaseName,
-			DataShare:                 datashare,
 			SRV:                       dataSource.GetSrv(),
 			AuthenticationDatabase:    dataSource.GetAuthenticationDatabase(),
 			SID:                       dataSource.GetSid(),
 			ServiceName:               dataSource.ServiceName,
 			SSHConfig:                 sshConfig,
-			ReadOnly:                  readOnly,
-			ConnectionContext:         connectionContext,
 			AuthenticationPrivateKey:  dataSource.GetAuthenticationPrivateKey(),
 			AuthenticationType:        dataSource.GetAuthenticationType(),
 			SASLConfig:                dbSaslConfig,
