@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net"
 	"os"
+	"time"
 
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/agent"
@@ -127,3 +128,9 @@ func init() {
 		PortFIFO <- i + 6113
 	}
 }
+
+type NoDeadlineConn struct{ net.Conn }
+
+func (*NoDeadlineConn) SetDeadline(time.Time) error      { return nil }
+func (*NoDeadlineConn) SetReadDeadline(time.Time) error  { return nil }
+func (*NoDeadlineConn) SetWriteDeadline(time.Time) error { return nil }

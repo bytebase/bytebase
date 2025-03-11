@@ -66,8 +66,6 @@ func newDriver(db.DriverConfig) db.Driver {
 
 // Open opens a Postgres driver.
 func (driver *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
-	// Require username for Postgres, as the guessDSN 1st guess is to use the username as the connecting database
-	// if database name is not explicitly specified.
 	if config.DataSource.Username == "" {
 		return nil, errors.Errorf("user must be set")
 	}
@@ -104,7 +102,7 @@ func (driver *Driver) Open(_ context.Context, _ storepb.Engine, config db.Connec
 			if err != nil {
 				return nil, err
 			}
-			return &noDeadlineConn{Conn: conn}, nil
+			return &util.NoDeadlineConn{Conn: conn}, nil
 		}
 	}
 	driver.databaseName = config.ConnectionContext.DatabaseName
@@ -124,12 +122,6 @@ func (driver *Driver) Open(_ context.Context, _ storepb.Engine, config db.Connec
 	driver.db = db
 	return driver, nil
 }
-
-type noDeadlineConn struct{ net.Conn }
-
-func (*noDeadlineConn) SetDeadline(time.Time) error      { return nil }
-func (*noDeadlineConn) SetReadDeadline(time.Time) error  { return nil }
-func (*noDeadlineConn) SetWriteDeadline(time.Time) error { return nil }
 
 // Close closes the database and prevents new queries from starting.
 // Close then waits for all queries that have started processing on the server to finish.
