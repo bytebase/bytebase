@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io/fs"
 	"log/slog"
-	"sort"
 
 	"github.com/pkg/errors"
 
@@ -41,12 +40,6 @@ func LoadDemoDataIfNeeded(ctx context.Context, stores *store.Store, demoName str
 	if err != nil {
 		return err
 	}
-
-	// We separate demo data for each table into their own demo data file.
-	// And there exists foreign key dependency among tables, so we
-	// name the data file as 10001_xxx.sql, 10002_xxx.sql. Here we sort
-	// the file name so they are loaded accordingly.
-	sort.Strings(names)
 
 	// Loop over all data files and execute them in order.
 	for _, name := range names {
