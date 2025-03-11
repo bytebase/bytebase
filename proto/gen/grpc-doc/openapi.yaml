@@ -3369,6 +3369,13 @@ paths:
                   description: Show deleted projects if specified.
                   schema:
                     type: boolean
+                - name: filter
+                  in: query
+                  description: |-
+                    Filter the project.
+                     Check filter for SearchProjectsRequest for details.
+                  schema:
+                    type: string
             responses:
                 "200":
                     description: OK
@@ -12615,6 +12622,7 @@ components:
                          Supported filters:
                          - name
                          - resource_id
+                         - exclude_default: if not include the default project.
 
                          For example:
                          name = "project name"
@@ -12623,6 +12631,7 @@ components:
                          resource_id.matches("project id")
                          name = "project name" && resource_id.matches("project id")
                          name.matches("project name") || resource_id = "project id"
+                         exclude_default == true
         SearchProjectsResponse:
             type: object
             properties:

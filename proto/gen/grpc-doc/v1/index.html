@@ -22646,6 +22646,14 @@ the call that provided the page token. </p></td>
                   <td><p>Show deleted projects if specified. </p></td>
                 </tr>
               
+                <tr>
+                  <td>filter</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Filter the project.
+Check filter for SearchProjectsRequest for details. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -22851,6 +22859,7 @@ If enabled, the issue will be created with the pre-appended &#34;set role &lt;db
 Supported filters:
 - name
 - resource_id
+- exclude_default: if not include the default project.
 
 For example:
 name = &#34;project name&#34;
@@ -22858,7 +22867,8 @@ name.matches(&#34;project name&#34;)
 resource_id = &#34;project id&#34;
 resource_id.matches(&#34;project id&#34;)
 name = &#34;project name&#34; &amp;&amp; resource_id.matches(&#34;project id&#34;)
-name.matches(&#34;project name&#34;) || resource_id = &#34;project id&#34; </p></td>
+name.matches(&#34;project name&#34;) || resource_id = &#34;project id&#34;
+exclude_default == true </p></td>
                 </tr>
               
             </tbody>
