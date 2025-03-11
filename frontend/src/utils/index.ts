@@ -26,3 +26,4 @@ export * from "./useDashboardSidebar";
 export * from "./v1";
 export * from "./iam";
 export * from "./auto-route";
+export * from "./pagination";

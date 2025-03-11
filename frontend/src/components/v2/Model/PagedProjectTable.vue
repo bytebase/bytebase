@@ -11,7 +11,6 @@
 </template>
 
 <script lang="tsx" setup>
-import { useDebounceFn } from "@vueuse/core";
 import { ref, watch } from "vue";
 import type { ComponentExposed } from "vue-component-type-helpers";
 import PagedTable from "@/components/v2/Model/PagedTable.vue";
@@ -56,8 +55,6 @@ const fetchProjects = async ({
 
 watch(
   () => props.search,
-  useDebounceFn(async () => {
-    await projectPagedTable.value?.refresh();
-  }, 500)
+  () => projectPagedTable.value?.refresh()
 );
 </script>

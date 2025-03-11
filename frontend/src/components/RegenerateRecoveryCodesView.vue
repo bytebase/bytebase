@@ -63,7 +63,6 @@ const regenerateTempMfaSecret = async () => {
       regenerateTempMfaSecret: true,
     })
   );
-  await authStore.refreshUserIfNeeded(currentUser.value.name);
 };
 
 const regenerateRecoveryCodes = async () => {
@@ -76,7 +75,6 @@ const regenerateRecoveryCodes = async () => {
       regenerateRecoveryCodes: true,
     })
   );
-  await authStore.refreshUserIfNeeded(currentUser.value.name);
   pushNotification({
     module: "bytebase",
     style: "SUCCESS",
