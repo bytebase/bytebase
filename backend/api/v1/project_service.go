@@ -75,11 +75,18 @@ func (s *ProjectService) ListProjects(ctx context.Context, request *v1pb.ListPro
 		return nil, err
 	}
 	limitPlusOne := offset.limit + 1
-	projects, err := s.store.ListProjectV2(ctx, &store.FindProjectMessage{
+
+	find := &store.FindProjectMessage{
 		ShowDeleted: request.ShowDeleted,
 		Limit:       &limitPlusOne,
 		Offset:      &offset.offset,
-	})
+	}
+	filter, err := getListProjectFilter(request.Filter)
+	if err != nil {
+		return nil, err
+	}
+	find.Filter = filter
+	projects, err := s.store.ListProjectV2(ctx, find)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -125,6 +132,12 @@ func getListProjectFilter(filter string) (*store.ListResourceFilter, error) {
 		case "resource_id":
 			positionalArgs = append(positionalArgs, value.(string))
 			return fmt.Sprintf("project.resource_id = $%d", len(positionalArgs)), nil
+		case "exclude_default":
+			if _, ok := value.(bool); ok {
+				positionalArgs = append(positionalArgs, api.DefaultProjectID)
+				return fmt.Sprintf("project.resource_id != $%d", len(positionalArgs)), nil
+			}
+			return "TRUE", nil
 		default:
 			return "", status.Errorf(codes.InvalidArgument, "unsupport variable %q", variable)
 		}
