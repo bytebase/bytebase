@@ -3,6 +3,7 @@ package migrator
 
 import (
 	"context"
+	"database/sql"
 	"embed"
 	"fmt"
 	"io/fs"
@@ -39,7 +40,13 @@ func MigrateSchema(ctx context.Context, storeDB *store.DB, storeInstance *store.
 	}
 	defer metadataDriver.Close(ctx)
 
-	if err := backfillSchemaObjectOwner(ctx, metadataDriver); err != nil {
+	conn, err := metadataDriver.GetDB().Conn(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close()
+
+	if err := backfillSchemaObjectOwner(ctx, conn); err != nil {
 		return nil, err
 	}
 
@@ -49,7 +56,7 @@ func MigrateSchema(ctx context.Context, storeDB *store.DB, storeInstance *store.
 		return nil, errors.Wrapf(err, "failed to get cutoff version")
 	}
 	slog.Info(fmt.Sprintf("The prod cutoff schema version: %s", cutoffSchemaVersion))
-	if err := initializeSchema(ctx, storeInstance, metadataDriver, cutoffSchemaVersion); err != nil {
+	if err := initializeSchema(ctx, storeInstance, conn, cutoffSchemaVersion); err != nil {
 		return nil, err
 	}
 	var c int
@@ -101,7 +108,7 @@ func MigrateSchema(ctx context.Context, storeDB *store.DB, storeInstance *store.
 		return nil, errors.Wrap(err, "failed to get current schema version")
 	}
 
-	if _, err := migrate(ctx, storeInstance, metadataDriver, verBefore); err != nil {
+	if _, err := migrate(ctx, storeInstance, conn, verBefore); err != nil {
 		return nil, errors.Wrap(err, "failed to migrate")
 	}
 
@@ -114,10 +121,10 @@ func MigrateSchema(ctx context.Context, storeDB *store.DB, storeInstance *store.
 	return &verAfter, nil
 }
 
-func initializeSchema(ctx context.Context, storeInstance *store.Store, metadataDriver dbdriver.Driver, cutoffSchemaVersion semver.Version) error {
+func initializeSchema(ctx context.Context, storeInstance *store.Store, conn *sql.Conn, cutoffSchemaVersion semver.Version) error {
 	// We use environment table to determine whether we've initialized the schema.
 	var exists bool
-	if err := metadataDriver.GetDB().QueryRowContext(ctx,
+	if err := conn.QueryRowContext(ctx,
 		`SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'environment')`,
 	).Scan(&exists); err != nil {
 		return err
@@ -136,15 +143,10 @@ func initializeSchema(ctx context.Context, storeInstance *store.Store, metadataD
 
 	version := cutoffSchemaVersion.String()
 	// Set role to database owner so that the schema owner and database owner are consistent.
-	owner, err := getCurrentDatabaseOwner(ctx, metadataDriver)
+	owner, err := getCurrentDatabaseOwner(ctx, conn)
 	if err != nil {
 		return err
 	}
-	conn, err := metadataDriver.GetDB().Conn(ctx)
-	if err != nil {
-		return err
-	}
-	defer conn.Close()
 	if _, err := conn.ExecContext(ctx, fmt.Sprintf("SET ROLE '%s'", owner)); err != nil {
 		return err
 	}
@@ -163,7 +165,7 @@ func initializeSchema(ctx context.Context, storeInstance *store.Store, metadataD
 }
 
 // getCurrentDatabaseOwner gets the role of the current database.
-func getCurrentDatabaseOwner(ctx context.Context, metadataDriver dbdriver.Driver) (string, error) {
+func getCurrentDatabaseOwner(ctx context.Context, conn *sql.Conn) (string, error) {
 	const query = `
 		SELECT
 			u.rolname
@@ -173,14 +175,14 @@ func getCurrentDatabaseOwner(ctx context.Context, metadataDriver dbdriver.Driver
 			d.datname = current_database();
 		`
 	var owner string
-	if err := metadataDriver.GetDB().QueryRowContext(ctx, query).Scan(&owner); err != nil {
+	if err := conn.QueryRowContext(ctx, query).Scan(&owner); err != nil {
 		return "", err
 	}
 	return owner, nil
 }
 
-func getCurrentUser(ctx context.Context, metadataDriver dbdriver.Driver) (string, error) {
-	row := metadataDriver.GetDB().QueryRowContext(ctx, "SELECT current_user;")
+func getCurrentUser(ctx context.Context, conn *sql.Conn) (string, error) {
+	row := conn.QueryRowContext(ctx, "SELECT current_user;")
 	var user string
 	if err := row.Scan(&user); err != nil {
 		return "", err
@@ -188,19 +190,19 @@ func getCurrentUser(ctx context.Context, metadataDriver dbdriver.Driver) (string
 	return user, nil
 }
 
-func backfillSchemaObjectOwner(ctx context.Context, metadataDriver dbdriver.Driver) error {
-	currentUser, err := getCurrentUser(ctx, metadataDriver)
+func backfillSchemaObjectOwner(ctx context.Context, conn *sql.Conn) error {
+	currentUser, err := getCurrentUser(ctx, conn)
 	if err != nil {
 		return err
 	}
-	databaseOwner, err := getCurrentDatabaseOwner(ctx, metadataDriver)
+	databaseOwner, err := getCurrentDatabaseOwner(ctx, conn)
 	if err != nil {
 		return err
 	}
 	if currentUser == databaseOwner {
 		return nil
 	}
-	if _, err := metadataDriver.GetDB().ExecContext(ctx, fmt.Sprintf("reassign owned by %s to %s;", currentUser, databaseOwner)); err != nil {
+	if _, err := conn.ExecContext(ctx, fmt.Sprintf("reassign owned by %s to %s;", currentUser, databaseOwner)); err != nil {
 		return err
 	}
 	return nil
@@ -253,7 +255,7 @@ const (
 // file run in a transaction to prevent partial migrations.
 //
 // The procedure follows https://github.com/bytebase/bytebase/blob/main/docs/schema-update-guide.md.
-func migrate(ctx context.Context, storeInstance *store.Store, metadataDriver dbdriver.Driver, curVer semver.Version) (bool, error) {
+func migrate(ctx context.Context, storeInstance *store.Store, conn *sql.Conn, curVer semver.Version) (bool, error) {
 	slog.Info("Apply database migration if needed...")
 	slog.Info(fmt.Sprintf("Current schema version before migration: %s", curVer))
 
@@ -287,7 +289,7 @@ func migrate(ctx context.Context, storeInstance *store.Store, metadataDriver dbd
 			}
 			slog.Info(fmt.Sprintf("Migrating %s...", pv.version))
 			version := pv.version.String()
-			if _, _, err := executeMigrationDefault(ctx, storeInstance, metadataDriver, string(buf), version); err != nil {
+			if _, _, err := executeMigrationDefault(ctx, storeInstance, conn, string(buf), version); err != nil {
 				return false, err
 			}
 			retVersion = pv.version
@@ -421,7 +423,7 @@ func getMinorVersions(names []string) ([]semver.Version, error) {
 }
 
 // executeMigrationDefault executes migration.
-func executeMigrationDefault(ctx context.Context, stores *store.Store, driver dbdriver.Driver, statement string, version string) (migrationHistoryID string, updatedSchema string, resErr error) {
+func executeMigrationDefault(ctx context.Context, stores *store.Store, conn *sql.Conn, statement string, version string) (migrationHistoryID string, updatedSchema string, resErr error) {
 	insertedID, err := beginMigration(ctx, stores, version)
 	if err != nil {
 		return "", "", errors.Wrapf(err, "failed to begin migration")
@@ -438,7 +440,7 @@ func executeMigrationDefault(ctx context.Context, stores *store.Store, driver db
 		}
 	}()
 
-	if _, err := driver.Execute(ctx, statement, dbdriver.ExecuteOptions{}); err != nil {
+	if _, err := conn.ExecContext(ctx, statement, dbdriver.ExecuteOptions{}); err != nil {
 		return "", "", err
 	}
 
