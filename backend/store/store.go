@@ -3,21 +3,22 @@ package store
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"strings"
 
 	lru "github.com/hashicorp/golang-lru/v2"
+	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/component/config"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 // Store provides database access to all raw objects.
 type Store struct {
-	db      *DB
-	profile *config.Profile
-	Secret  string
+	db *sql.DB
+
+	Secret string
 
 	userIDCache          *lru.Cache[int, *UserMessage]
 	userEmailCache       *lru.Cache[string, *UserMessage]
@@ -43,7 +44,7 @@ type Store struct {
 }
 
 // New creates a new instance of Store.
-func New(db *DB, profile *config.Profile) (*Store, error) {
+func New(ctx context.Context, pgURL string) (*Store, error) {
 	userIDCache, err := lru.New[int, *UserMessage](32768)
 	if err != nil {
 		return nil, err
@@ -121,9 +122,29 @@ func New(db *DB, profile *config.Profile) (*Store, error) {
 		return nil, err
 	}
 
+	db, err := sql.Open("pgx", pgURL)
+	if err != nil {
+		return nil, err
+	}
+
+	// Set the max open connections so that we won't exceed the connection limit of metaDB.
+	// The limit is the max connections minus connections reserved for superuser.
+	var maxConns, reservedConns int
+	if err := db.QueryRowContext(ctx, `SHOW max_connections`).Scan(&maxConns); err != nil {
+		return nil, errors.Wrap(err, "failed to get max_connections from metaDB")
+	}
+	if err := db.QueryRowContext(ctx, `SHOW superuser_reserved_connections`).Scan(&reservedConns); err != nil {
+		return nil, errors.Wrap(err, "failed to get superuser_reserved_connections from metaDB")
+	}
+	maxOpenConns := maxConns - reservedConns
+	if maxOpenConns > 50 {
+		// capped to 50
+		maxOpenConns = 50
+	}
+	db.SetMaxOpenConns(maxOpenConns)
+
 	return &Store{
-		db:      db,
-		profile: profile,
+		db: db,
 
 		// Cache.
 		userIDCache:          userIDCache,
@@ -149,8 +170,12 @@ func New(db *DB, profile *config.Profile) (*Store, error) {
 }
 
 // Close closes underlying db.
-func (s *Store) Close(ctx context.Context) error {
-	return s.db.Close(ctx)
+func (s *Store) Close() error {
+	return s.db.Close()
+}
+
+func (s *Store) GetDB() *sql.DB {
+	return s.db
 }
 
 func getInstanceCacheKey(instanceID string) string {

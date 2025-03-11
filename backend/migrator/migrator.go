@@ -21,26 +21,14 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	dbdriver "github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/store"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 //go:embed migration
 var migrationFS embed.FS
 
 // MigrateSchema migrates the schema for metadata database.
-func MigrateSchema(ctx context.Context, storeDB *store.DB, storeInstance *store.Store) (*semver.Version, error) {
-	metadataDriver, err := dbdriver.Open(
-		ctx,
-		storepb.Engine_POSTGRES,
-		dbdriver.DriverConfig{},
-		storeDB.ConnCfg,
-	)
-	if err != nil {
-		return nil, err
-	}
-	defer metadataDriver.Close(ctx)
-
-	conn, err := metadataDriver.GetDB().Conn(ctx)
+func MigrateSchema(ctx context.Context, stores *store.Store) (*semver.Version, error) {
+	conn, err := stores.GetDB().Conn(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -56,15 +44,15 @@ func MigrateSchema(ctx context.Context, storeDB *store.DB, storeInstance *store.
 		return nil, errors.Wrapf(err, "failed to get cutoff version")
 	}
 	slog.Info(fmt.Sprintf("The prod cutoff schema version: %s", cutoffSchemaVersion))
-	if err := initializeSchema(ctx, storeInstance, conn, cutoffSchemaVersion); err != nil {
+	if err := initializeSchema(ctx, stores, conn, cutoffSchemaVersion); err != nil {
 		return nil, err
 	}
 	var c int
-	err = metadataDriver.GetDB().QueryRowContext(ctx, "SELECT count(1) FROM instance_change_history WHERE database_id IS NOT NULL").Scan(&c)
+	err = conn.QueryRowContext(ctx, "SELECT count(1) FROM instance_change_history WHERE database_id IS NOT NULL").Scan(&c)
 	if err == nil && c > 0 {
 		return nil, errors.Errorf("Must upgrade to Bytebase 3.3.1 first")
 	}
-	if _, err := metadataDriver.GetDB().ExecContext(ctx, `
+	if _, err := conn.ExecContext(ctx, `
 	ALTER TABLE instance_change_history
 	DROP COLUMN IF EXISTS row_status,
 	DROP COLUMN IF EXISTS creator_id,
@@ -88,7 +76,7 @@ func MigrateSchema(ctx context.Context, storeDB *store.DB, storeInstance *store.
 	CREATE UNIQUE INDEX IF NOT EXISTS idx_instance_change_history_unique_version ON instance_change_history (version);`); err != nil {
 		return nil, err
 	}
-	if _, err := metadataDriver.GetDB().ExecContext(ctx, `
+	if _, err := conn.ExecContext(ctx, `
 		DELETE FROM instance_change_history WHERE status = 'FAILED';
 		UPDATE instance_change_history
 		SET
@@ -103,16 +91,16 @@ func MigrateSchema(ctx context.Context, storeDB *store.DB, storeInstance *store.
 		return nil, err
 	}
 
-	verBefore, err := getLatestVersion(ctx, storeInstance)
+	verBefore, err := getLatestVersion(ctx, stores)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get current schema version")
 	}
 
-	if _, err := migrate(ctx, storeInstance, conn, verBefore); err != nil {
+	if _, err := migrate(ctx, stores, conn, verBefore); err != nil {
 		return nil, errors.Wrap(err, "failed to migrate")
 	}
 
-	verAfter, err := getLatestVersion(ctx, storeInstance)
+	verAfter, err := getLatestVersion(ctx, stores)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get current schema version")
 	}
@@ -255,7 +243,7 @@ const (
 // file run in a transaction to prevent partial migrations.
 //
 // The procedure follows https://github.com/bytebase/bytebase/blob/main/docs/schema-update-guide.md.
-func migrate(ctx context.Context, storeInstance *store.Store, conn *sql.Conn, curVer semver.Version) (bool, error) {
+func migrate(ctx context.Context, stores *store.Store, conn *sql.Conn, curVer semver.Version) (bool, error) {
 	slog.Info("Apply database migration if needed...")
 	slog.Info(fmt.Sprintf("Current schema version before migration: %s", curVer))
 
@@ -289,7 +277,7 @@ func migrate(ctx context.Context, storeInstance *store.Store, conn *sql.Conn, cu
 			}
 			slog.Info(fmt.Sprintf("Migrating %s...", pv.version))
 			version := pv.version.String()
-			if _, _, err := executeMigrationDefault(ctx, storeInstance, conn, string(buf), version); err != nil {
+			if _, _, err := executeMigrationDefault(ctx, stores, conn, string(buf), version); err != nil {
 				return false, err
 			}
 			retVersion = pv.version
@@ -440,7 +428,7 @@ func executeMigrationDefault(ctx context.Context, stores *store.Store, conn *sql
 		}
 	}()
 
-	if _, err := conn.ExecContext(ctx, statement, dbdriver.ExecuteOptions{}); err != nil {
+	if _, err := conn.ExecContext(ctx, statement); err != nil {
 		return "", "", err
 	}
 

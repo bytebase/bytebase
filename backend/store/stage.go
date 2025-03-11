@@ -18,7 +18,7 @@ type StageMessage struct {
 	Active bool
 }
 
-func (*Store) createStages(ctx context.Context, tx *Tx, stagesCreate []*StageMessage, pipelineUID int) ([]*StageMessage, error) {
+func (*Store) createStages(ctx context.Context, txn *sql.Tx, stagesCreate []*StageMessage, pipelineUID int) ([]*StageMessage, error) {
 	if len(stagesCreate) == 0 {
 		return nil, nil
 	}
@@ -36,7 +36,7 @@ func (*Store) createStages(ctx context.Context, tx *Tx, stagesCreate []*StageMes
 			unnest(CAST($2 AS TEXT[])) AS environment
 		RETURNING id
     `
-	rows, err := tx.QueryContext(ctx, query, pipelineUID, environments)
+	rows, err := txn.QueryContext(ctx, query, pipelineUID, environments)
 	if err != nil {
 		return nil, err
 	}
@@ -59,8 +59,8 @@ func (*Store) createStages(ctx context.Context, tx *Tx, stagesCreate []*StageMes
 	return stagesCreate, nil
 }
 
-func (*Store) listStages(ctx context.Context, tx *Tx, pipelineUID int) ([]*StageMessage, error) {
-	rows, err := tx.QueryContext(ctx, `
+func (*Store) listStages(ctx context.Context, txn *sql.Tx, pipelineUID int) ([]*StageMessage, error) {
+	rows, err := txn.QueryContext(ctx, `
 		SELECT
 			stage.id,
 			stage.pipeline_id,
