@@ -89,13 +89,16 @@ const filter = computed(() => {
   if (props.filter?.excludeUnassigned) {
     params.push(`exclude_unassigned == true`);
   }
-  if (props.filter?.engines) {
+  if (props.filter?.engines && props.filter?.engines.length > 0) {
     // engine filter should be:
     // engine in ["MYSQL", "POSTGRES"]
     params.push(
       `engine in [${props.filter?.engines.map((e) => `"${e}"`).join(", ")}]`
     );
-  } else if (props.filter?.excludeEngines) {
+  } else if (
+    props.filter?.excludeEngines &&
+    props.filter?.excludeEngines.length > 0
+  ) {
     // engine filter should be:
     // !(engine in ["REDIS", "MONGODB"])
     params.push(

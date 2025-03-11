@@ -63,6 +63,7 @@ import {
 } from "@/store/modules/v1/common";
 import type { ComposedDatabase, ComposedProject } from "@/types";
 import { isValidDatabaseName } from "@/types";
+import { engineFromJSON } from "@/types/proto/v1/common";
 import type { SearchParams, SearchScope } from "@/utils";
 import {
   CommonFilterScopeIdList,
@@ -108,7 +109,7 @@ const allowToCreateDB = computed(() => {
 
 const scopeOptions = useCommonSearchScopeOptions(
   computed(() => state.params),
-  [...CommonFilterScopeIdList, "label"]
+  [...CommonFilterScopeIdList, "label", "engine"]
 );
 
 const selectedInstance = computed(() => {
@@ -137,11 +138,18 @@ const selectedLabels = computed(() => {
     .map((scope) => scope.value);
 });
 
+const selectedEngines = computed(() => {
+  return state.params.scopes
+    .filter((scope) => scope.id === "engine")
+    .map((scope) => engineFromJSON(scope.value));
+});
+
 const filter = computed(() => ({
   instance: selectedInstance.value,
   environment: selectedEnvironment.value,
   query: state.params.query,
   labels: selectedLabels.value,
+  engines: selectedEngines.value,
 }));
 
 const selectedDatabases = computed((): ComposedDatabase[] => {
