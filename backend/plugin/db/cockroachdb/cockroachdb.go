@@ -82,18 +82,13 @@ func (driver *Driver) Open(ctx context.Context, _ storepb.Engine, config db.Conn
 			if err != nil {
 				return nil, err
 			}
-			return &noDeadlineConn{Conn: conn}, nil
+			return &util.NoDeadlineConn{Conn: conn}, nil
 		}
 	}
 
 	driver.databaseName = config.ConnectionContext.DatabaseName
 	if config.ConnectionContext.DatabaseName == "" {
-		databaseName, cfg, err := guessDSN(pgxConnConfig, config.DataSource.Username)
-		if err != nil {
-			return nil, err
-		}
-		pgxConnConfig = cfg
-		driver.databaseName = databaseName
+		pgxConnConfig.Database = "postgres"
 	}
 	driver.config = config
 
@@ -134,8 +129,6 @@ func getRoutingIDFromCockroachCloudURL(host string) string {
 }
 
 func getCockroachConnectionConfig(config db.ConnectionConfig) (*pgx.ConnConfig, error) {
-	// Require username for Postgres, as the guessDSN 1st guess is to use the username as the connecting database
-	// if database name is not explicitly specified.
 	if config.DataSource.Username == "" {
 		return nil, errors.Errorf("user must be set")
 	}
@@ -183,39 +176,6 @@ func getCockroachConnectionConfig(config db.ConnectionConfig) (*pgx.ConnConfig, 
 	}
 
 	return connConfig, nil
-}
-
-type noDeadlineConn struct{ net.Conn }
-
-func (*noDeadlineConn) SetDeadline(time.Time) error      { return nil }
-func (*noDeadlineConn) SetReadDeadline(time.Time) error  { return nil }
-func (*noDeadlineConn) SetWriteDeadline(time.Time) error { return nil }
-
-// guessDSN will guess a valid DB connection and its database name.
-func guessDSN(baseConnConfig *pgx.ConnConfig, username string) (string, *pgx.ConnConfig, error) {
-	// Some postgres server default behavior is to use username as the database name if not specified,
-	// while some postgres server explicitly requires the database name to be present (e.g. render.com).
-	guesses := []string{"postgres", username, "template1"}
-	//  dsn+" dbname=bytebase"
-	for _, guessDatabase := range guesses {
-		connConfig := *baseConnConfig
-		connConfig.Database = guessDatabase
-		if err := func() error {
-			connectionString := stdlib.RegisterConnConfig(&connConfig)
-			defer stdlib.UnregisterConnConfig(connectionString)
-			db, err := sql.Open(driverName, connectionString)
-			if err != nil {
-				return err
-			}
-			defer db.Close()
-			return db.Ping()
-		}(); err != nil {
-			slog.Debug("guessDSN attempt failed", log.BBError(err))
-			continue
-		}
-		return guessDatabase, &connConfig, nil
-	}
-	return "", nil, errors.Errorf("cannot connect to the instance, make sure the connection info is correct")
 }
 
 // Close closes the driver.
