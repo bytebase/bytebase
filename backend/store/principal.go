@@ -63,6 +63,12 @@ type UserMessage struct {
 	CreatedAt time.Time
 }
 
+type UserStat struct {
+	Type    api.PrincipalType
+	Deleted bool
+	Count   int
+}
+
 // GetSystemBotUser gets the system bot.
 func (s *Store) GetSystemBotUser(ctx context.Context) *UserMessage {
 	user, err := s.GetUserByID(ctx, api.SystemBotID)
@@ -102,6 +108,39 @@ func (s *Store) GetUserByEmail(ctx context.Context, email string) (*UserMessage,
 
 	user, _ := s.userEmailCache.Get(email)
 	return user, nil
+}
+
+func (s *Store) StatUsers(ctx context.Context) ([]*UserStat, error) {
+	rows, err := s.db.db.QueryContext(ctx, `
+	SELECT
+		COUNT(*),
+		type,
+		deleted
+	FROM principal
+	GROUP BY type, deleted`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var stats []*UserStat
+
+	for rows.Next() {
+		var stat UserStat
+		if err := rows.Scan(
+			&stat.Count,
+			&stat.Type,
+			&stat.Deleted,
+		); err != nil {
+			return nil, err
+		}
+		stats = append(stats, &stat)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, errors.Wrapf(err, "failed to scan rows")
+	}
+
+	return stats, nil
 }
 
 // ListUsers list users.
@@ -188,7 +227,7 @@ func listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage) ([]*UserMe
 		principal.profile,
 		principal.created_at
 	FROM principal
-	WHERE ` + strings.Join(where, " AND ")
+	WHERE ` + strings.Join(where, " AND ") + ` ORDER BY type DESC, created_at ASC`
 
 	if v := find.Limit; v != nil {
 		query += fmt.Sprintf(" LIMIT %d", *v)

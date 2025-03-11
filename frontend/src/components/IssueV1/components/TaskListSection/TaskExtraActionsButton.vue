@@ -21,7 +21,6 @@
 </template>
 
 <script setup lang="ts">
-import { asyncComputed } from "@vueuse/core";
 import type { DropdownOption } from "naive-ui";
 import { NDropdown, NButton } from "naive-ui";
 import type { VNode } from "vue";
@@ -57,10 +56,9 @@ const actionList = computed(() => {
   );
 });
 
-const allowUserToSkipTask = asyncComputed(() => {
+const allowUserToSkipTask = computed(() => {
   return allowUserToApplyTaskRolloutAction(
     issue.value,
-    props.task,
     "SKIP",
     releaserCandidates.value
   );

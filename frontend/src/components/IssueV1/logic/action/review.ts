@@ -1,12 +1,16 @@
 import type { ButtonProps } from "naive-ui";
 import { t } from "@/plugins/i18n";
-import { candidatesOfApprovalStepV1, useCurrentUserV1 } from "@/store";
+import {
+  candidatesOfApprovalStepV1,
+  useCurrentUserV1,
+  extractUserId,
+} from "@/store";
 import type { ComposedIssue } from "@/types";
 import {
   IssueStatus,
   Issue_Approver_Status,
 } from "@/types/proto/v1/issue_service";
-import { extractUserResourceName } from "@/utils";
+import { isUserIncludedInList } from "@/utils";
 import type { ReviewContext } from "../context";
 
 export type IssueReviewAction = "APPROVE" | "SEND_BACK" | "RE_REQUEST";
@@ -79,9 +83,9 @@ export const allowUserToApplyReviewAction = (
     const step = steps[index];
     if (!step) return false;
     const candidates = candidatesOfApprovalStepV1(issue, step);
-    return candidates.includes(me.value.name);
+    return isUserIncludedInList(me.value.email, candidates);
   }
 
   // action === 'RE_REQUEST'
-  return me.value.email === extractUserResourceName(issue.creator);
+  return me.value.email === extractUserId(issue.creator);
 };

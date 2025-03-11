@@ -3,6 +3,7 @@ import { defineStore } from "pinia";
 import { computed, ref, unref, watch } from "vue";
 import { projectServiceClient } from "@/grpcweb";
 import {
+  ALL_USERS_USER_EMAIL,
   QueryPermissionQueryAny,
   type ComposedDatabase,
   type ComposedProject,
@@ -16,6 +17,7 @@ import { getUserEmailListInBinding } from "@/utils";
 import { convertFromExpr } from "@/utils/issue/cel";
 import { useCurrentUserV1 } from "../auth";
 import { useRoleStore } from "../role";
+import { batchGetOrFetchUsers } from "../user";
 import { usePermissionStore } from "./permission";
 
 export const useProjectIamPolicyStore = defineStore(
@@ -23,6 +25,20 @@ export const useProjectIamPolicyStore = defineStore(
   () => {
     const policyMap = ref(new Map<string, IamPolicy>());
     const requestCache = new Map<string, Promise<IamPolicy>>();
+
+    const composeProjectPolicy = async (policy: IamPolicy) => {
+      const members = policy.bindings.reduce((list, binding) => {
+        list.push(...binding.members);
+        return list;
+      }, [] as string[]);
+      await batchGetOrFetchUsers(members);
+    };
+
+    const setIamPolicy = async (project: string, policy: IamPolicy) => {
+      await composeProjectPolicy(policy);
+      policyMap.value.set(project, policy);
+      return policy;
+    };
 
     const fetchProjectIamPolicy = async (
       project: string,
@@ -40,8 +56,7 @@ export const useProjectIamPolicyStore = defineStore(
           resource: project,
         })
         .then((policy) => {
-          policyMap.value.set(project, policy);
-          return policy;
+          return setIamPolicy(project, policy);
         });
       requestCache.set(project, request);
       return request;
@@ -52,11 +67,11 @@ export const useProjectIamPolicyStore = defineStore(
         scope: "projects/-",
         names: projectList,
       });
-      response.policyResults.forEach(({ policy, project }) => {
-        if (policy) {
-          policyMap.value.set(project, policy);
+      for (const item of response.policyResults) {
+        if (item.policy) {
+          await setIamPolicy(item.project, item.policy);
         }
-      });
+      }
     };
 
     const updateProjectIamPolicy = async (
@@ -151,7 +166,10 @@ const checkProjectIAMPolicyWithExpr = (
       binding,
       ignoreGroup: false,
     });
-    if (!userEmailList.includes(user.email)) {
+    if (
+      !userEmailList.includes(user.email) &&
+      !userEmailList.includes(ALL_USERS_USER_EMAIL)
+    ) {
       continue;
     }
     // If the role does not have the permission, then skip.
