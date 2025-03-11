@@ -510,8 +510,13 @@ func queryRetry(
 	}
 	// The second query span should not tolerate any error, but we should retail the original error from database if possible.
 	for i, result := range results {
-		if i < len(spans) && result.Error == "" && spans[i].NotFoundError != nil {
-			return nil, nil, duration, status.Errorf(codes.Internal, "failed to get query span: %v", spans[i].NotFoundError)
+		if i < len(spans) && result.Error == "" {
+			if spans[i].FunctionNotSupportedError != nil {
+				return nil, nil, duration, status.Errorf(codes.Internal, "failed to mask data: %v", spans[i].FunctionNotSupportedError)
+			}
+			if spans[i].NotFoundError != nil {
+				return nil, nil, duration, status.Errorf(codes.Internal, "failed to mask data: %v", spans[i].NotFoundError)
+			}
 		}
 	}
 
