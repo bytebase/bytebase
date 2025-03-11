@@ -140,7 +140,7 @@ func getListProjectFilter(filter string) (*store.ListResourceFilter, error) {
 			case celoperators.LogicalAnd:
 				return getSubConditionFromExpr(expr, getFilter, "AND")
 			case celoperators.Equals:
-				variable, value := getVariavleAndValueFromExpr(expr)
+				variable, value := getVariableAndValueFromExpr(expr)
 				return parseToSQL(variable, value)
 			case celoverloads.Matches:
 				variable := expr.AsCall().Target().AsIdent()
