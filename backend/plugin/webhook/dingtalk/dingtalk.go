@@ -45,14 +45,14 @@ type Message struct {
 }
 
 func init() {
-	webhook.Register("bb.plugin.webhook.dingtalk", &dingTalkReceiver{})
+	webhook.Register("bb.plugin.webhook.dingtalk", &Receiver{})
 }
 
-// dingTalkReceiver is the receiver for DingTalk.
-type dingTalkReceiver struct {
+// Receiver is the receiver for DingTalk.
+type Receiver struct {
 }
 
-func (*dingTalkReceiver) Post(context webhook.Context) error {
+func (*Receiver) Post(context webhook.Context) error {
 	if context.DirectMessage && len(context.MentionEndUsers) > 0 {
 		sendDirectMessage(context)
 		return nil
@@ -60,7 +60,7 @@ func (*dingTalkReceiver) Post(context webhook.Context) error {
 	return sendMessage(context)
 }
 
-// sendDirectMessage returns true if the message is sent successfully.
+// returns true if the message is sent successfully.
 func sendDirectMessage(webhookCtx webhook.Context) {
 	dingtalk := webhookCtx.IMSetting.GetDingtalk()
 	if dingtalk == nil {
