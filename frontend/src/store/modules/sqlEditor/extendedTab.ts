@@ -4,8 +4,8 @@ import PouchDB from "pouchdb";
 import PouchDBFind from "pouchdb-find";
 import { computed } from "vue";
 import type { SQLEditorTab } from "@/types";
-import { extractUserUID } from "@/utils";
 import { useCurrentUserV1 } from "../auth";
+import { extractUserId } from "../v1/common";
 import { useSQLEditorStore } from "./editor";
 
 export const EXTENDED_TAB_FIELDS = [
@@ -30,7 +30,7 @@ export const useExtendedTabStore = defineStore("sqlEditorExtendedTab", () => {
   // context
   const { project } = storeToRefs(useSQLEditorStore());
   const me = useCurrentUserV1();
-  const userUID = computed(() => extractUserUID(me.value.name));
+  const userUID = computed(() => extractUserId(me.value.name));
 
   // stores
   const extendedTabDB = new PouchDB<ExtendedTabEntity>(

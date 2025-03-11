@@ -24,7 +24,7 @@ import { PencilIcon, Trash2Icon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { computed } from "vue";
 import { useCurrentUserV1 } from "@/store";
-import { getUserEmailFromIdentifier } from "@/store/modules/v1/common";
+import { extractUserId } from "@/store/modules/v1/common";
 import type { Group } from "@/types/proto/v1/group_service";
 import { GroupMember_Role } from "@/types/proto/v1/group_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
@@ -43,7 +43,7 @@ const currentUser = useCurrentUserV1();
 const isGroupOwner = computed(() => {
   return (
     props.group.members.find(
-      (m) => getUserEmailFromIdentifier(m.member) === currentUser.value.email
+      (m) => extractUserId(m.member) === currentUser.value.email
     )?.role === GroupMember_Role.OWNER
   );
 });

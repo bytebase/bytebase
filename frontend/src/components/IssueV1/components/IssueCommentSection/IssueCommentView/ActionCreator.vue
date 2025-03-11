@@ -17,10 +17,10 @@
 </template>
 
 <script lang="ts" setup>
+import { computedAsync } from "@vueuse/core";
 import { computed } from "vue";
 import SystemBotTag from "@/components/misc/SystemBotTag.vue";
-import { useAppFeature, useUserStore } from "@/store";
-import { extractUserResourceName } from "@/utils";
+import { useAppFeature, useUserStore, extractUserId } from "@/store";
 
 const props = defineProps<{
   // Format: users/{email}
@@ -33,11 +33,11 @@ const disallowNavigateToConsole = useAppFeature(
 );
 
 const userEmail = computed(() => {
-  return extractUserResourceName(props.creator);
+  return extractUserId(props.creator);
 });
 
-const user = computed(() => {
-  return userStore.getUserByEmail(userEmail.value);
+const user = computedAsync(() => {
+  return userStore.getOrFetchUserByIdentifier(props.creator);
 });
 
 const bindings = computed(() => {

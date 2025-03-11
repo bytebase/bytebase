@@ -1,16 +1,28 @@
-import { isEqual, isUndefined, orderBy } from "lodash-es";
+import { computedAsync } from "@vueuse/core";
+import { isEqual, isUndefined, uniq } from "lodash-es";
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
 import { userServiceClient } from "@/grpcweb";
-import { allUsersUser, SYSTEM_BOT_USER_NAME } from "@/types";
+import {
+  allUsersUser,
+  SYSTEM_BOT_USER_NAME,
+  isValidUserName,
+  unknownUser,
+} from "@/types";
 import { State } from "@/types/proto/v1/common";
-import type { UpdateUserRequest, User } from "@/types/proto/v1/user_service";
+import type {
+  UpdateUserRequest,
+  User,
+  StatUsersResponse_StatUser,
+} from "@/types/proto/v1/user_service";
 import { UserType } from "@/types/proto/v1/user_service";
-import { userNamePrefix, getUserEmailFromIdentifier } from "./v1/common";
+import { ensureUserFullName } from "@/utils";
+import { userNamePrefix, extractUserId } from "./v1/common";
 import { usePermissionStore } from "./v1/permission";
 
 export const useUserStore = defineStore("user", () => {
   const allUser = computed(() => allUsersUser());
+  const userStats = ref<StatUsersResponse_StatUser[]>([]);
   const userRequestCache = new Map<string, Promise<User>>();
 
   const userMapByName = ref<Map<string, User>>(
@@ -23,31 +35,8 @@ export const useUserStore = defineStore("user", () => {
     return user;
   };
 
-  const userList = computed(() => {
-    return orderBy(
-      Array.from(userMapByName.value.values()),
-      [
-        (user) =>
-          user.userType === UserType.SYSTEM_BOT
-            ? 0
-            : user.userType === UserType.SERVICE_ACCOUNT
-              ? 1
-              : 2,
-      ],
-      ["asc"]
-    );
-  });
-  // The active user list and exclude allUsers.
-  const activeUserList = computed(() => {
-    return userList.value.filter(
-      (user) => user.state === State.ACTIVE && user.name !== allUser.value.name
-    );
-  });
-
-  const systemBotUser = computed(() => {
-    return activeUserList.value.find(
-      (user) => user.name === SYSTEM_BOT_USER_NAME
-    );
+  const systemBotUser = computedAsync(() => {
+    return getOrFetchUserByIdentifier(SYSTEM_BOT_USER_NAME);
   });
 
   const fetchUserList = async (params: {
@@ -65,6 +54,12 @@ export const useUserStore = defineStore("user", () => {
     }
     return response;
   };
+
+  const refreshUserStat = async () => {
+    const { stats } = await userServiceClient.statUsers({});
+    userStats.value = stats;
+  };
+
   const fetchUser = async (name: string, silent = false) => {
     const user = await userServiceClient.getUser(
       {
@@ -76,94 +71,114 @@ export const useUserStore = defineStore("user", () => {
     );
     return setUser(user);
   };
+
   const createUser = async (user: User) => {
     const createdUser = await userServiceClient.createUser({
       user,
     });
+    await refreshUserStat();
     return setUser(createdUser);
   };
+
   const updateUser = async (updateUserRequest: UpdateUserRequest) => {
     const name = updateUserRequest.user?.name || "";
-    const originData = await getOrFetchUserByName(name);
+    const originData = await getOrFetchUserByIdentifier(name);
     if (!originData) {
       throw new Error(`user with name ${name} not found`);
     }
     const user = await userServiceClient.updateUser(updateUserRequest);
     return setUser(user);
   };
-  const getOrFetchUserByName = async (name: string, silent = true) => {
-    const cachedData = userMapByName.value.get(name);
-    if (cachedData) {
-      return cachedData;
-    }
-    const cached = userRequestCache.get(name);
-    if (cached) return cached;
-    const request = fetchUser(name, silent).then((user) => setUser(user));
-    userRequestCache.set(name, request);
-    return request;
-  };
-  const getUserByName = (name: string) => {
-    return userMapByName.value.get(name);
-  };
-  const getOrFetchUserById = async (uid: string, silent = false) => {
-    return await getOrFetchUserByName(getUserNameWithUserId(uid), silent);
-  };
-  const getUserById = (uid: string) => {
-    return getUserByName(getUserNameWithUserId(uid));
-  };
-  const getUserByIdentifier = (identifier: string) => {
-    return getUserByEmail(getUserEmailFromIdentifier(identifier));
-  };
-  const getUserByEmail = (email: string) => {
-    return [...userMapByName.value.values()].find(
-      (user) => user.email === email
-    );
-  };
-  const getOrFetchUserByEmail = (email: string) =>
-    getOrFetchUserByName(getUserNameWithUserId(email));
+
   const archiveUser = async (user: User) => {
     await userServiceClient.deleteUser({
       name: user.name,
     });
     user.state = State.DELETED;
+    await refreshUserStat();
     return user;
   };
+
   const restoreUser = async (user: User) => {
     const restoredUser = await userServiceClient.undeleteUser({
       name: user.name,
     });
+    await refreshUserStat();
     return setUser(restoredUser);
   };
 
+  const getOrFetchUserByIdentifier = async (
+    identifier: string,
+    silent = true
+  ) => {
+    const user = getUserByIdentifier(identifier);
+    if (user) {
+      return user;
+    }
+
+    const fullname = ensureUserFullName(identifier);
+    if (!isValidUserName(fullname)) {
+      return unknownUser();
+    }
+    const cached = userRequestCache.get(fullname);
+    if (cached) return cached;
+    const request = fetchUser(fullname, silent).then((user) => setUser(user));
+    userRequestCache.set(fullname, request);
+    return request;
+  };
+
+  const getUserByIdentifier = (identifier: string) => {
+    if (!identifier) {
+      return;
+    }
+    const id = extractUserId(identifier);
+    if (Number.isNaN(Number(id))) {
+      return [...userMapByName.value.values()].find(
+        (user) => user.email === id
+      );
+    }
+    return userMapByName.value.get(`${userNamePrefix}${id}`);
+  };
+
+  const activeUserCountWithoutBot = computed(() => {
+    return userStats.value.reduce((count, stat) => {
+      if (
+        stat.state === State.ACTIVE &&
+        stat.userType !== UserType.SYSTEM_BOT
+      ) {
+        count += stat.count;
+      }
+      return count;
+    }, 0);
+  });
+
   return {
     allUser,
-    userMapByName,
-    userList,
-    activeUserList,
+    userStats,
     systemBotUser,
     fetchUserList,
-    fetchUser,
+    refreshUserStat,
     createUser,
     updateUser,
-    getOrFetchUserByName,
-    getUserByName,
-    getOrFetchUserById,
-    getUserById,
+    getOrFetchUserByIdentifier,
     getUserByIdentifier,
-    getUserByEmail,
-    getOrFetchUserByEmail,
     archiveUser,
     restoreUser,
+    activeUserCountWithoutBot,
   };
 });
 
-export const extractUserEmail = (emailResource: string) => {
-  const matches = emailResource.match(/^(?:user:|users\/)(.+)$/);
-  return matches?.[1] ?? emailResource;
-};
-
-export const getUserNameWithUserId = (userUID: string) => {
-  return `${userNamePrefix}${userUID}`;
+export const batchGetOrFetchUsers = async (userNameList: string[]) => {
+  const userStore = useUserStore();
+  const distinctList = uniq(userNameList);
+  await Promise.all(
+    distinctList.map((userName) => {
+      if (!isValidUserName(userName)) {
+        return;
+      }
+      return userStore.getOrFetchUserByIdentifier(userName, true /* silent */);
+    })
+  );
 };
 
 export const getUpdateMaskFromUsers = (
@@ -184,15 +199,4 @@ export const getUpdateMaskFromUsers = (
     updateMask.push("phone");
   }
   return updateMask;
-};
-
-// Get all active users, including user and service account.
-export const useActiveUsers = () => {
-  const userStore = useUserStore();
-  return userStore.userList.filter(
-    (user) =>
-      user.name !== userStore.allUser.name &&
-      user.state === State.ACTIVE &&
-      [UserType.USER, UserType.SERVICE_ACCOUNT].includes(user.userType)
-  );
 };

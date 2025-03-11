@@ -34,6 +34,7 @@ import {
 } from "@/store";
 import type { ComposedDatabase, DatabaseResource } from "@/types";
 import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
+import { getDefaultPagination } from "@/utils";
 import Label from "./Label.vue";
 import type { DatabaseTreeOption } from "./common";
 import {
@@ -103,7 +104,7 @@ const cascadeLoopTreeNode = (
 
 const fetchDatabaseList = useDebounceFn(async () => {
   const { databases } = await databaseStore.fetchDatabases({
-    pageSize: 100,
+    pageSize: getDefaultPagination(),
     parent: props.projectName,
     filter: searchText.value ? `name.matches("${searchText.value}")` : "",
   });

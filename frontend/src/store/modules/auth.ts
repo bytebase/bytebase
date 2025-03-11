@@ -14,8 +14,8 @@ import { useAppFeature, useUserStore, useSettingV1Store } from "@/store";
 import { unknownUser } from "@/types";
 import type { LoginRequest } from "@/types/proto/v1/auth_service";
 import { LoginResponse } from "@/types/proto/v1/auth_service";
-import { User, UserType } from "@/types/proto/v1/user_service";
 import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
+import { User, UserType } from "@/types/proto/v1/user_service";
 import { getIntCookie } from "@/utils";
 
 export const useAuthStore = defineStore("auth_v1", () => {
@@ -25,7 +25,9 @@ export const useAuthStore = defineStore("auth_v1", () => {
 
   const currentUser = computed(() => {
     if (currentUserId.value) {
-      return userStore.getUserById(`${currentUserId.value}`) ?? unknownUser();
+      return (
+        userStore.getUserByIdentifier(`${currentUserId.value}`) ?? unknownUser()
+      );
     }
     return unknownUser();
   });
@@ -152,17 +154,8 @@ export const useAuthStore = defineStore("auth_v1", () => {
   const restoreUser = async () => {
     currentUserId.value = getUserIdFromCookie();
     if (currentUserId.value) {
-      await useUserStore().getOrFetchUserById(
+      await useUserStore().getOrFetchUserByIdentifier(
         String(currentUserId.value),
-        true // silent
-      );
-    }
-  };
-
-  const refreshUserIfNeeded = async (name: string) => {
-    if (name === currentUser.value.name) {
-      await useUserStore().fetchUser(
-        name,
         true // silent
       );
     }
@@ -177,7 +170,6 @@ export const useAuthStore = defineStore("auth_v1", () => {
     signup,
     logout,
     restoreUser,
-    refreshUserIfNeeded,
     requireResetPassword,
     setRequireResetPassword,
     showLoginModal,
