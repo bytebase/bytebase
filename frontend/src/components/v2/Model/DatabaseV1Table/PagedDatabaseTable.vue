@@ -169,8 +169,9 @@ const handleDatabaseClick = (event: MouseEvent, database: ComposedDatabase) => {
 };
 
 defineExpose({
-  refreshCache: (databases: ComposedDatabase[]) => {
-    databasePagedTable.value?.refreshCache(databases);
+  updateCache: (databases: ComposedDatabase[]) => {
+    databasePagedTable.value?.updateCache(databases);
   },
+  refresh: () => databasePagedTable.value?.refresh(),
 });
 </script>
