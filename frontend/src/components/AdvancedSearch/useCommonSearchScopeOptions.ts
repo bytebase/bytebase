@@ -6,6 +6,7 @@ import {
   ProjectV1Name,
   RichDatabaseName,
   EnvironmentV1Name,
+  RichEngineName,
 } from "@/components/v2";
 import { t } from "@/plugins/i18n";
 import {
@@ -23,6 +24,7 @@ import {
   extractEnvironmentResourceName,
   extractInstanceResourceName,
   extractProjectResourceName,
+  supportedEngineV1List,
 } from "@/utils";
 import type { ScopeOption, ValueOption } from "./types";
 
@@ -160,9 +162,24 @@ export const useCommonSearchScopeOptions = (
       }),
       label: () => ({
         id: "label",
-        title: "Label",
-        description: "Input the {label key}:{label value} then press Enter.",
+        title: t("issue.advanced-search.scope.database-label.title"),
+        description: t(
+          "issue.advanced-search.scope.database-label.description"
+        ),
         options: [] as ValueOption[],
+        allowMultiple: true,
+      }),
+      engine: () => ({
+        id: "engine",
+        title: t("issue.advanced-search.scope.engine.title"),
+        description: t("issue.advanced-search.scope.engine.description"),
+        options: supportedEngineV1List().map((engine) => {
+          return {
+            value: engine,
+            keywords: [engineToJSON(engine).toLowerCase()],
+            render: () => h(RichEngineName, { engine, tag: "p" }),
+          };
+        }),
         allowMultiple: true,
       }),
     } as Record<SearchScopeId, () => ScopeOption>;

@@ -822,6 +822,14 @@
         "label": {
           "title": "Nhãn",
           "description": "Lọc theo nhãn vấn đề"
+        },
+        "database-label": {
+          "title": "Nhãn",
+          "description": "Nhập \"key\":\"value\" rồi nhấn Enter"
+        },
+        "engine": {
+          "title": "Động cơ",
+          "description": "Lọc theo động cơ"
         }
       },
       "hide": "Ẩn tìm kiếm nâng cao"
