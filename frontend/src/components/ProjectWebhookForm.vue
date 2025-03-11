@@ -351,6 +351,8 @@ const imApp = computed(() => {
       return imSetting.value?.lark;
     case Webhook_Type.WECOM:
       return imSetting.value?.wecom;
+    case Webhook_Type.DINGTALK:
+      return imSetting.value?.dingtalk;
   }
   return undefined;
 });
