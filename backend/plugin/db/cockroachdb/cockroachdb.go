@@ -82,7 +82,7 @@ func (driver *Driver) Open(ctx context.Context, _ storepb.Engine, config db.Conn
 			if err != nil {
 				return nil, err
 			}
-			return &noDeadlineConn{Conn: conn}, nil
+			return &util.NoDeadlineConn{Conn: conn}, nil
 		}
 	}
 
@@ -177,12 +177,6 @@ func getCockroachConnectionConfig(config db.ConnectionConfig) (*pgx.ConnConfig, 
 
 	return connConfig, nil
 }
-
-type noDeadlineConn struct{ net.Conn }
-
-func (*noDeadlineConn) SetDeadline(time.Time) error      { return nil }
-func (*noDeadlineConn) SetReadDeadline(time.Time) error  { return nil }
-func (*noDeadlineConn) SetWriteDeadline(time.Time) error { return nil }
 
 // Close closes the driver.
 func (driver *Driver) Close(context.Context) error {
