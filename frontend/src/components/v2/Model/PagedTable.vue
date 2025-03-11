@@ -33,10 +33,11 @@
 
 <script lang="ts" setup generic="T extends { name: string }">
 import { useDebounceFn } from "@vueuse/core";
+import { sortBy, uniq } from "lodash-es";
 import { NSelect, NButton } from "naive-ui";
 import { computed, reactive, watch, ref, type Ref } from "vue";
 import { useIsLoggedIn, useCurrentUserV1 } from "@/store";
-import { useDynamicLocalStorage } from "@/utils";
+import { useDynamicLocalStorage, getDefaultPagination } from "@/utils";
 
 type LocalState = {
   loading: boolean;
@@ -76,8 +77,12 @@ const emit = defineEmits<{
   (event: "list:update", list: T[]): void;
 }>();
 
+const currentUser = useCurrentUserV1();
+
 const options = computed(() => {
-  return [50, 100, 200, 500].map((num) => ({
+  const defaultPageSize = getDefaultPagination();
+  const list = [defaultPageSize, 50, 100, 200, 500];
+  return sortBy(uniq(list)).map((num) => ({
     value: num,
     label: `${num}`,
   }));
@@ -87,7 +92,6 @@ const state = reactive<LocalState>({
   loading: false,
   paginationToken: "",
 });
-const currentUser = useCurrentUserV1();
 
 // https://stackoverflow.com/questions/69813587/vue-unwraprefsimplet-generics-type-cant-assignable-to-t-at-reactive
 const dataList = ref([]) as Ref<T[]>;

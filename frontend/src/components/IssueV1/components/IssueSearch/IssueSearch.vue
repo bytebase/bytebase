@@ -48,7 +48,11 @@ import { useUserStore } from "@/store";
 import { State, stateToJSON } from "@/types/proto/v1/common";
 import { UserType, userTypeToJSON } from "@/types/proto/v1/user_service";
 import type { SearchParams, SearchScope, SearchScopeId } from "@/utils";
-import { UIIssueFilterScopeIdList, useSearchScopeIdList } from "@/utils";
+import {
+  getDefaultPagination,
+  UIIssueFilterScopeIdList,
+  useSearchScopeIdList,
+} from "@/utils";
 import Status from "./Status.vue";
 import { useIssueSearchScopeOptions } from "./useIssueSearchScopeOptions";
 
@@ -87,7 +91,7 @@ const allowedScopes = computed(() => {
 
 const activeUserList = computedAsync(async () => {
   const { users } = await userStore.fetchUserList({
-    pageSize: 100,
+    pageSize: getDefaultPagination(),
     showDeleted: false,
     filter: `state == "${stateToJSON(State.ACTIVE)}" && user_type == "${userTypeToJSON(UserType.USER)}"`,
   });

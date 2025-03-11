@@ -30,7 +30,11 @@ import {
   unknownDatabase,
 } from "@/types";
 import { type Engine, engineToJSON } from "@/types/proto/v1/common";
-import { instanceV1Name, supportedEngineV1List } from "@/utils";
+import {
+  instanceV1Name,
+  supportedEngineV1List,
+  getDefaultPagination,
+} from "@/utils";
 import { InstanceV1EngineIcon } from "../Model";
 import ResourceSelect from "./ResourceSelect.vue";
 
@@ -111,7 +115,7 @@ const searchDatabases = async (name: string) => {
   const { databases } = await databaseStore.fetchDatabases({
     parent: "workspaces/-",
     filter: dbFilter.join(" && "),
-    pageSize: 100,
+    pageSize: getDefaultPagination(),
   });
   return databases;
 };

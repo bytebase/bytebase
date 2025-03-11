@@ -89,7 +89,7 @@ func (s *UserService) GetUser(ctx context.Context, request *v1pb.GetUserRequest)
 }
 
 // StatUsers count users by type and state.
-func (s *UserService) StatUsers(ctx context.Context, request *v1pb.StatUsersRequest) (*v1pb.StatUsersResponse, error) {
+func (s *UserService) StatUsers(ctx context.Context, _ *v1pb.StatUsersRequest) (*v1pb.StatUsersResponse, error) {
 	stats, err := s.store.StatUsers(ctx)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to stat users, error: %v", err)
@@ -109,10 +109,9 @@ func (s *UserService) StatUsers(ctx context.Context, request *v1pb.StatUsersRequ
 // ListUsers lists all users.
 func (s *UserService) ListUsers(ctx context.Context, request *v1pb.ListUsersRequest) (*v1pb.ListUsersResponse, error) {
 	offset, err := parseLimitAndOffset(&pageSize{
-		token: request.PageToken,
-		limit: int(request.PageSize),
-		// TODO(ed): support pagination.
-		maximum: 100000,
+		token:   request.PageToken,
+		limit:   int(request.PageSize),
+		maximum: 1000,
 	})
 	if err != nil {
 		return nil, err
@@ -194,14 +193,14 @@ func getListUserFilter(filter string) (*store.ListResourceFilter, error) {
 			}
 			positionalArgs = append(positionalArgs, v1pb.State(v1State) == v1pb.State_DELETED)
 			return fmt.Sprintf("principal.deleted = $%d", len(positionalArgs)), nil
-		// TODO(ed): support role filter
+		// TODO(ed): support role/project filter
 		default:
 			return "", status.Errorf(codes.InvalidArgument, "unsupport variable %q", variable)
 		}
 	}
 
 	parseToUserTypeSQL := func(expr celast.Expr, relation string) (string, error) {
-		variable, value := getVariavleAndValueFromExpr(expr)
+		variable, value := getVariableAndValueFromExpr(expr)
 		if variable != "user_type" {
 			return "", status.Errorf(codes.InvalidArgument, `only "user_type" support "user_type in [xx]"/"!(user_type in [xx])" operator`)
 		}
@@ -237,7 +236,7 @@ func getListUserFilter(filter string) (*store.ListResourceFilter, error) {
 			case celoperators.LogicalAnd:
 				return getSubConditionFromExpr(expr, getFilter, "AND")
 			case celoperators.Equals:
-				variable, value := getVariavleAndValueFromExpr(expr)
+				variable, value := getVariableAndValueFromExpr(expr)
 				return parseToSQL(variable, value)
 			case celoverloads.Matches:
 				variable := expr.AsCall().Target().AsIdent()

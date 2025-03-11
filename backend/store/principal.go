@@ -111,13 +111,7 @@ func (s *Store) GetUserByEmail(ctx context.Context, email string) (*UserMessage,
 }
 
 func (s *Store) StatUsers(ctx context.Context) ([]*UserStat, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-
-	rows, err := tx.QueryContext(ctx, `
+	rows, err := s.db.db.QueryContext(ctx, `
 	SELECT
 		COUNT(*),
 		type,
@@ -141,6 +135,9 @@ func (s *Store) StatUsers(ctx context.Context) ([]*UserStat, error) {
 			return nil, err
 		}
 		stats = append(stats, &stat)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, errors.Wrapf(err, "failed to scan rows")
 	}
 
 	return stats, nil
