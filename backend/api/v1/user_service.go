@@ -88,13 +88,30 @@ func (s *UserService) GetUser(ctx context.Context, request *v1pb.GetUserRequest)
 	return convertToUser(user), nil
 }
 
+// StatUsers count users by type and state.
+func (s *UserService) StatUsers(ctx context.Context, _ *v1pb.StatUsersRequest) (*v1pb.StatUsersResponse, error) {
+	stats, err := s.store.StatUsers(ctx)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to stat users, error: %v", err)
+	}
+	response := &v1pb.StatUsersResponse{}
+
+	for _, stat := range stats {
+		response.Stats = append(response.Stats, &v1pb.StatUsersResponse_StatUser{
+			State:    convertDeletedToState(stat.Deleted),
+			UserType: convertToV1UserType(stat.Type),
+			Count:    int32(stat.Count),
+		})
+	}
+	return response, nil
+}
+
 // ListUsers lists all users.
 func (s *UserService) ListUsers(ctx context.Context, request *v1pb.ListUsersRequest) (*v1pb.ListUsersResponse, error) {
 	offset, err := parseLimitAndOffset(&pageSize{
-		token: request.PageToken,
-		limit: int(request.PageSize),
-		// TODO(ed): support pagination.
-		maximum: 100000,
+		token:   request.PageToken,
+		limit:   int(request.PageSize),
+		maximum: 1000,
 	})
 	if err != nil {
 		return nil, err
@@ -169,7 +186,14 @@ func getListUserFilter(filter string) (*store.ListResourceFilter, error) {
 			}
 			positionalArgs = append(positionalArgs, principalType)
 			return fmt.Sprintf("principal.type = $%d", len(positionalArgs)), nil
-		// TODO(ed): support project filter
+		case "state":
+			v1State, ok := v1pb.State_value[value.(string)]
+			if !ok {
+				return "", status.Errorf(codes.InvalidArgument, "invalid state filter %q", value)
+			}
+			positionalArgs = append(positionalArgs, v1pb.State(v1State) == v1pb.State_DELETED)
+			return fmt.Sprintf("principal.deleted = $%d", len(positionalArgs)), nil
+		// TODO(ed): support role/project filter
 		default:
 			return "", status.Errorf(codes.InvalidArgument, "unsupport variable %q", variable)
 		}
@@ -221,14 +245,14 @@ func getListUserFilter(filter string) (*store.ListResourceFilter, error) {
 					return "", status.Errorf(codes.InvalidArgument, `invalid args for %q`, variable)
 				}
 				value := args[0].AsLiteral().Value()
-				if variable != "name" {
-					return "", status.Errorf(codes.InvalidArgument, `only "name" support %q operator, but found %q`, celoverloads.Matches, variable)
+				if variable != "name" && variable != "email" {
+					return "", status.Errorf(codes.InvalidArgument, `only "name" and "email" support %q operator, but found %q`, celoverloads.Matches, variable)
 				}
 				strValue, ok := value.(string)
 				if !ok {
 					return "", status.Errorf(codes.InvalidArgument, "expect string, got %T, hint: filter literals should be string", value)
 				}
-				return "LOWER(principal.name) LIKE '%" + strings.ToLower(strValue) + "%'", nil
+				return "LOWER(principal." + variable + ") LIKE '%" + strings.ToLower(strValue) + "%'", nil
 			case celoperators.In:
 				return parseToUserTypeSQL(expr, "IN")
 			case celoperators.LogicalNot:
@@ -699,24 +723,27 @@ func (s *UserService) UndeleteUser(ctx context.Context, request *v1pb.UndeleteUs
 	return convertToUser(user), nil
 }
 
-func convertToUser(user *store.UserMessage) *v1pb.User {
-	userType := v1pb.UserType_USER_TYPE_UNSPECIFIED
-	switch user.Type {
+func convertToV1UserType(userType api.PrincipalType) v1pb.UserType {
+	switch userType {
 	case api.EndUser:
-		userType = v1pb.UserType_USER
+		return v1pb.UserType_USER
 	case api.SystemBot:
-		userType = v1pb.UserType_SYSTEM_BOT
+		return v1pb.UserType_SYSTEM_BOT
 	case api.ServiceAccount:
-		userType = v1pb.UserType_SERVICE_ACCOUNT
+		return v1pb.UserType_SERVICE_ACCOUNT
+	default:
+		return v1pb.UserType_USER_TYPE_UNSPECIFIED
 	}
+}
 
+func convertToUser(user *store.UserMessage) *v1pb.User {
 	convertedUser := &v1pb.User{
 		Name:     common.FormatUserUID(user.ID),
 		State:    convertDeletedToState(user.MemberDeleted),
 		Email:    user.Email,
 		Phone:    user.Phone,
 		Title:    user.Name,
-		UserType: userType,
+		UserType: convertToV1UserType(user.Type),
 		Profile: &v1pb.User_Profile{
 			LastLoginTime:          user.Profile.LastLoginTime,
 			LastChangePasswordTime: user.Profile.LastChangePasswordTime,

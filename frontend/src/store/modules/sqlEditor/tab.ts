@@ -14,7 +14,6 @@ import {
   WebStorageHelper,
   defaultSQLEditorTab,
   emptySQLEditorConnection,
-  extractUserUID,
   isDisconnectedSQLEditorTab,
   isSimilarSQLEditorTab,
   useDynamicLocalStorage,
@@ -25,6 +24,7 @@ import {
   useDatabaseV1ByName,
   useEnvironmentV1Store,
   useInstanceResourceByName,
+  extractUserId,
 } from "../v1";
 import { useSQLEditorStore } from "./editor";
 import {
@@ -63,7 +63,7 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
     cleanupExtendedTabs,
   } = useExtendedTabStore();
   const me = useCurrentUserV1();
-  const userUID = computed(() => extractUserUID(me.value.name));
+  const userUID = computed(() => extractUserId(me.value.name));
   const keyNamespace = computed(
     () => `${LOCAL_STORAGE_KEY_PREFIX}.${userUID.value}`
   );

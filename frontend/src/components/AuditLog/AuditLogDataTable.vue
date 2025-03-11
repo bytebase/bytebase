@@ -15,7 +15,7 @@ import { NDataTable, type DataTableColumn } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import BBAvatar from "@/bbkit/BBAvatar.vue";
-import { extractUserEmail, useProjectV1Store, useUserStore } from "@/store";
+import { useProjectV1Store, useUserStore } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { getDateForPbTimestamp } from "@/types";
 import { AuditData, type AuditLog } from "@/types/proto/v1/audit_log_service";
@@ -89,9 +89,7 @@ const columnList = computed((): AuditDataTableColumn[] => {
         width: 128,
         title: t("audit-log.table.actor"),
         render: (auditLog) => {
-          const user = userStore.getUserByEmail(
-            extractUserEmail(auditLog.user)
-          );
+          const user = userStore.getUserByIdentifier(auditLog.user);
           if (!user) {
             return <span>-</span>;
           }

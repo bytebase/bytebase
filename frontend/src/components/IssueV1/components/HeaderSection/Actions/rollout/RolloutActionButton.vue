@@ -35,7 +35,7 @@ import ErrorList from "@/components/misc/ErrorList.vue";
 import { ContextMenuButton } from "@/components/v2";
 import { useUserStore } from "@/store";
 import { userNamePrefix, roleNamePrefix } from "@/store/modules/v1/common";
-import { displayRoleTitle, extractUserResourceName } from "@/utils";
+import { displayRoleTitle } from "@/utils";
 import type { RolloutAction, RolloutButtonAction } from "./common";
 
 const props = defineProps<{
@@ -53,12 +53,11 @@ const { issue, selectedTask, releaserCandidates } = useIssueContext();
 const errors = asyncComputed(async () => {
   const errors: ErrorItem[] = [];
   if (
-    !(await allowUserToApplyTaskRolloutAction(
+    !allowUserToApplyTaskRolloutAction(
       issue.value,
-      selectedTask.value,
       props.action,
       releaserCandidates.value
-    ))
+    )
   ) {
     errors.push(t("issue.error.you-are-not-allowed-to-perform-this-action"));
     const { releasers } = issue.value;
@@ -71,8 +70,8 @@ const errors = asyncComputed(async () => {
         });
       }
       if (roleOrUser.startsWith(userNamePrefix)) {
-        const email = extractUserResourceName(roleOrUser);
-        const user = useUserStore().getUserByEmail(email);
+        const user =
+          await useUserStore().getOrFetchUserByIdentifier(roleOrUser);
         if (user) {
           errors.push({
             error: `${user.title} (${user.email})`,

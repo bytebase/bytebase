@@ -1,5 +1,5 @@
 import { useAuthStore, useProjectV1Store } from "@/store";
-import { getUserEmailFromIdentifier } from "@/store/modules/v1/common";
+import { extractUserId } from "@/store/modules/v1/common";
 import { UNKNOWN_PROJECT_NAME } from "@/types";
 import type { Worksheet } from "@/types/proto/v1/worksheet_service";
 import { Worksheet_Visibility } from "@/types/proto/v1/worksheet_service";
@@ -18,9 +18,7 @@ export const extractWorksheetUID = (name: string) => {
 export const isWorksheetReadableV1 = (sheet: Worksheet) => {
   const authStore = useAuthStore();
 
-  if (
-    getUserEmailFromIdentifier(sheet.creator) === authStore.currentUser.email
-  ) {
+  if (extractUserId(sheet.creator) === authStore.currentUser.email) {
     // Always readable to the creator
     return true;
   }
@@ -51,9 +49,7 @@ export const isWorksheetReadableV1 = (sheet: Worksheet) => {
 export const isWorksheetWritableV1 = (sheet: Worksheet) => {
   const authStore = useAuthStore();
 
-  if (
-    getUserEmailFromIdentifier(sheet.creator) === authStore.currentUser.email
-  ) {
+  if (extractUserId(sheet.creator) === authStore.currentUser.email) {
     // Always writable to the creator
     return true;
   }

@@ -123,8 +123,9 @@ export const getInstanceAndDatabaseId = (name: string): string[] => {
   return tokens;
 };
 
-export const getUserEmailFromIdentifier = (identifier: string): string => {
-  return identifier.replace(/^(user:|users\/)/, "");
+export const extractUserId = (identifier: string) => {
+  const matches = identifier.match(/^(?:user:|users\/)(.+)$/);
+  return matches?.[1] ?? identifier;
 };
 
 export const getIdentityProviderResourceId = (name: string): ResourceId => {

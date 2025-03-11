@@ -224,7 +224,7 @@
 </template>
 
 <script lang="ts" setup>
-import { useTitle } from "@vueuse/core";
+import { computedAsync, useTitle } from "@vueuse/core";
 import { cloneDeep, head, isEqual } from "lodash-es";
 import type { DropdownOption } from "naive-ui";
 import { NButton, NInput, NDropdown, NTag } from "naive-ui";
@@ -341,12 +341,12 @@ const showRegenerateRecoveryCodes = computed(() => {
   return user.value.mfaEnabled && user.value.name === currentUserV1.value.name;
 });
 
-const user = computed(() => {
+const user = computedAsync(() => {
   if (props.principalEmail) {
-    return userStore.getUserByEmail(props.principalEmail) ?? unknownUser();
+    return userStore.getOrFetchUserByIdentifier(props.principalEmail);
   }
   return currentUserV1.value;
-});
+}, unknownUser());
 
 const userRoles = computed(() => {
   return [...workspaceStore.getWorkspaceRolesByEmail(user.value.email)];
@@ -375,12 +375,6 @@ const allowSaveEdit = computed(() => {
     !userPasswordRef.value?.passwordHint &&
     !userPasswordRef.value?.passwordMismatch
   );
-});
-
-onMounted(async () => {
-  if (props.principalEmail) {
-    await useUserStore().getOrFetchUserById(props.principalEmail);
-  }
 });
 
 const updateUser = <K extends keyof User>(field: K, value: User[K]) => {
@@ -434,7 +428,6 @@ const saveEdit = async () => {
     });
     return;
   }
-  await useAuthStore().refreshUserIfNeeded(currentUserV1.value.name);
 
   state.editingUser = undefined;
   state.editing = false;
@@ -483,7 +476,6 @@ const handleDisable2FA = async () => {
       updateMask: ["mfa_enabled"],
     })
   );
-  await userStore.fetchUser(user.value.name, true /* slient */);
   state.showDisable2FAConfirmModal = false;
   pushNotification({
     module: "bytebase",

@@ -1,13 +1,24 @@
-export const extractUserUID = (name: string) => {
-  // They are using the same format so we can simply call the method.
-  return extractUserResourceName(name);
+import { userNamePrefix, extractUserId } from "@/store/modules/v1/common";
+import { ALL_USERS_USER_EMAIL } from "@/types";
+
+export const ensureUserFullName = (identifier: string) => {
+  const id = extractUserId(identifier);
+  return `${userNamePrefix}${id}`;
 };
 
-/**
- * @param name Format: users/{email}
- */
-export const extractUserResourceName = (name: string) => {
-  const pattern = /(?:^|\/)users\/([^/]+)(?:$|\/)/;
-  const matches = name.match(pattern);
-  return matches?.[1] ?? "";
+export const isUserIncludedInList = (
+  identifier: string,
+  userList: string[]
+) => {
+  const validId = ensureUserFullName(identifier);
+  for (const name of userList) {
+    if (
+      name === ALL_USERS_USER_EMAIL ||
+      name === `${userNamePrefix}${ALL_USERS_USER_EMAIL}` ||
+      name === validId
+    ) {
+      return true;
+    }
+  }
+  return false;
 };
