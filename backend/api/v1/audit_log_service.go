@@ -247,7 +247,7 @@ func (s *AuditLogService) getSearchAuditLogsFilter(ctx context.Context, filter s
 			case celoperators.LogicalAnd:
 				return getSubConditionFromExpr(expr, getFilter, "AND")
 			case celoperators.Equals:
-				variable, rawValue := getVariavleAndValueFromExpr(expr)
+				variable, rawValue := getVariableAndValueFromExpr(expr)
 				value, ok := rawValue.(string)
 				if !ok {
 					return "", errors.Errorf("expect string, got %T, hint: filter literals should be string", rawValue)
@@ -270,7 +270,7 @@ func (s *AuditLogService) getSearchAuditLogsFilter(ctx context.Context, filter s
 				return fmt.Sprintf("payload->>'%s'=$%d", variable, len(positionalArgs)), nil
 
 			case celoperators.GreaterEquals, celoperators.LessEquals:
-				variable, rawValue := getVariavleAndValueFromExpr(expr)
+				variable, rawValue := getVariableAndValueFromExpr(expr)
 				value, ok := rawValue.(string)
 				if !ok {
 					return "", errors.Errorf("expect string, got %T, hint: filter literals should be string", rawValue)
