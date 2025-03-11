@@ -38,7 +38,7 @@ func (s *Store) CheckRoleInUse(ctx context.Context, role string) (bool, error) {
 		);
 	`
 	var exist bool
-	if err := s.db.db.QueryRowContext(ctx, query, role).Scan(&exist); err != nil {
+	if err := s.db.QueryRowContext(ctx, query, role).Scan(&exist); err != nil {
 		return false, err
 	}
 	return exist, nil
@@ -59,7 +59,7 @@ func (s *Store) CreateRole(ctx context.Context, create *RoleMessage) (*RoleMessa
 	if err != nil {
 		return nil, err
 	}
-	if _, err := s.db.db.ExecContext(ctx, query, create.ResourceID, create.Name, create.Description, permissionBytes); err != nil {
+	if _, err := s.db.ExecContext(ctx, query, create.ResourceID, create.Name, create.Description, permissionBytes); err != nil {
 		return nil, err
 	}
 	s.rolesCache.Add(create.ResourceID, create)
@@ -81,7 +81,7 @@ func (s *Store) GetRole(ctx context.Context, resourceID string) (*RoleMessage, e
 		Permissions: map[string]bool{},
 	}
 	var permissions []byte
-	if err := s.db.db.QueryRowContext(ctx, query, resourceID).Scan(&role.Name, &role.Description, &permissions); err != nil {
+	if err := s.db.QueryRowContext(ctx, query, resourceID).Scan(&role.Name, &role.Description, &permissions); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
@@ -106,7 +106,7 @@ func (s *Store) ListRoles(ctx context.Context) ([]*RoleMessage, error) {
 			resource_id, name, description, permissions
 		FROM role
 	`
-	rows, err := s.db.db.QueryContext(ctx, query)
+	rows, err := s.db.QueryContext(ctx, query)
 	if err != nil {
 		return nil, err
 	}
@@ -173,7 +173,7 @@ func (s *Store) UpdateRole(ctx context.Context, patch *UpdateRoleMessage) (*Role
 		Permissions: map[string]bool{},
 	}
 	var permissionBytes []byte
-	if err := s.db.db.QueryRowContext(ctx, query, args...).Scan(&role.Name, &role.Description, &permissionBytes); err != nil {
+	if err := s.db.QueryRowContext(ctx, query, args...).Scan(&role.Name, &role.Description, &permissionBytes); err != nil {
 		return nil, err
 	}
 	s.rolesCache.Remove(patch.ResourceID)
@@ -195,7 +195,7 @@ func (s *Store) DeleteRole(ctx context.Context, resourceID string) error {
 		DELETE FROM role
 		WHERE resource_id = $1
 	`
-	if _, err := s.db.db.ExecContext(ctx, query, resourceID); err != nil {
+	if _, err := s.db.ExecContext(ctx, query, resourceID); err != nil {
 		return err
 	}
 	s.rolesCache.Remove(resourceID)

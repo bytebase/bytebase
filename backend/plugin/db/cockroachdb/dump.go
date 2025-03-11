@@ -16,14 +16,14 @@ func (driver *Driver) Dump(ctx context.Context, w io.Writer, _ *storepb.Database
 	sb := &strings.Builder{}
 	if err := crdb.ExecuteTx(ctx, driver.db, &sql.TxOptions{
 		ReadOnly: true,
-	}, func(tx *sql.Tx) error {
-		createSchemas, err := dumpCreateSchemas(ctx, tx)
+	}, func(txn *sql.Tx) error {
+		createSchemas, err := dumpCreateSchemas(ctx, txn)
 		if err != nil {
 			return err
 		}
 		_, _ = sb.WriteString(createSchemas)
 
-		createTables, err := dumpCreateTables(ctx, tx)
+		createTables, err := dumpCreateTables(ctx, txn)
 		if err != nil {
 			return err
 		}
@@ -41,9 +41,9 @@ func (driver *Driver) Dump(ctx context.Context, w io.Writer, _ *storepb.Database
 	return nil
 }
 
-func dumpCreateTables(ctx context.Context, tx *sql.Tx) (string, error) {
+func dumpCreateTables(ctx context.Context, txn *sql.Tx) (string, error) {
 	sb := &strings.Builder{}
-	rows, err := tx.QueryContext(ctx, "SELECT create_statement FROM [SHOW CREATE ALL TABLES];")
+	rows, err := txn.QueryContext(ctx, "SELECT create_statement FROM [SHOW CREATE ALL TABLES];")
 	if err != nil {
 		return "", err
 	}
@@ -64,9 +64,9 @@ func dumpCreateTables(ctx context.Context, tx *sql.Tx) (string, error) {
 	return sb.String(), nil
 }
 
-func dumpCreateSchemas(ctx context.Context, tx *sql.Tx) (string, error) {
+func dumpCreateSchemas(ctx context.Context, txn *sql.Tx) (string, error) {
 	sb := &strings.Builder{}
-	rows, err := tx.QueryContext(ctx, "SELECT create_statement FROM [SHOW CREATE ALL SCHEMAS];")
+	rows, err := txn.QueryContext(ctx, "SELECT create_statement FROM [SHOW CREATE ALL SCHEMAS];")
 	if err != nil {
 		return "", err
 	}

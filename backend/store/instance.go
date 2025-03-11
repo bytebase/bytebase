@@ -188,7 +188,7 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 	return s.GetInstanceV2(ctx, &FindInstanceMessage{ResourceID: &patch.ResourceID})
 }
 
-func (s *Store) listInstanceImplV2(ctx context.Context, tx *Tx, find *FindInstanceMessage) ([]*InstanceMessage, error) {
+func (s *Store) listInstanceImplV2(ctx context.Context, txn *sql.Tx, find *FindInstanceMessage) ([]*InstanceMessage, error) {
 	where, args := []string{"TRUE"}, []any{}
 	if v := find.ResourceID; v != nil {
 		where, args = append(where, fmt.Sprintf("instance.resource_id = $%d", len(args)+1)), append(args, *v)
@@ -201,7 +201,7 @@ func (s *Store) listInstanceImplV2(ctx context.Context, tx *Tx, find *FindInstan
 	}
 
 	var instanceMessages []*InstanceMessage
-	rows, err := tx.QueryContext(ctx, fmt.Sprintf(`
+	rows, err := txn.QueryContext(ctx, fmt.Sprintf(`
 		SELECT
 			resource_id,
 			environment,
@@ -254,7 +254,7 @@ var countActivateInstanceQuery = "SELECT COUNT(1) FROM instance WHERE (metadata 
 // GetActivatedInstanceCount gets the number of activated instances.
 func (s *Store) GetActivatedInstanceCount(ctx context.Context) (int, error) {
 	var count int
-	if err := s.db.db.QueryRowContext(ctx, countActivateInstanceQuery).Scan(&count); err != nil {
+	if err := s.db.QueryRowContext(ctx, countActivateInstanceQuery).Scan(&count); err != nil {
 		return 0, err
 	}
 	return count, nil
