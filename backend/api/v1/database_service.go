@@ -89,7 +89,7 @@ func (s *DatabaseService) GetDatabase(ctx context.Context, request *v1pb.GetData
 	return database, nil
 }
 
-func getVariavleAndValueFromExpr(expr celast.Expr) (string, any) {
+func getVariableAndValueFromExpr(expr celast.Expr) (string, any) {
 	var variable string
 	var value any
 	for _, arg := range expr.AsCall().Args() {
@@ -200,7 +200,7 @@ func getListDatabaseFilter(filter string) (*store.ListResourceFilter, error) {
 	}
 
 	parseToEngineSQL := func(expr celast.Expr, relation string) (string, error) {
-		variable, value := getVariavleAndValueFromExpr(expr)
+		variable, value := getVariableAndValueFromExpr(expr)
 		if variable != "engine" {
 			return "", status.Errorf(codes.InvalidArgument, `only "engine" support "engine in [xx]"/"!(engine in [xx])" operator`)
 		}
@@ -233,7 +233,7 @@ func getListDatabaseFilter(filter string) (*store.ListResourceFilter, error) {
 			case celoperators.LogicalAnd:
 				return getSubConditionFromExpr(expr, getFilter, "AND")
 			case celoperators.Equals:
-				variable, value := getVariavleAndValueFromExpr(expr)
+				variable, value := getVariableAndValueFromExpr(expr)
 				return parseToSQL(variable, value)
 			case celoverloads.Matches:
 				variable := expr.AsCall().Target().AsIdent()
