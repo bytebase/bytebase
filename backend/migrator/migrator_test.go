@@ -152,15 +152,13 @@ func TestMigrationCompatibility(t *testing.T) {
 	stopInstance := postgres.SetupTestInstance(pgBinDir, t.TempDir(), pgPort)
 	defer stopInstance()
 
-	databaseName := "hidb"
 	ctx := context.Background()
-	defaultDB, err := sql.Open("pgx", fmt.Sprintf("host=%s port=%d user=%s database=postgres", common.GetPostgresSocketDir(), pgPort, postgres.TestPgUser))
+	db, err := sql.Open("pgx", fmt.Sprintf("host=%s port=%d user=%s database=postgres", common.GetPostgresSocketDir(), pgPort, postgres.TestPgUser))
 	require.NoError(t, err)
-	defer func() {
-		defaultDB.Close()
-	}()
-	_, err = defaultDB.ExecContext(ctx, fmt.Sprintf("CREATE DATABASE %s", databaseName))
+	defer db.Close()
+	conn, err := db.Conn(ctx)
 	require.NoError(t, err)
+	defer conn.Close()
 
 	metadataConnConfig := dbdriver.ConnectionConfig{
 		DataSource: &storepb.DataSource{
@@ -170,30 +168,19 @@ func TestMigrationCompatibility(t *testing.T) {
 			Port:     fmt.Sprintf("%d", pgPort),
 		},
 		Password: "",
-		ConnectionContext: dbdriver.ConnectionContext{
-			DatabaseName: databaseName,
-		},
 	}
 
-	metadataDriver, err := dbdriver.Open(
-		ctx,
-		storepb.Engine_POSTGRES,
-		dbdriver.DriverConfig{DbBinDir: pgBinDir},
-		metadataConnConfig,
-	)
+	stores := store.NewDB(metadataConnConfig, pgBinDir, false, common.ReleaseModeDev)
+	err = stores.Open(ctx)
 	require.NoError(t, err)
-
-	db := store.NewDB(metadataConnConfig, pgBinDir, false, common.ReleaseModeDev)
-	err = db.Open(ctx, true /* createDB */)
-	require.NoError(t, err)
-	storeInstance, err := store.New(db, &config.Profile{})
+	storeInstance, err := store.New(stores, &config.Profile{})
 	require.NoError(t, err)
 
 	releaseVersion, err := getProdCutoffVersion()
 	require.NoError(t, err)
 
 	// Create initial schema.
-	err = initializeSchema(ctx, storeInstance, metadataDriver, releaseVersion)
+	err = initializeSchema(ctx, storeInstance, conn, releaseVersion)
 	require.NoError(t, err)
 	// Check migration history.
 	histories, err := storeInstance.ListInstanceChangeHistoryForMigrator(ctx, &store.FindInstanceChangeHistoryMessage{})
@@ -202,7 +189,7 @@ func TestMigrationCompatibility(t *testing.T) {
 	require.Equal(t, histories[0].Version, releaseVersion.String())
 
 	// Check no migration after passing current version as the release cutoff version.
-	_, err = migrate(ctx, storeInstance, metadataDriver, releaseVersion)
+	_, err = migrate(ctx, storeInstance, conn, releaseVersion)
 	require.NoError(t, err)
 	// Check migration history.
 	histories, err = storeInstance.ListInstanceChangeHistoryForMigrator(ctx, &store.FindInstanceChangeHistoryMessage{})
