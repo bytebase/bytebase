@@ -154,7 +154,6 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	} else {
 		pgURL = profile.PgURL
 	}
-	fmt.Printf("Barny1: %s\n", pgURL)
 
 	// Start Postgres sample servers. It is used for onboarding users without requiring them to
 	// configure an external instance.
