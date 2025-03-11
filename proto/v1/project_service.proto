@@ -161,6 +161,10 @@ message ListProjectsRequest {
 
   // Show deleted projects if specified.
   bool show_deleted = 3;
+
+  // Filter the project.
+  // Check filter for SearchProjectsRequest for details.
+  string filter = 4;
 }
 
 message ListProjectsResponse {
@@ -180,6 +184,7 @@ message SearchProjectsRequest {
   // Supported filters:
   // - name
   // - resource_id
+  // - exclude_default: if not include the default project.
   //
   // For example:
   // name = "project name"
@@ -188,6 +193,7 @@ message SearchProjectsRequest {
   // resource_id.matches("project id")
   // name = "project name" && resource_id.matches("project id")
   // name.matches("project name") || resource_id = "project id"
+  // exclude_default == true
   string filter = 2;
 }
 
