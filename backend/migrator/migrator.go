@@ -28,10 +28,19 @@ func MigrateSchema(ctx context.Context, db *sql.DB) (*semver.Version, error) {
 	}
 	defer conn.Close()
 
-	if err := backfillSchemaObjectOwner(ctx, conn); err != nil {
+	// Calculate prod cutoffSchemaVersion.
+	cutoffSchemaVersion, err := getProdCutoffVersion()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get cutoff version")
+	}
+	slog.Info(fmt.Sprintf("The prod cutoff schema version: %s", cutoffSchemaVersion))
+	if err := initializeSchema(ctx, conn, cutoffSchemaVersion); err != nil {
 		return nil, err
 	}
 
+	if err := backfillSchemaObjectOwner(ctx, conn); err != nil {
+		return nil, err
+	}
 	var c int
 	err = conn.QueryRowContext(ctx, "SELECT count(1) FROM instance_change_history WHERE database_id IS NOT NULL").Scan(&c)
 	if err == nil && c > 0 {
@@ -85,16 +94,6 @@ func MigrateSchema(ctx context.Context, db *sql.DB) (*semver.Version, error) {
 	ALTER TABLE instance_change_history
 	DROP COLUMN IF EXISTS status,
 	DROP COLUMN IF EXISTS execution_duration_ns;`); err != nil {
-		return nil, err
-	}
-
-	// Calculate prod cutoffSchemaVersion.
-	cutoffSchemaVersion, err := getProdCutoffVersion()
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get cutoff version")
-	}
-	slog.Info(fmt.Sprintf("The prod cutoff schema version: %s", cutoffSchemaVersion))
-	if err := initializeSchema(ctx, conn, cutoffSchemaVersion); err != nil {
 		return nil, err
 	}
 
