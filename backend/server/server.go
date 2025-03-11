@@ -76,20 +76,14 @@ type Server struct {
 
 	licenseService enterprise.LicenseService
 
-	profile      *config.Profile
-	echoServer   *echo.Echo
-	grpcServer   *grpc.Server
-	muxServer    cmux.CMux
-	lspServer    *lsp.Server
-	store        *store.Store
-	sheetManager *sheet.Manager
-	dbFactory    *dbfactory.DBFactory
-	startedTs    int64
-
-	// Stubs.
-	planService    *apiv1.PlanService
-	rolloutService *apiv1.RolloutService
-	issueService   *apiv1.IssueService
+	profile    *config.Profile
+	echoServer *echo.Echo
+	grpcServer *grpc.Server
+	muxServer  cmux.CMux
+	lspServer  *lsp.Server
+	store      *store.Store
+	dbFactory  *dbfactory.DBFactory
+	startedTs  int64
 
 	// PG server stoppers.
 	stopper []func()
@@ -180,7 +174,7 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 		}
 	}
 	s.store = stores
-	s.sheetManager = sheet.NewManager(stores)
+	sheetManager := sheet.NewManager(stores)
 
 	s.stateCfg, err = state.New()
 	if err != nil {
@@ -246,7 +240,7 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	s.metricReporter = metricreport.NewReporter(s.store, s.licenseService, s.profile, false)
 	s.schemaSyncer = schemasync.NewSyncer(stores, s.dbFactory, s.stateCfg, profile, s.licenseService)
 	if !profile.Readonly {
-		s.approvalRunner = approval.NewRunner(stores, s.sheetManager, s.dbFactory, s.stateCfg, s.webhookManager, s.licenseService)
+		s.approvalRunner = approval.NewRunner(stores, sheetManager, s.dbFactory, s.stateCfg, s.webhookManager, s.licenseService)
 
 		s.taskSchedulerV2 = taskrun.NewSchedulerV2(stores, s.stateCfg, s.webhookManager, profile, s.licenseService)
 		s.taskSchedulerV2.Register(api.TaskDatabaseCreate, taskrun.NewDatabaseCreateExecutor(stores, s.dbFactory, s.schemaSyncer, s.stateCfg, profile))
@@ -259,11 +253,11 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 		s.planCheckScheduler = plancheck.NewScheduler(stores, s.licenseService, s.stateCfg)
 		databaseConnectExecutor := plancheck.NewDatabaseConnectExecutor(stores, s.dbFactory)
 		s.planCheckScheduler.Register(store.PlanCheckDatabaseConnect, databaseConnectExecutor)
-		statementAdviseExecutor := plancheck.NewStatementAdviseExecutor(stores, s.sheetManager, s.dbFactory, s.licenseService)
+		statementAdviseExecutor := plancheck.NewStatementAdviseExecutor(stores, sheetManager, s.dbFactory, s.licenseService)
 		s.planCheckScheduler.Register(store.PlanCheckDatabaseStatementAdvise, statementAdviseExecutor)
 		ghostSyncExecutor := plancheck.NewGhostSyncExecutor(stores, s.dbFactory)
 		s.planCheckScheduler.Register(store.PlanCheckDatabaseGhostSync, ghostSyncExecutor)
-		statementReportExecutor := plancheck.NewStatementReportExecutor(stores, s.sheetManager, s.dbFactory)
+		statementReportExecutor := plancheck.NewStatementReportExecutor(stores, sheetManager, s.dbFactory)
 		s.planCheckScheduler.Register(store.PlanCheckDatabaseStatementSummaryReport, statementReportExecutor)
 
 		// Metric reporter
@@ -310,9 +304,6 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	s.lspServer = lsp.NewServer(s.store, profile)
 
 	postCreateUser := func(ctx context.Context, user *store.UserMessage, firstEndUser bool) error {
-		if profile.TestOnlySkipOnboardingData {
-			return nil
-		}
 		// Only generate onboarding data after the first enduser signup.
 		if firstEndUser {
 			if profile.SampleDatabasePort != 0 {
@@ -326,11 +317,9 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 		}
 		return nil
 	}
-	_, planService, rolloutService, issueService, _, err := configureGrpcRouters(ctx, mux, s.grpcServer, s.store, s.sheetManager, s.dbFactory, s.licenseService, s.profile, s.metricReporter, s.stateCfg, s.schemaSyncer, s.webhookManager, s.iamManager, postCreateUser, secret)
-	if err != nil {
+	if err := configureGrpcRouters(ctx, mux, s.grpcServer, s.store, sheetManager, s.dbFactory, s.licenseService, s.profile, s.metricReporter, s.stateCfg, s.schemaSyncer, s.webhookManager, s.iamManager, postCreateUser, secret); err != nil {
 		return nil, err
 	}
-	s.planService, s.rolloutService, s.issueService = planService, rolloutService, issueService
 	directorySyncServer := directorysync.NewService(s.store, s.licenseService, s.iamManager)
 
 	// Configure echo server routes.
