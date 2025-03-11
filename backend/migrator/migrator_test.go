@@ -11,12 +11,9 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/component/config"
-	dbdriver "github.com/bytebase/bytebase/backend/plugin/db"
 	_ "github.com/bytebase/bytebase/backend/plugin/db/pg"
 	"github.com/bytebase/bytebase/backend/resources/postgres"
 	"github.com/bytebase/bytebase/backend/store"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 func TestGetMinorMigrationVersions(t *testing.T) {
@@ -152,60 +149,35 @@ func TestMigrationCompatibility(t *testing.T) {
 	stopInstance := postgres.SetupTestInstance(pgBinDir, t.TempDir(), pgPort)
 	defer stopInstance()
 
-	databaseName := "hidb"
 	ctx := context.Background()
-	defaultDB, err := sql.Open("pgx", fmt.Sprintf("host=%s port=%d user=%s database=postgres", common.GetPostgresSocketDir(), pgPort, postgres.TestPgUser))
+	pgURL := fmt.Sprintf("host=%s port=%d user=%s database=postgres", common.GetPostgresSocketDir(), pgPort, postgres.TestPgUser)
+	db, err := sql.Open("pgx", pgURL)
 	require.NoError(t, err)
-	defer func() {
-		defaultDB.Close()
-	}()
-	_, err = defaultDB.ExecContext(ctx, fmt.Sprintf("CREATE DATABASE %s", databaseName))
+	defer db.Close()
+	conn, err := db.Conn(ctx)
 	require.NoError(t, err)
+	defer conn.Close()
 
-	metadataConnConfig := dbdriver.ConnectionConfig{
-		DataSource: &storepb.DataSource{
-			Username: postgres.TestPgUser,
-			Password: "",
-			Host:     common.GetPostgresSocketDir(),
-			Port:     fmt.Sprintf("%d", pgPort),
-		},
-		Password: "",
-		ConnectionContext: dbdriver.ConnectionContext{
-			DatabaseName: databaseName,
-		},
-	}
-
-	metadataDriver, err := dbdriver.Open(
-		ctx,
-		storepb.Engine_POSTGRES,
-		dbdriver.DriverConfig{DbBinDir: pgBinDir},
-		metadataConnConfig,
-	)
-	require.NoError(t, err)
-
-	db := store.NewDB(metadataConnConfig, pgBinDir, false, common.ReleaseModeDev)
-	err = db.Open(ctx, true /* createDB */)
-	require.NoError(t, err)
-	storeInstance, err := store.New(db, &config.Profile{})
+	stores, err := store.New(ctx, pgURL)
 	require.NoError(t, err)
 
 	releaseVersion, err := getProdCutoffVersion()
 	require.NoError(t, err)
 
 	// Create initial schema.
-	err = initializeSchema(ctx, storeInstance, metadataDriver, releaseVersion)
+	err = initializeSchema(ctx, stores, conn, releaseVersion)
 	require.NoError(t, err)
 	// Check migration history.
-	histories, err := storeInstance.ListInstanceChangeHistoryForMigrator(ctx, &store.FindInstanceChangeHistoryMessage{})
+	histories, err := stores.ListInstanceChangeHistoryForMigrator(ctx, &store.FindInstanceChangeHistoryMessage{})
 	require.NoError(t, err)
 	require.Len(t, histories, 1)
 	require.Equal(t, histories[0].Version, releaseVersion.String())
 
 	// Check no migration after passing current version as the release cutoff version.
-	_, err = migrate(ctx, storeInstance, metadataDriver, releaseVersion)
+	_, err = migrate(ctx, stores, conn, releaseVersion)
 	require.NoError(t, err)
 	// Check migration history.
-	histories, err = storeInstance.ListInstanceChangeHistoryForMigrator(ctx, &store.FindInstanceChangeHistoryMessage{})
+	histories, err = stores.ListInstanceChangeHistoryForMigrator(ctx, &store.FindInstanceChangeHistoryMessage{})
 	require.NoError(t, err)
 	require.Len(t, histories, 1)
 }

@@ -238,7 +238,7 @@ func (s *Store) ListChangelogs(ctx context.Context, find *FindChangelogMessage) 
 		query += fmt.Sprintf(" OFFSET %d", *v)
 	}
 
-	rows, err := s.db.db.QueryContext(ctx, query, args...)
+	rows, err := s.db.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to query")
 	}

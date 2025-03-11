@@ -120,7 +120,7 @@ func (s *Store) FindBlockingTasksByVersion(ctx context.Context, instanceID, data
 		ORDER BY task.id ASC
 	`
 
-	rows, err := s.db.db.QueryContext(ctx, query, instanceID, databaseName, version)
+	rows, err := s.db.QueryContext(ctx, query, instanceID, databaseName, version)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to query rows")
 	}
@@ -142,7 +142,7 @@ func (s *Store) FindBlockingTasksByVersion(ctx context.Context, instanceID, data
 	return ids, nil
 }
 
-func (*Store) createTasks(ctx context.Context, tx *Tx, creates ...*TaskMessage) ([]*TaskMessage, error) {
+func (*Store) createTasks(ctx context.Context, txn *sql.Tx, creates ...*TaskMessage) ([]*TaskMessage, error) {
 	query := `INSERT INTO task (
 			pipeline_id,
 			stage_id,
@@ -192,7 +192,7 @@ func (*Store) createTasks(ctx context.Context, tx *Tx, creates ...*TaskMessage) 
 	}
 
 	var tasks []*TaskMessage
-	rows, err := tx.QueryContext(ctx, query,
+	rows, err := txn.QueryContext(ctx, query,
 		pipelineIDs,
 		stageIDs,
 		instances,
@@ -238,7 +238,7 @@ func (*Store) createTasks(ctx context.Context, tx *Tx, creates ...*TaskMessage) 
 	return tasks, nil
 }
 
-func (*Store) listTasksTx(ctx context.Context, tx *Tx, find *TaskFind) ([]*TaskMessage, error) {
+func (*Store) listTasksTx(ctx context.Context, txn *sql.Tx, find *TaskFind) ([]*TaskMessage, error) {
 	where, args := []string{"TRUE"}, []any{}
 	if v := find.ID; v != nil {
 		where, args = append(where, fmt.Sprintf("task.id = $%d", len(args)+1)), append(args, *v)
@@ -272,7 +272,7 @@ func (*Store) listTasksTx(ctx context.Context, tx *Tx, find *TaskFind) ([]*TaskM
 	}
 
 	args = append(args, api.TaskRunNotStarted)
-	rows, err := tx.QueryContext(ctx, fmt.Sprintf(`
+	rows, err := txn.QueryContext(ctx, fmt.Sprintf(`
 		SELECT
 			task.id,
 			task.pipeline_id,
@@ -461,7 +461,7 @@ func (s *Store) BatchSkipTasks(ctx context.Context, taskUIDs []int, comment stri
 	WHERE id = ANY($3)`
 	args := []any{true, comment, taskUIDs}
 
-	if _, err := s.db.db.ExecContext(ctx, query, args...); err != nil {
+	if _, err := s.db.ExecContext(ctx, query, args...); err != nil {
 		return errors.Wrapf(err, "failed to batch skip tasks")
 	}
 
@@ -476,7 +476,7 @@ func (s *Store) BatchSkipTasks(ctx context.Context, taskUIDs []int, comment stri
 // 5. are in the stage that is the first among the selected stages in the pipeline
 // 6. are not data export tasks.
 func (s *Store) ListTasksToAutoRollout(ctx context.Context, environments []string) ([]int, error) {
-	rows, err := s.db.db.QueryContext(ctx, `
+	rows, err := s.db.QueryContext(ctx, `
 	SELECT
 		task.pipeline_id,
 		task.stage_id,

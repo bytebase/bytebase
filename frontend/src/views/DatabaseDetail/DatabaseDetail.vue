@@ -108,7 +108,7 @@
       </div>
     </main>
 
-    <NTabs v-model:value="state.selectedTab">
+    <NTabs v-if="ready" v-model:value="state.selectedTab">
       <NTabPane name="overview" :tab="$t('common.overview')">
         <DatabaseOverviewPanel
           class="mt-2"
@@ -317,7 +317,7 @@ watch(
   { immediate: true }
 );
 
-const { database } = useDatabaseV1ByName(
+const { database, ready } = useDatabaseV1ByName(
   computed(
     () =>
       `${instanceNamePrefix}${props.instanceId}/${databaseNamePrefix}${props.databaseName}`

@@ -164,11 +164,11 @@ func (driver *Driver) getDatabases(ctx context.Context) ([]string, error) {
 	return databases, nil
 }
 
-func getDatabasesTxn(ctx context.Context, tx *sql.Tx) ([]string, error) {
+func getDatabasesTxn(ctx context.Context, txn *sql.Tx) ([]string, error) {
 	// Filter inbound shared databases because they are immutable and we cannot get their DDLs.
 	inboundDatabases := make(map[string]bool)
 	shareQuery := "SHOW SHARES"
-	shareRows, err := tx.Query(shareQuery)
+	shareRows, err := txn.Query(shareQuery)
 	if err != nil {
 		return nil, err
 	}
@@ -203,7 +203,7 @@ func getDatabasesTxn(ctx context.Context, tx *sql.Tx) ([]string, error) {
 		SELECT
 			DATABASE_NAME
 		FROM SNOWFLAKE.INFORMATION_SCHEMA.DATABASES`
-	rows, err := tx.QueryContext(ctx, query)
+	rows, err := txn.QueryContext(ctx, query)
 	if err != nil {
 		return nil, util.FormatErrorWithQuery(err, query)
 	}
