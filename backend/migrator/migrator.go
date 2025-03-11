@@ -61,7 +61,12 @@ func MigrateSchema(ctx context.Context, db *sql.DB) (*semver.Version, error) {
 	CREATE UNIQUE INDEX IF NOT EXISTS idx_instance_change_history_unique_version ON instance_change_history (version);`); err != nil {
 		return nil, err
 	}
-	if _, err := conn.ExecContext(ctx, `
+	var hasStatus bool
+	if err := conn.QueryRowContext(ctx, "SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'instance_change_history' AND column_name = 'status')").Scan(&hasStatus); err != nil {
+		return nil, err
+	}
+	if hasStatus {
+		if _, err := conn.ExecContext(ctx, `
 		DELETE FROM instance_change_history WHERE status = 'FAILED';
 		UPDATE instance_change_history
 		SET
@@ -73,7 +78,8 @@ func MigrateSchema(ctx context.Context, db *sql.DB) (*semver.Version, error) {
 				'.'
 			)
 		WHERE version LIKE '%-%';`); err != nil {
-		return nil, err
+			return nil, err
+		}
 	}
 	if _, err := conn.ExecContext(ctx, `
 	ALTER TABLE instance_change_history

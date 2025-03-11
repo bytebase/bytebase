@@ -338,9 +338,7 @@ CREATE INDEX idx_issue_subscriber_subscriber_id ON issue_subscriber(subscriber_i
 -- instance change history records the changes an instance and its databases.
 CREATE TABLE instance_change_history (
     id bigserial PRIMARY KEY,
-    status text NOT NULL CONSTRAINT instance_change_history_status_check CHECK (status IN ('PENDING', 'DONE', 'FAILED')),
-    version text NOT NULL,
-    execution_duration_ns bigint NOT NULL
+    version text NOT NULL
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_instance_change_history_unique_version ON instance_change_history (version);
