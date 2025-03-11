@@ -1,4 +1,4 @@
-package webhook
+package dingtalk
 
 import (
 	"bytes"
@@ -47,16 +47,7 @@ type DingTalkReceiver struct {
 }
 
 func (*DingTalkReceiver) Post(context webhook.Context) error {
-	metaStrList := []string{}
-	for _, meta := range context.GetMetaListZh() {
-		metaStrList = append(metaStrList, fmt.Sprintf("##### **%s:** %s", meta.Name, meta.Value))
-	}
-	metaStrList = append(metaStrList, fmt.Sprintf("##### **由:** %s (%s)", context.ActorName, context.ActorEmail))
-
-	text := fmt.Sprintf("# %s\n%s\n##### [在 Bytebase 中显示](%s)", context.TitleZh, strings.Join(metaStrList, "\n"), context.Link)
-	if context.Description != "" {
-		text = fmt.Sprintf("# %s\n> %s\n%s\n##### [在 Bytebase 中显示](%s)", context.TitleZh, context.Description, strings.Join(metaStrList, "\n"), context.Link)
-	}
+	text := getMarkdownText(context)
 	if len(context.MentionUsersByPhone) > 0 {
 		var ats []string
 		for _, phone := range context.MentionUsersByPhone {
@@ -115,4 +106,18 @@ func (*DingTalkReceiver) Post(context webhook.Context) error {
 	}
 
 	return nil
+}
+
+func getMarkdownText(context webhook.Context) string {
+	var metaStrList []string
+	for _, meta := range context.GetMetaListZh() {
+		metaStrList = append(metaStrList, fmt.Sprintf("##### **%s:** %s", meta.Name, meta.Value))
+	}
+	metaStrList = append(metaStrList, fmt.Sprintf("##### **由:** %s (%s)", context.ActorName, context.ActorEmail))
+
+	text := fmt.Sprintf("# %s\n%s\n##### [在 Bytebase 中显示](%s)", context.TitleZh, strings.Join(metaStrList, "\n"), context.Link)
+	if context.Description != "" {
+		text = fmt.Sprintf("# %s\n> %s\n%s\n##### [在 Bytebase 中显示](%s)", context.TitleZh, context.Description, strings.Join(metaStrList, "\n"), context.Link)
+	}
+	return text
 }
