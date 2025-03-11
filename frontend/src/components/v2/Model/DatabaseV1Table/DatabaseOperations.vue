@@ -69,13 +69,13 @@
       v-if="state.transferOutDatabaseType === 'TRANSFER-OUT'"
       :database-list="props.databases"
       :selected-database-names="selectedDatabaseNameList"
-      :on-success="(databases) => $emit('refresh', databases)"
+      :on-success="() => $emit('refresh')"
       @dismiss="state.transferOutDatabaseType = undefined"
     />
     <TransferDatabaseForm
       v-else
       :project-name="projectName"
-      :on-success="(databases) => $emit('refresh', databases)"
+      :on-success="() => $emit('refresh')"
       @dismiss="state.transferOutDatabaseType = undefined"
     />
   </Drawer>
@@ -183,7 +183,8 @@ const state = reactive<LocalState>({
 });
 
 const emit = defineEmits<{
-  (event: "refresh", databases: ComposedDatabase[]): void;
+  (event: "refresh"): void;
+  (event: "update-cache", databases: ComposedDatabase[]): void;
 }>();
 
 const { t } = useI18n();
@@ -374,7 +375,7 @@ const unAssignDatabases = async () => {
   }
   try {
     state.loading = true;
-    const databases = await databaseStore.batchUpdateDatabases({
+    await databaseStore.batchUpdateDatabases({
       parent: "-",
       requests: assignedDatabases.value.map((database) => {
         return UpdateDatabaseRequest.fromPartial({
@@ -386,7 +387,7 @@ const unAssignDatabases = async () => {
         });
       }),
     });
-    emit("refresh", databases);
+    emit("refresh");
     pushNotification({
       module: "bytebase",
       style: "SUCCESS",
@@ -597,7 +598,7 @@ const onLabelsApply = async (labelsList: { [key: string]: string }[]) => {
       });
     })
   );
-  emit("refresh", updatedDatabases);
+  emit("update-cache", updatedDatabases);
 
   pushNotification({
     module: "bytebase",
@@ -619,7 +620,7 @@ const onEnvironmentUpdate = async (environment: string) => {
       });
     }),
   });
-  emit("refresh", updatedDatabases);
+  emit("update-cache", updatedDatabases);
 
   pushNotification({
     module: "bytebase",
