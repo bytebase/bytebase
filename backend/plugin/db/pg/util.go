@@ -20,14 +20,9 @@ const (
 )
 
 func getSSLMode(ds *storepb.DataSource) sslMode {
-	sslMode := SSLModePrefer
+	sslMode := SSLModeDisable
 	if ds.GetUseSsl() {
-		sslMode = SSLModeVerifyFull
-		if ds.GetSslCa() != "" {
-			if ds.GetSshHost() != "" {
-				sslMode = SSLModeVerifyCA
-			}
-		}
+		sslMode = SSLModeVerifyCA
 	}
 	return sslMode
 }
