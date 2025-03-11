@@ -162,7 +162,7 @@ watch(
     }
     state.loading = true;
     try {
-      const { projects } = await projectStore.searchProjects({
+      const { projects } = await projectStore.fetchProjectList({
         query: state.searchText,
         showDeleted: false,
       });
