@@ -2,10 +2,8 @@ import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import type { BinaryLike } from "node:crypto";
 import { defineStore } from "pinia";
-import { reactive } from "vue";
 import { auditLogServiceClient } from "@/grpcweb";
 import type { SearchAuditLogsParams } from "@/types";
-import type { AuditLog } from "@/types/proto/v1/audit_log_service";
 import type { ExportFormat } from "@/types/proto/v1/common";
 import { userNamePrefix } from "./common";
 
@@ -36,8 +34,6 @@ const buildFilter = (search: SearchAuditLogsParams): string => {
 };
 
 export const useAuditLogStore = defineStore("audit_log", () => {
-  const auditLogList = reactive(new Map<string, AuditLog[]>());
-
   const fetchAuditLogs = async (search: SearchAuditLogsParams) => {
     const resp = await auditLogServiceClient.searchAuditLogs({
       parent: search.parent,
@@ -46,11 +42,6 @@ export const useAuditLogStore = defineStore("audit_log", () => {
       pageSize: search.pageSize,
       pageToken: search.pageToken,
     });
-    for (const auditLog of resp.auditLogs) {
-      const list = auditLogList.get(auditLog.resource) || [];
-      list.push(auditLog);
-      auditLogList.set(auditLog.resource, list);
-    }
     return resp;
   };
 

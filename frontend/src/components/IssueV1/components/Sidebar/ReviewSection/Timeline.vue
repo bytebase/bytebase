@@ -71,7 +71,24 @@
             </li>
           </ul>
           <hr />
-          <Candidates :step="step" />
+          <div
+            v-if="step.candidates.length === 0"
+            class="w-[14rem] text-wrap text-warning italic"
+          >
+            {{ $t("custom-approval.issue-review.no-one-matched") }}
+          </div>
+          <div
+            v-else
+            class="min-w-[8rem] max-w-[12rem] max-h-[18rem] flex flex-col text-control-light overflow-y-hidden"
+          >
+            <div class="flex-1 overflow-auto text-sm">
+              <Candidate
+                v-for="candidate in step.candidates"
+                :key="candidate"
+                :candidate="candidate"
+              />
+            </div>
+          </div>
         </div>
       </template>
     </NPopover>
@@ -90,7 +107,7 @@ import type { WrappedReviewStep } from "@/types";
 import { type User } from "@/types/proto/v1/user_service";
 import { approvalNodeText } from "@/utils";
 import Approver from "./Approver.vue";
-import Candidates from "./Candidates.vue";
+import Candidate from "./Candidate.vue";
 import TimelineIcon from "./TimelineIcon.vue";
 
 defineProps<{
