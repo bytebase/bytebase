@@ -161,13 +161,6 @@ export const useAuthStore = defineStore("auth_v1", () => {
     }
   };
 
-  // TODO(ed): ensure if we need it.
-  // const refreshUserIfNeeded = async (name: string) => {
-  //   if (name === currentUser.value.name) {
-  //     await useUserStore().getOrFetchUserByIdentifier(name);
-  //   }
-  // };
-
   return {
     currentUser,
     currentUserId,
