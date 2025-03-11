@@ -200,7 +200,7 @@ func getListUserFilter(filter string) (*store.ListResourceFilter, error) {
 	}
 
 	parseToUserTypeSQL := func(expr celast.Expr, relation string) (string, error) {
-		variable, value := getVariavleAndValueFromExpr(expr)
+		variable, value := getVariableAndValueFromExpr(expr)
 		if variable != "user_type" {
 			return "", status.Errorf(codes.InvalidArgument, `only "user_type" support "user_type in [xx]"/"!(user_type in [xx])" operator`)
 		}
@@ -236,7 +236,7 @@ func getListUserFilter(filter string) (*store.ListResourceFilter, error) {
 			case celoperators.LogicalAnd:
 				return getSubConditionFromExpr(expr, getFilter, "AND")
 			case celoperators.Equals:
-				variable, value := getVariavleAndValueFromExpr(expr)
+				variable, value := getVariableAndValueFromExpr(expr)
 				return parseToSQL(variable, value)
 			case celoverloads.Matches:
 				variable := expr.AsCall().Target().AsIdent()
