@@ -273,7 +273,7 @@ require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869 // indirect
 	github.com/bytebase/partiql-parser v0.0.0-20240531101102-1962ff456f2c
-	github.com/bytebase/tsql-parser v0.0.0-20241114064553-239d32311c0b
+	github.com/bytebase/tsql-parser v0.0.0-20250311085620-1db45111863e
 	github.com/census-instrumentation/opencensus-proto v0.4.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/cncf/xds/go v0.0.0-20250121191232-2f005788dc42 // indirect
