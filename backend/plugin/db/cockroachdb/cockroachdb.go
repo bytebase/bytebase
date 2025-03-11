@@ -154,7 +154,7 @@ func getCockroachConnectionConfig(config db.ConnectionConfig) (*pgx.ConnConfig, 
 	}
 
 	connStr := fmt.Sprintf("host=%s port=%s", config.DataSource.Host, config.DataSource.Port)
-	sslMode := getSSLMode(config.DataSource)
+	sslMode := db.GetPGSSLMode(config.DataSource)
 	connStr += fmt.Sprintf(" sslmode=%s", sslMode)
 
 	routingID := getRoutingIDFromCockroachCloudURL(config.DataSource.Host)
@@ -298,67 +298,48 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 	var nonTransactionAndSetRoleStmts []string
 	var nonTransactionAndSetRoleStmtsIndex []int32
 	var isPlsql bool
-	oneshot := true
-	// HACK(p0ny): always split for pg
-	//nolint
-	if true || len(statement) <= common.MaxSheetCheckSize {
-		singleSQLs, err := crdbparser.SplitSQLStatement(statement)
-		if err != nil {
-			return 0, err
-		}
-		for i, singleSQL := range singleSQLs {
-			commands = append(commands, base.SingleSQL{Text: singleSQL})
-			originalIndex = append(originalIndex, int32(i))
-		}
 
-		// If the statement is a single statement and is a PL/pgSQL block,
-		// we should execute it as a single statement without transaction.
-		// If the statement is a PL/pgSQL block, we should execute it as a single statement.
-		// https://www.postgresql.org/docs/current/plpgsql-control-structures.html
-		if len(singleSQLs) == 1 && isPlSQLBlock(singleSQLs[0]) {
-			isPlsql = true
-		}
-		// HACK(p0ny): always split for pg
-		//nolint
-		if false && len(commands) <= common.MaximumCommands {
-			oneshot = false
-		}
+	singleSQLs, err := crdbparser.SplitSQLStatement(statement)
+	if err != nil {
+		return 0, err
+	}
+	for i, singleSQL := range singleSQLs {
+		commands = append(commands, base.SingleSQL{Text: singleSQL})
+		originalIndex = append(originalIndex, int32(i))
+	}
 
-		var tmpCommands []base.SingleSQL
-		var tmpOriginalIndex []int32
-		for i, command := range commands {
-			switch {
-			case isSetRoleStatement(command.Text):
-				nonTransactionAndSetRoleStmts = append(nonTransactionAndSetRoleStmts, command.Text)
-				nonTransactionAndSetRoleStmtsIndex = append(nonTransactionAndSetRoleStmtsIndex, originalIndex[i])
-			case IsNonTransactionStatement(command.Text):
-				nonTransactionAndSetRoleStmts = append(nonTransactionAndSetRoleStmts, command.Text)
-				nonTransactionAndSetRoleStmtsIndex = append(nonTransactionAndSetRoleStmtsIndex, originalIndex[i])
-				continue
-			case isSuperuserStatement(command.Text):
-				// Use superuser privilege to run privileged statements.
-				slog.Info("Use superuser privilege to run privileged statements", slog.String("statement", command.Text))
-				ct := command.Text
-				if !strings.HasSuffix(strings.TrimRightFunc(ct, unicode.IsSpace), ";") {
-					ct += ";"
-				}
-				command.Text = fmt.Sprintf("SET LOCAL ROLE NONE;%sSET LOCAL ROLE '%s';", ct, owner)
+	// If the statement is a single statement and is a PL/pgSQL block,
+	// we should execute it as a single statement without transaction.
+	// If the statement is a PL/pgSQL block, we should execute it as a single statement.
+	// https://www.postgresql.org/docs/current/plpgsql-control-structures.html
+	if len(singleSQLs) == 1 && isPlSQLBlock(singleSQLs[0]) {
+		isPlsql = true
+	}
+
+	var tmpCommands []base.SingleSQL
+	var tmpOriginalIndex []int32
+	for i, command := range commands {
+		switch {
+		case isSetRoleStatement(command.Text):
+			nonTransactionAndSetRoleStmts = append(nonTransactionAndSetRoleStmts, command.Text)
+			nonTransactionAndSetRoleStmtsIndex = append(nonTransactionAndSetRoleStmtsIndex, originalIndex[i])
+		case IsNonTransactionStatement(command.Text):
+			nonTransactionAndSetRoleStmts = append(nonTransactionAndSetRoleStmts, command.Text)
+			nonTransactionAndSetRoleStmtsIndex = append(nonTransactionAndSetRoleStmtsIndex, originalIndex[i])
+			continue
+		case isSuperuserStatement(command.Text):
+			// Use superuser privilege to run privileged statements.
+			slog.Info("Use superuser privilege to run privileged statements", slog.String("statement", command.Text))
+			ct := command.Text
+			if !strings.HasSuffix(strings.TrimRightFunc(ct, unicode.IsSpace), ";") {
+				ct += ";"
 			}
-			tmpCommands = append(tmpCommands, command)
-			tmpOriginalIndex = append(tmpOriginalIndex, originalIndex[i])
+			command.Text = fmt.Sprintf("SET LOCAL ROLE NONE;%sSET LOCAL ROLE '%s';", ct, owner)
 		}
-		commands, originalIndex = tmpCommands, tmpOriginalIndex
+		tmpCommands = append(tmpCommands, command)
+		tmpOriginalIndex = append(tmpOriginalIndex, originalIndex[i])
 	}
-	// HACK(p0ny): always split for pg
-	//nolint
-	if false && oneshot {
-		commands = []base.SingleSQL{
-			{
-				Text: statement,
-			},
-		}
-		originalIndex = []int32{0}
-	}
+	commands, originalIndex = tmpCommands, tmpOriginalIndex
 
 	conn, err := driver.db.Conn(ctx)
 	if err != nil {
