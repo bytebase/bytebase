@@ -155,7 +155,7 @@ func getPGConnectionConfig(config db.ConnectionConfig) (*pgx.ConnConfig, error) 
 	}
 
 	connStr := fmt.Sprintf("host=%s port=%s", config.DataSource.Host, config.DataSource.Port)
-	sslMode := getSSLMode(config.DataSource)
+	sslMode := db.GetPGSSLMode(config.DataSource)
 	connStr += fmt.Sprintf(" sslmode=%s", sslMode)
 
 	// Add target_session_attrs=read-write if specified in ExtraConnectionParameters
