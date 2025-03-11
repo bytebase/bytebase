@@ -16,19 +16,14 @@ import (
 
 	"github.com/blang/semver/v4"
 	"github.com/pkg/errors"
-
-	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/log"
-	dbdriver "github.com/bytebase/bytebase/backend/plugin/db"
-	"github.com/bytebase/bytebase/backend/store"
 )
 
 //go:embed migration
 var migrationFS embed.FS
 
 // MigrateSchema migrates the schema for metadata database.
-func MigrateSchema(ctx context.Context, stores *store.Store) (*semver.Version, error) {
-	conn, err := stores.GetDB().Conn(ctx)
+func MigrateSchema(ctx context.Context, db *sql.DB) (*semver.Version, error) {
+	conn, err := db.Conn(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -44,7 +39,7 @@ func MigrateSchema(ctx context.Context, stores *store.Store) (*semver.Version, e
 		return nil, errors.Wrapf(err, "failed to get cutoff version")
 	}
 	slog.Info(fmt.Sprintf("The prod cutoff schema version: %s", cutoffSchemaVersion))
-	if err := initializeSchema(ctx, stores, conn, cutoffSchemaVersion); err != nil {
+	if err := initializeSchema(ctx, conn, cutoffSchemaVersion); err != nil {
 		return nil, err
 	}
 	var c int
@@ -91,25 +86,25 @@ func MigrateSchema(ctx context.Context, stores *store.Store) (*semver.Version, e
 		return nil, err
 	}
 
-	verBefore, err := getLatestVersion(ctx, stores)
+	verBefore, err := getLatestMigrationVersion(ctx, conn)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get current schema version")
 	}
 
-	if _, err := migrate(ctx, stores, conn, verBefore); err != nil {
+	if _, err := migrate(ctx, conn, *verBefore); err != nil {
 		return nil, errors.Wrap(err, "failed to migrate")
 	}
 
-	verAfter, err := getLatestVersion(ctx, stores)
+	verAfter, err := getLatestMigrationVersion(ctx, conn)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get current schema version")
 	}
 	slog.Info(fmt.Sprintf("Current schema version after migration: %s", verAfter))
 
-	return &verAfter, nil
+	return verAfter, nil
 }
 
-func initializeSchema(ctx context.Context, storeInstance *store.Store, conn *sql.Conn, cutoffSchemaVersion semver.Version) error {
+func initializeSchema(ctx context.Context, conn *sql.Conn, cutoffSchemaVersion semver.Version) error {
 	// We use environment table to determine whether we've initialized the schema.
 	var exists bool
 	if err := conn.QueryRowContext(ctx,
@@ -127,7 +122,6 @@ func initializeSchema(ctx context.Context, storeInstance *store.Store, conn *sql
 	if err != nil {
 		return errors.Wrapf(err, "failed to read latest schema %q", latestSchemaPath)
 	}
-	stmt := string(buf)
 
 	version := cutoffSchemaVersion.String()
 	// Set role to database owner so that the schema owner and database owner are consistent.
@@ -138,14 +132,8 @@ func initializeSchema(ctx context.Context, storeInstance *store.Store, conn *sql
 	if _, err := conn.ExecContext(ctx, fmt.Sprintf("SET ROLE '%s'", owner)); err != nil {
 		return err
 	}
-	if _, err := conn.ExecContext(ctx, stmt); err != nil {
-		return err
-	}
-	if err := storeInstance.CreateInstanceChangeHistoryForMigrator(ctx, &store.InstanceChangeHistoryMessage{
-		Status:              dbdriver.Done,
-		Version:             version,
-		ExecutionDurationNs: 0,
-	}); err != nil {
+
+	if err := executeMigration(ctx, conn, string(buf), version); err != nil {
 		return err
 	}
 	slog.Info(fmt.Sprintf("Completed database initial migration with version %s.", cutoffSchemaVersion))
@@ -196,54 +184,11 @@ func backfillSchemaObjectOwner(ctx context.Context, conn *sql.Conn) error {
 	return nil
 }
 
-// getLatestVersion returns the latest schema version in semantic versioning format.
-// We expect our own migration history to use semantic versions.
-// If there's no migration history, version will be nil.
-func getLatestVersion(ctx context.Context, storeInstance *store.Store) (semver.Version, error) {
-	// We look back the past migration history records and return the latest successful (DONE) migration version.
-	histories, err := storeInstance.ListInstanceChangeHistoryForMigrator(ctx, &store.FindInstanceChangeHistoryMessage{})
-	if err != nil {
-		return semver.Version{}, errors.Wrap(err, "failed to get migration history")
-	}
-	if len(histories) == 0 {
-		return semver.Version{}, errors.Errorf("migration history should exist for metadata database")
-	}
-
-	for _, h := range histories {
-		if h.Status != dbdriver.Done {
-			// Non-success migration history record is an anomaly, in the case where the actual
-			// migration has been applied, the followup migration will likely fail because the
-			// schema has already been applied. Thus emitting a warning here will assist debugging.
-			slog.Warn("Found stale migration history",
-				slog.String("status", string(h.Status)),
-				slog.String("version", h.Version),
-			)
-			continue
-		}
-		v, err := semver.Make(h.Version)
-		if err != nil {
-			return semver.Version{}, errors.Wrapf(err, "invalid version %q", h.Version)
-		}
-		return v, nil
-	}
-
-	return semver.Version{}, errors.Errorf("failed to find a successful migration history to determine the schema version")
-}
-
 const (
 	latestSchemaFile = "LATEST.sql"
 )
 
-// migrate sets up migration tracking and executes pending migration files.
-//
-// Migration files are embedded in the migration folder and are executed
-// in lexicographical order.
-//
-// We prepend each migration file with version = xxx; Each migration
-// file run in a transaction to prevent partial migrations.
-//
-// The procedure follows https://github.com/bytebase/bytebase/blob/main/docs/schema-update-guide.md.
-func migrate(ctx context.Context, stores *store.Store, conn *sql.Conn, curVer semver.Version) (bool, error) {
+func migrate(ctx context.Context, conn *sql.Conn, curVer semver.Version) (bool, error) {
 	slog.Info("Apply database migration if needed...")
 	slog.Info(fmt.Sprintf("Current schema version before migration: %s", curVer))
 
@@ -277,7 +222,7 @@ func migrate(ctx context.Context, stores *store.Store, conn *sql.Conn, curVer se
 			}
 			slog.Info(fmt.Sprintf("Migrating %s...", pv.version))
 			version := pv.version.String()
-			if _, _, err := executeMigrationDefault(ctx, stores, conn, string(buf), version); err != nil {
+			if err := executeMigration(ctx, conn, string(buf), version); err != nil {
 				return false, err
 			}
 			retVersion = pv.version
@@ -410,84 +355,44 @@ func getMinorVersions(names []string) ([]semver.Version, error) {
 	return versions, nil
 }
 
-// executeMigrationDefault executes migration.
-func executeMigrationDefault(ctx context.Context, stores *store.Store, conn *sql.Conn, statement string, version string) (migrationHistoryID string, updatedSchema string, resErr error) {
-	insertedID, err := beginMigration(ctx, stores, version)
-	if err != nil {
-		return "", "", errors.Wrapf(err, "failed to begin migration")
-	}
-
+func executeMigration(ctx context.Context, conn *sql.Conn, statement string, version string) error {
 	startedNs := time.Now().UnixNano()
 
-	defer func() {
-		if err := endMigration(ctx, stores, startedNs, insertedID, resErr == nil /* isDone */); err != nil {
-			slog.Error("Failed to update migration history record",
-				log.BBError(err),
-				slog.String("migration_id", migrationHistoryID),
-			)
-		}
-	}()
-
-	if _, err := conn.ExecContext(ctx, statement); err != nil {
-		return "", "", err
-	}
-
-	return insertedID, "", nil
-}
-
-// beginMigration checks before executing migration and inserts a migration history record with pending status.
-func beginMigration(ctx context.Context, stores *store.Store, version string) (string, error) {
-	// Phase 1 - Pre-check before executing migration
-	// Check if the same migration version has already been applied.
-	if list, err := stores.ListInstanceChangeHistoryForMigrator(ctx, &store.FindInstanceChangeHistoryMessage{
-		Version: &version,
-	}); err != nil {
-		return "", errors.Wrap(err, "failed to check duplicate version")
-	} else if len(list) > 0 {
-		migrationHistory := list[0]
-		switch migrationHistory.Status {
-		case dbdriver.Done:
-			err := common.Errorf(common.MigrationAlreadyApplied, "already applied version %s, hint: the version might be duplicate, please check the version", version)
-			slog.Debug(err.Error())
-			// Force migration
-			return migrationHistory.UID, nil
-		case dbdriver.Pending:
-			err := errors.Errorf("version %s migration is already in progress", version)
-			slog.Debug(err.Error())
-			// For force migration, we will ignore the existing migration history and continue to migration.
-			return migrationHistory.UID, nil
-		case dbdriver.Failed:
-			err := errors.Errorf("version %s migration has failed, please check your database to make sure things are fine and then start a new migration using a new version", version)
-			slog.Debug(err.Error())
-			// For force migration, we will ignore the existing migration history and continue to migration.
-			return migrationHistory.UID, nil
-		}
-	}
-
-	// Phase 2 - Record migration history as PENDING.
-	insertedID, err := stores.CreatePendingInstanceChangeHistoryForMigrator(ctx, version)
+	txn, err := conn.BeginTx(ctx, nil)
 	if err != nil {
-		return "", err
+		return err
+	}
+	defer txn.Rollback()
+
+	if _, err := txn.ExecContext(ctx, statement); err != nil {
+		return err
+	}
+	durationNano := time.Now().UnixNano() - startedNs
+	if _, err := txn.ExecContext(ctx,
+		`INSERT INTO instance_change_history (status, version, execution_duration_ns) VALUES ($1, $2, $3)`, "DONE",
+		version,
+		durationNano,
+	); err != nil {
+		return err
 	}
 
-	return insertedID, nil
+	return txn.Commit()
 }
 
-// endMigration updates the migration history record to DONE or FAILED depending on migration is done or not.
-func endMigration(ctx context.Context, storeInstance *store.Store, startedNs int64, insertedID string, isDone bool) error {
-	migrationDurationNs := time.Now().UnixNano() - startedNs
-	update := &store.UpdateInstanceChangeHistoryMessage{
-		ID:                  insertedID,
-		ExecutionDurationNs: &migrationDurationNs,
+func getLatestMigrationVersion(ctx context.Context, conn *sql.Conn) (*semver.Version, error) {
+	query := `SELECT version FROM instance_change_history WHERE status = 'DONE' ORDER BY id DESC`
+
+	var v string
+	if err := conn.QueryRowContext(ctx, query).Scan(&v); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
 	}
-	if isDone {
-		// Upon success, update the migration history as 'DONE', execution_duration_ns, updated schema.
-		status := dbdriver.Done
-		update.Status = &status
-	} else {
-		// Otherwise, update the migration history as 'FAILED', execution_duration.
-		status := dbdriver.Failed
-		update.Status = &status
+
+	version, err := semver.Make(v)
+	if err != nil {
+		return nil, errors.Wrapf(err, "invalid version %q", v)
 	}
-	return storeInstance.UpdateInstanceChangeHistory(ctx, update)
+	return &version, nil
 }
