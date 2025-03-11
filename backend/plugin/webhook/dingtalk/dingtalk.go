@@ -2,14 +2,20 @@ package dingtalk
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"strings"
 
+	"github.com/cenkalti/backoff/v4"
 	"github.com/pkg/errors"
+	"go.uber.org/multierr"
 
+	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/webhook"
 )
 
@@ -47,6 +53,68 @@ type DingTalkReceiver struct {
 }
 
 func (*DingTalkReceiver) Post(context webhook.Context) error {
+	if context.DirectMessage && len(context.MentionEndUsers) > 0 {
+		sendDirectMessage(context)
+		return nil
+	}
+	return sendMessage(context)
+}
+
+// returns true if the message is sent successfully
+func sendDirectMessage(webhookCtx webhook.Context) {
+	dingtalk := webhookCtx.IMSetting.GetDingtalk()
+	if dingtalk == nil {
+		return
+	}
+	p := newProvider(dingtalk.ClientId, dingtalk.ClientSecret, dingtalk.RobotCode)
+	ctx := context.Background()
+
+	sent := map[string]bool{}
+	if err := common.Retry(ctx, func() error {
+		var errs error
+		var userPhones, userIDs []string
+		for _, u := range webhookCtx.MentionEndUsers {
+			if u.Phone == "" {
+				continue
+			}
+			if sent[u.Phone] {
+				continue
+			}
+
+			userID, err := p.getIDByPhone(ctx, u.Phone)
+			if err != nil {
+				err = errors.Wrapf(err, "failed to get user id by phone %v", u.Phone)
+				multierr.AppendInto(&errs, err)
+				continue
+			}
+			if userID == "" {
+				// user not found
+				sent[u.Phone] = true
+				continue
+			}
+			userIDs = append(userIDs, userID)
+			userPhones = append(userPhones, u.Phone)
+		}
+		if len(userIDs) == 0 {
+			err := errors.Errorf("dingtalk dm: got 0 user id, errs: %v", errs)
+			return backoff.Permanent(err)
+		}
+
+		if err := p.sendMessage(ctx, userIDs, webhookCtx.TitleZh, getMarkdownText(webhookCtx)); err != nil {
+			err = errors.Wrapf(err, "failed to send message")
+			multierr.AppendInto(&errs, err)
+		} else {
+			for _, phone := range userPhones {
+				sent[phone] = true
+			}
+		}
+		return errs
+	}); err != nil {
+		slog.Warn("failed to send direct message to dingtalk users", log.BBError(err))
+	}
+}
+
+func sendMessage(context webhook.Context) error {
 	text := getMarkdownText(context)
 	if len(context.MentionUsersByPhone) > 0 {
 		var ats []string

@@ -66,6 +66,10 @@ var userIDCache = func() *lru.Cache[string, string] {
 
 // https://open.dingtalk.com/document/orgapp/query-users-by-phone-number
 func (p *provider) getIDByPhone(ctx context.Context, phone string) (string, error) {
+	if id, ok := userIDCache.Get(phone); ok {
+		return id, nil
+	}
+
 	const url = "https://oapi.dingtalk.com/topapi/v2/user/getbymobile"
 	b, err := p.do(ctx, http.MethodPost, url, []byte(fmt.Sprintf(`{"mobile":"%s"}`, phone)))
 	if err != nil {
@@ -82,11 +86,14 @@ func (p *provider) getIDByPhone(ctx context.Context, phone string) (string, erro
 		return "", errors.Wrapf(err, "failed to unmarshal response")
 	}
 	if response.Errcode == 60121 {
+		userIDCache.Add(phone, "")
 		return "", nil
 	}
 	if response.Errcode != 0 {
 		return "", errors.Errorf("failed to get id by phone, errcode: %d, errmsg: %s", response.Errcode, response.Errmsg)
 	}
+
+	userIDCache.Add(phone, response.Result.UserID)
 	return response.Result.UserID, nil
 }
 
