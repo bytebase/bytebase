@@ -136,6 +136,9 @@ func (s *Store) StatUsers(ctx context.Context) ([]*UserStat, error) {
 		}
 		stats = append(stats, &stat)
 	}
+	if err := rows.Err(); err != nil {
+		return nil, errors.Wrapf(err, "failed to scan rows")
+	}
 
 	return stats, nil
 }

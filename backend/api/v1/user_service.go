@@ -89,7 +89,7 @@ func (s *UserService) GetUser(ctx context.Context, request *v1pb.GetUserRequest)
 }
 
 // StatUsers count users by type and state.
-func (s *UserService) StatUsers(ctx context.Context, request *v1pb.StatUsersRequest) (*v1pb.StatUsersResponse, error) {
+func (s *UserService) StatUsers(ctx context.Context, _ *v1pb.StatUsersRequest) (*v1pb.StatUsersResponse, error) {
 	stats, err := s.store.StatUsers(ctx)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to stat users, error: %v", err)
