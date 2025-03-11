@@ -822,6 +822,14 @@
         "label": {
           "title": "Etiqueta",
           "description": "Filtrar por etiqueta de problema"
+        },
+        "database-label": {
+          "title": "Etiqueta",
+          "description": "Ingrese la \"key\":\"value\" y luego presione Enter"
+        },
+        "engine": {
+          "title": "Motor",
+          "description": "Filtrar por motores"
         }
       },
       "hide": "Ocultar búsqueda avanzada"

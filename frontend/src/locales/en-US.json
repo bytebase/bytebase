@@ -822,6 +822,14 @@
         "label": {
           "title": "Label",
           "description": "Filter by issue label"
+        },
+        "database-label": {
+          "title": "Label",
+          "description": "Input the \"label key\":\"label value\" then press Enter"
+        },
+        "engine": {
+          "title": "Engine",
+          "description": "Filter by engines"
         }
       },
       "hide": "Hide advanced search"

@@ -71,6 +71,7 @@ import {
 } from "@/store/modules/v1/common";
 import type { ComposedDatabase } from "@/types";
 import { DEFAULT_PROJECT_NAME, isValidDatabaseName } from "@/types";
+import { engineFromJSON } from "@/types/proto/v1/common";
 import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
 import type { SearchParams } from "@/utils";
 import {
@@ -126,7 +127,7 @@ const allowToCreateDB = computed(() => {
 
 const scopeOptions = useCommonSearchScopeOptions(
   computed(() => state.params),
-  [...CommonFilterScopeIdList, "project", "label"]
+  [...CommonFilterScopeIdList, "project", "label", "engine"]
 );
 
 const selectedLabels = computed(() => {
@@ -165,6 +166,12 @@ const selectedEnvironment = computed(() => {
   return `${environmentNamePrefix}${environmentId}`;
 });
 
+const selectedEngines = computed(() => {
+  return state.params.scopes
+    .filter((scope) => scope.id === "engine")
+    .map((scope) => engineFromJSON(scope.value));
+});
+
 const filter = computed(() => ({
   instance: selectedInstance.value,
   environment: selectedEnvironment.value,
@@ -172,6 +179,7 @@ const filter = computed(() => ({
   query: state.params.query,
   labels: selectedLabels.value,
   excludeUnassigned: hideUnassignedDatabases.value,
+  engines: selectedEngines.value,
 }));
 
 onMounted(() => {
