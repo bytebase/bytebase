@@ -12,7 +12,6 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/blang/semver/v4"
 	"github.com/pkg/errors"
@@ -83,6 +82,12 @@ func MigrateSchema(ctx context.Context, db *sql.DB) (*semver.Version, error) {
 				'.'
 			)
 		WHERE version LIKE '%-%';`); err != nil {
+		return nil, err
+	}
+	if _, err := conn.ExecContext(ctx, `
+	ALTER TABLE instance_change_history
+	DROP COLUMN IF EXISTS status,
+	DROP COLUMN IF EXISTS execution_duration_ns;`); err != nil {
 		return nil, err
 	}
 
@@ -356,8 +361,6 @@ func getMinorVersions(names []string) ([]semver.Version, error) {
 }
 
 func executeMigration(ctx context.Context, conn *sql.Conn, statement string, version string) error {
-	startedNs := time.Now().UnixNano()
-
 	txn, err := conn.BeginTx(ctx, nil)
 	if err != nil {
 		return err
@@ -367,11 +370,9 @@ func executeMigration(ctx context.Context, conn *sql.Conn, statement string, ver
 	if _, err := txn.ExecContext(ctx, statement); err != nil {
 		return err
 	}
-	durationNano := time.Now().UnixNano() - startedNs
 	if _, err := txn.ExecContext(ctx,
-		`INSERT INTO instance_change_history (status, version, execution_duration_ns) VALUES ($1, $2, $3)`, "DONE",
+		`INSERT INTO instance_change_history (version) VALUES ($1)`,
 		version,
-		durationNano,
 	); err != nil {
 		return err
 	}
@@ -380,7 +381,7 @@ func executeMigration(ctx context.Context, conn *sql.Conn, statement string, ver
 }
 
 func getLatestMigrationVersion(ctx context.Context, conn *sql.Conn) (*semver.Version, error) {
-	query := `SELECT version FROM instance_change_history WHERE status = 'DONE' ORDER BY id DESC`
+	query := `SELECT version FROM instance_change_history ORDER BY id DESC`
 
 	var v string
 	if err := conn.QueryRowContext(ctx, query).Scan(&v); err != nil {
