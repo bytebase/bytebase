@@ -11,12 +11,9 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/component/config"
-	dbdriver "github.com/bytebase/bytebase/backend/plugin/db"
 	_ "github.com/bytebase/bytebase/backend/plugin/db/pg"
 	"github.com/bytebase/bytebase/backend/resources/postgres"
 	"github.com/bytebase/bytebase/backend/store"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 func TestGetMinorMigrationVersions(t *testing.T) {
@@ -153,46 +150,34 @@ func TestMigrationCompatibility(t *testing.T) {
 	defer stopInstance()
 
 	ctx := context.Background()
-	db, err := sql.Open("pgx", fmt.Sprintf("host=%s port=%d user=%s database=postgres", common.GetPostgresSocketDir(), pgPort, postgres.TestPgUser))
+	pgURL := fmt.Sprintf("host=%s port=%d user=%s database=postgres", common.GetPostgresSocketDir(), pgPort, postgres.TestPgUser)
+	db, err := sql.Open("pgx", pgURL)
 	require.NoError(t, err)
 	defer db.Close()
 	conn, err := db.Conn(ctx)
 	require.NoError(t, err)
 	defer conn.Close()
 
-	metadataConnConfig := dbdriver.ConnectionConfig{
-		DataSource: &storepb.DataSource{
-			Username: postgres.TestPgUser,
-			Password: "",
-			Host:     common.GetPostgresSocketDir(),
-			Port:     fmt.Sprintf("%d", pgPort),
-		},
-		Password: "",
-	}
-
-	stores := store.NewDB(metadataConnConfig, pgBinDir, false, common.ReleaseModeDev)
-	err = stores.Open(ctx)
-	require.NoError(t, err)
-	storeInstance, err := store.New(stores, &config.Profile{})
+	stores, err := store.New(ctx, pgURL)
 	require.NoError(t, err)
 
 	releaseVersion, err := getProdCutoffVersion()
 	require.NoError(t, err)
 
 	// Create initial schema.
-	err = initializeSchema(ctx, storeInstance, conn, releaseVersion)
+	err = initializeSchema(ctx, stores, conn, releaseVersion)
 	require.NoError(t, err)
 	// Check migration history.
-	histories, err := storeInstance.ListInstanceChangeHistoryForMigrator(ctx, &store.FindInstanceChangeHistoryMessage{})
+	histories, err := stores.ListInstanceChangeHistoryForMigrator(ctx, &store.FindInstanceChangeHistoryMessage{})
 	require.NoError(t, err)
 	require.Len(t, histories, 1)
 	require.Equal(t, histories[0].Version, releaseVersion.String())
 
 	// Check no migration after passing current version as the release cutoff version.
-	_, err = migrate(ctx, storeInstance, conn, releaseVersion)
+	_, err = migrate(ctx, stores, conn, releaseVersion)
 	require.NoError(t, err)
 	// Check migration history.
-	histories, err = storeInstance.ListInstanceChangeHistoryForMigrator(ctx, &store.FindInstanceChangeHistoryMessage{})
+	histories, err = stores.ListInstanceChangeHistoryForMigrator(ctx, &store.FindInstanceChangeHistoryMessage{})
 	require.NoError(t, err)
 	require.Len(t, histories, 1)
 }

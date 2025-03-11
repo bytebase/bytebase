@@ -355,12 +355,12 @@ func (s *Store) DeleteSettingV2(ctx context.Context, name api.SettingName) error
 	return nil
 }
 
-func listSettingV2Impl(ctx context.Context, tx *Tx, find *FindSettingMessage) ([]*SettingMessage, error) {
+func listSettingV2Impl(ctx context.Context, txn *sql.Tx, find *FindSettingMessage) ([]*SettingMessage, error) {
 	where, args := []string{"TRUE"}, []any{}
 	if v := find.Name; v != nil {
 		where, args = append(where, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
 	}
-	rows, err := tx.QueryContext(ctx, `
+	rows, err := txn.QueryContext(ctx, `
 		SELECT
 			name,
 			value

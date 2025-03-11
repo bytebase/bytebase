@@ -529,9 +529,9 @@ func (s *Store) DeletePolicyV2(ctx context.Context, policy *PolicyMessage) error
 	return nil
 }
 
-func upsertPolicyV2Impl(ctx context.Context, tx *Tx, create *PolicyMessage) (*PolicyMessage, error) {
+func upsertPolicyV2Impl(ctx context.Context, txn *sql.Tx, create *PolicyMessage) (*PolicyMessage, error) {
 	create.UpdatedAt = time.Now()
-	if _, err := tx.ExecContext(ctx, `
+	if _, err := txn.ExecContext(ctx, `
 		INSERT INTO policy (
 			resource_type,
 			resource,
@@ -561,7 +561,7 @@ func upsertPolicyV2Impl(ctx context.Context, tx *Tx, create *PolicyMessage) (*Po
 	return create, nil
 }
 
-func (*Store) listPolicyImplV2(ctx context.Context, tx *Tx, find *FindPolicyMessage) ([]*PolicyMessage, error) {
+func (*Store) listPolicyImplV2(ctx context.Context, txn *sql.Tx, find *FindPolicyMessage) ([]*PolicyMessage, error) {
 	where, args := []string{"TRUE"}, []any{}
 	if v := find.ResourceType; v != nil {
 		where, args = append(where, fmt.Sprintf("resource_type = $%d", len(args)+1)), append(args, *v)
@@ -576,7 +576,7 @@ func (*Store) listPolicyImplV2(ctx context.Context, tx *Tx, find *FindPolicyMess
 		where, args = append(where, fmt.Sprintf("enforce = $%d", len(args)+1)), append(args, true)
 	}
 
-	rows, err := tx.QueryContext(ctx, `
+	rows, err := txn.QueryContext(ctx, `
 		SELECT
 			updated_at,
 			resource_type,
