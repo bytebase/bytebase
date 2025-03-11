@@ -221,12 +221,10 @@ export const useDatabaseV1ByName = (name: MaybeRef<string>) => {
   watch(
     () => unref(name),
     (name) => {
-      if (!isValidDatabaseName(store.getDatabaseByName(name).name)) {
-        ready.value = false;
-        store.fetchDatabaseByName(name).then(() => {
-          ready.value = true;
-        });
-      }
+      ready.value = false;
+      store.getOrFetchDatabaseByName(name).then(() => {
+        ready.value = true;
+      });
     },
     { immediate: true }
   );
