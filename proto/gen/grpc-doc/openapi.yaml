@@ -8027,6 +8027,19 @@ components:
                     $ref: '#/components/schemas/AppIMSetting_Wecom'
                 lark:
                     $ref: '#/components/schemas/AppIMSetting_Lark'
+                dingtalk:
+                    $ref: '#/components/schemas/AppIMSetting_DingTalk'
+        AppIMSetting_DingTalk:
+            type: object
+            properties:
+                enabled:
+                    type: boolean
+                clientId:
+                    type: string
+                clientSecret:
+                    type: string
+                robotCode:
+                    type: string
         AppIMSetting_Feishu:
             type: object
             properties:
