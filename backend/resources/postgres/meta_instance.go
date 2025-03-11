@@ -1,6 +1,8 @@
 package postgres
 
 import (
+	"context"
+	"database/sql"
 	"fmt"
 	"log/slog"
 	"os"
@@ -15,7 +17,7 @@ import (
 )
 
 // StartMetadataInstance starts the metadata instance.
-func StartMetadataInstance(dataDir, resourceDir, pgBinDir, pgUser, demoName string, port int, mode common.ReleaseMode) (func(), error) {
+func StartMetadataInstance(ctx context.Context, dataDir, resourceDir, pgBinDir, pgUser, demoName string, port int, mode common.ReleaseMode) (func(), error) {
 	pgDataDir := getPostgresDataDir(dataDir, demoName)
 	if err := upgradePostgres(dataDir, resourceDir, pgBinDir, pgDataDir, pgUser, port); err != nil {
 		return nil, err
@@ -30,6 +32,21 @@ func StartMetadataInstance(dataDir, resourceDir, pgBinDir, pgUser, demoName stri
 		return nil, err
 	}
 	slog.Info("-----Embedded Postgres END-----")
+	db, err := sql.Open("pgx", fmt.Sprintf("host=%s port=%d user=%s database=postgres", common.GetPostgresSocketDir(), port, pgUser))
+	if err != nil {
+		return nil, err
+	}
+	defer db.Close()
+
+	var ok bool
+	if err := db.QueryRowContext(ctx, "SELECT EXISTS (SELECT 1 FROM pg_database WHERE datname = $1)", pgUser).Scan(&ok); err != nil {
+		return nil, err
+	}
+	if !ok {
+		if _, err := db.ExecContext(ctx, fmt.Sprintf("CREATE DATABASE %s", pgUser)); err != nil {
+			slog.Debug("database should already exists")
+		}
+	}
 
 	return func() {
 		if err := stop(pgBinDir, pgDataDir); err != nil {
