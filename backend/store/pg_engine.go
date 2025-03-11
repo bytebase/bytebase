@@ -3,7 +3,6 @@ package store
 import (
 	"context"
 	"database/sql"
-	"fmt"
 
 	"github.com/pkg/errors"
 
@@ -46,28 +45,7 @@ func NewDB(connCfg dbdriver.ConnectionConfig, binDir string, readonly bool, mode
 }
 
 // Open opens the database connection.
-func (db *DB) Open(ctx context.Context, createDB bool) error {
-	if createDB {
-		createCfg := db.ConnCfg
-		// connect to the "postgres" as the target database has not been created yet.
-		createCfg.ConnectionContext.DatabaseName = "postgres"
-		// Create the metadata database.
-		defaultDriver, err := dbdriver.Open(
-			ctx,
-			storepb.Engine_POSTGRES,
-			dbdriver.DriverConfig{DbBinDir: db.binDir},
-			createCfg,
-		)
-		if err != nil {
-			return err
-		}
-		defer defaultDriver.Close(ctx)
-		// Underlying driver handles the case where database already exists.
-		if _, err := defaultDriver.Execute(ctx, fmt.Sprintf("CREATE DATABASE %s", db.ConnCfg.ConnectionContext.DatabaseName), dbdriver.ExecuteOptions{CreateDatabase: true}); err != nil {
-			return err
-		}
-	}
-
+func (db *DB) Open(ctx context.Context) error {
 	metadataDriver, err := dbdriver.Open(
 		ctx,
 		storepb.Engine_POSTGRES,
