@@ -21,10 +21,9 @@
 <script lang="ts" setup>
 import { NWatermark } from "naive-ui";
 import { computed } from "vue";
-import { featureToRef, useCurrentUserV1 } from "@/store";
+import { featureToRef, useCurrentUserV1, extractUserId } from "@/store";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
 import { UNKNOWN_USER_NAME } from "@/types";
-import { extractUserUID } from "@/utils";
 
 const GAP = 320;
 const SIZE = 16;
@@ -38,7 +37,7 @@ const hasWatermarkFeature = featureToRef("bb.feature.watermark");
 
 const lines = computed(() => {
   const user = currentUserV1.value;
-  const uid = extractUserUID(user.name);
+  const uid = extractUserId(user.name);
   if (user.name === UNKNOWN_USER_NAME) return [];
   if (!hasWatermarkFeature.value) return [];
   if (setting.value?.value?.stringValue !== "1") return [];

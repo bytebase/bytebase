@@ -167,12 +167,12 @@ import {
   useWorkspaceV1Store,
 } from "@/store";
 import { PresetRoleType, emptyUser } from "@/types";
+import { State } from "@/types/proto/v1/common";
 import {
   UpdateUserRequest,
   UserType,
   User,
 } from "@/types/proto/v1/user_service";
-import { State } from "@/types/proto/v1/common";
 import UserPassword from "./UserPassword.vue";
 
 interface LocalState {
@@ -190,6 +190,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (event: "close"): void;
+  (event: "created"): void;
 }>();
 
 const workspaceStore = useWorkspaceV1Store();
@@ -283,13 +284,8 @@ const allowDeactivate = computed(() => {
 
 const hasMoreThanOneOwner = computed(() => {
   return (
-    userStore.activeUserList.filter(
-      (user) =>
-        user.userType === UserType.USER &&
-        workspaceStore.emailMapToRoles
-          .get(user.email)
-          ?.has(PresetRoleType.WORKSPACE_ADMIN)
-    ).length > 1
+    (workspaceStore.roleMapToUsers.get(PresetRoleType.WORKSPACE_ADMIN)?.size ??
+      0) > 1
   );
 });
 
@@ -327,6 +323,7 @@ const tryCreateOrUpdateUser = async () => {
         },
       ]);
     }
+    emit("created");
     pushNotification({
       module: "bytebase",
       style: "SUCCESS",

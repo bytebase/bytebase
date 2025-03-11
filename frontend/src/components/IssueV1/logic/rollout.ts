@@ -1,6 +1,6 @@
 import { planCheckRunSummaryForCheckRunList } from "@/components/PlanCheckRun/common";
 import { t } from "@/plugins/i18n";
-import { useCurrentUserV1 } from "@/store";
+import { useCurrentUserV1, extractUserId } from "@/store";
 import type { ComposedIssue } from "@/types";
 import { IssueStatus, Issue_Type } from "@/types/proto/v1/issue_service";
 import type { PlanCheckRun } from "@/types/proto/v1/plan_service";
@@ -10,11 +10,7 @@ import {
   task_StatusToJSON,
   Task_Type,
 } from "@/types/proto/v1/rollout_service";
-import {
-  extractDatabaseGroupName,
-  extractUserResourceName,
-  hasProjectPermissionV2,
-} from "@/utils";
+import { extractDatabaseGroupName, hasProjectPermissionV2 } from "@/utils";
 import { specForTask, useIssueContext } from ".";
 
 export const isGroupingChangeTaskV1 = (issue: ComposedIssue, task: Task) => {
@@ -65,7 +61,7 @@ export const allowUserToEditStatementForTask = (
 
   denyReasons.push(...isTaskEditable(task, getPlanCheckRunsForTask(task)));
 
-  if (extractUserResourceName(issue.creator) !== user.value.email) {
+  if (extractUserId(issue.creator) !== user.value.email) {
     if (!hasProjectPermissionV2(issue.projectEntity, "bb.plans.update")) {
       denyReasons.push(
         t("issue.error.you-don-have-privilege-to-edit-this-issue")

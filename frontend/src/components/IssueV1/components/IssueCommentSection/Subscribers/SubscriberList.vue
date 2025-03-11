@@ -1,13 +1,17 @@
 <template>
   <NPopselect
+    :remote="true"
+    :loading="state.loading"
     :multiple="true"
     :value="issue.subscribers"
     :options="options"
     :render-label="renderLabel"
     :scrollable="true"
+    :filterable="true"
     trigger="click"
     placement="left"
     :disabled="readonly"
+    @search="handleSearch"
     @update:show="onUpdateShow"
     @update:value="onUpdateSubscribers"
   >
@@ -35,17 +39,18 @@
 </template>
 
 <script setup lang="ts">
+import { useDebounceFn } from "@vueuse/core";
 import type { SelectOption, SelectGroupOption } from "naive-ui";
 import { NButton, NPopselect, NInput } from "naive-ui";
-import { computed, h, nextTick, ref } from "vue";
+import { computed, h, nextTick, ref, onMounted, reactive } from "vue";
 import { updateIssueSubscribers, useIssueContext } from "@/components/IssueV1";
 import UserAvatar from "@/components/User/UserAvatar.vue";
 import { useUserStore } from "@/store";
 import { unknownUser } from "@/types";
+import { State, stateToJSON } from "@/types/proto/v1/common";
 import { type User } from "@/types/proto/v1/user_service";
-import { UserType } from "@/types/proto/v1/user_service";
-import { State } from "@/types/proto/v1/common";
-import { extractUserResourceName } from "@/utils";
+import { UserType, userTypeToJSON } from "@/types/proto/v1/user_service";
+import { getDefaultPagination } from "@/utils";
 import SubscriberListItem from "./SubscriberListItem.vue";
 
 defineProps<{
@@ -57,6 +62,16 @@ type UserSelectOption = SelectOption & {
   value: string;
 };
 
+interface LocalState {
+  loading: boolean;
+  rawUserList: User[];
+}
+
+const state = reactive<LocalState>({
+  loading: false,
+  rawUserList: [],
+});
+
 const userStore = useUserStore();
 const { issue } = useIssueContext();
 const keyword = ref("");
@@ -64,14 +79,13 @@ const filterInputRef = ref<InstanceType<typeof NInput>>();
 
 const subscriberList = computed(() => {
   return issue.value.subscribers.map((subscriber) => {
-    const email = extractUserResourceName(subscriber);
-    return userStore.getUserByEmail(email) ?? unknownUser();
+    return userStore.getUserByIdentifier(subscriber) ?? unknownUser();
   });
 });
 
 const options = computed(() => {
   const subscribers = new Set(issue.value.subscribers);
-  const options = userStore.userList
+  const options = state.rawUserList
     .filter(
       (user) => user.userType === UserType.USER && user.state === State.ACTIVE
     )
@@ -141,4 +155,33 @@ const onUpdateShow = (show: boolean) => {
     });
   }
 };
+
+// TODO(ed): I found the NPopselect NOT support search.
+// We need to use the NSelector instead.
+const handleSearch = useDebounceFn(async (search: string) => {
+  const filter = [
+    `state == "${stateToJSON(State.ACTIVE)}"`,
+    `user_type == "${userTypeToJSON(UserType.USER)}"`,
+  ];
+  if (search) {
+    filter.push(`(name.matches("${search}") || email.matches("${search}"))`);
+  }
+
+  state.loading = true;
+
+  try {
+    const { users } = await userStore.fetchUserList({
+      filter: filter.join(" && "),
+      pageSize: getDefaultPagination(),
+      showDeleted: false,
+    });
+    state.rawUserList = users;
+  } finally {
+    state.loading = false;
+  }
+});
+
+onMounted(async () => {
+  await handleSearch("");
+});
 </script>

@@ -4,7 +4,7 @@ import { computed, ref, watch, watchEffect } from "vue";
 import { useDatabaseV1Store } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import { QueryOption_RedisRunCommandsOn } from "@/types/proto/v1/sql_service";
-import { hasWorkspacePermissionV2 } from "@/utils";
+import { hasWorkspacePermissionV2, getDefaultPagination } from "@/utils";
 
 export const useSQLEditorStore = defineStore("sqlEditor", () => {
   const databaseStore = useDatabaseV1Store();
@@ -43,7 +43,7 @@ export const useSQLEditorStore = defineStore("sqlEditor", () => {
     try {
       const { databases } = await databaseStore.fetchDatabases({
         parent: project.value,
-        pageSize: 100,
+        pageSize: getDefaultPagination(),
         filter: name ? `name.matches("${name}")` : "",
       });
       databaseList.value = [...databases];

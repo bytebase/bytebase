@@ -90,6 +90,7 @@
 </template>
 
 <script lang="ts" setup>
+import { computedAsync } from "@vueuse/core";
 import { cloneDeep } from "lodash-es";
 import { NButton, NTabs, NTabPane, useDialog } from "naive-ui";
 import { computed, reactive } from "vue";
@@ -102,7 +103,7 @@ import {
   getMemberBindings,
 } from "@/components/Member/utils";
 import {
-  extractUserEmail,
+  extractUserId,
   pushNotification,
   useCurrentUserV1,
   useProjectIamPolicy,
@@ -156,7 +157,7 @@ const allowEdit = computed(() => {
 
 const workspaceRoles = computed(() => new Set(PRESET_WORKSPACE_ROLES));
 
-const memberBindingsByRole = computed(() => {
+const memberBindingsByRole = computedAsync(() => {
   return getMemberBindingsByRole({
     policies: [
       {
@@ -171,7 +172,7 @@ const memberBindingsByRole = computed(() => {
     searchText: state.searchText,
     ignoreRoles: workspaceRoles.value,
   });
-});
+}, new Map());
 
 const memberBindings = computed(() => {
   return getMemberBindings(memberBindingsByRole.value);
@@ -206,7 +207,7 @@ const revokeMember = async (binding: MemberBinding) => {
 const selectedUserEmails = computed(() => {
   return state.selectedMembers
     .filter((member) => !member.startsWith(groupBindingPrefix))
-    .map(extractUserEmail);
+    .map(extractUserId);
 });
 
 const handleRevokeSelectedMembers = () => {

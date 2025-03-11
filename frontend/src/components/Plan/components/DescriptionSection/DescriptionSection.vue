@@ -72,9 +72,9 @@ import { computed, nextTick, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRenderMarkdown } from "@/components/MarkdownEditor";
 import { planServiceClient } from "@/grpcweb";
-import { pushNotification, useCurrentUserV1 } from "@/store";
+import { pushNotification, useCurrentUserV1, extractUserId } from "@/store";
 import { Plan } from "@/types/proto/v1/plan_service";
-import { extractUserResourceName, hasProjectPermissionV2 } from "@/utils";
+import { hasProjectPermissionV2 } from "@/utils";
 import { usePlanContext } from "../../logic";
 
 type LocalState = {
@@ -105,7 +105,7 @@ const allowEdit = computed(() => {
     return true;
   }
   // Allowed if current user is the creator.
-  if (extractUserResourceName(plan.value.creator) === currentUser.value.email) {
+  if (extractUserId(plan.value.creator) === currentUser.value.email) {
     return true;
   }
   // Allowed if current has plan update permission in the project
