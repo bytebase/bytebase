@@ -74,7 +74,7 @@ func (s *Store) CreatePendingInstanceChangeHistoryForMigrator(ctx context.Contex
 	return uid, nil
 }
 
-func (*Store) createInstanceChangeHistoryImplForMigrator(ctx context.Context, tx *Tx, create *InstanceChangeHistoryMessage) (string, error) {
+func (*Store) createInstanceChangeHistoryImplForMigrator(ctx context.Context, txn *sql.Tx, create *InstanceChangeHistoryMessage) (string, error) {
 	query := `
 		INSERT INTO instance_change_history (
 			status,
@@ -84,7 +84,7 @@ func (*Store) createInstanceChangeHistoryImplForMigrator(ctx context.Context, tx
 		RETURNING id`
 
 	var uid string
-	if err := tx.QueryRowContext(ctx, query,
+	if err := txn.QueryRowContext(ctx, query,
 		create.Status,
 		create.Version,
 		create.ExecutionDurationNs,

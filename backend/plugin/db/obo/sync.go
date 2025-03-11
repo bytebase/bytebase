@@ -101,8 +101,8 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 	return databaseMetadata, nil
 }
 
-func getTables(ctx context.Context, tx *sql.Tx, schemaName string, columnMap map[db.TableKey][]*storepb.ColumnMetadata) (map[string][]*storepb.TableMetadata, error) {
-	indexMap, err := getIndexes(ctx, tx, schemaName)
+func getTables(ctx context.Context, txn *sql.Tx, schemaName string, columnMap map[db.TableKey][]*storepb.ColumnMetadata) (map[string][]*storepb.TableMetadata, error) {
+	indexMap, err := getIndexes(ctx, txn, schemaName)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get indexes")
 	}
@@ -114,7 +114,7 @@ func getTables(ctx context.Context, tx *sql.Tx, schemaName string, columnMap map
 		WHERE OWNER = '%s'
 		ORDER BY TABLE_NAME`, schemaName)
 
-	rows, err := tx.QueryContext(ctx, query)
+	rows, err := txn.QueryContext(ctx, query)
 	if err != nil {
 		return nil, err
 	}
@@ -144,7 +144,7 @@ func getTables(ctx context.Context, tx *sql.Tx, schemaName string, columnMap map
 	return tableMap, nil
 }
 
-func getTableColumns(ctx context.Context, tx *sql.Tx, schemaName string) (map[db.TableKey][]*storepb.ColumnMetadata, error) {
+func getTableColumns(ctx context.Context, txn *sql.Tx, schemaName string) (map[db.TableKey][]*storepb.ColumnMetadata, error) {
 	columnsMap := make(map[db.TableKey][]*storepb.ColumnMetadata)
 	query := fmt.Sprintf(`
 	SELECT
@@ -159,7 +159,7 @@ func getTableColumns(ctx context.Context, tx *sql.Tx, schemaName string) (map[db
 	WHERE OWNER = '%s' AND COLUMN_ID IS NOT NULL
 	ORDER BY TABLE_NAME, COLUMN_ID`, schemaName)
 
-	rows, err := tx.QueryContext(ctx, query)
+	rows, err := txn.QueryContext(ctx, query)
 	if err != nil {
 		return nil, err
 	}
@@ -193,7 +193,7 @@ func getTableColumns(ctx context.Context, tx *sql.Tx, schemaName string) (map[db
 	return columnsMap, nil
 }
 
-func getIndexes(ctx context.Context, tx *sql.Tx, schemaName string) (map[db.TableKey][]*storepb.IndexMetadata, error) {
+func getIndexes(ctx context.Context, txn *sql.Tx, schemaName string) (map[db.TableKey][]*storepb.IndexMetadata, error) {
 	indexMap := make(map[db.TableKey][]*storepb.IndexMetadata)
 
 	expressionsMap := make(map[db.IndexKey][]string)
@@ -204,7 +204,7 @@ func getIndexes(ctx context.Context, tx *sql.Tx, schemaName string) (map[db.Tabl
 		WHERE TABLE_OWNER = '%s'
 		ORDER BY TABLE_NAME, INDEX_NAME, COLUMN_POSITION`, schemaName)
 
-	colRows, err := tx.QueryContext(ctx, queryColumn)
+	colRows, err := txn.QueryContext(ctx, queryColumn)
 	if err != nil {
 		return nil, err
 	}
@@ -225,7 +225,7 @@ func getIndexes(ctx context.Context, tx *sql.Tx, schemaName string) (map[db.Tabl
 		FROM sys.all_ind_expressions
 		WHERE TABLE_OWNER = '%s'
 		ORDER BY TABLE_NAME, INDEX_NAME, COLUMN_POSITION`, schemaName)
-	expRows, err := tx.QueryContext(ctx, queryExpression)
+	expRows, err := txn.QueryContext(ctx, queryExpression)
 	if err != nil {
 		return nil, err
 	}
@@ -252,7 +252,7 @@ func getIndexes(ctx context.Context, tx *sql.Tx, schemaName string) (map[db.Tabl
 		FROM sys.all_indexes
 		WHERE OWNER = '%s'
 		ORDER BY TABLE_NAME, INDEX_NAME`, schemaName)
-	rows, err := tx.QueryContext(ctx, query)
+	rows, err := txn.QueryContext(ctx, query)
 	if err != nil {
 		return nil, err
 	}
@@ -279,7 +279,7 @@ func getIndexes(ctx context.Context, tx *sql.Tx, schemaName string) (map[db.Tabl
 	return indexMap, nil
 }
 
-func getViews(ctx context.Context, tx *sql.Tx, schemaName string, columnMap map[db.TableKey][]*storepb.ColumnMetadata) (map[string][]*storepb.ViewMetadata, error) {
+func getViews(ctx context.Context, txn *sql.Tx, schemaName string, columnMap map[db.TableKey][]*storepb.ColumnMetadata) (map[string][]*storepb.ViewMetadata, error) {
 	viewMap := make(map[string][]*storepb.ViewMetadata)
 
 	query := fmt.Sprintf(`
@@ -289,7 +289,7 @@ func getViews(ctx context.Context, tx *sql.Tx, schemaName string, columnMap map[
 		ORDER BY view_name
 	`, schemaName)
 
-	rows, err := tx.QueryContext(ctx, query)
+	rows, err := txn.QueryContext(ctx, query)
 	if err != nil {
 		return nil, err
 	}

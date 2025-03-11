@@ -235,8 +235,8 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 	return totalAffectRows, nil
 }
 
-func execute(ctx context.Context, tx *sql.Tx, statement string) (int64, error) {
-	sqlResult, err := tx.ExecContext(ctx, statement)
+func execute(ctx context.Context, txn *sql.Tx, statement string) (int64, error) {
+	sqlResult, err := txn.ExecContext(ctx, statement)
 	var e gomssqldb.Error
 	if errors.As(err, &e) {
 		err = unpackGoMSSQLDBError(e)

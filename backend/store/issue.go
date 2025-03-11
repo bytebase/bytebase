@@ -286,14 +286,14 @@ func (s *Store) UpdateIssueV2(ctx context.Context, uid int, patch *UpdateIssueMe
 	return s.GetIssueV2(ctx, &FindIssueMessage{UID: &uid})
 }
 
-func setSubscribers(ctx context.Context, tx *Tx, issueUID int, subscribers []*UserMessage) error {
+func setSubscribers(ctx context.Context, txn *sql.Tx, issueUID int, subscribers []*UserMessage) error {
 	subscriberIDs := make(map[int]bool)
 	for _, subscriber := range subscribers {
 		subscriberIDs[subscriber.ID] = true
 	}
 
 	oldSubscriberIDs := make(map[int]bool)
-	rows, err := tx.QueryContext(ctx, `
+	rows, err := txn.QueryContext(ctx, `
 		SELECT
 			subscriber_id
 		FROM issue_subscriber
@@ -337,7 +337,7 @@ func setSubscribers(ctx context.Context, tx *Tx, issueUID int, subscribers []*Us
 			args = append(args, issueUID, v)
 		}
 		query := fmt.Sprintf(`INSERT INTO issue_subscriber (issue_id, subscriber_id) VALUES %s`, strings.Join(tokens, ", "))
-		if _, err := tx.ExecContext(ctx, query, args...); err != nil {
+		if _, err := txn.ExecContext(ctx, query, args...); err != nil {
 			return err
 		}
 	}
@@ -350,7 +350,7 @@ func setSubscribers(ctx context.Context, tx *Tx, issueUID int, subscribers []*Us
 			args = append(args, v)
 		}
 		query := fmt.Sprintf(`DELETE FROM issue_subscriber WHERE issue_id = $1 AND subscriber_id IN (%s)`, strings.Join(tokens, ", "))
-		if _, err := tx.ExecContext(ctx, query, args...); err != nil {
+		if _, err := txn.ExecContext(ctx, query, args...); err != nil {
 			return err
 		}
 	}

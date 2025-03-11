@@ -160,8 +160,8 @@ func (s *Store) CreatePipelineAIO(ctx context.Context, planUID int64, pipeline *
 }
 
 // returns func() to invalidate cache.
-func (s *Store) updatePipelineUIDOfIssueAndPlan(ctx context.Context, tx *Tx, planUID int64, pipelineUID int) (func(), error) {
-	if _, err := tx.ExecContext(ctx, `
+func (s *Store) updatePipelineUIDOfIssueAndPlan(ctx context.Context, txn *sql.Tx, planUID int64, pipelineUID int) (func(), error) {
+	if _, err := txn.ExecContext(ctx, `
 		UPDATE plan
 		SET pipeline_id = $1
 		WHERE id = $2
@@ -169,7 +169,7 @@ func (s *Store) updatePipelineUIDOfIssueAndPlan(ctx context.Context, tx *Tx, pla
 		return nil, errors.Wrapf(err, "failed to update plan pipeline_id")
 	}
 	var issueUID int
-	if err := tx.QueryRowContext(ctx, `
+	if err := txn.QueryRowContext(ctx, `
 		UPDATE issue
 		SET pipeline_id = $1
 		WHERE plan_id = $2
@@ -187,12 +187,12 @@ func (s *Store) updatePipelineUIDOfIssueAndPlan(ctx context.Context, tx *Tx, pla
 	}, nil
 }
 
-func lockPlanAndGetPipelineUID(ctx context.Context, tx *Tx, planUID int64) (*int, error) {
+func lockPlanAndGetPipelineUID(ctx context.Context, txn *sql.Tx, planUID int64) (*int, error) {
 	query := `
 		SELECT pipeline_id FROM plan WHERE id = $1 FOR UPDATE
 	`
 	var uid sql.NullInt32
-	if err := tx.QueryRowContext(ctx, query, planUID).Scan(&uid); err != nil {
+	if err := txn.QueryRowContext(ctx, query, planUID).Scan(&uid); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, errors.Errorf("plan %d not found", planUID)
 		}
@@ -206,7 +206,7 @@ func lockPlanAndGetPipelineUID(ctx context.Context, tx *Tx, planUID int64) (*int
 	return nil, nil
 }
 
-func (*Store) createPipeline(ctx context.Context, tx *Tx, create *PipelineMessage, creatorUID int) (*PipelineMessage, error) {
+func (*Store) createPipeline(ctx context.Context, txn *sql.Tx, create *PipelineMessage, creatorUID int) (*PipelineMessage, error) {
 	query := `
 		INSERT INTO pipeline (
 			project,
@@ -225,7 +225,7 @@ func (*Store) createPipeline(ctx context.Context, tx *Tx, create *PipelineMessag
 		CreatorUID: creatorUID,
 		Name:       create.Name,
 	}
-	if err := tx.QueryRowContext(ctx, query,
+	if err := txn.QueryRowContext(ctx, query,
 		create.ProjectID,
 		creatorUID,
 		create.Name,
