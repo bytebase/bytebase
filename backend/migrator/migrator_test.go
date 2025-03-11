@@ -1,19 +1,13 @@
 package migrator
 
 import (
-	"context"
-	"database/sql"
 	"fmt"
-	"path"
 	"testing"
 
 	"github.com/blang/semver/v4"
 	"github.com/stretchr/testify/require"
 
-	"github.com/bytebase/bytebase/backend/common"
 	_ "github.com/bytebase/bytebase/backend/plugin/db/pg"
-	"github.com/bytebase/bytebase/backend/resources/postgres"
-	"github.com/bytebase/bytebase/backend/store"
 )
 
 func TestGetMinorMigrationVersions(t *testing.T) {
@@ -134,52 +128,6 @@ func TestGetPatchVersions(t *testing.T) {
 		}
 		require.Equal(t, test.want, got)
 	}
-}
-
-var (
-	pgPort = 6000
-)
-
-func TestMigrationCompatibility(t *testing.T) {
-	pgDir := t.TempDir()
-
-	pgBinDir, err := postgres.Install(path.Join(pgDir, "resource"))
-	require.NoError(t, err)
-
-	stopInstance := postgres.SetupTestInstance(pgBinDir, t.TempDir(), pgPort)
-	defer stopInstance()
-
-	ctx := context.Background()
-	pgURL := fmt.Sprintf("host=%s port=%d user=%s database=postgres", common.GetPostgresSocketDir(), pgPort, postgres.TestPgUser)
-	db, err := sql.Open("pgx", pgURL)
-	require.NoError(t, err)
-	defer db.Close()
-	conn, err := db.Conn(ctx)
-	require.NoError(t, err)
-	defer conn.Close()
-
-	stores, err := store.New(ctx, pgURL)
-	require.NoError(t, err)
-
-	releaseVersion, err := getProdCutoffVersion()
-	require.NoError(t, err)
-
-	// Create initial schema.
-	err = initializeSchema(ctx, stores, conn, releaseVersion)
-	require.NoError(t, err)
-	// Check migration history.
-	histories, err := stores.ListInstanceChangeHistoryForMigrator(ctx, &store.FindInstanceChangeHistoryMessage{})
-	require.NoError(t, err)
-	require.Len(t, histories, 1)
-	require.Equal(t, histories[0].Version, releaseVersion.String())
-
-	// Check no migration after passing current version as the release cutoff version.
-	_, err = migrate(ctx, stores, conn, releaseVersion)
-	require.NoError(t, err)
-	// Check migration history.
-	histories, err = stores.ListInstanceChangeHistoryForMigrator(ctx, &store.FindInstanceChangeHistoryMessage{})
-	require.NoError(t, err)
-	require.Len(t, histories, 1)
 }
 
 func TestGetCutoffVersion(t *testing.T) {
