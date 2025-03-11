@@ -17,9 +17,8 @@
 </template>
 
 <script lang="tsx" setup>
-import { computedAsync } from "@vueuse/core";
 import { orderBy } from "lodash-es";
-import { computed, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBAvatar } from "@/bbkit";
 import AdvancedSearch, { TimeRange } from "@/components/AdvancedSearch";
@@ -35,7 +34,7 @@ import { useCurrentUserV1, useProjectV1List, useUserStore } from "@/store";
 import { SYSTEM_BOT_USER_NAME } from "@/types";
 import { AuditLog_Severity } from "@/types/proto/v1/audit_log_service";
 import { State, stateToJSON } from "@/types/proto/v1/common";
-import { UserType, userTypeToJSON } from "@/types/proto/v1/user_service";
+import { User, UserType, userTypeToJSON } from "@/types/proto/v1/user_service";
 import {
   getDefaultPagination,
   extractProjectResourceName,
@@ -61,16 +60,17 @@ const me = useCurrentUserV1();
 const userStore = useUserStore();
 const { projectList } = useProjectV1List();
 
+const activeUserList = ref<User[]>([]);
 const showTimeRange = ref(false);
 
-const activeUserList = computedAsync(async () => {
+onMounted(async () => {
   const { users } = await userStore.fetchUserList({
     pageSize: getDefaultPagination(),
     showDeleted: false,
     filter: `state == "${stateToJSON(State.ACTIVE)}" && user_type == "${userTypeToJSON(UserType.USER)}"`,
   });
-  return users;
-}, []);
+  activeUserList.value = users;
+});
 
 const principalSearchValueOptions = computed(() => {
   // Put "you" to the top
