@@ -25,7 +25,10 @@
     <DatabaseOperations
       :project-name="project.name"
       :databases="selectedDatabases"
-      @refresh="(databases) => pagedDatabaseTableRef?.refreshCache(databases)"
+      @refresh="() => pagedDatabaseTableRef?.refresh()"
+      @update-cache="
+        (databases) => pagedDatabaseTableRef?.updateCache(databases)
+      "
     />
     <PagedDatabaseTable
       ref="pagedDatabaseTableRef"

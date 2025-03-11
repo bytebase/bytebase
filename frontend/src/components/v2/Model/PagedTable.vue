@@ -193,7 +193,7 @@ watch(
   (list) => emit("list:update", list)
 );
 
-const refreshCache = (data: T[]) => {
+const updateCache = (data: T[]) => {
   for (const item of data) {
     const index = dataList.value.findIndex((d) => d.name === item.name);
     if (index >= 0) {
@@ -206,6 +206,6 @@ defineExpose({
   refresh: useDebounceFn(async () => {
     await refresh();
   }, props.debounce),
-  refreshCache,
+  updateCache,
 });
 </script>
