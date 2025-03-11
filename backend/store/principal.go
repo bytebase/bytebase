@@ -111,7 +111,7 @@ func (s *Store) GetUserByEmail(ctx context.Context, email string) (*UserMessage,
 }
 
 func (s *Store) StatUsers(ctx context.Context) ([]*UserStat, error) {
-	rows, err := s.db.QueryContext(ctx, `
+	rows, err := s.db.db.QueryContext(ctx, `
 	SELECT
 		COUNT(*),
 		type,
