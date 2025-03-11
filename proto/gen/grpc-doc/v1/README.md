@@ -8224,6 +8224,7 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 
 When paginating, all other parameters provided to `ListProjects` must match the call that provided the page token. |
 | show_deleted | [bool](#bool) |  | Show deleted projects if specified. |
+| filter | [string](#string) |  | Filter the project. Check filter for SearchProjectsRequest for details. |
 
 
 
@@ -8298,9 +8299,9 @@ When paginating, all other parameters provided to `ListProjects` must match the 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | show_deleted | [bool](#bool) |  | Show deleted projects if specified. |
-| filter | [string](#string) |  | Filter the project. Supported filters: - name - resource_id
+| filter | [string](#string) |  | Filter the project. Supported filters: - name - resource_id - exclude_default: if not include the default project.
 
-For example: name = &#34;project name&#34; name.matches(&#34;project name&#34;) resource_id = &#34;project id&#34; resource_id.matches(&#34;project id&#34;) name = &#34;project name&#34; &amp;&amp; resource_id.matches(&#34;project id&#34;) name.matches(&#34;project name&#34;) || resource_id = &#34;project id&#34; |
+For example: name = &#34;project name&#34; name.matches(&#34;project name&#34;) resource_id = &#34;project id&#34; resource_id.matches(&#34;project id&#34;) name = &#34;project name&#34; &amp;&amp; resource_id.matches(&#34;project id&#34;) name.matches(&#34;project name&#34;) || resource_id = &#34;project id&#34; exclude_default == true |
 
 
 

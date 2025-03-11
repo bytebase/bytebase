@@ -40,6 +40,11 @@ export interface ListProjectsRequest {
   pageToken: string;
   /** Show deleted projects if specified. */
   showDeleted: boolean;
+  /**
+   * Filter the project.
+   * Check filter for SearchProjectsRequest for details.
+   */
+  filter: string;
 }
 
 export interface ListProjectsResponse {
@@ -60,6 +65,7 @@ export interface SearchProjectsRequest {
    * Supported filters:
    * - name
    * - resource_id
+   * - exclude_default: if not include the default project.
    *
    * For example:
    * name = "project name"
@@ -68,6 +74,7 @@ export interface SearchProjectsRequest {
    * resource_id.matches("project id")
    * name = "project name" && resource_id.matches("project id")
    * name.matches("project name") || resource_id = "project id"
+   * exclude_default == true
    */
   filter: string;
 }
@@ -650,7 +657,7 @@ export const GetProjectRequest: MessageFns<GetProjectRequest> = {
 };
 
 function createBaseListProjectsRequest(): ListProjectsRequest {
-  return { pageSize: 0, pageToken: "", showDeleted: false };
+  return { pageSize: 0, pageToken: "", showDeleted: false, filter: "" };
 }
 
 export const ListProjectsRequest: MessageFns<ListProjectsRequest> = {
@@ -663,6 +670,9 @@ export const ListProjectsRequest: MessageFns<ListProjectsRequest> = {
     }
     if (message.showDeleted !== false) {
       writer.uint32(24).bool(message.showDeleted);
+    }
+    if (message.filter !== "") {
+      writer.uint32(34).string(message.filter);
     }
     return writer;
   },
@@ -698,6 +708,14 @@ export const ListProjectsRequest: MessageFns<ListProjectsRequest> = {
           message.showDeleted = reader.bool();
           continue;
         }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.filter = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -712,6 +730,7 @@ export const ListProjectsRequest: MessageFns<ListProjectsRequest> = {
       pageSize: isSet(object.pageSize) ? globalThis.Number(object.pageSize) : 0,
       pageToken: isSet(object.pageToken) ? globalThis.String(object.pageToken) : "",
       showDeleted: isSet(object.showDeleted) ? globalThis.Boolean(object.showDeleted) : false,
+      filter: isSet(object.filter) ? globalThis.String(object.filter) : "",
     };
   },
 
@@ -726,6 +745,9 @@ export const ListProjectsRequest: MessageFns<ListProjectsRequest> = {
     if (message.showDeleted !== false) {
       obj.showDeleted = message.showDeleted;
     }
+    if (message.filter !== "") {
+      obj.filter = message.filter;
+    }
     return obj;
   },
 
@@ -737,6 +759,7 @@ export const ListProjectsRequest: MessageFns<ListProjectsRequest> = {
     message.pageSize = object.pageSize ?? 0;
     message.pageToken = object.pageToken ?? "";
     message.showDeleted = object.showDeleted ?? false;
+    message.filter = object.filter ?? "";
     return message;
   },
 };

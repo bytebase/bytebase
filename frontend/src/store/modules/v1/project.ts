@@ -69,56 +69,48 @@ export const useProjectV1Store = defineStore("project_v1", () => {
     return project as ComposedProject;
   };
 
+  const getListProjectFilter = (params: {
+    query?: string;
+    excludeDefault?: boolean;
+  }) => {
+    const list = [];
+    if (params.query) {
+      list.push(
+        `name.matches("${params.query}") || resource_id.matches("${params.query}")`
+      );
+    }
+    if (params.excludeDefault) {
+      list.push("exclude_default == true");
+    }
+    return list.join(" && ");
+  };
+
   const fetchProjectList = async (params: {
-    showDeleted: boolean;
-    pageSize: number;
+    showDeleted?: boolean;
+    pageSize?: number;
     pageToken?: string;
     query?: string;
     silent?: boolean;
+    excludeDefault?: boolean;
   }): Promise<{
     projects: ComposedProject[];
     nextPageToken?: string;
   }> => {
-    const request =
-      hasWorkspacePermissionV2("bb.projects.list") && !params.query
-        ? projectServiceClient.listProjects
-        : searchProjects;
-    const response = await request({
-      ...params,
-      query: params.query ?? "",
-      silent: params.silent ?? true,
-    });
+    const request = hasWorkspacePermissionV2("bb.projects.list")
+      ? projectServiceClient.listProjects
+      : projectServiceClient.searchProjects;
+    const response = await request(
+      {
+        ...params,
+        filter: getListProjectFilter(params),
+      },
+      { silent: params.silent ?? true }
+    );
     const composedProjects = await upsertProjectMap(response.projects);
 
     return {
       projects: composedProjects,
       nextPageToken: (response as ListProjectsResponse).nextPageToken,
-    };
-  };
-
-  const searchProjects = async ({
-    query,
-    silent = true,
-    showDeleted = false,
-  }: {
-    query: string;
-    silent?: boolean;
-    showDeleted?: boolean;
-  }): Promise<{
-    projects: ComposedProject[];
-  }> => {
-    const { projects } = await projectServiceClient.searchProjects(
-      {
-        filter: query
-          ? `name.matches("${query}") || resource_id.matches("${query}")`
-          : "",
-        showDeleted,
-      },
-      { silent }
-    );
-    const composedProjects = await upsertProjectMap(projects);
-    return {
-      projects: composedProjects,
     };
   };
 
@@ -179,7 +171,6 @@ export const useProjectV1Store = defineStore("project_v1", () => {
     archiveProject,
     restoreProject,
     updateProjectCache,
-    searchProjects,
     fetchProjectList,
   };
 });
