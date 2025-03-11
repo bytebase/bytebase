@@ -97,7 +97,7 @@ type FunctionNotSupportedError struct {
 
 func (e *FunctionNotSupportedError) Error() string {
 	parts := []string{
-		fmt.Sprintf("function not supported: %s", e.Function),
+		fmt.Sprintf("function is not supported with data masking: %s", e.Function),
 	}
 
 	if e.Err != nil {
