@@ -17,6 +17,7 @@
 </template>
 
 <script lang="tsx" setup>
+import { computedAsync } from "@vueuse/core";
 import { orderBy } from "lodash-es";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
@@ -33,7 +34,10 @@ import { ALL_METHODS_WITH_AUDIT } from "@/grpcweb/methods";
 import { useCurrentUserV1, useProjectV1List, useUserStore } from "@/store";
 import { SYSTEM_BOT_USER_NAME } from "@/types";
 import { AuditLog_Severity } from "@/types/proto/v1/audit_log_service";
+import { State, stateToJSON } from "@/types/proto/v1/common";
+import { UserType, userTypeToJSON } from "@/types/proto/v1/user_service";
 import {
+  getDefaultPagination,
   extractProjectResourceName,
   type SearchParams,
   type SearchScope,
@@ -59,10 +63,19 @@ const { projectList } = useProjectV1List();
 
 const showTimeRange = ref(false);
 
+const activeUserList = computedAsync(async () => {
+  const { users } = await userStore.fetchUserList({
+    pageSize: getDefaultPagination(),
+    showDeleted: false,
+    filter: `state == "${stateToJSON(State.ACTIVE)}" && user_type == "${userTypeToJSON(UserType.USER)}"`,
+  });
+  return users;
+}, []);
+
 const principalSearchValueOptions = computed(() => {
   // Put "you" to the top
   const sortedUsers = orderBy(
-    userStore.activeUserList,
+    activeUserList.value,
     (user) => (user.name === me.value.name ? -1 : 1),
     "asc"
   );

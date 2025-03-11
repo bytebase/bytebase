@@ -3,10 +3,9 @@ import {
   releaserCandidatesForIssue,
   useWrappedReviewStepsV1,
 } from "@/components/IssueV1/logic";
-import { useUserStore } from "@/store";
 import type { ComposedIssue } from "@/types";
 import { Issue_Approver_Status } from "@/types/proto/v1/issue_service";
-import { extractUserResourceName } from "@/utils/v1/user";
+import { isUserIncludedInList } from "@/utils";
 import type { SearchParams } from "../common";
 import { getValueFromSearchParams } from "../common";
 
@@ -40,11 +39,7 @@ export const filterIssueByApprover = (
   // Planning to support "approver:[{email_1}, {email_2}, ...]" and
   // "approver:roles/{role}" in the future
   if (approver.startsWith("users/")) {
-    return (
-      currentStep.candidates.findIndex(
-        (user) => `users/${user.email}` === approver
-      ) >= 0
-    );
+    return currentStep.candidates.includes(approver);
   }
 
   console.error(
@@ -64,18 +59,8 @@ export const filterIssueByReleaser = (
   // Planning to support "release:[{email_1}, {email_2}, ...]" and
   // "release:roles/{role}" in the future
   if (releaser.startsWith("users/")) {
-    const user = useUserStore().getUserByEmail(
-      extractUserResourceName(releaser)
-    );
-    if (!user) return false;
-
     const candidates = releaserCandidatesForIssue(issue);
-    // Otherwise any releasers can rollout the issue.
-    if (candidates.findIndex((c) => c.name === user.name) >= 0) {
-      return true;
-    }
-
-    return false;
+    return isUserIncludedInList(releaser, candidates);
   }
 
   console.error(

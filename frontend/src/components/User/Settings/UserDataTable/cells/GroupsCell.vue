@@ -16,9 +16,9 @@
 import { NTag } from "naive-ui";
 import { computed } from "vue";
 import { useGroupStore } from "@/store";
-import { getUserEmailFromIdentifier } from "@/store/modules/v1/common";
-import { type User } from "@/types/proto/v1/user_service";
+import { extractUserId } from "@/store/modules/v1/common";
 import type { Group } from "@/types/proto/v1/group_service";
+import { type User } from "@/types/proto/v1/user_service";
 
 const props = defineProps<{
   user: User;
@@ -34,7 +34,7 @@ const groups = computed(() => {
   const groups = [];
   for (const group of groupStore.groupList) {
     for (const member of group.members) {
-      if (getUserEmailFromIdentifier(member.member) === props.user.email) {
+      if (extractUserId(member.member) === props.user.email) {
         groups.push(group);
         break;
       }

@@ -37,7 +37,11 @@ import {
 } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import type { Project } from "@/types/proto/v1/project_service";
-import { extractProjectResourceName, hasWorkspacePermissionV2 } from "@/utils";
+import {
+  extractProjectResourceName,
+  hasWorkspacePermissionV2,
+  getDefaultPagination,
+} from "@/utils";
 import ResourceSelect from "./ResourceSelect.vue";
 
 const props = withDefaults(
@@ -168,7 +172,7 @@ const combinedProjectList = computed(() => {
 const searchProjects = async (query: string) => {
   const { projects } = await projectStore.fetchProjectList({
     query,
-    pageSize: 100,
+    pageSize: getDefaultPagination(),
     showDeleted: props.includeArchived,
   });
   return projects;
