@@ -11,7 +11,7 @@ import (
 )
 
 // StartMetadataInstance starts the metadata instance.
-func StartMetadataInstance(ctx context.Context, dataDir, resourceDir, pgBinDir, pgUser, demoName string, port int, mode common.ReleaseMode) (func(), error) {
+func StartMetadataInstance(ctx context.Context, dataDir, pgBinDir, pgUser, demoName string, port int, mode common.ReleaseMode) (func(), error) {
 	pgDataDir := getPostgresDataDir(dataDir, demoName)
 
 	slog.Info("-----Embedded Postgres BEGIN-----")

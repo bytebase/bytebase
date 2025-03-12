@@ -139,7 +139,7 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 
 	var pgURL string
 	if profile.UseEmbedDB() {
-		stopper, err := postgres.StartMetadataInstance(ctx, profile.DataDir, profile.ResourceDir, pgBinDir, profile.PgUser, profile.DemoName, profile.DatastorePort, profile.Mode)
+		stopper, err := postgres.StartMetadataInstance(ctx, profile.DataDir, pgBinDir, profile.PgUser, profile.DemoName, profile.DatastorePort, profile.Mode)
 		if err != nil {
 			return nil, err
 		}
