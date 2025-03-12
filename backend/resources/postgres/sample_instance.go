@@ -1,7 +1,6 @@
 package postgres
 
 import (
-	"bufio"
 	"context"
 	"embed"
 	"fmt"
@@ -9,8 +8,6 @@ import (
 	"log/slog"
 	"os"
 	"path"
-	"path/filepath"
-	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -118,10 +115,6 @@ func setupOneSampleInstance(ctx context.Context, pgBinDir, pgDataDir string, dbs
 		return errors.Wrapf(err, "failed to init sample instance")
 	}
 
-	if err := turnOnPGStateStatements(pgDataDir); err != nil {
-		return errors.Wrapf(err, "failed to turn on pg_stat_statements")
-	}
-
 	// TODO(tianzhou): Remove this after debugging completes.
 	// turn on serverlog to debug sample instance startup in SaaS.
 	if err := start(port, pgBinDir, pgDataDir, true /* serverLog */); err != nil {
@@ -174,6 +167,9 @@ func needSetupSampleDatabase(ctx context.Context, pgUser, port, database string)
 				Port:     port,
 				Database: database,
 			},
+			ConnectionContext: db.ConnectionContext{
+				DatabaseName: database,
+			},
 			MaximumSQLResultSize: common.DefaultMaximumSQLResultSize,
 		},
 	)
@@ -211,10 +207,6 @@ func prepareSampleDatabaseIfNeeded(ctx context.Context, pgUser, host, port, data
 		return err
 	}
 
-	if err := createPGStatStatementsExtension(ctx, pgUser, host, port, database); err != nil {
-		slog.Warn("Failed to create pg_stat_statements extension", log.BBError(err))
-	}
-
 	// Connect the just created sample database to load data.
 	driver, err := db.Open(
 		ctx,
@@ -227,6 +219,9 @@ func prepareSampleDatabaseIfNeeded(ctx context.Context, pgUser, host, port, data
 				Host:     host,
 				Port:     port,
 				Database: database,
+			},
+			ConnectionContext: db.ConnectionContext{
+				DatabaseName: database,
 			},
 			MaximumSQLResultSize: common.DefaultMaximumSQLResultSize,
 		},
@@ -256,6 +251,9 @@ func prepareSampleDatabase(ctx context.Context, pgUser, host, port, database str
 				Port:     port,
 				Database: "postgres",
 			},
+			ConnectionContext: db.ConnectionContext{
+				DatabaseName: database,
+			},
 			MaximumSQLResultSize: common.DefaultMaximumSQLResultSize,
 		},
 	)
@@ -273,34 +271,6 @@ func prepareSampleDatabase(ctx context.Context, pgUser, host, port, database str
 	return nil
 }
 
-func createPGStatStatementsExtension(ctx context.Context, pgUser, host, port, database string) error {
-	driver, err := db.Open(
-		ctx,
-		storepb.Engine_POSTGRES,
-		db.DriverConfig{},
-		db.ConnectionConfig{
-			DataSource: &storepb.DataSource{
-				Username: pgUser,
-				Password: "",
-				Host:     host,
-				Port:     port,
-				Database: database,
-			},
-			MaximumSQLResultSize: common.DefaultMaximumSQLResultSize,
-		},
-	)
-	if err != nil {
-		return errors.Wrapf(err, "failed to connect sample database")
-	}
-	defer driver.Close(ctx)
-
-	if _, err := driver.Execute(ctx, "CREATE EXTENSION IF NOT EXISTS pg_stat_statements;", db.ExecuteOptions{}); err != nil {
-		return errors.Wrapf(err, "failed to create pg_stat_statements extension")
-	}
-	slog.Info("Successfully created pg_stat_statements extension")
-	return nil
-}
-
 func dropDefaultPostgresDatabase(ctx context.Context, pgUser, host, port, connectingDb string) error {
 	driver, err := db.Open(
 		ctx,
@@ -314,6 +284,9 @@ func dropDefaultPostgresDatabase(ctx context.Context, pgUser, host, port, connec
 				Port:     port,
 				Database: connectingDb,
 			},
+			ConnectionContext: db.ConnectionContext{
+				DatabaseName: connectingDb,
+			},
 			MaximumSQLResultSize: common.DefaultMaximumSQLResultSize,
 		},
 	)
@@ -325,59 +298,6 @@ func dropDefaultPostgresDatabase(ctx context.Context, pgUser, host, port, connec
 	// Drop the default postgres database.
 	if _, err := driver.Execute(ctx, "DROP DATABASE IF EXISTS postgres", db.ExecuteOptions{}); err != nil {
 		return errors.Wrapf(err, "failed to drop default postgres database")
-	}
-
-	return nil
-}
-
-// turnOnPGStateStatements turns on pg_stat_statements extension.
-// Only works for sample PostgreSQL.
-func turnOnPGStateStatements(pgDataDir string) error {
-	// Enable pg_stat_statements extension
-	// Add shared_preload_libraries = 'pg_stat_statements' to postgresql.conf
-	pgConfig := filepath.Join(pgDataDir, "postgresql.conf")
-
-	// Check config in postgresql.conf
-	configFile, err := os.OpenFile(pgConfig, os.O_APPEND|os.O_RDWR, 0600)
-	if err != nil {
-		return errors.Wrapf(err, "failed to open postgresql.conf file")
-	}
-	defer configFile.Close()
-
-	scanner := bufio.NewScanner(configFile)
-	shardPreloadLibrariesReg := regexp.MustCompile(`^\s*shared_preload_libraries\s*=\s*'pg_stat_statements'`)
-	pgStatStatementsTrackReg := regexp.MustCompile(`^\s*pg_stat_statements.track\s*=`)
-	shardPreloadLibraries := false
-	pgStatStatementsTrack := false
-	for scanner.Scan() {
-		line := scanner.Text()
-		if !shardPreloadLibraries && shardPreloadLibrariesReg.MatchString(line) {
-			shardPreloadLibraries = true
-		}
-
-		if !pgStatStatementsTrack && pgStatStatementsTrackReg.MatchString(line) {
-			pgStatStatementsTrack = true
-		}
-	}
-	if err := scanner.Err(); err != nil {
-		return errors.Wrapf(err, "failed to scan postgresql.conf file")
-	}
-
-	added := false
-	if !shardPreloadLibraries {
-		if _, err := configFile.WriteString("\nshared_preload_libraries = 'pg_stat_statements'\n"); err != nil {
-			return errors.Wrapf(err, "failed to write shared_preload_libraries = 'pg_stat_statements' to postgresql.conf file")
-		}
-	}
-
-	if !pgStatStatementsTrack {
-		if _, err := configFile.WriteString("\npg_stat_statements.track = all\n"); err != nil {
-			return errors.Wrapf(err, "failed to write pg_stat_statements.track = all to postgresql.conf file")
-		}
-	}
-
-	if added {
-		slog.Debug("Successfully added pg_stat_statements to postgresql.conf file")
 	}
 
 	return nil
