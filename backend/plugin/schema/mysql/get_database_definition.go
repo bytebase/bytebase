@@ -131,7 +131,7 @@ func GetDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *storepb.Da
 	return buf.String(), nil
 }
 
-func GetTableDefinition(_ string, table *storepb.TableMetadata, sequences []*storepb.SequenceMetadata) (string, error) {
+func GetTableDefinition(_ string, table *storepb.TableMetadata, _ []*storepb.SequenceMetadata) (string, error) {
 	var buf strings.Builder
 	if err := writeTable(&buf, table); err != nil {
 		return "", err
