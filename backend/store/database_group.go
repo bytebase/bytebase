@@ -113,7 +113,7 @@ func (s *Store) GetDatabaseGroup(ctx context.Context, find *FindDatabaseGroupMes
 	return databaseGroups[0], nil
 }
 
-func (*Store) listDatabaseGroupImpl(ctx context.Context, tx *Tx, find *FindDatabaseGroupMessage) ([]*DatabaseGroupMessage, error) {
+func (*Store) listDatabaseGroupImpl(ctx context.Context, txn *sql.Tx, find *FindDatabaseGroupMessage) ([]*DatabaseGroupMessage, error) {
 	where, args := []string{"TRUE"}, []any{}
 	if v := find.ProjectID; v != nil {
 		where, args = append(where, fmt.Sprintf("project = $%d", len(args)+1)), append(args, *v)
@@ -130,7 +130,7 @@ func (*Store) listDatabaseGroupImpl(ctx context.Context, tx *Tx, find *FindDatab
 	}
 	query := fmt.Sprintf(`SELECT %s FROM db_group WHERE %s ORDER BY project, resource_id ASC;`, strings.Join(fields, ","), strings.Join(where, " AND "))
 	var databaseGroups []*DatabaseGroupMessage
-	rows, err := tx.QueryContext(ctx, query, args...)
+	rows, err := txn.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to scan")
 	}

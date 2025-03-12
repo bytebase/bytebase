@@ -169,19 +169,14 @@ const combinedProjectList = computed(() => {
   return list;
 });
 
-const searchProjects = async (query: string) => {
-  const { projects } = await projectStore.fetchProjectList({
-    query,
-    pageSize: getDefaultPagination(),
-    showDeleted: props.includeArchived,
-  });
-  return projects;
-};
-
 const handleSearch = useDebounceFn(async (search: string) => {
   state.loading = true;
   try {
-    const projects = await searchProjects(search);
+    const { projects } = await projectStore.fetchProjectList({
+      query: search,
+      pageSize: getDefaultPagination(),
+      showDeleted: props.includeArchived,
+    });
     state.rawProjectList = projects;
     if (!search) {
       initProjectList();

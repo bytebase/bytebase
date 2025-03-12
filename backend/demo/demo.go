@@ -7,41 +7,26 @@ import (
 	"fmt"
 	"io/fs"
 	"log/slog"
-	"sort"
 
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/store"
-
-	dbdriver "github.com/bytebase/bytebase/backend/plugin/db"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 //go:embed data
 var demoFS embed.FS
 
 // LoadDemoDataIfNeeded loads the demo data if specified.
-func LoadDemoDataIfNeeded(ctx context.Context, storeDB *store.DB, demoName string) error {
+func LoadDemoDataIfNeeded(ctx context.Context, stores *store.Store, demoName string) error {
 	if demoName == "" {
 		slog.Debug("Skip setting up demo data. Demo not specified.")
 		return nil
 	}
-
 	slog.Info(fmt.Sprintf("Setting up demo %q...", demoName))
 
-	metadataDriver, err := dbdriver.Open(
-		ctx,
-		storepb.Engine_POSTGRES,
-		dbdriver.DriverConfig{},
-		storeDB.ConnCfg,
-	)
-	if err != nil {
-		return err
-	}
-	defer metadataDriver.Close(ctx)
-
+	db := stores.GetDB()
 	var exists bool
-	if err := metadataDriver.GetDB().QueryRowContext(ctx,
+	if err := db.QueryRowContext(ctx,
 		`SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'environment')`,
 	).Scan(&exists); err != nil {
 		return err
@@ -56,15 +41,9 @@ func LoadDemoDataIfNeeded(ctx context.Context, storeDB *store.DB, demoName strin
 		return err
 	}
 
-	// We separate demo data for each table into their own demo data file.
-	// And there exists foreign key dependency among tables, so we
-	// name the data file as 10001_xxx.sql, 10002_xxx.sql. Here we sort
-	// the file name so they are loaded accordingly.
-	sort.Strings(names)
-
 	// Loop over all data files and execute them in order.
 	for _, name := range names {
-		if err := applyDataFile(name, metadataDriver.GetDB()); err != nil {
+		if err := applyDataFile(name, db); err != nil {
 			return errors.Wrapf(err, "Failed to load file: %q", name)
 		}
 	}

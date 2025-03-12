@@ -335,6 +335,7 @@ export interface AppIMSetting {
   feishu: AppIMSetting_Feishu | undefined;
   wecom: AppIMSetting_Wecom | undefined;
   lark: AppIMSetting_Lark | undefined;
+  dingtalk: AppIMSetting_DingTalk | undefined;
 }
 
 export interface AppIMSetting_Slack {
@@ -359,6 +360,13 @@ export interface AppIMSetting_Lark {
   enabled: boolean;
   appId: string;
   appSecret: string;
+}
+
+export interface AppIMSetting_DingTalk {
+  enabled: boolean;
+  clientId: string;
+  clientSecret: string;
+  robotCode: string;
 }
 
 export interface AgentPluginSetting {
@@ -1715,7 +1723,7 @@ export const SMTPMailDeliverySettingValue: MessageFns<SMTPMailDeliverySettingVal
 };
 
 function createBaseAppIMSetting(): AppIMSetting {
-  return { slack: undefined, feishu: undefined, wecom: undefined, lark: undefined };
+  return { slack: undefined, feishu: undefined, wecom: undefined, lark: undefined, dingtalk: undefined };
 }
 
 export const AppIMSetting: MessageFns<AppIMSetting> = {
@@ -1731,6 +1739,9 @@ export const AppIMSetting: MessageFns<AppIMSetting> = {
     }
     if (message.lark !== undefined) {
       AppIMSetting_Lark.encode(message.lark, writer.uint32(34).fork()).join();
+    }
+    if (message.dingtalk !== undefined) {
+      AppIMSetting_DingTalk.encode(message.dingtalk, writer.uint32(42).fork()).join();
     }
     return writer;
   },
@@ -1774,6 +1785,14 @@ export const AppIMSetting: MessageFns<AppIMSetting> = {
           message.lark = AppIMSetting_Lark.decode(reader, reader.uint32());
           continue;
         }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.dingtalk = AppIMSetting_DingTalk.decode(reader, reader.uint32());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1789,6 +1808,7 @@ export const AppIMSetting: MessageFns<AppIMSetting> = {
       feishu: isSet(object.feishu) ? AppIMSetting_Feishu.fromJSON(object.feishu) : undefined,
       wecom: isSet(object.wecom) ? AppIMSetting_Wecom.fromJSON(object.wecom) : undefined,
       lark: isSet(object.lark) ? AppIMSetting_Lark.fromJSON(object.lark) : undefined,
+      dingtalk: isSet(object.dingtalk) ? AppIMSetting_DingTalk.fromJSON(object.dingtalk) : undefined,
     };
   },
 
@@ -1805,6 +1825,9 @@ export const AppIMSetting: MessageFns<AppIMSetting> = {
     }
     if (message.lark !== undefined) {
       obj.lark = AppIMSetting_Lark.toJSON(message.lark);
+    }
+    if (message.dingtalk !== undefined) {
+      obj.dingtalk = AppIMSetting_DingTalk.toJSON(message.dingtalk);
     }
     return obj;
   },
@@ -1825,6 +1848,9 @@ export const AppIMSetting: MessageFns<AppIMSetting> = {
       : undefined;
     message.lark = (object.lark !== undefined && object.lark !== null)
       ? AppIMSetting_Lark.fromPartial(object.lark)
+      : undefined;
+    message.dingtalk = (object.dingtalk !== undefined && object.dingtalk !== null)
+      ? AppIMSetting_DingTalk.fromPartial(object.dingtalk)
       : undefined;
     return message;
   },
@@ -2194,6 +2220,114 @@ export const AppIMSetting_Lark: MessageFns<AppIMSetting_Lark> = {
     message.enabled = object.enabled ?? false;
     message.appId = object.appId ?? "";
     message.appSecret = object.appSecret ?? "";
+    return message;
+  },
+};
+
+function createBaseAppIMSetting_DingTalk(): AppIMSetting_DingTalk {
+  return { enabled: false, clientId: "", clientSecret: "", robotCode: "" };
+}
+
+export const AppIMSetting_DingTalk: MessageFns<AppIMSetting_DingTalk> = {
+  encode(message: AppIMSetting_DingTalk, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.enabled !== false) {
+      writer.uint32(8).bool(message.enabled);
+    }
+    if (message.clientId !== "") {
+      writer.uint32(18).string(message.clientId);
+    }
+    if (message.clientSecret !== "") {
+      writer.uint32(26).string(message.clientSecret);
+    }
+    if (message.robotCode !== "") {
+      writer.uint32(34).string(message.robotCode);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): AppIMSetting_DingTalk {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseAppIMSetting_DingTalk();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.enabled = reader.bool();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.clientId = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.clientSecret = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.robotCode = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): AppIMSetting_DingTalk {
+    return {
+      enabled: isSet(object.enabled) ? globalThis.Boolean(object.enabled) : false,
+      clientId: isSet(object.clientId) ? globalThis.String(object.clientId) : "",
+      clientSecret: isSet(object.clientSecret) ? globalThis.String(object.clientSecret) : "",
+      robotCode: isSet(object.robotCode) ? globalThis.String(object.robotCode) : "",
+    };
+  },
+
+  toJSON(message: AppIMSetting_DingTalk): unknown {
+    const obj: any = {};
+    if (message.enabled !== false) {
+      obj.enabled = message.enabled;
+    }
+    if (message.clientId !== "") {
+      obj.clientId = message.clientId;
+    }
+    if (message.clientSecret !== "") {
+      obj.clientSecret = message.clientSecret;
+    }
+    if (message.robotCode !== "") {
+      obj.robotCode = message.robotCode;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<AppIMSetting_DingTalk>): AppIMSetting_DingTalk {
+    return AppIMSetting_DingTalk.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<AppIMSetting_DingTalk>): AppIMSetting_DingTalk {
+    const message = createBaseAppIMSetting_DingTalk();
+    message.enabled = object.enabled ?? false;
+    message.clientId = object.clientId ?? "";
+    message.clientSecret = object.clientSecret ?? "";
+    message.robotCode = object.robotCode ?? "";
     return message;
   },
 };

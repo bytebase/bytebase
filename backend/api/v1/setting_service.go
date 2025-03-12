@@ -27,6 +27,7 @@ import (
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/mail"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
+	"github.com/bytebase/bytebase/backend/plugin/webhook/dingtalk"
 	"github.com/bytebase/bytebase/backend/plugin/webhook/feishu"
 	"github.com/bytebase/bytebase/backend/plugin/webhook/lark"
 	"github.com/bytebase/bytebase/backend/plugin/webhook/slack"
@@ -432,6 +433,11 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 					return nil, status.Errorf(codes.InvalidArgument, "validation failed, error: %v", err)
 				}
 				setting.Lark = payload.Lark
+			case "value.app_im_setting_value.dingtalk":
+				if err := dingtalk.Validate(ctx, payload.GetDingtalk().GetClientId(), payload.GetDingtalk().GetClientSecret(), payload.GetDingtalk().RobotCode, user.Phone); err != nil {
+					return nil, status.Errorf(codes.InvalidArgument, "validation failed, error: %v", err)
+				}
+				setting.Dingtalk = payload.Dingtalk
 
 			default:
 				return nil, status.Errorf(codes.InvalidArgument, "invalid update mask path %v", path)
@@ -660,6 +666,9 @@ func (s *SettingService) convertToSettingMessage(ctx context.Context, setting *s
 						},
 						Lark: &v1pb.AppIMSetting_Lark{
 							Enabled: storeValue.Lark != nil && storeValue.Lark.Enabled,
+						},
+						Dingtalk: &v1pb.AppIMSetting_DingTalk{
+							Enabled: storeValue.Dingtalk != nil && storeValue.Dingtalk.Enabled,
 						},
 					},
 				},
