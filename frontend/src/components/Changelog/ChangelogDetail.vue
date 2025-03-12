@@ -190,7 +190,7 @@ const state = reactive<LocalState>({
   showDiff: false,
 });
 
-const { database } = useDatabaseV1ByName(props.database);
+const { database, ready } = useDatabaseV1ByName(props.database);
 
 const hasPermission = computed(() =>
   hasProjectPermissionV2(database.value.projectEntity, "bb.changelogs.get")
@@ -273,7 +273,11 @@ const copySchema = async () => {
 
 watch(
   [database.value.name, changelogName],
-  async ([_, name]) => {
+  async () => {
+    if (!ready.value) {
+      return;
+    }
+
     state.loading = true;
     await Promise.all([
       dbSchemaStore.getOrFetchDatabaseMetadata({
@@ -281,7 +285,7 @@ watch(
         skipCache: false,
       }),
       changelogStore.getOrFetchChangelogByName(
-        unref(name),
+        unref(changelogName),
         ChangelogView.CHANGELOG_VIEW_FULL
       ),
     ]);
