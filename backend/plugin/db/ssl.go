@@ -76,3 +76,26 @@ func GetTLSConfig(ds *storepb.DataSource) (*tls.Config, error) {
 	}
 	return cfg, nil
 }
+
+// SSLMode is the PGSSLMode type.
+// https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNECT-SSLMODE
+type SSLMode string
+
+const (
+	SSLModeDisable SSLMode = "disable"
+	SSLModeAllow   SSLMode = "allow"
+	// It is the default mode of sslmode.
+	// https://www.postgresql.org/docs/current/libpq-ssl.html
+	SSLModePrefer     SSLMode = "prefer"
+	SSLModeRequire    SSLMode = "require"
+	SSLModeVerifyCA   SSLMode = "verify-ca"
+	SSLModeVerifyFull SSLMode = "verify-full"
+)
+
+func GetPGSSLMode(ds *storepb.DataSource) SSLMode {
+	sslMode := SSLModeDisable
+	if ds.GetUseSsl() {
+		sslMode = SSLModeVerifyCA
+	}
+	return sslMode
+}

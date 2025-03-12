@@ -209,6 +209,9 @@ func getListDatabaseFilter(filter string) (*store.ListResourceFilter, error) {
 		if !ok {
 			return "", status.Errorf(codes.InvalidArgument, "invalid engine value %q", value)
 		}
+		if len(rawEngineList) == 0 {
+			return "", status.Errorf(codes.InvalidArgument, "empty engine filter")
+		}
 		engineList := []string{}
 		for _, rawEngine := range rawEngineList {
 			v1Engine, ok := v1pb.Engine_value[rawEngine.(string)]

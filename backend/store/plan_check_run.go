@@ -112,7 +112,7 @@ func (s *Store) CreatePlanCheckRuns(ctx context.Context, creates ...*PlanCheckRu
 			return err
 		}
 	}
-	if _, err := s.db.db.ExecContext(ctx, query.String(), values...); err != nil {
+	if _, err := s.db.ExecContext(ctx, query.String(), values...); err != nil {
 		return errors.Wrapf(err, "failed to execute insert")
 	}
 	return nil
@@ -157,7 +157,7 @@ SELECT
 FROM plan_check_run
 WHERE %s
 %s`, distinctOn, strings.Join(where, " AND "), orderBy)
-	rows, err := s.db.db.QueryContext(ctx, query, args...)
+	rows, err := s.db.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -211,7 +211,7 @@ func (s *Store) UpdatePlanCheckRun(ctx context.Context, status PlanCheckRunStatu
 		status = $2,
 		result = $3
 	WHERE id = $4`
-	if _, err := s.db.db.ExecContext(ctx, query, time.Now(), status, resultBytes, uid); err != nil {
+	if _, err := s.db.ExecContext(ctx, query, time.Now(), status, resultBytes, uid); err != nil {
 		return errors.Wrapf(err, "failed to update plan check run")
 	}
 	return nil
@@ -225,7 +225,7 @@ func (s *Store) BatchCancelPlanCheckRuns(ctx context.Context, planCheckRunUIDs [
 			status = $1, 
 			updated_at = $2
 		WHERE id = ANY($3)`
-	if _, err := s.db.db.ExecContext(ctx, query, PlanCheckRunStatusCanceled, time.Now(), planCheckRunUIDs); err != nil {
+	if _, err := s.db.ExecContext(ctx, query, PlanCheckRunStatusCanceled, time.Now(), planCheckRunUIDs); err != nil {
 		return err
 	}
 	return nil

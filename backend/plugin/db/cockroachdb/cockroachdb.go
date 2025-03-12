@@ -82,18 +82,13 @@ func (driver *Driver) Open(ctx context.Context, _ storepb.Engine, config db.Conn
 			if err != nil {
 				return nil, err
 			}
-			return &noDeadlineConn{Conn: conn}, nil
+			return &util.NoDeadlineConn{Conn: conn}, nil
 		}
 	}
 
 	driver.databaseName = config.ConnectionContext.DatabaseName
 	if config.ConnectionContext.DatabaseName == "" {
-		databaseName, cfg, err := guessDSN(pgxConnConfig, config.DataSource.Username)
-		if err != nil {
-			return nil, err
-		}
-		pgxConnConfig = cfg
-		driver.databaseName = databaseName
+		pgxConnConfig.Database = "postgres"
 	}
 	driver.config = config
 
@@ -134,8 +129,6 @@ func getRoutingIDFromCockroachCloudURL(host string) string {
 }
 
 func getCockroachConnectionConfig(config db.ConnectionConfig) (*pgx.ConnConfig, error) {
-	// Require username for Postgres, as the guessDSN 1st guess is to use the username as the connecting database
-	// if database name is not explicitly specified.
 	if config.DataSource.Username == "" {
 		return nil, errors.Errorf("user must be set")
 	}
@@ -154,7 +147,7 @@ func getCockroachConnectionConfig(config db.ConnectionConfig) (*pgx.ConnConfig, 
 	}
 
 	connStr := fmt.Sprintf("host=%s port=%s", config.DataSource.Host, config.DataSource.Port)
-	sslMode := getSSLMode(config.DataSource)
+	sslMode := db.GetPGSSLMode(config.DataSource)
 	connStr += fmt.Sprintf(" sslmode=%s", sslMode)
 
 	routingID := getRoutingIDFromCockroachCloudURL(config.DataSource.Host)
@@ -183,39 +176,6 @@ func getCockroachConnectionConfig(config db.ConnectionConfig) (*pgx.ConnConfig, 
 	}
 
 	return connConfig, nil
-}
-
-type noDeadlineConn struct{ net.Conn }
-
-func (*noDeadlineConn) SetDeadline(time.Time) error      { return nil }
-func (*noDeadlineConn) SetReadDeadline(time.Time) error  { return nil }
-func (*noDeadlineConn) SetWriteDeadline(time.Time) error { return nil }
-
-// guessDSN will guess a valid DB connection and its database name.
-func guessDSN(baseConnConfig *pgx.ConnConfig, username string) (string, *pgx.ConnConfig, error) {
-	// Some postgres server default behavior is to use username as the database name if not specified,
-	// while some postgres server explicitly requires the database name to be present (e.g. render.com).
-	guesses := []string{"postgres", username, "template1"}
-	//  dsn+" dbname=bytebase"
-	for _, guessDatabase := range guesses {
-		connConfig := *baseConnConfig
-		connConfig.Database = guessDatabase
-		if err := func() error {
-			connectionString := stdlib.RegisterConnConfig(&connConfig)
-			defer stdlib.UnregisterConnConfig(connectionString)
-			db, err := sql.Open(driverName, connectionString)
-			if err != nil {
-				return err
-			}
-			defer db.Close()
-			return db.Ping()
-		}(); err != nil {
-			slog.Debug("guessDSN attempt failed", log.BBError(err))
-			continue
-		}
-		return guessDatabase, &connConfig, nil
-	}
-	return "", nil, errors.Errorf("cannot connect to the instance, make sure the connection info is correct")
 }
 
 // Close closes the driver.
@@ -298,67 +258,48 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 	var nonTransactionAndSetRoleStmts []string
 	var nonTransactionAndSetRoleStmtsIndex []int32
 	var isPlsql bool
-	oneshot := true
-	// HACK(p0ny): always split for pg
-	//nolint
-	if true || len(statement) <= common.MaxSheetCheckSize {
-		singleSQLs, err := crdbparser.SplitSQLStatement(statement)
-		if err != nil {
-			return 0, err
-		}
-		for i, singleSQL := range singleSQLs {
-			commands = append(commands, base.SingleSQL{Text: singleSQL})
-			originalIndex = append(originalIndex, int32(i))
-		}
 
-		// If the statement is a single statement and is a PL/pgSQL block,
-		// we should execute it as a single statement without transaction.
-		// If the statement is a PL/pgSQL block, we should execute it as a single statement.
-		// https://www.postgresql.org/docs/current/plpgsql-control-structures.html
-		if len(singleSQLs) == 1 && isPlSQLBlock(singleSQLs[0]) {
-			isPlsql = true
-		}
-		// HACK(p0ny): always split for pg
-		//nolint
-		if false && len(commands) <= common.MaximumCommands {
-			oneshot = false
-		}
+	singleSQLs, err := crdbparser.SplitSQLStatement(statement)
+	if err != nil {
+		return 0, err
+	}
+	for i, singleSQL := range singleSQLs {
+		commands = append(commands, base.SingleSQL{Text: singleSQL})
+		originalIndex = append(originalIndex, int32(i))
+	}
 
-		var tmpCommands []base.SingleSQL
-		var tmpOriginalIndex []int32
-		for i, command := range commands {
-			switch {
-			case isSetRoleStatement(command.Text):
-				nonTransactionAndSetRoleStmts = append(nonTransactionAndSetRoleStmts, command.Text)
-				nonTransactionAndSetRoleStmtsIndex = append(nonTransactionAndSetRoleStmtsIndex, originalIndex[i])
-			case IsNonTransactionStatement(command.Text):
-				nonTransactionAndSetRoleStmts = append(nonTransactionAndSetRoleStmts, command.Text)
-				nonTransactionAndSetRoleStmtsIndex = append(nonTransactionAndSetRoleStmtsIndex, originalIndex[i])
-				continue
-			case isSuperuserStatement(command.Text):
-				// Use superuser privilege to run privileged statements.
-				slog.Info("Use superuser privilege to run privileged statements", slog.String("statement", command.Text))
-				ct := command.Text
-				if !strings.HasSuffix(strings.TrimRightFunc(ct, unicode.IsSpace), ";") {
-					ct += ";"
-				}
-				command.Text = fmt.Sprintf("SET LOCAL ROLE NONE;%sSET LOCAL ROLE '%s';", ct, owner)
+	// If the statement is a single statement and is a PL/pgSQL block,
+	// we should execute it as a single statement without transaction.
+	// If the statement is a PL/pgSQL block, we should execute it as a single statement.
+	// https://www.postgresql.org/docs/current/plpgsql-control-structures.html
+	if len(singleSQLs) == 1 && isPlSQLBlock(singleSQLs[0]) {
+		isPlsql = true
+	}
+
+	var tmpCommands []base.SingleSQL
+	var tmpOriginalIndex []int32
+	for i, command := range commands {
+		switch {
+		case isSetRoleStatement(command.Text):
+			nonTransactionAndSetRoleStmts = append(nonTransactionAndSetRoleStmts, command.Text)
+			nonTransactionAndSetRoleStmtsIndex = append(nonTransactionAndSetRoleStmtsIndex, originalIndex[i])
+		case IsNonTransactionStatement(command.Text):
+			nonTransactionAndSetRoleStmts = append(nonTransactionAndSetRoleStmts, command.Text)
+			nonTransactionAndSetRoleStmtsIndex = append(nonTransactionAndSetRoleStmtsIndex, originalIndex[i])
+			continue
+		case isSuperuserStatement(command.Text):
+			// Use superuser privilege to run privileged statements.
+			slog.Info("Use superuser privilege to run privileged statements", slog.String("statement", command.Text))
+			ct := command.Text
+			if !strings.HasSuffix(strings.TrimRightFunc(ct, unicode.IsSpace), ";") {
+				ct += ";"
 			}
-			tmpCommands = append(tmpCommands, command)
-			tmpOriginalIndex = append(tmpOriginalIndex, originalIndex[i])
+			command.Text = fmt.Sprintf("SET LOCAL ROLE NONE;%sSET LOCAL ROLE '%s';", ct, owner)
 		}
-		commands, originalIndex = tmpCommands, tmpOriginalIndex
+		tmpCommands = append(tmpCommands, command)
+		tmpOriginalIndex = append(tmpOriginalIndex, originalIndex[i])
 	}
-	// HACK(p0ny): always split for pg
-	//nolint
-	if false && oneshot {
-		commands = []base.SingleSQL{
-			{
-				Text: statement,
-			},
-		}
-		originalIndex = []int32{0}
-	}
+	commands, originalIndex = tmpCommands, tmpOriginalIndex
 
 	conn, err := driver.db.Conn(ctx)
 	if err != nil {

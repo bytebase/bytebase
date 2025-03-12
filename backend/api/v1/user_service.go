@@ -209,6 +209,9 @@ func getListUserFilter(filter string) (*store.ListResourceFilter, error) {
 		if !ok {
 			return "", status.Errorf(codes.InvalidArgument, "invalid user_type value %q", value)
 		}
+		if len(rawTypeList) == 0 {
+			return "", status.Errorf(codes.InvalidArgument, "empty user_type filter")
+		}
 		userTypeList := []string{}
 		for _, rawType := range rawTypeList {
 			v1UserType, ok := v1pb.UserType_value[rawType.(string)]
