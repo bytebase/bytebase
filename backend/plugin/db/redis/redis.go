@@ -48,7 +48,7 @@ func newDriver(_ db.DriverConfig) db.Driver {
 
 // Open opens the redis driver.
 func (d *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
-	tlscfg, err := db.GetTLSConfig(config.DataSource)
+	tlscfg, err := util.GetTLSConfig(config.DataSource)
 	if err != nil {
 		return nil, errors.Wrap(err, "redis: failed to get tls config")
 	}

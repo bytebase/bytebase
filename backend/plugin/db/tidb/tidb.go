@@ -89,7 +89,7 @@ func (d *Driver) Open(_ context.Context, dbType storepb.Engine, connCfg db.Conne
 		protocol = "mysql+tcp"
 	}
 
-	tlscfg, err := db.GetTLSConfig(connCfg.DataSource)
+	tlscfg, err := util.GetTLSConfig(connCfg.DataSource)
 	if err != nil {
 		return nil, errors.Wrap(err, "sql: tls config error")
 	}
