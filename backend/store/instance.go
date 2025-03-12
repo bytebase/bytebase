@@ -283,7 +283,7 @@ func IsObjectCaseSensitive(instance *InstanceMessage) bool {
 	switch instance.Metadata.GetEngine() {
 	case storepb.Engine_TIDB:
 		return false
-	case storepb.Engine_MYSQL, storepb.Engine_MARIADB:
+	case storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 		return !(instance.Metadata != nil && instance.Metadata.MysqlLowerCaseTableNames != 0)
 	case storepb.Engine_MSSQL:
 		// In fact, SQL Server is possible to create a case-sensitive database and case-insensitive database on one instance.
