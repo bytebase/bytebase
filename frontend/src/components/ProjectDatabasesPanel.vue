@@ -9,7 +9,6 @@
         :autofocus="false"
         :placeholder="$t('database.filter-database')"
         :scope-options="scopeOptions"
-        :readonly-scopes="readonlyScopes"
       />
       <NButton
         v-if="allowToCreateDB"
@@ -55,7 +54,7 @@
 <script lang="ts" setup>
 import { PlusIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
-import { reactive, computed, ref } from "vue";
+import { reactive, computed, ref, watch } from "vue";
 import { CreateDatabasePrepPanel } from "@/components/CreateDatabasePrepForm";
 import { Drawer } from "@/components/v2";
 import { PagedDatabaseTable } from "@/components/v2/Model/DatabaseV1Table";
@@ -88,7 +87,11 @@ const props = defineProps<{
 }>();
 
 const readonlyScopes = computed((): SearchScope[] => [
-  { id: "project", value: extractProjectResourceName(props.project.name) },
+  {
+    id: "project",
+    value: extractProjectResourceName(props.project.name),
+    readonly: true,
+  },
 ]);
 
 const databaseStore = useDatabaseV1Store();
@@ -101,6 +104,17 @@ const state = reactive<LocalState>({
   },
   showCreateDrawer: false,
 });
+
+watch(
+  () => props.project.name,
+  () => {
+    state.params = {
+      query: "",
+      scopes: [...readonlyScopes.value],
+    };
+  }
+);
+
 const pagedDatabaseTableRef = ref<InstanceType<typeof PagedDatabaseTable>>();
 
 const allowToCreateDB = computed(() => {

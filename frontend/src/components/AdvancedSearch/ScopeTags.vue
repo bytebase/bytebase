@@ -2,8 +2,8 @@
   <NTag
     v-for="(scope, i) in params.scopes"
     :key="scope.id"
-    :closable="!isReadonlyScope(scope)"
-    :disabled="isReadonlyScope(scope)"
+    :closable="!scope.readonly"
+    :disabled="scope.readonly"
     :data-search-scope-id="scope.id"
     :bordered="false"
     size="small"
@@ -22,7 +22,6 @@
 import dayjs from "dayjs";
 import type { TagProps } from "naive-ui";
 import { NTag } from "naive-ui";
-import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { UNKNOWN_ID } from "@/types";
 import type { SearchParams, SearchScope, SearchScopeId } from "@/utils";
@@ -31,7 +30,6 @@ import { callCssVariable, extractDatabaseResourceName } from "@/utils";
 const props = defineProps<{
   params: SearchParams;
   focusedTagId?: SearchScopeId;
-  readonlyScopes?: SearchScope[];
 }>();
 
 const emit = defineEmits<{
@@ -40,14 +38,6 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-
-const readonlyScopeIds = computed(() => {
-  return new Set((props.readonlyScopes ?? []).map((s) => s.id));
-});
-
-const isReadonlyScope = (scope: SearchScope) => {
-  return readonlyScopeIds.value.has(scope.id);
-};
 
 const tagProps = (scope: SearchScope): TagProps => {
   if (props.focusedTagId !== scope.id) {
@@ -76,7 +66,7 @@ const renderValue = (scope: SearchScope, _index: number) => {
 };
 
 const handleClick = (scope: SearchScope) => {
-  if (isReadonlyScope(scope)) {
+  if (scope.readonly) {
     return;
   }
 

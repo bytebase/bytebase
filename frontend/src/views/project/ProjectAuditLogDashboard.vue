@@ -1,10 +1,7 @@
 <template>
   <div class="w-full space-y-4">
     <FeatureAttention feature="bb.feature.audit-log" />
-    <AuditLogSearch
-      v-model:params="state.params"
-      :readonly-scopes="readonlyScopes"
-    >
+    <AuditLogSearch v-model:params="state.params">
       <template #searchbox-suffix>
         <DataExportButton
           size="medium"
@@ -75,7 +72,7 @@ const props = defineProps<{
 }>();
 
 const readonlyScopes = computed((): SearchScope[] => {
-  return [{ id: "project", value: props.projectId }];
+  return [{ id: "project", value: props.projectId, readonly: true }];
 });
 
 const defaultSearchParams = () => {
@@ -89,6 +86,12 @@ const defaultSearchParams = () => {
 const state = reactive<LocalState>({
   params: defaultSearchParams(),
 });
+
+watch(
+  () => props.projectId,
+  () => (state.params = defaultSearchParams())
+);
+
 const { t } = useI18n();
 const hasAuditLogFeature = featureToRef("bb.feature.audit-log");
 const auditLogPagedTable = ref<ComponentExposed<typeof PagedTable<AuditLog>>>();
