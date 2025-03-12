@@ -212,24 +212,8 @@ func getCurrentDatabaseOwner(ctx context.Context, conn *sql.Conn) (string, error
 }
 
 func backfill(ctx context.Context, conn *sql.Conn) error {
-	// backfill schema object owner.
-	currentUser, err := getCurrentUser(ctx, conn)
-	if err != nil {
-		return err
-	}
-	databaseOwner, err := getCurrentDatabaseOwner(ctx, conn)
-	if err != nil {
-		return err
-	}
-	if currentUser == databaseOwner {
-		return nil
-	}
-	if _, err := conn.ExecContext(ctx, fmt.Sprintf("reassign owned by %s to %s;", currentUser, databaseOwner)); err != nil {
-		return err
-	}
-
 	var c int
-	err = conn.QueryRowContext(ctx, "SELECT count(1) FROM instance_change_history WHERE database_id IS NOT NULL").Scan(&c)
+	err := conn.QueryRowContext(ctx, "SELECT count(1) FROM instance_change_history WHERE database_id IS NOT NULL").Scan(&c)
 	if err == nil && c > 0 {
 		return errors.Errorf("Must upgrade to Bytebase 3.3.1 first")
 	}
@@ -284,13 +268,4 @@ func backfill(ctx context.Context, conn *sql.Conn) error {
 		return err
 	}
 	return nil
-}
-
-func getCurrentUser(ctx context.Context, conn *sql.Conn) (string, error) {
-	row := conn.QueryRowContext(ctx, "SELECT current_user;")
-	var user string
-	if err := row.Scan(&user); err != nil {
-		return "", err
-	}
-	return user, nil
 }
