@@ -63,10 +63,6 @@
 </template>
 
 <script lang="ts" setup>
-import { Volume2Icon } from "lucide-vue-next";
-import { NTooltip, type TooltipProps } from "naive-ui";
-import { storeToRefs } from "pinia";
-import { computed, reactive } from "vue";
 import {
   useActuatorV1Store,
   useAppFeature,
@@ -74,6 +70,10 @@ import {
 } from "@/store";
 import { PlanType } from "@/types/proto/v1/subscription_service";
 import { autoSubscriptionRoute, hasWorkspacePermissionV2 } from "@/utils";
+import { Volume2Icon } from "lucide-vue-next";
+import { NTooltip, type TooltipProps } from "naive-ui";
+import { storeToRefs } from "pinia";
+import { computed, reactive } from "vue";
 import ReleaseRemindModal from "../ReleaseRemindModal.vue";
 import TrialModal from "../TrialModal.vue";
 
@@ -142,7 +142,7 @@ const gitCommitBE = computed(() => {
   return `${actuatorStore.gitCommit.substring(0, 7)}`;
 });
 const gitCommitFE = computed(() => {
-  const commitHash = import.meta.env.BB_GIT_COMMIT_ID_FE as string | undefined;
+  const commitHash = import.meta.env.GIT_COMMIT as string | undefined;
   return (commitHash ?? "unknown").substring(0, 7);
 });
 </script>

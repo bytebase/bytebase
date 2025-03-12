@@ -25,10 +25,7 @@ RUN go mod download
 ARG TARGETARCH
 ARG VERSION="development"
 ARG VERSION_SUFFIX=""
-ARG GO_VERSION="1.24.0"
 ARG GIT_COMMIT="unknown"
-ARG BUILD_TIME="unknown"
-ARG BUILD_USER="unknown"
 ARG PRODUCT_ID="prod-n4dmmye4e6hjo"
 
 ARG RELEASE="release"
@@ -57,7 +54,7 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then \
     fi && \
     VERSION=`cat ./scripts/VERSION`${VERSION_SUFFIX} && CGO_ENABLED=1 GOOS=linux GOARCH=$TARGETARCH CC=$CC CC_FOR_TARGET=$CC_FOR_TARGET go build \
     --tags "${RELEASE},embed_frontend,aws" \
-    -ldflags="-w -s -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.version=${VERSION}' -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.goversion=${GO_VERSION}' -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.gitcommit=${GIT_COMMIT}' -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.buildtime=${BUILD_TIME}' -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.builduser=${BUILD_USER}'" \
+    -ldflags="-w -s -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.version=${VERSION}' -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.gitcommit=${GIT_COMMIT}'" \
     -o bytebase \
     ./backend/bin/server/main.go
 
@@ -82,14 +79,10 @@ FROM debian:bookworm-slim as monolithic
 ARG TARGETARCH
 ARG VERSION="development"
 ARG GIT_COMMIT="unknown"
-ARG BUILD_TIME="unknown"
-ARG BUILD_USER="unknown"
 
 # See https://github.com/opencontainers/image-spec/blob/master/annotations.md
 LABEL org.opencontainers.image.version=${VERSION}
 LABEL org.opencontainers.image.revision=${GIT_COMMIT}
-LABEL org.opencontainers.image.created=${BUILD_TIME}
-LABEL org.opencontainers.image.authors=${BUILD_USER}
 
 # Create user "bytebase" for running Postgres database and server.
 RUN addgroup --gid 113 --system bytebase && adduser --uid 113 --system bytebase && adduser bytebase bytebase
