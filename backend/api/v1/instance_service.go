@@ -666,7 +666,7 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 					}
 				default:
 				}
-			}else {
+			} else {
 				dataSource.IamExtension = nil
 			}
 		default:
