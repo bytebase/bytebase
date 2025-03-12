@@ -1,7 +1,5 @@
 <template>
-  <div v-if="templateList.length === 0" class="bg-white rounded-lg">
-    <NoDataPlaceholder />
-  </div>
+  <NEmpty v-if="templateList.length === 0" class="py-12 border rounded" />
   <div v-else class="flex">
     <div
       class="hidden sm:flex w-1/5 max-w-xs flex-col space-y-3 border-r mr-5 pr-5"
@@ -41,12 +39,11 @@
 </template>
 
 <script lang="ts" setup>
-import { NCheckbox } from "naive-ui";
+import { NCheckbox, NEmpty } from "naive-ui";
 import { reactive, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import type { Engine } from "@/types/proto/v1/common";
 import type { SchemaTemplateSetting_TableTemplate } from "@/types/proto/v1/setting_service";
-import NoDataPlaceholder from "../misc/NoDataPlaceholder.vue";
 import TableTemplateTable from "./TableTemplateTable.vue";
 
 interface LocalState {
