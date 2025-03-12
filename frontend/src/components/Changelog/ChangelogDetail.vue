@@ -1,6 +1,6 @@
 <template>
   <div class="focus:outline-none" tabindex="0" v-bind="$attrs">
-    <NoPermissionPlaceholder v-if="!hasPermission" />
+    <NoPermissionPlaceholder v-if="!hasPermission" class="py-6" />
     <div
       v-if="state.loading"
       class="flex items-center justify-center py-2 text-gray-400 text-sm"
