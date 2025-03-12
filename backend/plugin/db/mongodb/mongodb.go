@@ -24,6 +24,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/resources/mongoutil"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -52,7 +53,7 @@ func newDriver(dc db.DriverConfig) db.Driver {
 func (driver *Driver) Open(ctx context.Context, _ storepb.Engine, connCfg db.ConnectionConfig) (db.Driver, error) {
 	connectionURI := getBasicMongoDBConnectionURI(connCfg)
 	opts := options.Client().ApplyURI(connectionURI)
-	tlscfg, err := db.GetTLSConfig(connCfg.DataSource)
+	tlscfg, err := util.GetTLSConfig(connCfg.DataSource)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get SSL config")
 	}

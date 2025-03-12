@@ -23,7 +23,6 @@
               :autofocus="false"
               :placeholder="$t('database.filter-database')"
               :scope-options="scopeOptions"
-              :readonly-scopes="readonlyScopes"
             />
           </div>
 
@@ -171,7 +170,11 @@ const schemaEditorContext = ref<{
 });
 
 const readonlyScopes = computed((): SearchScope[] => [
-  { id: "project", value: extractProjectResourceName(props.projectName) },
+  {
+    id: "project",
+    value: extractProjectResourceName(props.projectName),
+    readonly: true,
+  },
 ]);
 
 const state = reactive<LocalState>({
