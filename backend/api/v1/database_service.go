@@ -1287,8 +1287,19 @@ func (s *DatabaseService) GetSchemaString(ctx context.Context, request *v1pb.Get
 		}
 		return &v1pb.GetSchemaStringResponse{SchemaString: s}, nil
 	case v1pb.GetSchemaStringRequest_PROCEDURE:
-		// TODO: implement.
-		return nil, status.Errorf(codes.Unimplemented, "PROCEDURE is not supported yet")
+		schemaMetadata := dbSchema.GetDatabaseMetadata().GetSchema(request.Schema)
+		if schemaMetadata == nil {
+			return nil, status.Errorf(codes.NotFound, "schema %q not found", request.Schema)
+		}
+		procedureMetadata := schemaMetadata.GetProcedure(request.Object)
+		if procedureMetadata == nil {
+			return nil, status.Errorf(codes.NotFound, "procedure %q not found", request.Object)
+		}
+		s, err := schema.GetProcedureDefinition(instance.Metadata.Engine, request.Schema, procedureMetadata.GetProto())
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "Failed to get procedure schema: %v", err)
+		}
+		return &v1pb.GetSchemaStringResponse{SchemaString: s}, nil
 	case v1pb.GetSchemaStringRequest_SEQUENCE:
 		schemaMetadata := dbSchema.GetDatabaseMetadata().GetSchema(request.Schema)
 		if schemaMetadata == nil {
