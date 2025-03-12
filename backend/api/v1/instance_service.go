@@ -1221,7 +1221,7 @@ func convertV1DataSource(dataSource *v1pb.DataSource) (*storepb.DataSource, erro
 		MasterPassword:           dataSource.MasterPassword,
 	}
 	if v := dataSource.IamExtension; v != nil {
-		if _, ok := v.(*v1pb.DataSource_ClientSecretCredential_); !ok {
+		if _, ok := v.(*v1pb.DataSource_ClientSecretCredential_); ok {
 			storeDataSource.IamExtension = &storepb.DataSource_ClientSecretCredential_{ClientSecretCredential: convertV1ClientSecretCredential(dataSource.GetClientSecretCredential())}
 		}
 	}
