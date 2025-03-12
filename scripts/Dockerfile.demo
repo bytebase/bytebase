@@ -1,10 +1,6 @@
-# This script is for PR preview and demo.bytebase.com on Render ONLY.
-
 FROM node:22.12.0 as frontend
 
-# RENDER_GIT_COMMIT is a render.com provided env var during build.
-# https://render.com/docs/environment-variables
-ARG RENDER_GIT_COMMIT="unknown"
+ARG GIT_COMMIT="unknown"
 ARG RELEASE="dev"
 
 RUN npm i -g pnpm
@@ -13,19 +9,14 @@ WORKDIR /frontend-build
 
 COPY . .
 
-ENV BB_GIT_COMMIT_ID_FE="${RENDER_GIT_COMMIT}"
+ENV GIT_COMMIT="${GIT_COMMIT}"
 RUN cd frontend && pnpm install --frozen-lockfile && pnpm release-docker
 
 FROM golang:1.24.0 as backend
 ADD go.mod go.sum /
 RUN go mod download
 
-ARG GO_VERSION="1.24.0"
-# RENDER_GIT_COMMIT is a render.com provided env var during build.
-# https://render.com/docs/environment-variables
-ARG RENDER_GIT_COMMIT="unknown"
-ARG BUILD_TIME="unknown"
-ARG BUILD_USER="unknown"
+ARG GIT_COMMIT="unknown"
 ARG RELEASE="dev"
 
 # Need gcc for CGO_ENABLED=1
@@ -45,7 +36,7 @@ COPY ./scripts/VERSION .
 # go-sqlite3 requires CGO_ENABLED
 RUN VERSION=`cat ./VERSION` && CGO_ENABLED=1 go build \
         --tags "${RELEASE},embed_frontend,minidemo,docker" \
-        -ldflags="-w -s -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.version=${VERSION}' -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.goversion=${GO_VERSION}' -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.gitcommit=${RENDER_GIT_COMMIT}' -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.buildtime=${BUILD_TIME}' -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.builduser=${BUILD_USER}'" \
+        -ldflags="-w -s -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.version=${VERSION}' -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.gitcommit=${GIT_COMMIT}'" \
         -o bytebase \
         ./backend/bin/server/main.go
 
@@ -68,15 +59,11 @@ RUN tar -Jxf /tmp/bytebase/resources/postgres/postgres-linux-${TARGETARCH}.txz -
 FROM debian:bookworm-slim as monolithic
 
 ARG VERSION="development"
-ARG RENDER_GIT_COMMIT="unknown"
-ARG BUILD_TIME="unknown"
-ARG BUILD_USER="unknown"
+ARG GIT_COMMIT="unknown"
 
 # See https://github.com/opencontainers/image-spec/blob/master/annotations.md
 LABEL org.opencontainers.image.version=${VERSION}
-LABEL org.opencontainers.image.revision=${RENDER_GIT_COMMIT}
-LABEL org.opencontainers.image.created=${BUILD_TIME}
-LABEL org.opencontainers.image.authors=${BUILD_USER}
+LABEL org.opencontainers.image.revision=${GIT_COMMIT}
 
 # Create user "bytebase" for running Postgres database and server.
 RUN addgroup --gid 113 --system bytebase && adduser --uid 113 --system bytebase && adduser bytebase bytebase
