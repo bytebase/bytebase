@@ -31,6 +31,21 @@ const (
 	setTimezone           = "SET time_zone = "
 	delimiterDoubleSemi   = "DELIMITER ;;\n"
 	delimiterSemi         = "DELIMITER ;\n"
+
+	mysqlTypeBlob       = "blob"
+	mysqlTypeTinyBob    = "tinyblob"
+	mysqlTypeMediumBlob = "mediumblob"
+	mysqlTypeLongBlob   = "longblob"
+	mysqlTypeJSON       = "json"
+	mysqlTypeGeometry   = "geometry"
+
+	mysqlIndexFullText = "FULLTEXT"
+	mysqlIndexSpatial  = "SPATIAL"
+
+	mysqlNoAction = "NO ACTION"
+
+	autoIncrementSymbol = "AUTO_INCREMENT"
+	autoRandSymbol      = "AUTO_RANDOM"
 )
 
 func init() {
@@ -830,6 +845,56 @@ func printPartitionClause(buf *strings.Builder, partitions []*storepb.TableParti
 	}
 
 	if _, err := fmt.Fprintf(buf, " */"); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func getPrepositionByType(tp storepb.TablePartitionMetadata_Type) (string, error) {
+	switch tp {
+	case storepb.TablePartitionMetadata_RANGE:
+		return "LESS THAN", nil
+	case storepb.TablePartitionMetadata_RANGE_COLUMNS:
+		return "LESS THAN", nil
+	case storepb.TablePartitionMetadata_LIST:
+		return "IN", nil
+	case storepb.TablePartitionMetadata_LIST_COLUMNS:
+		return "IN", nil
+	case storepb.TablePartitionMetadata_HASH, storepb.TablePartitionMetadata_KEY, storepb.TablePartitionMetadata_LINEAR_HASH, storepb.TablePartitionMetadata_LINEAR_KEY:
+		return "", nil
+	default:
+		return "", errors.Errorf("unsupported partition type: %v", tp)
+	}
+}
+
+func writePartitionOptions(buf io.StringWriter) error {
+	/*
+		int err = 0;
+		err += add_space(fptr);
+		if (p_elem->tablespace_name) {
+			err += add_string(fptr, "TABLESPACE = ");
+			err += add_ident_string(fptr, p_elem->tablespace_name);
+			err += add_space(fptr);
+		}
+		if (p_elem->nodegroup_id != UNDEF_NODEGROUP)
+			err += add_keyword_int(fptr, "NODEGROUP", (longlong)p_elem->nodegroup_id);
+		if (p_elem->part_max_rows)
+			err += add_keyword_int(fptr, "MAX_ROWS", (longlong)p_elem->part_max_rows);
+		if (p_elem->part_min_rows)
+			err += add_keyword_int(fptr, "MIN_ROWS", (longlong)p_elem->part_min_rows);
+		if (!(current_thd->variables.sql_mode & MODE_NO_DIR_IN_CREATE)) {
+			if (p_elem->data_file_name)
+			err += add_keyword_path(fptr, "DATA DIRECTORY", p_elem->data_file_name);
+			if (p_elem->index_file_name)
+			err += add_keyword_path(fptr, "INDEX DIRECTORY", p_elem->index_file_name);
+		}
+		if (p_elem->part_comment)
+			err += add_keyword_string(fptr, "COMMENT", true, p_elem->part_comment);
+		return err + add_engine(fptr, p_elem->engine_type);
+	*/
+	// TODO(zp): Get all the partition options from the metadata is too complex, just write ENGINE=InnoDB for now.
+	if _, err := buf.WriteString(" ENGINE=InnoDB"); err != nil {
 		return err
 	}
 

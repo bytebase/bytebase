@@ -1203,6 +1203,28 @@ func (s *DatabaseService) GetSchemaString(ctx context.Context, request *v1pb.Get
 		return nil, status.Errorf(codes.Internal, "Failed to get database schema: %v", err)
 	}
 
+	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+		InstanceID:   &instanceID,
+		DatabaseName: &databaseName,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "Failed to get database: %v", err)
+	}
+	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+		ResourceID: &database.ProjectID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "Failed to get project: %v", err)
+	}
+	if project != nil {
+		config, err := s.store.GetDataClassificationConfigByID(ctx, project.DataClassificationConfigID)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "Failed to get data classification config: %v", err)
+		}
+		if config != nil && config.ClassificationFromConfig {
+		}
+	}
+
 	switch request.Type {
 	case v1pb.GetSchemaStringRequest_DATABASE:
 		metadata := dbSchema.GetMetadata()
