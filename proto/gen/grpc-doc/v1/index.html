@@ -435,10 +435,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.SyncSlowQueriesRequest"><span class="badge">M</span>SyncSlowQueriesRequest</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.UndeleteInstanceRequest"><span class="badge">M</span>UndeleteInstanceRequest</a>
                 </li>
               
@@ -5267,32 +5263,6 @@ the instance metadata (such as the database list) and any newly discovered insta
 
         
       
-        <h3 id="bytebase.v1.SyncSlowQueriesRequest">SyncSlowQueriesRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>parent</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The name of the instance to sync slow queries.
-Format: instances/{instance} for one instance
-     or projects/{project} for one project. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.v1.UndeleteInstanceRequest">UndeleteInstanceRequest</h3>
         <p></p>
 
@@ -5694,13 +5664,6 @@ Format: instances/{instance} </p></td>
                 <td><p></p></td>
               </tr>
             
-              <tr>
-                <td>SyncSlowQueries</td>
-                <td><a href="#bytebase.v1.SyncSlowQueriesRequest">SyncSlowQueriesRequest</a></td>
-                <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
-                <td><p></p></td>
-              </tr>
-            
           </tbody>
         </table>
 
@@ -5835,23 +5798,6 @@ Format: instances/{instance} </p></td>
                 <td>UpdateDataSource</td>
                 <td>PATCH</td>
                 <td>/v1/{name=instances/*}:updateDataSource</td>
-                <td>*</td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>SyncSlowQueries</td>
-                <td>POST</td>
-                <td>/v1/{parent=instances/*}:syncSlowQueries</td>
-                <td>*</td>
-              </tr>
-              
-              <tr>
-                <td>SyncSlowQueries</td>
-                <td>POST</td>
-                <td>/v1/{parent=projects/*}:syncSlowQueries</td>
                 <td>*</td>
               </tr>
               
