@@ -59,6 +59,8 @@ func (driver *Driver) Open(_ context.Context, _ storepb.Engine, config db.Connec
 	query.Add("app name", "bytebase")
 	if config.ConnectionContext.DatabaseName != "" {
 		query.Add("database", config.ConnectionContext.DatabaseName)
+	} else if config.DataSource.Database != "" {
+		query.Add("database", config.DataSource.Database)
 	}
 
 	// In order to be compatible with db servers that only support old versions of tls.

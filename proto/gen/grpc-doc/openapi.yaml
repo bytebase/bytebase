@@ -3016,34 +3016,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
-    /v1/instances/{instance}:syncSlowQueries:
-        post:
-            tags:
-                - InstanceService
-            operationId: InstanceService_SyncSlowQueries
-            parameters:
-                - name: instance
-                  in: path
-                  description: The instance id.
-                  required: true
-                  schema:
-                    type: string
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/SyncSlowQueriesRequest'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content: {}
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
     /v1/instances/{instance}:undelete:
         post:
             tags:
@@ -6258,34 +6230,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/IamPolicy'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
-    /v1/projects/{project}:syncSlowQueries:
-        post:
-            tags:
-                - InstanceService
-            operationId: InstanceService_SyncSlowQueries
-            parameters:
-                - name: project
-                  in: path
-                  description: The project id.
-                  required: true
-                  schema:
-                    type: string
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/SyncSlowQueriesRequest'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content: {}
                 default:
                     description: Default error response
                     content:
@@ -13092,17 +13036,6 @@ components:
                     items:
                         type: string
                     description: All database name list in the instance.
-        SyncSlowQueriesRequest:
-            required:
-                - parent
-            type: object
-            properties:
-                parent:
-                    type: string
-                    description: |-
-                        The name of the instance to sync slow queries.
-                         Format: instances/{instance} for one instance
-                              or projects/{project} for one project.
         TableCatalog:
             type: object
             properties:

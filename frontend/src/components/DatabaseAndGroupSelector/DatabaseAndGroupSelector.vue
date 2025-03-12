@@ -7,7 +7,6 @@
         :autofocus="false"
         :placeholder="$t('database.filter-database')"
         :scope-options="scopeOptions"
-        :readonly-scopes="readonlyScopes"
       />
       <PagedDatabaseTable
         mode="PROJECT"
@@ -71,7 +70,11 @@ const emit = defineEmits<{
 }>();
 
 const readonlyScopes = computed((): SearchScope[] => [
-  { id: "project", value: extractProjectResourceName(props.project.name) },
+  {
+    id: "project",
+    value: extractProjectResourceName(props.project.name),
+    readonly: true,
+  },
 ]);
 
 const searchParams = ref<SearchParams>({
