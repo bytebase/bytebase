@@ -54,7 +54,10 @@
         url="https://www.bytebase.com/docs/security/data-masking/overview/?source=console"
       />
     </div>
-    <NoDataPlaceholder v-if="state.maskingRuleItemList.length === 0" />
+    <NEmpty
+      class="py-12 border rounded"
+      v-if="state.maskingRuleItemList.length === 0"
+    />
     <div
       v-for="(item, index) in state.maskingRuleItemList"
       :key="item.rule.id"
@@ -116,7 +119,7 @@ import {
   ChevronDownIcon,
   ListOrderedIcon,
 } from "lucide-vue-next";
-import { NButton, type SelectOption } from "naive-ui";
+import { NButton, NEmpty, type SelectOption } from "naive-ui";
 import { v4 as uuidv4 } from "uuid";
 import { computed, reactive, nextTick, onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
@@ -142,7 +145,6 @@ import {
 } from "@/types/proto/v1/org_policy_service";
 import { arraySwap, hasWorkspacePermissionV2 } from "@/utils";
 import LearnMoreLink from "../LearnMoreLink.vue";
-import NoDataPlaceholder from "../misc/NoDataPlaceholder.vue";
 import { MiniActionButton } from "../v2";
 import MaskingRuleConfig from "./components/MaskingRuleConfig.vue";
 import {

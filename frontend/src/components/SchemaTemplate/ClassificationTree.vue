@@ -21,15 +21,7 @@
       :node-props="nodeProps"
       :virtual-scroll="false"
       :theme-overrides="{ nodeHeight: '21px' }"
-    >
-      <template #empty>
-        <NoDataPlaceholder
-          class="!border-0"
-          :img-attrs="{ class: '!max-h-[10vh]' }"
-        >
-        </NoDataPlaceholder>
-      </template>
-    </NTree>
+    />
   </div>
 </template>
 
@@ -39,7 +31,6 @@ import { NTree } from "naive-ui";
 import { computed, reactive, h } from "vue";
 import type { DataClassificationSetting_DataClassificationConfig } from "@/types/proto/v1/setting_service";
 import { getHighlightHTMLByKeyWords } from "@/utils";
-import NoDataPlaceholder from "../misc/NoDataPlaceholder.vue";
 import { SearchBox } from "../v2";
 import ClassificationLevelBadge from "./ClassificationLevelBadge.vue";
 
