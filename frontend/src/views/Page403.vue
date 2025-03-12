@@ -1,24 +1,22 @@
 <template>
-  <!-- This example requires Tailwind CSS v2.0+ -->
-  <div class="bg-white px-4 sm:px-6 md:grid md:place-items-center lg:px-8">
-    <div class="max-w-max mx-auto">
-      <main class="sm:flex">
-        <div class="sm:ml-6">
-          <div
-            class="mt-6 flex space-x-3 sm:border-l sm:border-transparent sm:pl-6"
-          >
-            <NButton type="primary" @click.prevent="goHome">
-              {{ $t("error-page.go-back-home") }}
-            </NButton>
-          </div>
-        </div>
-      </main>
+  <div class="w-full px-4 md:grid md:place-items-center py-24">
+    <img
+      class="w-16 h-auto opacity-80"
+      src="@/assets/logo-icon.svg"
+      alt="Bytebase"
+    />
+    <p class="mt-4">{{ $t("common.missing-required-permission") }}</p>
+    <div class="mt-12">
+      <NButton size="small" @click.prevent="goHome">
+        <template #icon><ChevronLeftIcon /></template>
+        {{ $t("error-page.go-back-home") }}
+      </NButton>
     </div>
-    <img class="overflow-hidden" src="../assets/illustration/403.webp" alt="" />
   </div>
 </template>
 
 <script lang="ts" setup>
+import { ChevronLeftIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { useRouter } from "vue-router";
 import { WORKSPACE_ROOT_MODULE } from "@/router/dashboard/workspaceRoutes";
