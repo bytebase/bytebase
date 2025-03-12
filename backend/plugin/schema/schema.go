@@ -20,7 +20,8 @@ var (
 	getViewDefinitions             = make(map[storepb.Engine]getViewDefinition)
 	getMaterializedViewDefinitions = make(map[storepb.Engine]getMaterializedViewDefinition)
 	getFunctionDefinitions         = make(map[storepb.Engine]getFunctionDefinition)
-	GetSequenceDefinitions         = make(map[storepb.Engine]getSequenceDefinition)
+	getProcedureDefinitions        = make(map[storepb.Engine]getProcedureDefinition)
+	getSequenceDefinitions         = make(map[storepb.Engine]getSequenceDefinition)
 )
 
 type getDesignSchema func(*storepb.DatabaseSchemaMetadata) (string, error)
@@ -32,6 +33,7 @@ type getTableDefinition func(string, *storepb.TableMetadata, []*storepb.Sequence
 type getViewDefinition func(string, *storepb.ViewMetadata) (string, error)
 type getMaterializedViewDefinition func(string, *storepb.MaterializedViewMetadata) (string, error)
 type getFunctionDefinition func(string, *storepb.FunctionMetadata) (string, error)
+type getProcedureDefinition func(string, *storepb.ProcedureMetadata) (string, error)
 type getSequenceDefinition func(string, *storepb.SequenceMetadata) (string, error)
 
 type GetDefinitionContext struct {
@@ -42,14 +44,14 @@ type GetDefinitionContext struct {
 func RegisterGetSequenceDefinition(engine storepb.Engine, f getSequenceDefinition) {
 	mux.Lock()
 	defer mux.Unlock()
-	if _, dup := GetSequenceDefinitions[engine]; dup {
+	if _, dup := getSequenceDefinitions[engine]; dup {
 		panic(fmt.Sprintf("Register called twice %s", engine))
 	}
-	GetSequenceDefinitions[engine] = f
+	getSequenceDefinitions[engine] = f
 }
 
 func GetSequenceDefinition(engine storepb.Engine, sequenceName string, sequence *storepb.SequenceMetadata) (string, error) {
-	f, ok := GetSequenceDefinitions[engine]
+	f, ok := getSequenceDefinitions[engine]
 	if !ok {
 		return "", errors.Errorf("engine %s is not supported", engine)
 	}
@@ -71,6 +73,23 @@ func GetFunctionDefinition(engine storepb.Engine, functionName string, function 
 		return "", errors.Errorf("engine %s is not supported", engine)
 	}
 	return f(functionName, function)
+}
+
+func RegisterGetProcedureDefinition(engine storepb.Engine, f getProcedureDefinition) {
+	mux.Lock()
+	defer mux.Unlock()
+	if _, dup := getProcedureDefinitions[engine]; dup {
+		panic(fmt.Sprintf("Register called twice %s", engine))
+	}
+	getProcedureDefinitions[engine] = f
+}
+
+func GetProcedureDefinition(engine storepb.Engine, procedureName string, procedure *storepb.ProcedureMetadata) (string, error) {
+	f, ok := getProcedureDefinitions[engine]
+	if !ok {
+		return "", errors.Errorf("engine %s is not supported", engine)
+	}
+	return f(procedureName, procedure)
 }
 
 func RegisterGetMaterializedViewDefinition(engine storepb.Engine, f getMaterializedViewDefinition) {
