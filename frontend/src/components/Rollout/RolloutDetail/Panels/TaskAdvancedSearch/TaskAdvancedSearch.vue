@@ -2,7 +2,6 @@
   <AdvancedSearch
     class="flex-1"
     :params="params"
-    :readonly-scopes="readonlyScopes"
     :scope-options="scopeOptions"
     @update:params="$emit('update:params', $event)"
   />
@@ -15,19 +14,13 @@ import { useI18n } from "vue-i18n";
 import AdvancedSearch from "@/components/AdvancedSearch";
 import type { ScopeOption } from "@/components/AdvancedSearch/types";
 import { Task_Status } from "@/types/proto/v1/rollout_service";
-import { type SearchParams, type SearchScope } from "@/utils";
+import { type SearchParams } from "@/utils";
 import { useRolloutDetailContext } from "../../context";
 import { databaseForTask } from "../../utils";
 
-withDefaults(
-  defineProps<{
-    params: SearchParams;
-    readonlyScopes?: SearchScope[];
-  }>(),
-  {
-    readonlyScopes: () => [],
-  }
-);
+defineProps<{
+  params: SearchParams;
+}>();
 
 defineEmits<{
   (event: "update:params", params: SearchParams): void;
@@ -112,37 +105,37 @@ const scopeOptions = computed((): ScopeOption[] => {
         Task_Status.CANCELED,
         Task_Status.SKIPPED,
       ].map((status) => {
-      let statusTitle;
-      switch (status) {
-        case Task_Status.NOT_STARTED:
-        statusTitle = t("task.status.not-started");
-        break;
-        case Task_Status.PENDING:
-        statusTitle = t("task.status.pending");
-        break;
-        case Task_Status.RUNNING:
-        statusTitle = t("task.status.running");
-        break;
-        case Task_Status.DONE:
-        statusTitle = t("task.status.done");
-        break;
-        case Task_Status.FAILED:
-        statusTitle = t("task.status.failed");
-        break;
-        case Task_Status.CANCELED:
-        statusTitle = t("task.status.canceled");
-        break;
-        case Task_Status.SKIPPED:
-        statusTitle = t("task.status.skipped");
-        break;
-        default:
-        statusTitle = status;
-      }
-      return {
-        value: status,
-        keywords: [status],
-        render: () => statusTitle,
-      };
+        let statusTitle;
+        switch (status) {
+          case Task_Status.NOT_STARTED:
+            statusTitle = t("task.status.not-started");
+            break;
+          case Task_Status.PENDING:
+            statusTitle = t("task.status.pending");
+            break;
+          case Task_Status.RUNNING:
+            statusTitle = t("task.status.running");
+            break;
+          case Task_Status.DONE:
+            statusTitle = t("task.status.done");
+            break;
+          case Task_Status.FAILED:
+            statusTitle = t("task.status.failed");
+            break;
+          case Task_Status.CANCELED:
+            statusTitle = t("task.status.canceled");
+            break;
+          case Task_Status.SKIPPED:
+            statusTitle = t("task.status.skipped");
+            break;
+          default:
+            statusTitle = status;
+        }
+        return {
+          value: status,
+          keywords: [status],
+          render: () => statusTitle,
+        };
       }),
     },
   ];

@@ -5,7 +5,6 @@
         v-model:value="state.searchText"
         style="max-width: 100%"
         :placeholder="$t('common.filter-by-name')"
-        :autofocus="true"
       />
       <NButton
         v-if="hasWorkspacePermissionV2('bb.projects.create')"

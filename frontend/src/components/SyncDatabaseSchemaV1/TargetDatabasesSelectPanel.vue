@@ -17,7 +17,6 @@
         :autofocus="false"
         :placeholder="$t('database.filter-database')"
         :scope-options="scopeOptions"
-        :readonly-scopes="readonlyScopes"
       />
 
       <PagedDatabaseTable
@@ -70,7 +69,7 @@
 
 <script setup lang="ts">
 import { NButton, NTooltip } from "naive-ui";
-import { computed, reactive } from "vue";
+import { computed, reactive, watch } from "vue";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { useDatabaseV1Store } from "@/store";
 import {
@@ -97,7 +96,11 @@ const props = defineProps<{
 }>();
 
 const readonlyScopes = computed((): SearchScope[] => [
-  { id: "project", value: extractProjectResourceName(props.project) },
+  {
+    id: "project",
+    value: extractProjectResourceName(props.project),
+    readonly: true,
+  },
 ]);
 
 const emit = defineEmits<{
@@ -114,6 +117,16 @@ const state = reactive<LocalState>({
     scopes: [...readonlyScopes.value],
   },
 });
+
+watch(
+  () => props.project,
+  () => {
+    state.params = {
+      query: "",
+      scopes: [...readonlyScopes.value],
+    };
+  }
+);
 
 const scopeOptions = useCommonSearchScopeOptions(
   computed(() => state.params),

@@ -1,3 +1,4 @@
+<!-- TODO(steven): remove me later please -->
 <template>
   <div
     :class="[
@@ -7,11 +8,7 @@
   >
     <div class="text-center flex flex-col justify-center items-center">
       <slot name="image">
-        <img
-          src="@/assets/illustration/no-data.webp"
-          class="!w-auto max-h-[20vh]"
-          v-bind="imgAttrs"
-        />
+        <NEmpty />
       </slot>
     </div>
     <slot />
@@ -19,6 +16,7 @@
 </template>
 
 <script lang="ts" setup>
+import { NEmpty } from "naive-ui";
 import type { HTMLAttributes } from "vue";
 
 withDefaults(

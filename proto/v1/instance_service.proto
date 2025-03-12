@@ -126,21 +126,6 @@ service InstanceService {
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
   }
-
-  rpc SyncSlowQueries(SyncSlowQueriesRequest) returns (google.protobuf.Empty) {
-    option (google.api.http) = {
-      post: "/v1/{parent=instances/*}:syncSlowQueries"
-      body: "*"
-
-      additional_bindings: {
-        post: "/v1/{parent=projects/*}:syncSlowQueries"
-        body: "*"
-      }
-    };
-    option (bytebase.v1.permission) = "bb.instances.sync";
-    option (bytebase.v1.auth_method) = IAM;
-    // TODO(d): secure it.
-  }
 }
 
 message GetInstanceRequest {
@@ -316,16 +301,6 @@ message UpdateDataSourceRequest {
 
   // Validate only also tests the data source connection.
   bool validate_only = 4;
-}
-
-message SyncSlowQueriesRequest {
-  // The name of the instance to sync slow queries.
-  // Format: instances/{instance} for one instance
-  //      or projects/{project} for one project.
-  string parent = 1 [
-    (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference) = {child_type: "bytebase.com/Instance"}
-  ];
 }
 
 message Instance {
