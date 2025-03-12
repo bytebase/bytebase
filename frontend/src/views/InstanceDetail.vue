@@ -45,7 +45,6 @@
               :autofocus="false"
               :placeholder="$t('database.filter-database')"
               :scope-options="scopeOptions"
-              :readonly-scopes="readonlyScopes"
             />
           </div>
           <DatabaseOperations
@@ -167,7 +166,7 @@ const databaseChangeMode = useAppFeature("bb.feature.database-change-mode");
 const pagedDatabaseTableRef = ref<InstanceType<typeof PagedDatabaseTable>>();
 
 const readonlyScopes = computed((): SearchScope[] => [
-  { id: "instance", value: props.instanceId },
+  { id: "instance", value: props.instanceId, readonly: true },
 ]);
 
 const state = reactive<LocalState>({

@@ -57,6 +57,7 @@ export type SearchScopeId =
 export type SearchScope = {
   id: SearchScopeId;
   value: string;
+  readonly?: boolean;
 };
 
 export interface SearchParams {
