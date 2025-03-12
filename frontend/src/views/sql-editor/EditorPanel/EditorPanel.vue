@@ -6,7 +6,10 @@
 
         <TerminalPanel v-else-if="currentTab.mode === 'ADMIN'" />
 
-        <AccessDenied v-else />
+        <NoPermissionPlaceholder
+          v-else
+          :description="$t('database.access-denied')"
+        />
       </template>
     </Panels>
   </div>
@@ -14,8 +17,8 @@
 
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
+import NoPermissionPlaceholder from "@/components/misc/NoPermissionPlaceholder.vue";
 import { useSQLEditorTabStore } from "@/store";
-import AccessDenied from "./AccessDenied.vue";
 import Panels from "./Panels";
 import StandardPanel from "./StandardPanel";
 import TerminalPanel from "./TerminalPanel";
