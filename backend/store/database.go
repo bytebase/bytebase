@@ -149,7 +149,7 @@ func (s *Store) CreateDatabaseDefault(ctx context.Context, create *DatabaseMessa
 }
 
 // createDatabaseDefault only creates a default database with charset, collation only in the default project.
-func (*Store) createDatabaseDefaultImpl(ctx context.Context, tx *Tx, projectID, instanceID string, create *DatabaseMessage) (int, error) {
+func (*Store) createDatabaseDefaultImpl(ctx context.Context, txn *sql.Tx, projectID, instanceID string, create *DatabaseMessage) (int, error) {
 	query := `
 		INSERT INTO db (
 			instance,
@@ -162,7 +162,7 @@ func (*Store) createDatabaseDefaultImpl(ctx context.Context, tx *Tx, projectID, 
 			deleted = EXCLUDED.deleted
 		RETURNING id`
 	var databaseUID int
-	if err := tx.QueryRowContext(ctx, query,
+	if err := txn.QueryRowContext(ctx, query,
 		instanceID,
 		projectID,
 		create.DatabaseName,
@@ -347,7 +347,7 @@ func (s *Store) BatchUpdateDatabases(ctx context.Context, databases []*DatabaseM
 	return updatedDatabases, nil
 }
 
-func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabaseMessage) ([]*DatabaseMessage, error) {
+func (*Store) listDatabaseImplV2(ctx context.Context, txn *sql.Tx, find *FindDatabaseMessage) ([]*DatabaseMessage, error) {
 	where, args := []string{"TRUE"}, []any{}
 	if filter := find.Filter; filter != nil {
 		where = append(where, filter.Where)
@@ -427,7 +427,7 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 	}
 
 	var databaseMessages []*DatabaseMessage
-	rows, err := tx.QueryContext(ctx, query,
+	rows, err := txn.QueryContext(ctx, query,
 		args...,
 	)
 	if err != nil {

@@ -1063,6 +1063,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.AppIMSetting.DingTalk"><span class="badge">M</span>AppIMSetting.DingTalk</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.AppIMSetting.Feishu"><span class="badge">M</span>AppIMSetting.Feishu</a>
                 </li>
               
@@ -12634,6 +12638,58 @@ But frontend can be started with a single rule easily. </p></td>
                   <td><p> </p></td>
                 </tr>
               
+                <tr>
+                  <td>dingtalk</td>
+                  <td><a href="#bytebase.v1.AppIMSetting.DingTalk">AppIMSetting.DingTalk</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.AppIMSetting.DingTalk">AppIMSetting.DingTalk</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>enabled</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>client_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>client_secret</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>robot_code</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -22646,6 +22702,14 @@ the call that provided the page token. </p></td>
                   <td><p>Show deleted projects if specified. </p></td>
                 </tr>
               
+                <tr>
+                  <td>filter</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Filter the project.
+Check filter for SearchProjectsRequest for details. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -22851,6 +22915,7 @@ If enabled, the issue will be created with the pre-appended &#34;set role &lt;db
 Supported filters:
 - name
 - resource_id
+- exclude_default: if not include the default project.
 
 For example:
 name = &#34;project name&#34;
@@ -22858,7 +22923,8 @@ name.matches(&#34;project name&#34;)
 resource_id = &#34;project id&#34;
 resource_id.matches(&#34;project id&#34;)
 name = &#34;project name&#34; &amp;&amp; resource_id.matches(&#34;project id&#34;)
-name.matches(&#34;project name&#34;) || resource_id = &#34;project id&#34; </p></td>
+name.matches(&#34;project name&#34;) || resource_id = &#34;project id&#34;
+exclude_default == true </p></td>
                 </tr>
               
             </tbody>

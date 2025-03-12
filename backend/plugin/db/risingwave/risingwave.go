@@ -62,8 +62,6 @@ func newDriver(config db.DriverConfig) db.Driver {
 
 // Open opens a RisingWave driver.
 func (driver *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
-	// Require username for Postgres, as the guessDSN 1st guess is to use the username as the connecting database
-	// if database name is not explicitly specified.
 	if config.DataSource.Username == "" {
 		return nil, errors.Errorf("user must be set")
 	}
@@ -108,7 +106,7 @@ func (driver *Driver) Open(_ context.Context, _ storepb.Engine, config db.Connec
 			if err != nil {
 				return nil, err
 			}
-			return &noDeadlineConn{Conn: conn}, nil
+			return &util.NoDeadlineConn{Conn: conn}, nil
 		}
 	}
 	if config.ConnectionContext.ReadOnly {
@@ -117,12 +115,7 @@ func (driver *Driver) Open(_ context.Context, _ storepb.Engine, config db.Connec
 
 	driver.databaseName = config.ConnectionContext.DatabaseName
 	if config.ConnectionContext.DatabaseName == "" {
-		databaseName, cfg, err := guessDSN(pgxConnConfig)
-		if err != nil {
-			return nil, err
-		}
-		pgxConnConfig = cfg
-		driver.databaseName = databaseName
+		pgxConnConfig.Database = "postgres"
 	}
 	driver.config = config
 
@@ -133,37 +126,6 @@ func (driver *Driver) Open(_ context.Context, _ storepb.Engine, config db.Connec
 	}
 	driver.db = db
 	return driver, nil
-}
-
-type noDeadlineConn struct{ net.Conn }
-
-func (*noDeadlineConn) SetDeadline(time.Time) error      { return nil }
-func (*noDeadlineConn) SetReadDeadline(time.Time) error  { return nil }
-func (*noDeadlineConn) SetWriteDeadline(time.Time) error { return nil }
-
-// guessDSN will guess a valid DB connection and its database name.
-func guessDSN(baseConnConfig *pgx.ConnConfig) (string, *pgx.ConnConfig, error) {
-	// RisingWave creates the default `dev` database.
-	guesses := []string{"dev"}
-	for _, guessDatabase := range guesses {
-		connConfig := *baseConnConfig
-		connConfig.Database = guessDatabase
-		if err := func() error {
-			connectionString := stdlib.RegisterConnConfig(&connConfig)
-			defer stdlib.UnregisterConnConfig(connectionString)
-			db, err := sql.Open(driverName, connectionString)
-			if err != nil {
-				return err
-			}
-			defer db.Close()
-			return db.Ping()
-		}(); err != nil {
-			slog.Debug("guessDSN attempt failed", log.BBError(err))
-			continue
-		}
-		return guessDatabase, &connConfig, nil
-	}
-	return "", nil, errors.Errorf("cannot connect to the instance, make sure the connection info is correct")
 }
 
 // Close closes the driver.

@@ -40,13 +40,12 @@
 </template>
 
 <script lang="ts" setup>
-import { computedAsync } from "@vueuse/core";
-import { ref, computed } from "vue";
+import { ref, computed, onMounted } from "vue";
 import AdvancedSearch from "@/components/AdvancedSearch";
 import TimeRange from "@/components/AdvancedSearch/TimeRange.vue";
 import { useUserStore } from "@/store";
 import { State, stateToJSON } from "@/types/proto/v1/common";
-import { UserType, userTypeToJSON } from "@/types/proto/v1/user_service";
+import { User, UserType, userTypeToJSON } from "@/types/proto/v1/user_service";
 import type { SearchParams, SearchScope, SearchScopeId } from "@/utils";
 import {
   getDefaultPagination,
@@ -89,14 +88,16 @@ const allowedScopes = computed(() => {
   return [...UIIssueFilterScopeIdList, ...SearchScopeIdList.value];
 });
 
-const activeUserList = computedAsync(async () => {
+const activeUserList = ref<User[]>([]);
+
+onMounted(async () => {
   const { users } = await userStore.fetchUserList({
     pageSize: getDefaultPagination(),
     showDeleted: false,
     filter: `state == "${stateToJSON(State.ACTIVE)}" && user_type == "${userTypeToJSON(UserType.USER)}"`,
   });
-  return users;
-}, []);
+  activeUserList.value = users;
+});
 
 const scopeOptions = useIssueSearchScopeOptions(
   computed(() => props.params),

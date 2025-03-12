@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -111,7 +112,7 @@ func (s *Store) GetUserByEmail(ctx context.Context, email string) (*UserMessage,
 }
 
 func (s *Store) StatUsers(ctx context.Context) ([]*UserStat, error) {
-	rows, err := s.db.db.QueryContext(ctx, `
+	rows, err := s.db.QueryContext(ctx, `
 	SELECT
 		COUNT(*),
 		type,
@@ -191,7 +192,7 @@ func (s *Store) listAndCacheAllUsers(ctx context.Context) ([]*UserMessage, error
 	return users, nil
 }
 
-func listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage) ([]*UserMessage, error) {
+func listUserImpl(ctx context.Context, txn *sql.Tx, find *FindUserMessage) ([]*UserMessage, error) {
 	where, args := []string{"TRUE"}, []any{}
 	if filter := find.Filter; filter != nil {
 		where = append(where, filter.Where)
@@ -237,7 +238,7 @@ func listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage) ([]*UserMe
 	}
 
 	var userMessages []*UserMessage
-	rows, err := tx.QueryContext(ctx, query, args...)
+	rows, err := txn.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}

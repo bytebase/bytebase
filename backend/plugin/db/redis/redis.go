@@ -82,7 +82,7 @@ func (d *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionC
 				if err != nil {
 					return nil, err
 				}
-				return &noDeadlineConn{Conn: conn}, nil
+				return &util.NoDeadlineConn{Conn: conn}, nil
 			}
 		}
 		client := redis.NewClient(options)
@@ -116,7 +116,7 @@ func (d *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionC
 				if err != nil {
 					return nil, err
 				}
-				return &noDeadlineConn{Conn: conn}, nil
+				return &util.NoDeadlineConn{Conn: conn}, nil
 			}
 		}
 		d.databaseName = fmt.Sprintf("%d", db)
@@ -146,7 +146,7 @@ func (d *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionC
 				if err != nil {
 					return nil, err
 				}
-				return &noDeadlineConn{Conn: conn}, nil
+				return &util.NoDeadlineConn{Conn: conn}, nil
 			}
 		}
 		client := redis.NewClusterClient(options)
@@ -159,12 +159,6 @@ func (d *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionC
 
 	return d, nil
 }
-
-type noDeadlineConn struct{ net.Conn }
-
-func (*noDeadlineConn) SetDeadline(time.Time) error      { return nil }
-func (*noDeadlineConn) SetReadDeadline(time.Time) error  { return nil }
-func (*noDeadlineConn) SetWriteDeadline(time.Time) error { return nil }
 
 // Close closes the redis driver.
 func (d *Driver) Close(context.Context) error {

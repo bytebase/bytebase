@@ -822,6 +822,14 @@
         "label": {
           "title": "ラベル",
           "description": "イシュータグで絞り込む"
+        },
+        "database-label": {
+          "title": "ラベル",
+          "description": "\"key\":\"value\"を入力し、Enterを押します。"
+        },
+        "engine": {
+          "title": "エンジン",
+          "description": "エンジンでフィルタリング"
         }
       },
       "hide": "詳細検索を非表示にする"

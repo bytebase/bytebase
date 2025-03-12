@@ -15,7 +15,7 @@ import { ref, watch } from "vue";
 import type { ComponentExposed } from "vue-component-type-helpers";
 import PagedTable from "@/components/v2/Model/PagedTable.vue";
 import { useProjectV1Store } from "@/store";
-import { DEFAULT_PROJECT_NAME, type ComposedProject } from "@/types";
+import { type ComposedProject } from "@/types";
 import ProjectV1Table from "./ProjectV1Table.vue";
 
 const props = defineProps<{
@@ -41,15 +41,11 @@ const fetchProjects = async ({
     pageToken,
     pageSize,
     query: props.search,
+    excludeDefault: !props.includeDefault,
   });
   return {
     nextPageToken: nextPageToken ?? "",
-    list: projects.filter((project) => {
-      if (!props.includeDefault && project.name === DEFAULT_PROJECT_NAME) {
-        return false;
-      }
-      return true;
-    }),
+    list: projects,
   };
 };
 
