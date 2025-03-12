@@ -128,7 +128,7 @@ func (d *Driver) getMySQLConnection(connCfg db.ConnectionConfig) (string, error)
 		protocol = "mysql+tcp"
 	}
 
-	tlscfg, err := db.GetTLSConfig(connCfg.DataSource)
+	tlscfg, err := util.GetTLSConfig(connCfg.DataSource)
 	if err != nil {
 		return "", errors.Wrap(err, "sql: tls config error")
 	}
