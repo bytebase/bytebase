@@ -15,9 +15,7 @@ import (
 )
 
 func startStopServer(ctx context.Context, a *require.Assertions, ctl *controller, dataDir string) {
-	ctx, err := ctl.StartServer(ctx, &config{
-		dataDir: dataDir,
-	})
+	ctx, err := ctl.StartServerWithExternalPg(ctx)
 	a.NoError(err)
 
 	resp, err := ctl.projectServiceClient.ListProjects(ctx, &v1pb.ListProjectsRequest{})
@@ -37,42 +35,39 @@ func TestServerRestart(t *testing.T) {
 	a := require.New(t)
 	ctx := context.Background()
 	ctl := &controller{}
-	dataDir := t.TempDir()
-	// Start server in non-readonly mode to init schema and register user.
-	ctx, err := ctl.StartServer(ctx, &config{
-		dataDir: dataDir,
-	})
+
+	ctx, err := ctl.StartServerWithExternalPg(ctx)
 	a.NoError(err)
 	err = ctl.Close(ctx)
 	a.NoError(err)
 
-	// Start server in readonly mode.
-	startStopServer(ctx, a, ctl, dataDir)
-
-	// Start server in non-readonly mode.
-	startStopServer(ctx, a, ctl, dataDir)
+	ctx, err = ctl.StartServerWithExternalPg(ctx)
+	a.NoError(err)
+	err = ctl.Close(ctx)
+	a.NoError(err)
 }
 
 func TestMain(m *testing.M) {
 	resourceDir = os.TempDir()
-	dir, err := postgres.Install(resourceDir)
-	if err != nil {
+	if _, err := postgres.Install(resourceDir); err != nil {
 		log.Fatal(err)
 	}
-	pgBinDir = dir
 	if _, err := mongoutil.Install(resourceDir); err != nil {
 		log.Fatal(err)
 	}
 
-	dir, err = os.MkdirTemp("", "bbtest-pgdata")
+	ctx := context.Background()
+	pgContainer, err := getPgContainer(ctx)
+	defer func() {
+		pgContainer.Close(ctx)
+	}()
 	if err != nil {
 		log.Fatal(err)
 	}
-	stopInstance := postgres.SetupTestInstance(pgBinDir, dir, externalPgPort)
+	externalPgHost = pgContainer.host
+	externalPgPort = pgContainer.port
 
 	code := m.Run()
-
-	stopInstance()
 
 	os.Exit(code)
 }
