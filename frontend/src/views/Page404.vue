@@ -1,11 +1,13 @@
 <template>
-  <div class="w-full px-4 md:grid md:place-items-center py-24">
+  <div class="w-full px-4 grid place-items-center py-24">
     <img
       class="w-16 h-auto opacity-80"
       src="@/assets/logo-icon.svg"
       alt="Bytebase"
     />
-    <p class="mt-4">{{ $t("common.resource-not-found") }}</p>
+    <p class="mt-4 text-balance text-center">
+      {{ $t("common.resource-not-found") }}
+    </p>
     <div class="mt-12">
       <NButton size="small" @click.prevent="goHome">
         <template #icon><ChevronLeftIcon /></template>
