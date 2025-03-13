@@ -20,10 +20,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	a := require.New(t)
 	ctx := context.Background()
 	ctl := &controller{}
-	dataDir := t.TempDir()
-	ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
-		dataDir: dataDir,
-	})
+	ctx, err := ctl.StartServerWithExternalPg(ctx)
 	a.NoError(err)
 	defer ctl.Close(ctx)
 
@@ -252,9 +249,7 @@ CREATE TABLE "public"."book" (
 	a := require.New(t)
 	ctx := context.Background()
 	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
-		dataDir: t.TempDir(),
-	})
+	ctx, err := ctl.StartServerWithExternalPg(ctx)
 	a.NoError(err)
 	defer func() {
 		_ = ctl.Close(ctx)
@@ -361,10 +356,7 @@ func TestMarkTaskAsDone(t *testing.T) {
 	a := require.New(t)
 	ctx := context.Background()
 	ctl := &controller{}
-	dataDir := t.TempDir()
-	ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
-		dataDir: dataDir,
-	})
+	ctx, err := ctl.StartServerWithExternalPg(ctx)
 	a.NoError(err)
 	defer ctl.Close(ctx)
 
