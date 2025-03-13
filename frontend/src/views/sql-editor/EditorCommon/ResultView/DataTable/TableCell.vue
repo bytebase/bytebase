@@ -5,14 +5,31 @@
     :class="classes"
     @click="handleClick"
     @dblclick="showDetail"
+    @contextmenu.prevent="handleContextMenu"
+    ref="cellRef"
   >
     <div
       ref="wrapperRef"
       class="whitespace-nowrap font-mono text-start line-clamp-1"
       v-html="html"
     ></div>
-    <div v-if="clickable" class="absolute right-1 top-1/2 translate-y-[-45%]">
+    <div class="absolute right-1 top-1/2 translate-y-[-45%] flex items-center gap-1">
+      <!-- Format indicator for ByteData - only show when no column format is set -->
       <NButton
+        v-if="hasByteData && !props.columnFormatOverride"
+        size="tiny"
+        circle
+        class="dark:!bg-dark-bg"
+        @click.stop="showFormatDropdown"
+      >
+        <template #icon>
+          <IconCode class="w-3 h-3" />
+        </template>
+      </NButton>
+      
+      <!-- Expand button for long content -->
+      <NButton
+        v-if="clickable"
         size="tiny"
         circle
         class="dark:!bg-dark-bg"
@@ -23,22 +40,37 @@
         </template>
       </NButton>
     </div>
+    
+    <!-- Format dropdown menu -->
+    <NDropdown
+      v-if="hasByteData"
+      :trigger="'manual'"
+      :show="showFormatMenu"
+      :options="formatOptions"
+      :x="dropdownX"
+      :y="dropdownY"
+      @select="handleFormatSelect"
+      @clickoutside="showFormatMenu = false"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { type Table } from "@tanstack/vue-table";
-import { useResizeObserver } from "@vueuse/core";
+import { useLocalStorage, useResizeObserver } from "@vueuse/core";
 import { escape } from "lodash-es";
-import { NButton } from "naive-ui";
+import { Code as IconCode } from "lucide-vue-next";
+import { NButton, NDropdown } from "naive-ui";
 import { twMerge } from "tailwind-merge";
-import { computed, ref } from "vue";
+import { computed, nextTick, ref } from "vue";
 import { useConnectionOfCurrentSQLEditorTab } from "@/store";
 import { Engine } from "@/types/proto/v1/common";
 import type { QueryRow, RowValue } from "@/types/proto/v1/sql_service";
+import { RowValue_ByteData_DisplayFormat } from "@/types/proto/v1/sql_service";
 import { extractSQLRowValuePlain, getHighlightHTMLByRegExp } from "@/utils";
 import { useSQLResultViewContext } from "../context";
 import { useSelectionContext } from "./common/selection-logic";
+import { useI18n } from "vue-i18n";
 
 const props = defineProps<{
   table: Table<QueryRow>;
@@ -47,8 +79,10 @@ const props = defineProps<{
   rowIndex: number;
   colIndex: number;
   allowSelect?: boolean;
+  columnFormatOverride?: string | null;
 }>();
 
+const { t } = useI18n();
 const { detail, keyword } = useSQLResultViewContext();
 
 const {
@@ -58,10 +92,110 @@ const {
   selectRow,
 } = useSelectionContext();
 const wrapperRef = ref<HTMLDivElement>();
+const cellRef = ref<HTMLDivElement>();
 const truncated = ref(false);
+
+// Dropdown menu state
+const showFormatMenu = ref(false);
+const dropdownX = ref(0);
+const dropdownY = ref(0);
+
+// Get the server-provided format
+const getServerFormat = (): string => {
+  if (!props.value.byteDataValue) return "BINARY";
+  
+  // If it has a display format already specified, use that
+  if (props.value.byteDataValue.displayFormat) {
+    return props.value.byteDataValue.displayFormat;
+  }
+  
+  // Fallback to BINARY if no format is specified
+  return "BINARY";
+};
+
+// Current display format (reactive to server changes)
+const serverFormat = computed(() => getServerFormat());
+
+// Create a ref for temporary format override
+const formatOverride = ref<string | null>(null);
+
+// The actual format to display - use column override, cell override, or server format
+const displayFormat = computed(() => {
+  // Column-level override takes precedence (if provided)
+  if (props.columnFormatOverride && props.columnFormatOverride !== "DEFAULT") {
+    return props.columnFormatOverride;
+  }
+  
+  // Cell-level override is next
+  if (formatOverride.value && formatOverride.value !== "DEFAULT") {
+    return formatOverride.value;
+  }
+  
+  // Fallback to server format
+  return serverFormat.value;
+});
 
 const allowSelect = computed(() => {
   return props.allowSelect && !selectionDisabled.value;
+});
+
+// Check if the value is ByteData
+const hasByteData = computed(() => {
+  return !!props.value.byteDataValue;
+});
+
+// Check if it's a single bit ByteData (for boolean display)
+const isSingleBitValue = computed(() => {
+  if (props.value.byteDataValue) {
+    return props.value.byteDataValue.value.length === 1;
+  }
+  return false;
+});
+
+// Format options for the dropdown
+const formatOptions = computed(() => {
+  const currentFormat = formatOverride.value === null ? "DEFAULT" : formatOverride.value;
+  
+  const options = [
+    {
+      label: "Default",
+      key: "DEFAULT",
+      disabled: false,
+    },
+    {
+      label: "Binary (0s and 1s)",
+      key: "BINARY",
+      disabled: false,
+    },
+    {
+      label: "Hexadecimal (0x...)",
+      key: "HEX",
+      disabled: false,
+    },
+    {
+      label: "Text (UTF-8)",
+      key: "TEXT",
+      disabled: false,
+    },
+  ];
+  
+  // Only show boolean option for single-byte values
+  if (isSingleBitValue.value) {
+    options.splice(3, 0, {
+      label: "Boolean (true/false)",
+      key: "BOOLEAN",
+      disabled: false,
+    });
+  }
+  
+  // Add a checkmark to the currently selected option
+  options.forEach(option => {
+    if (option.key === currentFormat) {
+      option.label = "✓ " + option.label;
+    }
+  });
+  
+  return options;
 });
 
 useResizeObserver(wrapperRef, (entries) => {
@@ -120,8 +254,34 @@ const classes = computed(() => {
   return twMerge(classes);
 });
 
+// If it's ByteData, create a formatted value with the chosen format
+const formattedValue = computed(() => {
+  if (!hasByteData.value) return props.value;
+  
+  // Create a clone to avoid modifying the original
+  const formatted = { ...props.value };
+  
+  if (formatted.byteDataValue) {
+    // Create a new ByteData object with the same value but updated format
+    formatted.byteDataValue = {
+      value: formatted.byteDataValue.value,
+      displayFormat: displayFormat.value as RowValue_ByteData_DisplayFormat
+    };
+  }
+  
+  return formatted;
+});
+
 const html = computed(() => {
-  const value = extractSQLRowValuePlain(props.value);
+  let value;
+  
+  // Use the formatted value if it's ByteData
+  if (hasByteData.value) {
+    value = extractSQLRowValuePlain(formattedValue.value);
+  } else {
+    value = extractSQLRowValuePlain(props.value);
+  }
+  
   if (value === undefined) {
     return `<span class="text-gray-400 italic">UNSET</span>`;
   }
@@ -166,5 +326,40 @@ const showDetail = () => {
     col: props.colIndex,
     table: props.table,
   };
+};
+
+// Display the format dropdown menu
+const showFormatDropdown = (e: MouseEvent) => {
+  if (!cellRef.value) return;
+  
+  // Position the dropdown relative to the click position
+  dropdownX.value = e.clientX;
+  dropdownY.value = e.clientY;
+  showFormatMenu.value = true;
+};
+
+// Handle right-click context menu for ByteData
+const handleContextMenu = (e: MouseEvent) => {
+  if (hasByteData.value) {
+    showFormatDropdown(e);
+  }
+};
+
+// Handle format selection from dropdown
+const handleFormatSelect = (key: string) => {
+  // If DEFAULT is selected, remove the override
+  if (key === "DEFAULT") {
+    formatOverride.value = null;
+  } else {
+    // Otherwise set the override
+    formatOverride.value = key;
+  }
+  
+  showFormatMenu.value = false;
+  
+  // Force recomputation of html
+  nextTick(() => {
+    // This empty callback just ensures the component re-renders
+  });
 };
 </script>

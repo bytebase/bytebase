@@ -81,8 +81,8 @@
               <NButton
                 size="small"
                 style="--n-padding: 0 5px"
-                :type="binaryFormat !== 'BINARY' ? 'primary' : 'default'"
-                :secondary="binaryFormat !== 'BINARY'"
+                :type="binaryFormat !== serverFormat ? 'primary' : 'default'"
+                :secondary="binaryFormat !== serverFormat"
               >
                 <template #icon>
                   <Code2Icon class="w-4 h-4" />
@@ -91,18 +91,21 @@
             </template>
             <template #default>
               <div class="p-1">
-                <NRadioGroup v-model:value="binaryFormat" class="flex flex-col gap-2">
+                <NRadioGroup :value="binaryFormat" class="flex flex-col gap-2" @update:value="updateBinaryFormat">
+                  <NRadio value="DEFAULT">
+                    Default
+                  </NRadio>
                   <NRadio value="BINARY">
-                    {{ $t("sql-editor.binary-format") }}
+                    Binary (0s and 1s)
                   </NRadio>
                   <NRadio value="HEX">
-                    {{ $t("sql-editor.hex-format") }}
+                    Hexadecimal (0x...)
                   </NRadio>
                   <NRadio value="BOOLEAN" v-if="isSingleBitValue">
-                    {{ $t("sql-editor.boolean-format") }}
+                    Boolean (true/false)
                   </NRadio>
                   <NRadio value="TEXT">
-                    {{ $t("sql-editor.text-format") }}
+                    Text (UTF-8)
                   </NRadio>
                 </NRadioGroup>
               </div>
@@ -167,10 +170,10 @@ import {
   ClipboardIcon,
   BracesIcon,
   WrapTextIcon,
-  Code2Icon,
+  Code as Code2Icon,
 } from "lucide-vue-next";
 import { NButton, NPopover, NScrollbar, NTooltip, NRadioGroup, NRadio } from "naive-ui";
-import { computed } from "vue";
+import { computed, nextTick, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { DrawerContent } from "@/components/v2";
 import { pushNotification } from "@/store";
@@ -191,13 +194,7 @@ const wrap = useLocalStorage<boolean>(
   true
 );
 
-// New ref for binary data format
-const binaryFormat = useLocalStorage<string>(
-  "bb.sql-editor.detail-panel.binary-format",
-  "BINARY"
-);
-
-// Get the current value being displayed
+// Get the current value being displayed first
 const rawValue = computed(() => {
   const { row, col, table } = detail.value;
   if (!table) return undefined;
@@ -206,6 +203,33 @@ const rawValue = computed(() => {
     .getPrePaginationRowModel()
     .rows[row]?.getVisibleCells()
     [col]?.getValue<RowValue>();
+});
+
+// Get the server-provided format
+const getServerFormat = (): string => {
+  if (!rawValue.value?.byteDataValue) return "BINARY";
+  
+  // If it has a display format already specified, use that
+  if (rawValue.value.byteDataValue.displayFormat) {
+    return rawValue.value.byteDataValue.displayFormat;
+  }
+  
+  // Fallback to BINARY if no format is specified
+  return "BINARY";
+};
+
+// Current display format (reactive to server changes)
+const serverFormat = computed(() => getServerFormat());
+
+// Create a ref for temporary format override
+const formatOverride = ref<string | null>(null);
+
+// The actual format to display
+const binaryFormat = computed(() => {
+  if (formatOverride.value === null) {
+    return "DEFAULT"; // No override, show as DEFAULT in radio group
+  }
+  return formatOverride.value;
 });
 
 // Check if the current value is binary data
@@ -233,21 +257,27 @@ const isSingleBitValue = computed(() => {
 const formattedBinaryValue = computed(() => {
   if (!rawValue.value || !isBinaryData.value) return rawValue.value;
   
-  // Create a copy of the value
+  // Create a structured clone rather than using JSON to handle Uint8Array properly
   const formattedValue = { ...rawValue.value };
+  
+  // Get the actual format to use - default to server format if showing DEFAULT
+  const formatToUse = formatOverride.value === null ? serverFormat.value : formatOverride.value;
   
   // If it's using the legacy bytesValue format
   if (formattedValue.bytesValue) {
     // Create a synthetic byteDataValue with the selected format
     formattedValue.byteDataValue = {
       value: formattedValue.bytesValue,
-      displayFormat: binaryFormat.value as any
+      displayFormat: formatToUse as any
     };
     // Remove the legacy value to avoid conflicts
     delete formattedValue.bytesValue;
   } else if (formattedValue.byteDataValue) {
-    // Just update the display format
-    formattedValue.byteDataValue.displayFormat = binaryFormat.value as any;
+    // Just update the display format, preserving the original value
+    formattedValue.byteDataValue = {
+      value: formattedValue.byteDataValue.value,
+      displayFormat: formatToUse as any
+    };
   }
   
   return formattedValue;
@@ -350,4 +380,17 @@ onKeyStroke("ArrowDown", (e) => {
   e.stopPropagation();
   move(1);
 });
+
+// Method to handle binary format updates and ensure re-rendering
+const updateBinaryFormat = (value: string) => {
+  // If DEFAULT is selected, remove the override
+  if (value === "DEFAULT") {
+    formatOverride.value = null;
+  } else {
+    // Otherwise set the override
+    formatOverride.value = value;
+  }
+  
+  nextTick();
+};
 </script>

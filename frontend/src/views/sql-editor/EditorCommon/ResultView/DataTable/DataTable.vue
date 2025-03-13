@@ -64,6 +64,17 @@
                   header.column.getToggleSortingHandler()?.($event)
                 "
               />
+              
+              <!-- Add binary format button if this column has binary data -->
+              <BinaryFormatButton
+                v-if="isColumnWithBinaryData(header.index)"
+                :column-index="header.index"
+                :column-format="getColumnFormatOverride(header.index)"
+                :server-format="getColumnServerFormat(header.index)"
+                :has-single-bit-values="hasColumnSingleBitValues(header.index)"
+                @update:format="setColumnFormat(header.index, $event)"
+                @click.stop
+              />
             </div>
 
             <!-- The drag-to-resize handler -->
@@ -96,6 +107,7 @@
               :row-index="offset + rowIndex"
               :col-index="cellIndex"
               :allow-select="true"
+              :column-format-override="getColumnFormatOverride(cellIndex)"
             />
             <div
               v-if="cellIndex === 0 && !selectionDisabled"
@@ -134,6 +146,7 @@ import { useSQLResultViewContext } from "../context";
 import TableCell from "./TableCell.vue";
 import ColumnSortedIcon from "./common/ColumnSortedIcon.vue";
 import SensitiveDataIcon from "./common/SensitiveDataIcon.vue";
+import BinaryFormatButton from "./common/BinaryFormatButton.vue";
 import { useSelectionContext } from "./common/selection-logic";
 import useTableColumnWidthLogic from "./useTableResize";
 
@@ -170,6 +183,80 @@ const hasSensitiveFeature = computed(() => {
 });
 
 const rows = computed(() => props.table.getRowModel().rows);
+
+// Column format overrides - map of column index to format
+const columnFormatOverrides = ref<Map<number, string | null>>(new Map());
+
+// Check if a column contains any binary data
+const isColumnWithBinaryData = (columnIndex: number): boolean => {
+  const columnRows = props.table.getPrePaginationRowModel().rows;
+  
+  // Check each row in the column for binary data
+  for (const row of columnRows) {
+    const cell = row.getVisibleCells()[columnIndex];
+    if (!cell) continue;
+    
+    const value = cell.getValue<RowValue>();
+    if (value?.byteDataValue) {
+      return true;
+    }
+  }
+  
+  return false;
+};
+
+// Get the server-provided format for a column
+const getColumnServerFormat = (columnIndex: number): string | null => {
+  const columnRows = props.table.getPrePaginationRowModel().rows;
+  
+  // Look through rows to find the first byte data value with a format
+  for (const row of columnRows) {
+    const cell = row.getVisibleCells()[columnIndex];
+    if (!cell) continue;
+    
+    const value = cell.getValue<RowValue>();
+    if (value?.byteDataValue?.displayFormat) {
+      return value.byteDataValue.displayFormat;
+    }
+  }
+  
+  return null;
+};
+
+// Check if a column has any single-bit values
+const hasColumnSingleBitValues = (columnIndex: number): boolean => {
+  const columnRows = props.table.getPrePaginationRowModel().rows;
+  
+  // Check if any row in this column has a single-bit value
+  for (const row of columnRows) {
+    const cell = row.getVisibleCells()[columnIndex];
+    if (!cell) continue;
+    
+    const value = cell.getValue<RowValue>();
+    if (value?.byteDataValue?.value.length === 1) {
+      return true;
+    }
+  }
+  
+  return false;
+};
+
+// Get the current format override for a column
+const getColumnFormatOverride = (columnIndex: number): string | null => {
+  return columnFormatOverrides.value.get(columnIndex) || null;
+};
+
+// Set the format for a column
+const setColumnFormat = (columnIndex: number, format: string | null) => {
+  if (format === null) {
+    columnFormatOverrides.value.delete(columnIndex);
+  } else {
+    columnFormatOverrides.value.set(columnIndex, format);
+  }
+  
+  // Force a re-render
+  columnFormatOverrides.value = new Map(columnFormatOverrides.value);
+};
 
 onMounted(() => {
   nextTick(() => {
