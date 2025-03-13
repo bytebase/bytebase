@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"embed"
-	"fmt"
 	"io/fs"
 	"log/slog"
 )
@@ -14,7 +13,7 @@ var demoFS embed.FS
 
 // LoadDemoData loads the demo data.
 func LoadDemoData(ctx context.Context, pgURL string) error {
-	slog.Info(fmt.Sprintf("Setting up demo..."))
+	slog.Info("Setting up demo...")
 
 	db, err := sql.Open("pgx", pgURL)
 	if err != nil {
