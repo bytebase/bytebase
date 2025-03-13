@@ -1,6 +1,9 @@
 package tests
 
 import (
+	"fmt"
+	"io"
+	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -40,6 +43,18 @@ func TestValidateLinks(t *testing.T) {
 	a := require.New(t)
 	links, err := extractLinkRecursive()
 	a.NoError(err)
+
+	resp, err := http.Get("https://bytebase.com/sitemap.xml")
+	if err != nil {
+		t.Fatalf("failed to get sitemap xml: %v", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatalf("failed to read sitemap xml: %v", err)
+	}
+	fmt.Println(string(body))
 
 	sm, err := sitemap.Get("https://bytebase.com/sitemap.xml", nil)
 	a.NoError(err)
