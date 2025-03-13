@@ -18,6 +18,7 @@ import {
   hasProjectPermissionV2,
   type SearchParams,
 } from "@/utils";
+import { batchGetOrFetchDatabases } from "./database";
 import { useProjectV1Store } from "./project";
 
 export interface PlanFind {
@@ -89,6 +90,12 @@ export const composePlan = async (rawPlan: Plan): Promise<ComposedPlan> => {
     projectEntity,
     creatorEntity,
   };
+
+  await batchGetOrFetchDatabases(
+    plan.steps
+      .flatMap((step) => step.specs)
+      .flatMap((spec) => spec.changeDatabaseConfig?.target ?? "")
+  );
 
   if (hasProjectPermissionV2(projectEntity, "bb.planCheckRuns.list")) {
     // Only show the latest plan check runs.
