@@ -5,7 +5,7 @@
   >
     <NoPermissionPlaceholder
       v-if="permissionStore.onlyWorkspaceMember && !isSelf"
-      class="mx-4"
+      class="py-6"
     />
     <div v-else>
       <!-- Profile header -->

@@ -12,7 +12,7 @@
     <template v-else>
       <NoPermissionPlaceholder
         v-if="placeholder === 'PERMISSION_DENIED'"
-        class="!border-0"
+        class="py-6"
       />
       <NEmpty v-else class="py-6" />
     </template>

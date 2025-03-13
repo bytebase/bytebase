@@ -258,15 +258,6 @@ export interface UpdateDataSourceRequest {
   validateOnly: boolean;
 }
 
-export interface SyncSlowQueriesRequest {
-  /**
-   * The name of the instance to sync slow queries.
-   * Format: instances/{instance} for one instance
-   *      or projects/{project} for one project.
-   */
-  parent: string;
-}
-
 export interface Instance {
   /**
    * The name of the instance.
@@ -1957,64 +1948,6 @@ export const UpdateDataSourceRequest: MessageFns<UpdateDataSourceRequest> = {
       : undefined;
     message.updateMask = object.updateMask ?? undefined;
     message.validateOnly = object.validateOnly ?? false;
-    return message;
-  },
-};
-
-function createBaseSyncSlowQueriesRequest(): SyncSlowQueriesRequest {
-  return { parent: "" };
-}
-
-export const SyncSlowQueriesRequest: MessageFns<SyncSlowQueriesRequest> = {
-  encode(message: SyncSlowQueriesRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.parent !== "") {
-      writer.uint32(10).string(message.parent);
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): SyncSlowQueriesRequest {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseSyncSlowQueriesRequest();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.parent = reader.string();
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): SyncSlowQueriesRequest {
-    return { parent: isSet(object.parent) ? globalThis.String(object.parent) : "" };
-  },
-
-  toJSON(message: SyncSlowQueriesRequest): unknown {
-    const obj: any = {};
-    if (message.parent !== "") {
-      obj.parent = message.parent;
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<SyncSlowQueriesRequest>): SyncSlowQueriesRequest {
-    return SyncSlowQueriesRequest.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<SyncSlowQueriesRequest>): SyncSlowQueriesRequest {
-    const message = createBaseSyncSlowQueriesRequest();
-    message.parent = object.parent ?? "";
     return message;
   },
 };
@@ -4698,115 +4631,6 @@ export const InstanceServiceDefinition = {
               114,
               99,
               101,
-            ]),
-          ],
-        },
-      },
-    },
-    syncSlowQueries: {
-      name: "SyncSlowQueries",
-      requestType: SyncSlowQueriesRequest,
-      requestStream: false,
-      responseType: Empty,
-      responseStream: false,
-      options: {
-        _unknownFields: {
-          800010: [new Uint8Array([17, 98, 98, 46, 105, 110, 115, 116, 97, 110, 99, 101, 115, 46, 115, 121, 110, 99])],
-          800016: [new Uint8Array([1])],
-          578365826: [
-            new Uint8Array([
-              91,
-              58,
-              1,
-              42,
-              90,
-              44,
-              58,
-              1,
-              42,
-              34,
-              39,
-              47,
-              118,
-              49,
-              47,
-              123,
-              112,
-              97,
-              114,
-              101,
-              110,
-              116,
-              61,
-              112,
-              114,
-              111,
-              106,
-              101,
-              99,
-              116,
-              115,
-              47,
-              42,
-              125,
-              58,
-              115,
-              121,
-              110,
-              99,
-              83,
-              108,
-              111,
-              119,
-              81,
-              117,
-              101,
-              114,
-              105,
-              101,
-              115,
-              34,
-              40,
-              47,
-              118,
-              49,
-              47,
-              123,
-              112,
-              97,
-              114,
-              101,
-              110,
-              116,
-              61,
-              105,
-              110,
-              115,
-              116,
-              97,
-              110,
-              99,
-              101,
-              115,
-              47,
-              42,
-              125,
-              58,
-              115,
-              121,
-              110,
-              99,
-              83,
-              108,
-              111,
-              119,
-              81,
-              117,
-              101,
-              114,
-              105,
-              101,
-              115,
             ]),
           ],
         },
