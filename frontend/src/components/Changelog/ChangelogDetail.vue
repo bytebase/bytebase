@@ -164,6 +164,7 @@ import {
   getStatementSize,
   hasProjectPermissionV2,
   getAffectedTableDisplayName,
+  wrapRefAsPromise,
 } from "@/utils";
 import {
   getAffectedTablesOfChangelog,
@@ -274,10 +275,7 @@ const copySchema = async () => {
 watch(
   [database.value.name, changelogName],
   async () => {
-    if (!ready.value) {
-      return;
-    }
-
+    await wrapRefAsPromise(ready, true);
     state.loading = true;
     await Promise.all([
       dbSchemaStore.getOrFetchDatabaseMetadata({
