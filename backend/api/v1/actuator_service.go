@@ -120,9 +120,8 @@ func (s *ActuatorService) getServerInfo(ctx context.Context) (*v1pb.ActuatorInfo
 	serverInfo := v1pb.ActuatorInfo{
 		Version:                s.profile.Version,
 		GitCommit:              s.profile.GitCommit,
-		Readonly:               s.profile.Readonly,
 		Saas:                   s.profile.SaaS,
-		DemoName:               s.profile.DemoName,
+		Demo:                   s.profile.Demo,
 		NeedAdminSetup:         count == 0,
 		ExternalUrl:            setting.ExternalUrl,
 		DisallowSignup:         setting.DisallowSignup,
