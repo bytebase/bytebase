@@ -1238,7 +1238,9 @@
       }
     },
     "no-params-yet-add-above": "No parameters configured yet. Add parameters using the form above.",
-    "no-extra-params-configured": "No extra connection parameters configured"
+    "no-extra-params-configured": "No extra connection parameters configured",
+    "parameter-name-placeholder": "Parameter name",
+    "parameter-value-placeholder": "Parameter value"
   },
   "environment": {
     "select": "Select environment",

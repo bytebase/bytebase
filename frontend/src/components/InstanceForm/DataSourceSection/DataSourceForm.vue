@@ -844,12 +844,12 @@ MIIEvQ...
       <NInput
         v-model:value="newParam.key"
         class="w-full"
-        placeholder="Parameter name"
+        :placeholder="$t('instance.parameter-name-placeholder')"
       />
       <NInput
         v-model:value="newParam.value"
         class="w-full"
-        placeholder="Parameter value"
+        :placeholder="$t('instance.parameter-value-placeholder')"
       />
       <NButton 
         type="primary" 
