@@ -411,8 +411,8 @@ export const getFixedPrimaryKey = (engine: Engine) => {
   return undefined;
 };
 
-// supportStringifyMetadata returns true if the engine supports stringify metadata.
-export const supportStringifyMetadata = (engine: Engine) => {
+// supportGetStringSchema returns true if the engine supports getting schema string.
+export const supportGetStringSchema = (engine: Engine) => {
   return [
     Engine.MYSQL,
     Engine.OCEANBASE,
@@ -420,5 +420,6 @@ export const supportStringifyMetadata = (engine: Engine) => {
     Engine.TIDB,
     Engine.CLICKHOUSE,
     Engine.REDSHIFT,
+    Engine.ORACLE
   ].includes(engine);
 };

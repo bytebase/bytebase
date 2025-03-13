@@ -553,8 +553,6 @@
     - [RowValue.TimestampTZ](#bytebase-v1-RowValue-TimestampTZ)
     - [SearchQueryHistoriesRequest](#bytebase-v1-SearchQueryHistoriesRequest)
     - [SearchQueryHistoriesResponse](#bytebase-v1-SearchQueryHistoriesResponse)
-    - [StringifyMetadataRequest](#bytebase-v1-StringifyMetadataRequest)
-    - [StringifyMetadataResponse](#bytebase-v1-StringifyMetadataResponse)
   
     - [Advice.Status](#bytebase-v1-Advice-Status)
     - [CheckRequest.ChangeType](#bytebase-v1-CheckRequest-ChangeType)
@@ -8986,39 +8984,6 @@ for field description.
 
 
 
-
-<a name="bytebase-v1-StringifyMetadataRequest"></a>
-
-### StringifyMetadataRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| metadata | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) |  |  |
-| engine | [Engine](#bytebase-v1-Engine) |  | The database engine of the schema string. |
-| classification_from_config | [bool](#bool) |  | If false, we will build the raw common by classification in database catalog. |
-| catalog | [DatabaseCatalog](#bytebase-v1-DatabaseCatalog) | optional | Database catlog is required if classification_from_config is false. |
-
-
-
-
-
-
-<a name="bytebase-v1-StringifyMetadataResponse"></a>
-
-### StringifyMetadataResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| schema | [string](#string) |  |  |
-
-
-
-
-
  
 
 
@@ -9095,7 +9060,6 @@ for field description.
 | Check | [CheckRequest](#bytebase-v1-CheckRequest) | [CheckResponse](#bytebase-v1-CheckResponse) |  |
 | ParseMyBatisMapper | [ParseMyBatisMapperRequest](#bytebase-v1-ParseMyBatisMapperRequest) | [ParseMyBatisMapperResponse](#bytebase-v1-ParseMyBatisMapperResponse) |  |
 | Pretty | [PrettyRequest](#bytebase-v1-PrettyRequest) | [PrettyResponse](#bytebase-v1-PrettyResponse) |  |
-| StringifyMetadata | [StringifyMetadataRequest](#bytebase-v1-StringifyMetadataRequest) | [StringifyMetadataResponse](#bytebase-v1-StringifyMetadataResponse) |  |
 | DiffMetadata | [DiffMetadataRequest](#bytebase-v1-DiffMetadataRequest) | [DiffMetadataResponse](#bytebase-v1-DiffMetadataResponse) |  |
 
  
