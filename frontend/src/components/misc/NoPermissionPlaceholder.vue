@@ -1,12 +1,25 @@
 <template>
-  <NoDataPlaceholder :src="'@/assets/illustration/403.webp'">
-    <template #image>
-      <img src="@/assets/illustration/403.webp" class="!w-auto max-h-[20vh]" />
+  <NEmpty
+    :description="description ?? $t('common.missing-required-permission')"
+    v-bind="$attrs"
+  >
+    <template #icon>
+      <ShieldAlertIcon class="w-full h-auto" stroke-width="1.25" />
     </template>
-    <p class="textlabel">{{ $t("common.missing-permission") }}</p>
-  </NoDataPlaceholder>
+    <template #extra>
+      <slot name="extra" />
+    </template>
+  </NEmpty>
 </template>
 
 <script lang="ts" setup>
-import NoDataPlaceholder from "./NoDataPlaceholder.vue";
+import { ShieldAlertIcon } from "lucide-vue-next";
+import { NEmpty } from "naive-ui";
+
+defineProps({
+  description: {
+    type: String,
+    required: false,
+  },
+});
 </script>

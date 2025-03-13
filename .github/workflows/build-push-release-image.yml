@@ -21,8 +21,6 @@ jobs:
         run: |
           echo "RELEASE_VERSION=${GITHUB_REF_NAME#release/}" >> $GITHUB_ENV
           echo "GIT_COMMIT=$(git rev-parse HEAD)" >> $GITHUB_ENV
-          echo "BUILD_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")" >> $GITHUB_ENV
-          echo "BUILD_USER=$(id -u -n)" >> $GITHUB_ENV
       - uses: pnpm/action-setup@v4
         with:
           version: 10.5.2
@@ -37,7 +35,6 @@ jobs:
         run: |
           cp backend/enterprise/api/plan.yaml frontend/src/types
           cp backend/component/iam/permission.yaml frontend/src/types/iam
-          export BB_GIT_COMMIT_ID_FE=${{ env.GIT_COMMIT }}
           pnpm --dir ./frontend i && pnpm --dir ./frontend release
       - name: Login to DockerHub
         uses: docker/login-action@v3
@@ -60,8 +57,6 @@ jobs:
           build-args: |
             VERSION=${{ env.RELEASE_VERSION }}
             GIT_COMMIT=${{ env.GIT_COMMIT }}
-            BUILD_TIME=${{ env.BUILD_TIME }}
-            BUILD_USER=${{ env.BUILD_USER }}
       - uses: actions/checkout@v4
       - name: Login to DockerHub
         uses: docker/login-action@v3
@@ -76,7 +71,7 @@ jobs:
           context: .
           project: ${{ secrets.DEPOT_PROJECT}}
           token: ${{ secrets.DEPOT_TOKEN }}
-          file: scripts/Dockerfile.render-demo
+          file: scripts/Dockerfile.demo
           platforms: linux/amd64
           push: true
           tags: |
@@ -84,8 +79,5 @@ jobs:
           build-args: |
             VERSION=${{ env.RELEASE_VERSION }}
             GIT_COMMIT=${{ env.GIT_COMMIT }}
-            RENDER_GIT_COMMIT=${{ env.GIT_COMMIT }}
-            BUILD_TIME=${{ env.BUILD_TIME }}
-            BUILD_USER=${{ env.BUILD_USER }}
       - name: Image digest
         run: echo "Successfully pushed bytebase/bytebase:${{ env.RELEASE_VERSION }} ${{ steps.bytebase_build.outputs.digest }}"

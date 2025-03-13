@@ -43,18 +43,17 @@
     <template v-else>
       <NoPermissionPlaceholder
         v-if="placeholder === 'PERMISSION_DENIED'"
-        class="!border-0"
+        class="py-6"
       />
-      <NoDataPlaceholder v-else class="!border-0" />
+      <NEmpty v-else class="py-6" />
     </template>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { NScrollbar } from "naive-ui";
+import { NScrollbar, NEmpty } from "naive-ui";
 import { computed } from "vue";
 import { useIssueContext } from "@/components/IssueV1/logic";
-import NoDataPlaceholder from "@/components/misc/NoDataPlaceholder.vue";
 import NoPermissionPlaceholder from "@/components/misc/NoPermissionPlaceholder.vue";
 import { hasProjectPermissionV2 } from "@/utils";
 import StageCard from "./StageCard.vue";
