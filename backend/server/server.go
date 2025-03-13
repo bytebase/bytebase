@@ -139,7 +139,7 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 
 	var pgURL string
 	if profile.UseEmbedDB() {
-		stopper, err := postgres.StartMetadataInstance(ctx, profile.DataDir, profile.ResourceDir, pgBinDir, profile.PgUser, profile.DemoName, profile.DatastorePort, profile.Mode)
+		stopper, err := postgres.StartMetadataInstance(ctx, profile.DataDir, pgBinDir, profile.PgUser, profile.DemoName, profile.DatastorePort, profile.Mode)
 		if err != nil {
 			return nil, err
 		}
@@ -154,7 +154,7 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	if profile.SampleDatabasePort != 0 {
 		// Only create batch sample databases in demo mode. For normal mode, user starts from the free version
 		// and batch databases are useless because batch requires enterprise license.
-		stopper := postgres.StartAllSampleInstances(ctx, pgBinDir, profile.DataDir, profile.SampleDatabasePort, profile.DemoName != "")
+		stopper := postgres.StartAllSampleInstances(ctx, pgBinDir, profile.DataDir, profile.SampleDatabasePort)
 		s.stopper = append(s.stopper, stopper...)
 	}
 

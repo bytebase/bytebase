@@ -17,20 +17,4 @@ entries:
     urls:
     - bytebase-1.1.1.tgz
     version: 1.1.1
-  - apiVersion: v2
-    created: "2024-03-26T16:49:09.452887+08:00"
-    description: Safe database schema change and version control for DevOps teams.
-    digest: 5b8f271f7e851ef4b4d3844924fc5f2d4c7e0b6e61c5010abb3d4ab15218792b
-    home: https://bytebase.com/
-    icon: https://raw.githubusercontent.com/bytebase/bytebase.com/main/public/images/logo.svg
-    maintainers:
-    - email: support@bytebase.com
-      name: Bytebase
-    name: bytebase
-    sources:
-    - https://github.com/bytebase/bytebase
-    type: application
-    urls:
-    - bytebase-1.1.0.tgz
-    version: 1.1.0
 generated: "2025-02-12T23:13:26.003636-08:00"

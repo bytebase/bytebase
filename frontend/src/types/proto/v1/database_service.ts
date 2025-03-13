@@ -1729,6 +1729,11 @@ export interface GetSchemaStringRequest {
   schema: string;
   /** It's empty for DATABASE and SCHEMA. */
   object: string;
+  /**
+   * If use the metadata to generate the schema string, the type is OBJECT_TYPE_UNSPECIFIED.
+   * Also the schema and object are empty.
+   */
+  metadata: DatabaseMetadata | undefined;
 }
 
 export enum GetSchemaStringRequest_ObjectType {
@@ -9707,7 +9712,13 @@ export const Changelog: MessageFns<Changelog> = {
 };
 
 function createBaseGetSchemaStringRequest(): GetSchemaStringRequest {
-  return { name: "", type: GetSchemaStringRequest_ObjectType.OBJECT_TYPE_UNSPECIFIED, schema: "", object: "" };
+  return {
+    name: "",
+    type: GetSchemaStringRequest_ObjectType.OBJECT_TYPE_UNSPECIFIED,
+    schema: "",
+    object: "",
+    metadata: undefined,
+  };
 }
 
 export const GetSchemaStringRequest: MessageFns<GetSchemaStringRequest> = {
@@ -9723,6 +9734,9 @@ export const GetSchemaStringRequest: MessageFns<GetSchemaStringRequest> = {
     }
     if (message.object !== "") {
       writer.uint32(34).string(message.object);
+    }
+    if (message.metadata !== undefined) {
+      DatabaseMetadata.encode(message.metadata, writer.uint32(42).fork()).join();
     }
     return writer;
   },
@@ -9766,6 +9780,14 @@ export const GetSchemaStringRequest: MessageFns<GetSchemaStringRequest> = {
           message.object = reader.string();
           continue;
         }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.metadata = DatabaseMetadata.decode(reader, reader.uint32());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -9783,6 +9805,7 @@ export const GetSchemaStringRequest: MessageFns<GetSchemaStringRequest> = {
         : GetSchemaStringRequest_ObjectType.OBJECT_TYPE_UNSPECIFIED,
       schema: isSet(object.schema) ? globalThis.String(object.schema) : "",
       object: isSet(object.object) ? globalThis.String(object.object) : "",
+      metadata: isSet(object.metadata) ? DatabaseMetadata.fromJSON(object.metadata) : undefined,
     };
   },
 
@@ -9800,6 +9823,9 @@ export const GetSchemaStringRequest: MessageFns<GetSchemaStringRequest> = {
     if (message.object !== "") {
       obj.object = message.object;
     }
+    if (message.metadata !== undefined) {
+      obj.metadata = DatabaseMetadata.toJSON(message.metadata);
+    }
     return obj;
   },
 
@@ -9812,6 +9838,9 @@ export const GetSchemaStringRequest: MessageFns<GetSchemaStringRequest> = {
     message.type = object.type ?? GetSchemaStringRequest_ObjectType.OBJECT_TYPE_UNSPECIFIED;
     message.schema = object.schema ?? "";
     message.object = object.object ?? "";
+    message.metadata = (object.metadata !== undefined && object.metadata !== null)
+      ? DatabaseMetadata.fromPartial(object.metadata)
+      : undefined;
     return message;
   },
 };
