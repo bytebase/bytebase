@@ -92,14 +92,6 @@ service SQLService {
     option (bytebase.v1.allow_without_credential) = true;
   }
 
-  rpc StringifyMetadata(StringifyMetadataRequest) returns (StringifyMetadataResponse) {
-    option (google.api.http) = {
-      post: "/v1/schemaDesign:stringifyMetadata"
-      body: "*"
-    };
-    option (bytebase.v1.allow_without_credential) = true;
-  }
-
   rpc DiffMetadata(DiffMetadataRequest) returns (DiffMetadataResponse) {
     option (google.api.http) = {
       post: "/v1/schemaDesign:diffMetadata"
@@ -428,20 +420,6 @@ message ParseMyBatisMapperRequest {
 
 message ParseMyBatisMapperResponse {
   repeated string statements = 1;
-}
-
-message StringifyMetadataRequest {
-  DatabaseMetadata metadata = 1 [(google.api.field_behavior) = REQUIRED];
-  // The database engine of the schema string.
-  Engine engine = 2;
-  // If false, we will build the raw common by classification in database catalog.
-  bool classification_from_config = 3;
-  // Database catlog is required if classification_from_config is false.
-  optional DatabaseCatalog catalog = 4;
-}
-
-message StringifyMetadataResponse {
-  string schema = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 message DiffMetadataRequest {
