@@ -16,7 +16,7 @@ concurrency:
 
 jobs:
   go-tests:
-    runs-on: depot-ubuntu-24.04-16
+    runs-on: depot-ubuntu-24.04-8
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
@@ -29,7 +29,7 @@ jobs:
           go mod tidy
           git diff --exit-code
       - name: Install
-        run: sudo apt-get install -y libncurses6 libkrb5-dev
+        run: sudo apt-get install -y libkrb5-dev
       - name: Run all tests
         run: go test -p=16 -timeout 30m -ldflags "-w -s" -v ./backend/... | tee test.log; exit ${PIPESTATUS[0]}
       - name: Pretty print tests running time
