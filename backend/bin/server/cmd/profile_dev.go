@@ -11,7 +11,6 @@ func activeProfile(dataDir string) *config.Profile {
 	p := getBaseProfile(dataDir)
 	p.RuntimeDebug.Store(p.Debug)
 	p.Mode = common.ReleaseModeDev
-	p.EnableMetric = false
 	// Metric collection is disabled in dev mode.
 	// p.MetricConnectionKey = "3zcZLeX3ahvlueEJqNyJysGfVAErsjjT"
 	return p

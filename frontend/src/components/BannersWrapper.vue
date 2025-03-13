@@ -36,7 +36,7 @@ const actuatorStore = useActuatorV1Store();
 const subscriptionStore = useSubscriptionV1Store();
 
 const hideBanner = useAppFeature("bb.feature.hide-banner");
-const { isDemo, needConfigureExternalUrl } =
+const { needConfigureExternalUrl } =
   storeToRefs(actuatorStore);
 const {
   isExpired,

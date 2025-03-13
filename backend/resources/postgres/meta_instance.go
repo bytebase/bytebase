@@ -32,7 +32,7 @@ func StartMetadataInstance(ctx context.Context, pgBinDir, pgDataDir string, port
 		return nil, err
 	}
 	if !ok {
-		if _, err := db.ExecContext(ctx, fmt.Sprintf("CREATE DATABASE bb")); err != nil {
+		if _, err := db.ExecContext(ctx, "CREATE DATABASE bb"); err != nil {
 			slog.Debug("database should already exists")
 		}
 	}

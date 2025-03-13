@@ -46,8 +46,6 @@ type Profile struct {
 	PgURL string
 	// MetricConnectionKey is the connection key for metric.
 	MetricConnectionKey string
-	// EnableMetric will enable the metric collector.
-	EnableMetric bool
 
 	// LastActiveTs is the service last active timestamp, any API calls will refresh this value.
 	LastActiveTs int64
