@@ -18,7 +18,7 @@ COPY . .
 RUN pnpm --dir ./frontend i
 RUN pnpm --dir ./frontend release-aws
 
-FROM golang:1.24.0 as backend
+FROM golang:1.24.1 as backend
 ADD go.mod go.sum /
 RUN go mod download
 
