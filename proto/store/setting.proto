@@ -284,11 +284,18 @@ message AppIMSetting {
     string app_id = 2;
     string app_secret = 3;
   }
+  message DingTalk {
+    bool enabled = 1;
+    string client_id = 2;
+    string client_secret = 3;
+    string robot_code = 4;
+  }
 
   Slack slack = 1;
   Feishu feishu = 2;
   Wecom wecom = 3;
   Lark lark = 4;
+  DingTalk dingtalk = 5;
 }
 
 enum DatabaseChangeMode {

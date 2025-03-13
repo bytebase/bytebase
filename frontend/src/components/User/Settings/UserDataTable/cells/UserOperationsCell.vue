@@ -1,7 +1,10 @@
 <template>
   <div class="flex justify-end">
     <template v-if="allowEdit">
-      <NPopconfirm v-if="allowDeleteUser" @positive-click="handleArchiveUser">
+      <NPopconfirm
+        v-if="allowDeleteUser"
+        @positive-click="() => changeRowStatus(State.DELETED)"
+      >
         <template #trigger>
           <NButton quaternary circle @click.stop>
             <template #icon>
@@ -56,16 +59,17 @@ import { NButton, NPopconfirm } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useUserStore, pushNotification, useCurrentUserV1 } from "@/store";
-import { type User, UserType } from "@/types/proto/v1/user_service";
 import { State } from "@/types/proto/v1/common";
+import { type User, UserType } from "@/types/proto/v1/user_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
 const props = defineProps<{
   user: User;
 }>();
 
-defineEmits<{
+const emit = defineEmits<{
   (event: "click-user", user: User, e: MouseEvent): void;
+  (event: "update-user", user: User): void;
 }>();
 
 const userStore = useUserStore();
@@ -91,24 +95,21 @@ const allowDeleteUser = computed(() => {
   return me.value.name !== props.user.name;
 });
 
-const handleArchiveUser = async () => {
-  await userStore.archiveUser(props.user!);
-  pushNotification({
-    module: "bytebase",
-    style: "INFO",
-    title: t("common.archived"),
-  });
-};
-
 const allowReactiveUser = computed(() => {
   return allowEdit.value && props.user.state === State.DELETED;
 });
 
-const changeRowStatus = (state: State) => {
+const changeRowStatus = async (state: State) => {
   if (state === State.ACTIVE) {
-    userStore.restoreUser(props.user);
+    await userStore.restoreUser(props.user);
   } else {
-    userStore.archiveUser(props.user);
+    await userStore.archiveUser(props.user);
   }
+  emit("update-user", props.user);
+  pushNotification({
+    module: "bytebase",
+    style: "INFO",
+    title: t("common.updated"),
+  });
 };
 </script>

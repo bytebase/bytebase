@@ -66,9 +66,9 @@ const createRestoreIssue = async () => {
   useStorageStore().put(sqlStorageKey, statement);
   const query: Record<string, any> = {
     template: "bb.issue.database.data.update",
-    name: `Rollback ${selectedTask.value.title} in issue#${extractIssueUID(issue.value.name)}`,
+    name: `Rollback ${selectedTask.value.target} in issue#${extractIssueUID(issue.value.name)}`,
     databaseList: selectedTask.value.target,
-    description: `This issue is created to rollback the data of ${selectedTask.value.title} in issue #${extractIssueUID(issue.value.name)}`,
+    description: `This issue is created to rollback the data of ${selectedTask.value.target} in issue #${extractIssueUID(issue.value.name)}`,
     sqlStorageKey,
   };
   router.push({

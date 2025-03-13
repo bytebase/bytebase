@@ -77,12 +77,6 @@
         :disabled="!allowEdit || !hasSensitiveDataFeature"
         @on-select="onFileSelect"
       >
-        <template #image>
-          <NoDataPlaceholder
-            :border="false"
-            :img-attrs="{ class: '!max-h-[10vh]' }"
-          />
-        </template>
       </SingleFileSelector>
     </div>
     <div v-else class="h-full">
@@ -114,7 +108,6 @@ import { hasWorkspacePermissionV2 } from "@/utils";
 import LearnMoreLink from "../LearnMoreLink.vue";
 import ClassificationTree from "../SchemaTemplate/ClassificationTree.vue";
 import SingleFileSelector from "../SingleFileSelector.vue";
-import NoDataPlaceholder from "../misc/NoDataPlaceholder.vue";
 import DataExampleModal from "./components/DataExampleModal.vue";
 
 const uploader = ref<HTMLInputElement | null>(null);

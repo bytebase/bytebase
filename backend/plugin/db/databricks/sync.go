@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/pkg/errors"
@@ -86,10 +85,6 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 	// TODO(tommy): complete this part when Permissions API for Golang is implemented.
 
 	return instanceMetadata, nil
-}
-
-func (*Driver) SyncSlowQuery(_ context.Context, _ time.Time) (map[string]*storepb.SlowQueryStatistics, error) {
-	return nil, nil
 }
 
 // list all tables in the workspace when catalogName is set to "".

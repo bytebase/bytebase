@@ -127,9 +127,7 @@ func TestCreateDatabaseGroup(t *testing.T) {
 			t.Parallel()
 			ctl := &controller{}
 			ctx := context.Background()
-			ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
-				dataDir: t.TempDir(),
-			})
+			ctx, err := ctl.StartServerWithExternalPg(ctx)
 			a.NoError(err)
 			defer func() {
 				_ = ctl.Close(ctx)

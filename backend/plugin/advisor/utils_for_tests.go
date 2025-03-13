@@ -11,7 +11,6 @@ import (
 	"sort"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
@@ -314,16 +313,6 @@ func (*MockDriver) SyncDBSchema(_ context.Context) (*storepb.DatabaseSchemaMetad
 
 // Dump implements the Driver interface.
 func (*MockDriver) Dump(_ context.Context, _ io.Writer, _ *storepb.DatabaseSchemaMetadata) error {
-	return nil
-}
-
-// SyncSlowQuery implements the Driver interface.
-func (*MockDriver) SyncSlowQuery(_ context.Context, _ time.Time) (map[string]*storepb.SlowQueryStatistics, error) {
-	return nil, nil
-}
-
-// CheckSlowQueryLogEnabled checks if slow query log is enabled.
-func (*MockDriver) CheckSlowQueryLogEnabled(_ context.Context) error {
 	return nil
 }
 

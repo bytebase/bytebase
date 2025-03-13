@@ -9,7 +9,6 @@ import (
 
 	"io"
 	"net/http"
-	"time"
 
 	"github.com/elastic/go-elasticsearch/v7/esapi"
 	"github.com/pkg/errors"
@@ -61,14 +60,6 @@ func (d *Driver) SyncDBSchema(_ context.Context) (*storepb.DatabaseSchemaMetadat
 	dbSchemaMetadata.Schemas = append(dbSchemaMetadata.Schemas, &storepb.SchemaMetadata{Tables: indices})
 
 	return &dbSchemaMetadata, nil
-}
-
-func (*Driver) SyncSlowQuery(_ context.Context, _ time.Time) (map[string]*storepb.SlowQueryStatistics, error) {
-	return nil, errors.New("CheckSlowQuery() is not applicable to Elasticsearch")
-}
-
-func (*Driver) CheckSlowQueryLogEnabled(_ context.Context) error {
-	return errors.New("CheckSlowQueryLogEnabled() is not applicable to Elasticsearch")
 }
 
 // struct for getVersion().

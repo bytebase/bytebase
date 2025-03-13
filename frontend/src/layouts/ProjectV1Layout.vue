@@ -35,7 +35,7 @@
         :allow-edit="allowEdit"
         v-bind="$attrs"
       />
-      <NoPermissionPlaceholder v-else />
+      <NoPermissionPlaceholder v-else class="py-6" />
     </div>
   </template>
   <div

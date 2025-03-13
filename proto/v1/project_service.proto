@@ -161,6 +161,10 @@ message ListProjectsRequest {
 
   // Show deleted projects if specified.
   bool show_deleted = 3;
+
+  // Filter the project.
+  // Check filter for SearchProjectsRequest for details.
+  string filter = 4;
 }
 
 message ListProjectsResponse {
@@ -176,8 +180,21 @@ message SearchProjectsRequest {
   // Show deleted projects if specified.
   bool show_deleted = 1;
 
-  // Filter the project title or resource id by query.
-  string query = 2;
+  // Filter the project.
+  // Supported filters:
+  // - name
+  // - resource_id
+  // - exclude_default: if not include the default project.
+  //
+  // For example:
+  // name = "project name"
+  // name.matches("project name")
+  // resource_id = "project id"
+  // resource_id.matches("project id")
+  // name = "project name" && resource_id.matches("project id")
+  // name.matches("project name") || resource_id = "project id"
+  // exclude_default == true
+  string filter = 2;
 }
 
 message SearchProjectsResponse {

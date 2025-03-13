@@ -7,7 +7,6 @@
         <AdvancedSearch
           v-model:params="state.params"
           class="flex-1"
-          :readonly-scopes="readonlyScopes"
           :scope-options="scopeOptions"
         />
         <NDropdown
@@ -102,6 +101,7 @@ const readonlyScopes = computed((): SearchScope[] => {
     {
       id: "project",
       value: extractProjectResourceName(specificProject.value.name),
+      readonly: true,
     },
   ];
 });
@@ -119,6 +119,12 @@ const currentUser = useCurrentUserV1();
 const state = reactive<LocalState>({
   params: defaultSearchParams(),
 });
+
+watch(
+  () => props.projectId,
+  () => (state.params = defaultSearchParams())
+);
+
 const planStore = usePlanStore();
 const planPagedTable = ref<ComponentExposed<typeof PagedTable<ComposedPlan>>>();
 

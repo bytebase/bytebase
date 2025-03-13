@@ -241,6 +241,21 @@ func (s *Store) ListSettingV2(ctx context.Context, find *FindSettingMessage) ([]
 	return settings, nil
 }
 
+func (s *Store) GetSecret(ctx context.Context) (string, error) {
+	if s.Secret != "" {
+		return s.Secret, nil
+	}
+	setting, err := s.GetSettingV2(ctx, api.SettingAuthSecret)
+	if err != nil {
+		return "", err
+	}
+	if setting == nil {
+		return "", errors.New("auth secret not found")
+	}
+	s.Secret = setting.Value
+	return setting.Value, nil
+}
+
 // UpsertSettingV2 upserts the setting by name.
 func (s *Store) UpsertSettingV2(ctx context.Context, update *SetSettingMessage) (*SettingMessage, error) {
 	fields := []string{"name", "value"}
@@ -340,12 +355,12 @@ func (s *Store) DeleteSettingV2(ctx context.Context, name api.SettingName) error
 	return nil
 }
 
-func listSettingV2Impl(ctx context.Context, tx *Tx, find *FindSettingMessage) ([]*SettingMessage, error) {
+func listSettingV2Impl(ctx context.Context, txn *sql.Tx, find *FindSettingMessage) ([]*SettingMessage, error) {
 	where, args := []string{"TRUE"}, []any{}
 	if v := find.Name; v != nil {
 		where, args = append(where, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
 	}
-	rows, err := tx.QueryContext(ctx, `
+	rows, err := txn.QueryContext(ctx, `
 		SELECT
 			name,
 			value

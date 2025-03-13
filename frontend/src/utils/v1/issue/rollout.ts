@@ -61,11 +61,11 @@ export const extractTaskRunUID = (name: string) => {
 };
 
 export const stageV1Slug = (stage: Stage): string => {
-  return [slug(stage.title), extractStageUID(stage.name)].join("-");
+  return [slug(stage.environment), extractStageUID(stage.name)].join("-");
 };
 
 export const taskV1Slug = (task: Task): string => {
-  return [slug(task.title), extractTaskUID(task.name)].join("-");
+  return extractTaskUID(task.name)
 };
 
 export const activeTaskInTaskList = (tasks: Task[]): Task => {

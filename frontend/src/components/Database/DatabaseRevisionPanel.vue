@@ -3,7 +3,6 @@
     <PagedTable
       :key="pagedRevisionTableSessionKey"
       :session-key="pagedRevisionTableSessionKey"
-      :page-size="50"
       :fetch-list="fetchRevisionList"
     >
       <template #table="{ list, loading }">

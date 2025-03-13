@@ -17,7 +17,8 @@ import {
 } from "@/utils";
 import { useCurrentUserV1 } from "../auth";
 import { useSQLEditorTabStore } from "../sqlEditor";
-import { getUserEmailFromIdentifier } from "./common";
+import { useUserStore, batchGetOrFetchUsers } from "../user";
+import { extractUserId } from "./common";
 import { useDatabaseV1Store, batchGetOrFetchDatabases } from "./database";
 import { useProjectV1Store, batchGetOrFetchProjects } from "./project";
 
@@ -30,6 +31,7 @@ export const useWorkSheetStore = defineStore("worksheet_v1", () => {
   );
   const projectStore = useProjectV1Store();
   const databaseStore = useDatabaseV1Store();
+  const userStore = useUserStore();
 
   // Getters
   const worksheetList = computed(() => {
@@ -68,16 +70,18 @@ export const useWorkSheetStore = defineStore("worksheet_v1", () => {
     await Promise.all([
       projectStore.getOrFetchProjectByName(worksheet.project),
       databaseStore.getOrFetchDatabaseByName(worksheet.database),
+      userStore.getOrFetchUserByIdentifier(worksheet.creator),
     ]);
     cacheByUID.setEntity([uid, view], worksheet);
   };
   const setListCache = async (worksheets: Worksheet[]) => {
-    await batchGetOrFetchProjects(
-      worksheets.map((worksheet) => worksheet.project)
-    );
-    await batchGetOrFetchDatabases(
-      worksheets.map((worksheet) => worksheet.database)
-    );
+    await Promise.all([
+      batchGetOrFetchProjects(worksheets.map((worksheet) => worksheet.project)),
+      batchGetOrFetchDatabases(
+        worksheets.map((worksheet) => worksheet.database)
+      ),
+      batchGetOrFetchUsers(worksheets.map((worksheet) => worksheet.creator)),
+    ]);
     for (const worksheet of worksheets) {
       await setCache(worksheet, "BASIC");
     }
@@ -259,7 +263,7 @@ export const useWorkSheetAndTabStore = defineStore("worksheet_and_tab", () => {
   const isCreator = computed(() => {
     const worksheet = currentWorksheet.value;
     if (!worksheet) return false;
-    return getUserEmailFromIdentifier(worksheet.creator) === me.value.email;
+    return extractUserId(worksheet.creator) === me.value.email;
   });
 
   const isReadOnly = computed(() => {

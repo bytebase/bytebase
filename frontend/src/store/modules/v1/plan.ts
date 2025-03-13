@@ -13,12 +13,12 @@ import {
 } from "@/types/v1/issue/plan";
 import {
   extractProjectResourceName,
-  extractUserResourceName,
   getTsRangeFromSearchParams,
   getValueFromSearchParams,
   hasProjectPermissionV2,
   type SearchParams,
 } from "@/utils";
+import { batchGetOrFetchDatabases } from "./database";
 import { useProjectV1Store } from "./project";
 
 export interface PlanFind {
@@ -80,7 +80,7 @@ export const composePlan = async (rawPlan: Plan): Promise<ComposedPlan> => {
     await useProjectV1Store().getOrFetchProjectByName(project);
 
   const creatorEntity =
-    userStore.getUserByEmail(extractUserResourceName(rawPlan.creator)) ??
+    (await userStore.getOrFetchUserByIdentifier(rawPlan.creator)) ??
     unknownUser();
 
   const plan: ComposedPlan = {
@@ -90,6 +90,12 @@ export const composePlan = async (rawPlan: Plan): Promise<ComposedPlan> => {
     projectEntity,
     creatorEntity,
   };
+
+  await batchGetOrFetchDatabases(
+    plan.steps
+      .flatMap((step) => step.specs)
+      .flatMap((spec) => spec.changeDatabaseConfig?.target ?? "")
+  );
 
   if (hasProjectPermissionV2(projectEntity, "bb.planCheckRuns.list")) {
     // Only show the latest plan check runs.

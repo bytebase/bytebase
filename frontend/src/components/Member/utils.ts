@@ -8,17 +8,16 @@ import { State } from "@/types/proto/v1/common";
 import { IamPolicy } from "@/types/proto/v1/iam_policy";
 import type { MemberBinding } from "./types";
 
-const getMemberBinding = (
+const getMemberBinding = async (
   member: string,
   searchText: string
-): MemberBinding | undefined => {
+): Promise<MemberBinding | undefined> => {
   const groupStore = useGroupStore();
   const userStore = useUserStore();
 
   let memberBinding: MemberBinding | undefined = undefined;
-
   if (member.startsWith(groupBindingPrefix)) {
-    const group = groupStore.getGroupByIdentifier(member);
+    const group = await groupStore.getOrFetchGroupByIdentifier(member);
     if (!group) {
       return undefined;
     }
@@ -33,7 +32,7 @@ const getMemberBinding = (
       projectRoleBindings: [],
     };
   } else {
-    const user = userStore.getUserByIdentifier(member);
+    const user = await userStore.getOrFetchUserByIdentifier(member);
     if (!user) {
       return undefined;
     }
@@ -62,7 +61,9 @@ const getMemberBinding = (
   return memberBinding;
 };
 
-export const getMemberBindingsByRole = ({
+// getMemberBindingsByRole returns a map from the input policies.
+// The map will in the Map<roles/{role}, Map<user:{email} or group:{email}, MemberBinding>> format
+export const getMemberBindingsByRole = async ({
   policies,
   searchText,
   ignoreRoles,
@@ -70,19 +71,21 @@ export const getMemberBindingsByRole = ({
   policies: { level: "WORKSPACE" | "PROJECT"; policy: IamPolicy }[];
   searchText: string;
   ignoreRoles: Set<string>;
-}) => {
+}): Promise<Map<string, Map<string, MemberBinding>>> => {
   // Map<role, Map<member, MemberBinding>>
   const memberMap = new Map<string, MemberBinding>();
   const roleMap = new Map<string, Map<string, MemberBinding>>();
   const search = searchText.trim().toLowerCase();
 
-  const ensureMemberBinding = (member: string) => {
+  const ensureMemberBinding = async (member: string) => {
     if (!memberMap.has(member)) {
-      const memberBinding = getMemberBinding(member, search);
-      if (!memberBinding) {
-        return undefined;
-      }
-      memberMap.set(member, memberBinding);
+      try {
+        const memberBinding = await getMemberBinding(member, search);
+        if (!memberBinding) {
+          return undefined;
+        }
+        memberMap.set(member, memberBinding);
+      } catch {}
     }
     return memberMap.get(member);
   };
@@ -96,7 +99,7 @@ export const getMemberBindingsByRole = ({
         roleMap.set(binding.role, new Map<string, MemberBinding>());
       }
       for (const member of binding.members) {
-        const memberBinding = ensureMemberBinding(member);
+        const memberBinding = await ensureMemberBinding(member);
         if (!memberBinding) {
           continue;
         }

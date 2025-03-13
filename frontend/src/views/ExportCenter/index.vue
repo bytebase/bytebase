@@ -7,7 +7,6 @@
         <IssueSearch
           v-model:params="state.params"
           class="flex-1"
-          :readonly-scopes="readonlyScopes"
           :override-scope-id-list="overrideSearchScopeIdList"
         >
           <template #searchbox-suffix>
@@ -107,6 +106,7 @@ const readonlyScopes = computed((): SearchScope[] => {
     {
       id: "project",
       value: extractProjectResourceName(specificProject.value.name),
+      readonly: true,
     },
   ];
 });
@@ -124,6 +124,14 @@ const state = reactive<LocalState>({
   showRequestExportPanel: false,
   params: defaultSearchParams(),
 });
+
+watch(
+  () => props.projectId,
+  () => {
+    state.params = defaultSearchParams();
+  }
+);
+
 const issueStore = useIssueV1Store();
 const issuePagedTable =
   ref<ComponentExposed<typeof PagedTable<ComposedIssue>>>();

@@ -1,10 +1,7 @@
 <template>
   <div class="w-full space-y-4">
     <FeatureAttention feature="bb.feature.audit-log" />
-    <AuditLogSearch
-      v-model:params="state.params"
-      :readonly-scopes="readonlyScopes"
-    >
+    <AuditLogSearch v-model:params="state.params">
       <template #searchbox-suffix>
         <DataExportButton
           size="medium"
@@ -36,12 +33,13 @@
         />
       </template>
     </PagedTable>
-    <NoDataPlaceholder v-else />
+    <NEmpty class="py-12 border rounded" v-else />
   </div>
 </template>
 
 <script setup lang="ts">
 import dayjs from "dayjs";
+import { NEmpty } from "naive-ui";
 import type { BinaryLike } from "node:crypto";
 import { computed, reactive, ref, watch } from "vue";
 // https://github.com/vuejs/language-tools/issues/3206
@@ -53,9 +51,13 @@ import { buildSearchAuditLogParams } from "@/components/AuditLog/AuditLogSearch/
 import type { ExportOption } from "@/components/DataExportButton.vue";
 import DataExportButton from "@/components/DataExportButton.vue";
 import { FeatureAttention } from "@/components/FeatureGuard";
-import NoDataPlaceholder from "@/components/misc/NoDataPlaceholder.vue";
 import PagedTable from "@/components/v2/Model/PagedTable.vue";
-import { featureToRef, useAuditLogStore, pushNotification } from "@/store";
+import {
+  featureToRef,
+  useAuditLogStore,
+  batchGetOrFetchUsers,
+  pushNotification,
+} from "@/store";
 import { type SearchAuditLogsParams } from "@/types";
 import type { AuditLog } from "@/types/proto/v1/audit_log_service";
 import { ExportFormat } from "@/types/proto/v1/common";
@@ -70,7 +72,7 @@ const props = defineProps<{
 }>();
 
 const readonlyScopes = computed((): SearchScope[] => {
-  return [{ id: "project", value: props.projectId }];
+  return [{ id: "project", value: props.projectId, readonly: true }];
 });
 
 const defaultSearchParams = () => {
@@ -84,6 +86,12 @@ const defaultSearchParams = () => {
 const state = reactive<LocalState>({
   params: defaultSearchParams(),
 });
+
+watch(
+  () => props.projectId,
+  () => (state.params = defaultSearchParams())
+);
+
 const { t } = useI18n();
 const hasAuditLogFeature = featureToRef("bb.feature.audit-log");
 const auditLogPagedTable = ref<ComponentExposed<typeof PagedTable<AuditLog>>>();
@@ -108,6 +116,7 @@ const fetchAuditLog = async ({
     pageToken,
     pageSize,
   });
+  await batchGetOrFetchUsers(auditLogs.map((log) => log.user));
   return { nextPageToken, list: auditLogs };
 };
 

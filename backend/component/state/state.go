@@ -14,9 +14,6 @@ const defaultInstanceMaximumConnections = 10
 
 // State is the state for all in-memory states within the server.
 type State struct {
-	// InstanceSlowQuerySyncChan is the channel for synchronizing slow query logs for instances.
-	InstanceSlowQuerySyncChan chan *InstanceSlowQuerySyncMessage
-
 	// ApprovalFinding is the set of issues for finding the approval template.
 	ApprovalFinding sync.Map // map[issue.ID]*store.IssueMessage
 
@@ -64,7 +61,6 @@ func New() (*State, error) {
 		return nil, errors.Wrapf(err, "failed to create auth expire cache")
 	}
 	return &State{
-		InstanceSlowQuerySyncChan:            make(chan *InstanceSlowQuerySyncMessage, 100),
 		InstanceOutstandingConnections:       &connectionLimiter{connections: map[string]int{}},
 		IssueExternalApprovalRelayCancelChan: make(chan int, 1),
 		TaskSkippedOrDoneChan:                make(chan int, 1000),
@@ -72,16 +68,6 @@ func New() (*State, error) {
 		TaskRunTickleChan:                    make(chan int, 1000),
 		ExpireCache:                          expireCache,
 	}, nil
-}
-
-// InstanceSlowQuerySyncMessage is the message for synchronizing slow query logs for instances.
-type InstanceSlowQuerySyncMessage struct {
-	InstanceID string
-
-	// ProjectID is used to filter the database list.
-	// If ProjectID is empty, then all databases will be synced.
-	// If ProjectID is not empty, then only databases belong to the project will be synced.
-	ProjectID string
 }
 
 type connectionLimiter struct {

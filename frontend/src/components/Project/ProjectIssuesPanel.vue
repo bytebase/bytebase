@@ -2,7 +2,6 @@
   <div class="flex flex-col gap-y-2">
     <IssueSearch
       v-model:params="state.params"
-      :readonly-scopes="readonlyScopes"
       :components="
         state.advanced ? ['searchbox', 'time-range', 'status'] : ['status']
       "
@@ -134,7 +133,11 @@ const issuePagedTable =
 
 const readonlyScopes = computed((): SearchScope[] => {
   return [
-    { id: "project", value: extractProjectResourceName(props.project.name) },
+    {
+      id: "project",
+      value: extractProjectResourceName(props.project.name),
+      readonly: true,
+    },
   ];
 });
 const tabItemList = computed((): TabFilterItem<TabValue>[] => {

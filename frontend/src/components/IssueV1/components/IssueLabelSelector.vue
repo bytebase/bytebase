@@ -12,24 +12,23 @@
     @update:value="onLabelsUpdate"
   >
     <template #empty>
-      <div class="flex flex-col items-center justify-center">
-        <NoDataPlaceholder
-          :border="false"
-          :img-attrs="{ class: '!max-h-[6vh]' }"
-        />
-        <router-link
-          v-if="hasPermission"
-          :to="{
-            name: PROJECT_V1_ROUTE_SETTINGS,
-            params: {
-              projectId: getProjectName(project.name),
-            },
-          }"
-          class="textinfolabel normal-link mb-4"
-        >
-          {{ $t("project.settings.issue-related.labels.configure-labels") }}
-        </router-link>
-      </div>
+      <NEmpty>
+        <template #extra>
+          <router-link
+            v-if="hasPermission"
+            :to="{
+              name: PROJECT_V1_ROUTE_SETTINGS,
+              params: {
+                projectId: getProjectName(project.name),
+              },
+            }"
+            class="textinfolabel normal-link"
+          >
+            {{ $t("project.settings.issue-related.labels.configure-labels") }}
+            <ExternalLinkIcon class="w-4 h-auto inline-block" />
+          </router-link>
+        </template>
+      </NEmpty>
     </template>
   </NSelect>
 </template>
@@ -45,7 +44,8 @@ export const getValidIssueLabels = (
 </script>
 
 <script setup lang="ts">
-import { NCheckbox, NSelect, NTag } from "naive-ui";
+import { ExternalLinkIcon } from "lucide-vue-next";
+import { NCheckbox, NSelect, NTag, NEmpty } from "naive-ui";
 import type { SelectOption } from "naive-ui";
 import type { SelectBaseOption } from "naive-ui/lib/select/src/interface";
 import { computed, h } from "vue";
@@ -54,7 +54,6 @@ import { getProjectName } from "@/store/modules/v1/common";
 import type { ComposedProject } from "@/types";
 import { Label } from "@/types/proto/v1/project_service";
 import { hasProjectPermissionV2 } from "@/utils";
-import NoDataPlaceholder from "@/components/misc/NoDataPlaceholder.vue";
 
 type IssueLabelOption = SelectOption & {
   value: string;

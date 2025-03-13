@@ -40,7 +40,7 @@ echo "Step 1 - building Bytebase frontend..."
 
 rm -rf ./backend/server/dist
 
-export BB_GIT_COMMIT_ID_FE=$(git rev-parse HEAD)
+export GIT_COMMIT=$(git rev-parse HEAD)
 pnpm --dir ./frontend i && pnpm --dir ./frontend release
 
 echo "Completed building Bytebase frontend."

@@ -154,7 +154,6 @@ const regenerateTempMfaSecret = async () => {
       regenerateTempMfaSecret: true,
     })
   );
-  await authStore.refreshUserIfNeeded(currentUser.value.name);
 };
 
 const verifyTOPCode = async () => {
@@ -209,7 +208,6 @@ const tryFinishSetup = async () => {
       updateMask: ["mfa_enabled"],
     })
   );
-  await authStore.refreshUserIfNeeded(currentUser.value.name);
   pushNotification({
     module: "bytebase",
     style: "SUCCESS",

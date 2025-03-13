@@ -7,7 +7,6 @@
       <AdvancedSearch
         class="flex-1"
         :params="params"
-        :readonly-scopes="readonlyScopes"
         :scope-options="scopeOptions"
         @update:params="$emit('update:params', $event)"
       />
@@ -40,11 +39,18 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed } from "vue";
+import { ref, computed, onMounted } from "vue";
 import AdvancedSearch from "@/components/AdvancedSearch";
 import TimeRange from "@/components/AdvancedSearch/TimeRange.vue";
-import type { SearchParams, SearchScope, SearchScopeId } from "@/utils";
-import { UIIssueFilterScopeIdList, useSearchScopeIdList } from "@/utils";
+import { useUserStore } from "@/store";
+import { State, stateToJSON } from "@/types/proto/v1/common";
+import { User, UserType, userTypeToJSON } from "@/types/proto/v1/user_service";
+import type { SearchParams, SearchScopeId } from "@/utils";
+import {
+  getDefaultPagination,
+  UIIssueFilterScopeIdList,
+  useSearchScopeIdList,
+} from "@/utils";
 import Status from "./Status.vue";
 import { useIssueSearchScopeOptions } from "./useIssueSearchScopeOptions";
 
@@ -53,14 +59,12 @@ export type SearchComponent = "searchbox" | "status" | "time-range";
 const props = withDefaults(
   defineProps<{
     params: SearchParams;
-    readonlyScopes?: SearchScope[];
     overrideScopeIdList?: SearchScopeId[];
     autofocus?: boolean;
     components?: SearchComponent[];
     componentProps?: Partial<Record<SearchComponent, any>>;
   }>(),
   {
-    readonlyScopes: () => [],
     overrideScopeIdList: () => [],
     components: () => ["searchbox", "time-range", "status"],
     componentProps: undefined,
@@ -72,6 +76,7 @@ defineEmits<{
 
 const SearchScopeIdList = useSearchScopeIdList();
 const showTimeRange = ref(false);
+const userStore = useUserStore();
 
 const allowedScopes = computed(() => {
   if (props.overrideScopeIdList && props.overrideScopeIdList.length > 0) {
@@ -80,8 +85,20 @@ const allowedScopes = computed(() => {
   return [...UIIssueFilterScopeIdList, ...SearchScopeIdList.value];
 });
 
+const activeUserList = ref<User[]>([]);
+
+onMounted(async () => {
+  const { users } = await userStore.fetchUserList({
+    pageSize: getDefaultPagination(),
+    showDeleted: false,
+    filter: `state == "${stateToJSON(State.ACTIVE)}" && user_type == "${userTypeToJSON(UserType.USER)}"`,
+  });
+  activeUserList.value = users;
+});
+
 const scopeOptions = useIssueSearchScopeOptions(
   computed(() => props.params),
-  allowedScopes
+  allowedScopes,
+  activeUserList
 );
 </script>

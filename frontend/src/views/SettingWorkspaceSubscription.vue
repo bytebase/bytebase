@@ -72,7 +72,7 @@
           {{ $t("subscription.instance-assignment.used-and-total-user") }}
         </div>
         <div class="mt-1 text-4xl flex items-center gap-2">
-          {{ userCount }}
+          {{ userStore.activeUserCountWithoutBot }}
           <span class="font-mono text-gray-500">/</span>
           {{ userLimit }}
         </div>
@@ -173,7 +173,6 @@ import {
 } from "@/store";
 import { ENTERPRISE_INQUIRE_LINK } from "@/types";
 import { PlanType } from "@/types/proto/v1/subscription_service";
-import { UserType } from "@/types/proto/v1/user_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
 interface LocalState {
@@ -202,14 +201,6 @@ const state = reactive<LocalState>({
 
 const disabled = computed((): boolean => {
   return state.loading || !state.license;
-});
-
-const userCount = computed(() => {
-  return userStore.activeUserList.filter(
-    (user) =>
-      user.userType === UserType.USER ||
-      user.userType === UserType.SERVICE_ACCOUNT
-  ).length;
 });
 
 const userLimit = computed((): string => {

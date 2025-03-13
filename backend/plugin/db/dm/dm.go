@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"log/slog"
 	"math/big"
-	"strconv"
 	"time"
 
 	// Import go-dm DM driver.
@@ -46,20 +45,16 @@ func newDriver(db.DriverConfig) db.Driver {
 
 // Open opens a DM driver.
 func (driver *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
-	port, err := strconv.Atoi(config.Port)
-	if err != nil {
-		return nil, errors.Errorf("invalid port %q", config.Port)
-	}
-	dsn := fmt.Sprintf("dm://%s:%s@%s:%d", config.Username, config.Password, config.Host, port)
-	if config.Database != "" {
-		dsn = fmt.Sprintf("%s?schema=%s", dsn, config.Database)
+	dsn := fmt.Sprintf("dm://%s:%s@%s:%s", config.DataSource.Username, config.Password, config.DataSource.Host, config.DataSource.Port)
+	if config.ConnectionContext.DatabaseName != "" {
+		dsn = fmt.Sprintf("%s?schema=%s", dsn, config.ConnectionContext.DatabaseName)
 	}
 	db, err := sql.Open("dm", dsn)
 	if err != nil {
 		return nil, err
 	}
 	driver.db = db
-	driver.databaseName = config.Database
+	driver.databaseName = config.ConnectionContext.DatabaseName
 	driver.maximumSQLResultSize = config.MaximumSQLResultSize
 	return driver, nil
 }

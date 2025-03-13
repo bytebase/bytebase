@@ -45,13 +45,13 @@
               :autofocus="false"
               :placeholder="$t('database.filter-database')"
               :scope-options="scopeOptions"
-              :readonly-scopes="readonlyScopes"
             />
           </div>
           <DatabaseOperations
             :databases="selectedDatabases"
-            @refresh="
-              (databases) => pagedDatabaseTableRef?.refreshCache(databases)
+            @refresh="() => pagedDatabaseTableRef?.refresh()"
+            @update-cache="
+              (databases) => pagedDatabaseTableRef?.updateCache(databases)
             "
           />
           <PagedDatabaseTable
@@ -166,7 +166,7 @@ const databaseChangeMode = useAppFeature("bb.feature.database-change-mode");
 const pagedDatabaseTableRef = ref<InstanceType<typeof PagedDatabaseTable>>();
 
 const readonlyScopes = computed((): SearchScope[] => [
-  { id: "instance", value: props.instanceId },
+  { id: "instance", value: props.instanceId, readonly: true },
 ]);
 
 const state = reactive<LocalState>({
@@ -286,7 +286,7 @@ const createDatabase = () => {
   state.showCreateDatabaseModal = true;
 };
 
-useTitle(instance.value.title);
+useTitle(computed(() => instance.value.title));
 
 const handleDatabasesSelectionChanged = (
   selectedDatabaseNameList: Set<string>

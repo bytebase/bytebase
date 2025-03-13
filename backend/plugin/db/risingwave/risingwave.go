@@ -62,42 +62,40 @@ func newDriver(config db.DriverConfig) db.Driver {
 
 // Open opens a RisingWave driver.
 func (driver *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
-	// Require username for Postgres, as the guessDSN 1st guess is to use the username as the connecting database
-	// if database name is not explicitly specified.
-	if config.Username == "" {
+	if config.DataSource.Username == "" {
 		return nil, errors.Errorf("user must be set")
 	}
 
-	if config.Host == "" {
+	if config.DataSource.Host == "" {
 		return nil, errors.Errorf("host must be set")
 	}
 
-	if config.Port == "" {
+	if config.DataSource.Port == "" {
 		return nil, errors.Errorf("port must be set")
 	}
 
-	if (config.TLSConfig.SslCert == "" && config.TLSConfig.SslKey != "") ||
-		(config.TLSConfig.SslCert != "" && config.TLSConfig.SslKey == "") {
+	if (config.DataSource.GetSslCert() == "" && config.DataSource.GetSslKey() != "") ||
+		(config.DataSource.GetSslCert() != "" && config.DataSource.GetSslKey() == "") {
 		return nil, errors.Errorf("ssl-cert and ssl-key must be both set or unset")
 	}
 
-	connStr := fmt.Sprintf("host=%s port=%s", config.Host, config.Port)
+	connStr := fmt.Sprintf("host=%s port=%s", config.DataSource.Host, config.DataSource.Port)
 	pgxConnConfig, err := pgx.ParseConfig(connStr)
 	if err != nil {
 		return nil, err
 	}
-	pgxConnConfig.Config.User = config.Username
+	pgxConnConfig.Config.User = config.DataSource.Username
 	pgxConnConfig.Config.Password = config.Password
-	pgxConnConfig.Config.Database = config.Database
-	if config.TLSConfig.SslCert != "" {
-		cfg, err := config.TLSConfig.GetSslConfig()
+	pgxConnConfig.Config.Database = config.ConnectionContext.DatabaseName
+	if config.DataSource.GetSslCert() != "" {
+		tlscfg, err := util.GetTLSConfig(config.DataSource)
 		if err != nil {
 			return nil, err
 		}
-		pgxConnConfig.TLSConfig = cfg
+		pgxConnConfig.TLSConfig = tlscfg
 	}
-	if config.SSHConfig.Host != "" {
-		sshClient, err := util.GetSSHClient(config.SSHConfig)
+	if config.DataSource.GetSshHost() != "" {
+		sshClient, err := util.GetSSHClient(config.DataSource)
 		if err != nil {
 			return nil, err
 		}
@@ -108,21 +106,16 @@ func (driver *Driver) Open(_ context.Context, _ storepb.Engine, config db.Connec
 			if err != nil {
 				return nil, err
 			}
-			return &noDeadlineConn{Conn: conn}, nil
+			return &util.NoDeadlineConn{Conn: conn}, nil
 		}
 	}
-	if config.ReadOnly {
+	if config.ConnectionContext.ReadOnly {
 		pgxConnConfig.RuntimeParams["default_transaction_read_only"] = "true"
 	}
 
-	driver.databaseName = config.Database
-	if config.Database == "" {
-		databaseName, cfg, err := guessDSN(pgxConnConfig)
-		if err != nil {
-			return nil, err
-		}
-		pgxConnConfig = cfg
-		driver.databaseName = databaseName
+	driver.databaseName = config.ConnectionContext.DatabaseName
+	if config.ConnectionContext.DatabaseName == "" {
+		pgxConnConfig.Database = "postgres"
 	}
 	driver.config = config
 
@@ -133,37 +126,6 @@ func (driver *Driver) Open(_ context.Context, _ storepb.Engine, config db.Connec
 	}
 	driver.db = db
 	return driver, nil
-}
-
-type noDeadlineConn struct{ net.Conn }
-
-func (*noDeadlineConn) SetDeadline(time.Time) error      { return nil }
-func (*noDeadlineConn) SetReadDeadline(time.Time) error  { return nil }
-func (*noDeadlineConn) SetWriteDeadline(time.Time) error { return nil }
-
-// guessDSN will guess a valid DB connection and its database name.
-func guessDSN(baseConnConfig *pgx.ConnConfig) (string, *pgx.ConnConfig, error) {
-	// RisingWave creates the default `dev` database.
-	guesses := []string{"dev"}
-	for _, guessDatabase := range guesses {
-		connConfig := *baseConnConfig
-		connConfig.Database = guessDatabase
-		if err := func() error {
-			connectionString := stdlib.RegisterConnConfig(&connConfig)
-			defer stdlib.UnregisterConnConfig(connectionString)
-			db, err := sql.Open(driverName, connectionString)
-			if err != nil {
-				return err
-			}
-			defer db.Close()
-			return db.Ping()
-		}(); err != nil {
-			slog.Debug("guessDSN attempt failed", log.BBError(err))
-			continue
-		}
-		return guessDatabase, &connConfig, nil
-	}
-	return "", nil, errors.Errorf("cannot connect to the instance, make sure the connection info is correct")
 }
 
 // Close closes the driver.

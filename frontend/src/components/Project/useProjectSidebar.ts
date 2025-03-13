@@ -1,4 +1,3 @@
-import { startCase } from "lodash-es";
 import {
   Database,
   CircleDot,
@@ -20,7 +19,6 @@ import projectV1Routes, {
   PROJECT_V1_ROUTE_DATABASES,
   PROJECT_V1_ROUTE_ISSUES,
   PROJECT_V1_ROUTE_SYNC_SCHEMA,
-  PROJECT_V1_ROUTE_SLOW_QUERIES,
   PROJECT_V1_ROUTE_ANOMALIES,
   PROJECT_V1_ROUTE_MEMBERS,
   PROJECT_V1_ROUTE_SETTINGS,
@@ -142,11 +140,6 @@ export const useProjectSidebar = (
             path: PROJECT_V1_ROUTE_DATABASE_GROUPS,
             type: "div",
             hide: databaseChangeMode.value === DatabaseChangeMode.EDITOR,
-          },
-          {
-            title: startCase(t("slow-query.slow-queries")),
-            path: PROJECT_V1_ROUTE_SLOW_QUERIES,
-            type: "div",
           },
           {
             title: t("common.anomalies"),

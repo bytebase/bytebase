@@ -43,19 +43,19 @@ func (d *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionC
 	// ref: https://github.com/databricks/databricks-sdk-go?tab=readme-ov-file#databricks-native-authentication
 	// only support token authentication.
 	client, err := databricks.NewWorkspaceClient(&databricks.Config{
-		Host:  config.Host,
-		Token: config.AuthenticationPrivateKey,
+		Host:  config.DataSource.Host,
+		Token: config.DataSource.GetAuthenticationPrivateKey(),
 	})
 	if err != nil {
 		return nil, err
 	}
 
 	d.Client = client
-	if config.WarehouseID == "" {
+	if config.DataSource.GetWarehouseId() == "" {
 		return nil, errors.New("Warehouse ID must be set")
 	}
-	d.WarehouseID = config.WarehouseID
-	d.curCatalog = config.Database
+	d.WarehouseID = config.DataSource.GetWarehouseId()
+	d.curCatalog = config.ConnectionContext.DatabaseName
 	return d, nil
 }
 
@@ -124,10 +124,6 @@ func (d *Driver) Execute(ctx context.Context, statement string, _ db.ExecuteOpti
 	// No ways of fetching affected rows.
 	_, err := d.QueryConn(ctx, nil, statement, db.QueryContext{})
 	return 0, err
-}
-
-func (*Driver) CheckSlowQueryLogEnabled(_ context.Context) error {
-	return nil
 }
 
 // Execute SQL statement synchronously and return row data or error.

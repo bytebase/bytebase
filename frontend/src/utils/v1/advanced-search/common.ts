@@ -24,9 +24,11 @@ export const AllSearchScopeIdList = [
   "creator",
   "created",
   "status",
+  // database related search scopes.
+  "engine",
   // issue related search scopes.
   "subscriber",
-  "label",
+  "label", // label is also used by database search
   "taskType",
   // auditLog related search scopes.
   "method",
@@ -55,6 +57,7 @@ export type SearchScopeId =
 export type SearchScope = {
   id: SearchScopeId;
   value: string;
+  readonly?: boolean;
 };
 
 export interface SearchParams {

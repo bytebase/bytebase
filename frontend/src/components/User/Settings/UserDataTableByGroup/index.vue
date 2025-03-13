@@ -17,9 +17,8 @@ import { NDataTable } from "naive-ui";
 import { computed, h } from "vue";
 import { useI18n } from "vue-i18n";
 import { useUserStore } from "@/store";
-import { getUserEmailFromIdentifier } from "@/store/modules/v1/common";
-import { type User } from "@/types/proto/v1/user_service";
 import { Group, GroupMember_Role } from "@/types/proto/v1/group_service";
+import { type User } from "@/types/proto/v1/user_service";
 import GroupMemberNameCell from "./cells/GroupMemberNameCell.vue";
 import GroupNameCell from "./cells/GroupNameCell.vue";
 import GroupOperationsCell from "./cells/GroupOperationsCell.vue";
@@ -106,9 +105,7 @@ const userListByGroup = computed(() => {
   for (const group of props.groups) {
     const members: UserRowData[] = [];
     for (const member of group.members) {
-      const user = userStore.activeUserList.find(
-        (user) => user.email === getUserEmailFromIdentifier(member.member)
-      );
+      const user = userStore.getUserByIdentifier(member.member);
       if (!user) {
         continue;
       }

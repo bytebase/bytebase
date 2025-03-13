@@ -148,6 +148,21 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*ba
 
 	tableSource, err := q.extractTableSourceFromNode(ast.Stmt)
 	if err != nil {
+		var functionNotSupported *parsererror.FunctionNotSupportedError
+		if errors.As(err, &functionNotSupported) {
+			// Sadly, getAccessTables() returns nil for resources not found.
+			if len(accessTables) == 0 {
+				accessTables[base.ColumnResource{
+					Database: q.defaultDatabase,
+				}] = true
+			}
+			return &base.QuerySpan{
+				Type:          base.Select,
+				SourceColumns: accessTables,
+				Results:       []base.QuerySpanResult{},
+				NotFoundError: functionNotSupported,
+			}, nil
+		}
 		var resourceNotFound *parsererror.ResourceNotFoundError
 		if errors.As(err, &resourceNotFound) {
 			// Sadly, getAccessTables() returns nil for resources not found.
@@ -529,9 +544,13 @@ func (q *querySpanExtractor) findFunctionDefine(schemaName, funcName string, arg
 	}
 
 	function := candidates[0]
-	columns, err := q.getColumnsForFunction(fmt.Sprintf("%s.%s", schemaName, funcName), function.Definition)
+	functionName := fmt.Sprintf("%s.%s", schemaName, funcName)
+	columns, err := q.getColumnsForFunction(functionName, function.Definition)
 	if err != nil {
-		return nil, err
+		return nil, &parsererror.FunctionNotSupportedError{
+			Err:      err,
+			Function: functionName,
+		}
 	}
 	return &base.PseudoTable{
 		Columns: columns,

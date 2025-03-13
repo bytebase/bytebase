@@ -24,12 +24,13 @@
       </template>
     </SQLReviewTabsByEngine>
   </div>
-  <NoDataPlaceholder v-else>
-    <NButton type="primary" @click="showRuleSelectPanel = true">
-      {{ $t("sql-review.add-rules") }}
-    </NButton>
-  </NoDataPlaceholder>
-
+  <NEmpty v-else class="py-12 border rounded">
+    <template #extra>
+      <NButton type="primary" @click="showRuleSelectPanel = true">
+        {{ $t("sql-review.add-rules") }}
+      </NButton>
+    </template>
+  </NEmpty>
   <SQLReviewRulesSelectPanel
     :show="showRuleSelectPanel"
     :selected-rule-map="ruleMapByEngine"
@@ -40,11 +41,10 @@
 </template>
 
 <script lang="ts" setup>
-import { NButton } from "naive-ui";
+import { NButton, NEmpty } from "naive-ui";
 import { ref } from "vue";
 import type { Engine } from "@/types/proto/v1/common";
 import type { RuleTemplateV2 } from "@/types/sqlReview";
-import NoDataPlaceholder from "../misc/NoDataPlaceholder.vue";
 import SQLReviewRulesSelectPanel from "./components/SQLReviewRulesSelectPanel.vue";
 import SQLReviewTabsByEngine from "./components/SQLReviewTabsByEngine.vue";
 import SQLRuleTableWithFilter from "./components/SQLRuleTableWithFilter.vue";

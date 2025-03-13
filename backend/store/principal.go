@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -31,6 +32,8 @@ type FindUserMessage struct {
 	ShowDeleted bool
 	Type        *api.PrincipalType
 	Limit       *int
+	Offset      *int
+	Filter      *ListResourceFilter
 }
 
 // UpdateUserMessage is the message to update a user.
@@ -59,6 +62,12 @@ type UserMessage struct {
 	Phone string
 	// output only
 	CreatedAt time.Time
+}
+
+type UserStat struct {
+	Type    api.PrincipalType
+	Deleted bool
+	Count   int
 }
 
 // GetSystemBotUser gets the system bot.
@@ -100,6 +109,39 @@ func (s *Store) GetUserByEmail(ctx context.Context, email string) (*UserMessage,
 
 	user, _ := s.userEmailCache.Get(email)
 	return user, nil
+}
+
+func (s *Store) StatUsers(ctx context.Context) ([]*UserStat, error) {
+	rows, err := s.db.QueryContext(ctx, `
+	SELECT
+		COUNT(*),
+		type,
+		deleted
+	FROM principal
+	GROUP BY type, deleted`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var stats []*UserStat
+
+	for rows.Next() {
+		var stat UserStat
+		if err := rows.Scan(
+			&stat.Count,
+			&stat.Type,
+			&stat.Deleted,
+		); err != nil {
+			return nil, err
+		}
+		stats = append(stats, &stat)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, errors.Wrapf(err, "failed to scan rows")
+	}
+
+	return stats, nil
 }
 
 // ListUsers list users.
@@ -150,8 +192,12 @@ func (s *Store) listAndCacheAllUsers(ctx context.Context) ([]*UserMessage, error
 	return users, nil
 }
 
-func listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage) ([]*UserMessage, error) {
+func listUserImpl(ctx context.Context, txn *sql.Tx, find *FindUserMessage) ([]*UserMessage, error) {
 	where, args := []string{"TRUE"}, []any{}
+	if filter := find.Filter; filter != nil {
+		where = append(where, filter.Where)
+		args = append(args, filter.Args...)
+	}
 	if v := find.ID; v != nil {
 		where, args = append(where, fmt.Sprintf("principal.id = $%d", len(args)+1)), append(args, *v)
 	}
@@ -182,14 +228,17 @@ func listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage) ([]*UserMe
 		principal.profile,
 		principal.created_at
 	FROM principal
-	WHERE ` + strings.Join(where, " AND ")
+	WHERE ` + strings.Join(where, " AND ") + ` ORDER BY type DESC, created_at ASC`
 
 	if v := find.Limit; v != nil {
 		query += fmt.Sprintf(" LIMIT %d", *v)
 	}
+	if v := find.Offset; v != nil {
+		query += fmt.Sprintf(" OFFSET %d", *v)
+	}
 
 	var userMessages []*UserMessage
-	rows, err := tx.QueryContext(ctx, query, args...)
+	rows, err := txn.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}

@@ -67,7 +67,7 @@ onMounted(async () => {
 
   // Then prepare the other resources.
   await Promise.all([
-    useUserStore().fetchUserList(),
+    useUserStore().refreshUserStat(),
     useGroupStore().fetchGroupList(),
     useEnvironmentV1Store().fetchEnvironments(),
     prepareProjects(),

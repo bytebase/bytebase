@@ -1,5 +1,6 @@
 <template>
-  <component :is="tag">
+  <component :is="tag" class="flex items-center gap-x-2">
+    <EngineIcon :engine="engine" />
     {{ title }}
     <span v-if="subtitle" class="text-xs opacity-70">
       {{ subtitle }}
@@ -9,6 +10,7 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
+import { EngineIcon } from "@/components/Icon";
 import type { Engine } from "@/types/proto/v1/common";
 import { engineNameV1 } from "@/utils";
 

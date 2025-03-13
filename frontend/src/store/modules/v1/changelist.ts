@@ -8,10 +8,8 @@ import type {
   DeepPartial,
   ListChangelistsRequest,
 } from "@/types/proto/v1/changelist_service";
-import {
-  ResourceComposer,
-  isChangelogChangeSource,
-} from "@/utils";
+import { ResourceComposer, isChangelogChangeSource } from "@/utils";
+import { batchGetOrFetchUsers } from "../user";
 import { useChangelogStore } from "./changelog";
 import { useSheetV1Store } from "./sheet";
 
@@ -22,6 +20,9 @@ export const useChangelistStore = defineStore("changelist", () => {
     changelists: Changelist[],
     compose: boolean
   ) => {
+    await batchGetOrFetchUsers(
+      changelists.map((changelist) => changelist.creator)
+    );
     for (let i = 0; i < changelists.length; i++) {
       const changelist = changelists[i];
       if (compose) {

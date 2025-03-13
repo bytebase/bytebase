@@ -1,13 +1,12 @@
-# https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/defining-the-mergeability-of-pull-requests/troubleshooting-required-status-checks#handling-skipped-but-required-checks
 name: Proto linter
 
 on:
   pull_request:
     branches:
-      - main
-      - "release/*.*.*"
+      - 'main'
+      - 'release/*.*.*'
     paths-ignore:
-      - "proto/**"
+      - 'proto/**'
 
 jobs:
   lint-protos:

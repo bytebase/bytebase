@@ -6,11 +6,6 @@
   >
     <template #item="{ option }: RadioGridItem<Engine>">
       <div class="flex flex-row items-center gap-x-1">
-        <img
-          v-if="EngineIconPath[option.value]"
-          :src="EngineIconPath[option.value]"
-          class="w-5 h-auto max-h-[20px] object-contain"
-        />
         <RichEngineName
           :engine="option.value"
           tag="p"
@@ -24,7 +19,6 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
-import { EngineIconPath } from "@/components/InstanceForm/constants";
 import type { Engine } from "@/types/proto/v1/common";
 import { engineNameV1 } from "@/utils";
 import {

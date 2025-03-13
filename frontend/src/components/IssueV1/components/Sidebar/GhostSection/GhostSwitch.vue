@@ -171,7 +171,7 @@ const toggleChecked = async (on: boolean) => {
     try {
       await useIssueCommentStore().createIssueComment({
         issueName: issue.value.name,
-        comment: `${action} online migration for task [${selectedTask.value.title}].`,
+        comment: `${action} online migration for task [${selectedTask.value.target}].`,
       });
     } catch {
       // fail to comment won't be too bad.

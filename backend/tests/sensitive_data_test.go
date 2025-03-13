@@ -99,10 +99,7 @@ func TestSensitiveData(t *testing.T) {
 	a := require.New(t)
 	ctx := context.Background()
 	ctl := &controller{}
-	dataDir := t.TempDir()
-	ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
-		dataDir: dataDir,
-	})
+	ctx, err := ctl.StartServerWithExternalPg(ctx)
 	a.NoError(err)
 	defer ctl.Close(ctx)
 
@@ -130,13 +127,10 @@ func TestSensitiveData(t *testing.T) {
 	a.NoError(err)
 
 	mysqlContainer, err := getMySQLContainer(ctx)
-	a.NoError(err)
-
 	defer func() {
-		mysqlContainer.db.Close()
-		err := mysqlContainer.container.Terminate(ctx)
-		a.NoError(err)
+		mysqlContainer.Close(ctx)
 	}()
+	a.NoError(err)
 
 	mysqlDB := mysqlContainer.db
 	_, err = mysqlDB.Exec(fmt.Sprintf("DROP DATABASE IF EXISTS %v", databaseName))

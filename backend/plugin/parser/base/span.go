@@ -62,8 +62,9 @@ type QuerySpan struct {
 	SourceColumns SourceColumnSet
 	// PredicateColumns are the source columns contributing to the span.
 	// PredicateColumns here are the source columns for the where conditions.
-	PredicateColumns SourceColumnSet
-	NotFoundError    error
+	PredicateColumns          SourceColumnSet
+	NotFoundError             error
+	FunctionNotSupportedError error
 }
 
 // QuerySpanResult is the result column of a query span.

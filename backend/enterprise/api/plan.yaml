@@ -36,7 +36,6 @@ categoryList:
   - type: data-security-and-governance
     featureList:
       - rbac
-      - slow-query
       - archiving
       - sso
       - 2fa
@@ -110,7 +109,6 @@ planList:
         content: webhook-integration-basic
         tooltip: webhook-integration-basic-tooltip
       # Data Security and Governance
-      - type: slow-query
       - type: archiving
       - type: anomaly-detection
         content: anomaly-detection-basic
@@ -183,7 +181,6 @@ planList:
         content: webhook-integration-basic
         tooltip: webhook-integration-basic-tooltip
       # Data Security and Governance
-      - type: slow-query
       - type: archiving
       - type: anomaly-detection
         content: anomaly-detection-basic
@@ -261,7 +258,6 @@ planList:
         content: webhook-integration-advanced
         tooltip: webhook-integration-advanced-tooltip
       # Data Security and Governance
-      - type: slow-query
       - type: archiving
       - type: anomaly-detection
         content: anomaly-detection-advanced

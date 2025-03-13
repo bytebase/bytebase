@@ -74,11 +74,11 @@ func (scheduler *AddressScheduler) GetNewAddress() string {
 }
 
 func (*Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
-	address := fmt.Sprintf("%s:%s", config.Host, config.Port)
+	address := fmt.Sprintf("%s:%s", config.DataSource.Host, config.DataSource.Port)
 	u, err := url.Parse(address)
 	if err != nil || u.Host == "" {
 		protocol := "http"
-		if config.TLSConfig.UseSSL {
+		if config.DataSource.GetUseSsl() {
 			protocol = "https"
 		}
 		address = fmt.Sprintf("%s://%s", protocol, address)
@@ -89,7 +89,7 @@ func (*Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionCon
 	}
 
 	esConfig := elasticsearch.Config{
-		Username:  config.Username,
+		Username:  config.DataSource.Username,
 		Password:  config.Password,
 		Addresses: []string{address},
 		Transport: &http.Transport{
@@ -111,12 +111,12 @@ func (*Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionCon
 		},
 	}
 
-	if config.TLSConfig.SslCert != "" {
+	if config.DataSource.GetSslCert() != "" {
 		certPool := x509.NewCertPool()
-		if ok := certPool.AppendCertsFromPEM([]byte(config.TLSConfig.SslCert)); !ok {
+		if ok := certPool.AppendCertsFromPEM([]byte(config.DataSource.GetSslCert())); !ok {
 			return nil, errors.New("cannot add CA cert to pool")
 		}
-		esConfig.CACert = []byte(config.TLSConfig.SslCert)
+		esConfig.CACert = []byte(config.DataSource.GetSslCert())
 		esConfig.Transport = &http.Transport{
 			MaxIdleConnsPerHost:   10,
 			ResponseHeaderTimeout: time.Second,
@@ -134,7 +134,7 @@ func (*Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionCon
 	}
 
 	// generate basic authentication string for http client.
-	encodedUsrAndPasswd := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s:%s", config.Username, config.Password)))
+	encodedUsrAndPasswd := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s:%s", config.DataSource.Username, config.Password)))
 	basicAuthString := fmt.Sprintf("Basic %s", string(encodedUsrAndPasswd))
 
 	return &Driver{

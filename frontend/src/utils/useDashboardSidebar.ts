@@ -289,6 +289,7 @@ export const useDashboardSidebar = () => {
             title: t("settings.sidebar.mail-delivery"),
             name: WORKSPACE_ROUTE_MAIL_DELIVERY,
             type: "route",
+            hide: true, // TODO: show it until we have a mail delivery requirement.
           },
         ],
       },

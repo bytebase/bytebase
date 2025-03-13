@@ -1,14 +1,14 @@
-# https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/defining-the-mergeability-of-pull-requests/troubleshooting-required-status-checks#handling-skipped-but-required-checks
 name: Backend Tests
 
 on:
   pull_request:
     branches:
-      - main
-      - "release/*.*.*"
+      - 'main'
+      - 'release/*.*.*'
     paths-ignore:
-      - "backend/**"
-      - "go.mod"
+      - 'backend/**'
+      - 'go.mod'
+      - 'proto/**/*.go'
 
 jobs:
   go-tests:

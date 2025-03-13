@@ -2,7 +2,6 @@ package taskrun
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"sync"
@@ -211,16 +210,11 @@ func (s *SchedulerV2) scheduleAutoRolloutTask(ctx context.Context, rolloutPolicy
 		return nil
 	}
 
-	sheetUID, err := api.GetSheetUIDFromTaskPayload(task.Payload)
-	if err != nil {
-		return errors.Wrapf(err, "failed to get sheet uid")
-	}
-
+	sheetUID := int(task.Payload.GetSheetId())
 	create := &store.TaskRunMessage{
 		CreatorID: api.SystemBotID,
 		TaskUID:   task.ID,
-		SheetUID:  sheetUID,
-		Name:      fmt.Sprintf("%s %d", task.Name, time.Now().Unix()),
+		SheetUID:  &sheetUID,
 	}
 
 	if err := s.store.CreatePendingTaskRuns(ctx, create); err != nil {
@@ -284,17 +278,12 @@ func (s *SchedulerV2) schedulePendingTaskRun(ctx context.Context, taskRun *store
 			return true, nil
 		}
 
-		var version struct {
-			Version string `json:"schemaVersion"`
-		}
-		if err := json.Unmarshal([]byte(task.Payload), &version); err != nil {
-			return false, errors.Wrapf(err, "failed to unmarshal task payload")
-		}
-		if version.Version == "" {
+		schemaVersion := task.Payload.GetSchemaVersion()
+		if schemaVersion == "" {
 			return true, nil
 		}
 
-		taskIDs, err := s.store.FindBlockingTasksByVersion(ctx, task.InstanceID, *task.DatabaseName, version.Version)
+		taskIDs, err := s.store.FindBlockingTasksByVersion(ctx, task.InstanceID, *task.DatabaseName, schemaVersion)
 		if err != nil {
 			return false, errors.Wrapf(err, "failed to find blocking versioned tasks")
 		}
@@ -416,7 +405,6 @@ func (s *SchedulerV2) scheduleRunningTaskRuns(ctx context.Context) error {
 		if !ok {
 			slog.Error("Skip running task with unknown type",
 				slog.Int("id", task.ID),
-				slog.String("name", task.Name),
 				slog.String("type", string(task.Type)),
 			)
 			continue
@@ -481,7 +469,6 @@ func (s *SchedulerV2) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRun
 	if !done && err != nil {
 		slog.Debug("Encountered transient error running task, will retry",
 			slog.Int("id", task.ID),
-			slog.String("name", task.Name),
 			slog.String("type", string(task.Type)),
 			log.BBError(err),
 		)
@@ -491,7 +478,6 @@ func (s *SchedulerV2) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRun
 	if done && err != nil && errors.Is(err, context.Canceled) {
 		slog.Warn("task run is canceled",
 			slog.Int("id", task.ID),
-			slog.String("name", task.Name),
 			slog.String("type", string(task.Type)),
 			log.BBError(err),
 		)
@@ -521,7 +507,6 @@ func (s *SchedulerV2) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRun
 		if _, err := s.store.UpdateTaskRunStatus(ctx, taskRunStatusPatch); err != nil {
 			slog.Error("Failed to mark task as CANCELED",
 				slog.Int("id", task.ID),
-				slog.String("name", task.Name),
 				log.BBError(err),
 			)
 			return
@@ -532,7 +517,6 @@ func (s *SchedulerV2) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRun
 	if done && err != nil {
 		slog.Warn("task run failed",
 			slog.Int("id", task.ID),
-			slog.String("name", task.Name),
 			slog.String("type", string(task.Type)),
 			log.BBError(err),
 		)
@@ -571,7 +555,6 @@ func (s *SchedulerV2) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRun
 		if _, err := s.store.UpdateTaskRunStatus(ctx, taskRunStatusPatch); err != nil {
 			slog.Error("Failed to mark task as FAILED",
 				slog.Int("id", task.ID),
-				slog.String("name", task.Name),
 				log.BBError(err),
 			)
 			return
@@ -619,7 +602,6 @@ func (s *SchedulerV2) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRun
 		if _, err := s.store.UpdateTaskRunStatus(ctx, taskRunStatusPatch); err != nil {
 			slog.Error("Failed to mark task as DONE",
 				slog.Int("id", task.ID),
-				slog.String("name", task.Name),
 				log.BBError(err),
 			)
 			return
@@ -750,7 +732,7 @@ func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {
 						Issue:   webhook.NewIssue(issue),
 						Project: webhook.NewProject(issue.Project),
 						StageStatusUpdate: &webhook.EventStageStatusUpdate{
-							StageTitle: taskStage.Name,
+							StageTitle: taskStage.Environment,
 							StageUID:   taskStage.ID,
 						},
 					})
@@ -775,7 +757,7 @@ func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {
 						Project: webhook.NewProject(issue.Project),
 						IssueRolloutReady: &webhook.EventIssueRolloutReady{
 							RolloutPolicy: policy,
-							StageName:     nextStage.Name,
+							StageName:     nextStage.Environment,
 						},
 					})
 					return nil
@@ -847,6 +829,10 @@ func (s *SchedulerV2) createActivityForTaskRunStatusUpdate(ctx context.Context, 
 		if issue == nil {
 			return nil
 		}
+		taskRunTitle := ""
+		if task.DatabaseName != nil {
+			taskRunTitle = *task.DatabaseName
+		}
 		s.webhookManager.CreateEvent(ctx, &webhook.Event{
 			Actor:   s.store.GetSystemBotUser(ctx),
 			Type:    webhook.EventTypeTaskRunStatusUpdate,
@@ -854,7 +840,7 @@ func (s *SchedulerV2) createActivityForTaskRunStatusUpdate(ctx context.Context, 
 			Issue:   webhook.NewIssue(issue),
 			Project: webhook.NewProject(issue.Project),
 			TaskRunStatusUpdate: &webhook.EventTaskRunStatusUpdate{
-				Title:  task.Name,
+				Title:  taskRunTitle,
 				Status: newStatus.String(),
 				Detail: errDetail,
 			},
@@ -867,10 +853,7 @@ func (s *SchedulerV2) createActivityForTaskRunStatusUpdate(ctx context.Context, 
 
 func tasksSkippedOrDone(tasks []*store.TaskMessage) (bool, error) {
 	for _, task := range tasks {
-		skipped, err := utils.GetTaskSkipped(task)
-		if err != nil {
-			return false, err
-		}
+		skipped := task.Payload.GetSkipped()
 		done := task.LatestTaskRunStatus == api.TaskRunDone
 		if !skipped && !done {
 			return false, nil

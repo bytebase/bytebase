@@ -30,13 +30,12 @@ import {
   taskRolloutActionDisplayName,
   useIssueContext,
 } from "@/components/IssueV1";
-import { useCurrentUserV1, useAppFeature, extractUserEmail } from "@/store";
+import { useCurrentUserV1, useAppFeature, extractUserId } from "@/store";
 import {
   IssueStatus,
   Issue_Approver_Status,
 } from "@/types/proto/v1/issue_service";
 import {
-  extractUserResourceName,
   isDatabaseChangeRelatedIssue,
   hasWorkspacePermissionV2,
   hasProjectPermissionV2,
@@ -65,7 +64,7 @@ const shouldShowApproveOrReject = computed(() => {
   // Hide review actions if self-approval is disabled.
   if (
     !issue.value.projectEntity.allowSelfApproval &&
-    currentUser.value.email === extractUserEmail(issue.value.creator)
+    currentUser.value.email === extractUserId(issue.value.creator)
   ) {
     return false;
   }
@@ -89,7 +88,7 @@ const shouldShowReject = computed(() => {
 });
 const shouldShowReRequestReview = computed(() => {
   return (
-    extractUserResourceName(issue.value.creator) === currentUser.value.email &&
+    extractUserId(issue.value.creator) === currentUser.value.email &&
     status.value === Issue_Approver_Status.REJECTED
   );
 });

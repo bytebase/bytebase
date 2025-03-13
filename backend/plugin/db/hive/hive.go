@@ -45,44 +45,42 @@ var (
 )
 
 func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
-	if config.Host == "" {
+	if config.DataSource.Host == "" {
 		return nil, errors.Errorf("hostname not set")
 	}
 
 	d.config = config
 	d.ctx = config.ConnectionContext
 
-	port, err := strconv.Atoi(config.Port)
+	port, err := strconv.Atoi(config.DataSource.Port)
 	if err != nil {
 		return nil, errors.Errorf("conversion failure for 'port' [string -> int]")
 	}
 
 	var authConnParam = "NONE"
 	hiveConfig := gohive.NewConnectConfiguration()
-	switch t := config.SASLConfig.(type) {
-	case *db.KerberosConfig:
-		hiveConfig.Hostname = t.Instance
-		hiveConfig.Service = t.Primary
-		db.KrbEnvLock()
-		defer db.KrbEnvUnlock()
-		if err := config.SASLConfig.InitEnv(); err != nil {
+	if t, ok := config.DataSource.GetSaslConfig().GetMechanism().(*storepb.SASLConfig_KrbConfig); ok {
+		// Kerberos environment mutex.
+		util.Lock.Lock()
+		defer util.Lock.Unlock()
+
+		hiveConfig.Hostname = t.KrbConfig.Instance
+		hiveConfig.Service = t.KrbConfig.Primary
+		if err := util.BootKerberosEnv(t); err != nil {
 			return nil, errors.Wrapf(err, "failed to init SASL environment")
 		}
 		authConnParam = "KERBEROS"
-	case *db.PlainSASLConfig:
-		hiveConfig.Username = t.Username
-		hiveConfig.Password = t.Password
 	}
 
-	conn, err := gohive.Connect(config.Host, port, authConnParam, hiveConfig)
+	conn, err := gohive.Connect(config.DataSource.Host, port, authConnParam, hiveConfig)
 	if err != nil {
 		return nil, err
 	}
 	d.conn = conn
 
-	if config.Database != "" {
+	if config.ConnectionContext.DatabaseName != "" {
 		cursor := d.conn.Cursor()
-		if err := executeCursor(ctx, cursor, fmt.Sprintf("use %s", config.Database)); err != nil {
+		if err := executeCursor(ctx, cursor, fmt.Sprintf("use %s", config.ConnectionContext.DatabaseName)); err != nil {
 			return nil, multierr.Combine(d.conn.Close(), err)
 		}
 	}

@@ -5,7 +5,12 @@ import {
   planServiceClient,
   rolloutServiceClient,
 } from "@/grpcweb";
-import { useProjectV1Store, useUserStore } from "@/store";
+import {
+  useProjectV1Store,
+  useUserStore,
+  batchGetOrFetchUsers,
+  batchGetOrFetchDatabases,
+} from "@/store";
 import type { ComposedIssue, ComposedProject, ComposedTaskRun } from "@/types";
 import {
   emptyIssue,
@@ -18,11 +23,7 @@ import {
 import type { Issue } from "@/types/proto/v1/issue_service";
 import type { Plan } from "@/types/proto/v1/plan_service";
 import { TaskRunLog, type Rollout } from "@/types/proto/v1/rollout_service";
-import {
-  extractProjectResourceName,
-  extractUserResourceName,
-  hasProjectPermissionV2,
-} from "@/utils";
+import { extractProjectResourceName, hasProjectPermissionV2 } from "@/utils";
 import { DEFAULT_PAGE_SIZE } from "../common";
 
 export interface ComposeIssueConfig {
@@ -37,12 +38,13 @@ export const composeIssue = async (
   const userStore = useUserStore();
 
   const project = `projects/${extractProjectResourceName(rawIssue.name)}`;
-  const projectEntity =
-    await useProjectV1Store().getOrFetchProjectByName(project);
-
-  const creatorEntity =
-    userStore.getUserByEmail(extractUserResourceName(rawIssue.creator)) ??
-    unknownUser();
+  const [projectEntity, creatorEntity, _] = await Promise.all([
+    useProjectV1Store().getOrFetchProjectByName(project),
+    userStore
+      .getOrFetchUserByIdentifier(rawIssue.creator)
+      .then((user) => user ?? unknownUser()),
+    batchGetOrFetchUsers(rawIssue.subscribers),
+  ]);
 
   const issue: ComposedIssue = {
     ...rawIssue,
@@ -76,6 +78,12 @@ export const composeIssue = async (
       issue.rolloutEntity = await rolloutServiceClient.getRollout({
         name: issue.rollout,
       });
+      await batchGetOrFetchDatabases(
+        issue.rolloutEntity.stages.reduce((databaseList, stage) => {
+          databaseList.push(...stage.tasks.map((task) => task.target));
+          return databaseList;
+        }, [] as string[])
+      );
     }
     if (hasProjectPermissionV2(projectEntity, "bb.taskRuns.list")) {
       const { taskRuns } = await rolloutServiceClient.listTaskRuns({

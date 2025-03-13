@@ -6,7 +6,6 @@ import "google/api/field_behavior.proto";
 import "google/api/resource.proto";
 import "google/protobuf/timestamp.proto";
 import "store/common.proto";
-import "store/deployment_config.proto";
 import "store/plan_check_run.proto";
 
 option go_package = "generated-go/store";
@@ -16,7 +15,7 @@ message PlanConfig {
 
   ReleaseSource release_source = 3;
 
-  DeploymentSnapshot deployment_snapshot = 4;
+  Deployment deployment = 4;
 
   message Step {
     // Use the title if set.
@@ -126,19 +125,13 @@ message PlanConfig {
     string file = 1;
   }
 
-  message DeploymentSnapshot {
-    DeploymentConfigSnapshot deployment_config_snapshot = 1;
-    repeated DatabaseGroupSnapshot database_group_snapshots = 2;
+  message Deployment {
+    // The environments deploy order.
+    repeated string environments = 1;
+    // The database group mapping.
+    repeated DatabaseGroupMapping database_group_mappings = 2;
 
-    // The snapshot of the project deployment config at the time of creation.
-    message DeploymentConfigSnapshot {
-      string name = 1;
-      string title = 2;
-      DeploymentConfig deployment_config = 3;
-    }
-
-    // The snapshot of the database group at the time of creation.
-    message DatabaseGroupSnapshot {
+    message DatabaseGroupMapping {
       // Format: projects/{project}/databaseGroups/{databaseGroup}.
       string database_group = 1;
       // Format: instances/{instance-id}/databases/{database-name}.

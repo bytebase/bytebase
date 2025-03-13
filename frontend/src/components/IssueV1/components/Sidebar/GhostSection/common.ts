@@ -15,6 +15,7 @@ import {
   useCurrentUserV1,
   useStorageStore,
   useSubscriptionV1Store,
+  extractUserId,
 } from "@/store";
 import type { ComposedDatabase, ComposedIssue } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
@@ -29,7 +30,6 @@ import {
   task_StatusToJSON,
 } from "@/types/proto/v1/rollout_service";
 import {
-  extractUserResourceName,
   flattenTaskV1List,
   getSheetStatement,
   hasProjectPermissionV2,
@@ -85,7 +85,7 @@ export const provideIssueGhostContext = () => {
 
     const errors: string[] = [];
 
-    if (extractUserResourceName(issue.value.creator) !== me.value.email) {
+    if (extractUserId(issue.value.creator) !== me.value.email) {
       if (
         !hasProjectPermissionV2(issue.value.projectEntity, "bb.plans.update")
       ) {

@@ -32,7 +32,6 @@
     </div>
 
     <SensitiveColumnTable
-      v-if="hasSensitiveDataFeature && hasGetCatalogPermission"
       :database="database"
       :row-clickable="false"
       :row-selectable="true"
@@ -42,7 +41,6 @@
       @delete="onColumnRemove"
       @checked:update="updateCheckedColumnList($event)"
     />
-    <NoDataPlaceholder v-else />
   </div>
 
   <FeatureModal
@@ -96,7 +94,6 @@ import {
 import { type ComposedDatabase } from "@/types";
 import { PolicyType } from "@/types/proto/v1/org_policy_service";
 import { hasProjectPermissionV2 } from "@/utils";
-import NoDataPlaceholder from "../misc/NoDataPlaceholder.vue";
 
 const props = defineProps<{
   database: ComposedDatabase;

@@ -5,7 +5,7 @@ import type { ComposedInstance } from "@/types";
 import { unknownEnvironment, unknownInstance } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import type { DataSource, Instance } from "@/types/proto/v1/instance_service";
-import { extractInstanceResourceName } from "@/utils";
+import { extractInstanceResourceName, hasWorkspacePermissionV2 } from "@/utils";
 import { useListCache } from "./cache";
 import { useEnvironmentV1Store } from "./environment";
 
@@ -187,6 +187,9 @@ export const useInstanceV1List = (showDeleted: boolean = false) => {
   const cache = computed(() => listCache.getCache(cacheKey));
 
   watchEffect(async () => {
+    if (!hasWorkspacePermissionV2("bb.instances.list")) {
+      return;
+    }
     // Skip if request is already in progress or cache is available.
     if (cache.value?.isFetching || cache.value) {
       return;

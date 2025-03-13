@@ -3,39 +3,40 @@ package store
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"strings"
 
 	lru "github.com/hashicorp/golang-lru/v2"
+	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/component/config"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 // Store provides database access to all raw objects.
 type Store struct {
-	db      *DB
-	profile *config.Profile
+	db *sql.DB
 
-	userIDCache            *lru.Cache[int, *UserMessage]
-	userEmailCache         *lru.Cache[string, *UserMessage]
-	environmentCache       *lru.Cache[string, *EnvironmentMessage]
-	instanceCache          *lru.Cache[string, *InstanceMessage]
-	databaseCache          *lru.Cache[string, *DatabaseMessage]
-	projectCache           *lru.Cache[string, *ProjectMessage]
-	projectDeploymentCache *lru.Cache[string, *DeploymentConfigMessage]
-	policyCache            *lru.Cache[string, *PolicyMessage]
-	issueCache             *lru.Cache[int, *IssueMessage]
-	issueByPipelineCache   *lru.Cache[int, *IssueMessage]
-	pipelineCache          *lru.Cache[int, *PipelineMessage]
-	settingCache           *lru.Cache[api.SettingName, *SettingMessage]
-	idpCache               *lru.Cache[string, *IdentityProviderMessage]
-	risksCache             *lru.Cache[int, []*RiskMessage] // Use 0 as the key.
-	databaseGroupCache     *lru.Cache[string, *DatabaseGroupMessage]
-	rolesCache             *lru.Cache[string, *RoleMessage]
-	groupCache             *lru.Cache[string, *GroupMessage]
-	sheetCache             *lru.Cache[int, *SheetMessage]
+	Secret string
+
+	userIDCache          *lru.Cache[int, *UserMessage]
+	userEmailCache       *lru.Cache[string, *UserMessage]
+	environmentCache     *lru.Cache[string, *EnvironmentMessage]
+	instanceCache        *lru.Cache[string, *InstanceMessage]
+	databaseCache        *lru.Cache[string, *DatabaseMessage]
+	projectCache         *lru.Cache[string, *ProjectMessage]
+	policyCache          *lru.Cache[string, *PolicyMessage]
+	issueCache           *lru.Cache[int, *IssueMessage]
+	issueByPipelineCache *lru.Cache[int, *IssueMessage]
+	pipelineCache        *lru.Cache[int, *PipelineMessage]
+	settingCache         *lru.Cache[api.SettingName, *SettingMessage]
+	idpCache             *lru.Cache[string, *IdentityProviderMessage]
+	risksCache           *lru.Cache[int, []*RiskMessage] // Use 0 as the key.
+	databaseGroupCache   *lru.Cache[string, *DatabaseGroupMessage]
+	rolesCache           *lru.Cache[string, *RoleMessage]
+	groupCache           *lru.Cache[string, *GroupMessage]
+	sheetCache           *lru.Cache[int, *SheetMessage]
 
 	// Large objects.
 	sheetStatementCache *lru.Cache[int, string]
@@ -43,7 +44,7 @@ type Store struct {
 }
 
 // New creates a new instance of Store.
-func New(db *DB, profile *config.Profile) (*Store, error) {
+func New(ctx context.Context, pgURL string) (*Store, error) {
 	userIDCache, err := lru.New[int, *UserMessage](32768)
 	if err != nil {
 		return nil, err
@@ -65,10 +66,6 @@ func New(db *DB, profile *config.Profile) (*Store, error) {
 		return nil, err
 	}
 	projectCache, err := lru.New[string, *ProjectMessage](32768)
-	if err != nil {
-		return nil, err
-	}
-	projectDeploymentCache, err := lru.New[string, *DeploymentConfigMessage](128)
 	if err != nil {
 		return nil, err
 	}
@@ -125,37 +122,60 @@ func New(db *DB, profile *config.Profile) (*Store, error) {
 		return nil, err
 	}
 
+	db, err := sql.Open("pgx", pgURL)
+	if err != nil {
+		return nil, err
+	}
+
+	// Set the max open connections so that we won't exceed the connection limit of metaDB.
+	// The limit is the max connections minus connections reserved for superuser.
+	var maxConns, reservedConns int
+	if err := db.QueryRowContext(ctx, `SHOW max_connections`).Scan(&maxConns); err != nil {
+		return nil, errors.Wrap(err, "failed to get max_connections from metaDB")
+	}
+	if err := db.QueryRowContext(ctx, `SHOW superuser_reserved_connections`).Scan(&reservedConns); err != nil {
+		return nil, errors.Wrap(err, "failed to get superuser_reserved_connections from metaDB")
+	}
+	maxOpenConns := maxConns - reservedConns
+	if maxOpenConns > 50 {
+		// capped to 50
+		maxOpenConns = 50
+	}
+	db.SetMaxOpenConns(maxOpenConns)
+
 	return &Store{
-		db:      db,
-		profile: profile,
+		db: db,
 
 		// Cache.
-		userIDCache:            userIDCache,
-		userEmailCache:         userEmailCache,
-		environmentCache:       environmentCache,
-		instanceCache:          instanceCache,
-		databaseCache:          databaseCache,
-		projectCache:           projectCache,
-		projectDeploymentCache: projectDeploymentCache,
-		policyCache:            policyCache,
-		issueCache:             issueCache,
-		issueByPipelineCache:   issueByPipelineCache,
-		pipelineCache:          pipelineCache,
-		settingCache:           settingCache,
-		idpCache:               idpCache,
-		risksCache:             risksCache,
-		databaseGroupCache:     databaseGroupCache,
-		rolesCache:             rolesCache,
-		sheetCache:             sheetCache,
-		sheetStatementCache:    sheetStatementCache,
-		dbSchemaCache:          dbSchemaCache,
-		groupCache:             groupCache,
+		userIDCache:          userIDCache,
+		userEmailCache:       userEmailCache,
+		environmentCache:     environmentCache,
+		instanceCache:        instanceCache,
+		databaseCache:        databaseCache,
+		projectCache:         projectCache,
+		policyCache:          policyCache,
+		issueCache:           issueCache,
+		issueByPipelineCache: issueByPipelineCache,
+		pipelineCache:        pipelineCache,
+		settingCache:         settingCache,
+		idpCache:             idpCache,
+		risksCache:           risksCache,
+		databaseGroupCache:   databaseGroupCache,
+		rolesCache:           rolesCache,
+		sheetCache:           sheetCache,
+		sheetStatementCache:  sheetStatementCache,
+		dbSchemaCache:        dbSchemaCache,
+		groupCache:           groupCache,
 	}, nil
 }
 
 // Close closes underlying db.
-func (s *Store) Close(ctx context.Context) error {
-	return s.db.Close(ctx)
+func (s *Store) Close() error {
+	return s.db.Close()
+}
+
+func (s *Store) GetDB() *sql.DB {
+	return s.db
 }
 
 func getInstanceCacheKey(instanceID string) string {

@@ -341,7 +341,7 @@ func (s *Store) BatchCreateSheetBlob(ctx context.Context, sha256s [][]byte, cont
 		ON CONFLICT DO NOTHING
 	`
 
-	if _, err := s.db.db.ExecContext(ctx, query, sha256s, contents); err != nil {
+	if _, err := s.db.ExecContext(ctx, query, sha256s, contents); err != nil {
 		return errors.Wrapf(err, "failed to exec")
 	}
 
@@ -361,7 +361,7 @@ func (s *Store) PatchSheet(ctx context.Context, patch *PatchSheetMessage) (*Shee
 	}
 
 	var uid int
-	if err := s.db.db.QueryRowContext(ctx, `
+	if err := s.db.QueryRowContext(ctx, `
 		UPDATE sheet
 		SET
 			sha256 = $1

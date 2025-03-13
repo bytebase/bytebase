@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"strings"
 
@@ -85,14 +86,14 @@ func (s *Store) ListGroups(ctx context.Context, find *FindGroupMessage) ([]*Grou
 	return groups, nil
 }
 
-func (*Store) listGroupImpl(ctx context.Context, tx *Tx, find *FindGroupMessage) ([]*GroupMessage, error) {
+func (*Store) listGroupImpl(ctx context.Context, txn *sql.Tx, find *FindGroupMessage) ([]*GroupMessage, error) {
 	where, args := []string{"TRUE"}, []any{}
 	if v := find.Email; v != nil {
 		where, args = append(where, fmt.Sprintf("email = $%d", len(args)+1)), append(args, *v)
 	}
 
 	var groups []*GroupMessage
-	rows, err := tx.QueryContext(ctx, fmt.Sprintf(`
+	rows, err := txn.QueryContext(ctx, fmt.Sprintf(`
 	SELECT
 		email,
 		name,

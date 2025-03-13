@@ -582,6 +582,22 @@ func (s *SchemaMetadata) GetSequence(name string) *SequenceMetadata {
 	return s.internalSequences[nameID]
 }
 
+func (s *SchemaMetadata) GetSequencesByOwnerTable(name string) []*SequenceMetadata {
+	var result []*SequenceMetadata
+	for _, sequence := range s.internalSequences {
+		if s.isObjectCaseSensitive {
+			if sequence.GetProto().OwnerTable == name {
+				result = append(result, sequence)
+			}
+		} else {
+			if strings.EqualFold(sequence.GetProto().OwnerTable, name) {
+				result = append(result, sequence)
+			}
+		}
+	}
+	return result
+}
+
 // GetProto gets the proto of SchemaMetadata.
 func (s *SchemaMetadata) GetProto() *storepb.SchemaMetadata {
 	return s.proto
@@ -915,7 +931,7 @@ func (p *SequenceMetadata) GetProto() *storepb.SequenceMetadata {
 // Partition, subpartition, column, index, stored routine, event, and resource group names are not case-sensitive on any platform, nor are column aliases.
 func getIsDetailCaseSensitive(engine storepb.Engine) bool {
 	switch engine {
-	case storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_TIDB, storepb.Engine_MSSQL:
+	case storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_TIDB, storepb.Engine_MSSQL, storepb.Engine_OCEANBASE:
 		return false
 	default:
 		return true

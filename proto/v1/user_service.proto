@@ -31,6 +31,17 @@ service UserService {
     option (bytebase.v1.auth_method) = CUSTOM;
   }
 
+  // Get user stat.
+  // Any authenticated user can get stat.
+  rpc StatUsers(StatUsersRequest) returns (StatUsersResponse) {
+    option (google.api.http) = {
+      post: "/v1/users:stat"
+      body: "*"
+    };
+    option (google.api.method_signature) = "parent";
+    option (bytebase.v1.auth_method) = CUSTOM;
+  }
+
   // Create a user.
   // When Disallow Signup is enabled, only the caller with bb.users.create on the workspace can create a user.
   // Otherwise, any unauthenticated user can create a user.
@@ -85,15 +96,25 @@ message GetUserRequest {
   ];
 }
 
+message StatUsersRequest {}
+
+message StatUsersResponse {
+  message StatUser {
+    UserType user_type = 1;
+    State state = 2;
+    int32 count = 3;
+  }
+
+  repeated StatUser stats = 1;
+}
+
 message ListUsersRequest {
-  // Not used.
   // The maximum number of users to return. The service may return fewer than
   // this value.
-  // If unspecified, at most 50 users will be returned.
+  // If unspecified, at most 10 users will be returned.
   // The maximum value is 1000; values above 1000 will be coerced to 1000.
   int32 page_size = 1;
 
-  // Not used.
   // A page token, received from a previous `ListUsers` call.
   // Provide this to retrieve the subsequent page.
   //
@@ -103,6 +124,24 @@ message ListUsersRequest {
 
   // Show deleted users if specified.
   bool show_deleted = 3;
+
+  // Filter is used to filter users returned in the list.
+  // Supported filter:
+  // - name
+  // - email
+  // - user_type
+  // - state
+  //
+  // For example:
+  // name == "ed"
+  // name.matches("ed")
+  // email == "ed@bytebase.com"
+  // email.matches("ed")
+  // user_type == "SERVICE_ACCOUNT"
+  // user_type in ["SERVICE_ACCOUNT", "USER"]
+  // !(user_type in ["SERVICE_ACCOUNT", "USER"])
+  // state == "DELETED"
+  string filter = 4;
 }
 
 message ListUsersResponse {

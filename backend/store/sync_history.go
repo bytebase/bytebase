@@ -39,7 +39,7 @@ func (s *Store) GetSyncHistoryByUID(ctx context.Context, uid int64) (*SyncHistor
 	}
 
 	var m []byte
-	if err := s.db.db.QueryRowContext(ctx, query, uid).Scan(
+	if err := s.db.QueryRowContext(ctx, query, uid).Scan(
 		&h.UID,
 		&h.CreatedAt,
 		&h.InstanceID,

@@ -20,10 +20,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	a := require.New(t)
 	ctx := context.Background()
 	ctl := &controller{}
-	dataDir := t.TempDir()
-	ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
-		dataDir: dataDir,
-	})
+	ctx, err := ctl.StartServerWithExternalPg(ctx)
 	a.NoError(err)
 	defer ctl.Close(ctx)
 
@@ -252,9 +249,7 @@ CREATE TABLE "public"."book" (
 	a := require.New(t)
 	ctx := context.Background()
 	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
-		dataDir: t.TempDir(),
-	})
+	ctx, err := ctl.StartServerWithExternalPg(ctx)
 	a.NoError(err)
 	defer func() {
 		_ = ctl.Close(ctx)
@@ -274,12 +269,10 @@ CREATE TABLE "public"."book" (
 			switch test.dbType {
 			case storepb.Engine_POSTGRES:
 				pgContainer, err := getPgContainer(ctx)
-				a.NoError(err)
 				defer func() {
-					pgContainer.db.Close()
-					err := pgContainer.container.Terminate(ctx)
-					a.NoError(err)
+					pgContainer.Close(ctx)
 				}()
+				a.NoError(err)
 				instance, err = ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
 					InstanceId: test.instanceID,
 					Instance: &v1pb.Instance{
@@ -293,12 +286,10 @@ CREATE TABLE "public"."book" (
 				a.NoError(err)
 			case storepb.Engine_MYSQL:
 				mysqlContainer, err := getMySQLContainer(ctx)
-				a.NoError(err)
 				defer func() {
-					mysqlContainer.db.Close()
-					err := mysqlContainer.container.Terminate(ctx)
-					a.NoError(err)
+					mysqlContainer.Close(ctx)
 				}()
+				a.NoError(err)
 
 				instance, err = ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
 					InstanceId: test.instanceID,
@@ -365,10 +356,7 @@ func TestMarkTaskAsDone(t *testing.T) {
 	a := require.New(t)
 	ctx := context.Background()
 	ctl := &controller{}
-	dataDir := t.TempDir()
-	ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
-		dataDir: dataDir,
-	})
+	ctx, err := ctl.StartServerWithExternalPg(ctx)
 	a.NoError(err)
 	defer ctl.Close(ctx)
 

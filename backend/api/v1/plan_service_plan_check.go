@@ -2,7 +2,6 @@ package v1
 
 import (
 	"context"
-	"encoding/json"
 
 	"github.com/pkg/errors"
 
@@ -22,14 +21,8 @@ func getPlanCheckRunsFromPlan(ctx context.Context, s *store.Store, plan *store.P
 		}
 		skippedSpecIDs = make(map[string]struct{})
 		for _, task := range tasks {
-			var taskSpecID struct {
-				SpecID string `json:"specId"`
-			}
-			if err := json.Unmarshal([]byte(task.Payload), &taskSpecID); err != nil {
-				return nil, errors.Wrapf(err, "failed to unmarshal task payload")
-			}
 			if task.LatestTaskRunStatus == api.TaskRunDone {
-				skippedSpecIDs[taskSpecID.SpecID] = struct{}{}
+				skippedSpecIDs[task.Payload.GetSpecId()] = struct{}{}
 			}
 		}
 	}

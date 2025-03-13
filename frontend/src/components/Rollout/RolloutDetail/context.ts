@@ -75,7 +75,7 @@ export const provideRolloutDetailContext = (rolloutName: string) => {
   const mergedStages = computed(() => {
     // Merge preview stages with created rollout stages.
     return rolloutPreview.value.stages.map((sp) => {
-      const createdStage = rollout.value.stages.find((s) => s.id === sp.id);
+      const createdStage = rollout.value.stages.find((s) => s.environment === sp.environment);
       return createdStage || sp;
     });
   });

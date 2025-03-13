@@ -42,11 +42,6 @@ type DataExportExecutor struct {
 
 // RunOnce will run the data export task executor once.
 func (exec *DataExportExecutor) RunOnce(ctx context.Context, _ context.Context, task *store.TaskMessage, _ int) (terminated bool, result *storepb.TaskRunResult, err error) {
-	payload := &storepb.TaskDatabaseDataExportPayload{}
-	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(task.Payload), payload); err != nil {
-		return true, nil, errors.Wrap(err, "invalid database data export payload")
-	}
-
 	issue, err := exec.store.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &task.PipelineID})
 	if err != nil {
 		return true, nil, errors.Wrapf(err, "failed to get issue")
@@ -67,7 +62,7 @@ func (exec *DataExportExecutor) RunOnce(ctx context.Context, _ context.Context, 
 		return true, nil, errors.Errorf("instance not found")
 	}
 
-	statement, err := exec.store.GetSheetStatementByID(ctx, int(payload.SheetId))
+	statement, err := exec.store.GetSheetStatementByID(ctx, int(task.Payload.GetSheetId()))
 	if err != nil {
 		return true, nil, err
 	}
@@ -75,8 +70,8 @@ func (exec *DataExportExecutor) RunOnce(ctx context.Context, _ context.Context, 
 	exportRequest := &v1pb.ExportRequest{
 		Name:      common.FormatDatabase(instance.ResourceID, database.DatabaseName),
 		Statement: statement,
-		Format:    v1pb.ExportFormat(payload.Format),
-		Password:  payload.Password,
+		Format:    v1pb.ExportFormat(task.Payload.GetFormat()),
+		Password:  task.Payload.GetPassword(),
 	}
 	bytes, _, exportErr := apiv1.DoExport(ctx, exec.store, exec.dbFactory, exec.license, exportRequest, issue.Creator /* user */, instance, database, nil, exec.schemaSyncer)
 	if exportErr != nil {
@@ -86,7 +81,7 @@ func (exec *DataExportExecutor) RunOnce(ctx context.Context, _ context.Context, 
 	exportArchive, err := exec.store.CreateExportArchive(ctx, &store.ExportArchiveMessage{
 		Bytes: bytes,
 		Payload: &storepb.ExportArchivePayload{
-			FileFormat: payload.Format,
+			FileFormat: task.Payload.GetFormat(),
 		},
 	})
 	if err != nil {

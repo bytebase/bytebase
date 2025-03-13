@@ -30,7 +30,6 @@
             <ScopeTags
               :params="params"
               :focused-tag-id="focusedTagId"
-              :readonly-scopes="readonlyScopes"
               @select-scope="selectScopeFromTag"
               @remove-scope="removeScope"
             />
@@ -92,7 +91,7 @@ import scrollIntoView from "scroll-into-view-if-needed";
 import { zindexable as vZindexable } from "vdirs";
 import { reactive, watch, onMounted, ref, computed, nextTick } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import type { SearchParams, SearchScope, SearchScopeId } from "@/utils";
+import type { SearchParams, SearchScopeId } from "@/utils";
 import {
   emptySearchParams,
   getValueFromSearchParams,
@@ -111,12 +110,10 @@ const props = withDefaults(
     params: SearchParams;
     scopeOptions: ScopeOption[];
     placeholder?: string | undefined;
-    readonlyScopes?: SearchScope[];
     autofocus?: boolean;
   }>(),
   {
     scopeOptions: () => [],
-    readonlyScopes: () => [],
     autofocus: false,
     placeholder: undefined,
   }
@@ -138,9 +135,11 @@ const router = useRouter();
 
 const defaultSearchParams = () => {
   const params = emptySearchParams();
-  props.readonlyScopes.forEach((s) => {
-    params.scopes.push({ ...s });
-  });
+  for (const scope of props.params.scopes) {
+    if (scope.readonly) {
+      params.scopes.push({ ...scope });
+    }
+  }
   return params;
 };
 
@@ -165,11 +164,9 @@ const inputRef = ref<InputInst>();
 const menuIndex = ref(0);
 const { width: containerWidth } = useElementSize(containerRef);
 const focusedTagId = ref<SearchScopeId>();
-const readonlyScopeIds = computed(() => {
-  return new Set(props.readonlyScopes.map((s) => s.id));
-});
+
 const editableScopes = computed(() => {
-  return props.params.scopes.filter((s) => !readonlyScopeIds.value.has(s.id));
+  return props.params.scopes.filter((s) => !s.readonly);
 });
 
 watch(

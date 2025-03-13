@@ -155,7 +155,7 @@ func (s *Store) CountInstanceGroupByEngineAndEnvironmentID(ctx context.Context) 
 	defer tx.Rollback()
 
 	rows, err := tx.QueryContext(ctx, `
-		SELECT engine, environment, COUNT(1)
+		SELECT metadata->>'engine' AS engine, environment, COUNT(1)
 		FROM instance
 		WHERE id > 101 AND deleted = FALSE
 		GROUP BY engine, environment`,

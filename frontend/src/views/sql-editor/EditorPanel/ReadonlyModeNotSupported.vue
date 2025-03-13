@@ -1,6 +1,6 @@
 <template>
   <div class="w-full h-full flex flex-col items-center justify-center gap-y-2">
-    <img src="@/assets/illustration/403.webp" class="max-h-[40%]" />
+    <NoPermissionPlaceholder />
     <i18n-t
       class="textinfolabel flex items-center"
       keypath="sql-editor.allow-admin-mode-only"
@@ -15,6 +15,7 @@
 </template>
 
 <script lang="ts" setup>
+import NoPermissionPlaceholder from "@/components/misc/NoPermissionPlaceholder.vue";
 import { InstanceV1Name } from "@/components/v2";
 import { useConnectionOfCurrentSQLEditorTab } from "@/store";
 import AdminModeButton from "../EditorCommon/AdminModeButton.vue";

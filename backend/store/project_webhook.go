@@ -244,7 +244,7 @@ func (s *Store) DeleteProjectWebhookV2(ctx context.Context, projectResourceID st
 	return nil
 }
 
-func (*Store) findProjectWebhookImplV2(ctx context.Context, tx *Tx, find *FindProjectWebhookMessage) ([]*ProjectWebhookMessage, error) {
+func (*Store) findProjectWebhookImplV2(ctx context.Context, txn *sql.Tx, find *FindProjectWebhookMessage) ([]*ProjectWebhookMessage, error) {
 	// Build WHERE clause.
 	where, args := []string{"TRUE"}, []any{}
 	if v := find.ID; v != nil {
@@ -257,7 +257,7 @@ func (*Store) findProjectWebhookImplV2(ctx context.Context, tx *Tx, find *FindPr
 		where, args = append(where, fmt.Sprintf("url = $%d", len(args)+1)), append(args, *v)
 	}
 
-	rows, err := tx.QueryContext(ctx, `
+	rows, err := txn.QueryContext(ctx, `
 		SELECT
 			id,
 			type,

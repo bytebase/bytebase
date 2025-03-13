@@ -37,7 +37,11 @@ import {
 } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import type { Project } from "@/types/proto/v1/project_service";
-import { extractProjectResourceName, hasWorkspacePermissionV2 } from "@/utils";
+import {
+  extractProjectResourceName,
+  hasWorkspacePermissionV2,
+  getDefaultPagination,
+} from "@/utils";
 import ResourceSelect from "./ResourceSelect.vue";
 
 const props = withDefaults(
@@ -165,19 +169,14 @@ const combinedProjectList = computed(() => {
   return list;
 });
 
-const searchProjects = async (query: string) => {
-  const { projects } = await projectStore.fetchProjectList({
-    query,
-    pageSize: 100,
-    showDeleted: props.includeArchived,
-  });
-  return projects;
-};
-
 const handleSearch = useDebounceFn(async (search: string) => {
   state.loading = true;
   try {
-    const projects = await searchProjects(search);
+    const { projects } = await projectStore.fetchProjectList({
+      query: search,
+      pageSize: getDefaultPagination(),
+      showDeleted: props.includeArchived,
+    });
     state.rawProjectList = projects;
     if (!search) {
       initProjectList();

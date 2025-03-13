@@ -238,7 +238,6 @@ message Policy {
 
   oneof policy {
     RolloutPolicy rollout_policy = 19;
-    SlowQueryPolicy slow_query_policy = 12;
     DisableCopyDataPolicy disable_copy_data_policy = 16;
     MaskingRulePolicy masking_rule_policy = 17;
     MaskingExceptionPolicy masking_exception_policy = 18;
@@ -256,11 +255,10 @@ message Policy {
 }
 
 enum PolicyType {
-  reserved 2, 4, 6, 5;
+  reserved 2, 4, 6, 5, 7;
 
   POLICY_TYPE_UNSPECIFIED = 0;
   ROLLOUT_POLICY = 11;
-  SLOW_QUERY = 7;
   DISABLE_COPY_DATA = 8;
   MASKING_RULE = 9;
   MASKING_EXCEPTION = 10;
@@ -286,10 +284,6 @@ message RolloutPolicy {
   // roles/LAST_APPROVER
   // roles/CREATOR
   repeated string issue_roles = 3;
-}
-
-message SlowQueryPolicy {
-  bool active = 1;
 }
 
 message DisableCopyDataPolicy {

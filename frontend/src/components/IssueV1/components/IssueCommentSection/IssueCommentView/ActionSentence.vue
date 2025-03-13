@@ -12,6 +12,7 @@ import {
   IssueCommentType,
   type ComposedIssueComment,
 } from "@/store";
+import { extractUserId } from "@/store";
 import { getDateForPbTimestamp, type ComposedIssue } from "@/types";
 import {
   IssueComment_Approval,
@@ -24,7 +25,6 @@ import {
   IssueStatus,
 } from "@/types/proto/v1/issue_service";
 import { findStageByName, findTaskByName } from "@/utils";
-import { extractUserResourceName } from "@/utils";
 import StageName from "./StageName.vue";
 import StatementUpdate from "./StatementUpdate.vue";
 import TaskName from "./TaskName.vue";
@@ -222,17 +222,14 @@ const renderActionSentence = () => {
     }
     return renderVerbTypeTarget(params);
   }
-  return t("activity.sentence.empty");
+  return "";
 };
 
 const maybeAutomaticallyVerb = (
   issueComment: ComposedIssueComment,
   verb: string
 ): string => {
-  if (
-    extractUserResourceName(issueComment.creator) !==
-    userStore.systemBotUser?.email
-  ) {
+  if (extractUserId(issueComment.creator) !== userStore.systemBotUser?.email) {
     return verb;
   }
   return t("activity.sentence.xxx-automatically", {
@@ -249,7 +246,7 @@ type VerbTypeTarget = {
 
 const renderVerbTypeTarget = (params: VerbTypeTarget, props: object = {}) => {
   const keypath =
-    extractUserResourceName(params.issueComment.creator) ===
+    extractUserId(params.issueComment.creator) ===
     userStore.systemBotUser?.email
       ? "dynamic.activity.sentence.verb-type-target-by-system-bot"
       : "dynamic.activity.sentence.verb-type-target-by-people";

@@ -8,7 +8,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
@@ -48,11 +47,7 @@ var cannotCreateDatabase = map[storepb.Engine]bool{
 
 // RunOnce will run the database create task executor once.
 func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, _ int) (terminated bool, result *storepb.TaskRunResult, err error) {
-	payload := &storepb.TaskDatabaseCreatePayload{}
-	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(task.Payload), payload); err != nil {
-		return true, nil, errors.Wrap(err, "invalid create database payload")
-	}
-	sheetID := int(payload.SheetId)
+	sheetID := int(task.Payload.GetSheetId())
 	statement, err := exec.store.GetSheetStatementByID(ctx, sheetID)
 	if err != nil {
 		return true, nil, errors.Wrapf(err, "failed to get sheet statement of sheet: %d", sheetID)
@@ -97,15 +92,15 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, driverCtx conte
 	// Create database.
 	slog.Debug("Start creating database...",
 		slog.String("instance", instance.Metadata.GetTitle()),
-		slog.String("database", payload.DatabaseName),
+		slog.String("database", task.Payload.GetDatabaseName()),
 		slog.String("statement", statement),
 	)
 
 	database, err := exec.store.UpsertDatabase(ctx, &store.DatabaseMessage{
 		ProjectID:     pipeline.ProjectID,
 		InstanceID:    instance.ResourceID,
-		DatabaseName:  payload.DatabaseName,
-		EnvironmentID: payload.EnvironmentId,
+		DatabaseName:  task.Payload.GetDatabaseName(),
+		EnvironmentID: task.Payload.GetEnvironmentId(),
 		Metadata:      &storepb.DatabaseMetadata{},
 	})
 	if err != nil {
@@ -142,6 +137,6 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, driverCtx conte
 	}
 
 	return true, &storepb.TaskRunResult{
-		Detail: fmt.Sprintf("Created database %q", payload.DatabaseName),
+		Detail: fmt.Sprintf("Created database %q", task.Payload.GetDatabaseName()),
 	}, nil
 }

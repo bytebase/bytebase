@@ -63,6 +63,7 @@ import {
   AppIMSetting_Slack,
   AppIMSetting_Lark,
   AppIMSetting_Wecom,
+  AppIMSetting_DingTalk,
 } from "@/types/proto/v1/setting_service";
 
 interface LocalState {
@@ -120,6 +121,11 @@ watch(
       case Webhook_Type.LARK:
         if (!state.setting.lark) {
           state.setting.lark = AppIMSetting_Lark.fromPartial({});
+        }
+        break;
+      case Webhook_Type.DINGTALK:
+        if (!state.setting.dingtalk) {
+          state.setting.dingtalk = AppIMSetting_DingTalk.fromPartial({});
         }
         break;
     }
@@ -259,6 +265,50 @@ const imList = computed(() => {
         );
       },
     },
+    {
+      name: t("common.dingtalk"),
+      type: Webhook_Type.DINGTALK,
+      enabled: state.setting.dingtalk?.enabled,
+      render: () => {
+        return (
+          <div class="space-y-4">
+            <div>
+              <div class="textlabel">Client ID</div>
+              <BBTextField
+                class="mt-2"
+                placeholder={t("common.write-only")}
+                value={state.setting.dingtalk?.clientId ?? ""}
+                onUpdate:value={(val: string) => {
+                  state.setting.dingtalk!.clientId= val;
+                }}
+              />
+            </div>
+            <div>
+              <div class="textlabel">Client Secret</div>
+              <BBTextField
+                class="mt-2"
+                placeholder={t("common.write-only")}
+                value={state.setting.dingtalk?.clientSecret ?? ""}
+                onUpdate:value={(val: string) => {
+                  state.setting.dingtalk!.clientSecret = val;
+                }}
+              />
+            </div>
+            <div>
+              <div class="textlabel">Robot Code</div>
+              <BBTextField
+                class="mt-2"
+                placeholder={t("common.write-only")}
+                value={state.setting.dingtalk?.robotCode ?? ""}
+                onUpdate:value={(val: string) => {
+                  state.setting.dingtalk!.robotCode = val;
+                }}
+              />
+            </div>
+          </div>
+        );
+      },
+    }
   ];
 });
 
@@ -282,7 +332,12 @@ const dataChanged = computed(() => {
     case Webhook_Type.LARK:
       return !isEqual(
         state.setting.lark,
-        imSetting.value.lark?? AppIMSetting_Lark.fromPartial({})
+        imSetting.value.lark ?? AppIMSetting_Lark.fromPartial({})
+      );
+    case Webhook_Type.DINGTALK:
+      return !isEqual(
+        state.setting.dingtalk,
+        imSetting.value.dingtalk ?? AppIMSetting_DingTalk.fromPartial({})
       );
     default:
       return false;
@@ -303,6 +358,12 @@ const canSave = computed(() => {
       );
     case Webhook_Type.LARK:
       return !!state.setting.lark?.appId && !!state.setting.lark?.appSecret;
+    case Webhook_Type.DINGTALK:
+      return (
+        !!state.setting.dingtalk?.clientId &&
+        !!state.setting.dingtalk?.clientSecret &&
+        !!state.setting.dingtalk?.robotCode
+      );
     default:
       return false;
   }
@@ -321,6 +382,8 @@ const discardChanges = () => {
       break;
     case Webhook_Type.LARK:
       state.setting.lark = AppIMSetting_Lark.fromPartial({});
+    case Webhook_Type.DINGTALK:
+      state.setting.dingtalk = AppIMSetting_DingTalk.fromPartial({});
       break;
   }
 };
@@ -346,6 +409,10 @@ const onSave = async () => {
     case Webhook_Type.LARK:
       updateMask.push("value.app_im_setting_value.lark");
       data.lark!.enabled = true;
+      break;
+    case Webhook_Type.DINGTALK:
+      updateMask.push("value.app_im_setting_value.dingtalk");
+      data.dingtalk!.enabled = true;
       break;
   }
 
@@ -378,6 +445,11 @@ const onSave = async () => {
         state.setting.lark =
           setting.value?.appImSettingValue?.lark ??
           AppIMSetting_Lark.fromPartial({});
+        break;
+      case Webhook_Type.DINGTALK:
+        state.setting.dingtalk =
+          setting.value?.appImSettingValue?.dingtalk ??
+          AppIMSetting_DingTalk.fromPartial({});
         break;
     }
 

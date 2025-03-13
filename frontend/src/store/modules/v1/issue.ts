@@ -6,16 +6,16 @@ import { ref, watch } from "vue";
 import { issueServiceClient } from "@/grpcweb";
 import type { ComposedIssue, IssueFilter } from "@/types";
 import { isValidProjectName, PresetRoleType } from "@/types";
-import { State } from "@/types/proto/v1/common";
 import type { ApprovalStep } from "@/types/proto/v1/issue_service";
 import {
   issueStatusToJSON,
   ApprovalNode_Type,
   ApprovalNode_GroupValue,
 } from "@/types/proto/v1/issue_service";
-import { UserType } from "@/types/proto/v1/user_service";
-import { extractProjectResourceName, memberListInProjectIAM } from "@/utils";
-import { extractUserEmail, useUserStore } from "../user";
+import {
+  extractProjectResourceName,
+  memberMapToRolesInProjectIAM,
+} from "@/utils";
 import {
   shallowComposeIssue,
   type ComposeIssueConfig,
@@ -145,20 +145,14 @@ const convertApprovalNodeGroupToRole = (
   return "";
 };
 
+// candidatesOfApprovalStepV1 return user name list in users/{email} format.
+// The list could includs users/ALL_USERS_USER_EMAIL
 export const candidatesOfApprovalStepV1 = (
   issue: ComposedIssue,
   step: ApprovalStep
 ) => {
-  const userStore = useUserStore();
   const workspaceStore = useWorkspaceV1Store();
-
-  const workspaceMemberList = userStore.activeUserList.filter(
-    (user) => user.userType === UserType.USER
-  );
   const project = issue.projectEntity;
-  const projectMemberList = memberListInProjectIAM(project.iamPolicy).filter(
-    (member) => member.user.userType === UserType.USER
-  );
 
   const candidates = step.nodes.flatMap((node) => {
     const {
@@ -174,28 +168,28 @@ export const candidatesOfApprovalStepV1 = (
         groupValue === ApprovalNode_GroupValue.PROJECT_OWNER
       ) {
         const targetRole = convertApprovalNodeGroupToRole(groupValue);
-        return projectMemberList
-          .filter((member) => member.roleList.includes(targetRole))
-          .map((member) => member.user);
+        const projectMembersMap = memberMapToRolesInProjectIAM(
+          project.iamPolicy,
+          targetRole
+        );
+        return [...projectMembersMap.keys()];
       }
       if (
         groupValue === ApprovalNode_GroupValue.WORKSPACE_DBA ||
         groupValue === ApprovalNode_GroupValue.WORKSPACE_OWNER
       ) {
-        return workspaceMemberList.filter(
-          (member) =>
-            workspaceStore.emailMapToRoles
-              .get(member.email)
-              ?.has(convertApprovalNodeGroupToRole(groupValue)) ?? false
-        );
+        return [
+          ...(workspaceStore.roleMapToUsers.get(
+            convertApprovalNodeGroupToRole(groupValue)
+          ) ?? new Set()),
+        ];
       }
       return [];
     };
+
     const candidatesForCustomRoles = (role: string) => {
-      const memberList = memberListInProjectIAM(project.iamPolicy, role);
-      return memberList
-        .filter((member) => member.user.userType === UserType.USER)
-        .map((member) => member.user);
+      const memberMap = memberMapToRolesInProjectIAM(project.iamPolicy, role);
+      return [...memberMap.keys()];
     };
 
     if (groupValue !== ApprovalNode_GroupValue.UNRECOGNIZED) {
@@ -208,15 +202,12 @@ export const candidatesOfApprovalStepV1 = (
   });
 
   return uniq(
-    candidates
-      .filter(
-        (user) =>
-          user.userType === UserType.USER &&
-          user.state === State.ACTIVE &&
-          (issue.projectEntity.allowSelfApproval ||
-            user.email !== extractUserEmail(issue.creator))
-      )
-      .map((user) => user.name)
+    candidates.filter((user) => {
+      if (!issue.projectEntity.allowSelfApproval) {
+        return user !== issue.creator;
+      }
+      return true;
+    })
   );
 };
 

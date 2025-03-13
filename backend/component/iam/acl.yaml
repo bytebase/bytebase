@@ -4,12 +4,6 @@ roles:
     permissions:
       - bb.auditLogs.export
       - bb.auditLogs.search
-      - bb.branches.admin
-      - bb.branches.create
-      - bb.branches.delete
-      - bb.branches.get
-      - bb.branches.list
-      - bb.branches.update
       - bb.changelists.create
       - bb.changelists.delete
       - bb.changelists.get
@@ -139,12 +133,6 @@ roles:
     permissions:
       - bb.auditLogs.export
       - bb.auditLogs.search
-      - bb.branches.admin
-      - bb.branches.create
-      - bb.branches.delete
-      - bb.branches.get
-      - bb.branches.list
-      - bb.branches.update
       - bb.changelists.create
       - bb.changelists.delete
       - bb.changelists.get
@@ -286,12 +274,6 @@ roles:
     permissions:
       - bb.auditLogs.export
       - bb.auditLogs.search
-      - bb.branches.admin
-      - bb.branches.create
-      - bb.branches.delete
-      - bb.branches.get
-      - bb.branches.list
-      - bb.branches.update
       - bb.changelists.create
       - bb.changelists.delete
       - bb.changelists.get
@@ -360,11 +342,6 @@ roles:
     title: Project developer
     permissions:
       - bb.auditLogs.search
-      - bb.branches.create
-      - bb.branches.delete
-      - bb.branches.get
-      - bb.branches.list
-      - bb.branches.update
       - bb.changelists.create
       - bb.changelists.get
       - bb.changelists.list
@@ -437,7 +414,6 @@ roles:
   - name: roles/projectReleaser
     title: Project releaser
     permissions:
-      - bb.branches.get
       - bb.databaseCatalogs.get
       - bb.changelogs.get
       - bb.databases.check

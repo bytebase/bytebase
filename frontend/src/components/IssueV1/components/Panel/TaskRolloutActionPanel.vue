@@ -28,7 +28,7 @@
               {{ $t("common.stage") }}
             </label>
             <div class="textinfolabel break-all">
-              {{ stage.title }}
+              {{ extractEnvironmentResourceName(stage.environment) }}
             </div>
           </div>
         </template>
@@ -180,6 +180,7 @@ import { Task_Status, TaskRun_Status } from "@/types/proto/v1/rollout_service";
 import { ErrorList } from "../common";
 import CommonDrawer from "./CommonDrawer.vue";
 import RolloutTaskDatabaseName from "./RolloutTaskDatabaseName.vue";
+import { extractEnvironmentResourceName } from "@/utils";
 
 type LocalState = {
   loading: boolean;

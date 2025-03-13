@@ -46,7 +46,7 @@ import { computed } from "vue";
 import UserRolesCell from "@/components/Member/MemberDataTable/cells/UserRolesCell.vue";
 import type { MemberRole } from "@/components/Member/types";
 import { WORKSPACE_ROUTE_USERS } from "@/router/dashboard/workspaceRoutes";
-import { extractGroupEmail, extractUserEmail, useCurrentUserV1 } from "@/store";
+import { extractGroupEmail, extractUserId, useCurrentUserV1 } from "@/store";
 import { Group } from "@/types/proto/v1/group_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
@@ -71,7 +71,7 @@ const currentUser = useCurrentUserV1();
 const allowGetGroup = computed(() => {
   if (
     props.group.members.find(
-      (member) => extractUserEmail(member.member) === currentUser.value.name
+      (member) => extractUserId(member.member) === currentUser.value.name
     )
   ) {
     return true;

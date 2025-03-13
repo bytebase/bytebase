@@ -14,12 +14,7 @@
 import { NButton, useDialog } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import {
-  useRoleStore,
-  useUserStore,
-  useWorkspaceV1Store,
-  pushNotification,
-} from "@/store";
+import { useRoleStore, useWorkspaceV1Store, pushNotification } from "@/store";
 import type { Role } from "@/types/proto/v1/role_service";
 import { hasWorkspacePermissionV2, isCustomRole } from "@/utils";
 import { useCustomRoleSettingContext } from "../../../context";
@@ -34,7 +29,6 @@ defineEmits<{
 
 const { hasCustomRoleFeature, showFeatureModal } =
   useCustomRoleSettingContext();
-const userStore = useUserStore();
 const workspaceStore = useWorkspaceV1Store();
 const $dialog = useDialog();
 const { t } = useI18n();
@@ -43,12 +37,9 @@ const allowUpdate = computed(() => hasWorkspacePermissionV2("bb.roles.update"));
 const allowDelete = computed(() => hasWorkspacePermissionV2("bb.roles.delete"));
 
 const usersWithRole = computed(() => {
-  return userStore.activeUserList.filter((user) => {
-    return (
-      workspaceStore.emailMapToRoles.get(user.email)?.has(props.role.name) ??
-      false
-    );
-  });
+  return [
+    ...(workspaceStore.roleMapToUsers.get(props.role.name) ?? new Set([])),
+  ];
 });
 
 const handleDeleteRole = async () => {
@@ -78,9 +69,7 @@ const handleDeleteRole = async () => {
           </p>
           <ul class="list-disc ml-4 textinfolabel">
             {usersWithRole.value.map((user) => (
-              <li>
-                {user.title} ({user.email})
-              </li>
+              <li>{user}</li>
             ))}
           </ul>
           <p>{t("role.setting.delete-warning-retry")}</p>

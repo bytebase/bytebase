@@ -43,15 +43,16 @@ const detailTitle = computed(() => {
   return `${user.title} (${user.email})`;
 });
 
+// TODO(ed): not use the drawer.
 const handleClickUser = (user: User) => {
   state.detail.show = true;
   state.detail.user = user;
 };
 
-onMounted(() => {
+onMounted(async () => {
   const maybeEmail = route.hash.replace(/^#*/g, "");
   if (maybeEmail) {
-    const user = useUserStore().getUserByEmail(maybeEmail);
+    const user = await useUserStore().getOrFetchUserByIdentifier(maybeEmail);
     if (user) {
       state.detail.show = true;
       state.detail.user = user;

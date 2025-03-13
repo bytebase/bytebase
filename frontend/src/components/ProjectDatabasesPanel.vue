@@ -9,7 +9,6 @@
         :autofocus="false"
         :placeholder="$t('database.filter-database')"
         :scope-options="scopeOptions"
-        :readonly-scopes="readonlyScopes"
       />
       <NButton
         v-if="allowToCreateDB"
@@ -25,7 +24,10 @@
     <DatabaseOperations
       :project-name="project.name"
       :databases="selectedDatabases"
-      @refresh="(databases) => pagedDatabaseTableRef?.refreshCache(databases)"
+      @refresh="() => pagedDatabaseTableRef?.refresh()"
+      @update-cache="
+        (databases) => pagedDatabaseTableRef?.updateCache(databases)
+      "
     />
     <PagedDatabaseTable
       ref="pagedDatabaseTableRef"
@@ -52,7 +54,7 @@
 <script lang="ts" setup>
 import { PlusIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
-import { reactive, computed, ref } from "vue";
+import { reactive, computed, ref, watch } from "vue";
 import { CreateDatabasePrepPanel } from "@/components/CreateDatabasePrepForm";
 import { Drawer } from "@/components/v2";
 import { PagedDatabaseTable } from "@/components/v2/Model/DatabaseV1Table";
@@ -63,6 +65,7 @@ import {
 } from "@/store/modules/v1/common";
 import type { ComposedDatabase, ComposedProject } from "@/types";
 import { isValidDatabaseName } from "@/types";
+import { engineFromJSON } from "@/types/proto/v1/common";
 import type { SearchParams, SearchScope } from "@/utils";
 import {
   CommonFilterScopeIdList,
@@ -84,7 +87,11 @@ const props = defineProps<{
 }>();
 
 const readonlyScopes = computed((): SearchScope[] => [
-  { id: "project", value: extractProjectResourceName(props.project.name) },
+  {
+    id: "project",
+    value: extractProjectResourceName(props.project.name),
+    readonly: true,
+  },
 ]);
 
 const databaseStore = useDatabaseV1Store();
@@ -97,6 +104,17 @@ const state = reactive<LocalState>({
   },
   showCreateDrawer: false,
 });
+
+watch(
+  () => props.project.name,
+  () => {
+    state.params = {
+      query: "",
+      scopes: [...readonlyScopes.value],
+    };
+  }
+);
+
 const pagedDatabaseTableRef = ref<InstanceType<typeof PagedDatabaseTable>>();
 
 const allowToCreateDB = computed(() => {
@@ -108,7 +126,7 @@ const allowToCreateDB = computed(() => {
 
 const scopeOptions = useCommonSearchScopeOptions(
   computed(() => state.params),
-  [...CommonFilterScopeIdList, "label"]
+  [...CommonFilterScopeIdList, "label", "engine"]
 );
 
 const selectedInstance = computed(() => {
@@ -137,11 +155,18 @@ const selectedLabels = computed(() => {
     .map((scope) => scope.value);
 });
 
+const selectedEngines = computed(() => {
+  return state.params.scopes
+    .filter((scope) => scope.id === "engine")
+    .map((scope) => engineFromJSON(scope.value));
+});
+
 const filter = computed(() => ({
   instance: selectedInstance.value,
   environment: selectedEnvironment.value,
   query: state.params.query,
   labels: selectedLabels.value,
+  engines: selectedEngines.value,
 }));
 
 const selectedDatabases = computed((): ComposedDatabase[] => {

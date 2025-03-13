@@ -3,6 +3,7 @@
     key="user-table"
     :columns="columns"
     :data="userList"
+    :loading="loading"
     :striped="true"
     :bordered="true"
     :max-height="'calc(100vh - 15rem)'"
@@ -28,8 +29,8 @@ import { computed, reactive, h } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBAlert } from "@/bbkit";
 import { useAppFeature, useUserStore, useWorkspaceV1Store } from "@/store";
-import { type User } from "@/types/proto/v1/user_service";
 import type { Group } from "@/types/proto/v1/group_service";
+import { type User } from "@/types/proto/v1/user_service";
 import { copyServiceKeyToClipboardIfNeeded } from "../common";
 import GroupsCell from "./cells/GroupsCell.vue";
 import UserNameCell from "./cells/UserNameCell.vue";
@@ -48,6 +49,7 @@ defineOptions({
 const props = defineProps<{
   showRoles: boolean;
   userList: User[];
+  loading: boolean;
   onClickUser?: (user: User, event: MouseEvent) => void;
 }>();
 
@@ -113,9 +115,10 @@ const columns = computed(() => {
           "onClick-user": (user: User, e: MouseEvent) => {
             if (props.onClickUser) {
               props.onClickUser(user, e);
-            } else {
-              emit("update-user", user);
             }
+          },
+          "onUpdate-user": (user: User) => {
+            emit("update-user", user);
           },
         });
       },

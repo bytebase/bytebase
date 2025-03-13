@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
   pull_request:
     branches:
-      - main
+      - 'main'
     paths-ignore:
-      - "frontend/**"
+      - 'frontend/**'
 
 jobs:
   go-tests:

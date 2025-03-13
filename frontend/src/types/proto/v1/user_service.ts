@@ -83,17 +83,28 @@ export interface GetUserRequest {
   name: string;
 }
 
+export interface StatUsersRequest {
+}
+
+export interface StatUsersResponse {
+  stats: StatUsersResponse_StatUser[];
+}
+
+export interface StatUsersResponse_StatUser {
+  userType: UserType;
+  state: State;
+  count: number;
+}
+
 export interface ListUsersRequest {
   /**
-   * Not used.
    * The maximum number of users to return. The service may return fewer than
    * this value.
-   * If unspecified, at most 50 users will be returned.
+   * If unspecified, at most 10 users will be returned.
    * The maximum value is 1000; values above 1000 will be coerced to 1000.
    */
   pageSize: number;
   /**
-   * Not used.
    * A page token, received from a previous `ListUsers` call.
    * Provide this to retrieve the subsequent page.
    *
@@ -103,6 +114,25 @@ export interface ListUsersRequest {
   pageToken: string;
   /** Show deleted users if specified. */
   showDeleted: boolean;
+  /**
+   * Filter is used to filter users returned in the list.
+   * Supported filter:
+   * - name
+   * - email
+   * - user_type
+   * - state
+   *
+   * For example:
+   * name == "ed"
+   * name.matches("ed")
+   * email == "ed@bytebase.com"
+   * email.matches("ed")
+   * user_type == "SERVICE_ACCOUNT"
+   * user_type in ["SERVICE_ACCOUNT", "USER"]
+   * !(user_type in ["SERVICE_ACCOUNT", "USER"])
+   * state == "DELETED"
+   */
+  filter: string;
 }
 
 export interface ListUsersResponse {
@@ -256,8 +286,205 @@ export const GetUserRequest: MessageFns<GetUserRequest> = {
   },
 };
 
+function createBaseStatUsersRequest(): StatUsersRequest {
+  return {};
+}
+
+export const StatUsersRequest: MessageFns<StatUsersRequest> = {
+  encode(_: StatUsersRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): StatUsersRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseStatUsersRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(_: any): StatUsersRequest {
+    return {};
+  },
+
+  toJSON(_: StatUsersRequest): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create(base?: DeepPartial<StatUsersRequest>): StatUsersRequest {
+    return StatUsersRequest.fromPartial(base ?? {});
+  },
+  fromPartial(_: DeepPartial<StatUsersRequest>): StatUsersRequest {
+    const message = createBaseStatUsersRequest();
+    return message;
+  },
+};
+
+function createBaseStatUsersResponse(): StatUsersResponse {
+  return { stats: [] };
+}
+
+export const StatUsersResponse: MessageFns<StatUsersResponse> = {
+  encode(message: StatUsersResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    for (const v of message.stats) {
+      StatUsersResponse_StatUser.encode(v!, writer.uint32(10).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): StatUsersResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseStatUsersResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.stats.push(StatUsersResponse_StatUser.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): StatUsersResponse {
+    return {
+      stats: globalThis.Array.isArray(object?.stats)
+        ? object.stats.map((e: any) => StatUsersResponse_StatUser.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: StatUsersResponse): unknown {
+    const obj: any = {};
+    if (message.stats?.length) {
+      obj.stats = message.stats.map((e) => StatUsersResponse_StatUser.toJSON(e));
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<StatUsersResponse>): StatUsersResponse {
+    return StatUsersResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<StatUsersResponse>): StatUsersResponse {
+    const message = createBaseStatUsersResponse();
+    message.stats = object.stats?.map((e) => StatUsersResponse_StatUser.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseStatUsersResponse_StatUser(): StatUsersResponse_StatUser {
+  return { userType: UserType.USER_TYPE_UNSPECIFIED, state: State.STATE_UNSPECIFIED, count: 0 };
+}
+
+export const StatUsersResponse_StatUser: MessageFns<StatUsersResponse_StatUser> = {
+  encode(message: StatUsersResponse_StatUser, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.userType !== UserType.USER_TYPE_UNSPECIFIED) {
+      writer.uint32(8).int32(userTypeToNumber(message.userType));
+    }
+    if (message.state !== State.STATE_UNSPECIFIED) {
+      writer.uint32(16).int32(stateToNumber(message.state));
+    }
+    if (message.count !== 0) {
+      writer.uint32(24).int32(message.count);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): StatUsersResponse_StatUser {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseStatUsersResponse_StatUser();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.userType = userTypeFromJSON(reader.int32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.state = stateFromJSON(reader.int32());
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.count = reader.int32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): StatUsersResponse_StatUser {
+    return {
+      userType: isSet(object.userType) ? userTypeFromJSON(object.userType) : UserType.USER_TYPE_UNSPECIFIED,
+      state: isSet(object.state) ? stateFromJSON(object.state) : State.STATE_UNSPECIFIED,
+      count: isSet(object.count) ? globalThis.Number(object.count) : 0,
+    };
+  },
+
+  toJSON(message: StatUsersResponse_StatUser): unknown {
+    const obj: any = {};
+    if (message.userType !== UserType.USER_TYPE_UNSPECIFIED) {
+      obj.userType = userTypeToJSON(message.userType);
+    }
+    if (message.state !== State.STATE_UNSPECIFIED) {
+      obj.state = stateToJSON(message.state);
+    }
+    if (message.count !== 0) {
+      obj.count = Math.round(message.count);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<StatUsersResponse_StatUser>): StatUsersResponse_StatUser {
+    return StatUsersResponse_StatUser.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<StatUsersResponse_StatUser>): StatUsersResponse_StatUser {
+    const message = createBaseStatUsersResponse_StatUser();
+    message.userType = object.userType ?? UserType.USER_TYPE_UNSPECIFIED;
+    message.state = object.state ?? State.STATE_UNSPECIFIED;
+    message.count = object.count ?? 0;
+    return message;
+  },
+};
+
 function createBaseListUsersRequest(): ListUsersRequest {
-  return { pageSize: 0, pageToken: "", showDeleted: false };
+  return { pageSize: 0, pageToken: "", showDeleted: false, filter: "" };
 }
 
 export const ListUsersRequest: MessageFns<ListUsersRequest> = {
@@ -270,6 +497,9 @@ export const ListUsersRequest: MessageFns<ListUsersRequest> = {
     }
     if (message.showDeleted !== false) {
       writer.uint32(24).bool(message.showDeleted);
+    }
+    if (message.filter !== "") {
+      writer.uint32(34).string(message.filter);
     }
     return writer;
   },
@@ -305,6 +535,14 @@ export const ListUsersRequest: MessageFns<ListUsersRequest> = {
           message.showDeleted = reader.bool();
           continue;
         }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.filter = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -319,6 +557,7 @@ export const ListUsersRequest: MessageFns<ListUsersRequest> = {
       pageSize: isSet(object.pageSize) ? globalThis.Number(object.pageSize) : 0,
       pageToken: isSet(object.pageToken) ? globalThis.String(object.pageToken) : "",
       showDeleted: isSet(object.showDeleted) ? globalThis.Boolean(object.showDeleted) : false,
+      filter: isSet(object.filter) ? globalThis.String(object.filter) : "",
     };
   },
 
@@ -333,6 +572,9 @@ export const ListUsersRequest: MessageFns<ListUsersRequest> = {
     if (message.showDeleted !== false) {
       obj.showDeleted = message.showDeleted;
     }
+    if (message.filter !== "") {
+      obj.filter = message.filter;
+    }
     return obj;
   },
 
@@ -344,6 +586,7 @@ export const ListUsersRequest: MessageFns<ListUsersRequest> = {
     message.pageSize = object.pageSize ?? 0;
     message.pageToken = object.pageToken ?? "";
     message.showDeleted = object.showDeleted ?? false;
+    message.filter = object.filter ?? "";
     return message;
   },
 };
@@ -1146,6 +1389,26 @@ export const UserServiceDefinition = {
           8410: [new Uint8Array([6, 112, 97, 114, 101, 110, 116])],
           800016: [new Uint8Array([2])],
           578365826: [new Uint8Array([11, 18, 9, 47, 118, 49, 47, 117, 115, 101, 114, 115])],
+        },
+      },
+    },
+    /**
+     * Get user stat.
+     * Any authenticated user can get stat.
+     */
+    statUsers: {
+      name: "StatUsers",
+      requestType: StatUsersRequest,
+      requestStream: false,
+      responseType: StatUsersResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          8410: [new Uint8Array([6, 112, 97, 114, 101, 110, 116])],
+          800016: [new Uint8Array([2])],
+          578365826: [
+            new Uint8Array([19, 58, 1, 42, 34, 14, 47, 118, 49, 47, 117, 115, 101, 114, 115, 58, 115, 116, 97, 116]),
+          ],
         },
       },
     },

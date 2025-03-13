@@ -118,11 +118,12 @@ import {
   useIssueCommentStore,
   useIssueV1Store,
   type ComposedIssueComment,
+  extractUserId,
 } from "@/store";
 import { isValidProjectName } from "@/types";
 import type { ComposedIssue } from "@/types";
 import { ListIssueCommentsRequest } from "@/types/proto/v1/issue_service";
-import { extractUserResourceName, hasProjectPermissionV2 } from "@/utils";
+import { hasProjectPermissionV2 } from "@/utils";
 import { useIssueContext } from "../../logic";
 import {
   IssueCommentView,
@@ -226,7 +227,7 @@ const allowEditIssueComment = (comment: ComposedIssueComment) => {
   if (!isUserEditableComment(comment)) {
     return false;
   }
-  if (currentUser.value.email === extractUserResourceName(comment.creator)) {
+  if (currentUser.value.email === extractUserId(comment.creator)) {
     return true;
   }
   return hasProjectPermissionV2(

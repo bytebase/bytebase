@@ -202,11 +202,18 @@ message AppIMSetting {
     string app_id = 2 [(google.api.field_behavior) = INPUT_ONLY];
     string app_secret = 3 [(google.api.field_behavior) = INPUT_ONLY];
   }
+  message DingTalk {
+    bool enabled = 1;
+    string client_id = 2 [(google.api.field_behavior) = INPUT_ONLY];
+    string client_secret = 3 [(google.api.field_behavior) = INPUT_ONLY];
+    string robot_code = 4 [(google.api.field_behavior) = INPUT_ONLY];
+  }
 
   Slack slack = 1;
   Feishu feishu = 2;
   Wecom wecom = 3;
   Lark lark = 4;
+  DingTalk dingtalk = 5;
 }
 
 message AgentPluginSetting {

@@ -3,7 +3,6 @@ package spanner
 import (
 	"context"
 	"sort"
-	"time"
 
 	"cloud.google.com/go/spanner"
 	"cloud.google.com/go/spanner/admin/database/apiv1/databasepb"
@@ -22,7 +21,7 @@ import (
 func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
 	var databases []*storepb.DatabaseSchemaMetadata
 	iter := d.dbClient.ListDatabases(ctx, &databasepb.ListDatabasesRequest{
-		Parent: d.config.Host,
+		Parent: d.config.DataSource.Host,
 	})
 	for {
 		database, err := iter.Next()
@@ -107,7 +106,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 }
 
 func (d *Driver) notFoundDatabase(ctx context.Context, databaseName string) (bool, error) {
-	dsn := getDSN(d.config.Host, databaseName)
+	dsn := getDSN(d.config.DataSource.Host, databaseName)
 	_, err := d.dbClient.GetDatabase(ctx, &databasepb.GetDatabaseRequest{Name: dsn})
 	if status.Code(err) == codes.NotFound {
 		return true, nil
@@ -369,14 +368,4 @@ func getView(ctx context.Context, tx *spanner.ReadOnlyTransaction, columnMap map
 		})
 	}
 	return viewMap, nil
-}
-
-// SyncSlowQuery syncs the slow query.
-func (*Driver) SyncSlowQuery(_ context.Context, _ time.Time) (map[string]*storepb.SlowQueryStatistics, error) {
-	return nil, errors.Errorf("not implemented")
-}
-
-// CheckSlowQueryLogEnabled checks if slow query log is enabled.
-func (*Driver) CheckSlowQueryLogEnabled(_ context.Context) error {
-	return errors.Errorf("not implemented")
 }

@@ -1,6 +1,6 @@
 import type { ButtonProps } from "naive-ui";
 import { t } from "@/plugins/i18n";
-import { useCurrentUserV1 } from "@/store";
+import { useCurrentUserV1, extractUserId } from "@/store";
 import type { ComposedIssue } from "@/types";
 import {
   IssueStatus,
@@ -8,7 +8,6 @@ import {
 } from "@/types/proto/v1/issue_service";
 import { Task_Status } from "@/types/proto/v1/rollout_service";
 import {
-  extractUserResourceName,
   flattenTaskV1List,
   hasProjectPermissionV2,
   isDatabaseChangeRelatedIssue,
@@ -118,7 +117,7 @@ export const allowUserToApplyIssueStatusAction = (
   // User does not have permission to update the issue and is not the creator of the issue.
   if (
     !hasProjectPermissionV2(issue.projectEntity, "bb.issues.update") &&
-    extractUserResourceName(issue.creator) !== user.value.email
+    extractUserId(issue.creator) !== user.value.email
   ) {
     return [false, t("issue.error.you-don-have-privilege-to-edit-this-issue")];
   }

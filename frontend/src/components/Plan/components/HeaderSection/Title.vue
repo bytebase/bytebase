@@ -22,9 +22,9 @@ import type { CSSProperties } from "vue";
 import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { planServiceClient } from "@/grpcweb";
-import { pushNotification, useCurrentUserV1 } from "@/store";
+import { pushNotification, useCurrentUserV1, extractUserId } from "@/store";
 import { Plan } from "@/types/proto/v1/plan_service";
-import { extractUserResourceName, hasProjectPermissionV2 } from "@/utils";
+import { hasProjectPermissionV2 } from "@/utils";
 import { usePlanContext } from "../../logic";
 
 type ViewMode = "EDIT" | "VIEW";
@@ -66,7 +66,7 @@ const allowEdit = computed(() => {
     return true;
   }
 
-  if (extractUserResourceName(plan.value.creator) === currentUser.value.email) {
+  if (extractUserId(plan.value.creator) === currentUser.value.email) {
     // Allowed if current user is the creator.
     return true;
   }

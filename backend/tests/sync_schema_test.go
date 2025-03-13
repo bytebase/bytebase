@@ -40,21 +40,15 @@ DROP SCHEMA "schema_a";
 	a := require.New(t)
 	ctx := context.Background()
 	ctl := &controller{}
-	dataDir := t.TempDir()
-	ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
-		dataDir: dataDir,
-	})
+	ctx, err := ctl.StartServerWithExternalPg(ctx)
 	a.NoError(err)
 	defer ctl.Close(ctx)
 
 	pgContainer, err := getPgContainer(ctx)
-	a.NoError(err)
-
 	defer func() {
-		pgContainer.db.Close()
-		err := pgContainer.container.Terminate(ctx)
-		a.NoError(err)
+		pgContainer.Close(ctx)
 	}()
+	a.NoError(err)
 
 	pgDB := pgContainer.db
 	err = pgDB.Ping()

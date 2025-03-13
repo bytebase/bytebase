@@ -48,30 +48,30 @@ func newDriver(_ db.DriverConfig) db.Driver {
 
 // Open opens the redis driver.
 func (d *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
-	tlsConfig, err := config.TLSConfig.GetSslConfig()
+	tlscfg, err := util.GetTLSConfig(config.DataSource)
 	if err != nil {
 		return nil, errors.Wrap(err, "redis: failed to get tls config")
 	}
 	db := 0
-	if config.Database != "" {
-		database, err := strconv.Atoi(config.Database)
+	if config.ConnectionContext.DatabaseName != "" {
+		database, err := strconv.Atoi(config.ConnectionContext.DatabaseName)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to convert database %s to int", config.Database)
+			return nil, errors.Wrapf(err, "failed to convert database %s to int", config.ConnectionContext.DatabaseName)
 		}
 		db = database
 	}
 	d.databaseName = fmt.Sprintf("%d", db)
-	switch config.RedisType {
+	switch config.DataSource.GetRedisType() {
 	case storepb.DataSource_REDIS_TYPE_UNSPECIFIED, storepb.DataSource_STANDALONE:
 		options := &redis.Options{
-			Addr:      fmt.Sprintf("%s:%s", config.Host, config.Port),
-			Username:  config.Username,
+			Addr:      fmt.Sprintf("%s:%s", config.DataSource.Host, config.DataSource.Port),
+			Username:  config.DataSource.Username,
 			Password:  config.Password,
-			TLSConfig: tlsConfig,
+			TLSConfig: tlscfg,
 			DB:        db,
 		}
-		if config.SSHConfig.Host != "" {
-			sshClient, err := util.GetSSHClient(config.SSHConfig)
+		if config.DataSource.GetSshHost() != "" {
+			sshClient, err := util.GetSSHClient(config.DataSource)
 			if err != nil {
 				return nil, err
 			}
@@ -82,30 +82,30 @@ func (d *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionC
 				if err != nil {
 					return nil, err
 				}
-				return &noDeadlineConn{Conn: conn}, nil
+				return &util.NoDeadlineConn{Conn: conn}, nil
 			}
 		}
 		client := redis.NewClient(options)
 		d.databaseName = fmt.Sprintf("%d", db)
 		d.rdb = client
 	case storepb.DataSource_SENTINEL:
-		sentinelAddrs := make([]string, 0, 1+len(config.AdditionalAddresses))
-		sentinelAddrs = append(sentinelAddrs, fmt.Sprintf("%s:%s", config.Host, config.Port))
-		for _, sentinelAddr := range config.AdditionalAddresses {
+		sentinelAddrs := make([]string, 0, 1+len(config.DataSource.GetAdditionalAddresses()))
+		sentinelAddrs = append(sentinelAddrs, fmt.Sprintf("%s:%s", config.DataSource.Host, config.DataSource.Port))
+		for _, sentinelAddr := range config.DataSource.GetAdditionalAddresses() {
 			sentinelAddrs = append(sentinelAddrs, fmt.Sprintf("%s:%s", sentinelAddr.Host, sentinelAddr.Port))
 		}
 		options := &redis.FailoverOptions{
-			MasterName:       config.MasterName,
-			Username:         config.MasterUsername,
-			Password:         config.MasterPassword,
-			SentinelUsername: config.Username,
+			MasterName:       config.DataSource.GetMasterName(),
+			Username:         config.DataSource.GetMasterUsername(),
+			Password:         config.DataSource.GetMasterPassword(),
+			SentinelUsername: config.DataSource.Username,
 			SentinelPassword: config.Password,
 			SentinelAddrs:    sentinelAddrs,
 			DB:               db,
-			TLSConfig:        tlsConfig,
+			TLSConfig:        tlscfg,
 		}
-		if config.SSHConfig.Host != "" {
-			sshClient, err := util.GetSSHClient(config.SSHConfig)
+		if config.DataSource.GetSshHost() != "" {
+			sshClient, err := util.GetSSHClient(config.DataSource)
 			if err != nil {
 				return nil, err
 			}
@@ -116,26 +116,26 @@ func (d *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionC
 				if err != nil {
 					return nil, err
 				}
-				return &noDeadlineConn{Conn: conn}, nil
+				return &util.NoDeadlineConn{Conn: conn}, nil
 			}
 		}
 		d.databaseName = fmt.Sprintf("%d", db)
 		client := redis.NewFailoverClient(options)
 		d.rdb = client
 	case storepb.DataSource_CLUSTER:
-		addrs := make([]string, 0, 1+len(config.AdditionalAddresses))
-		addrs = append(addrs, fmt.Sprintf("%s:%s", config.Host, config.Port))
-		for _, addr := range config.AdditionalAddresses {
+		addrs := make([]string, 0, 1+len(config.DataSource.GetAdditionalAddresses()))
+		addrs = append(addrs, fmt.Sprintf("%s:%s", config.DataSource.Host, config.DataSource.Port))
+		for _, addr := range config.DataSource.GetAdditionalAddresses() {
 			addrs = append(addrs, fmt.Sprintf("%s:%s", addr.Host, addr.Port))
 		}
 		options := &redis.ClusterOptions{
 			Addrs:     addrs,
-			Username:  config.Username,
+			Username:  config.DataSource.Username,
 			Password:  config.Password,
-			TLSConfig: tlsConfig,
+			TLSConfig: tlscfg,
 		}
-		if config.SSHConfig.Host != "" {
-			sshClient, err := util.GetSSHClient(config.SSHConfig)
+		if config.DataSource.GetSshHost() != "" {
+			sshClient, err := util.GetSSHClient(config.DataSource)
 			if err != nil {
 				return nil, err
 			}
@@ -146,25 +146,19 @@ func (d *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionC
 				if err != nil {
 					return nil, err
 				}
-				return &noDeadlineConn{Conn: conn}, nil
+				return &util.NoDeadlineConn{Conn: conn}, nil
 			}
 		}
 		client := redis.NewClusterClient(options)
 		d.rdb = client
 	default:
-		return nil, errors.Errorf("unsupported redis type %s", config.RedisType.String())
+		return nil, errors.Errorf("unsupported redis type %s", config.DataSource.GetRedisType().String())
 	}
 
 	d.maximumSQLResultSize = config.MaximumSQLResultSize
 
 	return d, nil
 }
-
-type noDeadlineConn struct{ net.Conn }
-
-func (*noDeadlineConn) SetDeadline(time.Time) error      { return nil }
-func (*noDeadlineConn) SetReadDeadline(time.Time) error  { return nil }
-func (*noDeadlineConn) SetWriteDeadline(time.Time) error { return nil }
 
 // Close closes the redis driver.
 func (d *Driver) Close(context.Context) error {

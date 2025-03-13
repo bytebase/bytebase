@@ -2,15 +2,15 @@ import type { MaybeRef } from "vue";
 import { computed, ref, unref, watch } from "vue";
 import type { LocationQuery } from "vue-router";
 import { useRoute, useRouter } from "vue-router";
-import { experimentalFetchIssueByUID, useCurrentUserV1 } from "@/store";
+import {
+  experimentalFetchIssueByUID,
+  useCurrentUserV1,
+  extractUserId,
+} from "@/store";
 import type { ComposedIssue } from "@/types";
 import { emptyIssue, EMPTY_ID, UNKNOWN_ID } from "@/types";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
-import {
-  uidFromSlug,
-  hasProjectPermissionV2,
-  extractUserResourceName,
-} from "@/utils";
+import { uidFromSlug, hasProjectPermissionV2 } from "@/utils";
 import { createIssueSkeleton } from "./create";
 
 export * from "./create";
@@ -102,9 +102,7 @@ export function useInitializeIssue(
       return false;
     }
 
-    if (
-      extractUserResourceName(issue.value.creator) === currentUser.value.email
-    ) {
+    if (extractUserId(issue.value.creator) === currentUser.value.email) {
       // Allowed if current user is the creator.
       return true;
     }

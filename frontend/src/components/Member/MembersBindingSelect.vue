@@ -40,7 +40,6 @@
         :project-name="projectName"
         :include-all-users="includeAllUsers"
         :include-service-account="includeServiceAccount"
-        :allowed-workspace-role-list="[]"
         @update:users="onMemberListUpdate"
       />
     </div>
@@ -65,16 +64,21 @@
 <script setup lang="ts">
 import { uniq } from "lodash-es";
 import { NRadio, NRadioGroup } from "naive-ui";
-import { computed, ref, onMounted } from "vue";
+import { computed, ref, onMounted, watchEffect } from "vue";
 import { GroupSelect, UserSelect } from "@/components/v2";
-import { extractGroupEmail, useUserStore, useGroupStore } from "@/store";
+import {
+  extractGroupEmail,
+  useUserStore,
+  useGroupStore,
+  batchGetOrFetchUsers,
+  extractUserId,
+} from "@/store";
 import { groupNamePrefix } from "@/store/modules/v1/common";
 import {
   getUserEmailInBinding,
   getGroupEmailInBinding,
   groupBindingPrefix,
 } from "@/types";
-import { extractUserUID } from "@/utils";
 
 type MemberType = "USERS" | "GROUPS";
 
@@ -114,6 +118,14 @@ onMounted(() => {
   memberType.value = isGroupType ? "GROUPS" : "USERS";
 });
 
+watchEffect(async () => {
+  await batchGetOrFetchUsers(
+    props.value.map((binding) =>
+      binding.startsWith(groupBindingPrefix) ? "" : binding
+    )
+  );
+});
+
 const onTypeChange = (type: MemberType) => {
   emit("update:value", []);
   memberType.value = type;
@@ -134,7 +146,7 @@ const memberList = computed(() => {
       if (!user) {
         continue;
       }
-      list.push(extractUserUID(user.name));
+      list.push(extractUserId(user.name));
     }
   }
 
@@ -148,7 +160,7 @@ const onMemberListUpdate = (memberList: string[]) => {
         const email = extractGroupEmail(member);
         return getGroupEmailInBinding(email);
       }
-      const user = userStore.getUserById(member);
+      const user = userStore.getUserByIdentifier(member);
       if (!user) {
         return "";
       }

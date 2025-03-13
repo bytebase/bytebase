@@ -32,12 +32,13 @@
         />
       </template>
     </PagedTable>
-    <NoDataPlaceholder v-else />
+    <NEmpty class="py-12 border rounded" v-else />
   </div>
 </template>
 
 <script lang="ts" setup>
 import dayjs from "dayjs";
+import { NEmpty } from "naive-ui";
 import type { BinaryLike } from "node:crypto";
 import { reactive, computed, watch, ref } from "vue";
 import type { ComponentExposed } from "vue-component-type-helpers";
@@ -48,12 +49,12 @@ import { buildSearchAuditLogParams } from "@/components/AuditLog/AuditLogSearch/
 import type { ExportOption } from "@/components/DataExportButton.vue";
 import DataExportButton from "@/components/DataExportButton.vue";
 import { FeatureAttention } from "@/components/FeatureGuard";
-import NoDataPlaceholder from "@/components/misc/NoDataPlaceholder.vue";
 import PagedTable from "@/components/v2/Model/PagedTable.vue";
 import {
   featureToRef,
   useAuditLogStore,
   batchGetOrFetchProjects,
+  batchGetOrFetchUsers,
   pushNotification,
 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
@@ -110,6 +111,7 @@ const fetchAuditLog = async ({
       return `${projectNamePrefix}${projectResourceId}`;
     })
   );
+  await batchGetOrFetchUsers(auditLogs.map((log) => log.user));
   return { nextPageToken, list: auditLogs };
 };
 

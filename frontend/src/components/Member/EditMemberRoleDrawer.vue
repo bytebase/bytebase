@@ -77,7 +77,7 @@ import { Drawer, DrawerContent } from "@/components/v2";
 import { RoleSelect } from "@/components/v2/Select";
 import {
   extractGroupEmail,
-  extractUserEmail,
+  extractUserId,
   pushNotification,
   useWorkspaceV1Store,
 } from "@/store";
@@ -122,7 +122,7 @@ const email = computed(() => {
     return "";
   }
   if (props.member.type === "users") {
-    return extractUserEmail(props.member.binding);
+    return extractUserId(props.member.binding);
   }
   return extractGroupEmail(props.member.binding);
 });

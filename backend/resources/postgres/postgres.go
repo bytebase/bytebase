@@ -11,7 +11,6 @@ import (
 	"path/filepath"
 	"runtime"
 	"strconv"
-	"strings"
 	"syscall"
 
 	"github.com/pkg/errors"
@@ -107,8 +106,7 @@ func start(port int, binDir, dataDir string, serverLog bool) (err error) {
 // stop stops a postgres instance, outputs to stdout and stderr.
 func stop(pgBinDir, pgDataDir string) error {
 	pgbin := filepath.Join(pgBinDir, "pg_ctl")
-	p := exec.Command(pgbin, "stop", "-w",
-		"-D", pgDataDir)
+	p := exec.Command(pgbin, "stop", "-w", "-D", pgDataDir)
 	uid, _, sameUser, err := shouldSwitchUser()
 	if err != nil {
 		return err
@@ -208,18 +206,6 @@ func initDB(pgBinDir, pgDataDir, pgUser string) error {
 	slog.Info("-----Postgres initdb END-----")
 
 	return nil
-}
-
-func getVersion(pgDataPath string) (string, error) {
-	versionPath := filepath.Join(pgDataPath, "PG_VERSION")
-	data, err := os.ReadFile(versionPath)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return "", nil
-		}
-		return "", errors.Wrapf(err, "failed to check postgres version in data directory path %q", versionPath)
-	}
-	return strings.TrimRight(string(data), "\n"), nil
 }
 
 func shouldSwitchUser() (int, int, bool, error) {

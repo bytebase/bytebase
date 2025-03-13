@@ -3,7 +3,6 @@ package v1
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"log/slog"
 	"slices"
 	"sort"
@@ -82,7 +81,7 @@ func (s *RolloutService) PreviewRollout(ctx context.Context, request *v1pb.Previ
 	}
 	steps := convertPlanSteps(request.Plan.Steps)
 
-	rollout, err := GetPipelineCreate(ctx, s.store, s.sheetManager, s.licenseService, s.dbFactory, steps, nil /* snapshot */, project)
+	rollout, err := GetPipelineCreate(ctx, s.store, s.sheetManager, s.licenseService, s.dbFactory, request.GetPlan().GetName(), steps, nil /* snapshot */, project)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to get pipeline create, error: %v", err)
 	}
@@ -226,7 +225,7 @@ func (s *RolloutService) CreateRollout(ctx context.Context, request *v1pb.Create
 		return nil, status.Errorf(codes.NotFound, "plan not found for id: %d", planID)
 	}
 
-	pipelineCreate, err := GetPipelineCreate(ctx, s.store, s.sheetManager, s.licenseService, s.dbFactory, plan.Config.GetSteps(), plan.Config.GetDeploymentSnapshot(), project)
+	pipelineCreate, err := GetPipelineCreate(ctx, s.store, s.sheetManager, s.licenseService, s.dbFactory, plan.Name, plan.Config.GetSteps(), plan.Config.GetDeployment(), project)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to get pipeline create, error: %v", err)
 	}
@@ -234,7 +233,7 @@ func (s *RolloutService) CreateRollout(ctx context.Context, request *v1pb.Create
 		return nil, status.Errorf(codes.InvalidArgument, "no database matched for deployment, hint: check deployment config setting that the target database is in a stage")
 	}
 	if isChangeDatabasePlan(plan.Config.GetSteps()) {
-		pipelineCreate, err = getPipelineCreateToTargetStage(ctx, s.store, plan.Config.GetDeploymentSnapshot().GetDeploymentConfigSnapshot().GetDeploymentConfig(), project, pipelineCreate, request.StageId)
+		pipelineCreate, err = getPipelineCreateToTargetStage(ctx, s.store, plan.Config.GetDeployment().GetEnvironments(), pipelineCreate, request.Target)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to filter stages with stageId, error: %v", err)
 		}
@@ -579,14 +578,10 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, request *v1pb.BatchR
 			continue
 		}
 
-		sheetUID, err := api.GetSheetUIDFromTaskPayload(task.Payload)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to get sheet uid from task payload, error: %v", err)
-		}
+		sheetUID := int(task.Payload.GetSheetId())
 		create := &store.TaskRunMessage{
 			TaskUID:   task.ID,
-			SheetUID:  sheetUID,
-			Name:      fmt.Sprintf("%s %d", task.Name, time.Now().Unix()),
+			SheetUID:  &sheetUID,
 			CreatorID: user.ID,
 		}
 		taskRunCreates = append(taskRunCreates, create)
@@ -700,7 +695,7 @@ func (s *RolloutService) BatchSkipTasks(ctx context.Context, request *v1pb.Batch
 			return nil, status.Errorf(codes.Internal, "failed to check if the user can run tasks, error: %v", err)
 		}
 		if !ok {
-			return nil, status.Errorf(codes.PermissionDenied, "not allowed to skip tasks in stage %q", stage.Name)
+			return nil, status.Errorf(codes.PermissionDenied, "not allowed to skip tasks in stage %q", stage.Environment)
 		}
 	}
 
@@ -830,7 +825,7 @@ func (s *RolloutService) BatchCancelTaskRuns(ctx context.Context, request *v1pb.
 		case api.TaskRunPending:
 		case api.TaskRunRunning:
 		default:
-			return nil, status.Errorf(codes.InvalidArgument, "taskRun %v is not pending or running", taskRun.Name)
+			return nil, status.Errorf(codes.InvalidArgument, "taskRun %v is not pending or running", taskRun.ID)
 		}
 	}
 
@@ -889,16 +884,16 @@ func (s *RolloutService) PreviewTaskRunRollback(ctx context.Context, request *v1
 	taskRun := taskRuns[0]
 
 	if taskRun.Status != api.TaskRunDone {
-		return nil, status.Errorf(codes.InvalidArgument, "task run %v is not done", taskRun.Name)
+		return nil, status.Errorf(codes.InvalidArgument, "task run %v is not done", taskRun.ID)
 	}
 
 	if taskRun.ResultProto == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "task run %v has no result", taskRun.Name)
+		return nil, status.Errorf(codes.InvalidArgument, "task run %v has no result", taskRun.ID)
 	}
 
 	backupDetail := taskRun.ResultProto.PriorBackupDetail
 	if backupDetail == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "task run %v has no rollback", taskRun.Name)
+		return nil, status.Errorf(codes.InvalidArgument, "task run %v has no rollback", taskRun.ID)
 	}
 
 	task, err := s.store.GetTaskV2ByID(ctx, taskUID)
@@ -912,7 +907,7 @@ func (s *RolloutService) PreviewTaskRunRollback(ctx context.Context, request *v1
 	}
 
 	if taskRun.SheetUID == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "task run %v has no sheet", taskRun.Name)
+		return nil, status.Errorf(codes.InvalidArgument, "task run %v has no sheet", taskRun.ID)
 	}
 	statements, err := s.store.GetSheetStatementByID(ctx, *taskRun.SheetUID)
 	if err != nil {
@@ -950,7 +945,7 @@ func isChangeDatabasePlan(steps []*storepb.PlanConfig_Step) bool {
 }
 
 // GetPipelineCreate gets a pipeline create message from a plan.
-func GetPipelineCreate(ctx context.Context, s *store.Store, sheetManager *sheet.Manager, licenseService enterprise.LicenseService, dbFactory *dbfactory.DBFactory, steps []*storepb.PlanConfig_Step, snapshot *storepb.PlanConfig_DeploymentSnapshot /* nullable */, project *store.ProjectMessage) (*store.PipelineMessage, error) {
+func GetPipelineCreate(ctx context.Context, s *store.Store, sheetManager *sheet.Manager, licenseService enterprise.LicenseService, dbFactory *dbfactory.DBFactory, rolloutTitle string, steps []*storepb.PlanConfig_Step, deployment *storepb.PlanConfig_Deployment /* nullable */, project *store.ProjectMessage) (*store.PipelineMessage, error) {
 	// Flatten all specs from steps.
 	var specs []*storepb.PlanConfig_Spec
 	for _, step := range steps {
@@ -959,186 +954,110 @@ func GetPipelineCreate(ctx context.Context, s *store.Store, sheetManager *sheet.
 
 	// Step 1 - transform database group specs.
 	// Others are untouched.
-	transformSpecs, err := transformDatabaseGroupSpecs(ctx, s, project, specs, snapshot)
+	transformSpecs, err := transformDatabaseGroupSpecs(ctx, s, project, specs, deployment)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to transform database group specs")
 	}
-	specs = transformSpecs
 
-	// Step 2 - filter by deployment config for ChangeDatabase specs.
-	filterByDeploymentConfig := isChangeDatabasePlan(steps)
-
-	transformedSteps := steps
-	// All 0.
-	// deploymentIDs are present for ChangeDatabase type.
-	deploymentIDs := make([]string, len(transformedSteps))
-
-	// For ChangeDatabase specs, we will try to rebuild the steps based on the deployment config.
-	if filterByDeploymentConfig {
-		deploymentConfig := snapshot.GetDeploymentConfigSnapshot().GetDeploymentConfig()
-		if deploymentConfig == nil {
-			deploymentConfigMessage, err := s.GetDeploymentConfigV2(ctx, project.ResourceID)
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to get deployment config")
-			}
-			deploymentConfig = deploymentConfigMessage.Config
-		}
-		if err := utils.ValidateDeploymentSchedule(deploymentConfig.Schedule); err != nil {
-			return nil, errors.Wrapf(err, "failed to validate and get deployment schedule")
-		}
-		// Get all databases from specs.
-		var databases []*store.DatabaseMessage
-		for _, spec := range specs {
-			if config := spec.GetChangeDatabaseConfig(); config != nil {
-				instanceID, databaseName, err := common.GetInstanceDatabaseID(config.Target)
-				if err != nil {
-					return nil, status.Error(codes.InvalidArgument, err.Error())
-				}
-				database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-					InstanceID:   &instanceID,
-					DatabaseName: &databaseName,
-				})
-				if err != nil {
-					return nil, status.Error(codes.Internal, err.Error())
-				}
-				if database == nil {
-					return nil, status.Errorf(codes.NotFound, "database %v not found", config.Target)
-				}
-				databases = append(databases, database)
-			}
-		}
-		// Calculate the matrix of databases based on the deployment schedule.
-		matrix, err := utils.GetDatabaseMatrixFromDeploymentSchedule(deploymentConfig.GetSchedule(), databases)
+	// Step 2 - list snapshot environments.
+	snapshotEnvironments := deployment.GetEnvironments()
+	if len(snapshotEnvironments) == 0 {
+		environments, err := s.ListEnvironmentV2(ctx, &store.FindEnvironmentMessage{})
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get database matrix from deployment schedule")
+			return nil, errors.Wrapf(err, "failed to list environments")
 		}
-
-		specsByDatabase := map[string][]*storepb.PlanConfig_Spec{}
-		for _, s := range specs {
-			if s.GetChangeDatabaseConfig() == nil {
-				return nil, errors.Errorf("unexpected nil ChangeDatabaseConfig")
-			}
-			target := s.GetChangeDatabaseConfig().GetTarget()
-			specsByDatabase[target] = append(specsByDatabase[target], s)
+		for _, e := range environments {
+			snapshotEnvironments = append(snapshotEnvironments, e.ResourceID)
 		}
-		databaseLoaded := map[string]bool{}
-
-		var steps []*storepb.PlanConfig_Step
-		deploymentIDs = []string{}
-		for i, databases := range matrix {
-			if len(databases) == 0 {
-				continue
-			}
-
-			step := &storepb.PlanConfig_Step{
-				Title: deploymentConfig.GetSchedule().Deployments[i].Title,
-			}
-			for _, database := range databases {
-				name := common.FormatDatabase(database.InstanceID, database.DatabaseName)
-				if databaseLoaded[name] {
-					continue
-				}
-				specs, ok := specsByDatabase[name]
-				if !ok {
-					continue
-				}
-				step.Specs = append(step.Specs, specs...)
-				databaseLoaded[name] = true
-			}
-			steps = append(steps, step)
-			deploymentIDs = append(deploymentIDs, deploymentConfig.GetSchedule().Deployments[i].Id)
-		}
-		transformedSteps = steps
+	}
+	environmentIndex := make(map[string]int)
+	for i, e := range snapshotEnvironments {
+		environmentIndex[e] = i
 	}
 
-	pipelineCreate := &store.PipelineMessage{
-		Name:      "Rollout Pipeline",
+	// Step 3 - convert all task creates.
+	var taskCreates []*store.TaskMessage
+	for _, spec := range transformSpecs {
+		tcs, err := getTaskCreatesFromSpec(ctx, s, sheetManager, licenseService, dbFactory, spec, project)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to get task creates from spec")
+		}
+		taskCreates = append(taskCreates, tcs...)
+	}
+	if len(taskCreates) == 0 {
+		return nil, errors.Errorf("there is no tasks created from the plan")
+	}
+
+	// Step 4 - construct all environment stages.
+	var stages []*store.StageMessage
+	for _, environmentID := range snapshotEnvironments {
+		stages = append(stages, &store.StageMessage{
+			Environment: environmentID,
+		})
+	}
+
+	// Step 5 - build tasks for each stage.
+	for _, spec := range transformSpecs {
+		tc, err := getTaskCreatesFromSpec(ctx, s, sheetManager, licenseService, dbFactory, spec, project)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to get task creates from spec")
+		}
+		for _, t := range tc {
+			e, err := s.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &t.EnvironmentID})
+			if err != nil {
+				return nil, status.Error(codes.Internal, err.Error())
+			}
+			environmentIndex := environmentIndex[e.ResourceID]
+			stages[environmentIndex].TaskList = append(stages[environmentIndex].TaskList, t)
+		}
+	}
+	return &store.PipelineMessage{
+		Name:      rolloutTitle,
 		ProjectID: project.ResourceID,
-	}
-
-	for i, step := range transformedSteps {
-		stageCreate := &store.StageMessage{
-			DeploymentID: deploymentIDs[i],
-		}
-
-		var stageEnvironmentID string
-		registerEnvironmentID := func(environmentID string) error {
-			if stageEnvironmentID == "" {
-				stageEnvironmentID = environmentID
-				return nil
-			}
-			if stageEnvironmentID != environmentID {
-				return errors.Errorf("expect only one environment in a stage, got %s and %s", stageEnvironmentID, environmentID)
-			}
-			return nil
-		}
-
-		for _, spec := range step.Specs {
-			taskCreates, err := getTaskCreatesFromSpec(ctx, s, sheetManager, licenseService, dbFactory, spec, project, registerEnvironmentID)
-			if err != nil {
-				return nil, errors.Wrap(err, "failed to get task creates from spec")
-			}
-			stageCreate.TaskList = append(stageCreate.TaskList, taskCreates...)
-		}
-
-		environment, err := s.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &stageEnvironmentID})
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to get environment")
-		}
-		if environment == nil {
-			return nil, errors.Errorf("environment %q not found", stageEnvironmentID)
-		}
-		stageCreate.Environment = stageEnvironmentID
-		stageCreate.Name = fmt.Sprintf("%s Stage", environment.Title)
-		if step.Title != "" {
-			stageCreate.Name = step.Title
-		}
-
-		pipelineCreate.Stages = append(pipelineCreate.Stages, stageCreate)
-	}
-	return pipelineCreate, nil
+		Stages: slices.DeleteFunc(stages, func(stage *store.StageMessage) bool {
+			return len(stage.TaskList) == 0
+		}),
+	}, nil
 }
 
-// filter pipelineCreate.Stages using targetStageID.
-func getPipelineCreateToTargetStage(ctx context.Context, s *store.Store, snapshot *storepb.DeploymentConfig, project *store.ProjectMessage, pipelineCreate *store.PipelineMessage, targetStageID *string) (*store.PipelineMessage, error) {
-	if targetStageID == nil {
+// filter pipelineCreate.Stages using targetEnvironmentID.
+func getPipelineCreateToTargetStage(ctx context.Context, s *store.Store, snapshotEnvironments []string, pipelineCreate *store.PipelineMessage, targetEnvironment *string) (*store.PipelineMessage, error) {
+	if targetEnvironment == nil {
 		return pipelineCreate, nil
 	}
-	if *targetStageID == "" {
+	if *targetEnvironment == "" {
 		pipelineCreate.Stages = nil
 		return pipelineCreate, nil
 	}
-	if snapshot == nil {
-		deploymentConfigMessage, err := s.GetDeploymentConfigV2(ctx, project.ResourceID)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get deployment config")
-		}
-		snapshot = deploymentConfigMessage.Config
+	targetEnvironmentID, err := common.GetEnvironmentID(*targetEnvironment)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get environment id from %q", *targetEnvironment)
 	}
-
-	// Consider:
-	// deploymentStages: ["1", "2", "3", "4"]
-	// pipelineCreate.stageId: ["2", "4"]
-	// We iterate through deploymentStages and use i to indicate the current stage.
-	// We push the stage to stageCreates if stageId == deploymentStageId.
-	// On deploymentStageId == targetStageID, we break the loop.
+	if len(snapshotEnvironments) == 0 {
+		environments, err := s.ListEnvironmentV2(ctx, &store.FindEnvironmentMessage{})
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to list environments")
+		}
+		for _, e := range environments {
+			snapshotEnvironments = append(snapshotEnvironments, e.ResourceID)
+		}
+	}
 
 	foundID := false
 	var stageCreates []*store.StageMessage
 	i := 0
-	for _, deploymentStage := range snapshot.GetSchedule().Deployments {
-		id := deploymentStage.Id
-		if i < len(pipelineCreate.Stages) && pipelineCreate.Stages[i].DeploymentID == id {
+	for _, environmentID := range snapshotEnvironments {
+		if i < len(pipelineCreate.Stages) && pipelineCreate.Stages[i].Environment == environmentID {
 			stageCreates = append(stageCreates, pipelineCreate.Stages[i])
 			i++
 		}
-		if id == *targetStageID {
+		if environmentID == targetEnvironmentID {
 			foundID = true
 			break
 		}
 	}
 	if !foundID {
-		return nil, errors.Errorf("stageId %q not found in deployment schedules", *targetStageID)
+		return nil, errors.Errorf("environment %q not found", targetEnvironmentID)
 	}
 	pipelineCreate.Stages = stageCreates
 	return pipelineCreate, nil

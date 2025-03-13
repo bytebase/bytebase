@@ -26,7 +26,6 @@ const (
 	SQLService_Check_FullMethodName                = "/bytebase.v1.SQLService/Check"
 	SQLService_ParseMyBatisMapper_FullMethodName   = "/bytebase.v1.SQLService/ParseMyBatisMapper"
 	SQLService_Pretty_FullMethodName               = "/bytebase.v1.SQLService/Pretty"
-	SQLService_StringifyMetadata_FullMethodName    = "/bytebase.v1.SQLService/StringifyMetadata"
 	SQLService_DiffMetadata_FullMethodName         = "/bytebase.v1.SQLService/DiffMetadata"
 )
 
@@ -42,7 +41,6 @@ type SQLServiceClient interface {
 	Check(ctx context.Context, in *CheckRequest, opts ...grpc.CallOption) (*CheckResponse, error)
 	ParseMyBatisMapper(ctx context.Context, in *ParseMyBatisMapperRequest, opts ...grpc.CallOption) (*ParseMyBatisMapperResponse, error)
 	Pretty(ctx context.Context, in *PrettyRequest, opts ...grpc.CallOption) (*PrettyResponse, error)
-	StringifyMetadata(ctx context.Context, in *StringifyMetadataRequest, opts ...grpc.CallOption) (*StringifyMetadataResponse, error)
 	DiffMetadata(ctx context.Context, in *DiffMetadataRequest, opts ...grpc.CallOption) (*DiffMetadataResponse, error)
 }
 
@@ -127,16 +125,6 @@ func (c *sQLServiceClient) Pretty(ctx context.Context, in *PrettyRequest, opts .
 	return out, nil
 }
 
-func (c *sQLServiceClient) StringifyMetadata(ctx context.Context, in *StringifyMetadataRequest, opts ...grpc.CallOption) (*StringifyMetadataResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(StringifyMetadataResponse)
-	err := c.cc.Invoke(ctx, SQLService_StringifyMetadata_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *sQLServiceClient) DiffMetadata(ctx context.Context, in *DiffMetadataRequest, opts ...grpc.CallOption) (*DiffMetadataResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(DiffMetadataResponse)
@@ -159,7 +147,6 @@ type SQLServiceServer interface {
 	Check(context.Context, *CheckRequest) (*CheckResponse, error)
 	ParseMyBatisMapper(context.Context, *ParseMyBatisMapperRequest) (*ParseMyBatisMapperResponse, error)
 	Pretty(context.Context, *PrettyRequest) (*PrettyResponse, error)
-	StringifyMetadata(context.Context, *StringifyMetadataRequest) (*StringifyMetadataResponse, error)
 	DiffMetadata(context.Context, *DiffMetadataRequest) (*DiffMetadataResponse, error)
 	mustEmbedUnimplementedSQLServiceServer()
 }
@@ -191,9 +178,6 @@ func (UnimplementedSQLServiceServer) ParseMyBatisMapper(context.Context, *ParseM
 }
 func (UnimplementedSQLServiceServer) Pretty(context.Context, *PrettyRequest) (*PrettyResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Pretty not implemented")
-}
-func (UnimplementedSQLServiceServer) StringifyMetadata(context.Context, *StringifyMetadataRequest) (*StringifyMetadataResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method StringifyMetadata not implemented")
 }
 func (UnimplementedSQLServiceServer) DiffMetadata(context.Context, *DiffMetadataRequest) (*DiffMetadataResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DiffMetadata not implemented")
@@ -334,24 +318,6 @@ func _SQLService_Pretty_Handler(srv interface{}, ctx context.Context, dec func(i
 	return interceptor(ctx, in, info, handler)
 }
 
-func _SQLService_StringifyMetadata_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(StringifyMetadataRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(SQLServiceServer).StringifyMetadata(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: SQLService_StringifyMetadata_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SQLServiceServer).StringifyMetadata(ctx, req.(*StringifyMetadataRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _SQLService_DiffMetadata_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(DiffMetadataRequest)
 	if err := dec(in); err != nil {
@@ -400,10 +366,6 @@ var SQLService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Pretty",
 			Handler:    _SQLService_Pretty_Handler,
-		},
-		{
-			MethodName: "StringifyMetadata",
-			Handler:    _SQLService_StringifyMetadata_Handler,
 		},
 		{
 			MethodName: "DiffMetadata",

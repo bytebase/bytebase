@@ -127,7 +127,7 @@ const taskClass = computed(() => {
 });
 
 const taskTitle = computed(() => {
-  return props.task.title;
+  return props.task.target;
 });
 
 const database = computed(() => databaseForTask(issue.value, props.task));

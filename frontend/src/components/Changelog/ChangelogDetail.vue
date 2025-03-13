@@ -1,6 +1,6 @@
 <template>
   <div class="focus:outline-none" tabindex="0" v-bind="$attrs">
-    <NoPermissionPlaceholder v-if="!hasPermission" />
+    <NoPermissionPlaceholder v-if="!hasPermission" class="py-6" />
     <div
       v-if="state.loading"
       class="flex items-center justify-center py-2 text-gray-400 text-sm"
@@ -164,6 +164,7 @@ import {
   getStatementSize,
   hasProjectPermissionV2,
   getAffectedTableDisplayName,
+  wrapRefAsPromise,
 } from "@/utils";
 import {
   getAffectedTablesOfChangelog,
@@ -190,7 +191,7 @@ const state = reactive<LocalState>({
   showDiff: false,
 });
 
-const { database } = useDatabaseV1ByName(props.database);
+const { database, ready } = useDatabaseV1ByName(props.database);
 
 const hasPermission = computed(() =>
   hasProjectPermissionV2(database.value.projectEntity, "bb.changelogs.get")
@@ -273,7 +274,8 @@ const copySchema = async () => {
 
 watch(
   [database.value.name, changelogName],
-  async ([_, name]) => {
+  async () => {
+    await wrapRefAsPromise(ready, true);
     state.loading = true;
     await Promise.all([
       dbSchemaStore.getOrFetchDatabaseMetadata({
@@ -281,7 +283,7 @@ watch(
         skipCache: false,
       }),
       changelogStore.getOrFetchChangelogByName(
-        unref(name),
+        unref(changelogName),
         ChangelogView.CHANGELOG_VIEW_FULL
       ),
     ]);

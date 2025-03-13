@@ -22,7 +22,6 @@
 </template>
 
 <script setup lang="tsx">
-import { useDebounceFn } from "@vueuse/core";
 import { ref, watch, computed } from "vue";
 import type { ComponentExposed } from "vue-component-type-helpers";
 import { useRouter } from "vue-router";
@@ -90,13 +89,16 @@ const filter = computed(() => {
   if (props.filter?.excludeUnassigned) {
     params.push(`exclude_unassigned == true`);
   }
-  if (props.filter?.engines) {
+  if (props.filter?.engines && props.filter?.engines.length > 0) {
     // engine filter should be:
     // engine in ["MYSQL", "POSTGRES"]
     params.push(
       `engine in [${props.filter?.engines.map((e) => `"${e}"`).join(", ")}]`
     );
-  } else if (props.filter?.excludeEngines) {
+  } else if (
+    props.filter?.excludeEngines &&
+    props.filter?.excludeEngines.length > 0
+  ) {
     // engine filter should be:
     // !(engine in ["REDIS", "MONGODB"])
     params.push(
@@ -150,9 +152,7 @@ const fetchDatabses = async ({
 
 watch(
   () => [filter.value, props.parent],
-  useDebounceFn(async () => {
-    await databasePagedTable.value?.refresh();
-  }, 500)
+  () => databasePagedTable.value?.refresh()
 );
 
 const handleDatabaseClick = (event: MouseEvent, database: ComposedDatabase) => {
@@ -169,8 +169,9 @@ const handleDatabaseClick = (event: MouseEvent, database: ComposedDatabase) => {
 };
 
 defineExpose({
-  refreshCache: (databases: ComposedDatabase[]) => {
-    databasePagedTable.value?.refreshCache(databases);
+  updateCache: (databases: ComposedDatabase[]) => {
+    databasePagedTable.value?.updateCache(databases);
   },
+  refresh: () => databasePagedTable.value?.refresh(),
 });
 </script>

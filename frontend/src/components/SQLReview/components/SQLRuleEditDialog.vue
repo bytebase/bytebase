@@ -10,7 +10,6 @@
             {{ $t("common.name") }}
           </h3>
           <div class="flex items-center space-x-2">
-            <EngineIcon :engine="rule.engine" custom-class="ml-1" />
             <RichEngineName
               :engine="rule.engine"
               tag="p"
@@ -92,7 +91,6 @@
 import { NButton, NSwitch } from "naive-ui";
 import { nextTick, reactive, watch, ref } from "vue";
 import { BBModal, BBTextField } from "@/bbkit";
-import { EngineIcon } from "@/components/Icon";
 import { payloadValueListToComponentList } from "@/components/SQLReview/components";
 import { RichEngineName } from "@/components/v2";
 import { SQLReviewRuleLevel } from "@/types/proto/v1/org_policy_service";

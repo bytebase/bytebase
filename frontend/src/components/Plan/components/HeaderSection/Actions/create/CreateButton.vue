@@ -71,7 +71,7 @@ const loading = ref(false);
 const planCreateErrorList = computed(() => {
   const errorList: string[] = [];
   if (!hasProjectPermissionV2(plan.value.projectEntity, "bb.plans.create")) {
-    errorList.push(t("common.missing-permission"));
+    errorList.push(t("common.missing-required-permission"));
   }
   if (!plan.value.title.trim()) {
     errorList.push("Missing plan title");

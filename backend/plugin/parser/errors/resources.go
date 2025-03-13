@@ -88,3 +88,25 @@ func (e *TypeNotSupportedError) Error() string {
 func (e *TypeNotSupportedError) Unwrap() error {
 	return e.Err
 }
+
+type FunctionNotSupportedError struct {
+	Err        error
+	Function   string
+	Definition string
+}
+
+func (e *FunctionNotSupportedError) Error() string {
+	parts := []string{
+		fmt.Sprintf("function is not supported with data masking: %s", e.Function),
+	}
+
+	if e.Err != nil {
+		parts = append(parts, fmt.Sprintf("err: %s", e.Err.Error()))
+	}
+
+	if e.Definition != "" {
+		parts = append(parts, fmt.Sprintf("definition: %s", e.Definition))
+	}
+
+	return strings.Join(parts, ", ")
+}

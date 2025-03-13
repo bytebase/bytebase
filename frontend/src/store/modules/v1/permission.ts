@@ -18,9 +18,6 @@ export const usePermissionStore = defineStore("permission", () => {
   const projectPermissionsCache = shallowReactive(
     new Map<string, Set<Permission>>()
   );
-  const workspaceLevelPermissionsMapByUserName = shallowReactive(
-    new Map<string, Set<Permission>>()
-  );
   const roleStore = useRoleStore();
   const currentUser = useCurrentUserV1();
   const workspaceStore = useWorkspaceV1Store();
@@ -102,8 +99,6 @@ export const usePermissionStore = defineStore("permission", () => {
   };
 
   const invalidCacheByUser = (user: User) => {
-    workspaceLevelPermissionsMapByUserName.delete(user.name);
-
     const roleListKeys = Array.from(projectRoleListCache.keys()).filter((key) =>
       key.startsWith(`${user.name}@@`)
     );

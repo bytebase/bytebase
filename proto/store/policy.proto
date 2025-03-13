@@ -106,11 +106,6 @@ message EnvironmentTierPolicy {
   string color = 2;
 }
 
-// SlowQueryPolicy is the policy configuration for slow query.
-message SlowQueryPolicy {
-  bool active = 1;
-}
-
 // DisableCopyDataPolicy is the policy configuration for disabling copying data.
 message DisableCopyDataPolicy {
   bool active = 1;

@@ -5,12 +5,6 @@ type Permission = string
 const (
 	PermissionAuditLogsExport           Permission = "bb.auditLogs.export"
 	PermissionAuditLogsSearch           Permission = "bb.auditLogs.search"
-	PermissionBranchesAdmin             Permission = "bb.branches.admin"
-	PermissionBranchesCreate            Permission = "bb.branches.create"
-	PermissionBranchesDelete            Permission = "bb.branches.delete"
-	PermissionBranchesGet               Permission = "bb.branches.get"
-	PermissionBranchesList              Permission = "bb.branches.list"
-	PermissionBranchesUpdate            Permission = "bb.branches.update"
 	PermissionChangelistsCreate         Permission = "bb.changelists.create"
 	PermissionChangelistsDelete         Permission = "bb.changelists.delete"
 	PermissionChangelistsGet            Permission = "bb.changelists.get"
@@ -140,12 +134,6 @@ const (
 var allPermissions = []Permission{
 	PermissionAuditLogsExport,
 	PermissionAuditLogsSearch,
-	PermissionBranchesAdmin,
-	PermissionBranchesCreate,
-	PermissionBranchesDelete,
-	PermissionBranchesGet,
-	PermissionBranchesList,
-	PermissionBranchesUpdate,
 	PermissionChangelistsCreate,
 	PermissionChangelistsDelete,
 	PermissionChangelistsGet,

@@ -31,7 +31,6 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	component "github.com/bytebase/bytebase/backend/component/config"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
-	"github.com/bytebase/bytebase/backend/resources/postgres"
 	"github.com/bytebase/bytebase/backend/server"
 )
 
@@ -89,23 +88,17 @@ type controller struct {
 	v1APIURL string
 }
 
-type config struct {
-	dataDir            string
-	readOnly           bool
-	skipOnboardingData bool
-}
-
 var (
 	mu       sync.Mutex
 	nextPort = time.Now().Second()*200 + 5010
 
-	externalPgPort = time.Now().Second()*200 + 5000
+	externalPgHost string
+	externalPgPort string
 
 	nextDatabaseNumber = 20210113
 
 	// resourceDir is the shared resource directory.
 	resourceDir string
-	pgBinDir    string
 )
 
 func getTestPort() int {
@@ -113,14 +106,6 @@ func getTestPort() int {
 	defer mu.Unlock()
 	p := nextPort
 	nextPort += 2
-	return p
-}
-
-func getTestPortForEmbeddedPg() int {
-	mu.Lock()
-	defer mu.Unlock()
-	p := nextPort
-	nextPort += 3
 	return p
 }
 
@@ -134,8 +119,8 @@ func getTestDatabaseString() string {
 }
 
 // StartServerWithExternalPg starts the main server with external Postgres.
-func (ctl *controller) StartServerWithExternalPg(ctx context.Context, config *config) (context.Context, error) {
-	pgMainURL := fmt.Sprintf("postgresql://%s@:%d/%s?host=%s", postgres.TestPgUser, externalPgPort, "postgres", common.GetPostgresSocketDir())
+func (ctl *controller) StartServerWithExternalPg(ctx context.Context) (context.Context, error) {
+	pgMainURL := fmt.Sprintf("postgresql://postgres:root-password@%s:%s/postgres", externalPgHost, externalPgPort)
 	db, err := sql.Open("pgx", pgMainURL)
 	if err != nil {
 		return nil, err
@@ -146,9 +131,9 @@ func (ctl *controller) StartServerWithExternalPg(ctx context.Context, config *co
 		return nil, err
 	}
 
-	pgURL := fmt.Sprintf("postgresql://%s@:%d/%s?host=%s", postgres.TestPgUser, externalPgPort, databaseName, common.GetPostgresSocketDir())
+	pgURL := fmt.Sprintf("postgresql://postgres:root-password@%s:%s/%s", externalPgHost, externalPgPort, databaseName)
 	serverPort := getTestPort()
-	profile := getTestProfileWithExternalPg(config.dataDir, resourceDir, serverPort, postgres.TestPgUser, pgURL, config.skipOnboardingData)
+	profile := getTestProfileWithExternalPg(resourceDir, serverPort, pgURL)
 	server, err := server.NewServer(ctx, profile)
 	if err != nil {
 		return nil, err
@@ -197,20 +182,6 @@ func (ctl *controller) StartServerWithExternalPg(ctx context.Context, config *co
 	return metaCtx, nil
 }
 
-// StartServer starts the main server with embed Postgres.
-func (ctl *controller) StartServer(ctx context.Context, config *config) (context.Context, error) {
-	serverPort := getTestPortForEmbeddedPg()
-	profile := getTestProfile(config.dataDir, resourceDir, serverPort, config.readOnly)
-	server, err := server.NewServer(ctx, profile)
-	if err != nil {
-		return nil, err
-	}
-	ctl.server = server
-	ctl.profile = profile
-
-	return ctl.start(ctx, serverPort)
-}
-
 func (ctl *controller) initWorkspaceProfile(ctx context.Context) error {
 	_, err := ctl.settingServiceClient.UpdateSetting(ctx, &v1pb.UpdateSettingRequest{
 		AllowMissing: true,
@@ -235,40 +206,19 @@ func (ctl *controller) initWorkspaceProfile(ctx context.Context) error {
 	return err
 }
 
-// GetTestProfile will return a profile for testing.
-// We require port as an argument of GetTestProfile so that test can run in parallel in different ports.
-func getTestProfile(dataDir, resourceDir string, port int, readOnly bool) *component.Profile {
+// GetTestProfileWithExternalPg will return a profile for testing with external Postgres.
+// We require port as an argument of GetTestProfile so that test can run in parallel in different ports,
+// pgURL for connect to Postgres.
+func getTestProfileWithExternalPg(resourceDir string, port int, pgURL string) *component.Profile {
 	return &component.Profile{
 		Mode:                 common.ReleaseModeDev,
 		ExternalURL:          fmt.Sprintf("http://localhost:%d", port),
 		Port:                 port,
-		DatastorePort:        port + 2,
 		SampleDatabasePort:   0,
-		PgUser:               "bbtest",
-		Readonly:             readOnly,
-		DataDir:              dataDir,
 		ResourceDir:          resourceDir,
 		AppRunnerInterval:    1 * time.Second,
 		BackupRunnerInterval: 10 * time.Second,
-	}
-}
-
-// GetTestProfileWithExternalPg will return a profile for testing with external Postgres.
-// We require port as an argument of GetTestProfile so that test can run in parallel in different ports,
-// pgURL for connect to Postgres.
-func getTestProfileWithExternalPg(dataDir, resourceDir string, port int, pgUser string, pgURL string, skipOnboardingData bool) *component.Profile {
-	return &component.Profile{
-		Mode:                       common.ReleaseModeDev,
-		ExternalURL:                fmt.Sprintf("http://localhost:%d", port),
-		Port:                       port,
-		SampleDatabasePort:         0,
-		PgUser:                     pgUser,
-		DataDir:                    dataDir,
-		ResourceDir:                resourceDir,
-		AppRunnerInterval:          1 * time.Second,
-		BackupRunnerInterval:       10 * time.Second,
-		PgURL:                      pgURL,
-		TestOnlySkipOnboardingData: skipOnboardingData,
+		PgURL:                pgURL,
 	}
 }
 
@@ -290,7 +240,7 @@ func (ctl *controller) start(ctx context.Context, port int) (context.Context, er
 	ctl.client = &http.Client{}
 
 	// initialize grpc connection.
-	grpcConn, err := grpc.Dial(fmt.Sprintf("127.0.0.1:%d", port), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	grpcConn, err := grpc.NewClient(fmt.Sprintf("127.0.0.1:%d", port), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to dial grpc")
 	}

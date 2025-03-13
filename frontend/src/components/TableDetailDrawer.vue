@@ -74,7 +74,7 @@
                 <NPopover
                   trigger="click"
                   placement="bottom"
-                  v-if="supportStringifyMetadata(instanceEngine)"
+                  v-if="supportGetStringSchema(instanceEngine)"
                   @update:show="(show: boolean) => show"
                 >
                   <template #trigger>
@@ -279,7 +279,7 @@ import {
   hasTableEngineProperty,
   instanceV1SupportsTrigger,
   isDatabaseV1Queryable,
-  supportStringifyMetadata,
+  supportGetStringSchema,
 } from "@/utils";
 import ColumnDataTable from "./ColumnDataTable/index.vue";
 import { SQLEditorButtonV1 } from "./DatabaseDetail";
