@@ -429,7 +429,7 @@ func (s *Store) UpdateTaskV2(ctx context.Context, patch *TaskPatch) (*TaskMessag
 		&task.InstanceID,
 		&task.DatabaseName,
 		&task.Type,
-		&task.Payload,
+		&payload,
 		&earliestAllowedAt,
 	); err != nil {
 		if err == sql.ErrNoRows {
