@@ -10,7 +10,6 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/google/cel-go/cel"
-	"github.com/google/cel-go/checker/decls"
 	"github.com/pkg/errors"
 
 	exprpb "google.golang.org/genproto/googleapis/api/expr/v1alpha1"
@@ -332,8 +331,11 @@ type tableMap map[string]*resourceTable
 // .
 func generateResourceFilter(filter string, jsonbFieldName string) (string, error) {
 	env, err := cel.NewEnv(
-		cel.Declarations(
-			decls.NewFunction("tableExists", decls.NewOverload("tableExists_string", []*exprpb.Type{decls.String, decls.String, decls.String}, decls.Bool)),
+		cel.Function("tableExists",
+			cel.Overload("tableExists_string",
+				[]*cel.Type{cel.StringType, cel.StringType, cel.StringType},
+				cel.BoolType,
+			),
 		),
 	)
 	if err != nil {

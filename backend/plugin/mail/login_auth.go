@@ -27,7 +27,7 @@ func (la *loginAuth) Next(fromServer []byte, more bool) ([]byte, error) {
 		case "Password:":
 			return []byte(la.password), nil
 		default:
-			return nil, errors.New("Unknown fromServer")
+			return nil, errors.New("unknown fromServer")
 		}
 	}
 	return nil, nil

@@ -288,7 +288,7 @@ func (ctl *controller) start(ctx context.Context, port int) (context.Context, er
 	ctl.client = &http.Client{}
 
 	// initialize grpc connection.
-	grpcConn, err := grpc.Dial(fmt.Sprintf("127.0.0.1:%d", port), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	grpcConn, err := grpc.NewClient(fmt.Sprintf("127.0.0.1:%d", port), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to dial grpc")
 	}

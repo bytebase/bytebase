@@ -97,7 +97,7 @@ func configureGrpcRouters(
 
 	// REST gateway proxy.
 	grpcEndpoint := fmt.Sprintf(":%d", profile.Port)
-	grpcConn, err := grpc.Dial(
+	grpcConn, err := grpc.NewClient(
 		grpcEndpoint,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithDefaultCallOptions(
