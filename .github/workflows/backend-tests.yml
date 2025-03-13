@@ -23,7 +23,7 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: '1.24.1'
-          # cache: false # Caching is slow.
+          cache: false # Caching is slow.
       - name: Verify go.mod is tidy
         run: |
           go mod tidy
