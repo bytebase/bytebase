@@ -261,12 +261,6 @@ export const provideInstanceFormContext = (baseContext: {
         "updateAuthenticationPrivateKey"
       )
     );
-    
-    // IMPORTANT: Always ensure extraConnectionParameters is explicitly preserved
-    // This is necessary because cloneDeep may not correctly handle protobuf map fields
-    ds.extraConnectionParameters = edit.extraConnectionParameters 
-      ? { ...edit.extraConnectionParameters } 
-      : {};
     if (edit.updatedPassword) {
       ds.password = edit.updatedPassword;
     }
