@@ -55,7 +55,7 @@ export const getGroupEmailInBinding = (email: string) => {
 export const isValidUserName = (name: string) => {
   return (
     !!name &&
-    name.startsWith("users/") &&
+    /^users\/(.+)$/.test(name) &&
     name !== emptyUser().name &&
     name !== unknownUser().name &&
     name !== allUsersUser().name
