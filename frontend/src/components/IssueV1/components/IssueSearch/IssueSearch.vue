@@ -7,7 +7,6 @@
       <AdvancedSearch
         class="flex-1"
         :params="params"
-        :readonly-scopes="readonlyScopes"
         :scope-options="scopeOptions"
         @update:params="$emit('update:params', $event)"
       />
@@ -46,7 +45,7 @@ import TimeRange from "@/components/AdvancedSearch/TimeRange.vue";
 import { useUserStore } from "@/store";
 import { State, stateToJSON } from "@/types/proto/v1/common";
 import { User, UserType, userTypeToJSON } from "@/types/proto/v1/user_service";
-import type { SearchParams, SearchScope, SearchScopeId } from "@/utils";
+import type { SearchParams, SearchScopeId } from "@/utils";
 import {
   getDefaultPagination,
   UIIssueFilterScopeIdList,
@@ -60,14 +59,12 @@ export type SearchComponent = "searchbox" | "status" | "time-range";
 const props = withDefaults(
   defineProps<{
     params: SearchParams;
-    readonlyScopes?: SearchScope[];
     overrideScopeIdList?: SearchScopeId[];
     autofocus?: boolean;
     components?: SearchComponent[];
     componentProps?: Partial<Record<SearchComponent, any>>;
   }>(),
   {
-    readonlyScopes: () => [],
     overrideScopeIdList: () => [],
     components: () => ["searchbox", "time-range", "status"],
     componentProps: undefined,

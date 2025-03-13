@@ -453,26 +453,6 @@ CREATE TABLE risk (
 
 ALTER SEQUENCE risk_id_seq RESTART WITH 101;
 
--- slow_query stores slow query statistics for each database.
-CREATE TABLE slow_query (
-    id serial PRIMARY KEY,
-    -- In MySQL, users can query without specifying a database. In this case, instance is used to identify the instance.
-    instance text NOT NULL REFERENCES instance(resource_id),
-    -- In MySQL, users can query without specifying a database. In this case, db_name is NULL.
-    db_name text,
-    -- It's hard to store all slow query logs, so the slow query is aggregated by day and database.
-    log_date_ts integer NOT NULL,
-    -- It's hard to store all slow query logs, we sample the slow query log and store the part of them as details.
-    slow_query_statistics jsonb NOT NULL DEFAULT '{}'
-);
-
--- The slow query log is aggregated by day and database and we usually query the slow query log by day and database.
-CREATE UNIQUE INDEX idx_slow_query_unique_instance_db_name_log_date_ts ON slow_query(instance, db_name, log_date_ts);
-
-CREATE INDEX idx_slow_query_instance_id_log_date_ts ON slow_query(instance, log_date_ts);
-
-ALTER SEQUENCE slow_query_id_seq RESTART WITH 101;
-
 CREATE TABLE db_group (
     id bigserial PRIMARY KEY,
     project text NOT NULL REFERENCES project(resource_id),
