@@ -656,6 +656,8 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 			dataSource.MasterUsername = request.DataSource.MasterUsername
 		case "master_password":
 			dataSource.MasterPassword = request.DataSource.MasterPassword
+		case "extra_connection_parameters":
+			dataSource.ExtraConnectionParameters = request.DataSource.ExtraConnectionParameters
 		case "iam_extension", "client_secret_credential":
 			// TODO(zp): Remove the hack while frontend use new oneof artifact.
 			if v := request.DataSource.IamExtension; v != nil {
@@ -666,16 +668,6 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 					}
 				default:
 				}
-<<<<<<< HEAD
-			}
-		case "extra_connection_parameters":
-			dataSource.ExtraConnectionParameters = request.DataSource.ExtraConnectionParameters
-		// TODO(zp): Remove the hack while frontend use new oneof artifact.
-		case "client_secret_credential":
-			if request.DataSource.GetClientSecretCredential() == nil {
-				dataSource.IamExtension = nil
-=======
->>>>>>> origin/main
 			} else {
 				dataSource.IamExtension = nil
 			}
@@ -1199,76 +1191,40 @@ func convertV1DataSource(dataSource *v1pb.DataSource) (*storepb.DataSource, erro
 	saslConfig := convertV1DataSourceSaslConfig(dataSource.SaslConfig)
 
 	storeDataSource := &storepb.DataSource{
-<<<<<<< HEAD
-		Id:                                 dataSource.Id,
-		Type:                               dsType,
-		Username:                           dataSource.Username,
-		ObfuscatedPassword:                 common.Obfuscate(dataSource.Password, s.secret),
-		ObfuscatedSslCa:                    common.Obfuscate(dataSource.SslCa, s.secret),
-		ObfuscatedSslCert:                  common.Obfuscate(dataSource.SslCert, s.secret),
-		ObfuscatedSslKey:                   common.Obfuscate(dataSource.SslKey, s.secret),
-		Host:                               dataSource.Host,
-		Port:                               dataSource.Port,
-		Database:                           dataSource.Database,
-		Srv:                                dataSource.Srv,
-		AuthenticationDatabase:             dataSource.AuthenticationDatabase,
-		Sid:                                dataSource.Sid,
-		ServiceName:                        dataSource.ServiceName,
-		SshHost:                            dataSource.SshHost,
-		SshPort:                            dataSource.SshPort,
-		SshUser:                            dataSource.SshUser,
-		SshObfuscatedPassword:              common.Obfuscate(dataSource.SshPassword, s.secret),
-		SshObfuscatedPrivateKey:            common.Obfuscate(dataSource.SshPrivateKey, s.secret),
-		AuthenticationPrivateKeyObfuscated: common.Obfuscate(dataSource.AuthenticationPrivateKey, s.secret),
-		ExternalSecret:                     externalSecret,
-		SaslConfig:                         saslConfig,
-		AuthenticationType:                 convertV1AuthenticationType(dataSource.AuthenticationType),
-		AdditionalAddresses:                convertAdditionalAddresses(dataSource.AdditionalAddresses),
-		ReplicaSet:                         dataSource.ReplicaSet,
-		DirectConnection:                   dataSource.DirectConnection,
-		Region:                             dataSource.Region,
-		WarehouseId:                        dataSource.WarehouseId,
-		UseSsl:                             dataSource.UseSsl,
-		RedisType:                          convertV1RedisType(dataSource.RedisType),
-		MasterName:                         dataSource.MasterName,
-		MasterUsername:                     dataSource.MasterUsername,
-		MasterObfuscatedPassword:           common.Obfuscate(dataSource.MasterPassword, s.secret),
-		ExtraConnectionParameters:          dataSource.ExtraConnectionParameters,
-=======
-		Id:                       dataSource.Id,
-		Type:                     dsType,
-		Username:                 dataSource.Username,
-		Password:                 dataSource.Password,
-		SslCa:                    dataSource.SslCa,
-		SslCert:                  dataSource.SslCert,
-		SslKey:                   dataSource.SslKey,
-		Host:                     dataSource.Host,
-		Port:                     dataSource.Port,
-		Database:                 dataSource.Database,
-		Srv:                      dataSource.Srv,
-		AuthenticationDatabase:   dataSource.AuthenticationDatabase,
-		Sid:                      dataSource.Sid,
-		ServiceName:              dataSource.ServiceName,
-		SshHost:                  dataSource.SshHost,
-		SshPort:                  dataSource.SshPort,
-		SshUser:                  dataSource.SshUser,
-		SshPassword:              dataSource.SshPassword,
-		SshPrivateKey:            dataSource.SshPrivateKey,
-		AuthenticationPrivateKey: dataSource.AuthenticationPrivateKey,
-		ExternalSecret:           externalSecret,
-		SaslConfig:               saslConfig,
-		AuthenticationType:       convertV1AuthenticationType(dataSource.AuthenticationType),
-		AdditionalAddresses:      convertAdditionalAddresses(dataSource.AdditionalAddresses),
-		ReplicaSet:               dataSource.ReplicaSet,
-		DirectConnection:         dataSource.DirectConnection,
-		Region:                   dataSource.Region,
-		WarehouseId:              dataSource.WarehouseId,
-		UseSsl:                   dataSource.UseSsl,
-		RedisType:                convertV1RedisType(dataSource.RedisType),
-		MasterName:               dataSource.MasterName,
-		MasterUsername:           dataSource.MasterUsername,
-		MasterPassword:           dataSource.MasterPassword,
->>>>>>> origin/main
+		Id:                        dataSource.Id,
+		Type:                      dsType,
+		Username:                  dataSource.Username,
+		Password:                  dataSource.Password,
+		SslCa:                     dataSource.SslCa,
+		SslCert:                   dataSource.SslCert,
+		SslKey:                    dataSource.SslKey,
+		Host:                      dataSource.Host,
+		Port:                      dataSource.Port,
+		Database:                  dataSource.Database,
+		Srv:                       dataSource.Srv,
+		AuthenticationDatabase:    dataSource.AuthenticationDatabase,
+		Sid:                       dataSource.Sid,
+		ServiceName:               dataSource.ServiceName,
+		SshHost:                   dataSource.SshHost,
+		SshPort:                   dataSource.SshPort,
+		SshUser:                   dataSource.SshUser,
+		SshPassword:               dataSource.SshPassword,
+		SshPrivateKey:             dataSource.SshPrivateKey,
+		AuthenticationPrivateKey:  dataSource.AuthenticationPrivateKey,
+		ExternalSecret:            externalSecret,
+		SaslConfig:                saslConfig,
+		AuthenticationType:        convertV1AuthenticationType(dataSource.AuthenticationType),
+		AdditionalAddresses:       convertAdditionalAddresses(dataSource.AdditionalAddresses),
+		ReplicaSet:                dataSource.ReplicaSet,
+		DirectConnection:          dataSource.DirectConnection,
+		Region:                    dataSource.Region,
+		WarehouseId:               dataSource.WarehouseId,
+		UseSsl:                    dataSource.UseSsl,
+		RedisType:                 convertV1RedisType(dataSource.RedisType),
+		MasterName:                dataSource.MasterName,
+		MasterUsername:            dataSource.MasterUsername,
+		MasterPassword:            dataSource.MasterPassword,
+		ExtraConnectionParameters: dataSource.ExtraConnectionParameters,
 	}
 	if v := dataSource.IamExtension; v != nil {
 		if _, ok := v.(*v1pb.DataSource_ClientSecretCredential_); ok {
