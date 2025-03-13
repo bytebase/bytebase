@@ -157,6 +157,7 @@ require (
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/dvsekhvalnov/jose2go v1.7.0 // indirect
+	github.com/envoyproxy/go-control-plane/envoy v1.32.4 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/getsentry/sentry-go v0.12.0 // indirect
 	github.com/go-asn1-ber/asn1-ber v1.5.7 // indirect
@@ -274,7 +275,6 @@ require (
 	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869 // indirect
 	github.com/bytebase/partiql-parser v0.0.0-20240531101102-1962ff456f2c
 	github.com/bytebase/tsql-parser v0.0.0-20250311085620-1db45111863e
-	github.com/census-instrumentation/opencensus-proto v0.4.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/cncf/xds/go v0.0.0-20250121191232-2f005788dc42 // indirect
 	github.com/cockroachdb/cockroach-go/v2 v2.4.0
@@ -284,7 +284,6 @@ require (
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.4.0 // indirect
 	github.com/desertbit/timer v0.0.0-20180107155436-c41aec40b27f // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
-	github.com/envoyproxy/go-control-plane v0.13.4 // indirect
 	github.com/envoyproxy/protoc-gen-validate v1.2.1 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.7 // indirect
 	github.com/go-faster/city v1.0.1 // indirect
