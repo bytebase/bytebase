@@ -3,8 +3,7 @@ name: Build and push release image
 on:
   push:
     branches:
-      # Run on pushing branches like `release/1.0.0`
-      - "release/*.*.*"
+      - 'release/*.*.*'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -23,10 +22,10 @@ jobs:
           echo "GIT_COMMIT=$(git rev-parse HEAD)" >> $GITHUB_ENV
       - uses: pnpm/action-setup@v4
         with:
-          version: 10.5.2
+          version: '10.6.2'
       - uses: actions/setup-node@v4
         with:
-          node-version: "22.13.0"
+          node-version: '22.14.0'
           cache: pnpm
           cache-dependency-path: "frontend/pnpm-lock.yaml"
       - run: pnpm install --frozen-lockfile

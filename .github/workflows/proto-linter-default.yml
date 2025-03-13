@@ -3,10 +3,10 @@ name: Proto linter
 on:
   pull_request:
     branches:
-      - main
-      - "release/*.*.*"
+      - 'main'
+      - 'release/*.*.*'
     paths-ignore:
-      - "proto/**"
+      - 'proto/**'
 
 jobs:
   lint-protos:
