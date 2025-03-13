@@ -54,7 +54,7 @@ import { ChevronDownIcon } from "lucide-vue-next";
 import { computed, toRef } from "vue";
 import { MonacoEditor } from "@/components/MonacoEditor";
 import MaskSpinner from "@/components/misc/MaskSpinner.vue";
-import { sqlServiceClient } from "@/grpcweb";
+import { databaseServiceClient } from "@/grpcweb";
 import type { ComposedDatabase } from "@/types";
 import type { DatabaseCatalog } from "@/types/proto/v1/database_catalog_service";
 import {
@@ -94,20 +94,14 @@ const { status, data, error } = useQuery({
   queryFn: async () => {
     if (!expanded.value) return "";
     if (!debouncedMocked.value) return "";
-    const { metadata, catalog } = debouncedMocked.value;
+    const { metadata } = debouncedMocked.value;
 
     try {
-      const response = await sqlServiceClient.stringifyMetadata(
-        {
-          engine: engine.value,
-          metadata,
-          catalog,
-        },
-        {
-          silent: true,
-        }
-      );
-      return response.schema;
+      const response = await databaseServiceClient.getSchemaString({
+        name: props.db.name,
+        metadata,
+      })
+      return response.schemaString;
     } catch (err) {
       return Promise.reject(new Error(extractGrpcErrorMessage(err)));
     }
