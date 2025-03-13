@@ -90,7 +90,7 @@ const classes = computed((): string => {
     case Task_Status.NOT_STARTED:
     case Task_Status.STATUS_UNSPECIFIED:
       if (!isCreating.value) {
-        return "bg-white border-2 border-info rounded-full text-info";
+        return "bg-white border-2 border-info text-info rounded-full";
       }
       return "bg-white border-2 border-control rounded-full";
     case Task_Status.PENDING:
@@ -101,11 +101,11 @@ const classes = computed((): string => {
     case Task_Status.RUNNING:
       return "bg-white border-2 border-info text-info rounded-full";
     case Task_Status.SKIPPED:
-      return "bg-gray-200 text-gray-500";
+      return "bg-gray-200 text-gray-500 rounded-full";
     case Task_Status.DONE:
-      return "bg-success text-white";
+      return "bg-success text-white rounded-full";
     case Task_Status.FAILED:
-      return "bg-error text-white";
+      return "bg-error text-white rounded-full";
     default:
       return "";
   }
