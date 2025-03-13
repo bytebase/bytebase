@@ -21,7 +21,7 @@ import { computed, ref, h } from "vue";
 import { useI18n } from "vue-i18n";
 import { useLanguage } from "@/composables/useLanguage";
 import {
-  useActiveUsers,
+  useUserStore,
   useActuatorV1Store,
   useAppFeature,
   useAuthStore,
@@ -41,6 +41,7 @@ const props = defineProps<{
   link?: boolean;
 }>();
 
+const userStore = useUserStore();
 const actuatorStore = useActuatorV1Store();
 const authStore = useAuthStore();
 const subscriptionStore = useSubscriptionV1Store();
@@ -53,7 +54,7 @@ const hideQuickstart = computed(() => {
     return true;
   }
   // Hide quickstart if there are more than 1 active users.
-  return useActiveUsers().length > 1;
+  return userStore.activeUserCountWithoutBot > 1;
 });
 const hideHelp = useAppFeature("bb.feature.hide-help");
 

@@ -53,6 +53,13 @@
     @apply="onLabelsApply($event)"
   />
 
+  <DatabaseEditEnvironmentDrawer
+    :show="state.showEditEnvironmentDrawer"
+    :databases="databases"
+    @dismiss="state.showEditEnvironmentDrawer = false"
+    @update="onEnvironmentUpdate($event)"
+  />
+
   <Drawer
     :show="!!state.transferOutDatabaseType"
     :auto-focus="true"
@@ -62,11 +69,13 @@
       v-if="state.transferOutDatabaseType === 'TRANSFER-OUT'"
       :database-list="props.databases"
       :selected-database-names="selectedDatabaseNameList"
+      :on-success="() => $emit('refresh')"
       @dismiss="state.transferOutDatabaseType = undefined"
     />
     <TransferDatabaseForm
       v-else
       :project-name="projectName"
+      :on-success="() => $emit('refresh')"
       @dismiss="state.transferOutDatabaseType = undefined"
     />
   </Drawer>
@@ -98,6 +107,7 @@ import {
   ArrowRightLeftIcon,
   DownloadIcon,
   ChevronsDownIcon,
+  SquareStackIcon,
 } from "lucide-vue-next";
 import { NButton, NTooltip } from "naive-ui";
 import type { VNode } from "vue";
@@ -106,6 +116,7 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBAlert } from "@/bbkit";
 import SchemaEditorModal from "@/components/AlterSchemaPrepForm/SchemaEditorModal.vue";
+import DatabaseEditEnvironmentDrawer from "@/components/DatabaseEditEnvironmentDrawer.vue";
 import LabelEditorDrawer from "@/components/LabelEditorDrawer.vue";
 import { TransferDatabaseForm } from "@/components/TransferDatabaseForm";
 import TransferOutDatabaseForm from "@/components/TransferOutDatabaseForm";
@@ -124,6 +135,7 @@ import { DEFAULT_PROJECT_NAME } from "@/types";
 import {
   Database,
   DatabaseMetadataView,
+  UpdateDatabaseRequest,
 } from "@/types/proto/v1/database_service";
 import {
   isArchivedDatabaseV1,
@@ -149,6 +161,7 @@ interface LocalState {
   showSchemaEditorModal: boolean;
   showUnassignAlert: boolean;
   showLabelEditorDrawer: boolean;
+  showEditEnvironmentDrawer: boolean;
   transferOutDatabaseType?: "TRANSFER-IN" | "TRANSFER-OUT";
 }
 
@@ -165,8 +178,14 @@ const state = reactive<LocalState>({
   showSchemaEditorModal: false,
   showUnassignAlert: false,
   showLabelEditorDrawer: false,
+  showEditEnvironmentDrawer: false,
   transferOutDatabaseType: undefined,
 });
+
+const emit = defineEmits<{
+  (event: "refresh"): void;
+  (event: "update-cache", databases: ComposedDatabase[]): void;
+}>();
 
 const { t } = useI18n();
 const router = useRouter();
@@ -246,7 +265,7 @@ const allowExportData = computed(() => {
   });
 });
 
-const allowEditLabels = computed(() => {
+const allowUpdateDatabase = computed(() => {
   return props.databases.every((db) => {
     const project = db.projectEntity;
     return hasProjectPermissionV2(project, "bb.databases.update");
@@ -356,10 +375,19 @@ const unAssignDatabases = async () => {
   }
   try {
     state.loading = true;
-    await useDatabaseV1Store().transferDatabases(
-      assignedDatabases.value,
-      DEFAULT_PROJECT_NAME
-    );
+    await databaseStore.batchUpdateDatabases({
+      parent: "-",
+      requests: assignedDatabases.value.map((database) => {
+        return UpdateDatabaseRequest.fromPartial({
+          database: {
+            name: database.name,
+            project: DEFAULT_PROJECT_NAME,
+          },
+          updateMask: ["project"],
+        });
+      }),
+    });
+    emit("refresh");
     pushNotification({
       module: "bytebase",
       style: "SUCCESS",
@@ -418,10 +446,26 @@ const actions = computed((): DatabaseAction[] => {
         resp.push({
           icon: h(TagIcon),
           text: t("database.edit-labels"),
-          disabled: !allowEditLabels.value || props.databases.length < 1,
+          disabled: !allowUpdateDatabase.value || props.databases.length < 1,
           click: () => (state.showLabelEditorDrawer = true),
           tooltip: (action) => {
-            if (!allowEditLabels.value) {
+            if (!allowUpdateDatabase.value) {
+              return t("database.batch-action-permission-denied", {
+                action,
+              });
+            }
+            return getDisabledTooltip(action);
+          },
+        });
+        break;
+      case "EDIT-ENVIRONMENT":
+        resp.push({
+          icon: h(SquareStackIcon),
+          text: t("database.edit-environment"),
+          disabled: !allowUpdateDatabase.value || props.databases.length < 1,
+          click: () => (state.showEditEnvironmentDrawer = true),
+          tooltip: (action) => {
+            if (!allowUpdateDatabase.value) {
               return t("database.batch-action-permission-denied", {
                 action,
               });
@@ -540,19 +584,43 @@ const onLabelsApply = async (labelsList: { [key: string]: string }[]) => {
     return;
   }
 
-  await Promise.all(
+  // We doesn't support batch update labels, so we update one by one.
+  const updatedDatabases = await Promise.all(
     props.databases.map(async (database, i) => {
       const label = labelsList[i];
-      const patch: Database = {
+      const patch = {
         ...Database.fromPartial(database),
         labels: label,
       };
-      await useDatabaseV1Store().updateDatabase({
+      return await databaseStore.updateDatabase({
         database: patch,
         updateMask: ["labels"],
       });
     })
   );
+  emit("update-cache", updatedDatabases);
+
+  pushNotification({
+    module: "bytebase",
+    style: "SUCCESS",
+    title: t("common.updated"),
+  });
+};
+
+const onEnvironmentUpdate = async (environment: string) => {
+  const updatedDatabases = await databaseStore.batchUpdateDatabases({
+    parent: "-",
+    requests: props.databases.map((database) => {
+      return UpdateDatabaseRequest.fromPartial({
+        database: {
+          name: database.name,
+          environment: environment,
+        },
+        updateMask: ["environment"],
+      });
+    }),
+  });
+  emit("update-cache", updatedDatabases);
 
   pushNotification({
     module: "bytebase",

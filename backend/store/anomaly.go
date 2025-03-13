@@ -82,18 +82,18 @@ func (s *Store) UpsertActiveAnomalyV2(ctx context.Context, upsert *AnomalyMessag
 // ListAnomalyV2 lists anomalies, only return the normal ones.
 func (s *Store) ListAnomalyV2(ctx context.Context, list *ListAnomalyMessage) ([]*AnomalyMessage, error) {
 	// Build where clause
-	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	txn, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to begin transaction")
 	}
-	defer tx.Rollback()
+	defer txn.Rollback()
 
-	anomalies, err := s.listAnomalyImplV2(ctx, tx, list)
+	anomalies, err := s.listAnomalyImplV2(ctx, txn, list)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := tx.Commit(); err != nil {
+	if err := txn.Commit(); err != nil {
 		return nil, errors.Wrapf(err, "failed to commit transaction")
 	}
 
@@ -120,7 +120,7 @@ func (s *Store) DeleteAnomalyV2(ctx context.Context, d *DeleteAnomalyMessage) er
 	return tx.Commit()
 }
 
-func (*Store) listAnomalyImplV2(ctx context.Context, tx *Tx, list *ListAnomalyMessage) ([]*AnomalyMessage, error) {
+func (*Store) listAnomalyImplV2(ctx context.Context, txn *sql.Tx, list *ListAnomalyMessage) ([]*AnomalyMessage, error) {
 	where, args := []string{"TRUE"}, []any{}
 	where, args = append(where, fmt.Sprintf("project = $%d", len(args)+1)), append(args, list.ProjectID)
 	if v := list.InstanceID; v != nil {
@@ -148,7 +148,7 @@ func (*Store) listAnomalyImplV2(ctx context.Context, tx *Tx, list *ListAnomalyMe
 		WHERE %s
 	`, strings.Join(where, " AND "))
 
-	rows, err := tx.QueryContext(ctx, query, args...)
+	rows, err := txn.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}

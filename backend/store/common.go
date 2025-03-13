@@ -28,3 +28,8 @@ type OrderByKey struct {
 	Key       string
 	SortOrder SortOrder
 }
+
+type ListResourceFilter struct {
+	Args  []any
+	Where string
+}

@@ -24,9 +24,11 @@ export const AllSearchScopeIdList = [
   "creator",
   "created",
   "status",
+  // database related search scopes.
+  "engine",
   // issue related search scopes.
   "subscriber",
-  "label",
+  "label", // label is also used by database search
   "taskType",
   // auditLog related search scopes.
   "method",
@@ -55,6 +57,7 @@ export type SearchScopeId =
 export type SearchScope = {
   id: SearchScopeId;
   value: string;
+  readonly?: boolean;
 };
 
 export interface SearchParams {
@@ -143,11 +146,17 @@ export const getTsRangeFromSearchParams = (
  * @param mutate true to mutate `params`. false to create a deep cloned copy. Default to false.
  * @returns `params` itself or a deep-cloned copy.
  */
-export const upsertScope = (
-  params: SearchParams,
-  scopes: SearchScope | SearchScope[],
-  mutate = false
-) => {
+export const upsertScope = ({
+  params,
+  scopes,
+  mutate = false,
+  allowMultiple = false,
+}: {
+  params: SearchParams;
+  scopes: SearchScope | SearchScope[];
+  mutate?: boolean;
+  allowMultiple?: boolean;
+}) => {
   const target = mutate ? params : cloneDeep(params);
   if (!Array.isArray(scopes)) {
     scopes = [scopes];
@@ -158,7 +167,11 @@ export const upsertScope = (
       if (!scope.value) {
         pullAt(target.scopes, index);
       } else {
-        target.scopes[index].value = scope.value;
+        if (allowMultiple) {
+          target.scopes.push(scope);
+        } else {
+          target.scopes[index].value = scope.value;
+        }
       }
     } else {
       if (scope.value) {

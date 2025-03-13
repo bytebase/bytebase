@@ -30,7 +30,6 @@
             <ScopeTags
               :params="params"
               :focused-tag-id="focusedTagId"
-              :readonly-scopes="readonlyScopes"
               @select-scope="selectScopeFromTag"
               @remove-scope="removeScope"
             />
@@ -67,6 +66,7 @@
           @hover-item="menuIndex = $event"
         />
         <ValueMenu
+          v-if="visibleValueOptions.length > 0"
           :show="state.menuView === 'value'"
           :params="params"
           :scope-option="currentScopeOption"
@@ -90,12 +90,15 @@ import { NButton, NInput, type InputInst } from "naive-ui";
 import scrollIntoView from "scroll-into-view-if-needed";
 import { zindexable as vZindexable } from "vdirs";
 import { reactive, watch, onMounted, ref, computed, nextTick } from "vue";
-import type { SearchParams, SearchScope, SearchScopeId } from "@/utils";
+import { useRoute, useRouter } from "vue-router";
+import type { SearchParams, SearchScopeId } from "@/utils";
 import {
   emptySearchParams,
   getValueFromSearchParams,
   minmax,
   upsertScope,
+  buildSearchTextBySearchParams,
+  buildSearchParamsBySearchText,
 } from "@/utils";
 import ScopeMenu from "./ScopeMenu.vue";
 import ScopeTags from "./ScopeTags.vue";
@@ -107,12 +110,10 @@ const props = withDefaults(
     params: SearchParams;
     scopeOptions: ScopeOption[];
     placeholder?: string | undefined;
-    readonlyScopes?: SearchScope[];
     autofocus?: boolean;
   }>(),
   {
     scopeOptions: () => [],
-    readonlyScopes: () => [],
     autofocus: false,
     placeholder: undefined,
   }
@@ -129,11 +130,16 @@ interface LocalState {
   menuView?: "value" | "scope";
 }
 
+const route = useRoute();
+const router = useRouter();
+
 const defaultSearchParams = () => {
   const params = emptySearchParams();
-  props.readonlyScopes.forEach((s) => {
-    params.scopes.push({ ...s });
-  });
+  for (const scope of props.params.scopes) {
+    if (scope.readonly) {
+      params.scopes.push({ ...scope });
+    }
+  }
   return params;
 };
 
@@ -158,11 +164,9 @@ const inputRef = ref<InputInst>();
 const menuIndex = ref(0);
 const { width: containerWidth } = useElementSize(containerRef);
 const focusedTagId = ref<SearchScopeId>();
-const readonlyScopeIds = computed(() => {
-  return new Set(props.readonlyScopes.map((s) => s.id));
-});
+
 const editableScopes = computed(() => {
-  return props.params.scopes.filter((s) => !readonlyScopeIds.value.has(s.id));
+  return props.params.scopes.filter((s) => !s.readonly);
 });
 
 watch(
@@ -194,7 +198,7 @@ const availableScopeOptions = computed((): ScopeOption[] => {
   );
 
   return props.scopeOptions.filter((scope) => {
-    if (existedScopes.has(scope.id)) {
+    if (existedScopes.has(scope.id) && !scope.allowMultiple) {
       return false;
     }
     return true;
@@ -288,9 +292,12 @@ const moveMenuIndex = (delta: -1 | 1) => {
 };
 
 const removeScope = (id: SearchScopeId) => {
-  const updated = upsertScope(props.params, {
-    id,
-    value: "",
+  const updated = upsertScope({
+    params: props.params,
+    scopes: {
+      id,
+      value: "",
+    },
   });
   emit("update:params", updated);
 };
@@ -310,15 +317,33 @@ const selectScope = (
     state.menuView = "scope";
   }
 };
-const selectValue = (value: string) => {
+
+const extractValue = () => {
   const id = state.currentScope;
   if (!id) {
+    return;
+  }
+  const text = inputText.value;
+  if (!text.startsWith(`${id}:`)) {
+    return;
+  }
+  return text.slice(`${id}:`.length);
+};
+
+const selectValue = (value: string) => {
+  const id = state.currentScope;
+  if (!id || !currentScopeOption.value) {
     state.menuView = undefined;
     return;
   }
-  const updated = upsertScope(props.params, {
-    id,
-    value,
+  const { allowMultiple } = currentScopeOption.value;
+  const updated = upsertScope({
+    params: props.params,
+    scopes: {
+      id,
+      value,
+    },
+    allowMultiple,
   });
   updated.query = "";
   inputText.value = "";
@@ -459,9 +484,14 @@ const handleKeyUp = (e: KeyboardEvent) => {
       }
     }
     if (state.menuView === "value") {
-      const option = visibleValueOptions.value[index];
-      if (option) {
-        selectValue(option.value);
+      if (visibleValueOptions.value.length === 0) {
+        const val = extractValue();
+        if (val) {
+          selectValue(val);
+          return;
+        }
+      } else if (visibleValueOptions.value[index]) {
+        selectValue(visibleValueOptions.value[index].value);
         return;
       }
     }
@@ -495,7 +525,13 @@ onMounted(() => {
   if (props.autofocus) {
     inputRef.value?.inputElRef?.focus();
   }
+  const { qs } = route.query;
+  if (typeof qs === "string" && qs.length > 0) {
+    const params = buildSearchParamsBySearchText(qs);
+    emit("update:params", params);
+  }
 });
+
 watch(
   () => state.menuView,
   () => {
@@ -540,6 +576,13 @@ watch(
   () => props.params,
   (params) => {
     inputText.value = params.query;
-  }
+    router.replace({
+      query: {
+        ...route.query,
+        qs: buildSearchTextBySearchParams(params),
+      },
+    });
+  },
+  { deep: true }
 );
 </script>

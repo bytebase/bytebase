@@ -108,7 +108,7 @@
       </div>
     </main>
 
-    <NTabs v-model:value="state.selectedTab">
+    <NTabs v-if="ready" v-model:value="state.selectedTab">
       <NTabPane name="overview" :tab="$t('common.overview')">
         <DatabaseOverviewPanel
           class="mt-2"
@@ -132,13 +132,6 @@
         :tab="$t('database.revision.self')"
       >
         <DatabaseRevisionPanel class="mt-2" :database="database" />
-      </NTabPane>
-      <NTabPane
-        v-if="allowListSlowQueries"
-        name="slow-query"
-        :tab="$t('slow-query.slow-queries')"
-      >
-        <DatabaseSlowQueryPanel class="mt-2" :database="database" />
       </NTabPane>
       <NTabPane name="catalog" :tab="$t('common.catalog')">
         <DatabaseSensitiveDataPanel class="mt-2" :database="database" />
@@ -202,7 +195,7 @@ import { useTitle } from "@vueuse/core";
 import dayjs from "dayjs";
 import { ArrowRightLeftIcon } from "lucide-vue-next";
 import { NButton, NTabPane, NTabs } from "naive-ui";
-import { computed, reactive, watch, ref, onMounted } from "vue";
+import { computed, reactive, watch, ref, watchEffect } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { BBModal } from "@/bbkit";
 import SchemaEditorModal from "@/components/AlterSchemaPrepForm/SchemaEditorModal.vue";
@@ -210,7 +203,6 @@ import DatabaseChangelogPanel from "@/components/Database/DatabaseChangelogPanel
 import DatabaseOverviewPanel from "@/components/Database/DatabaseOverviewPanel.vue";
 import DatabaseRevisionPanel from "@/components/Database/DatabaseRevisionPanel.vue";
 import DatabaseSensitiveDataPanel from "@/components/Database/DatabaseSensitiveDataPanel.vue";
-import DatabaseSlowQueryPanel from "@/components/Database/DatabaseSlowQueryPanel.vue";
 import { useDatabaseDetailContext } from "@/components/Database/context";
 import {
   DatabaseSettingsPanel,
@@ -230,14 +222,18 @@ import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
   useAnomalyV1Store,
   useAppFeature,
-  useDatabaseV1Store,
   useEnvironmentV1Store,
+  useDatabaseV1ByName,
 } from "@/store";
 import {
   databaseNamePrefix,
   instanceNamePrefix,
 } from "@/store/modules/v1/common";
-import { UNKNOWN_PROJECT_NAME, unknownEnvironment } from "@/types";
+import {
+  UNKNOWN_PROJECT_NAME,
+  unknownEnvironment,
+  isValidDatabaseName,
+} from "@/types";
 import type { Anomaly } from "@/types/proto/v1/anomaly_service";
 import { State } from "@/types/proto/v1/common";
 import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
@@ -252,7 +248,6 @@ const databaseHashList = [
   "overview",
   "changelog",
   "revision",
-  "slow-query",
   "setting",
   "catalog",
 ] as const;
@@ -276,7 +271,6 @@ const props = defineProps<{
 }>();
 
 const router = useRouter();
-const databaseV1Store = useDatabaseV1Store();
 
 const state = reactive<LocalState>({
   showTransferDatabaseModal: false,
@@ -295,19 +289,11 @@ const {
   allowChangeData,
   allowAlterSchema,
   allowListChangelogs,
-  allowListSlowQueries,
 } = useDatabaseDetailContext();
 const disableSchemaEditor = useAppFeature(
   "bb.feature.issue.disable-schema-editor"
 );
 const databaseChangeMode = useAppFeature("bb.feature.database-change-mode");
-
-onMounted(async () => {
-  anomalyList.value = await useAnomalyV1Store().fetchAnomalyList(
-    database.value.project,
-    { database: database.value.name }
-  );
-});
 
 watch(
   () => route.hash,
@@ -331,12 +317,23 @@ watch(
   { immediate: true }
 );
 
-const database = computed(() => {
-  return databaseV1Store.getDatabaseByName(
-    `${instanceNamePrefix}${props.instanceId}/${databaseNamePrefix}${props.databaseName}`
-  );
-});
+const { database, ready } = useDatabaseV1ByName(
+  computed(
+    () =>
+      `${instanceNamePrefix}${props.instanceId}/${databaseNamePrefix}${props.databaseName}`
+  )
+);
+
 const project = computed(() => database.value.projectEntity);
+
+watchEffect(async () => {
+  if (isValidDatabaseName(database.value.name)) {
+    anomalyList.value = await useAnomalyV1Store().fetchAnomalyList(
+      database.value.project,
+      { database: database.value.name }
+    );
+  }
+});
 
 const hasSchemaDiagramFeature = computed((): boolean => {
   return instanceV1HasAlterSchema(database.value.instanceResource);
@@ -411,5 +408,5 @@ const environment = computed(() => {
   );
 });
 
-useTitle(database.value.databaseName);
+useTitle(computed(() => database.value.databaseName));
 </script>

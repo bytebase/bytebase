@@ -52,8 +52,11 @@ func (s *QueryResultMasker) MaskResults(ctx context.Context, spans []*base.Query
 		if strings.HasPrefix(strings.TrimSpace(results[i].Statement), "EXPLAIN") {
 			continue
 		}
+		if results[i].Error == "" && spans[i].FunctionNotSupportedError != nil {
+			return errors.Errorf("masking error: %v", spans[i].FunctionNotSupportedError)
+		}
 		if results[i].Error == "" && spans[i].NotFoundError != nil {
-			return errors.Errorf("query span error: %v", spans[i].NotFoundError)
+			return errors.Errorf("masking error: %v", spans[i].NotFoundError)
 		}
 		// Skip masking for error result.
 		if results[i].Error != "" && len(results[i].Rows) == 0 {

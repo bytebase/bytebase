@@ -3,7 +3,6 @@
     <AdvancedSearch
       class="flex-1"
       :params="params"
-      :readonly-scopes="readonlyScopes"
       :scope-options="scopeOptions"
       @update:params="$emit('update:params', $event)"
     />
@@ -18,7 +17,7 @@
 
 <script lang="tsx" setup>
 import { orderBy } from "lodash-es";
-import { computed, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBAvatar } from "@/bbkit";
 import AdvancedSearch, { TimeRange } from "@/components/AdvancedSearch";
@@ -33,21 +32,17 @@ import { ALL_METHODS_WITH_AUDIT } from "@/grpcweb/methods";
 import { useCurrentUserV1, useProjectV1List, useUserStore } from "@/store";
 import { SYSTEM_BOT_USER_NAME } from "@/types";
 import { AuditLog_Severity } from "@/types/proto/v1/audit_log_service";
+import { State, stateToJSON } from "@/types/proto/v1/common";
+import { User, UserType, userTypeToJSON } from "@/types/proto/v1/user_service";
 import {
+  getDefaultPagination,
   extractProjectResourceName,
   type SearchParams,
-  type SearchScope,
 } from "@/utils";
 
-withDefaults(
-  defineProps<{
-    params: SearchParams;
-    readonlyScopes?: SearchScope[];
-  }>(),
-  {
-    readonlyScopes: () => [],
-  }
-);
+defineProps<{
+  params: SearchParams;
+}>();
 defineEmits<{
   (event: "update:params", params: SearchParams): void;
 }>();
@@ -57,12 +52,22 @@ const me = useCurrentUserV1();
 const userStore = useUserStore();
 const { projectList } = useProjectV1List();
 
+const activeUserList = ref<User[]>([]);
 const showTimeRange = ref(false);
+
+onMounted(async () => {
+  const { users } = await userStore.fetchUserList({
+    pageSize: getDefaultPagination(),
+    showDeleted: false,
+    filter: `state == "${stateToJSON(State.ACTIVE)}" && user_type == "${userTypeToJSON(UserType.USER)}"`,
+  });
+  activeUserList.value = users;
+});
 
 const principalSearchValueOptions = computed(() => {
   // Put "you" to the top
   const sortedUsers = orderBy(
-    userStore.activeUserList,
+    activeUserList.value,
     (user) => (user.name === me.value.name ? -1 : 1),
     "asc"
   );
@@ -94,7 +99,6 @@ const scopeOptions = computed((): ScopeOption[] => {
       id: "project",
       title: t("issue.advanced-search.scope.project.title"),
       description: t("issue.advanced-search.scope.project.description"),
-      // TODO(ed): We need to support search projects asynchronous.
       options: projectList.value.map<ValueOption>((project) => {
         const name = extractProjectResourceName(project.name);
         return {

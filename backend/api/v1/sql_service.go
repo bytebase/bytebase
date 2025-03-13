@@ -193,7 +193,11 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 	if err != nil {
 		return nil, err
 	}
-	driver, err := s.dbFactory.GetDataSourceDriver(ctx, instance, dataSource, database.DatabaseName, database.Metadata.GetDatashare(), dataSource.GetType() == storepb.DataSourceType_READ_ONLY, db.ConnectionContext{})
+	driver, err := s.dbFactory.GetDataSourceDriver(ctx, instance, dataSource, db.ConnectionContext{
+		DatabaseName: database.DatabaseName,
+		DataShare:    database.Metadata.GetDatashare(),
+		ReadOnly:     dataSource.GetType() == storepb.DataSourceType_READ_ONLY,
+	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get database driver: %v", err)
 	}
@@ -506,8 +510,13 @@ func queryRetry(
 	}
 	// The second query span should not tolerate any error, but we should retail the original error from database if possible.
 	for i, result := range results {
-		if i < len(spans) && result.Error == "" && spans[i].NotFoundError != nil {
-			return nil, nil, duration, status.Errorf(codes.Internal, "failed to get query span: %v", spans[i].NotFoundError)
+		if i < len(spans) && result.Error == "" {
+			if spans[i].FunctionNotSupportedError != nil {
+				return nil, nil, duration, status.Errorf(codes.Internal, "failed to mask data: %v", spans[i].FunctionNotSupportedError)
+			}
+			if spans[i].NotFoundError != nil {
+				return nil, nil, duration, status.Errorf(codes.Internal, "failed to mask data: %v", spans[i].NotFoundError)
+			}
 		}
 	}
 
@@ -794,7 +803,11 @@ func DoExport(
 	if err != nil {
 		return nil, 0, err
 	}
-	driver, err := dbFactory.GetDataSourceDriver(ctx, instance, dataSource, database.DatabaseName, database.Metadata.GetDatashare(), true /* readOnly */, db.ConnectionContext{})
+	driver, err := dbFactory.GetDataSourceDriver(ctx, instance, dataSource, db.ConnectionContext{
+		DatabaseName: database.DatabaseName,
+		DataShare:    database.Metadata.GetDatashare(),
+		ReadOnly:     true,
+	})
 	if err != nil {
 		return nil, 0, status.Errorf(codes.Internal, "failed to get database driver: %v", err)
 	}
@@ -1639,58 +1652,6 @@ func (*SQLService) ParseMyBatisMapper(_ context.Context, request *v1pb.ParseMyBa
 	}, nil
 }
 
-// StringifyMetadata returns the stringified schema of the given metadata.
-func (*SQLService) StringifyMetadata(_ context.Context, request *v1pb.StringifyMetadataRequest) (*v1pb.StringifyMetadataResponse, error) {
-	switch request.Engine {
-	case v1pb.Engine_MYSQL, v1pb.Engine_OCEANBASE, v1pb.Engine_POSTGRES, v1pb.Engine_TIDB, v1pb.Engine_ORACLE, v1pb.Engine_REDSHIFT, v1pb.Engine_CLICKHOUSE:
-	default:
-		return nil, status.Errorf(codes.InvalidArgument, "unsupported engine: %v", request.Engine)
-	}
-
-	if request.Metadata == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "metadata is required")
-	}
-	storeSchemaMetadata, err := convertV1DatabaseMetadata(request.Metadata)
-	if err != nil {
-		return nil, err
-	}
-
-	if !request.ClassificationFromConfig {
-		if request.Catalog == nil {
-			return nil, status.Errorf(codes.InvalidArgument, "database catalog is required")
-		}
-		config := convertDatabaseCatalog(request.GetCatalog())
-		sanitizeCommentForSchemaMetadata(storeSchemaMetadata, model.NewDatabaseConfig(config), request.ClassificationFromConfig)
-	}
-
-	if request.Engine == v1pb.Engine_MYSQL && isSingleTable(storeSchemaMetadata) {
-		table := storeSchemaMetadata.Schemas[0].Tables[0]
-		schema, err := schema.StringifyTable(storepb.Engine(request.Engine), table)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to stringify table: %v", err)
-		}
-		return &v1pb.StringifyMetadataResponse{
-			Schema: schema,
-		}, nil
-	}
-
-	schema, err := schema.GetDesignSchema(storepb.Engine(request.Engine), storeSchemaMetadata)
-	if err != nil {
-		return nil, err
-	}
-
-	if request.Engine == v1pb.Engine_ORACLE {
-		schema, err = appendComments(schema, storeSchemaMetadata)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to append comments: %v", err)
-		}
-	}
-
-	return &v1pb.StringifyMetadataResponse{
-		Schema: schema,
-	}, nil
-}
-
 func (*SQLService) DiffMetadata(_ context.Context, request *v1pb.DiffMetadataRequest) (*v1pb.DiffMetadataResponse, error) {
 	switch request.Engine {
 	case v1pb.Engine_MYSQL, v1pb.Engine_POSTGRES, v1pb.Engine_TIDB, v1pb.Engine_ORACLE:
@@ -1723,11 +1684,17 @@ func (*SQLService) DiffMetadata(_ context.Context, request *v1pb.DiffMetadataReq
 		return nil, status.Errorf(codes.InvalidArgument, "invalid target metadata: %v", err)
 	}
 
-	sourceSchema, err := schema.GetDesignSchema(storepb.Engine(request.Engine), storeSourceMetadata)
+	sourceSchema, err := schema.GetDatabaseDefinition(storepb.Engine(request.Engine), schema.GetDefinitionContext{
+		SkipBackupSchema: false,
+		PrintHeader:      true,
+	}, storeSourceMetadata)
 	if err != nil {
 		return nil, err
 	}
-	targetSchema, err := schema.GetDesignSchema(storepb.Engine(request.Engine), storeTargetMetadata)
+	targetSchema, err := schema.GetDatabaseDefinition(storepb.Engine(request.Engine), schema.GetDefinitionContext{
+		SkipBackupSchema: false,
+		PrintHeader:      true,
+	}, storeTargetMetadata)
 	if err != nil {
 		return nil, err
 	}
@@ -1765,61 +1732,6 @@ func sanitizeCommentForSchemaMetadata(dbSchema *storepb.DatabaseSchemaMetadata, 
 			}
 		}
 	}
-}
-
-func appendComments(schema string, storeSchemaMetadata *storepb.DatabaseSchemaMetadata) (string, error) {
-	if !isSingleTable(storeSchemaMetadata) {
-		return schema, nil
-	}
-
-	schemaName := storeSchemaMetadata.Schemas[0].Name
-	table := storeSchemaMetadata.Schemas[0].Tables[0]
-	// Append comments to the schema.
-	comments, err := getComments(schemaName, table)
-	if err != nil {
-		return "", err
-	}
-	return schema + comments, nil
-}
-
-func getComments(schemaName string, table *storepb.TableMetadata) (string, error) {
-	var buf strings.Builder
-	if table.Comment != "" {
-		if _, err := fmt.Fprintf(&buf, "COMMENT ON TABLE \"%s\".\"%s\" IS '%s';\n", schemaName, table.Name, table.Comment); err != nil {
-			return "", err
-		}
-	}
-	for _, column := range table.Columns {
-		if column.Comment != "" {
-			if _, err := fmt.Fprintf(&buf, "COMMENT ON COLUMN \"%s\".\"%s\".\"%s\" IS '%s';\n", schemaName, table.Name, column.Name, column.Comment); err != nil {
-				return "", err
-			}
-		}
-	}
-	return buf.String(), nil
-}
-
-func isSingleTable(storeSchemaMetadata *storepb.DatabaseSchemaMetadata) bool {
-	if len(storeSchemaMetadata.Schemas) != 1 {
-		return false
-	}
-
-	if len(storeSchemaMetadata.Schemas[0].Tables) != 1 {
-		return false
-	}
-
-	if len(storeSchemaMetadata.Schemas[0].ExternalTables)+
-		len(storeSchemaMetadata.Schemas[0].Views)+
-		len(storeSchemaMetadata.Schemas[0].MaterializedViews)+
-		len(storeSchemaMetadata.Schemas[0].Functions)+
-		len(storeSchemaMetadata.Schemas[0].Procedures)+
-		len(storeSchemaMetadata.Schemas[0].Sequences)+
-		len(storeSchemaMetadata.Schemas[0].Streams)+
-		len(storeSchemaMetadata.Schemas[0].Tasks) != 0 {
-		return false
-	}
-
-	return true
 }
 
 // Pretty returns pretty format SDL.

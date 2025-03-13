@@ -6,9 +6,11 @@
 import { onMounted } from "vue";
 import { useGroupStore, useRoleStore, useUserStore } from "@/store";
 
-onMounted(() => {
-  useUserStore().fetchUserList();
-  useRoleStore().fetchRoleList();
-  useGroupStore().fetchGroupList();
+onMounted(async () => {
+  await Promise.all([
+    useUserStore().refreshUserStat(),
+    useRoleStore().fetchRoleList(),
+    useGroupStore().fetchGroupList(),
+  ]);
 });
 </script>

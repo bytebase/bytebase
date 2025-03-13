@@ -62,9 +62,6 @@ type Profile struct {
 	// EnableMetric will enable the metric collector.
 	EnableMetric bool
 
-	// Test only flag to skip generating onboarding data.
-	TestOnlySkipOnboardingData bool
-
 	// LastActiveTs is the service last active timestamp, any API calls will refresh this value.
 	LastActiveTs int64
 	// Unique ID per Bytebase instance run.

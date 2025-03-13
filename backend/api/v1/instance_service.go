@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	"go.uber.org/multierr"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
@@ -23,7 +22,6 @@ import (
 	metricapi "github.com/bytebase/bytebase/backend/metric"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/metric"
-	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 	"github.com/bytebase/bytebase/backend/runner/metricreport"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
@@ -37,7 +35,6 @@ type InstanceService struct {
 	store          *store.Store
 	licenseService enterprise.LicenseService
 	metricReporter *metricreport.Reporter
-	secret         string
 	stateCfg       *state.State
 	dbFactory      *dbfactory.DBFactory
 	schemaSyncer   *schemasync.Syncer
@@ -45,12 +42,11 @@ type InstanceService struct {
 }
 
 // NewInstanceService creates a new InstanceService.
-func NewInstanceService(store *store.Store, licenseService enterprise.LicenseService, metricReporter *metricreport.Reporter, secret string, stateCfg *state.State, dbFactory *dbfactory.DBFactory, schemaSyncer *schemasync.Syncer, iamManager *iam.Manager) *InstanceService {
+func NewInstanceService(store *store.Store, licenseService enterprise.LicenseService, metricReporter *metricreport.Reporter, stateCfg *state.State, dbFactory *dbfactory.DBFactory, schemaSyncer *schemasync.Syncer, iamManager *iam.Manager) *InstanceService {
 	return &InstanceService{
 		store:          store,
 		licenseService: licenseService,
 		metricReporter: metricReporter,
-		secret:         secret,
 		stateCfg:       stateCfg,
 		dbFactory:      dbFactory,
 		schemaSyncer:   schemaSyncer,
@@ -97,7 +93,7 @@ func (s *InstanceService) ListInstanceDatabase(ctx context.Context, request *v1p
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 
-		if instanceMessage, err = s.convertInstanceToInstanceMessage(instanceID, request.Instance); err != nil {
+		if instanceMessage, err = convertInstanceToInstanceMessage(instanceID, request.Instance); err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 	} else {
@@ -133,7 +129,7 @@ func (s *InstanceService) CreateInstance(ctx context.Context, request *v1pb.Crea
 		return nil, err
 	}
 
-	instanceMessage, err := s.convertInstanceToInstanceMessage(request.InstanceId, request.Instance)
+	instanceMessage, err := convertInstanceToInstanceMessage(request.InstanceId, request.Instance)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -142,7 +138,12 @@ func (s *InstanceService) CreateInstance(ctx context.Context, request *v1pb.Crea
 	if request.ValidateOnly {
 		for _, ds := range instanceMessage.Metadata.GetDataSources() {
 			err := func() error {
-				driver, err := s.dbFactory.GetDataSourceDriver(ctx, instanceMessage, ds, "", false /* datashare */, ds.GetType() == storepb.DataSourceType_READ_ONLY, db.ConnectionContext{})
+				driver, err := s.dbFactory.GetDataSourceDriver(
+					ctx, instanceMessage, ds,
+					db.ConnectionContext{
+						ReadOnly: ds.GetType() == storepb.DataSourceType_READ_ONLY,
+					},
+				)
 				if err != nil {
 					return status.Errorf(codes.Internal, "failed to get database driver with error: %v", err.Error())
 				}
@@ -227,17 +228,13 @@ func (s *InstanceService) checkDataSource(instance *store.InstanceMessage, dataS
 	if dataSource.GetId() == "" {
 		return status.Errorf(codes.InvalidArgument, "data source id is required")
 	}
-	password, err := common.Unobfuscate(dataSource.GetObfuscatedPassword(), s.secret)
-	if err != nil {
-		return status.Error(codes.Internal, err.Error())
-	}
 
 	if err := s.licenseService.IsFeatureEnabledForInstance(api.FeatureExternalSecretManager, instance); err != nil {
 		missingFeatureError := status.Error(codes.PermissionDenied, err.Error())
 		if dataSource.GetExternalSecret() != nil {
 			return missingFeatureError
 		}
-		if ok, _ := secret.GetExternalSecretURL(password); !ok {
+		if ok, _ := secret.GetExternalSecretURL(dataSource.GetPassword()); !ok {
 			return nil
 		}
 		return missingFeatureError
@@ -298,7 +295,7 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, request *v1pb.Upda
 		case "external_link":
 			patch.Metadata.ExternalLink = request.Instance.ExternalLink
 		case "data_sources":
-			dataSources, err := s.convertV1DataSources(request.Instance.DataSources)
+			dataSources, err := convertV1DataSources(request.Instance.DataSources)
 			if err != nil {
 				return nil, status.Error(codes.InvalidArgument, err.Error())
 			}
@@ -349,168 +346,6 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, request *v1pb.Upda
 	return convertInstanceMessage(ins)
 }
 
-func (s *InstanceService) syncSlowQueriesForInstance(ctx context.Context, instanceName string) (*emptypb.Empty, error) {
-	instance, err := getInstanceMessage(ctx, s.store, instanceName)
-	if err != nil {
-		return nil, err
-	}
-	if instance.Deleted {
-		return nil, status.Errorf(codes.NotFound, "instance %q has been deleted", instanceName)
-	}
-
-	slowQueryPolicy, err := s.store.GetSlowQueryPolicy(ctx, instance.ResourceID)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-	if slowQueryPolicy == nil || !slowQueryPolicy.Active {
-		return nil, status.Errorf(codes.FailedPrecondition, "slow query policy is not active for instance %q", instanceName)
-	}
-
-	if err := s.syncSlowQueriesImpl(ctx, (*store.ProjectMessage)(nil), instance); err != nil {
-		return nil, err
-	}
-
-	return &emptypb.Empty{}, nil
-}
-
-func (s *InstanceService) syncSlowQueriesImpl(ctx context.Context, project *store.ProjectMessage, instance *store.InstanceMessage) error {
-	switch instance.Metadata.GetEngine() {
-	case storepb.Engine_MYSQL:
-		driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */, db.ConnectionContext{})
-		if err != nil {
-			return err
-		}
-		defer driver.Close(ctx)
-		if err := driver.CheckSlowQueryLogEnabled(ctx); err != nil {
-			slog.Warn("slow query log is not enabled", slog.String("instance", instance.ResourceID), log.BBError(err))
-			return nil
-		}
-
-		// Sync slow queries for instance.
-		message := &state.InstanceSlowQuerySyncMessage{
-			InstanceID: instance.ResourceID,
-		}
-		if project != nil {
-			message.ProjectID = project.ResourceID
-		}
-		s.stateCfg.InstanceSlowQuerySyncChan <- message
-	case storepb.Engine_POSTGRES:
-		findDatabase := &store.FindDatabaseMessage{
-			InstanceID: &instance.ResourceID,
-		}
-		databases, err := s.store.ListDatabases(ctx, findDatabase)
-		if err != nil {
-			return status.Errorf(codes.Internal, "failed to list databases: %s", err.Error())
-		}
-
-		enabled := false
-		for _, database := range databases {
-			if database.Deleted {
-				continue
-			}
-			if pgparser.IsSystemDatabase(database.DatabaseName) {
-				continue
-			}
-			if err := func() error {
-				driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{})
-				if err != nil {
-					return err
-				}
-				defer driver.Close(ctx)
-				return driver.CheckSlowQueryLogEnabled(ctx)
-			}(); err != nil {
-				slog.Warn("slow query log is not enabled", slog.String("database", database.DatabaseName), log.BBError(err))
-				continue
-			}
-
-			enabled = true
-			break
-		}
-
-		if !enabled {
-			return nil
-		}
-
-		// Sync slow queries for instance.
-		message := &state.InstanceSlowQuerySyncMessage{
-			InstanceID: instance.ResourceID,
-		}
-		if project != nil {
-			message.ProjectID = project.ResourceID
-		}
-		s.stateCfg.InstanceSlowQuerySyncChan <- message
-	default:
-		return status.Errorf(codes.InvalidArgument, "unsupported engine %q", instance.Metadata.GetEngine())
-	}
-	return nil
-}
-
-func (s *InstanceService) syncSlowQueriesForProject(ctx context.Context, projectName string) (*emptypb.Empty, error) {
-	project, err := s.getProjectMessage(ctx, projectName)
-	if err != nil {
-		return nil, err
-	}
-	if project.Deleted {
-		return nil, status.Errorf(codes.NotFound, "project %q has been deleted", projectName)
-	}
-	databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{ProjectID: &project.ResourceID})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to list databases: %s", err.Error())
-	}
-
-	instanceMap := make(map[string]bool)
-	var errs error
-	for _, database := range databases {
-		instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to get instance %q: %s", database.InstanceID, err.Error())
-		}
-
-		switch instance.Metadata.GetEngine() {
-		case storepb.Engine_MYSQL, storepb.Engine_POSTGRES:
-			if instance.Deleted {
-				continue
-			}
-
-			slowQueryPolicy, err := s.store.GetSlowQueryPolicy(ctx, instance.ResourceID)
-			if err != nil {
-				return nil, status.Error(codes.Internal, err.Error())
-			}
-			if slowQueryPolicy == nil || !slowQueryPolicy.Active {
-				continue
-			}
-
-			if _, ok := instanceMap[instance.ResourceID]; ok {
-				continue
-			}
-
-			if err := s.syncSlowQueriesImpl(ctx, project, instance); err != nil {
-				errs = multierr.Append(errs, errors.Wrapf(err, "failed to sync slow queries for instance %q", instance.ResourceID))
-			}
-		default:
-			continue
-		}
-	}
-
-	if errs != nil {
-		return nil, status.Errorf(codes.Internal, "failed to sync slow queries for following instances: %s", errs.Error())
-	}
-
-	return &emptypb.Empty{}, nil
-}
-
-// SyncSlowQueries syncs slow queries for an instance.
-func (s *InstanceService) SyncSlowQueries(ctx context.Context, request *v1pb.SyncSlowQueriesRequest) (*emptypb.Empty, error) {
-	switch {
-	case strings.HasPrefix(request.Parent, common.InstanceNamePrefix):
-		return s.syncSlowQueriesForInstance(ctx, request.Parent)
-	case strings.HasPrefix(request.Parent, common.ProjectNamePrefix):
-		return s.syncSlowQueriesForProject(ctx, request.Parent)
-	default:
-		return nil, status.Errorf(codes.InvalidArgument, "invalid parent %q", request.Parent)
-	}
-}
-
 // DeleteInstance deletes an instance.
 func (s *InstanceService) DeleteInstance(ctx context.Context, request *v1pb.DeleteInstanceRequest) (*emptypb.Empty, error) {
 	instance, err := getInstanceMessage(ctx, s.store, request.Name)
@@ -527,7 +362,8 @@ func (s *InstanceService) DeleteInstance(ctx context.Context, request *v1pb.Dele
 	}
 	if request.Force {
 		if len(databases) > 0 {
-			if _, err := s.store.BatchUpdateDatabaseProject(ctx, databases, api.DefaultProjectID); err != nil {
+			defaultProjectID := api.DefaultProjectID
+			if _, err := s.store.BatchUpdateDatabases(ctx, databases, &store.BatchUpdateDatabases{ProjectID: &defaultProjectID}); err != nil {
 				return nil, err
 			}
 		}
@@ -644,7 +480,7 @@ func (s *InstanceService) AddDataSource(ctx context.Context, request *v1pb.AddDa
 		return nil, status.Errorf(codes.InvalidArgument, "only support adding read-only data source")
 	}
 
-	dataSource, err := s.convertV1DataSource(request.DataSource)
+	dataSource, err := convertV1DataSource(request.DataSource)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to convert data source")
 	}
@@ -668,7 +504,12 @@ func (s *InstanceService) AddDataSource(ctx context.Context, request *v1pb.AddDa
 	// Test connection.
 	if request.ValidateOnly {
 		err := func() error {
-			driver, err := s.dbFactory.GetDataSourceDriver(ctx, instance, dataSource, "", false /* datashare */, dataSource.GetType() == storepb.DataSourceType_READ_ONLY, db.ConnectionContext{})
+			driver, err := s.dbFactory.GetDataSourceDriver(
+				ctx, instance, dataSource,
+				db.ConnectionContext{
+					ReadOnly: dataSource.GetType() == storepb.DataSourceType_READ_ONLY,
+				},
+			)
 			if err != nil {
 				return status.Errorf(codes.Internal, "failed to get database driver with error: %v", err.Error())
 			}
@@ -747,13 +588,13 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 		case "username":
 			dataSource.Username = request.DataSource.Username
 		case "password":
-			dataSource.ObfuscatedPassword = common.Obfuscate(request.DataSource.Password, s.secret)
+			dataSource.Password = request.DataSource.Password
 		case "ssl_ca":
-			dataSource.ObfuscatedSslCa = common.Obfuscate(request.DataSource.SslCa, s.secret)
+			dataSource.SslCa = request.DataSource.SslCa
 		case "ssl_cert":
-			dataSource.ObfuscatedSslCert = common.Obfuscate(request.DataSource.SslCert, s.secret)
+			dataSource.SslCert = request.DataSource.SslCert
 		case "ssl_key":
-			dataSource.ObfuscatedSslKey = common.Obfuscate(request.DataSource.SslKey, s.secret)
+			dataSource.SslKey = request.DataSource.SslKey
 		case "host":
 			dataSource.Host = request.DataSource.Host
 		case "port":
@@ -778,13 +619,13 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 			dataSource.SshUser = request.DataSource.SshUser
 			hasSSH = true
 		case "ssh_password":
-			dataSource.SshObfuscatedPassword = common.Obfuscate(request.DataSource.SshPassword, s.secret)
+			dataSource.SshPassword = request.DataSource.SshPassword
 			hasSSH = true
 		case "ssh_private_key":
-			dataSource.SshObfuscatedPrivateKey = common.Obfuscate(request.DataSource.SshPrivateKey, s.secret)
+			dataSource.SshPrivateKey = request.DataSource.SshPrivateKey
 			hasSSH = true
 		case "authentication_private_key":
-			dataSource.AuthenticationPrivateKeyObfuscated = common.Obfuscate(request.DataSource.AuthenticationPrivateKey, s.secret)
+			dataSource.AuthenticationPrivateKey = request.DataSource.AuthenticationPrivateKey
 		case "external_secret":
 			externalSecret, err := convertV1DataSourceExternalSecret(request.DataSource.ExternalSecret)
 			if err != nil {
@@ -814,18 +655,18 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 		case "master_username":
 			dataSource.MasterUsername = request.DataSource.MasterUsername
 		case "master_password":
-			dataSource.MasterObfuscatedPassword = common.Obfuscate(request.DataSource.MasterPassword, s.secret)
-		case "iam_extension":
+			dataSource.MasterPassword = request.DataSource.MasterPassword
+		case "iam_extension", "client_secret_credential":
+			// TODO(zp): Remove the hack while frontend use new oneof artifact.
 			if v := request.DataSource.IamExtension; v != nil {
 				switch v := v.(type) {
 				case *v1pb.DataSource_ClientSecretCredential_:
-					v1ClientSecretCredential := v.ClientSecretCredential
-					v1ClientSecretCredential.ClientSecret = common.Obfuscate(v1ClientSecretCredential.ClientSecret, s.secret)
 					dataSource.IamExtension = &storepb.DataSource_ClientSecretCredential_{
 						ClientSecretCredential: convertV1ClientSecretCredential(v.ClientSecretCredential),
 					}
 				default:
 				}
+<<<<<<< HEAD
 			}
 		case "extra_connection_parameters":
 			dataSource.ExtraConnectionParameters = request.DataSource.ExtraConnectionParameters
@@ -833,12 +674,10 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 		case "client_secret_credential":
 			if request.DataSource.GetClientSecretCredential() == nil {
 				dataSource.IamExtension = nil
+=======
+>>>>>>> origin/main
 			} else {
-				v1ClientSecretCredential := request.DataSource.GetClientSecretCredential()
-				v1ClientSecretCredential.ClientSecret = common.Obfuscate(v1ClientSecretCredential.ClientSecret, s.secret)
-				dataSource.IamExtension = &storepb.DataSource_ClientSecretCredential_{
-					ClientSecretCredential: convertV1ClientSecretCredential(request.DataSource.GetClientSecretCredential()),
-				}
+				dataSource.IamExtension = nil
 			}
 		default:
 			return nil, status.Errorf(codes.InvalidArgument, `unsupported update_mask "%s"`, path)
@@ -857,7 +696,10 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 	// Test connection.
 	if request.ValidateOnly {
 		err := func() error {
-			driver, err := s.dbFactory.GetDataSourceDriver(ctx, instance, dataSource, "", false /* datashare */, dataSource.GetType() == storepb.DataSourceType_READ_ONLY, db.ConnectionContext{})
+			driver, err := s.dbFactory.GetDataSourceDriver(
+				ctx, instance, dataSource,
+				db.ConnectionContext{ReadOnly: dataSource.GetType() == storepb.DataSourceType_READ_ONLY},
+			)
 			if err != nil {
 				return status.Errorf(codes.Internal, "failed to get database driver with error: %v", err.Error())
 			}
@@ -930,25 +772,6 @@ func (s *InstanceService) RemoveDataSource(ctx context.Context, request *v1pb.Re
 	}
 
 	return convertInstanceMessage(instance)
-}
-
-func (s *InstanceService) getProjectMessage(ctx context.Context, name string) (*store.ProjectMessage, error) {
-	projectID, err := common.GetProjectID(name)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
-		ResourceID:  &projectID,
-		ShowDeleted: true,
-	})
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-	if project == nil {
-		return nil, status.Errorf(codes.NotFound, "project %q not found", name)
-	}
-
-	return project, nil
 }
 
 func getInstanceMessage(ctx context.Context, stores *store.Store, name string) (*store.InstanceMessage, error) {
@@ -1041,8 +864,8 @@ func convertInstanceRoles(instance *store.InstanceMessage, roles []*storepb.Inst
 	return v1Roles
 }
 
-func (s *InstanceService) convertInstanceToInstanceMessage(instanceID string, instance *v1pb.Instance) (*store.InstanceMessage, error) {
-	datasources, err := s.convertV1DataSources(instance.DataSources)
+func convertInstanceToInstanceMessage(instanceID string, instance *v1pb.Instance) (*store.InstanceMessage, error) {
+	datasources, err := convertV1DataSources(instance.DataSources)
 	if err != nil {
 		return nil, err
 	}
@@ -1083,10 +906,10 @@ func convertInstanceMessageToInstanceResource(instanceMessage *store.InstanceMes
 	}, nil
 }
 
-func (s *InstanceService) convertV1DataSources(dataSources []*v1pb.DataSource) ([]*storepb.DataSource, error) {
+func convertV1DataSources(dataSources []*v1pb.DataSource) ([]*storepb.DataSource, error) {
 	var values []*storepb.DataSource
 	for _, ds := range dataSources {
-		dataSource, err := s.convertV1DataSource(ds)
+		dataSource, err := convertV1DataSource(ds)
 		if err != nil {
 			return nil, err
 		}
@@ -1205,9 +1028,8 @@ func convertClientSecretCredential(clientSecretCredential *storepb.DataSource_Cl
 		return nil
 	}
 	return &v1pb.DataSource_ClientSecretCredential{
-		TenantId:     clientSecretCredential.TenantId,
-		ClientId:     clientSecretCredential.ClientId,
-		ClientSecret: clientSecretCredential.ClientSecret,
+		TenantId: clientSecretCredential.TenantId,
+		ClientId: clientSecretCredential.ClientId,
 	}
 }
 
@@ -1365,7 +1187,7 @@ func convertRedisType(redisType storepb.DataSource_RedisType) v1pb.DataSource_Re
 	return authenticationType
 }
 
-func (s *InstanceService) convertV1DataSource(dataSource *v1pb.DataSource) (*storepb.DataSource, error) {
+func convertV1DataSource(dataSource *v1pb.DataSource) (*storepb.DataSource, error) {
 	dsType, err := convertV1DataSourceType(dataSource.Type)
 	if err != nil {
 		return nil, err
@@ -1377,6 +1199,7 @@ func (s *InstanceService) convertV1DataSource(dataSource *v1pb.DataSource) (*sto
 	saslConfig := convertV1DataSourceSaslConfig(dataSource.SaslConfig)
 
 	storeDataSource := &storepb.DataSource{
+<<<<<<< HEAD
 		Id:                                 dataSource.Id,
 		Type:                               dsType,
 		Username:                           dataSource.Username,
@@ -1411,10 +1234,46 @@ func (s *InstanceService) convertV1DataSource(dataSource *v1pb.DataSource) (*sto
 		MasterUsername:                     dataSource.MasterUsername,
 		MasterObfuscatedPassword:           common.Obfuscate(dataSource.MasterPassword, s.secret),
 		ExtraConnectionParameters:          dataSource.ExtraConnectionParameters,
+=======
+		Id:                       dataSource.Id,
+		Type:                     dsType,
+		Username:                 dataSource.Username,
+		Password:                 dataSource.Password,
+		SslCa:                    dataSource.SslCa,
+		SslCert:                  dataSource.SslCert,
+		SslKey:                   dataSource.SslKey,
+		Host:                     dataSource.Host,
+		Port:                     dataSource.Port,
+		Database:                 dataSource.Database,
+		Srv:                      dataSource.Srv,
+		AuthenticationDatabase:   dataSource.AuthenticationDatabase,
+		Sid:                      dataSource.Sid,
+		ServiceName:              dataSource.ServiceName,
+		SshHost:                  dataSource.SshHost,
+		SshPort:                  dataSource.SshPort,
+		SshUser:                  dataSource.SshUser,
+		SshPassword:              dataSource.SshPassword,
+		SshPrivateKey:            dataSource.SshPrivateKey,
+		AuthenticationPrivateKey: dataSource.AuthenticationPrivateKey,
+		ExternalSecret:           externalSecret,
+		SaslConfig:               saslConfig,
+		AuthenticationType:       convertV1AuthenticationType(dataSource.AuthenticationType),
+		AdditionalAddresses:      convertAdditionalAddresses(dataSource.AdditionalAddresses),
+		ReplicaSet:               dataSource.ReplicaSet,
+		DirectConnection:         dataSource.DirectConnection,
+		Region:                   dataSource.Region,
+		WarehouseId:              dataSource.WarehouseId,
+		UseSsl:                   dataSource.UseSsl,
+		RedisType:                convertV1RedisType(dataSource.RedisType),
+		MasterName:               dataSource.MasterName,
+		MasterUsername:           dataSource.MasterUsername,
+		MasterPassword:           dataSource.MasterPassword,
+>>>>>>> origin/main
 	}
-	if v := dataSource.GetClientSecretCredential(); v != nil {
-		v.ClientSecret = common.Obfuscate(v.ClientSecret, s.secret)
-		storeDataSource.IamExtension = &storepb.DataSource_ClientSecretCredential_{ClientSecretCredential: convertV1ClientSecretCredential(v)}
+	if v := dataSource.IamExtension; v != nil {
+		if _, ok := v.(*v1pb.DataSource_ClientSecretCredential_); ok {
+			storeDataSource.IamExtension = &storepb.DataSource_ClientSecretCredential_{ClientSecretCredential: convertV1ClientSecretCredential(dataSource.GetClientSecretCredential())}
+		}
 	}
 
 	return storeDataSource, nil

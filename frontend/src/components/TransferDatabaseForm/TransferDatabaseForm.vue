@@ -7,7 +7,6 @@
         <TransferSourceSelector
           v-model:transfer-source="state.transferSource"
           :project="project"
-          :raw-database-list="rawDatabaseList"
           :environment-filter="state.environmentFilter"
           :instance-filter="state.instanceFilter"
           :search-text="state.searchText"
@@ -30,27 +29,18 @@
         >
           <!-- Empty -->
         </template>
-        <template v-else>
-          <div class="w-full relative">
-            <div
-              v-if="state.loading"
-              class="absolute inset-0 z-10 bg-white/70 flex items-center justify-center"
-            >
-              <BBSpin />
-            </div>
-            <template v-else>
-              <DatabaseV1Table
-                mode="PROJECT"
-                :database-list="filteredDatabaseList"
-                :show-selection="true"
-                :selected-database-names="state.selectedDatabaseNameList"
-                @update:selected-databases="
-                  state.selectedDatabaseNameList = Array.from($event)
-                "
-              />
-            </template>
-          </div>
-        </template>
+        <div v-else class="w-full relative">
+          <PagedDatabaseTable
+            mode="PROJECT"
+            :parent="databaseParent"
+            :filter="filter"
+            :show-selection="true"
+            :custom-click="true"
+            @update:selected-databases="
+              state.selectedDatabaseNameList = Array.from($event)
+            "
+          />
+        </div>
       </div>
     </div>
 
@@ -95,29 +85,23 @@
 import { NButton, NTooltip } from "naive-ui";
 import { computed, reactive, watchEffect } from "vue";
 import { toRef } from "vue";
-import { BBSpin } from "@/bbkit";
 import {
   pushNotification,
   useDatabaseV1Store,
   useProjectByName,
 } from "@/store";
-import { useDatabaseV1List } from "@/store/modules/v1/databaseList";
 import type { ComposedDatabase, ComposedProject } from "@/types";
 import {
   DEFAULT_PROJECT_NAME,
   defaultProject,
   isValidProjectName,
 } from "@/types";
+import { UpdateDatabaseRequest } from "@/types/proto/v1/database_service";
 import type { Environment } from "@/types/proto/v1/environment_service";
 import type { InstanceResource } from "@/types/proto/v1/instance_service";
-import {
-  filterDatabaseV1ByKeyword,
-  hasProjectPermissionV2,
-  sortDatabaseV1List,
-  wrapRefAsPromise,
-} from "@/utils";
+import { hasProjectPermissionV2 } from "@/utils";
 import { DrawerContent, ProjectSelect } from "../v2";
-import DatabaseV1Table from "../v2/Model/DatabaseV1Table/DatabaseV1Table.vue";
+import { PagedDatabaseTable } from "../v2/Model/DatabaseV1Table";
 import TransferSourceSelector from "./TransferSourceSelector.vue";
 import type { TransferSource } from "./utils";
 
@@ -131,10 +115,15 @@ interface LocalState {
   fromProjectName: string | undefined;
 }
 
-const props = defineProps<{
-  projectName: string;
-  onSuccess?: (databases: ComposedDatabase[]) => void;
-}>();
+const props = withDefaults(
+  defineProps<{
+    projectName: string;
+    onSuccess?: (databases: ComposedDatabase[]) => void;
+  }>(),
+  {
+    onSuccess: (_: ComposedDatabase[]) => {},
+  }
+);
 
 const emit = defineEmits<{
   (e: "dismiss"): void;
@@ -153,68 +142,21 @@ const state = reactive<LocalState>({
 });
 const { project } = useProjectByName(toRef(props, "projectName"));
 
-watchEffect(async () => {
-  if (state.transferSource === "OTHER" && !state.fromProjectName) {
-    return;
-  }
-
-  let fetchingProject = DEFAULT_PROJECT_NAME;
-  if (state.fromProjectName) {
-    fetchingProject = state.fromProjectName;
-  }
-  state.loading = true;
-  await wrapRefAsPromise(useDatabaseV1List(fetchingProject).ready, true);
-  state.loading = false;
-});
-
-const rawDatabaseList = computed(() => {
+const databaseParent = computed(() => {
   if (state.transferSource === "DEFAULT") {
-    return databaseStore.databaseListByProject(DEFAULT_PROJECT_NAME);
-  } else {
-    return databaseStore.databaseList.filter((db) => {
-      return (
-        db.project !== props.projectName &&
-        db.project !== DEFAULT_PROJECT_NAME &&
-        hasTransferDatabasePermission(db.projectEntity)
-      );
-    });
+    return DEFAULT_PROJECT_NAME;
   }
+  if (state.fromProjectName) {
+    return state.fromProjectName;
+  }
+  return DEFAULT_PROJECT_NAME;
 });
 
-const filteredDatabaseList = computed(() => {
-  let list = [...rawDatabaseList.value];
-  const keyword = state.searchText.trim();
-  list = list.filter((db) =>
-    filterDatabaseV1ByKeyword(db, keyword, [
-      "name",
-      "project",
-      "instance",
-      "environment",
-    ])
-  );
-
-  list = list.filter((db) => {
-    const environment = state.environmentFilter;
-    if (environment && db.effectiveEnvironment !== environment.name) {
-      return false;
-    }
-    const instance = state.instanceFilter;
-    if (instance && db.instance !== instance.name) {
-      return false;
-    }
-
-    // Other uses project filter
-    if (state.transferSource === "OTHER") {
-      if (state.fromProjectName && db.project !== state.fromProjectName) {
-        return false;
-      }
-    }
-
-    return true;
-  });
-
-  return sortDatabaseV1List(list);
-});
+const filter = computed(() => ({
+  instance: state.instanceFilter?.name,
+  environment: state.environmentFilter?.name,
+  query: state.searchText,
+}));
 
 const allowTransfer = computed(() => state.selectedDatabaseNameList.length > 0);
 
@@ -259,21 +201,26 @@ const transferDatabase = async () => {
   try {
     state.loading = true;
 
-    const updated = await useDatabaseV1Store().transferDatabases(
-      selectedDatabaseList.value,
-      props.projectName
-    );
+    const updated = await useDatabaseV1Store().batchUpdateDatabases({
+      parent: "-",
+      requests: selectedDatabaseList.value.map((database) => {
+        return UpdateDatabaseRequest.fromPartial({
+          database: {
+            name: database.name,
+            project: props.projectName,
+          },
+          updateMask: ["project"],
+        });
+      }),
+    });
 
     const displayDatabaseName =
       selectedDatabaseList.value.length > 1
         ? `${selectedDatabaseList.value.length} databases`
         : `'${selectedDatabaseList.value[0].databaseName}'`;
 
-    if (props.onSuccess) {
-      props.onSuccess(updated);
-    } else {
-      emit("dismiss");
-    }
+    props.onSuccess(updated);
+    emit("dismiss");
 
     pushNotification({
       module: "bytebase",

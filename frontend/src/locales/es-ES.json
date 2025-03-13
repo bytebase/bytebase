@@ -79,7 +79,6 @@
     "updated-at": "Actualizado",
     "statement": "Declaración",
     "statement-size": "Tamaño de la declaración",
-    "sql-statement": "Declaración SQL",
     "snapshot": "Instantánea",
     "status": "Estado",
     "stage": "Etapa",
@@ -153,7 +152,6 @@
     "view-doc": "Ver doc",
     "write-only": "solo escritura",
     "sync": "Sincronizar",
-    "sync-now": "Sincronizar ahora",
     "success": "Éxito",
     "failed": "Falló",
     "load-more": "Cargar más",
@@ -201,7 +199,8 @@
     "view-details": "Ver detalles",
     "force-verb": "forzar {verbo}",
     "untitled": "Intitulado",
-    "missing-permission": "Faltan permisos requeridos",
+    "missing-required-permission": "Faltan permisos requeridos",
+    "resource-not-found": "Recurso no encontrado",
     "continue-anyway": "De todas maneras, continúe",
     "permissions": "Permisos",
     "baseline": "Base",
@@ -729,7 +728,6 @@
       "reopened-issue": "incidencia reabierta",
       "resolved-issue": "incidencia resuelta",
       "canceled-issue": "incidencia cancelada",
-      "empty": "",
       "changed": "cambio",
       "canceled": "cancelado",
       "started": "iniciado",
@@ -825,6 +823,14 @@
         "label": {
           "title": "Etiqueta",
           "description": "Filtrar por etiqueta de problema"
+        },
+        "database-label": {
+          "title": "Etiqueta",
+          "description": "Ingrese la \"key\":\"value\" y luego presione Enter"
+        },
+        "engine": {
+          "title": "Motor",
+          "description": "Filtrar por motores"
         }
       },
       "hide": "Ocultar búsqueda avanzada"
@@ -982,9 +988,6 @@
       "request-querier-role": "Rol de consultador de solicitudes",
       "request-exporter-role": "Solicitar función de exportación"
     }
-  },
-  "alter-schema": {
-    "no-databases-in-project": "No hay bases de datos en este proyecto. Haga clic en Nueva BD o Transferir BD para agregar bases de datos."
   },
   "quick-action": {
     "create-db": "Crear base de datos",
@@ -1146,8 +1149,8 @@
       "password": "Contraseña",
       "password-tip": "También puede especificar un punto final de gestión de secreto externo",
       "google-iam": "Google Cloud SQL IAM",
-      "azure-iam": "Azure IAM",
       "aws-iam": "AWS RDS IAM",
+      "azure-iam": "Azure IAM",
       "external-secret-vault": "Vault (KV v2)",
       "external-secret-aws": "AWS Secrets Manager",
       "external-secret-gcp": "GCP Secret Manager"
@@ -1357,6 +1360,7 @@
     "unassign-alert-description": "Las bases de datos seleccionadas serán eliminadas del proyecto",
     "edit-schema": "Modificar esquema",
     "edit-labels": "Editar etiquetas",
+    "edit-environment": "Editar entorno",
     "mixed-values-for-label": "Esta etiqueta seleccionada tiene valores mixtos.",
     "mixed-label-values-warning": "Algunos de los recursos seleccionados tienen valores mixtos para la misma clave",
     "change-data": "Cambiar datos",
@@ -1422,7 +1426,6 @@
       "select": "Seleccionar tabla",
       "select-tip": "Seleccione una mesa para comenzar."
     },
-    "n-selected-m-in-total": "({selected} seleccionados, {total} en total)",
     "all": "Todas las bases de datos",
     "show-schemaless-databases": "Mostrar bases de datos sin esquema. (Editar Schema no se aplica a las bases de datos sin esquema.)",
     "secret": {
@@ -1506,8 +1509,7 @@
       "success-prompt": "Proyecto {name} creado exitosamente."
     },
     "overview": {
-      "info-slot-content": "Bytebase sincroniza periódicamente el esquema de la instancia. Las bases de datos recién sincronizadas se colocan aquí primero. El usuario debe transferirlas al proyecto de aplicación adecuado.",
-      "no-db-prompt": "No hay bases de datos que pertenezcan a este proyecto. Puedes agregar bases de datos haciendo clic en {newDb} o {transferInDb} desde la barra de acciones superior."
+      "info-slot-content": "Bytebase sincroniza periódicamente el esquema de la instancia. Las bases de datos recién sincronizadas se colocan aquí primero. El usuario debe transferirlas al proyecto de aplicación adecuado."
     },
     "webhook": {
       "success-created-prompt": "Webhook {name} creado exitosamente.",
@@ -1945,8 +1947,7 @@
       "key-duplicated": "Claves duplicadas",
       "max-value-length-exceeded": "La longitud del valor no puede exceder {longitud} caracteres"
     },
-    "add-label": "Agregar etiqueta",
-    "filter-by-label": "Filtrar por etiqueta"
+    "add-label": "Agregar etiqueta"
   },
   "oauth": {
     "unknown-event": "Tipo de evento inesperado, OAuth falló."
@@ -2332,39 +2333,6 @@
       "any-n-role-can-approve": "Cualquier {role} puede aprobar",
       "approved-by-n": "Aprobado por {approver}",
       "issue-creators-cannot-approve-their-own-issue": "El creador del problema no puede aprobar su propio problema."
-    }
-  },
-  "slow-query": {
-    "slow-queries": "Consultas lentas",
-    "report": "Reportar",
-    "last-query-time": "Hora de la última consulta",
-    "sql-statement": "Sentencia SQL",
-    "total-query-count": "Total de consultas",
-    "query-count-percent": "% de consultas",
-    "max-query-time": "Tiempo máximo de consulta",
-    "avg-query-time": "Tiempo promedio de consulta",
-    "query-time-percent": "% de tiempo de consulta",
-    "max-rows-examined": "Máximo de filas examinadas",
-    "avg-rows-examined": "Promedio de filas examinadas",
-    "max-rows-sent": "Máximo de filas enviadas",
-    "avg-rows-sent": "Promedio de filas enviadas",
-    "query-start-time": "Hora de inicio de la consulta",
-    "rows-examined": "Filas examinadas",
-    "rows-sent": "Filas enviadas",
-    "lock-time": "Tiempo de bloqueo",
-    "query-time": "Tiempo de consulta",
-    "attention-description": "Bytebase sincroniza periódicamente los registros de consultas lentas de las instancias. Para una instancia de MySQL, slow_query debe estar habilitado primero. Para una instancia de PostgreSQL, solo se recopilarán las consultas lentas si se habilita pg_stat_statements en la base de datos.",
-    "sync-job-started": "Se iniciaron trabajos de sincronización. Espere a que los trabajos se completen.",
-    "detail": "Detalles de la consulta lenta",
-    "advise-index": {
-      "current-index": "Índice actual",
-      "suggestion": "Sugerencia",
-      "create-index": "Crear índice",
-      "setup-openai-key-to-enable": "Configure la clave de OpenAI para habilitar el asesor de índices"
-    },
-    "no-log-placeholder": {
-      "admin": "Haga clic en el botón \"Configurar\" para obtener consultas lentas de las instancias de la base de datos o haga clic en el botón \"Sincronizar ahora\" para sincronizar los registros de consultas lentas de inmediato",
-      "developer": "Haga clic en el botón \"Sincronizar ahora\" para sincronizar los registros de consultas lentas inmediatamente o comuníquese con los administradors/DBA de Bytebase para configurar consultas lentas"
     }
   },
   "schema-template": {

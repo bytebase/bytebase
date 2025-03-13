@@ -23,6 +23,7 @@ import { useProjectIamPolicyStore } from "./projectIamPolicy";
 
 export const useProjectV1Store = defineStore("project_v1", () => {
   const projectMapByName = reactive(new Map<ResourceId, ComposedProject>());
+  const projectRequestCache = new Map<string, Promise<ComposedProject>>();
 
   const reset = () => {
     projectMapByName.clear();
@@ -68,20 +69,43 @@ export const useProjectV1Store = defineStore("project_v1", () => {
     return project as ComposedProject;
   };
 
+  const getListProjectFilter = (params: {
+    query?: string;
+    excludeDefault?: boolean;
+  }) => {
+    const list = [];
+    if (params.query) {
+      list.push(
+        `name.matches("${params.query}") || resource_id.matches("${params.query}")`
+      );
+    }
+    if (params.excludeDefault) {
+      list.push("exclude_default == true");
+    }
+    return list.join(" && ");
+  };
+
   const fetchProjectList = async (params: {
-    showDeleted: boolean;
-    pageSize: number;
+    showDeleted?: boolean;
+    pageSize?: number;
     pageToken?: string;
     query?: string;
+    silent?: boolean;
+    excludeDefault?: boolean;
   }): Promise<{
     projects: ComposedProject[];
     nextPageToken?: string;
   }> => {
-    const request =
-      hasWorkspacePermissionV2("bb.projects.list") && !params.query
-        ? projectServiceClient.listProjects
-        : projectServiceClient.searchProjects;
-    const response = await request(params);
+    const request = hasWorkspacePermissionV2("bb.projects.list")
+      ? projectServiceClient.listProjects
+      : projectServiceClient.searchProjects;
+    const response = await request(
+      {
+        ...params,
+        filter: getListProjectFilter(params),
+      },
+      { silent: params.silent ?? true }
+    );
     const composedProjects = await upsertProjectMap(response.projects);
 
     return {
@@ -90,26 +114,7 @@ export const useProjectV1Store = defineStore("project_v1", () => {
     };
   };
 
-  const searchProjects = async ({
-    query,
-    silent = true,
-    showDeleted = false,
-  }: {
-    query: string;
-    silent?: boolean;
-    showDeleted?: boolean;
-  }) => {
-    const { projects } = await projectServiceClient.searchProjects(
-      {
-        query,
-        showDeleted,
-      },
-      { silent }
-    );
-    return await upsertProjectMap(projects);
-  };
-
-  const getOrFetchProjectByName = async (name: string, silent = false) => {
+  const getOrFetchProjectByName = async (name: string, silent = true) => {
     const cachedData = getProjectByName(name);
     if (cachedData && cachedData.name !== UNKNOWN_PROJECT_NAME) {
       return cachedData;
@@ -117,7 +122,11 @@ export const useProjectV1Store = defineStore("project_v1", () => {
     if (!isValidProjectName(name)) {
       return unknownProject();
     }
-    return fetchProjectByName(name, silent);
+    const cached = projectRequestCache.get(name);
+    if (cached) return cached;
+    const request = fetchProjectByName(name, silent);
+    projectRequestCache.set(name, request);
+    return request;
   };
   const createProject = async (project: Project, resourceId: string) => {
     const created = await projectServiceClient.createProject({
@@ -162,11 +171,11 @@ export const useProjectV1Store = defineStore("project_v1", () => {
     archiveProject,
     restoreProject,
     updateProjectCache,
-    searchProjects,
     fetchProjectList,
   };
 });
 
+// TODO(ed): deprecate it.
 export const useProjectV1List = (showDeleted: boolean = false) => {
   const listCache = useListCache("project");
   const store = useProjectV1Store();

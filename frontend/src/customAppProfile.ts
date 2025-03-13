@@ -36,7 +36,7 @@ const overrideAppFeatures = (
 
   const modeInQuery = query.get("mode");
   if (modeInQuery === "STANDALONE") {
-    // The webapp is embedded within iframe
+    // The webapp is embedded within iframe.
     actuatorStore.appProfile.embedded = true;
 
     // mode=STANDALONE is not easy to read, but for legacy support we keep it as

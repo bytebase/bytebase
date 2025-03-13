@@ -79,7 +79,6 @@
     "updated-at": "更新于",
     "statement": "语句",
     "statement-size": "语句大小",
-    "sql-statement": "SQL @:{'common.statement'}",
     "snapshot": "快照",
     "status": "状态",
     "stage": "阶段",
@@ -153,7 +152,6 @@
     "view-doc": "查看文档",
     "write-only": "仅写入",
     "sync": "同步",
-    "sync-now": "现在同步",
     "success": "成功",
     "failed": "失败",
     "load-more": "加载更多",
@@ -201,7 +199,8 @@
     "view-details": "查看详情",
     "force-verb": "强制{verb}",
     "untitled": "未命名",
-    "missing-permission": "缺少必需的权限",
+    "missing-required-permission": "缺少必需的权限",
+    "resource-not-found": "未找到请求的资源",
     "continue-anyway": "仍要继续",
     "permissions": "权限",
     "baseline": "基线",
@@ -729,7 +728,6 @@
       "reopened-issue": "重开工单",
       "resolved-issue": "完成工单",
       "canceled-issue": "取消工单",
-      "empty": "",
       "changed": "修改",
       "canceled": "取消",
       "started": "开始",
@@ -825,6 +823,14 @@
         "label": {
           "title": "标签",
           "description": "按工单标签过滤"
+        },
+        "database-label": {
+          "title": "标签",
+          "description": "输入\"key\":\"value\"后按下回车"
+        },
+        "engine": {
+          "title": "引擎",
+          "description": "按引擎过滤"
         }
       },
       "hide": "隐藏高级搜索"
@@ -982,9 +988,6 @@
       "request-querier-role": "申请查询者角色",
       "request-exporter-role": "申请导出者角色"
     }
-  },
-  "alter-schema": {
-    "no-databases-in-project": "该项目里没有数据库。点击 创建数据库 或 转移数据库 以添加数据库。"
   },
   "quick-action": {
     "create-db": "创建数据库",
@@ -1357,6 +1360,7 @@
     "unassign-alert-description": "选定的数据库将从项目中移除",
     "edit-schema": "变更 Schema",
     "edit-labels": "编辑标签",
+    "edit-environment": "编辑环境",
     "mixed-values-for-label": "该标签拥有不同的值",
     "mixed-label-values-warning": "某些标签拥有不同的值，编辑标签将会批量应用",
     "change-data": "变更数据",
@@ -1422,7 +1426,6 @@
       "select": "选择表",
       "select-tip": "请选择一个表来开始查询。"
     },
-    "n-selected-m-in-total": "（已选择 {selected}，共计 {total}）",
     "all": "所有数据库",
     "show-schemaless-databases": "显示无模式的数据库。（变更 Schema 不适用于无 schema 的数据库. ）",
     "secret": {
@@ -1506,8 +1509,7 @@
       "success-prompt": "成功创建 {name}."
     },
     "overview": {
-      "info-slot-content": "Bytebase 会定时同步实例的 schema，新同步的数据库会首先被置于这里，之后您可以再将他们转移到适当的项目中。",
-      "no-db-prompt": "没有数据库属于当前项目。您可以通过点击位于上方菜单栏中的 {newDb} 或者 {transferInDb} 来添加数据库。"
+      "info-slot-content": "Bytebase 会定时同步实例的 schema，新同步的数据库会首先被置于这里，之后您可以再将他们转移到适当的项目中。"
     },
     "webhook": {
       "success-created-prompt": "成功创建 {name} webhook.",
@@ -1945,8 +1947,7 @@
       "key-duplicated": "Key 重复了",
       "max-value-length-exceeded": "值长的度不能超过 {length} 字符"
     },
-    "add-label": "添加标签",
-    "filter-by-label": "按标签过滤"
+    "add-label": "添加标签"
   },
   "oauth": {
     "unknown-event": "未知的事件类型，认证失败"
@@ -2332,39 +2333,6 @@
       "any-n-role-can-approve": "任意 {role} 可审批",
       "approved-by-n": "已由 {approver} 批准",
       "issue-creators-cannot-approve-their-own-issue": "工单创建者不能审批自己的工单"
-    }
-  },
-  "slow-query": {
-    "slow-queries": "慢查询",
-    "report": "报告",
-    "last-query-time": "最近执行时间",
-    "sql-statement": "SQL 语句",
-    "total-query-count": "总执行次数",
-    "query-count-percent": "执行次数比例",
-    "max-query-time": "最大执行时长",
-    "avg-query-time": "平均执行时长",
-    "query-time-percent": "执行时长比例",
-    "max-rows-examined": "最大扫描行数",
-    "avg-rows-examined": "平均扫描行数",
-    "max-rows-sent": "最大返回行数",
-    "avg-rows-sent": "平均返回行数",
-    "query-start-time": "执行开始时间",
-    "rows-examined": "解析行数",
-    "rows-sent": "返回行数",
-    "lock-time": "持有锁时长",
-    "query-time": "执行时长",
-    "attention-description": "Bytebase 定期从实例上同步慢查询日志。对 MySQL 实例，需要先开启 slow_query。对 PostgreSQL 实例，只有开启 pg_stat_statements 的数据库才会收集慢查询。",
-    "sync-job-started": "同步作业已启动。请等待同步完成。",
-    "detail": "慢查询详情",
-    "advise-index": {
-      "current-index": "当前索引",
-      "suggestion": "建议",
-      "create-index": "创建索引",
-      "setup-openai-key-to-enable": "设置 OpenAI API Key 以开启索引建议功能。"
-    },
-    "no-log-placeholder": {
-      "admin": "点击「配置」按钮从数据库实例上抓取慢查询日志或点击「立即同步」按钮立即同步慢查询日志",
-      "developer": "点击「立即同步」按钮立即同步慢查询日志或联系工作空间管理员或 DBA 配置慢查询功能"
     }
   },
   "schema-template": {

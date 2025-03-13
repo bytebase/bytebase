@@ -613,64 +613,6 @@
         
           
           <li>
-            <a href="#store%2fdeployment_config.proto">store/deployment_config.proto</a>
-            <ul>
-              
-                <li>
-                  <a href="#bytebase.store.DeploymentConfig"><span class="badge">M</span>DeploymentConfig</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.DeploymentSpec"><span class="badge">M</span>DeploymentSpec</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.LabelSelector"><span class="badge">M</span>LabelSelector</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.LabelSelectorRequirement"><span class="badge">M</span>LabelSelectorRequirement</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.Schedule"><span class="badge">M</span>Schedule</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.ScheduleDeployment"><span class="badge">M</span>ScheduleDeployment</a>
-                </li>
-              
-              
-                <li>
-                  <a href="#bytebase.store.LabelSelectorRequirement.OperatorType"><span class="badge">E</span>LabelSelectorRequirement.OperatorType</a>
-                </li>
-              
-              
-              
-            </ul>
-          </li>
-        
-          
-          <li>
-            <a href="#store%2fdeprecated.proto">store/deprecated.proto</a>
-            <ul>
-              
-                <li>
-                  <a href="#bytebase.store.DeprecatedMaskData"><span class="badge">M</span>DeprecatedMaskData</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.DeprecatedMaskingPolicy"><span class="badge">M</span>DeprecatedMaskingPolicy</a>
-                </li>
-              
-              
-              
-              
-            </ul>
-          </li>
-        
-          
-          <li>
             <a href="#store%2fexport_archive.proto">store/export_archive.proto</a>
             <ul>
               
@@ -979,15 +921,11 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.store.PlanConfig.DeploymentSnapshot"><span class="badge">M</span>PlanConfig.DeploymentSnapshot</a>
+                  <a href="#bytebase.store.PlanConfig.Deployment"><span class="badge">M</span>PlanConfig.Deployment</a>
                 </li>
               
                 <li>
-                  <a href="#bytebase.store.PlanConfig.DeploymentSnapshot.DatabaseGroupSnapshot"><span class="badge">M</span>PlanConfig.DeploymentSnapshot.DatabaseGroupSnapshot</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.PlanConfig.DeploymentSnapshot.DeploymentConfigSnapshot"><span class="badge">M</span>PlanConfig.DeploymentSnapshot.DeploymentConfigSnapshot</a>
+                  <a href="#bytebase.store.PlanConfig.Deployment.DatabaseGroupMapping"><span class="badge">M</span>PlanConfig.Deployment.DatabaseGroupMapping</a>
                 </li>
               
                 <li>
@@ -1079,10 +1017,6 @@
               
                 <li>
                   <a href="#bytebase.store.SQLReviewRule"><span class="badge">M</span>SQLReviewRule</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.SlowQueryPolicy"><span class="badge">M</span>SlowQueryPolicy</a>
                 </li>
               
                 <li>
@@ -1282,6 +1216,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.store.AppIMSetting.DingTalk"><span class="badge">M</span>AppIMSetting.DingTalk</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.store.AppIMSetting.Feishu"><span class="badge">M</span>AppIMSetting.Feishu</a>
                 </li>
               
@@ -1416,46 +1354,15 @@
         
           
           <li>
-            <a href="#store%2fslow_query.proto">store/slow_query.proto</a>
-            <ul>
-              
-                <li>
-                  <a href="#bytebase.store.SlowQueryDetails"><span class="badge">M</span>SlowQueryDetails</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.SlowQueryStatistics"><span class="badge">M</span>SlowQueryStatistics</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.SlowQueryStatisticsItem"><span class="badge">M</span>SlowQueryStatisticsItem</a>
-                </li>
-              
-              
-              
-              
-            </ul>
-          </li>
-        
-          
-          <li>
             <a href="#store%2ftask.proto">store/task.proto</a>
             <ul>
               
                 <li>
-                  <a href="#bytebase.store.TaskDatabaseCreatePayload"><span class="badge">M</span>TaskDatabaseCreatePayload</a>
+                  <a href="#bytebase.store.TaskPayload"><span class="badge">M</span>TaskPayload</a>
                 </li>
               
                 <li>
-                  <a href="#bytebase.store.TaskDatabaseDataExportPayload"><span class="badge">M</span>TaskDatabaseDataExportPayload</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.TaskDatabaseUpdatePayload"><span class="badge">M</span>TaskDatabaseUpdatePayload</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.TaskDatabaseUpdatePayload.FlagsEntry"><span class="badge">M</span>TaskDatabaseUpdatePayload.FlagsEntry</a>
+                  <a href="#bytebase.store.TaskPayload.FlagsEntry"><span class="badge">M</span>TaskPayload.FlagsEntry</a>
                 </li>
               
                 <li>
@@ -5849,324 +5756,6 @@ TRUNCATE. </p></td>
     
       
       <div class="file-heading">
-        <h2 id="store/deployment_config.proto">store/deployment_config.proto</h2><a href="#title">Top</a>
-      </div>
-      <p></p>
-
-      
-        <h3 id="bytebase.store.DeploymentConfig">DeploymentConfig</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>schedule</td>
-                  <td><a href="#bytebase.store.Schedule">Schedule</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.store.DeploymentSpec">DeploymentSpec</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>selector</td>
-                  <td><a href="#bytebase.store.LabelSelector">LabelSelector</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.store.LabelSelector">LabelSelector</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>match_expressions</td>
-                  <td><a href="#bytebase.store.LabelSelectorRequirement">LabelSelectorRequirement</a></td>
-                  <td>repeated</td>
-                  <td><p>match_expressions is a list of label selector requirements. The requirements are ANDed. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.store.LabelSelectorRequirement">LabelSelectorRequirement</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>key</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>operator</td>
-                  <td><a href="#bytebase.store.LabelSelectorRequirement.OperatorType">LabelSelectorRequirement.OperatorType</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>values</td>
-                  <td><a href="#string">string</a></td>
-                  <td>repeated</td>
-                  <td><p>Values is an array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. This array is replaced during a strategic merge patch. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.store.Schedule">Schedule</h3>
-        <p>Schedule is the message for deployment schedule.</p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>deployments</td>
-                  <td><a href="#bytebase.store.ScheduleDeployment">ScheduleDeployment</a></td>
-                  <td>repeated</td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.store.ScheduleDeployment">ScheduleDeployment</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>title</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The title of the deployment (stage) in a schedule. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>id</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>spec</td>
-                  <td><a href="#bytebase.store.DeploymentSpec">DeploymentSpec</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-
-      
-        <h3 id="bytebase.store.LabelSelectorRequirement.OperatorType">LabelSelectorRequirement.OperatorType</h3>
-        <p></p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>OPERATOR_TYPE_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p>The operator is not specified.</p></td>
-              </tr>
-            
-              <tr>
-                <td>IN</td>
-                <td>1</td>
-                <td><p>The operator is &#34;In&#34;.</p></td>
-              </tr>
-            
-              <tr>
-                <td>EXISTS</td>
-                <td>2</td>
-                <td><p>The operator is &#34;Exists&#34;.</p></td>
-              </tr>
-            
-              <tr>
-                <td>NOT_IN</td>
-                <td>3</td>
-                <td><p>The operator is &#34;Not In&#34;.</p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-      
-
-      
-
-      
-    
-      
-      <div class="file-heading">
-        <h2 id="store/deprecated.proto">store/deprecated.proto</h2><a href="#title">Top</a>
-      </div>
-      <p></p>
-
-      
-        <h3 id="bytebase.store.DeprecatedMaskData">DeprecatedMaskData</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>schema</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>table</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>column</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>masking_level</td>
-                  <td><a href="#bytebase.store.MaskingLevel">MaskingLevel</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>full_masking_algorithm_id</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>partial_masking_algorithm_id</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.store.DeprecatedMaskingPolicy">DeprecatedMaskingPolicy</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>mask_data</td>
-                  <td><a href="#bytebase.store.DeprecatedMaskData">DeprecatedMaskData</a></td>
-                  <td>repeated</td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-
-      
-
-      
-
-      
-    
-      
-      <div class="file-heading">
         <h2 id="store/export_archive.proto">store/export_archive.proto</h2><a href="#title">Top</a>
       </div>
       <p></p>
@@ -6783,6 +6372,13 @@ This is an optional style described in the OAuth2 RFC 6749 section 2.3.1.</p></t
                 </tr>
               
                 <tr>
+                  <td>password</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
                   <td>obfuscated_password</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
@@ -6797,6 +6393,13 @@ This is an optional style described in the OAuth2 RFC 6749 section 2.3.1.</p></t
                 </tr>
               
                 <tr>
+                  <td>ssl_ca</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
                   <td>obfuscated_ssl_ca</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
@@ -6804,7 +6407,21 @@ This is an optional style described in the OAuth2 RFC 6749 section 2.3.1.</p></t
                 </tr>
               
                 <tr>
+                  <td>ssl_cert</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
                   <td>obfuscated_ssl_cert</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>ssl_key</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
@@ -6897,25 +6514,46 @@ The hostname of the SSH server agent. </p></td>
                 </tr>
               
                 <tr>
-                  <td>ssh_obfuscated_password</td>
+                  <td>ssh_password</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The password to login the server. If it&#39;s empty string, no password is required. </p></td>
                 </tr>
               
                 <tr>
-                  <td>ssh_obfuscated_private_key</td>
+                  <td>obfuscated_ssh_password</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>ssh_private_key</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The private key to login the server. If it&#39;s empty string, we will use the system default private key from os.Getenv(&#34;SSH_AUTH_SOCK&#34;). </p></td>
                 </tr>
               
                 <tr>
-                  <td>authentication_private_key_obfuscated</td>
+                  <td>obfuscated_ssh_private_key</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>authentication_private_key</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>PKCS#8 private key in PEM format. If it&#39;s empty string, no private key is required.
 Used for authentication when connecting to the data source. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>obfuscated_authentication_private_key</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
                 </tr>
               
                 <tr>
@@ -6989,7 +6627,14 @@ Used for authentication when connecting to the data source. </p></td>
                 </tr>
               
                 <tr>
-                  <td>master_obfuscated_password</td>
+                  <td>master_password</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>obfuscated_master_password</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
@@ -7081,6 +6726,13 @@ For PostgreSQL HA, this can be used to set target_session_attrs=read-write </p><
               
                 <tr>
                   <td>client_secret</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>obfuscated_client_secret</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
@@ -8729,8 +8381,8 @@ Format: instances/{instance}/databases/{database} </p></td>
                 </tr>
               
                 <tr>
-                  <td>deployment_snapshot</td>
-                  <td><a href="#bytebase.store.PlanConfig.DeploymentSnapshot">PlanConfig.DeploymentSnapshot</a></td>
+                  <td>deployment</td>
+                  <td><a href="#bytebase.store.PlanConfig.Deployment">PlanConfig.Deployment</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
@@ -8920,7 +8572,7 @@ Format: environments/prod where prod is the environment resource ID. </p></td>
 
         
       
-        <h3 id="bytebase.store.PlanConfig.DeploymentSnapshot">PlanConfig.DeploymentSnapshot</h3>
+        <h3 id="bytebase.store.PlanConfig.Deployment">PlanConfig.Deployment</h3>
         <p></p>
 
         
@@ -8931,17 +8583,17 @@ Format: environments/prod where prod is the environment resource ID. </p></td>
             <tbody>
               
                 <tr>
-                  <td>deployment_config_snapshot</td>
-                  <td><a href="#bytebase.store.PlanConfig.DeploymentSnapshot.DeploymentConfigSnapshot">PlanConfig.DeploymentSnapshot.DeploymentConfigSnapshot</a></td>
-                  <td></td>
-                  <td><p> </p></td>
+                  <td>environments</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
+                  <td><p>The environments deploy order. </p></td>
                 </tr>
               
                 <tr>
-                  <td>database_group_snapshots</td>
-                  <td><a href="#bytebase.store.PlanConfig.DeploymentSnapshot.DatabaseGroupSnapshot">PlanConfig.DeploymentSnapshot.DatabaseGroupSnapshot</a></td>
+                  <td>database_group_mappings</td>
+                  <td><a href="#bytebase.store.PlanConfig.Deployment.DatabaseGroupMapping">PlanConfig.Deployment.DatabaseGroupMapping</a></td>
                   <td>repeated</td>
-                  <td><p> </p></td>
+                  <td><p>The database group mapping. </p></td>
                 </tr>
               
             </tbody>
@@ -8951,8 +8603,8 @@ Format: environments/prod where prod is the environment resource ID. </p></td>
 
         
       
-        <h3 id="bytebase.store.PlanConfig.DeploymentSnapshot.DatabaseGroupSnapshot">PlanConfig.DeploymentSnapshot.DatabaseGroupSnapshot</h3>
-        <p>The snapshot of the database group at the time of creation.</p>
+        <h3 id="bytebase.store.PlanConfig.Deployment.DatabaseGroupMapping">PlanConfig.Deployment.DatabaseGroupMapping</h3>
+        <p></p>
 
         
           <table class="field-table">
@@ -8973,44 +8625,6 @@ Format: environments/prod where prod is the environment resource ID. </p></td>
                   <td><a href="#string">string</a></td>
                   <td>repeated</td>
                   <td><p>Format: instances/{instance-id}/databases/{database-name}. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.store.PlanConfig.DeploymentSnapshot.DeploymentConfigSnapshot">PlanConfig.DeploymentSnapshot.DeploymentConfigSnapshot</h3>
-        <p>The snapshot of the project deployment config at the time of creation.</p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>title</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>deployment_config</td>
-                  <td><a href="#bytebase.store.DeploymentConfig">DeploymentConfig</a></td>
-                  <td></td>
-                  <td><p> </p></td>
                 </tr>
               
             </tbody>
@@ -9710,30 +9324,6 @@ roles/CREATOR </p></td>
                 <tr>
                   <td>comment</td>
                   <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.store.SlowQueryPolicy">SlowQueryPolicy</h3>
-        <p>SlowQueryPolicy is the policy configuration for slow query.</p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>active</td>
-                  <td><a href="#bool">bool</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
@@ -10815,6 +10405,58 @@ But frontend can be started with a single rule easily. </p></td>
                 <tr>
                   <td>lark</td>
                   <td><a href="#bytebase.store.AppIMSetting.Lark">AppIMSetting.Lark</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>dingtalk</td>
+                  <td><a href="#bytebase.store.AppIMSetting.DingTalk">AppIMSetting.DingTalk</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.AppIMSetting.DingTalk">AppIMSetting.DingTalk</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>enabled</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>client_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>client_secret</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>robot_code</td>
+                  <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
@@ -12035,197 +11677,13 @@ Default to this mode.</p></td>
     
       
       <div class="file-heading">
-        <h2 id="store/slow_query.proto">store/slow_query.proto</h2><a href="#title">Top</a>
-      </div>
-      <p></p>
-
-      
-        <h3 id="bytebase.store.SlowQueryDetails">SlowQueryDetails</h3>
-        <p>SlowQueryDetails is the details of a slow query.</p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>start_time</td>
-                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
-                  <td></td>
-                  <td><p>start_time is the start time of the slow query. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>query_time</td>
-                  <td><a href="#google.protobuf.Duration">google.protobuf.Duration</a></td>
-                  <td></td>
-                  <td><p>query_time is the query time of the slow query. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>lock_time</td>
-                  <td><a href="#google.protobuf.Duration">google.protobuf.Duration</a></td>
-                  <td></td>
-                  <td><p>lock_time is the lock time of the slow query. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>rows_sent</td>
-                  <td><a href="#int64">int64</a></td>
-                  <td></td>
-                  <td><p>rows_sent is the number of rows sent by the slow query. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>rows_examined</td>
-                  <td><a href="#int64">int64</a></td>
-                  <td></td>
-                  <td><p>rows_examined is the number of rows examined by the slow query. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>sql_text</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>sql_text is the SQL text of the slow query. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.store.SlowQueryStatistics">SlowQueryStatistics</h3>
-        <p>SlowQueryStatistics is the slow query statistics.</p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>items</td>
-                  <td><a href="#bytebase.store.SlowQueryStatisticsItem">SlowQueryStatisticsItem</a></td>
-                  <td>repeated</td>
-                  <td><p>Items is the list of slow query statistics. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.store.SlowQueryStatisticsItem">SlowQueryStatisticsItem</h3>
-        <p>SlowQueryStatisticsItem is the item of slow query statistics.</p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>sql_fingerprint</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>sql_fingerprint is the fingerprint of the slow query. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>count</td>
-                  <td><a href="#int64">int64</a></td>
-                  <td></td>
-                  <td><p>count is the number of slow queries with the same fingerprint. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>latest_log_time</td>
-                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
-                  <td></td>
-                  <td><p>latest_log_time is the time of the latest slow query with the same fingerprint. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>total_query_time</td>
-                  <td><a href="#google.protobuf.Duration">google.protobuf.Duration</a></td>
-                  <td></td>
-                  <td><p>The total query time of the slow query log. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>maximum_query_time</td>
-                  <td><a href="#google.protobuf.Duration">google.protobuf.Duration</a></td>
-                  <td></td>
-                  <td><p>The maximum query time of the slow query log. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>total_rows_sent</td>
-                  <td><a href="#int64">int64</a></td>
-                  <td></td>
-                  <td><p>The total rows sent of the slow query log. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>maximum_rows_sent</td>
-                  <td><a href="#int64">int64</a></td>
-                  <td></td>
-                  <td><p>The maximum rows sent of the slow query log. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>total_rows_examined</td>
-                  <td><a href="#int64">int64</a></td>
-                  <td></td>
-                  <td><p>The total rows examined of the slow query log. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>maximum_rows_examined</td>
-                  <td><a href="#int64">int64</a></td>
-                  <td></td>
-                  <td><p>The maximum rows examined of the slow query log. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>samples</td>
-                  <td><a href="#bytebase.store.SlowQueryDetails">SlowQueryDetails</a></td>
-                  <td>repeated</td>
-                  <td><p>samples are the details of the sample slow queries with the same fingerprint. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-
-      
-
-      
-
-      
-    
-      
-      <div class="file-heading">
         <h2 id="store/task.proto">store/task.proto</h2><a href="#title">Top</a>
       </div>
       <p></p>
 
       
-        <h3 id="bytebase.store.TaskDatabaseCreatePayload">TaskDatabaseCreatePayload</h3>
-        <p>TaskDatabaseCreatePayload is the task payload for creating databases.</p>
+        <h3 id="bytebase.store.TaskPayload">TaskPayload</h3>
+        <p></p>
 
         
           <table class="field-table">
@@ -12256,6 +11714,20 @@ Default to this mode.</p></td>
                 </tr>
               
                 <tr>
+                  <td>sheet_id</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>environment_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Create database fields. </p></td>
+                </tr>
+              
+                <tr>
                   <td>database_name</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
@@ -12265,13 +11737,6 @@ Default to this mode.</p></td>
                 <tr>
                   <td>table_name</td>
                   <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>sheet_id</td>
-                  <td><a href="#int32">int32</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
@@ -12291,46 +11756,29 @@ Default to this mode.</p></td>
                 </tr>
               
                 <tr>
-                  <td>environment_id</td>
+                  <td>schema_version</td>
                   <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Update database fields. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>pre_update_backup_detail</td>
+                  <td><a href="#bytebase.store.PreUpdateBackupDetail">PreUpdateBackupDetail</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
               
                 <tr>
-                  <td>labels</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.store.TaskDatabaseDataExportPayload">TaskDatabaseDataExportPayload</h3>
-        <p>TaskDatabaseDataExportPayload is the task payload for database data export.</p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>spec_id</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>common fields </p></td>
+                  <td>flags</td>
+                  <td><a href="#bytebase.store.TaskPayload.FlagsEntry">TaskPayload.FlagsEntry</a></td>
+                  <td>repeated</td>
+                  <td><p>ghost flags. </p></td>
                 </tr>
               
                 <tr>
-                  <td>sheet_id</td>
-                  <td><a href="#int32">int32</a></td>
+                  <td>task_release_source</td>
+                  <td><a href="#bytebase.store.TaskReleaseSource">TaskReleaseSource</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
@@ -12339,7 +11787,7 @@ Default to this mode.</p></td>
                   <td>password</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>Export data fields. </p></td>
                 </tr>
               
                 <tr>
@@ -12356,80 +11804,7 @@ Default to this mode.</p></td>
 
         
       
-        <h3 id="bytebase.store.TaskDatabaseUpdatePayload">TaskDatabaseUpdatePayload</h3>
-        <p>TaskDatabaseUpdatePayload is the task payload for updating database (DDL & DML).</p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>skipped</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>common fields </p></td>
-                </tr>
-              
-                <tr>
-                  <td>skipped_reason</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>spec_id</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>schema_version</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>sheet_id</td>
-                  <td><a href="#int32">int32</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>pre_update_backup_detail</td>
-                  <td><a href="#bytebase.store.PreUpdateBackupDetail">PreUpdateBackupDetail</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>flags</td>
-                  <td><a href="#bytebase.store.TaskDatabaseUpdatePayload.FlagsEntry">TaskDatabaseUpdatePayload.FlagsEntry</a></td>
-                  <td>repeated</td>
-                  <td><p>flags is used for ghost sync </p></td>
-                </tr>
-              
-                <tr>
-                  <td>task_release_source</td>
-                  <td><a href="#bytebase.store.TaskReleaseSource">TaskReleaseSource</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.store.TaskDatabaseUpdatePayload.FlagsEntry">TaskDatabaseUpdatePayload.FlagsEntry</h3>
+        <h3 id="bytebase.store.TaskPayload.FlagsEntry">TaskPayload.FlagsEntry</h3>
         <p></p>
 
         

@@ -15,11 +15,11 @@ export const PROJECT_V1_ROUTE_DATABASE_GROUPS_CREATE = `${PROJECT_V1_ROUTE_DASHB
 export const PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.database-group.detail`;
 export const PROJECT_V1_ROUTE_ISSUES = `${PROJECT_V1_ROUTE_DASHBOARD}.issue`;
 export const PROJECT_V1_ROUTE_ISSUE_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.issue.detail`;
+export const PROJECT_V1_ROUTE_PLANS = `${PROJECT_V1_ROUTE_DASHBOARD}.plan`;
 export const PROJECT_V1_ROUTE_PLAN_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.plan.detail`;
 export const PROJECT_V1_ROUTE_CHANGELISTS = `${PROJECT_V1_ROUTE_DASHBOARD}.changelist`;
 export const PROJECT_V1_ROUTE_CHANGELIST_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.changelist.detail`;
 export const PROJECT_V1_ROUTE_SYNC_SCHEMA = `${PROJECT_V1_ROUTE_DASHBOARD}.sync-schema`;
-export const PROJECT_V1_ROUTE_SLOW_QUERIES = `${PROJECT_V1_ROUTE_DASHBOARD}.slow-queries`;
 export const PROJECT_V1_ROUTE_ANOMALIES = `${PROJECT_V1_ROUTE_DASHBOARD}.anomalies`;
 export const PROJECT_V1_ROUTE_AUDIT_LOGS = `${PROJECT_V1_ROUTE_DASHBOARD}.audit-logs`;
 export const PROJECT_V1_ROUTE_WEBHOOKS = `${PROJECT_V1_ROUTE_DASHBOARD}.webhook`;
@@ -219,20 +219,6 @@ const projectV1Routes: RouteRecordRaw[] = [
         props: true,
       },
       {
-        path: "slow-queries",
-        name: PROJECT_V1_ROUTE_SLOW_QUERIES,
-        meta: {
-          overrideTitle: true,
-          requiredProjectPermissionList: () => [
-            "bb.projects.get",
-            "bb.slowQueries.list",
-          ],
-        },
-        component: () =>
-          import("@/views/project/ProjectSlowQueryDashboard.vue"),
-        props: true,
-      },
-      {
         path: "anomalies",
         name: PROJECT_V1_ROUTE_ANOMALIES,
         meta: {
@@ -408,6 +394,18 @@ const projectV1Routes: RouteRecordRaw[] = [
         },
         component: () => import("@/views/ReviewCenter/index.vue"),
         props: true,
+      },
+      {
+        path: "plans",
+        name: PROJECT_V1_ROUTE_PLANS,
+        redirect(to) {
+          return {
+            name: PROJECT_V1_ROUTE_REVIEW_CENTER,
+            params: {
+              projectId: to.params.projectId,
+            },
+          };
+        },
       },
       {
         path: "releases",

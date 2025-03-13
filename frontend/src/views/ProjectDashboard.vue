@@ -5,7 +5,6 @@
         v-model:value="state.searchText"
         style="max-width: 100%"
         :placeholder="$t('common.filter-by-name')"
-        :autofocus="true"
       />
       <NButton
         v-if="hasWorkspacePermissionV2('bb.projects.create')"
@@ -18,20 +17,13 @@
         {{ $t("quick-action.new-project") }}
       </NButton>
     </div>
-    <PagedTable
-      ref="projectPagedTable"
+    <PagedProjectTable
       session-key="bb.project-table"
-      :fetch-list="fetchProjects"
+      :search="state.searchText"
       :footer-class="'mx-4'"
-    >
-      <template #table="{ list, loading }">
-        <ProjectV1Table
-          :bordered="false"
-          :loading="loading"
-          :project-list="list"
-        />
-      </template>
-    </PagedTable>
+      :bordered="false"
+      :include-default="false"
+    />
   </div>
   <Drawer
     :auto-focus="true"
@@ -44,17 +36,13 @@
 </template>
 
 <script lang="ts" setup>
-import { useDebounceFn } from "@vueuse/core";
 import { PlusIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
-import { onMounted, reactive, ref, watch } from "vue";
-import type { ComponentExposed } from "vue-component-type-helpers";
+import { onMounted, reactive } from "vue";
 import ProjectCreatePanel from "@/components/Project/ProjectCreatePanel.vue";
-import { SearchBox, ProjectV1Table } from "@/components/v2";
+import { SearchBox, PagedProjectTable } from "@/components/v2";
 import { Drawer } from "@/components/v2";
-import PagedTable from "@/components/v2/Model/PagedTable.vue";
-import { useUIStateStore, useProjectV1Store } from "@/store";
-import { DEFAULT_PROJECT_NAME, type ComposedProject } from "@/types";
+import { useUIStateStore } from "@/store";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
 interface LocalState {
@@ -66,9 +54,6 @@ const state = reactive<LocalState>({
   searchText: "",
   showCreateDrawer: false,
 });
-const projectStore = useProjectV1Store();
-const projectPagedTable =
-  ref<ComponentExposed<typeof PagedTable<ComposedProject>>>();
 
 onMounted(() => {
   const uiStateStore = useUIStateStore();
@@ -79,30 +64,4 @@ onMounted(() => {
     });
   }
 });
-
-const fetchProjects = async ({
-  pageToken,
-  pageSize,
-}: {
-  pageToken: string;
-  pageSize: number;
-}) => {
-  const { nextPageToken, projects } = await projectStore.fetchProjectList({
-    showDeleted: false,
-    pageToken,
-    pageSize,
-    query: state.searchText,
-  });
-  return {
-    nextPageToken: nextPageToken ?? "",
-    list: projects.filter((project) => project.name !== DEFAULT_PROJECT_NAME),
-  };
-};
-
-watch(
-  () => state.searchText,
-  useDebounceFn(async () => {
-    await projectPagedTable.value?.refresh();
-  }, 500)
-);
 </script>

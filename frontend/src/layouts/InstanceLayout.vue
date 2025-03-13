@@ -12,7 +12,7 @@
           </div>
           <router-view v-else :instance-id="instanceId" />
         </template>
-        <NoPermissionPlaceholder v-else class="mx-4" />
+        <NoPermissionPlaceholder v-else class="py-6" />
       </ProvideInstanceContext>
     </template>
     <template #fallback>

@@ -159,8 +159,6 @@ import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
 import type { SearchParams, SearchScopeId, SemanticIssueStatus } from "@/utils";
 import {
   buildIssueFilterBySearchParams,
-  buildSearchParamsBySearchText,
-  buildSearchTextBySearchParams,
   buildUIIssueFilterBySearchParams,
   getSemanticIssueStatusFromSearchParams,
   getValueFromSearchParams,
@@ -285,48 +283,60 @@ const mergeSearchParamsByTab = (params: SearchParams, tab: TabValue) => {
 
   const myEmail = me.value.email;
   if (tab === "CREATED") {
-    return upsertScope(common, {
-      id: "creator",
-      value: myEmail,
+    return upsertScope({
+      params: common,
+      scopes: {
+        id: "creator",
+        value: myEmail,
+      },
     });
   }
   if (tab === "SUBSCRIBED") {
-    return upsertScope(common, {
-      id: "subscriber",
-      value: myEmail,
+    return upsertScope({
+      params: common,
+      scopes: {
+        id: "subscriber",
+        value: myEmail,
+      },
     });
   }
   if (tab === "WAITING_APPROVAL") {
-    return upsertScope(common, [
-      {
-        id: "status",
-        value: "OPEN",
-      },
-      {
-        id: "approval",
-        value: "pending",
-      },
-      {
-        id: "approver",
-        value: myEmail,
-      },
-    ]);
+    return upsertScope({
+      params: common,
+      scopes: [
+        {
+          id: "status",
+          value: "OPEN",
+        },
+        {
+          id: "approval",
+          value: "pending",
+        },
+        {
+          id: "approver",
+          value: myEmail,
+        },
+      ],
+    });
   }
   if (tab === "WAITING_ROLLOUT") {
-    return upsertScope(common, [
-      {
-        id: "status",
-        value: "OPEN",
-      },
-      {
-        id: "approval",
-        value: "approved",
-      },
-      {
-        id: "releaser",
-        value: myEmail,
-      },
-    ]);
+    return upsertScope({
+      params: common,
+      scopes: [
+        {
+          id: "status",
+          value: "OPEN",
+        },
+        {
+          id: "approval",
+          value: "approved",
+        },
+        {
+          id: "releaser",
+          value: myEmail,
+        },
+      ],
+    });
   }
   console.error("[mergeSearchParamsByTab] should never reach this line", tab);
   return common;
@@ -376,13 +386,6 @@ const guessTabValueFromSearchParams = (params: SearchParams): TabValue => {
   return "";
 };
 const initializeSearchParamsFromQueryOrLocalStorage = () => {
-  const { qs } = route.query;
-  if (typeof qs === "string" && qs.length > 0) {
-    return {
-      params: buildSearchParamsBySearchText(qs),
-      advanced: true,
-    };
-  }
   return {
     params: mergeSearchParamsByTab(defaultSearchParams(), storedTab.value),
     advanced: false,
@@ -479,14 +482,14 @@ watch(
   () => {
     if (tab.value === "WAITING_APPROVAL" || tab.value === "WAITING_ROLLOUT") {
       if (getValueFromSearchParams(state.params, "status") === "CLOSED") {
-        upsertScope(
-          state.params,
-          {
+        upsertScope({
+          params: state.params,
+          scopes: {
             id: "status",
             value: "OPEN",
           },
-          true /* mutate */
-        );
+          mutate: true,
+        });
       }
     }
   },
@@ -494,26 +497,18 @@ watch(
 );
 
 watch(
-  [() => state.params, tab],
+  () => tab.value,
   () => {
-    if (state.params.query || tab.value === "") {
+    if (tab.value !== "") {
       // using custom advanced search query, sync the search query string
       // to URL
-      router.replace({
-        query: {
-          ...route.query,
-          qs: buildSearchTextBySearchParams(state.params),
-        },
-      });
-    } else {
       const query = cloneDeep(route.query);
       delete query["qs"];
       router.replace({
         query,
       });
     }
-  },
-  { deep: true }
+  }
 );
 
 watch(

@@ -24,14 +24,10 @@
 <script lang="tsx" setup>
 import { useDebounceFn } from "@vueuse/core";
 import { intersection } from "lodash-es";
-import { computed, watchEffect, watch, reactive } from "vue";
+import { computed, watchEffect, reactive, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { ProjectNameCell } from "@/components/v2/Model/DatabaseV1Table/cells";
-import {
-  useProjectV1List,
-  useProjectV1Store,
-  usePermissionStore,
-} from "@/store";
+import { useProjectV1Store, usePermissionStore } from "@/store";
 import type { ComposedProject } from "@/types";
 import {
   unknownProject,
@@ -41,7 +37,11 @@ import {
 } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import type { Project } from "@/types/proto/v1/project_service";
-import { extractProjectResourceName, hasWorkspacePermissionV2 } from "@/utils";
+import {
+  extractProjectResourceName,
+  hasWorkspacePermissionV2,
+  getDefaultPagination,
+} from "@/utils";
 import ResourceSelect from "./ResourceSelect.vue";
 
 const props = withDefaults(
@@ -90,56 +90,45 @@ const state = reactive<LocalState>({
   loading: true,
   rawProjectList: [],
 });
-const { projectList, ready } = useProjectV1List(true /* showDeleted */);
 
-watch(
-  () => ready.value,
-  () => {
-    state.loading = !ready.value;
-    if (!ready.value) {
-      return;
-    }
-    state.rawProjectList = [...projectList.value];
+const initProjectList = () => {
+  if (
+    props.projectName &&
+    props.projectName !== DEFAULT_PROJECT_NAME &&
+    props.projectName !== UNKNOWN_PROJECT_NAME &&
+    isOrphanValue.value
+  ) {
+    // It may happen the selected id might not be in the project list.
+    // e.g. the selected project is deleted after the selection and we
+    // are unable to cleanup properly. In such case, the selected project id
+    // is orphaned and we just display the id
+    const dummyProject = {
+      ...unknownProject(),
+      name: props.projectName,
+      title: extractProjectResourceName(props.projectName),
+    };
+    state.rawProjectList.unshift(dummyProject);
+  }
 
+  if (
+    props.projectName === DEFAULT_PROJECT_NAME ||
+    props.includeDefaultProject
+  ) {
     if (
-      props.projectName &&
-      props.projectName !== DEFAULT_PROJECT_NAME &&
-      props.projectName !== UNKNOWN_PROJECT_NAME &&
-      isOrphanValue.value
+      !state.rawProjectList.find((proj) => proj.name === DEFAULT_PROJECT_NAME)
     ) {
-      // It may happen the selected id might not be in the project list.
-      // e.g. the selected project is deleted after the selection and we
-      // are unable to cleanup properly. In such case, the selected project id
-      // is orphaned and we just display the id
-      const dummyProject = {
-        ...unknownProject(),
-        name: props.projectName,
-        title: extractProjectResourceName(props.projectName),
-      };
-      state.rawProjectList.unshift(dummyProject);
+      state.rawProjectList.unshift({ ...defaultProject() });
     }
+  }
 
-    if (
-      props.projectName === DEFAULT_PROJECT_NAME ||
-      props.includeDefaultProject
-    ) {
-      if (
-        !state.rawProjectList.find((proj) => proj.name === DEFAULT_PROJECT_NAME)
-      ) {
-        state.rawProjectList.unshift({ ...defaultProject() });
-      }
-    }
-
-    if (props.projectName === UNKNOWN_PROJECT_NAME || props.includeAll) {
-      const dummyAll = {
-        ...unknownProject(),
-        title: t("project.all"),
-      };
-      state.rawProjectList.unshift(dummyAll);
-    }
-  },
-  { immediate: true }
-);
+  if (props.projectName === UNKNOWN_PROJECT_NAME || props.includeAll) {
+    const dummyAll = {
+      ...unknownProject(),
+      title: t("project.all"),
+    };
+    state.rawProjectList.unshift(dummyAll);
+  }
+};
 
 const hasWorkspaceManageProjectPermission = computed(() =>
   hasWorkspacePermissionV2("bb.projects.list")
@@ -181,22 +170,25 @@ const combinedProjectList = computed(() => {
 });
 
 const handleSearch = useDebounceFn(async (search: string) => {
-  if (!search) {
-    state.rawProjectList = projectList.value;
-    return;
-  }
-
   state.loading = true;
   try {
-    const projects = await projectStore.searchProjects({
+    const { projects } = await projectStore.fetchProjectList({
       query: search,
+      pageSize: getDefaultPagination(),
       showDeleted: props.includeArchived,
     });
     state.rawProjectList = projects;
+    if (!search) {
+      initProjectList();
+    }
   } finally {
     state.loading = false;
   }
 }, 500);
+
+onMounted(async () => {
+  await handleSearch("");
+});
 
 const options = computed(
   (): {

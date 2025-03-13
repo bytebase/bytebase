@@ -66,34 +66,32 @@ func newDriver(db.DriverConfig) db.Driver {
 
 // Open opens a Postgres driver.
 func (driver *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
-	// Require username for Postgres, as the guessDSN 1st guess is to use the username as the connecting database
-	// if database name is not explicitly specified.
-	if config.Username == "" {
+	if config.DataSource.Username == "" {
 		return nil, errors.Errorf("user must be set")
 	}
 
-	if (config.TLSConfig.SslCert == "" && config.TLSConfig.SslKey != "") ||
-		(config.TLSConfig.SslCert != "" && config.TLSConfig.SslKey == "") {
+	if (config.DataSource.GetSslCert() == "" && config.DataSource.GetSslKey() != "") ||
+		(config.DataSource.GetSslCert() != "" && config.DataSource.GetSslKey() == "") {
 		return nil, errors.Errorf("ssl-cert and ssl-key must be both set or unset")
 	}
 
-	pgxConnConfig, err := pgx.ParseConfig(fmt.Sprintf("host=%s port=%s", config.Host, config.Port))
+	pgxConnConfig, err := pgx.ParseConfig(fmt.Sprintf("host=%s port=%s", config.DataSource.Host, config.DataSource.Port))
 	if err != nil {
 		return nil, err
 	}
-	pgxConnConfig.Config.User = config.Username
+	pgxConnConfig.Config.User = config.DataSource.Username
 	pgxConnConfig.Config.Password = config.Password
-	pgxConnConfig.Config.Database = config.Database
+	pgxConnConfig.Config.Database = config.ConnectionContext.DatabaseName
 
-	if config.TLSConfig.SslCert != "" {
-		cfg, err := config.TLSConfig.GetSslConfig()
+	if config.DataSource.GetSslCert() != "" {
+		tlscfg, err := util.GetTLSConfig(config.DataSource)
 		if err != nil {
 			return nil, err
 		}
-		pgxConnConfig.TLSConfig = cfg
+		pgxConnConfig.TLSConfig = tlscfg
 	}
-	if config.SSHConfig.Host != "" {
-		sshClient, err := util.GetSSHClient(config.SSHConfig)
+	if config.DataSource.GetSshHost() != "" {
+		sshClient, err := util.GetSSHClient(config.DataSource)
 		if err != nil {
 			return nil, err
 		}
@@ -104,15 +102,15 @@ func (driver *Driver) Open(_ context.Context, _ storepb.Engine, config db.Connec
 			if err != nil {
 				return nil, err
 			}
-			return &noDeadlineConn{Conn: conn}, nil
+			return &util.NoDeadlineConn{Conn: conn}, nil
 		}
 	}
-	driver.databaseName = config.Database
-	driver.datashare = config.DataShare
+	driver.databaseName = config.ConnectionContext.DatabaseName
+	driver.datashare = config.ConnectionContext.DataShare
 	driver.config = config
 
 	// Datashare doesn't support read-only transactions.
-	if config.ReadOnly && !driver.datashare {
+	if config.ConnectionContext.ReadOnly && !driver.datashare {
 		pgxConnConfig.RuntimeParams["default_transaction_read_only"] = "true"
 	}
 
@@ -124,12 +122,6 @@ func (driver *Driver) Open(_ context.Context, _ storepb.Engine, config db.Connec
 	driver.db = db
 	return driver, nil
 }
-
-type noDeadlineConn struct{ net.Conn }
-
-func (*noDeadlineConn) SetDeadline(time.Time) error      { return nil }
-func (*noDeadlineConn) SetReadDeadline(time.Time) error  { return nil }
-func (*noDeadlineConn) SetWriteDeadline(time.Time) error { return nil }
 
 // Close closes the database and prevents new queries from starting.
 // Close then waits for all queries that have started processing on the server to finish.

@@ -37,13 +37,13 @@ func convertToPlan(ctx context.Context, s *store.Store, plan *store.PlanMessage)
 		Title:       plan.Name,
 		Description: plan.Description,
 		Steps:       convertToPlanSteps(plan.Config.Steps),
+		Deployment:  convertToPlanDeployment(plan.Config.Deployment),
 		ReleaseSource: &v1pb.Plan_ReleaseSource{
 			Release: plan.Config.GetReleaseSource().GetRelease(),
 		},
-		CreateTime:               timestamppb.New(plan.CreatedAt),
-		UpdateTime:               timestamppb.New(plan.UpdatedAt),
-		PlanCheckRunStatusCount:  plan.PlanCheckRunStatusCount,
-		DeploymentConfigSnapshot: convertToDeploymentConfigSnapshot(plan.Config.GetDeploymentSnapshot().GetDeploymentConfigSnapshot()),
+		CreateTime:              timestamppb.New(plan.CreatedAt),
+		UpdateTime:              timestamppb.New(plan.UpdatedAt),
+		PlanCheckRunStatusCount: plan.PlanCheckRunStatusCount,
 	}
 
 	creator, err := s.GetUserByID(ctx, plan.CreatorUID)
@@ -169,14 +169,42 @@ func convertToPlanSpecExportDataConfig(config *storepb.PlanConfig_Spec_ExportDat
 	}
 }
 
+func convertToPlanDeployment(deployment *storepb.PlanConfig_Deployment) *v1pb.Plan_Deployment {
+	if deployment == nil {
+		return nil
+	}
+	return &v1pb.Plan_Deployment{
+		Environments:          deployment.Environments,
+		DatabaseGroupMappings: convertToDatabaseGroupMappings(deployment.DatabaseGroupMappings),
+	}
+}
+
+func convertToDatabaseGroupMappings(mappings []*storepb.PlanConfig_Deployment_DatabaseGroupMapping) []*v1pb.Plan_Deployment_DatabaseGroupMapping {
+	v1Mappings := make([]*v1pb.Plan_Deployment_DatabaseGroupMapping, len(mappings))
+	for i := range mappings {
+		v1Mappings[i] = convertToDatabaseGroupMapping(mappings[i])
+	}
+	return v1Mappings
+}
+
+func convertToDatabaseGroupMapping(mapping *storepb.PlanConfig_Deployment_DatabaseGroupMapping) *v1pb.Plan_Deployment_DatabaseGroupMapping {
+	if mapping == nil {
+		return nil
+	}
+	return &v1pb.Plan_Deployment_DatabaseGroupMapping{
+		DatabaseGroup: mapping.DatabaseGroup,
+		Databases:     mapping.Databases,
+	}
+}
+
 func convertPlan(plan *v1pb.Plan) *storepb.PlanConfig {
 	if plan == nil {
 		return nil
 	}
 	return &storepb.PlanConfig{
-		Steps:              convertPlanSteps(plan.Steps),
-		ReleaseSource:      convertPlanReleaseSource(plan.ReleaseSource),
-		DeploymentSnapshot: nil,
+		Steps:         convertPlanSteps(plan.Steps),
+		ReleaseSource: convertPlanReleaseSource(plan.ReleaseSource),
+		Deployment:    nil,
 	}
 }
 
@@ -189,16 +217,34 @@ func convertPlanReleaseSource(s *v1pb.Plan_ReleaseSource) *storepb.PlanConfig_Re
 	}
 }
 
-func convertToDeploymentConfigSnapshot(s *storepb.PlanConfig_DeploymentSnapshot_DeploymentConfigSnapshot) *v1pb.DeploymentConfig {
+func convertPlanDeployment(s *v1pb.Plan_Deployment) *storepb.PlanConfig_Deployment {
 	if s == nil {
 		return nil
 	}
-	return &v1pb.DeploymentConfig{
-		Name:     s.Name,
-		Title:    s.Title,
-		Schedule: convertToSchedule(s.DeploymentConfig.GetSchedule()),
+	return &storepb.PlanConfig_Deployment{
+		Environments:          s.Environments,
+		DatabaseGroupMappings: convertDatabaseGroupMappings(s.DatabaseGroupMappings),
 	}
 }
+
+func convertDatabaseGroupMappings(s []*v1pb.Plan_Deployment_DatabaseGroupMapping) []*storepb.PlanConfig_Deployment_DatabaseGroupMapping {
+	storeMappings := make([]*storepb.PlanConfig_Deployment_DatabaseGroupMapping, len(s))
+	for i := range s {
+		storeMappings[i] = convertDatabaseGroupMapping(s[i])
+	}
+	return storeMappings
+}
+
+func convertDatabaseGroupMapping(s *v1pb.Plan_Deployment_DatabaseGroupMapping) *storepb.PlanConfig_Deployment_DatabaseGroupMapping {
+	if s == nil {
+		return nil
+	}
+	return &storepb.PlanConfig_Deployment_DatabaseGroupMapping{
+		DatabaseGroup: s.DatabaseGroup,
+		Databases:     s.Databases,
+	}
+}
+
 func convertPlanSteps(steps []*v1pb.Plan_Step) []*storepb.PlanConfig_Step {
 	storeSteps := make([]*storepb.PlanConfig_Step, len(steps))
 	for i := range steps {
@@ -432,7 +478,6 @@ func convertToTaskRun(ctx context.Context, s *store.Store, stateCfg *state.State
 		Creator:       common.FormatUserEmail(taskRun.Creator.Email),
 		CreateTime:    timestamppb.New(taskRun.CreatedAt),
 		UpdateTime:    timestamppb.New(taskRun.UpdatedAt),
-		Title:         taskRun.Name,
 		Status:        convertToTaskRunStatus(taskRun.Status),
 		Detail:        taskRun.ResultProto.Detail,
 		Changelog:     taskRun.ResultProto.Changelog,
@@ -625,9 +670,8 @@ func convertToRollout(ctx context.Context, s *store.Store, project *store.Projec
 	taskIDToName := map[int]string{}
 	for _, stage := range rollout.Stages {
 		rolloutStage := &v1pb.Stage{
-			Name:  common.FormatStage(project.ResourceID, rollout.ID, stage.ID),
-			Id:    stage.DeploymentID,
-			Title: stage.Name,
+			Name:        common.FormatStage(project.ResourceID, rollout.ID, stage.ID),
+			Environment: common.FormatEnvironment(stage.Environment),
 		}
 		for _, task := range stage.TaskList {
 			rolloutTask, err := convertToTask(ctx, s, project, task)
@@ -650,24 +694,18 @@ func convertToTask(ctx context.Context, s *store.Store, project *store.ProjectMe
 		return convertToTaskFromDatabaseCreate(ctx, s, project, task)
 	case api.TaskDatabaseSchemaBaseline:
 		return convertToTaskFromSchemaBaseline(ctx, s, project, task)
-	case api.TaskDatabaseSchemaUpdate, api.TaskDatabaseSchemaUpdateSDL, api.TaskDatabaseSchemaUpdateGhost:
+	case api.TaskDatabaseSchemaUpdate, api.TaskDatabaseSchemaUpdateGhost:
 		return convertToTaskFromSchemaUpdate(ctx, s, project, task)
 	case api.TaskDatabaseDataUpdate:
 		return convertToTaskFromDataUpdate(ctx, s, project, task)
 	case api.TaskDatabaseDataExport:
 		return convertToTaskFromDatabaseDataExport(ctx, s, project, task)
-	case api.TaskGeneral:
-		fallthrough
 	default:
 		return nil, errors.Errorf("task type %v is not supported", task.Type)
 	}
 }
 
 func convertToTaskFromDatabaseCreate(ctx context.Context, s *store.Store, project *store.ProjectMessage, task *store.TaskMessage) (*v1pb.Task, error) {
-	payload := &storepb.TaskDatabaseCreatePayload{}
-	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(task.Payload), payload); err != nil {
-		return nil, errors.Wrapf(err, "failed to unmarshal task payload")
-	}
 	instance, err := s.GetInstanceV2(ctx, &store.FindInstanceMessage{
 		ResourceID: &task.InstanceID,
 	})
@@ -676,21 +714,20 @@ func convertToTaskFromDatabaseCreate(ctx context.Context, s *store.Store, projec
 	}
 	v1pbTask := &v1pb.Task{
 		Name:          common.FormatTask(project.ResourceID, task.PipelineID, task.StageID, task.ID),
-		Title:         task.Name,
-		SpecId:        payload.SpecId,
+		SpecId:        task.Payload.GetSpecId(),
 		Type:          convertToTaskType(task.Type),
-		Status:        convertToTaskStatus(task.LatestTaskRunStatus, payload.Skipped),
-		SkippedReason: payload.SkippedReason,
+		Status:        convertToTaskStatus(task.LatestTaskRunStatus, task.Payload.GetSkipped()),
+		SkippedReason: task.Payload.GetSkippedReason(),
 		Target:        common.FormatInstance(instance.ResourceID),
 		Payload: &v1pb.Task_DatabaseCreate_{
 			DatabaseCreate: &v1pb.Task_DatabaseCreate{
 				Project:      "",
-				Database:     payload.DatabaseName,
-				Table:        payload.TableName,
-				Sheet:        common.FormatSheet(project.ResourceID, int(payload.SheetId)),
-				CharacterSet: payload.CharacterSet,
-				Collation:    payload.Collation,
-				Environment:  common.FormatEnvironment(payload.EnvironmentId),
+				Database:     task.Payload.GetDatabaseName(),
+				Table:        task.Payload.GetTableName(),
+				Sheet:        common.FormatSheet(project.ResourceID, int(task.Payload.GetSheetId())),
+				CharacterSet: task.Payload.GetCharacterSet(),
+				Collation:    task.Payload.GetCollation(),
+				Environment:  common.FormatEnvironment(task.Payload.GetEnvironmentId()),
 			},
 		},
 	}
@@ -702,10 +739,6 @@ func convertToTaskFromSchemaBaseline(ctx context.Context, s *store.Store, projec
 	if task.DatabaseName == nil {
 		return nil, errors.Errorf("baseline task database is nil")
 	}
-	payload := &storepb.TaskDatabaseUpdatePayload{}
-	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(task.Payload), payload); err != nil {
-		return nil, errors.Wrapf(err, "failed to unmarshal task payload")
-	}
 	database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &task.InstanceID, DatabaseName: task.DatabaseName, ShowDeleted: true})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get database")
@@ -715,15 +748,14 @@ func convertToTaskFromSchemaBaseline(ctx context.Context, s *store.Store, projec
 	}
 	v1pbTask := &v1pb.Task{
 		Name:          common.FormatTask(project.ResourceID, task.PipelineID, task.StageID, task.ID),
-		Title:         task.Name,
-		SpecId:        payload.SpecId,
+		SpecId:        task.Payload.GetSpecId(),
 		Type:          convertToTaskType(task.Type),
-		Status:        convertToTaskStatus(task.LatestTaskRunStatus, payload.Skipped),
-		SkippedReason: payload.SkippedReason,
+		Status:        convertToTaskStatus(task.LatestTaskRunStatus, task.Payload.GetSkipped()),
+		SkippedReason: task.Payload.GetSkippedReason(),
 		Target:        fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName),
 		Payload: &v1pb.Task_DatabaseSchemaBaseline_{
 			DatabaseSchemaBaseline: &v1pb.Task_DatabaseSchemaBaseline{
-				SchemaVersion: payload.SchemaVersion,
+				SchemaVersion: task.Payload.GetSchemaVersion(),
 			},
 		},
 	}
@@ -734,10 +766,6 @@ func convertToTaskFromSchemaUpdate(ctx context.Context, s *store.Store, project 
 	if task.DatabaseName == nil {
 		return nil, errors.Errorf("schema update task database is nil")
 	}
-	payload := &storepb.TaskDatabaseUpdatePayload{}
-	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(task.Payload), payload); err != nil {
-		return nil, errors.Wrapf(err, "failed to unmarshal task payload")
-	}
 	database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &task.InstanceID, DatabaseName: task.DatabaseName, ShowDeleted: true})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get database")
@@ -748,16 +776,15 @@ func convertToTaskFromSchemaUpdate(ctx context.Context, s *store.Store, project 
 
 	v1pbTask := &v1pb.Task{
 		Name:          common.FormatTask(project.ResourceID, task.PipelineID, task.StageID, task.ID),
-		Title:         task.Name,
-		SpecId:        payload.SpecId,
+		SpecId:        task.Payload.GetSpecId(),
 		Type:          convertToTaskType(task.Type),
-		Status:        convertToTaskStatus(task.LatestTaskRunStatus, payload.Skipped),
-		SkippedReason: payload.SkippedReason,
+		Status:        convertToTaskStatus(task.LatestTaskRunStatus, task.Payload.GetSkipped()),
+		SkippedReason: task.Payload.GetSkippedReason(),
 		Target:        fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName),
 		Payload: &v1pb.Task_DatabaseSchemaUpdate_{
 			DatabaseSchemaUpdate: &v1pb.Task_DatabaseSchemaUpdate{
-				Sheet:         common.FormatSheet(project.ResourceID, int(payload.SheetId)),
-				SchemaVersion: payload.SchemaVersion,
+				Sheet:         common.FormatSheet(project.ResourceID, int(task.Payload.GetSheetId())),
+				SchemaVersion: task.Payload.GetSchemaVersion(),
 			},
 		},
 	}
@@ -768,10 +795,6 @@ func convertToTaskFromDataUpdate(ctx context.Context, s *store.Store, project *s
 	if task.DatabaseName == nil {
 		return nil, errors.Errorf("data update task database is nil")
 	}
-	payload := &storepb.TaskDatabaseUpdatePayload{}
-	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(task.Payload), payload); err != nil {
-		return nil, errors.Wrapf(err, "failed to unmarshal task payload")
-	}
 	database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &task.InstanceID, DatabaseName: task.DatabaseName, ShowDeleted: true})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get database")
@@ -782,18 +805,17 @@ func convertToTaskFromDataUpdate(ctx context.Context, s *store.Store, project *s
 
 	v1pbTask := &v1pb.Task{
 		Name:          common.FormatTask(project.ResourceID, task.PipelineID, task.StageID, task.ID),
-		Title:         task.Name,
-		SpecId:        payload.SpecId,
+		SpecId:        task.Payload.GetSpecId(),
 		Type:          convertToTaskType(task.Type),
-		Status:        convertToTaskStatus(task.LatestTaskRunStatus, payload.Skipped),
-		SkippedReason: payload.SkippedReason,
+		Status:        convertToTaskStatus(task.LatestTaskRunStatus, task.Payload.GetSkipped()),
+		SkippedReason: task.Payload.GetSkippedReason(),
 		Target:        fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName),
 		Payload:       nil,
 	}
 	v1pbTaskPayload := &v1pb.Task_DatabaseDataUpdate_{
 		DatabaseDataUpdate: &v1pb.Task_DatabaseDataUpdate{
-			Sheet:         common.FormatSheet(project.ResourceID, int(payload.SheetId)),
-			SchemaVersion: payload.SchemaVersion,
+			Sheet:         common.FormatSheet(project.ResourceID, int(task.Payload.GetSheetId())),
+			SchemaVersion: task.Payload.GetSchemaVersion(),
 		},
 	}
 
@@ -805,10 +827,6 @@ func convertToTaskFromDatabaseDataExport(ctx context.Context, s *store.Store, pr
 	if task.DatabaseName == nil {
 		return nil, errors.Errorf("data export task database is nil")
 	}
-	payload := &storepb.TaskDatabaseDataExportPayload{}
-	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(task.Payload), payload); err != nil {
-		return nil, errors.Wrapf(err, "failed to unmarshal task payload")
-	}
 	database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &task.InstanceID, DatabaseName: task.DatabaseName, ShowDeleted: true})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get database")
@@ -817,19 +835,18 @@ func convertToTaskFromDatabaseDataExport(ctx context.Context, s *store.Store, pr
 		return nil, errors.Errorf("database not found")
 	}
 	targetDatabaseName := fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName)
-	sheet := common.FormatSheet(project.ResourceID, int(payload.SheetId))
+	sheet := common.FormatSheet(project.ResourceID, int(task.Payload.GetSheetId()))
 	v1pbTaskPayload := v1pb.Task_DatabaseDataExport_{
 		DatabaseDataExport: &v1pb.Task_DatabaseDataExport{
 			Target:   targetDatabaseName,
 			Sheet:    sheet,
-			Format:   convertExportFormat(payload.Format),
-			Password: &payload.Password,
+			Format:   convertExportFormat(task.Payload.GetFormat()),
+			Password: &task.Payload.Password,
 		},
 	}
 	v1pbTask := &v1pb.Task{
 		Name:    common.FormatTask(project.ResourceID, task.PipelineID, task.StageID, task.ID),
-		Title:   task.Name,
-		SpecId:  payload.SpecId,
+		SpecId:  task.Payload.GetSpecId(),
 		Type:    convertToTaskType(task.Type),
 		Status:  convertToTaskStatus(task.LatestTaskRunStatus, false),
 		Target:  targetDatabaseName,
@@ -862,16 +879,12 @@ func convertToTaskStatus(latestTaskRunStatus api.TaskRunStatus, skipped bool) v1
 
 func convertToTaskType(taskType api.TaskType) v1pb.Task_Type {
 	switch taskType {
-	case api.TaskGeneral:
-		return v1pb.Task_GENERAL
 	case api.TaskDatabaseCreate:
 		return v1pb.Task_DATABASE_CREATE
 	case api.TaskDatabaseSchemaBaseline:
 		return v1pb.Task_DATABASE_SCHEMA_BASELINE
 	case api.TaskDatabaseSchemaUpdate:
 		return v1pb.Task_DATABASE_SCHEMA_UPDATE
-	case api.TaskDatabaseSchemaUpdateSDL:
-		return v1pb.Task_DATABASE_SCHEMA_UPDATE_SDL
 	case api.TaskDatabaseSchemaUpdateGhost:
 		return v1pb.Task_DATABASE_SCHEMA_UPDATE_GHOST
 	case api.TaskDatabaseDataUpdate:

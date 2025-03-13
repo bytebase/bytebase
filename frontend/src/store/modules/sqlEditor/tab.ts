@@ -14,7 +14,6 @@ import {
   WebStorageHelper,
   defaultSQLEditorTab,
   emptySQLEditorConnection,
-  extractUserUID,
   isDisconnectedSQLEditorTab,
   isSimilarSQLEditorTab,
   useDynamicLocalStorage,
@@ -22,8 +21,10 @@ import {
 import { useCurrentUserV1 } from "../auth";
 import {
   useDatabaseV1Store,
+  useDatabaseV1ByName,
   useEnvironmentV1Store,
   useInstanceResourceByName,
+  extractUserId,
 } from "../v1";
 import { useSQLEditorStore } from "./editor";
 import {
@@ -62,7 +63,7 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
     cleanupExtendedTabs,
   } = useExtendedTabStore();
   const me = useCurrentUserV1();
-  const userUID = computed(() => extractUserUID(me.value.name));
+  const userUID = computed(() => extractUserId(me.value.name));
   const keyNamespace = computed(
     () => `${LOCAL_STORAGE_KEY_PREFIX}.${userUID.value}`
   );
@@ -412,9 +413,9 @@ export const useSQLEditorConnectionDetail = (
     return useInstanceResourceByName(unref(connection).instance);
   });
 
-  const database = computed(() => {
-    return useDatabaseV1Store().getDatabaseByName(unref(connection).database);
-  });
+  const { database } = useDatabaseV1ByName(
+    computed(() => unref(connection).database)
+  );
 
   const environment = computed(() => {
     if (isValidDatabaseName(database.value.name)) {
@@ -443,11 +444,12 @@ export const useConnectionOfCurrentSQLEditorTab = () => {
 
 export const resolveOpeningDatabaseListFromSQLEditorTabList = () => {
   const { tabList } = useSQLEditorTabStore();
+  const databaseStore = useDatabaseV1Store();
   return uniqBy(
     tabList.flatMap<SQLEditorTreeNodeMeta<"database">>((tab) => {
       const { database } = tab.connection;
       if (database) {
-        const db = useDatabaseV1Store().getDatabaseByName(database);
+        const db = databaseStore.getDatabaseByName(database);
         return [{ type: "database", target: db }];
       }
       return [];

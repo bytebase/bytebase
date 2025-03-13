@@ -32,7 +32,6 @@ const (
 	InstanceService_AddDataSource_FullMethodName        = "/bytebase.v1.InstanceService/AddDataSource"
 	InstanceService_RemoveDataSource_FullMethodName     = "/bytebase.v1.InstanceService/RemoveDataSource"
 	InstanceService_UpdateDataSource_FullMethodName     = "/bytebase.v1.InstanceService/UpdateDataSource"
-	InstanceService_SyncSlowQueries_FullMethodName      = "/bytebase.v1.InstanceService/SyncSlowQueries"
 )
 
 // InstanceServiceClient is the client API for InstanceService service.
@@ -51,7 +50,6 @@ type InstanceServiceClient interface {
 	AddDataSource(ctx context.Context, in *AddDataSourceRequest, opts ...grpc.CallOption) (*Instance, error)
 	RemoveDataSource(ctx context.Context, in *RemoveDataSourceRequest, opts ...grpc.CallOption) (*Instance, error)
 	UpdateDataSource(ctx context.Context, in *UpdateDataSourceRequest, opts ...grpc.CallOption) (*Instance, error)
-	SyncSlowQueries(ctx context.Context, in *SyncSlowQueriesRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
 
 type instanceServiceClient struct {
@@ -182,16 +180,6 @@ func (c *instanceServiceClient) UpdateDataSource(ctx context.Context, in *Update
 	return out, nil
 }
 
-func (c *instanceServiceClient) SyncSlowQueries(ctx context.Context, in *SyncSlowQueriesRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(emptypb.Empty)
-	err := c.cc.Invoke(ctx, InstanceService_SyncSlowQueries_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 // InstanceServiceServer is the server API for InstanceService service.
 // All implementations must embed UnimplementedInstanceServiceServer
 // for forward compatibility.
@@ -208,7 +196,6 @@ type InstanceServiceServer interface {
 	AddDataSource(context.Context, *AddDataSourceRequest) (*Instance, error)
 	RemoveDataSource(context.Context, *RemoveDataSourceRequest) (*Instance, error)
 	UpdateDataSource(context.Context, *UpdateDataSourceRequest) (*Instance, error)
-	SyncSlowQueries(context.Context, *SyncSlowQueriesRequest) (*emptypb.Empty, error)
 	mustEmbedUnimplementedInstanceServiceServer()
 }
 
@@ -254,9 +241,6 @@ func (UnimplementedInstanceServiceServer) RemoveDataSource(context.Context, *Rem
 }
 func (UnimplementedInstanceServiceServer) UpdateDataSource(context.Context, *UpdateDataSourceRequest) (*Instance, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateDataSource not implemented")
-}
-func (UnimplementedInstanceServiceServer) SyncSlowQueries(context.Context, *SyncSlowQueriesRequest) (*emptypb.Empty, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method SyncSlowQueries not implemented")
 }
 func (UnimplementedInstanceServiceServer) mustEmbedUnimplementedInstanceServiceServer() {}
 func (UnimplementedInstanceServiceServer) testEmbeddedByValue()                         {}
@@ -495,24 +479,6 @@ func _InstanceService_UpdateDataSource_Handler(srv interface{}, ctx context.Cont
 	return interceptor(ctx, in, info, handler)
 }
 
-func _InstanceService_SyncSlowQueries_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(SyncSlowQueriesRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(InstanceServiceServer).SyncSlowQueries(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: InstanceService_SyncSlowQueries_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(InstanceServiceServer).SyncSlowQueries(ctx, req.(*SyncSlowQueriesRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 // InstanceService_ServiceDesc is the grpc.ServiceDesc for InstanceService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -567,10 +533,6 @@ var InstanceService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UpdateDataSource",
 			Handler:    _InstanceService_UpdateDataSource_Handler,
-		},
-		{
-			MethodName: "SyncSlowQueries",
-			Handler:    _InstanceService_SyncSlowQueries_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

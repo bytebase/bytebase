@@ -88,7 +88,7 @@ const issueCreateErrorList = computed(() => {
       issue.value.projectEntity
     )
   ) {
-    errorList.push(t("common.missing-permission"));
+    errorList.push(t("common.missing-required-permission"));
   }
   if (!issue.value.title.trim()) {
     errorList.push("Missing issue title");
@@ -245,7 +245,7 @@ const maybeFormatSQL = async (sheet: Sheet, target: string) => {
   if (!formatOnSave.value) {
     return;
   }
-  const db = useDatabaseV1Store().getDatabaseByName(target);
+  const db = await useDatabaseV1Store().getOrFetchDatabaseByName(target);
   if (!db) {
     return;
   }

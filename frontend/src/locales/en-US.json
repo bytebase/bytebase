@@ -79,7 +79,6 @@
     "updated-at": "Updated",
     "statement": "Statement",
     "statement-size": "Statement size",
-    "sql-statement": "SQL statement",
     "snapshot": "Snapshot",
     "status": "Status",
     "stage": "Stage",
@@ -153,7 +152,6 @@
     "view-doc": "View doc",
     "write-only": "write only",
     "sync": "Sync",
-    "sync-now": "Sync Now",
     "success": "Succeed",
     "failed": "Failed",
     "load-more": "Load more",
@@ -201,7 +199,8 @@
     "view-details": "View details",
     "force-verb": "Force {verb}",
     "untitled": "Untitled",
-    "missing-permission": "Missing required permissions",
+    "missing-required-permission": "Missing required permissions",
+    "resource-not-found": "Resource not found",
     "continue-anyway": "Continue anyway",
     "permissions": "Permissions",
     "baseline": "Baseline",
@@ -729,7 +728,6 @@
       "reopened-issue": "reopened issue",
       "resolved-issue": "resolved issue",
       "canceled-issue": "canceled issue",
-      "empty": "",
       "changed": "changed",
       "canceled": "canceled",
       "started": "started",
@@ -825,6 +823,14 @@
         "label": {
           "title": "Label",
           "description": "Filter by issue label"
+        },
+        "database-label": {
+          "title": "Label",
+          "description": "Input the \"label key\":\"label value\" then press Enter"
+        },
+        "engine": {
+          "title": "Engine",
+          "description": "Filter by engines"
         }
       },
       "hide": "Hide advanced search"
@@ -982,9 +988,6 @@
       "request-querier-role": "Request querier role",
       "request-exporter-role": "Request exporter role"
     }
-  },
-  "alter-schema": {
-    "no-databases-in-project": "No databases in this project. Click New DB or Transfer in DB to add databases."
   },
   "quick-action": {
     "create-db": "Create database",
@@ -1357,6 +1360,7 @@
     "unassign-alert-description": "The selected databases will be removed from the project",
     "edit-schema": "Edit Schema",
     "edit-labels": "Edit Labels",
+    "edit-environment": "Edit Environment",
     "mixed-values-for-label": "This selected label have mixed values",
     "mixed-label-values-warning": "Some of the selected resources have mixed values for the same key",
     "change-data": "Change Data",
@@ -1422,7 +1426,6 @@
       "select": "Select table",
       "select-tip": "Please select a table to start."
     },
-    "n-selected-m-in-total": "({selected} selected, {total} in total)",
     "all": "All databases",
     "show-schemaless-databases": "Show schemaless databases. (Edit Schema is not applicable for schemaless databases.)",
     "secret": {
@@ -1506,8 +1509,7 @@
       "success-prompt": "Successfully created project {name}."
     },
     "overview": {
-      "info-slot-content": "Bytebase periodically syncs the instance schema. Newly synced databases are first placed here. User should transfer them to the proper application project.",
-      "no-db-prompt": "No database belongs to this project. You can add database by clicking {newDb} or {transferInDb} from the top action bar."
+      "info-slot-content": "Bytebase periodically syncs the instance schema. Newly synced databases are first placed here. User should transfer them to the proper application project."
     },
     "webhook": {
       "success-created-prompt": "Successfully created webhook {name}.",
@@ -1945,8 +1947,7 @@
       "key-duplicated": "Duplicated keys",
       "max-value-length-exceeded": "Value's length cannot exceed {length} characters"
     },
-    "add-label": "Add label",
-    "filter-by-label": "Filter by label"
+    "add-label": "Add label"
   },
   "oauth": {
     "unknown-event": "Unexpected event type, OAuth failed."
@@ -2332,39 +2333,6 @@
       "any-n-role-can-approve": "Any {role} can approve",
       "approved-by-n": "Approved by {approver}",
       "issue-creators-cannot-approve-their-own-issue": "Issue creators cannot approve their own issue"
-    }
-  },
-  "slow-query": {
-    "slow-queries": "Slow queries",
-    "report": "Report",
-    "last-query-time": "Last query time",
-    "sql-statement": "SQL statement",
-    "total-query-count": "Total query count",
-    "query-count-percent": "Query count %",
-    "max-query-time": "Max query time",
-    "avg-query-time": "Avg query time",
-    "query-time-percent": "Query time %",
-    "max-rows-examined": "Max rows examined",
-    "avg-rows-examined": "Avg rows examined",
-    "max-rows-sent": "Max rows sent",
-    "avg-rows-sent": "Avg rows sent",
-    "query-start-time": "Query start time",
-    "rows-examined": "Rows examined",
-    "rows-sent": "Rows sent",
-    "lock-time": "Lock time",
-    "query-time": "Query time",
-    "attention-description": "Bytebase periodically syncs slow query logs from instances. For MySQL instance, slow_query must be enabled first. For PostgreSQL instance, only databases with pg_stat_statements enabled will collect slow queries.",
-    "sync-job-started": "Sync jobs started. Please wait for the jobs to complete.",
-    "detail": "Slow Query Detail",
-    "advise-index": {
-      "current-index": "Current Index",
-      "suggestion": "Suggestion",
-      "create-index": "Create Index",
-      "setup-openai-key-to-enable": "Setup OpenAI key to enable index advisor"
-    },
-    "no-log-placeholder": {
-      "admin": "Click the \"Configure\" button to fetch slow queries from the database instances or click the \"Sync Now\" button to sync slow query logs immediately",
-      "developer": "Click the \"Sync Now\" button to sync slow query logs immediately or contact Bytebase admins/DBAs to configure slow queries"
     }
   },
   "schema-template": {

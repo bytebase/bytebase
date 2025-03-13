@@ -12,17 +12,8 @@
 </template>
 
 <script lang="ts" setup>
-import { computed } from "vue";
 import { useRolloutDetailContext } from "../../context";
 import StageCard from "./StageCard.vue";
 
-const { rollout, rolloutPreview } = useRolloutDetailContext();
-
-const mergedStages = computed(() => {
-  // Merge preview stages with created rollout stages.
-  return rolloutPreview.value.stages.map((sp) => {
-    const createdStage = rollout.value.stages.find((s) => s.id === sp.id);
-    return createdStage || sp;
-  });
-});
+const { mergedStages } = useRolloutDetailContext();
 </script>

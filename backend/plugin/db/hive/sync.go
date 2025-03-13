@@ -6,7 +6,6 @@ import (
 	"log/slog"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/pkg/errors"
 
@@ -41,7 +40,7 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 }
 
 func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetadata, error) {
-	dbName := d.config.Database
+	dbName := d.config.ConnectionContext.DatabaseName
 	if dbName == "" {
 		dbName = "default"
 	}
@@ -54,14 +53,6 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 		Name:    dbName,
 		Schemas: []*storepb.SchemaMetadata{schemaMetadata},
 	}, nil
-}
-
-func (*Driver) SyncSlowQuery(_ context.Context, _ time.Time) (map[string]*storepb.SlowQueryStatistics, error) {
-	return nil, errors.Errorf("SyncSlowQuery() is not applicable to Hive")
-}
-
-func (*Driver) CheckSlowQueryLogEnabled(_ context.Context) error {
-	return errors.Errorf("CheckSlowQueryLogEnabled() is not applicable to Hive")
 }
 
 func (d *Driver) getVersion(ctx context.Context) (string, error) {

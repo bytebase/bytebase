@@ -44,6 +44,7 @@ const emit = defineEmits<{
 
 const { isInitialized, isLoading, sheetList, fetchSheetList } =
   useSheetContextByView(props.view);
+const databaseStore = useDatabaseV1Store();
 
 const filteredWorksheetList = computed(() => {
   let sheets = sheetList.value;
@@ -68,7 +69,7 @@ const sortedWorksheetList = computed(() => {
         if (!worksheet.database) {
           return Number.MAX_VALUE;
         }
-        const db = useDatabaseV1Store().getDatabaseByName(worksheet.database);
+        const db = databaseStore.getDatabaseByName(worksheet.database);
         if (!isValidDatabaseName(db.name)) {
           return Number.MAX_VALUE;
         }

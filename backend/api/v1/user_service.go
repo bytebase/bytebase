@@ -7,6 +7,10 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/google/cel-go/cel"
+	celast "github.com/google/cel-go/common/ast"
+	celoperators "github.com/google/cel-go/common/operators"
+	celoverloads "github.com/google/cel-go/common/overloads"
 	"github.com/pkg/errors"
 
 	"github.com/pquerna/otp/totp"
@@ -84,17 +88,199 @@ func (s *UserService) GetUser(ctx context.Context, request *v1pb.GetUserRequest)
 	return convertToUser(user), nil
 }
 
+// StatUsers count users by type and state.
+func (s *UserService) StatUsers(ctx context.Context, _ *v1pb.StatUsersRequest) (*v1pb.StatUsersResponse, error) {
+	stats, err := s.store.StatUsers(ctx)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to stat users, error: %v", err)
+	}
+	response := &v1pb.StatUsersResponse{}
+
+	for _, stat := range stats {
+		response.Stats = append(response.Stats, &v1pb.StatUsersResponse_StatUser{
+			State:    convertDeletedToState(stat.Deleted),
+			UserType: convertToV1UserType(stat.Type),
+			Count:    int32(stat.Count),
+		})
+	}
+	return response, nil
+}
+
 // ListUsers lists all users.
 func (s *UserService) ListUsers(ctx context.Context, request *v1pb.ListUsersRequest) (*v1pb.ListUsersResponse, error) {
-	users, err := s.store.ListUsers(ctx, &store.FindUserMessage{ShowDeleted: request.ShowDeleted})
+	offset, err := parseLimitAndOffset(&pageSize{
+		token:   request.PageToken,
+		limit:   int(request.PageSize),
+		maximum: 1000,
+	})
+	if err != nil {
+		return nil, err
+	}
+	limitPlusOne := offset.limit + 1
+
+	find := &store.FindUserMessage{
+		Limit:       &limitPlusOne,
+		Offset:      &offset.offset,
+		ShowDeleted: request.ShowDeleted,
+	}
+	filter, err := getListUserFilter(request.Filter)
+	if err != nil {
+		return nil, err
+	}
+	find.Filter = filter
+
+	users, err := s.store.ListUsers(ctx, find)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to list user, error: %v", err)
 	}
-	response := &v1pb.ListUsersResponse{}
+
+	nextPageToken := ""
+	if len(users) == limitPlusOne {
+		users = users[:offset.limit]
+		if nextPageToken, err = offset.getNextPageToken(); err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to marshal next page token, error: %v", err)
+		}
+	}
+
+	response := &v1pb.ListUsersResponse{
+		NextPageToken: nextPageToken,
+	}
 	for _, user := range users {
 		response.Users = append(response.Users, convertToUser(user))
 	}
 	return response, nil
+}
+
+func getListUserFilter(filter string) (*store.ListResourceFilter, error) {
+	if filter == "" {
+		return nil, nil
+	}
+	e, err := cel.NewEnv()
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to create cel env")
+	}
+	ast, iss := e.Parse(filter)
+	if iss != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "failed to parse filter %v, error: %v", filter, iss.String())
+	}
+
+	var getFilter func(expr celast.Expr) (string, error)
+	var positionalArgs []any
+
+	parseToSQL := func(variable, value any) (string, error) {
+		switch variable {
+		case "email":
+			positionalArgs = append(positionalArgs, value.(string))
+			return fmt.Sprintf("principal.email = $%d", len(positionalArgs)), nil
+		case "name":
+			positionalArgs = append(positionalArgs, value.(string))
+			return fmt.Sprintf("principal.name = $%d", len(positionalArgs)), nil
+		case "user_type":
+			v1UserType, ok := v1pb.UserType_value[value.(string)]
+			if !ok {
+				return "", status.Errorf(codes.InvalidArgument, "invalid user type filter %q", value)
+			}
+			principalType, err := convertToPrincipalType(v1pb.UserType(v1UserType))
+			if err != nil {
+				return "", status.Errorf(codes.InvalidArgument, "failed to parse the user type %q with error: %v", v1UserType, err.Error())
+			}
+			positionalArgs = append(positionalArgs, principalType)
+			return fmt.Sprintf("principal.type = $%d", len(positionalArgs)), nil
+		case "state":
+			v1State, ok := v1pb.State_value[value.(string)]
+			if !ok {
+				return "", status.Errorf(codes.InvalidArgument, "invalid state filter %q", value)
+			}
+			positionalArgs = append(positionalArgs, v1pb.State(v1State) == v1pb.State_DELETED)
+			return fmt.Sprintf("principal.deleted = $%d", len(positionalArgs)), nil
+		// TODO(ed): support role/project filter
+		default:
+			return "", status.Errorf(codes.InvalidArgument, "unsupport variable %q", variable)
+		}
+	}
+
+	parseToUserTypeSQL := func(expr celast.Expr, relation string) (string, error) {
+		variable, value := getVariableAndValueFromExpr(expr)
+		if variable != "user_type" {
+			return "", status.Errorf(codes.InvalidArgument, `only "user_type" support "user_type in [xx]"/"!(user_type in [xx])" operator`)
+		}
+
+		rawTypeList, ok := value.([]any)
+		if !ok {
+			return "", status.Errorf(codes.InvalidArgument, "invalid user_type value %q", value)
+		}
+		if len(rawTypeList) == 0 {
+			return "", status.Errorf(codes.InvalidArgument, "empty user_type filter")
+		}
+		userTypeList := []string{}
+		for _, rawType := range rawTypeList {
+			v1UserType, ok := v1pb.UserType_value[rawType.(string)]
+			if !ok {
+				return "", status.Errorf(codes.InvalidArgument, "invalid user type filter %q", rawType)
+			}
+			principalType, err := convertToPrincipalType(v1pb.UserType(v1UserType))
+			if err != nil {
+				return "", status.Errorf(codes.InvalidArgument, "failed to parse the user type %q with error: %v", v1UserType, err.Error())
+			}
+			positionalArgs = append(positionalArgs, principalType)
+			userTypeList = append(userTypeList, fmt.Sprintf("$%d", len(positionalArgs)))
+		}
+
+		return fmt.Sprintf("principal.type %s (%s)", relation, strings.Join(userTypeList, ",")), nil
+	}
+
+	getFilter = func(expr celast.Expr) (string, error) {
+		switch expr.Kind() {
+		case celast.CallKind:
+			functionName := expr.AsCall().FunctionName()
+			switch functionName {
+			case celoperators.LogicalOr:
+				return getSubConditionFromExpr(expr, getFilter, "OR")
+			case celoperators.LogicalAnd:
+				return getSubConditionFromExpr(expr, getFilter, "AND")
+			case celoperators.Equals:
+				variable, value := getVariableAndValueFromExpr(expr)
+				return parseToSQL(variable, value)
+			case celoverloads.Matches:
+				variable := expr.AsCall().Target().AsIdent()
+				args := expr.AsCall().Args()
+				if len(args) != 1 {
+					return "", status.Errorf(codes.InvalidArgument, `invalid args for %q`, variable)
+				}
+				value := args[0].AsLiteral().Value()
+				if variable != "name" && variable != "email" {
+					return "", status.Errorf(codes.InvalidArgument, `only "name" and "email" support %q operator, but found %q`, celoverloads.Matches, variable)
+				}
+				strValue, ok := value.(string)
+				if !ok {
+					return "", status.Errorf(codes.InvalidArgument, "expect string, got %T, hint: filter literals should be string", value)
+				}
+				return "LOWER(principal." + variable + ") LIKE '%" + strings.ToLower(strValue) + "%'", nil
+			case celoperators.In:
+				return parseToUserTypeSQL(expr, "IN")
+			case celoperators.LogicalNot:
+				args := expr.AsCall().Args()
+				if len(args) != 1 {
+					return "", status.Errorf(codes.InvalidArgument, `only support !(user_type in ["{type1}", "{type2}"]) format`)
+				}
+				return parseToUserTypeSQL(args[0], "NOT IN")
+			default:
+				return "", status.Errorf(codes.InvalidArgument, "unexpected function %v", functionName)
+			}
+		default:
+			return "", status.Errorf(codes.InvalidArgument, "unexpected expr kind %v", expr.Kind())
+		}
+	}
+
+	where, err := getFilter(ast.NativeRep().Expr())
+	if err != nil {
+		return nil, err
+	}
+
+	return &store.ListResourceFilter{
+		Args:  positionalArgs,
+		Where: "(" + where + ")",
+	}, nil
 }
 
 // CreateUser creates a user.
@@ -540,24 +726,27 @@ func (s *UserService) UndeleteUser(ctx context.Context, request *v1pb.UndeleteUs
 	return convertToUser(user), nil
 }
 
-func convertToUser(user *store.UserMessage) *v1pb.User {
-	userType := v1pb.UserType_USER_TYPE_UNSPECIFIED
-	switch user.Type {
+func convertToV1UserType(userType api.PrincipalType) v1pb.UserType {
+	switch userType {
 	case api.EndUser:
-		userType = v1pb.UserType_USER
+		return v1pb.UserType_USER
 	case api.SystemBot:
-		userType = v1pb.UserType_SYSTEM_BOT
+		return v1pb.UserType_SYSTEM_BOT
 	case api.ServiceAccount:
-		userType = v1pb.UserType_SERVICE_ACCOUNT
+		return v1pb.UserType_SERVICE_ACCOUNT
+	default:
+		return v1pb.UserType_USER_TYPE_UNSPECIFIED
 	}
+}
 
+func convertToUser(user *store.UserMessage) *v1pb.User {
 	convertedUser := &v1pb.User{
 		Name:     common.FormatUserUID(user.ID),
 		State:    convertDeletedToState(user.MemberDeleted),
 		Email:    user.Email,
 		Phone:    user.Phone,
 		Title:    user.Name,
-		UserType: userType,
+		UserType: convertToV1UserType(user.Type),
 		Profile: &v1pb.User_Profile{
 			LastLoginTime:          user.Profile.LastLoginTime,
 			LastChangePasswordTime: user.Profile.LastChangePasswordTime,

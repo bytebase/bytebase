@@ -60,7 +60,7 @@ export const projectWebhookV1TypeItemList = (): ProjectWebhookV1TypeItem[] => {
       urlPlaceholder: "https://oapi.dingtalk.com/robot/...",
       docUrl:
         "https://developers.dingtalk.com/document/robots/custom-robot-access",
-      supportDirectMessage: false,
+      supportDirectMessage: true,
     },
     {
       type: Webhook_Type.FEISHU,

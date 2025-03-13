@@ -14,71 +14,6 @@ import { GetIamPolicyRequest, IamPolicy, SetIamPolicyRequest } from "./iam_polic
 
 export const protobufPackage = "bytebase.v1";
 
-export enum OperatorType {
-  /** OPERATOR_TYPE_UNSPECIFIED - The operator is not specified. */
-  OPERATOR_TYPE_UNSPECIFIED = "OPERATOR_TYPE_UNSPECIFIED",
-  /** OPERATOR_TYPE_IN - The operator is "In". */
-  OPERATOR_TYPE_IN = "OPERATOR_TYPE_IN",
-  /** OPERATOR_TYPE_EXISTS - The operator is "Exists". */
-  OPERATOR_TYPE_EXISTS = "OPERATOR_TYPE_EXISTS",
-  /** OPERATOR_TYPE_NOT_IN - The operator is "Not In". */
-  OPERATOR_TYPE_NOT_IN = "OPERATOR_TYPE_NOT_IN",
-  UNRECOGNIZED = "UNRECOGNIZED",
-}
-
-export function operatorTypeFromJSON(object: any): OperatorType {
-  switch (object) {
-    case 0:
-    case "OPERATOR_TYPE_UNSPECIFIED":
-      return OperatorType.OPERATOR_TYPE_UNSPECIFIED;
-    case 1:
-    case "OPERATOR_TYPE_IN":
-      return OperatorType.OPERATOR_TYPE_IN;
-    case 2:
-    case "OPERATOR_TYPE_EXISTS":
-      return OperatorType.OPERATOR_TYPE_EXISTS;
-    case 3:
-    case "OPERATOR_TYPE_NOT_IN":
-      return OperatorType.OPERATOR_TYPE_NOT_IN;
-    case -1:
-    case "UNRECOGNIZED":
-    default:
-      return OperatorType.UNRECOGNIZED;
-  }
-}
-
-export function operatorTypeToJSON(object: OperatorType): string {
-  switch (object) {
-    case OperatorType.OPERATOR_TYPE_UNSPECIFIED:
-      return "OPERATOR_TYPE_UNSPECIFIED";
-    case OperatorType.OPERATOR_TYPE_IN:
-      return "OPERATOR_TYPE_IN";
-    case OperatorType.OPERATOR_TYPE_EXISTS:
-      return "OPERATOR_TYPE_EXISTS";
-    case OperatorType.OPERATOR_TYPE_NOT_IN:
-      return "OPERATOR_TYPE_NOT_IN";
-    case OperatorType.UNRECOGNIZED:
-    default:
-      return "UNRECOGNIZED";
-  }
-}
-
-export function operatorTypeToNumber(object: OperatorType): number {
-  switch (object) {
-    case OperatorType.OPERATOR_TYPE_UNSPECIFIED:
-      return 0;
-    case OperatorType.OPERATOR_TYPE_IN:
-      return 1;
-    case OperatorType.OPERATOR_TYPE_EXISTS:
-      return 2;
-    case OperatorType.OPERATOR_TYPE_NOT_IN:
-      return 3;
-    case OperatorType.UNRECOGNIZED:
-    default:
-      return -1;
-  }
-}
-
 export interface GetProjectRequest {
   /**
    * The name of the project to retrieve.
@@ -105,6 +40,11 @@ export interface ListProjectsRequest {
   pageToken: string;
   /** Show deleted projects if specified. */
   showDeleted: boolean;
+  /**
+   * Filter the project.
+   * Check filter for SearchProjectsRequest for details.
+   */
+  filter: string;
 }
 
 export interface ListProjectsResponse {
@@ -120,8 +60,23 @@ export interface ListProjectsResponse {
 export interface SearchProjectsRequest {
   /** Show deleted projects if specified. */
   showDeleted: boolean;
-  /** Filter the project title or resource id by query. */
-  query: string;
+  /**
+   * Filter the project.
+   * Supported filters:
+   * - name
+   * - resource_id
+   * - exclude_default: if not include the default project.
+   *
+   * For example:
+   * name = "project name"
+   * name.matches("project name")
+   * resource_id = "project id"
+   * resource_id.matches("project id")
+   * name = "project name" && resource_id.matches("project id")
+   * name.matches("project name") || resource_id = "project id"
+   * exclude_default == true
+   */
+  filter: string;
 }
 
 export interface SearchProjectsResponse {
@@ -189,18 +144,6 @@ export interface BatchGetIamPolicyResponse {
 export interface BatchGetIamPolicyResponse_PolicyResult {
   project: string;
   policy: IamPolicy | undefined;
-}
-
-export interface GetDeploymentConfigRequest {
-  /**
-   * The name of the resource.
-   * Format: projects/{project}/deploymentConfigs/default.
-   */
-  name: string;
-}
-
-export interface UpdateDeploymentConfigRequest {
-  deploymentConfig: DeploymentConfig | undefined;
 }
 
 export interface Label {
@@ -404,42 +347,6 @@ export function webhook_TypeToNumber(object: Webhook_Type): number {
     default:
       return -1;
   }
-}
-
-export interface DeploymentConfig {
-  /**
-   * The name of the resource.
-   * Format: projects/{project}/deploymentConfigs/default.
-   */
-  name: string;
-  /** The title of the deployment config. */
-  title: string;
-  schedule: Schedule | undefined;
-}
-
-export interface Schedule {
-  deployments: ScheduleDeployment[];
-}
-
-export interface ScheduleDeployment {
-  /** The title of the deployment (stage) in a schedule. */
-  title: string;
-  id: string;
-  spec: DeploymentSpec | undefined;
-}
-
-export interface DeploymentSpec {
-  labelSelector: LabelSelector | undefined;
-}
-
-export interface LabelSelector {
-  matchExpressions: LabelSelectorRequirement[];
-}
-
-export interface LabelSelectorRequirement {
-  key: string;
-  operator: OperatorType;
-  values: string[];
 }
 
 /** TODO(zp): move to activity later. */
@@ -750,7 +657,7 @@ export const GetProjectRequest: MessageFns<GetProjectRequest> = {
 };
 
 function createBaseListProjectsRequest(): ListProjectsRequest {
-  return { pageSize: 0, pageToken: "", showDeleted: false };
+  return { pageSize: 0, pageToken: "", showDeleted: false, filter: "" };
 }
 
 export const ListProjectsRequest: MessageFns<ListProjectsRequest> = {
@@ -763,6 +670,9 @@ export const ListProjectsRequest: MessageFns<ListProjectsRequest> = {
     }
     if (message.showDeleted !== false) {
       writer.uint32(24).bool(message.showDeleted);
+    }
+    if (message.filter !== "") {
+      writer.uint32(34).string(message.filter);
     }
     return writer;
   },
@@ -798,6 +708,14 @@ export const ListProjectsRequest: MessageFns<ListProjectsRequest> = {
           message.showDeleted = reader.bool();
           continue;
         }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.filter = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -812,6 +730,7 @@ export const ListProjectsRequest: MessageFns<ListProjectsRequest> = {
       pageSize: isSet(object.pageSize) ? globalThis.Number(object.pageSize) : 0,
       pageToken: isSet(object.pageToken) ? globalThis.String(object.pageToken) : "",
       showDeleted: isSet(object.showDeleted) ? globalThis.Boolean(object.showDeleted) : false,
+      filter: isSet(object.filter) ? globalThis.String(object.filter) : "",
     };
   },
 
@@ -826,6 +745,9 @@ export const ListProjectsRequest: MessageFns<ListProjectsRequest> = {
     if (message.showDeleted !== false) {
       obj.showDeleted = message.showDeleted;
     }
+    if (message.filter !== "") {
+      obj.filter = message.filter;
+    }
     return obj;
   },
 
@@ -837,6 +759,7 @@ export const ListProjectsRequest: MessageFns<ListProjectsRequest> = {
     message.pageSize = object.pageSize ?? 0;
     message.pageToken = object.pageToken ?? "";
     message.showDeleted = object.showDeleted ?? false;
+    message.filter = object.filter ?? "";
     return message;
   },
 };
@@ -918,7 +841,7 @@ export const ListProjectsResponse: MessageFns<ListProjectsResponse> = {
 };
 
 function createBaseSearchProjectsRequest(): SearchProjectsRequest {
-  return { showDeleted: false, query: "" };
+  return { showDeleted: false, filter: "" };
 }
 
 export const SearchProjectsRequest: MessageFns<SearchProjectsRequest> = {
@@ -926,8 +849,8 @@ export const SearchProjectsRequest: MessageFns<SearchProjectsRequest> = {
     if (message.showDeleted !== false) {
       writer.uint32(8).bool(message.showDeleted);
     }
-    if (message.query !== "") {
-      writer.uint32(18).string(message.query);
+    if (message.filter !== "") {
+      writer.uint32(18).string(message.filter);
     }
     return writer;
   },
@@ -952,7 +875,7 @@ export const SearchProjectsRequest: MessageFns<SearchProjectsRequest> = {
             break;
           }
 
-          message.query = reader.string();
+          message.filter = reader.string();
           continue;
         }
       }
@@ -967,7 +890,7 @@ export const SearchProjectsRequest: MessageFns<SearchProjectsRequest> = {
   fromJSON(object: any): SearchProjectsRequest {
     return {
       showDeleted: isSet(object.showDeleted) ? globalThis.Boolean(object.showDeleted) : false,
-      query: isSet(object.query) ? globalThis.String(object.query) : "",
+      filter: isSet(object.filter) ? globalThis.String(object.filter) : "",
     };
   },
 
@@ -976,8 +899,8 @@ export const SearchProjectsRequest: MessageFns<SearchProjectsRequest> = {
     if (message.showDeleted !== false) {
       obj.showDeleted = message.showDeleted;
     }
-    if (message.query !== "") {
-      obj.query = message.query;
+    if (message.filter !== "") {
+      obj.filter = message.filter;
     }
     return obj;
   },
@@ -988,7 +911,7 @@ export const SearchProjectsRequest: MessageFns<SearchProjectsRequest> = {
   fromPartial(object: DeepPartial<SearchProjectsRequest>): SearchProjectsRequest {
     const message = createBaseSearchProjectsRequest();
     message.showDeleted = object.showDeleted ?? false;
-    message.query = object.query ?? "";
+    message.filter = object.filter ?? "";
     return message;
   },
 };
@@ -1555,126 +1478,6 @@ export const BatchGetIamPolicyResponse_PolicyResult: MessageFns<BatchGetIamPolic
     message.project = object.project ?? "";
     message.policy = (object.policy !== undefined && object.policy !== null)
       ? IamPolicy.fromPartial(object.policy)
-      : undefined;
-    return message;
-  },
-};
-
-function createBaseGetDeploymentConfigRequest(): GetDeploymentConfigRequest {
-  return { name: "" };
-}
-
-export const GetDeploymentConfigRequest: MessageFns<GetDeploymentConfigRequest> = {
-  encode(message: GetDeploymentConfigRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.name !== "") {
-      writer.uint32(10).string(message.name);
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): GetDeploymentConfigRequest {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseGetDeploymentConfigRequest();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.name = reader.string();
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): GetDeploymentConfigRequest {
-    return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
-  },
-
-  toJSON(message: GetDeploymentConfigRequest): unknown {
-    const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<GetDeploymentConfigRequest>): GetDeploymentConfigRequest {
-    return GetDeploymentConfigRequest.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<GetDeploymentConfigRequest>): GetDeploymentConfigRequest {
-    const message = createBaseGetDeploymentConfigRequest();
-    message.name = object.name ?? "";
-    return message;
-  },
-};
-
-function createBaseUpdateDeploymentConfigRequest(): UpdateDeploymentConfigRequest {
-  return { deploymentConfig: undefined };
-}
-
-export const UpdateDeploymentConfigRequest: MessageFns<UpdateDeploymentConfigRequest> = {
-  encode(message: UpdateDeploymentConfigRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.deploymentConfig !== undefined) {
-      DeploymentConfig.encode(message.deploymentConfig, writer.uint32(10).fork()).join();
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): UpdateDeploymentConfigRequest {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseUpdateDeploymentConfigRequest();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.deploymentConfig = DeploymentConfig.decode(reader, reader.uint32());
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): UpdateDeploymentConfigRequest {
-    return {
-      deploymentConfig: isSet(object.deploymentConfig) ? DeploymentConfig.fromJSON(object.deploymentConfig) : undefined,
-    };
-  },
-
-  toJSON(message: UpdateDeploymentConfigRequest): unknown {
-    const obj: any = {};
-    if (message.deploymentConfig !== undefined) {
-      obj.deploymentConfig = DeploymentConfig.toJSON(message.deploymentConfig);
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<UpdateDeploymentConfigRequest>): UpdateDeploymentConfigRequest {
-    return UpdateDeploymentConfigRequest.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<UpdateDeploymentConfigRequest>): UpdateDeploymentConfigRequest {
-    const message = createBaseUpdateDeploymentConfigRequest();
-    message.deploymentConfig = (object.deploymentConfig !== undefined && object.deploymentConfig !== null)
-      ? DeploymentConfig.fromPartial(object.deploymentConfig)
       : undefined;
     return message;
   },
@@ -2576,470 +2379,6 @@ export const Webhook: MessageFns<Webhook> = {
   },
 };
 
-function createBaseDeploymentConfig(): DeploymentConfig {
-  return { name: "", title: "", schedule: undefined };
-}
-
-export const DeploymentConfig: MessageFns<DeploymentConfig> = {
-  encode(message: DeploymentConfig, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.name !== "") {
-      writer.uint32(10).string(message.name);
-    }
-    if (message.title !== "") {
-      writer.uint32(18).string(message.title);
-    }
-    if (message.schedule !== undefined) {
-      Schedule.encode(message.schedule, writer.uint32(26).fork()).join();
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): DeploymentConfig {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseDeploymentConfig();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.name = reader.string();
-          continue;
-        }
-        case 2: {
-          if (tag !== 18) {
-            break;
-          }
-
-          message.title = reader.string();
-          continue;
-        }
-        case 3: {
-          if (tag !== 26) {
-            break;
-          }
-
-          message.schedule = Schedule.decode(reader, reader.uint32());
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): DeploymentConfig {
-    return {
-      name: isSet(object.name) ? globalThis.String(object.name) : "",
-      title: isSet(object.title) ? globalThis.String(object.title) : "",
-      schedule: isSet(object.schedule) ? Schedule.fromJSON(object.schedule) : undefined,
-    };
-  },
-
-  toJSON(message: DeploymentConfig): unknown {
-    const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
-    }
-    if (message.title !== "") {
-      obj.title = message.title;
-    }
-    if (message.schedule !== undefined) {
-      obj.schedule = Schedule.toJSON(message.schedule);
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<DeploymentConfig>): DeploymentConfig {
-    return DeploymentConfig.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<DeploymentConfig>): DeploymentConfig {
-    const message = createBaseDeploymentConfig();
-    message.name = object.name ?? "";
-    message.title = object.title ?? "";
-    message.schedule = (object.schedule !== undefined && object.schedule !== null)
-      ? Schedule.fromPartial(object.schedule)
-      : undefined;
-    return message;
-  },
-};
-
-function createBaseSchedule(): Schedule {
-  return { deployments: [] };
-}
-
-export const Schedule: MessageFns<Schedule> = {
-  encode(message: Schedule, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    for (const v of message.deployments) {
-      ScheduleDeployment.encode(v!, writer.uint32(10).fork()).join();
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): Schedule {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseSchedule();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.deployments.push(ScheduleDeployment.decode(reader, reader.uint32()));
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): Schedule {
-    return {
-      deployments: globalThis.Array.isArray(object?.deployments)
-        ? object.deployments.map((e: any) => ScheduleDeployment.fromJSON(e))
-        : [],
-    };
-  },
-
-  toJSON(message: Schedule): unknown {
-    const obj: any = {};
-    if (message.deployments?.length) {
-      obj.deployments = message.deployments.map((e) => ScheduleDeployment.toJSON(e));
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<Schedule>): Schedule {
-    return Schedule.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<Schedule>): Schedule {
-    const message = createBaseSchedule();
-    message.deployments = object.deployments?.map((e) => ScheduleDeployment.fromPartial(e)) || [];
-    return message;
-  },
-};
-
-function createBaseScheduleDeployment(): ScheduleDeployment {
-  return { title: "", id: "", spec: undefined };
-}
-
-export const ScheduleDeployment: MessageFns<ScheduleDeployment> = {
-  encode(message: ScheduleDeployment, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.title !== "") {
-      writer.uint32(10).string(message.title);
-    }
-    if (message.id !== "") {
-      writer.uint32(26).string(message.id);
-    }
-    if (message.spec !== undefined) {
-      DeploymentSpec.encode(message.spec, writer.uint32(18).fork()).join();
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): ScheduleDeployment {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseScheduleDeployment();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.title = reader.string();
-          continue;
-        }
-        case 3: {
-          if (tag !== 26) {
-            break;
-          }
-
-          message.id = reader.string();
-          continue;
-        }
-        case 2: {
-          if (tag !== 18) {
-            break;
-          }
-
-          message.spec = DeploymentSpec.decode(reader, reader.uint32());
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): ScheduleDeployment {
-    return {
-      title: isSet(object.title) ? globalThis.String(object.title) : "",
-      id: isSet(object.id) ? globalThis.String(object.id) : "",
-      spec: isSet(object.spec) ? DeploymentSpec.fromJSON(object.spec) : undefined,
-    };
-  },
-
-  toJSON(message: ScheduleDeployment): unknown {
-    const obj: any = {};
-    if (message.title !== "") {
-      obj.title = message.title;
-    }
-    if (message.id !== "") {
-      obj.id = message.id;
-    }
-    if (message.spec !== undefined) {
-      obj.spec = DeploymentSpec.toJSON(message.spec);
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<ScheduleDeployment>): ScheduleDeployment {
-    return ScheduleDeployment.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<ScheduleDeployment>): ScheduleDeployment {
-    const message = createBaseScheduleDeployment();
-    message.title = object.title ?? "";
-    message.id = object.id ?? "";
-    message.spec = (object.spec !== undefined && object.spec !== null)
-      ? DeploymentSpec.fromPartial(object.spec)
-      : undefined;
-    return message;
-  },
-};
-
-function createBaseDeploymentSpec(): DeploymentSpec {
-  return { labelSelector: undefined };
-}
-
-export const DeploymentSpec: MessageFns<DeploymentSpec> = {
-  encode(message: DeploymentSpec, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.labelSelector !== undefined) {
-      LabelSelector.encode(message.labelSelector, writer.uint32(10).fork()).join();
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): DeploymentSpec {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseDeploymentSpec();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.labelSelector = LabelSelector.decode(reader, reader.uint32());
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): DeploymentSpec {
-    return { labelSelector: isSet(object.labelSelector) ? LabelSelector.fromJSON(object.labelSelector) : undefined };
-  },
-
-  toJSON(message: DeploymentSpec): unknown {
-    const obj: any = {};
-    if (message.labelSelector !== undefined) {
-      obj.labelSelector = LabelSelector.toJSON(message.labelSelector);
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<DeploymentSpec>): DeploymentSpec {
-    return DeploymentSpec.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<DeploymentSpec>): DeploymentSpec {
-    const message = createBaseDeploymentSpec();
-    message.labelSelector = (object.labelSelector !== undefined && object.labelSelector !== null)
-      ? LabelSelector.fromPartial(object.labelSelector)
-      : undefined;
-    return message;
-  },
-};
-
-function createBaseLabelSelector(): LabelSelector {
-  return { matchExpressions: [] };
-}
-
-export const LabelSelector: MessageFns<LabelSelector> = {
-  encode(message: LabelSelector, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    for (const v of message.matchExpressions) {
-      LabelSelectorRequirement.encode(v!, writer.uint32(10).fork()).join();
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): LabelSelector {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseLabelSelector();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.matchExpressions.push(LabelSelectorRequirement.decode(reader, reader.uint32()));
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): LabelSelector {
-    return {
-      matchExpressions: globalThis.Array.isArray(object?.matchExpressions)
-        ? object.matchExpressions.map((e: any) => LabelSelectorRequirement.fromJSON(e))
-        : [],
-    };
-  },
-
-  toJSON(message: LabelSelector): unknown {
-    const obj: any = {};
-    if (message.matchExpressions?.length) {
-      obj.matchExpressions = message.matchExpressions.map((e) => LabelSelectorRequirement.toJSON(e));
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<LabelSelector>): LabelSelector {
-    return LabelSelector.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<LabelSelector>): LabelSelector {
-    const message = createBaseLabelSelector();
-    message.matchExpressions = object.matchExpressions?.map((e) => LabelSelectorRequirement.fromPartial(e)) || [];
-    return message;
-  },
-};
-
-function createBaseLabelSelectorRequirement(): LabelSelectorRequirement {
-  return { key: "", operator: OperatorType.OPERATOR_TYPE_UNSPECIFIED, values: [] };
-}
-
-export const LabelSelectorRequirement: MessageFns<LabelSelectorRequirement> = {
-  encode(message: LabelSelectorRequirement, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.key !== "") {
-      writer.uint32(10).string(message.key);
-    }
-    if (message.operator !== OperatorType.OPERATOR_TYPE_UNSPECIFIED) {
-      writer.uint32(16).int32(operatorTypeToNumber(message.operator));
-    }
-    for (const v of message.values) {
-      writer.uint32(26).string(v!);
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): LabelSelectorRequirement {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseLabelSelectorRequirement();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.key = reader.string();
-          continue;
-        }
-        case 2: {
-          if (tag !== 16) {
-            break;
-          }
-
-          message.operator = operatorTypeFromJSON(reader.int32());
-          continue;
-        }
-        case 3: {
-          if (tag !== 26) {
-            break;
-          }
-
-          message.values.push(reader.string());
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): LabelSelectorRequirement {
-    return {
-      key: isSet(object.key) ? globalThis.String(object.key) : "",
-      operator: isSet(object.operator) ? operatorTypeFromJSON(object.operator) : OperatorType.OPERATOR_TYPE_UNSPECIFIED,
-      values: globalThis.Array.isArray(object?.values) ? object.values.map((e: any) => globalThis.String(e)) : [],
-    };
-  },
-
-  toJSON(message: LabelSelectorRequirement): unknown {
-    const obj: any = {};
-    if (message.key !== "") {
-      obj.key = message.key;
-    }
-    if (message.operator !== OperatorType.OPERATOR_TYPE_UNSPECIFIED) {
-      obj.operator = operatorTypeToJSON(message.operator);
-    }
-    if (message.values?.length) {
-      obj.values = message.values;
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<LabelSelectorRequirement>): LabelSelectorRequirement {
-    return LabelSelectorRequirement.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<LabelSelectorRequirement>): LabelSelectorRequirement {
-    const message = createBaseLabelSelectorRequirement();
-    message.key = object.key ?? "";
-    message.operator = object.operator ?? OperatorType.OPERATOR_TYPE_UNSPECIFIED;
-    message.values = object.values?.map((e) => e) || [];
-    return message;
-  },
-};
-
 function createBaseActivity(): Activity {
   return {};
 }
@@ -3692,167 +3031,6 @@ export const ProjectServiceDefinition = {
               105,
               99,
               121,
-            ]),
-          ],
-        },
-      },
-    },
-    getDeploymentConfig: {
-      name: "GetDeploymentConfig",
-      requestType: GetDeploymentConfigRequest,
-      requestStream: false,
-      responseType: DeploymentConfig,
-      responseStream: false,
-      options: {
-        _unknownFields: {
-          800010: [new Uint8Array([15, 98, 98, 46, 112, 114, 111, 106, 101, 99, 116, 115, 46, 103, 101, 116])],
-          800016: [new Uint8Array([1])],
-          578365826: [
-            new Uint8Array([
-              43,
-              18,
-              41,
-              47,
-              118,
-              49,
-              47,
-              123,
-              110,
-              97,
-              109,
-              101,
-              61,
-              112,
-              114,
-              111,
-              106,
-              101,
-              99,
-              116,
-              115,
-              47,
-              42,
-              47,
-              100,
-              101,
-              112,
-              108,
-              111,
-              121,
-              109,
-              101,
-              110,
-              116,
-              67,
-              111,
-              110,
-              102,
-              105,
-              103,
-              115,
-              47,
-              42,
-              125,
-            ]),
-          ],
-        },
-      },
-    },
-    updateDeploymentConfig: {
-      name: "UpdateDeploymentConfig",
-      requestType: UpdateDeploymentConfigRequest,
-      requestStream: false,
-      responseType: DeploymentConfig,
-      responseStream: false,
-      options: {
-        _unknownFields: {
-          800010: [
-            new Uint8Array([18, 98, 98, 46, 112, 114, 111, 106, 101, 99, 116, 115, 46, 117, 112, 100, 97, 116, 101]),
-          ],
-          800016: [new Uint8Array([1])],
-          578365826: [
-            new Uint8Array([
-              80,
-              58,
-              17,
-              100,
-              101,
-              112,
-              108,
-              111,
-              121,
-              109,
-              101,
-              110,
-              116,
-              95,
-              99,
-              111,
-              110,
-              102,
-              105,
-              103,
-              50,
-              59,
-              47,
-              118,
-              49,
-              47,
-              123,
-              100,
-              101,
-              112,
-              108,
-              111,
-              121,
-              109,
-              101,
-              110,
-              116,
-              95,
-              99,
-              111,
-              110,
-              102,
-              105,
-              103,
-              46,
-              110,
-              97,
-              109,
-              101,
-              61,
-              112,
-              114,
-              111,
-              106,
-              101,
-              99,
-              116,
-              115,
-              47,
-              42,
-              47,
-              100,
-              101,
-              112,
-              108,
-              111,
-              121,
-              109,
-              101,
-              110,
-              116,
-              67,
-              111,
-              110,
-              102,
-              105,
-              103,
-              115,
-              47,
-              42,
-              125,
             ]),
           ],
         },

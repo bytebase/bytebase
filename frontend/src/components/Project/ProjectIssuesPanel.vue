@@ -2,7 +2,6 @@
   <div class="flex flex-col gap-y-2">
     <IssueSearch
       v-model:params="state.params"
-      :readonly-scopes="readonlyScopes"
       :components="
         state.advanced ? ['searchbox', 'time-range', 'status'] : ['status']
       "
@@ -95,8 +94,6 @@ import type {
 } from "@/utils";
 import {
   buildIssueFilterBySearchParams,
-  buildSearchParamsBySearchText,
-  buildSearchTextBySearchParams,
   buildUIIssueFilterBySearchParams,
   extractProjectResourceName,
   getSemanticIssueStatusFromSearchParams,
@@ -136,7 +133,11 @@ const issuePagedTable =
 
 const readonlyScopes = computed((): SearchScope[] => {
   return [
-    { id: "project", value: extractProjectResourceName(props.project.name) },
+    {
+      id: "project",
+      value: extractProjectResourceName(props.project.name),
+      readonly: true,
+    },
   ];
 });
 const tabItemList = computed((): TabFilterItem<TabValue>[] => {
@@ -213,34 +214,43 @@ const mergeSearchParamsByTab = (params: SearchParams, tab: TabValue) => {
     return common;
   }
   if (tab === "CREATED") {
-    return upsertScope(common, {
-      id: "creator",
-      value: me.value.email,
+    return upsertScope({
+      params: common,
+      scopes: {
+        id: "creator",
+        value: me.value.email,
+      },
     });
   }
   if (tab === "WAITING_APPROVAL") {
-    return upsertScope(common, [
-      {
-        id: "status",
-        value: "OPEN",
-      },
-      {
-        id: "approval",
-        value: "pending",
-      },
-    ]);
+    return upsertScope({
+      params: common,
+      scopes: [
+        {
+          id: "status",
+          value: "OPEN",
+        },
+        {
+          id: "approval",
+          value: "pending",
+        },
+      ],
+    });
   }
   if (tab === "WAITING_ROLLOUT") {
-    return upsertScope(common, [
-      {
-        id: "status",
-        value: "OPEN",
-      },
-      {
-        id: "approval",
-        value: "approved",
-      },
-    ]);
+    return upsertScope({
+      params: common,
+      scopes: [
+        {
+          id: "status",
+          value: "OPEN",
+        },
+        {
+          id: "approval",
+          value: "approved",
+        },
+      ],
+    });
   }
   console.error("[mergeSearchParamsByTab] should never reach this line", tab);
   return common;
@@ -281,13 +291,6 @@ const guessTabValueFromSearchParams = (params: SearchParams): TabValue => {
   return "";
 };
 const initializeSearchParamsFromQueryOrLocalStorage = () => {
-  const { qs } = route.query;
-  if (typeof qs === "string" && qs.length > 0) {
-    return {
-      params: buildSearchParamsBySearchText(qs),
-      advanced: true,
-    };
-  }
   return {
     params: mergeSearchParamsByTab(defaultSearchParams(), storedTab.value),
     advanced: false,
@@ -369,14 +372,14 @@ watch(
   () => {
     if (tab.value === "WAITING_APPROVAL" || tab.value === "WAITING_ROLLOUT") {
       if (getValueFromSearchParams(state.params, "status") === "CLOSED") {
-        upsertScope(
-          state.params,
-          {
+        upsertScope({
+          params: state.params,
+          scopes: {
             id: "status",
             value: "OPEN",
           },
-          true /* mutate */
-        );
+          mutate: true,
+        });
       }
     }
   },
@@ -391,20 +394,12 @@ watch(
 );
 
 watch(
-  [() => state.params, tab],
+  () => tab.value,
   () => {
     const hash = route.hash;
-    if (state.params.query || tab.value === "") {
+    if (tab.value !== "") {
       // using custom advanced search query, sync the search query string
       // to URL
-      router.replace({
-        query: {
-          ...route.query,
-          qs: buildSearchTextBySearchParams(state.params),
-        },
-        hash,
-      });
-    } else {
       const query = cloneDeep(route.query);
       delete query["qs"];
       router.replace({
@@ -412,8 +407,7 @@ watch(
         hash,
       });
     }
-  },
-  { deep: true }
+  }
 );
 
 watch(

@@ -102,6 +102,7 @@
 </template>
 
 <script lang="ts" setup>
+import { computedAsync } from "@vueuse/core";
 import { computed } from "vue";
 import { SkipIcon } from "@/components/Icon";
 import PrincipalAvatar from "@/components/PrincipalAvatar.vue";
@@ -110,6 +111,7 @@ import {
   useUserStore,
   type ComposedIssueComment,
 } from "@/store";
+import { extractUserId } from "@/store";
 import {
   IssueComment_Approval,
   IssueComment_Approval_Status,
@@ -118,7 +120,6 @@ import {
   IssueComment_TaskUpdate,
   IssueComment_TaskUpdate_Status,
 } from "@/types/proto/v1/issue_service";
-import { extractUserResourceName } from "@/utils";
 
 type ActionIconType =
   | "avatar"
@@ -142,9 +143,8 @@ const props = defineProps<{
 
 const userStore = useUserStore();
 
-const user = computed(() => {
-  const email = extractUserResourceName(props.issueComment.creator);
-  return userStore.getUserByEmail(email);
+const user = computedAsync(() => {
+  return userStore.getOrFetchUserByIdentifier(props.issueComment.creator);
 });
 
 const icon = computed((): ActionIconType => {
@@ -220,8 +220,7 @@ const icon = computed((): ActionIconType => {
     }
   }
 
-  return extractUserResourceName(issueComment.creator) ==
-    userStore.systemBotUser?.email
+  return extractUserId(issueComment.creator) == userStore.systemBotUser?.email
     ? "system"
     : "avatar";
 });

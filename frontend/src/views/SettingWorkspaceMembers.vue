@@ -2,7 +2,10 @@
   <div class="w-full mx-auto space-y-4">
     <FeatureAttention feature="bb.feature.rbac" />
 
-    <NoPermissionPlaceholder v-if="permissionStore.onlyWorkspaceMember" />
+    <NoPermissionPlaceholder
+      v-if="permissionStore.onlyWorkspaceMember"
+      class="py-6"
+    />
     <NTabs v-else v-model:value="state.selectedTab" type="line" animated>
       <NTabPane name="MEMBERS">
         <template #tab>
@@ -78,6 +81,7 @@
 </template>
 
 <script setup lang="ts">
+import { computedAsync } from "@vueuse/core";
 import { NButton, NTabs, NTabPane, useDialog } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
@@ -190,7 +194,7 @@ const revokeMember = async (binding: MemberBinding) => {
   });
 };
 
-const memberBindingsByRole = computed(() => {
+const memberBindingsByRole = computedAsync(() => {
   return getMemberBindingsByRole({
     policies: [
       {
@@ -201,7 +205,7 @@ const memberBindingsByRole = computed(() => {
     searchText: state.searchText,
     ignoreRoles: new Set([PresetRoleType.WORKSPACE_MEMBER]),
   });
-});
+}, new Map());
 
 const memberBindings = computed(() => {
   return getMemberBindings(memberBindingsByRole.value);

@@ -22,7 +22,6 @@
       {{ $t("settings.sensitive-data.semantic-types.label") }}
     </div>
     <SemanticTypesTable
-      v-if="state.semanticItemList.length > 0"
       :readonly="!hasPermission || !hasSensitiveDataFeature"
       :row-clickable="false"
       :semantic-item-list="state.semanticItemList"
@@ -30,7 +29,6 @@
       @remove="onRemove"
       @confirm="onConfirm"
     />
-    <NoDataPlaceholder v-else />
   </div>
   <SemanticTemplateDrawer
     :show="state.showTemplateDrawer"
@@ -47,7 +45,6 @@ import { useI18n } from "vue-i18n";
 import { featureToRef, pushNotification, useSettingV1Store } from "@/store";
 import { SemanticTypeSetting_SemanticType } from "@/types/proto/v1/setting_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
-import NoDataPlaceholder from "../misc/NoDataPlaceholder.vue";
 import SemanticTemplateDrawer from "./components/SemanticTemplateDrawer.vue";
 import type { SemanticItem } from "./components/SemanticTypesTable.vue";
 import SemanticTypesTable from "./components/SemanticTypesTable.vue";

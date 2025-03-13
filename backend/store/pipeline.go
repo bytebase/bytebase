@@ -66,14 +66,67 @@ func (s *Store) CreatePipelineAIO(ctx context.Context, planUID int64, pipeline *
 	if err != nil {
 		return 0, errors.Wrapf(err, "failed to list stages")
 	}
-	stagesAlreadyExist := map[string]bool{}
+	oldCreatedStages := map[string]*StageMessage{}
 	for _, stage := range stages {
-		stagesAlreadyExist[stage.DeploymentID] = true
+		oldCreatedStages[stage.Environment] = stage
 	}
 
 	var stagesToCreate []*StageMessage
 	for _, stage := range pipeline.Stages {
-		if !stagesAlreadyExist[stage.DeploymentID] {
+		if createdStage, ok := oldCreatedStages[stage.Environment]; ok {
+			// The stage was created, but we could have tasks to create.
+			tasks, err := s.listTasksTx(ctx, tx, &TaskFind{
+				PipelineID: &createdPipelineUID,
+				StageID:    &createdStage.ID,
+			})
+			if err != nil {
+				return 0, errors.Wrapf(err, "failed to list tasks in a created stage")
+			}
+
+			type taskKey struct {
+				instance string
+				database string
+				sheet    int
+			}
+
+			createdTasks := map[taskKey]struct{}{}
+			for _, task := range tasks {
+				k := taskKey{
+					instance: task.InstanceID,
+					sheet:    int(task.Payload.GetSheetId()),
+				}
+				if task.DatabaseName != nil {
+					k.database = *task.DatabaseName
+				}
+				createdTasks[k] = struct{}{}
+			}
+
+			var taskCreateList []*TaskMessage
+
+			for _, taskCreate := range stage.TaskList {
+				k := taskKey{
+					instance: taskCreate.InstanceID,
+					sheet:    int(taskCreate.Payload.GetSheetId()),
+				}
+				if taskCreate.DatabaseName != nil {
+					k.database = *taskCreate.DatabaseName
+				}
+
+				if _, ok := createdTasks[k]; ok {
+					continue
+				}
+				taskCreate.PipelineID = createdPipelineUID
+				taskCreate.StageID = createdStage.ID
+				taskCreateList = append(taskCreateList, taskCreate)
+			}
+
+			if len(taskCreateList) > 0 {
+				if _, err := s.createTasks(ctx, tx, taskCreateList...); err != nil {
+					return 0, errors.Wrap(err, "failed to create tasks")
+				}
+			}
+		} else {
+			// Create the stage and the tasks.
 			stagesToCreate = append(stagesToCreate, stage)
 		}
 	}
@@ -91,8 +144,10 @@ func (s *Store) CreatePipelineAIO(ctx context.Context, planUID int64, pipeline *
 			c.StageID = stage.ID
 			taskCreateList = append(taskCreateList, c)
 		}
-		if _, err := s.createTasks(ctx, tx, taskCreateList...); err != nil {
-			return 0, errors.Wrap(err, "failed to create tasks")
+		if len(taskCreateList) > 0 {
+			if _, err := s.createTasks(ctx, tx, taskCreateList...); err != nil {
+				return 0, errors.Wrap(err, "failed to create tasks")
+			}
 		}
 	}
 
@@ -105,8 +160,8 @@ func (s *Store) CreatePipelineAIO(ctx context.Context, planUID int64, pipeline *
 }
 
 // returns func() to invalidate cache.
-func (s *Store) updatePipelineUIDOfIssueAndPlan(ctx context.Context, tx *Tx, planUID int64, pipelineUID int) (func(), error) {
-	if _, err := tx.ExecContext(ctx, `
+func (s *Store) updatePipelineUIDOfIssueAndPlan(ctx context.Context, txn *sql.Tx, planUID int64, pipelineUID int) (func(), error) {
+	if _, err := txn.ExecContext(ctx, `
 		UPDATE plan
 		SET pipeline_id = $1
 		WHERE id = $2
@@ -114,7 +169,7 @@ func (s *Store) updatePipelineUIDOfIssueAndPlan(ctx context.Context, tx *Tx, pla
 		return nil, errors.Wrapf(err, "failed to update plan pipeline_id")
 	}
 	var issueUID int
-	if err := tx.QueryRowContext(ctx, `
+	if err := txn.QueryRowContext(ctx, `
 		UPDATE issue
 		SET pipeline_id = $1
 		WHERE plan_id = $2
@@ -132,12 +187,12 @@ func (s *Store) updatePipelineUIDOfIssueAndPlan(ctx context.Context, tx *Tx, pla
 	}, nil
 }
 
-func lockPlanAndGetPipelineUID(ctx context.Context, tx *Tx, planUID int64) (*int, error) {
+func lockPlanAndGetPipelineUID(ctx context.Context, txn *sql.Tx, planUID int64) (*int, error) {
 	query := `
 		SELECT pipeline_id FROM plan WHERE id = $1 FOR UPDATE
 	`
 	var uid sql.NullInt32
-	if err := tx.QueryRowContext(ctx, query, planUID).Scan(&uid); err != nil {
+	if err := txn.QueryRowContext(ctx, query, planUID).Scan(&uid); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, errors.Errorf("plan %d not found", planUID)
 		}
@@ -151,7 +206,7 @@ func lockPlanAndGetPipelineUID(ctx context.Context, tx *Tx, planUID int64) (*int
 	return nil, nil
 }
 
-func (*Store) createPipeline(ctx context.Context, tx *Tx, create *PipelineMessage, creatorUID int) (*PipelineMessage, error) {
+func (*Store) createPipeline(ctx context.Context, txn *sql.Tx, create *PipelineMessage, creatorUID int) (*PipelineMessage, error) {
 	query := `
 		INSERT INTO pipeline (
 			project,
@@ -170,7 +225,7 @@ func (*Store) createPipeline(ctx context.Context, tx *Tx, create *PipelineMessag
 		CreatorUID: creatorUID,
 		Name:       create.Name,
 	}
-	if err := tx.QueryRowContext(ctx, query,
+	if err := txn.QueryRowContext(ctx, query,
 		create.ProjectID,
 		creatorUID,
 		create.Name,

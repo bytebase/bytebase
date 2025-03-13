@@ -25,10 +25,12 @@
 <script lang="ts" setup>
 import { FeatureBadge } from "@/components/FeatureGuard";
 import { DatabaseV1Name, EnvironmentV1Name } from "@/components/v2";
-import type { ComposedDatabase } from "@/types";
+import { useDatabaseV1ByName } from "@/store";
 import { InstanceV1EngineIcon } from "./Instance";
 
-defineProps<{
-  database: ComposedDatabase;
+const props = defineProps<{
+  database: string;
 }>();
+
+const { database } = useDatabaseV1ByName(props.database);
 </script>

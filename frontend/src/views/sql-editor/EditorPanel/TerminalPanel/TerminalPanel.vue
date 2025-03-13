@@ -79,12 +79,14 @@
 <script lang="ts" setup>
 import { useElementSize } from "@vueuse/core";
 import { computed, defineAsyncComponent, ref, unref, watch } from "vue";
+import { watchEffect } from "vue";
 import { BBSpin } from "@/bbkit";
 import type { IStandaloneCodeEditor } from "@/components/MonacoEditor";
 import {
   useSQLEditorTabStore,
   useDatabaseV1Store,
   useWebTerminalStore,
+  batchGetOrFetchDatabases,
 } from "@/store";
 import type { SQLEditorQueryParams, WebTerminalQueryItemV1 } from "@/types";
 import {
@@ -109,6 +111,12 @@ const queryState = computed(() => {
 
 const queryList = computed(() => {
   return unref(queryState.value.queryItemList);
+});
+
+watchEffect(async () => {
+  await batchGetOrFetchDatabases(
+    queryList.value.map((query) => query?.params?.connection.database ?? "")
+  );
 });
 
 const queryListContainerRef = ref<HTMLDivElement>();

@@ -1,24 +1,24 @@
 package v1
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"regexp"
+	"slices"
 	"sort"
 	"strings"
-	"time"
 	"unicode"
 
-	tidbparser "github.com/pingcap/tidb/pkg/parser"
-	tidbast "github.com/pingcap/tidb/pkg/parser/ast"
-	"github.com/pingcap/tidb/pkg/parser/format"
+	"github.com/google/cel-go/cel"
+	celast "github.com/google/cel-go/common/ast"
+	celoperators "github.com/google/cel-go/common/operators"
+	celoverloads "github.com/google/cel-go/common/overloads"
 	"github.com/pkg/errors"
-	openai "github.com/sashabaranov/go-openai"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/emptypb"
+	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/config"
@@ -26,34 +26,12 @@ import (
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
-	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/transform"
+	"github.com/bytebase/bytebase/backend/plugin/schema"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
-	"github.com/bytebase/bytebase/backend/store/model"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
-)
-
-const (
-	filterKeyEnvironment = "environment"
-	filterKeyDatabase    = "database"
-	filterKeyStartTime   = "start_time"
-
-	// Support order by count, latest_log_time, average_query_time, maximum_query_time,
-	// average_rows_sent, maximum_rows_sent, average_rows_examined, maximum_rows_examined for now.
-	orderByKeyCount               = "count"
-	orderByKeyLatestLogTime       = "latest_log_time"
-	orderByKeyAverageQueryTime    = "average_query_time"
-	orderByKeyMaximumQueryTime    = "maximum_query_time"
-	orderByKeyAverageRowsSent     = "average_rows_sent"
-	orderByKeyMaximumRowsSent     = "maximum_rows_sent"
-	orderByKeyAverageRowsExamined = "average_rows_examined"
-	orderByKeyMaximumRowsExamined = "maximum_rows_examined"
-
-	// TODO: the frontend not support pagination yet.
-	maximumListDatabasePageSize = 1000000
 )
 
 // DatabaseService implements the database service.
@@ -111,91 +89,208 @@ func (s *DatabaseService) GetDatabase(ctx context.Context, request *v1pb.GetData
 	return database, nil
 }
 
-// ListInstanceDatabases lists all databases for an instance.
-func (s *DatabaseService) ListInstanceDatabases(ctx context.Context, request *v1pb.ListInstanceDatabasesRequest) (*v1pb.ListInstanceDatabasesResponse, error) {
-	instanceID, err := common.GetInstanceID(request.Parent)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+func getVariableAndValueFromExpr(expr celast.Expr) (string, any) {
+	var variable string
+	var value any
+	for _, arg := range expr.AsCall().Args() {
+		switch arg.Kind() {
+		case celast.IdentKind:
+			variable = arg.AsIdent()
+		case celast.LiteralKind:
+			value = arg.AsLiteral().Value()
+		case celast.ListKind:
+			list := []any{}
+			for _, e := range arg.AsList().Elements() {
+				if e.Kind() == celast.LiteralKind {
+					list = append(list, e.AsLiteral().Value())
+				}
+			}
+			value = list
+		}
+	}
+	return variable, value
+}
+
+func getSubConditionFromExpr(expr celast.Expr, getFilter func(expr celast.Expr) (string, error), join string) (string, error) {
+	var args []string
+	for _, arg := range expr.AsCall().Args() {
+		s, err := getFilter(arg)
+		if err != nil {
+			return "", err
+		}
+		args = append(args, "("+s+")")
+	}
+	return strings.Join(args, fmt.Sprintf(" %s ", join)), nil
+}
+
+// TODO(ed): test it.
+func getListDatabaseFilter(filter string) (*store.ListResourceFilter, error) {
+	if filter == "" {
+		return nil, nil
 	}
 
-	offset, err := parseLimitAndOffset(&pageSize{
-		token:   request.PageToken,
-		limit:   int(request.PageSize),
-		maximum: maximumListDatabasePageSize,
-	})
+	e, err := cel.NewEnv()
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to create cel env")
+	}
+	ast, iss := e.Parse(filter)
+	if iss != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "failed to parse filter %v, error: %v", filter, iss.String())
+	}
+
+	var getFilter func(expr celast.Expr) (string, error)
+	var positionalArgs []any
+
+	parseToSQL := func(variable, value any) (string, error) {
+		switch variable {
+		case "project":
+			projectID, err := common.GetProjectID(value.(string))
+			if err != nil {
+				return "", status.Errorf(codes.InvalidArgument, "invalid project filter %q", value)
+			}
+			positionalArgs = append(positionalArgs, projectID)
+			return fmt.Sprintf("db.project = $%d", len(positionalArgs)), nil
+		case "instance":
+			instanceID, err := common.GetInstanceID(value.(string))
+			if err != nil {
+				return "", status.Errorf(codes.InvalidArgument, "invalid instance filter %q", value)
+			}
+			positionalArgs = append(positionalArgs, instanceID)
+			return fmt.Sprintf("db.instance = $%d", len(positionalArgs)), nil
+		case "environment":
+			environmentID, err := common.GetEnvironmentID(value.(string))
+			if err != nil {
+				return "", status.Errorf(codes.InvalidArgument, "invalid environment filter %q", value)
+			}
+			positionalArgs = append(positionalArgs, environmentID)
+			return fmt.Sprintf(`
+			COALESCE(
+				db.environment,
+				instance.environment
+			) = $%d`, len(positionalArgs)), nil
+		case "engine":
+			v1Engine, ok := v1pb.Engine_value[value.(string)]
+			if !ok {
+				return "", status.Errorf(codes.InvalidArgument, "invalid engine filter %q", value)
+			}
+			engine := convertEngine(v1pb.Engine(v1Engine))
+			positionalArgs = append(positionalArgs, engine)
+			return fmt.Sprintf("instance.metadata->>'engine' = $%d", len(positionalArgs)), nil
+		case "name":
+			positionalArgs = append(positionalArgs, value)
+			return fmt.Sprintf("db.name = $%d", len(positionalArgs)), nil
+		case "label":
+			keyVal := strings.Split(value.(string), ":")
+			if len(keyVal) != 2 {
+				return "", status.Errorf(codes.InvalidArgument, `invalid label filter %q, should be in "{label key}:{label value} format"`, value)
+			}
+			labelKey := keyVal[0]
+			labelValues := strings.Split(keyVal[1], ",")
+			positionalArgs = append(positionalArgs, labelValues)
+			return fmt.Sprintf("db.metadata->'labels'->>'%s' = ANY($%d)", labelKey, len(positionalArgs)), nil
+		case "exclude_unassigned":
+			if _, ok := value.(bool); ok {
+				positionalArgs = append(positionalArgs, api.DefaultProjectID)
+				return fmt.Sprintf("db.project != $%d", len(positionalArgs)), nil
+			}
+			return "TRUE", nil
+		default:
+			return "", status.Errorf(codes.InvalidArgument, "unsupport variable %q", variable)
+		}
+	}
+
+	parseToEngineSQL := func(expr celast.Expr, relation string) (string, error) {
+		variable, value := getVariableAndValueFromExpr(expr)
+		if variable != "engine" {
+			return "", status.Errorf(codes.InvalidArgument, `only "engine" support "engine in [xx]"/"!(engine in [xx])" operator`)
+		}
+
+		rawEngineList, ok := value.([]any)
+		if !ok {
+			return "", status.Errorf(codes.InvalidArgument, "invalid engine value %q", value)
+		}
+		if len(rawEngineList) == 0 {
+			return "", status.Errorf(codes.InvalidArgument, "empty engine filter")
+		}
+		engineList := []string{}
+		for _, rawEngine := range rawEngineList {
+			v1Engine, ok := v1pb.Engine_value[rawEngine.(string)]
+			if !ok {
+				return "", status.Errorf(codes.InvalidArgument, "invalid engine filter %q", rawEngine)
+			}
+			engine := convertEngine(v1pb.Engine(v1Engine))
+			positionalArgs = append(positionalArgs, engine)
+			engineList = append(engineList, fmt.Sprintf("$%d", len(positionalArgs)))
+		}
+
+		return fmt.Sprintf("instance.metadata->>'engine' %s (%s)", relation, strings.Join(engineList, ",")), nil
+	}
+
+	getFilter = func(expr celast.Expr) (string, error) {
+		switch expr.Kind() {
+		case celast.CallKind:
+			functionName := expr.AsCall().FunctionName()
+			switch functionName {
+			case celoperators.LogicalOr:
+				return getSubConditionFromExpr(expr, getFilter, "OR")
+			case celoperators.LogicalAnd:
+				return getSubConditionFromExpr(expr, getFilter, "AND")
+			case celoperators.Equals:
+				variable, value := getVariableAndValueFromExpr(expr)
+				return parseToSQL(variable, value)
+			case celoverloads.Matches:
+				variable := expr.AsCall().Target().AsIdent()
+				args := expr.AsCall().Args()
+				if len(args) != 1 {
+					return "", status.Errorf(codes.InvalidArgument, `invalid args for %q`, variable)
+				}
+				value := args[0].AsLiteral().Value()
+				if variable != "name" {
+					return "", status.Errorf(codes.InvalidArgument, `only "name" support %q operator, but found %q`, celoverloads.Matches, variable)
+				}
+				strValue, ok := value.(string)
+				if !ok {
+					return "", status.Errorf(codes.InvalidArgument, "expect string, got %T, hint: filter literals should be string", value)
+				}
+				return "LOWER(db.name) LIKE '%" + strings.ToLower(strValue) + "%'", nil
+			case celoperators.In:
+				return parseToEngineSQL(expr, "IN")
+			case celoperators.LogicalNot:
+				args := expr.AsCall().Args()
+				if len(args) != 1 {
+					return "", status.Errorf(codes.InvalidArgument, `only support !(engine in ["{engine1}", "{engine2}"]) format`)
+				}
+				return parseToEngineSQL(args[0], "NOT IN")
+			default:
+				return "", status.Errorf(codes.InvalidArgument, "unexpected function %v", functionName)
+			}
+		default:
+			return "", status.Errorf(codes.InvalidArgument, "unexpected expr kind %v", expr.Kind())
+		}
+	}
+
+	where, err := getFilter(ast.NativeRep().Expr())
 	if err != nil {
 		return nil, err
 	}
-	limitPlusOne := offset.limit + 1
 
-	find := &store.FindDatabaseMessage{
-		InstanceID: &instanceID,
-		Limit:      &limitPlusOne,
-		Offset:     &offset.offset,
-	}
-
-	// Deprecated. Remove this later.
-	if instanceID == "-" {
-		find.InstanceID = nil
-	}
-	if request.Filter != "" {
-		projectFilter, err := getProjectFilter(request.Filter)
-		if err != nil {
-			return nil, status.Error(codes.InvalidArgument, err.Error())
-		}
-		projectID, err := common.GetProjectID(projectFilter)
-		if err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "invalid project %q in the filter", projectFilter)
-		}
-		find.ProjectID = &projectID
-	}
-
-	databaseMessages, err := s.store.ListDatabases(ctx, find)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-
-	nextPageToken := ""
-	if len(databaseMessages) == limitPlusOne {
-		databaseMessages = databaseMessages[:offset.limit]
-		if nextPageToken, err = offset.getNextPageToken(); err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to marshal next page token, error: %v", err)
-		}
-	}
-
-	response := &v1pb.ListInstanceDatabasesResponse{
-		NextPageToken: nextPageToken,
-	}
-	for _, databaseMessage := range databaseMessages {
-		database, err := s.convertToDatabase(ctx, databaseMessage)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to convert database, error: %v", err)
-		}
-		response.Databases = append(response.Databases, database)
-	}
-	return response, nil
+	return &store.ListResourceFilter{
+		Args:  positionalArgs,
+		Where: "(" + where + ")",
+	}, nil
 }
 
 // ListDatabases lists all databases.
 func (s *DatabaseService) ListDatabases(ctx context.Context, request *v1pb.ListDatabasesRequest) (*v1pb.ListDatabasesResponse, error) {
-	var projectID *string
-	switch {
-	case strings.HasPrefix(request.Parent, common.ProjectNamePrefix):
-		p, err := common.GetProjectID(request.Parent)
-		if err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "invalid project parent %q", request.Parent)
-		}
-		projectID = &p
-	case strings.HasPrefix(request.Parent, common.WorkspacePrefix):
-		// List all databases in a workspace.
-	default:
-		return nil, status.Errorf(codes.InvalidArgument, "invalid parent %q", request.Parent)
+	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "user not found")
 	}
 
 	offset, err := parseLimitAndOffset(&pageSize{
 		token:   request.PageToken,
 		limit:   int(request.PageSize),
-		maximum: maximumListDatabasePageSize,
+		maximum: 1000,
 	})
 	if err != nil {
 		return nil, err
@@ -203,9 +298,55 @@ func (s *DatabaseService) ListDatabases(ctx context.Context, request *v1pb.ListD
 	limitPlusOne := offset.limit + 1
 
 	find := &store.FindDatabaseMessage{
-		ProjectID: projectID,
-		Limit:     &limitPlusOne,
-		Offset:    &offset.offset,
+		Limit:       &limitPlusOne,
+		Offset:      &offset.offset,
+		ShowDeleted: request.ShowDeleted,
+	}
+
+	filter, err := getListDatabaseFilter(request.Filter)
+	if err != nil {
+		return nil, err
+	}
+	find.Filter = filter
+
+	switch {
+	case strings.HasPrefix(request.Parent, common.ProjectNamePrefix):
+		p, err := common.GetProjectID(request.Parent)
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "invalid parent %q", request.Parent)
+		}
+		ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionProjectsGet, user, p)
+		if err != nil {
+			return nil, err
+		}
+		if !ok {
+			return nil, status.Errorf(codes.PermissionDenied, "user does not have permission %q", iam.PermissionProjectsGet)
+		}
+		find.ProjectID = &p
+	case strings.HasPrefix(request.Parent, common.WorkspacePrefix):
+		ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionDatabasesList, user)
+		if err != nil {
+			return nil, err
+		}
+		if !ok {
+			return nil, status.Errorf(codes.PermissionDenied, "user does not have permission %q", iam.PermissionDatabasesList)
+		}
+	case strings.HasPrefix(request.Parent, common.InstanceNamePrefix):
+		ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionInstancesGet, user)
+		if err != nil {
+			return nil, err
+		}
+		if !ok {
+			return nil, status.Errorf(codes.PermissionDenied, "user does not have permission %q", iam.PermissionInstancesGet)
+		}
+
+		instanceID, err := common.GetInstanceID(request.Parent)
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "invalid parent %q", request.Parent)
+		}
+		find.InstanceID = &instanceID
+	default:
+		return nil, status.Errorf(codes.InvalidArgument, "invalid parent %q", request.Parent)
 	}
 
 	databaseMessages, err := s.store.ListDatabases(ctx, find)
@@ -368,8 +509,9 @@ func (s *DatabaseService) SyncDatabase(ctx context.Context, request *v1pb.SyncDa
 
 // BatchUpdateDatabases updates a database in batch.
 func (s *DatabaseService) BatchUpdateDatabases(ctx context.Context, request *v1pb.BatchUpdateDatabasesRequest) (*v1pb.BatchUpdateDatabasesResponse, error) {
-	var databases []*store.DatabaseMessage
-	projectURI := ""
+	databases := []*store.DatabaseMessage{}
+	batchUpdate := &store.BatchUpdateDatabases{}
+	var updateMask *fieldmaskpb.FieldMask
 	for _, req := range request.Requests {
 		if req.Database == nil {
 			return nil, status.Errorf(codes.InvalidArgument, "database must be set")
@@ -399,45 +541,88 @@ func (s *DatabaseService) BatchUpdateDatabases(ctx context.Context, request *v1p
 		if database == nil {
 			return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
 		}
-		if projectURI != "" && projectURI != req.Database.Project {
-			return nil, status.Errorf(codes.InvalidArgument, "database should use the same project")
+		if updateMask == nil {
+			updateMask = req.UpdateMask
 		}
-		projectURI = req.Database.Project
+		if !slices.Equal(updateMask.Paths, req.UpdateMask.Paths) {
+			return nil, status.Errorf(codes.InvalidArgument, "all databases should have the same update_mask")
+		}
+		for _, path := range req.UpdateMask.Paths {
+			switch path {
+			case "project":
+				projectID, err := common.GetProjectID(req.Database.Project)
+				if err != nil {
+					return nil, status.Error(codes.InvalidArgument, err.Error())
+				}
+				if batchUpdate.ProjectID != nil && *batchUpdate.ProjectID != projectID {
+					return nil, status.Errorf(codes.InvalidArgument, "all databases should use the same project")
+				}
+				batchUpdate.ProjectID = &projectID
+			case "environment":
+				if req.Database.Environment != "" {
+					envID, err := common.GetEnvironmentID(req.Database.Environment)
+					if err != nil {
+						return nil, status.Error(codes.InvalidArgument, err.Error())
+					}
+					if batchUpdate.EnvironmentID != nil && *batchUpdate.EnvironmentID != envID {
+						return nil, status.Errorf(codes.InvalidArgument, "all databases should use the same environment")
+					}
+					batchUpdate.EnvironmentID = &envID
+				} else {
+					if batchUpdate.EnvironmentID != nil && *batchUpdate.EnvironmentID != "" {
+						return nil, status.Errorf(codes.InvalidArgument, "all databases should use the same environment")
+					}
+					unsetEnvironment := ""
+					batchUpdate.EnvironmentID = &unsetEnvironment
+				}
+			default:
+				return nil, status.Errorf(codes.InvalidArgument, "unsupported update_mask path %q", path)
+			}
+		}
 		databases = append(databases, database)
 	}
-	// TODO(d): support batch update environment.
-	projectID, err := common.GetProjectID(projectURI)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-
-	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
-		ResourceID:  &projectID,
-		ShowDeleted: true,
-	})
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-	if project == nil {
-		return nil, status.Errorf(codes.NotFound, "project %q not found", projectID)
-	}
-	if project.Deleted {
-		return nil, status.Errorf(codes.FailedPrecondition, "project %q is deleted", projectID)
-	}
-
-	response := &v1pb.BatchUpdateDatabasesResponse{}
-	if len(databases) > 0 {
-		updatedDatabases, err := s.store.BatchUpdateDatabaseProject(ctx, databases, project.ResourceID)
+	if batchUpdate.ProjectID != nil {
+		project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+			ResourceID:  batchUpdate.ProjectID,
+			ShowDeleted: true,
+		})
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
-		for _, databaseMessage := range updatedDatabases {
-			database, err := s.convertToDatabase(ctx, databaseMessage)
-			if err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to convert database, error: %v", err)
-			}
-			response.Databases = append(response.Databases, database)
+		if project == nil {
+			return nil, status.Errorf(codes.NotFound, "project %q not found", *batchUpdate.ProjectID)
 		}
+		if project.Deleted {
+			return nil, status.Errorf(codes.FailedPrecondition, "project %q is deleted", *batchUpdate.ProjectID)
+		}
+	}
+	if batchUpdate.EnvironmentID != nil && *batchUpdate.EnvironmentID != "" {
+		environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{
+			ResourceID:  batchUpdate.EnvironmentID,
+			ShowDeleted: true,
+		})
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+		if environment == nil {
+			return nil, status.Errorf(codes.NotFound, "environment %q not found", *batchUpdate.EnvironmentID)
+		}
+		if environment.Deleted {
+			return nil, status.Errorf(codes.FailedPrecondition, "environment %q is deleted", *batchUpdate.EnvironmentID)
+		}
+	}
+
+	updatedDatabases, err := s.store.BatchUpdateDatabases(ctx, databases, batchUpdate)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	response := &v1pb.BatchUpdateDatabasesResponse{}
+	for _, databaseMessage := range updatedDatabases {
+		database, err := s.convertToDatabase(ctx, databaseMessage)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to convert database, error: %v", err)
+		}
+		response.Databases = append(response.Databases, database)
 	}
 	return response, nil
 }
@@ -913,290 +1098,6 @@ func (s *DatabaseService) DeleteSecret(ctx context.Context, request *v1pb.Delete
 	return &emptypb.Empty{}, nil
 }
 
-type totalValue struct {
-	totalQueryTime time.Duration
-	totalCount     int64
-}
-
-// ListSlowQueries lists the slow queries.
-func (s *DatabaseService) ListSlowQueries(ctx context.Context, request *v1pb.ListSlowQueriesRequest) (*v1pb.ListSlowQueriesResponse, error) {
-	projectID, err := common.GetProjectID(request.Parent)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-
-	findDatabase := &store.FindDatabaseMessage{
-		ProjectID: &projectID,
-	}
-
-	filters, err := ParseFilter(request.Filter)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-
-	var startLogDate, endLogDate *time.Time
-	for _, expr := range filters {
-		switch expr.Key {
-		case filterKeyEnvironment:
-			reg := regexp.MustCompile(`^environments/(.+)`)
-			match := reg.FindStringSubmatch(expr.Value)
-			if len(match) != 2 {
-				return nil, status.Errorf(codes.InvalidArgument, "invalid environment filter %q", expr.Value)
-			}
-			findDatabase.EffectiveEnvironmentID = &match[1]
-		case filterKeyDatabase:
-			instanceID, databaseName, err := common.GetInstanceDatabaseID(expr.Value)
-			if err != nil {
-				return nil, status.Error(codes.InvalidArgument, err.Error())
-			}
-			instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
-			if err != nil {
-				return nil, status.Error(codes.InvalidArgument, err.Error())
-			}
-			if instance == nil {
-				return nil, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
-			}
-			findDatabase.InstanceID = &instanceID
-			findDatabase.DatabaseName = &databaseName
-			findDatabase.IsCaseSensitive = store.IsObjectCaseSensitive(instance)
-		case filterKeyStartTime:
-			switch expr.Operator {
-			case ComparatorTypeGreater:
-				if startLogDate != nil {
-					return nil, status.Errorf(codes.InvalidArgument, "invalid filter %q", request.Filter)
-				}
-				t, err := time.Parse(time.RFC3339, expr.Value)
-				if err != nil {
-					return nil, status.Errorf(codes.InvalidArgument, "invalid start_time filter %q", expr.Value)
-				}
-				t = t.AddDate(0, 0, 1).UTC()
-				startLogDate = &t
-			case ComparatorTypeGreaterEqual:
-				if startLogDate != nil {
-					return nil, status.Errorf(codes.InvalidArgument, "invalid filter %q", request.Filter)
-				}
-				t, err := time.Parse(time.RFC3339, expr.Value)
-				if err != nil {
-					return nil, status.Errorf(codes.InvalidArgument, "invalid start_time filter %q", expr.Value)
-				}
-				t = t.UTC()
-				startLogDate = &t
-			case ComparatorTypeLess:
-				if endLogDate != nil {
-					return nil, status.Errorf(codes.InvalidArgument, "invalid filter %q", request.Filter)
-				}
-				t, err := time.Parse(time.RFC3339, expr.Value)
-				if err != nil {
-					return nil, status.Errorf(codes.InvalidArgument, "invalid start_time filter %q", expr.Value)
-				}
-				t = t.UTC()
-				endLogDate = &t
-			case ComparatorTypeLessEqual:
-				if endLogDate != nil {
-					return nil, status.Errorf(codes.InvalidArgument, "invalid filter %q", request.Filter)
-				}
-				t, err := time.Parse(time.RFC3339, expr.Value)
-				if err != nil {
-					return nil, status.Errorf(codes.InvalidArgument, "invalid start_time filter %q", expr.Value)
-				}
-				t = t.AddDate(0, 0, 1).UTC()
-				endLogDate = &t
-			default:
-				return nil, status.Errorf(codes.InvalidArgument, "invalid start_time filter %q %q %q", expr.Key, expr.Operator, expr.Value)
-			}
-		default:
-			return nil, status.Errorf(codes.InvalidArgument, "invalid filter key %q", expr.Key)
-		}
-	}
-
-	orderByKeys, err := parseOrderBy(request.OrderBy)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-	if err := validSlowQueryOrderByKey(orderByKeys); err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-
-	databases, err := s.store.ListDatabases(ctx, findDatabase)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to find database list %q", err.Error())
-	}
-
-	result := &v1pb.ListSlowQueriesResponse{}
-	instanceMap := make(map[string]*totalValue)
-
-	for _, database := range databases {
-		instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
-			ResourceID: &database.InstanceID,
-		})
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to find instance %q", err.Error())
-		}
-		if instance == nil {
-			return nil, status.Errorf(codes.NotFound, "instance %q not found", database.InstanceID)
-		}
-		listSlowQuery := &store.ListSlowQueryMessage{
-			InstanceID:   &database.InstanceID,
-			DatabaseName: &database.DatabaseName,
-			StartLogDate: startLogDate,
-			EndLogDate:   endLogDate,
-		}
-		logs, err := s.store.ListSlowQuery(ctx, listSlowQuery)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to find slow query %q", err.Error())
-		}
-
-		for _, log := range logs {
-			result.SlowQueryLogs = append(result.SlowQueryLogs, convertToSlowQueryLog(database.InstanceID, database.DatabaseName, database.ProjectID, log))
-			if value, exists := instanceMap[database.InstanceID]; exists {
-				value.totalQueryTime += log.Statistics.AverageQueryTime.AsDuration() * time.Duration(log.Statistics.Count)
-				value.totalCount += log.Statistics.Count
-			} else {
-				instanceMap[database.InstanceID] = &totalValue{
-					totalQueryTime: log.Statistics.AverageQueryTime.AsDuration() * time.Duration(log.Statistics.Count),
-					totalCount:     log.Statistics.Count,
-				}
-			}
-		}
-	}
-
-	for _, log := range result.SlowQueryLogs {
-		instanceID, _, err := common.GetInstanceDatabaseID(log.Resource)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to get instance id %q", err.Error())
-		}
-		totalQueryTime := log.Statistics.AverageQueryTime.AsDuration() * time.Duration(log.Statistics.Count)
-		log.Statistics.QueryTimePercent = float64(totalQueryTime) / float64(instanceMap[instanceID].totalQueryTime)
-		log.Statistics.CountPercent = float64(log.Statistics.Count) / float64(instanceMap[instanceID].totalCount)
-	}
-
-	result, err = sortSlowQueryLogResponse(result, orderByKeys)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to sort slow query logs %q", err.Error())
-	}
-
-	return result, nil
-}
-
-func sortSlowQueryLogResponse(response *v1pb.ListSlowQueriesResponse, orderByKeys []orderByKey) (*v1pb.ListSlowQueriesResponse, error) {
-	if len(orderByKeys) == 0 {
-		orderByKeys = []orderByKey{
-			{
-				key:      orderByKeyAverageQueryTime,
-				isAscend: false,
-			},
-		}
-	}
-
-	if err := validSlowQueryOrderByKey(orderByKeys); err != nil {
-		return nil, err
-	}
-
-	sort.Slice(response.SlowQueryLogs, func(i, j int) bool {
-		for _, key := range orderByKeys {
-			switch key.key {
-			case orderByKeyCount:
-				lCount := response.SlowQueryLogs[i].Statistics.Count
-				rCount := response.SlowQueryLogs[j].Statistics.Count
-				if lCount != rCount {
-					if key.isAscend {
-						return lCount < rCount
-					}
-					return lCount > rCount
-				}
-			case orderByKeyLatestLogTime:
-				lTime := response.SlowQueryLogs[i].Statistics.LatestLogTime.AsTime()
-				rTime := response.SlowQueryLogs[j].Statistics.LatestLogTime.AsTime()
-				if !lTime.Equal(rTime) {
-					if key.isAscend {
-						return lTime.Before(rTime)
-					}
-					return lTime.After(rTime)
-				}
-			case orderByKeyAverageQueryTime:
-				lTime := response.SlowQueryLogs[i].Statistics.AverageQueryTime.AsDuration()
-				rTime := response.SlowQueryLogs[j].Statistics.AverageQueryTime.AsDuration()
-				if lTime != rTime {
-					if key.isAscend {
-						return lTime < rTime
-					}
-					return lTime > rTime
-				}
-			case orderByKeyMaximumQueryTime:
-				lDuration := response.SlowQueryLogs[i].Statistics.MaximumQueryTime.AsDuration()
-				rDuration := response.SlowQueryLogs[j].Statistics.MaximumQueryTime.AsDuration()
-				if lDuration != rDuration {
-					if key.isAscend {
-						return lDuration < rDuration
-					}
-					return lDuration > rDuration
-				}
-			case orderByKeyAverageRowsSent:
-				lSent := response.SlowQueryLogs[i].Statistics.AverageRowsSent
-				rSent := response.SlowQueryLogs[j].Statistics.AverageRowsSent
-				if lSent != rSent {
-					if key.isAscend {
-						return lSent < rSent
-					}
-					return lSent > rSent
-				}
-			case orderByKeyMaximumRowsSent:
-				lSent := response.SlowQueryLogs[i].Statistics.MaximumRowsSent
-				rSent := response.SlowQueryLogs[j].Statistics.MaximumRowsSent
-				if lSent != rSent {
-					if key.isAscend {
-						return lSent < rSent
-					}
-					return lSent > rSent
-				}
-			case orderByKeyAverageRowsExamined:
-				lExamined := response.SlowQueryLogs[i].Statistics.AverageRowsExamined
-				rExamined := response.SlowQueryLogs[j].Statistics.AverageRowsExamined
-				if lExamined != rExamined {
-					if key.isAscend {
-						return lExamined < rExamined
-					}
-					return lExamined > rExamined
-				}
-			case orderByKeyMaximumRowsExamined:
-				lExamined := response.SlowQueryLogs[i].Statistics.MaximumRowsExamined
-				rExamined := response.SlowQueryLogs[j].Statistics.MaximumRowsExamined
-				if lExamined != rExamined {
-					if key.isAscend {
-						return lExamined < rExamined
-					}
-					return lExamined > rExamined
-				}
-			}
-		}
-		return false
-	})
-
-	return response, nil
-}
-
-func validSlowQueryOrderByKey(keys []orderByKey) error {
-	for _, key := range keys {
-		switch key.key {
-		// Support order by count, latest_log_time, average_query_time, maximum_query_time,
-		// average_rows_sent, maximum_rows_sent, average_rows_examined, maximum_rows_examined for now.
-		case orderByKeyCount, orderByKeyLatestLogTime, orderByKeyAverageQueryTime, orderByKeyMaximumQueryTime,
-			orderByKeyAverageRowsSent, orderByKeyMaximumRowsSent, orderByKeyAverageRowsExamined, orderByKeyMaximumRowsExamined:
-		default:
-			return errors.Errorf("invalid order_by key %q", key.key)
-		}
-	}
-	return nil
-}
-
-func convertToSlowQueryLog(instanceID string, databaseName string, projectID string, log *v1pb.SlowQueryLog) *v1pb.SlowQueryLog {
-	return &v1pb.SlowQueryLog{
-		Resource:   fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, instanceID, common.DatabaseIDPrefix, databaseName),
-		Project:    common.FormatProject(projectID),
-		Statistics: log.Statistics,
-	}
-}
-
 func (s *DatabaseService) convertToDatabase(ctx context.Context, database *store.DatabaseMessage) (*v1pb.Database, error) {
 	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
 		ResourceID: &database.InstanceID,
@@ -1283,373 +1184,153 @@ func isUpperCaseLetter(c rune) bool {
 	return 'A' <= c && c <= 'Z'
 }
 
-// AdviseIndex advises the index of a table.
-func (s *DatabaseService) AdviseIndex(ctx context.Context, request *v1pb.AdviseIndexRequest) (*v1pb.AdviseIndexResponse, error) {
-	if err := s.licenseService.IsFeatureEnabled(api.FeatureAIAssistant); err != nil {
-		return nil, status.Error(codes.PermissionDenied, err.Error())
-	}
-	instanceID, databaseName, err := common.GetInstanceDatabaseID(request.Parent)
+func (s *DatabaseService) GetSchemaString(ctx context.Context, request *v1pb.GetSchemaStringRequest) (*v1pb.GetSchemaStringResponse, error) {
+	instanceID, databaseName, err := common.GetInstanceDatabaseID(request.Name)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get instance %s", instanceID)
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	if instance == nil {
 		return nil, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
 	}
 
-	findDatabase := &store.FindDatabaseMessage{
-		InstanceID:      &instanceID,
-		DatabaseName:    &databaseName,
-		IsCaseSensitive: store.IsObjectCaseSensitive(instance),
-	}
-	database, err := s.store.GetDatabaseV2(ctx, findDatabase)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "Failed to get database: %v", err)
-	}
-	if database == nil {
-		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
-	}
-
-	switch instance.Metadata.GetEngine() {
-	case storepb.Engine_POSTGRES:
-		return s.pgAdviseIndex(ctx, request, database)
-	case storepb.Engine_MYSQL:
-		return s.mysqlAdviseIndex(ctx, request, instance, database)
-	default:
-		return nil, status.Errorf(codes.InvalidArgument, "AdviseIndex is not implemented for engine: %v", instance.Metadata.GetEngine())
-	}
-}
-
-func (s *DatabaseService) mysqlAdviseIndex(ctx context.Context, request *v1pb.AdviseIndexRequest, instance *store.InstanceMessage, database *store.DatabaseMessage) (*v1pb.AdviseIndexResponse, error) {
-	key, endpoint, modelName, err := s.getOpenAISetting((ctx))
-	if err != nil {
-		return nil, err
-	}
-
-	var schemas []*model.DatabaseSchema
-	// Deal with the cross database query.
-	resources, err := base.ExtractResourceList(instance.Metadata.GetEngine(), database.DatabaseName, "", request.Statement)
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "Failed to extract resource list: %v", err)
-	}
-	databaseMap := make(map[string]bool)
-	for _, resource := range resources {
-		databaseMap[resource.Database] = true
-	}
-	var databases []string
-	for database := range databaseMap {
-		databases = append(databases, database)
-	}
-	if len(databases) == 0 {
-		databases = append(databases, database.DatabaseName)
-	}
-
-	for _, db := range databases {
-		findDatabase := &store.FindDatabaseMessage{
-			InstanceID:      &instance.ResourceID,
-			DatabaseName:    &db,
-			IsCaseSensitive: store.IsObjectCaseSensitive(instance),
-		}
-		database, err := s.store.GetDatabaseV2(ctx, findDatabase)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "Failed to get database: %v", err)
-		}
-		if database == nil {
-			return nil, status.Errorf(codes.NotFound, "database %q not found", db)
-		}
-		schema, err := s.store.GetDBSchema(ctx, database.InstanceID, database.DatabaseName)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "Failed to get database schema: %v", err)
-		}
-		schemas = append(schemas, schema)
-	}
-
-	var compactBuf bytes.Buffer
-	for _, schema := range schemas {
-		compactSchema, err := schema.CompactText()
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "Failed to compact database schema: %v", err)
-		}
-		if _, err := compactBuf.WriteString(compactSchema); err != nil {
-			return nil, status.Errorf(codes.Internal, "Failed to write compact database schema: %v", err)
-		}
-	}
-
-	messages := []openai.ChatCompletionMessage{
-		{
-			Role:    openai.ChatMessageRoleSystem,
-			Content: `You are a MySQL index advisor. You answer the question about the index of tables and SQLs. DO NOT EXPLAIN THE ANSWER.`,
-		},
-		{
-			Role: openai.ChatMessageRoleUser,
-			Content: `You are an assistant who works as a Magic: The strict MySQL index advisor. Analyze the SQL with schema and existing indexes, then give the advice in the JSON format.
-			If the SQL will use the existing index, the current_index field is the index name with database name and table name. Otherwise, the current_index field is "N/A".
-			If it is possible to create a new index to speed up the query, the create_index_statement field is the SQL statement to create the index. Otherwise, the create_index_statement field is empty string.
-			YOUR ADVICE MUST FOLLOW JSON FORMAT. DO NOT EXPLAIN THE ADVICE.
-			Here two examples:
-			{"current_index": "index_schema_table_age ON db1.schema_table", "create_index_statement":""}
-			{"current_index": "N/A", "create_index_statement":"CREATE INDEX ON db1.schema_table(collected_at, schema_index_id)"}
-			` + fmt.Sprintf(`### MySQL schema:\n### %s\n###The SQL is:\n### %s###`, compactBuf.String(), request.Statement),
-		},
-	}
-
-	generateFunc := func(resp *v1pb.AdviseIndexResponse) error {
-		// Generate current index.
-		if resp.CurrentIndex != "N/A" {
-			// Use regex to extract the index name, database name and table name from "index_schema_table_age ON public.schema_table".
-			reg := regexp.MustCompile(`(?i)(.*) ON (.*)\.(.*)`)
-			matches := reg.FindStringSubmatch(resp.CurrentIndex)
-			if len(matches) != 4 {
-				return errors.Errorf("failed to extract index name, database name and table name from %s", resp.CurrentIndex)
-			}
-			var dbSchema *model.DatabaseSchema
-			for _, schema := range schemas {
-				if schema.GetMetadata().Name == matches[2] {
-					dbSchema = schema
-					break
-				}
-			}
-			if dbSchema == nil {
-				return errors.Errorf("database %s doesn't exist", matches[2])
-			}
-			tableMetadata := dbSchema.GetDatabaseMetadata().GetSchema("").GetTable(matches[3])
-			if tableMetadata == nil {
-				return errors.Errorf("table %s doesn't exist", matches[3])
-			}
-			indexMetadata := tableMetadata.GetIndex(matches[1])
-			if indexMetadata == nil {
-				return errors.Errorf("index %s doesn't exist", resp.CurrentIndex)
-			}
-			indexProto := indexMetadata.GetProto()
-			resp.CurrentIndex = fmt.Sprintf("USING %s (%s)", indexProto.Type, strings.Join(indexProto.Expressions, ", "))
-		} else {
-			resp.CurrentIndex = "No usable index"
-		}
-
-		// Generate suggestion and create index statement.
-		if resp.CreateIndexStatement != "" {
-			p := tidbparser.New()
-			node, err := p.ParseOneStmt(resp.CreateIndexStatement, "", "")
-			if err != nil {
-				return errors.Errorf("failed to parse create index statement: %v", err)
-			}
-			switch createIndex := node.(type) {
-			case *tidbast.CreateIndexStmt:
-				defineString, err := mysqlIndexExpressionList(createIndex)
-				if err != nil {
-					return errors.Errorf("failed to generate create index statement: %v", err)
-				}
-				indexType := createIndex.IndexOption.Tp.String()
-				if indexType == "" {
-					indexType = "BTREE"
-				}
-				resp.Suggestion = fmt.Sprintf("USING %s (%s)", indexType, defineString)
-			default:
-				return errors.Errorf("expect create index statement, but got %T", node)
-			}
-		} else {
-			resp.Suggestion = "N/A"
-		}
-
-		return nil
-	}
-
-	result, err := getOpenAIResponse(ctx, messages, key, endpoint, modelName, generateFunc)
-	if err != nil {
-		return nil, err
-	}
-
-	return result, nil
-}
-
-func mysqlIndexExpressionList(node *tidbast.CreateIndexStmt) (string, error) {
-	var buf bytes.Buffer
-	for i, item := range node.IndexPartSpecifications {
-		text, err := restoreNode(item)
-		if err != nil {
-			return "", err
-		}
-		if i != 0 {
-			if _, err := buf.WriteString(", "); err != nil {
-				return "", err
-			}
-		}
-		if _, err := buf.WriteString(text); err != nil {
-			return "", err
-		}
-	}
-	return buf.String(), nil
-}
-
-func restoreNode(node tidbast.Node) (string, error) {
-	var buffer strings.Builder
-	ctx := format.NewRestoreCtx(format.DefaultRestoreFlags, &buffer)
-	if err := node.Restore(ctx); err != nil {
-		return "", err
-	}
-	return buffer.String(), nil
-}
-
-func (s *DatabaseService) pgAdviseIndex(ctx context.Context, request *v1pb.AdviseIndexRequest, database *store.DatabaseMessage) (*v1pb.AdviseIndexResponse, error) {
-	key, endpoint, modelName, err := s.getOpenAISetting((ctx))
-	if err != nil {
-		return nil, err
-	}
-	schema, err := s.store.GetDBSchema(ctx, database.InstanceID, database.DatabaseName)
+	dbSchema, err := s.store.GetDBSchema(ctx, instanceID, databaseName)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Failed to get database schema: %v", err)
 	}
-	compactSchema, err := schema.CompactText()
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "Failed to compact database schema: %v", err)
-	}
 
-	messages := []openai.ChatCompletionMessage{
-		{
-			Role:    openai.ChatMessageRoleSystem,
-			Content: `You are a PostgreSQL index advisor. You answer the question about the index of tables and SQLs. DO NOT EXPLAIN THE ANSWER.`,
-		},
-		{
-			Role: openai.ChatMessageRoleUser,
-			Content: `You are an assistant who works as a Magic: The strict PostgreSQL index advisor. Analyze the SQL with schema and existing indexes, then give the advice in the JSON format.
-			If the SQL will use the existing index, the current_index field is the index name with schema name and table name. Otherwise, the current_index field is "N/A".
-			If it is possible to create a new index to speed up the query, the create_index_statement field is the SQL statement to create the index. Otherwise, the create_index_statement field is empty string.
-			YOUR ADVICE MUST FOLLOW JSON FORMAT. DO NOT EXPLAIN THE ADVICE.
-			Here two examples:
-			{"current_index": "index_schema_table_age ON public.schema_table", "create_index_statement":""}
-			{"current_index": "N/A", "create_index_statement":"CREATE INDEX ON public.schema_table(collected_at, schema_index_id)"}
-			` + fmt.Sprintf(`### Postgres schema:\n### %s\n###The SQL is:\n### %s###`, compactSchema, request.Statement),
-		},
-	}
-
-	generateFunc := func(resp *v1pb.AdviseIndexResponse) error {
-		// Generate current index.
-		if resp.CurrentIndex != "N/A" {
-			// Use regex to extract the index name, schema name and table name from "index_schema_table_age ON public.schema_table".
-			reg := regexp.MustCompile(`(?i)(.*) ON (.*)\.(.*)`)
-			matches := reg.FindStringSubmatch(resp.CurrentIndex)
-			if len(matches) != 4 {
-				return errors.Errorf("failed to extract index name, schema name and table name from %s", resp.CurrentIndex)
-			}
-			schemaMetadata := schema.GetDatabaseMetadata().GetSchema(matches[2])
-			if schemaMetadata == nil {
-				return errors.Errorf("schema %s doesn't exist", matches[2])
-			}
-			tableMetadata := schemaMetadata.GetTable(matches[3])
-			if tableMetadata == nil {
-				return errors.Errorf("table %s doesn't exist", matches[3])
-			}
-			indexMetadata := tableMetadata.GetIndex(matches[1])
-			if indexMetadata == nil {
-				return errors.Errorf("index %s doesn't exist", resp.CurrentIndex)
-			}
-			indexProto := indexMetadata.GetProto()
-			resp.CurrentIndex = fmt.Sprintf("USING %s (%s)", indexProto.Type, strings.Join(indexProto.Expressions, ", "))
-		} else {
-			resp.CurrentIndex = "No usable index"
+	switch request.Type {
+	case v1pb.GetSchemaStringRequest_OBJECT_TYPE_UNSPECIFIED:
+		if request.Metadata == nil {
+			return nil, status.Errorf(codes.InvalidArgument, "metadata is required")
 		}
-
-		// Generate suggestion and create index statement.
-		if resp.CreateIndexStatement != "" {
-			nodes, err := pgrawparser.Parse(pgrawparser.ParseContext{}, resp.CreateIndexStatement)
-			if err != nil {
-				return errors.Errorf("failed to parse create index statement: %v", err)
-			}
-			if len(nodes) != 1 {
-				return errors.Errorf("expect 1 statement, but got %d", len(nodes))
-			}
-			switch node := nodes[0].(type) {
-			case *ast.CreateIndexStmt:
-				resp.Suggestion = fmt.Sprintf("USING %s (%s)", node.Index.Method, strings.Join(node.Index.GetKeyNameList(), ", "))
-			default:
-				return errors.Errorf("expect CreateIndexStmt, but got %T", node)
-			}
-		} else {
-			resp.Suggestion = "N/A"
-		}
-
-		return nil
-	}
-
-	result, err := getOpenAIResponse(ctx, messages, key, endpoint, modelName, generateFunc)
-	if err != nil {
-		return nil, err
-	}
-
-	return result, nil
-}
-
-func (s *DatabaseService) getOpenAISetting(ctx context.Context) (string, string, string, error) {
-	key, err := s.store.GetSettingV2(ctx, api.SettingPluginOpenAIKey)
-	if err != nil {
-		return "", "", "", status.Errorf(codes.Internal, "Failed to get setting: %v", err)
-	}
-	if key.Value == "" {
-		return "", "", "", status.Errorf(codes.FailedPrecondition, "OpenAI key is not set")
-	}
-	endpointSetting, err := s.store.GetSettingV2(ctx, api.SettingPluginOpenAIEndpoint)
-	if err != nil {
-		return "", "", "", status.Errorf(codes.Internal, "Failed to get setting: %v", err)
-	}
-	var endpoint string
-	if endpointSetting != nil {
-		endpoint = endpointSetting.Value
-	}
-	model, err := s.store.GetSettingV2(ctx, api.SettingPluginOpenAIModel)
-	if err != nil {
-		return "", "", "", status.Errorf(codes.Internal, "Failed to get setting: %v", err)
-	}
-	return key.Value, endpoint, model.Value, nil
-}
-
-func getOpenAIResponse(ctx context.Context, messages []openai.ChatCompletionMessage, key, endpoint, model string, generateResponse func(*v1pb.AdviseIndexResponse) error) (*v1pb.AdviseIndexResponse, error) {
-	var result v1pb.AdviseIndexResponse
-	successful := false
-	var retErr error
-	if model == "" {
-		model = openai.GPT3Dot5Turbo
-	}
-	// Retry 5 times if failed.
-	for i := 0; i < 5; i++ {
-		cfg := openai.DefaultConfig(key)
-		if endpoint != "" {
-			cfg.BaseURL = endpoint
-		}
-		client := openai.NewClientWithConfig(cfg)
-		resp, err := client.CreateChatCompletion(
-			ctx,
-			openai.ChatCompletionRequest{
-				Model:            model,
-				Messages:         messages,
-				Temperature:      0,
-				Stop:             []string{"#", ";"},
-				TopP:             1.0,
-				FrequencyPenalty: 0.0,
-				PresencePenalty:  0.0,
-			},
-		)
+		storeSchema, err := convertV1DatabaseMetadata(request.Metadata)
 		if err != nil {
-			retErr = errors.Wrap(err, "failed to create chat completion")
-			continue
+			return nil, status.Errorf(codes.InvalidArgument, "failed to convert database metadata: %v", err)
 		}
-		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(resp.Choices[0].Message.Content), &result); err != nil {
-			retErr = errors.Wrapf(err, "failed to unmarshal chat completion response content: %s", resp.Choices[0].Message.Content)
-			continue
+		s, err := schema.GetDatabaseDefinition(instance.Metadata.Engine, schema.GetDefinitionContext{
+			SkipBackupSchema: false,
+			PrintHeader:      false,
+		}, storeSchema)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "Failed to get database schema: %v", err)
 		}
-		if err = generateResponse(&result); err != nil {
-			retErr = errors.Wrap(err, "failed to generate response")
-			continue
+		return &v1pb.GetSchemaStringResponse{SchemaString: s}, nil
+	case v1pb.GetSchemaStringRequest_DATABASE:
+		metadata := dbSchema.GetMetadata()
+		s, err := schema.GetDatabaseDefinition(instance.Metadata.Engine, schema.GetDefinitionContext{
+			SkipBackupSchema: false,
+			PrintHeader:      false,
+		}, metadata)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "Failed to get database schema: %v", err)
 		}
-		successful = true
-		break
-	}
+		return &v1pb.GetSchemaStringResponse{SchemaString: s}, nil
+	case v1pb.GetSchemaStringRequest_SCHEMA:
+		schemaMetadata := dbSchema.GetDatabaseMetadata().GetSchema(request.Schema)
+		if schemaMetadata == nil {
+			return nil, status.Errorf(codes.NotFound, "schema %q not found", request.Schema)
+		}
 
-	if !successful {
-		return nil, status.Errorf(codes.Internal, "Failed to get index advice, error %v", retErr)
+		s, err := schema.GetSchemaDefinition(instance.Metadata.Engine, schemaMetadata.GetProto())
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "Failed to get schema schema: %v", err)
+		}
+		return &v1pb.GetSchemaStringResponse{SchemaString: s}, nil
+	case v1pb.GetSchemaStringRequest_TABLE:
+		schemaMetadata := dbSchema.GetDatabaseMetadata().GetSchema(request.Schema)
+		if schemaMetadata == nil {
+			return nil, status.Errorf(codes.NotFound, "schema %q not found", request.Schema)
+		}
+		tableMetadata := schemaMetadata.GetTable(request.Object)
+		if tableMetadata == nil {
+			return nil, status.Errorf(codes.NotFound, "table %q not found", request.Object)
+		}
+		sequences := schemaMetadata.GetSequencesByOwnerTable(request.Object)
+		var sequencesProto []*storepb.SequenceMetadata
+		for _, sequence := range sequences {
+			sequencesProto = append(sequencesProto, sequence.GetProto())
+		}
+		s, err := schema.GetTableDefinition(instance.Metadata.Engine, request.Schema, tableMetadata.GetProto(), sequencesProto)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "Failed to get table schema: %v", err)
+		}
+		return &v1pb.GetSchemaStringResponse{SchemaString: s}, nil
+	case v1pb.GetSchemaStringRequest_VIEW:
+		schemaMetadata := dbSchema.GetDatabaseMetadata().GetSchema(request.Schema)
+		if schemaMetadata == nil {
+			return nil, status.Errorf(codes.NotFound, "schema %q not found", request.Schema)
+		}
+		viewMetadata := schemaMetadata.GetView(request.Object)
+		if viewMetadata == nil {
+			return nil, status.Errorf(codes.NotFound, "view %q not found", request.Object)
+		}
+		s, err := schema.GetViewDefinition(instance.Metadata.Engine, request.Schema, viewMetadata.GetProto())
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "Failed to get view schema: %v", err)
+		}
+		return &v1pb.GetSchemaStringResponse{SchemaString: s}, nil
+	case v1pb.GetSchemaStringRequest_MATERIALIZED_VIEW:
+		schemaMetadata := dbSchema.GetDatabaseMetadata().GetSchema(request.Schema)
+		if schemaMetadata == nil {
+			return nil, status.Errorf(codes.NotFound, "schema %q not found", request.Schema)
+		}
+		materializedViewMetadata := schemaMetadata.GetMaterializedView(request.Object)
+		if materializedViewMetadata == nil {
+			return nil, status.Errorf(codes.NotFound, "materialized view %q not found", request.Object)
+		}
+		s, err := schema.GetMaterializedViewDefinition(instance.Metadata.Engine, request.Schema, materializedViewMetadata.GetProto())
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "Failed to get materialized view schema: %v", err)
+		}
+		return &v1pb.GetSchemaStringResponse{SchemaString: s}, nil
+	case v1pb.GetSchemaStringRequest_FUNCTION:
+		schemaMetadata := dbSchema.GetDatabaseMetadata().GetSchema(request.Schema)
+		if schemaMetadata == nil {
+			return nil, status.Errorf(codes.NotFound, "schema %q not found", request.Schema)
+		}
+		functionMetadata := schemaMetadata.GetFunction(request.Object)
+		if functionMetadata == nil {
+			return nil, status.Errorf(codes.NotFound, "function %q not found", request.Object)
+		}
+		s, err := schema.GetFunctionDefinition(instance.Metadata.Engine, request.Schema, functionMetadata.GetProto())
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "Failed to get function schema: %v", err)
+		}
+		return &v1pb.GetSchemaStringResponse{SchemaString: s}, nil
+	case v1pb.GetSchemaStringRequest_PROCEDURE:
+		schemaMetadata := dbSchema.GetDatabaseMetadata().GetSchema(request.Schema)
+		if schemaMetadata == nil {
+			return nil, status.Errorf(codes.NotFound, "schema %q not found", request.Schema)
+		}
+		procedureMetadata := schemaMetadata.GetProcedure(request.Object)
+		if procedureMetadata == nil {
+			return nil, status.Errorf(codes.NotFound, "procedure %q not found", request.Object)
+		}
+		s, err := schema.GetProcedureDefinition(instance.Metadata.Engine, request.Schema, procedureMetadata.GetProto())
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "Failed to get procedure schema: %v", err)
+		}
+		return &v1pb.GetSchemaStringResponse{SchemaString: s}, nil
+	case v1pb.GetSchemaStringRequest_SEQUENCE:
+		schemaMetadata := dbSchema.GetDatabaseMetadata().GetSchema(request.Schema)
+		if schemaMetadata == nil {
+			return nil, status.Errorf(codes.NotFound, "schema %q not found", request.Schema)
+		}
+		sequenceMetadata := schemaMetadata.GetSequence(request.Object)
+		if sequenceMetadata == nil {
+			return nil, status.Errorf(codes.NotFound, "sequence %q not found", request.Object)
+		}
+		s, err := schema.GetSequenceDefinition(instance.Metadata.Engine, request.Schema, sequenceMetadata.GetProto())
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "Failed to get sequence schema: %v", err)
+		}
+		return &v1pb.GetSchemaStringResponse{SchemaString: s}, nil
+	default:
+		return nil, status.Errorf(codes.InvalidArgument, "unsupported schema type %v", request.Type)
 	}
-	return &result, nil
 }

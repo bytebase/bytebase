@@ -72,12 +72,12 @@ func (d *Driver) Open(_ context.Context, dbType storepb.Engine, connCfg db.Conne
 	}()
 
 	protocol := "tcp"
-	if strings.HasPrefix(connCfg.Host, "/") {
+	if strings.HasPrefix(connCfg.DataSource.Host, "/") {
 		protocol = "unix"
 	}
 	params := []string{"multiStatements=true", "maxAllowedPacket=0"}
-	if connCfg.SSHConfig.Host != "" {
-		sshClient, err := util.GetSSHClient(connCfg.SSHConfig)
+	if connCfg.DataSource.GetSshHost() != "" {
+		sshClient, err := util.GetSSHClient(connCfg.DataSource)
 		if err != nil {
 			return nil, err
 		}
@@ -89,14 +89,13 @@ func (d *Driver) Open(_ context.Context, dbType storepb.Engine, connCfg db.Conne
 		protocol = "mysql+tcp"
 	}
 
-	// TODO(zp): mysql and mysqlbinlog doesn't support SSL yet. We need to write certs to temp files and load them as CLI flags.
-	tlsConfig, err := connCfg.TLSConfig.GetSslConfig()
+	tlscfg, err := util.GetTLSConfig(connCfg.DataSource)
 	if err != nil {
 		return nil, errors.Wrap(err, "sql: tls config error")
 	}
 	tlsKey := uuid.NewString()
-	if tlsConfig != nil {
-		if err := mysql.RegisterTLSConfig(tlsKey, tlsConfig); err != nil {
+	if tlscfg != nil {
+		if err := mysql.RegisterTLSConfig(tlsKey, tlscfg); err != nil {
 			return nil, errors.Wrap(err, "sql: failed to register tls config")
 		}
 		// TLS config is only used during sql.Open, so should be safe to deregister afterwards.
@@ -104,7 +103,7 @@ func (d *Driver) Open(_ context.Context, dbType storepb.Engine, connCfg db.Conne
 		params = append(params, fmt.Sprintf("tls=%s", tlsKey))
 	}
 
-	dsn := fmt.Sprintf("%s:%s@%s(%s:%s)/%s?%s", connCfg.Username, connCfg.Password, protocol, connCfg.Host, connCfg.Port, connCfg.Database, strings.Join(params, "&"))
+	dsn := fmt.Sprintf("%s:%s@%s(%s:%s)/%s?%s", connCfg.DataSource.Username, connCfg.Password, protocol, connCfg.DataSource.Host, connCfg.DataSource.Port, connCfg.ConnectionContext.DatabaseName, strings.Join(params, "&"))
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
 		return nil, err
@@ -117,7 +116,7 @@ func (d *Driver) Open(_ context.Context, dbType storepb.Engine, connCfg db.Conne
 	db.SetMaxIdleConns(15)
 	d.connectionCtx = connCfg.ConnectionContext
 	d.connCfg = connCfg
-	d.databaseName = connCfg.Database
+	d.databaseName = connCfg.ConnectionContext.DatabaseName
 
 	return d, nil
 }

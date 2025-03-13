@@ -6,8 +6,8 @@
 </template>
 
 <script setup lang="ts">
+import { computedAsync } from "@vueuse/core";
 import { UnlinkIcon } from "lucide-vue-next";
-import { computed } from "vue";
 import { EngineIcon } from "@/components/Icon";
 import { useDatabaseV1Store } from "@/store";
 import type { SQLEditorTab } from "@/types";
@@ -19,12 +19,14 @@ const props = defineProps<{
   tab?: SQLEditorTab;
 }>();
 
-const instance = computed(() => {
+const instance = computedAsync(async () => {
   const { sheet, tab } = props;
   if (sheet) {
     if (!sheet.database) return undefined;
-    return useDatabaseV1Store().getDatabaseByName(sheet.database)
-      .instanceResource;
+    const database = await useDatabaseV1Store().getOrFetchDatabaseByName(
+      sheet.database
+    );
+    return database.instanceResource;
   }
   if (tab) {
     return connectionForSQLEditorTab(tab).instance;

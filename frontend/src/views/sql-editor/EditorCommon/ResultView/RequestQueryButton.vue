@@ -19,7 +19,7 @@
 import { NButton } from "naive-ui";
 import { computed, ref } from "vue";
 import GrantRequestPanel from "@/components/GrantRequestPanel";
-import { useDatabaseV1Store } from "@/store";
+import { useDatabaseV1ByName } from "@/store";
 import {
   isValidDatabaseName,
   PresetRoleType,
@@ -38,14 +38,13 @@ const props = withDefaults(
 );
 
 const showPanel = ref(false);
-const dbStore = useDatabaseV1Store();
 
-const database = computed(() =>
-  dbStore.getDatabaseByName(props.databaseResource.databaseFullName)
+const { database } = useDatabaseV1ByName(
+  computed(() => props.databaseResource.databaseFullName)
 );
 
 const available = computed(() => {
-  if (!isValidDatabaseName(props.databaseResource.databaseFullName)) {
+  if (!isValidDatabaseName(database.value.name)) {
     return false;
   }
 

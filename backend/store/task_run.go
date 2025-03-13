@@ -20,7 +20,6 @@ type TaskRunMessage struct {
 	TaskUID     int
 	StageUID    int
 	PipelineUID int
-	Name        string
 	Status      api.TaskRunStatus
 	Code        common.Code
 	Result      string
@@ -98,14 +97,13 @@ func (s *Store) ListTaskRunsV2(ctx context.Context, find *FindTaskRunMessage) ([
 		where = append(where, fmt.Sprintf("task_run.status in (%s)", strings.Join(list, ",")))
 	}
 
-	rows, err := s.db.db.QueryContext(ctx, fmt.Sprintf(`
+	rows, err := s.db.QueryContext(ctx, fmt.Sprintf(`
 		SELECT
 			task_run.id,
 			task_run.creator_id,
 			task_run.created_at,
 			task_run.updated_at,
 			task_run.task_id,
-			task_run.name,
 			task_run.status,
 			task_run.started_at,
 			task_run.code,
@@ -137,7 +135,6 @@ func (s *Store) ListTaskRunsV2(ctx context.Context, find *FindTaskRunMessage) ([
 			&taskRun.CreatedAt,
 			&taskRun.UpdatedAt,
 			&taskRun.TaskUID,
-			&taskRun.Name,
 			&taskRun.Status,
 			&startedAt,
 			&taskRun.Code,
@@ -256,7 +253,7 @@ func (s *Store) CreatePendingTaskRuns(ctx context.Context, creates ...*TaskRunMe
 	return nil
 }
 
-func (*Store) getTaskNextAttempt(ctx context.Context, tx *Tx, taskIDs []int) ([]int, error) {
+func (*Store) getTaskNextAttempt(ctx context.Context, txn *sql.Tx, taskIDs []int) ([]int, error) {
 	query := `
 	WITH tasks AS (
 		SELECT id FROM unnest(CAST($1 AS INTEGER[])) AS id
@@ -266,7 +263,7 @@ func (*Store) getTaskNextAttempt(ctx context.Context, tx *Tx, taskIDs []int) ([]
 	FROM tasks ORDER BY tasks.id ASC;
 	`
 
-	rows, err := tx.QueryContext(ctx, query, taskIDs)
+	rows, err := txn.QueryContext(ctx, query, taskIDs)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to query")
 	}
@@ -287,21 +284,21 @@ func (*Store) getTaskNextAttempt(ctx context.Context, tx *Tx, taskIDs []int) ([]
 	return attempts, nil
 }
 
-func (s *Store) createPendingTaskRunsTx(ctx context.Context, tx *Tx, attempts []int, creates []*TaskRunMessage) error {
+func (s *Store) createPendingTaskRunsTx(ctx context.Context, txn *sql.Tx, attempts []int, creates []*TaskRunMessage) error {
 	if len(attempts) != len(creates) {
 		return errors.Errorf("length of attempts and creates are different")
 	}
 
 	// TODO(p0ny): batch create.
 	for i, create := range creates {
-		if err := s.createTaskRunImpl(ctx, tx, create, attempts[i], api.TaskRunPending, create.CreatorID); err != nil {
+		if err := s.createTaskRunImpl(ctx, txn, create, attempts[i], api.TaskRunPending, create.CreatorID); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (*Store) checkTaskRunsExist(ctx context.Context, tx *Tx, taskIDs []int, statuses []api.TaskRunStatus) (bool, error) {
+func (*Store) checkTaskRunsExist(ctx context.Context, txn *sql.Tx, taskIDs []int, statuses []api.TaskRunStatus) (bool, error) {
 	query := `
 	SELECT EXISTS (
 		SELECT 1
@@ -310,7 +307,7 @@ func (*Store) checkTaskRunsExist(ctx context.Context, tx *Tx, taskIDs []int, sta
 	)`
 
 	var exist bool
-	if err := tx.QueryRowContext(ctx, query, taskIDs, statuses).Scan(&exist); err != nil {
+	if err := txn.QueryRowContext(ctx, query, taskIDs, statuses).Scan(&exist); err != nil {
 		return false, errors.Wrapf(err, "failed to query if task runs exist")
 	}
 
@@ -318,23 +315,21 @@ func (*Store) checkTaskRunsExist(ctx context.Context, tx *Tx, taskIDs []int, sta
 }
 
 // createTaskRunImpl creates a new taskRun.
-func (*Store) createTaskRunImpl(ctx context.Context, tx *Tx, create *TaskRunMessage, attempt int, status api.TaskRunStatus, creatorID int) error {
+func (*Store) createTaskRunImpl(ctx context.Context, txn *sql.Tx, create *TaskRunMessage, attempt int, status api.TaskRunStatus, creatorID int) error {
 	query := `
 		INSERT INTO task_run (
 			creator_id,
 			task_id,
 			sheet_id,
 			attempt,
-			name,
 			status
-		) VALUES ($1, $2, $3, $4, $5, $6)
+		) VALUES ($1, $2, $3, $4, $5)
 	`
-	if _, err := tx.ExecContext(ctx, query,
+	if _, err := txn.ExecContext(ctx, query,
 		creatorID,
 		create.TaskUID,
 		create.SheetUID,
 		attempt,
-		create.Name,
 		status,
 	); err != nil {
 		return err
@@ -343,7 +338,7 @@ func (*Store) createTaskRunImpl(ctx context.Context, tx *Tx, create *TaskRunMess
 }
 
 // patchTaskRunStatusImpl updates a taskRun status. Returns the new state of the taskRun after update.
-func (*Store) patchTaskRunStatusImpl(ctx context.Context, tx *Tx, patch *TaskRunStatusPatch) (*TaskRunMessage, error) {
+func (*Store) patchTaskRunStatusImpl(ctx context.Context, txn *sql.Tx, patch *TaskRunStatusPatch) (*TaskRunMessage, error) {
 	set, args := []string{"updated_at = $1", "status = $2"}, []any{time.Now(), patch.Status}
 	if v := patch.Code; v != nil {
 		set, args = append(set, fmt.Sprintf("code = $%d", len(args)+1)), append(args, *v)
@@ -364,11 +359,11 @@ func (*Store) patchTaskRunStatusImpl(ctx context.Context, tx *Tx, patch *TaskRun
 	where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, patch.ID)
 
 	var taskRun TaskRunMessage
-	if err := tx.QueryRowContext(ctx, `
+	if err := txn.QueryRowContext(ctx, `
 		UPDATE task_run
 		SET `+strings.Join(set, ", ")+`
 		WHERE `+strings.Join(where, " AND ")+`
-		RETURNING id, creator_id, created_at, updated_at, task_id, name, status, code, result
+		RETURNING id, creator_id, created_at, updated_at, task_id, status, code, result
 	`,
 		args...,
 	).Scan(
@@ -377,7 +372,6 @@ func (*Store) patchTaskRunStatusImpl(ctx context.Context, tx *Tx, patch *TaskRun
 		&taskRun.CreatedAt,
 		&taskRun.UpdatedAt,
 		&taskRun.TaskUID,
-		&taskRun.Name,
 		&taskRun.Status,
 		&taskRun.Code,
 		&taskRun.Result,
@@ -410,7 +404,7 @@ func (s *Store) ListTaskRun(ctx context.Context, find *TaskRunFind) ([]*TaskRunM
 	return list, nil
 }
 
-func (*Store) findTaskRunImpl(ctx context.Context, tx *Tx, find *TaskRunFind) ([]*TaskRunMessage, error) {
+func (*Store) findTaskRunImpl(ctx context.Context, txn *sql.Tx, find *TaskRunFind) ([]*TaskRunMessage, error) {
 	where, args := []string{"TRUE"}, []any{}
 	if v := find.TaskID; v != nil {
 		where, args = append(where, fmt.Sprintf("task_run.task_id = $%d", len(args)+1)), append(args, *v)
@@ -431,14 +425,13 @@ func (*Store) findTaskRunImpl(ctx context.Context, tx *Tx, find *TaskRunFind) ([
 		where = append(where, fmt.Sprintf("task_run.status in (%s)", strings.Join(list, ",")))
 	}
 
-	rows, err := tx.QueryContext(ctx, fmt.Sprintf(`
+	rows, err := txn.QueryContext(ctx, fmt.Sprintf(`
 		SELECT
 			task_run.id,
 			task_run.creator_id,
 			task_run.created_at,
 			task_run.updated_at,
 			task_run.task_id,
-			task_run.name,
 			task_run.status,
 			task_run.code,
 			task_run.result,
@@ -464,7 +457,6 @@ func (*Store) findTaskRunImpl(ctx context.Context, tx *Tx, find *TaskRunFind) ([
 			&taskRun.CreatedAt,
 			&taskRun.UpdatedAt,
 			&taskRun.TaskUID,
-			&taskRun.Name,
 			&taskRun.Status,
 			&taskRun.Code,
 			&taskRun.Result,
@@ -489,7 +481,7 @@ func (s *Store) BatchCancelTaskRuns(ctx context.Context, taskRunIDs []int) error
 		UPDATE task_run
 		SET status = $1
 		WHERE id = ANY($2)`
-	if _, err := s.db.db.ExecContext(ctx, query, api.TaskRunCanceled, taskRunIDs); err != nil {
+	if _, err := s.db.ExecContext(ctx, query, api.TaskRunCanceled, taskRunIDs); err != nil {
 		return err
 	}
 	return nil

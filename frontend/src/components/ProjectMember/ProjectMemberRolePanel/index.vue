@@ -207,7 +207,7 @@
 </template>
 
 <script lang="ts" setup>
-import { cloneDeep, isEqual, uniqBy } from "lodash-es";
+import { cloneDeep, isEqual } from "lodash-es";
 import { Building2Icon } from "lucide-vue-next";
 import { NButton, NTag, NTooltip, useDialog } from "naive-ui";
 import { computed, reactive, ref, watch } from "vue";
@@ -220,20 +220,23 @@ import GroupNameCell from "@/components/User/Settings/UserDataTableByGroup/cells
 import { Drawer, DrawerContent, InstanceV1Name } from "@/components/v2";
 import {
   extractGroupEmail,
-  extractUserEmail,
+  extractUserId,
   useDatabaseV1Store,
   useProjectIamPolicy,
   useProjectIamPolicyStore,
   useUserStore,
   pushNotification,
+  batchGetOrFetchDatabases,
 } from "@/store";
-import { groupNamePrefix } from "@/store/modules/v1/common";
 import type { ComposedProject, DatabaseResource } from "@/types";
 import { PresetRoleType, PRESET_ROLES } from "@/types";
-import { type User } from "@/types/proto/v1/user_service";
 import { State } from "@/types/proto/v1/common";
 import { Binding } from "@/types/proto/v1/iam_policy";
-import { displayRoleTitle, hasProjectPermissionV2 } from "@/utils";
+import {
+  displayRoleTitle,
+  hasProjectPermissionV2,
+  memberMapToRolesInProjectIAM,
+} from "@/utils";
 import {
   convertFromExpr,
   stringifyConditionExpression,
@@ -287,7 +290,7 @@ const editingBinding = ref<Binding | null>(null);
 const panelTitle = computed(() => {
   let email = props.binding.binding;
   if (props.binding.type === "users") {
-    email = extractUserEmail(email);
+    email = extractUserId(email);
   } else {
     email = extractGroupEmail(email);
   }
@@ -367,26 +370,9 @@ const allowRemoveRole = (role: string) => {
   }
 
   if (role === PresetRoleType.PROJECT_OWNER) {
-    const ownerBindings = iamPolicy.value.bindings.filter(
-      (binding) => binding.role === PresetRoleType.PROJECT_OWNER
-    );
-    const members: User[] = [];
-    // Find those never expires owner members.
-    for (const binding of ownerBindings) {
-      if (binding.condition?.expression !== "") {
-        continue;
-      }
-      members.push(
-        ...((binding?.members || [])
-          .filter((member) => !member.startsWith(groupNamePrefix))
-          .map((userIdentifier) => {
-            return userStore.getUserByIdentifier(userIdentifier);
-          })
-          .filter((user) => user && user.state === State.ACTIVE) as User[])
-      );
-    }
+    const memberMap = memberMapToRolesInProjectIAM(iamPolicy.value, role);
     // If there is only one owner, disallow removing.
-    if (uniqBy(members, "email").length <= 1) {
+    if (memberMap.size <= 1) {
       return false;
     }
   }
@@ -504,21 +490,19 @@ const handleDeleteCondition = async (singleBinding: SingleBinding) => {
   });
 };
 
-const extractDatabaseName = (databaseResource?: DatabaseResource) => {
-  if (!databaseResource) {
-    return "*";
-  }
-  const database = databaseStore.getDatabaseByName(
-    databaseResource.databaseFullName
-  );
-  return database.databaseName;
-};
-
 const extractDatabase = (databaseResource: DatabaseResource) => {
   const database = databaseStore.getDatabaseByName(
     databaseResource.databaseFullName
   );
   return database;
+};
+
+const extractDatabaseName = (databaseResource?: DatabaseResource) => {
+  if (!databaseResource) {
+    return "*";
+  }
+  const database = extractDatabase(databaseResource);
+  return database.databaseName;
 };
 
 const extractSchemaName = (databaseResource?: DatabaseResource) => {
@@ -589,6 +573,11 @@ watch(
           Array.isArray(conditionExpr.databaseResources) &&
           conditionExpr.databaseResources.length > 0
         ) {
+          await batchGetOrFetchDatabases(
+            conditionExpr.databaseResources.map(
+              (resource) => resource.databaseFullName
+            )
+          );
           for (const resource of conditionExpr.databaseResources) {
             singleBindingList.push({
               ...singleBinding,
