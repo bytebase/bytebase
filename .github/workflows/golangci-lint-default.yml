@@ -4,11 +4,12 @@ name: golangci-lint
 on:
   pull_request:
     branches:
-      - main
-      - "release/*.*.*"
+      - 'main'
+      - 'release/*.*.*'
     paths-ignore:
-      - "backend/**"
-      - "go.mod"
+      - 'backend/**'
+      - 'go.mod'
+      - 'proto/**/*.go'
 
 jobs:
   golangci-lint:
