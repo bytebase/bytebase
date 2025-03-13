@@ -2,9 +2,19 @@ package v1
 
 import (
 	"github.com/bytebase/bytebase/backend/component/masker"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
+	"github.com/pkg/errors"
 )
+
+func maskCosmosDB(span *base.QuerySpan, data any, objectSchema *storepb.ObjectSchema, semanticTypeToMasker map[string]masker.Masker) (any, error) {
+	if len(span.Results) == 1 && len(span.Results[0].SourceFieldPaths) == 0 {
+		// SELECT * FROM c
+		return walkAndMaskJSON(data, objectSchema, semanticTypeToMasker)
+	}
+	return nil, errors.New("unsupported statement for CosmosDB masking")
+}
 
 func walkAndMaskJSON(data any, objectSchema *storepb.ObjectSchema, semanticTypeToMasker map[string]masker.Masker) (any, error) {
 	switch data := data.(type) {
