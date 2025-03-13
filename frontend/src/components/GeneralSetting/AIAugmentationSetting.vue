@@ -62,55 +62,57 @@
           </span>
         </NTooltip>
 
-        <label class="flex items-center gap-x-2">
-          <span class="font-medium">{{
-            $t("settings.general.workspace.ai-assistant.openai-endpoint.self")
-          }}</span>
-        </label>
-        <div class="mb-3 text-sm text-gray-400">
-          {{
-            $t(
-              "settings.general.workspace.ai-assistant.openai-endpoint.description"
-            )
-          }}
-        </div>
-        <NTooltip placement="top-start" :disabled="allowEdit">
-          <template #trigger>
-            <NInput
-              v-model:value="state.openAIEndpoint"
-              class="mb-4 w-full"
-              :disabled="!allowEdit || !hasAIFeature"
-            />
-          </template>
-          <span class="text-sm text-gray-400 -translate-y-2">
-            {{ $t("settings.general.workspace.only-admin-can-edit") }}
-          </span>
-        </NTooltip>
+        <template v-if="isDev()">
+          <label class="flex items-center gap-x-2">
+            <span class="font-medium">{{
+              $t("settings.general.workspace.ai-assistant.openai-endpoint.self")
+            }}</span>
+          </label>
+          <div class="mb-3 text-sm text-gray-400">
+            {{
+              $t(
+                "settings.general.workspace.ai-assistant.openai-endpoint.description"
+              )
+            }}
+          </div>
+          <NTooltip placement="top-start" :disabled="allowEdit">
+            <template #trigger>
+              <NInput
+                v-model:value="state.openAIEndpoint"
+                class="mb-4 w-full"
+                :disabled="!allowEdit || !hasAIFeature"
+              />
+            </template>
+            <span class="text-sm text-gray-400 -translate-y-2">
+              {{ $t("settings.general.workspace.only-admin-can-edit") }}
+            </span>
+          </NTooltip>
 
-        <label class="flex items-center gap-x-2">
-          <span class="font-medium">{{
-            $t("settings.general.workspace.ai-assistant.openai-model.self")
-          }}</span>
-        </label>
-        <div class="mb-3 text-sm text-gray-400">
-          {{
-            $t(
-              "settings.general.workspace.ai-assistant.openai-model.description"
-            )
-          }}
-        </div>
-        <NTooltip placement="top-start" :disabled="allowEdit">
-          <template #trigger>
-            <NInput
-              v-model:value="state.openAIModel"
-              class="mb-4 w-full"
-              :disabled="!allowEdit || !hasAIFeature"
-            />
-          </template>
-          <span class="text-sm text-gray-400 -translate-y-2">
-            {{ $t("settings.general.workspace.only-admin-can-edit") }}
-          </span>
-        </NTooltip>
+          <label class="flex items-center gap-x-2">
+            <span class="font-medium">{{
+              $t("settings.general.workspace.ai-assistant.openai-model.self")
+            }}</span>
+          </label>
+          <div class="mb-3 text-sm text-gray-400">
+            {{
+              $t(
+                "settings.general.workspace.ai-assistant.openai-model.description"
+              )
+            }}
+          </div>
+          <NTooltip placement="top-start" :disabled="allowEdit">
+            <template #trigger>
+              <NInput
+                v-model:value="state.openAIModel"
+                class="mb-4 w-full"
+                :disabled="!allowEdit || !hasAIFeature"
+              />
+            </template>
+            <span class="text-sm text-gray-400 -translate-y-2">
+              {{ $t("settings.general.workspace.only-admin-can-edit") }}
+            </span>
+          </NTooltip>
+        </template>
       </div>
     </div>
   </div>
@@ -123,6 +125,7 @@ import { computed, onMounted, reactive, ref, watchEffect } from "vue";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import { hasFeature } from "@/store";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
+import { isDev } from "@/utils";
 import { FeatureBadge } from "../FeatureGuard";
 
 interface LocalState {
@@ -145,38 +148,38 @@ const state = reactive<LocalState>({
   openAIModel: "",
 });
 
-const openAIKeySetting = settingV1Store.getSettingByName(
-  "bb.plugin.openai.key"
+const openAIKeySetting = computed(() =>
+  settingV1Store.getSettingByName("bb.plugin.openai.key")
 );
-const openAIEndpointSetting = settingV1Store.getSettingByName(
-  "bb.plugin.openai.endpoint"
+const openAIEndpointSetting = computed(() =>
+  settingV1Store.getSettingByName("bb.plugin.openai.endpoint")
 );
-const openAIModelSetting = settingV1Store.getSettingByName(
-  "bb.plugin.openai.model"
+const openAIModelSetting = computed(() =>
+  settingV1Store.getSettingByName("bb.plugin.openai.model")
 );
 
 const hasAIFeature = computed(() => hasFeature("bb.feature.ai-assistant"));
 
 const getInitialState = (): LocalState => {
   return {
-    openAIKey: maskKey(openAIKeySetting?.value?.stringValue),
-    openAIEndpoint: openAIEndpointSetting?.value?.stringValue ?? "",
-    openAIModel: openAIModelSetting?.value?.stringValue ?? "",
+    openAIKey: maskKey(openAIKeySetting.value?.value?.stringValue),
+    openAIEndpoint: openAIEndpointSetting.value?.value?.stringValue ?? "",
+    openAIModel: openAIModelSetting.value?.value?.stringValue ?? "",
   };
 };
 
 watchEffect(() => {
-  Object.assign(state, getInitialState);
+  Object.assign(state, getInitialState());
 });
 
 const allowSave = computed((): boolean => {
   const openAIKeyUpdated =
-    state.openAIKey !== maskKey(openAIKeySetting?.value?.stringValue) ||
+    state.openAIKey !== maskKey(openAIKeySetting.value?.value?.stringValue) ||
     (state.openAIKey && !state.openAIKey.includes("***"));
   const openAIEndpointUpdated =
-    state.openAIEndpoint !== openAIEndpointSetting?.value?.stringValue;
+    state.openAIEndpoint !== openAIEndpointSetting.value?.value?.stringValue;
   const openAIModelUpdated =
-    state.openAIModel !== openAIModelSetting?.value?.stringValue;
+    state.openAIModel !== openAIModelSetting.value?.value?.stringValue;
   return openAIKeyUpdated || openAIEndpointUpdated || openAIModelUpdated;
 });
 
@@ -186,7 +189,7 @@ function maskKey(key: string | undefined): string {
 
 const updateOpenAIKeyEndpoint = async () => {
   if (
-    state.openAIKey !== maskKey(openAIKeySetting?.value?.stringValue) ||
+    state.openAIKey !== maskKey(openAIKeySetting.value?.value?.stringValue) ||
     !state.openAIKey.includes("***")
   ) {
     await settingV1Store.upsertSetting({
@@ -196,7 +199,9 @@ const updateOpenAIKeyEndpoint = async () => {
       },
     });
   }
-  if (state.openAIEndpoint !== openAIEndpointSetting?.value?.stringValue) {
+  if (
+    state.openAIEndpoint !== openAIEndpointSetting.value?.value?.stringValue
+  ) {
     await settingV1Store.upsertSetting({
       name: "bb.plugin.openai.endpoint",
       value: {
@@ -204,7 +209,7 @@ const updateOpenAIKeyEndpoint = async () => {
       },
     });
   }
-  if (state.openAIEndpoint !== openAIModelSetting?.value?.stringValue) {
+  if (state.openAIEndpoint !== openAIModelSetting.value?.value?.stringValue) {
     await settingV1Store.upsertSetting({
       name: "bb.plugin.openai.model",
       value: {
@@ -212,6 +217,8 @@ const updateOpenAIKeyEndpoint = async () => {
       },
     });
   }
+
+  Object.assign(state, getInitialState());
 };
 
 onMounted(() => {
