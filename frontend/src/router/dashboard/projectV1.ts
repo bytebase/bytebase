@@ -15,6 +15,7 @@ export const PROJECT_V1_ROUTE_DATABASE_GROUPS_CREATE = `${PROJECT_V1_ROUTE_DASHB
 export const PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.database-group.detail`;
 export const PROJECT_V1_ROUTE_ISSUES = `${PROJECT_V1_ROUTE_DASHBOARD}.issue`;
 export const PROJECT_V1_ROUTE_ISSUE_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.issue.detail`;
+export const PROJECT_V1_ROUTE_PLANS = `${PROJECT_V1_ROUTE_DASHBOARD}.plan`;
 export const PROJECT_V1_ROUTE_PLAN_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.plan.detail`;
 export const PROJECT_V1_ROUTE_CHANGELISTS = `${PROJECT_V1_ROUTE_DASHBOARD}.changelist`;
 export const PROJECT_V1_ROUTE_CHANGELIST_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.changelist.detail`;
@@ -393,6 +394,18 @@ const projectV1Routes: RouteRecordRaw[] = [
         },
         component: () => import("@/views/ReviewCenter/index.vue"),
         props: true,
+      },
+      {
+        path: "plans",
+        name: PROJECT_V1_ROUTE_PLANS,
+        redirect(to) {
+          return {
+            name: PROJECT_V1_ROUTE_REVIEW_CENTER,
+            params: {
+              projectId: to.params.projectId,
+            },
+          };
+        },
       },
       {
         path: "releases",
