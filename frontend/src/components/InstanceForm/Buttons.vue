@@ -71,6 +71,7 @@ import {
 import { isValidSpannerHost, defer, wrapRefAsPromise } from "@/utils";
 import ScanIntervalInput from "./ScanIntervalInput.vue";
 import {
+  applyExtraConnectionParameters,
   calcDataSourceUpdateMask,
   extractBasicInfo,
   extractDataSourceEditState,
@@ -263,8 +264,19 @@ const doCreate = async () => {
   state.value.isRequesting = true;
   try {
     await useGracefulRequest(async () => {
+      // Create a copy of the pending instance
+      const createInstance = { ...pendingCreateInstance.value };
+      
+      // Apply extra connection parameters to all data sources
+      createInstance.dataSources.forEach((ds, index) => {
+        const editDS = adminDataSource.value;
+        if (index === 0 && editDS) {
+          applyExtraConnectionParameters(ds, editDS);
+        }
+      });
+      
       const createdInstance = await instanceV1Store.createInstance(
-        pendingCreateInstance.value
+        createInstance
       );
       // Sync the database list after instance is created.
       useDatabaseV1List(createdInstance.name);
@@ -292,21 +304,7 @@ const doCreate = async () => {
 const updateEditState = (instance: Instance) => {
   basicInfo.value = extractBasicInfo(instance);
   const updatedEditState = extractDataSourceEditState(instance);
-  
-  // Explicitly preserve extraConnectionParameters from the instance when setting the updated edit state
-  if (instance.dataSources) {
-    instance.dataSources.forEach((originalDs) => {
-      const ds = updatedEditState.dataSources.find(d => d.id === originalDs.id);
-      if (ds && originalDs.extraConnectionParameters) {
-        // Ensure we have a fresh copy of the extraConnectionParameters
-        ds.extraConnectionParameters = { ...originalDs.extraConnectionParameters };
-      }
-    });
-  }
-  
-  // Now set the updated dataSources in the edit state
   dataSourceEditState.value.dataSources = updatedEditState.dataSources;
-  
   if (
     updatedEditState.dataSources.findIndex(
       (ds) => ds.id === dataSourceEditState.value.editingDataSourceId
@@ -431,6 +429,9 @@ const doUpdate = async () => {
         return true;
       }
     }
+    
+    // Apply extra connection parameters to ensure they are properly handled
+    applyExtraConnectionParameters(editing, editState);
 
     pendingRequestRunners.push(() =>
       instanceV1Store.updateDataSource(inst, editing, updateMask)
@@ -469,6 +470,9 @@ const doUpdate = async () => {
             return true;
           }
         }
+        
+        // Apply extra connection parameters to ensure they are properly handled
+        applyExtraConnectionParameters(patch, editing);
 
         pendingRequestRunners.push(() =>
           instanceV1Store.createDataSource(inst, patch)

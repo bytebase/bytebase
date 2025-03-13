@@ -1233,7 +1233,9 @@
           "description": "Filtrar por dirección"
         }
       }
-    }
+    },
+    "no-params-yet-add-above": "No hay parámetros configurados todavía. \nAgregue parámetros usando el formulario anterior.",
+    "no-extra-params-configured": "No hay parámetros de conexión adicionales configurados"
   },
   "environment": {
     "select": "Seleccionar entorno",

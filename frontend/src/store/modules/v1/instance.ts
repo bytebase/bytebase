@@ -1,5 +1,6 @@
 import { defineStore } from "pinia";
 import { computed, reactive, watchEffect } from "vue";
+import { cloneDeep } from "lodash-es";
 import { instanceServiceClient } from "@/grpcweb";
 import type { ComposedInstance } from "@/types";
 import { unknownEnvironment, unknownInstance } from "@/types";
@@ -40,11 +41,9 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
     const composedInstances = await Promise.all(
       list.map((instance) => composeInstance(instance))
     );
-    
     composedInstances.forEach((composed) => {
       instanceMapByName.set(composed.name, composed);
     });
-    
     return composedInstances;
   };
   const createInstance = async (instance: Instance) => {
@@ -122,8 +121,7 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
       return cached;
     }
     await fetchInstanceByName(name, silent);
-    const instance = getInstanceByName(name);
-    return instance;
+    return getInstanceByName(name);
   };
   const createDataSource = async (
     instance: Instance,
@@ -141,15 +139,8 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
     dataSource: DataSource,
     updateMask: string[]
   ) => {
-    // Create a clean version of the data source with manually copied extraConnectionParameters
-    const cleanDataSource = {...dataSource};
-    if (dataSource.extraConnectionParameters) {
-      const cleanParams: Record<string, string> = {};
-      Object.entries(dataSource.extraConnectionParameters).forEach(([key, value]) => {
-        cleanParams[key] = value;
-      });
-      cleanDataSource.extraConnectionParameters = cleanParams;
-    }
+    // Create a deep clone of the data source to ensure all nested objects are properly copied
+    const cleanDataSource = cloneDeep(dataSource);
     
     const updatedInstance = await instanceServiceClient.updateDataSource({
       name: instance.name,

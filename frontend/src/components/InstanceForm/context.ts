@@ -106,19 +106,7 @@ export const provideInstanceFormContext = (baseContext: {
   });
 
   const resetDataSource = () => {
-    // Extract the edit state to get fresh copies of the data sources
     dataSourceEditState.value = extractDataSourceEditState(instance.value);
-    
-    // Explicitly preserve the extraConnectionParameters for each data source after reset
-    if (instance.value?.dataSources) {
-      instance.value.dataSources.forEach((originalDs) => {
-        const ds = dataSourceEditState.value.dataSources.find(d => d.id === originalDs.id);
-        if (ds && originalDs.extraConnectionParameters) {
-          // Ensure we have a fresh copy of the extraConnectionParameters
-          ds.extraConnectionParameters = { ...originalDs.extraConnectionParameters };
-        }
-      });
-    }
   };
   const missingFeature = ref<FeatureType | undefined>(undefined);
 

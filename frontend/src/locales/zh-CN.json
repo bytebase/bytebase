@@ -1233,7 +1233,9 @@
           "description": "按地址过滤"
         }
       }
-    }
+    },
+    "no-params-yet-add-above": "尚未配置参数。\n使用上面的形式添加参数。",
+    "no-extra-params-configured": "没有配置的额外连接参数"
   },
   "environment": {
     "select": "选择环境",

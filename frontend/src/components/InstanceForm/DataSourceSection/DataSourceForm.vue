@@ -884,7 +884,7 @@ MIIEvQ...
       v-if="extraConnectionParamsList.length === 0" 
       class="text-gray-500 text-sm mt-2 italic"
     >
-      {{ allowEdit ? 'No parameters configured yet. Add parameters using the form above.' : 'No extra connection parameters configured' }}
+      {{ allowEdit ? $t('instance.no-params-yet-add-above') : $t('instance.no-extra-params-configured') }}
     </div>
   </div>
 
