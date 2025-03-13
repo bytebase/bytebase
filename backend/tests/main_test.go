@@ -13,20 +13,21 @@ import (
 
 func TestMain(m *testing.M) {
 	ctx := context.Background()
-	if err := startMain(ctx); err != nil {
+	code, err := startMain(ctx, m)
+	if err != nil {
 		log.Fatal(err)
 	}
 
-	os.Exit(m.Run())
+	os.Exit(code)
 }
 
-func startMain(ctx context.Context) error {
+func startMain(ctx context.Context, m *testing.M) (int, error) {
 	resourceDir = os.TempDir()
 	if _, err := postgres.Install(resourceDir); err != nil {
-		return err
+		return 0, err
 	}
 	if _, err := mongoutil.Install(resourceDir); err != nil {
-		return err
+		return 0, err
 	}
 
 	pgContainer, err := getPgContainer(ctx)
@@ -34,9 +35,10 @@ func startMain(ctx context.Context) error {
 		pgContainer.Close(ctx)
 	}()
 	if err != nil {
-		return err
+		return 0, err
 	}
 	externalPgHost = pgContainer.host
 	externalPgPort = pgContainer.port
-	return nil
+
+	return m.Run(), nil
 }
