@@ -3,8 +3,7 @@ name: Build and push release image
 on:
   push:
     branches:
-      # Run on pushing branches like `release/1.0.0`
-      - "release/*.*.*"
+      - 'release/*.*.*'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}

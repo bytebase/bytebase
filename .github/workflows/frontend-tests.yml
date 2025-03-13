@@ -4,9 +4,9 @@ on:
   pull_request:
     branches:
       - main
-      - "release/*.*.*"
+      - 'release/*.*.*'
     paths:
-      - "frontend/**"
+      - 'frontend/**'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}

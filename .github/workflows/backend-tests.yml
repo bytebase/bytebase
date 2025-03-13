@@ -3,11 +3,12 @@ name: Backend Tests
 on:
   pull_request:
     branches:
-      - main
-      - "release/*.*.*"
+      - 'main'
+      - 'release/*.*.*'
     paths:
-      - "backend/**"
-      - "go.mod"
+      - 'backend/**'
+      - 'go.mod'
+      - 'proto/**/*.go'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
