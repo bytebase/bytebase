@@ -2,7 +2,10 @@
   <div class="w-full mx-auto space-y-4">
     <FeatureAttention feature="bb.feature.rbac" />
 
-    <NoPermissionPlaceholder v-if="permissionStore.onlyWorkspaceMember" />
+    <NoPermissionPlaceholder
+      v-if="permissionStore.onlyWorkspaceMember"
+      class="py-6"
+    />
     <NTabs v-else v-model:value="state.selectedTab" type="line" animated>
       <NTabPane name="MEMBERS">
         <template #tab>

@@ -162,19 +162,8 @@ ALTER SEQUENCE public.changelog_id_seq OWNED BY public.changelog.id;
 
 CREATE TABLE public.data_source (
     id integer NOT NULL,
-    name text NOT NULL,
-    type text NOT NULL,
-    username text NOT NULL,
-    password text NOT NULL,
-    ssl_key text DEFAULT ''::text NOT NULL,
-    ssl_cert text DEFAULT ''::text NOT NULL,
-    ssl_ca text DEFAULT ''::text NOT NULL,
-    host text DEFAULT ''::text NOT NULL,
-    port text DEFAULT ''::text NOT NULL,
     options jsonb DEFAULT '{}'::jsonb NOT NULL,
-    database text DEFAULT ''::text NOT NULL,
-    instance text NOT NULL,
-    CONSTRAINT data_source_type_check CHECK ((type = ANY (ARRAY['ADMIN'::text, 'RW'::text, 'RO'::text])))
+    instance text NOT NULL
 );
 
 
@@ -205,17 +194,11 @@ ALTER SEQUENCE public.data_source_id_seq OWNED BY public.data_source.id;
 CREATE TABLE public.db (
     id integer NOT NULL,
     environment text,
-    sync_status text NOT NULL,
-    schema_version text NOT NULL,
     name text NOT NULL,
-    secrets jsonb DEFAULT '{}'::jsonb NOT NULL,
-    datashare boolean DEFAULT false NOT NULL,
-    service_name text DEFAULT ''::text NOT NULL,
     metadata jsonb DEFAULT '{}'::jsonb NOT NULL,
-    sync_at timestamp with time zone DEFAULT now() NOT NULL,
     project text NOT NULL,
     instance text NOT NULL,
-    CONSTRAINT db_sync_status_check CHECK ((sync_status = ANY (ARRAY['OK'::text, 'NOT_FOUND'::text])))
+    deleted boolean DEFAULT false NOT NULL
 );
 
 
@@ -304,38 +287,6 @@ CREATE SEQUENCE public.db_schema_id_seq
 --
 
 ALTER SEQUENCE public.db_schema_id_seq OWNED BY public.db_schema.id;
-
-
---
--- Name: deployment_config; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.deployment_config (
-    id integer NOT NULL,
-    name text NOT NULL,
-    config jsonb DEFAULT '{}'::jsonb NOT NULL,
-    project text NOT NULL
-);
-
-
---
--- Name: deployment_config_id_seq; Type: SEQUENCE; Schema: public; Owner: -
---
-
-CREATE SEQUENCE public.deployment_config_id_seq
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: deployment_config_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
---
-
-ALTER SEQUENCE public.deployment_config_id_seq OWNED BY public.deployment_config.id;
 
 
 --
@@ -447,13 +398,7 @@ ALTER SEQUENCE public.idp_id_seq OWNED BY public.idp.id;
 CREATE TABLE public.instance (
     id integer NOT NULL,
     environment text,
-    name text NOT NULL,
-    engine text NOT NULL,
-    engine_version text DEFAULT ''::text NOT NULL,
-    external_link text DEFAULT ''::text NOT NULL,
     resource_id text NOT NULL,
-    activation boolean DEFAULT false NOT NULL,
-    options jsonb DEFAULT '{}'::jsonb NOT NULL,
     metadata jsonb DEFAULT '{}'::jsonb NOT NULL,
     deleted boolean DEFAULT false NOT NULL
 );
@@ -465,10 +410,7 @@ CREATE TABLE public.instance (
 
 CREATE TABLE public.instance_change_history (
     id bigint NOT NULL,
-    status text NOT NULL,
-    version text NOT NULL,
-    execution_duration_ns bigint NOT NULL,
-    CONSTRAINT instance_change_history_status_check CHECK ((status = ANY (ARRAY['PENDING'::text, 'DONE'::text, 'FAILED'::text])))
+    version text NOT NULL
 );
 
 
@@ -524,8 +466,6 @@ CREATE TABLE public.issue (
     status text NOT NULL,
     type text NOT NULL,
     description text DEFAULT ''::text NOT NULL,
-    assignee_id integer,
-    assignee_need_attention boolean DEFAULT false NOT NULL,
     payload jsonb DEFAULT '{}'::jsonb NOT NULL,
     ts_vector tsvector,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
@@ -1113,47 +1053,12 @@ ALTER SEQUENCE public.sheet_id_seq OWNED BY public.sheet.id;
 
 
 --
--- Name: slow_query; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.slow_query (
-    id integer NOT NULL,
-    log_date_ts integer NOT NULL,
-    slow_query_statistics jsonb DEFAULT '{}'::jsonb NOT NULL,
-    instance text NOT NULL,
-    db_name text
-);
-
-
---
--- Name: slow_query_id_seq; Type: SEQUENCE; Schema: public; Owner: -
---
-
-CREATE SEQUENCE public.slow_query_id_seq
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: slow_query_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
---
-
-ALTER SEQUENCE public.slow_query_id_seq OWNED BY public.slow_query.id;
-
-
---
 -- Name: stage; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.stage (
     id integer NOT NULL,
     pipeline_id integer NOT NULL,
-    deployment_id text DEFAULT ''::text NOT NULL,
-    name text NOT NULL,
     environment text NOT NULL
 );
 
@@ -1219,47 +1124,13 @@ CREATE TABLE public.task (
     id integer NOT NULL,
     pipeline_id integer NOT NULL,
     stage_id integer NOT NULL,
-    name text NOT NULL,
-    status text NOT NULL,
     type text NOT NULL,
     payload jsonb DEFAULT '{}'::jsonb NOT NULL,
     earliest_allowed_at timestamp with time zone,
     instance text NOT NULL,
     db_name text,
-    CONSTRAINT task_status_check CHECK ((status = ANY (ARRAY['PENDING'::text, 'PENDING_APPROVAL'::text, 'RUNNING'::text, 'DONE'::text, 'FAILED'::text, 'CANCELED'::text]))),
     CONSTRAINT task_type_check CHECK ((type ~~ 'bb.task.%'::text))
 );
-
-
---
--- Name: task_dag; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.task_dag (
-    id integer NOT NULL,
-    from_task_id integer NOT NULL,
-    to_task_id integer NOT NULL
-);
-
-
---
--- Name: task_dag_id_seq; Type: SEQUENCE; Schema: public; Owner: -
---
-
-CREATE SEQUENCE public.task_dag_id_seq
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: task_dag_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
---
-
-ALTER SEQUENCE public.task_dag_id_seq OWNED BY public.task_dag.id;
 
 
 --
@@ -1292,7 +1163,6 @@ CREATE TABLE public.task_run (
     task_id integer NOT NULL,
     sheet_id integer,
     attempt integer NOT NULL,
-    name text NOT NULL,
     status text NOT NULL,
     code integer DEFAULT 0 NOT NULL,
     result jsonb DEFAULT '{}'::jsonb NOT NULL,
@@ -1364,75 +1234,6 @@ CREATE TABLE public.user_group (
     description text DEFAULT ''::text NOT NULL,
     payload jsonb DEFAULT '{}'::jsonb NOT NULL
 );
-
-
---
--- Name: vcs; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.vcs (
-    id integer NOT NULL,
-    resource_id text NOT NULL,
-    name text NOT NULL,
-    type text NOT NULL,
-    instance_url text NOT NULL,
-    access_token text DEFAULT ''::text NOT NULL,
-    CONSTRAINT vcs_instance_url_check CHECK ((((instance_url ~~ 'http://%'::text) OR (instance_url ~~ 'https://%'::text)) AND (instance_url = rtrim(instance_url, '/'::text)))),
-    CONSTRAINT vcs_type_check CHECK ((type = ANY (ARRAY['GITLAB'::text, 'GITHUB'::text, 'BITBUCKET'::text, 'AZURE_DEVOPS'::text])))
-);
-
-
---
--- Name: vcs_connector; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.vcs_connector (
-    id integer NOT NULL,
-    resource_id text NOT NULL,
-    payload jsonb DEFAULT '{}'::jsonb NOT NULL,
-    vcs text NOT NULL,
-    project text NOT NULL
-);
-
-
---
--- Name: vcs_connector_id_seq; Type: SEQUENCE; Schema: public; Owner: -
---
-
-CREATE SEQUENCE public.vcs_connector_id_seq
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: vcs_connector_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
---
-
-ALTER SEQUENCE public.vcs_connector_id_seq OWNED BY public.vcs_connector.id;
-
-
---
--- Name: vcs_id_seq; Type: SEQUENCE; Schema: public; Owner: -
---
-
-CREATE SEQUENCE public.vcs_id_seq
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: vcs_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
---
-
-ALTER SEQUENCE public.vcs_id_seq OWNED BY public.vcs.id;
 
 
 --
@@ -1560,13 +1361,6 @@ ALTER TABLE ONLY public.db_group ALTER COLUMN id SET DEFAULT nextval('public.db_
 --
 
 ALTER TABLE ONLY public.db_schema ALTER COLUMN id SET DEFAULT nextval('public.db_schema_id_seq'::regclass);
-
-
---
--- Name: deployment_config id; Type: DEFAULT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.deployment_config ALTER COLUMN id SET DEFAULT nextval('public.deployment_config_id_seq'::regclass);
 
 
 --
@@ -1717,13 +1511,6 @@ ALTER TABLE ONLY public.sheet ALTER COLUMN id SET DEFAULT nextval('public.sheet_
 
 
 --
--- Name: slow_query id; Type: DEFAULT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.slow_query ALTER COLUMN id SET DEFAULT nextval('public.slow_query_id_seq'::regclass);
-
-
---
 -- Name: stage id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1745,13 +1532,6 @@ ALTER TABLE ONLY public.task ALTER COLUMN id SET DEFAULT nextval('public.task_id
 
 
 --
--- Name: task_dag id; Type: DEFAULT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.task_dag ALTER COLUMN id SET DEFAULT nextval('public.task_dag_id_seq'::regclass);
-
-
---
 -- Name: task_run id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1763,20 +1543,6 @@ ALTER TABLE ONLY public.task_run ALTER COLUMN id SET DEFAULT nextval('public.tas
 --
 
 ALTER TABLE ONLY public.task_run_log ALTER COLUMN id SET DEFAULT nextval('public.task_run_log_id_seq'::regclass);
-
-
---
--- Name: vcs id; Type: DEFAULT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.vcs ALTER COLUMN id SET DEFAULT nextval('public.vcs_id_seq'::regclass);
-
-
---
--- Name: vcs_connector id; Type: DEFAULT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.vcs_connector ALTER COLUMN id SET DEFAULT nextval('public.vcs_connector_id_seq'::regclass);
 
 
 --
@@ -1797,6 +1563,8 @@ ALTER TABLE ONLY public.worksheet_organizer ALTER COLUMN id SET DEFAULT nextval(
 -- Data for Name: anomaly; Type: TABLE DATA; Schema: public; Owner: -
 --
 
+INSERT INTO public.anomaly (id, project, type, payload, updated_at, instance, db_name) VALUES (108, 'project-sample', 'bb.anomaly.database.schema.drift', '{}', '2025-03-12 03:24:50.877537-07', 'prod-sample-instance', 'hr_prod') ON CONFLICT DO NOTHING;
+INSERT INTO public.anomaly (id, project, type, payload, updated_at, instance, db_name) VALUES (109, 'project-sample', 'bb.anomaly.database.schema.drift', '{}', '2025-03-12 03:25:00.879189-07', 'test-sample-instance', 'hr_test') ON CONFLICT DO NOTHING;
 
 
 --
@@ -1860,6 +1628,7 @@ INSERT INTO public.audit_log (id, payload, created_at) VALUES (153, '{"user": "u
 INSERT INTO public.audit_log (id, payload, created_at) VALUES (156, '{"user": "users/101", "method": "/bytebase.v1.SQLService/Query", "parent": "projects/metadb-project", "request": "{\"name\":\"instances/bytebase-meta/databases/bb\", \"statement\":\"SELECT\\n  *\\nFROM\\n  \\\"public\\\".\\\"release\\\"\\nLIMIT\\n  50;\", \"limit\":1000, \"dataSourceId\":\"777072ed-539e-4cc2-a41e-6cc2917a7e7c\", \"schema\":\"public\", \"queryOption\":{\"redisRunCommandsOn\":\"SINGLE_NODE\"}, \"container\":\"release\"}", "resource": "instances/bytebase-meta/databases/bb", "response": "{\"results\":[{\"columnNames\":[\"id\", \"row_status\", \"project_id\", \"creator_id\", \"created_ts\", \"payload\"], \"columnTypeNames\":[\"INT8\", \"16398\", \"INT4\", \"INT4\", \"INT8\", \"JSONB\"], \"latency\":\"0.000670256s\", \"statement\":\"WITH result AS (\\nSELECT\\n  *\\nFROM\\n  \\\"public\\\".\\\"release\\\"\\nLIMIT\\n  50\\n) SELECT * FROM result LIMIT 1000;\"}], \"allowExport\":true}", "severity": "INFO", "requestMetadata": {"callerIp": "192.168.215.1:34778", "callerSuppliedUserAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"}}', '2025-01-22 22:26:12-08') ON CONFLICT DO NOTHING;
 INSERT INTO public.audit_log (id, payload, created_at) VALUES (157, '{"user": "users/101", "method": "/bytebase.v1.SQLService/Query", "parent": "projects/metadb-project", "request": "{\"name\":\"instances/bytebase-meta/databases/bb\", \"statement\":\"SELECT\\n  *\\nFROM\\n  \\\"public\\\".\\\"release\\\"\\nLIMIT\\n  50;\", \"limit\":1000, \"dataSourceId\":\"777072ed-539e-4cc2-a41e-6cc2917a7e7c\", \"schema\":\"public\", \"queryOption\":{\"redisRunCommandsOn\":\"SINGLE_NODE\"}, \"container\":\"release\"}", "resource": "instances/bytebase-meta/databases/bb", "response": "{\"results\":[{\"columnNames\":[\"id\", \"row_status\", \"project_id\", \"creator_id\", \"created_ts\", \"payload\"], \"columnTypeNames\":[\"INT8\", \"16398\", \"INT4\", \"INT4\", \"INT8\", \"JSONB\"], \"latency\":\"0.001700141s\", \"statement\":\"WITH result AS (\\nSELECT\\n  *\\nFROM\\n  \\\"public\\\".\\\"release\\\"\\nLIMIT\\n  50\\n) SELECT * FROM result LIMIT 1000;\"}], \"allowExport\":true}", "severity": "INFO", "requestMetadata": {"callerIp": "192.168.215.1:34778", "callerSuppliedUserAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"}}', '2025-01-22 22:26:15-08') ON CONFLICT DO NOTHING;
 INSERT INTO public.audit_log (id, payload, created_at) VALUES (158, '{"method": "/bytebase.v1.AuthService/Login", "parent": "workspaces/6c86d081-379d-4366-be6f-481425e6f397", "request": "{\"email\":\"demo@example.com\", \"web\":true}", "resource": "demo@example.com", "response": "{\"user\":{\"name\":\"users/101\", \"email\":\"demo@example.com\", \"title\":\"Demo\", \"userType\":\"USER\"}}", "severity": "INFO", "requestMetadata": {"callerIp": "127.0.0.1:35806", "callerSuppliedUserAgent": "grpc-go/1.70.0"}}', '2025-02-07 20:49:31-08') ON CONFLICT DO NOTHING;
+INSERT INTO public.audit_log (id, payload, created_at) VALUES (159, '{"user": "users/101", "method": "/bytebase.v1.AuthService/Login", "parent": "workspaces/6c86d081-379d-4366-be6f-481425e6f397", "request": "{\"email\":\"demo@example.com\", \"web\":true}", "resource": "demo@example.com", "response": "{\"user\":{\"name\":\"users/101\", \"email\":\"demo@example.com\", \"title\":\"Demo\", \"userType\":\"USER\"}}", "severity": "INFO", "requestMetadata": {"callerIp": "127.0.0.1:51235", "callerSuppliedUserAgent": "grpc-go/1.70.0"}}', '2025-03-12 03:20:19.117797-07') ON CONFLICT DO NOTHING;
 
 
 --
@@ -1888,28 +1657,30 @@ INSERT INTO public.changelog (id, created_at, status, prev_sync_history_id, sync
 -- Data for Name: data_source; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-INSERT INTO public.data_source (id, name, type, username, password, ssl_key, ssl_cert, ssl_ca, host, port, options, database, instance) VALUES (101, 'admin', 'ADMIN', 'bbsample', '', '', '', '', '/tmp', '8083', '{}', '', 'test-sample-instance') ON CONFLICT DO NOTHING;
-INSERT INTO public.data_source (id, name, type, username, password, ssl_key, ssl_cert, ssl_ca, host, port, options, database, instance) VALUES (102, 'admin', 'ADMIN', 'bbsample', '', '', '', '', '/tmp', '8084', '{}', '', 'prod-sample-instance') ON CONFLICT DO NOTHING;
-INSERT INTO public.data_source (id, name, type, username, password, ssl_key, ssl_cert, ssl_ca, host, port, options, database, instance) VALUES (103, '777072ed-539e-4cc2-a41e-6cc2917a7e7c', 'ADMIN', 'bb', '', '', '', '', '/tmp', '8082', '{}', '', 'bytebase-meta') ON CONFLICT DO NOTHING;
-INSERT INTO public.data_source (id, name, type, username, password, ssl_key, ssl_cert, ssl_ca, host, port, options, database, instance) VALUES (104, '351173a6-f320-45c5-8d95-8e17abe08964', 'RO', 'bbsample', 'WyYTVD4=', '', '', '', '/tmp', '8084', '{"authenticationType": "PASSWORD"}', '', 'prod-sample-instance') ON CONFLICT DO NOTHING;
-INSERT INTO public.data_source (id, name, type, username, password, ssl_key, ssl_cert, ssl_ca, host, port, options, database, instance) VALUES (105, 'e543ddfd-f633-4dbe-87f3-6b171a96e20a', 'RO', 'bbsample', 'WyYTVD4=', '', '', '', '/tmp', '8084', '{"authenticationType": "PASSWORD"}', '', 'prod-sample-instance') ON CONFLICT DO NOTHING;
+INSERT INTO public.data_source (id, options, instance) VALUES (101, '{"id": "admin", "host": "/tmp", "port": "8083", "type": "ADMIN", "database": "", "username": "bbsample", "obfuscatedSslCa": "", "obfuscatedSslKey": "", "obfuscatedSslCert": "", "obfuscatedPassword": ""}', 'test-sample-instance') ON CONFLICT DO NOTHING;
+INSERT INTO public.data_source (id, options, instance) VALUES (102, '{"id": "admin", "host": "/tmp", "port": "8084", "type": "ADMIN", "database": "", "username": "bbsample", "obfuscatedSslCa": "", "obfuscatedSslKey": "", "obfuscatedSslCert": "", "obfuscatedPassword": ""}', 'prod-sample-instance') ON CONFLICT DO NOTHING;
+INSERT INTO public.data_source (id, options, instance) VALUES (103, '{"id": "777072ed-539e-4cc2-a41e-6cc2917a7e7c", "host": "/tmp", "port": "8082", "type": "ADMIN", "database": "", "username": "bb", "obfuscatedSslCa": "", "obfuscatedSslKey": "", "obfuscatedSslCert": "", "obfuscatedPassword": ""}', 'bytebase-meta') ON CONFLICT DO NOTHING;
+INSERT INTO public.data_source (id, options, instance) VALUES (104, '{"id": "351173a6-f320-45c5-8d95-8e17abe08964", "host": "/tmp", "port": "8084", "type": "READ_ONLY", "database": "", "username": "bbsample", "obfuscatedSslCa": "", "obfuscatedSslKey": "", "obfuscatedSslCert": "", "authenticationType": "PASSWORD", "obfuscatedPassword": "WyYTVD4="}', 'prod-sample-instance') ON CONFLICT DO NOTHING;
+INSERT INTO public.data_source (id, options, instance) VALUES (105, '{"id": "e543ddfd-f633-4dbe-87f3-6b171a96e20a", "host": "/tmp", "port": "8084", "type": "READ_ONLY", "database": "", "username": "bbsample", "obfuscatedSslCa": "", "obfuscatedSslKey": "", "obfuscatedSslCert": "", "authenticationType": "PASSWORD", "obfuscatedPassword": "WyYTVD4="}', 'prod-sample-instance') ON CONFLICT DO NOTHING;
 
 
 --
 -- Data for Name: db; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-INSERT INTO public.db (id, environment, sync_status, schema_version, name, secrets, datashare, service_name, metadata, sync_at, project, instance) VALUES (110, NULL, 'OK', '', 'postgres', '{}', false, '', '{"lastSyncTime": "2025-01-15T17:40:40Z"}', '2025-01-15 09:40:40-08', 'default', 'bytebase-meta') ON CONFLICT DO NOTHING;
-INSERT INTO public.db (id, environment, sync_status, schema_version, name, secrets, datashare, service_name, metadata, sync_at, project, instance) VALUES (107, NULL, 'OK', '', 'hr_prod_5', '{}', false, '', '{"labels": {"location": "eu"}, "lastSyncTime": "2025-01-16T04:16:08Z", "backupAvailable": true}', '2025-01-15 20:16:08-08', 'batch-project', 'prod-sample-instance') ON CONFLICT DO NOTHING;
-INSERT INTO public.db (id, environment, sync_status, schema_version, name, secrets, datashare, service_name, metadata, sync_at, project, instance) VALUES (108, NULL, 'OK', '', 'hr_prod_6', '{}', false, '', '{"labels": {"location": "na"}, "lastSyncTime": "2025-01-16T04:16:08Z", "backupAvailable": true}', '2025-01-15 20:16:08-08', 'batch-project', 'prod-sample-instance') ON CONFLICT DO NOTHING;
-INSERT INTO public.db (id, environment, sync_status, schema_version, name, secrets, datashare, service_name, metadata, sync_at, project, instance) VALUES (105, NULL, 'OK', '', 'hr_prod_3', '{}', false, '', '{"labels": {"location": "na"}, "lastSyncTime": "2025-01-16T04:16:08Z", "backupAvailable": true}', '2025-01-15 20:16:08-08', 'batch-project', 'prod-sample-instance') ON CONFLICT DO NOTHING;
-INSERT INTO public.db (id, environment, sync_status, schema_version, name, secrets, datashare, service_name, metadata, sync_at, project, instance) VALUES (104, NULL, 'OK', '', 'hr_prod_2', '{}', false, '', '{"labels": {"location": "eu"}, "lastSyncTime": "2025-01-16T04:16:08Z", "backupAvailable": true}', '2025-01-15 20:16:08-08', 'batch-project', 'prod-sample-instance') ON CONFLICT DO NOTHING;
-INSERT INTO public.db (id, environment, sync_status, schema_version, name, secrets, datashare, service_name, metadata, sync_at, project, instance) VALUES (103, NULL, 'OK', '', 'hr_prod_1', '{}', false, '', '{"labels": {"location": "asia"}, "lastSyncTime": "2025-01-16T04:16:08Z", "backupAvailable": true}', '2025-01-15 20:16:08-08', 'batch-project', 'prod-sample-instance') ON CONFLICT DO NOTHING;
-INSERT INTO public.db (id, environment, sync_status, schema_version, name, secrets, datashare, service_name, metadata, sync_at, project, instance) VALUES (106, NULL, 'OK', '', 'hr_prod_4', '{}', false, '', '{"labels": {"location": "asia"}, "lastSyncTime": "2025-01-16T04:16:08Z", "backupAvailable": true}', '2025-01-15 20:16:08-08', 'batch-project', 'prod-sample-instance') ON CONFLICT DO NOTHING;
-INSERT INTO public.db (id, environment, sync_status, schema_version, name, secrets, datashare, service_name, metadata, sync_at, project, instance) VALUES (102, NULL, 'OK', '', 'hr_prod', '{}', false, '', '{"lastSyncTime": "2025-01-16T04:19:38Z", "backupAvailable": true}', '2025-01-15 20:19:38-08', 'project-sample', 'prod-sample-instance') ON CONFLICT DO NOTHING;
-INSERT INTO public.db (id, environment, sync_status, schema_version, name, secrets, datashare, service_name, metadata, sync_at, project, instance) VALUES (101, NULL, 'OK', '', 'hr_test', '{}', false, '', '{"lastSyncTime": "2025-01-16T04:21:56Z", "backupAvailable": true}', '2025-01-15 20:21:56-08', 'project-sample', 'test-sample-instance') ON CONFLICT DO NOTHING;
-INSERT INTO public.db (id, environment, sync_status, schema_version, name, secrets, datashare, service_name, metadata, sync_at, project, instance) VALUES (109, NULL, 'OK', '0000.0000.0000-1000-ddl', 'hr_prod_vcs', '{}', false, '', '{"lastSyncTime": "2025-01-16T04:22:57Z", "backupAvailable": true}', '2025-01-15 20:22:57-08', 'gitops-project', 'prod-sample-instance') ON CONFLICT DO NOTHING;
-INSERT INTO public.db (id, environment, sync_status, schema_version, name, secrets, datashare, service_name, metadata, sync_at, project, instance) VALUES (111, NULL, 'OK', '', 'bb', '{}', false, '', '{"lastSyncTime": "2025-02-08T07:25:11Z"}', '2025-02-07 23:25:11-08', 'metadb-project', 'bytebase-meta') ON CONFLICT DO NOTHING;
+INSERT INTO public.db (id, environment, name, metadata, project, instance, deleted) VALUES (103, NULL, 'hr_prod_1', '{"labels": {"location": "asia"}, "lastSyncTime": "2025-01-16T04:16:08Z", "backupAvailable": true}', 'batch-project', 'prod-sample-instance', true) ON CONFLICT DO NOTHING;
+INSERT INTO public.db (id, environment, name, metadata, project, instance, deleted) VALUES (104, NULL, 'hr_prod_2', '{"labels": {"location": "eu"}, "lastSyncTime": "2025-01-16T04:16:08Z", "backupAvailable": true}', 'batch-project', 'prod-sample-instance', true) ON CONFLICT DO NOTHING;
+INSERT INTO public.db (id, environment, name, metadata, project, instance, deleted) VALUES (105, NULL, 'hr_prod_3', '{"labels": {"location": "na"}, "lastSyncTime": "2025-01-16T04:16:08Z", "backupAvailable": true}', 'batch-project', 'prod-sample-instance', true) ON CONFLICT DO NOTHING;
+INSERT INTO public.db (id, environment, name, metadata, project, instance, deleted) VALUES (106, NULL, 'hr_prod_4', '{"labels": {"location": "asia"}, "lastSyncTime": "2025-01-16T04:16:08Z", "backupAvailable": true}', 'batch-project', 'prod-sample-instance', true) ON CONFLICT DO NOTHING;
+INSERT INTO public.db (id, environment, name, metadata, project, instance, deleted) VALUES (107, NULL, 'hr_prod_5', '{"labels": {"location": "eu"}, "lastSyncTime": "2025-01-16T04:16:08Z", "backupAvailable": true}', 'batch-project', 'prod-sample-instance', true) ON CONFLICT DO NOTHING;
+INSERT INTO public.db (id, environment, name, metadata, project, instance, deleted) VALUES (108, NULL, 'hr_prod_6', '{"labels": {"location": "na"}, "lastSyncTime": "2025-01-16T04:16:08Z", "backupAvailable": true}', 'batch-project', 'prod-sample-instance', true) ON CONFLICT DO NOTHING;
+INSERT INTO public.db (id, environment, name, metadata, project, instance, deleted) VALUES (109, NULL, 'hr_prod_vcs', '{"lastSyncTime": "2025-01-16T04:22:57Z", "backupAvailable": true}', 'gitops-project', 'prod-sample-instance', true) ON CONFLICT DO NOTHING;
+INSERT INTO public.db (id, environment, name, metadata, project, instance, deleted) VALUES (112, NULL, 'postgres', '{"lastSyncTime": "2025-03-12T10:24:50.866764Z"}', 'default', 'prod-sample-instance', false) ON CONFLICT DO NOTHING;
+INSERT INTO public.db (id, environment, name, metadata, project, instance, deleted) VALUES (102, NULL, 'hr_prod', '{"lastSyncTime": "2025-03-12T10:24:50.874613Z", "backupAvailable": true}', 'project-sample', 'prod-sample-instance', false) ON CONFLICT DO NOTHING;
+INSERT INTO public.db (id, environment, name, metadata, project, instance, deleted) VALUES (113, NULL, 'postgres', '{"lastSyncTime": "2025-03-12T10:25:00.867661Z"}', 'default', 'test-sample-instance', false) ON CONFLICT DO NOTHING;
+INSERT INTO public.db (id, environment, name, metadata, project, instance, deleted) VALUES (101, NULL, 'hr_test', '{"lastSyncTime": "2025-03-12T10:25:00.875983Z", "backupAvailable": true}', 'project-sample', 'test-sample-instance', false) ON CONFLICT DO NOTHING;
+INSERT INTO public.db (id, environment, name, metadata, project, instance, deleted) VALUES (110, NULL, 'postgres', '{"lastSyncTime": "2025-03-12T10:25:20.852689Z"}', 'default', 'bytebase-meta', false) ON CONFLICT DO NOTHING;
+INSERT INTO public.db (id, environment, name, metadata, project, instance, deleted) VALUES (111, NULL, 'bb', '{"lastSyncTime": "2025-03-12T10:25:20.867851Z"}', 'metadb-project', 'bytebase-meta', false) ON CONFLICT DO NOTHING;
 
 
 --
@@ -1924,2110 +1695,6 @@ INSERT INTO public.db_group (id, resource_id, placeholder, expression, payload, 
 -- Data for Name: db_schema; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-INSERT INTO public.db_schema (id, metadata, raw_dump, config, instance, db_name) VALUES (120, '{"name":"postgres", "schemas":[{"name":"public", "owner":"pg_database_owner"}], "characterSet":"UTF8", "collation":"en_US.UTF-8", "owner":"bb"}', '
-SET statement_timeout = 0;
-SET lock_timeout = 0;
-SET idle_in_transaction_session_timeout = 0;
-SET client_encoding = ''UTF8'';
-SET standard_conforming_strings = on;
-SELECT pg_catalog.set_config(''search_path'', '''', false);
-SET check_function_bodies = false;
-SET xmloption = content;
-SET client_min_messages = warning;
-SET row_security = off;
-
-SET default_tablespace = '''';
-
-', '{}', 'bytebase-meta', 'postgres') ON CONFLICT DO NOTHING;
-INSERT INTO public.db_schema (id, metadata, raw_dump, config, instance, db_name) VALUES (102, '{"name":"hr_prod","schemas":[{"name":"bbdataarchive","owner":"bbsample"},{"name":"public","tables":[{"name":"audit","columns":[{"name":"id","position":1,"defaultExpression":"nextval(''public.audit_id_seq''::regclass)","type":"integer"},{"name":"operation","position":2,"type":"text"},{"name":"query","position":3,"nullable":true,"type":"text"},{"name":"user_name","position":4,"type":"text"},{"name":"changed_at","position":5,"defaultExpression":"CURRENT_TIMESTAMP","nullable":true,"type":"timestamp with time zone"}],"indexes":[{"name":"audit_pkey","expressions":["id"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX audit_pkey ON public.audit USING btree (id);","isConstraint":true},{"name":"idx_audit_changed_at","expressions":["changed_at"],"type":"btree","definition":"CREATE INDEX idx_audit_changed_at ON public.audit USING btree (changed_at);"},{"name":"idx_audit_operation","expressions":["operation"],"type":"btree","definition":"CREATE INDEX idx_audit_operation ON public.audit USING btree (operation);"},{"name":"idx_audit_username","expressions":["user_name"],"type":"btree","definition":"CREATE INDEX idx_audit_username ON public.audit USING btree (user_name);"}],"dataSize":"8192","indexSize":"32768","owner":"bbsample"},{"name":"department","columns":[{"name":"dept_no","position":1,"type":"text"},{"name":"dept_name","position":2,"type":"text"}],"indexes":[{"name":"department_dept_name_key","expressions":["dept_name"],"type":"btree","unique":true,"definition":"CREATE UNIQUE INDEX department_dept_name_key ON public.department USING btree (dept_name);","isConstraint":true},{"name":"department_pkey","expressions":["dept_no"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX department_pkey ON public.department USING btree (dept_no);","isConstraint":true}],"dataSize":"16384","indexSize":"32768","owner":"bbsample"},{"name":"dept_emp","columns":[{"name":"emp_no","position":1,"type":"integer"},{"name":"dept_no","position":2,"type":"text"},{"name":"from_date","position":3,"type":"date"},{"name":"to_date","position":4,"type":"date"}],"indexes":[{"name":"dept_emp_pkey","expressions":["emp_no","dept_no"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX dept_emp_pkey ON public.dept_emp USING btree (emp_no, dept_no);","isConstraint":true}],"rowCount":"1103","dataSize":"106496","indexSize":"57344","foreignKeys":[{"name":"dept_emp_dept_no_fkey","columns":["dept_no"],"referencedSchema":"public","referencedTable":"department","referencedColumns":["dept_no"],"onDelete":"CASCADE","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"dept_emp_emp_no_fkey","columns":["emp_no"],"referencedSchema":"public","referencedTable":"employee","referencedColumns":["emp_no"],"onDelete":"CASCADE","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bbsample"},{"name":"dept_manager","columns":[{"name":"emp_no","position":1,"type":"integer"},{"name":"dept_no","position":2,"type":"text"},{"name":"from_date","position":3,"type":"date"},{"name":"to_date","position":4,"type":"date"}],"indexes":[{"name":"dept_manager_pkey","expressions":["emp_no","dept_no"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX dept_manager_pkey ON public.dept_manager USING btree (emp_no, dept_no);","isConstraint":true}],"dataSize":"16384","indexSize":"16384","foreignKeys":[{"name":"dept_manager_dept_no_fkey","columns":["dept_no"],"referencedSchema":"public","referencedTable":"department","referencedColumns":["dept_no"],"onDelete":"CASCADE","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"dept_manager_emp_no_fkey","columns":["emp_no"],"referencedSchema":"public","referencedTable":"employee","referencedColumns":["emp_no"],"onDelete":"CASCADE","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bbsample"},{"name":"employee","columns":[{"name":"emp_no","position":1,"defaultExpression":"nextval(''public.employee_emp_no_seq''::regclass)","type":"integer"},{"name":"birth_date","position":2,"type":"date"},{"name":"first_name","position":3,"type":"text"},{"name":"last_name","position":4,"type":"text"},{"name":"gender","position":5,"type":"text"},{"name":"hire_date","position":6,"type":"date"}],"indexes":[{"name":"employee_pkey","expressions":["emp_no"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX employee_pkey ON public.employee USING btree (emp_no);","isConstraint":true},{"name":"idx_employee_hire_date","expressions":["hire_date"],"type":"btree","definition":"CREATE INDEX idx_employee_hire_date ON public.employee USING btree (hire_date);"}],"rowCount":"1000","dataSize":"98304","indexSize":"98304","owner":"bbsample"},{"name":"salary","columns":[{"name":"emp_no","position":1,"type":"integer"},{"name":"amount","position":2,"type":"integer"},{"name":"from_date","position":3,"type":"date"},{"name":"to_date","position":4,"type":"date"}],"indexes":[{"name":"idx_salary_amount","expressions":["amount"],"type":"btree","definition":"CREATE INDEX idx_salary_amount ON public.salary USING btree (amount);"},{"name":"salary_pkey","expressions":["emp_no","from_date"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX salary_pkey ON public.salary USING btree (emp_no, from_date);","isConstraint":true}],"rowCount":"9488","dataSize":"458752","indexSize":"548864","foreignKeys":[{"name":"salary_emp_no_fkey","columns":["emp_no"],"referencedSchema":"public","referencedTable":"employee","referencedColumns":["emp_no"],"onDelete":"CASCADE","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bbsample","triggers":[{"name":"salary_log_trigger","body":"CREATE TRIGGER salary_log_trigger AFTER DELETE OR UPDATE ON public.salary FOR EACH ROW EXECUTE FUNCTION public.log_dml_operations()"}]},{"name":"title","columns":[{"name":"emp_no","position":1,"type":"integer"},{"name":"title","position":2,"type":"text"},{"name":"from_date","position":3,"type":"date"},{"name":"to_date","position":4,"nullable":true,"type":"date"}],"indexes":[{"name":"title_pkey","expressions":["emp_no","title","from_date"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX title_pkey ON public.title USING btree (emp_no, title, from_date);","isConstraint":true}],"rowCount":"1470","dataSize":"131072","indexSize":"73728","foreignKeys":[{"name":"title_emp_no_fkey","columns":["emp_no"],"referencedSchema":"public","referencedTable":"employee","referencedColumns":["emp_no"],"onDelete":"CASCADE","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bbsample"}],"views":[{"name":"current_dept_emp","definition":" SELECT l.emp_no,\n    d.dept_no,\n    l.from_date,\n    l.to_date\n   FROM (public.dept_emp d\n     JOIN public.dept_emp_latest_date l ON (((d.emp_no = l.emp_no) AND (d.from_date = l.from_date) AND (l.to_date = d.to_date))));","dependencyColumns":[{"schema":"public","table":"dept_emp","column":"dept_no"},{"schema":"public","table":"dept_emp","column":"emp_no"},{"schema":"public","table":"dept_emp","column":"from_date"},{"schema":"public","table":"dept_emp","column":"to_date"},{"schema":"public","table":"dept_emp_latest_date","column":"emp_no"},{"schema":"public","table":"dept_emp_latest_date","column":"from_date"},{"schema":"public","table":"dept_emp_latest_date","column":"to_date"}],"columns":[{"name":"emp_no","position":1,"nullable":true,"type":"integer"},{"name":"dept_no","position":2,"nullable":true,"type":"text"},{"name":"from_date","position":3,"nullable":true,"type":"date"},{"name":"to_date","position":4,"nullable":true,"type":"date"}]},{"name":"dept_emp_latest_date","definition":" SELECT emp_no,\n    max(from_date) AS from_date,\n    max(to_date) AS to_date\n   FROM public.dept_emp\n  GROUP BY emp_no;","dependencyColumns":[{"schema":"public","table":"dept_emp","column":"emp_no"},{"schema":"public","table":"dept_emp","column":"from_date"},{"schema":"public","table":"dept_emp","column":"to_date"}],"columns":[{"name":"emp_no","position":1,"nullable":true,"type":"integer"},{"name":"from_date","position":2,"nullable":true,"type":"date"},{"name":"to_date","position":3,"nullable":true,"type":"date"}]}],"functions":[{"name":"log_dml_operations","definition":"CREATE OR REPLACE FUNCTION public.log_dml_operations()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n    IF (TG_OP = ''INSERT'') THEN\n        INSERT INTO audit (operation, query, user_name)\n        VALUES (''INSERT'', current_query(), current_user);\n        RETURN NEW;\n    ELSIF (TG_OP = ''UPDATE'') THEN\n        INSERT INTO audit (operation, query, user_name)\n        VALUES (''UPDATE'', current_query(), current_user);\n        RETURN NEW;\n    ELSIF (TG_OP = ''DELETE'') THEN\n        INSERT INTO audit (operation, query, user_name)\n        VALUES (''DELETE'', current_query(), current_user);\n        RETURN OLD;\n    END IF;\n    RETURN NULL;\nEND;\n$function$\n","signature":"log_dml_operations()"}],"sequences":[{"name":"audit_id_seq","dataType":"integer","start":"1","minValue":"1","maxValue":"2147483647","increment":"1","cacheSize":"1","ownerTable":"audit","ownerColumn":"id"},{"name":"employee_emp_no_seq","dataType":"integer","start":"1","minValue":"1","maxValue":"2147483647","increment":"1","cacheSize":"1","ownerTable":"employee","ownerColumn":"emp_no"}],"owner":"pg_database_owner"}],"characterSet":"UTF8","collation":"en_US.UTF-8","extensions":[{"name":"pg_stat_statements","schema":"public","version":"1.10","description":"track planning and execution statistics of all SQL statements executed"}],"owner":"bbsample"}', '
-SET statement_timeout = 0;
-SET lock_timeout = 0;
-SET idle_in_transaction_session_timeout = 0;
-SET client_encoding = ''UTF8'';
-SET standard_conforming_strings = on;
-SELECT pg_catalog.set_config(''search_path'', '''', false);
-SET check_function_bodies = false;
-SET xmloption = content;
-SET client_min_messages = warning;
-SET row_security = off;
-
-CREATE SCHEMA "bbdataarchive";
-
-CREATE EXTENSION IF NOT EXISTS "pg_stat_statements" WITH SCHEMA "public";
-
-SET default_tablespace = '''';
-
-CREATE SEQUENCE "public"."audit_id_seq"
-    AS integer
-	START WITH 1
-	INCREMENT BY 1
-	MINVALUE 1
-	MAXVALUE 2147483647
-	NO CYCLE;
-
-CREATE TABLE "public"."audit" (
-    "id" integer DEFAULT nextval(''public.audit_id_seq''::regclass) NOT NULL,
-    "operation" text NOT NULL,
-    "query" text,
-    "user_name" text NOT NULL,
-    "changed_at" timestamp with time zone DEFAULT CURRENT_TIMESTAMP
-);
-
-ALTER SEQUENCE "public"."audit_id_seq" OWNED BY "public"."audit"."id";
-
-ALTER TABLE ONLY "public"."audit" ADD CONSTRAINT "audit_pkey" PRIMARY KEY ("id");
-
-CREATE INDEX "idx_audit_changed_at" ON ONLY "public"."audit" ("changed_at");
-
-CREATE INDEX "idx_audit_operation" ON ONLY "public"."audit" ("operation");
-
-CREATE INDEX "idx_audit_username" ON ONLY "public"."audit" ("user_name");
-
-CREATE TABLE "public"."department" (
-    "dept_no" text NOT NULL,
-    "dept_name" text NOT NULL
-);
-
-ALTER TABLE ONLY "public"."department" ADD CONSTRAINT "department_pkey" PRIMARY KEY ("dept_no");
-
-ALTER TABLE ONLY "public"."department" ADD CONSTRAINT "department_dept_name_key" UNIQUE ("dept_name");
-
-CREATE TABLE "public"."dept_emp" (
-    "emp_no" integer NOT NULL,
-    "dept_no" text NOT NULL,
-    "from_date" date NOT NULL,
-    "to_date" date NOT NULL
-);
-
-ALTER TABLE ONLY "public"."dept_emp" ADD CONSTRAINT "dept_emp_pkey" PRIMARY KEY ("emp_no", "dept_no");
-
-CREATE TABLE "public"."dept_manager" (
-    "emp_no" integer NOT NULL,
-    "dept_no" text NOT NULL,
-    "from_date" date NOT NULL,
-    "to_date" date NOT NULL
-);
-
-ALTER TABLE ONLY "public"."dept_manager" ADD CONSTRAINT "dept_manager_pkey" PRIMARY KEY ("emp_no", "dept_no");
-
-CREATE SEQUENCE "public"."employee_emp_no_seq"
-    AS integer
-	START WITH 1
-	INCREMENT BY 1
-	MINVALUE 1
-	MAXVALUE 2147483647
-	NO CYCLE;
-
-CREATE TABLE "public"."employee" (
-    "emp_no" integer DEFAULT nextval(''public.employee_emp_no_seq''::regclass) NOT NULL,
-    "birth_date" date NOT NULL,
-    "first_name" text NOT NULL,
-    "last_name" text NOT NULL,
-    "gender" text NOT NULL,
-    "hire_date" date NOT NULL
-);
-
-ALTER SEQUENCE "public"."employee_emp_no_seq" OWNED BY "public"."employee"."emp_no";
-
-ALTER TABLE ONLY "public"."employee" ADD CONSTRAINT "employee_pkey" PRIMARY KEY ("emp_no");
-
-CREATE INDEX "idx_employee_hire_date" ON ONLY "public"."employee" ("hire_date");
-
-CREATE OR REPLACE FUNCTION public.log_dml_operations()
- RETURNS trigger
- LANGUAGE plpgsql
-AS $function$
-BEGIN
-    IF (TG_OP = ''INSERT'') THEN
-        INSERT INTO audit (operation, query, user_name)
-        VALUES (''INSERT'', current_query(), current_user);
-        RETURN NEW;
-    ELSIF (TG_OP = ''UPDATE'') THEN
-        INSERT INTO audit (operation, query, user_name)
-        VALUES (''UPDATE'', current_query(), current_user);
-        RETURN NEW;
-    ELSIF (TG_OP = ''DELETE'') THEN
-        INSERT INTO audit (operation, query, user_name)
-        VALUES (''DELETE'', current_query(), current_user);
-        RETURN OLD;
-    END IF;
-    RETURN NULL;
-END;
-$function$
-;
-
-CREATE TABLE "public"."salary" (
-    "emp_no" integer NOT NULL,
-    "amount" integer NOT NULL,
-    "from_date" date NOT NULL,
-    "to_date" date NOT NULL
-);
-
-ALTER TABLE ONLY "public"."salary" ADD CONSTRAINT "salary_pkey" PRIMARY KEY ("emp_no", "from_date");
-
-CREATE INDEX "idx_salary_amount" ON ONLY "public"."salary" ("amount");
-
-CREATE TABLE "public"."title" (
-    "emp_no" integer NOT NULL,
-    "title" text NOT NULL,
-    "from_date" date NOT NULL,
-    "to_date" date
-);
-
-ALTER TABLE ONLY "public"."title" ADD CONSTRAINT "title_pkey" PRIMARY KEY ("emp_no", "title", "from_date");
-
-CREATE VIEW "public"."dept_emp_latest_date" AS 
- SELECT emp_no,
-    max(from_date) AS from_date,
-    max(to_date) AS to_date
-   FROM public.dept_emp
-  GROUP BY emp_no;
-
-CREATE VIEW "public"."current_dept_emp" AS 
- SELECT l.emp_no,
-    d.dept_no,
-    l.from_date,
-    l.to_date
-   FROM (public.dept_emp d
-     JOIN public.dept_emp_latest_date l ON (((d.emp_no = l.emp_no) AND (d.from_date = l.from_date) AND (l.to_date = d.to_date))));
-
-CREATE TRIGGER salary_log_trigger AFTER DELETE OR UPDATE ON public.salary FOR EACH ROW EXECUTE FUNCTION public.log_dml_operations();
-
-ALTER TABLE "public"."dept_emp"
-    ADD CONSTRAINT "dept_emp_dept_no_fkey" FOREIGN KEY ("dept_no")
-    REFERENCES "public"."department" ("dept_no");
-
-ALTER TABLE "public"."dept_emp"
-    ADD CONSTRAINT "dept_emp_emp_no_fkey" FOREIGN KEY ("emp_no")
-    REFERENCES "public"."employee" ("emp_no");
-
-ALTER TABLE "public"."dept_manager"
-    ADD CONSTRAINT "dept_manager_dept_no_fkey" FOREIGN KEY ("dept_no")
-    REFERENCES "public"."department" ("dept_no");
-
-ALTER TABLE "public"."dept_manager"
-    ADD CONSTRAINT "dept_manager_emp_no_fkey" FOREIGN KEY ("emp_no")
-    REFERENCES "public"."employee" ("emp_no");
-
-ALTER TABLE "public"."salary"
-    ADD CONSTRAINT "salary_emp_no_fkey" FOREIGN KEY ("emp_no")
-    REFERENCES "public"."employee" ("emp_no");
-
-ALTER TABLE "public"."title"
-    ADD CONSTRAINT "title_emp_no_fkey" FOREIGN KEY ("emp_no")
-    REFERENCES "public"."employee" ("emp_no");
-
-', '{"name": "hr_prod", "schemas": [{"name": "public", "tables": [{"name": "department", "columns": [{"name": "dept_name", "classification": "1-1"}]}, {"name": "salary", "columns": [{"name": "amount"}]}, {"name": "employee", "columns": [{"name": "last_name", "semanticType": "be433ce5-72e7-4dcf-8b58-e77b52a18e81", "classification": "1-3"}, {"name": "first_name", "semanticType": "be433ce5-72e7-4dcf-8b58-e77b52a18e81", "classification": "1-3"}]}, {"name": "title", "columns": [{"name": "title", "classification": "2-1"}]}]}]}', 'prod-sample-instance', 'hr_prod') ON CONFLICT DO NOTHING;
-INSERT INTO public.db_schema (id, metadata, raw_dump, config, instance, db_name) VALUES (121, '{"name":"bb","schemas":[{"name":"public","tables":[{"name":"activity","columns":[{"name":"id","position":1,"defaultExpression":"nextval(''public.activity_id_seq''::regclass)","type":"integer"},{"name":"row_status","position":2,"defaultExpression":"''NORMAL''::public.row_status","type":"public.row_status"},{"name":"creator_id","position":3,"type":"integer"},{"name":"created_ts","position":4,"defaultExpression":"EXTRACT(epoch FROM now())","type":"bigint"},{"name":"updater_id","position":5,"type":"integer"},{"name":"updated_ts","position":6,"defaultExpression":"EXTRACT(epoch FROM now())","type":"bigint"},{"name":"resource_container","position":7,"defaultExpression":"''''::text","type":"text"},{"name":"container_id","position":8,"type":"integer"},{"name":"type","position":9,"type":"text"},{"name":"level","position":10,"type":"text"},{"name":"comment","position":11,"defaultExpression":"''''::text","type":"text"},{"name":"payload","position":12,"defaultExpression":"''{}''::jsonb","type":"jsonb"}],"indexes":[{"name":"activity_pkey","expressions":["id"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX activity_pkey ON public.activity USING btree (id);","isConstraint":true},{"name":"idx_activity_container_id","expressions":["container_id"],"type":"btree","definition":"CREATE INDEX idx_activity_container_id ON public.activity USING btree (container_id);"},{"name":"idx_activity_created_ts","expressions":["created_ts"],"type":"btree","definition":"CREATE INDEX idx_activity_created_ts ON public.activity USING btree (created_ts);"},{"name":"idx_activity_resource_container","expressions":["resource_container"],"type":"btree","definition":"CREATE INDEX idx_activity_resource_container ON public.activity USING btree (resource_container);"}],"rowCount":"92","dataSize":"65536","indexSize":"65536","foreignKeys":[{"name":"activity_creator_id_fkey","columns":["creator_id"],"referencedSchema":"public","referencedTable":"principal","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"activity_updater_id_fkey","columns":["updater_id"],"referencedSchema":"public","referencedTable":"principal","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bb"},{"name":"anomaly","columns":[{"name":"id","position":1,"defaultExpression":"nextval(''public.anomaly_id_seq''::regclass)","type":"integer"},{"name":"row_status","position":2,"defaultExpression":"''NORMAL''::public.row_status","type":"public.row_status"},{"name":"creator_id","position":3,"type":"integer"},{"name":"created_ts","position":4,"defaultExpression":"EXTRACT(epoch FROM now())","type":"bigint"},{"name":"updater_id","position":5,"type":"integer"},{"name":"updated_ts","position":6,"defaultExpression":"EXTRACT(epoch FROM now())","type":"bigint"},{"name":"project","position":7,"type":"text"},{"name":"instance_id","position":8,"type":"integer"},{"name":"database_id","position":9,"nullable":true,"type":"integer"},{"name":"type","position":10,"type":"text"},{"name":"payload","position":11,"defaultExpression":"''{}''::jsonb","type":"jsonb"}],"indexes":[{"name":"anomaly_pkey","expressions":["id"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX anomaly_pkey ON public.anomaly USING btree (id);","isConstraint":true},{"name":"idx_anomaly_unique_project_database_id_type","expressions":["project","database_id","type"],"type":"btree","unique":true,"definition":"CREATE UNIQUE INDEX idx_anomaly_unique_project_database_id_type ON public.anomaly USING btree (project, database_id, type);"}],"rowCount":"1","dataSize":"16384","indexSize":"32768","foreignKeys":[{"name":"anomaly_creator_id_fkey","columns":["creator_id"],"referencedSchema":"public","referencedTable":"principal","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"anomaly_database_id_fkey","columns":["database_id"],"referencedSchema":"public","referencedTable":"db","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"anomaly_instance_id_fkey","columns":["instance_id"],"referencedSchema":"public","referencedTable":"instance","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"anomaly_updater_id_fkey","columns":["updater_id"],"referencedSchema":"public","referencedTable":"principal","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bb"},{"name":"audit_log","columns":[{"name":"id","position":1,"defaultExpression":"nextval(''public.audit_log_id_seq''::regclass)","type":"bigint"},{"name":"created_ts","position":2,"defaultExpression":"EXTRACT(epoch FROM now())","type":"bigint"},{"name":"payload","position":3,"defaultExpression":"''{}''::jsonb","type":"jsonb"}],"indexes":[{"name":"audit_log_pkey","expressions":["id"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX audit_log_pkey ON public.audit_log USING btree (id);","isConstraint":true},{"name":"idx_audit_log_created_ts","expressions":["created_ts"],"type":"btree","definition":"CREATE INDEX idx_audit_log_created_ts ON public.audit_log USING btree (created_ts);"},{"name":"idx_audit_log_payload_method","expressions":["payload ->> ''method''::text"],"type":"btree","definition":"CREATE INDEX idx_audit_log_payload_method ON public.audit_log USING btree (((payload ->> ''method''::text)));"},{"name":"idx_audit_log_payload_parent","expressions":["payload ->> ''parent''::text"],"type":"btree","definition":"CREATE INDEX idx_audit_log_payload_parent ON public.audit_log USING btree (((payload ->> ''parent''::text)));"},{"name":"idx_audit_log_payload_resource","expressions":["payload ->> ''resource''::text"],"type":"btree","definition":"CREATE INDEX idx_audit_log_payload_resource ON public.audit_log USING btree (((payload ->> ''resource''::text)));"},{"name":"idx_audit_log_payload_user","expressions":["payload ->> ''user''::text"],"type":"btree","definition":"CREATE INDEX idx_audit_log_payload_user ON public.audit_log USING btree (((payload ->> ''user''::text)));"}],"rowCount":"57","dataSize":"90112","indexSize":"98304","owner":"bb"},{"name":"branch","columns":[{"name":"id","position":1,"defaultExpression":"nextval(''public.branch_id_seq''::regclass)","type":"integer"},{"name":"row_status","position":2,"defaultExpression":"''NORMAL''::public.row_status","type":"public.row_status"},{"name":"creator_id","position":3,"type":"integer"},{"name":"created_ts","position":4,"defaultExpression":"EXTRACT(epoch FROM now())","type":"bigint"},{"name":"updater_id","position":5,"type":"integer"},{"name":"updated_ts","position":6,"defaultExpression":"EXTRACT(epoch FROM now())","type":"bigint"},{"name":"project_id","position":7,"type":"integer"},{"name":"name","position":8,"type":"text"},{"name":"engine","position":9,"type":"text"},{"name":"base","position":10,"defaultExpression":"''{}''::jsonb","type":"jsonb"},{"name":"head","position":11,"defaultExpression":"''{}''::jsonb","type":"jsonb"},{"name":"base_schema","position":12,"defaultExpression":"''''::text","type":"text"},{"name":"head_schema","position":13,"defaultExpression":"''''::text","type":"text"},{"name":"reconcile_state","position":14,"defaultExpression":"''''::text","type":"text"},{"name":"config","position":15,"defaultExpression":"''{}''::jsonb","type":"jsonb"}],"indexes":[{"name":"branch_pkey","expressions":["id"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX branch_pkey ON public.branch USING btree (id);","isConstraint":true},{"name":"idx_branch_reconcile_state","expressions":["reconcile_state"],"type":"btree","definition":"CREATE INDEX idx_branch_reconcile_state ON public.branch USING btree (reconcile_state);"},{"name":"idx_branch_unique_project_id_name","expressions":["project_id","name"],"type":"btree","unique":true,"definition":"CREATE UNIQUE INDEX idx_branch_unique_project_id_name ON public.branch USING btree (project_id, name);"}],"dataSize":"8192","indexSize":"24576","foreignKeys":[{"name":"branch_creator_id_fkey","columns":["creator_id"],"referencedSchema":"public","referencedTable":"principal","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"branch_project_id_fkey","columns":["project_id"],"referencedSchema":"public","referencedTable":"project","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"branch_updater_id_fkey","columns":["updater_id"],"referencedSchema":"public","referencedTable":"principal","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bb"},{"name":"changelist","columns":[{"name":"id","position":1,"defaultExpression":"nextval(''public.changelist_id_seq''::regclass)","type":"integer"},{"name":"row_status","position":2,"defaultExpression":"''NORMAL''::public.row_status","type":"public.row_status"},{"name":"creator_id","position":3,"type":"integer"},{"name":"created_ts","position":4,"defaultExpression":"EXTRACT(epoch FROM now())","type":"bigint"},{"name":"updater_id","position":5,"type":"integer"},{"name":"updated_ts","position":6,"defaultExpression":"EXTRACT(epoch FROM now())","type":"bigint"},{"name":"project_id","position":7,"type":"integer"},{"name":"name","position":8,"type":"text"},{"name":"payload","position":9,"defaultExpression":"''{}''::jsonb","type":"jsonb"}],"indexes":[{"name":"changelist_pkey","expressions":["id"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX changelist_pkey ON public.changelist USING btree (id);","isConstraint":true},{"name":"idx_changelist_project_id_name","expressions":["project_id","name"],"type":"btree","unique":true,"definition":"CREATE UNIQUE INDEX idx_changelist_project_id_name ON public.changelist USING btree (project_id, name);"}],"dataSize":"8192","indexSize":"16384","foreignKeys":[{"name":"changelist_creator_id_fkey","columns":["creator_id"],"referencedSchema":"public","referencedTable":"principal","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"changelist_project_id_fkey","columns":["project_id"],"referencedSchema":"public","referencedTable":"project","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"changelist_updater_id_fkey","columns":["updater_id"],"referencedSchema":"public","referencedTable":"principal","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bb"},{"name":"changelog","columns":[{"name":"id","position":1,"defaultExpression":"nextval(''public.changelog_id_seq''::regclass)","type":"bigint"},{"name":"creator_id","position":2,"type":"integer"},{"name":"created_ts","position":3,"defaultExpression":"now()","type":"timestamp with time zone"},{"name":"database_id","position":4,"type":"integer"},{"name":"status","position":5,"type":"text"},{"name":"prev_sync_history_id","position":6,"nullable":true,"type":"bigint"},{"name":"sync_history_id","position":7,"nullable":true,"type":"bigint"},{"name":"payload","position":8,"defaultExpression":"''{}''::jsonb","type":"jsonb"}],"indexes":[{"name":"changelog_pkey","expressions":["id"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX changelog_pkey ON public.changelog USING btree (id);","isConstraint":true},{"name":"idx_changelog_database_id","expressions":["database_id"],"type":"btree","definition":"CREATE INDEX idx_changelog_database_id ON public.changelog USING btree (database_id);"}],"rowCount":"10","dataSize":"16384","indexSize":"32768","foreignKeys":[{"name":"changelog_creator_id_fkey","columns":["creator_id"],"referencedSchema":"public","referencedTable":"principal","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"changelog_database_id_fkey","columns":["database_id"],"referencedSchema":"public","referencedTable":"db","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"changelog_prev_sync_history_id_fkey","columns":["prev_sync_history_id"],"referencedSchema":"public","referencedTable":"sync_history","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"changelog_sync_history_id_fkey","columns":["sync_history_id"],"referencedSchema":"public","referencedTable":"sync_history","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bb"},{"name":"data_source","columns":[{"name":"id","position":1,"defaultExpression":"nextval(''public.data_source_id_seq''::regclass)","type":"integer"},{"name":"row_status","position":2,"defaultExpression":"''NORMAL''::public.row_status","type":"public.row_status"},{"name":"creator_id","position":3,"type":"integer"},{"name":"created_ts","position":4,"defaultExpression":"EXTRACT(epoch FROM now())","type":"bigint"},{"name":"updater_id","position":5,"type":"integer"},{"name":"updated_ts","position":6,"defaultExpression":"EXTRACT(epoch FROM now())","type":"bigint"},{"name":"instance_id","position":7,"type":"integer"},{"name":"name","position":8,"type":"text"},{"name":"type","position":9,"type":"text"},{"name":"username","position":10,"type":"text"},{"name":"password","position":11,"type":"text"},{"name":"ssl_key","position":12,"defaultExpression":"''''::text","type":"text"},{"name":"ssl_cert","position":13,"defaultExpression":"''''::text","type":"text"},{"name":"ssl_ca","position":14,"defaultExpression":"''''::text","type":"text"},{"name":"host","position":15,"defaultExpression":"''''::text","type":"text"},{"name":"port","position":16,"defaultExpression":"''''::text","type":"text"},{"name":"options","position":17,"defaultExpression":"''{}''::jsonb","type":"jsonb"},{"name":"database","position":18,"defaultExpression":"''''::text","type":"text"}],"indexes":[{"name":"data_source_pkey","expressions":["id"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX data_source_pkey ON public.data_source USING btree (id);","isConstraint":true},{"name":"idx_data_source_unique_instance_id_name","expressions":["instance_id","name"],"type":"btree","unique":true,"definition":"CREATE UNIQUE INDEX idx_data_source_unique_instance_id_name ON public.data_source USING btree (instance_id, name);"}],"rowCount":"5","dataSize":"16384","indexSize":"32768","foreignKeys":[{"name":"data_source_creator_id_fkey","columns":["creator_id"],"referencedSchema":"public","referencedTable":"principal","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"data_source_instance_id_fkey","columns":["instance_id"],"referencedSchema":"public","referencedTable":"instance","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"data_source_updater_id_fkey","columns":["updater_id"],"referencedSchema":"public","referencedTable":"principal","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bb"},{"name":"db","columns":[{"name":"id","position":1,"defaultExpression":"nextval(''public.db_id_seq''::regclass)","type":"integer"},{"name":"row_status","position":2,"defaultExpression":"''NORMAL''::public.row_status","type":"public.row_status"},{"name":"creator_id","position":3,"type":"integer"},{"name":"created_ts","position":4,"defaultExpression":"EXTRACT(epoch FROM now())","type":"bigint"},{"name":"updater_id","position":5,"type":"integer"},{"name":"updated_ts","position":6,"defaultExpression":"EXTRACT(epoch FROM now())","type":"bigint"},{"name":"instance_id","position":7,"type":"integer"},{"name":"project_id","position":8,"type":"integer"},{"name":"environment","position":9,"nullable":true,"type":"text"},{"name":"sync_status","position":10,"type":"text"},{"name":"last_successful_sync_ts","position":11,"type":"bigint"},{"name":"schema_version","position":12,"type":"text"},{"name":"name","position":13,"type":"text"},{"name":"secrets","position":14,"defaultExpression":"''{}''::jsonb","type":"jsonb"},{"name":"datashare","position":15,"defaultExpression":"false","type":"boolean"},{"name":"service_name","position":16,"defaultExpression":"''''::text","type":"text"},{"name":"metadata","position":17,"defaultExpression":"''{}''::jsonb","type":"jsonb"}],"indexes":[{"name":"db_pkey","expressions":["id"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX db_pkey ON public.db USING btree (id);","isConstraint":true},{"name":"idx_db_instance_id","expressions":["instance_id"],"type":"btree","definition":"CREATE INDEX idx_db_instance_id ON public.db USING btree (instance_id);"},{"name":"idx_db_project_id","expressions":["project_id"],"type":"btree","definition":"CREATE INDEX idx_db_project_id ON public.db USING btree (project_id);"},{"name":"idx_db_unique_instance_id_name","expressions":["instance_id","name"],"type":"btree","unique":true,"definition":"CREATE UNIQUE INDEX idx_db_unique_instance_id_name ON public.db USING btree (instance_id, name);"}],"rowCount":"11","dataSize":"16384","indexSize":"65536","foreignKeys":[{"name":"db_creator_id_fkey","columns":["creator_id"],"referencedSchema":"public","referencedTable":"principal","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"db_environment_fkey","columns":["environment"],"referencedSchema":"public","referencedTable":"environment","referencedColumns":["resource_id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"db_instance_id_fkey","columns":["instance_id"],"referencedSchema":"public","referencedTable":"instance","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"db_project_id_fkey","columns":["project_id"],"referencedSchema":"public","referencedTable":"project","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"db_updater_id_fkey","columns":["updater_id"],"referencedSchema":"public","referencedTable":"principal","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bb"},{"name":"db_group","columns":[{"name":"id","position":1,"defaultExpression":"nextval(''public.db_group_id_seq''::regclass)","type":"bigint"},{"name":"row_status","position":2,"defaultExpression":"''NORMAL''::public.row_status","type":"public.row_status"},{"name":"creator_id","position":3,"type":"integer"},{"name":"created_ts","position":4,"defaultExpression":"EXTRACT(epoch FROM now())","type":"bigint"},{"name":"updater_id","position":5,"type":"integer"},{"name":"updated_ts","position":6,"defaultExpression":"EXTRACT(epoch FROM now())","type":"bigint"},{"name":"project_id","position":7,"type":"integer"},{"name":"resource_id","position":8,"type":"text"},{"name":"placeholder","position":9,"defaultExpression":"''''::text","type":"text"},{"name":"expression","position":10,"defaultExpression":"''{}''::jsonb","type":"jsonb"},{"name":"payload","position":11,"defaultExpression":"''{}''::jsonb","type":"jsonb"}],"indexes":[{"name":"db_group_pkey","expressions":["id"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX db_group_pkey ON public.db_group USING btree (id);","isConstraint":true},{"name":"idx_db_group_unique_project_id_placeholder","expressions":["project_id","placeholder"],"type":"btree","unique":true,"definition":"CREATE UNIQUE INDEX idx_db_group_unique_project_id_placeholder ON public.db_group USING btree (project_id, placeholder);"},{"name":"idx_db_group_unique_project_id_resource_id","expressions":["project_id","resource_id"],"type":"btree","unique":true,"definition":"CREATE UNIQUE INDEX idx_db_group_unique_project_id_resource_id ON public.db_group USING btree (project_id, resource_id);"}],"rowCount":"2","dataSize":"16384","indexSize":"49152","foreignKeys":[{"name":"db_group_creator_id_fkey","columns":["creator_id"],"referencedSchema":"public","referencedTable":"principal","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"db_group_project_id_fkey","columns":["project_id"],"referencedSchema":"public","referencedTable":"project","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"db_group_updater_id_fkey","columns":["updater_id"],"referencedSchema":"public","referencedTable":"principal","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bb"},{"name":"db_schema","columns":[{"name":"id","position":1,"defaultExpression":"nextval(''public.db_schema_id_seq''::regclass)","type":"integer"},{"name":"row_status","position":2,"defaultExpression":"''NORMAL''::public.row_status","type":"public.row_status"},{"name":"creator_id","position":3,"type":"integer"},{"name":"created_ts","position":4,"defaultExpression":"EXTRACT(epoch FROM now())","type":"bigint"},{"name":"updater_id","position":5,"type":"integer"},{"name":"updated_ts","position":6,"defaultExpression":"EXTRACT(epoch FROM now())","type":"bigint"},{"name":"database_id","position":7,"type":"integer"},{"name":"metadata","position":8,"defaultExpression":"''{}''::json","type":"json"},{"name":"raw_dump","position":9,"defaultExpression":"''''::text","type":"text"},{"name":"config","position":10,"defaultExpression":"''{}''::jsonb","type":"jsonb"}],"indexes":[{"name":"db_schema_pkey","expressions":["id"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX db_schema_pkey ON public.db_schema USING btree (id);","isConstraint":true},{"name":"idx_db_schema_unique_database_id","expressions":["database_id"],"type":"btree","unique":true,"definition":"CREATE UNIQUE INDEX idx_db_schema_unique_database_id ON public.db_schema USING btree (database_id);"}],"rowCount":"11","dataSize":"139264","indexSize":"32768","foreignKeys":[{"name":"db_schema_creator_id_fkey","columns":["creator_id"],"referencedSchema":"public","referencedTable":"principal","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"db_schema_database_id_fkey","columns":["database_id"],"referencedSchema":"public","referencedTable":"db","referencedColumns":["id"],"onDelete":"CASCADE","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"db_schema_updater_id_fkey","columns":["updater_id"],"referencedSchema":"public","referencedTable":"principal","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bb"},{"name":"deployment_config","columns":[{"name":"id","position":1,"defaultExpression":"nextval(''public.deployment_config_id_seq''::regclass)","type":"integer"},{"name":"row_status","position":2,"defaultExpression":"''NORMAL''::public.row_status","type":"public.row_status"},{"name":"creator_id","position":3,"type":"integer"},{"name":"created_ts","position":4,"defaultExpression":"EXTRACT(epoch FROM now())","type":"bigint"},{"name":"updater_id","position":5,"type":"integer"},{"name":"updated_ts","position":6,"defaultExpression":"EXTRACT(epoch FROM now())","type":"bigint"},{"name":"project_id","position":7,"type":"integer"},{"name":"name","position":8,"type":"text"},{"name":"config","position":9,"defaultExpression":"''{}''::jsonb","type":"jsonb"}],"indexes":[{"name":"deployment_config_pkey","expressions":["id"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX deployment_config_pkey ON public.deployment_config USING btree (id);","isConstraint":true},{"name":"idx_deployment_config_unique_project_id","expressions":["project_id"],"type":"btree","unique":true,"definition":"CREATE UNIQUE INDEX idx_deployment_config_unique_project_id ON public.deployment_config USING btree (project_id);"}],"rowCount":"1","dataSize":"16384","indexSize":"32768","foreignKeys":[{"name":"deployment_config_creator_id_fkey","columns":["creator_id"],"referencedSchema":"public","referencedTable":"principal","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"deployment_config_project_id_fkey","columns":["project_id"],"referencedSchema":"public","referencedTable":"project","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"deployment_config_updater_id_fkey","columns":["updater_id"],"referencedSchema":"public","referencedTable":"principal","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bb"},{"name":"environment","columns":[{"name":"id","position":1,"defaultExpression":"nextval(''public.environment_id_seq''::regclass)","type":"integer"},{"name":"row_status","position":2,"defaultExpression":"''NORMAL''::public.row_status","type":"public.row_status"},{"name":"creator_id","position":3,"type":"integer"},{"name":"created_ts","position":4,"defaultExpression":"EXTRACT(epoch FROM now())","type":"bigint"},{"name":"updater_id","position":5,"type":"integer"},{"name":"updated_ts","position":6,"defaultExpression":"EXTRACT(epoch FROM now())","type":"bigint"},{"name":"name","position":7,"type":"text"},{"name":"order","position":8,"type":"integer"},{"name":"resource_id","position":9,"type":"text"}],"indexes":[{"name":"environment_pkey","expressions":["id"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX environment_pkey ON public.environment USING btree (id);","isConstraint":true},{"name":"idx_environment_unique_resource_id","expressions":["resource_id"],"type":"btree","unique":true,"definition":"CREATE UNIQUE INDEX idx_environment_unique_resource_id ON public.environment USING btree (resource_id);"}],"rowCount":"2","dataSize":"16384","indexSize":"32768","foreignKeys":[{"name":"environment_creator_id_fkey","columns":["creator_id"],"referencedSchema":"public","referencedTable":"principal","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"environment_updater_id_fkey","columns":["updater_id"],"referencedSchema":"public","referencedTable":"principal","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bb"},{"name":"export_archive","columns":[{"name":"id","position":1,"defaultExpression":"nextval(''public.export_archive_id_seq''::regclass)","type":"integer"},{"name":"created_ts","position":2,"defaultExpression":"EXTRACT(epoch FROM now())","type":"bigint"},{"name":"bytes","position":3,"nullable":true,"type":"bytea"},{"name":"payload","position":4,"defaultExpression":"''{}''::jsonb","type":"jsonb"}],"indexes":[{"name":"export_archive_pkey","expressions":["id"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX export_archive_pkey ON public.export_archive USING btree (id);","isConstraint":true}],"dataSize":"8192","indexSize":"8192","owner":"bb"},{"name":"external_approval","columns":[{"name":"id","position":1,"defaultExpression":"nextval(''public.external_approval_id_seq''::regclass)","type":"integer"},{"name":"row_status","position":2,"defaultExpression":"''NORMAL''::public.row_status","type":"public.row_status"},{"name":"created_ts","position":3,"defaultExpression":"EXTRACT(epoch FROM now())","type":"bigint"},{"name":"updated_ts","position":4,"defaultExpression":"EXTRACT(epoch FROM now())","type":"bigint"},{"name":"issue_id","position":5,"type":"integer"},{"name":"requester_id","position":6,"type":"integer"},{"name":"approver_id","position":7,"type":"integer"},{"name":"type","position":8,"type":"text"},{"name":"payload","position":9,"type":"jsonb"}],"indexes":[{"name":"external_approval_pkey","expressions":["id"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX external_approval_pkey ON public.external_approval USING btree (id);","isConstraint":true},{"name":"idx_external_approval_row_status_issue_id","expressions":["row_status","issue_id"],"type":"btree","definition":"CREATE INDEX idx_external_approval_row_status_issue_id ON public.external_approval USING btree (row_status, issue_id);"}],"dataSize":"8192","indexSize":"16384","foreignKeys":[{"name":"external_approval_approver_id_fkey","columns":["approver_id"],"referencedSchema":"public","referencedTable":"principal","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"external_approval_issue_id_fkey","columns":["issue_id"],"referencedSchema":"public","referencedTable":"issue","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"external_approval_requester_id_fkey","columns":["requester_id"],"referencedSchema":"public","referencedTable":"principal","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bb"},{"name":"idp","columns":[{"name":"id","position":1,"defaultExpression":"nextval(''public.idp_id_seq''::regclass)","type":"integer"},{"name":"row_status","position":2,"defaultExpression":"''NORMAL''::public.row_status","type":"public.row_status"},{"name":"created_ts","position":3,"defaultExpression":"EXTRACT(epoch FROM now())","type":"bigint"},{"name":"updated_ts","position":4,"defaultExpression":"EXTRACT(epoch FROM now())","type":"bigint"},{"name":"resource_id","position":5,"type":"text"},{"name":"name","position":6,"type":"text"},{"name":"domain","position":7,"type":"text"},{"name":"type","position":8,"type":"text"},{"name":"config","position":9,"defaultExpression":"''{}''::jsonb","type":"jsonb"}],"indexes":[{"name":"idp_pkey","expressions":["id"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX idp_pkey ON public.idp USING btree (id);","isConstraint":true},{"name":"idx_idp_unique_resource_id","expressions":["resource_id"],"type":"btree","unique":true,"definition":"CREATE UNIQUE INDEX idx_idp_unique_resource_id ON public.idp USING btree (resource_id);"}],"dataSize":"8192","indexSize":"16384","owner":"bb"},{"name":"instance","columns":[{"name":"id","position":1,"defaultExpression":"nextval(''public.instance_id_seq''::regclass)","type":"integer"},{"name":"row_status","position":2,"defaultExpression":"''NORMAL''::public.row_status","type":"public.row_status"},{"name":"creator_id","position":3,"type":"integer"},{"name":"created_ts","position":4,"defaultExpression":"EXTRACT(epoch FROM now())","type":"bigint"},{"name":"updater_id","position":5,"type":"integer"},{"name":"updated_ts","position":6,"defaultExpression":"EXTRACT(epoch FROM now())","type":"bigint"},{"name":"environment","position":7,"nullable":true,"type":"text"},{"name":"name","position":8,"type":"text"},{"name":"engine","position":9,"type":"text"},{"name":"engine_version","position":10,"defaultExpression":"''''::text","type":"text"},{"name":"external_link","position":11,"defaultExpression":"''''::text","type":"text"},{"name":"resource_id","position":12,"type":"text"},{"name":"activation","position":13,"defaultExpression":"false","type":"boolean"},{"name":"options","position":14,"defaultExpression":"''{}''::jsonb","type":"jsonb"},{"name":"metadata","position":15,"defaultExpression":"''{}''::jsonb","type":"jsonb"}],"indexes":[{"name":"idx_instance_unique_resource_id","expressions":["resource_id"],"type":"btree","unique":true,"definition":"CREATE UNIQUE INDEX idx_instance_unique_resource_id ON public.instance USING btree (resource_id);"},{"name":"instance_pkey","expressions":["id"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX instance_pkey ON public.instance USING btree (id);","isConstraint":true}],"rowCount":"3","dataSize":"16384","indexSize":"32768","foreignKeys":[{"name":"instance_creator_id_fkey","columns":["creator_id"],"referencedSchema":"public","referencedTable":"principal","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"instance_environment_fkey","columns":["environment"],"referencedSchema":"public","referencedTable":"environment","referencedColumns":["resource_id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"instance_updater_id_fkey","columns":["updater_id"],"referencedSchema":"public","referencedTable":"principal","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bb"},{"name":"instance_change_history","columns":[{"name":"id","position":1,"defaultExpression":"nextval(''public.instance_change_history_id_seq''::regclass)","type":"bigint"},{"name":"row_status","position":2,"defaultExpression":"''NORMAL''::public.row_status","type":"public.row_status"},{"name":"creator_id","position":3,"type":"integer"},{"name":"created_ts","position":4,"defaultExpression":"EXTRACT(epoch FROM now())","type":"bigint"},{"name":"updater_id","position":5,"type":"integer"},{"name":"updated_ts","position":6,"defaultExpression":"EXTRACT(epoch FROM now())","type":"bigint"},{"name":"instance_id","position":7,"nullable":true,"type":"integer"},{"name":"database_id","position":8,"nullable":true,"type":"integer"},{"name":"project_id","position":9,"nullable":true,"type":"integer"},{"name":"issue_id","position":10,"nullable":true,"type":"integer"},{"name":"release_version","position":11,"type":"text"},{"name":"sequence","position":12,"type":"bigint"},{"name":"source","position":13,"type":"text"},{"name":"type","position":14,"type":"text"},{"name":"status","position":15,"type":"text"},{"name":"version","position":16,"type":"text"},{"name":"description","position":17,"type":"text"},{"name":"statement","position":18,"type":"text"},{"name":"sheet_id","position":19,"nullable":true,"type":"bigint"},{"name":"schema","position":20,"type":"text"},{"name":"schema_prev","position":21,"type":"text"},{"name":"execution_duration_ns","position":22,"type":"bigint"},{"name":"payload","position":23,"defaultExpression":"''{}''::jsonb","type":"jsonb"}],"indexes":[{"name":"idx_instance_change_history_unique_instance_id_database_id_sequ","expressions":["instance_id","database_id","sequence"],"type":"btree","unique":true,"definition":"CREATE UNIQUE INDEX idx_instance_change_history_unique_instance_id_database_id_sequ ON public.instance_change_history USING btree (instance_id, database_id, sequence);"},{"name":"idx_instance_change_history_unique_instance_id_database_id_vers","expressions":["instance_id","database_id","version"],"type":"btree","unique":true,"definition":"CREATE UNIQUE INDEX idx_instance_change_history_unique_instance_id_database_id_vers ON public.instance_change_history USING btree (instance_id, database_id, version);"},{"name":"instance_change_history_pkey","expressions":["id"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX instance_change_history_pkey ON public.instance_change_history USING btree (id);","isConstraint":true}],"rowCount":"2","dataSize":"16384","indexSize":"49152","foreignKeys":[{"name":"instance_change_history_creator_id_fkey","columns":["creator_id"],"referencedSchema":"public","referencedTable":"principal","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"instance_change_history_database_id_fkey","columns":["database_id"],"referencedSchema":"public","referencedTable":"db","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"instance_change_history_instance_id_fkey","columns":["instance_id"],"referencedSchema":"public","referencedTable":"instance","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"instance_change_history_issue_id_fkey","columns":["issue_id"],"referencedSchema":"public","referencedTable":"issue","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"instance_change_history_project_id_fkey","columns":["project_id"],"referencedSchema":"public","referencedTable":"project","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"instance_change_history_updater_id_fkey","columns":["updater_id"],"referencedSchema":"public","referencedTable":"principal","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bb"},{"name":"instance_user","columns":[{"name":"id","position":1,"defaultExpression":"nextval(''public.instance_user_id_seq''::regclass)","type":"integer"},{"name":"row_status","position":2,"defaultExpression":"''NORMAL''::public.row_status","type":"public.row_status"},{"name":"creator_id","position":3,"type":"integer"},{"name":"created_ts","position":4,"defaultExpression":"EXTRACT(epoch FROM now())","type":"bigint"},{"name":"updater_id","position":5,"type":"integer"},{"name":"updated_ts","position":6,"defaultExpression":"EXTRACT(epoch FROM now())","type":"bigint"},{"name":"instance_id","position":7,"type":"integer"},{"name":"name","position":8,"type":"text"},{"name":"grant","position":9,"type":"text"}],"indexes":[{"name":"idx_instance_user_unique_instance_id_name","expressions":["instance_id","name"],"type":"btree","unique":true,"definition":"CREATE UNIQUE INDEX idx_instance_user_unique_instance_id_name ON public.instance_user USING btree (instance_id, name);"},{"name":"instance_user_pkey","expressions":["id"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX instance_user_pkey ON public.instance_user USING btree (id);","isConstraint":true}],"rowCount":"3","dataSize":"16384","indexSize":"32768","foreignKeys":[{"name":"instance_user_creator_id_fkey","columns":["creator_id"],"referencedSchema":"public","referencedTable":"principal","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"instance_user_instance_id_fkey","columns":["instance_id"],"referencedSchema":"public","referencedTable":"instance","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"instance_user_updater_id_fkey","columns":["updater_id"],"referencedSchema":"public","referencedTable":"principal","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bb"},{"name":"issue","columns":[{"name":"id","position":1,"defaultExpression":"nextval(''public.issue_id_seq''::regclass)","type":"integer"},{"name":"row_status","position":2,"defaultExpression":"''NORMAL''::public.row_status","type":"public.row_status"},{"name":"creator_id","position":3,"type":"integer"},{"name":"created_ts","position":4,"defaultExpression":"EXTRACT(epoch FROM now())","type":"bigint"},{"name":"updater_id","position":5,"type":"integer"},{"name":"updated_ts","position":6,"defaultExpression":"EXTRACT(epoch FROM now())","type":"bigint"},{"name":"project_id","position":7,"type":"integer"},{"name":"plan_id","position":8,"nullable":true,"type":"bigint"},{"name":"pipeline_id","position":9,"nullable":true,"type":"integer"},{"name":"name","position":10,"type":"text"},{"name":"status","position":11,"type":"text"},{"name":"type","position":12,"type":"text"},{"name":"description","position":13,"defaultExpression":"''''::text","type":"text"},{"name":"assignee_id","position":14,"nullable":true,"type":"integer"},{"name":"assignee_need_attention","position":15,"defaultExpression":"false","type":"boolean"},{"name":"payload","position":16,"defaultExpression":"''{}''::jsonb","type":"jsonb"},{"name":"ts_vector","position":17,"nullable":true,"type":"tsvector"}],"indexes":[{"name":"idx_issue_assignee_id","expressions":["assignee_id"],"type":"btree","definition":"CREATE INDEX idx_issue_assignee_id ON public.issue USING btree (assignee_id);"},{"name":"idx_issue_created_ts","expressions":["created_ts"],"type":"btree","definition":"CREATE INDEX idx_issue_created_ts ON public.issue USING btree (created_ts);"},{"name":"idx_issue_creator_id","expressions":["creator_id"],"type":"btree","definition":"CREATE INDEX idx_issue_creator_id ON public.issue USING btree (creator_id);"},{"name":"idx_issue_pipeline_id","expressions":["pipeline_id"],"type":"btree","definition":"CREATE INDEX idx_issue_pipeline_id ON public.issue USING btree (pipeline_id);"},{"name":"idx_issue_plan_id","expressions":["plan_id"],"type":"btree","definition":"CREATE INDEX idx_issue_plan_id ON public.issue USING btree (plan_id);"},{"name":"idx_issue_project_id","expressions":["project_id"],"type":"btree","definition":"CREATE INDEX idx_issue_project_id ON public.issue USING btree (project_id);"},{"name":"idx_issue_ts_vector","expressions":["ts_vector"],"type":"gin","definition":"CREATE INDEX idx_issue_ts_vector ON public.issue USING gin (ts_vector);"},{"name":"issue_pkey","expressions":["id"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX issue_pkey ON public.issue USING btree (id);","isConstraint":true}],"rowCount":"10","dataSize":"16384","indexSize":"131072","foreignKeys":[{"name":"issue_assignee_id_fkey","columns":["assignee_id"],"referencedSchema":"public","referencedTable":"principal","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"issue_creator_id_fkey","columns":["creator_id"],"referencedSchema":"public","referencedTable":"principal","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"issue_pipeline_id_fkey","columns":["pipeline_id"],"referencedSchema":"public","referencedTable":"pipeline","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"issue_plan_id_fkey","columns":["plan_id"],"referencedSchema":"public","referencedTable":"plan","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"issue_project_id_fkey","columns":["project_id"],"referencedSchema":"public","referencedTable":"project","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"issue_updater_id_fkey","columns":["updater_id"],"referencedSchema":"public","referencedTable":"principal","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bb"},{"name":"issue_comment","columns":[{"name":"id","position":1,"defaultExpression":"nextval(''public.issue_comment_id_seq''::regclass)","type":"bigint"},{"name":"row_status","position":2,"defaultExpression":"''NORMAL''::public.row_status","type":"public.row_status"},{"name":"creator_id","position":3,"type":"integer"},{"name":"created_ts","position":4,"defaultExpression":"EXTRACT(epoch FROM now())","type":"bigint"},{"name":"updater_id","position":5,"type":"integer"},{"name":"updated_ts","position":6,"defaultExpression":"EXTRACT(epoch FROM now())","type":"bigint"},{"name":"issue_id","position":7,"type":"integer"},{"name":"payload","position":8,"defaultExpression":"''{}''::jsonb","type":"jsonb"}],"indexes":[{"name":"idx_issue_comment_issue_id","expressions":["issue_id"],"type":"btree","definition":"CREATE INDEX idx_issue_comment_issue_id ON public.issue_comment USING btree (issue_id);"},{"name":"issue_comment_pkey","expressions":["id"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX issue_comment_pkey ON public.issue_comment USING btree (id);","isConstraint":true}],"rowCount":"37","dataSize":"16384","indexSize":"32768","foreignKeys":[{"name":"issue_comment_creator_id_fkey","columns":["creator_id"],"referencedSchema":"public","referencedTable":"principal","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"issue_comment_issue_id_fkey","columns":["issue_id"],"referencedSchema":"public","referencedTable":"issue","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"issue_comment_updater_id_fkey","columns":["updater_id"],"referencedSchema":"public","referencedTable":"principal","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bb"},{"name":"issue_subscriber","columns":[{"name":"issue_id","position":1,"type":"integer"},{"name":"subscriber_id","position":2,"type":"integer"}],"indexes":[{"name":"idx_issue_subscriber_subscriber_id","expressions":["subscriber_id"],"type":"btree","definition":"CREATE INDEX idx_issue_subscriber_subscriber_id ON public.issue_subscriber USING btree (subscriber_id);"},{"name":"issue_subscriber_pkey","expressions":["issue_id","subscriber_id"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX issue_subscriber_pkey ON public.issue_subscriber USING btree (issue_id, subscriber_id);","isConstraint":true}],"indexSize":"16384","foreignKeys":[{"name":"issue_subscriber_issue_id_fkey","columns":["issue_id"],"referencedSchema":"public","referencedTable":"issue","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"issue_subscriber_subscriber_id_fkey","columns":["subscriber_id"],"referencedSchema":"public","referencedTable":"principal","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bb"},{"name":"pipeline","columns":[{"name":"id","position":1,"defaultExpression":"nextval(''public.pipeline_id_seq''::regclass)","type":"integer"},{"name":"row_status","position":2,"defaultExpression":"''NORMAL''::public.row_status","type":"public.row_status"},{"name":"creator_id","position":3,"type":"integer"},{"name":"created_ts","position":4,"defaultExpression":"EXTRACT(epoch FROM now())","type":"bigint"},{"name":"updater_id","position":5,"type":"integer"},{"name":"updated_ts","position":6,"defaultExpression":"EXTRACT(epoch FROM now())","type":"bigint"},{"name":"project_id","position":7,"type":"integer"},{"name":"name","position":8,"type":"text"}],"indexes":[{"name":"pipeline_pkey","expressions":["id"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX pipeline_pkey ON public.pipeline USING btree (id);","isConstraint":true}],"rowCount":"10","dataSize":"16384","indexSize":"16384","foreignKeys":[{"name":"pipeline_creator_id_fkey","columns":["creator_id"],"referencedSchema":"public","referencedTable":"principal","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"pipeline_project_id_fkey","columns":["project_id"],"referencedSchema":"public","referencedTable":"project","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"pipeline_updater_id_fkey","columns":["updater_id"],"referencedSchema":"public","referencedTable":"principal","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bb"},{"name":"plan","columns":[{"name":"id","position":1,"defaultExpression":"nextval(''public.plan_id_seq''::regclass)","type":"bigint"},{"name":"row_status","position":2,"defaultExpression":"''NORMAL''::public.row_status","type":"public.row_status"},{"name":"creator_id","position":3,"type":"integer"},{"name":"created_ts","position":4,"defaultExpression":"EXTRACT(epoch FROM now())","type":"bigint"},{"name":"updater_id","position":5,"type":"integer"},{"name":"updated_ts","position":6,"defaultExpression":"EXTRACT(epoch FROM now())","type":"bigint"},{"name":"project_id","position":7,"type":"integer"},{"name":"pipeline_id","position":8,"nullable":true,"type":"integer"},{"name":"name","position":9,"type":"text"},{"name":"description","position":10,"type":"text"},{"name":"config","position":11,"defaultExpression":"''{}''::jsonb","type":"jsonb"}],"indexes":[{"name":"idx_plan_pipeline_id","expressions":["pipeline_id"],"type":"btree","definition":"CREATE INDEX idx_plan_pipeline_id ON public.plan USING btree (pipeline_id);"},{"name":"idx_plan_project_id","expressions":["project_id"],"type":"btree","definition":"CREATE INDEX idx_plan_project_id ON public.plan USING btree (project_id);"},{"name":"plan_pkey","expressions":["id"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX plan_pkey ON public.plan USING btree (id);","isConstraint":true}],"rowCount":"10","dataSize":"16384","indexSize":"49152","foreignKeys":[{"name":"plan_creator_id_fkey","columns":["creator_id"],"referencedSchema":"public","referencedTable":"principal","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"plan_pipeline_id_fkey","columns":["pipeline_id"],"referencedSchema":"public","referencedTable":"pipeline","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"plan_project_id_fkey","columns":["project_id"],"referencedSchema":"public","referencedTable":"project","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"plan_updater_id_fkey","columns":["updater_id"],"referencedSchema":"public","referencedTable":"principal","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bb"},{"name":"plan_check_run","columns":[{"name":"id","position":1,"defaultExpression":"nextval(''public.plan_check_run_id_seq''::regclass)","type":"integer"},{"name":"creator_id","position":2,"type":"integer"},{"name":"created_ts","position":3,"defaultExpression":"EXTRACT(epoch FROM now())","type":"bigint"},{"name":"updater_id","position":4,"type":"integer"},{"name":"updated_ts","position":5,"defaultExpression":"EXTRACT(epoch FROM now())","type":"bigint"},{"name":"plan_id","position":6,"type":"bigint"},{"name":"status","position":7,"type":"text"},{"name":"type","position":8,"type":"text"},{"name":"config","position":9,"defaultExpression":"''{}''::jsonb","type":"jsonb"},{"name":"result","position":10,"defaultExpression":"''{}''::jsonb","type":"jsonb"},{"name":"payload","position":11,"defaultExpression":"''{}''::jsonb","type":"jsonb"}],"indexes":[{"name":"idx_plan_check_run_plan_id","expressions":["plan_id"],"type":"btree","definition":"CREATE INDEX idx_plan_check_run_plan_id ON public.plan_check_run USING btree (plan_id);"},{"name":"plan_check_run_pkey","expressions":["id"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX plan_check_run_pkey ON public.plan_check_run USING btree (id);","isConstraint":true}],"rowCount":"54","dataSize":"57344","indexSize":"32768","foreignKeys":[{"name":"plan_check_run_creator_id_fkey","columns":["creator_id"],"referencedSchema":"public","referencedTable":"principal","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"plan_check_run_plan_id_fkey","columns":["plan_id"],"referencedSchema":"public","referencedTable":"plan","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"plan_check_run_updater_id_fkey","columns":["updater_id"],"referencedSchema":"public","referencedTable":"principal","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bb"},{"name":"policy","columns":[{"name":"id","position":1,"defaultExpression":"nextval(''public.policy_id_seq''::regclass)","type":"integer"},{"name":"row_status","position":2,"defaultExpression":"''NORMAL''::public.row_status","type":"public.row_status"},{"name":"creator_id","position":3,"type":"integer"},{"name":"created_ts","position":4,"defaultExpression":"EXTRACT(epoch FROM now())","type":"bigint"},{"name":"updater_id","position":5,"type":"integer"},{"name":"updated_ts","position":6,"defaultExpression":"EXTRACT(epoch FROM now())","type":"bigint"},{"name":"type","position":7,"type":"text"},{"name":"payload","position":8,"defaultExpression":"''{}''::jsonb","type":"jsonb"},{"name":"resource_type","position":9,"type":"public.resource_type"},{"name":"resource_id","position":10,"type":"integer"},{"name":"inherit_from_parent","position":11,"defaultExpression":"true","type":"boolean"}],"indexes":[{"name":"idx_policy_unique_resource_type_resource_id_type","expressions":["resource_type","resource_id","type"],"type":"btree","unique":true,"definition":"CREATE UNIQUE INDEX idx_policy_unique_resource_type_resource_id_type ON public.policy USING btree (resource_type, resource_id, type);"},{"name":"policy_pkey","expressions":["id"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX policy_pkey ON public.policy USING btree (id);","isConstraint":true}],"rowCount":"16","dataSize":"16384","indexSize":"32768","foreignKeys":[{"name":"policy_creator_id_fkey","columns":["creator_id"],"referencedSchema":"public","referencedTable":"principal","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"policy_updater_id_fkey","columns":["updater_id"],"referencedSchema":"public","referencedTable":"principal","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bb"},{"name":"principal","columns":[{"name":"id","position":1,"defaultExpression":"nextval(''public.principal_id_seq''::regclass)","type":"integer"},{"name":"row_status","position":2,"defaultExpression":"''NORMAL''::public.row_status","type":"public.row_status"},{"name":"creator_id","position":3,"type":"integer"},{"name":"created_ts","position":4,"defaultExpression":"EXTRACT(epoch FROM now())","type":"bigint"},{"name":"updater_id","position":5,"type":"integer"},{"name":"updated_ts","position":6,"defaultExpression":"EXTRACT(epoch FROM now())","type":"bigint"},{"name":"type","position":7,"type":"text"},{"name":"name","position":8,"type":"text"},{"name":"email","position":9,"type":"text"},{"name":"password_hash","position":10,"type":"text"},{"name":"phone","position":11,"defaultExpression":"''''::text","type":"text"},{"name":"mfa_config","position":12,"defaultExpression":"''{}''::jsonb","type":"jsonb"},{"name":"profile","position":13,"defaultExpression":"''{}''::jsonb","type":"jsonb"}],"indexes":[{"name":"principal_pkey","expressions":["id"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX principal_pkey ON public.principal USING btree (id);","isConstraint":true}],"rowCount":"11","dataSize":"16384","indexSize":"16384","foreignKeys":[{"name":"principal_creator_id_fkey","columns":["creator_id"],"referencedSchema":"public","referencedTable":"principal","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"principal_updater_id_fkey","columns":["updater_id"],"referencedSchema":"public","referencedTable":"principal","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bb"},{"name":"project","columns":[{"name":"id","position":1,"defaultExpression":"nextval(''public.project_id_seq''::regclass)","type":"integer"},{"name":"row_status","position":2,"defaultExpression":"''NORMAL''::public.row_status","type":"public.row_status"},{"name":"creator_id","position":3,"type":"integer"},{"name":"created_ts","position":4,"defaultExpression":"EXTRACT(epoch FROM now())","type":"bigint"},{"name":"updater_id","position":5,"type":"integer"},{"name":"updated_ts","position":6,"defaultExpression":"EXTRACT(epoch FROM now())","type":"bigint"},{"name":"name","position":7,"type":"text"},{"name":"key","position":8,"type":"text"},{"name":"resource_id","position":9,"type":"text"},{"name":"data_classification_config_id","position":10,"defaultExpression":"''''::text","type":"text"},{"name":"setting","position":11,"defaultExpression":"''{}''::jsonb","type":"jsonb"}],"indexes":[{"name":"idx_project_unique_key","expressions":["key"],"type":"btree","unique":true,"definition":"CREATE UNIQUE INDEX idx_project_unique_key ON public.project USING btree (key);"},{"name":"idx_project_unique_resource_id","expressions":["resource_id"],"type":"btree","unique":true,"definition":"CREATE UNIQUE INDEX idx_project_unique_resource_id ON public.project USING btree (resource_id);"},{"name":"project_pkey","expressions":["id"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX project_pkey ON public.project USING btree (id);","isConstraint":true}],"rowCount":"5","dataSize":"16384","indexSize":"49152","foreignKeys":[{"name":"project_creator_id_fkey","columns":["creator_id"],"referencedSchema":"public","referencedTable":"principal","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"project_updater_id_fkey","columns":["updater_id"],"referencedSchema":"public","referencedTable":"principal","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bb"},{"name":"project_webhook","columns":[{"name":"id","position":1,"defaultExpression":"nextval(''public.project_webhook_id_seq''::regclass)","type":"integer"},{"name":"row_status","position":2,"defaultExpression":"''NORMAL''::public.row_status","type":"public.row_status"},{"name":"creator_id","position":3,"type":"integer"},{"name":"created_ts","position":4,"defaultExpression":"EXTRACT(epoch FROM now())","type":"bigint"},{"name":"updater_id","position":5,"type":"integer"},{"name":"updated_ts","position":6,"defaultExpression":"EXTRACT(epoch FROM now())","type":"bigint"},{"name":"project_id","position":7,"type":"integer"},{"name":"type","position":8,"type":"text"},{"name":"name","position":9,"type":"text"},{"name":"url","position":10,"type":"text"},{"name":"activity_list","position":11,"type":"_text"},{"name":"payload","position":12,"defaultExpression":"''{}''::jsonb","type":"jsonb"}],"indexes":[{"name":"idx_project_webhook_project_id","expressions":["project_id"],"type":"btree","definition":"CREATE INDEX idx_project_webhook_project_id ON public.project_webhook USING btree (project_id);"},{"name":"idx_project_webhook_unique_project_id_url","expressions":["project_id","url"],"type":"btree","unique":true,"definition":"CREATE UNIQUE INDEX idx_project_webhook_unique_project_id_url ON public.project_webhook USING btree (project_id, url);"},{"name":"project_webhook_pkey","expressions":["id"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX project_webhook_pkey ON public.project_webhook USING btree (id);","isConstraint":true}],"dataSize":"8192","indexSize":"24576","foreignKeys":[{"name":"project_webhook_creator_id_fkey","columns":["creator_id"],"referencedSchema":"public","referencedTable":"principal","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"project_webhook_project_id_fkey","columns":["project_id"],"referencedSchema":"public","referencedTable":"project","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"project_webhook_updater_id_fkey","columns":["updater_id"],"referencedSchema":"public","referencedTable":"principal","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bb"},{"name":"query_history","columns":[{"name":"id","position":1,"defaultExpression":"nextval(''public.query_history_id_seq''::regclass)","type":"bigint"},{"name":"row_status","position":2,"defaultExpression":"''NORMAL''::public.row_status","type":"public.row_status"},{"name":"creator_id","position":3,"type":"integer"},{"name":"created_ts","position":4,"defaultExpression":"EXTRACT(epoch FROM now())","type":"bigint"},{"name":"project_id","position":5,"type":"text"},{"name":"database","position":6,"type":"text"},{"name":"statement","position":7,"type":"text"},{"name":"type","position":8,"type":"text"},{"name":"payload","position":9,"defaultExpression":"''{}''::jsonb","type":"jsonb"}],"indexes":[{"name":"idx_query_history_creator_id_created_ts_project_id","expressions":["creator_id","created_ts","project_id"],"type":"btree","definition":"CREATE INDEX idx_query_history_creator_id_created_ts_project_id ON public.query_history USING btree (creator_id, created_ts, project_id DESC);"},{"name":"query_history_pkey","expressions":["id"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX query_history_pkey ON public.query_history USING btree (id);","isConstraint":true}],"rowCount":"30","dataSize":"49152","indexSize":"32768","foreignKeys":[{"name":"query_history_creator_id_fkey","columns":["creator_id"],"referencedSchema":"public","referencedTable":"principal","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bb"},{"name":"release","columns":[{"name":"id","position":1,"defaultExpression":"nextval(''public.release_id_seq''::regclass)","type":"bigint"},{"name":"row_status","position":2,"defaultExpression":"''NORMAL''::public.row_status","type":"public.row_status"},{"name":"project_id","position":3,"type":"integer"},{"name":"creator_id","position":4,"type":"integer"},{"name":"created_ts","position":5,"defaultExpression":"now()","type":"timestamp with time zone"},{"name":"payload","position":6,"defaultExpression":"''{}''::jsonb","type":"jsonb"}],"indexes":[{"name":"idx_release_project_id","expressions":["project_id"],"type":"btree","definition":"CREATE INDEX idx_release_project_id ON public.release USING btree (project_id);"},{"name":"release_pkey","expressions":["id"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX release_pkey ON public.release USING btree (id);","isConstraint":true}],"dataSize":"8192","indexSize":"16384","foreignKeys":[{"name":"release_creator_id_fkey","columns":["creator_id"],"referencedSchema":"public","referencedTable":"principal","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"release_project_id_fkey","columns":["project_id"],"referencedSchema":"public","referencedTable":"project","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bb"},{"name":"review_config","columns":[{"name":"id","position":1,"type":"text"},{"name":"row_status","position":2,"defaultExpression":"''NORMAL''::public.row_status","type":"public.row_status"},{"name":"creator_id","position":3,"type":"integer"},{"name":"created_ts","position":4,"defaultExpression":"EXTRACT(epoch FROM now())","type":"bigint"},{"name":"updater_id","position":5,"type":"integer"},{"name":"updated_ts","position":6,"defaultExpression":"EXTRACT(epoch FROM now())","type":"bigint"},{"name":"name","position":7,"type":"text"},{"name":"payload","position":8,"defaultExpression":"''{}''::jsonb","type":"jsonb"}],"indexes":[{"name":"review_config_pkey","expressions":["id"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX review_config_pkey ON public.review_config USING btree (id);","isConstraint":true}],"rowCount":"1","dataSize":"32768","indexSize":"16384","foreignKeys":[{"name":"review_config_creator_id_fkey","columns":["creator_id"],"referencedSchema":"public","referencedTable":"principal","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"review_config_updater_id_fkey","columns":["updater_id"],"referencedSchema":"public","referencedTable":"principal","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bb"},{"name":"revision","columns":[{"name":"id","position":1,"defaultExpression":"nextval(''public.revision_id_seq''::regclass)","type":"bigint"},{"name":"database_id","position":2,"type":"integer"},{"name":"creator_id","position":3,"type":"integer"},{"name":"created_ts","position":4,"defaultExpression":"now()","type":"timestamp with time zone"},{"name":"deleter_id","position":5,"nullable":true,"type":"integer"},{"name":"deleted_ts","position":6,"nullable":true,"type":"timestamp with time zone"},{"name":"version","position":7,"type":"text"},{"name":"payload","position":8,"defaultExpression":"''{}''::jsonb","type":"jsonb"}],"indexes":[{"name":"idx_revision_database_id_version","expressions":["database_id","version"],"type":"btree","definition":"CREATE INDEX idx_revision_database_id_version ON public.revision USING btree (database_id, version);"},{"name":"idx_revision_unique_database_id_version_deleted_ts_null","expressions":["database_id","version"],"type":"btree","unique":true,"definition":"CREATE UNIQUE INDEX idx_revision_unique_database_id_version_deleted_ts_null ON public.revision USING btree (database_id, version) WHERE (deleted_ts IS NULL);"},{"name":"revision_pkey","expressions":["id"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX revision_pkey ON public.revision USING btree (id);","isConstraint":true}],"dataSize":"8192","indexSize":"24576","foreignKeys":[{"name":"revision_creator_id_fkey","columns":["creator_id"],"referencedSchema":"public","referencedTable":"principal","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"revision_database_id_fkey","columns":["database_id"],"referencedSchema":"public","referencedTable":"db","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"revision_deleter_id_fkey","columns":["deleter_id"],"referencedSchema":"public","referencedTable":"principal","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bb"},{"name":"risk","columns":[{"name":"id","position":1,"defaultExpression":"nextval(''public.risk_id_seq''::regclass)","type":"bigint"},{"name":"row_status","position":2,"defaultExpression":"''NORMAL''::public.row_status","type":"public.row_status"},{"name":"creator_id","position":3,"type":"integer"},{"name":"created_ts","position":4,"defaultExpression":"EXTRACT(epoch FROM now())","type":"bigint"},{"name":"updater_id","position":5,"type":"integer"},{"name":"updated_ts","position":6,"defaultExpression":"EXTRACT(epoch FROM now())","type":"bigint"},{"name":"source","position":7,"type":"text"},{"name":"level","position":8,"type":"bigint"},{"name":"name","position":9,"type":"text"},{"name":"active","position":10,"type":"boolean"},{"name":"expression","position":11,"type":"jsonb"}],"indexes":[{"name":"risk_pkey","expressions":["id"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX risk_pkey ON public.risk USING btree (id);","isConstraint":true}],"rowCount":"2","dataSize":"16384","indexSize":"16384","foreignKeys":[{"name":"risk_creator_id_fkey","columns":["creator_id"],"referencedSchema":"public","referencedTable":"principal","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"risk_updater_id_fkey","columns":["updater_id"],"referencedSchema":"public","referencedTable":"principal","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bb"},{"name":"role","columns":[{"name":"id","position":1,"defaultExpression":"nextval(''public.role_id_seq''::regclass)","type":"bigint"},{"name":"row_status","position":2,"defaultExpression":"''NORMAL''::public.row_status","type":"public.row_status"},{"name":"creator_id","position":3,"type":"integer"},{"name":"created_ts","position":4,"defaultExpression":"EXTRACT(epoch FROM now())","type":"bigint"},{"name":"updater_id","position":5,"type":"integer"},{"name":"updated_ts","position":6,"defaultExpression":"EXTRACT(epoch FROM now())","type":"bigint"},{"name":"resource_id","position":7,"type":"text"},{"name":"name","position":8,"type":"text"},{"name":"description","position":9,"type":"text"},{"name":"permissions","position":10,"defaultExpression":"''{}''::jsonb","type":"jsonb"},{"name":"payload","position":11,"defaultExpression":"''{}''::jsonb","type":"jsonb"}],"indexes":[{"name":"idx_role_unique_resource_id","expressions":["resource_id"],"type":"btree","unique":true,"definition":"CREATE UNIQUE INDEX idx_role_unique_resource_id ON public.role USING btree (resource_id);"},{"name":"role_pkey","expressions":["id"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX role_pkey ON public.role USING btree (id);","isConstraint":true}],"rowCount":"1","dataSize":"16384","indexSize":"32768","foreignKeys":[{"name":"role_creator_id_fkey","columns":["creator_id"],"referencedSchema":"public","referencedTable":"principal","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"role_updater_id_fkey","columns":["updater_id"],"referencedSchema":"public","referencedTable":"principal","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bb"},{"name":"setting","columns":[{"name":"id","position":1,"defaultExpression":"nextval(''public.setting_id_seq''::regclass)","type":"integer"},{"name":"row_status","position":2,"defaultExpression":"''NORMAL''::public.row_status","type":"public.row_status"},{"name":"creator_id","position":3,"type":"integer"},{"name":"created_ts","position":4,"defaultExpression":"EXTRACT(epoch FROM now())","type":"bigint"},{"name":"updater_id","position":5,"type":"integer"},{"name":"updated_ts","position":6,"defaultExpression":"EXTRACT(epoch FROM now())","type":"bigint"},{"name":"name","position":7,"type":"text"},{"name":"value","position":8,"type":"text"},{"name":"description","position":9,"defaultExpression":"''''::text","type":"text"}],"indexes":[{"name":"idx_setting_unique_name","expressions":["name"],"type":"btree","unique":true,"definition":"CREATE UNIQUE INDEX idx_setting_unique_name ON public.setting USING btree (name);"},{"name":"setting_pkey","expressions":["id"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX setting_pkey ON public.setting USING btree (id);","isConstraint":true}],"rowCount":"16","dataSize":"16384","indexSize":"32768","foreignKeys":[{"name":"setting_creator_id_fkey","columns":["creator_id"],"referencedSchema":"public","referencedTable":"principal","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"setting_updater_id_fkey","columns":["updater_id"],"referencedSchema":"public","referencedTable":"principal","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bb"},{"name":"sheet","columns":[{"name":"id","position":1,"defaultExpression":"nextval(''public.sheet_id_seq''::regclass)","type":"integer"},{"name":"row_status","position":2,"defaultExpression":"''NORMAL''::public.row_status","type":"public.row_status"},{"name":"creator_id","position":3,"type":"integer"},{"name":"created_ts","position":4,"defaultExpression":"EXTRACT(epoch FROM now())","type":"bigint"},{"name":"updater_id","position":5,"type":"integer"},{"name":"updated_ts","position":6,"defaultExpression":"EXTRACT(epoch FROM now())","type":"bigint"},{"name":"project_id","position":7,"type":"integer"},{"name":"name","position":8,"type":"text"},{"name":"sha256","position":9,"type":"bytea"},{"name":"payload","position":10,"defaultExpression":"''{}''::jsonb","type":"jsonb"}],"indexes":[{"name":"idx_sheet_creator_id","expressions":["creator_id"],"type":"btree","definition":"CREATE INDEX idx_sheet_creator_id ON public.sheet USING btree (creator_id);"},{"name":"idx_sheet_name","expressions":["name"],"type":"btree","definition":"CREATE INDEX idx_sheet_name ON public.sheet USING btree (name);"},{"name":"idx_sheet_project_id","expressions":["project_id"],"type":"btree","definition":"CREATE INDEX idx_sheet_project_id ON public.sheet USING btree (project_id);"},{"name":"idx_sheet_project_id_row_status","expressions":["project_id","row_status"],"type":"btree","definition":"CREATE INDEX idx_sheet_project_id_row_status ON public.sheet USING btree (project_id, row_status);"},{"name":"sheet_pkey","expressions":["id"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX sheet_pkey ON public.sheet USING btree (id);","isConstraint":true}],"rowCount":"13","dataSize":"16384","indexSize":"81920","foreignKeys":[{"name":"sheet_creator_id_fkey","columns":["creator_id"],"referencedSchema":"public","referencedTable":"principal","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"sheet_project_id_fkey","columns":["project_id"],"referencedSchema":"public","referencedTable":"project","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"sheet_updater_id_fkey","columns":["updater_id"],"referencedSchema":"public","referencedTable":"principal","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bb"},{"name":"sheet_blob","columns":[{"name":"sha256","position":1,"type":"bytea"},{"name":"content","position":2,"type":"text"}],"indexes":[{"name":"sheet_blob_pkey","expressions":["sha256"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX sheet_blob_pkey ON public.sheet_blob USING btree (sha256);","isConstraint":true}],"rowCount":"9","dataSize":"16384","indexSize":"16384","owner":"bb"},{"name":"slow_query","columns":[{"name":"id","position":1,"defaultExpression":"nextval(''public.slow_query_id_seq''::regclass)","type":"integer"},{"name":"row_status","position":2,"defaultExpression":"''NORMAL''::public.row_status","type":"public.row_status"},{"name":"creator_id","position":3,"type":"integer"},{"name":"created_ts","position":4,"defaultExpression":"EXTRACT(epoch FROM now())","type":"bigint"},{"name":"updater_id","position":5,"type":"integer"},{"name":"updated_ts","position":6,"defaultExpression":"EXTRACT(epoch FROM now())","type":"bigint"},{"name":"instance_id","position":7,"type":"integer"},{"name":"database_id","position":8,"nullable":true,"type":"integer"},{"name":"log_date_ts","position":9,"type":"integer"},{"name":"slow_query_statistics","position":10,"defaultExpression":"''{}''::jsonb","type":"jsonb"}],"indexes":[{"name":"idx_slow_query_instance_id_log_date_ts","expressions":["instance_id","log_date_ts"],"type":"btree","definition":"CREATE INDEX idx_slow_query_instance_id_log_date_ts ON public.slow_query USING btree (instance_id, log_date_ts);"},{"name":"slow_query_pkey","expressions":["id"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX slow_query_pkey ON public.slow_query USING btree (id);","isConstraint":true},{"name":"uk_slow_query_database_id_log_date_ts","expressions":["database_id","log_date_ts"],"type":"btree","unique":true,"definition":"CREATE UNIQUE INDEX uk_slow_query_database_id_log_date_ts ON public.slow_query USING btree (database_id, log_date_ts);"}],"dataSize":"8192","indexSize":"24576","foreignKeys":[{"name":"slow_query_creator_id_fkey","columns":["creator_id"],"referencedSchema":"public","referencedTable":"principal","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"slow_query_database_id_fkey","columns":["database_id"],"referencedSchema":"public","referencedTable":"db","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"slow_query_instance_id_fkey","columns":["instance_id"],"referencedSchema":"public","referencedTable":"instance","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"slow_query_updater_id_fkey","columns":["updater_id"],"referencedSchema":"public","referencedTable":"principal","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bb"},{"name":"sql_lint_config","columns":[{"name":"id","position":1,"type":"text"},{"name":"creator_id","position":2,"type":"integer"},{"name":"created_ts","position":3,"defaultExpression":"EXTRACT(epoch FROM now())","type":"bigint"},{"name":"updater_id","position":4,"type":"integer"},{"name":"updated_ts","position":5,"defaultExpression":"EXTRACT(epoch FROM now())","type":"bigint"},{"name":"config","position":6,"defaultExpression":"''{}''::jsonb","type":"jsonb"}],"indexes":[{"name":"sql_lint_config_pkey","expressions":["id"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX sql_lint_config_pkey ON public.sql_lint_config USING btree (id);","isConstraint":true}],"dataSize":"8192","indexSize":"8192","foreignKeys":[{"name":"sql_lint_config_creator_id_fkey","columns":["creator_id"],"referencedSchema":"public","referencedTable":"principal","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"sql_lint_config_updater_id_fkey","columns":["updater_id"],"referencedSchema":"public","referencedTable":"principal","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bb"},{"name":"stage","columns":[{"name":"id","position":1,"defaultExpression":"nextval(''public.stage_id_seq''::regclass)","type":"integer"},{"name":"row_status","position":2,"defaultExpression":"''NORMAL''::public.row_status","type":"public.row_status"},{"name":"creator_id","position":3,"type":"integer"},{"name":"created_ts","position":4,"defaultExpression":"EXTRACT(epoch FROM now())","type":"bigint"},{"name":"updater_id","position":5,"type":"integer"},{"name":"updated_ts","position":6,"defaultExpression":"EXTRACT(epoch FROM now())","type":"bigint"},{"name":"pipeline_id","position":7,"type":"integer"},{"name":"environment_id","position":8,"type":"integer"},{"name":"deployment_id","position":9,"defaultExpression":"''''::text","type":"text"},{"name":"name","position":10,"type":"text"}],"indexes":[{"name":"idx_stage_pipeline_id","expressions":["pipeline_id"],"type":"btree","definition":"CREATE INDEX idx_stage_pipeline_id ON public.stage USING btree (pipeline_id);"},{"name":"stage_pkey","expressions":["id"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX stage_pkey ON public.stage USING btree (id);","isConstraint":true}],"rowCount":"13","dataSize":"16384","indexSize":"32768","foreignKeys":[{"name":"stage_creator_id_fkey","columns":["creator_id"],"referencedSchema":"public","referencedTable":"principal","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"stage_environment_id_fkey","columns":["environment_id"],"referencedSchema":"public","referencedTable":"environment","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"stage_pipeline_id_fkey","columns":["pipeline_id"],"referencedSchema":"public","referencedTable":"pipeline","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"stage_updater_id_fkey","columns":["updater_id"],"referencedSchema":"public","referencedTable":"principal","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bb"},{"name":"sync_history","columns":[{"name":"id","position":1,"defaultExpression":"nextval(''public.sync_history_id_seq''::regclass)","type":"bigint"},{"name":"creator_id","position":2,"type":"integer"},{"name":"created_ts","position":3,"defaultExpression":"now()","type":"timestamp with time zone"},{"name":"database_id","position":4,"type":"integer"},{"name":"metadata","position":5,"defaultExpression":"''{}''::json","type":"json"},{"name":"raw_dump","position":6,"defaultExpression":"''''::text","type":"text"}],"indexes":[{"name":"idx_sync_history_database_id_created_ts","expressions":["database_id","created_ts"],"type":"btree","definition":"CREATE INDEX idx_sync_history_database_id_created_ts ON public.sync_history USING btree (database_id, created_ts);"},{"name":"sync_history_pkey","expressions":["id"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX sync_history_pkey ON public.sync_history USING btree (id);","isConstraint":true}],"rowCount":"8","dataSize":"98304","indexSize":"32768","foreignKeys":[{"name":"sync_history_creator_id_fkey","columns":["creator_id"],"referencedSchema":"public","referencedTable":"principal","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"sync_history_database_id_fkey","columns":["database_id"],"referencedSchema":"public","referencedTable":"db","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bb"},{"name":"task","columns":[{"name":"id","position":1,"defaultExpression":"nextval(''public.task_id_seq''::regclass)","type":"integer"},{"name":"row_status","position":2,"defaultExpression":"''NORMAL''::public.row_status","type":"public.row_status"},{"name":"creator_id","position":3,"type":"integer"},{"name":"created_ts","position":4,"defaultExpression":"EXTRACT(epoch FROM now())","type":"bigint"},{"name":"updater_id","position":5,"type":"integer"},{"name":"updated_ts","position":6,"defaultExpression":"EXTRACT(epoch FROM now())","type":"bigint"},{"name":"pipeline_id","position":7,"type":"integer"},{"name":"stage_id","position":8,"type":"integer"},{"name":"instance_id","position":9,"type":"integer"},{"name":"database_id","position":10,"nullable":true,"type":"integer"},{"name":"name","position":11,"type":"text"},{"name":"status","position":12,"type":"text"},{"name":"type","position":13,"type":"text"},{"name":"payload","position":14,"defaultExpression":"''{}''::jsonb","type":"jsonb"},{"name":"earliest_allowed_ts","position":15,"defaultExpression":"0","type":"bigint"}],"indexes":[{"name":"idx_task_earliest_allowed_ts","expressions":["earliest_allowed_ts"],"type":"btree","definition":"CREATE INDEX idx_task_earliest_allowed_ts ON public.task USING btree (earliest_allowed_ts);"},{"name":"idx_task_pipeline_id_stage_id","expressions":["pipeline_id","stage_id"],"type":"btree","definition":"CREATE INDEX idx_task_pipeline_id_stage_id ON public.task USING btree (pipeline_id, stage_id);"},{"name":"idx_task_status","expressions":["status"],"type":"btree","definition":"CREATE INDEX idx_task_status ON public.task USING btree (status);"},{"name":"task_pkey","expressions":["id"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX task_pkey ON public.task USING btree (id);","isConstraint":true}],"rowCount":"16","dataSize":"16384","indexSize":"65536","foreignKeys":[{"name":"task_creator_id_fkey","columns":["creator_id"],"referencedSchema":"public","referencedTable":"principal","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"task_database_id_fkey","columns":["database_id"],"referencedSchema":"public","referencedTable":"db","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"task_instance_id_fkey","columns":["instance_id"],"referencedSchema":"public","referencedTable":"instance","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"task_pipeline_id_fkey","columns":["pipeline_id"],"referencedSchema":"public","referencedTable":"pipeline","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"task_stage_id_fkey","columns":["stage_id"],"referencedSchema":"public","referencedTable":"stage","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"task_updater_id_fkey","columns":["updater_id"],"referencedSchema":"public","referencedTable":"principal","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bb"},{"name":"task_dag","columns":[{"name":"id","position":1,"defaultExpression":"nextval(''public.task_dag_id_seq''::regclass)","type":"integer"},{"name":"created_ts","position":2,"defaultExpression":"EXTRACT(epoch FROM now())","type":"bigint"},{"name":"updated_ts","position":3,"defaultExpression":"EXTRACT(epoch FROM now())","type":"bigint"},{"name":"from_task_id","position":4,"type":"integer"},{"name":"to_task_id","position":5,"type":"integer"},{"name":"payload","position":6,"defaultExpression":"''{}''::jsonb","type":"jsonb"}],"indexes":[{"name":"idx_task_dag_from_task_id","expressions":["from_task_id"],"type":"btree","definition":"CREATE INDEX idx_task_dag_from_task_id ON public.task_dag USING btree (from_task_id);"},{"name":"idx_task_dag_to_task_id","expressions":["to_task_id"],"type":"btree","definition":"CREATE INDEX idx_task_dag_to_task_id ON public.task_dag USING btree (to_task_id);"},{"name":"task_dag_pkey","expressions":["id"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX task_dag_pkey ON public.task_dag USING btree (id);","isConstraint":true}],"dataSize":"8192","indexSize":"24576","foreignKeys":[{"name":"task_dag_from_task_id_fkey","columns":["from_task_id"],"referencedSchema":"public","referencedTable":"task","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"task_dag_to_task_id_fkey","columns":["to_task_id"],"referencedSchema":"public","referencedTable":"task","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bb"},{"name":"task_run","columns":[{"name":"id","position":1,"defaultExpression":"nextval(''public.task_run_id_seq''::regclass)","type":"integer"},{"name":"creator_id","position":2,"type":"integer"},{"name":"created_ts","position":3,"defaultExpression":"EXTRACT(epoch FROM now())","type":"bigint"},{"name":"updater_id","position":4,"type":"integer"},{"name":"updated_ts","position":5,"defaultExpression":"EXTRACT(epoch FROM now())","type":"bigint"},{"name":"task_id","position":6,"type":"integer"},{"name":"sheet_id","position":7,"nullable":true,"type":"integer"},{"name":"attempt","position":8,"type":"integer"},{"name":"name","position":9,"type":"text"},{"name":"status","position":10,"type":"text"},{"name":"started_ts","position":11,"defaultExpression":"0","type":"bigint"},{"name":"code","position":12,"defaultExpression":"0","type":"integer"},{"name":"result","position":13,"defaultExpression":"''{}''::jsonb","type":"jsonb"}],"indexes":[{"name":"idx_task_run_task_id","expressions":["task_id"],"type":"btree","definition":"CREATE INDEX idx_task_run_task_id ON public.task_run USING btree (task_id);"},{"name":"task_run_pkey","expressions":["id"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX task_run_pkey ON public.task_run USING btree (id);","isConstraint":true},{"name":"uk_task_run_task_id_attempt","expressions":["task_id","attempt"],"type":"btree","unique":true,"definition":"CREATE UNIQUE INDEX uk_task_run_task_id_attempt ON public.task_run USING btree (task_id, attempt);"}],"rowCount":"10","dataSize":"16384","indexSize":"49152","foreignKeys":[{"name":"task_run_creator_id_fkey","columns":["creator_id"],"referencedSchema":"public","referencedTable":"principal","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"task_run_sheet_id_fkey","columns":["sheet_id"],"referencedSchema":"public","referencedTable":"sheet","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"task_run_task_id_fkey","columns":["task_id"],"referencedSchema":"public","referencedTable":"task","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"task_run_updater_id_fkey","columns":["updater_id"],"referencedSchema":"public","referencedTable":"principal","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bb"},{"name":"task_run_log","columns":[{"name":"id","position":1,"defaultExpression":"nextval(''public.task_run_log_id_seq''::regclass)","type":"bigint"},{"name":"task_run_id","position":2,"type":"integer"},{"name":"created_ts","position":3,"defaultExpression":"now()","type":"timestamp with time zone"},{"name":"payload","position":4,"defaultExpression":"''{}''::jsonb","type":"jsonb"}],"indexes":[{"name":"idx_task_run_log_task_run_id","expressions":["task_run_id"],"type":"btree","definition":"CREATE INDEX idx_task_run_log_task_run_id ON public.task_run_log USING btree (task_run_id);"},{"name":"task_run_log_pkey","expressions":["id"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX task_run_log_pkey ON public.task_run_log USING btree (id);","isConstraint":true}],"rowCount":"54","dataSize":"49152","indexSize":"32768","foreignKeys":[{"name":"task_run_log_task_run_id_fkey","columns":["task_run_id"],"referencedSchema":"public","referencedTable":"task_run","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bb"},{"name":"user_group","columns":[{"name":"email","position":1,"type":"text"},{"name":"creator_id","position":2,"type":"integer"},{"name":"created_ts","position":3,"defaultExpression":"EXTRACT(epoch FROM now())","type":"bigint"},{"name":"updater_id","position":4,"type":"integer"},{"name":"updated_ts","position":5,"defaultExpression":"EXTRACT(epoch FROM now())","type":"bigint"},{"name":"name","position":6,"type":"text"},{"name":"description","position":7,"defaultExpression":"''''::text","type":"text"},{"name":"payload","position":8,"defaultExpression":"''{}''::jsonb","type":"jsonb"}],"indexes":[{"name":"user_group_pkey","expressions":["email"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX user_group_pkey ON public.user_group USING btree (email);","isConstraint":true}],"dataSize":"8192","indexSize":"8192","foreignKeys":[{"name":"user_group_creator_id_fkey","columns":["creator_id"],"referencedSchema":"public","referencedTable":"principal","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"user_group_updater_id_fkey","columns":["updater_id"],"referencedSchema":"public","referencedTable":"principal","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bb"},{"name":"vcs","columns":[{"name":"id","position":1,"defaultExpression":"nextval(''public.vcs_id_seq''::regclass)","type":"integer"},{"name":"row_status","position":2,"defaultExpression":"''NORMAL''::public.row_status","type":"public.row_status"},{"name":"creator_id","position":3,"type":"integer"},{"name":"created_ts","position":4,"defaultExpression":"EXTRACT(epoch FROM now())","type":"bigint"},{"name":"updater_id","position":5,"type":"integer"},{"name":"updated_ts","position":6,"defaultExpression":"EXTRACT(epoch FROM now())","type":"bigint"},{"name":"resource_id","position":7,"type":"text"},{"name":"name","position":8,"type":"text"},{"name":"type","position":9,"type":"text"},{"name":"instance_url","position":10,"type":"text"},{"name":"access_token","position":11,"defaultExpression":"''''::text","type":"text"}],"indexes":[{"name":"idx_vcs_unique_resource_id","expressions":["resource_id"],"type":"btree","unique":true,"definition":"CREATE UNIQUE INDEX idx_vcs_unique_resource_id ON public.vcs USING btree (resource_id);"},{"name":"vcs_pkey","expressions":["id"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX vcs_pkey ON public.vcs USING btree (id);","isConstraint":true}],"rowCount":"1","dataSize":"16384","indexSize":"32768","foreignKeys":[{"name":"vcs_creator_id_fkey","columns":["creator_id"],"referencedSchema":"public","referencedTable":"principal","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"vcs_updater_id_fkey","columns":["updater_id"],"referencedSchema":"public","referencedTable":"principal","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bb"},{"name":"vcs_connector","columns":[{"name":"id","position":1,"defaultExpression":"nextval(''public.vcs_connector_id_seq''::regclass)","type":"integer"},{"name":"row_status","position":2,"defaultExpression":"''NORMAL''::public.row_status","type":"public.row_status"},{"name":"creator_id","position":3,"type":"integer"},{"name":"created_ts","position":4,"defaultExpression":"EXTRACT(epoch FROM now())","type":"bigint"},{"name":"updater_id","position":5,"type":"integer"},{"name":"updated_ts","position":6,"defaultExpression":"EXTRACT(epoch FROM now())","type":"bigint"},{"name":"vcs_id","position":7,"type":"integer"},{"name":"project_id","position":8,"type":"integer"},{"name":"resource_id","position":9,"type":"text"},{"name":"payload","position":10,"defaultExpression":"''{}''::jsonb","type":"jsonb"}],"indexes":[{"name":"idx_vcs_connector_unique_project_id_resource_id","expressions":["project_id","resource_id"],"type":"btree","unique":true,"definition":"CREATE UNIQUE INDEX idx_vcs_connector_unique_project_id_resource_id ON public.vcs_connector USING btree (project_id, resource_id);"},{"name":"vcs_connector_pkey","expressions":["id"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX vcs_connector_pkey ON public.vcs_connector USING btree (id);","isConstraint":true}],"rowCount":"1","dataSize":"16384","indexSize":"32768","foreignKeys":[{"name":"vcs_connector_creator_id_fkey","columns":["creator_id"],"referencedSchema":"public","referencedTable":"principal","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"vcs_connector_project_id_fkey","columns":["project_id"],"referencedSchema":"public","referencedTable":"project","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"vcs_connector_updater_id_fkey","columns":["updater_id"],"referencedSchema":"public","referencedTable":"principal","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"vcs_connector_vcs_id_fkey","columns":["vcs_id"],"referencedSchema":"public","referencedTable":"vcs","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bb"},{"name":"worksheet","columns":[{"name":"id","position":1,"defaultExpression":"nextval(''public.worksheet_id_seq''::regclass)","type":"integer"},{"name":"row_status","position":2,"defaultExpression":"''NORMAL''::public.row_status","type":"public.row_status"},{"name":"creator_id","position":3,"type":"integer"},{"name":"created_ts","position":4,"defaultExpression":"EXTRACT(epoch FROM now())","type":"bigint"},{"name":"updater_id","position":5,"type":"integer"},{"name":"updated_ts","position":6,"defaultExpression":"EXTRACT(epoch FROM now())","type":"bigint"},{"name":"project_id","position":7,"type":"integer"},{"name":"database_id","position":8,"nullable":true,"type":"integer"},{"name":"name","position":9,"type":"text"},{"name":"statement","position":10,"type":"text"},{"name":"visibility","position":11,"type":"text"},{"name":"payload","position":12,"defaultExpression":"''{}''::jsonb","type":"jsonb"}],"indexes":[{"name":"idx_worksheet_creator_id_project_id","expressions":["creator_id","project_id"],"type":"btree","definition":"CREATE INDEX idx_worksheet_creator_id_project_id ON public.worksheet USING btree (creator_id, project_id);"},{"name":"worksheet_pkey","expressions":["id"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX worksheet_pkey ON public.worksheet USING btree (id);","isConstraint":true}],"rowCount":"7","dataSize":"16384","indexSize":"32768","foreignKeys":[{"name":"worksheet_creator_id_fkey","columns":["creator_id"],"referencedSchema":"public","referencedTable":"principal","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"worksheet_database_id_fkey","columns":["database_id"],"referencedSchema":"public","referencedTable":"db","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"worksheet_project_id_fkey","columns":["project_id"],"referencedSchema":"public","referencedTable":"project","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"worksheet_updater_id_fkey","columns":["updater_id"],"referencedSchema":"public","referencedTable":"principal","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bb"},{"name":"worksheet_organizer","columns":[{"name":"id","position":1,"defaultExpression":"nextval(''public.worksheet_organizer_id_seq''::regclass)","type":"integer"},{"name":"worksheet_id","position":2,"type":"integer"},{"name":"principal_id","position":3,"type":"integer"},{"name":"starred","position":4,"defaultExpression":"false","type":"boolean"}],"indexes":[{"name":"idx_worksheet_organizer_principal_id","expressions":["principal_id"],"type":"btree","definition":"CREATE INDEX idx_worksheet_organizer_principal_id ON public.worksheet_organizer USING btree (principal_id);"},{"name":"idx_worksheet_organizer_unique_sheet_id_principal_id","expressions":["worksheet_id","principal_id"],"type":"btree","unique":true,"definition":"CREATE UNIQUE INDEX idx_worksheet_organizer_unique_sheet_id_principal_id ON public.worksheet_organizer USING btree (worksheet_id, principal_id);"},{"name":"worksheet_organizer_pkey","expressions":["id"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX worksheet_organizer_pkey ON public.worksheet_organizer USING btree (id);","isConstraint":true}],"indexSize":"24576","foreignKeys":[{"name":"worksheet_organizer_principal_id_fkey","columns":["principal_id"],"referencedSchema":"public","referencedTable":"principal","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"worksheet_organizer_worksheet_id_fkey","columns":["worksheet_id"],"referencedSchema":"public","referencedTable":"worksheet","referencedColumns":["id"],"onDelete":"CASCADE","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bb"}],"sequences":[{"name":"activity_id_seq","dataType":"integer","start":"1","minValue":"1","maxValue":"2147483647","increment":"1","cacheSize":"1","lastValue":"194","ownerTable":"activity","ownerColumn":"id"},{"name":"anomaly_id_seq","dataType":"integer","start":"1","minValue":"1","maxValue":"2147483647","increment":"1","cacheSize":"1","lastValue":"107","ownerTable":"anomaly","ownerColumn":"id"},{"name":"audit_log_id_seq","dataType":"bigint","start":"1","minValue":"1","maxValue":"9223372036854775807","increment":"1","cacheSize":"1","lastValue":"158","ownerTable":"audit_log","ownerColumn":"id"},{"name":"branch_id_seq","dataType":"integer","start":"1","minValue":"1","maxValue":"2147483647","increment":"1","cacheSize":"1","lastValue":"105","ownerTable":"branch","ownerColumn":"id"},{"name":"changelist_id_seq","dataType":"integer","start":"1","minValue":"1","maxValue":"2147483647","increment":"1","cacheSize":"1","lastValue":"101","ownerTable":"changelist","ownerColumn":"id"},{"name":"changelog_id_seq","dataType":"bigint","start":"1","minValue":"1","maxValue":"9223372036854775807","increment":"1","cacheSize":"1","lastValue":"120","ownerTable":"changelog","ownerColumn":"id"},{"name":"data_source_id_seq","dataType":"integer","start":"1","minValue":"1","maxValue":"2147483647","increment":"1","cacheSize":"1","lastValue":"105","ownerTable":"data_source","ownerColumn":"id"},{"name":"db_group_id_seq","dataType":"bigint","start":"1","minValue":"1","maxValue":"9223372036854775807","increment":"1","cacheSize":"1","lastValue":"102","ownerTable":"db_group","ownerColumn":"id"},{"name":"db_id_seq","dataType":"integer","start":"1","minValue":"1","maxValue":"2147483647","increment":"1","cacheSize":"1","lastValue":"111","ownerTable":"db","ownerColumn":"id"},{"name":"db_schema_id_seq","dataType":"integer","start":"1","minValue":"1","maxValue":"2147483647","increment":"1","cacheSize":"1","lastValue":"178","ownerTable":"db_schema","ownerColumn":"id"},{"name":"deployment_config_id_seq","dataType":"integer","start":"1","minValue":"1","maxValue":"2147483647","increment":"1","cacheSize":"1","lastValue":"101","ownerTable":"deployment_config","ownerColumn":"id"},{"name":"environment_id_seq","dataType":"integer","start":"1","minValue":"1","maxValue":"2147483647","increment":"1","cacheSize":"1","ownerTable":"environment","ownerColumn":"id"},{"name":"export_archive_id_seq","dataType":"integer","start":"1","minValue":"1","maxValue":"2147483647","increment":"1","cacheSize":"1","ownerTable":"export_archive","ownerColumn":"id"},{"name":"external_approval_id_seq","dataType":"integer","start":"1","minValue":"1","maxValue":"2147483647","increment":"1","cacheSize":"1","ownerTable":"external_approval","ownerColumn":"id"},{"name":"idp_id_seq","dataType":"integer","start":"1","minValue":"1","maxValue":"2147483647","increment":"1","cacheSize":"1","ownerTable":"idp","ownerColumn":"id"},{"name":"instance_change_history_id_seq","dataType":"bigint","start":"1","minValue":"1","maxValue":"9223372036854775807","increment":"1","cacheSize":"1","lastValue":"197","ownerTable":"instance_change_history","ownerColumn":"id"},{"name":"instance_id_seq","dataType":"integer","start":"1","minValue":"1","maxValue":"2147483647","increment":"1","cacheSize":"1","lastValue":"103","ownerTable":"instance","ownerColumn":"id"},{"name":"instance_user_id_seq","dataType":"integer","start":"1","minValue":"1","maxValue":"2147483647","increment":"1","cacheSize":"1","lastValue":"103","ownerTable":"instance_user","ownerColumn":"id"},{"name":"issue_comment_id_seq","dataType":"bigint","start":"1","minValue":"1","maxValue":"9223372036854775807","increment":"1","cacheSize":"1","lastValue":"141","ownerTable":"issue_comment","ownerColumn":"id"},{"name":"issue_id_seq","dataType":"integer","start":"1","minValue":"1","maxValue":"2147483647","increment":"1","cacheSize":"1","lastValue":"110","ownerTable":"issue","ownerColumn":"id"},{"name":"pipeline_id_seq","dataType":"integer","start":"1","minValue":"1","maxValue":"2147483647","increment":"1","cacheSize":"1","lastValue":"110","ownerTable":"pipeline","ownerColumn":"id"},{"name":"plan_check_run_id_seq","dataType":"integer","start":"1","minValue":"1","maxValue":"2147483647","increment":"1","cacheSize":"1","lastValue":"171","ownerTable":"plan_check_run","ownerColumn":"id"},{"name":"plan_id_seq","dataType":"bigint","start":"1","minValue":"1","maxValue":"9223372036854775807","increment":"1","cacheSize":"1","lastValue":"110","ownerTable":"plan","ownerColumn":"id"},{"name":"policy_id_seq","dataType":"integer","start":"1","minValue":"1","maxValue":"2147483647","increment":"1","cacheSize":"1","lastValue":"169","ownerTable":"policy","ownerColumn":"id"},{"name":"principal_id_seq","dataType":"integer","start":"1","minValue":"1","maxValue":"2147483647","increment":"1","cacheSize":"1","lastValue":"109","ownerTable":"principal","ownerColumn":"id"},{"name":"project_id_seq","dataType":"integer","start":"1","minValue":"1","maxValue":"2147483647","increment":"1","cacheSize":"1","lastValue":"104","ownerTable":"project","ownerColumn":"id"},{"name":"project_webhook_id_seq","dataType":"integer","start":"1","minValue":"1","maxValue":"2147483647","increment":"1","cacheSize":"1","ownerTable":"project_webhook","ownerColumn":"id"},{"name":"query_history_id_seq","dataType":"bigint","start":"1","minValue":"1","maxValue":"9223372036854775807","increment":"1","cacheSize":"1","lastValue":"130","ownerTable":"query_history","ownerColumn":"id"},{"name":"release_id_seq","dataType":"bigint","start":"1","minValue":"1","maxValue":"9223372036854775807","increment":"1","cacheSize":"1","ownerTable":"release","ownerColumn":"id"},{"name":"revision_id_seq","dataType":"bigint","start":"1","minValue":"1","maxValue":"9223372036854775807","increment":"1","cacheSize":"1","ownerTable":"revision","ownerColumn":"id"},{"name":"risk_id_seq","dataType":"bigint","start":"1","minValue":"1","maxValue":"9223372036854775807","increment":"1","cacheSize":"1","lastValue":"102","ownerTable":"risk","ownerColumn":"id"},{"name":"role_id_seq","dataType":"bigint","start":"1","minValue":"1","maxValue":"9223372036854775807","increment":"1","cacheSize":"1","lastValue":"101","ownerTable":"role","ownerColumn":"id"},{"name":"setting_id_seq","dataType":"integer","start":"1","minValue":"1","maxValue":"2147483647","increment":"1","cacheSize":"1","lastValue":"196","ownerTable":"setting","ownerColumn":"id"},{"name":"sheet_id_seq","dataType":"integer","start":"1","minValue":"1","maxValue":"2147483647","increment":"1","cacheSize":"1","lastValue":"135","ownerTable":"sheet","ownerColumn":"id"},{"name":"slow_query_id_seq","dataType":"integer","start":"1","minValue":"1","maxValue":"2147483647","increment":"1","cacheSize":"1","lastValue":"101","ownerTable":"slow_query","ownerColumn":"id"},{"name":"stage_id_seq","dataType":"integer","start":"1","minValue":"1","maxValue":"2147483647","increment":"1","cacheSize":"1","lastValue":"113","ownerTable":"stage","ownerColumn":"id"},{"name":"sync_history_id_seq","dataType":"bigint","start":"1","minValue":"1","maxValue":"9223372036854775807","increment":"1","cacheSize":"1","lastValue":"108","ownerTable":"sync_history","ownerColumn":"id"},{"name":"task_dag_id_seq","dataType":"integer","start":"1","minValue":"1","maxValue":"2147483647","increment":"1","cacheSize":"1","ownerTable":"task_dag","ownerColumn":"id"},{"name":"task_id_seq","dataType":"integer","start":"1","minValue":"1","maxValue":"2147483647","increment":"1","cacheSize":"1","lastValue":"116","ownerTable":"task","ownerColumn":"id"},{"name":"task_run_id_seq","dataType":"integer","start":"1","minValue":"1","maxValue":"2147483647","increment":"1","cacheSize":"1","lastValue":"110","ownerTable":"task_run","ownerColumn":"id"},{"name":"task_run_log_id_seq","dataType":"bigint","start":"1","minValue":"1","maxValue":"9223372036854775807","increment":"1","cacheSize":"1","lastValue":"154","ownerTable":"task_run_log","ownerColumn":"id"},{"name":"vcs_connector_id_seq","dataType":"integer","start":"1","minValue":"1","maxValue":"2147483647","increment":"1","cacheSize":"1","ownerTable":"vcs_connector","ownerColumn":"id"},{"name":"vcs_id_seq","dataType":"integer","start":"1","minValue":"1","maxValue":"2147483647","increment":"1","cacheSize":"1","lastValue":"102","ownerTable":"vcs","ownerColumn":"id"},{"name":"worksheet_id_seq","dataType":"integer","start":"1","minValue":"1","maxValue":"2147483647","increment":"1","cacheSize":"1","lastValue":"110","ownerTable":"worksheet","ownerColumn":"id"},{"name":"worksheet_organizer_id_seq","dataType":"integer","start":"1","minValue":"1","maxValue":"2147483647","increment":"1","cacheSize":"1","ownerTable":"worksheet_organizer","ownerColumn":"id"}],"owner":"pg_database_owner","enumTypes":[{"name":"resource_type","values":["WORKSPACE","ENVIRONMENT","PROJECT","INSTANCE","DATABASE"]},{"name":"row_status","values":["NORMAL","ARCHIVED"]}]}],"characterSet":"UTF8","collation":"en_US.UTF-8","owner":"bb"}', '
-SET statement_timeout = 0;
-SET lock_timeout = 0;
-SET idle_in_transaction_session_timeout = 0;
-SET client_encoding = ''UTF8'';
-SET standard_conforming_strings = on;
-SELECT pg_catalog.set_config(''search_path'', '''', false);
-SET check_function_bodies = false;
-SET xmloption = content;
-SET client_min_messages = warning;
-SET row_security = off;
-
-CREATE TYPE "public"."resource_type" AS ENUM (
-    ''WORKSPACE'',
-    ''ENVIRONMENT'',
-    ''PROJECT'',
-    ''INSTANCE'',
-    ''DATABASE''
-);
-
-CREATE TYPE "public"."row_status" AS ENUM (
-    ''NORMAL'',
-    ''ARCHIVED''
-);
-
-SET default_tablespace = '''';
-
-CREATE SEQUENCE "public"."activity_id_seq"
-    AS integer
-	START WITH 1
-	INCREMENT BY 1
-	MINVALUE 1
-	MAXVALUE 2147483647
-	NO CYCLE;
-
-CREATE TABLE "public"."activity" (
-    "id" integer DEFAULT nextval(''public.activity_id_seq''::regclass) NOT NULL,
-    "row_status" public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
-    "creator_id" integer NOT NULL,
-    "created_ts" bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
-    "updater_id" integer NOT NULL,
-    "updated_ts" bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
-    "resource_container" text DEFAULT ''''::text NOT NULL,
-    "container_id" integer NOT NULL,
-    "type" text NOT NULL,
-    "level" text NOT NULL,
-    "comment" text DEFAULT ''''::text NOT NULL,
-    "payload" jsonb DEFAULT ''{}''::jsonb NOT NULL
-);
-
-ALTER SEQUENCE "public"."activity_id_seq" OWNED BY "public"."activity"."id";
-
-ALTER TABLE ONLY "public"."activity" ADD CONSTRAINT "activity_pkey" PRIMARY KEY ("id");
-
-CREATE INDEX "idx_activity_container_id" ON ONLY "public"."activity" ("container_id");
-
-CREATE INDEX "idx_activity_created_ts" ON ONLY "public"."activity" ("created_ts");
-
-CREATE INDEX "idx_activity_resource_container" ON ONLY "public"."activity" ("resource_container");
-
-CREATE SEQUENCE "public"."anomaly_id_seq"
-    AS integer
-	START WITH 1
-	INCREMENT BY 1
-	MINVALUE 1
-	MAXVALUE 2147483647
-	NO CYCLE;
-
-CREATE TABLE "public"."anomaly" (
-    "id" integer DEFAULT nextval(''public.anomaly_id_seq''::regclass) NOT NULL,
-    "row_status" public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
-    "creator_id" integer NOT NULL,
-    "created_ts" bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
-    "updater_id" integer NOT NULL,
-    "updated_ts" bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
-    "project" text NOT NULL,
-    "instance_id" integer NOT NULL,
-    "database_id" integer,
-    "type" text NOT NULL,
-    "payload" jsonb DEFAULT ''{}''::jsonb NOT NULL
-);
-
-ALTER SEQUENCE "public"."anomaly_id_seq" OWNED BY "public"."anomaly"."id";
-
-ALTER TABLE ONLY "public"."anomaly" ADD CONSTRAINT "anomaly_pkey" PRIMARY KEY ("id");
-
-CREATE UNIQUE INDEX "idx_anomaly_unique_project_database_id_type" ON ONLY "public"."anomaly" ("project", "database_id", "type");
-
-CREATE SEQUENCE "public"."audit_log_id_seq"
-    AS bigint
-	START WITH 1
-	INCREMENT BY 1
-	MINVALUE 1
-	MAXVALUE 9223372036854775807
-	NO CYCLE;
-
-CREATE TABLE "public"."audit_log" (
-    "id" bigint DEFAULT nextval(''public.audit_log_id_seq''::regclass) NOT NULL,
-    "created_ts" bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
-    "payload" jsonb DEFAULT ''{}''::jsonb NOT NULL
-);
-
-ALTER SEQUENCE "public"."audit_log_id_seq" OWNED BY "public"."audit_log"."id";
-
-ALTER TABLE ONLY "public"."audit_log" ADD CONSTRAINT "audit_log_pkey" PRIMARY KEY ("id");
-
-CREATE INDEX "idx_audit_log_created_ts" ON ONLY "public"."audit_log" ("created_ts");
-
-CREATE INDEX "idx_audit_log_payload_method" ON ONLY "public"."audit_log" ((payload ->> ''method''::text));
-
-CREATE INDEX "idx_audit_log_payload_parent" ON ONLY "public"."audit_log" ((payload ->> ''parent''::text));
-
-CREATE INDEX "idx_audit_log_payload_resource" ON ONLY "public"."audit_log" ((payload ->> ''resource''::text));
-
-CREATE INDEX "idx_audit_log_payload_user" ON ONLY "public"."audit_log" ((payload ->> ''user''::text));
-
-CREATE SEQUENCE "public"."branch_id_seq"
-    AS integer
-	START WITH 1
-	INCREMENT BY 1
-	MINVALUE 1
-	MAXVALUE 2147483647
-	NO CYCLE;
-
-CREATE TABLE "public"."branch" (
-    "id" integer DEFAULT nextval(''public.branch_id_seq''::regclass) NOT NULL,
-    "row_status" public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
-    "creator_id" integer NOT NULL,
-    "created_ts" bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
-    "updater_id" integer NOT NULL,
-    "updated_ts" bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
-    "project_id" integer NOT NULL,
-    "name" text NOT NULL,
-    "engine" text NOT NULL,
-    "base" jsonb DEFAULT ''{}''::jsonb NOT NULL,
-    "head" jsonb DEFAULT ''{}''::jsonb NOT NULL,
-    "base_schema" text DEFAULT ''''::text NOT NULL,
-    "head_schema" text DEFAULT ''''::text NOT NULL,
-    "reconcile_state" text DEFAULT ''''::text NOT NULL,
-    "config" jsonb DEFAULT ''{}''::jsonb NOT NULL
-);
-
-ALTER SEQUENCE "public"."branch_id_seq" OWNED BY "public"."branch"."id";
-
-ALTER TABLE ONLY "public"."branch" ADD CONSTRAINT "branch_pkey" PRIMARY KEY ("id");
-
-CREATE INDEX "idx_branch_reconcile_state" ON ONLY "public"."branch" ("reconcile_state");
-
-CREATE UNIQUE INDEX "idx_branch_unique_project_id_name" ON ONLY "public"."branch" ("project_id", "name");
-
-CREATE SEQUENCE "public"."changelist_id_seq"
-    AS integer
-	START WITH 1
-	INCREMENT BY 1
-	MINVALUE 1
-	MAXVALUE 2147483647
-	NO CYCLE;
-
-CREATE TABLE "public"."changelist" (
-    "id" integer DEFAULT nextval(''public.changelist_id_seq''::regclass) NOT NULL,
-    "row_status" public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
-    "creator_id" integer NOT NULL,
-    "created_ts" bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
-    "updater_id" integer NOT NULL,
-    "updated_ts" bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
-    "project_id" integer NOT NULL,
-    "name" text NOT NULL,
-    "payload" jsonb DEFAULT ''{}''::jsonb NOT NULL
-);
-
-ALTER SEQUENCE "public"."changelist_id_seq" OWNED BY "public"."changelist"."id";
-
-ALTER TABLE ONLY "public"."changelist" ADD CONSTRAINT "changelist_pkey" PRIMARY KEY ("id");
-
-CREATE UNIQUE INDEX "idx_changelist_project_id_name" ON ONLY "public"."changelist" ("project_id", "name");
-
-CREATE SEQUENCE "public"."changelog_id_seq"
-    AS bigint
-	START WITH 1
-	INCREMENT BY 1
-	MINVALUE 1
-	MAXVALUE 9223372036854775807
-	NO CYCLE;
-
-CREATE TABLE "public"."changelog" (
-    "id" bigint DEFAULT nextval(''public.changelog_id_seq''::regclass) NOT NULL,
-    "creator_id" integer NOT NULL,
-    "created_ts" timestamp with time zone DEFAULT now() NOT NULL,
-    "database_id" integer NOT NULL,
-    "status" text NOT NULL,
-    "prev_sync_history_id" bigint,
-    "sync_history_id" bigint,
-    "payload" jsonb DEFAULT ''{}''::jsonb NOT NULL
-);
-
-ALTER SEQUENCE "public"."changelog_id_seq" OWNED BY "public"."changelog"."id";
-
-ALTER TABLE ONLY "public"."changelog" ADD CONSTRAINT "changelog_pkey" PRIMARY KEY ("id");
-
-CREATE INDEX "idx_changelog_database_id" ON ONLY "public"."changelog" ("database_id");
-
-CREATE SEQUENCE "public"."data_source_id_seq"
-    AS integer
-	START WITH 1
-	INCREMENT BY 1
-	MINVALUE 1
-	MAXVALUE 2147483647
-	NO CYCLE;
-
-CREATE TABLE "public"."data_source" (
-    "id" integer DEFAULT nextval(''public.data_source_id_seq''::regclass) NOT NULL,
-    "row_status" public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
-    "creator_id" integer NOT NULL,
-    "created_ts" bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
-    "updater_id" integer NOT NULL,
-    "updated_ts" bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
-    "instance_id" integer NOT NULL,
-    "name" text NOT NULL,
-    "type" text NOT NULL,
-    "username" text NOT NULL,
-    "password" text NOT NULL,
-    "ssl_key" text DEFAULT ''''::text NOT NULL,
-    "ssl_cert" text DEFAULT ''''::text NOT NULL,
-    "ssl_ca" text DEFAULT ''''::text NOT NULL,
-    "host" text DEFAULT ''''::text NOT NULL,
-    "port" text DEFAULT ''''::text NOT NULL,
-    "options" jsonb DEFAULT ''{}''::jsonb NOT NULL,
-    "database" text DEFAULT ''''::text NOT NULL
-);
-
-ALTER SEQUENCE "public"."data_source_id_seq" OWNED BY "public"."data_source"."id";
-
-ALTER TABLE ONLY "public"."data_source" ADD CONSTRAINT "data_source_pkey" PRIMARY KEY ("id");
-
-CREATE UNIQUE INDEX "idx_data_source_unique_instance_id_name" ON ONLY "public"."data_source" ("instance_id", "name");
-
-CREATE SEQUENCE "public"."db_id_seq"
-    AS integer
-	START WITH 1
-	INCREMENT BY 1
-	MINVALUE 1
-	MAXVALUE 2147483647
-	NO CYCLE;
-
-CREATE TABLE "public"."db" (
-    "id" integer DEFAULT nextval(''public.db_id_seq''::regclass) NOT NULL,
-    "row_status" public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
-    "creator_id" integer NOT NULL,
-    "created_ts" bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
-    "updater_id" integer NOT NULL,
-    "updated_ts" bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
-    "instance_id" integer NOT NULL,
-    "project_id" integer NOT NULL,
-    "environment" text,
-    "sync_status" text NOT NULL,
-    "last_successful_sync_ts" bigint NOT NULL,
-    "schema_version" text NOT NULL,
-    "name" text NOT NULL,
-    "secrets" jsonb DEFAULT ''{}''::jsonb NOT NULL,
-    "datashare" boolean DEFAULT false NOT NULL,
-    "service_name" text DEFAULT ''''::text NOT NULL,
-    "metadata" jsonb DEFAULT ''{}''::jsonb NOT NULL
-);
-
-ALTER SEQUENCE "public"."db_id_seq" OWNED BY "public"."db"."id";
-
-ALTER TABLE ONLY "public"."db" ADD CONSTRAINT "db_pkey" PRIMARY KEY ("id");
-
-CREATE INDEX "idx_db_instance_id" ON ONLY "public"."db" ("instance_id");
-
-CREATE INDEX "idx_db_project_id" ON ONLY "public"."db" ("project_id");
-
-CREATE UNIQUE INDEX "idx_db_unique_instance_id_name" ON ONLY "public"."db" ("instance_id", "name");
-
-CREATE SEQUENCE "public"."db_group_id_seq"
-    AS bigint
-	START WITH 1
-	INCREMENT BY 1
-	MINVALUE 1
-	MAXVALUE 9223372036854775807
-	NO CYCLE;
-
-CREATE TABLE "public"."db_group" (
-    "id" bigint DEFAULT nextval(''public.db_group_id_seq''::regclass) NOT NULL,
-    "row_status" public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
-    "creator_id" integer NOT NULL,
-    "created_ts" bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
-    "updater_id" integer NOT NULL,
-    "updated_ts" bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
-    "project_id" integer NOT NULL,
-    "resource_id" text NOT NULL,
-    "placeholder" text DEFAULT ''''::text NOT NULL,
-    "expression" jsonb DEFAULT ''{}''::jsonb NOT NULL,
-    "payload" jsonb DEFAULT ''{}''::jsonb NOT NULL
-);
-
-ALTER SEQUENCE "public"."db_group_id_seq" OWNED BY "public"."db_group"."id";
-
-ALTER TABLE ONLY "public"."db_group" ADD CONSTRAINT "db_group_pkey" PRIMARY KEY ("id");
-
-CREATE UNIQUE INDEX "idx_db_group_unique_project_id_placeholder" ON ONLY "public"."db_group" ("project_id", "placeholder");
-
-CREATE UNIQUE INDEX "idx_db_group_unique_project_id_resource_id" ON ONLY "public"."db_group" ("project_id", "resource_id");
-
-CREATE SEQUENCE "public"."db_schema_id_seq"
-    AS integer
-	START WITH 1
-	INCREMENT BY 1
-	MINVALUE 1
-	MAXVALUE 2147483647
-	NO CYCLE;
-
-CREATE TABLE "public"."db_schema" (
-    "id" integer DEFAULT nextval(''public.db_schema_id_seq''::regclass) NOT NULL,
-    "row_status" public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
-    "creator_id" integer NOT NULL,
-    "created_ts" bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
-    "updater_id" integer NOT NULL,
-    "updated_ts" bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
-    "database_id" integer NOT NULL,
-    "metadata" json DEFAULT ''{}''::json NOT NULL,
-    "raw_dump" text DEFAULT ''''::text NOT NULL,
-    "config" jsonb DEFAULT ''{}''::jsonb NOT NULL
-);
-
-ALTER SEQUENCE "public"."db_schema_id_seq" OWNED BY "public"."db_schema"."id";
-
-ALTER TABLE ONLY "public"."db_schema" ADD CONSTRAINT "db_schema_pkey" PRIMARY KEY ("id");
-
-CREATE UNIQUE INDEX "idx_db_schema_unique_database_id" ON ONLY "public"."db_schema" ("database_id");
-
-CREATE SEQUENCE "public"."deployment_config_id_seq"
-    AS integer
-	START WITH 1
-	INCREMENT BY 1
-	MINVALUE 1
-	MAXVALUE 2147483647
-	NO CYCLE;
-
-CREATE TABLE "public"."deployment_config" (
-    "id" integer DEFAULT nextval(''public.deployment_config_id_seq''::regclass) NOT NULL,
-    "row_status" public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
-    "creator_id" integer NOT NULL,
-    "created_ts" bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
-    "updater_id" integer NOT NULL,
-    "updated_ts" bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
-    "project_id" integer NOT NULL,
-    "name" text NOT NULL,
-    "config" jsonb DEFAULT ''{}''::jsonb NOT NULL
-);
-
-ALTER SEQUENCE "public"."deployment_config_id_seq" OWNED BY "public"."deployment_config"."id";
-
-ALTER TABLE ONLY "public"."deployment_config" ADD CONSTRAINT "deployment_config_pkey" PRIMARY KEY ("id");
-
-CREATE UNIQUE INDEX "idx_deployment_config_unique_project_id" ON ONLY "public"."deployment_config" ("project_id");
-
-CREATE SEQUENCE "public"."environment_id_seq"
-    AS integer
-	START WITH 1
-	INCREMENT BY 1
-	MINVALUE 1
-	MAXVALUE 2147483647
-	NO CYCLE;
-
-CREATE TABLE "public"."environment" (
-    "id" integer DEFAULT nextval(''public.environment_id_seq''::regclass) NOT NULL,
-    "row_status" public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
-    "creator_id" integer NOT NULL,
-    "created_ts" bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
-    "updater_id" integer NOT NULL,
-    "updated_ts" bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
-    "name" text NOT NULL,
-    "order" integer NOT NULL,
-    "resource_id" text NOT NULL
-);
-
-ALTER SEQUENCE "public"."environment_id_seq" OWNED BY "public"."environment"."id";
-
-ALTER TABLE ONLY "public"."environment" ADD CONSTRAINT "environment_pkey" PRIMARY KEY ("id");
-
-CREATE UNIQUE INDEX "idx_environment_unique_resource_id" ON ONLY "public"."environment" ("resource_id");
-
-CREATE SEQUENCE "public"."export_archive_id_seq"
-    AS integer
-	START WITH 1
-	INCREMENT BY 1
-	MINVALUE 1
-	MAXVALUE 2147483647
-	NO CYCLE;
-
-CREATE TABLE "public"."export_archive" (
-    "id" integer DEFAULT nextval(''public.export_archive_id_seq''::regclass) NOT NULL,
-    "created_ts" bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
-    "bytes" bytea,
-    "payload" jsonb DEFAULT ''{}''::jsonb NOT NULL
-);
-
-ALTER SEQUENCE "public"."export_archive_id_seq" OWNED BY "public"."export_archive"."id";
-
-ALTER TABLE ONLY "public"."export_archive" ADD CONSTRAINT "export_archive_pkey" PRIMARY KEY ("id");
-
-CREATE SEQUENCE "public"."external_approval_id_seq"
-    AS integer
-	START WITH 1
-	INCREMENT BY 1
-	MINVALUE 1
-	MAXVALUE 2147483647
-	NO CYCLE;
-
-CREATE TABLE "public"."external_approval" (
-    "id" integer DEFAULT nextval(''public.external_approval_id_seq''::regclass) NOT NULL,
-    "row_status" public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
-    "created_ts" bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
-    "updated_ts" bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
-    "issue_id" integer NOT NULL,
-    "requester_id" integer NOT NULL,
-    "approver_id" integer NOT NULL,
-    "type" text NOT NULL,
-    "payload" jsonb NOT NULL
-);
-
-ALTER SEQUENCE "public"."external_approval_id_seq" OWNED BY "public"."external_approval"."id";
-
-ALTER TABLE ONLY "public"."external_approval" ADD CONSTRAINT "external_approval_pkey" PRIMARY KEY ("id");
-
-CREATE INDEX "idx_external_approval_row_status_issue_id" ON ONLY "public"."external_approval" ("row_status", "issue_id");
-
-CREATE SEQUENCE "public"."idp_id_seq"
-    AS integer
-	START WITH 1
-	INCREMENT BY 1
-	MINVALUE 1
-	MAXVALUE 2147483647
-	NO CYCLE;
-
-CREATE TABLE "public"."idp" (
-    "id" integer DEFAULT nextval(''public.idp_id_seq''::regclass) NOT NULL,
-    "row_status" public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
-    "created_ts" bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
-    "updated_ts" bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
-    "resource_id" text NOT NULL,
-    "name" text NOT NULL,
-    "domain" text NOT NULL,
-    "type" text NOT NULL,
-    "config" jsonb DEFAULT ''{}''::jsonb NOT NULL
-);
-
-ALTER SEQUENCE "public"."idp_id_seq" OWNED BY "public"."idp"."id";
-
-ALTER TABLE ONLY "public"."idp" ADD CONSTRAINT "idp_pkey" PRIMARY KEY ("id");
-
-CREATE UNIQUE INDEX "idx_idp_unique_resource_id" ON ONLY "public"."idp" ("resource_id");
-
-CREATE SEQUENCE "public"."instance_id_seq"
-    AS integer
-	START WITH 1
-	INCREMENT BY 1
-	MINVALUE 1
-	MAXVALUE 2147483647
-	NO CYCLE;
-
-CREATE TABLE "public"."instance" (
-    "id" integer DEFAULT nextval(''public.instance_id_seq''::regclass) NOT NULL,
-    "row_status" public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
-    "creator_id" integer NOT NULL,
-    "created_ts" bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
-    "updater_id" integer NOT NULL,
-    "updated_ts" bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
-    "environment" text,
-    "name" text NOT NULL,
-    "engine" text NOT NULL,
-    "engine_version" text DEFAULT ''''::text NOT NULL,
-    "external_link" text DEFAULT ''''::text NOT NULL,
-    "resource_id" text NOT NULL,
-    "activation" boolean DEFAULT false NOT NULL,
-    "options" jsonb DEFAULT ''{}''::jsonb NOT NULL,
-    "metadata" jsonb DEFAULT ''{}''::jsonb NOT NULL
-);
-
-ALTER SEQUENCE "public"."instance_id_seq" OWNED BY "public"."instance"."id";
-
-ALTER TABLE ONLY "public"."instance" ADD CONSTRAINT "instance_pkey" PRIMARY KEY ("id");
-
-CREATE UNIQUE INDEX "idx_instance_unique_resource_id" ON ONLY "public"."instance" ("resource_id");
-
-CREATE SEQUENCE "public"."instance_change_history_id_seq"
-    AS bigint
-	START WITH 1
-	INCREMENT BY 1
-	MINVALUE 1
-	MAXVALUE 9223372036854775807
-	NO CYCLE;
-
-CREATE TABLE "public"."instance_change_history" (
-    "id" bigint DEFAULT nextval(''public.instance_change_history_id_seq''::regclass) NOT NULL,
-    "row_status" public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
-    "creator_id" integer NOT NULL,
-    "created_ts" bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
-    "updater_id" integer NOT NULL,
-    "updated_ts" bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
-    "instance_id" integer,
-    "database_id" integer,
-    "project_id" integer,
-    "issue_id" integer,
-    "release_version" text NOT NULL,
-    "sequence" bigint NOT NULL,
-    "source" text NOT NULL,
-    "type" text NOT NULL,
-    "status" text NOT NULL,
-    "version" text NOT NULL,
-    "description" text NOT NULL,
-    "statement" text NOT NULL,
-    "sheet_id" bigint,
-    "schema" text NOT NULL,
-    "schema_prev" text NOT NULL,
-    "execution_duration_ns" bigint NOT NULL,
-    "payload" jsonb DEFAULT ''{}''::jsonb NOT NULL
-);
-
-ALTER SEQUENCE "public"."instance_change_history_id_seq" OWNED BY "public"."instance_change_history"."id";
-
-ALTER TABLE ONLY "public"."instance_change_history" ADD CONSTRAINT "instance_change_history_pkey" PRIMARY KEY ("id");
-
-CREATE UNIQUE INDEX "idx_instance_change_history_unique_instance_id_database_id_sequ" ON ONLY "public"."instance_change_history" ("instance_id", "database_id", "sequence");
-
-CREATE UNIQUE INDEX "idx_instance_change_history_unique_instance_id_database_id_vers" ON ONLY "public"."instance_change_history" ("instance_id", "database_id", "version");
-
-CREATE SEQUENCE "public"."instance_user_id_seq"
-    AS integer
-	START WITH 1
-	INCREMENT BY 1
-	MINVALUE 1
-	MAXVALUE 2147483647
-	NO CYCLE;
-
-CREATE TABLE "public"."instance_user" (
-    "id" integer DEFAULT nextval(''public.instance_user_id_seq''::regclass) NOT NULL,
-    "row_status" public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
-    "creator_id" integer NOT NULL,
-    "created_ts" bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
-    "updater_id" integer NOT NULL,
-    "updated_ts" bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
-    "instance_id" integer NOT NULL,
-    "name" text NOT NULL,
-    "grant" text NOT NULL
-);
-
-ALTER SEQUENCE "public"."instance_user_id_seq" OWNED BY "public"."instance_user"."id";
-
-ALTER TABLE ONLY "public"."instance_user" ADD CONSTRAINT "instance_user_pkey" PRIMARY KEY ("id");
-
-CREATE UNIQUE INDEX "idx_instance_user_unique_instance_id_name" ON ONLY "public"."instance_user" ("instance_id", "name");
-
-CREATE SEQUENCE "public"."issue_id_seq"
-    AS integer
-	START WITH 1
-	INCREMENT BY 1
-	MINVALUE 1
-	MAXVALUE 2147483647
-	NO CYCLE;
-
-CREATE TABLE "public"."issue" (
-    "id" integer DEFAULT nextval(''public.issue_id_seq''::regclass) NOT NULL,
-    "row_status" public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
-    "creator_id" integer NOT NULL,
-    "created_ts" bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
-    "updater_id" integer NOT NULL,
-    "updated_ts" bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
-    "project_id" integer NOT NULL,
-    "plan_id" bigint,
-    "pipeline_id" integer,
-    "name" text NOT NULL,
-    "status" text NOT NULL,
-    "type" text NOT NULL,
-    "description" text DEFAULT ''''::text NOT NULL,
-    "assignee_id" integer,
-    "assignee_need_attention" boolean DEFAULT false NOT NULL,
-    "payload" jsonb DEFAULT ''{}''::jsonb NOT NULL,
-    "ts_vector" tsvector
-);
-
-ALTER SEQUENCE "public"."issue_id_seq" OWNED BY "public"."issue"."id";
-
-ALTER TABLE ONLY "public"."issue" ADD CONSTRAINT "issue_pkey" PRIMARY KEY ("id");
-
-CREATE INDEX "idx_issue_assignee_id" ON ONLY "public"."issue" ("assignee_id");
-
-CREATE INDEX "idx_issue_created_ts" ON ONLY "public"."issue" ("created_ts");
-
-CREATE INDEX "idx_issue_creator_id" ON ONLY "public"."issue" ("creator_id");
-
-CREATE INDEX "idx_issue_pipeline_id" ON ONLY "public"."issue" ("pipeline_id");
-
-CREATE INDEX "idx_issue_plan_id" ON ONLY "public"."issue" ("plan_id");
-
-CREATE INDEX "idx_issue_project_id" ON ONLY "public"."issue" ("project_id");
-
-CREATE INDEX "idx_issue_ts_vector" ON ONLY "public"."issue" ("ts_vector");
-
-CREATE SEQUENCE "public"."issue_comment_id_seq"
-    AS bigint
-	START WITH 1
-	INCREMENT BY 1
-	MINVALUE 1
-	MAXVALUE 9223372036854775807
-	NO CYCLE;
-
-CREATE TABLE "public"."issue_comment" (
-    "id" bigint DEFAULT nextval(''public.issue_comment_id_seq''::regclass) NOT NULL,
-    "row_status" public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
-    "creator_id" integer NOT NULL,
-    "created_ts" bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
-    "updater_id" integer NOT NULL,
-    "updated_ts" bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
-    "issue_id" integer NOT NULL,
-    "payload" jsonb DEFAULT ''{}''::jsonb NOT NULL
-);
-
-ALTER SEQUENCE "public"."issue_comment_id_seq" OWNED BY "public"."issue_comment"."id";
-
-ALTER TABLE ONLY "public"."issue_comment" ADD CONSTRAINT "issue_comment_pkey" PRIMARY KEY ("id");
-
-CREATE INDEX "idx_issue_comment_issue_id" ON ONLY "public"."issue_comment" ("issue_id");
-
-CREATE TABLE "public"."issue_subscriber" (
-    "issue_id" integer NOT NULL,
-    "subscriber_id" integer NOT NULL
-);
-
-ALTER TABLE ONLY "public"."issue_subscriber" ADD CONSTRAINT "issue_subscriber_pkey" PRIMARY KEY ("issue_id", "subscriber_id");
-
-CREATE INDEX "idx_issue_subscriber_subscriber_id" ON ONLY "public"."issue_subscriber" ("subscriber_id");
-
-CREATE SEQUENCE "public"."pipeline_id_seq"
-    AS integer
-	START WITH 1
-	INCREMENT BY 1
-	MINVALUE 1
-	MAXVALUE 2147483647
-	NO CYCLE;
-
-CREATE TABLE "public"."pipeline" (
-    "id" integer DEFAULT nextval(''public.pipeline_id_seq''::regclass) NOT NULL,
-    "row_status" public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
-    "creator_id" integer NOT NULL,
-    "created_ts" bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
-    "updater_id" integer NOT NULL,
-    "updated_ts" bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
-    "project_id" integer NOT NULL,
-    "name" text NOT NULL
-);
-
-ALTER SEQUENCE "public"."pipeline_id_seq" OWNED BY "public"."pipeline"."id";
-
-ALTER TABLE ONLY "public"."pipeline" ADD CONSTRAINT "pipeline_pkey" PRIMARY KEY ("id");
-
-CREATE SEQUENCE "public"."plan_id_seq"
-    AS bigint
-	START WITH 1
-	INCREMENT BY 1
-	MINVALUE 1
-	MAXVALUE 9223372036854775807
-	NO CYCLE;
-
-CREATE TABLE "public"."plan" (
-    "id" bigint DEFAULT nextval(''public.plan_id_seq''::regclass) NOT NULL,
-    "row_status" public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
-    "creator_id" integer NOT NULL,
-    "created_ts" bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
-    "updater_id" integer NOT NULL,
-    "updated_ts" bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
-    "project_id" integer NOT NULL,
-    "pipeline_id" integer,
-    "name" text NOT NULL,
-    "description" text NOT NULL,
-    "config" jsonb DEFAULT ''{}''::jsonb NOT NULL
-);
-
-ALTER SEQUENCE "public"."plan_id_seq" OWNED BY "public"."plan"."id";
-
-ALTER TABLE ONLY "public"."plan" ADD CONSTRAINT "plan_pkey" PRIMARY KEY ("id");
-
-CREATE INDEX "idx_plan_pipeline_id" ON ONLY "public"."plan" ("pipeline_id");
-
-CREATE INDEX "idx_plan_project_id" ON ONLY "public"."plan" ("project_id");
-
-CREATE SEQUENCE "public"."plan_check_run_id_seq"
-    AS integer
-	START WITH 1
-	INCREMENT BY 1
-	MINVALUE 1
-	MAXVALUE 2147483647
-	NO CYCLE;
-
-CREATE TABLE "public"."plan_check_run" (
-    "id" integer DEFAULT nextval(''public.plan_check_run_id_seq''::regclass) NOT NULL,
-    "creator_id" integer NOT NULL,
-    "created_ts" bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
-    "updater_id" integer NOT NULL,
-    "updated_ts" bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
-    "plan_id" bigint NOT NULL,
-    "status" text NOT NULL,
-    "type" text NOT NULL,
-    "config" jsonb DEFAULT ''{}''::jsonb NOT NULL,
-    "result" jsonb DEFAULT ''{}''::jsonb NOT NULL,
-    "payload" jsonb DEFAULT ''{}''::jsonb NOT NULL
-);
-
-ALTER SEQUENCE "public"."plan_check_run_id_seq" OWNED BY "public"."plan_check_run"."id";
-
-ALTER TABLE ONLY "public"."plan_check_run" ADD CONSTRAINT "plan_check_run_pkey" PRIMARY KEY ("id");
-
-CREATE INDEX "idx_plan_check_run_plan_id" ON ONLY "public"."plan_check_run" ("plan_id");
-
-CREATE SEQUENCE "public"."policy_id_seq"
-    AS integer
-	START WITH 1
-	INCREMENT BY 1
-	MINVALUE 1
-	MAXVALUE 2147483647
-	NO CYCLE;
-
-CREATE TABLE "public"."policy" (
-    "id" integer DEFAULT nextval(''public.policy_id_seq''::regclass) NOT NULL,
-    "row_status" public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
-    "creator_id" integer NOT NULL,
-    "created_ts" bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
-    "updater_id" integer NOT NULL,
-    "updated_ts" bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
-    "type" text NOT NULL,
-    "payload" jsonb DEFAULT ''{}''::jsonb NOT NULL,
-    "resource_type" public.resource_type NOT NULL,
-    "resource_id" integer NOT NULL,
-    "inherit_from_parent" boolean DEFAULT true NOT NULL
-);
-
-ALTER SEQUENCE "public"."policy_id_seq" OWNED BY "public"."policy"."id";
-
-ALTER TABLE ONLY "public"."policy" ADD CONSTRAINT "policy_pkey" PRIMARY KEY ("id");
-
-CREATE UNIQUE INDEX "idx_policy_unique_resource_type_resource_id_type" ON ONLY "public"."policy" ("resource_type", "resource_id", "type");
-
-CREATE SEQUENCE "public"."principal_id_seq"
-    AS integer
-	START WITH 1
-	INCREMENT BY 1
-	MINVALUE 1
-	MAXVALUE 2147483647
-	NO CYCLE;
-
-CREATE TABLE "public"."principal" (
-    "id" integer DEFAULT nextval(''public.principal_id_seq''::regclass) NOT NULL,
-    "row_status" public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
-    "creator_id" integer NOT NULL,
-    "created_ts" bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
-    "updater_id" integer NOT NULL,
-    "updated_ts" bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
-    "type" text NOT NULL,
-    "name" text NOT NULL,
-    "email" text NOT NULL,
-    "password_hash" text NOT NULL,
-    "phone" text DEFAULT ''''::text NOT NULL,
-    "mfa_config" jsonb DEFAULT ''{}''::jsonb NOT NULL,
-    "profile" jsonb DEFAULT ''{}''::jsonb NOT NULL
-);
-
-ALTER SEQUENCE "public"."principal_id_seq" OWNED BY "public"."principal"."id";
-
-ALTER TABLE ONLY "public"."principal" ADD CONSTRAINT "principal_pkey" PRIMARY KEY ("id");
-
-CREATE SEQUENCE "public"."project_id_seq"
-    AS integer
-	START WITH 1
-	INCREMENT BY 1
-	MINVALUE 1
-	MAXVALUE 2147483647
-	NO CYCLE;
-
-CREATE TABLE "public"."project" (
-    "id" integer DEFAULT nextval(''public.project_id_seq''::regclass) NOT NULL,
-    "row_status" public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
-    "creator_id" integer NOT NULL,
-    "created_ts" bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
-    "updater_id" integer NOT NULL,
-    "updated_ts" bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
-    "name" text NOT NULL,
-    "key" text NOT NULL,
-    "resource_id" text NOT NULL,
-    "data_classification_config_id" text DEFAULT ''''::text NOT NULL,
-    "setting" jsonb DEFAULT ''{}''::jsonb NOT NULL
-);
-
-ALTER SEQUENCE "public"."project_id_seq" OWNED BY "public"."project"."id";
-
-ALTER TABLE ONLY "public"."project" ADD CONSTRAINT "project_pkey" PRIMARY KEY ("id");
-
-CREATE UNIQUE INDEX "idx_project_unique_key" ON ONLY "public"."project" ("key");
-
-CREATE UNIQUE INDEX "idx_project_unique_resource_id" ON ONLY "public"."project" ("resource_id");
-
-CREATE SEQUENCE "public"."project_webhook_id_seq"
-    AS integer
-	START WITH 1
-	INCREMENT BY 1
-	MINVALUE 1
-	MAXVALUE 2147483647
-	NO CYCLE;
-
-CREATE TABLE "public"."project_webhook" (
-    "id" integer DEFAULT nextval(''public.project_webhook_id_seq''::regclass) NOT NULL,
-    "row_status" public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
-    "creator_id" integer NOT NULL,
-    "created_ts" bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
-    "updater_id" integer NOT NULL,
-    "updated_ts" bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
-    "project_id" integer NOT NULL,
-    "type" text NOT NULL,
-    "name" text NOT NULL,
-    "url" text NOT NULL,
-    "activity_list" _text NOT NULL,
-    "payload" jsonb DEFAULT ''{}''::jsonb NOT NULL
-);
-
-ALTER SEQUENCE "public"."project_webhook_id_seq" OWNED BY "public"."project_webhook"."id";
-
-ALTER TABLE ONLY "public"."project_webhook" ADD CONSTRAINT "project_webhook_pkey" PRIMARY KEY ("id");
-
-CREATE INDEX "idx_project_webhook_project_id" ON ONLY "public"."project_webhook" ("project_id");
-
-CREATE UNIQUE INDEX "idx_project_webhook_unique_project_id_url" ON ONLY "public"."project_webhook" ("project_id", "url");
-
-CREATE SEQUENCE "public"."query_history_id_seq"
-    AS bigint
-	START WITH 1
-	INCREMENT BY 1
-	MINVALUE 1
-	MAXVALUE 9223372036854775807
-	NO CYCLE;
-
-CREATE TABLE "public"."query_history" (
-    "id" bigint DEFAULT nextval(''public.query_history_id_seq''::regclass) NOT NULL,
-    "row_status" public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
-    "creator_id" integer NOT NULL,
-    "created_ts" bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
-    "project_id" text NOT NULL,
-    "database" text NOT NULL,
-    "statement" text NOT NULL,
-    "type" text NOT NULL,
-    "payload" jsonb DEFAULT ''{}''::jsonb NOT NULL
-);
-
-ALTER SEQUENCE "public"."query_history_id_seq" OWNED BY "public"."query_history"."id";
-
-ALTER TABLE ONLY "public"."query_history" ADD CONSTRAINT "query_history_pkey" PRIMARY KEY ("id");
-
-CREATE INDEX "idx_query_history_creator_id_created_ts_project_id" ON ONLY "public"."query_history" ("creator_id", "created_ts", "project_id" DESC);
-
-CREATE SEQUENCE "public"."release_id_seq"
-    AS bigint
-	START WITH 1
-	INCREMENT BY 1
-	MINVALUE 1
-	MAXVALUE 9223372036854775807
-	NO CYCLE;
-
-CREATE TABLE "public"."release" (
-    "id" bigint DEFAULT nextval(''public.release_id_seq''::regclass) NOT NULL,
-    "row_status" public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
-    "project_id" integer NOT NULL,
-    "creator_id" integer NOT NULL,
-    "created_ts" timestamp with time zone DEFAULT now() NOT NULL,
-    "payload" jsonb DEFAULT ''{}''::jsonb NOT NULL
-);
-
-ALTER SEQUENCE "public"."release_id_seq" OWNED BY "public"."release"."id";
-
-ALTER TABLE ONLY "public"."release" ADD CONSTRAINT "release_pkey" PRIMARY KEY ("id");
-
-CREATE INDEX "idx_release_project_id" ON ONLY "public"."release" ("project_id");
-
-CREATE TABLE "public"."review_config" (
-    "id" text NOT NULL,
-    "row_status" public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
-    "creator_id" integer NOT NULL,
-    "created_ts" bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
-    "updater_id" integer NOT NULL,
-    "updated_ts" bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
-    "name" text NOT NULL,
-    "payload" jsonb DEFAULT ''{}''::jsonb NOT NULL
-);
-
-ALTER TABLE ONLY "public"."review_config" ADD CONSTRAINT "review_config_pkey" PRIMARY KEY ("id");
-
-CREATE SEQUENCE "public"."revision_id_seq"
-    AS bigint
-	START WITH 1
-	INCREMENT BY 1
-	MINVALUE 1
-	MAXVALUE 9223372036854775807
-	NO CYCLE;
-
-CREATE TABLE "public"."revision" (
-    "id" bigint DEFAULT nextval(''public.revision_id_seq''::regclass) NOT NULL,
-    "database_id" integer NOT NULL,
-    "creator_id" integer NOT NULL,
-    "created_ts" timestamp with time zone DEFAULT now() NOT NULL,
-    "deleter_id" integer,
-    "deleted_ts" timestamp with time zone,
-    "version" text NOT NULL,
-    "payload" jsonb DEFAULT ''{}''::jsonb NOT NULL
-);
-
-ALTER SEQUENCE "public"."revision_id_seq" OWNED BY "public"."revision"."id";
-
-ALTER TABLE ONLY "public"."revision" ADD CONSTRAINT "revision_pkey" PRIMARY KEY ("id");
-
-CREATE INDEX "idx_revision_database_id_version" ON ONLY "public"."revision" ("database_id", "version");
-
-CREATE UNIQUE INDEX "idx_revision_unique_database_id_version_deleted_ts_null" ON ONLY "public"."revision" ("database_id", "version");
-
-CREATE SEQUENCE "public"."risk_id_seq"
-    AS bigint
-	START WITH 1
-	INCREMENT BY 1
-	MINVALUE 1
-	MAXVALUE 9223372036854775807
-	NO CYCLE;
-
-CREATE TABLE "public"."risk" (
-    "id" bigint DEFAULT nextval(''public.risk_id_seq''::regclass) NOT NULL,
-    "row_status" public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
-    "creator_id" integer NOT NULL,
-    "created_ts" bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
-    "updater_id" integer NOT NULL,
-    "updated_ts" bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
-    "source" text NOT NULL,
-    "level" bigint NOT NULL,
-    "name" text NOT NULL,
-    "active" boolean NOT NULL,
-    "expression" jsonb NOT NULL
-);
-
-ALTER SEQUENCE "public"."risk_id_seq" OWNED BY "public"."risk"."id";
-
-ALTER TABLE ONLY "public"."risk" ADD CONSTRAINT "risk_pkey" PRIMARY KEY ("id");
-
-CREATE SEQUENCE "public"."role_id_seq"
-    AS bigint
-	START WITH 1
-	INCREMENT BY 1
-	MINVALUE 1
-	MAXVALUE 9223372036854775807
-	NO CYCLE;
-
-CREATE TABLE "public"."role" (
-    "id" bigint DEFAULT nextval(''public.role_id_seq''::regclass) NOT NULL,
-    "row_status" public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
-    "creator_id" integer NOT NULL,
-    "created_ts" bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
-    "updater_id" integer NOT NULL,
-    "updated_ts" bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
-    "resource_id" text NOT NULL,
-    "name" text NOT NULL,
-    "description" text NOT NULL,
-    "permissions" jsonb DEFAULT ''{}''::jsonb NOT NULL,
-    "payload" jsonb DEFAULT ''{}''::jsonb NOT NULL
-);
-
-ALTER SEQUENCE "public"."role_id_seq" OWNED BY "public"."role"."id";
-
-ALTER TABLE ONLY "public"."role" ADD CONSTRAINT "role_pkey" PRIMARY KEY ("id");
-
-CREATE UNIQUE INDEX "idx_role_unique_resource_id" ON ONLY "public"."role" ("resource_id");
-
-CREATE SEQUENCE "public"."setting_id_seq"
-    AS integer
-	START WITH 1
-	INCREMENT BY 1
-	MINVALUE 1
-	MAXVALUE 2147483647
-	NO CYCLE;
-
-CREATE TABLE "public"."setting" (
-    "id" integer DEFAULT nextval(''public.setting_id_seq''::regclass) NOT NULL,
-    "row_status" public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
-    "creator_id" integer NOT NULL,
-    "created_ts" bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
-    "updater_id" integer NOT NULL,
-    "updated_ts" bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
-    "name" text NOT NULL,
-    "value" text NOT NULL,
-    "description" text DEFAULT ''''::text NOT NULL
-);
-
-ALTER SEQUENCE "public"."setting_id_seq" OWNED BY "public"."setting"."id";
-
-ALTER TABLE ONLY "public"."setting" ADD CONSTRAINT "setting_pkey" PRIMARY KEY ("id");
-
-CREATE UNIQUE INDEX "idx_setting_unique_name" ON ONLY "public"."setting" ("name");
-
-CREATE SEQUENCE "public"."sheet_id_seq"
-    AS integer
-	START WITH 1
-	INCREMENT BY 1
-	MINVALUE 1
-	MAXVALUE 2147483647
-	NO CYCLE;
-
-CREATE TABLE "public"."sheet" (
-    "id" integer DEFAULT nextval(''public.sheet_id_seq''::regclass) NOT NULL,
-    "row_status" public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
-    "creator_id" integer NOT NULL,
-    "created_ts" bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
-    "updater_id" integer NOT NULL,
-    "updated_ts" bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
-    "project_id" integer NOT NULL,
-    "name" text NOT NULL,
-    "sha256" bytea NOT NULL,
-    "payload" jsonb DEFAULT ''{}''::jsonb NOT NULL
-);
-
-ALTER SEQUENCE "public"."sheet_id_seq" OWNED BY "public"."sheet"."id";
-
-ALTER TABLE ONLY "public"."sheet" ADD CONSTRAINT "sheet_pkey" PRIMARY KEY ("id");
-
-CREATE INDEX "idx_sheet_creator_id" ON ONLY "public"."sheet" ("creator_id");
-
-CREATE INDEX "idx_sheet_name" ON ONLY "public"."sheet" ("name");
-
-CREATE INDEX "idx_sheet_project_id" ON ONLY "public"."sheet" ("project_id");
-
-CREATE INDEX "idx_sheet_project_id_row_status" ON ONLY "public"."sheet" ("project_id", "row_status");
-
-CREATE TABLE "public"."sheet_blob" (
-    "sha256" bytea NOT NULL,
-    "content" text NOT NULL
-);
-
-ALTER TABLE ONLY "public"."sheet_blob" ADD CONSTRAINT "sheet_blob_pkey" PRIMARY KEY ("sha256");
-
-CREATE SEQUENCE "public"."slow_query_id_seq"
-    AS integer
-	START WITH 1
-	INCREMENT BY 1
-	MINVALUE 1
-	MAXVALUE 2147483647
-	NO CYCLE;
-
-CREATE TABLE "public"."slow_query" (
-    "id" integer DEFAULT nextval(''public.slow_query_id_seq''::regclass) NOT NULL,
-    "row_status" public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
-    "creator_id" integer NOT NULL,
-    "created_ts" bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
-    "updater_id" integer NOT NULL,
-    "updated_ts" bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
-    "instance_id" integer NOT NULL,
-    "database_id" integer,
-    "log_date_ts" integer NOT NULL,
-    "slow_query_statistics" jsonb DEFAULT ''{}''::jsonb NOT NULL
-);
-
-ALTER SEQUENCE "public"."slow_query_id_seq" OWNED BY "public"."slow_query"."id";
-
-ALTER TABLE ONLY "public"."slow_query" ADD CONSTRAINT "slow_query_pkey" PRIMARY KEY ("id");
-
-CREATE INDEX "idx_slow_query_instance_id_log_date_ts" ON ONLY "public"."slow_query" ("instance_id", "log_date_ts");
-
-CREATE UNIQUE INDEX "uk_slow_query_database_id_log_date_ts" ON ONLY "public"."slow_query" ("database_id", "log_date_ts");
-
-CREATE TABLE "public"."sql_lint_config" (
-    "id" text NOT NULL,
-    "creator_id" integer NOT NULL,
-    "created_ts" bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
-    "updater_id" integer NOT NULL,
-    "updated_ts" bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
-    "config" jsonb DEFAULT ''{}''::jsonb NOT NULL
-);
-
-ALTER TABLE ONLY "public"."sql_lint_config" ADD CONSTRAINT "sql_lint_config_pkey" PRIMARY KEY ("id");
-
-CREATE SEQUENCE "public"."stage_id_seq"
-    AS integer
-	START WITH 1
-	INCREMENT BY 1
-	MINVALUE 1
-	MAXVALUE 2147483647
-	NO CYCLE;
-
-CREATE TABLE "public"."stage" (
-    "id" integer DEFAULT nextval(''public.stage_id_seq''::regclass) NOT NULL,
-    "row_status" public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
-    "creator_id" integer NOT NULL,
-    "created_ts" bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
-    "updater_id" integer NOT NULL,
-    "updated_ts" bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
-    "pipeline_id" integer NOT NULL,
-    "environment_id" integer NOT NULL,
-    "deployment_id" text DEFAULT ''''::text NOT NULL,
-    "name" text NOT NULL
-);
-
-ALTER SEQUENCE "public"."stage_id_seq" OWNED BY "public"."stage"."id";
-
-ALTER TABLE ONLY "public"."stage" ADD CONSTRAINT "stage_pkey" PRIMARY KEY ("id");
-
-CREATE INDEX "idx_stage_pipeline_id" ON ONLY "public"."stage" ("pipeline_id");
-
-CREATE SEQUENCE "public"."sync_history_id_seq"
-    AS bigint
-	START WITH 1
-	INCREMENT BY 1
-	MINVALUE 1
-	MAXVALUE 9223372036854775807
-	NO CYCLE;
-
-CREATE TABLE "public"."sync_history" (
-    "id" bigint DEFAULT nextval(''public.sync_history_id_seq''::regclass) NOT NULL,
-    "creator_id" integer NOT NULL,
-    "created_ts" timestamp with time zone DEFAULT now() NOT NULL,
-    "database_id" integer NOT NULL,
-    "metadata" json DEFAULT ''{}''::json NOT NULL,
-    "raw_dump" text DEFAULT ''''::text NOT NULL
-);
-
-ALTER SEQUENCE "public"."sync_history_id_seq" OWNED BY "public"."sync_history"."id";
-
-ALTER TABLE ONLY "public"."sync_history" ADD CONSTRAINT "sync_history_pkey" PRIMARY KEY ("id");
-
-CREATE INDEX "idx_sync_history_database_id_created_ts" ON ONLY "public"."sync_history" ("database_id", "created_ts");
-
-CREATE SEQUENCE "public"."task_id_seq"
-    AS integer
-	START WITH 1
-	INCREMENT BY 1
-	MINVALUE 1
-	MAXVALUE 2147483647
-	NO CYCLE;
-
-CREATE TABLE "public"."task" (
-    "id" integer DEFAULT nextval(''public.task_id_seq''::regclass) NOT NULL,
-    "row_status" public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
-    "creator_id" integer NOT NULL,
-    "created_ts" bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
-    "updater_id" integer NOT NULL,
-    "updated_ts" bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
-    "pipeline_id" integer NOT NULL,
-    "stage_id" integer NOT NULL,
-    "instance_id" integer NOT NULL,
-    "database_id" integer,
-    "name" text NOT NULL,
-    "status" text NOT NULL,
-    "type" text NOT NULL,
-    "payload" jsonb DEFAULT ''{}''::jsonb NOT NULL,
-    "earliest_allowed_ts" bigint DEFAULT 0 NOT NULL
-);
-
-ALTER SEQUENCE "public"."task_id_seq" OWNED BY "public"."task"."id";
-
-ALTER TABLE ONLY "public"."task" ADD CONSTRAINT "task_pkey" PRIMARY KEY ("id");
-
-CREATE INDEX "idx_task_earliest_allowed_ts" ON ONLY "public"."task" ("earliest_allowed_ts");
-
-CREATE INDEX "idx_task_pipeline_id_stage_id" ON ONLY "public"."task" ("pipeline_id", "stage_id");
-
-CREATE INDEX "idx_task_status" ON ONLY "public"."task" ("status");
-
-CREATE SEQUENCE "public"."task_dag_id_seq"
-    AS integer
-	START WITH 1
-	INCREMENT BY 1
-	MINVALUE 1
-	MAXVALUE 2147483647
-	NO CYCLE;
-
-CREATE TABLE "public"."task_dag" (
-    "id" integer DEFAULT nextval(''public.task_dag_id_seq''::regclass) NOT NULL,
-    "created_ts" bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
-    "updated_ts" bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
-    "from_task_id" integer NOT NULL,
-    "to_task_id" integer NOT NULL,
-    "payload" jsonb DEFAULT ''{}''::jsonb NOT NULL
-);
-
-ALTER SEQUENCE "public"."task_dag_id_seq" OWNED BY "public"."task_dag"."id";
-
-ALTER TABLE ONLY "public"."task_dag" ADD CONSTRAINT "task_dag_pkey" PRIMARY KEY ("id");
-
-CREATE INDEX "idx_task_dag_from_task_id" ON ONLY "public"."task_dag" ("from_task_id");
-
-CREATE INDEX "idx_task_dag_to_task_id" ON ONLY "public"."task_dag" ("to_task_id");
-
-CREATE SEQUENCE "public"."task_run_id_seq"
-    AS integer
-	START WITH 1
-	INCREMENT BY 1
-	MINVALUE 1
-	MAXVALUE 2147483647
-	NO CYCLE;
-
-CREATE TABLE "public"."task_run" (
-    "id" integer DEFAULT nextval(''public.task_run_id_seq''::regclass) NOT NULL,
-    "creator_id" integer NOT NULL,
-    "created_ts" bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
-    "updater_id" integer NOT NULL,
-    "updated_ts" bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
-    "task_id" integer NOT NULL,
-    "sheet_id" integer,
-    "attempt" integer NOT NULL,
-    "name" text NOT NULL,
-    "status" text NOT NULL,
-    "started_ts" bigint DEFAULT 0 NOT NULL,
-    "code" integer DEFAULT 0 NOT NULL,
-    "result" jsonb DEFAULT ''{}''::jsonb NOT NULL
-);
-
-ALTER SEQUENCE "public"."task_run_id_seq" OWNED BY "public"."task_run"."id";
-
-ALTER TABLE ONLY "public"."task_run" ADD CONSTRAINT "task_run_pkey" PRIMARY KEY ("id");
-
-CREATE INDEX "idx_task_run_task_id" ON ONLY "public"."task_run" ("task_id");
-
-CREATE UNIQUE INDEX "uk_task_run_task_id_attempt" ON ONLY "public"."task_run" ("task_id", "attempt");
-
-CREATE SEQUENCE "public"."task_run_log_id_seq"
-    AS bigint
-	START WITH 1
-	INCREMENT BY 1
-	MINVALUE 1
-	MAXVALUE 9223372036854775807
-	NO CYCLE;
-
-CREATE TABLE "public"."task_run_log" (
-    "id" bigint DEFAULT nextval(''public.task_run_log_id_seq''::regclass) NOT NULL,
-    "task_run_id" integer NOT NULL,
-    "created_ts" timestamp with time zone DEFAULT now() NOT NULL,
-    "payload" jsonb DEFAULT ''{}''::jsonb NOT NULL
-);
-
-ALTER SEQUENCE "public"."task_run_log_id_seq" OWNED BY "public"."task_run_log"."id";
-
-ALTER TABLE ONLY "public"."task_run_log" ADD CONSTRAINT "task_run_log_pkey" PRIMARY KEY ("id");
-
-CREATE INDEX "idx_task_run_log_task_run_id" ON ONLY "public"."task_run_log" ("task_run_id");
-
-CREATE TABLE "public"."user_group" (
-    "email" text NOT NULL,
-    "creator_id" integer NOT NULL,
-    "created_ts" bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
-    "updater_id" integer NOT NULL,
-    "updated_ts" bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
-    "name" text NOT NULL,
-    "description" text DEFAULT ''''::text NOT NULL,
-    "payload" jsonb DEFAULT ''{}''::jsonb NOT NULL
-);
-
-ALTER TABLE ONLY "public"."user_group" ADD CONSTRAINT "user_group_pkey" PRIMARY KEY ("email");
-
-CREATE SEQUENCE "public"."vcs_id_seq"
-    AS integer
-	START WITH 1
-	INCREMENT BY 1
-	MINVALUE 1
-	MAXVALUE 2147483647
-	NO CYCLE;
-
-CREATE TABLE "public"."vcs" (
-    "id" integer DEFAULT nextval(''public.vcs_id_seq''::regclass) NOT NULL,
-    "row_status" public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
-    "creator_id" integer NOT NULL,
-    "created_ts" bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
-    "updater_id" integer NOT NULL,
-    "updated_ts" bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
-    "resource_id" text NOT NULL,
-    "name" text NOT NULL,
-    "type" text NOT NULL,
-    "instance_url" text NOT NULL,
-    "access_token" text DEFAULT ''''::text NOT NULL
-);
-
-ALTER SEQUENCE "public"."vcs_id_seq" OWNED BY "public"."vcs"."id";
-
-ALTER TABLE ONLY "public"."vcs" ADD CONSTRAINT "vcs_pkey" PRIMARY KEY ("id");
-
-CREATE UNIQUE INDEX "idx_vcs_unique_resource_id" ON ONLY "public"."vcs" ("resource_id");
-
-CREATE SEQUENCE "public"."vcs_connector_id_seq"
-    AS integer
-	START WITH 1
-	INCREMENT BY 1
-	MINVALUE 1
-	MAXVALUE 2147483647
-	NO CYCLE;
-
-CREATE TABLE "public"."vcs_connector" (
-    "id" integer DEFAULT nextval(''public.vcs_connector_id_seq''::regclass) NOT NULL,
-    "row_status" public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
-    "creator_id" integer NOT NULL,
-    "created_ts" bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
-    "updater_id" integer NOT NULL,
-    "updated_ts" bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
-    "vcs_id" integer NOT NULL,
-    "project_id" integer NOT NULL,
-    "resource_id" text NOT NULL,
-    "payload" jsonb DEFAULT ''{}''::jsonb NOT NULL
-);
-
-ALTER SEQUENCE "public"."vcs_connector_id_seq" OWNED BY "public"."vcs_connector"."id";
-
-ALTER TABLE ONLY "public"."vcs_connector" ADD CONSTRAINT "vcs_connector_pkey" PRIMARY KEY ("id");
-
-CREATE UNIQUE INDEX "idx_vcs_connector_unique_project_id_resource_id" ON ONLY "public"."vcs_connector" ("project_id", "resource_id");
-
-CREATE SEQUENCE "public"."worksheet_id_seq"
-    AS integer
-	START WITH 1
-	INCREMENT BY 1
-	MINVALUE 1
-	MAXVALUE 2147483647
-	NO CYCLE;
-
-CREATE TABLE "public"."worksheet" (
-    "id" integer DEFAULT nextval(''public.worksheet_id_seq''::regclass) NOT NULL,
-    "row_status" public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
-    "creator_id" integer NOT NULL,
-    "created_ts" bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
-    "updater_id" integer NOT NULL,
-    "updated_ts" bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
-    "project_id" integer NOT NULL,
-    "database_id" integer,
-    "name" text NOT NULL,
-    "statement" text NOT NULL,
-    "visibility" text NOT NULL,
-    "payload" jsonb DEFAULT ''{}''::jsonb NOT NULL
-);
-
-ALTER SEQUENCE "public"."worksheet_id_seq" OWNED BY "public"."worksheet"."id";
-
-ALTER TABLE ONLY "public"."worksheet" ADD CONSTRAINT "worksheet_pkey" PRIMARY KEY ("id");
-
-CREATE INDEX "idx_worksheet_creator_id_project_id" ON ONLY "public"."worksheet" ("creator_id", "project_id");
-
-CREATE SEQUENCE "public"."worksheet_organizer_id_seq"
-    AS integer
-	START WITH 1
-	INCREMENT BY 1
-	MINVALUE 1
-	MAXVALUE 2147483647
-	NO CYCLE;
-
-CREATE TABLE "public"."worksheet_organizer" (
-    "id" integer DEFAULT nextval(''public.worksheet_organizer_id_seq''::regclass) NOT NULL,
-    "worksheet_id" integer NOT NULL,
-    "principal_id" integer NOT NULL,
-    "starred" boolean DEFAULT false NOT NULL
-);
-
-ALTER SEQUENCE "public"."worksheet_organizer_id_seq" OWNED BY "public"."worksheet_organizer"."id";
-
-ALTER TABLE ONLY "public"."worksheet_organizer" ADD CONSTRAINT "worksheet_organizer_pkey" PRIMARY KEY ("id");
-
-CREATE INDEX "idx_worksheet_organizer_principal_id" ON ONLY "public"."worksheet_organizer" ("principal_id");
-
-CREATE UNIQUE INDEX "idx_worksheet_organizer_unique_sheet_id_principal_id" ON ONLY "public"."worksheet_organizer" ("worksheet_id", "principal_id");
-
-ALTER TABLE "public"."activity"
-    ADD CONSTRAINT "activity_creator_id_fkey" FOREIGN KEY ("creator_id")
-    REFERENCES "public"."principal" ("id");
-
-ALTER TABLE "public"."activity"
-    ADD CONSTRAINT "activity_updater_id_fkey" FOREIGN KEY ("updater_id")
-    REFERENCES "public"."principal" ("id");
-
-ALTER TABLE "public"."anomaly"
-    ADD CONSTRAINT "anomaly_creator_id_fkey" FOREIGN KEY ("creator_id")
-    REFERENCES "public"."principal" ("id");
-
-ALTER TABLE "public"."anomaly"
-    ADD CONSTRAINT "anomaly_database_id_fkey" FOREIGN KEY ("database_id")
-    REFERENCES "public"."db" ("id");
-
-ALTER TABLE "public"."anomaly"
-    ADD CONSTRAINT "anomaly_instance_id_fkey" FOREIGN KEY ("instance_id")
-    REFERENCES "public"."instance" ("id");
-
-ALTER TABLE "public"."anomaly"
-    ADD CONSTRAINT "anomaly_updater_id_fkey" FOREIGN KEY ("updater_id")
-    REFERENCES "public"."principal" ("id");
-
-ALTER TABLE "public"."branch"
-    ADD CONSTRAINT "branch_creator_id_fkey" FOREIGN KEY ("creator_id")
-    REFERENCES "public"."principal" ("id");
-
-ALTER TABLE "public"."branch"
-    ADD CONSTRAINT "branch_project_id_fkey" FOREIGN KEY ("project_id")
-    REFERENCES "public"."project" ("id");
-
-ALTER TABLE "public"."branch"
-    ADD CONSTRAINT "branch_updater_id_fkey" FOREIGN KEY ("updater_id")
-    REFERENCES "public"."principal" ("id");
-
-ALTER TABLE "public"."changelist"
-    ADD CONSTRAINT "changelist_creator_id_fkey" FOREIGN KEY ("creator_id")
-    REFERENCES "public"."principal" ("id");
-
-ALTER TABLE "public"."changelist"
-    ADD CONSTRAINT "changelist_project_id_fkey" FOREIGN KEY ("project_id")
-    REFERENCES "public"."project" ("id");
-
-ALTER TABLE "public"."changelist"
-    ADD CONSTRAINT "changelist_updater_id_fkey" FOREIGN KEY ("updater_id")
-    REFERENCES "public"."principal" ("id");
-
-ALTER TABLE "public"."changelog"
-    ADD CONSTRAINT "changelog_creator_id_fkey" FOREIGN KEY ("creator_id")
-    REFERENCES "public"."principal" ("id");
-
-ALTER TABLE "public"."changelog"
-    ADD CONSTRAINT "changelog_database_id_fkey" FOREIGN KEY ("database_id")
-    REFERENCES "public"."db" ("id");
-
-ALTER TABLE "public"."changelog"
-    ADD CONSTRAINT "changelog_prev_sync_history_id_fkey" FOREIGN KEY ("prev_sync_history_id")
-    REFERENCES "public"."sync_history" ("id");
-
-ALTER TABLE "public"."changelog"
-    ADD CONSTRAINT "changelog_sync_history_id_fkey" FOREIGN KEY ("sync_history_id")
-    REFERENCES "public"."sync_history" ("id");
-
-ALTER TABLE "public"."data_source"
-    ADD CONSTRAINT "data_source_creator_id_fkey" FOREIGN KEY ("creator_id")
-    REFERENCES "public"."principal" ("id");
-
-ALTER TABLE "public"."data_source"
-    ADD CONSTRAINT "data_source_instance_id_fkey" FOREIGN KEY ("instance_id")
-    REFERENCES "public"."instance" ("id");
-
-ALTER TABLE "public"."data_source"
-    ADD CONSTRAINT "data_source_updater_id_fkey" FOREIGN KEY ("updater_id")
-    REFERENCES "public"."principal" ("id");
-
-ALTER TABLE "public"."db"
-    ADD CONSTRAINT "db_creator_id_fkey" FOREIGN KEY ("creator_id")
-    REFERENCES "public"."principal" ("id");
-
-ALTER TABLE "public"."db"
-    ADD CONSTRAINT "db_environment_fkey" FOREIGN KEY ("environment")
-    REFERENCES "public"."environment" ("resource_id");
-
-ALTER TABLE "public"."db"
-    ADD CONSTRAINT "db_instance_id_fkey" FOREIGN KEY ("instance_id")
-    REFERENCES "public"."instance" ("id");
-
-ALTER TABLE "public"."db"
-    ADD CONSTRAINT "db_project_id_fkey" FOREIGN KEY ("project_id")
-    REFERENCES "public"."project" ("id");
-
-ALTER TABLE "public"."db"
-    ADD CONSTRAINT "db_updater_id_fkey" FOREIGN KEY ("updater_id")
-    REFERENCES "public"."principal" ("id");
-
-ALTER TABLE "public"."db_group"
-    ADD CONSTRAINT "db_group_creator_id_fkey" FOREIGN KEY ("creator_id")
-    REFERENCES "public"."principal" ("id");
-
-ALTER TABLE "public"."db_group"
-    ADD CONSTRAINT "db_group_project_id_fkey" FOREIGN KEY ("project_id")
-    REFERENCES "public"."project" ("id");
-
-ALTER TABLE "public"."db_group"
-    ADD CONSTRAINT "db_group_updater_id_fkey" FOREIGN KEY ("updater_id")
-    REFERENCES "public"."principal" ("id");
-
-ALTER TABLE "public"."db_schema"
-    ADD CONSTRAINT "db_schema_creator_id_fkey" FOREIGN KEY ("creator_id")
-    REFERENCES "public"."principal" ("id");
-
-ALTER TABLE "public"."db_schema"
-    ADD CONSTRAINT "db_schema_database_id_fkey" FOREIGN KEY ("database_id")
-    REFERENCES "public"."db" ("id");
-
-ALTER TABLE "public"."db_schema"
-    ADD CONSTRAINT "db_schema_updater_id_fkey" FOREIGN KEY ("updater_id")
-    REFERENCES "public"."principal" ("id");
-
-ALTER TABLE "public"."deployment_config"
-    ADD CONSTRAINT "deployment_config_creator_id_fkey" FOREIGN KEY ("creator_id")
-    REFERENCES "public"."principal" ("id");
-
-ALTER TABLE "public"."deployment_config"
-    ADD CONSTRAINT "deployment_config_project_id_fkey" FOREIGN KEY ("project_id")
-    REFERENCES "public"."project" ("id");
-
-ALTER TABLE "public"."deployment_config"
-    ADD CONSTRAINT "deployment_config_updater_id_fkey" FOREIGN KEY ("updater_id")
-    REFERENCES "public"."principal" ("id");
-
-ALTER TABLE "public"."environment"
-    ADD CONSTRAINT "environment_creator_id_fkey" FOREIGN KEY ("creator_id")
-    REFERENCES "public"."principal" ("id");
-
-ALTER TABLE "public"."environment"
-    ADD CONSTRAINT "environment_updater_id_fkey" FOREIGN KEY ("updater_id")
-    REFERENCES "public"."principal" ("id");
-
-ALTER TABLE "public"."external_approval"
-    ADD CONSTRAINT "external_approval_approver_id_fkey" FOREIGN KEY ("approver_id")
-    REFERENCES "public"."principal" ("id");
-
-ALTER TABLE "public"."external_approval"
-    ADD CONSTRAINT "external_approval_issue_id_fkey" FOREIGN KEY ("issue_id")
-    REFERENCES "public"."issue" ("id");
-
-ALTER TABLE "public"."external_approval"
-    ADD CONSTRAINT "external_approval_requester_id_fkey" FOREIGN KEY ("requester_id")
-    REFERENCES "public"."principal" ("id");
-
-ALTER TABLE "public"."instance"
-    ADD CONSTRAINT "instance_creator_id_fkey" FOREIGN KEY ("creator_id")
-    REFERENCES "public"."principal" ("id");
-
-ALTER TABLE "public"."instance"
-    ADD CONSTRAINT "instance_environment_fkey" FOREIGN KEY ("environment")
-    REFERENCES "public"."environment" ("resource_id");
-
-ALTER TABLE "public"."instance"
-    ADD CONSTRAINT "instance_updater_id_fkey" FOREIGN KEY ("updater_id")
-    REFERENCES "public"."principal" ("id");
-
-ALTER TABLE "public"."instance_change_history"
-    ADD CONSTRAINT "instance_change_history_creator_id_fkey" FOREIGN KEY ("creator_id")
-    REFERENCES "public"."principal" ("id");
-
-ALTER TABLE "public"."instance_change_history"
-    ADD CONSTRAINT "instance_change_history_database_id_fkey" FOREIGN KEY ("database_id")
-    REFERENCES "public"."db" ("id");
-
-ALTER TABLE "public"."instance_change_history"
-    ADD CONSTRAINT "instance_change_history_instance_id_fkey" FOREIGN KEY ("instance_id")
-    REFERENCES "public"."instance" ("id");
-
-ALTER TABLE "public"."instance_change_history"
-    ADD CONSTRAINT "instance_change_history_issue_id_fkey" FOREIGN KEY ("issue_id")
-    REFERENCES "public"."issue" ("id");
-
-ALTER TABLE "public"."instance_change_history"
-    ADD CONSTRAINT "instance_change_history_project_id_fkey" FOREIGN KEY ("project_id")
-    REFERENCES "public"."project" ("id");
-
-ALTER TABLE "public"."instance_change_history"
-    ADD CONSTRAINT "instance_change_history_updater_id_fkey" FOREIGN KEY ("updater_id")
-    REFERENCES "public"."principal" ("id");
-
-ALTER TABLE "public"."instance_user"
-    ADD CONSTRAINT "instance_user_creator_id_fkey" FOREIGN KEY ("creator_id")
-    REFERENCES "public"."principal" ("id");
-
-ALTER TABLE "public"."instance_user"
-    ADD CONSTRAINT "instance_user_instance_id_fkey" FOREIGN KEY ("instance_id")
-    REFERENCES "public"."instance" ("id");
-
-ALTER TABLE "public"."instance_user"
-    ADD CONSTRAINT "instance_user_updater_id_fkey" FOREIGN KEY ("updater_id")
-    REFERENCES "public"."principal" ("id");
-
-ALTER TABLE "public"."issue"
-    ADD CONSTRAINT "issue_assignee_id_fkey" FOREIGN KEY ("assignee_id")
-    REFERENCES "public"."principal" ("id");
-
-ALTER TABLE "public"."issue"
-    ADD CONSTRAINT "issue_creator_id_fkey" FOREIGN KEY ("creator_id")
-    REFERENCES "public"."principal" ("id");
-
-ALTER TABLE "public"."issue"
-    ADD CONSTRAINT "issue_pipeline_id_fkey" FOREIGN KEY ("pipeline_id")
-    REFERENCES "public"."pipeline" ("id");
-
-ALTER TABLE "public"."issue"
-    ADD CONSTRAINT "issue_plan_id_fkey" FOREIGN KEY ("plan_id")
-    REFERENCES "public"."plan" ("id");
-
-ALTER TABLE "public"."issue"
-    ADD CONSTRAINT "issue_project_id_fkey" FOREIGN KEY ("project_id")
-    REFERENCES "public"."project" ("id");
-
-ALTER TABLE "public"."issue"
-    ADD CONSTRAINT "issue_updater_id_fkey" FOREIGN KEY ("updater_id")
-    REFERENCES "public"."principal" ("id");
-
-ALTER TABLE "public"."issue_comment"
-    ADD CONSTRAINT "issue_comment_creator_id_fkey" FOREIGN KEY ("creator_id")
-    REFERENCES "public"."principal" ("id");
-
-ALTER TABLE "public"."issue_comment"
-    ADD CONSTRAINT "issue_comment_issue_id_fkey" FOREIGN KEY ("issue_id")
-    REFERENCES "public"."issue" ("id");
-
-ALTER TABLE "public"."issue_comment"
-    ADD CONSTRAINT "issue_comment_updater_id_fkey" FOREIGN KEY ("updater_id")
-    REFERENCES "public"."principal" ("id");
-
-ALTER TABLE "public"."issue_subscriber"
-    ADD CONSTRAINT "issue_subscriber_issue_id_fkey" FOREIGN KEY ("issue_id")
-    REFERENCES "public"."issue" ("id");
-
-ALTER TABLE "public"."issue_subscriber"
-    ADD CONSTRAINT "issue_subscriber_subscriber_id_fkey" FOREIGN KEY ("subscriber_id")
-    REFERENCES "public"."principal" ("id");
-
-ALTER TABLE "public"."pipeline"
-    ADD CONSTRAINT "pipeline_creator_id_fkey" FOREIGN KEY ("creator_id")
-    REFERENCES "public"."principal" ("id");
-
-ALTER TABLE "public"."pipeline"
-    ADD CONSTRAINT "pipeline_project_id_fkey" FOREIGN KEY ("project_id")
-    REFERENCES "public"."project" ("id");
-
-ALTER TABLE "public"."pipeline"
-    ADD CONSTRAINT "pipeline_updater_id_fkey" FOREIGN KEY ("updater_id")
-    REFERENCES "public"."principal" ("id");
-
-ALTER TABLE "public"."plan"
-    ADD CONSTRAINT "plan_creator_id_fkey" FOREIGN KEY ("creator_id")
-    REFERENCES "public"."principal" ("id");
-
-ALTER TABLE "public"."plan"
-    ADD CONSTRAINT "plan_pipeline_id_fkey" FOREIGN KEY ("pipeline_id")
-    REFERENCES "public"."pipeline" ("id");
-
-ALTER TABLE "public"."plan"
-    ADD CONSTRAINT "plan_project_id_fkey" FOREIGN KEY ("project_id")
-    REFERENCES "public"."project" ("id");
-
-ALTER TABLE "public"."plan"
-    ADD CONSTRAINT "plan_updater_id_fkey" FOREIGN KEY ("updater_id")
-    REFERENCES "public"."principal" ("id");
-
-ALTER TABLE "public"."plan_check_run"
-    ADD CONSTRAINT "plan_check_run_creator_id_fkey" FOREIGN KEY ("creator_id")
-    REFERENCES "public"."principal" ("id");
-
-ALTER TABLE "public"."plan_check_run"
-    ADD CONSTRAINT "plan_check_run_plan_id_fkey" FOREIGN KEY ("plan_id")
-    REFERENCES "public"."plan" ("id");
-
-ALTER TABLE "public"."plan_check_run"
-    ADD CONSTRAINT "plan_check_run_updater_id_fkey" FOREIGN KEY ("updater_id")
-    REFERENCES "public"."principal" ("id");
-
-ALTER TABLE "public"."policy"
-    ADD CONSTRAINT "policy_creator_id_fkey" FOREIGN KEY ("creator_id")
-    REFERENCES "public"."principal" ("id");
-
-ALTER TABLE "public"."policy"
-    ADD CONSTRAINT "policy_updater_id_fkey" FOREIGN KEY ("updater_id")
-    REFERENCES "public"."principal" ("id");
-
-ALTER TABLE "public"."principal"
-    ADD CONSTRAINT "principal_creator_id_fkey" FOREIGN KEY ("creator_id")
-    REFERENCES "public"."principal" ("id");
-
-ALTER TABLE "public"."principal"
-    ADD CONSTRAINT "principal_updater_id_fkey" FOREIGN KEY ("updater_id")
-    REFERENCES "public"."principal" ("id");
-
-ALTER TABLE "public"."project"
-    ADD CONSTRAINT "project_creator_id_fkey" FOREIGN KEY ("creator_id")
-    REFERENCES "public"."principal" ("id");
-
-ALTER TABLE "public"."project"
-    ADD CONSTRAINT "project_updater_id_fkey" FOREIGN KEY ("updater_id")
-    REFERENCES "public"."principal" ("id");
-
-ALTER TABLE "public"."project_webhook"
-    ADD CONSTRAINT "project_webhook_creator_id_fkey" FOREIGN KEY ("creator_id")
-    REFERENCES "public"."principal" ("id");
-
-ALTER TABLE "public"."project_webhook"
-    ADD CONSTRAINT "project_webhook_project_id_fkey" FOREIGN KEY ("project_id")
-    REFERENCES "public"."project" ("id");
-
-ALTER TABLE "public"."project_webhook"
-    ADD CONSTRAINT "project_webhook_updater_id_fkey" FOREIGN KEY ("updater_id")
-    REFERENCES "public"."principal" ("id");
-
-ALTER TABLE "public"."query_history"
-    ADD CONSTRAINT "query_history_creator_id_fkey" FOREIGN KEY ("creator_id")
-    REFERENCES "public"."principal" ("id");
-
-ALTER TABLE "public"."release"
-    ADD CONSTRAINT "release_creator_id_fkey" FOREIGN KEY ("creator_id")
-    REFERENCES "public"."principal" ("id");
-
-ALTER TABLE "public"."release"
-    ADD CONSTRAINT "release_project_id_fkey" FOREIGN KEY ("project_id")
-    REFERENCES "public"."project" ("id");
-
-ALTER TABLE "public"."review_config"
-    ADD CONSTRAINT "review_config_creator_id_fkey" FOREIGN KEY ("creator_id")
-    REFERENCES "public"."principal" ("id");
-
-ALTER TABLE "public"."review_config"
-    ADD CONSTRAINT "review_config_updater_id_fkey" FOREIGN KEY ("updater_id")
-    REFERENCES "public"."principal" ("id");
-
-ALTER TABLE "public"."revision"
-    ADD CONSTRAINT "revision_creator_id_fkey" FOREIGN KEY ("creator_id")
-    REFERENCES "public"."principal" ("id");
-
-ALTER TABLE "public"."revision"
-    ADD CONSTRAINT "revision_database_id_fkey" FOREIGN KEY ("database_id")
-    REFERENCES "public"."db" ("id");
-
-ALTER TABLE "public"."revision"
-    ADD CONSTRAINT "revision_deleter_id_fkey" FOREIGN KEY ("deleter_id")
-    REFERENCES "public"."principal" ("id");
-
-ALTER TABLE "public"."risk"
-    ADD CONSTRAINT "risk_creator_id_fkey" FOREIGN KEY ("creator_id")
-    REFERENCES "public"."principal" ("id");
-
-ALTER TABLE "public"."risk"
-    ADD CONSTRAINT "risk_updater_id_fkey" FOREIGN KEY ("updater_id")
-    REFERENCES "public"."principal" ("id");
-
-ALTER TABLE "public"."role"
-    ADD CONSTRAINT "role_creator_id_fkey" FOREIGN KEY ("creator_id")
-    REFERENCES "public"."principal" ("id");
-
-ALTER TABLE "public"."role"
-    ADD CONSTRAINT "role_updater_id_fkey" FOREIGN KEY ("updater_id")
-    REFERENCES "public"."principal" ("id");
-
-ALTER TABLE "public"."setting"
-    ADD CONSTRAINT "setting_creator_id_fkey" FOREIGN KEY ("creator_id")
-    REFERENCES "public"."principal" ("id");
-
-ALTER TABLE "public"."setting"
-    ADD CONSTRAINT "setting_updater_id_fkey" FOREIGN KEY ("updater_id")
-    REFERENCES "public"."principal" ("id");
-
-ALTER TABLE "public"."sheet"
-    ADD CONSTRAINT "sheet_creator_id_fkey" FOREIGN KEY ("creator_id")
-    REFERENCES "public"."principal" ("id");
-
-ALTER TABLE "public"."sheet"
-    ADD CONSTRAINT "sheet_project_id_fkey" FOREIGN KEY ("project_id")
-    REFERENCES "public"."project" ("id");
-
-ALTER TABLE "public"."sheet"
-    ADD CONSTRAINT "sheet_updater_id_fkey" FOREIGN KEY ("updater_id")
-    REFERENCES "public"."principal" ("id");
-
-ALTER TABLE "public"."slow_query"
-    ADD CONSTRAINT "slow_query_creator_id_fkey" FOREIGN KEY ("creator_id")
-    REFERENCES "public"."principal" ("id");
-
-ALTER TABLE "public"."slow_query"
-    ADD CONSTRAINT "slow_query_database_id_fkey" FOREIGN KEY ("database_id")
-    REFERENCES "public"."db" ("id");
-
-ALTER TABLE "public"."slow_query"
-    ADD CONSTRAINT "slow_query_instance_id_fkey" FOREIGN KEY ("instance_id")
-    REFERENCES "public"."instance" ("id");
-
-ALTER TABLE "public"."slow_query"
-    ADD CONSTRAINT "slow_query_updater_id_fkey" FOREIGN KEY ("updater_id")
-    REFERENCES "public"."principal" ("id");
-
-ALTER TABLE "public"."sql_lint_config"
-    ADD CONSTRAINT "sql_lint_config_creator_id_fkey" FOREIGN KEY ("creator_id")
-    REFERENCES "public"."principal" ("id");
-
-ALTER TABLE "public"."sql_lint_config"
-    ADD CONSTRAINT "sql_lint_config_updater_id_fkey" FOREIGN KEY ("updater_id")
-    REFERENCES "public"."principal" ("id");
-
-ALTER TABLE "public"."stage"
-    ADD CONSTRAINT "stage_creator_id_fkey" FOREIGN KEY ("creator_id")
-    REFERENCES "public"."principal" ("id");
-
-ALTER TABLE "public"."stage"
-    ADD CONSTRAINT "stage_environment_id_fkey" FOREIGN KEY ("environment_id")
-    REFERENCES "public"."environment" ("id");
-
-ALTER TABLE "public"."stage"
-    ADD CONSTRAINT "stage_pipeline_id_fkey" FOREIGN KEY ("pipeline_id")
-    REFERENCES "public"."pipeline" ("id");
-
-ALTER TABLE "public"."stage"
-    ADD CONSTRAINT "stage_updater_id_fkey" FOREIGN KEY ("updater_id")
-    REFERENCES "public"."principal" ("id");
-
-ALTER TABLE "public"."sync_history"
-    ADD CONSTRAINT "sync_history_creator_id_fkey" FOREIGN KEY ("creator_id")
-    REFERENCES "public"."principal" ("id");
-
-ALTER TABLE "public"."sync_history"
-    ADD CONSTRAINT "sync_history_database_id_fkey" FOREIGN KEY ("database_id")
-    REFERENCES "public"."db" ("id");
-
-ALTER TABLE "public"."task"
-    ADD CONSTRAINT "task_creator_id_fkey" FOREIGN KEY ("creator_id")
-    REFERENCES "public"."principal" ("id");
-
-ALTER TABLE "public"."task"
-    ADD CONSTRAINT "task_database_id_fkey" FOREIGN KEY ("database_id")
-    REFERENCES "public"."db" ("id");
-
-ALTER TABLE "public"."task"
-    ADD CONSTRAINT "task_instance_id_fkey" FOREIGN KEY ("instance_id")
-    REFERENCES "public"."instance" ("id");
-
-ALTER TABLE "public"."task"
-    ADD CONSTRAINT "task_pipeline_id_fkey" FOREIGN KEY ("pipeline_id")
-    REFERENCES "public"."pipeline" ("id");
-
-ALTER TABLE "public"."task"
-    ADD CONSTRAINT "task_stage_id_fkey" FOREIGN KEY ("stage_id")
-    REFERENCES "public"."stage" ("id");
-
-ALTER TABLE "public"."task"
-    ADD CONSTRAINT "task_updater_id_fkey" FOREIGN KEY ("updater_id")
-    REFERENCES "public"."principal" ("id");
-
-ALTER TABLE "public"."task_dag"
-    ADD CONSTRAINT "task_dag_from_task_id_fkey" FOREIGN KEY ("from_task_id")
-    REFERENCES "public"."task" ("id");
-
-ALTER TABLE "public"."task_dag"
-    ADD CONSTRAINT "task_dag_to_task_id_fkey" FOREIGN KEY ("to_task_id")
-    REFERENCES "public"."task" ("id");
-
-ALTER TABLE "public"."task_run"
-    ADD CONSTRAINT "task_run_creator_id_fkey" FOREIGN KEY ("creator_id")
-    REFERENCES "public"."principal" ("id");
-
-ALTER TABLE "public"."task_run"
-    ADD CONSTRAINT "task_run_sheet_id_fkey" FOREIGN KEY ("sheet_id")
-    REFERENCES "public"."sheet" ("id");
-
-ALTER TABLE "public"."task_run"
-    ADD CONSTRAINT "task_run_task_id_fkey" FOREIGN KEY ("task_id")
-    REFERENCES "public"."task" ("id");
-
-ALTER TABLE "public"."task_run"
-    ADD CONSTRAINT "task_run_updater_id_fkey" FOREIGN KEY ("updater_id")
-    REFERENCES "public"."principal" ("id");
-
-ALTER TABLE "public"."task_run_log"
-    ADD CONSTRAINT "task_run_log_task_run_id_fkey" FOREIGN KEY ("task_run_id")
-    REFERENCES "public"."task_run" ("id");
-
-ALTER TABLE "public"."user_group"
-    ADD CONSTRAINT "user_group_creator_id_fkey" FOREIGN KEY ("creator_id")
-    REFERENCES "public"."principal" ("id");
-
-ALTER TABLE "public"."user_group"
-    ADD CONSTRAINT "user_group_updater_id_fkey" FOREIGN KEY ("updater_id")
-    REFERENCES "public"."principal" ("id");
-
-ALTER TABLE "public"."vcs"
-    ADD CONSTRAINT "vcs_creator_id_fkey" FOREIGN KEY ("creator_id")
-    REFERENCES "public"."principal" ("id");
-
-ALTER TABLE "public"."vcs"
-    ADD CONSTRAINT "vcs_updater_id_fkey" FOREIGN KEY ("updater_id")
-    REFERENCES "public"."principal" ("id");
-
-ALTER TABLE "public"."vcs_connector"
-    ADD CONSTRAINT "vcs_connector_creator_id_fkey" FOREIGN KEY ("creator_id")
-    REFERENCES "public"."principal" ("id");
-
-ALTER TABLE "public"."vcs_connector"
-    ADD CONSTRAINT "vcs_connector_project_id_fkey" FOREIGN KEY ("project_id")
-    REFERENCES "public"."project" ("id");
-
-ALTER TABLE "public"."vcs_connector"
-    ADD CONSTRAINT "vcs_connector_updater_id_fkey" FOREIGN KEY ("updater_id")
-    REFERENCES "public"."principal" ("id");
-
-ALTER TABLE "public"."vcs_connector"
-    ADD CONSTRAINT "vcs_connector_vcs_id_fkey" FOREIGN KEY ("vcs_id")
-    REFERENCES "public"."vcs" ("id");
-
-ALTER TABLE "public"."worksheet"
-    ADD CONSTRAINT "worksheet_creator_id_fkey" FOREIGN KEY ("creator_id")
-    REFERENCES "public"."principal" ("id");
-
-ALTER TABLE "public"."worksheet"
-    ADD CONSTRAINT "worksheet_database_id_fkey" FOREIGN KEY ("database_id")
-    REFERENCES "public"."db" ("id");
-
-ALTER TABLE "public"."worksheet"
-    ADD CONSTRAINT "worksheet_project_id_fkey" FOREIGN KEY ("project_id")
-    REFERENCES "public"."project" ("id");
-
-ALTER TABLE "public"."worksheet"
-    ADD CONSTRAINT "worksheet_updater_id_fkey" FOREIGN KEY ("updater_id")
-    REFERENCES "public"."principal" ("id");
-
-ALTER TABLE "public"."worksheet_organizer"
-    ADD CONSTRAINT "worksheet_organizer_principal_id_fkey" FOREIGN KEY ("principal_id")
-    REFERENCES "public"."principal" ("id");
-
-ALTER TABLE "public"."worksheet_organizer"
-    ADD CONSTRAINT "worksheet_organizer_worksheet_id_fkey" FOREIGN KEY ("worksheet_id")
-    REFERENCES "public"."worksheet" ("id");
-
-', '{}', 'bytebase-meta', 'bb') ON CONFLICT DO NOTHING;
 INSERT INTO public.db_schema (id, metadata, raw_dump, config, instance, db_name) VALUES (104, '{"name":"hr_prod_2","schemas":[{"name":"bbdataarchive","owner":"bbsample"},{"name":"public","tables":[{"name":"audit","columns":[{"name":"id","position":1,"defaultExpression":"nextval(''public.audit_id_seq''::regclass)","type":"integer"},{"name":"operation","position":2,"type":"text"},{"name":"query","position":3,"nullable":true,"type":"text"},{"name":"user_name","position":4,"type":"text"},{"name":"changed_at","position":5,"defaultExpression":"CURRENT_TIMESTAMP","nullable":true,"type":"timestamp with time zone"}],"indexes":[{"name":"audit_pkey","expressions":["id"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX audit_pkey ON public.audit USING btree (id);","isConstraint":true},{"name":"idx_audit_changed_at","expressions":["changed_at"],"type":"btree","definition":"CREATE INDEX idx_audit_changed_at ON public.audit USING btree (changed_at);"},{"name":"idx_audit_operation","expressions":["operation"],"type":"btree","definition":"CREATE INDEX idx_audit_operation ON public.audit USING btree (operation);"},{"name":"idx_audit_username","expressions":["user_name"],"type":"btree","definition":"CREATE INDEX idx_audit_username ON public.audit USING btree (user_name);"}],"dataSize":"8192","indexSize":"32768","owner":"bbsample"},{"name":"department","columns":[{"name":"dept_no","position":1,"type":"text"},{"name":"dept_name","position":2,"type":"text"}],"indexes":[{"name":"department_dept_name_key","expressions":["dept_name"],"type":"btree","unique":true,"definition":"CREATE UNIQUE INDEX department_dept_name_key ON public.department USING btree (dept_name);","isConstraint":true},{"name":"department_pkey","expressions":["dept_no"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX department_pkey ON public.department USING btree (dept_no);","isConstraint":true}],"dataSize":"16384","indexSize":"32768","owner":"bbsample"},{"name":"dept_emp","columns":[{"name":"emp_no","position":1,"type":"integer"},{"name":"dept_no","position":2,"type":"text"},{"name":"from_date","position":3,"type":"date"},{"name":"to_date","position":4,"type":"date"}],"indexes":[{"name":"dept_emp_pkey","expressions":["emp_no","dept_no"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX dept_emp_pkey ON public.dept_emp USING btree (emp_no, dept_no);","isConstraint":true}],"rowCount":"1103","dataSize":"106496","indexSize":"57344","foreignKeys":[{"name":"dept_emp_dept_no_fkey","columns":["dept_no"],"referencedSchema":"public","referencedTable":"department","referencedColumns":["dept_no"],"onDelete":"CASCADE","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"dept_emp_emp_no_fkey","columns":["emp_no"],"referencedSchema":"public","referencedTable":"employee","referencedColumns":["emp_no"],"onDelete":"CASCADE","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bbsample"},{"name":"dept_manager","columns":[{"name":"emp_no","position":1,"type":"integer"},{"name":"dept_no","position":2,"type":"text"},{"name":"from_date","position":3,"type":"date"},{"name":"to_date","position":4,"type":"date"}],"indexes":[{"name":"dept_manager_pkey","expressions":["emp_no","dept_no"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX dept_manager_pkey ON public.dept_manager USING btree (emp_no, dept_no);","isConstraint":true}],"dataSize":"16384","indexSize":"16384","foreignKeys":[{"name":"dept_manager_dept_no_fkey","columns":["dept_no"],"referencedSchema":"public","referencedTable":"department","referencedColumns":["dept_no"],"onDelete":"CASCADE","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"dept_manager_emp_no_fkey","columns":["emp_no"],"referencedSchema":"public","referencedTable":"employee","referencedColumns":["emp_no"],"onDelete":"CASCADE","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bbsample"},{"name":"employee","columns":[{"name":"emp_no","position":1,"defaultExpression":"nextval(''public.employee_emp_no_seq''::regclass)","type":"integer"},{"name":"birth_date","position":2,"type":"date"},{"name":"first_name","position":3,"type":"text"},{"name":"last_name","position":4,"type":"text"},{"name":"gender","position":5,"type":"text"},{"name":"hire_date","position":6,"type":"date"}],"indexes":[{"name":"employee_pkey","expressions":["emp_no"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX employee_pkey ON public.employee USING btree (emp_no);","isConstraint":true},{"name":"idx_employee_hire_date","expressions":["hire_date"],"type":"btree","definition":"CREATE INDEX idx_employee_hire_date ON public.employee USING btree (hire_date);"}],"rowCount":"1000","dataSize":"98304","indexSize":"98304","owner":"bbsample"},{"name":"salary","columns":[{"name":"emp_no","position":1,"type":"integer"},{"name":"amount","position":2,"type":"integer"},{"name":"from_date","position":3,"type":"date"},{"name":"to_date","position":4,"type":"date"}],"indexes":[{"name":"idx_salary_amount","expressions":["amount"],"type":"btree","definition":"CREATE INDEX idx_salary_amount ON public.salary USING btree (amount);"},{"name":"salary_pkey","expressions":["emp_no","from_date"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX salary_pkey ON public.salary USING btree (emp_no, from_date);","isConstraint":true}],"rowCount":"9488","dataSize":"458752","indexSize":"548864","foreignKeys":[{"name":"salary_emp_no_fkey","columns":["emp_no"],"referencedSchema":"public","referencedTable":"employee","referencedColumns":["emp_no"],"onDelete":"CASCADE","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bbsample","triggers":[{"name":"salary_log_trigger","body":"CREATE TRIGGER salary_log_trigger AFTER DELETE OR UPDATE ON public.salary FOR EACH ROW EXECUTE FUNCTION public.log_dml_operations()"}]},{"name":"title","columns":[{"name":"emp_no","position":1,"type":"integer"},{"name":"title","position":2,"type":"text"},{"name":"from_date","position":3,"type":"date"},{"name":"to_date","position":4,"nullable":true,"type":"date"}],"indexes":[{"name":"title_pkey","expressions":["emp_no","title","from_date"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX title_pkey ON public.title USING btree (emp_no, title, from_date);","isConstraint":true}],"rowCount":"1470","dataSize":"131072","indexSize":"73728","foreignKeys":[{"name":"title_emp_no_fkey","columns":["emp_no"],"referencedSchema":"public","referencedTable":"employee","referencedColumns":["emp_no"],"onDelete":"CASCADE","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bbsample"}],"views":[{"name":"current_dept_emp","definition":" SELECT l.emp_no,\n    d.dept_no,\n    l.from_date,\n    l.to_date\n   FROM (public.dept_emp d\n     JOIN public.dept_emp_latest_date l ON (((d.emp_no = l.emp_no) AND (d.from_date = l.from_date) AND (l.to_date = d.to_date))));","dependencyColumns":[{"schema":"public","table":"dept_emp","column":"dept_no"},{"schema":"public","table":"dept_emp","column":"emp_no"},{"schema":"public","table":"dept_emp","column":"from_date"},{"schema":"public","table":"dept_emp","column":"to_date"},{"schema":"public","table":"dept_emp_latest_date","column":"emp_no"},{"schema":"public","table":"dept_emp_latest_date","column":"from_date"},{"schema":"public","table":"dept_emp_latest_date","column":"to_date"}],"columns":[{"name":"emp_no","position":1,"nullable":true,"type":"integer"},{"name":"dept_no","position":2,"nullable":true,"type":"text"},{"name":"from_date","position":3,"nullable":true,"type":"date"},{"name":"to_date","position":4,"nullable":true,"type":"date"}]},{"name":"dept_emp_latest_date","definition":" SELECT emp_no,\n    max(from_date) AS from_date,\n    max(to_date) AS to_date\n   FROM public.dept_emp\n  GROUP BY emp_no;","dependencyColumns":[{"schema":"public","table":"dept_emp","column":"emp_no"},{"schema":"public","table":"dept_emp","column":"from_date"},{"schema":"public","table":"dept_emp","column":"to_date"}],"columns":[{"name":"emp_no","position":1,"nullable":true,"type":"integer"},{"name":"from_date","position":2,"nullable":true,"type":"date"},{"name":"to_date","position":3,"nullable":true,"type":"date"}]}],"functions":[{"name":"log_dml_operations","definition":"CREATE OR REPLACE FUNCTION public.log_dml_operations()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n    IF (TG_OP = ''INSERT'') THEN\n        INSERT INTO audit (operation, query, user_name)\n        VALUES (''INSERT'', current_query(), current_user);\n        RETURN NEW;\n    ELSIF (TG_OP = ''UPDATE'') THEN\n        INSERT INTO audit (operation, query, user_name)\n        VALUES (''UPDATE'', current_query(), current_user);\n        RETURN NEW;\n    ELSIF (TG_OP = ''DELETE'') THEN\n        INSERT INTO audit (operation, query, user_name)\n        VALUES (''DELETE'', current_query(), current_user);\n        RETURN OLD;\n    END IF;\n    RETURN NULL;\nEND;\n$function$\n","signature":"log_dml_operations()"}],"sequences":[{"name":"audit_id_seq","dataType":"integer","start":"1","minValue":"1","maxValue":"2147483647","increment":"1","cacheSize":"1","ownerTable":"audit","ownerColumn":"id"},{"name":"employee_emp_no_seq","dataType":"integer","start":"1","minValue":"1","maxValue":"2147483647","increment":"1","cacheSize":"1","ownerTable":"employee","ownerColumn":"emp_no"}],"owner":"pg_database_owner"}],"characterSet":"UTF8","collation":"en_US.UTF-8","extensions":[{"name":"pg_stat_statements","schema":"public","version":"1.10","description":"track planning and execution statistics of all SQL statements executed"}],"owner":"bbsample"}', '
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -4565,7 +2232,7 @@ ALTER TABLE "public"."title"
     REFERENCES "public"."employee" ("emp_no");
 
 ', '{}', 'prod-sample-instance', 'hr_prod_1') ON CONFLICT DO NOTHING;
-INSERT INTO public.db_schema (id, metadata, raw_dump, config, instance, db_name) VALUES (101, '{"name":"hr_test","schemas":[{"name":"bbdataarchive","owner":"bbsample"},{"name":"public","tables":[{"name":"audit","columns":[{"name":"id","position":1,"defaultExpression":"nextval(''public.audit_id_seq''::regclass)","type":"integer"},{"name":"operation","position":2,"type":"text"},{"name":"query","position":3,"nullable":true,"type":"text"},{"name":"user_name","position":4,"type":"text"},{"name":"changed_at","position":5,"defaultExpression":"CURRENT_TIMESTAMP","nullable":true,"type":"timestamp with time zone"}],"indexes":[{"name":"audit_pkey","expressions":["id"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX audit_pkey ON public.audit USING btree (id);","isConstraint":true},{"name":"idx_audit_changed_at","expressions":["changed_at"],"type":"btree","definition":"CREATE INDEX idx_audit_changed_at ON public.audit USING btree (changed_at);"},{"name":"idx_audit_operation","expressions":["operation"],"type":"btree","definition":"CREATE INDEX idx_audit_operation ON public.audit USING btree (operation);"},{"name":"idx_audit_username","expressions":["user_name"],"type":"btree","definition":"CREATE INDEX idx_audit_username ON public.audit USING btree (user_name);"}],"dataSize":"8192","indexSize":"32768","owner":"bbsample"},{"name":"department","columns":[{"name":"dept_no","position":1,"type":"text"},{"name":"dept_name","position":2,"type":"text"}],"indexes":[{"name":"department_dept_name_key","expressions":["dept_name"],"type":"btree","unique":true,"definition":"CREATE UNIQUE INDEX department_dept_name_key ON public.department USING btree (dept_name);","isConstraint":true},{"name":"department_pkey","expressions":["dept_no"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX department_pkey ON public.department USING btree (dept_no);","isConstraint":true}],"dataSize":"16384","indexSize":"32768","owner":"bbsample"},{"name":"dept_emp","columns":[{"name":"emp_no","position":1,"type":"integer"},{"name":"dept_no","position":2,"type":"text"},{"name":"from_date","position":3,"type":"date"},{"name":"to_date","position":4,"type":"date"}],"indexes":[{"name":"dept_emp_pkey","expressions":["emp_no","dept_no"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX dept_emp_pkey ON public.dept_emp USING btree (emp_no, dept_no);","isConstraint":true}],"rowCount":"1103","dataSize":"106496","indexSize":"57344","foreignKeys":[{"name":"dept_emp_dept_no_fkey","columns":["dept_no"],"referencedSchema":"public","referencedTable":"department","referencedColumns":["dept_no"],"onDelete":"CASCADE","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"dept_emp_emp_no_fkey","columns":["emp_no"],"referencedSchema":"public","referencedTable":"employee","referencedColumns":["emp_no"],"onDelete":"CASCADE","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bbsample"},{"name":"dept_manager","columns":[{"name":"emp_no","position":1,"type":"integer"},{"name":"dept_no","position":2,"type":"text"},{"name":"from_date","position":3,"type":"date"},{"name":"to_date","position":4,"type":"date"}],"indexes":[{"name":"dept_manager_pkey","expressions":["emp_no","dept_no"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX dept_manager_pkey ON public.dept_manager USING btree (emp_no, dept_no);","isConstraint":true}],"dataSize":"16384","indexSize":"16384","foreignKeys":[{"name":"dept_manager_dept_no_fkey","columns":["dept_no"],"referencedSchema":"public","referencedTable":"department","referencedColumns":["dept_no"],"onDelete":"CASCADE","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"dept_manager_emp_no_fkey","columns":["emp_no"],"referencedSchema":"public","referencedTable":"employee","referencedColumns":["emp_no"],"onDelete":"CASCADE","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bbsample"},{"name":"employee","columns":[{"name":"emp_no","position":1,"defaultExpression":"nextval(''public.employee_emp_no_seq''::regclass)","type":"integer"},{"name":"birth_date","position":2,"type":"date"},{"name":"first_name","position":3,"type":"text"},{"name":"last_name","position":4,"type":"text"},{"name":"gender","position":5,"type":"text"},{"name":"hire_date","position":6,"type":"date"}],"indexes":[{"name":"employee_pkey","expressions":["emp_no"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX employee_pkey ON public.employee USING btree (emp_no);","isConstraint":true},{"name":"idx_employee_hire_date","expressions":["hire_date"],"type":"btree","definition":"CREATE INDEX idx_employee_hire_date ON public.employee USING btree (hire_date);"}],"rowCount":"1000","dataSize":"98304","indexSize":"98304","owner":"bbsample"},{"name":"salary","columns":[{"name":"emp_no","position":1,"type":"integer"},{"name":"amount","position":2,"type":"integer"},{"name":"from_date","position":3,"type":"date"},{"name":"to_date","position":4,"type":"date"}],"indexes":[{"name":"idx_salary_amount","expressions":["amount"],"type":"btree","definition":"CREATE INDEX idx_salary_amount ON public.salary USING btree (amount);"},{"name":"salary_pkey","expressions":["emp_no","from_date"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX salary_pkey ON public.salary USING btree (emp_no, from_date);","isConstraint":true}],"rowCount":"9488","dataSize":"458752","indexSize":"548864","foreignKeys":[{"name":"salary_emp_no_fkey","columns":["emp_no"],"referencedSchema":"public","referencedTable":"employee","referencedColumns":["emp_no"],"onDelete":"CASCADE","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bbsample","triggers":[{"name":"salary_log_trigger","body":"CREATE TRIGGER salary_log_trigger AFTER DELETE OR UPDATE ON public.salary FOR EACH ROW EXECUTE FUNCTION public.log_dml_operations()"}]},{"name":"title","columns":[{"name":"emp_no","position":1,"type":"integer"},{"name":"title","position":2,"type":"text"},{"name":"from_date","position":3,"type":"date"},{"name":"to_date","position":4,"nullable":true,"type":"date"}],"indexes":[{"name":"title_pkey","expressions":["emp_no","title","from_date"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX title_pkey ON public.title USING btree (emp_no, title, from_date);","isConstraint":true}],"rowCount":"1470","dataSize":"131072","indexSize":"73728","foreignKeys":[{"name":"title_emp_no_fkey","columns":["emp_no"],"referencedSchema":"public","referencedTable":"employee","referencedColumns":["emp_no"],"onDelete":"CASCADE","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bbsample"}],"views":[{"name":"current_dept_emp","definition":" SELECT l.emp_no,\n    d.dept_no,\n    l.from_date,\n    l.to_date\n   FROM (public.dept_emp d\n     JOIN public.dept_emp_latest_date l ON (((d.emp_no = l.emp_no) AND (d.from_date = l.from_date) AND (l.to_date = d.to_date))));","dependencyColumns":[{"schema":"public","table":"dept_emp","column":"dept_no"},{"schema":"public","table":"dept_emp","column":"emp_no"},{"schema":"public","table":"dept_emp","column":"from_date"},{"schema":"public","table":"dept_emp","column":"to_date"},{"schema":"public","table":"dept_emp_latest_date","column":"emp_no"},{"schema":"public","table":"dept_emp_latest_date","column":"from_date"},{"schema":"public","table":"dept_emp_latest_date","column":"to_date"}],"columns":[{"name":"emp_no","position":1,"nullable":true,"type":"integer"},{"name":"dept_no","position":2,"nullable":true,"type":"text"},{"name":"from_date","position":3,"nullable":true,"type":"date"},{"name":"to_date","position":4,"nullable":true,"type":"date"}]},{"name":"dept_emp_latest_date","definition":" SELECT emp_no,\n    max(from_date) AS from_date,\n    max(to_date) AS to_date\n   FROM public.dept_emp\n  GROUP BY emp_no;","dependencyColumns":[{"schema":"public","table":"dept_emp","column":"emp_no"},{"schema":"public","table":"dept_emp","column":"from_date"},{"schema":"public","table":"dept_emp","column":"to_date"}],"columns":[{"name":"emp_no","position":1,"nullable":true,"type":"integer"},{"name":"from_date","position":2,"nullable":true,"type":"date"},{"name":"to_date","position":3,"nullable":true,"type":"date"}]}],"functions":[{"name":"log_dml_operations","definition":"CREATE OR REPLACE FUNCTION public.log_dml_operations()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n    IF (TG_OP = ''INSERT'') THEN\n        INSERT INTO audit (operation, query, user_name)\n        VALUES (''INSERT'', current_query(), current_user);\n        RETURN NEW;\n    ELSIF (TG_OP = ''UPDATE'') THEN\n        INSERT INTO audit (operation, query, user_name)\n        VALUES (''UPDATE'', current_query(), current_user);\n        RETURN NEW;\n    ELSIF (TG_OP = ''DELETE'') THEN\n        INSERT INTO audit (operation, query, user_name)\n        VALUES (''DELETE'', current_query(), current_user);\n        RETURN OLD;\n    END IF;\n    RETURN NULL;\nEND;\n$function$\n","signature":"log_dml_operations()"}],"sequences":[{"name":"audit_id_seq","dataType":"integer","start":"1","minValue":"1","maxValue":"2147483647","increment":"1","cacheSize":"1","ownerTable":"audit","ownerColumn":"id"},{"name":"employee_emp_no_seq","dataType":"integer","start":"1","minValue":"1","maxValue":"2147483647","increment":"1","cacheSize":"1","ownerTable":"employee","ownerColumn":"emp_no"}],"owner":"pg_database_owner"}],"characterSet":"UTF8","collation":"en_US.UTF-8","extensions":[{"name":"pg_stat_statements","schema":"public","version":"1.10","description":"track planning and execution statistics of all SQL statements executed"}],"owner":"bbsample"}', '
+INSERT INTO public.db_schema (id, metadata, raw_dump, config, instance, db_name) VALUES (121, '{"name":"bb","schemas":[{"name":"public","tables":[{"name":"anomaly","columns":[{"name":"id","position":1,"defaultExpression":"nextval(''public.anomaly_id_seq''::regclass)","type":"integer"},{"name":"project","position":2,"type":"text"},{"name":"type","position":3,"type":"text"},{"name":"payload","position":4,"defaultExpression":"''{}''::jsonb","type":"jsonb"},{"name":"updated_at","position":5,"defaultExpression":"now()","type":"timestamp with time zone"},{"name":"instance","position":6,"type":"text"},{"name":"db_name","position":7,"type":"text"}],"indexes":[{"name":"anomaly_pkey","expressions":["id"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX anomaly_pkey ON public.anomaly USING btree (id);","isConstraint":true},{"name":"idx_anomaly_unique_project_instance_dn_name_type","expressions":["project","instance","db_name","type"],"type":"btree","unique":true,"definition":"CREATE UNIQUE INDEX idx_anomaly_unique_project_instance_dn_name_type ON public.anomaly USING btree (project, instance, db_name, type);"}],"dataSize":"16384","indexSize":"32768","foreignKeys":[{"name":"anomaly_instance_db_name_fkey","columns":["instance","db_name"],"referencedSchema":"public","referencedTable":"db","referencedColumns":["instance","name"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bb"},{"name":"audit_log","columns":[{"name":"id","position":1,"defaultExpression":"nextval(''public.audit_log_id_seq''::regclass)","type":"bigint"},{"name":"payload","position":2,"defaultExpression":"''{}''::jsonb","type":"jsonb"},{"name":"created_at","position":3,"defaultExpression":"now()","type":"timestamp with time zone"}],"indexes":[{"name":"audit_log_pkey","expressions":["id"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX audit_log_pkey ON public.audit_log USING btree (id);","isConstraint":true},{"name":"idx_audit_log_created_at","expressions":["created_at"],"type":"btree","definition":"CREATE INDEX idx_audit_log_created_at ON public.audit_log USING btree (created_at);"},{"name":"idx_audit_log_payload_method","expressions":["payload ->> ''method''::text"],"type":"btree","definition":"CREATE INDEX idx_audit_log_payload_method ON public.audit_log USING btree (((payload ->> ''method''::text)));"},{"name":"idx_audit_log_payload_parent","expressions":["payload ->> ''parent''::text"],"type":"btree","definition":"CREATE INDEX idx_audit_log_payload_parent ON public.audit_log USING btree (((payload ->> ''parent''::text)));"},{"name":"idx_audit_log_payload_resource","expressions":["payload ->> ''resource''::text"],"type":"btree","definition":"CREATE INDEX idx_audit_log_payload_resource ON public.audit_log USING btree (((payload ->> ''resource''::text)));"},{"name":"idx_audit_log_payload_user","expressions":["payload ->> ''user''::text"],"type":"btree","definition":"CREATE INDEX idx_audit_log_payload_user ON public.audit_log USING btree (((payload ->> ''user''::text)));"}],"rowCount":"57","dataSize":"90112","indexSize":"98304","owner":"bb"},{"name":"changelist","columns":[{"name":"id","position":1,"defaultExpression":"nextval(''public.changelist_id_seq''::regclass)","type":"integer"},{"name":"creator_id","position":2,"type":"integer"},{"name":"name","position":3,"type":"text"},{"name":"payload","position":4,"defaultExpression":"''{}''::jsonb","type":"jsonb"},{"name":"updated_at","position":5,"defaultExpression":"now()","type":"timestamp with time zone"},{"name":"project","position":6,"type":"text"}],"indexes":[{"name":"changelist_pkey","expressions":["id"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX changelist_pkey ON public.changelist USING btree (id);","isConstraint":true},{"name":"idx_changelist_project_name","expressions":["project","name"],"type":"btree","unique":true,"definition":"CREATE UNIQUE INDEX idx_changelist_project_name ON public.changelist USING btree (project, name);"}],"dataSize":"8192","indexSize":"16384","foreignKeys":[{"name":"changelist_creator_id_fkey","columns":["creator_id"],"referencedSchema":"public","referencedTable":"principal","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"changelist_project_fkey","columns":["project"],"referencedSchema":"public","referencedTable":"project","referencedColumns":["resource_id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bb"},{"name":"changelog","columns":[{"name":"id","position":1,"defaultExpression":"nextval(''public.changelog_id_seq''::regclass)","type":"bigint"},{"name":"created_at","position":2,"defaultExpression":"now()","type":"timestamp with time zone"},{"name":"status","position":3,"type":"text"},{"name":"prev_sync_history_id","position":4,"nullable":true,"type":"bigint"},{"name":"sync_history_id","position":5,"nullable":true,"type":"bigint"},{"name":"payload","position":6,"defaultExpression":"''{}''::jsonb","type":"jsonb"},{"name":"instance","position":7,"type":"text"},{"name":"db_name","position":8,"type":"text"}],"indexes":[{"name":"changelog_pkey","expressions":["id"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX changelog_pkey ON public.changelog USING btree (id);","isConstraint":true},{"name":"idx_changelog_instance_db_name","expressions":["instance","db_name"],"type":"btree","definition":"CREATE INDEX idx_changelog_instance_db_name ON public.changelog USING btree (instance, db_name);"}],"rowCount":"10","dataSize":"16384","indexSize":"32768","foreignKeys":[{"name":"changelog_instance_db_name_fkey","columns":["instance","db_name"],"referencedSchema":"public","referencedTable":"db","referencedColumns":["instance","name"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"changelog_prev_sync_history_id_fkey","columns":["prev_sync_history_id"],"referencedSchema":"public","referencedTable":"sync_history","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"changelog_sync_history_id_fkey","columns":["sync_history_id"],"referencedSchema":"public","referencedTable":"sync_history","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bb"},{"name":"data_source","columns":[{"name":"id","position":1,"defaultExpression":"nextval(''public.data_source_id_seq''::regclass)","type":"integer"},{"name":"options","position":11,"defaultExpression":"''{}''::jsonb","type":"jsonb"},{"name":"instance","position":13,"type":"text"}],"indexes":[{"name":"data_source_pkey","expressions":["id"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX data_source_pkey ON public.data_source USING btree (id);","isConstraint":true}],"rowCount":"5","dataSize":"49152","indexSize":"16384","foreignKeys":[{"name":"data_source_instance_fkey","columns":["instance"],"referencedSchema":"public","referencedTable":"instance","referencedColumns":["resource_id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bb"},{"name":"db","columns":[{"name":"id","position":1,"defaultExpression":"nextval(''public.db_id_seq''::regclass)","type":"integer"},{"name":"environment","position":2,"nullable":true,"type":"text"},{"name":"name","position":5,"type":"text"},{"name":"metadata","position":9,"defaultExpression":"''{}''::jsonb","type":"jsonb"},{"name":"project","position":11,"type":"text"},{"name":"instance","position":12,"type":"text"},{"name":"deleted","position":13,"defaultExpression":"false","type":"boolean"}],"indexes":[{"name":"db_pkey","expressions":["id"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX db_pkey ON public.db USING btree (id);","isConstraint":true},{"name":"idx_db_project","expressions":["project"],"type":"btree","definition":"CREATE INDEX idx_db_project ON public.db USING btree (project);"},{"name":"idx_db_unique_instance_name","expressions":["instance","name"],"type":"btree","unique":true,"definition":"CREATE UNIQUE INDEX idx_db_unique_instance_name ON public.db USING btree (instance, name);"}],"rowCount":"11","dataSize":"16384","indexSize":"49152","foreignKeys":[{"name":"db_environment_fkey","columns":["environment"],"referencedSchema":"public","referencedTable":"environment","referencedColumns":["resource_id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"db_instance_fkey","columns":["instance"],"referencedSchema":"public","referencedTable":"instance","referencedColumns":["resource_id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"db_project_fkey","columns":["project"],"referencedSchema":"public","referencedTable":"project","referencedColumns":["resource_id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bb"},{"name":"db_group","columns":[{"name":"id","position":1,"defaultExpression":"nextval(''public.db_group_id_seq''::regclass)","type":"bigint"},{"name":"resource_id","position":2,"type":"text"},{"name":"placeholder","position":3,"defaultExpression":"''''::text","type":"text"},{"name":"expression","position":4,"defaultExpression":"''{}''::jsonb","type":"jsonb"},{"name":"payload","position":5,"defaultExpression":"''{}''::jsonb","type":"jsonb"},{"name":"project","position":6,"type":"text"}],"indexes":[{"name":"db_group_pkey","expressions":["id"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX db_group_pkey ON public.db_group USING btree (id);","isConstraint":true},{"name":"idx_db_group_unique_project_placeholder","expressions":["project","placeholder"],"type":"btree","unique":true,"definition":"CREATE UNIQUE INDEX idx_db_group_unique_project_placeholder ON public.db_group USING btree (project, placeholder);"},{"name":"idx_db_group_unique_project_resource_id","expressions":["project","resource_id"],"type":"btree","unique":true,"definition":"CREATE UNIQUE INDEX idx_db_group_unique_project_resource_id ON public.db_group USING btree (project, resource_id);"}],"rowCount":"2","dataSize":"16384","indexSize":"49152","foreignKeys":[{"name":"db_group_project_fkey","columns":["project"],"referencedSchema":"public","referencedTable":"project","referencedColumns":["resource_id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bb"},{"name":"db_schema","columns":[{"name":"id","position":1,"defaultExpression":"nextval(''public.db_schema_id_seq''::regclass)","type":"integer"},{"name":"metadata","position":2,"defaultExpression":"''{}''::json","type":"json"},{"name":"raw_dump","position":3,"defaultExpression":"''''::text","type":"text"},{"name":"config","position":4,"defaultExpression":"''{}''::jsonb","type":"jsonb"},{"name":"instance","position":5,"type":"text"},{"name":"db_name","position":6,"type":"text"}],"indexes":[{"name":"db_schema_pkey","expressions":["id"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX db_schema_pkey ON public.db_schema USING btree (id);","isConstraint":true},{"name":"idx_db_schema_unique_instance_db_name","expressions":["instance","db_name"],"type":"btree","unique":true,"definition":"CREATE UNIQUE INDEX idx_db_schema_unique_instance_db_name ON public.db_schema USING btree (instance, db_name);"}],"rowCount":"11","dataSize":"163840","indexSize":"32768","foreignKeys":[{"name":"db_schema_instance_db_name_fkey","columns":["instance","db_name"],"referencedSchema":"public","referencedTable":"db","referencedColumns":["instance","name"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bb"},{"name":"environment","columns":[{"name":"id","position":1,"defaultExpression":"nextval(''public.environment_id_seq''::regclass)","type":"integer"},{"name":"name","position":2,"type":"text"},{"name":"order","position":3,"type":"integer"},{"name":"resource_id","position":4,"type":"text"},{"name":"deleted","position":5,"defaultExpression":"false","type":"boolean"}],"indexes":[{"name":"environment_pkey","expressions":["id"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX environment_pkey ON public.environment USING btree (id);","isConstraint":true},{"name":"idx_environment_unique_resource_id","expressions":["resource_id"],"type":"btree","unique":true,"definition":"CREATE UNIQUE INDEX idx_environment_unique_resource_id ON public.environment USING btree (resource_id);"}],"rowCount":"2","dataSize":"16384","indexSize":"32768","owner":"bb"},{"name":"export_archive","columns":[{"name":"id","position":1,"defaultExpression":"nextval(''public.export_archive_id_seq''::regclass)","type":"integer"},{"name":"bytes","position":2,"nullable":true,"type":"bytea"},{"name":"payload","position":3,"defaultExpression":"''{}''::jsonb","type":"jsonb"},{"name":"created_at","position":4,"defaultExpression":"now()","type":"timestamp with time zone"}],"indexes":[{"name":"export_archive_pkey","expressions":["id"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX export_archive_pkey ON public.export_archive USING btree (id);","isConstraint":true}],"dataSize":"8192","indexSize":"8192","owner":"bb"},{"name":"idp","columns":[{"name":"id","position":1,"defaultExpression":"nextval(''public.idp_id_seq''::regclass)","type":"integer"},{"name":"resource_id","position":2,"type":"text"},{"name":"name","position":3,"type":"text"},{"name":"domain","position":4,"type":"text"},{"name":"type","position":5,"type":"text"},{"name":"config","position":6,"defaultExpression":"''{}''::jsonb","type":"jsonb"},{"name":"deleted","position":7,"defaultExpression":"false","type":"boolean"}],"indexes":[{"name":"idp_pkey","expressions":["id"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX idp_pkey ON public.idp USING btree (id);","isConstraint":true},{"name":"idx_idp_unique_resource_id","expressions":["resource_id"],"type":"btree","unique":true,"definition":"CREATE UNIQUE INDEX idx_idp_unique_resource_id ON public.idp USING btree (resource_id);"}],"dataSize":"8192","indexSize":"16384","owner":"bb"},{"name":"instance","columns":[{"name":"id","position":1,"defaultExpression":"nextval(''public.instance_id_seq''::regclass)","type":"integer"},{"name":"environment","position":2,"nullable":true,"type":"text"},{"name":"resource_id","position":7,"type":"text"},{"name":"metadata","position":10,"defaultExpression":"''{}''::jsonb","type":"jsonb"},{"name":"deleted","position":11,"defaultExpression":"false","type":"boolean"}],"indexes":[{"name":"idx_instance_unique_resource_id","expressions":["resource_id"],"type":"btree","unique":true,"definition":"CREATE UNIQUE INDEX idx_instance_unique_resource_id ON public.instance USING btree (resource_id);"},{"name":"instance_pkey","expressions":["id"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX instance_pkey ON public.instance USING btree (id);","isConstraint":true}],"rowCount":"3","dataSize":"57344","indexSize":"32768","foreignKeys":[{"name":"instance_environment_fkey","columns":["environment"],"referencedSchema":"public","referencedTable":"environment","referencedColumns":["resource_id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bb"},{"name":"instance_change_history","columns":[{"name":"id","position":1,"defaultExpression":"nextval(''public.instance_change_history_id_seq''::regclass)","type":"bigint"},{"name":"version","position":3,"type":"text"}],"indexes":[{"name":"idx_instance_change_history_unique_version","expressions":["version"],"type":"btree","unique":true,"definition":"CREATE UNIQUE INDEX idx_instance_change_history_unique_version ON public.instance_change_history USING btree (version);"},{"name":"instance_change_history_pkey","expressions":["id"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX instance_change_history_pkey ON public.instance_change_history USING btree (id);","isConstraint":true}],"rowCount":"20","dataSize":"16384","indexSize":"32768","owner":"bb"},{"name":"issue","columns":[{"name":"id","position":1,"defaultExpression":"nextval(''public.issue_id_seq''::regclass)","type":"integer"},{"name":"creator_id","position":2,"type":"integer"},{"name":"plan_id","position":3,"nullable":true,"type":"bigint"},{"name":"pipeline_id","position":4,"nullable":true,"type":"integer"},{"name":"name","position":5,"type":"text"},{"name":"status","position":6,"type":"text"},{"name":"type","position":7,"type":"text"},{"name":"description","position":8,"defaultExpression":"''''::text","type":"text"},{"name":"payload","position":11,"defaultExpression":"''{}''::jsonb","type":"jsonb"},{"name":"ts_vector","position":12,"nullable":true,"type":"tsvector"},{"name":"created_at","position":13,"defaultExpression":"now()","type":"timestamp with time zone"},{"name":"updated_at","position":14,"defaultExpression":"now()","type":"timestamp with time zone"},{"name":"project","position":15,"type":"text"}],"indexes":[{"name":"idx_issue_creator_id","expressions":["creator_id"],"type":"btree","definition":"CREATE INDEX idx_issue_creator_id ON public.issue USING btree (creator_id);"},{"name":"idx_issue_pipeline_id","expressions":["pipeline_id"],"type":"btree","definition":"CREATE INDEX idx_issue_pipeline_id ON public.issue USING btree (pipeline_id);"},{"name":"idx_issue_plan_id","expressions":["plan_id"],"type":"btree","definition":"CREATE INDEX idx_issue_plan_id ON public.issue USING btree (plan_id);"},{"name":"idx_issue_project","expressions":["project"],"type":"btree","definition":"CREATE INDEX idx_issue_project ON public.issue USING btree (project);"},{"name":"idx_issue_ts_vector","expressions":["ts_vector"],"type":"gin","definition":"CREATE INDEX idx_issue_ts_vector ON public.issue USING gin (ts_vector);"},{"name":"issue_pkey","expressions":["id"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX issue_pkey ON public.issue USING btree (id);","isConstraint":true}],"rowCount":"10","dataSize":"16384","indexSize":"98304","foreignKeys":[{"name":"issue_creator_id_fkey","columns":["creator_id"],"referencedSchema":"public","referencedTable":"principal","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"issue_pipeline_id_fkey","columns":["pipeline_id"],"referencedSchema":"public","referencedTable":"pipeline","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"issue_plan_id_fkey","columns":["plan_id"],"referencedSchema":"public","referencedTable":"plan","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"issue_project_fkey","columns":["project"],"referencedSchema":"public","referencedTable":"project","referencedColumns":["resource_id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bb"},{"name":"issue_comment","columns":[{"name":"id","position":1,"defaultExpression":"nextval(''public.issue_comment_id_seq''::regclass)","type":"bigint"},{"name":"creator_id","position":2,"type":"integer"},{"name":"issue_id","position":3,"type":"integer"},{"name":"payload","position":4,"defaultExpression":"''{}''::jsonb","type":"jsonb"},{"name":"created_at","position":5,"defaultExpression":"now()","type":"timestamp with time zone"},{"name":"updated_at","position":6,"defaultExpression":"now()","type":"timestamp with time zone"}],"indexes":[{"name":"idx_issue_comment_issue_id","expressions":["issue_id"],"type":"btree","definition":"CREATE INDEX idx_issue_comment_issue_id ON public.issue_comment USING btree (issue_id);"},{"name":"issue_comment_pkey","expressions":["id"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX issue_comment_pkey ON public.issue_comment USING btree (id);","isConstraint":true}],"rowCount":"37","dataSize":"16384","indexSize":"32768","foreignKeys":[{"name":"issue_comment_creator_id_fkey","columns":["creator_id"],"referencedSchema":"public","referencedTable":"principal","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"issue_comment_issue_id_fkey","columns":["issue_id"],"referencedSchema":"public","referencedTable":"issue","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bb"},{"name":"issue_subscriber","columns":[{"name":"issue_id","position":1,"type":"integer"},{"name":"subscriber_id","position":2,"type":"integer"}],"indexes":[{"name":"idx_issue_subscriber_subscriber_id","expressions":["subscriber_id"],"type":"btree","definition":"CREATE INDEX idx_issue_subscriber_subscriber_id ON public.issue_subscriber USING btree (subscriber_id);"},{"name":"issue_subscriber_pkey","expressions":["issue_id","subscriber_id"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX issue_subscriber_pkey ON public.issue_subscriber USING btree (issue_id, subscriber_id);","isConstraint":true}],"indexSize":"16384","foreignKeys":[{"name":"issue_subscriber_issue_id_fkey","columns":["issue_id"],"referencedSchema":"public","referencedTable":"issue","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"issue_subscriber_subscriber_id_fkey","columns":["subscriber_id"],"referencedSchema":"public","referencedTable":"principal","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bb"},{"name":"pipeline","columns":[{"name":"id","position":1,"defaultExpression":"nextval(''public.pipeline_id_seq''::regclass)","type":"integer"},{"name":"creator_id","position":2,"type":"integer"},{"name":"name","position":3,"type":"text"},{"name":"created_at","position":4,"defaultExpression":"now()","type":"timestamp with time zone"},{"name":"project","position":5,"type":"text"}],"indexes":[{"name":"pipeline_pkey","expressions":["id"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX pipeline_pkey ON public.pipeline USING btree (id);","isConstraint":true}],"rowCount":"10","dataSize":"16384","indexSize":"16384","foreignKeys":[{"name":"pipeline_creator_id_fkey","columns":["creator_id"],"referencedSchema":"public","referencedTable":"principal","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"pipeline_project_fkey","columns":["project"],"referencedSchema":"public","referencedTable":"project","referencedColumns":["resource_id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bb"},{"name":"plan","columns":[{"name":"id","position":1,"defaultExpression":"nextval(''public.plan_id_seq''::regclass)","type":"bigint"},{"name":"creator_id","position":2,"type":"integer"},{"name":"pipeline_id","position":3,"nullable":true,"type":"integer"},{"name":"name","position":4,"type":"text"},{"name":"description","position":5,"type":"text"},{"name":"config","position":6,"defaultExpression":"''{}''::jsonb","type":"jsonb"},{"name":"created_at","position":7,"defaultExpression":"now()","type":"timestamp with time zone"},{"name":"updated_at","position":8,"defaultExpression":"now()","type":"timestamp with time zone"},{"name":"project","position":9,"type":"text"}],"indexes":[{"name":"idx_plan_pipeline_id","expressions":["pipeline_id"],"type":"btree","definition":"CREATE INDEX idx_plan_pipeline_id ON public.plan USING btree (pipeline_id);"},{"name":"idx_plan_project","expressions":["project"],"type":"btree","definition":"CREATE INDEX idx_plan_project ON public.plan USING btree (project);"},{"name":"plan_pkey","expressions":["id"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX plan_pkey ON public.plan USING btree (id);","isConstraint":true}],"rowCount":"10","dataSize":"16384","indexSize":"49152","foreignKeys":[{"name":"plan_creator_id_fkey","columns":["creator_id"],"referencedSchema":"public","referencedTable":"principal","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"plan_pipeline_id_fkey","columns":["pipeline_id"],"referencedSchema":"public","referencedTable":"pipeline","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"plan_project_fkey","columns":["project"],"referencedSchema":"public","referencedTable":"project","referencedColumns":["resource_id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bb"},{"name":"plan_check_run","columns":[{"name":"id","position":1,"defaultExpression":"nextval(''public.plan_check_run_id_seq''::regclass)","type":"integer"},{"name":"plan_id","position":2,"type":"bigint"},{"name":"status","position":3,"type":"text"},{"name":"type","position":4,"type":"text"},{"name":"config","position":5,"defaultExpression":"''{}''::jsonb","type":"jsonb"},{"name":"result","position":6,"defaultExpression":"''{}''::jsonb","type":"jsonb"},{"name":"payload","position":7,"defaultExpression":"''{}''::jsonb","type":"jsonb"},{"name":"created_at","position":8,"defaultExpression":"now()","type":"timestamp with time zone"},{"name":"updated_at","position":9,"defaultExpression":"now()","type":"timestamp with time zone"}],"indexes":[{"name":"idx_plan_check_run_plan_id","expressions":["plan_id"],"type":"btree","definition":"CREATE INDEX idx_plan_check_run_plan_id ON public.plan_check_run USING btree (plan_id);"},{"name":"plan_check_run_pkey","expressions":["id"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX plan_check_run_pkey ON public.plan_check_run USING btree (id);","isConstraint":true}],"rowCount":"54","dataSize":"57344","indexSize":"32768","foreignKeys":[{"name":"plan_check_run_plan_id_fkey","columns":["plan_id"],"referencedSchema":"public","referencedTable":"plan","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bb"},{"name":"policy","columns":[{"name":"id","position":1,"defaultExpression":"nextval(''public.policy_id_seq''::regclass)","type":"integer"},{"name":"type","position":2,"type":"text"},{"name":"payload","position":3,"defaultExpression":"''{}''::jsonb","type":"jsonb"},{"name":"resource_type","position":4,"type":"text"},{"name":"inherit_from_parent","position":5,"defaultExpression":"true","type":"boolean"},{"name":"updated_at","position":6,"defaultExpression":"now()","type":"timestamp with time zone"},{"name":"resource","position":7,"type":"text"},{"name":"enforce","position":8,"defaultExpression":"true","type":"boolean"}],"indexes":[{"name":"idx_policy_unique_resource_type_resource_type","expressions":["resource_type","resource","type"],"type":"btree","unique":true,"definition":"CREATE UNIQUE INDEX idx_policy_unique_resource_type_resource_type ON public.policy USING btree (resource_type, resource, type);"},{"name":"policy_pkey","expressions":["id"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX policy_pkey ON public.policy USING btree (id);","isConstraint":true}],"rowCount":"15","dataSize":"16384","indexSize":"32768","owner":"bb"},{"name":"principal","columns":[{"name":"id","position":1,"defaultExpression":"nextval(''public.principal_id_seq''::regclass)","type":"integer"},{"name":"type","position":2,"type":"text"},{"name":"name","position":3,"type":"text"},{"name":"email","position":4,"type":"text"},{"name":"password_hash","position":5,"type":"text"},{"name":"phone","position":6,"defaultExpression":"''''::text","type":"text"},{"name":"mfa_config","position":7,"defaultExpression":"''{}''::jsonb","type":"jsonb"},{"name":"profile","position":8,"defaultExpression":"''{}''::jsonb","type":"jsonb"},{"name":"created_at","position":9,"defaultExpression":"now()","type":"timestamp with time zone"},{"name":"deleted","position":10,"defaultExpression":"false","type":"boolean"}],"indexes":[{"name":"principal_pkey","expressions":["id"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX principal_pkey ON public.principal USING btree (id);","isConstraint":true}],"rowCount":"11","dataSize":"16384","indexSize":"16384","owner":"bb"},{"name":"project","columns":[{"name":"id","position":1,"defaultExpression":"nextval(''public.project_id_seq''::regclass)","type":"integer"},{"name":"name","position":2,"type":"text"},{"name":"resource_id","position":3,"type":"text"},{"name":"data_classification_config_id","position":4,"defaultExpression":"''''::text","type":"text"},{"name":"setting","position":5,"defaultExpression":"''{}''::jsonb","type":"jsonb"},{"name":"deleted","position":6,"defaultExpression":"false","type":"boolean"}],"indexes":[{"name":"idx_project_unique_resource_id","expressions":["resource_id"],"type":"btree","unique":true,"definition":"CREATE UNIQUE INDEX idx_project_unique_resource_id ON public.project USING btree (resource_id);"},{"name":"project_pkey","expressions":["id"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX project_pkey ON public.project USING btree (id);","isConstraint":true}],"rowCount":"5","dataSize":"16384","indexSize":"32768","owner":"bb"},{"name":"project_webhook","columns":[{"name":"id","position":1,"defaultExpression":"nextval(''public.project_webhook_id_seq''::regclass)","type":"integer"},{"name":"type","position":2,"type":"text"},{"name":"name","position":3,"type":"text"},{"name":"url","position":4,"type":"text"},{"name":"activity_list","position":5,"type":"_text"},{"name":"payload","position":6,"defaultExpression":"''{}''::jsonb","type":"jsonb"},{"name":"project","position":7,"type":"text"}],"indexes":[{"name":"idx_project_webhook_project","expressions":["project"],"type":"btree","definition":"CREATE INDEX idx_project_webhook_project ON public.project_webhook USING btree (project);"},{"name":"project_webhook_pkey","expressions":["id"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX project_webhook_pkey ON public.project_webhook USING btree (id);","isConstraint":true}],"dataSize":"8192","indexSize":"16384","foreignKeys":[{"name":"project_webhook_project_fkey","columns":["project"],"referencedSchema":"public","referencedTable":"project","referencedColumns":["resource_id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bb"},{"name":"query_history","columns":[{"name":"id","position":1,"defaultExpression":"nextval(''public.query_history_id_seq''::regclass)","type":"bigint"},{"name":"creator_id","position":2,"type":"integer"},{"name":"project_id","position":3,"type":"text"},{"name":"database","position":4,"type":"text"},{"name":"statement","position":5,"type":"text"},{"name":"type","position":6,"type":"text"},{"name":"payload","position":7,"defaultExpression":"''{}''::jsonb","type":"jsonb"},{"name":"created_at","position":8,"defaultExpression":"now()","type":"timestamp with time zone"}],"indexes":[{"name":"idx_query_history_creator_id_created_at_project_id","expressions":["creator_id","created_at","project_id"],"type":"btree","definition":"CREATE INDEX idx_query_history_creator_id_created_at_project_id ON public.query_history USING btree (creator_id, created_at, project_id DESC);"},{"name":"query_history_pkey","expressions":["id"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX query_history_pkey ON public.query_history USING btree (id);","isConstraint":true}],"rowCount":"30","dataSize":"49152","indexSize":"32768","foreignKeys":[{"name":"query_history_creator_id_fkey","columns":["creator_id"],"referencedSchema":"public","referencedTable":"principal","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bb"},{"name":"release","columns":[{"name":"id","position":1,"defaultExpression":"nextval(''public.release_id_seq''::regclass)","type":"bigint"},{"name":"creator_id","position":2,"type":"integer"},{"name":"created_at","position":3,"defaultExpression":"now()","type":"timestamp with time zone"},{"name":"payload","position":4,"defaultExpression":"''{}''::jsonb","type":"jsonb"},{"name":"project","position":5,"type":"text"},{"name":"deleted","position":6,"defaultExpression":"false","type":"boolean"}],"indexes":[{"name":"idx_release_project","expressions":["project"],"type":"btree","definition":"CREATE INDEX idx_release_project ON public.release USING btree (project);"},{"name":"release_pkey","expressions":["id"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX release_pkey ON public.release USING btree (id);","isConstraint":true}],"dataSize":"8192","indexSize":"16384","foreignKeys":[{"name":"release_creator_id_fkey","columns":["creator_id"],"referencedSchema":"public","referencedTable":"principal","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"release_project_fkey","columns":["project"],"referencedSchema":"public","referencedTable":"project","referencedColumns":["resource_id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bb"},{"name":"review_config","columns":[{"name":"id","position":1,"type":"text"},{"name":"name","position":2,"type":"text"},{"name":"payload","position":3,"defaultExpression":"''{}''::jsonb","type":"jsonb"},{"name":"enabled","position":4,"defaultExpression":"true","type":"boolean"}],"indexes":[{"name":"review_config_pkey","expressions":["id"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX review_config_pkey ON public.review_config USING btree (id);","isConstraint":true}],"rowCount":"1","dataSize":"32768","indexSize":"16384","owner":"bb"},{"name":"revision","columns":[{"name":"id","position":1,"defaultExpression":"nextval(''public.revision_id_seq''::regclass)","type":"bigint"},{"name":"created_at","position":2,"defaultExpression":"now()","type":"timestamp with time zone"},{"name":"deleter_id","position":3,"nullable":true,"type":"integer"},{"name":"deleted_at","position":4,"nullable":true,"type":"timestamp with time zone"},{"name":"version","position":5,"type":"text"},{"name":"payload","position":6,"defaultExpression":"''{}''::jsonb","type":"jsonb"},{"name":"instance","position":7,"type":"text"},{"name":"db_name","position":8,"type":"text"}],"indexes":[{"name":"idx_revision_instance_db_name_version","expressions":["instance","db_name","version"],"type":"btree","definition":"CREATE INDEX idx_revision_instance_db_name_version ON public.revision USING btree (instance, db_name, version);"},{"name":"idx_revision_unique_instance_db_name_version_deleted_at_null","expressions":["instance","db_name","version"],"type":"btree","unique":true,"definition":"CREATE UNIQUE INDEX idx_revision_unique_instance_db_name_version_deleted_at_null ON public.revision USING btree (instance, db_name, version) WHERE (deleted_at IS NULL);"},{"name":"revision_pkey","expressions":["id"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX revision_pkey ON public.revision USING btree (id);","isConstraint":true}],"dataSize":"8192","indexSize":"24576","foreignKeys":[{"name":"revision_deleter_id_fkey","columns":["deleter_id"],"referencedSchema":"public","referencedTable":"principal","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"revision_instance_db_name_fkey","columns":["instance","db_name"],"referencedSchema":"public","referencedTable":"db","referencedColumns":["instance","name"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bb"},{"name":"risk","columns":[{"name":"id","position":1,"defaultExpression":"nextval(''public.risk_id_seq''::regclass)","type":"bigint"},{"name":"source","position":2,"type":"text"},{"name":"level","position":3,"type":"bigint"},{"name":"name","position":4,"type":"text"},{"name":"active","position":5,"type":"boolean"},{"name":"expression","position":6,"type":"jsonb"}],"indexes":[{"name":"risk_pkey","expressions":["id"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX risk_pkey ON public.risk USING btree (id);","isConstraint":true}],"rowCount":"2","dataSize":"16384","indexSize":"16384","owner":"bb"},{"name":"role","columns":[{"name":"id","position":1,"defaultExpression":"nextval(''public.role_id_seq''::regclass)","type":"bigint"},{"name":"resource_id","position":2,"type":"text"},{"name":"name","position":3,"type":"text"},{"name":"description","position":4,"type":"text"},{"name":"permissions","position":5,"defaultExpression":"''{}''::jsonb","type":"jsonb"},{"name":"payload","position":6,"defaultExpression":"''{}''::jsonb","type":"jsonb"}],"indexes":[{"name":"idx_role_unique_resource_id","expressions":["resource_id"],"type":"btree","unique":true,"definition":"CREATE UNIQUE INDEX idx_role_unique_resource_id ON public.role USING btree (resource_id);"},{"name":"role_pkey","expressions":["id"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX role_pkey ON public.role USING btree (id);","isConstraint":true}],"rowCount":"1","dataSize":"16384","indexSize":"32768","owner":"bb"},{"name":"setting","columns":[{"name":"id","position":1,"defaultExpression":"nextval(''public.setting_id_seq''::regclass)","type":"integer"},{"name":"name","position":2,"type":"text"},{"name":"value","position":3,"type":"text"}],"indexes":[{"name":"idx_setting_unique_name","expressions":["name"],"type":"btree","unique":true,"definition":"CREATE UNIQUE INDEX idx_setting_unique_name ON public.setting USING btree (name);"},{"name":"setting_pkey","expressions":["id"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX setting_pkey ON public.setting USING btree (id);","isConstraint":true}],"rowCount":"15","dataSize":"16384","indexSize":"32768","owner":"bb"},{"name":"sheet","columns":[{"name":"id","position":1,"defaultExpression":"nextval(''public.sheet_id_seq''::regclass)","type":"integer"},{"name":"creator_id","position":2,"type":"integer"},{"name":"name","position":3,"type":"text"},{"name":"sha256","position":4,"type":"bytea"},{"name":"payload","position":5,"defaultExpression":"''{}''::jsonb","type":"jsonb"},{"name":"created_at","position":6,"defaultExpression":"now()","type":"timestamp with time zone"},{"name":"project","position":7,"type":"text"}],"indexes":[{"name":"idx_sheet_project","expressions":["project"],"type":"btree","definition":"CREATE INDEX idx_sheet_project ON public.sheet USING btree (project);"},{"name":"sheet_pkey","expressions":["id"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX sheet_pkey ON public.sheet USING btree (id);","isConstraint":true}],"rowCount":"13","dataSize":"16384","indexSize":"32768","foreignKeys":[{"name":"sheet_creator_id_fkey","columns":["creator_id"],"referencedSchema":"public","referencedTable":"principal","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"sheet_project_fkey","columns":["project"],"referencedSchema":"public","referencedTable":"project","referencedColumns":["resource_id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bb"},{"name":"sheet_blob","columns":[{"name":"sha256","position":1,"type":"bytea"},{"name":"content","position":2,"type":"text"}],"indexes":[{"name":"sheet_blob_pkey","expressions":["sha256"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX sheet_blob_pkey ON public.sheet_blob USING btree (sha256);","isConstraint":true}],"rowCount":"9","dataSize":"16384","indexSize":"16384","owner":"bb"},{"name":"stage","columns":[{"name":"id","position":1,"defaultExpression":"nextval(''public.stage_id_seq''::regclass)","type":"integer"},{"name":"pipeline_id","position":2,"type":"integer"},{"name":"environment","position":5,"type":"text"}],"indexes":[{"name":"idx_stage_pipeline_id","expressions":["pipeline_id"],"type":"btree","definition":"CREATE INDEX idx_stage_pipeline_id ON public.stage USING btree (pipeline_id);"},{"name":"stage_pkey","expressions":["id"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX stage_pkey ON public.stage USING btree (id);","isConstraint":true}],"rowCount":"13","dataSize":"16384","indexSize":"32768","foreignKeys":[{"name":"stage_environment_fkey","columns":["environment"],"referencedSchema":"public","referencedTable":"environment","referencedColumns":["resource_id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"stage_pipeline_id_fkey","columns":["pipeline_id"],"referencedSchema":"public","referencedTable":"pipeline","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bb"},{"name":"sync_history","columns":[{"name":"id","position":1,"defaultExpression":"nextval(''public.sync_history_id_seq''::regclass)","type":"bigint"},{"name":"created_at","position":2,"defaultExpression":"now()","type":"timestamp with time zone"},{"name":"metadata","position":3,"defaultExpression":"''{}''::json","type":"json"},{"name":"raw_dump","position":4,"defaultExpression":"''''::text","type":"text"},{"name":"instance","position":5,"type":"text"},{"name":"db_name","position":6,"type":"text"}],"indexes":[{"name":"idx_sync_history_instance_db_name_created_at","expressions":["instance","db_name","created_at"],"type":"btree","definition":"CREATE INDEX idx_sync_history_instance_db_name_created_at ON public.sync_history USING btree (instance, db_name, created_at);"},{"name":"sync_history_pkey","expressions":["id"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX sync_history_pkey ON public.sync_history USING btree (id);","isConstraint":true}],"rowCount":"8","dataSize":"98304","indexSize":"32768","foreignKeys":[{"name":"sync_history_instance_db_name_fkey","columns":["instance","db_name"],"referencedSchema":"public","referencedTable":"db","referencedColumns":["instance","name"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bb"},{"name":"task","columns":[{"name":"id","position":1,"defaultExpression":"nextval(''public.task_id_seq''::regclass)","type":"integer"},{"name":"pipeline_id","position":2,"type":"integer"},{"name":"stage_id","position":3,"type":"integer"},{"name":"type","position":6,"type":"text"},{"name":"payload","position":7,"defaultExpression":"''{}''::jsonb","type":"jsonb"},{"name":"earliest_allowed_at","position":8,"nullable":true,"type":"timestamp with time zone"},{"name":"instance","position":9,"type":"text"},{"name":"db_name","position":10,"nullable":true,"type":"text"}],"indexes":[{"name":"idx_task_pipeline_id_stage_id","expressions":["pipeline_id","stage_id"],"type":"btree","definition":"CREATE INDEX idx_task_pipeline_id_stage_id ON public.task USING btree (pipeline_id, stage_id);"},{"name":"task_pkey","expressions":["id"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX task_pkey ON public.task USING btree (id);","isConstraint":true}],"rowCount":"16","dataSize":"16384","indexSize":"32768","foreignKeys":[{"name":"task_instance_fkey","columns":["instance"],"referencedSchema":"public","referencedTable":"instance","referencedColumns":["resource_id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"task_pipeline_id_fkey","columns":["pipeline_id"],"referencedSchema":"public","referencedTable":"pipeline","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"task_stage_id_fkey","columns":["stage_id"],"referencedSchema":"public","referencedTable":"stage","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bb"},{"name":"task_run","columns":[{"name":"id","position":1,"defaultExpression":"nextval(''public.task_run_id_seq''::regclass)","type":"integer"},{"name":"creator_id","position":2,"type":"integer"},{"name":"task_id","position":3,"type":"integer"},{"name":"sheet_id","position":4,"nullable":true,"type":"integer"},{"name":"attempt","position":5,"type":"integer"},{"name":"status","position":7,"type":"text"},{"name":"code","position":8,"defaultExpression":"0","type":"integer"},{"name":"result","position":9,"defaultExpression":"''{}''::jsonb","type":"jsonb"},{"name":"created_at","position":10,"defaultExpression":"now()","type":"timestamp with time zone"},{"name":"updated_at","position":11,"defaultExpression":"now()","type":"timestamp with time zone"},{"name":"started_at","position":12,"nullable":true,"type":"timestamp with time zone"}],"indexes":[{"name":"idx_task_run_task_id","expressions":["task_id"],"type":"btree","definition":"CREATE INDEX idx_task_run_task_id ON public.task_run USING btree (task_id);"},{"name":"task_run_pkey","expressions":["id"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX task_run_pkey ON public.task_run USING btree (id);","isConstraint":true},{"name":"uk_task_run_task_id_attempt","expressions":["task_id","attempt"],"type":"btree","unique":true,"definition":"CREATE UNIQUE INDEX uk_task_run_task_id_attempt ON public.task_run USING btree (task_id, attempt);"}],"rowCount":"10","dataSize":"16384","indexSize":"49152","foreignKeys":[{"name":"task_run_creator_id_fkey","columns":["creator_id"],"referencedSchema":"public","referencedTable":"principal","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"task_run_sheet_id_fkey","columns":["sheet_id"],"referencedSchema":"public","referencedTable":"sheet","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"task_run_task_id_fkey","columns":["task_id"],"referencedSchema":"public","referencedTable":"task","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bb"},{"name":"task_run_log","columns":[{"name":"id","position":1,"defaultExpression":"nextval(''public.task_run_log_id_seq''::regclass)","type":"bigint"},{"name":"task_run_id","position":2,"type":"integer"},{"name":"created_at","position":3,"defaultExpression":"now()","type":"timestamp with time zone"},{"name":"payload","position":4,"defaultExpression":"''{}''::jsonb","type":"jsonb"}],"indexes":[{"name":"idx_task_run_log_task_run_id","expressions":["task_run_id"],"type":"btree","definition":"CREATE INDEX idx_task_run_log_task_run_id ON public.task_run_log USING btree (task_run_id);"},{"name":"task_run_log_pkey","expressions":["id"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX task_run_log_pkey ON public.task_run_log USING btree (id);","isConstraint":true}],"rowCount":"54","dataSize":"49152","indexSize":"32768","foreignKeys":[{"name":"task_run_log_task_run_id_fkey","columns":["task_run_id"],"referencedSchema":"public","referencedTable":"task_run","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bb"},{"name":"user_group","columns":[{"name":"email","position":1,"type":"text"},{"name":"name","position":2,"type":"text"},{"name":"description","position":3,"defaultExpression":"''''::text","type":"text"},{"name":"payload","position":4,"defaultExpression":"''{}''::jsonb","type":"jsonb"}],"indexes":[{"name":"user_group_pkey","expressions":["email"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX user_group_pkey ON public.user_group USING btree (email);","isConstraint":true}],"dataSize":"8192","indexSize":"8192","owner":"bb"},{"name":"worksheet","columns":[{"name":"id","position":1,"defaultExpression":"nextval(''public.worksheet_id_seq''::regclass)","type":"integer"},{"name":"creator_id","position":2,"type":"integer"},{"name":"name","position":3,"type":"text"},{"name":"statement","position":4,"type":"text"},{"name":"visibility","position":5,"type":"text"},{"name":"payload","position":6,"defaultExpression":"''{}''::jsonb","type":"jsonb"},{"name":"created_at","position":7,"defaultExpression":"now()","type":"timestamp with time zone"},{"name":"updated_at","position":8,"defaultExpression":"now()","type":"timestamp with time zone"},{"name":"project","position":9,"type":"text"},{"name":"instance","position":10,"nullable":true,"type":"text"},{"name":"db_name","position":11,"nullable":true,"type":"text"}],"indexes":[{"name":"idx_worksheet_creator_id_project","expressions":["creator_id","project"],"type":"btree","definition":"CREATE INDEX idx_worksheet_creator_id_project ON public.worksheet USING btree (creator_id, project);"},{"name":"worksheet_pkey","expressions":["id"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX worksheet_pkey ON public.worksheet USING btree (id);","isConstraint":true}],"rowCount":"7","dataSize":"16384","indexSize":"32768","foreignKeys":[{"name":"worksheet_creator_id_fkey","columns":["creator_id"],"referencedSchema":"public","referencedTable":"principal","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"worksheet_project_fkey","columns":["project"],"referencedSchema":"public","referencedTable":"project","referencedColumns":["resource_id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bb"},{"name":"worksheet_organizer","columns":[{"name":"id","position":1,"defaultExpression":"nextval(''public.worksheet_organizer_id_seq''::regclass)","type":"integer"},{"name":"worksheet_id","position":2,"type":"integer"},{"name":"principal_id","position":3,"type":"integer"},{"name":"starred","position":4,"defaultExpression":"false","type":"boolean"}],"indexes":[{"name":"idx_worksheet_organizer_principal_id","expressions":["principal_id"],"type":"btree","definition":"CREATE INDEX idx_worksheet_organizer_principal_id ON public.worksheet_organizer USING btree (principal_id);"},{"name":"idx_worksheet_organizer_unique_sheet_id_principal_id","expressions":["worksheet_id","principal_id"],"type":"btree","unique":true,"definition":"CREATE UNIQUE INDEX idx_worksheet_organizer_unique_sheet_id_principal_id ON public.worksheet_organizer USING btree (worksheet_id, principal_id);"},{"name":"worksheet_organizer_pkey","expressions":["id"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX worksheet_organizer_pkey ON public.worksheet_organizer USING btree (id);","isConstraint":true}],"indexSize":"24576","foreignKeys":[{"name":"worksheet_organizer_principal_id_fkey","columns":["principal_id"],"referencedSchema":"public","referencedTable":"principal","referencedColumns":["id"],"onDelete":"NO ACTION","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"worksheet_organizer_worksheet_id_fkey","columns":["worksheet_id"],"referencedSchema":"public","referencedTable":"worksheet","referencedColumns":["id"],"onDelete":"CASCADE","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bb"}],"sequences":[{"name":"anomaly_id_seq","dataType":"integer","start":"1","minValue":"1","maxValue":"2147483647","increment":"1","cacheSize":"1","lastValue":"109","ownerTable":"anomaly","ownerColumn":"id"},{"name":"audit_log_id_seq","dataType":"bigint","start":"1","minValue":"1","maxValue":"9223372036854775807","increment":"1","cacheSize":"1","lastValue":"159","ownerTable":"audit_log","ownerColumn":"id"},{"name":"changelist_id_seq","dataType":"integer","start":"1","minValue":"1","maxValue":"2147483647","increment":"1","cacheSize":"1","lastValue":"101","ownerTable":"changelist","ownerColumn":"id"},{"name":"changelog_id_seq","dataType":"bigint","start":"1","minValue":"1","maxValue":"9223372036854775807","increment":"1","cacheSize":"1","lastValue":"120","ownerTable":"changelog","ownerColumn":"id"},{"name":"data_source_id_seq","dataType":"integer","start":"1","minValue":"1","maxValue":"2147483647","increment":"1","cacheSize":"1","lastValue":"105","ownerTable":"data_source","ownerColumn":"id"},{"name":"db_group_id_seq","dataType":"bigint","start":"1","minValue":"1","maxValue":"9223372036854775807","increment":"1","cacheSize":"1","lastValue":"102","ownerTable":"db_group","ownerColumn":"id"},{"name":"db_id_seq","dataType":"integer","start":"1","minValue":"1","maxValue":"2147483647","increment":"1","cacheSize":"1","lastValue":"115","ownerTable":"db","ownerColumn":"id"},{"name":"db_schema_id_seq","dataType":"integer","start":"1","minValue":"1","maxValue":"2147483647","increment":"1","cacheSize":"1","lastValue":"188","ownerTable":"db_schema","ownerColumn":"id"},{"name":"environment_id_seq","dataType":"integer","start":"1","minValue":"1","maxValue":"2147483647","increment":"1","cacheSize":"1","ownerTable":"environment","ownerColumn":"id"},{"name":"export_archive_id_seq","dataType":"integer","start":"1","minValue":"1","maxValue":"2147483647","increment":"1","cacheSize":"1","ownerTable":"export_archive","ownerColumn":"id"},{"name":"idp_id_seq","dataType":"integer","start":"1","minValue":"1","maxValue":"2147483647","increment":"1","cacheSize":"1","ownerTable":"idp","ownerColumn":"id"},{"name":"instance_change_history_id_seq","dataType":"bigint","start":"1","minValue":"1","maxValue":"9223372036854775807","increment":"1","cacheSize":"1","lastValue":"231","ownerTable":"instance_change_history","ownerColumn":"id"},{"name":"instance_id_seq","dataType":"integer","start":"1","minValue":"1","maxValue":"2147483647","increment":"1","cacheSize":"1","lastValue":"103","ownerTable":"instance","ownerColumn":"id"},{"name":"issue_comment_id_seq","dataType":"bigint","start":"1","minValue":"1","maxValue":"9223372036854775807","increment":"1","cacheSize":"1","lastValue":"141","ownerTable":"issue_comment","ownerColumn":"id"},{"name":"issue_id_seq","dataType":"integer","start":"1","minValue":"1","maxValue":"2147483647","increment":"1","cacheSize":"1","lastValue":"110","ownerTable":"issue","ownerColumn":"id"},{"name":"pipeline_id_seq","dataType":"integer","start":"1","minValue":"1","maxValue":"2147483647","increment":"1","cacheSize":"1","lastValue":"110","ownerTable":"pipeline","ownerColumn":"id"},{"name":"plan_check_run_id_seq","dataType":"integer","start":"1","minValue":"1","maxValue":"2147483647","increment":"1","cacheSize":"1","lastValue":"171","ownerTable":"plan_check_run","ownerColumn":"id"},{"name":"plan_id_seq","dataType":"bigint","start":"1","minValue":"1","maxValue":"9223372036854775807","increment":"1","cacheSize":"1","lastValue":"110","ownerTable":"plan","ownerColumn":"id"},{"name":"policy_id_seq","dataType":"integer","start":"1","minValue":"1","maxValue":"2147483647","increment":"1","cacheSize":"1","lastValue":"190","ownerTable":"policy","ownerColumn":"id"},{"name":"principal_id_seq","dataType":"integer","start":"1","minValue":"1","maxValue":"2147483647","increment":"1","cacheSize":"1","lastValue":"109","ownerTable":"principal","ownerColumn":"id"},{"name":"project_id_seq","dataType":"integer","start":"1","minValue":"1","maxValue":"2147483647","increment":"1","cacheSize":"1","lastValue":"104","ownerTable":"project","ownerColumn":"id"},{"name":"project_webhook_id_seq","dataType":"integer","start":"1","minValue":"1","maxValue":"2147483647","increment":"1","cacheSize":"1","ownerTable":"project_webhook","ownerColumn":"id"},{"name":"query_history_id_seq","dataType":"bigint","start":"1","minValue":"1","maxValue":"9223372036854775807","increment":"1","cacheSize":"1","lastValue":"130","ownerTable":"query_history","ownerColumn":"id"},{"name":"release_id_seq","dataType":"bigint","start":"1","minValue":"1","maxValue":"9223372036854775807","increment":"1","cacheSize":"1","ownerTable":"release","ownerColumn":"id"},{"name":"revision_id_seq","dataType":"bigint","start":"1","minValue":"1","maxValue":"9223372036854775807","increment":"1","cacheSize":"1","ownerTable":"revision","ownerColumn":"id"},{"name":"risk_id_seq","dataType":"bigint","start":"1","minValue":"1","maxValue":"9223372036854775807","increment":"1","cacheSize":"1","lastValue":"102","ownerTable":"risk","ownerColumn":"id"},{"name":"role_id_seq","dataType":"bigint","start":"1","minValue":"1","maxValue":"9223372036854775807","increment":"1","cacheSize":"1","lastValue":"101","ownerTable":"role","ownerColumn":"id"},{"name":"setting_id_seq","dataType":"integer","start":"1","minValue":"1","maxValue":"2147483647","increment":"1","cacheSize":"1","lastValue":"206","ownerTable":"setting","ownerColumn":"id"},{"name":"sheet_id_seq","dataType":"integer","start":"1","minValue":"1","maxValue":"2147483647","increment":"1","cacheSize":"1","lastValue":"135","ownerTable":"sheet","ownerColumn":"id"},{"name":"stage_id_seq","dataType":"integer","start":"1","minValue":"1","maxValue":"2147483647","increment":"1","cacheSize":"1","lastValue":"113","ownerTable":"stage","ownerColumn":"id"},{"name":"sync_history_id_seq","dataType":"bigint","start":"1","minValue":"1","maxValue":"9223372036854775807","increment":"1","cacheSize":"1","lastValue":"108","ownerTable":"sync_history","ownerColumn":"id"},{"name":"task_id_seq","dataType":"integer","start":"1","minValue":"1","maxValue":"2147483647","increment":"1","cacheSize":"1","lastValue":"116","ownerTable":"task","ownerColumn":"id"},{"name":"task_run_id_seq","dataType":"integer","start":"1","minValue":"1","maxValue":"2147483647","increment":"1","cacheSize":"1","lastValue":"110","ownerTable":"task_run","ownerColumn":"id"},{"name":"task_run_log_id_seq","dataType":"bigint","start":"1","minValue":"1","maxValue":"9223372036854775807","increment":"1","cacheSize":"1","lastValue":"154","ownerTable":"task_run_log","ownerColumn":"id"},{"name":"worksheet_id_seq","dataType":"integer","start":"1","minValue":"1","maxValue":"2147483647","increment":"1","cacheSize":"1","lastValue":"110","ownerTable":"worksheet","ownerColumn":"id"},{"name":"worksheet_organizer_id_seq","dataType":"integer","start":"1","minValue":"1","maxValue":"2147483647","increment":"1","cacheSize":"1","ownerTable":"worksheet_organizer","ownerColumn":"id"}],"owner":"pg_database_owner"}],"characterSet":"UTF8","collation":"en_US.UTF-8","owner":"bb"}', '
 SET statement_timeout = 0;
 SET lock_timeout = 0;
 SET idle_in_transaction_session_timeout = 0;
@@ -4577,9 +2244,1113 @@ SET xmloption = content;
 SET client_min_messages = warning;
 SET row_security = off;
 
-CREATE SCHEMA "bbdataarchive";
+SET default_tablespace = '''';
 
-CREATE EXTENSION IF NOT EXISTS "pg_stat_statements" WITH SCHEMA "public";
+CREATE SEQUENCE "public"."anomaly_id_seq"
+    AS integer
+	START WITH 1
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 2147483647
+	NO CYCLE;
+
+CREATE TABLE "public"."anomaly" (
+    "id" integer DEFAULT nextval(''public.anomaly_id_seq''::regclass) NOT NULL,
+    "project" text NOT NULL,
+    "type" text NOT NULL,
+    "payload" jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT now() NOT NULL,
+    "instance" text NOT NULL,
+    "db_name" text NOT NULL
+);
+
+ALTER SEQUENCE "public"."anomaly_id_seq" OWNED BY "public"."anomaly"."id";
+
+ALTER TABLE ONLY "public"."anomaly" ADD CONSTRAINT "anomaly_pkey" PRIMARY KEY ("id");
+
+CREATE UNIQUE INDEX "idx_anomaly_unique_project_instance_dn_name_type" ON ONLY "public"."anomaly" ("project", "instance", "db_name", "type");
+
+CREATE SEQUENCE "public"."audit_log_id_seq"
+    AS bigint
+	START WITH 1
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	NO CYCLE;
+
+CREATE TABLE "public"."audit_log" (
+    "id" bigint DEFAULT nextval(''public.audit_log_id_seq''::regclass) NOT NULL,
+    "payload" jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    "created_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+
+ALTER SEQUENCE "public"."audit_log_id_seq" OWNED BY "public"."audit_log"."id";
+
+ALTER TABLE ONLY "public"."audit_log" ADD CONSTRAINT "audit_log_pkey" PRIMARY KEY ("id");
+
+CREATE INDEX "idx_audit_log_created_at" ON ONLY "public"."audit_log" ("created_at");
+
+CREATE INDEX "idx_audit_log_payload_method" ON ONLY "public"."audit_log" ((payload ->> ''method''::text));
+
+CREATE INDEX "idx_audit_log_payload_parent" ON ONLY "public"."audit_log" ((payload ->> ''parent''::text));
+
+CREATE INDEX "idx_audit_log_payload_resource" ON ONLY "public"."audit_log" ((payload ->> ''resource''::text));
+
+CREATE INDEX "idx_audit_log_payload_user" ON ONLY "public"."audit_log" ((payload ->> ''user''::text));
+
+CREATE SEQUENCE "public"."changelist_id_seq"
+    AS integer
+	START WITH 1
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 2147483647
+	NO CYCLE;
+
+CREATE TABLE "public"."changelist" (
+    "id" integer DEFAULT nextval(''public.changelist_id_seq''::regclass) NOT NULL,
+    "creator_id" integer NOT NULL,
+    "name" text NOT NULL,
+    "payload" jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT now() NOT NULL,
+    "project" text NOT NULL
+);
+
+ALTER SEQUENCE "public"."changelist_id_seq" OWNED BY "public"."changelist"."id";
+
+ALTER TABLE ONLY "public"."changelist" ADD CONSTRAINT "changelist_pkey" PRIMARY KEY ("id");
+
+CREATE UNIQUE INDEX "idx_changelist_project_name" ON ONLY "public"."changelist" ("project", "name");
+
+CREATE SEQUENCE "public"."changelog_id_seq"
+    AS bigint
+	START WITH 1
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	NO CYCLE;
+
+CREATE TABLE "public"."changelog" (
+    "id" bigint DEFAULT nextval(''public.changelog_id_seq''::regclass) NOT NULL,
+    "created_at" timestamp with time zone DEFAULT now() NOT NULL,
+    "status" text NOT NULL,
+    "prev_sync_history_id" bigint,
+    "sync_history_id" bigint,
+    "payload" jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    "instance" text NOT NULL,
+    "db_name" text NOT NULL
+);
+
+ALTER SEQUENCE "public"."changelog_id_seq" OWNED BY "public"."changelog"."id";
+
+ALTER TABLE ONLY "public"."changelog" ADD CONSTRAINT "changelog_pkey" PRIMARY KEY ("id");
+
+CREATE INDEX "idx_changelog_instance_db_name" ON ONLY "public"."changelog" ("instance", "db_name");
+
+CREATE SEQUENCE "public"."data_source_id_seq"
+    AS integer
+	START WITH 1
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 2147483647
+	NO CYCLE;
+
+CREATE TABLE "public"."data_source" (
+    "id" integer DEFAULT nextval(''public.data_source_id_seq''::regclass) NOT NULL,
+    "options" jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    "instance" text NOT NULL
+);
+
+ALTER SEQUENCE "public"."data_source_id_seq" OWNED BY "public"."data_source"."id";
+
+ALTER TABLE ONLY "public"."data_source" ADD CONSTRAINT "data_source_pkey" PRIMARY KEY ("id");
+
+CREATE SEQUENCE "public"."db_id_seq"
+    AS integer
+	START WITH 1
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 2147483647
+	NO CYCLE;
+
+CREATE TABLE "public"."db" (
+    "id" integer DEFAULT nextval(''public.db_id_seq''::regclass) NOT NULL,
+    "environment" text,
+    "name" text NOT NULL,
+    "metadata" jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    "project" text NOT NULL,
+    "instance" text NOT NULL,
+    "deleted" boolean DEFAULT false NOT NULL
+);
+
+ALTER SEQUENCE "public"."db_id_seq" OWNED BY "public"."db"."id";
+
+ALTER TABLE ONLY "public"."db" ADD CONSTRAINT "db_pkey" PRIMARY KEY ("id");
+
+CREATE INDEX "idx_db_project" ON ONLY "public"."db" ("project");
+
+CREATE UNIQUE INDEX "idx_db_unique_instance_name" ON ONLY "public"."db" ("instance", "name");
+
+CREATE SEQUENCE "public"."db_group_id_seq"
+    AS bigint
+	START WITH 1
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	NO CYCLE;
+
+CREATE TABLE "public"."db_group" (
+    "id" bigint DEFAULT nextval(''public.db_group_id_seq''::regclass) NOT NULL,
+    "resource_id" text NOT NULL,
+    "placeholder" text DEFAULT ''''::text NOT NULL,
+    "expression" jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    "payload" jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    "project" text NOT NULL
+);
+
+ALTER SEQUENCE "public"."db_group_id_seq" OWNED BY "public"."db_group"."id";
+
+ALTER TABLE ONLY "public"."db_group" ADD CONSTRAINT "db_group_pkey" PRIMARY KEY ("id");
+
+CREATE UNIQUE INDEX "idx_db_group_unique_project_placeholder" ON ONLY "public"."db_group" ("project", "placeholder");
+
+CREATE UNIQUE INDEX "idx_db_group_unique_project_resource_id" ON ONLY "public"."db_group" ("project", "resource_id");
+
+CREATE SEQUENCE "public"."db_schema_id_seq"
+    AS integer
+	START WITH 1
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 2147483647
+	NO CYCLE;
+
+CREATE TABLE "public"."db_schema" (
+    "id" integer DEFAULT nextval(''public.db_schema_id_seq''::regclass) NOT NULL,
+    "metadata" json DEFAULT ''{}''::json NOT NULL,
+    "raw_dump" text DEFAULT ''''::text NOT NULL,
+    "config" jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    "instance" text NOT NULL,
+    "db_name" text NOT NULL
+);
+
+ALTER SEQUENCE "public"."db_schema_id_seq" OWNED BY "public"."db_schema"."id";
+
+ALTER TABLE ONLY "public"."db_schema" ADD CONSTRAINT "db_schema_pkey" PRIMARY KEY ("id");
+
+CREATE UNIQUE INDEX "idx_db_schema_unique_instance_db_name" ON ONLY "public"."db_schema" ("instance", "db_name");
+
+CREATE SEQUENCE "public"."environment_id_seq"
+    AS integer
+	START WITH 1
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 2147483647
+	NO CYCLE;
+
+CREATE TABLE "public"."environment" (
+    "id" integer DEFAULT nextval(''public.environment_id_seq''::regclass) NOT NULL,
+    "name" text NOT NULL,
+    "order" integer NOT NULL,
+    "resource_id" text NOT NULL,
+    "deleted" boolean DEFAULT false NOT NULL
+);
+
+ALTER SEQUENCE "public"."environment_id_seq" OWNED BY "public"."environment"."id";
+
+ALTER TABLE ONLY "public"."environment" ADD CONSTRAINT "environment_pkey" PRIMARY KEY ("id");
+
+CREATE UNIQUE INDEX "idx_environment_unique_resource_id" ON ONLY "public"."environment" ("resource_id");
+
+CREATE SEQUENCE "public"."export_archive_id_seq"
+    AS integer
+	START WITH 1
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 2147483647
+	NO CYCLE;
+
+CREATE TABLE "public"."export_archive" (
+    "id" integer DEFAULT nextval(''public.export_archive_id_seq''::regclass) NOT NULL,
+    "bytes" bytea,
+    "payload" jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    "created_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+
+ALTER SEQUENCE "public"."export_archive_id_seq" OWNED BY "public"."export_archive"."id";
+
+ALTER TABLE ONLY "public"."export_archive" ADD CONSTRAINT "export_archive_pkey" PRIMARY KEY ("id");
+
+CREATE SEQUENCE "public"."idp_id_seq"
+    AS integer
+	START WITH 1
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 2147483647
+	NO CYCLE;
+
+CREATE TABLE "public"."idp" (
+    "id" integer DEFAULT nextval(''public.idp_id_seq''::regclass) NOT NULL,
+    "resource_id" text NOT NULL,
+    "name" text NOT NULL,
+    "domain" text NOT NULL,
+    "type" text NOT NULL,
+    "config" jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    "deleted" boolean DEFAULT false NOT NULL
+);
+
+ALTER SEQUENCE "public"."idp_id_seq" OWNED BY "public"."idp"."id";
+
+ALTER TABLE ONLY "public"."idp" ADD CONSTRAINT "idp_pkey" PRIMARY KEY ("id");
+
+CREATE UNIQUE INDEX "idx_idp_unique_resource_id" ON ONLY "public"."idp" ("resource_id");
+
+CREATE SEQUENCE "public"."instance_id_seq"
+    AS integer
+	START WITH 1
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 2147483647
+	NO CYCLE;
+
+CREATE TABLE "public"."instance" (
+    "id" integer DEFAULT nextval(''public.instance_id_seq''::regclass) NOT NULL,
+    "environment" text,
+    "resource_id" text NOT NULL,
+    "metadata" jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    "deleted" boolean DEFAULT false NOT NULL
+);
+
+ALTER SEQUENCE "public"."instance_id_seq" OWNED BY "public"."instance"."id";
+
+ALTER TABLE ONLY "public"."instance" ADD CONSTRAINT "instance_pkey" PRIMARY KEY ("id");
+
+CREATE UNIQUE INDEX "idx_instance_unique_resource_id" ON ONLY "public"."instance" ("resource_id");
+
+CREATE SEQUENCE "public"."instance_change_history_id_seq"
+    AS bigint
+	START WITH 1
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	NO CYCLE;
+
+CREATE TABLE "public"."instance_change_history" (
+    "id" bigint DEFAULT nextval(''public.instance_change_history_id_seq''::regclass) NOT NULL,
+    "version" text NOT NULL
+);
+
+ALTER SEQUENCE "public"."instance_change_history_id_seq" OWNED BY "public"."instance_change_history"."id";
+
+ALTER TABLE ONLY "public"."instance_change_history" ADD CONSTRAINT "instance_change_history_pkey" PRIMARY KEY ("id");
+
+CREATE UNIQUE INDEX "idx_instance_change_history_unique_version" ON ONLY "public"."instance_change_history" ("version");
+
+CREATE SEQUENCE "public"."issue_id_seq"
+    AS integer
+	START WITH 1
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 2147483647
+	NO CYCLE;
+
+CREATE TABLE "public"."issue" (
+    "id" integer DEFAULT nextval(''public.issue_id_seq''::regclass) NOT NULL,
+    "creator_id" integer NOT NULL,
+    "plan_id" bigint,
+    "pipeline_id" integer,
+    "name" text NOT NULL,
+    "status" text NOT NULL,
+    "type" text NOT NULL,
+    "description" text DEFAULT ''''::text NOT NULL,
+    "payload" jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    "ts_vector" tsvector,
+    "created_at" timestamp with time zone DEFAULT now() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT now() NOT NULL,
+    "project" text NOT NULL
+);
+
+ALTER SEQUENCE "public"."issue_id_seq" OWNED BY "public"."issue"."id";
+
+ALTER TABLE ONLY "public"."issue" ADD CONSTRAINT "issue_pkey" PRIMARY KEY ("id");
+
+CREATE INDEX "idx_issue_creator_id" ON ONLY "public"."issue" ("creator_id");
+
+CREATE INDEX "idx_issue_pipeline_id" ON ONLY "public"."issue" ("pipeline_id");
+
+CREATE INDEX "idx_issue_plan_id" ON ONLY "public"."issue" ("plan_id");
+
+CREATE INDEX "idx_issue_project" ON ONLY "public"."issue" ("project");
+
+CREATE INDEX "idx_issue_ts_vector" ON ONLY "public"."issue" ("ts_vector");
+
+CREATE SEQUENCE "public"."issue_comment_id_seq"
+    AS bigint
+	START WITH 1
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	NO CYCLE;
+
+CREATE TABLE "public"."issue_comment" (
+    "id" bigint DEFAULT nextval(''public.issue_comment_id_seq''::regclass) NOT NULL,
+    "creator_id" integer NOT NULL,
+    "issue_id" integer NOT NULL,
+    "payload" jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    "created_at" timestamp with time zone DEFAULT now() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+
+ALTER SEQUENCE "public"."issue_comment_id_seq" OWNED BY "public"."issue_comment"."id";
+
+ALTER TABLE ONLY "public"."issue_comment" ADD CONSTRAINT "issue_comment_pkey" PRIMARY KEY ("id");
+
+CREATE INDEX "idx_issue_comment_issue_id" ON ONLY "public"."issue_comment" ("issue_id");
+
+CREATE TABLE "public"."issue_subscriber" (
+    "issue_id" integer NOT NULL,
+    "subscriber_id" integer NOT NULL
+);
+
+ALTER TABLE ONLY "public"."issue_subscriber" ADD CONSTRAINT "issue_subscriber_pkey" PRIMARY KEY ("issue_id", "subscriber_id");
+
+CREATE INDEX "idx_issue_subscriber_subscriber_id" ON ONLY "public"."issue_subscriber" ("subscriber_id");
+
+CREATE SEQUENCE "public"."pipeline_id_seq"
+    AS integer
+	START WITH 1
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 2147483647
+	NO CYCLE;
+
+CREATE TABLE "public"."pipeline" (
+    "id" integer DEFAULT nextval(''public.pipeline_id_seq''::regclass) NOT NULL,
+    "creator_id" integer NOT NULL,
+    "name" text NOT NULL,
+    "created_at" timestamp with time zone DEFAULT now() NOT NULL,
+    "project" text NOT NULL
+);
+
+ALTER SEQUENCE "public"."pipeline_id_seq" OWNED BY "public"."pipeline"."id";
+
+ALTER TABLE ONLY "public"."pipeline" ADD CONSTRAINT "pipeline_pkey" PRIMARY KEY ("id");
+
+CREATE SEQUENCE "public"."plan_id_seq"
+    AS bigint
+	START WITH 1
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	NO CYCLE;
+
+CREATE TABLE "public"."plan" (
+    "id" bigint DEFAULT nextval(''public.plan_id_seq''::regclass) NOT NULL,
+    "creator_id" integer NOT NULL,
+    "pipeline_id" integer,
+    "name" text NOT NULL,
+    "description" text NOT NULL,
+    "config" jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    "created_at" timestamp with time zone DEFAULT now() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT now() NOT NULL,
+    "project" text NOT NULL
+);
+
+ALTER SEQUENCE "public"."plan_id_seq" OWNED BY "public"."plan"."id";
+
+ALTER TABLE ONLY "public"."plan" ADD CONSTRAINT "plan_pkey" PRIMARY KEY ("id");
+
+CREATE INDEX "idx_plan_pipeline_id" ON ONLY "public"."plan" ("pipeline_id");
+
+CREATE INDEX "idx_plan_project" ON ONLY "public"."plan" ("project");
+
+CREATE SEQUENCE "public"."plan_check_run_id_seq"
+    AS integer
+	START WITH 1
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 2147483647
+	NO CYCLE;
+
+CREATE TABLE "public"."plan_check_run" (
+    "id" integer DEFAULT nextval(''public.plan_check_run_id_seq''::regclass) NOT NULL,
+    "plan_id" bigint NOT NULL,
+    "status" text NOT NULL,
+    "type" text NOT NULL,
+    "config" jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    "result" jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    "payload" jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    "created_at" timestamp with time zone DEFAULT now() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+
+ALTER SEQUENCE "public"."plan_check_run_id_seq" OWNED BY "public"."plan_check_run"."id";
+
+ALTER TABLE ONLY "public"."plan_check_run" ADD CONSTRAINT "plan_check_run_pkey" PRIMARY KEY ("id");
+
+CREATE INDEX "idx_plan_check_run_plan_id" ON ONLY "public"."plan_check_run" ("plan_id");
+
+CREATE SEQUENCE "public"."policy_id_seq"
+    AS integer
+	START WITH 1
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 2147483647
+	NO CYCLE;
+
+CREATE TABLE "public"."policy" (
+    "id" integer DEFAULT nextval(''public.policy_id_seq''::regclass) NOT NULL,
+    "type" text NOT NULL,
+    "payload" jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    "resource_type" text NOT NULL,
+    "inherit_from_parent" boolean DEFAULT true NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT now() NOT NULL,
+    "resource" text NOT NULL,
+    "enforce" boolean DEFAULT true NOT NULL
+);
+
+ALTER SEQUENCE "public"."policy_id_seq" OWNED BY "public"."policy"."id";
+
+ALTER TABLE ONLY "public"."policy" ADD CONSTRAINT "policy_pkey" PRIMARY KEY ("id");
+
+CREATE UNIQUE INDEX "idx_policy_unique_resource_type_resource_type" ON ONLY "public"."policy" ("resource_type", "resource", "type");
+
+CREATE SEQUENCE "public"."principal_id_seq"
+    AS integer
+	START WITH 1
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 2147483647
+	NO CYCLE;
+
+CREATE TABLE "public"."principal" (
+    "id" integer DEFAULT nextval(''public.principal_id_seq''::regclass) NOT NULL,
+    "type" text NOT NULL,
+    "name" text NOT NULL,
+    "email" text NOT NULL,
+    "password_hash" text NOT NULL,
+    "phone" text DEFAULT ''''::text NOT NULL,
+    "mfa_config" jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    "profile" jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    "created_at" timestamp with time zone DEFAULT now() NOT NULL,
+    "deleted" boolean DEFAULT false NOT NULL
+);
+
+ALTER SEQUENCE "public"."principal_id_seq" OWNED BY "public"."principal"."id";
+
+ALTER TABLE ONLY "public"."principal" ADD CONSTRAINT "principal_pkey" PRIMARY KEY ("id");
+
+CREATE SEQUENCE "public"."project_id_seq"
+    AS integer
+	START WITH 1
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 2147483647
+	NO CYCLE;
+
+CREATE TABLE "public"."project" (
+    "id" integer DEFAULT nextval(''public.project_id_seq''::regclass) NOT NULL,
+    "name" text NOT NULL,
+    "resource_id" text NOT NULL,
+    "data_classification_config_id" text DEFAULT ''''::text NOT NULL,
+    "setting" jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    "deleted" boolean DEFAULT false NOT NULL
+);
+
+ALTER SEQUENCE "public"."project_id_seq" OWNED BY "public"."project"."id";
+
+ALTER TABLE ONLY "public"."project" ADD CONSTRAINT "project_pkey" PRIMARY KEY ("id");
+
+CREATE UNIQUE INDEX "idx_project_unique_resource_id" ON ONLY "public"."project" ("resource_id");
+
+CREATE SEQUENCE "public"."project_webhook_id_seq"
+    AS integer
+	START WITH 1
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 2147483647
+	NO CYCLE;
+
+CREATE TABLE "public"."project_webhook" (
+    "id" integer DEFAULT nextval(''public.project_webhook_id_seq''::regclass) NOT NULL,
+    "type" text NOT NULL,
+    "name" text NOT NULL,
+    "url" text NOT NULL,
+    "activity_list" _text NOT NULL,
+    "payload" jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    "project" text NOT NULL
+);
+
+ALTER SEQUENCE "public"."project_webhook_id_seq" OWNED BY "public"."project_webhook"."id";
+
+ALTER TABLE ONLY "public"."project_webhook" ADD CONSTRAINT "project_webhook_pkey" PRIMARY KEY ("id");
+
+CREATE INDEX "idx_project_webhook_project" ON ONLY "public"."project_webhook" ("project");
+
+CREATE SEQUENCE "public"."query_history_id_seq"
+    AS bigint
+	START WITH 1
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	NO CYCLE;
+
+CREATE TABLE "public"."query_history" (
+    "id" bigint DEFAULT nextval(''public.query_history_id_seq''::regclass) NOT NULL,
+    "creator_id" integer NOT NULL,
+    "project_id" text NOT NULL,
+    "database" text NOT NULL,
+    "statement" text NOT NULL,
+    "type" text NOT NULL,
+    "payload" jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    "created_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+
+ALTER SEQUENCE "public"."query_history_id_seq" OWNED BY "public"."query_history"."id";
+
+ALTER TABLE ONLY "public"."query_history" ADD CONSTRAINT "query_history_pkey" PRIMARY KEY ("id");
+
+CREATE INDEX "idx_query_history_creator_id_created_at_project_id" ON ONLY "public"."query_history" ("creator_id", "created_at", "project_id" DESC);
+
+CREATE SEQUENCE "public"."release_id_seq"
+    AS bigint
+	START WITH 1
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	NO CYCLE;
+
+CREATE TABLE "public"."release" (
+    "id" bigint DEFAULT nextval(''public.release_id_seq''::regclass) NOT NULL,
+    "creator_id" integer NOT NULL,
+    "created_at" timestamp with time zone DEFAULT now() NOT NULL,
+    "payload" jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    "project" text NOT NULL,
+    "deleted" boolean DEFAULT false NOT NULL
+);
+
+ALTER SEQUENCE "public"."release_id_seq" OWNED BY "public"."release"."id";
+
+ALTER TABLE ONLY "public"."release" ADD CONSTRAINT "release_pkey" PRIMARY KEY ("id");
+
+CREATE INDEX "idx_release_project" ON ONLY "public"."release" ("project");
+
+CREATE TABLE "public"."review_config" (
+    "id" text NOT NULL,
+    "name" text NOT NULL,
+    "payload" jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    "enabled" boolean DEFAULT true NOT NULL
+);
+
+ALTER TABLE ONLY "public"."review_config" ADD CONSTRAINT "review_config_pkey" PRIMARY KEY ("id");
+
+CREATE SEQUENCE "public"."revision_id_seq"
+    AS bigint
+	START WITH 1
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	NO CYCLE;
+
+CREATE TABLE "public"."revision" (
+    "id" bigint DEFAULT nextval(''public.revision_id_seq''::regclass) NOT NULL,
+    "created_at" timestamp with time zone DEFAULT now() NOT NULL,
+    "deleter_id" integer,
+    "deleted_at" timestamp with time zone,
+    "version" text NOT NULL,
+    "payload" jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    "instance" text NOT NULL,
+    "db_name" text NOT NULL
+);
+
+ALTER SEQUENCE "public"."revision_id_seq" OWNED BY "public"."revision"."id";
+
+ALTER TABLE ONLY "public"."revision" ADD CONSTRAINT "revision_pkey" PRIMARY KEY ("id");
+
+CREATE INDEX "idx_revision_instance_db_name_version" ON ONLY "public"."revision" ("instance", "db_name", "version");
+
+CREATE UNIQUE INDEX "idx_revision_unique_instance_db_name_version_deleted_at_null" ON ONLY "public"."revision" ("instance", "db_name", "version");
+
+CREATE SEQUENCE "public"."risk_id_seq"
+    AS bigint
+	START WITH 1
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	NO CYCLE;
+
+CREATE TABLE "public"."risk" (
+    "id" bigint DEFAULT nextval(''public.risk_id_seq''::regclass) NOT NULL,
+    "source" text NOT NULL,
+    "level" bigint NOT NULL,
+    "name" text NOT NULL,
+    "active" boolean NOT NULL,
+    "expression" jsonb NOT NULL
+);
+
+ALTER SEQUENCE "public"."risk_id_seq" OWNED BY "public"."risk"."id";
+
+ALTER TABLE ONLY "public"."risk" ADD CONSTRAINT "risk_pkey" PRIMARY KEY ("id");
+
+CREATE SEQUENCE "public"."role_id_seq"
+    AS bigint
+	START WITH 1
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	NO CYCLE;
+
+CREATE TABLE "public"."role" (
+    "id" bigint DEFAULT nextval(''public.role_id_seq''::regclass) NOT NULL,
+    "resource_id" text NOT NULL,
+    "name" text NOT NULL,
+    "description" text NOT NULL,
+    "permissions" jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    "payload" jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+ALTER SEQUENCE "public"."role_id_seq" OWNED BY "public"."role"."id";
+
+ALTER TABLE ONLY "public"."role" ADD CONSTRAINT "role_pkey" PRIMARY KEY ("id");
+
+CREATE UNIQUE INDEX "idx_role_unique_resource_id" ON ONLY "public"."role" ("resource_id");
+
+CREATE SEQUENCE "public"."setting_id_seq"
+    AS integer
+	START WITH 1
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 2147483647
+	NO CYCLE;
+
+CREATE TABLE "public"."setting" (
+    "id" integer DEFAULT nextval(''public.setting_id_seq''::regclass) NOT NULL,
+    "name" text NOT NULL,
+    "value" text NOT NULL
+);
+
+ALTER SEQUENCE "public"."setting_id_seq" OWNED BY "public"."setting"."id";
+
+ALTER TABLE ONLY "public"."setting" ADD CONSTRAINT "setting_pkey" PRIMARY KEY ("id");
+
+CREATE UNIQUE INDEX "idx_setting_unique_name" ON ONLY "public"."setting" ("name");
+
+CREATE SEQUENCE "public"."sheet_id_seq"
+    AS integer
+	START WITH 1
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 2147483647
+	NO CYCLE;
+
+CREATE TABLE "public"."sheet" (
+    "id" integer DEFAULT nextval(''public.sheet_id_seq''::regclass) NOT NULL,
+    "creator_id" integer NOT NULL,
+    "name" text NOT NULL,
+    "sha256" bytea NOT NULL,
+    "payload" jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    "created_at" timestamp with time zone DEFAULT now() NOT NULL,
+    "project" text NOT NULL
+);
+
+ALTER SEQUENCE "public"."sheet_id_seq" OWNED BY "public"."sheet"."id";
+
+ALTER TABLE ONLY "public"."sheet" ADD CONSTRAINT "sheet_pkey" PRIMARY KEY ("id");
+
+CREATE INDEX "idx_sheet_project" ON ONLY "public"."sheet" ("project");
+
+CREATE TABLE "public"."sheet_blob" (
+    "sha256" bytea NOT NULL,
+    "content" text NOT NULL
+);
+
+ALTER TABLE ONLY "public"."sheet_blob" ADD CONSTRAINT "sheet_blob_pkey" PRIMARY KEY ("sha256");
+
+CREATE SEQUENCE "public"."stage_id_seq"
+    AS integer
+	START WITH 1
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 2147483647
+	NO CYCLE;
+
+CREATE TABLE "public"."stage" (
+    "id" integer DEFAULT nextval(''public.stage_id_seq''::regclass) NOT NULL,
+    "pipeline_id" integer NOT NULL,
+    "environment" text NOT NULL
+);
+
+ALTER SEQUENCE "public"."stage_id_seq" OWNED BY "public"."stage"."id";
+
+ALTER TABLE ONLY "public"."stage" ADD CONSTRAINT "stage_pkey" PRIMARY KEY ("id");
+
+CREATE INDEX "idx_stage_pipeline_id" ON ONLY "public"."stage" ("pipeline_id");
+
+CREATE SEQUENCE "public"."sync_history_id_seq"
+    AS bigint
+	START WITH 1
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	NO CYCLE;
+
+CREATE TABLE "public"."sync_history" (
+    "id" bigint DEFAULT nextval(''public.sync_history_id_seq''::regclass) NOT NULL,
+    "created_at" timestamp with time zone DEFAULT now() NOT NULL,
+    "metadata" json DEFAULT ''{}''::json NOT NULL,
+    "raw_dump" text DEFAULT ''''::text NOT NULL,
+    "instance" text NOT NULL,
+    "db_name" text NOT NULL
+);
+
+ALTER SEQUENCE "public"."sync_history_id_seq" OWNED BY "public"."sync_history"."id";
+
+ALTER TABLE ONLY "public"."sync_history" ADD CONSTRAINT "sync_history_pkey" PRIMARY KEY ("id");
+
+CREATE INDEX "idx_sync_history_instance_db_name_created_at" ON ONLY "public"."sync_history" ("instance", "db_name", "created_at");
+
+CREATE SEQUENCE "public"."task_id_seq"
+    AS integer
+	START WITH 1
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 2147483647
+	NO CYCLE;
+
+CREATE TABLE "public"."task" (
+    "id" integer DEFAULT nextval(''public.task_id_seq''::regclass) NOT NULL,
+    "pipeline_id" integer NOT NULL,
+    "stage_id" integer NOT NULL,
+    "type" text NOT NULL,
+    "payload" jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    "earliest_allowed_at" timestamp with time zone,
+    "instance" text NOT NULL,
+    "db_name" text
+);
+
+ALTER SEQUENCE "public"."task_id_seq" OWNED BY "public"."task"."id";
+
+ALTER TABLE ONLY "public"."task" ADD CONSTRAINT "task_pkey" PRIMARY KEY ("id");
+
+CREATE INDEX "idx_task_pipeline_id_stage_id" ON ONLY "public"."task" ("pipeline_id", "stage_id");
+
+CREATE SEQUENCE "public"."task_run_id_seq"
+    AS integer
+	START WITH 1
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 2147483647
+	NO CYCLE;
+
+CREATE TABLE "public"."task_run" (
+    "id" integer DEFAULT nextval(''public.task_run_id_seq''::regclass) NOT NULL,
+    "creator_id" integer NOT NULL,
+    "task_id" integer NOT NULL,
+    "sheet_id" integer,
+    "attempt" integer NOT NULL,
+    "status" text NOT NULL,
+    "code" integer DEFAULT 0 NOT NULL,
+    "result" jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    "created_at" timestamp with time zone DEFAULT now() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT now() NOT NULL,
+    "started_at" timestamp with time zone
+);
+
+ALTER SEQUENCE "public"."task_run_id_seq" OWNED BY "public"."task_run"."id";
+
+ALTER TABLE ONLY "public"."task_run" ADD CONSTRAINT "task_run_pkey" PRIMARY KEY ("id");
+
+CREATE INDEX "idx_task_run_task_id" ON ONLY "public"."task_run" ("task_id");
+
+CREATE UNIQUE INDEX "uk_task_run_task_id_attempt" ON ONLY "public"."task_run" ("task_id", "attempt");
+
+CREATE SEQUENCE "public"."task_run_log_id_seq"
+    AS bigint
+	START WITH 1
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	NO CYCLE;
+
+CREATE TABLE "public"."task_run_log" (
+    "id" bigint DEFAULT nextval(''public.task_run_log_id_seq''::regclass) NOT NULL,
+    "task_run_id" integer NOT NULL,
+    "created_at" timestamp with time zone DEFAULT now() NOT NULL,
+    "payload" jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+ALTER SEQUENCE "public"."task_run_log_id_seq" OWNED BY "public"."task_run_log"."id";
+
+ALTER TABLE ONLY "public"."task_run_log" ADD CONSTRAINT "task_run_log_pkey" PRIMARY KEY ("id");
+
+CREATE INDEX "idx_task_run_log_task_run_id" ON ONLY "public"."task_run_log" ("task_run_id");
+
+CREATE TABLE "public"."user_group" (
+    "email" text NOT NULL,
+    "name" text NOT NULL,
+    "description" text DEFAULT ''''::text NOT NULL,
+    "payload" jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+ALTER TABLE ONLY "public"."user_group" ADD CONSTRAINT "user_group_pkey" PRIMARY KEY ("email");
+
+CREATE SEQUENCE "public"."worksheet_id_seq"
+    AS integer
+	START WITH 1
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 2147483647
+	NO CYCLE;
+
+CREATE TABLE "public"."worksheet" (
+    "id" integer DEFAULT nextval(''public.worksheet_id_seq''::regclass) NOT NULL,
+    "creator_id" integer NOT NULL,
+    "name" text NOT NULL,
+    "statement" text NOT NULL,
+    "visibility" text NOT NULL,
+    "payload" jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    "created_at" timestamp with time zone DEFAULT now() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT now() NOT NULL,
+    "project" text NOT NULL,
+    "instance" text,
+    "db_name" text
+);
+
+ALTER SEQUENCE "public"."worksheet_id_seq" OWNED BY "public"."worksheet"."id";
+
+ALTER TABLE ONLY "public"."worksheet" ADD CONSTRAINT "worksheet_pkey" PRIMARY KEY ("id");
+
+CREATE INDEX "idx_worksheet_creator_id_project" ON ONLY "public"."worksheet" ("creator_id", "project");
+
+CREATE SEQUENCE "public"."worksheet_organizer_id_seq"
+    AS integer
+	START WITH 1
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 2147483647
+	NO CYCLE;
+
+CREATE TABLE "public"."worksheet_organizer" (
+    "id" integer DEFAULT nextval(''public.worksheet_organizer_id_seq''::regclass) NOT NULL,
+    "worksheet_id" integer NOT NULL,
+    "principal_id" integer NOT NULL,
+    "starred" boolean DEFAULT false NOT NULL
+);
+
+ALTER SEQUENCE "public"."worksheet_organizer_id_seq" OWNED BY "public"."worksheet_organizer"."id";
+
+ALTER TABLE ONLY "public"."worksheet_organizer" ADD CONSTRAINT "worksheet_organizer_pkey" PRIMARY KEY ("id");
+
+CREATE INDEX "idx_worksheet_organizer_principal_id" ON ONLY "public"."worksheet_organizer" ("principal_id");
+
+CREATE UNIQUE INDEX "idx_worksheet_organizer_unique_sheet_id_principal_id" ON ONLY "public"."worksheet_organizer" ("worksheet_id", "principal_id");
+
+ALTER TABLE "public"."anomaly"
+    ADD CONSTRAINT "anomaly_instance_db_name_fkey" FOREIGN KEY ("instance", "db_name")
+    REFERENCES "public"."db" ("instance", "name");
+
+ALTER TABLE "public"."changelist"
+    ADD CONSTRAINT "changelist_creator_id_fkey" FOREIGN KEY ("creator_id")
+    REFERENCES "public"."principal" ("id");
+
+ALTER TABLE "public"."changelist"
+    ADD CONSTRAINT "changelist_project_fkey" FOREIGN KEY ("project")
+    REFERENCES "public"."project" ("resource_id");
+
+ALTER TABLE "public"."changelog"
+    ADD CONSTRAINT "changelog_instance_db_name_fkey" FOREIGN KEY ("instance", "db_name")
+    REFERENCES "public"."db" ("instance", "name");
+
+ALTER TABLE "public"."changelog"
+    ADD CONSTRAINT "changelog_prev_sync_history_id_fkey" FOREIGN KEY ("prev_sync_history_id")
+    REFERENCES "public"."sync_history" ("id");
+
+ALTER TABLE "public"."changelog"
+    ADD CONSTRAINT "changelog_sync_history_id_fkey" FOREIGN KEY ("sync_history_id")
+    REFERENCES "public"."sync_history" ("id");
+
+ALTER TABLE "public"."data_source"
+    ADD CONSTRAINT "data_source_instance_fkey" FOREIGN KEY ("instance")
+    REFERENCES "public"."instance" ("resource_id");
+
+ALTER TABLE "public"."db"
+    ADD CONSTRAINT "db_environment_fkey" FOREIGN KEY ("environment")
+    REFERENCES "public"."environment" ("resource_id");
+
+ALTER TABLE "public"."db"
+    ADD CONSTRAINT "db_instance_fkey" FOREIGN KEY ("instance")
+    REFERENCES "public"."instance" ("resource_id");
+
+ALTER TABLE "public"."db"
+    ADD CONSTRAINT "db_project_fkey" FOREIGN KEY ("project")
+    REFERENCES "public"."project" ("resource_id");
+
+ALTER TABLE "public"."db_group"
+    ADD CONSTRAINT "db_group_project_fkey" FOREIGN KEY ("project")
+    REFERENCES "public"."project" ("resource_id");
+
+ALTER TABLE "public"."db_schema"
+    ADD CONSTRAINT "db_schema_instance_db_name_fkey" FOREIGN KEY ("instance", "db_name")
+    REFERENCES "public"."db" ("instance", "name");
+
+ALTER TABLE "public"."instance"
+    ADD CONSTRAINT "instance_environment_fkey" FOREIGN KEY ("environment")
+    REFERENCES "public"."environment" ("resource_id");
+
+ALTER TABLE "public"."issue"
+    ADD CONSTRAINT "issue_creator_id_fkey" FOREIGN KEY ("creator_id")
+    REFERENCES "public"."principal" ("id");
+
+ALTER TABLE "public"."issue"
+    ADD CONSTRAINT "issue_pipeline_id_fkey" FOREIGN KEY ("pipeline_id")
+    REFERENCES "public"."pipeline" ("id");
+
+ALTER TABLE "public"."issue"
+    ADD CONSTRAINT "issue_plan_id_fkey" FOREIGN KEY ("plan_id")
+    REFERENCES "public"."plan" ("id");
+
+ALTER TABLE "public"."issue"
+    ADD CONSTRAINT "issue_project_fkey" FOREIGN KEY ("project")
+    REFERENCES "public"."project" ("resource_id");
+
+ALTER TABLE "public"."issue_comment"
+    ADD CONSTRAINT "issue_comment_creator_id_fkey" FOREIGN KEY ("creator_id")
+    REFERENCES "public"."principal" ("id");
+
+ALTER TABLE "public"."issue_comment"
+    ADD CONSTRAINT "issue_comment_issue_id_fkey" FOREIGN KEY ("issue_id")
+    REFERENCES "public"."issue" ("id");
+
+ALTER TABLE "public"."issue_subscriber"
+    ADD CONSTRAINT "issue_subscriber_issue_id_fkey" FOREIGN KEY ("issue_id")
+    REFERENCES "public"."issue" ("id");
+
+ALTER TABLE "public"."issue_subscriber"
+    ADD CONSTRAINT "issue_subscriber_subscriber_id_fkey" FOREIGN KEY ("subscriber_id")
+    REFERENCES "public"."principal" ("id");
+
+ALTER TABLE "public"."pipeline"
+    ADD CONSTRAINT "pipeline_creator_id_fkey" FOREIGN KEY ("creator_id")
+    REFERENCES "public"."principal" ("id");
+
+ALTER TABLE "public"."pipeline"
+    ADD CONSTRAINT "pipeline_project_fkey" FOREIGN KEY ("project")
+    REFERENCES "public"."project" ("resource_id");
+
+ALTER TABLE "public"."plan"
+    ADD CONSTRAINT "plan_creator_id_fkey" FOREIGN KEY ("creator_id")
+    REFERENCES "public"."principal" ("id");
+
+ALTER TABLE "public"."plan"
+    ADD CONSTRAINT "plan_pipeline_id_fkey" FOREIGN KEY ("pipeline_id")
+    REFERENCES "public"."pipeline" ("id");
+
+ALTER TABLE "public"."plan"
+    ADD CONSTRAINT "plan_project_fkey" FOREIGN KEY ("project")
+    REFERENCES "public"."project" ("resource_id");
+
+ALTER TABLE "public"."plan_check_run"
+    ADD CONSTRAINT "plan_check_run_plan_id_fkey" FOREIGN KEY ("plan_id")
+    REFERENCES "public"."plan" ("id");
+
+ALTER TABLE "public"."project_webhook"
+    ADD CONSTRAINT "project_webhook_project_fkey" FOREIGN KEY ("project")
+    REFERENCES "public"."project" ("resource_id");
+
+ALTER TABLE "public"."query_history"
+    ADD CONSTRAINT "query_history_creator_id_fkey" FOREIGN KEY ("creator_id")
+    REFERENCES "public"."principal" ("id");
+
+ALTER TABLE "public"."release"
+    ADD CONSTRAINT "release_creator_id_fkey" FOREIGN KEY ("creator_id")
+    REFERENCES "public"."principal" ("id");
+
+ALTER TABLE "public"."release"
+    ADD CONSTRAINT "release_project_fkey" FOREIGN KEY ("project")
+    REFERENCES "public"."project" ("resource_id");
+
+ALTER TABLE "public"."revision"
+    ADD CONSTRAINT "revision_deleter_id_fkey" FOREIGN KEY ("deleter_id")
+    REFERENCES "public"."principal" ("id");
+
+ALTER TABLE "public"."revision"
+    ADD CONSTRAINT "revision_instance_db_name_fkey" FOREIGN KEY ("instance", "db_name")
+    REFERENCES "public"."db" ("instance", "name");
+
+ALTER TABLE "public"."sheet"
+    ADD CONSTRAINT "sheet_creator_id_fkey" FOREIGN KEY ("creator_id")
+    REFERENCES "public"."principal" ("id");
+
+ALTER TABLE "public"."sheet"
+    ADD CONSTRAINT "sheet_project_fkey" FOREIGN KEY ("project")
+    REFERENCES "public"."project" ("resource_id");
+
+ALTER TABLE "public"."stage"
+    ADD CONSTRAINT "stage_environment_fkey" FOREIGN KEY ("environment")
+    REFERENCES "public"."environment" ("resource_id");
+
+ALTER TABLE "public"."stage"
+    ADD CONSTRAINT "stage_pipeline_id_fkey" FOREIGN KEY ("pipeline_id")
+    REFERENCES "public"."pipeline" ("id");
+
+ALTER TABLE "public"."sync_history"
+    ADD CONSTRAINT "sync_history_instance_db_name_fkey" FOREIGN KEY ("instance", "db_name")
+    REFERENCES "public"."db" ("instance", "name");
+
+ALTER TABLE "public"."task"
+    ADD CONSTRAINT "task_instance_fkey" FOREIGN KEY ("instance")
+    REFERENCES "public"."instance" ("resource_id");
+
+ALTER TABLE "public"."task"
+    ADD CONSTRAINT "task_pipeline_id_fkey" FOREIGN KEY ("pipeline_id")
+    REFERENCES "public"."pipeline" ("id");
+
+ALTER TABLE "public"."task"
+    ADD CONSTRAINT "task_stage_id_fkey" FOREIGN KEY ("stage_id")
+    REFERENCES "public"."stage" ("id");
+
+ALTER TABLE "public"."task_run"
+    ADD CONSTRAINT "task_run_creator_id_fkey" FOREIGN KEY ("creator_id")
+    REFERENCES "public"."principal" ("id");
+
+ALTER TABLE "public"."task_run"
+    ADD CONSTRAINT "task_run_sheet_id_fkey" FOREIGN KEY ("sheet_id")
+    REFERENCES "public"."sheet" ("id");
+
+ALTER TABLE "public"."task_run"
+    ADD CONSTRAINT "task_run_task_id_fkey" FOREIGN KEY ("task_id")
+    REFERENCES "public"."task" ("id");
+
+ALTER TABLE "public"."task_run_log"
+    ADD CONSTRAINT "task_run_log_task_run_id_fkey" FOREIGN KEY ("task_run_id")
+    REFERENCES "public"."task_run" ("id");
+
+ALTER TABLE "public"."worksheet"
+    ADD CONSTRAINT "worksheet_creator_id_fkey" FOREIGN KEY ("creator_id")
+    REFERENCES "public"."principal" ("id");
+
+ALTER TABLE "public"."worksheet"
+    ADD CONSTRAINT "worksheet_project_fkey" FOREIGN KEY ("project")
+    REFERENCES "public"."project" ("resource_id");
+
+ALTER TABLE "public"."worksheet_organizer"
+    ADD CONSTRAINT "worksheet_organizer_principal_id_fkey" FOREIGN KEY ("principal_id")
+    REFERENCES "public"."principal" ("id");
+
+ALTER TABLE "public"."worksheet_organizer"
+    ADD CONSTRAINT "worksheet_organizer_worksheet_id_fkey" FOREIGN KEY ("worksheet_id")
+    REFERENCES "public"."worksheet" ("id");
+
+', '{}', 'bytebase-meta', 'bb') ON CONFLICT DO NOTHING;
+INSERT INTO public.db_schema (id, metadata, raw_dump, config, instance, db_name) VALUES (102, '{"name":"hr_prod","schemas":[{"name":"bbdataarchive","owner":"bbsample"},{"name":"public","tables":[{"name":"audit","columns":[{"name":"id","position":1,"defaultExpression":"nextval(''public.audit_id_seq''::regclass)","type":"integer"},{"name":"operation","position":2,"type":"text"},{"name":"query","position":3,"nullable":true,"type":"text"},{"name":"user_name","position":4,"type":"text"},{"name":"changed_at","position":5,"defaultExpression":"CURRENT_TIMESTAMP","nullable":true,"type":"timestamp with time zone"}],"indexes":[{"name":"audit_pkey","expressions":["id"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX audit_pkey ON public.audit USING btree (id);","isConstraint":true},{"name":"idx_audit_changed_at","expressions":["changed_at"],"type":"btree","definition":"CREATE INDEX idx_audit_changed_at ON public.audit USING btree (changed_at);"},{"name":"idx_audit_operation","expressions":["operation"],"type":"btree","definition":"CREATE INDEX idx_audit_operation ON public.audit USING btree (operation);"},{"name":"idx_audit_username","expressions":["user_name"],"type":"btree","definition":"CREATE INDEX idx_audit_username ON public.audit USING btree (user_name);"}],"dataSize":"8192","indexSize":"32768","owner":"bbsample"},{"name":"department","columns":[{"name":"dept_no","position":1,"type":"text"},{"name":"dept_name","position":2,"type":"text"}],"indexes":[{"name":"department_dept_name_key","expressions":["dept_name"],"type":"btree","unique":true,"definition":"CREATE UNIQUE INDEX department_dept_name_key ON public.department USING btree (dept_name);","isConstraint":true},{"name":"department_pkey","expressions":["dept_no"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX department_pkey ON public.department USING btree (dept_no);","isConstraint":true}],"dataSize":"16384","indexSize":"32768","owner":"bbsample"},{"name":"dept_emp","columns":[{"name":"emp_no","position":1,"type":"integer"},{"name":"dept_no","position":2,"type":"text"},{"name":"from_date","position":3,"type":"date"},{"name":"to_date","position":4,"type":"date"}],"indexes":[{"name":"dept_emp_pkey","expressions":["emp_no","dept_no"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX dept_emp_pkey ON public.dept_emp USING btree (emp_no, dept_no);","isConstraint":true}],"dataSize":"98304","indexSize":"57344","foreignKeys":[{"name":"dept_emp_dept_no_fkey","columns":["dept_no"],"referencedSchema":"public","referencedTable":"department","referencedColumns":["dept_no"],"onDelete":"CASCADE","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"dept_emp_emp_no_fkey","columns":["emp_no"],"referencedSchema":"public","referencedTable":"employee","referencedColumns":["emp_no"],"onDelete":"CASCADE","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bbsample"},{"name":"dept_manager","columns":[{"name":"emp_no","position":1,"type":"integer"},{"name":"dept_no","position":2,"type":"text"},{"name":"from_date","position":3,"type":"date"},{"name":"to_date","position":4,"type":"date"}],"indexes":[{"name":"dept_manager_pkey","expressions":["emp_no","dept_no"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX dept_manager_pkey ON public.dept_manager USING btree (emp_no, dept_no);","isConstraint":true}],"dataSize":"16384","indexSize":"16384","foreignKeys":[{"name":"dept_manager_dept_no_fkey","columns":["dept_no"],"referencedSchema":"public","referencedTable":"department","referencedColumns":["dept_no"],"onDelete":"CASCADE","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"dept_manager_emp_no_fkey","columns":["emp_no"],"referencedSchema":"public","referencedTable":"employee","referencedColumns":["emp_no"],"onDelete":"CASCADE","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bbsample"},{"name":"employee","columns":[{"name":"emp_no","position":1,"defaultExpression":"nextval(''public.employee_emp_no_seq''::regclass)","type":"integer"},{"name":"birth_date","position":2,"type":"date"},{"name":"first_name","position":3,"type":"text"},{"name":"last_name","position":4,"type":"text"},{"name":"gender","position":5,"type":"text"},{"name":"hire_date","position":6,"type":"date"}],"indexes":[{"name":"employee_pkey","expressions":["emp_no"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX employee_pkey ON public.employee USING btree (emp_no);","isConstraint":true},{"name":"idx_employee_hire_date","expressions":["hire_date"],"type":"btree","definition":"CREATE INDEX idx_employee_hire_date ON public.employee USING btree (hire_date);"}],"dataSize":"98304","indexSize":"98304","owner":"bbsample"},{"name":"salary","columns":[{"name":"emp_no","position":1,"type":"integer"},{"name":"amount","position":2,"type":"integer"},{"name":"from_date","position":3,"type":"date"},{"name":"to_date","position":4,"type":"date"}],"indexes":[{"name":"idx_salary_amount","expressions":["amount"],"type":"btree","definition":"CREATE INDEX idx_salary_amount ON public.salary USING btree (amount);"},{"name":"salary_pkey","expressions":["emp_no","from_date"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX salary_pkey ON public.salary USING btree (emp_no, from_date);","isConstraint":true}],"dataSize":"450560","indexSize":"548864","foreignKeys":[{"name":"salary_emp_no_fkey","columns":["emp_no"],"referencedSchema":"public","referencedTable":"employee","referencedColumns":["emp_no"],"onDelete":"CASCADE","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bbsample","triggers":[{"name":"salary_log_trigger","body":"CREATE TRIGGER salary_log_trigger AFTER DELETE OR UPDATE ON public.salary FOR EACH ROW EXECUTE FUNCTION public.log_dml_operations()"}]},{"name":"title","columns":[{"name":"emp_no","position":1,"type":"integer"},{"name":"title","position":2,"type":"text"},{"name":"from_date","position":3,"type":"date"},{"name":"to_date","position":4,"nullable":true,"type":"date"}],"indexes":[{"name":"title_pkey","expressions":["emp_no","title","from_date"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX title_pkey ON public.title USING btree (emp_no, title, from_date);","isConstraint":true}],"dataSize":"122880","indexSize":"73728","foreignKeys":[{"name":"title_emp_no_fkey","columns":["emp_no"],"referencedSchema":"public","referencedTable":"employee","referencedColumns":["emp_no"],"onDelete":"CASCADE","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bbsample"}],"views":[{"name":"current_dept_emp","definition":" SELECT l.emp_no,\n    d.dept_no,\n    l.from_date,\n    l.to_date\n   FROM (public.dept_emp d\n     JOIN public.dept_emp_latest_date l ON (((d.emp_no = l.emp_no) AND (d.from_date = l.from_date) AND (l.to_date = d.to_date))));","dependencyColumns":[{"schema":"public","table":"dept_emp","column":"dept_no"},{"schema":"public","table":"dept_emp","column":"emp_no"},{"schema":"public","table":"dept_emp","column":"from_date"},{"schema":"public","table":"dept_emp","column":"to_date"},{"schema":"public","table":"dept_emp_latest_date","column":"emp_no"},{"schema":"public","table":"dept_emp_latest_date","column":"from_date"},{"schema":"public","table":"dept_emp_latest_date","column":"to_date"}],"columns":[{"name":"emp_no","position":1,"nullable":true,"type":"integer"},{"name":"dept_no","position":2,"nullable":true,"type":"text"},{"name":"from_date","position":3,"nullable":true,"type":"date"},{"name":"to_date","position":4,"nullable":true,"type":"date"}]},{"name":"dept_emp_latest_date","definition":" SELECT emp_no,\n    max(from_date) AS from_date,\n    max(to_date) AS to_date\n   FROM public.dept_emp\n  GROUP BY emp_no;","dependencyColumns":[{"schema":"public","table":"dept_emp","column":"emp_no"},{"schema":"public","table":"dept_emp","column":"from_date"},{"schema":"public","table":"dept_emp","column":"to_date"}],"columns":[{"name":"emp_no","position":1,"nullable":true,"type":"integer"},{"name":"from_date","position":2,"nullable":true,"type":"date"},{"name":"to_date","position":3,"nullable":true,"type":"date"}]}],"functions":[{"name":"log_dml_operations","definition":"CREATE OR REPLACE FUNCTION public.log_dml_operations()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n    IF (TG_OP = ''INSERT'') THEN\n        INSERT INTO audit (operation, query, user_name)\n        VALUES (''INSERT'', current_query(), current_user);\n        RETURN NEW;\n    ELSIF (TG_OP = ''UPDATE'') THEN\n        INSERT INTO audit (operation, query, user_name)\n        VALUES (''UPDATE'', current_query(), current_user);\n        RETURN NEW;\n    ELSIF (TG_OP = ''DELETE'') THEN\n        INSERT INTO audit (operation, query, user_name)\n        VALUES (''DELETE'', current_query(), current_user);\n        RETURN OLD;\n    END IF;\n    RETURN NULL;\nEND;\n$function$\n","signature":"log_dml_operations()"}],"sequences":[{"name":"audit_id_seq","dataType":"integer","start":"1","minValue":"1","maxValue":"2147483647","increment":"1","cacheSize":"1","ownerTable":"audit","ownerColumn":"id"},{"name":"employee_emp_no_seq","dataType":"integer","start":"1","minValue":"1","maxValue":"2147483647","increment":"1","cacheSize":"1","ownerTable":"employee","ownerColumn":"emp_no"}],"owner":"pg_database_owner"}],"characterSet":"UTF8","collation":"en_US.UTF-8","owner":"bbsample"}', '
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET client_encoding = ''UTF8'';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config(''search_path'', '''', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
 
 SET default_tablespace = '''';
 
@@ -4743,7 +3514,22 @@ ALTER TABLE "public"."title"
     ADD CONSTRAINT "title_emp_no_fkey" FOREIGN KEY ("emp_no")
     REFERENCES "public"."employee" ("emp_no");
 
-', '{}', 'test-sample-instance', 'hr_test') ON CONFLICT DO NOTHING;
+', '{"name": "hr_prod", "schemas": [{"name": "public", "tables": [{"name": "department", "columns": [{"name": "dept_name", "classification": "1-1"}]}, {"name": "salary", "columns": [{"name": "amount"}]}, {"name": "employee", "columns": [{"name": "first_name", "semanticType": "be433ce5-72e7-4dcf-8b58-e77b52a18e81", "classification": "1-3"}, {"name": "last_name", "semanticType": "be433ce5-72e7-4dcf-8b58-e77b52a18e81", "classification": "1-3"}]}, {"name": "title", "columns": [{"name": "title", "classification": "2-1"}]}]}]}', 'prod-sample-instance', 'hr_prod') ON CONFLICT DO NOTHING;
+INSERT INTO public.db_schema (id, metadata, raw_dump, config, instance, db_name) VALUES (120, '{"name":"postgres","schemas":[{"name":"public","owner":"pg_database_owner"}],"characterSet":"UTF8","collation":"en_US.UTF-8","owner":"bb"}', '
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET client_encoding = ''UTF8'';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config(''search_path'', '''', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+SET default_tablespace = '''';
+
+', '{}', 'bytebase-meta', 'postgres') ON CONFLICT DO NOTHING;
 INSERT INTO public.db_schema (id, metadata, raw_dump, config, instance, db_name) VALUES (107, '{"name":"hr_prod_5","schemas":[{"name":"bbdataarchive","owner":"bbsample"},{"name":"public","tables":[{"name":"audit","columns":[{"name":"id","position":1,"defaultExpression":"nextval(''public.audit_id_seq''::regclass)","type":"integer"},{"name":"operation","position":2,"type":"text"},{"name":"query","position":3,"nullable":true,"type":"text"},{"name":"user_name","position":4,"type":"text"},{"name":"changed_at","position":5,"defaultExpression":"CURRENT_TIMESTAMP","nullable":true,"type":"timestamp with time zone"}],"indexes":[{"name":"audit_pkey","expressions":["id"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX audit_pkey ON public.audit USING btree (id);","isConstraint":true},{"name":"idx_audit_changed_at","expressions":["changed_at"],"type":"btree","definition":"CREATE INDEX idx_audit_changed_at ON public.audit USING btree (changed_at);"},{"name":"idx_audit_operation","expressions":["operation"],"type":"btree","definition":"CREATE INDEX idx_audit_operation ON public.audit USING btree (operation);"},{"name":"idx_audit_username","expressions":["user_name"],"type":"btree","definition":"CREATE INDEX idx_audit_username ON public.audit USING btree (user_name);"}],"dataSize":"8192","indexSize":"32768","owner":"bbsample"},{"name":"department","columns":[{"name":"dept_no","position":1,"type":"text"},{"name":"dept_name","position":2,"type":"text"}],"indexes":[{"name":"department_dept_name_key","expressions":["dept_name"],"type":"btree","unique":true,"definition":"CREATE UNIQUE INDEX department_dept_name_key ON public.department USING btree (dept_name);","isConstraint":true},{"name":"department_pkey","expressions":["dept_no"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX department_pkey ON public.department USING btree (dept_no);","isConstraint":true}],"dataSize":"16384","indexSize":"32768","owner":"bbsample"},{"name":"dept_emp","columns":[{"name":"emp_no","position":1,"type":"integer"},{"name":"dept_no","position":2,"type":"text"},{"name":"from_date","position":3,"type":"date"},{"name":"to_date","position":4,"type":"date"}],"indexes":[{"name":"dept_emp_pkey","expressions":["emp_no","dept_no"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX dept_emp_pkey ON public.dept_emp USING btree (emp_no, dept_no);","isConstraint":true}],"rowCount":"1103","dataSize":"106496","indexSize":"57344","foreignKeys":[{"name":"dept_emp_dept_no_fkey","columns":["dept_no"],"referencedSchema":"public","referencedTable":"department","referencedColumns":["dept_no"],"onDelete":"CASCADE","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"dept_emp_emp_no_fkey","columns":["emp_no"],"referencedSchema":"public","referencedTable":"employee","referencedColumns":["emp_no"],"onDelete":"CASCADE","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bbsample"},{"name":"dept_manager","columns":[{"name":"emp_no","position":1,"type":"integer"},{"name":"dept_no","position":2,"type":"text"},{"name":"from_date","position":3,"type":"date"},{"name":"to_date","position":4,"type":"date"}],"indexes":[{"name":"dept_manager_pkey","expressions":["emp_no","dept_no"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX dept_manager_pkey ON public.dept_manager USING btree (emp_no, dept_no);","isConstraint":true}],"dataSize":"16384","indexSize":"16384","foreignKeys":[{"name":"dept_manager_dept_no_fkey","columns":["dept_no"],"referencedSchema":"public","referencedTable":"department","referencedColumns":["dept_no"],"onDelete":"CASCADE","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"dept_manager_emp_no_fkey","columns":["emp_no"],"referencedSchema":"public","referencedTable":"employee","referencedColumns":["emp_no"],"onDelete":"CASCADE","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bbsample"},{"name":"employee","columns":[{"name":"emp_no","position":1,"defaultExpression":"nextval(''public.employee_emp_no_seq''::regclass)","type":"integer"},{"name":"birth_date","position":2,"type":"date"},{"name":"first_name","position":3,"type":"text"},{"name":"last_name","position":4,"type":"text"},{"name":"gender","position":5,"type":"text"},{"name":"hire_date","position":6,"type":"date"}],"indexes":[{"name":"employee_pkey","expressions":["emp_no"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX employee_pkey ON public.employee USING btree (emp_no);","isConstraint":true},{"name":"idx_employee_hire_date","expressions":["hire_date"],"type":"btree","definition":"CREATE INDEX idx_employee_hire_date ON public.employee USING btree (hire_date);"}],"rowCount":"1000","dataSize":"98304","indexSize":"98304","owner":"bbsample"},{"name":"salary","columns":[{"name":"emp_no","position":1,"type":"integer"},{"name":"amount","position":2,"type":"integer"},{"name":"from_date","position":3,"type":"date"},{"name":"to_date","position":4,"type":"date"}],"indexes":[{"name":"idx_salary_amount","expressions":["amount"],"type":"btree","definition":"CREATE INDEX idx_salary_amount ON public.salary USING btree (amount);"},{"name":"salary_pkey","expressions":["emp_no","from_date"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX salary_pkey ON public.salary USING btree (emp_no, from_date);","isConstraint":true}],"rowCount":"9488","dataSize":"458752","indexSize":"548864","foreignKeys":[{"name":"salary_emp_no_fkey","columns":["emp_no"],"referencedSchema":"public","referencedTable":"employee","referencedColumns":["emp_no"],"onDelete":"CASCADE","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bbsample","triggers":[{"name":"salary_log_trigger","body":"CREATE TRIGGER salary_log_trigger AFTER DELETE OR UPDATE ON public.salary FOR EACH ROW EXECUTE FUNCTION public.log_dml_operations()"}]},{"name":"title","columns":[{"name":"emp_no","position":1,"type":"integer"},{"name":"title","position":2,"type":"text"},{"name":"from_date","position":3,"type":"date"},{"name":"to_date","position":4,"nullable":true,"type":"date"}],"indexes":[{"name":"title_pkey","expressions":["emp_no","title","from_date"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX title_pkey ON public.title USING btree (emp_no, title, from_date);","isConstraint":true}],"rowCount":"1470","dataSize":"131072","indexSize":"73728","foreignKeys":[{"name":"title_emp_no_fkey","columns":["emp_no"],"referencedSchema":"public","referencedTable":"employee","referencedColumns":["emp_no"],"onDelete":"CASCADE","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bbsample"}],"views":[{"name":"current_dept_emp","definition":" SELECT l.emp_no,\n    d.dept_no,\n    l.from_date,\n    l.to_date\n   FROM (public.dept_emp d\n     JOIN public.dept_emp_latest_date l ON (((d.emp_no = l.emp_no) AND (d.from_date = l.from_date) AND (l.to_date = d.to_date))));","dependencyColumns":[{"schema":"public","table":"dept_emp","column":"dept_no"},{"schema":"public","table":"dept_emp","column":"emp_no"},{"schema":"public","table":"dept_emp","column":"from_date"},{"schema":"public","table":"dept_emp","column":"to_date"},{"schema":"public","table":"dept_emp_latest_date","column":"emp_no"},{"schema":"public","table":"dept_emp_latest_date","column":"from_date"},{"schema":"public","table":"dept_emp_latest_date","column":"to_date"}],"columns":[{"name":"emp_no","position":1,"nullable":true,"type":"integer"},{"name":"dept_no","position":2,"nullable":true,"type":"text"},{"name":"from_date","position":3,"nullable":true,"type":"date"},{"name":"to_date","position":4,"nullable":true,"type":"date"}]},{"name":"dept_emp_latest_date","definition":" SELECT emp_no,\n    max(from_date) AS from_date,\n    max(to_date) AS to_date\n   FROM public.dept_emp\n  GROUP BY emp_no;","dependencyColumns":[{"schema":"public","table":"dept_emp","column":"emp_no"},{"schema":"public","table":"dept_emp","column":"from_date"},{"schema":"public","table":"dept_emp","column":"to_date"}],"columns":[{"name":"emp_no","position":1,"nullable":true,"type":"integer"},{"name":"from_date","position":2,"nullable":true,"type":"date"},{"name":"to_date","position":3,"nullable":true,"type":"date"}]}],"functions":[{"name":"log_dml_operations","definition":"CREATE OR REPLACE FUNCTION public.log_dml_operations()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n    IF (TG_OP = ''INSERT'') THEN\n        INSERT INTO audit (operation, query, user_name)\n        VALUES (''INSERT'', current_query(), current_user);\n        RETURN NEW;\n    ELSIF (TG_OP = ''UPDATE'') THEN\n        INSERT INTO audit (operation, query, user_name)\n        VALUES (''UPDATE'', current_query(), current_user);\n        RETURN NEW;\n    ELSIF (TG_OP = ''DELETE'') THEN\n        INSERT INTO audit (operation, query, user_name)\n        VALUES (''DELETE'', current_query(), current_user);\n        RETURN OLD;\n    END IF;\n    RETURN NULL;\nEND;\n$function$\n","signature":"log_dml_operations()"}],"sequences":[{"name":"audit_id_seq","dataType":"integer","start":"1","minValue":"1","maxValue":"2147483647","increment":"1","cacheSize":"1","ownerTable":"audit","ownerColumn":"id"},{"name":"employee_emp_no_seq","dataType":"integer","start":"1","minValue":"1","maxValue":"2147483647","increment":"1","cacheSize":"1","ownerTable":"employee","ownerColumn":"emp_no"}],"owner":"pg_database_owner"}],"characterSet":"UTF8","collation":"en_US.UTF-8","extensions":[{"name":"pg_stat_statements","schema":"public","version":"1.10","description":"track planning and execution statistics of all SQL statements executed"}],"owner":"bbsample"}', '
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -5461,13 +4247,211 @@ ALTER TABLE "public"."title"
     REFERENCES "public"."employee" ("emp_no");
 
 ', '{}', 'prod-sample-instance', 'hr_prod_vcs') ON CONFLICT DO NOTHING;
+INSERT INTO public.db_schema (id, metadata, raw_dump, config, instance, db_name) VALUES (182, '{"name":"postgres","schemas":[{"name":"public","owner":"pg_database_owner"}],"characterSet":"UTF8","collation":"en_US.UTF-8","owner":"bbsample"}', '
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET client_encoding = ''UTF8'';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config(''search_path'', '''', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
 
+SET default_tablespace = '''';
 
---
--- Data for Name: deployment_config; Type: TABLE DATA; Schema: public; Owner: -
---
+', '{}', 'prod-sample-instance', 'postgres') ON CONFLICT DO NOTHING;
+INSERT INTO public.db_schema (id, metadata, raw_dump, config, instance, db_name) VALUES (183, '{"name":"postgres","schemas":[{"name":"public","owner":"pg_database_owner"}],"characterSet":"UTF8","collation":"en_US.UTF-8","owner":"bbsample"}', '
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET client_encoding = ''UTF8'';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config(''search_path'', '''', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
 
-INSERT INTO public.deployment_config (id, name, config, project) VALUES (101, '', '{"schedule": {"deployments": [{"id": "98cc534c-1c61-4707-8875-6765a30f5e65", "spec": {"selector": {"matchExpressions": [{"key": "location", "values": ["asia"], "operator": "IN"}, {"key": "environment", "values": ["prod"], "operator": "IN"}]}}, "title": "Asia"}, {"id": "536b8383-d8c4-41ad-b735-dcdb73577fb4", "spec": {"selector": {"matchExpressions": [{"key": "location", "values": ["eu"], "operator": "IN"}, {"key": "environment", "values": ["prod"], "operator": "IN"}]}}, "title": "Europe"}, {"id": "8dbd167f-1cbb-485b-9b7c-639d77ac92fd", "spec": {"selector": {"matchExpressions": [{"key": "location", "values": ["na"], "operator": "IN"}, {"key": "environment", "values": ["prod"], "operator": "IN"}]}}, "title": "North America"}]}}', 'batch-project') ON CONFLICT DO NOTHING;
+SET default_tablespace = '''';
+
+', '{}', 'test-sample-instance', 'postgres') ON CONFLICT DO NOTHING;
+INSERT INTO public.db_schema (id, metadata, raw_dump, config, instance, db_name) VALUES (101, '{"name":"hr_test","schemas":[{"name":"bbdataarchive","owner":"bbsample"},{"name":"public","tables":[{"name":"audit","columns":[{"name":"id","position":1,"defaultExpression":"nextval(''public.audit_id_seq''::regclass)","type":"integer"},{"name":"operation","position":2,"type":"text"},{"name":"query","position":3,"nullable":true,"type":"text"},{"name":"user_name","position":4,"type":"text"},{"name":"changed_at","position":5,"defaultExpression":"CURRENT_TIMESTAMP","nullable":true,"type":"timestamp with time zone"}],"indexes":[{"name":"audit_pkey","expressions":["id"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX audit_pkey ON public.audit USING btree (id);","isConstraint":true},{"name":"idx_audit_changed_at","expressions":["changed_at"],"type":"btree","definition":"CREATE INDEX idx_audit_changed_at ON public.audit USING btree (changed_at);"},{"name":"idx_audit_operation","expressions":["operation"],"type":"btree","definition":"CREATE INDEX idx_audit_operation ON public.audit USING btree (operation);"},{"name":"idx_audit_username","expressions":["user_name"],"type":"btree","definition":"CREATE INDEX idx_audit_username ON public.audit USING btree (user_name);"}],"dataSize":"8192","indexSize":"32768","owner":"bbsample"},{"name":"department","columns":[{"name":"dept_no","position":1,"type":"text"},{"name":"dept_name","position":2,"type":"text"}],"indexes":[{"name":"department_dept_name_key","expressions":["dept_name"],"type":"btree","unique":true,"definition":"CREATE UNIQUE INDEX department_dept_name_key ON public.department USING btree (dept_name);","isConstraint":true},{"name":"department_pkey","expressions":["dept_no"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX department_pkey ON public.department USING btree (dept_no);","isConstraint":true}],"dataSize":"16384","indexSize":"32768","owner":"bbsample"},{"name":"dept_emp","columns":[{"name":"emp_no","position":1,"type":"integer"},{"name":"dept_no","position":2,"type":"text"},{"name":"from_date","position":3,"type":"date"},{"name":"to_date","position":4,"type":"date"}],"indexes":[{"name":"dept_emp_pkey","expressions":["emp_no","dept_no"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX dept_emp_pkey ON public.dept_emp USING btree (emp_no, dept_no);","isConstraint":true}],"dataSize":"98304","indexSize":"57344","foreignKeys":[{"name":"dept_emp_dept_no_fkey","columns":["dept_no"],"referencedSchema":"public","referencedTable":"department","referencedColumns":["dept_no"],"onDelete":"CASCADE","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"dept_emp_emp_no_fkey","columns":["emp_no"],"referencedSchema":"public","referencedTable":"employee","referencedColumns":["emp_no"],"onDelete":"CASCADE","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bbsample"},{"name":"dept_manager","columns":[{"name":"emp_no","position":1,"type":"integer"},{"name":"dept_no","position":2,"type":"text"},{"name":"from_date","position":3,"type":"date"},{"name":"to_date","position":4,"type":"date"}],"indexes":[{"name":"dept_manager_pkey","expressions":["emp_no","dept_no"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX dept_manager_pkey ON public.dept_manager USING btree (emp_no, dept_no);","isConstraint":true}],"dataSize":"16384","indexSize":"16384","foreignKeys":[{"name":"dept_manager_dept_no_fkey","columns":["dept_no"],"referencedSchema":"public","referencedTable":"department","referencedColumns":["dept_no"],"onDelete":"CASCADE","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"dept_manager_emp_no_fkey","columns":["emp_no"],"referencedSchema":"public","referencedTable":"employee","referencedColumns":["emp_no"],"onDelete":"CASCADE","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bbsample"},{"name":"employee","columns":[{"name":"emp_no","position":1,"defaultExpression":"nextval(''public.employee_emp_no_seq''::regclass)","type":"integer"},{"name":"birth_date","position":2,"type":"date"},{"name":"first_name","position":3,"type":"text"},{"name":"last_name","position":4,"type":"text"},{"name":"gender","position":5,"type":"text"},{"name":"hire_date","position":6,"type":"date"}],"indexes":[{"name":"employee_pkey","expressions":["emp_no"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX employee_pkey ON public.employee USING btree (emp_no);","isConstraint":true},{"name":"idx_employee_hire_date","expressions":["hire_date"],"type":"btree","definition":"CREATE INDEX idx_employee_hire_date ON public.employee USING btree (hire_date);"}],"dataSize":"98304","indexSize":"98304","owner":"bbsample"},{"name":"salary","columns":[{"name":"emp_no","position":1,"type":"integer"},{"name":"amount","position":2,"type":"integer"},{"name":"from_date","position":3,"type":"date"},{"name":"to_date","position":4,"type":"date"}],"indexes":[{"name":"idx_salary_amount","expressions":["amount"],"type":"btree","definition":"CREATE INDEX idx_salary_amount ON public.salary USING btree (amount);"},{"name":"salary_pkey","expressions":["emp_no","from_date"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX salary_pkey ON public.salary USING btree (emp_no, from_date);","isConstraint":true}],"dataSize":"450560","indexSize":"548864","foreignKeys":[{"name":"salary_emp_no_fkey","columns":["emp_no"],"referencedSchema":"public","referencedTable":"employee","referencedColumns":["emp_no"],"onDelete":"CASCADE","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bbsample","triggers":[{"name":"salary_log_trigger","body":"CREATE TRIGGER salary_log_trigger AFTER DELETE OR UPDATE ON public.salary FOR EACH ROW EXECUTE FUNCTION public.log_dml_operations()"}]},{"name":"title","columns":[{"name":"emp_no","position":1,"type":"integer"},{"name":"title","position":2,"type":"text"},{"name":"from_date","position":3,"type":"date"},{"name":"to_date","position":4,"nullable":true,"type":"date"}],"indexes":[{"name":"title_pkey","expressions":["emp_no","title","from_date"],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX title_pkey ON public.title USING btree (emp_no, title, from_date);","isConstraint":true}],"dataSize":"122880","indexSize":"73728","foreignKeys":[{"name":"title_emp_no_fkey","columns":["emp_no"],"referencedSchema":"public","referencedTable":"employee","referencedColumns":["emp_no"],"onDelete":"CASCADE","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bbsample"}],"views":[{"name":"current_dept_emp","definition":" SELECT l.emp_no,\n    d.dept_no,\n    l.from_date,\n    l.to_date\n   FROM (public.dept_emp d\n     JOIN public.dept_emp_latest_date l ON (((d.emp_no = l.emp_no) AND (d.from_date = l.from_date) AND (l.to_date = d.to_date))));","dependencyColumns":[{"schema":"public","table":"dept_emp","column":"dept_no"},{"schema":"public","table":"dept_emp","column":"emp_no"},{"schema":"public","table":"dept_emp","column":"from_date"},{"schema":"public","table":"dept_emp","column":"to_date"},{"schema":"public","table":"dept_emp_latest_date","column":"emp_no"},{"schema":"public","table":"dept_emp_latest_date","column":"from_date"},{"schema":"public","table":"dept_emp_latest_date","column":"to_date"}],"columns":[{"name":"emp_no","position":1,"nullable":true,"type":"integer"},{"name":"dept_no","position":2,"nullable":true,"type":"text"},{"name":"from_date","position":3,"nullable":true,"type":"date"},{"name":"to_date","position":4,"nullable":true,"type":"date"}]},{"name":"dept_emp_latest_date","definition":" SELECT emp_no,\n    max(from_date) AS from_date,\n    max(to_date) AS to_date\n   FROM public.dept_emp\n  GROUP BY emp_no;","dependencyColumns":[{"schema":"public","table":"dept_emp","column":"emp_no"},{"schema":"public","table":"dept_emp","column":"from_date"},{"schema":"public","table":"dept_emp","column":"to_date"}],"columns":[{"name":"emp_no","position":1,"nullable":true,"type":"integer"},{"name":"from_date","position":2,"nullable":true,"type":"date"},{"name":"to_date","position":3,"nullable":true,"type":"date"}]}],"functions":[{"name":"log_dml_operations","definition":"CREATE OR REPLACE FUNCTION public.log_dml_operations()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n    IF (TG_OP = ''INSERT'') THEN\n        INSERT INTO audit (operation, query, user_name)\n        VALUES (''INSERT'', current_query(), current_user);\n        RETURN NEW;\n    ELSIF (TG_OP = ''UPDATE'') THEN\n        INSERT INTO audit (operation, query, user_name)\n        VALUES (''UPDATE'', current_query(), current_user);\n        RETURN NEW;\n    ELSIF (TG_OP = ''DELETE'') THEN\n        INSERT INTO audit (operation, query, user_name)\n        VALUES (''DELETE'', current_query(), current_user);\n        RETURN OLD;\n    END IF;\n    RETURN NULL;\nEND;\n$function$\n","signature":"log_dml_operations()"}],"sequences":[{"name":"audit_id_seq","dataType":"integer","start":"1","minValue":"1","maxValue":"2147483647","increment":"1","cacheSize":"1","ownerTable":"audit","ownerColumn":"id"},{"name":"employee_emp_no_seq","dataType":"integer","start":"1","minValue":"1","maxValue":"2147483647","increment":"1","cacheSize":"1","ownerTable":"employee","ownerColumn":"emp_no"}],"owner":"pg_database_owner"}],"characterSet":"UTF8","collation":"en_US.UTF-8","owner":"bbsample"}', '
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET client_encoding = ''UTF8'';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config(''search_path'', '''', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+SET default_tablespace = '''';
+
+CREATE SEQUENCE "public"."audit_id_seq"
+    AS integer
+	START WITH 1
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 2147483647
+	NO CYCLE;
+
+CREATE TABLE "public"."audit" (
+    "id" integer DEFAULT nextval(''public.audit_id_seq''::regclass) NOT NULL,
+    "operation" text NOT NULL,
+    "query" text,
+    "user_name" text NOT NULL,
+    "changed_at" timestamp with time zone DEFAULT CURRENT_TIMESTAMP
+);
+
+ALTER SEQUENCE "public"."audit_id_seq" OWNED BY "public"."audit"."id";
+
+ALTER TABLE ONLY "public"."audit" ADD CONSTRAINT "audit_pkey" PRIMARY KEY ("id");
+
+CREATE INDEX "idx_audit_changed_at" ON ONLY "public"."audit" ("changed_at");
+
+CREATE INDEX "idx_audit_operation" ON ONLY "public"."audit" ("operation");
+
+CREATE INDEX "idx_audit_username" ON ONLY "public"."audit" ("user_name");
+
+CREATE TABLE "public"."department" (
+    "dept_no" text NOT NULL,
+    "dept_name" text NOT NULL
+);
+
+ALTER TABLE ONLY "public"."department" ADD CONSTRAINT "department_pkey" PRIMARY KEY ("dept_no");
+
+ALTER TABLE ONLY "public"."department" ADD CONSTRAINT "department_dept_name_key" UNIQUE ("dept_name");
+
+CREATE TABLE "public"."dept_emp" (
+    "emp_no" integer NOT NULL,
+    "dept_no" text NOT NULL,
+    "from_date" date NOT NULL,
+    "to_date" date NOT NULL
+);
+
+ALTER TABLE ONLY "public"."dept_emp" ADD CONSTRAINT "dept_emp_pkey" PRIMARY KEY ("emp_no", "dept_no");
+
+CREATE TABLE "public"."dept_manager" (
+    "emp_no" integer NOT NULL,
+    "dept_no" text NOT NULL,
+    "from_date" date NOT NULL,
+    "to_date" date NOT NULL
+);
+
+ALTER TABLE ONLY "public"."dept_manager" ADD CONSTRAINT "dept_manager_pkey" PRIMARY KEY ("emp_no", "dept_no");
+
+CREATE SEQUENCE "public"."employee_emp_no_seq"
+    AS integer
+	START WITH 1
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 2147483647
+	NO CYCLE;
+
+CREATE TABLE "public"."employee" (
+    "emp_no" integer DEFAULT nextval(''public.employee_emp_no_seq''::regclass) NOT NULL,
+    "birth_date" date NOT NULL,
+    "first_name" text NOT NULL,
+    "last_name" text NOT NULL,
+    "gender" text NOT NULL,
+    "hire_date" date NOT NULL
+);
+
+ALTER SEQUENCE "public"."employee_emp_no_seq" OWNED BY "public"."employee"."emp_no";
+
+ALTER TABLE ONLY "public"."employee" ADD CONSTRAINT "employee_pkey" PRIMARY KEY ("emp_no");
+
+CREATE INDEX "idx_employee_hire_date" ON ONLY "public"."employee" ("hire_date");
+
+CREATE OR REPLACE FUNCTION public.log_dml_operations()
+ RETURNS trigger
+ LANGUAGE plpgsql
+AS $function$
+BEGIN
+    IF (TG_OP = ''INSERT'') THEN
+        INSERT INTO audit (operation, query, user_name)
+        VALUES (''INSERT'', current_query(), current_user);
+        RETURN NEW;
+    ELSIF (TG_OP = ''UPDATE'') THEN
+        INSERT INTO audit (operation, query, user_name)
+        VALUES (''UPDATE'', current_query(), current_user);
+        RETURN NEW;
+    ELSIF (TG_OP = ''DELETE'') THEN
+        INSERT INTO audit (operation, query, user_name)
+        VALUES (''DELETE'', current_query(), current_user);
+        RETURN OLD;
+    END IF;
+    RETURN NULL;
+END;
+$function$
+;
+
+CREATE TABLE "public"."salary" (
+    "emp_no" integer NOT NULL,
+    "amount" integer NOT NULL,
+    "from_date" date NOT NULL,
+    "to_date" date NOT NULL
+);
+
+ALTER TABLE ONLY "public"."salary" ADD CONSTRAINT "salary_pkey" PRIMARY KEY ("emp_no", "from_date");
+
+CREATE INDEX "idx_salary_amount" ON ONLY "public"."salary" ("amount");
+
+CREATE TABLE "public"."title" (
+    "emp_no" integer NOT NULL,
+    "title" text NOT NULL,
+    "from_date" date NOT NULL,
+    "to_date" date
+);
+
+ALTER TABLE ONLY "public"."title" ADD CONSTRAINT "title_pkey" PRIMARY KEY ("emp_no", "title", "from_date");
+
+CREATE VIEW "public"."dept_emp_latest_date" AS 
+ SELECT emp_no,
+    max(from_date) AS from_date,
+    max(to_date) AS to_date
+   FROM public.dept_emp
+  GROUP BY emp_no;
+
+CREATE VIEW "public"."current_dept_emp" AS 
+ SELECT l.emp_no,
+    d.dept_no,
+    l.from_date,
+    l.to_date
+   FROM (public.dept_emp d
+     JOIN public.dept_emp_latest_date l ON (((d.emp_no = l.emp_no) AND (d.from_date = l.from_date) AND (l.to_date = d.to_date))));
+
+CREATE TRIGGER salary_log_trigger AFTER DELETE OR UPDATE ON public.salary FOR EACH ROW EXECUTE FUNCTION public.log_dml_operations();
+
+ALTER TABLE "public"."dept_emp"
+    ADD CONSTRAINT "dept_emp_dept_no_fkey" FOREIGN KEY ("dept_no")
+    REFERENCES "public"."department" ("dept_no");
+
+ALTER TABLE "public"."dept_emp"
+    ADD CONSTRAINT "dept_emp_emp_no_fkey" FOREIGN KEY ("emp_no")
+    REFERENCES "public"."employee" ("emp_no");
+
+ALTER TABLE "public"."dept_manager"
+    ADD CONSTRAINT "dept_manager_dept_no_fkey" FOREIGN KEY ("dept_no")
+    REFERENCES "public"."department" ("dept_no");
+
+ALTER TABLE "public"."dept_manager"
+    ADD CONSTRAINT "dept_manager_emp_no_fkey" FOREIGN KEY ("emp_no")
+    REFERENCES "public"."employee" ("emp_no");
+
+ALTER TABLE "public"."salary"
+    ADD CONSTRAINT "salary_emp_no_fkey" FOREIGN KEY ("emp_no")
+    REFERENCES "public"."employee" ("emp_no");
+
+ALTER TABLE "public"."title"
+    ADD CONSTRAINT "title_emp_no_fkey" FOREIGN KEY ("emp_no")
+    REFERENCES "public"."employee" ("emp_no");
+
+', '{}', 'test-sample-instance', 'hr_test') ON CONFLICT DO NOTHING;
 
 
 --
@@ -5494,53 +4478,69 @@ INSERT INTO public.environment (id, name, "order", resource_id, deleted) VALUES 
 -- Data for Name: instance; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-INSERT INTO public.instance (id, environment, name, engine, engine_version, external_link, resource_id, activation, options, metadata, deleted) VALUES (103, 'prod', 'bytebase-meta', 'POSTGRES', '16.0.2', '', 'bytebase-meta', true, '{}', '{"roles": [{"name": "bb", "attribute": "Superuser Create role Create DB Replication Bypass RLS+"}], "lastSyncTime": "2024-08-04T08:05:34.620309Z"}', false) ON CONFLICT DO NOTHING;
-INSERT INTO public.instance (id, environment, name, engine, engine_version, external_link, resource_id, activation, options, metadata, deleted) VALUES (101, 'test', 'Test Sample Instance', 'POSTGRES', '16.0.2', '', 'test-sample-instance', true, '{}', '{"roles": [{"name": "bbsample", "attribute": "Superuser Create role Create DB Replication Bypass RLS+"}], "lastSyncTime": "2024-08-04T08:05:40.864680Z"}', false) ON CONFLICT DO NOTHING;
-INSERT INTO public.instance (id, environment, name, engine, engine_version, external_link, resource_id, activation, options, metadata, deleted) VALUES (102, 'prod', 'Prod Sample Instance', 'POSTGRES', '16.0.0', '', 'prod-sample-instance', true, '{}', '{"roles": [{"name": "bbsample", "attribute": "Superuser Create role Create DB Replication Bypass RLS+"}], "lastSyncTime": "2025-01-16T04:16:04.772800Z"}', false) ON CONFLICT DO NOTHING;
+INSERT INTO public.instance (id, environment, resource_id, metadata, deleted) VALUES (101, 'test', 'test-sample-instance', '{"roles": [{"name": "bbsample", "attribute": "Superuser Create role Create DB Replication Bypass RLS+"}], "title": "Test Sample Instance", "engine": "POSTGRES", "version": "16.0.2", "activation": true, "dataSources": [{"id": "admin", "host": "/tmp", "port": "8083", "type": "ADMIN", "username": "bbsample"}], "lastSyncTime": "2025-03-12T10:24:52.683555Z"}', false) ON CONFLICT DO NOTHING;
+INSERT INTO public.instance (id, environment, resource_id, metadata, deleted) VALUES (103, 'prod', 'bytebase-meta', '{"roles": [{"name": "bb", "attribute": "Superuser Create role Create DB Replication Bypass RLS+"}], "title": "bytebase-meta", "engine": "POSTGRES", "version": "16.0.2", "activation": true, "dataSources": [{"id": "777072ed-539e-4cc2-a41e-6cc2917a7e7c", "host": "/tmp", "port": "8082", "type": "ADMIN", "username": "bb"}], "lastSyncTime": "2025-03-12T10:25:11.806883Z"}', false) ON CONFLICT DO NOTHING;
+INSERT INTO public.instance (id, environment, resource_id, metadata, deleted) VALUES (102, 'prod', 'prod-sample-instance', '{"roles": [{"name": "bbsample", "attribute": "Superuser Create role Create DB Replication Bypass RLS+"}], "title": "Prod Sample Instance", "engine": "POSTGRES", "version": "16.0.2", "activation": true, "dataSources": [{"id": "admin", "host": "/tmp", "port": "8084", "type": "ADMIN", "username": "bbsample"}, {"id": "351173a6-f320-45c5-8d95-8e17abe08964", "host": "/tmp", "port": "8084", "type": "READ_ONLY", "username": "bbsample", "authenticationType": "PASSWORD", "obfuscatedPassword": "WyYTVD4="}, {"id": "e543ddfd-f633-4dbe-87f3-6b171a96e20a", "host": "/tmp", "port": "8084", "type": "READ_ONLY", "username": "bbsample", "authenticationType": "PASSWORD", "obfuscatedPassword": "WyYTVD4="}], "lastSyncTime": "2025-03-12T10:24:47.554607Z"}', false) ON CONFLICT DO NOTHING;
 
 
 --
 -- Data for Name: instance_change_history; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-INSERT INTO public.instance_change_history (id, status, version, execution_duration_ns) VALUES (197, 'DONE', '3.4.0', 1274667) ON CONFLICT DO NOTHING;
-INSERT INTO public.instance_change_history (id, status, version, execution_duration_ns) VALUES (196, 'DONE', '3.3.8', 1708599) ON CONFLICT DO NOTHING;
-INSERT INTO public.instance_change_history (id, status, version, execution_duration_ns) VALUES (198, 'DONE', '3.4.1', 1814000) ON CONFLICT DO NOTHING;
-INSERT INTO public.instance_change_history (id, status, version, execution_duration_ns) VALUES (199, 'DONE', '3.4.2', 15456000) ON CONFLICT DO NOTHING;
-INSERT INTO public.instance_change_history (id, status, version, execution_duration_ns) VALUES (200, 'DONE', '3.4.3', 642000) ON CONFLICT DO NOTHING;
-INSERT INTO public.instance_change_history (id, status, version, execution_duration_ns) VALUES (201, 'DONE', '3.4.4', 6151000) ON CONFLICT DO NOTHING;
-INSERT INTO public.instance_change_history (id, status, version, execution_duration_ns) VALUES (202, 'DONE', '3.4.5', 916000) ON CONFLICT DO NOTHING;
-INSERT INTO public.instance_change_history (id, status, version, execution_duration_ns) VALUES (203, 'DONE', '3.4.6', 14826000) ON CONFLICT DO NOTHING;
-INSERT INTO public.instance_change_history (id, status, version, execution_duration_ns) VALUES (204, 'DONE', '3.4.7', 53717000) ON CONFLICT DO NOTHING;
-INSERT INTO public.instance_change_history (id, status, version, execution_duration_ns) VALUES (205, 'DONE', '3.4.8', 938000) ON CONFLICT DO NOTHING;
-INSERT INTO public.instance_change_history (id, status, version, execution_duration_ns) VALUES (206, 'DONE', '3.4.9', 2181000) ON CONFLICT DO NOTHING;
-INSERT INTO public.instance_change_history (id, status, version, execution_duration_ns) VALUES (207, 'DONE', '3.4.10', 215000) ON CONFLICT DO NOTHING;
-INSERT INTO public.instance_change_history (id, status, version, execution_duration_ns) VALUES (208, 'DONE', '3.4.11', 2558000) ON CONFLICT DO NOTHING;
-INSERT INTO public.instance_change_history (id, status, version, execution_duration_ns) VALUES (209, 'DONE', '3.4.12', 2859000) ON CONFLICT DO NOTHING;
-INSERT INTO public.instance_change_history (id, status, version, execution_duration_ns) VALUES (210, 'DONE', '3.4.13', 753000) ON CONFLICT DO NOTHING;
-INSERT INTO public.instance_change_history (id, status, version, execution_duration_ns) VALUES (211, 'DONE', '3.4.14', 505000) ON CONFLICT DO NOTHING;
-INSERT INTO public.instance_change_history (id, status, version, execution_duration_ns) VALUES (212, 'DONE', '3.4.15', 1103000) ON CONFLICT DO NOTHING;
-INSERT INTO public.instance_change_history (id, status, version, execution_duration_ns) VALUES (213, 'DONE', '3.4.16', 3437000) ON CONFLICT DO NOTHING;
-INSERT INTO public.instance_change_history (id, status, version, execution_duration_ns) VALUES (214, 'DONE', '3.4.17', 1628000) ON CONFLICT DO NOTHING;
-INSERT INTO public.instance_change_history (id, status, version, execution_duration_ns) VALUES (215, 'DONE', '3.4.18', 2392000) ON CONFLICT DO NOTHING;
+INSERT INTO public.instance_change_history (id, version) VALUES (197, '3.4.0') ON CONFLICT DO NOTHING;
+INSERT INTO public.instance_change_history (id, version) VALUES (196, '3.3.8') ON CONFLICT DO NOTHING;
+INSERT INTO public.instance_change_history (id, version) VALUES (198, '3.4.1') ON CONFLICT DO NOTHING;
+INSERT INTO public.instance_change_history (id, version) VALUES (199, '3.4.2') ON CONFLICT DO NOTHING;
+INSERT INTO public.instance_change_history (id, version) VALUES (200, '3.4.3') ON CONFLICT DO NOTHING;
+INSERT INTO public.instance_change_history (id, version) VALUES (201, '3.4.4') ON CONFLICT DO NOTHING;
+INSERT INTO public.instance_change_history (id, version) VALUES (202, '3.4.5') ON CONFLICT DO NOTHING;
+INSERT INTO public.instance_change_history (id, version) VALUES (203, '3.4.6') ON CONFLICT DO NOTHING;
+INSERT INTO public.instance_change_history (id, version) VALUES (204, '3.4.7') ON CONFLICT DO NOTHING;
+INSERT INTO public.instance_change_history (id, version) VALUES (205, '3.4.8') ON CONFLICT DO NOTHING;
+INSERT INTO public.instance_change_history (id, version) VALUES (206, '3.4.9') ON CONFLICT DO NOTHING;
+INSERT INTO public.instance_change_history (id, version) VALUES (207, '3.4.10') ON CONFLICT DO NOTHING;
+INSERT INTO public.instance_change_history (id, version) VALUES (208, '3.4.11') ON CONFLICT DO NOTHING;
+INSERT INTO public.instance_change_history (id, version) VALUES (209, '3.4.12') ON CONFLICT DO NOTHING;
+INSERT INTO public.instance_change_history (id, version) VALUES (210, '3.4.13') ON CONFLICT DO NOTHING;
+INSERT INTO public.instance_change_history (id, version) VALUES (211, '3.4.14') ON CONFLICT DO NOTHING;
+INSERT INTO public.instance_change_history (id, version) VALUES (212, '3.4.15') ON CONFLICT DO NOTHING;
+INSERT INTO public.instance_change_history (id, version) VALUES (213, '3.4.16') ON CONFLICT DO NOTHING;
+INSERT INTO public.instance_change_history (id, version) VALUES (214, '3.4.17') ON CONFLICT DO NOTHING;
+INSERT INTO public.instance_change_history (id, version) VALUES (215, '3.4.18') ON CONFLICT DO NOTHING;
+INSERT INTO public.instance_change_history (id, version) VALUES (216, '3.5.0') ON CONFLICT DO NOTHING;
+INSERT INTO public.instance_change_history (id, version) VALUES (217, '3.5.1') ON CONFLICT DO NOTHING;
+INSERT INTO public.instance_change_history (id, version) VALUES (218, '3.5.2') ON CONFLICT DO NOTHING;
+INSERT INTO public.instance_change_history (id, version) VALUES (219, '3.5.3') ON CONFLICT DO NOTHING;
+INSERT INTO public.instance_change_history (id, version) VALUES (220, '3.5.4') ON CONFLICT DO NOTHING;
+INSERT INTO public.instance_change_history (id, version) VALUES (221, '3.5.5') ON CONFLICT DO NOTHING;
+INSERT INTO public.instance_change_history (id, version) VALUES (222, '3.5.6') ON CONFLICT DO NOTHING;
+INSERT INTO public.instance_change_history (id, version) VALUES (223, '3.5.7') ON CONFLICT DO NOTHING;
+INSERT INTO public.instance_change_history (id, version) VALUES (224, '3.5.8') ON CONFLICT DO NOTHING;
+INSERT INTO public.instance_change_history (id, version) VALUES (225, '3.5.9') ON CONFLICT DO NOTHING;
+INSERT INTO public.instance_change_history (id, version) VALUES (226, '3.5.10') ON CONFLICT DO NOTHING;
+INSERT INTO public.instance_change_history (id, version) VALUES (227, '3.5.11') ON CONFLICT DO NOTHING;
+INSERT INTO public.instance_change_history (id, version) VALUES (228, '3.5.12') ON CONFLICT DO NOTHING;
+INSERT INTO public.instance_change_history (id, version) VALUES (229, '3.5.13') ON CONFLICT DO NOTHING;
+INSERT INTO public.instance_change_history (id, version) VALUES (230, '3.5.14') ON CONFLICT DO NOTHING;
+INSERT INTO public.instance_change_history (id, version) VALUES (231, '3.5.15') ON CONFLICT DO NOTHING;
 
 
 --
 -- Data for Name: issue; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-INSERT INTO public.issue (id, creator_id, plan_id, pipeline_id, name, status, type, description, assignee_id, assignee_need_attention, payload, ts_vector, created_at, updated_at, project) VALUES (104, 104, 104, 104, '[hr_prod] Alter schema @11-04 22:56 UTC+0800', 'CANCELED', 'bb.issue.database.general', '', 1, false, '{"approval": {"approvalTemplates": [{"flow": {"steps": [{"type": "ANY", "nodes": [{"role": "roles/tester", "type": "ANY_IN_GROUP"}]}, {"type": "ANY", "nodes": [{"type": "ANY_IN_GROUP", "groupValue": "PROJECT_OWNER"}]}, {"type": "ANY", "nodes": [{"type": "ANY_IN_GROUP", "groupValue": "WORKSPACE_DBA"}]}]}, "title": "Tester -> Project Owner -> DBA", "creatorId": 101, "description": "Tester -> Project Owner -> DBA"}], "approvalFindingDone": true}}', '''04'':6 ''0800'':10 ''11'':5 ''22'':7 ''56'':8 ''alter'':3 ''hr'':1 ''prod'':2 ''schema'':4 ''utc'':9', '2023-11-04 07:57:12-07', '2023-11-04 07:59:27-07', 'project-sample') ON CONFLICT DO NOTHING;
-INSERT INTO public.issue (id, creator_id, plan_id, pipeline_id, name, status, type, description, assignee_id, assignee_need_attention, payload, ts_vector, created_at, updated_at, project) VALUES (102, 1, 102, 102, 'feat: add city to employee table', 'DONE', 'bb.issue.database.general', '', 1, false, '{"approval": {"approvalFindingDone": true}}', '''20231101'':15 ''add'':6,17 ''alter'':4 ''by'':8 ''city'':7,18 ''ddl'':16 ''files'':10 ''hr'':1,12 ''prod'':2,11,13 ''schema'':5 ''sql'':19 ''vcs'':3,9,14', '2023-11-03 09:07:13-07', '2023-12-14 05:55:47-08', 'gitops-project') ON CONFLICT DO NOTHING;
-INSERT INTO public.issue (id, creator_id, plan_id, pipeline_id, name, status, type, description, assignee_id, assignee_need_attention, payload, ts_vector, created_at, updated_at, project) VALUES (106, 1, 106, 106, 'feat: add phone to employee table', 'OPEN', 'bb.issue.database.general', '', 1, false, '{"approval": {"riskLevel": "HIGH", "approvalTemplates": [{"flow": {"steps": [{"type": "ANY", "nodes": [{"type": "ANY_IN_GROUP", "groupValue": "PROJECT_OWNER"}]}, {"type": "ANY", "nodes": [{"type": "ANY_IN_GROUP", "groupValue": "WORKSPACE_OWNER"}]}]}, "title": "Project Owner -> Workspace Admin", "creatorId": 101, "description": "Project Owner -> Workspace Admin"}], "approvalFindingDone": true}}', '''add'':2 ''employee'':5 ''feat'':1 ''phone'':3 ''table'':6 ''to'':4', '2024-04-10 01:18:10-07', '2024-04-10 01:18:10-07', 'gitops-project') ON CONFLICT DO NOTHING;
-INSERT INTO public.issue (id, creator_id, plan_id, pipeline_id, name, status, type, description, assignee_id, assignee_need_attention, payload, ts_vector, created_at, updated_at, project) VALUES (108, 101, 108, 108, 'Establish "hr_prod_vcs" baseline', 'DONE', 'bb.issue.database.general', '', NULL, false, '{"approval": {"approvalFindingDone": true}}', '''baseline'':5 ''establish'':1 ''hr'':2 ''prod'':3 ''vcs'':4', '2025-01-15 20:17:55-08', '2025-01-15 20:19:11-08', 'gitops-project') ON CONFLICT DO NOTHING;
-INSERT INTO public.issue (id, creator_id, plan_id, pipeline_id, name, status, type, description, assignee_id, assignee_need_attention, payload, ts_vector, created_at, updated_at, project) VALUES (101, 101, 101, 101, '👉👉👉 [START HERE] Add email column to Employee table', 'OPEN', 'bb.issue.database.general', 'A sample issue to showcase how to review database schema change.
+INSERT INTO public.issue (id, creator_id, plan_id, pipeline_id, name, status, type, description, payload, ts_vector, created_at, updated_at, project) VALUES (104, 104, 104, 104, '[hr_prod] Alter schema @11-04 22:56 UTC+0800', 'CANCELED', 'bb.issue.database.general', '', '{"approval": {"approvalTemplates": [{"flow": {"steps": [{"type": "ANY", "nodes": [{"role": "roles/tester", "type": "ANY_IN_GROUP"}]}, {"type": "ANY", "nodes": [{"type": "ANY_IN_GROUP", "groupValue": "PROJECT_OWNER"}]}, {"type": "ANY", "nodes": [{"type": "ANY_IN_GROUP", "groupValue": "WORKSPACE_DBA"}]}]}, "title": "Tester -> Project Owner -> DBA", "creatorId": 101, "description": "Tester -> Project Owner -> DBA"}], "approvalFindingDone": true}}', '''04'':6 ''0800'':10 ''11'':5 ''22'':7 ''56'':8 ''alter'':3 ''hr'':1 ''prod'':2 ''schema'':4 ''utc'':9', '2023-11-04 07:57:12-07', '2023-11-04 07:59:27-07', 'project-sample') ON CONFLICT DO NOTHING;
+INSERT INTO public.issue (id, creator_id, plan_id, pipeline_id, name, status, type, description, payload, ts_vector, created_at, updated_at, project) VALUES (102, 1, 102, 102, 'feat: add city to employee table', 'DONE', 'bb.issue.database.general', '', '{"approval": {"approvalFindingDone": true}}', '''20231101'':15 ''add'':6,17 ''alter'':4 ''by'':8 ''city'':7,18 ''ddl'':16 ''files'':10 ''hr'':1,12 ''prod'':2,11,13 ''schema'':5 ''sql'':19 ''vcs'':3,9,14', '2023-11-03 09:07:13-07', '2023-12-14 05:55:47-08', 'gitops-project') ON CONFLICT DO NOTHING;
+INSERT INTO public.issue (id, creator_id, plan_id, pipeline_id, name, status, type, description, payload, ts_vector, created_at, updated_at, project) VALUES (106, 1, 106, 106, 'feat: add phone to employee table', 'OPEN', 'bb.issue.database.general', '', '{"approval": {"riskLevel": "HIGH", "approvalTemplates": [{"flow": {"steps": [{"type": "ANY", "nodes": [{"type": "ANY_IN_GROUP", "groupValue": "PROJECT_OWNER"}]}, {"type": "ANY", "nodes": [{"type": "ANY_IN_GROUP", "groupValue": "WORKSPACE_OWNER"}]}]}, "title": "Project Owner -> Workspace Admin", "creatorId": 101, "description": "Project Owner -> Workspace Admin"}], "approvalFindingDone": true}}', '''add'':2 ''employee'':5 ''feat'':1 ''phone'':3 ''table'':6 ''to'':4', '2024-04-10 01:18:10-07', '2024-04-10 01:18:10-07', 'gitops-project') ON CONFLICT DO NOTHING;
+INSERT INTO public.issue (id, creator_id, plan_id, pipeline_id, name, status, type, description, payload, ts_vector, created_at, updated_at, project) VALUES (108, 101, 108, 108, 'Establish "hr_prod_vcs" baseline', 'DONE', 'bb.issue.database.general', '', '{"approval": {"approvalFindingDone": true}}', '''baseline'':5 ''establish'':1 ''hr'':2 ''prod'':3 ''vcs'':4', '2025-01-15 20:17:55-08', '2025-01-15 20:19:11-08', 'gitops-project') ON CONFLICT DO NOTHING;
+INSERT INTO public.issue (id, creator_id, plan_id, pipeline_id, name, status, type, description, payload, ts_vector, created_at, updated_at, project) VALUES (101, 101, 101, 101, '👉👉👉 [START HERE] Add email column to Employee table', 'OPEN', 'bb.issue.database.general', 'A sample issue to showcase how to review database schema change.
 
-				Click "Approve" button to apply the schema update.', 101, false, '{"labels": ["2.17.0", "bug"], "approval": {"riskLevel": "HIGH", "approvalTemplates": [{"flow": {"steps": [{"type": "ANY", "nodes": [{"type": "ANY_IN_GROUP", "groupValue": "PROJECT_OWNER"}]}, {"type": "ANY", "nodes": [{"type": "ANY_IN_GROUP", "groupValue": "WORKSPACE_OWNER"}]}]}, "title": "Project Owner -> Workspace Admin", "creatorId": 101, "description": "Project Owner -> Workspace Admin"}], "approvalFindingDone": true}}', '''a'':9 ''add'':3 ''apply'':24 ''approve'':21 ''button'':22 ''change'':19 ''click'':20 ''column'':5 ''database'':17 ''email'':4 ''employee'':7 ''here'':2 ''how'':14 ''issue'':11 ''review'':16 ''sample'':10 ''schema'':18,26 ''showcase'':13 ''start'':1 ''table'':8 ''the'':25 ''to'':6,12,15,23 ''update'':27', '2023-11-03 08:46:31-07', '2024-05-16 09:42:50-07', 'project-sample') ON CONFLICT DO NOTHING;
-INSERT INTO public.issue (id, creator_id, plan_id, pipeline_id, name, status, type, description, assignee_id, assignee_need_attention, payload, ts_vector, created_at, updated_at, project) VALUES (105, 104, 105, 105, 'Add performance table', 'OPEN', 'bb.issue.database.general', '', 1, false, '{"labels": ["feature"], "approval": {"approvalTemplates": [{"flow": {"steps": [{"type": "ANY", "nodes": [{"type": "ANY_IN_GROUP", "groupValue": "PROJECT_OWNER"}]}, {"type": "ANY", "nodes": [{"type": "ANY_IN_GROUP", "groupValue": "WORKSPACE_DBA"}]}]}, "title": "Project Owner -> DBA", "creatorId": 1, "description": "The system defines the approval process, first the project Owner approves, then the DBA approves."}], "approvalFindingDone": true}}', '''add'':1 ''performance'':2 ''table'':3', '2023-11-04 08:05:35-07', '2024-05-16 09:43:01-07', 'project-sample') ON CONFLICT DO NOTHING;
-INSERT INTO public.issue (id, creator_id, plan_id, pipeline_id, name, status, type, description, assignee_id, assignee_need_attention, payload, ts_vector, created_at, updated_at, project) VALUES (110, 101, 110, 110, 'Establish "hr_test" baseline', 'DONE', 'bb.issue.database.general', '', NULL, false, '{"approval": {"approvalFindingDone": true}}', '''baseline'':4 ''establish'':1 ''hr'':2 ''test'':3', '2025-01-15 20:21:52-08', '2025-01-15 20:21:56-08', 'project-sample') ON CONFLICT DO NOTHING;
-INSERT INTO public.issue (id, creator_id, plan_id, pipeline_id, name, status, type, description, assignee_id, assignee_need_attention, payload, ts_vector, created_at, updated_at, project) VALUES (107, 101, 107, 107, 'Update employee gender to M', 'OPEN', 'bb.issue.database.general', '', NULL, false, '{"approval": {"approvalTemplates": [{"flow": {"steps": [{"type": "ANY", "nodes": [{"type": "ANY_IN_GROUP", "groupValue": "PROJECT_OWNER"}]}]}, "title": "Project Owner", "creatorId": 1, "description": "The system defines the approval process and only needs the project Owner o approve it."}], "approvalFindingDone": true}}', '''employee'':2 ''gender'':3 ''m'':5 ''to'':4 ''update'':1', '2024-05-16 09:58:06-07', '2024-05-16 09:58:07-07', 'project-sample') ON CONFLICT DO NOTHING;
-INSERT INTO public.issue (id, creator_id, plan_id, pipeline_id, name, status, type, description, assignee_id, assignee_need_attention, payload, ts_vector, created_at, updated_at, project) VALUES (109, 101, 109, 109, 'Establish "hr_prod" baseline', 'DONE', 'bb.issue.database.general', '', NULL, false, '{"approval": {"approvalFindingDone": true}}', '''baseline'':4 ''establish'':1 ''hr'':2 ''prod'':3', '2025-01-15 20:19:35-08', '2025-01-15 20:19:38-08', 'project-sample') ON CONFLICT DO NOTHING;
-INSERT INTO public.issue (id, creator_id, plan_id, pipeline_id, name, status, type, description, assignee_id, assignee_need_attention, payload, ts_vector, created_at, updated_at, project) VALUES (103, 106, 103, 103, 'Add Investor Relation department', 'DONE', 'bb.issue.database.general', '', 1, false, '{"approval": {"approvalFindingDone": true}}', '''add'':1 ''department'':4 ''investor'':2 ''relation'':3', '2023-11-03 10:28:39-07', '2025-01-22 22:26:01-08', 'batch-project') ON CONFLICT DO NOTHING;
+				Click "Approve" button to apply the schema update.', '{"labels": ["2.17.0", "bug"], "approval": {"riskLevel": "HIGH", "approvalTemplates": [{"flow": {"steps": [{"type": "ANY", "nodes": [{"type": "ANY_IN_GROUP", "groupValue": "PROJECT_OWNER"}]}, {"type": "ANY", "nodes": [{"type": "ANY_IN_GROUP", "groupValue": "WORKSPACE_OWNER"}]}]}, "title": "Project Owner -> Workspace Admin", "creatorId": 101, "description": "Project Owner -> Workspace Admin"}], "approvalFindingDone": true}}', '''a'':9 ''add'':3 ''apply'':24 ''approve'':21 ''button'':22 ''change'':19 ''click'':20 ''column'':5 ''database'':17 ''email'':4 ''employee'':7 ''here'':2 ''how'':14 ''issue'':11 ''review'':16 ''sample'':10 ''schema'':18,26 ''showcase'':13 ''start'':1 ''table'':8 ''the'':25 ''to'':6,12,15,23 ''update'':27', '2023-11-03 08:46:31-07', '2024-05-16 09:42:50-07', 'project-sample') ON CONFLICT DO NOTHING;
+INSERT INTO public.issue (id, creator_id, plan_id, pipeline_id, name, status, type, description, payload, ts_vector, created_at, updated_at, project) VALUES (105, 104, 105, 105, 'Add performance table', 'OPEN', 'bb.issue.database.general', '', '{"labels": ["feature"], "approval": {"approvalTemplates": [{"flow": {"steps": [{"type": "ANY", "nodes": [{"type": "ANY_IN_GROUP", "groupValue": "PROJECT_OWNER"}]}, {"type": "ANY", "nodes": [{"type": "ANY_IN_GROUP", "groupValue": "WORKSPACE_DBA"}]}]}, "title": "Project Owner -> DBA", "creatorId": 1, "description": "The system defines the approval process, first the project Owner approves, then the DBA approves."}], "approvalFindingDone": true}}', '''add'':1 ''performance'':2 ''table'':3', '2023-11-04 08:05:35-07', '2024-05-16 09:43:01-07', 'project-sample') ON CONFLICT DO NOTHING;
+INSERT INTO public.issue (id, creator_id, plan_id, pipeline_id, name, status, type, description, payload, ts_vector, created_at, updated_at, project) VALUES (110, 101, 110, 110, 'Establish "hr_test" baseline', 'DONE', 'bb.issue.database.general', '', '{"approval": {"approvalFindingDone": true}}', '''baseline'':4 ''establish'':1 ''hr'':2 ''test'':3', '2025-01-15 20:21:52-08', '2025-01-15 20:21:56-08', 'project-sample') ON CONFLICT DO NOTHING;
+INSERT INTO public.issue (id, creator_id, plan_id, pipeline_id, name, status, type, description, payload, ts_vector, created_at, updated_at, project) VALUES (107, 101, 107, 107, 'Update employee gender to M', 'OPEN', 'bb.issue.database.general', '', '{"approval": {"approvalTemplates": [{"flow": {"steps": [{"type": "ANY", "nodes": [{"type": "ANY_IN_GROUP", "groupValue": "PROJECT_OWNER"}]}]}, "title": "Project Owner", "creatorId": 1, "description": "The system defines the approval process and only needs the project Owner o approve it."}], "approvalFindingDone": true}}', '''employee'':2 ''gender'':3 ''m'':5 ''to'':4 ''update'':1', '2024-05-16 09:58:06-07', '2024-05-16 09:58:07-07', 'project-sample') ON CONFLICT DO NOTHING;
+INSERT INTO public.issue (id, creator_id, plan_id, pipeline_id, name, status, type, description, payload, ts_vector, created_at, updated_at, project) VALUES (109, 101, 109, 109, 'Establish "hr_prod" baseline', 'DONE', 'bb.issue.database.general', '', '{"approval": {"approvalFindingDone": true}}', '''baseline'':4 ''establish'':1 ''hr'':2 ''prod'':3', '2025-01-15 20:19:35-08', '2025-01-15 20:19:38-08', 'project-sample') ON CONFLICT DO NOTHING;
+INSERT INTO public.issue (id, creator_id, plan_id, pipeline_id, name, status, type, description, payload, ts_vector, created_at, updated_at, project) VALUES (103, 106, 103, 103, 'Add Investor Relation department', 'DONE', 'bb.issue.database.general', '', '{"approval": {"approvalFindingDone": true}}', '''add'':1 ''department'':4 ''investor'':2 ''relation'':3', '2023-11-03 10:28:39-07', '2025-01-22 22:26:01-08', 'batch-project') ON CONFLICT DO NOTHING;
 
 
 --
@@ -5695,7 +4695,6 @@ INSERT INTO public.policy (id, type, payload, resource_type, inherit_from_parent
 INSERT INTO public.policy (id, type, payload, resource_type, inherit_from_parent, updated_at, resource, enforce) VALUES (116, 'bb.policy.iam', '{"bindings": [{"role": "roles/projectDeveloper", "members": ["users/106", "users/107"], "condition": {"title": "Developer"}}, {"role": "roles/projectOwner", "members": ["users/101"], "condition": {}}, {"role": "roles/projectOwner", "members": ["users/102", "users/103"], "condition": {"title": "Owner"}}, {"role": "roles/sqlEditorUser", "members": ["users/104", "users/105"], "condition": {"title": "Querier All"}}]}', 'PROJECT', false, '2025-02-24 22:35:21.127989-08', 'projects/batch-project', true) ON CONFLICT DO NOTHING;
 INSERT INTO public.policy (id, type, payload, resource_type, inherit_from_parent, updated_at, resource, enforce) VALUES (105, 'bb.policy.environment-tier', '{"environmentTier": "PROTECTED"}', 'ENVIRONMENT', true, '2025-02-24 22:35:21.127989-08', 'environments/prod', true) ON CONFLICT DO NOTHING;
 INSERT INTO public.policy (id, type, payload, resource_type, inherit_from_parent, updated_at, resource, enforce) VALUES (104, 'bb.policy.rollout', '{}', 'ENVIRONMENT', false, '2025-02-24 22:35:21.127989-08', 'environments/prod', true) ON CONFLICT DO NOTHING;
-INSERT INTO public.policy (id, type, payload, resource_type, inherit_from_parent, updated_at, resource, enforce) VALUES (119, 'bb.policy.iam', '{"bindings": [{"role": "roles/workspaceDBA", "members": ["users/102", "users/103", "users/109"]}, {"role": "roles/workspaceAdmin", "members": ["users/101", "users/1"]}, {"role": "roles/workspaceMember", "members": ["allUsers"]}]}', 'WORKSPACE', false, '2025-02-24 22:37:39.073157-08', '', true) ON CONFLICT DO NOTHING;
 INSERT INTO public.policy (id, type, payload, resource_type, inherit_from_parent, updated_at, resource, enforce) VALUES (117, 'bb.policy.iam', '{"bindings": [{"role": "roles/projectOwner", "members": ["users/101"], "condition": {}}, {"role": "roles/sqlEditorUser", "members": ["users/104"], "condition": {"title": "Project Querier All"}}]}', 'PROJECT', false, '2025-02-24 22:35:21.127989-08', 'projects/metadb-project', true) ON CONFLICT DO NOTHING;
 INSERT INTO public.policy (id, type, payload, resource_type, inherit_from_parent, updated_at, resource, enforce) VALUES (103, 'bb.policy.rollout', '{}', 'ENVIRONMENT', false, '2025-02-24 22:35:21.127989-08', 'environments/test', true) ON CONFLICT DO NOTHING;
 INSERT INTO public.policy (id, type, payload, resource_type, inherit_from_parent, updated_at, resource, enforce) VALUES (108, 'bb.policy.disable-copy-data', '{"active": false}', 'ENVIRONMENT', false, '2025-02-24 22:35:21.127989-08', 'environments/test', true) ON CONFLICT DO NOTHING;
@@ -5703,6 +4702,8 @@ INSERT INTO public.policy (id, type, payload, resource_type, inherit_from_parent
 INSERT INTO public.policy (id, type, payload, resource_type, inherit_from_parent, updated_at, resource, enforce) VALUES (118, 'bb.policy.tag', '{"tags": {"bb.tag.review_config": "reviewConfigs/prod"}}', 'ENVIRONMENT', true, '2025-02-24 22:35:21.127989-08', 'environments/prod', true) ON CONFLICT DO NOTHING;
 INSERT INTO public.policy (id, type, payload, resource_type, inherit_from_parent, updated_at, resource, enforce) VALUES (122, 'bb.policy.data-source-query', '{"disallowDdl": true, "disallowDml": true, "adminDataSourceRestriction": "FALLBACK"}', 'ENVIRONMENT', false, '2025-02-24 22:35:21.127989-08', 'environments/test', true) ON CONFLICT DO NOTHING;
 INSERT INTO public.policy (id, type, payload, resource_type, inherit_from_parent, updated_at, resource, enforce) VALUES (123, 'bb.policy.data-source-query', '{"disallowDdl": true, "disallowDml": true, "adminDataSourceRestriction": "FALLBACK"}', 'ENVIRONMENT', false, '2025-02-24 22:35:21.127989-08', 'environments/prod', true) ON CONFLICT DO NOTHING;
+INSERT INTO public.policy (id, type, payload, resource_type, inherit_from_parent, updated_at, resource, enforce) VALUES (174, 'bb.policy.query-data', '{"timeout": "600s"}', 'WORKSPACE', false, '2025-03-12 03:10:55.082145-07', '', true) ON CONFLICT DO NOTHING;
+INSERT INTO public.policy (id, type, payload, resource_type, inherit_from_parent, updated_at, resource, enforce) VALUES (119, 'bb.policy.iam', '{"bindings": [{"role": "roles/workspaceDBA", "members": ["users/102", "users/103", "users/109"]}, {"role": "roles/workspaceAdmin", "members": ["users/101", "users/1"]}, {"role": "roles/workspaceMember", "members": ["allUsers"]}]}', 'WORKSPACE', false, '2025-03-12 03:25:30.021918-07', '', true) ON CONFLICT DO NOTHING;
 
 
 --
@@ -5719,7 +4720,7 @@ INSERT INTO public.principal (id, type, name, email, password_hash, phone, mfa_c
 INSERT INTO public.principal (id, type, name, email, password_hash, phone, mfa_config, profile, created_at, deleted) VALUES (108, 'END_USER', 'qa1', 'qa1@example.com', '$2a$10$tgPwB2JdZlyu2MD/W.IxluFMI8bM9IPgYSQYaQEIBYT0SO23QM5Iu', '', '{}', '{}', '2023-11-04 07:48:30-07', false) ON CONFLICT DO NOTHING;
 INSERT INTO public.principal (id, type, name, email, password_hash, phone, mfa_config, profile, created_at, deleted) VALUES (104, 'END_USER', 'dev1', 'dev1@example.com', '$2a$10$hX4vTGH7Id6v9BWhHHtW9uHT.M/ANZ25owa5J9m1tSS5qzlSCkjSu', '', '{}', '{"lastLoginTime": "2024-09-20T08:16:29.553490Z"}', '2023-11-03 09:23:51-07', false) ON CONFLICT DO NOTHING;
 INSERT INTO public.principal (id, type, name, email, password_hash, phone, mfa_config, profile, created_at, deleted) VALUES (109, 'SERVICE_ACCOUNT', 'ci', 'ci@service.bytebase.com', '$2a$10$LLSrQ6pPSnqIqml/PUh3G.WjrLUMod2l8hWbSKa4qsVQ7bw9ZTNc.', '', '{}', '{"lastChangePasswordTime": "2025-01-23T16:49:28.865322699Z"}', '2024-04-10 01:06:18-07', false) ON CONFLICT DO NOTHING;
-INSERT INTO public.principal (id, type, name, email, password_hash, phone, mfa_config, profile, created_at, deleted) VALUES (101, 'END_USER', 'Demo', 'demo@example.com', '$2a$10$aKjyVRxwbzmNToxYLXgTn.cQZX9x8KI1LLu5U69zzn5wcaoagoBLG', '', '{}', '{"lastLoginTime": "2025-02-08T04:49:31.431086962Z"}', '2023-11-03 08:46:31-07', false) ON CONFLICT DO NOTHING;
+INSERT INTO public.principal (id, type, name, email, password_hash, phone, mfa_config, profile, created_at, deleted) VALUES (101, 'END_USER', 'Demo', 'demo@example.com', '$2a$10$aKjyVRxwbzmNToxYLXgTn.cQZX9x8KI1LLu5U69zzn5wcaoagoBLG', '', '{}', '{"lastLoginTime": "2025-03-12T10:20:19.115719Z"}', '2023-11-03 08:46:31-07', false) ON CONFLICT DO NOTHING;
 
 
 --
@@ -6096,28 +5097,22 @@ INSERT INTO public.sheet_blob (sha256, content) VALUES ('\xe3b0c44298fc1c149afbf
 
 
 --
--- Data for Name: slow_query; Type: TABLE DATA; Schema: public; Owner: -
---
-
-
-
---
 -- Data for Name: stage; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-INSERT INTO public.stage (id, pipeline_id, deployment_id, name, environment) VALUES (101, 101, '', 'Test Stage', 'test') ON CONFLICT DO NOTHING;
-INSERT INTO public.stage (id, pipeline_id, deployment_id, name, environment) VALUES (102, 101, '', 'Prod Stage', 'prod') ON CONFLICT DO NOTHING;
-INSERT INTO public.stage (id, pipeline_id, deployment_id, name, environment) VALUES (103, 102, '', 'Prod Stage', 'prod') ON CONFLICT DO NOTHING;
-INSERT INTO public.stage (id, pipeline_id, deployment_id, name, environment) VALUES (104, 103, '', 'Prod Stage', 'prod') ON CONFLICT DO NOTHING;
-INSERT INTO public.stage (id, pipeline_id, deployment_id, name, environment) VALUES (105, 103, '', 'Prod Stage', 'prod') ON CONFLICT DO NOTHING;
-INSERT INTO public.stage (id, pipeline_id, deployment_id, name, environment) VALUES (106, 103, '', 'Prod Stage', 'prod') ON CONFLICT DO NOTHING;
-INSERT INTO public.stage (id, pipeline_id, deployment_id, name, environment) VALUES (107, 104, '', 'Prod Stage', 'prod') ON CONFLICT DO NOTHING;
-INSERT INTO public.stage (id, pipeline_id, deployment_id, name, environment) VALUES (108, 105, '', 'Prod Stage', 'prod') ON CONFLICT DO NOTHING;
-INSERT INTO public.stage (id, pipeline_id, deployment_id, name, environment) VALUES (109, 106, '', 'Prod Stage', 'prod') ON CONFLICT DO NOTHING;
-INSERT INTO public.stage (id, pipeline_id, deployment_id, name, environment) VALUES (110, 107, '', 'Prod Stage', 'prod') ON CONFLICT DO NOTHING;
-INSERT INTO public.stage (id, pipeline_id, deployment_id, name, environment) VALUES (111, 108, '1', 'Prod Stage', 'prod') ON CONFLICT DO NOTHING;
-INSERT INTO public.stage (id, pipeline_id, deployment_id, name, environment) VALUES (112, 109, '1', 'Prod Stage', 'prod') ON CONFLICT DO NOTHING;
-INSERT INTO public.stage (id, pipeline_id, deployment_id, name, environment) VALUES (113, 110, '0', 'Test Stage', 'test') ON CONFLICT DO NOTHING;
+INSERT INTO public.stage (id, pipeline_id, environment) VALUES (101, 101, 'test') ON CONFLICT DO NOTHING;
+INSERT INTO public.stage (id, pipeline_id, environment) VALUES (102, 101, 'prod') ON CONFLICT DO NOTHING;
+INSERT INTO public.stage (id, pipeline_id, environment) VALUES (103, 102, 'prod') ON CONFLICT DO NOTHING;
+INSERT INTO public.stage (id, pipeline_id, environment) VALUES (104, 103, 'prod') ON CONFLICT DO NOTHING;
+INSERT INTO public.stage (id, pipeline_id, environment) VALUES (105, 103, 'prod') ON CONFLICT DO NOTHING;
+INSERT INTO public.stage (id, pipeline_id, environment) VALUES (106, 103, 'prod') ON CONFLICT DO NOTHING;
+INSERT INTO public.stage (id, pipeline_id, environment) VALUES (107, 104, 'prod') ON CONFLICT DO NOTHING;
+INSERT INTO public.stage (id, pipeline_id, environment) VALUES (108, 105, 'prod') ON CONFLICT DO NOTHING;
+INSERT INTO public.stage (id, pipeline_id, environment) VALUES (109, 106, 'prod') ON CONFLICT DO NOTHING;
+INSERT INTO public.stage (id, pipeline_id, environment) VALUES (110, 107, 'prod') ON CONFLICT DO NOTHING;
+INSERT INTO public.stage (id, pipeline_id, environment) VALUES (111, 108, 'prod') ON CONFLICT DO NOTHING;
+INSERT INTO public.stage (id, pipeline_id, environment) VALUES (112, 109, 'prod') ON CONFLICT DO NOTHING;
+INSERT INTO public.stage (id, pipeline_id, environment) VALUES (113, 110, 'test') ON CONFLICT DO NOTHING;
 
 
 --
@@ -7465,44 +6460,38 @@ ALTER TABLE "public"."title"
 -- Data for Name: task; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-INSERT INTO public.task (id, pipeline_id, stage_id, name, status, type, payload, earliest_allowed_at, instance, db_name) VALUES (103, 102, 103, 'DDL(schema) for database "hr_prod_vcs"', 'PENDING_APPROVAL', 'bb.task.database.schema.update', '{"sheetId": 104}', NULL, 'prod-sample-instance', 'hr_prod_vcs') ON CONFLICT DO NOTHING;
-INSERT INTO public.task (id, pipeline_id, stage_id, name, status, type, payload, earliest_allowed_at, instance, db_name) VALUES (104, 103, 104, 'DML(data) for database "hr_prod_1"', 'PENDING_APPROVAL', 'bb.task.database.data.update', '{"specId": "2b77e8db-cfbf-4148-aac9-39965fbd43e3", "sheetId": 106, "rollbackSqlStatus": "PENDING"}', NULL, 'prod-sample-instance', 'hr_prod_1') ON CONFLICT DO NOTHING;
-INSERT INTO public.task (id, pipeline_id, stage_id, name, status, type, payload, earliest_allowed_at, instance, db_name) VALUES (105, 103, 104, 'DML(data) for database "hr_prod_4"', 'PENDING_APPROVAL', 'bb.task.database.data.update', '{"specId": "2b77e8db-cfbf-4148-aac9-39965fbd43e3", "sheetId": 106, "rollbackSqlStatus": "PENDING"}', NULL, 'prod-sample-instance', 'hr_prod_4') ON CONFLICT DO NOTHING;
-INSERT INTO public.task (id, pipeline_id, stage_id, name, status, type, payload, earliest_allowed_at, instance, db_name) VALUES (106, 103, 105, 'DML(data) for database "hr_prod_2"', 'PENDING_APPROVAL', 'bb.task.database.data.update', '{"specId": "2b77e8db-cfbf-4148-aac9-39965fbd43e3", "sheetId": 106, "rollbackSqlStatus": "PENDING"}', NULL, 'prod-sample-instance', 'hr_prod_2') ON CONFLICT DO NOTHING;
-INSERT INTO public.task (id, pipeline_id, stage_id, name, status, type, payload, earliest_allowed_at, instance, db_name) VALUES (107, 103, 105, 'DML(data) for database "hr_prod_5"', 'PENDING_APPROVAL', 'bb.task.database.data.update', '{"specId": "2b77e8db-cfbf-4148-aac9-39965fbd43e3", "sheetId": 106, "rollbackSqlStatus": "PENDING"}', NULL, 'prod-sample-instance', 'hr_prod_5') ON CONFLICT DO NOTHING;
-INSERT INTO public.task (id, pipeline_id, stage_id, name, status, type, payload, earliest_allowed_at, instance, db_name) VALUES (108, 103, 106, 'DML(data) for database "hr_prod_3"', 'PENDING_APPROVAL', 'bb.task.database.data.update', '{"specId": "2b77e8db-cfbf-4148-aac9-39965fbd43e3", "sheetId": 106, "rollbackSqlStatus": "PENDING"}', NULL, 'prod-sample-instance', 'hr_prod_3') ON CONFLICT DO NOTHING;
-INSERT INTO public.task (id, pipeline_id, stage_id, name, status, type, payload, earliest_allowed_at, instance, db_name) VALUES (109, 103, 106, 'DML(data) for database "hr_prod_6"', 'PENDING_APPROVAL', 'bb.task.database.data.update', '{"specId": "2b77e8db-cfbf-4148-aac9-39965fbd43e3", "sheetId": 106, "rollbackSqlStatus": "PENDING"}', NULL, 'prod-sample-instance', 'hr_prod_6') ON CONFLICT DO NOTHING;
-INSERT INTO public.task (id, pipeline_id, stage_id, name, status, type, payload, earliest_allowed_at, instance, db_name) VALUES (110, 104, 107, 'DDL(schema) for database "hr_prod"', 'PENDING_APPROVAL', 'bb.task.database.schema.update', '{"specId": "96967c30-ee17-468e-8368-6366ccc83c52", "sheetId": 107}', NULL, 'prod-sample-instance', 'hr_prod') ON CONFLICT DO NOTHING;
-INSERT INTO public.task (id, pipeline_id, stage_id, name, status, type, payload, earliest_allowed_at, instance, db_name) VALUES (111, 105, 108, 'DDL(schema) for database "hr_prod"', 'PENDING_APPROVAL', 'bb.task.database.schema.update', '{"specId": "9227f0c7-fa7d-44f3-9282-a32da230e2e4", "sheetId": 108}', NULL, 'prod-sample-instance', 'hr_prod') ON CONFLICT DO NOTHING;
-INSERT INTO public.task (id, pipeline_id, stage_id, name, status, type, payload, earliest_allowed_at, instance, db_name) VALUES (101, 101, 101, 'DDL(schema) for database "hr_test"', 'PENDING_APPROVAL', 'bb.task.database.schema.update', '{"sheetId": 130}', NULL, 'test-sample-instance', 'hr_test') ON CONFLICT DO NOTHING;
-INSERT INTO public.task (id, pipeline_id, stage_id, name, status, type, payload, earliest_allowed_at, instance, db_name) VALUES (102, 101, 102, 'DDL(schema) for database "hr_prod"', 'PENDING_APPROVAL', 'bb.task.database.schema.update', '{"sheetId": 130}', NULL, 'prod-sample-instance', 'hr_prod') ON CONFLICT DO NOTHING;
-INSERT INTO public.task (id, pipeline_id, stage_id, name, status, type, payload, earliest_allowed_at, instance, db_name) VALUES (112, 106, 109, 'DDL(schema) for database "hr_prod_vcs"', 'PENDING_APPROVAL', 'bb.task.database.schema.update', '{"specId": "e4010ea4-dd1e-441a-9ea2-90f467ed8506", "sheetId": 131}', NULL, 'prod-sample-instance', 'hr_prod_vcs') ON CONFLICT DO NOTHING;
-INSERT INTO public.task (id, pipeline_id, stage_id, name, status, type, payload, earliest_allowed_at, instance, db_name) VALUES (113, 107, 110, 'DML(data) for database "hr_prod"', 'PENDING_APPROVAL', 'bb.task.database.data.update', '{"specId": "0992ef9b-3d08-4745-ab40-ff74d34208a8", "sheetId": 132, "rollbackSqlStatus": "PENDING", "preUpdateBackupDetail": {}}', NULL, 'prod-sample-instance', 'hr_prod') ON CONFLICT DO NOTHING;
-INSERT INTO public.task (id, pipeline_id, stage_id, name, status, type, payload, earliest_allowed_at, instance, db_name) VALUES (114, 108, 111, 'Establish baseline for database "hr_prod_vcs"', 'PENDING_APPROVAL', 'bb.task.database.schema.baseline', '{"specId": "ff8ecf1c-f037-4544-971c-c3f4c8ff5889", "taskReleaseSource": {}}', NULL, 'prod-sample-instance', 'hr_prod_vcs') ON CONFLICT DO NOTHING;
-INSERT INTO public.task (id, pipeline_id, stage_id, name, status, type, payload, earliest_allowed_at, instance, db_name) VALUES (115, 109, 112, 'Establish baseline for database "hr_prod"', 'PENDING_APPROVAL', 'bb.task.database.schema.baseline', '{"specId": "231a929d-bb89-4845-8b7c-6e4870116d32", "taskReleaseSource": {}}', NULL, 'prod-sample-instance', 'hr_prod') ON CONFLICT DO NOTHING;
-INSERT INTO public.task (id, pipeline_id, stage_id, name, status, type, payload, earliest_allowed_at, instance, db_name) VALUES (116, 110, 113, 'Establish baseline for database "hr_test"', 'PENDING_APPROVAL', 'bb.task.database.schema.baseline', '{"specId": "913aa19f-18e6-42c5-b6e7-2fbb358cffee", "taskReleaseSource": {}}', NULL, 'test-sample-instance', 'hr_test') ON CONFLICT DO NOTHING;
-
-
---
--- Data for Name: task_dag; Type: TABLE DATA; Schema: public; Owner: -
---
-
+INSERT INTO public.task (id, pipeline_id, stage_id, type, payload, earliest_allowed_at, instance, db_name) VALUES (103, 102, 103, 'bb.task.database.schema.update', '{"sheetId": 104}', NULL, 'prod-sample-instance', 'hr_prod_vcs') ON CONFLICT DO NOTHING;
+INSERT INTO public.task (id, pipeline_id, stage_id, type, payload, earliest_allowed_at, instance, db_name) VALUES (104, 103, 104, 'bb.task.database.data.update', '{"specId": "2b77e8db-cfbf-4148-aac9-39965fbd43e3", "sheetId": 106, "rollbackSqlStatus": "PENDING"}', NULL, 'prod-sample-instance', 'hr_prod_1') ON CONFLICT DO NOTHING;
+INSERT INTO public.task (id, pipeline_id, stage_id, type, payload, earliest_allowed_at, instance, db_name) VALUES (105, 103, 104, 'bb.task.database.data.update', '{"specId": "2b77e8db-cfbf-4148-aac9-39965fbd43e3", "sheetId": 106, "rollbackSqlStatus": "PENDING"}', NULL, 'prod-sample-instance', 'hr_prod_4') ON CONFLICT DO NOTHING;
+INSERT INTO public.task (id, pipeline_id, stage_id, type, payload, earliest_allowed_at, instance, db_name) VALUES (106, 103, 105, 'bb.task.database.data.update', '{"specId": "2b77e8db-cfbf-4148-aac9-39965fbd43e3", "sheetId": 106, "rollbackSqlStatus": "PENDING"}', NULL, 'prod-sample-instance', 'hr_prod_2') ON CONFLICT DO NOTHING;
+INSERT INTO public.task (id, pipeline_id, stage_id, type, payload, earliest_allowed_at, instance, db_name) VALUES (107, 103, 105, 'bb.task.database.data.update', '{"specId": "2b77e8db-cfbf-4148-aac9-39965fbd43e3", "sheetId": 106, "rollbackSqlStatus": "PENDING"}', NULL, 'prod-sample-instance', 'hr_prod_5') ON CONFLICT DO NOTHING;
+INSERT INTO public.task (id, pipeline_id, stage_id, type, payload, earliest_allowed_at, instance, db_name) VALUES (108, 103, 106, 'bb.task.database.data.update', '{"specId": "2b77e8db-cfbf-4148-aac9-39965fbd43e3", "sheetId": 106, "rollbackSqlStatus": "PENDING"}', NULL, 'prod-sample-instance', 'hr_prod_3') ON CONFLICT DO NOTHING;
+INSERT INTO public.task (id, pipeline_id, stage_id, type, payload, earliest_allowed_at, instance, db_name) VALUES (109, 103, 106, 'bb.task.database.data.update', '{"specId": "2b77e8db-cfbf-4148-aac9-39965fbd43e3", "sheetId": 106, "rollbackSqlStatus": "PENDING"}', NULL, 'prod-sample-instance', 'hr_prod_6') ON CONFLICT DO NOTHING;
+INSERT INTO public.task (id, pipeline_id, stage_id, type, payload, earliest_allowed_at, instance, db_name) VALUES (110, 104, 107, 'bb.task.database.schema.update', '{"specId": "96967c30-ee17-468e-8368-6366ccc83c52", "sheetId": 107}', NULL, 'prod-sample-instance', 'hr_prod') ON CONFLICT DO NOTHING;
+INSERT INTO public.task (id, pipeline_id, stage_id, type, payload, earliest_allowed_at, instance, db_name) VALUES (111, 105, 108, 'bb.task.database.schema.update', '{"specId": "9227f0c7-fa7d-44f3-9282-a32da230e2e4", "sheetId": 108}', NULL, 'prod-sample-instance', 'hr_prod') ON CONFLICT DO NOTHING;
+INSERT INTO public.task (id, pipeline_id, stage_id, type, payload, earliest_allowed_at, instance, db_name) VALUES (101, 101, 101, 'bb.task.database.schema.update', '{"sheetId": 130}', NULL, 'test-sample-instance', 'hr_test') ON CONFLICT DO NOTHING;
+INSERT INTO public.task (id, pipeline_id, stage_id, type, payload, earliest_allowed_at, instance, db_name) VALUES (102, 101, 102, 'bb.task.database.schema.update', '{"sheetId": 130}', NULL, 'prod-sample-instance', 'hr_prod') ON CONFLICT DO NOTHING;
+INSERT INTO public.task (id, pipeline_id, stage_id, type, payload, earliest_allowed_at, instance, db_name) VALUES (112, 106, 109, 'bb.task.database.schema.update', '{"specId": "e4010ea4-dd1e-441a-9ea2-90f467ed8506", "sheetId": 131}', NULL, 'prod-sample-instance', 'hr_prod_vcs') ON CONFLICT DO NOTHING;
+INSERT INTO public.task (id, pipeline_id, stage_id, type, payload, earliest_allowed_at, instance, db_name) VALUES (113, 107, 110, 'bb.task.database.data.update', '{"specId": "0992ef9b-3d08-4745-ab40-ff74d34208a8", "sheetId": 132, "rollbackSqlStatus": "PENDING", "preUpdateBackupDetail": {}}', NULL, 'prod-sample-instance', 'hr_prod') ON CONFLICT DO NOTHING;
+INSERT INTO public.task (id, pipeline_id, stage_id, type, payload, earliest_allowed_at, instance, db_name) VALUES (114, 108, 111, 'bb.task.database.schema.baseline', '{"specId": "ff8ecf1c-f037-4544-971c-c3f4c8ff5889", "taskReleaseSource": {}}', NULL, 'prod-sample-instance', 'hr_prod_vcs') ON CONFLICT DO NOTHING;
+INSERT INTO public.task (id, pipeline_id, stage_id, type, payload, earliest_allowed_at, instance, db_name) VALUES (115, 109, 112, 'bb.task.database.schema.baseline', '{"specId": "231a929d-bb89-4845-8b7c-6e4870116d32", "taskReleaseSource": {}}', NULL, 'prod-sample-instance', 'hr_prod') ON CONFLICT DO NOTHING;
+INSERT INTO public.task (id, pipeline_id, stage_id, type, payload, earliest_allowed_at, instance, db_name) VALUES (116, 110, 113, 'bb.task.database.schema.baseline', '{"specId": "913aa19f-18e6-42c5-b6e7-2fbb358cffee", "taskReleaseSource": {}}', NULL, 'test-sample-instance', 'hr_test') ON CONFLICT DO NOTHING;
 
 
 --
 -- Data for Name: task_run; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-INSERT INTO public.task_run (id, creator_id, task_id, sheet_id, attempt, name, status, code, result, created_at, updated_at, started_at) VALUES (101, 101, 103, 104, 0, 'DDL(schema) for database "hr_prod_vcs" 1702562144', 'DONE', 0, '{"detail": "Applied migration version 1000-ddl to database \"hr_prod_vcs\".", "version": "0000.0000.0000-1000-ddl", "changelog": "instances/prod-sample-instance/databases/hr_prod_vcs/changelogs/110", "changeHistory": "instances/prod-sample-instance/databases/hr_prod_vcs/changeHistories/110"}', '2023-12-14 05:55:44-08', '2023-12-14 05:55:47-08', '2023-12-14 05:55:44-08') ON CONFLICT DO NOTHING;
-INSERT INTO public.task_run (id, creator_id, task_id, sheet_id, attempt, name, status, code, result, created_at, updated_at, started_at) VALUES (102, 101, 114, NULL, 0, 'Establish baseline for database "hr_prod_vcs" 1737001150', 'DONE', 0, '{"detail": "Established baseline version  for database \"hr_prod_vcs\".", "changelog": "instances/prod-sample-instance/databases/hr_prod_vcs/changelogs/112"}', '2025-01-15 20:19:11-08', '2025-01-15 20:19:11-08', '2025-01-15 20:19:11-08') ON CONFLICT DO NOTHING;
-INSERT INTO public.task_run (id, creator_id, task_id, sheet_id, attempt, name, status, code, result, created_at, updated_at, started_at) VALUES (103, 101, 115, NULL, 0, 'Establish baseline for database "hr_prod" 1737001177', 'DONE', 0, '{"detail": "Established baseline version  for database \"hr_prod\".", "changelog": "instances/prod-sample-instance/databases/hr_prod/changelogs/113"}', '2025-01-15 20:19:38-08', '2025-01-15 20:19:38-08', '2025-01-15 20:19:38-08') ON CONFLICT DO NOTHING;
-INSERT INTO public.task_run (id, creator_id, task_id, sheet_id, attempt, name, status, code, result, created_at, updated_at, started_at) VALUES (104, 101, 116, NULL, 0, 'Establish baseline for database "hr_test" 1737001316', 'DONE', 0, '{"detail": "Established baseline version  for database \"hr_test\".", "changelog": "instances/test-sample-instance/databases/hr_test/changelogs/114"}', '2025-01-15 20:21:56-08', '2025-01-15 20:21:56-08', '2025-01-15 20:21:56-08') ON CONFLICT DO NOTHING;
-INSERT INTO public.task_run (id, creator_id, task_id, sheet_id, attempt, name, status, code, result, created_at, updated_at, started_at) VALUES (106, 1, 105, 106, 0, 'DML(data) for database "hr_prod_4" 1737613551', 'DONE', 0, '{"detail": "Applied migration version  to database \"hr_prod_4\".", "changelog": "instances/prod-sample-instance/databases/hr_prod_4/changelogs/115"}', '2025-01-22 22:25:52-08', '2025-01-22 22:25:51-08', '2025-01-22 22:25:52-08') ON CONFLICT DO NOTHING;
-INSERT INTO public.task_run (id, creator_id, task_id, sheet_id, attempt, name, status, code, result, created_at, updated_at, started_at) VALUES (105, 1, 104, 106, 0, 'DML(data) for database "hr_prod_1" 1737613551', 'DONE', 0, '{"detail": "Applied migration version  to database \"hr_prod_1\".", "changelog": "instances/prod-sample-instance/databases/hr_prod_1/changelogs/116"}', '2025-01-22 22:25:52-08', '2025-01-22 22:25:51-08', '2025-01-22 22:25:52-08') ON CONFLICT DO NOTHING;
-INSERT INTO public.task_run (id, creator_id, task_id, sheet_id, attempt, name, status, code, result, created_at, updated_at, started_at) VALUES (107, 1, 106, 106, 0, 'DML(data) for database "hr_prod_2" 1737613556', 'DONE', 0, '{"detail": "Applied migration version  to database \"hr_prod_2\".", "changelog": "instances/prod-sample-instance/databases/hr_prod_2/changelogs/117"}', '2025-01-22 22:25:57-08', '2025-01-22 22:25:56-08', '2025-01-22 22:25:57-08') ON CONFLICT DO NOTHING;
-INSERT INTO public.task_run (id, creator_id, task_id, sheet_id, attempt, name, status, code, result, created_at, updated_at, started_at) VALUES (108, 1, 107, 106, 0, 'DML(data) for database "hr_prod_5" 1737613556', 'DONE', 0, '{"detail": "Applied migration version  to database \"hr_prod_5\".", "changelog": "instances/prod-sample-instance/databases/hr_prod_5/changelogs/118"}', '2025-01-22 22:25:57-08', '2025-01-22 22:25:56-08', '2025-01-22 22:25:57-08') ON CONFLICT DO NOTHING;
-INSERT INTO public.task_run (id, creator_id, task_id, sheet_id, attempt, name, status, code, result, created_at, updated_at, started_at) VALUES (110, 1, 109, 106, 0, 'DML(data) for database "hr_prod_6" 1737613561', 'DONE', 0, '{"detail": "Applied migration version  to database \"hr_prod_6\".", "changelog": "instances/prod-sample-instance/databases/hr_prod_6/changelogs/119"}', '2025-01-22 22:26:02-08', '2025-01-22 22:26:01-08', '2025-01-22 22:26:02-08') ON CONFLICT DO NOTHING;
-INSERT INTO public.task_run (id, creator_id, task_id, sheet_id, attempt, name, status, code, result, created_at, updated_at, started_at) VALUES (109, 1, 108, 106, 0, 'DML(data) for database "hr_prod_3" 1737613561', 'DONE', 0, '{"detail": "Applied migration version  to database \"hr_prod_3\".", "changelog": "instances/prod-sample-instance/databases/hr_prod_3/changelogs/120"}', '2025-01-22 22:26:02-08', '2025-01-22 22:26:01-08', '2025-01-22 22:26:02-08') ON CONFLICT DO NOTHING;
+INSERT INTO public.task_run (id, creator_id, task_id, sheet_id, attempt, status, code, result, created_at, updated_at, started_at) VALUES (101, 101, 103, 104, 0, 'DONE', 0, '{"detail": "Applied migration version 1000-ddl to database \"hr_prod_vcs\".", "version": "0000.0000.0000-1000-ddl", "changelog": "instances/prod-sample-instance/databases/hr_prod_vcs/changelogs/110", "changeHistory": "instances/prod-sample-instance/databases/hr_prod_vcs/changeHistories/110"}', '2023-12-14 05:55:44-08', '2023-12-14 05:55:47-08', '2023-12-14 05:55:44-08') ON CONFLICT DO NOTHING;
+INSERT INTO public.task_run (id, creator_id, task_id, sheet_id, attempt, status, code, result, created_at, updated_at, started_at) VALUES (102, 101, 114, NULL, 0, 'DONE', 0, '{"detail": "Established baseline version  for database \"hr_prod_vcs\".", "changelog": "instances/prod-sample-instance/databases/hr_prod_vcs/changelogs/112"}', '2025-01-15 20:19:11-08', '2025-01-15 20:19:11-08', '2025-01-15 20:19:11-08') ON CONFLICT DO NOTHING;
+INSERT INTO public.task_run (id, creator_id, task_id, sheet_id, attempt, status, code, result, created_at, updated_at, started_at) VALUES (103, 101, 115, NULL, 0, 'DONE', 0, '{"detail": "Established baseline version  for database \"hr_prod\".", "changelog": "instances/prod-sample-instance/databases/hr_prod/changelogs/113"}', '2025-01-15 20:19:38-08', '2025-01-15 20:19:38-08', '2025-01-15 20:19:38-08') ON CONFLICT DO NOTHING;
+INSERT INTO public.task_run (id, creator_id, task_id, sheet_id, attempt, status, code, result, created_at, updated_at, started_at) VALUES (104, 101, 116, NULL, 0, 'DONE', 0, '{"detail": "Established baseline version  for database \"hr_test\".", "changelog": "instances/test-sample-instance/databases/hr_test/changelogs/114"}', '2025-01-15 20:21:56-08', '2025-01-15 20:21:56-08', '2025-01-15 20:21:56-08') ON CONFLICT DO NOTHING;
+INSERT INTO public.task_run (id, creator_id, task_id, sheet_id, attempt, status, code, result, created_at, updated_at, started_at) VALUES (106, 1, 105, 106, 0, 'DONE', 0, '{"detail": "Applied migration version  to database \"hr_prod_4\".", "changelog": "instances/prod-sample-instance/databases/hr_prod_4/changelogs/115"}', '2025-01-22 22:25:52-08', '2025-01-22 22:25:51-08', '2025-01-22 22:25:52-08') ON CONFLICT DO NOTHING;
+INSERT INTO public.task_run (id, creator_id, task_id, sheet_id, attempt, status, code, result, created_at, updated_at, started_at) VALUES (105, 1, 104, 106, 0, 'DONE', 0, '{"detail": "Applied migration version  to database \"hr_prod_1\".", "changelog": "instances/prod-sample-instance/databases/hr_prod_1/changelogs/116"}', '2025-01-22 22:25:52-08', '2025-01-22 22:25:51-08', '2025-01-22 22:25:52-08') ON CONFLICT DO NOTHING;
+INSERT INTO public.task_run (id, creator_id, task_id, sheet_id, attempt, status, code, result, created_at, updated_at, started_at) VALUES (107, 1, 106, 106, 0, 'DONE', 0, '{"detail": "Applied migration version  to database \"hr_prod_2\".", "changelog": "instances/prod-sample-instance/databases/hr_prod_2/changelogs/117"}', '2025-01-22 22:25:57-08', '2025-01-22 22:25:56-08', '2025-01-22 22:25:57-08') ON CONFLICT DO NOTHING;
+INSERT INTO public.task_run (id, creator_id, task_id, sheet_id, attempt, status, code, result, created_at, updated_at, started_at) VALUES (108, 1, 107, 106, 0, 'DONE', 0, '{"detail": "Applied migration version  to database \"hr_prod_5\".", "changelog": "instances/prod-sample-instance/databases/hr_prod_5/changelogs/118"}', '2025-01-22 22:25:57-08', '2025-01-22 22:25:56-08', '2025-01-22 22:25:57-08') ON CONFLICT DO NOTHING;
+INSERT INTO public.task_run (id, creator_id, task_id, sheet_id, attempt, status, code, result, created_at, updated_at, started_at) VALUES (110, 1, 109, 106, 0, 'DONE', 0, '{"detail": "Applied migration version  to database \"hr_prod_6\".", "changelog": "instances/prod-sample-instance/databases/hr_prod_6/changelogs/119"}', '2025-01-22 22:26:02-08', '2025-01-22 22:26:01-08', '2025-01-22 22:26:02-08') ON CONFLICT DO NOTHING;
+INSERT INTO public.task_run (id, creator_id, task_id, sheet_id, attempt, status, code, result, created_at, updated_at, started_at) VALUES (109, 1, 108, 106, 0, 'DONE', 0, '{"detail": "Applied migration version  to database \"hr_prod_3\".", "changelog": "instances/prod-sample-instance/databases/hr_prod_3/changelogs/120"}', '2025-01-22 22:26:02-08', '2025-01-22 22:26:01-08', '2025-01-22 22:26:02-08') ON CONFLICT DO NOTHING;
 
 
 --
@@ -7569,20 +6558,6 @@ INSERT INTO public.task_run_log (id, task_run_id, created_at, payload) VALUES (1
 -- Data for Name: user_group; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-
-
---
--- Data for Name: vcs; Type: TABLE DATA; Schema: public; Owner: -
---
-
-INSERT INTO public.vcs (id, resource_id, name, type, instance_url, access_token) VALUES (102, 'githubucom-a6ug', 'GitHub.com', 'GITHUB', 'https://github.com', 'redacted') ON CONFLICT DO NOTHING;
-
-
---
--- Data for Name: vcs_connector; Type: TABLE DATA; Schema: public; Owner: -
---
-
-INSERT INTO public.vcs_connector (id, resource_id, payload, vcs, project) VALUES (104, 'hr-sample', '{"title": "hr-sample", "branch": "main", "webUrl": "https://github.com/s-bytebase/hr-sample", "fullPath": "s-bytebase/hr-sample", "externalId": "s-bytebase/hr-sample", "baseDirectory": "bytebase", "externalWebhookId": "471715274", "webhookSecretToken": "JiUzpc2tBHX7LVeI"}', 'githubucom-a6ug', 'gitops-project') ON CONFLICT DO NOTHING;
 
 
 --
@@ -7749,14 +6724,14 @@ ORDER BY
 -- Name: anomaly_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.anomaly_id_seq', 107, true);
+SELECT pg_catalog.setval('public.anomaly_id_seq', 109, true);
 
 
 --
 -- Name: audit_log_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.audit_log_id_seq', 158, true);
+SELECT pg_catalog.setval('public.audit_log_id_seq', 159, true);
 
 
 --
@@ -7791,21 +6766,14 @@ SELECT pg_catalog.setval('public.db_group_id_seq', 102, true);
 -- Name: db_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.db_id_seq', 111, true);
+SELECT pg_catalog.setval('public.db_id_seq', 115, true);
 
 
 --
 -- Name: db_schema_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.db_schema_id_seq', 179, true);
-
-
---
--- Name: deployment_config_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
---
-
-SELECT pg_catalog.setval('public.deployment_config_id_seq', 101, true);
+SELECT pg_catalog.setval('public.db_schema_id_seq', 189, true);
 
 
 --
@@ -7833,7 +6801,7 @@ SELECT pg_catalog.setval('public.idp_id_seq', 101, false);
 -- Name: instance_change_history_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.instance_change_history_id_seq', 215, true);
+SELECT pg_catalog.setval('public.instance_change_history_id_seq', 231, true);
 
 
 --
@@ -7882,7 +6850,7 @@ SELECT pg_catalog.setval('public.plan_id_seq', 110, true);
 -- Name: policy_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.policy_id_seq', 173, true);
+SELECT pg_catalog.setval('public.policy_id_seq', 192, true);
 
 
 --
@@ -7945,7 +6913,7 @@ SELECT pg_catalog.setval('public.role_id_seq', 101, true);
 -- Name: setting_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.setting_id_seq', 198, true);
+SELECT pg_catalog.setval('public.setting_id_seq', 207, true);
 
 
 --
@@ -7953,13 +6921,6 @@ SELECT pg_catalog.setval('public.setting_id_seq', 198, true);
 --
 
 SELECT pg_catalog.setval('public.sheet_id_seq', 135, true);
-
-
---
--- Name: slow_query_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
---
-
-SELECT pg_catalog.setval('public.slow_query_id_seq', 101, true);
 
 
 --
@@ -7974,13 +6935,6 @@ SELECT pg_catalog.setval('public.stage_id_seq', 113, true);
 --
 
 SELECT pg_catalog.setval('public.sync_history_id_seq', 108, true);
-
-
---
--- Name: task_dag_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
---
-
-SELECT pg_catalog.setval('public.task_dag_id_seq', 101, false);
 
 
 --
@@ -8002,20 +6956,6 @@ SELECT pg_catalog.setval('public.task_run_id_seq', 110, true);
 --
 
 SELECT pg_catalog.setval('public.task_run_log_id_seq', 154, true);
-
-
---
--- Name: vcs_connector_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
---
-
-SELECT pg_catalog.setval('public.vcs_connector_id_seq', 101, false);
-
-
---
--- Name: vcs_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
---
-
-SELECT pg_catalog.setval('public.vcs_id_seq', 102, true);
 
 
 --
@@ -8094,14 +7034,6 @@ ALTER TABLE ONLY public.db
 
 ALTER TABLE ONLY public.db_schema
     ADD CONSTRAINT db_schema_pkey PRIMARY KEY (id);
-
-
---
--- Name: deployment_config deployment_config_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.deployment_config
-    ADD CONSTRAINT deployment_config_pkey PRIMARY KEY (id);
 
 
 --
@@ -8297,14 +7229,6 @@ ALTER TABLE ONLY public.sheet
 
 
 --
--- Name: slow_query slow_query_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.slow_query
-    ADD CONSTRAINT slow_query_pkey PRIMARY KEY (id);
-
-
---
 -- Name: stage stage_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -8318,14 +7242,6 @@ ALTER TABLE ONLY public.stage
 
 ALTER TABLE ONLY public.sync_history
     ADD CONSTRAINT sync_history_pkey PRIMARY KEY (id);
-
-
---
--- Name: task_dag task_dag_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.task_dag
-    ADD CONSTRAINT task_dag_pkey PRIMARY KEY (id);
 
 
 --
@@ -8358,22 +7274,6 @@ ALTER TABLE ONLY public.task_run
 
 ALTER TABLE ONLY public.user_group
     ADD CONSTRAINT user_group_pkey PRIMARY KEY (email);
-
-
---
--- Name: vcs_connector vcs_connector_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.vcs_connector
-    ADD CONSTRAINT vcs_connector_pkey PRIMARY KEY (id);
-
-
---
--- Name: vcs vcs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.vcs
-    ADD CONSTRAINT vcs_pkey PRIMARY KEY (id);
 
 
 --
@@ -8449,13 +7349,6 @@ CREATE INDEX idx_changelog_instance_db_name ON public.changelog USING btree (ins
 
 
 --
--- Name: idx_data_source_unique_instance_name; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE UNIQUE INDEX idx_data_source_unique_instance_name ON public.data_source USING btree (instance, name);
-
-
---
 -- Name: idx_db_group_unique_project_placeholder; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -8491,13 +7384,6 @@ CREATE UNIQUE INDEX idx_db_unique_instance_name ON public.db USING btree (instan
 
 
 --
--- Name: idx_deployment_config_unique_project; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE UNIQUE INDEX idx_deployment_config_unique_project ON public.deployment_config USING btree (project);
-
-
---
 -- Name: idx_environment_unique_resource_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -8523,13 +7409,6 @@ CREATE UNIQUE INDEX idx_instance_change_history_unique_version ON public.instanc
 --
 
 CREATE UNIQUE INDEX idx_instance_unique_resource_id ON public.instance USING btree (resource_id);
-
-
---
--- Name: idx_issue_assignee_id; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_issue_assignee_id ON public.issue USING btree (assignee_id);
 
 
 --
@@ -8673,20 +7552,6 @@ CREATE INDEX idx_sheet_project ON public.sheet USING btree (project);
 
 
 --
--- Name: idx_slow_query_instance_id_log_date_ts; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_slow_query_instance_id_log_date_ts ON public.slow_query USING btree (instance, log_date_ts);
-
-
---
--- Name: idx_slow_query_unique_instance_db_name_log_date_ts; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE UNIQUE INDEX idx_slow_query_unique_instance_db_name_log_date_ts ON public.slow_query USING btree (instance, db_name, log_date_ts);
-
-
---
 -- Name: idx_stage_pipeline_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -8698,20 +7563,6 @@ CREATE INDEX idx_stage_pipeline_id ON public.stage USING btree (pipeline_id);
 --
 
 CREATE INDEX idx_sync_history_instance_db_name_created_at ON public.sync_history USING btree (instance, db_name, created_at);
-
-
---
--- Name: idx_task_dag_from_task_id; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_task_dag_from_task_id ON public.task_dag USING btree (from_task_id);
-
-
---
--- Name: idx_task_dag_to_task_id; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_task_dag_to_task_id ON public.task_dag USING btree (to_task_id);
 
 
 --
@@ -8733,27 +7584,6 @@ CREATE INDEX idx_task_run_log_task_run_id ON public.task_run_log USING btree (ta
 --
 
 CREATE INDEX idx_task_run_task_id ON public.task_run USING btree (task_id);
-
-
---
--- Name: idx_task_status; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_task_status ON public.task USING btree (status);
-
-
---
--- Name: idx_vcs_connector_unique_project_resource_id; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE UNIQUE INDEX idx_vcs_connector_unique_project_resource_id ON public.vcs_connector USING btree (project, resource_id);
-
-
---
--- Name: idx_vcs_unique_resource_id; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE UNIQUE INDEX idx_vcs_unique_resource_id ON public.vcs USING btree (resource_id);
 
 
 --
@@ -8881,27 +7711,11 @@ ALTER TABLE ONLY public.db_schema
 
 
 --
--- Name: deployment_config deployment_config_project_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.deployment_config
-    ADD CONSTRAINT deployment_config_project_fkey FOREIGN KEY (project) REFERENCES public.project(resource_id);
-
-
---
 -- Name: instance instance_environment_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.instance
     ADD CONSTRAINT instance_environment_fkey FOREIGN KEY (environment) REFERENCES public.environment(resource_id);
-
-
---
--- Name: issue issue_assignee_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.issue
-    ADD CONSTRAINT issue_assignee_id_fkey FOREIGN KEY (assignee_id) REFERENCES public.principal(id);
 
 
 --
@@ -9081,14 +7895,6 @@ ALTER TABLE ONLY public.sheet
 
 
 --
--- Name: slow_query slow_query_instance_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.slow_query
-    ADD CONSTRAINT slow_query_instance_fkey FOREIGN KEY (instance) REFERENCES public.instance(resource_id);
-
-
---
 -- Name: stage stage_environment_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -9110,22 +7916,6 @@ ALTER TABLE ONLY public.stage
 
 ALTER TABLE ONLY public.sync_history
     ADD CONSTRAINT sync_history_instance_db_name_fkey FOREIGN KEY (instance, db_name) REFERENCES public.db(instance, name);
-
-
---
--- Name: task_dag task_dag_from_task_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.task_dag
-    ADD CONSTRAINT task_dag_from_task_id_fkey FOREIGN KEY (from_task_id) REFERENCES public.task(id);
-
-
---
--- Name: task_dag task_dag_to_task_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.task_dag
-    ADD CONSTRAINT task_dag_to_task_id_fkey FOREIGN KEY (to_task_id) REFERENCES public.task(id);
 
 
 --
@@ -9182,22 +7972,6 @@ ALTER TABLE ONLY public.task_run
 
 ALTER TABLE ONLY public.task
     ADD CONSTRAINT task_stage_id_fkey FOREIGN KEY (stage_id) REFERENCES public.stage(id);
-
-
---
--- Name: vcs_connector vcs_connector_project_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.vcs_connector
-    ADD CONSTRAINT vcs_connector_project_fkey FOREIGN KEY (project) REFERENCES public.project(resource_id);
-
-
---
--- Name: vcs_connector vcs_connector_vcs_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.vcs_connector
-    ADD CONSTRAINT vcs_connector_vcs_fkey FOREIGN KEY (vcs) REFERENCES public.vcs(resource_id);
 
 
 --

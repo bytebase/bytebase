@@ -139,7 +139,7 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 
 	var pgURL string
 	if profile.UseEmbedDB() {
-		stopper, err := postgres.StartMetadataInstance(ctx, profile.DataDir, profile.ResourceDir, pgBinDir, profile.PgUser, profile.DemoName, profile.DatastorePort, profile.Mode)
+		stopper, err := postgres.StartMetadataInstance(ctx, profile.DataDir, pgBinDir, profile.PgUser, profile.DemoName, profile.DatastorePort, profile.Mode)
 		if err != nil {
 			return nil, err
 		}
@@ -154,24 +154,25 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	if profile.SampleDatabasePort != 0 {
 		// Only create batch sample databases in demo mode. For normal mode, user starts from the free version
 		// and batch databases are useless because batch requires enterprise license.
-		stopper := postgres.StartAllSampleInstances(ctx, pgBinDir, profile.DataDir, profile.SampleDatabasePort, profile.DemoName != "")
+		stopper := postgres.StartAllSampleInstances(ctx, pgBinDir, profile.DataDir, profile.SampleDatabasePort)
 		s.stopper = append(s.stopper, stopper...)
+	}
+
+	if profile.Readonly {
+		slog.Info("Database is opened in readonly mode. Skip migration and demo data setup.")
+	} else {
+		if err := demo.LoadDemoDataIfNeeded(ctx, pgURL, profile.DemoName); err != nil {
+			return nil, errors.Wrapf(err, "failed to load demo data")
+		}
+		if err := migrator.MigrateSchema(ctx, pgURL); err != nil {
+			return nil, err
+		}
 	}
 
 	// Connect to the instance that stores bytebase's own metadata.
 	stores, err := store.New(ctx, pgURL)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to new store")
-	}
-	if profile.Readonly {
-		slog.Info("Database is opened in readonly mode. Skip migration and demo data setup.")
-	} else {
-		if err := demo.LoadDemoDataIfNeeded(ctx, stores, profile.DemoName); err != nil {
-			return nil, errors.Wrapf(err, "failed to load demo data")
-		}
-		if err := migrator.MigrateSchema(ctx, stores.GetDB()); err != nil {
-			return nil, err
-		}
 	}
 	s.store = stores
 	sheetManager := sheet.NewManager(stores)

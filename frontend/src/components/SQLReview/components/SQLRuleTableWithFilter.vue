@@ -26,19 +26,19 @@
         @rule-upsert="onRuleChange"
         @update:selected-rule-keys="$emit('update:selectedRuleKeys', $event)"
       />
-      <NoDataPlaceholder v-else class="my-5" />
+      <NEmpty v-else class="py-12 border rounded" />
     </template>
   </SQLRuleFilter>
 </template>
 
 <script setup lang="ts">
+import { NEmpty } from "naive-ui";
 import { watch } from "vue";
 import {
   SQLRuleFilter,
   useSQLRuleFilter,
   SQLRuleTable,
 } from "@/components/SQLReview/components";
-import NoDataPlaceholder from "@/components/misc/NoDataPlaceholder.vue";
 import type { RuleTemplateV2 } from "@/types";
 import type { Engine } from "@/types/proto/v1/common";
 import type { RuleListWithCategory } from "./SQLReviewCategoryTabFilter.vue";

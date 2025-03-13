@@ -32,6 +32,7 @@ import {
 } from "@/store";
 import { Anomaly } from "@/types/proto/v1/anomaly_service";
 import { ChangelogView } from "@/types/proto/v1/database_service";
+import { wrapRefAsPromise } from "@/utils";
 import { DiffEditor } from "../MonacoEditor";
 
 const props = defineProps<{
@@ -46,16 +47,14 @@ const isLoading = ref(true);
 const originalSchema = ref<string>("");
 const modifiedSchema = ref<string>("");
 
-const { database } = useDatabaseV1ByName(
+const { database, ready } = useDatabaseV1ByName(
   computed(() => props.anomaly.resource)
 );
 
 onMounted(async () => {
-  const database = await databaseStore.getOrFetchDatabaseByName(
-    props.anomaly.resource
-  );
+  await wrapRefAsPromise(ready, true);
   const changelogs = await changelogStore.getOrFetchChangelogListOfDatabase(
-    database.name,
+    database.value.name,
     1, // Only fetch the latest changelog.
     ChangelogView.CHANGELOG_VIEW_FULL, // Needs to fetch the full schema.
     `type = "BASELINE | MIGRATE | MIGRATE_SDL"` // Only fetch the schema related changelog.
@@ -65,7 +64,7 @@ onMounted(async () => {
     originalSchema.value = latestChangelog.schema;
   }
   const schema = await databaseStore.fetchDatabaseSchema(
-    `${database.name}/schema`
+    `${database.value.name}/schema`
   );
   modifiedSchema.value = schema.schema;
   isLoading.value = false;

@@ -88,7 +88,7 @@ const issueCreateErrorList = computed(() => {
       issue.value.projectEntity
     )
   ) {
-    errorList.push(t("common.missing-permission"));
+    errorList.push(t("common.missing-required-permission"));
   }
   if (!issue.value.title.trim()) {
     errorList.push("Missing issue title");

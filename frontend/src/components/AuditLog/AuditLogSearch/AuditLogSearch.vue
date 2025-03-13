@@ -3,7 +3,6 @@
     <AdvancedSearch
       class="flex-1"
       :params="params"
-      :readonly-scopes="readonlyScopes"
       :scope-options="scopeOptions"
       @update:params="$emit('update:params', $event)"
     />
@@ -39,18 +38,11 @@ import {
   getDefaultPagination,
   extractProjectResourceName,
   type SearchParams,
-  type SearchScope,
 } from "@/utils";
 
-withDefaults(
-  defineProps<{
-    params: SearchParams;
-    readonlyScopes?: SearchScope[];
-  }>(),
-  {
-    readonlyScopes: () => [],
-  }
-);
+defineProps<{
+  params: SearchParams;
+}>();
 defineEmits<{
   (event: "update:params", params: SearchParams): void;
 }>();
