@@ -46,7 +46,7 @@ import {
   instanceV1HasAlterSchema,
   keyForDependencyColumn,
   sortByDictionary,
-  supportStringifyMetadata,
+  supportGetStringSchema,
   toClipboard,
 } from "@/utils";
 import { keyWithPosition } from "../../EditorCommon";
@@ -420,7 +420,7 @@ export const useDropdown = () => {
           },
         });
 
-        if (supportStringifyMetadata(db.instanceResource.engine)) {
+        if (supportGetStringSchema(db.instanceResource.engine)) {
           items.push({
             key: "view-schema-text",
             label: t("sql-editor.view-schema-text"),

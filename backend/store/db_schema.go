@@ -57,7 +57,7 @@ func (s *Store) GetDBSchema(ctx context.Context, instanceID, databaseName string
 		return nil, err
 	}
 
-	dbSchema, err := s.convertMetadataAndConfig(ctx, metadata, schema, config, instanceID, databaseName)
+	dbSchema, err := s.convertMetadataAndConfig(ctx, metadata, schema, config, instanceID)
 	if err != nil {
 		return nil, err
 	}
@@ -167,7 +167,7 @@ func (s *Store) UpdateDBSchema(ctx context.Context, instanceID, databaseName str
 	return nil
 }
 
-func (s *Store) convertMetadataAndConfig(ctx context.Context, metadata, schema, config []byte, instanceID string, databaseName string) (*model.DatabaseSchema, error) {
+func (s *Store) convertMetadataAndConfig(ctx context.Context, metadata, schema, config []byte, instanceID string) (*model.DatabaseSchema, error) {
 	var databaseSchema storepb.DatabaseSchemaMetadata
 	var databaseConfig storepb.DatabaseConfig
 	if err := common.ProtojsonUnmarshaler.Unmarshal(metadata, &databaseSchema); err != nil {
@@ -180,23 +180,5 @@ func (s *Store) convertMetadataAndConfig(ctx context.Context, metadata, schema, 
 	if err != nil {
 		return nil, err
 	}
-	database, err := s.GetDatabaseV2(ctx, &FindDatabaseMessage{InstanceID: &instanceID, DatabaseName: &databaseName})
-	if err != nil {
-		return nil, err
-	}
-	project, err := s.GetProjectV2(ctx, &FindProjectMessage{ResourceID: &database.ProjectID})
-	if err != nil {
-		return nil, err
-	}
-	if project != nil {
-		classificationConfig, err := s.GetDataClassificationConfigByID(ctx, project.DataClassificationConfigID)
-		if err != nil {
-			return nil, err
-		}
-		if classificationConfig != nil && !classificationConfig.ClassificationFromConfig {
-
-		}
-	}
-
 	return model.NewDatabaseSchema(&databaseSchema, schema, &databaseConfig, instance.Metadata.GetEngine(), IsObjectCaseSensitive(instance)), nil
 }
