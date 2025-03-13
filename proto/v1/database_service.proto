@@ -1457,6 +1457,13 @@ message GetSchemaStringRequest {
     (google.api.resource_reference) = {type: "bytebase.com/Database"}
   ];
 
+  // This API is used to generate the schema string for the database.
+  // It can accept the two types of input:
+  // 1. The type, schema and object are required.
+  // 2. The metadata is required.
+  // For the first type, the schema string is generated based on the db schema in the backend.
+  // For the second type, the schema string is generated based on the metadata.
+
   enum ObjectType {
     OBJECT_TYPE_UNSPECIFIED = 0;
     DATABASE = 1;
@@ -1473,6 +1480,10 @@ message GetSchemaStringRequest {
   string schema = 3;
   // It's empty for DATABASE and SCHEMA.
   string object = 4;
+
+  // If use the metadata to generate the schema string, the type is OBJECT_TYPE_UNSPECIFIED.
+  // Also the schema and object are empty.
+  DatabaseMetadata metadata = 5;
 }
 
 message GetSchemaStringResponse {
