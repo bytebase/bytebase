@@ -24,6 +24,8 @@ jobs:
         with:
           go-version: '1.24.1'
           cache: false # Caching is slow.
+      - name: Install
+        run: sudo apt-get install -y libncurses5 libkrb5-dev
       - name: Verify go.mod is tidy
         run: |
           go mod tidy
