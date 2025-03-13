@@ -2460,6 +2460,7 @@ FunctionMetadata is the metadata for functions.
 | type | [GetSchemaStringRequest.ObjectType](#bytebase-v1-GetSchemaStringRequest-ObjectType) |  |  |
 | schema | [string](#string) |  | It&#39;s empty for DATABASE. |
 | object | [string](#string) |  | It&#39;s empty for DATABASE and SCHEMA. |
+| metadata | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) |  | If use the metadata to generate the schema string, the type is OBJECT_TYPE_UNSPECIFIED. Also the schema and object are empty. |
 
 
 

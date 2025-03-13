@@ -1204,6 +1204,22 @@ func (s *DatabaseService) GetSchemaString(ctx context.Context, request *v1pb.Get
 	}
 
 	switch request.Type {
+	case v1pb.GetSchemaStringRequest_OBJECT_TYPE_UNSPECIFIED:
+		if request.Metadata == nil {
+			return nil, status.Errorf(codes.InvalidArgument, "metadata is required")
+		}
+		storeSchema, err := convertV1DatabaseMetadata(request.Metadata)
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "failed to convert database metadata: %v", err)
+		}
+		s, err := schema.GetDatabaseDefinition(instance.Metadata.Engine, schema.GetDefinitionContext{
+			SkipBackupSchema: false,
+			PrintHeader:      false,
+		}, storeSchema)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "Failed to get database schema: %v", err)
+		}
+		return &v1pb.GetSchemaStringResponse{SchemaString: s}, nil
 	case v1pb.GetSchemaStringRequest_DATABASE:
 		metadata := dbSchema.GetMetadata()
 		s, err := schema.GetDatabaseDefinition(instance.Metadata.Engine, schema.GetDefinitionContext{
