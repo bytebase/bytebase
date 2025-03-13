@@ -2194,6 +2194,28 @@ paths:
                   description: It's empty for DATABASE and SCHEMA.
                   schema:
                     type: string
+                - name: metadata.name
+                  in: query
+                  description: |-
+                    The database metadata name.
+
+                     Format: instances/{instance}/databases/{database}/metadata
+                  schema:
+                    type: string
+                - name: metadata.characterSet
+                  in: query
+                  description: The character_set is the character set of a database.
+                  schema:
+                    type: string
+                - name: metadata.collation
+                  in: query
+                  description: The collation is the collation of a database.
+                  schema:
+                    type: string
+                - name: metadata.owner
+                  in: query
+                  schema:
+                    type: string
             responses:
                 "200":
                     description: OK

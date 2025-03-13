@@ -86,15 +86,9 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 
 	// We set the search path to empty before the column sync.
 	// The reason is that we can get the expression with default schema name.
-	originSearchPath, err := setSearchPath(txn, "")
-	if err != nil {
+	if err := setTxSearchPath(txn, ""); err != nil {
 		return nil, errors.Wrapf(err, "failed to set search path")
 	}
-	defer func() {
-		if _, err := setSearchPath(txn, originSearchPath); err != nil {
-			slog.Error("failed to restore search path", log.BBError(err))
-		}
-	}()
 
 	extensionDepend, err := getExtensionDepend(txn)
 	if err != nil {
@@ -638,19 +632,13 @@ func getIndexInheritance(txn *sql.Tx) (map[db.IndexKey]*db.IndexKey, error) {
 	return result, nil
 }
 
-var showSearchPathQuery = `SELECT pg_catalog.current_setting('search_path');`
-
-var setSearchPathQuery = `SELECT pg_catalog.set_config('search_path', $1, false);`
-
-func setSearchPath(txn *sql.Tx, searchPath string) (string, error) {
-	var originSearchPath string
-	if err := txn.QueryRow(showSearchPathQuery).Scan(&originSearchPath); err != nil {
-		return "", err
-	}
+func setTxSearchPath(txn *sql.Tx, searchPath string) error {
+	// The new value of the search_path will only apply during the current transaction.
+	const setSearchPathQuery = `SELECT pg_catalog.set_config('search_path', $1, true);`
 	if _, err := txn.Exec(setSearchPathQuery, searchPath); err != nil {
-		return "", err
+		return err
 	}
-	return originSearchPath, nil
+	return nil
 }
 
 var listColumnQuery = `
