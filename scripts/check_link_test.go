@@ -44,7 +44,7 @@ func TestValidateLinks(t *testing.T) {
 	links, err := extractLinkRecursive()
 	a.NoError(err)
 
-	resp, err := http.Get("https://bytebase.com/sitemap.xml")
+	resp, err := http.Get("http://bytebase.com/sitemap.xml")
 	if err != nil {
 		t.Fatalf("failed to get sitemap xml: %v", err)
 	}
@@ -56,7 +56,7 @@ func TestValidateLinks(t *testing.T) {
 	}
 	fmt.Println(string(body))
 
-	sm, err := sitemap.Get("https://bytebase.com/sitemap.xml", nil)
+	sm, err := sitemap.Get("http://bytebase.com/sitemap.xml", nil)
 	a.NoError(err)
 
 	paths := map[string]struct{}{}
