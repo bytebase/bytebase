@@ -282,7 +282,7 @@ Below diagram describes a typical mapping between an engineering org and the cor
 1. Start frontend (with live reload).
 
    ```bash
-   cd frontend && pnpm i && pnpm dev
+   pnpm --dir frontend i && pnpm --dir frontend dev
    ```
 
    Bytebase should now be running at http://localhost:3000 and change either frontend or backend code would trigger live reload.
