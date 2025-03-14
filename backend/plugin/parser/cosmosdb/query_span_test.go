@@ -37,7 +37,7 @@ func TestPredicateInWhere(t *testing.T) {
 	a := require.New(t)
 
 	for _, tc := range testCases {
-		querySpan, err := getQuerySpan(tc.statement)
+		querySpan, err := getQuerySpanImpl(tc.statement)
 		a.Nil(err)
 		a.Equal(len(tc.predicatePaths), len(querySpan.PredicatePaths))
 		for path := range tc.predicatePaths {

@@ -19,10 +19,10 @@ func init() {
 }
 
 func GetQuerySpan(_ context.Context, _ base.GetQuerySpanContext, statement, _, _ string, _ bool) (*base.QuerySpan, error) {
-	return getQuerySpan(statement)
+	return getQuerySpanImpl(statement)
 }
 
-func getQuerySpan(statement string) (*base.QuerySpan, error) {
+func getQuerySpanImpl(statement string) (*base.QuerySpan, error) {
 	parseResults, err := ParseCosmosDBQuery(statement)
 	if err != nil {
 		return nil, err

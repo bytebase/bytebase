@@ -534,7 +534,6 @@ func queryRetry(
 				semanticType := getFirstSemanticTypeInPath(predicatePath, objectSchema)
 				if semanticType != "" {
 					for _, result := range results {
-
 						result.Error = fmt.Sprintf("using path %q tagged by semantic type %q in WHERE clause is not allowed", pathStr, semanticType)
 						result.Rows = nil
 						result.RowsCount = 0
