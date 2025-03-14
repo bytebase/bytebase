@@ -42,16 +42,6 @@ export const extractDataSourceEditState = (
   if (!adminDS) {
     dataSources.unshift(wrapEditDataSource(undefined));
   }
-  // Explicitly preserve extraConnectionParameters from the instance
-  if (instance?.dataSources) {
-    instance.dataSources.forEach((originalDs) => {
-      const ds = dataSources.find(d => d.id === originalDs.id);
-      if (ds && originalDs.extraConnectionParameters) {
-        // Ensure we have a fresh copy of the extraConnectionParameters
-        ds.extraConnectionParameters = { ...originalDs.extraConnectionParameters };
-      }
-    });
-  }
   const editingDataSourceId =
     dataSources.find((ds) => ds.type === DataSourceType.ADMIN)?.id ??
     first(dataSources)?.id ??
@@ -166,9 +156,5 @@ export const calcDataSourceUpdateMask = (
   if (updateAuthenticationPrivateKey) {
     updateMask.add("authentication_private_key");
   }
-  // Always add extra_connection_parameters to update mask
-  // This is needed even if they're empty or haven't changed, to ensure proper handling of parameters
-  updateMask.add("extra_connection_parameters");
-
   return Array.from(updateMask);
 };
