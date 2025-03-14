@@ -12,14 +12,7 @@ import Components from "unplugin-vue-components/vite";
 import { defineConfig } from "vite";
 
 const SERVER_PORT = parseInt(process.env.PORT ?? "3000", 10) ?? 3000;
-const HTTPS_PORT = 443;
 const LOCAL_ENDPOINT = "http://localhost:8080";
-
-// NOTE: the following lines is to solve https://github.com/gitpod-io/gitpod/issues/6719
-// tl;dr : the HMR(hot module replacement) will behave differently when VPN is on, and by manually set its port to 443 should prevent this issue.
-const IS_RUNNING_GITPOD =
-  process.env["GITPOD_WORKSPACE_ID"] !== null &&
-  process.env["GITPOD_WORKSPACE_ID"] !== undefined;
 
 const extractHostPort = (url: string) => {
   const parsed = new URL(url);
@@ -94,7 +87,7 @@ export default defineConfig({
       },
     },
     hmr: {
-      port: IS_RUNNING_GITPOD ? HTTPS_PORT : SERVER_PORT,
+      port: SERVER_PORT,
     },
   },
   resolve: {
@@ -107,7 +100,7 @@ export default defineConfig({
     },
     dedupe: ["vscode"],
   },
-  envPrefix: "BB_",
+  envPrefix: ["BB_", "GIT_COMMIT"],
   define: {
     _global: {},
   },
