@@ -8,13 +8,12 @@ import (
 
 func TestString(t *testing.T) {
 	testCases := []struct {
-		root  string
 		nodes []SelectorNode
 		want  string
 	}{
 		{
-			root: "a",
 			nodes: []SelectorNode{
+				NewItemSelector("a"),
 				NewArraySelector("b", 1),
 				NewItemSelector("c"),
 			},
@@ -25,10 +24,14 @@ func TestString(t *testing.T) {
 	a := require.New(t)
 
 	for _, tc := range testCases {
-		ast := NewPathAST(tc.root)
-		var next SelectorNode = ast.Root
-		for _, node := range tc.nodes {
-			next.SetNext(node)
+		if len(tc.nodes) == 0 {
+			continue
+		}
+
+		ast := NewPathAST(tc.nodes[0])
+		next := ast.Root
+		for i := 1; i < len(tc.nodes); i++ {
+			next.SetNext(tc.nodes[i])
 			next = next.GetNext()
 		}
 

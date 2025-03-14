@@ -530,6 +530,18 @@ func queryRetry(
 			if err != nil {
 				return nil, nil, duration, status.Error(codes.Internal, err.Error())
 			}
+			for pathStr, predicatePath := range spans[0].PredicatePaths {
+				semanticType := getFirstSemanticTypeInPath(predicatePath, objectSchema)
+				if semanticType != "" {
+					for _, result := range results {
+
+						result.Error = fmt.Sprintf("using path %q tagged by semantic type %q in WHERE clause is not allowed", pathStr, semanticType)
+						result.Rows = nil
+						result.RowsCount = 0
+					}
+					return results, spans, duration, nil
+				}
+			}
 			if objectSchema != nil {
 				// We store one query result document in one row.
 				for _, result := range results {

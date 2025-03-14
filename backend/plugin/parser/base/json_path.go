@@ -11,7 +11,7 @@ var (
 )
 
 type PathAST struct {
-	Root *ItemSelector
+	Root SelectorNode
 }
 
 type SelectorNode interface {
@@ -32,29 +32,14 @@ type ArraySelector struct {
 	Next       SelectorNode
 }
 
-func NewPathAST(identifier string) *PathAST {
+func NewPathAST(selectorNode SelectorNode) *PathAST {
 	return &PathAST{
-		Root: &ItemSelector{
-			Identifier: identifier,
-		},
+		Root: selectorNode,
 	}
 }
 
 func (p *PathAST) String() (string, error) {
-	sb := new(strings.Builder)
-	if _, err := sb.WriteString(p.Root.Identifier); err != nil {
-		return "", err
-	}
-	if v := p.Root.Next; v != nil {
-		if _, err := sb.WriteString("."); err != nil {
-			return "", err
-		}
-		if _, err := sb.WriteString(v.toString()); err != nil {
-			return "", err
-		}
-	}
-
-	return sb.String(), nil
+	return p.Root.toString(), nil
 }
 
 func NewItemSelector(identifier string) *ItemSelector {
