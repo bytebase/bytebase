@@ -303,7 +303,6 @@
     "deploy": "Auto Hospedaje",
     "cloud": "Cloud",
     "request-demo": "Reserva una demo de producto de 30 minutos.",
-    "readonly": "Bytebase está en modo de solo lectura. Todavía puede ver la consola, pero cualquier intento de cambio fallará.",
     "external-url": "Bytebase no ha configurado --external-url"
   },
   "bbkit": {

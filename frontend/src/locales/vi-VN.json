@@ -303,7 +303,6 @@
     "deploy": "Tự lưu trữ",
     "cloud": "Đám mây",
     "request-demo": "Đặt lịch giới thiệu sản phẩm 30 phút.",
-    "readonly": "Bytebase đang ở chế độ chỉ đọc. Bạn vẫn có thể xem bảng điều khiển, nhưng mọi nỗ lực thay đổi sẽ không thành công.",
     "external-url": "Bytebase chưa được cấu hình --external-url"
   },
   "bbkit": {

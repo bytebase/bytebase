@@ -8,6 +8,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"path"
 	"sync"
 	"time"
 
@@ -107,8 +108,7 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	slog.Info(fmt.Sprintf("mode=%s", profile.Mode))
 	slog.Info(fmt.Sprintf("dataDir=%s", profile.DataDir))
 	slog.Info(fmt.Sprintf("resourceDir=%s", profile.ResourceDir))
-	slog.Info(fmt.Sprintf("readonly=%t", profile.Readonly))
-	slog.Info(fmt.Sprintf("demoName=%s", profile.DemoName))
+	slog.Info(fmt.Sprintf("demo=%v", profile.Demo))
 	slog.Info(fmt.Sprintf("instanceRunUUID=%s", profile.DeployID))
 	slog.Info("-----Config END-------")
 
@@ -139,12 +139,17 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 
 	var pgURL string
 	if profile.UseEmbedDB() {
-		stopper, err := postgres.StartMetadataInstance(ctx, profile.DataDir, pgBinDir, profile.PgUser, profile.DemoName, profile.DatastorePort, profile.Mode)
+		pgDataDir := path.Join(profile.DataDir, "pgdata")
+		if profile.Demo {
+			pgDataDir = path.Join(profile.DataDir, "pgdata-demo")
+		}
+
+		stopper, err := postgres.StartMetadataInstance(ctx, pgBinDir, pgDataDir, profile.DatastorePort, profile.Mode)
 		if err != nil {
 			return nil, err
 		}
 		s.stopper = append(s.stopper, stopper)
-		pgURL = fmt.Sprintf("host=%s port=%d user=%s database=%s", common.GetPostgresSocketDir(), profile.DatastorePort, profile.PgUser, profile.PgUser)
+		pgURL = fmt.Sprintf("host=%s port=%d user=bb database=bb", common.GetPostgresSocketDir(), profile.DatastorePort)
 	} else {
 		pgURL = profile.PgURL
 	}
@@ -158,15 +163,13 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 		s.stopper = append(s.stopper, stopper...)
 	}
 
-	if profile.Readonly {
-		slog.Info("Database is opened in readonly mode. Skip migration and demo data setup.")
-	} else {
-		if err := demo.LoadDemoDataIfNeeded(ctx, pgURL, profile.DemoName); err != nil {
+	if profile.Demo {
+		if err := demo.LoadDemoData(ctx, pgURL); err != nil {
 			return nil, errors.Wrapf(err, "failed to load demo data")
 		}
-		if err := migrator.MigrateSchema(ctx, pgURL); err != nil {
-			return nil, err
-		}
+	}
+	if err := migrator.MigrateSchema(ctx, pgURL); err != nil {
+		return nil, err
 	}
 
 	// Connect to the instance that stores bytebase's own metadata.
@@ -238,32 +241,30 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 		}),
 	)
 
-	s.metricReporter = metricreport.NewReporter(s.store, s.licenseService, s.profile, false)
-	s.schemaSyncer = schemasync.NewSyncer(stores, s.dbFactory, s.stateCfg, profile, s.licenseService)
-	if !profile.Readonly {
-		s.approvalRunner = approval.NewRunner(stores, sheetManager, s.dbFactory, s.stateCfg, s.webhookManager, s.licenseService)
+	s.metricReporter = metricreport.NewReporter(s.store, s.licenseService, s.profile)
+	s.schemaSyncer = schemasync.NewSyncer(stores, s.dbFactory, s.stateCfg)
+	s.approvalRunner = approval.NewRunner(stores, sheetManager, s.dbFactory, s.stateCfg, s.webhookManager, s.licenseService)
 
-		s.taskSchedulerV2 = taskrun.NewSchedulerV2(stores, s.stateCfg, s.webhookManager, profile, s.licenseService)
-		s.taskSchedulerV2.Register(api.TaskDatabaseCreate, taskrun.NewDatabaseCreateExecutor(stores, s.dbFactory, s.schemaSyncer, s.stateCfg, profile))
-		s.taskSchedulerV2.Register(api.TaskDatabaseSchemaBaseline, taskrun.NewSchemaBaselineExecutor(stores, s.dbFactory, s.licenseService, s.stateCfg, s.schemaSyncer, profile))
-		s.taskSchedulerV2.Register(api.TaskDatabaseSchemaUpdate, taskrun.NewSchemaUpdateExecutor(stores, s.dbFactory, s.licenseService, s.stateCfg, s.schemaSyncer, profile))
-		s.taskSchedulerV2.Register(api.TaskDatabaseDataUpdate, taskrun.NewDataUpdateExecutor(stores, s.dbFactory, s.licenseService, s.stateCfg, s.schemaSyncer, profile))
-		s.taskSchedulerV2.Register(api.TaskDatabaseDataExport, taskrun.NewDataExportExecutor(stores, s.dbFactory, s.licenseService, s.stateCfg, s.schemaSyncer, profile))
-		s.taskSchedulerV2.Register(api.TaskDatabaseSchemaUpdateGhost, taskrun.NewSchemaUpdateGhostExecutor(stores, s.dbFactory, s.licenseService, s.stateCfg, s.schemaSyncer, s.profile))
+	s.taskSchedulerV2 = taskrun.NewSchedulerV2(stores, s.stateCfg, s.webhookManager, profile, s.licenseService)
+	s.taskSchedulerV2.Register(api.TaskDatabaseCreate, taskrun.NewDatabaseCreateExecutor(stores, s.dbFactory, s.schemaSyncer, s.stateCfg, profile))
+	s.taskSchedulerV2.Register(api.TaskDatabaseSchemaBaseline, taskrun.NewSchemaBaselineExecutor(stores, s.dbFactory, s.licenseService, s.stateCfg, s.schemaSyncer, profile))
+	s.taskSchedulerV2.Register(api.TaskDatabaseSchemaUpdate, taskrun.NewSchemaUpdateExecutor(stores, s.dbFactory, s.licenseService, s.stateCfg, s.schemaSyncer, profile))
+	s.taskSchedulerV2.Register(api.TaskDatabaseDataUpdate, taskrun.NewDataUpdateExecutor(stores, s.dbFactory, s.licenseService, s.stateCfg, s.schemaSyncer, profile))
+	s.taskSchedulerV2.Register(api.TaskDatabaseDataExport, taskrun.NewDataExportExecutor(stores, s.dbFactory, s.licenseService, s.stateCfg, s.schemaSyncer, profile))
+	s.taskSchedulerV2.Register(api.TaskDatabaseSchemaUpdateGhost, taskrun.NewSchemaUpdateGhostExecutor(stores, s.dbFactory, s.licenseService, s.stateCfg, s.schemaSyncer, s.profile))
 
-		s.planCheckScheduler = plancheck.NewScheduler(stores, s.licenseService, s.stateCfg)
-		databaseConnectExecutor := plancheck.NewDatabaseConnectExecutor(stores, s.dbFactory)
-		s.planCheckScheduler.Register(store.PlanCheckDatabaseConnect, databaseConnectExecutor)
-		statementAdviseExecutor := plancheck.NewStatementAdviseExecutor(stores, sheetManager, s.dbFactory, s.licenseService)
-		s.planCheckScheduler.Register(store.PlanCheckDatabaseStatementAdvise, statementAdviseExecutor)
-		ghostSyncExecutor := plancheck.NewGhostSyncExecutor(stores, s.dbFactory)
-		s.planCheckScheduler.Register(store.PlanCheckDatabaseGhostSync, ghostSyncExecutor)
-		statementReportExecutor := plancheck.NewStatementReportExecutor(stores, sheetManager, s.dbFactory)
-		s.planCheckScheduler.Register(store.PlanCheckDatabaseStatementSummaryReport, statementReportExecutor)
+	s.planCheckScheduler = plancheck.NewScheduler(stores, s.licenseService, s.stateCfg)
+	databaseConnectExecutor := plancheck.NewDatabaseConnectExecutor(stores, s.dbFactory)
+	s.planCheckScheduler.Register(store.PlanCheckDatabaseConnect, databaseConnectExecutor)
+	statementAdviseExecutor := plancheck.NewStatementAdviseExecutor(stores, sheetManager, s.dbFactory, s.licenseService)
+	s.planCheckScheduler.Register(store.PlanCheckDatabaseStatementAdvise, statementAdviseExecutor)
+	ghostSyncExecutor := plancheck.NewGhostSyncExecutor(stores, s.dbFactory)
+	s.planCheckScheduler.Register(store.PlanCheckDatabaseGhostSync, ghostSyncExecutor)
+	statementReportExecutor := plancheck.NewStatementReportExecutor(stores, sheetManager, s.dbFactory)
+	s.planCheckScheduler.Register(store.PlanCheckDatabaseStatementSummaryReport, statementReportExecutor)
 
-		// Metric reporter
-		s.initMetricReporter()
-	}
+	// Metric reporter
+	s.initMetricReporter()
 
 	// Setup the gRPC and grpc-gateway.
 	authProvider := auth.New(s.store, secret, s.licenseService, s.stateCfg, s.profile)
@@ -334,21 +335,19 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 func (s *Server) Run(ctx context.Context, port int) error {
 	ctx, cancel := context.WithCancel(ctx)
 	s.cancel = cancel
-	if !s.profile.Readonly {
-		// runnerWG waits for all goroutines to complete.
-		s.runnerWG.Add(1)
-		go s.taskSchedulerV2.Run(ctx, &s.runnerWG)
-		s.runnerWG.Add(1)
-		go s.schemaSyncer.Run(ctx, &s.runnerWG)
-		s.runnerWG.Add(1)
-		go s.approvalRunner.Run(ctx, &s.runnerWG)
+	// runnerWG waits for all goroutines to complete.
+	s.runnerWG.Add(1)
+	go s.taskSchedulerV2.Run(ctx, &s.runnerWG)
+	s.runnerWG.Add(1)
+	go s.schemaSyncer.Run(ctx, &s.runnerWG)
+	s.runnerWG.Add(1)
+	go s.approvalRunner.Run(ctx, &s.runnerWG)
 
-		s.runnerWG.Add(1)
-		go s.metricReporter.Run(ctx, &s.runnerWG)
+	s.runnerWG.Add(1)
+	go s.metricReporter.Run(ctx, &s.runnerWG)
 
-		s.runnerWG.Add(1)
-		go s.planCheckScheduler.Run(ctx, &s.runnerWG)
-	}
+	s.runnerWG.Add(1)
+	go s.planCheckScheduler.Run(ctx, &s.runnerWG)
 
 	address := fmt.Sprintf(":%d", port)
 	listener, err := net.Listen("tcp", address)

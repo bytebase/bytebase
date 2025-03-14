@@ -1,9 +1,3 @@
-import type { RemovableRef } from "@vueuse/core";
-import { useLocalStorage } from "@vueuse/core";
-import axios from "axios";
-import { defineStore } from "pinia";
-import semver from "semver";
-import { computed } from "vue";
 import { actuatorServiceClient } from "@/grpcweb";
 import { useSilentRequest } from "@/plugins/silent-request";
 import {
@@ -19,6 +13,12 @@ import type {
 } from "@/types/proto/v1/actuator_service";
 import { PasswordRestrictionSetting } from "@/types/proto/v1/setting_service";
 import { semverCompare } from "@/utils";
+import type { RemovableRef } from "@vueuse/core";
+import { useLocalStorage } from "@vueuse/core";
+import axios from "axios";
+import { defineStore } from "pinia";
+import semver from "semver";
+import { computed } from "vue";
 
 const EXTERNAL_URL_PLACEHOLDER =
   "https://www.bytebase.com/docs/get-started/install/external-url";
@@ -70,10 +70,7 @@ export const useActuatorV1Store = defineStore("actuator_v1", {
       return state.serverInfo?.gitCommit || "";
     },
     isDemo: (state) => {
-      return state.serverInfo?.demoName;
-    },
-    isReadonly: (state) => {
-      return state.serverInfo?.readonly || false;
+      return state.serverInfo?.demo;
     },
     isDebug: (state) => {
       return state.serverInfo?.debug || false;

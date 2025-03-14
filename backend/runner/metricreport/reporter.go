@@ -55,9 +55,9 @@ type Reporter struct {
 }
 
 // NewReporter creates a new metric scheduler.
-func NewReporter(store *store.Store, licenseService enterprise.LicenseService, profile *config.Profile, enabled bool) *Reporter {
+func NewReporter(store *store.Store, licenseService enterprise.LicenseService, profile *config.Profile) *Reporter {
 	var r metric.Reporter
-	if enabled {
+	if profile.MetricConnectionKey != "" {
 		r = segment.NewReporter(profile.MetricConnectionKey)
 	} else {
 		r = segment.NewMockReporter()
