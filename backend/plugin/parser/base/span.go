@@ -62,7 +62,10 @@ type QuerySpan struct {
 	SourceColumns SourceColumnSet
 	// PredicateColumns are the source columns contributing to the span.
 	// PredicateColumns here are the source columns for the where conditions.
-	PredicateColumns          SourceColumnSet
+	PredicateColumns SourceColumnSet
+	// PredicatePaths is predicateColumns used by Cosmos DB only, to store the path of the field, all the
+	// paths should begin with the container name.
+	PredicatePaths            map[string]*PathAST
 	NotFoundError             error
 	FunctionNotSupportedError error
 }
@@ -75,6 +78,9 @@ type QuerySpanResult struct {
 	SourceColumns SourceColumnSet
 	// IsPlainField indicates whether the field is a plain column reference (true) or an expression (false).
 	IsPlainField bool
+	// SourceFieldPaths is used for Cosmos DB only, to store the path of the field, the root is the document($). Empty
+	// for select * statement.
+	SourceFieldPaths map[string]bool
 }
 
 // ColumnResource is the resource key for a column.
