@@ -25,7 +25,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.35.2
 	github.com/beltran/gohive v1.8.0
 	github.com/blang/semver/v4 v4.0.0
-	github.com/bytebase/cosmosdb-parser v0.0.0-20250310090827-e5137b765aac
+	github.com/bytebase/cosmosdb-parser v0.0.0-20250314070019-4ba8fb2edf87
 	github.com/bytebase/google-sql-parser v0.0.0-20250116032737-689a327f9465
 	github.com/bytebase/mysql-parser v0.0.0-20241224071214-cb9fd84811dd
 	github.com/bytebase/plsql-parser v0.0.0-20250218041636-9fed633593d1
@@ -170,7 +170,6 @@ require (
 	github.com/golang/geo v0.0.0-20210211234256-740aa86cb551 // indirect
 	github.com/google/btree v1.1.2 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
-	github.com/google/gops v0.3.28 // indirect
 	github.com/google/s2a-go v0.1.9 // indirect
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0 // indirect
 	github.com/gsterjov/go-libsecret v0.0.0-20161001094733-a6f4afe4910c // indirect
@@ -230,7 +229,6 @@ require (
 	github.com/twpayne/go-geom v1.4.1 // indirect
 	github.com/twpayne/go-kml v1.5.2 // indirect
 	github.com/vcaesar/cedar v0.20.2 // indirect
-	github.com/xlab/treeprint v1.2.0 // indirect
 	github.com/xuri/efp v0.0.0-20240408161823-9ad904a10d6d // indirect
 	github.com/xuri/nfp v0.0.0-20240318013403-ab9948c2c4a7 // indirect
 	go.etcd.io/etcd/api/v3 v3.5.10 // indirect
@@ -249,7 +247,6 @@ require (
 	golang.org/x/term v0.30.0 // indirect
 	gopkg.in/go-jose/go-jose.v2 v2.6.3 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
-	rsc.io/goversion v1.2.0 // indirect
 )
 
 require (
@@ -398,5 +395,3 @@ replace github.com/youmark/pkcs8 => github.com/bytebase/pkcs8 v0.0.0-20240612095
 replace github.com/Azure/azure-sdk-for-go/sdk/data/azcosmos => github.com/bytebase/azure-sdk-for-go/sdk/data/azcosmos v0.0.0-20250109032656-87cf24d45689
 
 replace github.com/jackc/pgx/v5 => github.com/bytebase/pgx/v5 v5.0.0-20250212161523-96ff8aed8767
-
-replace github.com/bytebase/cosmosdb-parser => /Users/h3n4l/OpenSource/cosmosdb-parser
