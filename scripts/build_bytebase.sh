@@ -11,25 +11,6 @@ cd "$(dirname "$0")/../"
 . ./scripts/build_init.sh
 
 OUTPUT_DIR=$(mkdir_output "$1")
-OUTPUT_BINARY=$OUTPUT_DIR/bytebase
-
-TARGET_GO_VERSION="1.24.0"
-GO_VERSION=`go version | { read _ _ v _; echo ${v#go}; }`
-if [ "$(version ${GO_VERSION})" -lt "$(version $TARGET_GO_VERSION)" ];
-then
-   echo "${RED}Precheck failed.${NC} Require go version >= $TARGET_GO_VERSION. Current version ${GO_VERSION}."; exit 1;
-fi
-
-NODE_VERSION=`node -v | { read v; echo ${v#v}; }`
-if [ "$(version ${NODE_VERSION})" -lt "$(version 22.13.0)" ];
-then
-   echo "${RED}Precheck failed.${NC} Require node.js version >= 22.13.0. Current version ${NODE_VERSION}."; exit 1;
-fi
-
-if ! command -v npm > /dev/null
-then
-   echo "${RED}Precheck failed.${NC} npm is not installed."; exit 1;
-fi
 
 # Step 1 - Build the frontend release version into the backend/server/dist folder
 # Step 2 - Build the monolithic app by building backend release version together with the backend/server/dist.
@@ -40,7 +21,6 @@ echo "Step 1 - building Bytebase frontend..."
 
 rm -rf ./backend/server/dist
 
-export GIT_COMMIT=$(git rev-parse HEAD)
 pnpm --dir ./frontend i && pnpm --dir ./frontend release
 
 echo "Completed building Bytebase frontend."
@@ -48,7 +28,8 @@ echo "Completed building Bytebase frontend."
 echo ""
 echo "Step 2 - building Bytebase backend..."
 
-go build -p=8 --tags "release,embed_frontend" -ldflags "-w -s -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.version=${VERSION}' -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.gitcommit=$(git rev-parse HEAD)'" -o ${OUTPUT_BINARY} ./backend/bin/server/main.go
+OUTPUT_BINARY=$OUTPUT_DIR/bytebase
+go build -p=8 --tags "release,embed_frontend" -ldflags "-w -s -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.version=${VERSION}' -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.gitcommit=${GIT_COMMIT}'" -o ${OUTPUT_BINARY} ./backend/bin/server/main.go
 
 echo ""
 echo "${GREEN}Completed building Bytebase ${VERSION}.${NC}"

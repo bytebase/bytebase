@@ -28,7 +28,7 @@ func StartMetadataInstance(ctx context.Context, pgBinDir, pgDataDir string, port
 	defer db.Close()
 
 	var ok bool
-	if err := db.QueryRowContext(ctx, "SELECT EXISTS (SELECT 1 FROM pg_database WHERE datname = bb)").Scan(&ok); err != nil {
+	if err := db.QueryRowContext(ctx, "SELECT EXISTS (SELECT 1 FROM pg_database WHERE datname = 'bb');").Scan(&ok); err != nil {
 		return nil, err
 	}
 	if !ok {
