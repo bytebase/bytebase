@@ -1,7 +1,6 @@
-FROM node:22.12.0 as frontend
+FROM node:22.14.0 as frontend
 
 ARG GIT_COMMIT="unknown"
-ARG RELEASE="dev"
 
 RUN npm i -g pnpm
 
@@ -17,9 +16,7 @@ ADD go.mod go.sum /
 RUN go mod download
 
 ARG GIT_COMMIT="unknown"
-ARG RELEASE="dev"
 
-# Need gcc for CGO_ENABLED=1
 RUN apt-get install -y gcc
 RUN apt-get update && apt-get install -y libkrb5-dev
 
@@ -33,12 +30,11 @@ COPY --from=frontend /frontend-build/frontend/dist ./backend/server/dist
 COPY ./scripts/VERSION .
 
 # -ldflags="-w -s" means omit DWARF symbol table and the symbol table and debug information
-# go-sqlite3 requires CGO_ENABLED
-RUN VERSION=`cat ./VERSION` && CGO_ENABLED=1 go build \
-        --tags "${RELEASE},embed_frontend,minidemo,docker" \
-        -ldflags="-w -s -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.version=${VERSION}' -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.gitcommit=${GIT_COMMIT}'" \
-        -o bytebase \
-        ./backend/bin/server/main.go
+RUN VERSION=`cat ./VERSION` && go build \
+  --tags "dev,embed_frontend,minidemo,docker" \
+  -ldflags="-w -s -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.version=${VERSION}' -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.gitcommit=${GIT_COMMIT}'" \
+  -o bytebase \
+  ./backend/bin/server/main.go
 
 # Use debian to decompress tar files.
 FROM debian:bookworm-slim as decompressor
