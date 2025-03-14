@@ -24,7 +24,6 @@ RUN go mod download
 
 ARG TARGETARCH
 ARG VERSION="development"
-ARG VERSION_SUFFIX=""
 ARG GIT_COMMIT="unknown"
 
 ARG RELEASE="release"
@@ -51,7 +50,7 @@ COPY ./scripts/VERSION .
 RUN if [ "$TARGETARCH" = "arm64" ]; then \
     CC=aarch64-linux-gnu-gcc && CC_FOR_TARGET=gcc-aarch64-linux-gnu; \
     fi && \
-    VERSION=`cat ./scripts/VERSION`${VERSION_SUFFIX} && CGO_ENABLED=1 GOOS=linux GOARCH=$TARGETARCH CC=$CC CC_FOR_TARGET=$CC_FOR_TARGET go build \
+    VERSION=`cat ./scripts/VERSION` && CGO_ENABLED=1 GOOS=linux GOARCH=$TARGETARCH CC=$CC CC_FOR_TARGET=$CC_FOR_TARGET go build \
     --tags "${RELEASE},embed_frontend,docker" \
     -ldflags="-w -s -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.version=${VERSION}' -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.gitcommit=${GIT_COMMIT}'" \
     -o bytebase \
