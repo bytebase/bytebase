@@ -14,9 +14,8 @@ ADD go.mod go.sum /
 RUN go mod download
 
 ARG TARGETARCH
-ARG VERSION="development"
-ARG GIT_COMMIT="unknown"
-ARG PRODUCT_ID="prod-n4dmmye4e6hjo"
+ARG VERSION
+ARG GIT_COMMIT
 
 RUN if [ "$TARGETARCH" = "arm64" ]; then \
     apt-get install -y gcc-aarch64-linux-gnu; \
@@ -36,7 +35,7 @@ COPY ./scripts/VERSION .
 
 # -ldflags="-w -s" means omit DWARF symbol table and the symbol table and debug information
 RUN if [ "$TARGETARCH" = "arm64" ]; then CC=aarch64-linux-gnu-gcc && CC_FOR_TARGET=gcc-aarch64-linux-gnu; fi && \
-  VERSION=`cat ./scripts/VERSION` && GOOS=linux GOARCH=$TARGETARCH CC=$CC CC_FOR_TARGET=$CC_FOR_TARGET go build \
+  GOARCH=$TARGETARCH CC=$CC CC_FOR_TARGET=$CC_FOR_TARGET go build \
   --tags "release,embed_frontend,aws" \
   -ldflags="-w -s -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.version=${VERSION}' -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.gitcommit=${GIT_COMMIT}'" \
   -o bytebase \
@@ -61,8 +60,8 @@ RUN tar -Jxf /tmp/bytebase/resources/postgres/postgres-linux-${TARGETARCH}.txz -
 FROM debian:bookworm-slim as monolithic
 
 ARG TARGETARCH
-ARG VERSION="development"
-ARG GIT_COMMIT="unknown"
+ARG VERSION
+ARG GIT_COMMI
 
 # See https://github.com/opencontainers/image-spec/blob/master/annotations.md
 LABEL org.opencontainers.image.version=${VERSION}
@@ -93,7 +92,7 @@ COPY --from=backend /etc/ssl/certs /etc/ssl/certs
 COPY --from=decompressor /var/opt/bytebase/resources /bytebase/resources
 
 ENV OPENSSL_CONF /etc/ssl/
-ENV AWS_PRODUCT_ID=$PRODUCT_ID
+ENV AWS_PRODUCT_ID="prod-n4dmmye4e6hjo"
 
 CMD ["--port", "8080", "--data", "/var/opt/bytebase"]
 

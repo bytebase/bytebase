@@ -9,7 +9,7 @@ WORKDIR /frontend-build
 COPY . .
 
 ENV GIT_COMMIT="${GIT_COMMIT}"
-RUN cd frontend && pnpm install --frozen-lockfile && pnpm release-docker
+RUN pnpm --dir frontend release-docker
 
 FROM golang:1.24.1 as backend
 ADD go.mod go.sum /
@@ -54,8 +54,8 @@ RUN tar -Jxf /tmp/bytebase/resources/postgres/postgres-linux-${TARGETARCH}.txz -
 # Use debian because mysql requires glibc.
 FROM debian:bookworm-slim as monolithic
 
-ARG VERSION="development"
-ARG GIT_COMMIT="unknown"
+ARG VERSION
+ARG GIT_COMMIT
 
 # See https://github.com/opencontainers/image-spec/blob/master/annotations.md
 LABEL org.opencontainers.image.version=${VERSION}
