@@ -14,7 +14,7 @@ echo "Start building Bytebase docker image ${VERSION}..."
 
 docker build -f ./scripts/Dockerfile.aws \
     --build-arg VERSION="${VERSION}" \
-    --build-arg GIT_COMMIT="$(git rev-parse HEAD)" \
+    --build-arg GIT_COMMIT=${GIT_COMMIT}" \
     -t bytebase/bytebase .
 
 echo "${GREEN}Completed building Bytebase docker image ${VERSION}.${NC}"
