@@ -1,13 +1,4 @@
-# DO NOT run docker build against this file directly. Instead using ./build_bytebase_docker.sh as that
-# one sets the various ARG used in the Dockerfile
-
-# After build
-
-# $ docker run --init --rm --name bytebase --publish 8080:8080 --volume ~/.bytebase/data:/var/opt/bytebase bytebase/bytebase
-
-FROM node:22.12.0 as frontend
-
-ARG RELEASE="release"
+FROM node:22.14.0 as frontend
 
 RUN npm i -g pnpm
 
@@ -26,14 +17,11 @@ ARG TARGETARCH
 ARG VERSION="development"
 ARG GIT_COMMIT="unknown"
 
-ARG RELEASE="release"
-
-# Need gcc for CGO_ENABLED=1
 RUN if [ "$TARGETARCH" = "arm64" ]; then \
     apt-get install -y gcc-aarch64-linux-gnu; \
-    else \
+  else \
     apt-get install -y gcc ;\
-    fi
+  fi
 RUN apt-get update && apt-get install -y libkrb5-dev
 
 WORKDIR /backend-build
@@ -46,15 +34,11 @@ COPY --from=frontend /frontend-build/frontend/dist ./backend/server/dist
 COPY ./scripts/VERSION .
 
 # -ldflags="-w -s" means omit DWARF symbol table and the symbol table and debug information
-# go-sqlite3 requires CGO_ENABLED
-RUN if [ "$TARGETARCH" = "arm64" ]; then \
-    CC=aarch64-linux-gnu-gcc && CC_FOR_TARGET=gcc-aarch64-linux-gnu; \
-    fi && \
-    VERSION=`cat ./scripts/VERSION` && CGO_ENABLED=1 GOOS=linux GOARCH=$TARGETARCH CC=$CC CC_FOR_TARGET=$CC_FOR_TARGET go build \
-    --tags "${RELEASE},embed_frontend,docker" \
-    -ldflags="-w -s -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.version=${VERSION}' -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.gitcommit=${GIT_COMMIT}'" \
-    -o bytebase \
-    ./backend/bin/server/main.go
+RUN if [ "$TARGETARCH" = "arm64" ]; then CC=aarch64-linux-gnu-gcc && CC_FOR_TARGET=gcc-aarch64-linux-gnu; fi && \
+  VERSION=`cat ./scripts/VERSION` && GOOS=linux GOARCH=$TARGETARCH CC=$CC CC_FOR_TARGET=$CC_FOR_TARGET go build \
+  --tags "release,embed_frontend,docker" \
+  -ldflags="-w -s -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.version=${VERSION}' -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.gitcommit=${GIT_COMMIT}'" \
+  -o bytebase ./backend/bin/server/main.go
 
 # Use debian to decompress tar files.
 FROM debian:bookworm-slim as decompressor
