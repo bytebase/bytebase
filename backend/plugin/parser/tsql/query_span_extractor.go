@@ -28,7 +28,7 @@ type querySpanExtractor struct {
 	gCtx base.GetQuerySpanContext
 	// Private fields.
 	// ctes is used to record the common table expressions (CTEs) in the query.
-	// It should be shrunk to the privious length while exiting the query scope.
+	// It should be shrunk to the previous length while exiting the query scope.
 	ctes []*base.PseudoTable
 
 	// outerTableSources is used to record the outer table sources in the query.
@@ -97,7 +97,7 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string)
 		}, nil
 	}
 
-	// We assumes the caller had handled the statement type case,
+	// We assume the caller had handled the statement type case,
 	// so we only need to handle the determined statement type here.
 	// In order to decrease the maintenance cost, we use listener
 	// to handle the select statement precisely.
