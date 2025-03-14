@@ -31,10 +31,10 @@ COPY ./scripts/VERSION .
 
 # -ldflags="-w -s" means omit DWARF symbol table and the symbol table and debug information
 RUN VERSION=`cat ./VERSION` && go build \
-        --tags "dev,embed_frontend,minidemo,docker" \
-        -ldflags="-w -s -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.version=${VERSION}' -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.gitcommit=${GIT_COMMIT}'" \
-        -o bytebase \
-        ./backend/bin/server/main.go
+  --tags "dev,embed_frontend,minidemo,docker" \
+  -ldflags="-w -s -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.version=${VERSION}' -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.gitcommit=${GIT_COMMIT}'" \
+  -o bytebase \
+  ./backend/bin/server/main.go
 
 # Use debian to decompress tar files.
 FROM debian:bookworm-slim as decompressor

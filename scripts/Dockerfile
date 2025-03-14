@@ -19,9 +19,9 @@ ARG GIT_COMMIT="unknown"
 
 RUN if [ "$TARGETARCH" = "arm64" ]; then \
     apt-get install -y gcc-aarch64-linux-gnu; \
-    else \
+  else \
     apt-get install -y gcc ;\
-    fi
+  fi
 RUN apt-get update && apt-get install -y libkrb5-dev
 
 WORKDIR /backend-build
@@ -34,14 +34,11 @@ COPY --from=frontend /frontend-build/frontend/dist ./backend/server/dist
 COPY ./scripts/VERSION .
 
 # -ldflags="-w -s" means omit DWARF symbol table and the symbol table and debug information
-RUN if [ "$TARGETARCH" = "arm64" ]; then \
-    CC=aarch64-linux-gnu-gcc && CC_FOR_TARGET=gcc-aarch64-linux-gnu; \
-    fi && \
-    VERSION=`cat ./scripts/VERSION` && GOOS=linux GOARCH=$TARGETARCH CC=$CC CC_FOR_TARGET=$CC_FOR_TARGET go build \
-    --tags "release,embed_frontend,docker" \
-    -ldflags="-w -s -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.version=${VERSION}' -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.gitcommit=${GIT_COMMIT}'" \
-    -o bytebase \
-    ./backend/bin/server/main.go
+RUN if [ "$TARGETARCH" = "arm64" ]; then CC=aarch64-linux-gnu-gcc && CC_FOR_TARGET=gcc-aarch64-linux-gnu; fi && \
+  VERSION=`cat ./scripts/VERSION` && GOOS=linux GOARCH=$TARGETARCH CC=$CC CC_FOR_TARGET=$CC_FOR_TARGET go build \
+  --tags "release,embed_frontend,docker" \
+  -ldflags="-w -s -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.version=${VERSION}' -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.gitcommit=${GIT_COMMIT}'" \
+  -o bytebase ./backend/bin/server/main.go
 
 # Use debian to decompress tar files.
 FROM debian:bookworm-slim as decompressor
