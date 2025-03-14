@@ -1,10 +1,91 @@
 package v1
 
 import (
+	"github.com/pkg/errors"
+
 	"github.com/bytebase/bytebase/backend/component/masker"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
+
+func getFirstSemanticTypeInPath(ast *base.PathAST, objectSchema *storepb.ObjectSchema) string {
+	if ast == nil || ast.Root == nil || objectSchema == nil {
+		return ""
+	}
+
+	// Skip the first node because it always represents the container.
+	astWoutContainer := base.NewPathAST(ast.Root.GetNext())
+	if astWoutContainer == nil || astWoutContainer.Root == nil {
+		return ""
+	}
+
+	if objectSchema.SemanticType != "" {
+		return objectSchema.SemanticType
+	}
+
+	os := objectSchema
+
+	for node := astWoutContainer.Root; node != nil; node = node.GetNext() {
+		if node.GetIdentifier() == "" {
+			return ""
+		}
+
+		switch node := node.(type) {
+		case *base.ItemSelector:
+			if os.Type != storepb.ObjectSchema_OBJECT {
+				return ""
+			}
+			var valid bool
+			if v := os.GetStructKind().GetProperties(); v != nil {
+				if child, ok := v[node.GetIdentifier()]; ok {
+					os = child
+					valid = true
+				}
+			}
+			if !valid {
+				return ""
+			}
+		case *base.ArraySelector:
+			if os.Type != storepb.ObjectSchema_OBJECT {
+				return ""
+			}
+			var valid bool
+			if v := os.GetStructKind().GetProperties(); v != nil {
+				if child, ok := v[node.GetIdentifier()]; ok {
+					os = child
+					valid = true
+				}
+			}
+			if !valid {
+				return ""
+			}
+
+			if os.Type != storepb.ObjectSchema_ARRAY {
+				return ""
+			}
+
+			os = os.GetArrayKind().GetKind()
+			if os == nil {
+				return ""
+			}
+		}
+
+		if os.SemanticType != "" {
+			return os.SemanticType
+		}
+	}
+
+	return ""
+}
+
+func maskCosmosDB(span *base.QuerySpan, data any, objectSchema *storepb.ObjectSchema, semanticTypeToMasker map[string]masker.Masker) (any, error) {
+	if len(span.Results) == 1 && len(span.Results[0].SourceFieldPaths) == 0 {
+		// SELECT * FROM c
+		return walkAndMaskJSON(data, objectSchema, semanticTypeToMasker)
+	}
+	return nil, errors.New("unsupported statement for CosmosDB masking")
+}
 
 func walkAndMaskJSON(data any, objectSchema *storepb.ObjectSchema, semanticTypeToMasker map[string]masker.Masker) (any, error) {
 	switch data := data.(type) {

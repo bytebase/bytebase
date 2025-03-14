@@ -101,7 +101,7 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*ba
 	}
 
 	q.ctx = ctx
-	// We assumes the caller had handled the statement type case,
+	// We assume the caller had handled the statement type case,
 	// so we only need to handle the determined statement type here.
 	// In order to decrease the maintenance cost, we use listener to handle
 	// the select statement precisely instead of using type switch.
