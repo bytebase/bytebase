@@ -3,7 +3,6 @@ package config
 
 import (
 	"sync/atomic"
-	"time"
 
 	"github.com/bytebase/bytebase/backend/common"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
@@ -24,14 +23,6 @@ type Profile struct {
 	SampleDatabasePort int
 	// Port is the binding port for the server.
 	Port int
-	// PgUser is the user we use to connect to bytebase's Postgres database.
-	// The name of the database storing metadata is the same as pgUser.
-	PgUser string
-	// When we are running in readonly mode:
-	// - The data file will be opened in readonly mode, no applicable migration or seeding will be applied.
-	// - Requests other than GET will be rejected
-	// - Any operations involving mutation will not start (e.g. Background schema syncer, task scheduler)
-	Readonly bool
 	// When we are running in SaaS mode, some features are not allowed to edit by users.
 	SaaS bool
 	// When enabled output logs in json format
@@ -44,12 +35,8 @@ type Profile struct {
 	DataDir string
 	// ResourceDir is the directory stores the resources including embedded postgres, mysqlutil, mongoutil and etc.
 	ResourceDir string
-	// DemoName specifies the demo name. Empty string means no demo.
-	DemoName string
-	// AppRunnerInterval is the interval for application runner.
-	AppRunnerInterval time.Duration
-	// BackupRunnerInterval is the interval for backup runner.
-	BackupRunnerInterval time.Duration
+	// Demo mode.
+	Demo bool
 
 	// Version is the bytebase's server version
 	Version string
@@ -59,8 +46,6 @@ type Profile struct {
 	PgURL string
 	// MetricConnectionKey is the connection key for metric.
 	MetricConnectionKey string
-	// EnableMetric will enable the metric collector.
-	EnableMetric bool
 
 	// LastActiveTs is the service last active timestamp, any API calls will refresh this value.
 	LastActiveTs int64
@@ -69,9 +54,6 @@ type Profile struct {
 
 	// can be set in runtime
 	RuntimeDebug atomic.Bool
-
-	// Development flag, enables the versioned workflow.
-	DevelopmentVersioned bool
 }
 
 // UseEmbedDB returns whether to use embedDB.

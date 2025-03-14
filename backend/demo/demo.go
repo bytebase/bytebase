@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"embed"
-	"fmt"
 	"io/fs"
 	"log/slog"
 )
@@ -12,18 +11,15 @@ import (
 //go:embed data
 var demoFS embed.FS
 
-// LoadDemoDataIfNeeded loads the demo data if specified.
-func LoadDemoDataIfNeeded(ctx context.Context, pgURL, demo string) error {
-	if demo == "" {
-		slog.Debug("Skip setting up demo data. Demo not specified.")
-		return nil
-	}
-	slog.Info(fmt.Sprintf("Setting up demo %q...", demo))
+// LoadDemoData loads the demo data.
+func LoadDemoData(ctx context.Context, pgURL string) error {
+	slog.Info("Setting up demo...")
 
 	db, err := sql.Open("pgx", pgURL)
 	if err != nil {
 		return err
-	} // This query in the dump.sql will poison the connection.
+	}
+	// This query in the dump.sql will poison the connection.
 	// SELECT pg_catalog.set_config('search_path', '', false);
 	var ok bool
 	if err := db.QueryRowContext(ctx,
