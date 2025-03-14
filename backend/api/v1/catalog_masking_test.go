@@ -7,8 +7,132 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/backend/component/masker"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
+
+func TestGetFirstSemanticTypeInPath(t *testing.T) {
+	containerName := "container"
+	containerNode := base.NewItemSelector(containerName)
+
+	testCases := []struct {
+		nodes        []base.SelectorNode
+		objectSchema *storepb.ObjectSchema
+		want         string
+	}{
+		{
+			nodes: []base.SelectorNode{
+				base.NewItemSelector("a"),
+			},
+			objectSchema: &storepb.ObjectSchema{
+				Type: storepb.ObjectSchema_OBJECT,
+				Kind: &storepb.ObjectSchema_StructKind_{
+					StructKind: &storepb.ObjectSchema_StructKind{
+						Properties: map[string]*storepb.ObjectSchema{
+							"a": {
+								SemanticType: "st-a",
+								Type:         storepb.ObjectSchema_STRING,
+							},
+						},
+					},
+				},
+			},
+			want: "st-a",
+		},
+		{
+			nodes: []base.SelectorNode{
+				base.NewItemSelector("a"),
+				base.NewArraySelector("b", 1),
+				base.NewItemSelector("c"),
+			},
+			objectSchema: &storepb.ObjectSchema{
+				Type: storepb.ObjectSchema_OBJECT,
+				Kind: &storepb.ObjectSchema_StructKind_{
+					StructKind: &storepb.ObjectSchema_StructKind{
+						Properties: map[string]*storepb.ObjectSchema{
+							"a": {
+								Type: storepb.ObjectSchema_OBJECT,
+								Kind: &storepb.ObjectSchema_StructKind_{
+									StructKind: &storepb.ObjectSchema_StructKind{
+										Properties: map[string]*storepb.ObjectSchema{
+											"b": {
+												Type:         storepb.ObjectSchema_ARRAY,
+												SemanticType: "st-b",
+												Kind: &storepb.ObjectSchema_ArrayKind_{
+													ArrayKind: &storepb.ObjectSchema_ArrayKind{
+														Kind: &storepb.ObjectSchema{
+															Type: storepb.ObjectSchema_OBJECT,
+															Kind: &storepb.ObjectSchema_StructKind_{
+																StructKind: &storepb.ObjectSchema_StructKind{
+																	Properties: map[string]*storepb.ObjectSchema{
+																		"c": {
+																			Type:         storepb.ObjectSchema_STRING,
+																			SemanticType: "st-c",
+																		},
+																	},
+																},
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: "st-c",
+		},
+		{
+			nodes: []base.SelectorNode{
+				base.NewItemSelector("a"),
+				base.NewItemSelector("c"),
+			},
+			objectSchema: &storepb.ObjectSchema{
+				Type: storepb.ObjectSchema_OBJECT,
+				Kind: &storepb.ObjectSchema_StructKind_{
+					StructKind: &storepb.ObjectSchema_StructKind{
+						Properties: map[string]*storepb.ObjectSchema{
+							"a": {
+								Type: storepb.ObjectSchema_OBJECT,
+								Kind: &storepb.ObjectSchema_StructKind_{
+									StructKind: &storepb.ObjectSchema_StructKind{
+										Properties: map[string]*storepb.ObjectSchema{
+											"b": {
+												Type:         storepb.ObjectSchema_STRING,
+												SemanticType: "st-b",
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: "",
+		},
+	}
+
+	for _, tc := range testCases {
+		if len(tc.nodes) == 0 {
+			continue
+		}
+
+		ast := base.NewPathAST(containerNode)
+		next := ast.Root
+		for i := 0; i < len(tc.nodes); i++ {
+			next.SetNext(tc.nodes[i])
+			next = next.GetNext()
+		}
+
+		got := getFirstSemanticTypeInPath(ast, tc.objectSchema)
+		require.Equal(t, tc.want, got)
+	}
+}
 
 func TestWalkAndMaskJSON(t *testing.T) {
 	type testCase struct {

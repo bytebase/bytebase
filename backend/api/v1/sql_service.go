@@ -523,9 +523,23 @@ func queryRetry(
 	if licenseService.IsFeatureEnabledForInstance(api.FeatureSensitiveData, instance) == nil && !queryContext.Explain {
 		// TODO(zp): Refactor Document Database and RDBMS to use the same masking logic.
 		if instance.Metadata.GetEngine() == storepb.Engine_COSMOSDB {
+			if len(spans) != 1 {
+				return nil, nil, duration, status.Error(codes.Internal, "expected one span for CosmosDB")
+			}
 			objectSchema, err := getCosmosDBContainerObjectSchema(ctx, stores, database.InstanceID, database.DatabaseName, queryContext.Container)
 			if err != nil {
 				return nil, nil, duration, status.Error(codes.Internal, err.Error())
+			}
+			for pathStr, predicatePath := range spans[0].PredicatePaths {
+				semanticType := getFirstSemanticTypeInPath(predicatePath, objectSchema)
+				if semanticType != "" {
+					for _, result := range results {
+						result.Error = fmt.Sprintf("using path %q tagged by semantic type %q in WHERE clause is not allowed", pathStr, semanticType)
+						result.Rows = nil
+						result.RowsCount = 0
+					}
+					return results, spans, duration, nil
+				}
 			}
 			if objectSchema != nil {
 				// We store one query result document in one row.
@@ -548,7 +562,7 @@ func queryRetry(
 							return nil, nil, duration, status.Errorf(codes.Internal, "failed to unmarshal document: %v", err)
 						}
 						// Mask the document.
-						maskedDoc, err := walkAndMaskJSON(doc, objectSchema, semanticTypeToMaskerMap)
+						maskedDoc, err := maskCosmosDB(spans[0], doc, objectSchema, semanticTypeToMaskerMap)
 						if err != nil {
 							return nil, nil, duration, status.Errorf(codes.Internal, "failed to mask document: %v", err)
 						}
