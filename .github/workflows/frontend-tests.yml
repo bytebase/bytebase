@@ -46,8 +46,6 @@ jobs:
           node-version: '22.14.0'
           cache: pnpm
           cache-dependency-path: "frontend/pnpm-lock.yaml"
-      - run: pnpm install --frozen-lockfile
-        working-directory: frontend
       - name: Copy config files
         run: |
           cp ../backend/enterprise/api/plan.yaml ./src/types
