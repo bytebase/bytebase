@@ -12,7 +12,7 @@ func activeProfile(dataDir string) *config.Profile {
 	p.RuntimeDebug.Store(p.Debug)
 	p.Mode = common.ReleaseModeProd
 	// Enable metric if it's not explicitly disabled and it's not running in demo mode.
-	f !flags.disableMetric && !p.Demo {
+	if !flags.disableMetric && !p.Demo {
 		p.MetricConnectionKey = "so9lLwj5zLjH09sxNabsyVNYSsAHn68F"
 	}
 	return p
