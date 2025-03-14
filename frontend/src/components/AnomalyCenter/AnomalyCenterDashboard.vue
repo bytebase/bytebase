@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col space-y-4">
+  <div v-if="!loading" class="flex flex-col space-y-4">
     <FeatureAttentionForInstanceLicense
       v-if="hasSchemaDriftFeature"
       feature="bb.feature.schema-drift"
@@ -75,10 +75,14 @@
       }}
     </div>
   </div>
+  <div v-else class="flex justify-center items-center py-10">
+    <BBSpin />
+  </div>
 </template>
 
 <script lang="ts" setup>
 import { computed, onMounted, ref } from "vue";
+import { BBSpin } from "@/bbkit";
 import type { BBTableSectionDataSource } from "@/bbkit/types";
 import {
   featureToRef,
@@ -116,6 +120,7 @@ const props = defineProps<{
 const databaseStore = useDatabaseV1Store();
 const environmentList = useEnvironmentV1List(false /* !showDeleted */);
 const allAnomalyList = ref<Anomaly[]>([]);
+const loading = ref(true);
 
 onMounted(async () => {
   // Prepare all anomaly list.
@@ -123,10 +128,10 @@ onMounted(async () => {
     props.project?.name,
     {}
   );
-
   await batchGetOrFetchDatabases(
     allAnomalyList.value.map((anomaly) => anomaly.resource)
   );
+  loading.value = false;
 });
 
 const databaseAnomalySectionList = computed((): LocalDataSource[] => {
