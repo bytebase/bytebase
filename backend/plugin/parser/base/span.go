@@ -65,7 +65,7 @@ type QuerySpan struct {
 	PredicateColumns SourceColumnSet
 	// PredicatePaths is predicateColumns used by Cosmos DB only, to store the path of the field, all the
 	// paths should begin with the container name.
-	PredicatePaths            map[string]bool
+	PredicatePaths            map[string]*PathAST
 	NotFoundError             error
 	FunctionNotSupportedError error
 }

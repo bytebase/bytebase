@@ -2,11 +2,14 @@ package cosmosdb
 
 import (
 	"context"
+	"log/slog"
+	"strconv"
 
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/cosmosdb-parser"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -71,7 +74,7 @@ func (l *querySpanResultListener) EnterSelect(ctx *parser.SelectContext) {
 type querySpanPredicatePathsListener struct {
 	*parser.BaseCosmosDBParserListener
 
-	predicatePaths map[string]bool
+	predicatePaths map[string]*base.PathAST
 	err            error
 }
 
@@ -104,19 +107,35 @@ func (l *querySpanPredicatePathsListener) EnterSelect(ctx *parser.SelectContext)
 	l.predicatePaths = predicateFields
 }
 
-func extractPredicateFieldsFromWhereClause(ctx parser.IWhere_clauseContext, originalContainerName string, fromAlias string) (map[string]bool, error) {
+func extractPredicateFieldsFromWhereClause(ctx parser.IWhere_clauseContext, originalContainerName string, fromAlias string) (map[string]*base.PathAST, error) {
 	scalarExpression := ctx.Scalar_expression_in_where()
 
 	paths := extractPredicateFieldsFromScalarExpressionInWhere(scalarExpression, originalContainerName, fromAlias)
 
-	r := make(map[string]bool)
+	r := make(map[string]*base.PathAST)
 	for _, path := range paths {
-		r[path] = true
+		if len(path) == 0 {
+			continue
+		}
+
+		ast := base.NewPathAST(path[0].GetIdentifier())
+		var current base.SelectorNode = ast.Root
+		for i := 1; i < len(path); i++ {
+			current.SetNext(path[i])
+			current = current.GetNext()
+		}
+
+		str, err := ast.String()
+		if err != nil {
+			slog.Warn("failed to convert path ast to string", log.BBError(err))
+		}
+		r[str] = ast
 	}
+
 	return r, nil
 }
 
-func extractPredicateFieldsFromScalarExpressionInWhere(ctx parser.IScalar_expression_in_whereContext, originalContainerName string, fromAlias string) []string {
+func extractPredicateFieldsFromScalarExpressionInWhere(ctx parser.IScalar_expression_in_whereContext, originalContainerName string, fromAlias string) [][]base.SelectorNode {
 	if ctx == nil {
 		return nil
 	}
@@ -127,20 +146,24 @@ func extractPredicateFieldsFromScalarExpressionInWhere(ctx parser.IScalar_expres
 		if fromAlias != "" && name == fromAlias {
 			name = originalContainerName
 		}
-		return []string{name}
+		return [][]base.SelectorNode{
+			{
+				base.NewItemSelector(name),
+			},
+		}
 	case ctx.AND_SYMBOL() != nil, ctx.OR_SYMBOL() != nil:
 		allScalarExpressionInWheres := ctx.AllScalar_expression_in_where()
-		var paths []string
+		var allPaths [][]base.SelectorNode
 		for _, expr := range allScalarExpressionInWheres {
-			path := extractPredicateFieldsFromScalarExpressionInWhere(expr, originalContainerName, fromAlias)
-			paths = append(paths, path...)
+			paths := extractPredicateFieldsFromScalarExpressionInWhere(expr, originalContainerName, fromAlias)
+			allPaths = append(allPaths, paths...)
 		}
-		return paths
+		return allPaths
 	case ctx.DOT_SYMBOL() != nil:
 		// Most usual case like a.b.c.d.
 		paths := extractPredicateFieldsFromScalarExpressionInWhere(ctx.Scalar_expression_in_where(0), originalContainerName, fromAlias)
-		for i, path := range paths {
-			paths[i] = path + "." + ctx.Property_name().IDENTIFIER().GetText()
+		for i := range paths {
+			paths[i] = append(paths[i], base.NewItemSelector(ctx.Property_name().IDENTIFIER().GetText()))
 		}
 		return paths
 	case ctx.LS_BRACKET_SYMBOL() != nil:
@@ -148,9 +171,19 @@ func extractPredicateFieldsFromScalarExpressionInWhere(ctx parser.IScalar_expres
 		for i, path := range paths {
 			switch {
 			case ctx.Property_name() != nil:
-				paths[i] = path + "." + ctx.Property_name().IDENTIFIER().GetText()
+				paths[i] = append(path, base.NewItemSelector(ctx.Property_name().IDENTIFIER().GetText()))
 			case ctx.Array_index() != nil:
-				paths[i] = path + "[" + ctx.Array_index().GetText() + "]"
+				if len(paths[i]) == 0 {
+					break
+				}
+				index, err := strconv.Atoi(ctx.Array_index().GetText())
+				if err != nil {
+					slog.Warn("cannot convert array index to int", slog.String("index", ctx.Array_index().GetText()))
+					break
+				}
+				// Rebuild the ast because of the different level of array index and array name.
+				last := paths[i][len(paths[i])-1]
+				paths[i][len(paths[i])-1] = base.NewArraySelector(last.GetIdentifier(), index)
 			}
 		}
 		return paths
@@ -169,7 +202,7 @@ func extractPredicateFieldsFromScalarExpressionInWhere(ctx parser.IScalar_expres
 		switch {
 		case ctx.Scalar_function_expression().Udf_scalar_function_expression() != nil:
 			allScalarExpressionInWheres := ctx.Scalar_function_expression().Udf_scalar_function_expression().AllScalar_expression_in_where()
-			var paths []string
+			var paths [][]base.SelectorNode
 			for _, expr := range allScalarExpressionInWheres {
 				path := extractPredicateFieldsFromScalarExpressionInWhere(expr, originalContainerName, fromAlias)
 				paths = append(paths, path...)
@@ -177,7 +210,7 @@ func extractPredicateFieldsFromScalarExpressionInWhere(ctx parser.IScalar_expres
 			return paths
 		case ctx.Scalar_function_expression().Builtin_function_expression() != nil:
 			allScalarExpressionInWheres := ctx.Scalar_function_expression().Builtin_function_expression().AllScalar_expression_in_where()
-			var paths []string
+			var paths [][]base.SelectorNode
 			for _, expr := range allScalarExpressionInWheres {
 				path := extractPredicateFieldsFromScalarExpressionInWhere(expr, originalContainerName, fromAlias)
 				paths = append(paths, path...)

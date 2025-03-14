@@ -39,6 +39,10 @@ func TestPredicateInWhere(t *testing.T) {
 	for _, tc := range testCases {
 		querySpan, err := getQuerySpan(tc.statement)
 		a.Nil(err)
-		a.Equalf(tc.predicatePaths, querySpan.PredicatePaths, "test failed for statement: %s", tc.statement)
+		a.Equal(len(tc.predicatePaths), len(querySpan.PredicatePaths))
+		for path := range tc.predicatePaths {
+			_, ok := querySpan.PredicatePaths[path]
+			a.True(ok)
+		}
 	}
 }
