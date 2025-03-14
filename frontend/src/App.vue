@@ -31,21 +31,20 @@
 </template>
 
 <script lang="ts" setup>
+import Watermark from "@/components/misc/Watermark.vue";
+import { AUTH_PASSWORD_RESET_MODULE } from "@/router/auth";
 import { cloneDeep, isEqual } from "lodash-es";
 import {
-  NSpin,
   NConfigProvider,
   NDialogProvider,
   NNotificationProvider,
+  NSpin,
 } from "naive-ui";
 import { ServerError } from "nice-grpc-common";
 import { ClientError, Status } from "nice-grpc-web";
-import { onErrorCaptured, onMounted, watchEffect } from "vue";
-import { watch } from "vue";
+import { onErrorCaptured, onMounted, watch, watchEffect } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import Watermark from "@/components/misc/Watermark.vue";
-import { AUTH_PASSWORD_RESET_MODULE } from "@/router/auth";
-import { themeOverrides, dateLang, generalLang } from "../naive-ui.config";
+import { dateLang, generalLang, themeOverrides } from "../naive-ui.config";
 import { provideAppRootContext } from "./AppRootContext";
 import AuthContext from "./AuthContext.vue";
 import NotificationContext from "./NotificationContext.vue";
@@ -61,8 +60,8 @@ import {
 } from "./store";
 import { isDev } from "./utils";
 
-// Show at most 3 notifications to prevent excessive notification when shit hits the fan.
-const MAX_NOTIFICATION_DISPLAY_COUNT = 3;
+// Show at most 2 notifications to prevent excessive notification.
+const MAX_NOTIFICATION_DISPLAY_COUNT = 2;
 
 const route = useRoute();
 const router = useRouter();
