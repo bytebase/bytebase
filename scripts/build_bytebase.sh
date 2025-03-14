@@ -48,23 +48,10 @@ echo "Completed building Bytebase frontend."
 echo ""
 echo "Step 2 - building Bytebase backend..."
 
-flags="-X 'github.com/bytebase/bytebase/backend/bin/server/cmd.version=${VERSION}'
--X 'github.com/bytebase/bytebase/backend/bin/server/cmd.goversion=$(go version)'
--X 'github.com/bytebase/bytebase/backend/bin/server/cmd.gitcommit=$(git rev-parse HEAD)'
--X 'github.com/bytebase/bytebase/backend/bin/server/cmd.buildtime=$(date -u +"%Y-%m-%dT%H:%M:%SZ")'
--X 'github.com/bytebase/bytebase/backend/bin/server/cmd.builduser=$(id -u -n)'"
-
-CGO_ENABLED=1 go build -p=8 --tags "release,embed_frontend" -ldflags "-w -s $flags" -o ${OUTPUT_BINARY} ./backend/bin/server/main.go
-
-echo "Completed building Bytebase backend."
+go build -p=8 --tags "release,embed_frontend" -ldflags "-w -s -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.version=${VERSION}' -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.gitcommit=$(git rev-parse HEAD)'" -o ${OUTPUT_BINARY} ./backend/bin/server/main.go
 
 echo ""
-echo "Step 3 - printing version..."
-
-${OUTPUT_BINARY} version
-
-echo ""
-echo "${GREEN}Completed building Bytebase monolithic ${VERSION} at ${OUTPUT_BINARY}.${NC}"
+echo "${GREEN}Completed building Bytebase ${VERSION}.${NC}"
 echo ""
 echo "Command to start Bytebase on port 8080"
 echo ""
