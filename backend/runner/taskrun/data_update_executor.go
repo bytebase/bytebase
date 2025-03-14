@@ -216,7 +216,7 @@ func (exec *DataUpdateExecutor) backupData(
 	}
 
 	if len(originStatement) > common.MaxSheetCheckSize {
-		return nil, errors.Errorf("statement size %d exceeds the limit %d", len(originStatement), common.MaxSheetCheckSize)
+		return nil, errors.Errorf("statement size %d exceeds the limit %d, please disable data backup", len(originStatement), common.MaxSheetCheckSize)
 	}
 
 	prefix := "_" + time.Now().Format("20060102150405")
