@@ -4935,7 +4935,7 @@ Actuator concept is similar to the Spring Boot Actuator.
 | git_commit | [string](#string) |  | git_commit is the git commit hash of the build |
 | readonly | [bool](#bool) |  | readonly flag means if the Bytebase is running in readonly mode. |
 | saas | [bool](#bool) |  | saas flag means if the Bytebase is running in SaaS mode, some features are not allowed to edit by users. |
-| demo_name | [string](#string) |  | demo_name specifies the demo name, empty string means no demo. |
+| demo | [bool](#bool) |  | demo flag means if the Bytebase is running in demo mode. |
 | host | [string](#string) |  | host is the Bytebase instance host. |
 | port | [string](#string) |  | port is the Bytebase instance port. |
 | external_url | [string](#string) |  | external_url is the URL where user or webhook callback visits Bytebase. |

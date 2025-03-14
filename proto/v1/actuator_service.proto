@@ -78,8 +78,8 @@ message ActuatorInfo {
   // saas flag means if the Bytebase is running in SaaS mode, some features are not allowed to edit by users.
   bool saas = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  // demo_name specifies the demo name, empty string means no demo.
-  string demo_name = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // demo flag means if the Bytebase is running in demo mode.
+  bool demo = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // host is the Bytebase instance host.
   string host = 6 [(google.api.field_behavior) = OUTPUT_ONLY];

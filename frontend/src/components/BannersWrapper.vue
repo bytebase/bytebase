@@ -7,13 +7,6 @@
     <template v-if="shouldShowSubscriptionBanner">
       <BannerSubscription />
     </template>
-    <template v-if="shouldShowReadonlyBanner">
-      <div class="bg-info">
-        <div class="text-center py-1 px-3 font-medium text-white truncate">
-          {{ $t("banner.readonly") }}
-        </div>
-      </div>
-    </template>
     <template v-if="shouldShowExternalUrlBanner">
       <BannerExternalUrl />
     </template>
@@ -23,8 +16,6 @@
 </template>
 
 <script lang="ts" setup>
-import { storeToRefs } from "pinia";
-import { computed } from "vue";
 import {
   LICENSE_EXPIRATION_THRESHOLD,
   useActuatorV1Store,
@@ -38,12 +29,14 @@ import BannerDemo from "@/views/BannerDemo.vue";
 import BannerExternalUrl from "@/views/BannerExternalUrl.vue";
 import BannerSubscription from "@/views/BannerSubscription.vue";
 import BannerUpgradeSubscription from "@/views/BannerUpgradeSubscription.vue";
+import { storeToRefs } from "pinia";
+import { computed } from "vue";
 
 const actuatorStore = useActuatorV1Store();
 const subscriptionStore = useSubscriptionV1Store();
 
 const hideBanner = useAppFeature("bb.feature.hide-banner");
-const { isDemo, isReadonly, needConfigureExternalUrl } =
+const { needConfigureExternalUrl } =
   storeToRefs(actuatorStore);
 const {
   isExpired,
@@ -55,7 +48,7 @@ const {
 
 const shouldShowDemoBanner = computed(() => {
   if (!actuatorStore.serverInfo) return false;
-  return actuatorStore.serverInfo.demoName !== "";
+  return actuatorStore.serverInfo.demo;
 });
 
 const shouldShowSubscriptionBanner = computed(() => {
@@ -66,10 +59,6 @@ const shouldShowSubscriptionBanner = computed(() => {
       daysBeforeExpire.value <= LICENSE_EXPIRATION_THRESHOLD) ||
     (currentPlan.value === PlanType.FREE && existTrialLicense.value)
   );
-});
-
-const shouldShowReadonlyBanner = computed(() => {
-  return !isDemo.value && isReadonly.value;
 });
 
 const shouldShowExternalUrlBanner = computed(() => {

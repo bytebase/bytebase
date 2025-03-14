@@ -52,8 +52,8 @@ export interface ActuatorInfo {
   readonly: boolean;
   /** saas flag means if the Bytebase is running in SaaS mode, some features are not allowed to edit by users. */
   saas: boolean;
-  /** demo_name specifies the demo name, empty string means no demo. */
-  demoName: string;
+  /** demo flag means if the Bytebase is running in demo mode. */
+  demo: boolean;
   /** host is the Bytebase instance host. */
   host: string;
   /** port is the Bytebase instance port. */
@@ -355,7 +355,7 @@ function createBaseActuatorInfo(): ActuatorInfo {
     gitCommit: "",
     readonly: false,
     saas: false,
-    demoName: "",
+    demo: false,
     host: "",
     port: "",
     externalUrl: "",
@@ -386,8 +386,8 @@ export const ActuatorInfo: MessageFns<ActuatorInfo> = {
     if (message.saas !== false) {
       writer.uint32(32).bool(message.saas);
     }
-    if (message.demoName !== "") {
-      writer.uint32(42).string(message.demoName);
+    if (message.demo !== false) {
+      writer.uint32(40).bool(message.demo);
     }
     if (message.host !== "") {
       writer.uint32(50).string(message.host);
@@ -471,11 +471,11 @@ export const ActuatorInfo: MessageFns<ActuatorInfo> = {
           continue;
         }
         case 5: {
-          if (tag !== 42) {
+          if (tag !== 40) {
             break;
           }
 
-          message.demoName = reader.string();
+          message.demo = reader.bool();
           continue;
         }
         case 6: {
@@ -597,7 +597,7 @@ export const ActuatorInfo: MessageFns<ActuatorInfo> = {
       gitCommit: isSet(object.gitCommit) ? globalThis.String(object.gitCommit) : "",
       readonly: isSet(object.readonly) ? globalThis.Boolean(object.readonly) : false,
       saas: isSet(object.saas) ? globalThis.Boolean(object.saas) : false,
-      demoName: isSet(object.demoName) ? globalThis.String(object.demoName) : "",
+      demo: isSet(object.demo) ? globalThis.Boolean(object.demo) : false,
       host: isSet(object.host) ? globalThis.String(object.host) : "",
       port: isSet(object.port) ? globalThis.String(object.port) : "",
       externalUrl: isSet(object.externalUrl) ? globalThis.String(object.externalUrl) : "",
@@ -634,8 +634,8 @@ export const ActuatorInfo: MessageFns<ActuatorInfo> = {
     if (message.saas !== false) {
       obj.saas = message.saas;
     }
-    if (message.demoName !== "") {
-      obj.demoName = message.demoName;
+    if (message.demo !== false) {
+      obj.demo = message.demo;
     }
     if (message.host !== "") {
       obj.host = message.host;
@@ -688,7 +688,7 @@ export const ActuatorInfo: MessageFns<ActuatorInfo> = {
     message.gitCommit = object.gitCommit ?? "";
     message.readonly = object.readonly ?? false;
     message.saas = object.saas ?? false;
-    message.demoName = object.demoName ?? "";
+    message.demo = object.demo ?? false;
     message.host = object.host ?? "";
     message.port = object.port ?? "";
     message.externalUrl = object.externalUrl ?? "";

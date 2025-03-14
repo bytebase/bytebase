@@ -73,16 +73,13 @@ var (
 		saas bool
 		// output logs in json format
 		enableJSONLogging bool
-		// demoName is the name of the demo and should be one of the subpath name in the ../migrator/demo directory.
-		// empty means no demo.
-		demoName string
-		debug    bool
+		// demo mode.
+		demo  bool
+		debug bool
 		// disableMetric is the flag to disable the metric collector.
 		disableMetric bool
 		// disableSample is the flag to disable the sample instance.
 		disableSample bool
-
-		developmentVersioned bool
 	}
 
 	rootCmd = &cobra.Command{
@@ -118,12 +115,10 @@ func init() {
 	rootCmd.PersistentFlags().BoolVar(&flags.saas, "saas", false, "whether to run in SaaS mode")
 	rootCmd.PersistentFlags().BoolVar(&flags.enableJSONLogging, "enable-json-logging", false, "enable output logs in bytebase in json format")
 	// Must be one of the subpath name in the ../migrator/demo directory
-	rootCmd.PersistentFlags().StringVar(&flags.demoName, "demo", "", "name of the demo to use. Empty means not running in demo mode.")
+	rootCmd.PersistentFlags().BoolVar(&flags.demo, "demo", false, "run in demo mode.")
 	rootCmd.PersistentFlags().BoolVar(&flags.debug, "debug", false, "whether to enable debug level logging")
 	rootCmd.PersistentFlags().BoolVar(&flags.disableMetric, "disable-metric", false, "disable the metric collector")
 	rootCmd.PersistentFlags().BoolVar(&flags.disableSample, "disable-sample", false, "disable the sample instance")
-
-	rootCmd.PersistentFlags().BoolVar(&flags.developmentVersioned, "development-versioned", false, "(WIP) versioned workflow")
 }
 
 // -----------------------------------Command Line Config END--------------------------------------
@@ -185,7 +180,7 @@ func start() {
 	// A safety measure to prevent accidentally resetting user's actual data with demo data.
 	// For emebeded mode, we control where data is stored and we put demo data in a separate directory
 	// from the non-demo data.
-	if flags.demoName != "" && flags.pgURL != "" {
+	if flags.demo && flags.pgURL != "" {
 		slog.Error("demo mode is disallowed when storing metadata in external PostgreSQL instance")
 		return
 	}
