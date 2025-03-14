@@ -1,6 +1,6 @@
+import vueI18n from "@intlify/eslint-plugin-vue-i18n";
 import vueTsEslintConfig from "@vue/eslint-config-typescript";
 import pluginVue from "eslint-plugin-vue";
-import vueI18n from '@intlify/eslint-plugin-vue-i18n'
 
 export default [
   ...pluginVue.configs["flat/essential"],
@@ -12,7 +12,7 @@ export default [
     },
     rootDir: import.meta.dirname,
   }),
-  ...vueI18n.configs['flat/recommended'],
+  ...vueI18n.configs["flat/recommended"],
   {
     ignores: ["**/dist/**", "**/node_modules/**", "**/proto/**"],
   },
@@ -29,11 +29,11 @@ export default [
       "@intlify/vue-i18n/no-unused-keys": [
         "error",
         {
-          "src": "./src",
-          "extensions": [".js", ".vue", ".ts", ".tsx"],
-          "ignores": [],
-          "enableFix": true
-        }
+          src: "./src",
+          extensions: [".js", ".vue", ".ts", ".tsx"],
+          ignores: [],
+          enableFix: true,
+        },
       ],
       "@intlify/vue-i18n/no-missing-keys": "off",
       "@intlify/vue-i18n/no-raw-text": "off",
@@ -42,7 +42,7 @@ export default [
       "vue/no-unused-components": "error",
       "vue/no-useless-template-attributes": "error",
       "vue/no-undef-components": [
-        "warn",
+        "error",
         {
           ignorePatterns: [
             /^heroicons(-solid|-outline)?:/,
@@ -59,10 +59,10 @@ export default [
       "vue/multi-word-component-names": "off",
     },
     settings: {
-      'vue-i18n': {
-        localeDir: './src/locales/*.json',
-        messageSyntaxVersion: '^9.0.0'
-      }
+      "vue-i18n": {
+        localeDir: "./src/locales/*.json",
+        messageSyntaxVersion: "^9.0.0",
+      },
     },
   },
 ];
