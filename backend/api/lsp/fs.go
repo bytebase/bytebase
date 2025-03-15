@@ -123,10 +123,3 @@ func isFileSystemRequest(method string) bool {
 		return false
 	}
 }
-
-// Reset resets the file system with lock.
-func (fs *MemFS) Reset() {
-	fs.mu.Lock()
-	defer fs.mu.Unlock()
-	fs.m = make(map[string][]byte)
-}

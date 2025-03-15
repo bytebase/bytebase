@@ -12,7 +12,7 @@ import (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MSSQL, advisor.MSSQLProcedureDisallowCreateOrAlter, &FunctionDisallowCreateOrAlterAdvisor{})
+	advisor.Register(storepb.Engine_MSSQL, advisor.MSSQLProcedureDisallowCreateOrAlter, &ProcedureDisallowCreateOrAlterAdvisor{})
 }
 
 type ProcedureDisallowCreateOrAlterAdvisor struct{}
