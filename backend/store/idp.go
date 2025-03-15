@@ -102,7 +102,7 @@ func (s *Store) CreateIdentityProvider(ctx context.Context, create *IdentityProv
 // GetIdentityProvider gets an identity provider.
 func (s *Store) GetIdentityProvider(ctx context.Context, find *FindIdentityProviderMessage) (*IdentityProviderMessage, error) {
 	if find.ResourceID != nil {
-		if v, ok := s.idpCache.Get(*find.ResourceID); ok {
+		if v, ok := s.idpCache.Get(*find.ResourceID); ok && s.enableCache {
 			return v, nil
 		}
 	}

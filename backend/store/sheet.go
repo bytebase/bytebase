@@ -64,7 +64,7 @@ type PatchSheetMessage struct {
 
 // GetSheetStatementByID gets the statement of a sheet by ID.
 func (s *Store) GetSheetStatementByID(ctx context.Context, id int) (string, error) {
-	if v, ok := s.sheetStatementCache.Get(id); ok {
+	if v, ok := s.sheetStatementCache.Get(id); ok && s.enableCache {
 		return v, nil
 	}
 
@@ -85,7 +85,7 @@ func (s *Store) GetSheetStatementByID(ctx context.Context, id int) (string, erro
 func (s *Store) GetSheet(ctx context.Context, find *FindSheetMessage) (*SheetMessage, error) {
 	shouldCache := !find.LoadFull && find.UID != nil
 	if shouldCache {
-		if v, ok := s.sheetCache.Get(*find.UID); ok {
+		if v, ok := s.sheetCache.Get(*find.UID); ok && s.enableCache {
 			return v, nil
 		}
 	}
