@@ -84,7 +84,7 @@ func (s *Store) ListDatabaseGroups(ctx context.Context, find *FindDatabaseGroupM
 // GetDatabaseGroup gets a database group.
 func (s *Store) GetDatabaseGroup(ctx context.Context, find *FindDatabaseGroupMessage) (*DatabaseGroupMessage, error) {
 	if find.ProjectID != nil && find.ResourceID != nil {
-		if v, ok := s.databaseGroupCache.Get(getDatabaseGroupCacheKey(*find.ProjectID, *find.ResourceID)); ok {
+		if v, ok := s.databaseGroupCache.Get(getDatabaseGroupCacheKey(*find.ProjectID, *find.ResourceID)); ok && s.enableCache {
 			return v, nil
 		}
 	}

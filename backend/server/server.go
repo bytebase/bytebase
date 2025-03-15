@@ -173,7 +173,7 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	}
 
 	// Connect to the instance that stores bytebase's own metadata.
-	stores, err := store.New(ctx, pgURL)
+	stores, err := store.New(ctx, pgURL, !profile.HA)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to new store")
 	}
