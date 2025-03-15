@@ -17,9 +17,10 @@ import (
 // Store provides database access to all raw objects.
 type Store struct {
 	db *sql.DB
+	enableCache bool
 
+	// Cache.
 	Secret string
-
 	userIDCache          *lru.Cache[int, *UserMessage]
 	userEmailCache       *lru.Cache[string, *UserMessage]
 	environmentCache     *lru.Cache[string, *EnvironmentMessage]
@@ -44,7 +45,7 @@ type Store struct {
 }
 
 // New creates a new instance of Store.
-func New(ctx context.Context, pgURL string) (*Store, error) {
+func New(ctx context.Context, pgURL string, enableCache bool) (*Store, error) {
 	userIDCache, err := lru.New[int, *UserMessage](32768)
 	if err != nil {
 		return nil, err
@@ -145,6 +146,7 @@ func New(ctx context.Context, pgURL string) (*Store, error) {
 
 	return &Store{
 		db: db,
+		enableCache: enableCache,
 
 		// Cache.
 		userIDCache:          userIDCache,

@@ -64,13 +64,8 @@ var (
 		// https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING
 		pgURL   string
 		dataDir string
-		// When we are running in readonly mode:
-		// - The data file will be opened in readonly mode, no applicable migration or seeding will be applied.
-		// - Requests other than GET will be rejected
-		// - Any operations involving mutation will not start (e.g. Background schema syncer, task scheduler)
-		readonly bool
-		// saas means the Bytebase is running in SaaS mode, several features is only controlled by us instead of users under this mode.
-		saas bool
+		ha      bool
+		saas    bool
 		// output logs in json format
 		enableJSONLogging bool
 		// demo mode.
@@ -111,8 +106,8 @@ func init() {
 	// It allows to pass the postgres connection string as an ENV to the service.
 	rootCmd.PersistentFlags().StringVar(&flags.pgURL, "pg", os.Getenv("PG_URL"), "optional external PostgreSQL instance connection url (must provide dbname); for example postgresql://user:secret@masterhost:5432/dbname?sslrootcert=cert")
 	rootCmd.PersistentFlags().StringVar(&flags.dataDir, "data", ".", "not recommended for production. Directory where Bytebase stores data if --pg is not specified. If relative path is supplied, then the path is relative to the directory where Bytebase is under")
-	rootCmd.PersistentFlags().BoolVar(&flags.readonly, "readonly", false, "whether to run in read-only mode")
-	rootCmd.PersistentFlags().BoolVar(&flags.saas, "saas", false, "whether to run in SaaS mode")
+	rootCmd.PersistentFlags().BoolVar(&flags.ha, "ha", false, "run in HA mode")
+	rootCmd.PersistentFlags().BoolVar(&flags.saas, "saas", false, "run in SaaS mode")
 	rootCmd.PersistentFlags().BoolVar(&flags.enableJSONLogging, "enable-json-logging", false, "enable output logs in bytebase in json format")
 	// Must be one of the subpath name in the ../migrator/demo directory
 	rootCmd.PersistentFlags().BoolVar(&flags.demo, "demo", false, "run in demo mode.")
