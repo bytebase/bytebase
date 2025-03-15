@@ -45,8 +45,6 @@ func isValidResourceID(resourceID string) bool {
 	return resourceIDMatcher.MatchString(resourceID)
 }
 
-const filterExample = `project == "projects/abc"`
-
 // getEBNFTokens will parse the simple filter such as `project = "abc" | "def".` to {project: ["abc", "def"]} .
 func getEBNFTokens(filter, filterKey string) ([]string, error) {
 	grammar, err := ebnf.Parse("", strings.NewReader(filter))
