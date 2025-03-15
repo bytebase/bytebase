@@ -5,7 +5,6 @@
       code: 202
       title: statement.where.require.select
       content: WHERE clause is required for SELETE statement.
-      detail: ""
       startposition:
         line: 1
         column: 0
@@ -22,7 +21,6 @@
       code: 202
       title: statement.where.require.select
       content: WHERE clause is required for SELETE statement.
-      detail: ""
       startposition:
         line: 2
         column: 0
@@ -31,7 +29,6 @@
       code: 202
       title: statement.where.require.select
       content: WHERE clause is required for SELETE statement.
-      detail: ""
       startposition:
         line: 3
         column: 0
