@@ -1235,7 +1235,11 @@
           "description": "住所でフィルタリング"
         }
       }
-    }
+    },
+    "no-params-yet-add-above": "まだ構成されていません。\n上記のフォームを使用してパラメーターを追加します。",
+    "no-extra-params-configured": "追加の接続パラメーターは構成されていません",
+    "parameter-value-placeholder": "パラメーター値",
+    "parameter-name-placeholder": "パラメーター名"
   },
   "environment": {
     "select": "環境を選ぶ",
@@ -1655,6 +1659,10 @@
   },
   "data-source": {
     "snowflake-keypair-tip": "キーペア認証",
+    "extra-params": {
+      "self": "追加のパラメーター",
+      "description": "データベース接続文字列の追加パラメーター。 \nPostgreSQLの場合、ターゲット_session_attrs= read-writeなどのパラメーターを使用して、読み取りワイトインスタンスへの接続を確保できます。"
+    },
     "ssl": {
       "ca-cert": "CA証明書",
       "client-key": "クライアントキー",

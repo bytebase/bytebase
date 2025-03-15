@@ -70,6 +70,7 @@ import {
 import { isValidSpannerHost, defer } from "@/utils";
 import ScanIntervalInput from "./ScanIntervalInput.vue";
 import {
+  applyExtraConnectionParameters,
   calcDataSourceUpdateMask,
   extractBasicInfo,
   extractDataSourceEditState,
@@ -263,8 +264,19 @@ const doCreate = async () => {
   state.value.isRequesting = true;
   try {
     await useGracefulRequest(async () => {
+      // Create a copy of the pending instance
+      const createInstance = { ...pendingCreateInstance.value };
+      
+      // Apply extra connection parameters to all data sources
+      createInstance.dataSources.forEach((ds, index) => {
+        const editDS = adminDataSource.value;
+        if (index === 0 && editDS) {
+          applyExtraConnectionParameters(ds, editDS);
+        }
+      });
+      
       const createdInstance = await instanceV1Store.createInstance(
-        pendingCreateInstance.value
+        createInstance
       );
       if (props.onCreated) {
         props.onCreated(createdInstance);
@@ -409,6 +421,9 @@ const doUpdate = async () => {
         return true;
       }
     }
+    
+    // Apply extra connection parameters to ensure they are properly handled
+    applyExtraConnectionParameters(editing, editState);
 
     pendingRequestRunners.push(() =>
       instanceV1Store.updateDataSource(inst, editing, updateMask)
@@ -447,6 +462,9 @@ const doUpdate = async () => {
             return true;
           }
         }
+        
+        // Apply extra connection parameters to ensure they are properly handled
+        applyExtraConnectionParameters(patch, editing);
 
         pendingRequestRunners.push(() =>
           instanceV1Store.createDataSource(inst, patch)
@@ -487,8 +505,9 @@ const doUpdate = async () => {
       const runner = pendingRequestRunners[i];
       await runner();
     }
-
-    const updatedInstance = instanceV1Store.getInstanceByName(inst.name);
+    
+    // Refresh the instance data to ensure we have the latest values including extra parameters
+    const updatedInstance = await instanceV1Store.getOrFetchInstanceByName(inst.name, true);
     updateEditState(updatedInstance);
     pushNotification({
       module: "bytebase",

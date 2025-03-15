@@ -1,5 +1,6 @@
 import { defineStore } from "pinia";
 import { computed, reactive, watchEffect } from "vue";
+import { cloneDeep } from "lodash-es";
 import { instanceServiceClient } from "@/grpcweb";
 import type { ComposedInstance } from "@/types";
 import { unknownEnvironment, unknownInstance } from "@/types";
@@ -138,11 +139,15 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
     dataSource: DataSource,
     updateMask: string[]
   ) => {
+    // Create a deep clone of the data source to ensure all nested objects are properly copied
+    const cleanDataSource = cloneDeep(dataSource);
+    
     const updatedInstance = await instanceServiceClient.updateDataSource({
       name: instance.name,
-      dataSource: dataSource,
+      dataSource: cleanDataSource,
       updateMask,
     });
+    
     const [composed] = await upsertInstances([updatedInstance]);
     return composed;
   };

@@ -1235,7 +1235,11 @@
           "description": "Lọc theo địa chỉ"
         }
       }
-    }
+    },
+    "no-params-yet-add-above": "Chưa có thông số nào được cấu hình. \nThêm tham số bằng cách sử dụng biểu mẫu trên.",
+    "no-extra-params-configured": "Không có thông số kết nối bổ sung được cấu hình",
+    "parameter-value-placeholder": "Giá trị tham số",
+    "parameter-name-placeholder": "Tên tham số"
   },
   "environment": {
     "select": "Chọn môi trường",
@@ -1655,6 +1659,10 @@
   },
   "data-source": {
     "snowflake-keypair-tip": "Xác thực cặp khóa",
+    "extra-params": {
+      "self": "Thông số bổ sung",
+      "description": "Các tham số bổ sung cho chuỗi kết nối cơ sở dữ liệu. \nĐối với PostgreSQL, bạn có thể sử dụng các tham số như target_session_attrs = read-write để đảm bảo kết nối với các phiên bản đọc-write."
+    },
     "ssl": {
       "ca-cert": "Chứng chỉ CA",
       "client-key": "Khóa máy khách",

@@ -1235,7 +1235,11 @@
           "description": "Filtrar por dirección"
         }
       }
-    }
+    },
+    "no-params-yet-add-above": "No hay parámetros configurados todavía. \nAgregue parámetros usando el formulario anterior.",
+    "no-extra-params-configured": "No hay parámetros de conexión adicionales configurados",
+    "parameter-value-placeholder": "Valor de parámetro",
+    "parameter-name-placeholder": "Nombre de parámetro"
   },
   "environment": {
     "select": "Seleccionar entorno",
@@ -1655,6 +1659,10 @@
   },
   "data-source": {
     "snowflake-keypair-tip": "Autenticación de par de claves",
+    "extra-params": {
+      "self": "Parámetros adicionales",
+      "description": "Parámetros adicionales para la cadena de conexión de la base de datos. \nPara PostgreSQL, puede usar parámetros como Target_Session_Attrs = Read-Write para garantizar las conexiones a instancias de lectura-escritura."
+    },
     "ssl": {
       "ca-cert": "Certificado de CA",
       "client-key": "Clave del cliente",

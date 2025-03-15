@@ -1235,7 +1235,11 @@
           "description": "Filter by address"
         }
       }
-    }
+    },
+    "no-params-yet-add-above": "No parameters configured yet. Add parameters using the form above.",
+    "no-extra-params-configured": "No extra connection parameters configured",
+    "parameter-name-placeholder": "Parameter name",
+    "parameter-value-placeholder": "Parameter value"
   },
   "environment": {
     "select": "Select environment",
@@ -1653,9 +1657,12 @@
       "revoke-exemption-title": "Remove both export and query masking exemptions for {member}?"
     }
   },
-
   "data-source": {
     "snowflake-keypair-tip": "Key-pair authentication",
+    "extra-params": {
+      "self": "Extra Parameters",
+      "description": "Additional parameters for database connection string. For PostgreSQL, you can use parameters like target_session_attrs=read-write to ensure connections to read-write instances."
+    },
     "ssl": {
       "ca-cert": "CA Certificate",
       "client-key": "Client Key",

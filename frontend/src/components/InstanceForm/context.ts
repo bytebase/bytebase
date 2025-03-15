@@ -246,6 +246,8 @@ export const provideInstanceFormContext = (baseContext: {
     edit: EditDataSource
   ): DataSource => {
     const { showDatabase, showSSH, showSSL } = specs;
+    
+    // Clone the data source without the properties that should be excluded
     const ds = cloneDeep(
       omit(
         edit,

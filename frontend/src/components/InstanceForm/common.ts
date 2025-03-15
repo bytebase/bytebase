@@ -23,6 +23,7 @@ export type EditDataSource = DataSource & {
   updateSsl?: boolean;
   updateSsh?: boolean;
   updateAuthenticationPrivateKey?: boolean;
+  extraConnectionParameters?: Record<string, string>;
 };
 
 export type DataSourceEditState = {
@@ -80,14 +81,43 @@ export const extractBasicInfo = (instance: Instance | undefined): BasicInfo => {
 };
 
 export const wrapEditDataSource = (ds: DataSource | undefined) => {
-  return {
-    ...cloneDeep(ds ?? emptyDataSource()),
+  // Deep clone the data source to avoid reference issues
+  const cloned = cloneDeep(ds ?? emptyDataSource());
+  
+  const result = {
+    ...cloned,
     pendingCreate: ds === undefined,
     updatedPassword: "",
     updatedMasterPassword: "",
     useEmptyPassword: false,
     useEmptyMasterPassword: false,
   };
+  
+  return result;
+};
+
+/**
+ * Applies the extra connection parameters from an EditDataSource to a DataSource object
+ * This ensures that the extraConnectionParameters are properly handled as plain objects
+ */
+export const applyExtraConnectionParameters = (
+  dataSource: DataSource,
+  editState: EditDataSource
+): DataSource => {
+  // Make sure dataSource has the correct extraConnectionParameters
+  if (editState.extraConnectionParameters) {
+    // Clone the map manually to ensure it's a plain object, not a Proxy
+    const params: Record<string, string> = {};
+    Object.entries(editState.extraConnectionParameters).forEach(([key, value]) => {
+      params[key] = value;
+    });
+    
+    dataSource.extraConnectionParameters = params;
+  } else {
+    dataSource.extraConnectionParameters = {}; 
+  }
+  
+  return dataSource;
 };
 
 export const calcDataSourceUpdateMask = (
@@ -126,6 +156,5 @@ export const calcDataSourceUpdateMask = (
   if (updateAuthenticationPrivateKey) {
     updateMask.add("authentication_private_key");
   }
-
   return Array.from(updateMask);
 };
