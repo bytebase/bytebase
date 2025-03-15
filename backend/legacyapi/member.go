@@ -1,17 +1,5 @@
 package api
 
-// MemberStatus is the status of an member.
-type MemberStatus string
-
-const (
-	// Unknown is the member status for UNKNOWN.
-	Unknown MemberStatus = "UNKNOWN"
-	// Invited is the member status for INVITED.
-	Invited MemberStatus = "INVITED"
-	// Active is the member status for ACTIVE.
-	Active MemberStatus = "ACTIVE"
-)
-
 // Role is the type of a role.
 type Role string
 

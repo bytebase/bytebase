@@ -108,17 +108,6 @@ func NewTokenizer(statement string, options ...Option) *Tokenizer {
 	return t
 }
 
-func NewStreamTokenizer(src io.Reader, f func(string) error) *Tokenizer {
-	t := &Tokenizer{
-		cursor: 0,
-		line:   1,
-		reader: bufio.NewReader(src),
-		f:      f,
-	}
-	t.scan()
-	return t
-}
-
 func (t *Tokenizer) SetLineForMySQLCreateTableStmt(node *tidbast.CreateTableStmt, firstLine int) error {
 	// We assume that the parser will parse the columns and table constraints according to the order of the raw SQL statements
 	// and the identifiers don't equal any keywords in CREATE TABLE statements.

@@ -5,7 +5,6 @@
       code: 308
       title: naming.table.no-keyword
       content: Table name [fillfactor] is a reserved keyword and should be avoided.
-      detail: ""
       startposition:
         line: 1
         column: 0
@@ -17,7 +16,6 @@
       code: 308
       title: naming.table.no-keyword
       content: Table name [fillfactor] is a reserved keyword and should be avoided.
-      detail: ""
       startposition:
         line: 1
         column: 0

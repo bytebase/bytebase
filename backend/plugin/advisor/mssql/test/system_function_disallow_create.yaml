@@ -19,7 +19,6 @@
       code: 1701
       title: system.function.disallow-create
       content: Creating or altering functions is prohibited
-      detail: ""
       startposition:
         line: 1
         column: 0

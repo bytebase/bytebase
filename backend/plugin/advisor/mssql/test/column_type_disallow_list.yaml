@@ -10,7 +10,6 @@
       code: 411
       title: column.type-disallow-list
       content: Column type JSON is disallowed
-      detail: ""
       startposition:
         line: 4
         column: 0

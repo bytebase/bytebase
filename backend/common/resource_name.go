@@ -2,7 +2,6 @@ package common
 
 import (
 	"fmt"
-	"regexp"
 	"strconv"
 	"strings"
 
@@ -98,14 +97,6 @@ func GetProjectIDWebhookID(name string) (string, string, error) {
 	return tokens[0], tokens[1], nil
 }
 
-func GetProjectIDDeploymentConfigID(name string) (string, string, error) {
-	tokens, err := GetNameParentTokens(name, ProjectNamePrefix, DeploymentConfigPrefix)
-	if err != nil {
-		return "", "", err
-	}
-	return tokens[0], tokens[1], nil
-}
-
 func GetProjectIDChangelistID(name string) (string, string, error) {
 	tokens, err := GetNameParentTokens(name, ProjectNamePrefix, ChangelistsPrefix)
 	if err != nil {
@@ -125,15 +116,6 @@ func GetUIDFromName(name, prefix string) (int, error) {
 		return 0, errors.Errorf("invalid ID %q", tokens[0])
 	}
 	return uid, nil
-}
-
-// TrimSuffixAndGetProjectID trims the suffix from the name and returns the project ID.
-func TrimSuffixAndGetProjectID(name string, suffix string) (string, error) {
-	trimmed, err := TrimSuffix(name, suffix)
-	if err != nil {
-		return "", err
-	}
-	return GetProjectID(trimmed)
 }
 
 // TrimSuffixAndGetInstanceDatabaseID trims the suffix from the name and returns the instance ID and database ID.
@@ -162,16 +144,6 @@ func GetInstanceID(name string) (string, error) {
 		return "", err
 	}
 	return tokens[0], nil
-}
-
-// GetInstanceRoleID returns the instance ID and instance role name from a resource name.
-func GetInstanceRoleID(name string) (string, string, error) {
-	// the instance request should be instances/{instance-id}/roles/{role-name}
-	tokens, err := GetNameParentTokens(name, InstanceNamePrefix, InstanceRolePrefix)
-	if err != nil {
-		return "", "", err
-	}
-	return tokens[0], tokens[1], nil
 }
 
 // GetInstanceDatabaseID returns the instance ID and database ID from a resource name.
@@ -307,19 +279,6 @@ func GetIssueID(name string) (int, error) {
 		return 0, errors.Errorf("invalid issue ID %q", tokens[1])
 	}
 	return issueID, nil
-}
-
-// GetTaskID returns the task ID from a resource name.
-func GetTaskID(name string) (int, error) {
-	tokens, err := GetNameParentTokens(name, ProjectNamePrefix, RolloutPrefix, StagePrefix, TaskPrefix)
-	if err != nil {
-		return 0, err
-	}
-	taskID, err := strconv.Atoi(tokens[3])
-	if err != nil {
-		return 0, errors.Errorf("invalid task ID %q", tokens[1])
-	}
-	return taskID, nil
 }
 
 // GetProjectIDPlanID returns the project ID and plan ID from a resource name.
@@ -555,17 +514,6 @@ func GetProjectReleaseUIDFile(name string) (string, int64, string, error) {
 	return tokens[0], releaseUID, tokens[2], nil
 }
 
-var branchRegexp = regexp.MustCompile("^projects/([^/]+)/branches/(.+)$")
-
-// GetProjectAndBranchID returns the project and branch ID from a resource name.
-func GetProjectAndBranchID(name string) (string, string, error) {
-	matches := branchRegexp.FindStringSubmatch(name)
-	if len(matches) != 3 {
-		return "", "", errors.Errorf("invalid branch name %q", name)
-	}
-	return matches[1], matches[2], nil
-}
-
 // GetGroupEmail returns the group email.
 func GetGroupEmail(name string) (string, error) {
 	tokens, err := GetNameParentTokens(name, GroupPrefix)
@@ -606,10 +554,6 @@ func FormatWorkspace(id string) string {
 
 func FormatProject(id string) string {
 	return fmt.Sprintf("%s%s", ProjectNamePrefix, id)
-}
-
-func FormatDeploymentConfig(parent string) string {
-	return fmt.Sprintf("%s/%s%s", parent, DeploymentConfigPrefix, "default")
 }
 
 func FormatUserEmail(email string) string {
@@ -666,10 +610,6 @@ func FormatTask(projectID string, pipelineUID, stageUID, taskUID int) string {
 
 func FormatTaskRun(projectID string, pipelineUID, stageUID, taskUID, taskRunUID int) string {
 	return fmt.Sprintf("%s/%s%d", FormatTask(projectID, pipelineUID, stageUID, taskUID), TaskRunPrefix, taskRunUID)
-}
-
-func FormatBranchResourceID(projectID string, branchID string) string {
-	return fmt.Sprintf("%s/%s%s", FormatProject(projectID), BranchPrefix, branchID)
 }
 
 func FormatReleaseName(projectID string, releaseUID int64) string {

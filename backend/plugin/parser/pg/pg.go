@@ -6,8 +6,6 @@ import (
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/postgresql-parser"
 
-	"github.com/pkg/errors"
-
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
@@ -88,39 +86,6 @@ func normalizePostgreSQLName(ctx parser.INameContext) string {
 	return ""
 }
 
-func NormalizePostgreSQLFuncName(ctx parser.IFunc_nameContext) []string {
-	if ctx == nil {
-		return nil
-	}
-
-	switch {
-	case ctx.Builtin_function_name() != nil:
-		return []string{strings.ToLower(ctx.Builtin_function_name().GetText())}
-	case ctx.Type_function_name() != nil:
-		return []string{NormalizePostgreSQLTypeFunctionName(ctx.Type_function_name())}
-	case ctx.Colid() != nil:
-		var result []string
-		result = append(result, NormalizePostgreSQLColid(ctx.Colid()))
-		result = append(result, normalizePostgreSQLIndirection(ctx.Indirection())...)
-		return result
-	default:
-		return []string{strings.ToLower(ctx.GetText())}
-	}
-}
-
-func NormalizePostgreSQLTypeFunctionName(ctx parser.IType_function_nameContext) string {
-	if ctx == nil {
-		return ""
-	}
-
-	switch {
-	case ctx.Identifier() != nil:
-		return normalizePostgreSQLIdentifier(ctx.Identifier())
-	default:
-		return strings.ToLower(ctx.GetText())
-	}
-}
-
 // NormalizePostgreSQLAnyName normalizes the given any name.
 func NormalizePostgreSQLAnyName(ctx parser.IAny_nameContext) []string {
 	if ctx == nil {
@@ -136,59 +101,6 @@ func NormalizePostgreSQLAnyName(ctx parser.IAny_nameContext) []string {
 	}
 
 	return result
-}
-
-func normalizePostgreSQLStringListAsTableName(list []string) (string, string, error) {
-	switch len(list) {
-	case 2:
-		return list[0], list[1], nil
-	case 1:
-		return "", list[0], nil
-	case 0:
-		return "", "", nil
-	default:
-		return "", "", errors.Errorf("Invalid table name: %v", list)
-	}
-}
-
-// NormalizePostgreSQLAnyNameAsTableName normalizes the given any name as table name.
-func NormalizePostgreSQLAnyNameAsTableName(ctx parser.IAny_nameContext) (string, string, error) {
-	if ctx == nil {
-		return "", "", nil
-	}
-
-	list := NormalizePostgreSQLAnyName(ctx)
-	return normalizePostgreSQLStringListAsTableName(list)
-}
-
-// NormalizePostgreSQLAnyNameAsColumnName normalizes the given any name as column name.
-func NormalizePostgreSQLAnyNameAsColumnName(ctx parser.IAny_nameContext) (string, string, string, error) {
-	if ctx == nil {
-		return "", "", "", nil
-	}
-
-	list := NormalizePostgreSQLAnyName(ctx)
-
-	switch len(list) {
-	case 3:
-		return list[0], list[1], list[2], nil
-	case 2:
-		return "", list[0], list[1], nil
-	case 1:
-		return "", "", list[0], nil
-	default:
-		return "", "", "", errors.Errorf("Invalid column name: %v", list)
-	}
-}
-
-// NormalizePostgreSQLQualifiedNameAsTableName normalizes the given qualified name as table name.
-func NormalizePostgreSQLQualifiedNameAsTableName(ctx parser.IQualified_nameContext) (string, string, error) {
-	if ctx == nil {
-		return "", "", nil
-	}
-
-	list := NormalizePostgreSQLQualifiedName(ctx)
-	return normalizePostgreSQLStringListAsTableName(list)
 }
 
 // ParsePostgreSQLStatement parses the given SQL and returns the AST tree.

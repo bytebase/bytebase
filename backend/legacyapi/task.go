@@ -1,25 +1,5 @@
 package api
 
-// TaskStatus is the status of a task.
-type TaskStatus string
-
-const (
-	// TaskPending is the task status for PENDING.
-	TaskPending TaskStatus = "PENDING"
-	// TaskPendingApproval is the task status for PENDING_APPROVAL.
-	TaskPendingApproval TaskStatus = "PENDING_APPROVAL"
-	// TaskRunning is the task status for RUNNING.
-	TaskRunning TaskStatus = "RUNNING"
-	// TaskDone is the task status for DONE.
-	TaskDone TaskStatus = "DONE"
-	// TaskFailed is the task status for FAILED.
-	TaskFailed TaskStatus = "FAILED"
-	// TaskCanceled is the task status for CANCELED.
-	TaskCanceled TaskStatus = "CANCELED"
-	// TaskSkipped is the task status for SKIPPED.
-	TaskSkipped TaskStatus = "SKIPPED"
-)
-
 // TaskType is the type of a task.
 type TaskType string
 

@@ -9,7 +9,6 @@
       code: 601
       title: table.require-pk
       content: Table MySchema.MyTable requires PRIMARY KEY.
-      detail: ""
       startposition:
         line: 1
         column: 0

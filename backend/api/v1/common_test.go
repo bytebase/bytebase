@@ -39,45 +39,6 @@ func TestIsValidResourceID(t *testing.T) {
 	}
 }
 
-func TestGetProjectFilter(t *testing.T) {
-	tests := []struct {
-		filter  string
-		want    string
-		wantErr bool
-	}{
-		{
-			filter:  "",
-			want:    "",
-			wantErr: true,
-		},
-		{
-			filter:  `project == "projects/abc"`,
-			want:    "projects/abc",
-			wantErr: false,
-		},
-		{
-			filter:  `project== "projects/abc"`,
-			want:    "projects/abc",
-			wantErr: false,
-		},
-		{
-			filter:  `project== "projects/abc".`,
-			want:    "",
-			wantErr: true,
-		},
-	}
-
-	for _, test := range tests {
-		value, err := getProjectFilter(test.filter)
-		if test.wantErr {
-			require.Error(t, err)
-		} else {
-			require.NoError(t, err)
-			require.Equal(t, test.want, value)
-		}
-	}
-}
-
 func TestGetEBNFTokens(t *testing.T) {
 	testCases := []struct {
 		input   string

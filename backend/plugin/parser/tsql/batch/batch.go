@@ -19,15 +19,9 @@ const (
 )
 
 type Command interface {
-	// isCommand is a dummy method to prevent users from implementing the Command interface.
-	isCommand()
 	// String returns the string representation of the command.
 	String() string
 }
-
-type baseCommand struct{}
-
-func (*baseCommand) isCommand() {}
 
 var (
 	// lineEnd is the slice to use when appending a line.
@@ -45,7 +39,6 @@ var (
 // GoCommand signals the end of a batch of Transact-SQL statements to the SQL Server Utilities.
 // https://learn.microsoft.com/en-us/sql/t-sql/language-elements/sql-server-utilities-statements-go?view=sql-server-ver16
 type GoCommand struct {
-	baseCommand
 	// Count is a positive integer, the batch preceding the GO command will execute the specified number of times.
 	// The default value of Count is 1.
 	Count uint

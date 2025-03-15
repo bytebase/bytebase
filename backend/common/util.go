@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"math/big"
 	"path"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"unicode/utf8"
@@ -130,11 +129,6 @@ func TruncateStringWithDescription(str string) string {
 		return fmt.Sprintf("%s... (view details in Bytebase)", truncatedStr)
 	}
 	return str
-}
-
-// GetBinlogAbsDir gets the binary log directory for an instance.
-func GetBinlogAbsDir(dataDir string, instanceID int) string {
-	return filepath.Join(dataDir, "backup", "instance", fmt.Sprintf("%d", instanceID))
 }
 
 // Obfuscate obfuscates a string with a seed string.

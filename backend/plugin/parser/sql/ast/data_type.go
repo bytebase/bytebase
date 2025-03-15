@@ -55,14 +55,11 @@ type UserDefinedType interface {
 	DataType
 
 	TypeName() *TypeNameDef
-	userDefinedTypeInterface()
 }
 
 type userDefinedType struct {
 	dataType
 }
-
-func (*userDefinedType) userDefinedTypeInterface() {}
 
 // TypeName implements the UserDefinedType interface.
 func (*userDefinedType) TypeName() *TypeNameDef {

@@ -135,22 +135,6 @@ type WalkThroughError struct {
 	Payload any
 }
 
-// NewParseError returns a new ErrorTypeParseError.
-func NewParseError(content string) *WalkThroughError {
-	return &WalkThroughError{
-		Type:    ErrorTypeParseError,
-		Content: content,
-	}
-}
-
-// NewSetLineError returns a new ErrorTypeParseError.
-func NewSetLineError(content string) *WalkThroughError {
-	return &WalkThroughError{
-		Type:    ErrorTypeSetLineError,
-		Content: content,
-	}
-}
-
 // NewRelationExistsError returns a new ErrorTypeRelationExists.
 func NewRelationExistsError(relationName string, schemaName string) *WalkThroughError {
 	return &WalkThroughError{

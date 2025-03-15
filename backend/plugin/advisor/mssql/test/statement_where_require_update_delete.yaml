@@ -5,7 +5,6 @@
       code: 202
       title: statement.where.require.update-delete
       content: WHERE clause is required for UPDATE statement.
-      detail: ""
       startposition:
         line: 1
         column: 0
@@ -19,7 +18,6 @@
       code: 202
       title: statement.where.require.update-delete
       content: WHERE clause is required for DELETE statement.
-      detail: ""
       startposition:
         line: 1
         column: 0
