@@ -16,11 +16,11 @@ import (
 
 // Store provides database access to all raw objects.
 type Store struct {
-	db *sql.DB
+	db          *sql.DB
 	enableCache bool
 
 	// Cache.
-	Secret string
+	Secret               string
 	userIDCache          *lru.Cache[int, *UserMessage]
 	userEmailCache       *lru.Cache[string, *UserMessage]
 	environmentCache     *lru.Cache[string, *EnvironmentMessage]
@@ -145,7 +145,7 @@ func New(ctx context.Context, pgURL string, enableCache bool) (*Store, error) {
 	db.SetMaxOpenConns(maxOpenConns)
 
 	return &Store{
-		db: db,
+		db:          db,
 		enableCache: enableCache,
 
 		// Cache.
