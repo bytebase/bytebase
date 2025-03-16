@@ -18,7 +18,6 @@
       code: 401
       title: column.required
       content: Table t missing required column "created_ts"
-      detail: ""
       startposition:
         line: 1
         column: 0
@@ -27,7 +26,6 @@
       code: 401
       title: column.required
       content: Table t missing required column "creator_id"
-      detail: ""
       startposition:
         line: 1
         column: 0
@@ -36,7 +34,6 @@
       code: 401
       title: column.required
       content: Table t missing required column "id"
-      detail: ""
       startposition:
         line: 1
         column: 0
@@ -45,7 +42,6 @@
       code: 401
       title: column.required
       content: Table t missing required column "updated_ts"
-      detail: ""
       startposition:
         line: 1
         column: 0
@@ -54,7 +50,6 @@
       code: 401
       title: column.required
       content: Table t missing required column "updater_id"
-      detail: ""
       startposition:
         line: 1
         column: 0
@@ -72,7 +67,6 @@
       code: 401
       title: column.required
       content: Table t missing required column "updated_ts"
-      detail: ""
       startposition:
         line: 1
         column: 0
@@ -84,7 +78,6 @@
       code: 401
       title: column.required
       content: Table t missing required column "created_ts"
-      detail: ""
       startposition:
         line: 1
         column: 0
@@ -96,7 +89,6 @@
       code: 401
       title: column.required
       content: Table t missing required column "creator_id"
-      detail: ""
       startposition:
         line: 1
         column: 0

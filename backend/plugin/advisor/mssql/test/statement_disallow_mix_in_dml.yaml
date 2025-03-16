@@ -9,7 +9,6 @@
       code: 227
       title: statement.disallow-mix-in-dml
       content: Data change can only run DML
-      detail: ""
       startposition:
         line: 1
         column: 0
