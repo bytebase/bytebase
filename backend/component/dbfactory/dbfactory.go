@@ -53,7 +53,6 @@ func (d *DBFactory) GetDataSourceDriver(ctx context.Context, instance *store.Ins
 	connectionContext.InstanceID = instance.ResourceID
 	connectionContext.EngineVersion = instance.Metadata.GetVersion()
 
-	maximumSQLResultSize := d.store.GetMaximumSQLResultLimit(ctx)
 	driver, err := db.Open(
 		ctx,
 		instance.Metadata.GetEngine(),
@@ -64,8 +63,6 @@ func (d *DBFactory) GetDataSourceDriver(ctx context.Context, instance *store.Ins
 			DataSource:        dataSource,
 			ConnectionContext: connectionContext,
 			Password:          password,
-
-			MaximumSQLResultSize: maximumSQLResultSize,
 		},
 	)
 	if err != nil {
