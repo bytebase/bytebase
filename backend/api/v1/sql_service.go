@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io"
 	"regexp"
-	"strconv"
 	"strings"
 	"time"
 
@@ -1771,21 +1770,6 @@ func (*SQLService) Pretty(_ context.Context, request *v1pb.PrettyRequest) (*v1pb
 		CurrentSchema:  prettyCurrentSchema,
 		ExpectedSchema: prettyExpectedSchema,
 	}, nil
-}
-
-func getOffsetAndOriginTable(backupTable string) (int, string, error) {
-	if backupTable == "" {
-		return 0, "", nil
-	}
-	parts := strings.Split(backupTable, "_")
-	if len(parts) < 4 {
-		return 0, "", status.Errorf(codes.InvalidArgument, "invalid backup table format: %s", backupTable)
-	}
-	offset, err := strconv.Atoi(parts[2])
-	if err != nil {
-		return 0, "", status.Errorf(codes.InvalidArgument, "invalid offset: %s", parts[0])
-	}
-	return offset, strings.Join(parts[3:], "_"), nil
 }
 
 func checkAndGetDataSourceQueriable(ctx context.Context, storeInstance *store.Store, database *store.DatabaseMessage, dataSourceID string) (*storepb.DataSource, error) {

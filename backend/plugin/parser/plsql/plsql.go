@@ -225,14 +225,6 @@ func NormalizeTableName(tableName parser.ITable_nameContext) string {
 	return NormalizeIdentifierContext(tableName.Identifier())
 }
 
-func NormalizeGeneralElement(element parser.IGeneral_elementContext) []string {
-	var result []string
-	for _, child := range element.AllGeneral_element_part() {
-		result = append(result, NormalizeIDExpression(child.Id_expression()))
-	}
-	return result
-}
-
 // EquivalentType returns true if the given type is equivalent to the given text.
 func EquivalentType(tp parser.IDatatypeContext, text string) (bool, error) {
 	tree, _, err := ParsePLSQL(fmt.Sprintf(`CREATE TABLE t(a %s);`, text))
