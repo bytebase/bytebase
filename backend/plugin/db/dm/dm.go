@@ -34,9 +34,8 @@ func init() {
 
 // Driver is the DM driver.
 type Driver struct {
-	db                   *sql.DB
-	databaseName         string
-	maximumSQLResultSize int64
+	db           *sql.DB
+	databaseName string
 }
 
 func newDriver(db.DriverConfig) db.Driver {
@@ -55,7 +54,6 @@ func (driver *Driver) Open(_ context.Context, _ storepb.Engine, config db.Connec
 	}
 	driver.db = db
 	driver.databaseName = config.ConnectionContext.DatabaseName
-	driver.maximumSQLResultSize = config.MaximumSQLResultSize
 	return driver, nil
 }
 
@@ -135,7 +133,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 }
 
 // QueryConn queries a SQL statement in a given connection.
-func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
+func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
 	singleSQLs, err := plsqlparser.SplitSQL(statement)
 	if err != nil {
 		return nil, err
@@ -178,7 +176,7 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 					return nil, err
 				}
 				defer rows.Close()
-				r, err := util.RowsToQueryResult(rows, makeValueByTypeName, convertValue, driver.maximumSQLResultSize)
+				r, err := util.RowsToQueryResult(rows, makeValueByTypeName, convertValue, queryContext.MaximumSQLResultSize)
 				if err != nil {
 					return nil, err
 				}

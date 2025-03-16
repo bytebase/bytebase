@@ -144,7 +144,7 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 			statement = fmt.Sprintf("EXPLAIN %s", statement)
 		}
 
-		result, err := runSingleStatement(ctx, d.conn, statement, d.config.MaximumSQLResultSize)
+		result, err := queryStatementWithLimit(ctx, d.conn, statement, queryCtx.MaximumSQLResultSize)
 		if err != nil {
 			return nil, err
 		}
@@ -181,7 +181,11 @@ func parseValueType(value any, gohiveType string) (*v1pb.RowValue, error) {
 	}
 }
 
-func runSingleStatement(ctx context.Context, conn *gohive.Connection, statement string, limit int64) (*v1pb.QueryResult, error) {
+func queryStatement(ctx context.Context, conn *gohive.Connection, statement string) (*v1pb.QueryResult, error) {
+	return queryStatementWithLimit(ctx, conn, statement, 0)
+}
+
+func queryStatementWithLimit(ctx context.Context, conn *gohive.Connection, statement string, limit int64) (*v1pb.QueryResult, error) {
 	startTime := time.Now()
 
 	cursor := conn.Cursor()
@@ -221,7 +225,7 @@ func runSingleStatement(ctx context.Context, conn *gohive.Connection, statement 
 		// Rows.
 		result.Rows = append(result.Rows, queryRow)
 		n := len(result.Rows)
-		if (n&(n-1) == 0) && int64(proto.Size(result)) > limit {
+		if (n&(n-1) == 0) && limit > 0 && int64(proto.Size(result)) > limit {
 			result.Error = common.FormatMaximumSQLResultSizeMessage(limit)
 			break
 		}

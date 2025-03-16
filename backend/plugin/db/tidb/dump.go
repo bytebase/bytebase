@@ -8,7 +8,6 @@ import (
 	"log/slog"
 	"regexp"
 	"strings"
-	"time"
 
 	"github.com/pkg/errors"
 
@@ -95,20 +94,14 @@ func (driver *Driver) Dump(ctx context.Context, out io.Writer, _ *storepb.Databa
 	}
 	defer conn.Close()
 
-	options := sql.TxOptions{}
-	// TiDB does not support readonly, so we only set for MySQL and OceanBase.
-	if driver.dbType == storepb.Engine_MYSQL || driver.dbType == storepb.Engine_MARIADB || driver.dbType == storepb.Engine_OCEANBASE {
-		options.ReadOnly = true
-	}
-
-	txn, err := conn.BeginTx(ctx, &options)
+	txn, err := conn.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
 	defer txn.Rollback()
 
 	slog.Debug("begin to dump database", slog.String("database", driver.databaseName))
-	if err := dumpTxn(txn, driver.dbType, driver.databaseName, out); err != nil {
+	if err := dumpTxn(txn, driver.databaseName, out); err != nil {
 		return err
 	}
 
@@ -116,43 +109,7 @@ func (driver *Driver) Dump(ctx context.Context, out io.Writer, _ *storepb.Databa
 	return err
 }
 
-// FlushTablesWithReadLock runs FLUSH TABLES table1, table2, ... WITH READ LOCK for all the tables in the database.
-func FlushTablesWithReadLock(ctx context.Context, dbType storepb.Engine, conn *sql.Conn, database string) error {
-	// The lock acquiring could take a long time if there are concurrent exclusive locks on the tables.
-	// We ensures that the execution is canceled after 30 seconds, otherwise we may get dead lock and stuck forever.
-	ctxWithTimeout, cancel := context.WithTimeout(ctx, 30*time.Second)
-	defer cancel()
-
-	txn, err := conn.BeginTx(ctxWithTimeout, nil)
-	if err != nil {
-		return err
-	}
-	defer txn.Rollback()
-
-	tables, err := getTablesTx(txn, dbType, database)
-	if err != nil {
-		return err
-	}
-
-	var tableNames []string
-	for _, table := range tables {
-		if table.TableType != baseTableType {
-			continue
-		}
-		tableNames = append(tableNames, fmt.Sprintf("`%s`", table.Name))
-	}
-
-	if len(tableNames) != 0 {
-		flushTableStmt := fmt.Sprintf("FLUSH TABLES %s WITH READ LOCK;", strings.Join(tableNames, ", "))
-		if _, err := txn.ExecContext(ctxWithTimeout, flushTableStmt); err != nil {
-			return err
-		}
-	}
-
-	return txn.Commit()
-}
-
-func dumpTxn(txn *sql.Tx, dbType storepb.Engine, database string, out io.Writer) error {
+func dumpTxn(txn *sql.Tx, database string, out io.Writer) error {
 	// Disable foreign key check.
 	// mysqldump uses the same mechanism. When there is any schema or data dependency, we have to disable
 	// the unique and foreign key check so that the restoring will not fail.
@@ -162,7 +119,7 @@ func dumpTxn(txn *sql.Tx, dbType storepb.Engine, database string, out io.Writer)
 
 	// Table and view statement.
 	// We have to dump the table before views because of the structure dependency.
-	tables, err := getTablesTx(txn, dbType, database)
+	tables, err := getTablesTx(txn, database)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get tables of database %q", database)
 	}
@@ -217,7 +174,7 @@ func dumpTxn(txn *sql.Tx, dbType storepb.Engine, database string, out io.Writer)
 	}
 
 	// Procedure and function (routine) statements.
-	routines, err := getRoutines(txn, dbType, database)
+	routines, err := getRoutines(txn, database)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get routines of database %q", database)
 	}
@@ -227,22 +184,19 @@ func dumpTxn(txn *sql.Tx, dbType storepb.Engine, database string, out io.Writer)
 		}
 	}
 
-	// OceanBase doesn't support "Event Scheduler"
-	if dbType != storepb.Engine_OCEANBASE {
-		// Event statements.
-		events, err := getEvents(txn, database)
-		if err != nil {
-			return errors.Wrapf(err, "failed to get events of database %q", database)
-		}
-		for _, et := range events {
-			if _, err := io.WriteString(out, fmt.Sprintf("%s\n", et.statement)); err != nil {
-				return err
-			}
+	// Event statements.
+	events, err := getEvents(txn, database)
+	if err != nil {
+		return errors.Wrapf(err, "failed to get events of database %q", database)
+	}
+	for _, et := range events {
+		if _, err := io.WriteString(out, fmt.Sprintf("%s\n", et.statement)); err != nil {
+			return err
 		}
 	}
 
 	// Trigger statements.
-	triggers, err := getTriggers(txn, dbType, database)
+	triggers, err := getTriggers(txn, database)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get triggers of database %q", database)
 	}
@@ -309,7 +263,7 @@ type triggerSchema struct {
 }
 
 // getTablesTx gets all tables of a database using the provided transaction.
-func getTablesTx(txn *sql.Tx, dbType storepb.Engine, dbName string) ([]*TableSchema, error) {
+func getTablesTx(txn *sql.Tx, dbName string) ([]*TableSchema, error) {
 	var tables []*TableSchema
 	query := "SELECT TABLE_NAME, TABLE_TYPE FROM information_schema.TABLES WHERE TABLE_SCHEMA = ?;"
 	rows, err := txn.Query(query, dbName)
@@ -329,7 +283,7 @@ func getTablesTx(txn *sql.Tx, dbType storepb.Engine, dbName string) ([]*TableSch
 		return nil, err
 	}
 	for _, tbl := range tables {
-		stmt, err := getTableStmt(txn, dbType, dbName, tbl.Name, tbl.TableType)
+		stmt, err := getTableStmt(txn, dbName, tbl.Name, tbl.TableType)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to call getTableStmt(%q, %q, %q)", dbName, tbl.Name, tbl.TableType)
 		}
@@ -346,17 +300,8 @@ func getTablesTx(txn *sql.Tx, dbType storepb.Engine, dbName string) ([]*TableSch
 	return tables, nil
 }
 
-func trimAfterLastParenthesis(sql string) string {
-	pos := strings.LastIndex(sql, ")")
-	if pos != -1 {
-		return sql[:pos+1]
-	}
-
-	return sql
-}
-
 // getTableStmt gets the create statement of a table.
-func getTableStmt(txn *sql.Tx, dbType storepb.Engine, dbName, tblName, tblType string) (string, error) {
+func getTableStmt(txn *sql.Tx, dbName, tblName, tblType string) (string, error) {
 	switch tblType {
 	case baseTableType:
 		query := fmt.Sprintf("SHOW CREATE TABLE `%s`.`%s`;", dbName, tblName)
@@ -366,9 +311,6 @@ func getTableStmt(txn *sql.Tx, dbType storepb.Engine, dbName, tblName, tblType s
 				return "", common.FormatDBErrorEmptyRowWithQuery(query)
 			}
 			return "", err
-		}
-		if dbType == storepb.Engine_OCEANBASE {
-			stmt = trimAfterLastParenthesis(stmt)
 		}
 		return fmt.Sprintf(tableStmtFmt, tblName, stmt), nil
 	case viewTableType:
@@ -424,22 +366,13 @@ func getViewColumns(txn *sql.Tx, dbName, tblName string) ([]string, error) {
 }
 
 // getRoutines gets all routines of a database.
-func getRoutines(txn *sql.Tx, dbType storepb.Engine, dbName string) ([]*routineSchema, error) {
+func getRoutines(txn *sql.Tx, dbName string) ([]*routineSchema, error) {
 	var routines []*routineSchema
 	for _, routineType := range []string{"FUNCTION", "PROCEDURE"} {
 		if err := func() error {
-			var query string
-			if dbType == storepb.Engine_OCEANBASE {
-				query = fmt.Sprintf("SHOW %s STATUS FROM `%s`;", routineType, dbName)
-			} else {
-				query = fmt.Sprintf("SHOW %s STATUS WHERE Db = '%s';", routineType, dbName)
-			}
+			query := fmt.Sprintf("SHOW %s STATUS WHERE Db = '%s';", routineType, dbName)
 			rows, err := txn.Query(query)
 			if err != nil {
-				// Oceanbase starts to support functions since 4.0.
-				if dbType == storepb.Engine_OCEANBASE {
-					return nil
-				}
 				return errors.Wrapf(err, "failed query %q", query)
 			}
 			defer rows.Close()
@@ -573,15 +506,11 @@ func getEventStmt(txn *sql.Tx, dbName, eventName string) (string, error) {
 }
 
 // getTriggers gets all triggers of a database.
-func getTriggers(txn *sql.Tx, dbType storepb.Engine, dbName string) ([]*triggerSchema, error) {
+func getTriggers(txn *sql.Tx, dbName string) ([]*triggerSchema, error) {
 	var triggers []*triggerSchema
 	query := fmt.Sprintf("SHOW TRIGGERS FROM `%s`;", dbName)
 	rows, err := txn.Query(query)
 	if err != nil {
-		// Oceanbase starts to support trigger since 4.0.
-		if dbType == storepb.Engine_OCEANBASE {
-			return nil, nil
-		}
 		return nil, err
 	}
 	defer rows.Close()

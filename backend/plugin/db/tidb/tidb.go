@@ -45,22 +45,17 @@ func init() {
 
 // Driver is the MySQL driver.
 type Driver struct {
-	connectionCtx db.ConnectionContext
-	connCfg       db.ConnectionConfig
-	dbType        storepb.Engine
-	dbBinDir      string
-	db            *sql.DB
-	databaseName  string
-	sshClient     *ssh.Client
+	dbType       storepb.Engine
+	db           *sql.DB
+	databaseName string
+	sshClient    *ssh.Client
 
 	// Called upon driver.Open() finishes.
 	openCleanUp []func()
 }
 
-func newDriver(dc db.DriverConfig) db.Driver {
-	return &Driver{
-		dbBinDir: dc.DbBinDir,
-	}
+func newDriver(_ db.DriverConfig) db.Driver {
+	return &Driver{}
 }
 
 // Open opens a MySQL driver.
@@ -114,10 +109,7 @@ func (d *Driver) Open(_ context.Context, dbType storepb.Engine, connCfg db.Conne
 	db.SetConnMaxLifetime(2 * time.Hour)
 	db.SetMaxOpenConns(50)
 	db.SetMaxIdleConns(15)
-	d.connectionCtx = connCfg.ConnectionContext
-	d.connCfg = connCfg
 	d.databaseName = connCfg.ConnectionContext.DatabaseName
-
 	return d, nil
 }
 
@@ -347,7 +339,7 @@ func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string
 					return nil, err
 				}
 				defer rows.Close()
-				r, err := util.RowsToQueryResult(rows, makeValueByTypeName, convertValue, d.connCfg.MaximumSQLResultSize)
+				r, err := util.RowsToQueryResult(rows, makeValueByTypeName, convertValue, queryContext.MaximumSQLResultSize)
 				if err != nil {
 					return nil, err
 				}
