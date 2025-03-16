@@ -45,8 +45,7 @@ type Driver struct {
 	databaseName string
 
 	// certificate file path should be deleted if calling closed.
-	certFilePath         string
-	maximumSQLResultSize int64
+	certFilePath string
 }
 
 func newDriver(db.DriverConfig) db.Driver {
@@ -123,7 +122,6 @@ func (driver *Driver) Open(_ context.Context, _ storepb.Engine, config db.Connec
 	}
 	driver.db = db
 	driver.databaseName = config.ConnectionContext.DatabaseName
-	driver.maximumSQLResultSize = config.MaximumSQLResultSize
 	return driver, nil
 }
 
@@ -314,7 +312,7 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 // queryBatch queries a batch of SQL statements, for Result Set-Generating statements, it returns the results, for Row Count-Generating statements,
 // it returns the affected rows, for other statements, it returns the empty query result.
 // https://learn.microsoft.com/en-us/sql/odbc/reference/develop-app/result-generating-and-result-free-statements?view=sql-server-ver16
-func (driver *Driver) queryBatch(ctx context.Context, conn *sql.Conn, batch string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
+func (*Driver) queryBatch(ctx context.Context, conn *sql.Conn, batch string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
 	singleSQLs, err := tsqlparser.SplitSQL(batch)
 	if err != nil {
 		return nil, err
@@ -396,7 +394,7 @@ func (driver *Driver) queryBatch(ctx context.Context, conn *sql.Conn, batch stri
 				return ret, err
 			}
 		case sqlexp.MsgNext:
-			r, err := util.RowsToQueryResult(rows, makeValueByTypeName, convertValue, driver.maximumSQLResultSize)
+			r, err := util.RowsToQueryResult(rows, makeValueByTypeName, convertValue, queryContext.MaximumSQLResultSize)
 			if err != nil {
 				queryResult.Error = err.Error()
 				ret = append(ret, queryResult)
