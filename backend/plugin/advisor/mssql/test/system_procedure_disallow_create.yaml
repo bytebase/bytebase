@@ -20,10 +20,9 @@
   changeType: 0
   want:
     - status: 2
-      code: 1701
+      code: 1401
       title: system.procedure.disallow-create
       content: Creating or altering procedures is prohibited
-      detail: ""
       startposition:
         line: 1
         column: 0
