@@ -33,11 +33,10 @@ func init() {
 
 // Driver is the SQLite driver.
 type Driver struct {
-	dir                  string
-	db                   *sql.DB
-	connectionCtx        db.ConnectionContext
-	databaseName         string
-	maximumSQLResultSize int64
+	dir           string
+	db            *sql.DB
+	connectionCtx db.ConnectionContext
+	databaseName  string
 }
 
 func newDriver(db.DriverConfig) db.Driver {
@@ -57,7 +56,6 @@ func (driver *Driver) Open(_ context.Context, _ storepb.Engine, config db.Connec
 	driver.db = db
 	driver.connectionCtx = config.ConnectionContext
 	driver.databaseName = config.ConnectionContext.DatabaseName
-	driver.maximumSQLResultSize = config.MaximumSQLResultSize
 	return driver, nil
 }
 
@@ -151,7 +149,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 }
 
 // QueryConn queries a SQL statement in a given connection.
-func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, _ db.QueryContext) ([]*v1pb.QueryResult, error) {
+func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
 	startTime := time.Now()
 	rows, err := conn.QueryContext(ctx, statement)
 	if err != nil {
@@ -159,7 +157,7 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 	}
 	defer rows.Close()
 
-	result, err := util.RowsToQueryResult(rows, util.MakeCommonValueByTypeName, util.ConvertCommonValue, driver.maximumSQLResultSize)
+	result, err := util.RowsToQueryResult(rows, util.MakeCommonValueByTypeName, util.ConvertCommonValue, queryContext.MaximumSQLResultSize)
 	if err != nil {
 		// nolint
 		return []*v1pb.QueryResult{

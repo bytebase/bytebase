@@ -542,7 +542,7 @@ func (driver *Driver) GetCurrentDatabaseOwner(ctx context.Context) (string, erro
 }
 
 // QueryConn queries a SQL statement in a given connection.
-func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
+func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
 	singleSQLs, err := crdbparser.SplitSQLStatement(statement)
 	if err != nil {
 		return nil, err
@@ -585,7 +585,7 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 						return err
 					}
 					defer rows.Close()
-					r, err = util.RowsToQueryResult(rows, makeValueByTypeName, convertValue, driver.config.MaximumSQLResultSize)
+					r, err = util.RowsToQueryResult(rows, makeValueByTypeName, convertValue, queryContext.MaximumSQLResultSize)
 					if err != nil {
 						return err
 					}

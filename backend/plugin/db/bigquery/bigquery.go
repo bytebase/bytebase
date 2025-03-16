@@ -163,8 +163,8 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 					}
 					result.Rows = append(result.Rows, row)
 					n := len(result.Rows)
-					if (n&(n-1) == 0) && int64(proto.Size(result)) > d.config.MaximumSQLResultSize {
-						result.Error = common.FormatMaximumSQLResultSizeMessage(d.config.MaximumSQLResultSize)
+					if (n&(n-1) == 0) && int64(proto.Size(result)) > queryContext.MaximumSQLResultSize {
+						result.Error = common.FormatMaximumSQLResultSizeMessage(queryContext.MaximumSQLResultSize)
 						break
 					}
 				}

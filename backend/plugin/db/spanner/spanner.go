@@ -275,7 +275,7 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 		startTime := time.Now()
 		queryResult, err := func() (*v1pb.QueryResult, error) {
 			if util.IsSelect(statement) {
-				return d.querySingleSQL(ctx, statement)
+				return d.querySingleSQL(ctx, statement, queryContext)
 			}
 			if util.IsDDL(statement) {
 				op, err := d.dbClient.UpdateDatabaseDdl(ctx, &databasepb.UpdateDatabaseDdlRequest{
@@ -322,7 +322,7 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 	return results, nil
 }
 
-func (d *Driver) querySingleSQL(ctx context.Context, statement string) (*v1pb.QueryResult, error) {
+func (d *Driver) querySingleSQL(ctx context.Context, statement string, queryContext db.QueryContext) (*v1pb.QueryResult, error) {
 	iter := d.client.Single().Query(ctx, spanner.NewStatement(statement))
 	defer iter.Stop()
 
@@ -350,8 +350,8 @@ func (d *Driver) querySingleSQL(ctx context.Context, statement string) (*v1pb.Qu
 		}
 		result.Rows = append(result.Rows, rowData)
 		n := len(result.Rows)
-		if (n&(n-1) == 0) && int64(proto.Size(result)) > d.config.MaximumSQLResultSize {
-			result.Error = common.FormatMaximumSQLResultSizeMessage(d.config.MaximumSQLResultSize)
+		if (n&(n-1) == 0) && int64(proto.Size(result)) > queryContext.MaximumSQLResultSize {
+			result.Error = common.FormatMaximumSQLResultSizeMessage(queryContext.MaximumSQLResultSize)
 			break
 		}
 
