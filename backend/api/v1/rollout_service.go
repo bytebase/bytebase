@@ -225,7 +225,11 @@ func (s *RolloutService) CreateRollout(ctx context.Context, request *v1pb.Create
 		return nil, status.Errorf(codes.NotFound, "plan not found for id: %d", planID)
 	}
 
-	pipelineCreate, err := GetPipelineCreate(ctx, s.store, s.sheetManager, s.licenseService, s.dbFactory, plan.Name, plan.Config.GetSteps(), plan.Config.GetDeployment(), project)
+	rolloutTitle := request.GetRollout().GetTitle()
+	if rolloutTitle == "" {
+		rolloutTitle = plan.Name
+	}
+	pipelineCreate, err := GetPipelineCreate(ctx, s.store, s.sheetManager, s.licenseService, s.dbFactory, rolloutTitle, plan.Config.GetSteps(), plan.Config.GetDeployment(), project)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to get pipeline create, error: %v", err)
 	}
