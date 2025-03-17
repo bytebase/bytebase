@@ -190,7 +190,7 @@ const state = reactive<LocalState>({
 
 const scopeOptions = useCommonSearchScopeOptions(
   computed(() => state.params),
-  computed(() => ["project", "instance", "environment", "label"])
+  computed(() => ["project", "instance", "environment", "database-label"])
 );
 
 const selectedInstance = computed(() => {
@@ -215,7 +215,7 @@ const selectedEnvironment = computed(() => {
 
 const selectedLabels = computed(() => {
   return state.params.scopes
-    .filter((scope) => scope.id === "label")
+    .filter((scope) => scope.id === "database-label")
     .map((scope) => scope.value);
 });
 
