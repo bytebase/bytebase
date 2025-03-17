@@ -184,7 +184,7 @@ const route = useRoute();
 
 const scopeOptions = useCommonSearchScopeOptions(
   computed(() => state.params),
-  [...CommonFilterScopeIdList, "project", "label"]
+  [...CommonFilterScopeIdList, "project", "database-label"]
 );
 
 watch(
@@ -245,7 +245,7 @@ const selectedProject = computed(() => {
 
 const selectedLabels = computed(() => {
   return state.params.scopes
-    .filter((scope) => scope.id === "label")
+    .filter((scope) => scope.id === "database-label")
     .map((scope) => scope.value);
 });
 
