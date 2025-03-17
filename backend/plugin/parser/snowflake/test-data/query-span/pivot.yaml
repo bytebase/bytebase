@@ -63,9 +63,13 @@
               table: T1
               column: A
           isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: F
           sourcecolumns: []
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: E
           sourcecolumns:
             - server: ""
@@ -84,6 +88,8 @@
               table: T1
               column: D
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
     sourcecolumns:
         - server: ""
           database: SNOWFLAKE
@@ -156,6 +162,8 @@
               table: T1
               column: C
           isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: D
           sourcecolumns:
             - server: ""
@@ -164,6 +172,8 @@
               table: T1
               column: D
           isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: '''a'''
           sourcecolumns:
             - server: ""
@@ -172,6 +182,8 @@
               table: T1
               column: A
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: '''b'''
           sourcecolumns:
             - server: ""
@@ -180,6 +192,8 @@
               table: T1
               column: A
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: '''c'''
           sourcecolumns:
             - server: ""
@@ -188,6 +202,8 @@
               table: T1
               column: A
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
     sourcecolumns:
         - server: ""
           database: SNOWFLAKE
