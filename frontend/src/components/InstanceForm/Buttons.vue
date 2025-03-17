@@ -409,7 +409,7 @@ const doUpdate = async () => {
         return true;
       }
     }
-    
+
     pendingRequestRunners.push(() =>
       instanceV1Store.updateDataSource(inst, editing, updateMask)
     );
@@ -447,7 +447,7 @@ const doUpdate = async () => {
             return true;
           }
         }
-        
+
         pendingRequestRunners.push(() =>
           instanceV1Store.createDataSource(inst, patch)
         );
@@ -487,7 +487,6 @@ const doUpdate = async () => {
       const runner = pendingRequestRunners[i];
       await runner();
     }
-    
     const updatedInstance = instanceV1Store.getInstanceByName(inst.name);
     updateEditState(updatedInstance);
     pushNotification({
