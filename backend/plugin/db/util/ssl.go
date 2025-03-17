@@ -82,8 +82,9 @@ func GetTLSConfig(ds *storepb.DataSource) (*tls.Config, error) {
 type SSLMode string
 
 const (
-	sslModeDisable SSLMode = "disable"
-	sslModeAllow   SSLMode = "allow"
+	// Unused.
+	// sslModeDisable SSLMode = "disable"
+	// sslModeAllow   SSLMode = "allow"
 	// It is the default mode of sslmode.
 	// https://www.postgresql.org/docs/current/libpq-ssl.html
 	sslModePrefer     SSLMode = "prefer"
