@@ -142,8 +142,6 @@ const isOrphanValue = computed(() => {
 
 const combinedProjectList = computed(() => {
   let list = state.rawProjectList.filter((project) => {
-    if (project.name === DEFAULT_PROJECT_NAME && !props.includeDefaultProject)
-      return false;
     if (props.includeArchived) return true;
     if (project.state === State.ACTIVE) return true;
     // ARCHIVED
@@ -176,6 +174,7 @@ const handleSearch = useDebounceFn(async (search: string) => {
       query: search,
       pageSize: getDefaultPagination(),
       showDeleted: props.includeArchived,
+      excludeDefault: !props.includeDefaultProject,
     });
     state.rawProjectList = projects;
     if (!search) {

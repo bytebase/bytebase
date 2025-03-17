@@ -420,9 +420,10 @@ type SearchProjectsRequest struct {
 	// name.matches("project name")
 	// resource_id = "project id"
 	// resource_id.matches("project id")
+	// exclude_default == true
+	// You can combine filter conditions like:
 	// name = "project name" && resource_id.matches("project id")
 	// name.matches("project name") || resource_id = "project id"
-	// exclude_default == true
 	Filter        string `protobuf:"bytes,2,opt,name=filter,proto3" json:"filter,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
