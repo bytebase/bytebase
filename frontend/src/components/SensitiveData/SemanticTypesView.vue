@@ -134,7 +134,9 @@ const onConfirm = async (index: number) => {
   };
 
   await onUpsert(
-    state.semanticItemList.map((data) => data.item),
+    state.semanticItemList
+      .filter((data) => data.mode === "NORMAL")
+      .map((data) => data.item),
     t(`common.${item.mode === "CREATE" ? "created" : "updated"}`)
   );
 };
