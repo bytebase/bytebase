@@ -342,7 +342,6 @@ CREATE TABLE "public"."book" (
 			}
 			latestSchemaMetadata, err := ctl.databaseServiceClient.GetDatabaseMetadata(ctx, &v1pb.GetDatabaseMetadataRequest{
 				Name: fmt.Sprintf("%s/metadata", database.Name),
-				View: v1pb.DatabaseMetadataView_DATABASE_METADATA_VIEW_FULL,
 			})
 			a.NoError(err)
 			diff := cmp.Diff(test.wantDatabaseMetadata, latestSchemaMetadata, protocmp.Transform())
