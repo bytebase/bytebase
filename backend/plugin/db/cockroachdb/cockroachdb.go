@@ -151,8 +151,9 @@ func getCockroachConnectionConfig(config db.ConnectionConfig) (*pgx.ConnConfig, 
 	}
 
 	connStr := fmt.Sprintf("host=%s port=%s", config.DataSource.Host, config.DataSource.Port)
-	sslMode := util.GetPGSSLMode(config.DataSource)
-	connStr += fmt.Sprintf(" sslmode=%s", sslMode)
+	if config.DataSource.GetUseSsl() {
+		connStr += fmt.Sprintf(" sslmode=%s", util.GetPGSSLMode(config.DataSource))
+	}
 
 	routingID := getRoutingIDFromCockroachCloudURL(config.DataSource.Host)
 	if routingID != "" {
