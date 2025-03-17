@@ -128,10 +128,12 @@ const allowToCreateDB = computed(() => {
   );
 });
 
-const scopeOptions = useCommonSearchScopeOptions(
-  computed(() => state.params),
-  [...CommonFilterScopeIdList, "project", "database-label", "engine"]
-);
+const scopeOptions = useCommonSearchScopeOptions([
+  ...CommonFilterScopeIdList,
+  "project",
+  "database-label",
+  "engine",
+]);
 
 const selectedLabels = computed(() => {
   return state.params.scopes

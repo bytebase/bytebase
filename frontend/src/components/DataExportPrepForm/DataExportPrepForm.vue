@@ -100,10 +100,11 @@ const state = reactive<LocalState>({
   },
 });
 
-const scopeOptions = useCommonSearchScopeOptions(
-  computed(() => state.params),
-  ["environment", "instance", "database-label"]
-);
+const scopeOptions = useCommonSearchScopeOptions([
+  "environment",
+  "instance",
+  "database-label",
+]);
 
 const selectedInstance = computed(() => {
   const instanceId = state.params.scopes.find(

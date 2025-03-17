@@ -117,10 +117,7 @@ const filter = computed(() => ({
   query: searchParams.value.query,
 }));
 
-const scopeOptions = useCommonSearchScopeOptions(
-  computed(() => searchParams.value),
-  [...CommonFilterScopeIdList]
-);
+const scopeOptions = useCommonSearchScopeOptions([...CommonFilterScopeIdList]);
 
 watch(
   () => databaseSelectState,

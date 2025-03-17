@@ -1,20 +1,33 @@
 import { orderBy } from "lodash-es";
 import type { Ref, RenderFunction } from "vue";
-import { computed, h } from "vue";
+import { computed, h, ref, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
+import { useRoute } from "vue-router";
 import BBAvatar from "@/bbkit/BBAvatar.vue";
 import { useCommonSearchScopeOptions } from "@/components/AdvancedSearch/useCommonSearchScopeOptions";
 import SystemBotTag from "@/components/misc/SystemBotTag.vue";
 import YouTag from "@/components/misc/YouTag.vue";
+import { RichDatabaseName } from "@/components/v2";
 import {
   useCurrentUserV1,
   useDatabaseV1Store,
   useProjectV1List,
 } from "@/store";
-import { SYSTEM_BOT_USER_NAME, UNKNOWN_ID } from "@/types";
+import {
+  SYSTEM_BOT_USER_NAME,
+  UNKNOWN_ID,
+  isValidProjectName,
+  type ComposedDatabase,
+} from "@/types";
 import { Label } from "@/types/proto/v1/project_service";
 import { User } from "@/types/proto/v1/user_service";
 import type { SearchParams, SearchScopeId } from "@/utils";
+import {
+  getDefaultPagination,
+  extractEnvironmentResourceName,
+  extractInstanceResourceName,
+  extractProjectResourceName,
+} from "@/utils";
 
 export type ScopeOption = {
   id: SearchScopeId;
@@ -56,13 +69,38 @@ export const useIssueSearchScopeOptions = (
   activeUserList: Ref<User[]>
 ) => {
   const { t } = useI18n();
+  const route = useRoute();
   const me = useCurrentUserV1();
   const databaseV1Store = useDatabaseV1Store();
 
-  const commonScopeOptions = useCommonSearchScopeOptions(
-    params,
-    supportOptionIdList
-  );
+  const project = computed(() => {
+    const { projectId } = route?.params ?? {};
+    if (projectId && typeof projectId === "string") {
+      return `projects/${projectId}`;
+    }
+    const projectScope = params.value.scopes.find(
+      (scope) => scope.id === "project"
+    );
+    if (projectScope) {
+      return `projects/${projectScope.value}`;
+    }
+    return undefined;
+  });
+
+  const databaseList = ref<ComposedDatabase[]>([]);
+
+  watchEffect(async () => {
+    if (!isValidProjectName(project.value)) {
+      return;
+    }
+    const { databases } = await databaseV1Store.fetchDatabases({
+      pageSize: getDefaultPagination(),
+      parent: project.value!,
+    });
+    databaseList.value = databases;
+  });
+
+  const commonScopeOptions = useCommonSearchScopeOptions(supportOptionIdList);
 
   const principalSearchValueOptions = computed(() => {
     // Put "you" to the top
@@ -98,6 +136,34 @@ export const useIssueSearchScopeOptions = (
   const fullScopeOptions = computed((): ScopeOption[] => {
     const scopes: ScopeOption[] = [
       ...commonScopeOptions.value,
+      {
+        id: "database",
+        title: t("issue.advanced-search.scope.database.title"),
+        description: t("issue.advanced-search.scope.database.description"),
+        options: databaseList.value.map((db) => {
+          return {
+            value: db.name,
+            keywords: [
+              db.databaseName,
+              extractInstanceResourceName(db.instance),
+              db.instanceResource.title,
+              extractEnvironmentResourceName(db.effectiveEnvironment),
+              db.effectiveEnvironmentEntity.title,
+              extractProjectResourceName(db.project),
+              db.projectEntity.title,
+            ],
+            custom: true,
+            render: () => {
+              return h("div", { class: "text-sm" }, [
+                h(RichDatabaseName, {
+                  database: db,
+                  showProject: true,
+                }),
+              ]);
+            },
+          };
+        }),
+      },
       {
         id: "status",
         title: t("common.status"),
@@ -194,7 +260,9 @@ export const useIssueSearchScopeOptions = (
       },
     ];
     const supportOptionIdSet = new Set(supportOptionIdList.value);
-    return scopes.filter((scope) => supportOptionIdSet.has(scope.id));
+    return scopes.filter(
+      (scope) => supportOptionIdSet.has(scope.id) && scope.options.length > 0
+    );
   });
 
   // filteredScopeOptions will filter search options by chosen scope.
