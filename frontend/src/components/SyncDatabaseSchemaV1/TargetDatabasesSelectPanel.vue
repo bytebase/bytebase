@@ -128,10 +128,7 @@ watch(
   }
 );
 
-const scopeOptions = useCommonSearchScopeOptions(
-  computed(() => state.params),
-  [...CommonFilterScopeIdList]
-);
+const scopeOptions = useCommonSearchScopeOptions([...CommonFilterScopeIdList]);
 
 const selectedDatabaseList = computed(() =>
   state.selectedDatabaseNameList.map((name) =>
