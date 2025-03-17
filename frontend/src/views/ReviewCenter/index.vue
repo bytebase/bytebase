@@ -147,10 +147,7 @@ const supportedScopes = computed(() => {
   return supportedScopes;
 });
 
-const scopeOptions = useCommonSearchScopeOptions(
-  computed(() => state.params),
-  supportedScopes.value
-);
+const scopeOptions = useCommonSearchScopeOptions(supportedScopes.value);
 
 const planSearchParams = computed(() => {
   // Default scopes with type and creator.
