@@ -160,7 +160,7 @@ export const useCommonSearchScopeOptions = (
           };
         }),
       }),
-      label: () => ({
+      "database-label": () => ({
         id: "database-label",
         title: t("issue.advanced-search.scope.database-label.title"),
         description: t(
