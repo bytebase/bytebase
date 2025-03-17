@@ -41,7 +41,6 @@ import {
   useSQLEditorTabStore,
 } from "@/store";
 import { isValidDatabaseName } from "@/types";
-import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
 import {
   extractDatabaseResourceName,
   nextAnimationFrame,
@@ -76,7 +75,6 @@ const databaseMetadata = computedAsync(() => {
   }
   return useDBSchemaV1Store().getOrFetchDatabaseMetadata({
     database: database.value.name,
-    view: DatabaseMetadataView.DATABASE_METADATA_VIEW_FULL,
     silent: true,
   });
 });

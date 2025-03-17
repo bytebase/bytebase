@@ -20,7 +20,6 @@ import {
   useSQLEditorTabStore,
 } from "@/store";
 import { Engine } from "@/types/proto/v1/common";
-import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
 import ConnectChooser from "./ConnectChooser.vue";
 
 const OptionValueUnspecified = "-1";
@@ -34,10 +33,7 @@ const show = computed(() => {
 });
 
 const databaseMetadata = computed(() => {
-  return useDBSchemaV1Store().getDatabaseMetadata(
-    database.value.name,
-    DatabaseMetadataView.DATABASE_METADATA_VIEW_FULL
-  );
+  return useDBSchemaV1Store().getDatabaseMetadata(database.value.name);
 });
 const options = computed(() => {
   const selectOptions: SelectOption[] = [

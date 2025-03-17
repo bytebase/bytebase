@@ -5,7 +5,6 @@ import {
   useConnectionOfCurrentSQLEditorTab,
   useDBSchemaV1Store,
 } from "@/store";
-import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
 import { hasSchemaProperty } from "@/utils";
 import { useEditorPanelContext } from "../context";
 
@@ -13,10 +12,7 @@ export const useSelectSchema = () => {
   const { database, instance } = useConnectionOfCurrentSQLEditorTab();
   const { selectedSchemaName } = useEditorPanelContext();
   const databaseMetadata = computed(() => {
-    return useDBSchemaV1Store().getDatabaseMetadata(
-      database.value.name,
-      DatabaseMetadataView.DATABASE_METADATA_VIEW_FULL
-    );
+    return useDBSchemaV1Store().getDatabaseMetadata(database.value.name);
   });
   const options = computed(() => {
     return databaseMetadata.value.schemas.map<SelectOption>((schema) => ({
