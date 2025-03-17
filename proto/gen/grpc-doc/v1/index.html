@@ -7276,7 +7276,16 @@ Format: instances/{instance}/databases/{database}/metadata </p></td>
                   <td>filter</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The filter used for a specific schema object such as
+                  <td><p>Filter is used to filter databases returned in the list.
+Supported filter:
+- schema
+- table
+
+For example:
+schema == &#34;schema-a&#34;
+table == &#34;table-a&#34;
+schema == &#34;schema-a&#34; &amp;&amp; table == &#34;table-a&#34;
+The filter used for a specific schema object such as
 &#34;schemas/schema-a/tables/table-a&#34;.
 The column masking level will only be returned when a table filter is used. </p></td>
                 </tr>
@@ -7751,7 +7760,9 @@ engine in [&#34;MYSQL&#34;, &#34;POSTGRES&#34;]
 label == &#34;region:asia&#34;
 label == &#34;tenant:asia,europe&#34;
 label == &#34;region:asia&#34; &amp;&amp; label == &#34;tenant:bytebase&#34;
-exclude_unassigned == true </p></td>
+exclude_unassigned == true
+You can combine filter conditions like:
+environment == &#34;environments/prod&#34; &amp;&amp; name.matches(&#34;employee&#34;) </p></td>
                 </tr>
               
                 <tr>
@@ -15371,6 +15382,12 @@ This information is not authenticated and should be treated accordingly. </p></t
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The filter of the log. It should be a valid CEL expression.
+Supported filter:
+- method
+- severity
+- user
+- create_time
+
 For example:
  - filter = &#34;method == &#39;/bytebase.v1.SQLService/Query&#39;&#34;
  - filter = &#34;method == &#39;/bytebase.v1.SQLService/Query&#39; &amp;&amp; severity == &#39;ERROR&#39;&#34;
@@ -15726,6 +15743,7 @@ Supported filter:
 - email
 - user_type
 - state
+- project
 
 For example:
 name == &#34;ed&#34;
@@ -15735,7 +15753,11 @@ email.matches(&#34;ed&#34;)
 user_type == &#34;SERVICE_ACCOUNT&#34;
 user_type in [&#34;SERVICE_ACCOUNT&#34;, &#34;USER&#34;]
 !(user_type in [&#34;SERVICE_ACCOUNT&#34;, &#34;USER&#34;])
-state == &#34;DELETED&#34; </p></td>
+state == &#34;DELETED&#34;
+project == &#34;projects/sample-project&#34;
+You can combine filter conditions like:
+name.matches(&#34;ed&#34;) &amp;&amp; project == &#34;projects/sample-project&#34;
+(name == &#34;ed&#34; || email == &#34;ed@bytebase.com&#34;) &amp;&amp; project == &#34;projects/sample-project&#34; </p></td>
                 </tr>
               
             </tbody>
@@ -22868,9 +22890,10 @@ name = &#34;project name&#34;
 name.matches(&#34;project name&#34;)
 resource_id = &#34;project id&#34;
 resource_id.matches(&#34;project id&#34;)
+exclude_default == true
+You can combine filter conditions like:
 name = &#34;project name&#34; &amp;&amp; resource_id.matches(&#34;project id&#34;)
-name.matches(&#34;project name&#34;) || resource_id = &#34;project id&#34;
-exclude_default == true </p></td>
+name.matches(&#34;project name&#34;) || resource_id = &#34;project id&#34; </p></td>
                 </tr>
               
             </tbody>

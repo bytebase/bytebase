@@ -187,6 +187,8 @@ export interface ListDatabasesRequest {
    * label == "tenant:asia,europe"
    * label == "region:asia" && label == "tenant:bytebase"
    * exclude_unassigned == true
+   * You can combine filter conditions like:
+   * environment == "environments/prod" && name.matches("employee")
    */
   filter: string;
   /** Show deleted database if specified. */
@@ -257,6 +259,15 @@ export interface GetDatabaseMetadataRequest {
   /** The view to return. Defaults to DATABASE_METADATA_VIEW_BASIC. */
   view: DatabaseMetadataView;
   /**
+   * Filter is used to filter databases returned in the list.
+   * Supported filter:
+   * - schema
+   * - table
+   *
+   * For example:
+   * schema == "schema-a"
+   * table == "table-a"
+   * schema == "schema-a" && table == "table-a"
    * The filter used for a specific schema object such as
    * "schemas/schema-a/tables/table-a".
    * The column masking level will only be returned when a table filter is used.

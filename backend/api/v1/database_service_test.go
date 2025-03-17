@@ -4,8 +4,13 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
+	api "github.com/bytebase/bytebase/backend/legacyapi"
+	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
+	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 func TestIsSecretValid(t *testing.T) {
@@ -114,6 +119,75 @@ func TestIsSecretValid(t *testing.T) {
 			require.Error(t, err)
 		} else {
 			require.NoError(t, err)
+		}
+	}
+}
+
+func TestListDatabaseFilter(t *testing.T) {
+	testCases := []struct {
+		input string
+		want  *store.ListResourceFilter
+		error error
+	}{
+		{
+			input: `environment == "environments/test"`,
+			want: &store.ListResourceFilter{
+				Where: `(
+			COALESCE(
+				db.environment,
+				instance.environment
+			) = $1)`,
+				Args: []any{"test"},
+			},
+		},
+		{
+			input: `environment == "test"`,
+			error: status.Errorf(codes.InvalidArgument, "invalid environment filter %q", "test"),
+		},
+		{
+			input: `project == "projects/sample"`,
+			want: &store.ListResourceFilter{
+				Where: "(db.project = $1)",
+				Args:  []any{"sample"},
+			},
+		},
+		{
+			input: `name.matches("Employee")`,
+			want: &store.ListResourceFilter{
+				Where: `(LOWER(db.name) LIKE '%employee%')`,
+			},
+		},
+		{
+			input: `engine in ["MYSQL", "POSTGRES"]`,
+			want: &store.ListResourceFilter{
+				Where: `(instance.metadata->>'engine' IN ($1,$2))`,
+				Args:  []any{v1pb.Engine_MYSQL, v1pb.Engine_POSTGRES},
+			},
+		},
+		{
+			input: `label == "region:asia" && label == "tenant:bytebase"`,
+			want: &store.ListResourceFilter{
+				Where: `((db.metadata->'labels'->>'region' = ANY($1)) AND (db.metadata->'labels'->>'tenant' = ANY($2)))`,
+				Args:  []any{"asia", "bytebase"},
+			},
+		},
+		{
+			input: `(label == "region:asia" || label == "tenant:bytebase") && exclude_unassigned == true`,
+			want: &store.ListResourceFilter{
+				Where: `(((db.metadata->'labels'->>'region' = ANY($1)) OR (db.metadata->'labels'->>'tenant' = ANY($2))) AND (db.project != $3))`,
+				Args:  []any{"asia", "bytebase", api.DefaultProjectID},
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		filter, err := getListDatabaseFilter(tc.input)
+		if tc.error != nil {
+			require.Error(t, err)
+			require.Equal(t, tc.error, err)
+		} else {
+			require.NoError(t, err)
+			require.Equal(t, tc.want.Where, filter.Where)
 		}
 	}
 }

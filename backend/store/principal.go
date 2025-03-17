@@ -34,6 +34,7 @@ type FindUserMessage struct {
 	Limit       *int
 	Offset      *int
 	Filter      *ListResourceFilter
+	ProjectID   *string
 }
 
 // UpdateUserMessage is the message to update a user.
@@ -215,7 +216,25 @@ func listUserImpl(ctx context.Context, txn *sql.Tx, find *FindUserMessage) ([]*U
 		where, args = append(where, fmt.Sprintf("principal.deleted = $%d", len(args)+1)), append(args, false)
 	}
 
-	query := `
+	var with, join string
+	if v := find.ProjectID; v != nil {
+		with = `WITH all_members AS (
+			SELECT
+				jsonb_array_elements_text(jsonb_array_elements(policy.payload->'bindings')->'members') AS member,
+				jsonb_array_elements(policy.payload->'bindings')->>'role' AS role
+			FROM policy
+			WHERE ((resource_type = 'PROJECT' AND resource = 'projects/` + *v + `') OR resource_type = 'WORKSPACE') AND type = 'bb.policy.iam'
+		),
+		project_members AS (
+			SELECT member FROM all_members WHERE role LIKE 'roles/project%'
+		),
+		members AS (
+			SELECT ARRAY_AGG(member) AS members FROM project_members
+		)`
+		join = `RIGHT JOIN members ON (CONCAT('users/', principal.id) = ANY(members.members) OR '` + api.AllUsers + `' = ANY(members.members))`
+	}
+
+	query := with + `
 	SELECT
 		principal.id AS user_id,
 		principal.deleted,
@@ -227,8 +246,7 @@ func listUserImpl(ctx context.Context, txn *sql.Tx, find *FindUserMessage) ([]*U
 		principal.phone,
 		principal.profile,
 		principal.created_at
-	FROM principal
-	WHERE ` + strings.Join(where, " AND ") + ` ORDER BY type DESC, created_at ASC`
+	FROM principal ` + join + ` WHERE ` + strings.Join(where, " AND ") + ` ORDER BY type DESC, created_at ASC`
 
 	if v := find.Limit; v != nil {
 		query += fmt.Sprintf(" LIMIT %d", *v)

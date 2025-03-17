@@ -9,8 +9,12 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/genproto/googleapis/type/expr"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/durationpb"
 
+	api "github.com/bytebase/bytebase/backend/legacyapi"
+	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
@@ -330,6 +334,70 @@ func TestFindIamPolicyDeltas(t *testing.T) {
 		deltas := findIamPolicyDeltas(test.oldPolicy, test.newIamPolicy)
 		if !cmp.Equal(test.want, deltas, cmpopts.IgnoreUnexported(v1pb.BindingDelta{}, expr.Expr{})) {
 			t.Fatalf("%v != %v", test.want, deltas)
+		}
+	}
+}
+
+func TestListProjectFilter(t *testing.T) {
+	testCases := []struct {
+		input string
+		want  *store.ListResourceFilter
+		error error
+	}{
+		{
+			input: `title == "sample project"`,
+			error: status.Errorf(codes.InvalidArgument, "unsupport variable %q", "title"),
+		},
+		{
+			input: `name == "sample project"`,
+			want: &store.ListResourceFilter{
+				Where: `(project.name = $1)`,
+				Args:  []any{"sample project"},
+			},
+		},
+		{
+			input: `name.matches("Sample")`,
+			want: &store.ListResourceFilter{
+				Where: `(LOWER(project.name) LIKE '%sample%')`,
+			},
+		},
+		{
+			input: `resource_id == "sample-project"`,
+			want: &store.ListResourceFilter{
+				Where: `(project.resource_id = $1)`,
+				Args:  []any{"sample-project"},
+			},
+		},
+		{
+			input: `resource_id.matches("sample")`,
+			want: &store.ListResourceFilter{
+				Where: `(LOWER(project.resource_id) LIKE '%sample%')`,
+			},
+		},
+		{
+			input: `exclude_default == true`,
+			want: &store.ListResourceFilter{
+				Where: `(project.resource_id != $1)`,
+				Args:  []any{api.DefaultProjectID},
+			},
+		},
+		{
+			input: `(name.matches("sample") || resource_id.matches("Sample")) && exclude_default == true`,
+			want: &store.ListResourceFilter{
+				Where: `(((LOWER(project.name) LIKE '%sample%') OR (LOWER(project.resource_id) LIKE '%sample%')) AND (project.resource_id != $1))`,
+				Args:  []any{api.DefaultProjectID},
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		filter, err := getListProjectFilter(tc.input)
+		if tc.error != nil {
+			require.Error(t, err)
+			require.Equal(t, tc.error, err)
+		} else {
+			require.NoError(t, err)
+			require.Equal(t, tc.want.Where, filter.Where)
 		}
 	}
 }
