@@ -72,9 +72,10 @@ export interface SearchProjectsRequest {
    * name.matches("project name")
    * resource_id = "project id"
    * resource_id.matches("project id")
+   * exclude_default == true
+   * You can combine filter conditions like:
    * name = "project name" && resource_id.matches("project id")
    * name.matches("project name") || resource_id = "project id"
-   * exclude_default == true
    */
   filter: string;
 }

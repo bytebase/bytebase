@@ -119,7 +119,7 @@ onMounted(async () => {
     props.databaseResources.map((resource) => resource.databaseFullName)
   );
 
-  // TODO(ed): I really don't want to do this.
+  // I really don't want to do this.
   // But the transfer component not support native search callback.
   const selectorElement = document.getElementById("database-resource-selector");
   const input = selectorElement?.querySelector("input");
