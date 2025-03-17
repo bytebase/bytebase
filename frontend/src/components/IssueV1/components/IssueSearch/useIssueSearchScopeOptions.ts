@@ -260,7 +260,9 @@ export const useIssueSearchScopeOptions = (
       },
     ];
     const supportOptionIdSet = new Set(supportOptionIdList.value);
-    return scopes.filter((scope) => supportOptionIdSet.has(scope.id));
+    return scopes.filter(
+      (scope) => supportOptionIdSet.has(scope.id) && scope.options.length > 0
+    );
   });
 
   // filteredScopeOptions will filter search options by chosen scope.
