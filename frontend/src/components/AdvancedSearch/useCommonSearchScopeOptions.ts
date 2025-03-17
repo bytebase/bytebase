@@ -161,7 +161,7 @@ export const useCommonSearchScopeOptions = (
         }),
       }),
       label: () => ({
-        id: "label",
+        id: "database-label",
         title: t("issue.advanced-search.scope.database-label.title"),
         description: t(
           "issue.advanced-search.scope.database-label.description"
