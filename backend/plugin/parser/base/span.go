@@ -78,9 +78,9 @@ type QuerySpanResult struct {
 	SourceColumns SourceColumnSet
 	// IsPlainField indicates whether the field is a plain column reference (true) or an expression (false).
 	IsPlainField bool
-	// SourceFieldPaths is used for Cosmos DB only, to store the path of the field, the root is the document($). Empty
-	// for select * statement.
-	SourceFieldPaths map[string]bool
+	// SourceFieldPaths is used for Cosmos DB only, to store the path of the field, the root is the container name. Empty
+	// for free access statement.
+	SourceFieldPaths map[string]*PathAST
 }
 
 // ColumnResource is the resource key for a column.
