@@ -80,7 +80,7 @@ func getFirstSemanticTypeInPath(ast *base.PathAST, objectSchema *storepb.ObjectS
 }
 
 func maskCosmosDB(span *base.QuerySpan, data any, objectSchema *storepb.ObjectSchema, semanticTypeToMasker map[string]masker.Masker) (any, error) {
-	if len(span.Results) == 1 && len(span.Results[0].SourceFieldPaths) == 0 {
+	if len(span.Results) == 1 && span.Results[0].SelectAsterisk {
 		// SELECT * FROM c
 		return walkAndMaskJSON(data, objectSchema, semanticTypeToMasker)
 	}

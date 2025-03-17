@@ -47,6 +47,8 @@
               table: Customers
               column: Id
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: Name
           sourcecolumns:
             - server: ""
@@ -55,6 +57,8 @@
               table: Customers
               column: Name
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: CustomerId
           sourcecolumns:
             - server: ""
@@ -63,6 +67,8 @@
               table: Orders
               column: CustomerId
           isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
     sourcecolumns:
         - server: ""
           database: maskingdb
@@ -111,6 +117,8 @@
               table: people
               column: ID
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
     sourcecolumns:
         - server: ""
           database: ds1
@@ -170,6 +178,8 @@
               table: people
               column: ID
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: NAME
           sourcecolumns:
             - server: ""
@@ -183,6 +193,8 @@
               table: people
               column: NAME
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
     sourcecolumns:
         - server: ""
           database: ds1
@@ -255,6 +267,8 @@
               table: people
               column: ID
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: NAME
           sourcecolumns:
             - server: ""
@@ -263,6 +277,8 @@
               table: people
               column: NAME
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: ADDRESS
           sourcecolumns:
             - server: ""
@@ -271,6 +287,8 @@
               table: address
               column: ADDRESS
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
     sourcecolumns:
         - server: ""
           database: ds1
@@ -333,6 +351,8 @@
               table: people
               column: ID
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: NAME
           sourcecolumns:
             - server: ""
@@ -341,6 +361,8 @@
               table: people
               column: NAME
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: ADDRESS
           sourcecolumns:
             - server: ""
@@ -349,6 +371,8 @@
               table: address
               column: ADDRESS
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
     sourcecolumns:
         - server: ""
           database: ds1
@@ -408,6 +432,8 @@
               table: people
               column: Id
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: NAME
           sourcecolumns:
             - server: ""
@@ -416,6 +442,8 @@
               table: people
               column: Name
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: ADDRESS
           sourcecolumns:
             - server: ""
@@ -424,6 +452,8 @@
               table: address
               column: Address
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
     sourcecolumns:
         - server: ""
           database: maskingdb
@@ -486,6 +516,8 @@
               table: T1
               column: b
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: C2
           sourcecolumns:
             - server: ""
@@ -499,6 +531,8 @@
               table: T1
               column: b
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: C3
           sourcecolumns:
             - server: ""
@@ -517,9 +551,13 @@
               table: T1
               column: c
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: "N"
           sourcecolumns: []
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
     sourcecolumns:
         - server: ""
           database: maskingdb
@@ -568,6 +606,8 @@
               table: Customers
               column: Id
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: NAME
           sourcecolumns:
             - server: ""
@@ -576,6 +616,8 @@
               table: Customers
               column: Name
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
     sourcecolumns:
         - server: ""
           database: maskingdb
@@ -641,9 +683,13 @@
               table: galleries
               column: CITY
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: TOTAL_PAINTINGS
           sourcecolumns: []
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
     sourcecolumns:
         - server: ""
           database: ds1
@@ -687,6 +733,8 @@
         - name: ""
           sourcecolumns: []
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: ID
           sourcecolumns:
             - server: ""
@@ -695,6 +743,8 @@
               table: Customers
               column: Id
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
     sourcecolumns:
         - server: ""
           database: maskingdb
@@ -738,6 +788,8 @@
               table: Customers
               column: Id
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: Id
           sourcecolumns:
             - server: ""
@@ -746,6 +798,8 @@
               table: Customers
               column: Id
           isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: Name
           sourcecolumns:
             - server: ""
@@ -754,6 +808,8 @@
               table: Customers
               column: Name
           isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
     sourcecolumns:
         - server: ""
           database: maskingdb
@@ -802,6 +858,8 @@
               table: Customers
               column: Id
           isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: Name
           sourcecolumns:
             - server: ""
@@ -810,6 +868,8 @@
               table: Customers
               column: Name
           isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
     sourcecolumns:
         - server: ""
           database: maskingdb
@@ -853,6 +913,8 @@
               table: Customers
               column: Id
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: NAME
           sourcecolumns:
             - server: ""
@@ -861,6 +923,8 @@
               table: Customers
               column: Name
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
     sourcecolumns:
         - server: ""
           database: maskingdb
@@ -904,6 +968,8 @@
               table: Customers
               column: Id
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: ID
           sourcecolumns:
             - server: ""
@@ -917,6 +983,8 @@
               table: Customers
               column: Name
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: ID
           sourcecolumns:
             - server: ""
@@ -930,6 +998,8 @@
               table: Customers
               column: Name
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
     sourcecolumns:
         - server: ""
           database: maskingdb
@@ -973,6 +1043,8 @@
               table: Customers
               column: Id
           isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: Name
           sourcecolumns:
             - server: ""
@@ -981,6 +1053,8 @@
               table: Customers
               column: Name
           isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
     sourcecolumns:
         - server: ""
           database: maskingdb

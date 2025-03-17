@@ -73,6 +73,8 @@
               table: T3
               column: E
           isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: B
           sourcecolumns:
             - server: ""
@@ -91,6 +93,8 @@
               table: T3
               column: F
           isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
     sourcecolumns:
         - server: ""
           database: SNOWFLAKE
