@@ -26,9 +26,10 @@ export const AllSearchScopeIdList = [
   "status",
   // database related search scopes.
   "engine",
+  "database-label",
   // issue related search scopes.
   "subscriber",
-  "label", // label is also used by database search
+  "label",
   "taskType",
   // auditLog related search scopes.
   "method",
