@@ -64,7 +64,8 @@ func (l *querySpanResultListener) EnterSelect(ctx *parser.SelectContext) {
 		l.result = []base.QuerySpanResult{
 			{
 				Name:             "",
-				SourceFieldPaths: map[string]*base.PathAST{},
+				SourceFieldPaths: make(map[string]*base.PathAST),
+				SelectAsterisk:   true,
 			},
 		}
 		return

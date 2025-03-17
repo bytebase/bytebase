@@ -81,6 +81,8 @@ type QuerySpanResult struct {
 	// SourceFieldPaths is used for Cosmos DB only, to store the path of the field, the root is the container name. Empty
 	// for free access statement.
 	SourceFieldPaths map[string]*PathAST
+	// SelectAsterisk indicates whether the field is selected by asterisk, used by Cosmos DB.
+	SelectAsterisk bool
 }
 
 // ColumnResource is the resource key for a column.
