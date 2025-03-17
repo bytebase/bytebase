@@ -88,28 +88,27 @@ func NewIdentityProvider(config IdentityProviderConfig) (*IdentityProvider, erro
 }
 
 func (p *IdentityProvider) dial() (*ldap.Conn, error) {
-	addr := fmt.Sprintf("%s:%d", p.config.Host, p.config.Port)
 	tlsConfig := &tls.Config{
 		ServerName:         p.config.Host,
 		InsecureSkipVerify: p.config.SkipTLSVerify,
 	}
 	switch p.config.SecurityProtocol {
 	case SecurityProtocolLDAPS:
-		conn, err := ldap.DialTLS("tcp", addr, tlsConfig)
+		url := fmt.Sprintf("ldaps://%s:%d", p.config.Host, p.config.Port)
+		conn, err := ldap.DialURL(url, ldap.DialWithTLSConfig(tlsConfig))
 		if err != nil {
 			return nil, errors.Errorf("dial TLS: %v", err)
 		}
 		return conn, nil
 	case SecurityProtocolStartTLS:
-		conn, err := ldap.Dial("tcp", addr)
+		url := fmt.Sprintf("ldap://%s:%d", p.config.Host, p.config.Port)
+		conn, err := ldap.DialURL(url)
 		if err != nil {
 			return nil, errors.Errorf("dial: %v", err)
 		}
-		if p.config.SecurityProtocol == SecurityProtocolStartTLS {
-			if err = conn.StartTLS(tlsConfig); err != nil {
-				_ = conn.Close()
-				return nil, errors.Errorf("start TLS: %v", err)
-			}
+		if err := conn.StartTLS(tlsConfig); err != nil {
+			_ = conn.Close()
+			return nil, errors.Errorf("start TLS: %v", err)
 		}
 		return conn, nil
 	default:
