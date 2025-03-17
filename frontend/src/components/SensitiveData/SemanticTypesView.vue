@@ -113,7 +113,9 @@ const onRemove = async (index: number) => {
     name: "bb.workspace.semantic-types",
     value: {
       semanticTypeSettingValue: {
-        types: state.semanticItemList.map((data) => data.item),
+        types: state.semanticItemList
+          .filter((data) => data.mode === "NORMAL")
+          .map((data) => data.item),
       },
     },
   });
