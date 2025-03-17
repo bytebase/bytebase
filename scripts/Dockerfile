@@ -16,6 +16,7 @@ RUN go mod download
 ARG TARGETARCH
 ARG VERSION
 ARG GIT_COMMIT
+ARG RELEASE="release"
 
 RUN if [ "$TARGETARCH" = "arm64" ]; then \
     apt-get install -y gcc-aarch64-linux-gnu; \
@@ -36,7 +37,7 @@ COPY ./scripts/VERSION .
 # -ldflags="-w -s" means omit DWARF symbol table and the symbol table and debug information
 RUN if [ "$TARGETARCH" = "arm64" ]; then CC=aarch64-linux-gnu-gcc && CC_FOR_TARGET=gcc-aarch64-linux-gnu; fi && \
   GOARCH=$TARGETARCH CC=$CC CC_FOR_TARGET=$CC_FOR_TARGET go build \
-  --tags "release,embed_frontend,docker" \
+  --tags "${RELEASE},embed_frontend,docker" \
   -ldflags="-w -s -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.version=${VERSION}' -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.gitcommit=${GIT_COMMIT}'" \
   -o bytebase ./backend/bin/server/main.go
 
