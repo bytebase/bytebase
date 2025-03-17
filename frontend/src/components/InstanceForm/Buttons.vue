@@ -73,7 +73,7 @@ import {
   calcDataSourceUpdateMask,
   extractBasicInfo,
   extractDataSourceEditState,
-  type EditDataSource
+  type EditDataSource,
 } from "./common";
 import { useInstanceFormContext } from "./context";
 
