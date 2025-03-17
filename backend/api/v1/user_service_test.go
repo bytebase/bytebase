@@ -71,6 +71,5 @@ func TestListUserFilter(t *testing.T) {
 				require.NotNil(t, find.ProjectID)
 			}
 		}
-
 	}
 }
