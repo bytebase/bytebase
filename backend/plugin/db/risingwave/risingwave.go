@@ -114,7 +114,11 @@ func (driver *Driver) Open(_ context.Context, _ storepb.Engine, config db.Connec
 	}
 
 	driver.databaseName = config.ConnectionContext.DatabaseName
-	if config.ConnectionContext.DatabaseName == "" {
+	if config.ConnectionContext.DatabaseName != "" {
+		pgxConnConfig.Database = config.ConnectionContext.DatabaseName
+	} else if config.DataSource.GetDatabase() != "" {
+		pgxConnConfig.Database = config.DataSource.GetDatabase()
+	} else {
 		pgxConnConfig.Database = "postgres"
 	}
 	driver.config = config
