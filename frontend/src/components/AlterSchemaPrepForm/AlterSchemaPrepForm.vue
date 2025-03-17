@@ -189,7 +189,6 @@ const state = reactive<LocalState>({
 });
 
 const scopeOptions = useCommonSearchScopeOptions(
-  computed(() => state.params),
   computed(() => ["project", "instance", "environment", "database-label"])
 );
 

@@ -140,10 +140,6 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
       await fetchDatabaseByName(database);
     }
   };
-  // TODO(ed): deprecate it.
-  const databaseListByProject = (project: string) => {
-    return databaseList.value.filter((db) => db.project === project);
-  };
   const getDatabaseByName = (name: string) => {
     return databaseMapByName.get(name) ?? unknownDatabase();
   };
@@ -202,7 +198,6 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
     removeCacheByInstance,
     upsertDatabaseMap,
     syncDatabase,
-    databaseListByProject,
     getDatabaseByName,
     fetchDatabaseByName,
     getOrFetchDatabaseByName,
