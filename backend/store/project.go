@@ -51,7 +51,7 @@ type UpdateProjectMessage struct {
 // GetProjectV2 gets project by resource ID.
 func (s *Store) GetProjectV2(ctx context.Context, find *FindProjectMessage) (*ProjectMessage, error) {
 	if find.ResourceID != nil {
-		if v, ok := s.projectCache.Get(*find.ResourceID); ok {
+		if v, ok := s.projectCache.Get(*find.ResourceID); ok && s.enableCache {
 			return v, nil
 		}
 	}

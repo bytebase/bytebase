@@ -44,7 +44,7 @@ type UpdateEnvironmentMessage struct {
 // GetEnvironmentV2 gets environment by resource ID.
 func (s *Store) GetEnvironmentV2(ctx context.Context, find *FindEnvironmentMessage) (*EnvironmentMessage, error) {
 	if find.ResourceID != nil {
-		if v, ok := s.environmentCache.Get(*find.ResourceID); ok {
+		if v, ok := s.environmentCache.Get(*find.ResourceID); ok && s.enableCache {
 			return v, nil
 		}
 	}

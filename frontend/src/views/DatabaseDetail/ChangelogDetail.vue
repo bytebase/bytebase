@@ -16,10 +16,14 @@
     </NBreadcrumbItem>
   </NBreadcrumb>
   <ChangelogDetailView
+    v-if="ready"
     :instance="instance"
     :database="database.name"
     :changelog-id="changelogId"
   />
+  <div v-else class="flex justify-center items-center py-10">
+    <BBSpin />
+  </div>
 </template>
 
 <script lang="ts" setup>
@@ -28,6 +32,7 @@ import { useRouter } from "vue-router";
 import { ChangelogDetail as ChangelogDetailView } from "@/components/Changelog";
 import { useDatabaseV1ByName } from "@/store";
 import { databaseV1Url } from "@/utils";
+import { BBSpin } from "@/bbkit";
 
 const props = defineProps<{
   project: string;
@@ -38,5 +43,5 @@ const props = defineProps<{
 
 const router = useRouter();
 
-const { database } = useDatabaseV1ByName(props.database);
+const { database, ready } = useDatabaseV1ByName(props.database);
 </script>

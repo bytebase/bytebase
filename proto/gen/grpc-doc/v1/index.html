@@ -2286,14 +2286,6 @@
                   <a href="#bytebase.v1.SearchQueryHistoriesResponse"><span class="badge">M</span>SearchQueryHistoriesResponse</a>
                 </li>
               
-                <li>
-                  <a href="#bytebase.v1.StringifyMetadataRequest"><span class="badge">M</span>StringifyMetadataRequest</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.StringifyMetadataResponse"><span class="badge">M</span>StringifyMetadataResponse</a>
-                </li>
-              
               
                 <li>
                   <a href="#bytebase.v1.Advice.Status"><span class="badge">E</span>Advice.Status</a>
@@ -7415,6 +7407,14 @@ Format: instances/{instance}/databases/{database} </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>It&#39;s empty for DATABASE and SCHEMA. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>metadata</td>
+                  <td><a href="#bytebase.v1.DatabaseMetadata">DatabaseMetadata</a></td>
+                  <td></td>
+                  <td><p>If use the metadata to generate the schema string, the type is OBJECT_TYPE_UNSPECIFIED.
+Also the schema and object are empty. </p></td>
                 </tr>
               
             </tbody>
@@ -14268,10 +14268,10 @@ Default to this mode.</p></td>
                 </tr>
               
                 <tr>
-                  <td>demo_name</td>
-                  <td><a href="#string">string</a></td>
+                  <td>demo</td>
+                  <td><a href="#bool">bool</a></td>
                   <td></td>
-                  <td><p>demo_name specifies the demo name, empty string means no demo. </p></td>
+                  <td><p>demo flag means if the Bytebase is running in demo mode. </p></td>
                 </tr>
               
                 <tr>
@@ -24869,75 +24869,6 @@ Pass this value in the page_token field in the subsequent call to
 
         
       
-        <h3 id="bytebase.v1.StringifyMetadataRequest">StringifyMetadataRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>metadata</td>
-                  <td><a href="#bytebase.v1.DatabaseMetadata">DatabaseMetadata</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>engine</td>
-                  <td><a href="#bytebase.v1.Engine">Engine</a></td>
-                  <td></td>
-                  <td><p>The database engine of the schema string. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>classification_from_config</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>If false, we will build the raw common by classification in database catalog. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>catalog</td>
-                  <td><a href="#bytebase.v1.DatabaseCatalog">DatabaseCatalog</a></td>
-                  <td>optional</td>
-                  <td><p>Database catlog is required if classification_from_config is false. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.StringifyMetadataResponse">StringifyMetadataResponse</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>schema</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
 
       
         <h3 id="bytebase.v1.Advice.Status">Advice.Status</h3>
@@ -25136,13 +25067,6 @@ Pass this value in the page_token field in the subsequent call to
               </tr>
             
               <tr>
-                <td>StringifyMetadata</td>
-                <td><a href="#bytebase.v1.StringifyMetadataRequest">StringifyMetadataRequest</a></td>
-                <td><a href="#bytebase.v1.StringifyMetadataResponse">StringifyMetadataResponse</a></td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
                 <td>DiffMetadata</td>
                 <td><a href="#bytebase.v1.DiffMetadataRequest">DiffMetadataRequest</a></td>
                 <td><a href="#bytebase.v1.DiffMetadataResponse">DiffMetadataResponse</a></td>
@@ -25254,16 +25178,6 @@ Pass this value in the page_token field in the subsequent call to
                 <td>Pretty</td>
                 <td>POST</td>
                 <td>/v1/sql/pretty</td>
-                <td>*</td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>StringifyMetadata</td>
-                <td>POST</td>
-                <td>/v1/schemaDesign:stringifyMetadata</td>
                 <td>*</td>
               </tr>
               

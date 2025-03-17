@@ -64,25 +64,17 @@ var (
 		// https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING
 		pgURL   string
 		dataDir string
-		// When we are running in readonly mode:
-		// - The data file will be opened in readonly mode, no applicable migration or seeding will be applied.
-		// - Requests other than GET will be rejected
-		// - Any operations involving mutation will not start (e.g. Background schema syncer, task scheduler)
-		readonly bool
-		// saas means the Bytebase is running in SaaS mode, several features is only controlled by us instead of users under this mode.
-		saas bool
+		ha      bool
+		saas    bool
 		// output logs in json format
 		enableJSONLogging bool
-		// demoName is the name of the demo and should be one of the subpath name in the ../migrator/demo directory.
-		// empty means no demo.
-		demoName string
-		debug    bool
+		// demo mode.
+		demo  bool
+		debug bool
 		// disableMetric is the flag to disable the metric collector.
 		disableMetric bool
 		// disableSample is the flag to disable the sample instance.
 		disableSample bool
-
-		developmentVersioned bool
 	}
 
 	rootCmd = &cobra.Command{
@@ -114,16 +106,14 @@ func init() {
 	// It allows to pass the postgres connection string as an ENV to the service.
 	rootCmd.PersistentFlags().StringVar(&flags.pgURL, "pg", os.Getenv("PG_URL"), "optional external PostgreSQL instance connection url (must provide dbname); for example postgresql://user:secret@masterhost:5432/dbname?sslrootcert=cert")
 	rootCmd.PersistentFlags().StringVar(&flags.dataDir, "data", ".", "not recommended for production. Directory where Bytebase stores data if --pg is not specified. If relative path is supplied, then the path is relative to the directory where Bytebase is under")
-	rootCmd.PersistentFlags().BoolVar(&flags.readonly, "readonly", false, "whether to run in read-only mode")
-	rootCmd.PersistentFlags().BoolVar(&flags.saas, "saas", false, "whether to run in SaaS mode")
+	rootCmd.PersistentFlags().BoolVar(&flags.ha, "ha", false, "run in HA mode")
+	rootCmd.PersistentFlags().BoolVar(&flags.saas, "saas", false, "run in SaaS mode")
 	rootCmd.PersistentFlags().BoolVar(&flags.enableJSONLogging, "enable-json-logging", false, "enable output logs in bytebase in json format")
 	// Must be one of the subpath name in the ../migrator/demo directory
-	rootCmd.PersistentFlags().StringVar(&flags.demoName, "demo", "", "name of the demo to use. Empty means not running in demo mode.")
+	rootCmd.PersistentFlags().BoolVar(&flags.demo, "demo", false, "run in demo mode.")
 	rootCmd.PersistentFlags().BoolVar(&flags.debug, "debug", false, "whether to enable debug level logging")
 	rootCmd.PersistentFlags().BoolVar(&flags.disableMetric, "disable-metric", false, "disable the metric collector")
 	rootCmd.PersistentFlags().BoolVar(&flags.disableSample, "disable-sample", false, "disable the sample instance")
-
-	rootCmd.PersistentFlags().BoolVar(&flags.developmentVersioned, "development-versioned", false, "(WIP) versioned workflow")
 }
 
 // -----------------------------------Command Line Config END--------------------------------------
@@ -185,7 +175,7 @@ func start() {
 	// A safety measure to prevent accidentally resetting user's actual data with demo data.
 	// For emebeded mode, we control where data is stored and we put demo data in a separate directory
 	// from the non-demo data.
-	if flags.demoName != "" && flags.pgURL != "" {
+	if flags.demo && flags.pgURL != "" {
 		slog.Error("demo mode is disallowed when storing metadata in external PostgreSQL instance")
 		return
 	}

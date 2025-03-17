@@ -553,8 +553,6 @@
     - [RowValue.TimestampTZ](#bytebase-v1-RowValue-TimestampTZ)
     - [SearchQueryHistoriesRequest](#bytebase-v1-SearchQueryHistoriesRequest)
     - [SearchQueryHistoriesResponse](#bytebase-v1-SearchQueryHistoriesResponse)
-    - [StringifyMetadataRequest](#bytebase-v1-StringifyMetadataRequest)
-    - [StringifyMetadataResponse](#bytebase-v1-StringifyMetadataResponse)
   
     - [Advice.Status](#bytebase-v1-Advice-Status)
     - [CheckRequest.ChangeType](#bytebase-v1-CheckRequest-ChangeType)
@@ -2460,6 +2458,7 @@ FunctionMetadata is the metadata for functions.
 | type | [GetSchemaStringRequest.ObjectType](#bytebase-v1-GetSchemaStringRequest-ObjectType) |  |  |
 | schema | [string](#string) |  | It&#39;s empty for DATABASE. |
 | object | [string](#string) |  | It&#39;s empty for DATABASE and SCHEMA. |
+| metadata | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) |  | If use the metadata to generate the schema string, the type is OBJECT_TYPE_UNSPECIFIED. Also the schema and object are empty. |
 
 
 
@@ -4936,7 +4935,7 @@ Actuator concept is similar to the Spring Boot Actuator.
 | git_commit | [string](#string) |  | git_commit is the git commit hash of the build |
 | readonly | [bool](#bool) |  | readonly flag means if the Bytebase is running in readonly mode. |
 | saas | [bool](#bool) |  | saas flag means if the Bytebase is running in SaaS mode, some features are not allowed to edit by users. |
-| demo_name | [string](#string) |  | demo_name specifies the demo name, empty string means no demo. |
+| demo | [bool](#bool) |  | demo flag means if the Bytebase is running in demo mode. |
 | host | [string](#string) |  | host is the Bytebase instance host. |
 | port | [string](#string) |  | port is the Bytebase instance port. |
 | external_url | [string](#string) |  | external_url is the URL where user or webhook callback visits Bytebase. |
@@ -8985,39 +8984,6 @@ for field description.
 
 
 
-
-<a name="bytebase-v1-StringifyMetadataRequest"></a>
-
-### StringifyMetadataRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| metadata | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) |  |  |
-| engine | [Engine](#bytebase-v1-Engine) |  | The database engine of the schema string. |
-| classification_from_config | [bool](#bool) |  | If false, we will build the raw common by classification in database catalog. |
-| catalog | [DatabaseCatalog](#bytebase-v1-DatabaseCatalog) | optional | Database catlog is required if classification_from_config is false. |
-
-
-
-
-
-
-<a name="bytebase-v1-StringifyMetadataResponse"></a>
-
-### StringifyMetadataResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| schema | [string](#string) |  |  |
-
-
-
-
-
  
 
 
@@ -9094,7 +9060,6 @@ for field description.
 | Check | [CheckRequest](#bytebase-v1-CheckRequest) | [CheckResponse](#bytebase-v1-CheckResponse) |  |
 | ParseMyBatisMapper | [ParseMyBatisMapperRequest](#bytebase-v1-ParseMyBatisMapperRequest) | [ParseMyBatisMapperResponse](#bytebase-v1-ParseMyBatisMapperResponse) |  |
 | Pretty | [PrettyRequest](#bytebase-v1-PrettyRequest) | [PrettyResponse](#bytebase-v1-PrettyResponse) |  |
-| StringifyMetadata | [StringifyMetadataRequest](#bytebase-v1-StringifyMetadataRequest) | [StringifyMetadataResponse](#bytebase-v1-StringifyMetadataResponse) |  |
 | DiffMetadata | [DiffMetadataRequest](#bytebase-v1-DiffMetadataRequest) | [DiffMetadataResponse](#bytebase-v1-DiffMetadataResponse) |  |
 
  

@@ -4,10 +4,10 @@ name: Frontend Tests
 on:
   pull_request:
     branches:
-      - main
-      - "release/*.*.*"
+      - 'main'
+      - 'release/*.*.*'
     paths-ignore:
-      - "frontend/**"
+      - 'frontend/**'
 
 jobs:
   static-checks:

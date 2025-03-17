@@ -19,10 +19,8 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
-	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/state"
-	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/store"
@@ -43,13 +41,11 @@ const (
 )
 
 // NewSyncer creates a schema syncer.
-func NewSyncer(stores *store.Store, dbFactory *dbfactory.DBFactory, stateCfg *state.State, profile *config.Profile, licenseService enterprise.LicenseService) *Syncer {
+func NewSyncer(stores *store.Store, dbFactory *dbfactory.DBFactory, stateCfg *state.State) *Syncer {
 	return &Syncer{
-		store:          stores,
-		dbFactory:      dbFactory,
-		stateCfg:       stateCfg,
-		profile:        profile,
-		licenseService: licenseService,
+		store:     stores,
+		dbFactory: dbFactory,
+		stateCfg:  stateCfg,
 	}
 }
 
@@ -60,8 +56,6 @@ type Syncer struct {
 	store           *store.Store
 	dbFactory       *dbfactory.DBFactory
 	stateCfg        *state.State
-	profile         *config.Profile
-	licenseService  enterprise.LicenseService
 	databaseSyncMap sync.Map // map[string]*store.DatabaseMessage
 }
 
@@ -280,10 +274,6 @@ func (s *Syncer) GetInstanceMeta(ctx context.Context, instance *store.InstanceMe
 
 // SyncInstance syncs the schema for all databases in an instance.
 func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessage) (*store.InstanceMessage, []*storepb.DatabaseSchemaMetadata, []*store.DatabaseMessage, error) {
-	if s.profile.Readonly {
-		return nil, nil, nil, nil
-	}
-
 	instanceMeta, err := s.GetInstanceMeta(ctx, instance)
 	if err != nil {
 		return nil, nil, nil, err
@@ -357,10 +347,6 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessa
 
 // SyncDatabaseSchema will sync the schema for a database.
 func (s *Syncer) SyncDatabaseSchemaToHistory(ctx context.Context, database *store.DatabaseMessage) (int64, error) {
-	if s.profile.Readonly {
-		return 0, nil
-	}
-
 	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
 	if err != nil {
 		return 0, errors.Wrapf(err, "failed to get instance %q", database.InstanceID)
@@ -465,10 +451,6 @@ func (s *Syncer) SyncDatabaseSchemaToHistory(ctx context.Context, database *stor
 
 // SyncDatabaseSchema will sync the schema for a database.
 func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.DatabaseMessage) (retErr error) {
-	if s.profile.Readonly {
-		return nil
-	}
-
 	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
 	if err != nil {
 		return errors.Wrapf(err, "failed to get instance %q", database.InstanceID)
@@ -560,60 +542,58 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 	}
 
 	// Check schema drift
-	if s.licenseService.IsFeatureEnabledForInstance(api.FeatureSchemaDrift, instance) == nil {
-		if err := func() error {
-			// Redis and MongoDB are schemaless.
-			if disableSchemaDriftAnomalyCheck(instance.Metadata.GetEngine()) {
-				return nil
-			}
-			limit := 1
-			list, err := s.store.ListChangelogs(ctx, &store.FindChangelogMessage{
-				InstanceID:     &database.InstanceID,
-				DatabaseName:   &database.DatabaseName,
-				TypeList:       []string{string(db.Migrate), string(db.Baseline)},
-				HasSyncHistory: true,
-				Limit:          &limit,
-				ShowFull:       true,
-			})
-			if err != nil {
-				return errors.Wrapf(err, "failed to list changelogs")
-			}
-			if len(list) == 0 {
-				return nil
-			}
-
-			changelog := list[0]
-			if changelog.SyncHistoryUID == nil {
-				return errors.Errorf("expect sync history but get nil")
-			}
-			latestSchema := string(rawDump)
-			if changelog.Schema != latestSchema {
-				if _, err = s.store.UpsertActiveAnomalyV2(ctx, &store.AnomalyMessage{
-					ProjectID:    database.ProjectID,
-					InstanceID:   database.InstanceID,
-					DatabaseName: database.DatabaseName,
-					Type:         api.AnomalyDatabaseSchemaDrift,
-				}); err != nil {
-					return errors.Wrapf(err, "failed to create anomaly")
-				}
-			} else {
-				err := s.store.DeleteAnomalyV2(ctx, &store.DeleteAnomalyMessage{
-					InstanceID:   database.InstanceID,
-					DatabaseName: database.DatabaseName,
-					Type:         api.AnomalyDatabaseSchemaDrift,
-				})
-				if err != nil && common.ErrorCode(err) != common.NotFound {
-					return errors.Wrapf(err, "failed to close anomaly")
-				}
-			}
+	if err := func() error {
+		// Redis and MongoDB are schemaless.
+		if disableSchemaDriftAnomalyCheck(instance.Metadata.GetEngine()) {
 			return nil
-		}(); err != nil {
-			slog.Error("failed to check anomaly",
-				slog.String("instance", database.InstanceID),
-				slog.String("database", database.DatabaseName),
-				slog.String("type", string(api.AnomalyDatabaseSchemaDrift)),
-				log.BBError(err))
 		}
+		limit := 1
+		list, err := s.store.ListChangelogs(ctx, &store.FindChangelogMessage{
+			InstanceID:     &database.InstanceID,
+			DatabaseName:   &database.DatabaseName,
+			TypeList:       []string{string(db.Migrate), string(db.Baseline)},
+			HasSyncHistory: true,
+			Limit:          &limit,
+			ShowFull:       true,
+		})
+		if err != nil {
+			return errors.Wrapf(err, "failed to list changelogs")
+		}
+		if len(list) == 0 {
+			return nil
+		}
+
+		changelog := list[0]
+		if changelog.SyncHistoryUID == nil {
+			return errors.Errorf("expect sync history but get nil")
+		}
+		latestSchema := string(rawDump)
+		if changelog.Schema != latestSchema {
+			if _, err = s.store.UpsertActiveAnomalyV2(ctx, &store.AnomalyMessage{
+				ProjectID:    database.ProjectID,
+				InstanceID:   database.InstanceID,
+				DatabaseName: database.DatabaseName,
+				Type:         api.AnomalyDatabaseSchemaDrift,
+			}); err != nil {
+				return errors.Wrapf(err, "failed to create anomaly")
+			}
+		} else {
+			err := s.store.DeleteAnomalyV2(ctx, &store.DeleteAnomalyMessage{
+				InstanceID:   database.InstanceID,
+				DatabaseName: database.DatabaseName,
+				Type:         api.AnomalyDatabaseSchemaDrift,
+			})
+			if err != nil && common.ErrorCode(err) != common.NotFound {
+				return errors.Wrapf(err, "failed to close anomaly")
+			}
+		}
+		return nil
+	}(); err != nil {
+		slog.Error("failed to check anomaly",
+			slog.String("instance", database.InstanceID),
+			slog.String("database", database.DatabaseName),
+			slog.String("type", string(api.AnomalyDatabaseSchemaDrift)),
+			log.BBError(err))
 	}
 	return nil
 }

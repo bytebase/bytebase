@@ -85,7 +85,7 @@ func (s *Store) GetSystemBotUser(ctx context.Context) *UserMessage {
 
 // GetUserByID gets the user by ID.
 func (s *Store) GetUserByID(ctx context.Context, id int) (*UserMessage, error) {
-	if v, ok := s.userIDCache.Get(id); ok {
+	if v, ok := s.userIDCache.Get(id); ok && s.enableCache {
 		return v, nil
 	}
 
@@ -99,7 +99,7 @@ func (s *Store) GetUserByID(ctx context.Context, id int) (*UserMessage, error) {
 
 // GetUserByEmail gets the user by email.
 func (s *Store) GetUserByEmail(ctx context.Context, email string) (*UserMessage, error) {
-	if v, ok := s.userEmailCache.Get(email); ok {
+	if v, ok := s.userEmailCache.Get(email); ok && s.enableCache {
 		return v, nil
 	}
 

@@ -10,7 +10,6 @@
       code: 233
       title: statement.disallow-cross-db-queries
       content: 'Cross database queries (target databse: ''master2'', current database: ''master'') are prohibited'
-      detail: ""
       startposition:
         line: 1
         column: 0
@@ -24,7 +23,6 @@
       code: 233
       title: statement.disallow-cross-db-queries
       content: 'Cross database queries (target databse: ''master'', current database: ''master2'') are prohibited'
-      detail: ""
       startposition:
         line: 2
         column: 0
