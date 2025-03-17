@@ -103,7 +103,6 @@ import {
   useSQLEditorTabStore,
 } from "@/store";
 import { isValidDatabaseName } from "@/types";
-import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
 import {
   allEqual,
   extractDatabaseResourceName,
@@ -167,7 +166,6 @@ const metadata = computedAsync(
     if (!isValidDatabaseName(db.name)) return null;
     const metadata = await useDBSchemaV1Store().getOrFetchDatabaseMetadata({
       database: db.name,
-      view: DatabaseMetadataView.DATABASE_METADATA_VIEW_FULL,
     });
     return metadata;
   },

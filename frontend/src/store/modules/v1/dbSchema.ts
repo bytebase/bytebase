@@ -7,17 +7,10 @@ import { UNKNOWN_ID, EMPTY_ID, UNKNOWN_INSTANCE_NAME } from "@/types";
 import {
   TableMetadata,
   DatabaseMetadata,
-  DatabaseMetadataView,
 } from "@/types/proto/v1/database_service";
 import { extractDatabaseResourceName } from "@/utils";
 
-const VIEW_FULL = DatabaseMetadataView.DATABASE_METADATA_VIEW_FULL;
-const VIEW_BASIC = DatabaseMetadataView.DATABASE_METADATA_VIEW_BASIC;
-
-type DatabaseMetadataCacheKey = [
-  string /* database metadata resource name */,
-  view: DatabaseMetadataView,
-];
+type DatabaseMetadataCacheKey = [string /* database metadata resource name */];
 type TableMetadataCacheKey = [
   string /* database metadata resource name */,
   string /* schema */,
@@ -33,68 +26,43 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
     TableMetadata | undefined
   >("bb.db-schema.table-metadata-by-name");
 
-  // getCache try use cache (full -> basic). VIEW_FULL is always the source of truth.
-  const getCache = (
-    name: string,
-    view?: DatabaseMetadataView
-  ): [DatabaseMetadata | undefined, DatabaseMetadataView | undefined] => {
+  // getCache try use cache.
+  const getCache = (name: string): DatabaseMetadata | undefined => {
     const metadataResourceName = ensureDatabaseMetadataResourceName(name);
 
-    const full = cacheByName.getEntity([metadataResourceName, VIEW_FULL]);
+    const full = cacheByName.getEntity([metadataResourceName]);
     if (full) {
-      return [full, VIEW_FULL];
+      return full;
     }
 
-    if (view && view !== VIEW_BASIC) {
-      // want FULL but only found BASIC
-      return [undefined, view];
-    }
-
-    const entity = cacheByName.getEntity([metadataResourceName, VIEW_BASIC]);
-    return [entity, VIEW_BASIC];
+    const entity = cacheByName.getEntity([metadataResourceName]);
+    return entity;
   };
   const getRequestCache = (
-    name: string,
-    view: DatabaseMetadataView
-  ): [
-    Promise<DatabaseMetadata> | undefined,
-    DatabaseMetadataView | undefined,
-  ] => {
+    name: string
+  ): Promise<DatabaseMetadata> | undefined => {
     const metadataResourceName = ensureDatabaseMetadataResourceName(name);
-    const entity = cacheByName.getRequest([metadataResourceName, view]);
-    return [entity, view];
+    const entity = cacheByName.getRequest([metadataResourceName]);
+    return entity;
   };
-  const setCache = (metadata: DatabaseMetadata, view: DatabaseMetadataView) => {
-    if (view === VIEW_FULL) {
-      cacheByName.invalidateEntity([metadata.name, VIEW_BASIC]);
-    }
-    cacheByName.setEntity([metadata.name, view], metadata);
+  const setCache = (metadata: DatabaseMetadata) => {
+    cacheByName.setEntity([metadata.name], metadata);
     return metadata;
   };
   const setRequestCache = (
     name: string,
-    view: DatabaseMetadataView,
     promise: Promise<DatabaseMetadata>
   ) => {
     const metadataResourceName = ensureDatabaseMetadataResourceName(name);
-    if (view === VIEW_FULL) {
-      cacheByName.invalidateRequest([metadataResourceName, VIEW_BASIC]);
-    }
-    cacheByName.setRequest([metadataResourceName, view], promise);
+    cacheByName.setRequest([metadataResourceName], promise);
   };
   const mergeCache = (
     metadata: DatabaseMetadata,
-    view: DatabaseMetadataView = VIEW_BASIC,
     dropIfNotExist: boolean = false
   ) => {
-    const [existed, existedView] = getCache(metadata.name, view);
-    if (!existed || view === VIEW_FULL) {
-      return setCache(metadata, view);
-    }
-    if (!existedView) {
-      throw new Error(
-        `should never reach this line. metadata=${metadata}, view=${view}, existed=${existed}, existedView=${existedView}`
-      );
+    const existed = getCache(metadata.name);
+    if (!existed) {
+      return setCache(metadata);
     }
 
     for (const schema of metadata.schemas) {
@@ -125,7 +93,7 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
 
     dropCacheIfNotExist(dropIfNotExist, metadata.schemas, existed.schemas);
 
-    return setCache(existed, existedView);
+    return setCache(existed);
   };
 
   // drop old data if it not exists in the new data list.
@@ -148,10 +116,8 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
     }
   };
 
-  const getDatabaseMetadataWithoutDefault = (
-    database: string,
-    view?: DatabaseMetadataView
-  ) => getCache(database, view)[0];
+  const getDatabaseMetadataWithoutDefault = (database: string) =>
+    getCache(database);
 
   /**
    *
@@ -159,12 +125,9 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
    * @param view if not specified, try find full -> basic
    * @returns
    */
-  const getDatabaseMetadata = (
-    database: string,
-    view?: DatabaseMetadataView
-  ) => {
+  const getDatabaseMetadata = (database: string) => {
     return (
-      getDatabaseMetadataWithoutDefault(database, view) ??
+      getDatabaseMetadataWithoutDefault(database) ??
       DatabaseMetadata.fromPartial({
         name: ensureDatabaseMetadataResourceName(database),
       })
@@ -176,16 +139,10 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
    */
   const getOrFetchDatabaseMetadata = async (params: {
     database: string;
-    view?: DatabaseMetadataView;
     skipCache?: boolean;
     silent?: boolean;
   }) => {
-    const {
-      database,
-      view = VIEW_BASIC,
-      skipCache = false,
-      silent = false,
-    } = params;
+    const { database, skipCache = false, silent = false } = params;
     const { databaseName } = extractDatabaseResourceName(database);
     if (
       databaseName === String(UNKNOWN_ID) ||
@@ -201,13 +158,13 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
     const metadataResourceName = ensureDatabaseMetadataResourceName(database);
 
     if (!skipCache) {
-      const [existed] = getCache(database, view);
+      const existed = getCache(database);
       if (existed) {
         // The metadata entity is stored in local dictionary.
         return existed;
       }
 
-      const [cachedRequest] = getRequestCache(metadataResourceName, view);
+      const cachedRequest = getRequestCache(metadataResourceName);
       if (cachedRequest) {
         // The request was sent but still not returned.
         // We won't create a duplicated request.
@@ -218,29 +175,27 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
     // Send a request and cache it.
     console.debug("[getOrFetchDatabaseMetadata]", {
       name: metadataResourceName,
-      view,
     });
     const promise = databaseServiceClient.getDatabaseMetadata(
       {
         name: metadataResourceName,
-        view,
       },
       {
         silent,
       }
     );
-    setRequestCache(metadataResourceName, view, promise);
+    setRequestCache(metadataResourceName, promise);
     promise.then((res) => {
-      mergeCache(res, view, true);
+      mergeCache(res, true);
     });
 
     return promise;
   };
   const getSchemaList = (database: string) => {
-    return getCache(database)[0]?.schemas ?? [];
+    return getCache(database)?.schemas ?? [];
   };
   const getTableList = (database: string, schema?: string) => {
-    const [databaseMetadata] = getCache(database);
+    const databaseMetadata = getCache(database);
     if (!databaseMetadata) {
       return [];
     }
@@ -253,13 +208,8 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
 
     return databaseMetadata.schemas.flatMap((s) => s.tables);
   };
-  const getTableByName = (
-    database: string,
-    table: string,
-    schema?: string,
-    view?: DatabaseMetadataView
-  ) => {
-    const [databaseMetadata] = getCache(database, view);
+  const getTableByName = (database: string, table: string, schema?: string) => {
+    const databaseMetadata = getCache(database);
     if (!databaseMetadata) {
       return undefined;
     }
@@ -293,7 +243,7 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
     const metadataResourceName = ensureDatabaseMetadataResourceName(database);
 
     if (!skipCache) {
-      const existedTable = getTableByName(database, table, schema, VIEW_FULL);
+      const existedTable = getTableByName(database, table, schema);
       if (existedTable && existedTable.columns.length > 0) {
         return existedTable;
       }
@@ -311,21 +261,18 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
     console.debug("[getOrFetchDatabaseMetadata]", {
       name: metadataResourceName,
       filter: `schema == "${schema}" && table == "${table}"`,
-      view: VIEW_FULL,
     });
     const promise = databaseServiceClient
       .getDatabaseMetadata(
         {
           name: metadataResourceName,
           filter: `schema == "${schema}" && table == "${table}"`,
-          // TODO(ed): remove the legacy view
-          view: VIEW_FULL,
         },
         {
           silent,
         }
       )
-      .then((res) => mergeCache(res, VIEW_BASIC))
+      .then((res) => mergeCache(res))
       .then((res) => {
         return res.schemas
           .find((s) => s.name === schema)
@@ -338,7 +285,7 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
     return promise;
   };
   const getExternalTableList = (database: string, schema?: string) => {
-    const [databaseMetadata] = getCache(database);
+    const databaseMetadata = getCache(database);
     if (!databaseMetadata) {
       return [];
     }
@@ -356,13 +303,13 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
     database: string,
     schema?: string
   ) => {
-    if (!getCache(database)[0]) {
-      await getOrFetchDatabaseMetadata({ database, view: VIEW_BASIC });
+    if (!getCache(database)) {
+      await getOrFetchDatabaseMetadata({ database });
     }
     return getExternalTableList(database, schema);
   };
   const getViewList = (database: string, schema?: string) => {
-    const [databaseMetadata] = getCache(database);
+    const databaseMetadata = getCache(database);
     if (!databaseMetadata) {
       return [];
     }
@@ -376,7 +323,7 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
     return databaseMetadata.schemas.flatMap((s) => s.views);
   };
   const getExtensionList = (database: string) => {
-    const [databaseMetadata] = getCache(database);
+    const databaseMetadata = getCache(database);
     if (!databaseMetadata) {
       return [];
     }
@@ -384,7 +331,7 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
     return databaseMetadata.extensions;
   };
   const getFunctionList = (database: string, schema?: string) => {
-    const [databaseMetadata] = getCache(database);
+    const databaseMetadata = getCache(database);
     if (!databaseMetadata) {
       return [];
     }
@@ -398,8 +345,8 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
 
   const removeCache = (name: string) => {
     const metadataResourceName = ensureDatabaseMetadataResourceName(name);
-    cacheByName.invalidateEntity([metadataResourceName, VIEW_FULL]);
-    cacheByName.invalidateEntity([metadataResourceName, VIEW_BASIC]);
+    cacheByName.invalidateEntity([metadataResourceName]);
+    cacheByName.invalidateEntity([metadataResourceName]);
     Array.from(tableRequestCacheByName.requestCacheMap.values()).forEach(
       (cache) => {
         if (cache.keys[0] === metadataResourceName) {
@@ -435,8 +382,7 @@ const ensureDatabaseMetadataResourceName = (name: string) => {
 
 export const useMetadata = (
   database: MaybeRef<string>,
-  skipCache: MaybeRef<boolean>,
-  view: MaybeRef<DatabaseMetadataView>
+  skipCache: MaybeRef<boolean>
 ) => {
   const store = useDBSchemaV1Store();
   watchEffect(() => {
@@ -450,10 +396,7 @@ export const useMetadata = (
     store.getOrFetchDatabaseMetadata({
       database: unref(database),
       skipCache: unref(skipCache),
-      view: unref(view),
     });
   });
-  return computed(() =>
-    store.getDatabaseMetadata(unref(database), unref(view))
-  );
+  return computed(() => store.getDatabaseMetadata(unref(database)));
 };
