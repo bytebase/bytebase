@@ -150,8 +150,12 @@ func extractPathFromScalarExpression(ctx parser.IScalar_expressionContext, origi
 	case ctx.LS_BRACKET_SYMBOL() != nil:
 		path := extractPathFromScalarExpression(ctx.Scalar_expression(), originalContainerName, fromAlias)
 		switch {
-		case ctx.Property_name() != nil:
-			path = append(path, base.NewItemSelector(ctx.Property_name().IDENTIFIER().GetText()))
+		case ctx.DOUBLE_QUOTE_STRING_LITERAL() != nil:
+			text := ctx.DOUBLE_QUOTE_STRING_LITERAL().GetText()
+			if len(text) > 1 {
+				text = text[1 : len(text)-1]
+			}
+			path = append(path, base.NewItemSelector(text))
 		case ctx.Array_index() != nil:
 			if len(path) == 0 {
 				break

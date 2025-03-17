@@ -107,10 +107,11 @@ func extractPredicateFieldsFromScalarExpressionInWhere(ctx parser.IScalar_expres
 		return paths
 	case ctx.LS_BRACKET_SYMBOL() != nil:
 		paths := extractPredicateFieldsFromScalarExpressionInWhere(ctx.Scalar_expression_in_where(0), originalContainerName, fromAlias)
-		for i, path := range paths {
+		for i := range paths {
 			switch {
 			case ctx.Property_name() != nil:
-				paths[i] = append(path, base.NewItemSelector(ctx.Property_name().IDENTIFIER().GetText()))
+				paths[i] = append(paths[i], base.NewItemSelector(ctx.Property_name().IDENTIFIER().GetText()))
+				paths[i] = append(paths[i], base.NewItemSelector(ctx.Array_index().GetText()))
 			case ctx.Array_index() != nil:
 				if len(paths[i]) == 0 {
 					break
