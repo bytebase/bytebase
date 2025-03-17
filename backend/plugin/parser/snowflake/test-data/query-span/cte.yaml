@@ -52,6 +52,8 @@
               table: T1
               column: B
           isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: C2
           sourcecolumns:
             - server: ""
@@ -65,6 +67,8 @@
               table: T1
               column: B
           isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: C3
           sourcecolumns:
             - server: ""
@@ -83,9 +87,13 @@
               table: T1
               column: C
           isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: "N"
           sourcecolumns: []
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
     sourcecolumns:
         - server: ""
           database: SNOWFLAKE
