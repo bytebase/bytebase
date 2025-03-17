@@ -33,7 +33,6 @@ import {
   batchGetOrFetchDatabases,
 } from "@/store";
 import type { ComposedDatabase, DatabaseResource } from "@/types";
-import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
 import { getDefaultPagination } from "@/utils";
 import Label from "./Label.vue";
 import type { DatabaseTreeOption } from "./common";
@@ -147,7 +146,6 @@ onMounted(async () => {
     [...databaseNames].map(async (databaseName) => {
       await dbSchemaStore.getOrFetchDatabaseMetadata({
         database: databaseName,
-        view: DatabaseMetadataView.DATABASE_METADATA_VIEW_BASIC,
       });
     })
   );
@@ -248,7 +246,6 @@ const onTreeNodeLoad = async (node: TreeOption) => {
   if (treeNode.level === "databases") {
     await dbSchemaStore.getOrFetchDatabaseMetadata({
       database: treeNode.value,
-      view: DatabaseMetadataView.DATABASE_METADATA_VIEW_BASIC,
     });
     const database = await databaseStore.getOrFetchDatabaseByName(
       treeNode.value

@@ -9,10 +9,7 @@ import {
   isValidDatabaseName,
   unknownDatabase,
 } from "@/types";
-import {
-  DatabaseMetadata,
-  DatabaseMetadataView,
-} from "@/types/proto/v1/database_service";
+import { DatabaseMetadata } from "@/types/proto/v1/database_service";
 import type { Table } from "../types";
 import { type ConnectionScope, type MonacoModule, type Schema } from "../types";
 
@@ -58,7 +55,6 @@ export const useLegacyAutoComplete = async (
 
       return useDBSchemaV1Store().getOrFetchDatabaseMetadata({
         database: database.value.name,
-        view: DatabaseMetadataView.DATABASE_METADATA_VIEW_FULL,
         skipCache: false,
       });
     },

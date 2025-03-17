@@ -7,7 +7,6 @@ import { computed, onMounted } from "vue";
 import { provideDatabaseDetailContext } from "@/components/Database/context";
 import { useDBSchemaV1Store } from "@/store";
 import type { ComposedDatabase } from "@/types";
-import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
 import {
   extractDatabaseResourceName,
   extractProjectResourceName,
@@ -35,7 +34,6 @@ provideDatabaseDetailContext(
 onMounted(async () => {
   await dbSchemaStore.getOrFetchDatabaseMetadata({
     database: props.database.name,
-    view: DatabaseMetadataView.DATABASE_METADATA_VIEW_BASIC,
   });
 });
 </script>

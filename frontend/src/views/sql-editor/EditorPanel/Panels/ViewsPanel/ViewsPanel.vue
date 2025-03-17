@@ -1,8 +1,5 @@
 <template>
-  <div
-    v-if="metadata?.schema"
-    class="h-full overflow-hidden flex flex-col"
-  >
+  <div v-if="metadata?.schema" class="h-full overflow-hidden flex flex-col">
     <div
       v-show="!metadata.view"
       class="w-full h-[44px] py-2 px-2 border-b flex flex-row gap-x-2 justify-between items-center"
@@ -49,7 +46,6 @@ import {
 } from "@/store";
 import {
   DatabaseMetadata,
-  DatabaseMetadataView,
   ViewMetadata,
   SchemaMetadata,
 } from "@/types/proto/v1/database_service";
@@ -62,10 +58,7 @@ import ViewsTable from "./ViewsTable.vue";
 const { database } = useConnectionOfCurrentSQLEditorTab();
 const { viewState, updateViewState } = useEditorPanelContext();
 const databaseMetadata = computed(() => {
-  return useDBSchemaV1Store().getDatabaseMetadata(
-    database.value.name,
-    DatabaseMetadataView.DATABASE_METADATA_VIEW_FULL
-  );
+  return useDBSchemaV1Store().getDatabaseMetadata(database.value.name);
 });
 const state = reactive({
   keyword: "",

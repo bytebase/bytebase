@@ -152,7 +152,6 @@ import { dialectOfEngineV1, isValidProjectName, unknownProject } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import type { DatabaseCatalog } from "@/types/proto/v1/database_catalog_service";
 import type { DatabaseMetadata } from "@/types/proto/v1/database_service";
-import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
 import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
 import {
   TinyTimer,
@@ -284,7 +283,6 @@ const prepareDatabaseMetadata = async () => {
     const database = databaseList.value[i];
     const metadata = await dbSchemaStore.getOrFetchDatabaseMetadata({
       database: database.name,
-      view: DatabaseMetadataView.DATABASE_METADATA_VIEW_FULL,
       skipCache: true,
     });
     const catalog = await dbCatalogStore.getOrFetchDatabaseCatalog({
