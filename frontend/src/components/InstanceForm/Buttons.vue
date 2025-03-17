@@ -49,17 +49,12 @@
 </template>
 
 <script setup lang="ts">
-import { cloneDeep, isEqual } from "lodash-es";
-import { NButton } from "naive-ui";
-import { computed, ref } from "vue";
-import { useI18n } from "vue-i18n";
-import { useRouter } from "vue-router";
 import {
+  pushNotification,
   useDatabaseV1Store,
+  useGracefulRequest,
   useInstanceV1Store,
   useSubscriptionV1Store,
-  useGracefulRequest,
-  pushNotification,
 } from "@/store";
 import { Engine } from "@/types/proto/v1/common";
 import {
@@ -67,7 +62,12 @@ import {
   DataSourceType,
   Instance,
 } from "@/types/proto/v1/instance_service";
-import { isValidSpannerHost, defer } from "@/utils";
+import { defer, isValidSpannerHost } from "@/utils";
+import { cloneDeep, isEqual } from "lodash-es";
+import { NButton } from "naive-ui";
+import { computed, ref } from "vue";
+import { useI18n } from "vue-i18n";
+import { useRouter } from "vue-router";
 import ScanIntervalInput from "./ScanIntervalInput.vue";
 import {
   calcDataSourceUpdateMask,
