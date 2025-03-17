@@ -138,6 +138,7 @@ func TestWalkAndMaskJSON(t *testing.T) {
 	type testCase struct {
 		description          string
 		input                string
+		fieldPathsElements   map[string][]base.SelectorNode
 		objectSchema         *storepb.ObjectSchema
 		semanticTypeToMasker map[string]masker.Masker
 		want                 string
@@ -261,20 +262,92 @@ func TestWalkAndMaskJSON(t *testing.T) {
 			},
 			want: `{"name": "John", "information": ["******", "******"]}`,
 		},
+		{
+			description: "mask following the field paths",
+			input: `{
+    "firstName": "John",
+    "address": {
+        "street": "123 Main St"
+    },
+    "creditCard": {
+        "number": "4111-1111-1111-1111"
+    }
+}`,
+			fieldPathsElements: map[string][]base.SelectorNode{
+				"firstName": {base.NewItemSelector("firstName")},
+				"street":    {base.NewItemSelector("address"), base.NewItemSelector("street")},
+				"number":    {base.NewItemSelector("creditCard"), base.NewItemSelector("number")},
+			},
+			objectSchema: &storepb.ObjectSchema{
+				Type: storepb.ObjectSchema_OBJECT,
+				Kind: &storepb.ObjectSchema_StructKind_{
+					StructKind: &storepb.ObjectSchema_StructKind{
+						Properties: map[string]*storepb.ObjectSchema{
+							"address": {
+								Type:         storepb.ObjectSchema_OBJECT,
+								SemanticType: "PII",
+								Kind: &storepb.ObjectSchema_StructKind_{
+									StructKind: &storepb.ObjectSchema_StructKind{
+										Properties: map[string]*storepb.ObjectSchema{},
+									},
+								},
+							},
+							"creditCard": {
+								Type: storepb.ObjectSchema_OBJECT,
+								Kind: &storepb.ObjectSchema_StructKind_{
+									StructKind: &storepb.ObjectSchema_StructKind{
+										Properties: map[string]*storepb.ObjectSchema{
+											"number": {
+												Type:         storepb.ObjectSchema_STRING,
+												SemanticType: "PII",
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			semanticTypeToMasker: map[string]masker.Masker{
+				"PII": masker.NewFullMasker("******"),
+			},
+			want: `{
+    "firstName": "John",
+    "address": {
+        "street": "******"
+    },
+    "creditCard": {
+        "number": "******"
+    }
+}`,
+		},
 	}
 
 	for _, tc := range testCases {
-		var input any
+		var input map[string]any
 		err := json.Unmarshal([]byte(tc.input), &input)
 		require.NoError(t, err, tc.description)
 
-		got, err := walkAndMaskJSON(input, tc.objectSchema, tc.semanticTypeToMasker)
+		fieldPaths := make(map[string]*base.PathAST)
+		if len(tc.fieldPathsElements) > 0 {
+			for field, e := range tc.fieldPathsElements {
+				ast := base.NewPathAST(base.NewItemSelector("container"))
+				next := ast.Root
+				for i := 0; i < len(e); i++ {
+					next.SetNext(e[i])
+					next = next.GetNext()
+				}
+				fieldPaths[field] = ast
+			}
+		}
+		got, err := walkAndMaskJSON(input, fieldPaths, tc.objectSchema, tc.semanticTypeToMasker)
 		require.NoError(t, err, tc.description)
 
 		output, err := json.Marshal(got)
 		require.NoError(t, err, tc.description)
 
 		require.NoError(t, err, tc.description)
-		require.JSONEq(t, tc.want, string(output))
+		require.JSONEqf(t, tc.want, string(output), tc.description)
 	}
 }
