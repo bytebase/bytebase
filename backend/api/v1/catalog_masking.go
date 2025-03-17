@@ -79,15 +79,102 @@ func getFirstSemanticTypeInPath(ast *base.PathAST, objectSchema *storepb.ObjectS
 	return ""
 }
 
-func maskCosmosDB(span *base.QuerySpan, data any, objectSchema *storepb.ObjectSchema, semanticTypeToMasker map[string]masker.Masker) (any, error) {
-	if len(span.Results) == 1 && span.Results[0].SelectAsterisk {
-		// SELECT * FROM c
-		return walkAndMaskJSON(data, objectSchema, semanticTypeToMasker)
+func maskCosmosDB(span *base.QuerySpan, data map[string]any, objectSchema *storepb.ObjectSchema, semanticTypeToMasker map[string]masker.Masker) (map[string]any, error) {
+	if len(span.Results) != 1 {
+		return nil, errors.Errorf("expected 1 result, but got %d", len(span.Results))
 	}
-	return nil, errors.New("unsupported statement for CosmosDB masking")
+	return walkAndMaskJSON(data, span.Results[0].SourceFieldPaths, objectSchema, semanticTypeToMasker)
 }
 
-func walkAndMaskJSON(data any, objectSchema *storepb.ObjectSchema, semanticTypeToMasker map[string]masker.Masker) (any, error) {
+func walkAndMaskJSON(data map[string]any, fieldPaths map[string]*base.PathAST, objectSchema *storepb.ObjectSchema, semanticTypeToMasker map[string]masker.Masker) (map[string]any, error) {
+	result := make(map[string]any)
+	for key, value := range data {
+		o := objectSchema
+		var ast *base.PathAST
+		if fieldPaths != nil {
+			// Relocate the object schema cursor to the path position.
+			// Skip the first node because it always represents the container.
+			if path, ok := fieldPaths[key]; ok {
+				if path != nil && path.Root != nil {
+					astWoutContainer := base.NewPathAST(path.Root.GetNext())
+					ast = astWoutContainer
+				}
+			}
+		}
+		if ast == nil || ast.Root == nil {
+			ast = base.NewPathAST(base.NewItemSelector(key))
+		}
+
+		var parentSemanticType string
+		o, parentSemanticType = getObjectSchemaByPath(o, ast)
+		if parentSemanticType != "" {
+			if m, ok := semanticTypeToMasker[parentSemanticType]; ok {
+				maskedData, err := applyMaskerToData(value, m)
+				if err != nil {
+					return nil, err
+				}
+				result[key] = maskedData
+				continue
+			}
+		}
+
+		fieldValue, err := walkAndMaskJSONRecursive(value, o, semanticTypeToMasker)
+		if err != nil {
+			return nil, err
+		}
+		result[key] = fieldValue
+	}
+	return result, nil
+}
+
+func getObjectSchemaByPath(objectSchema *storepb.ObjectSchema, path *base.PathAST) (*storepb.ObjectSchema, string) {
+	outer := objectSchema
+	outerSemanticType := outer.SemanticType
+	if outerSemanticType != "" {
+		return outer, outer.SemanticType
+	}
+	for node := path.Root; node != nil; node = node.GetNext() {
+		identifier := node.GetIdentifier()
+		switch outer.Type {
+		case storepb.ObjectSchema_OBJECT:
+			v := outer.GetStructKind().GetProperties()
+			if v == nil {
+				return nil, outerSemanticType
+			}
+			inner, ok := v[identifier]
+			if !ok {
+				return nil, outerSemanticType
+			}
+			outer = inner
+			outerSemanticType = outer.SemanticType
+		case storepb.ObjectSchema_ARRAY:
+			v := outer.GetArrayKind().GetKind()
+			if v == nil {
+				return nil, outerSemanticType
+			}
+			if v.Type != storepb.ObjectSchema_OBJECT {
+				return nil, outerSemanticType
+			}
+			p := v.GetStructKind().GetProperties()
+			if p == nil {
+				return nil, outerSemanticType
+			}
+			inner, ok := p[identifier]
+			if !ok {
+				return nil, outerSemanticType
+			}
+			outer = inner
+			outerSemanticType = outer.SemanticType
+		}
+	}
+
+	return outer, outerSemanticType
+}
+
+func walkAndMaskJSONRecursive(data any, objectSchema *storepb.ObjectSchema, semanticTypeToMasker map[string]masker.Masker) (any, error) {
+	if objectSchema == nil {
+		return data, nil
+	}
 	switch data := data.(type) {
 	case map[string]any:
 		if objectSchema.SemanticType != "" {
@@ -110,7 +197,7 @@ func walkAndMaskJSON(data any, objectSchema *storepb.ObjectSchema, semanticTypeT
 				if childObjectSchema, ok := structKind.Properties[key]; ok {
 					// Recursively walk the property if child object schema found.
 					var err error
-					data[key], err = walkAndMaskJSON(value, childObjectSchema, semanticTypeToMasker)
+					data[key], err = walkAndMaskJSONRecursive(value, childObjectSchema, semanticTypeToMasker)
 					if err != nil {
 						return nil, err
 					}
@@ -140,7 +227,7 @@ func walkAndMaskJSON(data any, objectSchema *storepb.ObjectSchema, semanticTypeT
 			}
 			// Otherwise, recursively walk the array.
 			for i, value := range data {
-				maskedValue, err := walkAndMaskJSON(value, childObjectSchema, semanticTypeToMasker)
+				maskedValue, err := walkAndMaskJSONRecursive(value, childObjectSchema, semanticTypeToMasker)
 				if err != nil {
 					return nil, err
 				}
