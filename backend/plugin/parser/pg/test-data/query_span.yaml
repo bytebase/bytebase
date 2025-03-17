@@ -16,9 +16,13 @@
         - name: a
           sourcecolumns: []
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: b
           sourcecolumns: []
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
     sourcecolumns: []
     predicatecolumns: []
 - description: unnest as table source with alias
@@ -39,9 +43,13 @@
         - name: t
           sourcecolumns: []
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: t
           sourcecolumns: []
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
     sourcecolumns: []
     predicatecolumns: []
 - description: unnest as table source with alias
@@ -62,6 +70,8 @@
         - name: t
           sourcecolumns: []
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
     sourcecolumns: []
     predicatecolumns: []
 - description: Function with if-else
@@ -128,6 +138,8 @@
               table: t2
               column: c
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: xx
           sourcecolumns:
             - server: ""
@@ -141,6 +153,8 @@
               table: t2
               column: d
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: xxx
           sourcecolumns:
             - server: ""
@@ -154,6 +168,8 @@
               table: t2
               column: e
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
     sourcecolumns:
         - server: ""
           database: db
@@ -224,6 +240,8 @@
               table: t2
               column: c
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
     sourcecolumns:
         - server: ""
           database: db
@@ -298,6 +316,8 @@
               table: t2
               column: d
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
     sourcecolumns:
         - server: ""
           database: db
@@ -726,6 +746,8 @@
               table: issue
               column: created_ts
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: issue_count
           sourcecolumns:
             - server: ""
@@ -734,6 +756,8 @@
               table: issue
               column: id
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: approver_emails
           sourcecolumns:
             - server: ""
@@ -747,6 +771,8 @@
               table: principal
               column: email
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: releaser_emails
           sourcecolumns:
             - server: ""
@@ -760,6 +786,8 @@
               table: task_run
               column: creator_id
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
     sourcecolumns:
         - server: ""
           database: db
@@ -829,6 +857,8 @@
               table: t
               column: b
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
     sourcecolumns:
         - server: ""
           database: db
@@ -869,6 +899,8 @@
               table: t
               column: a
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
     sourcecolumns:
         - server: ""
           database: db
@@ -909,6 +941,8 @@
               table: t
               column: a
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
     sourcecolumns:
         - server: ""
           database: db
@@ -949,6 +983,8 @@
               table: t
               column: a
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
     sourcecolumns:
         - server: ""
           database: db
@@ -989,6 +1025,8 @@
               table: t
               column: a
           isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: key
           sourcecolumns:
             - server: ""
@@ -997,6 +1035,8 @@
               table: t
               column: a
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: value
           sourcecolumns:
             - server: ""
@@ -1005,6 +1045,8 @@
               table: t
               column: a
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
     sourcecolumns:
         - server: ""
           database: db
@@ -1045,6 +1087,8 @@
               table: t
               column: a
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
     sourcecolumns:
         - server: ""
           database: db
@@ -1085,6 +1129,8 @@
               table: t
               column: a
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
     sourcecolumns:
         - server: ""
           database: db
@@ -1120,9 +1166,13 @@
         - name: unnest
           sourcecolumns: []
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: unnest
           sourcecolumns: []
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
     sourcecolumns: []
     predicatecolumns: []
 - description: Test For unnest function
@@ -1153,6 +1203,8 @@
         - name: unnest
           sourcecolumns: []
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
     sourcecolumns: []
     predicatecolumns: []
 - description: Test For System Function As Table Source
@@ -1183,6 +1235,8 @@
         - name: generate_series
           sourcecolumns: []
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
     sourcecolumns: []
     predicatecolumns: []
 - description: Test For System Function As Table Source
@@ -1213,6 +1267,8 @@
         - name: generate_subscripts
           sourcecolumns: []
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
     sourcecolumns: []
     predicatecolumns: []
 - description: Test For alias.* with join
@@ -1248,6 +1304,8 @@
               table: t
               column: a
           isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: a
           sourcecolumns:
             - server: ""
@@ -1256,6 +1314,8 @@
               table: t
               column: a
           isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
     sourcecolumns:
         - server: ""
           database: db
@@ -1315,6 +1375,8 @@
               table: t2
               column: a
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
     sourcecolumns:
         - server: ""
           database: db
@@ -1366,6 +1428,8 @@
               table: t
               column: a
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
     sourcecolumns:
         - server: ""
           database: db
@@ -1416,6 +1480,8 @@
               table: t
               column: a
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
     sourcecolumns:
         - server: ""
           database: db
@@ -1462,6 +1528,8 @@
               table: t
               column: a
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
     sourcecolumns:
         - server: ""
           database: db
@@ -1524,6 +1592,8 @@
         - name: ?column?
           sourcecolumns: []
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
     sourcecolumns: []
     predicatecolumns: []
 - description: Test asterisk and column
@@ -1568,6 +1638,8 @@
               table: t
               column: a
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: a
           sourcecolumns:
             - server: ""
@@ -1576,6 +1648,8 @@
               table: t
               column: a
           isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: b
           sourcecolumns:
             - server: ""
@@ -1584,6 +1658,8 @@
               table: t
               column: b
           isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: c
           sourcecolumns:
             - server: ""
@@ -1592,6 +1668,8 @@
               table: t
               column: c
           isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: d
           sourcecolumns:
             - server: ""
@@ -1600,6 +1678,8 @@
               table: t
               column: d
           isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
     sourcecolumns:
         - server: ""
           database: db
@@ -1649,6 +1729,8 @@
               table: t
               column: a
           isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: b
           sourcecolumns:
             - server: ""
@@ -1657,6 +1739,8 @@
               table: t
               column: b
           isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: c
           sourcecolumns:
             - server: ""
@@ -1665,6 +1749,8 @@
               table: t
               column: c
           isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: d
           sourcecolumns:
             - server: ""
@@ -1673,6 +1759,8 @@
               table: t
               column: d
           isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
     sourcecolumns:
         - server: ""
           database: db
@@ -1722,6 +1810,8 @@
               table: t
               column: a
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: b
           sourcecolumns:
             - server: ""
@@ -1730,6 +1820,8 @@
               table: t
               column: b
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: c
           sourcecolumns:
             - server: ""
@@ -1738,6 +1830,8 @@
               table: t
               column: c
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: d
           sourcecolumns:
             - server: ""
@@ -1746,6 +1840,8 @@
               table: t
               column: d
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
     sourcecolumns:
         - server: ""
           database: db
@@ -1790,9 +1886,13 @@
         - name: col_1
           sourcecolumns: []
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: col_2
           sourcecolumns: []
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: avg_a_b_c
           sourcecolumns:
             - server: ""
@@ -1811,6 +1911,8 @@
               table: t
               column: c
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
     sourcecolumns:
         - server: ""
           database: db
@@ -1855,6 +1957,8 @@
         - name: ?column?
           sourcecolumns: []
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
     sourcecolumns:
         - server: ""
           database: db
@@ -1915,9 +2019,13 @@
               table: galleries
               column: city
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: total_paintings
           sourcecolumns: []
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
     sourcecolumns:
         - server: ""
           database: db
@@ -1972,6 +2080,8 @@
               table: t
               column: a
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: c1
           sourcecolumns:
             - server: ""
@@ -1985,6 +2095,8 @@
               table: t
               column: b
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: c2
           sourcecolumns:
             - server: ""
@@ -1998,6 +2110,8 @@
               table: t
               column: b
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: ?column?
           sourcecolumns:
             - server: ""
@@ -2011,6 +2125,8 @@
               table: t
               column: b
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: ?column?
           sourcecolumns:
             - server: ""
@@ -2034,6 +2150,8 @@
               table: t
               column: d
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
     sourcecolumns:
         - server: ""
           database: db
@@ -2088,6 +2206,8 @@
               table: t1
               column: a
           isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: b
           sourcecolumns:
             - server: ""
@@ -2096,6 +2216,8 @@
               table: t1
               column: b
           isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: c
           sourcecolumns:
             - server: ""
@@ -2104,9 +2226,13 @@
               table: t2
               column: c
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: ?column?
           sourcecolumns: []
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
     sourcecolumns:
         - server: ""
           database: db
@@ -2161,6 +2287,8 @@
               table: t
               column: a
           isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: b
           sourcecolumns:
             - server: ""
@@ -2169,6 +2297,8 @@
               table: t
               column: b
           isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: c
           sourcecolumns:
             - server: ""
@@ -2177,6 +2307,8 @@
               table: t
               column: c
           isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: d
           sourcecolumns:
             - server: ""
@@ -2185,6 +2317,8 @@
               table: t
               column: d
           isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: b
           sourcecolumns:
             - server: ""
@@ -2193,6 +2327,8 @@
               table: t
               column: b
           isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: c
           sourcecolumns:
             - server: ""
@@ -2201,6 +2337,8 @@
               table: t
               column: c
           isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: d
           sourcecolumns:
             - server: ""
@@ -2209,6 +2347,8 @@
               table: t
               column: d
           isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
     sourcecolumns:
         - server: ""
           database: db
@@ -2258,6 +2398,8 @@
               table: t
               column: a
           isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: b
           sourcecolumns:
             - server: ""
@@ -2266,6 +2408,8 @@
               table: t
               column: b
           isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: c
           sourcecolumns:
             - server: ""
@@ -2274,6 +2418,8 @@
               table: t
               column: c
           isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: d
           sourcecolumns:
             - server: ""
@@ -2282,6 +2428,8 @@
               table: t
               column: d
           isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
     sourcecolumns:
         - server: ""
           database: db
@@ -2331,6 +2479,8 @@
               table: t
               column: a
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
     sourcecolumns:
         - server: ""
           database: db
@@ -2380,6 +2530,8 @@
               table: t
               column: a
           isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: c
           sourcecolumns:
             - server: ""
@@ -2388,6 +2540,8 @@
               table: t
               column: b
           isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: b
           sourcecolumns:
             - server: ""
@@ -2396,6 +2550,8 @@
               table: t
               column: c
           isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: a
           sourcecolumns:
             - server: ""
@@ -2404,6 +2560,8 @@
               table: t
               column: d
           isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
     sourcecolumns:
         - server: ""
           database: db
@@ -2458,6 +2616,8 @@
               table: t
               column: b
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: cc2
           sourcecolumns:
             - server: ""
@@ -2471,6 +2631,8 @@
               table: t
               column: b
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: cc3
           sourcecolumns:
             - server: ""
@@ -2489,9 +2651,13 @@
               table: t
               column: c
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: "n"
           sourcecolumns: []
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
     sourcecolumns:
         - server: ""
           database: db
@@ -2541,6 +2707,8 @@
               table: t
               column: a
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: c2
           sourcecolumns:
             - server: ""
@@ -2549,6 +2717,8 @@
               table: t
               column: b
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: c3
           sourcecolumns:
             - server: ""
@@ -2557,6 +2727,8 @@
               table: t
               column: d
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: c4
           sourcecolumns:
             - server: ""
@@ -2565,6 +2737,8 @@
               table: t
               column: c
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
     sourcecolumns:
         - server: ""
           database: db

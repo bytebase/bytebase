@@ -46,6 +46,8 @@
               table: MyTable1
               column: a
           isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: b
           sourcecolumns:
             - server: ""
@@ -54,6 +56,8 @@
               table: MyTable1
               column: b
           isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
     sourcecolumns:
         - server: ""
           database: db
@@ -114,6 +118,8 @@
               table: MyTable1
               column: a
           isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: b
           sourcecolumns:
             - server: ""
@@ -122,6 +128,8 @@
               table: MyTable1
               column: b
           isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
     sourcecolumns:
         - server: ""
           database: db
