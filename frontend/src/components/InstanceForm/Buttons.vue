@@ -49,17 +49,12 @@
 </template>
 
 <script setup lang="ts">
-import { cloneDeep, isEqual } from "lodash-es";
-import { NButton } from "naive-ui";
-import { computed, ref } from "vue";
-import { useI18n } from "vue-i18n";
-import { useRouter } from "vue-router";
 import {
+  pushNotification,
   useDatabaseV1Store,
+  useGracefulRequest,
   useInstanceV1Store,
   useSubscriptionV1Store,
-  useGracefulRequest,
-  pushNotification,
 } from "@/store";
 import { Engine } from "@/types/proto/v1/common";
 import {
@@ -67,14 +62,18 @@ import {
   DataSourceType,
   Instance,
 } from "@/types/proto/v1/instance_service";
-import { isValidSpannerHost, defer } from "@/utils";
+import { defer, isValidSpannerHost } from "@/utils";
+import { cloneDeep, isEqual } from "lodash-es";
+import { NButton } from "naive-ui";
+import { computed, ref } from "vue";
+import { useI18n } from "vue-i18n";
+import { useRouter } from "vue-router";
 import ScanIntervalInput from "./ScanIntervalInput.vue";
 import {
-  applyExtraConnectionParameters,
   calcDataSourceUpdateMask,
   extractBasicInfo,
   extractDataSourceEditState,
-  type EditDataSource,
+  type EditDataSource
 } from "./common";
 import { useInstanceFormContext } from "./context";
 
@@ -263,20 +262,9 @@ const doCreate = async () => {
 
   state.value.isRequesting = true;
   try {
-    await useGracefulRequest(async () => {
-      // Create a copy of the pending instance
-      const createInstance = { ...pendingCreateInstance.value };
-      
-      // Apply extra connection parameters to all data sources
-      createInstance.dataSources.forEach((ds, index) => {
-        const editDS = adminDataSource.value;
-        if (index === 0 && editDS) {
-          applyExtraConnectionParameters(ds, editDS);
-        }
-      });
-      
+    await useGracefulRequest(async () => {      
       const createdInstance = await instanceV1Store.createInstance(
-        createInstance
+        pendingCreateInstance.value
       );
       if (props.onCreated) {
         props.onCreated(createdInstance);
@@ -422,9 +410,6 @@ const doUpdate = async () => {
       }
     }
     
-    // Apply extra connection parameters to ensure they are properly handled
-    applyExtraConnectionParameters(editing, editState);
-
     pendingRequestRunners.push(() =>
       instanceV1Store.updateDataSource(inst, editing, updateMask)
     );
@@ -463,9 +448,6 @@ const doUpdate = async () => {
           }
         }
         
-        // Apply extra connection parameters to ensure they are properly handled
-        applyExtraConnectionParameters(patch, editing);
-
         pendingRequestRunners.push(() =>
           instanceV1Store.createDataSource(inst, patch)
         );
@@ -506,8 +488,7 @@ const doUpdate = async () => {
       await runner();
     }
     
-    // Refresh the instance data to ensure we have the latest values including extra parameters
-    const updatedInstance = await instanceV1Store.getOrFetchInstanceByName(inst.name, true);
+    const updatedInstance = instanceV1Store.getInstanceByName(inst.name);
     updateEditState(updatedInstance);
     pushNotification({
       module: "bytebase",

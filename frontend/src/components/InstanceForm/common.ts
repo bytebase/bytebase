@@ -1,4 +1,3 @@
-import { cloneDeep, first } from "lodash-es";
 import { t } from "@/plugins/i18n";
 import { useInstanceV1Store, useSubscriptionV1Store } from "@/store";
 import {
@@ -11,6 +10,7 @@ import type { DataSource, Instance } from "@/types/proto/v1/instance_service";
 import { DataSourceType } from "@/types/proto/v1/instance_service";
 import { PlanType } from "@/types/proto/v1/subscription_service";
 import { calcUpdateMask } from "@/utils";
+import { cloneDeep, first } from "lodash-es";
 
 export type BasicInfo = Omit<Instance, "dataSources" | "engineVersion">;
 
@@ -81,19 +81,14 @@ export const extractBasicInfo = (instance: Instance | undefined): BasicInfo => {
 };
 
 export const wrapEditDataSource = (ds: DataSource | undefined) => {
-  // Deep clone the data source to avoid reference issues
-  const cloned = cloneDeep(ds ?? emptyDataSource());
-  
-  const result = {
-    ...cloned,
+  return {
+    ...cloneDeep(ds ?? emptyDataSource()),
     pendingCreate: ds === undefined,
     updatedPassword: "",
     updatedMasterPassword: "",
     useEmptyPassword: false,
     useEmptyMasterPassword: false,
   };
-  
-  return result;
 };
 
 /**
@@ -156,5 +151,6 @@ export const calcDataSourceUpdateMask = (
   if (updateAuthenticationPrivateKey) {
     updateMask.add("authentication_private_key");
   }
+
   return Array.from(updateMask);
 };
