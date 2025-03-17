@@ -318,7 +318,8 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
         {
           name: metadataResourceName,
           filter: `schema == "${schema}" && table == "${table}"`,
-          view: VIEW_BASIC,
+          // TODO(ed): remove the legacy view
+          view: VIEW_FULL,
         },
         {
           silent,
