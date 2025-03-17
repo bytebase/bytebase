@@ -41,6 +41,8 @@
               table: products
               column: product_info
           isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
     sourcecolumns:
         - server: ""
           database: db
@@ -87,6 +89,8 @@
               table: products
               column: product_info
           isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
     sourcecolumns:
         - server: ""
           database: db

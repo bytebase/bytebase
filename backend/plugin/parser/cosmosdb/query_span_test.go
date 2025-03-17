@@ -1,48 +1,60 @@
 package cosmosdb
 
 import (
+	"context"
+	"io"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"gopkg.in/yaml.v3"
+
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
-func TestPredicateInWhere(t *testing.T) {
-	testCases := []struct {
-		statement      string
-		predicatePaths map[string]bool
-	}{
-		{
-			statement: "SELECT * FROM container WHERE container.name = 'test'",
-			predicatePaths: map[string]bool{
-				"container.name": true,
-			},
-		},
-		{
-			statement: "SELECT * FROM container WHERE container.addresses[1].country = 'Canada'",
-			predicatePaths: map[string]bool{
-				"container.addresses[1].country": true,
-			},
-		},
-		{
-			statement: "SELECT * FROM container c WHERE udf.foo(c.name, c.salary, c.addresses[1].country) = c.age",
-			predicatePaths: map[string]bool{
-				"container.name":                 true,
-				"container.salary":               true,
-				"container.addresses[1].country": true,
-				"container.age":                  true,
-			},
-		},
+func TestGetQuerySpan(t *testing.T) {
+	type testCase struct {
+		Description string              `yaml:"description,omitempty"`
+		Statement   string              `yaml:"statement,omitempty"`
+		QuerySpan   *base.YamlQuerySpan `yaml:"querySpan,omitempty"`
 	}
 
-	a := require.New(t)
+	var (
+		record        = true
+		testDataPaths = []string{
+			"test-data/query-span/standard.yaml",
+		}
+	)
 
-	for _, tc := range testCases {
-		querySpan, err := getQuerySpanImpl(tc.statement)
-		a.Nil(err)
-		a.Equal(len(tc.predicatePaths), len(querySpan.PredicatePaths))
-		for path := range tc.predicatePaths {
-			_, ok := querySpan.PredicatePaths[path]
-			a.True(ok)
+	a := require.New(t)
+	for _, testDataPath := range testDataPaths {
+		testDataPath := testDataPath
+
+		yamlFile, err := os.Open(testDataPath)
+		a.NoError(err)
+
+		var testCases []testCase
+		byteValue, err := io.ReadAll(yamlFile)
+		a.NoError(err)
+		a.NoError(yamlFile.Close())
+		a.NoError(yaml.Unmarshal(byteValue, &testCases))
+
+		for i, tc := range testCases {
+			result, err := GetQuerySpan(context.TODO(), base.GetQuerySpanContext{}, tc.Statement, "", "", false)
+			a.NoErrorf(err, "statement: %s", tc.Statement)
+			resultYaml := result.ToYaml()
+			if record {
+				testCases[i].QuerySpan = resultYaml
+			} else {
+				a.Equalf(tc.QuerySpan, resultYaml, "statement: %s", tc.Statement)
+			}
+		}
+
+		if record {
+			byteValue, err := yaml.Marshal(testCases)
+			a.NoError(err)
+			err = os.WriteFile(testDataPath, byteValue, 0644)
+			a.NoError(err)
 		}
 	}
 }

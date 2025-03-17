@@ -1,0 +1,16 @@
+- description: Test for declare temp table
+  statement: select c.category, c.salary["value"] FROM container c
+  querySpan:
+    type: 0
+    results:
+        - name: ""
+          sourcecolumns: []
+          isplainfield: false
+          sourcefieldpaths:
+            - name: category
+              path: container.category
+            - name: value
+              path: container.salary.value
+          selectasterisk: false
+    sourcecolumns: []
+    predicatecolumns: []
