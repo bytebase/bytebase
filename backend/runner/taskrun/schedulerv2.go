@@ -210,11 +210,13 @@ func (s *SchedulerV2) scheduleAutoRolloutTask(ctx context.Context, rolloutPolicy
 		return nil
 	}
 
-	sheetUID := int(task.Payload.GetSheetId())
 	create := &store.TaskRunMessage{
 		CreatorID: api.SystemBotID,
 		TaskUID:   task.ID,
-		SheetUID:  &sheetUID,
+	}
+	if task.Payload.GetSheetId() != 0 {
+		sheetUID := int(task.Payload.GetSheetId())
+		create.SheetUID = &sheetUID
 	}
 
 	if err := s.store.CreatePendingTaskRuns(ctx, create); err != nil {
