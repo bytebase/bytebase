@@ -262,7 +262,7 @@ const doCreate = async () => {
 
   state.value.isRequesting = true;
   try {
-    await useGracefulRequest(async () => {      
+    await useGracefulRequest(async () => {
       const createdInstance = await instanceV1Store.createInstance(
         pendingCreateInstance.value
       );
@@ -487,6 +487,7 @@ const doUpdate = async () => {
       const runner = pendingRequestRunners[i];
       await runner();
     }
+
     const updatedInstance = instanceV1Store.getInstanceByName(inst.name);
     updateEditState(updatedInstance);
     pushNotification({
