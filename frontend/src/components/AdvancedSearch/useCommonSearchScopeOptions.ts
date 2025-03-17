@@ -1,24 +1,21 @@
-import type { Ref, VNode } from "vue";
+import type { VNode } from "vue";
 import { computed, h, unref } from "vue";
-import { useRoute } from "vue-router";
 import {
   InstanceV1Name,
   ProjectV1Name,
-  RichDatabaseName,
   EnvironmentV1Name,
   RichEngineName,
 } from "@/components/v2";
 import { t } from "@/plugins/i18n";
 import {
-  useDatabaseV1Store,
   useEnvironmentV1List,
   useEnvironmentV1Store,
   useInstanceResourceList,
   useProjectV1List,
 } from "@/store";
-import { UNKNOWN_ID, isValidProjectName, type MaybeRef } from "@/types";
+import { type MaybeRef } from "@/types";
 import { engineToJSON } from "@/types/proto/v1/common";
-import type { SearchParams, SearchScopeId } from "@/utils";
+import type { SearchScopeId } from "@/utils";
 import {
   environmentV1Name,
   extractEnvironmentResourceName,
@@ -29,35 +26,11 @@ import {
 import type { ScopeOption, ValueOption } from "./types";
 
 export const useCommonSearchScopeOptions = (
-  params: Ref<SearchParams>,
   supportOptionIdList: MaybeRef<SearchScopeId[]>
 ) => {
-  const route = useRoute();
-  const databaseV1Store = useDatabaseV1Store();
   const environmentStore = useEnvironmentV1Store();
   const environmentList = useEnvironmentV1List();
   const { projectList } = useProjectV1List();
-
-  const project = computed(() => {
-    const { projectId } = route?.params ?? {};
-    if (projectId && typeof projectId === "string") {
-      return `projects/${projectId}`;
-    }
-    const projectScope = params.value.scopes.find(
-      (scope) => scope.id === "project"
-    );
-    if (projectScope) {
-      return `projects/${projectScope.value}`;
-    }
-    return undefined;
-  });
-
-  const databaseList = computed(() => {
-    if (!isValidProjectName(project.value)) {
-      return [];
-    }
-    return databaseV1Store.databaseListByProject(project.value!);
-  });
 
   const instanceList = computed(() => useInstanceResourceList().value);
 
@@ -108,37 +81,11 @@ export const useCommonSearchScopeOptions = (
                   link: false,
                   tooltip: false,
                 }),
-                renderSpan(
+                h(
+                  "span",
+                  {},
                   `(${environmentV1Name(environmentStore.getEnvironmentByName(ins.environment))})`
                 ),
-              ]);
-            },
-          };
-        }),
-      }),
-      database: () => ({
-        id: "database",
-        title: t("issue.advanced-search.scope.database.title"),
-        description: t("issue.advanced-search.scope.database.description"),
-        options: databaseList.value.map((db) => {
-          return {
-            value: db.name,
-            keywords: [
-              db.databaseName,
-              extractInstanceResourceName(db.instance),
-              db.instanceResource.title,
-              extractEnvironmentResourceName(db.effectiveEnvironment),
-              db.effectiveEnvironmentEntity.title,
-              extractProjectResourceName(db.project),
-              db.projectEntity.title,
-            ],
-            custom: true,
-            render: () => {
-              return h("div", { class: "text-sm" }, [
-                h(RichDatabaseName, {
-                  database: db,
-                  showProject: true,
-                }),
               ]);
             },
           };
@@ -186,18 +133,6 @@ export const useCommonSearchScopeOptions = (
 
     const scopes: ScopeOption[] = [];
     unref(supportOptionIdList).forEach((id) => {
-      // Do not show database scope if there are no databases.
-      if (databaseList.value.length === 0) {
-        if (id === "database") {
-          return;
-        }
-        // Do not show instance scope if there are no instances.
-        if (instanceList.value.length === 0) {
-          if (id === "instance") {
-            return;
-          }
-        }
-      }
       const create = scopeCreators[id];
       if (create) {
         scopes.push(create());
@@ -206,53 +141,5 @@ export const useCommonSearchScopeOptions = (
     return scopes;
   });
 
-  // filteredScopeOptions will filter search options by chosen scope.
-  // For example, if users select a specific project, we should only allow them select instances related with this project.
-  const filteredScopeOptions = computed((): ScopeOption[] => {
-    const existedScopes = new Map<SearchScopeId, string>(
-      params.value.scopes.map((scope) => [scope.id, scope.value])
-    );
-
-    const clone = fullScopeOptions.value.map((scope) => ({
-      ...scope,
-      options: scope.options.map((option) => ({
-        ...option,
-      })),
-    }));
-    const index = clone.findIndex((scope) => scope.id === "database");
-    if (index >= 0) {
-      clone[index].options = clone[index].options.filter((option) => {
-        if (!existedScopes.has("project") && !existedScopes.has("instance")) {
-          return true;
-        }
-
-        const db = databaseV1Store.getDatabaseByName(option.value);
-        const project = db.project;
-        const instance = db.instance;
-
-        const existedProject = `projects/${
-          existedScopes.get("project") ?? UNKNOWN_ID
-        }`;
-        if (project === existedProject) {
-          return true;
-        }
-        const existedInstance = `instances/${
-          existedScopes.get("instance") ?? UNKNOWN_ID
-        }`;
-        if (instance === existedInstance) {
-          return true;
-        }
-
-        return false;
-      });
-    }
-
-    return clone;
-  });
-
-  return filteredScopeOptions;
-};
-
-const renderSpan = (content: string) => {
-  return h("span", {}, content);
+  return fullScopeOptions;
 };
