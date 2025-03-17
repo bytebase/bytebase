@@ -15,68 +15,6 @@ import { InstanceResource } from "./instance_service";
 
 export const protobufPackage = "bytebase.v1";
 
-export enum DatabaseMetadataView {
-  /**
-   * DATABASE_METADATA_VIEW_UNSPECIFIED - The default and unset value.
-   * The API will default to the BASIC view.
-   */
-  DATABASE_METADATA_VIEW_UNSPECIFIED = "DATABASE_METADATA_VIEW_UNSPECIFIED",
-  /**
-   * DATABASE_METADATA_VIEW_BASIC - Include basic information of schema object names such as schema, table,
-   * view, function names.
-   */
-  DATABASE_METADATA_VIEW_BASIC = "DATABASE_METADATA_VIEW_BASIC",
-  /** DATABASE_METADATA_VIEW_FULL - Include everything such as columns and column masking level. */
-  DATABASE_METADATA_VIEW_FULL = "DATABASE_METADATA_VIEW_FULL",
-  UNRECOGNIZED = "UNRECOGNIZED",
-}
-
-export function databaseMetadataViewFromJSON(object: any): DatabaseMetadataView {
-  switch (object) {
-    case 0:
-    case "DATABASE_METADATA_VIEW_UNSPECIFIED":
-      return DatabaseMetadataView.DATABASE_METADATA_VIEW_UNSPECIFIED;
-    case 1:
-    case "DATABASE_METADATA_VIEW_BASIC":
-      return DatabaseMetadataView.DATABASE_METADATA_VIEW_BASIC;
-    case 2:
-    case "DATABASE_METADATA_VIEW_FULL":
-      return DatabaseMetadataView.DATABASE_METADATA_VIEW_FULL;
-    case -1:
-    case "UNRECOGNIZED":
-    default:
-      return DatabaseMetadataView.UNRECOGNIZED;
-  }
-}
-
-export function databaseMetadataViewToJSON(object: DatabaseMetadataView): string {
-  switch (object) {
-    case DatabaseMetadataView.DATABASE_METADATA_VIEW_UNSPECIFIED:
-      return "DATABASE_METADATA_VIEW_UNSPECIFIED";
-    case DatabaseMetadataView.DATABASE_METADATA_VIEW_BASIC:
-      return "DATABASE_METADATA_VIEW_BASIC";
-    case DatabaseMetadataView.DATABASE_METADATA_VIEW_FULL:
-      return "DATABASE_METADATA_VIEW_FULL";
-    case DatabaseMetadataView.UNRECOGNIZED:
-    default:
-      return "UNRECOGNIZED";
-  }
-}
-
-export function databaseMetadataViewToNumber(object: DatabaseMetadataView): number {
-  switch (object) {
-    case DatabaseMetadataView.DATABASE_METADATA_VIEW_UNSPECIFIED:
-      return 0;
-    case DatabaseMetadataView.DATABASE_METADATA_VIEW_BASIC:
-      return 1;
-    case DatabaseMetadataView.DATABASE_METADATA_VIEW_FULL:
-      return 2;
-    case DatabaseMetadataView.UNRECOGNIZED:
-    default:
-      return -1;
-  }
-}
-
 export enum ChangelogView {
   /**
    * CHANGELOG_VIEW_UNSPECIFIED - The default / unset value.
@@ -256,8 +194,6 @@ export interface GetDatabaseMetadataRequest {
    * Format: instances/{instance}/databases/{database}/metadata
    */
   name: string;
-  /** The view to return. Defaults to DATABASE_METADATA_VIEW_BASIC. */
-  view: DatabaseMetadataView;
   /**
    * Filter is used to filter databases returned in the list.
    * Supported filter:
@@ -2432,7 +2368,7 @@ export const SyncDatabaseResponse: MessageFns<SyncDatabaseResponse> = {
 };
 
 function createBaseGetDatabaseMetadataRequest(): GetDatabaseMetadataRequest {
-  return { name: "", view: DatabaseMetadataView.DATABASE_METADATA_VIEW_UNSPECIFIED, filter: "" };
+  return { name: "", filter: "" };
 }
 
 export const GetDatabaseMetadataRequest: MessageFns<GetDatabaseMetadataRequest> = {
@@ -2440,11 +2376,8 @@ export const GetDatabaseMetadataRequest: MessageFns<GetDatabaseMetadataRequest> 
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
     }
-    if (message.view !== DatabaseMetadataView.DATABASE_METADATA_VIEW_UNSPECIFIED) {
-      writer.uint32(16).int32(databaseMetadataViewToNumber(message.view));
-    }
     if (message.filter !== "") {
-      writer.uint32(26).string(message.filter);
+      writer.uint32(18).string(message.filter);
     }
     return writer;
   },
@@ -2465,15 +2398,7 @@ export const GetDatabaseMetadataRequest: MessageFns<GetDatabaseMetadataRequest> 
           continue;
         }
         case 2: {
-          if (tag !== 16) {
-            break;
-          }
-
-          message.view = databaseMetadataViewFromJSON(reader.int32());
-          continue;
-        }
-        case 3: {
-          if (tag !== 26) {
+          if (tag !== 18) {
             break;
           }
 
@@ -2492,9 +2417,6 @@ export const GetDatabaseMetadataRequest: MessageFns<GetDatabaseMetadataRequest> 
   fromJSON(object: any): GetDatabaseMetadataRequest {
     return {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
-      view: isSet(object.view)
-        ? databaseMetadataViewFromJSON(object.view)
-        : DatabaseMetadataView.DATABASE_METADATA_VIEW_UNSPECIFIED,
       filter: isSet(object.filter) ? globalThis.String(object.filter) : "",
     };
   },
@@ -2503,9 +2425,6 @@ export const GetDatabaseMetadataRequest: MessageFns<GetDatabaseMetadataRequest> 
     const obj: any = {};
     if (message.name !== "") {
       obj.name = message.name;
-    }
-    if (message.view !== DatabaseMetadataView.DATABASE_METADATA_VIEW_UNSPECIFIED) {
-      obj.view = databaseMetadataViewToJSON(message.view);
     }
     if (message.filter !== "") {
       obj.filter = message.filter;
@@ -2519,7 +2438,6 @@ export const GetDatabaseMetadataRequest: MessageFns<GetDatabaseMetadataRequest> 
   fromPartial(object: DeepPartial<GetDatabaseMetadataRequest>): GetDatabaseMetadataRequest {
     const message = createBaseGetDatabaseMetadataRequest();
     message.name = object.name ?? "";
-    message.view = object.view ?? DatabaseMetadataView.DATABASE_METADATA_VIEW_UNSPECIFIED;
     message.filter = object.filter ?? "";
     return message;
   },

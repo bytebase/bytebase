@@ -134,7 +134,6 @@ import type { ComposedDatabase } from "@/types";
 import { DEFAULT_PROJECT_NAME } from "@/types";
 import {
   Database,
-  DatabaseMetadataView,
   UpdateDatabaseRequest,
 } from "@/types/proto/v1/database_service";
 import {
@@ -346,7 +345,6 @@ const syncSchema = async () => {
         databaseStore.syncDatabase(db.name).then(() => {
           dbSchemaStore.getOrFetchDatabaseMetadata({
             database: db.name,
-            view: DatabaseMetadataView.DATABASE_METADATA_VIEW_FULL,
             skipCache: true,
           });
         });

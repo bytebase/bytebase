@@ -221,7 +221,6 @@ import {
   useConnectionOfCurrentSQLEditorTab,
   useDBSchemaV1Store,
 } from "@/store";
-import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
 import {
   instanceV1SupportsExternalTable,
   instanceV1SupportsPackage,
@@ -254,10 +253,7 @@ const state = reactive({
 const { database } = useConnectionOfCurrentSQLEditorTab();
 const { viewState, updateViewState } = useEditorPanelContext();
 const databaseMetadata = computed(() => {
-  return useDBSchemaV1Store().getDatabaseMetadata(
-    database.value.name,
-    DatabaseMetadataView.DATABASE_METADATA_VIEW_FULL
-  );
+  return useDBSchemaV1Store().getDatabaseMetadata(database.value.name);
 });
 
 const metadata = computed(() => {

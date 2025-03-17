@@ -14,7 +14,6 @@ import {
   databaseNamePrefix,
   instanceNamePrefix,
 } from "@/store/modules/v1/common";
-import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
 
 const props = defineProps<{
   projectId: string;
@@ -35,7 +34,6 @@ onMounted(async () => {
   );
   await dbSchemaStore.getOrFetchDatabaseMetadata({
     database: database.name,
-    view: DatabaseMetadataView.DATABASE_METADATA_VIEW_BASIC,
   });
 });
 </script>

@@ -152,7 +152,6 @@
     - [Changelog.Type](#bytebase-v1-Changelog-Type)
     - [ChangelogView](#bytebase-v1-ChangelogView)
     - [ColumnMetadata.IdentityGeneration](#bytebase-v1-ColumnMetadata-IdentityGeneration)
-    - [DatabaseMetadataView](#bytebase-v1-DatabaseMetadataView)
     - [GenerationMetadata.Type](#bytebase-v1-GenerationMetadata-Type)
     - [GetSchemaStringRequest.ObjectType](#bytebase-v1-GetSchemaStringRequest-ObjectType)
     - [StreamMetadata.Mode](#bytebase-v1-StreamMetadata-Mode)
@@ -2392,7 +2391,6 @@ FunctionMetadata is the metadata for functions.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name of the database to retrieve metadata. Format: instances/{instance}/databases/{database}/metadata |
-| view | [DatabaseMetadataView](#bytebase-v1-DatabaseMetadataView) |  | The view to return. Defaults to DATABASE_METADATA_VIEW_BASIC. |
 | filter | [string](#string) |  | Filter is used to filter databases returned in the list. Supported filter: - schema - table
 
 For example: schema == &#34;schema-a&#34; table == &#34;table-a&#34; schema == &#34;schema-a&#34; &amp;&amp; table == &#34;table-a&#34; The filter used for a specific schema object such as &#34;schemas/schema-a/tables/table-a&#34;. The column masking level will only be returned when a table filter is used. |
@@ -3085,19 +3083,6 @@ ViewMetadata is the metadata for views.
 | IDENTITY_GENERATION_UNSPECIFIED | 0 |  |
 | ALWAYS | 1 |  |
 | BY_DEFAULT | 2 |  |
-
-
-
-<a name="bytebase-v1-DatabaseMetadataView"></a>
-
-### DatabaseMetadataView
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| DATABASE_METADATA_VIEW_UNSPECIFIED | 0 | The default and unset value. The API will default to the BASIC view. |
-| DATABASE_METADATA_VIEW_BASIC | 1 | Include basic information of schema object names such as schema, table, view, function names. |
-| DATABASE_METADATA_VIEW_FULL | 2 | Include everything such as columns and column masking level. |
 
 
 
