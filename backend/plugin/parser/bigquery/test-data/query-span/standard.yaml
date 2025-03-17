@@ -34,6 +34,8 @@
               table: people
               column: ID
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
     sourcecolumns:
         - server: ""
           database: ds1
@@ -93,6 +95,8 @@
               table: people
               column: ID
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: NAME
           sourcecolumns:
             - server: ""
@@ -106,6 +110,8 @@
               table: people
               column: NAME
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
     sourcecolumns:
         - server: ""
           database: ds1
@@ -183,6 +189,8 @@
               table: people
               column: ID
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: NAME
           sourcecolumns:
             - server: ""
@@ -191,6 +199,8 @@
               table: people
               column: NAME
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: ADDRESS
           sourcecolumns:
             - server: ""
@@ -199,6 +209,8 @@
               table: address
               column: ADDRESS
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
     sourcecolumns:
         - server: ""
           database: ds1
@@ -266,6 +278,8 @@
               table: people
               column: ID
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: NAME
           sourcecolumns:
             - server: ""
@@ -274,6 +288,8 @@
               table: people
               column: NAME
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: ADDRESS
           sourcecolumns:
             - server: ""
@@ -282,6 +298,8 @@
               table: address
               column: ADDRESS
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
     sourcecolumns:
         - server: ""
           database: ds1
@@ -341,6 +359,8 @@
               table: people
               column: ID
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: NAME
           sourcecolumns:
             - server: ""
@@ -349,6 +369,8 @@
               table: people
               column: NAME
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: ADDRESS
           sourcecolumns:
             - server: ""
@@ -357,6 +379,8 @@
               table: address
               column: ADDRESS
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
     sourcecolumns:
         - server: ""
           database: ds1
@@ -419,6 +443,8 @@
               table: T1
               column: b
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: C2
           sourcecolumns:
             - server: ""
@@ -432,6 +458,8 @@
               table: T1
               column: b
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: C3
           sourcecolumns:
             - server: ""
@@ -450,9 +478,13 @@
               table: T1
               column: c
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: "N"
           sourcecolumns: []
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
     sourcecolumns:
         - server: ""
           database: ds1
@@ -501,6 +533,8 @@
               table: people
               column: ID
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: NAME
           sourcecolumns:
             - server: ""
@@ -509,6 +543,8 @@
               table: people
               column: NAME
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
     sourcecolumns:
         - server: ""
           database: ds1
@@ -574,9 +610,13 @@
               table: galleries
               column: CITY
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: TOTAL_PAINTINGS
           sourcecolumns: []
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
     sourcecolumns:
         - server: ""
           database: ds1
@@ -620,6 +660,8 @@
         - name: ""
           sourcecolumns: []
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: ID
           sourcecolumns:
             - server: ""
@@ -628,6 +670,8 @@
               table: people
               column: ID
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
     sourcecolumns:
         - server: ""
           database: ds1
@@ -671,6 +715,8 @@
               table: people
               column: ID
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: ID
           sourcecolumns:
             - server: ""
@@ -679,6 +725,8 @@
               table: people
               column: ID
           isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: NAME
           sourcecolumns:
             - server: ""
@@ -687,6 +735,8 @@
               table: people
               column: NAME
           isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
     sourcecolumns:
         - server: ""
           database: ds1
@@ -735,6 +785,8 @@
               table: people
               column: ID
           isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: NAME
           sourcecolumns:
             - server: ""
@@ -743,6 +795,8 @@
               table: people
               column: NAME
           isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
     sourcecolumns:
         - server: ""
           database: ds1
@@ -786,6 +840,8 @@
               table: people
               column: ID
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: NAME
           sourcecolumns:
             - server: ""
@@ -794,6 +850,8 @@
               table: people
               column: NAME
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
     sourcecolumns:
         - server: ""
           database: ds1
@@ -837,6 +895,8 @@
               table: people
               column: ID
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: ID
           sourcecolumns:
             - server: ""
@@ -850,6 +910,8 @@
               table: people
               column: NAME
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: ID
           sourcecolumns:
             - server: ""
@@ -863,6 +925,8 @@
               table: people
               column: NAME
           isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
     sourcecolumns:
         - server: ""
           database: ds1
@@ -906,6 +970,8 @@
               table: people
               column: ID
           isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: NAME
           sourcecolumns:
             - server: ""
@@ -914,6 +980,8 @@
               table: people
               column: NAME
           isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
     sourcecolumns:
         - server: ""
           database: ds1
