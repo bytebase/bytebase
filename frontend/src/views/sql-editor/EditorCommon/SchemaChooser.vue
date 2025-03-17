@@ -19,7 +19,6 @@ import {
   useDBSchemaV1Store,
   useSQLEditorTabStore,
 } from "@/store";
-import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
 import { instanceAllowsSchemaScopedQuery } from "@/utils";
 import ConnectChooser from "./ConnectChooser.vue";
 
@@ -34,10 +33,7 @@ const show = computed(() => {
 });
 
 const databaseMetadata = computed(() => {
-  return useDBSchemaV1Store().getDatabaseMetadata(
-    database.value.name,
-    DatabaseMetadataView.DATABASE_METADATA_VIEW_FULL
-  );
+  return useDBSchemaV1Store().getDatabaseMetadata(database.value.name);
 });
 const options = computed(() => {
   const options = databaseMetadata.value.schemas.map<SelectOption>(

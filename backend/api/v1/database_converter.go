@@ -17,8 +17,10 @@ func convertStoreDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata, filt
 		if schema == nil {
 			continue
 		}
-		if filter != nil && (schema.Name != "" && filter.schema != schema.Name) {
-			continue
+		if filter != nil && filter.schema != nil {
+			if schema.Name != *filter.schema {
+				continue
+			}
 		}
 		s := &v1pb.SchemaMetadata{
 			Name:     schema.Name,
@@ -29,8 +31,10 @@ func convertStoreDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata, filt
 			if table == nil {
 				continue
 			}
-			if filter != nil && filter.table != table.Name {
-				continue
+			if filter != nil && filter.table != nil {
+				if table.Name != *filter.table {
+					continue
+				}
 			}
 			s.Tables = append(s.Tables, convertStoreTableMetadata(table))
 		}

@@ -20,7 +20,7 @@ type UpdateDBSchemaMessage struct {
 
 // GetDBSchema gets the schema for a database.
 func (s *Store) GetDBSchema(ctx context.Context, instanceID, databaseName string) (*model.DatabaseSchema, error) {
-	if v, ok := s.dbSchemaCache.Get(getDatabaseCacheKey(instanceID, databaseName)); ok {
+	if v, ok := s.dbSchemaCache.Get(getDatabaseCacheKey(instanceID, databaseName)); ok && s.enableCache {
 		return v, nil
 	}
 

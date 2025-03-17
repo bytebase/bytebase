@@ -7,7 +7,6 @@
       code: 308
       title: naming.identifier.no-keyword
       content: Identifier [exec] is a keyword identifier and should be avoided.
-      detail: ""
       startposition:
         line: 1
         column: 0
@@ -16,7 +15,6 @@
       code: 308
       title: naming.identifier.no-keyword
       content: Identifier [fillfactor] is a keyword identifier and should be avoided.
-      detail: ""
       startposition:
         line: 1
         column: 0
@@ -25,7 +23,6 @@
       code: 308
       title: naming.identifier.no-keyword
       content: Identifier [add] is a keyword identifier and should be avoided.
-      detail: ""
       startposition:
         line: 2
         column: 0
@@ -34,7 +31,6 @@
       code: 308
       title: naming.identifier.no-keyword
       content: Identifier [fillfactor] is a keyword identifier and should be avoided.
-      detail: ""
       startposition:
         line: 2
         column: 0

@@ -32,6 +32,8 @@
               table: T
               column: a
           isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
     sourcecolumns:
         - server: ""
           database: db

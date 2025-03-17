@@ -124,10 +124,11 @@ const allowToCreateDB = computed(() => {
   );
 });
 
-const scopeOptions = useCommonSearchScopeOptions(
-  computed(() => state.params),
-  [...CommonFilterScopeIdList, "label", "engine"]
-);
+const scopeOptions = useCommonSearchScopeOptions([
+  ...CommonFilterScopeIdList,
+  "database-label",
+  "engine",
+]);
 
 const selectedInstance = computed(() => {
   const instanceId = state.params.scopes.find(
@@ -151,7 +152,7 @@ const selectedEnvironment = computed(() => {
 
 const selectedLabels = computed(() => {
   return state.params.scopes
-    .filter((scope) => scope.id === "label")
+    .filter((scope) => scope.id === "database-label")
     .map((scope) => scope.value);
 });
 

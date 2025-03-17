@@ -68,7 +68,7 @@ func (s *Store) CreateRole(ctx context.Context, create *RoleMessage) (*RoleMessa
 
 // GetRole returns a role by ID.
 func (s *Store) GetRole(ctx context.Context, resourceID string) (*RoleMessage, error) {
-	if v, ok := s.rolesCache.Get(resourceID); ok {
+	if v, ok := s.rolesCache.Get(resourceID); ok && s.enableCache {
 		return v, nil
 	}
 	query := `

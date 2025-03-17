@@ -38,11 +38,10 @@ func init() {
 
 // Driver is the MongoDB driver.
 type Driver struct {
-	dbBinDir      string
-	connectionCtx db.ConnectionContext
-	connCfg       db.ConnectionConfig
-	client        *mongo.Client
-	databaseName  string
+	dbBinDir     string
+	connCfg      db.ConnectionConfig
+	client       *mongo.Client
+	databaseName string
 }
 
 func newDriver(dc db.DriverConfig) db.Driver {
@@ -67,7 +66,6 @@ func (driver *Driver) Open(ctx context.Context, _ storepb.Engine, connCfg db.Con
 		return nil, errors.Wrap(err, "failed to create MongoDB client")
 	}
 	driver.client = client
-	driver.connectionCtx = connCfg.ConnectionContext
 	driver.connCfg = connCfg
 	driver.databaseName = connCfg.ConnectionContext.DatabaseName
 	return driver, nil
@@ -348,11 +346,11 @@ func (driver *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement stri
 	if err != nil {
 		return nil, err
 	}
-	if int64(fileInfo.Size()) > driver.connCfg.MaximumSQLResultSize {
+	if int64(fileInfo.Size()) > queryContext.MaximumSQLResultSize {
 		return []*v1pb.QueryResult{{
 			Latency:   durationpb.New(time.Since(startTime)),
 			Statement: statement,
-			Error:     common.FormatMaximumSQLResultSizeMessage(driver.connCfg.MaximumSQLResultSize),
+			Error:     common.FormatMaximumSQLResultSizeMessage(queryContext.MaximumSQLResultSize),
 		}}, nil
 	}
 

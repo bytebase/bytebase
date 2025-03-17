@@ -44,7 +44,7 @@ type FindInstanceMessage struct {
 // GetInstanceV2 gets an instance by the resource_id.
 func (s *Store) GetInstanceV2(ctx context.Context, find *FindInstanceMessage) (*InstanceMessage, error) {
 	if find.ResourceID != nil {
-		if v, ok := s.instanceCache.Get(getInstanceCacheKey(*find.ResourceID)); ok {
+		if v, ok := s.instanceCache.Get(getInstanceCacheKey(*find.ResourceID)); ok && s.enableCache {
 			return v, nil
 		}
 	}

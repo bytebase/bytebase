@@ -81,7 +81,6 @@ import {
 import type { Changelog } from "@/types/proto/v1/database_service";
 import {
   Changelog_Type,
-  DatabaseMetadataView,
   changelog_TypeToJSON,
 } from "@/types/proto/v1/database_service";
 import {
@@ -158,7 +157,6 @@ const handleDatabaseSelect = async (name: string | undefined) => {
     state.databaseName = name;
     dbSchemaStore.getOrFetchDatabaseMetadata({
       database: database.name,
-      view: DatabaseMetadataView.DATABASE_METADATA_VIEW_FULL,
     });
   } else {
     state.databaseName = undefined;

@@ -7,7 +7,6 @@
       code: 422
       title: column.maximum-varchar-length
       content: The maximum varchar length is 2560.
-      detail: ""
       startposition:
         line: 1
         column: 0
@@ -19,7 +18,6 @@
       code: 422
       title: column.maximum-varchar-length
       content: The maximum varchar length is 2560.
-      detail: ""
       startposition:
         line: 1
         column: 0
@@ -31,7 +29,6 @@
       code: 422
       title: column.maximum-varchar-length
       content: The maximum varchar length is 2560.
-      detail: ""
       startposition:
         line: 1
         column: 0

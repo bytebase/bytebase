@@ -35,6 +35,8 @@
               table: MyTable1
               column: a
           isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
     sourcecolumns:
         - server: ""
           database: db

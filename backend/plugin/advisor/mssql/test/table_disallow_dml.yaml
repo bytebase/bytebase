@@ -8,7 +8,6 @@
       code: 614
       title: table.disallow-dml
       content: DML is disallowed on table MySchema.Identifier.
-      detail: ""
       startposition:
         line: 1
         column: 0
@@ -22,7 +21,6 @@
       code: 614
       title: table.disallow-dml
       content: DML is disallowed on table MySchema.Identifier.
-      detail: ""
       startposition:
         line: 2
         column: 0
@@ -34,7 +32,6 @@
       code: 614
       title: table.disallow-dml
       content: DML is disallowed on table MySchema.Identifier.
-      detail: ""
       startposition:
         line: 1
         column: 0
@@ -46,7 +43,6 @@
       code: 614
       title: table.disallow-dml
       content: DML is disallowed on table MySchema.Identifier.
-      detail: ""
       startposition:
         line: 1
         column: 0
@@ -58,7 +54,6 @@
       code: 614
       title: table.disallow-dml
       content: DML is disallowed on table MySchema.Identifier.
-      detail: ""
       startposition:
         line: 1
         column: 0

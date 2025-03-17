@@ -224,6 +224,7 @@ type ListUsersRequest struct {
 	// - email
 	// - user_type
 	// - state
+	// - project
 	//
 	// For example:
 	// name == "ed"
@@ -234,6 +235,10 @@ type ListUsersRequest struct {
 	// user_type in ["SERVICE_ACCOUNT", "USER"]
 	// !(user_type in ["SERVICE_ACCOUNT", "USER"])
 	// state == "DELETED"
+	// project == "projects/sample-project"
+	// You can combine filter conditions like:
+	// name.matches("ed") && project == "projects/sample-project"
+	// (name == "ed" || email == "ed@bytebase.com") && project == "projects/sample-project"
 	Filter        string `protobuf:"bytes,4,opt,name=filter,proto3" json:"filter,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache

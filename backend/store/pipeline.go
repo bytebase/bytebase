@@ -244,7 +244,7 @@ func (*Store) createPipeline(ctx context.Context, txn *sql.Tx, create *PipelineM
 
 // GetPipelineV2ByID gets the pipeline by ID.
 func (s *Store) GetPipelineV2ByID(ctx context.Context, id int) (*PipelineMessage, error) {
-	if v, ok := s.pipelineCache.Get(id); ok {
+	if v, ok := s.pipelineCache.Get(id); ok && s.enableCache {
 		return v, nil
 	}
 	pipelines, err := s.ListPipelineV2(ctx, &PipelineFind{ID: &id})

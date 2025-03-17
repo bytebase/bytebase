@@ -1,8 +1,6 @@
 package tidb
 
 import (
-	"fmt"
-
 	tidbast "github.com/pingcap/tidb/pkg/parser/ast"
 )
 
@@ -30,25 +28,4 @@ func extractFieldName(in *tidbast.SelectField) string {
 		return in.Text()
 	}
 	return ""
-}
-
-type PartitionDefaultNameGenerator struct {
-	parentName string
-	count      int
-}
-
-func NewPartitionDefaultNameGenerator(parentName string) *PartitionDefaultNameGenerator {
-	return &PartitionDefaultNameGenerator{
-		parentName: parentName,
-		count:      -1,
-	}
-}
-
-func (g *PartitionDefaultNameGenerator) Next() string {
-	g.count++
-
-	if g.parentName == "" {
-		return fmt.Sprintf("p%d", g.count)
-	}
-	return fmt.Sprintf("%ssp%d", g.parentName, g.count)
 }

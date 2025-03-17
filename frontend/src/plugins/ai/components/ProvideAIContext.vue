@@ -13,7 +13,6 @@ import {
   useSettingV1Store,
   useSQLEditorTabStore,
 } from "@/store";
-import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
 import { wrapRefAsPromise } from "@/utils";
 import { provideAIContext, useChatByTab, useCurrentChat } from "../logic";
 import { useConversationStore } from "../store";
@@ -43,13 +42,12 @@ const openAIEndpoint = computed(
 );
 const openAIModel = computed(
   () => openAIModelSetting?.value?.stringValue ?? ""
-)
+);
 const { instance, database } = useConnectionOfCurrentSQLEditorTab();
 
 const databaseMetadata = useMetadata(
   computed(() => database.value.name),
-  false /* !skipCache */,
-  DatabaseMetadataView.DATABASE_METADATA_VIEW_FULL
+  false /* !skipCache */
 );
 
 const events: AIContextEvents = new Emittery();

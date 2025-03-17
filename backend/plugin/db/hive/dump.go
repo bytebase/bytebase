@@ -75,7 +75,7 @@ func (d *Driver) Dump(ctx context.Context, out io.Writer, _ *storepb.DatabaseSch
 
 	// dump managed tables.
 	for _, table := range schema.GetTables() {
-		tableDDL, err := showCreateDDL(ctx, d.conn, "TABLE", table.Name, d.config.MaximumSQLResultSize)
+		tableDDL, err := showCreateDDL(ctx, d.conn, "TABLE", table.Name)
 		if err != nil {
 			return errors.Wrapf(err, "failed to dump table %s", table.Name)
 		}
@@ -109,7 +109,7 @@ func (d *Driver) Dump(ctx context.Context, out io.Writer, _ *storepb.DatabaseSch
 
 	// dump external tables.
 	for _, extTable := range schema.GetExternalTables() {
-		tabDDL, err := showCreateDDL(ctx, d.conn, "TABLE", extTable.Name, d.config.MaximumSQLResultSize)
+		tabDDL, err := showCreateDDL(ctx, d.conn, "TABLE", extTable.Name)
 		if err != nil {
 			return errors.Wrapf(err, "failed to dump table %s", extTable.Name)
 		}
@@ -118,7 +118,7 @@ func (d *Driver) Dump(ctx context.Context, out io.Writer, _ *storepb.DatabaseSch
 
 	// dump views.
 	for _, view := range schema.GetViews() {
-		viewDDL, err := showCreateDDL(ctx, d.conn, "VIEW", view.Name, d.config.MaximumSQLResultSize)
+		viewDDL, err := showCreateDDL(ctx, d.conn, "VIEW", view.Name)
 		if err != nil {
 			return errors.Wrapf(err, "failed to dump view %s", view.Name)
 		}
@@ -158,16 +158,16 @@ func (d *Driver) Dump(ctx context.Context, out io.Writer, _ *storepb.DatabaseSch
 }
 
 // This function shows DDLs for creating certain type of schema [VIEW, DATABASE, TABLE].
-func showCreateDDL(ctx context.Context, conn *gohive.Connection, objectType string, objectName string, limit int64) (string, error) {
+func showCreateDDL(ctx context.Context, conn *gohive.Connection, objectType string, objectName string) (string, error) {
 	objectName = fmt.Sprintf("`%s`", objectName)
 
 	// 'SHOW CREATE TABLE' can also be used for dumping views.
-	queryStatement := fmt.Sprintf("SHOW CREATE %s %s", objectType, objectName)
+	stmt := fmt.Sprintf("SHOW CREATE %s %s", objectType, objectName)
 	if objectType == "VIEW" {
-		queryStatement = fmt.Sprintf("SHOW CREATE TABLE %s", objectName)
+		stmt = fmt.Sprintf("SHOW CREATE TABLE %s", objectName)
 	}
 
-	schemaDDLResult, err := runSingleStatement(ctx, conn, queryStatement, limit)
+	schemaDDLResult, err := queryStatement(ctx, conn, stmt)
 	if err != nil {
 		return "", err
 	}

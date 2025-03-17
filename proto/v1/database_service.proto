@@ -219,6 +219,8 @@ message ListDatabasesRequest {
   // label == "tenant:asia,europe"
   // label == "region:asia" && label == "tenant:bytebase"
   // exclude_unassigned == true
+  // You can combine filter conditions like:
+  // environment == "environments/prod" && name.matches("employee")
   string filter = 4;
 
   // Show deleted database if specified.
@@ -273,19 +275,6 @@ message SyncDatabaseRequest {
 
 message SyncDatabaseResponse {}
 
-enum DatabaseMetadataView {
-  // The default and unset value.
-  // The API will default to the BASIC view.
-  DATABASE_METADATA_VIEW_UNSPECIFIED = 0;
-
-  // Include basic information of schema object names such as schema, table,
-  // view, function names.
-  DATABASE_METADATA_VIEW_BASIC = 1;
-
-  // Include everything such as columns and column masking level.
-  DATABASE_METADATA_VIEW_FULL = 2;
-}
-
 message GetDatabaseMetadataRequest {
   // The name of the database to retrieve metadata.
   // Format: instances/{instance}/databases/{database}/metadata
@@ -294,13 +283,19 @@ message GetDatabaseMetadataRequest {
     (google.api.resource_reference) = {type: "bytebase.com/DatabaseMetadata"}
   ];
 
-  // The view to return. Defaults to DATABASE_METADATA_VIEW_BASIC.
-  DatabaseMetadataView view = 2;
-
+  // Filter is used to filter databases returned in the list.
+  // Supported filter:
+  // - schema
+  // - table
+  //
+  // For example:
+  // schema == "schema-a"
+  // table == "table-a"
+  // schema == "schema-a" && table == "table-a"
   // The filter used for a specific schema object such as
   // "schemas/schema-a/tables/table-a".
   // The column masking level will only be returned when a table filter is used.
-  string filter = 3;
+  string filter = 2;
 }
 
 message GetDatabaseSchemaRequest {

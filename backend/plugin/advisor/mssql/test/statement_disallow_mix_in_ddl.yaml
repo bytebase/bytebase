@@ -5,7 +5,6 @@
       code: 227
       title: statement.disallow-mix-in-ddl
       content: Alter schema can only run DDL
-      detail: ""
       startposition:
         line: 1
         column: 0
@@ -17,7 +16,6 @@
       code: 227
       title: statement.disallow-mix-in-ddl
       content: Alter schema can only run DDL
-      detail: ""
       startposition:
         line: 1
         column: 0
@@ -29,7 +27,6 @@
       code: 227
       title: statement.disallow-mix-in-ddl
       content: Alter schema can only run DDL
-      detail: ""
       startposition:
         line: 1
         column: 0
@@ -38,7 +35,6 @@
       code: 227
       title: statement.disallow-mix-in-ddl
       content: Alter schema can only run DDL
-      detail: ""
       startposition:
         line: 1
         column: 0
