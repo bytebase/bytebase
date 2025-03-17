@@ -1,4 +1,3 @@
-import { cloneDeep, first } from "lodash-es";
 import { t } from "@/plugins/i18n";
 import { useInstanceV1Store, useSubscriptionV1Store } from "@/store";
 import {
@@ -11,6 +10,7 @@ import type { DataSource, Instance } from "@/types/proto/v1/instance_service";
 import { DataSourceType } from "@/types/proto/v1/instance_service";
 import { PlanType } from "@/types/proto/v1/subscription_service";
 import { calcUpdateMask } from "@/utils";
+import { cloneDeep, first } from "lodash-es";
 
 export type BasicInfo = Omit<Instance, "dataSources" | "engineVersion">;
 
@@ -23,6 +23,7 @@ export type EditDataSource = DataSource & {
   updateSsl?: boolean;
   updateSsh?: boolean;
   updateAuthenticationPrivateKey?: boolean;
+  extraConnectionParameters?: Record<string, string>;
 };
 
 export type DataSourceEditState = {
@@ -88,6 +89,30 @@ export const wrapEditDataSource = (ds: DataSource | undefined) => {
     useEmptyPassword: false,
     useEmptyMasterPassword: false,
   };
+};
+
+/**
+ * Applies the extra connection parameters from an EditDataSource to a DataSource object
+ * This ensures that the extraConnectionParameters are properly handled as plain objects
+ */
+export const applyExtraConnectionParameters = (
+  dataSource: DataSource,
+  editState: EditDataSource
+): DataSource => {
+  // Make sure dataSource has the correct extraConnectionParameters
+  if (editState.extraConnectionParameters) {
+    // Clone the map manually to ensure it's a plain object, not a Proxy
+    const params: Record<string, string> = {};
+    Object.entries(editState.extraConnectionParameters).forEach(([key, value]) => {
+      params[key] = value;
+    });
+    
+    dataSource.extraConnectionParameters = params;
+  } else {
+    dataSource.extraConnectionParameters = {}; 
+  }
+  
+  return dataSource;
 };
 
 export const calcDataSourceUpdateMask = (
