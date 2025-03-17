@@ -93,25 +93,28 @@ func (p *IdentityProvider) dial() (*ldap.Conn, error) {
 		ServerName:         p.config.Host,
 		InsecureSkipVerify: p.config.SkipTLSVerify,
 	}
-	if p.config.SecurityProtocol == SecurityProtocolLDAPS {
+	switch p.config.SecurityProtocol {
+	case SecurityProtocolLDAPS:
 		conn, err := ldap.DialTLS("tcp", addr, tlsConfig)
 		if err != nil {
 			return nil, errors.Errorf("dial TLS: %v", err)
 		}
 		return conn, nil
-	}
-
-	conn, err := ldap.Dial("tcp", addr)
-	if err != nil {
-		return nil, errors.Errorf("dial: %v", err)
-	}
-	if p.config.SecurityProtocol == SecurityProtocolStartTLS {
-		if err = conn.StartTLS(tlsConfig); err != nil {
-			_ = conn.Close()
-			return nil, errors.Errorf("start TLS: %v", err)
+	case SecurityProtocolStartTLS:
+		conn, err := ldap.Dial("tcp", addr)
+		if err != nil {
+			return nil, errors.Errorf("dial: %v", err)
 		}
+		if p.config.SecurityProtocol == SecurityProtocolStartTLS {
+			if err = conn.StartTLS(tlsConfig); err != nil {
+				_ = conn.Close()
+				return nil, errors.Errorf("start TLS: %v", err)
+			}
+		}
+		return conn, nil
+	default:
+		return nil, errors.Errorf("unsupported security protocol %q", p.config.SecurityProtocol)
 	}
-	return conn, nil
 }
 
 // Connect establishes a connection using the bind DN and bind password.
