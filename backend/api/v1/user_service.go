@@ -123,11 +123,22 @@ func (s *UserService) ListUsers(ctx context.Context, request *v1pb.ListUsersRequ
 		Offset:      &offset.offset,
 		ShowDeleted: request.ShowDeleted,
 	}
-	filter, err := getListUserFilter(request.Filter)
-	if err != nil {
+	if err := parseListUserFilter(find, request.Filter); err != nil {
 		return nil, err
 	}
-	find.Filter = filter
+	if v := find.ProjectID; v != nil {
+		user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+		if !ok {
+			return nil, status.Errorf(codes.Internal, "user not found")
+		}
+		hasPermission, err := s.iamManager.CheckPermission(ctx, iam.PermissionProjectsGet, user, *v)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to check user permission")
+		}
+		if !hasPermission {
+			return nil, status.Errorf(codes.PermissionDenied, "user does not have permission %q", iam.PermissionProjectsGet)
+		}
+	}
 
 	users, err := s.store.ListUsers(ctx, find)
 	if err != nil {
@@ -151,17 +162,17 @@ func (s *UserService) ListUsers(ctx context.Context, request *v1pb.ListUsersRequ
 	return response, nil
 }
 
-func getListUserFilter(filter string) (*store.ListResourceFilter, error) {
+func parseListUserFilter(find *store.FindUserMessage, filter string) error {
 	if filter == "" {
-		return nil, nil
+		return nil
 	}
 	e, err := cel.NewEnv()
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to create cel env")
+		return status.Errorf(codes.Internal, "failed to create cel env")
 	}
 	ast, iss := e.Parse(filter)
 	if iss != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "failed to parse filter %v, error: %v", filter, iss.String())
+		return status.Errorf(codes.InvalidArgument, "failed to parse filter %v, error: %v", filter, iss.String())
 	}
 
 	var getFilter func(expr celast.Expr) (string, error)
@@ -193,7 +204,13 @@ func getListUserFilter(filter string) (*store.ListResourceFilter, error) {
 			}
 			positionalArgs = append(positionalArgs, v1pb.State(v1State) == v1pb.State_DELETED)
 			return fmt.Sprintf("principal.deleted = $%d", len(positionalArgs)), nil
-		// TODO(ed): support role/project filter
+		case "project":
+			projectID, err := common.GetProjectID(value.(string))
+			if err != nil {
+				return "", status.Errorf(codes.InvalidArgument, "invalid project filter %q", value)
+			}
+			find.ProjectID = &projectID
+			return "TRUE", nil
 		default:
 			return "", status.Errorf(codes.InvalidArgument, "unsupport variable %q", variable)
 		}
@@ -274,13 +291,14 @@ func getListUserFilter(filter string) (*store.ListResourceFilter, error) {
 
 	where, err := getFilter(ast.NativeRep().Expr())
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return &store.ListResourceFilter{
+	find.Filter = &store.ListResourceFilter{
 		Args:  positionalArgs,
 		Where: "(" + where + ")",
-	}, nil
+	}
+	return nil
 }
 
 // CreateUser creates a user.

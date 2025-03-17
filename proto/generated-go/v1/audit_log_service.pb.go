@@ -96,6 +96,12 @@ type SearchAuditLogsRequest struct {
 	state  protoimpl.MessageState `protogen:"open.v1"`
 	Parent string                 `protobuf:"bytes,5,opt,name=parent,proto3" json:"parent,omitempty"`
 	// The filter of the log. It should be a valid CEL expression.
+	// Supported filter:
+	// - method
+	// - severity
+	// - user
+	// - create_time
+	//
 	// For example:
 	//   - filter = "method == '/bytebase.v1.SQLService/Query'"
 	//   - filter = "method == '/bytebase.v1.SQLService/Query' && severity == 'ERROR'"

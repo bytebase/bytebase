@@ -310,14 +310,15 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
 
     console.debug("[getOrFetchDatabaseMetadata]", {
       name: metadataResourceName,
-      filter: `schemas/${schema || "-"}/tables/${table}`,
+      filter: `schema == "${schema}" && table == "${table}"`,
       view: VIEW_FULL,
     });
     const promise = databaseServiceClient
       .getDatabaseMetadata(
         {
           name: metadataResourceName,
-          filter: `schemas/${schema || "-"}/tables/${table}`,
+          filter: `schema == "${schema}" && table == "${table}"`,
+          // TODO(ed): remove the legacy view
           view: VIEW_FULL,
         },
         {

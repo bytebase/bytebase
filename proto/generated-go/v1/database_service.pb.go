@@ -711,6 +711,8 @@ type ListDatabasesRequest struct {
 	// label == "tenant:asia,europe"
 	// label == "region:asia" && label == "tenant:bytebase"
 	// exclude_unassigned == true
+	// You can combine filter conditions like:
+	// environment == "environments/prod" && name.matches("employee")
 	Filter string `protobuf:"bytes,4,opt,name=filter,proto3" json:"filter,omitempty"`
 	// Show deleted database if specified.
 	ShowDeleted   bool `protobuf:"varint,5,opt,name=show_deleted,json=showDeleted,proto3" json:"show_deleted,omitempty"`
@@ -1087,6 +1089,15 @@ type GetDatabaseMetadataRequest struct {
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// The view to return. Defaults to DATABASE_METADATA_VIEW_BASIC.
 	View DatabaseMetadataView `protobuf:"varint,2,opt,name=view,proto3,enum=bytebase.v1.DatabaseMetadataView" json:"view,omitempty"`
+	// Filter is used to filter databases returned in the list.
+	// Supported filter:
+	// - schema
+	// - table
+	//
+	// For example:
+	// schema == "schema-a"
+	// table == "table-a"
+	// schema == "schema-a" && table == "table-a"
 	// The filter used for a specific schema object such as
 	// "schemas/schema-a/tables/table-a".
 	// The column masking level will only be returned when a table filter is used.
