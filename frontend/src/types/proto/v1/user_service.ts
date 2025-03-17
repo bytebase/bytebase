@@ -121,6 +121,7 @@ export interface ListUsersRequest {
    * - email
    * - user_type
    * - state
+   * - project
    *
    * For example:
    * name == "ed"
@@ -131,6 +132,10 @@ export interface ListUsersRequest {
    * user_type in ["SERVICE_ACCOUNT", "USER"]
    * !(user_type in ["SERVICE_ACCOUNT", "USER"])
    * state == "DELETED"
+   * project == "projects/sample-project"
+   * You can combine filter conditions like:
+   * name.matches("ed") && project == "projects/sample-project"
+   * (name == "ed" || email == "ed@bytebase.com") && project == "projects/sample-project"
    */
   filter: string;
 }

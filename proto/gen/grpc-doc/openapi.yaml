@@ -1307,6 +1307,8 @@ paths:
                      label == "tenant:asia,europe"
                      label == "region:asia" && label == "tenant:bytebase"
                      exclude_unassigned == true
+                     You can combine filter conditions like:
+                     environment == "environments/prod" && name.matches("employee")
                   schema:
                     type: string
                 - name: showDeleted
@@ -1686,7 +1688,16 @@ paths:
                 - name: filter
                   in: query
                   description: |-
-                    The filter used for a specific schema object such as
+                    Filter is used to filter databases returned in the list.
+                     Supported filter:
+                     - schema
+                     - table
+
+                     For example:
+                     schema == "schema-a"
+                     table == "table-a"
+                     schema == "schema-a" && table == "table-a"
+                     The filter used for a specific schema object such as
                      "schemas/schema-a/tables/table-a".
                      The column masking level will only be returned when a table filter is used.
                   schema:
@@ -4043,6 +4054,8 @@ paths:
                      label == "tenant:asia,europe"
                      label == "region:asia" && label == "tenant:bytebase"
                      exclude_unassigned == true
+                     You can combine filter conditions like:
+                     environment == "environments/prod" && name.matches("employee")
                   schema:
                     type: string
                 - name: showDeleted
@@ -7096,6 +7109,7 @@ paths:
                      - email
                      - user_type
                      - state
+                     - project
 
                      For example:
                      name == "ed"
@@ -7106,6 +7120,10 @@ paths:
                      user_type in ["SERVICE_ACCOUNT", "USER"]
                      !(user_type in ["SERVICE_ACCOUNT", "USER"])
                      state == "DELETED"
+                     project == "projects/sample-project"
+                     You can combine filter conditions like:
+                     name.matches("ed") && project == "projects/sample-project"
+                     (name == "ed" || email == "ed@bytebase.com") && project == "projects/sample-project"
                   schema:
                     type: string
             responses:
@@ -7572,6 +7590,8 @@ paths:
                      label == "tenant:asia,europe"
                      label == "region:asia" && label == "tenant:bytebase"
                      exclude_unassigned == true
+                     You can combine filter conditions like:
+                     environment == "environments/prod" && name.matches("employee")
                   schema:
                     type: string
                 - name: showDeleted
@@ -12436,6 +12456,12 @@ components:
                     type: string
                     description: |-
                         The filter of the log. It should be a valid CEL expression.
+                         Supported filter:
+                         - method
+                         - severity
+                         - user
+                         - create_time
+
                          For example:
                           - filter = "method == '/bytebase.v1.SQLService/Query'"
                           - filter = "method == '/bytebase.v1.SQLService/Query' && severity == 'ERROR'"
@@ -12584,9 +12610,10 @@ components:
                          name.matches("project name")
                          resource_id = "project id"
                          resource_id.matches("project id")
+                         exclude_default == true
+                         You can combine filter conditions like:
                          name = "project name" && resource_id.matches("project id")
                          name.matches("project name") || resource_id = "project id"
-                         exclude_default == true
         SearchProjectsResponse:
             type: object
             properties:
