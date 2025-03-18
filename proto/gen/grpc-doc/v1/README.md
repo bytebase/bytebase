@@ -6101,7 +6101,6 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | database_expr | [google.type.Expr](#google-type-Expr) |  | The condition that is associated with this database group. |
 | matched_databases | [DatabaseGroup.Database](#bytebase-v1-DatabaseGroup-Database) | repeated | The list of databases that match the database group condition. |
 | unmatched_databases | [DatabaseGroup.Database](#bytebase-v1-DatabaseGroup-Database) | repeated | The list of databases that match the database group condition. |
-| multitenancy | [bool](#bool) |  |  |
 
 
 

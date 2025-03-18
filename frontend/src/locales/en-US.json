@@ -210,7 +210,6 @@
     "resource": "Resource",
     "resources": "Resources",
     "closed": "Closed",
-    "options": "Options",
     "refresh": "Refresh",
     "rollback": "Rollback",
     "rows": {
@@ -2450,10 +2449,6 @@
     "edit": "Edit database group",
     "matched-database": "Matched database",
     "unmatched-database": "Unmatched database",
-    "multitenancy": {
-      "self": "Multitenancy",
-      "description": "Enables managing multiple homogeneous databases in one workflow across different tenants."
-    },
     "condition": {
       "self": "Condition"
     },

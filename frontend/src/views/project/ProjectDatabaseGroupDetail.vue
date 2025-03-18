@@ -19,12 +19,6 @@
                 >
                   {{ databaseGroup.databasePlaceholder }}
                 </h1>
-                <NTag v-if="databaseGroup.multitenancy" round type="info">
-                  <template #icon>
-                    <TenantIcon />
-                  </template>
-                  {{ $t("database-group.multitenancy.self") }}
-                </NTag>
               </div>
             </div>
           </div>
@@ -95,30 +89,27 @@
 </template>
 
 <script lang="ts" setup>
-import { NButton, NDivider, NTag } from "naive-ui";
-import { reactive, computed, watchEffect } from "vue";
-import { useRouter } from "vue-router";
 import DatabaseGroupPanel from "@/components/DatabaseGroup/DatabaseGroupPanel.vue";
 import MatchedDatabaseView from "@/components/DatabaseGroup/MatchedDatabaseView.vue";
-import { FactorList } from "@/components/DatabaseGroup/utils";
 import {
-  factorSupportDropdown,
-  getDatabaseGroupOptionConfigMap,
+  FactorList, factorSupportDropdown,
+  getDatabaseGroupOptionConfigMap
 } from "@/components/DatabaseGroup/utils";
 import ExprEditor from "@/components/ExprEditor";
 import { FeatureAttentionForInstanceLicense } from "@/components/FeatureGuard";
-import TenantIcon from "@/components/TenantIcon.vue";
 import {
   useDBGroupStore,
   useDatabaseV1Store,
   useProjectByName,
   useSubscriptionV1Store,
 } from "@/store";
-import { databaseGroupNamePrefix } from "@/store/modules/v1/common";
-import { projectNamePrefix } from "@/store/modules/v1/common";
+import { databaseGroupNamePrefix, projectNamePrefix } from "@/store/modules/v1/common";
 import { DatabaseGroupView } from "@/types/proto/v1/database_group_service";
 import { hasPermissionToCreateChangeDatabaseIssueInProject } from "@/utils";
 import { generateDatabaseGroupIssueRoute } from "@/utils/databaseGroup/issue";
+import { NButton, NDivider } from "naive-ui";
+import { computed, reactive, watchEffect } from "vue";
+import { useRouter } from "vue-router";
 
 interface LocalState {
   showEditPanel: boolean;

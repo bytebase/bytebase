@@ -11,18 +11,14 @@ import Long from "long";
 export const protobufPackage = "bytebase.store";
 
 export interface DatabaseGroupPayload {
-  multitenancy: boolean;
 }
 
 function createBaseDatabaseGroupPayload(): DatabaseGroupPayload {
-  return { multitenancy: false };
+  return {};
 }
 
 export const DatabaseGroupPayload: MessageFns<DatabaseGroupPayload> = {
-  encode(message: DatabaseGroupPayload, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.multitenancy !== false) {
-      writer.uint32(8).bool(message.multitenancy);
-    }
+  encode(_: DatabaseGroupPayload, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     return writer;
   },
 
@@ -33,14 +29,6 @@ export const DatabaseGroupPayload: MessageFns<DatabaseGroupPayload> = {
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 8) {
-            break;
-          }
-
-          message.multitenancy = reader.bool();
-          continue;
-        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -50,24 +38,20 @@ export const DatabaseGroupPayload: MessageFns<DatabaseGroupPayload> = {
     return message;
   },
 
-  fromJSON(object: any): DatabaseGroupPayload {
-    return { multitenancy: isSet(object.multitenancy) ? globalThis.Boolean(object.multitenancy) : false };
+  fromJSON(_: any): DatabaseGroupPayload {
+    return {};
   },
 
-  toJSON(message: DatabaseGroupPayload): unknown {
+  toJSON(_: DatabaseGroupPayload): unknown {
     const obj: any = {};
-    if (message.multitenancy !== false) {
-      obj.multitenancy = message.multitenancy;
-    }
     return obj;
   },
 
   create(base?: DeepPartial<DatabaseGroupPayload>): DatabaseGroupPayload {
     return DatabaseGroupPayload.fromPartial(base ?? {});
   },
-  fromPartial(object: DeepPartial<DatabaseGroupPayload>): DatabaseGroupPayload {
+  fromPartial(_: DeepPartial<DatabaseGroupPayload>): DatabaseGroupPayload {
     const message = createBaseDatabaseGroupPayload();
-    message.multitenancy = object.multitenancy ?? false;
     return message;
   },
 };
@@ -79,10 +63,6 @@ export type DeepPartial<T> = T extends Builtin ? T
   : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
-
-function isSet(value: any): boolean {
-  return value !== null && value !== undefined;
-}
 
 export interface MessageFns<T> {
   encode(message: T, writer?: BinaryWriter): BinaryWriter;
