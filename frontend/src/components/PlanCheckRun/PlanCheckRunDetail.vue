@@ -64,13 +64,6 @@
         <div
           class="flex items-center justify-start space-x-2 divide-x divide-block-border"
         >
-          <div v-if="row.checkResult.content" class="pl-2 first:pl-0">
-            <span
-              class="normal-link"
-              @click="state.activeResultDefinition = row.checkResult.content"
-              >{{ $t("sql-review.view-definition") }}</span
-            >
-          </div>
           <div
             v-if="
               row.checkResult.sqlReviewReport &&
@@ -158,14 +151,6 @@
       </div>
       <div class="textinfolabel">
         <span>{{ row.checkResult.content }}</span>
-        <template v-if="row.checkResult.content">
-          <span
-            class="ml-1 normal-link"
-            @click="state.activeResultDefinition = row.checkResult.content"
-            >{{ $t("sql-review.view-definition") }}</span
-          >
-          <span class="border-r border-control-border ml-1"></span>
-        </template>
         <template
           v-if="
             row.checkResult.sqlReviewReport &&
@@ -235,12 +220,6 @@
     :disabled="true"
     @cancel="state.activeRule = undefined"
   />
-
-  <PlanCheckResultDefinitionModal
-    v-if="state.activeResultDefinition"
-    :definition="state.activeResultDefinition"
-    @close="state.activeResultDefinition = undefined"
-  />
 </template>
 
 <script setup lang="ts">
@@ -273,7 +252,6 @@ import {
   PlanCheckRun_Result_Status,
   PlanCheckRun_Status,
 } from "@/types/proto/v1/plan_service";
-import PlanCheckResultDefinitionModal from "./PlanCheckResultDefinitionModal.vue";
 import { usePlanCheckRunContext } from "./context";
 import { OnlineMigrationDetail } from "./detail";
 
@@ -292,7 +270,6 @@ export type PlanCheckDetailTableRow = {
 
 type LocalState = {
   activeRule?: RuleTemplateV2;
-  activeResultDefinition?: string;
 };
 
 const props = defineProps<{
@@ -307,7 +284,6 @@ const { events } = usePlanCheckRunContext();
 const hideDocLink = useAppFeature("bb.feature.sql-check.hide-doc-link");
 const state = reactive<LocalState>({
   activeRule: undefined,
-  activeResultDefinition: undefined,
 });
 
 const statusIconClass = (status: PlanCheckRun_Result_Status) => {
