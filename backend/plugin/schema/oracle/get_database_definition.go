@@ -385,6 +385,9 @@ func writeColumn(buf *strings.Builder, column *storepb.ColumnMetadata) error {
 		if _, err := buf.WriteString(column.Collation); err != nil {
 			return err
 		}
+		if _, err := buf.WriteString(`"`); err != nil {
+			return err
+		}
 	}
 	if column.DefaultValue != nil {
 		if _, err := buf.WriteString(` DEFAULT `); err != nil {
