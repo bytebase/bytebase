@@ -9,7 +9,7 @@ import (
 )
 
 // Dump dumps the database.
-func (driver *Driver) Dump(_ context.Context, out io.Writer, metadata *storepb.DatabaseSchemaMetadata) error {
+func (*Driver) Dump(_ context.Context, out io.Writer, metadata *storepb.DatabaseSchemaMetadata) error {
 	text, err := schema.GetDatabaseDefinition(storepb.Engine_ORACLE, schema.GetDefinitionContext{}, metadata)
 	if err != nil {
 		return err

@@ -224,7 +224,7 @@ func writeForeignKey(buf *strings.Builder, schema string, fk *storepb.ForeignKey
 	if _, err := buf.WriteString(fk.Name); err != nil {
 		return err
 	}
-	if _, err := buf.Write([]byte(`"`)); err != nil {
+	if _, err := buf.WriteString(`"`); err != nil {
 		return err
 	}
 	if _, err := buf.WriteString(` FOREIGN KEY (`); err != nil {
@@ -290,7 +290,7 @@ func writeCheckConstraint(buf *strings.Builder, check *storepb.CheckConstraintMe
 	if _, err := buf.WriteString(check.Name); err != nil {
 		return err
 	}
-	if _, err := buf.Write([]byte(`"`)); err != nil {
+	if _, err := buf.WriteString(`"`); err != nil {
 		return err
 	}
 	if _, err := buf.WriteString(` CHECK (`); err != nil {
@@ -310,7 +310,7 @@ func writeConstraint(buf *strings.Builder, constraint *storepb.IndexMetadata) er
 	if _, err := buf.WriteString(constraint.Name); err != nil {
 		return err
 	}
-	if _, err := buf.Write([]byte(`"`)); err != nil {
+	if _, err := buf.WriteString(`"`); err != nil {
 		return err
 	}
 
