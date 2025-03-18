@@ -11,7 +11,7 @@ import { RichDatabaseName } from "@/components/v2";
 import {
   useCurrentUserV1,
   useDatabaseV1Store,
-  useProjectV1List,
+  useProjectV1Store,
 } from "@/store";
 import {
   SYSTEM_BOT_USER_NAME,
@@ -19,7 +19,7 @@ import {
   isValidProjectName,
   type ComposedDatabase,
 } from "@/types";
-import { Label } from "@/types/proto/v1/project_service";
+import { type Label } from "@/types/proto/v1/project_service";
 import { User } from "@/types/proto/v1/user_service";
 import type { SearchParams, SearchScopeId } from "@/utils";
 import {
@@ -44,25 +44,6 @@ export type ValueOption = {
   render: RenderFunction;
 };
 
-const useProjectLabels = (params: Ref<SearchParams>) => {
-  const { projectList } = useProjectV1List();
-  const projectName = params.value.scopes.find(
-    (scope) => scope.id === "project"
-  )?.value;
-
-  const labels = new Map<string, Label>();
-  for (const project of projectList.value) {
-    if (projectName && project.name !== `projects/${projectName}`) {
-      continue;
-    }
-    for (const label of project.issueLabels) {
-      const key = `${label.value}-${label.color}`;
-      labels.set(key, label);
-    }
-  }
-  return [...labels.values()];
-};
-
 export const useIssueSearchScopeOptions = (
   params: Ref<SearchParams>,
   supportOptionIdList: Ref<SearchScopeId[]>,
@@ -72,8 +53,9 @@ export const useIssueSearchScopeOptions = (
   const route = useRoute();
   const me = useCurrentUserV1();
   const databaseV1Store = useDatabaseV1Store();
+  const projectStore = useProjectV1Store();
 
-  const project = computed(() => {
+  const projectName = computed(() => {
     const { projectId } = route?.params ?? {};
     if (projectId && typeof projectId === "string") {
       return `projects/${projectId}`;
@@ -88,14 +70,30 @@ export const useIssueSearchScopeOptions = (
   });
 
   const databaseList = ref<ComposedDatabase[]>([]);
+  const projectLabels = ref<Label[]>([]);
 
   watchEffect(async () => {
-    if (!isValidProjectName(project.value)) {
+    if (!isValidProjectName(projectName.value)) {
+      return;
+    }
+    const project = await projectStore.getOrFetchProjectByName(
+      projectName.value!
+    );
+    const labels = new Map<string, Label>();
+    for (const label of project.issueLabels) {
+      const key = `${label.value}-${label.color}`;
+      labels.set(key, label);
+    }
+    projectLabels.value = [...labels.values()];
+  });
+
+  watchEffect(async () => {
+    if (!isValidProjectName(projectName.value)) {
       return;
     }
     const { databases } = await databaseV1Store.fetchDatabases({
       pageSize: getDefaultPagination(),
-      parent: project.value!,
+      parent: projectName.value!,
     });
     databaseList.value = databases;
   });
@@ -243,7 +241,7 @@ export const useIssueSearchScopeOptions = (
         id: "label",
         title: t("issue.advanced-search.scope.label.title"),
         description: t("issue.advanced-search.scope.label.description"),
-        options: useProjectLabels(params).map((label) => {
+        options: projectLabels.value.map((label) => {
           return {
             value: label.value,
             keywords: [label.value],

@@ -73,8 +73,7 @@ import { cloneDeep } from "lodash-es";
 import { NButton, NInput } from "naive-ui";
 import { computed, nextTick, onMounted, ref } from "vue";
 import type { LocalApprovalRule } from "@/types";
-import { SYSTEM_BOT_USER_NAME } from "@/types";
-import { creatorOfRule } from "@/utils";
+import { isReadonlyApprovalRule } from "@/utils";
 import { RequiredStar } from "../../common";
 import { StepsTable } from "../common";
 import { useCustomApprovalContext } from "../context";
@@ -115,7 +114,7 @@ const state = ref(resolveLocalState());
 
 const allowEditRule = computed(() => {
   if (!allowAdmin.value) return false;
-  return creatorOfRule(rule.value).name !== SYSTEM_BOT_USER_NAME;
+  return !isReadonlyApprovalRule(rule.value);
 });
 
 const allowCreateOrUpdate = computed(() => {

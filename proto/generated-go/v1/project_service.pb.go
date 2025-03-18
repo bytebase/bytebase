@@ -414,6 +414,7 @@ type SearchProjectsRequest struct {
 	// - name
 	// - resource_id
 	// - exclude_default: if not include the default project.
+	// - state
 	//
 	// For example:
 	// name = "project name"
@@ -421,6 +422,7 @@ type SearchProjectsRequest struct {
 	// resource_id = "project id"
 	// resource_id.matches("project id")
 	// exclude_default == true
+	// state == "DELETED"
 	// You can combine filter conditions like:
 	// name = "project name" && resource_id.matches("project id")
 	// name.matches("project name") || resource_id = "project id"
