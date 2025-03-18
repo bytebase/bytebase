@@ -654,6 +654,11 @@ export interface ColumnMetadata {
     | string
     | undefined;
   /**
+   * Oracle specific metadata.
+   * The default_on_null is the default on null of a column.
+   */
+  defaultOnNull: boolean;
+  /**
    * The on_update is the on update action of a column.
    * For MySQL like databases, it's only supported for TIMESTAMP columns with
    * CURRENT_TIMESTAMP as on update value.
@@ -4942,6 +4947,7 @@ function createBaseColumnMetadata(): ColumnMetadata {
     defaultNull: undefined,
     defaultString: undefined,
     defaultExpression: undefined,
+    defaultOnNull: false,
     onUpdate: "",
     nullable: false,
     type: "",
@@ -4973,6 +4979,9 @@ export const ColumnMetadata: MessageFns<ColumnMetadata> = {
     }
     if (message.defaultExpression !== undefined) {
       writer.uint32(50).string(message.defaultExpression);
+    }
+    if (message.defaultOnNull !== false) {
+      writer.uint32(144).bool(message.defaultOnNull);
     }
     if (message.onUpdate !== "") {
       writer.uint32(122).string(message.onUpdate);
@@ -5057,6 +5066,14 @@ export const ColumnMetadata: MessageFns<ColumnMetadata> = {
           }
 
           message.defaultExpression = reader.string();
+          continue;
+        }
+        case 18: {
+          if (tag !== 144) {
+            break;
+          }
+
+          message.defaultOnNull = reader.bool();
           continue;
         }
         case 15: {
@@ -5148,6 +5165,7 @@ export const ColumnMetadata: MessageFns<ColumnMetadata> = {
       defaultNull: isSet(object.defaultNull) ? globalThis.Boolean(object.defaultNull) : undefined,
       defaultString: isSet(object.defaultString) ? globalThis.String(object.defaultString) : undefined,
       defaultExpression: isSet(object.defaultExpression) ? globalThis.String(object.defaultExpression) : undefined,
+      defaultOnNull: isSet(object.defaultOnNull) ? globalThis.Boolean(object.defaultOnNull) : false,
       onUpdate: isSet(object.onUpdate) ? globalThis.String(object.onUpdate) : "",
       nullable: isSet(object.nullable) ? globalThis.Boolean(object.nullable) : false,
       type: isSet(object.type) ? globalThis.String(object.type) : "",
@@ -5181,6 +5199,9 @@ export const ColumnMetadata: MessageFns<ColumnMetadata> = {
     }
     if (message.defaultExpression !== undefined) {
       obj.defaultExpression = message.defaultExpression;
+    }
+    if (message.defaultOnNull !== false) {
+      obj.defaultOnNull = message.defaultOnNull;
     }
     if (message.onUpdate !== "") {
       obj.onUpdate = message.onUpdate;
@@ -5223,6 +5244,7 @@ export const ColumnMetadata: MessageFns<ColumnMetadata> = {
     message.defaultNull = object.defaultNull ?? undefined;
     message.defaultString = object.defaultString ?? undefined;
     message.defaultExpression = object.defaultExpression ?? undefined;
+    message.defaultOnNull = object.defaultOnNull ?? false;
     message.onUpdate = object.onUpdate ?? "";
     message.nullable = object.nullable ?? false;
     message.type = object.type ?? "";
