@@ -43,12 +43,12 @@ const (
 
 // Issue object of issue.
 type Issue struct {
-	ID          int                `json:"id"`
-	Name        string             `json:"name"`
-	Status      string             `json:"status"`
-	Type        string             `json:"type"`
-	Description string             `json:"description"`
-	Creator     *store.UserMessage `json:"-"`
+	ID          int
+	Name        string
+	Status      string
+	Type        string
+	Description string
+	Creator     *store.UserMessage
 }
 
 type Rollout struct {
@@ -57,23 +57,23 @@ type Rollout struct {
 }
 
 type Stage struct {
-	Name string `json:"name"`
+	Name string
 }
 
 // TaskResult is the latest result of a task.
 // The `detail` field is only present if the status is TaskFailed.
 // The `SkippedReason` field is only present if the task is skipped.
 type TaskResult struct {
-	Name          string `json:"name"`
-	Status        string `json:"status"`
-	Detail        string `json:"detail"`
-	SkippedReason string `json:"skippedReason"`
+	Name          string
+	Status        string
+	Detail        string
+	SkippedReason string
 }
 
 // Project object of project.
 type Project struct {
-	Name  string `json:"name"`
-	Title string `json:"title"`
+	Name  string
+	Title string
 }
 
 // Context is the context of webhook.
