@@ -155,6 +155,7 @@ const (
 	DuplicateIndexInTable      Code = 815
 	IndexTypeNotAllowed        Code = 816
 	RedundantIndex             Code = 817
+	DropIndexUnconcurrently    Code = 818
 
 	// 1001 ~ 1099 charset error code.
 	DisabledCharset Code = 1001
@@ -586,8 +587,8 @@ const (
 	// PostgreSQLIndexNoDuplicateColumn is an advisor type for Postgresql no duplicate columns in index.
 	PostgreSQLIndexNoDuplicateColumn Type = "bb.plugin.advisor.postgresql.index.no-duplicate-column"
 
-	// PostgreSQLCreateIndexConcurrently is an advisor type for PostgreSQL to create index concurrently.
-	PostgreSQLCreateIndexConcurrently Type = "bb.plugin.advisor.postgresql.index.create-concurrently"
+	// PostgreSQLIndexConcurrently is an advisor type for PostgreSQL to create or drop index concurrently.
+	PostgreSQLIndexConcurrently Type = "bb.plugin.advisor.postgresql.index.create-concurrently"
 
 	// PostgreSQLColumnTypeDisallowList is an advisor type for Postgresql column type disallow list.
 	PostgreSQLColumnTypeDisallowList Type = "bb.plugin.advisor.postgresql.column.type-disallow-list"

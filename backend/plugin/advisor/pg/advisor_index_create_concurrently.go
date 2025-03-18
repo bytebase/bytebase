@@ -13,20 +13,20 @@ import (
 )
 
 var (
-	_ advisor.Advisor = (*IndexCreateConcurrentlyAdvisor)(nil)
+	_ advisor.Advisor = (*IndexConcurrentlyAdvisor)(nil)
 	_ ast.Visitor     = (*indexCreateConcurrentlyChecker)(nil)
 )
 
 func init() {
-	advisor.Register(storepb.Engine_POSTGRES, advisor.PostgreSQLCreateIndexConcurrently, &IndexCreateConcurrentlyAdvisor{})
+	advisor.Register(storepb.Engine_POSTGRES, advisor.PostgreSQLIndexConcurrently, &IndexConcurrentlyAdvisor{})
 }
 
-// IndexCreateConcurrentlyAdvisor is the advisor checking for to create index concurrently.
-type IndexCreateConcurrentlyAdvisor struct {
+// IndexConcurrentlyAdvisor is the advisor checking for to create index concurrently.
+type IndexConcurrentlyAdvisor struct {
 }
 
 // Check checks for to create index concurrently.
-func (*IndexCreateConcurrentlyAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
+func (*IndexConcurrentlyAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
 	stmtList, ok := checkCtx.AST.([]ast.Node)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Node")
@@ -56,7 +56,8 @@ type indexCreateConcurrentlyChecker struct {
 
 // Visit implements ast.Visitor interface.
 func (checker *indexCreateConcurrentlyChecker) Visit(in ast.Node) ast.Visitor {
-	if node, ok := in.(*ast.CreateIndexStmt); ok {
+	switch node := in.(type) {
+	case *ast.CreateIndexStmt:
 		if !node.Concurrently {
 			checker.adviceList = append(checker.adviceList, &storepb.Advice{
 				Status:  checker.level,
@@ -68,7 +69,18 @@ func (checker *indexCreateConcurrentlyChecker) Visit(in ast.Node) ast.Visitor {
 				},
 			})
 		}
+	case *ast.DropIndexStmt:
+		if !node.Concurrently {
+			checker.adviceList = append(checker.adviceList, &storepb.Advice{
+				Status:  checker.level,
+				Code:    advisor.DropIndexUnconcurrently.Int32(),
+				Title:   checker.title,
+				Content: "Droping indexes will block writes on the table, unless use CONCURRENTLY",
+				StartPosition: &storepb.Position{
+					Line: int32(in.LastLine()),
+				},
+			})
+		}
 	}
-
 	return checker
 }
