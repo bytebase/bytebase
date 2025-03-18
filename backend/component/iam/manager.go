@@ -123,6 +123,19 @@ func (m *Manager) ReloadCache(ctx context.Context) error {
 	return nil
 }
 
+func (m *Manager) GetBuiltinRolesByPermission(p Permission) []string {
+	roles := []string{}
+	for _, role := range m.PredefinedRoles {
+		for permission := range role.Permissions {
+			if permission == p {
+				roles = append(roles, role.Name)
+				break
+			}
+		}
+	}
+	return roles
+}
+
 // GetPermissions returns all permissions for the given role.
 // Role format is roles/{role}.
 func (m *Manager) GetPermissions(role string) (map[Permission]bool, error) {

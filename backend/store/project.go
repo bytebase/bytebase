@@ -36,6 +36,11 @@ type FindProjectMessage struct {
 	Limit       *int
 	Offset      *int
 	Filter      *ListResourceFilter
+
+	// Filter if the user have the "bb.projects.get" permission.
+	UserID *int
+	// Filter if the user have any specific roles in the workspace level, works with the UserID
+	Roles []string
 }
 
 // UpdateProjectMessage is the message for updating a project.
@@ -251,16 +256,49 @@ func (s *Store) listProjectImplV2(ctx context.Context, txn *sql.Tx, find *FindPr
 		where, args = append(where, fmt.Sprintf("deleted = $%d", len(args)+1)), append(args, false)
 	}
 
-	query := fmt.Sprintf(`
+	var with, join string
+	if v := find.UserID; v != nil {
+		var requiredWorkspaceRoleQuery string
+		if len(find.Roles) > 0 {
+			requiredWorkspaceRoleQuery = fmt.Sprintf(`OR (ARRAY[%s] && roles AND resource = '')`, strings.Join(find.Roles, ", "))
+		}
+		with = fmt.Sprintf(`WITH all_members AS (
+			SELECT
+				jsonb_array_elements_text(jsonb_array_elements(policy.payload -> 'bindings') -> 'members') AS member,
+				jsonb_array_elements(policy.payload -> 'bindings') ->> 'role' AS role,
+				resource
+			FROM policy
+			WHERE (resource_type = 'PROJECT' OR resource_type = 'WORKSPACE') AND type = 'bb.policy.iam'
+		),
+		project_roles AS (
+			SELECT ARRAY_AGG(role) AS roles, resource
+			FROM all_members WHERE (member = 'users/%d' OR member = 'allUsers')
+			GROUP BY resource
+		),
+		project_permissions AS (
+			SELECT
+				roles,
+				(permissions -> 'permissions')::jsonb AS permission,
+				project_roles.resource
+			FROM role
+			INNER JOIN project_roles ON CONCAT('roles/', role.resource_id) = ANY(project_roles.roles)
+		),
+		available_projects AS (
+			SELECT ARRAY_AGG(resource) AS resources
+			FROM project_permissions
+			WHERE (permission ? 'bb.projects.get') %s
+		)`, *v, requiredWorkspaceRoleQuery)
+		join = `INNER JOIN available_projects ON CONCAT('projects/', project.resource_id) = ANY(available_projects.resources) OR '' = ANY(available_projects.resources)`
+	}
+
+	query := with + `
 		SELECT
 			resource_id,
 			name,
 			data_classification_config_id,
 			setting,
 			deleted
-		FROM project
-		WHERE %s
-		ORDER BY project.resource_id`, strings.Join(where, " AND "))
+		FROM project ` + join + ` WHERE ` + strings.Join(where, " AND ") + ` ORDER BY project.resource_id`
 	if v := find.Limit; v != nil {
 		query += fmt.Sprintf(" LIMIT %d", *v)
 	}
