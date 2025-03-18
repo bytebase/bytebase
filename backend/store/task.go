@@ -38,6 +38,16 @@ type TaskMessage struct {
 	LatestTaskRunStatus api.TaskRunStatus
 }
 
+func (t *TaskMessage) GetDatabaseName() string {
+	if t == nil {
+		return ""
+	}
+	if t.DatabaseName == nil {
+		return ""
+	}
+	return *t.DatabaseName
+}
+
 // TaskFind is the API message for finding tasks.
 type TaskFind struct {
 	ID  *int
