@@ -37,11 +37,7 @@ import {
 } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import type { Project } from "@/types/proto/v1/project_service";
-import {
-  extractProjectResourceName,
-  hasWorkspacePermissionV2,
-  getDefaultPagination,
-} from "@/utils";
+import { hasWorkspacePermissionV2, getDefaultPagination } from "@/utils";
 import ResourceSelect from "./ResourceSelect.vue";
 
 const props = withDefaults(
@@ -91,7 +87,7 @@ const state = reactive<LocalState>({
   rawProjectList: [],
 });
 
-const initProjectList = () => {
+const initProjectList = async () => {
   if (
     props.projectName &&
     props.projectName !== DEFAULT_PROJECT_NAME &&
@@ -101,13 +97,11 @@ const initProjectList = () => {
     // It may happen the selected id might not be in the project list.
     // e.g. the selected project is deleted after the selection and we
     // are unable to cleanup properly. In such case, the selected project id
-    // is orphaned and we just display the id
-    const dummyProject = {
-      ...unknownProject(),
-      name: props.projectName,
-      title: extractProjectResourceName(props.projectName),
-    };
-    state.rawProjectList.unshift(dummyProject);
+    // is orphaned and we need to fetch the project by name.
+    const project = await projectStore.getOrFetchProjectByName(
+      props.projectName
+    );
+    state.rawProjectList.unshift(project);
   }
 
   if (
@@ -178,7 +172,7 @@ const handleSearch = useDebounceFn(async (search: string) => {
     });
     state.rawProjectList = projects;
     if (!search) {
-      initProjectList();
+      await initProjectList();
     }
   } finally {
     state.loading = false;
