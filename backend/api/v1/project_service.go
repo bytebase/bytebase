@@ -221,7 +221,7 @@ func (s *ProjectService) SearchProjects(ctx context.Context, request *v1pb.Searc
 	find := &store.FindProjectMessage{
 		ShowDeleted: request.ShowDeleted,
 		UserID:      &user.ID,
-		Roles:       s.iamManager.GetBuiltinRolesByPermission("iam.PermissionProjectsGet"),
+		Roles:       s.iamManager.GetBuiltinRolesByPermission(iam.PermissionProjectsGet),
 		Limit:       &limitPlusOne,
 		Offset:      &offset.offset,
 	}
