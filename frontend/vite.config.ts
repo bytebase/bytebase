@@ -93,12 +93,8 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": fileURLToPath(new URL("./src", import.meta.url)),
-      "@sql-lsp": fileURLToPath(
-        new URL("./src/plugins/sql-lsp", import.meta.url)
-      ),
       "@public": fileURLToPath(new URL("./public", import.meta.url)),
     },
-    dedupe: ["vscode"],
   },
   envPrefix: ["BB_", "GIT_COMMIT"],
   define: {

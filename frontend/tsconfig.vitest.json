@@ -11,8 +11,7 @@
     "jsx": "preserve",
     "jsxImportSource": "vue",
     "paths": {
-      "@/*": ["./src/*"],
-      "@sql-lsp/*": ["./src/plugins/sql-lsp/*"]
+      "@/*": ["./src/*"]
     }
   }
 }
