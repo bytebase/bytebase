@@ -18,19 +18,18 @@
 </template>
 
 <script lang="tsx" setup>
+import type { ComposedDatabaseGroup } from "@/types";
+import { hasPermissionToCreateChangeDatabaseIssueInProject } from "@/utils";
+import { generateDatabaseGroupIssueRoute } from "@/utils/databaseGroup/issue";
 import {
   NButton,
   NDataTable,
-  NTag,
   NDropdown,
-  type DataTableColumn,
+  type DataTableColumn
 } from "naive-ui";
 import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import type { ComposedDatabaseGroup } from "@/types";
-import { hasPermissionToCreateChangeDatabaseIssueInProject } from "@/utils";
-import { generateDatabaseGroupIssueRoute } from "@/utils/databaseGroup/issue";
 
 interface LocalState {
   selectedDatabaseGroupNameList: Set<string>;
@@ -93,11 +92,6 @@ const columnList = computed((): DatabaseGroupDataTableColumn[] => {
       return (
         <div class="space-x-2">
           <span>{data.databasePlaceholder}</span>
-          {data.multitenancy && (
-            <NTag round type="info" size="small">
-              {t("database-group.multitenancy.self")}
-            </NTag>
-          )}
         </div>
       );
     },

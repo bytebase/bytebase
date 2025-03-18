@@ -65,10 +65,6 @@
 </template>
 
 <script setup lang="ts">
-import { cloneDeep, isEqual, uniqBy } from "lodash-es";
-import { NButton, NTooltip } from "naive-ui";
-import { computed, ref, watch } from "vue";
-import { useI18n } from "vue-i18n";
 import {
   chooseUpdateTarget,
   databaseForTask,
@@ -85,6 +81,10 @@ import { pushNotification, useDBGroupStore } from "@/store";
 import type { Plan_Spec } from "@/types/proto/v1/plan_service";
 import { Task_Type } from "@/types/proto/v1/rollout_service";
 import { extractDatabaseGroupName, extractEnvironmentResourceName } from "@/utils";
+import { cloneDeep, isEqual, uniqBy } from "lodash-es";
+import { NButton, NTooltip } from "naive-ui";
+import { computed, ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import FlagsForm from "./FlagsForm";
 import { allowChangeTaskGhostFlags, useIssueGhostContext } from "./common";
 
@@ -141,7 +141,7 @@ const chooseUpdateSpecs = async () => {
   const target = spec.value?.changeDatabaseConfig?.target;
   if (target && extractDatabaseGroupName(target)) {
     const dbGroup = dbGroupStore.getDBGroupByName(target);
-    if (dbGroup?.multitenancy) {
+    if (dbGroup) {
       isBatchMode = true;
     }
   }

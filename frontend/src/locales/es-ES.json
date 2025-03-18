@@ -210,7 +210,6 @@
     "resource": "Recurso",
     "resources": "Recursos",
     "closed": "Cerrado",
-    "options": "Opciones",
     "refresh": "Actualizar",
     "rollback": "Retroceder",
     "rows": {
@@ -2450,10 +2449,6 @@
     "edit": "Editar grupo de bases de datos",
     "matched-database": "Base de datos coincidente",
     "unmatched-database": "Base de datos no coincidente",
-    "multitenancy": {
-      "self": "Multi Alquiler",
-      "description": "Permite gestionar múltiples bases de datos homogéneas en un flujo de trabajo entre diferentes inquilinos."
-    },
     "condition": {
       "self": "Condición"
     },

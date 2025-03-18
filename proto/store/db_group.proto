@@ -4,6 +4,4 @@ package bytebase.store;
 
 option go_package = "generated-go/store";
 
-message DatabaseGroupPayload {
-  bool multitenancy = 1;
-}
+message DatabaseGroupPayload {}

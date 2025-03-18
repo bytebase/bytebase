@@ -210,7 +210,6 @@
     "resource": "Tài nguyên",
     "resources": "Tài nguyên",
     "closed": "Đã đóng",
-    "options": "Tùy chọn",
     "refresh": "Làm mới",
     "rollback": "Hoàn tác",
     "rows": {
@@ -2450,10 +2449,6 @@
     "edit": "Chỉnh sửa nhóm cơ sở dữ liệu",
     "matched-database": "Cơ sở dữ liệu phù hợp",
     "unmatched-database": "Cơ sở dữ liệu không phù hợp",
-    "multitenancy": {
-      "self": "Đa đối tượng thuê",
-      "description": "Cho phép quản lý nhiều cơ sở dữ liệu đồng nhất trong một quy trình công việc trên các đối tượng thuê khác nhau."
-    },
     "condition": {
       "self": "Điều kiện"
     },
