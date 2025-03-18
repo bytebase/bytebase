@@ -289,8 +289,9 @@ func convert(node *pgquery.Node, statement base.SingleSQL) (res ast.Node, err er
 		switch in.DropStmt.RemoveType {
 		case pgquery.ObjectType_OBJECT_INDEX:
 			dropIndex := &ast.DropIndexStmt{
-				IfExists: in.DropStmt.MissingOk,
-				Behavior: convertDropBehavior(in.DropStmt.Behavior),
+				IfExists:     in.DropStmt.MissingOk,
+				Concurrently: in.DropStmt.Concurrent,
+				Behavior:     convertDropBehavior(in.DropStmt.Behavior),
 			}
 			for _, object := range in.DropStmt.Objects {
 				list, ok := object.Node.(*pgquery.Node_List)
