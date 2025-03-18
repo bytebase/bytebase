@@ -43,7 +43,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, reactive, watchEffect } from "vue";
+import { computed, reactive, watchEffect, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import IdentityProviderTable from "@/components/SSO/IdentityProviderTable.vue";
 import {
@@ -57,13 +57,15 @@ import {
   useEnvironmentV1Store,
   useIdentityProviderStore,
   useInstanceV1List,
-  useProjectV1List,
+  useProjectV1Store,
 } from "@/store";
+import { type ComposedProject } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import type { IdentityProvider } from "@/types/proto/v1/idp_service";
 import {
   filterProjectV1ListByKeyword,
   hasWorkspacePermissionV2,
+  getDefaultPagination,
 } from "@/utils";
 
 type LocalTabType = "PROJECT" | "INSTANCE" | "ENVIRONMENT" | "SSO";
@@ -74,6 +76,8 @@ interface LocalState {
 }
 
 const { t } = useI18n();
+const projectList = ref<ComposedProject[]>([]);
+const projectStore = useProjectV1Store();
 const environmentStore = useEnvironmentV1Store();
 const identityProviderStore = useIdentityProviderStore();
 const state = reactive<LocalState>({
@@ -81,9 +85,17 @@ const state = reactive<LocalState>({
   searchText: "",
 });
 
-const prepareList = () => {
-  environmentStore.fetchEnvironments(true /* showDeleted */);
-  identityProviderStore.fetchIdentityProviderList(true /* showDeleted */);
+const prepareList = async () => {
+  const [_1, _2, listProjectResponse] = await Promise.all([
+    environmentStore.fetchEnvironments(true /* showDeleted */),
+    identityProviderStore.fetchIdentityProviderList(true /* showDeleted */),
+    projectStore.fetchProjectList({
+      showDeleted: true,
+      pageSize: getDefaultPagination(),
+      state: State.DELETED,
+    }),
+  ]);
+  projectList.value = listProjectResponse.projects;
 };
 
 watchEffect(prepareList);
@@ -97,13 +109,6 @@ const environmentList = computed(() => {
 const instanceList = computed(() => {
   return useInstanceV1List(true /** showDeleted */).instanceList.value.filter(
     (instance) => instance.state === State.DELETED
-  );
-});
-
-const projectList = computed(() => {
-  // TODO(ed): support pagination.
-  return useProjectV1List(true /** showDeleted */).projectList.value.filter(
-    (project) => project.state === State.DELETED
   );
 });
 

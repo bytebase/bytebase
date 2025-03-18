@@ -29,11 +29,15 @@ import SystemBotTag from "@/components/misc/SystemBotTag.vue";
 import YouTag from "@/components/misc/YouTag.vue";
 import { ProjectV1Name } from "@/components/v2";
 import { ALL_METHODS_WITH_AUDIT } from "@/grpcweb/methods";
-import { useCurrentUserV1, useProjectV1List, useUserStore } from "@/store";
-import { SYSTEM_BOT_USER_NAME } from "@/types";
+import { useCurrentUserV1, useProjectV1Store, useUserStore } from "@/store";
+import { SYSTEM_BOT_USER_NAME, type ComposedProject } from "@/types";
 import { AuditLog_Severity } from "@/types/proto/v1/audit_log_service";
 import { State, stateToJSON } from "@/types/proto/v1/common";
-import { User, UserType, userTypeToJSON } from "@/types/proto/v1/user_service";
+import {
+  type User,
+  UserType,
+  userTypeToJSON,
+} from "@/types/proto/v1/user_service";
 import {
   getDefaultPagination,
   extractProjectResourceName,
@@ -50,18 +54,26 @@ defineEmits<{
 const { t } = useI18n();
 const me = useCurrentUserV1();
 const userStore = useUserStore();
-const { projectList } = useProjectV1List();
+const projectStore = useProjectV1Store();
 
 const activeUserList = ref<User[]>([]);
+const projectList = ref<ComposedProject[]>([]);
 const showTimeRange = ref(false);
 
 onMounted(async () => {
-  const { users } = await userStore.fetchUserList({
-    pageSize: getDefaultPagination(),
-    showDeleted: false,
-    filter: `state == "${stateToJSON(State.ACTIVE)}" && user_type == "${userTypeToJSON(UserType.USER)}"`,
-  });
-  activeUserList.value = users;
+  const [listUsersResponse, listProjectsResponse] = await Promise.all([
+    userStore.fetchUserList({
+      pageSize: getDefaultPagination(),
+      showDeleted: false,
+      filter: `state == "${stateToJSON(State.ACTIVE)}" && user_type == "${userTypeToJSON(UserType.USER)}"`,
+    }),
+    projectStore.fetchProjectList({
+      showDeleted: false,
+      pageSize: getDefaultPagination(),
+    }),
+  ]);
+  activeUserList.value = listUsersResponse.users;
+  projectList.value = listProjectsResponse.projects;
 });
 
 const principalSearchValueOptions = computed(() => {

@@ -78,10 +78,11 @@ export const provideSQLEditorContext = () => {
     pendingInsertAtCaret: ref(),
     events: new Emittery(),
 
-    maybeSwitchProject: (project) => {
+    maybeSwitchProject: async (project) => {
       if (editorStore.project !== project) {
         editorStore.project = project;
-        return context.events.once("project-context-ready").then(() => project);
+        await context.events.once("project-context-ready");
+        return project;
       }
       return Promise.resolve(editorStore.project);
     },

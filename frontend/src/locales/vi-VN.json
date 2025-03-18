@@ -195,6 +195,7 @@
     "info": "Thông tin",
     "minutes": "Phút",
     "filter-by-name": "Lọc theo tên",
+    "search-by-name": "Tìm kiếm theo tên",
     "license": "Giấy phép",
     "view-details": "Xem chi tiết",
     "force-verb": "Buộc {verb}",
@@ -1237,8 +1238,8 @@
     },
     "no-params-yet-add-above": "Chưa có thông số nào được cấu hình. \nThêm tham số bằng cách sử dụng biểu mẫu trên.",
     "no-extra-params-configured": "Không có thông số kết nối bổ sung được cấu hình",
-    "parameter-value-placeholder": "Giá trị tham số",
-    "parameter-name-placeholder": "Tên tham số"
+    "parameter-name-placeholder": "Tên tham số",
+    "parameter-value-placeholder": "Giá trị tham số"
   },
   "environment": {
     "select": "Chọn môi trường",
