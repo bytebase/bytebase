@@ -25,7 +25,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.35.2
 	github.com/beltran/gohive v1.8.0
 	github.com/blang/semver/v4 v4.0.0
-	github.com/bytebase/cosmosdb-parser v0.0.0-20250314070019-4ba8fb2edf87
+	github.com/bytebase/cosmosdb-parser v0.0.0-20250317064006-c1dcb3ed4fa4
 	github.com/bytebase/google-sql-parser v0.0.0-20250116032737-689a327f9465
 	github.com/bytebase/mysql-parser v0.0.0-20241224071214-cb9fd84811dd
 	github.com/bytebase/plsql-parser v0.0.0-20250218041636-9fed633593d1

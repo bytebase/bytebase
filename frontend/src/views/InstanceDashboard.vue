@@ -197,10 +197,7 @@ const addressOptions = computed(() => {
 
 const scopeOptions = computed((): ScopeOption[] => {
   return [
-    ...useCommonSearchScopeOptions(
-      computed(() => state.params),
-      ["environment"]
-    ).value,
+    ...useCommonSearchScopeOptions(["environment"]).value,
     {
       id: "address",
       title: t("instance.advanced-search.scope.address.title"),
@@ -258,18 +255,26 @@ const remainingInstanceCount = computed((): number => {
 });
 
 const instanceCountAttention = computed((): string => {
-  const upgrade = t("dynamic.subscription.features.bb-feature-instance-count.upgrade");
+  const upgrade = t(
+    "dynamic.subscription.features.bb-feature-instance-count.upgrade"
+  );
   let status = "";
 
   if (remainingInstanceCount.value > 0) {
-    status = t("dynamic.subscription.features.bb-feature-instance-count.remaining", {
-      total: subscriptionStore.instanceCountLimit,
-      count: remainingInstanceCount.value,
-    });
+    status = t(
+      "dynamic.subscription.features.bb-feature-instance-count.remaining",
+      {
+        total: subscriptionStore.instanceCountLimit,
+        count: remainingInstanceCount.value,
+      }
+    );
   } else {
-    status = t("dynamic.subscription.features.bb-feature-instance-count.runoutof", {
-      total: subscriptionStore.instanceCountLimit,
-    });
+    status = t(
+      "dynamic.subscription.features.bb-feature-instance-count.runoutof",
+      {
+        total: subscriptionStore.instanceCountLimit,
+      }
+    );
   }
 
   return `${status} ${upgrade}`;

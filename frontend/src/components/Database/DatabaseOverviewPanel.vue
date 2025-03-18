@@ -189,7 +189,6 @@ import { useDBSchemaV1Store } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import type { Anomaly } from "@/types/proto/v1/anomaly_service";
 import { Engine } from "@/types/proto/v1/common";
-import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
 import {
   hasSchemaProperty,
   instanceV1SupportsPackage,
@@ -243,7 +242,6 @@ watch(
   async (database) => {
     await dbSchemaStore.getOrFetchDatabaseMetadata({
       database,
-      view: DatabaseMetadataView.DATABASE_METADATA_VIEW_FULL,
       skipCache: false,
     });
     if (schemaList.value.length > 0) {

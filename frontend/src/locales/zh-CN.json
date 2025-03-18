@@ -210,7 +210,6 @@
     "resource": "资源",
     "resources": "资源",
     "closed": "已关闭",
-    "options": "配置项",
     "refresh": "刷新",
     "rollback": "回滚",
     "rows": {
@@ -1235,7 +1234,11 @@
           "description": "按地址过滤"
         }
       }
-    }
+    },
+    "no-params-yet-add-above": "尚未配置参数。\n使用上面的形式添加参数。",
+    "no-extra-params-configured": "没有配置的额外连接参数",
+    "parameter-value-placeholder": "参数值",
+    "parameter-name-placeholder": "参数名称"
   },
   "environment": {
     "select": "选择环境",
@@ -1655,6 +1658,10 @@
   },
   "data-source": {
     "snowflake-keypair-tip": "密钥对认证",
+    "extra-params": {
+      "self": "额外的参数",
+      "description": "数据库连接字符串的其他参数。\n对于PostgreSQL，您可以使用诸如target_session_attrs = read-write之类的参数来确保与读取文字实例的连接。"
+    },
     "ssl": {
       "ca-cert": "CA 证书",
       "client-key": "客户端密钥",
@@ -2442,10 +2449,6 @@
     "edit": "编辑数据库分组",
     "matched-database": "相匹配的数据库",
     "unmatched-database": "不匹配的数据库",
-    "multitenancy": {
-      "self": "多租户",
-      "description": "支持管理跨不同租户的多个同构数据库。"
-    },
     "condition": {
       "self": "条件"
     },

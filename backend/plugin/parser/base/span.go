@@ -78,9 +78,10 @@ type QuerySpanResult struct {
 	SourceColumns SourceColumnSet
 	// IsPlainField indicates whether the field is a plain column reference (true) or an expression (false).
 	IsPlainField bool
-	// SourceFieldPaths is used for Cosmos DB only, to store the path of the field, the root is the document($). Empty
-	// for select * statement.
-	SourceFieldPaths map[string]bool
+	// SourceFieldPaths is used for Cosmos DB only, to store the path of the field, the root is the container name.
+	SourceFieldPaths map[string]*PathAST
+	// SelectAsterisk indicates whether the field is selected by asterisk, used by Cosmos DB.
+	SelectAsterisk bool
 }
 
 // ColumnResource is the resource key for a column.
@@ -351,9 +352,11 @@ func (s *QuerySpan) ToYaml() *YamlQuerySpan {
 	}
 	for _, result := range s.Results {
 		yamlResult := &YamlQuerySpanResult{
-			Name:          result.Name,
-			SourceColumns: []ColumnResource{},
-			IsPlainField:  result.IsPlainField,
+			Name:             result.Name,
+			SourceColumns:    []ColumnResource{},
+			IsPlainField:     result.IsPlainField,
+			SelectAsterisk:   result.SelectAsterisk,
+			SourceFieldPaths: []YamlQuerySpanResultSourceFieldPaths{},
 		}
 		for k := range result.SourceColumns {
 			yamlResult.SourceColumns = append(yamlResult.SourceColumns, k)
@@ -361,6 +364,17 @@ func (s *QuerySpan) ToYaml() *YamlQuerySpan {
 		sort.Slice(yamlResult.SourceColumns, func(i, j int) bool {
 			vi, vj := yamlResult.SourceColumns[i], yamlResult.SourceColumns[j]
 			return vi.String() < vj.String()
+		})
+		for k, v := range result.SourceFieldPaths {
+			s, _ := v.String()
+			yamlResult.SourceFieldPaths = append(yamlResult.SourceFieldPaths, YamlQuerySpanResultSourceFieldPaths{
+				Name: k,
+				Path: s,
+			})
+		}
+		sort.Slice(yamlResult.SourceFieldPaths, func(i, j int) bool {
+			vi, vj := yamlResult.SourceFieldPaths[i], yamlResult.SourceFieldPaths[j]
+			return vi.Name < vj.Name
 		})
 		y.Results = append(y.Results, *yamlResult)
 	}
@@ -389,7 +403,14 @@ type YamlQuerySpan struct {
 }
 
 type YamlQuerySpanResult struct {
-	Name          string
-	SourceColumns []ColumnResource
-	IsPlainField  bool
+	Name             string
+	SourceColumns    []ColumnResource
+	IsPlainField     bool
+	SourceFieldPaths []YamlQuerySpanResultSourceFieldPaths
+	SelectAsterisk   bool
+}
+
+type YamlQuerySpanResultSourceFieldPaths struct {
+	Name string
+	Path string
 }

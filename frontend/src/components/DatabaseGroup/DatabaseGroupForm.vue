@@ -54,26 +54,6 @@
             />
           </div>
         </div>
-        <NDivider />
-        <div class="w-full pl-1">
-          <p class="font-medium text-main mb-2">
-            {{ $t("common.options") }}
-          </p>
-          <div>
-            <NCheckbox
-              v-model:checked="state.multitenancy"
-              size="medium"
-              :label="$t('database-group.multitenancy.self')"
-            />
-            <p class="text-sm text-gray-400 pl-6 ml-0.5">
-              {{ $t("database-group.multitenancy.description") }}
-              <LearnMoreLink
-                url="https://www.bytebase.com/docs/change-database/batch-change/?source=console#multitenancy"
-                class="text-sm"
-              />
-            </p>
-          </div>
-        </div>
       </div>
     </template>
     <template #footer>
@@ -98,22 +78,13 @@
 </template>
 
 <script lang="ts" setup>
-import { useDebounceFn } from "@vueuse/core";
-import { cloneDeep, head, isEqual } from "lodash-es";
-import { Trash2Icon } from "lucide-vue-next";
-import { NCheckbox, NButton, NInput, NDivider, useDialog } from "naive-ui";
-import { ClientError, Status } from "nice-grpc-web";
-import { computed, onMounted, reactive, ref, watch } from "vue";
-import { useI18n } from "vue-i18n";
-import { useRouter } from "vue-router";
 import ExprEditor from "@/components/ExprEditor";
-import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import FormLayout from "@/components/v2/Form/FormLayout.vue";
 import type { ConditionGroupExpr } from "@/plugins/cel";
 import {
+  buildCELExpr,
   emptySimpleExpr,
   validateSimpleExpr,
-  buildCELExpr,
   wrapAsGroup,
 } from "@/plugins/cel";
 import {
@@ -121,9 +92,9 @@ import {
   PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL,
 } from "@/router/dashboard/projectV1";
 import {
+  pushNotification,
   useDBGroupStore,
   useSubscriptionV1Store,
-  pushNotification,
 } from "@/store";
 import {
   databaseGroupNamePrefix,
@@ -140,14 +111,22 @@ import { Expr } from "@/types/proto/google/type/expr";
 import type { DatabaseGroup } from "@/types/proto/v1/database_group_service";
 import { batchConvertParsedExprToCELString } from "@/utils";
 import { getErrorCode } from "@/utils/grpcweb";
+import { useDebounceFn } from "@vueuse/core";
+import { cloneDeep, head, isEqual } from "lodash-es";
+import { Trash2Icon } from "lucide-vue-next";
+import { NButton, NDivider, NInput, useDialog } from "naive-ui";
+import { ClientError, Status } from "nice-grpc-web";
+import { computed, onMounted, reactive, ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
+import { useRouter } from "vue-router";
 import { FeatureAttentionForInstanceLicense } from "../FeatureGuard";
 import { ResourceIdField } from "../v2";
 import MatchedDatabaseView from "./MatchedDatabaseView.vue";
 import {
+  FactorList,
   factorSupportDropdown,
   getDatabaseGroupOptionConfigMap,
 } from "./utils";
-import { FactorList } from "./utils";
 
 const props = defineProps<{
   project: ComposedProject;
@@ -166,7 +145,6 @@ type LocalState = {
   placeholder: string;
   selectedDatabaseGroupId?: string;
   expr: ConditionGroupExpr;
-  multitenancy: boolean;
 };
 
 const { t } = useI18n();
@@ -177,7 +155,6 @@ const state = reactive<LocalState>({
   resourceId: "",
   placeholder: "",
   expr: wrapAsGroup(emptySimpleExpr()),
-  multitenancy: false,
 });
 const resourceIdField = ref<InstanceType<typeof ResourceIdField>>();
 const router = useRouter();
@@ -204,7 +181,6 @@ onMounted(async () => {
   if (composedDatabaseGroup.simpleExpr) {
     state.expr = cloneDeep(composedDatabaseGroup.simpleExpr);
   }
-  state.multitenancy = composedDatabaseGroup.multitenancy;
 });
 
 const validateResourceId = async (
@@ -369,7 +345,6 @@ const doConfirm = async () => {
         databaseExpr: Expr.fromPartial({
           expression: celString,
         }),
-        multitenancy: formState.multitenancy,
       },
       databaseGroupId: resourceId,
     });
@@ -395,9 +370,6 @@ const doConfirm = async () => {
     ) {
       updateMask.push("database_expr");
     }
-    if (!isEqual(props.databaseGroup.multitenancy, formState.multitenancy)) {
-      updateMask.push("multitenancy");
-    }
     await dbGroupStore.updateDatabaseGroup(
       {
         ...props.databaseGroup!,
@@ -405,7 +377,6 @@ const doConfirm = async () => {
         databaseExpr: Expr.fromPartial({
           expression: celString,
         }),
-        multitenancy: formState.multitenancy,
       },
       updateMask
     );

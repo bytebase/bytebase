@@ -1675,16 +1675,6 @@ paths:
                   required: true
                   schema:
                     type: string
-                - name: view
-                  in: query
-                  description: The view to return. Defaults to DATABASE_METADATA_VIEW_BASIC.
-                  schema:
-                    enum:
-                        - DATABASE_METADATA_VIEW_UNSPECIFIED
-                        - DATABASE_METADATA_VIEW_BASIC
-                        - DATABASE_METADATA_VIEW_FULL
-                    type: string
-                    format: enum
                 - name: filter
                   in: query
                   description: |-
@@ -9169,8 +9159,6 @@ components:
                     items:
                         $ref: '#/components/schemas/DatabaseGroup_Database'
                     description: The list of databases that match the database group condition.
-                multitenancy:
-                    type: boolean
         DatabaseGroup_Database:
             type: object
             properties:
