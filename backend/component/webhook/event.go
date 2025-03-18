@@ -24,8 +24,10 @@ type Event struct {
 	Actor   *store.UserMessage
 	Type    EventType
 	Comment string
+	// nullable
 	Issue   *Issue
 	Project *Project
+	Rollout *Rollout
 
 	IssueUpdate         *EventIssueUpdate
 	IssueApprovalCreate *EventIssueApprovalCreate
@@ -35,6 +37,9 @@ type Event struct {
 }
 
 func NewIssue(i *store.IssueMessage) *Issue {
+	if i == nil {
+		return nil
+	}
 	return &Issue{
 		UID:         i.UID,
 		Status:      i.Status.String(),
@@ -53,6 +58,13 @@ func NewProject(p *store.ProjectMessage) *Project {
 	}
 }
 
+func NewRollout(r *store.PipelineMessage) *Rollout {
+	return &Rollout{
+		UID:   r.ID,
+		Title: r.Name,
+	}
+}
+
 type Issue struct {
 	UID         int
 	Status      string
@@ -66,6 +78,11 @@ type Issue struct {
 type Project struct {
 	ResourceID string
 	Title      string
+}
+
+type Rollout struct {
+	UID   int
+	Title string
 }
 
 type EventIssueUpdate struct {
