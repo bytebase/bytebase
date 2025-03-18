@@ -2460,7 +2460,13 @@ func (*diffNode) getViewDependency(view *ast.CreateViewStmt, getDatabaseMetadata
 
 func (diff *diffNode) dropConstraint(m schemaMap) {
 	for _, schemaInfo := range m {
+		if !schemaInfo.existsInNew {
+			continue
+		}
 		for _, tableInfo := range schemaInfo.tableMap {
+			if !tableInfo.existsInNew {
+				continue
+			}
 			var constraintInfoList []*constraintInfo
 			for _, constraintInfo := range tableInfo.constraintMap {
 				if !constraintInfo.existsInNew {
@@ -2783,9 +2789,19 @@ func (diff *diffNode) dropTriggerStmt(m schemaMap) {
 func dropIndex(m schemaMap) *ast.DropIndexStmt {
 	var indexList []*indexInfo
 	for _, schema := range m {
+		if !schema.existsInNew {
+			continue
+		}
 		for _, index := range schema.indexMap {
 			if index.existsInNew {
 				// no need to drop
+				continue
+			}
+			tbl, ok := schema.tableMap[index.createIndex.Index.Table.Name]
+			if !ok {
+				continue
+			}
+			if !tbl.existsInNew {
 				continue
 			}
 			indexList = append(indexList, index)
