@@ -467,11 +467,11 @@ func getTypeString(dataType string, dataLength, dataPrecision, dataScale sql.Nul
 	var buf strings.Builder
 	switch dataType {
 	case "VARCHAR2", "CHAR":
-		if _, err := buf.Write([]byte(fmt.Sprintf("(%d BYTE)", dataLength.Int64))); err != nil {
+		if _, err := fmt.Fprintf(&buf, "(%d BYTE)", dataLength.Int64); err != nil {
 			return "", err
 		}
 	case "NVARCHAR2", "RAW", "UROWID", "NCHAR":
-		if _, err := buf.Write([]byte(fmt.Sprintf("(%d)", dataLength.Int64))); err != nil {
+		if _, err := fmt.Fprintf(&buf, "(%d)", dataLength.Int64); err != nil {
 			return "", err
 		}
 	case "NUMBER":
@@ -479,11 +479,11 @@ func getTypeString(dataType string, dataLength, dataPrecision, dataScale sql.Nul
 		case !dataPrecision.Valid || dataPrecision.Int64 == 0:
 		// do nothing
 		case dataPrecision.Valid && dataPrecision.Int64 > 0 && (!dataScale.Valid || dataScale.Int64 == 0):
-			if _, err := buf.Write([]byte(fmt.Sprintf("(%d)", dataPrecision.Int64))); err != nil {
+			if _, err := fmt.Fprintf(&buf, "(%d)", dataPrecision.Int64); err != nil {
 				return "", err
 			}
 		case dataPrecision.Valid && dataPrecision.Int64 > 0 && dataScale.Valid && dataScale.Int64 > 0:
-			if _, err := buf.Write([]byte(fmt.Sprintf("(%d,%d)", dataPrecision.Int64, dataScale.Int64))); err != nil {
+			if _, err := fmt.Fprintf(&buf, "(%d,%d)", dataPrecision.Int64, dataScale.Int64); err != nil {
 				return "", err
 			}
 		}
@@ -492,7 +492,7 @@ func getTypeString(dataType string, dataLength, dataPrecision, dataScale sql.Nul
 		case !dataPrecision.Valid || dataPrecision.Int64 == 0:
 		// do nothing
 		case dataPrecision.Valid && dataPrecision.Int64 > 0:
-			if _, err := buf.Write([]byte(fmt.Sprintf("(%d)", dataPrecision.Int64))); err != nil {
+			if _, err := fmt.Fprintf(&buf, "(%d)", dataPrecision.Int64); err != nil {
 				return "", err
 			}
 		}
@@ -661,6 +661,7 @@ func getConstraints(txn *sql.Tx, schemaName string) (
 						return nil, nil, nil, nil, errors.Wrapf(err, "failed to get outer schema reference columns")
 					}
 				}
+				foreignKeyMap[key] = append(foreignKeyMap[key], foreignKey)
 			}
 		}
 	}
