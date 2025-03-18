@@ -1,14 +1,12 @@
 package advisor
 
 import (
-	"bytes"
 	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
 	"log/slog"
 	"regexp"
-	"strings"
 
 	"github.com/pkg/errors"
 
@@ -545,7 +543,7 @@ func SQLReviewCheck(
 		switch checkContext.DbType {
 		case storepb.Engine_TIDB, storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_POSTGRES, storepb.Engine_OCEANBASE:
 			if err := finder.WalkThrough(asts); err != nil {
-				return convertWalkThroughErrorToAdvice(ctx, checkContext, err)
+				return convertWalkThroughErrorToAdvice(err)
 			}
 		}
 	}
@@ -622,7 +620,7 @@ func SQLReviewCheck(
 	return advices, nil
 }
 
-func convertWalkThroughErrorToAdvice(ctx context.Context, checkContext SQLReviewCheckContext, err error) ([]*storepb.Advice, error) {
+func convertWalkThroughErrorToAdvice(err error) ([]*storepb.Advice, error) {
 	walkThroughError, ok := err.(*catalog.WalkThroughError)
 	if !ok {
 		return nil, err
@@ -799,18 +797,6 @@ func convertWalkThroughErrorToAdvice(ctx context.Context, checkContext SQLReview
 		})
 	case catalog.ErrorTypeColumnIsReferencedByView:
 		details := walkThroughError.Content
-		if checkContext.DbType == storepb.Engine_POSTGRES {
-			list, yes := walkThroughError.Payload.([]string)
-			if !yes {
-				return nil, errors.Errorf("invalid payload for ColumnIsReferencedByView, expect []string but found %T", walkThroughError.Payload)
-			}
-			if definition, err := getViewDefinition(ctx, checkContext, list); err != nil {
-				slog.Warn("failed to get view definition", log.BBError(err))
-			} else {
-				details = definition
-			}
-		}
-
 		res = append(res, &storepb.Advice{
 			Status:  storepb.Advice_ERROR,
 			Code:    ColumnIsReferencedByView.Int32(),
@@ -822,18 +808,6 @@ func convertWalkThroughErrorToAdvice(ctx context.Context, checkContext SQLReview
 		})
 	case catalog.ErrorTypeTableIsReferencedByView:
 		details := walkThroughError.Content
-		if checkContext.DbType == storepb.Engine_POSTGRES {
-			list, yes := walkThroughError.Payload.([]string)
-			if !yes {
-				return nil, errors.Errorf("invalid payload for TableIsReferencedByView, expect []string but found %T", walkThroughError.Payload)
-			}
-			if definition, err := getViewDefinition(ctx, checkContext, list); err != nil {
-				slog.Warn("failed to get view definition", log.BBError(err))
-			} else {
-				details = definition
-			}
-		}
-
 		res = append(res, &storepb.Advice{
 			Status:  storepb.Advice_ERROR,
 			Code:    TableIsReferencedByView.Int32(),
@@ -866,49 +840,6 @@ func convertWalkThroughErrorToAdvice(ctx context.Context, checkContext SQLReview
 	}
 
 	return res, nil
-}
-
-func getViewDefinition(ctx context.Context, checkContext SQLReviewCheckContext, viewList []string) (string, error) {
-	var buf bytes.Buffer
-	sql := fmt.Sprintf(`
-		WITH view_list(view_name) AS (
-			VALUES ('%s')
-		)
-		SELECT view_name, pg_get_viewdef(view_name) AS view_definition
-		FROM view_list;
-	`, strings.Join(viewList, "'),('"))
-
-	rows, err := checkContext.Driver.QueryContext(ctx, sql)
-	if err != nil {
-		return "", err
-	}
-	defer rows.Close()
-	for rows.Next() {
-		var viewName, viewDefinition string
-		if err := rows.Scan(&viewName, &viewDefinition); err != nil {
-			return "", err
-		}
-		if _, err := buf.WriteString("The definition of view "); err != nil {
-			return "", err
-		}
-		if _, err := buf.WriteString(viewName); err != nil {
-			return "", err
-		}
-		if _, err := buf.WriteString(" is \n"); err != nil {
-			return "", err
-		}
-		if _, err := buf.WriteString(viewDefinition); err != nil {
-			return "", err
-		}
-		if _, err := buf.WriteString("\n\n"); err != nil {
-			return "", err
-		}
-	}
-	if err := rows.Err(); err != nil {
-		return "", err
-	}
-
-	return buf.String(), nil
 }
 
 func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Type, error) {
