@@ -180,7 +180,6 @@ export interface DatabaseGroup {
   matchedDatabases: DatabaseGroup_Database[];
   /** The list of databases that match the database group condition. */
   unmatchedDatabases: DatabaseGroup_Database[];
-  multitenancy: boolean;
 }
 
 export interface DatabaseGroup_Database {
@@ -686,14 +685,7 @@ export const DeleteDatabaseGroupRequest: MessageFns<DeleteDatabaseGroupRequest> 
 };
 
 function createBaseDatabaseGroup(): DatabaseGroup {
-  return {
-    name: "",
-    databasePlaceholder: "",
-    databaseExpr: undefined,
-    matchedDatabases: [],
-    unmatchedDatabases: [],
-    multitenancy: false,
-  };
+  return { name: "", databasePlaceholder: "", databaseExpr: undefined, matchedDatabases: [], unmatchedDatabases: [] };
 }
 
 export const DatabaseGroup: MessageFns<DatabaseGroup> = {
@@ -712,9 +704,6 @@ export const DatabaseGroup: MessageFns<DatabaseGroup> = {
     }
     for (const v of message.unmatchedDatabases) {
       DatabaseGroup_Database.encode(v!, writer.uint32(42).fork()).join();
-    }
-    if (message.multitenancy !== false) {
-      writer.uint32(48).bool(message.multitenancy);
     }
     return writer;
   },
@@ -766,14 +755,6 @@ export const DatabaseGroup: MessageFns<DatabaseGroup> = {
           message.unmatchedDatabases.push(DatabaseGroup_Database.decode(reader, reader.uint32()));
           continue;
         }
-        case 6: {
-          if (tag !== 48) {
-            break;
-          }
-
-          message.multitenancy = reader.bool();
-          continue;
-        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -794,7 +775,6 @@ export const DatabaseGroup: MessageFns<DatabaseGroup> = {
       unmatchedDatabases: globalThis.Array.isArray(object?.unmatchedDatabases)
         ? object.unmatchedDatabases.map((e: any) => DatabaseGroup_Database.fromJSON(e))
         : [],
-      multitenancy: isSet(object.multitenancy) ? globalThis.Boolean(object.multitenancy) : false,
     };
   },
 
@@ -815,9 +795,6 @@ export const DatabaseGroup: MessageFns<DatabaseGroup> = {
     if (message.unmatchedDatabases?.length) {
       obj.unmatchedDatabases = message.unmatchedDatabases.map((e) => DatabaseGroup_Database.toJSON(e));
     }
-    if (message.multitenancy !== false) {
-      obj.multitenancy = message.multitenancy;
-    }
     return obj;
   },
 
@@ -833,7 +810,6 @@ export const DatabaseGroup: MessageFns<DatabaseGroup> = {
       : undefined;
     message.matchedDatabases = object.matchedDatabases?.map((e) => DatabaseGroup_Database.fromPartial(e)) || [];
     message.unmatchedDatabases = object.unmatchedDatabases?.map((e) => DatabaseGroup_Database.fromPartial(e)) || [];
-    message.multitenancy = object.multitenancy ?? false;
     return message;
   },
 };

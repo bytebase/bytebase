@@ -210,7 +210,6 @@
     "resource": "リソース",
     "resources": "リソース",
     "closed": "閉まっている",
-    "options": "オプション",
     "refresh": "リフレッシュ",
     "rollback": "ロールバック",
     "rows": {
@@ -2450,10 +2449,6 @@
     "edit": "データベースグループの編集",
     "matched-database": "マッチングデータベース",
     "unmatched-database": "データベースが一致しません",
-    "multitenancy": {
-      "self": "マルチテナント",
-      "description": "異なるテナント間で複数の同種データベースを 1 つのワークフローで管理できます。"
-    },
     "condition": {
       "self": "状態"
     },
