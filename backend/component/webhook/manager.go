@@ -104,7 +104,12 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, acti
 	level := webhook.WebhookInfo
 	title := ""
 	titleZh := ""
-	link := fmt.Sprintf("%s/projects/%s/issues/%s-%d", setting.ExternalUrl, e.Project.ResourceID, slug.Make(e.Issue.Title), e.Issue.UID)
+	link := ""
+	if e.Issue != nil {
+		link = fmt.Sprintf("%s/projects/%s/issues/%s-%d", setting.ExternalUrl, e.Project.ResourceID, slug.Make(e.Issue.Title), e.Issue.UID)
+	} else if e.Rollout != nil {
+		link = fmt.Sprintf("%s/projects/%s/rollouts/%d", setting.ExternalUrl, e.Project.ResourceID, e.Rollout.UID)
+	}
 	switch e.Type {
 	case EventTypeIssueCreate:
 		title = "Issue created"
@@ -144,7 +149,9 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, acti
 
 	case EventTypeStageStatusUpdate:
 		u := e.StageStatusUpdate
-		link += fmt.Sprintf("?stage=%d", u.StageUID)
+		if e.Issue != nil {
+			link = fmt.Sprintf("%s/projects/%s/issues/%s-%d?stage=%d", setting.ExternalUrl, e.Project.ResourceID, slug.Make(e.Issue.Title), e.Issue.UID, u.StageUID)
+		}
 		title = "Stage ends"
 		titleZh = "阶段结束"
 
@@ -316,14 +323,8 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, acti
 		ActivityType: string(activityType),
 		Title:        title,
 		TitleZh:      titleZh,
-		Issue: &webhook.Issue{
-			ID:          e.Issue.UID,
-			Name:        e.Issue.Title,
-			Status:      e.Issue.Status,
-			Type:        e.Issue.Type,
-			Description: e.Issue.Description,
-			Creator:     e.Issue.Creator,
-		},
+		Issue:        nil,
+		Rollout:      nil,
 		Project: &webhook.Project{
 			Name:  common.FormatProject(e.Project.ResourceID),
 			Title: e.Project.Title,
@@ -337,6 +338,22 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, acti
 		ActorEmail:          e.Actor.Email,
 		MentionEndUsers:     mentionEndUsers,
 		MentionUsersByPhone: mentions,
+	}
+	if e.Issue != nil {
+		webhookCtx.Issue = &webhook.Issue{
+			ID:          e.Issue.UID,
+			Name:        e.Issue.Title,
+			Status:      e.Issue.Status,
+			Type:        e.Issue.Type,
+			Description: e.Issue.Description,
+			Creator:     e.Issue.Creator,
+		}
+	}
+	if e.Rollout != nil {
+		webhookCtx.Rollout = &webhook.Rollout{
+			UID:   e.Rollout.UID,
+			Title: e.Rollout.Title,
+		}
 	}
 	if u := e.TaskRunStatusUpdate; u != nil {
 		webhookCtx.TaskResult = &webhook.TaskResult{

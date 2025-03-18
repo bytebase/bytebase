@@ -146,6 +146,22 @@ func (s *SchedulerV2) scheduleAutoRolloutTask(ctx context.Context, rolloutPolicy
 		return nil
 	}
 
+	pipeline, err := s.store.GetPipelineV2ByID(ctx, task.PipelineID)
+	if err != nil {
+		return errors.Wrapf(err, "failed to get pipeline")
+	}
+	if pipeline == nil {
+		return errors.Errorf("pipeline %v not found", task.PipelineID)
+	}
+
+	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{ResourceID: &pipeline.ProjectID})
+	if err != nil {
+		return errors.Wrapf(err, "failed to get project")
+	}
+	if project == nil {
+		return errors.Errorf("project %v not found", pipeline.ProjectID)
+	}
+
 	if !rolloutPolicy.Automatic {
 		return nil
 	}
@@ -228,19 +244,19 @@ func (s *SchedulerV2) scheduleAutoRolloutTask(ctx context.Context, rolloutPolicy
 		if err := s.store.CreateIssueCommentTaskUpdateStatus(ctx, issue.UID, tasks, storepb.IssueCommentPayload_TaskUpdate_PENDING, api.SystemBotID, ""); err != nil {
 			slog.Warn("failed to create issue comment", "issueUID", issue.UID, log.BBError(err))
 		}
-
-		s.webhookManager.CreateEvent(ctx, &webhook.Event{
-			Actor:   s.store.GetSystemBotUser(ctx),
-			Type:    webhook.EventTypeTaskRunStatusUpdate,
-			Comment: "",
-			Issue:   webhook.NewIssue(issue),
-			Project: webhook.NewProject(issue.Project),
-			TaskRunStatusUpdate: &webhook.EventTaskRunStatusUpdate{
-				Title:  issue.Title,
-				Status: api.TaskRunPending.String(),
-			},
-		})
 	}
+	s.webhookManager.CreateEvent(ctx, &webhook.Event{
+		Actor:   s.store.GetSystemBotUser(ctx),
+		Type:    webhook.EventTypeTaskRunStatusUpdate,
+		Comment: "",
+		Issue:   webhook.NewIssue(issue),
+		Rollout: webhook.NewRollout(pipeline),
+		Project: webhook.NewProject(project),
+		TaskRunStatusUpdate: &webhook.EventTaskRunStatusUpdate{
+			Title:  task.GetDatabaseName(),
+			Status: api.TaskRunPending.String(),
+		},
+	})
 
 	return nil
 }
@@ -703,8 +719,39 @@ func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {
 				if err != nil {
 					return errors.Wrapf(err, "failed to get issue")
 				}
-				if issue == nil {
+
+				// every task in the stage terminated
+				// create "stage ends" activity.
+				if err := func() error {
+					pipeline, err := s.store.GetPipelineV2ByID(ctx, task.PipelineID)
+					if err != nil {
+						return errors.Wrapf(err, "failed to get pipeline")
+					}
+					if pipeline == nil {
+						return errors.Errorf("pipeline %v not found", task.PipelineID)
+					}
+					project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{ResourceID: &pipeline.ProjectID})
+					if err != nil {
+						return errors.Wrapf(err, "failed to get project")
+					}
+					if project == nil {
+						return errors.Errorf("project %v not found", pipeline.ProjectID)
+					}
+					s.webhookManager.CreateEvent(ctx, &webhook.Event{
+						Actor:   s.store.GetSystemBotUser(ctx),
+						Type:    webhook.EventTypeStageStatusUpdate,
+						Comment: "",
+						// Issue:   webhook.NewIssue(issue),
+						Rollout: webhook.NewRollout(pipeline),
+						Project: webhook.NewProject(project),
+						StageStatusUpdate: &webhook.EventStageStatusUpdate{
+							StageTitle: taskStage.Environment,
+							StageUID:   taskStage.ID,
+						},
+					})
 					return nil
+				}(); err != nil {
+					slog.Error("failed to create ActivityPipelineStageStatusUpdate activity", log.BBError(err))
 				}
 
 				if err := func() error {
@@ -724,24 +771,6 @@ func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {
 					slog.Warn("failed to create issue comment", log.BBError(err))
 				}
 
-				// every task in the stage terminated
-				// create "stage ends" activity.
-				if err := func() error {
-					s.webhookManager.CreateEvent(ctx, &webhook.Event{
-						Actor:   s.store.GetSystemBotUser(ctx),
-						Type:    webhook.EventTypeStageStatusUpdate,
-						Comment: "",
-						Issue:   webhook.NewIssue(issue),
-						Project: webhook.NewProject(issue.Project),
-						StageStatusUpdate: &webhook.EventStageStatusUpdate{
-							StageTitle: taskStage.Environment,
-							StageUID:   taskStage.ID,
-						},
-					})
-					return nil
-				}(); err != nil {
-					slog.Error("failed to create ActivityPipelineStageStatusUpdate activity", log.BBError(err))
-				}
 				// create "notify pipeline rollout" activity.
 				if err := func() error {
 					if nextStage == nil {
@@ -822,27 +851,35 @@ func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {
 
 func (s *SchedulerV2) createActivityForTaskRunStatusUpdate(ctx context.Context, task *store.TaskMessage, newStatus api.TaskRunStatus, errDetail string) {
 	if err := func() error {
+		rollout, err := s.store.GetPipelineV2ByID(ctx, task.PipelineID)
+		if err != nil {
+			return errors.Wrapf(err, "failed to get pipeline")
+		}
+		if rollout == nil {
+			return errors.Errorf("pipeline %v not found", task.PipelineID)
+		}
+		project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{ResourceID: &rollout.ProjectID})
+		if err != nil {
+			return errors.Wrapf(err, "failed to get project")
+		}
+		if project == nil {
+			return errors.Errorf("project %v not found", rollout.ProjectID)
+		}
 		issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{
 			PipelineID: &task.PipelineID,
 		})
 		if err != nil {
 			return errors.Wrap(err, "failed to get issue")
 		}
-		if issue == nil {
-			return nil
-		}
-		taskRunTitle := ""
-		if task.DatabaseName != nil {
-			taskRunTitle = *task.DatabaseName
-		}
 		s.webhookManager.CreateEvent(ctx, &webhook.Event{
 			Actor:   s.store.GetSystemBotUser(ctx),
 			Type:    webhook.EventTypeTaskRunStatusUpdate,
 			Comment: "",
 			Issue:   webhook.NewIssue(issue),
-			Project: webhook.NewProject(issue.Project),
+			Rollout: webhook.NewRollout(rollout),
+			Project: webhook.NewProject(project),
 			TaskRunStatusUpdate: &webhook.EventTaskRunStatusUpdate{
-				Title:  taskRunTitle,
+				Title:  task.GetDatabaseName(),
 				Status: newStatus.String(),
 				Detail: errDetail,
 			},

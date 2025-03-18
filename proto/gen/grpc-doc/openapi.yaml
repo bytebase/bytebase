@@ -8721,6 +8721,11 @@ components:
                     type: string
                 defaultExpression:
                     type: string
+                defaultOnNull:
+                    type: boolean
+                    description: |-
+                        Oracle specific metadata.
+                         The default_on_null is the default on null of a column.
                 onUpdate:
                     type: string
                     description: |-
