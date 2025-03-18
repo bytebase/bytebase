@@ -1,8 +1,3 @@
-import { computedAsync } from "@vueuse/core";
-import { head } from "lodash-es";
-import { defineStore } from "pinia";
-import type { MaybeRef } from "vue";
-import { computed, ref, unref, watchEffect } from "vue";
 import { databaseGroupServiceClient } from "@/grpcweb";
 import type { ConditionGroupExpr } from "@/plugins/cel";
 import {
@@ -12,23 +7,27 @@ import {
   wrapAsGroup,
 } from "@/plugins/cel";
 import type {
-  ComposedDatabaseGroup,
   ComposedDatabase,
+  ComposedDatabaseGroup,
   ComposedProject,
 } from "@/types";
 import { Expr } from "@/types/proto/google/type/expr";
-import { DatabaseGroup } from "@/types/proto/v1/database_group_service";
-import { DatabaseGroupView } from "@/types/proto/v1/database_group_service";
+import { DatabaseGroup, DatabaseGroupView } from "@/types/proto/v1/database_group_service";
 import {
-  batchConvertParsedExprToCELString,
   batchConvertCELStringToParsedExpr,
+  batchConvertParsedExprToCELString,
 } from "@/utils";
+import { computedAsync } from "@vueuse/core";
+import { head } from "lodash-es";
+import { defineStore } from "pinia";
+import type { MaybeRef } from "vue";
+import { computed, ref, unref, watchEffect } from "vue";
 import { useCache } from "../cache";
 import {
-  useProjectV1Store,
-  useDatabaseV1Store,
   batchGetOrFetchDatabases,
   batchGetOrFetchProjects,
+  useDatabaseV1Store,
+  useProjectV1Store,
 } from "./v1";
 import {
   databaseGroupNamePrefix,
@@ -196,7 +195,7 @@ export const useDBGroupStore = defineStore("db-group", () => {
     projectName: string;
     databaseGroup: Pick<
       DatabaseGroup,
-      "name" | "databasePlaceholder" | "databaseExpr" | "multitenancy"
+      "name" | "databasePlaceholder" | "databaseExpr"
     >;
     databaseGroupId: string;
     validateOnly?: boolean;
