@@ -2,7 +2,7 @@
   <BBGrid
     class="border w-full"
     :column-list="COLUMN_LIST"
-    :data-source="filteredApprovalRuleList"
+    :data-source="store.config.rules"
     :row-clickable="false"
     :show-placeholder="true"
     row-key="uid"
@@ -11,10 +11,7 @@
     <template #item="{ item: rule }: { item: LocalApprovalRule }">
       <div class="bb-grid-cell whitespace-nowrap">
         {{ rule.template?.title }}
-        <SystemLabel
-          v-if="creatorOfRule(rule).name === SYSTEM_BOT_USER_NAME"
-          class="ml-1"
-        />
+        <SystemLabel v-if="isReadonlyApprovalRule(rule)" class="ml-1" />
       </div>
       <div class="bb-grid-cell justify-center">
         <NButton
@@ -31,7 +28,7 @@
         {{ rule.template?.description }}
       </div>
       <div class="bb-grid-cell gap-x-2">
-        <template v-if="creatorOfRule(rule).name !== SYSTEM_BOT_USER_NAME">
+        <template v-if="!isReadonlyApprovalRule(rule)">
           <NButton size="small" @click="editApprovalTemplate(rule)">
             {{ allowAdmin ? $t("common.edit") : $t("common.view") }}
           </NButton>
@@ -67,9 +64,8 @@ import { BBGrid, BBModal, type BBGridColumn } from "@/bbkit";
 import SystemLabel from "@/components/SystemLabel.vue";
 import { pushNotification, useWorkspaceApprovalSettingStore } from "@/store";
 import type { LocalApprovalRule } from "@/types";
-import { SYSTEM_BOT_USER_NAME } from "@/types";
 import type { ApprovalFlow } from "@/types/proto/store/approval";
-import { creatorOfRule } from "@/utils";
+import { isReadonlyApprovalRule } from "@/utils";
 import { SpinnerButton } from "../../common";
 import { StepsTable } from "../common";
 import { useCustomApprovalContext } from "../context";
@@ -102,15 +98,6 @@ const COLUMN_LIST = computed(() => {
   ];
 
   return columns;
-});
-
-const filteredApprovalRuleList = computed(() => {
-  // const { searchText } = approvalConfigContext.value;
-  const list = [...store.config.rules];
-  // if (searchText) {
-  //   list = list.filter((ap) => ap.template?.title.includes(searchText));
-  // }
-  return list;
 });
 
 const editApprovalTemplate = (rule: LocalApprovalRule) => {

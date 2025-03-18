@@ -195,6 +195,7 @@
     "info": "情報",
     "minutes": "分",
     "filter-by-name": "名前でフィルタリングする",
+    "search-by-name": "名前で検索",
     "license": "ライセンス",
     "view-details": "詳細を確認する",
     "force-verb": "フォース{verb}",
@@ -1237,8 +1238,8 @@
     },
     "no-params-yet-add-above": "まだ構成されていません。\n上記のフォームを使用してパラメーターを追加します。",
     "no-extra-params-configured": "追加の接続パラメーターは構成されていません",
-    "parameter-value-placeholder": "パラメーター値",
-    "parameter-name-placeholder": "パラメーター名"
+    "parameter-name-placeholder": "パラメーター名",
+    "parameter-value-placeholder": "パラメーター値"
   },
   "environment": {
     "select": "環境を選ぶ",

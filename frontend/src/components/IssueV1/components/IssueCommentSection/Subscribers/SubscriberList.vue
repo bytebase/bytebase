@@ -1,19 +1,16 @@
 <template>
   <NPopselect
-    :remote="true"
     :loading="state.loading"
     :multiple="true"
     :value="issue.subscribers"
     :options="options"
     :render-label="renderLabel"
     :scrollable="true"
-    :filterable="true"
     trigger="click"
     placement="left"
     :disabled="readonly"
-    @search="handleSearch"
+    :node-props="nodeProps"
     @update:show="onUpdateShow"
-    @update:value="onUpdateSubscribers"
   >
     <NButton quaternary>
       <div class="flex items-center gap-x-1">
@@ -28,7 +25,7 @@
       </div>
     </NButton>
 
-    <template v-if="false" #action>
+    <template #action>
       <NInput
         ref="filterInputRef"
         v-model:value="keyword"
@@ -42,7 +39,7 @@
 import { useDebounceFn } from "@vueuse/core";
 import type { SelectOption, SelectGroupOption } from "naive-ui";
 import { NButton, NPopselect, NInput } from "naive-ui";
-import { computed, h, nextTick, ref, onMounted, reactive } from "vue";
+import { computed, h, nextTick, ref, reactive, watch } from "vue";
 import { updateIssueSubscribers, useIssueContext } from "@/components/IssueV1";
 import UserAvatar from "@/components/User/UserAvatar.vue";
 import { useUserStore } from "@/store";
@@ -68,7 +65,7 @@ interface LocalState {
 }
 
 const state = reactive<LocalState>({
-  loading: false,
+  loading: true,
   rawUserList: [],
 });
 
@@ -82,6 +79,22 @@ const subscriberList = computed(() => {
     return userStore.getUserByIdentifier(subscriber) ?? unknownUser();
   });
 });
+
+const nodeProps = (option: SelectOption | SelectGroupOption) => {
+  return {
+    onClick(_: MouseEvent) {
+      if (option.disabled || !option.value) return;
+      const value = option.value as string;
+      const subscribers = new Set(issue.value.subscribers);
+      if (subscribers.has(value)) {
+        subscribers.delete(value);
+      } else {
+        subscribers.add(value);
+      }
+      onUpdateSubscribers([...subscribers]);
+    },
+  };
+};
 
 const options = computed(() => {
   const subscribers = new Set(issue.value.subscribers);
@@ -142,7 +155,7 @@ const renderLabel = (option: SelectOption | SelectGroupOption) => {
 const onUpdateSubscribers = async (subscribers: string[]) => {
   try {
     await updateIssueSubscribers(issue.value, subscribers);
-    keyword.value = "";
+    nextTick(() => (keyword.value = ""));
   } finally {
     // Nothing
   }
@@ -156,8 +169,6 @@ const onUpdateShow = (show: boolean) => {
   }
 };
 
-// TODO(ed): I found the NPopselect NOT support search.
-// We need to use the NSelector instead.
 const handleSearch = useDebounceFn(async (search: string) => {
   const filter = [
     `state == "${stateToJSON(State.ACTIVE)}"`,
@@ -181,7 +192,5 @@ const handleSearch = useDebounceFn(async (search: string) => {
   }
 });
 
-onMounted(async () => {
-  await handleSearch("");
-});
+watch(() => keyword.value, handleSearch, { immediate: true });
 </script>
