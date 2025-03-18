@@ -82,7 +82,7 @@ const subscriberList = computed(() => {
 
 const nodeProps = (option: SelectOption | SelectGroupOption) => {
   return {
-    onClick(e: MouseEvent) {
+    onClick(_: MouseEvent) {
       if (option.disabled || !option.value) return;
       const value = option.value as string;
       const subscribers = new Set(issue.value.subscribers);
