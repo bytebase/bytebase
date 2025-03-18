@@ -210,7 +210,6 @@
     "resource": "资源",
     "resources": "资源",
     "closed": "已关闭",
-    "options": "配置项",
     "refresh": "刷新",
     "rollback": "回滚",
     "rows": {
@@ -2450,10 +2449,6 @@
     "edit": "编辑数据库分组",
     "matched-database": "相匹配的数据库",
     "unmatched-database": "不匹配的数据库",
-    "multitenancy": {
-      "self": "多租户",
-      "description": "支持管理跨不同租户的多个同构数据库。"
-    },
     "condition": {
       "self": "条件"
     },

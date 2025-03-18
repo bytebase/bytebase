@@ -9159,8 +9159,6 @@ components:
                     items:
                         $ref: '#/components/schemas/DatabaseGroup_Database'
                     description: The list of databases that match the database group condition.
-                multitenancy:
-                    type: boolean
         DatabaseGroup_Database:
             type: object
             properties:
