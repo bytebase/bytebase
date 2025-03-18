@@ -543,7 +543,7 @@ func SQLReviewCheck(
 		switch checkContext.DbType {
 		case storepb.Engine_TIDB, storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_POSTGRES, storepb.Engine_OCEANBASE:
 			if err := finder.WalkThrough(asts); err != nil {
-				return convertWalkThroughErrorToAdvice(ctx, checkContext, err)
+				return convertWalkThroughErrorToAdvice(err)
 			}
 		}
 	}
@@ -620,7 +620,7 @@ func SQLReviewCheck(
 	return advices, nil
 }
 
-func convertWalkThroughErrorToAdvice(ctx context.Context, checkContext SQLReviewCheckContext, err error) ([]*storepb.Advice, error) {
+func convertWalkThroughErrorToAdvice(err error) ([]*storepb.Advice, error) {
 	walkThroughError, ok := err.(*catalog.WalkThroughError)
 	if !ok {
 		return nil, err
