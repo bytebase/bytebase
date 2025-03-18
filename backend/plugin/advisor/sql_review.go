@@ -1343,7 +1343,7 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 		}
 	case SchemaRuleCreateIndexConcurrently:
 		if engine == storepb.Engine_POSTGRES {
-			return PostgreSQLCreateIndexConcurrently, nil
+			return PostgreSQLIndexConcurrently, nil
 		}
 	case SchemaRuleIndexTypeAllowList:
 		if engine == storepb.Engine_MYSQL {
