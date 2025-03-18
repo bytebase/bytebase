@@ -51,6 +51,11 @@ type IndexKey struct {
 	Index  string
 }
 
+type ConstraintKey struct {
+	Schema     string
+	Constraint string
+}
+
 type SequenceKey struct {
 	Schema   string
 	Sequence string
