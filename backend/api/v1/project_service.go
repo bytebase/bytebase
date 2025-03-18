@@ -138,6 +138,13 @@ func getListProjectFilter(filter string) (*store.ListResourceFilter, error) {
 				return fmt.Sprintf("project.resource_id != $%d", len(positionalArgs)), nil
 			}
 			return "TRUE", nil
+		case "state":
+			v1State, ok := v1pb.State_value[value.(string)]
+			if !ok {
+				return "", status.Errorf(codes.InvalidArgument, "invalid state filter %q", value)
+			}
+			positionalArgs = append(positionalArgs, v1pb.State(v1State) == v1pb.State_DELETED)
+			return fmt.Sprintf("project.deleted = $%d", len(positionalArgs)), nil
 		default:
 			return "", status.Errorf(codes.InvalidArgument, "unsupport variable %q", variable)
 		}

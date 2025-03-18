@@ -195,6 +195,7 @@
     "info": "Info",
     "minutes": "Minutes",
     "filter-by-name": "Filter by name",
+    "search-by-name": "Search by name",
     "license": "License",
     "view-details": "View details",
     "force-verb": "Force {verb}",

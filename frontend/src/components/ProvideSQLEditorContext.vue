@@ -46,7 +46,6 @@ import {
   useGroupStore,
   pushNotification,
   useAppFeature,
-  useProjectV1List,
 } from "@/store";
 import type { SQLEditorConnection } from "@/types";
 import {
@@ -69,7 +68,7 @@ import {
   worksheetNameFromSlug,
   extractWorksheetUID,
   extractInstanceResourceName,
-  wrapRefAsPromise,
+  getDefaultPagination,
 } from "@/utils";
 import {
   extractWorksheetConnection,
@@ -99,16 +98,12 @@ const {
 const hideProjects = useAppFeature("bb.feature.sql-editor.hide-projects");
 
 const fallbackToFirstProject = async () => {
-  const { projectList, ready } = useProjectV1List();
-  await wrapRefAsPromise(ready, true);
-  const projectListWithoutDefaultProject = projectList.value.filter(
-    (proj) => proj.name !== DEFAULT_PROJECT_NAME
-  );
-  return (
-    head(projectListWithoutDefaultProject)?.name ??
-    head(projectList.value)?.name ??
-    ""
-  );
+  const { projects } = await projectStore.fetchProjectList({
+    showDeleted: false,
+    pageSize: getDefaultPagination(),
+    excludeDefault: true,
+  });
+  return head(projects)?.name ?? DEFAULT_PROJECT_NAME;
 };
 
 const initializeProjects = async () => {
@@ -179,8 +174,6 @@ const handleProjectSwitched = async () => {
   const { project } = editorStore;
   if (project) {
     await projectStore.getOrFetchProjectByName(project, true /* silent */);
-  } else {
-    await wrapRefAsPromise(useProjectV1List().ready, true);
   }
   tabStore.maybeInitProject(project);
 };
