@@ -430,10 +430,7 @@ func getTableColumns(txn *sql.Tx, schemaName string, version *plsql.Version) (ma
 		); err != nil {
 			return nil, err
 		}
-		column.Type, err = getTypeString(column.Type, dataLength, dataPrecision, dataScale)
-		if err != nil {
-			return nil, errors.Errorf("failed to get type string: %v", err)
-		}
+		column.Type = getTypeString(column.Type, dataLength, dataPrecision, dataScale)
 		if defaultStr.Valid {
 			// TODO: use correct default type
 			column.DefaultValue = &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: defaultStr.String}
@@ -463,41 +460,30 @@ func getTableColumns(txn *sql.Tx, schemaName string, version *plsql.Version) (ma
 	return columnsMap, nil
 }
 
-func getTypeString(dataType string, dataLength, dataPrecision, dataScale sql.NullInt64) (string, error) {
-	var buf strings.Builder
+func getTypeString(dataType string, dataLength, dataPrecision, dataScale sql.NullInt64) string {
 	switch dataType {
 	case "VARCHAR2", "CHAR":
-		if _, err := fmt.Fprintf(&buf, "(%d BYTE)", dataLength.Int64); err != nil {
-			return "", err
-		}
+		return fmt.Sprintf("%s(%d BYTE)", dataType, dataLength.Int64)
 	case "NVARCHAR2", "RAW", "UROWID", "NCHAR":
-		if _, err := fmt.Fprintf(&buf, "(%d)", dataLength.Int64); err != nil {
-			return "", err
-		}
+		return fmt.Sprintf("%s(%d)", dataType, dataLength.Int64)
 	case "NUMBER":
 		switch {
 		case !dataPrecision.Valid || dataPrecision.Int64 == 0:
 		// do nothing
 		case dataPrecision.Valid && dataPrecision.Int64 > 0 && (!dataScale.Valid || dataScale.Int64 == 0):
-			if _, err := fmt.Fprintf(&buf, "(%d)", dataPrecision.Int64); err != nil {
-				return "", err
-			}
+			return fmt.Sprintf("%s(%d)", dataType, dataPrecision.Int64)
 		case dataPrecision.Valid && dataPrecision.Int64 > 0 && dataScale.Valid && dataScale.Int64 > 0:
-			if _, err := fmt.Fprintf(&buf, "(%d,%d)", dataPrecision.Int64, dataScale.Int64); err != nil {
-				return "", err
-			}
+			return fmt.Sprintf("%s(%d,%d)", dataType, dataPrecision.Int64, dataScale.Int64)
 		}
 	case "FLOAT":
 		switch {
 		case !dataPrecision.Valid || dataPrecision.Int64 == 0:
 		// do nothing
 		case dataPrecision.Valid && dataPrecision.Int64 > 0:
-			if _, err := fmt.Fprintf(&buf, "(%d)", dataPrecision.Int64); err != nil {
-				return "", err
-			}
+			return fmt.Sprintf("%s(%d)", dataType, dataPrecision.Int64)
 		}
 	}
-	return buf.String(), nil
+	return dataType
 }
 
 func getOuterSchemaRColumns(txn *sql.Tx, outerRTableMap map[db.ConstraintKey]string, outerRColumnMap map[db.ConstraintKey][]string, schemaName, constraintName string) (string, []string, error) {
