@@ -16,9 +16,6 @@
           class="ml-1"
         />
       </div>
-      <div class="bb-grid-cell">
-        {{ creatorOfRule(rule).title }}
-      </div>
       <div class="bb-grid-cell justify-center">
         <NButton
           quaternary
@@ -92,7 +89,6 @@ const { hasFeature, showFeatureModal, allowAdmin, dialog } = context;
 const COLUMN_LIST = computed(() => {
   const columns: BBGridColumn[] = [
     { title: t("common.name"), width: "1fr" },
-    { title: t("common.creator"), width: "minmax(auto, 10rem)" },
     {
       title: t("custom-approval.approval-flow.approval-nodes"),
       width: "6rem",
