@@ -719,8 +719,39 @@ func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {
 				if err != nil {
 					return errors.Wrapf(err, "failed to get issue")
 				}
-				if issue == nil {
+
+				// every task in the stage terminated
+				// create "stage ends" activity.
+				if err := func() error {
+					pipeline, err := s.store.GetPipelineV2ByID(ctx, task.PipelineID)
+					if err != nil {
+						return errors.Wrapf(err, "failed to get pipeline")
+					}
+					if pipeline == nil {
+						return errors.Errorf("pipeline %v not found", task.PipelineID)
+					}
+					project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{ResourceID: &pipeline.ProjectID})
+					if err != nil {
+						return errors.Wrapf(err, "failed to get project")
+					}
+					if project == nil {
+						return errors.Errorf("project %v not found", pipeline.ProjectID)
+					}
+					s.webhookManager.CreateEvent(ctx, &webhook.Event{
+						Actor:   s.store.GetSystemBotUser(ctx),
+						Type:    webhook.EventTypeStageStatusUpdate,
+						Comment: "",
+						// Issue:   webhook.NewIssue(issue),
+						Rollout: webhook.NewRollout(pipeline),
+						Project: webhook.NewProject(project),
+						StageStatusUpdate: &webhook.EventStageStatusUpdate{
+							StageTitle: taskStage.Environment,
+							StageUID:   taskStage.ID,
+						},
+					})
 					return nil
+				}(); err != nil {
+					slog.Error("failed to create ActivityPipelineStageStatusUpdate activity", log.BBError(err))
 				}
 
 				if err := func() error {
@@ -740,24 +771,6 @@ func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {
 					slog.Warn("failed to create issue comment", log.BBError(err))
 				}
 
-				// every task in the stage terminated
-				// create "stage ends" activity.
-				if err := func() error {
-					s.webhookManager.CreateEvent(ctx, &webhook.Event{
-						Actor:   s.store.GetSystemBotUser(ctx),
-						Type:    webhook.EventTypeStageStatusUpdate,
-						Comment: "",
-						Issue:   webhook.NewIssue(issue),
-						Project: webhook.NewProject(issue.Project),
-						StageStatusUpdate: &webhook.EventStageStatusUpdate{
-							StageTitle: taskStage.Environment,
-							StageUID:   taskStage.ID,
-						},
-					})
-					return nil
-				}(); err != nil {
-					slog.Error("failed to create ActivityPipelineStageStatusUpdate activity", log.BBError(err))
-				}
 				// create "notify pipeline rollout" activity.
 				if err := func() error {
 					if nextStage == nil {

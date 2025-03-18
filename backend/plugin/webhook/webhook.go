@@ -134,10 +134,12 @@ func (c *Context) GetMetaList() []Meta {
 			Value: common.TruncateStringWithDescription(c.Issue.Description),
 		})
 	} else if c.Rollout != nil {
-		m = append(m, Meta{
-			Name:  "Rollout",
-			Value: c.Rollout.Title,
-		})
+		if c.Rollout.Title != "" {
+			m = append(m, Meta{
+				Name:  "Rollout",
+				Value: c.Rollout.Title,
+			})
+		}
 	}
 
 	if c.Stage != nil {
@@ -202,10 +204,12 @@ func (c *Context) GetMetaListZh() []Meta {
 			Value: common.TruncateStringWithDescription(c.Issue.Description),
 		})
 	} else if c.Rollout != nil {
-		m = append(m, Meta{
-			Name:  "发布",
-			Value: c.Rollout.Title,
-		})
+		if c.Rollout.Title != "" {
+			m = append(m, Meta{
+				Name:  "发布",
+				Value: c.Rollout.Title,
+			})
+		}
 	}
 
 	if c.Stage != nil {
