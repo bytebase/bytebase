@@ -226,12 +226,9 @@ func listUserImpl(ctx context.Context, txn *sql.Tx, find *FindUserMessage) ([]*U
 			WHERE ((resource_type = 'PROJECT' AND resource = 'projects/` + *v + `') OR resource_type = 'WORKSPACE') AND type = 'bb.policy.iam'
 		),
 		project_members AS (
-			SELECT member FROM all_members WHERE role LIKE 'roles/project%'
-		),
-		members AS (
-			SELECT ARRAY_AGG(member) AS members FROM project_members
+			SELECT ARRAY_AGG(member) AS members FROM all_members WHERE role LIKE 'roles/project%'
 		)`
-		join = `RIGHT JOIN members ON (CONCAT('users/', principal.id) = ANY(members.members) OR '` + api.AllUsers + `' = ANY(members.members))`
+		join = `INNER JOIN project_members ON (CONCAT('users/', principal.id) = ANY(project_members.members) OR '` + api.AllUsers + `' = ANY(project_members.members))`
 	}
 
 	query := with + `

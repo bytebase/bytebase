@@ -80,11 +80,31 @@ export interface SearchProjectsRequest {
    * name.matches("project name") || resource_id = "project id"
    */
   filter: string;
+  /**
+   * The maximum number of projects to return. The service may return fewer than
+   * this value.
+   * If unspecified, at most 10 projects will be returned.
+   * The maximum value is 1000; values above 1000 will be coerced to 1000.
+   */
+  pageSize: number;
+  /**
+   * A page token, received from a previous `SearchProjects` call.
+   * Provide this to retrieve the subsequent page.
+   *
+   * When paginating, all other parameters provided to `SearchProjects` must match
+   * the call that provided the page token.
+   */
+  pageToken: string;
 }
 
 export interface SearchProjectsResponse {
   /** The projects from the specified request. */
   projects: Project[];
+  /**
+   * A token, which can be sent as `page_token` to retrieve the next page.
+   * If this field is omitted, there are no subsequent pages.
+   */
+  nextPageToken: string;
 }
 
 export interface CreateProjectRequest {
@@ -844,7 +864,7 @@ export const ListProjectsResponse: MessageFns<ListProjectsResponse> = {
 };
 
 function createBaseSearchProjectsRequest(): SearchProjectsRequest {
-  return { showDeleted: false, filter: "" };
+  return { showDeleted: false, filter: "", pageSize: 0, pageToken: "" };
 }
 
 export const SearchProjectsRequest: MessageFns<SearchProjectsRequest> = {
@@ -854,6 +874,12 @@ export const SearchProjectsRequest: MessageFns<SearchProjectsRequest> = {
     }
     if (message.filter !== "") {
       writer.uint32(18).string(message.filter);
+    }
+    if (message.pageSize !== 0) {
+      writer.uint32(24).int32(message.pageSize);
+    }
+    if (message.pageToken !== "") {
+      writer.uint32(34).string(message.pageToken);
     }
     return writer;
   },
@@ -881,6 +907,22 @@ export const SearchProjectsRequest: MessageFns<SearchProjectsRequest> = {
           message.filter = reader.string();
           continue;
         }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.pageSize = reader.int32();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.pageToken = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -894,6 +936,8 @@ export const SearchProjectsRequest: MessageFns<SearchProjectsRequest> = {
     return {
       showDeleted: isSet(object.showDeleted) ? globalThis.Boolean(object.showDeleted) : false,
       filter: isSet(object.filter) ? globalThis.String(object.filter) : "",
+      pageSize: isSet(object.pageSize) ? globalThis.Number(object.pageSize) : 0,
+      pageToken: isSet(object.pageToken) ? globalThis.String(object.pageToken) : "",
     };
   },
 
@@ -905,6 +949,12 @@ export const SearchProjectsRequest: MessageFns<SearchProjectsRequest> = {
     if (message.filter !== "") {
       obj.filter = message.filter;
     }
+    if (message.pageSize !== 0) {
+      obj.pageSize = Math.round(message.pageSize);
+    }
+    if (message.pageToken !== "") {
+      obj.pageToken = message.pageToken;
+    }
     return obj;
   },
 
@@ -915,18 +965,23 @@ export const SearchProjectsRequest: MessageFns<SearchProjectsRequest> = {
     const message = createBaseSearchProjectsRequest();
     message.showDeleted = object.showDeleted ?? false;
     message.filter = object.filter ?? "";
+    message.pageSize = object.pageSize ?? 0;
+    message.pageToken = object.pageToken ?? "";
     return message;
   },
 };
 
 function createBaseSearchProjectsResponse(): SearchProjectsResponse {
-  return { projects: [] };
+  return { projects: [], nextPageToken: "" };
 }
 
 export const SearchProjectsResponse: MessageFns<SearchProjectsResponse> = {
   encode(message: SearchProjectsResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     for (const v of message.projects) {
       Project.encode(v!, writer.uint32(10).fork()).join();
+    }
+    if (message.nextPageToken !== "") {
+      writer.uint32(18).string(message.nextPageToken);
     }
     return writer;
   },
@@ -946,6 +1001,14 @@ export const SearchProjectsResponse: MessageFns<SearchProjectsResponse> = {
           message.projects.push(Project.decode(reader, reader.uint32()));
           continue;
         }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.nextPageToken = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -958,6 +1021,7 @@ export const SearchProjectsResponse: MessageFns<SearchProjectsResponse> = {
   fromJSON(object: any): SearchProjectsResponse {
     return {
       projects: globalThis.Array.isArray(object?.projects) ? object.projects.map((e: any) => Project.fromJSON(e)) : [],
+      nextPageToken: isSet(object.nextPageToken) ? globalThis.String(object.nextPageToken) : "",
     };
   },
 
@@ -965,6 +1029,9 @@ export const SearchProjectsResponse: MessageFns<SearchProjectsResponse> = {
     const obj: any = {};
     if (message.projects?.length) {
       obj.projects = message.projects.map((e) => Project.toJSON(e));
+    }
+    if (message.nextPageToken !== "") {
+      obj.nextPageToken = message.nextPageToken;
     }
     return obj;
   },
@@ -975,6 +1042,7 @@ export const SearchProjectsResponse: MessageFns<SearchProjectsResponse> = {
   fromPartial(object: DeepPartial<SearchProjectsResponse>): SearchProjectsResponse {
     const message = createBaseSearchProjectsResponse();
     message.projects = object.projects?.map((e) => Project.fromPartial(e)) || [];
+    message.nextPageToken = object.nextPageToken ?? "";
     return message;
   },
 };
