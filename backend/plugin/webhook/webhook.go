@@ -51,6 +51,11 @@ type Issue struct {
 	Creator     *store.UserMessage `json:"-"`
 }
 
+type Rollout struct {
+	UID   int
+	Title string
+}
+
 type Stage struct {
 	Name string `json:"name"`
 }
@@ -85,6 +90,7 @@ type Context struct {
 	ActorEmail   string
 	CreatedTs    int64
 	Issue        *Issue
+	Rollout      *Rollout
 	Stage        *Stage
 	Project      *Project
 	TaskResult   *TaskResult
@@ -127,6 +133,13 @@ func (c *Context) GetMetaList() []Meta {
 			Name:  "Issue Description",
 			Value: common.TruncateStringWithDescription(c.Issue.Description),
 		})
+	} else if c.Rollout != nil {
+		if c.Rollout.Title != "" {
+			m = append(m, Meta{
+				Name:  "Rollout",
+				Value: c.Rollout.Title,
+			})
+		}
 	}
 
 	if c.Stage != nil {
@@ -137,10 +150,12 @@ func (c *Context) GetMetaList() []Meta {
 	}
 
 	if c.TaskResult != nil {
-		m = append(m, Meta{
-			Name:  "Task",
-			Value: c.TaskResult.Name,
-		})
+		if c.TaskResult.Name != "" {
+			m = append(m, Meta{
+				Name:  "Task",
+				Value: c.TaskResult.Name,
+			})
+		}
 		m = append(m, Meta{
 			Name:  "Status",
 			Value: c.TaskResult.Status,
@@ -188,6 +203,13 @@ func (c *Context) GetMetaListZh() []Meta {
 			Name:  "工单描述",
 			Value: common.TruncateStringWithDescription(c.Issue.Description),
 		})
+	} else if c.Rollout != nil {
+		if c.Rollout.Title != "" {
+			m = append(m, Meta{
+				Name:  "发布",
+				Value: c.Rollout.Title,
+			})
+		}
 	}
 
 	if c.Stage != nil {
@@ -198,10 +220,12 @@ func (c *Context) GetMetaListZh() []Meta {
 	}
 
 	if c.TaskResult != nil {
-		m = append(m, Meta{
-			Name:  "任务",
-			Value: c.TaskResult.Name,
-		})
+		if c.TaskResult.Name != "" {
+			m = append(m, Meta{
+				Name:  "任务",
+				Value: c.TaskResult.Name,
+			})
+		}
 		m = append(m, Meta{
 			Name:  "状态",
 			Value: c.TaskResult.Status,
