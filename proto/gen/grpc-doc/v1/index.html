@@ -755,10 +755,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.DatabaseMetadataView"><span class="badge">E</span>DatabaseMetadataView</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.GenerationMetadata.Type"><span class="badge">E</span>GenerationMetadata.Type</a>
                 </li>
               
@@ -7274,17 +7270,19 @@ Format: instances/{instance}/databases/{database}/metadata </p></td>
                 </tr>
               
                 <tr>
-                  <td>view</td>
-                  <td><a href="#bytebase.v1.DatabaseMetadataView">DatabaseMetadataView</a></td>
-                  <td></td>
-                  <td><p>The view to return. Defaults to DATABASE_METADATA_VIEW_BASIC. </p></td>
-                </tr>
-              
-                <tr>
                   <td>filter</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The filter used for a specific schema object such as
+                  <td><p>Filter is used to filter databases returned in the list.
+Supported filter:
+- schema
+- table
+
+For example:
+schema == &#34;schema-a&#34;
+table == &#34;table-a&#34;
+schema == &#34;schema-a&#34; &amp;&amp; table == &#34;table-a&#34;
+The filter used for a specific schema object such as
 &#34;schemas/schema-a/tables/table-a&#34;.
 The column masking level will only be returned when a table filter is used. </p></td>
                 </tr>
@@ -7759,7 +7757,9 @@ engine in [&#34;MYSQL&#34;, &#34;POSTGRES&#34;]
 label == &#34;region:asia&#34;
 label == &#34;tenant:asia,europe&#34;
 label == &#34;region:asia&#34; &amp;&amp; label == &#34;tenant:bytebase&#34;
-exclude_unassigned == true </p></td>
+exclude_unassigned == true
+You can combine filter conditions like:
+environment == &#34;environments/prod&#34; &amp;&amp; name.matches(&#34;employee&#34;) </p></td>
                 </tr>
               
                 <tr>
@@ -9342,37 +9342,6 @@ The API will default to the BASIC view.</p></td>
                 <td>BY_DEFAULT</td>
                 <td>2</td>
                 <td><p></p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-      
-        <h3 id="bytebase.v1.DatabaseMetadataView">DatabaseMetadataView</h3>
-        <p></p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>DATABASE_METADATA_VIEW_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p>The default and unset value.
-The API will default to the BASIC view.</p></td>
-              </tr>
-            
-              <tr>
-                <td>DATABASE_METADATA_VIEW_BASIC</td>
-                <td>1</td>
-                <td><p>Include basic information of schema object names such as schema, table,
-view, function names.</p></td>
-              </tr>
-            
-              <tr>
-                <td>DATABASE_METADATA_VIEW_FULL</td>
-                <td>2</td>
-                <td><p>Include everything such as columns and column masking level.</p></td>
               </tr>
             
           </tbody>
@@ -15379,6 +15348,12 @@ This information is not authenticated and should be treated accordingly. </p></t
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The filter of the log. It should be a valid CEL expression.
+Supported filter:
+- method
+- severity
+- user
+- create_time
+
 For example:
  - filter = &#34;method == &#39;/bytebase.v1.SQLService/Query&#39;&#34;
  - filter = &#34;method == &#39;/bytebase.v1.SQLService/Query&#39; &amp;&amp; severity == &#39;ERROR&#39;&#34;
@@ -15734,6 +15709,7 @@ Supported filter:
 - email
 - user_type
 - state
+- project
 
 For example:
 name == &#34;ed&#34;
@@ -15743,7 +15719,11 @@ email.matches(&#34;ed&#34;)
 user_type == &#34;SERVICE_ACCOUNT&#34;
 user_type in [&#34;SERVICE_ACCOUNT&#34;, &#34;USER&#34;]
 !(user_type in [&#34;SERVICE_ACCOUNT&#34;, &#34;USER&#34;])
-state == &#34;DELETED&#34; </p></td>
+state == &#34;DELETED&#34;
+project == &#34;projects/sample-project&#34;
+You can combine filter conditions like:
+name.matches(&#34;ed&#34;) &amp;&amp; project == &#34;projects/sample-project&#34;
+(name == &#34;ed&#34; || email == &#34;ed@bytebase.com&#34;) &amp;&amp; project == &#34;projects/sample-project&#34; </p></td>
                 </tr>
               
             </tbody>
@@ -17246,13 +17226,6 @@ For example, the placeholder for db1_2010, db1_2021, db1_2023 will be &#34;db1&#
                   <td><a href="#bytebase.v1.DatabaseGroup.Database">DatabaseGroup.Database</a></td>
                   <td>repeated</td>
                   <td><p>The list of databases that match the database group condition. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>multitenancy</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p> </p></td>
                 </tr>
               
             </tbody>
@@ -22870,15 +22843,18 @@ Supported filters:
 - name
 - resource_id
 - exclude_default: if not include the default project.
+- state
 
 For example:
 name = &#34;project name&#34;
 name.matches(&#34;project name&#34;)
 resource_id = &#34;project id&#34;
 resource_id.matches(&#34;project id&#34;)
+exclude_default == true
+state == &#34;DELETED&#34;
+You can combine filter conditions like:
 name = &#34;project name&#34; &amp;&amp; resource_id.matches(&#34;project id&#34;)
-name.matches(&#34;project name&#34;) || resource_id = &#34;project id&#34;
-exclude_default == true </p></td>
+name.matches(&#34;project name&#34;) || resource_id = &#34;project id&#34; </p></td>
                 </tr>
               
             </tbody>

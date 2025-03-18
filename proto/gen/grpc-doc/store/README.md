@@ -1973,11 +1973,6 @@ LIST, HASH (https://www.postgresql.org/docs/current/ddl-partitioning.html)
 
 
 
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| multitenancy | [bool](#bool) |  |  |
-
-
 
 
 

@@ -36,10 +36,3 @@ func NewCatalog(ctx context.Context, s *store.Store, instanceID, databaseName st
 func (c *Catalog) GetFinder() *Finder {
 	return c.Finder
 }
-
-// NewEmptyCatalog creates a new empty database catalog.
-func NewEmptyCatalog(engineType storepb.Engine) (*Catalog, error) {
-	return &Catalog{
-		NewEmptyFinder(&FinderContext{CheckIntegrity: false, EngineType: engineType, IgnoreCaseSensitive: false}),
-	}, nil
-}

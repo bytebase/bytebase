@@ -5,7 +5,6 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/google/cel-go/cel"
 	"github.com/pkg/errors"
 	"golang.org/x/exp/ebnf"
 	"google.golang.org/grpc/codes"
@@ -44,44 +43,6 @@ func convertDeletedToState(deleted bool) v1pb.State {
 
 func isValidResourceID(resourceID string) bool {
 	return resourceIDMatcher.MatchString(resourceID)
-}
-
-const filterExample = `project == "projects/abc"`
-
-// getProjectFilter will parse the simple filter such as `project = "projects/abc"` to "projects/abc" .
-func getProjectFilter(filter string) (string, error) {
-	retErr := errors.Errorf("invalid filter %q, example %q", filter, filterExample)
-	e, err := cel.NewEnv(cel.Variable("project", cel.StringType))
-	if err != nil {
-		return "", err
-	}
-	ast, issues := e.Compile(filter)
-	if issues != nil {
-		return "", status.Error(codes.InvalidArgument, issues.String())
-	}
-	parsedExpr, err := cel.AstToParsedExpr(ast)
-	if err != nil {
-		return "", retErr
-	}
-	expr := parsedExpr.Expr
-	callExpr := expr.GetCallExpr()
-	if callExpr == nil {
-		return "", retErr
-	}
-	if callExpr.Function != "_==_" {
-		return "", retErr
-	}
-	if len(callExpr.Args) != 2 {
-		return "", retErr
-	}
-	if callExpr.Args[0].GetIdentExpr() == nil || callExpr.Args[0].GetIdentExpr().Name != "project" {
-		return "", retErr
-	}
-	constExpr := callExpr.Args[1].GetConstExpr()
-	if constExpr == nil {
-		return "", retErr
-	}
-	return constExpr.GetStringValue(), nil
 }
 
 // getEBNFTokens will parse the simple filter such as `project = "abc" | "def".` to {project: ["abc", "def"]} .

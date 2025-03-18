@@ -31,7 +31,6 @@ import { BBModal } from "@/bbkit";
 import { SchemaDiagram, SchemaDiagramIcon } from "@/components/SchemaDiagram";
 import { useDBSchemaV1Store } from "@/store";
 import type { ComposedDatabase } from "@/types";
-import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
 
 type LocalState = {
   show: boolean;
@@ -53,7 +52,6 @@ const openModal = async () => {
   if (!state.fetchLast) {
     await dbSchemaStore.getOrFetchDatabaseMetadata({
       database: props.database.name,
-      view: DatabaseMetadataView.DATABASE_METADATA_VIEW_FULL,
       skipCache: true,
     });
     state.fetchLast = true;

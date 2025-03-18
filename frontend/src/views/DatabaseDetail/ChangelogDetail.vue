@@ -32,6 +32,7 @@ import { useRouter } from "vue-router";
 import { ChangelogDetail as ChangelogDetailView } from "@/components/Changelog";
 import { useDatabaseV1ByName } from "@/store";
 import { databaseV1Url } from "@/utils";
+import { BBSpin } from "@/bbkit";
 
 const props = defineProps<{
   project: string;

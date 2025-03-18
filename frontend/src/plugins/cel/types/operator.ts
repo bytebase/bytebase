@@ -72,6 +72,11 @@ const OperatorList: Record<Factor, Operator[]> = {
     ...CollectionOperatorList,
     ...StringOperatorList,
   ]),
+  schema_name: uniq([
+    ...EqualityOperatorList,
+    ...CollectionOperatorList,
+    ...StringOperatorList,
+  ]),
   table_name: uniq([
     ...EqualityOperatorList,
     ...CollectionOperatorList,

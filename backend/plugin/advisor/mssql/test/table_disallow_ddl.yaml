@@ -13,7 +13,6 @@
       code: 613
       title: table.disallow-ddl
       content: DDL is disallowed on table MySchema.Identifier.
-      detail: ""
       startposition:
         line: 5
         column: 0

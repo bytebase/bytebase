@@ -114,7 +114,11 @@ func (driver *Driver) Open(_ context.Context, _ storepb.Engine, config db.Connec
 	}
 
 	driver.databaseName = config.ConnectionContext.DatabaseName
-	if config.ConnectionContext.DatabaseName == "" {
+	if config.ConnectionContext.DatabaseName != "" {
+		pgxConnConfig.Database = config.ConnectionContext.DatabaseName
+	} else if config.DataSource.GetDatabase() != "" {
+		pgxConnConfig.Database = config.DataSource.GetDatabase()
+	} else {
 		pgxConnConfig.Database = "postgres"
 	}
 	driver.config = config
@@ -296,7 +300,7 @@ func getDatabaseInCreateDatabaseStatement(createDatabaseStatement string) (strin
 }
 
 // QueryConn queries a SQL statement in a given connection.
-func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
+func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
 	singleSQLs, err := pgparser.SplitSQL(statement)
 	if err != nil {
 		return nil, err
@@ -335,7 +339,7 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 					return nil, err
 				}
 				defer rows.Close()
-				r, err := util.RowsToQueryResult(rows, makeValueByTypeName, convertValue, driver.config.MaximumSQLResultSize)
+				r, err := util.RowsToQueryResult(rows, makeValueByTypeName, convertValue, queryContext.MaximumSQLResultSize)
 				if err != nil {
 					return nil, err
 				}

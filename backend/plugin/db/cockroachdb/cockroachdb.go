@@ -87,7 +87,11 @@ func (driver *Driver) Open(ctx context.Context, _ storepb.Engine, config db.Conn
 	}
 
 	driver.databaseName = config.ConnectionContext.DatabaseName
-	if config.ConnectionContext.DatabaseName == "" {
+	if config.ConnectionContext.DatabaseName != "" {
+		pgxConnConfig.Database = config.ConnectionContext.DatabaseName
+	} else if config.DataSource.GetDatabase() != "" {
+		pgxConnConfig.Database = config.DataSource.GetDatabase()
+	} else {
 		pgxConnConfig.Database = "postgres"
 	}
 	driver.config = config
@@ -147,8 +151,9 @@ func getCockroachConnectionConfig(config db.ConnectionConfig) (*pgx.ConnConfig, 
 	}
 
 	connStr := fmt.Sprintf("host=%s port=%s", config.DataSource.Host, config.DataSource.Port)
-	sslMode := util.GetPGSSLMode(config.DataSource)
-	connStr += fmt.Sprintf(" sslmode=%s", sslMode)
+	if config.DataSource.GetUseSsl() {
+		connStr += fmt.Sprintf(" sslmode=%s", util.GetPGSSLMode(config.DataSource))
+	}
 
 	routingID := getRoutingIDFromCockroachCloudURL(config.DataSource.Host)
 	if routingID != "" {
@@ -542,7 +547,7 @@ func (driver *Driver) GetCurrentDatabaseOwner(ctx context.Context) (string, erro
 }
 
 // QueryConn queries a SQL statement in a given connection.
-func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
+func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
 	singleSQLs, err := crdbparser.SplitSQLStatement(statement)
 	if err != nil {
 		return nil, err
@@ -585,7 +590,7 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 						return err
 					}
 					defer rows.Close()
-					r, err = util.RowsToQueryResult(rows, makeValueByTypeName, convertValue, driver.config.MaximumSQLResultSize)
+					r, err = util.RowsToQueryResult(rows, makeValueByTypeName, convertValue, queryContext.MaximumSQLResultSize)
 					if err != nil {
 						return err
 					}

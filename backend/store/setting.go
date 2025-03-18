@@ -191,7 +191,7 @@ func (s *Store) DeleteCache() {
 
 // GetSettingV2 returns the setting by name.
 func (s *Store) GetSettingV2(ctx context.Context, name api.SettingName) (*SettingMessage, error) {
-	if v, ok := s.settingCache.Get(name); ok {
+	if v, ok := s.settingCache.Get(name); ok && s.enableCache {
 		return v, nil
 	}
 
@@ -293,7 +293,7 @@ func (s *Store) UpsertSettingV2(ctx context.Context, update *SetSettingMessage) 
 
 // CreateSettingIfNotExistV2 creates a new setting only if the named setting doesn't exist.
 func (s *Store) CreateSettingIfNotExistV2(ctx context.Context, create *SettingMessage) (*SettingMessage, bool, error) {
-	if v, ok := s.settingCache.Get(create.Name); ok {
+	if v, ok := s.settingCache.Get(create.Name); ok && s.enableCache {
 		return v, false, nil
 	}
 

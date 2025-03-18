@@ -152,10 +152,7 @@ const state = reactive<LocalState>({
   },
 });
 
-const scopeOptions = useCommonSearchScopeOptions(
-  computed(() => state.params),
-  ["environment"]
-);
+const scopeOptions = useCommonSearchScopeOptions(["environment"]);
 
 const selectedEnvironment = computed(() => {
   return (
@@ -221,18 +218,26 @@ const remainingInstanceCount = computed((): number => {
 });
 
 const instanceCountAttention = computed((): string => {
-  const upgrade = t("dynamic.subscription.features.bb-feature-instance-count.upgrade");
+  const upgrade = t(
+    "dynamic.subscription.features.bb-feature-instance-count.upgrade"
+  );
   let status = "";
 
   if (remainingInstanceCount.value > 0) {
-    status = t("dynamic.subscription.features.bb-feature-instance-count.remaining", {
-      total: subscriptionStore.instanceCountLimit,
-      count: remainingInstanceCount.value,
-    });
+    status = t(
+      "dynamic.subscription.features.bb-feature-instance-count.remaining",
+      {
+        total: subscriptionStore.instanceCountLimit,
+        count: remainingInstanceCount.value,
+      }
+    );
   } else {
-    status = t("dynamic.subscription.features.bb-feature-instance-count.runoutof", {
-      total: subscriptionStore.instanceCountLimit,
-    });
+    status = t(
+      "dynamic.subscription.features.bb-feature-instance-count.runoutof",
+      {
+        total: subscriptionStore.instanceCountLimit,
+      }
+    );
   }
 
   return `${status} ${upgrade}`;

@@ -15,7 +15,6 @@ import (
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -79,11 +78,6 @@ func (s *DatabaseGroupService) CreateDatabaseGroup(ctx context.Context, request 
 		Placeholder: request.DatabaseGroup.DatabasePlaceholder,
 		Expression:  request.DatabaseGroup.DatabaseExpr,
 	}
-	if request.DatabaseGroup.Multitenancy {
-		storeDatabaseGroup.Payload = &storepb.DatabaseGroupPayload{
-			Multitenancy: true,
-		}
-	}
 	if request.ValidateOnly {
 		return s.convertStoreToAPIDatabaseGroupFull(ctx, storeDatabaseGroup, projectResourceID)
 	}
@@ -143,10 +137,6 @@ func (s *DatabaseGroupService) UpdateDatabaseGroup(ctx context.Context, request 
 				return nil, status.Errorf(codes.InvalidArgument, "invalid database group expression: %v", err)
 			}
 			updateDatabaseGroup.Expression = request.DatabaseGroup.DatabaseExpr
-		case "multitenancy":
-			updateDatabaseGroup.Payload = &storepb.DatabaseGroupPayload{
-				Multitenancy: request.DatabaseGroup.Multitenancy,
-			}
 		default:
 			return nil, status.Errorf(codes.InvalidArgument, "unsupported path: %q", path)
 		}
@@ -289,9 +279,6 @@ func convertStoreToAPIDatabaseGroupBasic(databaseGroup *store.DatabaseGroupMessa
 		Name:                fmt.Sprintf("%s/%s%s", common.FormatProject(projectResourceID), common.DatabaseGroupNamePrefix, databaseGroup.ResourceID),
 		DatabasePlaceholder: databaseGroup.Placeholder,
 		DatabaseExpr:        databaseGroup.Expression,
-	}
-	if databaseGroup.Payload != nil {
-		databaseGroupV1.Multitenancy = databaseGroup.Payload.Multitenancy
 	}
 	return databaseGroupV1
 }

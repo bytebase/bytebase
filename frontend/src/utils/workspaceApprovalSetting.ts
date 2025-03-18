@@ -11,10 +11,10 @@ import {
 import { t, te } from "@/plugins/i18n";
 import { useUserStore } from "@/store";
 import { userNamePrefix } from "@/store/modules/v1/common";
+import { extractUserId } from "@/store/modules/v1/common";
 import type { ParsedApprovalRule, UnrecognizedApprovalRule } from "@/types";
 import {
   DEFAULT_RISK_LEVEL,
-  unknownUser,
   UNKNOWN_USER_NAME,
   SYSTEM_BOT_EMAIL,
 } from "@/types";
@@ -40,7 +40,7 @@ import {
 import {
   batchConvertCELStringToParsedExpr,
   batchConvertParsedExprToCELString,
-} from "@/utils/v1";
+} from "@/utils";
 import { displayRoleTitle } from "./role";
 
 export const approvalNodeGroupValueText = (group: ApprovalNode_GroupValue) => {
@@ -375,9 +375,7 @@ export const seedWorkspaceApprovalSetting = () => {
   });
 };
 
-export const creatorOfRule = (rule: LocalApprovalRule) => {
+export const isReadonlyApprovalRule = (rule: LocalApprovalRule) => {
   const creatorName = rule.template.creator ?? UNKNOWN_USER_NAME;
-  if (creatorName === UNKNOWN_USER_NAME) return unknownUser();
-
-  return useUserStore().getUserByIdentifier(creatorName) ?? unknownUser();
+  return extractUserId(creatorName) === SYSTEM_BOT_EMAIL;
 };

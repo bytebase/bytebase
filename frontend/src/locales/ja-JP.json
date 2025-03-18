@@ -195,6 +195,7 @@
     "info": "情報",
     "minutes": "分",
     "filter-by-name": "名前でフィルタリングする",
+    "search-by-name": "名前で検索",
     "license": "ライセンス",
     "view-details": "詳細を確認する",
     "force-verb": "フォース{verb}",
@@ -210,7 +211,6 @@
     "resource": "リソース",
     "resources": "リソース",
     "closed": "閉まっている",
-    "options": "オプション",
     "refresh": "リフレッシュ",
     "rollback": "ロールバック",
     "rows": {
@@ -1235,7 +1235,11 @@
           "description": "住所でフィルタリング"
         }
       }
-    }
+    },
+    "no-params-yet-add-above": "まだ構成されていません。\n上記のフォームを使用してパラメーターを追加します。",
+    "no-extra-params-configured": "追加の接続パラメーターは構成されていません",
+    "parameter-name-placeholder": "パラメーター名",
+    "parameter-value-placeholder": "パラメーター値"
   },
   "environment": {
     "select": "環境を選ぶ",
@@ -1655,6 +1659,10 @@
   },
   "data-source": {
     "snowflake-keypair-tip": "キーペア認証",
+    "extra-params": {
+      "self": "追加のパラメーター",
+      "description": "データベース接続文字列の追加パラメーター。 \nPostgreSQLの場合、ターゲット_session_attrs= read-writeなどのパラメーターを使用して、読み取りワイトインスタンスへの接続を確保できます。"
+    },
     "ssl": {
       "ca-cert": "CA証明書",
       "client-key": "クライアントキー",
@@ -2442,10 +2450,6 @@
     "edit": "データベースグループの編集",
     "matched-database": "マッチングデータベース",
     "unmatched-database": "データベースが一致しません",
-    "multitenancy": {
-      "self": "マルチテナント",
-      "description": "異なるテナント間で複数の同種データベースを 1 つのワークフローで管理できます。"
-    },
     "condition": {
       "self": "状態"
     },

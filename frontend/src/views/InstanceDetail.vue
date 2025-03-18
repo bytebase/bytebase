@@ -182,10 +182,11 @@ const state = reactive<LocalState>({
 
 const route = useRoute();
 
-const scopeOptions = useCommonSearchScopeOptions(
-  computed(() => state.params),
-  [...CommonFilterScopeIdList, "project", "label"]
-);
+const scopeOptions = useCommonSearchScopeOptions([
+  ...CommonFilterScopeIdList,
+  "project",
+  "database-label",
+]);
 
 watch(
   () => route.hash,
@@ -245,7 +246,7 @@ const selectedProject = computed(() => {
 
 const selectedLabels = computed(() => {
   return state.params.scopes
-    .filter((scope) => scope.id === "label")
+    .filter((scope) => scope.id === "database-label")
     .map((scope) => scope.value);
 });
 
