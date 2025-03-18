@@ -8293,6 +8293,10 @@ When paginating, all other parameters provided to `ListProjects` must match the 
 | filter | [string](#string) |  | Filter the project. Supported filters: - name - resource_id - exclude_default: if not include the default project. - state
 
 For example: name = &#34;project name&#34; name.matches(&#34;project name&#34;) resource_id = &#34;project id&#34; resource_id.matches(&#34;project id&#34;) exclude_default == true state == &#34;DELETED&#34; You can combine filter conditions like: name = &#34;project name&#34; &amp;&amp; resource_id.matches(&#34;project id&#34;) name.matches(&#34;project name&#34;) || resource_id = &#34;project id&#34; |
+| page_size | [int32](#int32) |  | The maximum number of projects to return. The service may return fewer than this value. If unspecified, at most 10 projects will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | A page token, received from a previous `SearchProjects` call. Provide this to retrieve the subsequent page.
+
+When paginating, all other parameters provided to `SearchProjects` must match the call that provided the page token. |
 
 
 
@@ -8308,6 +8312,7 @@ For example: name = &#34;project name&#34; name.matches(&#34;project name&#34;) 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | projects | [Project](#bytebase-v1-Project) | repeated | The projects from the specified request. |
+| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
 
 
 

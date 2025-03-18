@@ -208,8 +208,20 @@ func (s *ProjectService) SearchProjects(ctx context.Context, request *v1pb.Searc
 		return nil, status.Errorf(codes.Internal, "user not found")
 	}
 
+	offset, err := parseLimitAndOffset(&pageSize{
+		token:   request.PageToken,
+		limit:   int(request.PageSize),
+		maximum: 1000,
+	})
+	if err != nil {
+		return nil, err
+	}
+	limitPlusOne := offset.limit + 1
+
 	find := &store.FindProjectMessage{
 		ShowDeleted: request.ShowDeleted,
+		Limit:       &limitPlusOne,
+		Offset:      &offset.offset,
 	}
 	filter, err := getListProjectFilter(request.Filter)
 	if err != nil {
@@ -222,8 +234,14 @@ func (s *ProjectService) SearchProjects(ctx context.Context, request *v1pb.Searc
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	// TODO(p0ny): support filter by permission in SQL
-	// So that we can support pagination in the API.
+	nextPageToken := ""
+	if len(projects) == limitPlusOne {
+		projects = projects[:offset.limit]
+		if nextPageToken, err = offset.getNextPageToken(); err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to marshal next page token, error: %v", err)
+		}
+	}
+
 	ok, err = s.iamManager.CheckPermission(ctx, iam.PermissionProjectsGet, user)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to check permission, error %v", err)
@@ -242,7 +260,9 @@ func (s *ProjectService) SearchProjects(ctx context.Context, request *v1pb.Searc
 		projects = ps
 	}
 
-	response := &v1pb.SearchProjectsResponse{}
+	response := &v1pb.SearchProjectsResponse{
+		NextPageToken: nextPageToken,
+	}
 	for _, project := range projects {
 		response.Projects = append(response.Projects, convertToProject(project))
 	}
