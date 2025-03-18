@@ -15,7 +15,7 @@
     "type-check": "export NODE_OPTIONS=--max_old_space_size=8000 && vue-tsc --build --force",
     "test": "vitest run --passWithNoTests",
     "coverage": "vitest --coverage",
-    "postinstall": "npm run copy:monaco-workers && monaco-treemending",
+    "postinstall": "npm run copy:monaco-workers",
     "i18n": "TS_NODE_PROJECT='./tsconfig.i18n.json' ts-node i18n.ts"
   },
   "dependencies": {
@@ -78,10 +78,6 @@
     "vdirs": "^0.1.8",
     "vscode": "npm:@codingame/monaco-vscode-api@1.85.6",
     "vscode-languageclient": "9.0.1",
-    "vscode-languageserver": "9.0.1",
-    "vscode-languageserver-protocol": "3.17.5",
-    "vscode-languageserver-textdocument": "1.0.12",
-    "vscode-languageserver-types": "3.17.5",
     "vscode-ws-jsonrpc": "3.3.2",
     "vue": "3.5.13",
     "vuedraggable": "^4.1.0",
@@ -90,7 +86,7 @@
   "devDependencies": {
     "@iconify/json": "2.2.312",
     "@intlify/eslint-plugin-vue-i18n": "^3.2.0",
-    "@intlify/unplugin-vue-i18n": "6.0.3",
+    "@intlify/unplugin-vue-i18n": "6.0.4",
     "@rollup/plugin-yaml": "4.1.2",
     "@tailwindcss/forms": "0.5.10",
     "@tailwindcss/typography": "0.5.16",
