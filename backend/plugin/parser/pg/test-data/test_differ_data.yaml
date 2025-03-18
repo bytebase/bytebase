@@ -230,9 +230,11 @@
     )
   diff: ""
 - oldSchema: |
+    CREATE TABLE public.t1(a int, b int, c int);
     CREATE INDEX idx1 ON public.t1 USING btree (a, b, (c+1));
     CREATE INDEX idx2 ON public.t1 USING hash (a);
   newSchema: |
+    CREATE TABLE public.t1(a int, b int, c int);
     CREATE INDEX idx2 ON public.t1 USING btree (a);
     CREATE INDEX idx3 ON public.t1 USING btree (a, b);
   diff: |+
@@ -284,8 +286,6 @@
     alter table schema1.t1 alter column a set default nextval('schema1.sequence1'::regclass);
   newSchema: ""
   diff: |+
-    DROP INDEX "schema1"."idx_t1_a";
-
     ALTER SEQUENCE "schema1"."sequence1"
         OWNED BY NONE;
 
@@ -583,4 +583,22 @@
     COMMENT ON COLUMN "public"."t1"."d" IS 'comment with ''; test escape for d';
 
     COMMENT ON COLUMN "public"."t1"."a" IS '';
+
+- oldSchema: |-
+    CREATE TABLE public.t (
+      id integer NOT NULL
+    );
+    ALTER TABLE ONLY public.t ADD CONSTRAINT t_pkey PRIMARY KEY (id);
+  newSchema: ""
+  diff: |+
+    DROP TABLE "public"."t";
+
+- oldSchema: |-
+    CREATE TABLE public.t (
+      id integer NOT NULL
+    );
+    CREATE INDEX hello ON public.t USING btree (id);
+  newSchema: ""
+  diff: |+
+    DROP TABLE "public"."t";
 
