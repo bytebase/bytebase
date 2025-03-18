@@ -1,5 +1,5 @@
 import type { VNode } from "vue";
-import { computed, h, unref } from "vue";
+import { computed, h, unref, ref, watchEffect } from "vue";
 import {
   InstanceV1Name,
   ProjectV1Name,
@@ -11,9 +11,9 @@ import {
   useEnvironmentV1List,
   useEnvironmentV1Store,
   useInstanceResourceList,
-  useProjectV1List,
+  useProjectV1Store,
 } from "@/store";
-import { type MaybeRef } from "@/types";
+import type { MaybeRef, ComposedProject } from "@/types";
 import { engineToJSON } from "@/types/proto/v1/common";
 import type { SearchScopeId } from "@/utils";
 import {
@@ -22,15 +22,29 @@ import {
   extractInstanceResourceName,
   extractProjectResourceName,
   supportedEngineV1List,
+  getDefaultPagination,
 } from "@/utils";
 import type { ScopeOption, ValueOption } from "./types";
 
 export const useCommonSearchScopeOptions = (
   supportOptionIdList: MaybeRef<SearchScopeId[]>
 ) => {
+  const projectStore = useProjectV1Store();
   const environmentStore = useEnvironmentV1Store();
   const environmentList = useEnvironmentV1List();
-  const { projectList } = useProjectV1List();
+  const projectList = ref<ComposedProject[]>([]);
+
+  watchEffect(async () => {
+    try {
+      const { projects } = await projectStore.fetchProjectList({
+        showDeleted: false,
+        pageSize: getDefaultPagination(),
+      });
+      projectList.value = projects;
+    } catch {
+      // do nothing
+    }
+  });
 
   const instanceList = computed(() => useInstanceResourceList().value);
 

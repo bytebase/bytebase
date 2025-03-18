@@ -17,7 +17,7 @@
         <div class="flex flex-row justify-end items-center gap-x-2">
           <SearchBox
             v-model:value="state.searchText"
-            :placeholder="$t('common.filter-by-name')"
+            :placeholder="$t('common.search-by-name')"
             :autofocus="false"
             class="!w-40"
             size="small"
@@ -72,7 +72,7 @@ import { SearchBox, ProjectV1Table } from "@/components/v2";
 import { PROJECT_V1_ROUTE_DETAIL } from "@/router/dashboard/projectV1";
 import { WORKSPACE_ROUTE_LANDING } from "@/router/dashboard/workspaceRoutes";
 import { useRecentVisit } from "@/router/useRecentVisit";
-import { useProjectV1List, useProjectV1Store } from "@/store";
+import { useProjectV1Store } from "@/store";
 import { getProjectName } from "@/store/modules/v1/common";
 import type { ComposedProject } from "@/types";
 import { isValidProjectName, DEFAULT_PROJECT_NAME } from "@/types";
@@ -104,20 +104,9 @@ const state = reactive<LocalState>({
   allProjects: [],
 });
 const projectStore = useProjectV1Store();
-const { projectList, ready } = useProjectV1List();
 const { recentViewProjects } = useRecentProjects();
 const router = useRouter();
 const { record } = useRecentVisit();
-
-watch(
-  () => ready.value,
-  () => {
-    if (ready.value) {
-      state.allProjects = [...projectList.value];
-    }
-  },
-  { immediate: true }
-);
 
 const params = computed(() => {
   const route = router.currentRoute.value;
@@ -156,10 +145,6 @@ const allowToCreateProject = computed(() =>
 watch(
   () => state.searchText,
   useDebounceFn(async () => {
-    if (!state.searchText) {
-      state.allProjects = [...projectList.value];
-      return;
-    }
     state.loading = true;
     try {
       const { projects } = await projectStore.fetchProjectList({
@@ -170,7 +155,8 @@ watch(
     } finally {
       state.loading = false;
     }
-  }, 500)
+  }, 500),
+  { immediate: true }
 );
 
 const tabList = computed(
