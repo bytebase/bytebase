@@ -54,7 +54,6 @@
             />
           </div>
         </div>
-        <NDivider />
       </div>
     </template>
     <template #footer>
