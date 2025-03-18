@@ -260,7 +260,11 @@ func (s *Store) listProjectImplV2(ctx context.Context, txn *sql.Tx, find *FindPr
 	if v := find.UserID; v != nil {
 		var requiredWorkspaceRoleQuery string
 		if len(find.Roles) > 0 {
-			requiredWorkspaceRoleQuery = fmt.Sprintf(`OR (ARRAY[%s] && roles AND resource = '')`, strings.Join(find.Roles, ", "))
+			roles := []string{}
+			for _, role := range find.Roles {
+				roles = append(roles, fmt.Sprintf(`'%s'`, role))
+			}
+			requiredWorkspaceRoleQuery = fmt.Sprintf(`OR (ARRAY[%s] && roles AND resource = '')`, strings.Join(roles, ", "))
 		}
 		with = fmt.Sprintf(`WITH all_members AS (
 			SELECT
