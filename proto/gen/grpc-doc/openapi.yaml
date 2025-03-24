@@ -7711,6 +7711,25 @@ paths:
                                 $ref: '#/components/schemas/Status'
 components:
     schemas:
+        AISetting:
+            type: object
+            properties:
+                provider:
+                    enum:
+                        - PROVIDER_UNSPECIFIED
+                        - OPEN_AI
+                        - CLAUDE
+                        - GEMINI
+                    type: string
+                    format: enum
+                endpoint:
+                    type: string
+                apiKey:
+                    type: string
+                model:
+                    type: string
+                version:
+                    type: string
         ActuatorInfo:
             type: object
             properties:
@@ -13803,6 +13822,8 @@ components:
                     $ref: '#/components/schemas/SCIMSetting'
                 passwordRestrictionSetting:
                     $ref: '#/components/schemas/PasswordRestrictionSetting'
+                aiSetting:
+                    $ref: '#/components/schemas/AISetting'
             description: The data in setting value.
         Webhook:
             required:

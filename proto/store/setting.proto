@@ -333,3 +333,17 @@ message PasswordRestrictionSetting {
   // password_rotation requires users to reset their password after the duration.
   google.protobuf.Duration password_rotation = 7;
 }
+
+message AISetting {
+  enum Provider {
+    PROVIDER_UNSPECIFIED = 0;
+    OPEN_AI = 1;
+    CLAUDE = 2;
+    GEMINI = 3;
+  }
+  Provider provider = 1;
+  string endpoint = 2;
+  string api_key = 3;
+  string model = 4;
+  string version = 5;
+}

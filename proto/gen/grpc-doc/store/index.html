@@ -1180,6 +1180,10 @@
             <ul>
               
                 <li>
+                  <a href="#bytebase.store.AISetting"><span class="badge">M</span>AISetting</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.store.AgentPluginSetting"><span class="badge">M</span>AgentPluginSetting</a>
                 </li>
               
@@ -1307,6 +1311,10 @@
                   <a href="#bytebase.store.WorkspaceProfileSetting"><span class="badge">M</span>WorkspaceProfileSetting</a>
                 </li>
               
+              
+                <li>
+                  <a href="#bytebase.store.AISetting.Provider"><span class="badge">E</span>AISetting.Provider</a>
+                </li>
               
                 <li>
                   <a href="#bytebase.store.Algorithm.InnerOuterMask.MaskType"><span class="badge">E</span>Algorithm.InnerOuterMask.MaskType</a>
@@ -10091,6 +10099,58 @@ Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRu
       <p></p>
 
       
+        <h3 id="bytebase.store.AISetting">AISetting</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>provider</td>
+                  <td><a href="#bytebase.store.AISetting.Provider">AISetting.Provider</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>endpoint</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>api_key</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>model</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>version</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.store.AgentPluginSetting">AgentPluginSetting</h3>
         <p></p>
 
@@ -11414,6 +11474,41 @@ The default value is 100MB, we will use the default value if the setting not exi
         
       
 
+      
+        <h3 id="bytebase.store.AISetting.Provider">AISetting.Provider</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>PROVIDER_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>OPEN_AI</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>CLAUDE</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>GEMINI</td>
+                <td>3</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
       
         <h3 id="bytebase.store.Algorithm.InnerOuterMask.MaskType">Algorithm.InnerOuterMask.MaskType</h3>
         <p></p>
