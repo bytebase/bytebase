@@ -1,5 +1,4 @@
 import ConnectionHolder from "./ConnectionHolder.vue";
-import ConnectionPathBar from "./ConnectionPathBar.vue";
 import DisconnectedIcon from "./DisconnectedIcon.vue";
 import EditorAction from "./EditorAction.vue";
 import ExecutingHintModal from "./ExecutingHintModal.vue";
@@ -11,7 +10,6 @@ import SheetConnectionIcon from "./SheetConnectionIcon.vue";
 
 export {
   ConnectionHolder,
-  ConnectionPathBar,
   EditorAction,
   ExecutingHintModal,
   SaveSheetModal,
