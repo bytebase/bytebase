@@ -28,7 +28,7 @@
 </template>
 
 <script lang="ts" setup>
-import type { editor as Editor } from "monaco-editor";
+import type { editor as Editor, IDisposable } from "monaco-editor";
 import { storeToRefs } from "pinia";
 import { computed, nextTick, ref, toRef, watch } from "vue";
 import type {
@@ -47,7 +47,7 @@ import {
 } from "@/store";
 import type { SQLDialect, SQLEditorQueryParams } from "@/types";
 import { dialectOfEngineV1 } from "@/types";
-import { useInstanceV1EditorLanguage } from "@/utils";
+import { useInstanceV1EditorLanguage, instanceV1AllowsExplain } from "@/utils";
 import { useSQLEditorContext } from "../../context";
 import {
   checkCursorAtFirstLine,
@@ -145,15 +145,28 @@ const handleEditorReady = (
     run: () => execute(false),
   });
 
-  editor.addAction({
-    id: "ExplainQuery",
-    label: "Explain Query",
-    keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyE],
-    contextMenuGroupId: "operation",
-    contextMenuOrder: 1,
-    precondition: "!readonly",
-    run: () => execute(true),
-  });
+  let explainQueryAction: IDisposable | undefined;
+  watch(
+    () => instance.value.engine,
+    () => {
+      if (instanceV1AllowsExplain(instance.value)) {
+        if (!editor.getAction("ExplainQuery")) {
+          explainQueryAction = editor.addAction({
+            id: "ExplainQuery",
+            label: "Explain Query",
+            keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyE],
+            contextMenuGroupId: "operation",
+            contextMenuOrder: 1,
+            precondition: "!readonly",
+            run: () => execute(true),
+          });
+        }
+      } else {
+        explainQueryAction?.dispose();
+      }
+    },
+    { immediate: true }
+  );
 
   editor.addAction({
     id: "ClearScreen",
