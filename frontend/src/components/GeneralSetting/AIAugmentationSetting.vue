@@ -125,6 +125,10 @@ import { computed, onMounted, reactive, ref, watchEffect } from "vue";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import { hasFeature } from "@/store";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
+import {
+  AISetting,
+  AISetting_Provider,
+} from "@/types/proto/v1/setting_service";
 import { isDev } from "@/utils";
 import { FeatureBadge } from "../FeatureGuard";
 
@@ -148,23 +152,17 @@ const state = reactive<LocalState>({
   openAIModel: "",
 });
 
-const openAIKeySetting = computed(() =>
-  settingV1Store.getSettingByName("bb.plugin.openai.key")
-);
-const openAIEndpointSetting = computed(() =>
-  settingV1Store.getSettingByName("bb.plugin.openai.endpoint")
-);
-const openAIModelSetting = computed(() =>
-  settingV1Store.getSettingByName("bb.plugin.openai.model")
+const aiSetting = computed(
+  () => settingV1Store.getSettingByName("bb.ai")?.value?.aiSetting
 );
 
 const hasAIFeature = computed(() => hasFeature("bb.feature.ai-assistant"));
 
 const getInitialState = (): LocalState => {
   return {
-    openAIKey: maskKey(openAIKeySetting.value?.value?.stringValue),
-    openAIEndpoint: openAIEndpointSetting.value?.value?.stringValue ?? "",
-    openAIModel: openAIModelSetting.value?.value?.stringValue ?? "",
+    openAIKey: maskKey(aiSetting.value?.apiKey),
+    openAIEndpoint: aiSetting.value?.endpoint ?? "",
+    openAIModel: aiSetting.value?.model ?? "",
   };
 };
 
@@ -174,12 +172,11 @@ watchEffect(() => {
 
 const allowSave = computed((): boolean => {
   const openAIKeyUpdated =
-    state.openAIKey !== maskKey(openAIKeySetting.value?.value?.stringValue) ||
+    state.openAIKey !== maskKey(aiSetting.value?.apiKey) ||
     (state.openAIKey && !state.openAIKey.includes("***"));
   const openAIEndpointUpdated =
-    state.openAIEndpoint !== openAIEndpointSetting.value?.value?.stringValue;
-  const openAIModelUpdated =
-    state.openAIModel !== openAIModelSetting.value?.value?.stringValue;
+    state.openAIEndpoint !== aiSetting.value?.endpoint;
+  const openAIModelUpdated = state.openAIModel !== aiSetting.value?.model;
   return openAIKeyUpdated || openAIEndpointUpdated || openAIModelUpdated;
 });
 
@@ -188,35 +185,19 @@ function maskKey(key: string | undefined): string {
 }
 
 const updateOpenAIKeyEndpoint = async () => {
-  if (
-    state.openAIKey !== maskKey(openAIKeySetting.value?.value?.stringValue) ||
-    !state.openAIKey.includes("***")
-  ) {
-    await settingV1Store.upsertSetting({
-      name: "bb.plugin.openai.key",
-      value: {
-        stringValue: state.openAIKey,
-      },
-    });
-  }
-  if (
-    state.openAIEndpoint !== openAIEndpointSetting.value?.value?.stringValue
-  ) {
-    await settingV1Store.upsertSetting({
-      name: "bb.plugin.openai.endpoint",
-      value: {
-        stringValue: state.openAIEndpoint,
-      },
-    });
-  }
-  if (state.openAIEndpoint !== openAIModelSetting.value?.value?.stringValue) {
-    await settingV1Store.upsertSetting({
-      name: "bb.plugin.openai.model",
-      value: {
-        stringValue: state.openAIModel,
-      },
-    });
-  }
+  await settingV1Store.upsertSetting({
+    name: "bb.ai",
+    value: {
+      aiSetting: AISetting.fromPartial({
+        ...(aiSetting.value ?? {}),
+        apiKey: state.openAIKey,
+        endpoint: state.openAIEndpoint,
+        model: state.openAIModel,
+        // TODO(ed): support change provider.
+        provider: AISetting_Provider.OPEN_AI,
+      }),
+    },
+  });
 
   Object.assign(state, getInitialState());
 };
