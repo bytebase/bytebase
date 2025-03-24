@@ -167,11 +167,11 @@ func (s *ActuatorService) getUsedFeatures(ctx context.Context) ([]api.FeatureTyp
 		features = append(features, api.FeatureWatermark)
 	}
 
-	openAIKey, err := s.store.GetSettingV2(ctx, api.SettingPluginOpenAIKey)
+	aiSetting, err := s.store.GetAISetting(ctx)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get openai key setting")
+		return nil, errors.Wrapf(err, "failed to get ai setting")
 	}
-	if openAIKey != nil && openAIKey.Value != "" {
+	if aiSetting.ApiKey != "" {
 		features = append(features, api.FeatureAIAssistant)
 	}
 
