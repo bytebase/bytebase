@@ -11,7 +11,10 @@
       class="pt-2"
       @enter="requestAI"
     />
-    <div v-else class="flex-1 overflow-hidden relative flex items-center justify-center">
+    <div
+      v-else
+      class="flex-1 overflow-hidden relative flex items-center justify-center"
+    >
       <NSpin size="small" />
     </div>
 
@@ -37,7 +40,6 @@ import { onConnectionChanged, useAIContext, useCurrentChat } from "../logic";
 import * as promptUtils from "../logic/prompt";
 import { useConversationStore } from "../store";
 import type { OpenAIMessage, OpenAIResponse } from "../types";
-import { OPENAI_DEFAULT_MODEL } from "@/types";
 import ActionBar from "./ActionBar.vue";
 import ChatView from "./ChatView";
 import DynamicSuggestions from "./DynamicSuggestions.vue";
@@ -56,8 +58,13 @@ const { currentTab: tab } = storeToRefs(useSQLEditorTabStore());
 const store = useConversationStore();
 
 const context = useAIContext();
-const { openAIKey, openAIEndpoint, openAIModel, showHistoryDialog, pendingSendChat } =
-  context;
+const {
+  openAIKey,
+  openAIEndpoint,
+  openAIModel,
+  showHistoryDialog,
+  pendingSendChat,
+} = context;
 const {
   list: conversationList,
   ready,
@@ -110,15 +117,7 @@ const requestAI = async (query: string) => {
     conversation_id: conversation.id,
     status: "LOADING",
   });
-  const url =
-    openAIEndpoint.value === ""
-      ? "https://api.openai.com/v1/chat/completions"
-      : openAIEndpoint.value + "/v1/chat/completions";
   const messages: OpenAIMessage[] = [];
-  const model =
-    openAIModel.value === ""
-      ? OPENAI_DEFAULT_MODEL
-      : openAIModel.value;
   conversation.messageList.forEach((message) => {
     const { author, prompt } = message;
     messages.push({
@@ -127,7 +126,7 @@ const requestAI = async (query: string) => {
     });
   });
   const body = {
-    model: model,
+    model: openAIModel.value,
     messages,
     temperature: 0,
     stop: ["#", ";"],
@@ -146,7 +145,7 @@ const requestAI = async (query: string) => {
   };
   try {
     const response: AxiosResponse<string> = await axios.post(
-      url,
+      openAIEndpoint.value,
       JSON.stringify(body),
       {
         headers,

@@ -14,7 +14,6 @@ export const TEXT_VALIDATION_DELAY = 1000;
 export const ENTERPRISE_INQUIRE_LINK =
   "https://www.bytebase.com/contact-us?source=console";
 
-export const OPENAI_DEFAULT_MODEL = "gpt-3.5-turbo";
 // Router
 export type RouterSlug = {
   issueSlug?: string;
