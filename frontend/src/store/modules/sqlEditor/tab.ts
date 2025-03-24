@@ -23,7 +23,6 @@ import {
   useDatabaseV1Store,
   useDatabaseV1ByName,
   useEnvironmentV1Store,
-  useInstanceResourceByName,
   extractUserId,
 } from "../v1";
 import { useSQLEditorStore } from "./editor";
@@ -409,13 +408,13 @@ export const isSQLEditorTabClosable = (tab: SQLEditorTab) => {
 export const useSQLEditorConnectionDetail = (
   connection: MaybeRef<SQLEditorConnection>
 ) => {
-  const instance = computed(() => {
-    return useInstanceResourceByName(unref(connection).instance);
-  });
-
   const { database } = useDatabaseV1ByName(
     computed(() => unref(connection).database)
   );
+
+  const instance = computed(() => {
+    return database.value.instanceResource;
+  });
 
   const environment = computed(() => {
     if (isValidDatabaseName(database.value.name)) {
