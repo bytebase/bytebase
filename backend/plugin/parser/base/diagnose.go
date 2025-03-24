@@ -23,7 +23,7 @@ func ConvertSyntaxErrorToDiagnostic(err *SyntaxError) Diagnostic {
 				Character: uint32(err.Column) + 1,
 			},
 		},
-		Severity: lsp.DiagnosticSeverity(lsp.Error),
+		Severity: lsp.SeverityError,
 		Source:   "Syntax check",
 		// Use RawMessage which created by antlr runtime, do not need our fine-tuned message
 		// because we had indicated the error position in the message.
