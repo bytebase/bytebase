@@ -1750,7 +1750,6 @@
     "format": "Định dạng",
     "sql-review-result": "Kết quả đánh giá SQL",
     "visualize-explain": "Trực quan hóa Giải thích",
-    "sql-execute-in-production-environment": "Hãy cẩn thận, bạn đang truy cập cơ sở dữ liệu trong môi trường sản xuất.",
     "rows-upper-limit": "đã đạt đến giới hạn kết quả truy vấn",
     "close-sheet": "Đóng trang tính",
     "connect": "Kết nối",

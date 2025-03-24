@@ -195,6 +195,7 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
 
   return {
     reset,
+    databaseList,
     removeCacheByInstance,
     upsertDatabaseMap,
     syncDatabase,
