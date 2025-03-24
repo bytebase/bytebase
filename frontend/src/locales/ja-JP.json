@@ -1750,7 +1750,6 @@
     "format": "フォーマット",
     "sql-review-result": "SQLチェック結果",
     "visualize-explain": "視覚化の説明",
-    "sql-execute-in-production-environment": "実稼働データベースを使用していることに注意してください。",
     "rows-upper-limit": "クエリ結果の数が上限に達しました",
     "close-sheet": "ワークシートを閉じる",
     "connect": "接続する",
