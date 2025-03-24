@@ -349,8 +349,6 @@ const handleEditorReady = (
     },
     { immediate: true }
   );
-
-  // updateExplainQueryAction();
 };
 const updateAdvices = (
   tab: SQLEditorTab,
