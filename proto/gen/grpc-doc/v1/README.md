@@ -221,6 +221,7 @@
     - [SubscriptionService](#bytebase-v1-SubscriptionService)
   
 - [v1/setting_service.proto](#v1_setting_service-proto)
+    - [AISetting](#bytebase-v1-AISetting)
     - [AgentPluginSetting](#bytebase-v1-AgentPluginSetting)
     - [Algorithm](#bytebase-v1-Algorithm)
     - [Algorithm.FullMask](#bytebase-v1-Algorithm-FullMask)
@@ -262,6 +263,7 @@
     - [WorkspaceProfileSetting](#bytebase-v1-WorkspaceProfileSetting)
     - [WorkspaceTrialSetting](#bytebase-v1-WorkspaceTrialSetting)
   
+    - [AISetting.Provider](#bytebase-v1-AISetting-Provider)
     - [Algorithm.InnerOuterMask.MaskType](#bytebase-v1-Algorithm-InnerOuterMask-MaskType)
     - [Announcement.AlertLevel](#bytebase-v1-Announcement-AlertLevel)
     - [DatabaseChangeMode](#bytebase-v1-DatabaseChangeMode)
@@ -4108,6 +4110,25 @@ ANY means approving any node will proceed.
 
 
 
+<a name="bytebase-v1-AISetting"></a>
+
+### AISetting
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| provider | [AISetting.Provider](#bytebase-v1-AISetting-Provider) |  |  |
+| endpoint | [string](#string) |  |  |
+| api_key | [string](#string) |  |  |
+| model | [string](#string) |  |  |
+| version | [string](#string) |  |  |
+
+
+
+
+
+
 <a name="bytebase-v1-AgentPluginSetting"></a>
 
 ### AgentPluginSetting
@@ -4731,6 +4752,7 @@ The data in setting value.
 | maximum_sql_result_size_setting | [MaximumSQLResultSizeSetting](#bytebase-v1-MaximumSQLResultSizeSetting) |  |  |
 | scim_setting | [SCIMSetting](#bytebase-v1-SCIMSetting) |  |  |
 | password_restriction_setting | [PasswordRestrictionSetting](#bytebase-v1-PasswordRestrictionSetting) |  |  |
+| ai_setting | [AISetting](#bytebase-v1-AISetting) |  |  |
 
 
 
@@ -4813,6 +4835,20 @@ The data in setting value.
 
 
  
+
+
+<a name="bytebase-v1-AISetting-Provider"></a>
+
+### AISetting.Provider
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| PROVIDER_UNSPECIFIED | 0 |  |
+| OPEN_AI | 1 |  |
+| CLAUDE | 2 |  |
+| GEMINI | 3 |  |
+
 
 
 <a name="bytebase-v1-Algorithm-InnerOuterMask-MaskType"></a>
