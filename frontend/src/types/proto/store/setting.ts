@@ -602,6 +602,7 @@ export interface PasswordRestrictionSetting {
 }
 
 export interface AISetting {
+  enabled: boolean;
   provider: AISetting_Provider;
   endpoint: string;
   apiKey: string;
@@ -4039,25 +4040,35 @@ export const PasswordRestrictionSetting: MessageFns<PasswordRestrictionSetting> 
 };
 
 function createBaseAISetting(): AISetting {
-  return { provider: AISetting_Provider.PROVIDER_UNSPECIFIED, endpoint: "", apiKey: "", model: "", version: "" };
+  return {
+    enabled: false,
+    provider: AISetting_Provider.PROVIDER_UNSPECIFIED,
+    endpoint: "",
+    apiKey: "",
+    model: "",
+    version: "",
+  };
 }
 
 export const AISetting: MessageFns<AISetting> = {
   encode(message: AISetting, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.enabled !== false) {
+      writer.uint32(8).bool(message.enabled);
+    }
     if (message.provider !== AISetting_Provider.PROVIDER_UNSPECIFIED) {
-      writer.uint32(8).int32(aISetting_ProviderToNumber(message.provider));
+      writer.uint32(16).int32(aISetting_ProviderToNumber(message.provider));
     }
     if (message.endpoint !== "") {
-      writer.uint32(18).string(message.endpoint);
+      writer.uint32(26).string(message.endpoint);
     }
     if (message.apiKey !== "") {
-      writer.uint32(26).string(message.apiKey);
+      writer.uint32(34).string(message.apiKey);
     }
     if (message.model !== "") {
-      writer.uint32(34).string(message.model);
+      writer.uint32(42).string(message.model);
     }
     if (message.version !== "") {
-      writer.uint32(42).string(message.version);
+      writer.uint32(50).string(message.version);
     }
     return writer;
   },
@@ -4074,15 +4085,15 @@ export const AISetting: MessageFns<AISetting> = {
             break;
           }
 
-          message.provider = aISetting_ProviderFromJSON(reader.int32());
+          message.enabled = reader.bool();
           continue;
         }
         case 2: {
-          if (tag !== 18) {
+          if (tag !== 16) {
             break;
           }
 
-          message.endpoint = reader.string();
+          message.provider = aISetting_ProviderFromJSON(reader.int32());
           continue;
         }
         case 3: {
@@ -4090,7 +4101,7 @@ export const AISetting: MessageFns<AISetting> = {
             break;
           }
 
-          message.apiKey = reader.string();
+          message.endpoint = reader.string();
           continue;
         }
         case 4: {
@@ -4098,11 +4109,19 @@ export const AISetting: MessageFns<AISetting> = {
             break;
           }
 
-          message.model = reader.string();
+          message.apiKey = reader.string();
           continue;
         }
         case 5: {
           if (tag !== 42) {
+            break;
+          }
+
+          message.model = reader.string();
+          continue;
+        }
+        case 6: {
+          if (tag !== 50) {
             break;
           }
 
@@ -4120,6 +4139,7 @@ export const AISetting: MessageFns<AISetting> = {
 
   fromJSON(object: any): AISetting {
     return {
+      enabled: isSet(object.enabled) ? globalThis.Boolean(object.enabled) : false,
       provider: isSet(object.provider)
         ? aISetting_ProviderFromJSON(object.provider)
         : AISetting_Provider.PROVIDER_UNSPECIFIED,
@@ -4132,6 +4152,9 @@ export const AISetting: MessageFns<AISetting> = {
 
   toJSON(message: AISetting): unknown {
     const obj: any = {};
+    if (message.enabled !== false) {
+      obj.enabled = message.enabled;
+    }
     if (message.provider !== AISetting_Provider.PROVIDER_UNSPECIFIED) {
       obj.provider = aISetting_ProviderToJSON(message.provider);
     }
@@ -4155,6 +4178,7 @@ export const AISetting: MessageFns<AISetting> = {
   },
   fromPartial(object: DeepPartial<AISetting>): AISetting {
     const message = createBaseAISetting();
+    message.enabled = object.enabled ?? false;
     message.provider = object.provider ?? AISetting_Provider.PROVIDER_UNSPECIFIED;
     message.endpoint = object.endpoint ?? "";
     message.apiKey = object.apiKey ?? "";
