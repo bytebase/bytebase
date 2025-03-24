@@ -171,11 +171,11 @@ const rowProps = (review: SQLReviewPolicy) => {
 };
 
 const hasUpdatePolicyPermission = computed(() => {
-  return hasWorkspacePermissionV2("bb.policies.update");
+  return hasWorkspacePermissionV2("bb.reviewConfigs.update");
 });
 
 const hasDeletePolicyPermission = computed(() => {
-  return hasWorkspacePermissionV2("bb.policies.delete");
+  return hasWorkspacePermissionV2("bb.reviewConfigs.delete");
 });
 
 const toggleReviewEnabled = async (review: SQLReviewPolicy, on: boolean) => {

@@ -87,11 +87,11 @@ const router = useRouter();
 const sqlReviewStore = useSQLReviewStore();
 
 const hasUpdatePolicyPermission = computed(() => {
-  return hasWorkspacePermissionV2("bb.policies.update");
+  return hasWorkspacePermissionV2("bb.reviewConfigs.update");
 });
 
 const hasDeletePolicyPermission = computed(() => {
-  return hasWorkspacePermissionV2("bb.policies.delete");
+  return hasWorkspacePermissionV2("bb.reviewConfigs.delete");
 });
 
 const handleClickEdit = (review: SQLReviewPolicy) => {
