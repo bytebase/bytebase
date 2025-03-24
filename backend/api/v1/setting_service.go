@@ -568,8 +568,8 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 		if err := convertProtoToProto(request.Setting.Value.GetAiSetting(), aiSetting); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", apiSettingName, err)
 		}
-		if aiSetting.ApiKey == "" || aiSetting.Endpoint == "" || aiSetting.Model == "" {
-			return nil, status.Errorf(codes.InvalidArgument, "both api key, endpoint and model are required")
+		if aiSetting.Enabled && (aiSetting.ApiKey == "" || aiSetting.Endpoint == "" || aiSetting.Model == "") {
+			return nil, status.Errorf(codes.InvalidArgument, "api key, endpoint and model are required")
 		}
 		bytes, err := protojson.Marshal(aiSetting)
 		if err != nil {
