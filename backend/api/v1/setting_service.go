@@ -68,9 +68,6 @@ var whitelistSettings = []api.SettingName{
 	api.SettingAppIM,
 	api.SettingWatermark,
 	api.SettingAI,
-	api.SettingPluginOpenAIKey,
-	api.SettingPluginOpenAIEndpoint,
-	api.SettingPluginOpenAIModel,
 	api.SettingWorkspaceApproval,
 	api.SettingWorkspaceMailDelivery,
 	api.SettingWorkspaceProfile,
@@ -525,11 +522,6 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 			return nil, status.Error(codes.PermissionDenied, err.Error())
 		}
 		storeSettingValue = request.Setting.Value.GetStringValue()
-	case api.SettingPluginOpenAIKey:
-		if err := s.licenseService.IsFeatureEnabled(api.FeatureAIAssistant); err != nil {
-			return nil, status.Error(codes.PermissionDenied, err.Error())
-		}
-		storeSettingValue = request.Setting.Value.GetStringValue()
 	case api.SettingSQLResultSizeLimit:
 		maximumSQLResultSizeSetting := new(storepb.MaximumSQLResultSizeSetting)
 		if err := convertProtoToProto(request.Setting.Value.GetMaximumSqlResultSizeSetting(), maximumSQLResultSizeSetting); err != nil {
@@ -567,6 +559,16 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 			return nil, status.Errorf(codes.InvalidArgument, "invalid password minimum length, should no less than 8")
 		}
 		bytes, err := protojson.Marshal(passwordSetting)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to marshal setting for %s with error: %v", apiSettingName, err)
+		}
+		storeSettingValue = string(bytes)
+	case api.SettingAI:
+		aiSetting := &storepb.AISetting{}
+		if err := convertProtoToProto(request.Setting.Value.GetAiSetting(), aiSetting); err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", apiSettingName, err)
+		}
+		bytes, err := protojson.Marshal(aiSetting)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to marshal setting for %s with error: %v", apiSettingName, err)
 		}
@@ -812,6 +814,19 @@ func (s *SettingService) convertToSettingMessage(ctx context.Context, setting *s
 			Value: &v1pb.Value{
 				Value: &v1pb.Value_PasswordRestrictionSetting{
 					PasswordRestrictionSetting: v1Value,
+				},
+			},
+		}, nil
+	case api.SettingAI:
+		v1Value := &v1pb.AISetting{}
+		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), v1Value); err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", setting.Name, err)
+		}
+		return &v1pb.Setting{
+			Name: settingName,
+			Value: &v1pb.Value{
+				Value: &v1pb.Value_AiSetting{
+					AiSetting: v1Value,
 				},
 			},
 		}, nil

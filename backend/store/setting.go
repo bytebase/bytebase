@@ -181,6 +181,22 @@ func (s *Store) GetDataClassificationConfigByID(ctx context.Context, classificat
 	return &storepb.DataClassificationSetting_DataClassificationConfig{}, nil
 }
 
+func (s *Store) GetAISetting(ctx context.Context) (*storepb.AISetting, error) {
+	aiSetting := &storepb.AISetting{}
+	setting, err := s.GetSettingV2(ctx, api.SettingAI)
+	if err != nil {
+		return nil, err
+	}
+	if setting == nil {
+		return aiSetting, nil
+	}
+
+	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), aiSetting); err != nil {
+		return nil, err
+	}
+	return aiSetting, nil
+}
+
 // DeleteCache deletes the cache.
 func (s *Store) DeleteCache() {
 	s.settingCache.Purge()

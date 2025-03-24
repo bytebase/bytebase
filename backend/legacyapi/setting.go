@@ -24,13 +24,6 @@ const (
 	SettingWatermark SettingName = "bb.workspace.watermark"
 	// SettingAI is used for AI setting.
 	SettingAI SettingName = "bb.ai"
-	// SettingPluginOpenAIKey is used for OpenAI's API key.
-	// For AI-related features.
-	SettingPluginOpenAIKey SettingName = "bb.plugin.openai.key"
-	// SettingPluginOpenAIEndpoint is used for OpenAI's API endpoint.
-	SettingPluginOpenAIEndpoint SettingName = "bb.plugin.openai.endpoint"
-	// SettingPluginOpenAIModel is used for OpenAI's API model name.
-	SettingPluginOpenAIModel SettingName = "bb.plugin.openai.model"
 	// SettingPluginAgent is the setting name for the internal agent API.
 	// For now we will call the hub to fetch the subscription license.
 	SettingPluginAgent SettingName = "bb.plugin.agent"
