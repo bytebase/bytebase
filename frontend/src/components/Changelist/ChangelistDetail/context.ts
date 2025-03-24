@@ -11,7 +11,7 @@ import {
 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import type { ComposedProject, Permission } from "@/types";
-import { unknownChangelist, unknownProject } from "@/types";
+import { unknownChangelist, unknownProject, isValidProjectName } from "@/types";
 import type {
   Changelist,
   Changelist_Change as Change,
@@ -66,17 +66,27 @@ export const provideChangelistDetailContext = () => {
     return proj;
   }, unknownProject());
 
-  const name = computed(() => {
+  const changelistName = computed(() => {
+    if (!isValidProjectName(project.value.name)) {
+      return;
+    }
     return `${project.value.name}/changelists/${route.params.changelistName}`;
   });
 
   watchEffect(async () => {
-    await useChangelistStore().fetchChangelistByName(name.value);
+    if (changelistName.value) {
+      await useChangelistStore().getOrFetchChangelistByName(
+        changelistName.value
+      );
+    }
   });
 
   const changelist = computed(() => {
+    if (!changelistName.value) {
+      return unknownChangelist();
+    }
     return (
-      useChangelistStore().getChangelistByName(name.value) ??
+      useChangelistStore().getChangelistByName(changelistName.value) ??
       unknownChangelist()
     );
   });
