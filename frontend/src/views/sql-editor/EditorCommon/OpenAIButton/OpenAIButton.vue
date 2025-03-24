@@ -85,11 +85,8 @@ const tabStore = useSQLEditorTabStore();
 const settingV1Store = useSettingV1Store();
 const databaseChangeMode = useAppFeature("bb.feature.database-change-mode");
 
-const openAIKeySetting = computed(() =>
-  settingV1Store.getSettingByName("bb.plugin.openai.key")
-);
 const openAIKey = computed(
-  () => openAIKeySetting.value?.value?.stringValue ?? ""
+  () => settingV1Store.getSettingByName("bb.ai")?.value?.aiSetting?.apiKey
 );
 
 const { showAIPanel } = useSQLEditorContext();

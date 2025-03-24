@@ -27,22 +27,12 @@ const state = reactive<LocalState>({
 });
 
 const settingV1Store = useSettingV1Store();
-const openAIKeySetting = settingV1Store.getSettingByName(
-  "bb.plugin.openai.key"
-);
-const openAIEndpointSetting = settingV1Store.getSettingByName(
-  "bb.plugin.openai.endpoint"
-);
-const openAIModelSetting = settingV1Store.getSettingByName(
-  "bb.plugin.openai.model"
-);
-const openAIKey = computed(() => openAIKeySetting?.value?.stringValue ?? "");
+const aiSetting = settingV1Store.getSettingByName("bb.ai");
+const openAIKey = computed(() => aiSetting?.value?.aiSetting?.apiKey ?? "");
 const openAIEndpoint = computed(
-  () => openAIEndpointSetting?.value?.stringValue ?? ""
+  () => aiSetting?.value?.aiSetting?.endpoint ?? ""
 );
-const openAIModel = computed(
-  () => openAIModelSetting?.value?.stringValue ?? ""
-);
+const openAIModel = computed(() => aiSetting?.value?.aiSetting?.model ?? "");
 const { instance, database } = useConnectionOfCurrentSQLEditorTab();
 
 const databaseMetadata = useMetadata(
