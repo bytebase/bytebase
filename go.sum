@@ -831,8 +831,6 @@ github.com/bytebase/cosmosdb-parser v0.0.0-20250317064006-c1dcb3ed4fa4 h1:mw6ze5
 github.com/bytebase/cosmosdb-parser v0.0.0-20250317064006-c1dcb3ed4fa4/go.mod h1:sivaOoKlMrXkuude2VGsKv6p83CRRGgblNfeVKQka/Y=
 github.com/bytebase/gh-ost2 v1.1.7-0.20250310031106-33e16ca4b2e0 h1:wm4Set2lwArmC4f9hYdiunXtEYYzr6SyYRepTXNdkm4=
 github.com/bytebase/gh-ost2 v1.1.7-0.20250310031106-33e16ca4b2e0/go.mod h1:X0CGYwIZUnjfrv02/nBlftxqSBMm4mYJzFwiyn2D4d8=
-github.com/bytebase/go-lsp v0.0.0-20240130071507-c04b5c75010c h1:W832GNANCst4C6TgYbQnKKxbuMZKQxTD4++b3HOuzBo=
-github.com/bytebase/go-lsp v0.0.0-20240130071507-c04b5c75010c/go.mod h1:SULmZY7YNBsvNiQbrb/BEDdEJ84TGnfyUQxaHt8t8rY=
 github.com/bytebase/go-mssqldb v0.0.0-20240801091126-3ff3ca07d898 h1:0ggqA9XL4yvtePPvRDRYMed3jtdNk4s0o8AMW8uJPSA=
 github.com/bytebase/go-mssqldb v0.0.0-20240801091126-3ff3ca07d898/go.mod h1:2KhUz4GSLcdJGXSJMXAf2BjmakcgoOkNyPpHdGAxRpY=
 github.com/bytebase/go-obo v0.0.0-20231026081615-705a7fffbfd2 h1:nEHZi8S7PHT4GxP9GfJiuhO8KkYcHmePvy5BfiYxwNk=
@@ -843,6 +841,8 @@ github.com/bytebase/google-sql-parser v0.0.0-20250116032737-689a327f9465 h1:Yk6W
 github.com/bytebase/google-sql-parser v0.0.0-20250116032737-689a327f9465/go.mod h1:edPCw84OriRDnBl+JdtruQ1XoX6dbYR/AkhxyGFRHwg=
 github.com/bytebase/gosasl v0.0.0-20240422091407-6b7481e86f08 h1:S1GgjJLspz4E4z4CvomGvKgxyv0ATfZm27qHM418jWc=
 github.com/bytebase/gosasl v0.0.0-20240422091407-6b7481e86f08/go.mod h1:Qx8cW6jkI8riyzmklj80kAIkv+iezFUTBiGU0qHhHes=
+github.com/bytebase/lsp-protocol v0.0.0-20250324071136-1586d0c10ff0 h1:bJ8NSf2K+pccl5m/wuu97fiYjDwpJH6IzURAq/3XA2U=
+github.com/bytebase/lsp-protocol v0.0.0-20250324071136-1586d0c10ff0/go.mod h1:BEWMfiZtqshdmulKJcIsWb45MUaEvDO4CROcgi8dfFg=
 github.com/bytebase/mysql-parser v0.0.0-20241224071214-cb9fd84811dd h1:nKWY30Pq9y/z0+MScRm90KU1U3i0U3j0KGBLN0JL/3M=
 github.com/bytebase/mysql-parser v0.0.0-20241224071214-cb9fd84811dd/go.mod h1:n22yoTeLcphIYQlV6nbufQbHMxNceOjeGDOrpaRIhiY=
 github.com/bytebase/partiql-parser v0.0.0-20240531101102-1962ff456f2c h1:TMANvCCN7gpqXHrzRWeWRkPTXmFvTSEyXTZ1Fz20EvM=
