@@ -113,7 +113,6 @@ export const useChangelistStore = defineStore("changelist", () => {
 
   return {
     getChangelistByName,
-    fetchChangelistByName,
     getOrFetchChangelistByName,
     createChangelist,
     fetchChangelists,
