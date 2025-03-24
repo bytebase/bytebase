@@ -31,6 +31,7 @@
 </template>
 
 <script lang="ts" setup>
+import { type IDisposable } from "monaco-editor";
 import { storeToRefs } from "pinia";
 import { v1 as uuidv1 } from "uuid";
 import { computed, nextTick, onBeforeUnmount, ref, watch } from "vue";
@@ -60,7 +61,11 @@ import {
 import type { SQLDialect, SQLEditorQueryParams, SQLEditorTab } from "@/types";
 import { dialectOfEngineV1 } from "@/types";
 import { Advice_Status, type Advice } from "@/types/proto/v1/sql_service";
-import { nextAnimationFrame, useInstanceV1EditorLanguage } from "@/utils";
+import {
+  nextAnimationFrame,
+  useInstanceV1EditorLanguage,
+  instanceV1AllowsExplain,
+} from "@/utils";
 import { useSQLEditorContext } from "../../context";
 import UploadFileButton from "./UploadFileButton.vue";
 import { activeSQLEditorRef } from "./state";
@@ -217,14 +222,6 @@ const handleEditorReady = (
     contextMenuOrder: 0,
     run: () => runQueryAction({ explain: false, newTab: true }),
   });
-  editor.addAction({
-    id: "ExplainQuery",
-    label: "Explain Query",
-    keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyE],
-    contextMenuGroupId: "operation",
-    contextMenuOrder: 0,
-    run: () => runQueryAction({ explain: true, newTab: false }),
-  });
   editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
     handleSaveSheet();
   });
@@ -266,6 +263,28 @@ const handleEditorReady = (
       }
     },
   });
+
+  let explainQueryAction: IDisposable | undefined;
+  watch(
+    () => instance.value.engine,
+    () => {
+      if (instanceV1AllowsExplain(instance.value)) {
+        if (!editor.getAction("ExplainQuery")) {
+          explainQueryAction = editor.addAction({
+            id: "ExplainQuery",
+            label: "Explain Query",
+            keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyE],
+            contextMenuGroupId: "operation",
+            contextMenuOrder: 0,
+            run: () => runQueryAction({ explain: true, newTab: false }),
+          });
+        }
+      } else {
+        explainQueryAction?.dispose();
+      }
+    },
+    { immediate: true }
+  );
 
   watch(
     pendingFormatContentCommand,
