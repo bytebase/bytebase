@@ -225,6 +225,7 @@ func (h *Handler) handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonrpc2
 
 		return lsp.InitializeResult{
 			Capabilities: lsp.ServerCapabilities{
+				TextDocumentSync: lsp.Incremental,
 				CompletionProvider: &lsp.CompletionOptions{
 					TriggerCharacters: []string{".", " "},
 				},
