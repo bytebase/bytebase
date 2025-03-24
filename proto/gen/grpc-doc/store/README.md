@@ -3894,6 +3894,7 @@ RestrictIssueCreationForSQLReviewPolicy is the policy configuration for restrict
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
+| enabled | [bool](#bool) |  |  |
 | provider | [AISetting.Provider](#bytebase-store-AISetting-Provider) |  |  |
 | endpoint | [string](#string) |  |  |
 | api_key | [string](#string) |  |  |
