@@ -1750,7 +1750,6 @@
     "format": "Format",
     "sql-review-result": "SQL review result",
     "visualize-explain": "Visualize Explain",
-    "sql-execute-in-production-environment": "Be careful, you are accessing a database in a production environment.",
     "rows-upper-limit": "reached the limit of query results",
     "close-sheet": "Close sheet",
     "connect": "Connect",

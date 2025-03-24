@@ -1750,7 +1750,6 @@
     "format": "格式化",
     "sql-review-result": "SQL 检查结果",
     "visualize-explain": "可视化 Explain",
-    "sql-execute-in-production-environment": "小心，您正在操作生产环境下的数据库。",
     "rows-upper-limit": "到达查询结果条数上限",
     "close-sheet": "关闭工作表",
     "connect": "连接",
