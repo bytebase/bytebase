@@ -46,9 +46,10 @@
         </div>
         <NTooltip placement="top-start" :disabled="allowEdit">
           <template #trigger>
-            <NInput
+            <BBTextField
               v-model:value="state.openAIKey"
               class="mb-4 w-full"
+              :required="true"
               :disabled="!allowEdit || !hasAIFeature"
               :placeholder="
                 $t(
@@ -77,9 +78,10 @@
           </div>
           <NTooltip placement="top-start" :disabled="allowEdit">
             <template #trigger>
-              <NInput
+              <BBTextField
                 v-model:value="state.openAIEndpoint"
                 class="mb-4 w-full"
+                :required="true"
                 :disabled="!allowEdit || !hasAIFeature"
               />
             </template>
@@ -102,9 +104,10 @@
           </div>
           <NTooltip placement="top-start" :disabled="allowEdit">
             <template #trigger>
-              <NInput
+              <BBTextField
                 v-model:value="state.openAIModel"
                 class="mb-4 w-full"
+                :required="true"
                 :disabled="!allowEdit || !hasAIFeature"
               />
             </template>
@@ -119,9 +122,10 @@
 </template>
 
 <script lang="ts" setup>
-import { NInput, NTooltip } from "naive-ui";
+import { NTooltip } from "naive-ui";
 import scrollIntoView from "scroll-into-view-if-needed";
 import { computed, onMounted, reactive, ref, watchEffect } from "vue";
+import { BBTextField } from "@/bbkit";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import { hasFeature } from "@/store";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
@@ -171,12 +175,13 @@ watchEffect(() => {
 });
 
 const allowSave = computed((): boolean => {
+  const initValue = getInitialState();
   const openAIKeyUpdated =
-    state.openAIKey !== maskKey(aiSetting.value?.apiKey) ||
+    state.openAIKey !== initValue.openAIKey ||
     (state.openAIKey && !state.openAIKey.includes("***"));
   const openAIEndpointUpdated =
-    state.openAIEndpoint !== aiSetting.value?.endpoint;
-  const openAIModelUpdated = state.openAIModel !== aiSetting.value?.model;
+    state.openAIEndpoint !== initValue.openAIEndpoint;
+  const openAIModelUpdated = state.openAIModel !== initValue.openAIModel;
   return openAIKeyUpdated || openAIEndpointUpdated || openAIModelUpdated;
 });
 
