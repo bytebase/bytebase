@@ -7714,6 +7714,8 @@ components:
         AISetting:
             type: object
             properties:
+                enabled:
+                    type: boolean
                 provider:
                     enum:
                         - PROVIDER_UNSPECIFIED

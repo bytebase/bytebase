@@ -4118,6 +4118,7 @@ ANY means approving any node will proceed.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
+| enabled | [bool](#bool) |  |  |
 | provider | [AISetting.Provider](#bytebase-v1-AISetting-Provider) |  |  |
 | endpoint | [string](#string) |  |  |
 | api_key | [string](#string) |  |  |
