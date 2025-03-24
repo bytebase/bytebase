@@ -18,7 +18,7 @@
     >
       <BBTextField
         class="flex-1 !text-xl !pl-0 px-0.5 font-bold truncate sql-review-title"
-        :disabled="!hasPermission"
+        :disabled="!hasUpdateReviwConfigPermission"
         :required="true"
         :focus-on-mount="false"
         :ends-on-enter="true"
@@ -27,7 +27,7 @@
         @on-focus="state.editingTitle = true"
         @end-editing="changeName"
       />
-      <div v-if="hasPermission" class="flex gap-x-2">
+      <div v-if="hasUpdateReviwConfigPermission" class="flex gap-x-2">
         <NButton
           v-if="reviewPolicy.enforce"
           @click.prevent="state.showDisableModal = true"
@@ -38,7 +38,7 @@
           {{ $t("common.enable") }}
         </NButton>
         <NButton
-          v-if="reviewPolicy.resources.length > 0"
+          v-if="reviewPolicy.resources.length > 0 && hasTagPolicyPermission"
           @click.prevent="state.showResourcePanel = true"
         >
           {{ $t("sql-review.attach-resource.change-resources") }}
@@ -78,7 +78,7 @@
         <SQLRuleTableWithFilter
           :engine="engine"
           :rule-list="ruleListFilteredByEngine"
-          :editable="hasPermission"
+          :editable="hasUpdateReviwConfigPermission"
           @rule-upsert="markChange"
         />
       </template>
@@ -86,7 +86,7 @@
 
     <BBButtonConfirm
       class="!my-4"
-      :disabled="!hasPermission"
+      :disabled="!hasDeleteReviwConfigPermission"
       :type="'DELETE'"
       :button-text="$t('sql-review.delete')"
       :ok-text="$t('common.delete')"
@@ -219,7 +219,15 @@ const state = reactive<LocalState>({
   showResourcePanel: false,
 });
 
-const hasPermission = computed(() => {
+const hasUpdateReviwConfigPermission = computed(() => {
+  return hasWorkspacePermissionV2("bb.reviewConfigs.update");
+});
+
+const hasDeleteReviwConfigPermission = computed(() => {
+  return hasWorkspacePermissionV2("bb.reviewConfigs.delete");
+});
+
+const hasTagPolicyPermission = computed(() => {
   return hasWorkspacePermissionV2("bb.policies.update");
 });
 
@@ -232,7 +240,7 @@ watchEffect(async () => {
 });
 
 onMounted(() => {
-  if (route.query.attachResourcePanel && hasPermission.value) {
+  if (route.query.attachResourcePanel && hasTagPolicyPermission.value) {
     nextTick(() => {
       state.showResourcePanel = true;
     });

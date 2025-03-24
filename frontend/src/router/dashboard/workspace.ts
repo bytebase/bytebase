@@ -152,7 +152,7 @@ const workspaceRoutes: RouteRecordRaw[] = [
         name: WORKSPACE_ROUTE_SQL_REVIEW,
         meta: {
           title: () => t("sql-review.title"),
-          requiredWorkspacePermissionList: () => ["bb.policies.get"],
+          requiredWorkspacePermissionList: () => ["bb.reviewConfigs.list"],
         },
         component: () => import("@/views/SettingWorkspaceSQLReview.vue"),
         props: true,
@@ -162,7 +162,7 @@ const workspaceRoutes: RouteRecordRaw[] = [
         name: WORKSPACE_ROUTE_SQL_REVIEW_CREATE,
         meta: {
           title: () => t("sql-review.create.breadcrumb"),
-          requiredWorkspacePermissionList: () => ["bb.policies.create"],
+          requiredWorkspacePermissionList: () => ["bb.reviewConfigs.create"],
         },
         component: () => import("@/views/SettingWorkspaceSQLReviewCreate.vue"),
         props: true,
@@ -172,7 +172,7 @@ const workspaceRoutes: RouteRecordRaw[] = [
         name: WORKSPACE_ROUTE_SQL_REVIEW_DETAIL,
         meta: {
           title: () => t("sql-review.title"),
-          requiredWorkspacePermissionList: () => ["bb.policies.get"],
+          requiredWorkspacePermissionList: () => ["bb.reviewConfigs.get"],
         },
         component: () => import("@/views/SettingWorkspaceSQLReviewDetail.vue"),
         props: true,

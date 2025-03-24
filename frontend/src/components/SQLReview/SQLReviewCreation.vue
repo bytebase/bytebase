@@ -212,7 +212,11 @@ const changeStepIndex = (nextIndex: number) => {
 };
 
 const tryFinishSetup = async () => {
-  if (!hasWorkspacePermissionV2("bb.policies.update")) {
+  if (
+    !hasWorkspacePermissionV2(
+      isUpdate.value ? "bb.reviewConfigs.update" : "bb.reviewConfigs.create"
+    )
+  ) {
     pushNotification({
       module: "bytebase",
       style: "CRITICAL",
