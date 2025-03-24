@@ -72,7 +72,7 @@ watchEffect(() => {
 });
 
 const hasCreatePolicyPermission = computed(() => {
-  return hasWorkspacePermissionV2("bb.policies.create");
+  return hasWorkspacePermissionV2("bb.reviewConfigs.create");
 });
 
 const createSQLReview = () => {
