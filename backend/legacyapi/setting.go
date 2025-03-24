@@ -22,6 +22,8 @@ const (
 	SettingAppIM SettingName = "bb.app.im"
 	// SettingWatermark is the setting name for watermark displaying.
 	SettingWatermark SettingName = "bb.workspace.watermark"
+	// SettingAI is used for AI setting.
+	SettingAI SettingName = "bb.ai"
 	// SettingPluginOpenAIKey is used for OpenAI's API key.
 	// For AI-related features.
 	SettingPluginOpenAIKey SettingName = "bb.plugin.openai.key"

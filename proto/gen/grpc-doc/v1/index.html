@@ -1019,6 +1019,10 @@
             <ul>
               
                 <li>
+                  <a href="#bytebase.v1.AISetting"><span class="badge">M</span>AISetting</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.AgentPluginSetting"><span class="badge">M</span>AgentPluginSetting</a>
                 </li>
               
@@ -1178,6 +1182,10 @@
                   <a href="#bytebase.v1.WorkspaceTrialSetting"><span class="badge">M</span>WorkspaceTrialSetting</a>
                 </li>
               
+              
+                <li>
+                  <a href="#bytebase.v1.AISetting.Provider"><span class="badge">E</span>AISetting.Provider</a>
+                </li>
               
                 <li>
                   <a href="#bytebase.v1.Algorithm.InnerOuterMask.MaskType"><span class="badge">E</span>Algorithm.InnerOuterMask.MaskType</a>
@@ -12252,6 +12260,58 @@ The access is based on approval flow.</p></td>
       <p></p>
 
       
+        <h3 id="bytebase.v1.AISetting">AISetting</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>provider</td>
+                  <td><a href="#bytebase.v1.AISetting.Provider">AISetting.Provider</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>endpoint</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>api_key</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>model</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>version</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.AgentPluginSetting">AgentPluginSetting</h3>
         <p></p>
 
@@ -13726,6 +13786,13 @@ server would not persist the setting value if it is true. </p></td>
                   <td><p> </p></td>
                 </tr>
               
+                <tr>
+                  <td>ai_setting</td>
+                  <td><a href="#bytebase.v1.AISetting">AISetting</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -13942,6 +14009,41 @@ server would not persist the setting value if it is true. </p></td>
         
       
 
+      
+        <h3 id="bytebase.v1.AISetting.Provider">AISetting.Provider</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>PROVIDER_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>OPEN_AI</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>CLAUDE</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>GEMINI</td>
+                <td>3</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
       
         <h3 id="bytebase.v1.Algorithm.InnerOuterMask.MaskType">Algorithm.InnerOuterMask.MaskType</h3>
         <p></p>

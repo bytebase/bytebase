@@ -601,6 +601,75 @@ export interface PasswordRestrictionSetting {
   passwordRotation: Duration | undefined;
 }
 
+export interface AISetting {
+  provider: AISetting_Provider;
+  endpoint: string;
+  apiKey: string;
+  model: string;
+  version: string;
+}
+
+export enum AISetting_Provider {
+  PROVIDER_UNSPECIFIED = "PROVIDER_UNSPECIFIED",
+  OPEN_AI = "OPEN_AI",
+  CLAUDE = "CLAUDE",
+  GEMINI = "GEMINI",
+  UNRECOGNIZED = "UNRECOGNIZED",
+}
+
+export function aISetting_ProviderFromJSON(object: any): AISetting_Provider {
+  switch (object) {
+    case 0:
+    case "PROVIDER_UNSPECIFIED":
+      return AISetting_Provider.PROVIDER_UNSPECIFIED;
+    case 1:
+    case "OPEN_AI":
+      return AISetting_Provider.OPEN_AI;
+    case 2:
+    case "CLAUDE":
+      return AISetting_Provider.CLAUDE;
+    case 3:
+    case "GEMINI":
+      return AISetting_Provider.GEMINI;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return AISetting_Provider.UNRECOGNIZED;
+  }
+}
+
+export function aISetting_ProviderToJSON(object: AISetting_Provider): string {
+  switch (object) {
+    case AISetting_Provider.PROVIDER_UNSPECIFIED:
+      return "PROVIDER_UNSPECIFIED";
+    case AISetting_Provider.OPEN_AI:
+      return "OPEN_AI";
+    case AISetting_Provider.CLAUDE:
+      return "CLAUDE";
+    case AISetting_Provider.GEMINI:
+      return "GEMINI";
+    case AISetting_Provider.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+export function aISetting_ProviderToNumber(object: AISetting_Provider): number {
+  switch (object) {
+    case AISetting_Provider.PROVIDER_UNSPECIFIED:
+      return 0;
+    case AISetting_Provider.OPEN_AI:
+      return 1;
+    case AISetting_Provider.CLAUDE:
+      return 2;
+    case AISetting_Provider.GEMINI:
+      return 3;
+    case AISetting_Provider.UNRECOGNIZED:
+    default:
+      return -1;
+  }
+}
+
 function createBaseWorkspaceProfileSetting(): WorkspaceProfileSetting {
   return {
     externalUrl: "",
@@ -3965,6 +4034,132 @@ export const PasswordRestrictionSetting: MessageFns<PasswordRestrictionSetting> 
     message.passwordRotation = (object.passwordRotation !== undefined && object.passwordRotation !== null)
       ? Duration.fromPartial(object.passwordRotation)
       : undefined;
+    return message;
+  },
+};
+
+function createBaseAISetting(): AISetting {
+  return { provider: AISetting_Provider.PROVIDER_UNSPECIFIED, endpoint: "", apiKey: "", model: "", version: "" };
+}
+
+export const AISetting: MessageFns<AISetting> = {
+  encode(message: AISetting, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.provider !== AISetting_Provider.PROVIDER_UNSPECIFIED) {
+      writer.uint32(8).int32(aISetting_ProviderToNumber(message.provider));
+    }
+    if (message.endpoint !== "") {
+      writer.uint32(18).string(message.endpoint);
+    }
+    if (message.apiKey !== "") {
+      writer.uint32(26).string(message.apiKey);
+    }
+    if (message.model !== "") {
+      writer.uint32(34).string(message.model);
+    }
+    if (message.version !== "") {
+      writer.uint32(42).string(message.version);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): AISetting {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseAISetting();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.provider = aISetting_ProviderFromJSON(reader.int32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.endpoint = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.apiKey = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.model = reader.string();
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.version = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): AISetting {
+    return {
+      provider: isSet(object.provider)
+        ? aISetting_ProviderFromJSON(object.provider)
+        : AISetting_Provider.PROVIDER_UNSPECIFIED,
+      endpoint: isSet(object.endpoint) ? globalThis.String(object.endpoint) : "",
+      apiKey: isSet(object.apiKey) ? globalThis.String(object.apiKey) : "",
+      model: isSet(object.model) ? globalThis.String(object.model) : "",
+      version: isSet(object.version) ? globalThis.String(object.version) : "",
+    };
+  },
+
+  toJSON(message: AISetting): unknown {
+    const obj: any = {};
+    if (message.provider !== AISetting_Provider.PROVIDER_UNSPECIFIED) {
+      obj.provider = aISetting_ProviderToJSON(message.provider);
+    }
+    if (message.endpoint !== "") {
+      obj.endpoint = message.endpoint;
+    }
+    if (message.apiKey !== "") {
+      obj.apiKey = message.apiKey;
+    }
+    if (message.model !== "") {
+      obj.model = message.model;
+    }
+    if (message.version !== "") {
+      obj.version = message.version;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<AISetting>): AISetting {
+    return AISetting.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<AISetting>): AISetting {
+    const message = createBaseAISetting();
+    message.provider = object.provider ?? AISetting_Provider.PROVIDER_UNSPECIFIED;
+    message.endpoint = object.endpoint ?? "";
+    message.apiKey = object.apiKey ?? "";
+    message.model = object.model ?? "";
+    message.version = object.version ?? "";
     return message;
   },
 };
