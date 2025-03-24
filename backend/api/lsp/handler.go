@@ -7,8 +7,8 @@ import (
 	"log/slog"
 	"sync"
 
+	lsp "github.com/bytebase/lsp-protocol"
 	"github.com/pkg/errors"
-	"github.com/sourcegraph/go-lsp"
 	"github.com/sourcegraph/jsonrpc2"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -223,12 +223,9 @@ func (h *Handler) handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonrpc2
 			return nil, err
 		}
 
-		kind := lsp.TDSKIncremental
 		return lsp.InitializeResult{
 			Capabilities: lsp.ServerCapabilities{
-				TextDocumentSync: &lsp.TextDocumentSyncOptionsOrKind{
-					Kind: &kind,
-				},
+				TextDocumentSync: lsp.Incremental,
 				CompletionProvider: &lsp.CompletionOptions{
 					TriggerCharacters: []string{".", " "},
 				},
