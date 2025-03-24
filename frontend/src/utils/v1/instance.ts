@@ -237,6 +237,27 @@ export const instanceV1AllowsCrossDatabaseQuery = (
   ].includes(engine);
 };
 
+export const instanceV1AllowsExplain = (
+  instanceOrEngine: Instance | InstanceResource | Engine
+) => {
+  const engine = engineOfInstanceV1(instanceOrEngine);
+  return [
+    Engine.MYSQL,
+    Engine.TIDB,
+    Engine.CLICKHOUSE,
+    Engine.COCKROACHDB,
+    Engine.DM,
+    Engine.HIVE,
+    Engine.OCEANBASE_ORACLE,
+    Engine.ORACLE,
+    Engine.POSTGRES,
+    Engine.REDSHIFT,
+    Engine.RISINGWAVE,
+    Engine.SNOWFLAKE,
+    Engine.STARROCKS,
+  ].includes(engine);
+};
+
 export const instanceV1AllowsReorderColumns = (
   instanceOrEngine: Instance | InstanceResource | Engine
 ) => {
@@ -420,6 +441,6 @@ export const supportGetStringSchema = (engine: Engine) => {
     Engine.TIDB,
     Engine.CLICKHOUSE,
     Engine.REDSHIFT,
-    Engine.ORACLE
+    Engine.ORACLE,
   ].includes(engine);
 };
