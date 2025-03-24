@@ -1,6 +1,8 @@
 package lsp
 
-import "github.com/sourcegraph/go-lsp"
+import (
+	protocol "github.com/bytebase/lsp-protocol"
+)
 
 type CommandName string
 
@@ -10,7 +12,7 @@ const (
 
 // SetMetadataCommandParams are the parameters to the "setMetadata" command.
 type SetMetadataCommandParams struct {
-	lsp.ExecuteCommandParams
+	protocol.ExecuteCommandParams
 	Arguments []SetMetadataCommandArguments `json:"arguments,omitempty"`
 }
 

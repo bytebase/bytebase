@@ -7,8 +7,8 @@ import (
 	"log/slog"
 	"os"
 
+	lsp "github.com/bytebase/lsp-protocol"
 	"github.com/pkg/errors"
-	"github.com/sourcegraph/go-lsp"
 	"github.com/sourcegraph/jsonrpc2"
 
 	"github.com/bytebase/bytebase/backend/common/log"

@@ -5,8 +5,8 @@ import (
 	"strings"
 	"sync"
 
+	lsp "github.com/bytebase/lsp-protocol"
 	"github.com/pkg/errors"
-	"github.com/sourcegraph/go-lsp"
 )
 
 // MemFS is an in-memory file system.
