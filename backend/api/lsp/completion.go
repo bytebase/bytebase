@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"log/slog"
 
+	lsp "github.com/bytebase/lsp-protocol"
 	"github.com/pkg/errors"
-	"github.com/sourcegraph/go-lsp"
 	"github.com/sourcegraph/jsonrpc2"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
@@ -68,7 +68,7 @@ func (h *Handler) handleTextDocumentCompletion(ctx context.Context, _ *jsonrpc2.
 		DefaultSchema:     h.getDefaultSchema(),
 		Metadata:          h.GetDatabaseMetadataFunc,
 		ListDatabaseNames: h.ListDatabaseNamesFunc,
-	}, string(content), params.Position.Line+1, params.Position.Character)
+	}, string(content), int(params.Position.Line)+1, int(params.Position.Character))
 	if err != nil {
 		// return errors will close the websocket connection, so we just log the error and return empty completion list.
 		slog.Error("Failed to get completion candidates", "err", err)
@@ -88,10 +88,12 @@ func (h *Handler) handleTextDocumentCompletion(ctx context.Context, _ *jsonrpc2.
 				Detail:      fmt.Sprintf("(%s)", string(candidate.Type)),
 				Description: candidate.Definition,
 			},
-			Kind:          convertLSPCompletionItemKind(candidate.Type),
-			Documentation: candidate.Comment,
-			SortText:      generateSortText(params, engine, candidate),
-			InsertText:    candidate.Text,
+			Kind: convertLSPCompletionItemKind(candidate.Type),
+			Documentation: &lsp.Or_CompletionItem_documentation{
+				Value: candidate.Comment,
+			},
+			SortText:   generateSortText(params, engine, candidate),
+			InsertText: candidate.Text,
 		}
 		items = append(items, completionItem)
 	}
@@ -129,19 +131,19 @@ func generateSortText(_ lsp.CompletionParams, _ storepb.Engine, candidate base.C
 func convertLSPCompletionItemKind(tp base.CandidateType) lsp.CompletionItemKind {
 	switch tp {
 	case base.CandidateTypeSchema:
-		return lsp.CIKModule
+		return lsp.ModuleCompletion
 	case base.CandidateTypeDatabase:
-		return lsp.CIKClass
+		return lsp.ClassCompletion
 	case base.CandidateTypeTable, base.CandidateTypeForeignTable:
-		return lsp.CIKField
+		return lsp.FieldCompletion
 	case base.CandidateTypeColumn:
-		return lsp.CIKInterface
+		return lsp.InterfaceCompletion
 	case base.CandidateTypeFunction:
-		return lsp.CIKFunction
+		return lsp.FunctionCompletion
 	case base.CandidateTypeView, base.CandidateTypeMaterializedView:
-		return lsp.CIKVariable
+		return lsp.VariableCompletion
 	default:
-		return lsp.CIKText
+		return lsp.TextCompletion
 	}
 }
 

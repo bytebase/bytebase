@@ -27,6 +27,7 @@ require (
 	github.com/blang/semver/v4 v4.0.0
 	github.com/bytebase/cosmosdb-parser v0.0.0-20250317064006-c1dcb3ed4fa4
 	github.com/bytebase/google-sql-parser v0.0.0-20250116032737-689a327f9465
+	github.com/bytebase/lsp-protocol v0.0.0-20250324071136-1586d0c10ff0
 	github.com/bytebase/mysql-parser v0.0.0-20241224071214-cb9fd84811dd
 	github.com/bytebase/plsql-parser v0.0.0-20250218041636-9fed633593d1
 	github.com/bytebase/postgresql-parser v0.0.0-20250213053010-aeb8220eb3bb
@@ -79,7 +80,6 @@ require (
 	github.com/snowflakedb/gosnowflake v1.13.1
 	github.com/soheilhy/cmux v0.1.5
 	github.com/sourcegraph/conc v0.3.0
-	github.com/sourcegraph/go-lsp v0.0.0-20240223163137-f80c5dd31dfd
 	github.com/sourcegraph/jsonrpc2 v0.2.0
 	github.com/spf13/cobra v1.9.1
 	github.com/stretchr/testify v1.10.0

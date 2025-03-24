@@ -1,6 +1,8 @@
 package lsp
 
-import "github.com/sourcegraph/go-lsp"
+import (
+	lsp "github.com/bytebase/lsp-protocol"
+)
 
 type CommandName string
 
