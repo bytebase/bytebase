@@ -109,28 +109,6 @@ func (s *Server) getInitSetting(ctx context.Context) error {
 		return err
 	}
 
-	// initial OpenAI key setting
-	if _, _, err := s.store.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
-		Name:  api.SettingPluginOpenAIKey,
-		Value: "",
-	}); err != nil {
-		return err
-	}
-
-	if _, _, err := s.store.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
-		Name:  api.SettingPluginOpenAIEndpoint,
-		Value: "",
-	}); err != nil {
-		return err
-	}
-
-	if _, _, err := s.store.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
-		Name:  api.SettingPluginOpenAIModel,
-		Value: "",
-	}); err != nil {
-		return err
-	}
-
 	// initial schema template setting
 	schemaTemplateSettingValue, err := protojson.Marshal(&storepb.SchemaTemplateSetting{})
 	if err != nil {
