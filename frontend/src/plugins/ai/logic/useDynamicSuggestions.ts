@@ -4,7 +4,6 @@ import { computed, reactive, ref } from "vue";
 import { hashCode } from "@/bbkit/BBUtil";
 import { WebStorageHelper } from "@/utils";
 import type { OpenAIMessage, OpenAIResponse } from "../types";
-import { OPENAI_DEFAULT_MODEL } from "@/types";
 import { useAIContext } from "./context";
 import * as promptUtils from "./prompt";
 
@@ -43,12 +42,8 @@ export const useDynamicSuggestions = () => {
 
   const requestAI = async (messages: OpenAIMessage[]) => {
     await new Promise((resolve) => setTimeout(resolve, 1000));
-    const modelName =
-      context.openAIModel.value === ""
-      ? OPENAI_DEFAULT_MODEL
-      : context.openAIModel.value
     const body = {
-      model: modelName,
+      model: context.openAIModel.value,
       messages,
       temperature: 0,
       stop: ["#", ";"],
@@ -64,13 +59,9 @@ export const useDynamicSuggestions = () => {
       "Content-Type": "application/json",
       Authorization: `Bearer ${context.openAIKey.value}`,
     };
-    const url =
-      context.openAIEndpoint.value === ""
-        ? "https://api.openai.com/v1/chat/completions"
-        : context.openAIEndpoint.value + "/v1/chat/completions";
     try {
       const response: AxiosResponse<string> = await axios.post(
-        url,
+        context.openAIEndpoint.value,
         JSON.stringify(body),
         {
           headers,
