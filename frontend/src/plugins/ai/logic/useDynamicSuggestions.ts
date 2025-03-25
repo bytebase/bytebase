@@ -1,8 +1,9 @@
-import { hashCode } from "@/bbkit/BBUtil";
-import { WebStorageHelper } from "@/utils";
 import { Axios, type AxiosResponse } from "axios";
 import { head, uniq, values } from "lodash-es";
 import { computed, reactive, ref } from "vue";
+import { hashCode } from "@/bbkit/BBUtil";
+import { AISetting_Provider } from "@/types/proto/v1/setting_service";
+import { WebStorageHelper } from "@/utils";
 import type { OpenAIMessage, OpenAIResponse } from "../types";
 import { useAIContext } from "./context";
 import * as promptUtils from "./prompt";
@@ -58,7 +59,7 @@ export const useDynamicSuggestions = () => {
     const headers: { [key: string]: string } = {
       "Content-Type": "application/json",
     };
-    if (context.aiSetting.value.provider === "AZURE_OPENAI") {
+    if (context.aiSetting.value.provider === AISetting_Provider.AZURE_OPENAI) {
       headers["api-key"] = context.aiSetting.value.apiKey;
     } else {
       headers["Authorization"] = `Bearer ${context.aiSetting.value.apiKey}`;
