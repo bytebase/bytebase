@@ -564,7 +564,7 @@
           },
           "api-key": {
             "self": "APIキー",
-            "description": "SQL エディターで Text2SQL を開く機能を有効にする API キーを提供します。 {viewDoc}",
+            "description": "読み取り専用の API キーを入力してください。{viewDoc}",
             "find-my-key": "鍵を探す",
             "placeholder": "API キーは通常 sk-***** で始まります"
           },
