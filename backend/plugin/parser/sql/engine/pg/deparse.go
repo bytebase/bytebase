@@ -1662,7 +1662,7 @@ func depraseSequenceDef(ctx DeparseContext, in *ast.SequenceDef, buf *strings.Bu
 		if err := ctx.WriteIndent(buf, deparseIndentString); err != nil {
 			return err
 		}
-		if _, err := buf.WriteString(fmt.Sprintf("MAXVALUE %d", *in.MaxValue)); err != nil {
+		if _, err := fmt.Fprintf(buf, "MAXVALUE %d", *in.MaxValue); err != nil {
 			return err
 		}
 	} else {
@@ -1683,7 +1683,7 @@ func depraseSequenceDef(ctx DeparseContext, in *ast.SequenceDef, buf *strings.Bu
 		if err := ctx.WriteIndent(buf, deparseIndentString); err != nil {
 			return err
 		}
-		if _, err := buf.WriteString(fmt.Sprintf("START WITH %d", *in.StartWith)); err != nil {
+		if _, err := fmt.Fprintf(buf, "START WITH %d", *in.StartWith); err != nil {
 			return err
 		}
 	}
@@ -1694,7 +1694,7 @@ func depraseSequenceDef(ctx DeparseContext, in *ast.SequenceDef, buf *strings.Bu
 		if err := ctx.WriteIndent(buf, deparseIndentString); err != nil {
 			return err
 		}
-		if _, err := buf.WriteString(fmt.Sprintf("CACHE %d", *in.Cache)); err != nil {
+		if _, err := fmt.Fprintf(buf, "CACHE %d", *in.Cache); err != nil {
 			return err
 		}
 	}

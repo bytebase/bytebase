@@ -196,7 +196,7 @@ func (e *StatementAdviseExecutor) runReview(
 		Collation:                dbSchema.GetMetadata().Collation,
 		DBSchema:                 dbSchema.GetMetadata(),
 		ChangeType:               changeType,
-		DbType:                   instance.Metadata.GetEngine(),
+		DBType:                   instance.Metadata.GetEngine(),
 		Catalog:                  catalog,
 		Driver:                   connection,
 		PreUpdateBackupDetail:    preUpdateBackupDetail,

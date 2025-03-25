@@ -54,12 +54,12 @@ func newDriver(db.DriverConfig) db.Driver {
 }
 
 // GetVersion gets the Oracle version.
-func (driver *Driver) GetVersion() (*plsqlparser.Version, error) {
-	return plsqlparser.ParseVersion(driver.connectionCtx.EngineVersion)
+func (d *Driver) GetVersion() (*plsqlparser.Version, error) {
+	return plsqlparser.ParseVersion(d.connectionCtx.EngineVersion)
 }
 
 // Open opens a Oracle driver.
-func (driver *Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
+func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
 	port, err := strconv.Atoi(config.DataSource.Port)
 	if err != nil {
 		return nil, errors.Errorf("invalid port %q", config.DataSource.Port)
@@ -79,33 +79,33 @@ func (driver *Driver) Open(ctx context.Context, _ storepb.Engine, config db.Conn
 			return nil, errors.Wrapf(err, "failed to set current schema to %q", config.ConnectionContext.DatabaseName)
 		}
 	}
-	driver.db = db
-	driver.databaseName = config.ConnectionContext.DatabaseName
-	driver.serviceName = config.DataSource.GetServiceName()
-	driver.connectionCtx = config.ConnectionContext
-	return driver, nil
+	d.db = db
+	d.databaseName = config.ConnectionContext.DatabaseName
+	d.serviceName = config.DataSource.GetServiceName()
+	d.connectionCtx = config.ConnectionContext
+	return d, nil
 }
 
 // Close closes the driver.
-func (driver *Driver) Close(_ context.Context) error {
-	return driver.db.Close()
+func (d *Driver) Close(_ context.Context) error {
+	return d.db.Close()
 }
 
 // Ping pings the database.
-func (driver *Driver) Ping(ctx context.Context) error {
-	return driver.db.PingContext(ctx)
+func (d *Driver) Ping(ctx context.Context) error {
+	return d.db.PingContext(ctx)
 }
 
 // GetDB gets the database.
-func (driver *Driver) GetDB() *sql.DB {
-	return driver.db
+func (d *Driver) GetDB() *sql.DB {
+	return d.db
 }
 
 // Execute executes the migration, `beforeCommitTxFunc` will be called before transaction commit and after executing `statement`.
 //
 // Callers can use `beforeCommitTx` to do some extra work before transaction commit, like get the transaction id.
 // Any error returned by `beforeCommitTx` will rollback the transaction, so it is the callers' responsibility to return nil if the error occurs in `beforeCommitTx` is not fatal.
-func (driver *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
+func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
 	if opts.CreateDatabase {
 		return 0, errors.New("create database is not supported for Oracle")
 	}
@@ -132,7 +132,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 		originalIndex = []int32{0}
 	}
 
-	conn, err := driver.db.Conn(ctx)
+	conn, err := d.db.Conn(ctx)
 	if err != nil {
 		return 0, errors.Wrapf(err, "failed to get connection")
 	}
@@ -198,7 +198,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 }
 
 // QueryConn queries a SQL statement in a given connection.
-func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
+func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
 	singleSQLs, err := plsqlparser.SplitSQL(statement)
 	if err != nil {
 		return nil, err
@@ -226,7 +226,7 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 		}
 
 		if !queryContext.Explain && queryContext.Limit > 0 {
-			stmt, err := driver.getStatementWithResultLimit(statement, queryContext)
+			stmt, err := d.getStatementWithResultLimit(statement, queryContext)
 			if err != nil {
 				slog.Error("fail to add limit clause", "statement", statement, log.BBError(err))
 				stmt = getStatementWithResultLimitFor11g(stmt, queryContext.Limit)
@@ -285,8 +285,8 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 	return results, nil
 }
 
-func (driver *Driver) getStatementWithResultLimit(stmt string, queryContext db.QueryContext) (string, error) {
-	engineVersion := driver.connectionCtx.EngineVersion
+func (d *Driver) getStatementWithResultLimit(stmt string, queryContext db.QueryContext) (string, error) {
+	engineVersion := d.connectionCtx.EngineVersion
 	versionIdx := strings.Index(engineVersion, ".")
 	if versionIdx < 0 {
 		return "", errors.New("instance version number is invalid")

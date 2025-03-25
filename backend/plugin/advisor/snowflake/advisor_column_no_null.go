@@ -162,7 +162,7 @@ func (l *columnNoNullChecker) EnterTable_column_action(ctx *parser.Table_column_
 		inlineConstraintHasNotNull := ctx.Inline_constraint() != nil && (ctx.Inline_constraint().Null_not_null() != nil && ctx.Inline_constraint().Null_not_null().NOT() != nil)
 		hasNotNull := ctx.Null_not_null() != nil && ctx.Null_not_null().NOT() != nil
 
-		if !(inlineConstraintHasPK || inlineConstraintHasNotNull || hasNotNull) {
+		if !inlineConstraintHasPK && !inlineConstraintHasNotNull && !hasNotNull {
 			l.columnNullable[normalizedNewColumnName] = ctx.GetStart().GetLine()
 		}
 		return

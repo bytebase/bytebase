@@ -8,11 +8,11 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 )
 
-func (driver *Driver) CountAffectedRows(ctx context.Context, statement string) (int64, error) {
+func (d *Driver) CountAffectedRows(ctx context.Context, statement string) (int64, error) {
 	// MSSQL uses dry-run to get the affected rows.
 	// It's dangerous if statements are executed via different connections in the pool.
 	// So we have the use a dedicated connection.
-	conn, err := driver.db.Conn(ctx)
+	conn, err := d.db.Conn(ctx)
 	if err != nil {
 		return 0, err
 	}

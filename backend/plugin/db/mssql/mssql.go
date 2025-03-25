@@ -53,7 +53,7 @@ func newDriver(db.DriverConfig) db.Driver {
 }
 
 // Open opens a MSSQL driver.
-func (driver *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
+func (d *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
 	query := url.Values{}
 	query.Add("app name", "bytebase")
 	if config.ConnectionContext.DatabaseName != "" {
@@ -82,7 +82,7 @@ func (driver *Driver) Open(_ context.Context, _ storepb.Engine, config db.Connec
 			if err != nil {
 				_ = os.Remove(fName)
 			} else {
-				driver.certFilePath = fName
+				d.certFilePath = fName
 			}
 		}(err)
 		_, err = file.WriteString(config.DataSource.GetSslCa())
@@ -120,43 +120,43 @@ func (driver *Driver) Open(_ context.Context, _ storepb.Engine, config db.Connec
 	if err != nil {
 		return nil, err
 	}
-	driver.db = db
-	driver.databaseName = config.ConnectionContext.DatabaseName
-	return driver, nil
+	d.db = db
+	d.databaseName = config.ConnectionContext.DatabaseName
+	return d, nil
 }
 
 // Close closes the driver.
-func (driver *Driver) Close(_ context.Context) error {
-	if driver.certFilePath != "" {
-		if err := os.Remove(driver.certFilePath); err != nil {
-			slog.Warn("failed to delete temporary file", slog.String("path", driver.certFilePath), log.BBError(err))
+func (d *Driver) Close(_ context.Context) error {
+	if d.certFilePath != "" {
+		if err := os.Remove(d.certFilePath); err != nil {
+			slog.Warn("failed to delete temporary file", slog.String("path", d.certFilePath), log.BBError(err))
 		}
 	}
-	if driver.db != nil {
-		return driver.db.Close()
+	if d.db != nil {
+		return d.db.Close()
 	}
 	return nil
 }
 
 // Ping pings the database.
-func (driver *Driver) Ping(ctx context.Context) error {
-	return driver.db.PingContext(ctx)
+func (d *Driver) Ping(ctx context.Context) error {
+	return d.db.PingContext(ctx)
 }
 
 // GetDB gets the database.
-func (driver *Driver) GetDB() *sql.DB {
-	return driver.db
+func (d *Driver) GetDB() *sql.DB {
+	return d.db
 }
 
 // Execute executes a SQL statement and returns the affected rows.
-func (driver *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
+func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
 	if opts.CreateDatabase {
-		if _, err := driver.db.ExecContext(ctx, statement); err != nil {
+		if _, err := d.db.ExecContext(ctx, statement); err != nil {
 			return 0, err
 		}
 		return 0, nil
 	}
-	tx, err := driver.db.BeginTx(ctx, nil)
+	tx, err := d.db.BeginTx(ctx, nil)
 	if err != nil {
 		opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_BEGIN, err.Error())
 		return 0, err
@@ -268,7 +268,7 @@ func unpackGoMSSQLDBError(err gomssqldb.Error) error {
 	return errors.Errorf("%s", strings.Join(msgs, "\n"))
 }
 
-func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
+func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
 	batch := NewBatch(statement)
 	var results []*v1pb.QueryResult
 	for {
@@ -278,7 +278,7 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 				v := batch.String()
 				if v != "" {
 					// Query the last batch.
-					qr, err := driver.queryBatch(ctx, conn, v, queryContext)
+					qr, err := d.queryBatch(ctx, conn, v, queryContext)
 					results = append(results, qr...)
 					if err != nil {
 						return results, err
@@ -296,7 +296,7 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 		case *tsqlbatch.GoCommand:
 			stmt := batch.String()
 			// Query the batch.
-			qr, err := driver.queryBatch(ctx, conn, stmt, queryContext)
+			qr, err := d.queryBatch(ctx, conn, stmt, queryContext)
 			results = append(results, qr...)
 			if err != nil {
 				return results, err

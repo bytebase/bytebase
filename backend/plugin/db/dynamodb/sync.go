@@ -90,9 +90,10 @@ func (d *Driver) syncTable(ctx context.Context, tableName string) (*storepb.Tabl
 	if out.Table.KeySchema != nil {
 		var hashKeyAttributes, rangeKeyAttributes []string
 		for _, keySchema := range out.Table.KeySchema {
-			if keySchema.KeyType == types.KeyTypeHash {
+			switch keySchema.KeyType {
+			case types.KeyTypeHash:
 				hashKeyAttributes = append(hashKeyAttributes, *keySchema.AttributeName)
-			} else if keySchema.KeyType == types.KeyTypeRange {
+			case types.KeyTypeRange:
 				rangeKeyAttributes = append(rangeKeyAttributes, *keySchema.AttributeName)
 			}
 		}

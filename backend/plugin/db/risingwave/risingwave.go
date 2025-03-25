@@ -56,12 +56,12 @@ type Driver struct {
 
 func newDriver(config db.DriverConfig) db.Driver {
 	return &Driver{
-		dbBinDir: config.DbBinDir,
+		dbBinDir: config.DBBinDir,
 	}
 }
 
 // Open opens a RisingWave driver.
-func (driver *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
+func (d *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
 	if config.DataSource.Username == "" {
 		return nil, errors.Errorf("user must be set")
 	}
@@ -84,9 +84,9 @@ func (driver *Driver) Open(_ context.Context, _ storepb.Engine, config db.Connec
 	if err != nil {
 		return nil, err
 	}
-	pgxConnConfig.Config.User = config.DataSource.Username
-	pgxConnConfig.Config.Password = config.Password
-	pgxConnConfig.Config.Database = config.ConnectionContext.DatabaseName
+	pgxConnConfig.User = config.DataSource.Username
+	pgxConnConfig.Password = config.Password
+	pgxConnConfig.Database = config.ConnectionContext.DatabaseName
 	if config.DataSource.GetSslCert() != "" {
 		tlscfg, err := util.GetTLSConfig(config.DataSource)
 		if err != nil {
@@ -99,9 +99,9 @@ func (driver *Driver) Open(_ context.Context, _ storepb.Engine, config db.Connec
 		if err != nil {
 			return nil, err
 		}
-		driver.sshClient = sshClient
+		d.sshClient = sshClient
 
-		pgxConnConfig.Config.DialFunc = func(_ context.Context, network, addr string) (net.Conn, error) {
+		pgxConnConfig.DialFunc = func(_ context.Context, network, addr string) (net.Conn, error) {
 			conn, err := sshClient.Dial(network, addr)
 			if err != nil {
 				return nil, err
@@ -113,7 +113,7 @@ func (driver *Driver) Open(_ context.Context, _ storepb.Engine, config db.Connec
 		pgxConnConfig.RuntimeParams["default_transaction_read_only"] = "true"
 	}
 
-	driver.databaseName = config.ConnectionContext.DatabaseName
+	d.databaseName = config.ConnectionContext.DatabaseName
 	if config.ConnectionContext.DatabaseName != "" {
 		pgxConnConfig.Database = config.ConnectionContext.DatabaseName
 	} else if config.DataSource.GetDatabase() != "" {
@@ -121,42 +121,42 @@ func (driver *Driver) Open(_ context.Context, _ storepb.Engine, config db.Connec
 	} else {
 		pgxConnConfig.Database = "postgres"
 	}
-	driver.config = config
+	d.config = config
 
-	driver.connectionString = stdlib.RegisterConnConfig(pgxConnConfig)
-	db, err := sql.Open(driverName, driver.connectionString)
+	d.connectionString = stdlib.RegisterConnConfig(pgxConnConfig)
+	db, err := sql.Open(driverName, d.connectionString)
 	if err != nil {
 		return nil, err
 	}
-	driver.db = db
-	return driver, nil
+	d.db = db
+	return d, nil
 }
 
 // Close closes the driver.
-func (driver *Driver) Close(context.Context) error {
-	stdlib.UnregisterConnConfig(driver.connectionString)
+func (d *Driver) Close(context.Context) error {
+	stdlib.UnregisterConnConfig(d.connectionString)
 	var err error
-	err = multierr.Append(err, driver.db.Close())
-	if driver.sshClient != nil {
-		err = multierr.Append(err, driver.sshClient.Close())
+	err = multierr.Append(err, d.db.Close())
+	if d.sshClient != nil {
+		err = multierr.Append(err, d.sshClient.Close())
 	}
 	return err
 }
 
 // Ping pings the database.
-func (driver *Driver) Ping(ctx context.Context) error {
-	return driver.db.PingContext(ctx)
+func (d *Driver) Ping(ctx context.Context) error {
+	return d.db.PingContext(ctx)
 }
 
 // GetDB gets the database.
-func (driver *Driver) GetDB() *sql.DB {
-	return driver.db
+func (d *Driver) GetDB() *sql.DB {
+	return d.db
 }
 
 // getDatabases gets all databases of an instance.
-func (driver *Driver) getDatabases(ctx context.Context) ([]*storepb.DatabaseSchemaMetadata, error) {
+func (d *Driver) getDatabases(ctx context.Context) ([]*storepb.DatabaseSchemaMetadata, error) {
 	var databases []*storepb.DatabaseSchemaMetadata
-	rows, err := driver.db.QueryContext(ctx, "SELECT datname, pg_encoding_to_char(encoding), datcollate FROM pg_database;")
+	rows, err := d.db.QueryContext(ctx, "SELECT datname, pg_encoding_to_char(encoding), datcollate FROM pg_database;")
 	if err != nil {
 		return nil, err
 	}
@@ -176,13 +176,13 @@ func (driver *Driver) getDatabases(ctx context.Context) ([]*storepb.DatabaseSche
 }
 
 // getVersion gets the version of Postgres server.
-func (driver *Driver) getVersion(ctx context.Context) (string, error) {
+func (d *Driver) getVersion(ctx context.Context) (string, error) {
 	// Likes PostgreSQL 9.5-RisingWave-1.1.0 (f41ff20612323dc56f654939cfa3be9ca684b52f)
 	// We will return 1.1.0
 	regexp := regexp.MustCompile(`(?m)PostgreSQL (?P<PG_VERSION>.*)-RisingWave-(?P<RISINGWAVE_VERSION>.*) \((?P<BUILD_SHA>.*)\)$`)
 	query := "SELECT version();"
 	var version string
-	if err := driver.db.QueryRowContext(ctx, query).Scan(&version); err != nil {
+	if err := d.db.QueryRowContext(ctx, query).Scan(&version); err != nil {
 		if err == sql.ErrNoRows {
 			return "", common.FormatDBErrorEmptyRowWithQuery(query)
 		}
@@ -197,9 +197,9 @@ func (driver *Driver) getVersion(ctx context.Context) (string, error) {
 
 // Execute will execute the statement. For CREATE DATABASE statement, some types of databases such as Postgres
 // will not use transactions to execute the statement but will still use transactions to execute the rest of statements.
-func (driver *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
+func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
 	if opts.CreateDatabase {
-		if err := driver.createDatabaseExecute(ctx, statement); err != nil {
+		if err := d.createDatabaseExecute(ctx, statement); err != nil {
 			return 0, err
 		}
 		return 0, nil
@@ -226,7 +226,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 	}
 	totalRowsAffected := int64(0)
 	if len(commands) != 0 {
-		tx, err := driver.db.BeginTx(ctx, nil)
+		tx, err := d.db.BeginTx(ctx, nil)
 		if err != nil {
 			return 0, err
 		}
@@ -263,12 +263,12 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 	return totalRowsAffected, nil
 }
 
-func (driver *Driver) createDatabaseExecute(ctx context.Context, statement string) error {
+func (d *Driver) createDatabaseExecute(ctx context.Context, statement string) error {
 	databaseName, err := getDatabaseInCreateDatabaseStatement(statement)
 	if err != nil {
 		return err
 	}
-	databases, err := driver.getDatabases(ctx)
+	databases, err := d.getDatabases(ctx)
 	if err != nil {
 		return err
 	}
@@ -280,7 +280,7 @@ func (driver *Driver) createDatabaseExecute(ctx context.Context, statement strin
 	}
 
 	for _, s := range strings.Split(statement, "\n") {
-		if _, err := driver.db.ExecContext(ctx, s); err != nil {
+		if _, err := d.db.ExecContext(ctx, s); err != nil {
 			return err
 		}
 	}

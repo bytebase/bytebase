@@ -23,19 +23,19 @@ var (
 )
 
 // SyncInstance syncs the instance.
-func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
-	version, err := driver.getVersion(ctx)
+func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
+	version, err := d.getVersion(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	instanceRoles, err := driver.getInstanceRoles(ctx)
+	instanceRoles, err := d.getInstanceRoles(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	// Query db info
-	databases, err := driver.getDatabases(ctx)
+	databases, err := d.getDatabases(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -55,40 +55,40 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, e
 }
 
 // SyncDBSchema syncs a single database schema.
-func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetadata, error) {
+func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetadata, error) {
 	// Query db info
-	databases, err := driver.getDatabases(ctx)
+	databases, err := d.getDatabases(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	databaseMetadata := &storepb.DatabaseSchemaMetadata{
-		Name: driver.databaseName,
+		Name: d.databaseName,
 	}
 	found := false
 	for _, database := range databases {
-		if database == driver.databaseName {
+		if database == d.databaseName {
 			found = true
 			break
 		}
 	}
 	if !found {
-		return nil, common.Errorf(common.NotFound, "database %q not found", driver.databaseName)
+		return nil, common.Errorf(common.NotFound, "database %q not found", d.databaseName)
 	}
 
-	schemaList, err := driver.getSchemaList(ctx, driver.databaseName)
+	schemaList, err := d.getSchemaList(ctx, d.databaseName)
 	if err != nil {
 		return nil, err
 	}
-	tableMap, viewMap, err := driver.getTableSchema(ctx, driver.databaseName)
+	tableMap, viewMap, err := d.getTableSchema(ctx, d.databaseName)
 	if err != nil {
 		return nil, err
 	}
-	streamMap, err := driver.getStreamSchema(ctx, driver.databaseName)
+	streamMap, err := d.getStreamSchema(ctx, d.databaseName)
 	if err != nil {
 		return nil, err
 	}
-	taskMap, err := driver.getTaskSchema(ctx, driver.databaseName)
+	taskMap, err := d.getTaskSchema(ctx, d.databaseName)
 	if err != nil {
 		return nil, err
 	}
@@ -105,7 +105,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 	return databaseMetadata, nil
 }
 
-func (driver *Driver) getSchemaList(ctx context.Context, database string) ([]string, error) {
+func (d *Driver) getSchemaList(ctx context.Context, database string) ([]string, error) {
 	// Query table info
 	var excludedSchemaList []string
 	// Skip all system schemas.
@@ -120,7 +120,7 @@ func (driver *Driver) getSchemaList(ctx context.Context, database string) ([]str
 		FROM "%s".INFORMATION_SCHEMA.SCHEMATA
 		WHERE %s ORDER BY SCHEMA_NAME`, database, excludeWhere)
 
-	rows, err := driver.db.QueryContext(ctx, query)
+	rows, err := d.db.QueryContext(ctx, query)
 	if err != nil {
 		return nil, util.FormatErrorWithQuery(err, query)
 	}
@@ -146,11 +146,11 @@ func (driver *Driver) getSchemaList(ctx context.Context, database string) ([]str
 // Key: normalized schema name
 //
 // Value: stream list in the schema.
-func (driver *Driver) getStreamSchema(ctx context.Context, database string) (map[string][]*storepb.StreamMetadata, error) {
+func (d *Driver) getStreamSchema(ctx context.Context, database string) (map[string][]*storepb.StreamMetadata, error) {
 	streamMap := make(map[string][]*storepb.StreamMetadata)
 
 	streamQuery := fmt.Sprintf(`SHOW STREAMS IN DATABASE "%s";`, database)
-	streamMetaRows, err := driver.db.QueryContext(ctx, streamQuery)
+	streamMetaRows, err := d.db.QueryContext(ctx, streamQuery)
 	if err != nil {
 		return nil, util.FormatErrorWithQuery(err, streamQuery)
 	}
@@ -236,7 +236,7 @@ func (driver *Driver) getStreamSchema(ctx context.Context, database string) (map
 		for _, stream := range streamList {
 			definitionQuery := fmt.Sprintf("SELECT GET_DDL('STREAM', '%s', TRUE);", fmt.Sprintf(`"%s"."%s"."%s"`, database, schemaName, stream.Name))
 			var definition string
-			if err := driver.db.QueryRow(definitionQuery).Scan(&definition); err != nil {
+			if err := d.db.QueryRow(definitionQuery).Scan(&definition); err != nil {
 				return nil, err
 			}
 			stream.Definition = definition
@@ -271,11 +271,11 @@ func (a *ArrayString) Scan(src any) error {
 // Key: normalized schema name
 //
 // Value: stream list in the schema.
-func (driver *Driver) getTaskSchema(ctx context.Context, database string) (map[string][]*storepb.TaskMetadata, error) {
+func (d *Driver) getTaskSchema(ctx context.Context, database string) (map[string][]*storepb.TaskMetadata, error) {
 	taskMap := make(map[string][]*storepb.TaskMetadata)
 
 	taskQuery := fmt.Sprintf(`SHOW TASKS IN DATABASE "%s";`, database)
-	streamMetaRows, err := driver.db.QueryContext(ctx, taskQuery)
+	streamMetaRows, err := d.db.QueryContext(ctx, taskQuery)
 	if err != nil {
 		return nil, util.FormatErrorWithQuery(err, taskQuery)
 	}
@@ -372,7 +372,7 @@ func (driver *Driver) getTaskSchema(ctx context.Context, database string) (map[s
 		for _, task := range taskList {
 			definitionQuery := fmt.Sprintf("SELECT GET_DDL('TASK', '%s', TRUE);", fmt.Sprintf(`"%s"."%s"."%s"`, database, schemaName, task.Name))
 			var definition string
-			if err := driver.db.QueryRow(definitionQuery).Scan(&definition); err != nil {
+			if err := d.db.QueryRow(definitionQuery).Scan(&definition); err != nil {
 				return nil, err
 			}
 			task.Definition = definition
@@ -387,7 +387,7 @@ func (driver *Driver) getTaskSchema(ctx context.Context, database string) (map[s
 	return taskMap, nil
 }
 
-func (driver *Driver) getTableSchema(ctx context.Context, database string) (map[string][]*storepb.TableMetadata, map[string][]*storepb.ViewMetadata, error) {
+func (d *Driver) getTableSchema(ctx context.Context, database string) (map[string][]*storepb.TableMetadata, map[string][]*storepb.ViewMetadata, error) {
 	tableMap, viewMap := make(map[string][]*storepb.TableMetadata), make(map[string][]*storepb.ViewMetadata)
 
 	// Query table info
@@ -415,7 +415,7 @@ func (driver *Driver) getTableSchema(ctx context.Context, database string) (map[
 		FROM "%s".INFORMATION_SCHEMA.COLUMNS
 		WHERE %s
 		ORDER BY TABLE_SCHEMA, TABLE_NAME, ORDINAL_POSITION`, database, excludeWhere)
-	columnRows, err := driver.db.QueryContext(ctx, columnQuery)
+	columnRows, err := d.db.QueryContext(ctx, columnQuery)
 	if err != nil {
 		return nil, nil, util.FormatErrorWithQuery(err, columnQuery)
 	}
@@ -465,7 +465,7 @@ func (driver *Driver) getTableSchema(ctx context.Context, database string) (map[
 		FROM "%s".INFORMATION_SCHEMA.TABLES
 		WHERE TABLE_TYPE = 'BASE TABLE' AND %s
 		ORDER BY TABLE_SCHEMA, TABLE_NAME`, database, excludeWhere)
-	tableRows, err := driver.db.QueryContext(ctx, tableQuery)
+	tableRows, err := d.db.QueryContext(ctx, tableQuery)
 	if err != nil {
 		return nil, nil, util.FormatErrorWithQuery(err, tableQuery)
 	}
@@ -501,7 +501,7 @@ func (driver *Driver) getTableSchema(ctx context.Context, database string) (map[
 		FROM "%s".INFORMATION_SCHEMA.VIEWS
 		WHERE %s
 		ORDER BY TABLE_SCHEMA, TABLE_NAME`, database, excludeWhere)
-	viewRows, err := driver.db.QueryContext(ctx, viewQuery)
+	viewRows, err := d.db.QueryContext(ctx, viewQuery)
 	if err != nil {
 		return nil, nil, util.FormatErrorWithQuery(err, viewQuery)
 	}

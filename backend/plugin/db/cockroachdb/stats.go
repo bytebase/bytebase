@@ -13,11 +13,11 @@ import (
 
 var rowsRegexp = regexp.MustCompile("rows=([0-9]+)")
 
-func (driver *Driver) CountAffectedRows(ctx context.Context, statement string) (int64, error) {
+func (d *Driver) CountAffectedRows(ctx context.Context, statement string) (int64, error) {
 	explainSQL := fmt.Sprintf("EXPLAIN %s", statement)
 	var rowCount int64
 	if err := crdb.Execute(func() error {
-		rows, err := driver.db.QueryContext(ctx, explainSQL)
+		rows, err := d.db.QueryContext(ctx, explainSQL)
 		if err != nil {
 			return err
 		}

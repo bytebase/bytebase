@@ -162,15 +162,16 @@ func (s *IdentityProviderService) UpdateIdentityProvider(ctx context.Context, re
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 		// Don't update client secret if it's empty string.
-		if identityProviderMessage.Type == storepb.IdentityProviderType_OAUTH2 {
+		switch identityProviderMessage.Type {
+		case storepb.IdentityProviderType_OAUTH2:
 			if request.IdentityProvider.Config.GetOauth2Config().ClientSecret == "" {
 				patch.Config.GetOauth2Config().ClientSecret = identityProviderMessage.Config.GetOauth2Config().ClientSecret
 			}
-		} else if identityProviderMessage.Type == storepb.IdentityProviderType_OIDC {
+		case storepb.IdentityProviderType_OIDC:
 			if request.IdentityProvider.Config.GetOidcConfig().ClientSecret == "" {
 				patch.Config.GetOidcConfig().ClientSecret = identityProviderMessage.Config.GetOidcConfig().ClientSecret
 			}
-		} else if identityProviderMessage.Type == storepb.IdentityProviderType_LDAP {
+		case storepb.IdentityProviderType_LDAP:
 			if request.IdentityProvider.Config.GetLdapConfig().BindPassword == "" {
 				patch.Config.GetLdapConfig().BindPassword = identityProviderMessage.Config.GetLdapConfig().BindPassword
 			}
@@ -269,7 +270,8 @@ func (s *IdentityProviderService) TestIdentityProvider(ctx context.Context, requ
 		return nil, status.Errorf(codes.FailedPrecondition, setupExternalURLError)
 	}
 
-	if identityProvider.Type == v1pb.IdentityProviderType_OAUTH2 {
+	switch identityProvider.Type {
+	case v1pb.IdentityProviderType_OAUTH2:
 		// Find client secret for those existed identity providers.
 		if identityProvider.Config.GetOauth2Config().ClientSecret == "" {
 			storedIdentityProvider, err := s.getIdentityProviderMessage(ctx, identityProvider.Name)
@@ -299,7 +301,7 @@ func (s *IdentityProviderService) TestIdentityProvider(ctx context.Context, requ
 		if _, err := oauth2IdentityProvider.UserInfo(token); err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "failed to get user info, error: %s", err.Error())
 		}
-	} else if identityProvider.Type == v1pb.IdentityProviderType_OIDC {
+	case v1pb.IdentityProviderType_OIDC:
 		// Find client secret for those existed identity providers.
 		if identityProvider.Config.GetOidcConfig().ClientSecret == "" {
 			storedIdentityProvider, err := s.getIdentityProviderMessage(ctx, identityProvider.Name)
@@ -338,7 +340,7 @@ func (s *IdentityProviderService) TestIdentityProvider(ctx context.Context, requ
 		if _, err := oidcIdentityProvider.UserInfo(ctx, token, ""); err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "failed to get user info, error: %s", err.Error())
 		}
-	} else if identityProvider.Type == v1pb.IdentityProviderType_LDAP {
+	case v1pb.IdentityProviderType_LDAP:
 		// Retrieve bind password from stored identity provider if not provided.
 		if identityProvider.Config.GetLdapConfig().BindPassword == "" {
 			storedIdentityProvider, err := s.getIdentityProviderMessage(ctx, identityProvider.Name)
@@ -373,7 +375,7 @@ func (s *IdentityProviderService) TestIdentityProvider(ctx context.Context, requ
 			return nil, status.Errorf(codes.InvalidArgument, "failed to test connection, error: %s", err.Error())
 		}
 		_ = conn.Close()
-	} else {
+	default:
 		return nil, status.Errorf(codes.InvalidArgument, "identity provider type %s not supported", identityProvider.Type.String())
 	}
 	return &v1pb.TestIdentityProviderResponse{}, nil
@@ -566,19 +568,20 @@ func convertIdentityProviderConfigToStore(identityProviderConfig *v1pb.IdentityP
 
 // validIdentityProviderConfig validates the identity provider's config is a valid JSON.
 func validIdentityProviderConfig(identityProviderType v1pb.IdentityProviderType, identityProviderConfig *v1pb.IdentityProviderConfig) error {
-	if identityProviderType == v1pb.IdentityProviderType_OAUTH2 {
+	switch identityProviderType {
+	case v1pb.IdentityProviderType_OAUTH2:
 		if identityProviderConfig.GetOauth2Config() == nil {
 			return errors.Errorf("unexpected provider config value")
 		}
-	} else if identityProviderType == v1pb.IdentityProviderType_OIDC {
+	case v1pb.IdentityProviderType_OIDC:
 		if identityProviderConfig.GetOidcConfig() == nil {
 			return errors.Errorf("unexpected provider config value")
 		}
-	} else if identityProviderType == v1pb.IdentityProviderType_LDAP {
+	case v1pb.IdentityProviderType_LDAP:
 		if identityProviderConfig.GetLdapConfig() == nil {
 			return errors.Errorf("unexpected provider config value")
 		}
-	} else {
+	default:
 		return errors.Errorf("unexpected provider type %s", identityProviderType)
 	}
 	return nil

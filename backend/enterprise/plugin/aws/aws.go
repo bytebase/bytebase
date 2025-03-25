@@ -96,7 +96,7 @@ func (p *Provider) LoadSubscription(ctx context.Context) *enterprise.Subscriptio
 				log.BBError(err),
 			)
 		} else {
-			subscription.StartedTs = begin.UTC().Unix()
+			subscription.StartedTS = begin.UTC().Unix()
 		}
 
 		end, err := time.Parse(time.RFC3339, aws.ToString(v.End))
@@ -106,7 +106,7 @@ func (p *Provider) LoadSubscription(ctx context.Context) *enterprise.Subscriptio
 				log.BBError(err),
 			)
 		} else {
-			subscription.ExpiresTs = end.UTC().Unix()
+			subscription.ExpiresTS = end.UTC().Unix()
 		}
 	}
 

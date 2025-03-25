@@ -22,14 +22,14 @@ const (
 )
 
 // Dump dumps the database.
-func (driver *Driver) Dump(ctx context.Context, out io.Writer, _ *storepb.DatabaseSchemaMetadata) error {
-	txn, err := driver.db.BeginTx(ctx, &sql.TxOptions{})
+func (d *Driver) Dump(ctx context.Context, out io.Writer, _ *storepb.DatabaseSchemaMetadata) error {
+	txn, err := d.db.BeginTx(ctx, &sql.TxOptions{})
 	if err != nil {
 		return err
 	}
 	defer txn.Rollback()
 
-	if err := dumpTxn(ctx, txn, driver.databaseName, out); err != nil {
+	if err := dumpTxn(ctx, txn, d.databaseName, out); err != nil {
 		return err
 	}
 
@@ -40,20 +40,20 @@ func (driver *Driver) Dump(ctx context.Context, out io.Writer, _ *storepb.Databa
 // dumpTxn will dump the input database. schemaOnly isn't supported yet and true by default.
 func dumpTxn(ctx context.Context, txn *sql.Tx, database string, out io.Writer) error {
 	// Find all dumpable databases
-	var dumpableDbNames []string
+	var dumpableDBNames []string
 	if database != "" {
-		dumpableDbNames = []string{database}
+		dumpableDBNames = []string{database}
 	} else {
 		var err error
-		dumpableDbNames, err = getDatabasesTxn(ctx, txn)
+		dumpableDBNames, err = getDatabasesTxn(ctx, txn)
 		if err != nil {
 			return errors.Wrap(err, "failed to get databases")
 		}
 	}
 
-	for _, dbName := range dumpableDbNames {
+	for _, dbName := range dumpableDBNames {
 		// includeCreateDatabaseStmt should be false if dumping a single database.
-		dumpSingleDatabase := len(dumpableDbNames) == 1
+		dumpSingleDatabase := len(dumpableDBNames) == 1
 		if err := dumpOneDatabase(ctx, txn, dbName, out, dumpSingleDatabase); err != nil {
 			return err
 		}

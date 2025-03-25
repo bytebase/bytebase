@@ -94,8 +94,8 @@ func (s *SubscriptionService) loadSubscription(ctx context.Context) (*v1pb.Subsc
 		OrgName:       sub.OrgName,
 	}
 	if sub.Plan != api.FREE {
-		subscription.ExpiresTime = timestamppb.New(time.Unix(sub.ExpiresTs, 0))
-		subscription.StartedTime = timestamppb.New(time.Unix(sub.StartedTs, 0))
+		subscription.ExpiresTime = timestamppb.New(time.Unix(sub.ExpiresTS, 0))
+		subscription.StartedTime = timestamppb.New(time.Unix(sub.StartedTS, 0))
 	}
 
 	return subscription, nil
