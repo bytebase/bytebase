@@ -58,7 +58,7 @@ func extractPredicateFieldsFromWhereClause(ctx parser.IWhere_clauseContext, orig
 		}
 
 		ast := base.NewPathAST(path[0])
-		var current base.SelectorNode = ast.Root
+		current := ast.Root
 		for i := 1; i < len(path); i++ {
 			current.SetNext(path[i])
 			current = current.GetNext()

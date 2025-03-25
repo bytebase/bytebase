@@ -16,14 +16,14 @@ import (
 )
 
 // Dump dumps the database.
-func (driver *Driver) Dump(ctx context.Context, out io.Writer, _ *storepb.DatabaseSchemaMetadata) error {
-	txn, err := driver.db.BeginTx(ctx, &sql.TxOptions{})
+func (d *Driver) Dump(ctx context.Context, out io.Writer, _ *storepb.DatabaseSchemaMetadata) error {
+	txn, err := d.db.BeginTx(ctx, &sql.TxOptions{})
 	if err != nil {
 		return err
 	}
 	defer txn.Rollback()
 
-	if err := driver.dumpTxn(ctx, txn, []string{driver.databaseName}, out); err != nil {
+	if err := d.dumpTxn(ctx, txn, []string{d.databaseName}, out); err != nil {
 		return err
 	}
 
@@ -33,9 +33,9 @@ func (driver *Driver) Dump(ctx context.Context, out io.Writer, _ *storepb.Databa
 	return err
 }
 
-func (driver *Driver) dumpTxn(ctx context.Context, txn *sql.Tx, schemas []string, out io.Writer) error {
+func (d *Driver) dumpTxn(ctx context.Context, txn *sql.Tx, schemas []string, out io.Writer) error {
 	for _, schema := range schemas {
-		if err := driver.dumpSchemaTxn(ctx, txn, schema, out); err != nil {
+		if err := d.dumpSchemaTxn(ctx, txn, schema, out); err != nil {
 			return err
 		}
 	}
@@ -470,7 +470,7 @@ func (f *fieldMeta) assembleType(out io.Writer) error {
 				return err
 			}
 		case f.DataPrecision.Valid && f.DataPrecision.Int64 > 0 && f.DataScale.Valid && f.DataScale.Int64 > 0:
-			if _, err := out.Write([]byte(fmt.Sprintf("(%d,%d)", f.DataPrecision.Int64, f.DataScale.Int64))); err != nil {
+			if _, err := fmt.Fprintf(out, "(%d,%d)", f.DataPrecision.Int64, f.DataScale.Int64); err != nil {
 				return err
 			}
 		}
@@ -856,13 +856,13 @@ func assembleIndexProperties(index *mergedIndexMeta, out io.Writer) error {
 	}
 
 	if index.PctFree.Valid {
-		if _, err := out.Write([]byte(fmt.Sprintf("\nPCTFREE %d", index.PctFree.Int64))); err != nil {
+		if _, err := fmt.Fprintf(out, "\nPCTFREE %d", index.PctFree.Int64); err != nil {
 			return err
 		}
 	}
 
 	if index.IniTrans.Valid {
-		if _, err := out.Write([]byte(fmt.Sprintf("\nINITRANS %d", index.IniTrans.Int64))); err != nil {
+		if _, err := fmt.Fprintf(out, "\nINITRANS %d", index.IniTrans.Int64); err != nil {
 			return err
 		}
 	}
@@ -973,35 +973,35 @@ func (i *mergedIndexMeta) assembleStorage(out io.Writer) error {
 
 	switch {
 	case i.InitialExtent.Valid:
-		if _, err := out.Write([]byte(fmt.Sprintf("\n  INITIAL %d", i.InitialExtent.Int64))); err != nil {
+		if _, err := fmt.Fprintf(out, "\n  INITIAL %d", i.InitialExtent.Int64); err != nil {
 			return err
 		}
 	case i.NextExtent.Valid:
-		if _, err := out.Write([]byte(fmt.Sprintf("\n  NEXT %d", i.NextExtent.Int64))); err != nil {
+		if _, err := fmt.Fprintf(out, "\n  NEXT %d", i.NextExtent.Int64); err != nil {
 			return err
 		}
 	case i.MinExtents.Valid:
-		if _, err := out.Write([]byte(fmt.Sprintf("\n  MINEXTENTS %d", i.MinExtents.Int64))); err != nil {
+		if _, err := fmt.Fprintf(out, "\n  MINEXTENTS %d", i.MinExtents.Int64); err != nil {
 			return err
 		}
 	case i.MaxExtents.Valid:
-		if _, err := out.Write([]byte(fmt.Sprintf("\n  MAXEXTENTS %d", i.MaxExtents.Int64))); err != nil {
+		if _, err := fmt.Fprintf(out, "\n  MAXEXTENTS %d", i.MaxExtents.Int64); err != nil {
 			return err
 		}
 	case i.PctIncrease.Valid:
-		if _, err := out.Write([]byte(fmt.Sprintf("\n  PCTINCREASE %d", i.PctIncrease.Int64))); err != nil {
+		if _, err := fmt.Fprintf(out, "\n  PCTINCREASE %d", i.PctIncrease.Int64); err != nil {
 			return err
 		}
 	case i.FreeLists.Valid:
-		if _, err := out.Write([]byte(fmt.Sprintf("\n  FREELISTS %d", i.FreeLists.Int64))); err != nil {
+		if _, err := fmt.Fprintf(out, "\n  FREELISTS %d", i.FreeLists.Int64); err != nil {
 			return err
 		}
 	case i.FreeListGroups.Valid:
-		if _, err := out.Write([]byte(fmt.Sprintf("\n  FREELIST GROUPS %d", i.FreeListGroups.Int64))); err != nil {
+		if _, err := fmt.Fprintf(out, "\n  FREELIST GROUPS %d", i.FreeListGroups.Int64); err != nil {
 			return err
 		}
 	case i.BufferPool.Valid && i.BufferPool.String != "NULL":
-		if _, err := out.Write([]byte(fmt.Sprintf("\n  BUFFER_POOL %s", i.BufferPool.String))); err != nil {
+		if _, err := fmt.Fprintf(out, "\n  BUFFER_POOL %s", i.BufferPool.String); err != nil {
 			return err
 		}
 	case i.FlashCache.Valid:

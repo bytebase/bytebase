@@ -12,14 +12,14 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-func (driver *Driver) getInstanceRoles(ctx context.Context) ([]*storepb.InstanceRole, error) {
+func (d *Driver) getInstanceRoles(ctx context.Context) ([]*storepb.InstanceRole, error) {
 	var instanceRoles []*storepb.InstanceRole
 	var users []string
 	var err error
-	users, err = driver.getUsersFromMySQLUser(ctx)
+	users, err = d.getUsersFromMySQLUser(ctx)
 	if err != nil {
 		slog.Info("failed to get users", log.BBError(err))
-		users, err = driver.getUsersFromUserAttributes(ctx)
+		users, err = d.getUsersFromUserAttributes(ctx)
 		if err != nil {
 			slog.Info("failed to get users", log.BBError(err))
 			return nil, nil
@@ -30,7 +30,7 @@ func (driver *Driver) getInstanceRoles(ctx context.Context) ([]*storepb.Instance
 	// instead of table (which should use backtick instead). MySQL actually works
 	// in both ways. On the other hand, some other MySQL compatible engines might not (OceanBase in this case).
 	for _, name := range users {
-		grantList, err := driver.getGrantFromUser(ctx, name)
+		grantList, err := d.getGrantFromUser(ctx, name)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get grants for %s", name)
 		}
@@ -44,9 +44,9 @@ func (driver *Driver) getInstanceRoles(ctx context.Context) ([]*storepb.Instance
 }
 
 // getGrantFromUser reads grants for user with format "'<user>'@'<host>'".
-func (driver *Driver) getGrantFromUser(ctx context.Context, name string) ([]string, error) {
+func (d *Driver) getGrantFromUser(ctx context.Context, name string) ([]string, error) {
 	grantQuery := fmt.Sprintf("SHOW GRANTS FOR %s", name)
-	grantRows, err := driver.db.QueryContext(ctx,
+	grantRows, err := d.db.QueryContext(ctx,
 		grantQuery,
 	)
 	if err != nil {
@@ -70,7 +70,7 @@ func (driver *Driver) getGrantFromUser(ctx context.Context, name string) ([]stri
 }
 
 // getUsersFromUserAttributes reads users from information_schema.user_attributes, returns the list of users with format "'<user>'@'<host>'".
-func (driver *Driver) getUsersFromUserAttributes(ctx context.Context) ([]string, error) {
+func (d *Driver) getUsersFromUserAttributes(ctx context.Context) ([]string, error) {
 	var users []string
 	query := `
 	SELECT
@@ -79,7 +79,7 @@ func (driver *Driver) getUsersFromUserAttributes(ctx context.Context) ([]string,
 	FROM information_schema.user_attributes
 	WHERE user NOT LIKE 'mysql.%'
 	`
-	roleRows, err := driver.db.QueryContext(ctx, query)
+	roleRows, err := d.db.QueryContext(ctx, query)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to query information_schema.user_attributes")
 	}
@@ -102,7 +102,7 @@ func (driver *Driver) getUsersFromUserAttributes(ctx context.Context) ([]string,
 }
 
 // getUsersFromMySQLUser reads users from mysql.user, returns the list of users with format "'<user>'@'<host>'".
-func (driver *Driver) getUsersFromMySQLUser(ctx context.Context) ([]string, error) {
+func (d *Driver) getUsersFromMySQLUser(ctx context.Context) ([]string, error) {
 	var users []string
 	query := `
 	SELECT
@@ -111,7 +111,7 @@ func (driver *Driver) getUsersFromMySQLUser(ctx context.Context) ([]string, erro
 	FROM mysql.user
 	WHERE user NOT LIKE 'mysql.%'
 	`
-	roleRows, err := driver.db.QueryContext(ctx, query)
+	roleRows, err := d.db.QueryContext(ctx, query)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to query mysql.user")
 	}

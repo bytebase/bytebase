@@ -337,7 +337,7 @@ func (i *indexState) toString(buf *strings.Builder) error {
 			}
 		}
 
-		if _, err := buf.WriteString(fmt.Sprintf("`%s` (", i.name)); err != nil {
+		if _, err := fmt.Fprintf(buf, "`%s` (", i.name); err != nil {
 			return err
 		}
 		for j, key := range i.keys {
@@ -918,7 +918,7 @@ type columnState struct {
 
 func (c *columnState) toString(buf *strings.Builder) error {
 	columnCanonicalType := tidb.GetColumnTypeCanonicalSynonym(strings.ToLower(c.tp))
-	if _, err := buf.WriteString(fmt.Sprintf("`%s` %s", c.name, columnCanonicalType)); err != nil {
+	if _, err := fmt.Fprintf(buf, "`%s` %s", c.name, columnCanonicalType); err != nil {
 		return err
 	}
 	if !c.nullable {
@@ -937,7 +937,7 @@ func (c *columnState) toString(buf *strings.Builder) error {
 					return err
 				}
 			} else if strings.Contains(strings.ToUpper(c.defaultValue.toString()), autoRandSymbol) {
-				if _, err := buf.WriteString(fmt.Sprintf(" /*T![auto_rand] %s */", c.defaultValue.toString())); err != nil {
+				if _, err := fmt.Fprintf(buf, " /*T![auto_rand] %s */", c.defaultValue.toString()); err != nil {
 					return err
 				}
 			} else {
@@ -948,12 +948,12 @@ func (c *columnState) toString(buf *strings.Builder) error {
 		}
 	}
 	if c.onUpdate != "" {
-		if _, err := buf.WriteString(fmt.Sprintf(" ON UPDATE %s", c.onUpdate)); err != nil {
+		if _, err := fmt.Fprintf(buf, " ON UPDATE %s", c.onUpdate); err != nil {
 			return err
 		}
 	}
 	if c.comment != "" {
-		if _, err := buf.WriteString(fmt.Sprintf(" COMMENT '%s'", c.comment)); err != nil {
+		if _, err := fmt.Fprintf(buf, " COMMENT '%s'", c.comment); err != nil {
 			return err
 		}
 	}

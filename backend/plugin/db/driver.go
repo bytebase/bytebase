@@ -69,7 +69,7 @@ var (
 // DriverConfig is the driver configuration.
 type DriverConfig struct {
 	// The directiory contains db specific utilites, mongosh for MongoDB.
-	DbBinDir string
+	DBBinDir string
 }
 
 type driverFunc func(DriverConfig) Driver

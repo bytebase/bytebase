@@ -73,10 +73,7 @@ func splitDelimiterModeSQL(stream *antlr.CommonTokenStream) ([]base.SingleSQL, e
 	start := 0
 
 	i := 0
-	for {
-		if i >= len(tokens) {
-			break
-		}
+	for i < len(tokens) {
 		token := tokens[i]
 		// Deal with delimiter statement.
 		if token.GetChannel() == antlr.TokenDefaultChannel && token.GetTokenType() == parser.MySQLLexerDELIMITER_SYMBOL {

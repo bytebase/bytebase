@@ -138,9 +138,10 @@ func (l *tableRequirePkChecker) EnterOut_of_line_constraint(ctx *parser.Out_of_l
 	if ctx.PRIMARY() == nil || l.currentNormalizedTableName == "" || l.currentConstraintAction == currentConstraintActionNone {
 		return
 	}
-	if l.currentConstraintAction == currentConstraintActionAdd {
+	switch l.currentConstraintAction {
+	case currentConstraintActionAdd:
 		l.tableHasPrimaryKey[l.currentNormalizedTableName] = true
-	} else if l.currentConstraintAction == currentConstraintActionDrop {
+	case currentConstraintActionDrop:
 		l.tableHasPrimaryKey[l.currentNormalizedTableName] = false
 		l.tableLine[l.currentNormalizedTableName] = ctx.GetStart().GetLine()
 	}

@@ -218,9 +218,10 @@ func (sm *stateMachine) consume(reader *bufio.Reader) {
 			sm.queryBodyBuf = append(sm.queryBodyBuf, string(c)...)
 		}
 
-		if c == '{' {
+		switch c {
+		case '{':
 			sm.numLeftBraces++
-		} else if c == '}' {
+		case '}':
 			sm.numRightBraces++
 			if sm.numLeftBraces < sm.numRightBraces {
 				sm.err = errors.New("the curly braces '{}' are mismatched")

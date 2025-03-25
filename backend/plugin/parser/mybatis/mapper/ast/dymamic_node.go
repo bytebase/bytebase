@@ -629,9 +629,10 @@ type PropertyNode struct {
 func NewPropertyNode(startElement *xml.StartElement) *PropertyNode {
 	var name, value string
 	for _, attr := range startElement.Attr {
-		if attr.Name.Local == "name" {
+		switch attr.Name.Local {
+		case "name":
 			name = attr.Value
-		} else if attr.Name.Local == "value" {
+		case "value":
 			value = attr.Value
 		}
 	}

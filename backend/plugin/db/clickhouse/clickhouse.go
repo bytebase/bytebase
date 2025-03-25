@@ -57,7 +57,7 @@ func newDriver(db.DriverConfig) db.Driver {
 }
 
 // Open opens a ClickHouse driver.
-func (driver *Driver) Open(_ context.Context, dbType storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
+func (d *Driver) Open(_ context.Context, dbType storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
 	addr := fmt.Sprintf("%s:%s", config.DataSource.Host, config.DataSource.Port)
 	tlsConfig, err := util.GetTLSConfig(config.DataSource)
 	if err != nil {
@@ -86,33 +86,33 @@ func (driver *Driver) Open(_ context.Context, dbType storepb.Engine, config db.C
 		slog.String("database", config.ConnectionContext.InstanceID),
 	)
 
-	driver.dbType = dbType
-	driver.db = conn
-	driver.databaseName = config.ConnectionContext.DatabaseName
-	driver.connectionCtx = config.ConnectionContext
-	return driver, nil
+	d.dbType = dbType
+	d.db = conn
+	d.databaseName = config.ConnectionContext.DatabaseName
+	d.connectionCtx = config.ConnectionContext
+	return d, nil
 }
 
 // Close closes the driver.
-func (driver *Driver) Close(context.Context) error {
-	return driver.db.Close()
+func (d *Driver) Close(context.Context) error {
+	return d.db.Close()
 }
 
 // Ping pings the database.
-func (driver *Driver) Ping(ctx context.Context) error {
-	return driver.db.PingContext(ctx)
+func (d *Driver) Ping(ctx context.Context) error {
+	return d.db.PingContext(ctx)
 }
 
 // GetDB gets the database.
-func (driver *Driver) GetDB() *sql.DB {
-	return driver.db
+func (d *Driver) GetDB() *sql.DB {
+	return d.db
 }
 
 // getVersion gets the version.
-func (driver *Driver) getVersion(ctx context.Context) (string, error) {
+func (d *Driver) getVersion(ctx context.Context) (string, error) {
 	query := "SELECT VERSION()"
 	var version string
-	if err := driver.db.QueryRowContext(ctx, query).Scan(&version); err != nil {
+	if err := d.db.QueryRowContext(ctx, query).Scan(&version); err != nil {
 		if err == sql.ErrNoRows {
 			return "", common.FormatDBErrorEmptyRowWithQuery(query)
 		}
@@ -122,7 +122,7 @@ func (driver *Driver) getVersion(ctx context.Context) (string, error) {
 }
 
 // Execute executes a SQL statement.
-func (driver *Driver) Execute(ctx context.Context, statement string, _ db.ExecuteOptions) (int64, error) {
+func (d *Driver) Execute(ctx context.Context, statement string, _ db.ExecuteOptions) (int64, error) {
 	singleSQLs, err := standard.SplitSQL(statement)
 	if err != nil {
 		return 0, err
@@ -132,7 +132,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ db.Execut
 		return 0, nil
 	}
 
-	tx, err := driver.db.BeginTx(ctx, nil)
+	tx, err := d.db.BeginTx(ctx, nil)
 	if err != nil {
 		return 0, err
 	}

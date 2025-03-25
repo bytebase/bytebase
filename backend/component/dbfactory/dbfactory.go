@@ -57,7 +57,7 @@ func (d *DBFactory) GetDataSourceDriver(ctx context.Context, instance *store.Ins
 		ctx,
 		instance.Metadata.GetEngine(),
 		db.DriverConfig{
-			DbBinDir: dbBinDir,
+			DBBinDir: dbBinDir,
 		},
 		db.ConnectionConfig{
 			DataSource:        dataSource,
