@@ -4477,6 +4477,7 @@ RestrictIssueCreationForSQLReviewPolicy is the policy configuration for restrict
 | OPEN_AI | 1 |  |
 | CLAUDE | 2 |  |
 | GEMINI | 3 |  |
+| AZURE_OPENAI | 4 |  |
 
 
 
