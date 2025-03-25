@@ -99,13 +99,13 @@ func writeTables(w io.StringWriter, to *storepb.DatabaseSchemaMetadata, state *d
 			}
 			// Generate comment for table and columns.
 			if table.comment != "" {
-				if _, err := buf.WriteString(fmt.Sprintf("COMMENT ON TABLE %s IS '%s';\n", table.name, table.comment)); err != nil {
+				if _, err := fmt.Fprintf(buf, "COMMENT ON TABLE %s IS '%s';\n", table.name, table.comment); err != nil {
 					return err
 				}
 			}
 			for _, column := range table.columns {
 				if column.comment != "" {
-					if _, err := buf.WriteString(fmt.Sprintf("COMMENT ON COLUMN %s.%s IS '%s';\n", table.name, column.name, column.comment)); err != nil {
+					if _, err := fmt.Fprintf(buf, "COMMENT ON COLUMN %s.%s IS '%s';\n", table.name, column.name, column.comment); err != nil {
 						return err
 					}
 				}
@@ -142,7 +142,7 @@ func writeViews(w io.StringWriter, to *storepb.DatabaseSchemaMetadata, state *da
 			}
 			// Generate comment for view.
 			if view.comment != "" {
-				if _, err := buf.WriteString(fmt.Sprintf("COMMENT ON VIEW %s IS '%s';\n", view.name, view.comment)); err != nil {
+				if _, err := fmt.Fprintf(buf, "COMMENT ON VIEW %s IS '%s';\n", view.name, view.comment); err != nil {
 					return err
 				}
 			}

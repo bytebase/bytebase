@@ -208,7 +208,7 @@ func (in *APIAuthInterceptor) getPrincipalID(ctx context.Context, accessTokenStr
 	}
 
 	// Only update for authorized request.
-	in.profile.LastActiveTs = time.Now().Unix()
+	in.profile.LastActiveTS = time.Now().Unix()
 	return principalID, nil
 }
 

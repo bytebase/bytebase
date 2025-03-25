@@ -384,7 +384,7 @@ func (m *Manager) postWebhookList(ctx context.Context, webhookCtx *webhook.Conte
 	for _, hook := range webhookList {
 		webhookCtx := *webhookCtx
 		webhookCtx.URL = hook.URL
-		webhookCtx.CreatedTs = time.Now().Unix()
+		webhookCtx.CreatedTS = time.Now().Unix()
 		webhookCtx.DirectMessage = hook.Payload.GetDirectMessage()
 		go func(webhookCtx *webhook.Context, hook *store.ProjectWebhookMessage) {
 			if err := common.Retry(ctx, func() error {

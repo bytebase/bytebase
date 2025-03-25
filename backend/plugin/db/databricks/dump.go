@@ -37,7 +37,7 @@ func (d *Driver) Dump(ctx context.Context, writer io.Writer, _ *storepb.Database
 		if catalogName == sysCatalog {
 			continue
 		}
-		if _, err := writer.Write([]byte(fmt.Sprintf("CREATE CATALOG %s\n", catalogName))); err != nil {
+		if _, err := fmt.Fprintf(writer, "CREATE CATALOG %s\n", catalogName); err != nil {
 			return err
 		}
 
@@ -46,8 +46,7 @@ func (d *Driver) Dump(ctx context.Context, writer io.Writer, _ *storepb.Database
 				continue
 			}
 			if schemaName != dftSchema {
-				_, err := writer.Write([]byte(fmt.Sprintf("CREATE SCHEMA `%s`.`%s`\n", catalogName, schemaName)))
-				if err != nil {
+				if _, err := fmt.Fprintf(writer, "CREATE SCHEMA `%s`.`%s`\n", catalogName, schemaName); err != nil {
 					return err
 				}
 			}

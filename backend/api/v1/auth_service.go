@@ -157,19 +157,20 @@ func (s *AuthService) Login(ctx context.Context, request *v1pb.LoginRequest) (*v
 		}, nil
 	}
 
-	if loginUser.Type == api.EndUser {
+	switch loginUser.Type {
+	case api.EndUser:
 		token, err := auth.GenerateAccessToken(loginUser.Name, loginUser.ID, s.profile.Mode, s.secret, tokenDuration)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to generate API access token")
 		}
 		response.Token = token
-	} else if loginUser.Type == api.ServiceAccount {
+	case api.ServiceAccount:
 		token, err := auth.GenerateAPIToken(loginUser.Name, loginUser.ID, s.profile.Mode, s.secret)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to generate API access token")
 		}
 		response.Token = token
-	} else {
+	default:
 		return nil, status.Errorf(codes.Unauthenticated, "user type %s cannot login", loginUser.Type)
 	}
 
@@ -312,7 +313,8 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 	}
 
 	var userInfo *storepb.IdentityProviderUserInfo
-	if idp.Type == storepb.IdentityProviderType_OAUTH2 {
+	switch idp.Type {
+	case storepb.IdentityProviderType_OAUTH2:
 		oauth2Context := request.IdpContext.GetOauth2Context()
 		if oauth2Context == nil {
 			return nil, status.Errorf(codes.InvalidArgument, "missing OAuth2 context")
@@ -330,7 +332,7 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to get user info: %v", err)
 		}
-	} else if idp.Type == storepb.IdentityProviderType_OIDC {
+	case storepb.IdentityProviderType_OIDC:
 		oauth2Context := request.IdpContext.GetOauth2Context()
 		if oauth2Context == nil {
 			return nil, status.Errorf(codes.InvalidArgument, "missing OAuth2 context")
@@ -362,7 +364,7 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to get user info: %v", err)
 		}
-	} else if idp.Type == storepb.IdentityProviderType_LDAP {
+	case storepb.IdentityProviderType_LDAP:
 		idpConfig := idp.Config.GetLdapConfig()
 		ldapIDP, err := ldap.NewIdentityProvider(
 			ldap.IdentityProviderConfig{
@@ -385,7 +387,7 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to get user info: %v", err)
 		}
-	} else {
+	default:
 		return nil, status.Errorf(codes.InvalidArgument, "identity provider type %s not supported", idp.Type.String())
 	}
 	if userInfo == nil {
