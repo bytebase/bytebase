@@ -36,9 +36,9 @@ export const databaseMetadataToText = (
         const columns = table.columns
           .map((column) => {
             if (column.comment) {
-              return `${column.name}(${column.comment})`;
+              return `${column.name} ${column.type} (${column.comment})`;
             } else {
-              return column.name;
+              return `${column.name} ${column.type}`;
             }
           })
           .join(", ");
