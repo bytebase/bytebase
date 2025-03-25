@@ -556,20 +556,25 @@
         "ai-assistant": {
           "self": "Asistente de AI",
           "enable-ai-assistant": "Habilitar el Asistente de IA",
-          "description": "Utilice OpenAPI para ayudar en las tareas de desarrollo de bases de datos.",
-          "openai-key": {
-            "self": "Clave de API de OpenAI",
-            "description": "Proporcione una clave de API de OpenAI para habilitar la capacidad Text2SQL en el Editor de SQL. {viewDoc}",
+          "description": "Utilice AI para ayudar en las tareas de desarrollo de bases de datos.",
+          "provider": {
+            "self": "Proveedor de IA",
+            "open_ai": "Open AI",
+            "azure_open_ai": "Azure Open AI"
+          },
+          "api-key": {
+            "self": "Clave de API",
+            "description": "Proporcione una clave de API para habilitar la capacidad Text2SQL en el Editor de SQL. {viewDoc}",
             "find-my-key": "Encuentra mi llave",
-            "placeholder": "Una clave de API de OpenAI generalmente comienza con sk-*****"
+            "placeholder": "Una clave de API generalmente comienza con sk-*****"
           },
-          "openai-endpoint": {
-            "self": "Punto de conexión de API de OpenAI",
-            "description": "Proporcione una implementación privada del Punto de conexión de API de OpenAI."
+          "endpoint": {
+            "self": "Punto de conexión de API",
+            "description": "Proporcione una implementación privada del Punto de conexión de API."
           },
-          "openai-model": {
-            "self": "Nombre del modelo de OpenAI",
-            "description": "Suministro de implementación privada del nombre del modelo de OpenAI."
+          "model": {
+            "self": "Nombre del modelo",
+            "description": "Suministro de implementación privada del nombre del modelo."
           }
         },
         "announcement": {

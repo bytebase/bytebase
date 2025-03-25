@@ -556,20 +556,25 @@
         "ai-assistant": {
           "self": "AI 助手",
           "enable-ai-assistant": "启用 AI 助手",
-          "description": "使用 OpenAPI 来辅助数据库开发任务。",
-          "openai-key": {
-            "self": "OpenAI API Key",
-            "description": "提供 OpenAI API Key 以开启 AI 助手。{viewDoc}",
+          "description": "使用 AI 来辅助数据库开发任务。",
+          "provider": {
+            "self": "AI 提供方",
+            "open_ai": "Open AI",
+            "azure_open_ai": "Azure Open AI"
+          },
+          "api-key": {
+            "self": "API Key",
+            "description": "提供 API Key 以开启 AI 助手。{viewDoc}",
             "find-my-key": "找到我的 Key",
-            "placeholder": "OpenAI API Key 通常以 sk-***** 开头"
+            "placeholder": "API Key 通常以 sk-***** 开头"
           },
-          "openai-endpoint": {
-            "self": "OpenAI API Endpoint",
-            "description": "提供私有化部署的 OpenAI API Endpoint。"
+          "endpoint": {
+            "self": "API Endpoint",
+            "description": "提供私有化部署的 API Endpoint。"
           },
-          "openai-model": {
-            "self": "OpenAI Model Name",
-            "description": "提供私有化部署的 OpenAI 模型名称。"
+          "model": {
+            "self": "Model Name",
+            "description": "提供私有化部署的模型名称。"
           }
         },
         "announcement": {

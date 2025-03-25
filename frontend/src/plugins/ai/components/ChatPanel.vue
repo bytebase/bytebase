@@ -28,14 +28,15 @@
 </template>
 
 <script lang="ts" setup>
-import { useSQLEditorTabStore } from "@/store";
-import { nextAnimationFrame } from "@/utils";
 import type { AxiosResponse } from "axios";
 import { Axios } from "axios";
 import { head } from "lodash-es";
 import { NSpin } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { reactive, watch } from "vue";
+import { useSQLEditorTabStore } from "@/store";
+import { AISetting_Provider } from "@/types/proto/v1/setting_service";
+import { nextAnimationFrame } from "@/utils";
 import { onConnectionChanged, useAIContext, useCurrentChat } from "../logic";
 import * as promptUtils from "../logic/prompt";
 import { useConversationStore } from "../store";
@@ -58,11 +59,7 @@ const { currentTab: tab } = storeToRefs(useSQLEditorTabStore());
 const store = useConversationStore();
 
 const context = useAIContext();
-const {
-  aiSetting,
-  showHistoryDialog,
-  pendingSendChat,
-} = context;
+const { aiSetting, showHistoryDialog, pendingSendChat } = context;
 const {
   list: conversationList,
   ready,
@@ -140,7 +137,7 @@ const requestAI = async (query: string) => {
   const headers: { [key: string]: string } = {
     "Content-Type": "application/json",
   };
-  if (context.aiSetting.value.provider === "AZURE_OPENAI") {
+  if (context.aiSetting.value.provider === AISetting_Provider.AZURE_OPENAI) {
     headers["api-key"] = context.aiSetting.value.apiKey;
   } else {
     headers["Authorization"] = `Bearer ${context.aiSetting.value.apiKey}`;
