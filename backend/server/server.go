@@ -84,7 +84,7 @@ type Server struct {
 	lspServer  *lsp.Server
 	store      *store.Store
 	dbFactory  *dbfactory.DBFactory
-	startedTs  int64
+	startedTS  int64
 
 	// PG server stoppers.
 	stopper []func()
@@ -100,7 +100,7 @@ type Server struct {
 func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	s := &Server{
 		profile:   profile,
-		startedTs: time.Now().Unix(),
+		startedTS: time.Now().Unix(),
 	}
 
 	// Display config

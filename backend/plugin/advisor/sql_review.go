@@ -498,7 +498,7 @@ type SQLReviewCheckContext struct {
 	Collation             string
 	ChangeType            storepb.PlanCheckRunConfig_ChangeDatabaseType
 	DBSchema              *storepb.DatabaseSchemaMetadata
-	DbType                storepb.Engine
+	DBType                storepb.Engine
 	Catalog               catalogInterface
 	Driver                *sql.DB
 	PreUpdateBackupDetail *storepb.PreUpdateBackupDetail
@@ -525,13 +525,13 @@ func SQLReviewCheck(
 	ruleList []*storepb.SQLReviewRule,
 	checkContext SQLReviewCheckContext,
 ) ([]*storepb.Advice, error) {
-	asts, parseResult := sm.GetASTsForChecks(checkContext.DbType, statements)
+	asts, parseResult := sm.GetASTsForChecks(checkContext.DBType, statements)
 
 	builtinOnly := len(ruleList) == 0
 
 	if !checkContext.NoAppendBuiltin {
 		// Append builtin rules to the rule list.
-		ruleList = append(ruleList, GetBuiltinRules(checkContext.DbType)...)
+		ruleList = append(ruleList, GetBuiltinRules(checkContext.DBType)...)
 	}
 
 	if asts == nil || len(ruleList) == 0 {
@@ -540,7 +540,7 @@ func SQLReviewCheck(
 
 	finder := checkContext.Catalog.GetFinder()
 	if !builtinOnly {
-		switch checkContext.DbType {
+		switch checkContext.DBType {
 		case storepb.Engine_TIDB, storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_POSTGRES, storepb.Engine_OCEANBASE:
 			if err := finder.WalkThrough(asts); err != nil {
 				return convertWalkThroughErrorToAdvice(err)
@@ -550,7 +550,7 @@ func SQLReviewCheck(
 
 	var errorAdvices, warningAdvices []*storepb.Advice
 	for _, rule := range ruleList {
-		if rule.Engine != storepb.Engine_ENGINE_UNSPECIFIED && rule.Engine != checkContext.DbType {
+		if rule.Engine != storepb.Engine_ENGINE_UNSPECIFIED && rule.Engine != checkContext.DBType {
 			continue
 		}
 		if rule.Level == storepb.SQLReviewRuleLevel_DISABLED {
@@ -562,7 +562,7 @@ func SQLReviewCheck(
 			continue
 		}
 
-		advisorType, err := getAdvisorTypeByRule(ruleType, checkContext.DbType)
+		advisorType, err := getAdvisorTypeByRule(ruleType, checkContext.DBType)
 		if err != nil {
 			if rule.Engine != storepb.Engine_ENGINE_UNSPECIFIED {
 				slog.Warn("not supported rule", "rule type", rule.Type, "engine", rule.Engine.String(), log.BBError(err))
@@ -572,7 +572,7 @@ func SQLReviewCheck(
 
 		adviceList, err := Check(
 			ctx,
-			checkContext.DbType,
+			checkContext.DBType,
 			advisorType,
 			Context{
 				DBSchema:                 checkContext.DBSchema,
@@ -1201,15 +1201,17 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 			return MySQLTableDisallowSetCharset, nil
 		}
 	case SchemaRuleTableDisallowDDL:
-		if engine == storepb.Engine_MYSQL {
+		switch engine {
+		case storepb.Engine_MYSQL:
 			return MySQLTableDisallowDDL, nil
-		} else if engine == storepb.Engine_MSSQL {
+		case storepb.Engine_MSSQL:
 			return MSSQLTableDisallowDDL, nil
 		}
 	case SchemaRuleTableDisallowDML:
-		if engine == storepb.Engine_MYSQL {
+		switch engine {
+		case storepb.Engine_MYSQL:
 			return MySQLTableDisallowDML, nil
-		} else if engine == storepb.Engine_MSSQL {
+		case storepb.Engine_MSSQL:
 			return MSSQLTableDisallowDML, nil
 		}
 	case SchemaRuleTableLimitSize:

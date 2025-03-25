@@ -161,10 +161,7 @@ func IsTSQLReservedKeyword(keyword string, caseSensitive bool) bool {
 func FlattenExecuteStatementArgExecuteStatementArgUnnamed(ctx parser.IExecute_statement_argContext) []parser.IExecute_statement_arg_unnamedContext {
 	var queue []parser.IExecute_statement_arg_unnamedContext
 	ele := ctx
-	for {
-		if ele.Execute_statement_arg_unnamed() == nil {
-			break
-		}
+	for ele.Execute_statement_arg_unnamed() != nil {
 		queue = append(queue, ele.Execute_statement_arg_unnamed())
 		if len(ele.AllExecute_statement_arg()) != 1 {
 			break

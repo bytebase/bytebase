@@ -77,7 +77,7 @@ func (p *Provider) LoadSubscription(ctx context.Context) *enterprise.Subscriptio
 		return &enterprise.Subscription{
 			Plan: api.FREE,
 			// -1 means not expire, just for free plan
-			ExpiresTs: -1,
+			ExpiresTS: -1,
 			// Instance license count.
 			InstanceCount: 0,
 			Seat:          0,
@@ -86,8 +86,8 @@ func (p *Provider) LoadSubscription(ctx context.Context) *enterprise.Subscriptio
 
 	return &enterprise.Subscription{
 		Plan:          license.Plan,
-		ExpiresTs:     license.ExpiresTs,
-		StartedTs:     license.IssuedTs,
+		ExpiresTS:     license.ExpiresTS,
+		StartedTS:     license.IssuedTS,
 		InstanceCount: license.InstanceCount,
 		Seat:          license.Seat,
 		Trialing:      license.Trialing,
@@ -167,7 +167,7 @@ func (p *Provider) findEnterpriseLicense(ctx context.Context) (*enterprise.Licen
 			slog.Debug(
 				"Load valid license",
 				slog.String("plan", license.Plan.String()),
-				slog.Time("expiresAt", time.Unix(license.ExpiresTs, 0)),
+				slog.Time("expiresAt", time.Unix(license.ExpiresTS, 0)),
 				slog.Int("instanceCount", license.InstanceCount),
 			)
 			return license, nil
@@ -204,8 +204,8 @@ func (p *Provider) parseClaims(ctx context.Context, claim *claims) (*enterprise.
 	license := &enterprise.License{
 		InstanceCount: claim.InstanceCount,
 		Seat:          claim.Seat,
-		ExpiresTs:     claim.ExpiresAt.Unix(),
-		IssuedTs:      claim.IssuedAt.Unix(),
+		ExpiresTS:     claim.ExpiresAt.Unix(),
+		IssuedTS:      claim.IssuedAt.Unix(),
 		Plan:          planType,
 		Subject:       claim.Subject,
 		Trialing:      claim.Trialing,

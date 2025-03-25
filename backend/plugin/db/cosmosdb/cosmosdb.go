@@ -40,7 +40,7 @@ func newDriver(_ db.DriverConfig) db.Driver {
 }
 
 // Open opens a CosmosDB driver.
-func (driver *Driver) Open(_ context.Context, _ storepb.Engine, connCfg db.ConnectionConfig) (db.Driver, error) {
+func (d *Driver) Open(_ context.Context, _ storepb.Engine, connCfg db.ConnectionConfig) (db.Driver, error) {
 	endpoint := connCfg.DataSource.Host
 	var credential azcore.TokenCredential
 	if clientSecretCredential := connCfg.DataSource.GetClientSecretCredential(); clientSecretCredential != nil {
@@ -60,10 +60,10 @@ func (driver *Driver) Open(_ context.Context, _ storepb.Engine, connCfg db.Conne
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create CosmosDB client")
 	}
-	driver.client = client
-	driver.databaseName = connCfg.ConnectionContext.DatabaseName
-	driver.connCfg = connCfg
-	return driver, nil
+	d.client = client
+	d.databaseName = connCfg.ConnectionContext.DatabaseName
+	d.connCfg = connCfg
+	return d, nil
 }
 
 // Close closes the CosmosDB driver.
@@ -72,8 +72,8 @@ func (*Driver) Close(_ context.Context) error {
 }
 
 // Ping pings the database.
-func (driver *Driver) Ping(ctx context.Context) error {
-	queryPager := driver.client.NewQueryDatabasesPager("select 1", nil)
+func (d *Driver) Ping(ctx context.Context) error {
+	queryPager := d.client.NewQueryDatabasesPager("select 1", nil)
 	for queryPager.More() {
 		_, err := queryPager.NextPage(ctx)
 		if err != nil {
@@ -99,7 +99,7 @@ func (*Driver) Dump(_ context.Context, _ io.Writer, _ *storepb.DatabaseSchemaMet
 }
 
 // QueryConn queries a SQL statement in a given connection.
-func (driver *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
+func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
 	if queryContext.Container == "" {
 		return nil, status.Errorf(codes.InvalidArgument, "container argument is required for CosmosDB")
 	}
@@ -111,7 +111,7 @@ func (driver *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement stri
 	}
 
 	startTime := time.Now()
-	container, err := driver.client.NewContainer(driver.databaseName, queryContext.Container)
+	container, err := d.client.NewContainer(d.databaseName, queryContext.Container)
 	if err != nil {
 		return nil, status.Error(codes.Internal, errors.Wrapf(err, "failed to create container").Error())
 	}

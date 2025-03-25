@@ -44,37 +44,37 @@ func newDriver(db.DriverConfig) db.Driver {
 }
 
 // Open opens a SQLite driver.
-func (driver *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
+func (d *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
 	// Host is the directory (instance) containing all SQLite databases.
-	driver.dir = config.DataSource.Host
+	d.dir = config.DataSource.Host
 
 	// If config.Database is empty, we will get a connection to in-memory database.
-	db, err := createDBConnection(driver.dir, config.ConnectionContext.DatabaseName)
+	db, err := createDBConnection(d.dir, config.ConnectionContext.DatabaseName)
 	if err != nil {
 		return nil, err
 	}
-	driver.db = db
-	driver.connectionCtx = config.ConnectionContext
-	driver.databaseName = config.ConnectionContext.DatabaseName
-	return driver, nil
+	d.db = db
+	d.connectionCtx = config.ConnectionContext
+	d.databaseName = config.ConnectionContext.DatabaseName
+	return d, nil
 }
 
 // Close closes the driver.
-func (driver *Driver) Close(context.Context) error {
-	if driver.db != nil {
-		return driver.db.Close()
+func (d *Driver) Close(context.Context) error {
+	if d.db != nil {
+		return d.db.Close()
 	}
 	return nil
 }
 
 // Ping pings the database.
-func (driver *Driver) Ping(ctx context.Context) error {
-	return driver.db.PingContext(ctx)
+func (d *Driver) Ping(ctx context.Context) error {
+	return d.db.PingContext(ctx)
 }
 
 // GetDB gets the database.
-func (driver *Driver) GetDB() *sql.DB {
-	return driver.db
+func (d *Driver) GetDB() *sql.DB {
+	return d.db
 }
 
 // createDBConnection gets a database connection.
@@ -91,10 +91,10 @@ func createDBConnection(dir, database string) (*sql.DB, error) {
 	return db, nil
 }
 
-func (driver *Driver) getDatabases() ([]string, error) {
-	files, err := os.ReadDir(driver.dir)
+func (d *Driver) getDatabases() ([]string, error) {
+	files, err := os.ReadDir(d.dir)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to read directory %q", driver.dir)
+		return nil, errors.Wrapf(err, "failed to read directory %q", d.dir)
 	}
 	var databases []string
 	for _, file := range files {
@@ -107,13 +107,13 @@ func (driver *Driver) getDatabases() ([]string, error) {
 }
 
 // Execute executes a SQL statement.
-func (driver *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
+func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
 	if opts.CreateDatabase {
 		parts := strings.Split(statement, `'`)
 		if len(parts) != 3 {
 			return 0, errors.Errorf("invalid statement %q", statement)
 		}
-		db, err := createDBConnection(driver.dir, parts[1])
+		db, err := createDBConnection(d.dir, parts[1])
 		if err != nil {
 			return 0, err
 		}
@@ -125,7 +125,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 		return 0, nil
 	}
 
-	tx, err := driver.db.BeginTx(ctx, nil)
+	tx, err := d.db.BeginTx(ctx, nil)
 	if err != nil {
 		return 0, err
 	}

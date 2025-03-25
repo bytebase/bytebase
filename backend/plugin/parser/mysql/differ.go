@@ -950,7 +950,7 @@ func sortAndWriteDropForeignKeyList(buf *strings.Builder, fks []*foreignKeyDef) 
 }
 
 func writeDropForeignKeyStatement(buf *strings.Builder, fk *foreignKeyDef) error {
-	if _, err := buf.WriteString(fmt.Sprintf("ALTER TABLE `%s` DROP FOREIGN KEY `%s`;\n\n", fk.tableName, fk.name)); err != nil {
+	if _, err := fmt.Fprintf(buf, "ALTER TABLE `%s` DROP FOREIGN KEY `%s`;\n\n", fk.tableName, fk.name); err != nil {
 		return err
 	}
 	return nil
@@ -966,7 +966,7 @@ func sortAndWriteDropFunctionList(buf *strings.Builder, functions []*functionDef
 }
 
 func writeDropFunctionStatement(buf *strings.Builder, function *functionDef) error {
-	if _, err := buf.WriteString(fmt.Sprintf("DROP FUNCTION IF EXISTS `%s`;\n\n", function.name)); err != nil {
+	if _, err := fmt.Fprintf(buf, "DROP FUNCTION IF EXISTS `%s`;\n\n", function.name); err != nil {
 		return err
 	}
 
@@ -994,7 +994,7 @@ func writeCreateFunctionStatement(buf *strings.Builder, function *functionDef) e
 		return err
 	}
 
-	if _, err := buf.WriteString(fmt.Sprintf("DELIMITER ;;\n%s\nDELIMITER ;\n\n", def.String())); err != nil {
+	if _, err := fmt.Fprintf(buf, "DELIMITER ;;\n%s\nDELIMITER ;\n\n", def.String()); err != nil {
 		return err
 	}
 	return nil
@@ -1010,7 +1010,7 @@ func sortAndWriteDropProcedureList(buf *strings.Builder, procedures []*procedure
 }
 
 func writeDropProcedureStatement(buf *strings.Builder, procedure *procedureDef) error {
-	if _, err := buf.WriteString(fmt.Sprintf("DROP PROCEDURE IF EXISTS `%s`;\n\n", procedure.name)); err != nil {
+	if _, err := fmt.Fprintf(buf, "DROP PROCEDURE IF EXISTS `%s`;\n\n", procedure.name); err != nil {
 		return err
 	}
 
@@ -1038,7 +1038,7 @@ func writeCreateProcedureStatement(buf *strings.Builder, procedure *procedureDef
 		return err
 	}
 
-	if _, err := buf.WriteString(fmt.Sprintf("DELIMITER ;;\n%s\nDELIMITER ;\n\n", def.String())); err != nil {
+	if _, err := fmt.Fprintf(buf, "DELIMITER ;;\n%s\nDELIMITER ;\n\n", def.String()); err != nil {
 		return err
 	}
 	return nil
@@ -1054,7 +1054,7 @@ func sortAndWriteDropEventList(buf *strings.Builder, events []*eventDef) error {
 }
 
 func writeDropEventStatement(buf *strings.Builder, event *eventDef) error {
-	if _, err := buf.WriteString(fmt.Sprintf("DROP EVENT IF EXISTS `%s`;\n\n", event.name)); err != nil {
+	if _, err := fmt.Fprintf(buf, "DROP EVENT IF EXISTS `%s`;\n\n", event.name); err != nil {
 		return err
 	}
 
@@ -1082,7 +1082,7 @@ func writeCreateEventStatement(buf *strings.Builder, event *eventDef) error {
 		return err
 	}
 
-	if _, err := buf.WriteString(fmt.Sprintf("DELIMITER ;;\n%s\nDELIMITER ;\n\n", def.String())); err != nil {
+	if _, err := fmt.Fprintf(buf, "DELIMITER ;;\n%s\nDELIMITER ;\n\n", def.String()); err != nil {
 		return err
 	}
 	return nil
@@ -1098,7 +1098,7 @@ func sortAndWriteDropTriggerList(buf *strings.Builder, triggers []*triggerDef) e
 }
 
 func writeDropTriggerStatement(buf *strings.Builder, trigger *triggerDef) error {
-	if _, err := buf.WriteString(fmt.Sprintf("DROP TRIGGER IF EXISTS `%s`;\n\n", trigger.name)); err != nil {
+	if _, err := fmt.Fprintf(buf, "DROP TRIGGER IF EXISTS `%s`;\n\n", trigger.name); err != nil {
 		return err
 	}
 
@@ -1126,7 +1126,7 @@ func writeCreateTriggerStatement(buf *strings.Builder, trigger *triggerDef) erro
 		return err
 	}
 
-	if _, err := buf.WriteString(fmt.Sprintf("DELIMITER ;;\n%s\nDELIMITER ;\n\n", def.String())); err != nil {
+	if _, err := fmt.Fprintf(buf, "DELIMITER ;;\n%s\nDELIMITER ;\n\n", def.String()); err != nil {
 		return err
 	}
 	return nil
@@ -1148,7 +1148,7 @@ func sortAndWriteDropIndexList(buf *strings.Builder, indexes []*indexDef) error 
 }
 
 func writeDropIndexStatement(buf *strings.Builder, index *indexDef) error {
-	if _, err := buf.WriteString(fmt.Sprintf("DROP INDEX `%s` ON `%s`;\n\n", index.name, index.tableName)); err != nil {
+	if _, err := fmt.Fprintf(buf, "DROP INDEX `%s` ON `%s`;\n\n", index.name, index.tableName); err != nil {
 		return err
 	}
 	return nil
@@ -1170,7 +1170,7 @@ func sortAndWriteDropIndexConstraintList(buf *strings.Builder, indexes []*indexC
 }
 
 func writeDropIndexConstraintStatement(buf *strings.Builder, index *indexConstraintDef) error {
-	if _, err := buf.WriteString(fmt.Sprintf("DROP INDEX `%s` ON `%s`;\n\n", index.name, index.tableName)); err != nil {
+	if _, err := fmt.Fprintf(buf, "DROP INDEX `%s` ON `%s`;\n\n", index.name, index.tableName); err != nil {
 		return err
 	}
 	return nil
@@ -1190,7 +1190,7 @@ func sortAndWriteDropViewList(buf *strings.Builder, views []*viewDef) error {
 }
 
 func writeDropViewStatement(buf *strings.Builder, view *viewDef) error {
-	if _, err := buf.WriteString(fmt.Sprintf("DROP VIEW IF EXISTS `%s`;\n\n", view.name)); err != nil {
+	if _, err := fmt.Fprintf(buf, "DROP VIEW IF EXISTS `%s`;\n\n", view.name); err != nil {
 		return err
 	}
 
@@ -1211,7 +1211,7 @@ func sortAndWriteDropTableList(buf *strings.Builder, ns []*tableDef) error {
 }
 
 func writeDropTableStatement(buf *strings.Builder, table *tableDef) error {
-	if _, err := buf.WriteString(fmt.Sprintf("DROP TABLE IF EXISTS `%s`;\n\n", table.name)); err != nil {
+	if _, err := fmt.Fprintf(buf, "DROP TABLE IF EXISTS `%s`;\n\n", table.name); err != nil {
 		return err
 	}
 	return nil
@@ -1267,7 +1267,7 @@ func sortAndWriteDropColumnList(buf *strings.Builder, columns []*columnDef) erro
 }
 
 func writeDropColumnStatement(buf *strings.Builder, column *columnDef) error {
-	if _, err := buf.WriteString(fmt.Sprintf("ALTER TABLE `%s` DROP COLUMN `%s`;\n\n", column.tableName, column.name)); err != nil {
+	if _, err := fmt.Fprintf(buf, "ALTER TABLE `%s` DROP COLUMN `%s`;\n\n", column.tableName, column.name); err != nil {
 		return err
 	}
 	return nil
@@ -1284,7 +1284,7 @@ func sortAndWriteAddColumnList(buf *strings.Builder, columns []*columnDef) error
 }
 
 func writeAddColumnStatement(buf *strings.Builder, column *columnDef) error {
-	if _, err := buf.WriteString(fmt.Sprintf("ALTER TABLE `%s` ADD COLUMN ", column.tableName)); err != nil {
+	if _, err := fmt.Fprintf(buf, "ALTER TABLE `%s` ADD COLUMN ", column.tableName); err != nil {
 		return err
 	}
 	if _, err := buf.WriteString(column.ctx.GetParser().GetTokenStream().GetTextFromRuleContext(column.ctx.GetRuleContext())); err != nil {
@@ -1293,9 +1293,10 @@ func writeAddColumnStatement(buf *strings.Builder, column *columnDef) error {
 	// TODO: add column position.
 	if column.columnPosition != nil {
 		pos := ""
-		if column.columnPosition.tp == "FIRST" {
+		switch column.columnPosition.tp {
+		case "FIRST":
 			pos = " FIRST"
-		} else if column.columnPosition.tp == "AFTER" {
+		case "AFTER":
 			pos = fmt.Sprintf(" AFTER `%s`", column.columnPosition.relativeColumn)
 		}
 		if _, err := buf.WriteString(pos); err != nil {
@@ -1773,7 +1774,7 @@ func sortAndWriteModifyColumnList(buf *strings.Builder, columns []*columnDef) er
 }
 
 func writeModifyColumnStatement(buf *strings.Builder, column *columnDef) error {
-	if _, err := buf.WriteString(fmt.Sprintf("ALTER TABLE `%s` ", column.tableName)); err != nil {
+	if _, err := fmt.Fprintf(buf, "ALTER TABLE `%s` ", column.tableName); err != nil {
 		return err
 	}
 
@@ -1855,7 +1856,7 @@ func writeCreateIndexConstraintStatement(buf *strings.Builder, index *indexConst
 	if indexCategory != "" {
 		createIndexPrefix = fmt.Sprintf("%s ", indexCategory)
 	}
-	if _, err := buf.WriteString(fmt.Sprintf("CREATE %sINDEX `%s` ON `%s`%s%s%s;\n\n", createIndexPrefix, index.name, index.tableName, keyList, indexType, indexOption)); err != nil {
+	if _, err := fmt.Fprintf(buf, "CREATE %sINDEX `%s` ON `%s`%s%s%s;\n\n", createIndexPrefix, index.name, index.tableName, keyList, indexType, indexOption); err != nil {
 		return err
 	}
 	return nil
@@ -1880,7 +1881,7 @@ func writeCreatePrimaryIndexStatement(buf *strings.Builder, primary *primaryKeyD
 		Start: primary.ctx.KeyListVariants().GetStop().GetTokenIndex() + 1,
 		Stop:  primary.ctx.GetStop().GetTokenIndex(),
 	})
-	if _, err := buf.WriteString(fmt.Sprintf("ALTER TABLE `%s` ADD PRIMARY KEY %s%s;\n\n", primary.tableName, keyList, indexOption)); err != nil {
+	if _, err := fmt.Fprintf(buf, "ALTER TABLE `%s` ADD PRIMARY KEY %s%s;\n\n", primary.tableName, keyList, indexOption); err != nil {
 		return err
 	}
 	return nil
@@ -1900,7 +1901,7 @@ func sortAndWriteDropPrimaryIndexList(buf *strings.Builder, primaryKeys []*prima
 }
 
 func writeDropPrimaryIndexStatement(buf *strings.Builder, primary *primaryKeyDef) error {
-	if _, err := buf.WriteString(fmt.Sprintf("ALTER TABLE `%s` DROP PRIMARY KEY;\n\n", primary.tableName)); err != nil {
+	if _, err := fmt.Fprintf(buf, "ALTER TABLE `%s` DROP PRIMARY KEY;\n\n", primary.tableName); err != nil {
 		return err
 	}
 	return nil

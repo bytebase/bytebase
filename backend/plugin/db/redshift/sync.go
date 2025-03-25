@@ -20,17 +20,17 @@ import (
 )
 
 // SyncInstance syncs the instance.
-func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
-	version, err := driver.getVersion(ctx)
+func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
+	version, err := d.getVersion(ctx)
 	if err != nil {
 		return nil, err
 	}
-	instanceRoles, err := driver.getInstanceRoles(ctx)
+	instanceRoles, err := d.getInstanceRoles(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	databases, err := driver.getDatabases(ctx)
+	databases, err := d.getDatabases(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get databases")
 	}
@@ -54,40 +54,40 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, e
 }
 
 // SyncDBSchema syncs a single database schema.
-func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetadata, error) {
+func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetadata, error) {
 	// Query db info
-	databases, err := driver.getDatabases(ctx)
+	databases, err := d.getDatabases(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get databases")
 	}
 
 	var databaseMetadata *storepb.DatabaseSchemaMetadata
 	for _, database := range databases {
-		if database.Name == driver.databaseName {
+		if database.Name == d.databaseName {
 			databaseMetadata = database
 			break
 		}
 	}
 	if databaseMetadata == nil {
-		return nil, common.Errorf(common.NotFound, "database %q not found", driver.databaseName)
+		return nil, common.Errorf(common.NotFound, "database %q not found", d.databaseName)
 	}
 
-	txn, err := driver.db.BeginTx(ctx, nil)
+	txn, err := d.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
 	defer txn.Rollback()
 
-	schemaList, err := driver.getSchemas(txn)
+	schemaList, err := d.getSchemas(txn)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get schemas from database %q", driver.databaseName)
+		return nil, errors.Wrapf(err, "failed to get schemas from database %q", d.databaseName)
 	}
 	var tableMap map[string][]*storepb.TableMetadata
 	var viewMap map[string][]*storepb.ViewMetadata
-	if driver.datashare {
-		tableMap, err = driver.getDatashareTables(txn)
+	if d.datashare {
+		tableMap, err = d.getDatashareTables(txn)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get tables from datashare database %q", driver.databaseName)
+			return nil, errors.Wrapf(err, "failed to get tables from datashare database %q", d.databaseName)
 		}
 	} else {
 		columnMap, err := getTableColumns(txn)
@@ -96,11 +96,11 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 		}
 		tableMap, err = getTables(txn, columnMap)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get tables from database %q", driver.databaseName)
+			return nil, errors.Wrapf(err, "failed to get tables from database %q", d.databaseName)
 		}
 		viewMap, err = getViews(txn, columnMap)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get views from database %q", driver.databaseName)
+			return nil, errors.Wrapf(err, "failed to get views from database %q", d.databaseName)
 		}
 	}
 	if err := txn.Commit(); err != nil {
@@ -248,7 +248,7 @@ func formatTableNameFromRegclass(name string) string {
 	return strings.Trim(name, `"`)
 }
 
-func (driver *Driver) getSchemas(txn *sql.Tx) ([]string, error) {
+func (d *Driver) getSchemas(txn *sql.Tx) ([]string, error) {
 	query := `
 		SELECT
 			schema_name
@@ -259,7 +259,7 @@ func (driver *Driver) getSchemas(txn *sql.Tx) ([]string, error) {
 		ORDER BY
 			schema_name;
 	`
-	rows, err := txn.Query(query, driver.databaseName)
+	rows, err := txn.Query(query, d.databaseName)
 	if err != nil {
 		return nil, err
 	}
@@ -407,8 +407,8 @@ func getTableColumns(txn *sql.Tx) (map[db.TableKey][]*storepb.ColumnMetadata, er
 }
 
 // getDatashareTables gets all tables of a datashare database.
-func (driver *Driver) getDatashareTables(txn *sql.Tx) (map[string][]*storepb.TableMetadata, error) {
-	columnMap, err := driver.getDatashareTableColumns(txn)
+func (d *Driver) getDatashareTables(txn *sql.Tx) (map[string][]*storepb.TableMetadata, error) {
+	columnMap, err := d.getDatashareTableColumns(txn)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get table columns")
 	}
@@ -422,7 +422,7 @@ func (driver *Driver) getDatashareTables(txn *sql.Tx) (map[string][]*storepb.Tab
 		table_name
 	FROM SVV_ALL_TABLES
 	WHERE database_name = $1;`
-	rows, err := txn.Query(query, driver.databaseName)
+	rows, err := txn.Query(query, d.databaseName)
 	if err != nil {
 		return nil, err
 	}
@@ -447,7 +447,7 @@ func (driver *Driver) getDatashareTables(txn *sql.Tx) (map[string][]*storepb.Tab
 }
 
 // getDatashareTableColumns gets the columns of tables in datashare database.
-func (driver *Driver) getDatashareTableColumns(txn *sql.Tx) (map[db.TableKey][]*storepb.ColumnMetadata, error) {
+func (d *Driver) getDatashareTableColumns(txn *sql.Tx) (map[db.TableKey][]*storepb.ColumnMetadata, error) {
 	columnsMap := make(map[db.TableKey][]*storepb.ColumnMetadata)
 
 	query := `
@@ -462,7 +462,7 @@ func (driver *Driver) getDatashareTableColumns(txn *sql.Tx) (map[db.TableKey][]*
 		character_maximum_length
 	FROM SVV_ALL_COLUMNS
 	WHERE database_name = $1;`
-	rows, err := txn.Query(query, driver.databaseName)
+	rows, err := txn.Query(query, d.databaseName)
 	if err != nil {
 		return nil, err
 	}
@@ -635,14 +635,14 @@ func getIndexMethodType(stmt string) string {
 	return matches[1]
 }
 
-func (driver *Driver) getVersion(ctx context.Context) (string, error) {
+func (d *Driver) getVersion(ctx context.Context) (string, error) {
 	// Redshift doesn't support SHOW server_version to retrieve the clean version number.
 	// We can parse the output of `SELECT version()` to get the PostgreSQL version and the
 	// Redshift version because Redshift is based on PostgreSQL.
 	// For example, the output of `SELECT version()` is:
 	// PostgreSQL 8.0.2 on i686-pc-linux-gnu, compiled by GCC gcc (GCC) 3.4.2 20041017 (Red Hat 3.4.2-6.fc3), Redshift 1.0.48042
 	// We will return the 'Redshift 1.0.48042 based on PostgreSQL 8.0.2'.
-	rows, err := driver.db.QueryContext(ctx, "SELECT version()")
+	rows, err := d.db.QueryContext(ctx, "SELECT version()")
 	if err != nil {
 		return "", err
 	}
@@ -699,9 +699,9 @@ func buildRedshiftVersionString(redshiftVersion, postgresVersion string) string 
 }
 
 // getDatabases gets all databases of an instance.
-func (driver *Driver) getDatabases(ctx context.Context) ([]*storepb.DatabaseSchemaMetadata, error) {
+func (d *Driver) getDatabases(ctx context.Context) ([]*storepb.DatabaseSchemaMetadata, error) {
 	consumerDatabases := make(map[string]bool)
-	dsRows, err := driver.db.QueryContext(ctx, `
+	dsRows, err := d.db.QueryContext(ctx, `
 		SELECT consumer_database FROM SVV_DATASHARES WHERE share_type = 'INBOUND';
 	`)
 	if err != nil {
@@ -721,7 +721,7 @@ func (driver *Driver) getDatabases(ctx context.Context) ([]*storepb.DatabaseSche
 	}
 
 	var databases []*storepb.DatabaseSchemaMetadata
-	rows, err := driver.db.QueryContext(ctx, `
+	rows, err := d.db.QueryContext(ctx, `
 		SELECT datname,
 		pg_encoding_to_char(encoding)
 		FROM pg_database;

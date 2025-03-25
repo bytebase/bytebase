@@ -59,14 +59,14 @@ var (
 )
 
 // SyncInstance syncs the instance.
-func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
-	version, _, err := driver.getVersion(ctx)
+func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
+	version, _, err := d.getVersion(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	lowerCaseTableNames := 0
-	lowerCaseTableNamesText, err := driver.getServerVariable(ctx, "lower_case_table_names")
+	lowerCaseTableNamesText, err := d.getServerVariable(ctx, "lower_case_table_names")
 	if err != nil {
 		slog.Debug("failed to get lower_case_table_names variable", log.BBError(err))
 	} else {
@@ -76,7 +76,7 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, e
 		}
 	}
 
-	instanceRoles, err := driver.getInstanceRoles(ctx)
+	instanceRoles, err := d.getInstanceRoles(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -90,7 +90,7 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, e
 			DEFAULT_COLLATION_NAME
 		FROM information_schema.SCHEMATA
 		WHERE ` + where
-	rows, err := driver.db.QueryContext(ctx, query)
+	rows, err := d.db.QueryContext(ctx, query)
 	if err != nil {
 		return nil, util.FormatErrorWithQuery(err, query)
 	}
@@ -122,8 +122,8 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, e
 	}, nil
 }
 
-func (driver *Driver) getServerVariable(ctx context.Context, varName string) (string, error) {
-	db := driver.GetDB()
+func (d *Driver) getServerVariable(ctx context.Context, varName string) (string, error) {
+	db := d.GetDB()
 	query := fmt.Sprintf("SHOW VARIABLES LIKE '%s'", varName)
 	var varNameFound, value string
 	if err := db.QueryRowContext(ctx, query).Scan(&varNameFound, &value); err != nil {
@@ -170,13 +170,13 @@ func utf8ToISO88591(utf8Str string) (string, error) {
 }
 
 // SyncDBSchema syncs a single database schema.
-func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetadata, error) {
+func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetadata, error) {
 	schemaMetadata := &storepb.SchemaMetadata{
 		Name: "",
 	}
 
 	// Query MySQL version
-	version, rest, err := driver.getVersion(ctx)
+	version, rest, err := d.getVersion(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -228,7 +228,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 			WHERE TABLE_SCHEMA = ?
 			ORDER BY TABLE_NAME, INDEX_NAME, SEQ_IN_INDEX`
 	}
-	indexRows, err := driver.db.QueryContext(ctx, indexQuery, driver.databaseName)
+	indexRows, err := d.db.QueryContext(ctx, indexQuery, d.databaseName)
 	if err != nil {
 		return nil, util.FormatErrorWithQuery(err, indexQuery)
 	}
@@ -328,7 +328,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 		WHERE TABLE_SCHEMA = ?
 		ORDER BY TABLE_NAME, ORDINAL_POSITION`
 	}
-	columnRows, err := driver.db.QueryContext(ctx, columnQuery, driver.databaseName)
+	columnRows, err := d.db.QueryContext(ctx, columnQuery, d.databaseName)
 	if err != nil {
 		return nil, util.FormatErrorWithQuery(err, columnQuery)
 	}
@@ -405,7 +405,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 			JOIN information_schema.TABLE_CONSTRAINTS tc ON cc.CONSTRAINT_NAME = tc.CONSTRAINT_NAME
 		WHERE tc.CONSTRAINT_TYPE = 'CHECK' AND tc.TABLE_SCHEMA = ?
 	`
-		checkRows, err := driver.db.QueryContext(ctx, checkQuery, driver.databaseName)
+		checkRows, err := d.db.QueryContext(ctx, checkQuery, d.databaseName)
 		if err != nil {
 			return nil, util.FormatErrorWithQuery(err, checkQuery)
 		}
@@ -436,7 +436,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 			VIEW_DEFINITION
 		FROM information_schema.VIEWS
 		WHERE TABLE_SCHEMA = ?`
-	viewRows, err := driver.db.QueryContext(ctx, viewQuery, driver.databaseName)
+	viewRows, err := d.db.QueryContext(ctx, viewQuery, d.databaseName)
 	if err != nil {
 		return nil, util.FormatErrorWithQuery(err, viewQuery)
 	}
@@ -457,7 +457,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 		return nil, util.FormatErrorWithQuery(err, viewQuery)
 	}
 	for key := range viewMap {
-		def, err := driver.reconcileViewDefinition(ctx, driver.databaseName, key.Table)
+		def, err := d.reconcileViewDefinition(ctx, d.databaseName, key.Table)
 		if err != nil {
 			return nil, err
 		}
@@ -467,34 +467,34 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 	}
 
 	// Query triggers.
-	triggerMap, err := driver.getTriggerList(ctx, driver.databaseName)
+	triggerMap, err := d.getTriggerList(ctx, d.databaseName)
 	if err != nil {
 		return nil, err
 	}
 
 	// Query events.
-	eventList, err := driver.getEventList(ctx, driver.databaseName)
+	eventList, err := d.getEventList(ctx, d.databaseName)
 	if err != nil {
 		return nil, err
 	}
 	schemaMetadata.Events = eventList
 
 	// Query foreign key info.
-	foreignKeysMap, err := driver.getForeignKeyList(ctx, driver.databaseName)
+	foreignKeysMap, err := d.getForeignKeyList(ctx, d.databaseName)
 	if err != nil {
 		return nil, err
 	}
 
 	partitionTables := make(map[db.TableKey][]*storepb.TablePartitionMetadata)
 	// Query partition info.
-	if driver.dbType == storepb.Engine_MYSQL {
-		partitionTables, err = driver.listPartitionTables(ctx, driver.databaseName)
+	if d.dbType == storepb.Engine_MYSQL {
+		partitionTables, err = d.listPartitionTables(ctx, d.databaseName)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	functions, procedures, err := driver.syncRoutines(ctx, driver.databaseName)
+	functions, procedures, err := d.syncRoutines(ctx, d.databaseName)
 	if err != nil {
 		return nil, err
 	}
@@ -520,7 +520,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 		ON TABLES.TABLE_COLLATION = CCSA.COLLATION_NAME
 		WHERE TABLE_SCHEMA = ?
 		ORDER BY TABLE_NAME`
-	tableRows, err := driver.db.QueryContext(ctx, tableQuery, driver.databaseName)
+	tableRows, err := d.db.QueryContext(ctx, tableQuery, d.databaseName)
 	if err != nil {
 		return nil, util.FormatErrorWithQuery(err, tableQuery)
 	}
@@ -595,7 +595,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 	}
 
 	databaseMetadata := &storepb.DatabaseSchemaMetadata{
-		Name:    driver.databaseName,
+		Name:    d.databaseName,
 		Schemas: []*storepb.SchemaMetadata{schemaMetadata},
 	}
 	// Query db info.
@@ -605,12 +605,12 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 			DEFAULT_COLLATION_NAME
 		FROM information_schema.SCHEMATA
 		WHERE SCHEMA_NAME = ?`
-	if err := driver.db.QueryRowContext(ctx, databaseQuery, driver.databaseName).Scan(
+	if err := d.db.QueryRowContext(ctx, databaseQuery, d.databaseName).Scan(
 		&databaseMetadata.CharacterSet,
 		&databaseMetadata.Collation,
 	); err != nil {
 		if err == sql.ErrNoRows {
-			return nil, common.Errorf(common.NotFound, "database %q not found", driver.databaseName)
+			return nil, common.Errorf(common.NotFound, "database %q not found", d.databaseName)
 		}
 		return nil, err
 	}
@@ -618,7 +618,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 	return databaseMetadata, err
 }
 
-func (driver *Driver) getEventList(ctx context.Context, databaseName string) ([]*storepb.EventMetadata, error) {
+func (d *Driver) getEventList(ctx context.Context, databaseName string) ([]*storepb.EventMetadata, error) {
 	listEventsQuery := `
 	SELECT
 		EVENT_NAME,
@@ -630,7 +630,7 @@ func (driver *Driver) getEventList(ctx context.Context, databaseName string) ([]
 	WHERE EVENT_SCHEMA = ?
 	ORDER BY EVENT_NAME ASC;
 	`
-	eventRows, err := driver.db.QueryContext(ctx, listEventsQuery, databaseName)
+	eventRows, err := d.db.QueryContext(ctx, listEventsQuery, databaseName)
 	if err != nil {
 		return nil, util.FormatErrorWithQuery(err, listEventsQuery)
 	}
@@ -647,7 +647,7 @@ func (driver *Driver) getEventList(ctx context.Context, databaseName string) ([]
 		); err != nil {
 			return nil, err
 		}
-		eventDef, err := driver.getCreateEventStmt(ctx, databaseName, name)
+		eventDef, err := d.getCreateEventStmt(ctx, databaseName, name)
 		if err != nil {
 			return nil, err
 		}
@@ -667,9 +667,9 @@ func (driver *Driver) getEventList(ctx context.Context, databaseName string) ([]
 	return events, nil
 }
 
-func (driver *Driver) getCreateEventStmt(ctx context.Context, databaseName string, name string) (string, error) {
+func (d *Driver) getCreateEventStmt(ctx context.Context, databaseName string, name string) (string, error) {
 	query := fmt.Sprintf("SHOW CREATE EVENT `%s`.`%s`", databaseName, name)
-	rows, err := driver.db.QueryContext(ctx, query)
+	rows, err := d.db.QueryContext(ctx, query)
 	if err != nil {
 		return "", util.FormatErrorWithQuery(err, query)
 	}
@@ -718,7 +718,7 @@ func (driver *Driver) getCreateEventStmt(ctx context.Context, databaseName strin
 	return "", nil
 }
 
-func (driver *Driver) getTriggerList(ctx context.Context, databaseName string) (map[db.TableKey][]*storepb.TriggerMetadata, error) {
+func (d *Driver) getTriggerList(ctx context.Context, databaseName string) (map[db.TableKey][]*storepb.TriggerMetadata, error) {
 	triggersQuery := `
 	SELECT 
 		TRIGGER_NAME,
@@ -733,7 +733,7 @@ func (driver *Driver) getTriggerList(ctx context.Context, databaseName string) (
 	WHERE TRIGGER_SCHEMA = ?
 	ORDER BY EVENT_OBJECT_TABLE ASC, EVENT_MANIPULATION ASC, ACTION_TIMING ASC, ACTION_ORDER ASC;
 	`
-	triggerRows, err := driver.db.QueryContext(ctx, triggersQuery, databaseName)
+	triggerRows, err := d.db.QueryContext(ctx, triggersQuery, databaseName)
 	if err != nil {
 		return nil, util.FormatErrorWithQuery(err, triggersQuery)
 	}
@@ -771,7 +771,7 @@ func (driver *Driver) getTriggerList(ctx context.Context, databaseName string) (
 	return triggerMap, nil
 }
 
-func (driver *Driver) syncRoutines(ctx context.Context, databaseName string) ([]*storepb.FunctionMetadata, []*storepb.ProcedureMetadata, error) {
+func (d *Driver) syncRoutines(ctx context.Context, databaseName string) ([]*storepb.FunctionMetadata, []*storepb.ProcedureMetadata, error) {
 	// Query functions and procedure info.
 	routinesQuery := `
 		SELECT
@@ -786,7 +786,7 @@ func (driver *Driver) syncRoutines(ctx context.Context, databaseName string) ([]
 		WHERE ROUTINE_SCHEMA = ? AND ROUTINE_TYPE IN ('FUNCTION', 'PROCEDURE')
 		ORDER BY ROUTINE_TYPE, ROUTINE_NAME;
 	`
-	routineRows, err := driver.db.QueryContext(ctx, routinesQuery, driver.databaseName)
+	routineRows, err := d.db.QueryContext(ctx, routinesQuery, d.databaseName)
 	if err != nil {
 		return nil, nil, util.FormatErrorWithQuery(err, routinesQuery)
 	}
@@ -807,7 +807,7 @@ func (driver *Driver) syncRoutines(ctx context.Context, databaseName string) ([]
 			return nil, nil, err
 		}
 		if strings.EqualFold(routineType, "PROCEDURE") {
-			procedureDef, err := driver.getCreateProcedureStmt(ctx, databaseName, name)
+			procedureDef, err := d.getCreateProcedureStmt(ctx, databaseName, name)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -820,7 +820,7 @@ func (driver *Driver) syncRoutines(ctx context.Context, databaseName string) ([]
 				DatabaseCollation:   databaseCollation.String,
 			})
 		} else {
-			functionDef, err := driver.getCreateFunctionStmt(ctx, databaseName, name)
+			functionDef, err := d.getCreateFunctionStmt(ctx, databaseName, name)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -841,9 +841,9 @@ func (driver *Driver) syncRoutines(ctx context.Context, databaseName string) ([]
 	return functions, procedures, nil
 }
 
-func (driver *Driver) getCreateFunctionStmt(ctx context.Context, databaseName, functionName string) (string, error) {
+func (d *Driver) getCreateFunctionStmt(ctx context.Context, databaseName, functionName string) (string, error) {
 	query := fmt.Sprintf("SHOW CREATE FUNCTION `%s`.`%s`", databaseName, functionName)
-	rows, err := driver.db.QueryContext(ctx, query)
+	rows, err := d.db.QueryContext(ctx, query)
 	if err != nil {
 		return "", util.FormatErrorWithQuery(err, query)
 	}
@@ -905,9 +905,9 @@ func (driver *Driver) getCreateFunctionStmt(ctx context.Context, databaseName, f
 	return "", nil
 }
 
-func (driver *Driver) getCreateProcedureStmt(ctx context.Context, databaseName, functionName string) (string, error) {
+func (d *Driver) getCreateProcedureStmt(ctx context.Context, databaseName, functionName string) (string, error) {
 	query := fmt.Sprintf("SHOW CREATE PROCEDURE `%s`.`%s`", databaseName, functionName)
-	rows, err := driver.db.QueryContext(ctx, query)
+	rows, err := d.db.QueryContext(ctx, query)
 	if err != nil {
 		return "", util.FormatErrorWithQuery(err, query)
 	}
@@ -1011,10 +1011,10 @@ func isCurrentTimestampLike(s string) bool {
 	return false
 }
 
-func (driver *Driver) reconcileViewDefinition(ctx context.Context, databaseName, viewName string) (string, error) {
+func (d *Driver) reconcileViewDefinition(ctx context.Context, databaseName, viewName string) (string, error) {
 	query := fmt.Sprintf("SHOW CREATE VIEW `%s`.`%s`", databaseName, viewName)
 	var createStmt, unused string
-	if err := driver.db.QueryRowContext(ctx, query).Scan(&unused, &createStmt, &unused, &unused); err != nil {
+	if err := d.db.QueryRowContext(ctx, query).Scan(&unused, &createStmt, &unused, &unused); err != nil {
 		if noRows := errors.Is(err, sql.ErrNoRows); noRows {
 			slog.Warn("no rows return for query show create view", slog.String("viewName", viewName), slog.String("databaseName", databaseName))
 			return "", nil
@@ -1044,7 +1044,7 @@ func getViewDefFromCreateView(createView string) (string, error) {
 	return "", errors.Errorf("failed to match view definition, %s", createView)
 }
 
-func (driver *Driver) listPartitionTables(ctx context.Context, databaseName string) (map[db.TableKey][]*storepb.TablePartitionMetadata, error) {
+func (d *Driver) listPartitionTables(ctx context.Context, databaseName string) (map[db.TableKey][]*storepb.TablePartitionMetadata, error) {
 	const query string = `
 		SELECT
 			TABLE_NAME,
@@ -1060,7 +1060,7 @@ func (driver *Driver) listPartitionTables(ctx context.Context, databaseName stri
 		ORDER BY TABLE_NAME ASC, PARTITION_ORDINAL_POSITION ASC, SUBPARTITION_ORDINAL_POSITION ASC;
 	`
 	// Prepare the query statement.
-	stmt, err := driver.db.PrepareContext(ctx, query)
+	stmt, err := d.db.PrepareContext(ctx, query)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to prepare query: %s", query)
 	}
@@ -1165,7 +1165,7 @@ func (driver *Driver) listPartitionTables(ctx context.Context, databaseName stri
 			continue
 		}
 		showQuery := fmt.Sprintf("SHOW CREATE TABLE `%s`.`%s`", databaseName, tableKey.Table)
-		showRows, err := driver.db.QueryContext(ctx, showQuery)
+		showRows, err := d.db.QueryContext(ctx, showQuery)
 		if err != nil {
 			slog.Warn("failed to execute query", slog.String("query", showQuery), log.BBError(err))
 		}
@@ -1236,7 +1236,7 @@ func convertToStorepbTablePartitionType(tp string) storepb.TablePartitionMetadat
 	}
 }
 
-func (driver *Driver) getForeignKeyList(ctx context.Context, databaseName string) (map[db.TableKey][]*storepb.ForeignKeyMetadata, error) {
+func (d *Driver) getForeignKeyList(ctx context.Context, databaseName string) (map[db.TableKey][]*storepb.ForeignKeyMetadata, error) {
 	fkQuery := `
 		SELECT
 			TABLE_NAME,
@@ -1260,7 +1260,7 @@ func (driver *Driver) getForeignKeyList(ctx context.Context, databaseName string
 		ORDER BY TABLE_NAME, CONSTRAINT_NAME, ORDINAL_POSITION;
 	`
 
-	fkRows, err := driver.db.QueryContext(ctx, fkQuery, databaseName)
+	fkRows, err := d.db.QueryContext(ctx, fkQuery, databaseName)
 	if err != nil {
 		return nil, util.FormatErrorWithQuery(err, fkQuery)
 	}
@@ -1286,7 +1286,7 @@ func (driver *Driver) getForeignKeyList(ctx context.Context, databaseName string
 		return nil, util.FormatErrorWithQuery(err, fkQuery)
 	}
 
-	kcuQueryRows, err := driver.db.QueryContext(ctx, kcuQuery, databaseName)
+	kcuQueryRows, err := d.db.QueryContext(ctx, kcuQuery, databaseName)
 	if err != nil {
 		return nil, util.FormatErrorWithQuery(err, kcuQuery)
 	}

@@ -9,7 +9,7 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-func (driver *Driver) getInstanceRoles(ctx context.Context) ([]*storepb.InstanceRole, error) {
+func (d *Driver) getInstanceRoles(ctx context.Context) ([]*storepb.InstanceRole, error) {
 	// Reference: https://sourcegraph.com/github.com/postgres/postgres@REL_14_0/-/blob/src/bin/psql/describe.c?L3792
 	query := `
 	SELECT
@@ -25,7 +25,7 @@ func (driver *Driver) getInstanceRoles(ctx context.Context) ([]*storepb.Instance
 	ORDER BY 1;
 	`
 	var instanceRoles []*storepb.InstanceRole
-	rows, err := driver.db.QueryContext(ctx, query)
+	rows, err := d.db.QueryContext(ctx, query)
 	if err != nil {
 		return nil, err
 	}
@@ -65,11 +65,12 @@ func (driver *Driver) getInstanceRoles(ctx context.Context) ([]*storepb.Instance
 			attributes = append(attributes, "Cannot login")
 		}
 		if connectionLimit >= 0 {
-			if connectionLimit == 0 {
+			switch connectionLimit {
+			case 0:
 				attributes = append(attributes, "No connections")
-			} else if connectionLimit == 1 {
+			case 1:
 				attributes = append(attributes, "1 connection")
-			} else {
+			default:
 				attributes = append(attributes, fmt.Sprintf("%d connections", connectionLimit))
 			}
 		}

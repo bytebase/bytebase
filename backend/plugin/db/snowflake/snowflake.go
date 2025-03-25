@@ -48,7 +48,7 @@ func newDriver(db.DriverConfig) db.Driver {
 }
 
 // Open opens a Snowflake driver.
-func (driver *Driver) Open(_ context.Context, dbType storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
+func (d *Driver) Open(_ context.Context, dbType storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
 	dsn, loggedDSN, err := buildSnowflakeDSN(config)
 	if err != nil {
 		return nil, err
@@ -63,11 +63,11 @@ func (driver *Driver) Open(_ context.Context, dbType storepb.Engine, config db.C
 	if err != nil {
 		panic(err)
 	}
-	driver.dbType = dbType
-	driver.db = db
-	driver.connectionCtx = config.ConnectionContext
-	driver.databaseName = config.ConnectionContext.DatabaseName
-	return driver, nil
+	d.dbType = dbType
+	d.db = db
+	d.connectionCtx = config.ConnectionContext
+	d.databaseName = config.ConnectionContext.DatabaseName
+	return d, nil
 }
 
 // buildSnowflakeDSN returns the Snowflake Golang DSN and a redacted version of the DSN.
@@ -115,25 +115,25 @@ func buildSnowflakeDSN(config db.ConnectionConfig) (string, string, error) {
 }
 
 // Close closes the driver.
-func (driver *Driver) Close(context.Context) error {
-	return driver.db.Close()
+func (d *Driver) Close(context.Context) error {
+	return d.db.Close()
 }
 
 // Ping pings the database.
-func (driver *Driver) Ping(ctx context.Context) error {
-	return driver.db.PingContext(ctx)
+func (d *Driver) Ping(ctx context.Context) error {
+	return d.db.PingContext(ctx)
 }
 
 // GetDB gets the database.
-func (driver *Driver) GetDB() *sql.DB {
-	return driver.db
+func (d *Driver) GetDB() *sql.DB {
+	return d.db
 }
 
 // getVersion gets the version.
-func (driver *Driver) getVersion(ctx context.Context) (string, error) {
+func (d *Driver) getVersion(ctx context.Context) (string, error) {
 	query := "SELECT CURRENT_VERSION()"
 	var version string
-	if err := driver.db.QueryRowContext(ctx, query).Scan(&version); err != nil {
+	if err := d.db.QueryRowContext(ctx, query).Scan(&version); err != nil {
 		if err == sql.ErrNoRows {
 			return "", common.FormatDBErrorEmptyRowWithQuery(query)
 		}
@@ -142,8 +142,8 @@ func (driver *Driver) getVersion(ctx context.Context) (string, error) {
 	return version, nil
 }
 
-func (driver *Driver) getDatabases(ctx context.Context) ([]string, error) {
-	txn, err := driver.db.BeginTx(ctx, &sql.TxOptions{})
+func (d *Driver) getDatabases(ctx context.Context) ([]string, error) {
+	txn, err := d.db.BeginTx(ctx, &sql.TxOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -226,8 +226,8 @@ func getDatabasesTxn(ctx context.Context, txn *sql.Tx) ([]string, error) {
 }
 
 // Execute executes a SQL statement and returns the affected rows.
-func (driver *Driver) Execute(ctx context.Context, statement string, _ db.ExecuteOptions) (int64, error) {
-	tx, err := driver.db.BeginTx(ctx, nil)
+func (d *Driver) Execute(ctx context.Context, statement string, _ db.ExecuteOptions) (int64, error) {
+	tx, err := d.db.BeginTx(ctx, nil)
 	if err != nil {
 		return 0, err
 	}

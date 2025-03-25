@@ -23,8 +23,8 @@ type License struct {
 	Subject       string
 	InstanceCount int
 	Seat          int
-	ExpiresTs     int64
-	IssuedTs      int64
+	ExpiresTS     int64
+	IssuedTS      int64
 	Plan          api.PlanType
 	Trialing      bool
 	OrgName       string
@@ -32,7 +32,7 @@ type License struct {
 
 // Valid will check if license expired or has correct plan type.
 func (l *License) Valid() error {
-	if expireTime := time.Unix(l.ExpiresTs, 0); expireTime.Before(time.Now()) {
+	if expireTime := time.Unix(l.ExpiresTS, 0); expireTime.Before(time.Now()) {
 		return errors.Errorf("license has expired at %v", expireTime)
 	}
 

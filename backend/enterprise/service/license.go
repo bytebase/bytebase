@@ -109,7 +109,7 @@ func (s *LicenseService) GetInstanceLicenseCount(ctx context.Context) int {
 func (s *LicenseService) GetEffectivePlan() api.PlanType {
 	ctx := context.Background()
 	subscription := s.LoadSubscription(ctx)
-	if expireTime := time.Unix(subscription.ExpiresTs, 0); expireTime.Before(time.Now()) {
+	if expireTime := time.Unix(subscription.ExpiresTS, 0); expireTime.Before(time.Now()) {
 		return api.FREE
 	}
 	return subscription.Plan

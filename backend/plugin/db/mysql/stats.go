@@ -13,13 +13,13 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-func (driver *Driver) CountAffectedRows(ctx context.Context, statement string) (int64, error) {
-	if driver.dbType == storepb.Engine_OCEANBASE {
-		return countAffectedRowsForOceanBase(ctx, driver.db, statement)
+func (d *Driver) CountAffectedRows(ctx context.Context, statement string) (int64, error) {
+	if d.dbType == storepb.Engine_OCEANBASE {
+		return countAffectedRowsForOceanBase(ctx, d.db, statement)
 	}
 
 	explainSQL := fmt.Sprintf("EXPLAIN %s", statement)
-	rows, err := driver.db.QueryContext(ctx, explainSQL)
+	rows, err := d.db.QueryContext(ctx, explainSQL)
 	if err != nil {
 		return 0, err
 	}
