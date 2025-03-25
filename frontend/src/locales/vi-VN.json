@@ -556,20 +556,25 @@
         "ai-assistant": {
           "self": "Trợ lý AI",
           "enable-ai-assistant": "Bật Trợ lý AI",
-          "description": "Sử dụng OpenAPI để hỗ trợ các tác vụ phát triển cơ sở dữ liệu.",
-          "openai-key": {
-            "self": "Khóa API OpenAI",
-            "description": "Cung cấp Khóa API OpenAI. {viewDoc}",
+          "description": "Sử dụng AI để hỗ trợ các tác vụ phát triển cơ sở dữ liệu.",
+          "provider": {
+            "self": "Nhà cung cấp AI",
+            "open_ai": "Open AI",
+            "azure_open_ai": "Azure Open AI"
+          },
+          "api-key": {
+            "self": "Khóa API",
+            "description": "Cung cấp Khóa API. {viewDoc}",
             "find-my-key": "Tìm khóa của tôi",
-            "placeholder": "Khóa API OpenAI thường bắt đầu bằng sk-*****"
+            "placeholder": "Khóa API thường bắt đầu bằng sk-*****"
           },
-          "openai-endpoint": {
-            "self": "Điểm cuối API OpenAI",
-            "description": "Cung cấp triển khai riêng của Điểm cuối API OpenAI."
+          "endpoint": {
+            "self": "Điểm cuối API",
+            "description": "Cung cấp triển khai riêng của Điểm cuối API."
           },
-          "openai-model": {
-            "self": "Tên mô hình OpenAI",
-            "description": "Cung cấp triển khai riêng của tên mô hình OpenAI."
+          "model": {
+            "self": "Tên mô hình",
+            "description": "Cung cấp triển khai riêng của tên mô hình."
           }
         },
         "announcement": {

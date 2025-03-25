@@ -556,20 +556,25 @@
         "ai-assistant": {
           "self": "AI アシスタント",
           "enable-ai-assistant": "AIアシスタントを有効にする",
-          "description": "OpenAPI を使用してデータベース開発タスクを支援します。",
-          "openai-key": {
-            "self": "OpenAI APIキー",
-            "description": "SQL エディターで Text2SQL を開く機能を有効にする OpenAI API キーを提供します。 {viewDoc}",
+          "description": "AI を使用してデータベース開発タスクを支援します。",
+          "provider": {
+            "self": "AIプロバイダー",
+            "open_ai": "Open AI",
+            "azure_open_ai": "Azure Open AI"
+          },
+          "api-key": {
+            "self": "APIキー",
+            "description": "SQL エディターで Text2SQL を開く機能を有効にする API キーを提供します。 {viewDoc}",
             "find-my-key": "鍵を探す",
-            "placeholder": "OpenAI API キーは通常 sk-***** で始まります"
+            "placeholder": "API キーは通常 sk-***** で始まります"
           },
-          "openai-endpoint": {
-            "self": "OpenAI API エンドポイント",
-            "description": "プライベート展開用の OpenAI API エンドポイントを提供します。"
+          "endpoint": {
+            "self": "API エンドポイント",
+            "description": "プライベート展開用の API エンドポイントを提供します。"
           },
-          "openai-model": {
-            "self": "OpenAIモデル名",
-            "description": "供給プライベートデプロイメントのOpenAIモデル名。"
+          "model": {
+            "self": "モデル名",
+            "description": "供給プライベートデプロイメントのモデル名。"
           }
         },
         "announcement": {

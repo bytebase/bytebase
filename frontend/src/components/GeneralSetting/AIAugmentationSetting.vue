@@ -39,23 +39,36 @@
         </div>
         <template v-if="state.enabled">
           <div>
+            <label class="flex items-center gap-x-2 mb-2">
+              <span class="font-medium">{{
+                $t("settings.general.workspace.ai-assistant.provider.self")
+              }}</span>
+            </label>
+            <NSelect
+              style="width: 12rem"
+              v-model:value="state.provider"
+              :options="providerOptions"
+              :consistent-menu-width="true"
+            />
+          </div>
+          <div>
             <label class="flex items-center gap-x-2">
               <span class="font-medium">{{
-                $t("settings.general.workspace.ai-assistant.openai-key.self")
+                $t("settings.general.workspace.ai-assistant.api-key.self")
               }}</span>
             </label>
             <div class="mb-3 text-sm text-gray-400">
               <i18n-t
-                keypath="settings.general.workspace.ai-assistant.openai-key.description"
+                keypath="settings.general.workspace.ai-assistant.api-key.description"
               >
                 <template #viewDoc>
                   <a
-                    href="https://platform.openai.com/account/api-keys"
+                    :href="providerDefault.apiKeyDoc"
                     class="normal-link"
                     target="_blank"
                     >{{
                       $t(
-                        "settings.general.workspace.ai-assistant.openai-key.find-my-key"
+                        "settings.general.workspace.ai-assistant.api-key.find-my-key"
                       )
                     }}
                   </a>
@@ -65,12 +78,12 @@
             <NTooltip placement="top-start" :disabled="allowEdit">
               <template #trigger>
                 <BBTextField
-                  v-model:value="state.openAIKey"
+                  v-model:value="state.apiKey"
                   :required="true"
                   :disabled="!allowEdit || !hasAIFeature"
                   :placeholder="
                     $t(
-                      'settings.general.workspace.ai-assistant.openai-key.placeholder'
+                      'settings.general.workspace.ai-assistant.api-key.placeholder'
                     )
                   "
                 />
@@ -84,24 +97,23 @@
           <div>
             <label class="flex items-center gap-x-2">
               <span class="font-medium">{{
-                $t(
-                  "settings.general.workspace.ai-assistant.openai-endpoint.self"
-                )
+                $t("settings.general.workspace.ai-assistant.endpoint.self")
               }}</span>
             </label>
             <div class="mb-3 text-sm text-gray-400">
               {{
                 $t(
-                  "settings.general.workspace.ai-assistant.openai-endpoint.description"
+                  "settings.general.workspace.ai-assistant.endpoint.description"
                 )
               }}
             </div>
             <NTooltip placement="top-start" :disabled="allowEdit">
               <template #trigger>
                 <BBTextField
-                  v-model:value="state.openAIEndpoint"
+                  v-model:value="state.endpoint"
                   :required="true"
                   :disabled="!allowEdit || !hasAIFeature"
+                  :placeholder="providerDefault.endpoint"
                 />
               </template>
               <span class="text-sm text-gray-400 -translate-y-2">
@@ -113,20 +125,18 @@
           <div>
             <label class="flex items-center gap-x-2">
               <span class="font-medium">{{
-                $t("settings.general.workspace.ai-assistant.openai-model.self")
+                $t("settings.general.workspace.ai-assistant.model.self")
               }}</span>
             </label>
             <div class="mb-3 text-sm text-gray-400">
               {{
-                $t(
-                  "settings.general.workspace.ai-assistant.openai-model.description"
-                )
+                $t("settings.general.workspace.ai-assistant.model.description")
               }}
             </div>
             <NTooltip placement="top-start" :disabled="allowEdit">
               <template #trigger>
                 <BBTextField
-                  v-model:value="state.openAIModel"
+                  v-model:value="state.model"
                   :required="true"
                   :disabled="!allowEdit || !hasAIFeature"
                 />
@@ -143,9 +153,10 @@
 </template>
 
 <script lang="ts" setup>
-import { NTooltip } from "naive-ui";
+import { NTooltip, NSelect } from "naive-ui";
 import scrollIntoView from "scroll-into-view-if-needed";
-import { computed, onMounted, reactive, ref, watchEffect } from "vue";
+import { computed, onMounted, reactive, ref, watchEffect, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import { BBTextField } from "@/bbkit";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import { Switch } from "@/components/v2";
@@ -159,9 +170,10 @@ import { FeatureBadge } from "../FeatureGuard";
 
 interface LocalState {
   enabled: boolean;
-  openAIKey: string;
-  openAIEndpoint: string;
-  openAIModel: string;
+  apiKey: string;
+  endpoint: string;
+  model: string;
+  provider: AISetting_Provider;
 }
 
 const props = defineProps<{
@@ -171,12 +183,14 @@ const props = defineProps<{
 
 const settingV1Store = useSettingV1Store();
 const containerRef = ref<HTMLDivElement>();
+const { t } = useI18n();
 
 const state = reactive<LocalState>({
   enabled: false,
-  openAIKey: "",
-  openAIEndpoint: "",
-  openAIModel: "",
+  apiKey: "",
+  endpoint: "",
+  model: "",
+  provider: AISetting_Provider.OPEN_AI,
 });
 
 const aiSetting = computed(
@@ -188,11 +202,34 @@ const hasAIFeature = computed(() => hasFeature("bb.feature.ai-assistant"));
 const getInitialState = (): LocalState => {
   return {
     enabled: aiSetting.value?.enabled ?? false,
-    openAIKey: maskKey(aiSetting.value?.apiKey),
-    openAIEndpoint: aiSetting.value?.endpoint ?? "",
-    openAIModel: aiSetting.value?.model ?? "",
+    apiKey: maskKey(aiSetting.value?.apiKey),
+    endpoint: aiSetting.value?.endpoint ?? "",
+    model: aiSetting.value?.model ?? "",
+    provider: aiSetting.value?.provider ?? AISetting_Provider.OPEN_AI,
   };
 };
+
+const providerOptions = computed(() =>
+  [AISetting_Provider.OPEN_AI, AISetting_Provider.AZURE_OPENAI].map(
+    (provider) => {
+      let label = "";
+      switch (provider) {
+        case AISetting_Provider.OPEN_AI:
+          label = t("settings.general.workspace.ai-assistant.provider.open_ai");
+          break;
+        case AISetting_Provider.AZURE_OPENAI:
+          label = t(
+            "settings.general.workspace.ai-assistant.provider.azure_open_ai"
+          );
+          break;
+      }
+      return {
+        label,
+        value: provider,
+      };
+    }
+  )
+);
 
 watchEffect(() => {
   Object.assign(state, getInitialState());
@@ -202,11 +239,10 @@ const allowSave = computed((): boolean => {
   const initValue = getInitialState();
   const enabledUpdated = state.enabled !== initValue.enabled;
   const openAIKeyUpdated =
-    state.openAIKey !== initValue.openAIKey ||
-    (state.openAIKey && !state.openAIKey.includes("***"));
-  const openAIEndpointUpdated =
-    state.openAIEndpoint !== initValue.openAIEndpoint;
-  const openAIModelUpdated = state.openAIModel !== initValue.openAIModel;
+    state.apiKey !== initValue.apiKey ||
+    (state.apiKey && !state.apiKey.includes("***"));
+  const openAIEndpointUpdated = state.endpoint !== initValue.endpoint;
+  const openAIModelUpdated = state.model !== initValue.model;
   return (
     enabledUpdated ||
     openAIKeyUpdated ||
@@ -219,16 +255,48 @@ function maskKey(key: string | undefined): string {
   return key ? key.slice(0, 3) + "***" + key.slice(-4) : "";
 }
 
+const providerDefault = computed(() => {
+  switch (state.provider) {
+    case AISetting_Provider.OPEN_AI:
+      return {
+        apiKey: "",
+        apiKeyDoc: "https://platform.openai.com/account/api-keys",
+        endpoint: "https://api.openai.com/v1/chat/completions",
+        model: "gpt-3.5-turbo",
+      };
+    case AISetting_Provider.AZURE_OPENAI:
+      return {
+        apiKey: "",
+        apiKeyDoc: "https://ai.azure.com/",
+        endpoint:
+          "https://{resource name}.openai.azure.com/openai/deployments/{deployment id}/chat/completions?api-version=2024-06-0",
+        model: "gpt-4o",
+      };
+    default:
+      return {
+        apiKey: "",
+        apiKeyDoc: "",
+        endpoint: "",
+        model: "",
+      };
+  }
+});
+
+watch(
+  () => state.provider,
+  () => {
+    Object.assign(state, providerDefault.value);
+  }
+);
+
 const toggleAIEnabled = (on: boolean) => {
   if (!on) {
     return;
   }
-  if (state.openAIEndpoint === "") {
-    state.openAIEndpoint = "https://api.openai.com/v1/chat/completions";
-  }
-  if (state.openAIModel === "") {
-    state.openAIModel = "gpt-3.5-turbo";
-  }
+  Object.assign(state, {
+    endpoint: state.endpoint || providerDefault.value.endpoint,
+    model: state.model || providerDefault.value.model,
+  });
 };
 
 const updateAISetting = async () => {
@@ -238,11 +306,10 @@ const updateAISetting = async () => {
       aiSetting: AISetting.fromPartial({
         ...(aiSetting.value ?? {}),
         enabled: state.enabled,
-        apiKey: state.openAIKey,
-        endpoint: state.openAIEndpoint,
-        model: state.openAIModel,
-        // TODO(ed): support change provider.
-        provider: AISetting_Provider.OPEN_AI,
+        apiKey: state.apiKey,
+        endpoint: state.endpoint,
+        model: state.model,
+        provider: state.provider,
       }),
     },
   });
