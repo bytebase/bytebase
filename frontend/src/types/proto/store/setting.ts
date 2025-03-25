@@ -615,6 +615,7 @@ export enum AISetting_Provider {
   OPEN_AI = "OPEN_AI",
   CLAUDE = "CLAUDE",
   GEMINI = "GEMINI",
+  AZURE_OPENAI = "AZURE_OPENAI",
   UNRECOGNIZED = "UNRECOGNIZED",
 }
 
@@ -632,6 +633,9 @@ export function aISetting_ProviderFromJSON(object: any): AISetting_Provider {
     case 3:
     case "GEMINI":
       return AISetting_Provider.GEMINI;
+    case 4:
+    case "AZURE_OPENAI":
+      return AISetting_Provider.AZURE_OPENAI;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -649,6 +653,8 @@ export function aISetting_ProviderToJSON(object: AISetting_Provider): string {
       return "CLAUDE";
     case AISetting_Provider.GEMINI:
       return "GEMINI";
+    case AISetting_Provider.AZURE_OPENAI:
+      return "AZURE_OPENAI";
     case AISetting_Provider.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
@@ -665,6 +671,8 @@ export function aISetting_ProviderToNumber(object: AISetting_Provider): number {
       return 2;
     case AISetting_Provider.GEMINI:
       return 3;
+    case AISetting_Provider.AZURE_OPENAI:
+      return 4;
     case AISetting_Provider.UNRECOGNIZED:
     default:
       return -1;
