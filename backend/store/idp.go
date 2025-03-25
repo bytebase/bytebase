@@ -286,19 +286,22 @@ func (*Store) listIdentityProvidersImpl(ctx context.Context, txn *sql.Tx, find *
 }
 
 func convertIdentityProviderType(identityProviderType string) storepb.IdentityProviderType {
-	if identityProviderType == "OAUTH2" {
+	switch identityProviderType {
+	case "OAUTH2":
 		return storepb.IdentityProviderType_OAUTH2
-	} else if identityProviderType == "OIDC" {
+	case "OIDC":
 		return storepb.IdentityProviderType_OIDC
-	} else if identityProviderType == "LDAP" {
+	case "LDAP":
 		return storepb.IdentityProviderType_LDAP
+	default:
+		return storepb.IdentityProviderType_IDENTITY_PROVIDER_TYPE_UNSPECIFIED
 	}
-	return storepb.IdentityProviderType_IDENTITY_PROVIDER_TYPE_UNSPECIFIED
 }
 
 func convertIdentityProviderConfigString(identityProviderType storepb.IdentityProviderType, config string) *storepb.IdentityProviderConfig {
 	identityProviderConfig := &storepb.IdentityProviderConfig{}
-	if identityProviderType == storepb.IdentityProviderType_OAUTH2 {
+	switch identityProviderType {
+	case storepb.IdentityProviderType_OAUTH2:
 		var formattedConfig storepb.OAuth2IdentityProviderConfig
 		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(config), &formattedConfig); err != nil {
 			return nil
@@ -306,7 +309,7 @@ func convertIdentityProviderConfigString(identityProviderType storepb.IdentityPr
 		identityProviderConfig.Config = &storepb.IdentityProviderConfig_Oauth2Config{
 			Oauth2Config: &formattedConfig,
 		}
-	} else if identityProviderType == storepb.IdentityProviderType_OIDC {
+	case storepb.IdentityProviderType_OIDC:
 		var formattedConfig storepb.OIDCIdentityProviderConfig
 		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(config), &formattedConfig); err != nil {
 			return nil
@@ -314,7 +317,7 @@ func convertIdentityProviderConfigString(identityProviderType storepb.IdentityPr
 		identityProviderConfig.Config = &storepb.IdentityProviderConfig_OidcConfig{
 			OidcConfig: &formattedConfig,
 		}
-	} else if identityProviderType == storepb.IdentityProviderType_LDAP {
+	case storepb.IdentityProviderType_LDAP:
 		var formattedConfig storepb.LDAPIdentityProviderConfig
 		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(config), &formattedConfig); err != nil {
 			return nil

@@ -1017,7 +1017,7 @@ func (s *SchemaState) pgGenerateIndexName(createIndex *ast.CreateIndexStmt) (str
 				return "", err
 			}
 			if expressionID != 0 {
-				if _, err := buf.WriteString(fmt.Sprintf("%d", expressionID)); err != nil {
+				if _, err := fmt.Fprintf(buf, "%d", expressionID); err != nil {
 					return "", err
 				}
 			}
