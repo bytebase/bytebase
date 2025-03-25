@@ -1,6 +1,6 @@
 <template>
   <template v-if="showButton">
-    <template v-if="enabled">
+    <template v-if="openAIEnabled">
       <NPopselect
         v-if="options.length > 0"
         placement="bottom-end"
@@ -14,7 +14,7 @@
       </NPopselect>
       <Button v-else v-bind="$attrs" @click="handleClickButton" />
     </template>
-    <NPopover v-if="!enabled" placement="bottom-end">
+    <NPopover v-if="!openAIEnabled" placement="bottom-end">
       <template #trigger>
         <Button v-bind="$attrs" :disabled="true" />
       </template>
@@ -85,8 +85,9 @@ const tabStore = useSQLEditorTabStore();
 const settingV1Store = useSettingV1Store();
 const databaseChangeMode = useAppFeature("bb.feature.database-change-mode");
 
-const openAIKey = computed(
-  () => settingV1Store.getSettingByName("bb.ai")?.value?.aiSetting?.apiKey
+const openAIEnabled = computed(
+  () =>
+    settingV1Store.getSettingByName("bb.ai")?.value?.aiSetting?.enabled ?? false
 );
 
 const { showAIPanel } = useSQLEditorContext();
@@ -115,10 +116,6 @@ const options = computed(() => {
 
 const showButton = computed(() => {
   return !tabStore.isDisconnected && tabStore.currentTab?.mode === "WORKSHEET";
-});
-
-const enabled = computed(() => {
-  return openAIKey.value;
 });
 
 const allowConfigure = computed((): boolean => {
