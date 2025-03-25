@@ -8837,6 +8837,8 @@ components:
                     allOf:
                         - $ref: '#/components/schemas/GenerationMetadata'
                     description: The generation is the generation of a column.
+                isIdentity:
+                    type: boolean
                 identityGeneration:
                     enum:
                         - IDENTITY_GENERATION_UNSPECIFIED
@@ -8845,6 +8847,12 @@ components:
                     type: string
                     description: The identity_generation is for identity columns, PG only.
                     format: enum
+                identitySeed:
+                    type: string
+                    description: The identity_seed is for identity columns, MSSQL only.
+                identityIncrement:
+                    type: string
+                    description: The identity_increment is for identity columns, MSSQL only.
             description: ColumnMetadata is the metadata for columns.
         Content_Part:
             type: object

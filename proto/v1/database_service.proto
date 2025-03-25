@@ -745,6 +745,8 @@ message ColumnMetadata {
   // The generation is the generation of a column.
   GenerationMetadata generation = 16;
 
+  bool is_identity = 19;
+
   enum IdentityGeneration {
     IDENTITY_GENERATION_UNSPECIFIED = 0;
     ALWAYS = 1;
@@ -753,6 +755,12 @@ message ColumnMetadata {
 
   // The identity_generation is for identity columns, PG only.
   IdentityGeneration identity_generation = 17;
+
+  // The identity_seed is for identity columns, MSSQL only.
+  int64 identity_seed = 20;
+
+  // The identity_increment is for identity columns, MSSQL only.
+  int64 identity_increment = 21;
 }
 
 message GenerationMetadata {

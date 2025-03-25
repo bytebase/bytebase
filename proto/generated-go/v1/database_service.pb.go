@@ -2617,10 +2617,15 @@ type ColumnMetadata struct {
 	UserComment string `protobuf:"bytes,13,opt,name=user_comment,json=userComment,proto3" json:"user_comment,omitempty"`
 	// The generation is the generation of a column.
 	Generation *GenerationMetadata `protobuf:"bytes,16,opt,name=generation,proto3" json:"generation,omitempty"`
+	IsIdentity bool                `protobuf:"varint,19,opt,name=is_identity,json=isIdentity,proto3" json:"is_identity,omitempty"`
 	// The identity_generation is for identity columns, PG only.
 	IdentityGeneration ColumnMetadata_IdentityGeneration `protobuf:"varint,17,opt,name=identity_generation,json=identityGeneration,proto3,enum=bytebase.v1.ColumnMetadata_IdentityGeneration" json:"identity_generation,omitempty"`
-	unknownFields      protoimpl.UnknownFields
-	sizeCache          protoimpl.SizeCache
+	// The identity_seed is for identity columns, MSSQL only.
+	IdentitySeed int64 `protobuf:"varint,20,opt,name=identity_seed,json=identitySeed,proto3" json:"identity_seed,omitempty"`
+	// The identity_increment is for identity columns, MSSQL only.
+	IdentityIncrement int64 `protobuf:"varint,21,opt,name=identity_increment,json=identityIncrement,proto3" json:"identity_increment,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
 }
 
 func (x *ColumnMetadata) Reset() {
@@ -2771,11 +2776,32 @@ func (x *ColumnMetadata) GetGeneration() *GenerationMetadata {
 	return nil
 }
 
+func (x *ColumnMetadata) GetIsIdentity() bool {
+	if x != nil {
+		return x.IsIdentity
+	}
+	return false
+}
+
 func (x *ColumnMetadata) GetIdentityGeneration() ColumnMetadata_IdentityGeneration {
 	if x != nil {
 		return x.IdentityGeneration
 	}
 	return ColumnMetadata_IDENTITY_GENERATION_UNSPECIFIED
+}
+
+func (x *ColumnMetadata) GetIdentitySeed() int64 {
+	if x != nil {
+		return x.IdentitySeed
+	}
+	return 0
+}
+
+func (x *ColumnMetadata) GetIdentityIncrement() int64 {
+	if x != nil {
+		return x.IdentityIncrement
+	}
+	return 0
 }
 
 type isColumnMetadata_Default interface {
@@ -5964,7 +5990,7 @@ const file_v1_database_service_proto_rawDesc = "" +
 	"\vLINEAR_HASH\x10\x06\x12\a\n" +
 	"\x03KEY\x10\a\x12\x0e\n" +
 	"\n" +
-	"LINEAR_KEY\x10\b\"\xd9\x05\n" +
+	"LINEAR_KEY\x10\b\"\xce\x06\n" +
 	"\x0eColumnMetadata\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1a\n" +
 	"\bposition\x18\x02 \x01(\x05R\bposition\x12\x1f\n" +
@@ -5984,8 +6010,12 @@ const file_v1_database_service_proto_rawDesc = "" +
 	"\fuser_comment\x18\r \x01(\tR\vuserComment\x12?\n" +
 	"\n" +
 	"generation\x18\x10 \x01(\v2\x1f.bytebase.v1.GenerationMetadataR\n" +
-	"generation\x12_\n" +
-	"\x13identity_generation\x18\x11 \x01(\x0e2..bytebase.v1.ColumnMetadata.IdentityGenerationR\x12identityGeneration\"U\n" +
+	"generation\x12\x1f\n" +
+	"\vis_identity\x18\x13 \x01(\bR\n" +
+	"isIdentity\x12_\n" +
+	"\x13identity_generation\x18\x11 \x01(\x0e2..bytebase.v1.ColumnMetadata.IdentityGenerationR\x12identityGeneration\x12#\n" +
+	"\ridentity_seed\x18\x14 \x01(\x03R\fidentitySeed\x12-\n" +
+	"\x12identity_increment\x18\x15 \x01(\x03R\x11identityIncrement\"U\n" +
 	"\x12IdentityGeneration\x12#\n" +
 	"\x1fIDENTITY_GENERATION_UNSPECIFIED\x10\x00\x12\n" +
 	"\n" +

@@ -1160,7 +1160,10 @@ ColumnMetadata is the metadata for columns.
 | comment | [string](#string) |  | The comment is the comment of a column. classification and user_comment is parsed from the comment. |
 | user_comment | [string](#string) |  | The user_comment is the user comment of a table parsed from the comment. |
 | generation | [GenerationMetadata](#bytebase-store-GenerationMetadata) |  | The generation is for generated columns. |
+| is_identity | [bool](#bool) |  |  |
 | identity_generation | [ColumnMetadata.IdentityGeneration](#bytebase-store-ColumnMetadata-IdentityGeneration) |  | The identity_generation is for identity columns, PG only. |
+| identity_seed | [int64](#int64) |  | The identity_seed is for identity columns, MSSQL only. |
+| identity_increment | [int64](#int64) |  | The identity_increment is for identity columns, MSSQL only. |
 
 
 
