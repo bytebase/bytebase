@@ -555,6 +555,7 @@
         "failed-to-update-setting": "設定「{title}」の更新に失敗しました",
         "ai-assistant": {
           "self": "AI アシスタント",
+          "enable-ai-assistant": "AIアシスタントを有効にする",
           "description": "OpenAPI を使用してデータベース開発タスクを支援します。",
           "openai-key": {
             "self": "OpenAI APIキー",
