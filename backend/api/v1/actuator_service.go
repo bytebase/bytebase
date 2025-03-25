@@ -126,7 +126,7 @@ func (s *ActuatorService) getServerInfo(ctx context.Context) (*v1pb.ActuatorInfo
 		ExternalUrl:            setting.ExternalUrl,
 		DisallowSignup:         setting.DisallowSignup,
 		Require_2Fa:            setting.Require_2Fa,
-		LastActiveTime:         timestamppb.New(time.Unix(s.profile.LastActiveTs, 0)),
+		LastActiveTime:         timestamppb.New(time.Unix(s.profile.LastActiveTS, 0)),
 		WorkspaceId:            workspaceID,
 		Debug:                  s.profile.RuntimeDebug.Load(),
 		Docker:                 s.profile.IsDocker,

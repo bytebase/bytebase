@@ -196,7 +196,7 @@ func (m *Reporter) identify(ctx context.Context) (string, error) {
 			identifyTraitForOrgID:                 orgID,
 			identifyTraitForOrgName:               orgName,
 			identifyTraitForMode:                  mode,
-			identifyTraitForLastActiveTime:        time.Unix(m.profile.LastActiveTs, 0).String(),
+			identifyTraitForLastActiveTime:        time.Unix(m.profile.LastActiveTS, 0).String(),
 			identifyTraitForSubscriptionStartDate: subscriptionStartDate,
 			identifyTraitForSubscriptionEndDate:   subscriptionEndDate,
 		},

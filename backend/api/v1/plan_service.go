@@ -468,12 +468,12 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 					}
 					specEarliest := spec.EarliestAllowedTime.GetSeconds()
 					if specEarliest != taskEarliest {
-						taskPatch.UpdateEarliestAllowedTs = true
+						taskPatch.UpdateEarliestAllowedTS = true
 						if specEarliest == 0 {
-							taskPatch.EarliestAllowedTs = nil
+							taskPatch.EarliestAllowedTS = nil
 						} else {
 							v := spec.EarliestAllowedTime.AsTime()
-							taskPatch.EarliestAllowedTs = &v
+							taskPatch.EarliestAllowedTS = &v
 						}
 						doUpdate = true
 
@@ -687,7 +687,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 			}
 
 			for _, taskPatch := range taskPatchList {
-				if taskPatch.SheetID != nil || taskPatch.EarliestAllowedTs != nil {
+				if taskPatch.SheetID != nil || taskPatch.EarliestAllowedTS != nil {
 					task := tasksMap[taskPatch.ID]
 					if task.LatestTaskRunStatus == api.TaskRunPending || task.LatestTaskRunStatus == api.TaskRunRunning || task.LatestTaskRunStatus == api.TaskRunSkipped || task.LatestTaskRunStatus == api.TaskRunDone {
 						return nil, status.Errorf(codes.FailedPrecondition, "cannot update plan because task %v is %s", task.ID, task.LatestTaskRunStatus)

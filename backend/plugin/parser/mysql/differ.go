@@ -872,7 +872,7 @@ func sortAndWriteDropCheckConstraintList(buf *strings.Builder, checks []*checkDe
 }
 
 func writeDropCheckConstraintStatement(buf *strings.Builder, check *checkDef) error {
-	if _, err := buf.WriteString(fmt.Sprintf("ALTER TABLE `%s` DROP CHECK `%s`;\n\n", check.tableName, check.name)); err != nil {
+	if _, err := fmt.Fprintf(buf, "ALTER TABLE `%s` DROP CHECK `%s`;\n\n", check.tableName, check.name); err != nil {
 		return err
 	}
 	return nil
@@ -894,7 +894,7 @@ func sortAndWriteAddCheckConstraintList(buf *strings.Builder, checks []*checkDef
 }
 
 func writeAddCheckConstraintStatement(buf *strings.Builder, check *checkDef) error {
-	if _, err := buf.WriteString(fmt.Sprintf("ALTER TABLE `%s` ADD ", check.tableName)); err != nil {
+	if _, err := fmt.Fprintf(buf, "ALTER TABLE `%s` ADD ", check.tableName); err != nil {
 		return err
 	}
 	if _, err := buf.WriteString(check.ctx.GetParser().GetTokenStream().GetTextFromRuleContext(check.ctx.GetRuleContext())); err != nil {

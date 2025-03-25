@@ -328,7 +328,7 @@ func genMaterializedViewDDL(opts *MaterializedViewDDLOptions) (string, error) {
 func formatColumn(builder *strings.Builder, columnNames []string) {
 	_, _ = builder.WriteString("(\n")
 	for idx, colName := range columnNames {
-		_, _ = builder.WriteString(fmt.Sprintf("  `%s`", colName))
+		_, _ = fmt.Fprintf(builder, "  `%s`", colName)
 		if idx != len(columnNames)-1 {
 			_, _ = builder.WriteString(",\n")
 		}
@@ -341,7 +341,7 @@ func formatKVPair(builder *strings.Builder, kvMap map[string]string) {
 	count := 0
 	for key, value := range kvMap {
 		count++
-		_, _ = builder.WriteString(fmt.Sprintf("  '%s' = '%s'", key, value))
+		_, _ = fmt.Fprintf(builder, "  '%s' = '%s'", key, value)
 		if count != len(kvMap) {
 			_, _ = builder.WriteString(",\n")
 		}

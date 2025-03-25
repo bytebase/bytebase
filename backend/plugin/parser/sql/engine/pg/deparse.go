@@ -1073,7 +1073,7 @@ func deparseColumnConstraint(_ DeparseContext, in *ast.ConstraintDef, buf *strin
 			return err
 		}
 	case ast.ConstraintTypeGenerated:
-		if _, err := buf.WriteString(fmt.Sprintf("GENERATED ALWAYS AS (%s) STORED", in.Expression.Text())); err != nil {
+		if _, err := fmt.Fprintf(buf, "GENERATED ALWAYS AS (%s) STORED", in.Expression.Text()); err != nil {
 			return err
 		}
 	default:
@@ -1240,7 +1240,7 @@ func deparseAlterSequence(ctx DeparseContext, in *ast.AlterSequenceStmt, buf *st
 			return err
 		}
 
-		if _, err := buf.WriteString(fmt.Sprintf("INCREMENT BY %d", *in.IncrementBy)); err != nil {
+		if _, err := fmt.Fprintf(buf, "INCREMENT BY %d", *in.IncrementBy); err != nil {
 			return err
 		}
 	}
@@ -1264,7 +1264,7 @@ func deparseAlterSequence(ctx DeparseContext, in *ast.AlterSequenceStmt, buf *st
 			return err
 		}
 
-		if _, err := buf.WriteString(fmt.Sprintf("MINVALUE %d", *in.MinValue)); err != nil {
+		if _, err := fmt.Fprintf(buf, "MINVALUE %d", *in.MinValue); err != nil {
 			return err
 		}
 	}
@@ -1288,7 +1288,7 @@ func deparseAlterSequence(ctx DeparseContext, in *ast.AlterSequenceStmt, buf *st
 			return err
 		}
 
-		if _, err := buf.WriteString(fmt.Sprintf("MAXVALUE %d", *in.MaxValue)); err != nil {
+		if _, err := fmt.Fprintf(buf, "MAXVALUE %d", *in.MaxValue); err != nil {
 			return err
 		}
 	}
@@ -1301,7 +1301,7 @@ func deparseAlterSequence(ctx DeparseContext, in *ast.AlterSequenceStmt, buf *st
 			return err
 		}
 
-		if _, err := buf.WriteString(fmt.Sprintf("START WITH %d", *in.StartWith)); err != nil {
+		if _, err := fmt.Fprintf(buf, "START WITH %d", *in.StartWith); err != nil {
 			return err
 		}
 	}
@@ -1314,7 +1314,7 @@ func deparseAlterSequence(ctx DeparseContext, in *ast.AlterSequenceStmt, buf *st
 			return err
 		}
 
-		if _, err := buf.WriteString(fmt.Sprintf("RESTART WITH %d", *in.RestartWith)); err != nil {
+		if _, err := fmt.Fprintf(buf, "RESTART WITH %d", *in.RestartWith); err != nil {
 			return err
 		}
 	}
@@ -1327,7 +1327,7 @@ func deparseAlterSequence(ctx DeparseContext, in *ast.AlterSequenceStmt, buf *st
 			return err
 		}
 
-		if _, err := buf.WriteString(fmt.Sprintf("CACHE %d", *in.Cache)); err != nil {
+		if _, err := fmt.Fprintf(buf, "CACHE %d", *in.Cache); err != nil {
 			return err
 		}
 	}
@@ -1630,7 +1630,7 @@ func depraseSequenceDef(ctx DeparseContext, in *ast.SequenceDef, buf *strings.Bu
 		if err := ctx.WriteIndent(buf, deparseIndentString); err != nil {
 			return err
 		}
-		if _, err := buf.WriteString(fmt.Sprintf("INCREMENT BY %d", *in.IncrementBy)); err != nil {
+		if _, err := fmt.Fprintf(buf, "INCREMENT BY %d", *in.IncrementBy); err != nil {
 			return err
 		}
 	}
@@ -1641,7 +1641,7 @@ func depraseSequenceDef(ctx DeparseContext, in *ast.SequenceDef, buf *strings.Bu
 		if err := ctx.WriteIndent(buf, deparseIndentString); err != nil {
 			return err
 		}
-		if _, err := buf.WriteString(fmt.Sprintf("MINVALUE %d", *in.MinValue)); err != nil {
+		if _, err := fmt.Fprintf(buf, "MINVALUE %d", *in.MinValue); err != nil {
 			return err
 		}
 	} else {
