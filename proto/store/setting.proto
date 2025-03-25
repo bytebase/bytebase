@@ -341,6 +341,7 @@ message AISetting {
     OPEN_AI = 1;
     CLAUDE = 2;
     GEMINI = 3;
+    AZURE_OPENAI = 4;
   }
   Provider provider = 2;
   string endpoint = 3;
