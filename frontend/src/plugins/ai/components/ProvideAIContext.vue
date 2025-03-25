@@ -3,9 +3,6 @@
 </template>
 
 <script lang="ts" setup>
-import Emittery from "emittery";
-import { storeToRefs } from "pinia";
-import { computed, reactive, ref, toRef } from "vue";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import {
   useConnectionOfCurrentSQLEditorTab,
@@ -13,7 +10,11 @@ import {
   useSettingV1Store,
   useSQLEditorTabStore,
 } from "@/store";
+import { AISetting } from "@/types/proto/v1/setting_service";
 import { wrapRefAsPromise } from "@/utils";
+import Emittery from "emittery";
+import { storeToRefs } from "pinia";
+import { computed, reactive, ref, toRef } from "vue";
 import { provideAIContext, useChatByTab, useCurrentChat } from "../logic";
 import { useConversationStore } from "../store";
 import type { AIContext, AIContextEvents } from "../types";
@@ -27,12 +28,7 @@ const state = reactive<LocalState>({
 });
 
 const settingV1Store = useSettingV1Store();
-const aiSetting = settingV1Store.getSettingByName("bb.ai");
-const openAIKey = computed(() => aiSetting?.value?.aiSetting?.apiKey ?? "");
-const openAIEndpoint = computed(
-  () => aiSetting?.value?.aiSetting?.endpoint ?? ""
-);
-const openAIModel = computed(() => aiSetting?.value?.aiSetting?.model ?? "");
+const aiSetting = computed(() => settingV1Store.getSettingByName("bb.ai")?.value?.aiSetting ?? AISetting.create());
 const { instance, database } = useConnectionOfCurrentSQLEditorTab();
 
 const databaseMetadata = useMetadata(
@@ -51,9 +47,7 @@ const schema = computed(() => tab.value?.connection.schema);
 const store = useConversationStore();
 
 const context: AIContext = {
-  openAIKey,
-  openAIEndpoint,
-  openAIModel,
+  aiSetting: aiSetting,
   engine: computed(() => instance.value.engine),
   databaseMetadata,
   schema,

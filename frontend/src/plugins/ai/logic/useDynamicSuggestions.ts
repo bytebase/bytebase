@@ -1,8 +1,8 @@
+import { hashCode } from "@/bbkit/BBUtil";
+import { WebStorageHelper } from "@/utils";
 import { Axios, type AxiosResponse } from "axios";
 import { head, uniq, values } from "lodash-es";
 import { computed, reactive, ref } from "vue";
-import { hashCode } from "@/bbkit/BBUtil";
-import { WebStorageHelper } from "@/utils";
 import type { OpenAIMessage, OpenAIResponse } from "../types";
 import { useAIContext } from "./context";
 import * as promptUtils from "./prompt";
@@ -43,7 +43,7 @@ export const useDynamicSuggestions = () => {
   const requestAI = async (messages: OpenAIMessage[]) => {
     await new Promise((resolve) => setTimeout(resolve, 1000));
     const body = {
-      model: context.openAIModel.value,
+      model: context.aiSetting.value.model,
       messages,
       temperature: 0,
       stop: ["#", ";"],
@@ -55,13 +55,17 @@ export const useDynamicSuggestions = () => {
       timeout: 300 * 1000,
       responseType: "json",
     });
-    const headers = {
+    const headers: { [key: string]: string } = {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${context.openAIKey.value}`,
     };
+    if (context.aiSetting.value.provider === "AZURE_OPENAI") {
+      headers["api-key"] = context.aiSetting.value.apiKey;
+    } else {
+      headers["Authorization"] = `Bearer ${context.aiSetting.value.apiKey}`;
+    }
     try {
       const response: AxiosResponse<string> = await axios.post(
-        context.openAIEndpoint.value,
+        context.aiSetting.value.endpoint,
         JSON.stringify(body),
         {
           headers,
