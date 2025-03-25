@@ -555,6 +555,7 @@
         "failed-to-update-setting": "Failed to update setting \"{title}\"",
         "ai-assistant": {
           "self": "AI Assistant",
+          "enable-ai-assistant": "Enable AI Assistant",
           "description": "Use OpenAPI to assist the database development tasks.",
           "openai-key": {
             "self": "OpenAI API Key",
