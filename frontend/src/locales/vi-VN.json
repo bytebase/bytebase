@@ -557,17 +557,17 @@
           "self": "Trợ lý AI",
           "enable-ai-assistant": "Bật Trợ lý AI",
           "description": "Sử dụng OpenAPI để hỗ trợ các tác vụ phát triển cơ sở dữ liệu.",
-          "openai-key": {
+          "api-key": {
             "self": "Khóa API OpenAI",
             "description": "Cung cấp Khóa API OpenAI. {viewDoc}",
             "find-my-key": "Tìm khóa của tôi",
             "placeholder": "Khóa API OpenAI thường bắt đầu bằng sk-*****"
           },
-          "openai-endpoint": {
+          "endpoint": {
             "self": "Điểm cuối API OpenAI",
             "description": "Cung cấp triển khai riêng của Điểm cuối API OpenAI."
           },
-          "openai-model": {
+          "model": {
             "self": "Tên mô hình OpenAI",
             "description": "Cung cấp triển khai riêng của tên mô hình OpenAI."
           }

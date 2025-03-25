@@ -41,12 +41,12 @@
           <div>
             <label class="flex items-center gap-x-2">
               <span class="font-medium">{{
-                $t("settings.general.workspace.ai-assistant.openai-key.self")
+                $t("settings.general.workspace.ai-assistant.api-key.self")
               }}</span>
             </label>
             <div class="mb-3 text-sm text-gray-400">
               <i18n-t
-                keypath="settings.general.workspace.ai-assistant.openai-key.description"
+                keypath="settings.general.workspace.ai-assistant.api-key.description"
               >
                 <template #viewDoc>
                   <a
@@ -55,7 +55,7 @@
                     target="_blank"
                     >{{
                       $t(
-                        "settings.general.workspace.ai-assistant.openai-key.find-my-key"
+                        "settings.general.workspace.ai-assistant.api-key.find-my-key"
                       )
                     }}
                   </a>
@@ -70,7 +70,7 @@
                   :disabled="!allowEdit || !hasAIFeature"
                   :placeholder="
                     $t(
-                      'settings.general.workspace.ai-assistant.openai-key.placeholder'
+                      'settings.general.workspace.ai-assistant.api-key.placeholder'
                     )
                   "
                 />
@@ -84,15 +84,13 @@
           <div>
             <label class="flex items-center gap-x-2">
               <span class="font-medium">{{
-                $t(
-                  "settings.general.workspace.ai-assistant.openai-endpoint.self"
-                )
+                $t("settings.general.workspace.ai-assistant.endpoint.self")
               }}</span>
             </label>
             <div class="mb-3 text-sm text-gray-400">
               {{
                 $t(
-                  "settings.general.workspace.ai-assistant.openai-endpoint.description"
+                  "settings.general.workspace.ai-assistant.endpoint.description"
                 )
               }}
             </div>
@@ -113,14 +111,12 @@
           <div>
             <label class="flex items-center gap-x-2">
               <span class="font-medium">{{
-                $t("settings.general.workspace.ai-assistant.openai-model.self")
+                $t("settings.general.workspace.ai-assistant.model.self")
               }}</span>
             </label>
             <div class="mb-3 text-sm text-gray-400">
               {{
-                $t(
-                  "settings.general.workspace.ai-assistant.openai-model.description"
-                )
+                $t("settings.general.workspace.ai-assistant.model.description")
               }}
             </div>
             <NTooltip placement="top-start" :disabled="allowEdit">
