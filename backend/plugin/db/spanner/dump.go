@@ -17,7 +17,7 @@ func (d *Driver) Dump(ctx context.Context, out io.Writer, _ *storepb.DatabaseSch
 	if err != nil {
 		return err
 	}
-	var dumpableDbNames []string
+	var dumpableDBNames []string
 	if d.databaseName != "" {
 		exist := false
 		for _, db := range instance.Databases {
@@ -29,13 +29,13 @@ func (d *Driver) Dump(ctx context.Context, out io.Writer, _ *storepb.DatabaseSch
 		if !exist {
 			return errors.Errorf("database %q not found", d.databaseName)
 		}
-		dumpableDbNames = []string{d.databaseName}
+		dumpableDBNames = []string{d.databaseName}
 	} else {
 		for _, db := range instance.Databases {
-			dumpableDbNames = append(dumpableDbNames, db.Name)
+			dumpableDBNames = append(dumpableDBNames, db.Name)
 		}
 	}
-	for _, db := range dumpableDbNames {
+	for _, db := range dumpableDBNames {
 		resp, err := d.dbClient.GetDatabaseDdl(ctx, &databasepb.GetDatabaseDdlRequest{
 			Database: getDSN(d.config.DataSource.Host, db),
 		})

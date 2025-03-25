@@ -372,8 +372,8 @@ type SchemaState struct {
 	identifierMap identifierMap
 }
 
-func (d *SchemaState) Index(tableIndexFind *TableIndexFind) *IndexStateMap {
-	table, exists := d.getTable(tableIndexFind.TableName)
+func (s *SchemaState) Index(tableIndexFind *TableIndexFind) *IndexStateMap {
+	table, exists := s.getTable(tableIndexFind.TableName)
 	if !exists {
 		return nil
 	}
@@ -401,32 +401,32 @@ type TableState struct {
 }
 
 // ListColumns return the list of columns.
-func (table *TableState) ListColumns() []*ColumnState {
+func (t *TableState) ListColumns() []*ColumnState {
 	var columns []*ColumnState
-	for _, v := range table.columnSet {
+	for _, v := range t.columnSet {
 		columns = append(columns, v)
 	}
 	return columns
 }
 
 // CountIndex return the index total number.
-func (table *TableState) CountIndex() int {
-	return len(table.indexSet)
+func (t *TableState) CountIndex() int {
+	return len(t.indexSet)
 }
 
 // Index return the index map of table.
-func (table *TableState) Index(_ *TableIndexFind) *IndexStateMap {
-	return &table.indexSet
+func (t *TableState) Index(_ *TableIndexFind) *IndexStateMap {
+	return &t.indexSet
 }
 
-func (table *TableState) copy() *TableState {
+func (t *TableState) copy() *TableState {
 	return &TableState{
-		name:      table.name,
-		engine:    copyStringPointer(table.engine),
-		collation: copyStringPointer(table.collation),
-		comment:   copyStringPointer(table.comment),
-		columnSet: table.columnSet.copy(),
-		indexSet:  table.indexSet.copy(),
+		name:      t.name,
+		engine:    copyStringPointer(t.engine),
+		collation: copyStringPointer(t.collation),
+		comment:   copyStringPointer(t.comment),
+		columnSet: t.columnSet.copy(),
+		indexSet:  t.indexSet.copy(),
 	}
 }
 

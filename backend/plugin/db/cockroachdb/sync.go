@@ -24,19 +24,19 @@ import (
 )
 
 // SyncInstance syncs the instance.
-func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
-	version, err := driver.getVersion(ctx)
+func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
+	version, err := d.getVersion(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	instanceRoles, err := driver.getInstanceRoles(ctx)
+	instanceRoles, err := d.getInstanceRoles(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	// Query db info
-	databases, err := driver.getDatabases(ctx)
+	databases, err := d.getDatabases(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get databases")
 	}
@@ -60,26 +60,26 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, e
 }
 
 // SyncDBSchema syncs a single database schema.
-func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetadata, error) {
+func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetadata, error) {
 	// Query db info
-	databases, err := driver.getDatabases(ctx)
+	databases, err := d.getDatabases(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get databases")
 	}
 
 	var databaseMetadata *storepb.DatabaseSchemaMetadata
 	for _, database := range databases {
-		if database.Name == driver.databaseName {
+		if database.Name == d.databaseName {
 			databaseMetadata = database
 			break
 		}
 	}
 	if databaseMetadata == nil {
-		return nil, common.Errorf(common.NotFound, "database %q not found", driver.databaseName)
+		return nil, common.Errorf(common.NotFound, "database %q not found", d.databaseName)
 	}
-	isAtLeastPG10 := isAtLeastPG10(driver.connectionCtx.EngineVersion)
+	isAtLeastPG10 := isAtLeastPG10(d.connectionCtx.EngineVersion)
 
-	txn, err := driver.db.BeginTx(ctx, nil)
+	txn, err := d.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -87,43 +87,43 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 
 	schemas, err := getSchemas(txn)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get schemas from database %q", driver.databaseName)
+		return nil, errors.Wrapf(err, "failed to get schemas from database %q", d.databaseName)
 	}
 	columnMap, err := getTableColumns(txn)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get columns from database %q", driver.databaseName)
+		return nil, errors.Wrapf(err, "failed to get columns from database %q", d.databaseName)
 	}
 	tableMap, externalTableMap, err := getTables(txn, isAtLeastPG10, columnMap)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get tables from database %q", driver.databaseName)
+		return nil, errors.Wrapf(err, "failed to get tables from database %q", d.databaseName)
 	}
 	var tablePartitionMap map[db.TableKey][]*storepb.TablePartitionMetadata
 	if isAtLeastPG10 {
 		tablePartitionMap, err = getTablePartitions(txn)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get table partitions from database %q", driver.databaseName)
+			return nil, errors.Wrapf(err, "failed to get table partitions from database %q", d.databaseName)
 		}
 	}
 	viewMap, err := getViews(txn, columnMap)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get views from database %q", driver.databaseName)
+		return nil, errors.Wrapf(err, "failed to get views from database %q", d.databaseName)
 	}
 	materializedViewMap, err := getMaterializedViews(txn)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get materialized views from database %q", driver.databaseName)
+		return nil, errors.Wrapf(err, "failed to get materialized views from database %q", d.databaseName)
 	}
 	functionMap, err := getFunctions(txn)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get functions from database %q", driver.databaseName)
+		return nil, errors.Wrapf(err, "failed to get functions from database %q", d.databaseName)
 	}
 	sequenceMap, err := getSequences(txn)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get sequences from database %q", driver.databaseName)
+		return nil, errors.Wrapf(err, "failed to get sequences from database %q", d.databaseName)
 	}
 
 	extensions, err := getExtensions(txn)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get extensions from database %q", driver.databaseName)
+		return nil, errors.Wrapf(err, "failed to get extensions from database %q", d.databaseName)
 	}
 
 	if err := txn.Commit(); err != nil {

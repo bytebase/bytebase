@@ -10,14 +10,14 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-func (driver *Driver) getInstanceRoles(ctx context.Context) ([]*storepb.InstanceRole, error) {
+func (d *Driver) getInstanceRoles(ctx context.Context) ([]*storepb.InstanceRole, error) {
 	query := `
 		SELECT r.rolname, r.rolsuper, r.rolinherit, r.rolcreaterole, r.rolcreatedb, r.rolcanlogin, r.rolreplication, r.rolvaliduntil, r.rolbypassrls
 		FROM pg_catalog.pg_roles r
 		WHERE r.rolname !~ '^pg_';
 	`
 	var instanceRoles []*storepb.InstanceRole
-	rows, err := driver.db.QueryContext(ctx, query)
+	rows, err := d.db.QueryContext(ctx, query)
 	if err != nil {
 		return nil, util.FormatErrorWithQuery(err, query)
 	}

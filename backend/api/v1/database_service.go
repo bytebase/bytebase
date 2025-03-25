@@ -813,10 +813,7 @@ func (s *DatabaseService) DiffSchema(ctx context.Context, request *v1pb.DiffSche
 		return nil, status.Errorf(codes.Internal, "failed to get parser engine, error: %v", err)
 	}
 
-	strictMode := true
-	if engine == storepb.Engine_ORACLE {
-		strictMode = false
-	}
+	strictMode := engine != storepb.Engine_ORACLE
 	diff, err := base.SchemaDiff(engine, base.DiffContext{
 		IgnoreCaseSensitive: false,
 		StrictMode:          strictMode,

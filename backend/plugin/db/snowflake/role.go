@@ -8,7 +8,7 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-func (driver *Driver) getInstanceRoles(ctx context.Context) ([]*storepb.InstanceRole, error) {
+func (d *Driver) getInstanceRoles(ctx context.Context) ([]*storepb.InstanceRole, error) {
 	grantQuery := `
 		SELECT
 			GRANTEE_NAME,
@@ -16,7 +16,7 @@ func (driver *Driver) getInstanceRoles(ctx context.Context) ([]*storepb.Instance
 		FROM SNOWFLAKE.ACCOUNT_USAGE.GRANTS_TO_USERS
 	`
 	grants := make(map[string][]string)
-	grantRows, err := driver.db.QueryContext(ctx, grantQuery)
+	grantRows, err := d.db.QueryContext(ctx, grantQuery)
 	if err != nil {
 		return nil, util.FormatErrorWithQuery(err, grantQuery)
 	}
@@ -46,7 +46,7 @@ func (driver *Driver) getInstanceRoles(ctx context.Context) ([]*storepb.Instance
 		ORDER BY name ASC
 	`
 	var instanceRoles []*storepb.InstanceRole
-	rows, err := driver.db.QueryContext(ctx, userQuery)
+	rows, err := d.db.QueryContext(ctx, userQuery)
 	if err != nil {
 		return nil, util.FormatErrorWithQuery(err, userQuery)
 	}

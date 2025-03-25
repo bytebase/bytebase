@@ -295,7 +295,7 @@ type columnState struct {
 }
 
 func (c *columnState) toString(buf *strings.Builder) error {
-	if _, err := buf.WriteString(fmt.Sprintf("%s ", c.name)); err != nil {
+	if _, err := fmt.Fprintf(buf, "%s ", c.name); err != nil {
 		return err
 	}
 	if _, err := buf.WriteString(c.tp); err != nil {

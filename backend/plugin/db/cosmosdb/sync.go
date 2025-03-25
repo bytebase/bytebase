@@ -10,11 +10,11 @@ import (
 )
 
 // SyncInstance syncs the instance meta.
-func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
+func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
 	var databases []*storepb.DatabaseSchemaMetadata
 	// List databases names.
 	// https://github.com/Azure/azure-sdk-for-go/pull/19769
-	queryPager := driver.client.NewQueryDatabasesPager("select * from dbs d", nil)
+	queryPager := d.client.NewQueryDatabasesPager("select * from dbs d", nil)
 	for queryPager.More() {
 		queryResponse, err := queryPager.NextPage(ctx)
 		if err != nil {
@@ -32,13 +32,13 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, e
 }
 
 // SyncDBSchema syncs the database schema.
-func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetadata, error) {
+func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetadata, error) {
 	var containers []*storepb.TableMetadata
 	// List containers names.
 	// https://github.com/Azure/azure-sdk-for-go/pull/19769
-	database, err := driver.client.NewDatabase(driver.databaseName)
+	database, err := d.client.NewDatabase(d.databaseName)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get database %q", driver.databaseName)
+		return nil, errors.Wrapf(err, "failed to get database %q", d.databaseName)
 	}
 	queryPager := database.NewQueryContainersPager("select * from colls c", nil)
 	for queryPager.More() {
@@ -53,7 +53,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 		}
 	}
 	return &storepb.DatabaseSchemaMetadata{
-		Name: driver.databaseName,
+		Name: d.databaseName,
 		Schemas: []*storepb.SchemaMetadata{
 			{
 				Tables: containers,

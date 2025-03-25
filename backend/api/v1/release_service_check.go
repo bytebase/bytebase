@@ -280,7 +280,7 @@ func (s *ReleaseService) runSQLReviewCheckForFile(
 		Collation:                dbMetadata.Collation,
 		ChangeType:               changeType,
 		DBSchema:                 dbMetadata,
-		DbType:                   instance.Metadata.GetEngine(),
+		DBType:                   instance.Metadata.GetEngine(),
 		Catalog:                  catalog,
 		Driver:                   connection,
 		CurrentDatabase:          database.DatabaseName,

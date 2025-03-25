@@ -29,5 +29,5 @@ jobs:
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v6
         with:
-          version: v1.64.7
+          version: v2.0.1
           args: --verbose -j 8 --timeout 30m --max-same-issues=30 --allow-parallel-runners

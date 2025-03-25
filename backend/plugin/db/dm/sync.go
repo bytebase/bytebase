@@ -16,16 +16,16 @@ import (
 const systemSchema = "'CTISYS','SYS','SYSAUDITOR','SYSDBA','SYSSSO'"
 
 // SyncInstance syncs the instance.
-func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
+func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
 	var fullVersion string
 	// DM Database Server 64 V8.
-	if err := driver.db.QueryRowContext(ctx, "SELECT BANNER FROM v$version WHERE banner LIKE 'DM%'").Scan(&fullVersion); err != nil {
+	if err := d.db.QueryRowContext(ctx, "SELECT BANNER FROM v$version WHERE banner LIKE 'DM%'").Scan(&fullVersion); err != nil {
 		return nil, err
 	}
 	tokens := strings.Fields(fullVersion)
 	version := tokens[len(tokens)-1]
 
-	txn, err := driver.db.BeginTx(ctx, nil)
+	txn, err := d.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -53,24 +53,24 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, e
 }
 
 // SyncDBSchema syncs a single database schema.
-func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetadata, error) {
-	txn, err := driver.db.BeginTx(ctx, nil)
+func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetadata, error) {
+	txn, err := d.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
 	defer txn.Rollback()
 
-	columnMap, err := getTableColumns(txn, driver.databaseName)
+	columnMap, err := getTableColumns(txn, d.databaseName)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get table columns from database %q", driver.databaseName)
+		return nil, errors.Wrapf(err, "failed to get table columns from database %q", d.databaseName)
 	}
-	tableMap, err := getTables(txn, driver.databaseName, columnMap)
+	tableMap, err := getTables(txn, d.databaseName, columnMap)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get tables from database %q", driver.databaseName)
+		return nil, errors.Wrapf(err, "failed to get tables from database %q", d.databaseName)
 	}
-	viewMap, err := getViews(txn, driver.databaseName, columnMap)
+	viewMap, err := getViews(txn, d.databaseName, columnMap)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get views from database %q", driver.databaseName)
+		return nil, errors.Wrapf(err, "failed to get views from database %q", d.databaseName)
 	}
 
 	if err := txn.Commit(); err != nil {
@@ -78,12 +78,12 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 	}
 
 	databaseMetadata := &storepb.DatabaseSchemaMetadata{
-		Name: driver.databaseName,
+		Name: d.databaseName,
 	}
 	databaseMetadata.Schemas = append(databaseMetadata.Schemas, &storepb.SchemaMetadata{
 		Name:   "",
-		Tables: tableMap[driver.databaseName],
-		Views:  viewMap[driver.databaseName],
+		Tables: tableMap[d.databaseName],
+		Views:  viewMap[d.databaseName],
 	})
 	return databaseMetadata, nil
 }

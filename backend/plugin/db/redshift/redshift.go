@@ -65,7 +65,7 @@ func newDriver(db.DriverConfig) db.Driver {
 }
 
 // Open opens a Postgres driver.
-func (driver *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
+func (d *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
 	if config.DataSource.Username == "" {
 		return nil, errors.Errorf("user must be set")
 	}
@@ -79,9 +79,9 @@ func (driver *Driver) Open(_ context.Context, _ storepb.Engine, config db.Connec
 	if err != nil {
 		return nil, err
 	}
-	pgxConnConfig.Config.User = config.DataSource.Username
-	pgxConnConfig.Config.Password = config.Password
-	pgxConnConfig.Config.Database = config.ConnectionContext.DatabaseName
+	pgxConnConfig.User = config.DataSource.Username
+	pgxConnConfig.Password = config.Password
+	pgxConnConfig.Database = config.ConnectionContext.DatabaseName
 
 	if config.DataSource.GetSslCert() != "" {
 		tlscfg, err := util.GetTLSConfig(config.DataSource)
@@ -95,9 +95,9 @@ func (driver *Driver) Open(_ context.Context, _ storepb.Engine, config db.Connec
 		if err != nil {
 			return nil, err
 		}
-		driver.sshClient = sshClient
+		d.sshClient = sshClient
 
-		pgxConnConfig.Config.DialFunc = func(_ context.Context, network, addr string) (net.Conn, error) {
+		pgxConnConfig.DialFunc = func(_ context.Context, network, addr string) (net.Conn, error) {
 			conn, err := sshClient.Dial(network, addr)
 			if err != nil {
 				return nil, err
@@ -105,60 +105,60 @@ func (driver *Driver) Open(_ context.Context, _ storepb.Engine, config db.Connec
 			return &util.NoDeadlineConn{Conn: conn}, nil
 		}
 	}
-	driver.databaseName = config.ConnectionContext.DatabaseName
-	driver.datashare = config.ConnectionContext.DataShare
-	driver.config = config
+	d.databaseName = config.ConnectionContext.DatabaseName
+	d.datashare = config.ConnectionContext.DataShare
+	d.config = config
 
 	// Datashare doesn't support read-only transactions.
-	if config.ConnectionContext.ReadOnly && !driver.datashare {
+	if config.ConnectionContext.ReadOnly && !d.datashare {
 		pgxConnConfig.RuntimeParams["default_transaction_read_only"] = "true"
 	}
 
-	driver.connectionString = stdlib.RegisterConnConfig(pgxConnConfig)
-	db, err := sql.Open(driverName, driver.connectionString)
+	d.connectionString = stdlib.RegisterConnConfig(pgxConnConfig)
+	db, err := sql.Open(driverName, d.connectionString)
 	if err != nil {
 		return nil, err
 	}
-	driver.db = db
-	return driver, nil
+	d.db = db
+	return d, nil
 }
 
 // Close closes the database and prevents new queries from starting.
 // Close then waits for all queries that have started processing on the server to finish.
-func (driver *Driver) Close(context.Context) error {
-	stdlib.UnregisterConnConfig(driver.connectionString)
+func (d *Driver) Close(context.Context) error {
+	stdlib.UnregisterConnConfig(d.connectionString)
 	var err error
-	err = multierr.Append(err, driver.db.Close())
-	if driver.sshClient != nil {
-		err = multierr.Append(err, driver.sshClient.Close())
+	err = multierr.Append(err, d.db.Close())
+	if d.sshClient != nil {
+		err = multierr.Append(err, d.sshClient.Close())
 	}
 	return err
 }
 
 // Ping verifies a connection to the database is still alive, establishing a connection if necessary.
-func (driver *Driver) Ping(ctx context.Context) error {
-	return driver.db.PingContext(ctx)
+func (d *Driver) Ping(ctx context.Context) error {
+	return d.db.PingContext(ctx)
 }
 
 // GetDB gets the database.
-func (driver *Driver) GetDB() *sql.DB {
-	return driver.db
+func (d *Driver) GetDB() *sql.DB {
+	return d.db
 }
 
 // Execute will execute the statement. For CREATE DATABASE statement, some types of databases such as Postgres
 // will not use transactions to execute the statement but will still use transactions to execute the rest of statements.
-func (driver *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
-	if driver.datashare {
+func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
+	if d.datashare {
 		return 0, errors.Errorf("datashare database cannot be updated")
 	}
 	if opts.CreateDatabase {
-		if err := driver.createDatabaseExecute(ctx, statement); err != nil {
+		if err := d.createDatabaseExecute(ctx, statement); err != nil {
 			return 0, err
 		}
 		return 0, nil
 	}
 
-	owner, err := driver.GetCurrentDatabaseOwner()
+	owner, err := d.GetCurrentDatabaseOwner()
 	if err != nil {
 		return 0, err
 	}
@@ -190,7 +190,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 	}
 	totalRowsAffected := int64(0)
 	if len(commands) != 0 {
-		tx, err := driver.db.BeginTx(ctx, nil)
+		tx, err := d.db.BeginTx(ctx, nil)
 		if err != nil {
 			return 0, err
 		}
@@ -231,12 +231,12 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 	return totalRowsAffected, nil
 }
 
-func (driver *Driver) createDatabaseExecute(ctx context.Context, statement string) error {
+func (d *Driver) createDatabaseExecute(ctx context.Context, statement string) error {
 	databaseName, err := getDatabaseInCreateDatabaseStatement(statement)
 	if err != nil {
 		return err
 	}
-	databases, err := driver.getDatabases(ctx)
+	databases, err := d.getDatabases(ctx)
 	if err != nil {
 		return err
 	}
@@ -248,7 +248,7 @@ func (driver *Driver) createDatabaseExecute(ctx context.Context, statement strin
 	}
 
 	for _, s := range strings.Split(statement, "\n") {
-		if _, err := driver.db.ExecContext(ctx, s); err != nil {
+		if _, err := d.db.ExecContext(ctx, s); err != nil {
 			return err
 		}
 	}
@@ -273,7 +273,7 @@ func getDatabaseInCreateDatabaseStatement(createDatabaseStatement string) (strin
 }
 
 // GetCurrentDatabaseOwner returns the current database owner name.
-func (driver *Driver) GetCurrentDatabaseOwner() (string, error) {
+func (d *Driver) GetCurrentDatabaseOwner() (string, error) {
 	const query = `
 		SELECT
 			u.usename
@@ -282,7 +282,7 @@ func (driver *Driver) GetCurrentDatabaseOwner() (string, error) {
 		WHERE d.datname = current_database();
 	`
 	var owner string
-	rows, err := driver.db.Query(query)
+	rows, err := d.db.Query(query)
 	if err != nil {
 		return "", err
 	}
@@ -302,7 +302,7 @@ func (driver *Driver) GetCurrentDatabaseOwner() (string, error) {
 }
 
 // QueryConn queries a SQL statement in a given connection.
-func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
+func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
 	singleSQLs, err := pgparser.SplitSQL(statement)
 	if err != nil {
 		return nil, err
@@ -323,8 +323,8 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 	var results []*v1pb.QueryResult
 	for _, singleSQL := range singleSQLs {
 		statement := singleSQL.Text
-		if driver.datashare {
-			statement = strings.ReplaceAll(statement, fmt.Sprintf("%s.", driver.databaseName), "")
+		if d.datashare {
+			statement = strings.ReplaceAll(statement, fmt.Sprintf("%s.", d.databaseName), "")
 		}
 		if queryContext.Explain {
 			statement = fmt.Sprintf("EXPLAIN %s", statement)

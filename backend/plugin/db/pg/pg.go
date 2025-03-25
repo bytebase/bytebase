@@ -63,12 +63,12 @@ type Driver struct {
 
 func newDriver(config db.DriverConfig) db.Driver {
 	return &Driver{
-		dbBinDir: config.DbBinDir,
+		dbBinDir: config.DBBinDir,
 	}
 }
 
 // Open opens a Postgres driver.
-func (driver *Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
+func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
 	var pgxConnConfig *pgx.ConnConfig
 	var err error
 
@@ -93,9 +93,9 @@ func (driver *Driver) Open(ctx context.Context, _ storepb.Engine, config db.Conn
 		if err != nil {
 			return nil, err
 		}
-		driver.sshClient = sshClient
+		d.sshClient = sshClient
 
-		pgxConnConfig.Config.DialFunc = func(_ context.Context, network, addr string) (net.Conn, error) {
+		pgxConnConfig.DialFunc = func(_ context.Context, network, addr string) (net.Conn, error) {
 			conn, err := sshClient.Dial(network, addr)
 			if err != nil {
 				return nil, err
@@ -104,7 +104,7 @@ func (driver *Driver) Open(ctx context.Context, _ storepb.Engine, config db.Conn
 		}
 	}
 
-	driver.databaseName = config.ConnectionContext.DatabaseName
+	d.databaseName = config.ConnectionContext.DatabaseName
 	if config.ConnectionContext.DatabaseName != "" {
 		pgxConnConfig.Database = config.ConnectionContext.DatabaseName
 	} else if config.DataSource.GetDatabase() != "" {
@@ -112,25 +112,25 @@ func (driver *Driver) Open(ctx context.Context, _ storepb.Engine, config db.Conn
 	} else {
 		pgxConnConfig.Database = "postgres"
 	}
-	driver.config = config
+	d.config = config
 
-	driver.connectionString = stdlib.RegisterConnConfig(pgxConnConfig)
-	db, err := sql.Open(driverName, driver.connectionString)
+	d.connectionString = stdlib.RegisterConnConfig(pgxConnConfig)
+	db, err := sql.Open(driverName, d.connectionString)
 	if err != nil {
 		return nil, err
 	}
-	driver.db = db
+	d.db = db
 	if config.ConnectionContext.UseDatabaseOwner {
-		owner, err := driver.GetCurrentDatabaseOwner(ctx)
+		owner, err := d.GetCurrentDatabaseOwner(ctx)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get database owner")
 		}
-		if _, err := driver.db.ExecContext(ctx, fmt.Sprintf("SET ROLE \"%s\";", owner)); err != nil {
+		if _, err := d.db.ExecContext(ctx, fmt.Sprintf("SET ROLE \"%s\";", owner)); err != nil {
 			return nil, errors.Wrapf(err, "failed to set role to database owner %q", owner)
 		}
 	}
-	driver.connectionCtx = config.ConnectionContext
-	return driver, nil
+	d.connectionCtx = config.ConnectionContext
+	return d, nil
 }
 
 func getPGConnectionConfig(config db.ConnectionConfig) (*pgx.ConnConfig, error) {
@@ -167,9 +167,9 @@ func getPGConnectionConfig(config db.ConnectionConfig) (*pgx.ConnConfig, error) 
 	if err != nil {
 		return nil, err
 	}
-	connConfig.Config.User = config.DataSource.Username
-	connConfig.Config.Password = config.Password
-	connConfig.Config.Database = config.ConnectionContext.DatabaseName
+	connConfig.User = config.DataSource.Username
+	connConfig.Password = config.Password
+	connConfig.Database = config.ConnectionContext.DatabaseName
 
 	tlscfg, err := util.GetTLSConfig(config.DataSource)
 	if err != nil {
@@ -236,30 +236,30 @@ func getCloudSQLConnectionConfig(ctx context.Context, conf db.ConnectionConfig) 
 }
 
 // Close closes the driver.
-func (driver *Driver) Close(context.Context) error {
-	stdlib.UnregisterConnConfig(driver.connectionString)
+func (d *Driver) Close(context.Context) error {
+	stdlib.UnregisterConnConfig(d.connectionString)
 	var err error
-	err = multierr.Append(err, driver.db.Close())
-	if driver.sshClient != nil {
-		err = multierr.Append(err, driver.sshClient.Close())
+	err = multierr.Append(err, d.db.Close())
+	if d.sshClient != nil {
+		err = multierr.Append(err, d.sshClient.Close())
 	}
 	return err
 }
 
 // Ping pings the database.
-func (driver *Driver) Ping(ctx context.Context) error {
-	return driver.db.PingContext(ctx)
+func (d *Driver) Ping(ctx context.Context) error {
+	return d.db.PingContext(ctx)
 }
 
 // GetDB gets the database.
-func (driver *Driver) GetDB() *sql.DB {
-	return driver.db
+func (d *Driver) GetDB() *sql.DB {
+	return d.db
 }
 
 // getDatabases gets all databases of an instance.
-func (driver *Driver) getDatabases(ctx context.Context) ([]*storepb.DatabaseSchemaMetadata, error) {
+func (d *Driver) getDatabases(ctx context.Context) ([]*storepb.DatabaseSchemaMetadata, error) {
 	var databases []*storepb.DatabaseSchemaMetadata
-	rows, err := driver.db.QueryContext(ctx, "SELECT datname, pg_encoding_to_char(encoding), datcollate, pg_catalog.pg_get_userbyid(datdba) as db_owner FROM pg_database;")
+	rows, err := d.db.QueryContext(ctx, "SELECT datname, pg_encoding_to_char(encoding), datcollate, pg_catalog.pg_get_userbyid(datdba) as db_owner FROM pg_database;")
 	if err != nil {
 		return nil, err
 	}
@@ -279,14 +279,14 @@ func (driver *Driver) getDatabases(ctx context.Context) ([]*storepb.DatabaseSche
 }
 
 // getVersion gets the version of Postgres server.
-func (driver *Driver) getVersion(ctx context.Context) (string, error) {
+func (d *Driver) getVersion(ctx context.Context) (string, error) {
 	// SHOW server_version_num returns an integer such as 100005, which means 10.0.5.
 	// It is more convenient to use SHOW server_version to get the version string.
 	// PostgreSQL supports it since 8.2.
 	// https://www.postgresql.org/docs/current/functions-info.html
 	query := "SHOW server_version_num"
 	var version string
-	if err := driver.db.QueryRowContext(ctx, query).Scan(&version); err != nil {
+	if err := d.db.QueryRowContext(ctx, query).Scan(&version); err != nil {
 		if err == sql.ErrNoRows {
 			return "", common.FormatDBErrorEmptyRowWithQuery(query)
 		}
@@ -304,15 +304,15 @@ func (driver *Driver) getVersion(ctx context.Context) (string, error) {
 
 // Execute will execute the statement. For CREATE DATABASE statement, some types of databases such as Postgres
 // will not use transactions to execute the statement but will still use transactions to execute the rest of statements.
-func (driver *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
+func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
 	if opts.CreateDatabase {
-		if err := driver.createDatabaseExecute(ctx, statement); err != nil {
+		if err := d.createDatabaseExecute(ctx, statement); err != nil {
 			return 0, err
 		}
 		return 0, nil
 	}
 
-	owner, err := driver.GetCurrentDatabaseOwner(ctx)
+	owner, err := d.GetCurrentDatabaseOwner(ctx)
 	if err != nil {
 		return 0, err
 	}
@@ -381,7 +381,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 		originalIndex = []int32{0}
 	}
 
-	conn, err := driver.db.Conn(ctx)
+	conn, err := d.db.Conn(ctx)
 	if err != nil {
 		return 0, errors.Wrapf(err, "failed to get connection")
 	}
@@ -400,7 +400,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 	}
 
 	if isPlsql {
-		if driver.connectionCtx.UseDatabaseOwner {
+		if d.connectionCtx.UseDatabaseOwner {
 			// USE SET SESSION ROLE to set the role for the current session.
 			if _, err := conn.ExecContext(ctx, fmt.Sprintf("SET SESSION ROLE '%s'", owner)); err != nil {
 				return 0, errors.Wrapf(err, "failed to set role to database owner %q", owner)
@@ -443,7 +443,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 				opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_ROLLBACK, rerr)
 			}()
 
-			if driver.connectionCtx.UseDatabaseOwner {
+			if d.connectionCtx.UseDatabaseOwner {
 				// Set the current transaction role to the database owner so that the owner of created objects will be the same as the database owner.
 				if _, err := tx.Exec(ctx, fmt.Sprintf("SET LOCAL ROLE '%s'", owner)); err != nil {
 					return err
@@ -498,7 +498,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 		}
 	}
 
-	if driver.connectionCtx.UseDatabaseOwner {
+	if d.connectionCtx.UseDatabaseOwner {
 		// USE SET SESSION ROLE to set the role for the current session.
 		if _, err := conn.ExecContext(ctx, fmt.Sprintf("SET SESSION ROLE '%s'", owner)); err != nil {
 			return 0, errors.Wrapf(err, "failed to set role to database owner %q", owner)
@@ -517,12 +517,12 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 	return totalRowsAffected, nil
 }
 
-func (driver *Driver) createDatabaseExecute(ctx context.Context, statement string) error {
+func (d *Driver) createDatabaseExecute(ctx context.Context, statement string) error {
 	databaseName, err := getDatabaseInCreateDatabaseStatement(statement)
 	if err != nil {
 		return err
 	}
-	databases, err := driver.getDatabases(ctx)
+	databases, err := d.getDatabases(ctx)
 	if err != nil {
 		return err
 	}
@@ -534,7 +534,7 @@ func (driver *Driver) createDatabaseExecute(ctx context.Context, statement strin
 	}
 
 	for _, s := range strings.Split(statement, "\n") {
-		if _, err := driver.db.ExecContext(ctx, s); err != nil {
+		if _, err := d.db.ExecContext(ctx, s); err != nil {
 			return err
 		}
 	}
@@ -597,7 +597,7 @@ func getDatabaseInCreateDatabaseStatement(createDatabaseStatement string) (strin
 }
 
 // GetCurrentDatabaseOwner gets the role of the current database.
-func (driver *Driver) GetCurrentDatabaseOwner(ctx context.Context) (string, error) {
+func (d *Driver) GetCurrentDatabaseOwner(ctx context.Context) (string, error) {
 	const query = `
 		SELECT
 			u.rolname
@@ -607,7 +607,7 @@ func (driver *Driver) GetCurrentDatabaseOwner(ctx context.Context) (string, erro
 			d.datname = current_database();
 		`
 	var owner string
-	if err := driver.db.QueryRowContext(ctx, query).Scan(&owner); err != nil {
+	if err := d.db.QueryRowContext(ctx, query).Scan(&owner); err != nil {
 		return "", err
 	}
 	return owner, nil
