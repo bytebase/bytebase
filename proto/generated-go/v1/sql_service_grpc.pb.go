@@ -27,6 +27,7 @@ const (
 	SQLService_ParseMyBatisMapper_FullMethodName   = "/bytebase.v1.SQLService/ParseMyBatisMapper"
 	SQLService_Pretty_FullMethodName               = "/bytebase.v1.SQLService/Pretty"
 	SQLService_DiffMetadata_FullMethodName         = "/bytebase.v1.SQLService/DiffMetadata"
+	SQLService_AICompletion_FullMethodName         = "/bytebase.v1.SQLService/AICompletion"
 )
 
 // SQLServiceClient is the client API for SQLService service.
@@ -42,6 +43,7 @@ type SQLServiceClient interface {
 	ParseMyBatisMapper(ctx context.Context, in *ParseMyBatisMapperRequest, opts ...grpc.CallOption) (*ParseMyBatisMapperResponse, error)
 	Pretty(ctx context.Context, in *PrettyRequest, opts ...grpc.CallOption) (*PrettyResponse, error)
 	DiffMetadata(ctx context.Context, in *DiffMetadataRequest, opts ...grpc.CallOption) (*DiffMetadataResponse, error)
+	AICompletion(ctx context.Context, in *AICompletionRequest, opts ...grpc.CallOption) (*AICompletionResponse, error)
 }
 
 type sQLServiceClient struct {
@@ -135,6 +137,16 @@ func (c *sQLServiceClient) DiffMetadata(ctx context.Context, in *DiffMetadataReq
 	return out, nil
 }
 
+func (c *sQLServiceClient) AICompletion(ctx context.Context, in *AICompletionRequest, opts ...grpc.CallOption) (*AICompletionResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AICompletionResponse)
+	err := c.cc.Invoke(ctx, SQLService_AICompletion_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // SQLServiceServer is the server API for SQLService service.
 // All implementations must embed UnimplementedSQLServiceServer
 // for forward compatibility.
@@ -148,6 +160,7 @@ type SQLServiceServer interface {
 	ParseMyBatisMapper(context.Context, *ParseMyBatisMapperRequest) (*ParseMyBatisMapperResponse, error)
 	Pretty(context.Context, *PrettyRequest) (*PrettyResponse, error)
 	DiffMetadata(context.Context, *DiffMetadataRequest) (*DiffMetadataResponse, error)
+	AICompletion(context.Context, *AICompletionRequest) (*AICompletionResponse, error)
 	mustEmbedUnimplementedSQLServiceServer()
 }
 
@@ -181,6 +194,9 @@ func (UnimplementedSQLServiceServer) Pretty(context.Context, *PrettyRequest) (*P
 }
 func (UnimplementedSQLServiceServer) DiffMetadata(context.Context, *DiffMetadataRequest) (*DiffMetadataResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DiffMetadata not implemented")
+}
+func (UnimplementedSQLServiceServer) AICompletion(context.Context, *AICompletionRequest) (*AICompletionResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AICompletion not implemented")
 }
 func (UnimplementedSQLServiceServer) mustEmbedUnimplementedSQLServiceServer() {}
 func (UnimplementedSQLServiceServer) testEmbeddedByValue()                    {}
@@ -336,6 +352,24 @@ func _SQLService_DiffMetadata_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _SQLService_AICompletion_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AICompletionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SQLServiceServer).AICompletion(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SQLService_AICompletion_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SQLServiceServer).AICompletion(ctx, req.(*AICompletionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // SQLService_ServiceDesc is the grpc.ServiceDesc for SQLService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -370,6 +404,10 @@ var SQLService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DiffMetadata",
 			Handler:    _SQLService_DiffMetadata_Handler,
+		},
+		{
+			MethodName: "AICompletion",
+			Handler:    _SQLService_AICompletion_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

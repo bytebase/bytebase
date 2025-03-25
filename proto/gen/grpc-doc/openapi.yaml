@@ -6943,6 +6943,30 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
+    /v1/sql/aiCompletion:
+        post:
+            tags:
+                - SQLService
+            operationId: SQLService_AICompletion
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/AICompletionRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/AICompletionResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
     /v1/sql/check:
         post:
             tags:
@@ -7711,6 +7735,33 @@ paths:
                                 $ref: '#/components/schemas/Status'
 components:
     schemas:
+        AICompletionRequest:
+            type: object
+            properties:
+                messages:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/AICompletionRequest_Message'
+        AICompletionRequest_Message:
+            type: object
+            properties:
+                role:
+                    type: string
+                content:
+                    type: string
+        AICompletionResponse:
+            type: object
+            properties:
+                candidates:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/AICompletionResponse_Candidate'
+                    description: candidates is used for results with multiple choices and candidates. Used for OpenAI and Gemini.
+        AICompletionResponse_Candidate:
+            type: object
+            properties:
+                content:
+                    $ref: '#/components/schemas/Candidate_Content'
         AISetting:
             type: object
             properties:
@@ -8422,6 +8473,14 @@ components:
                     allOf:
                         - $ref: '#/components/schemas/Expr'
                     description: The parsed expression of the condition.
+        Candidate_Content:
+            type: object
+            properties:
+                parts:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/Content_Part'
+                    description: parts is used for a result content with multiple parts.
         ChangeDatabaseConfig_PreUpdateBackupDetail:
             type: object
             properties:
@@ -8787,6 +8846,11 @@ components:
                     description: The identity_generation is for identity columns, PG only.
                     format: enum
             description: ColumnMetadata is the metadata for columns.
+        Content_Part:
+            type: object
+            properties:
+                text:
+                    type: string
         CreateSheetRequest:
             required:
                 - parent
