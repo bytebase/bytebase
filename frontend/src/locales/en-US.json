@@ -564,7 +564,7 @@
           },
           "api-key": {
             "self": "API Key",
-            "description": "Supply API Key. {viewDoc}",
+            "description": "Supply API Key, read-only. {viewDoc}",
             "find-my-key": "Find my key",
             "placeholder": "An API Key usually starts with sk-*****"
           },

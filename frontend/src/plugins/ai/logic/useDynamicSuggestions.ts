@@ -1,10 +1,9 @@
-import { Axios, type AxiosResponse } from "axios";
 import { head, uniq, values } from "lodash-es";
 import { computed, reactive, ref } from "vue";
 import { hashCode } from "@/bbkit/BBUtil";
-import { AISetting_Provider } from "@/types/proto/v1/setting_service";
+import { sqlServiceClient } from "@/grpcweb";
+import { type AICompletionRequest_Message } from "@/types/proto/v1/sql_service";
 import { WebStorageHelper } from "@/utils";
-import type { OpenAIMessage, OpenAIResponse } from "../types";
 import { useAIContext } from "./context";
 import * as promptUtils from "./prompt";
 
@@ -41,44 +40,12 @@ export const useDynamicSuggestions = () => {
     return "";
   });
 
-  const requestAI = async (messages: OpenAIMessage[]) => {
+  const requestAI = async (messages: AICompletionRequest_Message[]) => {
     await new Promise((resolve) => setTimeout(resolve, 1000));
-    const body = {
-      model: context.aiSetting.value.model,
-      messages,
-      temperature: 0,
-      stop: ["#", ";"],
-      top_p: 1.0,
-      frequency_penalty: 0.0,
-      presence_penalty: 0.0,
-    };
-    const axios = new Axios({
-      timeout: 300 * 1000,
-      responseType: "json",
-    });
-    const headers: { [key: string]: string } = {
-      "Content-Type": "application/json",
-    };
-    if (context.aiSetting.value.provider === AISetting_Provider.AZURE_OPENAI) {
-      headers["api-key"] = context.aiSetting.value.apiKey;
-    } else {
-      headers["Authorization"] = `Bearer ${context.aiSetting.value.apiKey}`;
-    }
     try {
-      const response: AxiosResponse<string> = await axios.post(
-        context.aiSetting.value.endpoint,
-        JSON.stringify(body),
-        {
-          headers,
-        }
-      );
-
-      const data = JSON.parse(response.data) as OpenAIResponse;
-      if (data?.error) {
-        throw new Error(data.error.message);
-      }
-
-      const text = head(data?.choices)?.message.content?.trim() ?? "";
+      const response = await sqlServiceClient.aICompletion({ messages });
+      const text =
+        head(head(response.candidates)?.content?.parts)?.text?.trim() ?? "";
       const card = JSON.parse(text) as Record<string, string>;
       return values(card ?? {});
     } catch {
@@ -117,7 +84,7 @@ export const useDynamicSuggestions = () => {
           metadata,
           new Set([...used.values(), ...suggestions])
         );
-        const messages: OpenAIMessage[] = [
+        const messages: AICompletionRequest_Message[] = [
           {
             role: "system",
             content: command,

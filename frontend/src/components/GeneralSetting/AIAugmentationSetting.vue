@@ -79,7 +79,6 @@
               <template #trigger>
                 <BBTextField
                   v-model:value="state.apiKey"
-                  :required="true"
                   :disabled="!allowEdit || !hasAIFeature"
                   :placeholder="
                     $t(
@@ -202,7 +201,7 @@ const hasAIFeature = computed(() => hasFeature("bb.feature.ai-assistant"));
 const getInitialState = (): LocalState => {
   return {
     enabled: aiSetting.value?.enabled ?? false,
-    apiKey: maskKey(aiSetting.value?.apiKey),
+    apiKey: "",
     endpoint: aiSetting.value?.endpoint ?? "",
     model: aiSetting.value?.model ?? "",
     provider: aiSetting.value?.provider ?? AISetting_Provider.OPEN_AI,
@@ -238,9 +237,7 @@ watchEffect(() => {
 const allowSave = computed((): boolean => {
   const initValue = getInitialState();
   const enabledUpdated = state.enabled !== initValue.enabled;
-  const openAIKeyUpdated =
-    state.apiKey !== initValue.apiKey ||
-    (state.apiKey && !state.apiKey.includes("***"));
+  const openAIKeyUpdated = !!state.apiKey;
   const openAIEndpointUpdated = state.endpoint !== initValue.endpoint;
   const openAIModelUpdated = state.model !== initValue.model;
   return (
@@ -250,10 +247,6 @@ const allowSave = computed((): boolean => {
     openAIModelUpdated
   );
 });
-
-function maskKey(key: string | undefined): string {
-  return key ? key.slice(0, 3) + "***" + key.slice(-4) : "";
-}
 
 const providerDefault = computed(() => {
   switch (state.provider) {

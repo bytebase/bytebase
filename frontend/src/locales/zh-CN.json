@@ -564,7 +564,7 @@
           },
           "api-key": {
             "self": "API Key",
-            "description": "提供 API Key 以开启 AI 助手。{viewDoc}",
+            "description": "提供 API 密钥，只读。{viewDoc}",
             "find-my-key": "找到我的 Key",
             "placeholder": "API Key 通常以 sk-***** 开头"
           },

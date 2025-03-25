@@ -28,19 +28,17 @@
 </template>
 
 <script lang="ts" setup>
-import type { AxiosResponse } from "axios";
-import { Axios } from "axios";
 import { head } from "lodash-es";
 import { NSpin } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { reactive, watch } from "vue";
+import { sqlServiceClient } from "@/grpcweb";
 import { useSQLEditorTabStore } from "@/store";
-import { AISetting_Provider } from "@/types/proto/v1/setting_service";
+import { type AICompletionRequest_Message } from "@/types/proto/v1/sql_service";
 import { nextAnimationFrame } from "@/utils";
 import { onConnectionChanged, useAIContext, useCurrentChat } from "../logic";
 import * as promptUtils from "../logic/prompt";
 import { useConversationStore } from "../store";
-import type { OpenAIMessage, OpenAIResponse } from "../types";
 import ActionBar from "./ActionBar.vue";
 import ChatView from "./ChatView";
 import DynamicSuggestions from "./DynamicSuggestions.vue";
@@ -112,7 +110,7 @@ const requestAI = async (query: string) => {
     conversation_id: conversation.id,
     status: "LOADING",
   });
-  const messages: OpenAIMessage[] = [];
+  const messages: AICompletionRequest_Message[] = [];
   conversation.messageList.forEach((message) => {
     const { author, prompt } = message;
     messages.push({
@@ -120,43 +118,10 @@ const requestAI = async (query: string) => {
       content: prompt,
     });
   });
-  const body = {
-    model: aiSetting.value.model,
-    messages,
-    temperature: 0,
-    stop: ["#", ";"],
-    top_p: 1.0,
-    frequency_penalty: 0.0,
-    presence_penalty: 0.0,
-  };
   state.loading = true;
-  const axios = new Axios({
-    timeout: 300 * 1000,
-    responseType: "json",
-  });
-  const headers: { [key: string]: string } = {
-    "Content-Type": "application/json",
-  };
-  if (context.aiSetting.value.provider === AISetting_Provider.AZURE_OPENAI) {
-    headers["api-key"] = context.aiSetting.value.apiKey;
-  } else {
-    headers["Authorization"] = `Bearer ${context.aiSetting.value.apiKey}`;
-  }
   try {
-    const response: AxiosResponse<string> = await axios.post(
-      aiSetting.value.endpoint,
-      JSON.stringify(body),
-      {
-        headers,
-      }
-    );
-
-    const data = JSON.parse(response.data) as OpenAIResponse;
-    if (data?.error) {
-      throw new Error(data.error.message);
-    }
-
-    const text = head(data?.choices)?.message.content?.trim();
+    const response = await sqlServiceClient.aICompletion({ messages });
+    const text = head(head(response.candidates)?.content?.parts)?.text?.trim();
     console.debug("[AI Assistant] answer:", text);
     if (text) {
       answer.content = text;

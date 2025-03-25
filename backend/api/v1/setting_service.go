@@ -568,9 +568,24 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 		if err := convertProtoToProto(request.Setting.Value.GetAiSetting(), aiSetting); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", apiSettingName, err)
 		}
-		if aiSetting.Enabled && (aiSetting.ApiKey == "" || aiSetting.Endpoint == "" || aiSetting.Model == "") {
-			return nil, status.Errorf(codes.InvalidArgument, "api key, endpoint and model are required")
+		if aiSetting.Enabled {
+			if aiSetting.Endpoint == "" || aiSetting.Model == "" {
+				return nil, status.Errorf(codes.InvalidArgument, "API endpoint and model are required")
+			}
+			if existedSetting != nil {
+				existedAISetting, err := s.convertToSettingMessage(ctx, existedSetting)
+				if err != nil {
+					return nil, status.Errorf(codes.Internal, "failed to unmarshal existed ai setting with error: %v", err)
+				}
+				if aiSetting.ApiKey == "" {
+					aiSetting.ApiKey = existedAISetting.Value.GetAiSetting().GetApiKey()
+				}
+			}
+			if aiSetting.ApiKey == "" {
+				return nil, status.Errorf(codes.InvalidArgument, "API key is required")
+			}
 		}
+
 		bytes, err := protojson.Marshal(aiSetting)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to marshal setting for %s with error: %v", apiSettingName, err)
@@ -825,6 +840,8 @@ func (s *SettingService) convertToSettingMessage(ctx context.Context, setting *s
 		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), v1Value); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", setting.Name, err)
 		}
+		// DO NOT expose the api key.
+		v1Value.ApiKey = ""
 		return &v1pb.Setting{
 			Name: settingName,
 			Value: &v1pb.Value{

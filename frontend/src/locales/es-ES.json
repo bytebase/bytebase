@@ -564,7 +564,7 @@
           },
           "api-key": {
             "self": "Clave de API",
-            "description": "Proporcione una clave de API para habilitar la capacidad Text2SQL en el Editor de SQL. {viewDoc}",
+            "description": "Proporcionar clave API, solo lectura. {viewDoc}",
             "find-my-key": "Encuentra mi llave",
             "placeholder": "Una clave de API generalmente comienza con sk-*****"
           },

@@ -140,7 +140,7 @@ watchEffect(async () => {
   }
 });
 
-const { project, ready } = useProjectByName(projectName.value);
+const { project, ready } = useProjectByName(projectName);
 
 const initialized = computed(
   () => ready && project.value.name !== UNKNOWN_PROJECT_NAME

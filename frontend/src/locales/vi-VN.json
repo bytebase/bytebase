@@ -564,7 +564,7 @@
           },
           "api-key": {
             "self": "Khóa API",
-            "description": "Cung cấp Khóa API. {viewDoc}",
+            "description": "Cung cấp Khóa API, chỉ đọc. {viewDoc}",
             "find-my-key": "Tìm khóa của tôi",
             "placeholder": "Khóa API thường bắt đầu bằng sk-*****"
           },
