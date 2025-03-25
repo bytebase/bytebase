@@ -629,11 +629,12 @@ func maskProtoValue(m Masker, value *structpb.Value) *structpb.Value {
 
 func NewInnerOuterMasker(storeMaskerType storepb.Algorithm_InnerOuterMask_MaskType, prefixLen, suffixLen int32, substitution string) *InnerOuterMasker {
 	var maskerType int32
-	if storeMaskerType == storepb.Algorithm_InnerOuterMask_INNER {
+	switch storeMaskerType {
+	case storepb.Algorithm_InnerOuterMask_INNER:
 		maskerType = InnerOuterMaskerTypeInner
-	} else if storeMaskerType == storepb.Algorithm_InnerOuterMask_OUTER {
+	case storepb.Algorithm_InnerOuterMask_OUTER:
 		maskerType = InnerOuterMaskerTypeOuter
-	} else {
+	default:
 		return nil
 	}
 

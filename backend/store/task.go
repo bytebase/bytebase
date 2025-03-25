@@ -75,8 +75,8 @@ type TaskPatch struct {
 
 	// Domain specific fields
 	DatabaseName            *string
-	EarliestAllowedTs       *time.Time
-	UpdateEarliestAllowedTs bool
+	EarliestAllowedTS       *time.Time
+	UpdateEarliestAllowedTS bool
 	Type                    *api.TaskType
 
 	SheetID               *int
@@ -407,11 +407,11 @@ func (s *Store) UpdateTaskV2(ctx context.Context, patch *TaskPatch) (*TaskMessag
 	if len(payloadSet) != 0 {
 		set = append(set, fmt.Sprintf(`payload = payload || %s`, strings.Join(payloadSet, "||")))
 	}
-	if patch.UpdateEarliestAllowedTs {
-		if patch.EarliestAllowedTs == nil {
+	if patch.UpdateEarliestAllowedTS {
+		if patch.EarliestAllowedTS == nil {
 			set = append(set, "earliest_allowed_at = null")
 		} else {
-			set, args = append(set, fmt.Sprintf("earliest_allowed_at = $%d", len(args)+1)), append(args, *patch.EarliestAllowedTs)
+			set, args = append(set, fmt.Sprintf("earliest_allowed_at = $%d", len(args)+1)), append(args, *patch.EarliestAllowedTS)
 		}
 	}
 	args = append(args, patch.ID)

@@ -148,7 +148,7 @@ func (s *Store) CreateIssueV2(ctx context.Context, create *IssueMessage, creator
 		return nil, err
 	}
 
-	tsVector := getTsVector(fmt.Sprintf("%s %s", create.Title, create.Description))
+	tsVector := getTSVector(fmt.Sprintf("%s %s", create.Title, create.Description))
 	query := `
 		INSERT INTO issue (
 			creator_id,
@@ -246,7 +246,7 @@ func (s *Store) UpdateIssueV2(ctx context.Context, uid int, patch *UpdateIssueMe
 			description = *patch.Description
 		}
 
-		tsVector := getTsVector(fmt.Sprintf("%s %s", title, description))
+		tsVector := getTSVector(fmt.Sprintf("%s %s", title, description))
 		set = append(set, fmt.Sprintf("ts_vector = $%d", len(args)+1))
 		args = append(args, tsVector)
 	}
@@ -400,7 +400,7 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 		args = append(args, *v)
 	}
 	if v := find.Query; v != nil && *v != "" {
-		if tsQuery := getTsQuery(*v); tsQuery != "" {
+		if tsQuery := getTSQuery(*v); tsQuery != "" {
 			from += fmt.Sprintf(` LEFT JOIN CAST($%d AS tsquery) AS query ON TRUE`, len(args)+1)
 			args = append(args, tsQuery)
 			where = append(where, "issue.ts_vector @@ query")
@@ -620,7 +620,7 @@ func (s *Store) BatchUpdateIssueStatuses(ctx context.Context, issueUIDs []int, s
 	return nil
 }
 
-func getTsVector(text string) string {
+func getTSVector(text string) string {
 	seg := getSegmenter()
 	parts := seg.CutTrim(text)
 	var tsVector strings.Builder
@@ -633,7 +633,7 @@ func getTsVector(text string) string {
 	return tsVector.String()
 }
 
-func getTsQuery(text string) string {
+func getTSQuery(text string) string {
 	seg := getSegmenter()
 	parts := seg.Trim(seg.CutSearch(text))
 	// CutSearch returns empty for a single word.
@@ -653,7 +653,7 @@ func getTsQuery(text string) string {
 	return tsQuery.String()
 }
 
-func (s *Store) BackfillIssueTsVector(ctx context.Context) error {
+func (s *Store) BackfillIssueTSVector(ctx context.Context) error {
 	chunkSize := 50
 	offset := 0
 	selectQuery := `
@@ -705,7 +705,7 @@ func (s *Store) BackfillIssueTsVector(ctx context.Context) error {
 		offset += len(issues)
 
 		for _, issue := range issues {
-			tsVector := getTsVector(fmt.Sprintf("%s %s", issue.Title, issue.Description))
+			tsVector := getTSVector(fmt.Sprintf("%s %s", issue.Title, issue.Description))
 			if _, err := tx.ExecContext(ctx, updateStatement, tsVector, issue.UID); err != nil {
 				return errors.Wrapf(err, "failed to update")
 			}

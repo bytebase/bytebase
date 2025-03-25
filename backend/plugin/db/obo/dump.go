@@ -144,13 +144,13 @@ func (t *tableSchema) assembleStatement(out io.Writer) error {
 	}
 
 	if t.meta.PctFree.Valid {
-		if _, err := out.Write([]byte(fmt.Sprintf("\nPCTFREE %d", t.meta.PctFree.Int64))); err != nil {
+		if _, err := fmt.Fprintf(out, "\nPCTFREE %d", t.meta.PctFree.Int64); err != nil {
 			return err
 		}
 	}
 
 	if t.meta.IniTrans.Valid {
-		if _, err := out.Write([]byte(fmt.Sprintf("\nINITRANS %d", t.meta.IniTrans.Int64))); err != nil {
+		if _, err := fmt.Fprintf(out, "\nINITRANS %d", t.meta.IniTrans.Int64); err != nil {
 			return err
 		}
 	}
@@ -177,7 +177,7 @@ func (t *tableSchema) assembleStatement(out io.Writer) error {
 				return err
 			}
 		} else {
-			if _, err := out.Write([]byte(fmt.Sprintf("\nPARALLEL %s", t.meta.Degree.String))); err != nil {
+			if _, err := fmt.Fprintf(out, "\nPARALLEL %s", t.meta.Degree.String); err != nil {
 				return err
 			}
 		}
@@ -227,35 +227,35 @@ func (t *tableSchema) assembleStorage(out io.Writer) error {
 
 	switch {
 	case t.meta.InitialExtent.Valid:
-		if _, err := out.Write([]byte(fmt.Sprintf("\n  INITIAL %d", t.meta.InitialExtent.Int64))); err != nil {
+		if _, err := fmt.Fprintf(out, "\n  INITIAL %d", t.meta.InitialExtent.Int64); err != nil {
 			return err
 		}
 	case t.meta.NextExtent.Valid:
-		if _, err := out.Write([]byte(fmt.Sprintf("\n  NEXT %d", t.meta.NextExtent.Int64))); err != nil {
+		if _, err := fmt.Fprintf(out, "\n  NEXT %d", t.meta.NextExtent.Int64); err != nil {
 			return err
 		}
 	case t.meta.MinExtents.Valid:
-		if _, err := out.Write([]byte(fmt.Sprintf("\n  MINEXTENTS %d", t.meta.MinExtents.Int64))); err != nil {
+		if _, err := fmt.Fprintf(out, "\n  MINEXTENTS %d", t.meta.MinExtents.Int64); err != nil {
 			return err
 		}
 	case t.meta.MaxExtents.Valid:
-		if _, err := out.Write([]byte(fmt.Sprintf("\n  MAXEXTENTS %d", t.meta.MaxExtents.Int64))); err != nil {
+		if _, err := fmt.Fprintf(out, "\n  MAXEXTENTS %d", t.meta.MaxExtents.Int64); err != nil {
 			return err
 		}
 	case t.meta.PctIncrease.Valid:
-		if _, err := out.Write([]byte(fmt.Sprintf("\n  PCTINCREASE %d", t.meta.PctIncrease.Int64))); err != nil {
+		if _, err := fmt.Fprintf(out, "\n  PCTINCREASE %d", t.meta.PctIncrease.Int64); err != nil {
 			return err
 		}
 	case t.meta.FreeLists.Valid:
-		if _, err := out.Write([]byte(fmt.Sprintf("\n  FREELISTS %d", t.meta.FreeLists.Int64))); err != nil {
+		if _, err := fmt.Fprintf(out, "\n  FREELISTS %d", t.meta.FreeLists.Int64); err != nil {
 			return err
 		}
 	case t.meta.FreeListGroups.Valid:
-		if _, err := out.Write([]byte(fmt.Sprintf("\n  FREELIST GROUPS %d", t.meta.FreeListGroups.Int64))); err != nil {
+		if _, err := fmt.Fprintf(out, "\n  FREELIST GROUPS %d", t.meta.FreeListGroups.Int64); err != nil {
 			return err
 		}
 	case t.meta.BufferPool.Valid && t.meta.BufferPool.String != "NULL":
-		if _, err := out.Write([]byte(fmt.Sprintf("\n  BUFFER_POOL %s", t.meta.BufferPool.String))); err != nil {
+		if _, err := fmt.Fprintf(out, "\n  BUFFER_POOL %s", t.meta.BufferPool.String); err != nil {
 			return err
 		}
 	}
@@ -454,11 +454,11 @@ func (f *fieldMeta) assembleType(out io.Writer) error {
 	}
 	switch f.DataType.String {
 	case "VARCHAR2", "CHAR":
-		if _, err := out.Write([]byte(fmt.Sprintf("(%d BYTE)", f.DataLength.Int64))); err != nil {
+		if _, err := fmt.Fprintf(out, "(%d BYTE)", f.DataLength.Int64); err != nil {
 			return err
 		}
 	case "NVARCHAR2", "RAW", "UROWID", "NCHAR":
-		if _, err := out.Write([]byte(fmt.Sprintf("(%d)", f.DataLength.Int64))); err != nil {
+		if _, err := fmt.Fprintf(out, "(%d)", f.DataLength.Int64); err != nil {
 			return err
 		}
 	case "NUMBER":
@@ -466,7 +466,7 @@ func (f *fieldMeta) assembleType(out io.Writer) error {
 		case !f.DataPrecision.Valid || f.DataPrecision.Int64 == 0:
 		// do nothing
 		case f.DataPrecision.Valid && f.DataPrecision.Int64 > 0 && (!f.DataScale.Valid || f.DataScale.Int64 == 0):
-			if _, err := out.Write([]byte(fmt.Sprintf("(%d)", f.DataPrecision.Int64))); err != nil {
+			if _, err := fmt.Fprintf(out, "(%d)", f.DataPrecision.Int64); err != nil {
 				return err
 			}
 		case f.DataPrecision.Valid && f.DataPrecision.Int64 > 0 && f.DataScale.Valid && f.DataScale.Int64 > 0:
@@ -479,7 +479,7 @@ func (f *fieldMeta) assembleType(out io.Writer) error {
 		case !f.DataPrecision.Valid || f.DataPrecision.Int64 == 0:
 		// do nothing
 		case f.DataPrecision.Valid && f.DataPrecision.Int64 > 0:
-			if _, err := out.Write([]byte(fmt.Sprintf("(%d)", f.DataPrecision.Int64))); err != nil {
+			if _, err := fmt.Fprintf(out, "(%d)", f.DataPrecision.Int64); err != nil {
 				return err
 			}
 		}
