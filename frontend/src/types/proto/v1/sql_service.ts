@@ -633,6 +633,33 @@ export function queryHistory_TypeToNumber(object: QueryHistory_Type): number {
   }
 }
 
+export interface AICompletionRequest {
+  messages: AICompletionRequest_Message[];
+}
+
+export interface AICompletionRequest_Message {
+  role: string;
+  content: string;
+}
+
+export interface AICompletionResponse {
+  /** candidates is used for results with multiple choices and candidates. Used for OpenAI and Gemini. */
+  candidates: AICompletionResponse_Candidate[];
+}
+
+export interface AICompletionResponse_Candidate {
+  content: AICompletionResponse_Candidate_Content | undefined;
+}
+
+export interface AICompletionResponse_Candidate_Content {
+  /** parts is used for a result content with multiple parts. */
+  parts: AICompletionResponse_Candidate_Content_Part[];
+}
+
+export interface AICompletionResponse_Candidate_Content_Part {
+  text: string;
+}
+
 function createBaseAdminExecuteRequest(): AdminExecuteRequest {
   return { name: "", statement: "", limit: 0, schema: undefined, container: undefined };
 }
@@ -3683,6 +3710,393 @@ export const QueryHistory: MessageFns<QueryHistory> = {
   },
 };
 
+function createBaseAICompletionRequest(): AICompletionRequest {
+  return { messages: [] };
+}
+
+export const AICompletionRequest: MessageFns<AICompletionRequest> = {
+  encode(message: AICompletionRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    for (const v of message.messages) {
+      AICompletionRequest_Message.encode(v!, writer.uint32(10).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): AICompletionRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseAICompletionRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.messages.push(AICompletionRequest_Message.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): AICompletionRequest {
+    return {
+      messages: globalThis.Array.isArray(object?.messages)
+        ? object.messages.map((e: any) => AICompletionRequest_Message.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: AICompletionRequest): unknown {
+    const obj: any = {};
+    if (message.messages?.length) {
+      obj.messages = message.messages.map((e) => AICompletionRequest_Message.toJSON(e));
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<AICompletionRequest>): AICompletionRequest {
+    return AICompletionRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<AICompletionRequest>): AICompletionRequest {
+    const message = createBaseAICompletionRequest();
+    message.messages = object.messages?.map((e) => AICompletionRequest_Message.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseAICompletionRequest_Message(): AICompletionRequest_Message {
+  return { role: "", content: "" };
+}
+
+export const AICompletionRequest_Message: MessageFns<AICompletionRequest_Message> = {
+  encode(message: AICompletionRequest_Message, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.role !== "") {
+      writer.uint32(10).string(message.role);
+    }
+    if (message.content !== "") {
+      writer.uint32(18).string(message.content);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): AICompletionRequest_Message {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseAICompletionRequest_Message();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.role = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.content = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): AICompletionRequest_Message {
+    return {
+      role: isSet(object.role) ? globalThis.String(object.role) : "",
+      content: isSet(object.content) ? globalThis.String(object.content) : "",
+    };
+  },
+
+  toJSON(message: AICompletionRequest_Message): unknown {
+    const obj: any = {};
+    if (message.role !== "") {
+      obj.role = message.role;
+    }
+    if (message.content !== "") {
+      obj.content = message.content;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<AICompletionRequest_Message>): AICompletionRequest_Message {
+    return AICompletionRequest_Message.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<AICompletionRequest_Message>): AICompletionRequest_Message {
+    const message = createBaseAICompletionRequest_Message();
+    message.role = object.role ?? "";
+    message.content = object.content ?? "";
+    return message;
+  },
+};
+
+function createBaseAICompletionResponse(): AICompletionResponse {
+  return { candidates: [] };
+}
+
+export const AICompletionResponse: MessageFns<AICompletionResponse> = {
+  encode(message: AICompletionResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    for (const v of message.candidates) {
+      AICompletionResponse_Candidate.encode(v!, writer.uint32(10).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): AICompletionResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseAICompletionResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.candidates.push(AICompletionResponse_Candidate.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): AICompletionResponse {
+    return {
+      candidates: globalThis.Array.isArray(object?.candidates)
+        ? object.candidates.map((e: any) => AICompletionResponse_Candidate.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: AICompletionResponse): unknown {
+    const obj: any = {};
+    if (message.candidates?.length) {
+      obj.candidates = message.candidates.map((e) => AICompletionResponse_Candidate.toJSON(e));
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<AICompletionResponse>): AICompletionResponse {
+    return AICompletionResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<AICompletionResponse>): AICompletionResponse {
+    const message = createBaseAICompletionResponse();
+    message.candidates = object.candidates?.map((e) => AICompletionResponse_Candidate.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseAICompletionResponse_Candidate(): AICompletionResponse_Candidate {
+  return { content: undefined };
+}
+
+export const AICompletionResponse_Candidate: MessageFns<AICompletionResponse_Candidate> = {
+  encode(message: AICompletionResponse_Candidate, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.content !== undefined) {
+      AICompletionResponse_Candidate_Content.encode(message.content, writer.uint32(10).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): AICompletionResponse_Candidate {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseAICompletionResponse_Candidate();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.content = AICompletionResponse_Candidate_Content.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): AICompletionResponse_Candidate {
+    return {
+      content: isSet(object.content) ? AICompletionResponse_Candidate_Content.fromJSON(object.content) : undefined,
+    };
+  },
+
+  toJSON(message: AICompletionResponse_Candidate): unknown {
+    const obj: any = {};
+    if (message.content !== undefined) {
+      obj.content = AICompletionResponse_Candidate_Content.toJSON(message.content);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<AICompletionResponse_Candidate>): AICompletionResponse_Candidate {
+    return AICompletionResponse_Candidate.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<AICompletionResponse_Candidate>): AICompletionResponse_Candidate {
+    const message = createBaseAICompletionResponse_Candidate();
+    message.content = (object.content !== undefined && object.content !== null)
+      ? AICompletionResponse_Candidate_Content.fromPartial(object.content)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseAICompletionResponse_Candidate_Content(): AICompletionResponse_Candidate_Content {
+  return { parts: [] };
+}
+
+export const AICompletionResponse_Candidate_Content: MessageFns<AICompletionResponse_Candidate_Content> = {
+  encode(message: AICompletionResponse_Candidate_Content, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    for (const v of message.parts) {
+      AICompletionResponse_Candidate_Content_Part.encode(v!, writer.uint32(10).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): AICompletionResponse_Candidate_Content {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseAICompletionResponse_Candidate_Content();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.parts.push(AICompletionResponse_Candidate_Content_Part.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): AICompletionResponse_Candidate_Content {
+    return {
+      parts: globalThis.Array.isArray(object?.parts)
+        ? object.parts.map((e: any) => AICompletionResponse_Candidate_Content_Part.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: AICompletionResponse_Candidate_Content): unknown {
+    const obj: any = {};
+    if (message.parts?.length) {
+      obj.parts = message.parts.map((e) => AICompletionResponse_Candidate_Content_Part.toJSON(e));
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<AICompletionResponse_Candidate_Content>): AICompletionResponse_Candidate_Content {
+    return AICompletionResponse_Candidate_Content.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<AICompletionResponse_Candidate_Content>): AICompletionResponse_Candidate_Content {
+    const message = createBaseAICompletionResponse_Candidate_Content();
+    message.parts = object.parts?.map((e) => AICompletionResponse_Candidate_Content_Part.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseAICompletionResponse_Candidate_Content_Part(): AICompletionResponse_Candidate_Content_Part {
+  return { text: "" };
+}
+
+export const AICompletionResponse_Candidate_Content_Part: MessageFns<AICompletionResponse_Candidate_Content_Part> = {
+  encode(
+    message: AICompletionResponse_Candidate_Content_Part,
+    writer: BinaryWriter = new BinaryWriter(),
+  ): BinaryWriter {
+    if (message.text !== "") {
+      writer.uint32(10).string(message.text);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): AICompletionResponse_Candidate_Content_Part {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseAICompletionResponse_Candidate_Content_Part();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.text = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): AICompletionResponse_Candidate_Content_Part {
+    return { text: isSet(object.text) ? globalThis.String(object.text) : "" };
+  },
+
+  toJSON(message: AICompletionResponse_Candidate_Content_Part): unknown {
+    const obj: any = {};
+    if (message.text !== "") {
+      obj.text = message.text;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<AICompletionResponse_Candidate_Content_Part>): AICompletionResponse_Candidate_Content_Part {
+    return AICompletionResponse_Candidate_Content_Part.fromPartial(base ?? {});
+  },
+  fromPartial(
+    object: DeepPartial<AICompletionResponse_Candidate_Content_Part>,
+  ): AICompletionResponse_Candidate_Content_Part {
+    const message = createBaseAICompletionResponse_Candidate_Content_Part();
+    message.text = object.text ?? "";
+    return message;
+  },
+};
+
 export type SQLServiceDefinition = typeof SQLServiceDefinition;
 export const SQLServiceDefinition = {
   name: "SQLService",
@@ -4124,6 +4538,48 @@ export const SQLServiceDefinition = {
               97,
               116,
               97,
+            ]),
+          ],
+        },
+      },
+    },
+    aICompletion: {
+      name: "AICompletion",
+      requestType: AICompletionRequest,
+      requestStream: false,
+      responseType: AICompletionResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          800016: [new Uint8Array([2])],
+          578365826: [
+            new Uint8Array([
+              25,
+              58,
+              1,
+              42,
+              34,
+              20,
+              47,
+              118,
+              49,
+              47,
+              115,
+              113,
+              108,
+              47,
+              97,
+              105,
+              67,
+              111,
+              109,
+              112,
+              108,
+              101,
+              116,
+              105,
+              111,
+              110,
             ]),
           ],
         },
