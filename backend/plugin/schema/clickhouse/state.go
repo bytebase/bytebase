@@ -66,7 +66,7 @@ type tableState struct {
 }
 
 func (t *tableState) toString(buf *strings.Builder) error {
-	if _, err := buf.WriteString(fmt.Sprintf("CREATE TABLE %s (\n  ", t.name)); err != nil {
+	if _, err := fmt.Fprintf(buf, "CREATE TABLE %s (\n  ", t.name); err != nil {
 		return err
 	}
 	columns := []*columnState{}
@@ -78,7 +78,7 @@ func (t *tableState) toString(buf *strings.Builder) error {
 	})
 	for i, column := range columns {
 		if i > 0 {
-			if _, err := buf.WriteString(",\n  "); err != nil {
+			if _, err := fmt.Fprintf(buf, ",\n  "); err != nil {
 				return err
 			}
 		}
@@ -90,12 +90,12 @@ func (t *tableState) toString(buf *strings.Builder) error {
 		return err
 	}
 	if t.engine != "" {
-		if _, err := buf.WriteString(fmt.Sprintf("\nENGINE = %s", t.engine)); err != nil {
+		if _, err := fmt.Fprintf(buf, "\nENGINE = %s", t.engine); err != nil {
 			return err
 		}
 	}
 	if len(t.sortingKeys) > 0 {
-		if _, err := buf.WriteString(fmt.Sprintf("\nORDER BY (%s)", strings.Join(t.sortingKeys, ", "))); err != nil {
+		if _, err := fmt.Fprintf(buf, "\nORDER BY (%s)", strings.Join(t.sortingKeys, ", ")); err != nil {
 			return err
 		}
 	} else {
@@ -109,12 +109,12 @@ func (t *tableState) toString(buf *strings.Builder) error {
 		}
 	}
 	if len(t.primaryKeys) > 0 {
-		if _, err := buf.WriteString(fmt.Sprintf("\nPRIMARY KEY (%s)", strings.Join(t.primaryKeys, ", "))); err != nil {
+		if _, err := fmt.Fprintf(buf, "\nPRIMARY KEY (%s)", strings.Join(t.primaryKeys, ", ")); err != nil {
 			return err
 		}
 	}
 	if t.comment != "" {
-		if _, err := buf.WriteString(fmt.Sprintf("\nCOMMENT '%s'", t.comment)); err != nil {
+		if _, err := fmt.Fprintf(buf, "\nCOMMENT '%s'", t.comment); err != nil {
 			return err
 		}
 	}
@@ -198,12 +198,12 @@ func (c *columnState) toString(buf *strings.Builder) error {
 		}
 	}
 	if c.defaultValue != nil {
-		if _, err := buf.WriteString(fmt.Sprintf(" DEFAULT %s", c.defaultValue.toString())); err != nil {
+		if _, err := fmt.Fprintf(buf, " DEFAULT %s", c.defaultValue.toString()); err != nil {
 			return err
 		}
 	}
 	if c.comment != "" {
-		if _, err := buf.WriteString(fmt.Sprintf(" COMMENT '%s'", c.comment)); err != nil {
+		if _, err := fmt.Fprintf(buf, " COMMENT '%s'", c.comment); err != nil {
 			return err
 		}
 	}

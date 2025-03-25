@@ -88,7 +88,7 @@ type Context struct {
 	ActorID      int
 	ActorName    string
 	ActorEmail   string
-	CreatedTs    int64
+	CreatedTS    int64
 	Issue        *Issue
 	Rollout      *Rollout
 	Stage        *Stage

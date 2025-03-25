@@ -22,8 +22,8 @@ const (
 	SizeExceeded   Code = 7
 
 	// 101 ~ 199 db error.
-	DbConnectionFailure Code = 101
-	DbExecutionError    Code = 102
+	DBConnectionFailure Code = 101
+	DBExecutionError    Code = 102
 
 	// 201 db migration error
 	// Db migration is a core feature, so we separate it from the db error.
@@ -119,5 +119,5 @@ func Wrap(err error, code Code) *Error {
 
 // FormatDBErrorEmptyRowWithQuery formats database error that query returns empty row.
 func FormatDBErrorEmptyRowWithQuery(query string) error {
-	return Errorf(DbExecutionError, "query %q returned empty row", query)
+	return Errorf(DBExecutionError, "query %q returned empty row", query)
 }

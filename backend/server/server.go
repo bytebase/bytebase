@@ -185,7 +185,7 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 		return nil, err
 	}
 
-	if err := s.store.BackfillIssueTsVector(ctx); err != nil {
+	if err := s.store.BackfillIssueTSVector(ctx); err != nil {
 		slog.Warn("failed to backfill issue ts vector", log.BBError(err))
 	}
 

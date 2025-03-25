@@ -62,7 +62,7 @@ func (e *DatabaseConnectExecutor) checkDatabaseConnection(ctx context.Context, i
 	if err != nil {
 		return &storepb.PlanCheckRunResult_Result{
 			Status:  storepb.PlanCheckRunResult_Result_ERROR,
-			Code:    common.DbConnectionFailure.Int32(),
+			Code:    common.DBConnectionFailure.Int32(),
 			Title:   fmt.Sprintf("Failed to connect %q", database.DatabaseName),
 			Content: err.Error(),
 		}

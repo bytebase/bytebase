@@ -64,7 +64,7 @@ type tableState struct {
 }
 
 func (t *tableState) toString(buf *strings.Builder) error {
-	if _, err := buf.WriteString(fmt.Sprintf("CREATE TABLE %s (\n  ", t.name)); err != nil {
+	if _, err := fmt.Fprintf(buf, "CREATE TABLE %s (\n  ", t.name); err != nil {
 		return err
 	}
 	columns := []*columnState{}
@@ -190,7 +190,7 @@ func (f *foreignKeyState) toString(buf *strings.Builder) error {
 			return err
 		}
 		referencedColumn := f.referencedColumns[i]
-		if _, err := buf.WriteString(fmt.Sprintf("%s(%s)", f.referencedTable, referencedColumn)); err != nil {
+		if _, err := fmt.Fprintf(buf, "%s(%s)", f.referencedTable, referencedColumn); err != nil {
 			return err
 		}
 	}
@@ -307,7 +307,7 @@ func (c *columnState) toString(buf *strings.Builder) error {
 		}
 	}
 	if c.defaultValue != nil {
-		if _, err := buf.WriteString(fmt.Sprintf(" DEFAULT %s", c.defaultValue.toString())); err != nil {
+		if _, err := fmt.Fprintf(buf, " DEFAULT %s", c.defaultValue.toString()); err != nil {
 			return err
 		}
 	}

@@ -938,7 +938,7 @@ func (s *ProjectService) TestWebhook(ctx context.Context, request *v1pb.TestWebh
 			ActorID:      api.SystemBotID,
 			ActorName:    "Bytebase",
 			ActorEmail:   s.store.GetSystemBotUser(ctx).Email,
-			CreatedTs:    time.Now().Unix(),
+			CreatedTS:    time.Now().Unix(),
 			Issue: &webhookplugin.Issue{
 				ID:          1,
 				Name:        "Test issue",
