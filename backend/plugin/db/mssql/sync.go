@@ -68,11 +68,11 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get schemas from database %q", driver.databaseName)
 	}
-	columnMap, err := getTableColumns(txn)
+	columnMap, err := getTableColumns(txn, schemaNames)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get table columns from database %q", driver.databaseName)
 	}
-	tableMap, err := getTables(txn, columnMap)
+	tableMap, err := getTables(txn, schemaNames, columnMap)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get tables from database %q", driver.databaseName)
 	}
@@ -139,18 +139,22 @@ func getSchemas(txn *sql.Tx) ([]string, error) {
 }
 
 // getTables gets all tables of a database.
-func getTables(txn *sql.Tx, columnMap map[db.TableKey][]*storepb.ColumnMetadata) (map[string][]*storepb.TableMetadata, error) {
-	indexMap, err := getIndexes(txn)
+func getTables(txn *sql.Tx, schemas []string, columnMap map[db.TableKey][]*storepb.ColumnMetadata) (map[string][]*storepb.TableMetadata, error) {
+	indexMap, err := getKeyAndIndexes(txn, schemas)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get indices")
 	}
 
-	fkMap, err := getForeignKeys(txn)
+	fkMap, err := getForeignKeys(txn, schemas)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get foreign keys")
 	}
 
-	// TODO(d): foreign keys.
+	checkMap, err := getChecks(txn, schemas)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get checks")
+	}
+
 	tableMap := make(map[string][]*storepb.TableMetadata)
 	query := `
 		SELECT
@@ -191,6 +195,7 @@ func getTables(txn *sql.Tx, columnMap map[db.TableKey][]*storepb.ColumnMetadata)
 		table.Columns = columnMap[key]
 		table.Indexes = indexMap[key]
 		table.ForeignKeys = fkMap[key]
+		table.CheckConstraints = checkMap[key]
 		if comment.Valid {
 			table.Comment = comment.String
 		}
@@ -204,79 +209,124 @@ func getTables(txn *sql.Tx, columnMap map[db.TableKey][]*storepb.ColumnMetadata)
 	return tableMap, nil
 }
 
-// https://learn.microsoft.com/en-us/sql/relational-databases/system-catalog-views/sys-foreign-key-columns-transact-sql?view=sql-server-ver16#example-query
-var listForeignKeyQuery = `
-SELECT fk.name AS ForeignKeyName,
-       s_parent.name AS ParentSchemaName,
-       t_parent.name AS ParentTableName,
-       c_parent.name AS ParentColumnName,
-       s_child.name AS ReferencedSchemaName,
-       t_child.name AS ReferencedTableName,
-       c_child.name AS ReferencedColumnName,
-       CASE fk.delete_referential_action
-        WHEN 0 THEN ''
-        WHEN 1 THEN 'CASCADE'
-        WHEN 2 THEN 'SET NULL'
-        WHEN 3 THEN 'SET DEFAULT'
-       END AS OnDeleteAction,
-       CASE fk.update_referential_action
-        WHEN 0 THEN ''
-        WHEN 1 THEN 'CASCADE'
-        WHEN 2 THEN 'SET NULL'
-        WHEN 3 THEN 'SET DEFAULT'
-       END AS OnUpdateAction
-FROM sys.foreign_keys fk
-INNER JOIN sys.foreign_key_columns fkc
-    ON fkc.constraint_object_id = fk.object_id
-INNER JOIN sys.tables t_parent
-    ON t_parent.object_id = fk.parent_object_id
-INNER JOIN sys.schemas s_parent
-    ON s_parent.schema_id = t_parent.schema_id
-INNER JOIN sys.columns c_parent
-    ON fkc.parent_column_id = c_parent.column_id
-    AND c_parent.object_id = t_parent.object_id
-INNER JOIN sys.tables t_child
-    ON t_child.object_id = fk.referenced_object_id
-INNER JOIN sys.schemas s_child
-    ON s_child.schema_id = t_child.schema_id
-INNER JOIN sys.columns c_child
-    ON c_child.object_id = t_child.object_id
-    AND fkc.referenced_column_id = c_child.column_id
-ORDER BY fk.name, t_parent.name, t_child.name, c_parent.name, c_child.name;
-`
+func getChecks(txn *sql.Tx, schemas []string) (map[db.TableKey][]*storepb.CheckConstraintMetadata, error) {
+	checkMap := make(map[db.TableKey][]*storepb.CheckConstraintMetadata)
+	dumpCheckConstraintSQL := fmt.Sprintf(`
+	SELECT
+		t.schema_name,
+	    t.name AS table_name,
+	    c.name,
+	    c.comment,
+	    c.definition
+	FROM
+	    (SELECT s.name as schema_name, o.name, o.object_id, o.type FROM sys.all_objects o LEFT JOIN sys.schemas s ON s.schema_id = o.schema_id WHERE s.name in (%s) ) t
+	        INNER JOIN (SELECT ch.name, ch.object_id, ch.parent_object_id, ch.is_disabled, CAST(p.[value] AS nvarchar(4000)) AS comment, ch.is_not_for_replication, ch.definition FROM sys.check_constraints ch LEFT JOIN sys.extended_properties p ON p.major_id = ch.object_id AND p.minor_id = 0 AND p.name = 'MS_Description') c ON c.parent_object_id = t.object_id
+	        LEFT JOIN sys.objects co ON co.object_id = c.object_id
+	ORDER BY t.schema_name ASC, t.object_id ASC, c.object_id ASC
+	`, quoteList(schemas))
 
-func getForeignKeys(txn *sql.Tx) (map[db.TableKey][]*storepb.ForeignKeyMetadata, error) {
+	rows, err := txn.Query(dumpCheckConstraintSQL)
+	if err != nil {
+		return nil, util.FormatErrorWithQuery(err, dumpCheckConstraintSQL)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var schemaName, tableName, checkName, comment, definition sql.NullString
+		if err := rows.Scan(&schemaName, &tableName, &checkName, &comment, &definition); err != nil {
+			return nil, err
+		}
+		if !schemaName.Valid || !tableName.Valid || !checkName.Valid || !definition.Valid {
+			continue
+		}
+		key := db.TableKey{Schema: schemaName.String, Table: tableName.String}
+		// todo: set comments.
+		_ = comment
+		checkMap[key] = append(checkMap[key], &storepb.CheckConstraintMetadata{
+			Name:       checkName.String,
+			Expression: definition.String,
+		})
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return checkMap, nil
+}
+
+func referentialAction(action int) string {
+	switch action {
+	case 0:
+		return "NO ACTION"
+	case 1:
+		return "CASCADE"
+	case 2:
+		return "SET NULL"
+	case 3:
+		return "SET DEFAULT"
+	default:
+		return "NO ACTION"
+	}
+}
+
+func getForeignKeys(txn *sql.Tx, schemas []string) (map[db.TableKey][]*storepb.ForeignKeyMetadata, error) {
 	fkMap := make(map[db.TableKey]map[string]*storepb.ForeignKeyMetadata)
+	dumpForeignKeySQL := fmt.Sprintf(`
+	SELECT
+		t.schema_name,
+	    t.name AS table_name,
+	    f.name,
+	    f.referenced_schema,
+	    f.referenced_table,
+	    f.comment,
+	    f.delete_referential_action,
+	    f.update_referential_action,
+	    f.parent_column,
+	    f.referenced_column
+	FROM (SELECT s.name AS schema_name, o.name, o.object_id, o.type FROM sys.all_objects o LEFT JOIN sys.schemas s ON s.schema_id = o.schema_id WHERE s.name in (%s) ) t
+	    INNER JOIN (SELECT fk.object_id, fk.parent_object_id, fk.name, OBJECT_SCHEMA_NAME(fk.referenced_object_id) AS referenced_schema, OBJECT_NAME(fk.referenced_object_id) AS referenced_table, fk.is_disabled, fk.is_not_for_replication, fk.delete_referential_action, fk.update_referential_action, fc.parent_column, CAST(p.[value] AS nvarchar(4000)) AS comment, fc.referenced_column FROM sys.foreign_keys fk LEFT JOIN (SELECT fkc.constraint_object_id, pc.name AS parent_column, rc.name AS referenced_column FROM sys.foreign_key_columns fkc LEFT JOIN sys.all_columns pc ON pc.object_id = fkc.parent_object_id AND pc.column_id = fkc.parent_column_id LEFT JOIN sys.all_columns rc ON rc.object_id = fkc.referenced_object_id AND rc.column_id = fkc.referenced_column_id) fc ON fc.constraint_object_id = fk.object_id LEFT JOIN sys.extended_properties p ON p.major_id = fk.object_id AND p.minor_id = 0 AND p.name = 'MS_Description' ) f ON f.parent_object_id = t.object_id
+	    LEFT JOIN sys.objects co ON co.object_id = f.object_id
+	ORDER BY t.schema_name ASC, t.object_id ASC, f.object_id ASC
+	`, quoteList(schemas))
 
-	rows, err := txn.Query(listForeignKeyQuery)
+	rows, err := txn.Query(dumpForeignKeySQL)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 	for rows.Next() {
-		var fkName, parentSchemaName, parentTableName, parentColumnName, referencedSchemaName, referencedTableName, referencedColumnName, onDelete, onUpdate string
-		if err := rows.Scan(&fkName, &parentSchemaName, &parentTableName, &parentColumnName, &referencedSchemaName, &referencedTableName, &referencedColumnName, &onDelete, &onUpdate); err != nil {
+		var schemaName, tableName, fkName, referencedSchemaName, referencedTableName, comment, parentColumnName, referencedColumnName sql.NullString
+		var onDelete, onUpdate sql.NullInt32
+		if err := rows.Scan(&schemaName, &tableName, &fkName, &referencedSchemaName, &referencedTableName, &comment, &onDelete, &onUpdate, &parentColumnName, &referencedColumnName); err != nil {
 			return nil, err
 		}
-		outerKey := db.TableKey{Schema: parentSchemaName, Table: parentTableName}
+		if !schemaName.Valid || !tableName.Valid || !fkName.Valid || !referencedSchemaName.Valid || !referencedTableName.Valid || !parentColumnName.Valid || !referencedColumnName.Valid {
+			continue
+		}
+		outerKey := db.TableKey{Schema: schemaName.String, Table: tableName.String}
 		if _, ok := fkMap[outerKey]; !ok {
 			fkMap[outerKey] = make(map[string]*storepb.ForeignKeyMetadata)
 		}
 
-		if _, ok := fkMap[outerKey][fkName]; !ok {
-			fkMap[outerKey][fkName] = &storepb.ForeignKeyMetadata{
-				Name:              fkName,
-				Columns:           []string{parentColumnName},
-				ReferencedSchema:  referencedSchemaName,
-				ReferencedTable:   referencedTableName,
-				ReferencedColumns: []string{referencedColumnName},
-				OnDelete:          onDelete,
-				OnUpdate:          onUpdate,
+		if _, ok := fkMap[outerKey][fkName.String]; !ok {
+			fk := &storepb.ForeignKeyMetadata{
+				Name:             fkName.String,
+				ReferencedSchema: referencedSchemaName.String,
+				ReferencedTable:  referencedTableName.String,
 			}
-		} else {
-			fkMap[outerKey][fkName].Columns = append(fkMap[outerKey][fkName].Columns, parentColumnName)
-			fkMap[outerKey][fkName].ReferencedColumns = append(fkMap[outerKey][fkName].ReferencedColumns, referencedColumnName)
+			// Set comments.
+			_ = comment
+
+			if onDelete.Valid {
+				fk.OnDelete = referentialAction(int(onDelete.Int32))
+			}
+			if onUpdate.Valid {
+				fk.OnUpdate = referentialAction(int(onUpdate.Int32))
+			}
+
+			fkMap[outerKey][fkName.String] = fk
 		}
+
+		fkMap[outerKey][fkName.String].Columns = append(fkMap[outerKey][fkName.String].Columns, parentColumnName.String)
+		fkMap[outerKey][fkName.String].ReferencedColumns = append(fkMap[outerKey][fkName.String].ReferencedColumns, referencedColumnName.String)
 	}
 
 	if err := rows.Err(); err != nil {
@@ -299,69 +349,112 @@ func getForeignKeys(txn *sql.Tx) (map[db.TableKey][]*storepb.ForeignKeyMetadata,
 	return result, nil
 }
 
+func quote(s string) string {
+	return fmt.Sprintf("N'%s'", s)
+}
+
+func quoteList(schemas []string) string {
+	var quoted []string
+	for _, schema := range schemas {
+		quoted = append(quoted, quote(schema))
+	}
+	return strings.Join(quoted, ",")
+}
+
 // getTableColumns gets the columns of a table.
-func getTableColumns(txn *sql.Tx) (map[db.TableKey][]*storepb.ColumnMetadata, error) {
+func getTableColumns(txn *sql.Tx, schemas []string) (map[db.TableKey][]*storepb.ColumnMetadata, error) {
 	columnsMap := make(map[db.TableKey][]*storepb.ColumnMetadata)
 
-	query := `
-		SELECT
-			IC.table_schema,
-			IC.table_name,
-			IC.column_name,
-			IC.data_type,
-			IC.character_maximum_length,
-			IC.ordinal_position,
-			IC.column_default,
-			IC.is_nullable,
-			IC.collation_name,
-			IJ.PropertyValue AS ColumnComment
-		FROM INFORMATION_SCHEMA.COLUMNS IC
-		LEFT JOIN (
-			SELECT
-				EP.value AS PropertyValue,
-				S.name AS SchemaName,
-				O.name AS TableName,
-				C.name AS ColumnName
-			FROM
-				(SELECT major_id, minor_id, name, value FROM sys.extended_properties WHERE name = 'MS_Description') AS EP
-				INNER JOIN sys.all_objects AS O ON EP.major_id = O.object_id
-				INNER JOIN sys.schemas AS S ON O.schema_id = S.schema_id
-				INNER JOIN sys.columns AS C ON EP.major_id = C.object_id AND EP.minor_id = C.column_id
-			WHERE S.name IS NOT NULL AND O.name IS NOT NULL AND C.name IS NOT NULL
-		) IJ ON IJ.SchemaName = IC.table_schema AND IJ.TableName = IC.table_name AND IJ.ColumnName = IC.column_name
-		ORDER BY IC.table_schema, IC.table_name, IC.ordinal_position;`
-	rows, err := txn.Query(query)
+	getColumnSQL := fmt.Sprintf(`
+	SELECT
+		s.name AS schema_name,
+		OBJECT_NAME(c.object_id) AS table_name,
+		c.name AS column_name,
+		t.name AS type_name,
+		c.is_computed,
+		cc.definition,
+		cc.is_persisted,
+		c.max_length,
+		c.precision AS precision,
+		c.scale,
+		c.collation_name,
+		c.is_nullable,
+		c.is_identity,
+		d.definition AS default_value,
+		CAST(p.[value] AS nvarchar(4000)) AS comment,
+		id.seed_value AS seed_value,
+		id.increment_value AS increment_value
+	FROM sys.columns c
+		LEFT JOIN sys.computed_columns cc ON cc.object_id = c.object_id AND cc.column_id = c.column_id
+		LEFT JOIN sys.types t ON c.user_type_id = t.user_type_id
+		LEFT JOIN (SELECT so.object_id, sc.name as default_schema, so.name AS default_name, dc.definition FROM sys.objects so LEFT JOIN sys.schemas sc ON sc.schema_id = so.schema_id LEFT JOIN sys.default_constraints dc ON dc.object_id = so.object_id WHERE so.type = 'D') d ON d.object_id = c.default_object_id
+		LEFT JOIN sys.objects o ON o.object_id = c.object_id
+		LEFT JOIN sys.schemas s ON s.schema_id = o.schema_id
+		LEFT JOIN sys.identity_columns id ON c.object_id = id.object_id AND c.column_id = id.column_id
+		LEFT JOIN sys.extended_properties p ON p.major_id = c.object_id AND p.minor_id = c.column_id AND p.class = 1 AND p.name = 'MS_Description'
+	WHERE s.name in (%s)
+	ORDER BY s.name ASC, c.object_id ASC, c.column_id ASC 
+	`, quoteList(schemas))
+
+	rows, err := txn.Query(getColumnSQL)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 	for rows.Next() {
-		column := &storepb.ColumnMetadata{}
-		var schemaName, tableName, columnType, nullable string
-		var defaultStr, collation, comment sql.NullString
-		var characterLength sql.NullInt32
-		if err := rows.Scan(&schemaName, &tableName, &column.Name, &columnType, &characterLength, &column.Position, &defaultStr, &nullable, &collation, &comment); err != nil {
+		var schemaName, tableName, columnName, typeName, definition, collationName, defaultValue, comment sql.NullString
+		var isComputed, isPersisted, isNullable, isIdentity sql.NullBool
+		var maxLength, precision, scale, seedValue, incrementValue sql.NullInt64
+		if err := rows.Scan(
+			&schemaName,
+			&tableName,
+			&columnName,
+			&typeName,
+			&isComputed,
+			&definition,
+			&isPersisted,
+			&maxLength,
+			&precision,
+			&scale,
+			&collationName,
+			&isNullable,
+			&isIdentity,
+			&defaultValue,
+			&comment,
+			&seedValue,
+			&incrementValue,
+		); err != nil {
 			return nil, err
 		}
-		if characterLength.Valid {
-			column.Type = fmt.Sprintf("%s(%d)", columnType, characterLength.Int32)
-		} else {
-			column.Type = columnType
+		if !schemaName.Valid || !tableName.Valid || !columnName.Valid || !typeName.Valid {
+			continue
 		}
-		if defaultStr.Valid {
-			// TODO: use correct default type
-			column.DefaultValue = &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: defaultStr.String}
+		column := &storepb.ColumnMetadata{
+			Name: columnName.String,
 		}
-		isNullBool, err := util.ConvertYesNo(nullable)
+		column.Type, err = getColumnType(definition, typeName, isComputed, isPersisted, precision, scale, maxLength)
 		if err != nil {
-			return nil, err
+			return nil, errors.Errorf("failed to get column type: %v", err)
 		}
-		column.Nullable = isNullBool
-		column.Collation = collation.String
+		if isIdentity.Valid && isIdentity.Bool && seedValue.Valid && incrementValue.Valid {
+			column.IsIdentity = true
+			column.IdentitySeed = seedValue.Int64
+			column.IdentityIncrement = incrementValue.Int64
+		}
+		if collationName.Valid {
+			column.Collation = collationName.String
+		}
+		if defaultValue.Valid {
+			column.DefaultValue = &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: defaultValue.String}
+		}
+		column.Nullable = true
+		if isNullable.Valid && !isNullable.Bool {
+			column.Nullable = false
+		}
 		if comment.Valid {
 			column.Comment = comment.String
 		}
-		key := db.TableKey{Schema: schemaName, Table: tableName}
+		key := db.TableKey{Schema: schemaName.String, Table: tableName.String}
 		columnsMap[key] = append(columnsMap[key], column)
 	}
 	if err := rows.Err(); err != nil {
@@ -371,59 +464,135 @@ func getTableColumns(txn *sql.Tx) (map[db.TableKey][]*storepb.ColumnMetadata, er
 	return columnsMap, nil
 }
 
-// getIndexes gets all indices of a database.
-func getIndexes(txn *sql.Tx) (map[db.TableKey][]*storepb.IndexMetadata, error) {
+func getColumnType(definition, typeName sql.NullString, isComputed, isPersisted sql.NullBool, precision, scale, maxLength sql.NullInt64) (string, error) {
+	var buf strings.Builder
+	if definition.Valid && isComputed.Valid && isComputed.Bool {
+		if _, err := fmt.Fprintf(&buf, " AS %s", definition.String); err != nil {
+			return "", err
+		}
+		if isPersisted.Valid && isPersisted.Bool {
+			if _, err := fmt.Fprintf(&buf, " PERSISTED"); err != nil {
+				return "", err
+			}
+		}
+		return "", nil
+	}
+
+	if !typeName.Valid {
+		return "", errors.New("column type name is not valid")
+	}
+
+	if _, err := fmt.Fprintf(&buf, " %s", typeName.String); err != nil {
+		return "", err
+	}
+
+	switch typeName.String {
+	case "decimal", "numeric":
+		if precision.Valid && scale.Valid {
+			if _, err := fmt.Fprintf(&buf, "(%d, %d)", precision.Int64, scale.Int64); err != nil {
+				return "", err
+			}
+		} else if precision.Valid {
+			if _, err := fmt.Fprintf(&buf, "(%d)", precision.Int64); err != nil {
+				return "", err
+			}
+		}
+	case "float", "real":
+		if precision.Valid {
+			if _, err := fmt.Fprintf(&buf, "(%d)", precision.Int64); err != nil {
+				return "", err
+			}
+		}
+	case "dateoffset", "datetime2", "time":
+		if scale.Valid {
+			if _, err := fmt.Fprintf(&buf, "(%d)", scale.Int64); err != nil {
+				return "", err
+			}
+		}
+	case "char", "nchar", "varchar", "nvarchar", "binary", "varbinary":
+		if maxLength.Valid {
+			if maxLength.Int64 == -1 {
+				if _, err := fmt.Fprintf(&buf, "(max)"); err != nil {
+					return "", err
+				}
+			} else {
+				if _, err := fmt.Fprintf(&buf, "(%d)", maxLength.Int64); err != nil {
+					return "", err
+				}
+			}
+		}
+	}
+	return buf.String(), nil
+}
+
+func getIndexes(txn *sql.Tx, schemas []string) (map[db.TableKey][]*storepb.IndexMetadata, error) {
 	// MSSQL doesn't support function-based indexes.
 	indexMap := make(map[db.TableKey]map[string]*storepb.IndexMetadata)
 
-	query := `
-		SELECT
-			s.name,
-			t.name,
-			ind.name,
-			col.name,
-			ind.type_desc,
-			ind.is_primary_key,
-			ind.is_unique
-		FROM
-			sys.indexes ind
-		INNER JOIN
-			sys.index_columns ic ON  ind.object_id = ic.object_id and ind.index_id = ic.index_id
-		INNER JOIN
-			sys.columns col ON ic.object_id = col.object_id and ic.column_id = col.column_id
-		INNER JOIN
-			sys.tables t ON ind.object_id = t.object_id
-		INNER JOIN
-			sys.schemas s ON s.schema_id = t.schema_id
-		WHERE
-			t.is_ms_shipped = 0 AND ind.name IS NOT NULL
-		ORDER BY 
-			s.name, t.name, ind.name, ic.key_ordinal;`
+	query := fmt.Sprintf(`
+	SELECT
+		s.name AS schema_name,
+	    o.name AS table_name,
+	    i.name,
+	    i.type_desc,
+	    col.name AS column_name,
+	    ic.is_descending_key,
+	    CAST(ep.value AS NVARCHAR(MAX)) comment
+	FROM
+	    sys.indexes i
+	        LEFT JOIN sys.all_objects o ON o.object_id = i.object_id
+	        LEFT JOIN sys.schemas s ON s.schema_id = o.schema_id
+	        LEFT JOIN sys.index_columns ic ON ic.object_id = i.object_id AND ic.index_id = i.index_id
+	        LEFT JOIN sys.all_columns col ON ic.column_id = col.column_id AND ic.object_id = col.object_id
+	        LEFT JOIN sys.key_constraints cons ON (cons.parent_object_id = ic.object_id AND cons.unique_index_id = i.index_id)
+	        LEFT JOIN sys.extended_properties ep ON (((i.is_primary_key <> 1 AND i.is_unique_constraint <> 1 AND ep.class = 7 AND i.object_id = ep.major_id AND ep.minor_id = i.index_id) OR ((i.is_primary_key = 1 OR i.is_unique_constraint = 1) AND ep.class = 1 AND cons.object_id = ep.major_id AND ep.minor_id = 0)) AND ep.name = 'MS_Description'),
+	    sys.stats stat
+	        LEFT JOIN sys.all_objects so ON (stat.object_id = so.object_id)
+	WHERE (i.object_id = so.object_id OR i.object_id = so.parent_object_id) AND i.name = stat.name AND i.index_id > 0 AND (i.is_primary_key = 0 AND i.is_unique_constraint = 0) AND s.name in (%s) AND o.type IN ('U', 'S', 'V')
+	ORDER BY s.name, table_name, i.index_id, ic.key_ordinal, ic.index_column_id
+	`, quoteList(schemas))
 	rows, err := txn.Query(query)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 	for rows.Next() {
-		var schemaName, tableName, indexName, indexType, colName string
-		var primary, unique bool
-		if err := rows.Scan(&schemaName, &tableName, &indexName, &colName, &indexType, &primary, &unique); err != nil {
+		var schemaName, tableName, indexName, typeDesc, colName, comment sql.NullString
+		var isDescending sql.NullBool
+		if err := rows.Scan(&schemaName, &tableName, &indexName, &colName, &typeDesc, &isDescending, &comment); err != nil {
 			return nil, err
 		}
 
-		key := db.TableKey{Schema: schemaName, Table: tableName}
+		if !schemaName.Valid || !tableName.Valid || !indexName.Valid || !colName.Valid {
+			continue
+		}
+
+		key := db.TableKey{Schema: schemaName.String, Table: tableName.String}
 		if _, ok := indexMap[key]; !ok {
 			indexMap[key] = make(map[string]*storepb.IndexMetadata)
 		}
-		if _, ok := indexMap[key][indexName]; !ok {
-			indexMap[key][indexName] = &storepb.IndexMetadata{
-				Name:    indexName,
-				Type:    indexType,
-				Unique:  unique,
-				Primary: primary,
+		if _, ok := indexMap[key][indexName.String]; !ok {
+			index := &storepb.IndexMetadata{
+				Name:         indexName.String,
+				Unique:       false,
+				Primary:      false,
+				IsConstraint: false,
 			}
+			if typeDesc.Valid {
+				index.Type = typeDesc.String
+			}
+			if comment.Valid {
+				index.Comment = comment.String
+			}
+			indexMap[key][indexName.String] = index
 		}
-		indexMap[key][indexName].Expressions = append(indexMap[key][indexName].Expressions, colName)
+
+		indexMap[key][indexName.String].Expressions = append(indexMap[key][indexName.String].Expressions, colName.String)
+		if isDescending.Valid && isDescending.Bool {
+			indexMap[key][indexName.String].Descending = append(indexMap[key][indexName.String].Descending, true)
+		} else {
+			indexMap[key][indexName.String].Descending = append(indexMap[key][indexName.String].Descending, false)
+		}
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
@@ -439,6 +608,112 @@ func getIndexes(txn *sql.Tx) (map[db.TableKey][]*storepb.IndexMetadata, error) {
 		})
 	}
 	return tableIndexes, nil
+}
+
+func getKeys(txn *sql.Tx, schemas []string) (map[db.TableKey][]*storepb.IndexMetadata, error) {
+	indexMap := make(map[db.TableKey]map[string]*storepb.IndexMetadata)
+	dumpKeySQL := fmt.Sprintf(`
+	SELECT
+		s.name AS schema_name,
+	    o.name AS table_name,
+	    i.name,
+	    c.name AS column_name,
+	    ic.is_descending_key,
+	    i.is_primary_key,
+	    i.is_unique_constraint,
+	    i.type_desc,
+	    CAST(p.[value] AS nvarchar(4000)) AS comment
+	FROM
+	    sys.indexes i
+	        LEFT JOIN sys.index_columns ic ON ic.object_id = i.object_id AND ic.index_id = i.index_id
+	        LEFT JOIN sys.columns c ON c.object_id = ic.object_id AND c.column_id = ic.column_id
+	        LEFT JOIN sys.objects co ON co.parent_object_id = i.object_id AND co.name = i.name LEFT JOIN sys.objects o ON o.object_id = i.object_id
+	        LEFT JOIN sys.schemas s ON s.schema_id = o.schema_id
+	        LEFT JOIN sys.extended_properties p ON p.major_id = co.object_id AND p.class = 1 AND p.name = 'MS_Description'
+	WHERE i.index_id > 0 AND (i.is_primary_key = 1 OR i.is_unique_constraint = 1) AND o.type IN ('U', 'V') AND s.name in (%s)
+	ORDER BY s.name ASC, i.name ASC, ic.key_ordinal ASC
+	`, quoteList(schemas))
+
+	rows, err := txn.Query(dumpKeySQL)
+	if err != nil {
+		return nil, util.FormatErrorWithQuery(err, dumpKeySQL)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var schemaName, tableName, indexName, colName, typeDesc, comment sql.NullString
+		var isDescending, isPrimaryKey, isUniqueConstraint sql.NullBool
+		if err := rows.Scan(&schemaName, &tableName, &indexName, &colName, &isDescending, &isPrimaryKey, &isUniqueConstraint, &typeDesc, &comment); err != nil {
+			return nil, err
+		}
+
+		if !schemaName.Valid || !tableName.Valid || !indexName.Valid || !colName.Valid {
+			continue
+		}
+		key := db.TableKey{Schema: schemaName.String, Table: tableName.String}
+		if _, ok := indexMap[key]; !ok {
+			indexMap[key] = make(map[string]*storepb.IndexMetadata)
+		}
+		if _, ok := indexMap[key][indexName.String]; !ok {
+			index := &storepb.IndexMetadata{
+				Name:         indexName.String,
+				Unique:       false,
+				Primary:      false,
+				IsConstraint: true,
+			}
+			if isPrimaryKey.Valid && isPrimaryKey.Bool {
+				index.Primary = true
+				index.Unique = true
+			}
+			if isUniqueConstraint.Valid && isUniqueConstraint.Bool {
+				index.Unique = true
+			}
+			if typeDesc.Valid {
+				index.Type = typeDesc.String
+			}
+			if comment.Valid {
+				index.Comment = comment.String
+			}
+			indexMap[key][indexName.String] = index
+		}
+
+		indexMap[key][indexName.String].Expressions = append(indexMap[key][indexName.String].Expressions, colName.String)
+		if isDescending.Valid && isDescending.Bool {
+			indexMap[key][indexName.String].Descending = append(indexMap[key][indexName.String].Descending, true)
+		} else {
+			indexMap[key][indexName.String].Descending = append(indexMap[key][indexName.String].Descending, false)
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	tableIndexes := make(map[db.TableKey][]*storepb.IndexMetadata)
+	for k, m := range indexMap {
+		for _, v := range m {
+			tableIndexes[k] = append(tableIndexes[k], v)
+		}
+		sort.Slice(tableIndexes[k], func(i, j int) bool {
+			return tableIndexes[k][i].Name < tableIndexes[k][j].Name
+		})
+	}
+	return tableIndexes, nil
+}
+
+// getIndexes gets all indices of a database.
+func getKeyAndIndexes(txn *sql.Tx, schemas []string) (map[db.TableKey][]*storepb.IndexMetadata, error) {
+	keys, err := getKeys(txn, schemas)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get keys")
+	}
+	indexes, err := getIndexes(txn, schemas)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get indexes")
+	}
+	for k, v := range indexes {
+		keys[k] = append(keys[k], v...)
+	}
+	return keys, nil
 }
 
 // getViews gets all views of a database.

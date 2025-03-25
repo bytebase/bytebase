@@ -441,18 +441,22 @@ func convertStoreTablePartitionMetadata(partition *storepb.TablePartitionMetadat
 
 func convertStoreColumnMetadata(column *storepb.ColumnMetadata) *v1pb.ColumnMetadata {
 	metadata := &v1pb.ColumnMetadata{
-		Name:          column.Name,
-		Position:      column.Position,
-		HasDefault:    column.DefaultValue != nil,
-		DefaultOnNull: column.DefaultOnNull,
-		OnUpdate:      column.OnUpdate,
-		Nullable:      column.Nullable,
-		Type:          column.Type,
-		CharacterSet:  column.CharacterSet,
-		Collation:     column.Collation,
-		Comment:       column.Comment,
-		UserComment:   column.UserComment,
-		Generation:    convertStoreGenerationMetadata(column.Generation),
+		Name:               column.Name,
+		Position:           column.Position,
+		HasDefault:         column.DefaultValue != nil,
+		DefaultOnNull:      column.DefaultOnNull,
+		OnUpdate:           column.OnUpdate,
+		Nullable:           column.Nullable,
+		Type:               column.Type,
+		CharacterSet:       column.CharacterSet,
+		Collation:          column.Collation,
+		Comment:            column.Comment,
+		UserComment:        column.UserComment,
+		Generation:         convertStoreGenerationMetadata(column.Generation),
+		IdentityGeneration: v1pb.ColumnMetadata_IdentityGeneration(column.IdentityGeneration),
+		IsIdentity:         column.IsIdentity,
+		IdentitySeed:       column.IdentitySeed,
+		IdentityIncrement:  column.IdentityIncrement,
 	}
 	if metadata.HasDefault {
 		switch value := column.DefaultValue.(type) {
@@ -884,17 +888,21 @@ func convertV1TablePartitionMetadata(tablePartition *v1pb.TablePartitionMetadata
 
 func convertV1ColumnMetadata(column *v1pb.ColumnMetadata) *storepb.ColumnMetadata {
 	metadata := &storepb.ColumnMetadata{
-		Name:          column.Name,
-		Position:      column.Position,
-		Nullable:      column.Nullable,
-		DefaultOnNull: column.DefaultOnNull,
-		Type:          column.Type,
-		CharacterSet:  column.CharacterSet,
-		Collation:     column.Collation,
-		Comment:       column.Comment,
-		UserComment:   column.UserComment,
-		OnUpdate:      column.OnUpdate,
-		Generation:    convertV1GenerationMetadata(column.Generation),
+		Name:               column.Name,
+		Position:           column.Position,
+		Nullable:           column.Nullable,
+		DefaultOnNull:      column.DefaultOnNull,
+		Type:               column.Type,
+		CharacterSet:       column.CharacterSet,
+		Collation:          column.Collation,
+		Comment:            column.Comment,
+		UserComment:        column.UserComment,
+		OnUpdate:           column.OnUpdate,
+		Generation:         convertV1GenerationMetadata(column.Generation),
+		IdentityGeneration: storepb.ColumnMetadata_IdentityGeneration(column.IdentityGeneration),
+		IsIdentity:         column.IsIdentity,
+		IdentitySeed:       column.IdentitySeed,
+		IdentityIncrement:  column.IdentityIncrement,
 	}
 
 	if column.HasDefault {
