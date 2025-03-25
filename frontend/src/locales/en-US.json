@@ -557,11 +557,16 @@
           "self": "AI Assistant",
           "enable-ai-assistant": "Enable AI Assistant",
           "description": "Use AI to assist the database development tasks.",
+          "provider": {
+            "self": "AI Provider",
+            "open_ai": "Open AI",
+            "azure_open_ai": "Azure Open AI"
+          },
           "api-key": {
             "self": "API Key",
             "description": "Supply API Key. {viewDoc}",
             "find-my-key": "Find my key",
-            "placeholder": "An OpenAI API Key usually starts with sk-*****"
+            "placeholder": "An API Key usually starts with sk-*****"
           },
           "endpoint": {
             "self": "API Endpoint",
