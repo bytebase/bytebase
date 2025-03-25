@@ -92,6 +92,12 @@ import {
   useDatabaseCatalog,
 } from "@/store";
 import { type ComposedDatabase } from "@/types";
+import {
+  ObjectSchema_Type,
+  type ObjectSchema,
+  type TableCatalog,
+  type ColumnCatalog,
+} from "@/types/proto/v1/database_catalog_service";
 import { PolicyType } from "@/types/proto/v1/org_policy_service";
 import { hasProjectPermissionV2 } from "@/utils";
 
@@ -103,7 +109,7 @@ interface LocalState {
   searchText: string;
   showFeatureModal: boolean;
   isLoading: boolean;
-  sensitiveColumnList: MaskData[];
+  sensitiveList: MaskData[];
   pendingGrantAccessColumn: MaskData[];
   showGrantAccessDrawer: boolean;
 }
@@ -112,7 +118,7 @@ const state = reactive<LocalState>({
   searchText: "",
   showFeatureModal: false,
   isLoading: false,
-  sensitiveColumnList: [],
+  sensitiveList: [],
   pendingGrantAccessColumn: [],
   showGrantAccessDrawer: false,
 });
@@ -152,9 +158,48 @@ const isMissingLicenseForInstance = computed(() =>
 
 const databaseCatalog = useDatabaseCatalog(props.database.name, false);
 
+const flattenObjectSchema = (
+  parentPath: string,
+  objectSchema: ObjectSchema
+): {
+  column: string;
+  semanticTypeId: string;
+  target: TableCatalog | ColumnCatalog | ObjectSchema;
+}[] => {
+  switch (objectSchema.type) {
+    case ObjectSchema_Type.OBJECT:
+      const resp = [];
+      for (const [key, schema] of Object.entries(
+        objectSchema.structKind?.properties ?? {}
+      )) {
+        resp.push(
+          ...flattenObjectSchema(
+            [parentPath, key].filter((i) => i).join("."),
+            schema
+          )
+        );
+      }
+      return resp;
+    case ObjectSchema_Type.ARRAY:
+      if (!objectSchema.arrayKind?.kind) {
+        return [];
+      }
+      // TODO(ed): I'm not sure about this.
+      return flattenObjectSchema(parentPath, objectSchema.arrayKind?.kind);
+    default:
+      return [
+        {
+          column: parentPath,
+          semanticTypeId: objectSchema.semanticType,
+          target: objectSchema,
+        },
+      ];
+  }
+};
+
 const updateList = async () => {
   state.isLoading = true;
-  const sensitiveColumnList: MaskData[] = [];
+  const sensitiveList: MaskData[] = [];
 
   for (const schema of databaseCatalog.value.schemas) {
     for (const table of schema.tables) {
@@ -162,25 +207,53 @@ const updateList = async () => {
         if (!column.semanticType && !column.classification) {
           continue;
         }
-        sensitiveColumnList.push({
+        sensitiveList.push({
           schema: schema.name,
           table: table.name,
           column: column.name,
           semanticTypeId: column.semanticType,
           classificationId: column.classification,
+          target: column,
+        });
+      }
+
+      if (table.objectSchema) {
+        const flattenItems = flattenObjectSchema("", table.objectSchema);
+        sensitiveList.push(
+          ...flattenItems.map((item) => ({
+            ...item,
+            schema: schema.name,
+            table: table.name,
+            classificationId: "",
+            // TODO(ed/zp/danny): can we support classification for object schema?
+            disableClassification: true,
+          }))
+        );
+      }
+
+      if (table.classification) {
+        sensitiveList.push({
+          schema: schema.name,
+          table: table.name,
+          column: "",
+          semanticTypeId: "",
+          // TODO(ed/zp/danny): can we support senamtic type for table catalog?
+          disableSemanticType: true,
+          classificationId: table.classification,
+          target: table,
         });
       }
     }
   }
 
-  state.sensitiveColumnList = sensitiveColumnList;
+  state.sensitiveList = sensitiveList;
   state.isLoading = false;
 };
 
 watch(databaseCatalog, updateList, { immediate: true, deep: true });
 
 const filteredColumnList = computed(() => {
-  let list = state.sensitiveColumnList;
+  let list = state.sensitiveList;
   const searchText = state.searchText.trim().toLowerCase();
   if (searchText) {
     list = list.filter(

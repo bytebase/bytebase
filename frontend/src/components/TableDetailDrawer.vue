@@ -122,10 +122,14 @@
                     {{ $t("database.classification.self") }}
                   </dt>
                   <dd class="mt-1 flex flex-row items-center">
-                    <ClassificationLevelBadge
+                    <ClassificationCell
                       :classification="tableCatalog.classification"
                       :classification-config="classificationConfig"
-                      placeholder="-"
+                      :readonly="!allowSetClassification"
+                      @apply="
+                        (id: string) =>
+                          $emit('apply-classification', tableName, id)
+                      "
                     />
                   </dd>
                 </div>
@@ -250,7 +254,7 @@ import { computedAsync } from "@vueuse/core";
 import { CodeIcon } from "lucide-vue-next";
 import { NButton, NPopover } from "naive-ui";
 import { computed, reactive, ref } from "vue";
-import ClassificationLevelBadge from "@/components/SchemaTemplate/ClassificationLevelBadge.vue";
+import ClassificationCell from "@/components/ColumnDataTable/ClassificationCell.vue";
 import TableSchemaViewer from "@/components/TableSchemaViewer.vue";
 import {
   DatabaseV1Name,
@@ -299,10 +303,14 @@ const props = defineProps<{
   databaseName: string;
   schemaName: string;
   tableName: string;
+  allowSetClassification: boolean;
   classificationConfig?: DataClassificationSetting_DataClassificationConfig;
 }>();
 
-defineEmits(["dismiss"]);
+defineEmits<{
+  (event: "dismiss"): void;
+  (event: "apply-classification", table: string, id: string): void;
+}>();
 
 const databaseV1Store = useDatabaseV1Store();
 const dbSchemaStore = useDBSchemaV1Store();
