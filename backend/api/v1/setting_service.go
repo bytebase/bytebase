@@ -840,7 +840,7 @@ func (s *SettingService) convertToSettingMessage(ctx context.Context, setting *s
 		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), v1Value); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", setting.Name, err)
 		}
-		// DONOT expose the api key.
+		// DO NOT expose the api key.
 		v1Value.ApiKey = ""
 		return &v1pb.Setting{
 			Name: settingName,
