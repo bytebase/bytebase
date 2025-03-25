@@ -1,7 +1,8 @@
-import type Emittery from "emittery";
-import type { Ref } from "vue";
 import type { Engine } from "@/types/proto/v1/common";
 import type { DatabaseMetadata } from "@/types/proto/v1/database_service";
+import type { AISetting } from "@/types/proto/v1/setting_service";
+import type Emittery from "emittery";
+import type { Ref } from "vue";
 import type { Conversation } from "./conversation";
 
 export type AIContextEvents = Emittery<{
@@ -18,9 +19,7 @@ export type AIChatInfo = {
 };
 
 export type AIContext = {
-  openAIKey: Ref<string>;
-  openAIEndpoint: Ref<string>;
-  openAIModel: Ref<string>;
+  aiSetting: Ref<AISetting>;
   engine: Ref<Engine | undefined>;
   databaseMetadata: Ref<DatabaseMetadata | undefined>;
   schema: Ref<string | undefined>;
