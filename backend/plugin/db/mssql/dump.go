@@ -18,15 +18,15 @@ const (
 )
 
 // Dump dumps the database.
-func (driver *Driver) Dump(ctx context.Context, out io.Writer, _ *storepb.DatabaseSchemaMetadata) error {
-	txn, err := driver.db.BeginTx(ctx, &sql.TxOptions{})
+func (d *Driver) Dump(ctx context.Context, out io.Writer, _ *storepb.DatabaseSchemaMetadata) error {
+	txn, err := d.db.BeginTx(ctx, &sql.TxOptions{})
 	if err != nil {
 		return err
 	}
 	defer txn.Rollback()
 
-	if err := driver.dumpDatabaseTxn(ctx, txn, out); err != nil {
-		return errors.Wrapf(err, "failed to dump database %q", driver.databaseName)
+	if err := d.dumpDatabaseTxn(ctx, txn, out); err != nil {
+		return errors.Wrapf(err, "failed to dump database %q", d.databaseName)
 	}
 
 	return txn.Commit()

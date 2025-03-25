@@ -1472,11 +1472,12 @@ func writeIndexKeyList(out io.Writer, index *storepb.IndexMetadata) error {
 				return err
 			}
 		}
-		if key.NullOrder == ast.NullOrderTypeFirst {
+		switch key.NullOrder {
+		case ast.NullOrderTypeFirst:
 			if _, err := io.WriteString(out, " NULLS FIRST"); err != nil {
 				return err
 			}
-		} else if key.NullOrder == ast.NullOrderTypeLast {
+		case ast.NullOrderTypeLast:
 			if _, err := io.WriteString(out, " NULLS LAST"); err != nil {
 				return err
 			}

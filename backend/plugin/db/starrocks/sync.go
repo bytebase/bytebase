@@ -38,14 +38,14 @@ var (
 )
 
 // SyncInstance syncs the instance.
-func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
-	version, _, err := driver.getVersion(ctx)
+func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
+	version, _, err := d.getVersion(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	lowerCaseTableNames := 0
-	lowerCaseTableNamesText, err := driver.getServerVariable(ctx, "lower_case_table_names")
+	lowerCaseTableNamesText, err := d.getServerVariable(ctx, "lower_case_table_names")
 	if err != nil {
 		slog.Debug("failed to get lower_case_table_names variable", log.BBError(err))
 	} else {
@@ -64,7 +64,7 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, e
 			DEFAULT_COLLATION_NAME
 		FROM information_schema.SCHEMATA
 		WHERE ` + where
-	rows, err := driver.db.QueryContext(ctx, query)
+	rows, err := d.db.QueryContext(ctx, query)
 	if err != nil {
 		return nil, util.FormatErrorWithQuery(err, query)
 	}
@@ -80,7 +80,7 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, e
 		); err != nil {
 			return nil, err
 		}
-		if driver.dbType == storepb.Engine_DORIS {
+		if d.dbType == storepb.Engine_DORIS {
 			database.CharacterSet = ""
 			database.Collation = ""
 		}
@@ -99,8 +99,8 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, e
 	}, nil
 }
 
-func (driver *Driver) getServerVariable(ctx context.Context, varName string) (string, error) {
-	db := driver.GetDB()
+func (d *Driver) getServerVariable(ctx context.Context, varName string) (string, error) {
+	db := d.GetDB()
 	query := fmt.Sprintf("SHOW VARIABLES LIKE '%s'", varName)
 	var varNameFound, value string
 	if err := db.QueryRowContext(ctx, query).Scan(&varNameFound, &value); err != nil {
@@ -116,7 +116,7 @@ func (driver *Driver) getServerVariable(ctx context.Context, varName string) (st
 }
 
 // SyncDBSchema syncs a single database schema.
-func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetadata, error) {
+func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetadata, error) {
 	schemaMetadata := &storepb.SchemaMetadata{
 		Name: "",
 	}
@@ -138,8 +138,8 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 			EXTRA
 		FROM information_schema.columns
 		WHERE TABLE_SCHEMA = '%s'
-		ORDER BY TABLE_NAME, ORDINAL_POSITION`, driver.databaseName)
-	columnRows, err := driver.db.QueryContext(ctx, columnQuery)
+		ORDER BY TABLE_NAME, ORDINAL_POSITION`, d.databaseName)
+	columnRows, err := d.db.QueryContext(ctx, columnQuery)
 	if err != nil {
 		return nil, util.FormatErrorWithQuery(err, columnQuery)
 	}
@@ -195,8 +195,8 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 			TABLE_NAME,
 			VIEW_DEFINITION
 		FROM information_schema.VIEWS
-		WHERE TABLE_SCHEMA = '%s'`, driver.databaseName)
-	viewRows, err := driver.db.QueryContext(ctx, viewQuery)
+		WHERE TABLE_SCHEMA = '%s'`, d.databaseName)
+	viewRows, err := d.db.QueryContext(ctx, viewQuery)
 	if err != nil {
 		return nil, util.FormatErrorWithQuery(err, viewQuery)
 	}
@@ -232,8 +232,8 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 			IFNULL(TABLE_COMMENT, '')
 		FROM information_schema.TABLES
 		WHERE TABLE_SCHEMA = '%s'
-		ORDER BY TABLE_NAME`, driver.databaseName)
-	tableRows, err := driver.db.QueryContext(ctx, tableQuery)
+		ORDER BY TABLE_NAME`, d.databaseName)
+	tableRows, err := d.db.QueryContext(ctx, tableQuery)
 	if err != nil {
 		return nil, util.FormatErrorWithQuery(err, tableQuery)
 	}
@@ -290,7 +290,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 	}
 
 	databaseMetadata := &storepb.DatabaseSchemaMetadata{
-		Name:    driver.databaseName,
+		Name:    d.databaseName,
 		Schemas: []*storepb.SchemaMetadata{schemaMetadata},
 	}
 	// Query db info.
@@ -299,19 +299,19 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 			DEFAULT_CHARACTER_SET_NAME,
 			DEFAULT_COLLATION_NAME
 		FROM information_schema.SCHEMATA
-		WHERE SCHEMA_NAME = '%s'`, driver.databaseName)
-	if err := driver.db.QueryRowContext(ctx, databaseQuery).Scan(
+		WHERE SCHEMA_NAME = '%s'`, d.databaseName)
+	if err := d.db.QueryRowContext(ctx, databaseQuery).Scan(
 		&databaseMetadata.CharacterSet,
 		&databaseMetadata.Collation,
 	); err != nil {
 		if err == sql.ErrNoRows {
-			return nil, common.Errorf(common.NotFound, "database %q not found", driver.databaseName)
+			return nil, common.Errorf(common.NotFound, "database %q not found", d.databaseName)
 		}
 		return nil, err
 	}
 	// "characterSet":"utf8\u0000", "collation":"utf8_general_ci\u0000".
 	// ERROR: unsupported Unicode escape sequence (SQLSTATE 22P05).
-	if driver.dbType == storepb.Engine_DORIS {
+	if d.dbType == storepb.Engine_DORIS {
 		databaseMetadata.CharacterSet = ""
 		databaseMetadata.Collation = ""
 	}

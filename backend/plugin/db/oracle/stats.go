@@ -10,12 +10,12 @@ import (
 	"github.com/pkg/errors"
 )
 
-func (driver *Driver) CountAffectedRows(ctx context.Context, statement string) (int64, error) {
+func (d *Driver) CountAffectedRows(ctx context.Context, statement string) (int64, error) {
 	// Statement includes trailing semicolon, so we need to remove it.
-	if _, err := driver.db.ExecContext(ctx, fmt.Sprintf("EXPLAIN PLAN FOR %s", statement)); err != nil {
+	if _, err := d.db.ExecContext(ctx, fmt.Sprintf("EXPLAIN PLAN FOR %s", statement)); err != nil {
 		return 0, err
 	}
-	rows, err := driver.db.QueryContext(ctx, "SELECT * FROM TABLE(DBMS_XPLAN.DISPLAY)")
+	rows, err := d.db.QueryContext(ctx, "SELECT * FROM TABLE(DBMS_XPLAN.DISPLAY)")
 	if err != nil {
 		return 0, err
 	}

@@ -1546,7 +1546,7 @@ func (s *SQLService) SQLReviewCheck(
 		Collation:                dbMetadata.Collation,
 		ChangeType:               changeType,
 		DBSchema:                 dbMetadata,
-		DbType:                   instance.Metadata.GetEngine(),
+		DBType:                   instance.Metadata.GetEngine(),
 		Catalog:                  catalog,
 		Driver:                   connection,
 		CurrentDatabase:          database.DatabaseName,

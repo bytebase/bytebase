@@ -12,13 +12,13 @@ import (
 )
 
 // SyncInstance syncs the instance.
-func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
-	version, err := driver.getVersion(ctx)
+func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
+	version, err := d.getVersion(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	instanceRoles, err := driver.getInstanceRoles(ctx)
+	instanceRoles, err := d.getInstanceRoles(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -31,7 +31,7 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, e
 			schema_name
 		FROM information_schema.schemata
 		WHERE ` + where
-	rows, err := driver.db.QueryContext(ctx, query)
+	rows, err := d.db.QueryContext(ctx, query)
 	if err != nil {
 		return nil, util.FormatErrorWithQuery(err, query)
 	}
@@ -59,7 +59,7 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, e
 }
 
 // SyncDBSchema syncs a single database schema.
-func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetadata, error) {
+func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetadata, error) {
 	schemaMetadata := &storepb.SchemaMetadata{
 		Name: "",
 	}
@@ -81,7 +81,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 		FROM information_schema.columns
 		WHERE table_schema = $1
 		ORDER BY table_name, ordinal_position`
-	columnRows, err := driver.db.QueryContext(ctx, columnQuery, driver.databaseName)
+	columnRows, err := d.db.QueryContext(ctx, columnQuery, d.databaseName)
 	if err != nil {
 		return nil, util.FormatErrorWithQuery(err, columnQuery)
 	}
@@ -142,7 +142,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 		FROM system.tables
 		WHERE database = $1
 		ORDER BY name`
-	tableRows, err := driver.db.QueryContext(ctx, tableQuery, driver.databaseName)
+	tableRows, err := d.db.QueryContext(ctx, tableQuery, d.databaseName)
 	if err != nil {
 		return nil, util.FormatErrorWithQuery(err, tableQuery)
 	}
@@ -181,7 +181,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 				DataSize: totalBytes,
 				Comment:  comment,
 			}
-			indexes, err := driver.getDataSkippingIndices(ctx, driver.databaseName, name)
+			indexes, err := d.getDataSkippingIndices(ctx, d.databaseName, name)
 			if err != nil {
 				return nil, err
 			}
@@ -206,12 +206,12 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 	}
 
 	return &storepb.DatabaseSchemaMetadata{
-		Name:    driver.databaseName,
+		Name:    d.databaseName,
 		Schemas: []*storepb.SchemaMetadata{schemaMetadata},
 	}, nil
 }
 
-func (driver *Driver) getDataSkippingIndices(ctx context.Context, database string, table string) ([]*storepb.IndexMetadata, error) {
+func (d *Driver) getDataSkippingIndices(ctx context.Context, database string, table string) ([]*storepb.IndexMetadata, error) {
 	// Select basic fields of the data skipping index.
 	// References:
 	// * https://clickhouse.com/docs/en/operations/system-tables/data_skipping_indices
@@ -225,7 +225,7 @@ func (driver *Driver) getDataSkippingIndices(ctx context.Context, database strin
 		FROM system.data_skipping_indices
 		WHERE database = $1 AND table = $2
 		ORDER BY name`
-	rows, err := driver.db.QueryContext(ctx, query, database, table)
+	rows, err := d.db.QueryContext(ctx, query, database, table)
 	if err != nil {
 		return nil, util.FormatErrorWithQuery(err, query)
 	}

@@ -24,10 +24,10 @@ var (
 )
 
 // SyncInstance syncs the instance.
-func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
+func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
 	var fullVersion string
 	queryVersion := "SELECT BANNER FROM v$version WHERE banner LIKE 'Oracle%'"
-	if err := driver.db.QueryRowContext(ctx, queryVersion).Scan(&fullVersion); err != nil {
+	if err := d.db.QueryRowContext(ctx, queryVersion).Scan(&fullVersion); err != nil {
 		return nil, util.FormatErrorWithQuery(err, queryVersion)
 	}
 	tokens := strings.Fields(fullVersion)
@@ -46,7 +46,7 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, e
 		version = fmt.Sprintf("%s (%s)", version, canonicalVersion)
 	}
 
-	txn, err := driver.db.BeginTx(ctx, nil)
+	txn, err := d.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -54,7 +54,7 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, e
 
 	schemas, err := getSchemas(txn)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get schemas from database %q", driver.databaseName)
+		return nil, errors.Wrapf(err, "failed to get schemas from database %q", d.databaseName)
 	}
 	var databases []*storepb.DatabaseSchemaMetadata
 	for _, schema := range schemas {
@@ -75,41 +75,41 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, e
 }
 
 // SyncDBSchema syncs a single database schema.
-func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetadata, error) {
-	txn, err := driver.db.BeginTx(ctx, nil)
+func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetadata, error) {
+	txn, err := d.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
 	defer txn.Rollback()
 
-	version, err := driver.GetVersion()
+	version, err := d.GetVersion()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get version")
 	}
 
-	columnMap, err := getTableColumns(txn, driver.databaseName, version)
+	columnMap, err := getTableColumns(txn, d.databaseName, version)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get table columns from database %q", driver.databaseName)
+		return nil, errors.Wrapf(err, "failed to get table columns from database %q", d.databaseName)
 	}
-	tableMap, err := getTables(txn, driver.databaseName, columnMap)
+	tableMap, err := getTables(txn, d.databaseName, columnMap)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get tables from database %q", driver.databaseName)
+		return nil, errors.Wrapf(err, "failed to get tables from database %q", d.databaseName)
 	}
-	viewMap, err := getViews(txn, driver.databaseName, columnMap)
+	viewMap, err := getViews(txn, d.databaseName, columnMap)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get views from database %q", driver.databaseName)
+		return nil, errors.Wrapf(err, "failed to get views from database %q", d.databaseName)
 	}
-	sequences, err := getSequences(txn, driver.databaseName)
+	sequences, err := getSequences(txn, d.databaseName)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get sequences from database %q", driver.databaseName)
+		return nil, errors.Wrapf(err, "failed to get sequences from database %q", d.databaseName)
 	}
 	dbLinks, err := getDBLinks(txn)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get db links from database %q", driver.databaseName)
+		return nil, errors.Wrapf(err, "failed to get db links from database %q", d.databaseName)
 	}
-	functions, procedures, packages, err := getRoutines(txn, driver.databaseName)
+	functions, procedures, packages, err := getRoutines(txn, d.databaseName)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get routines from database %q", driver.databaseName)
+		return nil, errors.Wrapf(err, "failed to get routines from database %q", d.databaseName)
 	}
 
 	if err := txn.Commit(); err != nil {
@@ -117,14 +117,14 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 	}
 
 	databaseMetadata := &storepb.DatabaseSchemaMetadata{
-		Name:            driver.databaseName,
-		ServiceName:     driver.serviceName,
+		Name:            d.databaseName,
+		ServiceName:     d.serviceName,
 		LinkedDatabases: dbLinks,
 	}
 	databaseMetadata.Schemas = append(databaseMetadata.Schemas, &storepb.SchemaMetadata{
 		Name:       "",
-		Tables:     tableMap[driver.databaseName],
-		Views:      viewMap[driver.databaseName],
+		Tables:     tableMap[d.databaseName],
+		Views:      viewMap[d.databaseName],
 		Sequences:  sequences,
 		Functions:  functions,
 		Procedures: procedures,

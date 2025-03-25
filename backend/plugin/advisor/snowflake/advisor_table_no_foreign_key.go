@@ -128,10 +128,11 @@ func (l *tableNoForeignKeyChecker) EnterOut_of_line_constraint(ctx *parser.Out_o
 	if ctx.REFERENCES() == nil || l.currentNormalizedTableName == "" || l.currentConstraintAction == currentConstraintActionNone {
 		return
 	}
-	if l.currentConstraintAction == currentConstraintActionAdd {
+	switch l.currentConstraintAction {
+	case currentConstraintActionAdd:
 		l.tableForeignKeyTimes[l.currentNormalizedTableName]++
 		l.tableLine[l.currentNormalizedTableName] = ctx.GetStart().GetLine()
-	} else if l.currentConstraintAction == currentConstraintActionDrop {
+	case currentConstraintActionDrop:
 		if times, ok := l.tableForeignKeyTimes[l.currentNormalizedTableName]; ok && times > 0 {
 			l.tableForeignKeyTimes[l.currentNormalizedTableName]--
 		}

@@ -7,14 +7,14 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-func (driver *Driver) getInstanceRoles(ctx context.Context) ([]*storepb.InstanceRole, error) {
+func (d *Driver) getInstanceRoles(ctx context.Context) ([]*storepb.InstanceRole, error) {
 	// host_ip isn't used for user identifier.
 	query := `
 	  SELECT
 			name
 		FROM system.users
 	`
-	roleRows, err := driver.db.QueryContext(ctx, query)
+	roleRows, err := d.db.QueryContext(ctx, query)
 
 	if err != nil {
 		return nil, util.FormatErrorWithQuery(err, query)

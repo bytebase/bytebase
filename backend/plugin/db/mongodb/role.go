@@ -16,8 +16,8 @@ const (
 )
 
 // getUserList returns the list of users.
-func (driver *Driver) getInstanceRoles(ctx context.Context) ([]*storepb.InstanceRole, error) {
-	database := driver.client.Database(bytebaseDefaultDatabase)
+func (d *Driver) getInstanceRoles(ctx context.Context) ([]*storepb.InstanceRole, error) {
+	database := d.client.Database(bytebaseDefaultDatabase)
 	command := bson.D{{
 		Key: "usersInfo",
 		Value: bson.D{{

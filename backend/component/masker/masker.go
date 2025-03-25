@@ -733,9 +733,10 @@ func (m *InnerOuterMasker) Mask(data *MaskData) *v1pb.RowValue {
 		}
 	}
 
-	if m.maskerType == InnerOuterMaskerTypeInner {
+	switch m.maskerType {
+	case InnerOuterMaskerTypeInner:
 		maskedData = m.maskInner([]rune(unmaskedData))
-	} else if m.maskerType == InnerOuterMaskerTypeOuter {
+	case InnerOuterMaskerTypeOuter:
 		maskedData = m.maskOuter([]rune(unmaskedData))
 	}
 

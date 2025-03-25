@@ -70,11 +70,11 @@ const (
 )
 
 // Dump dumps the database.
-func (driver *Driver) Dump(ctx context.Context, out io.Writer, _ *storepb.DatabaseSchemaMetadata) error {
+func (d *Driver) Dump(ctx context.Context, out io.Writer, _ *storepb.DatabaseSchemaMetadata) error {
 	// mysqldump -u root --databases dbName --no-data --routines --events --triggers --compact
 
 	// We must use the same MySQL connection to lock and unlock tables.
-	conn, err := driver.db.Conn(ctx)
+	conn, err := d.db.Conn(ctx)
 	if err != nil {
 		return err
 	}
@@ -90,8 +90,8 @@ func (driver *Driver) Dump(ctx context.Context, out io.Writer, _ *storepb.Databa
 	}
 	defer txn.Rollback()
 
-	slog.Debug("begin to dump database", slog.String("database", driver.databaseName))
-	if err := dumpTxn(txn, driver.databaseName, out); err != nil {
+	slog.Debug("begin to dump database", slog.String("database", d.databaseName))
+	if err := dumpTxn(txn, d.databaseName, out); err != nil {
 		return err
 	}
 
