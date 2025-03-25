@@ -1,10 +1,10 @@
 <template>
-  <ChatPanel v-if="openAIKey" />
+  <ChatPanel v-if="aiSetting.enabled" />
 </template>
 
 <script lang="ts" setup>
 import { useAIContext } from "../logic";
 
 const [{ default: ChatPanel }] = await Promise.all([import("./ChatPanel.vue")]);
-const { openAIKey } = useAIContext();
+const { aiSetting } = useAIContext();
 </script>

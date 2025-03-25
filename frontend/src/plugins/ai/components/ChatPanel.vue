@@ -1,6 +1,6 @@
 <template>
   <div
-    v-if="openAIKey"
+    v-if="aiSetting.enabled"
     class="w-full h-full flex-1 flex flex-col overflow-hidden"
   >
     <ActionBar />
@@ -28,14 +28,14 @@
 </template>
 
 <script lang="ts" setup>
+import { useSQLEditorTabStore } from "@/store";
+import { nextAnimationFrame } from "@/utils";
 import type { AxiosResponse } from "axios";
 import { Axios } from "axios";
 import { head } from "lodash-es";
 import { NSpin } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { reactive, watch } from "vue";
-import { useSQLEditorTabStore } from "@/store";
-import { nextAnimationFrame } from "@/utils";
 import { onConnectionChanged, useAIContext, useCurrentChat } from "../logic";
 import * as promptUtils from "../logic/prompt";
 import { useConversationStore } from "../store";
@@ -59,9 +59,7 @@ const store = useConversationStore();
 
 const context = useAIContext();
 const {
-  openAIKey,
-  openAIEndpoint,
-  openAIModel,
+  aiSetting,
   showHistoryDialog,
   pendingSendChat,
 } = context;
@@ -126,7 +124,7 @@ const requestAI = async (query: string) => {
     });
   });
   const body = {
-    model: openAIModel.value,
+    model: aiSetting.value.model,
     messages,
     temperature: 0,
     stop: ["#", ";"],
@@ -139,13 +137,17 @@ const requestAI = async (query: string) => {
     timeout: 300 * 1000,
     responseType: "json",
   });
-  const headers = {
+  const headers: { [key: string]: string } = {
     "Content-Type": "application/json",
-    Authorization: `Bearer ${openAIKey.value}`,
   };
+  if (context.aiSetting.value.provider === "AZURE_OPENAI") {
+    headers["api-key"] = context.aiSetting.value.apiKey;
+  } else {
+    headers["Authorization"] = `Bearer ${context.aiSetting.value.apiKey}`;
+  }
   try {
     const response: AxiosResponse<string> = await axios.post(
-      openAIEndpoint.value,
+      aiSetting.value.endpoint,
       JSON.stringify(body),
       {
         headers,
