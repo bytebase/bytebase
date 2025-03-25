@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
-	"strings"
 
 	"github.com/pkg/errors"
 
@@ -444,21 +443,6 @@ func assembleForeignKey(out io.Writer, fkMeta []*foreignKeyMeta) error {
 		}
 	}
 	return nil
-}
-
-func referentialAction(action int) string {
-	switch action {
-	case 0:
-		return "NO ACTION"
-	case 1:
-		return "CASCADE"
-	case 2:
-		return "SET NULL"
-	case 3:
-		return "SET DEFAULT"
-	default:
-		return "NO ACTION"
-	}
 }
 
 func mergeFKMetaMap(fkMetaMap []*foreignKeyMeta) [][]*foreignKeyMeta {
@@ -1120,18 +1104,6 @@ type tableMeta struct {
 	comment                 sql.NullString
 	schemaName              sql.NullString
 	currentValue            sql.NullString
-}
-
-func quote(s string) string {
-	return fmt.Sprintf("N'%s'", s)
-}
-
-func quoteList(schemas []string) string {
-	var quoted []string
-	for _, schema := range schemas {
-		quoted = append(quoted, quote(schema))
-	}
-	return strings.Join(quoted, ",")
 }
 
 func dumpTableTxn(ctx context.Context, txn *sql.Tx, schemas []string) (map[string][]*tableMeta, error) {

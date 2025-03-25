@@ -624,11 +624,14 @@ export interface ColumnMetadata {
   /** The user_comment is the user comment of a table parsed from the comment. */
   userComment: string;
   /** The generation is for generated columns. */
-  generation:
-    | GenerationMetadata
-    | undefined;
+  generation: GenerationMetadata | undefined;
+  isIdentity: boolean;
   /** The identity_generation is for identity columns, PG only. */
   identityGeneration: ColumnMetadata_IdentityGeneration;
+  /** The identity_seed is for identity columns, MSSQL only. */
+  identitySeed: Long;
+  /** The identity_increment is for identity columns, MSSQL only. */
+  identityIncrement: Long;
 }
 
 export enum ColumnMetadata_IdentityGeneration {
@@ -3815,7 +3818,10 @@ function createBaseColumnMetadata(): ColumnMetadata {
     comment: "",
     userComment: "",
     generation: undefined,
+    isIdentity: false,
     identityGeneration: ColumnMetadata_IdentityGeneration.IDENTITY_GENERATION_UNSPECIFIED,
+    identitySeed: Long.ZERO,
+    identityIncrement: Long.ZERO,
   };
 }
 
@@ -3863,8 +3869,17 @@ export const ColumnMetadata: MessageFns<ColumnMetadata> = {
     if (message.generation !== undefined) {
       GenerationMetadata.encode(message.generation, writer.uint32(114).fork()).join();
     }
+    if (message.isIdentity !== false) {
+      writer.uint32(136).bool(message.isIdentity);
+    }
     if (message.identityGeneration !== ColumnMetadata_IdentityGeneration.IDENTITY_GENERATION_UNSPECIFIED) {
       writer.uint32(120).int32(columnMetadata_IdentityGenerationToNumber(message.identityGeneration));
+    }
+    if (!message.identitySeed.equals(Long.ZERO)) {
+      writer.uint32(144).int64(message.identitySeed.toString());
+    }
+    if (!message.identityIncrement.equals(Long.ZERO)) {
+      writer.uint32(152).int64(message.identityIncrement.toString());
     }
     return writer;
   },
@@ -3988,12 +4003,36 @@ export const ColumnMetadata: MessageFns<ColumnMetadata> = {
           message.generation = GenerationMetadata.decode(reader, reader.uint32());
           continue;
         }
+        case 17: {
+          if (tag !== 136) {
+            break;
+          }
+
+          message.isIdentity = reader.bool();
+          continue;
+        }
         case 15: {
           if (tag !== 120) {
             break;
           }
 
           message.identityGeneration = columnMetadata_IdentityGenerationFromJSON(reader.int32());
+          continue;
+        }
+        case 18: {
+          if (tag !== 144) {
+            break;
+          }
+
+          message.identitySeed = Long.fromString(reader.int64().toString());
+          continue;
+        }
+        case 19: {
+          if (tag !== 152) {
+            break;
+          }
+
+          message.identityIncrement = Long.fromString(reader.int64().toString());
           continue;
         }
       }
@@ -4021,9 +4060,12 @@ export const ColumnMetadata: MessageFns<ColumnMetadata> = {
       comment: isSet(object.comment) ? globalThis.String(object.comment) : "",
       userComment: isSet(object.userComment) ? globalThis.String(object.userComment) : "",
       generation: isSet(object.generation) ? GenerationMetadata.fromJSON(object.generation) : undefined,
+      isIdentity: isSet(object.isIdentity) ? globalThis.Boolean(object.isIdentity) : false,
       identityGeneration: isSet(object.identityGeneration)
         ? columnMetadata_IdentityGenerationFromJSON(object.identityGeneration)
         : ColumnMetadata_IdentityGeneration.IDENTITY_GENERATION_UNSPECIFIED,
+      identitySeed: isSet(object.identitySeed) ? Long.fromValue(object.identitySeed) : Long.ZERO,
+      identityIncrement: isSet(object.identityIncrement) ? Long.fromValue(object.identityIncrement) : Long.ZERO,
     };
   },
 
@@ -4071,8 +4113,17 @@ export const ColumnMetadata: MessageFns<ColumnMetadata> = {
     if (message.generation !== undefined) {
       obj.generation = GenerationMetadata.toJSON(message.generation);
     }
+    if (message.isIdentity !== false) {
+      obj.isIdentity = message.isIdentity;
+    }
     if (message.identityGeneration !== ColumnMetadata_IdentityGeneration.IDENTITY_GENERATION_UNSPECIFIED) {
       obj.identityGeneration = columnMetadata_IdentityGenerationToJSON(message.identityGeneration);
+    }
+    if (!message.identitySeed.equals(Long.ZERO)) {
+      obj.identitySeed = (message.identitySeed || Long.ZERO).toString();
+    }
+    if (!message.identityIncrement.equals(Long.ZERO)) {
+      obj.identityIncrement = (message.identityIncrement || Long.ZERO).toString();
     }
     return obj;
   },
@@ -4098,8 +4149,15 @@ export const ColumnMetadata: MessageFns<ColumnMetadata> = {
     message.generation = (object.generation !== undefined && object.generation !== null)
       ? GenerationMetadata.fromPartial(object.generation)
       : undefined;
+    message.isIdentity = object.isIdentity ?? false;
     message.identityGeneration = object.identityGeneration ??
       ColumnMetadata_IdentityGeneration.IDENTITY_GENERATION_UNSPECIFIED;
+    message.identitySeed = (object.identitySeed !== undefined && object.identitySeed !== null)
+      ? Long.fromValue(object.identitySeed)
+      : Long.ZERO;
+    message.identityIncrement = (object.identityIncrement !== undefined && object.identityIncrement !== null)
+      ? Long.fromValue(object.identityIncrement)
+      : Long.ZERO;
     return message;
   },
 };
