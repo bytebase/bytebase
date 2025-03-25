@@ -556,20 +556,25 @@
         "ai-assistant": {
           "self": "AI Assistant",
           "enable-ai-assistant": "Enable AI Assistant",
-          "description": "Use OpenAPI to assist the database development tasks.",
-          "openai-key": {
-            "self": "OpenAI API Key",
-            "description": "Supply OpenAI API Key. {viewDoc}",
+          "description": "Use AI to assist the database development tasks.",
+          "provider": {
+            "self": "AI Provider",
+            "open_ai": "Open AI",
+            "azure_open_ai": "Azure Open AI"
+          },
+          "api-key": {
+            "self": "API Key",
+            "description": "Supply API Key. {viewDoc}",
             "find-my-key": "Find my key",
-            "placeholder": "An OpenAI API Key usually starts with sk-*****"
+            "placeholder": "An API Key usually starts with sk-*****"
           },
-          "openai-endpoint": {
-            "self": "OpenAI API Endpoint",
-            "description": "Supply private deployment of OpenAI API Endpoint."
+          "endpoint": {
+            "self": "API Endpoint",
+            "description": "Supply private deployment of API Endpoint."
           },
-          "openai-model": {
-            "self": "OpenAI Model Name",
-            "description": "Supply private deployment of OpenAI Model name."
+          "model": {
+            "self": "Model Name",
+            "description": "Supply private deployment of model name."
           }
         },
         "announcement": {
