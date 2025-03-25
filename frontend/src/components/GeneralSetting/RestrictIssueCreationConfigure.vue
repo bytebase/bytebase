@@ -6,7 +6,7 @@
         :text="true"
         :disabled="!allowEdit"
       />
-      <span class="textlabel">
+      <span class="font-medium">
         {{
           $t(
             "settings.general.workspace.restrict-issue-creation-for-sql-review.title"

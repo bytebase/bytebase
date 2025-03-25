@@ -1,6 +1,6 @@
 <template>
   <div
-    v-if="openAIKey"
+    v-if="aiSetting.enabled"
     class="w-full h-full flex-1 flex flex-col overflow-hidden"
   >
     <ActionBar />
@@ -11,7 +11,10 @@
       class="pt-2"
       @enter="requestAI"
     />
-    <div v-else class="flex-1 overflow-hidden relative flex items-center justify-center">
+    <div
+      v-else
+      class="flex-1 overflow-hidden relative flex items-center justify-center"
+    >
       <NSpin size="small" />
     </div>
 
@@ -25,19 +28,17 @@
 </template>
 
 <script lang="ts" setup>
-import type { AxiosResponse } from "axios";
-import { Axios } from "axios";
 import { head } from "lodash-es";
 import { NSpin } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { reactive, watch } from "vue";
+import { sqlServiceClient } from "@/grpcweb";
 import { useSQLEditorTabStore } from "@/store";
+import { type AICompletionRequest_Message } from "@/types/proto/v1/sql_service";
 import { nextAnimationFrame } from "@/utils";
 import { onConnectionChanged, useAIContext, useCurrentChat } from "../logic";
 import * as promptUtils from "../logic/prompt";
 import { useConversationStore } from "../store";
-import type { OpenAIMessage, OpenAIResponse } from "../types";
-import { OPENAI_DEFAULT_MODEL } from "@/types";
 import ActionBar from "./ActionBar.vue";
 import ChatView from "./ChatView";
 import DynamicSuggestions from "./DynamicSuggestions.vue";
@@ -56,8 +57,7 @@ const { currentTab: tab } = storeToRefs(useSQLEditorTabStore());
 const store = useConversationStore();
 
 const context = useAIContext();
-const { openAIKey, openAIEndpoint, openAIModel, showHistoryDialog, pendingSendChat } =
-  context;
+const { aiSetting, showHistoryDialog, pendingSendChat } = context;
 const {
   list: conversationList,
   ready,
@@ -110,15 +110,7 @@ const requestAI = async (query: string) => {
     conversation_id: conversation.id,
     status: "LOADING",
   });
-  const url =
-    openAIEndpoint.value === ""
-      ? "https://api.openai.com/v1/chat/completions"
-      : openAIEndpoint.value + "/v1/chat/completions";
-  const messages: OpenAIMessage[] = [];
-  const model =
-    openAIModel.value === ""
-      ? OPENAI_DEFAULT_MODEL
-      : openAIModel.value;
+  const messages: AICompletionRequest_Message[] = [];
   conversation.messageList.forEach((message) => {
     const { author, prompt } = message;
     messages.push({
@@ -126,39 +118,10 @@ const requestAI = async (query: string) => {
       content: prompt,
     });
   });
-  const body = {
-    model: model,
-    messages,
-    temperature: 0,
-    stop: ["#", ";"],
-    top_p: 1.0,
-    frequency_penalty: 0.0,
-    presence_penalty: 0.0,
-  };
   state.loading = true;
-  const axios = new Axios({
-    timeout: 300 * 1000,
-    responseType: "json",
-  });
-  const headers = {
-    "Content-Type": "application/json",
-    Authorization: `Bearer ${openAIKey.value}`,
-  };
   try {
-    const response: AxiosResponse<string> = await axios.post(
-      url,
-      JSON.stringify(body),
-      {
-        headers,
-      }
-    );
-
-    const data = JSON.parse(response.data) as OpenAIResponse;
-    if (data?.error) {
-      throw new Error(data.error.message);
-    }
-
-    const text = head(data?.choices)?.message.content?.trim();
+    const response = await sqlServiceClient.aICompletion({ messages });
+    const text = head(head(response.candidates)?.content?.parts)?.text?.trim();
     console.debug("[AI Assistant] answer:", text);
     if (text) {
       answer.content = text;

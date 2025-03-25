@@ -1019,6 +1019,10 @@
             <ul>
               
                 <li>
+                  <a href="#bytebase.v1.AISetting"><span class="badge">M</span>AISetting</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.AgentPluginSetting"><span class="badge">M</span>AgentPluginSetting</a>
                 </li>
               
@@ -1178,6 +1182,10 @@
                   <a href="#bytebase.v1.WorkspaceTrialSetting"><span class="badge">M</span>WorkspaceTrialSetting</a>
                 </li>
               
+              
+                <li>
+                  <a href="#bytebase.v1.AISetting.Provider"><span class="badge">E</span>AISetting.Provider</a>
+                </li>
               
                 <li>
                   <a href="#bytebase.v1.Algorithm.InnerOuterMask.MaskType"><span class="badge">E</span>Algorithm.InnerOuterMask.MaskType</a>
@@ -2181,6 +2189,30 @@
           <li>
             <a href="#v1%2fsql_service.proto">v1/sql_service.proto</a>
             <ul>
+              
+                <li>
+                  <a href="#bytebase.v1.AICompletionRequest"><span class="badge">M</span>AICompletionRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.AICompletionRequest.Message"><span class="badge">M</span>AICompletionRequest.Message</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.AICompletionResponse"><span class="badge">M</span>AICompletionResponse</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.AICompletionResponse.Candidate"><span class="badge">M</span>AICompletionResponse.Candidate</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.AICompletionResponse.Candidate.Content"><span class="badge">M</span>AICompletionResponse.Candidate.Content</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.AICompletionResponse.Candidate.Content.Part"><span class="badge">M</span>AICompletionResponse.Candidate.Content.Part</a>
+                </li>
               
                 <li>
                   <a href="#bytebase.v1.AdminExecuteRequest"><span class="badge">M</span>AdminExecuteRequest</a>
@@ -12273,6 +12305,65 @@ The access is based on approval flow.</p></td>
       <p></p>
 
       
+        <h3 id="bytebase.v1.AISetting">AISetting</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>enabled</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>provider</td>
+                  <td><a href="#bytebase.v1.AISetting.Provider">AISetting.Provider</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>endpoint</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>api_key</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>model</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>version</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.AgentPluginSetting">AgentPluginSetting</h3>
         <p></p>
 
@@ -13747,6 +13838,13 @@ server would not persist the setting value if it is true. </p></td>
                   <td><p> </p></td>
                 </tr>
               
+                <tr>
+                  <td>ai_setting</td>
+                  <td><a href="#bytebase.v1.AISetting">AISetting</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -13963,6 +14061,47 @@ server would not persist the setting value if it is true. </p></td>
         
       
 
+      
+        <h3 id="bytebase.v1.AISetting.Provider">AISetting.Provider</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>PROVIDER_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>OPEN_AI</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>CLAUDE</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>GEMINI</td>
+                <td>3</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>AZURE_OPENAI</td>
+                <td>4</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
       
         <h3 id="bytebase.v1.Algorithm.InnerOuterMask.MaskType">Algorithm.InnerOuterMask.MaskType</h3>
         <p></p>
@@ -23647,6 +23786,157 @@ TYPE_SQL_EDITOR_QUERY represents executing query in SQL Editor.</p></td>
       <p></p>
 
       
+        <h3 id="bytebase.v1.AICompletionRequest">AICompletionRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>messages</td>
+                  <td><a href="#bytebase.v1.AICompletionRequest.Message">AICompletionRequest.Message</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.AICompletionRequest.Message">AICompletionRequest.Message</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>role</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>content</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.AICompletionResponse">AICompletionResponse</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>candidates</td>
+                  <td><a href="#bytebase.v1.AICompletionResponse.Candidate">AICompletionResponse.Candidate</a></td>
+                  <td>repeated</td>
+                  <td><p>candidates is used for results with multiple choices and candidates. Used for OpenAI and Gemini. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.AICompletionResponse.Candidate">AICompletionResponse.Candidate</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>content</td>
+                  <td><a href="#bytebase.v1.AICompletionResponse.Candidate.Content">AICompletionResponse.Candidate.Content</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.AICompletionResponse.Candidate.Content">AICompletionResponse.Candidate.Content</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>parts</td>
+                  <td><a href="#bytebase.v1.AICompletionResponse.Candidate.Content.Part">AICompletionResponse.Candidate.Content.Part</a></td>
+                  <td>repeated</td>
+                  <td><p>parts is used for a result content with multiple parts. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.AICompletionResponse.Candidate.Content.Part">AICompletionResponse.Candidate.Content.Part</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>text</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.AdminExecuteRequest">AdminExecuteRequest</h3>
         <p></p>
 
@@ -25107,6 +25397,13 @@ Pass this value in the page_token field in the subsequent call to
                 <td><p></p></td>
               </tr>
             
+              <tr>
+                <td>AICompletion</td>
+                <td><a href="#bytebase.v1.AICompletionRequest">AICompletionRequest</a></td>
+                <td><a href="#bytebase.v1.AICompletionResponse">AICompletionResponse</a></td>
+                <td><p></p></td>
+              </tr>
+            
           </tbody>
         </table>
 
@@ -25222,6 +25519,16 @@ Pass this value in the page_token field in the subsequent call to
                 <td>DiffMetadata</td>
                 <td>POST</td>
                 <td>/v1/schemaDesign:diffMetadata</td>
+                <td>*</td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>AICompletion</td>
+                <td>POST</td>
+                <td>/v1/sql/aiCompletion</td>
                 <td>*</td>
               </tr>
               

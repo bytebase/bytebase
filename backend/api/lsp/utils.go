@@ -7,8 +7,8 @@ import (
 	"unicode"
 	"unicode/utf8"
 
+	lsp "github.com/bytebase/lsp-protocol"
 	"github.com/pkg/errors"
-	"github.com/sourcegraph/go-lsp"
 )
 
 func trimFilePrefix(s string) string {
@@ -43,7 +43,7 @@ func offsetForPosition(content []byte, p lsp.Position) (byteOffset int, whyInval
 	}
 
 	// Validate line number, notes that the Position in LSP is 0-based.
-	if p.Line >= lineNumber {
+	if int(p.Line) >= lineNumber {
 		return 0, errors.Errorf("line number %d out of range [0, %d)", p.Line, lineNumber)
 	}
 
@@ -51,7 +51,7 @@ func offsetForPosition(content []byte, p lsp.Position) (byteOffset int, whyInval
 	trimmedContent := content[offset:]
 
 	col8 := 0
-	for col16 := 0; col16 < p.Character; col16++ {
+	for col16 := 0; col16 < int(p.Character); col16++ {
 		// Unpack the first rune.
 		r, sz := utf8.DecodeRune(trimmedContent)
 		if sz == 0 {
@@ -115,7 +115,7 @@ func getSQLStatementRangesUTF16Position(content []byte) []lsp.Range {
 			continue
 		}
 
-		begin := lsp.Position{Line: line, Character: character}
+		begin := lsp.Position{Line: uint32(line), Character: uint32(character)}
 		for _, r := range statement {
 			if r == '\n' {
 				line++
@@ -147,7 +147,7 @@ func getSQLStatementRangesUTF16Position(content []byte) []lsp.Range {
 				endCharacter++
 			}
 		}
-		end := lsp.Position{Line: endLine, Character: endCharacter}
+		end := lsp.Position{Line: uint32(endLine), Character: uint32(endCharacter)}
 		ranges = append(ranges, lsp.Range{Start: begin, End: end})
 	}
 	return ranges

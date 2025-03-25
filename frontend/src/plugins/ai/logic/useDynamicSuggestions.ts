@@ -1,10 +1,9 @@
-import { Axios, type AxiosResponse } from "axios";
 import { head, uniq, values } from "lodash-es";
 import { computed, reactive, ref } from "vue";
 import { hashCode } from "@/bbkit/BBUtil";
+import { sqlServiceClient } from "@/grpcweb";
+import { type AICompletionRequest_Message } from "@/types/proto/v1/sql_service";
 import { WebStorageHelper } from "@/utils";
-import type { OpenAIMessage, OpenAIResponse } from "../types";
-import { OPENAI_DEFAULT_MODEL } from "@/types";
 import { useAIContext } from "./context";
 import * as promptUtils from "./prompt";
 
@@ -41,48 +40,12 @@ export const useDynamicSuggestions = () => {
     return "";
   });
 
-  const requestAI = async (messages: OpenAIMessage[]) => {
+  const requestAI = async (messages: AICompletionRequest_Message[]) => {
     await new Promise((resolve) => setTimeout(resolve, 1000));
-    const modelName =
-      context.openAIModel.value === ""
-      ? OPENAI_DEFAULT_MODEL
-      : context.openAIModel.value
-    const body = {
-      model: modelName,
-      messages,
-      temperature: 0,
-      stop: ["#", ";"],
-      top_p: 1.0,
-      frequency_penalty: 0.0,
-      presence_penalty: 0.0,
-    };
-    const axios = new Axios({
-      timeout: 300 * 1000,
-      responseType: "json",
-    });
-    const headers = {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${context.openAIKey.value}`,
-    };
-    const url =
-      context.openAIEndpoint.value === ""
-        ? "https://api.openai.com/v1/chat/completions"
-        : context.openAIEndpoint.value + "/v1/chat/completions";
     try {
-      const response: AxiosResponse<string> = await axios.post(
-        url,
-        JSON.stringify(body),
-        {
-          headers,
-        }
-      );
-
-      const data = JSON.parse(response.data) as OpenAIResponse;
-      if (data?.error) {
-        throw new Error(data.error.message);
-      }
-
-      const text = head(data?.choices)?.message.content?.trim() ?? "";
+      const response = await sqlServiceClient.aICompletion({ messages });
+      const text =
+        head(head(response.candidates)?.content?.parts)?.text?.trim() ?? "";
       const card = JSON.parse(text) as Record<string, string>;
       return values(card ?? {});
     } catch {
@@ -121,7 +84,7 @@ export const useDynamicSuggestions = () => {
           metadata,
           new Set([...used.values(), ...suggestions])
         );
-        const messages: OpenAIMessage[] = [
+        const messages: AICompletionRequest_Message[] = [
           {
             role: "system",
             content: command,

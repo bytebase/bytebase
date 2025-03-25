@@ -221,6 +221,7 @@
     - [SubscriptionService](#bytebase-v1-SubscriptionService)
   
 - [v1/setting_service.proto](#v1_setting_service-proto)
+    - [AISetting](#bytebase-v1-AISetting)
     - [AgentPluginSetting](#bytebase-v1-AgentPluginSetting)
     - [Algorithm](#bytebase-v1-Algorithm)
     - [Algorithm.FullMask](#bytebase-v1-Algorithm-FullMask)
@@ -262,6 +263,7 @@
     - [WorkspaceProfileSetting](#bytebase-v1-WorkspaceProfileSetting)
     - [WorkspaceTrialSetting](#bytebase-v1-WorkspaceTrialSetting)
   
+    - [AISetting.Provider](#bytebase-v1-AISetting-Provider)
     - [Algorithm.InnerOuterMask.MaskType](#bytebase-v1-Algorithm-InnerOuterMask-MaskType)
     - [Announcement.AlertLevel](#bytebase-v1-Announcement-AlertLevel)
     - [DatabaseChangeMode](#bytebase-v1-DatabaseChangeMode)
@@ -527,6 +529,12 @@
     - [ProjectService](#bytebase-v1-ProjectService)
   
 - [v1/sql_service.proto](#v1_sql_service-proto)
+    - [AICompletionRequest](#bytebase-v1-AICompletionRequest)
+    - [AICompletionRequest.Message](#bytebase-v1-AICompletionRequest-Message)
+    - [AICompletionResponse](#bytebase-v1-AICompletionResponse)
+    - [AICompletionResponse.Candidate](#bytebase-v1-AICompletionResponse-Candidate)
+    - [AICompletionResponse.Candidate.Content](#bytebase-v1-AICompletionResponse-Candidate-Content)
+    - [AICompletionResponse.Candidate.Content.Part](#bytebase-v1-AICompletionResponse-Candidate-Content-Part)
     - [AdminExecuteRequest](#bytebase-v1-AdminExecuteRequest)
     - [AdminExecuteResponse](#bytebase-v1-AdminExecuteResponse)
     - [Advice](#bytebase-v1-Advice)
@@ -4111,6 +4119,26 @@ ANY means approving any node will proceed.
 
 
 
+<a name="bytebase-v1-AISetting"></a>
+
+### AISetting
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| enabled | [bool](#bool) |  |  |
+| provider | [AISetting.Provider](#bytebase-v1-AISetting-Provider) |  |  |
+| endpoint | [string](#string) |  |  |
+| api_key | [string](#string) |  |  |
+| model | [string](#string) |  |  |
+| version | [string](#string) |  |  |
+
+
+
+
+
+
 <a name="bytebase-v1-AgentPluginSetting"></a>
 
 ### AgentPluginSetting
@@ -4734,6 +4762,7 @@ The data in setting value.
 | maximum_sql_result_size_setting | [MaximumSQLResultSizeSetting](#bytebase-v1-MaximumSQLResultSizeSetting) |  |  |
 | scim_setting | [SCIMSetting](#bytebase-v1-SCIMSetting) |  |  |
 | password_restriction_setting | [PasswordRestrictionSetting](#bytebase-v1-PasswordRestrictionSetting) |  |  |
+| ai_setting | [AISetting](#bytebase-v1-AISetting) |  |  |
 
 
 
@@ -4816,6 +4845,21 @@ The data in setting value.
 
 
  
+
+
+<a name="bytebase-v1-AISetting-Provider"></a>
+
+### AISetting.Provider
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| PROVIDER_UNSPECIFIED | 0 |  |
+| OPEN_AI | 1 |  |
+| CLAUDE | 2 |  |
+| GEMINI | 3 |  |
+| AZURE_OPENAI | 4 |  |
+
 
 
 <a name="bytebase-v1-Algorithm-InnerOuterMask-MaskType"></a>
@@ -8519,6 +8563,97 @@ TYPE_PROJECT_REPOSITORY_PUSH represents Bytebase receiving a push event from the
 
 
 
+<a name="bytebase-v1-AICompletionRequest"></a>
+
+### AICompletionRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| messages | [AICompletionRequest.Message](#bytebase-v1-AICompletionRequest-Message) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-AICompletionRequest-Message"></a>
+
+### AICompletionRequest.Message
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| role | [string](#string) |  |  |
+| content | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-AICompletionResponse"></a>
+
+### AICompletionResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| candidates | [AICompletionResponse.Candidate](#bytebase-v1-AICompletionResponse-Candidate) | repeated | candidates is used for results with multiple choices and candidates. Used for OpenAI and Gemini. |
+
+
+
+
+
+
+<a name="bytebase-v1-AICompletionResponse-Candidate"></a>
+
+### AICompletionResponse.Candidate
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| content | [AICompletionResponse.Candidate.Content](#bytebase-v1-AICompletionResponse-Candidate-Content) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-AICompletionResponse-Candidate-Content"></a>
+
+### AICompletionResponse.Candidate.Content
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parts | [AICompletionResponse.Candidate.Content.Part](#bytebase-v1-AICompletionResponse-Candidate-Content-Part) | repeated | parts is used for a result content with multiple parts. |
+
+
+
+
+
+
+<a name="bytebase-v1-AICompletionResponse-Candidate-Content-Part"></a>
+
+### AICompletionResponse.Candidate.Content.Part
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| text | [string](#string) |  |  |
+
+
+
+
+
+
 <a name="bytebase-v1-AdminExecuteRequest"></a>
 
 ### AdminExecuteRequest
@@ -9058,6 +9193,7 @@ for field description.
 | ParseMyBatisMapper | [ParseMyBatisMapperRequest](#bytebase-v1-ParseMyBatisMapperRequest) | [ParseMyBatisMapperResponse](#bytebase-v1-ParseMyBatisMapperResponse) |  |
 | Pretty | [PrettyRequest](#bytebase-v1-PrettyRequest) | [PrettyResponse](#bytebase-v1-PrettyResponse) |  |
 | DiffMetadata | [DiffMetadataRequest](#bytebase-v1-DiffMetadataRequest) | [DiffMetadataResponse](#bytebase-v1-DiffMetadataResponse) |  |
+| AICompletion | [AICompletionRequest](#bytebase-v1-AICompletionRequest) | [AICompletionResponse](#bytebase-v1-AICompletionResponse) |  |
 
  
 

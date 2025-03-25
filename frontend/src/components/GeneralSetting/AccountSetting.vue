@@ -19,7 +19,7 @@
             :text="true"
             :disabled="!allowEdit || !hasDisallowSignupFeature"
           />
-          <div class="textlabel flex items-center gap-x-2">
+          <div class="font-medium flex items-center gap-x-2">
             {{ $t("settings.general.workspace.disallow-signup.enable") }}
             <FeatureBadge feature="bb.feature.disallow-signup" />
           </div>
@@ -45,7 +45,7 @@
               :text="true"
               :disabled="!allowEdit || !has2FAFeature"
             />
-            <div class="textlabel flex items-center gap-x-2">
+            <div class="font-medium flex items-center gap-x-2">
               {{ $t("settings.general.workspace.require-2fa.enable") }}
               <FeatureBadge feature="bb.feature.2fa" />
             </div>
@@ -65,7 +65,7 @@
                 (!state.disallowPasswordSignin && !existActiveIdentityProvider)
               "
             />
-            <div class="textlabel flex items-center gap-x-2">
+            <div class="font-medium flex items-center gap-x-2">
               {{
                 $t("settings.general.workspace.disallow-password-signin.enable")
               }}

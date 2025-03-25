@@ -19,7 +19,7 @@
             :text="true"
             :disabled="!allowEdit || !hasWatermarkFeature"
           />
-          <span class="textlabel">
+          <span class="font-medium">
             {{ $t("settings.general.workspace.watermark.enable") }}
           </span>
           <FeatureBadge feature="bb.feature.watermark" />
@@ -35,7 +35,7 @@
             :text="true"
             :disabled="!allowEdit || !hasAccessControlFeature"
           />
-          <span class="textlabel">
+          <span class="font-medium">
             {{ $t("settings.general.workspace.data-export.enable") }}
           </span>
           <FeatureBadge feature="bb.feature.access-control" />

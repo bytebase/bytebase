@@ -21,12 +21,11 @@ import { useDebounceFn } from "@vueuse/core";
 import { computed, h, watch, reactive, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import { useDatabaseV1Store } from "@/store";
+import { workspaceNamePrefix } from "@/store/modules/v1/common";
 import type { ComposedDatabase } from "@/types";
 import {
   isValidDatabaseName,
   isValidEnvironmentName,
-  isValidInstanceName,
-  isValidProjectName,
   unknownDatabase,
 } from "@/types";
 import { type Engine, engineToJSON } from "@/types/proto/v1/common";
@@ -48,7 +47,6 @@ const props = withDefaults(
     databaseName?: string; // UNKNOWN_DATABASE_NAME stands for "ALL"
     databaseNames?: string[];
     environmentName?: string;
-    instanceName?: string;
     projectName?: string;
     allowedEngineTypeList?: readonly Engine[];
     includeAll?: boolean;
@@ -62,7 +60,6 @@ const props = withDefaults(
     databaseName: undefined,
     databaseNames: undefined,
     environmentName: undefined,
-    instanceName: undefined,
     projectName: undefined,
     allowedEngineTypeList: () => supportedEngineV1List(),
     includeAll: false,
@@ -92,12 +89,6 @@ const filterParams = computed(() => {
   if (isValidEnvironmentName(props.environmentName)) {
     list.push(`environment == "${props.environmentName}"`);
   }
-  if (isValidInstanceName(props.instanceName)) {
-    list.push(`instance == "${props.instanceName}"`);
-  }
-  if (isValidProjectName(props.projectName)) {
-    list.push(`project == "${props.projectName}"`);
-  }
   if (props.allowedEngineTypeList.length > 0) {
     list.push(
       `engine in [${props.allowedEngineTypeList.map((e) => `"${engineToJSON(e)}"`).join(", ")}]`
@@ -113,7 +104,7 @@ const searchDatabases = async (name: string) => {
     dbFilter.push(`name.matches("${name}")`);
   }
   const { databases } = await databaseStore.fetchDatabases({
-    parent: "workspaces/-",
+    parent: props.projectName ?? `${workspaceNamePrefix}-`,
     filter: dbFilter.join(" && "),
     pageSize: getDefaultPagination(),
   });

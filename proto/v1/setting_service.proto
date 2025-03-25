@@ -134,6 +134,7 @@ message Value {
     MaximumSQLResultSizeSetting maximum_sql_result_size_setting = 13;
     SCIMSetting scim_setting = 14;
     PasswordRestrictionSetting password_restriction_setting = 15;
+    AISetting ai_setting = 16;
   }
 }
 
@@ -475,4 +476,20 @@ message PasswordRestrictionSetting {
   bool require_reset_password_for_first_login = 6;
   // password_rotation requires users to reset their password after the duration.
   google.protobuf.Duration password_rotation = 7;
+}
+
+message AISetting {
+  bool enabled = 1;
+  enum Provider {
+    PROVIDER_UNSPECIFIED = 0;
+    OPEN_AI = 1;
+    CLAUDE = 2;
+    GEMINI = 3;
+    AZURE_OPENAI = 4;
+  }
+  Provider provider = 2;
+  string endpoint = 3;
+  string api_key = 4;
+  string model = 5;
+  string version = 6;
 }
