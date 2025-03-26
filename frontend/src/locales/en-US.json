@@ -225,7 +225,8 @@
     "catalog": "Catalog",
     "summary": "Summary",
     "errors": "Errors",
-    "removed": "Removed"
+    "removed": "Removed",
+    "text-wrap": "Text Wrap"
   },
   "error-page": {
     "go-back-home": "Go back home"
