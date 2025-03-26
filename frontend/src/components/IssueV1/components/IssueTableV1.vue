@@ -64,8 +64,6 @@ import IssueLabelSelector, {
 } from "./IssueLabelSelector.vue";
 import IssueStatusIconWithTaskSummary from "./IssueStatusIconWithTaskSummary.vue";
 
-type Mode = "ALL" | "PROJECT";
-
 const { t } = useI18n();
 
 const columnList = computed((): DataTableColumn<ComposedIssue>[] => {
@@ -146,7 +144,7 @@ const columnList = computed((): DataTableColumn<ComposedIssue>[] => {
       key: "project",
       title: t("common.project"),
       width: 150,
-      hide: !showExtendedColumns.value || props.mode === "PROJECT",
+      hide: !showExtendedColumns.value || !props.showProject,
       render: (issue) => issue.projectEntity.title,
     },
     {
@@ -189,14 +187,13 @@ const props = withDefaults(
     issueList: ComposedIssue[];
     bordered?: boolean;
     title?: string;
-    mode?: Mode;
     highlightText?: string;
     loading?: boolean;
+    showProject?: boolean;
     showSelection?: boolean;
   }>(),
   {
     title: "",
-    mode: "ALL",
     highlightText: "",
     loading: true,
     bordered: false,
