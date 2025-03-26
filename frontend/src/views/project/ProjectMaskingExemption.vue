@@ -55,7 +55,7 @@
     <MaskingExceptionUserTable
       size="medium"
       :disabled="false"
-      :project="project.name"
+      :project="project"
       :show-database-column="true"
       :filter-access-user="filterAccessUser"
     />
