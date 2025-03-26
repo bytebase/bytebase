@@ -59,7 +59,6 @@
       >
         <template #table="{ list, loading }">
           <IssueTableV1
-            mode="PROJECT"
             :bordered="true"
             :loading="loading"
             :issue-list="applyUIIssueFilter(list, mergedUIIssueFilter)"
