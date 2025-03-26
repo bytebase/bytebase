@@ -18,26 +18,26 @@
       </template>
       <template #default>
         <div class="p-2 w-52">
-          <div class="text-xs font-semibold mb-2">Column Display Format</div>
+          <div class="text-xs font-semibold mb-2">{{ $t("sql-editor.column-display-format") }}</div>
           <NRadioGroup
             :value="currentColumnFormat"
             class="flex flex-col gap-2"
             @update:value="updateColumnFormat"
           >
             <NRadio value="DEFAULT">
-              Default
+              {{ $t("sql-editor.format-default") }}
             </NRadio>
             <NRadio value="BINARY">
-              Binary (0s and 1s)
+              {{ $t("sql-editor.binary-format") }}
             </NRadio>
             <NRadio value="HEX">
-              Hexadecimal (0x...)
+              {{ $t("sql-editor.hex-format") }}
             </NRadio>
             <NRadio value="TEXT">
-              Text (UTF-8)
+              {{ $t("sql-editor.text-format") }}
             </NRadio>
             <NRadio value="BOOLEAN" v-if="hasSingleBitValues">
-              Boolean (true/false)
+              {{ $t("sql-editor.boolean-format") }}
             </NRadio>
           </NRadioGroup>
         </div>

@@ -93,19 +93,19 @@
               <div class="p-1">
                 <NRadioGroup :value="binaryFormat" class="flex flex-col gap-2" @update:value="updateBinaryFormat">
                   <NRadio value="DEFAULT">
-                    Default
+                    {{ $t("sql-editor.format-default") }}
                   </NRadio>
                   <NRadio value="BINARY">
-                    Binary (0s and 1s)
+                    {{ $t("sql-editor.binary-format") }}
                   </NRadio>
                   <NRadio value="HEX">
-                    Hexadecimal (0x...)
+                    {{ $t("sql-editor.hex-format") }}
                   </NRadio>
                   <NRadio value="BOOLEAN" v-if="isSingleBitValue">
-                    Boolean (true/false)
+                    {{ $t("sql-editor.boolean-format") }}
                   </NRadio>
                   <NRadio value="TEXT">
-                    Text (UTF-8)
+                    {{ $t("sql-editor.text-format") }}
                   </NRadio>
                 </NRadioGroup>
               </div>
@@ -214,8 +214,22 @@ const getServerFormat = (): string => {
     return rawValue.value.byteDataValue.displayFormat;
   }
   
-  // Fallback to BINARY if no format is specified
-  return "BINARY";
+  // If no format is specified, determine intelligently based on data
+  const byteArray = Array.from(rawValue.value.byteDataValue.value);
+  
+  // For single byte values (could be boolean)
+  if (byteArray.length === 1 && (byteArray[0] === 0 || byteArray[0] === 1)) {
+    return "BOOLEAN";
+  }
+  
+  // Check if it's readable text
+  const isReadableText = byteArray.every(byte => byte >= 32 && byte <= 126);
+  if (isReadableText) {
+    return "TEXT";
+  }
+  
+  // Default to HEX for most binary data as it's more compact than binary
+  return "HEX";
 };
 
 // Current display format (reactive to server changes)

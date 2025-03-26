@@ -57,7 +57,7 @@
 
 <script setup lang="ts">
 import { type Table } from "@tanstack/vue-table";
-import { useLocalStorage, useResizeObserver } from "@vueuse/core";
+import { useResizeObserver } from "@vueuse/core";
 import { escape } from "lodash-es";
 import { Code as IconCode } from "lucide-vue-next";
 import { NButton, NDropdown } from "naive-ui";
@@ -109,8 +109,22 @@ const getServerFormat = (): string => {
     return props.value.byteDataValue.displayFormat;
   }
   
-  // Fallback to BINARY if no format is specified
-  return "BINARY";
+  // If no format is specified, determine intelligently based on data
+  const byteArray = Array.from(props.value.byteDataValue.value);
+  
+  // For single byte values (could be boolean)
+  if (byteArray.length === 1 && (byteArray[0] === 0 || byteArray[0] === 1)) {
+    return "BOOLEAN";
+  }
+  
+  // Check if it's readable text
+  const isReadableText = byteArray.every(byte => byte >= 32 && byte <= 126);
+  if (isReadableText) {
+    return "TEXT";
+  }
+  
+  // Default to HEX for most binary data as it's more compact than binary
+  return "HEX";
 };
 
 // Current display format (reactive to server changes)
@@ -158,22 +172,22 @@ const formatOptions = computed(() => {
   
   const options = [
     {
-      label: "Default",
+      label: t("sql-editor.format-default"),
       key: "DEFAULT",
       disabled: false,
     },
     {
-      label: "Binary (0s and 1s)",
+      label: t("sql-editor.binary-format"),
       key: "BINARY",
       disabled: false,
     },
     {
-      label: "Hexadecimal (0x...)",
+      label: t("sql-editor.hex-format"),
       key: "HEX",
       disabled: false,
     },
     {
-      label: "Text (UTF-8)",
+      label: t("sql-editor.text-format"),
       key: "TEXT",
       disabled: false,
     },
@@ -182,7 +196,7 @@ const formatOptions = computed(() => {
   // Only show boolean option for single-byte values
   if (isSingleBitValue.value) {
     options.splice(3, 0, {
-      label: "Boolean (true/false)",
+      label: t("sql-editor.boolean-format"),
       key: "BOOLEAN",
       disabled: false,
     });

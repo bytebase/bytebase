@@ -32,47 +32,69 @@ export const extractSQLRowValuePlain = (value: RowValue | undefined) => {
   if (value.byteDataValue) {
     const byteArray = Array.from(value.byteDataValue.value);
     
-    switch (value.byteDataValue.displayFormat) {
-      case 'BINARY': // Display as binary (0s and 1s)
-        const binaryString = byteArray
-          .map((byte) => byte.toString(2).padStart(8, "0"))
-          .join("")
-          .replace(/^0+/g, "");
-        return binaryString.length === 0 ? "0" : binaryString;
-        
-      case 'HEX': // Display as hexadecimal
-        return "0x" + byteArray
-          .map((byte) => byte.toString(16).toUpperCase().padStart(2, "0"))
-          .join("");
+    // If a display format is specified, use that format
+    if (value.byteDataValue.displayFormat) {
+      switch (value.byteDataValue.displayFormat) {
+        case 'BINARY': // Display as binary (0s and 1s)
+          const binaryString = byteArray
+            .map((byte) => byte.toString(2).padStart(8, "0"))
+            .join("")
+            .replace(/^0+/g, "");
+          return binaryString.length === 0 ? "0" : binaryString;
           
-      case 'BOOLEAN': // Display as boolean
-        // For single bit/byte values, convert to boolean
-        if (byteArray.length === 1) {
-          return byteArray[0] === 1 ? "true" : "false";
-        }
-        // Fall back to hex for multi-byte
-        return "0x" + byteArray
-          .map((byte) => byte.toString(16).toUpperCase().padStart(2, "0"))
-          .join("");
-          
-      case 'TEXT': // Display as text if readable
-        try {
-          // Try to interpret as UTF-8 text
-          return new TextDecoder().decode(new Uint8Array(byteArray));
-        } catch {
-          // Fall back to hex if can't decode as text
+        case 'HEX': // Display as hexadecimal
           return "0x" + byteArray
             .map((byte) => byte.toString(16).toUpperCase().padStart(2, "0"))
             .join("");
-        }
-        
-      default: // Default to binary format
-        const defaultBinaryString = byteArray
-          .map((byte) => byte.toString(2).padStart(8, "0"))
-          .join("")
-          .replace(/^0+/g, "");
-        return defaultBinaryString.length === 0 ? "0" : defaultBinaryString;
+            
+        case 'BOOLEAN': // Display as boolean
+          // For single bit/byte values, convert to boolean
+          if (byteArray.length === 1) {
+            return byteArray[0] === 1 ? "true" : "false";
+          }
+          // Fall back to hex for multi-byte
+          return "0x" + byteArray
+            .map((byte) => byte.toString(16).toUpperCase().padStart(2, "0"))
+            .join("");
+            
+        case 'TEXT': // Display as text if readable
+          try {
+            // Try to interpret as UTF-8 text
+            return new TextDecoder().decode(new Uint8Array(byteArray));
+          } catch {
+            // Fall back to hex if can't decode as text
+            return "0x" + byteArray
+              .map((byte) => byte.toString(16).toUpperCase().padStart(2, "0"))
+              .join("");
+          }
+      }
     }
+    
+    // If no display format is specified or it's UNSPECIFIED, 
+    // intelligently determine format based on the data
+    
+    // For single byte/bit values (could be boolean)
+    if (byteArray.length === 1) {
+      // If it's 0 or 1, display as boolean
+      if (byteArray[0] === 0 || byteArray[0] === 1) {
+        return byteArray[0] === 1 ? "true" : "false";
+      }
+    }
+    
+    // Check if it's readable text
+    const isReadableText = byteArray.every(byte => byte >= 32 && byte <= 126);
+    if (isReadableText) {
+      try {
+        return new TextDecoder().decode(new Uint8Array(byteArray));
+      } catch {
+        // If text decoding fails, fallback to hex
+      }
+    }
+    
+    // Default to hex for most binary data as it's more compact than binary
+    return "0x" + byteArray
+      .map((byte) => byte.toString(16).toUpperCase().padStart(2, "0"))
+      .join("");
   }
   
   // Legacy bytesValue handling
