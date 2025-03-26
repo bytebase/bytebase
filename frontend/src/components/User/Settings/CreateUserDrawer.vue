@@ -44,13 +44,16 @@
               v-if="state.user.userType === UserType.SERVICE_ACCOUNT"
               class="w-full flex flex-col items-start"
             >
-              <EmailInput v-model:value="state.user.email" />
+              <EmailInput
+                v-model:value="state.user.email"
+                :domain="serviceAccountDomain"
+              />
             </div>
             <EmailInput
               v-else
               v-model:value="state.user.email"
               :readonly="disallowEditUser"
-              :domain="workspaceDomain"
+              :domain="enforceIdentityDomain ? workspaceDomain : undefined"
             />
           </NFormItem>
           <NFormItem :label="$t('settings.members.table.roles')">
@@ -224,11 +227,21 @@ const passwordRestrictionSetting = computed(
   () => settingV1Store.passwordRestriction
 );
 
+const enforceIdentityDomain = computed(() => {
+  return Boolean(settingV1Store.workspaceProfileSetting?.enforceIdentityDomain);
+});
+
 const workspaceDomain = computed(() => {
-  if (!settingV1Store.workspaceProfileSetting?.enforceIdentityDomain) {
-    return undefined;
-  }
   return head(settingV1Store.workspaceProfileSetting?.domains);
+});
+
+// For service account, we use the domain of the workspace if it exists.
+// Otherwise, we use the default domain.
+const serviceAccountDomain = computed(() => {
+  if (workspaceDomain.value) {
+    return "service." + workspaceDomain.value;
+  }
+  return "service.bytebase.com";
 });
 
 const isCreating = computed(() => !props.user);
