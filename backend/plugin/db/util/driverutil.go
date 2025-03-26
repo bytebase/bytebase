@@ -115,7 +115,7 @@ func MakeCommonValueByTypeName(typeName string, _ *sql.ColumnType) any {
 	}
 }
 
-func ConvertCommonValue(typeName string, columnType *sql.ColumnType, value any) *v1pb.RowValue {
+func ConvertCommonValue(_ string, columnType *sql.ColumnType, value any) *v1pb.RowValue {
 	switch raw := value.(type) {
 	case *sql.NullString:
 		if raw.Valid {
@@ -183,18 +183,6 @@ func ConvertYesNo(s string) (bool, error) {
 	default:
 		return false, errors.Errorf("unrecognized isNullable type %q", s)
 	}
-}
-
-// isReadableText determines if binary data is readable text.
-// Returns true if the data contains only printable ASCII characters.
-func isReadableText(data []byte) bool {
-	// Basic check: Contains only printable ASCII characters
-	for _, b := range data {
-		if b < 32 || b > 126 {
-			return false
-		}
-	}
-	return true
 }
 
 func GetColumnIndex(columns []string, name string) (int, bool) {
