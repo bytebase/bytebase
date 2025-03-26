@@ -8,33 +8,32 @@
       class="flex flex-col space-x-2 lg:flex-row gap-y-4 justify-between items-end lg:items-center"
     >
       <SearchBox v-model:value="state.searchText" style="max-width: 100%" />
-      <div class="flex items-center space-x-2">
-        <NButton
-          type="primary"
-          :disabled="
-            state.pendingGrantAccessColumn.length === 0 ||
-            !hasPolicyPermission ||
-            !hasGetCatalogPermission
-          "
-          @click="onGrantAccessButtonClick"
-        >
-          <template #icon>
-            <ShieldCheckIcon v-if="hasSensitiveDataFeature" class="w-4" />
-            <FeatureBadge
-              v-else
-              feature="bb.feature.sensitive-data"
-              custom-class="text-white"
-            />
-          </template>
-          {{ $t("settings.sensitive-data.grant-access") }}
-        </NButton>
-      </div>
+      <NButton
+        v-if="!isMaskingForNoSQL"
+        type="primary"
+        :disabled="
+          state.pendingGrantAccessColumn.length === 0 ||
+          !hasPolicyPermission ||
+          !hasGetCatalogPermission
+        "
+        @click="onGrantAccessButtonClick"
+      >
+        <template #icon>
+          <ShieldCheckIcon v-if="hasSensitiveDataFeature" class="w-4" />
+          <FeatureBadge
+            v-else
+            feature="bb.feature.sensitive-data"
+            custom-class="text-white"
+          />
+        </template>
+        {{ $t("settings.sensitive-data.grant-access") }}
+      </NButton>
     </div>
 
     <SensitiveColumnTable
       :database="database"
       :row-clickable="false"
-      :row-selectable="true"
+      :row-selectable="!isMaskingForNoSQL"
       :show-operation="hasUpdateCatalogPermission && hasSensitiveDataFeature"
       :column-list="filteredColumnList"
       :checked-column-index-list="checkedColumnIndexList"
@@ -99,7 +98,7 @@ import {
   type ColumnCatalog,
 } from "@/types/proto/v1/database_catalog_service";
 import { PolicyType } from "@/types/proto/v1/org_policy_service";
-import { hasProjectPermissionV2 } from "@/utils";
+import { hasProjectPermissionV2, instanceV1MaskingForNoSQL } from "@/utils";
 
 const props = defineProps<{
   database: ComposedDatabase;
@@ -122,6 +121,10 @@ const state = reactive<LocalState>({
   pendingGrantAccessColumn: [],
   showGrantAccessDrawer: false,
 });
+
+const isMaskingForNoSQL = computed(() =>
+  instanceV1MaskingForNoSQL(props.database.instanceResource)
+);
 
 const hasUpdateCatalogPermission = computed(() => {
   return hasProjectPermissionV2(

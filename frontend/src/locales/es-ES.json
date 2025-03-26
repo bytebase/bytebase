@@ -1055,6 +1055,9 @@
     },
     "schema": {
       "default": "Por defecto"
+    },
+    "catalog": {
+      "description": "Editar y cargar el catálogo de tablas."
     }
   },
   "instance": {
