@@ -307,6 +307,11 @@ roles:
       - bb.plans.list
       - bb.plans.preview
       - bb.plans.update
+      - bb.policies.create
+      - bb.policies.delete
+      - bb.policies.get
+      - bb.policies.list
+      - bb.policies.update
       - bb.projects.get
       - bb.projects.getIamPolicy
       - bb.projects.setIamPolicy
