@@ -18,7 +18,6 @@ import { useI18n } from "vue-i18n";
 import { useRouter, RouterLink } from "vue-router";
 import ClassificationCell from "@/components/ColumnDataTable/ClassificationCell.vue";
 import SemanticTypeCell from "@/components/ColumnDataTable/SemanticTypeCell.vue";
-import { updateColumnCatalog } from "@/components/ColumnDataTable/utils";
 import type { MaskData } from "@/components/SensitiveData/types";
 import { MiniActionButton } from "@/components/v2";
 import {
@@ -26,7 +25,6 @@ import {
   useDatabaseCatalogV1Store,
   useSettingV1Store,
   useDatabaseCatalog,
-  getColumnCatalog,
 } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import { DataClassificationSetting_DataClassificationConfig as DataClassificationConfig } from "@/types/proto/v1/setting_service";
@@ -155,16 +153,9 @@ const dataTableColumns = computed(() => {
       width: "minmax(min-content, auto)",
       resizable: true,
       render(item) {
-        const columnCatalog = getColumnCatalog(
-          databaseCatalog.value,
-          item.schema,
-          item.table,
-          item.column
-        );
-
         return (
           <ClassificationCell
-            classification={columnCatalog.classification}
+            classification={item.classificationId}
             classificationConfig={classificationConfig.value}
             readonly={!props.showOperation || item.disableClassification}
             onApply={(id: string) => onClassificationIdApply(item, id)}
@@ -183,7 +174,7 @@ const dataTableColumns = computed(() => {
           NPopconfirm,
           {
             onPositiveClick: () => {
-              emit("delete", item);
+              onMaskingClear(item);
             },
           },
           {
@@ -244,14 +235,25 @@ const onClassificationIdApply = async (
   item: MaskData,
   classification: string
 ) => {
-  await updateColumnCatalog({
-    database: props.database.name,
-    schema: item.schema,
-    table: item.table,
-    column: item.column,
-    columnCatalog: { classification },
-    notification: !classification ? "common.removed" : undefined,
+  (item.target as any).classification = classification;
+  await dbCatalogStore.updateDatabaseCatalog(databaseCatalog.value);
+  pushNotification({
+    module: "bytebase",
+    style: "SUCCESS",
+    title: t("common.updated"),
   });
+};
+
+const onMaskingClear = async (item: MaskData) => {
+  (item.target as any).classification = "";
+  (item.target as any).semanticType = "";
+  await dbCatalogStore.updateDatabaseCatalog(databaseCatalog.value);
+  pushNotification({
+    module: "bytebase",
+    style: "SUCCESS",
+    title: t("common.removed"),
+  });
+  emit("delete", item);
 };
 
 const handleUpdateCheckedRowKeys = (keys: string[]) => {
