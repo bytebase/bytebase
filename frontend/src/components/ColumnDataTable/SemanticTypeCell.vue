@@ -49,7 +49,6 @@ import { useSubscriptionV1Store } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import FeatureModal from "../FeatureGuard/FeatureModal.vue";
 import SemanticTypesDrawer from "../SensitiveData/components/SemanticTypesDrawer.vue";
-import { updateColumnCatalog } from "./utils";
 
 type LocalState = {
   showFeatureModal: boolean;
@@ -57,11 +56,13 @@ type LocalState = {
 };
 
 const props = defineProps<{
+  semanticTypeId: string;
   database: ComposedDatabase;
-  schema: string;
-  table: string;
-  column: string;
   readonly?: boolean;
+}>();
+
+const emit = defineEmits<{
+  (event: "apply", id: string): Promise<void>;
 }>();
 
 const state = reactive<LocalState>({
@@ -69,12 +70,9 @@ const state = reactive<LocalState>({
   showSemanticTypesDrawer: false,
 });
 const subscriptionV1Store = useSubscriptionV1Store();
-const { semanticType, semanticTypeList } = useSemanticType({
-  database: props.database.name,
-  schema: props.schema,
-  table: props.table,
-  column: props.column,
-});
+const { semanticType, semanticTypeList } = useSemanticType(
+  computed(() => props.semanticTypeId)
+);
 
 const hasSensitiveDataFeature = computed(() => {
   return subscriptionV1Store.hasFeature("bb.feature.sensitive-data");
@@ -97,13 +95,6 @@ const openSemanticTypeDrawer = () => {
 };
 
 const onSemanticTypeApply = async (semanticType: string) => {
-  await updateColumnCatalog({
-    database: props.database.name,
-    schema: props.schema,
-    table: props.table,
-    column: props.column,
-    columnCatalog: { semanticType },
-    notification: !semanticType ? "common.removed" : undefined,
-  });
+  await emit("apply", semanticType);
 };
 </script>

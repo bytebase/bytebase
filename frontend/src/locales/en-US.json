@@ -1055,6 +1055,9 @@
     },
     "schema": {
       "default": "Default"
+    },
+    "catalog": {
+      "description": "Edit and upload the table catalog."
     }
   },
   "instance": {

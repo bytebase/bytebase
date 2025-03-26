@@ -31,7 +31,7 @@ import type {
 import {
   bytesToString,
   getHighlightHTMLByRegExp,
-  hasCollationProperty,
+  instanceV1HasCollationAndCharacterSet,
   hasIndexSizeProperty,
   hasTableEngineProperty,
   useAutoHeightDataTable,
@@ -112,7 +112,7 @@ const columns = computed(() => {
     {
       key: "collation",
       title: t("schema-editor.database.collation"),
-      hide: !hasCollationProperty(instanceEngine.value),
+      hide: !instanceV1HasCollationAndCharacterSet(instanceEngine.value),
       resizable: true,
       minWidth: 120,
       maxWidth: 180,

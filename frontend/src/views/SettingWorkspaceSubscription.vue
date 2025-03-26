@@ -101,7 +101,7 @@
           :disabled="!workspaceId"
           @click="handleCopyId"
         >
-          <heroicons-outline:clipboard-document class="w-4 h-4" />
+          <ClipboardCopyIcon class="w-4 h-4" />
         </NButton>
       </div>
     </div>
@@ -156,6 +156,7 @@
 
 <script lang="ts" setup>
 import { useClipboard } from "@vueuse/core";
+import { ClipboardCopyIcon } from "lucide-vue-next";
 import { NButton, NDivider, NInput } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { computed, reactive, ref } from "vue";

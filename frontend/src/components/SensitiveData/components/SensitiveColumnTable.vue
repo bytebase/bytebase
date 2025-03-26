@@ -22,6 +22,8 @@ import { updateColumnCatalog } from "@/components/ColumnDataTable/utils";
 import type { MaskData } from "@/components/SensitiveData/types";
 import { MiniActionButton } from "@/components/v2";
 import {
+  pushNotification,
+  useDatabaseCatalogV1Store,
   useSettingV1Store,
   useDatabaseCatalog,
   getColumnCatalog,
@@ -50,6 +52,7 @@ const checkedColumnIndex = ref<Set<number>>(
   new Set(props.checkedColumnIndexList)
 );
 const settingStore = useSettingV1Store();
+const dbCatalogStore = useDatabaseCatalogV1Store();
 
 watch(
   () => props.columnList,
@@ -127,7 +130,7 @@ const dataTableColumns = computed(() => {
       resizable: true,
       width: "minmax(min-content, auto)",
       render(item) {
-        return item.column;
+        return item.column || "-";
       },
     },
     {
@@ -139,10 +142,9 @@ const dataTableColumns = computed(() => {
         return (
           <SemanticTypeCell
             database={props.database}
-            schema={item.schema}
-            table={item.table}
-            column={item.column}
-            readonly={!props.showOperation}
+            semanticTypeId={item.semanticTypeId}
+            readonly={!props.showOperation || item.disableSemanticType}
+            onApply={(id: string) => onSemanticTypeApply(item, id)}
           />
         );
       },
@@ -164,7 +166,7 @@ const dataTableColumns = computed(() => {
           <ClassificationCell
             classification={columnCatalog.classification}
             classificationConfig={classificationConfig.value}
-            readonly={!props.showOperation}
+            readonly={!props.showOperation || item.disableClassification}
             onApply={(id: string) => onClassificationIdApply(item, id)}
           />
         );
@@ -225,6 +227,18 @@ const dataTableColumns = computed(() => {
   }
   return columns;
 });
+
+const onSemanticTypeApply = async (item: MaskData, semanticType: string) => {
+  // TODO(ed): dirty but works.
+  (item.target as any).semanticType = semanticType;
+  await dbCatalogStore.updateDatabaseCatalog(databaseCatalog.value);
+
+  pushNotification({
+    module: "bytebase",
+    style: "SUCCESS",
+    title: t("common.updated"),
+  });
+};
 
 const onClassificationIdApply = async (
   item: MaskData,
