@@ -6,7 +6,7 @@ export type SQLResultViewContext = {
   dark: Ref<boolean>;
   disallowCopyingData: Ref<boolean>;
   keyword: Ref<string>;
-  columnTypeNames?: Ref<string[]>; // Column type names from QueryResult
+  columnTypeNames?: Ref<string[] | undefined>; // Column type names from QueryResult
   detail: Ref<{
     show: boolean;
     set: number; // The index of selected result set.
