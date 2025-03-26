@@ -243,7 +243,9 @@ const formattedBinaryValue = computed(() => {
   else {
     // Get column information if available (from table definition metadata)
     const header = props.table?.getFlatHeaders().find(h => h.index === props.colIndex);
-    const columnType = header?.column?.columnDef?.meta?.columnType?.toString()?.toLowerCase() || '';
+    // Use type assertion to access the columnType property safely
+    const meta = header?.column?.columnDef?.meta as { columnType?: string } | undefined;
+    const columnType = meta?.columnType?.toString()?.toLowerCase() || '';
     
     // Default format based on column type
     let defaultFormat = "BINARY";

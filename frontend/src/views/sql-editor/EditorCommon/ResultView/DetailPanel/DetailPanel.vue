@@ -214,10 +214,11 @@ const getServerFormat = (): string => {
   if (!table) return "HEX";
   
   const columnDef = table.getFlatHeaders()[col]?.column?.columnDef;
-  const columnName = columnDef?.header?.toString() || '';
   
   // Get the column type from meta (set in SingleResultViewV1.vue)
-  const columnType = columnDef?.meta?.columnType?.toString().toLowerCase() || '';
+  // Use type assertion to access the columnType property safely
+  const meta = columnDef?.meta as { columnType?: string } | undefined;
+  const columnType = meta?.columnType?.toString().toLowerCase() || '';
   
   // Default format based on column type
   let defaultFormat = "HEX";

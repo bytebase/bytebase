@@ -298,7 +298,6 @@ message RowValue {
     // timestamp_tz_value is used for the timestamptz data type, which
     // accurately represents the timestamp with location information.
     TimestampTZ timestamp_tz_value = 13;
-    // byte_data_value is used for binary and bit data types with display format information
   }
 }
 

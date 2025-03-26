@@ -209,10 +209,11 @@ const isColumnWithBinaryData = (columnIndex: number): boolean => {
 const getColumnServerFormat = (columnIndex: number): string | null => {
   // Access the column definition
   const columnDef = props.table.getFlatHeaders()[columnIndex]?.column?.columnDef;
-  const columnName = columnDef?.header?.toString() || '';
   
   // Get the column type from meta (set in SingleResultViewV1.vue)
-  const columnType = columnDef?.meta?.columnType?.toString().toLowerCase() || '';
+  // Use type assertion to access the columnType property safely
+  const meta = columnDef?.meta as { columnType?: string } | undefined;
+  const columnType = meta?.columnType?.toString().toLowerCase() || '';
   
   // Default format based on column type (default to HEX)
   let defaultFormat = "HEX";

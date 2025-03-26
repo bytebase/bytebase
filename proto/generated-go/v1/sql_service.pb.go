@@ -1000,7 +1000,7 @@ type RowValue_TimestampValue struct {
 type RowValue_TimestampTzValue struct {
 	// timestamp_tz_value is used for the timestamptz data type, which
 	// accurately represents the timestamp with location information.
-	TimestampTzValue *RowValue_TimestampTZ `protobuf:"bytes,13,opt,name=timestamp_tz_value,json=timestampTzValue,proto3,oneof"` // byte_data_value is used for binary and bit data types with display format information
+	TimestampTzValue *RowValue_TimestampTZ `protobuf:"bytes,13,opt,name=timestamp_tz_value,json=timestampTzValue,proto3,oneof"`
 }
 
 func (*RowValue_NullValue) isRowValue_Kind() {}
