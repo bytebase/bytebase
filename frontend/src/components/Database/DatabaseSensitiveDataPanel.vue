@@ -98,8 +98,6 @@ import { type ComposedDatabase } from "@/types";
 import {
   ObjectSchema_Type,
   type ObjectSchema,
-  type TableCatalog,
-  type ColumnCatalog,
 } from "@/types/proto/v1/database_catalog_service";
 import { PolicyType } from "@/types/proto/v1/org_policy_service";
 import { hasProjectPermissionV2, instanceV1MaskingForNoSQL } from "@/utils";
