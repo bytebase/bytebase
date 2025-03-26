@@ -1848,7 +1848,7 @@
     },
     "upload-file": "ファイルをアップロードする",
     "copy-selected-results": "選択したデータを{action}または{button}でコピーします",
-    "binary-format": "バイナリ（0Sおよび1S）",
+    "binary-format": "バイナリ形式",
     "format-default": "デフォルト",
     "hex-format": "16進形式",
     "text-format": "テキスト形式",

@@ -222,11 +222,11 @@
     "encoding": "Encoding",
     "finish": "Finish",
     "title": "Title",
+    "text-wrap": "Text Wrap",
     "catalog": "Catalog",
     "summary": "Summary",
     "errors": "Errors",
-    "removed": "Removed",
-    "text-wrap": "Text Wrap"
+    "removed": "Removed"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -1735,7 +1735,7 @@
     "vertical-display": "Vertical display",
     "no-history-found": "No history found",
     "search-history": "Search History",
-    "binary-format": "Binary (0s and 1s)",
+    "binary-format": "Binary format",
     "hex-format": "Hexadecimal format",
     "boolean-format": "Boolean format",
     "text-format": "Text format",
