@@ -21,21 +21,6 @@
             </template>
           </i18n-t>
         </p>
-        <p v-if="descriptions.action && descriptions.reaction">
-          <i18n-t keypath="sql-editor.want-to-action">
-            <template #want>
-              {{ descriptions.want }}
-            </template>
-            <template #action>
-              <strong>
-                {{ descriptions.action }}
-              </strong>
-            </template>
-            <template #reaction>
-              {{ descriptions.reaction }}
-            </template>
-          </i18n-t>
-        </p>
       </section>
     </NAlert>
 
@@ -129,13 +114,13 @@ const actions = computed(() => {
 
 const descriptions = computed(() => {
   const descriptions = {
-    want: t("database.edit-schema").toLowerCase(),
+    want: t("database.change-data").toLowerCase(),
     action: "",
     reaction: "",
   };
   const { admin, issue } = actions.value;
   if (issue) {
-    descriptions.action = t("database.edit-schema");
+    descriptions.action = t("database.change-data");
     descriptions.reaction = t("sql-editor.and-submit-an-issue");
   } else if (admin) {
     descriptions.action = t("sql-editor.admin-mode.self");
@@ -154,7 +139,7 @@ const gotoCreateIssue = async () => {
     pushNotification({
       module: "bytebase",
       style: "CRITICAL",
-      title: t("sql-editor.goto-edit-schema-hint"),
+      title: "No database selected",
     });
     return;
   }
@@ -171,7 +156,7 @@ const gotoCreateIssue = async () => {
       issueSlug: "create",
     },
     query: {
-      template: "bb.issue.database.schema.update", // Default to DDL issue template.
+      template: "bb.issue.database.data.update", // Default to DML issue template.
       name: `[${db.databaseName}] Update from SQL Editor`,
       databaseList: db.name,
       sqlStorageKey,
