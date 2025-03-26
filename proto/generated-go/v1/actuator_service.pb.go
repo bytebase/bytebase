@@ -435,6 +435,9 @@ func (x *ActuatorInfo) GetDocker() bool {
 var File_v1_actuator_service_proto protoreflect.FileDescriptor
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> c7db07e2d (chore: update)
 const file_v1_actuator_service_proto_rawDesc = "" +
 	"\n" +
 	"\x19v1/actuator_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\x1a\x18v1/setting_service.proto\"\x1b\n" +
@@ -446,14 +449,23 @@ const file_v1_actuator_service_proto_rawDesc = "" +
 	"\bactuator\x18\x01 \x01(\v2\x19.bytebase.v1.ActuatorInfoB\x04\xe2A\x01\x02R\bactuator\x12A\n" +
 	"\vupdate_mask\x18\x02 \x01(\v2\x1a.google.protobuf.FieldMaskB\x04\xe2A\x01\x02R\n" +
 	"updateMask\"\x14\n" +
+<<<<<<< HEAD
 	"\x12DeleteCacheRequest\"\xff\x05\n" +
+=======
+	"\x12DeleteCacheRequest\"\xf6\x05\n" +
+>>>>>>> c7db07e2d (chore: update)
 	"\fActuatorInfo\x12\x1e\n" +
 	"\aversion\x18\x01 \x01(\tB\x04\xe2A\x01\x03R\aversion\x12#\n" +
 	"\n" +
 	"git_commit\x18\x02 \x01(\tB\x04\xe2A\x01\x03R\tgitCommit\x12 \n" +
 	"\breadonly\x18\x03 \x01(\bB\x04\xe2A\x01\x03R\breadonly\x12\x18\n" +
+<<<<<<< HEAD
 	"\x04saas\x18\x04 \x01(\bB\x04\xe2A\x01\x03R\x04saas\x12!\n" +
 	"\tdemo_name\x18\x05 \x01(\tB\x04\xe2A\x01\x03R\bdemoName\x12\x18\n" +
+=======
+	"\x04saas\x18\x04 \x01(\bB\x04\xe2A\x01\x03R\x04saas\x12\x18\n" +
+	"\x04demo\x18\x05 \x01(\bB\x04\xe2A\x01\x03R\x04demo\x12\x18\n" +
+>>>>>>> c7db07e2d (chore: update)
 	"\x04host\x18\x06 \x01(\tB\x04\xe2A\x01\x03R\x04host\x12\x18\n" +
 	"\x04port\x18\a \x01(\tB\x04\xe2A\x01\x03R\x04port\x12'\n" +
 	"\fexternal_url\x18\b \x01(\tB\x04\xe2A\x01\x03R\vexternalUrl\x12.\n" +
@@ -474,6 +486,7 @@ const file_v1_actuator_service_proto_rawDesc = "" +
 	"\x12UpdateActuatorInfo\x12&.bytebase.v1.UpdateActuatorInfoRequest\x1a\x19.bytebase.v1.ActuatorInfo\"Q\xdaA\x14actuator,update_mask\x8a\xea0\x0fbb.settings.set\x90\xea0\x01\x82\xd3\xe4\x93\x02\x1d:\bactuator2\x11/v1/actuator/info\x12f\n" +
 	"\vDeleteCache\x12\x1f.bytebase.v1.DeleteCacheRequest\x1a\x16.google.protobuf.Empty\"\x1e\x80\xea0\x01\x82\xd3\xe4\x93\x02\x14*\x12/v1/actuator/cache\x12\x81\x01\n" +
 	"\x12GetResourcePackage\x12&.bytebase.v1.GetResourcePackageRequest\x1a\x1c.bytebase.v1.ResourcePackage\"%\xdaA\x00\x80\xea0\x01\x82\xd3\xe4\x93\x02\x18\x12\x16/v1/actuator/resourcesB\x11Z\x0fgenerated-go/v1b\x06proto3"
+<<<<<<< HEAD
 =======
 var file_v1_actuator_service_proto_rawDesc = string([]byte{
 	0x0a, 0x19, 0x76, 0x31, 0x2f, 0x61, 0x63, 0x74, 0x75, 0x61, 0x74, 0x6f, 0x72, 0x5f, 0x73, 0x65,
@@ -596,6 +609,8 @@ var file_v1_actuator_service_proto_rawDesc = string([]byte{
 	0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 })
 >>>>>>> 483a8a5ea (chore: cleanup flags (#15543))
+=======
+>>>>>>> c7db07e2d (chore: update)
 
 var (
 	file_v1_actuator_service_proto_rawDescOnce sync.Once

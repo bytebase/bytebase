@@ -296,6 +296,7 @@ const (
 	AISetting_OPEN_AI              AISetting_Provider = 1
 	AISetting_CLAUDE               AISetting_Provider = 2
 	AISetting_GEMINI               AISetting_Provider = 3
+	AISetting_AZURE_OPENAI         AISetting_Provider = 4
 )
 
 // Enum value maps for AISetting_Provider.
@@ -305,12 +306,14 @@ var (
 		1: "OPEN_AI",
 		2: "CLAUDE",
 		3: "GEMINI",
+		4: "AZURE_OPENAI",
 	}
 	AISetting_Provider_value = map[string]int32{
 		"PROVIDER_UNSPECIFIED": 0,
 		"OPEN_AI":              1,
 		"CLAUDE":               2,
 		"GEMINI":               3,
+		"AZURE_OPENAI":         4,
 	}
 )
 
@@ -3208,6 +3211,9 @@ func (x *Algorithm_RangeMask_Slice) GetSubstitution() string {
 var File_v1_setting_service_proto protoreflect.FileDescriptor
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> c7db07e2d (chore: update)
 const file_v1_setting_service_proto_rawDesc = "" +
 	"\n" +
 	"\x18v1/setting_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1egoogle/protobuf/duration.proto\x1a google/protobuf/field_mask.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x16google/type/expr.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\x1a!v1/database_catalog_service.proto\x1a\x19v1/database_service.proto\x1a\x16v1/issue_service.proto\x1a\x1dv1/subscription_service.proto\"Q\n" +
@@ -3232,7 +3238,11 @@ const file_v1_setting_service_proto_rawDesc = "" +
 	"\aSetting\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12(\n" +
 	"\x05value\x18\x02 \x01(\v2\x12.bytebase.v1.ValueR\x05value:-\xeaA*\n" +
+<<<<<<< HEAD
 	"\x14bytebase.com/Setting\x12\x12settings/{setting}\"\x81\n" +
+=======
+	"\x14bytebase.com/Setting\x12\x12settings/{setting}\"\xba\n" +
+>>>>>>> c7db07e2d (chore: update)
 	"\n" +
 	"\x05Value\x12#\n" +
 	"\fstring_value\x18\x01 \x01(\tH\x00R\vstringValue\x12s\n" +
@@ -3248,7 +3258,13 @@ const file_v1_setting_service_proto_rawDesc = "" +
 	"\x1bsemantic_type_setting_value\x18\v \x01(\v2 .bytebase.v1.SemanticTypeSettingH\x00R\x18semanticTypeSettingValue\x12p\n" +
 	"\x1fmaximum_sql_result_size_setting\x18\r \x01(\v2(.bytebase.v1.MaximumSQLResultSizeSettingH\x00R\x1bmaximumSqlResultSizeSetting\x12=\n" +
 	"\fscim_setting\x18\x0e \x01(\v2\x18.bytebase.v1.SCIMSettingH\x00R\vscimSetting\x12k\n" +
+<<<<<<< HEAD
 	"\x1cpassword_restriction_setting\x18\x0f \x01(\v2'.bytebase.v1.PasswordRestrictionSettingH\x00R\x1apasswordRestrictionSettingB\a\n" +
+=======
+	"\x1cpassword_restriction_setting\x18\x0f \x01(\v2'.bytebase.v1.PasswordRestrictionSettingH\x00R\x1apasswordRestrictionSetting\x127\n" +
+	"\n" +
+	"ai_setting\x18\x10 \x01(\v2\x16.bytebase.v1.AISettingH\x00R\taiSettingB\a\n" +
+>>>>>>> c7db07e2d (chore: update)
 	"\x05value\"\xda\x05\n" +
 	"\x1cSMTPMailDeliverySettingValue\x12\x16\n" +
 	"\x06server\x18\x01 \x01(\tR\x06server\x12\x12\n" +
@@ -3441,7 +3457,26 @@ const file_v1_setting_service_proto_rawDesc = "" +
 	"\x18require_uppercase_letter\x18\x04 \x01(\bR\x16requireUppercaseLetter\x12:\n" +
 	"\x19require_special_character\x18\x05 \x01(\bR\x17requireSpecialCharacter\x12Q\n" +
 	"&require_reset_password_for_first_login\x18\x06 \x01(\bR!requireResetPasswordForFirstLogin\x12F\n" +
+<<<<<<< HEAD
 	"\x11password_rotation\x18\a \x01(\v2\x19.google.protobuf.DurationR\x10passwordRotation*T\n" +
+=======
+	"\x11password_rotation\x18\a \x01(\v2\x19.google.protobuf.DurationR\x10passwordRotation\"\xa4\x02\n" +
+	"\tAISetting\x12\x18\n" +
+	"\aenabled\x18\x01 \x01(\bR\aenabled\x12;\n" +
+	"\bprovider\x18\x02 \x01(\x0e2\x1f.bytebase.v1.AISetting.ProviderR\bprovider\x12\x1a\n" +
+	"\bendpoint\x18\x03 \x01(\tR\bendpoint\x12\x17\n" +
+	"\aapi_key\x18\x04 \x01(\tR\x06apiKey\x12\x14\n" +
+	"\x05model\x18\x05 \x01(\tR\x05model\x12\x18\n" +
+	"\aversion\x18\x06 \x01(\tR\aversion\"[\n" +
+	"\bProvider\x12\x18\n" +
+	"\x14PROVIDER_UNSPECIFIED\x10\x00\x12\v\n" +
+	"\aOPEN_AI\x10\x01\x12\n" +
+	"\n" +
+	"\x06CLAUDE\x10\x02\x12\n" +
+	"\n" +
+	"\x06GEMINI\x10\x03\x12\x10\n" +
+	"\fAZURE_OPENAI\x10\x04*T\n" +
+>>>>>>> c7db07e2d (chore: update)
 	"\x12DatabaseChangeMode\x12$\n" +
 	" DATABASE_CHANGE_MODE_UNSPECIFIED\x10\x00\x12\f\n" +
 	"\bPIPELINE\x10\x01\x12\n" +
@@ -3452,6 +3487,7 @@ const file_v1_setting_service_proto_rawDesc = "" +
 	"\n" +
 	"GetSetting\x12\x1e.bytebase.v1.GetSettingRequest\x1a\x14.bytebase.v1.Setting\";\xdaA\x04name\x8a\xea0\x0fbb.settings.get\x90\xea0\x01\x82\xd3\xe4\x93\x02\x17\x12\x15/v1/{name=settings/*}\x12\x93\x01\n" +
 	"\rUpdateSetting\x12!.bytebase.v1.UpdateSettingRequest\x1a\x14.bytebase.v1.Setting\"I\x8a\xea0\x0fbb.settings.set\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02(:\asetting2\x1d/v1/{setting.name=settings/*}B\x11Z\x0fgenerated-go/v1b\x06proto3"
+<<<<<<< HEAD
 =======
 var file_v1_setting_service_proto_rawDesc = string([]byte{
 	0x0a, 0x18, 0x76, 0x31, 0x2f, 0x73, 0x65, 0x74, 0x74, 0x69, 0x6e, 0x67, 0x5f, 0x73, 0x65, 0x72,
@@ -4047,6 +4083,8 @@ var file_v1_setting_service_proto_rawDesc = string([]byte{
 	0x6f, 0x33,
 })
 >>>>>>> 5b01ad654 (chore: ai setting proto (#15607))
+=======
+>>>>>>> c7db07e2d (chore: update)
 
 var (
 	file_v1_setting_service_proto_rawDescOnce sync.Once

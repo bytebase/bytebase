@@ -60,6 +60,7 @@ func (*DatabaseGroupPayload) Descriptor() ([]byte, []int) {
 var File_store_db_group_proto protoreflect.FileDescriptor
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 const file_store_db_group_proto_rawDesc = "" +
 	"\n" +
 	"\x14store/db_group.proto\x12\x0ebytebase.store\":\n" +
@@ -75,6 +76,12 @@ var file_store_db_group_proto_rawDesc = string([]byte{
 	0x74, 0x6f, 0x72, 0x65, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 })
 >>>>>>> c32fb49ea (chore: remove multitenancy (#15581))
+=======
+const file_store_db_group_proto_rawDesc = "" +
+	"\n" +
+	"\x14store/db_group.proto\x12\x0ebytebase.store\"\x16\n" +
+	"\x14DatabaseGroupPayloadB\x14Z\x12generated-go/storeb\x06proto3"
+>>>>>>> c7db07e2d (chore: update)
 
 var (
 	file_store_db_group_proto_rawDescOnce sync.Once

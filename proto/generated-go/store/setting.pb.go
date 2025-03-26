@@ -295,6 +295,7 @@ const (
 	AISetting_OPEN_AI              AISetting_Provider = 1
 	AISetting_CLAUDE               AISetting_Provider = 2
 	AISetting_GEMINI               AISetting_Provider = 3
+	AISetting_AZURE_OPENAI         AISetting_Provider = 4
 )
 
 // Enum value maps for AISetting_Provider.
@@ -304,12 +305,14 @@ var (
 		1: "OPEN_AI",
 		2: "CLAUDE",
 		3: "GEMINI",
+		4: "AZURE_OPENAI",
 	}
 	AISetting_Provider_value = map[string]int32{
 		"PROVIDER_UNSPECIFIED": 0,
 		"OPEN_AI":              1,
 		"CLAUDE":               2,
 		"GEMINI":               3,
+		"AZURE_OPENAI":         4,
 	}
 )
 
@@ -2504,6 +2507,9 @@ func (x *AppIMSetting_DingTalk) GetRobotCode() string {
 var File_store_setting_proto protoreflect.FileDescriptor
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> c7db07e2d (chore: update)
 const file_store_setting_proto_rawDesc = "" +
 	"\n" +
 	"\x13store/setting.proto\x12\x0ebytebase.store\x1a%google/api/expr/v1alpha1/syntax.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x16google/type/expr.proto\x1a\x14store/approval.proto\x1a\x12store/common.proto\x1a\x14store/database.proto\"\xe9\x04\n" +
@@ -2687,12 +2693,32 @@ const file_store_setting_proto_rawDesc = "" +
 	"\x18require_uppercase_letter\x18\x04 \x01(\bR\x16requireUppercaseLetter\x12:\n" +
 	"\x19require_special_character\x18\x05 \x01(\bR\x17requireSpecialCharacter\x12Q\n" +
 	"&require_reset_password_for_first_login\x18\x06 \x01(\bR!requireResetPasswordForFirstLogin\x12F\n" +
+<<<<<<< HEAD
 	"\x11password_rotation\x18\a \x01(\v2\x19.google.protobuf.DurationR\x10passwordRotation*T\n" +
+=======
+	"\x11password_rotation\x18\a \x01(\v2\x19.google.protobuf.DurationR\x10passwordRotation\"\xa7\x02\n" +
+	"\tAISetting\x12\x18\n" +
+	"\aenabled\x18\x01 \x01(\bR\aenabled\x12>\n" +
+	"\bprovider\x18\x02 \x01(\x0e2\".bytebase.store.AISetting.ProviderR\bprovider\x12\x1a\n" +
+	"\bendpoint\x18\x03 \x01(\tR\bendpoint\x12\x17\n" +
+	"\aapi_key\x18\x04 \x01(\tR\x06apiKey\x12\x14\n" +
+	"\x05model\x18\x05 \x01(\tR\x05model\x12\x18\n" +
+	"\aversion\x18\x06 \x01(\tR\aversion\"[\n" +
+	"\bProvider\x12\x18\n" +
+	"\x14PROVIDER_UNSPECIFIED\x10\x00\x12\v\n" +
+	"\aOPEN_AI\x10\x01\x12\n" +
+	"\n" +
+	"\x06CLAUDE\x10\x02\x12\n" +
+	"\n" +
+	"\x06GEMINI\x10\x03\x12\x10\n" +
+	"\fAZURE_OPENAI\x10\x04*T\n" +
+>>>>>>> c7db07e2d (chore: update)
 	"\x12DatabaseChangeMode\x12$\n" +
 	" DATABASE_CHANGE_MODE_UNSPECIFIED\x10\x00\x12\f\n" +
 	"\bPIPELINE\x10\x01\x12\n" +
 	"\n" +
 	"\x06EDITOR\x10\x02B\x14Z\x12generated-go/storeb\x06proto3"
+<<<<<<< HEAD
 =======
 var file_store_setting_proto_rawDesc = string([]byte{
 	0x0a, 0x13, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x2f, 0x73, 0x65, 0x74, 0x74, 0x69, 0x6e, 0x67, 0x2e,
@@ -3103,6 +3129,8 @@ var file_store_setting_proto_rawDesc = string([]byte{
 	0x6f, 0x2f, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 })
 >>>>>>> 5b01ad654 (chore: ai setting proto (#15607))
+=======
+>>>>>>> c7db07e2d (chore: update)
 
 var (
 	file_store_setting_proto_rawDescOnce sync.Once

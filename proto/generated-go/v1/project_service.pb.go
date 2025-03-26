@@ -1535,6 +1535,9 @@ func (x *BatchGetIamPolicyResponse_PolicyResult) GetPolicy() *IamPolicy {
 var File_v1_project_service_proto protoreflect.FileDescriptor
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> c7db07e2d (chore: update)
 const file_v1_project_service_proto_rawDesc = "" +
 	"\n" +
 	"\x18v1/project_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\x1a\x13v1/iam_policy.proto\"F\n" +
@@ -1549,12 +1552,25 @@ const file_v1_project_service_proto_rawDesc = "" +
 	"\x06filter\x18\x04 \x01(\tR\x06filter\"p\n" +
 	"\x14ListProjectsResponse\x120\n" +
 	"\bprojects\x18\x01 \x03(\v2\x14.bytebase.v1.ProjectR\bprojects\x12&\n" +
+<<<<<<< HEAD
 	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"R\n" +
 	"\x15SearchProjectsRequest\x12!\n" +
 	"\fshow_deleted\x18\x01 \x01(\bR\vshowDeleted\x12\x16\n" +
 	"\x06filter\x18\x02 \x01(\tR\x06filter\"J\n" +
 	"\x16SearchProjectsResponse\x120\n" +
 	"\bprojects\x18\x01 \x03(\v2\x14.bytebase.v1.ProjectR\bprojects\"k\n" +
+=======
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\x8e\x01\n" +
+	"\x15SearchProjectsRequest\x12!\n" +
+	"\fshow_deleted\x18\x01 \x01(\bR\vshowDeleted\x12\x16\n" +
+	"\x06filter\x18\x02 \x01(\tR\x06filter\x12\x1b\n" +
+	"\tpage_size\x18\x03 \x01(\x05R\bpageSize\x12\x1d\n" +
+	"\n" +
+	"page_token\x18\x04 \x01(\tR\tpageToken\"r\n" +
+	"\x16SearchProjectsResponse\x120\n" +
+	"\bprojects\x18\x01 \x03(\v2\x14.bytebase.v1.ProjectR\bprojects\x12&\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"k\n" +
+>>>>>>> c7db07e2d (chore: update)
 	"\x14CreateProjectRequest\x124\n" +
 	"\aproject\x18\x01 \x01(\v2\x14.bytebase.v1.ProjectB\x04\xe2A\x01\x02R\aproject\x12\x1d\n" +
 	"\n" +
@@ -1674,6 +1690,7 @@ const file_v1_project_service_proto_rawDesc = "" +
 	"\rUpdateWebhook\x12!.bytebase.v1.UpdateWebhookRequest\x1a\x14.bytebase.v1.Project\"q\xdaA\x13webhook,update_mask\x8a\xea0\x12bb.projects.update\x90\xea0\x01\x82\xd3\xe4\x93\x02;:\x01*\"6/v1/{webhook.name=projects/*/webhooks/*}:updateWebhook\x12\xa5\x01\n" +
 	"\rRemoveWebhook\x12!.bytebase.v1.RemoveWebhookRequest\x1a\x14.bytebase.v1.Project\"[\x8a\xea0\x12bb.projects.update\x90\xea0\x01\x82\xd3\xe4\x93\x02;:\x01*\"6/v1/{webhook.name=projects/*/webhooks/*}:removeWebhook\x12\x9b\x01\n" +
 	"\vTestWebhook\x12\x1f.bytebase.v1.TestWebhookRequest\x1a .bytebase.v1.TestWebhookResponse\"I\x8a\xea0\x12bb.projects.update\x90\xea0\x01\x82\xd3\xe4\x93\x02):\x01*\"$/v1/{project=projects/*}:testWebhookB\x11Z\x0fgenerated-go/v1b\x06proto3"
+<<<<<<< HEAD
 =======
 var file_v1_project_service_proto_rawDesc = string([]byte{
 	0x0a, 0x18, 0x76, 0x31, 0x2f, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x5f, 0x73, 0x65, 0x72,
@@ -2072,6 +2089,8 @@ var file_v1_project_service_proto_rawDesc = string([]byte{
 	0x6f, 0x2f, 0x76, 0x31, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 })
 >>>>>>> 975047b72 (chore: add page size for search projects api (#15591))
+=======
+>>>>>>> c7db07e2d (chore: update)
 
 var (
 	file_v1_project_service_proto_rawDescOnce sync.Once

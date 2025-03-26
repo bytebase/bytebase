@@ -7722,6 +7722,7 @@ components:
                         - OPEN_AI
                         - CLAUDE
                         - GEMINI
+                        - AZURE_OPENAI
                     type: string
                     format: enum
                 endpoint:

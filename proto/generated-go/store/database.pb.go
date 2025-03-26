@@ -3752,6 +3752,9 @@ func (x *ObjectSchema_ArrayKind) GetKind() *ObjectSchema {
 var File_store_database_proto protoreflect.FileDescriptor
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> c7db07e2d (chore: update)
 const file_store_database_proto_rawDesc = "" +
 	"\n" +
 	"\x14store/database.proto\x12\x0ebytebase.store\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1egoogle/protobuf/wrappers.proto\x1a\x12store/common.proto\"\xd0\x02\n" +
@@ -3938,13 +3941,22 @@ const file_store_database_proto_rawDesc = "" +
 	"\vLINEAR_HASH\x10\x06\x12\a\n" +
 	"\x03KEY\x10\a\x12\x0e\n" +
 	"\n" +
+<<<<<<< HEAD
 	"LINEAR_KEY\x10\b\"\xad\x05\n" +
+=======
+	"LINEAR_KEY\x10\b\"\xd5\x05\n" +
+>>>>>>> c7db07e2d (chore: update)
 	"\x0eColumnMetadata\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1a\n" +
 	"\bposition\x18\x02 \x01(\x05R\bposition\x128\n" +
 	"\adefault\x18\x03 \x01(\v2\x1c.google.protobuf.StringValueH\x00R\adefault\x12#\n" +
 	"\fdefault_null\x18\x04 \x01(\bH\x00R\vdefaultNull\x12/\n" +
+<<<<<<< HEAD
 	"\x12default_expression\x18\x05 \x01(\tH\x00R\x11defaultExpression\x12\x1b\n" +
+=======
+	"\x12default_expression\x18\x05 \x01(\tH\x00R\x11defaultExpression\x12&\n" +
+	"\x0fdefault_on_null\x18\x10 \x01(\bR\rdefaultOnNull\x12\x1b\n" +
+>>>>>>> c7db07e2d (chore: update)
 	"\ton_update\x18\r \x01(\tR\bonUpdate\x12\x1a\n" +
 	"\bnullable\x18\x06 \x01(\bR\bnullable\x12\x12\n" +
 	"\x04type\x18\a \x01(\tR\x04type\x12#\n" +
@@ -4126,6 +4138,7 @@ const file_store_database_proto_rawDesc = "" +
 	"\x06OBJECT\x10\x04\x12\t\n" +
 	"\x05ARRAY\x10\x05B\x06\n" +
 	"\x04kindB\x14Z\x12generated-go/storeb\x06proto3"
+<<<<<<< HEAD
 =======
 var file_store_database_proto_rawDesc = string([]byte{
 	0x0a, 0x14, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x2f, 0x64, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65,
@@ -4778,6 +4791,8 @@ var file_store_database_proto_rawDesc = string([]byte{
 	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 })
 >>>>>>> dc868b5c0 (chore: update oracle sync (#15586))
+=======
+>>>>>>> c7db07e2d (chore: update)
 
 var (
 	file_store_database_proto_rawDescOnce sync.Once

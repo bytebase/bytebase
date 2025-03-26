@@ -4851,6 +4851,7 @@ The data in setting value.
 | OPEN_AI | 1 |  |
 | CLAUDE | 2 |  |
 | GEMINI | 3 |  |
+| AZURE_OPENAI | 4 |  |
 
 
 

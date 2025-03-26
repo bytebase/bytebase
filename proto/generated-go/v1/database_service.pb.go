@@ -5772,6 +5772,9 @@ func (x *GetSchemaStringResponse) GetSchemaString() string {
 var File_v1_database_service_proto protoreflect.FileDescriptor
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> c7db07e2d (chore: update)
 const file_v1_database_service_proto_rawDesc = "" +
 	"\n" +
 	"\x19v1/database_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\x1a\x19v1/instance_service.proto\"H\n" +
@@ -5800,12 +5803,20 @@ const file_v1_database_service_proto_rawDesc = "" +
 	"\x13SyncDatabaseRequest\x122\n" +
 	"\x04name\x18\x01 \x01(\tB\x1e\xe2A\x01\x02\xfaA\x17\n" +
 	"\x15bytebase.com/DatabaseR\x04name\"\x16\n" +
+<<<<<<< HEAD
 	"\x14SyncDatabaseResponse\"\xa7\x01\n" +
 	"\x1aGetDatabaseMetadataRequest\x12:\n" +
 	"\x04name\x18\x01 \x01(\tB&\xe2A\x01\x02\xfaA\x1f\n" +
 	"\x1dbytebase.com/DatabaseMetadataR\x04name\x125\n" +
 	"\x04view\x18\x02 \x01(\x0e2!.bytebase.v1.DatabaseMetadataViewR\x04view\x12\x16\n" +
 	"\x06filter\x18\x03 \x01(\tR\x06filter\"s\n" +
+=======
+	"\x14SyncDatabaseResponse\"p\n" +
+	"\x1aGetDatabaseMetadataRequest\x12:\n" +
+	"\x04name\x18\x01 \x01(\tB&\xe2A\x01\x02\xfaA\x1f\n" +
+	"\x1dbytebase.com/DatabaseMetadataR\x04name\x12\x16\n" +
+	"\x06filter\x18\x02 \x01(\tR\x06filter\"s\n" +
+>>>>>>> c7db07e2d (chore: update)
 	"\x18GetDatabaseSchemaRequest\x128\n" +
 	"\x04name\x18\x01 \x01(\tB$\xe2A\x01\x02\xfaA\x1d\n" +
 	"\x1bbytebase.com/DatabaseSchemaR\x04name\x12\x1d\n" +
@@ -5966,7 +5977,11 @@ const file_v1_database_service_proto_rawDesc = "" +
 	"\vLINEAR_HASH\x10\x06\x12\a\n" +
 	"\x03KEY\x10\a\x12\x0e\n" +
 	"\n" +
+<<<<<<< HEAD
 	"LINEAR_KEY\x10\b\"\xb1\x05\n" +
+=======
+	"LINEAR_KEY\x10\b\"\xd9\x05\n" +
+>>>>>>> c7db07e2d (chore: update)
 	"\x0eColumnMetadata\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1a\n" +
 	"\bposition\x18\x02 \x01(\x05R\bposition\x12\x1f\n" +
@@ -5974,7 +5989,12 @@ const file_v1_database_service_proto_rawDesc = "" +
 	"hasDefault\x12#\n" +
 	"\fdefault_null\x18\x04 \x01(\bH\x00R\vdefaultNull\x12'\n" +
 	"\x0edefault_string\x18\x05 \x01(\tH\x00R\rdefaultString\x12/\n" +
+<<<<<<< HEAD
 	"\x12default_expression\x18\x06 \x01(\tH\x00R\x11defaultExpression\x12\x1b\n" +
+=======
+	"\x12default_expression\x18\x06 \x01(\tH\x00R\x11defaultExpression\x12&\n" +
+	"\x0fdefault_on_null\x18\x12 \x01(\bR\rdefaultOnNull\x12\x1b\n" +
+>>>>>>> c7db07e2d (chore: update)
 	"\ton_update\x18\x0f \x01(\tR\bonUpdate\x12\x1a\n" +
 	"\bnullable\x18\a \x01(\bR\bnullable\x12\x12\n" +
 	"\x04type\x18\b \x01(\tR\x04type\x12#\n" +
@@ -6302,11 +6322,15 @@ const file_v1_database_service_proto_rawDesc = "" +
 	"\tPROCEDURE\x10\a\x12\f\n" +
 	"\bSEQUENCE\x10\b\">\n" +
 	"\x17GetSchemaStringResponse\x12#\n" +
+<<<<<<< HEAD
 	"\rschema_string\x18\x01 \x01(\tR\fschemaString*\x81\x01\n" +
 	"\x14DatabaseMetadataView\x12&\n" +
 	"\"DATABASE_METADATA_VIEW_UNSPECIFIED\x10\x00\x12 \n" +
 	"\x1cDATABASE_METADATA_VIEW_BASIC\x10\x01\x12\x1f\n" +
 	"\x1bDATABASE_METADATA_VIEW_FULL\x10\x02*b\n" +
+=======
+	"\rschema_string\x18\x01 \x01(\tR\fschemaString*b\n" +
+>>>>>>> c7db07e2d (chore: update)
 	"\rChangelogView\x12\x1e\n" +
 	"\x1aCHANGELOG_VIEW_UNSPECIFIED\x10\x00\x12\x18\n" +
 	"\x14CHANGELOG_VIEW_BASIC\x10\x01\x12\x17\n" +
@@ -6331,6 +6355,7 @@ const file_v1_database_service_proto_rawDesc = "" +
 	"\x0eListChangelogs\x12\".bytebase.v1.ListChangelogsRequest\x1a#.bytebase.v1.ListChangelogsResponse\"Z\xdaA\x06parent\x8a\xea0\x12bb.changelogs.list\x90\xea0\x01\x82\xd3\xe4\x93\x021\x12//v1/{parent=instances/*/databases/*}/changelogs\x12\xa1\x01\n" +
 	"\fGetChangelog\x12 .bytebase.v1.GetChangelogRequest\x1a\x16.bytebase.v1.Changelog\"W\xdaA\x04name\x8a\xea0\x11bb.changelogs.get\x90\xea0\x01\x82\xd3\xe4\x93\x021\x12//v1/{name=instances/*/databases/*/changelogs/*}\x12\xba\x01\n" +
 	"\x0fGetSchemaString\x12#.bytebase.v1.GetSchemaStringRequest\x1a$.bytebase.v1.GetSchemaStringResponse\"\\\xdaA\x04name\x8a\xea0\x16bb.databases.getSchema\x90\xea0\x01\x82\xd3\xe4\x93\x021\x12//v1/{name=instances/*/databases/*/schemaString}B\x11Z\x0fgenerated-go/v1b\x06proto3"
+<<<<<<< HEAD
 =======
 var file_v1_database_service_proto_rawDesc = string([]byte{
 	0x0a, 0x19, 0x76, 0x31, 0x2f, 0x64, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x5f, 0x73, 0x65,
@@ -7486,6 +7511,8 @@ var file_v1_database_service_proto_rawDesc = string([]byte{
 	0x72, 0x6f, 0x74, 0x6f, 0x33,
 })
 >>>>>>> 125604a27 (chore: deprecate the unused metadata view (#15566))
+=======
+>>>>>>> c7db07e2d (chore: update)
 
 var (
 	file_v1_database_service_proto_rawDescOnce sync.Once

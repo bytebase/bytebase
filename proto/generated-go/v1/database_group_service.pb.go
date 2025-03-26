@@ -573,6 +573,9 @@ func (x *DatabaseGroup_Database) GetName() string {
 var File_v1_database_group_service_proto protoreflect.FileDescriptor
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> c7db07e2d (chore: update)
 const file_v1_database_group_service_proto_rawDesc = "" +
 	"\n" +
 	"\x1fv1/database_group_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x16google/type/expr.proto\x1a\x13v1/annotation.proto\"\x8e\x01\n" +
@@ -601,14 +604,22 @@ const file_v1_database_group_service_proto_rawDesc = "" +
 	"updateMask\"U\n" +
 	"\x1aDeleteDatabaseGroupRequest\x127\n" +
 	"\x04name\x18\x01 \x01(\tB#\xe2A\x01\x02\xfaA\x1c\n" +
+<<<<<<< HEAD
 	"\x1abytebase.com/DatabaseGroupR\x04name\"\xda\x03\n" +
+=======
+	"\x1abytebase.com/DatabaseGroupR\x04name\"\xb6\x03\n" +
+>>>>>>> c7db07e2d (chore: update)
 	"\rDatabaseGroup\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x121\n" +
 	"\x14database_placeholder\x18\x02 \x01(\tR\x13databasePlaceholder\x126\n" +
 	"\rdatabase_expr\x18\x03 \x01(\v2\x11.google.type.ExprR\fdatabaseExpr\x12V\n" +
 	"\x11matched_databases\x18\x04 \x03(\v2#.bytebase.v1.DatabaseGroup.DatabaseB\x04\xe2A\x01\x03R\x10matchedDatabases\x12Z\n" +
+<<<<<<< HEAD
 	"\x13unmatched_databases\x18\x05 \x03(\v2#.bytebase.v1.DatabaseGroup.DatabaseB\x04\xe2A\x01\x03R\x12unmatchedDatabases\x12\"\n" +
 	"\fmultitenancy\x18\x06 \x01(\bR\fmultitenancy\x1a\x1e\n" +
+=======
+	"\x13unmatched_databases\x18\x05 \x03(\v2#.bytebase.v1.DatabaseGroup.DatabaseB\x04\xe2A\x01\x03R\x12unmatchedDatabases\x1a\x1e\n" +
+>>>>>>> c7db07e2d (chore: update)
 	"\bDatabase\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name:R\xeaAO\n" +
 	"\x1abytebase.com/DatabaseGroup\x121projects/{project}/databaseGroups/{databaseGroup}*u\n" +
@@ -622,6 +633,7 @@ const file_v1_database_group_service_proto_rawDesc = "" +
 	"\x13CreateDatabaseGroup\x12'.bytebase.v1.CreateDatabaseGroupRequest\x1a\x1a.bytebase.v1.DatabaseGroup\"s\xdaA\x14parent,databaseGroup\x8a\xea0\x12bb.projects.update\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x028:\x0edatabase_group\"&/v1/{parent=projects/*}/databaseGroups\x12\xe5\x01\n" +
 	"\x13UpdateDatabaseGroup\x12'.bytebase.v1.UpdateDatabaseGroupRequest\x1a\x1a.bytebase.v1.DatabaseGroup\"\x88\x01\xdaA\x1adatabase_group,update_mask\x8a\xea0\x12bb.projects.update\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02G:\x0edatabase_group25/v1/{database_group.name=projects/*/databaseGroups/*}\x12\xab\x01\n" +
 	"\x13DeleteDatabaseGroup\x12'.bytebase.v1.DeleteDatabaseGroupRequest\x1a\x16.google.protobuf.Empty\"S\xdaA\x04name\x8a\xea0\x12bb.projects.update\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02(*&/v1/{name=projects/*/databaseGroups/*}B\x11Z\x0fgenerated-go/v1b\x06proto3"
+<<<<<<< HEAD
 =======
 var file_v1_database_group_service_proto_rawDesc = string([]byte{
 	0x0a, 0x1f, 0x76, 0x31, 0x2f, 0x64, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x5f, 0x67, 0x72,
@@ -799,6 +811,8 @@ var file_v1_database_group_service_proto_rawDesc = string([]byte{
 	0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 })
 >>>>>>> c32fb49ea (chore: remove multitenancy (#15581))
+=======
+>>>>>>> c7db07e2d (chore: update)
 
 var (
 	file_v1_database_group_service_proto_rawDescOnce sync.Once
