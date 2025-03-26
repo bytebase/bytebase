@@ -22,19 +22,47 @@ export const extractSQLRowValuePlain = (value: RowValue | undefined) => {
   const plainObject = RowValue.toJSON(value) as Record<string, any>;
   const keys = Object.keys(plainObject);
   if (keys.length === 0) {
-    return undefined; // Will bi displayed as "UNSET"
+    return undefined; // Will be displayed as "UNSET"
   }
   if (keys.length > 1) {
     console.debug("mixed type in row value", value);
   }
-  if (value.bytesValue) {
-    const byteArray = Array.from(value.bytesValue);
-    const binaryString = byteArray
-      .map((byte) => byte.toString(2).padStart(8, "0"))
-      .join("")
-      .replace(/^0+/g, "");
-    return binaryString.length === 0 ? "0" : binaryString;
+  
+  // First check if there's a formatted stringValue which should take precedence
+  if (value.stringValue) {
+    return value.stringValue;
   }
+  
+  // Handle binary data with auto-format detection
+  if (value.bytesValue) {
+    // Ensure bytesValue exists before converting to array
+    const byteArray = Array.from(value.bytesValue);
+    
+    // For single byte/bit values (could be boolean)
+    if (byteArray.length === 1) {
+      // If it's 0 or 1, display as boolean
+      if (byteArray[0] === 0 || byteArray[0] === 1) {
+        return byteArray[0] === 1 ? "true" : "false";
+      }
+    }
+    
+    // Check if it's readable text
+    const isReadableText = byteArray.every(byte => byte >= 32 && byte <= 126);
+    if (isReadableText) {
+      try {
+        return new TextDecoder().decode(new Uint8Array(byteArray));
+      } catch {
+        // If text decoding fails, fallback to hex
+      }
+    }
+    
+    // The column type isn't available in this context
+    // Default to HEX format for most binary data as it's more compact
+    return "0x" + byteArray
+      .map((byte) => byte.toString(16).toUpperCase().padStart(2, "0"))
+      .join("");
+  }
+  
   if (value.timestampValue && value.timestampValue.googleTimestamp) {
     return formatTimestamp(value.timestampValue);
   }

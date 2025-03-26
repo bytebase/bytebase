@@ -1733,6 +1733,10 @@
     "vertical-display": "竖向展示",
     "no-history-found": "暂无历史记录",
     "search-history": "搜索历史记录",
+    "binary-format": "二进制格式",
+    "hex-format": "十六进制格式",
+    "boolean-format": "布尔格式",
+    "text-format": "文本格式",
     "hint-tips": {
       "confirm-to-close-unsaved-sheet": {
         "title": "确定关闭未保存的工作表？",
@@ -1845,7 +1849,9 @@
       "contact-the-admin-to-grant-access": "联系管理员以授予访问权限。"
     },
     "upload-file": "上传文件",
-    "copy-selected-results": "通过 {action} 或 {button} 来快速复制选定的数据"
+    "copy-selected-results": "通过 {action} 或 {button} 来快速复制选定的数据",
+    "format-default": "默认",
+    "column-display-format": "列显示格式"
   },
   "schema-editor": {
     "self": "Schema 编辑器",

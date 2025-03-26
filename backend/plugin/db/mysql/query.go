@@ -29,7 +29,7 @@ func makeValueByTypeName(typeName string, _ *sql.ColumnType) any {
 		return new(sql.NullInt64)
 	case "FLOAT", "DOUBLE", "FLOAT4", "FLOAT8":
 		return new(sql.NullFloat64)
-	case "BIT", "VARBIT":
+	case "BIT", "VARBIT", "BINARY", "VARBINARY":
 		return new([]byte)
 	default:
 		return new(sql.NullString)

@@ -282,10 +282,31 @@ const filteredResults = computed(() => {
   });
 });
 
+// Create a ref for column type names to share via context
+// This needs to update when the user switches result tabs
+const columnTypeNamesRef = computed(() => {
+  // If no result set, return undefined
+  if (!props.resultSet?.results) return undefined;
+  
+  // For single result mode, use the first result
+  if (viewMode.value === "SINGLE-RESULT") {
+    return props.resultSet.results[0]?.columnTypeNames;
+  }
+  
+  // For multi-result mode, use the active tab's result
+  // The active tab corresponds to the detail.set value
+  if (viewMode.value === "MULTI-RESULT" && detail.value.set < filteredResults.value.length) {
+    return filteredResults.value[detail.value.set]?.columnTypeNames;
+  }
+  
+  return undefined;
+});
+
 provideSQLResultViewContext({
   dark: toRef(props, "dark"),
   disallowCopyingData,
   keyword,
   detail,
+  columnTypeNames: columnTypeNamesRef,
 });
 </script>

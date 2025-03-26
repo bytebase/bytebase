@@ -222,7 +222,7 @@
     "encoding": "Encoding",
     "finish": "Finish",
     "title": "Title",
-    "text-wrap": "Text wrap",
+    "text-wrap": "Text Wrap",
     "catalog": "Catalog",
     "summary": "Summary",
     "errors": "Errors",
@@ -1733,6 +1733,10 @@
     "vertical-display": "Vertical display",
     "no-history-found": "No history found",
     "search-history": "Search History",
+    "binary-format": "Binary format",
+    "hex-format": "Hexadecimal format",
+    "boolean-format": "Boolean format",
+    "text-format": "Text format",
     "hint-tips": {
       "confirm-to-close-unsaved-sheet": {
         "title": "Close the unsaved sheet?",
@@ -1794,8 +1798,6 @@
     },
     "executing-query": "Executing query",
     "request-query": "Request query",
-    "previous-row": "Previous row",
-    "next-row": "Next row",
     "copy-success": "Copy success",
     "connect-in-new-tab": "Connect in new tab",
     "copy-name": "Copy name",
@@ -1845,7 +1847,11 @@
       "contact-the-admin-to-grant-access": "Contact to the admin to grant access."
     },
     "upload-file": "Upload file",
-    "copy-selected-results": "Copy selected data by {action} or {button}"
+    "copy-selected-results": "Copy selected data by {action} or {button}",
+    "format-default": "Default",
+    "column-display-format": "Column Display Format",
+    "next-row": "Next Row",
+    "previous-row": "Previous Row"
   },
   "schema-editor": {
     "self": "Schema Editor",
