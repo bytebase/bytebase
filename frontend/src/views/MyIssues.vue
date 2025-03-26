@@ -64,6 +64,7 @@
             :loading="loading"
             :issue-list="applyUIIssueFilter(list, mergedUIIssueFilter)"
             :highlight-text="state.params.query"
+            :show-project="true"
           />
         </template>
       </PagedTable>
