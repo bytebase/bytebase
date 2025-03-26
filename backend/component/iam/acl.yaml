@@ -338,6 +338,11 @@ roles:
       - bb.sql.select
       - bb.taskRuns.list
       - bb.worksheets.get
+      - bb.policies.create
+      - bb.policies.delete
+      - bb.policies.get
+      - bb.policies.list
+      - bb.policies.update
   - name: roles/projectDeveloper
     title: Project developer
     permissions:

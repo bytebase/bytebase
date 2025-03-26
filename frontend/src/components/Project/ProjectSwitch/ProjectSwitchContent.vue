@@ -100,7 +100,7 @@ const state = reactive<LocalState>({
   showPopover: false,
   searchText: "",
   selectedTab: "all",
-  loading: false,
+  loading: true,
   allProjects: [],
 });
 const projectStore = useProjectV1Store();
