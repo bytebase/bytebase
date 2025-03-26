@@ -532,7 +532,7 @@ const onSubmit = async () => {
 
 const updateExceptionPolicy = async () => {
   const policy = await policyStore.getOrFetchPolicyByParentAndType({
-    parentPath: props.project,
+    parentPath: props.project.name,
     policyType: PolicyType.MASKING_EXCEPTION,
   });
   if (!policy) {
@@ -579,7 +579,7 @@ const updateExceptionPolicy = async () => {
     maskingExceptions: exceptions,
   };
   await policyStore.upsertPolicy({
-    parentPath: props.project,
+    parentPath: props.project.name,
     policy,
   });
 };
