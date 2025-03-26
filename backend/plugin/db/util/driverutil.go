@@ -115,7 +115,7 @@ func MakeCommonValueByTypeName(typeName string, _ *sql.ColumnType) any {
 	}
 }
 
-func ConvertCommonValue(_ string, columnType *sql.ColumnType, value any) *v1pb.RowValue {
+func ConvertCommonValue(_ string, _ *sql.ColumnType, value any) *v1pb.RowValue {
 	switch raw := value.(type) {
 	case *sql.NullString:
 		if raw.Valid {
