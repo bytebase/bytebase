@@ -106,20 +106,28 @@ const columnList = computed((): DataTableColumn<ComposedIssue>[] => {
         return (
           <div class="flex items-center space-x-2">
             <IssueStatusIconWithTaskSummary issue={issue} />
-            <div class="whitespace-nowrap text-control text-opacity-80">
-              {`#${extractIssueUID(issue.name)}`}
-            </div>
-            <NPerformantEllipsis>
-              {{
-                default: () => (
-                  <span
-                    class="min-w-32 shrink"
-                    innerHTML={highlight(issue.title)}
-                  ></span>
-                ),
-                tooltip: () => issue.title,
+            <a
+              href={issueUrl(issue)}
+              class="flex items-center space-x-2 select-none"
+              onClick={(e: MouseEvent) => {
+                e.stopPropagation();
               }}
-            </NPerformantEllipsis>
+            >
+              <div class="whitespace-nowrap text-control text-opacity-80">
+                {`#${extractIssueUID(issue.name)}  `}
+              </div>
+              <NPerformantEllipsis>
+                {{
+                  default: () => (
+                    <span
+                      class="min-w-32 shrink"
+                      innerHTML={highlight(issue.title)}
+                    ></span>
+                  ),
+                  tooltip: () => issue.title,
+                }}
+              </NPerformantEllipsis>
+            </a>
             {labels.length > 0 && (
               <IssueLabelSelector
                 class="!w-auto shrink-0"
@@ -233,6 +241,17 @@ const selectedIssueList = computed(() => {
   );
 });
 
+const issueUrl = (issue: ComposedIssue) => {
+  const route = router.resolve({
+    name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
+    params: {
+      projectId: extractProjectResourceName(issue.project),
+      issueSlug: issueV1Slug(issue),
+    },
+  });
+  return route.fullPath;
+};
+
 const rowProps = (issue: ComposedIssue) => {
   return {
     style: "cursor: pointer;",
@@ -240,14 +259,7 @@ const rowProps = (issue: ComposedIssue) => {
       emitWindowEvent("bb.issue-detail", {
         uid: extractIssueUID(issue.name),
       });
-      const route = router.resolve({
-        name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
-        params: {
-          projectId: extractProjectResourceName(issue.project),
-          issueSlug: issueV1Slug(issue),
-        },
-      });
-      const url = route.fullPath;
+      const url = issueUrl(issue);
       if (e.ctrlKey || e.metaKey) {
         window.open(url, "_blank");
       } else {
