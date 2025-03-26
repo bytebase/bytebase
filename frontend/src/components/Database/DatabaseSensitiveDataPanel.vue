@@ -171,7 +171,7 @@ const flattenObjectSchema = (
 ): {
   column: string;
   semanticTypeId: string;
-  target: TableCatalog | ColumnCatalog | ObjectSchema;
+  target: ObjectSchema;
 }[] => {
   switch (objectSchema.type) {
     case ObjectSchema_Type.OBJECT:
@@ -191,7 +191,7 @@ const flattenObjectSchema = (
       if (!objectSchema.arrayKind?.kind) {
         return [];
       }
-      // TODO(ed): I'm not sure about this.
+      // TODO(ed): Currently, the object schemas of the element in array are the same.
       return flattenObjectSchema(parentPath, objectSchema.arrayKind?.kind);
     default:
       return [
