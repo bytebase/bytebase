@@ -15,13 +15,13 @@ import (
 )
 
 // SyncInstance syncs the instance.
-func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
-	version, err := driver.getVersion(ctx)
+func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
+	version, err := d.getVersion(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	databaseNames, err := driver.getDatabases()
+	databaseNames, err := d.getDatabases()
 	if err != nil {
 		return nil, err
 	}
@@ -38,17 +38,17 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, e
 }
 
 // getVersion gets the version.
-func (driver *Driver) getVersion(ctx context.Context) (string, error) {
+func (d *Driver) getVersion(ctx context.Context) (string, error) {
 	var version string
-	if err := driver.db.QueryRowContext(ctx, "SELECT sqlite_version();").Scan(&version); err != nil {
+	if err := d.db.QueryRowContext(ctx, "SELECT sqlite_version();").Scan(&version); err != nil {
 		return "", err
 	}
 	return version, nil
 }
 
 // SyncDBSchema syncs a single database schema.
-func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetadata, error) {
-	databases, err := driver.getDatabases()
+func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetadata, error) {
+	databases, err := d.getDatabases()
 	if err != nil {
 		return nil, err
 	}
@@ -57,21 +57,21 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 		Name: "",
 	}
 	databaseMetadata := &storepb.DatabaseSchemaMetadata{
-		Name:    driver.databaseName,
+		Name:    d.databaseName,
 		Schemas: []*storepb.SchemaMetadata{schemaMetadata},
 	}
 	found := false
 	for _, database := range databases {
-		if database == driver.databaseName {
+		if database == d.databaseName {
 			found = true
 			break
 		}
 	}
 	if !found {
-		return nil, common.Errorf(common.NotFound, "database %q not found", driver.databaseName)
+		return nil, common.Errorf(common.NotFound, "database %q not found", d.databaseName)
 	}
 
-	txn, err := driver.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	txn, err := d.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, err
 	}

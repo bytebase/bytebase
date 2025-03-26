@@ -224,7 +224,7 @@ func RunSQLReviewRuleTest(t *testing.T, rule SQLReviewRuleType, dbType storepb.E
 		checkCtx := SQLReviewCheckContext{
 			Charset:         "",
 			Collation:       "",
-			DbType:          dbType,
+			DBType:          dbType,
 			Catalog:         &testCatalog{finder: finder},
 			Driver:          nil,
 			CurrentDatabase: curDB,
@@ -397,9 +397,10 @@ func SetDefaultSQLReviewRulePayload(ruleTp SQLReviewRuleType, dbType storepb.Eng
 	case SchemaRuleColumnNaming:
 		format := "^[a-z]+(_[a-z]+)*$"
 		maxLength := 64
-		if dbType == storepb.Engine_SNOWFLAKE {
+		switch dbType {
+		case storepb.Engine_SNOWFLAKE:
 			format = "^[A-Z]+(_[A-Z]+)*$"
-		} else if dbType == storepb.Engine_MSSQL {
+		case storepb.Engine_MSSQL:
 			format = "^[A-Z]([_A-Za-z])*$"
 		}
 		payload, err = json.Marshal(NamingRulePayload{

@@ -51,17 +51,17 @@ type Role struct {
 }
 
 // SyncInstance syncs the instance meta.
-func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
-	version, err := driver.getVersion(ctx)
+func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
+	version, err := d.getVersion(ctx)
 	if err != nil {
 		return nil, err
 	}
-	instanceRoles, err := driver.getInstanceRoles(ctx)
+	instanceRoles, err := d.getInstanceRoles(ctx)
 	if err != nil {
 		return nil, err
 	}
 	var databases []*storepb.DatabaseSchemaMetadata
-	databaseNames, err := driver.getNonSystemDatabaseList(ctx)
+	databaseNames, err := d.getNonSystemDatabaseList(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -81,20 +81,20 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, e
 }
 
 // SyncDBSchema syncs the database schema.
-func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetadata, error) {
+func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetadata, error) {
 	schemaMetadata := &storepb.SchemaMetadata{
 		Name: "",
 	}
 
-	exist, err := driver.isDatabaseExist(ctx, driver.databaseName)
+	exist, err := d.isDatabaseExist(ctx, d.databaseName)
 	if err != nil {
 		return nil, err
 	}
 	if !exist {
-		return nil, errors.Errorf("database %s does not exist", driver.databaseName)
+		return nil, errors.Errorf("database %s does not exist", d.databaseName)
 	}
 
-	database := driver.client.Database(driver.databaseName)
+	database := d.client.Database(d.databaseName)
 	collectionList, err := database.ListCollections(ctx, bson.M{})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to list collection names")
@@ -194,7 +194,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 	}
 
 	return &storepb.DatabaseSchemaMetadata{
-		Name:    driver.databaseName,
+		Name:    d.databaseName,
 		Schemas: []*storepb.SchemaMetadata{schemaMetadata},
 	}, nil
 }
@@ -259,8 +259,8 @@ func getIndexes(ctx context.Context, collection *mongo.Collection) ([]*storepb.I
 }
 
 // getVersion returns the version of mongod or mongos instance.
-func (driver *Driver) getVersion(ctx context.Context) (string, error) {
-	database := driver.client.Database(bytebaseDefaultDatabase)
+func (d *Driver) getVersion(ctx context.Context) (string, error) {
+	database := d.client.Database(bytebaseDefaultDatabase)
 	var commandResult bson.M
 	command := bson.D{{Key: "buildInfo", Value: 1}}
 	if err := database.RunCommand(ctx, command).Decode(&commandResult); err != nil {
@@ -278,10 +278,10 @@ func (driver *Driver) getVersion(ctx context.Context) (string, error) {
 }
 
 // isDatabaseExist returns true if the database exists.
-func (driver *Driver) isDatabaseExist(ctx context.Context, databaseName string) (bool, error) {
+func (d *Driver) isDatabaseExist(ctx context.Context, databaseName string) (bool, error) {
 	// We do the filter by hand instead of using the filter option of ListDatabaseNames because we may encounter the following error:
 	// Unallowed argument in listDatabases command: filter
-	databaseList, err := driver.client.ListDatabaseNames(ctx, bson.M{})
+	databaseList, err := d.client.ListDatabaseNames(ctx, bson.M{})
 	if err != nil {
 		return false, errors.Wrap(err, "failed to list database names")
 	}
@@ -294,8 +294,8 @@ func (driver *Driver) isDatabaseExist(ctx context.Context, databaseName string) 
 }
 
 // getNonSystemDatabaseList returns the list of non system databases.
-func (driver *Driver) getNonSystemDatabaseList(ctx context.Context) ([]string, error) {
-	databaseNames, err := driver.client.ListDatabaseNames(ctx, bson.M{})
+func (d *Driver) getNonSystemDatabaseList(ctx context.Context) ([]string, error) {
+	databaseNames, err := d.client.ListDatabaseNames(ctx, bson.M{})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to list database names")
 	}

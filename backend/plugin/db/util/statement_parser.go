@@ -82,7 +82,8 @@ func removeCommentsAndTrim(sql string) (string, error) {
 					isInMultiLineComment = true
 					index++
 				} else {
-					if c == singleQuote || c == doubleQuote || c == backtick {
+					switch c {
+					case singleQuote, doubleQuote, backtick:
 						isInQuoted = true
 						startQuote = c
 						// Check whether it is a triple-quote.
@@ -152,7 +153,8 @@ func splitStatement(sql string) ([]string, error) {
 			_, _ = res.WriteRune(c)
 		} else {
 			// We are not in a quoted string.
-			if c == singleQuote || c == doubleQuote || c == backtick {
+			switch c {
+			case singleQuote, doubleQuote, backtick:
 				isInQuoted = true
 				startQuote = c
 				// Check whether it is a triple-quote.
@@ -163,14 +165,14 @@ func splitStatement(sql string) ([]string, error) {
 					index += 2
 				}
 				_, _ = res.WriteRune(c)
-			} else if c == delimiter {
+			case delimiter:
 				stmt := strings.Trim(res.String(), " \n\t")
 				if stmt != "" {
 					stmts = append(stmts, stmt)
 				}
 				res.Reset()
 				res.Grow(len(sql))
-			} else {
+			default:
 				_, _ = res.WriteRune(c)
 			}
 		}

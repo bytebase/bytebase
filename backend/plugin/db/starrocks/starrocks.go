@@ -56,9 +56,9 @@ func newDriver(_ db.DriverConfig) db.Driver {
 }
 
 // Open opens a MySQL driver.
-func (driver *Driver) Open(_ context.Context, dbType storepb.Engine, connCfg db.ConnectionConfig) (db.Driver, error) {
+func (d *Driver) Open(_ context.Context, dbType storepb.Engine, connCfg db.ConnectionConfig) (db.Driver, error) {
 	defer func() {
-		for _, f := range driver.openCleanUp {
+		for _, f := range d.openCleanUp {
 			f()
 		}
 	}()
@@ -73,7 +73,7 @@ func (driver *Driver) Open(_ context.Context, dbType storepb.Engine, connCfg db.
 		if err != nil {
 			return nil, err
 		}
-		driver.sshClient = sshClient
+		d.sshClient = sshClient
 		// Now we register the dialer with the ssh connection as a parameter.
 		mysql.RegisterDialContext("mysql+tcp", func(_ context.Context, addr string) (net.Conn, error) {
 			return sshClient.Dial("tcp", addr)
@@ -91,7 +91,7 @@ func (driver *Driver) Open(_ context.Context, dbType storepb.Engine, connCfg db.
 			return nil, errors.Wrap(err, "sql: failed to register tls config")
 		}
 		// TLS config is only used during sql.Open, so should be safe to deregister afterwards.
-		driver.openCleanUp = append(driver.openCleanUp, func() { mysql.DeregisterTLSConfig(tlsKey) })
+		d.openCleanUp = append(d.openCleanUp, func() { mysql.DeregisterTLSConfig(tlsKey) })
 		params = append(params, fmt.Sprintf("tls=%s", tlsKey))
 	}
 
@@ -100,41 +100,41 @@ func (driver *Driver) Open(_ context.Context, dbType storepb.Engine, connCfg db.
 	if err != nil {
 		return nil, err
 	}
-	driver.dbType = dbType
-	driver.db = db
+	d.dbType = dbType
+	d.db = db
 	// TODO(d): remove the work-around once we have clean-up the migration connection hack.
 	db.SetConnMaxLifetime(2 * time.Hour)
 	db.SetMaxOpenConns(50)
 	db.SetMaxIdleConns(15)
-	driver.databaseName = connCfg.ConnectionContext.DatabaseName
-	return driver, nil
+	d.databaseName = connCfg.ConnectionContext.DatabaseName
+	return d, nil
 }
 
 // Close closes the driver.
-func (driver *Driver) Close(context.Context) error {
+func (d *Driver) Close(context.Context) error {
 	var err error
-	err = multierr.Append(err, driver.db.Close())
-	if driver.sshClient != nil {
-		err = multierr.Append(err, driver.sshClient.Close())
+	err = multierr.Append(err, d.db.Close())
+	if d.sshClient != nil {
+		err = multierr.Append(err, d.sshClient.Close())
 	}
 	return err
 }
 
 // Ping pings the database.
-func (driver *Driver) Ping(ctx context.Context) error {
-	return driver.db.PingContext(ctx)
+func (d *Driver) Ping(ctx context.Context) error {
+	return d.db.PingContext(ctx)
 }
 
 // GetDB gets the database.
-func (driver *Driver) GetDB() *sql.DB {
-	return driver.db
+func (d *Driver) GetDB() *sql.DB {
+	return d.db
 }
 
 // getVersion gets the version.
-func (driver *Driver) getVersion(ctx context.Context) (string, string, error) {
+func (d *Driver) getVersion(ctx context.Context) (string, string, error) {
 	query := "SELECT VERSION()"
 	var version string
-	if err := driver.db.QueryRowContext(ctx, query).Scan(&version); err != nil {
+	if err := d.db.QueryRowContext(ctx, query).Scan(&version); err != nil {
 		if err == sql.ErrNoRows {
 			return "", "", common.FormatDBErrorEmptyRowWithQuery(query)
 		}
@@ -152,12 +152,12 @@ func parseVersion(version string) (string, string, error) {
 }
 
 // Execute executes a SQL statement.
-func (driver *Driver) Execute(ctx context.Context, statement string, _ db.ExecuteOptions) (int64, error) {
+func (d *Driver) Execute(ctx context.Context, statement string, _ db.ExecuteOptions) (int64, error) {
 	statement, err := mysqlparser.DealWithDelimiter(statement)
 	if err != nil {
 		return 0, errors.Wrapf(err, "failed to deal with delimiter")
 	}
-	conn, err := driver.db.Conn(ctx)
+	conn, err := d.db.Conn(ctx)
 	if err != nil {
 		return 0, err
 	}
@@ -179,7 +179,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ db.Execut
 	if err != nil {
 		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
 			slog.Info("cancel connection", slog.String("connectionID", connectionID))
-			if err := driver.StopConnectionByID(connectionID); err != nil {
+			if err := d.StopConnectionByID(connectionID); err != nil {
 				slog.Error("failed to cancel connection", slog.String("connectionID", connectionID), log.BBError(err))
 			}
 		}
@@ -199,7 +199,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ db.Execut
 }
 
 // QueryConn queries a SQL statement in a given connection.
-func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
+func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
 	singleSQLs, err := base.SplitMultiSQL(storepb.Engine_MYSQL, statement)
 	if err != nil {
 		return nil, err
@@ -263,7 +263,7 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 		if err != nil {
 			if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
 				slog.Info("cancel connection", slog.String("connectionID", connectionID))
-				if err := driver.StopConnectionByID(connectionID); err != nil {
+				if err := d.StopConnectionByID(connectionID); err != nil {
 					slog.Error("failed to cancel connection", slog.String("connectionID", connectionID), log.BBError(err))
 				}
 			}
@@ -284,8 +284,8 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 	return results, nil
 }
 
-func (driver *Driver) StopConnectionByID(id string) error {
-	_, err := driver.db.Exec(fmt.Sprintf("KILL QUERY %s", id))
+func (d *Driver) StopConnectionByID(id string) error {
+	_, err := d.db.Exec(fmt.Sprintf("KILL QUERY %s", id))
 	return err
 }
 

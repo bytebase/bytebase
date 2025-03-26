@@ -1646,10 +1646,7 @@ func (diff *diffNode) addEnumValue(oldType *ast.CreateTypeStmt, newType *ast.Cre
 	}
 
 	firstOldLabelPos := 0
-	for {
-		if newEnum.LabelList[firstOldLabelPos] == oldEnum.LabelList[0] {
-			break
-		}
+	for newEnum.LabelList[firstOldLabelPos] != oldEnum.LabelList[0] {
 		firstOldLabelPos++
 	}
 

@@ -12,9 +12,9 @@ import (
 )
 
 // Dump dumps the database.
-func (driver *Driver) Dump(ctx context.Context, w io.Writer, _ *storepb.DatabaseSchemaMetadata) error {
+func (d *Driver) Dump(ctx context.Context, w io.Writer, _ *storepb.DatabaseSchemaMetadata) error {
 	sb := &strings.Builder{}
-	if err := crdb.ExecuteTx(ctx, driver.db, &sql.TxOptions{
+	if err := crdb.ExecuteTx(ctx, d.db, &sql.TxOptions{
 		ReadOnly: true,
 	}, func(txn *sql.Tx) error {
 		createSchemas, err := dumpCreateSchemas(ctx, txn)

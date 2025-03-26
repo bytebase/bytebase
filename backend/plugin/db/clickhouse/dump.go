@@ -33,14 +33,14 @@ const (
 )
 
 // Dump dumps the database.
-func (driver *Driver) Dump(ctx context.Context, out io.Writer, _ *storepb.DatabaseSchemaMetadata) error {
-	txn, err := driver.db.BeginTx(ctx, &sql.TxOptions{})
+func (d *Driver) Dump(ctx context.Context, out io.Writer, _ *storepb.DatabaseSchemaMetadata) error {
+	txn, err := d.db.BeginTx(ctx, &sql.TxOptions{})
 	if err != nil {
 		return err
 	}
 	defer txn.Rollback()
 
-	if err := dumpTxn(ctx, txn, driver.databaseName, out); err != nil {
+	if err := dumpTxn(ctx, txn, d.databaseName, out); err != nil {
 		return err
 	}
 
@@ -77,7 +77,7 @@ func dumpTxn(ctx context.Context, txn *sql.Tx, database string, out io.Writer) e
 		return errors.Wrap(err, "failed to get databases")
 	}
 
-	var dumpableDbNames []string
+	var dumpableDBNames []string
 	if database != "" {
 		exist := false
 		for _, n := range dbNames {
@@ -89,19 +89,19 @@ func dumpTxn(ctx context.Context, txn *sql.Tx, database string, out io.Writer) e
 		if !exist {
 			return common.Errorf(common.NotFound, "database %s not found", database)
 		}
-		dumpableDbNames = []string{database}
+		dumpableDBNames = []string{database}
 	} else {
 		for _, dbName := range dbNames {
 			if systemDatabases[dbName] {
 				continue
 			}
-			dumpableDbNames = append(dumpableDbNames, dbName)
+			dumpableDBNames = append(dumpableDBNames, dbName)
 		}
 	}
 
-	for _, dbName := range dumpableDbNames {
+	for _, dbName := range dumpableDBNames {
 		// Include "USE DATABASE xxx" if dumping multiple databases.
-		if len(dumpableDbNames) > 1 {
+		if len(dumpableDBNames) > 1 {
 			// Database header.
 			header := fmt.Sprintf(databaseHeaderFmt, dbName)
 			if _, err := io.WriteString(out, header); err != nil {

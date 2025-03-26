@@ -43,7 +43,7 @@ func newDriver(db.DriverConfig) db.Driver {
 }
 
 // Open opens a DM driver.
-func (driver *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
+func (d *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
 	dsn := fmt.Sprintf("dm://%s:%s@%s:%s", config.DataSource.Username, config.Password, config.DataSource.Host, config.DataSource.Port)
 	if config.ConnectionContext.DatabaseName != "" {
 		dsn = fmt.Sprintf("%s?schema=%s", dsn, config.ConnectionContext.DatabaseName)
@@ -52,31 +52,31 @@ func (driver *Driver) Open(_ context.Context, _ storepb.Engine, config db.Connec
 	if err != nil {
 		return nil, err
 	}
-	driver.db = db
-	driver.databaseName = config.ConnectionContext.DatabaseName
-	return driver, nil
+	d.db = db
+	d.databaseName = config.ConnectionContext.DatabaseName
+	return d, nil
 }
 
 // Close closes the driver.
-func (driver *Driver) Close(_ context.Context) error {
-	return driver.db.Close()
+func (d *Driver) Close(_ context.Context) error {
+	return d.db.Close()
 }
 
 // Ping pings the database.
-func (driver *Driver) Ping(ctx context.Context) error {
-	return driver.db.PingContext(ctx)
+func (d *Driver) Ping(ctx context.Context) error {
+	return d.db.PingContext(ctx)
 }
 
 // GetDB gets the database.
-func (driver *Driver) GetDB() *sql.DB {
-	return driver.db
+func (d *Driver) GetDB() *sql.DB {
+	return d.db
 }
 
 // Execute executes the migration, `beforeCommitTxFunc` will be called before transaction commit and after executing `statement`.
 //
 // Callers can use `beforeCommitTx` to do some extra work before transaction commit, like get the transaction id.
 // Any error returned by `beforeCommitTx` will rollback the transaction, so it is the callers' responsibility to return nil if the error occurs in `beforeCommitTx` is not fatal.
-func (driver *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
+func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
 	if opts.CreateDatabase {
 		return 0, errors.New("create database is not supported for DM")
 	}
@@ -91,7 +91,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 		return 0, nil
 	}
 
-	conn, err := driver.db.Conn(ctx)
+	conn, err := d.db.Conn(ctx)
 	if err != nil {
 		return 0, errors.Wrapf(err, "failed to get connection")
 	}

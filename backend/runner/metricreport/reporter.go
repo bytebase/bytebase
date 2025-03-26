@@ -165,8 +165,8 @@ func (m *Reporter) identify(ctx context.Context) (string, error) {
 	subscriptionStartDate := ""
 	subscriptionEndDate := ""
 	if subscription.Plan != api.FREE {
-		subscriptionStartDate = time.Unix(subscription.StartedTs, 0).Format(time.RFC3339)
-		subscriptionEndDate = time.Unix(subscription.ExpiresTs, 0).Format(time.RFC3339)
+		subscriptionStartDate = time.Unix(subscription.StartedTS, 0).Format(time.RFC3339)
+		subscriptionEndDate = time.Unix(subscription.ExpiresTS, 0).Format(time.RFC3339)
 	}
 
 	user, err := m.store.GetUserByID(ctx, api.PrincipalIDForFirstUser)

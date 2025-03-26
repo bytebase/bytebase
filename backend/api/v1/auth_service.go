@@ -72,10 +72,7 @@ func NewAuthService(store *store.Store, secret string, licenseService enterprise
 // Login is the auth login method including SSO.
 func (s *AuthService) Login(ctx context.Context, request *v1pb.LoginRequest) (*v1pb.LoginResponse, error) {
 	var loginUser *store.UserMessage
-	mfaSecondLogin := false
-	if request.MfaTempToken != nil && *request.MfaTempToken != "" {
-		mfaSecondLogin = true
-	}
+	mfaSecondLogin := request.MfaTempToken != nil && *request.MfaTempToken != ""
 	loginViaIDP := request.GetIdpName() != ""
 
 	response := &v1pb.LoginResponse{}
