@@ -41,7 +41,7 @@
       <BBTableCell v-if="showVisibleColumn">
         {{ index.visible }}
       </BBTableCell>
-      <BBTableCell>
+      <BBTableCell v-if="showCommentColumn">
         {{ index.comment }}
       </BBTableCell>
     </template>

@@ -1055,6 +1055,9 @@
     },
     "schema": {
       "default": "デフォルト"
+    },
+    "catalog": {
+      "description": "テーブルカタログを編集してアップロードします。"
     }
   },
   "instance": {

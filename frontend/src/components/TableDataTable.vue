@@ -18,6 +18,10 @@
     :schema-name="schemaName"
     :table-name="state.selectedTableName ?? ''"
     :classification-config="classificationConfig"
+    :allow-set-classification="!setClassificationFromComment"
+    @apply-classification="
+      (table: string, id: string) => onClassificationIdApply(table, id)
+    "
     @dismiss="state.selectedTableName = undefined"
   />
 </template>
