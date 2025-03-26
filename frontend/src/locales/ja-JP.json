@@ -1845,7 +1845,13 @@
       "contact-the-admin-to-grant-access": "管理者に連絡してアクセスを許可してください。"
     },
     "upload-file": "ファイルをアップロードする",
-    "copy-selected-results": "選択したデータを{action}または{button}でコピーします"
+    "copy-selected-results": "選択したデータを{action}または{button}でコピーします",
+    "binary-format": "バイナリ形式",
+    "format-default": "デフォルト",
+    "hex-format": "16進形式",
+    "text-format": "テキスト形式",
+    "boolean-format": "ブール形式",
+    "column-display-format": "列表示形式"
   },
   "schema-editor": {
     "self": "スキーマエディタ",

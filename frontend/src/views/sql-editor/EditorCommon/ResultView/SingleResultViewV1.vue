@@ -122,6 +122,7 @@
         :offset="pageIndex * pageSize"
         :is-sensitive-column="isSensitiveColumn"
         :is-column-missing-sensitive="isColumnMissingSensitive"
+        :column-type-names="props.result.columnTypeNames"
       />
     </div>
 
@@ -341,10 +342,15 @@ const columns = computed(() => {
   return props.result.columnNames.map<ColumnDef<QueryRow, RowValue>>(
     (columnName, index) => {
       const columnType = props.result.columnTypeNames[index] as string;
+      
       return {
         id: `${columnName}@${index}`,
         accessorFn: (item) => item.values[index],
         header: columnName,
+        meta: {
+          // Store column type in meta for easy access by other components
+          columnType: columnType
+        },
         sortingFn: (rowA, rowB) => {
           return compareQueryRowValues(
             columnType,

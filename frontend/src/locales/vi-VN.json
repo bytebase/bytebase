@@ -1733,6 +1733,10 @@
     "vertical-display": "Hiển thị dọc",
     "no-history-found": "Không tìm thấy lịch sử",
     "search-history": "Tìm kiếm Lịch sử",
+    "binary-format": "Định dạng nhị phân",
+    "hex-format": "Định dạng thập lục phân",
+    "boolean-format": "Định dạng Boolean",
+    "text-format": "Định dạng văn bản",
     "hint-tips": {
       "confirm-to-close-unsaved-sheet": {
         "title": "Đóng trang tính chưa lưu?",
@@ -1845,7 +1849,9 @@
       "contact-the-admin-to-grant-access": "Liên hệ với quản trị viên để cấp quyền truy cập."
     },
     "upload-file": "Tải lên tệp",
-    "copy-selected-results": "Sao chép dữ liệu đã chọn bằng {action} hoặc {button}"
+    "copy-selected-results": "Sao chép dữ liệu đã chọn bằng {action} hoặc {button}",
+    "format-default": "Mặc định",
+    "column-display-format": "Định dạng hiển thị cột"
   },
   "schema-editor": {
     "self": "Trình soạn thảo lược đồ",

@@ -64,6 +64,17 @@
                   header.column.getToggleSortingHandler()?.($event)
                 "
               />
+              
+              <!-- Add binary format button if this column has binary data -->
+              <BinaryFormatButton
+                v-if="isColumnWithBinaryData(header.index)"
+                :column-index="header.index"
+                :column-format="getColumnFormatOverride(header.index)"
+                :server-format="getColumnServerFormat(header.index)"
+                :has-single-bit-values="hasColumnSingleBitValues(header.index)"
+                @update:format="setColumnFormat(header.index, $event)"
+                @click.stop
+              />
             </div>
 
             <!-- The drag-to-resize handler -->
@@ -96,6 +107,8 @@
               :row-index="offset + rowIndex"
               :col-index="cellIndex"
               :allow-select="true"
+              :column-format-override="getColumnFormatOverride(cellIndex)"
+              :column-type="props.columnTypeNames?.[cellIndex]"
             />
             <div
               v-if="cellIndex === 0 && !selectionDisabled"
@@ -129,11 +142,12 @@ import {
   FeatureBadgeForInstanceLicense,
 } from "@/components/FeatureGuard";
 import { useSubscriptionV1Store } from "@/store";
-import type { QueryRow, RowValue } from "@/types/proto/v1/sql_service";
+import { type QueryRow, type RowValue } from "@/types/proto/v1/sql_service";
 import { useSQLResultViewContext } from "../context";
 import TableCell from "./TableCell.vue";
 import ColumnSortedIcon from "./common/ColumnSortedIcon.vue";
 import SensitiveDataIcon from "./common/SensitiveDataIcon.vue";
+import BinaryFormatButton from "./common/BinaryFormatButton.vue";
 import { useSelectionContext } from "./common/selection-logic";
 import useTableColumnWidthLogic from "./useTableResize";
 
@@ -144,6 +158,7 @@ const props = defineProps<{
   isSensitiveColumn: (index: number) => boolean;
   isColumnMissingSensitive: (index: number) => boolean;
   maxHeight?: number;
+  columnTypeNames?: string[]; // Column type names from QueryResult
 }>();
 
 const {
@@ -170,6 +185,155 @@ const hasSensitiveFeature = computed(() => {
 });
 
 const rows = computed(() => props.table.getRowModel().rows);
+
+// Column format overrides - map of column index to format
+const columnFormatOverrides = ref<Map<number, string | null>>(new Map());
+
+// Check if a column contains any binary data
+const isColumnWithBinaryData = (columnIndex: number): boolean => {
+  const columnRows = props.table.getPrePaginationRowModel().rows;
+  
+  // Check each row in the column for binary data
+  for (const row of columnRows) {
+    const cell = row.getVisibleCells()[columnIndex];
+    if (!cell) continue;
+    
+    const value = cell.getValue<RowValue>();
+    if (value?.bytesValue) {
+      return true;
+    }
+  }
+  
+  return false;
+};
+
+// Determine the suitable format for a column based on column type and content
+const getColumnServerFormat = (columnIndex: number): string | null => {
+  // Get column type name from direct columnTypeNames prop
+  let columnType = '';
+  
+  // Use column type names from props
+  if (props.columnTypeNames && columnIndex < props.columnTypeNames.length) {
+    columnType = props.columnTypeNames[columnIndex].toLowerCase();
+  }
+  
+  // Default format based on column type (default to HEX)
+  let defaultFormat = "HEX";
+  
+  // Detect BIT column types (bit, varbit, bit varying) - for binary format display
+  const isBitColumn = (
+    // Generic bit types
+    columnType === 'bit' ||
+    columnType.startsWith('bit(') ||
+    (columnType.includes('bit') && !columnType.includes('binary')) ||
+    
+    // PostgreSQL bit types
+    columnType === 'varbit' ||
+    columnType === 'bit varying'
+  );
+    
+  // Detect BINARY column types (binary, varbinary, bytea, blob, etc) - for hex format display
+  const isBinaryColumn = (
+    // Generic binary types
+    columnType === 'binary' ||
+    columnType.includes('binary') || 
+    
+    // MySQL/MariaDB binary types
+    columnType.startsWith('binary(') ||
+    columnType.startsWith('varbinary') ||
+    columnType.includes('blob') ||
+    columnType === 'longblob' ||
+    columnType === 'mediumblob' ||
+    columnType === 'tinyblob' ||
+    
+    // PostgreSQL binary type
+    columnType === 'bytea' ||
+    
+    // SQL Server binary types
+    columnType === 'image' ||
+    columnType === 'varbinary(max)' ||
+    
+    // Oracle binary types
+    columnType === 'raw' ||
+    columnType === 'long raw'
+  )
+    
+  // BIT columns default to binary format
+  if (isBitColumn) {
+    defaultFormat = "BINARY";
+  }
+  
+  // BINARY/VARBINARY/BLOB columns default to HEX format
+  if (isBinaryColumn) {
+    defaultFormat = "HEX";
+  }
+  
+  const columnRows = props.table.getPrePaginationRowModel().rows;
+  
+  // Look through rows to find byte values and determine format
+  for (const row of columnRows) {
+    const cell = row.getVisibleCells()[columnIndex];
+    if (!cell) continue;
+    
+    const value = cell.getValue<RowValue>();
+    if (value?.bytesValue) {
+      // Get default format based on content
+      // Ensure bytesValue exists before converting to array
+      const byteArray = value.bytesValue ? Array.from(value.bytesValue) : [];
+      
+      // For single byte values (could be boolean)
+      if (byteArray.length === 1 && (byteArray[0] === 0 || byteArray[0] === 1)) {
+        return "BOOLEAN";
+      }
+      
+      // Check if it's readable text
+      const isReadableText = byteArray.every(byte => byte >= 32 && byte <= 126);
+      if (isReadableText) {
+        return "TEXT";
+      }
+      
+      // Return default format based on column type
+      return defaultFormat;
+    }
+  }
+  
+  return null;
+};
+
+// Check if a column has any single-bit values
+const hasColumnSingleBitValues = (columnIndex: number): boolean => {
+  const columnRows = props.table.getPrePaginationRowModel().rows;
+  
+  // Check if any row in this column has a single-bit value
+  for (const row of columnRows) {
+    const cell = row.getVisibleCells()[columnIndex];
+    if (!cell) continue;
+    
+    const value = cell.getValue<RowValue>();
+    if (value?.bytesValue?.length === 1) {
+      return true;
+    }
+  }
+  
+  return false;
+};
+
+// Get the current format override for a column
+const getColumnFormatOverride = (columnIndex: number): string | null => {
+  return columnFormatOverrides.value.get(columnIndex) || null;
+};
+
+// Set the format for a column
+const setColumnFormat = (columnIndex: number, format: string | null) => {
+  if (format === null) {
+    columnFormatOverrides.value.delete(columnIndex);
+  } else {
+    columnFormatOverrides.value.set(columnIndex, format);
+  }
+  
+  // Force a re-render
+  columnFormatOverrides.value = new Map(columnFormatOverrides.value);
+};
 
 onMounted(() => {
   nextTick(() => {
