@@ -46,12 +46,13 @@ import {
   getGroupEmailInBinding,
   groupBindingPrefix,
   isValidDatabaseName,
+  type ComposedProject,
 } from "@/types";
 import { Expr } from "@/types/proto/google/type/expr";
 import { MaskingExceptionPolicy_MaskingException_Action } from "@/types/proto/v1/org_policy_service";
 import type { MaskingExceptionPolicy_MaskingException } from "@/types/proto/v1/org_policy_service";
 import { PolicyType } from "@/types/proto/v1/org_policy_service";
-import { autoDatabaseRoute, hasWorkspacePermissionV2 } from "@/utils";
+import { autoDatabaseRoute, hasProjectPermissionV2 } from "@/utils";
 import {
   type ConditionExpression,
   batchConvertFromCELString,
@@ -68,8 +69,7 @@ interface LocalState {
 const props = defineProps<{
   size: "small" | "medium";
   disabled: boolean;
-  // project full name
-  project: string;
+  project: ComposedProject;
   showDatabaseColumn: boolean;
   filterAccessUser: (accessUser: AccessUser) => boolean;
 }>();
@@ -88,12 +88,12 @@ const policyStore = usePolicyV1Store();
 const $dialog = useDialog();
 
 const hasPermission = computed(() => {
-  return hasWorkspacePermissionV2("bb.policies.update");
+  return hasProjectPermissionV2(props.project, "bb.policies.update");
 });
 
 const { policy, ready } = usePolicyByParentAndType(
   computed(() => ({
-    parentPath: props.project,
+    parentPath: props.project.name,
     policyType: PolicyType.MASKING_EXCEPTION,
   }))
 );
