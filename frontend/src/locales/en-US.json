@@ -224,7 +224,8 @@
     "title": "Title",
     "catalog": "Catalog",
     "summary": "Summary",
-    "errors": "Errors"
+    "errors": "Errors",
+    "text-wrap": "Text wrap"
   },
   "error-page": {
     "go-back-home": "Go back home"

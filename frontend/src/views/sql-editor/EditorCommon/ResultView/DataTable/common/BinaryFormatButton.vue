@@ -49,8 +49,7 @@
 <script setup lang="ts">
 import { Code as IconCode } from "lucide-vue-next";
 import { NButton, NPopover, NRadioGroup, NRadio } from "naive-ui";
-import { computed, ref } from "vue";
-import { RowValue_ByteData_DisplayFormat } from "@/types/proto/v1/sql_service";
+import { computed } from "vue";
 
 // Event interface
 const emit = defineEmits<{
