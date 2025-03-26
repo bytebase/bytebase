@@ -432,7 +432,6 @@ const hasDatabaseCatalogPermission = computed(() => {
 watch(
   () => tableCatalog.value,
   (catalog) => {
-    console.log(catalog);
     if (catalog) {
       state.tableCatalog = cloneDeep(catalog);
       // clear
