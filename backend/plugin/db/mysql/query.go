@@ -72,7 +72,44 @@ func convertValue(typeName string, columnType *sql.ColumnType, value any) *v1pb.
 		}
 	case *[]byte:
 		if len(*raw) > 0 {
+			// Special handling for different binary types
+			format := v1pb.RowValue_ByteData_BINARY
+
+			switch typeName {
+			case "BIT":
+				// For MySQL BIT type, we can check the length of raw data
+				// BIT(1) is typically used for boolean values
+				if len(*raw) == 1 && ((*raw)[0] == 0 || (*raw)[0] == 1) {
+					format = v1pb.RowValue_ByteData_BOOLEAN
+				}
+			case "BINARY", "VARBINARY":
+				// Try to detect if it's readable text
+				if isReadableText(*raw) {
+					format = v1pb.RowValue_ByteData_TEXT
+				} else {
+					format = v1pb.RowValue_ByteData_HEX
+				}
+			}
+
+			// Check TINYINT(1) which is often used as boolean in MySQL
+			if typeName == "TINYINT" && len(*raw) == 1 && ((*raw)[0] == 0 || (*raw)[0] == 1) {
+				columnTypeName := columnType.DatabaseTypeName()
+				if columnTypeName == "TINYINT" {
+					// Try to check if it's TINYINT(1) by looking at the type name
+					fmt.Println(columnType)
+					typeNameWithLength := columnType.DatabaseTypeName()
+					if typeNameWithLength == "tinyint(1)" || typeNameWithLength == "TINYINT(1)" {
+						format = v1pb.RowValue_ByteData_BOOLEAN
+					}
+				}
+			}
+
 			return &v1pb.RowValue{
+				Kind: &v1pb.RowValue_ByteDataValue{
+					ByteDataValue: &v1pb.RowValue_ByteData{
+						Value:         *raw,
+						DisplayFormat: format,
+					},
 				Kind: &v1pb.RowValue_ByteDataValue{
 					ByteDataValue: &v1pb.RowValue_ByteData{
 						Value: *raw,
@@ -171,4 +208,15 @@ func (r *mysqlRewriter) EnterQueryExpression(ctx *mysql.QueryExpressionContext) 
 			r.rewriter.InsertAfterDefault(ctx.QueryExpressionParens().GetStop().GetTokenIndex(), fmt.Sprintf(" LIMIT %d", r.limitCount))
 		}
 	}
+}
+
+// Helper function to determine if binary data is readable text
+func isReadableText(data []byte) bool {
+	// Basic check: Contains only printable ASCII characters
+	for _, b := range data {
+		if b < 32 || b > 126 {
+			return false
+		}
+	}
+	return true
 }

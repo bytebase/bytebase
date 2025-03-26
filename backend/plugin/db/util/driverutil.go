@@ -115,7 +115,7 @@ func MakeCommonValueByTypeName(typeName string, _ *sql.ColumnType) any {
 	}
 }
 
-func ConvertCommonValue(typeName string, _ *sql.ColumnType, value any) *v1pb.RowValue {
+func ConvertCommonValue(typeName string, columnType *sql.ColumnType, value any) *v1pb.RowValue {
 	switch raw := value.(type) {
 	case *sql.NullString:
 		if raw.Valid {
@@ -135,33 +135,6 @@ func ConvertCommonValue(typeName string, _ *sql.ColumnType, value any) *v1pb.Row
 		}
 	case *[]byte:
 		if len(*raw) > 0 {
-			// Use ByteData with appropriate format based on data type and content
-			format := v1pb.RowValue_ByteData_BINARY
-
-			switch typeName {
-			case "BIT", "VARBIT":
-				// For BIT type, if it's a single bit, display as boolean
-				if len(*raw) == 1 && ((*raw)[0] == 0 || (*raw)[0] == 1) {
-					format = v1pb.RowValue_ByteData_BOOLEAN
-				}
-			case "BINARY", "VARBINARY":
-				// For binary types, try to detect if it's readable text
-				if isReadableText(*raw) {
-					format = v1pb.RowValue_ByteData_TEXT
-				} else {
-					format = v1pb.RowValue_ByteData_HEX
-				}
-			default:
-				// For other types containing binary data
-				if isReadableText(*raw) {
-					format = v1pb.RowValue_ByteData_TEXT
-				} else if len(*raw) == 1 && ((*raw)[0] == 0 || (*raw)[0] == 1) {
-					format = v1pb.RowValue_ByteData_BOOLEAN
-				} else {
-					format = v1pb.RowValue_ByteData_HEX
-				}
-			}
-
 			return &v1pb.RowValue{
 				Kind: &v1pb.RowValue_ByteDataValue{
 					ByteDataValue: &v1pb.RowValue_ByteData{

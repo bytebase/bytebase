@@ -170,10 +170,9 @@ import {
   ClipboardIcon,
   BracesIcon,
   WrapTextIcon,
-  Code as Code2Icon,
 } from "lucide-vue-next";
-import { NButton, NPopover, NScrollbar, NTooltip, NRadioGroup, NRadio } from "naive-ui";
-import { computed, nextTick, ref } from "vue";
+import { NButton, NPopover, NScrollbar, NTooltip } from "naive-ui";
+import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { DrawerContent } from "@/components/v2";
 import { pushNotification } from "@/store";
@@ -194,8 +193,7 @@ const wrap = useLocalStorage<boolean>(
   true
 );
 
-// Get the current value being displayed first
-const rawValue = computed(() => {
+const content = computed(() => {
   const { row, col, table } = detail.value;
   if (!table) return undefined;
 
@@ -203,111 +201,8 @@ const rawValue = computed(() => {
     .getPrePaginationRowModel()
     .rows[row]?.getVisibleCells()
     [col]?.getValue<RowValue>();
-});
 
-// Get the server-provided format
-const getServerFormat = (): string => {
-  if (!rawValue.value?.byteDataValue) return "BINARY";
-  
-  // If it has a display format already specified, use that
-  if (rawValue.value.byteDataValue.displayFormat) {
-    return rawValue.value.byteDataValue.displayFormat;
-  }
-  
-  // If no format is specified, determine intelligently based on data
-  const byteArray = Array.from(rawValue.value.byteDataValue.value);
-  
-  // For single byte values (could be boolean)
-  if (byteArray.length === 1 && (byteArray[0] === 0 || byteArray[0] === 1)) {
-    return "BOOLEAN";
-  }
-  
-  // Check if it's readable text
-  const isReadableText = byteArray.every(byte => byte >= 32 && byte <= 126);
-  if (isReadableText) {
-    return "TEXT";
-  }
-  
-  // Default to HEX for most binary data as it's more compact than binary
-  return "HEX";
-};
-
-// Current display format (reactive to server changes)
-const serverFormat = computed(() => getServerFormat());
-
-// Create a ref for temporary format override
-const formatOverride = ref<string | null>(null);
-
-// The actual format to display
-const binaryFormat = computed(() => {
-  if (formatOverride.value === null) {
-    return "DEFAULT"; // No override, show as DEFAULT in radio group
-  }
-  return formatOverride.value;
-});
-
-// Check if the current value is binary data
-const isBinaryData = computed(() => {
-  if (!rawValue.value) return false;
-  return !!(rawValue.value.bytesValue || rawValue.value.byteDataValue);
-});
-
-// Check if it's a single bit value (for boolean display)
-const isSingleBitValue = computed(() => {
-  if (!rawValue.value) return false;
-  
-  if (rawValue.value.byteDataValue) {
-    return rawValue.value.byteDataValue.value.length === 1;
-  }
-  
-  if (rawValue.value.bytesValue) {
-    return rawValue.value.bytesValue.length === 1;
-  }
-  
-  return false;
-});
-
-// If it's binary data, create a synthetic ByteData value for display
-const formattedBinaryValue = computed(() => {
-  if (!rawValue.value || !isBinaryData.value) return rawValue.value;
-  
-  // Create a structured clone rather than using JSON to handle Uint8Array properly
-  const formattedValue = { ...rawValue.value };
-  
-  // Get the actual format to use - default to server format if showing DEFAULT
-  const formatToUse = formatOverride.value === null ? serverFormat.value : formatOverride.value;
-  
-  // If it's using the legacy bytesValue format
-  if (formattedValue.bytesValue) {
-    // Create a synthetic byteDataValue with the selected format
-    formattedValue.byteDataValue = {
-      value: formattedValue.bytesValue,
-      displayFormat: formatToUse as any
-    };
-    // Remove the legacy value to avoid conflicts
-    delete formattedValue.bytesValue;
-  } else if (formattedValue.byteDataValue) {
-    // Just update the display format, preserving the original value
-    formattedValue.byteDataValue = {
-      value: formattedValue.byteDataValue.value,
-      displayFormat: formatToUse as any
-    };
-  }
-  
-  return formattedValue;
-});
-
-// Apply formatting based on selected options
-const content = computed(() => {
-  if (!rawValue.value) return undefined;
-  
-  // If it's binary data, use the formatted version
-  if (isBinaryData.value) {
-    return String(extractSQLRowValuePlain(formattedBinaryValue.value));
-  }
-  
-  // Otherwise use the raw value
-  return String(extractSQLRowValuePlain(rawValue.value));
+  return String(extractSQLRowValuePlain(value));
 });
 
 const guessedIsJSON = computed(() => {

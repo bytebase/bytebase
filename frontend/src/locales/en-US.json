@@ -222,7 +222,6 @@
     "encoding": "Encoding",
     "finish": "Finish",
     "title": "Title",
-    "text-wrap": "Text wrap",
     "catalog": "Catalog",
     "summary": "Summary",
     "errors": "Errors"
@@ -1796,8 +1795,6 @@
     },
     "executing-query": "Executing query",
     "request-query": "Request query",
-    "previous-row": "Previous row",
-    "next-row": "Next row",
     "copy-success": "Copy success",
     "connect-in-new-tab": "Connect in new tab",
     "copy-name": "Copy name",
