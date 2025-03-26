@@ -225,7 +225,8 @@
     "text-wrap": "Ajuste de texto",
     "catalog": "Catálogo",
     "summary": "Resumen",
-    "errors": "Errores"
+    "errors": "Errores",
+    "removed": "Remoto"
   },
   "error-page": {
     "go-back-home": "Volver al inicio"
