@@ -1,6 +1,9 @@
 <template>
   <div v-if="allowEdit" class="flex justify-end">
-    <NPopconfirm v-if="allowUpdate" @positive-click="$emit('revoke-binding')">
+    <NPopconfirm
+      v-if="allowUpdate && binding.projectRoleBindings.length > 0"
+      @positive-click="$emit('revoke-binding')"
+    >
       <template #trigger>
         <NButton quaternary circle @click.stop>
           <template #icon>
