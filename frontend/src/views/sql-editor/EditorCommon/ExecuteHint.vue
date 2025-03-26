@@ -156,7 +156,7 @@ const gotoCreateIssue = async () => {
       issueSlug: "create",
     },
     query: {
-      template: "bb.issue.database.data.update", // Default to DDL issue template.
+      template: "bb.issue.database.data.update", // Default to DML issue template.
       name: `[${db.databaseName}] Update from SQL Editor`,
       databaseList: db.name,
       sqlStorageKey,
