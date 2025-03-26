@@ -149,12 +149,17 @@ const columns = computed(() => {
       resizable: true,
       width: 140,
       render: (column) => {
+        const columnCatalog = getColumnCatalog(
+          databaseCatalog.value,
+          props.schema,
+          props.table.name,
+          column.name
+        );
         return h(SemanticTypeCell, {
           database: props.database,
-          schema: props.schema,
-          table: props.table.name,
-          column: column.name,
+          semanticTypeId: columnCatalog.semanticType,
           readonly: !hasDatabaseCatalogPermission.value,
+          onApply: (id: string) => onSemanticTypeApply(column.name, id),
         });
       },
     },
@@ -288,6 +293,17 @@ const onClassificationIdApply = async (
     column,
     columnCatalog: { classification },
     notification: !classification ? "common.removed" : undefined,
+  });
+};
+
+const onSemanticTypeApply = async (column: string, semanticType: string) => {
+  await updateColumnCatalog({
+    database: props.database.name,
+    schema: props.schema,
+    table: props.table.name,
+    column,
+    columnCatalog: { semanticType },
+    notification: !semanticType ? "common.removed" : undefined,
   });
 };
 </script>

@@ -1055,6 +1055,9 @@
     },
     "schema": {
       "default": "默认"
+    },
+    "catalog": {
+      "description": "编辑并上传表的 Catalog"
     }
   },
   "instance": {

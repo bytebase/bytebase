@@ -122,10 +122,14 @@
                     {{ $t("database.classification.self") }}
                   </dt>
                   <dd class="mt-1 flex flex-row items-center">
-                    <ClassificationLevelBadge
+                    <ClassificationCell
                       :classification="tableCatalog.classification"
                       :classification-config="classificationConfig"
-                      placeholder="-"
+                      :readonly="!allowSetClassification"
+                      @apply="
+                        (id: string) =>
+                          $emit('apply-classification', tableName, id)
+                      "
                     />
                   </dd>
                 </div>
@@ -160,7 +164,9 @@
                   </dd>
                 </div>
 
-                <template v-if="hasCollationProperty(instanceEngine)">
+                <template
+                  v-if="instanceV1HasCollationAndCharacterSet(instanceEngine)"
+                >
                   <div class="col-span-1">
                     <dt class="text-sm font-medium text-control-light">
                       {{ $t("db.collation") }}
@@ -193,8 +199,11 @@
             />
           </div>
 
-          <div v-if="shouldShowColumnTable" class="mt-6 px-6">
-            <div class="mb-4 w-full flex flex-row justify-between items-center">
+          <div
+            v-if="instanceV1SupportsColumn(instanceEngine)"
+            class="mt-6 px-6 space-y-4"
+          >
+            <div class="w-full flex flex-row justify-between items-center">
               <div class="text-lg leading-6 font-medium text-main">
                 {{ $t("database.columns") }}
               </div>
@@ -218,8 +227,11 @@
             />
           </div>
 
-          <div v-if="instanceEngine !== Engine.SNOWFLAKE" class="mt-6 px-6">
-            <div class="text-lg leading-6 font-medium text-main mb-4">
+          <div
+            v-if="instanceV1SupportsIndex(instanceEngine)"
+            class="mt-6 px-6 space-y-4"
+          >
+            <div class="text-lg leading-6 font-medium text-main">
               {{ $t("database.indexes") }}
             </div>
             <IndexTable :database="database" :index-list="table.indexes" />
@@ -227,9 +239,9 @@
 
           <div
             v-if="instanceV1SupportsTrigger(instanceEngine)"
-            class="mt-6 px-6"
+            class="mt-6 px-6 space-y-4"
           >
-            <div class="text-lg leading-6 font-medium text-main mb-4">
+            <div class="text-lg leading-6 font-medium text-main">
               {{ $t("db.triggers") }}
             </div>
             <TriggerDataTable
@@ -239,6 +251,49 @@
               :trigger-list="table.triggers"
             />
           </div>
+
+          <div
+            v-if="instanceV1MaskingForNoSQL(instanceEngine)"
+            class="mt-6 px-6 space-y-4"
+          >
+            <div>
+              <div class="text-lg leading-6 font-medium text-main">
+                {{ $t("common.catalog") }}
+              </div>
+              <span class="text-sm text-gray-400 -translate-y-2">
+                {{ $t("db.catalog.description") }}
+                <a
+                  href="https://api.bytebase.com/#tag/databasecatalogservice/PATCH/v1/instances/{instance}/databases/{database}/catalog"
+                  target="__blank"
+                  class="normal-link"
+                >
+                  {{ $t("common.view-doc") }}
+                </a>
+              </span>
+            </div>
+            <NInput
+              type="textarea"
+              :autosize="{
+                minRows: 15,
+                maxRows: 50,
+              }"
+              :disabled="!hasDatabaseCatalogPermission"
+              :value="JSON.stringify(state.tableCatalog, null, 4)"
+              @update:value="onCatalogChange"
+            />
+            <div
+              v-if="!isEqual(state.tableCatalog, tableCatalog)"
+              class="w-full flex items-center justify-end space-x-2 mt-2"
+            >
+              <NButton
+                type="primary"
+                :loading="state.isUploading"
+                @click="onCatalogUpload"
+              >
+                {{ $t("common.upload") }}
+              </NButton>
+            </div>
+          </div>
         </main>
       </div>
     </DrawerContent>
@@ -247,10 +302,12 @@
 
 <script lang="ts" setup>
 import { computedAsync } from "@vueuse/core";
+import { cloneDeep, isEqual } from "lodash-es";
 import { CodeIcon } from "lucide-vue-next";
-import { NButton, NPopover } from "naive-ui";
-import { computed, reactive, ref } from "vue";
-import ClassificationLevelBadge from "@/components/SchemaTemplate/ClassificationLevelBadge.vue";
+import { NButton, NPopover, NInput } from "naive-ui";
+import { computed, reactive, ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
+import ClassificationCell from "@/components/ColumnDataTable/ClassificationCell.vue";
 import TableSchemaViewer from "@/components/TableSchemaViewer.vue";
 import {
   DatabaseV1Name,
@@ -266,18 +323,29 @@ import {
   useDatabaseCatalog,
   useDBSchemaV1Store,
   getTableCatalog,
+  pushNotification,
+  useDatabaseCatalogV1Store,
 } from "@/store";
 import { DEFAULT_PROJECT_NAME, defaultProject } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
+import {
+  TableCatalog,
+  ObjectSchema,
+  ObjectSchema_Type,
+  ObjectSchema_StructKind,
+} from "@/types/proto/v1/database_catalog_service";
 import type { DataClassificationSetting_DataClassificationConfig } from "@/types/proto/v1/setting_service";
 import {
   bytesToString,
-  hasCollationProperty,
+  instanceV1HasCollationAndCharacterSet,
   hasIndexSizeProperty,
   hasProjectPermissionV2,
   hasSchemaProperty,
   hasTableEngineProperty,
   instanceV1SupportsTrigger,
+  instanceV1SupportsColumn,
+  instanceV1SupportsIndex,
+  instanceV1MaskingForNoSQL,
   isDatabaseV1Queryable,
   supportGetStringSchema,
 } from "@/utils";
@@ -291,6 +359,8 @@ import MaskSpinner from "./misc/MaskSpinner.vue";
 interface LocalState {
   columnNameSearchKeyword: string;
   partitionTableNameSearchKeyword: string;
+  tableCatalog: TableCatalog;
+  isUploading: boolean;
 }
 
 const props = defineProps<{
@@ -299,18 +369,34 @@ const props = defineProps<{
   databaseName: string;
   schemaName: string;
   tableName: string;
+  allowSetClassification: boolean;
   classificationConfig?: DataClassificationSetting_DataClassificationConfig;
 }>();
 
-defineEmits(["dismiss"]);
+defineEmits<{
+  (event: "dismiss"): void;
+  (event: "apply-classification", table: string, id: string): void;
+}>();
 
+const { t } = useI18n();
 const databaseV1Store = useDatabaseV1Store();
 const dbSchemaStore = useDBSchemaV1Store();
+const catalogStore = useDatabaseCatalogV1Store();
+
 const state = reactive<LocalState>({
   columnNameSearchKeyword: "",
   partitionTableNameSearchKeyword: "",
+  tableCatalog: TableCatalog.fromPartial({
+    name: props.tableName,
+    objectSchema: ObjectSchema.fromPartial({
+      type: ObjectSchema_Type.OBJECT,
+      structKind: ObjectSchema_StructKind.fromPartial({}),
+    }),
+  }),
+  isUploading: false,
 });
 const isFetchingTableMetadata = ref(false);
+
 const table = computedAsync(
   async () => {
     const { databaseName, tableName, schemaName } = props;
@@ -335,6 +421,85 @@ const databaseCatalog = useDatabaseCatalog(props.databaseName, false);
 const tableCatalog = computed(() =>
   getTableCatalog(databaseCatalog.value, props.schemaName, props.tableName)
 );
+
+const hasDatabaseCatalogPermission = computed(() => {
+  return hasProjectPermissionV2(
+    database.value.projectEntity,
+    "bb.databaseCatalogs.update"
+  );
+});
+
+watch(
+  () => tableCatalog.value,
+  (catalog) => {
+    if (catalog) {
+      state.tableCatalog = cloneDeep(catalog);
+      // clear
+      state.tableCatalog.columns = undefined;
+      if (!state.tableCatalog.objectSchema) {
+        state.tableCatalog.objectSchema = ObjectSchema.fromPartial({
+          type: ObjectSchema_Type.OBJECT,
+          structKind: ObjectSchema_StructKind.fromPartial({}),
+        });
+      }
+    }
+  },
+  { immediate: true, deep: true }
+);
+
+const onCatalogChange = (value: string) => {
+  try {
+    const catalog = JSON.parse(value) as TableCatalog;
+    state.tableCatalog = catalog;
+  } catch (e) {
+    pushNotification({
+      module: "bytebase",
+      style: "WARN",
+      title: t("common.warning"),
+      description: `Failed to parse catalog with error: ${e}`,
+    });
+  }
+};
+
+const onCatalogUpload = async () => {
+  if (state.tableCatalog.name !== props.tableName) {
+    pushNotification({
+      module: "bytebase",
+      style: "CRITICAL",
+      title: t("common.error"),
+      description: `catalog name must be ${props.tableName}`,
+    });
+    return;
+  }
+  state.isUploading = true;
+
+  try {
+    const pendingUploadCatalog = cloneDeep(databaseCatalog.value);
+    for (const schemaCatalog of pendingUploadCatalog.schemas) {
+      if (schemaCatalog.name !== props.schemaName) {
+        continue;
+      }
+      const index = schemaCatalog.tables.findIndex(
+        (t) => t.name === props.tableName
+      );
+      if (index >= 0) {
+        schemaCatalog.tables[index] = state.tableCatalog;
+      } else {
+        schemaCatalog.tables.push(state.tableCatalog);
+      }
+      break;
+    }
+    await catalogStore.updateDatabaseCatalog(pendingUploadCatalog);
+
+    pushNotification({
+      module: "bytebase",
+      style: "SUCCESS",
+      title: t("common.updated"),
+    });
+  } finally {
+    state.isUploading = false;
+  }
+};
 
 const database = computed(() => {
   return databaseV1Store.getDatabaseByName(props.databaseName);
@@ -362,10 +527,6 @@ const hasPartitionTables = computed(() => {
 
 const shouldShowPartitionTablesDataTable = computed(() => {
   return hasPartitionTables.value;
-});
-
-const shouldShowColumnTable = computed(() => {
-  return instanceEngine.value !== Engine.MONGODB;
 });
 
 const getTableName = (tableName: string) => {
