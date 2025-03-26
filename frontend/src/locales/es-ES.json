@@ -1733,6 +1733,10 @@
     "vertical-display": "Pantalla vertical",
     "no-history-found": "No se encontró historial",
     "search-history": "Historial de búsqueda",
+    "binary-format": "Formato binario",
+    "hex-format": "Formato hexadecimal",
+    "boolean-format": "Formato booleano",
+    "text-format": "Formato de texto",
     "hint-tips": {
       "confirm-to-close-unsaved-sheet": {
         "title": "¿Cerrar la hoja no guardada?",
@@ -1845,7 +1849,9 @@
       "contact-the-admin-to-grant-access": "Póngase en contacto con el administrador para otorgar acceso."
     },
     "upload-file": "Subir archivo",
-    "copy-selected-results": "Copiar datos seleccionados por {action} o {button}"
+    "copy-selected-results": "Copiar datos seleccionados por {action} o {button}",
+    "format-default": "Por defecto",
+    "column-display-format": "Formato de visualización de columna"
   },
   "schema-editor": {
     "self": "Editor de esquema",
