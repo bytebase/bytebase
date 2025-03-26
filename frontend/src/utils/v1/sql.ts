@@ -28,50 +28,15 @@ export const extractSQLRowValuePlain = (value: RowValue | undefined) => {
     console.debug("mixed type in row value", value);
   }
   
-  // Handle ByteData value with display format information
-  if (value.byteDataValue) {
-    const byteArray = Array.from(value.byteDataValue.value);
-    
-    // If a display format is specified, use that format
-    if (value.byteDataValue.displayFormat) {
-      switch (value.byteDataValue.displayFormat) {
-        case 'BINARY': // Display as binary (0s and 1s)
-          const binaryString = byteArray
-            .map((byte) => byte.toString(2).padStart(8, "0"))
-            .join("")
-            .replace(/^0+/g, "");
-          return binaryString.length === 0 ? "0" : binaryString;
-          
-        case 'HEX': // Display as hexadecimal
-          return "0x" + byteArray
-            .map((byte) => byte.toString(16).toUpperCase().padStart(2, "0"))
-            .join("");
-            
-        case 'BOOLEAN': // Display as boolean
-          // For single bit/byte values, convert to boolean
-          if (byteArray.length === 1) {
-            return byteArray[0] === 1 ? "true" : "false";
-          }
-          // Fall back to hex for multi-byte
-          return "0x" + byteArray
-            .map((byte) => byte.toString(16).toUpperCase().padStart(2, "0"))
-            .join("");
-            
-        case 'TEXT': // Display as text if readable
-          try {
-            // Try to interpret as UTF-8 text
-            return new TextDecoder().decode(new Uint8Array(byteArray));
-          } catch {
-            // Fall back to hex if can't decode as text
-            return "0x" + byteArray
-              .map((byte) => byte.toString(16).toUpperCase().padStart(2, "0"))
-              .join("");
-          }
-      }
-    }
-    
-    // If no display format is specified or it's UNSPECIFIED, 
-    // intelligently determine format based on the data
+  // First check if there's a formatted stringValue which should take precedence
+  if (value.stringValue) {
+    return value.stringValue;
+  }
+  
+  // Handle binary data with auto-format detection
+  if (value.bytesValue) {
+    // Ensure bytesValue exists before converting to array
+    const byteArray = Array.from(value.bytesValue);
     
     // For single byte/bit values (could be boolean)
     if (byteArray.length === 1) {
@@ -91,20 +56,11 @@ export const extractSQLRowValuePlain = (value: RowValue | undefined) => {
       }
     }
     
-    // Default to hex for most binary data as it's more compact than binary
+    // The column type isn't available in this context
+    // Default to HEX format for most binary data as it's more compact
     return "0x" + byteArray
       .map((byte) => byte.toString(16).toUpperCase().padStart(2, "0"))
       .join("");
-  }
-  
-  // Legacy bytesValue handling
-  if (value.bytesValue) {
-    const byteArray = Array.from(value.bytesValue);
-    const binaryString = byteArray
-      .map((byte) => byte.toString(2).padStart(8, "0"))
-      .join("")
-      .replace(/^0+/g, "");
-    return binaryString.length === 0 ? "0" : binaryString;
   }
   
   if (value.timestampValue && value.timestampValue.googleTimestamp) {

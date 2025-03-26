@@ -136,10 +136,8 @@ func ConvertCommonValue(_ string, _ *sql.ColumnType, value any) *v1pb.RowValue {
 	case *[]byte:
 		if len(*raw) > 0 {
 			return &v1pb.RowValue{
-				Kind: &v1pb.RowValue_ByteDataValue{
-					ByteDataValue: &v1pb.RowValue_ByteData{
-						Value: *raw,
-					},
+				Kind: &v1pb.RowValue_BytesValue{
+					BytesValue: *raw,
 				},
 			}
 		}

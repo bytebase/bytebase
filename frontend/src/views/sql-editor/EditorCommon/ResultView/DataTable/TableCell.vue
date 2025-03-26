@@ -14,7 +14,7 @@
       v-html="html"
     ></div>
     <div class="absolute right-1 top-1/2 translate-y-[-45%] flex items-center gap-1">
-      <!-- Format indicator for ByteData - only show when no column format is set -->
+      <!-- Format button for binary data -->
       <NButton
         v-if="hasByteData && !props.columnFormatOverride"
         size="tiny"
@@ -66,7 +66,6 @@ import { computed, nextTick, ref } from "vue";
 import { useConnectionOfCurrentSQLEditorTab } from "@/store";
 import { Engine } from "@/types/proto/v1/common";
 import type { QueryRow, RowValue } from "@/types/proto/v1/sql_service";
-import { RowValue_ByteData_DisplayFormat } from "@/types/proto/v1/sql_service";
 import { extractSQLRowValuePlain, getHighlightHTMLByRegExp } from "@/utils";
 import { useSQLResultViewContext } from "../context";
 import { useSelectionContext } from "./common/selection-logic";
@@ -100,68 +99,22 @@ const showFormatMenu = ref(false);
 const dropdownX = ref(0);
 const dropdownY = ref(0);
 
-// Get the server-provided format
-const getServerFormat = (): string => {
-  if (!props.value.byteDataValue) return "BINARY";
-  
-  // If it has a display format already specified, use that
-  if (props.value.byteDataValue.displayFormat) {
-    return props.value.byteDataValue.displayFormat;
-  }
-  
-  // If no format is specified, determine intelligently based on data
-  const byteArray = Array.from(props.value.byteDataValue.value);
-  
-  // For single byte values (could be boolean)
-  if (byteArray.length === 1 && (byteArray[0] === 0 || byteArray[0] === 1)) {
-    return "BOOLEAN";
-  }
-  
-  // Check if it's readable text
-  const isReadableText = byteArray.every(byte => byte >= 32 && byte <= 126);
-  if (isReadableText) {
-    return "TEXT";
-  }
-  
-  // Default to HEX for most binary data as it's more compact than binary
-  return "HEX";
-};
-
-// Current display format (reactive to server changes)
-const serverFormat = computed(() => getServerFormat());
-
 // Create a ref for temporary format override
 const formatOverride = ref<string | null>(null);
-
-// The actual format to display - use column override, cell override, or server format
-const displayFormat = computed(() => {
-  // Column-level override takes precedence (if provided)
-  if (props.columnFormatOverride && props.columnFormatOverride !== "DEFAULT") {
-    return props.columnFormatOverride;
-  }
-  
-  // Cell-level override is next
-  if (formatOverride.value && formatOverride.value !== "DEFAULT") {
-    return formatOverride.value;
-  }
-  
-  // Fallback to server format
-  return serverFormat.value;
-});
 
 const allowSelect = computed(() => {
   return props.allowSelect && !selectionDisabled.value;
 });
 
-// Check if the value is ByteData
+// Check if the value is binary data
 const hasByteData = computed(() => {
-  return !!props.value.byteDataValue;
+  return !!props.value.bytesValue;
 });
 
-// Check if it's a single bit ByteData (for boolean display)
+// Check if it's a single bit value (for boolean display)
 const isSingleBitValue = computed(() => {
-  if (props.value.byteDataValue) {
-    return props.value.byteDataValue.value.length === 1;
+  if (props.value.bytesValue) {
+    return props.value.bytesValue.length === 1;
   }
   return false;
 });
@@ -268,33 +221,131 @@ const classes = computed(() => {
   return twMerge(classes);
 });
 
-// If it's ByteData, create a formatted value with the chosen format
-const formattedValue = computed(() => {
-  if (!hasByteData.value) return props.value;
+// Format the binary value based on selected format
+const formattedBinaryValue = computed(() => {
+  if (!props.value?.bytesValue) return props.value;
   
-  // Create a clone to avoid modifying the original
-  const formatted = { ...props.value };
+  // Deep clone the value to avoid mutating the original
+  const newValue = { ...props.value };
   
-  if (formatted.byteDataValue) {
-    // Create a new ByteData object with the same value but updated format
-    formatted.byteDataValue = {
-      value: formatted.byteDataValue.value,
-      displayFormat: displayFormat.value as RowValue_ByteData_DisplayFormat
-    };
+  // Determine the format to use - column override, cell override, or auto-detected format
+  let actualFormat = null;
+  
+  // If column has an override, use that
+  if (props.columnFormatOverride !== null && props.columnFormatOverride !== undefined) {
+    actualFormat = props.columnFormatOverride;
+  } 
+  // Otherwise use the cell's override if set
+  else if (formatOverride.value !== null) {
+    actualFormat = formatOverride.value;
+  }
+  // Otherwise use auto-detected format
+  else {
+    // Get column information if available (from table definition metadata)
+    const header = props.table?.getFlatHeaders().find(h => h.index === props.colIndex);
+    const columnType = header?.column?.columnDef?.meta?.columnType?.toString()?.toLowerCase() || '';
+    
+    // Default format based on column type
+    let defaultFormat = "BINARY";
+    
+    // Detect BIT column types - for binary format display (0s and 1s)
+    const isBitColumn = (
+      columnType === 'bit' ||
+      columnType.startsWith('bit(') ||
+      (columnType.includes('bit') && !columnType.includes('binary')) ||
+      columnType === 'varbit' ||
+      columnType === 'bit varying'
+    );
+    
+    // Detect BINARY column types - for hex format display (0x...)
+    const isBinaryColumn = (
+      columnType === 'binary' ||
+      columnType.includes('binary') ||
+      columnType.startsWith('binary(') ||
+      columnType.startsWith('varbinary') ||
+      columnType.includes('blob') ||
+      columnType === 'bytea'
+    );
+    
+    // Set default format based on column type
+    if (isBitColumn) {
+      defaultFormat = "BINARY";
+    } else if (isBinaryColumn) {
+      defaultFormat = "HEX";
+    }
+    
+    // Now also consider content-based auto-detection
+    const byteArray = newValue.bytesValue ? Array.from(newValue.bytesValue) : [];
+    
+    // For single bit values (could be boolean)
+    if (byteArray.length === 1 && (byteArray[0] === 0 || byteArray[0] === 1)) {
+      actualFormat = "BOOLEAN";
+    }
+    // Check if it's readable text
+    else if (byteArray.every(byte => byte >= 32 && byte <= 126)) {
+      actualFormat = "TEXT";
+    }
+    // Default to format based on column type
+    else {
+      actualFormat = defaultFormat;
+    }
   }
   
-  return formatted;
+  // Skip formatting for DEFAULT (auto) format
+  if (actualFormat === "DEFAULT") {
+    return newValue;
+  }
+  
+  // Ensure bytesValue exists before converting to array
+  const byteArray = newValue.bytesValue ? Array.from(newValue.bytesValue) : [];
+  
+  // Format based on selected format
+  switch (actualFormat) {
+    case "BINARY":
+      // Format as binary string without spaces
+      newValue.stringValue = byteArray
+        .map(byte => byte.toString(2).padStart(8, "0"))
+        .join("");
+      break;
+    case "HEX":
+      // Format as hex string
+      newValue.stringValue = "0x" + byteArray
+        .map(byte => byte.toString(16).toUpperCase().padStart(2, "0"))
+        .join("");
+      break;
+    case "TEXT":
+      // Format as text
+      try {
+        newValue.stringValue = new TextDecoder().decode(new Uint8Array(byteArray));
+      } catch {
+        // Fallback to binary if text decoding fails
+        newValue.stringValue = byteArray
+          .map(byte => byte.toString(2).padStart(8, "0"))
+          .join("");
+      }
+      break;
+    case "BOOLEAN":
+      // Only for single-byte values
+      if (byteArray.length === 1) {
+        newValue.stringValue = byteArray[0] === 1 ? "true" : "false";
+      } else {
+        // Fall back to BINARY for non-single-bit values
+        newValue.stringValue = byteArray
+          .map(byte => byte.toString(2).padStart(8, "0"))
+          .join("");
+      }
+      break;
+  }
+  
+  return newValue;
 });
 
 const html = computed(() => {
-  let value;
+  // If it's binary data, use the formatted version
+  const valueToRender = hasByteData.value ? formattedBinaryValue.value : props.value;
   
-  // Use the formatted value if it's ByteData
-  if (hasByteData.value) {
-    value = extractSQLRowValuePlain(formattedValue.value);
-  } else {
-    value = extractSQLRowValuePlain(props.value);
-  }
+  // Extract the display value
+  const value = extractSQLRowValuePlain(valueToRender);
   
   if (value === undefined) {
     return `<span class="text-gray-400 italic">UNSET</span>`;
@@ -352,7 +403,7 @@ const showFormatDropdown = (e: MouseEvent) => {
   showFormatMenu.value = true;
 };
 
-// Handle right-click context menu for ByteData
+// Handle right-click context menu for binary data
 const handleContextMenu = (e: MouseEvent) => {
   if (hasByteData.value) {
     showFormatDropdown(e);
@@ -372,8 +423,6 @@ const handleFormatSelect = (key: string) => {
   showFormatMenu.value = false;
   
   // Force recomputation of html
-  nextTick(() => {
-    // This empty callback just ensures the component re-renders
-  });
+  nextTick();
 };
 </script>

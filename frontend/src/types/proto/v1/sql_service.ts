@@ -239,11 +239,7 @@ export interface RowValue {
    * timestamp_tz_value is used for the timestamptz data type, which
    * accurately represents the timestamp with location information.
    */
-  timestampTzValue?:
-    | RowValue_TimestampTZ
-    | undefined;
-  /** byte_data_value is used for binary and bit data types with display format information */
-  byteDataValue?: RowValue_ByteData | undefined;
+  timestampTzValue?: RowValue_TimestampTZ | undefined;
 }
 
 export interface RowValue_Timestamp {
@@ -270,87 +266,6 @@ export interface RowValue_TimestampTZ {
   /** The offset is in seconds east of UTC */
   offset: number;
   accuracy: number;
-}
-
-/** ByteData is used to represent binary and bit data with display format information */
-export interface RowValue_ByteData {
-  /** The actual binary data */
-  value: Uint8Array;
-  displayFormat: RowValue_ByteData_DisplayFormat;
-}
-
-/** Indicates the preferred display format for the binary data */
-export enum RowValue_ByteData_DisplayFormat {
-  DISPLAY_FORMAT_UNSPECIFIED = "DISPLAY_FORMAT_UNSPECIFIED",
-  /** BINARY - Display as binary (0s and 1s) */
-  BINARY = "BINARY",
-  /** HEX - Display as hexadecimal */
-  HEX = "HEX",
-  /** BOOLEAN - Display as boolean (for single bit values) */
-  BOOLEAN = "BOOLEAN",
-  /** TEXT - Display as text (if it contains readable text) */
-  TEXT = "TEXT",
-  UNRECOGNIZED = "UNRECOGNIZED",
-}
-
-export function rowValue_ByteData_DisplayFormatFromJSON(object: any): RowValue_ByteData_DisplayFormat {
-  switch (object) {
-    case 0:
-    case "DISPLAY_FORMAT_UNSPECIFIED":
-      return RowValue_ByteData_DisplayFormat.DISPLAY_FORMAT_UNSPECIFIED;
-    case 1:
-    case "BINARY":
-      return RowValue_ByteData_DisplayFormat.BINARY;
-    case 2:
-    case "HEX":
-      return RowValue_ByteData_DisplayFormat.HEX;
-    case 3:
-    case "BOOLEAN":
-      return RowValue_ByteData_DisplayFormat.BOOLEAN;
-    case 4:
-    case "TEXT":
-      return RowValue_ByteData_DisplayFormat.TEXT;
-    case -1:
-    case "UNRECOGNIZED":
-    default:
-      return RowValue_ByteData_DisplayFormat.UNRECOGNIZED;
-  }
-}
-
-export function rowValue_ByteData_DisplayFormatToJSON(object: RowValue_ByteData_DisplayFormat): string {
-  switch (object) {
-    case RowValue_ByteData_DisplayFormat.DISPLAY_FORMAT_UNSPECIFIED:
-      return "DISPLAY_FORMAT_UNSPECIFIED";
-    case RowValue_ByteData_DisplayFormat.BINARY:
-      return "BINARY";
-    case RowValue_ByteData_DisplayFormat.HEX:
-      return "HEX";
-    case RowValue_ByteData_DisplayFormat.BOOLEAN:
-      return "BOOLEAN";
-    case RowValue_ByteData_DisplayFormat.TEXT:
-      return "TEXT";
-    case RowValue_ByteData_DisplayFormat.UNRECOGNIZED:
-    default:
-      return "UNRECOGNIZED";
-  }
-}
-
-export function rowValue_ByteData_DisplayFormatToNumber(object: RowValue_ByteData_DisplayFormat): number {
-  switch (object) {
-    case RowValue_ByteData_DisplayFormat.DISPLAY_FORMAT_UNSPECIFIED:
-      return 0;
-    case RowValue_ByteData_DisplayFormat.BINARY:
-      return 1;
-    case RowValue_ByteData_DisplayFormat.HEX:
-      return 2;
-    case RowValue_ByteData_DisplayFormat.BOOLEAN:
-      return 3;
-    case RowValue_ByteData_DisplayFormat.TEXT:
-      return 4;
-    case RowValue_ByteData_DisplayFormat.UNRECOGNIZED:
-    default:
-      return -1;
-  }
 }
 
 export interface Advice {
@@ -1911,7 +1826,6 @@ function createBaseRowValue(): RowValue {
     valueValue: undefined,
     timestampValue: undefined,
     timestampTzValue: undefined,
-    byteDataValue: undefined,
   };
 }
 
@@ -1955,9 +1869,6 @@ export const RowValue: MessageFns<RowValue> = {
     }
     if (message.timestampTzValue !== undefined) {
       RowValue_TimestampTZ.encode(message.timestampTzValue, writer.uint32(106).fork()).join();
-    }
-    if (message.byteDataValue !== undefined) {
-      RowValue_ByteData.encode(message.byteDataValue, writer.uint32(114).fork()).join();
     }
     return writer;
   },
@@ -2073,14 +1984,6 @@ export const RowValue: MessageFns<RowValue> = {
           message.timestampTzValue = RowValue_TimestampTZ.decode(reader, reader.uint32());
           continue;
         }
-        case 14: {
-          if (tag !== 114) {
-            break;
-          }
-
-          message.byteDataValue = RowValue_ByteData.decode(reader, reader.uint32());
-          continue;
-        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2107,7 +2010,6 @@ export const RowValue: MessageFns<RowValue> = {
       timestampTzValue: isSet(object.timestampTzValue)
         ? RowValue_TimestampTZ.fromJSON(object.timestampTzValue)
         : undefined,
-      byteDataValue: isSet(object.byteDataValue) ? RowValue_ByteData.fromJSON(object.byteDataValue) : undefined,
     };
   },
 
@@ -2152,9 +2054,6 @@ export const RowValue: MessageFns<RowValue> = {
     if (message.timestampTzValue !== undefined) {
       obj.timestampTzValue = RowValue_TimestampTZ.toJSON(message.timestampTzValue);
     }
-    if (message.byteDataValue !== undefined) {
-      obj.byteDataValue = RowValue_ByteData.toJSON(message.byteDataValue);
-    }
     return obj;
   },
 
@@ -2183,9 +2082,6 @@ export const RowValue: MessageFns<RowValue> = {
       : undefined;
     message.timestampTzValue = (object.timestampTzValue !== undefined && object.timestampTzValue !== null)
       ? RowValue_TimestampTZ.fromPartial(object.timestampTzValue)
-      : undefined;
-    message.byteDataValue = (object.byteDataValue !== undefined && object.byteDataValue !== null)
-      ? RowValue_ByteData.fromPartial(object.byteDataValue)
       : undefined;
     return message;
   },
@@ -2375,84 +2271,6 @@ export const RowValue_TimestampTZ: MessageFns<RowValue_TimestampTZ> = {
     message.zone = object.zone ?? "";
     message.offset = object.offset ?? 0;
     message.accuracy = object.accuracy ?? 0;
-    return message;
-  },
-};
-
-function createBaseRowValue_ByteData(): RowValue_ByteData {
-  return { value: new Uint8Array(0), displayFormat: RowValue_ByteData_DisplayFormat.DISPLAY_FORMAT_UNSPECIFIED };
-}
-
-export const RowValue_ByteData: MessageFns<RowValue_ByteData> = {
-  encode(message: RowValue_ByteData, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.value.length !== 0) {
-      writer.uint32(10).bytes(message.value);
-    }
-    if (message.displayFormat !== RowValue_ByteData_DisplayFormat.DISPLAY_FORMAT_UNSPECIFIED) {
-      writer.uint32(16).int32(rowValue_ByteData_DisplayFormatToNumber(message.displayFormat));
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): RowValue_ByteData {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseRowValue_ByteData();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.value = reader.bytes();
-          continue;
-        }
-        case 2: {
-          if (tag !== 16) {
-            break;
-          }
-
-          message.displayFormat = rowValue_ByteData_DisplayFormatFromJSON(reader.int32());
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): RowValue_ByteData {
-    return {
-      value: isSet(object.value) ? bytesFromBase64(object.value) : new Uint8Array(0),
-      displayFormat: isSet(object.displayFormat)
-        ? rowValue_ByteData_DisplayFormatFromJSON(object.displayFormat)
-        : RowValue_ByteData_DisplayFormat.DISPLAY_FORMAT_UNSPECIFIED,
-    };
-  },
-
-  toJSON(message: RowValue_ByteData): unknown {
-    const obj: any = {};
-    if (message.value.length !== 0) {
-      obj.value = base64FromBytes(message.value);
-    }
-    if (message.displayFormat !== RowValue_ByteData_DisplayFormat.DISPLAY_FORMAT_UNSPECIFIED) {
-      obj.displayFormat = rowValue_ByteData_DisplayFormatToJSON(message.displayFormat);
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<RowValue_ByteData>): RowValue_ByteData {
-    return RowValue_ByteData.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<RowValue_ByteData>): RowValue_ByteData {
-    const message = createBaseRowValue_ByteData();
-    message.value = object.value ?? new Uint8Array(0);
-    message.displayFormat = object.displayFormat ?? RowValue_ByteData_DisplayFormat.DISPLAY_FORMAT_UNSPECIFIED;
     return message;
   },
 };

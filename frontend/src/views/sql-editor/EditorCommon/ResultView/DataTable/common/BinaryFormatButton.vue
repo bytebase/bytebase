@@ -62,9 +62,9 @@ const props = defineProps<{
   columnIndex: number;
   // Current format override for the column
   columnFormat: string | null;
-  // Server-provided default format
+  // Auto-detected server format
   serverFormat: string | null;
-  // Whether this column contains any single-bit values
+  // Whether this column contains any single-bit values (for boolean option)
   hasSingleBitValues: boolean;
 }>();
 

@@ -2299,10 +2299,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.RowValue.ByteData"><span class="badge">M</span>RowValue.ByteData</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.RowValue.Timestamp"><span class="badge">M</span>RowValue.Timestamp</a>
                 </li>
               
@@ -2333,10 +2329,6 @@
               
                 <li>
                   <a href="#bytebase.v1.QueryOption.RedisRunCommandsOn"><span class="badge">E</span>QueryOption.RedisRunCommandsOn</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.RowValue.ByteData.DisplayFormat"><span class="badge">E</span>RowValue.ByteData.DisplayFormat</a>
                 </li>
               
               
@@ -25026,45 +25018,9 @@ timestamp missing location context. </p></td>
                   <td><a href="#bytebase.v1.RowValue.TimestampTZ">RowValue.TimestampTZ</a></td>
                   <td></td>
                   <td><p>timestamp_tz_value is used for the timestamptz data type, which
-accurately represents the timestamp with location information. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>byte_data_value</td>
-                  <td><a href="#bytebase.v1.RowValue.ByteData">RowValue.ByteData</a></td>
-                  <td></td>
-                  <td><p>byte_data_value is used for binary and bit data types with display format information </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
+accurately represents the timestamp with location information.
 
-          
-
-        
-      
-        <h3 id="bytebase.v1.RowValue.ByteData">RowValue.ByteData</h3>
-        <p>ByteData is used to represent binary and bit data with display format information</p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>value</td>
-                  <td><a href="#bytes">bytes</a></td>
-                  <td></td>
-                  <td><p>The actual binary data </p></td>
-                </tr>
-              
-                <tr>
-                  <td>display_format</td>
-                  <td><a href="#bytebase.v1.RowValue.ByteData.DisplayFormat">RowValue.ByteData.DisplayFormat</a></td>
-                  <td></td>
-                  <td><p> </p></td>
+byte_data_value is used for binary and bit data types with display format information </p></td>
                 </tr>
               
             </tbody>
@@ -25370,47 +25326,6 @@ Pass this value in the page_token field in the subsequent call to
                 <td>ALL_NODES</td>
                 <td>2</td>
                 <td><p></p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-      
-        <h3 id="bytebase.v1.RowValue.ByteData.DisplayFormat">RowValue.ByteData.DisplayFormat</h3>
-        <p>Indicates the preferred display format for the binary data</p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>DISPLAY_FORMAT_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>BINARY</td>
-                <td>1</td>
-                <td><p>Display as binary (0s and 1s)</p></td>
-              </tr>
-            
-              <tr>
-                <td>HEX</td>
-                <td>2</td>
-                <td><p>Display as hexadecimal</p></td>
-              </tr>
-            
-              <tr>
-                <td>BOOLEAN</td>
-                <td>3</td>
-                <td><p>Display as boolean (for single bit values)</p></td>
-              </tr>
-            
-              <tr>
-                <td>TEXT</td>
-                <td>4</td>
-                <td><p>Display as text (if it contains readable text)</p></td>
               </tr>
             
           </tbody>

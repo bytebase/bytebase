@@ -1851,7 +1851,8 @@
     "format-default": "デフォルト",
     "hex-format": "16進形式",
     "text-format": "テキスト形式",
-    "boolean-format": "ブール形式"
+    "boolean-format": "ブール形式",
+    "column-display-format": "列表示形式"
   },
   "schema-editor": {
     "self": "スキーマエディタ",

@@ -84,12 +84,6 @@ func convertValueToBytesInCSV(value *v1pb.RowValue) []byte {
 		result = append(result, []byte(escapeCSVString(string(value.GetBytesValue())))...)
 		result = append(result, '"')
 		return result
-	case *v1pb.RowValue_ByteDataValue:
-		var result []byte
-		result = append(result, '"')
-		result = append(result, []byte(escapeCSVString(string(value.GetByteDataValue().Value)))...)
-		result = append(result, '"')
-		return result
 	case *v1pb.RowValue_NullValue:
 		return []byte("")
 	case *v1pb.RowValue_TimestampValue:
@@ -203,8 +197,6 @@ func convertValueToBytesInSQL(engine storepb.Engine, value *v1pb.RowValue) []byt
 		return []byte(strconv.FormatBool(value.GetBoolValue()))
 	case *v1pb.RowValue_BytesValue:
 		return escapeSQLBytes(engine, value.GetBytesValue())
-	case *v1pb.RowValue_ByteDataValue:
-		return escapeSQLBytes(engine, value.GetByteDataValue().Value)
 	case *v1pb.RowValue_NullValue:
 		return []byte("NULL")
 	case *v1pb.RowValue_TimestampValue:
@@ -676,12 +668,6 @@ func convertValueToStringInJSON(value *v1pb.RowValue) string {
 			return ""
 		}
 		return value
-	case *v1pb.RowValue_ByteDataValue:
-		value, err := convertBytesToBinaryString(value.GetByteDataValue().Value)
-		if err != nil {
-			return ""
-		}
-		return value
 	case *v1pb.RowValue_NullValue:
 		return "null"
 	case *v1pb.RowValue_TimestampValue:
@@ -797,8 +783,6 @@ func convertValueToStringInXLSX(value *v1pb.RowValue) string {
 		return strconv.FormatBool(value.GetBoolValue())
 	case *v1pb.RowValue_BytesValue:
 		return base64.StdEncoding.EncodeToString(value.GetBytesValue())
-	case *v1pb.RowValue_ByteDataValue:
-		return base64.StdEncoding.EncodeToString(value.GetByteDataValue().Value)
 	case *v1pb.RowValue_NullValue:
 		return ""
 	case *v1pb.RowValue_TimestampValue:

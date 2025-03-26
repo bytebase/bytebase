@@ -205,17 +205,72 @@ const rawValue = computed(() => {
     [col]?.getValue<RowValue>();
 });
 
-// Get the server-provided format
+// Determine binary format based on column type and content
 const getServerFormat = (): string => {
-  if (!rawValue.value?.byteDataValue) return "BINARY";
+  if (!rawValue.value?.bytesValue) return "HEX";
   
-  // If it has a display format already specified, use that
-  if (rawValue.value.byteDataValue.displayFormat) {
-    return rawValue.value.byteDataValue.displayFormat;
+  // Get column information
+  const { col, table } = detail.value;
+  if (!table) return "HEX";
+  
+  const columnDef = table.getFlatHeaders()[col]?.column?.columnDef;
+  const columnName = columnDef?.header?.toString() || '';
+  
+  // Get the column type from meta (set in SingleResultViewV1.vue)
+  const columnType = columnDef?.meta?.columnType?.toString().toLowerCase() || '';
+  
+  // Default format based on column type
+  let defaultFormat = "HEX";
+  
+  // Detect BIT column types (bit, varbit, bit varying) - for binary format display
+  const isBitColumn = (
+    // Generic bit types
+    columnType === 'bit' ||
+    columnType.startsWith('bit(') ||
+    (columnType.includes('bit') && !columnType.includes('binary')) ||
+    
+    // PostgreSQL bit types
+    columnType === 'varbit' ||
+    columnType === 'bit varying'
+  );
+    
+  // Detect BINARY column types (binary, varbinary, bytea, blob, etc) - for hex format display
+  const isBinaryColumn = (
+    // Generic binary types
+    columnType === 'binary' ||
+    columnType.includes('binary') || 
+    
+    // MySQL/MariaDB binary types
+    columnType.startsWith('binary(') ||
+    columnType.startsWith('varbinary') ||
+    columnType.includes('blob') ||
+    columnType === 'longblob' ||
+    columnType === 'mediumblob' ||
+    columnType === 'tinyblob' ||
+    
+    // PostgreSQL binary type
+    columnType === 'bytea' ||
+    
+    // SQL Server binary types
+    columnType === 'image' ||
+    columnType === 'varbinary(max)' ||
+    
+    // Oracle binary types
+    columnType === 'raw' ||
+    columnType === 'long raw'
+  );
+  
+  // BIT columns default to binary format
+  if (isBitColumn) {
+    defaultFormat = "BINARY";
   }
   
-  // If no format is specified, determine intelligently based on data
-  const byteArray = Array.from(rawValue.value.byteDataValue.value);
+  // BINARY/VARBINARY/BLOB columns default to HEX format
+  if (isBinaryColumn) {
+    defaultFormat = "HEX";
+  }
+  
+  const byteArray = Array.from(rawValue.value.bytesValue);
   
   // For single byte values (could be boolean)
   if (byteArray.length === 1 && (byteArray[0] === 0 || byteArray[0] === 1)) {
@@ -228,8 +283,8 @@ const getServerFormat = (): string => {
     return "TEXT";
   }
   
-  // Default to HEX for most binary data as it's more compact than binary
-  return "HEX";
+  // Return default format based on column type
+  return defaultFormat;
 };
 
 // Current display format (reactive to server changes)
@@ -246,55 +301,70 @@ const binaryFormat = computed(() => {
   return formatOverride.value;
 });
 
-// Check if the current value is binary data
+// Check if the current value is binary data (using bytesValue)
 const isBinaryData = computed(() => {
   if (!rawValue.value) return false;
-  return !!(rawValue.value.bytesValue || rawValue.value.byteDataValue);
+  return !!rawValue.value.bytesValue;
 });
 
 // Check if it's a single bit value (for boolean display)
 const isSingleBitValue = computed(() => {
-  if (!rawValue.value) return false;
-  
-  if (rawValue.value.byteDataValue) {
-    return rawValue.value.byteDataValue.value.length === 1;
-  }
-  
-  if (rawValue.value.bytesValue) {
-    return rawValue.value.bytesValue.length === 1;
-  }
-  
-  return false;
+  if (!rawValue.value?.bytesValue) return false;
+  return rawValue.value.bytesValue.length === 1;
 });
 
-// If it's binary data, create a synthetic ByteData value for display
+// Format the binary value based on selected format
 const formattedBinaryValue = computed(() => {
-  if (!rawValue.value || !isBinaryData.value) return rawValue.value;
+  if (!rawValue.value?.bytesValue) return rawValue.value;
   
-  // Create a structured clone rather than using JSON to handle Uint8Array properly
-  const formattedValue = { ...rawValue.value };
+  // Deep clone the value to avoid mutating the original
+  const newValue = { ...rawValue.value };
   
-  // Get the actual format to use - default to server format if showing DEFAULT
-  const formatToUse = formatOverride.value === null ? serverFormat.value : formatOverride.value;
+  // Get the actual format to use (override or server default)
+  const actualFormat = formatOverride.value === null ? serverFormat.value : formatOverride.value;
   
-  // If it's using the legacy bytesValue format
-  if (formattedValue.bytesValue) {
-    // Create a synthetic byteDataValue with the selected format
-    formattedValue.byteDataValue = {
-      value: formattedValue.bytesValue,
-      displayFormat: formatToUse as any
-    };
-    // Remove the legacy value to avoid conflicts
-    delete formattedValue.bytesValue;
-  } else if (formattedValue.byteDataValue) {
-    // Just update the display format, preserving the original value
-    formattedValue.byteDataValue = {
-      value: formattedValue.byteDataValue.value,
-      displayFormat: formatToUse as any
-    };
+  // Skip formatting if using default format
+  if (actualFormat === "DEFAULT") {
+    return newValue;
   }
   
-  return formattedValue;
+  // Ensure bytesValue exists before converting to array
+  const byteArray = newValue.bytesValue ? Array.from(newValue.bytesValue) : [];
+  
+  // Format based on selected format
+  switch (actualFormat) {
+    case "BINARY":
+      // Format as binary string without spaces
+      newValue.stringValue = byteArray
+        .map(byte => byte.toString(2).padStart(8, "0"))
+        .join("");
+      break;
+    case "HEX":
+      // Format as hex string
+      newValue.stringValue = "0x" + byteArray
+        .map(byte => byte.toString(16).toUpperCase().padStart(2, "0"))
+        .join("");
+      break;
+    case "TEXT":
+      // Format as text
+      try {
+        newValue.stringValue = new TextDecoder().decode(new Uint8Array(byteArray));
+      } catch {
+        // Fallback to binary if text decoding fails
+        newValue.stringValue = byteArray
+          .map(byte => byte.toString(2).padStart(8, "0"))
+          .join("");
+      }
+      break;
+    case "BOOLEAN":
+      // Only for single-byte values
+      if (byteArray.length === 1) {
+        newValue.stringValue = byteArray[0] === 1 ? "true" : "false";
+      }
+      break;
+  }
+  
+  return newValue;
 });
 
 const content = computed(() => {
@@ -404,6 +474,7 @@ const updateBinaryFormat = (value: string) => {
     formatOverride.value = value;
   }
   
+  // Force render
   nextTick();
 };
 </script>

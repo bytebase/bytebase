@@ -1851,7 +1851,8 @@
     },
     "upload-file": "Subir archivo",
     "copy-selected-results": "Copiar datos seleccionados por {action} o {button}",
-    "format-default": "Por defecto"
+    "format-default": "Por defecto",
+    "column-display-format": "Formato de visualización de columna"
   },
   "schema-editor": {
     "self": "Editor de esquema",

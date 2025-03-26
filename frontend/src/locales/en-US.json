@@ -1850,6 +1850,7 @@
     "upload-file": "Upload file",
     "copy-selected-results": "Copy selected data by {action} or {button}",
     "format-default": "Default",
+    "column-display-format": "Column display format",
     "next-row": "Next Row",
     "previous-row": "Previous Row"
   },

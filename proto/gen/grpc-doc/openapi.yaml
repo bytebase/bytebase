@@ -12175,27 +12175,6 @@ components:
                     description: |-
                         timestamp_tz_value is used for the timestamptz data type, which
                          accurately represents the timestamp with location information.
-                byteDataValue:
-                    allOf:
-                        - $ref: '#/components/schemas/RowValue_ByteData'
-                    description: byte_data_value is used for binary and bit data types with display format information
-        RowValue_ByteData:
-            type: object
-            properties:
-                value:
-                    type: string
-                    description: The actual binary data
-                    format: bytes
-                displayFormat:
-                    enum:
-                        - DISPLAY_FORMAT_UNSPECIFIED
-                        - BINARY
-                        - HEX
-                        - BOOLEAN
-                        - TEXT
-                    type: string
-                    format: enum
-            description: ByteData is used to represent binary and bit data with display format information
         RowValue_Timestamp:
             type: object
             properties:

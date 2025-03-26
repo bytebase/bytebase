@@ -197,7 +197,7 @@ const isColumnWithBinaryData = (columnIndex: number): boolean => {
     if (!cell) continue;
     
     const value = cell.getValue<RowValue>();
-    if (value?.byteDataValue) {
+    if (value?.bytesValue) {
       return true;
     }
   }
@@ -205,18 +205,92 @@ const isColumnWithBinaryData = (columnIndex: number): boolean => {
   return false;
 };
 
-// Get the server-provided format for a column
+// Determine the suitable format for a column based on column type and content
 const getColumnServerFormat = (columnIndex: number): string | null => {
+  // Access the column definition
+  const columnDef = props.table.getFlatHeaders()[columnIndex]?.column?.columnDef;
+  const columnName = columnDef?.header?.toString() || '';
+  
+  // Get the column type from meta (set in SingleResultViewV1.vue)
+  const columnType = columnDef?.meta?.columnType?.toString().toLowerCase() || '';
+  
+  // Default format based on column type (default to HEX)
+  let defaultFormat = "HEX";
+  
+  // Detect BIT column types (bit, varbit, bit varying) - for binary format display
+  const isBitColumn = (
+    // Generic bit types
+    columnType === 'bit' ||
+    columnType.startsWith('bit(') ||
+    (columnType.includes('bit') && !columnType.includes('binary')) ||
+    
+    // PostgreSQL bit types
+    columnType === 'varbit' ||
+    columnType === 'bit varying'
+  );
+    
+  // Detect BINARY column types (binary, varbinary, bytea, blob, etc) - for hex format display
+  const isBinaryColumn = (
+    // Generic binary types
+    columnType === 'binary' ||
+    columnType.includes('binary') || 
+    
+    // MySQL/MariaDB binary types
+    columnType.startsWith('binary(') ||
+    columnType.startsWith('varbinary') ||
+    columnType.includes('blob') ||
+    columnType === 'longblob' ||
+    columnType === 'mediumblob' ||
+    columnType === 'tinyblob' ||
+    
+    // PostgreSQL binary type
+    columnType === 'bytea' ||
+    
+    // SQL Server binary types
+    columnType === 'image' ||
+    columnType === 'varbinary(max)' ||
+    
+    // Oracle binary types
+    columnType === 'raw' ||
+    columnType === 'long raw'
+  )
+    
+  // BIT columns default to binary format
+  if (isBitColumn) {
+    defaultFormat = "BINARY";
+  }
+  
+  // BINARY/VARBINARY/BLOB columns default to HEX format
+  if (isBinaryColumn) {
+    defaultFormat = "HEX";
+  }
+  
   const columnRows = props.table.getPrePaginationRowModel().rows;
   
-  // Look through rows to find the first byte data value with a format
+  // Look through rows to find byte values and determine format
   for (const row of columnRows) {
     const cell = row.getVisibleCells()[columnIndex];
     if (!cell) continue;
     
     const value = cell.getValue<RowValue>();
-    if (value?.byteDataValue?.displayFormat) {
-      return value.byteDataValue.displayFormat;
+    if (value?.bytesValue) {
+      // Get default format based on content
+      // Ensure bytesValue exists before converting to array
+      const byteArray = value.bytesValue ? Array.from(value.bytesValue) : [];
+      
+      // For single byte values (could be boolean)
+      if (byteArray.length === 1 && (byteArray[0] === 0 || byteArray[0] === 1)) {
+        return "BOOLEAN";
+      }
+      
+      // Check if it's readable text
+      const isReadableText = byteArray.every(byte => byte >= 32 && byte <= 126);
+      if (isReadableText) {
+        return "TEXT";
+      }
+      
+      // Return default format based on column type
+      return defaultFormat;
     }
   }
   
@@ -233,7 +307,7 @@ const hasColumnSingleBitValues = (columnIndex: number): boolean => {
     if (!cell) continue;
     
     const value = cell.getValue<RowValue>();
-    if (value?.byteDataValue?.value.length === 1) {
+    if (value?.bytesValue?.length === 1) {
       return true;
     }
   }
