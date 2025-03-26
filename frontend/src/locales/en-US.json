@@ -1845,7 +1845,9 @@
     },
     "upload-file": "Upload file",
     "copy-selected-results": "Copy selected data by {action} or {button}",
-    "format-default": "Default"
+    "format-default": "Default",
+    "next-row": "Next Row",
+    "previous-row": "Previous Row"
   },
   "schema-editor": {
     "self": "Schema Editor",

@@ -276,22 +276,6 @@ message RowValue {
     int32 offset = 3;
     int32 accuracy = 4;
   }
-  
-  // ByteData is used to represent binary and bit data with display format information
-  message ByteData {
-    // The actual binary data
-    bytes value = 1;
-    
-    // Indicates the preferred display format for the binary data
-    enum DisplayFormat {
-      DISPLAY_FORMAT_UNSPECIFIED = 0;
-      BINARY = 1;  // Display as binary (0s and 1s)
-      HEX = 2;     // Display as hexadecimal 
-      BOOLEAN = 3; // Display as boolean (for single bit values)
-      TEXT = 4;    // Display as text (if it contains readable text)
-    }
-    DisplayFormat display_format = 2;
-  }
 
   // ByteData is used to represent binary and bit data with display format information
   message ByteData {

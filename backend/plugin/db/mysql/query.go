@@ -77,10 +77,6 @@ func convertValue(typeName string, columnType *sql.ColumnType, value any) *v1pb.
 					ByteDataValue: &v1pb.RowValue_ByteData{
 						Value: *raw,
 					},
-				Kind: &v1pb.RowValue_ByteDataValue{
-					ByteDataValue: &v1pb.RowValue_ByteData{
-						Value: *raw,
-					},
 				},
 			}
 		}
@@ -176,17 +172,3 @@ func (r *mysqlRewriter) EnterQueryExpression(ctx *mysql.QueryExpressionContext) 
 		}
 	}
 }
-<<<<<<< HEAD
-
-// Helper function to determine if binary data is readable text
-func isReadableText(data []byte) bool {
-	// Basic check: Contains only printable ASCII characters
-	for _, b := range data {
-		if b < 32 || b > 126 {
-			return false
-		}
-	}
-	return true
-}
-=======
->>>>>>> 8d61aea33 (chore: move backend logic to frontend and UI update)
