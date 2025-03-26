@@ -1055,6 +1055,9 @@
     },
     "schema": {
       "default": "Mặc định"
+    },
+    "catalog": {
+      "description": "Chỉnh sửa và tải lên danh mục bảng."
     }
   },
   "instance": {

@@ -1,17 +1,7 @@
-import { computed } from "vue";
-import { useSettingV1Store, useDatabaseCatalog, getColumnCatalog } from "@/store";
+import { computed, unref, type MaybeRef } from "vue";
+import { useSettingV1Store } from "@/store";
 
-export const useSemanticType = ({
-  database,
-  schema,
-  table,
-  column,
-}: {
-  database: string;
-  schema: string;
-  table: string;
-  column: string;
-}) => {
+export const useSemanticType = (semanticTypeId: MaybeRef<string>) => {
   const settingV1Store = useSettingV1Store();
 
   const semanticTypeList = computed(() => {
@@ -21,16 +11,12 @@ export const useSemanticType = ({
     );
   });
 
-  const databaseCatalog = useDatabaseCatalog(database, false);
-
   const semanticType = computed(() => {
-    const columnCatalog = getColumnCatalog(databaseCatalog.value, schema, table, column)
-    if (!columnCatalog.semanticType) {
+    const id = unref(semanticTypeId);
+    if (!id) {
       return;
     }
-    return semanticTypeList.value.find(
-      (data) => data.id === columnCatalog.semanticType
-    );
+    return semanticTypeList.value.find((data) => data.id === id);
   });
 
   return {

@@ -3,13 +3,7 @@
     class="grid grid-cols-1 gap-x-4 gap-y-4 sm:grid-cols-2"
     data-label="bb-database-overview-description-list"
   >
-    <template
-      v-if="
-        databaseEngine !== Engine.CLICKHOUSE &&
-        databaseEngine !== Engine.SNOWFLAKE &&
-        databaseEngine !== Engine.MONGODB
-      "
-    >
+    <template v-if="instanceV1HasCollationAndCharacterSet(databaseEngine)">
       <div class="col-span-1 col-start-1">
         <dt class="text-sm font-medium text-control-light">
           {{
@@ -60,6 +54,7 @@ import { computed } from "vue";
 import { useDBSchemaV1Store } from "@/store";
 import { getDateForPbTimestamp, type ComposedDatabase } from "@/types";
 import { Engine, State } from "@/types/proto/v1/common";
+import { instanceV1HasCollationAndCharacterSet } from "@/utils";
 
 const props = defineProps<{
   database: ComposedDatabase;

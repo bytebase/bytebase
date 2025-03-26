@@ -25,7 +25,19 @@
                     class="w-5 h-5"
                   />
                 </h1>
-                <span class="textinfolabel">{{ database.name }}</span>
+                <div class="flex items-center">
+                  <span class="textinfolabel">
+                    {{ database.name }}
+                  </span>
+                  <NButton
+                    v-if="isSupported"
+                    quaternary
+                    size="tiny"
+                    @click="handleCopyDatabaseName(database.name)"
+                  >
+                    <ClipboardCopyIcon class="w-4 h-4" />
+                  </NButton>
+                </div>
               </div>
             </div>
           </div>
@@ -192,8 +204,9 @@
 
 <script lang="ts" setup>
 import { useTitle } from "@vueuse/core";
+import { useClipboard } from "@vueuse/core";
 import dayjs from "dayjs";
-import { ArrowRightLeftIcon } from "lucide-vue-next";
+import { ArrowRightLeftIcon, ClipboardCopyIcon } from "lucide-vue-next";
 import { NButton, NTabPane, NTabs } from "naive-ui";
 import { computed, reactive, watch, ref, watchEffect } from "vue";
 import { useRouter, useRoute } from "vue-router";
@@ -224,6 +237,7 @@ import {
   useAppFeature,
   useEnvironmentV1Store,
   useDatabaseV1ByName,
+  pushNotification,
 } from "@/store";
 import {
   databaseNamePrefix,
@@ -409,4 +423,20 @@ const environment = computed(() => {
 });
 
 useTitle(computed(() => database.value.databaseName));
+
+const { copy: copyTextToClipboard, isSupported } = useClipboard({
+  legacy: true,
+});
+const handleCopyDatabaseName = (name: string) => {
+  if (!isSupported.value) {
+    return;
+  }
+  copyTextToClipboard(name).then(() => {
+    pushNotification({
+      module: "bytebase",
+      style: "SUCCESS",
+      title: "Database full name copied.",
+    });
+  });
+};
 </script>
