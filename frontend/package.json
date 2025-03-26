@@ -150,7 +150,7 @@
     "unified": "^11.0.5",
     "unplugin-icons": "22.1.0",
     "unplugin-vue-components": "28.4.1",
-    "vite": "6.0.9",
+    "vite": "6.0.12",
     "vite-bundle-visualizer": "^1.2.1",
     "vitest": "3.0.7",
     "vue-component-type-helpers": "^2.2.8",
