@@ -122,6 +122,7 @@
         :offset="pageIndex * pageSize"
         :is-sensitive-column="isSensitiveColumn"
         :is-column-missing-sensitive="isColumnMissingSensitive"
+        :column-type-names="props.result.columnTypeNames"
       />
     </div>
 

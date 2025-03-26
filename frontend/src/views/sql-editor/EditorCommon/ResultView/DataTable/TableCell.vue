@@ -79,6 +79,7 @@ const props = defineProps<{
   colIndex: number;
   allowSelect?: boolean;
   columnFormatOverride?: string | null;
+  columnType?: string; // Column type from QueryResult
 }>();
 
 const { t } = useI18n();
@@ -241,11 +242,8 @@ const formattedBinaryValue = computed(() => {
   }
   // Otherwise use auto-detected format
   else {
-    // Get column information if available (from table definition metadata)
-    const header = props.table?.getFlatHeaders().find(h => h.index === props.colIndex);
-    // Use type assertion to access the columnType property safely
-    const meta = header?.column?.columnDef?.meta as { columnType?: string } | undefined;
-    const columnType = meta?.columnType?.toString()?.toLowerCase() || '';
+    // Use column type directly from props if available
+    const columnType = props.columnType?.toLowerCase() || '';
     
     // Default format based on column type
     let defaultFormat = "BINARY";

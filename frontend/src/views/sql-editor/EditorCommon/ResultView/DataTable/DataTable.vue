@@ -108,6 +108,7 @@
               :col-index="cellIndex"
               :allow-select="true"
               :column-format-override="getColumnFormatOverride(cellIndex)"
+              :column-type="props.columnTypeNames?.[cellIndex]"
             />
             <div
               v-if="cellIndex === 0 && !selectionDisabled"
@@ -141,7 +142,7 @@ import {
   FeatureBadgeForInstanceLicense,
 } from "@/components/FeatureGuard";
 import { useSubscriptionV1Store } from "@/store";
-import type { QueryRow, RowValue } from "@/types/proto/v1/sql_service";
+import { type QueryRow, type RowValue } from "@/types/proto/v1/sql_service";
 import { useSQLResultViewContext } from "../context";
 import TableCell from "./TableCell.vue";
 import ColumnSortedIcon from "./common/ColumnSortedIcon.vue";
@@ -157,6 +158,7 @@ const props = defineProps<{
   isSensitiveColumn: (index: number) => boolean;
   isColumnMissingSensitive: (index: number) => boolean;
   maxHeight?: number;
+  columnTypeNames?: string[]; // Column type names from QueryResult
 }>();
 
 const {
@@ -207,13 +209,13 @@ const isColumnWithBinaryData = (columnIndex: number): boolean => {
 
 // Determine the suitable format for a column based on column type and content
 const getColumnServerFormat = (columnIndex: number): string | null => {
-  // Access the column definition
-  const columnDef = props.table.getFlatHeaders()[columnIndex]?.column?.columnDef;
+  // Get column type name from direct columnTypeNames prop
+  let columnType = '';
   
-  // Get the column type from meta (set in SingleResultViewV1.vue)
-  // Use type assertion to access the columnType property safely
-  const meta = columnDef?.meta as { columnType?: string } | undefined;
-  const columnType = meta?.columnType?.toString().toLowerCase() || '';
+  // Use column type names from props
+  if (props.columnTypeNames && columnIndex < props.columnTypeNames.length) {
+    columnType = props.columnTypeNames[columnIndex].toLowerCase();
+  }
   
   // Default format based on column type (default to HEX)
   let defaultFormat = "HEX";

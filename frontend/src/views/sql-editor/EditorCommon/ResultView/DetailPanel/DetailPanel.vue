@@ -213,12 +213,17 @@ const getServerFormat = (): string => {
   const { col, table } = detail.value;
   if (!table) return "HEX";
   
-  const columnDef = table.getFlatHeaders()[col]?.column?.columnDef;
+  // Get the column type from context's columnTypeNames
+  let columnType = '';
   
-  // Get the column type from meta (set in SingleResultViewV1.vue)
-  // Use type assertion to access the columnType property safely
-  const meta = columnDef?.meta as { columnType?: string } | undefined;
-  const columnType = meta?.columnType?.toString().toLowerCase() || '';
+  // Get context and safely access columnTypeNames
+  const context = useSQLResultViewContext();
+  const columnTypeNames = context.columnTypeNames?.value;
+  
+  // Use column type names from context
+  if (columnTypeNames && col < columnTypeNames.length) {
+    columnType = columnTypeNames[col].toLowerCase();
+  }
   
   // Default format based on column type
   let defaultFormat = "HEX";
