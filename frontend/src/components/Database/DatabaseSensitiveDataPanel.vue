@@ -34,7 +34,11 @@
       :database="database"
       :row-clickable="false"
       :row-selectable="!isMaskingForNoSQL"
-      :show-operation="hasUpdateCatalogPermission && hasSensitiveDataFeature"
+      :show-operation="
+        hasUpdateCatalogPermission &&
+        hasSensitiveDataFeature &&
+        !isMaskingForNoSQL
+      "
       :column-list="filteredColumnList"
       :checked-column-index-list="checkedColumnIndexList"
       @delete="onColumnRemove"
