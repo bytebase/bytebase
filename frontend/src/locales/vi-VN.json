@@ -225,7 +225,8 @@
     "text-wrap": "Ngắt dòng văn bản",
     "catalog": "Danh mục",
     "summary": "Tóm tắt",
-    "errors": "Lỗi"
+    "errors": "Lỗi",
+    "removed": "LOẠI BỎ"
   },
   "error-page": {
     "go-back-home": "Về trang chủ"

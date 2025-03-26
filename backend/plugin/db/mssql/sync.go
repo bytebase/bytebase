@@ -467,7 +467,7 @@ func getTableColumns(txn *sql.Tx, schemas []string) (map[db.TableKey][]*storepb.
 func getColumnType(definition, typeName sql.NullString, isComputed, isPersisted sql.NullBool, precision, scale, maxLength sql.NullInt64) (string, error) {
 	var buf strings.Builder
 	if definition.Valid && isComputed.Valid && isComputed.Bool {
-		if _, err := fmt.Fprintf(&buf, " AS %s", definition.String); err != nil {
+		if _, err := fmt.Fprintf(&buf, "AS %s", definition.String); err != nil {
 			return "", err
 		}
 		if isPersisted.Valid && isPersisted.Bool {
@@ -475,14 +475,14 @@ func getColumnType(definition, typeName sql.NullString, isComputed, isPersisted 
 				return "", err
 			}
 		}
-		return "", nil
+		return buf.String(), nil
 	}
 
 	if !typeName.Valid {
 		return "", errors.New("column type name is not valid")
 	}
 
-	if _, err := fmt.Fprintf(&buf, " %s", typeName.String); err != nil {
+	if _, err := fmt.Fprintf(&buf, "%s", typeName.String); err != nil {
 		return "", err
 	}
 
@@ -559,7 +559,7 @@ func getIndexes(txn *sql.Tx, schemas []string) (map[db.TableKey][]*storepb.Index
 	for rows.Next() {
 		var schemaName, tableName, indexName, typeDesc, colName, comment sql.NullString
 		var isDescending sql.NullBool
-		if err := rows.Scan(&schemaName, &tableName, &indexName, &colName, &typeDesc, &isDescending, &comment); err != nil {
+		if err := rows.Scan(&schemaName, &tableName, &indexName, &typeDesc, &colName, &isDescending, &comment); err != nil {
 			return nil, err
 		}
 

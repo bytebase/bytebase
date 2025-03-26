@@ -44,10 +44,7 @@
               v-if="state.user.userType === UserType.SERVICE_ACCOUNT"
               class="w-full flex flex-col items-start"
             >
-              <EmailInput
-                v-model:value="state.user.email"
-                :domain="serviceAccountEmailSuffix"
-              />
+              <EmailInput v-model:value="state.user.email" />
             </div>
             <EmailInput
               v-else
@@ -181,8 +178,6 @@ interface LocalState {
   roles: string[];
   passwordConfirm: string;
 }
-
-const serviceAccountEmailSuffix = "service.bytebase.com";
 
 const props = defineProps<{
   user?: User;

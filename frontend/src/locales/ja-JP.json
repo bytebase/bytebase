@@ -225,7 +225,8 @@
     "text-wrap": "テキストの折り返し",
     "catalog": "カタログ",
     "summary": "まとめ",
-    "errors": "エラー"
+    "errors": "エラー",
+    "removed": "削除されました"
   },
   "error-page": {
     "go-back-home": "ホームページに戻る"

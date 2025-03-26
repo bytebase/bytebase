@@ -34,11 +34,7 @@
       :database="database"
       :row-clickable="false"
       :row-selectable="!isMaskingForNoSQL"
-      :show-operation="
-        hasUpdateCatalogPermission &&
-        hasSensitiveDataFeature &&
-        !isMaskingForNoSQL
-      "
+      :show-operation="hasUpdateCatalogPermission && hasSensitiveDataFeature"
       :column-list="filteredColumnList"
       :checked-column-index-list="checkedColumnIndexList"
       @delete="onColumnRemove"
@@ -77,7 +73,6 @@
 import { ShieldCheckIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { computed, reactive, watch } from "vue";
-import { updateColumnCatalog } from "@/components/ColumnDataTable/utils";
 import {
   FeatureModal,
   FeatureBadge,
@@ -272,17 +267,6 @@ const filteredColumnList = computed(() => {
 });
 
 const removeSensitiveColumn = async (sensitiveColumn: MaskData) => {
-  await updateColumnCatalog({
-    database: props.database.name,
-    schema: sensitiveColumn.schema,
-    table: sensitiveColumn.table,
-    column: sensitiveColumn.column,
-    columnCatalog: {
-      classification: "",
-      semanticType: "",
-    },
-    notification: "common.removed",
-  });
   await removeMaskingExceptions(sensitiveColumn);
 };
 
