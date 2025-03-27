@@ -147,7 +147,7 @@ interface LocalState {
 
 const emit = defineEmits<{
   (event: "close"): void;
-  (event: "created"): void;
+  (event: "created", user: User): void;
 }>();
 
 const workspaceStore = useWorkspaceV1Store();
@@ -226,7 +226,7 @@ const tryCreateOrUpdateUser = async () => {
       },
     ]);
   }
-  emit("created");
+  emit("created", createdUser);
   pushNotification({
     module: "bytebase",
     style: "SUCCESS",

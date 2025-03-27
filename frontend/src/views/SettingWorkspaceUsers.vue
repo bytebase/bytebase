@@ -431,8 +431,10 @@ const handleCreateUser = () => {
   state.showCreateUserDrawer = true;
 };
 
-const handleUserCreated = () => {
-  userPagedTable.value?.refresh();
+const handleUserCreated = (user: User) => {
+  userPagedTable.value?.refresh().then(() => {
+    userPagedTable.value?.updateCache([user]);
+  });
 };
 
 const handleUserUpdated = (_: User) => {
