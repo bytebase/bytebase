@@ -40,7 +40,7 @@ func MigrateSchema(ctx context.Context, pgURL string) error {
 
 	var ok bool
 	if err := conn.QueryRowContext(ctx,
-		`SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'environment')`,
+		`SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'principal')`,
 	).Scan(&ok); err != nil {
 		return err
 	}
