@@ -1671,7 +1671,7 @@
     "snowflake-keypair-tip": "密钥对认证",
     "extra-params": {
       "self": "额外的参数",
-      "description": "数据库连接字符串的其他参数。\n对于PostgreSQL，您可以使用诸如target_session_attrs = read-write之类的参数来确保与读取文字实例的连接。"
+      "description": "数据库连接字符串的其他参数"
     },
     "ssl": {
       "ca-cert": "CA 证书",
