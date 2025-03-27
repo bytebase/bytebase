@@ -32,13 +32,14 @@ import {
   UNKNOWN_USER_NAME,
   allUsersUser,
   isValidProjectName,
+  isValidUserName,
 } from "@/types";
 import {
   UserType,
   userTypeToJSON,
   type User,
 } from "@/types/proto/v1/user_service";
-import { getDefaultPagination } from "@/utils";
+import { getDefaultPagination, ensureUserFullName } from "@/utils";
 import ResourceSelect from "./ResourceSelect.vue";
 
 const props = withDefaults(
@@ -114,6 +115,18 @@ const getFilter = (search: string) => {
   return filter.join(" && ");
 };
 
+const initSelectedUsers = async (userIds: string[]) => {
+  for (const userId of userIds) {
+    const userName = ensureUserFullName(userId);
+    if (isValidUserName(userName)) {
+      const user = await userStore.getOrFetchUserByIdentifier(userName);
+      if (!state.rawUserList.find((u) => u.name === user.name)) {
+        state.rawUserList.unshift(user);
+      }
+    }
+  }
+};
+
 const searchUsers = async (search: string) => {
   const { users } = await userStore.fetchUserList({
     filter: getFilter(search),
@@ -128,13 +141,21 @@ const handleSearch = useDebounceFn(async (search: string) => {
   try {
     const users = await searchUsers(search);
     state.rawUserList = users;
-    if (!search && props.includeAllUsers) {
-      state.rawUserList.unshift(allUsersUser());
+    if (!search) {
+      if (props.includeAllUsers) {
+        state.rawUserList.unshift(allUsersUser());
+      }
+      if (props.user) {
+        await initSelectedUsers([props.user]);
+      }
+      if (props.users) {
+        await initSelectedUsers(props.users);
+      }
     }
   } finally {
     state.loading = false;
   }
-}, 500);
+}, 200);
 
 onMounted(async () => {
   await handleSearch("");
