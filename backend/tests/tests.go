@@ -79,13 +79,15 @@ type controller struct {
 	sqlServiceClient             v1pb.SQLServiceClient
 	subscriptionServiceClient    v1pb.SubscriptionServiceClient
 	actuatorServiceClient        v1pb.ActuatorServiceClient
+	workspaceServiceClient       v1pb.WorkspaceServiceClient
 
 	cookie  string
 	project *v1pb.Project
 
-	rootURL  string
-	apiURL   string
-	v1APIURL string
+	rootURL       string
+	apiURL        string
+	v1APIURL      string
+	principalName string
 }
 
 var (
@@ -261,6 +263,7 @@ func (ctl *controller) start(ctx context.Context, port int) (context.Context, er
 	ctl.sqlServiceClient = v1pb.NewSQLServiceClient(ctl.grpcConn)
 	ctl.subscriptionServiceClient = v1pb.NewSubscriptionServiceClient(ctl.grpcConn)
 	ctl.actuatorServiceClient = v1pb.NewActuatorServiceClient(ctl.grpcConn)
+	ctl.workspaceServiceClient = v1pb.NewWorkspaceServiceClient(ctl.grpcConn)
 
 	if err := ctl.waitForHealthz(ctx); err != nil {
 		return nil, errors.Wrap(err, "failed to wait for healthz")
@@ -327,14 +330,15 @@ func (*controller) provisionSQLiteInstance(rootDir, name string) (string, error)
 
 // signupAndLogin will signup and login as user demo@example.com.
 func (ctl *controller) signupAndLogin(ctx context.Context) (string, error) {
-	if _, err := ctl.userServiceClient.CreateUser(ctx, &v1pb.CreateUserRequest{
+	principal, err := ctl.userServiceClient.CreateUser(ctx, &v1pb.CreateUserRequest{
 		User: &v1pb.User{
 			Email:    "demo@example.com",
 			Password: "1024bytebase",
 			Title:    "demo",
 			UserType: v1pb.UserType_USER,
 		},
-	}); err != nil && !strings.Contains(err.Error(), "exist") {
+	})
+	if err != nil && !strings.Contains(err.Error(), "exist") {
 		return "", err
 	}
 	resp, err := ctl.authServiceClient.Login(ctx, &v1pb.LoginRequest{
@@ -344,6 +348,7 @@ func (ctl *controller) signupAndLogin(ctx context.Context) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	ctl.principalName = principal.Name
 	ctl.cookie = fmt.Sprintf("access-token=%s", resp.Token)
 	return resp.Token, nil
 }
