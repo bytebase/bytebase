@@ -11,7 +11,6 @@
         <NCheckbox
           :checked="isIssueCreatorChecked"
           :disabled="disabled"
-          style="--n-label-padding: 0 0 0 1rem"
           @update:checked="toggleIssueRoles($event, VirtualRoleType.CREATOR)"
         >
           <div class="textlabel">
@@ -21,7 +20,6 @@
         <NCheckbox
           :checked="isIssueLastApproverChecked"
           :disabled="disabled"
-          style="--n-label-padding: 0 0 0 1rem"
           @update:checked="
             toggleIssueRoles($event, VirtualRoleType.LAST_APPROVER)
           "
@@ -34,9 +32,8 @@
       <NCheckbox
         :checked="isAutomaticRolloutChecked"
         :disabled="disabled"
-        style="--n-label-padding: 0 0 0 1rem"
         @update:checked="toggleAutomaticRollout($event)"
-        >
+      >
         <div class="flex flex-col gap-y-1">
           <div class="textlabel">
             {{ $t("policy.rollout.auto") }}
@@ -88,10 +85,12 @@ const update = (rp: RolloutPolicy) => {
   });
 };
 const toggleAutomaticRollout = (selected: boolean) => {
-  update(RolloutPolicy.fromJSON({
-    ...rolloutPolicy.value,
-    automatic: selected,
-  }));
+  update(
+    RolloutPolicy.fromJSON({
+      ...rolloutPolicy.value,
+      automatic: selected,
+    })
+  );
 };
 const toggleIssueRoles = (checked: boolean, role: string) => {
   const issueRoles = rolloutPolicy.value.issueRoles;

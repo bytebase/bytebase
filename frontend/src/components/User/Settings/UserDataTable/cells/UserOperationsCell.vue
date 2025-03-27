@@ -79,6 +79,12 @@ const me = useCurrentUserV1();
 const allowEdit = computed(() => {
   return hasWorkspacePermissionV2("bb.users.update");
 });
+const allowDelete = computed(() => {
+  return hasWorkspacePermissionV2("bb.users.delete");
+});
+const allowUndelete = computed(() => {
+  return hasWorkspacePermissionV2("bb.users.undelete");
+});
 
 const allowUpdateUser = computed(() => {
   if (props.user.userType === UserType.SYSTEM_BOT) {
@@ -92,11 +98,11 @@ const allowDeleteUser = computed(() => {
     return false;
   }
   // cannot delete self.
-  return me.value.name !== props.user.name;
+  return me.value.name !== props.user.name && allowDelete.value;
 });
 
 const allowReactiveUser = computed(() => {
-  return allowEdit.value && props.user.state === State.DELETED;
+  return allowUndelete.value && props.user.state === State.DELETED;
 });
 
 const changeRowStatus = async (state: State) => {

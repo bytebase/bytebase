@@ -381,12 +381,8 @@
         "workspace-domain-required": "Vui lòng thiết lập tên miền không gian làm việc trước."
       },
       "action": {
-        "deactivate": "Vô hiệu hóa",
         "deactivate-confirm-title": "Bạn có chắc muốn vô hiệu hóa?",
         "reactivate-confirm-title": "Bạn có chắc muốn kích hoạt lại?"
-      },
-      "tooltip": {
-        "not-allow-remove": "Không thể xóa Quản trị viên cuối cùng"
       },
       "system-bot": "Bot hệ thống",
       "service-account": "Tài khoản dịch vụ",
@@ -408,7 +404,6 @@
         "reset-token": "Đặt lại mã thông báo",
         "reset-token-warning": "Bạn cần cập nhật cấu hình cung cấp ứng dụng Entra."
       },
-      "update-user": "Cập nhật người dùng",
       "search-member": "Tìm kiếm thành viên",
       "revoked": "Đã thu hồi",
       "view-by-members": "Xem theo thành viên",
