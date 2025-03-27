@@ -381,12 +381,8 @@
         "workspace-domain-required": "Primero configure un dominio de espacio de trabajo."
       },
       "action": {
-        "deactivate": "Desactivar",
         "deactivate-confirm-title": "¿Estás seguro de que deseas desactivar?",
         "reactivate-confirm-title": "¿Estás seguro de que deseas reactivar?"
-      },
-      "tooltip": {
-        "not-allow-remove": "No se puede eliminar el último administrador"
       },
       "system-bot": "Bot del Sistema",
       "service-account": "Cuenta de Servicio",
@@ -408,7 +404,6 @@
         "reset-token": "Restablecer token",
         "reset-token-warning": "Debe actualizar la configuración de aprovisionamiento de aplicaciones de Entra."
       },
-      "update-user": "Actualizar usuario",
       "search-member": "Buscar miembro",
       "revoked": "Revocado",
       "view-by-members": "Ver por miembros",

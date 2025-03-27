@@ -381,12 +381,8 @@
         "workspace-domain-required": "まずワークスペースドメインを設定してください。"
       },
       "action": {
-        "deactivate": "無効にする",
         "deactivate-confirm-title": "無効にしてもOK",
         "reactivate-confirm-title": "[OK] を有効にします"
-      },
-      "tooltip": {
-        "not-allow-remove": "最後の管理者を削除できません"
       },
       "system-bot": "ロボットアシスタント",
       "service-account": "サービスアカウント",
@@ -408,7 +404,6 @@
         "reset-token": "トークンをリセット",
         "reset-token-warning": "Entra アプリケーションのプロビジョニング設定を更新する必要があります。"
       },
-      "update-user": "ユーザーを更新",
       "search-member": "メンバーを検索",
       "revoked": "取り消されました",
       "view-by-members": "メンバー別に表示",

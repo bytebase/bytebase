@@ -381,12 +381,8 @@
         "workspace-domain-required": "Please set a workspace domain first."
       },
       "action": {
-        "deactivate": "Deactivate",
         "deactivate-confirm-title": "Are you sure to deactivate?",
         "reactivate-confirm-title": "Are you sure to reactivate"
-      },
-      "tooltip": {
-        "not-allow-remove": "Cannot remove the last Admin"
       },
       "system-bot": "System Bot",
       "service-account": "Service Account",
@@ -408,7 +404,6 @@
         "reset-token": "Reset token",
         "reset-token-warning": "You need to update the Entra application provisioning config."
       },
-      "update-user": "Update user",
       "search-member": "Search member",
       "revoked": "Revoked",
       "view-by-members": "View by members",
