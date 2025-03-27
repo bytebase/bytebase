@@ -24,24 +24,24 @@ type ANTLRPosition struct {
 // returns the previous ANTLRPosition if the Position is in the middle of a character,
 // returns the previous ANTLRPosition if the Position is out of the end of a line.
 func (p Position) ToANTLRPosition(text string) ANTLRPosition {
-	bt := []byte(text)
+	bs := []byte(text)
 	line := 0
 	byteOffset := 0
 	characterOffset := 0
-	for bi := 0; bi < len(bt); {
+	for bi := 0; bi < len(bs); {
 		if line < p.Line {
-			if bt[bi] == '\n' {
+			if bs[bi] == '\n' {
 				line++
 			}
 			bi++
 			continue
 		}
 
-		if byteOffset >= p.Column || bt[bi] == '\n' {
+		if byteOffset >= p.Column || bs[bi] == '\n' {
 			break
 		}
 
-		r, sz := utf8.DecodeRune(bt[bi:])
+		r, sz := utf8.DecodeRune(bs[bi:])
 		if r == utf8.RuneError {
 			break
 		}
@@ -66,24 +66,24 @@ func (p Position) ToANTLRPosition(text string) ANTLRPosition {
 // returns the previous Position if the ANTLRPosition is in the middle of a character,
 // returns the previous Position if the ANTLRPosition is out of the end of a line.
 func (a ANTLRPosition) ToPosition(text string) Position {
-	bt := []byte(text)
+	bs := []byte(text)
 	line := 0
 	byteOffset := 0
 	characterOffset := 0
-	for bi := 0; bi < len(bt); {
+	for bi := 0; bi < len(bs); {
 		if line < a.Line-1 {
-			if bt[bi] == '\n' {
+			if bs[bi] == '\n' {
 				line++
 			}
 			bi++
 			continue
 		}
 
-		if characterOffset >= a.Column || bt[bi] == '\n' {
+		if characterOffset >= a.Column || bs[bi] == '\n' {
 			break
 		}
 
-		r, sz := utf8.DecodeRune(bt[bi:])
+		r, sz := utf8.DecodeRune(bs[bi:])
 		if r == utf8.RuneError {
 			break
 		}
