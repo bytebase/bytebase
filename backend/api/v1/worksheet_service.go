@@ -543,7 +543,7 @@ func (s *WorksheetService) convertToAPIWorksheetMessage(ctx context.Context, wor
 			slog.Debug("failed to found database for worksheet", log.BBError(err), slog.Int("id", worksheet.UID), slog.String("instance", *worksheet.InstanceID), slog.String("database", *worksheet.DatabaseName))
 		}
 		if database != nil {
-			databaseParent = fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, worksheet.InstanceID, common.DatabaseIDPrefix, worksheet.DatabaseName)
+			databaseParent = common.FormatDatabase(database.InstanceID, database.DatabaseName)
 		}
 	}
 
