@@ -11297,10 +11297,15 @@ components:
             properties:
                 line:
                     type: integer
+                    description: Line position in a text (zero-based).
                     format: int32
                 column:
                     type: integer
+                    description: Column position in a text (zero-based), equivalent to byte offset.
                     format: int32
+            description: |-
+                Position in a text expressed as zero-based line and zero-based column byte
+                 offset.
         Postgres_Session:
             type: object
             properties:

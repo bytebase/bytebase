@@ -357,13 +357,14 @@ Used internally for obfuscating the page token.
 <a name="bytebase-store-Position"></a>
 
 ### Position
-
+Position in a text expressed as zero-based line and zero-based column byte
+offset.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| line | [int32](#int32) |  |  |
-| column | [int32](#int32) |  |  |
+| line | [int32](#int32) |  | Line position in a text (zero-based). |
+| column | [int32](#int32) |  | Column position in a text (zero-based), equivalent to byte offset. |
 
 
 
@@ -4799,6 +4800,7 @@ We support three types of SMTP encryption: NONE, STARTTLS, and SSL/TLS.
 
 ### TaskRunResult.Position
 The following fields are used for error reporting.
+TODO(zp): Use common Position instead.
 
 
 | Field | Type | Label | Description |

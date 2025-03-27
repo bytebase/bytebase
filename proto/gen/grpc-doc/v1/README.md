@@ -768,13 +768,14 @@
 <a name="bytebase-v1-Position"></a>
 
 ### Position
-
+Position in a text expressed as zero-based line and zero-based column byte
+offset.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| line | [int32](#int32) |  |  |
-| column | [int32](#int32) |  |  |
+| line | [int32](#int32) |  | Line position in a text (zero-based). |
+| column | [int32](#int32) |  | Column position in a text (zero-based), equivalent to byte offset. |
 
 
 
