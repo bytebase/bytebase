@@ -84,7 +84,8 @@ type Advice struct {
 	Title string `protobuf:"bytes,3,opt,name=title,proto3" json:"title,omitempty"`
 	// The advice content.
 	Content string `protobuf:"bytes,4,opt,name=content,proto3" json:"content,omitempty"`
-	// 1-based positions of the sql statment.
+	// The start_position is inclusive and the end_position is exclusive.
+	// TODO: use range instead.
 	StartPosition *Position `protobuf:"bytes,6,opt,name=start_position,json=startPosition,proto3" json:"start_position,omitempty"`
 	EndPosition   *Position `protobuf:"bytes,7,opt,name=end_position,json=endPosition,proto3" json:"end_position,omitempty"`
 	unknownFields protoimpl.UnknownFields

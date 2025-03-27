@@ -496,7 +496,7 @@ offset.
 | code | [int32](#int32) |  | The advice code. |
 | title | [string](#string) |  | The advice title. |
 | content | [string](#string) |  | The advice content. |
-| start_position | [Position](#bytebase-store-Position) |  | 1-based positions of the sql statment. |
+| start_position | [Position](#bytebase-store-Position) |  | The start_position is inclusive and the end_position is exclusive. TODO: use range instead. |
 | end_position | [Position](#bytebase-store-Position) |  |  |
 
 

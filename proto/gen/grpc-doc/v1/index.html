@@ -23855,7 +23855,8 @@ TYPE_SQL_EDITOR_QUERY represents executing query in SQL Editor.</p></td>
                   <td>candidates</td>
                   <td><a href="#bytebase.v1.AICompletionResponse.Candidate">AICompletionResponse.Candidate</a></td>
                   <td>repeated</td>
-                  <td><p>candidates is used for results with multiple choices and candidates. Used for OpenAI and Gemini. </p></td>
+                  <td><p>candidates is used for results with multiple choices and candidates. Used
+for OpenAI and Gemini. </p></td>
                 </tr>
               
             </tbody>
@@ -24072,8 +24073,9 @@ CosmosDB only. </p></td>
                   <td>start_position</td>
                   <td><a href="#bytebase.v1.Position">Position</a></td>
                   <td></td>
-                  <td><p>1-based Position of the SQL statement.
-To supersede `line` and `column` above. </p></td>
+                  <td><p>To supersede `line` and `column` above.
+The start_position is inclusive and the end_position is exclusive.
+TODO: use range instead </p></td>
                 </tr>
               
                 <tr>
@@ -24209,7 +24211,8 @@ Format: instances/{instance}/databases/{database} </p></td>
                   <td>classification_from_config</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
-                  <td><p>If false, we will build the raw common by classification in database config. </p></td>
+                  <td><p>If false, we will build the raw common by classification in database
+config. </p></td>
                 </tr>
               
             </tbody>
