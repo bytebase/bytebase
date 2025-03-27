@@ -69,6 +69,9 @@ func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.Connectio
 	if config.DataSource.GetSid() != "" {
 		options["SID"] = config.DataSource.GetSid()
 	}
+	for key, value := range config.DataSource.GetExtraConnectionParameters() {
+		options[key] = value
+	}
 	dsn := goora.BuildUrl(config.DataSource.Host, port, config.DataSource.GetServiceName(), config.DataSource.Username, config.Password, options)
 	db, err := sql.Open("oracle", dsn)
 	if err != nil {
