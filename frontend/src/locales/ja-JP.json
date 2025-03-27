@@ -1671,7 +1671,7 @@
     "snowflake-keypair-tip": "キーペア認証",
     "extra-params": {
       "self": "追加のパラメーター",
-      "description": "データベース接続文字列の追加パラメーター。 \nPostgreSQLの場合、ターゲット_session_attrs= read-writeなどのパラメーターを使用して、読み取りワイトインスタンスへの接続を確保できます。"
+      "description": "データベース接続文字列の追加パラメーター"
     },
     "ssl": {
       "ca-cert": "CA証明書",
