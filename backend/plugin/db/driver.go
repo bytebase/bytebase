@@ -140,9 +140,10 @@ type ConnectionConfig struct {
 // ConnectionContext is the context for connection.
 // It's not used for establishing the db connection, but is useful for logging.
 type ConnectionContext struct {
-	EnvironmentID string
-	InstanceID    string
-	EngineVersion string
+	EnvironmentID        string
+	InstanceID           string
+	EngineVersion        string
+	OperationalComponent string
 	// UseDatabaseOwner is used by Postgres for using role of database owner.
 	UseDatabaseOwner bool
 	DatabaseName     string

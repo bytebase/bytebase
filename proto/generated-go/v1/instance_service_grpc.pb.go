@@ -253,7 +253,7 @@ type UnsafeInstanceServiceServer interface {
 }
 
 func RegisterInstanceServiceServer(s grpc.ServiceRegistrar, srv InstanceServiceServer) {
-	// If the following call pancis, it indicates UnimplementedInstanceServiceServer was
+	// If the following call panics, it indicates UnimplementedInstanceServiceServer was
 	// embedded by pointer and is nil.  This will cause panics if an
 	// unimplemented method is ever invoked, so we test this at initialization
 	// time to prevent it from happening at runtime later due to I/O.

@@ -360,7 +360,9 @@ func (s *RolloutService) GetTaskRunSession(ctx context.Context, request *v1pb.Ge
 		return nil, status.Errorf(codes.Internal, "failed to get instance, error: %v", err)
 	}
 
-	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, nil, db.ConnectionContext{})
+	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, nil, db.ConnectionContext{
+		OperationalComponent: "get-taskrun-session",
+	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get driver, error: %v", err)
 	}

@@ -122,7 +122,9 @@ func (e *GhostSyncExecutor) Run(ctx context.Context, config *storepb.PlanCheckRu
 	defer func() {
 		if err := func() error {
 			ctx := context.Background()
-			driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{})
+			driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{
+				OperationalComponent: "remove-ghost",
+			})
 			if err != nil {
 				return errors.Wrapf(err, "failed to get driver")
 			}

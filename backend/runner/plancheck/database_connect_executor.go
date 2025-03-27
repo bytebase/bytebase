@@ -52,7 +52,9 @@ func (e *DatabaseConnectExecutor) Run(ctx context.Context, config *storepb.PlanC
 
 func (e *DatabaseConnectExecutor) checkDatabaseConnection(ctx context.Context, instance *store.InstanceMessage, database *store.DatabaseMessage) *storepb.PlanCheckRunResult_Result {
 	err := func() error {
-		driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{})
+		driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{
+			OperationalComponent: "check-connection",
+		})
 		if err != nil {
 			return err
 		}

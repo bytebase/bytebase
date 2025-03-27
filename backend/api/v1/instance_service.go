@@ -181,7 +181,9 @@ func (s *InstanceService) CreateInstance(ctx context.Context, request *v1pb.Crea
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */, db.ConnectionContext{})
+	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */, db.ConnectionContext{
+		OperationalComponent: "create-instance",
+	})
 	if err == nil {
 		defer driver.Close(ctx)
 		updatedInstance, _, _, err := s.schemaSyncer.SyncInstance(ctx, instance)
