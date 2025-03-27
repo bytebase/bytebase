@@ -6,31 +6,28 @@
 </template>
 
 <script setup lang="ts">
-import { computedAsync } from "@vueuse/core";
 import { UnlinkIcon } from "lucide-vue-next";
+import { computed } from "vue";
 import { EngineIcon } from "@/components/Icon";
-import { useDatabaseV1Store } from "@/store";
-import type { SQLEditorTab } from "@/types";
-import type { Worksheet } from "@/types/proto/v1/worksheet_service";
+import { type SQLEditorTab, isValidInstanceName } from "@/types";
 import { connectionForSQLEditorTab } from "@/utils";
 
 const props = defineProps<{
-  sheet?: Worksheet;
   tab?: SQLEditorTab;
 }>();
 
-const instance = computedAsync(async () => {
-  const { sheet, tab } = props;
-  if (sheet) {
-    if (!sheet.database) return undefined;
-    const database = await useDatabaseV1Store().getOrFetchDatabaseByName(
-      sheet.database
-    );
-    return database.instanceResource;
+const instance = computed(() => {
+  const { tab } = props;
+  if (!tab) {
+    return;
   }
-  if (tab) {
-    return connectionForSQLEditorTab(tab).instance;
+  const { instance } = connectionForSQLEditorTab(tab);
+  if (!instance) {
+    return;
   }
-  return undefined;
+  if (!isValidInstanceName(instance.name)) {
+    return;
+  }
+  return instance;
 });
 </script>
