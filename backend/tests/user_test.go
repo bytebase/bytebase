@@ -10,7 +10,6 @@ import (
 
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 
-	v1 "github.com/bytebase/bytebase/proto/generated-go/v1"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -27,7 +26,7 @@ func TestDeleteUser(t *testing.T) {
 	member, err := ctl.userServiceClient.CreateUser(ctx, &v1pb.CreateUserRequest{
 		User: &v1pb.User{
 			Title:    "member",
-			UserType: v1.UserType_USER,
+			UserType: v1pb.UserType_USER,
 			Email:    "member@bytebase.com",
 			Password: "1024bytebase",
 		},
@@ -49,7 +48,7 @@ func TestDeleteUser(t *testing.T) {
 	serviceAccount, err := ctl.userServiceClient.CreateUser(ctx, &v1pb.CreateUserRequest{
 		User: &v1pb.User{
 			Title:    "bot",
-			UserType: v1.UserType_SERVICE_ACCOUNT,
+			UserType: v1pb.UserType_SERVICE_ACCOUNT,
 			Email:    "bot@service.bytebase.com",
 		},
 	})
