@@ -67,11 +67,15 @@ export const useWorkSheetStore = defineStore("worksheet_v1", () => {
       cacheByUID.invalidateEntity([uid, "BASIC"]);
     }
 
-    await Promise.all([
-      projectStore.getOrFetchProjectByName(worksheet.project),
-      databaseStore.getOrFetchDatabaseByName(worksheet.database),
-      userStore.getOrFetchUserByIdentifier(worksheet.creator),
-    ]);
+    try {
+      await Promise.all([
+        projectStore.getOrFetchProjectByName(worksheet.project),
+        databaseStore.getOrFetchDatabaseByName(worksheet.database),
+        userStore.getOrFetchUserByIdentifier(worksheet.creator),
+      ]);
+    } catch {
+      // ignore error
+    }
     cacheByUID.setEntity([uid, view], worksheet);
   };
   const setListCache = async (worksheets: Worksheet[]) => {

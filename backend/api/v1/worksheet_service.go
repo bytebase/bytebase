@@ -535,16 +535,16 @@ func (s *WorksheetService) convertToAPIWorksheetMessage(ctx context.Context, wor
 	databaseParent := ""
 	if worksheet.InstanceID != nil && worksheet.DatabaseName != nil {
 		database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+			ProjectID:    &worksheet.ProjectID,
 			InstanceID:   worksheet.InstanceID,
 			DatabaseName: worksheet.DatabaseName,
 		})
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to get database: %v", err)
+			slog.Debug("failed to found database for worksheet", log.BBError(err), slog.Int("id", worksheet.UID), slog.String("instance", *worksheet.InstanceID), slog.String("database", *worksheet.DatabaseName))
 		}
-		if database == nil {
-			return nil, status.Errorf(codes.NotFound, "database %s not found", *worksheet.DatabaseName)
+		if database != nil {
+			databaseParent = common.FormatDatabase(database.InstanceID, database.DatabaseName)
 		}
-		databaseParent = fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName)
 	}
 
 	visibility := v1pb.Worksheet_VISIBILITY_UNSPECIFIED
