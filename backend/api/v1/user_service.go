@@ -705,7 +705,6 @@ func (s *UserService) getActiveUserCount(ctx context.Context) (int, error) {
 	return activeEndUserCount, nil
 }
 
-// TODO(ed): move to integration test.
 func (s *UserService) hasExtraWorkspaceAdmin(ctx context.Context, policy *storepb.IamPolicy, userID int) (bool, error) {
 	workspaceAdminRole := common.FormatRole(api.WorkspaceAdmin.String())
 	userMember := common.FormatUserUID(userID)
