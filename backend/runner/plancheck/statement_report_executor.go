@@ -168,7 +168,8 @@ func GetSQLSummaryReport(ctx context.Context, stores *store.Store, sheetManager 
 		return nil, err
 	}
 	driver, err := dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{
-		UseDatabaseOwner: useDatabaseOwner,
+		UseDatabaseOwner:     useDatabaseOwner,
+		OperationalComponent: "sql-summary-report",
 	})
 	if err != nil {
 		return nil, err

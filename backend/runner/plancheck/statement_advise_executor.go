@@ -179,7 +179,10 @@ func (e *StatementAdviseExecutor) runReview(
 			return nil, common.Wrapf(err, common.Internal, "failed to get use database owner")
 		}
 	}
-	driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{UseDatabaseOwner: useDatabaseOwner})
+	driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{
+		UseDatabaseOwner:     useDatabaseOwner,
+		OperationalComponent: "sql-review-check",
+	})
 	if err != nil {
 		return nil, err
 	}

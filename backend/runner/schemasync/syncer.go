@@ -250,7 +250,9 @@ func (s *Syncer) SyncDatabasesAsync(databases []*store.DatabaseMessage) {
 
 // GetInstanceMeta gets the instance metadata.
 func (s *Syncer) GetInstanceMeta(ctx context.Context, instance *store.InstanceMessage) (*db.InstanceMetadata, error) {
-	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */, db.ConnectionContext{})
+	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */, db.ConnectionContext{
+		OperationalComponent: "instance-meta",
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -354,7 +356,9 @@ func (s *Syncer) SyncDatabaseSchemaToHistory(ctx context.Context, database *stor
 	if instance == nil {
 		return 0, errors.Errorf("instance %q not found", database.InstanceID)
 	}
-	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{})
+	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{
+		OperationalComponent: "sync-schema",
+	})
 	if err != nil {
 		s.upsertDatabaseConnectionAnomaly(ctx, database, err)
 		return 0, err
@@ -458,7 +462,9 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 	if instance == nil {
 		return errors.Errorf("instance %q not found", database.InstanceID)
 	}
-	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{})
+	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{
+		OperationalComponent: "sync-schema",
+	})
 	if err != nil {
 		s.upsertDatabaseConnectionAnomaly(ctx, database, err)
 		return err

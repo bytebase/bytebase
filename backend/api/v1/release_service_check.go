@@ -268,7 +268,7 @@ func (s *ReleaseService) runSQLReviewCheckForFile(
 		return storepb.Advice_ERROR, nil, status.Errorf(codes.Internal, "failed to get use database owner: %v", err)
 	}
 	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{
-		OperationalComponent: "release-service",
+		OperationalComponent: "sql-review-check-context",
 	})
 	if err != nil {
 		return storepb.Advice_ERROR, nil, status.Errorf(codes.Internal, "failed to get database driver: %v", err)
