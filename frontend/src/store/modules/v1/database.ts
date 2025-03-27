@@ -241,7 +241,9 @@ export const batchGetOrFetchDatabases = async (databaseNames: string[]) => {
       if (!databaseName || !isValidDatabaseName(databaseName)) {
         return;
       }
-      return store.getOrFetchDatabaseByName(databaseName, true /* silent */);
+      return store
+        .getOrFetchDatabaseByName(databaseName, true /* silent */)
+        .catch(() => {});
     })
   );
 };
