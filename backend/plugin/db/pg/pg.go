@@ -157,10 +157,8 @@ func getPGConnectionConfig(config db.ConnectionConfig) (*pgx.ConnConfig, error) 
 	}
 
 	// Add target_session_attrs=read-write if specified in ExtraConnectionParameters
-	if len(config.DataSource.GetExtraConnectionParameters()) > 0 {
-		for key, value := range config.DataSource.GetExtraConnectionParameters() {
-			connStr += fmt.Sprintf(" %s=%s", key, value)
-		}
+	for key, value := range config.DataSource.GetExtraConnectionParameters() {
+		connStr += fmt.Sprintf(" %s=%s", key, value)
 	}
 
 	connConfig, err := pgx.ParseConfig(connStr)

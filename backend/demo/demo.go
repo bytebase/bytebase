@@ -23,7 +23,7 @@ func LoadDemoData(ctx context.Context, pgURL string) error {
 	// SELECT pg_catalog.set_config('search_path', '', false);
 	var ok bool
 	if err := db.QueryRowContext(ctx,
-		`SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'environment')`,
+		`SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'principal')`,
 	).Scan(&ok); err != nil {
 		return err
 	}
