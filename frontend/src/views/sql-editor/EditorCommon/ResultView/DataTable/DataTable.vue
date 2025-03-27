@@ -150,6 +150,7 @@ import SensitiveDataIcon from "./common/SensitiveDataIcon.vue";
 import BinaryFormatButton from "./common/BinaryFormatButton.vue";
 import { useSelectionContext } from "./common/selection-logic";
 import useTableColumnWidthLogic from "./useTableResize";
+import { setColumnFormatOverride } from "./binary-format-store";
 
 const props = defineProps<{
   table: Table<QueryRow>;
@@ -330,6 +331,9 @@ const setColumnFormat = (columnIndex: number, format: string | null) => {
   } else {
     columnFormatOverrides.value.set(columnIndex, format);
   }
+  
+  // Store the format in the binary format store for use during copy
+  setColumnFormatOverride(columnIndex, format, props.setIndex);
   
   // Force a re-render
   columnFormatOverrides.value = new Map(columnFormatOverrides.value);

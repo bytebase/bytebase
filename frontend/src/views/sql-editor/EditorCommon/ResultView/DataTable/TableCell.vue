@@ -62,7 +62,8 @@ import { escape } from "lodash-es";
 import { Code as IconCode } from "lucide-vue-next";
 import { NButton, NDropdown } from "naive-ui";
 import { twMerge } from "tailwind-merge";
-import { computed, nextTick, ref } from "vue";
+import { computed, nextTick, ref, onMounted } from "vue";
+import { getBinaryFormat, setBinaryFormat, setColumnType } from "./binary-format-store";
 import { useConnectionOfCurrentSQLEditorTab } from "@/store";
 import { Engine } from "@/types/proto/v1/common";
 import type { QueryRow, RowValue } from "@/types/proto/v1/sql_service";
@@ -289,6 +290,9 @@ const formattedBinaryValue = computed(() => {
     else {
       actualFormat = defaultFormat;
     }
+    
+    // Store the auto-detected format for use during copy operations
+    setBinaryFormat(props.rowIndex, props.colIndex, actualFormat, props.setIndex);
   }
   
   // Skip formatting for DEFAULT (auto) format
@@ -412,12 +416,17 @@ const handleContextMenu = (e: MouseEvent) => {
 
 // Handle format selection from dropdown
 const handleFormatSelect = (key: string) => {
+  
   // If DEFAULT is selected, remove the override
   if (key === "DEFAULT") {
     formatOverride.value = null;
+    // Also remove from the global store if it exists
+    setBinaryFormat(props.rowIndex, props.colIndex, "DEFAULT", props.setIndex);
   } else {
     // Otherwise set the override
     formatOverride.value = key;
+    // Store the format in the global binary format store
+    setBinaryFormat(props.rowIndex, props.colIndex, key, props.setIndex);
   }
   
   showFormatMenu.value = false;
@@ -425,4 +434,21 @@ const handleFormatSelect = (key: string) => {
   // Force recomputation of html
   nextTick();
 };
+
+// On component mount, check for any stored formats and store column type
+onMounted(() => {
+  // Store column type information for later format detection
+  if (props.columnType) {
+    setColumnType(props.colIndex, props.columnType, props.setIndex);
+  }
+  
+  // Only proceed if we have binary data
+  if (hasByteData.value) {
+    // Check for a saved format and apply it
+    const savedFormat = getBinaryFormat(props.rowIndex, props.colIndex, props.setIndex);
+    if (savedFormat && savedFormat !== "DEFAULT") {
+      formatOverride.value = savedFormat;
+    }
+  }
+});
 </script>
