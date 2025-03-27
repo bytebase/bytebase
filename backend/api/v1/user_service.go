@@ -676,8 +676,11 @@ func (s *UserService) DeleteUser(ctx context.Context, request *v1pb.DeleteUserRe
 	if err != nil {
 		return nil, err
 	}
-	ok = hasExtraWorkspaceAdmin(policy.Policy, user.ID)
-	if !ok {
+	hasExtraWorkspaceAdmin, err := s.hasExtraWorkspaceAdmin(ctx, policy.Policy, user.ID)
+	if err != nil {
+		return nil, err
+	}
+	if !hasExtraWorkspaceAdmin {
 		return nil, status.Errorf(codes.InvalidArgument, "workspace must have at least one admin")
 	}
 
@@ -687,21 +690,56 @@ func (s *UserService) DeleteUser(ctx context.Context, request *v1pb.DeleteUserRe
 	return &emptypb.Empty{}, nil
 }
 
-func hasExtraWorkspaceAdmin(policy *storepb.IamPolicy, userID int) bool {
+func (s *UserService) getActiveUserCount(ctx context.Context) (int, error) {
+	userStat, err := s.store.StatUsers(ctx)
+	if err != nil {
+		return 0, status.Errorf(codes.Internal, "failed to stat users with error: %v", err.Error())
+	}
+	activeEndUserCount := 0
+	for _, stat := range userStat {
+		if !stat.Deleted && stat.Type == api.EndUser {
+			activeEndUserCount = stat.Count
+			break
+		}
+	}
+	return activeEndUserCount, nil
+}
+
+// TODO(ed): move to integration test.
+func (s *UserService) hasExtraWorkspaceAdmin(ctx context.Context, policy *storepb.IamPolicy, userID int) (bool, error) {
 	workspaceAdminRole := common.FormatRole(api.WorkspaceAdmin.String())
 	userMember := common.FormatUserUID(userID)
 	systemBotMember := common.FormatUserUID(api.SystemBotID)
+
 	for _, binding := range policy.GetBindings() {
 		if binding.GetRole() != workspaceAdminRole {
 			continue
 		}
 		for _, member := range binding.GetMembers() {
-			if member != userMember && member != systemBotMember {
-				return true
+			if member == userMember || member == systemBotMember {
+				continue
+			}
+			if member == api.AllUsers {
+				activeEndUserCount, err := s.getActiveUserCount(ctx)
+				if err != nil {
+					return false, err
+				}
+				return activeEndUserCount > 1, nil
+			}
+			uID, err := common.GetUserID(member)
+			if err != nil {
+				return false, status.Errorf(codes.Internal, "failed to get id from member %v with error: %v", member, err.Error())
+			}
+			user, err := s.store.GetUserByID(ctx, uID)
+			if err != nil {
+				return false, status.Errorf(codes.Internal, "failed to get user %v with error: %v", member, err.Error())
+			}
+			if !user.MemberDeleted && user.Type == api.EndUser {
+				return true, nil
 			}
 		}
 	}
-	return false
+	return false, nil
 }
 
 // UndeleteUser undeletes a user.

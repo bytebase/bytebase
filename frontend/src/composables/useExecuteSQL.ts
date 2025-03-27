@@ -318,7 +318,8 @@ const useExecuteSQL = () => {
           fail(database, {
             advices: [],
             allowExport: false,
-            error: "No queriable data source.",
+            error:
+              "No queriable data source. Please check the data source query policy on environment or project.",
             results: [],
             status: Status.NOT_FOUND,
           });

@@ -23,7 +23,7 @@
           </div>
 
           <div class="w-full space-y-2">
-            <div class="flex items-center gap-x-1">
+            <div class="flex items-center gap-x-1 text-main">
               {{ $t("settings.members.assign-role", 2 /* multiply*/) }}
               <span class="text-red-600">*</span>
             </div>
