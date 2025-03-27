@@ -11,6 +11,7 @@ import (
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 
 	v1 "github.com/bytebase/bytebase/proto/generated-go/v1"
+	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 func TestDeleteUser(t *testing.T) {
@@ -23,8 +24,8 @@ func TestDeleteUser(t *testing.T) {
 
 	expectErrorMsg := "rpc error: code = InvalidArgument desc = workspace must have at least one admin"
 
-	member, err := ctl.userServiceClient.CreateUser(ctx, &v1.CreateUserRequest{
-		User: &v1.User{
+	member, err := ctl.userServiceClient.CreateUser(ctx, &v1pb.CreateUserRequest{
+		User: &v1pb.User{
 			Title:    "member",
 			UserType: v1.UserType_USER,
 			Email:    "member@bytebase.com",
@@ -33,20 +34,20 @@ func TestDeleteUser(t *testing.T) {
 	})
 	a.NoError(err)
 
-	_, err = ctl.userServiceClient.DeleteUser(ctx, &v1.DeleteUserRequest{
+	_, err = ctl.userServiceClient.DeleteUser(ctx, &v1pb.DeleteUserRequest{
 		Name: member.Name,
 	})
 	a.NoError(err)
 
 	// Test: cannot delete the last admin.
-	_, err = ctl.userServiceClient.DeleteUser(ctx, &v1.DeleteUserRequest{
+	_, err = ctl.userServiceClient.DeleteUser(ctx, &v1pb.DeleteUserRequest{
 		Name: ctl.principalName,
 	})
 	a.Error(err)
 	a.EqualError(err, expectErrorMsg)
 
-	serviceAccount, err := ctl.userServiceClient.CreateUser(ctx, &v1.CreateUserRequest{
-		User: &v1.User{
+	serviceAccount, err := ctl.userServiceClient.CreateUser(ctx, &v1pb.CreateUserRequest{
+		User: &v1pb.User{
 			Title:    "bot",
 			UserType: v1.UserType_SERVICE_ACCOUNT,
 			Email:    "bot@service.bytebase.com",
@@ -54,7 +55,7 @@ func TestDeleteUser(t *testing.T) {
 	})
 	a.NoError(err)
 
-	policy, err := ctl.workspaceServiceClient.GetIamPolicy(ctx, &v1.GetIamPolicyRequest{})
+	policy, err := ctl.workspaceServiceClient.GetIamPolicy(ctx, &v1pb.GetIamPolicyRequest{})
 	a.NoError(err)
 
 	// Test: only count the end user.
@@ -64,19 +65,19 @@ func TestDeleteUser(t *testing.T) {
 			break
 		}
 	}
-	updatedPolicy, err := ctl.workspaceServiceClient.SetIamPolicy(ctx, &v1.SetIamPolicyRequest{
+	updatedPolicy, err := ctl.workspaceServiceClient.SetIamPolicy(ctx, &v1pb.SetIamPolicyRequest{
 		Etag:   policy.Etag,
 		Policy: policy,
 	})
 	a.NoError(err)
 
-	_, err = ctl.userServiceClient.DeleteUser(ctx, &v1.DeleteUserRequest{
+	_, err = ctl.userServiceClient.DeleteUser(ctx, &v1pb.DeleteUserRequest{
 		Name: ctl.principalName,
 	})
 	a.Error(err)
 	a.EqualError(err, expectErrorMsg)
 
-	_, err = ctl.userServiceClient.UndeleteUser(ctx, &v1.UndeleteUserRequest{
+	_, err = ctl.userServiceClient.UndeleteUser(ctx, &v1pb.UndeleteUserRequest{
 		Name: member.Name,
 	})
 	a.NoError(err)
@@ -88,19 +89,19 @@ func TestDeleteUser(t *testing.T) {
 			break
 		}
 	}
-	newPolicy, err := ctl.workspaceServiceClient.SetIamPolicy(ctx, &v1.SetIamPolicyRequest{
+	newPolicy, err := ctl.workspaceServiceClient.SetIamPolicy(ctx, &v1pb.SetIamPolicyRequest{
 		Etag:   updatedPolicy.Etag,
 		Policy: updatedPolicy,
 	})
 	a.NoError(err)
 
-	_, err = ctl.userServiceClient.DeleteUser(ctx, &v1.DeleteUserRequest{
+	_, err = ctl.userServiceClient.DeleteUser(ctx, &v1pb.DeleteUserRequest{
 		Name: ctl.principalName,
 	})
 	a.NoError(err)
 
 	// Switch context.
-	resp, err := ctl.authServiceClient.Login(ctx, &v1.LoginRequest{
+	resp, err := ctl.authServiceClient.Login(ctx, &v1pb.LoginRequest{
 		Email:    member.Email,
 		Password: "1024bytebase",
 	})
@@ -118,24 +119,24 @@ func TestDeleteUser(t *testing.T) {
 			break
 		}
 	}
-	_, err = ctl.workspaceServiceClient.SetIamPolicy(ctx, &v1.SetIamPolicyRequest{
+	_, err = ctl.workspaceServiceClient.SetIamPolicy(ctx, &v1pb.SetIamPolicyRequest{
 		Etag:   newPolicy.Etag,
 		Policy: newPolicy,
 	})
 	a.NoError(err)
 
-	_, err = ctl.userServiceClient.DeleteUser(ctx, &v1.DeleteUserRequest{
+	_, err = ctl.userServiceClient.DeleteUser(ctx, &v1pb.DeleteUserRequest{
 		Name: member.Name,
 	})
 	a.Error(err)
 	a.EqualError(err, expectErrorMsg)
 
-	_, err = ctl.userServiceClient.UndeleteUser(ctx, &v1.UndeleteUserRequest{
+	_, err = ctl.userServiceClient.UndeleteUser(ctx, &v1pb.UndeleteUserRequest{
 		Name: ctl.principalName,
 	})
 	a.NoError(err)
 
-	_, err = ctl.userServiceClient.DeleteUser(ctx, &v1.DeleteUserRequest{
+	_, err = ctl.userServiceClient.DeleteUser(ctx, &v1pb.DeleteUserRequest{
 		Name: member.Name,
 	})
 	a.NoError(err)
