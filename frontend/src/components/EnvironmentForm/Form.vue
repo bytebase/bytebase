@@ -6,7 +6,7 @@
           <div class="w-4 h-4 relative">
             <component :is="renderColorPicker()" />
           </div>
-          <span for="name" class="textlabel">
+          <span for="name" class="font-medium">
             {{ $t("common.environment-name") }}
             <span class="text-red-600">*</span>
           </span>
@@ -14,7 +14,7 @@
         <NInput
           v-model:value="state.environment.title"
           :disabled="!allowEdit"
-          size="large"
+          required
         />
 
         <ResourceIdField
@@ -28,7 +28,7 @@
       </div>
 
       <div v-if="features.includes('TIER')" class="flex flex-col gap-y-2">
-        <label class="textlabel flex items-center">
+        <label class="font-medium flex items-center">
           {{ $t("policy.environment-tier.name") }}
           <FeatureBadge feature="bb.feature.environment-tier-policy" />
         </label>
@@ -47,7 +47,6 @@
         <NCheckbox
           :checked="state.environmentTier === EnvironmentTier.PROTECTED"
           :disabled="!allowEdit"
-          style="--n-label-padding: 0 0 0 1rem"
           @update:checked="
             (on: boolean) => {
               state.environmentTier = on
@@ -64,23 +63,27 @@
         v-if="features.includes('ROLLOUT_POLICY')"
         class="flex flex-col gap-y-2"
       >
-        <label class="textlabel">
-          {{ $t("policy.rollout.name") }}
-        </label>
-        <span
-          v-show="!create && valueChanged('rolloutPolicy')"
-          class="textlabeltip !ml-0"
-          >{{ $t("policy.rollout.tip") }}</span
-        >
+        <div class="flex items-baseline space-x-2">
+          <label class="font-medium">
+            {{ $t("policy.rollout.name") }}
+          </label>
+          <span
+            v-show="!create && valueChanged('rolloutPolicy')"
+            class="textlabeltip"
+          >
+            {{ $t("policy.rollout.tip") }}
+          </span>
+        </div>
         <div class="textinfolabel">
           {{ $t("policy.rollout.info") }}
           <a
             class="inline-flex items-center text-blue-600 ml-1 hover:underline"
             href="https://www.bytebase.com/docs/administration/environment-policy/rollout-policy"
             target="_blank"
-            >{{ $t("common.learn-more")
-            }}<heroicons-outline:external-link class="w-4 h-4"
-          /></a>
+          >
+            {{ $t("common.learn-more") }}
+            <heroicons-outline:external-link class="w-4 h-4" />
+          </a>
         </div>
         <RolloutPolicyConfig
           v-model:policy="state.rolloutPolicy"

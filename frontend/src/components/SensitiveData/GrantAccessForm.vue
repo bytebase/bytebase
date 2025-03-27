@@ -4,7 +4,7 @@
       <div class="space-y-8">
         <div class="w-full">
           <div class="flex items-center gap-x-1 mb-2">
-            <span class="font-medium text-main">
+            <span class="text-main">
               {{ $t("common.resources") }}
             </span>
             <span class="text-red-600">*</span>
@@ -19,7 +19,7 @@
 
         <div class="w-full">
           <div class="flex items-center gap-x-1 mb-2">
-            <span class="font-medium text-main">
+            <span class="text-main">
               {{ $t("settings.sensitive-data.action.self") }}
             </span>
             <span class="text-red-600">*</span>
@@ -43,7 +43,7 @@
         </div>
 
         <div class="w-full">
-          <p class="mb-2 font-medium text-main">
+          <p class="mb-2 text-main">
             {{ $t("common.expiration") }}
           </p>
           <NDatePicker

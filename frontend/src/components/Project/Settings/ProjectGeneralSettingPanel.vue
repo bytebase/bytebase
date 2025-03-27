@@ -3,27 +3,24 @@
     <p class="text-lg font-medium leading-7 text-main">
       {{ $t("common.general") }}
     </p>
-    <div class="flex justify-start items-start gap-6">
-      <dl class="">
-        <dt class="text-sm font-medium text-control-light">
-          {{ $t("common.name") }} <span class="text-red-600">*</span>
-        </dt>
-        <dd class="mt-1 text-sm text-main">
-          <NInput
-            id="projectName"
-            v-model:value="state.title"
-            :disabled="!allowEdit"
-            required
-          />
-        </dd>
-        <div class="mt-1">
-          <ResourceIdField
-            resource-type="project"
-            :value="extractProjectResourceName(project.name)"
-            :readonly="true"
-          />
-        </div>
-      </dl>
+    <div>
+      <div class="font-medium">
+        {{ $t("common.name") }} <span class="text-red-600">*</span>
+      </div>
+      <NInput
+        id="projectName"
+        class="mt-1"
+        v-model:value="state.title"
+        :disabled="!allowEdit"
+        required
+      />
+      <div class="mt-1">
+        <ResourceIdField
+          resource-type="project"
+          :value="extractProjectResourceName(project.name)"
+          :readonly="true"
+        />
+      </div>
     </div>
   </form>
 </template>

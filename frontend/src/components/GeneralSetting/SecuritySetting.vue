@@ -48,6 +48,7 @@
         ref="restrictIssueCreationConfigureRef"
         :resource="''"
         :allow-edit="allowEdit"
+        text-class="font-medium"
       />
       <MaximumSQLResultSizeSetting
         ref="maximumSQLResultSizeSettingRef"

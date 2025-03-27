@@ -6,7 +6,7 @@
         :text="true"
         :disabled="!allowEdit"
       />
-      <span class="font-medium">
+      <span :class="textClass">
         {{
           $t(
             "settings.general.workspace.restrict-issue-creation-for-sql-review.title"
@@ -40,10 +40,16 @@ import { hasWorkspacePermissionV2 } from "@/utils";
 import { FeatureBadge } from "../FeatureGuard";
 import { Switch } from "../v2";
 
-const props = defineProps<{
-  resource: string;
-  allowEdit: boolean;
-}>();
+const props = withDefaults(
+  defineProps<{
+    resource: string;
+    allowEdit: boolean;
+    textClass?: string;
+  }>(),
+  {
+    textClass: "textlabel",
+  }
+);
 
 const policyV1Store = usePolicyV1Store();
 

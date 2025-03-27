@@ -1,6 +1,6 @@
 <template>
   <div class="flex flex-col gap-y-2">
-    <label class="textlabel">
+    <label class="font-medium">
       {{ $t("sql-review.title") }}
     </label>
     <div>
