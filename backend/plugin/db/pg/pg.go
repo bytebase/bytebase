@@ -396,7 +396,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 				nonTransactionAndSetRoleStmts = append(nonTransactionAndSetRoleStmts, command.Text)
 				nonTransactionAndSetRoleStmtsIndex = append(nonTransactionAndSetRoleStmtsIndex, originalIndex[i])
 				continue
-			case isSuperuserStatement(command.Text) && d.connectionCtx.UseDatabaseOwner:
+			case isSuperuserStatement(command.Text) && driver.connectionCtx.UseDatabaseOwner:
 				// Use superuser privilege to run privileged statements.
 				slog.Info("Use superuser privilege to run privileged statements", slog.String("statement", command.Text))
 				ct := command.Text
