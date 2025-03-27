@@ -1671,7 +1671,7 @@
     "snowflake-keypair-tip": "Autenticación de par de claves",
     "extra-params": {
       "self": "Parámetros adicionales",
-      "description": "Parámetros adicionales para la cadena de conexión de la base de datos. \nPara PostgreSQL, puede usar parámetros como Target_Session_Attrs = Read-Write para garantizar las conexiones a instancias de lectura-escritura."
+      "description": "Parámetros adicionales para la cadena de conexión de la base de datos"
     },
     "ssl": {
       "ca-cert": "Certificado de CA",

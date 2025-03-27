@@ -66,6 +66,13 @@ func (d *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionC
 	// See: https://github.com/microsoft/go-mssqldb/issues/33
 	query.Add("tlsmin", "1.0")
 
+	// Add extra connection parameters if specified in the DataSource
+	if len(config.DataSource.GetExtraConnectionParameters()) > 0 {
+		for key, value := range config.DataSource.GetExtraConnectionParameters() {
+			query.Add(key, value)
+		}
+	}
+
 	var err error
 	if config.DataSource.GetUseSsl() && config.DataSource.GetSslCa() != "" {
 		// Due to Golang runtime limitation, x509 package will throw the error of 'certificate relies on legacy Common Name field, use SANs instead.

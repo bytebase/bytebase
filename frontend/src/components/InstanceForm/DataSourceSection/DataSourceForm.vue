@@ -827,7 +827,6 @@ MIIEvQ...
   </div>
 
   <div 
-    v-if="basicInfo.engine === Engine.POSTGRES" 
     class="mt-4 sm:col-span-3 sm:col-start-1"
   >
     <div class="flex flex-row items-center justify-between">
