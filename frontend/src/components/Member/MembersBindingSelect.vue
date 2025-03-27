@@ -28,7 +28,7 @@
       </template>
     </i18n-t>
     <div :class="['w-full space-y-2', memberType !== 'USERS' ? 'hidden' : '']">
-      <div class="flex font-medium text-main items-center gap-x-1">
+      <div class="flex text-main items-center gap-x-1">
         {{ $t("settings.members.select-user", 2 /* multiply*/) }}
         <span v-if="required" class="text-red-600">*</span>
       </div>

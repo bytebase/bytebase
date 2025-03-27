@@ -381,12 +381,8 @@
         "workspace-domain-required": "请先设置工作空间的域名。"
       },
       "action": {
-        "deactivate": "禁用",
         "deactivate-confirm-title": "确定禁用",
         "reactivate-confirm-title": "确定启用"
-      },
-      "tooltip": {
-        "not-allow-remove": "不能移除最后一个管理员"
       },
       "system-bot": "机器人助手",
       "service-account": "服务账号",
@@ -408,7 +404,6 @@
         "reset-token": "重置密钥",
         "reset-token-warning": "您需要更新 Entra 应用程序配置。"
       },
-      "update-user": "更新用户",
       "search-member": "搜索成员",
       "revoked": "已撤销",
       "view-by-members": "按成员查看",

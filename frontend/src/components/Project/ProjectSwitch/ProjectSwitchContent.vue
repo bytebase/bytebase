@@ -197,12 +197,16 @@ const onProjectSelect = (project: ComposedProject) => {
   record(route.fullPath);
 };
 
-const gotoWorkspace = () => {
+const gotoWorkspace = (e: MouseEvent) => {
   const route = router.resolve({
     name: WORKSPACE_ROUTE_LANDING,
   });
   record(route.fullPath);
-  router.push(route.fullPath);
+  if (e.ctrlKey || e.metaKey) {
+    window.open(route.fullPath, "_blank");
+  } else {
+    router.push(route.fullPath);
+  }
 };
 
 // Close popover when current project changed.

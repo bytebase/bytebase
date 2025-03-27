@@ -65,10 +65,9 @@
                   :size="'medium'"
                   @update:value="(role) => updateMemberRole(i, role)"
                 />
-                <div class="pl-5 flex justify-end">
+                <div class="flex justify-end">
                   <NButton
                     quaternary
-                    circle
                     size="tiny"
                     :disabled="disallowEditMember"
                     @click="deleteMember(i)"
@@ -106,7 +105,7 @@
             </template>
           </RemoveGroupButton>
 
-          <div class="flex flex-row items-center justify-end gap-x-3">
+          <div class="flex-1 flex flex-row items-center justify-end gap-x-3">
             <NButton @click="$emit('close')">
               {{ $t("common.cancel") }}
             </NButton>

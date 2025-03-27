@@ -163,7 +163,6 @@
 
   <CreateUserDrawer
     v-if="state.showCreateUserDrawer"
-    :user="state.editingUser"
     @close="state.showCreateUserDrawer = false"
     @created="handleUserCreated"
   />
@@ -230,7 +229,6 @@ type LocalState = {
   showCreateUserDrawer: boolean;
   showCreateGroupDrawer: boolean;
   showAadSyncDrawer: boolean;
-  editingUser?: User;
   editingGroup?: Group;
   showFeatureModal: boolean;
 };
@@ -430,12 +428,13 @@ const handleUpdateGroup = (group: Group) => {
 };
 
 const handleCreateUser = () => {
-  state.editingUser = undefined;
   state.showCreateUserDrawer = true;
 };
 
-const handleUserCreated = () => {
-  userPagedTable.value?.refresh();
+const handleUserCreated = (user: User) => {
+  userPagedTable.value?.refresh().then(() => {
+    userPagedTable.value?.updateCache([user]);
+  });
 };
 
 const handleUserUpdated = (_: User) => {
