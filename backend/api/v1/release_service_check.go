@@ -118,6 +118,10 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, request *v1pb.CheckRe
 		if instance == nil {
 			return nil, status.Errorf(codes.NotFound, "instance %q not found", database.InstanceID)
 		}
+		// Continue if the instance is not supported by SQL review.
+		if !isSQLReviewSupported(instance.Metadata.GetEngine()) {
+			continue
+		}
 
 		catalog, err := catalog.NewCatalog(ctx, s.store, database.InstanceID, database.DatabaseName, instance.Metadata.GetEngine(), store.IsObjectCaseSensitive(instance), nil)
 		if err != nil {
@@ -241,10 +245,6 @@ func (s *ReleaseService) runSQLReviewCheckForFile(
 	changeType storepb.PlanCheckRunConfig_ChangeDatabaseType,
 	statement string,
 ) (storepb.Advice_Status, []*v1pb.Advice, error) {
-	if !isSQLReviewSupported(instance.Metadata.GetEngine()) || database == nil {
-		return storepb.Advice_SUCCESS, nil, nil
-	}
-
 	dbSchema, err := s.store.GetDBSchema(ctx, database.InstanceID, database.DatabaseName)
 	if err != nil {
 		return storepb.Advice_ERROR, nil, errors.Wrapf(err, "failed to fetch database schema for database %s", database.String())
