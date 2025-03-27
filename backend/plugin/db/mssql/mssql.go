@@ -67,10 +67,8 @@ func (d *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionC
 	query.Add("tlsmin", "1.0")
 
 	// Add extra connection parameters if specified in the DataSource
-	if len(config.DataSource.GetExtraConnectionParameters()) > 0 {
-		for key, value := range config.DataSource.GetExtraConnectionParameters() {
-			query.Add(key, value)
-		}
+	for key, value := range config.DataSource.GetExtraConnectionParameters() {
+		query.Add(key, value)
 	}
 
 	var err error
