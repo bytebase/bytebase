@@ -108,10 +108,8 @@ func (d *Driver) getMySQLConnection(connCfg db.ConnectionConfig) (string, error)
 	}
 
 	params := []string{"multiStatements=true", "maxAllowedPacket=0"}
-	if len(connCfg.DataSource.GetExtraConnectionParameters()) > 0 {
-		for key, value := range connCfg.DataSource.GetExtraConnectionParameters() {
-			params = append(params, fmt.Sprintf("%s=%s", key, value))
-		}
+	for key, value := range connCfg.DataSource.GetExtraConnectionParameters() {
+		params = append(params, fmt.Sprintf("%s=%s", key, value))
 	}
 	if connCfg.DataSource.GetSshHost() != "" {
 		sshClient, err := util.GetSSHClient(connCfg.DataSource)
