@@ -1671,7 +1671,7 @@
     "snowflake-keypair-tip": "Xác thực cặp khóa",
     "extra-params": {
       "self": "Thông số bổ sung",
-      "description": "Các tham số bổ sung cho chuỗi kết nối cơ sở dữ liệu. \nĐối với PostgreSQL, bạn có thể sử dụng các tham số như target_session_attrs = read-write để đảm bảo kết nối với các phiên bản đọc-write."
+      "description": "Các tham số bổ sung cho chuỗi kết nối cơ sở dữ liệu"
     },
     "ssl": {
       "ca-cert": "Chứng chỉ CA",
