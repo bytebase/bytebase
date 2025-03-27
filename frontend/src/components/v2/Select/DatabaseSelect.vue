@@ -98,6 +98,17 @@ const filterParams = computed(() => {
   return list;
 });
 
+const initSelectedDatabases = async (databaseNames: string[]) => {
+  for (const databaseName of databaseNames) {
+    if (isValidDatabaseName(databaseName)) {
+      const db = await databaseStore.getOrFetchDatabaseByName(databaseName);
+      if (!state.rawDatabaseList.find((d) => d.name === db.name)) {
+        state.rawDatabaseList.unshift(db);
+      }
+    }
+  }
+};
+
 const searchDatabases = async (name: string) => {
   const dbFilter = [...filterParams.value];
   if (name) {
@@ -116,17 +127,25 @@ const handleSearch = useDebounceFn(async (search: string) => {
   try {
     const databases = await searchDatabases(search);
     state.rawDatabaseList = databases;
-    if (!search && props.includeAll) {
-      const dummyAll = {
-        ...unknownDatabase(),
-        databaseName: t("database.all"),
-      };
-      state.rawDatabaseList.unshift(dummyAll);
+    if (!search) {
+      if (props.includeAll) {
+        const dummyAll = {
+          ...unknownDatabase(),
+          databaseName: t("database.all"),
+        };
+        state.rawDatabaseList.unshift(dummyAll);
+      }
+      if (props.databaseName) {
+        await initSelectedDatabases([props.databaseName]);
+      }
+      if (props.databaseNames) {
+        await initSelectedDatabases(props.databaseNames);
+      }
     }
   } finally {
     state.loading = false;
   }
-}, 500);
+}, 200);
 
 watch(
   () => filterParams.value,
