@@ -1,33 +1,30 @@
 package common
 
-import "unicode/utf8"
+import (
+	"unicode/utf8"
 
-// Position in a text expressed as zero-based line and zero-based column byte offset.
-type Position struct {
-	// Line position in a text (zero-based).
-	Line int
-	// Column position in a text (zero-based), equivalent to byte offset.
-	Column int
-}
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
+)
 
 // ANTLRPosition is a position in a text expressed as one-based line and
 // zero-based column character (code point) offset integrated with ANTLR4.
 type ANTLRPosition struct {
 	// Line position in a text (one-based).
-	Line int
+	Line int32
 	// Column position in a text (zero-based), equivalent to character offset.
-	Column int
+	Column int32
 }
 
-// ToANTLRPosition converts a Position to an ANTLRPosition in a given text.
+// ConvertPositionToANTLRPosition converts a Position to an ANTLRPosition in a given text.
 // Returns the end ANTLRPosition if the Position is out of the end of text,
 // returns the previous ANTLRPosition if the Position is in the middle of a character,
 // returns the previous ANTLRPosition if the Position is out of the end of a line.
-func (p Position) ToANTLRPosition(text string) ANTLRPosition {
+func ConvertPositionToANTLRPosition(p *storepb.Position, text string) *ANTLRPosition {
 	bs := []byte(text)
-	line := 0
-	byteOffset := 0
-	characterOffset := 0
+	line := int32(0)
+	byteOffset := int32(0)
+	characterOffset := int32(0)
+
 	for bi := 0; bi < len(bs); {
 		if line < p.Line {
 			if bs[bi] == '\n' {
@@ -50,26 +47,27 @@ func (p Position) ToANTLRPosition(text string) ANTLRPosition {
 			break
 		}
 
-		byteOffset += sz
+		byteOffset += int32(sz)
 		bi += sz
 		characterOffset += 1
 	}
 
-	return ANTLRPosition{
+	return &ANTLRPosition{
 		Line:   line + 1,
 		Column: characterOffset,
 	}
 }
 
-// ToPosition converts an ANTLRPosition to a Position in a given text.
+// ConvertANTLRPositionToPosition converts an ANTLRPosition to a Position in a given text.
 // Returns the end Position if the ANTLRPosition is out of the end of text,
 // returns the previous Position if the ANTLRPosition is in the middle of a character,
 // returns the previous Position if the ANTLRPosition is out of the end of a line.
-func (a ANTLRPosition) ToPosition(text string) Position {
+func ConvertANTLRPositionToPosition(a *ANTLRPosition, text string) *storepb.Position {
 	bs := []byte(text)
-	line := 0
-	byteOffset := 0
-	characterOffset := 0
+	line := int32(0)
+	byteOffset := int32(0)
+	characterOffset := int32(0)
+
 	for bi := 0; bi < len(bs); {
 		if line < a.Line-1 {
 			if bs[bi] == '\n' {
@@ -92,12 +90,12 @@ func (a ANTLRPosition) ToPosition(text string) Position {
 			break
 		}
 
-		byteOffset += sz
+		byteOffset += int32(sz)
 		bi += sz
 		characterOffset += 1
 	}
 
-	return Position{
+	return &storepb.Position{
 		Line:   line,
 		Column: byteOffset,
 	}
