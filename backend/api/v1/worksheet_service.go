@@ -226,7 +226,6 @@ func (s *WorksheetService) SearchWorksheets(ctx context.Context, request *v1pb.S
 			slog.Warn("cannot access worksheet", slog.String("name", worksheet.Title))
 			continue
 		}
-
 		v1pbWorksheet, err := s.convertToAPIWorksheetMessage(ctx, worksheet)
 		if err != nil {
 			st := status.Convert(err)
