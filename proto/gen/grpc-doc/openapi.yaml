@@ -9350,6 +9350,7 @@ components:
                         - DATABRICKS
                         - COCKROACHDB
                         - COSMOSDB
+                        - TRINO
                     type: string
                     description: The database engine of the schema.
                     format: enum
@@ -9979,6 +9980,7 @@ components:
                         - DATABRICKS
                         - COCKROACHDB
                         - COSMOSDB
+                        - TRINO
                     type: string
                     format: enum
                 engineVersion:
@@ -11370,6 +11372,7 @@ components:
                         - DATABRICKS
                         - COCKROACHDB
                         - COSMOSDB
+                        - TRINO
                     type: string
                     format: enum
                 currentSchema:
@@ -12954,6 +12957,7 @@ components:
                         - DATABRICKS
                         - COCKROACHDB
                         - COSMOSDB
+                        - TRINO
                     type: string
                     description: The SQL dialect.
                     format: enum
