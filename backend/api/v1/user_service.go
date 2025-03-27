@@ -723,10 +723,7 @@ func (s *UserService) hasExtraWorkspaceAdmin(ctx context.Context, policy *storep
 				if err != nil {
 					return false, err
 				}
-				if activeEndUserCount > 1 {
-					return true, nil
-				}
-				continue
+				return activeEndUserCount > 1, nil
 			}
 			uID, err := common.GetUserID(member)
 			if err != nil {
