@@ -34,6 +34,7 @@ import {
   defaultProject,
   DEFAULT_PROJECT_NAME,
   UNKNOWN_PROJECT_NAME,
+  isValidProjectName,
 } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import type { Project } from "@/types/proto/v1/project_service";
@@ -87,21 +88,23 @@ const state = reactive<LocalState>({
   rawProjectList: [],
 });
 
+const initSelectedProjects = async (projectNames: string[]) => {
+  for (const projectName of projectNames) {
+    if (isValidProjectName(projectName)) {
+      const project = await projectStore.getOrFetchProjectByName(projectName);
+      if (!state.rawProjectList.find((p) => p.name === project.name)) {
+        state.rawProjectList.unshift(project);
+      }
+    }
+  }
+};
+
 const initProjectList = async () => {
-  if (
-    props.projectName &&
-    props.projectName !== DEFAULT_PROJECT_NAME &&
-    props.projectName !== UNKNOWN_PROJECT_NAME &&
-    isOrphanValue.value
-  ) {
-    // It may happen the selected id might not be in the project list.
-    // e.g. the selected project is deleted after the selection and we
-    // are unable to cleanup properly. In such case, the selected project id
-    // is orphaned and we need to fetch the project by name.
-    const project = await projectStore.getOrFetchProjectByName(
-      props.projectName
-    );
-    state.rawProjectList.unshift(project);
+  if (props.projectName) {
+    await initSelectedProjects([props.projectName]);
+  }
+  if (props.projectNames) {
+    await initSelectedProjects(props.projectNames);
   }
 
   if (
@@ -127,12 +130,6 @@ const initProjectList = async () => {
 const hasWorkspaceManageProjectPermission = computed(() =>
   hasWorkspacePermissionV2("bb.projects.list")
 );
-
-const isOrphanValue = computed(() => {
-  if (props.projectName === undefined) return false;
-
-  return !state.rawProjectList.find((proj) => proj.name === props.projectName);
-});
 
 const combinedProjectList = computed(() => {
   let list = state.rawProjectList.filter((project) => {
@@ -177,7 +174,7 @@ const handleSearch = useDebounceFn(async (search: string) => {
   } finally {
     state.loading = false;
   }
-}, 500);
+}, 200);
 
 onMounted(async () => {
   await handleSearch("");
