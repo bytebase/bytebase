@@ -92,13 +92,11 @@ func (checker *collationAllowlistChecker) checkCollation(collation string, lineN
 	collation = strings.ToLower(collation)
 	if _, exists := checker.allowList[collation]; collation != "" && !exists {
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{
-			Status:  checker.level,
-			Code:    advisor.DisabledCollation.Int32(),
-			Title:   checker.title,
-			Content: fmt.Sprintf("\"%s\" used disabled collation '%s'", checker.text, collation),
-			StartPosition: &storepb.Position{
-				Line: int32(checker.baseLine + lineNumber),
-			},
+			Status:        checker.level,
+			Code:          advisor.DisabledCollation.Int32(),
+			Title:         checker.title,
+			Content:       fmt.Sprintf("\"%s\" used disabled collation '%s'", checker.text, collation),
+			StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + lineNumber),
 		})
 	}
 }

@@ -95,25 +95,21 @@ func (checker *statementAffectedRowLimitChecker) Visit(in ast.Node) ast.Visitor 
 		}, checker.driver, storepb.Engine_POSTGRES, fmt.Sprintf("EXPLAIN %s", node.Text()))
 		if err != nil {
 			checker.adviceList = append(checker.adviceList, &storepb.Advice{
-				Status:  checker.level,
-				Code:    advisor.InsertTooManyRows.Int32(),
-				Title:   checker.title,
-				Content: fmt.Sprintf("\"%s\" dry runs failed: %s", checker.text, err.Error()),
-				StartPosition: &storepb.Position{
-					Line: int32(node.LastLine()),
-				},
+				Status:        checker.level,
+				Code:          advisor.InsertTooManyRows.Int32(),
+				Title:         checker.title,
+				Content:       fmt.Sprintf("\"%s\" dry runs failed: %s", checker.text, err.Error()),
+				StartPosition: advisor.ConvertANTLRLineToPosition(node.LastLine()),
 			})
 		} else {
 			rowCount, err := getAffectedRows(res)
 			if err != nil {
 				checker.adviceList = append(checker.adviceList, &storepb.Advice{
-					Status:  checker.level,
-					Code:    advisor.Internal.Int32(),
-					Title:   checker.title,
-					Content: fmt.Sprintf("failed to get row count for \"%s\": %s", checker.text, err.Error()),
-					StartPosition: &storepb.Position{
-						Line: int32(node.LastLine()),
-					},
+					Status:        checker.level,
+					Code:          advisor.Internal.Int32(),
+					Title:         checker.title,
+					Content:       fmt.Sprintf("failed to get row count for \"%s\": %s", checker.text, err.Error()),
+					StartPosition: advisor.ConvertANTLRLineToPosition(node.LastLine()),
 				})
 			} else if rowCount > int64(checker.maxRow) {
 				code = advisor.StatementAffectedRowExceedsLimit
@@ -124,13 +120,11 @@ func (checker *statementAffectedRowLimitChecker) Visit(in ast.Node) ast.Visitor 
 
 	if code != advisor.Ok {
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{
-			Status:  checker.level,
-			Code:    code.Int32(),
-			Title:   checker.title,
-			Content: fmt.Sprintf("The statement \"%s\" affected %d rows (estimated). The count exceeds %d.", checker.text, rows, checker.maxRow),
-			StartPosition: &storepb.Position{
-				Line: int32(in.LastLine()),
-			},
+			Status:        checker.level,
+			Code:          code.Int32(),
+			Title:         checker.title,
+			Content:       fmt.Sprintf("The statement \"%s\" affected %d rows (estimated). The count exceeds %d.", checker.text, rows, checker.maxRow),
+			StartPosition: advisor.ConvertANTLRLineToPosition(in.LastLine()),
 		})
 	}
 	return checker

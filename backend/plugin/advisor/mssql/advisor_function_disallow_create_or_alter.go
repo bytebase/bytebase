@@ -49,12 +49,10 @@ func (*FunctionDisallowCreateOrAlterAdvisor) Check(_ context.Context, checkCtx a
 
 func (checker *FunctionDisallowCreateOrAlterChecker) EnterCreate_or_alter_function(ctx *parser.Create_or_alter_functionContext) {
 	checker.adviceList = append(checker.adviceList, &storepb.Advice{
-		Status:  checker.level,
-		Code:    advisor.DisallowCreateFunction.Int32(),
-		Title:   checker.title,
-		Content: "Creating or altering functions is prohibited",
-		StartPosition: &storepb.Position{
-			Line: int32(ctx.GetStart().GetLine()),
-		},
+		Status:        checker.level,
+		Code:          advisor.DisallowCreateFunction.Int32(),
+		Title:         checker.title,
+		Content:       "Creating or altering functions is prohibited",
+		StartPosition: advisor.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
 	})
 }

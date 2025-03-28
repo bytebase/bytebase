@@ -85,13 +85,11 @@ func (checker *encodingAllowlistChecker) Visit(in ast.Node) ast.Visitor {
 
 	if code != advisor.Ok {
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{
-			Status:  checker.level,
-			Code:    code.Int32(),
-			Title:   checker.title,
-			Content: fmt.Sprintf("\"%s\" used disabled encoding '%s'", checker.text, disabledEncoding),
-			StartPosition: &storepb.Position{
-				Line: int32(line),
-			},
+			Status:        checker.level,
+			Code:          code.Int32(),
+			Title:         checker.title,
+			Content:       fmt.Sprintf("\"%s\" used disabled encoding '%s'", checker.text, disabledEncoding),
+			StartPosition: advisor.ConvertANTLRLineToPosition(line),
 		})
 	}
 

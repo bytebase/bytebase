@@ -68,13 +68,11 @@ func (checker *columnTypeDisallowListChecker) EnterData_type(ctx *parser.Data_ty
 	formatedDataType := strings.ToUpper(ctx.GetText())
 	if slices.Contains(checker.disallowTypes, formatedDataType) {
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{
-			Status:  checker.level,
-			Code:    advisor.DisabledColumnType.Int32(),
-			Title:   checker.title,
-			Content: "Column type " + formatedDataType + " is disallowed",
-			StartPosition: &storepb.Position{
-				Line: int32(ctx.GetStart().GetLine()),
-			},
+			Status:        checker.level,
+			Code:          advisor.DisabledColumnType.Int32(),
+			Title:         checker.title,
+			Content:       "Column type " + formatedDataType + " is disallowed",
+			StartPosition: advisor.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
 		})
 	}
 }

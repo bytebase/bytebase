@@ -151,13 +151,11 @@ func (v *compatibilityChecker) Enter(in ast.Node) (ast.Node, bool) {
 
 	if code != advisor.Ok {
 		v.adviceList = append(v.adviceList, &storepb.Advice{
-			Status:  v.level,
-			Code:    code.Int32(),
-			Title:   v.title,
-			Content: fmt.Sprintf("\"%s\" may cause incompatibility with the existing data and code", in.Text()),
-			StartPosition: &storepb.Position{
-				Line: int32(in.OriginTextPosition()),
-			},
+			Status:        v.level,
+			Code:          code.Int32(),
+			Title:         v.title,
+			Content:       fmt.Sprintf("\"%s\" may cause incompatibility with the existing data and code", in.Text()),
+			StartPosition: advisor.ConvertANTLRLineToPosition(in.OriginTextPosition()),
 		})
 	}
 	return in, false

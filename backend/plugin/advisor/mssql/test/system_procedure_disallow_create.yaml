@@ -24,6 +24,6 @@
       title: system.procedure.disallow-create
       content: Creating or altering procedures is prohibited
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null

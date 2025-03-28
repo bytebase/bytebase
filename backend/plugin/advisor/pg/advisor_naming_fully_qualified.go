@@ -165,13 +165,11 @@ func (checker *FullyQualifiedObjectNameChecker) appendAdviceByObjName(objName st
 	re := regexp.MustCompile(`.+\..+`)
 	if !re.MatchString(objName) {
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{
-			Status:  checker.status,
-			Code:    advisor.NamingNotFullyQualifiedName,
-			Title:   checker.title,
-			Content: fmt.Sprintf("unqualified object name: '%s'", objName),
-			StartPosition: &storepb.Position{
-				Line: int32(checker.line),
-			},
+			Status:        checker.status,
+			Code:          advisor.NamingNotFullyQualifiedName,
+			Title:         checker.title,
+			Content:       fmt.Sprintf("unqualified object name: '%s'", objName),
+			StartPosition: advisor.ConvertANTLRLineToPosition(checker.line),
 		})
 	}
 }

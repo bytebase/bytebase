@@ -116,13 +116,11 @@ func (checker *collationAllowlistChecker) Visit(in ast.Node) ast.Visitor {
 
 	if code != advisor.Ok {
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{
-			Status:  checker.level,
-			Code:    code.Int32(),
-			Title:   checker.title,
-			Content: fmt.Sprintf("Use disabled collation \"%s\", related statement \"%s\"", disabledCollation, checker.text),
-			StartPosition: &storepb.Position{
-				Line: int32(line),
-			},
+			Status:        checker.level,
+			Code:          code.Int32(),
+			Title:         checker.title,
+			Content:       fmt.Sprintf("Use disabled collation \"%s\", related statement \"%s\"", disabledCollation, checker.text),
+			StartPosition: advisor.ConvertANTLRLineToPosition(line),
 		})
 	}
 

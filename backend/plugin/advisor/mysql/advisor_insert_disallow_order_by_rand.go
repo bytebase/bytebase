@@ -101,13 +101,11 @@ func (checker *insertDisallowOrderByRandChecker) EnterQueryExpression(ctx *mysql
 		text := expr.GetText()
 		if strings.EqualFold(text, RandFn) {
 			checker.adviceList = append(checker.adviceList, &storepb.Advice{
-				Status:  checker.level,
-				Code:    advisor.InsertUseOrderByRand.Int32(),
-				Title:   checker.title,
-				Content: fmt.Sprintf("\"%s\" uses ORDER BY RAND in the INSERT statement", checker.text),
-				StartPosition: &storepb.Position{
-					Line: int32(checker.baseLine + ctx.GetStart().GetLine()),
-				},
+				Status:        checker.level,
+				Code:          advisor.InsertUseOrderByRand.Int32(),
+				Title:         checker.title,
+				Content:       fmt.Sprintf("\"%s\" uses ORDER BY RAND in the INSERT statement", checker.text),
+				StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
 			})
 		}
 	}

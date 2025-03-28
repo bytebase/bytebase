@@ -7,9 +7,8 @@
       code: 306
       title: naming.index.pk
       content: Primary key in table "tech_book" mismatches the naming convention, expect "^$|^pk_tech_book_id_name$" but found "tech_book_id_name"
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: ALTER TABLE tech_book ADD CONSTRAINT udmhjtnsaablcmjhqcznfiwtnevcehcvw PRIMARY KEY (id, name)
@@ -19,9 +18,8 @@
       code: 306
       title: naming.index.pk
       content: Primary key in table "tech_book" mismatches the naming convention, expect "^$|^pk_tech_book_id_name$" but found "udmhjtnsaablcmjhqcznfiwtnevcehcvw"
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: CREATE TABLE book(id INT, name VARCHAR(20), CONSTRAINT pk_book_name PRIMARY KEY (name))
@@ -39,9 +37,8 @@
       code: 306
       title: naming.index.pk
       content: Primary key in table "book" mismatches the naming convention, expect "^$|^pk_book_name$" but found "tech_book_name"
-      detail: ""
       startposition:
-        line: 5
+        line: 4
         column: 0
       endposition: null
 - statement: CREATE TABLE book(id INT, name VARCHAR(20), PRIMARY KEY (name))
@@ -57,9 +54,8 @@
       code: 306
       title: naming.index.pk
       content: Primary key in table "tech_book" mismatches the naming convention, expect "^$|^pk_tech_book_id_name$" but found "pk_tech_book"
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: ALTER TABLE tech_book RENAME CONSTRAINT old_pk TO pk_tech_book_id_name
@@ -71,9 +67,8 @@
       code: 306
       title: naming.index.pk
       content: Primary key in table "tech_book" mismatches the naming convention, expect "^$|^pk_tech_book_id_name$" but found "pk_tech_book"
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: ALTER INDEX old_pk RENAME TO pk_tech_book_id_name
@@ -85,8 +80,7 @@
       code: 306
       title: naming.index.pk
       content: Primary key in table "tech_book" mismatches the naming convention, expect "^$|^pk_tech_book_id_name$" but found "pk_tech_book"
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null

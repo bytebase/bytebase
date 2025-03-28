@@ -7,8 +7,7 @@
       code: 1601
       title: system.view.disallow-create
       content: View is forbidden, but "CREATE VIEW get_one AS SELECT 1;" creates
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null

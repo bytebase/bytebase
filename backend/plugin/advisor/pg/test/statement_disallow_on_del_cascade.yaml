@@ -12,10 +12,9 @@
       code: 213
       title: statement.disallow-on-del-cascade
       content: The CASCADE option is not permitted for ON DELETE clauses
-      detail: ""
       startposition:
-        line: 1
-        column: 1
+        line: 0
+        column: 0
       endposition: null
 - statement: |-
     CREATE TABLE users (
@@ -39,8 +38,7 @@
       code: 213
       title: statement.disallow-on-del-cascade
       content: The CASCADE option is not permitted for ON DELETE clauses
-      detail: ""
       startposition:
-        line: 3
-        column: 1
+        line: 1
+        column: 0
       endposition: null

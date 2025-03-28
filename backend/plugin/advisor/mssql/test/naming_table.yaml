@@ -8,7 +8,7 @@
       title: naming.table
       content: '[\\] mismatches table naming convention, naming format should be "^[A-Z]([_A-Za-z])*$"'
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: CREATE TABLE all_lowercase(ID INT);
@@ -19,7 +19,7 @@
       title: naming.table
       content: all_lowercase mismatches table naming convention, naming format should be "^[A-Z]([_A-Za-z])*$"
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: CREATE TABLE PascalCase(ID INT);
@@ -34,6 +34,6 @@
       title: naming.table
       content: salesTerr mismatches table naming convention, naming format should be "^[A-Z]([_A-Za-z])*$"
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null

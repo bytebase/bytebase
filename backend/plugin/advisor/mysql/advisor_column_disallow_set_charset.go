@@ -89,13 +89,11 @@ func (checker *columnDisallowSetCharsetChecker) EnterCreateTable(ctx *mysql.Crea
 		charset := checker.getCharSet(tableElement.ColumnDefinition().FieldDefinition().DataType())
 		if !checker.checkCharset(charset) {
 			checker.adviceList = append(checker.adviceList, &storepb.Advice{
-				Status:  checker.level,
-				Code:    advisor.SetColumnCharset.Int32(),
-				Title:   checker.title,
-				Content: fmt.Sprintf("Disallow set column charset but \"%s\" does", checker.text),
-				StartPosition: &storepb.Position{
-					Line: int32(checker.baseLine + ctx.GetStart().GetLine()),
-				},
+				Status:        checker.level,
+				Code:          advisor.SetColumnCharset.Int32(),
+				Title:         checker.title,
+				Content:       fmt.Sprintf("Disallow set column charset but \"%s\" does", checker.text),
+				StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
 			})
 		}
 	}
@@ -168,13 +166,11 @@ func (checker *columnDisallowSetCharsetChecker) EnterAlterTable(ctx *mysql.Alter
 		for _, charsetName := range charsetList {
 			if !checker.checkCharset(charsetName) {
 				checker.adviceList = append(checker.adviceList, &storepb.Advice{
-					Status:  checker.level,
-					Code:    advisor.SetColumnCharset.Int32(),
-					Title:   checker.title,
-					Content: fmt.Sprintf("Disallow set column charset but \"%s\" does", checker.text),
-					StartPosition: &storepb.Position{
-						Line: int32(checker.baseLine + ctx.GetStart().GetLine()),
-					},
+					Status:        checker.level,
+					Code:          advisor.SetColumnCharset.Int32(),
+					Title:         checker.title,
+					Content:       fmt.Sprintf("Disallow set column charset but \"%s\" does", checker.text),
+					StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
 				})
 			}
 		}

@@ -304,10 +304,14 @@ func (ExportFormat) EnumDescriptor() ([]byte, []int) {
 	return file_v1_common_proto_rawDescGZIP(), []int{3}
 }
 
+// Position in a text expressed as zero-based line and zero-based column byte
+// offset.
 type Position struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Line          int32                  `protobuf:"varint,1,opt,name=line,proto3" json:"line,omitempty"`
-	Column        int32                  `protobuf:"varint,2,opt,name=column,proto3" json:"column,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Line position in a text (zero-based).
+	Line int32 `protobuf:"varint,1,opt,name=line,proto3" json:"line,omitempty"`
+	// Column position in a text (zero-based), equivalent to byte offset.
+	Column        int32 `protobuf:"varint,2,opt,name=column,proto3" json:"column,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }

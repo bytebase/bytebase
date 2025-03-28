@@ -18,45 +18,40 @@
       code: 401
       title: column.required
       content: Table t missing required column "created_ts"
-      detail: ""
       startposition:
-        line: 3
+        line: 2
         column: 0
       endposition: null
     - status: 2
       code: 401
       title: column.required
       content: Table t missing required column "creator_id"
-      detail: ""
       startposition:
-        line: 3
+        line: 2
         column: 0
       endposition: null
     - status: 2
       code: 401
       title: column.required
       content: Table t missing required column "id"
-      detail: ""
       startposition:
-        line: 3
+        line: 2
         column: 0
       endposition: null
     - status: 2
       code: 401
       title: column.required
       content: Table t missing required column "updated_ts"
-      detail: ""
       startposition:
-        line: 3
+        line: 2
         column: 0
       endposition: null
     - status: 2
       code: 401
       title: column.required
       content: Table t missing required column "updater_id"
-      detail: ""
       startposition:
-        line: 3
+        line: 2
         column: 0
       endposition: null
 - statement: |-
@@ -72,9 +67,8 @@
       code: 401
       title: column.required
       content: Table t missing required column "updated_ts"
-      detail: ""
       startposition:
-        line: 5
+        line: 4
         column: 0
       endposition: null
 - statement: ALTER TABLE t DROP COLUMN "created_ts";
@@ -84,9 +78,8 @@
       code: 401
       title: column.required
       content: Table t missing required column "created_ts"
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: ALTER TABLE t DROP COLUMN creator_id;

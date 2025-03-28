@@ -5,9 +5,8 @@
       code: 227
       title: statement.disallow-mix-in-ddl
       content: Alter schema can only run DDL
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: UPDATE tech_book SET id = 1;
@@ -17,9 +16,8 @@
       code: 227
       title: statement.disallow-mix-in-ddl
       content: Alter schema can only run DDL
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: ALTER TABLE tech_book ADD author VARCHAR2(250); UPDATE tech_book SET id = 1;DELETE FROM tech_book WHERE a > 1;
@@ -29,17 +27,15 @@
       code: 227
       title: statement.disallow-mix-in-ddl
       content: Alter schema can only run DDL
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
     - status: 2
       code: 227
       title: statement.disallow-mix-in-ddl
       content: Alter schema can only run DDL
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null

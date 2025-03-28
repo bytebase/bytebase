@@ -11,8 +11,7 @@
       code: 406
       title: column.disallow-change
       content: '"ALTER TABLE t CHANGE COLUMN b a int" contains CHANGE COLUMN statement'
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null

@@ -74,36 +74,30 @@ func (checker *tableCommentConventionChecker) Enter(in ast.Node) (ast.Node, bool
 		exist, comment := tableComment(node.Options)
 		if checker.payload.Required && !exist {
 			checker.adviceList = append(checker.adviceList, &storepb.Advice{
-				Status:  checker.level,
-				Code:    advisor.CommentEmpty.Int32(),
-				Title:   checker.title,
-				Content: fmt.Sprintf("Table `%s` requires comments", node.Table.Name.O),
-				StartPosition: &storepb.Position{
-					Line: int32(checker.line),
-				},
+				Status:        checker.level,
+				Code:          advisor.CommentEmpty.Int32(),
+				Title:         checker.title,
+				Content:       fmt.Sprintf("Table `%s` requires comments", node.Table.Name.O),
+				StartPosition: advisor.ConvertANTLRLineToPosition(checker.line),
 			})
 		}
 		if checker.payload.MaxLength >= 0 && len(comment) > checker.payload.MaxLength {
 			checker.adviceList = append(checker.adviceList, &storepb.Advice{
-				Status:  checker.level,
-				Code:    advisor.CommentTooLong.Int32(),
-				Title:   checker.title,
-				Content: fmt.Sprintf("The length of table `%s` comment should be within %d characters", node.Table.Name.O, checker.payload.MaxLength),
-				StartPosition: &storepb.Position{
-					Line: int32(checker.line),
-				},
+				Status:        checker.level,
+				Code:          advisor.CommentTooLong.Int32(),
+				Title:         checker.title,
+				Content:       fmt.Sprintf("The length of table `%s` comment should be within %d characters", node.Table.Name.O, checker.payload.MaxLength),
+				StartPosition: advisor.ConvertANTLRLineToPosition(checker.line),
 			})
 		}
 		if checker.payload.RequiredClassification {
 			if classification, _ := common.GetClassificationAndUserComment(comment, checker.classificationConfig); classification == "" {
 				checker.adviceList = append(checker.adviceList, &storepb.Advice{
-					Status:  checker.level,
-					Code:    advisor.CommentMissingClassification.Int32(),
-					Title:   checker.title,
-					Content: fmt.Sprintf("Table `%s` comment requires classification", node.Table.Name.O),
-					StartPosition: &storepb.Position{
-						Line: int32(checker.line),
-					},
+					Status:        checker.level,
+					Code:          advisor.CommentMissingClassification.Int32(),
+					Title:         checker.title,
+					Content:       fmt.Sprintf("Table `%s` comment requires classification", node.Table.Name.O),
+					StartPosition: advisor.ConvertANTLRLineToPosition(checker.line),
 				})
 			}
 		}

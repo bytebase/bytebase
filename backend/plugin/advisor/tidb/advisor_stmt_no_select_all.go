@@ -62,13 +62,11 @@ func (v *noSelectAllChecker) Enter(in ast.Node) (ast.Node, bool) {
 		for _, field := range node.Fields.Fields {
 			if field.WildCard != nil {
 				v.adviceList = append(v.adviceList, &storepb.Advice{
-					Status:  v.level,
-					Code:    advisor.StatementSelectAll.Int32(),
-					Title:   v.title,
-					Content: fmt.Sprintf("\"%s\" uses SELECT all", v.text),
-					StartPosition: &storepb.Position{
-						Line: int32(v.line),
-					},
+					Status:        v.level,
+					Code:          advisor.StatementSelectAll.Int32(),
+					Title:         v.title,
+					Content:       fmt.Sprintf("\"%s\" uses SELECT all", v.text),
+					StartPosition: advisor.ConvertANTLRLineToPosition(v.line),
 				})
 				break
 			}

@@ -1043,8 +1043,9 @@ type Advice struct {
 	Line int32 `protobuf:"varint,5,opt,name=line,proto3" json:"line,omitempty"`
 	// The advice column number in the SQL statement.
 	Column int32 `protobuf:"varint,6,opt,name=column,proto3" json:"column,omitempty"`
-	// 1-based Position of the SQL statement.
 	// To supersede `line` and `column` above.
+	// The start_position is inclusive and the end_position is exclusive.
+	// TODO: use range instead
 	StartPosition *Position `protobuf:"bytes,8,opt,name=start_position,json=startPosition,proto3" json:"start_position,omitempty"`
 	EndPosition   *Position `protobuf:"bytes,9,opt,name=end_position,json=endPosition,proto3" json:"end_position,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -1619,7 +1620,8 @@ type DiffMetadataRequest struct {
 	TargetCatalog  *DatabaseCatalog  `protobuf:"bytes,6,opt,name=target_catalog,json=targetCatalog,proto3" json:"target_catalog,omitempty"`
 	// The database engine of the schema.
 	Engine Engine `protobuf:"varint,3,opt,name=engine,proto3,enum=bytebase.v1.Engine" json:"engine,omitempty"`
-	// If false, we will build the raw common by classification in database config.
+	// If false, we will build the raw common by classification in database
+	// config.
 	ClassificationFromConfig bool `protobuf:"varint,4,opt,name=classification_from_config,json=classificationFromConfig,proto3" json:"classification_from_config,omitempty"`
 	unknownFields            protoimpl.UnknownFields
 	sizeCache                protoimpl.SizeCache
@@ -2024,7 +2026,8 @@ func (x *AICompletionRequest) GetMessages() []*AICompletionRequest_Message {
 
 type AICompletionResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// candidates is used for results with multiple choices and candidates. Used for OpenAI and Gemini.
+	// candidates is used for results with multiple choices and candidates. Used
+	// for OpenAI and Gemini.
 	Candidates    []*AICompletionResponse_Candidate `protobuf:"bytes,1,rep,name=candidates,proto3" json:"candidates,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache

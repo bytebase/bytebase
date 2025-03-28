@@ -115,13 +115,11 @@ func (v *indexPrimaryKeyTypeAllowlistChecker) Enter(in ast.Node) (ast.Node, bool
 	}
 	for _, pd := range pkDataList {
 		v.adviceList = append(v.adviceList, &storepb.Advice{
-			Status:  v.level,
-			Code:    advisor.IndexPKType.Int32(),
-			Title:   v.title,
-			Content: fmt.Sprintf("The column `%s` in table `%s` is one of the primary key, but its type \"%s\" is not in allowlist", pd.column, pd.table, pd.columnType),
-			StartPosition: &storepb.Position{
-				Line: int32(pd.line),
-			},
+			Status:        v.level,
+			Code:          advisor.IndexPKType.Int32(),
+			Title:         v.title,
+			Content:       fmt.Sprintf("The column `%s` in table `%s` is one of the primary key, but its type \"%s\" is not in allowlist", pd.column, pd.table, pd.columnType),
+			StartPosition: advisor.ConvertANTLRLineToPosition(pd.line),
 		})
 	}
 	return in, false

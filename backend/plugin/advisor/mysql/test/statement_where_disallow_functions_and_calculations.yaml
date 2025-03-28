@@ -5,8 +5,7 @@
       code: 1702
       title: statement.where.disallow-functions-and-calculations
       content: Function is disallowed in where clause, but "SELECT * FROM employee WHERE id = RAND();" uses
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null

@@ -69,13 +69,11 @@ func (v *whereRequirementForSelectChecker) Enter(in ast.Node) (ast.Node, bool) {
 
 	if code != advisor.Ok {
 		v.adviceList = append(v.adviceList, &storepb.Advice{
-			Status:  v.level,
-			Code:    code.Int32(),
-			Title:   v.title,
-			Content: fmt.Sprintf("\"%s\" requires WHERE clause", v.text),
-			StartPosition: &storepb.Position{
-				Line: int32(v.line),
-			},
+			Status:        v.level,
+			Code:          code.Int32(),
+			Title:         v.title,
+			Content:       fmt.Sprintf("\"%s\" requires WHERE clause", v.text),
+			StartPosition: advisor.ConvertANTLRLineToPosition(v.line),
 		})
 	}
 	return in, false

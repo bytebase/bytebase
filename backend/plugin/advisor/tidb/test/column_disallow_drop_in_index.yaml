@@ -11,9 +11,8 @@
       code: 424
       title: column.disallow-drop-in-index
       content: '`t`.`b` cannot drop index column'
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null
 - statement: |-
@@ -25,9 +24,8 @@
       code: 424
       title: column.disallow-drop-in-index
       content: '`t`.`c` cannot drop index column'
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null
 - statement: |-
@@ -45,17 +43,15 @@
       code: 424
       title: column.disallow-drop-in-index
       content: '`t`.`a` cannot drop index column'
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null
     - status: 2
       code: 424
       title: column.disallow-drop-in-index
       content: '`t`.`c` cannot drop index column'
-      detail: ""
       startposition:
-        line: 3
+        line: 2
         column: 0
       endposition: null

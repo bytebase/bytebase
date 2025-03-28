@@ -47,13 +47,11 @@ func (*StatementDisallowMixInDDLAdvisor) Check(_ context.Context, checkCtx advis
 		if stmt, ok := item.(parser.IUnit_statementContext); ok {
 			if stmt.Data_manipulation_language_statements() != nil {
 				adviceList = append(adviceList, &storepb.Advice{
-					Status:  level,
-					Title:   title,
-					Content: "Alter schema can only run DDL",
-					Code:    advisor.StatementDisallowMixDDLDML.Int32(),
-					StartPosition: &storepb.Position{
-						Line: int32(stmt.GetStart().GetLine()),
-					},
+					Status:        level,
+					Title:         title,
+					Content:       "Alter schema can only run DDL",
+					Code:          advisor.StatementDisallowMixDDLDML.Int32(),
+					StartPosition: advisor.ConvertANTLRLineToPosition(stmt.GetStart().GetLine()),
 				})
 			}
 		}

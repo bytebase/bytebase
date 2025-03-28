@@ -7,8 +7,7 @@
       code: 603
       title: table.drop-naming-convention
       content: '"FOO" mismatches drop table naming convention, naming format should be "_delete$"'
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null

@@ -79,13 +79,11 @@ func (checker *functionDisallowedListChecker) EnterFunctionCall(ctx *mysql.Funct
 		functionName := mysqlparser.NormalizeMySQLPureIdentifier(pi)
 		if slices.Contains(checker.disallowList, strings.ToUpper(functionName)) {
 			checker.adviceList = append(checker.adviceList, &storepb.Advice{
-				Status:  checker.level,
-				Code:    advisor.DisabledFunction.Int32(),
-				Title:   checker.title,
-				Content: fmt.Sprintf("Function \"%s\" is disallowed, but \"%s\" uses", functionName, checker.text),
-				StartPosition: &storepb.Position{
-					Line: int32(checker.baseLine + ctx.GetStart().GetLine()),
-				},
+				Status:        checker.level,
+				Code:          advisor.DisabledFunction.Int32(),
+				Title:         checker.title,
+				Content:       fmt.Sprintf("Function \"%s\" is disallowed, but \"%s\" uses", functionName, checker.text),
+				StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
 			})
 		}
 	}

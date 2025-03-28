@@ -160,12 +160,10 @@ func (c *useInnoDBChecker) EnterSetStatement(ctx *mysql.SetStatementContext) {
 func (c *useInnoDBChecker) addAdvice(content string, lineNumber int) {
 	lineNumber += c.baseLine
 	c.adviceList = append(c.adviceList, &storepb.Advice{
-		Status:  c.level,
-		Code:    advisor.NotInnoDBEngine.Int32(),
-		Title:   c.title,
-		Content: fmt.Sprintf("\"%s;\" doesn't use InnoDB engine", content),
-		StartPosition: &storepb.Position{
-			Line: int32(lineNumber),
-		},
+		Status:        c.level,
+		Code:          advisor.NotInnoDBEngine.Int32(),
+		Title:         c.title,
+		Content:       fmt.Sprintf("\"%s;\" doesn't use InnoDB engine", content),
+		StartPosition: advisor.ConvertANTLRLineToPosition(lineNumber),
 	})
 }

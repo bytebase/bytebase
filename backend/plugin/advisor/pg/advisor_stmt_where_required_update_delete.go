@@ -75,13 +75,11 @@ func (checker *whereRequirementForUpdateDeleteChecker) Visit(node ast.Node) ast.
 
 	if code != advisor.Ok {
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{
-			Status:  checker.level,
-			Code:    code.Int32(),
-			Title:   checker.title,
-			Content: fmt.Sprintf("\"%s\" requires WHERE clause", checker.text),
-			StartPosition: &storepb.Position{
-				Line: int32(checker.line),
-			},
+			Status:        checker.level,
+			Code:          code.Int32(),
+			Title:         checker.title,
+			Content:       fmt.Sprintf("\"%s\" requires WHERE clause", checker.text),
+			StartPosition: advisor.ConvertANTLRLineToPosition(checker.line),
 		})
 	}
 	return checker

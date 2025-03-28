@@ -55,13 +55,11 @@ func (checker *DisallowCrossDBQueriesChecker) EnterTable_source_item(ctx *parser
 		// Case insensitive.
 		if fullTblName, err := tsql.NormalizeFullTableName(fullTblnameCtx); err == nil && fullTblName.Database != "" && !strings.EqualFold(fullTblName.Database, checker.curDB) {
 			checker.adviceList = append(checker.adviceList, &storepb.Advice{
-				Status:  checker.level,
-				Code:    advisor.StatementDisallowCrossDBQueries.Int32(),
-				Title:   checker.title,
-				Content: fmt.Sprintf("Cross database queries (target databse: '%s', current database: '%s') are prohibited", fullTblName.Database, checker.curDB),
-				StartPosition: &storepb.Position{
-					Line: int32(ctx.GetStart().GetLine()),
-				},
+				Status:        checker.level,
+				Code:          advisor.StatementDisallowCrossDBQueries.Int32(),
+				Title:         checker.title,
+				Content:       fmt.Sprintf("Cross database queries (target databse: '%s', current database: '%s') are prohibited", fullTblName.Database, checker.curDB),
+				StartPosition: advisor.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
 			})
 		}
 		// Ignore internal error...

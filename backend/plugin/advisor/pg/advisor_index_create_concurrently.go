@@ -60,25 +60,21 @@ func (checker *indexCreateConcurrentlyChecker) Visit(in ast.Node) ast.Visitor {
 	case *ast.CreateIndexStmt:
 		if !node.Concurrently {
 			checker.adviceList = append(checker.adviceList, &storepb.Advice{
-				Status:  checker.level,
-				Code:    advisor.CreateIndexUnconcurrently.Int32(),
-				Title:   checker.title,
-				Content: "Creating indexes will block writes on the table, unless use CONCURRENTLY",
-				StartPosition: &storepb.Position{
-					Line: int32(in.LastLine()),
-				},
+				Status:        checker.level,
+				Code:          advisor.CreateIndexUnconcurrently.Int32(),
+				Title:         checker.title,
+				Content:       "Creating indexes will block writes on the table, unless use CONCURRENTLY",
+				StartPosition: advisor.ConvertANTLRLineToPosition(in.LastLine()),
 			})
 		}
 	case *ast.DropIndexStmt:
 		if !node.Concurrently {
 			checker.adviceList = append(checker.adviceList, &storepb.Advice{
-				Status:  checker.level,
-				Code:    advisor.DropIndexUnconcurrently.Int32(),
-				Title:   checker.title,
-				Content: "Droping indexes will block writes on the table, unless use CONCURRENTLY",
-				StartPosition: &storepb.Position{
-					Line: int32(in.LastLine()),
-				},
+				Status:        checker.level,
+				Code:          advisor.DropIndexUnconcurrently.Int32(),
+				Title:         checker.title,
+				Content:       "Droping indexes will block writes on the table, unless use CONCURRENTLY",
+				StartPosition: advisor.ConvertANTLRLineToPosition(in.LastLine()),
 			})
 		}
 	}

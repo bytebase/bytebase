@@ -74,13 +74,11 @@ func (l *columnRequireDefaultListener) generateAdvice() ([]*storepb.Advice, erro
 	for _, columnID := range columnIDs {
 		line := l.noDefaultColumns[columnID]
 		advice = append(advice, &storepb.Advice{
-			Status:  l.level,
-			Code:    advisor.NoDefault.Int32(),
-			Title:   l.title,
-			Content: fmt.Sprintf("Column %q doesn't have default value", lastIdentifier(columnID)),
-			StartPosition: &storepb.Position{
-				Line: int32(line),
-			},
+			Status:        l.level,
+			Code:          advisor.NoDefault.Int32(),
+			Title:         l.title,
+			Content:       fmt.Sprintf("Column %q doesn't have default value", lastIdentifier(columnID)),
+			StartPosition: advisor.ConvertANTLRLineToPosition(line),
 		})
 	}
 

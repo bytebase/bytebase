@@ -6,7 +6,7 @@
       title: statement.where.require.select
       content: WHERE clause is required for SELETE statement.
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: SELECT * FROM MyTable WHERE a = 1;
@@ -22,7 +22,7 @@
       title: statement.where.require.select
       content: WHERE clause is required for SELETE statement.
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null
     - status: 2
@@ -30,7 +30,7 @@
       title: statement.where.require.select
       content: WHERE clause is required for SELETE statement.
       startposition:
-        line: 3
+        line: 2
         column: 0
       endposition: null
 - statement: SELECT 1;

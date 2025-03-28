@@ -88,9 +88,7 @@ func (checker *tableNoFKChecker) Visit(node ast.Node) ast.Visitor {
 				tableHasFK.Name,
 				checker.text,
 			),
-			StartPosition: &storepb.Position{
-				Line: int32(node.LastLine()),
-			},
+			StartPosition: advisor.ConvertANTLRLineToPosition(node.LastLine()),
 		})
 	}
 

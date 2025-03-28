@@ -84,13 +84,11 @@ func (checker *statementDmlDryRunChecker) Visit(in ast.Node) ast.Visitor {
 			PreExecutions:            checker.setRoles,
 		}, checker.driver, storepb.Engine_POSTGRES, fmt.Sprintf("EXPLAIN %s", node.Text())); err != nil {
 			checker.adviceList = append(checker.adviceList, &storepb.Advice{
-				Status:  checker.level,
-				Code:    advisor.StatementDMLDryRunFailed.Int32(),
-				Title:   checker.title,
-				Content: fmt.Sprintf("\"%s\" dry runs failed: %s", node.Text(), err.Error()),
-				StartPosition: &storepb.Position{
-					Line: int32(node.LastLine()),
-				},
+				Status:        checker.level,
+				Code:          advisor.StatementDMLDryRunFailed.Int32(),
+				Title:         checker.title,
+				Content:       fmt.Sprintf("\"%s\" dry runs failed: %s", node.Text(), err.Error()),
+				StartPosition: advisor.ConvertANTLRLineToPosition(node.LastLine()),
 			})
 		}
 	}

@@ -79,13 +79,11 @@ func (checker *statementDisallowLimitChecker) Enter(in ast.Node) (ast.Node, bool
 
 	if code != advisor.Ok {
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{
-			Status:  checker.level,
-			Code:    code.Int32(),
-			Title:   checker.title,
-			Content: fmt.Sprintf("LIMIT clause is forbidden in INSERT, UPDATE and DELETE statement, but \"%s\" uses", checker.text),
-			StartPosition: &storepb.Position{
-				Line: int32(checker.line),
-			},
+			Status:        checker.level,
+			Code:          code.Int32(),
+			Title:         checker.title,
+			Content:       fmt.Sprintf("LIMIT clause is forbidden in INSERT, UPDATE and DELETE statement, but \"%s\" uses", checker.text),
+			StartPosition: advisor.ConvertANTLRLineToPosition(checker.line),
 		})
 	}
 

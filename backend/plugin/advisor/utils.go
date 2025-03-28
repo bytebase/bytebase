@@ -163,3 +163,13 @@ func DatabaseExists(ctx context.Context, checkCtx Context, database string) bool
 
 	return false
 }
+
+func ConvertANTLRLineToPosition(line int) *storepb.Position {
+	positionLine := line - 1
+	if line == 0 {
+		positionLine = 0
+	}
+	return &storepb.Position{
+		Line: int32(positionLine),
+	}
+}

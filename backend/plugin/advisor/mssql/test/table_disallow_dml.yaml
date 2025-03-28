@@ -9,7 +9,7 @@
       title: table.disallow-dml
       content: DML is disallowed on table MySchema.Identifier.
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: |-
@@ -22,7 +22,7 @@
       title: table.disallow-dml
       content: DML is disallowed on table MySchema.Identifier.
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null
 - statement: DELETE FROM MySchema.Identifier WHERE Id = 1;
@@ -33,7 +33,7 @@
       title: table.disallow-dml
       content: DML is disallowed on table MySchema.Identifier.
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: UPDATE MySchema.Identifier SET Name = 'Bob' WHERE Id = 1;
@@ -44,7 +44,7 @@
       title: table.disallow-dml
       content: DML is disallowed on table MySchema.Identifier.
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: SELECT * INTO MySchema.Identifier FROM MySchema.MyTable;
@@ -55,6 +55,6 @@
       title: table.disallow-dml
       content: DML is disallowed on table MySchema.Identifier.
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null

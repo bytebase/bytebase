@@ -90,13 +90,11 @@ func (checker *columnDisallowChangingChecker) EnterAlterTable(ctx *mysql.AlterTa
 		// change column
 		if item.CHANGE_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.Identifier() != nil {
 			checker.adviceList = append(checker.adviceList, &storepb.Advice{
-				Status:  checker.level,
-				Code:    advisor.UseChangeColumnStatement.Int32(),
-				Title:   checker.title,
-				Content: fmt.Sprintf("\"%s\" contains CHANGE COLUMN statement", checker.text),
-				StartPosition: &storepb.Position{
-					Line: int32(checker.baseLine + ctx.GetStart().GetLine()),
-				},
+				Status:        checker.level,
+				Code:          advisor.UseChangeColumnStatement.Int32(),
+				Title:         checker.title,
+				Content:       fmt.Sprintf("\"%s\" contains CHANGE COLUMN statement", checker.text),
+				StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
 			})
 		}
 	}

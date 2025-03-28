@@ -11,9 +11,8 @@
       code: 802
       title: index.key-number-limit
       content: Index key number should be less than or equal to 5
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: CREATE TABLE t(id int, name char(225), c1 int, c2 int, c3 int, c4 int, CONSTRAINT t_id_name UNIQUE (id, name, c1, c2, c3, c4));
@@ -23,9 +22,8 @@
       code: 802
       title: index.key-number-limit
       content: Index key number should be less than or equal to 5
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: |-
@@ -37,9 +35,8 @@
       code: 802
       title: index.key-number-limit
       content: Index key number should be less than or equal to 5
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null
 - statement: |-
@@ -51,9 +48,8 @@
       code: 802
       title: index.key-number-limit
       content: Index key number should be less than or equal to 5
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null
 - statement: |-
@@ -65,8 +61,7 @@
       code: 802
       title: index.key-number-limit
       content: Index key number should be less than or equal to 5
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null

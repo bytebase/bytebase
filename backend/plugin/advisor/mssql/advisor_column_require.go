@@ -115,13 +115,11 @@ func (l *columnRequireChecker) ExitCreate_table(ctx *parser.Create_tableContext)
 	})
 	for _, column := range columnNames {
 		l.adviceList = append(l.adviceList, &storepb.Advice{
-			Status:  l.level,
-			Code:    advisor.NoRequiredColumn.Int32(),
-			Title:   l.title,
-			Content: fmt.Sprintf("Table %s missing required column %q", l.currentOriginalTableName, column),
-			StartPosition: &storepb.Position{
-				Line: int32(ctx.GetStart().GetLine()),
-			},
+			Status:        l.level,
+			Code:          advisor.NoRequiredColumn.Int32(),
+			Title:         l.title,
+			Content:       fmt.Sprintf("Table %s missing required column %q", l.currentOriginalTableName, column),
+			StartPosition: advisor.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
 		})
 	}
 
@@ -140,13 +138,11 @@ func (l *columnRequireChecker) EnterAlter_table(ctx *parser.Alter_tableContext) 
 		_, normalizedColumnName := tsqlparser.NormalizeTSQLIdentifier(columnName)
 		if _, ok := l.requireColumns[normalizedColumnName]; ok {
 			l.adviceList = append(l.adviceList, &storepb.Advice{
-				Status:  l.level,
-				Code:    advisor.NoRequiredColumn.Int32(),
-				Title:   l.title,
-				Content: fmt.Sprintf("Table %s missing required column %q", tableName, normalizedColumnName),
-				StartPosition: &storepb.Position{
-					Line: int32(ctx.GetStart().GetLine()),
-				},
+				Status:        l.level,
+				Code:          advisor.NoRequiredColumn.Int32(),
+				Title:         l.title,
+				Content:       fmt.Sprintf("Table %s missing required column %q", tableName, normalizedColumnName),
+				StartPosition: advisor.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
 			})
 		}
 	}

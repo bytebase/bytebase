@@ -5,9 +5,8 @@
       code: 301
       title: naming.table
       content: '`techBook` mismatches table naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: CREATE TABLE tech_book_copy(id int, name varchar(255));
@@ -19,9 +18,8 @@
       code: 301
       title: naming.table
       content: '`cjnubexocfhqoogdmihudyahmmghviqkzvpixnwvxtxumvuannpwdcbtsgwrvzpde` mismatches table naming convention, its length should be within 64 characters'
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: |
@@ -33,9 +31,8 @@
       code: 301
       title: naming.table
       content: '`TechBook` mismatches table naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null
 - statement: |
@@ -51,9 +48,8 @@
       code: 301
       title: naming.table
       content: '`LiteraryBook` mismatches table naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null
 - statement: |
@@ -66,18 +62,16 @@
       code: 301
       title: naming.table
       content: '`LiteraryBook` mismatches table naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
-      detail: ""
       startposition:
-        line: 3
+        line: 2
         column: 0
       endposition: null
     - status: 2
       code: 301
       title: naming.table
       content: '`TechBook` mismatches table naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
-      detail: ""
       startposition:
-        line: 3
+        line: 2
         column: 0
       endposition: null
 - statement: |

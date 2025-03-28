@@ -17,9 +17,8 @@
       code: 419
       title: column.current-time-count-limit
       content: Table `userTable` has 2 ON UPDATE CURRENT_TIMESTAMP() columns. The count greater than 1.
-      detail: ""
       startposition:
-        line: 6
+        line: 5
         column: 0
       endposition: null
 - statement: |
@@ -49,9 +48,8 @@
       code: 418
       title: column.current-time-count-limit
       content: Table `t` has 3 DEFAULT CURRENT_TIMESTAMP() columns. The count greater than 2.
-      detail: ""
       startposition:
-        line: 4
+        line: 3
         column: 0
       endposition: null
 - statement: |-
@@ -65,9 +63,8 @@
       code: 419
       title: column.current-time-count-limit
       content: Table `t` has 2 ON UPDATE CURRENT_TIMESTAMP() columns. The count greater than 1.
-      detail: ""
       startposition:
-        line: 3
+        line: 2
         column: 0
       endposition: null
 - statement: |-
@@ -79,8 +76,7 @@
       code: 419
       title: column.current-time-count-limit
       content: Table `tech_book` has 2 ON UPDATE CURRENT_TIMESTAMP() columns. The count greater than 1.
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null

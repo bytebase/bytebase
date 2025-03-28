@@ -236,13 +236,11 @@ func (checker *indexTypeNoBlobChecker) checkConstraintDef(tableName string, ctx 
 func (checker *indexTypeNoBlobChecker) addAdvice(tableName, columnName, columnType string, lineNumber int) {
 	if checker.isBlob(columnType) {
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{
-			Status:  checker.level,
-			Code:    advisor.IndexTypeNoBlob.Int32(),
-			Title:   checker.title,
-			Content: fmt.Sprintf("Columns in index must not be BLOB but `%s`.`%s` is %s", tableName, columnName, columnType),
-			StartPosition: &storepb.Position{
-				Line: int32(checker.baseLine + lineNumber),
-			},
+			Status:        checker.level,
+			Code:          advisor.IndexTypeNoBlob.Int32(),
+			Title:         checker.title,
+			Content:       fmt.Sprintf("Columns in index must not be BLOB but `%s`.`%s` is %s", tableName, columnName, columnType),
+			StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + lineNumber),
 		})
 	}
 }

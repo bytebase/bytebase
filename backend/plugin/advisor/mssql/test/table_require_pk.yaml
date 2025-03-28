@@ -10,7 +10,7 @@
       title: table.require-pk
       content: Table MySchema.MyTable requires PRIMARY KEY.
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: |-

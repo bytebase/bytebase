@@ -52,26 +52,22 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx context.Context, checkCtx adv
 
 	if len(checkCtx.Statements) > common.MaxSheetCheckSize {
 		adviceList = append(adviceList, &storepb.Advice{
-			Status:  level,
-			Title:   title,
-			Content: fmt.Sprintf("The size of statements in the sheet exceeds the limit of %d", common.MaxSheetCheckSize),
-			Code:    advisor.BuiltinPriorBackupCheck.Int32(),
-			StartPosition: &storepb.Position{
-				Line: 1,
-			},
+			Status:        level,
+			Title:         title,
+			Content:       fmt.Sprintf("The size of statements in the sheet exceeds the limit of %d", common.MaxSheetCheckSize),
+			Code:          advisor.BuiltinPriorBackupCheck.Int32(),
+			StartPosition: advisor.ConvertANTLRLineToPosition(1),
 		})
 	}
 
 	databaseName := extractDatabaseName(checkCtx.PreUpdateBackupDetail.Database)
 	if !advisor.DatabaseExists(ctx, checkCtx, databaseName) {
 		adviceList = append(adviceList, &storepb.Advice{
-			Status:  level,
-			Title:   title,
-			Content: fmt.Sprintf("Need database %q to do prior backup but it does not exist", checkCtx.PreUpdateBackupDetail.Database),
-			Code:    advisor.DatabaseNotExists.Int32(),
-			StartPosition: &storepb.Position{
-				Line: 1,
-			},
+			Status:        level,
+			Title:         title,
+			Content:       fmt.Sprintf("Need database %q to do prior backup but it does not exist", checkCtx.PreUpdateBackupDetail.Database),
+			Code:          advisor.DatabaseNotExists.Int32(),
+			StartPosition: advisor.ConvertANTLRLineToPosition(1),
 		})
 		return adviceList, nil
 	}
@@ -81,13 +77,11 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx context.Context, checkCtx adv
 
 	if checker.hasDDL {
 		adviceList = append(adviceList, &storepb.Advice{
-			Status:  level,
-			Title:   title,
-			Content: "Prior backup cannot deal with mixed DDL and DML statements",
-			Code:    int32(advisor.BuiltinPriorBackupCheck),
-			StartPosition: &storepb.Position{
-				Line: 0,
-			},
+			Status:        level,
+			Title:         title,
+			Content:       "Prior backup cannot deal with mixed DDL and DML statements",
+			Code:          int32(advisor.BuiltinPriorBackupCheck),
+			StartPosition: advisor.ConvertANTLRLineToPosition(1),
 		})
 	}
 
@@ -111,13 +105,11 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx context.Context, checkCtx adv
 			}
 			if statementType != item.table.StatementType {
 				adviceList = append(adviceList, &storepb.Advice{
-					Status:  level,
-					Title:   title,
-					Content: fmt.Sprintf("The statement type is not the same for all statements on the same table %q", key),
-					Code:    advisor.BuiltinPriorBackupCheck.Int32(),
-					StartPosition: &storepb.Position{
-						Line: 1,
-					},
+					Status:        level,
+					Title:         title,
+					Content:       fmt.Sprintf("The statement type is not the same for all statements on the same table %q", key),
+					Code:          advisor.BuiltinPriorBackupCheck.Int32(),
+					StartPosition: advisor.ConvertANTLRLineToPosition(1),
 				})
 				break
 			}

@@ -80,13 +80,11 @@ func (l *columnNoNullChecker) EnterCreate_table(ctx *parser.Create_tableContext)
 func (l *columnNoNullChecker) ExitCreate_table(*parser.Create_tableContext) {
 	for normalizedColumnName, columnNullableLine := range l.columnNullable {
 		l.adviceList = append(l.adviceList, &storepb.Advice{
-			Status:  l.level,
-			Code:    advisor.ColumnCannotNull.Int32(),
-			Title:   l.title,
-			Content: fmt.Sprintf("Column %s is nullable, which is not allowed.", normalizedColumnName),
-			StartPosition: &storepb.Position{
-				Line: int32(columnNullableLine),
-			},
+			Status:        l.level,
+			Code:          advisor.ColumnCannotNull.Int32(),
+			Title:         l.title,
+			Content:       fmt.Sprintf("Column %s is nullable, which is not allowed.", normalizedColumnName),
+			StartPosition: advisor.ConvertANTLRLineToPosition(columnNullableLine),
 		})
 	}
 	l.currentOriginalTableName = ""
@@ -138,13 +136,11 @@ func (l *columnNoNullChecker) EnterAlter_table(ctx *parser.Alter_tableContext) {
 func (l *columnNoNullChecker) ExitAlter_table(*parser.Alter_tableContext) {
 	for normalizedColumnName, columnNullableLine := range l.columnNullable {
 		l.adviceList = append(l.adviceList, &storepb.Advice{
-			Status:  l.level,
-			Code:    advisor.ColumnCannotNull.Int32(),
-			Title:   l.title,
-			Content: fmt.Sprintf("Column %s is nullable, which is not allowed.", normalizedColumnName),
-			StartPosition: &storepb.Position{
-				Line: int32(columnNullableLine),
-			},
+			Status:        l.level,
+			Code:          advisor.ColumnCannotNull.Int32(),
+			Title:         l.title,
+			Content:       fmt.Sprintf("Column %s is nullable, which is not allowed.", normalizedColumnName),
+			StartPosition: advisor.ConvertANTLRLineToPosition(columnNullableLine),
 		})
 	}
 	l.currentOriginalTableName = ""
@@ -185,13 +181,11 @@ func (l *columnNoNullChecker) EnterAlter_table_alter_column(ctx *parser.Alter_ta
 func (l *columnNoNullChecker) ExitAlter_table_alter_column(*parser.Alter_table_alter_columnContext) {
 	for normalizedColumnName, columnNullableLine := range l.columnNullable {
 		l.adviceList = append(l.adviceList, &storepb.Advice{
-			Status:  l.level,
-			Code:    advisor.ColumnCannotNull.Int32(),
-			Title:   l.title,
-			Content: fmt.Sprintf("After dropping NOT NULL of column %s, it will be nullable, which is not allowed.", normalizedColumnName),
-			StartPosition: &storepb.Position{
-				Line: int32(columnNullableLine),
-			},
+			Status:        l.level,
+			Code:          advisor.ColumnCannotNull.Int32(),
+			Title:         l.title,
+			Content:       fmt.Sprintf("After dropping NOT NULL of column %s, it will be nullable, which is not allowed.", normalizedColumnName),
+			StartPosition: advisor.ConvertANTLRLineToPosition(columnNullableLine),
 		})
 	}
 	l.currentOriginalTableName = ""

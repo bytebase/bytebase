@@ -5,9 +5,8 @@
       code: 202
       title: statement.where.require.select
       content: WHERE clause is required for SELECT statement.
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: SELECT a FROM t WHERE a > 0
@@ -19,9 +18,8 @@
       code: 202
       title: statement.where.require.select
       content: WHERE clause is required for SELECT statement.
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: SELECT 1 FROM dual

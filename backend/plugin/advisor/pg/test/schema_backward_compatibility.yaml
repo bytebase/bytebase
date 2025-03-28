@@ -5,8 +5,7 @@
       code: 111
       title: schema.backward-compatibility
       content: '"ALTER TABLE tech_book ALTER COLUMN name TYPE TEXT" may cause incompatibility with the existing data and code'
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null

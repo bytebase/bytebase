@@ -132,13 +132,11 @@ func (checker *charsetAllowlistChecker) Enter(in ast.Node) (ast.Node, bool) {
 
 	if code != advisor.Ok {
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{
-			Status:  checker.level,
-			Code:    code.Int32(),
-			Title:   checker.title,
-			Content: fmt.Sprintf("\"%s\" used disabled charset '%s'", checker.text, disabledCharset),
-			StartPosition: &storepb.Position{
-				Line: int32(line),
-			},
+			Status:        checker.level,
+			Code:          code.Int32(),
+			Title:         checker.title,
+			Content:       fmt.Sprintf("\"%s\" used disabled charset '%s'", checker.text, disabledCharset),
+			StartPosition: advisor.ConvertANTLRLineToPosition(line),
 		})
 	}
 

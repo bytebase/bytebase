@@ -16,9 +16,8 @@
                 PARTITION p0 VALUES LESS THAN (6),
                 PARTITION p1 VALUES LESS THAN (11)
               );" creates
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null
 - statement: |-
@@ -36,9 +35,8 @@
                 PARTITION p0 VALUES LESS THAN (6),
                 PARTITION p1 VALUES LESS THAN (11)
               );" creates
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: |-
@@ -60,9 +58,8 @@
                 PARTITION p0 VALUES LESS THAN (6),
                 PARTITION p1 VALUES LESS THAN (11)
               );" creates
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
     - status: 2
@@ -73,8 +70,7 @@
                 PARTITION p0 VALUES LESS THAN (6),
                 PARTITION p1 VALUES LESS THAN (11)
               );" creates
-      detail: ""
       startposition:
-        line: 5
+        line: 4
         column: 0
       endposition: null

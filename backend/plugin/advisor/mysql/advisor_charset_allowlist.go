@@ -92,13 +92,11 @@ func (checker *charsetAllowlistChecker) EnterCreateDatabase(ctx *mysql.CreateDat
 func (checker *charsetAllowlistChecker) checkCharset(charset string, lineNumber int) {
 	if _, exists := checker.allowList[charset]; charset != "" && !exists {
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{
-			Status:  checker.level,
-			Code:    advisor.DisabledCharset.Int32(),
-			Title:   checker.title,
-			Content: fmt.Sprintf("\"%s\" used disabled charset '%s'", checker.text, charset),
-			StartPosition: &storepb.Position{
-				Line: int32(checker.baseLine + lineNumber),
-			},
+			Status:        checker.level,
+			Code:          advisor.DisabledCharset.Int32(),
+			Title:         checker.title,
+			Content:       fmt.Sprintf("\"%s\" used disabled charset '%s'", checker.text, charset),
+			StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + lineNumber),
 		})
 	}
 }

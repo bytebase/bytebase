@@ -12,9 +12,8 @@
       code: 603
       title: table.drop-naming-convention
       content: '`foo` mismatches drop table naming convention, naming format should be "_delete$"'
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null
 - statement: |-
@@ -28,8 +27,7 @@
       code: 603
       title: table.drop-naming-convention
       content: '`bar` mismatches drop table naming convention, naming format should be "_delete$"'
-      detail: ""
       startposition:
-        line: 4
+        line: 3
         column: 0
       endposition: null

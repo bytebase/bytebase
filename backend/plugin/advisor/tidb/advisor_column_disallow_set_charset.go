@@ -95,13 +95,11 @@ func (checker *columnDisallowSetCharsetChecker) Enter(in ast.Node) (ast.Node, bo
 
 	if code != advisor.Ok {
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{
-			Status:  checker.level,
-			Code:    advisor.SetColumnCharset.Int32(),
-			Title:   checker.title,
-			Content: fmt.Sprintf("Disallow set column charset but \"%s\" does", checker.text),
-			StartPosition: &storepb.Position{
-				Line: int32(checker.line),
-			},
+			Status:        checker.level,
+			Code:          advisor.SetColumnCharset.Int32(),
+			Title:         checker.title,
+			Content:       fmt.Sprintf("Disallow set column charset but \"%s\" does", checker.text),
+			StartPosition: advisor.ConvertANTLRLineToPosition(checker.line),
 		})
 	}
 

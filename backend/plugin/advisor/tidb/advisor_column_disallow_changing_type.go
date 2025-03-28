@@ -82,13 +82,11 @@ func (checker *columnDisallowChangingTypeChecker) Enter(in ast.Node) (ast.Node, 
 
 	if changeType {
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{
-			Status:  checker.level,
-			Code:    advisor.ChangeColumnType.Int32(),
-			Title:   checker.title,
-			Content: fmt.Sprintf("\"%s\" changes column type", checker.text),
-			StartPosition: &storepb.Position{
-				Line: int32(checker.line),
-			},
+			Status:        checker.level,
+			Code:          advisor.ChangeColumnType.Int32(),
+			Title:         checker.title,
+			Content:       fmt.Sprintf("\"%s\" changes column type", checker.text),
+			StartPosition: advisor.ConvertANTLRLineToPosition(checker.line),
 		})
 	}
 
