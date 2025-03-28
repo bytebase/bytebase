@@ -1,8 +1,22 @@
 <template>
   <NWatermark
+    style="z-index: 10000000"
+    :content="version"
+    cross
+    fullscreen
+    :font-size="16"
+    :font-color="`rgba(256, 128, 128, .003)`"
+    :line-height="16"
+    :width="128"
+    :height="128"
+    :x-offset="24"
+    :y-offset="80"
+    :rotate="15"
+  />
+  <NWatermark
     v-for="(line, i) in lines"
     :key="i"
-    style="z-index: 10000000"
+    style="z-index: 10000001"
     :content="line"
     :cross="true"
     :fullscreen="true"
@@ -21,7 +35,7 @@
 <script lang="ts" setup>
 import { NWatermark } from "naive-ui";
 import { computed } from "vue";
-import { featureToRef, useCurrentUserV1, extractUserId } from "@/store";
+import { featureToRef, useCurrentUserV1, extractUserId, useActuatorV1Store } from "@/store";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
 import { UNKNOWN_USER_NAME } from "@/types";
 
@@ -30,6 +44,7 @@ const SIZE = 16;
 const PADDING = 6;
 
 const currentUserV1 = useCurrentUserV1();
+const version = computed(() => useActuatorV1Store().version + "-" + useActuatorV1Store().gitCommit.substring(0, 7));
 const setting = computed(() =>
   useSettingV1Store().getSettingByName("bb.workspace.watermark")
 );
