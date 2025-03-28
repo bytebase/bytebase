@@ -145,10 +145,10 @@ func (checker *columnRequireDefaultChecker) EnterAlterTable(ctx *mysql.AlterTabl
 func (checker *columnRequireDefaultChecker) checkFieldDefinition(tableName, columnName string, ctx mysql.IFieldDefinitionContext) {
 	if !checker.hasDefault(ctx) && checker.needDefault(ctx) {
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{
-			Status:  checker.level,
-			Code:    advisor.NoDefault.Int32(),
-			Title:   checker.title,
-			Content: fmt.Sprintf("Column `%s`.`%s` doesn't have DEFAULT.", tableName, columnName),
+			Status:        checker.level,
+			Code:          advisor.NoDefault.Int32(),
+			Title:         checker.title,
+			Content:       fmt.Sprintf("Column `%s`.`%s` doesn't have DEFAULT.", tableName, columnName),
 			StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
 		})
 	}
