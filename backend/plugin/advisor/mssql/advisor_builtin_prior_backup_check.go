@@ -52,13 +52,11 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx context.Context, checkCtx adv
 
 	if len(checkCtx.Statements) > common.MaxSheetCheckSize {
 		adviceList = append(adviceList, &storepb.Advice{
-			Status:  level,
-			Title:   title,
-			Content: fmt.Sprintf("The size of statements in the sheet exceeds the limit of %d", common.MaxSheetCheckSize),
-			Code:    advisor.BuiltinPriorBackupCheck.Int32(),
-			StartPosition: &storepb.Position{
-				Line: 0,
-			},
+			Status:        level,
+			Title:         title,
+			Content:       fmt.Sprintf("The size of statements in the sheet exceeds the limit of %d", common.MaxSheetCheckSize),
+			Code:          advisor.BuiltinPriorBackupCheck.Int32(),
+			StartPosition: advisor.ConvertANTLRLineToPosition(1),
 		})
 	}
 
