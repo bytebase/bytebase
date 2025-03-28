@@ -109,13 +109,11 @@ func (checker *columnMaximumCharacterLengthChecker) Enter(in ast.Node) (ast.Node
 
 	if tableName != "" {
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{
-			Status:  checker.level,
-			Code:    advisor.CharLengthExceedsLimit.Int32(),
-			Title:   checker.title,
-			Content: fmt.Sprintf("The length of the CHAR column `%s` is bigger than %d, please use VARCHAR instead", columnName, checker.maximum),
-			StartPosition: &storepb.Position{
-				Line: int32(line),
-			},
+			Status:        checker.level,
+			Code:          advisor.CharLengthExceedsLimit.Int32(),
+			Title:         checker.title,
+			Content:       fmt.Sprintf("The length of the CHAR column `%s` is bigger than %d, please use VARCHAR instead", columnName, checker.maximum),
+			StartPosition: advisor.ConvertANTLRLineToPosition(line),
 		})
 	}
 

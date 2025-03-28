@@ -149,9 +149,7 @@ func (checker *columnRequireDefaultChecker) checkFieldDefinition(tableName, colu
 			Code:    advisor.NoDefault.Int32(),
 			Title:   checker.title,
 			Content: fmt.Sprintf("Column `%s`.`%s` doesn't have DEFAULT.", tableName, columnName),
-			StartPosition: &storepb.Position{
-				Line: int32(checker.baseLine + ctx.GetStart().GetLine()),
-			},
+			StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
 		})
 	}
 }

@@ -81,13 +81,11 @@ func (checker *columnRequireCharsetChecker) EnterCreateTable(ctx *mysql.CreateTa
 		if isCharsetDataType(dataType) {
 			if dataType.CharsetWithOptBinary() == nil {
 				checker.adviceList = append(checker.adviceList, &storepb.Advice{
-					Status:  checker.level,
-					Code:    advisor.NoCharset.Int32(),
-					Title:   checker.title,
-					Content: fmt.Sprintf("Column %s does not have a character set specified", columnName),
-					StartPosition: &storepb.Position{
-						Line: int32(checker.baseLine + columnDefinition.GetStart().GetLine()),
-					},
+					Status:        checker.level,
+					Code:          advisor.NoCharset.Int32(),
+					Title:         checker.title,
+					Content:       fmt.Sprintf("Column %s does not have a character set specified", columnName),
+					StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + columnDefinition.GetStart().GetLine()),
 				})
 			}
 		}
@@ -109,13 +107,11 @@ func (checker *columnRequireCharsetChecker) EnterAlterTable(ctx *mysql.AlterTabl
 		if isCharsetDataType(dataType) {
 			if dataType.CharsetWithOptBinary() == nil {
 				checker.adviceList = append(checker.adviceList, &storepb.Advice{
-					Status:  checker.level,
-					Code:    advisor.NoCharset.Int32(),
-					Title:   checker.title,
-					Content: fmt.Sprintf("Column %s does not have a character set specified", columnName),
-					StartPosition: &storepb.Position{
-						Line: int32(checker.baseLine + alterListItem.GetStart().GetLine()),
-					},
+					Status:        checker.level,
+					Code:          advisor.NoCharset.Int32(),
+					Title:         checker.title,
+					Content:       fmt.Sprintf("Column %s does not have a character set specified", columnName),
+					StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + alterListItem.GetStart().GetLine()),
 				})
 			}
 		}

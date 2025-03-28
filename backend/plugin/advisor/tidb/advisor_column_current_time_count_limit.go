@@ -87,24 +87,20 @@ func (checker *columnCurrentTimeCountLimitChecker) generateAdvice() []*storepb.A
 	for _, table := range tableList {
 		if table.defaultCurrentTimeCount > maxDefaultCurrentTimeColumCount {
 			checker.adviceList = append(checker.adviceList, &storepb.Advice{
-				Status:  checker.level,
-				Code:    advisor.DefaultCurrentTimeColumnCountExceedsLimit.Int32(),
-				Title:   checker.title,
-				Content: fmt.Sprintf("Table `%s` has %d DEFAULT CURRENT_TIMESTAMP() columns. The count greater than %d.", table.tableName, table.defaultCurrentTimeCount, maxDefaultCurrentTimeColumCount),
-				StartPosition: &storepb.Position{
-					Line: int32(table.line),
-				},
+				Status:        checker.level,
+				Code:          advisor.DefaultCurrentTimeColumnCountExceedsLimit.Int32(),
+				Title:         checker.title,
+				Content:       fmt.Sprintf("Table `%s` has %d DEFAULT CURRENT_TIMESTAMP() columns. The count greater than %d.", table.tableName, table.defaultCurrentTimeCount, maxDefaultCurrentTimeColumCount),
+				StartPosition: advisor.ConvertANTLRLineToPosition(table.line),
 			})
 		}
 		if table.onUpdateCurrentTimeCount > maxOnUpdateCurrentTimeColumnCount {
 			checker.adviceList = append(checker.adviceList, &storepb.Advice{
-				Status:  checker.level,
-				Code:    advisor.OnUpdateCurrentTimeColumnCountExceedsLimit.Int32(),
-				Title:   checker.title,
-				Content: fmt.Sprintf("Table `%s` has %d ON UPDATE CURRENT_TIMESTAMP() columns. The count greater than %d.", table.tableName, table.onUpdateCurrentTimeCount, maxOnUpdateCurrentTimeColumnCount),
-				StartPosition: &storepb.Position{
-					Line: int32(table.line),
-				},
+				Status:        checker.level,
+				Code:          advisor.OnUpdateCurrentTimeColumnCountExceedsLimit.Int32(),
+				Title:         checker.title,
+				Content:       fmt.Sprintf("Table `%s` has %d ON UPDATE CURRENT_TIMESTAMP() columns. The count greater than %d.", table.tableName, table.onUpdateCurrentTimeCount, maxOnUpdateCurrentTimeColumnCount),
+				StartPosition: advisor.ConvertANTLRLineToPosition(table.line),
 			})
 		}
 	}

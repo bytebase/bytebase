@@ -74,13 +74,11 @@ func (checker *statementMaximumJoinTableCountChecker) EnterJoinedTable(ctx *mysq
 	// The count starts from 0. We count the number of tables in the joins.
 	if checker.count == checker.limitMaxValue {
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{
-			Status:  checker.level,
-			Code:    advisor.StatementMaximumJoinTableCount.Int32(),
-			Title:   checker.title,
-			Content: fmt.Sprintf("\"%s\" exceeds the maximum number of joins %d.", checker.text, checker.limitMaxValue),
-			StartPosition: &storepb.Position{
-				Line: int32(checker.baseLine + ctx.GetStart().GetLine()),
-			},
+			Status:        checker.level,
+			Code:          advisor.StatementMaximumJoinTableCount.Int32(),
+			Title:         checker.title,
+			Content:       fmt.Sprintf("\"%s\" exceeds the maximum number of joins %d.", checker.text, checker.limitMaxValue),
+			StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
 		})
 	}
 }

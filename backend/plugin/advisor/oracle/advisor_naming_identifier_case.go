@@ -77,25 +77,21 @@ func (l *namingIdentifierCaseListener) EnterId_expression(ctx *parser.Id_express
 	if l.upper {
 		if identifier != strings.ToUpper(identifier) {
 			l.adviceList = append(l.adviceList, &storepb.Advice{
-				Status:  l.level,
-				Code:    advisor.NamingCaseMismatch.Int32(),
-				Title:   l.title,
-				Content: fmt.Sprintf("Identifier %q should be upper case", identifier),
-				StartPosition: &storepb.Position{
-					Line: int32(ctx.GetStart().GetLine()),
-				},
+				Status:        l.level,
+				Code:          advisor.NamingCaseMismatch.Int32(),
+				Title:         l.title,
+				Content:       fmt.Sprintf("Identifier %q should be upper case", identifier),
+				StartPosition: advisor.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
 			})
 		}
 	} else {
 		if identifier != strings.ToLower(identifier) {
 			l.adviceList = append(l.adviceList, &storepb.Advice{
-				Status:  l.level,
-				Code:    advisor.NamingCaseMismatch.Int32(),
-				Title:   l.title,
-				Content: fmt.Sprintf("Identifier %q should be lower case", identifier),
-				StartPosition: &storepb.Position{
-					Line: int32(ctx.GetStart().GetLine()),
-				},
+				Status:        l.level,
+				Code:          advisor.NamingCaseMismatch.Int32(),
+				Title:         l.title,
+				Content:       fmt.Sprintf("Identifier %q should be lower case", identifier),
+				StartPosition: advisor.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
 			})
 		}
 	}

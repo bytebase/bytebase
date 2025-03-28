@@ -61,23 +61,19 @@ func (v *allowDropEmptyDBChecker) Enter(in ast.Node) (ast.Node, bool) {
 	if node, ok := in.(*ast.DropDatabaseStmt); ok {
 		if v.catalog.Origin.DatabaseName() != node.Name.O {
 			v.adviceList = append(v.adviceList, &storepb.Advice{
-				Status:  v.level,
-				Code:    advisor.NotCurrentDatabase.Int32(),
-				Title:   v.title,
-				Content: fmt.Sprintf("Database `%s` that is trying to be deleted is not the current database `%s`", node.Name, v.catalog.Origin.DatabaseName()),
-				StartPosition: &storepb.Position{
-					Line: int32(node.OriginTextPosition()),
-				},
+				Status:        v.level,
+				Code:          advisor.NotCurrentDatabase.Int32(),
+				Title:         v.title,
+				Content:       fmt.Sprintf("Database `%s` that is trying to be deleted is not the current database `%s`", node.Name, v.catalog.Origin.DatabaseName()),
+				StartPosition: advisor.ConvertANTLRLineToPosition(node.OriginTextPosition()),
 			})
 		} else if !v.catalog.Origin.HasNoTable() {
 			v.adviceList = append(v.adviceList, &storepb.Advice{
-				Status:  v.level,
-				Code:    advisor.DatabaseNotEmpty.Int32(),
-				Title:   v.title,
-				Content: fmt.Sprintf("Database `%s` is not allowed to drop if not empty", node.Name),
-				StartPosition: &storepb.Position{
-					Line: int32(node.OriginTextPosition()),
-				},
+				Status:        v.level,
+				Code:          advisor.DatabaseNotEmpty.Int32(),
+				Title:         v.title,
+				Content:       fmt.Sprintf("Database `%s` is not allowed to drop if not empty", node.Name),
+				StartPosition: advisor.ConvertANTLRLineToPosition(node.OriginTextPosition()),
 			})
 		}
 	}

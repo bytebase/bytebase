@@ -157,24 +157,20 @@ func (checker *namingColumnConventionChecker) handleColumn(tableName string, col
 	lineNumber += checker.baseLine
 	if !checker.format.MatchString(columnName) {
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{
-			Status:  checker.level,
-			Code:    advisor.NamingColumnConventionMismatch.Int32(),
-			Title:   checker.title,
-			Content: fmt.Sprintf("`%s`.`%s` mismatches column naming convention, naming format should be %q", tableName, columnName, checker.format),
-			StartPosition: &storepb.Position{
-				Line: int32(lineNumber),
-			},
+			Status:        checker.level,
+			Code:          advisor.NamingColumnConventionMismatch.Int32(),
+			Title:         checker.title,
+			Content:       fmt.Sprintf("`%s`.`%s` mismatches column naming convention, naming format should be %q", tableName, columnName, checker.format),
+			StartPosition: advisor.ConvertANTLRLineToPosition(lineNumber),
 		})
 	}
 	if checker.maxLength > 0 && len(columnName) > checker.maxLength {
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{
-			Status:  checker.level,
-			Code:    advisor.NamingColumnConventionMismatch.Int32(),
-			Title:   checker.title,
-			Content: fmt.Sprintf("`%s`.`%s` mismatches column naming convention, its length should be within %d characters", tableName, columnName, checker.maxLength),
-			StartPosition: &storepb.Position{
-				Line: int32(lineNumber),
-			},
+			Status:        checker.level,
+			Code:          advisor.NamingColumnConventionMismatch.Int32(),
+			Title:         checker.title,
+			Content:       fmt.Sprintf("`%s`.`%s` mismatches column naming convention, its length should be within %d characters", tableName, columnName, checker.maxLength),
+			StartPosition: advisor.ConvertANTLRLineToPosition(lineNumber),
 		})
 	}
 }

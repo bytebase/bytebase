@@ -61,13 +61,11 @@ func (checker *statementAddCheckNotValidChecker) Visit(in ast.Node) ast.Visitor 
 	if node, ok := in.(*ast.AddConstraintStmt); ok {
 		if node.Constraint.Type == ast.ConstraintTypeCheck && !node.Constraint.SkipValidation {
 			checker.adviceList = append(checker.adviceList, &storepb.Advice{
-				Status:  checker.level,
-				Code:    advisor.StatementAddCheckWithValidation.Int32(),
-				Title:   checker.title,
-				Content: "Adding check constraints with validation will block reads and writes. You can add check constraints not valid and then validate separately",
-				StartPosition: &storepb.Position{
-					Line: int32(checker.line),
-				},
+				Status:        checker.level,
+				Code:          advisor.StatementAddCheckWithValidation.Int32(),
+				Title:         checker.title,
+				Content:       "Adding check constraints with validation will block reads and writes. You can add check constraints not valid and then validate separately",
+				StartPosition: advisor.ConvertANTLRLineToPosition(checker.line),
 			})
 		}
 	}

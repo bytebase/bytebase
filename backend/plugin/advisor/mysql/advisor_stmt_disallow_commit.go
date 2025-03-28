@@ -77,12 +77,10 @@ func (checker *statementDisallowCommitChecker) EnterTransactionStatement(ctx *my
 	}
 
 	checker.adviceList = append(checker.adviceList, &storepb.Advice{
-		Status:  checker.level,
-		Code:    advisor.StatementDisallowCommit.Int32(),
-		Title:   checker.title,
-		Content: fmt.Sprintf("Commit is not allowed, related statement: \"%s\"", checker.text),
-		StartPosition: &storepb.Position{
-			Line: int32(checker.baseLine + ctx.GetStart().GetLine()),
-		},
+		Status:        checker.level,
+		Code:          advisor.StatementDisallowCommit.Int32(),
+		Title:         checker.title,
+		Content:       fmt.Sprintf("Commit is not allowed, related statement: \"%s\"", checker.text),
+		StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
 	})
 }

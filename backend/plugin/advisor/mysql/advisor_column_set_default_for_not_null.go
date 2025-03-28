@@ -119,13 +119,11 @@ func (checker *columnSetDefaultForNotNullChecker) EnterCreateTable(ctx *mysql.Cr
 		}
 		if !checker.canNull(field) && !checker.hasDefault(field) && checker.needDefault(field) {
 			checker.adviceList = append(checker.adviceList, &storepb.Advice{
-				Status:  checker.level,
-				Code:    advisor.NotNullColumnWithNoDefault.Int32(),
-				Title:   checker.title,
-				Content: fmt.Sprintf("Column `%s`.`%s` is NOT NULL but doesn't have DEFAULT", tableName, columnName),
-				StartPosition: &storepb.Position{
-					Line: int32(checker.baseLine + tableElement.GetStart().GetLine()),
-				},
+				Status:        checker.level,
+				Code:          advisor.NotNullColumnWithNoDefault.Int32(),
+				Title:         checker.title,
+				Content:       fmt.Sprintf("Column `%s`.`%s` is NOT NULL but doesn't have DEFAULT", tableName, columnName),
+				StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + tableElement.GetStart().GetLine()),
 			})
 		}
 	}
@@ -134,13 +132,11 @@ func (checker *columnSetDefaultForNotNullChecker) EnterCreateTable(ctx *mysql.Cr
 func (checker *columnSetDefaultForNotNullChecker) checkFieldDefinition(tableName, columnName string, ctx mysql.IFieldDefinitionContext) {
 	if !checker.canNull(ctx) && checker.needDefault(ctx) && !checker.hasDefault(ctx) {
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{
-			Status:  checker.level,
-			Code:    advisor.NotNullColumnWithNoDefault.Int32(),
-			Title:   checker.title,
-			Content: fmt.Sprintf("Column `%s`.`%s` is NOT NULL but doesn't have DEFAULT", tableName, columnName),
-			StartPosition: &storepb.Position{
-				Line: int32(checker.baseLine + ctx.GetStart().GetLine()),
-			},
+			Status:        checker.level,
+			Code:          advisor.NotNullColumnWithNoDefault.Int32(),
+			Title:         checker.title,
+			Content:       fmt.Sprintf("Column `%s`.`%s` is NOT NULL but doesn't have DEFAULT", tableName, columnName),
+			StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
 		})
 	}
 }

@@ -131,24 +131,20 @@ func (checker *namingTableConventionChecker) handleTableName(tableName string, l
 	lineNumber += checker.baseLine
 	if !checker.format.MatchString(tableName) {
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{
-			Status:  checker.level,
-			Code:    advisor.NamingTableConventionMismatch.Int32(),
-			Title:   checker.title,
-			Content: fmt.Sprintf("`%s` mismatches table naming convention, naming format should be %q", tableName, checker.format),
-			StartPosition: &storepb.Position{
-				Line: int32(lineNumber),
-			},
+			Status:        checker.level,
+			Code:          advisor.NamingTableConventionMismatch.Int32(),
+			Title:         checker.title,
+			Content:       fmt.Sprintf("`%s` mismatches table naming convention, naming format should be %q", tableName, checker.format),
+			StartPosition: advisor.ConvertANTLRLineToPosition(lineNumber),
 		})
 	}
 	if checker.maxLength > 0 && len(tableName) > checker.maxLength {
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{
-			Status:  checker.level,
-			Code:    advisor.NamingTableConventionMismatch.Int32(),
-			Title:   checker.title,
-			Content: fmt.Sprintf("`%s` mismatches table naming convention, its length should be within %d characters", tableName, checker.maxLength),
-			StartPosition: &storepb.Position{
-				Line: int32(lineNumber),
-			},
+			Status:        checker.level,
+			Code:          advisor.NamingTableConventionMismatch.Int32(),
+			Title:         checker.title,
+			Content:       fmt.Sprintf("`%s` mismatches table naming convention, its length should be within %d characters", tableName, checker.maxLength),
+			StartPosition: advisor.ConvertANTLRLineToPosition(lineNumber),
 		})
 	}
 }

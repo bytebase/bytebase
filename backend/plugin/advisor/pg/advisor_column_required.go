@@ -102,13 +102,11 @@ func (checker *columnRequirementChecker) Visit(node ast.Node) ast.Visitor {
 		// Order it cause the random iteration order in Go, see https://go.dev/blog/maps
 		sort.Strings(missingColumns)
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{
-			Status:  checker.level,
-			Code:    advisor.NoRequiredColumn.Int32(),
-			Title:   checker.title,
-			Content: fmt.Sprintf("Table %q requires columns: %s", table.Name, strings.Join(missingColumns, ", ")),
-			StartPosition: &storepb.Position{
-				Line: int32(node.LastLine()),
-			},
+			Status:        checker.level,
+			Code:          advisor.NoRequiredColumn.Int32(),
+			Title:         checker.title,
+			Content:       fmt.Sprintf("Table %q requires columns: %s", table.Name, strings.Join(missingColumns, ", ")),
+			StartPosition: advisor.ConvertANTLRLineToPosition(node.LastLine()),
 		})
 	}
 

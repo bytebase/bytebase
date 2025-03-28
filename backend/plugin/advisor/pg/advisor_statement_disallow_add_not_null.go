@@ -61,13 +61,11 @@ type statementDisallowAddNotNullChecker struct {
 func (checker *statementDisallowAddNotNullChecker) Visit(in ast.Node) ast.Visitor {
 	if node, ok := in.(*ast.SetNotNullStmt); ok {
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{
-			Status:  checker.level,
-			Code:    advisor.StatementAddNotNull.Int32(),
-			Title:   checker.title,
-			Content: fmt.Sprintf("Setting NOT NULL will block reads and writes. You can use CHECK (%q IS NOT NULL) instead", node.ColumnName),
-			StartPosition: &storepb.Position{
-				Line: int32(checker.line),
-			},
+			Status:        checker.level,
+			Code:          advisor.StatementAddNotNull.Int32(),
+			Title:         checker.title,
+			Content:       fmt.Sprintf("Setting NOT NULL will block reads and writes. You can use CHECK (%q IS NOT NULL) instead", node.ColumnName),
+			StartPosition: advisor.ConvertANTLRLineToPosition(checker.line),
 		})
 	}
 

@@ -109,13 +109,11 @@ func (checker *columnTypeDisallowListChecker) checkFieldDefinition(tableName, co
 	columnType = strings.ToUpper(columnType)
 	if _, exists := checker.typeRestriction[columnType]; exists {
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{
-			Status:  checker.level,
-			Code:    advisor.DisabledColumnType.Int32(),
-			Title:   checker.title,
-			Content: fmt.Sprintf("Disallow column type %s but column `%s`.`%s` is", columnType, tableName, columnName),
-			StartPosition: &storepb.Position{
-				Line: int32(checker.baseLine + ctx.GetStart().GetLine()),
-			},
+			Status:        checker.level,
+			Code:          advisor.DisabledColumnType.Int32(),
+			Title:         checker.title,
+			Content:       fmt.Sprintf("Disallow column type %s but column `%s`.`%s` is", columnType, tableName, columnName),
+			StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
 		})
 	}
 }

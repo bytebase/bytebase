@@ -55,73 +55,61 @@ func (c *statementCreateSpecifySchemaChecker) Visit(node ast.Node) ast.Visitor {
 	case *ast.CreateTableStmt:
 		if n.Name.Schema == "" {
 			c.adviceList = append(c.adviceList, &storepb.Advice{
-				Status:  c.level,
-				Code:    advisor.StatementCreateWithoutSchemaName.Int32(),
-				Title:   c.title,
-				Content: "Table schema should be specified.",
-				StartPosition: &storepb.Position{
-					Line: int32(node.LastLine()),
-				},
+				Status:        c.level,
+				Code:          advisor.StatementCreateWithoutSchemaName.Int32(),
+				Title:         c.title,
+				Content:       "Table schema should be specified.",
+				StartPosition: advisor.ConvertANTLRLineToPosition(node.LastLine()),
 			})
 		}
 	case *ast.CreateExtensionStmt:
 		if n.Schema == "" {
 			c.adviceList = append(c.adviceList, &storepb.Advice{
-				Status:  c.level,
-				Code:    advisor.StatementCreateWithoutSchemaName.Int32(),
-				Title:   c.title,
-				Content: "Extension schema should be specified.",
-				StartPosition: &storepb.Position{
-					Line: int32(node.LastLine()),
-				},
+				Status:        c.level,
+				Code:          advisor.StatementCreateWithoutSchemaName.Int32(),
+				Title:         c.title,
+				Content:       "Extension schema should be specified.",
+				StartPosition: advisor.ConvertANTLRLineToPosition(node.LastLine()),
 			})
 		}
 	case *ast.CreateFunctionStmt:
 		if n.Function.Schema == "" {
 			c.adviceList = append(c.adviceList, &storepb.Advice{
-				Status:  c.level,
-				Code:    advisor.StatementCreateWithoutSchemaName.Int32(),
-				Title:   c.title,
-				Content: "Function schema should be specified.",
-				StartPosition: &storepb.Position{
-					Line: int32(node.LastLine()),
-				},
+				Status:        c.level,
+				Code:          advisor.StatementCreateWithoutSchemaName.Int32(),
+				Title:         c.title,
+				Content:       "Function schema should be specified.",
+				StartPosition: advisor.ConvertANTLRLineToPosition(node.LastLine()),
 			})
 		}
 	case *ast.CreateIndexStmt:
 		if n.Index.Table.Schema == "" {
 			c.adviceList = append(c.adviceList, &storepb.Advice{
-				Status:  c.level,
-				Code:    advisor.StatementCreateWithoutSchemaName.Int32(),
-				Title:   c.title,
-				Content: "Table schema for index should be specified.",
-				StartPosition: &storepb.Position{
-					Line: int32(node.LastLine()),
-				},
+				Status:        c.level,
+				Code:          advisor.StatementCreateWithoutSchemaName.Int32(),
+				Title:         c.title,
+				Content:       "Table schema for index should be specified.",
+				StartPosition: advisor.ConvertANTLRLineToPosition(node.LastLine()),
 			})
 		}
 	case *ast.CreateSequenceStmt:
 		if n.SequenceDef.SequenceName.Schema == "" {
 			c.adviceList = append(c.adviceList, &storepb.Advice{
-				Status:  c.level,
-				Code:    advisor.StatementCreateWithoutSchemaName.Int32(),
-				Title:   c.title,
-				Content: "Sequence schema should be specified.",
-				StartPosition: &storepb.Position{
-					Line: int32(node.LastLine()),
-				},
+				Status:        c.level,
+				Code:          advisor.StatementCreateWithoutSchemaName.Int32(),
+				Title:         c.title,
+				Content:       "Sequence schema should be specified.",
+				StartPosition: advisor.ConvertANTLRLineToPosition(node.LastLine()),
 			})
 		}
 	case *ast.CreateTriggerStmt:
 		if n.Trigger.Table.Schema == "" {
 			c.adviceList = append(c.adviceList, &storepb.Advice{
-				Status:  c.level,
-				Code:    advisor.StatementCreateWithoutSchemaName.Int32(),
-				Title:   c.title,
-				Content: "Table schema for trigger should be specified.",
-				StartPosition: &storepb.Position{
-					Line: int32(node.LastLine()),
-				},
+				Status:        c.level,
+				Code:          advisor.StatementCreateWithoutSchemaName.Int32(),
+				Title:         c.title,
+				Content:       "Table schema for trigger should be specified.",
+				StartPosition: advisor.ConvertANTLRLineToPosition(node.LastLine()),
 			})
 		}
 	}

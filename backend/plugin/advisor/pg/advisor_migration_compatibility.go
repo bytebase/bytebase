@@ -117,13 +117,11 @@ func (checker *compatibilityChecker) Visit(node ast.Node) ast.Visitor {
 
 	if code != advisor.Ok {
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{
-			Status:  checker.level,
-			Code:    code.Int32(),
-			Title:   checker.title,
-			Content: fmt.Sprintf("\"%s\" may cause incompatibility with the existing data and code", checker.text),
-			StartPosition: &storepb.Position{
-				Line: int32(node.LastLine()),
-			},
+			Status:        checker.level,
+			Code:          code.Int32(),
+			Title:         checker.title,
+			Content:       fmt.Sprintf("\"%s\" may cause incompatibility with the existing data and code", checker.text),
+			StartPosition: advisor.ConvertANTLRLineToPosition(node.LastLine()),
 		})
 	}
 	return checker

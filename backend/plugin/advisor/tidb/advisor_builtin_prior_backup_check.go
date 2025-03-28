@@ -68,13 +68,11 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx context.Context, checkCtx adv
 
 		if isDDL {
 			adviceList = append(adviceList, &storepb.Advice{
-				Status:  level,
-				Title:   title,
-				Content: "Prior backup cannot deal with mixed DDL and DML statements",
-				Code:    advisor.BuiltinPriorBackupCheck.Int32(),
-				StartPosition: &storepb.Position{
-					Line: int32(stmtNode.OriginTextPosition()),
-				},
+				Status:        level,
+				Title:         title,
+				Content:       "Prior backup cannot deal with mixed DDL and DML statements",
+				Code:          advisor.BuiltinPriorBackupCheck.Int32(),
+				StartPosition: advisor.ConvertANTLRLineToPosition(stmtNode.OriginTextPosition()),
 			})
 		}
 	}

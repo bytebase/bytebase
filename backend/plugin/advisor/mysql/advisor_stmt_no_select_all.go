@@ -67,13 +67,11 @@ func (checker *noSelectAllChecker) EnterQuery(ctx *mysql.QueryContext) {
 func (checker *noSelectAllChecker) EnterSelectItemList(ctx *mysql.SelectItemListContext) {
 	if ctx.MULT_OPERATOR() != nil {
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{
-			Status:  checker.level,
-			Code:    advisor.StatementSelectAll.Int32(),
-			Title:   checker.title,
-			Content: fmt.Sprintf("\"%s\" uses SELECT all", checker.text),
-			StartPosition: &storepb.Position{
-				Line: int32(checker.baseLine + ctx.GetStart().GetLine()),
-			},
+			Status:        checker.level,
+			Code:          advisor.StatementSelectAll.Int32(),
+			Title:         checker.title,
+			Content:       fmt.Sprintf("\"%s\" uses SELECT all", checker.text),
+			StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
 		})
 	}
 }

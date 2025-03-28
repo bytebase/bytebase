@@ -92,13 +92,11 @@ func (checker *columnAutoIncrementInitialValueChecker) EnterCreateTable(ctx *mys
 		}
 		if value != uint64(checker.value) {
 			checker.adviceList = append(checker.adviceList, &storepb.Advice{
-				Status:  checker.level,
-				Code:    advisor.AutoIncrementColumnInitialValueNotMatch.Int32(),
-				Title:   checker.title,
-				Content: fmt.Sprintf("The initial auto-increment value in table `%s` is %v, which doesn't equal %v", tableName, value, checker.value),
-				StartPosition: &storepb.Position{
-					Line: int32(checker.baseLine + ctx.GetStart().GetLine()),
-				},
+				Status:        checker.level,
+				Code:          advisor.AutoIncrementColumnInitialValueNotMatch.Int32(),
+				Title:         checker.title,
+				Content:       fmt.Sprintf("The initial auto-increment value in table `%s` is %v, which doesn't equal %v", tableName, value, checker.value),
+				StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
 			})
 		}
 	}
@@ -141,13 +139,11 @@ func (checker *columnAutoIncrementInitialValueChecker) EnterAlterTable(ctx *mysq
 			}
 			if value != uint64(checker.value) {
 				checker.adviceList = append(checker.adviceList, &storepb.Advice{
-					Status:  checker.level,
-					Code:    advisor.AutoIncrementColumnInitialValueNotMatch.Int32(),
-					Title:   checker.title,
-					Content: fmt.Sprintf("The initial auto-increment value in table `%s` is %v, which doesn't equal %v", tableName, value, checker.value),
-					StartPosition: &storepb.Position{
-						Line: int32(checker.baseLine + ctx.GetStart().GetLine()),
-					},
+					Status:        checker.level,
+					Code:          advisor.AutoIncrementColumnInitialValueNotMatch.Int32(),
+					Title:         checker.title,
+					Content:       fmt.Sprintf("The initial auto-increment value in table `%s` is %v, which doesn't equal %v", tableName, value, checker.value),
+					StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
 				})
 			}
 		}

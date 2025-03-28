@@ -94,13 +94,11 @@ func (checker *columnMaximumCharacterLengthChecker) EnterCreateTable(ctx *mysql.
 		charLength := checker.getCharLength(tableElement.ColumnDefinition().FieldDefinition().DataType())
 		if checker.maximum > 0 && charLength > checker.maximum {
 			checker.adviceList = append(checker.adviceList, &storepb.Advice{
-				Status:  checker.level,
-				Code:    advisor.CharLengthExceedsLimit.Int32(),
-				Title:   checker.title,
-				Content: fmt.Sprintf("The length of the CHAR column `%s.%s` is bigger than %d, please use VARCHAR instead", tableName, columnName, checker.maximum),
-				StartPosition: &storepb.Position{
-					Line: int32(checker.baseLine + tableElement.GetStart().GetLine()),
-				},
+				Status:        checker.level,
+				Code:          advisor.CharLengthExceedsLimit.Int32(),
+				Title:         checker.title,
+				Content:       fmt.Sprintf("The length of the CHAR column `%s.%s` is bigger than %d, please use VARCHAR instead", tableName, columnName, checker.maximum),
+				StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + tableElement.GetStart().GetLine()),
 			})
 		}
 	}
@@ -182,13 +180,11 @@ func (checker *columnMaximumCharacterLengthChecker) EnterAlterTable(ctx *mysql.A
 		for _, columnName := range columnList {
 			if charLength, ok := charLengthMap[columnName]; ok && checker.maximum > 0 && charLength > checker.maximum {
 				checker.adviceList = append(checker.adviceList, &storepb.Advice{
-					Status:  checker.level,
-					Code:    advisor.CharLengthExceedsLimit.Int32(),
-					Title:   checker.title,
-					Content: fmt.Sprintf("The length of the CHAR column `%s.%s` is bigger than %d, please use VARCHAR instead", tableName, columnName, checker.maximum),
-					StartPosition: &storepb.Position{
-						Line: int32(checker.baseLine + ctx.GetStart().GetLine()),
-					},
+					Status:        checker.level,
+					Code:          advisor.CharLengthExceedsLimit.Int32(),
+					Title:         checker.title,
+					Content:       fmt.Sprintf("The length of the CHAR column `%s.%s` is bigger than %d, please use VARCHAR instead", tableName, columnName, checker.maximum),
+					StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
 				})
 			}
 		}

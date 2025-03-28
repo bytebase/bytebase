@@ -94,12 +94,10 @@ func (l *columnMaximumVarcharLengthListener) EnterDatatype(ctx *parser.DatatypeC
 	}
 
 	l.adviceList = append(l.adviceList, &storepb.Advice{
-		Status:  l.level,
-		Code:    advisor.VarcharLengthExceedsLimit.Int32(),
-		Title:   l.title,
-		Content: fmt.Sprintf("The maximum varchar length is %d.", l.maximum),
-		StartPosition: &storepb.Position{
-			Line: int32(ctx.GetStart().GetLine()),
-		},
+		Status:        l.level,
+		Code:          advisor.VarcharLengthExceedsLimit.Int32(),
+		Title:         l.title,
+		Content:       fmt.Sprintf("The maximum varchar length is %d.", l.maximum),
+		StartPosition: advisor.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
 	})
 }

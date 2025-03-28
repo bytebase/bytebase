@@ -49,7 +49,7 @@ func ConvertPositionToANTLRPosition(p *storepb.Position, text string) *ANTLRPosi
 
 		byteOffset += int32(sz)
 		bi += sz
-		characterOffset += 1
+		characterOffset++
 	}
 
 	return &ANTLRPosition{
@@ -92,7 +92,7 @@ func ConvertANTLRPositionToPosition(a *ANTLRPosition, text string) *storepb.Posi
 
 		byteOffset += int32(sz)
 		bi += sz
-		characterOffset += 1
+		characterOffset++
 	}
 
 	return &storepb.Position{

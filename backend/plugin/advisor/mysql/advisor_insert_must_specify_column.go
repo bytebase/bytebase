@@ -87,26 +87,22 @@ func (checker *insertMustSpecifyColumnChecker) EnterInsertStatement(ctx *mysql.I
 		return
 	}
 	checker.adviceList = append(checker.adviceList, &storepb.Advice{
-		Status:  checker.level,
-		Code:    advisor.InsertNotSpecifyColumn.Int32(),
-		Title:   checker.title,
-		Content: fmt.Sprintf("The INSERT statement must specify columns but \"%s\" does not", checker.text),
-		StartPosition: &storepb.Position{
-			Line: int32(checker.baseLine + ctx.GetStart().GetLine()),
-		},
+		Status:        checker.level,
+		Code:          advisor.InsertNotSpecifyColumn.Int32(),
+		Title:         checker.title,
+		Content:       fmt.Sprintf("The INSERT statement must specify columns but \"%s\" does not", checker.text),
+		StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
 	})
 }
 
 func (checker *insertMustSpecifyColumnChecker) EnterSelectItemList(ctx *mysql.SelectItemListContext) {
 	if checker.hasSelect && ctx.MULT_OPERATOR() != nil {
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{
-			Status:  checker.level,
-			Code:    advisor.InsertNotSpecifyColumn.Int32(),
-			Title:   checker.title,
-			Content: fmt.Sprintf("The INSERT statement must specify columns but \"%s\" does not", checker.text),
-			StartPosition: &storepb.Position{
-				Line: int32(checker.baseLine + ctx.GetStart().GetLine()),
-			},
+			Status:        checker.level,
+			Code:          advisor.InsertNotSpecifyColumn.Int32(),
+			Title:         checker.title,
+			Content:       fmt.Sprintf("The INSERT statement must specify columns but \"%s\" does not", checker.text),
+			StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
 		})
 	}
 }

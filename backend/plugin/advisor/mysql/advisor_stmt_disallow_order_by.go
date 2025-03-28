@@ -85,12 +85,10 @@ func (checker *disallowOrderByChecker) EnterUpdateStatement(ctx *mysql.UpdateSta
 
 func (checker *disallowOrderByChecker) handleOrderByClause(code advisor.Code, lineNumber int) {
 	checker.adviceList = append(checker.adviceList, &storepb.Advice{
-		Status:  checker.level,
-		Code:    code.Int32(),
-		Title:   checker.title,
-		Content: fmt.Sprintf("ORDER BY clause is forbidden in DELETE and UPDATE statements, but \"%s\" uses", checker.text),
-		StartPosition: &storepb.Position{
-			Line: int32(checker.line + lineNumber),
-		},
+		Status:        checker.level,
+		Code:          code.Int32(),
+		Title:         checker.title,
+		Content:       fmt.Sprintf("ORDER BY clause is forbidden in DELETE and UPDATE statements, but \"%s\" uses", checker.text),
+		StartPosition: advisor.ConvertANTLRLineToPosition(checker.line + lineNumber),
 	})
 }

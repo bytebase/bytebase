@@ -80,13 +80,11 @@ func (checker *namingDropTableConventionChecker) EnterDropTable(ctx *mysql.DropT
 		_, tableName := mysqlparser.NormalizeMySQLTableRef(tableRef)
 		if !checker.format.MatchString(tableName) {
 			checker.adviceList = append(checker.adviceList, &storepb.Advice{
-				Status:  checker.level,
-				Code:    advisor.TableDropNamingConventionMismatch.Int32(),
-				Title:   checker.title,
-				Content: fmt.Sprintf("`%s` mismatches drop table naming convention, naming format should be %q", tableName, checker.format),
-				StartPosition: &storepb.Position{
-					Line: int32(checker.baseLine + ctx.GetStart().GetLine()),
-				},
+				Status:        checker.level,
+				Code:          advisor.TableDropNamingConventionMismatch.Int32(),
+				Title:         checker.title,
+				Content:       fmt.Sprintf("`%s` mismatches drop table naming convention, naming format should be %q", tableName, checker.format),
+				StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
 			})
 		}
 	}

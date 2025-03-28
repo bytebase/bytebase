@@ -94,13 +94,11 @@ func (checker *columnMaximumVarcharLengthChecker) EnterCreateTable(ctx *mysql.Cr
 		length := getVarcharLength(tableElement.ColumnDefinition().FieldDefinition().DataType())
 		if checker.maximum > 0 && length > checker.maximum {
 			checker.adviceList = append(checker.adviceList, &storepb.Advice{
-				Status:  checker.level,
-				Code:    advisor.VarcharLengthExceedsLimit.Int32(),
-				Title:   checker.title,
-				Content: fmt.Sprintf("The length of the VARCHAR column `%s.%s` is bigger than %d", tableName, columnName, checker.maximum),
-				StartPosition: &storepb.Position{
-					Line: int32(checker.baseLine + tableElement.GetStart().GetLine()),
-				},
+				Status:        checker.level,
+				Code:          advisor.VarcharLengthExceedsLimit.Int32(),
+				Title:         checker.title,
+				Content:       fmt.Sprintf("The length of the VARCHAR column `%s.%s` is bigger than %d", tableName, columnName, checker.maximum),
+				StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + tableElement.GetStart().GetLine()),
 			})
 		}
 	}
@@ -181,13 +179,11 @@ func (checker *columnMaximumVarcharLengthChecker) EnterAlterTable(ctx *mysql.Alt
 		for _, columnName := range columnList {
 			if length, ok := varcharLengthMap[columnName]; ok && checker.maximum > 0 && length > checker.maximum {
 				checker.adviceList = append(checker.adviceList, &storepb.Advice{
-					Status:  checker.level,
-					Code:    advisor.VarcharLengthExceedsLimit.Int32(),
-					Title:   checker.title,
-					Content: fmt.Sprintf("The length of the VARCHAR column `%s.%s` is bigger than %d", tableName, columnName, checker.maximum),
-					StartPosition: &storepb.Position{
-						Line: int32(checker.baseLine + ctx.GetStart().GetLine()),
-					},
+					Status:        checker.level,
+					Code:          advisor.VarcharLengthExceedsLimit.Int32(),
+					Title:         checker.title,
+					Content:       fmt.Sprintf("The length of the VARCHAR column `%s.%s` is bigger than %d", tableName, columnName, checker.maximum),
+					StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
 				})
 			}
 		}

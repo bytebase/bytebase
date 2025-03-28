@@ -82,13 +82,11 @@ func (checker *RequireAlgorithmOptionChecker) EnterAlterTable(ctx *mysql.AlterTa
 func (checker *RequireAlgorithmOptionChecker) ExitAlterTable(*mysql.AlterTableContext) {
 	if !checker.hasOption {
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{
-			Status:  checker.level,
-			Code:    int32(checker.errorCode),
-			Title:   checker.title,
-			Content: "ALTER TABLE statement should include " + checker.requiredOption + " option",
-			StartPosition: &storepb.Position{
-				Line: int32(checker.baseLine + checker.line),
-			},
+			Status:        checker.level,
+			Code:          int32(checker.errorCode),
+			Title:         checker.title,
+			Content:       "ALTER TABLE statement should include " + checker.requiredOption + " option",
+			StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + checker.line),
 		})
 	}
 	checker.inAlterTableStatement = false

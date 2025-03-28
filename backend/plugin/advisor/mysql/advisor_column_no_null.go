@@ -95,13 +95,11 @@ func (checker *columnNoNullChecker) generateAdvice() []*storepb.Advice {
 		})
 		if col != nil && col.Nullable() {
 			checker.adviceList = append(checker.adviceList, &storepb.Advice{
-				Status:  checker.level,
-				Code:    advisor.ColumnCannotNull.Int32(),
-				Title:   checker.title,
-				Content: fmt.Sprintf("`%s`.`%s` cannot have NULL value", column.tableName, column.columnName),
-				StartPosition: &storepb.Position{
-					Line: int32(column.line),
-				},
+				Status:        checker.level,
+				Code:          advisor.ColumnCannotNull.Int32(),
+				Title:         checker.title,
+				Content:       fmt.Sprintf("`%s`.`%s` cannot have NULL value", column.tableName, column.columnName),
+				StartPosition: advisor.ConvertANTLRLineToPosition(column.line),
 			})
 		}
 	}

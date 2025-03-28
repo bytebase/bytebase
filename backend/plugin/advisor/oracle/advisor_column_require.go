@@ -102,13 +102,11 @@ func (l *columnRequireListener) ExitCreate_table(ctx *parser.Create_tableContext
 	sort.Strings(missingColumns)
 	tableName := normalizeIdentifier(ctx.Table_name(), l.currentDatabase)
 	l.adviceList = append(l.adviceList, &storepb.Advice{
-		Status:  l.level,
-		Code:    advisor.NoRequiredColumn.Int32(),
-		Title:   l.title,
-		Content: fmt.Sprintf("Table %q requires columns: %s", tableName, strings.Join(missingColumns, ", ")),
-		StartPosition: &storepb.Position{
-			Line: int32(ctx.GetStop().GetLine()),
-		},
+		Status:        l.level,
+		Code:          advisor.NoRequiredColumn.Int32(),
+		Title:         l.title,
+		Content:       fmt.Sprintf("Table %q requires columns: %s", tableName, strings.Join(missingColumns, ", ")),
+		StartPosition: advisor.ConvertANTLRLineToPosition(ctx.GetStop().GetLine()),
 	})
 }
 
@@ -141,13 +139,11 @@ func (l *columnRequireListener) ExitAlter_table(ctx *parser.Alter_tableContext) 
 	sort.Strings(missingColumns)
 	tableName := lastIdentifier(normalizeIdentifier(ctx.Tableview_name(), l.currentDatabase))
 	l.adviceList = append(l.adviceList, &storepb.Advice{
-		Status:  l.level,
-		Code:    advisor.NoRequiredColumn.Int32(),
-		Title:   l.title,
-		Content: fmt.Sprintf("Table %q requires columns: %s", tableName, strings.Join(missingColumns, ", ")),
-		StartPosition: &storepb.Position{
-			Line: int32(ctx.GetStop().GetLine()),
-		},
+		Status:        l.level,
+		Code:          advisor.NoRequiredColumn.Int32(),
+		Title:         l.title,
+		Content:       fmt.Sprintf("Table %q requires columns: %s", tableName, strings.Join(missingColumns, ", ")),
+		StartPosition: advisor.ConvertANTLRLineToPosition(ctx.GetStop().GetLine()),
 	})
 }
 

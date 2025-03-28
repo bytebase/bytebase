@@ -112,9 +112,7 @@ func (checker *tableRequirePKChecker) Visit(node ast.Node) ast.Visitor {
 				missingPK.Name,
 				checker.text,
 			),
-			StartPosition: &storepb.Position{
-				Line: int32(node.LastLine()),
-			},
+			StartPosition: advisor.ConvertANTLRLineToPosition(node.LastLine()),
 		})
 	}
 

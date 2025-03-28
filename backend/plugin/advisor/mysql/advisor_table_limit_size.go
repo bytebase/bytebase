@@ -67,13 +67,11 @@ func (*MaximumTableSizeAdvisor) Check(_ context.Context, checkCtx advisor.Contex
 					tableRows := getTabRowsByName(tabName, checkCtx.DBSchema.Schemas[0].Tables)
 					if tableRows >= int64(payload.Number) {
 						adviceList = append(adviceList, &storepb.Advice{
-							Status:  status,
-							Code:    advisor.TableExceedLimitSize.Int32(),
-							Title:   checkCtx.Rule.Type,
-							Content: fmt.Sprintf("Apply DDL on large table '%s' ( %d rows ) will lock table for a long time", tabName, tableRows),
-							StartPosition: &storepb.Position{
-								Line: int32(statementBaseLine + tableSizeChecker.baseLine),
-							},
+							Status:        status,
+							Code:          advisor.TableExceedLimitSize.Int32(),
+							Title:         checkCtx.Rule.Type,
+							Content:       fmt.Sprintf("Apply DDL on large table '%s' ( %d rows ) will lock table for a long time", tabName, tableRows),
+							StartPosition: advisor.ConvertANTLRLineToPosition(statementBaseLine + tableSizeChecker.baseLine),
 						})
 					}
 				}

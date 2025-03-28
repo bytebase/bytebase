@@ -100,13 +100,11 @@ func (checker *indexKeyNumberLimitChecker) Visit(node ast.Node) ast.Visitor {
 
 	for _, index := range indexDataList {
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{
-			Status:  checker.level,
-			Code:    advisor.IndexKeyNumberExceedsLimit.Int32(),
-			Title:   checker.title,
-			Content: fmt.Sprintf("The number of keys of index %q in table %q should be not greater than %d", index.indexName, index.tableName, checker.max),
-			StartPosition: &storepb.Position{
-				Line: int32(index.line),
-			},
+			Status:        checker.level,
+			Code:          advisor.IndexKeyNumberExceedsLimit.Int32(),
+			Title:         checker.title,
+			Content:       fmt.Sprintf("The number of keys of index %q in table %q should be not greater than %d", index.indexName, index.tableName, checker.max),
+			StartPosition: advisor.ConvertANTLRLineToPosition(index.line),
 		})
 	}
 	return checker

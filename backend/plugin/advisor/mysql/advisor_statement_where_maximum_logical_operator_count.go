@@ -51,13 +51,11 @@ func (*StatementWhereMaximumLogicalOperatorCountAdvisor) Check(_ context.Context
 		antlr.ParseTreeWalkerDefault.Walk(checker, stmt.Tree)
 		if checker.maxOrCount > checker.maximum {
 			checker.adviceList = append(checker.adviceList, &storepb.Advice{
-				Status:  checker.level,
-				Code:    advisor.StatementWhereMaximumLogicalOperatorCount.Int32(),
-				Title:   checker.title,
-				Content: fmt.Sprintf("Number of tokens (%d) in the OR predicate operation exceeds limit (%d) in statement %q.", checker.maxOrCount, checker.maximum, checker.text),
-				StartPosition: &storepb.Position{
-					Line: int32(checker.maxOrCountLine),
-				},
+				Status:        checker.level,
+				Code:          advisor.StatementWhereMaximumLogicalOperatorCount.Int32(),
+				Title:         checker.title,
+				Content:       fmt.Sprintf("Number of tokens (%d) in the OR predicate operation exceeds limit (%d) in statement %q.", checker.maxOrCount, checker.maximum, checker.text),
+				StartPosition: advisor.ConvertANTLRLineToPosition(checker.maxOrCountLine),
 			})
 		}
 	}
@@ -104,13 +102,11 @@ func (checker *statementWhereMaximumLogicalOperatorCountChecker) EnterExprList(c
 	count := len(ctx.AllExpr())
 	if count > checker.maximum {
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{
-			Status:  checker.level,
-			Code:    advisor.StatementWhereMaximumLogicalOperatorCount.Int32(),
-			Title:   checker.title,
-			Content: fmt.Sprintf("Number of tokens (%d) in IN predicate operation exceeds limit (%d) in statement %q.", count, checker.maximum, checker.text),
-			StartPosition: &storepb.Position{
-				Line: int32(checker.baseLine + ctx.GetStart().GetLine()),
-			},
+			Status:        checker.level,
+			Code:          advisor.StatementWhereMaximumLogicalOperatorCount.Int32(),
+			Title:         checker.title,
+			Content:       fmt.Sprintf("Number of tokens (%d) in IN predicate operation exceeds limit (%d) in statement %q.", count, checker.maximum, checker.text),
+			StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
 		})
 	}
 }

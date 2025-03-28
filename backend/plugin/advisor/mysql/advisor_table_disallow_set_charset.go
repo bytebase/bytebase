@@ -70,13 +70,11 @@ func (checker *tableDisallowSetCharsetChecker) EnterCreateTable(ctx *mysql.Creat
 		for _, option := range ctx.CreateTableOptions().AllCreateTableOption() {
 			if option.DefaultCharset() != nil {
 				checker.adviceList = append(checker.adviceList, &storepb.Advice{
-					Status:  checker.level,
-					Code:    advisor.DisallowSetCharset.Int32(),
-					Title:   checker.title,
-					Content: fmt.Sprintf("Set charset on tables is disallowed, but \"%s\" uses", checker.text),
-					StartPosition: &storepb.Position{
-						Line: int32(checker.baseLine + ctx.GetStart().GetLine()),
-					},
+					Status:        checker.level,
+					Code:          advisor.DisallowSetCharset.Int32(),
+					Title:         checker.title,
+					Content:       fmt.Sprintf("Set charset on tables is disallowed, but \"%s\" uses", checker.text),
+					StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
 				})
 			}
 		}
@@ -102,13 +100,11 @@ func (checker *tableDisallowSetCharsetChecker) EnterAlterTable(ctx *mysql.AlterT
 
 		if alterListItem.Charset() != nil {
 			checker.adviceList = append(checker.adviceList, &storepb.Advice{
-				Status:  checker.level,
-				Code:    advisor.DisallowSetCharset.Int32(),
-				Title:   checker.title,
-				Content: fmt.Sprintf("Set charset on tables is disallowed, but \"%s\" uses", checker.text),
-				StartPosition: &storepb.Position{
-					Line: int32(checker.baseLine + ctx.GetStart().GetLine()),
-				},
+				Status:        checker.level,
+				Code:          advisor.DisallowSetCharset.Int32(),
+				Title:         checker.title,
+				Content:       fmt.Sprintf("Set charset on tables is disallowed, but \"%s\" uses", checker.text),
+				StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
 			})
 		}
 	}

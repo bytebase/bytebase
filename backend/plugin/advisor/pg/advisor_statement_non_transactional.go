@@ -42,13 +42,11 @@ func (*NonTransactionalAdvisor) Check(_ context.Context, checkCtx advisor.Contex
 		checker.line = stmt.LastLine()
 		if pg.IsNonTransactionStatement(checker.text) {
 			checker.adviceList = append(checker.adviceList, &storepb.Advice{
-				Status:  checker.level,
-				Code:    advisor.StatementNonTransactional.Int32(),
-				Title:   checker.title,
-				Content: "This statement is non-transactional",
-				StartPosition: &storepb.Position{
-					Line: int32(checker.line),
-				},
+				Status:        checker.level,
+				Code:          advisor.StatementNonTransactional.Int32(),
+				Title:         checker.title,
+				Content:       "This statement is non-transactional",
+				StartPosition: advisor.ConvertANTLRLineToPosition(checker.line),
 			})
 		}
 	}

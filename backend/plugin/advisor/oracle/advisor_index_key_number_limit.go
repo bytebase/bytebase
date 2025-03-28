@@ -77,13 +77,11 @@ func (l *indexKeyNumberLimitListener) EnterTable_index_clause(ctx *parser.Table_
 	keys := len(ctx.AllIndex_expr_option())
 	if keys > l.max {
 		l.adviceList = append(l.adviceList, &storepb.Advice{
-			Status:  l.level,
-			Code:    advisor.IndexKeyNumberExceedsLimit.Int32(),
-			Title:   l.title,
-			Content: fmt.Sprintf("Index key number should be less than or equal to %d", l.max),
-			StartPosition: &storepb.Position{
-				Line: int32(ctx.GetStart().GetLine()),
-			},
+			Status:        l.level,
+			Code:          advisor.IndexKeyNumberExceedsLimit.Int32(),
+			Title:         l.title,
+			Content:       fmt.Sprintf("Index key number should be less than or equal to %d", l.max),
+			StartPosition: advisor.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
 		})
 	}
 }
@@ -93,13 +91,11 @@ func (l *indexKeyNumberLimitListener) EnterOut_of_line_constraint(ctx *parser.Ou
 	keys := len(ctx.AllColumn_name())
 	if keys > l.max {
 		l.adviceList = append(l.adviceList, &storepb.Advice{
-			Status:  l.level,
-			Code:    advisor.IndexKeyNumberExceedsLimit.Int32(),
-			Title:   l.title,
-			Content: fmt.Sprintf("Index key number should be less than or equal to %d", l.max),
-			StartPosition: &storepb.Position{
-				Line: int32(ctx.GetStart().GetLine()),
-			},
+			Status:        l.level,
+			Code:          advisor.IndexKeyNumberExceedsLimit.Int32(),
+			Title:         l.title,
+			Content:       fmt.Sprintf("Index key number should be less than or equal to %d", l.max),
+			StartPosition: advisor.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
 		})
 	}
 }

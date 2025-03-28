@@ -84,35 +84,29 @@ func (checker *disallowUsingTemporaryChecker) EnterSelectStatement(ctx *mysql.Se
 	res, err := advisor.Query(checker.ctx, advisor.QueryContext{}, checker.driver, storepb.Engine_MYSQL, fmt.Sprintf("EXPLAIN %s", query))
 	if err != nil {
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{
-			Status:  checker.level,
-			Code:    advisor.StatementExplainQueryFailed.Int32(),
-			Title:   checker.title,
-			Content: fmt.Sprintf("Failed to explain query: %s, with error: %s", query, err),
-			StartPosition: &storepb.Position{
-				Line: int32(checker.baseLine + ctx.GetStart().GetLine()),
-			},
+			Status:        checker.level,
+			Code:          advisor.StatementExplainQueryFailed.Int32(),
+			Title:         checker.title,
+			Content:       fmt.Sprintf("Failed to explain query: %s, with error: %s", query, err),
+			StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
 		})
 	} else {
 		hasUsingTemporary, tables, err := hasUsingTemporaryInExtraColumn(res)
 		if err != nil {
 			checker.adviceList = append(checker.adviceList, &storepb.Advice{
-				Status:  checker.level,
-				Code:    advisor.Internal.Int32(),
-				Title:   checker.title,
-				Content: fmt.Sprintf("Failed to check extra column: %s, with error: %s", query, err),
-				StartPosition: &storepb.Position{
-					Line: int32(checker.baseLine + ctx.GetStart().GetLine()),
-				},
+				Status:        checker.level,
+				Code:          advisor.Internal.Int32(),
+				Title:         checker.title,
+				Content:       fmt.Sprintf("Failed to check extra column: %s, with error: %s", query, err),
+				StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
 			})
 		} else if hasUsingTemporary {
 			checker.adviceList = append(checker.adviceList, &storepb.Advice{
-				Status:  checker.level,
-				Code:    advisor.StatementHasUsingTemporary.Int32(),
-				Title:   checker.title,
-				Content: fmt.Sprintf("Using temporary detected on table(s): %s", tables),
-				StartPosition: &storepb.Position{
-					Line: int32(checker.baseLine + ctx.GetStart().GetLine()),
-				},
+				Status:        checker.level,
+				Code:          advisor.StatementHasUsingTemporary.Int32(),
+				Title:         checker.title,
+				Content:       fmt.Sprintf("Using temporary detected on table(s): %s", tables),
+				StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
 			})
 		}
 	}
