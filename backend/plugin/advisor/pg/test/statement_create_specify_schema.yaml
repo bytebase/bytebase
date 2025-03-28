@@ -5,9 +5,8 @@
       code: 216
       title: statement.create-specify-schema
       content: Table schema should be specified.
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: CREATE TABLE public.t(id int);

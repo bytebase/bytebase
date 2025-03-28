@@ -19,9 +19,8 @@
       code: 410
       title: column.auto-increment-must-integer
       content: Auto-increment column `t2`.`a` requires integer type
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null
 - statement: |-
@@ -33,9 +32,8 @@
       code: 410
       title: column.auto-increment-must-integer
       content: Auto-increment column `t`.`a` requires integer type
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null
 - statement: |-
@@ -47,9 +45,8 @@
       code: 410
       title: column.auto-increment-must-integer
       content: Auto-increment column `t`.`a` requires integer type
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null
 - statement: |-
@@ -61,9 +58,8 @@
       code: 410
       title: column.auto-increment-must-integer
       content: Auto-increment column `t`.`a` requires integer type
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null
 - statement: |-
@@ -76,9 +72,8 @@
       code: 410
       title: column.auto-increment-must-integer
       content: Auto-increment column `t`.`a` requires integer type
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null
 - statement: |-
@@ -90,8 +85,7 @@
       code: 410
       title: column.auto-increment-must-integer
       content: Auto-increment column `t`.`a` requires integer type
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null

@@ -11,8 +11,7 @@
       code: 236
       title: statement.require-algorithm-option
       content: ALTER TABLE statement should include ALGORITHM option
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null

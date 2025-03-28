@@ -5,7 +5,6 @@
       code: 308
       title: naming.table.no-keyword
       content: Table name "CONNECT" is a keyword identifier and should be avoided.
-      detail: ""
       startposition: null
       endposition: null
 - statement: CREATE TABLE "DB_NAME"."SCHEMA_NAME"."CONNECT"(ID INT);
@@ -15,7 +14,6 @@
       code: 308
       title: naming.table.no-keyword
       content: Table name "CONNECT" is a keyword identifier and should be avoided.
-      detail: ""
       startposition: null
       endposition: null
 - statement: CREATE TABLE "DB_NAME"."SCHEMA_NAME"."TABLE_NAME"(ID INT);
@@ -27,6 +25,5 @@
       code: 308
       title: naming.table.no-keyword
       content: Table name "CONNECT" is a keyword identifier and should be avoided.
-      detail: ""
       startposition: null
       endposition: null

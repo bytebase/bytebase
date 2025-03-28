@@ -9,8 +9,7 @@
       code: 227
       title: statement.disallow-mix-in-dml
       content: Data change can only run DML, "ALTER TABLE tech_book ADD COLUMN author TEXT;" is not DML
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null

@@ -65,13 +65,11 @@ func (l *whereRequirementForUpdateDeleteChecker) generateAdvice() ([]*storepb.Ad
 func (l *whereRequirementForUpdateDeleteChecker) EnterDelete_statement(ctx *parser.Delete_statementContext) {
 	if ctx.WHERE() == nil {
 		l.adviceList = append(l.adviceList, &storepb.Advice{
-			Status:  l.level,
-			Code:    advisor.StatementNoWhere.Int32(),
-			Title:   l.title,
-			Content: "WHERE clause is required for DELETE statement.",
-			StartPosition: &storepb.Position{
-				Line: int32(ctx.GetStart().GetLine()),
-			},
+			Status:        l.level,
+			Code:          advisor.StatementNoWhere.Int32(),
+			Title:         l.title,
+			Content:       "WHERE clause is required for DELETE statement.",
+			StartPosition: advisor.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
 		})
 	}
 }
@@ -80,13 +78,11 @@ func (l *whereRequirementForUpdateDeleteChecker) EnterDelete_statement(ctx *pars
 func (l *whereRequirementForUpdateDeleteChecker) EnterUpdate_statement(ctx *parser.Update_statementContext) {
 	if ctx.WHERE() == nil {
 		l.adviceList = append(l.adviceList, &storepb.Advice{
-			Status:  l.level,
-			Code:    advisor.StatementNoWhere.Int32(),
-			Title:   l.title,
-			Content: "WHERE clause is required for UPDATE statement.",
-			StartPosition: &storepb.Position{
-				Line: int32(ctx.GetStart().GetLine()),
-			},
+			Status:        l.level,
+			Code:          advisor.StatementNoWhere.Int32(),
+			Title:         l.title,
+			Content:       "WHERE clause is required for UPDATE statement.",
+			StartPosition: advisor.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
 		})
 	}
 }

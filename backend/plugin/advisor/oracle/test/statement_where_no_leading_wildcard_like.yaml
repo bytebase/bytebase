@@ -7,9 +7,8 @@
       code: 204
       title: statement.where.no-leading-wildcard-like
       content: Avoid using leading wildcard LIKE.
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: SELECT * FROM t WHERE a LIKE 'abc' OR a LIKE '%abc'
@@ -19,9 +18,8 @@
       code: 204
       title: statement.where.no-leading-wildcard-like
       content: Avoid using leading wildcard LIKE.
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: SELECT * FROM t WHERE a LIKE '%acc' OR a LIKE '%abc'
@@ -31,18 +29,16 @@
       code: 204
       title: statement.where.no-leading-wildcard-like
       content: Avoid using leading wildcard LIKE.
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
     - status: 2
       code: 204
       title: statement.where.no-leading-wildcard-like
       content: Avoid using leading wildcard LIKE.
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: SELECT * FROM (SELECT * FROM t WHERE a LIKE '%acc' OR a LIKE '%abc') t1
@@ -52,17 +48,15 @@
       code: 204
       title: statement.where.no-leading-wildcard-like
       content: Avoid using leading wildcard LIKE.
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
     - status: 2
       code: 204
       title: statement.where.no-leading-wildcard-like
       content: Avoid using leading wildcard LIKE.
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null

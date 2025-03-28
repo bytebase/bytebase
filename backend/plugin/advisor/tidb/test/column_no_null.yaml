@@ -8,18 +8,16 @@
       code: 402
       title: column.no-null
       content: '`book`.`id` cannot have NULL value'
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null
     - status: 2
       code: 402
       title: column.no-null
       content: '`book`.`name` cannot have NULL value'
-      detail: ""
       startposition:
-        line: 3
+        line: 2
         column: 0
       endposition: null
 - statement: CREATE TABLE book(id int PRIMARY KEY, name varchar(255))
@@ -29,9 +27,8 @@
       code: 402
       title: column.no-null
       content: '`book`.`name` cannot have NULL value'
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: CREATE TABLE book(id int NOT NULL, name varchar(255))
@@ -41,9 +38,8 @@
       code: 402
       title: column.no-null
       content: '`book`.`name` cannot have NULL value'
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: CREATE TABLE book(id int PRIMARY KEY, name varchar(255) NOT NULL)
@@ -57,9 +53,8 @@
       code: 402
       title: column.no-null
       content: '`book`.`id` cannot have NULL value'
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null
 - statement: |-
@@ -75,9 +70,8 @@
       code: 402
       title: column.no-null
       content: '`book`.`name` cannot have NULL value'
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null
 - statement: |-

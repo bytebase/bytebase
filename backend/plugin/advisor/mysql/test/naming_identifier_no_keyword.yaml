@@ -7,7 +7,6 @@
       code: 201
       title: Syntax error
       content: "Syntax error at line 1:13 \nrelated text: CREATE TABLE interval"
-      detail: ""
       startposition:
         line: 1
         column: 13
@@ -19,7 +18,6 @@
       code: 308
       title: naming.identifier.no-keyword
       content: Identifier "execute" is a keyword and should be avoided
-      detail: ""
       startposition:
         line: 1
         column: 0
@@ -31,7 +29,6 @@
       code: 308
       title: naming.identifier.no-keyword
       content: Identifier "execute" is a keyword and should be avoided
-      detail: ""
       startposition:
         line: 1
         column: 0
@@ -43,7 +40,6 @@
       code: 308
       title: naming.identifier.no-keyword
       content: Identifier "interval" is a keyword and should be avoided
-      detail: ""
       startposition:
         line: 1
         column: 0
@@ -55,7 +51,6 @@
       code: 308
       title: naming.identifier.no-keyword
       content: Identifier "current_timestamp" is a keyword and should be avoided
-      detail: ""
       startposition:
         line: 3
         column: 0
@@ -67,7 +62,6 @@
       code: 308
       title: naming.identifier.no-keyword
       content: Identifier "interval" is a keyword and should be avoided
-      detail: ""
       startposition:
         line: 1
         column: 0

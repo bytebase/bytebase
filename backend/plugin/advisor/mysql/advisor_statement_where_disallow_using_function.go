@@ -88,13 +88,11 @@ func (checker *statementWhereDisallowUsingFunctionChecker) EnterFunctionCall(ctx
 	pi := ctx.PureIdentifier()
 	if pi != nil {
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{
-			Status:  checker.level,
-			Code:    advisor.DisabledFunction.Int32(),
-			Title:   checker.title,
-			Content: fmt.Sprintf("Function is disallowed in where clause, but \"%s\" uses", checker.text),
-			StartPosition: &storepb.Position{
-				Line: int32(checker.baseLine + ctx.GetStart().GetLine()),
-			},
+			Status:        checker.level,
+			Code:          advisor.DisabledFunction.Int32(),
+			Title:         checker.title,
+			Content:       fmt.Sprintf("Function is disallowed in where clause, but \"%s\" uses", checker.text),
+			StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
 		})
 	}
 }

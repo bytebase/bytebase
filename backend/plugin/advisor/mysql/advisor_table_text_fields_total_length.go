@@ -88,13 +88,11 @@ func (checker *tableFieldsMaximumVarcharLengthChecker) EnterCreateTable(ctx *mys
 	total := getTotalTextLength(tableInfo)
 	if total > int64(checker.maximum) {
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{
-			Status:  checker.level,
-			Code:    advisor.IndexCountExceedsLimit.Int32(),
-			Title:   checker.title,
-			Content: fmt.Sprintf("Table %q total text column length (%d) exceeds the limit (%d).", tableName, total, checker.maximum),
-			StartPosition: &storepb.Position{
-				Line: int32(checker.baseLine + ctx.GetStart().GetLine()),
-			},
+			Status:        checker.level,
+			Code:          advisor.IndexCountExceedsLimit.Int32(),
+			Title:         checker.title,
+			Content:       fmt.Sprintf("Table %q total text column length (%d) exceeds the limit (%d).", tableName, total, checker.maximum),
+			StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
 		})
 	}
 }
@@ -124,13 +122,11 @@ func (checker *tableFieldsMaximumVarcharLengthChecker) EnterAlterTable(ctx *mysq
 	total := getTotalTextLength(tableInfo)
 	if total > int64(checker.maximum) {
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{
-			Status:  checker.level,
-			Code:    advisor.TotalTextLengthExceedsLimit.Int32(),
-			Title:   checker.title,
-			Content: fmt.Sprintf("Table %q total text column length (%d) exceeds the limit (%d).", tableName, total, checker.maximum),
-			StartPosition: &storepb.Position{
-				Line: int32(checker.baseLine + ctx.GetStart().GetLine()),
-			},
+			Status:        checker.level,
+			Code:          advisor.TotalTextLengthExceedsLimit.Int32(),
+			Title:         checker.title,
+			Content:       fmt.Sprintf("Table %q total text column length (%d) exceeds the limit (%d).", tableName, total, checker.maximum),
+			StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
 		})
 	}
 }

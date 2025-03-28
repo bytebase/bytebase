@@ -65,13 +65,11 @@ func (checker *columnDisallowChangingChecker) Enter(in ast.Node) (ast.Node, bool
 		for _, spec := range node.Specs {
 			if spec.Tp == ast.AlterTableChangeColumn {
 				checker.adviceList = append(checker.adviceList, &storepb.Advice{
-					Status:  checker.level,
-					Code:    advisor.UseChangeColumnStatement.Int32(),
-					Title:   checker.title,
-					Content: fmt.Sprintf("\"%s\" contains CHANGE COLUMN statement", checker.text),
-					StartPosition: &storepb.Position{
-						Line: int32(checker.line),
-					},
+					Status:        checker.level,
+					Code:          advisor.UseChangeColumnStatement.Int32(),
+					Title:         checker.title,
+					Content:       fmt.Sprintf("\"%s\" contains CHANGE COLUMN statement", checker.text),
+					StartPosition: advisor.ConvertANTLRLineToPosition(checker.line),
 				})
 				break
 			}

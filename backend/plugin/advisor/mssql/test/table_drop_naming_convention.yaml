@@ -8,7 +8,7 @@
       title: table.drop-naming-convention
       content: '[foo] mismatches drop table naming convention, naming format should be "_delete$"'
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: DROP TABLE [Foo], [Bar_delete];
@@ -19,6 +19,6 @@
       title: table.drop-naming-convention
       content: '[foo] mismatches drop table naming convention, naming format should be "_delete$"'
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null

@@ -146,13 +146,11 @@ func (checker *columnAutoIncrementMustUnsignedChecker) EnterAlterTable(ctx *mysq
 func (checker *columnAutoIncrementMustUnsignedChecker) checkFieldDefinition(tableName, columnName string, ctx mysql.IFieldDefinitionContext) {
 	if !checker.isAutoIncrementColumnIsInteger(ctx) {
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{
-			Status:  checker.level,
-			Code:    advisor.AutoIncrementColumnSigned.Int32(),
-			Title:   checker.title,
-			Content: fmt.Sprintf("Auto-increment column `%s`.`%s` is not UNSIGNED type", tableName, columnName),
-			StartPosition: &storepb.Position{
-				Line: int32(checker.baseLine + ctx.GetStart().GetLine()),
-			},
+			Status:        checker.level,
+			Code:          advisor.AutoIncrementColumnSigned.Int32(),
+			Title:         checker.title,
+			Content:       fmt.Sprintf("Auto-increment column `%s`.`%s` is not UNSIGNED type", tableName, columnName),
+			StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
 		})
 	}
 }

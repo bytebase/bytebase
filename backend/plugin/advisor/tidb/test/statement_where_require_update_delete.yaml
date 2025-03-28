@@ -5,9 +5,8 @@
       code: 202
       title: statement.where.require.update-delete
       content: '"DELETE FROM tech_book" requires WHERE clause'
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: UPDATE tech_book SET id = 1
@@ -17,9 +16,8 @@
       code: 202
       title: statement.where.require.update-delete
       content: '"UPDATE tech_book SET id = 1" requires WHERE clause'
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: DELETE FROM tech_book WHERE id > 0

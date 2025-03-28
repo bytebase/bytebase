@@ -66,13 +66,11 @@ func (v *namingDropTableConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 		for _, table := range node.Tables {
 			if !v.format.MatchString(table.Name.O) {
 				v.adviceList = append(v.adviceList, &storepb.Advice{
-					Status:  v.level,
-					Code:    advisor.TableDropNamingConventionMismatch.Int32(),
-					Title:   v.title,
-					Content: fmt.Sprintf("`%s` mismatches drop table naming convention, naming format should be %q", table.Name.O, v.format),
-					StartPosition: &storepb.Position{
-						Line: int32(node.OriginTextPosition()),
-					},
+					Status:        v.level,
+					Code:          advisor.TableDropNamingConventionMismatch.Int32(),
+					Title:         v.title,
+					Content:       fmt.Sprintf("`%s` mismatches drop table naming convention, naming format should be %q", table.Name.O, v.format),
+					StartPosition: advisor.ConvertANTLRLineToPosition(node.OriginTextPosition()),
 				})
 			}
 		}

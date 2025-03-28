@@ -96,13 +96,11 @@ func (checker *indexTotalNumberLimitChecker) generateAdvice() []*storepb.Advice 
 		tableInfo := checker.catalog.Final.FindTable(&catalog.TableFind{TableName: table.name})
 		if tableInfo != nil && tableInfo.CountIndex() > checker.max {
 			checker.adviceList = append(checker.adviceList, &storepb.Advice{
-				Status:  checker.level,
-				Code:    advisor.IndexCountExceedsLimit.Int32(),
-				Title:   checker.title,
-				Content: fmt.Sprintf("The count of index in table `%s` should be no more than %d, but found %d", table.name, checker.max, tableInfo.CountIndex()),
-				StartPosition: &storepb.Position{
-					Line: int32(table.line),
-				},
+				Status:        checker.level,
+				Code:          advisor.IndexCountExceedsLimit.Int32(),
+				Title:         checker.title,
+				Content:       fmt.Sprintf("The count of index in table `%s` should be no more than %d, but found %d", table.name, checker.max, tableInfo.CountIndex()),
+				StartPosition: advisor.ConvertANTLRLineToPosition(table.line),
 			})
 		}
 	}

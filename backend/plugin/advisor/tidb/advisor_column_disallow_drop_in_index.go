@@ -105,13 +105,11 @@ func (checker *columnDisallowDropInIndexChecker) dropColumn(in ast.Node) (ast.No
 				colName := spec.OldColumnName.Name.String()
 				if !checker.canDrop(table, colName) {
 					checker.adviceList = append(checker.adviceList, &storepb.Advice{
-						Status:  checker.level,
-						Code:    advisor.DropIndexColumn.Int32(),
-						Title:   checker.title,
-						Content: fmt.Sprintf("`%s`.`%s` cannot drop index column", table, colName),
-						StartPosition: &storepb.Position{
-							Line: int32(checker.line),
-						},
+						Status:        checker.level,
+						Code:          advisor.DropIndexColumn.Int32(),
+						Title:         checker.title,
+						Content:       fmt.Sprintf("`%s`.`%s` cannot drop index column", table, colName),
+						StartPosition: advisor.ConvertANTLRLineToPosition(checker.line),
 					})
 				}
 			}

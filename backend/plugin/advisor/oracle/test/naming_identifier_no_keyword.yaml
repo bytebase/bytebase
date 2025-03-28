@@ -5,18 +5,16 @@
       code: 308
       title: naming.identifier.no-keyword
       content: Identifier "NAME" is a keyword and should be avoided
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
     - status: 2
       code: 308
       title: naming.identifier.no-keyword
       content: Identifier "table" is a keyword and should be avoided
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: CREATE TABLE "rlcmidzlevbivwvcntihenpoibtsdfasdfasdfiutqeb"(id int, name varchar(255))
@@ -26,9 +24,8 @@
       code: 308
       title: naming.identifier.no-keyword
       content: Identifier "NAME" is a keyword and should be avoided
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: CREATE TABLE analyze(id int, name varchar(255))
@@ -38,9 +35,8 @@
       code: 308
       title: naming.identifier.no-keyword
       content: Identifier "NAME" is a keyword and should be avoided
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: ALTER TABLE tech_book RENAME TO analyze

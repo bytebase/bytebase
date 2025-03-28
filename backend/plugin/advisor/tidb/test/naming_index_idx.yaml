@@ -7,9 +7,8 @@
       code: 303
       title: naming.index.idx
       content: Index in table `tech_book` mismatches the naming convention, expect "^$|^idx_tech_book_id_name$" but found `tech_book_id_name`
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: CREATE INDEX afvjwsgrbgqzjfrkmbcoxzstznuypasijbbcdykoboredqovetzfcmmqliaelyavw ON tech_book(id, name)
@@ -19,18 +18,16 @@
       code: 303
       title: naming.index.idx
       content: Index `afvjwsgrbgqzjfrkmbcoxzstznuypasijbbcdykoboredqovetzfcmmqliaelyavw` in table `tech_book` mismatches the naming convention, its length should be within 64 characters
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
     - status: 2
       code: 303
       title: naming.index.idx
       content: Index in table `tech_book` mismatches the naming convention, expect "^$|^idx_tech_book_id_name$" but found `afvjwsgrbgqzjfrkmbcoxzstznuypasijbbcdykoboredqovetzfcmmqliaelyavw`
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: ALTER TABLE tech_book RENAME INDEX old_index TO idx_tech_book_id_name
@@ -42,9 +39,8 @@
       code: 303
       title: naming.index.idx
       content: Index in table `tech_book` mismatches the naming convention, expect "^$|^idx_tech_book_id_name$" but found `idx_tech_book`
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: ALTER TABLE tech_book ADD INDEX idx_tech_book_id_name (id, name)
@@ -56,9 +52,8 @@
       code: 303
       title: naming.index.idx
       content: Index in table `tech_book` mismatches the naming convention, expect "^$|^idx_tech_book_id_name$" but found `tech_book_id_name`
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: CREATE TABLE tech_book_copy(id INT PRIMARY KEY, name VARCHAR(20), INDEX idx_tech_book_copy_name (name))

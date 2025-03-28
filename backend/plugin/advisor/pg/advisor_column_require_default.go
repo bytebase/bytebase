@@ -87,13 +87,11 @@ func (checker *columnRequireDefaultChecker) generateAdvice() []*storepb.Advice {
 		})
 		if columnInfo != nil && !columnInfo.HasDefault() {
 			checker.adviceList = append(checker.adviceList, &storepb.Advice{
-				Status:  checker.level,
-				Code:    advisor.NoDefault.Int32(),
-				Title:   checker.title,
-				Content: fmt.Sprintf("Column %q.%q in schema %q doesn't have DEFAULT", column.table, column.name, column.schema),
-				StartPosition: &storepb.Position{
-					Line: int32(column.line),
-				},
+				Status:        checker.level,
+				Code:          advisor.NoDefault.Int32(),
+				Title:         checker.title,
+				Content:       fmt.Sprintf("Column %q.%q in schema %q doesn't have DEFAULT", column.table, column.name, column.schema),
+				StartPosition: advisor.ConvertANTLRLineToPosition(column.line),
 			})
 		}
 	}

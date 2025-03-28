@@ -7,9 +7,8 @@
       code: 304
       title: naming.index.uk
       content: Unique key in table "tech_book" mismatches the naming convention, expect "^$|^uk_tech_book_id_name$" but found "tech_book_id_name"
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: CREATE UNIQUE INDEX dzfzqbhnkiiegdhvqjeqoevesfuwcmokrehxlapoqj ON tech_book(id, name)
@@ -19,9 +18,8 @@
       code: 304
       title: naming.index.uk
       content: Unique key in table "tech_book" mismatches the naming convention, expect "^$|^uk_tech_book_id_name$" but found "dzfzqbhnkiiegdhvqjeqoevesfuwcmokrehxlapoqj"
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: ALTER TABLE tech_book ADD CONSTRAINT uk_tech_book_id_name UNIQUE (id, name)
@@ -33,9 +31,8 @@
       code: 304
       title: naming.index.uk
       content: Unique key in table "tech_book" mismatches the naming convention, expect "^$|^uk_tech_book_id_name$" but found "tech_book_id_name"
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: CREATE TABLE book(id INT PRIMARY KEY, name VARCHAR(20), CONSTRAINT uk_book_name UNIQUE (name))
@@ -53,9 +50,8 @@
       code: 304
       title: naming.index.uk
       content: Unique key in table "book" mismatches the naming convention, expect "^$|^uk_book_name$" but found "book_name"
-      detail: ""
       startposition:
-        line: 5
+        line: 4
         column: 0
       endposition: null
 - statement: CREATE TABLE book(id INT PRIMARY KEY, name VARCHAR(20), UNIQUE (name))
@@ -71,9 +67,8 @@
       code: 304
       title: naming.index.uk
       content: Unique key in table "tech_book" mismatches the naming convention, expect "^$|^uk_tech_book_id_name$" but found "uk_tech_book"
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: ALTER TABLE tech_book RENAME CONSTRAINT old_uk TO uk_tech_book_id_name
@@ -85,9 +80,8 @@
       code: 304
       title: naming.index.uk
       content: Unique key in table "tech_book" mismatches the naming convention, expect "^$|^uk_tech_book_id_name$" but found "uk_tech_book"
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: ALTER INDEX old_uk RENAME TO uk_tech_book_id_name
@@ -99,8 +93,7 @@
       code: 304
       title: naming.index.uk
       content: Unique key in table "tech_book" mismatches the naming convention, expect "^$|^uk_tech_book_id_name$" but found "uk_tech_book"
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null

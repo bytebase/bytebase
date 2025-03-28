@@ -48,13 +48,11 @@ func (*StatementDisallowMixInDMLAdvisor) Check(_ context.Context, checkCtx advis
 		if stmt, ok := item.(parser.IUnit_statementContext); ok {
 			if stmt.Data_manipulation_language_statements() == nil {
 				adviceList = append(adviceList, &storepb.Advice{
-					Status:  level,
-					Title:   title,
-					Content: "Data change can only run DML",
-					Code:    advisor.StatementDisallowMixDDLDML.Int32(),
-					StartPosition: &storepb.Position{
-						Line: int32(stmt.GetStart().GetLine()),
-					},
+					Status:        level,
+					Title:         title,
+					Content:       "Data change can only run DML",
+					Code:          advisor.StatementDisallowMixDDLDML.Int32(),
+					StartPosition: advisor.ConvertANTLRLineToPosition(stmt.GetStart().GetLine()),
 				})
 			}
 		}

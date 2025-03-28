@@ -56,13 +56,11 @@ func (*BuiltinPriorBackupCheckAdvisor) Check(_ context.Context, checkCtx advisor
 	for _, stmt := range stmtList {
 		if _, ok := stmt.(ast.DDLNode); ok {
 			adviceList = append(adviceList, &storepb.Advice{
-				Status:  level,
-				Title:   title,
-				Content: fmt.Sprintf("Data change can only run DML, \"%s\" is not DML", stmt.Text()),
-				Code:    advisor.BuiltinPriorBackupCheck.Int32(),
-				StartPosition: &storepb.Position{
-					Line: int32(stmt.LastLine()),
-				},
+				Status:        level,
+				Title:         title,
+				Content:       fmt.Sprintf("Data change can only run DML, \"%s\" is not DML", stmt.Text()),
+				Code:          advisor.BuiltinPriorBackupCheck.Int32(),
+				StartPosition: advisor.ConvertANTLRLineToPosition(stmt.LastLine()),
 			})
 		}
 	}

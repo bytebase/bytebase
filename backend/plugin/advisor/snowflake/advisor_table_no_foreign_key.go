@@ -83,13 +83,11 @@ func (l *tableNoForeignKeyChecker) generateAdvice() ([]*storepb.Advice, error) {
 	for tableName, times := range l.tableForeignKeyTimes {
 		if times > 0 {
 			l.adviceList = append(l.adviceList, &storepb.Advice{
-				Status:  l.level,
-				Code:    advisor.TableHasFK.Int32(),
-				Title:   l.title,
-				Content: fmt.Sprintf("FOREIGN KEY is not allowed in the table %s.", l.tableOriginalName[tableName]),
-				StartPosition: &storepb.Position{
-					Line: int32(l.tableLine[tableName]),
-				},
+				Status:        l.level,
+				Code:          advisor.TableHasFK.Int32(),
+				Title:         l.title,
+				Content:       fmt.Sprintf("FOREIGN KEY is not allowed in the table %s.", l.tableOriginalName[tableName]),
+				StartPosition: advisor.ConvertANTLRLineToPosition(l.tableLine[tableName]),
 			})
 		}
 	}

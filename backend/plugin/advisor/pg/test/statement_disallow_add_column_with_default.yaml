@@ -7,8 +7,7 @@
       code: 210
       title: statement.disallow-add-column-with-default
       content: Adding column with DEFAULT will locked the whole table and rewriting each rows
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null

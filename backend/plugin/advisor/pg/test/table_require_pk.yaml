@@ -9,9 +9,8 @@
       code: 601
       title: table.require-pk
       content: 'Table "public"."t" requires PRIMARY KEY, related statement: "CREATE TABLE t(id INT)"'
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: ALTER TABLE "tech_book" DROP CONSTRAINT "old_pk"
@@ -21,9 +20,8 @@
       code: 601
       title: table.require-pk
       content: 'Table "public"."tech_book" requires PRIMARY KEY, related statement: "ALTER TABLE \"tech_book\" DROP CONSTRAINT \"old_pk\""'
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: ALTER TABLE "tech_book" DROP CONSTRAINT "old_index"
@@ -37,9 +35,8 @@
       code: 601
       title: table.require-pk
       content: 'Table "public"."tech_book" requires PRIMARY KEY, related statement: "ALTER TABLE \"tech_book\" DROP COLUMN id"'
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: |-

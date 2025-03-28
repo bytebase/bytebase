@@ -20,7 +20,10 @@ export interface Advice {
   title: string;
   /** The advice content. */
   content: string;
-  /** 1-based positions of the sql statment. */
+  /**
+   * The start_position is inclusive and the end_position is exclusive.
+   * TODO: use range instead.
+   */
   startPosition: Position | undefined;
   endPosition: Position | undefined;
 }

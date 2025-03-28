@@ -5,9 +5,8 @@
       code: 403
       title: column.disallow-change-type
       content: '"ALTER TABLE tech_book MODIFY id INTEGER UNSIGNED" changes column type'
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: ALTER TABLE tech_book MODIFY id int
@@ -19,9 +18,8 @@
       code: 403
       title: column.disallow-change-type
       content: '"ALTER TABLE tech_book MODIFY id bigint" changes column type'
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: ALTER TABLE tech_book CHANGE name uname varchar(20)
@@ -31,8 +29,7 @@
       code: 403
       title: column.disallow-change-type
       content: '"ALTER TABLE tech_book CHANGE name uname varchar(20)" changes column type'
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null

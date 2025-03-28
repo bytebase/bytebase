@@ -81,13 +81,11 @@ func (checker *columnRequireCollationChecker) EnterCreateTable(ctx *mysql.Create
 		if isCharsetDataType(dataType) {
 			if columnDefinition.FieldDefinition().Collate() == nil {
 				checker.adviceList = append(checker.adviceList, &storepb.Advice{
-					Status:  checker.level,
-					Code:    advisor.NoCollation.Int32(),
-					Title:   checker.title,
-					Content: fmt.Sprintf("Column %s does not have a collation specified", columnName),
-					StartPosition: &storepb.Position{
-						Line: int32(checker.baseLine + columnDefinition.GetStart().GetLine()),
-					},
+					Status:        checker.level,
+					Code:          advisor.NoCollation.Int32(),
+					Title:         checker.title,
+					Content:       fmt.Sprintf("Column %s does not have a collation specified", columnName),
+					StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + columnDefinition.GetStart().GetLine()),
 				})
 			}
 		}
@@ -109,13 +107,11 @@ func (checker *columnRequireCollationChecker) EnterAlterTable(ctx *mysql.AlterTa
 		if isCharsetDataType(dataType) {
 			if alterListItem.FieldDefinition().Collate() == nil {
 				checker.adviceList = append(checker.adviceList, &storepb.Advice{
-					Status:  checker.level,
-					Code:    advisor.NoCollation.Int32(),
-					Title:   checker.title,
-					Content: fmt.Sprintf("Column %s does not have a collation specified", columnName),
-					StartPosition: &storepb.Position{
-						Line: int32(checker.baseLine + alterListItem.GetStart().GetLine()),
-					},
+					Status:        checker.level,
+					Code:          advisor.NoCollation.Int32(),
+					Title:         checker.title,
+					Content:       fmt.Sprintf("Column %s does not have a collation specified", columnName),
+					StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + alterListItem.GetStart().GetLine()),
 				})
 			}
 		}

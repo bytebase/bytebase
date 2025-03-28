@@ -15,9 +15,8 @@
                 PARTITION p0 VALUES LESS THAN (6),
                 PARTITION p1 VALUES LESS THAN (11)
               )" creates
-      detail: ""
       startposition:
-        line: 4
+        line: 3
         column: 0
       endposition: null
 - statement: |-
@@ -35,8 +34,7 @@
                 PARTITION p0 VALUES LESS THAN (6),
                 PARTITION p1 VALUES LESS THAN (11)
               )" creates
-      detail: ""
       startposition:
-        line: 4
+        line: 3
         column: 0
       endposition: null

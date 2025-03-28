@@ -77,13 +77,11 @@ func (checker *noLeadingWildcardLikeChecker) EnterPredicateExprLike(ctx *mysql.P
 		pattern := expr.GetText()
 		if (strings.HasPrefix(pattern, "'%") && strings.HasSuffix(pattern, "'")) || (strings.HasPrefix(pattern, "\"%") && strings.HasSuffix(pattern, "\"")) {
 			checker.adviceList = append(checker.adviceList, &storepb.Advice{
-				Status:  checker.level,
-				Code:    advisor.StatementLeadingWildcardLike.Int32(),
-				Title:   checker.title,
-				Content: fmt.Sprintf("\"%s\" uses leading wildcard LIKE", checker.text),
-				StartPosition: &storepb.Position{
-					Line: int32(checker.baseLine + ctx.GetStart().GetLine()),
-				},
+				Status:        checker.level,
+				Code:          advisor.StatementLeadingWildcardLike.Int32(),
+				Title:         checker.title,
+				Content:       fmt.Sprintf("\"%s\" uses leading wildcard LIKE", checker.text),
+				StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
 			})
 		}
 	}

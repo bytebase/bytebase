@@ -12,8 +12,7 @@
       content: |-
         Trigger is forbidden, but "CREATE TRIGGER ins_sum BEFORE INSERT ON account
            FOR EACH ROW SET @sum = @sum + NEW.amount;" creates
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null

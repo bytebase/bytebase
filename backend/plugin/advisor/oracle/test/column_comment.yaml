@@ -3,37 +3,47 @@
       id int
     );
     COMMENT ON COLUMN book.id IS 'comments';
+  changeType: 0
 - statement: |-
     ALTER TABLE t ADD (d int, a int);
     COMMENT ON COLUMN t.d IS 'comments';
     COMMENT ON COLUMN t.a IS 'comments';
-- statement: |-
-    CREATE TABLE t(a int);
+  changeType: 0
+- statement: CREATE TABLE t(a int);
+  changeType: 0
   want:
     - status: 2
       code: 1032
       title: column.comment
       content: Comment is required for column "TEST_DB"."T"."A"
       startposition:
-        line: 1
+        line: 0
+        column: 0
+      endposition: null
 - statement: |-
     ALTER TABLE t ADD (d int, a int);
     COMMENT ON COLUMN t.a IS 'comments';
+  changeType: 0
   want:
     - status: 2
       code: 1032
       title: column.comment
       content: Comment is required for column "TEST_DB"."T"."D"
       startposition:
-        line: 1
+        line: 0
+        column: 0
+      endposition: null
 - statement: |-
     CREATE TABLE t(a int);
     COMMENT ON COLUMN t.a IS 'comments';
     COMMENT ON COLUMN t.a IS '';
+  changeType: 0
   want:
     - status: 2
       code: 1032
       title: column.comment
       content: Comment is required for column "TEST_DB"."T"."A"
       startposition:
-        line: 1
+        line: 0
+        column: 0
+      endposition: null

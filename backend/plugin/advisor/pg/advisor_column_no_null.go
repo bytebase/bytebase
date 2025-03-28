@@ -79,13 +79,11 @@ func (checker *columnNoNullChecker) generateAdviceList() []*storepb.Advice {
 	}
 	for _, column := range columnList {
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{
-			Status:  checker.level,
-			Code:    advisor.ColumnCannotNull.Int32(),
-			Title:   checker.title,
-			Content: fmt.Sprintf(`Column "%s" in %s cannot have NULL value`, column.column, column.normalizeTableName()),
-			StartPosition: &storepb.Position{
-				Line: int32(checker.nullableColumns[column]),
-			},
+			Status:        checker.level,
+			Code:          advisor.ColumnCannotNull.Int32(),
+			Title:         checker.title,
+			Content:       fmt.Sprintf(`Column "%s" in %s cannot have NULL value`, column.column, column.normalizeTableName()),
+			StartPosition: advisor.ConvertANTLRLineToPosition(checker.nullableColumns[column]),
 		})
 	}
 

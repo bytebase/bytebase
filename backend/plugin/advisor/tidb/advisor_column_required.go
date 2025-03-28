@@ -130,13 +130,11 @@ func (v *columnRequirementChecker) generateAdviceList() []*storepb.Advice {
 			// Order it cause the random iteration order in Go, see https://go.dev/blog/maps
 			sort.Strings(missingColumns)
 			v.adviceList = append(v.adviceList, &storepb.Advice{
-				Status:  v.level,
-				Code:    advisor.NoRequiredColumn.Int32(),
-				Title:   v.title,
-				Content: fmt.Sprintf("Table `%s` requires columns: %s", tableName, strings.Join(missingColumns, ", ")),
-				StartPosition: &storepb.Position{
-					Line: int32(v.line[tableName]),
-				},
+				Status:        v.level,
+				Code:          advisor.NoRequiredColumn.Int32(),
+				Title:         v.title,
+				Content:       fmt.Sprintf("Table `%s` requires columns: %s", tableName, strings.Join(missingColumns, ", ")),
+				StartPosition: advisor.ConvertANTLRLineToPosition(v.line[tableName]),
 			})
 		}
 	}

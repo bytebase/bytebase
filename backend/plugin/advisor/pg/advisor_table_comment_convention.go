@@ -65,38 +65,32 @@ func (*TableCommentConventionAdvisor) Check(_ context.Context, checkCtx advisor.
 		if commentStmt == nil || commentStmt.Comment == "" {
 			if checker.payload.Required {
 				checker.adviceList = append(checker.adviceList, &storepb.Advice{
-					Status:  checker.level,
-					Code:    advisor.CommentEmpty.Int32(),
-					Title:   checker.title,
-					Content: fmt.Sprintf("Comment is required for table `%s`", stringifyTableDef(createTableStmt.Name)),
-					StartPosition: &storepb.Position{
-						Line: int32(createTableStmt.LastLine()),
-					},
+					Status:        checker.level,
+					Code:          advisor.CommentEmpty.Int32(),
+					Title:         checker.title,
+					Content:       fmt.Sprintf("Comment is required for table `%s`", stringifyTableDef(createTableStmt.Name)),
+					StartPosition: advisor.ConvertANTLRLineToPosition(createTableStmt.LastLine()),
 				})
 			}
 		} else {
 			comment := commentStmt.Comment
 			if checker.payload.MaxLength > 0 && len(comment) > checker.payload.MaxLength {
 				checker.adviceList = append(checker.adviceList, &storepb.Advice{
-					Status:  checker.level,
-					Code:    advisor.CommentTooLong.Int32(),
-					Title:   checker.title,
-					Content: fmt.Sprintf("Table `%s` comment is too long. The length of comment should be within %d characters", stringifyTableDef(createTableStmt.Name), checker.payload.MaxLength),
-					StartPosition: &storepb.Position{
-						Line: int32(commentStmt.LastLine()),
-					},
+					Status:        checker.level,
+					Code:          advisor.CommentTooLong.Int32(),
+					Title:         checker.title,
+					Content:       fmt.Sprintf("Table `%s` comment is too long. The length of comment should be within %d characters", stringifyTableDef(createTableStmt.Name), checker.payload.MaxLength),
+					StartPosition: advisor.ConvertANTLRLineToPosition(commentStmt.LastLine()),
 				})
 			}
 			if checker.payload.RequiredClassification {
 				if classification, _ := common.GetClassificationAndUserComment(comment, checker.classificationConfig); classification == "" {
 					checker.adviceList = append(checker.adviceList, &storepb.Advice{
-						Status:  checker.level,
-						Code:    advisor.CommentMissingClassification.Int32(),
-						Title:   checker.title,
-						Content: fmt.Sprintf("Table `%s` comment requires classification", stringifyTableDef(createTableStmt.Name)),
-						StartPosition: &storepb.Position{
-							Line: int32(commentStmt.LastLine()),
-						},
+						Status:        checker.level,
+						Code:          advisor.CommentMissingClassification.Int32(),
+						Title:         checker.title,
+						Content:       fmt.Sprintf("Table `%s` comment requires classification", stringifyTableDef(createTableStmt.Name)),
+						StartPosition: advisor.ConvertANTLRLineToPosition(commentStmt.LastLine()),
 					})
 				}
 			}

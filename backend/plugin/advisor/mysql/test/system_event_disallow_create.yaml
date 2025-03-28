@@ -23,8 +23,7 @@
           INSERT INTO backup_table (backup_date, data)
           SELECT NOW(), data
           FROM main_table;" creates
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null

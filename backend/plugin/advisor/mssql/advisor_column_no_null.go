@@ -92,13 +92,11 @@ func (l *columnNoNullChecker) ExitCreate_table(_ *parser.Create_tableContext) {
 			continue
 		}
 		l.adviceList = append(l.adviceList, &storepb.Advice{
-			Status:  l.level,
-			Code:    advisor.ColumnCannotNull.Int32(),
-			Title:   l.title,
-			Content: fmt.Sprintf("Column [%s] is nullable, which is not allowed.", columnName),
-			StartPosition: &storepb.Position{
-				Line: int32(l.currentTableColumnIsNullableLine[columnName]),
-			},
+			Status:        l.level,
+			Code:          advisor.ColumnCannotNull.Int32(),
+			Title:         l.title,
+			Content:       fmt.Sprintf("Column [%s] is nullable, which is not allowed.", columnName),
+			StartPosition: advisor.ConvertANTLRLineToPosition(l.currentTableColumnIsNullableLine[columnName]),
 		})
 	}
 
@@ -170,13 +168,11 @@ func (l *columnNoNullChecker) ExitAlter_table(_ *parser.Alter_tableContext) {
 			continue
 		}
 		l.adviceList = append(l.adviceList, &storepb.Advice{
-			Status:  l.level,
-			Code:    advisor.ColumnCannotNull.Int32(),
-			Title:   l.title,
-			Content: fmt.Sprintf("Column [%s] is nullable, which is not allowed.", columnName),
-			StartPosition: &storepb.Position{
-				Line: int32(l.currentTableColumnIsNullableLine[columnName]),
-			},
+			Status:        l.level,
+			Code:          advisor.ColumnCannotNull.Int32(),
+			Title:         l.title,
+			Content:       fmt.Sprintf("Column [%s] is nullable, which is not allowed.", columnName),
+			StartPosition: advisor.ConvertANTLRLineToPosition(l.currentTableColumnIsNullableLine[columnName]),
 		})
 	}
 

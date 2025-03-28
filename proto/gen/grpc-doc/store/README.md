@@ -357,13 +357,14 @@ Used internally for obfuscating the page token.
 <a name="bytebase-store-Position"></a>
 
 ### Position
-
+Position in a text expressed as zero-based line and zero-based column byte
+offset.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| line | [int32](#int32) |  |  |
-| column | [int32](#int32) |  |  |
+| line | [int32](#int32) |  | Line position in a text (zero-based). |
+| column | [int32](#int32) |  | Column position in a text (zero-based), equivalent to byte offset. |
 
 
 
@@ -496,7 +497,7 @@ Used internally for obfuscating the page token.
 | code | [int32](#int32) |  | The advice code. |
 | title | [string](#string) |  | The advice title. |
 | content | [string](#string) |  | The advice content. |
-| start_position | [Position](#bytebase-store-Position) |  | 1-based positions of the sql statment. |
+| start_position | [Position](#bytebase-store-Position) |  | The start_position is inclusive and the end_position is exclusive. TODO: use range instead. |
 | end_position | [Position](#bytebase-store-Position) |  |  |
 
 
@@ -4800,6 +4801,7 @@ We support three types of SMTP encryption: NONE, STARTTLS, and SSL/TLS.
 
 ### TaskRunResult.Position
 The following fields are used for error reporting.
+TODO(zp): Use common Position instead.
 
 
 | Field | Type | Label | Description |

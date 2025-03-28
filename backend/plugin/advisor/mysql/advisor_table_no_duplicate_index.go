@@ -99,13 +99,11 @@ func (checker *tableNoDuplicateIndexChecker) EnterCreateTable(ctx *mysql.CreateT
 	// Check for duplicate index.
 	if index := hasDuplicateIndexes(checker.indexList); index != nil {
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{
-			Status:  checker.level,
-			Code:    advisor.DuplicateIndexInTable.Int32(),
-			Title:   checker.title,
-			Content: fmt.Sprintf("`%s` has duplicate index `%s`", tableName, index.indexName),
-			StartPosition: &storepb.Position{
-				Line: int32(index.line),
-			},
+			Status:        checker.level,
+			Code:          advisor.DuplicateIndexInTable.Int32(),
+			Title:         checker.title,
+			Content:       fmt.Sprintf("`%s` has duplicate index `%s`", tableName, index.indexName),
+			StartPosition: advisor.ConvertANTLRLineToPosition(index.line),
 		})
 	}
 }
@@ -132,13 +130,11 @@ func (checker *tableNoDuplicateIndexChecker) EnterAlterTable(ctx *mysql.AlterTab
 	}
 	if index := hasDuplicateIndexes(checker.indexList); index != nil {
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{
-			Status:  checker.level,
-			Code:    advisor.DuplicateIndexInTable.Int32(),
-			Title:   checker.title,
-			Content: fmt.Sprintf("`%s` has duplicate index `%s`", tableName, index.indexName),
-			StartPosition: &storepb.Position{
-				Line: int32(index.line),
-			},
+			Status:        checker.level,
+			Code:          advisor.DuplicateIndexInTable.Int32(),
+			Title:         checker.title,
+			Content:       fmt.Sprintf("`%s` has duplicate index `%s`", tableName, index.indexName),
+			StartPosition: advisor.ConvertANTLRLineToPosition(index.line),
 		})
 	}
 }
@@ -216,13 +212,11 @@ func (checker *tableNoDuplicateIndexChecker) EnterCreateIndex(ctx *mysql.CreateI
 	checker.indexList = append(checker.indexList, index)
 	if index := hasDuplicateIndexes(checker.indexList); index != nil {
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{
-			Status:  checker.level,
-			Code:    advisor.DuplicateIndexInTable.Int32(),
-			Title:   checker.title,
-			Content: fmt.Sprintf("`%s` has duplicate index `%s`", tableName, index.indexName),
-			StartPosition: &storepb.Position{
-				Line: int32(index.line),
-			},
+			Status:        checker.level,
+			Code:          advisor.DuplicateIndexInTable.Int32(),
+			Title:         checker.title,
+			Content:       fmt.Sprintf("`%s` has duplicate index `%s`", tableName, index.indexName),
+			StartPosition: advisor.ConvertANTLRLineToPosition(index.line),
 		})
 	}
 }

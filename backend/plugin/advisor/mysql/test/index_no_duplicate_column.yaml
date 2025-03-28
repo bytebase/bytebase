@@ -11,9 +11,8 @@
       code: 812
       title: index.no-duplicate-column
       content: PRIMARY KEY `` has duplicate column `t`.`a`
-      detail: ""
       startposition:
-        line: 3
+        line: 2
         column: 0
       endposition: null
 - statement: |-
@@ -35,9 +34,8 @@
       code: 812
       title: index.no-duplicate-column
       content: FOREIGN KEY `fk1` has duplicate column `t3`.`a`
-      detail: ""
       startposition:
-        line: 11
+        line: 10
         column: 0
       endposition: null
 - statement: |-
@@ -51,9 +49,8 @@
       code: 812
       title: index.no-duplicate-column
       content: INDEX `idx_a` has duplicate column `t`.`a`
-      detail: ""
       startposition:
-        line: 3
+        line: 2
         column: 0
       endposition: null
 - statement: |-
@@ -66,9 +63,8 @@
       code: 812
       title: index.no-duplicate-column
       content: INDEX `idx_a` has duplicate column `t`.`a`
-      detail: ""
       startposition:
-        line: 3
+        line: 2
         column: 0
       endposition: null
 - statement: |-
@@ -81,9 +77,8 @@
       code: 812
       title: index.no-duplicate-column
       content: UNIQUE INDEX `idx_a` has duplicate column `t`.`a`
-      detail: ""
       startposition:
-        line: 3
+        line: 2
         column: 0
       endposition: null
 - statement: |-
@@ -96,9 +91,8 @@
       code: 812
       title: index.no-duplicate-column
       content: INDEX `idx_a` has duplicate column `t`.`a`
-      detail: ""
       startposition:
-        line: 3
+        line: 2
         column: 0
       endposition: null
 - statement: |-
@@ -110,9 +104,8 @@
       code: 812
       title: index.no-duplicate-column
       content: PRIMARY KEY `pk_a` has duplicate column `t`.`a`
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null
 - statement: |-
@@ -129,9 +122,8 @@
       code: 812
       title: index.no-duplicate-column
       content: UNIQUE KEY `uk_a` has duplicate column `t`.`a`
-      detail: ""
       startposition:
-        line: 3
+        line: 2
         column: 0
       endposition: null
 - statement: |-
@@ -144,8 +136,7 @@
       code: 812
       title: index.no-duplicate-column
       content: FOREIGN KEY `fk_a` has duplicate column `t`.`a`
-      detail: ""
       startposition:
-        line: 3
+        line: 2
         column: 0
       endposition: null

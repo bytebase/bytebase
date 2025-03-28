@@ -5,9 +5,8 @@
       code: 308
       title: naming.table.no-keyword
       content: Table name "table" is a keyword identifier and should be avoided.
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: CREATE TABLE "rlcmidzlevbivwvcntihenpoibtsdfasdfasdfiutqeb"(id int, name varchar(255))
@@ -19,9 +18,8 @@
       code: 308
       title: naming.table.no-keyword
       content: Table name "AVG" is a keyword identifier and should be avoided.
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: ALTER TABLE tech_book RENAME TO avg
@@ -31,9 +29,8 @@
       code: 308
       title: naming.table.no-keyword
       content: Table name "AVG" is a keyword identifier and should be avoided.
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: |-

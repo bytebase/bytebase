@@ -5,9 +5,8 @@
       code: 202
       title: statement.where.require.select
       content: WHERE clause is required for SELECT statement.
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: SELECT * FROM t;
@@ -17,9 +16,8 @@
       code: 202
       title: statement.where.require.select
       content: WHERE clause is required for SELECT statement.
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: SELECT * FROM t WHERE b = 2;
@@ -40,18 +38,16 @@
       code: 202
       title: statement.where.require.select
       content: WHERE clause is required for SELECT statement.
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
     - status: 2
       code: 202
       title: statement.where.require.select
       content: WHERE clause is required for SELECT statement.
-      detail: ""
       startposition:
-        line: 5
+        line: 4
         column: 0
       endposition: null
 - statement: |-
@@ -66,9 +62,8 @@
       code: 202
       title: statement.where.require.select
       content: WHERE clause is required for SELECT statement.
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null
 - statement: SELECT 1;

@@ -7,8 +7,7 @@
       code: 1107
       title: statement.insert.must-specify-column
       content: INSERT statement should specify column name.
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null

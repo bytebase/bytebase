@@ -9,9 +9,8 @@
       code: 310
       title: naming.fully-qualified
       content: 'unqualified object name: ''pokesv2'''
-      detail: ""
       startposition:
-        line: 4
+        line: 3
         column: 0
       endposition: null
 - statement: |-
@@ -24,9 +23,8 @@
       code: 310
       title: naming.fully-qualified
       content: 'unqualified object name: ''seq'''
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null
 - statement: |-
@@ -41,9 +39,8 @@
       code: 310
       title: naming.fully-qualified
       content: 'unqualified object name: ''pokesv1'''
-      detail: ""
       startposition:
-        line: 4
+        line: 3
         column: 0
       endposition: null
 - statement: DROP TRIGGER test_trigger ON public.pokes;
@@ -57,9 +54,8 @@
       code: 310
       title: naming.fully-qualified
       content: 'unqualified object name: ''pokesv1'''
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null
 - statement: |-
@@ -72,9 +68,8 @@
       code: 310
       title: naming.fully-qualified
       content: 'unqualified object name: ''pokesv1'''
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null
 - statement: |-
@@ -89,9 +84,8 @@
       code: 310
       title: naming.fully-qualified
       content: 'unqualified object name: ''pokesv1'''
-      detail: ""
       startposition:
-        line: 4
+        line: 3
         column: 0
       endposition: null
 - statement: "CREATE TABLE public.pokes (foo int); \nSELECT * FROM (SELECT (id) FROM tech_book) AS foo;"
@@ -101,9 +95,8 @@
       code: 310
       title: naming.fully-qualified
       content: 'unqualified object name: ''tech_book'''
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null
 - statement: "CREATE TABLE public.pokes (foo int);\nWITH foo1 AS (SELECT * FROM public.tech_book) \nSELECT * FROM foo1;"

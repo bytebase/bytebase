@@ -7,8 +7,7 @@
       code: 1108
       title: statement.insert.disallow-order-by-rand
       content: '"INSERT INTO tech_book SELECT * FROM tech_book ORDER BY rand()" uses ORDER BY RAND in the INSERT statement'
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null

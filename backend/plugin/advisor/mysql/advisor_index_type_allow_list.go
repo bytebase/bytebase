@@ -156,12 +156,10 @@ func (checker *indexTypeAllowListChecker) validateIndexType(indexType string, li
 	}
 
 	checker.adviceList = append(checker.adviceList, &storepb.Advice{
-		Status:  checker.level,
-		Code:    advisor.IndexTypeNotAllowed.Int32(),
-		Title:   checker.title,
-		Content: fmt.Sprintf("Index type `%s` is not allowed", indexType),
-		StartPosition: &storepb.Position{
-			Line: int32(checker.baseLine + line),
-		},
+		Status:        checker.level,
+		Code:          advisor.IndexTypeNotAllowed.Int32(),
+		Title:         checker.title,
+		Content:       fmt.Sprintf("Index type `%s` is not allowed", indexType),
+		StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + line),
 	})
 }

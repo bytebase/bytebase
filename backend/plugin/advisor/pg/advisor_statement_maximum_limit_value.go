@@ -68,13 +68,11 @@ func (checker *statementMaximumLimitValueChecker) Visit(in ast.Node) ast.Visitor
 	if node, ok := in.(*ast.SelectStmt); ok {
 		if node.Limit != nil && int(*node.Limit) > checker.limitMaxValue {
 			checker.adviceList = append(checker.adviceList, &storepb.Advice{
-				Status:  checker.level,
-				Code:    advisor.StatementExceedMaximumLimitValue.Int32(),
-				Title:   checker.title,
-				Content: fmt.Sprintf("The limit value %d exceeds the maximum allowed value %d", *node.Limit, checker.limitMaxValue),
-				StartPosition: &storepb.Position{
-					Line: int32(checker.line),
-				},
+				Status:        checker.level,
+				Code:          advisor.StatementExceedMaximumLimitValue.Int32(),
+				Title:         checker.title,
+				Content:       fmt.Sprintf("The limit value %d exceeds the maximum allowed value %d", *node.Limit, checker.limitMaxValue),
+				StartPosition: advisor.ConvertANTLRLineToPosition(checker.line),
 			})
 		}
 	}

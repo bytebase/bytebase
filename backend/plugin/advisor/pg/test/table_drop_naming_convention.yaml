@@ -7,9 +7,8 @@
       code: 603
       title: table.drop-naming-convention
       content: '`foo` mismatches drop table naming convention, naming format should be "_delete$"'
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: DROP TABLE IF EXISTS foo_delete, bar
@@ -19,8 +18,7 @@
       code: 603
       title: table.drop-naming-convention
       content: '`bar` mismatches drop table naming convention, naming format should be "_delete$"'
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
