@@ -100,6 +100,7 @@ const (
 	Engine_DATABRICKS         Engine = 24
 	Engine_COCKROACHDB        Engine = 25
 	Engine_COSMOSDB           Engine = 26
+	Engine_TRINO              Engine = 27
 )
 
 // Enum value maps for Engine.
@@ -132,6 +133,7 @@ var (
 		24: "DATABRICKS",
 		25: "COCKROACHDB",
 		26: "COSMOSDB",
+		27: "TRINO",
 	}
 	Engine_value = map[string]int32{
 		"ENGINE_UNSPECIFIED": 0,
@@ -161,6 +163,7 @@ var (
 		"DATABRICKS":         24,
 		"COCKROACHDB":        25,
 		"COSMOSDB":           26,
+		"TRINO":              27,
 	}
 )
 
@@ -420,7 +423,7 @@ const file_v1_common_proto_rawDesc = "" +
 	"\x11STATE_UNSPECIFIED\x10\x00\x12\n" +
 	"\n" +
 	"\x06ACTIVE\x10\x01\x12\v\n" +
-	"\aDELETED\x10\x02*\x84\x03\n" +
+	"\aDELETED\x10\x02*\x8f\x03\n" +
 	"\x06Engine\x12\x16\n" +
 	"\x12ENGINE_UNSPECIFIED\x10\x00\x12\x0e\n" +
 	"\n" +
@@ -454,7 +457,8 @@ const file_v1_common_proto_rawDesc = "" +
 	"\n" +
 	"DATABRICKS\x10\x18\x12\x0f\n" +
 	"\vCOCKROACHDB\x10\x19\x12\f\n" +
-	"\bCOSMOSDB\x10\x1a*\\\n" +
+	"\bCOSMOSDB\x10\x1a\x12\t\n" +
+	"\x05TRINO\x10\x1b*\\\n" +
 	"\aVCSType\x12\x18\n" +
 	"\x14VCS_TYPE_UNSPECIFIED\x10\x00\x12\n" +
 	"\n" +
