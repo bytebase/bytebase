@@ -64,6 +64,7 @@ type UserFlags struct {
 	niceRatio                     *float64
 	throttleControlReplicas       *string
 	attemptInstantDDL             *bool
+	assumeMasterHost              *bool // use datasource host if true
 }
 
 var knownKeys = map[string]bool{
@@ -81,6 +82,7 @@ var knownKeys = map[string]bool{
 	"nice-ratio":                       true,
 	"throttle-control-replicas":        true,
 	"attempt-instant-ddl":              true,
+	"assume-master-host":               true,
 }
 
 func GetUserFlags(flags map[string]string) (*UserFlags, error) {
@@ -187,6 +189,13 @@ func GetUserFlags(flags map[string]string) (*UserFlags, error) {
 			return nil, errors.Wrapf(err, "failed to convert attempt-instant-ddl %q to bool", v)
 		}
 		f.attemptInstantDDL = &attemptInstantDDL
+	}
+	if v, ok := flags["assume-master-host"]; ok {
+		assumeMasterHost, err := strconv.ParseBool(v)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to convert assume-master-host %q to bool", v)
+		}
+		f.assumeMasterHost = &assumeMasterHost
 	}
 	return f, nil
 }
@@ -331,6 +340,12 @@ func NewMigrationContext(ctx context.Context, taskID int, database *store.Databa
 	if v := userFlags.throttleControlReplicas; v != nil {
 		if err := migrationContext.ReadThrottleControlReplicaKeys(*v); err != nil {
 			return nil, errors.Wrapf(err, "failed to set throttleControlReplicas")
+		}
+	}
+	if v := userFlags.assumeMasterHost; v != nil && *v {
+		migrationContext.AssumeMasterHostname = dataSource.GetHost()
+		if dataSource.GetPort() != "" {
+			migrationContext.AssumeMasterHostname += ":" + dataSource.GetPort()
 		}
 	}
 	// Uses specified port. GCP, Aliyun, Azure are equivalent here.
