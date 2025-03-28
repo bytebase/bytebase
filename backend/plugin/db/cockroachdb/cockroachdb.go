@@ -177,6 +177,7 @@ func getCockroachConnectionConfig(config db.ConnectionConfig) (*pgx.ConnConfig, 
 	}
 	if config.ConnectionContext.ReadOnly {
 		connConfig.RuntimeParams["default_transaction_read_only"] = "true"
+		// TODO: name a function like getAppName(config db.ConnectionConfig), but where to put?
 		connConfig.RuntimeParams["application_name"] = "bytebase"
 	}
 
