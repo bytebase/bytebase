@@ -97,12 +97,10 @@ func (checker *IndexNotRedundantChecker) EnterCreate_index(ctx *parser.Create_in
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{
 			Status: checker.level,
 			Title:  checker.title,
-			StartPosition: &storepb.Position{
-				Line: int32(ctx.GetStart().GetLine()),
-			},
-			Code: advisor.RedundantIndex.Int32(),
+			Code:   advisor.RedundantIndex.Int32(),
 			Content: fmt.Sprintf("Redundant indexes with the same prefix ('%s' and '%s') in '%s.%s' is not allowed",
 				metaIdxName, statIdxName, findIdxKey.schemaName, findIdxKey.tblName),
+			StartPosition: advisor.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
 		})
 	}
 }

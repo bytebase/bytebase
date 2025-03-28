@@ -11,6 +11,6 @@
       title: column.type-disallow-list
       content: Column type JSON is disallowed
       startposition:
-        line: 4
+        line: 3
         column: 0
       endposition: null

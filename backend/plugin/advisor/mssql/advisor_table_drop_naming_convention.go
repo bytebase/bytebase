@@ -81,13 +81,11 @@ func (l *tableDropNamingConventionChecker) EnterDrop_table(ctx *parser.Drop_tabl
 		_, normalizedTableName := tsqlparser.NormalizeTSQLIdentifier(table)
 		if !l.format.MatchString(normalizedTableName) {
 			l.adviceList = append(l.adviceList, &storepb.Advice{
-				Status:  l.level,
-				Code:    advisor.TableDropNamingConventionMismatch.Int32(),
-				Title:   l.title,
-				Content: fmt.Sprintf("[%s] mismatches drop table naming convention, naming format should be %q", normalizedTableName, l.format),
-				StartPosition: &storepb.Position{
-					Line: int32(table.GetStart().GetLine()),
-				},
+				Status:        l.level,
+				Code:          advisor.TableDropNamingConventionMismatch.Int32(),
+				Title:         l.title,
+				Content:       fmt.Sprintf("[%s] mismatches drop table naming convention, naming format should be %q", normalizedTableName, l.format),
+				StartPosition: advisor.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
 			})
 		}
 	}

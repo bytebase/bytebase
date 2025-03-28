@@ -6,7 +6,7 @@
       title: index.not-redundant
       content: Redundant indexes with the same prefix ('idx_0' and 'test_index') in 'dbo.pokes' is not allowed
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: CREATE INDEX test_index ON dbo.pokes (c100, c200);
@@ -19,6 +19,6 @@
       title: index.not-redundant
       content: Redundant indexes with the same prefix ('idx_0' and 'test_index') in 'dbo.pokes' is not allowed
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null

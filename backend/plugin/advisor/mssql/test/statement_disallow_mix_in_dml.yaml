@@ -10,6 +10,6 @@
       title: statement.disallow-mix-in-dml
       content: Data change can only run DML
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
