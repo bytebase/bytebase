@@ -1,6 +1,6 @@
 FROM node:22.14.0 as frontend
 
-RUN npm i -g pnpm
+RUN npm i -g pnpm@10.7.0
 
 WORKDIR /frontend-build
 
