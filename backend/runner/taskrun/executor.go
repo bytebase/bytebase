@@ -257,7 +257,8 @@ func doMigrationWithFunc(
 		return false, errors.Wrapf(err, "failed to check if we should use database owner")
 	}
 	driver, err := mc.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{
-		UseDatabaseOwner: useDBOwner,
+		UseDatabaseOwner:     useDBOwner,
+		OperationalComponent: "migration",
 	})
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to get driver connection for instance %q", instance.ResourceID)
@@ -298,6 +299,9 @@ func doMigrationWithFunc(
 	}
 
 	if execFunc == nil {
+		// possible subtle issue here, this function will pull 'driver' into the lexical closure for 'execFunc'
+		// which is then passed to executeMigrationWithFunc, yet, from the outside, there no way to tell if
+		// executeMigrationWithFunc retained 'execFunc', but if it did, and it was called later, 'driver' would be invalid/Closed
 		execFunc = func(ctx context.Context, execStatement string) error {
 			if _, err := driver.Execute(ctx, execStatement, opts); err != nil {
 				return err

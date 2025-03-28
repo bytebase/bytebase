@@ -104,7 +104,9 @@ func (exec *SchemaUpdateGhostExecutor) RunOnce(ctx context.Context, driverCtx co
 		defer func() {
 			if err := func() error {
 				ctx := context.Background()
-				driver, err := exec.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{})
+				driver, err := exec.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{
+					OperationalComponent: "remove-ghost-tables",
+				})
 				if err != nil {
 					return errors.Wrapf(err, "failed to get driver")
 				}

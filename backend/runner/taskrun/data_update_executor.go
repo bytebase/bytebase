@@ -181,7 +181,9 @@ func (exec *DataUpdateExecutor) backupData(
 		if backupDatabase == nil {
 			return nil, errors.Errorf("backup database %q not found", targetDatabaseName)
 		}
-		backupDriver, err = exec.dbFactory.GetAdminDatabaseDriver(driverCtx, instance, backupDatabase, db.ConnectionContext{})
+		backupDriver, err = exec.dbFactory.GetAdminDatabaseDriver(driverCtx, instance, backupDatabase, db.ConnectionContext{
+			OperationalComponent: "backup-data",
+		})
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to get backup database driver")
 		}
@@ -193,7 +195,8 @@ func (exec *DataUpdateExecutor) backupData(
 		return nil, errors.Wrap(err, "failed to check use database owner")
 	}
 	driver, err := exec.dbFactory.GetAdminDatabaseDriver(driverCtx, instance, database, db.ConnectionContext{
-		UseDatabaseOwner: useDatabaseOwner,
+		UseDatabaseOwner:     useDatabaseOwner,
+		OperationalComponent: "backup-data",
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get database driver")
