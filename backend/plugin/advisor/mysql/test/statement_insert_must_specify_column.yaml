@@ -5,9 +5,8 @@
       code: 1107
       title: statement.insert.must-specify-column
       content: The INSERT statement must specify columns but "INSERT INTO t_copy SELECT * FROM t;" does not
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: INSERT INTO tech_book(id, name) VALUES (1, '1');
@@ -19,8 +18,7 @@
       code: 1107
       title: statement.insert.must-specify-column
       content: The INSERT statement must specify columns but "INSERT INTO tech_book VALUES (1, '1');" does not
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null

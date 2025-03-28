@@ -7,9 +7,8 @@
       code: 602
       title: table.no-foreign-key
       content: Foreign key is not allowed in the table `tech_book`
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null
 - statement: |-
@@ -21,8 +20,7 @@
       code: 602
       title: table.no-foreign-key
       content: Foreign key is not allowed in the table `book`
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null

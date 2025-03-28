@@ -5,9 +5,8 @@
       code: 302
       title: naming.column
       content: '"book"."creatorId" mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: CREATE TABLE book(id int, qavszgslczmsacubtvyymzhojfytkcmon int)
@@ -25,9 +24,8 @@
       code: 302
       title: naming.column
       content: '"book"."creatorId" mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null
 - statement: |-
@@ -43,9 +41,8 @@
       code: 302
       title: naming.column
       content: '"book"."creatorId" mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null
 - statement: |-

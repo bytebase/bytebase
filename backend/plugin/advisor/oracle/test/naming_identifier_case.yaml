@@ -5,9 +5,8 @@
       code: 309
       title: naming.identifier.case
       content: Identifier "table" should be upper case
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: CREATE TABLE tt(id int, name varchar(255))
@@ -19,9 +18,8 @@
       code: 309
       title: naming.identifier.case
       content: Identifier "Tt" should be upper case
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: ALTER TABLE tech_book RENAME TO analyze

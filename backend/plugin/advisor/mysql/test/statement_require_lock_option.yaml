@@ -11,9 +11,8 @@
       code: 237
       title: statement.require-lock-option
       content: ALTER TABLE statement should include LOCK option
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null
 - statement: |
@@ -26,8 +25,7 @@
       code: 237
       title: statement.require-lock-option
       content: ALTER TABLE statement should include LOCK option
-      detail: ""
       startposition:
-        line: 3
+        line: 2
         column: 0
       endposition: null

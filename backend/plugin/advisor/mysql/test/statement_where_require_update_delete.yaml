@@ -11,9 +11,8 @@
       code: 202
       title: statement.where.require.update-delete
       content: '"DELETE FROM book;" requires WHERE clause'
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null
 - statement: |
@@ -25,9 +24,8 @@
       code: 202
       title: statement.where.require.update-delete
       content: '"UPDATE book SET id = 1;" requires WHERE clause'
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null
 - statement: |

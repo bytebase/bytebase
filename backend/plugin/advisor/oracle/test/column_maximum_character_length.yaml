@@ -9,9 +9,8 @@
       code: 415
       title: column.maximum-character-length
       content: The maximum character length is 20.
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: ALTER TABLE public.tech_book ADD name_2 char(225)
@@ -21,9 +20,8 @@
       code: 415
       title: column.maximum-character-length
       content: The maximum character length is 20.
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: ALTER TABLE tech_book MODIFY name char(225)
@@ -33,8 +31,7 @@
       code: 415
       title: column.maximum-character-length
       content: The maximum character length is 20.
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null

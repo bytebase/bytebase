@@ -7,9 +7,8 @@
       code: 1702
       title: system.function.disallowed-list
       content: Function "RAND" is disallowed, but "SELECT RAND();" uses
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: |-
@@ -29,9 +28,8 @@
           name VARCHAR(255),
           age INT
         );" uses
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null
 - statement: SELECT SLEEP(5);
@@ -41,8 +39,7 @@
       code: 1702
       title: system.function.disallowed-list
       content: Function "SLEEP" is disallowed, but "SELECT SLEEP(5);" uses
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null

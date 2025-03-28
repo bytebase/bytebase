@@ -7,9 +7,8 @@
       code: 411
       title: column.type-disallow-list
       content: Disallow column type JSON but column "B" is
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: |-
@@ -21,9 +20,8 @@
       code: 411
       title: column.type-disallow-list
       content: Disallow column type JSON but column "A" is
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null
 - statement: |-
@@ -35,9 +33,8 @@
       code: 411
       title: column.type-disallow-list
       content: Disallow column type BINARY_FLOAT but column "D" is
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null
 - statement: CREATE TABLE t(a int, b BINARY_FLOAT);
@@ -47,9 +44,8 @@
       code: 411
       title: column.type-disallow-list
       content: Disallow column type BINARY_FLOAT but column "B" is
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: |-
@@ -61,8 +57,7 @@
       code: 411
       title: column.type-disallow-list
       content: Disallow column type BINARY_FLOAT but column "A" is
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null

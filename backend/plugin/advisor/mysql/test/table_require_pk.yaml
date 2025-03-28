@@ -17,9 +17,8 @@
       code: 601
       title: table.require-pk
       content: Table `userTable` requires PRIMARY KEY
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: |
@@ -45,9 +44,8 @@
       code: 601
       title: table.require-pk
       content: Table `t2` requires PRIMARY KEY
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null
 - statement: |-
@@ -60,9 +58,8 @@
       code: 601
       title: table.require-pk
       content: Table `t2` requires PRIMARY KEY
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null
 - statement: |-
@@ -79,9 +76,8 @@
       code: 601
       title: table.require-pk
       content: Table `t2` requires PRIMARY KEY
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null
 - statement: |-
@@ -103,9 +99,8 @@
       code: 601
       title: table.require-pk
       content: Table `t` requires PRIMARY KEY
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null
 - statement: |-
@@ -117,9 +112,8 @@
       code: 601
       title: table.require-pk
       content: Table `t` requires PRIMARY KEY
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null
 - statement: |-
@@ -152,9 +146,8 @@
       code: 601
       title: table.require-pk
       content: Table `t` requires PRIMARY KEY
-      detail: ""
       startposition:
-        line: 3
+        line: 2
         column: 0
       endposition: null
 - statement: |-
@@ -166,9 +159,8 @@
       code: 601
       title: table.require-pk
       content: Table `tech_book` requires PRIMARY KEY
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null
 - statement: ALTER TABLE tech_book DROP COLUMN name;
@@ -182,9 +174,8 @@
       code: 601
       title: table.require-pk
       content: Table `tech_book` requires PRIMARY KEY
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null
 - statement: |-
@@ -196,8 +187,7 @@
       code: 601
       title: table.require-pk
       content: Table `tech_book` requires PRIMARY KEY
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null

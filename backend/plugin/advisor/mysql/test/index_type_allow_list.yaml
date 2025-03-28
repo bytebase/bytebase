@@ -26,9 +26,8 @@
       code: 816
       title: index.type-allow-list
       content: Index type `SPATIAL` is not allowed
-      detail: ""
       startposition:
-        line: 5
+        line: 4
         column: 0
       endposition: null
 - statement: |-
@@ -43,8 +42,7 @@
       code: 816
       title: index.type-allow-list
       content: Index type `FULLTEXT` is not allowed
-      detail: ""
       startposition:
-        line: 5
+        line: 4
         column: 0
       endposition: null

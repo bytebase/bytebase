@@ -29,9 +29,8 @@
           UNIQUE KEY uk1(id, name),
           FOREIGN KEY fk1(roomId) REFERENCES room(id),
           INDEX idx_userTable_content(content)) ENGINE = CSV COLLATE latin1_bin;" doesn't use InnoDB engine
-      detail: ""
       startposition:
-        line: 12
+        line: 11
         column: 0
       endposition: null
 - statement: |
@@ -66,9 +65,8 @@
           id INT,
           price INT
         ) ENGINE = CSV;" doesn't use InnoDB engine
-      detail: ""
       startposition:
-        line: 4
+        line: 3
         column: 0
       endposition: null
 - statement: |
@@ -87,9 +85,8 @@
           id INT,
           price INT
         ) ENGINE = CSV;" doesn't use InnoDB engine
-      detail: ""
       startposition:
-        line: 5
+        line: 4
         column: 0
       endposition: null
 - statement: ALTER TABLE tech_book ENGINE = INNODB;
@@ -104,9 +101,8 @@
       code: 501
       title: engine.mysql.use-innodb
       content: '"ALTER TABLE tech_book ENGINE = CSV;" doesn''t use InnoDB engine'
-      detail: ""
       startposition:
-        line: 3
+        line: 2
         column: 0
       endposition: null
 - statement: SET default_storage_engine=INNODB;
@@ -120,9 +116,8 @@
       code: 501
       title: engine.mysql.use-innodb
       content: '"SET default_storage_engine=CSV;" doesn''t use InnoDB engine'
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null
 - statement: |

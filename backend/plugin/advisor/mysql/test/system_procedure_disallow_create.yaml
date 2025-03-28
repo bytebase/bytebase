@@ -15,8 +15,7 @@
         BEGIN
             SELECT 'Hello, World!' AS Message;
         END;" creates
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null

@@ -6,9 +6,8 @@
       code: 204
       title: statement.where.no-leading-wildcard-like
       content: '"DELETE FROM tech_book WHERE name like "%abc";" uses leading wildcard LIKE'
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: |
@@ -24,9 +23,8 @@
       code: 204
       title: statement.where.no-leading-wildcard-like
       content: '"SELECT * FROM t WHERE a LIKE ''%abc'';" uses leading wildcard LIKE'
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null
 - statement: |
@@ -38,9 +36,8 @@
       code: 204
       title: statement.where.no-leading-wildcard-like
       content: '"SELECT * FROM t WHERE a LIKE ''abc'' OR a LIKE ''%abc'';" uses leading wildcard LIKE'
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null
 - statement: |
@@ -59,9 +56,8 @@
         FROM t
         WHERE a LIKE '%acc'
           OR a LIKE '%abc';" uses leading wildcard LIKE
-      detail: ""
       startposition:
-        line: 4
+        line: 3
         column: 0
       endposition: null
     - status: 2
@@ -72,9 +68,8 @@
         FROM t
         WHERE a LIKE '%acc'
           OR a LIKE '%abc';" uses leading wildcard LIKE
-      detail: ""
       startposition:
-        line: 5
+        line: 4
         column: 0
       endposition: null
 - statement: |
@@ -97,9 +92,8 @@
           WHERE a LIKE '%acc'
             OR a LIKE '%abc'
           ) t1;" uses leading wildcard LIKE
-      detail: ""
       startposition:
-        line: 5
+        line: 4
         column: 0
       endposition: null
     - status: 2
@@ -112,8 +106,7 @@
           WHERE a LIKE '%acc'
             OR a LIKE '%abc'
           ) t1;" uses leading wildcard LIKE
-      detail: ""
       startposition:
-        line: 6
+        line: 5
         column: 0
       endposition: null

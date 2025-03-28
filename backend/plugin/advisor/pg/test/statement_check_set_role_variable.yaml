@@ -7,7 +7,6 @@
       code: 217
       title: statement.check-set-role-variable
       content: No SET ROLE statement found.
-      detail: ""
       startposition:
         line: 1
         column: 0

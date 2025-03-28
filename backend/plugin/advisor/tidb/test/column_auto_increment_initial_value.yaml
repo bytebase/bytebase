@@ -9,8 +9,7 @@
       code: 416
       title: column.auto-increment-initial-value
       content: The initial auto-increment value in table `t` is 2, which doesn't equal 20
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null

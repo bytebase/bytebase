@@ -7,8 +7,7 @@
       code: 420
       title: column.default-disallow-volatile
       content: Column "tech_book"."b" in schema "public" has volatile DEFAULT
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
