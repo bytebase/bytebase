@@ -162,7 +162,7 @@ func GetUserFlags(flags map[string]string) (*UserFlags, error) {
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to convert assume-rbr %q to bool", v)
 		}
-		f.switchToRBR = &assumeRBR
+		f.assumeRBR = &assumeRBR
 	}
 	if v, ok := flags["heartbeat-interval-millis"]; ok {
 		heartbeatIntervalMillis, err := strconv.ParseInt(v, 10, 64)
