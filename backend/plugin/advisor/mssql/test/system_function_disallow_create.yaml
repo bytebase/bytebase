@@ -20,6 +20,6 @@
       title: system.function.disallow-create
       content: Creating or altering functions is prohibited
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null

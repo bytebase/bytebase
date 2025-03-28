@@ -66,13 +66,11 @@ func generateAdviceOnFunctionUsing(c *DisallowFuncAndCalculationsChecker, ctx an
 	}
 	c.hasTriggeredRule = true
 	return &storepb.Advice{
-		Status:  c.level,
-		Code:    advisor.StatementDisallowFunctionsAndCalculations.Int32(),
-		Title:   c.title,
-		Content: fmt.Sprintf("Calling function '%s' in 'WHERE' clause is not allowed", ctx.GetText()),
-		StartPosition: &storepb.Position{
-			Line: int32(ctx.GetStart().GetLine()),
-		},
+		Status:        c.level,
+		Code:          advisor.StatementDisallowFunctionsAndCalculations.Int32(),
+		Title:         c.title,
+		Content:       fmt.Sprintf("Calling function '%s' in 'WHERE' clause is not allowed", ctx.GetText()),
+		StartPosition: advisor.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
 	}
 }
 
@@ -82,13 +80,11 @@ func generateAdviceOnPerformingCalculations(c *DisallowFuncAndCalculationsChecke
 	}
 	c.hasTriggeredRule = true
 	return &storepb.Advice{
-		Status:  c.level,
-		Code:    advisor.StatementDisallowFunctionsAndCalculations.Int32(),
-		Title:   c.title,
-		Content: "Performing calculations in 'WHERE' clause is not allowed",
-		StartPosition: &storepb.Position{
-			Line: int32(ctx.GetStart().GetLine()),
-		},
+		Status:        c.level,
+		Code:          advisor.StatementDisallowFunctionsAndCalculations.Int32(),
+		Title:         c.title,
+		Content:       "Performing calculations in 'WHERE' clause is not allowed",
+		StartPosition: advisor.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
 	}
 }
 

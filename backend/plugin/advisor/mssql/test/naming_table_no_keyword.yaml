@@ -6,7 +6,7 @@
       title: naming.table.no-keyword
       content: Table name [fillfactor] is a reserved keyword and should be avoided.
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: CREATE TABLE MyDB.MySchema.[fillfactor] (id INT);
@@ -17,7 +17,7 @@
       title: naming.table.no-keyword
       content: Table name [fillfactor] is a reserved keyword and should be avoided.
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: CREATE TABLE Person(id INT);

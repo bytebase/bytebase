@@ -174,13 +174,11 @@ func (checker *indexPrimaryKeyTypeAllowlistChecker) checkFieldDefinition(tableNa
 		if attribute.PRIMARY_SYMBOL() != nil {
 			if _, exists := checker.allowlist[columnType]; !exists {
 				checker.adviceList = append(checker.adviceList, &storepb.Advice{
-					Status:  checker.level,
-					Code:    advisor.IndexPKType.Int32(),
-					Title:   checker.title,
-					Content: fmt.Sprintf("The column `%s` in table `%s` is one of the primary key, but its type \"%s\" is not in allowlist", columnName, tableName, columnType),
-					StartPosition: &storepb.Position{
-						Line: int32(checker.baseLine + ctx.GetStart().GetLine()),
-					},
+					Status:        checker.level,
+					Code:          advisor.IndexPKType.Int32(),
+					Title:         checker.title,
+					Content:       fmt.Sprintf("The column `%s` in table `%s` is one of the primary key, but its type \"%s\" is not in allowlist", columnName, tableName, columnType),
+					StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
 				})
 			}
 		}
@@ -205,13 +203,11 @@ func (checker *indexPrimaryKeyTypeAllowlistChecker) checkConstraintDef(tableName
 		columnType = strings.ToLower(columnType)
 		if _, exists := checker.allowlist[columnType]; !exists {
 			checker.adviceList = append(checker.adviceList, &storepb.Advice{
-				Status:  checker.level,
-				Code:    advisor.IndexPKType.Int32(),
-				Title:   checker.title,
-				Content: fmt.Sprintf("The column `%s` in table `%s` is one of the primary key, but its type \"%s\" is not in allowlist", columnName, tableName, columnType),
-				StartPosition: &storepb.Position{
-					Line: int32(checker.baseLine + ctx.GetStart().GetLine()),
-				},
+				Status:        checker.level,
+				Code:          advisor.IndexPKType.Int32(),
+				Title:         checker.title,
+				Content:       fmt.Sprintf("The column `%s` in table `%s` is one of the primary key, but its type \"%s\" is not in allowlist", columnName, tableName, columnType),
+				StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
 			})
 		}
 	}

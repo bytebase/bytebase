@@ -11,9 +11,8 @@
       code: 416
       title: column.auto-increment-initial-value
       content: The initial auto-increment value in table `t2` is 2, which doesn't equal 20
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null
 - statement: |-
@@ -27,8 +26,7 @@
       code: 416
       title: column.auto-increment-initial-value
       content: The initial auto-increment value in table `t` is 100, which doesn't equal 20
-      detail: ""
       startposition:
-        line: 4
+        line: 3
         column: 0
       endposition: null

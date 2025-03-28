@@ -7,9 +7,8 @@
       code: 411
       title: column.type-disallow-list
       content: Disallow column type JSON but column `t`.`a` is
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: |-
@@ -21,9 +20,8 @@
       code: 411
       title: column.type-disallow-list
       content: Disallow column type JSON but column `t`.`a` is
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null
 - statement: |-
@@ -35,18 +33,16 @@
       code: 411
       title: column.type-disallow-list
       content: Disallow column type JSON but column `t`.`a` is
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null
     - status: 2
       code: 411
       title: column.type-disallow-list
       content: Disallow column type JSON but column `t`.`b` is
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null
 - statement: |-
@@ -58,9 +54,8 @@
       code: 411
       title: column.type-disallow-list
       content: Disallow column type JSON but column `t`.`a` is
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null
 - statement: |-
@@ -72,8 +67,7 @@
       code: 411
       title: column.type-disallow-list
       content: Disallow column type JSON but column `t`.`c` is
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null

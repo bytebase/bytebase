@@ -111,13 +111,11 @@ func (checker *statementAddColumnWithoutPositionChecker) EnterAlterTable(ctx *my
 
 		if len(position) != 0 {
 			checker.adviceList = append(checker.adviceList, &storepb.Advice{
-				Status:  checker.level,
-				Code:    advisor.StatementAddColumnWithPosition.Int32(),
-				Title:   checker.title,
-				Content: fmt.Sprintf("add column with position \"%s\"", position),
-				StartPosition: &storepb.Position{
-					Line: int32(checker.baseLine + ctx.GetStart().GetLine()),
-				},
+				Status:        checker.level,
+				Code:          advisor.StatementAddColumnWithPosition.Int32(),
+				Title:         checker.title,
+				Content:       fmt.Sprintf("add column with position \"%s\"", position),
+				StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
 			})
 		}
 	}

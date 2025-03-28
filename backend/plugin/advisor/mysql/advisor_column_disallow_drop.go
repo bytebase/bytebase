@@ -84,13 +84,11 @@ func (checker *columnDisallowDropChecker) EnterAlterTable(ctx *mysql.AlterTableC
 
 		columnName := mysqlparser.NormalizeMySQLColumnInternalRef(item.ColumnInternalRef())
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{
-			Status:  checker.level,
-			Code:    advisor.DropColumn.Int32(),
-			Title:   checker.title,
-			Content: fmt.Sprintf("drops column \"%s\" of table \"%s\"", columnName, tableName),
-			StartPosition: &storepb.Position{
-				Line: int32(checker.baseLine + item.GetStart().GetLine()),
-			},
+			Status:        checker.level,
+			Code:          advisor.DropColumn.Int32(),
+			Title:         checker.title,
+			Content:       fmt.Sprintf("drops column \"%s\" of table \"%s\"", columnName, tableName),
+			StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + item.GetStart().GetLine()),
 		})
 	}
 }

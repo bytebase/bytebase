@@ -67,13 +67,11 @@ func (l *insertMustSpecifyColumnListener) generateAdvice() ([]*storepb.Advice, e
 func (l *insertMustSpecifyColumnListener) EnterInsert_into_clause(ctx *parser.Insert_into_clauseContext) {
 	if ctx.Paren_column_list() == nil {
 		l.adviceList = append(l.adviceList, &storepb.Advice{
-			Status:  l.level,
-			Code:    advisor.InsertNotSpecifyColumn.Int32(),
-			Title:   l.title,
-			Content: "INSERT statement should specify column name.",
-			StartPosition: &storepb.Position{
-				Line: int32(ctx.GetStart().GetLine()),
-			},
+			Status:        l.level,
+			Code:          advisor.InsertNotSpecifyColumn.Int32(),
+			Title:         l.title,
+			Content:       "INSERT statement should specify column name.",
+			StartPosition: advisor.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
 		})
 	}
 }

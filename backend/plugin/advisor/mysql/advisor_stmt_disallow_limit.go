@@ -105,12 +105,10 @@ func (checker *statementDisallowLimitChecker) EnterQueryExpression(ctx *mysql.Qu
 
 func (checker *statementDisallowLimitChecker) handleLimitClause(code advisor.Code, lineNumber int) {
 	checker.adviceList = append(checker.adviceList, &storepb.Advice{
-		Status:  checker.level,
-		Code:    code.Int32(),
-		Title:   checker.title,
-		Content: fmt.Sprintf("LIMIT clause is forbidden in INSERT, UPDATE and DELETE statement, but \"%s\" uses", checker.text),
-		StartPosition: &storepb.Position{
-			Line: int32(checker.line + lineNumber),
-		},
+		Status:        checker.level,
+		Code:          code.Int32(),
+		Title:         checker.title,
+		Content:       fmt.Sprintf("LIMIT clause is forbidden in INSERT, UPDATE and DELETE statement, but \"%s\" uses", checker.text),
+		StartPosition: advisor.ConvertANTLRLineToPosition(checker.line + lineNumber),
 	})
 }

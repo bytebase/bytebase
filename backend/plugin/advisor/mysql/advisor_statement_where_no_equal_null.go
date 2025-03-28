@@ -83,13 +83,11 @@ func (checker *statementWhereNoEqualNullChecker) EnterPrimaryExprCompare(ctx *my
 	}
 	if ctx.Predicate() != nil && ctx.Predicate().GetText() == "NULL" {
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{
-			Status:  checker.level,
-			Code:    advisor.StatementWhereNoEqualNull.Int32(),
-			Title:   checker.title,
-			Content: fmt.Sprintf("WHERE clause contains equal null: %s", checker.text),
-			StartPosition: &storepb.Position{
-				Line: int32(checker.baseLine + ctx.GetStart().GetLine()),
-			},
+			Status:        checker.level,
+			Code:          advisor.StatementWhereNoEqualNull.Int32(),
+			Title:         checker.title,
+			Content:       fmt.Sprintf("WHERE clause contains equal null: %s", checker.text),
+			StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
 		})
 	}
 }

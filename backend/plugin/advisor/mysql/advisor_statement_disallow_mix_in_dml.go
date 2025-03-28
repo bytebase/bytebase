@@ -48,13 +48,11 @@ func (*StatementDisallowMixInDMLAdvisor) Check(_ context.Context, checkCtx advis
 
 		if checker.IsDDL {
 			adviceList = append(adviceList, &storepb.Advice{
-				Status:  level,
-				Title:   title,
-				Content: fmt.Sprintf("Data change can only run DML, \"%s\" is not DML", checker.Text),
-				Code:    advisor.StatementDisallowMixDDLDML.Int32(),
-				StartPosition: &storepb.Position{
-					Line: int32(stmt.BaseLine) + 1,
-				},
+				Status:        level,
+				Title:         title,
+				Content:       fmt.Sprintf("Data change can only run DML, \"%s\" is not DML", checker.Text),
+				Code:          advisor.StatementDisallowMixDDLDML.Int32(),
+				StartPosition: advisor.ConvertANTLRLineToPosition(stmt.BaseLine),
 			})
 		}
 	}

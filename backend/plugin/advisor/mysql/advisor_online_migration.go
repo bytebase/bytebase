@@ -11,6 +11,7 @@ import (
 
 	mysql "github.com/bytebase/mysql-parser"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
@@ -79,6 +80,7 @@ func (*OnlineMigrationAdvisor) Check(ctx context.Context, checkCtx advisor.Conte
 			currentDatabase:  checkCtx.CurrentDatabase,
 			changedResources: make(map[string]base.SchemaResource),
 			baseline:         int32(stmt.BaseLine),
+			checkCtx:         checkCtx,
 		}
 
 		antlr.ParseTreeWalkerDefault.Walk(checker, stmt.Tree)
@@ -148,6 +150,7 @@ func (*OnlineMigrationAdvisor) Check(ctx context.Context, checkCtx advisor.Conte
 
 type useGhostChecker struct {
 	*mysql.BaseMySQLParserListener
+	checkCtx advisor.Context
 
 	currentDatabase  string
 	changedResources map[string]base.SchemaResource
@@ -159,17 +162,23 @@ type useGhostChecker struct {
 }
 
 func (c *useGhostChecker) EnterAlterStatement(ctx *mysql.AlterStatementContext) {
-	c.start = &storepb.Position{
-		Line:   c.baseline + int32(ctx.GetStart().GetLine()),
-		Column: int32(ctx.GetStart().GetColumn()) + 1, // convert to 1-based
-	}
+	c.start = common.ConvertANTLRPositionToPosition(
+		&common.ANTLRPosition{
+			Line:   int32(ctx.GetStart().GetLine()),
+			Column: int32(ctx.GetStart().GetColumn()),
+		},
+		c.checkCtx.Statements,
+	)
 }
 
 func (c *useGhostChecker) ExitAlterStatement(ctx *mysql.AlterStatementContext) {
-	c.end = &storepb.Position{
-		Line:   c.baseline + int32(ctx.GetStop().GetLine()),
-		Column: int32(ctx.GetStop().GetColumn()+len([]rune(ctx.GetStop().GetText()))) + 1, // convert to 1-based
-	}
+	c.end = common.ConvertANTLRPositionToPosition(
+		&common.ANTLRPosition{
+			Line:   c.baseline + int32(ctx.GetStop().GetLine()),
+			Column: int32(ctx.GetStop().GetColumn() + len([]rune(ctx.GetStop().GetText()))),
+		},
+		c.checkCtx.Statements,
+	)
 }
 
 func (c *useGhostChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {

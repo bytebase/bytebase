@@ -77,13 +77,11 @@ func (l *whereNoLeadingWildcardLikeListener) EnterCompound_expression(ctx *parse
 	text := ctx.Concatenation(1).GetText()
 	if strings.HasPrefix(text, "'%") && strings.HasSuffix(text, "'") {
 		l.adviceList = append(l.adviceList, &storepb.Advice{
-			Status:  l.level,
-			Code:    advisor.StatementLeadingWildcardLike.Int32(),
-			Title:   l.title,
-			Content: "Avoid using leading wildcard LIKE.",
-			StartPosition: &storepb.Position{
-				Line: int32(ctx.GetStart().GetLine()),
-			},
+			Status:        l.level,
+			Code:          advisor.StatementLeadingWildcardLike.Int32(),
+			Title:         l.title,
+			Content:       "Avoid using leading wildcard LIKE.",
+			StartPosition: advisor.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
 		})
 	}
 }

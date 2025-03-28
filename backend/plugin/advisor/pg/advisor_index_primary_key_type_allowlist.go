@@ -95,13 +95,11 @@ func (checker *indexPrimaryKeyTypeAllowlistChecker) Visit(in ast.Node) ast.Visit
 				typeText = ""
 			}
 			checker.adviceList = append(checker.adviceList, &storepb.Advice{
-				Status:  checker.level,
-				Code:    advisor.IndexPKType.Int32(),
-				Title:   checker.title,
-				Content: fmt.Sprintf(`The column "%s" is one of the primary key, but its type "%s" is not in allowlist`, column.ColumnName, typeText),
-				StartPosition: &storepb.Position{
-					Line: int32(column.LastLine()),
-				},
+				Status:        checker.level,
+				Code:          advisor.IndexPKType.Int32(),
+				Title:         checker.title,
+				Content:       fmt.Sprintf(`The column "%s" is one of the primary key, but its type "%s" is not in allowlist`, column.ColumnName, typeText),
+				StartPosition: advisor.ConvertANTLRLineToPosition(column.LastLine()),
 			})
 		}
 	}

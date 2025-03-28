@@ -11,7 +11,7 @@
       title: statement.disallow-cross-db-queries
       content: 'Cross database queries (target databse: ''master2'', current database: ''master'') are prohibited'
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: |-
@@ -24,6 +24,6 @@
       title: statement.disallow-cross-db-queries
       content: 'Cross database queries (target databse: ''master'', current database: ''master2'') are prohibited'
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null

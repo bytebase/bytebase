@@ -101,37 +101,31 @@ func (l *tableCommentConventionListener) generateAdvices() ([]*storepb.Advice, e
 		if !ok || comment == "" {
 			if l.payload.Required {
 				advices = append(advices, &storepb.Advice{
-					Status:  l.level,
-					Code:    advisor.CommentEmpty.Int32(),
-					Title:   l.title,
-					Content: fmt.Sprintf("Comment is required for table %s", normalizeIdentifierName(tableName)),
-					StartPosition: &storepb.Position{
-						Line: int32(l.tableLine[tableName]),
-					},
+					Status:        l.level,
+					Code:          advisor.CommentEmpty.Int32(),
+					Title:         l.title,
+					Content:       fmt.Sprintf("Comment is required for table %s", normalizeIdentifierName(tableName)),
+					StartPosition: advisor.ConvertANTLRLineToPosition(l.tableLine[tableName]),
 				})
 			}
 		} else {
 			if l.payload.MaxLength > 0 && len(comment) > l.payload.MaxLength {
 				advices = append(advices, &storepb.Advice{
-					Status:  l.level,
-					Code:    advisor.CommentTooLong.Int32(),
-					Title:   l.title,
-					Content: fmt.Sprintf("Table %s comment is too long. The length of comment should be within %d characters", normalizeIdentifierName(tableName), l.payload.MaxLength),
-					StartPosition: &storepb.Position{
-						Line: int32(l.tableLine[tableName]),
-					},
+					Status:        l.level,
+					Code:          advisor.CommentTooLong.Int32(),
+					Title:         l.title,
+					Content:       fmt.Sprintf("Table %s comment is too long. The length of comment should be within %d characters", normalizeIdentifierName(tableName), l.payload.MaxLength),
+					StartPosition: advisor.ConvertANTLRLineToPosition(l.tableLine[tableName]),
 				})
 			}
 			if l.payload.RequiredClassification {
 				if classification, _ := common.GetClassificationAndUserComment(comment, l.classificationConfig); classification == "" {
 					advices = append(advices, &storepb.Advice{
-						Status:  l.level,
-						Code:    advisor.CommentMissingClassification.Int32(),
-						Title:   l.title,
-						Content: fmt.Sprintf("Table %s comment requires classification", normalizeIdentifierName(tableName)),
-						StartPosition: &storepb.Position{
-							Line: int32(l.tableLine[tableName]),
-						},
+						Status:        l.level,
+						Code:          advisor.CommentMissingClassification.Int32(),
+						Title:         l.title,
+						Content:       fmt.Sprintf("Table %s comment requires classification", normalizeIdentifierName(tableName)),
+						StartPosition: advisor.ConvertANTLRLineToPosition(l.tableLine[tableName]),
 					})
 				}
 			}

@@ -11,9 +11,8 @@
       code: 802
       title: index.key-number-limit
       content: The number of index `pk` in table `t` should be not greater than 5
-      detail: ""
       startposition:
-        line: 4
+        line: 3
         column: 0
       endposition: null
 - statement: |-
@@ -25,9 +24,8 @@
       code: 802
       title: index.key-number-limit
       content: The number of index `idx` in table `t` should be not greater than 5
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null
 - statement: |-
@@ -39,9 +37,8 @@
       code: 802
       title: index.key-number-limit
       content: The number of index `uk` in table `t` should be not greater than 5
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null
 - statement: |-
@@ -53,8 +50,7 @@
       code: 802
       title: index.key-number-limit
       content: The number of index `uk` in table `t` should be not greater than 5
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null

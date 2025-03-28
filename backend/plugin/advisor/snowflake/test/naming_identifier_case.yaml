@@ -16,9 +16,8 @@
       code: 309
       title: naming.identifier.case
       content: Identifier "address" should be upper case
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null
 - statement: |-
@@ -33,9 +32,8 @@
       code: 309
       title: naming.identifier.case
       content: Identifier "address" should be upper case
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null
 - statement: |-
@@ -52,9 +50,8 @@
       code: 309
       title: naming.identifier.case
       content: Identifier "address" should be upper case
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: ALTER TABLE mytable RENAME COLUMN name TO address;

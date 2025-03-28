@@ -108,13 +108,11 @@ func (checker *columnAutoIncrementMustIntegerChecker) Enter(in ast.Node) (ast.No
 
 	for _, column := range columnList {
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{
-			Status:  checker.level,
-			Code:    advisor.AutoIncrementColumnNotInteger.Int32(),
-			Title:   checker.title,
-			Content: fmt.Sprintf("Auto-increment column `%s`.`%s` requires integer type", column.table, column.column),
-			StartPosition: &storepb.Position{
-				Line: int32(checker.line),
-			},
+			Status:        checker.level,
+			Code:          advisor.AutoIncrementColumnNotInteger.Int32(),
+			Title:         checker.title,
+			Content:       fmt.Sprintf("Auto-increment column `%s`.`%s` requires integer type", column.table, column.column),
+			StartPosition: advisor.ConvertANTLRLineToPosition(checker.line),
 		})
 	}
 

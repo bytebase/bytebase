@@ -6,7 +6,7 @@
       title: statement.select.no-select-all
       content: Avoid using SELECT *.
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: SELECT a, b FROM t
@@ -19,7 +19,7 @@
       title: statement.select.no-select-all
       content: Avoid using SELECT *.
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: INSERT INTO t SELECT * FROM t1
@@ -30,6 +30,6 @@
       title: statement.select.no-select-all
       content: Avoid using SELECT *.
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null

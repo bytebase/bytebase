@@ -10,7 +10,7 @@
       title: statement.where.disallow-functions-and-calculations
       content: Performing calculations in 'WHERE' clause is not allowed
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null
     - status: 2
@@ -18,7 +18,7 @@
       title: statement.where.disallow-functions-and-calculations
       content: Performing calculations in 'WHERE' clause is not allowed
       startposition:
-        line: 4
+        line: 3
         column: 0
       endposition: null
 - statement: |-
@@ -31,7 +31,7 @@
       title: statement.where.disallow-functions-and-calculations
       content: Performing calculations in 'WHERE' clause is not allowed
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
     - status: 2
@@ -39,7 +39,7 @@
       title: statement.where.disallow-functions-and-calculations
       content: Calling function 'AVG(bar)' in 'WHERE' clause is not allowed
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null
 - statement: SELECT bar FROM pokes WHERE bar > 1;
@@ -58,6 +58,6 @@
       title: statement.where.disallow-functions-and-calculations
       content: Calling function 'AVG(a)' in 'WHERE' clause is not allowed
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null

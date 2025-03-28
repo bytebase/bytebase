@@ -75,13 +75,11 @@ func (l *whereRequireForSelectListener) EnterQuery_block(ctx *parser.Query_block
 	}
 	if ctx.Where_clause() == nil {
 		l.adviceList = append(l.adviceList, &storepb.Advice{
-			Status:  l.level,
-			Code:    advisor.StatementNoWhere.Int32(),
-			Title:   l.title,
-			Content: "WHERE clause is required for SELECT statement.",
-			StartPosition: &storepb.Position{
-				Line: int32(ctx.GetStop().GetLine()),
-			},
+			Status:        l.level,
+			Code:          advisor.StatementNoWhere.Int32(),
+			Title:         l.title,
+			Content:       "WHERE clause is required for SELECT statement.",
+			StartPosition: advisor.ConvertANTLRLineToPosition(ctx.GetStop().GetLine()),
 		})
 	}
 }

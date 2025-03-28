@@ -62,13 +62,11 @@ func (checker *statementMergeAlterTableChecker) generateAdvice() []*storepb.Advi
 	for _, table := range tableList {
 		if table.count > 1 {
 			checker.adviceList = append(checker.adviceList, &storepb.Advice{
-				Status:  checker.level,
-				Code:    advisor.StatementRedundantAlterTable.Int32(),
-				Title:   checker.title,
-				Content: fmt.Sprintf("There are %d statements to modify table `%s`", table.count, table.name),
-				StartPosition: &storepb.Position{
-					Line: int32(table.line),
-				},
+				Status:        checker.level,
+				Code:          advisor.StatementRedundantAlterTable.Int32(),
+				Title:         checker.title,
+				Content:       fmt.Sprintf("There are %d statements to modify table `%s`", table.count, table.name),
+				StartPosition: advisor.ConvertANTLRLineToPosition(table.line),
 			})
 		}
 	}

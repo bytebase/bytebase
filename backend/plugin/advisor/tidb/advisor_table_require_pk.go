@@ -131,13 +131,11 @@ func (v *tableRequirePKChecker) generateAdviceList() []*storepb.Advice {
 	for _, tableName := range tableList {
 		if len(v.tables[tableName]) == 0 {
 			v.adviceList = append(v.adviceList, &storepb.Advice{
-				Status:  v.level,
-				Code:    advisor.TableNoPK.Int32(),
-				Title:   v.title,
-				Content: fmt.Sprintf("Table `%s` requires PRIMARY KEY", tableName),
-				StartPosition: &storepb.Position{
-					Line: int32(v.line[tableName]),
-				},
+				Status:        v.level,
+				Code:          advisor.TableNoPK.Int32(),
+				Title:         v.title,
+				Content:       fmt.Sprintf("Table `%s` requires PRIMARY KEY", tableName),
+				StartPosition: advisor.ConvertANTLRLineToPosition(v.line[tableName]),
 			})
 		}
 	}

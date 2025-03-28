@@ -96,13 +96,11 @@ func (l *columnAddNotNullColumnRequireDefaultListener) ExitColumn_definition(ctx
 
 	if ctx.DEFAULT() == nil {
 		l.adviceList = append(l.adviceList, &storepb.Advice{
-			Status:  l.level,
-			Code:    advisor.NotNullColumnWithNoDefault.Int32(),
-			Title:   l.title,
-			Content: fmt.Sprintf("Adding not null column %q requires default.", normalizeIdentifier(ctx.Column_name(), l.currentDatabase)),
-			StartPosition: &storepb.Position{
-				Line: int32(ctx.GetStart().GetLine()),
-			},
+			Status:        l.level,
+			Code:          advisor.NotNullColumnWithNoDefault.Int32(),
+			Title:         l.title,
+			Content:       fmt.Sprintf("Adding not null column %q requires default.", normalizeIdentifier(ctx.Column_name(), l.currentDatabase)),
+			StartPosition: advisor.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
 		})
 	}
 }

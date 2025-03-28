@@ -5,9 +5,8 @@
       code: 420
       title: column.require-default
       content: Column "A" doesn't have default value
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: |-
@@ -21,8 +20,7 @@
       code: 420
       title: column.require-default
       content: Column "A" doesn't have default value
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null

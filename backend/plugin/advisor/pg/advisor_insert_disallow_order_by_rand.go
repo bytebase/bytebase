@@ -73,13 +73,11 @@ func (checker *insertDisallowOrderByRandChecker) Visit(in ast.Node) ast.Visitor 
 
 	if code != advisor.Ok {
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{
-			Status:  checker.level,
-			Code:    code.Int32(),
-			Title:   checker.title,
-			Content: fmt.Sprintf("The INSERT statement uses ORDER BY random() or random_between(), related statement \"%s\"", checker.text),
-			StartPosition: &storepb.Position{
-				Line: int32(in.LastLine()),
-			},
+			Status:        checker.level,
+			Code:          code.Int32(),
+			Title:         checker.title,
+			Content:       fmt.Sprintf("The INSERT statement uses ORDER BY random() or random_between(), related statement \"%s\"", checker.text),
+			StartPosition: advisor.ConvertANTLRLineToPosition(in.LastLine()),
 		})
 	}
 

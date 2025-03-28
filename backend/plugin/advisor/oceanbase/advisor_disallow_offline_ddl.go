@@ -242,12 +242,10 @@ func (*disallowOfflineDdlChecker) isPrimaryKeyColumn(ctx mysql.IFieldDefinitionC
 
 func (checker *disallowOfflineDdlChecker) advice(ctx antlr.ParserRuleContext, operation string) {
 	checker.adviceList = append(checker.adviceList, &storepb.Advice{
-		Status:  checker.level,
-		Code:    advisor.StatementOfflineDDL.Int32(),
-		Title:   checker.title,
-		Content: fmt.Sprintf("%s is an offline DDL operation.", operation),
-		StartPosition: &storepb.Position{
-			Line: int32(checker.baseLine + ctx.GetStart().GetLine()),
-		},
+		Status:        checker.level,
+		Code:          advisor.StatementOfflineDDL.Int32(),
+		Title:         checker.title,
+		Content:       fmt.Sprintf("%s is an offline DDL operation.", operation),
+		StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
 	})
 }

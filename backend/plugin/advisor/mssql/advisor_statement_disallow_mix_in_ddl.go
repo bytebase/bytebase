@@ -73,13 +73,11 @@ func (c *statementDisallowMixInDDLChecker) EnterSql_clauses(ctx *parser.Sql_clau
 
 	if isDML {
 		c.adviceList = append(c.adviceList, &storepb.Advice{
-			Status:  c.level,
-			Title:   c.title,
-			Content: "Alter schema can only run DDL",
-			Code:    advisor.StatementDisallowMixDDLDML.Int32(),
-			StartPosition: &storepb.Position{
-				Line: int32(ctx.GetStart().GetLine()),
-			},
+			Status:        c.level,
+			Title:         c.title,
+			Content:       "Alter schema can only run DDL",
+			Code:          advisor.StatementDisallowMixDDLDML.Int32(),
+			StartPosition: advisor.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
 		})
 	}
 }

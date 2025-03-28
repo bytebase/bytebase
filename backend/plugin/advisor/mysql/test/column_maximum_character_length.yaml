@@ -13,9 +13,8 @@
       code: 415
       title: column.maximum-character-length
       content: The length of the CHAR column `t2.name` is bigger than 20, please use VARCHAR instead
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null
 - statement: |-
@@ -27,9 +26,8 @@
       code: 415
       title: column.maximum-character-length
       content: The length of the CHAR column `tech_book.name_2` is bigger than 20, please use VARCHAR instead
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null
 - statement: |-
@@ -41,9 +39,8 @@
       code: 415
       title: column.maximum-character-length
       content: The length of the CHAR column `tech_book.name` is bigger than 20, please use VARCHAR instead
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null
 - statement: |-
@@ -55,8 +52,7 @@
       code: 415
       title: column.maximum-character-length
       content: The length of the CHAR column `tech_book.name` is bigger than 20, please use VARCHAR instead
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null

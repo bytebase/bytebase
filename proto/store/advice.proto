@@ -28,7 +28,8 @@ message Advice {
   // The advice content.
   string content = 4;
 
-  // 1-based positions of the sql statment.
+  // The start_position is inclusive and the end_position is exclusive.
+  // TODO: use range instead.
   Position start_position = 6;
   Position end_position = 7;
 }

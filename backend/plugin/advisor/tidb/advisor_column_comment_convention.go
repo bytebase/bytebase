@@ -123,36 +123,30 @@ func (checker *columnCommentConventionChecker) Enter(in ast.Node) (ast.Node, boo
 	for _, column := range columnList {
 		if checker.payload.Required && !column.exist {
 			checker.adviceList = append(checker.adviceList, &storepb.Advice{
-				Status:  checker.level,
-				Code:    advisor.CommentEmpty.Int32(),
-				Title:   checker.title,
-				Content: fmt.Sprintf("Column `%s`.`%s` requires comments", column.table, column.column),
-				StartPosition: &storepb.Position{
-					Line: int32(column.line),
-				},
+				Status:        checker.level,
+				Code:          advisor.CommentEmpty.Int32(),
+				Title:         checker.title,
+				Content:       fmt.Sprintf("Column `%s`.`%s` requires comments", column.table, column.column),
+				StartPosition: advisor.ConvertANTLRLineToPosition(column.line),
 			})
 		}
 		if checker.payload.MaxLength >= 0 && len(column.comment) > checker.payload.MaxLength {
 			checker.adviceList = append(checker.adviceList, &storepb.Advice{
-				Status:  checker.level,
-				Code:    advisor.CommentTooLong.Int32(),
-				Title:   checker.title,
-				Content: fmt.Sprintf("The length of column `%s`.`%s` comment should be within %d characters", column.table, column.column, checker.payload.MaxLength),
-				StartPosition: &storepb.Position{
-					Line: int32(column.line),
-				},
+				Status:        checker.level,
+				Code:          advisor.CommentTooLong.Int32(),
+				Title:         checker.title,
+				Content:       fmt.Sprintf("The length of column `%s`.`%s` comment should be within %d characters", column.table, column.column, checker.payload.MaxLength),
+				StartPosition: advisor.ConvertANTLRLineToPosition(column.line),
 			})
 		}
 		if checker.payload.RequiredClassification {
 			if classification, _ := common.GetClassificationAndUserComment(column.comment, checker.classificationConfig); classification == "" {
 				checker.adviceList = append(checker.adviceList, &storepb.Advice{
-					Status:  checker.level,
-					Code:    advisor.CommentMissingClassification.Int32(),
-					Title:   checker.title,
-					Content: fmt.Sprintf("Column `%s`.`%s` comment requires classification", column.table, column.column),
-					StartPosition: &storepb.Position{
-						Line: int32(column.line),
-					},
+					Status:        checker.level,
+					Code:          advisor.CommentMissingClassification.Int32(),
+					Title:         checker.title,
+					Content:       fmt.Sprintf("Column `%s`.`%s` comment requires classification", column.table, column.column),
+					StartPosition: advisor.ConvertANTLRLineToPosition(column.line),
 				})
 			}
 		}

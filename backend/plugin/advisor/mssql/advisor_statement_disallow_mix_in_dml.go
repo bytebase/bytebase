@@ -73,13 +73,11 @@ func (c *statementDisallowMixInDMLChecker) EnterSql_clauses(ctx *parser.Sql_clau
 
 	if !isDML {
 		c.adviceList = append(c.adviceList, &storepb.Advice{
-			Status:  c.level,
-			Title:   c.title,
-			Content: "Data change can only run DML",
-			Code:    advisor.StatementDisallowMixDDLDML.Int32(),
-			StartPosition: &storepb.Position{
-				Line: int32(ctx.GetStart().GetLine()),
-			},
+			Status:        c.level,
+			Title:         c.title,
+			Content:       "Data change can only run DML",
+			Code:          advisor.StatementDisallowMixDDLDML.Int32(),
+			StartPosition: advisor.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
 		})
 	}
 }

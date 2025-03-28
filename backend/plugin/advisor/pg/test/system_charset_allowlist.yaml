@@ -9,7 +9,6 @@
       code: 1001
       title: system.charset.allowlist
       content: '"" used disabled encoding ''latin1'''
-      detail: ""
       startposition:
         line: 0
         column: 0

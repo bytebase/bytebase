@@ -11,7 +11,14 @@
       code: 401
       title: column.required
       content: 'Table `t1` requires columns: created_ts, creator_id, id, updated_ts, updater_id'
-      detail: ""
+      startposition:
+        line: 0
+        column: 0
+      endposition: null
+    - status: 2
+      code: 401
+      title: column.required
+      content: 'Table `book` requires columns: created_ts, creator_id, updated_ts, updater_id'
       startposition:
         line: 1
         column: 0
@@ -19,8 +26,7 @@
     - status: 2
       code: 401
       title: column.required
-      content: 'Table `book` requires columns: created_ts, creator_id, updated_ts, updater_id'
-      detail: ""
+      content: 'Table `t2` requires columns: created_ts, updated_ts, updater_id'
       startposition:
         line: 2
         column: 0
@@ -28,8 +34,7 @@
     - status: 2
       code: 401
       title: column.required
-      content: 'Table `t2` requires columns: created_ts, updated_ts, updater_id'
-      detail: ""
+      content: 'Table `t3` requires columns: updated_ts, updater_id'
       startposition:
         line: 3
         column: 0
@@ -37,19 +42,9 @@
     - status: 2
       code: 401
       title: column.required
-      content: 'Table `t3` requires columns: updated_ts, updater_id'
-      detail: ""
+      content: 'Table `t4` requires columns: updated_ts'
       startposition:
         line: 4
-        column: 0
-      endposition: null
-    - status: 2
-      code: 401
-      title: column.required
-      content: 'Table `t4` requires columns: updated_ts'
-      detail: ""
-      startposition:
-        line: 5
         column: 0
       endposition: null
 - statement: |-
@@ -76,9 +71,8 @@
       code: 401
       title: column.required
       content: 'Table `book` requires columns: creator_id'
-      detail: ""
       startposition:
-        line: 8
+        line: 7
         column: 0
       endposition: null
 - statement: |-
@@ -106,9 +100,8 @@
       code: 401
       title: column.required
       content: 'Table `book` requires columns: creator_id'
-      detail: ""
       startposition:
-        line: 8
+        line: 7
         column: 0
       endposition: null
 - statement: |-
@@ -136,9 +129,8 @@
       code: 401
       title: column.required
       content: 'Table `book` requires columns: creator_id'
-      detail: ""
       startposition:
-        line: 8
+        line: 7
         column: 0
       endposition: null
 - statement: |-
@@ -166,9 +158,8 @@
       code: 401
       title: column.required
       content: 'Table `book` requires columns: updater_id'
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: |-
@@ -199,18 +190,16 @@
       code: 401
       title: column.required
       content: 'Table `book` requires columns: creator_id'
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
     - status: 2
       code: 401
       title: column.required
       content: 'Table `student` requires columns: creator_id, updater_id'
-      detail: ""
       startposition:
-        line: 7
+        line: 6
         column: 0
       endposition: null
 - statement: |-

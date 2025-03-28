@@ -36,7 +36,7 @@
       title: builtin.prior-backup-check
       content: Data change can only run DML, "CREATE TABLE t_test_backup(a int);" is not DML
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: SET ROLE role1;DELETE FROM tech_book WHERE a > 1;

@@ -69,13 +69,11 @@ func (l *namingTableNoKeywordChecker) EnterCreate_table(ctx *parser.Create_table
 	_, normalizedTableName := tsqlparser.NormalizeTSQLIdentifier(tableName)
 	if tsqlparser.IsTSQLReservedKeyword(normalizedTableName, false) {
 		l.adviceList = append(l.adviceList, &storepb.Advice{
-			Status:  l.level,
-			Code:    advisor.NameIsKeywordIdentifier.Int32(),
-			Title:   l.title,
-			Content: fmt.Sprintf("Table name [%s] is a reserved keyword and should be avoided.", normalizedTableName),
-			StartPosition: &storepb.Position{
-				Line: int32(tableName.GetStart().GetLine()),
-			},
+			Status:        l.level,
+			Code:          advisor.NameIsKeywordIdentifier.Int32(),
+			Title:         l.title,
+			Content:       fmt.Sprintf("Table name [%s] is a reserved keyword and should be avoided.", normalizedTableName),
+			StartPosition: advisor.ConvertANTLRLineToPosition(tableName.GetStart().GetLine()),
 		})
 	}
 }

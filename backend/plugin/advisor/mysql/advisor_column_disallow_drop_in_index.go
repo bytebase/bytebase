@@ -148,13 +148,11 @@ func (checker *columnDisallowDropInIndexChecker) EnterAlterTable(ctx *mysql.Alte
 		columnName := mysqlparser.NormalizeMySQLColumnInternalRef(item.ColumnInternalRef())
 		if !checker.canDrop(tableName, columnName) {
 			checker.adviceList = append(checker.adviceList, &storepb.Advice{
-				Status:  checker.level,
-				Code:    advisor.DropIndexColumn.Int32(),
-				Title:   checker.title,
-				Content: fmt.Sprintf("`%s`.`%s` cannot drop index column", tableName, columnName),
-				StartPosition: &storepb.Position{
-					Line: int32(checker.baseLine + item.GetStart().GetLine()),
-				},
+				Status:        checker.level,
+				Code:          advisor.DropIndexColumn.Int32(),
+				Title:         checker.title,
+				Content:       fmt.Sprintf("`%s`.`%s` cannot drop index column", tableName, columnName),
+				StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + item.GetStart().GetLine()),
 			})
 		}
 	}

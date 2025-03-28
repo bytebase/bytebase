@@ -11,7 +11,14 @@
       code: 1301
       title: column.comment
       content: The length of column `t`.`a` comment should be within 10 characters
-      detail: ""
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 1032
+      title: column.comment
+      content: Column `t`.`b` requires comments
       startposition:
         line: 2
         column: 0
@@ -19,19 +26,9 @@
     - status: 2
       code: 1032
       title: column.comment
-      content: Column `t`.`b` requires comments
-      detail: ""
+      content: Column `t`.`c` requires comments
       startposition:
         line: 3
-        column: 0
-      endposition: null
-    - status: 2
-      code: 1032
-      title: column.comment
-      content: Column `t`.`c` requires comments
-      detail: ""
-      startposition:
-        line: 4
         column: 0
       endposition: null
 - statement: |-
@@ -43,9 +40,8 @@
       code: 1032
       title: column.comment
       content: Column `t`.`b` requires comments
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null
 - statement: |-
@@ -57,18 +53,16 @@
       code: 1301
       title: column.comment
       content: The length of column `t`.`a` comment should be within 10 characters
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
     - status: 2
       code: 1032
       title: column.comment
       content: Column `t`.`b` requires comments
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null
 - statement: |-
@@ -80,18 +74,16 @@
       code: 1301
       title: column.comment
       content: The length of column `t`.`b` comment should be within 10 characters
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
     - status: 2
       code: 1032
       title: column.comment
       content: Column `t`.`b` requires comments
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null
 - statement: |-
@@ -103,17 +95,15 @@
       code: 1301
       title: column.comment
       content: The length of column `t`.`b` comment should be within 10 characters
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
     - status: 2
       code: 1301
       title: column.comment
       content: The length of column `t`.`b` comment should be within 10 characters
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null

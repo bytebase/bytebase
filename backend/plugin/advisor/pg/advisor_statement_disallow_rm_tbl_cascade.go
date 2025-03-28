@@ -9,6 +9,7 @@ import (
 	pgquery "github.com/pganalyze/pg_query_go/v5"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -57,10 +58,10 @@ func (*StatementDisallowRemoveTblCascadeAdvisor) Check(_ context.Context, checkC
 			Title:   string(checkCtx.Rule.Type),
 			Content: "The use of CASCADE is not permitted when removing a table",
 			Code:    advisor.StatementDisallowCascade.Int32(),
-			StartPosition: &storepb.Position{
-				Line:   int32(p.line + 1),
-				Column: int32(p.column + 1),
-			},
+			StartPosition: common.ConvertANTLRPositionToPosition(&common.ANTLRPosition{
+				Line:   int32(p.line),
+				Column: int32(p.column),
+			}, checkCtx.Statements),
 		})
 	}
 

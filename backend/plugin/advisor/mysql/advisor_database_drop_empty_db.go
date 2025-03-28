@@ -76,23 +76,19 @@ func (checker *allowDropEmptyDBChecker) EnterDropDatabase(ctx *mysql.DropDatabas
 	dbName := mysqlparser.NormalizeMySQLSchemaRef(ctx.SchemaRef())
 	if checker.catalog.Origin.DatabaseName() != dbName {
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{
-			Status:  checker.level,
-			Code:    advisor.NotCurrentDatabase.Int32(),
-			Title:   checker.title,
-			Content: fmt.Sprintf("Database `%s` that is trying to be deleted is not the current database `%s`", dbName, checker.catalog.Origin.DatabaseName()),
-			StartPosition: &storepb.Position{
-				Line: int32(checker.baseLine + ctx.GetStart().GetLine()),
-			},
+			Status:        checker.level,
+			Code:          advisor.NotCurrentDatabase.Int32(),
+			Title:         checker.title,
+			Content:       fmt.Sprintf("Database `%s` that is trying to be deleted is not the current database `%s`", dbName, checker.catalog.Origin.DatabaseName()),
+			StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
 		})
 	} else if !checker.catalog.Origin.HasNoTable() {
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{
-			Status:  checker.level,
-			Code:    advisor.DatabaseNotEmpty.Int32(),
-			Title:   checker.title,
-			Content: fmt.Sprintf("Database `%s` is not allowed to drop if not empty", dbName),
-			StartPosition: &storepb.Position{
-				Line: int32(checker.baseLine + ctx.GetStart().GetLine()),
-			},
+			Status:        checker.level,
+			Code:          advisor.DatabaseNotEmpty.Int32(),
+			Title:         checker.title,
+			Content:       fmt.Sprintf("Database `%s` is not allowed to drop if not empty", dbName),
+			StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
 		})
 	}
 }

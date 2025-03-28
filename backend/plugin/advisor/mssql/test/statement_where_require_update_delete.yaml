@@ -6,7 +6,7 @@
       title: statement.where.require.update-delete
       content: WHERE clause is required for UPDATE statement.
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: UPDATE MyTable SET a = 1 WHERE a = 1;
@@ -19,7 +19,7 @@
       title: statement.where.require.update-delete
       content: WHERE clause is required for DELETE statement.
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: DELETE FROM MyTable WHERE a = 1;

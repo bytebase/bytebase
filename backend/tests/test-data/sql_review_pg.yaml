@@ -14,22 +14,22 @@
   result:
     - |-
       {
-        "status": "SUCCESS",
-        "title": "OK"
+        "status":  "SUCCESS",
+        "title":  "OK"
       }
   run: false
 - statement: CREATE TABLE user(id);
   result:
     - |-
       {
-        "status": "ERROR",
-        "title": "Syntax error",
-        "content": "syntax error at or near \"user\"",
-        "code": 201,
-        "sqlReviewReport": {
-          "line": 1,
-          "startPosition": {
-            "line": 1
+        "status":  "ERROR",
+        "title":  "Syntax error",
+        "content":  "syntax error at or near \"user\"",
+        "code":  201,
+        "sqlReviewReport":  {
+          "line":  1,
+          "startPosition":  {
+            "line":  1
           }
         }
       }
@@ -46,131 +46,131 @@
   result:
     - |-
       {
-        "status": "ERROR",
-        "title": "table.require-pk",
-        "content": "Table \"public\".\"userTable\" requires PRIMARY KEY, related statement: \"CREATE TABLE \\\"userTable\\\"(\\n        id INT,\\n        name VARCHAR(255),\\n        \\\"roomId\\\" INT,\\n        CONSTRAINT uk1 UNIQUE (id, name),\\n        CONSTRAINT fk1 FOREIGN KEY (\\\"roomId\\\") REFERENCES room(id)\\n        );\"",
-        "code": 601,
-        "sqlReviewReport": {
-          "line": 7,
-          "startPosition": {
-            "line": 7
+        "status":  "ERROR",
+        "title":  "table.require-pk",
+        "content":  "Table \"public\".\"userTable\" requires PRIMARY KEY, related statement: \"CREATE TABLE \\\"userTable\\\"(\\n        id INT,\\n        name VARCHAR(255),\\n        \\\"roomId\\\" INT,\\n        CONSTRAINT uk1 UNIQUE (id, name),\\n        CONSTRAINT fk1 FOREIGN KEY (\\\"roomId\\\") REFERENCES room(id)\\n        );\"",
+        "code":  601,
+        "sqlReviewReport":  {
+          "line":  6,
+          "startPosition":  {
+            "line":  6
           }
         }
       }
     - |-
       {
-        "status": "ERROR",
-        "title": "table.no-foreign-key",
-        "content": "Foreign key is not allowed in the table \"public\".\"userTable\", related statement: \"CREATE TABLE \"userTable\"(\n        id INT,\n        name VARCHAR(255),\n        \"roomId\" INT,\n        CONSTRAINT uk1 UNIQUE (id, name),\n        CONSTRAINT fk1 FOREIGN KEY (\"roomId\") REFERENCES room(id)\n        );\"",
-        "code": 602,
-        "sqlReviewReport": {
-          "line": 7,
-          "startPosition": {
-            "line": 7
+        "status":  "ERROR",
+        "title":  "table.no-foreign-key",
+        "content":  "Foreign key is not allowed in the table \"public\".\"userTable\", related statement: \"CREATE TABLE \"userTable\"(\n        id INT,\n        name VARCHAR(255),\n        \"roomId\" INT,\n        CONSTRAINT uk1 UNIQUE (id, name),\n        CONSTRAINT fk1 FOREIGN KEY (\"roomId\") REFERENCES room(id)\n        );\"",
+        "code":  602,
+        "sqlReviewReport":  {
+          "line":  6,
+          "startPosition":  {
+            "line":  6
           }
         }
       }
     - |-
       {
-        "status": "WARNING",
-        "title": "naming.table",
-        "content": "\"userTable\" mismatches table naming convention, naming format should be \"^[a-z]+(_[a-z]+)*$\"",
-        "code": 301,
-        "sqlReviewReport": {
-          "line": 7,
-          "startPosition": {
-            "line": 7
+        "status":  "WARNING",
+        "title":  "naming.table",
+        "content":  "\"userTable\" mismatches table naming convention, naming format should be \"^[a-z]+(_[a-z]+)*$\"",
+        "code":  301,
+        "sqlReviewReport":  {
+          "line":  6,
+          "startPosition":  {
+            "line":  6
           }
         }
       }
     - |-
       {
-        "status": "WARNING",
-        "title": "naming.column",
-        "content": "\"userTable\".\"roomId\" mismatches column naming convention, naming format should be \"^[a-z]+(_[a-z]+)*$\"",
-        "code": 302,
-        "sqlReviewReport": {
-          "line": 4,
-          "startPosition": {
-            "line": 4
+        "status":  "WARNING",
+        "title":  "naming.column",
+        "content":  "\"userTable\".\"roomId\" mismatches column naming convention, naming format should be \"^[a-z]+(_[a-z]+)*$\"",
+        "code":  302,
+        "sqlReviewReport":  {
+          "line":  3,
+          "startPosition":  {
+            "line":  3
           }
         }
       }
     - |-
       {
-        "status": "WARNING",
-        "title": "naming.index.uk",
-        "content": "Unique key in table \"userTable\" mismatches the naming convention, expect \"^$|^uk_userTable_id_name$\" but found \"uk1\"",
-        "code": 304,
-        "sqlReviewReport": {
-          "line": 5,
-          "startPosition": {
-            "line": 5
+        "status":  "WARNING",
+        "title":  "naming.index.uk",
+        "content":  "Unique key in table \"userTable\" mismatches the naming convention, expect \"^$|^uk_userTable_id_name$\" but found \"uk1\"",
+        "code":  304,
+        "sqlReviewReport":  {
+          "line":  4,
+          "startPosition":  {
+            "line":  4
           }
         }
       }
     - |-
       {
-        "status": "WARNING",
-        "title": "naming.index.fk",
-        "content": "Foreign key in table \"userTable\" mismatches the naming convention, expect \"^$|^fk_userTable_roomId_room_id$\" but found \"fk1\"",
-        "code": 305,
-        "sqlReviewReport": {
-          "line": 6,
-          "startPosition": {
-            "line": 6
+        "status":  "WARNING",
+        "title":  "naming.index.fk",
+        "content":  "Foreign key in table \"userTable\" mismatches the naming convention, expect \"^$|^fk_userTable_roomId_room_id$\" but found \"fk1\"",
+        "code":  305,
+        "sqlReviewReport":  {
+          "line":  5,
+          "startPosition":  {
+            "line":  5
           }
         }
       }
     - |-
       {
-        "status": "WARNING",
-        "title": "column.required",
-        "content": "Table \"userTable\" requires columns: created_ts, creator_id, updated_ts, updater_id",
-        "code": 401,
-        "sqlReviewReport": {
-          "line": 7,
-          "startPosition": {
-            "line": 7
+        "status":  "WARNING",
+        "title":  "column.required",
+        "content":  "Table \"userTable\" requires columns: created_ts, creator_id, updated_ts, updater_id",
+        "code":  401,
+        "sqlReviewReport":  {
+          "line":  6,
+          "startPosition":  {
+            "line":  6
           }
         }
       }
     - |-
       {
-        "status": "WARNING",
-        "title": "column.no-null",
-        "content": "Column \"id\" in \"public\".\"userTable\" cannot have NULL value",
-        "code": 402,
-        "sqlReviewReport": {
-          "line": 2,
-          "startPosition": {
-            "line": 2
+        "status":  "WARNING",
+        "title":  "column.no-null",
+        "content":  "Column \"id\" in \"public\".\"userTable\" cannot have NULL value",
+        "code":  402,
+        "sqlReviewReport":  {
+          "line":  1,
+          "startPosition":  {
+            "line":  1
           }
         }
       }
     - |-
       {
-        "status": "WARNING",
-        "title": "column.no-null",
-        "content": "Column \"name\" in \"public\".\"userTable\" cannot have NULL value",
-        "code": 402,
-        "sqlReviewReport": {
-          "line": 3,
-          "startPosition": {
-            "line": 3
+        "status":  "WARNING",
+        "title":  "column.no-null",
+        "content":  "Column \"name\" in \"public\".\"userTable\" cannot have NULL value",
+        "code":  402,
+        "sqlReviewReport":  {
+          "line":  2,
+          "startPosition":  {
+            "line":  2
           }
         }
       }
     - |-
       {
-        "status": "WARNING",
-        "title": "column.no-null",
-        "content": "Column \"roomId\" in \"public\".\"userTable\" cannot have NULL value",
-        "code": 402,
-        "sqlReviewReport": {
-          "line": 4,
-          "startPosition": {
-            "line": 4
+        "status":  "WARNING",
+        "title":  "column.no-null",
+        "content":  "Column \"roomId\" in \"public\".\"userTable\" cannot have NULL value",
+        "code":  402,
+        "sqlReviewReport":  {
+          "line":  3,
+          "startPosition":  {
+            "line":  3
           }
         }
       }
@@ -179,15 +179,12 @@
   result:
     - |-
       {
-        "status": "ERROR",
-        "title": "statement.where.require.update-delete",
-        "content": "\"DELETE FROM t\" requires WHERE clause",
-        "code": 202,
-        "sqlReviewReport": {
-          "line": 1,
-          "startPosition": {
-            "line": 1
-          }
+        "status":  "ERROR",
+        "title":  "statement.where.require.update-delete",
+        "content":  "\"DELETE FROM t\" requires WHERE clause",
+        "code":  202,
+        "sqlReviewReport":  {
+          "startPosition":  {}
         }
       }
   run: false
@@ -195,15 +192,12 @@
   result:
     - |-
       {
-        "status": "ERROR",
-        "title": "statement.where.no-leading-wildcard-like",
-        "content": "\"DELETE FROM t WHERE a like '%abc'\" uses leading wildcard LIKE",
-        "code": 204,
-        "sqlReviewReport": {
-          "line": 1,
-          "startPosition": {
-            "line": 1
-          }
+        "status":  "ERROR",
+        "title":  "statement.where.no-leading-wildcard-like",
+        "content":  "\"DELETE FROM t WHERE a like '%abc'\" uses leading wildcard LIKE",
+        "code":  204,
+        "sqlReviewReport":  {
+          "startPosition":  {}
         }
       }
   run: false
@@ -211,16 +205,16 @@
   result:
     - |-
       {
-        "status": "SUCCESS",
-        "title": "OK"
+        "status":  "SUCCESS",
+        "title":  "OK"
       }
   run: false
 - statement: INSERT INTO t VALUES (1), (2)
   result:
     - |-
       {
-        "status": "SUCCESS",
-        "title": "OK"
+        "status":  "SUCCESS",
+        "title":  "OK"
       }
   run: false
 - statement: |-
@@ -236,23 +230,20 @@
   result:
     - |-
       {
-        "status": "SUCCESS",
-        "title": "OK"
+        "status":  "SUCCESS",
+        "title":  "OK"
       }
   run: true
 - statement: ALTER INDEX pk_tech_book_id RENAME TO pk1
   result:
     - |-
       {
-        "status": "WARNING",
-        "title": "naming.index.pk",
-        "content": "Primary key in table \"tech_book\" mismatches the naming convention, expect \"^$|^pk_tech_book_id$\" but found \"pk1\"",
-        "code": 306,
-        "sqlReviewReport": {
-          "line": 1,
-          "startPosition": {
-            "line": 1
-          }
+        "status":  "WARNING",
+        "title":  "naming.index.pk",
+        "content":  "Primary key in table \"tech_book\" mismatches the naming convention, expect \"^$|^pk_tech_book_id$\" but found \"pk1\"",
+        "code":  306,
+        "sqlReviewReport":  {
+          "startPosition":  {}
         }
       }
   run: false

@@ -85,35 +85,29 @@ func (checker *statementSelectFullTableScanChecker) EnterSelectStatement(ctx *my
 	res, err := advisor.Query(checker.ctx, advisor.QueryContext{}, checker.driver, storepb.Engine_MYSQL, fmt.Sprintf("EXPLAIN %s", query))
 	if err != nil {
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{
-			Status:  checker.level,
-			Code:    advisor.StatementCheckSelectFullTableScanFailed.Int32(),
-			Title:   checker.title,
-			Content: fmt.Sprintf("Failed to check full table scan: %s, with error: %s", query, err),
-			StartPosition: &storepb.Position{
-				Line: int32(checker.baseLine + ctx.GetStart().GetLine()),
-			},
+			Status:        checker.level,
+			Code:          advisor.StatementCheckSelectFullTableScanFailed.Int32(),
+			Title:         checker.title,
+			Content:       fmt.Sprintf("Failed to check full table scan: %s, with error: %s", query, err),
+			StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
 		})
 	} else {
 		hasFullScan, tables, err := hasTableFullScan(res)
 		if err != nil {
 			checker.adviceList = append(checker.adviceList, &storepb.Advice{
-				Status:  checker.level,
-				Code:    advisor.Internal.Int32(),
-				Title:   checker.title,
-				Content: fmt.Sprintf("Failed to check full table scan: %s, with error: %s", query, err),
-				StartPosition: &storepb.Position{
-					Line: int32(checker.baseLine + ctx.GetStart().GetLine()),
-				},
+				Status:        checker.level,
+				Code:          advisor.Internal.Int32(),
+				Title:         checker.title,
+				Content:       fmt.Sprintf("Failed to check full table scan: %s, with error: %s", query, err),
+				StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
 			})
 		} else if hasFullScan {
 			checker.adviceList = append(checker.adviceList, &storepb.Advice{
-				Status:  checker.level,
-				Code:    advisor.StatementHasTableFullScan.Int32(),
-				Title:   checker.title,
-				Content: fmt.Sprintf("Full table scan detected on table(s): %s", tables),
-				StartPosition: &storepb.Position{
-					Line: int32(checker.baseLine + ctx.GetStart().GetLine()),
-				},
+				Status:        checker.level,
+				Code:          advisor.StatementHasTableFullScan.Int32(),
+				Title:         checker.title,
+				Content:       fmt.Sprintf("Full table scan detected on table(s): %s", tables),
+				StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
 			})
 		}
 	}

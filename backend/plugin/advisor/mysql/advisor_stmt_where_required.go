@@ -96,12 +96,10 @@ func (checker *whereRequirementChecker) EnterQuerySpecification(ctx *mysql.Query
 
 func (checker *whereRequirementChecker) handleWhereClause(lineNumber int) {
 	checker.adviceList = append(checker.adviceList, &storepb.Advice{
-		Status:  checker.level,
-		Code:    advisor.StatementNoWhere.Int32(),
-		Title:   checker.title,
-		Content: fmt.Sprintf("\"%s\" requires WHERE clause", checker.text),
-		StartPosition: &storepb.Position{
-			Line: int32(checker.baseLine + lineNumber),
-		},
+		Status:        checker.level,
+		Code:          advisor.StatementNoWhere.Int32(),
+		Title:         checker.title,
+		Content:       fmt.Sprintf("\"%s\" requires WHERE clause", checker.text),
+		StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + lineNumber),
 	})
 }

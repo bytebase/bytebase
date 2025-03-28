@@ -14,6 +14,6 @@
       title: table.disallow-ddl
       content: DDL is disallowed on table MySchema.Identifier.
       startposition:
-        line: 5
+        line: 4
         column: 0
       endposition: null

@@ -5,9 +5,8 @@
       code: 203
       title: statement.select.no-select-all
       content: '"SELECT * FROM t;" uses SELECT all'
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: SELECT a, b FROM t;
@@ -22,18 +21,16 @@
       code: 203
       title: statement.select.no-select-all
       content: '"SELECT * FROM t;" uses SELECT all'
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null
     - status: 2
       code: 203
       title: statement.select.no-select-all
       content: '"SELECT a, b FROM (SELECT * from t1 JOIN t2) t;" uses SELECT all'
-      detail: ""
       startposition:
-        line: 3
+        line: 2
         column: 0
       endposition: null
 - statement: |-
@@ -50,9 +47,8 @@
         "SELECT * FROM t1
         UNION
         SELECT * FROM t2;" uses SELECT all
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null
     - status: 2
@@ -62,9 +58,8 @@
         "SELECT * FROM t1
         UNION
         SELECT * FROM t2;" uses SELECT all
-      detail: ""
       startposition:
-        line: 4
+        line: 3
         column: 0
       endposition: null
 - statement: |-
@@ -81,9 +76,8 @@
         "WITH cte AS (
           SELECT * FROM a
         ) SELECT * FROM cte;" uses SELECT all
-      detail: ""
       startposition:
-        line: 3
+        line: 2
         column: 0
       endposition: null
     - status: 2
@@ -93,9 +87,8 @@
         "WITH cte AS (
           SELECT * FROM a
         ) SELECT * FROM cte;" uses SELECT all
-      detail: ""
       startposition:
-        line: 4
+        line: 3
         column: 0
       endposition: null
 - statement: |-
@@ -112,8 +105,7 @@
         "SELECT *
         FROM a
         INNER JOIN b USING(id);" uses SELECT all
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null

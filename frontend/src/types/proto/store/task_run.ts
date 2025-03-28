@@ -27,7 +27,10 @@ export interface TaskRunResult {
   priorBackupDetail: PriorBackupDetail | undefined;
 }
 
-/** The following fields are used for error reporting. */
+/**
+ * The following fields are used for error reporting.
+ * TODO(zp): Use common Position instead.
+ */
 export interface TaskRunResult_Position {
   line: number;
   column: number;

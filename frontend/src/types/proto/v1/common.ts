@@ -454,8 +454,14 @@ export function exportFormatToNumber(object: ExportFormat): number {
   }
 }
 
+/**
+ * Position in a text expressed as zero-based line and zero-based column byte
+ * offset.
+ */
 export interface Position {
+  /** Line position in a text (zero-based). */
   line: number;
+  /** Column position in a text (zero-based), equivalent to byte offset. */
   column: number;
 }
 

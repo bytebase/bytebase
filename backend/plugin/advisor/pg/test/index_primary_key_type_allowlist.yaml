@@ -12,9 +12,8 @@
       code: 803
       title: index.primary-key-type-allowlist
       content: The column "a" is one of the primary key, but its type "character varying(20)" is not in allowlist
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null
 - statement: |-
@@ -28,8 +27,7 @@
       code: 803
       title: index.primary-key-type-allowlist
       content: The column "a" is one of the primary key, but its type "character varying(20)" is not in allowlist
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null

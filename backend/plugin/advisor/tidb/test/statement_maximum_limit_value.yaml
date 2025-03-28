@@ -6,8 +6,7 @@
       code: 222
       title: statement.maximum-limit-value
       content: The limit value 1000000 exceeds the maximum allowed value 1000
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null

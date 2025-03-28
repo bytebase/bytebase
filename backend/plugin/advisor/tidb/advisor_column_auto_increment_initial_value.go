@@ -72,13 +72,11 @@ func (checker *columnAutoIncrementInitialValueChecker) Enter(in ast.Node) (ast.N
 			if option.Tp == ast.TableOptionAutoIncrement {
 				if option.UintValue != uint64(checker.value) {
 					checker.adviceList = append(checker.adviceList, &storepb.Advice{
-						Status:  checker.level,
-						Code:    advisor.AutoIncrementColumnInitialValueNotMatch.Int32(),
-						Title:   checker.title,
-						Content: fmt.Sprintf("The initial auto-increment value in table `%s` is %v, which doesn't equal %v", createTable.Table.Name.O, option.UintValue, checker.value),
-						StartPosition: &storepb.Position{
-							Line: int32(checker.line),
-						},
+						Status:        checker.level,
+						Code:          advisor.AutoIncrementColumnInitialValueNotMatch.Int32(),
+						Title:         checker.title,
+						Content:       fmt.Sprintf("The initial auto-increment value in table `%s` is %v, which doesn't equal %v", createTable.Table.Name.O, option.UintValue, checker.value),
+						StartPosition: advisor.ConvertANTLRLineToPosition(checker.line),
 					})
 				}
 			}

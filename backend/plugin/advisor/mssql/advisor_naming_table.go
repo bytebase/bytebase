@@ -81,24 +81,20 @@ func (l *namingTableListener) EnterCreate_table(ctx *parser.Create_tableContext)
 
 	if !l.format.MatchString(tableName) {
 		l.adviceList = append(l.adviceList, &storepb.Advice{
-			Status:  l.level,
-			Code:    advisor.NamingTableConventionMismatch.Int32(),
-			Title:   l.title,
-			Content: fmt.Sprintf(`%s mismatches table naming convention, naming format should be %q`, tableName, l.format),
-			StartPosition: &storepb.Position{
-				Line: int32(ctx.GetStart().GetLine()),
-			},
+			Status:        l.level,
+			Code:          advisor.NamingTableConventionMismatch.Int32(),
+			Title:         l.title,
+			Content:       fmt.Sprintf(`%s mismatches table naming convention, naming format should be %q`, tableName, l.format),
+			StartPosition: advisor.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
 		})
 	}
 	if l.maxLength > 0 && len(tableName) > l.maxLength {
 		l.adviceList = append(l.adviceList, &storepb.Advice{
-			Status:  l.level,
-			Code:    advisor.NamingTableConventionMismatch.Int32(),
-			Title:   l.title,
-			Content: fmt.Sprintf(`%s mismatches table naming convention, its length should be within %d characters`, tableName, l.maxLength),
-			StartPosition: &storepb.Position{
-				Line: int32(ctx.GetStart().GetLine()),
-			},
+			Status:        l.level,
+			Code:          advisor.NamingTableConventionMismatch.Int32(),
+			Title:         l.title,
+			Content:       fmt.Sprintf(`%s mismatches table naming convention, its length should be within %d characters`, tableName, l.maxLength),
+			StartPosition: advisor.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
 		})
 	}
 }
@@ -168,24 +164,20 @@ func (l *namingTableListener) EnterExecute_body(ctx *parser.Execute_bodyContext)
 
 	if !l.format.MatchString(newTableName) {
 		l.adviceList = append(l.adviceList, &storepb.Advice{
-			Status:  l.level,
-			Code:    advisor.NamingTableConventionMismatch.Int32(),
-			Title:   l.title,
-			Content: fmt.Sprintf(`%s mismatches table naming convention, naming format should be %q`, newTableName, l.format),
-			StartPosition: &storepb.Position{
-				Line: int32(ctx.GetStart().GetLine()),
-			},
+			Status:        l.level,
+			Code:          advisor.NamingTableConventionMismatch.Int32(),
+			Title:         l.title,
+			Content:       fmt.Sprintf(`%s mismatches table naming convention, naming format should be %q`, newTableName, l.format),
+			StartPosition: advisor.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
 		})
 	}
 	if l.maxLength > 0 && len(newTableName) > l.maxLength {
 		l.adviceList = append(l.adviceList, &storepb.Advice{
-			Status:  l.level,
-			Code:    advisor.NamingTableConventionMismatch.Int32(),
-			Title:   l.title,
-			Content: fmt.Sprintf(`%s mismatches table naming convention, its length should be within %d characters`, newTableName, l.maxLength),
-			StartPosition: &storepb.Position{
-				Line: int32(ctx.GetStart().GetLine()),
-			},
+			Status:        l.level,
+			Code:          advisor.NamingTableConventionMismatch.Int32(),
+			Title:         l.title,
+			Content:       fmt.Sprintf(`%s mismatches table naming convention, its length should be within %d characters`, newTableName, l.maxLength),
+			StartPosition: advisor.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
 		})
 	}
 }

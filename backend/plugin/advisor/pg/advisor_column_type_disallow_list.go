@@ -137,13 +137,11 @@ func (checker *columnTypeDisallowListChecker) Visit(in ast.Node) ast.Visitor {
 
 	for _, column := range columnList {
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{
-			Status:  checker.level,
-			Code:    advisor.DisabledColumnType.Int32(),
-			Title:   checker.title,
-			Content: fmt.Sprintf("Disallow column type %s but column \"%s\".\"%s\" is", column.tp, column.table, column.column),
-			StartPosition: &storepb.Position{
-				Line: int32(column.line),
-			},
+			Status:        checker.level,
+			Code:          advisor.DisabledColumnType.Int32(),
+			Title:         checker.title,
+			Content:       fmt.Sprintf("Disallow column type %s but column \"%s\".\"%s\" is", column.tp, column.table, column.column),
+			StartPosition: advisor.ConvertANTLRLineToPosition(column.line),
 		})
 	}
 	return checker

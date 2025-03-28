@@ -7,9 +7,8 @@
       code: 303
       title: naming.index.idx
       content: Index in table "tech_book" mismatches the naming convention, expect "^$|^idx_tech_book_id_name$" but found "tech_book_id_name"
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: CREATE INDEX wfdtqyetsyoovcvikjlyfukxyjxxxhifl ON tech_book(id, name)
@@ -19,9 +18,8 @@
       code: 303
       title: naming.index.idx
       content: Index in table "tech_book" mismatches the naming convention, expect "^$|^idx_tech_book_id_name$" but found "wfdtqyetsyoovcvikjlyfukxyjxxxhifl"
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: ALTER INDEX old_index RENAME TO idx_tech_book_id_name
@@ -33,8 +31,7 @@
       code: 303
       title: naming.index.idx
       content: Index in table "tech_book" mismatches the naming convention, expect "^$|^idx_tech_book_id_name$" but found "idx_tech_book"
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null

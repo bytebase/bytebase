@@ -118,24 +118,20 @@ func (checker *namingAutoIncrementColumnChecker) Enter(in ast.Node) (ast.Node, b
 	for _, column := range columnList {
 		if !checker.format.MatchString(column.name) {
 			checker.adviceList = append(checker.adviceList, &storepb.Advice{
-				Status:  checker.level,
-				Code:    advisor.NamingAutoIncrementColumnConventionMismatch.Int32(),
-				Title:   checker.title,
-				Content: fmt.Sprintf("`%s`.`%s` mismatches auto_increment column naming convention, naming format should be %q", tableName, column.name, checker.format),
-				StartPosition: &storepb.Position{
-					Line: int32(column.line),
-				},
+				Status:        checker.level,
+				Code:          advisor.NamingAutoIncrementColumnConventionMismatch.Int32(),
+				Title:         checker.title,
+				Content:       fmt.Sprintf("`%s`.`%s` mismatches auto_increment column naming convention, naming format should be %q", tableName, column.name, checker.format),
+				StartPosition: advisor.ConvertANTLRLineToPosition(column.line),
 			})
 		}
 		if checker.maxLength > 0 && len(column.name) > checker.maxLength {
 			checker.adviceList = append(checker.adviceList, &storepb.Advice{
-				Status:  checker.level,
-				Code:    advisor.NamingAutoIncrementColumnConventionMismatch.Int32(),
-				Title:   checker.title,
-				Content: fmt.Sprintf("`%s`.`%s` mismatches auto_increment column naming convention, its length should be within %d characters", tableName, column.name, checker.maxLength),
-				StartPosition: &storepb.Position{
-					Line: int32(column.line),
-				},
+				Status:        checker.level,
+				Code:          advisor.NamingAutoIncrementColumnConventionMismatch.Int32(),
+				Title:         checker.title,
+				Content:       fmt.Sprintf("`%s`.`%s` mismatches auto_increment column naming convention, its length should be within %d characters", tableName, column.name, checker.maxLength),
+				StartPosition: advisor.ConvertANTLRLineToPosition(column.line),
 			})
 		}
 	}
