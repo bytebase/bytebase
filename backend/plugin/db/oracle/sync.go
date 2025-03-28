@@ -91,11 +91,15 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get table columns from database %q", d.databaseName)
 	}
-	tableMap, err := getTables(txn, d.databaseName, columnMap)
+	tableTriggerMap, viewTriggerMap, err := getTriggers(txn, d.databaseName)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get triggers from database %q", d.databaseName)
+	}
+	tableMap, err := getTables(txn, d.databaseName, columnMap, tableTriggerMap)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get tables from database %q", d.databaseName)
 	}
-	viewMap, err := getViews(txn, d.databaseName, columnMap)
+	viewMap, err := getViews(txn, d.databaseName, columnMap, viewTriggerMap)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get views from database %q", d.databaseName)
 	}
@@ -204,8 +208,66 @@ func getSchemas(txn *sql.Tx) ([]string, error) {
 	return result, nil
 }
 
+func getTriggers(txn *sql.Tx, schemaName string) (map[db.TableKey][]*storepb.TriggerMetadata, map[db.TableKey][]*storepb.TriggerMetadata, error) {
+	tableTriggerMap := make(map[db.TableKey][]*storepb.TriggerMetadata)
+	viewTriggerMap := make(map[db.TableKey][]*storepb.TriggerMetadata)
+
+	query := fmt.Sprintf(`
+		SELECT TRIGGER_NAME, TABLE_NAME, DESCRIPTION, TRIGGER_BODY, BASE_OBJECT_TYPE, TRIGGER_TYPE, TRIGGERING_EVENT
+		FROM sys.all_triggers
+		WHERE OWNER = '%s' AND TABLE_NAME is NOT NULL AND (BASE_OBJECT_TYPE = 'TABLE' OR BASE_OBJECT_TYPE = 'VIEW')
+		ORDER BY TRIGGER_NAME`, schemaName)
+
+	slog.Debug("running get triggers query")
+	rows, err := txn.Query(query)
+	if err != nil {
+		return nil, nil, util.FormatErrorWithQuery(err, query)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var triggerName, tableName, description, triggerBody, baseObjectType, triggerType, triggeringEvent sql.NullString
+		if err := rows.Scan(&triggerName, &tableName, &description, &triggerBody, &baseObjectType, &triggerType, &triggeringEvent); err != nil {
+			return nil, nil, err
+		}
+		if !triggerName.Valid || !tableName.Valid || !description.Valid || !triggerBody.Valid || !baseObjectType.Valid {
+			continue
+		}
+		key := db.TableKey{Schema: schemaName, Table: tableName.String}
+		trigger := &storepb.TriggerMetadata{
+			Name: triggerName.String,
+			Body: constructTriggerBody(description.String, triggerBody.String),
+		}
+		if triggerType.Valid {
+			trigger.Timing = triggerType.String
+		}
+		if triggeringEvent.Valid {
+			trigger.Event = triggeringEvent.String
+		}
+
+		if baseObjectType.String == "TABLE" {
+			tableTriggerMap[key] = append(tableTriggerMap[key], trigger)
+		} else {
+			viewTriggerMap[key] = append(viewTriggerMap[key], trigger)
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return nil, nil, util.FormatErrorWithQuery(err, query)
+	}
+
+	return tableTriggerMap, viewTriggerMap, nil
+}
+
+func constructTriggerBody(description, triggerBody string) string {
+	var buf strings.Builder
+	_, _ = buf.WriteString("CREATE OR REPLACE TRIGGER ")
+	_, _ = buf.WriteString(description)
+	_, _ = buf.WriteString(triggerBody)
+	return buf.String()
+}
+
 // getTables gets all tables of a database.
-func getTables(txn *sql.Tx, schemaName string, columnMap map[db.TableKey][]*storepb.ColumnMetadata) (map[string][]*storepb.TableMetadata, error) {
+func getTables(txn *sql.Tx, schemaName string, columnMap map[db.TableKey][]*storepb.ColumnMetadata, triggerMap map[db.TableKey][]*storepb.TriggerMetadata) (map[string][]*storepb.TableMetadata, error) {
 	indexMap, checkConstraintMap, foreignKeyMap, err := getIndexesAndConstraints(txn, schemaName)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get indices")
@@ -257,6 +319,7 @@ func getTables(txn *sql.Tx, schemaName string, columnMap map[db.TableKey][]*stor
 		table.Indexes = indexMap[key]
 		table.CheckConstraints = checkConstraintMap[key]
 		table.ForeignKeys = foreignKeyMap[key]
+		table.Triggers = triggerMap[key]
 		if comment, ok := tableCommentMap[db.TableKey{Schema: schemaName, Table: table.Name}]; ok {
 			table.Comment = comment
 		}
@@ -774,7 +837,7 @@ func getIndexesAndConstraints(txn *sql.Tx, schemaName string) (map[db.TableKey][
 }
 
 // getViews gets all views of a database.
-func getViews(txn *sql.Tx, schemaName string, columnMap map[db.TableKey][]*storepb.ColumnMetadata) (map[string][]*storepb.ViewMetadata, error) {
+func getViews(txn *sql.Tx, schemaName string, columnMap map[db.TableKey][]*storepb.ColumnMetadata, triggerMap map[db.TableKey][]*storepb.TriggerMetadata) (map[string][]*storepb.ViewMetadata, error) {
 	viewMap := make(map[string][]*storepb.ViewMetadata)
 
 	query := fmt.Sprintf(`
@@ -798,6 +861,7 @@ func getViews(txn *sql.Tx, schemaName string, columnMap map[db.TableKey][]*store
 		}
 		key := db.TableKey{Schema: schemaName, Table: view.Name}
 		view.Columns = columnMap[key]
+		view.Triggers = triggerMap[key]
 
 		viewMap[schemaName] = append(viewMap[schemaName], view)
 	}
