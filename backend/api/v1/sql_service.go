@@ -196,9 +196,10 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 		return nil, err
 	}
 	driver, err := s.dbFactory.GetDataSourceDriver(ctx, instance, dataSource, db.ConnectionContext{
-		DatabaseName: database.DatabaseName,
-		DataShare:    database.Metadata.GetDatashare(),
-		ReadOnly:     dataSource.GetType() == storepb.DataSourceType_READ_ONLY,
+		DatabaseName:         database.DatabaseName,
+		DataShare:            database.Metadata.GetDatashare(),
+		ReadOnly:             dataSource.GetType() == storepb.DataSourceType_READ_ONLY,
+		OperationalComponent: "sql-query",
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get database driver: %v", err)
@@ -822,9 +823,10 @@ func DoExport(
 		return nil, 0, err
 	}
 	driver, err := dbFactory.GetDataSourceDriver(ctx, instance, dataSource, db.ConnectionContext{
-		DatabaseName: database.DatabaseName,
-		DataShare:    database.Metadata.GetDatashare(),
-		ReadOnly:     true,
+		DatabaseName:         database.DatabaseName,
+		DataShare:            database.Metadata.GetDatashare(),
+		ReadOnly:             true,
+		OperationalComponent: "do-export",
 	})
 	if err != nil {
 		return nil, 0, status.Errorf(codes.Internal, "failed to get database driver: %v", err)
