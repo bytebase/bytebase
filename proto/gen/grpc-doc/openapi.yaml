@@ -9903,6 +9903,7 @@ components:
                         - DATABRICKS
                         - COCKROACHDB
                         - COSMOSDB
+                        - TRINO
                     type: string
                     format: enum
                 activation:
@@ -12325,6 +12326,7 @@ components:
                         - DATABRICKS
                         - COCKROACHDB
                         - COSMOSDB
+                        - TRINO
                     type: string
                     format: enum
                 comment:
@@ -12393,6 +12395,7 @@ components:
                         - DATABRICKS
                         - COCKROACHDB
                         - COSMOSDB
+                        - TRINO
                     type: string
                     format: enum
                 enabled:
@@ -12435,6 +12438,7 @@ components:
                         - DATABRICKS
                         - COCKROACHDB
                         - COSMOSDB
+                        - TRINO
                     type: string
                     format: enum
                 category:
@@ -12477,6 +12481,7 @@ components:
                         - DATABRICKS
                         - COCKROACHDB
                         - COSMOSDB
+                        - TRINO
                     type: string
                     format: enum
                 category:

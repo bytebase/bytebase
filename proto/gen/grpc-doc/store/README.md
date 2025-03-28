@@ -422,6 +422,7 @@ Used internally for obfuscating the page token.
 | DATABRICKS | 24 |  |
 | COCKROACHDB | 25 |  |
 | COSMOSDB | 26 |  |
+| TRINO | 27 |  |
 
 
 
