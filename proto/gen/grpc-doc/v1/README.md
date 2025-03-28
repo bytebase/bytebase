@@ -833,6 +833,7 @@
 | DATABRICKS | 24 |  |
 | COCKROACHDB | 25 |  |
 | COSMOSDB | 26 |  |
+| TRINO | 27 |  |
 
 
 
