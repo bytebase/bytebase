@@ -29,10 +29,11 @@ import {
   type SQLEditorConnection,
 } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
-import type {
-  SchemaMetadata,
-  TableMetadata,
-  ViewMetadata,
+import {
+  GetSchemaStringRequest_ObjectType,
+  type SchemaMetadata,
+  type TableMetadata,
+  type ViewMetadata,
 } from "@/types/proto/v1/database_service";
 import { DataSource, DataSourceType } from "@/types/proto/v1/instance_service";
 import {
@@ -407,6 +408,25 @@ export const useDropdown = () => {
           copyToClipboard(name);
         },
       });
+      if (type === 'view') {
+       const {db, schema, view} = target as NodeTarget<"view">;
+       if (supportGetStringSchema(db.instanceResource.engine)) {
+          items.push({
+            key: "view-schema-text",
+            label: t("sql-editor.view-schema-text"),
+            icon: () => <CodeIcon class="w-4 h-4" />,
+            onSelect: () => {
+              schemaViewer.value = {
+                database: db,
+                schema: schema.name,
+                object: view.name,
+                type: GetSchemaStringRequest_ObjectType.VIEW
+              };
+            },
+          });
+        }
+      }
+
       if (type === "table") {
         const { db, schema, table } = target as NodeTarget<"table">;
 
@@ -429,7 +449,8 @@ export const useDropdown = () => {
               schemaViewer.value = {
                 database: db,
                 schema: schema.name,
-                table: table.name,
+                object: table.name,
+                type: GetSchemaStringRequest_ObjectType.TABLE,
               };
             },
           });
