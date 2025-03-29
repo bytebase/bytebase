@@ -14,19 +14,26 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, h, watch } from "vue";
+import { computed, h, watch, reactive, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
-import { useInstanceResourceList } from "@/store";
+import { useInstanceResourceList, useInstanceV1Store } from "@/store";
 import {
   UNKNOWN_INSTANCE_NAME,
   isValidEnvironmentName,
+  isValidInstanceName,
   unknownInstance,
+  type ComposedInstance,
 } from "@/types";
-import { type Engine } from "@/types/proto/v1/common";
+import { type Engine, engineToJSON } from "@/types/proto/v1/common";
 import type { InstanceResource } from "@/types/proto/v1/instance_service";
 import { supportedEngineV1List } from "@/utils";
 import { InstanceV1EngineIcon } from "../Model/Instance";
 import ResourceSelect from "./ResourceSelect.vue";
+
+interface LocalState {
+  loading: boolean;
+  rawInstanceList: ComposedInstance[];
+}
 
 const props = withDefaults(
   defineProps<{
@@ -53,6 +60,12 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 const instanceList = useInstanceResourceList();
+const instanceStore = useInstanceV1Store();
+
+const state = reactive<LocalState>({
+  loading: true,
+  rawInstanceList: [],
+});
 
 const rawInstanceList = computed(() => {
   let list = [...instanceList.value];
@@ -65,6 +78,29 @@ const rawInstanceList = computed(() => {
   list = list.filter((instance) =>
     props.allowedEngineList.includes(instance.engine)
   );
+  return list;
+});
+
+const initSelectedInstance = async (instanceName: string[]) => {
+  if (isValidInstanceName(instanceName)) {
+    const instance = await instanceStore.getOrFetchInstanceByName(instanceName);
+    if (!state.rawInstanceList.find((ins) => ins.name === instance.name)) {
+      state.rawInstanceList.unshift(instance);
+    }
+  }
+};
+
+const filterParams = computed(() => {
+  const list = [];
+  if (isValidEnvironmentName(props.environmentName)) {
+    list.push(`environment == "${props.environmentName}"`);
+  }
+  if (props.allowedEngineList.length > 0) {
+    list.push(
+      `engine in [${props.allowedEngineList.map((e) => `"${engineToJSON(e)}"`).join(", ")}]`
+    );
+  }
+
   return list;
 });
 
