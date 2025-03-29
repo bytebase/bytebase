@@ -18,7 +18,7 @@ const instanceRoutes: RouteRecordRaw[] = [
         path: "",
         name: INSTANCE_ROUTE_DETAIL,
         meta: {
-          requiredWorkspacePermissionList: () => ["bb.instances.get"],
+          requiredPermissionList: () => ["bb.instances.get"],
         },
         component: () => import("@/views/InstanceDetail.vue"),
         props: true,

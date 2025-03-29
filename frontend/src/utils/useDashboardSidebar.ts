@@ -11,9 +11,9 @@ import {
   SettingsIcon,
 } from "lucide-vue-next";
 import { computed, h } from "vue";
-import type { RouteRecordRaw } from "vue-router";
 import { useRoute } from "vue-router";
-import type { SidebarItem } from "@/components/CommonSidebar.vue";
+import type { SidebarItem } from "@/components/v2/Sidebar/CommonSidebar.vue";
+import { getFlattenRoutes } from "@/components/v2/Sidebar/utils.ts";
 import { t } from "@/plugins/i18n";
 import workspaceRoutes from "@/router/dashboard/workspace";
 import {
@@ -44,7 +44,6 @@ import {
   SETTING_ROUTE_WORKSPACE_ARCHIVE,
 } from "@/router/dashboard/workspaceSetting";
 import { useAppFeature, usePermissionStore } from "@/store";
-import type { Permission } from "@/types";
 import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
@@ -104,41 +103,6 @@ export const useDashboardSidebar = () => {
             .includes("router-link-active"),
         children: filterSidebarByPermissions(item.children ?? []),
       }));
-  };
-
-  const getFlattenRoutes = (
-    routes: RouteRecordRaw[],
-    permissions: Permission[] = []
-  ): {
-    name: string;
-    permissions: Permission[];
-  }[] => {
-    return routes.reduce(
-      (list, workspaceRoute) => {
-        const requiredWorkspacePermissionListFunc =
-          workspaceRoute.meta?.requiredWorkspacePermissionList;
-        let requiredPermissionList = requiredWorkspacePermissionListFunc
-          ? requiredWorkspacePermissionListFunc()
-          : [];
-        if (requiredPermissionList.length === 0) {
-          requiredPermissionList = permissions;
-        }
-
-        if (workspaceRoute.name && workspaceRoute.name.toString() !== "") {
-          list.push({
-            name: workspaceRoute.name.toString(),
-            permissions: requiredPermissionList,
-          });
-        }
-        if (workspaceRoute.children) {
-          list.push(
-            ...getFlattenRoutes(workspaceRoute.children, requiredPermissionList)
-          );
-        }
-        return list;
-      },
-      [] as { name: string; permissions: Permission[] }[]
-    );
   };
 
   const flattenRoutes = computed(() => {

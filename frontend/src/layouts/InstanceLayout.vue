@@ -41,7 +41,7 @@ const instanceStore = useInstanceV1Store();
 
 const requiredPermissions = computed(() => {
   const getPermissionListFunc =
-    router.currentRoute.value.meta.requiredWorkspacePermissionList;
+    router.currentRoute.value.meta.requiredPermissionList;
   return getPermissionListFunc ? getPermissionListFunc() : [];
 });
 

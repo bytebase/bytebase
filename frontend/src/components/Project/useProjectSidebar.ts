@@ -11,9 +11,10 @@ import {
   PackageIcon,
 } from "lucide-vue-next";
 import { computed, h, unref } from "vue";
-import type { RouteLocationNormalizedLoaded, RouteRecordRaw } from "vue-router";
+import type { RouteLocationNormalizedLoaded } from "vue-router";
 import { useRoute } from "vue-router";
-import type { SidebarItem } from "@/components/CommonSidebar.vue";
+import type { SidebarItem } from "@/components/v2/Sidebar/CommonSidebar.vue";
+import { getFlattenRoutes } from "@/components/v2/Sidebar/utils.ts";
 import { t } from "@/plugins/i18n";
 import projectV1Routes, {
   PROJECT_V1_ROUTE_DATABASES,
@@ -32,7 +33,7 @@ import projectV1Routes, {
   PROJECT_V1_ROUTE_MASKING_EXEMPTION,
 } from "@/router/dashboard/projectV1";
 import { useAppFeature } from "@/store";
-import type { ComposedProject, MaybeRef, Permission } from "@/types";
+import type { ComposedProject, MaybeRef } from "@/types";
 import { DEFAULT_PROJECT_NAME } from "@/types";
 import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
 import { hasProjectPermissionV2 } from "@/utils";
@@ -55,46 +56,8 @@ export const useProjectSidebar = (
     return unref(project).name === DEFAULT_PROJECT_NAME;
   });
 
-  const getFlattenProjectV1Routes = (
-    routes: RouteRecordRaw[],
-    permissions: Permission[] = []
-  ): {
-    name: string;
-    permissions: Permission[];
-  }[] => {
-    return routes.reduce(
-      (list, projectV1Route) => {
-        const requiredProjectPermissionListFunc =
-          projectV1Route.meta?.requiredProjectPermissionList;
-        let requiredPermissionList = requiredProjectPermissionListFunc
-          ? requiredProjectPermissionListFunc()
-          : [];
-        if (requiredPermissionList.length === 0) {
-          requiredPermissionList = permissions;
-        }
-
-        if (projectV1Route.name && projectV1Route.name.toString() !== "") {
-          list.push({
-            name: projectV1Route.name.toString(),
-            permissions: requiredPermissionList,
-          });
-        }
-        if (projectV1Route.children) {
-          list.push(
-            ...getFlattenProjectV1Routes(
-              projectV1Route.children,
-              requiredPermissionList
-            )
-          );
-        }
-        return list;
-      },
-      [] as { name: string; permissions: Permission[] }[]
-    );
-  };
-
   const flattenProjectV1Routes = computed(() => {
-    return getFlattenProjectV1Routes(projectV1Routes);
+    return getFlattenRoutes(projectV1Routes);
   });
 
   const filterProjectSidebarByPermissions = (

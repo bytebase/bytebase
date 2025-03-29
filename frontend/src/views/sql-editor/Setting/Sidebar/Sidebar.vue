@@ -33,7 +33,7 @@ import { ChevronLeftIcon } from "lucide-vue-next";
 import { watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import BytebaseLogo from "@/components/BytebaseLogo.vue";
-import CommonSidebar from "@/components/CommonSidebar.vue";
+import CommonSidebar from "@/components/v2/Sidebar/CommonSidebar.vue";
 import {
   SQL_EDITOR_HOME_MODULE,
   SQL_EDITOR_SETTING_MODULE,

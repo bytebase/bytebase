@@ -29,6 +29,7 @@ export const PROJECT_V1_ROUTE_MEMBERS = `${PROJECT_V1_ROUTE_DASHBOARD}.members`;
 export const PROJECT_V1_ROUTE_SETTINGS = `${PROJECT_V1_ROUTE_DASHBOARD}.settings`;
 export const PROJECT_V1_ROUTE_EXPORT_CENTER = `${PROJECT_V1_ROUTE_DASHBOARD}.export-center`;
 export const PROJECT_V1_ROUTE_REVIEW_CENTER = `${PROJECT_V1_ROUTE_DASHBOARD}.review-center`;
+export const PROJECT_V1_ROUTE_REVIEW_CENTER_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.review-center.detail`;
 export const PROJECT_V1_ROUTE_RELEASES = `${PROJECT_V1_ROUTE_DASHBOARD}.release`;
 export const PROJECT_V1_ROUTE_RELEASE_CREATE = `${PROJECT_V1_ROUTE_DASHBOARD}.release.create`;
 export const PROJECT_V1_ROUTE_RELEASE_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.release.detail`;
@@ -44,6 +45,10 @@ const projectV1Routes: RouteRecordRaw[] = [
       leftSidebar: ProjectSidebarV1,
     },
     props: { content: true, leftSidebar: true },
+    meta: {
+      overrideTitle: true,
+      requiredPermissionList: () => ["bb.projects.get"],
+    },
     children: [
       {
         path: "",
@@ -57,10 +62,7 @@ const projectV1Routes: RouteRecordRaw[] = [
         name: PROJECT_V1_ROUTE_DATABASES,
         meta: {
           overrideTitle: true,
-          requiredProjectPermissionList: () => [
-            "bb.projects.get",
-            "bb.databases.list",
-          ],
+          requiredPermissionList: () => ["bb.databases.list"],
         },
         component: () => import("@/views/project/ProjectDatabaseDashboard.vue"),
         props: true,
@@ -69,8 +71,7 @@ const projectV1Routes: RouteRecordRaw[] = [
         path: "masking-exemption",
         meta: {
           overrideTitle: true,
-          requiredProjectPermissionList: () => [
-            "bb.projects.get",
+          requiredPermissionList: () => [
             "bb.databases.list",
             "bb.policies.get",
           ],
@@ -91,7 +92,7 @@ const projectV1Routes: RouteRecordRaw[] = [
               import("@/views/project/ProjectMaskingExemptionCreate.vue"),
             props: true,
             meta: {
-              requiredProjectPermissionList: () => ["bb.policies.create"],
+              requiredPermissionList: () => ["bb.policies.create"],
             },
           },
         ],
@@ -100,7 +101,6 @@ const projectV1Routes: RouteRecordRaw[] = [
         path: "database-groups",
         meta: {
           overrideTitle: true,
-          requiredProjectPermissionList: () => ["bb.projects.get"],
         },
         props: true,
         children: [
@@ -119,7 +119,7 @@ const projectV1Routes: RouteRecordRaw[] = [
             name: PROJECT_V1_ROUTE_DATABASE_GROUPS_CREATE,
             meta: {
               overrideTitle: true,
-              requiredProjectPermissionList: () => ["bb.projects.update"],
+              requiredPermissionList: () => ["bb.projects.update"],
             },
             component: () =>
               import("@/views/project/ProjectDatabaseGroupCreate.vue"),
@@ -136,36 +136,31 @@ const projectV1Routes: RouteRecordRaw[] = [
       },
       {
         path: "issues",
-        name: PROJECT_V1_ROUTE_ISSUES,
         meta: {
           overrideTitle: true,
-          requiredProjectPermissionList: () => [
-            "bb.projects.get",
-            "bb.issues.list",
-          ],
         },
-        component: () => import("@/views/project/ProjectIssueDashboard.vue"),
         props: true,
-      },
-      {
-        path: "issues/:issueSlug",
-        name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
-        meta: {
-          overrideTitle: true,
-          requiredProjectPermissionList: () => ["bb.projects.get"],
-        },
-        component: () => import("@/views/project/ProjectIssueDetail.vue"),
-        props: true,
-      },
-      {
-        path: "plans/:planSlug",
-        name: PROJECT_V1_ROUTE_PLAN_DETAIL,
-        meta: {
-          overrideTitle: true,
-          requiredProjectPermissionList: () => ["bb.projects.get"],
-        },
-        component: () => import("@/views/project/ProjectPlanDetail.vue"),
-        props: true,
+        children: [
+          {
+            path: "",
+            name: PROJECT_V1_ROUTE_ISSUES,
+            meta: {
+              requiredPermissionList: () => ["bb.issues.list"],
+            },
+            component: () =>
+              import("@/views/project/ProjectIssueDashboard.vue"),
+            props: true,
+          },
+          {
+            path: ":issueSlug",
+            name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
+            meta: {
+              requiredPermissionList: () => ["bb.issues.get"],
+            },
+            component: () => import("@/views/project/ProjectIssueDetail.vue"),
+            props: true,
+          },
+        ],
       },
       {
         path: "changelists",
@@ -179,10 +174,7 @@ const projectV1Routes: RouteRecordRaw[] = [
             name: PROJECT_V1_ROUTE_CHANGELISTS,
             meta: {
               overrideTitle: true,
-              requiredProjectPermissionList: () => [
-                "bb.projects.get",
-                "bb.changelists.list",
-              ],
+              requiredPermissionList: () => ["bb.changelists.list"],
             },
             component: () =>
               import("@/views/project/ProjectChangelistDashboard.vue"),
@@ -193,10 +185,7 @@ const projectV1Routes: RouteRecordRaw[] = [
             name: PROJECT_V1_ROUTE_CHANGELIST_DETAIL,
             meta: {
               overrideTitle: true,
-              requiredProjectPermissionList: () => [
-                "bb.projects.get",
-                "bb.changelists.get",
-              ],
+              requiredPermissionList: () => ["bb.changelists.get"],
             },
             component: () =>
               import("@/components/Changelist/ChangelistDetail/"),
@@ -209,10 +198,7 @@ const projectV1Routes: RouteRecordRaw[] = [
         name: PROJECT_V1_ROUTE_SYNC_SCHEMA,
         meta: {
           overrideTitle: true,
-          requiredProjectPermissionList: () => [
-            "bb.projects.get",
-            "bb.databases.sync",
-          ],
+          requiredPermissionList: () => ["bb.databases.sync"],
         },
         component: () =>
           import("@/views/project/ProjectSyncDatabasePanelV1.vue"),
@@ -223,7 +209,6 @@ const projectV1Routes: RouteRecordRaw[] = [
         name: PROJECT_V1_ROUTE_ANOMALIES,
         meta: {
           overrideTitle: true,
-          requiredProjectPermissionList: () => ["bb.projects.get"],
         },
         component: () =>
           import("@/views/project/ProjectAnomalyCenterDashboard.vue"),
@@ -234,10 +219,7 @@ const projectV1Routes: RouteRecordRaw[] = [
         name: PROJECT_V1_ROUTE_AUDIT_LOGS,
         meta: {
           overrideTitle: true,
-          requiredProjectPermissionList: () => [
-            "bb.projects.get",
-            "bb.auditLogs.search",
-          ],
+          requiredPermissionList: () => ["bb.auditLogs.search"],
         },
         component: () => import("@/views/project/ProjectAuditLogDashboard.vue"),
         props: true,
@@ -246,7 +228,6 @@ const projectV1Routes: RouteRecordRaw[] = [
         path: "webhooks",
         meta: {
           overrideTitle: true,
-          requiredProjectPermissionList: () => ["bb.projects.get"],
         },
         props: true,
         children: [
@@ -265,7 +246,7 @@ const projectV1Routes: RouteRecordRaw[] = [
             name: PROJECT_V1_ROUTE_WEBHOOK_CREATE,
             meta: {
               title: () => t("project.webhook.create-webhook"),
-              requiredProjectPermissionList: () => ["bb.projects.update"],
+              requiredPermissionList: () => ["bb.projects.update"],
             },
             component: () => import("@/views/project/ProjectWebhookCreate.vue"),
             props: true,
@@ -286,10 +267,7 @@ const projectV1Routes: RouteRecordRaw[] = [
         name: PROJECT_V1_ROUTE_MEMBERS,
         meta: {
           overrideTitle: true,
-          requiredProjectPermissionList: () => [
-            "bb.projects.get",
-            "bb.projects.getIamPolicy",
-          ],
+          requiredPermissionList: () => ["bb.projects.getIamPolicy"],
         },
         component: () => import("@/views/project/ProjectMemberDashboard.vue"),
         props: true,
@@ -299,7 +277,6 @@ const projectV1Routes: RouteRecordRaw[] = [
         name: PROJECT_V1_ROUTE_SETTINGS,
         meta: {
           overrideTitle: true,
-          requiredProjectPermissionList: () => ["bb.projects.get"],
         },
         component: () => import("@/views/project/ProjectSettingPanel.vue"),
         props: true,
@@ -308,10 +285,7 @@ const projectV1Routes: RouteRecordRaw[] = [
         path: "instances/:instanceId/databases/:databaseName",
         meta: {
           overrideTitle: true,
-          requiredProjectPermissionList: () => [
-            "bb.projects.get",
-            "bb.databases.get",
-          ],
+          requiredPermissionList: () => ["bb.databases.get"],
         },
         component: () => import("@/views/project/ProjectDatabaseLayout.vue"),
         props: { content: true, leftSidebar: true },
@@ -329,10 +303,9 @@ const projectV1Routes: RouteRecordRaw[] = [
             path: "changelogs/:changelogId",
             name: PROJECT_V1_ROUTE_DATABASE_CHANGELOG_DETAIL,
             meta: {
-              requiredProjectPermissionList: () => [
-                "bb.projects.get",
+              requiredPermissionList: () => [
                 "bb.databases.get",
-                // TODO: add changelogs related permission.
+                "bb.changelogs.get",
               ],
             },
             component: () =>
@@ -350,9 +323,9 @@ const projectV1Routes: RouteRecordRaw[] = [
             name: PROJECT_V1_ROUTE_DATABASE_REVISION_DETAIL,
             meta: {
               overrideTitle: true,
-              requiredProjectPermissionList: () => [
-                "bb.projects.get",
+              requiredPermissionList: () => [
                 "bb.databases.get",
+                "bb.revisions.get",
               ],
             },
             component: () =>
@@ -372,28 +345,42 @@ const projectV1Routes: RouteRecordRaw[] = [
         name: PROJECT_V1_ROUTE_EXPORT_CENTER,
         meta: {
           overrideTitle: true,
-          requiredProjectPermissionList: () => [
-            "bb.projects.get",
-            "bb.issues.list",
-            "bb.databases.list",
-          ],
+          requiredPermissionList: () => ["bb.issues.list", "bb.databases.list"],
         },
         component: () => import("@/views/ExportCenter/index.vue"),
         props: true,
       },
       {
         path: "review-center",
-        name: PROJECT_V1_ROUTE_REVIEW_CENTER,
         meta: {
           overrideTitle: true,
-          requiredProjectPermissionList: () => [
-            "bb.projects.get",
-            "bb.issues.list",
-            "bb.databases.list",
-          ],
         },
-        component: () => import("@/views/ReviewCenter/index.vue"),
         props: true,
+        children: [
+          {
+            path: "",
+            name: PROJECT_V1_ROUTE_REVIEW_CENTER,
+            meta: {
+              overrideTitle: true,
+              requiredPermissionList: () => [
+                "bb.databases.list",
+                "bb.plans.list",
+              ],
+            },
+            props: true,
+            component: () => import("@/views/ReviewCenter/index.vue"),
+          },
+          {
+            path: ":planSlug",
+            name: PROJECT_V1_ROUTE_REVIEW_CENTER_DETAIL,
+            meta: {
+              overrideTitle: true,
+              requiredPermissionList: () => ["bb.plans.get"],
+            },
+            component: () => import("@/views/project/ProjectPlanDetail.vue"),
+            props: true,
+          },
+        ],
       },
       {
         path: "plans",
@@ -403,6 +390,19 @@ const projectV1Routes: RouteRecordRaw[] = [
             name: PROJECT_V1_ROUTE_REVIEW_CENTER,
             params: {
               projectId: to.params.projectId,
+            },
+          };
+        },
+      },
+      {
+        path: "plans/:planSlug",
+        name: PROJECT_V1_ROUTE_PLAN_DETAIL,
+        redirect(to) {
+          return {
+            name: PROJECT_V1_ROUTE_REVIEW_CENTER_DETAIL,
+            params: {
+              projectId: to.params.projectId,
+              planSlug: to.params.planSlug,
             },
           };
         },
@@ -419,10 +419,7 @@ const projectV1Routes: RouteRecordRaw[] = [
             name: PROJECT_V1_ROUTE_RELEASES,
             meta: {
               overrideTitle: true,
-              requiredProjectPermissionList: () => [
-                "bb.projects.get",
-                "bb.releases.list",
-              ],
+              requiredPermissionList: () => ["bb.releases.list"],
             },
             component: () =>
               import("@/views/project/ProjectReleaseDashboard.vue"),
@@ -433,10 +430,7 @@ const projectV1Routes: RouteRecordRaw[] = [
             name: PROJECT_V1_ROUTE_RELEASE_CREATE,
             meta: {
               title: () => t("release.create"),
-              requiredProjectPermissionList: () => [
-                "bb.projects.get",
-                "bb.releases.create",
-              ],
+              requiredPermissionList: () => ["bb.releases.create"],
             },
             component: () => import("@/components/Release/ReleaseCreate/"),
             props: true,
@@ -446,10 +440,7 @@ const projectV1Routes: RouteRecordRaw[] = [
             name: PROJECT_V1_ROUTE_RELEASE_DETAIL,
             meta: {
               overrideTitle: true,
-              requiredProjectPermissionList: () => [
-                "bb.projects.get",
-                "bb.releases.get",
-              ],
+              requiredPermissionList: () => ["bb.releases.get"],
             },
             component: () => import("@/components/Release/ReleaseDetail/"),
             props: true,
@@ -468,7 +459,7 @@ const projectV1Routes: RouteRecordRaw[] = [
             name: PROJECT_V1_ROUTE_ROLLOUTS,
             meta: {
               overrideTitle: true,
-              requiredProjectPermissionList: () => ["bb.projects.get"],
+              requiredPermissionList: () => ["bb.rollouts.list"],
             },
             component: () =>
               import("@/views/project/ProjectRolloutDashboard.vue"),
@@ -481,13 +472,16 @@ const projectV1Routes: RouteRecordRaw[] = [
                 "@/components/Rollout/RolloutDetail/RolloutDetailLayout.vue"
               ),
             props: true,
+            meta: {
+              overrideTitle: true,
+              requiredPermissionList: () => ["bb.rollouts.get"],
+            },
             children: [
               {
                 path: "",
                 name: PROJECT_V1_ROUTE_ROLLOUT_DETAIL,
                 meta: {
                   overrideTitle: true,
-                  requiredProjectPermissionList: () => ["bb.projects.get"],
                 },
                 component: () => import("@/components/Rollout/RolloutDetail/"),
                 props: true,
