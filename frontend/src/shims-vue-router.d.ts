@@ -6,7 +6,6 @@ declare module "vue-router" {
   interface RouteMeta {
     title?: (route: RouteLocationNormalized) => string;
     overrideTitle?: boolean;
-    requiredWorkspacePermissionList?: () => Permission[];
-    requiredProjectPermissionList?: () => Permission[];
+    requiredPermissionList?: () => Permission[];
   }
 }

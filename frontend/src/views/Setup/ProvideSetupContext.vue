@@ -18,10 +18,10 @@ const router = useRouter();
 const ready = ref<boolean>(false);
 
 const checkPermissions = (route: RouteLocationNormalizedLoadedGeneric) => {
-  if (!route.meta.requiredWorkspacePermissionList) {
+  if (!route.meta.requiredPermissionList) {
     return true;
   }
-  const requiredPermissionList = route.meta.requiredWorkspacePermissionList();
+  const requiredPermissionList = route.meta.requiredPermissionList();
   if (!requiredPermissionList.every(hasWorkspacePermissionV2)) {
     return false;
   }
