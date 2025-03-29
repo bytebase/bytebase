@@ -135,7 +135,7 @@ import { ActionConfirmModal } from "@/components/SchemaEditorLite";
 import SQLUploadButton from "@/components/misc/SQLUploadButton.vue";
 import {
   PROJECT_V1_ROUTE_ISSUE_DETAIL,
-  PROJECT_V1_ROUTE_PLAN_DETAIL,
+  PROJECT_V1_ROUTE_REVIEW_CENTER_DETAIL,
 } from "@/router/dashboard/projectV1";
 import {
   pushNotification,
@@ -501,7 +501,7 @@ const handlePreviewIssue = async () => {
 
   const routeInfo = {
     name: state.planOnly
-      ? PROJECT_V1_ROUTE_PLAN_DETAIL
+      ? PROJECT_V1_ROUTE_REVIEW_CENTER_DETAIL
       : PROJECT_V1_ROUTE_ISSUE_DETAIL,
     params: {
       projectId: extractProjectResourceName(project.value.name),
