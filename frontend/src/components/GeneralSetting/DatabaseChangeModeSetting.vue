@@ -161,7 +161,7 @@ const onUpdate = async () => {
 };
 
 const goToSQLEditor = () => {
-  router.replace({
+  router.push({
     name: SQL_EDITOR_HOME_MODULE,
   });
 };

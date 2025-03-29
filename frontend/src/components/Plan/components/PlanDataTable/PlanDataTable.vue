@@ -18,7 +18,7 @@ import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { ProjectNameCell } from "@/components/v2/Model/DatabaseV1Table/cells";
-import { PROJECT_V1_ROUTE_PLAN_DETAIL } from "@/router/dashboard/projectV1";
+import { PROJECT_V1_ROUTE_REVIEW_CENTER_DETAIL } from "@/router/dashboard/projectV1";
 import { getTimeForPbTimestamp } from "@/types";
 import type { ComposedPlan } from "@/types/v1/issue/plan";
 import {
@@ -104,7 +104,7 @@ const rowProps = (plan: ComposedPlan) => {
     style: "cursor: pointer;",
     onClick: (e: MouseEvent) => {
       const route = router.resolve({
-        name: PROJECT_V1_ROUTE_PLAN_DETAIL,
+        name: PROJECT_V1_ROUTE_REVIEW_CENTER_DETAIL,
         params: {
           projectId: extractProjectResourceName(plan.project),
           planSlug: planV1Slug(plan),

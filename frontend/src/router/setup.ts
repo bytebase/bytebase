@@ -15,10 +15,7 @@ const setupRoutes: RouteRecordRaw[] = [
         name: SETUP_WORKSPACE_MODE_MODULE,
         meta: {
           title: () => `${t("setup.self")} | ${"setup.workspace-mode"}`,
-          requiredWorkspacePermissionList: () => [
-            "bb.settings.get",
-            "bb.settings.set",
-          ],
+          requiredPermissionList: () => ["bb.settings.get", "bb.settings.set"],
         },
         component: () => import("@/views/Setup/WorkspaceMode.vue"),
       },

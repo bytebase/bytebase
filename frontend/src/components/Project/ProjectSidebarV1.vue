@@ -11,8 +11,8 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { useRouter } from "vue-router";
-import type { SidebarItem } from "@/components/CommonSidebar.vue";
-import CommonSidebar from "@/components/CommonSidebar.vue";
+import type { SidebarItem } from "@/components/v2/Sidebar/CommonSidebar.vue";
+import CommonSidebar from "@/components/v2/Sidebar/CommonSidebar.vue";
 import { PROJECT_V1_ROUTE_DETAIL } from "@/router/dashboard/projectV1";
 import { useRecentVisit } from "@/router/useRecentVisit";
 import { getProjectName } from "@/store/modules/v1/common";

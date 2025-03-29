@@ -98,7 +98,7 @@ const sqlEditorRoutes: RouteRecordRaw[] = [
             path: "general",
             name: SQL_EDITOR_SETTING_GENERAL_MODULE,
             meta: {
-              requiredWorkspacePermissionList: () => ["bb.settings.get"],
+              requiredPermissionList: () => ["bb.settings.get"],
             },
             component: () => import("../views/sql-editor/Setting/General"),
           },
@@ -106,7 +106,7 @@ const sqlEditorRoutes: RouteRecordRaw[] = [
             path: "subscription",
             name: SQL_EDITOR_SETTING_SUBSCRIPTION_MODULE,
             meta: {
-              requiredWorkspacePermissionList: () => ["bb.settings.get"],
+              requiredPermissionList: () => ["bb.settings.get"],
             },
             component: () => import("../views/sql-editor/Setting/Subscription"),
           },
@@ -114,7 +114,7 @@ const sqlEditorRoutes: RouteRecordRaw[] = [
             path: "instance",
             name: SQL_EDITOR_SETTING_INSTANCE_MODULE,
             meta: {
-              requiredWorkspacePermissionList: () => ["bb.instances.list"],
+              requiredPermissionList: () => ["bb.instances.list"],
             },
             component: () => import("../views/sql-editor/Setting/Instance"),
           },
@@ -127,7 +127,7 @@ const sqlEditorRoutes: RouteRecordRaw[] = [
             path: "environment",
             name: SQL_EDITOR_SETTING_ENVIRONMENT_MODULE,
             meta: {
-              requiredWorkspacePermissionList: () => ["bb.environments.list"],
+              requiredPermissionList: () => ["bb.environments.list"],
             },
             component: () => import("../views/sql-editor/Setting/Environment"),
           },
@@ -135,7 +135,7 @@ const sqlEditorRoutes: RouteRecordRaw[] = [
             path: "database/instances/:instanceId/databases/:databaseName",
             name: SQL_EDITOR_SETTING_DATABASE_DETAIL_MODULE,
             meta: {
-              requiredWorkspacePermissionList: () => ["bb.databases.list"],
+              requiredPermissionList: () => ["bb.databases.list"],
             },
             component: () => import("../views/sql-editor/Setting/Database"),
           },
@@ -143,7 +143,7 @@ const sqlEditorRoutes: RouteRecordRaw[] = [
             path: "database",
             name: SQL_EDITOR_SETTING_DATABASES_MODULE,
             meta: {
-              requiredWorkspacePermissionList: () => ["bb.databases.list"],
+              requiredPermissionList: () => ["bb.databases.list"],
             },
             component: () => import("../views/sql-editor/Setting/Database"),
           },
@@ -156,7 +156,7 @@ const sqlEditorRoutes: RouteRecordRaw[] = [
             path: "members",
             name: SQL_EDITOR_SETTING_MEMBERS_MODULE,
             meta: {
-              requiredWorkspacePermissionList: () => ["bb.policies.get"],
+              requiredPermissionList: () => ["bb.policies.get"],
             },
             component: () => import("../views/sql-editor/Setting/Members"),
           },
@@ -164,7 +164,7 @@ const sqlEditorRoutes: RouteRecordRaw[] = [
             path: "roles",
             name: SQL_EDITOR_SETTING_ROLES_MODULE,
             meta: {
-              requiredWorkspacePermissionList: () => ["bb.roles.list"],
+              requiredPermissionList: () => ["bb.roles.list"],
             },
             component: () => import("../views/sql-editor/Setting/Roles"),
           },
@@ -172,7 +172,7 @@ const sqlEditorRoutes: RouteRecordRaw[] = [
             path: "sso",
             name: SQL_EDITOR_SETTING_SSO_MODULE,
             meta: {
-              requiredWorkspacePermissionList: () => ["bb.settings.get"],
+              requiredPermissionList: () => ["bb.settings.get"],
             },
             component: () => import("../views/sql-editor/Setting/SSO"),
           },
@@ -180,7 +180,7 @@ const sqlEditorRoutes: RouteRecordRaw[] = [
             path: "audit-log",
             name: SQL_EDITOR_SETTING_AUDIT_LOG_MODULE,
             meta: {
-              requiredWorkspacePermissionList: () => [
+              requiredPermissionList: () => [
                 "bb.settings.get",
                 "bb.auditLogs.search",
               ],
@@ -191,7 +191,7 @@ const sqlEditorRoutes: RouteRecordRaw[] = [
             path: "data-classification",
             name: SQL_EDITOR_SETTING_DATA_CLASSIFICATION_MODULE,
             meta: {
-              requiredWorkspacePermissionList: () => ["bb.settings.get"],
+              requiredPermissionList: () => ["bb.settings.get"],
             },
             component: () =>
               import("../views/sql-editor/Setting/DataClassification"),
@@ -200,7 +200,7 @@ const sqlEditorRoutes: RouteRecordRaw[] = [
             path: "semantic-types",
             name: SQL_EDITOR_SETTING_DATA_SEMANTIC_TYPES,
             meta: {
-              requiredWorkspacePermissionList: () => ["bb.settings.get"],
+              requiredPermissionList: () => ["bb.settings.get"],
             },
             component: () =>
               import("../views/sql-editor/Setting/SemanticTypes"),
@@ -209,7 +209,7 @@ const sqlEditorRoutes: RouteRecordRaw[] = [
             path: "global-masking",
             name: SQL_EDITOR_SETTING_GLOBAL_MASKING_MODULE,
             meta: {
-              requiredWorkspacePermissionList: () => ["bb.policies.get"],
+              requiredPermissionList: () => ["bb.policies.get"],
             },
             component: () => import("../views/sql-editor/Setting/DataMasking"),
           },
@@ -217,7 +217,7 @@ const sqlEditorRoutes: RouteRecordRaw[] = [
             path: "profile",
             name: SQL_EDITOR_SETTING_PROFILE_MODULE,
             meta: {
-              requiredWorkspacePermissionList: () => [],
+              requiredPermissionList: () => [],
             },
             component: () => import("../views/sql-editor/Setting/Profile"),
           },
