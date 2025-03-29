@@ -77,13 +77,11 @@ func (l *columnNoNullListener) generateAdvice() ([]*storepb.Advice, error) {
 	for _, columnID := range columnIDs {
 		line := l.nullableColumns[columnID]
 		advice = append(advice, &storepb.Advice{
-			Status:  l.level,
-			Code:    advisor.ColumnCannotNull.Int32(),
-			Title:   l.title,
-			Content: fmt.Sprintf("Column %q is nullable, which is not allowed.", lastIdentifier(columnID)),
-			StartPosition: &storepb.Position{
-				Line: int32(line),
-			},
+			Status:        l.level,
+			Code:          advisor.ColumnCannotNull.Int32(),
+			Title:         l.title,
+			Content:       fmt.Sprintf("Column %q is nullable, which is not allowed.", lastIdentifier(columnID)),
+			StartPosition: advisor.ConvertANTLRLineToPosition(line),
 		})
 	}
 

@@ -69,13 +69,11 @@ func (checker *tableDropNamingConventionChecker) Visit(in ast.Node) ast.Visitor 
 		for _, table := range node.TableList {
 			if !checker.format.MatchString(table.Name) {
 				checker.adviceList = append(checker.adviceList, &storepb.Advice{
-					Status:  checker.level,
-					Code:    advisor.TableDropNamingConventionMismatch.Int32(),
-					Title:   checker.title,
-					Content: fmt.Sprintf("`%s` mismatches drop table naming convention, naming format should be %q", table.Name, checker.format),
-					StartPosition: &storepb.Position{
-						Line: int32(node.LastLine()),
-					},
+					Status:        checker.level,
+					Code:          advisor.TableDropNamingConventionMismatch.Int32(),
+					Title:         checker.title,
+					Content:       fmt.Sprintf("`%s` mismatches drop table naming convention, naming format should be %q", table.Name, checker.format),
+					StartPosition: advisor.ConvertANTLRLineToPosition(node.LastLine()),
 				})
 			}
 		}

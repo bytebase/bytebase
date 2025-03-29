@@ -214,6 +214,7 @@ func (x *SchedulerInfo) GetWaitingCause() *SchedulerInfo_WaitingCause {
 }
 
 // The following fields are used for error reporting.
+// TODO(zp): Use common Position instead.
 type TaskRunResult_Position struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Line          int32                  `protobuf:"varint,1,opt,name=line,proto3" json:"line,omitempty"`

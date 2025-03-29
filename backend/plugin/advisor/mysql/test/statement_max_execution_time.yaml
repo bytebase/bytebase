@@ -9,7 +9,6 @@
       code: 235
       title: statement.max-execution-time
       content: The max_execution_time is not set
-      detail: ""
       startposition: null
       endposition: null
 - statement: SELECT * FROM t;
@@ -19,6 +18,5 @@
       code: 235
       title: statement.max-execution-time
       content: The max_execution_time is not set
-      detail: ""
       startposition: null
       endposition: null

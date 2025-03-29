@@ -150,13 +150,11 @@ func (checker *columnDisallowChangingTypeChecker) changeColumnType(tableName, co
 
 	if normalizeColumnType(column.Type()) != normalizeColumnType(tp) {
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{
-			Status:  checker.level,
-			Code:    advisor.ChangeColumnType.Int32(),
-			Title:   checker.title,
-			Content: fmt.Sprintf("\"%s\" changes column type", checker.text),
-			StartPosition: &storepb.Position{
-				Line: int32(checker.baseLine + dataType.GetStart().GetLine()),
-			},
+			Status:        checker.level,
+			Code:          advisor.ChangeColumnType.Int32(),
+			Title:         checker.title,
+			Content:       fmt.Sprintf("\"%s\" changes column type", checker.text),
+			StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + dataType.GetStart().GetLine()),
 		})
 	}
 }

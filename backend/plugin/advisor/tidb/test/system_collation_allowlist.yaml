@@ -5,9 +5,8 @@
       code: 1201
       title: system.collation.allowlist
       content: '"CREATE TABLE t(a int) COLLATE utf8mb4_polish_ci" used disabled collation ''utf8mb4_polish_ci'''
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: CREATE TABLE t(a varchar(255))
@@ -19,9 +18,8 @@
       code: 1201
       title: system.collation.allowlist
       content: '"CREATE TABLE t(a int) COLLATE latin1_bin" used disabled collation ''latin1_bin'''
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: |-
@@ -33,9 +31,8 @@
       code: 1201
       title: system.collation.allowlist
       content: '"ALTER TABLE t COLLATE latin1_bin" used disabled collation ''latin1_bin'''
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null
 - statement: ALTER DATABASE test COLLATE latin1_bin
@@ -45,9 +42,8 @@
       code: 1201
       title: system.collation.allowlist
       content: '"ALTER DATABASE test COLLATE latin1_bin" used disabled collation ''latin1_bin'''
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: CREATE TABLE t(a varchar(255) CHARACTER SET latin1 COLLATE latin1_bin)
@@ -57,9 +53,8 @@
       code: 1201
       title: system.collation.allowlist
       content: '"CREATE TABLE t(a varchar(255) CHARACTER SET latin1 COLLATE latin1_bin)" used disabled collation ''latin1_bin'''
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: |-
@@ -71,9 +66,8 @@
       code: 1201
       title: system.collation.allowlist
       content: '"ALTER TABLE t ADD COLUMN a varchar(255) CHARACTER SET latin1 COLLATE latin1_bin" used disabled collation ''latin1_bin'''
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null
 - statement: |-
@@ -85,9 +79,8 @@
       code: 1201
       title: system.collation.allowlist
       content: '"ALTER TABLE t MODIFY COLUMN a varchar(255) CHARACTER SET latin1 COLLATE latin1_bin" used disabled collation ''latin1_bin'''
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null
 - statement: |-
@@ -99,8 +92,7 @@
       code: 1201
       title: system.collation.allowlist
       content: '"ALTER TABLE t CHANGE COLUMN a a varchar(255) CHARACTER SET latin1 COLLATE latin1_bin" used disabled collation ''latin1_bin'''
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null

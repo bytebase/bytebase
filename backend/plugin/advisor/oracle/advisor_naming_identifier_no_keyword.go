@@ -70,13 +70,11 @@ func (l *namingIdentifierNoKeywordListener) EnterId_expression(ctx *parser.Id_ex
 	identifier := normalizeIDExpression(ctx)
 	if plsqlparser.IsOracleKeyword(identifier) {
 		l.adviceList = append(l.adviceList, &storepb.Advice{
-			Status:  l.level,
-			Code:    advisor.NameIsKeywordIdentifier.Int32(),
-			Title:   l.title,
-			Content: fmt.Sprintf("Identifier %q is a keyword and should be avoided", identifier),
-			StartPosition: &storepb.Position{
-				Line: int32(ctx.GetStart().GetLine()),
-			},
+			Status:        l.level,
+			Code:          advisor.NameIsKeywordIdentifier.Int32(),
+			Title:         l.title,
+			Content:       fmt.Sprintf("Identifier %q is a keyword and should be avoided", identifier),
+			StartPosition: advisor.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
 		})
 	}
 }

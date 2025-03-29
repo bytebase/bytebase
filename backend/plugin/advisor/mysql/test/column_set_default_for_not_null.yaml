@@ -18,9 +18,8 @@
       code: 404
       title: column.set-default-for-not-null
       content: Column `book`.`id` is NOT NULL but doesn't have DEFAULT
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null
 - statement: |-
@@ -42,9 +41,8 @@
       code: 404
       title: column.set-default-for-not-null
       content: Column `book`.`id` is NOT NULL but doesn't have DEFAULT
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null
 - statement: |-
@@ -56,18 +54,16 @@
       code: 404
       title: column.set-default-for-not-null
       content: Column `book`.`b` is NOT NULL but doesn't have DEFAULT
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null
     - status: 2
       code: 404
       title: column.set-default-for-not-null
       content: Column `book`.`c` is NOT NULL but doesn't have DEFAULT
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null
 - statement: |-
@@ -79,9 +75,8 @@
       code: 404
       title: column.set-default-for-not-null
       content: Column `book`.`id` is NOT NULL but doesn't have DEFAULT
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null
 - statement: |-
@@ -101,9 +96,8 @@
       code: 404
       title: column.set-default-for-not-null
       content: Column `book`.`id` is NOT NULL but doesn't have DEFAULT
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null
 - statement: |-

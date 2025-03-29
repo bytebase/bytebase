@@ -114,13 +114,11 @@ func (l *migrationCompatibilityChecker) EnterDrop_table(ctx *parser.Drop_tableCo
 		level = storepb.Advice_WARNING
 	}
 	l.adviceList = append(l.adviceList, &storepb.Advice{
-		Status:  level,
-		Code:    advisor.CompatibilityDropTable.Int32(),
-		Title:   l.title,
-		Content: fmt.Sprintf("Drop table %q may cause incompatibility with the existing data and code", normalizedFullDropTableName),
-		StartPosition: &storepb.Position{
-			Line: int32(ctx.GetStart().GetLine()),
-		},
+		Status:        level,
+		Code:          advisor.CompatibilityDropTable.Int32(),
+		Title:         l.title,
+		Content:       fmt.Sprintf("Drop table %q may cause incompatibility with the existing data and code", normalizedFullDropTableName),
+		StartPosition: advisor.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
 	})
 }
 
@@ -136,13 +134,11 @@ func (l *migrationCompatibilityChecker) EnterDrop_schema(ctx *parser.Drop_schema
 		level = storepb.Advice_WARNING
 	}
 	l.adviceList = append(l.adviceList, &storepb.Advice{
-		Status:  level,
-		Code:    advisor.CompatibilityDropSchema.Int32(),
-		Title:   l.title,
-		Content: fmt.Sprintf("Drop schema %q may cause incompatibility with the existing data and code", normalizedFullDropSchemaName),
-		StartPosition: &storepb.Position{
-			Line: int32(ctx.GetStart().GetLine()),
-		},
+		Status:        level,
+		Code:          advisor.CompatibilityDropSchema.Int32(),
+		Title:         l.title,
+		Content:       fmt.Sprintf("Drop schema %q may cause incompatibility with the existing data and code", normalizedFullDropSchemaName),
+		StartPosition: advisor.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
 	})
 }
 
@@ -158,13 +154,11 @@ func (l *migrationCompatibilityChecker) EnterDrop_database(ctx *parser.Drop_data
 		level = storepb.Advice_WARNING
 	}
 	l.adviceList = append(l.adviceList, &storepb.Advice{
-		Status:  level,
-		Code:    advisor.CompatibilityDropDatabase.Int32(),
-		Title:   l.title,
-		Content: fmt.Sprintf("Drop database %q may cause incompatibility with the existing data and code", normalizedFullDropDatabaseName),
-		StartPosition: &storepb.Position{
-			Line: int32(ctx.GetStart().GetLine()),
-		},
+		Status:        level,
+		Code:          advisor.CompatibilityDropDatabase.Int32(),
+		Title:         l.title,
+		Content:       fmt.Sprintf("Drop database %q may cause incompatibility with the existing data and code", normalizedFullDropDatabaseName),
+		StartPosition: advisor.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
 	})
 }
 
@@ -184,12 +178,10 @@ func (l *migrationCompatibilityChecker) EnterAlter_table(ctx *parser.Alter_table
 		normalizedAllColumnNames = append(normalizedAllColumnNames, fmt.Sprintf("%q", snowsqlparser.NormalizeSnowSQLObjectNamePart(columnName.Id_())))
 	}
 	l.adviceList = append(l.adviceList, &storepb.Advice{
-		Status:  l.level,
-		Code:    advisor.CompatibilityDropColumn.Int32(),
-		Title:   l.title,
-		Content: fmt.Sprintf("Drop column %s may cause incompatibility with the existing data and code", strings.Join(normalizedAllColumnNames, ",")),
-		StartPosition: &storepb.Position{
-			Line: int32(ctx.GetStart().GetLine()),
-		},
+		Status:        l.level,
+		Code:          advisor.CompatibilityDropColumn.Int32(),
+		Title:         l.title,
+		Content:       fmt.Sprintf("Drop column %s may cause incompatibility with the existing data and code", strings.Join(normalizedAllColumnNames, ",")),
+		StartPosition: advisor.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
 	})
 }

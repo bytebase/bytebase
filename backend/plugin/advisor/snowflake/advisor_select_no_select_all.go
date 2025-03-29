@@ -66,13 +66,11 @@ func (l *selectNoSelectAllChecker) EnterSelect_list_elem(ctx *parser.Select_list
 	if v := ctx.Column_elem(); v != nil {
 		if v.STAR() != nil {
 			l.adviceList = append(l.adviceList, &storepb.Advice{
-				Status:  l.level,
-				Code:    advisor.StatementSelectAll.Int32(),
-				Title:   l.title,
-				Content: "Avoid using SELECT *.",
-				StartPosition: &storepb.Position{
-					Line: int32(v.STAR().GetSymbol().GetLine()),
-				},
+				Status:        l.level,
+				Code:          advisor.StatementSelectAll.Int32(),
+				Title:         l.title,
+				Content:       "Avoid using SELECT *.",
+				StartPosition: advisor.ConvertANTLRLineToPosition(v.STAR().GetSymbol().GetLine()),
 			})
 		}
 	}

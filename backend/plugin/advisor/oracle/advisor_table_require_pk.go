@@ -69,13 +69,11 @@ func (l *TableRequirePKListener) generateAdvice() ([]*storepb.Advice, error) {
 	for tableName, hasPK := range l.tableWitPK {
 		if !hasPK {
 			advice = append(advice, &storepb.Advice{
-				Status:  l.level,
-				Code:    advisor.TableNoPK.Int32(),
-				Title:   l.title,
-				Content: fmt.Sprintf("Table %s requires PRIMARY KEY.", normalizeIdentifierName(tableName)),
-				StartPosition: &storepb.Position{
-					Line: int32(l.tableLine[tableName]),
-				},
+				Status:        l.level,
+				Code:          advisor.TableNoPK.Int32(),
+				Title:         l.title,
+				Content:       fmt.Sprintf("Table %s requires PRIMARY KEY.", normalizeIdentifierName(tableName)),
+				StartPosition: advisor.ConvertANTLRLineToPosition(l.tableLine[tableName]),
 			})
 		}
 	}

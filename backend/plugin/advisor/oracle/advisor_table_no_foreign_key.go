@@ -69,13 +69,11 @@ func (l *tableNoForeignKeyListener) generateAdvice() ([]*storepb.Advice, error) 
 	for tableName, hasFK := range l.tableWithFK {
 		if hasFK {
 			advice = append(advice, &storepb.Advice{
-				Status:  l.level,
-				Code:    advisor.TableHasFK.Int32(),
-				Title:   l.title,
-				Content: fmt.Sprintf("Foreign key is not allowed in the table %s.", normalizeIdentifierName(tableName)),
-				StartPosition: &storepb.Position{
-					Line: int32(l.tableLine[tableName]),
-				},
+				Status:        l.level,
+				Code:          advisor.TableHasFK.Int32(),
+				Title:         l.title,
+				Content:       fmt.Sprintf("Foreign key is not allowed in the table %s.", normalizeIdentifierName(tableName)),
+				StartPosition: advisor.ConvertANTLRLineToPosition(l.tableLine[tableName]),
 			})
 		}
 	}

@@ -70,13 +70,11 @@ func (l *namingTableNoKeywordListener) EnterCreate_table(ctx *parser.Create_tabl
 	tableName := normalizeIdentifier(ctx.Table_name(), l.currentDatabase)
 	if plsqlparser.IsOracleKeyword(tableName) {
 		l.adviceList = append(l.adviceList, &storepb.Advice{
-			Status:  l.level,
-			Code:    advisor.NameIsKeywordIdentifier.Int32(),
-			Title:   l.title,
-			Content: fmt.Sprintf("Table name %q is a keyword identifier and should be avoided.", tableName),
-			StartPosition: &storepb.Position{
-				Line: int32(ctx.GetStart().GetLine()),
-			},
+			Status:        l.level,
+			Code:          advisor.NameIsKeywordIdentifier.Int32(),
+			Title:         l.title,
+			Content:       fmt.Sprintf("Table name %q is a keyword identifier and should be avoided.", tableName),
+			StartPosition: advisor.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
 		})
 	}
 }
@@ -89,13 +87,11 @@ func (l *namingTableNoKeywordListener) EnterAlter_table_properties(ctx *parser.A
 	tableName := lastIdentifier(normalizeIdentifier(ctx.Tableview_name(), l.currentDatabase))
 	if plsqlparser.IsOracleKeyword(tableName) {
 		l.adviceList = append(l.adviceList, &storepb.Advice{
-			Status:  l.level,
-			Code:    advisor.NameIsKeywordIdentifier.Int32(),
-			Title:   l.title,
-			Content: fmt.Sprintf("Table name %q is a keyword identifier and should be avoided.", tableName),
-			StartPosition: &storepb.Position{
-				Line: int32(ctx.GetStart().GetLine()),
-			},
+			Status:        l.level,
+			Code:          advisor.NameIsKeywordIdentifier.Int32(),
+			Title:         l.title,
+			Content:       fmt.Sprintf("Table name %q is a keyword identifier and should be avoided.", tableName),
+			StartPosition: advisor.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
 		})
 	}
 }

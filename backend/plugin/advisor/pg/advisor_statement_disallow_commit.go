@@ -59,13 +59,11 @@ type statementDisallowCommitChecker struct {
 func (checker *statementDisallowCommitChecker) Visit(in ast.Node) ast.Visitor {
 	if _, ok := in.(*ast.CommitStmt); ok {
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{
-			Status:  checker.level,
-			Code:    advisor.StatementDisallowCommit.Int32(),
-			Title:   checker.title,
-			Content: fmt.Sprintf("Commit is not allowed, related statement: \"%s\"", in.Text()),
-			StartPosition: &storepb.Position{
-				Line: int32(in.LastLine()),
-			},
+			Status:        checker.level,
+			Code:          advisor.StatementDisallowCommit.Int32(),
+			Title:         checker.title,
+			Content:       fmt.Sprintf("Commit is not allowed, related statement: \"%s\"", in.Text()),
+			StartPosition: advisor.ConvertANTLRLineToPosition(in.LastLine()),
 		})
 	}
 

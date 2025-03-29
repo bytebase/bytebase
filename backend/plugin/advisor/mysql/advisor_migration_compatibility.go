@@ -73,13 +73,11 @@ func (checker *compatibilityChecker) ExitQuery(ctx *mysql.QueryContext) {
 	if checker.code != advisor.Ok {
 		text := ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{
-			Status:  checker.level,
-			Code:    checker.code.Int32(),
-			Title:   checker.title,
-			Content: fmt.Sprintf("\"%s\" may cause incompatibility with the existing data and code", text),
-			StartPosition: &storepb.Position{
-				Line: int32(checker.baseLine + ctx.GetStart().GetLine()),
-			},
+			Status:        checker.level,
+			Code:          checker.code.Int32(),
+			Title:         checker.title,
+			Content:       fmt.Sprintf("\"%s\" may cause incompatibility with the existing data and code", text),
+			StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
 		})
 	}
 }

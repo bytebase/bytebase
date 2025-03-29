@@ -5,9 +5,8 @@
       code: 1301
       title: table.comment
       content: The length of table `t` comment should be within 10 characters
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: CREATE TABLE t(a int)
@@ -17,9 +16,8 @@
       code: 1032
       title: table.comment
       content: Table `t` requires comments
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: CREATE TABLE t(a int) COMMENT 'sdlfkjalkseblkjduafelbnlsdfkljayue'
@@ -29,8 +27,7 @@
       code: 1301
       title: table.comment
       content: The length of table `t` comment should be within 10 characters
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null

@@ -105,13 +105,11 @@ func (l *namingIdentifierCaseChecker) EnterColumn_decl_item_list(ctx *parser.Col
 			originalColName := snowsqlparser.NormalizeSnowSQLObjectNamePart(originalID)
 			if strings.ToUpper(originalColName) != originalColName {
 				l.adviceList = append(l.adviceList, &storepb.Advice{
-					Status:  l.level,
-					Code:    advisor.NamingCaseMismatch.Int32(),
-					Title:   l.title,
-					Content: fmt.Sprintf("Identifier %q should be upper case", originalColName),
-					StartPosition: &storepb.Position{
-						Line: int32(ctx.GetStart().GetLine()),
-					},
+					Status:        l.level,
+					Code:          advisor.NamingCaseMismatch.Int32(),
+					Title:         l.title,
+					Content:       fmt.Sprintf("Identifier %q should be upper case", originalColName),
+					StartPosition: advisor.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
 				})
 			}
 		}
@@ -128,13 +126,11 @@ func (l *namingIdentifierCaseChecker) EnterAlter_table(ctx *parser.Alter_tableCo
 	renameToColName := snowsqlparser.NormalizeSnowSQLObjectNamePart(renameToID)
 	if strings.ToUpper(renameToColName) != renameToColName {
 		l.adviceList = append(l.adviceList, &storepb.Advice{
-			Status:  l.level,
-			Code:    advisor.NamingCaseMismatch.Int32(),
-			Title:   l.title,
-			Content: fmt.Sprintf("Identifier %q should be upper case", renameToColName),
-			StartPosition: &storepb.Position{
-				Line: int32(renameToID.GetStart().GetLine()),
-			},
+			Status:        l.level,
+			Code:          advisor.NamingCaseMismatch.Int32(),
+			Title:         l.title,
+			Content:       fmt.Sprintf("Identifier %q should be upper case", renameToColName),
+			StartPosition: advisor.ConvertANTLRLineToPosition(renameToID.GetStart().GetLine()),
 		})
 	}
 }

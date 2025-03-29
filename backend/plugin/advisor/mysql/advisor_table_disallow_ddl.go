@@ -111,13 +111,11 @@ func (checker *tableDisallowDDLChecker) checkTableName(tableName string, line in
 	for _, disallow := range checker.disallowList {
 		if tableName == disallow {
 			checker.adviceList = append(checker.adviceList, &storepb.Advice{
-				Status:  checker.level,
-				Code:    advisor.TableDisallowDDL.Int32(),
-				Title:   checker.title,
-				Content: fmt.Sprintf("DDL is disallowed on table %s.", tableName),
-				StartPosition: &storepb.Position{
-					Line: int32(line),
-				},
+				Status:        checker.level,
+				Code:          advisor.TableDisallowDDL.Int32(),
+				Title:         checker.title,
+				Content:       fmt.Sprintf("DDL is disallowed on table %s.", tableName),
+				StartPosition: advisor.ConvertANTLRLineToPosition(line),
 			})
 			return
 		}

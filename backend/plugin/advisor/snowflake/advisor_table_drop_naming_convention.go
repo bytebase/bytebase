@@ -75,13 +75,11 @@ func (l *tableDropNamingConventionChecker) EnterDrop_table(ctx *parser.Drop_tabl
 	normalizedObjectName := snowsqlparser.NormalizeSnowSQLObjectNamePart(ctx.Object_name().GetO())
 	if !l.format.MatchString(normalizedObjectName) {
 		l.adviceList = append(l.adviceList, &storepb.Advice{
-			Status:  l.level,
-			Code:    advisor.TableDropNamingConventionMismatch.Int32(),
-			Title:   l.title,
-			Content: fmt.Sprintf("%q mismatches drop table naming convention, naming format should be %q", normalizedObjectName, l.format),
-			StartPosition: &storepb.Position{
-				Line: int32(ctx.Object_name().GetO().GetStart().GetLine()),
-			},
+			Status:        l.level,
+			Code:          advisor.TableDropNamingConventionMismatch.Int32(),
+			Title:         l.title,
+			Content:       fmt.Sprintf("%q mismatches drop table naming convention, naming format should be %q", normalizedObjectName, l.format),
+			StartPosition: advisor.ConvertANTLRLineToPosition(ctx.Object_name().GetO().GetStart().GetLine()),
 		})
 	}
 }

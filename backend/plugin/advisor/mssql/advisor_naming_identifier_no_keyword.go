@@ -87,13 +87,11 @@ func (l *namingIdentifierNoKeywordChecker) EnterId_(ctx *parser.Id_Context) {
 	_, normalizedID := tsqlparser.NormalizeTSQLIdentifier(ctx)
 	if tsqlparser.IsTSQLReservedKeyword(normalizedID, false) {
 		l.adviceList = append(l.adviceList, &storepb.Advice{
-			Status:  l.level,
-			Code:    advisor.NameIsKeywordIdentifier.Int32(),
-			Title:   l.title,
-			Content: fmt.Sprintf("Identifier [%s] is a keyword identifier and should be avoided.", normalizedID),
-			StartPosition: &storepb.Position{
-				Line: int32(ctx.GetStart().GetLine()),
-			},
+			Status:        l.level,
+			Code:          advisor.NameIsKeywordIdentifier.Int32(),
+			Title:         l.title,
+			Content:       fmt.Sprintf("Identifier [%s] is a keyword identifier and should be avoided.", normalizedID),
+			StartPosition: advisor.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
 		})
 	}
 }

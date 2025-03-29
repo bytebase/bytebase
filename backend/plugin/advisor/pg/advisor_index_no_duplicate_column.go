@@ -120,13 +120,11 @@ func (checker *indexNoDuplicateColumnChecker) Visit(node ast.Node) ast.Visitor {
 
 	for _, column := range columnList {
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{
-			Status:  checker.level,
-			Code:    advisor.DuplicateColumnInIndex.Int32(),
-			Title:   checker.title,
-			Content: fmt.Sprintf("%s \"%s\" has duplicate column \"%s\".\"%s\"", column.constraintType, column.index, column.table, column.column),
-			StartPosition: &storepb.Position{
-				Line: int32(column.line),
-			},
+			Status:        checker.level,
+			Code:          advisor.DuplicateColumnInIndex.Int32(),
+			Title:         checker.title,
+			Content:       fmt.Sprintf("%s \"%s\" has duplicate column \"%s\".\"%s\"", column.constraintType, column.index, column.table, column.column),
+			StartPosition: advisor.ConvertANTLRLineToPosition(column.line),
 		})
 	}
 

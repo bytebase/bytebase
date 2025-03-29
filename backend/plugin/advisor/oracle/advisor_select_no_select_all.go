@@ -67,13 +67,11 @@ func (l *selectNoSelectAllListener) generateAdvice() ([]*storepb.Advice, error) 
 func (l *selectNoSelectAllListener) EnterSelected_list(ctx *parser.Selected_listContext) {
 	if ctx.ASTERISK() != nil {
 		l.adviceList = append(l.adviceList, &storepb.Advice{
-			Status:  l.level,
-			Code:    advisor.StatementSelectAll.Int32(),
-			Title:   l.title,
-			Content: "Avoid using SELECT *.",
-			StartPosition: &storepb.Position{
-				Line: int32(ctx.GetStart().GetLine()),
-			},
+			Status:        l.level,
+			Code:          advisor.StatementSelectAll.Int32(),
+			Title:         l.title,
+			Content:       "Avoid using SELECT *.",
+			StartPosition: advisor.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
 		})
 	}
 }

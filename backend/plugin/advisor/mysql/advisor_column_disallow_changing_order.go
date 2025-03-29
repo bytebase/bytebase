@@ -100,13 +100,11 @@ func (checker *columnDisallowChangingOrderChecker) EnterAlterTable(ctx *mysql.Al
 
 		if item.Place() != nil {
 			checker.adviceList = append(checker.adviceList, &storepb.Advice{
-				Status:  checker.level,
-				Code:    advisor.ChangeColumnOrder.Int32(),
-				Title:   checker.title,
-				Content: fmt.Sprintf("\"%s\" changes column order", checker.text),
-				StartPosition: &storepb.Position{
-					Line: int32(checker.baseLine + ctx.GetStart().GetLine()),
-				},
+				Status:        checker.level,
+				Code:          advisor.ChangeColumnOrder.Int32(),
+				Title:         checker.title,
+				Content:       fmt.Sprintf("\"%s\" changes column order", checker.text),
+				StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
 			})
 		}
 	}

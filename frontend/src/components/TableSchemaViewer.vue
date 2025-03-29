@@ -52,7 +52,8 @@ import { hasSchemaProperty } from "@/utils";
 const props = defineProps<{
   database: ComposedDatabase;
   schema?: string;
-  table?: string;
+  object?: string;
+  type?: GetSchemaStringRequest_ObjectType;
 }>();
 
 const { t } = useI18n();
@@ -67,11 +68,11 @@ const engine = computed(() => {
 });
 
 const resourceName = computed(() => {
-  if (props.table) {
+  if (props.object) {
     if (hasSchemaProperty(engine.value)) {
-      return `${props.schema}.${props.table}`;
+      return `${props.schema}.${props.object}`;
     } else {
-      return props.table;
+      return props.object;
     }
   }
   if (props.schema) {
@@ -84,9 +85,9 @@ onMounted(async () => {
   nextTick(async () => {
     const response = await databaseServiceClient.getSchemaString({
       name: props.database.name,
-      type: GetSchemaStringRequest_ObjectType.TABLE,
+      type: props.type,
       schema: props.schema,
-      object: props.table,
+      object: props.object,
     })
     schemaString.value = response.schemaString.trim();
   });

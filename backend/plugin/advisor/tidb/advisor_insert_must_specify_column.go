@@ -64,13 +64,11 @@ func (checker *insertMustSpecifyColumnChecker) Enter(in ast.Node) (ast.Node, boo
 	if node, ok := in.(*ast.InsertStmt); ok {
 		if node.Columns == nil {
 			checker.adviceList = append(checker.adviceList, &storepb.Advice{
-				Status:  checker.level,
-				Code:    advisor.InsertNotSpecifyColumn.Int32(),
-				Title:   checker.title,
-				Content: fmt.Sprintf("The INSERT statement must specify columns but \"%s\" does not", checker.text),
-				StartPosition: &storepb.Position{
-					Line: int32(checker.line),
-				},
+				Status:        checker.level,
+				Code:          advisor.InsertNotSpecifyColumn.Int32(),
+				Title:         checker.title,
+				Content:       fmt.Sprintf("The INSERT statement must specify columns but \"%s\" does not", checker.text),
+				StartPosition: advisor.ConvertANTLRLineToPosition(checker.line),
 			})
 		}
 	}

@@ -103,13 +103,11 @@ func (l *namingIdentifierNoKeywordChecker) EnterColumn_decl_item_list(ctx *parse
 			originalColName := snowsqlparser.NormalizeSnowSQLObjectNamePart(originalID)
 			if snowsqlparser.IsSnowflakeKeyword(originalColName, false) {
 				l.adviceList = append(l.adviceList, &storepb.Advice{
-					Status:  l.level,
-					Code:    advisor.NameIsKeywordIdentifier.Int32(),
-					Title:   l.title,
-					Content: fmt.Sprintf("Identifier %s is a keyword and should be avoided", originalID.GetText()),
-					StartPosition: &storepb.Position{
-						Line: int32(ctx.GetStart().GetLine()),
-					},
+					Status:        l.level,
+					Code:          advisor.NameIsKeywordIdentifier.Int32(),
+					Title:         l.title,
+					Content:       fmt.Sprintf("Identifier %s is a keyword and should be avoided", originalID.GetText()),
+					StartPosition: advisor.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
 				})
 			}
 		}
@@ -126,13 +124,11 @@ func (l *namingIdentifierNoKeywordChecker) EnterAlter_table(ctx *parser.Alter_ta
 	renameToColName := snowsqlparser.NormalizeSnowSQLObjectNamePart(renameToID)
 	if snowsqlparser.IsSnowflakeKeyword(renameToColName, false) {
 		l.adviceList = append(l.adviceList, &storepb.Advice{
-			Status:  l.level,
-			Code:    advisor.NameIsKeywordIdentifier.Int32(),
-			Title:   l.title,
-			Content: fmt.Sprintf("Identifier %s is a keyword and should be avoided", renameToID.GetText()),
-			StartPosition: &storepb.Position{
-				Line: int32(renameToID.GetStart().GetLine()),
-			},
+			Status:        l.level,
+			Code:          advisor.NameIsKeywordIdentifier.Int32(),
+			Title:         l.title,
+			Content:       fmt.Sprintf("Identifier %s is a keyword and should be avoided", renameToID.GetText()),
+			StartPosition: advisor.ConvertANTLRLineToPosition(renameToID.GetStart().GetLine()),
 		})
 	}
 }

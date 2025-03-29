@@ -105,13 +105,11 @@ func (checker *statementDmlDryRunChecker) handleStmt(text string, lineNumber int
 	checker.explainCount++
 	if _, err := advisor.Query(checker.ctx, advisor.QueryContext{}, checker.driver, storepb.Engine_MYSQL, fmt.Sprintf("EXPLAIN %s", text)); err != nil {
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{
-			Status:  checker.level,
-			Code:    advisor.StatementDMLDryRunFailed.Int32(),
-			Title:   checker.title,
-			Content: fmt.Sprintf("\"%s\" dry runs failed: %s", text, err.Error()),
-			StartPosition: &storepb.Position{
-				Line: int32(checker.line + lineNumber),
-			},
+			Status:        checker.level,
+			Code:          advisor.StatementDMLDryRunFailed.Int32(),
+			Title:         checker.title,
+			Content:       fmt.Sprintf("\"%s\" dry runs failed: %s", text, err.Error()),
+			StartPosition: advisor.ConvertANTLRLineToPosition(checker.line + lineNumber),
 		})
 	}
 }

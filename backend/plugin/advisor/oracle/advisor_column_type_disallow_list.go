@@ -87,26 +87,22 @@ func (l *columnTypeDisallowListListener) isDisallowType(tp parser.IDatatypeConte
 func (l *columnTypeDisallowListListener) EnterColumn_definition(ctx *parser.Column_definitionContext) {
 	if l.isDisallowType(ctx.Datatype()) {
 		l.adviceList = append(l.adviceList, &storepb.Advice{
-			Status:  l.level,
-			Code:    advisor.DisabledColumnType.Int32(),
-			Title:   l.title,
-			Content: fmt.Sprintf("Disallow column type %s but column \"%s\" is", ctx.Datatype().GetText(), normalizeIdentifier(ctx.Column_name(), l.currentDatabase)),
-			StartPosition: &storepb.Position{
-				Line: int32(ctx.Datatype().GetStart().GetLine()),
-			},
+			Status:        l.level,
+			Code:          advisor.DisabledColumnType.Int32(),
+			Title:         l.title,
+			Content:       fmt.Sprintf("Disallow column type %s but column \"%s\" is", ctx.Datatype().GetText(), normalizeIdentifier(ctx.Column_name(), l.currentDatabase)),
+			StartPosition: advisor.ConvertANTLRLineToPosition(ctx.Datatype().GetStart().GetLine()),
 		})
 	}
 	if ctx.Regular_id() != nil {
 		for _, tp := range l.disallowList {
 			if ctx.Regular_id().GetText() == tp {
 				l.adviceList = append(l.adviceList, &storepb.Advice{
-					Status:  l.level,
-					Code:    advisor.DisabledColumnType.Int32(),
-					Title:   l.title,
-					Content: fmt.Sprintf("Disallow column type %s but column \"%s\" is", ctx.Regular_id().GetText(), normalizeIdentifier(ctx.Column_name(), l.currentDatabase)),
-					StartPosition: &storepb.Position{
-						Line: int32(ctx.Regular_id().GetStart().GetLine()),
-					},
+					Status:        l.level,
+					Code:          advisor.DisabledColumnType.Int32(),
+					Title:         l.title,
+					Content:       fmt.Sprintf("Disallow column type %s but column \"%s\" is", ctx.Regular_id().GetText(), normalizeIdentifier(ctx.Column_name(), l.currentDatabase)),
+					StartPosition: advisor.ConvertANTLRLineToPosition(ctx.Regular_id().GetStart().GetLine()),
 				})
 				break
 			}
@@ -118,13 +114,11 @@ func (l *columnTypeDisallowListListener) EnterColumn_definition(ctx *parser.Colu
 func (l *columnTypeDisallowListListener) EnterModify_col_properties(ctx *parser.Modify_col_propertiesContext) {
 	if l.isDisallowType(ctx.Datatype()) {
 		l.adviceList = append(l.adviceList, &storepb.Advice{
-			Status:  l.level,
-			Code:    advisor.DisabledColumnType.Int32(),
-			Title:   l.title,
-			Content: fmt.Sprintf("Disallow column type %s but column \"%s\" is", ctx.Datatype().GetText(), normalizeIdentifier(ctx.Column_name(), l.currentDatabase)),
-			StartPosition: &storepb.Position{
-				Line: int32(ctx.Datatype().GetStart().GetLine()),
-			},
+			Status:        l.level,
+			Code:          advisor.DisabledColumnType.Int32(),
+			Title:         l.title,
+			Content:       fmt.Sprintf("Disallow column type %s but column \"%s\" is", ctx.Datatype().GetText(), normalizeIdentifier(ctx.Column_name(), l.currentDatabase)),
+			StartPosition: advisor.ConvertANTLRLineToPosition(ctx.Datatype().GetStart().GetLine()),
 		})
 	}
 }

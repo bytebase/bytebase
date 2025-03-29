@@ -52,13 +52,11 @@ func (*NoLeadingWildcardLikeAdvisor) Check(_ context.Context, checkCtx advisor.C
 
 		if checker.leadingWildcardLike {
 			checker.adviceList = append(checker.adviceList, &storepb.Advice{
-				Status:  checker.level,
-				Code:    advisor.StatementLeadingWildcardLike.Int32(),
-				Title:   checker.title,
-				Content: fmt.Sprintf("\"%s\" uses leading wildcard LIKE", checker.text),
-				StartPosition: &storepb.Position{
-					Line: int32(stmt.LastLine()),
-				},
+				Status:        checker.level,
+				Code:          advisor.StatementLeadingWildcardLike.Int32(),
+				Title:         checker.title,
+				Content:       fmt.Sprintf("\"%s\" uses leading wildcard LIKE", checker.text),
+				StartPosition: advisor.ConvertANTLRLineToPosition(stmt.LastLine()),
 			})
 		}
 	}

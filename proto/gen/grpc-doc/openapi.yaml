@@ -7756,7 +7756,9 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/AICompletionResponse_Candidate'
-                    description: candidates is used for results with multiple choices and candidates. Used for OpenAI and Gemini.
+                    description: |-
+                        candidates is used for results with multiple choices and candidates. Used
+                         for OpenAI and Gemini.
         AICompletionResponse_Candidate:
             type: object
             properties:
@@ -7926,7 +7928,9 @@ components:
                 startPosition:
                     allOf:
                         - $ref: '#/components/schemas/Position'
-                    description: 1-based positions of the sql statment.
+                    description: |-
+                        The start_position is inclusive and the end_position is exclusive.
+                         TODO: use range instead.
                 endPosition:
                     $ref: '#/components/schemas/Position'
         AgentPluginSetting:
@@ -9356,7 +9360,9 @@ components:
                     format: enum
                 classificationFromConfig:
                     type: boolean
-                    description: If false, we will build the raw common by classification in database config.
+                    description: |-
+                        If false, we will build the raw common by classification in database
+                         config.
         DiffMetadataResponse:
             type: object
             properties:
@@ -11300,10 +11306,15 @@ components:
             properties:
                 line:
                     type: integer
+                    description: Line position in a text (zero-based).
                     format: int32
                 column:
                     type: integer
+                    description: Column position in a text (zero-based), equivalent to byte offset.
                     format: int32
+            description: |-
+                Position in a text expressed as zero-based line and zero-based column byte
+                 offset.
         Postgres_Session:
             type: object
             properties:

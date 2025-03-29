@@ -5,9 +5,8 @@
       code: 101
       title: schema.backward-compatibility
       content: Drop database "DB" may cause incompatibility with the existing data and code
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: DROP SCHEMA SCHEMA1;
@@ -17,9 +16,8 @@
       code: 112
       title: schema.backward-compatibility
       content: Drop schema "TEST_DB.SCHEMA1" may cause incompatibility with the existing data and code
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: DROP TABLE T;
@@ -29,9 +27,8 @@
       code: 103
       title: schema.backward-compatibility
       content: Drop table "TEST_DB.PUBLIC.T" may cause incompatibility with the existing data and code
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: ALTER TABLE T DROP COLUMN COL1;
@@ -41,9 +38,8 @@
       code: 105
       title: schema.backward-compatibility
       content: Drop column "COL1" may cause incompatibility with the existing data and code
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: |-
@@ -55,9 +51,8 @@
       code: 103
       title: schema.backward-compatibility
       content: Drop table "TEST_DB.PUBLIC.T" may cause incompatibility with the existing data and code
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null
 - statement: |-

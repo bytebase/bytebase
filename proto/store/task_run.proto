@@ -14,6 +14,7 @@ message TaskRunResult {
   string version = 3;
 
   // The following fields are used for error reporting.
+  // TODO(zp): Use common Position instead.
   message Position {
     int32 line = 1;
     int32 column = 2;

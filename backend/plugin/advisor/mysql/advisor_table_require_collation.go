@@ -78,13 +78,11 @@ func (checker *tableRequireCollationChecker) EnterCreateTable(ctx *mysql.CreateT
 	}
 	if !hasCollation {
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{
-			Status:  checker.level,
-			Code:    advisor.NoCollation.Int32(),
-			Title:   checker.title,
-			Content: fmt.Sprintf("Table %s does not have a collation specified", tableName),
-			StartPosition: &storepb.Position{
-				Line: int32(checker.baseLine + ctx.GetStart().GetLine()),
-			},
+			Status:        checker.level,
+			Code:          advisor.NoCollation.Int32(),
+			Title:         checker.title,
+			Content:       fmt.Sprintf("Table %s does not have a collation specified", tableName),
+			StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
 		})
 	}
 }

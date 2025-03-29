@@ -9,9 +9,8 @@
       code: 415
       title: column.maximum-character-length
       content: The length of the CHAR column "name" in table "t" is bigger than 20, please use VARCHAR instead
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: ALTER TABLE public.tech_book ADD COLUMN name_2 char(225)
@@ -21,9 +20,8 @@
       code: 415
       title: column.maximum-character-length
       content: The length of the CHAR column "name_2" in table "public"."tech_book" is bigger than 20, please use VARCHAR instead
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: ALTER TABLE tech_book ALTER COLUMN name SET DATA TYPE char(225)
@@ -33,8 +31,7 @@
       code: 415
       title: column.maximum-character-length
       content: The length of the CHAR column "name" in table "tech_book" is bigger than 20, please use VARCHAR instead
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null

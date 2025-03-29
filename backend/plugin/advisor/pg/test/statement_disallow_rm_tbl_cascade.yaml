@@ -5,10 +5,9 @@
       code: 213
       title: statement.disallow-rm-tbl-cascade
       content: The use of CASCADE is not permitted when removing a table
-      detail: ""
       startposition:
-        line: 1
-        column: 1
+        line: 0
+        column: 0
       endposition: null
 - statement: |-
     CREATE TABLE users (
@@ -39,17 +38,15 @@
       code: 213
       title: statement.disallow-rm-tbl-cascade
       content: The use of CASCADE is not permitted when removing a table
-      detail: ""
       startposition:
-        line: 1
-        column: 1
+        line: 0
+        column: 0
       endposition: null
     - status: 2
       code: 213
       title: statement.disallow-rm-tbl-cascade
       content: The use of CASCADE is not permitted when removing a table
-      detail: ""
       startposition:
-        line: 2
-        column: 1
+        line: 0
+        column: 0
       endposition: null

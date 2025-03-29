@@ -200,13 +200,11 @@ func (checker *statementJoinStrictColumnAttrsChecker) checkColumnAttrs(leftColum
 	}
 	if leftColumn.Type != rightColumn.Type || leftColumn.CharacterSet != rightColumn.CharacterSet || leftColumn.Collation != rightColumn.Collation {
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{
-			Status:  checker.level,
-			Code:    advisor.StatementJoinColumnAttrsNotMatch.Int32(),
-			Title:   checker.title,
-			Content: fmt.Sprintf("%s.%s and %s.%s column fields do not match", leftColumnAttr.Table, leftColumnAttr.Column, rightColumnAttr.Table, rightColumnAttr.Column),
-			StartPosition: &storepb.Position{
-				Line: int32(checker.baseLine) + 1,
-			},
+			Status:        checker.level,
+			Code:          advisor.StatementJoinColumnAttrsNotMatch.Int32(),
+			Title:         checker.title,
+			Content:       fmt.Sprintf("%s.%s and %s.%s column fields do not match", leftColumnAttr.Table, leftColumnAttr.Column, rightColumnAttr.Table, rightColumnAttr.Column),
+			StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine),
 		})
 	}
 }

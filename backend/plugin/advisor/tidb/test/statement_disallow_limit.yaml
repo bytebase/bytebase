@@ -7,9 +7,8 @@
       code: 1103
       title: statement.disallow-limit
       content: LIMIT clause is forbidden in INSERT, UPDATE and DELETE statement, but "INSERT INTO tech_book SELECT * FROM tech_book LIMIT 1" uses
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: INSERT INTO tech_book SELECT * FROM tech_book UNION SELECT * FROM tech_book LIMIT 1
@@ -19,9 +18,8 @@
       code: 1103
       title: statement.disallow-limit
       content: LIMIT clause is forbidden in INSERT, UPDATE and DELETE statement, but "INSERT INTO tech_book SELECT * FROM tech_book UNION SELECT * FROM tech_book LIMIT 1" uses
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: UPDATE tech_book SET name = 'my name' LIMIT 10
@@ -31,9 +29,8 @@
       code: 1102
       title: statement.disallow-limit
       content: LIMIT clause is forbidden in INSERT, UPDATE and DELETE statement, but "UPDATE tech_book SET name = 'my name' LIMIT 10" uses
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: DELETE FROM tech_book LIMIT 10
@@ -43,8 +40,7 @@
       code: 1106
       title: statement.disallow-limit
       content: LIMIT clause is forbidden in INSERT, UPDATE and DELETE statement, but "DELETE FROM tech_book LIMIT 10" uses
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null

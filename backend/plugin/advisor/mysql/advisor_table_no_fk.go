@@ -111,13 +111,11 @@ func (checker *tableNoFKChecker) handleTableConstraintDef(tableName string, ctx 
 		switch strings.ToUpper(ctx.GetType_().GetText()) {
 		case "FOREIGN":
 			checker.adviceList = append(checker.adviceList, &storepb.Advice{
-				Status:  checker.level,
-				Code:    advisor.TableHasFK.Int32(),
-				Title:   checker.title,
-				Content: fmt.Sprintf("Foreign key is not allowed in the table `%s`", tableName),
-				StartPosition: &storepb.Position{
-					Line: int32(checker.baseLine + ctx.GetStart().GetLine()),
-				},
+				Status:        checker.level,
+				Code:          advisor.TableHasFK.Int32(),
+				Title:         checker.title,
+				Content:       fmt.Sprintf("Foreign key is not allowed in the table `%s`", tableName),
+				StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
 			})
 		default:
 		}

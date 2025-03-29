@@ -282,8 +282,9 @@ export interface Advice {
   /** The advice column number in the SQL statement. */
   column: number;
   /**
-   * 1-based Position of the SQL statement.
    * To supersede `line` and `column` above.
+   * The start_position is inclusive and the end_position is exclusive.
+   * TODO: use range instead
    */
   startPosition: Position | undefined;
   endPosition: Position | undefined;
@@ -513,7 +514,10 @@ export interface DiffMetadataRequest {
     | undefined;
   /** The database engine of the schema. */
   engine: Engine;
-  /** If false, we will build the raw common by classification in database config. */
+  /**
+   * If false, we will build the raw common by classification in database
+   * config.
+   */
   classificationFromConfig: boolean;
 }
 
@@ -643,7 +647,10 @@ export interface AICompletionRequest_Message {
 }
 
 export interface AICompletionResponse {
-  /** candidates is used for results with multiple choices and candidates. Used for OpenAI and Gemini. */
+  /**
+   * candidates is used for results with multiple choices and candidates. Used
+   * for OpenAI and Gemini.
+   */
   candidates: AICompletionResponse_Candidate[];
 }
 

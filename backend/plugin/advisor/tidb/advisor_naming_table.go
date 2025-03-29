@@ -87,24 +87,20 @@ func (v *namingTableConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 	for _, tableName := range tableNames {
 		if !v.format.MatchString(tableName) {
 			v.adviceList = append(v.adviceList, &storepb.Advice{
-				Status:  v.level,
-				Code:    advisor.NamingTableConventionMismatch.Int32(),
-				Title:   v.title,
-				Content: fmt.Sprintf("`%s` mismatches table naming convention, naming format should be %q", tableName, v.format),
-				StartPosition: &storepb.Position{
-					Line: int32(in.OriginTextPosition()),
-				},
+				Status:        v.level,
+				Code:          advisor.NamingTableConventionMismatch.Int32(),
+				Title:         v.title,
+				Content:       fmt.Sprintf("`%s` mismatches table naming convention, naming format should be %q", tableName, v.format),
+				StartPosition: advisor.ConvertANTLRLineToPosition(in.OriginTextPosition()),
 			})
 		}
 		if v.maxLength > 0 && len(tableName) > v.maxLength {
 			v.adviceList = append(v.adviceList, &storepb.Advice{
-				Status:  v.level,
-				Code:    advisor.NamingTableConventionMismatch.Int32(),
-				Title:   v.title,
-				Content: fmt.Sprintf("`%s` mismatches table naming convention, its length should be within %d characters", tableName, v.maxLength),
-				StartPosition: &storepb.Position{
-					Line: int32(in.OriginTextPosition()),
-				},
+				Status:        v.level,
+				Code:          advisor.NamingTableConventionMismatch.Int32(),
+				Title:         v.title,
+				Content:       fmt.Sprintf("`%s` mismatches table naming convention, its length should be within %d characters", tableName, v.maxLength),
+				StartPosition: advisor.ConvertANTLRLineToPosition(in.OriginTextPosition()),
 			})
 		}
 	}

@@ -5,9 +5,8 @@
       code: 401
       title: column.required
       content: 'Table "BOOK" requires columns: "created_ts", "creator_id", "updated_ts", "updater_id"'
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: |-
@@ -27,9 +26,8 @@
       code: 401
       title: column.required
       content: 'Table "TECH_BOOK" requires columns: "creator_id"'
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null
 - statement: |-
@@ -41,8 +39,7 @@
       code: 401
       title: column.required
       content: 'Table "TECH_BOOK" requires columns: "creator_id"'
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null

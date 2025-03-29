@@ -4,44 +4,56 @@
       name varchar(255)
     );
     COMMENT ON TABLE book IS 'comments';
-- statement: |-
-    CREATE TABLE t(a int);
+  changeType: 0
+- statement: CREATE TABLE t(a int);
+  changeType: 0
   want:
     - status: 2
       code: 1032
       title: table.comment
       content: Comment is required for table "TEST_DB"."T"
       startposition:
-        line: 1
+        line: 0
+        column: 0
+      endposition: null
 - statement: |-
     CREATE TABLE t(a int);
     CREATE TABLE d(a int);
     COMMENT ON TABLE t IS 'comments';
+  changeType: 0
   want:
     - status: 2
       code: 1032
       title: table.comment
       content: Comment is required for table "TEST_DB"."D"
       startposition:
-        line: 2
+        line: 1
+        column: 0
+      endposition: null
 - statement: |-
     CREATE TABLE t(a int);
     COMMENT ON TABLE t IS 'comments';
     COMMENT ON TABLE t IS '';
+  changeType: 0
   want:
     - status: 2
       code: 1032
       title: table.comment
       content: Comment is required for table "TEST_DB"."T"
       startposition:
-        line: 1
+        line: 0
+        column: 0
+      endposition: null
 - statement: |-
     CREATE TABLE t(a int);
     COMMENT ON TABLE t IS 'looooooong comments';
+  changeType: 0
   want:
     - status: 2
       code: 1301
       title: table.comment
       content: Table "TEST_DB"."T" comment is too long. The length of comment should be within 10 characters
       startposition:
-        line: 1
+        line: 0
+        column: 0
+      endposition: null

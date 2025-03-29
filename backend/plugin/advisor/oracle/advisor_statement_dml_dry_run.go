@@ -94,13 +94,11 @@ func (s *statementDmlDryRunChecker) handleStmt(text string, lineNumber int) {
 	s.explainCount++
 	if _, err := advisor.Query(s.ctx, advisor.QueryContext{}, s.driver, storepb.Engine_ORACLE, fmt.Sprintf("EXPLAIN PLAN FOR %s", text)); err != nil {
 		s.adviceList = append(s.adviceList, &storepb.Advice{
-			Status:  s.level,
-			Code:    advisor.StatementDMLDryRunFailed.Int32(),
-			Title:   s.title,
-			Content: fmt.Sprintf("Failed to dry run statement at line %d: %v", lineNumber, err),
-			StartPosition: &storepb.Position{
-				Line: int32(lineNumber),
-			},
+			Status:        s.level,
+			Code:          advisor.StatementDMLDryRunFailed.Int32(),
+			Title:         s.title,
+			Content:       fmt.Sprintf("Failed to dry run statement at line %d: %v", lineNumber, err),
+			StartPosition: advisor.ConvertANTLRLineToPosition(lineNumber),
 		})
 	}
 }

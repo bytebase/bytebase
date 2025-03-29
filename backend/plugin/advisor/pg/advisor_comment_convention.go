@@ -78,13 +78,11 @@ func (checker *commentConventionChecker) Visit(node ast.Node) ast.Visitor {
 
 	if checker.maxLength > 0 && len(comment.comment) > checker.maxLength {
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{
-			Status:  checker.level,
-			Code:    advisor.CommentTooLong.Int32(),
-			Title:   checker.title,
-			Content: fmt.Sprintf("The length of comment should be within %d characters", checker.maxLength),
-			StartPosition: &storepb.Position{
-				Line: int32(comment.line),
-			},
+			Status:        checker.level,
+			Code:          advisor.CommentTooLong.Int32(),
+			Title:         checker.title,
+			Content:       fmt.Sprintf("The length of comment should be within %d characters", checker.maxLength),
+			StartPosition: advisor.ConvertANTLRLineToPosition(comment.line),
 		})
 	}
 

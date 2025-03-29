@@ -114,24 +114,20 @@ func (v *namingColumnConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 	for _, column := range columnList {
 		if !v.format.MatchString(column.name) {
 			v.adviceList = append(v.adviceList, &storepb.Advice{
-				Status:  v.level,
-				Code:    advisor.NamingColumnConventionMismatch.Int32(),
-				Title:   v.title,
-				Content: fmt.Sprintf("`%s`.`%s` mismatches column naming convention, naming format should be %q", tableName, column.name, v.format),
-				StartPosition: &storepb.Position{
-					Line: int32(column.line),
-				},
+				Status:        v.level,
+				Code:          advisor.NamingColumnConventionMismatch.Int32(),
+				Title:         v.title,
+				Content:       fmt.Sprintf("`%s`.`%s` mismatches column naming convention, naming format should be %q", tableName, column.name, v.format),
+				StartPosition: advisor.ConvertANTLRLineToPosition(column.line),
 			})
 		}
 		if v.maxLength > 0 && len(column.name) > v.maxLength {
 			v.adviceList = append(v.adviceList, &storepb.Advice{
-				Status:  v.level,
-				Code:    advisor.NamingColumnConventionMismatch.Int32(),
-				Title:   v.title,
-				Content: fmt.Sprintf("`%s`.`%s` mismatches column naming convention, its length should be within %d characters", tableName, column.name, v.maxLength),
-				StartPosition: &storepb.Position{
-					Line: int32(column.line),
-				},
+				Status:        v.level,
+				Code:          advisor.NamingColumnConventionMismatch.Int32(),
+				Title:         v.title,
+				Content:       fmt.Sprintf("`%s`.`%s` mismatches column naming convention, its length should be within %d characters", tableName, column.name, v.maxLength),
+				StartPosition: advisor.ConvertANTLRLineToPosition(column.line),
 			})
 		}
 	}

@@ -5,6 +5,7 @@ import { inject, provide, ref } from "vue";
 import { useSQLEditorStore } from "@/store";
 import type { ComposedDatabase, SQLEditorTab } from "@/types";
 import type { Worksheet } from "@/types/proto/v1/worksheet_service";
+import type { GetSchemaStringRequest_ObjectType } from "@/types/proto/v1/database_service";
 
 export type AsidePanelTab = "SCHEMA" | "WORKSHEET" | "HISTORY";
 
@@ -46,7 +47,8 @@ export type SQLEditorContext = {
     | {
         database: ComposedDatabase;
         schema?: string;
-        table?: string;
+        object?: string;
+        type?: GetSchemaStringRequest_ObjectType;
       }
     | undefined
   >;

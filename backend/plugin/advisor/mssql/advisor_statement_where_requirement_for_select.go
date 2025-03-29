@@ -66,13 +66,11 @@ func (l *whereRequirementForSelectChecker) EnterQuery_specification(ctx *parser.
 	// Allow SELECT queries without a FROM clause to proceed, e.g. SELECT 1.
 	if ctx.WHERE() == nil && ctx.From_table_sources() != nil {
 		l.adviceList = append(l.adviceList, &storepb.Advice{
-			Status:  l.level,
-			Code:    advisor.StatementNoWhere.Int32(),
-			Title:   l.title,
-			Content: "WHERE clause is required for SELETE statement.",
-			StartPosition: &storepb.Position{
-				Line: int32(ctx.GetStart().GetLine()),
-			},
+			Status:        l.level,
+			Code:          advisor.StatementNoWhere.Int32(),
+			Title:         l.title,
+			Content:       "WHERE clause is required for SELETE statement.",
+			StartPosition: advisor.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
 		})
 	}
 }

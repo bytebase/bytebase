@@ -5,9 +5,8 @@
       code: 803
       title: index.pk-type-limit
       content: Columns in primary key must be INT/BIGINT but `t`.`id` is varchar(5)
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: CREATE TABLE t(id INT PRIMARY KEY)
@@ -19,9 +18,8 @@
       code: 803
       title: index.pk-type-limit
       content: Columns in primary key must be INT/BIGINT but `t`.`id` is varchar(5)
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: CREATE TABLE t(id INT, id2 VARCHAR(5), id3 VARCHAR(5), PRIMARY KEY(id, id2, id3))
@@ -31,18 +29,16 @@
       code: 803
       title: index.pk-type-limit
       content: Columns in primary key must be INT/BIGINT but `t`.`id2` is varchar(5)
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
     - status: 2
       code: 803
       title: index.pk-type-limit
       content: Columns in primary key must be INT/BIGINT but `t`.`id3` is varchar(5)
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: CREATE TABLE t(id INT, id2 BIGINT, PRIMARY KEY(id, id2))
@@ -58,9 +54,8 @@
       code: 803
       title: index.pk-type-limit
       content: Columns in primary key must be INT/BIGINT but `t`.`id` is varchar(5)
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null
 - statement: |-
@@ -76,9 +71,8 @@
       code: 803
       title: index.pk-type-limit
       content: Columns in primary key must be INT/BIGINT but `t`.`id` is varchar(5)
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null
 - statement: |-
@@ -90,18 +84,16 @@
       code: 803
       title: index.pk-type-limit
       content: Columns in primary key must be INT/BIGINT but `t`.`id2` is varchar(5)
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null
     - status: 2
       code: 803
       title: index.pk-type-limit
       content: Columns in primary key must be INT/BIGINT but `t`.`id3` is varchar(5)
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null
 - statement: |-
@@ -121,9 +113,8 @@
       code: 803
       title: index.pk-type-limit
       content: Columns in primary key must be INT/BIGINT but `t`.`id` is varchar(5)
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null
 - statement: |-
@@ -135,18 +126,16 @@
       code: 803
       title: index.pk-type-limit
       content: Columns in primary key must be INT/BIGINT but `t`.`id2` is varchar(5)
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null
     - status: 2
       code: 803
       title: index.pk-type-limit
       content: Columns in primary key must be INT/BIGINT but `t`.`id3` is varchar(5)
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null
 - statement: |-
@@ -166,9 +155,8 @@
       code: 803
       title: index.pk-type-limit
       content: Columns in primary key must be INT/BIGINT but `t`.`id` is varchar(5)
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null
 - statement: |-
@@ -184,9 +172,8 @@
       code: 803
       title: index.pk-type-limit
       content: Columns in primary key must be INT/BIGINT but `t`.`id2` is varchar(5)
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null
 - statement: |-

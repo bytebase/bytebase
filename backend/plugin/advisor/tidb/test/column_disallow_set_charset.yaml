@@ -11,9 +11,8 @@
       code: 414
       title: column.disallow-set-charset
       content: Disallow set column charset but "CREATE TABLE t(a varchar(20) CHARSET ascii)" does
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: ALTER TABLE tech_book ADD COLUMN a varchar(20) CHARSET ascii
@@ -23,9 +22,8 @@
       code: 414
       title: column.disallow-set-charset
       content: Disallow set column charset but "ALTER TABLE tech_book ADD COLUMN a varchar(20) CHARSET ascii" does
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: ALTER TABLE tech_book MODIFY COLUMN id varchar(20) CHARSET ascii
@@ -35,9 +33,8 @@
       code: 414
       title: column.disallow-set-charset
       content: Disallow set column charset but "ALTER TABLE tech_book MODIFY COLUMN id varchar(20) CHARSET ascii" does
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
 - statement: ALTER TABLE tech_book CHANGE COLUMN name name varchar(20) CHARSET ascii
@@ -47,8 +44,7 @@
       code: 414
       title: column.disallow-set-charset
       content: Disallow set column charset but "ALTER TABLE tech_book CHANGE COLUMN name name varchar(20) CHARSET ascii" does
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null

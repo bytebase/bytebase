@@ -59,13 +59,11 @@ func (checker *tableNoFKChecker) Enter(in ast.Node) (ast.Node, bool) {
 		for _, constraint := range node.Constraints {
 			if constraint.Tp == ast.ConstraintForeignKey {
 				checker.adviceList = append(checker.adviceList, &storepb.Advice{
-					Status:  checker.level,
-					Code:    advisor.TableHasFK.Int32(),
-					Title:   checker.title,
-					Content: fmt.Sprintf("Foreign key is not allowed in the table `%s`", node.Table.Name),
-					StartPosition: &storepb.Position{
-						Line: int32(constraint.OriginTextPosition()),
-					},
+					Status:        checker.level,
+					Code:          advisor.TableHasFK.Int32(),
+					Title:         checker.title,
+					Content:       fmt.Sprintf("Foreign key is not allowed in the table `%s`", node.Table.Name),
+					StartPosition: advisor.ConvertANTLRLineToPosition(constraint.OriginTextPosition()),
 				})
 			}
 		}
@@ -73,13 +71,11 @@ func (checker *tableNoFKChecker) Enter(in ast.Node) (ast.Node, bool) {
 		for _, spec := range node.Specs {
 			if spec.Tp == ast.AlterTableAddConstraint && spec.Constraint.Tp == ast.ConstraintForeignKey {
 				checker.adviceList = append(checker.adviceList, &storepb.Advice{
-					Status:  checker.level,
-					Code:    advisor.TableHasFK.Int32(),
-					Title:   checker.title,
-					Content: fmt.Sprintf("Foreign key is not allowed in the table `%s`", node.Table.Name),
-					StartPosition: &storepb.Position{
-						Line: int32(in.OriginTextPosition()),
-					},
+					Status:        checker.level,
+					Code:          advisor.TableHasFK.Int32(),
+					Title:         checker.title,
+					Content:       fmt.Sprintf("Foreign key is not allowed in the table `%s`", node.Table.Name),
+					StartPosition: advisor.ConvertANTLRLineToPosition(in.OriginTextPosition()),
 				})
 			}
 		}

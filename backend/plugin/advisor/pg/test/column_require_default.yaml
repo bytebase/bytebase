@@ -11,9 +11,8 @@
       code: 420
       title: column.require-default
       content: Column "t"."a" in schema "public" doesn't have DEFAULT
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null
 - statement: |-
@@ -25,17 +24,15 @@
       code: 420
       title: column.require-default
       content: Column "tech_book"."a" in schema "public" doesn't have DEFAULT
-      detail: ""
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
     - status: 2
       code: 420
       title: column.require-default
       content: Column "tech_book"."b" in schema "public" doesn't have DEFAULT
-      detail: ""
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null

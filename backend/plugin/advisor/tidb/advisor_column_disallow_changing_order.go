@@ -66,13 +66,11 @@ func (checker *columnDisallowChangingOrderChecker) Enter(in ast.Node) (ast.Node,
 			if (spec.Tp == ast.AlterTableChangeColumn || spec.Tp == ast.AlterTableModifyColumn) &&
 				spec.Position.Tp != ast.ColumnPositionNone {
 				checker.adviceList = append(checker.adviceList, &storepb.Advice{
-					Status:  checker.level,
-					Code:    advisor.ChangeColumnOrder.Int32(),
-					Title:   checker.title,
-					Content: fmt.Sprintf("\"%s\" changes column order", checker.text),
-					StartPosition: &storepb.Position{
-						Line: int32(checker.line),
-					},
+					Status:        checker.level,
+					Code:          advisor.ChangeColumnOrder.Int32(),
+					Title:         checker.title,
+					Content:       fmt.Sprintf("\"%s\" changes column order", checker.text),
+					StartPosition: advisor.ConvertANTLRLineToPosition(checker.line),
 				})
 				break
 			}

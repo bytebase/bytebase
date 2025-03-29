@@ -9,34 +9,31 @@
       code: 207
       title: statement.merge-alter-table
       content: There are 2 statements to modify table `tech_book`
-      detail: ""
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE t(a int);
+    ALTER TABLE tech_book ADD COLUMN a int;
+    ALTER TABLE t ADD COLUMN b int;
+    ALTER TABLE tech_book ADD COLUMN b int;
+  changeType: 0
+  want:
+    - status: 2
+      code: 207
+      title: statement.merge-alter-table
+      content: There are 2 statements to modify table `t`
       startposition:
         line: 2
         column: 0
       endposition: null
-- statement: |-
-    CREATE TABLE t(a int);
-    ALTER TABLE tech_book ADD COLUMN a int;
-    ALTER TABLE t ADD COLUMN b int;
-    ALTER TABLE tech_book ADD COLUMN b int;
-  changeType: 0
-  want:
-    - status: 2
-      code: 207
-      title: statement.merge-alter-table
-      content: There are 2 statements to modify table `t`
-      detail: ""
-      startposition:
-        line: 3
-        column: 0
-      endposition: null
     - status: 2
       code: 207
       title: statement.merge-alter-table
       content: There are 2 statements to modify table `tech_book`
-      detail: ""
       startposition:
-        line: 4
+        line: 3
         column: 0
       endposition: null
 - statement: |-
@@ -50,17 +47,15 @@
       code: 207
       title: statement.merge-alter-table
       content: There are 2 statements to modify table `tech_book`
-      detail: ""
       startposition:
-        line: 3
+        line: 2
         column: 0
       endposition: null
     - status: 2
       code: 207
       title: statement.merge-alter-table
       content: There are 2 statements to modify table `t`
-      detail: ""
       startposition:
-        line: 4
+        line: 3
         column: 0
       endposition: null

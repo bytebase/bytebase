@@ -62,13 +62,11 @@ func (checker *statementDisallowAddColumnWithDefaultChecker) Visit(in ast.Node) 
 		for _, column := range node.ColumnList {
 			if setDefault(column) {
 				checker.adviceList = append(checker.adviceList, &storepb.Advice{
-					Status:  checker.level,
-					Code:    advisor.StatementAddColumnWithDefault.Int32(),
-					Title:   checker.title,
-					Content: "Adding column with DEFAULT will locked the whole table and rewriting each rows",
-					StartPosition: &storepb.Position{
-						Line: int32(checker.line),
-					},
+					Status:        checker.level,
+					Code:          advisor.StatementAddColumnWithDefault.Int32(),
+					Title:         checker.title,
+					Content:       "Adding column with DEFAULT will locked the whole table and rewriting each rows",
+					StartPosition: advisor.ConvertANTLRLineToPosition(checker.line),
 				})
 			}
 		}
