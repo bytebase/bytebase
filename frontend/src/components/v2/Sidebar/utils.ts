@@ -11,7 +11,7 @@ export const getFlattenRoutes = (
   return routes.reduce(
     (list, v1Route) => {
       const requiredPermissionListFunc = v1Route.meta?.requiredPermissionList;
-      let requiredPermissionList = requiredPermissionListFunc
+      const requiredPermissionList = requiredPermissionListFunc
         ? requiredPermissionListFunc()
         : [];
 
