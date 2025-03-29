@@ -111,7 +111,7 @@ import { FeatureModal } from "@/components/FeatureGuard";
 import { PagedDatabaseTable } from "@/components/v2/Model/DatabaseV1Table";
 import {
   PROJECT_V1_ROUTE_ISSUE_DETAIL,
-  PROJECT_V1_ROUTE_PLAN_DETAIL,
+  PROJECT_V1_ROUTE_REVIEW_CENTER_DETAIL,
 } from "@/router/dashboard/projectV1";
 import { useDatabaseV1Store, useAppFeature } from "@/store";
 import {
@@ -288,7 +288,7 @@ const generateMultiDb = async () => {
 
   router.push({
     name: state.planOnly
-      ? PROJECT_V1_ROUTE_PLAN_DETAIL
+      ? PROJECT_V1_ROUTE_REVIEW_CENTER_DETAIL
       : PROJECT_V1_ROUTE_ISSUE_DETAIL,
     params: {
       projectId: extractProjectResourceName(project.name),

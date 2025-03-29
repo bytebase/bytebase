@@ -10,7 +10,7 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
-import CommonSidebar from "@/components/CommonSidebar.vue";
+import CommonSidebar from "@/components/v2/Sidebar/CommonSidebar.vue";
 import { WORKSPACE_ROUTE_LANDING } from "@/router/dashboard/workspaceRoutes";
 import { SQL_EDITOR_HOME_MODULE } from "@/router/sqlEditor";
 import { useAppFeature } from "@/store";

@@ -42,7 +42,7 @@ const workspaceSettingRoutes: RouteRecordRaw[] = [
         name: SETTING_ROUTE_WORKSPACE_GENERAL,
         meta: {
           title: () => t("settings.sidebar.general"),
-          requiredWorkspacePermissionList: () => ["bb.settings.get"],
+          requiredPermissionList: () => ["bb.settings.get"],
         },
         component: () => import("@/views/SettingWorkspaceGeneral.vue"),
         props: true,
@@ -52,7 +52,7 @@ const workspaceSettingRoutes: RouteRecordRaw[] = [
         name: SETTING_ROUTE_WORKSPACE_SUBSCRIPTION,
         meta: {
           title: () => t("settings.sidebar.subscription"),
-          requiredWorkspacePermissionList: () => ["bb.settings.get"],
+          requiredPermissionList: () => ["bb.settings.get"],
         },
         component: () => import("@/views/SettingWorkspaceSubscription.vue"),
         props: true,
@@ -62,7 +62,7 @@ const workspaceSettingRoutes: RouteRecordRaw[] = [
         name: SETTING_ROUTE_WORKSPACE_ARCHIVE,
         meta: {
           title: () => t("common.archived"),
-          requiredWorkspacePermissionList: () => [
+          requiredPermissionList: () => [
             "bb.projects.list",
             "bb.instances.list",
             "bb.environments.list",

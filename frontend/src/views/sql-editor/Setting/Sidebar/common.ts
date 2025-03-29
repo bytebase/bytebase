@@ -9,9 +9,10 @@ import {
 } from "lucide-vue-next";
 import { computed, h, unref, type MaybeRef } from "vue";
 import { useI18n } from "vue-i18n";
-import { useRoute, type RouteRecordRaw } from "vue-router";
-import type { SidebarItem } from "@/components/CommonSidebar.vue";
+import { useRoute } from "vue-router";
 import { DatabaseIcon } from "@/components/Icon";
+import type { SidebarItem } from "@/components/v2/Sidebar/CommonSidebar.vue";
+import { getFlattenRoutes } from "@/components/v2/Sidebar/utils";
 import sqlEditorRoutes, {
   SQL_EDITOR_SETTING_AUDIT_LOG_MODULE,
   SQL_EDITOR_SETTING_DATA_CLASSIFICATION_MODULE,
@@ -30,7 +31,6 @@ import sqlEditorRoutes, {
   SQL_EDITOR_SETTING_USERS_MODULE,
 } from "@/router/sqlEditor";
 import { useAppFeature, usePermissionStore } from "@/store";
-import type { Permission } from "@/types";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
 export const useSidebarItems = (ignoreModeCheck?: MaybeRef<boolean>) => {
@@ -44,41 +44,6 @@ export const useSidebarItems = (ignoreModeCheck?: MaybeRef<boolean>) => {
       return ["router-link-active", "bg-link-hover"];
     }
     return [];
-  };
-
-  const getFlattenRoutes = (
-    routes: RouteRecordRaw[],
-    permissions: Permission[] = []
-  ): {
-    name: string;
-    permissions: Permission[];
-  }[] => {
-    return routes.reduce(
-      (list, workspaceRoute) => {
-        const requiredWorkspacePermissionListFunc =
-          workspaceRoute.meta?.requiredWorkspacePermissionList;
-        let requiredPermissionList = requiredWorkspacePermissionListFunc
-          ? requiredWorkspacePermissionListFunc()
-          : [];
-        if (requiredPermissionList.length === 0) {
-          requiredPermissionList = permissions;
-        }
-
-        if (workspaceRoute.name && workspaceRoute.name.toString() !== "") {
-          list.push({
-            name: workspaceRoute.name.toString(),
-            permissions: requiredPermissionList,
-          });
-        }
-        if (workspaceRoute.children) {
-          list.push(
-            ...getFlattenRoutes(workspaceRoute.children, requiredPermissionList)
-          );
-        }
-        return list;
-      },
-      [] as { name: string; permissions: Permission[] }[]
-    );
   };
 
   const flattenRoutes = computed(() => {

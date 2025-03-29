@@ -14,7 +14,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, watch, h } from "vue";
+import { computed, h, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useInstanceResourceList } from "@/store";
 import {
@@ -22,7 +22,7 @@ import {
   isValidEnvironmentName,
   unknownInstance,
 } from "@/types";
-import type { Engine } from "@/types/proto/v1/common";
+import { type Engine } from "@/types/proto/v1/common";
 import type { InstanceResource } from "@/types/proto/v1/instance_service";
 import { supportedEngineV1List } from "@/utils";
 import { InstanceV1EngineIcon } from "../Model/Instance";
