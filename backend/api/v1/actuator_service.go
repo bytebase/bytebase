@@ -135,6 +135,30 @@ func (s *ActuatorService) getServerInfo(ctx context.Context) (*v1pb.ActuatorInfo
 		PasswordRestriction:    passwordSetting,
 	}
 
+	stats, err := s.store.StatUsers(ctx)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to stat users, error: %v", err)
+	}
+	for _, stat := range stats {
+		serverInfo.UserStats = append(serverInfo.UserStats, &v1pb.ActuatorInfo_StatUser{
+			State:    convertDeletedToState(stat.Deleted),
+			UserType: convertToV1UserType(stat.Type),
+			Count:    int32(stat.Count),
+		})
+	}
+
+	activatedInstanceCount, err := s.store.GetActivatedInstanceCount(ctx)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to count activated instance, error: %v", err)
+	}
+	serverInfo.ActivatedInstanceCount = int32(activatedInstanceCount)
+
+	totalInstanceCount, err := s.store.CountInstance(ctx, &store.CountInstanceMessage{})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to count total instance, error: %v", err)
+	}
+	serverInfo.TotalInstanceCount = int32(totalInstanceCount)
+
 	return &serverInfo, nil
 }
 

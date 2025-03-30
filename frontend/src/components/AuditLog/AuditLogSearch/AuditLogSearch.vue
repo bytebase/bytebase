@@ -32,12 +32,7 @@ import { ALL_METHODS_WITH_AUDIT } from "@/grpcweb/methods";
 import { useCurrentUserV1, useProjectV1Store, useUserStore } from "@/store";
 import { SYSTEM_BOT_USER_NAME, type ComposedProject } from "@/types";
 import { AuditLog_Severity } from "@/types/proto/v1/audit_log_service";
-import { State, stateToJSON } from "@/types/proto/v1/common";
-import {
-  type User,
-  UserType,
-  userTypeToJSON,
-} from "@/types/proto/v1/user_service";
+import { type User, UserType } from "@/types/proto/v1/user_service";
 import {
   getDefaultPagination,
   extractProjectResourceName,
@@ -64,8 +59,9 @@ onMounted(async () => {
   const [listUsersResponse, listProjectsResponse] = await Promise.all([
     userStore.fetchUserList({
       pageSize: getDefaultPagination(),
-      showDeleted: false,
-      filter: `state == "${stateToJSON(State.ACTIVE)}" && user_type == "${userTypeToJSON(UserType.USER)}"`,
+      filter: {
+        types: [UserType.USER],
+      },
     }),
     projectStore.fetchProjectList({
       pageSize: getDefaultPagination(),

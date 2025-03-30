@@ -18,46 +18,48 @@ option go_package = "generated-go/v1";
 service SQLService {
   rpc Query(QueryRequest) returns (QueryResponse) {
     option (google.api.http) = {
-      post : "/v1/{name=instances/*/databases/*}:query"
-      body : "*"
+      post: "/v1/{name=instances/*/databases/*}:query"
+      body: "*"
 
-      additional_bindings : {post : "/v1/{name=instances/*}:query" body : "*"}
+      additional_bindings: {
+        post: "/v1/{name=instances/*}:query"
+        body: "*"
+      }
     };
     option (bytebase.v1.permission) = "bb.databases.get";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
   }
 
-  rpc AdminExecute(stream AdminExecuteRequest)
-      returns (stream AdminExecuteResponse) {
+  rpc AdminExecute(stream AdminExecuteRequest) returns (stream AdminExecuteResponse) {
     // GRPC streaming / websocket requires GET method instead of POST.
-    option (google.api.http) = {
-      get : "/v1:adminExecute"
-    };
+    option (google.api.http) = {get: "/v1:adminExecute"};
     option (bytebase.v1.permission) = "bb.sql.admin";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
   }
 
   // SearchQueryHistories searches query histories for the caller.
-  rpc SearchQueryHistories(SearchQueryHistoriesRequest)
-      returns (SearchQueryHistoriesResponse) {
+  rpc SearchQueryHistories(SearchQueryHistoriesRequest) returns (SearchQueryHistoriesResponse) {
     option (google.api.http) = {
-      post : "/v1/queryHistories:search"
-      body : "*"
+      post: "/v1/queryHistories:search"
+      body: "*"
     };
     option (bytebase.v1.auth_method) = CUSTOM;
   }
 
   rpc Export(ExportRequest) returns (ExportResponse) {
     option (google.api.http) = {
-      post : "/v1/{name=instances/*/databases/*}:export"
-      body : "*"
+      post: "/v1/{name=instances/*/databases/*}:export"
+      body: "*"
 
-      additional_bindings : {post : "/v1/{name=instances/*}:export" body : "*"}
-      additional_bindings : {
-        post : "/v1/{name=projects/*/issues/*}:export"
-        body : "*"
+      additional_bindings: {
+        post: "/v1/{name=instances/*}:export"
+        body: "*"
+      }
+      additional_bindings: {
+        post: "/v1/{name=projects/*/issues/*}:export"
+        body: "*"
       }
     };
     option (bytebase.v1.permission) = "bb.databases.get";
@@ -67,34 +69,33 @@ service SQLService {
 
   rpc Check(CheckRequest) returns (CheckResponse) {
     option (google.api.http) = {
-      post : "/v1/sql/check"
-      body : "*"
+      post: "/v1/sql/check"
+      body: "*"
     };
     option (bytebase.v1.permission) = "bb.databases.check";
     option (bytebase.v1.auth_method) = IAM;
   }
 
-  rpc ParseMyBatisMapper(ParseMyBatisMapperRequest)
-      returns (ParseMyBatisMapperResponse) {
+  rpc ParseMyBatisMapper(ParseMyBatisMapperRequest) returns (ParseMyBatisMapperResponse) {
     option (google.api.http) = {
-      post : "/v1/sql/parseMyBatisMapper"
-      body : "*"
+      post: "/v1/sql/parseMyBatisMapper"
+      body: "*"
     };
     option (bytebase.v1.allow_without_credential) = true;
   }
 
   rpc Pretty(PrettyRequest) returns (PrettyResponse) {
     option (google.api.http) = {
-      post : "/v1/sql/pretty"
-      body : "*"
+      post: "/v1/sql/pretty"
+      body: "*"
     };
     option (bytebase.v1.allow_without_credential) = true;
   }
 
   rpc DiffMetadata(DiffMetadataRequest) returns (DiffMetadataResponse) {
     option (google.api.http) = {
-      post : "/v1/schemaDesign:diffMetadata"
-      body : "*"
+      post: "/v1/schemaDesign:diffMetadata"
+      body: "*"
     };
     option (bytebase.v1.allow_without_credential) = true;
     // This is a util method requiring no authentication thus no authorization.
@@ -102,8 +103,8 @@ service SQLService {
 
   rpc AICompletion(AICompletionRequest) returns (AICompletionResponse) {
     option (google.api.http) = {
-      post : "/v1/sql/aiCompletion"
-      body : "*"
+      post: "/v1/sql/aiCompletion"
+      body: "*"
     };
     option (bytebase.v1.auth_method) = CUSTOM;
   }
@@ -116,7 +117,7 @@ message AdminExecuteRequest {
   // Format: instances/{instance}/databases/{databaseName}
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference) = {type : "bytebase.com/Database"}
+    (google.api.resource_reference) = {type: "bytebase.com/Database"}
   ];
 
   // The SQL statement to execute.
@@ -146,7 +147,7 @@ message QueryRequest {
   // Format: instances/{instance}/databases/{databaseName}
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference) = {type : "bytebase.com/Database"}
+    (google.api.resource_reference) = {type: "bytebase.com/Database"}
   ];
 
   // The SQL statement to execute.
@@ -223,7 +224,9 @@ message QueryResult {
   // The query statement for the result.
   string statement = 8;
 
-  oneof detailed_error { PostgresError postgres_error = 9; }
+  oneof detailed_error {
+    PostgresError postgres_error = 9;
+  }
 
   // refer https://www.postgresql.org/docs/11/protocol-error-fields.html
   // for field description.
@@ -341,7 +344,7 @@ message ExportRequest {
   // Format: projects/{project}/issues/{issue} for data export issue.
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference) = {type : "bytebase.com/Database"}
+    (google.api.resource_reference) = {type: "bytebase.com/Database"}
   ];
 
   // The SQL statement to execute.
@@ -398,7 +401,7 @@ message CheckRequest {
   // Format: instances/{instance}/databases/{database}
   string name = 2 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference) = {type : "bytebase.com/Database"}
+    (google.api.resource_reference) = {type: "bytebase.com/Database"}
   ];
 
   string statement = 1;
@@ -420,18 +423,20 @@ message CheckResponse {
   int32 affected_rows = 2;
 }
 
-message ParseMyBatisMapperRequest { bytes content = 1; }
+message ParseMyBatisMapperRequest {
+  bytes content = 1;
+}
 
-message ParseMyBatisMapperResponse { repeated string statements = 1; }
+message ParseMyBatisMapperResponse {
+  repeated string statements = 1;
+}
 
 message DiffMetadataRequest {
   // The metadata of the source schema.
-  DatabaseMetadata source_metadata = 1
-      [ (google.api.field_behavior) = REQUIRED ];
+  DatabaseMetadata source_metadata = 1 [(google.api.field_behavior) = REQUIRED];
 
   // The metadata of the target schema.
-  DatabaseMetadata target_metadata = 2
-      [ (google.api.field_behavior) = REQUIRED ];
+  DatabaseMetadata target_metadata = 2 [(google.api.field_behavior) = REQUIRED];
 
   DatabaseCatalog source_catalog = 5;
 
@@ -476,8 +481,7 @@ message SearchQueryHistoriesRequest {
 
 message SearchQueryHistoriesResponse {
   // The list of history.
-  repeated QueryHistory query_histories = 1
-      [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  repeated QueryHistory query_histories = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // A token to retrieve next page of history.
   // Pass this value in the page_token field in the subsequent call to
@@ -488,23 +492,21 @@ message SearchQueryHistoriesResponse {
 message QueryHistory {
   // The name for the query history.
   // Format: queryHistories/{uid}
-  string name = 1 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  string name = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The database name to execute the query.
   // Format: instances/{instance}/databases/{databaseName}
-  string database = 2 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  string database = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  string creator = 3 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  string creator = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  google.protobuf.Timestamp create_time = 4
-      [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  google.protobuf.Timestamp create_time = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  string statement = 5 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  string statement = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  optional string error = 6 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  optional string error = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  google.protobuf.Duration duration = 7
-      [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  google.protobuf.Duration duration = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   enum Type {
     TYPE_UNSPECIFIED = 0;
@@ -526,7 +528,9 @@ message AICompletionRequest {
 message AICompletionResponse {
   message Candidate {
     message Content {
-      message Part { string text = 1; }
+      message Part {
+        string text = 1;
+      }
       // parts is used for a result content with multiple parts.
       repeated Part parts = 1;
     }
