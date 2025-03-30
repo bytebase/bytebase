@@ -19,10 +19,12 @@
     </div>
     <PagedProjectTable
       session-key="bb.project-table"
-      :search="state.searchText"
+      :filter="{
+        query: state.searchText,
+        excludeDefault: true,
+      }"
       :footer-class="'mx-4'"
       :bordered="false"
-      :include-default="false"
     />
   </div>
   <Drawer

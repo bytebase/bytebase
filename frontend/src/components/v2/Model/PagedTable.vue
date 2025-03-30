@@ -207,5 +207,6 @@ defineExpose({
     await refresh();
   }, props.debounce),
   updateCache,
+  dataList,
 });
 </script>
