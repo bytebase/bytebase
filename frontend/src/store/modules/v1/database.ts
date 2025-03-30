@@ -4,11 +4,15 @@ import { computed, reactive, ref, unref, watch, markRaw } from "vue";
 import { databaseServiceClient } from "@/grpcweb";
 import type { ComposedInstance, ComposedDatabase, MaybeRef } from "@/types";
 import {
+  isValidEnvironmentName,
+  isValidProjectName,
+  isValidInstanceName,
   isValidDatabaseName,
   unknownDatabase,
   unknownEnvironment,
   unknownInstanceResource,
 } from "@/types";
+import { type Engine, engineToJSON } from "@/types/proto/v1/common";
 import type {
   Database,
   UpdateDatabaseRequest,
@@ -30,15 +34,30 @@ import { useDBSchemaV1Store } from "./dbSchema";
 import { useEnvironmentV1Store } from "./environment";
 import { batchGetOrFetchProjects, useProjectV1Store } from "./project";
 
+export interface DatabaseFilter {
+  project?: string;
+  instance?: string;
+  environment?: string;
+  query?: string;
+  showDeleted?: boolean;
+  excludeUnassigned?: boolean;
+  // label should be "{label key}:{label value}" format
+  labels?: string[];
+  engines?: Engine[];
+  excludeEngines?: Engine[];
+}
+
 const formatListDatabaseParent = async (
   parent: string
-): Promise<{ parent: string; filter?: string }> => {
+): Promise<{ parent: string; filter?: DatabaseFilter }> => {
   if (parent.startsWith(projectNamePrefix)) {
     const project = await useProjectV1Store().getOrFetchProjectByName(parent);
     if (!hasProjectPermissionV2(project, "bb.projects.get")) {
       return {
         parent: `${workspaceNamePrefix}-`,
-        filter: `project == "${parent}"`,
+        filter: {
+          project: parent,
+        },
       };
     }
     return { parent };
@@ -47,12 +66,67 @@ const formatListDatabaseParent = async (
     if (!hasWorkspacePermissionV2("bb.instances.get")) {
       return {
         parent: `${workspaceNamePrefix}-`,
-        filter: `instance == "${parent}"`,
+        filter: {
+          instance: parent,
+        },
       };
     }
     return { parent };
   }
   return { parent: `${workspaceNamePrefix}-` };
+};
+
+const getListDatabaseFilter = (filter: DatabaseFilter): string => {
+  const params: string[] = [];
+  if (isValidProjectName(filter.project)) {
+    params.push(`project == "${filter.project}"`);
+  }
+  if (isValidInstanceName(filter.instance)) {
+    params.push(`instance == "${filter.instance}"`);
+  }
+  if (isValidEnvironmentName(filter.environment)) {
+    params.push(`environment == "${filter.environment}"`);
+  }
+  if (filter.excludeUnassigned) {
+    params.push(`exclude_unassigned == true`);
+  }
+  if (filter.engines && filter.engines.length > 0) {
+    // engine filter should be:
+    // engine in ["MYSQL", "POSTGRES"]
+    params.push(
+      `engine in [${filter.engines.map((e) => `"${engineToJSON(e)}"`).join(", ")}]`
+    );
+  } else if (filter.excludeEngines && filter.excludeEngines.length > 0) {
+    // engine filter should be:
+    // !(engine in ["REDIS", "MONGODB"])
+    params.push(
+      `!(engine in [${filter.excludeEngines.map((e) => `"${engineToJSON(e)}"`).join(", ")}])`
+    );
+  }
+  const keyword = filter.query?.trim()?.toLowerCase();
+  if (keyword) {
+    params.push(`name.matches("${keyword}")`);
+  }
+  if (filter.labels) {
+    // label filter like:
+    // label == "region:asia,europe" && label == "tenant:bytebase"
+    const labelMap = new Map<string, Set<string>>();
+    for (const label of filter.labels) {
+      const sections = label.split(":");
+      if (sections.length !== 2) {
+        continue;
+      }
+      if (!labelMap.has(sections[0])) {
+        labelMap.set(sections[0], new Set());
+      }
+      labelMap.get(sections[0])!.add(sections[1]);
+    }
+    for (const [labelKey, labelValues] of labelMap.entries()) {
+      params.push(`label == "${labelKey}:${[...labelValues].join(",")}"`);
+    }
+  }
+
+  return params.join(" && ");
 };
 
 export const useDatabaseV1Store = defineStore("database_v1", () => {
@@ -83,8 +157,7 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
     pageSize: number;
     pageToken?: string;
     parent: string;
-    filter?: string;
-    showDeleted?: boolean;
+    filter?: DatabaseFilter;
   }): Promise<{
     databases: ComposedDatabase[];
     nextPageToken: string;
@@ -95,11 +168,11 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
       await databaseServiceClient.listDatabases({
         ...params,
         parent,
-        filter: filter
-          ? params.filter
-            ? `${params.filter} && ${filter}`
-            : filter
-          : params.filter,
+        showDeleted: params.filter?.showDeleted,
+        filter: getListDatabaseFilter({
+          ...params.filter,
+          ...filter,
+        }),
       });
     if (parent.startsWith(instanceNamePrefix)) {
       removeCacheByInstance(parent);

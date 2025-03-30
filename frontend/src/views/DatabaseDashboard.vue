@@ -198,8 +198,8 @@ onMounted(() => {
 
 const selectedDatabases = computed((): ComposedDatabase[] => {
   return [...state.selectedDatabaseNameList]
-    .map((databaseName) => databaseStore.getDatabaseByName(databaseName))
-    .filter((database) => isValidDatabaseName(database.name));
+    .filter((databaseName) => isValidDatabaseName(databaseName))
+    .map((databaseName) => databaseStore.getDatabaseByName(databaseName));
 });
 
 const handleDatabasesSelectionChanged = (

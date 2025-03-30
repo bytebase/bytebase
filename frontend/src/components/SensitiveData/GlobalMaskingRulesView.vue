@@ -143,7 +143,11 @@ import {
   PolicyResourceType,
   MaskingRulePolicy_MaskingRule,
 } from "@/types/proto/v1/org_policy_service";
-import { arraySwap, hasWorkspacePermissionV2 } from "@/utils";
+import {
+  arraySwap,
+  hasWorkspacePermissionV2,
+  getDefaultPagination,
+} from "@/utils";
 import LearnMoreLink from "../LearnMoreLink.vue";
 import { MiniActionButton } from "../v2";
 import MaskingRuleConfig from "./components/MaskingRuleConfig.vue";
@@ -362,7 +366,12 @@ const factorOptionsMap = computed((): Map<Factor, OptionConfig> => {
           options: getProjectIdOptions(projectStore.getProjectList()),
           search: async (keyword: string) => {
             return projectStore
-              .fetchProjectList({ query: keyword })
+              .fetchProjectList({
+                pageSize: getDefaultPagination(),
+                filter: {
+                  query: keyword,
+                },
+              })
               .then((resp) => getProjectIdOptions(resp.projects));
           },
         });

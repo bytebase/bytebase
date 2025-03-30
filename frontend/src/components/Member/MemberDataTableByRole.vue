@@ -127,12 +127,13 @@ const userListByRole = computed(() => {
         member: memberBinding,
       });
     }
-
-    rowDataList.push({
-      type: "role",
-      name: role,
-      children,
-    });
+    if (children.length > 0) {
+      rowDataList.push({
+        type: "role",
+        name: role,
+        children,
+      });
+    }
   }
 
   return rowDataList;
