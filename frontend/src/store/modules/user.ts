@@ -10,19 +10,16 @@ import {
   unknownUser,
 } from "@/types";
 import { State } from "@/types/proto/v1/common";
-import type {
-  UpdateUserRequest,
-  User,
-  StatUsersResponse_StatUser,
-} from "@/types/proto/v1/user_service";
+import type { UpdateUserRequest, User } from "@/types/proto/v1/user_service";
 import { UserType } from "@/types/proto/v1/user_service";
 import { ensureUserFullName } from "@/utils";
+import { useActuatorV1Store } from "./v1/actuator";
 import { userNamePrefix, extractUserId } from "./v1/common";
 import { usePermissionStore } from "./v1/permission";
 
 export const useUserStore = defineStore("user", () => {
+  const actuatorStore = useActuatorV1Store();
   const allUser = computed(() => allUsersUser());
-  const userStats = ref<StatUsersResponse_StatUser[]>([]);
   const userRequestCache = new Map<string, Promise<User>>();
 
   const userMapByName = ref<Map<string, User>>(
@@ -55,11 +52,6 @@ export const useUserStore = defineStore("user", () => {
     return response;
   };
 
-  const refreshUserStat = async () => {
-    const { stats } = await userServiceClient.statUsers({});
-    userStats.value = stats;
-  };
-
   const fetchUser = async (name: string, silent = false) => {
     const user = await userServiceClient.getUser(
       {
@@ -76,7 +68,7 @@ export const useUserStore = defineStore("user", () => {
     const createdUser = await userServiceClient.createUser({
       user,
     });
-    await refreshUserStat();
+    await actuatorStore.fetchServerInfo();
     return setUser(createdUser);
   };
 
@@ -95,7 +87,7 @@ export const useUserStore = defineStore("user", () => {
       name: user.name,
     });
     user.state = State.DELETED;
-    await refreshUserStat();
+    await actuatorStore.fetchServerInfo();
     return user;
   };
 
@@ -103,7 +95,7 @@ export const useUserStore = defineStore("user", () => {
     const restoredUser = await userServiceClient.undeleteUser({
       name: user.name,
     });
-    await refreshUserStat();
+    await actuatorStore.fetchServerInfo();
     return setUser(restoredUser);
   };
 
@@ -140,31 +132,16 @@ export const useUserStore = defineStore("user", () => {
     return userMapByName.value.get(`${userNamePrefix}${id}`);
   };
 
-  const activeUserCountWithoutBot = computed(() => {
-    return userStats.value.reduce((count, stat) => {
-      if (
-        stat.state === State.ACTIVE &&
-        stat.userType !== UserType.SYSTEM_BOT
-      ) {
-        count += stat.count;
-      }
-      return count;
-    }, 0);
-  });
-
   return {
     allUser,
-    userStats,
     systemBotUser,
     fetchUserList,
-    refreshUserStat,
     createUser,
     updateUser,
     getOrFetchUserByIdentifier,
     getUserByIdentifier,
     archiveUser,
     restoreUser,
-    activeUserCountWithoutBot,
   };
 });
 

@@ -208,6 +208,7 @@ import {
   useSettingV1Store,
   featureToRef,
   useSubscriptionV1Store,
+  useActuatorV1Store,
 } from "@/store";
 import { groupNamePrefix } from "@/store/modules/v1/common";
 import { State, stateToJSON } from "@/types/proto/v1/common";
@@ -254,6 +255,7 @@ const router = useRouter();
 const userStore = useUserStore();
 const groupStore = useGroupStore();
 const uiStateStore = useUIStateStore();
+const actuatorStore = useActuatorV1Store();
 const settingV1Store = useSettingV1Store();
 const subscriptionV1Store = useSubscriptionV1Store();
 const userPagedTable = ref<ComponentExposed<typeof PagedTable<User>>>();
@@ -370,27 +372,17 @@ const filteredGroupList = computed(() => {
 });
 
 const activeUserCount = computed(() => {
-  return userStore.userStats.reduce((count, stat) => {
-    if (stat.state === State.ACTIVE) {
-      count += stat.count;
-    }
-    return count;
-  }, 0);
+  return actuatorStore.getActiveUserCount(true);
 });
 
 const inactiveUserCount = computed(() => {
-  return userStore.userStats.reduce((count, stat) => {
-    if (stat.state === State.DELETED) {
-      count += stat.count;
-    }
-    return count;
-  }, 0);
+  return actuatorStore.inactiveUserCount;
 });
 
 const remainingUserCount = computed((): number => {
   return Math.max(
     0,
-    subscriptionV1Store.userCountLimit - userStore.activeUserCountWithoutBot
+    subscriptionV1Store.userCountLimit - actuatorStore.getActiveUserCount(false)
   );
 });
 

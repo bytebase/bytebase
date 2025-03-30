@@ -42,11 +42,7 @@ import { storeToRefs } from "pinia";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import InstanceAssignment from "@/components/InstanceAssignment.vue";
-import {
-  useInstanceV1List,
-  useInstanceV1Store,
-  useSubscriptionV1Store,
-} from "@/store";
+import { useActuatorV1Store, useSubscriptionV1Store } from "@/store";
 import { PlanType } from "@/types/proto/v1/subscription_service";
 
 interface LocalState {
@@ -58,9 +54,7 @@ const state = reactive<LocalState>({
   showInstanceAssignmentDrawer: false,
 });
 const subscriptionStore = useSubscriptionV1Store();
-const instanceV1Store = useInstanceV1Store();
-// Prepare instance list.
-useInstanceV1List();
+const actuatorStore = useActuatorV1Store();
 
 const { instanceLicenseCount } = storeToRefs(subscriptionStore);
 
@@ -72,6 +66,6 @@ const totalLicenseCount = computed((): string => {
 });
 
 const activateLicenseCount = computed((): string => {
-  return `${instanceV1Store.activateInstanceCount}`;
+  return `${actuatorStore.activatedInstanceCount}`;
 });
 </script>
