@@ -126,7 +126,7 @@ import {
   pushNotification,
   useUIStateStore,
   useProjectV1Store,
-  useUserStore,
+  useActuatorV1Store,
 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import type { Permission } from "@/types";
@@ -152,7 +152,7 @@ type IntroItem = {
 const { t } = useI18n();
 const projectStore = useProjectV1Store();
 const uiStateStore = useUIStateStore();
-const userStore = useUserStore();
+const actuatorStore = useActuatorV1Store();
 
 const show = computed(() => {
   return !uiStateStore.getIntroStateByKey("hidden");
@@ -252,7 +252,7 @@ const introList = computed(() => {
 });
 
 const isFirstUser = computed(() => {
-  return userStore.activeUserCountWithoutBot === 1;
+  return actuatorStore.getActiveUserCount({ includeBot: false }) === 1;
 });
 
 const showQuickstart = computed(() => {

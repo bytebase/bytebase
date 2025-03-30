@@ -22,7 +22,6 @@ const _ = grpc.SupportPackageIsVersion9
 const (
 	UserService_GetUser_FullMethodName      = "/bytebase.v1.UserService/GetUser"
 	UserService_ListUsers_FullMethodName    = "/bytebase.v1.UserService/ListUsers"
-	UserService_StatUsers_FullMethodName    = "/bytebase.v1.UserService/StatUsers"
 	UserService_CreateUser_FullMethodName   = "/bytebase.v1.UserService/CreateUser"
 	UserService_UpdateUser_FullMethodName   = "/bytebase.v1.UserService/UpdateUser"
 	UserService_DeleteUser_FullMethodName   = "/bytebase.v1.UserService/DeleteUser"
@@ -39,9 +38,6 @@ type UserServiceClient interface {
 	// List all users.
 	// Any authenticated user can list users.
 	ListUsers(ctx context.Context, in *ListUsersRequest, opts ...grpc.CallOption) (*ListUsersResponse, error)
-	// Get user stat.
-	// Any authenticated user can get stat.
-	StatUsers(ctx context.Context, in *StatUsersRequest, opts ...grpc.CallOption) (*StatUsersResponse, error)
 	// Create a user.
 	// When Disallow Signup is enabled, only the caller with bb.users.create on the workspace can create a user.
 	// Otherwise, any unauthenticated user can create a user.
@@ -77,16 +73,6 @@ func (c *userServiceClient) ListUsers(ctx context.Context, in *ListUsersRequest,
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ListUsersResponse)
 	err := c.cc.Invoke(ctx, UserService_ListUsers_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *userServiceClient) StatUsers(ctx context.Context, in *StatUsersRequest, opts ...grpc.CallOption) (*StatUsersResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(StatUsersResponse)
-	err := c.cc.Invoke(ctx, UserService_StatUsers_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -143,9 +129,6 @@ type UserServiceServer interface {
 	// List all users.
 	// Any authenticated user can list users.
 	ListUsers(context.Context, *ListUsersRequest) (*ListUsersResponse, error)
-	// Get user stat.
-	// Any authenticated user can get stat.
-	StatUsers(context.Context, *StatUsersRequest) (*StatUsersResponse, error)
 	// Create a user.
 	// When Disallow Signup is enabled, only the caller with bb.users.create on the workspace can create a user.
 	// Otherwise, any unauthenticated user can create a user.
@@ -172,9 +155,6 @@ func (UnimplementedUserServiceServer) GetUser(context.Context, *GetUserRequest) 
 }
 func (UnimplementedUserServiceServer) ListUsers(context.Context, *ListUsersRequest) (*ListUsersResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListUsers not implemented")
-}
-func (UnimplementedUserServiceServer) StatUsers(context.Context, *StatUsersRequest) (*StatUsersResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method StatUsers not implemented")
 }
 func (UnimplementedUserServiceServer) CreateUser(context.Context, *CreateUserRequest) (*User, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateUser not implemented")
@@ -241,24 +221,6 @@ func _UserService_ListUsers_Handler(srv interface{}, ctx context.Context, dec fu
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(UserServiceServer).ListUsers(ctx, req.(*ListUsersRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _UserService_StatUsers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(StatUsersRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(UserServiceServer).StatUsers(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: UserService_StatUsers_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(UserServiceServer).StatUsers(ctx, req.(*StatUsersRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -349,10 +311,6 @@ var UserService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListUsers",
 			Handler:    _UserService_ListUsers_Handler,
-		},
-		{
-			MethodName: "StatUsers",
-			Handler:    _UserService_StatUsers_Handler,
 		},
 		{
 			MethodName: "CreateUser",

@@ -1218,11 +1218,70 @@
         
           
           <li>
+            <a href="#v1%2fuser_service.proto">v1/user_service.proto</a>
+            <ul>
+              
+                <li>
+                  <a href="#bytebase.v1.CreateUserRequest"><span class="badge">M</span>CreateUserRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.DeleteUserRequest"><span class="badge">M</span>DeleteUserRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.GetUserRequest"><span class="badge">M</span>GetUserRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.ListUsersRequest"><span class="badge">M</span>ListUsersRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.ListUsersResponse"><span class="badge">M</span>ListUsersResponse</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.UndeleteUserRequest"><span class="badge">M</span>UndeleteUserRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.UpdateUserRequest"><span class="badge">M</span>UpdateUserRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.User"><span class="badge">M</span>User</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.User.Profile"><span class="badge">M</span>User.Profile</a>
+                </li>
+              
+              
+                <li>
+                  <a href="#bytebase.v1.UserType"><span class="badge">E</span>UserType</a>
+                </li>
+              
+              
+              
+                <li>
+                  <a href="#bytebase.v1.UserService"><span class="badge">S</span>UserService</a>
+                </li>
+              
+            </ul>
+          </li>
+        
+          
+          <li>
             <a href="#v1%2factuator_service.proto">v1/actuator_service.proto</a>
             <ul>
               
                 <li>
                   <a href="#bytebase.v1.ActuatorInfo"><span class="badge">M</span>ActuatorInfo</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.ActuatorInfo.StatUser"><span class="badge">M</span>ActuatorInfo.StatUser</a>
                 </li>
               
                 <li>
@@ -1371,73 +1430,6 @@
               
                 <li>
                   <a href="#bytebase.v1.AuditLogService"><span class="badge">S</span>AuditLogService</a>
-                </li>
-              
-            </ul>
-          </li>
-        
-          
-          <li>
-            <a href="#v1%2fuser_service.proto">v1/user_service.proto</a>
-            <ul>
-              
-                <li>
-                  <a href="#bytebase.v1.CreateUserRequest"><span class="badge">M</span>CreateUserRequest</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.DeleteUserRequest"><span class="badge">M</span>DeleteUserRequest</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.GetUserRequest"><span class="badge">M</span>GetUserRequest</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.ListUsersRequest"><span class="badge">M</span>ListUsersRequest</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.ListUsersResponse"><span class="badge">M</span>ListUsersResponse</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.StatUsersRequest"><span class="badge">M</span>StatUsersRequest</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.StatUsersResponse"><span class="badge">M</span>StatUsersResponse</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.StatUsersResponse.StatUser"><span class="badge">M</span>StatUsersResponse.StatUser</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.UndeleteUserRequest"><span class="badge">M</span>UndeleteUserRequest</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.UpdateUserRequest"><span class="badge">M</span>UpdateUserRequest</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.User"><span class="badge">M</span>User</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.User.Profile"><span class="badge">M</span>User.Profile</a>
-                </li>
-              
-              
-                <li>
-                  <a href="#bytebase.v1.UserType"><span class="badge">E</span>UserType</a>
-                </li>
-              
-              
-              
-                <li>
-                  <a href="#bytebase.v1.UserService"><span class="badge">S</span>UserService</a>
                 </li>
               
             </ul>
@@ -14367,6 +14359,592 @@ Default to this mode.</p></td>
     
       
       <div class="file-heading">
+        <h2 id="v1/user_service.proto">v1/user_service.proto</h2><a href="#title">Top</a>
+      </div>
+      <p></p>
+
+      
+        <h3 id="bytebase.v1.CreateUserRequest">CreateUserRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>user</td>
+                  <td><a href="#bytebase.v1.User">User</a></td>
+                  <td></td>
+                  <td><p>The user to create. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.DeleteUserRequest">DeleteUserRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of the user to delete.
+Format: users/{user} </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.GetUserRequest">GetUserRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of the user to retrieve.
+Format: users/{user uid or user email} </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.ListUsersRequest">ListUsersRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>page_size</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>The maximum number of users to return. The service may return fewer than
+this value.
+If unspecified, at most 10 users will be returned.
+The maximum value is 1000; values above 1000 will be coerced to 1000. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>page_token</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>A page token, received from a previous `ListUsers` call.
+Provide this to retrieve the subsequent page.
+
+When paginating, all other parameters provided to `ListUsers` must match
+the call that provided the page token. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>show_deleted</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>Show deleted users if specified. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>filter</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Filter is used to filter users returned in the list.
+Supported filter:
+- name
+- email
+- user_type
+- state
+- project
+
+For example:
+name == &#34;ed&#34;
+name.matches(&#34;ed&#34;)
+email == &#34;ed@bytebase.com&#34;
+email.matches(&#34;ed&#34;)
+user_type == &#34;SERVICE_ACCOUNT&#34;
+user_type in [&#34;SERVICE_ACCOUNT&#34;, &#34;USER&#34;]
+!(user_type in [&#34;SERVICE_ACCOUNT&#34;, &#34;USER&#34;])
+state == &#34;DELETED&#34;
+project == &#34;projects/sample-project&#34;
+You can combine filter conditions like:
+name.matches(&#34;ed&#34;) &amp;&amp; project == &#34;projects/sample-project&#34;
+(name == &#34;ed&#34; || email == &#34;ed@bytebase.com&#34;) &amp;&amp; project == &#34;projects/sample-project&#34; </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.ListUsersResponse">ListUsersResponse</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>users</td>
+                  <td><a href="#bytebase.v1.User">User</a></td>
+                  <td>repeated</td>
+                  <td><p>The users from the specified request. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>next_page_token</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>A token, which can be sent as `page_token` to retrieve the next page.
+If this field is omitted, there are no subsequent pages. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.UndeleteUserRequest">UndeleteUserRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of the deleted user.
+Format: users/{user} </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.UpdateUserRequest">UpdateUserRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>user</td>
+                  <td><a href="#bytebase.v1.User">User</a></td>
+                  <td></td>
+                  <td><p>The user to update.
+
+The user&#39;s `name` field is used to identify the user to update.
+Format: users/{user} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>update_mask</td>
+                  <td><a href="#google.protobuf.FieldMask">google.protobuf.FieldMask</a></td>
+                  <td></td>
+                  <td><p>The list of fields to update. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>otp_code</td>
+                  <td><a href="#string">string</a></td>
+                  <td>optional</td>
+                  <td><p>The otp_code is used to verify the user&#39;s identity by MFA. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>regenerate_temp_mfa_secret</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>The regenerate_temp_mfa_secret flag means to regenerate temporary MFA secret for user.
+This is used for MFA setup. The temporary MFA secret and recovery codes will be returned in the response. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>regenerate_recovery_codes</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>The regenerate_recovery_codes flag means to regenerate recovery codes for user. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.User">User</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of the user.
+Format: users/{user}. {user} is a system-generated unique ID. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>state</td>
+                  <td><a href="#bytebase.v1.State">State</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>email</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>title</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>user_type</td>
+                  <td><a href="#bytebase.v1.UserType">UserType</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>password</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>service_key</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>mfa_enabled</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>The mfa_enabled flag means if the user has enabled MFA. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>mfa_secret</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The mfa_secret is the temporary secret using in two phase verification. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>recovery_codes</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
+                  <td><p>The recovery_codes is the temporary recovery codes using in two phase verification. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>phone</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Should be a valid E.164 compliant phone number.
+Could be empty. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>profile</td>
+                  <td><a href="#bytebase.v1.User.Profile">User.Profile</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.User.Profile">User.Profile</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>last_login_time</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>last_change_password_time</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>source</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>source means where the user comes from. For now we support Entra ID SCIM sync, so the source could be Entra ID. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+
+      
+        <h3 id="bytebase.v1.UserType">UserType</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>USER_TYPE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>USER</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>SYSTEM_BOT</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>SERVICE_ACCOUNT</td>
+                <td>3</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+
+      
+
+      
+        <h3 id="bytebase.v1.UserService">UserService</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Method Name</td><td>Request Type</td><td>Response Type</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>GetUser</td>
+                <td><a href="#bytebase.v1.GetUserRequest">GetUserRequest</a></td>
+                <td><a href="#bytebase.v1.User">User</a></td>
+                <td><p>Get the user.
+Any authenticated user can get the user.</p></td>
+              </tr>
+            
+              <tr>
+                <td>ListUsers</td>
+                <td><a href="#bytebase.v1.ListUsersRequest">ListUsersRequest</a></td>
+                <td><a href="#bytebase.v1.ListUsersResponse">ListUsersResponse</a></td>
+                <td><p>List all users.
+Any authenticated user can list users.</p></td>
+              </tr>
+            
+              <tr>
+                <td>CreateUser</td>
+                <td><a href="#bytebase.v1.CreateUserRequest">CreateUserRequest</a></td>
+                <td><a href="#bytebase.v1.User">User</a></td>
+                <td><p>Create a user.
+When Disallow Signup is enabled, only the caller with bb.users.create on the workspace can create a user.
+Otherwise, any unauthenticated user can create a user.</p></td>
+              </tr>
+            
+              <tr>
+                <td>UpdateUser</td>
+                <td><a href="#bytebase.v1.UpdateUserRequest">UpdateUserRequest</a></td>
+                <td><a href="#bytebase.v1.User">User</a></td>
+                <td><p>Only the user itself and the user with bb.users.update permission on the workspace can update the user.</p></td>
+              </tr>
+            
+              <tr>
+                <td>DeleteUser</td>
+                <td><a href="#bytebase.v1.DeleteUserRequest">DeleteUserRequest</a></td>
+                <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
+                <td><p>Only the user with bb.users.delete permission on the workspace can delete the user.
+The last remaining workspace admin cannot be deleted.</p></td>
+              </tr>
+            
+              <tr>
+                <td>UndeleteUser</td>
+                <td><a href="#bytebase.v1.UndeleteUserRequest">UndeleteUserRequest</a></td>
+                <td><a href="#bytebase.v1.User">User</a></td>
+                <td><p>Only the user with bb.users.undelete permission on the workspace can undelete the user.</p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+
+        
+          
+          
+          <h4>Methods with HTTP bindings</h4>
+          <table>
+            <thead>
+              <tr>
+                <td>Method Name</td>
+                <td>Method</td>
+                <td>Pattern</td>
+                <td>Body</td>
+              </tr>
+            </thead>
+            <tbody>
+            
+              
+              
+              <tr>
+                <td>GetUser</td>
+                <td>GET</td>
+                <td>/v1/{name=users/*}</td>
+                <td></td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>ListUsers</td>
+                <td>GET</td>
+                <td>/v1/users</td>
+                <td></td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>CreateUser</td>
+                <td>POST</td>
+                <td>/v1/users</td>
+                <td>user</td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>UpdateUser</td>
+                <td>PATCH</td>
+                <td>/v1/{user.name=users/*}</td>
+                <td>user</td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>DeleteUser</td>
+                <td>DELETE</td>
+                <td>/v1/{name=users/*}</td>
+                <td></td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>UndeleteUser</td>
+                <td>POST</td>
+                <td>/v1/{name=users/*}:undelete</td>
+                <td>*</td>
+              </tr>
+              
+            
+            </tbody>
+          </table>
+          
+        
+    
+      
+      <div class="file-heading">
         <h2 id="v1/actuator_service.proto">v1/actuator_service.proto</h2><a href="#title">Top</a>
       </div>
       <p></p>
@@ -14506,6 +15084,65 @@ Default to this mode.</p></td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
                   <td><p>docker flag means if the Bytebase instance is running in docker. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>user_stats</td>
+                  <td><a href="#bytebase.v1.ActuatorInfo.StatUser">ActuatorInfo.StatUser</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>activated_instance_count</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>total_instance_count</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.ActuatorInfo.StatUser">ActuatorInfo.StatUser</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>user_type</td>
+                  <td><a href="#bytebase.v1.UserType">UserType</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>state</td>
+                  <td><a href="#bytebase.v1.State">State</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>count</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p> </p></td>
                 </tr>
               
             </tbody>
@@ -15737,679 +16374,6 @@ to retrieve the next page of log entities. </p></td>
                 <td>ExportAuditLogs</td>
                 <td>POST</td>
                 <td>/v1/auditLogs:export</td>
-                <td>*</td>
-              </tr>
-              
-            
-            </tbody>
-          </table>
-          
-        
-    
-      
-      <div class="file-heading">
-        <h2 id="v1/user_service.proto">v1/user_service.proto</h2><a href="#title">Top</a>
-      </div>
-      <p></p>
-
-      
-        <h3 id="bytebase.v1.CreateUserRequest">CreateUserRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>user</td>
-                  <td><a href="#bytebase.v1.User">User</a></td>
-                  <td></td>
-                  <td><p>The user to create. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.DeleteUserRequest">DeleteUserRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The name of the user to delete.
-Format: users/{user} </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.GetUserRequest">GetUserRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The name of the user to retrieve.
-Format: users/{user uid or user email} </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.ListUsersRequest">ListUsersRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>page_size</td>
-                  <td><a href="#int32">int32</a></td>
-                  <td></td>
-                  <td><p>The maximum number of users to return. The service may return fewer than
-this value.
-If unspecified, at most 10 users will be returned.
-The maximum value is 1000; values above 1000 will be coerced to 1000. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>page_token</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>A page token, received from a previous `ListUsers` call.
-Provide this to retrieve the subsequent page.
-
-When paginating, all other parameters provided to `ListUsers` must match
-the call that provided the page token. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>show_deleted</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>Show deleted users if specified. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>filter</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Filter is used to filter users returned in the list.
-Supported filter:
-- name
-- email
-- user_type
-- state
-- project
-
-For example:
-name == &#34;ed&#34;
-name.matches(&#34;ed&#34;)
-email == &#34;ed@bytebase.com&#34;
-email.matches(&#34;ed&#34;)
-user_type == &#34;SERVICE_ACCOUNT&#34;
-user_type in [&#34;SERVICE_ACCOUNT&#34;, &#34;USER&#34;]
-!(user_type in [&#34;SERVICE_ACCOUNT&#34;, &#34;USER&#34;])
-state == &#34;DELETED&#34;
-project == &#34;projects/sample-project&#34;
-You can combine filter conditions like:
-name.matches(&#34;ed&#34;) &amp;&amp; project == &#34;projects/sample-project&#34;
-(name == &#34;ed&#34; || email == &#34;ed@bytebase.com&#34;) &amp;&amp; project == &#34;projects/sample-project&#34; </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.ListUsersResponse">ListUsersResponse</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>users</td>
-                  <td><a href="#bytebase.v1.User">User</a></td>
-                  <td>repeated</td>
-                  <td><p>The users from the specified request. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>next_page_token</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>A token, which can be sent as `page_token` to retrieve the next page.
-If this field is omitted, there are no subsequent pages. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.StatUsersRequest">StatUsersRequest</h3>
-        <p></p>
-
-        
-
-        
-      
-        <h3 id="bytebase.v1.StatUsersResponse">StatUsersResponse</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>stats</td>
-                  <td><a href="#bytebase.v1.StatUsersResponse.StatUser">StatUsersResponse.StatUser</a></td>
-                  <td>repeated</td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.StatUsersResponse.StatUser">StatUsersResponse.StatUser</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>user_type</td>
-                  <td><a href="#bytebase.v1.UserType">UserType</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>state</td>
-                  <td><a href="#bytebase.v1.State">State</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>count</td>
-                  <td><a href="#int32">int32</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.UndeleteUserRequest">UndeleteUserRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The name of the deleted user.
-Format: users/{user} </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.UpdateUserRequest">UpdateUserRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>user</td>
-                  <td><a href="#bytebase.v1.User">User</a></td>
-                  <td></td>
-                  <td><p>The user to update.
-
-The user&#39;s `name` field is used to identify the user to update.
-Format: users/{user} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>update_mask</td>
-                  <td><a href="#google.protobuf.FieldMask">google.protobuf.FieldMask</a></td>
-                  <td></td>
-                  <td><p>The list of fields to update. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>otp_code</td>
-                  <td><a href="#string">string</a></td>
-                  <td>optional</td>
-                  <td><p>The otp_code is used to verify the user&#39;s identity by MFA. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>regenerate_temp_mfa_secret</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>The regenerate_temp_mfa_secret flag means to regenerate temporary MFA secret for user.
-This is used for MFA setup. The temporary MFA secret and recovery codes will be returned in the response. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>regenerate_recovery_codes</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>The regenerate_recovery_codes flag means to regenerate recovery codes for user. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.User">User</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The name of the user.
-Format: users/{user}. {user} is a system-generated unique ID. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>state</td>
-                  <td><a href="#bytebase.v1.State">State</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>email</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>title</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>user_type</td>
-                  <td><a href="#bytebase.v1.UserType">UserType</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>password</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>service_key</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>mfa_enabled</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>The mfa_enabled flag means if the user has enabled MFA. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>mfa_secret</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The mfa_secret is the temporary secret using in two phase verification. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>recovery_codes</td>
-                  <td><a href="#string">string</a></td>
-                  <td>repeated</td>
-                  <td><p>The recovery_codes is the temporary recovery codes using in two phase verification. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>phone</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Should be a valid E.164 compliant phone number.
-Could be empty. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>profile</td>
-                  <td><a href="#bytebase.v1.User.Profile">User.Profile</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.User.Profile">User.Profile</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>last_login_time</td>
-                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>last_change_password_time</td>
-                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>source</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>source means where the user comes from. For now we support Entra ID SCIM sync, so the source could be Entra ID. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-
-      
-        <h3 id="bytebase.v1.UserType">UserType</h3>
-        <p></p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>USER_TYPE_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>USER</td>
-                <td>1</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>SYSTEM_BOT</td>
-                <td>2</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>SERVICE_ACCOUNT</td>
-                <td>3</td>
-                <td><p></p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-      
-
-      
-
-      
-        <h3 id="bytebase.v1.UserService">UserService</h3>
-        <p></p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Method Name</td><td>Request Type</td><td>Response Type</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>GetUser</td>
-                <td><a href="#bytebase.v1.GetUserRequest">GetUserRequest</a></td>
-                <td><a href="#bytebase.v1.User">User</a></td>
-                <td><p>Get the user.
-Any authenticated user can get the user.</p></td>
-              </tr>
-            
-              <tr>
-                <td>ListUsers</td>
-                <td><a href="#bytebase.v1.ListUsersRequest">ListUsersRequest</a></td>
-                <td><a href="#bytebase.v1.ListUsersResponse">ListUsersResponse</a></td>
-                <td><p>List all users.
-Any authenticated user can list users.</p></td>
-              </tr>
-            
-              <tr>
-                <td>StatUsers</td>
-                <td><a href="#bytebase.v1.StatUsersRequest">StatUsersRequest</a></td>
-                <td><a href="#bytebase.v1.StatUsersResponse">StatUsersResponse</a></td>
-                <td><p>Get user stat.
-Any authenticated user can get stat.</p></td>
-              </tr>
-            
-              <tr>
-                <td>CreateUser</td>
-                <td><a href="#bytebase.v1.CreateUserRequest">CreateUserRequest</a></td>
-                <td><a href="#bytebase.v1.User">User</a></td>
-                <td><p>Create a user.
-When Disallow Signup is enabled, only the caller with bb.users.create on the workspace can create a user.
-Otherwise, any unauthenticated user can create a user.</p></td>
-              </tr>
-            
-              <tr>
-                <td>UpdateUser</td>
-                <td><a href="#bytebase.v1.UpdateUserRequest">UpdateUserRequest</a></td>
-                <td><a href="#bytebase.v1.User">User</a></td>
-                <td><p>Only the user itself and the user with bb.users.update permission on the workspace can update the user.</p></td>
-              </tr>
-            
-              <tr>
-                <td>DeleteUser</td>
-                <td><a href="#bytebase.v1.DeleteUserRequest">DeleteUserRequest</a></td>
-                <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
-                <td><p>Only the user with bb.users.delete permission on the workspace can delete the user.
-The last remaining workspace admin cannot be deleted.</p></td>
-              </tr>
-            
-              <tr>
-                <td>UndeleteUser</td>
-                <td><a href="#bytebase.v1.UndeleteUserRequest">UndeleteUserRequest</a></td>
-                <td><a href="#bytebase.v1.User">User</a></td>
-                <td><p>Only the user with bb.users.undelete permission on the workspace can undelete the user.</p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-
-        
-          
-          
-          <h4>Methods with HTTP bindings</h4>
-          <table>
-            <thead>
-              <tr>
-                <td>Method Name</td>
-                <td>Method</td>
-                <td>Pattern</td>
-                <td>Body</td>
-              </tr>
-            </thead>
-            <tbody>
-            
-              
-              
-              <tr>
-                <td>GetUser</td>
-                <td>GET</td>
-                <td>/v1/{name=users/*}</td>
-                <td></td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>ListUsers</td>
-                <td>GET</td>
-                <td>/v1/users</td>
-                <td></td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>StatUsers</td>
-                <td>POST</td>
-                <td>/v1/users:stat</td>
-                <td>*</td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>CreateUser</td>
-                <td>POST</td>
-                <td>/v1/users</td>
-                <td>user</td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>UpdateUser</td>
-                <td>PATCH</td>
-                <td>/v1/{user.name=users/*}</td>
-                <td>user</td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>DeleteUser</td>
-                <td>DELETE</td>
-                <td>/v1/{name=users/*}</td>
-                <td></td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>UndeleteUser</td>
-                <td>POST</td>
-                <td>/v1/{name=users/*}:undelete</td>
                 <td>*</td>
               </tr>
               

@@ -44,9 +44,9 @@ import { updateIssueSubscribers, useIssueContext } from "@/components/IssueV1";
 import UserAvatar from "@/components/User/UserAvatar.vue";
 import { useUserStore } from "@/store";
 import { unknownUser } from "@/types";
-import { State, stateToJSON } from "@/types/proto/v1/common";
+import { State } from "@/types/proto/v1/common";
 import { type User } from "@/types/proto/v1/user_service";
-import { UserType, userTypeToJSON } from "@/types/proto/v1/user_service";
+import { UserType } from "@/types/proto/v1/user_service";
 import { getDefaultPagination } from "@/utils";
 import SubscriberListItem from "./SubscriberListItem.vue";
 
@@ -170,21 +170,15 @@ const onUpdateShow = (show: boolean) => {
 };
 
 const handleSearch = useDebounceFn(async (search: string) => {
-  const filter = [
-    `state == "${stateToJSON(State.ACTIVE)}"`,
-    `user_type == "${userTypeToJSON(UserType.USER)}"`,
-  ];
-  if (search) {
-    filter.push(`(name.matches("${search}") || email.matches("${search}"))`);
-  }
-
   state.loading = true;
 
   try {
     const { users } = await userStore.fetchUserList({
-      filter: filter.join(" && "),
+      filter: {
+        types: [UserType.USER],
+        query: search,
+      },
       pageSize: getDefaultPagination(),
-      showDeleted: false,
     });
     state.rawUserList = users;
   } finally {

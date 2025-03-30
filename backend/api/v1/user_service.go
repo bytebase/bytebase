@@ -88,24 +88,6 @@ func (s *UserService) GetUser(ctx context.Context, request *v1pb.GetUserRequest)
 	return convertToUser(user), nil
 }
 
-// StatUsers count users by type and state.
-func (s *UserService) StatUsers(ctx context.Context, _ *v1pb.StatUsersRequest) (*v1pb.StatUsersResponse, error) {
-	stats, err := s.store.StatUsers(ctx)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to stat users, error: %v", err)
-	}
-	response := &v1pb.StatUsersResponse{}
-
-	for _, stat := range stats {
-		response.Stats = append(response.Stats, &v1pb.StatUsersResponse_StatUser{
-			State:    convertDeletedToState(stat.Deleted),
-			UserType: convertToV1UserType(stat.Type),
-			Count:    int32(stat.Count),
-		})
-	}
-	return response, nil
-}
-
 // ListUsers lists all users.
 func (s *UserService) ListUsers(ctx context.Context, request *v1pb.ListUsersRequest) (*v1pb.ListUsersResponse, error) {
 	offset, err := parseLimitAndOffset(&pageSize{

@@ -208,9 +208,10 @@ import {
   useSettingV1Store,
   featureToRef,
   useSubscriptionV1Store,
+  useActuatorV1Store,
 } from "@/store";
 import { groupNamePrefix } from "@/store/modules/v1/common";
-import { State, stateToJSON } from "@/types/proto/v1/common";
+import { State } from "@/types/proto/v1/common";
 import type { Group } from "@/types/proto/v1/group_service";
 import { WorkspaceProfileSetting } from "@/types/proto/v1/setting_service";
 import { type User } from "@/types/proto/v1/user_service";
@@ -254,6 +255,7 @@ const router = useRouter();
 const userStore = useUserStore();
 const groupStore = useGroupStore();
 const uiStateStore = useUIStateStore();
+const actuatorStore = useActuatorV1Store();
 const settingV1Store = useSettingV1Store();
 const subscriptionV1Store = useSubscriptionV1Store();
 const userPagedTable = ref<ComponentExposed<typeof PagedTable<User>>>();
@@ -291,10 +293,9 @@ const fetchUserList = async ({
   const { users, nextPageToken } = await userStore.fetchUserList({
     pageToken,
     pageSize,
-    showDeleted: false,
-    filter: state.activeUserFilterText
-      ? `name.matches("${state.activeUserFilterText}")`
-      : "",
+    filter: {
+      query: state.activeUserFilterText,
+    },
   });
   return { list: users, nextPageToken };
 };
@@ -314,8 +315,9 @@ const fetchInactiveUserList = async ({
   const { users, nextPageToken } = await userStore.fetchUserList({
     pageToken,
     pageSize,
-    showDeleted: true,
-    filter: `state == "${stateToJSON(State.DELETED)}"`,
+    filter: {
+      state: State.DELETED,
+    },
   });
   return { list: users, nextPageToken };
 };
@@ -370,27 +372,18 @@ const filteredGroupList = computed(() => {
 });
 
 const activeUserCount = computed(() => {
-  return userStore.userStats.reduce((count, stat) => {
-    if (stat.state === State.ACTIVE) {
-      count += stat.count;
-    }
-    return count;
-  }, 0);
+  return actuatorStore.getActiveUserCount({ includeBot: true });
 });
 
 const inactiveUserCount = computed(() => {
-  return userStore.userStats.reduce((count, stat) => {
-    if (stat.state === State.DELETED) {
-      count += stat.count;
-    }
-    return count;
-  }, 0);
+  return actuatorStore.inactiveUserCount;
 });
 
 const remainingUserCount = computed((): number => {
   return Math.max(
     0,
-    subscriptionV1Store.userCountLimit - userStore.activeUserCountWithoutBot
+    subscriptionV1Store.userCountLimit -
+      actuatorStore.getActiveUserCount({ includeBot: false })
   );
 });
 
