@@ -32,11 +32,7 @@ import { ALL_METHODS_WITH_AUDIT } from "@/grpcweb/methods";
 import { useCurrentUserV1, useProjectV1Store, useUserStore } from "@/store";
 import { SYSTEM_BOT_USER_NAME, type ComposedProject } from "@/types";
 import { AuditLog_Severity } from "@/types/proto/v1/audit_log_service";
-import {
-  type User,
-  UserType,
-  userTypeToJSON,
-} from "@/types/proto/v1/user_service";
+import { type User, UserType } from "@/types/proto/v1/user_service";
 import {
   getDefaultPagination,
   extractProjectResourceName,
