@@ -1,5 +1,6 @@
+import { cloneDeep, first } from "lodash-es";
 import { t } from "@/plugins/i18n";
-import { useInstanceV1Store, useSubscriptionV1Store } from "@/store";
+import { useActuatorV1Store, useSubscriptionV1Store } from "@/store";
 import {
   emptyDataSource,
   UNKNOWN_ENVIRONMENT_NAME,
@@ -10,7 +11,6 @@ import type { DataSource, Instance } from "@/types/proto/v1/instance_service";
 import { DataSourceType } from "@/types/proto/v1/instance_service";
 import { PlanType } from "@/types/proto/v1/subscription_service";
 import { calcUpdateMask } from "@/utils";
-import { cloneDeep, first } from "lodash-es";
 
 export type BasicInfo = Omit<Instance, "dataSources" | "engineVersion">;
 
@@ -54,11 +54,12 @@ export const extractDataSourceEditState = (
 
 export const extractBasicInfo = (instance: Instance | undefined): BasicInfo => {
   const subscriptionStore = useSubscriptionV1Store();
-  const instanceStore = useInstanceV1Store();
+  const actuatorStore = useActuatorV1Store();
 
   const availableLicenseCount = Math.max(
     0,
-    subscriptionStore.instanceLicenseCount - instanceStore.activateInstanceCount
+    subscriptionStore.instanceLicenseCount -
+      actuatorStore.activatedInstanceCount
   );
 
   return {
@@ -103,15 +104,17 @@ export const applyExtraConnectionParameters = (
   if (editState.extraConnectionParameters) {
     // Clone the map manually to ensure it's a plain object, not a Proxy
     const params: Record<string, string> = {};
-    Object.entries(editState.extraConnectionParameters).forEach(([key, value]) => {
-      params[key] = value;
-    });
-    
+    Object.entries(editState.extraConnectionParameters).forEach(
+      ([key, value]) => {
+        params[key] = value;
+      }
+    );
+
     dataSource.extraConnectionParameters = params;
   } else {
-    dataSource.extraConnectionParameters = {}; 
+    dataSource.extraConnectionParameters = {};
   }
-  
+
   return dataSource;
 };
 

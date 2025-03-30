@@ -31,17 +31,6 @@ service UserService {
     option (bytebase.v1.auth_method) = CUSTOM;
   }
 
-  // Get user stat.
-  // Any authenticated user can get stat.
-  rpc StatUsers(StatUsersRequest) returns (StatUsersResponse) {
-    option (google.api.http) = {
-      post: "/v1/users:stat"
-      body: "*"
-    };
-    option (google.api.method_signature) = "parent";
-    option (bytebase.v1.auth_method) = CUSTOM;
-  }
-
   // Create a user.
   // When Disallow Signup is enabled, only the caller with bb.users.create on the workspace can create a user.
   // Otherwise, any unauthenticated user can create a user.
@@ -94,18 +83,6 @@ message GetUserRequest {
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference) = {type: "bytebase.com/User"}
   ];
-}
-
-message StatUsersRequest {}
-
-message StatUsersResponse {
-  message StatUser {
-    UserType user_type = 1;
-    State state = 2;
-    int32 count = 3;
-  }
-
-  repeated StatUser stats = 1;
 }
 
 message ListUsersRequest {

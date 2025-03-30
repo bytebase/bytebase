@@ -20,7 +20,6 @@ import {
   usePolicyV1Store,
   useRoleStore,
   useSettingV1Store,
-  useUserStore,
   useUIStateStore,
   useGroupStore,
 } from "@/store";
@@ -47,7 +46,6 @@ onMounted(async () => {
 
   // Then prepare the other resources.
   await Promise.all([
-    useUserStore().refreshUserStat(),
     useGroupStore().fetchGroupList(),
     useEnvironmentV1Store().fetchEnvironments(),
   ]);

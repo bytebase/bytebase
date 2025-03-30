@@ -1,3 +1,9 @@
+import type { RemovableRef } from "@vueuse/core";
+import { useLocalStorage } from "@vueuse/core";
+import axios from "axios";
+import { defineStore } from "pinia";
+import semver from "semver";
+import { computed } from "vue";
 import { actuatorServiceClient } from "@/grpcweb";
 import { useSilentRequest } from "@/plugins/silent-request";
 import {
@@ -11,14 +17,10 @@ import type {
   ActuatorInfo,
   ResourcePackage,
 } from "@/types/proto/v1/actuator_service";
+import { State } from "@/types/proto/v1/common";
 import { PasswordRestrictionSetting } from "@/types/proto/v1/setting_service";
+import { UserType } from "@/types/proto/v1/user_service";
 import { semverCompare } from "@/utils";
-import type { RemovableRef } from "@vueuse/core";
-import { useLocalStorage } from "@vueuse/core";
-import axios from "axios";
-import { defineStore } from "pinia";
-import semver from "semver";
-import { computed } from "vue";
 
 const EXTERNAL_URL_PLACEHOLDER =
   "https://www.bytebase.com/docs/get-started/install/external-url";
@@ -114,8 +116,34 @@ export const useActuatorV1Store = defineStore("actuator_v1", {
         })
       );
     },
+    activatedInstanceCount: (state) => {
+      return state.serverInfo?.activatedInstanceCount ?? 0;
+    },
+    totalInstanceCount: (state) => {
+      return state.serverInfo?.totalInstanceCount ?? 0;
+    },
+    inactiveUserCount: (state) => {
+      return (state.serverInfo?.userStats ?? []).reduce((count, stat) => {
+        if (stat.state === State.DELETED) {
+          count += stat.count;
+        }
+        return count;
+      }, 0);
+    },
   },
   actions: {
+    getActiveUserCount({ includeBot }: { includeBot: boolean }) {
+      return (this.serverInfo?.userStats ?? []).reduce((count, stat) => {
+        if (stat.state !== State.ACTIVE) {
+          return count;
+        }
+        if (!includeBot && stat.userType === UserType.SYSTEM_BOT) {
+          return count;
+        }
+        count += stat.count;
+        return count;
+      }, 0);
+    },
     setLogo(logo: string) {
       if (this.resourcePackage) {
         this.resourcePackage.logo = new TextEncoder().encode(logo);

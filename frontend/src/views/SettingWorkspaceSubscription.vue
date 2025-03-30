@@ -72,7 +72,7 @@
           {{ $t("subscription.instance-assignment.used-and-total-user") }}
         </div>
         <div class="mt-1 text-4xl flex items-center gap-2">
-          {{ userStore.activeUserCountWithoutBot }}
+          {{ activeUserCountWithoutBot }}
           <span class="font-mono text-gray-500">/</span>
           {{ userLimit }}
         </div>
@@ -170,7 +170,7 @@ import {
   pushNotification,
   useSubscriptionV1Store,
   useSettingV1Store,
-  useUserStore,
+  useActuatorV1Store,
 } from "@/store";
 import { ENTERPRISE_INQUIRE_LINK } from "@/types";
 import { PlanType } from "@/types/proto/v1/subscription_service";
@@ -191,7 +191,7 @@ const { t } = useI18n();
 const { locale } = useLanguage();
 const subscriptionStore = useSubscriptionV1Store();
 const settingV1Store = useSettingV1Store();
-const userStore = useUserStore();
+const actuatorStore = useActuatorV1Store();
 
 const state = reactive<LocalState>({
   loading: false,
@@ -203,6 +203,10 @@ const state = reactive<LocalState>({
 const disabled = computed((): boolean => {
   return state.loading || !state.license;
 });
+
+const activeUserCountWithoutBot = computed(() =>
+  actuatorStore.getActiveUserCount({ includeBot: false })
+);
 
 const userLimit = computed((): string => {
   if (subscriptionStore.userCountLimit === Number.MAX_VALUE) {

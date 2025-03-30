@@ -496,6 +496,7 @@ import {
   useActuatorV1Store,
   useInstanceV1Store,
   useSubscriptionV1Store,
+  pushNotification,
 } from "@/store";
 import { instanceNamePrefix } from "@/store/modules/v1/common";
 import type { ResourceId, ValidatedMessage, ComposedInstance } from "@/types";
@@ -560,7 +561,7 @@ const availableLicenseCount = computed(() => {
   return Math.max(
     0,
     subscriptionStore.instanceLicenseCount -
-      instanceV1Store.activateInstanceCount
+      actuatorStore.activatedInstanceCount
   );
 });
 
@@ -758,6 +759,14 @@ const changeInstanceActivation = async (on: boolean) => {
       activation: on,
     };
     await instanceV1Store.updateInstance(instancePatch, ["activation"]);
+    // refresh activatedInstanceCount
+    await actuatorStore.fetchServerInfo();
+
+    pushNotification({
+      module: "bytebase",
+      style: "SUCCESS",
+      title: t("common.updated"),
+    });
   }
 };
 

@@ -43,8 +43,7 @@ import { ref, computed, onMounted } from "vue";
 import AdvancedSearch from "@/components/AdvancedSearch";
 import TimeRange from "@/components/AdvancedSearch/TimeRange.vue";
 import { useUserStore } from "@/store";
-import { State, stateToJSON } from "@/types/proto/v1/common";
-import { User, UserType, userTypeToJSON } from "@/types/proto/v1/user_service";
+import { User, UserType } from "@/types/proto/v1/user_service";
 import type { SearchParams, SearchScopeId } from "@/utils";
 import {
   getDefaultPagination,
@@ -90,8 +89,9 @@ const activeUserList = ref<User[]>([]);
 onMounted(async () => {
   const { users } = await userStore.fetchUserList({
     pageSize: getDefaultPagination(),
-    showDeleted: false,
-    filter: `state == "${stateToJSON(State.ACTIVE)}" && user_type == "${userTypeToJSON(UserType.USER)}"`,
+    filter: {
+      types: [UserType.USER],
+    },
   });
   activeUserList.value = users;
 });

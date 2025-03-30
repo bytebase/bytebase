@@ -9,7 +9,9 @@ import "google/protobuf/empty.proto";
 import "google/protobuf/field_mask.proto";
 import "google/protobuf/timestamp.proto";
 import "v1/annotation.proto";
+import "v1/common.proto";
 import "v1/setting_service.proto";
+import "v1/user_service.proto";
 
 option go_package = "generated-go/v1";
 
@@ -117,4 +119,15 @@ message ActuatorInfo {
 
   // docker flag means if the Bytebase instance is running in docker.
   bool docker = 22;
+
+  message StatUser {
+    UserType user_type = 1;
+    State state = 2;
+    int32 count = 3;
+  }
+
+  repeated StatUser user_stats = 23;
+
+  int32 activated_instance_count = 24;
+  int32 total_instance_count = 25;
 }
