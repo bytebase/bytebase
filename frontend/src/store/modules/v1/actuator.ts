@@ -119,6 +119,9 @@ export const useActuatorV1Store = defineStore("actuator_v1", {
     activatedInstanceCount: (state) => {
       return state.serverInfo?.activatedInstanceCount ?? 0;
     },
+    totalInstanceCount: (state) => {
+      return state.serverInfo?.totalInstanceCount ?? 0;
+    },
     inactiveUserCount: (state) => {
       return (state.serverInfo?.userStats ?? []).reduce((count, stat) => {
         if (stat.state === State.DELETED) {
@@ -129,7 +132,7 @@ export const useActuatorV1Store = defineStore("actuator_v1", {
     },
   },
   actions: {
-    getActiveUserCount(includeBot: boolean) {
+    getActiveUserCount({ includeBot }: { includeBot: boolean }) {
       return (this.serverInfo?.userStats ?? []).reduce((count, stat) => {
         if (stat.state !== State.ACTIVE) {
           return count;

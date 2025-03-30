@@ -372,7 +372,7 @@ const filteredGroupList = computed(() => {
 });
 
 const activeUserCount = computed(() => {
-  return actuatorStore.getActiveUserCount(true);
+  return actuatorStore.getActiveUserCount({ includeBot: true });
 });
 
 const inactiveUserCount = computed(() => {
@@ -382,7 +382,8 @@ const inactiveUserCount = computed(() => {
 const remainingUserCount = computed((): number => {
   return Math.max(
     0,
-    subscriptionV1Store.userCountLimit - actuatorStore.getActiveUserCount(false)
+    subscriptionV1Store.userCountLimit -
+      actuatorStore.getActiveUserCount({ includeBot: false })
   );
 });
 

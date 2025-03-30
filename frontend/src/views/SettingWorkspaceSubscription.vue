@@ -205,7 +205,7 @@ const disabled = computed((): boolean => {
 });
 
 const activeUserCountWithoutBot = computed(() =>
-  actuatorStore.getActiveUserCount(false)
+  actuatorStore.getActiveUserCount({ includeBot: false })
 );
 
 const userLimit = computed((): string => {

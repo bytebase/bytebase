@@ -252,7 +252,7 @@ const introList = computed(() => {
 });
 
 const isFirstUser = computed(() => {
-  return actuatorStore.getActiveUserCount(false) === 1;
+  return actuatorStore.getActiveUserCount({ includeBot: false }) === 1;
 });
 
 const showQuickstart = computed(() => {
