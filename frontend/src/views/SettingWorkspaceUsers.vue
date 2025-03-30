@@ -211,7 +211,7 @@ import {
   useActuatorV1Store,
 } from "@/store";
 import { groupNamePrefix } from "@/store/modules/v1/common";
-import { State, stateToJSON } from "@/types/proto/v1/common";
+import { State } from "@/types/proto/v1/common";
 import type { Group } from "@/types/proto/v1/group_service";
 import { WorkspaceProfileSetting } from "@/types/proto/v1/setting_service";
 import { type User } from "@/types/proto/v1/user_service";
@@ -293,10 +293,9 @@ const fetchUserList = async ({
   const { users, nextPageToken } = await userStore.fetchUserList({
     pageToken,
     pageSize,
-    showDeleted: false,
-    filter: state.activeUserFilterText
-      ? `name.matches("${state.activeUserFilterText}")`
-      : "",
+    filter: {
+      query: state.activeUserFilterText,
+    },
   });
   return { list: users, nextPageToken };
 };
@@ -316,8 +315,9 @@ const fetchInactiveUserList = async ({
   const { users, nextPageToken } = await userStore.fetchUserList({
     pageToken,
     pageSize,
-    showDeleted: true,
-    filter: `state == "${stateToJSON(State.DELETED)}"`,
+    filter: {
+      state: State.DELETED,
+    },
   });
   return { list: users, nextPageToken };
 };

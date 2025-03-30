@@ -10,7 +10,9 @@ import Long from "long";
 import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
 import { Timestamp } from "../google/protobuf/timestamp";
+import { State, stateFromJSON, stateToJSON, stateToNumber } from "./common";
 import { PasswordRestrictionSetting } from "./setting_service";
+import { UserType, userTypeFromJSON, userTypeToJSON, userTypeToNumber } from "./user_service";
 
 export const protobufPackage = "bytebase.v1";
 
@@ -82,6 +84,14 @@ export interface ActuatorInfo {
     | undefined;
   /** docker flag means if the Bytebase instance is running in docker. */
   docker: boolean;
+  userStats: ActuatorInfo_StatUser[];
+  activatedInstanceCount: number;
+}
+
+export interface ActuatorInfo_StatUser {
+  userType: UserType;
+  state: State;
+  count: number;
 }
 
 function createBaseGetResourcePackageRequest(): GetResourcePackageRequest {
@@ -369,6 +379,8 @@ function createBaseActuatorInfo(): ActuatorInfo {
     disallowPasswordSignin: false,
     passwordRestriction: undefined,
     docker: false,
+    userStats: [],
+    activatedInstanceCount: 0,
   };
 }
 
@@ -427,6 +439,12 @@ export const ActuatorInfo: MessageFns<ActuatorInfo> = {
     }
     if (message.docker !== false) {
       writer.uint32(176).bool(message.docker);
+    }
+    for (const v of message.userStats) {
+      ActuatorInfo_StatUser.encode(v!, writer.uint32(186).fork()).join();
+    }
+    if (message.activatedInstanceCount !== 0) {
+      writer.uint32(192).int32(message.activatedInstanceCount);
     }
     return writer;
   },
@@ -582,6 +600,22 @@ export const ActuatorInfo: MessageFns<ActuatorInfo> = {
           message.docker = reader.bool();
           continue;
         }
+        case 23: {
+          if (tag !== 186) {
+            break;
+          }
+
+          message.userStats.push(ActuatorInfo_StatUser.decode(reader, reader.uint32()));
+          continue;
+        }
+        case 24: {
+          if (tag !== 192) {
+            break;
+          }
+
+          message.activatedInstanceCount = reader.int32();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -617,6 +651,12 @@ export const ActuatorInfo: MessageFns<ActuatorInfo> = {
         ? PasswordRestrictionSetting.fromJSON(object.passwordRestriction)
         : undefined,
       docker: isSet(object.docker) ? globalThis.Boolean(object.docker) : false,
+      userStats: globalThis.Array.isArray(object?.userStats)
+        ? object.userStats.map((e: any) => ActuatorInfo_StatUser.fromJSON(e))
+        : [],
+      activatedInstanceCount: isSet(object.activatedInstanceCount)
+        ? globalThis.Number(object.activatedInstanceCount)
+        : 0,
     };
   },
 
@@ -676,6 +716,12 @@ export const ActuatorInfo: MessageFns<ActuatorInfo> = {
     if (message.docker !== false) {
       obj.docker = message.docker;
     }
+    if (message.userStats?.length) {
+      obj.userStats = message.userStats.map((e) => ActuatorInfo_StatUser.toJSON(e));
+    }
+    if (message.activatedInstanceCount !== 0) {
+      obj.activatedInstanceCount = Math.round(message.activatedInstanceCount);
+    }
     return obj;
   },
 
@@ -706,6 +752,100 @@ export const ActuatorInfo: MessageFns<ActuatorInfo> = {
       ? PasswordRestrictionSetting.fromPartial(object.passwordRestriction)
       : undefined;
     message.docker = object.docker ?? false;
+    message.userStats = object.userStats?.map((e) => ActuatorInfo_StatUser.fromPartial(e)) || [];
+    message.activatedInstanceCount = object.activatedInstanceCount ?? 0;
+    return message;
+  },
+};
+
+function createBaseActuatorInfo_StatUser(): ActuatorInfo_StatUser {
+  return { userType: UserType.USER_TYPE_UNSPECIFIED, state: State.STATE_UNSPECIFIED, count: 0 };
+}
+
+export const ActuatorInfo_StatUser: MessageFns<ActuatorInfo_StatUser> = {
+  encode(message: ActuatorInfo_StatUser, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.userType !== UserType.USER_TYPE_UNSPECIFIED) {
+      writer.uint32(8).int32(userTypeToNumber(message.userType));
+    }
+    if (message.state !== State.STATE_UNSPECIFIED) {
+      writer.uint32(16).int32(stateToNumber(message.state));
+    }
+    if (message.count !== 0) {
+      writer.uint32(24).int32(message.count);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ActuatorInfo_StatUser {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseActuatorInfo_StatUser();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.userType = userTypeFromJSON(reader.int32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.state = stateFromJSON(reader.int32());
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.count = reader.int32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ActuatorInfo_StatUser {
+    return {
+      userType: isSet(object.userType) ? userTypeFromJSON(object.userType) : UserType.USER_TYPE_UNSPECIFIED,
+      state: isSet(object.state) ? stateFromJSON(object.state) : State.STATE_UNSPECIFIED,
+      count: isSet(object.count) ? globalThis.Number(object.count) : 0,
+    };
+  },
+
+  toJSON(message: ActuatorInfo_StatUser): unknown {
+    const obj: any = {};
+    if (message.userType !== UserType.USER_TYPE_UNSPECIFIED) {
+      obj.userType = userTypeToJSON(message.userType);
+    }
+    if (message.state !== State.STATE_UNSPECIFIED) {
+      obj.state = stateToJSON(message.state);
+    }
+    if (message.count !== 0) {
+      obj.count = Math.round(message.count);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ActuatorInfo_StatUser>): ActuatorInfo_StatUser {
+    return ActuatorInfo_StatUser.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ActuatorInfo_StatUser>): ActuatorInfo_StatUser {
+    const message = createBaseActuatorInfo_StatUser();
+    message.userType = object.userType ?? UserType.USER_TYPE_UNSPECIFIED;
+    message.state = object.state ?? State.STATE_UNSPECIFIED;
+    message.count = object.count ?? 0;
     return message;
   },
 };

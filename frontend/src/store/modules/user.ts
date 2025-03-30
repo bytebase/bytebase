@@ -4,18 +4,47 @@ import { defineStore } from "pinia";
 import { computed, ref } from "vue";
 import { userServiceClient } from "@/grpcweb";
 import {
+  isValidProjectName,
   allUsersUser,
   SYSTEM_BOT_USER_NAME,
   isValidUserName,
   unknownUser,
 } from "@/types";
-import { State } from "@/types/proto/v1/common";
+import { State, stateToJSON } from "@/types/proto/v1/common";
 import type { UpdateUserRequest, User } from "@/types/proto/v1/user_service";
-import { UserType } from "@/types/proto/v1/user_service";
+import { UserType, userTypeToJSON } from "@/types/proto/v1/user_service";
 import { ensureUserFullName } from "@/utils";
 import { useActuatorV1Store } from "./v1/actuator";
 import { userNamePrefix, extractUserId } from "./v1/common";
 import { usePermissionStore } from "./v1/permission";
+
+export interface UserFilter {
+  query?: string;
+  types?: UserType[];
+  project?: string;
+  state?: State;
+}
+
+const getListUserFilter = (params: UserFilter) => {
+  const filter = [];
+  const search = params.query?.trim()?.toLowerCase();
+  if (search) {
+    filter.push(`(name.matches("${search}") || email.matches("${search}"))`);
+  }
+  if (params.types) {
+    filter.push(
+      `user_type in [${params.types.map((t) => `"${userTypeToJSON(t)}"`).join(", ")}]`
+    );
+  }
+  if (isValidProjectName(params.project)) {
+    filter.push(`project == "${params.project}"`);
+  }
+  if (params.state === State.DELETED) {
+    filter.push(`state == "${stateToJSON(params.state)}"`);
+  }
+
+  return filter.join(" && ");
+};
 
 export const useUserStore = defineStore("user", () => {
   const actuatorStore = useActuatorV1Store();
@@ -39,13 +68,16 @@ export const useUserStore = defineStore("user", () => {
   const fetchUserList = async (params: {
     pageSize: number;
     pageToken?: string;
-    filter?: string;
-    showDeleted?: boolean;
+    filter?: UserFilter;
   }): Promise<{
     users: User[];
     nextPageToken: string;
   }> => {
-    const response = await userServiceClient.listUsers(params);
+    const response = await userServiceClient.listUsers({
+      ...params,
+      filter: getListUserFilter(params.filter ?? {}),
+      showDeleted: params.filter?.state === State.DELETED ? true : false,
+    });
     for (const user of response.users) {
       setUser(user);
     }
