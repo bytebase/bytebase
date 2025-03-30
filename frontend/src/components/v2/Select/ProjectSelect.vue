@@ -36,7 +36,6 @@ import {
   UNKNOWN_PROJECT_NAME,
   isValidProjectName,
 } from "@/types";
-import { State } from "@/types/proto/v1/common";
 import type { Project } from "@/types/proto/v1/project_service";
 import { hasWorkspacePermissionV2, getDefaultPagination } from "@/utils";
 import ResourceSelect from "./ResourceSelect.vue";

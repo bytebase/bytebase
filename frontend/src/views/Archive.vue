@@ -54,6 +54,7 @@ import {
   SearchBox,
   TabFilter,
   PagedProjectTable,
+  InstanceV1Table,
 } from "@/components/v2";
 import {
   useEnvironmentV1Store,

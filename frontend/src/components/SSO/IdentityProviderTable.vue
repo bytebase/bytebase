@@ -65,7 +65,7 @@ const columnList = computed((): DataTableColumn<IdentityProvider>[] => {
 const rowProps = (identityProvider: IdentityProvider) => {
   return {
     style: "cursor: pointer;",
-    onClick: (e: MouseEvent) => {
+    onClick: (_: MouseEvent) => {
       router.push({
         name: WORKSPACE_ROUTE_SSO_DETAIL,
         params: {
