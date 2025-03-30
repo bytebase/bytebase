@@ -79,6 +79,7 @@ import { isValidProjectName, DEFAULT_PROJECT_NAME } from "@/types";
 import {
   filterProjectV1ListByKeyword,
   hasWorkspacePermissionV2,
+  getDefaultPagination,
 } from "@/utils";
 
 type LocalTabType = "recent" | "all";
@@ -148,8 +149,10 @@ watch(
     state.loading = true;
     try {
       const { projects } = await projectStore.fetchProjectList({
-        query: state.searchText,
-        showDeleted: false,
+        filter: {
+          query: state.searchText,
+        },
+        pageSize: getDefaultPagination(),
       });
       state.allProjects = [...projects];
     } finally {

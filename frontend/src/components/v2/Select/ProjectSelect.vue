@@ -49,7 +49,6 @@ const props = withDefaults(
     allowedProjectRoleList?: string[]; // Empty array([]) to "ALL"
     includeAll?: boolean;
     includeDefaultProject?: boolean;
-    includeArchived?: boolean;
     multiple?: boolean;
     renderSuffix?: (project: string) => string;
     filter?: (project: ComposedProject, index: number) => boolean;
@@ -62,7 +61,6 @@ const props = withDefaults(
     allowedProjectRoleList: () => [],
     includeAll: false,
     includeDefaultProject: false,
-    includeArchived: false,
     multiple: false,
     filter: () => true,
     renderSuffix: () => "",
@@ -132,13 +130,7 @@ const hasWorkspaceManageProjectPermission = computed(() =>
 );
 
 const combinedProjectList = computed(() => {
-  let list = state.rawProjectList.filter((project) => {
-    if (props.includeArchived) return true;
-    if (project.state === State.ACTIVE) return true;
-    // ARCHIVED
-    if (project.name === props.projectName) return true;
-    return false;
-  });
+  let list = [...state.rawProjectList];
 
   // If the current user is not workspace admin/DBA, filter the project list by the given role list.
   if (
@@ -162,10 +154,11 @@ const handleSearch = useDebounceFn(async (search: string) => {
   state.loading = true;
   try {
     const { projects } = await projectStore.fetchProjectList({
-      query: search,
+      filter: {
+        query: search,
+        excludeDefault: !props.includeDefaultProject,
+      },
       pageSize: getDefaultPagination(),
-      showDeleted: props.includeArchived,
-      excludeDefault: !props.includeDefaultProject,
     });
     state.rawProjectList = projects;
     if (!search) {

@@ -16,12 +16,18 @@ import type { ComponentExposed } from "vue-component-type-helpers";
 import PagedTable from "@/components/v2/Model/PagedTable.vue";
 import { useProjectV1Store } from "@/store";
 import { type ComposedProject } from "@/types";
+import { type State } from "@/types/proto/v1/common";
 import ProjectV1Table from "./ProjectV1Table.vue";
 
+interface ProjectFilter {
+  query?: string;
+  state?: State;
+  excludeDefault?: boolean;
+}
+
 const props = defineProps<{
-  search: string;
+  filter: ProjectFilter;
   sessionKey: string;
-  includeDefault: boolean;
 }>();
 
 const projectStore = useProjectV1Store();
@@ -37,11 +43,9 @@ const fetchProjects = async ({
   pageSize: number;
 }) => {
   const { nextPageToken, projects } = await projectStore.fetchProjectList({
-    showDeleted: false,
     pageToken,
     pageSize,
-    query: props.search,
-    excludeDefault: !props.includeDefault,
+    filter: props.filter,
   });
   return {
     nextPageToken: nextPageToken ?? "",
@@ -50,7 +54,8 @@ const fetchProjects = async ({
 };
 
 watch(
-  () => props.search,
-  () => projectPagedTable.value?.refresh()
+  () => props.filter,
+  () => projectPagedTable.value?.refresh(),
+  { deep: true }
 );
 </script>

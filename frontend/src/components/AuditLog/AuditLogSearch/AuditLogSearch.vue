@@ -68,7 +68,6 @@ onMounted(async () => {
       filter: `state == "${stateToJSON(State.ACTIVE)}" && user_type == "${userTypeToJSON(UserType.USER)}"`,
     }),
     projectStore.fetchProjectList({
-      showDeleted: false,
       pageSize: getDefaultPagination(),
     }),
   ]);

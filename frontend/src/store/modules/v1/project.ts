@@ -74,9 +74,10 @@ export const useProjectV1Store = defineStore("project_v1", () => {
     state?: State;
   }) => {
     const list = [];
-    if (params.query) {
+    const search = params.query?.trim().toLowerCase();
+    if (search) {
       list.push(
-        `name.matches("${params.query}") || resource_id.matches("${params.query}")`
+        `(name.matches("${search}") || resource_id.matches("${search}"))`
       );
     }
     if (params.excludeDefault) {
@@ -92,10 +93,12 @@ export const useProjectV1Store = defineStore("project_v1", () => {
     showDeleted?: boolean;
     pageSize?: number;
     pageToken?: string;
-    query?: string;
     silent?: boolean;
-    excludeDefault?: boolean;
-    state?: State;
+    filter?: {
+      query?: string;
+      excludeDefault?: boolean;
+      state?: State;
+    };
   }): Promise<{
     projects: ComposedProject[];
     nextPageToken?: string;
@@ -106,7 +109,8 @@ export const useProjectV1Store = defineStore("project_v1", () => {
     const response = await request(
       {
         ...params,
-        filter: getListProjectFilter(params),
+        filter: getListProjectFilter(params.filter ?? {}),
+        showDeleted: params.filter?.state === State.DELETED ? true : false,
       },
       { silent: params.silent ?? true }
     );
