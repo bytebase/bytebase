@@ -19,6 +19,7 @@ import {
   extractEnvironmentResourceName,
   extractProjectResourceName,
   supportedEngineV1List,
+  getDefaultPagination,
 } from "@/utils";
 
 export const sourceText = (source: Risk_Source) => {
@@ -270,7 +271,12 @@ export const getOptionConfigMap = (source: Risk_Source) => {
           options: getProjectIdOptions(projectStore.getProjectList()),
           search: async (keyword: string) => {
             return projectStore
-              .fetchProjectList({ query: keyword })
+              .fetchProjectList({
+                pageSize: getDefaultPagination(),
+                filter: {
+                  query: keyword,
+                },
+              })
               .then((resp) => getProjectIdOptions(resp.projects));
           },
         });

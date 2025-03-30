@@ -99,9 +99,10 @@ const hideProjects = useAppFeature("bb.feature.sql-editor.hide-projects");
 
 const fallbackToFirstProject = async () => {
   const { projects } = await projectStore.fetchProjectList({
-    showDeleted: false,
     pageSize: getDefaultPagination(),
-    excludeDefault: true,
+    filter: {
+      excludeDefault: true,
+    },
   });
   return head(projects)?.name ?? DEFAULT_PROJECT_NAME;
 };

@@ -20,6 +20,29 @@ import type {
 import { hasWorkspacePermissionV2 } from "@/utils";
 import { useProjectIamPolicyStore } from "./projectIamPolicy";
 
+export interface ProjectFilter {
+  query?: string;
+  excludeDefault?: boolean;
+  state?: State;
+}
+
+const getListProjectFilter = (params: ProjectFilter) => {
+  const list = [];
+  const search = params.query?.trim().toLowerCase();
+  if (search) {
+    list.push(
+      `(name.matches("${search}") || resource_id.matches("${search}"))`
+    );
+  }
+  if (params.excludeDefault) {
+    list.push("exclude_default == true");
+  }
+  if (params.state === State.DELETED) {
+    list.push(`state == "${stateToJSON(params.state)}"`);
+  }
+  return list.join(" && ");
+};
+
 export const useProjectV1Store = defineStore("project_v1", () => {
   const projectMapByName = reactive(new Map<ResourceId, ComposedProject>());
   const projectRequestCache = new Map<string, Promise<ComposedProject>>();
@@ -68,34 +91,11 @@ export const useProjectV1Store = defineStore("project_v1", () => {
     return project as ComposedProject;
   };
 
-  const getListProjectFilter = (params: {
-    query?: string;
-    excludeDefault?: boolean;
-    state?: State;
-  }) => {
-    const list = [];
-    if (params.query) {
-      list.push(
-        `name.matches("${params.query}") || resource_id.matches("${params.query}")`
-      );
-    }
-    if (params.excludeDefault) {
-      list.push("exclude_default == true");
-    }
-    if (params.state === State.DELETED) {
-      list.push(`state == "${stateToJSON(params.state)}"`);
-    }
-    return list.join(" && ");
-  };
-
   const fetchProjectList = async (params: {
-    showDeleted?: boolean;
     pageSize?: number;
     pageToken?: string;
-    query?: string;
     silent?: boolean;
-    excludeDefault?: boolean;
-    state?: State;
+    filter?: ProjectFilter;
   }): Promise<{
     projects: ComposedProject[];
     nextPageToken?: string;
@@ -106,7 +106,8 @@ export const useProjectV1Store = defineStore("project_v1", () => {
     const response = await request(
       {
         ...params,
-        filter: getListProjectFilter(params),
+        filter: getListProjectFilter(params.filter ?? {}),
+        showDeleted: params.filter?.state === State.DELETED ? true : false,
       },
       { silent: params.silent ?? true }
     );

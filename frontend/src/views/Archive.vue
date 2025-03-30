@@ -13,10 +13,15 @@
       />
     </div>
     <div class="">
-      <ProjectV1Table
+      <PagedProjectTable
         v-if="state.selectedTab == 'PROJECT'"
-        key="archived-project-table"
-        :project-list="filteredProjectList"
+        session-key="bb.project-table.archived"
+        :filter="{
+          query: state.searchText,
+          state: State.DELETED,
+          excludeDefault: true,
+        }"
+        :bordered="true"
       />
       <InstanceV1Table
         v-else-if="state.selectedTab == 'INSTANCE'"
@@ -29,13 +34,11 @@
       <EnvironmentV1Table
         v-else-if="state.selectedTab == 'ENVIRONMENT'"
         key="archived-environment-table"
-        class="border-x"
         :environment-list="filteredEnvironmentList"
       />
       <IdentityProviderTable
         v-else-if="state.selectedTab == 'SSO'"
         key="archived-sso-table"
-        class="border-x"
         :identity-provider-list="filteredSSOList(deletedSSOList)"
       />
     </div>
@@ -43,30 +46,24 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, reactive, watchEffect, ref } from "vue";
+import { computed, reactive, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import IdentityProviderTable from "@/components/SSO/IdentityProviderTable.vue";
 import {
   EnvironmentV1Table,
-  InstanceV1Table,
-  ProjectV1Table,
   SearchBox,
   TabFilter,
+  PagedProjectTable,
+  InstanceV1Table,
 } from "@/components/v2";
 import {
   useEnvironmentV1Store,
   useIdentityProviderStore,
   useInstanceV1List,
-  useProjectV1Store,
 } from "@/store";
-import { type ComposedProject } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import type { IdentityProvider } from "@/types/proto/v1/idp_service";
-import {
-  filterProjectV1ListByKeyword,
-  hasWorkspacePermissionV2,
-  getDefaultPagination,
-} from "@/utils";
+import { hasWorkspacePermissionV2 } from "@/utils";
 
 type LocalTabType = "PROJECT" | "INSTANCE" | "ENVIRONMENT" | "SSO";
 
@@ -76,8 +73,6 @@ interface LocalState {
 }
 
 const { t } = useI18n();
-const projectList = ref<ComposedProject[]>([]);
-const projectStore = useProjectV1Store();
 const environmentStore = useEnvironmentV1Store();
 const identityProviderStore = useIdentityProviderStore();
 const state = reactive<LocalState>({
@@ -86,16 +81,10 @@ const state = reactive<LocalState>({
 });
 
 const prepareList = async () => {
-  const [_1, _2, listProjectResponse] = await Promise.all([
+  const [_1, _2] = await Promise.all([
     environmentStore.fetchEnvironments(true /* showDeleted */),
     identityProviderStore.fetchIdentityProviderList(true /* showDeleted */),
-    projectStore.fetchProjectList({
-      showDeleted: true,
-      pageSize: getDefaultPagination(),
-      state: State.DELETED,
-    }),
   ]);
-  projectList.value = listProjectResponse.projects;
 };
 
 watchEffect(prepareList);
@@ -134,10 +123,6 @@ const tabItemList = computed(() => {
   }
 
   return list;
-});
-
-const filteredProjectList = computed(() => {
-  return filterProjectV1ListByKeyword(projectList.value, state.searchText);
 });
 
 const filteredInstanceList = computed(() => {

@@ -19,10 +19,12 @@
 
     <PagedProjectTable
       session-key="bb.sql-editor.project-table"
-      :search="state.keyword"
+      :filter="{
+        query: state.keyword,
+        excludeDefault: true,
+      }"
       :footer-class="'mx-4'"
       :bordered="false"
-      :include-default="false"
       :prevent-default="true"
       @row-click="showProjectDetail"
     />

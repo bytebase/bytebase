@@ -1,57 +1,70 @@
 <template>
-  <BBGrid
-    :column-list="columnList"
-    :data-source="environmentList"
-    :show-header="true"
-    :show-placeholder="true"
-    class="border-y"
-    @click-row="clickEnvironment"
-  >
-    <template #item="{ item: environment }: EnvironmentRow">
-      <div class="bb-grid-cell">
-        <EnvironmentV1Name :environment="environment" :link="false" />
-      </div>
-    </template>
-  </BBGrid>
+  <NDataTable
+    key="environment-table"
+    size="small"
+    v-bind="$attrs"
+    :columns="columnList"
+    :data="environmentList"
+    :striped="true"
+    :bordered="bordered"
+    :row-key="(data: Environment) => data.name"
+    :row-props="rowProps"
+    :paginate-single-page="false"
+  />
 </template>
 
-<script lang="ts" setup>
+<script lang="tsx" setup>
+import { NDataTable, type DataTableColumn } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import type { BBGridColumn, BBGridRow } from "@/bbkit";
-import { BBGrid } from "@/bbkit";
 import type { Environment } from "@/types/proto/v1/environment_service";
 import { EnvironmentV1Name } from ".";
 
-export type EnvironmentRow = BBGridRow<Environment>;
-
-defineProps<{
-  environmentList: Environment[];
-}>();
+withDefaults(
+  defineProps<{
+    environmentList: Environment[];
+    bordered?: boolean;
+  }>(),
+  {
+    bordered: true,
+  }
+);
 
 const router = useRouter();
 
 const { t } = useI18n();
 
-const columnList = computed((): BBGridColumn[] => [
-  {
-    title: t("common.name"),
-    width: "1fr",
-  },
-]);
-
-const clickEnvironment = function (
-  environment: Environment,
-  section: number,
-  row: number,
-  e: MouseEvent
-) {
-  const url = `/${environment.name}`;
-  if (e.ctrlKey || e.metaKey) {
-    window.open(url, "_blank");
-  } else {
-    router.push(url);
-  }
+const rowProps = (environment: Environment) => {
+  return {
+    style: "cursor: pointer;",
+    onClick: (e: MouseEvent) => {
+      const url = `/${environment.name}`;
+      if (e.ctrlKey || e.metaKey) {
+        window.open(url, "_blank");
+      } else {
+        router.push(url);
+      }
+    },
+  };
 };
+
+const columnList = computed((): DataTableColumn<Environment>[] => {
+  return [
+    {
+      key: "id",
+      title: t("common.id"),
+      resizable: true,
+      ellipsis: true,
+      render: (env) => {
+        return env.name;
+      },
+    },
+    {
+      key: "title",
+      title: t("common.name"),
+      render: (env) => <EnvironmentV1Name environment={env} link={false} />,
+    },
+  ];
+});
 </script>

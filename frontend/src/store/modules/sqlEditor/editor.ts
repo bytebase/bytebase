@@ -44,7 +44,9 @@ export const useSQLEditorStore = defineStore("sqlEditor", () => {
       const { databases } = await databaseStore.fetchDatabases({
         parent: project.value,
         pageSize: getDefaultPagination(),
-        filter: name ? `name.matches("${name}")` : "",
+        filter: {
+          query: name,
+        },
       });
       databaseList.value = [...databases];
     } catch {
