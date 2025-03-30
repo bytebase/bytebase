@@ -14,16 +14,9 @@
 import { ref, watch } from "vue";
 import type { ComponentExposed } from "vue-component-type-helpers";
 import PagedTable from "@/components/v2/Model/PagedTable.vue";
-import { useProjectV1Store } from "@/store";
+import { useProjectV1Store, type ProjectFilter } from "@/store";
 import { type ComposedProject } from "@/types";
-import { type State } from "@/types/proto/v1/common";
 import ProjectV1Table from "./ProjectV1Table.vue";
-
-interface ProjectFilter {
-  query?: string;
-  state?: State;
-  excludeDefault?: boolean;
-}
 
 const props = defineProps<{
   filter: ProjectFilter;

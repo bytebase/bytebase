@@ -34,7 +34,7 @@ import { useDBSchemaV1Store } from "./dbSchema";
 import { useEnvironmentV1Store } from "./environment";
 import { batchGetOrFetchProjects, useProjectV1Store } from "./project";
 
-interface DatabaseFilter {
+export interface DatabaseFilter {
   project?: string;
   instance?: string;
   environment?: string;

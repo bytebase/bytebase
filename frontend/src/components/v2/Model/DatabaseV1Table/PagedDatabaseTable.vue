@@ -26,24 +26,10 @@ import { ref, watch } from "vue";
 import type { ComponentExposed } from "vue-component-type-helpers";
 import { useRouter } from "vue-router";
 import PagedTable from "@/components/v2/Model/PagedTable.vue";
-import { useDatabaseV1Store } from "@/store";
+import { useDatabaseV1Store, type DatabaseFilter } from "@/store";
 import type { ComposedDatabase } from "@/types";
-import { type Engine } from "@/types/proto/v1/common";
 import { autoDatabaseRoute } from "@/utils";
 import DatabaseV1Table from "./DatabaseV1Table.vue";
-
-interface DatabaseFilter {
-  project?: string;
-  instance?: string;
-  environment?: string;
-  query?: string;
-  showDeleted?: boolean;
-  excludeUnassigned?: boolean;
-  // label should be "{label key}:{label value}" format
-  labels?: string[];
-  engines?: Engine[];
-  excludeEngines?: Engine[];
-}
 
 const props = withDefaults(
   defineProps<{
