@@ -37,7 +37,6 @@ export const useCommonSearchScopeOptions = (
   watchEffect(async () => {
     try {
       const { projects } = await projectStore.fetchProjectList({
-        showDeleted: false,
         pageSize: getDefaultPagination(),
       });
       projectList.value = projects;
