@@ -274,6 +274,7 @@ type ActuatorInfo struct {
 	Docker                 bool                     `protobuf:"varint,22,opt,name=docker,proto3" json:"docker,omitempty"`
 	UserStats              []*ActuatorInfo_StatUser `protobuf:"bytes,23,rep,name=user_stats,json=userStats,proto3" json:"user_stats,omitempty"`
 	ActivatedInstanceCount int32                    `protobuf:"varint,24,opt,name=activated_instance_count,json=activatedInstanceCount,proto3" json:"activated_instance_count,omitempty"`
+	TotalInstanceCount     int32                    `protobuf:"varint,25,opt,name=total_instance_count,json=totalInstanceCount,proto3" json:"total_instance_count,omitempty"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
@@ -448,6 +449,13 @@ func (x *ActuatorInfo) GetActivatedInstanceCount() int32 {
 	return 0
 }
 
+func (x *ActuatorInfo) GetTotalInstanceCount() int32 {
+	if x != nil {
+		return x.TotalInstanceCount
+	}
+	return 0
+}
+
 type ActuatorInfo_StatUser struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	UserType      UserType               `protobuf:"varint,1,opt,name=user_type,json=userType,proto3,enum=bytebase.v1.UserType" json:"user_type,omitempty"`
@@ -521,7 +529,7 @@ const file_v1_actuator_service_proto_rawDesc = "" +
 	"\bactuator\x18\x01 \x01(\v2\x19.bytebase.v1.ActuatorInfoB\x04\xe2A\x01\x02R\bactuator\x12A\n" +
 	"\vupdate_mask\x18\x02 \x01(\v2\x1a.google.protobuf.FieldMaskB\x04\xe2A\x01\x02R\n" +
 	"updateMask\"\x14\n" +
-	"\x12DeleteCacheRequest\"\xf3\a\n" +
+	"\x12DeleteCacheRequest\"\xa5\b\n" +
 	"\fActuatorInfo\x12\x1e\n" +
 	"\aversion\x18\x01 \x01(\tB\x04\xe2A\x01\x03R\aversion\x12#\n" +
 	"\n" +
@@ -546,7 +554,8 @@ const file_v1_actuator_service_proto_rawDesc = "" +
 	"\x06docker\x18\x16 \x01(\bR\x06docker\x12A\n" +
 	"\n" +
 	"user_stats\x18\x17 \x03(\v2\".bytebase.v1.ActuatorInfo.StatUserR\tuserStats\x128\n" +
-	"\x18activated_instance_count\x18\x18 \x01(\x05R\x16activatedInstanceCount\x1a~\n" +
+	"\x18activated_instance_count\x18\x18 \x01(\x05R\x16activatedInstanceCount\x120\n" +
+	"\x14total_instance_count\x18\x19 \x01(\x05R\x12totalInstanceCount\x1a~\n" +
 	"\bStatUser\x122\n" +
 	"\tuser_type\x18\x01 \x01(\x0e2\x15.bytebase.v1.UserTypeR\buserType\x12(\n" +
 	"\x05state\x18\x02 \x01(\x0e2\x12.bytebase.v1.StateR\x05state\x12\x14\n" +

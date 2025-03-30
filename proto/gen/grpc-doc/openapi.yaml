@@ -7837,6 +7837,9 @@ components:
                 activatedInstanceCount:
                     type: integer
                     format: int32
+                totalInstanceCount:
+                    type: integer
+                    format: int32
             description: |-
                 ServerInfo is the API message for server info.
                  Actuator concept is similar to the Spring Boot Actuator.

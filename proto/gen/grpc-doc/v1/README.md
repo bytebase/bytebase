@@ -5193,6 +5193,7 @@ Actuator concept is similar to the Spring Boot Actuator.
 | docker | [bool](#bool) |  | docker flag means if the Bytebase instance is running in docker. |
 | user_stats | [ActuatorInfo.StatUser](#bytebase-v1-ActuatorInfo-StatUser) | repeated |  |
 | activated_instance_count | [int32](#int32) |  |  |
+| total_instance_count | [int32](#int32) |  |  |
 
 
 

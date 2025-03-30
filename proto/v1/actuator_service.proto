@@ -129,4 +129,5 @@ message ActuatorInfo {
   repeated StatUser user_stats = 23;
 
   int32 activated_instance_count = 24;
+  int32 total_instance_count = 25;
 }

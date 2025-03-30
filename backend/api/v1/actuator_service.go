@@ -153,6 +153,12 @@ func (s *ActuatorService) getServerInfo(ctx context.Context) (*v1pb.ActuatorInfo
 	}
 	serverInfo.ActivatedInstanceCount = int32(activatedInstanceCount)
 
+	totalInstanceCount, err := s.store.CountInstance(ctx, &store.CountInstanceMessage{})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to count total instance, error: %v", err)
+	}
+	serverInfo.TotalInstanceCount = int32(totalInstanceCount)
+
 	return &serverInfo, nil
 }
 

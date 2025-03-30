@@ -86,6 +86,7 @@ export interface ActuatorInfo {
   docker: boolean;
   userStats: ActuatorInfo_StatUser[];
   activatedInstanceCount: number;
+  totalInstanceCount: number;
 }
 
 export interface ActuatorInfo_StatUser {
@@ -381,6 +382,7 @@ function createBaseActuatorInfo(): ActuatorInfo {
     docker: false,
     userStats: [],
     activatedInstanceCount: 0,
+    totalInstanceCount: 0,
   };
 }
 
@@ -445,6 +447,9 @@ export const ActuatorInfo: MessageFns<ActuatorInfo> = {
     }
     if (message.activatedInstanceCount !== 0) {
       writer.uint32(192).int32(message.activatedInstanceCount);
+    }
+    if (message.totalInstanceCount !== 0) {
+      writer.uint32(200).int32(message.totalInstanceCount);
     }
     return writer;
   },
@@ -616,6 +621,14 @@ export const ActuatorInfo: MessageFns<ActuatorInfo> = {
           message.activatedInstanceCount = reader.int32();
           continue;
         }
+        case 25: {
+          if (tag !== 200) {
+            break;
+          }
+
+          message.totalInstanceCount = reader.int32();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -657,6 +670,7 @@ export const ActuatorInfo: MessageFns<ActuatorInfo> = {
       activatedInstanceCount: isSet(object.activatedInstanceCount)
         ? globalThis.Number(object.activatedInstanceCount)
         : 0,
+      totalInstanceCount: isSet(object.totalInstanceCount) ? globalThis.Number(object.totalInstanceCount) : 0,
     };
   },
 
@@ -722,6 +736,9 @@ export const ActuatorInfo: MessageFns<ActuatorInfo> = {
     if (message.activatedInstanceCount !== 0) {
       obj.activatedInstanceCount = Math.round(message.activatedInstanceCount);
     }
+    if (message.totalInstanceCount !== 0) {
+      obj.totalInstanceCount = Math.round(message.totalInstanceCount);
+    }
     return obj;
   },
 
@@ -754,6 +771,7 @@ export const ActuatorInfo: MessageFns<ActuatorInfo> = {
     message.docker = object.docker ?? false;
     message.userStats = object.userStats?.map((e) => ActuatorInfo_StatUser.fromPartial(e)) || [];
     message.activatedInstanceCount = object.activatedInstanceCount ?? 0;
+    message.totalInstanceCount = object.totalInstanceCount ?? 0;
     return message;
   },
 };
