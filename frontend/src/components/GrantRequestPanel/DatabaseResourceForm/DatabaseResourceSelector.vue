@@ -105,7 +105,9 @@ const fetchDatabaseList = useDebounceFn(async () => {
   const { databases } = await databaseStore.fetchDatabases({
     pageSize: getDefaultPagination(),
     parent: props.projectName,
-    filter: searchText.value ? `name.matches("${searchText.value}")` : "",
+    filter: {
+      query: searchText.value,
+    },
   });
   databaseList.value = databases;
 }, 500);

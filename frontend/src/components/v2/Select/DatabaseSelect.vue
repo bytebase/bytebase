@@ -23,12 +23,8 @@ import { useI18n } from "vue-i18n";
 import { useDatabaseV1Store } from "@/store";
 import { workspaceNamePrefix } from "@/store/modules/v1/common";
 import type { ComposedDatabase } from "@/types";
-import {
-  isValidDatabaseName,
-  isValidEnvironmentName,
-  unknownDatabase,
-} from "@/types";
-import { type Engine, engineToJSON } from "@/types/proto/v1/common";
+import { isValidDatabaseName, unknownDatabase } from "@/types";
+import { type Engine } from "@/types/proto/v1/common";
 import {
   instanceV1Name,
   supportedEngineV1List,
@@ -48,7 +44,7 @@ const props = withDefaults(
     databaseNames?: string[];
     environmentName?: string;
     projectName?: string;
-    allowedEngineTypeList?: readonly Engine[];
+    allowedEngineTypeList?: Engine[];
     includeAll?: boolean;
     autoReset?: boolean;
     filter?: (database: ComposedDatabase, index: number) => boolean;
@@ -84,20 +80,6 @@ const state = reactive<LocalState>({
   rawDatabaseList: [],
 });
 
-const filterParams = computed(() => {
-  const list = [];
-  if (isValidEnvironmentName(props.environmentName)) {
-    list.push(`environment == "${props.environmentName}"`);
-  }
-  if (props.allowedEngineTypeList.length > 0) {
-    list.push(
-      `engine in [${props.allowedEngineTypeList.map((e) => `"${engineToJSON(e)}"`).join(", ")}]`
-    );
-  }
-
-  return list;
-});
-
 const initSelectedDatabases = async (databaseNames: string[]) => {
   for (const databaseName of databaseNames) {
     if (isValidDatabaseName(databaseName)) {
@@ -110,13 +92,13 @@ const initSelectedDatabases = async (databaseNames: string[]) => {
 };
 
 const searchDatabases = async (name: string) => {
-  const dbFilter = [...filterParams.value];
-  if (name) {
-    dbFilter.push(`name.matches("${name}")`);
-  }
   const { databases } = await databaseStore.fetchDatabases({
     parent: props.projectName ?? `${workspaceNamePrefix}-`,
-    filter: dbFilter.join(" && "),
+    filter: {
+      environment: props.environmentName,
+      engines: props.allowedEngineTypeList,
+      query: name,
+    },
     pageSize: getDefaultPagination(),
   });
   return databases;
@@ -148,11 +130,12 @@ const handleSearch = useDebounceFn(async (search: string) => {
 }, 200);
 
 watch(
-  () => filterParams.value,
+  () => [props.environmentName, props.allowedEngineTypeList],
   () => {
     handleSearch("");
   },
   {
+    deep: true,
     immediate: true,
   }
 );
