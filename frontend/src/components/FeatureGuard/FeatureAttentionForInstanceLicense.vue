@@ -27,7 +27,7 @@
 <script lang="ts" setup>
 import { reactive, computed } from "vue";
 import { BBAttention } from "@/bbkit";
-import { useSubscriptionV1Store, useInstanceResourceList } from "@/store";
+import { useSubscriptionV1Store, useActuatorV1Store } from "@/store";
 import type { FeatureType } from "@/types";
 import { instanceLimitFeature } from "@/types";
 import { PlanType } from "@/types/proto/v1/subscription_service";
@@ -49,8 +49,8 @@ const state = reactive<LocalState>({
 });
 
 const subscriptionV1Store = useSubscriptionV1Store();
+const actuatorStore = useActuatorV1Store();
 const featureKey = props.feature.split(".").join("-");
-const instanceList = useInstanceResourceList();
 
 const onClick = () => {
   state.showInstanceAssignmentDrawer = true;
@@ -61,6 +61,8 @@ const canManageSubscription = computed((): boolean => {
 });
 
 const existInstanceWithoutLicense = computed(() => {
-  return instanceList.value.some((ins) => !ins.activation);
+  return (
+    actuatorStore.totalInstanceCount > actuatorStore.activatedInstanceCount
+  );
 });
 </script>
