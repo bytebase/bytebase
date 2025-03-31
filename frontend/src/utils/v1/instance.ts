@@ -4,6 +4,7 @@ import { t, locale } from "@/plugins/i18n";
 import { useEnvironmentV1Store, useSubscriptionV1Store } from "@/store";
 import type { ComposedInstance, MaybeRef } from "@/types";
 import {
+  emptyInstance,
   isValidInstanceName,
   languageOfEngineV1,
   unknownInstance,
@@ -23,8 +24,11 @@ import { PlanType } from "@/types/proto/v1/subscription_service";
 export function instanceV1Name(instance: Instance | InstanceResource) {
   const store = useSubscriptionV1Store();
   let name = instance.title;
-  // For unknown instance, we will use the name as the title.
-  if (instance.title === unknownInstance().title) {
+  // For unknown or empty instance, we will use the name as the title.
+  if (
+    instance.title === unknownInstance().title ||
+    instance.title === emptyInstance().title
+  ) {
     name = extractInstanceResourceName(instance.name);
   }
   if ((instance as Instance).state === State.DELETED) {
