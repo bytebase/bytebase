@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -160,8 +161,8 @@ func TestListDatabaseFilter(t *testing.T) {
 		{
 			input: `engine in ["MYSQL", "POSTGRES"]`,
 			want: &store.ListResourceFilter{
-				Where: `(instance.metadata->>'engine' IN ($1,$2))`,
-				Args:  []any{v1pb.Engine_MYSQL, v1pb.Engine_POSTGRES},
+				Where: fmt.Sprintf(`(instance.metadata->>'engine' IN ('%s','%s'))`, v1pb.Engine_MYSQL.String(), v1pb.Engine_POSTGRES.String()),
+				Args:  []any{},
 			},
 		},
 		{

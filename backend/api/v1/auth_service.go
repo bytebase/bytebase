@@ -56,7 +56,7 @@ type AuthService struct {
 }
 
 // NewAuthService creates a new AuthService.
-func NewAuthService(store *store.Store, secret string, licenseService enterprise.LicenseService, metricReporter *metricreport.Reporter, profile *config.Profile, stateCfg *state.State, iamManager *iam.Manager, postCreateUser func(ctx context.Context, user *store.UserMessage, firstEndUser bool) error) (*AuthService, error) {
+func NewAuthService(store *store.Store, secret string, licenseService enterprise.LicenseService, metricReporter *metricreport.Reporter, profile *config.Profile, stateCfg *state.State, iamManager *iam.Manager, postCreateUser func(ctx context.Context, user *store.UserMessage, firstEndUser bool) error) *AuthService {
 	return &AuthService{
 		store:          store,
 		secret:         secret,
@@ -66,7 +66,7 @@ func NewAuthService(store *store.Store, secret string, licenseService enterprise
 		stateCfg:       stateCfg,
 		iamManager:     iamManager,
 		postCreateUser: postCreateUser,
-	}, nil
+	}
 }
 
 // Login is the auth login method including SSO.
