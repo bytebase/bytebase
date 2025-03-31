@@ -185,10 +185,6 @@ const toggleChecked = async (on: boolean) => {
     });
   }
 };
-
-events.on("toggle-online-migration", ({ on }) => {
-  toggleChecked(on);
-});
 </script>
 
 <style lang="postcss" scoped>
