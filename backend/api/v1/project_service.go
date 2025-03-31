@@ -52,14 +52,12 @@ func NewProjectService(
 	profile *config.Profile,
 	iamManager *iam.Manager,
 	licenseService enterprise.LicenseService,
-	instanceService *InstanceService,
 ) *ProjectService {
 	return &ProjectService{
-		store:           store,
-		profile:         profile,
-		iamManager:      iamManager,
-		licenseService:  licenseService,
-		instanceService: instanceService,
+		store:          store,
+		profile:        profile,
+		iamManager:     iamManager,
+		licenseService: licenseService,
 	}
 }
 
@@ -626,36 +624,6 @@ func (s *ProjectService) SetIamPolicy(ctx context.Context, request *v1pb.SetIamP
 	}
 
 	return convertToV1IamPolicy(ctx, s.store, iamPolicyMessage)
-}
-
-// ListProjectInstances lists instances related to the project.
-func (s *ProjectService) ListProjectInstances(ctx context.Context, request *v1pb.ListProjectInstancesRequest) (*v1pb.ListProjectInstancesResponse, error) {
-	project, err := s.getProjectMessage(ctx, request.Project)
-	if err != nil {
-		return nil, err
-	}
-	filter := []string{fmt.Sprintf(`project == "%s"`, common.FormatProject(project.ResourceID))}
-	if request.Filter != "" {
-		filter = append(filter, request.Filter)
-	}
-
-	resp, err := s.instanceService.ListInstances(ctx, &v1pb.ListInstancesRequest{
-		PageSize:    request.PageSize,
-		PageToken:   request.PageToken,
-		ShowDeleted: request.ShowDeleted,
-		Filter:      strings.Join(filter, " && "),
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	listProjectInstancesResponse := &v1pb.ListProjectInstancesResponse{
-		NextPageToken: resp.NextPageToken,
-	}
-	for _, instance := range resp.Instances {
-		listProjectInstancesResponse.Instances = append(listProjectInstancesResponse.Instances, instance)
-	}
-	return listProjectInstancesResponse, nil
 }
 
 func convertToProtoAny(i any) (*anypb.Any, error) {

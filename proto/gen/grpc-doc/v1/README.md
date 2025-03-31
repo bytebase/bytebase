@@ -508,8 +508,6 @@
     - [DeleteProjectRequest](#bytebase-v1-DeleteProjectRequest)
     - [GetProjectRequest](#bytebase-v1-GetProjectRequest)
     - [Label](#bytebase-v1-Label)
-    - [ListProjectInstancesRequest](#bytebase-v1-ListProjectInstancesRequest)
-    - [ListProjectInstancesResponse](#bytebase-v1-ListProjectInstancesResponse)
     - [ListProjectsRequest](#bytebase-v1-ListProjectsRequest)
     - [ListProjectsResponse](#bytebase-v1-ListProjectsResponse)
     - [Project](#bytebase-v1-Project)
@@ -8231,43 +8229,6 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 
 
 
-<a name="bytebase-v1-ListProjectInstancesRequest"></a>
-
-### ListProjectInstancesRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| project | [string](#string) |  | The name of the project to add the webhook to. Format: projects/{project} |
-| page_size | [int32](#int32) |  | The maximum number of instances to return. The service may return fewer than this value. If unspecified, at most 10 instances will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | A page token, received from a previous `ListProjectInstances` call. Provide this to retrieve the subsequent page.
-
-When paginating, all other parameters provided to `ListProjectInstances` must match the call that provided the page token. |
-| show_deleted | [bool](#bool) |  | Show deleted instances if specified. |
-| filter | [string](#string) |  | Filter the project. Same as the filter in ListInstancesRequest. |
-
-
-
-
-
-
-<a name="bytebase-v1-ListProjectInstancesResponse"></a>
-
-### ListProjectInstancesResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| instances | [Instance](#bytebase-v1-Instance) | repeated | The instances from the specified request. |
-| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
-
-
-
-
-
-
 <a name="bytebase-v1-ListProjectsRequest"></a>
 
 ### ListProjectsRequest
@@ -8570,7 +8531,6 @@ TYPE_PROJECT_REPOSITORY_PUSH represents Bytebase receiving a push event from the
 | UpdateWebhook | [UpdateWebhookRequest](#bytebase-v1-UpdateWebhookRequest) | [Project](#bytebase-v1-Project) |  |
 | RemoveWebhook | [RemoveWebhookRequest](#bytebase-v1-RemoveWebhookRequest) | [Project](#bytebase-v1-Project) |  |
 | TestWebhook | [TestWebhookRequest](#bytebase-v1-TestWebhookRequest) | [TestWebhookResponse](#bytebase-v1-TestWebhookResponse) |  |
-| ListProjectInstances | [ListProjectInstancesRequest](#bytebase-v1-ListProjectInstancesRequest) | [ListProjectInstancesResponse](#bytebase-v1-ListProjectInstancesResponse) |  |
 
  
 

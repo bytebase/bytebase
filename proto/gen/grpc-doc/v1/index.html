@@ -2112,14 +2112,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.ListProjectInstancesRequest"><span class="badge">M</span>ListProjectInstancesRequest</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.ListProjectInstancesResponse"><span class="badge">M</span>ListProjectInstancesResponse</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.ListProjectsRequest"><span class="badge">M</span>ListProjectsRequest</a>
                 </li>
               
@@ -22760,99 +22752,6 @@ Format: projects/{project} </p></td>
 
         
       
-        <h3 id="bytebase.v1.ListProjectInstancesRequest">ListProjectInstancesRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>project</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The name of the project to add the webhook to.
-Format: projects/{project} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>page_size</td>
-                  <td><a href="#int32">int32</a></td>
-                  <td></td>
-                  <td><p>The maximum number of instances to return. The service may return fewer than
-this value.
-If unspecified, at most 10 instances will be returned.
-The maximum value is 1000; values above 1000 will be coerced to 1000. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>page_token</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>A page token, received from a previous `ListProjectInstances` call.
-Provide this to retrieve the subsequent page.
-
-When paginating, all other parameters provided to `ListProjectInstances` must match
-the call that provided the page token. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>show_deleted</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>Show deleted instances if specified. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>filter</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Filter the project.
-Same as the filter in ListInstancesRequest. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.ListProjectInstancesResponse">ListProjectInstancesResponse</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>instances</td>
-                  <td><a href="#bytebase.v1.Instance">Instance</a></td>
-                  <td>repeated</td>
-                  <td><p>The instances from the specified request. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>next_page_token</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>A token, which can be sent as `page_token` to retrieve the next page.
-If this field is omitted, there are no subsequent pages. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.v1.ListProjectsRequest">ListProjectsRequest</h3>
         <p></p>
 
@@ -23718,13 +23617,6 @@ TYPE_SQL_EDITOR_QUERY represents executing query in SQL Editor.</p></td>
                 <td><p></p></td>
               </tr>
             
-              <tr>
-                <td>ListProjectInstances</td>
-                <td><a href="#bytebase.v1.ListProjectInstancesRequest">ListProjectInstancesRequest</a></td>
-                <td><a href="#bytebase.v1.ListProjectInstancesResponse">ListProjectInstancesResponse</a></td>
-                <td><p></p></td>
-              </tr>
-            
           </tbody>
         </table>
 
@@ -23879,16 +23771,6 @@ TYPE_SQL_EDITOR_QUERY represents executing query in SQL Editor.</p></td>
                 <td>TestWebhook</td>
                 <td>POST</td>
                 <td>/v1/{project=projects/*}:testWebhook</td>
-                <td>*</td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>ListProjectInstances</td>
-                <td>POST</td>
-                <td>/v1/{project=projects/*}/instances</td>
                 <td>*</td>
               </tr>
               

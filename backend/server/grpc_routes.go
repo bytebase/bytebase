@@ -52,16 +52,15 @@ func configureGrpcRouters(
 		metricReporter,
 		licenseService))
 	v1pb.RegisterEnvironmentServiceServer(grpcServer, apiv1.NewEnvironmentService(stores, licenseService))
-	instanceService := apiv1.NewInstanceService(
+	v1pb.RegisterInstanceServiceServer(grpcServer, apiv1.NewInstanceService(
 		stores,
 		licenseService,
 		metricReporter,
 		stateCfg,
 		dbFactory,
 		schemaSyncer,
-		iamManager)
-	v1pb.RegisterInstanceServiceServer(grpcServer, instanceService)
-	v1pb.RegisterProjectServiceServer(grpcServer, apiv1.NewProjectService(stores, profile, iamManager, licenseService, instanceService))
+		iamManager))
+	v1pb.RegisterProjectServiceServer(grpcServer, apiv1.NewProjectService(stores, profile, iamManager, licenseService))
 	v1pb.RegisterDatabaseServiceServer(grpcServer, apiv1.NewDatabaseService(stores, schemaSyncer, licenseService, profile, iamManager))
 	v1pb.RegisterDatabaseCatalogServiceServer(grpcServer, apiv1.NewDatabaseCatalogService(stores, licenseService))
 	v1pb.RegisterInstanceRoleServiceServer(grpcServer, apiv1.NewInstanceRoleService(stores, dbFactory))
