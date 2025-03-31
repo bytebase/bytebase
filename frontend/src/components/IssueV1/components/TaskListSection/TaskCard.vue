@@ -14,7 +14,6 @@
       <div class="flex items-start">
         <div class="flex items-center flex-1 gap-x-1">
           <TaskStatusIcon
-            :create="isCreating"
             :status="task.status"
             :task="task"
             class="transform scale-75"
