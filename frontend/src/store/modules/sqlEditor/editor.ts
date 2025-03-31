@@ -2,7 +2,7 @@ import { useLocalStorage, useDebounceFn } from "@vueuse/core";
 import { defineStore } from "pinia";
 import { computed, ref, watch, watchEffect } from "vue";
 import { useDatabaseV1Store } from "@/store";
-import type { ComposedDatabase } from "@/types";
+import { type ComposedDatabase, isValidProjectName } from "@/types";
 import { QueryOption_RedisRunCommandsOn } from "@/types/proto/v1/sql_service";
 import { hasWorkspacePermissionV2, getDefaultPagination } from "@/utils";
 
@@ -57,13 +57,15 @@ export const useSQLEditorStore = defineStore("sqlEditor", () => {
   }, 500);
 
   watchEffect(async () => {
-    if (project.value) {
+    if (isValidProjectName(project.value)) {
       await prepareDatabases();
     }
   });
 
   watch(project, (project) => {
-    storedLastViewedProject.value = project;
+    if (isValidProjectName(project)) {
+      storedLastViewedProject.value = project;
+    }
   });
 
   const isShowExecutingHint = ref(false);
