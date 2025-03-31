@@ -21,7 +21,6 @@ export type IssueEvents = Emittery<{
   "perform-issue-review-action": { action: IssueReviewAction };
   "perform-issue-status-action": { action: IssueStatusAction };
   "perform-task-rollout-action": { action: TaskRolloutAction; tasks: Task[] };
-  "toggle-online-migration": { on: boolean };
 }>;
 
 export type ReviewContext = {
@@ -46,7 +45,8 @@ export type IssueContext = {
   issue: Ref<ComposedIssue>;
   phase: Ref<IssuePhase>;
   isLegacyIssue: Ref<boolean>;
-  // users in users/{email} format.
+  // The release candidates of the issue.
+  // Format: users/{email}
   releaserCandidates: Ref<string[]>;
   allowEditIssue: ComputedRef<boolean>;
 
