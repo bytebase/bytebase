@@ -32,6 +32,7 @@ service DatabaseService {
     };
 
     option (google.api.method_signature) = "";
+    option (bytebase.v1.permission) = "bb.databases.list";
     option (bytebase.v1.auth_method) = CUSTOM;
   }
 

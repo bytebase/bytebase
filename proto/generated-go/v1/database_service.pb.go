@@ -6335,10 +6335,10 @@ const file_v1_database_service_proto_rawDesc = "" +
 	"\rChangelogView\x12\x1e\n" +
 	"\x1aCHANGELOG_VIEW_UNSPECIFIED\x10\x00\x12\x18\n" +
 	"\x14CHANGELOG_VIEW_BASIC\x10\x01\x12\x17\n" +
-	"\x13CHANGELOG_VIEW_FULL\x10\x022\xb4\x19\n" +
+	"\x13CHANGELOG_VIEW_FULL\x10\x022\xca\x19\n" +
 	"\x0fDatabaseService\x12\x90\x01\n" +
-	"\vGetDatabase\x12\x1f.bytebase.v1.GetDatabaseRequest\x1a\x15.bytebase.v1.Database\"I\xdaA\x04name\x8a\xea0\x10bb.databases.get\x90\xea0\x01\x82\xd3\xe4\x93\x02$\x12\"/v1/{name=instances/*/databases/*}\x12\xd5\x01\n" +
-	"\rListDatabases\x12!.bytebase.v1.ListDatabasesRequest\x1a\".bytebase.v1.ListDatabasesResponse\"}\xdaA\x00\x90\xea0\x02\x82\xd3\xe4\x93\x02pZ$\x12\"/v1/{parent=instances/*}/databasesZ%\x12#/v1/{parent=workspaces/*}/databases\x12!/v1/{parent=projects/*}/databases\x12\xc0\x01\n" +
+	"\vGetDatabase\x12\x1f.bytebase.v1.GetDatabaseRequest\x1a\x15.bytebase.v1.Database\"I\xdaA\x04name\x8a\xea0\x10bb.databases.get\x90\xea0\x01\x82\xd3\xe4\x93\x02$\x12\"/v1/{name=instances/*/databases/*}\x12\xeb\x01\n" +
+	"\rListDatabases\x12!.bytebase.v1.ListDatabasesRequest\x1a\".bytebase.v1.ListDatabasesResponse\"\x92\x01\xdaA\x00\x8a\xea0\x11bb.databases.list\x90\xea0\x02\x82\xd3\xe4\x93\x02pZ$\x12\"/v1/{parent=instances/*}/databasesZ%\x12#/v1/{parent=workspaces/*}/databases\x12!/v1/{parent=projects/*}/databases\x12\xc0\x01\n" +
 	"\x0eUpdateDatabase\x12\".bytebase.v1.UpdateDatabaseRequest\x1a\x15.bytebase.v1.Database\"s\xdaA\x14database,update_mask\x8a\xea0\x13bb.databases.update\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x027:\bdatabase2+/v1/{database.name=instances/*/databases/*}\x12\xc5\x01\n" +
 	"\x14BatchUpdateDatabases\x12(.bytebase.v1.BatchUpdateDatabasesRequest\x1a).bytebase.v1.BatchUpdateDatabasesResponse\"X\x8a\xea0\x13bb.databases.update\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x023:\x01*\"./v1/{parent=instances/*}/databases:batchUpdate\x12\xa0\x01\n" +
 	"\fSyncDatabase\x12 .bytebase.v1.SyncDatabaseRequest\x1a!.bytebase.v1.SyncDatabaseResponse\"K\x8a\xea0\x11bb.databases.sync\x90\xea0\x01\x82\xd3\xe4\x93\x02,:\x01*\"'/v1/{name=instances/*/databases/*}:sync\x12\xb0\x01\n" +
