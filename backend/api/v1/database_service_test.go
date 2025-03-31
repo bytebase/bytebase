@@ -161,7 +161,7 @@ func TestListDatabaseFilter(t *testing.T) {
 		{
 			input: `engine in ["MYSQL", "POSTGRES"]`,
 			want: &store.ListResourceFilter{
-				Where: fmt.Sprintf(`(instance.metadata->>'engine' IN ("%s","%s"))`, v1pb.Engine_MYSQL.String(), v1pb.Engine_POSTGRES.String()),
+				Where: fmt.Sprintf(`(instance.metadata->>'engine' IN ('%s','%s'))`, v1pb.Engine_MYSQL.String(), v1pb.Engine_POSTGRES.String()),
 				Args:  []any{},
 			},
 		},
