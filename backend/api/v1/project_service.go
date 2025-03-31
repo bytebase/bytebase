@@ -39,11 +39,10 @@ import (
 // ProjectService implements the project service.
 type ProjectService struct {
 	v1pb.UnimplementedProjectServiceServer
-	store           *store.Store
-	profile         *config.Profile
-	iamManager      *iam.Manager
-	licenseService  enterprise.LicenseService
-	instanceService *InstanceService
+	store          *store.Store
+	profile        *config.Profile
+	iamManager     *iam.Manager
+	licenseService enterprise.LicenseService
 }
 
 // NewProjectService creates a new ProjectService.
