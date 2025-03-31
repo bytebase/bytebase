@@ -46,7 +46,12 @@ type ProjectService struct {
 }
 
 // NewProjectService creates a new ProjectService.
-func NewProjectService(store *store.Store, profile *config.Profile, iamManager *iam.Manager, licenseService enterprise.LicenseService) *ProjectService {
+func NewProjectService(
+	store *store.Store,
+	profile *config.Profile,
+	iamManager *iam.Manager,
+	licenseService enterprise.LicenseService,
+) *ProjectService {
 	return &ProjectService{
 		store:          store,
 		profile:        profile,
