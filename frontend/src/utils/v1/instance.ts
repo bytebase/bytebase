@@ -3,7 +3,12 @@ import { computed, unref } from "vue";
 import { t, locale } from "@/plugins/i18n";
 import { useEnvironmentV1Store, useSubscriptionV1Store } from "@/store";
 import type { ComposedInstance, MaybeRef } from "@/types";
-import { isValidProjectName, languageOfEngineV1 } from "@/types";
+import {
+  emptyInstance,
+  isValidInstanceName,
+  languageOfEngineV1,
+  unknownInstance,
+} from "@/types";
 import { Engine, State } from "@/types/proto/v1/common";
 import type { Environment } from "@/types/proto/v1/environment_service";
 import type {
@@ -19,11 +24,17 @@ import { PlanType } from "@/types/proto/v1/subscription_service";
 export function instanceV1Name(instance: Instance | InstanceResource) {
   const store = useSubscriptionV1Store();
   let name = instance.title;
-  // instance cannot be deleted and activated at the same time.
+  // For unknown or empty instance, we will use the name as the title.
+  if (
+    instance.title === unknownInstance().title ||
+    instance.title === emptyInstance().title
+  ) {
+    name = extractInstanceResourceName(instance.name);
+  }
   if ((instance as Instance).state === State.DELETED) {
     name += ` (${t("common.archived")})`;
   } else if (
-    isValidProjectName(instance.name) &&
+    isValidInstanceName(instance.name) &&
     !instance.activation &&
     store.currentPlan !== PlanType.FREE
   ) {
