@@ -40,14 +40,8 @@ func configureGrpcRouters(
 	postCreateUser apiv1.CreateUserFunc,
 	secret string) error {
 	// Register services.
-	authService, err := apiv1.NewAuthService(stores, secret, licenseService, metricReporter, profile, stateCfg, iamManager, postCreateUser)
-	if err != nil {
-		return err
-	}
-	userService, err := apiv1.NewUserService(stores, secret, licenseService, metricReporter, profile, stateCfg, iamManager, postCreateUser)
-	if err != nil {
-		return err
-	}
+	authService := apiv1.NewAuthService(stores, secret, licenseService, metricReporter, profile, stateCfg, iamManager, postCreateUser)
+	userService := apiv1.NewUserService(stores, secret, licenseService, metricReporter, profile, stateCfg, iamManager, postCreateUser)
 	v1pb.RegisterAuditLogServiceServer(grpcServer, apiv1.NewAuditLogService(stores, iamManager, licenseService))
 	v1pb.RegisterAuthServiceServer(grpcServer, authService)
 	v1pb.RegisterUserServiceServer(grpcServer, userService)

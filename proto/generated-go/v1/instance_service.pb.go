@@ -384,13 +384,11 @@ func (x *GetInstanceRequest) GetName() string {
 
 type ListInstancesRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Not used.
 	// The maximum number of instances to return. The service may return fewer than
 	// this value.
 	// If unspecified, at most 10 instances will be returned.
 	// The maximum value is 1000; values above 1000 will be coerced to 1000.
 	PageSize int32 `protobuf:"varint,1,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
-	// Not used.
 	// A page token, received from a previous `ListInstances` call.
 	// Provide this to retrieve the subsequent page.
 	//
@@ -398,7 +396,35 @@ type ListInstancesRequest struct {
 	// the call that provided the page token.
 	PageToken string `protobuf:"bytes,2,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
 	// Show deleted instances if specified.
-	ShowDeleted   bool `protobuf:"varint,3,opt,name=show_deleted,json=showDeleted,proto3" json:"show_deleted,omitempty"`
+	ShowDeleted bool `protobuf:"varint,3,opt,name=show_deleted,json=showDeleted,proto3" json:"show_deleted,omitempty"`
+	// Filter the project.
+	// Supported filters:
+	// - name
+	// - resource_id
+	// - environment
+	// - state
+	// - engine
+	// - host
+	// - port
+	// - project
+	//
+	// For example:
+	// name == "sample instance"
+	// name.matches("sample")
+	// resource_id = "sample-instance"
+	// resource_id.matches("sample")
+	// state == "DELETED"
+	// environment == "environments/test"
+	// engine == "MYSQL"
+	// engine in ["MYSQL", "POSTGRES"]
+	// !(engine in ["MYSQL", "POSTGRES"])
+	// host == "127.0.0.1"
+	// port == "54321"
+	// project == "projects/sample-project"
+	// You can combine filter conditions like:
+	// name.matches("sample") && environment == "environments/test"
+	// host == "127.0.0.1" && port == "54321"
+	Filter        string `protobuf:"bytes,4,opt,name=filter,proto3" json:"filter,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -452,6 +478,13 @@ func (x *ListInstancesRequest) GetShowDeleted() bool {
 		return x.ShowDeleted
 	}
 	return false
+}
+
+func (x *ListInstancesRequest) GetFilter() string {
+	if x != nil {
+		return x.Filter
+	}
+	return ""
 }
 
 type ListInstancesResponse struct {
@@ -2308,12 +2341,13 @@ const file_v1_instance_service_proto_rawDesc = "" +
 	"\x19v1/instance_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\x1a\x1ev1/instance_role_service.proto\"H\n" +
 	"\x12GetInstanceRequest\x122\n" +
 	"\x04name\x18\x01 \x01(\tB\x1e\xe2A\x01\x02\xfaA\x17\n" +
-	"\x15bytebase.com/InstanceR\x04name\"u\n" +
+	"\x15bytebase.com/InstanceR\x04name\"\x8d\x01\n" +
 	"\x14ListInstancesRequest\x12\x1b\n" +
 	"\tpage_size\x18\x01 \x01(\x05R\bpageSize\x12\x1d\n" +
 	"\n" +
 	"page_token\x18\x02 \x01(\tR\tpageToken\x12!\n" +
-	"\fshow_deleted\x18\x03 \x01(\bR\vshowDeleted\"t\n" +
+	"\fshow_deleted\x18\x03 \x01(\bR\vshowDeleted\x12\x16\n" +
+	"\x06filter\x18\x04 \x01(\tR\x06filter\"t\n" +
 	"\x15ListInstancesResponse\x123\n" +
 	"\tinstances\x18\x01 \x03(\v2\x15.bytebase.v1.InstanceR\tinstances\x12&\n" +
 	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\x96\x01\n" +

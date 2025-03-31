@@ -2,9 +2,14 @@ package v1
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"strings"
 
+	"github.com/google/cel-go/cel"
+	celast "github.com/google/cel-go/common/ast"
+	celoperators "github.com/google/cel-go/common/operators"
+	celoverloads "github.com/google/cel-go/common/overloads"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -63,16 +68,167 @@ func (s *InstanceService) GetInstance(ctx context.Context, request *v1pb.GetInst
 	return convertInstanceMessage(instance)
 }
 
+func parseListInstanceFilter(filter string) (*store.ListResourceFilter, error) {
+	if filter == "" {
+		return nil, nil
+	}
+	e, err := cel.NewEnv()
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to create cel env")
+	}
+	ast, iss := e.Parse(filter)
+	if iss != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "failed to parse filter %v, error: %v", filter, iss.String())
+	}
+
+	var getFilter func(expr celast.Expr) (string, error)
+	var positionalArgs []any
+
+	parseToSQL := func(variable, value any) (string, error) {
+		switch variable {
+		case "name":
+			positionalArgs = append(positionalArgs, value.(string))
+			return fmt.Sprintf("instance.metadata->>'title' = $%d", len(positionalArgs)), nil
+		case "resource_id":
+			positionalArgs = append(positionalArgs, value.(string))
+			return fmt.Sprintf("instance.resource_id = $%d", len(positionalArgs)), nil
+		case "environment":
+			environmentID, err := common.GetEnvironmentID(value.(string))
+			if err != nil {
+				return "", status.Errorf(codes.InvalidArgument, "invalid environment filter %q", value)
+			}
+			positionalArgs = append(positionalArgs, environmentID)
+			return fmt.Sprintf("instance.environment = $%d", len(positionalArgs)), nil
+		case "state":
+			v1State, ok := v1pb.State_value[value.(string)]
+			if !ok {
+				return "", status.Errorf(codes.InvalidArgument, "invalid state filter %q", value)
+			}
+			positionalArgs = append(positionalArgs, v1pb.State(v1State) == v1pb.State_DELETED)
+			return fmt.Sprintf("instance.deleted = $%d", len(positionalArgs)), nil
+		case "engine":
+			v1Engine, ok := v1pb.Engine_value[value.(string)]
+			if !ok {
+				return "", status.Errorf(codes.InvalidArgument, "invalid engine filter %q", value)
+			}
+			engine := convertEngine(v1pb.Engine(v1Engine))
+			positionalArgs = append(positionalArgs, engine)
+			return fmt.Sprintf("instance.metadata->>'engine' = $%d", len(positionalArgs)), nil
+		case "host":
+			positionalArgs = append(positionalArgs, value.(string))
+			return fmt.Sprintf("ds ->> 'host' = $%d", len(positionalArgs)), nil
+		case "port":
+			positionalArgs = append(positionalArgs, value.(string))
+			return fmt.Sprintf("ds ->> 'port' = $%d", len(positionalArgs)), nil
+		case "project":
+			projectID, err := common.GetProjectID(value.(string))
+			if err != nil {
+				return "", status.Errorf(codes.InvalidArgument, "invalid project filter %q", value)
+			}
+			positionalArgs = append(positionalArgs, projectID)
+			return fmt.Sprintf("db.project = $%d", len(positionalArgs)), nil
+		default:
+			return "", status.Errorf(codes.InvalidArgument, "unsupport variable %q", variable)
+		}
+	}
+
+	getFilter = func(expr celast.Expr) (string, error) {
+		switch expr.Kind() {
+		case celast.CallKind:
+			functionName := expr.AsCall().FunctionName()
+			switch functionName {
+			case celoperators.LogicalOr:
+				return getSubConditionFromExpr(expr, getFilter, "OR")
+			case celoperators.LogicalAnd:
+				return getSubConditionFromExpr(expr, getFilter, "AND")
+			case celoperators.Equals:
+				variable, value := getVariableAndValueFromExpr(expr)
+				return parseToSQL(variable, value)
+			case celoverloads.Matches:
+				variable := expr.AsCall().Target().AsIdent()
+				args := expr.AsCall().Args()
+				if len(args) != 1 {
+					return "", status.Errorf(codes.InvalidArgument, `invalid args for %q`, variable)
+				}
+				value := args[0].AsLiteral().Value()
+				strValue, ok := value.(string)
+				if !ok {
+					return "", status.Errorf(codes.InvalidArgument, "expect string, got %T, hint: filter literals should be string", value)
+				}
+
+				switch variable {
+				case "name":
+					return "LOWER(instance.metadata->>'title') LIKE '%" + strings.ToLower(strValue) + "%'", nil
+				case "resource_id":
+					return "LOWER(instance.resource_id) LIKE '%" + strings.ToLower(strValue) + "%'", nil
+				default:
+					return "", status.Errorf(codes.InvalidArgument, "unsupport variable %q", variable)
+				}
+			case celoperators.In:
+				return parseToEngineSQL(expr, "IN")
+			case celoperators.LogicalNot:
+				args := expr.AsCall().Args()
+				if len(args) != 1 {
+					return "", status.Errorf(codes.InvalidArgument, `only support !(engine in ["{engine1}", "{engine2}"]) format`)
+				}
+				return parseToEngineSQL(args[0], "NOT IN")
+			default:
+				return "", status.Errorf(codes.InvalidArgument, "unexpected function %v", functionName)
+			}
+		default:
+			return "", status.Errorf(codes.InvalidArgument, "unexpected expr kind %v", expr.Kind())
+		}
+	}
+
+	where, err := getFilter(ast.NativeRep().Expr())
+	if err != nil {
+		return nil, err
+	}
+
+	return &store.ListResourceFilter{
+		Args:  positionalArgs,
+		Where: "(" + where + ")",
+	}, nil
+}
+
 // ListInstances lists all instances.
 func (s *InstanceService) ListInstances(ctx context.Context, request *v1pb.ListInstancesRequest) (*v1pb.ListInstancesResponse, error) {
+	offset, err := parseLimitAndOffset(&pageSize{
+		token:   request.PageToken,
+		limit:   int(request.PageSize),
+		maximum: 1000,
+	})
+	if err != nil {
+		return nil, err
+	}
+	limitPlusOne := offset.limit + 1
+
 	find := &store.FindInstanceMessage{
 		ShowDeleted: request.ShowDeleted,
+		Limit:       &limitPlusOne,
+		Offset:      &offset.offset,
 	}
+	filter, err := parseListInstanceFilter(request.Filter)
+	if err != nil {
+		return nil, err
+	}
+	find.Filter = filter
 	instances, err := s.store.ListInstancesV2(ctx, find)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
-	response := &v1pb.ListInstancesResponse{}
+
+	nextPageToken := ""
+	if len(instances) == limitPlusOne {
+		instances = instances[:offset.limit]
+		if nextPageToken, err = offset.getNextPageToken(); err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to marshal next page token, error: %v", err)
+		}
+	}
+
+	response := &v1pb.ListInstancesResponse{
+		NextPageToken: nextPageToken,
+	}
 	for _, instance := range instances {
 		ins, err := convertInstanceMessage(instance)
 		if err != nil {

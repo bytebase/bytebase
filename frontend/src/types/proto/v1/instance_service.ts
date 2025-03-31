@@ -87,7 +87,6 @@ export interface GetInstanceRequest {
 
 export interface ListInstancesRequest {
   /**
-   * Not used.
    * The maximum number of instances to return. The service may return fewer than
    * this value.
    * If unspecified, at most 10 instances will be returned.
@@ -95,7 +94,6 @@ export interface ListInstancesRequest {
    */
   pageSize: number;
   /**
-   * Not used.
    * A page token, received from a previous `ListInstances` call.
    * Provide this to retrieve the subsequent page.
    *
@@ -105,6 +103,36 @@ export interface ListInstancesRequest {
   pageToken: string;
   /** Show deleted instances if specified. */
   showDeleted: boolean;
+  /**
+   * Filter the project.
+   * Supported filters:
+   * - name
+   * - resource_id
+   * - environment
+   * - state
+   * - engine
+   * - host
+   * - port
+   * - project
+   *
+   * For example:
+   * name == "sample instance"
+   * name.matches("sample")
+   * resource_id = "sample-instance"
+   * resource_id.matches("sample")
+   * state == "DELETED"
+   * environment == "environments/test"
+   * engine == "MYSQL"
+   * engine in ["MYSQL", "POSTGRES"]
+   * !(engine in ["MYSQL", "POSTGRES"])
+   * host == "127.0.0.1"
+   * port == "54321"
+   * project == "projects/sample-project"
+   * You can combine filter conditions like:
+   * name.matches("sample") && environment == "environments/test"
+   * host == "127.0.0.1" && port == "54321"
+   */
+  filter: string;
 }
 
 export interface ListInstancesResponse {
@@ -812,7 +840,7 @@ export const GetInstanceRequest: MessageFns<GetInstanceRequest> = {
 };
 
 function createBaseListInstancesRequest(): ListInstancesRequest {
-  return { pageSize: 0, pageToken: "", showDeleted: false };
+  return { pageSize: 0, pageToken: "", showDeleted: false, filter: "" };
 }
 
 export const ListInstancesRequest: MessageFns<ListInstancesRequest> = {
@@ -825,6 +853,9 @@ export const ListInstancesRequest: MessageFns<ListInstancesRequest> = {
     }
     if (message.showDeleted !== false) {
       writer.uint32(24).bool(message.showDeleted);
+    }
+    if (message.filter !== "") {
+      writer.uint32(34).string(message.filter);
     }
     return writer;
   },
@@ -860,6 +891,14 @@ export const ListInstancesRequest: MessageFns<ListInstancesRequest> = {
           message.showDeleted = reader.bool();
           continue;
         }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.filter = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -874,6 +913,7 @@ export const ListInstancesRequest: MessageFns<ListInstancesRequest> = {
       pageSize: isSet(object.pageSize) ? globalThis.Number(object.pageSize) : 0,
       pageToken: isSet(object.pageToken) ? globalThis.String(object.pageToken) : "",
       showDeleted: isSet(object.showDeleted) ? globalThis.Boolean(object.showDeleted) : false,
+      filter: isSet(object.filter) ? globalThis.String(object.filter) : "",
     };
   },
 
@@ -888,6 +928,9 @@ export const ListInstancesRequest: MessageFns<ListInstancesRequest> = {
     if (message.showDeleted !== false) {
       obj.showDeleted = message.showDeleted;
     }
+    if (message.filter !== "") {
+      obj.filter = message.filter;
+    }
     return obj;
   },
 
@@ -899,6 +942,7 @@ export const ListInstancesRequest: MessageFns<ListInstancesRequest> = {
     message.pageSize = object.pageSize ?? 0;
     message.pageToken = object.pageToken ?? "";
     message.showDeleted = object.showDeleted ?? false;
+    message.filter = object.filter ?? "";
     return message;
   },
 };

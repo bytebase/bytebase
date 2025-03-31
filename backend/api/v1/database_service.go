@@ -123,6 +123,32 @@ func getSubConditionFromExpr(expr celast.Expr, getFilter func(expr celast.Expr) 
 	return strings.Join(args, fmt.Sprintf(" %s ", join)), nil
 }
 
+func parseToEngineSQL(expr celast.Expr, relation string) (string, error) {
+	variable, value := getVariableAndValueFromExpr(expr)
+	if variable != "engine" {
+		return "", status.Errorf(codes.InvalidArgument, `only "engine" support "engine in [xx]"/"!(engine in [xx])" operator`)
+	}
+
+	rawEngineList, ok := value.([]any)
+	if !ok {
+		return "", status.Errorf(codes.InvalidArgument, "invalid engine value %q", value)
+	}
+	if len(rawEngineList) == 0 {
+		return "", status.Errorf(codes.InvalidArgument, "empty engine filter")
+	}
+	engineList := []string{}
+	for _, rawEngine := range rawEngineList {
+		v1Engine, ok := v1pb.Engine_value[rawEngine.(string)]
+		if !ok {
+			return "", status.Errorf(codes.InvalidArgument, "invalid engine filter %q", rawEngine)
+		}
+		engine := convertEngine(v1pb.Engine(v1Engine))
+		engineList = append(engineList, fmt.Sprintf(`'%s'`, engine.String()))
+	}
+
+	return fmt.Sprintf("instance.metadata->>'engine' %s (%s)", relation, strings.Join(engineList, ",")), nil
+}
+
 func getListDatabaseFilter(filter string) (*store.ListResourceFilter, error) {
 	if filter == "" {
 		return nil, nil
@@ -196,33 +222,6 @@ func getListDatabaseFilter(filter string) (*store.ListResourceFilter, error) {
 		default:
 			return "", status.Errorf(codes.InvalidArgument, "unsupport variable %q", variable)
 		}
-	}
-
-	parseToEngineSQL := func(expr celast.Expr, relation string) (string, error) {
-		variable, value := getVariableAndValueFromExpr(expr)
-		if variable != "engine" {
-			return "", status.Errorf(codes.InvalidArgument, `only "engine" support "engine in [xx]"/"!(engine in [xx])" operator`)
-		}
-
-		rawEngineList, ok := value.([]any)
-		if !ok {
-			return "", status.Errorf(codes.InvalidArgument, "invalid engine value %q", value)
-		}
-		if len(rawEngineList) == 0 {
-			return "", status.Errorf(codes.InvalidArgument, "empty engine filter")
-		}
-		engineList := []string{}
-		for _, rawEngine := range rawEngineList {
-			v1Engine, ok := v1pb.Engine_value[rawEngine.(string)]
-			if !ok {
-				return "", status.Errorf(codes.InvalidArgument, "invalid engine filter %q", rawEngine)
-			}
-			engine := convertEngine(v1pb.Engine(v1Engine))
-			positionalArgs = append(positionalArgs, engine)
-			engineList = append(engineList, fmt.Sprintf("$%d", len(positionalArgs)))
-		}
-
-		return fmt.Sprintf("instance.metadata->>'engine' %s (%s)", relation, strings.Join(engineList, ",")), nil
 	}
 
 	getFilter = func(expr celast.Expr) (string, error) {

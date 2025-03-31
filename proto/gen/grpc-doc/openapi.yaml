@@ -1087,8 +1087,7 @@ paths:
                 - name: pageSize
                   in: query
                   description: |-
-                    Not used.
-                     The maximum number of instances to return. The service may return fewer than
+                    The maximum number of instances to return. The service may return fewer than
                      this value.
                      If unspecified, at most 10 instances will be returned.
                      The maximum value is 1000; values above 1000 will be coerced to 1000.
@@ -1098,8 +1097,7 @@ paths:
                 - name: pageToken
                   in: query
                   description: |-
-                    Not used.
-                     A page token, received from a previous `ListInstances` call.
+                    A page token, received from a previous `ListInstances` call.
                      Provide this to retrieve the subsequent page.
 
                      When paginating, all other parameters provided to `ListInstances` must match
@@ -1111,6 +1109,38 @@ paths:
                   description: Show deleted instances if specified.
                   schema:
                     type: boolean
+                - name: filter
+                  in: query
+                  description: |-
+                    Filter the project.
+                     Supported filters:
+                     - name
+                     - resource_id
+                     - environment
+                     - state
+                     - engine
+                     - host
+                     - port
+                     - project
+
+                     For example:
+                     name == "sample instance"
+                     name.matches("sample")
+                     resource_id = "sample-instance"
+                     resource_id.matches("sample")
+                     state == "DELETED"
+                     environment == "environments/test"
+                     engine == "MYSQL"
+                     engine in ["MYSQL", "POSTGRES"]
+                     !(engine in ["MYSQL", "POSTGRES"])
+                     host == "127.0.0.1"
+                     port == "54321"
+                     project == "projects/sample-project"
+                     You can combine filter conditions like:
+                     name.matches("sample") && environment == "environments/test"
+                     host == "127.0.0.1" && port == "54321"
+                  schema:
+                    type: string
             responses:
                 "200":
                     description: OK

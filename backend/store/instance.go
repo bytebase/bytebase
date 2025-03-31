@@ -39,6 +39,9 @@ type FindInstanceMessage struct {
 	ResourceID  *string
 	ResourceIDs *[]string
 	ShowDeleted bool
+	Limit       *int
+	Offset      *int
+	Filter      *ListResourceFilter
 }
 
 // GetInstanceV2 gets an instance by the resource_id.
@@ -190,6 +193,10 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 
 func (s *Store) listInstanceImplV2(ctx context.Context, txn *sql.Tx, find *FindInstanceMessage) ([]*InstanceMessage, error) {
 	where, args := []string{"TRUE"}, []any{}
+	if filter := find.Filter; filter != nil {
+		where = append(where, filter.Where)
+		args = append(args, filter.Args...)
+	}
 	if v := find.ResourceID; v != nil {
 		where, args = append(where, fmt.Sprintf("instance.resource_id = $%d", len(args)+1)), append(args, *v)
 	}
@@ -200,18 +207,26 @@ func (s *Store) listInstanceImplV2(ctx context.Context, txn *sql.Tx, find *FindI
 		where, args = append(where, fmt.Sprintf("instance.deleted = $%d", len(args)+1)), append(args, false)
 	}
 
-	var instanceMessages []*InstanceMessage
-	rows, err := txn.QueryContext(ctx, fmt.Sprintf(`
-		SELECT
-			resource_id,
-			environment,
-			deleted,
-			metadata
+	query := fmt.Sprintf(`
+		SELECT DISTINCT ON (resource_id)
+			instance.resource_id,
+			instance.environment,
+			instance.deleted,
+			instance.metadata
 		FROM instance
+		CROSS JOIN jsonb_array_elements(instance.metadata -> 'dataSources') AS ds
+		LEFT JOIN db ON db.instance = instance.resource_id
 		WHERE %s
-		ORDER BY resource_id`, strings.Join(where, " AND ")),
-		args...,
-	)
+		ORDER BY resource_id`, strings.Join(where, " AND "))
+	if v := find.Limit; v != nil {
+		query += fmt.Sprintf(" LIMIT %d", *v)
+	}
+	if v := find.Offset; v != nil {
+		query += fmt.Sprintf(" OFFSET %d", *v)
+	}
+
+	var instanceMessages []*InstanceMessage
+	rows, err := txn.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
