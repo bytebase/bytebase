@@ -833,6 +833,7 @@ offset.
 | COCKROACHDB | 25 |  |
 | COSMOSDB | 26 |  |
 | TRINO | 27 |  |
+| CASSANDRA | 28 |  |
 
 
 
