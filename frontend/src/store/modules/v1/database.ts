@@ -21,7 +21,11 @@ import type {
 } from "@/types/proto/v1/database_service";
 import type { InstanceResource } from "@/types/proto/v1/instance_service";
 import { extractDatabaseResourceName } from "@/utils";
-import { instanceNamePrefix } from "./common";
+import {
+  instanceNamePrefix,
+  projectNamePrefix,
+  workspaceNamePrefix,
+} from "./common";
 import { useDBSchemaV1Store } from "./dbSchema";
 import { useEnvironmentV1Store } from "./environment";
 import { batchGetOrFetchProjects, useProjectV1Store } from "./project";
@@ -38,6 +42,19 @@ export interface DatabaseFilter {
   engines?: Engine[];
   excludeEngines?: Engine[];
 }
+
+const isValidParentName = (parent: string): boolean => {
+  if (parent.startsWith(workspaceNamePrefix)) {
+    return true;
+  }
+  if (parent.startsWith(projectNamePrefix)) {
+    return isValidProjectName(parent);
+  }
+  if (parent.startsWith(instanceNamePrefix)) {
+    return isValidInstanceName(parent);
+  }
+  return false;
+};
 
 const getListDatabaseFilter = (filter: DatabaseFilter): string => {
   const params: string[] = [];
@@ -125,6 +142,13 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
     databases: ComposedDatabase[];
     nextPageToken: string;
   }> => {
+    if (!isValidParentName(params.parent)) {
+      return {
+        databases: [],
+        nextPageToken: "",
+      };
+    }
+
     const { databases, nextPageToken } =
       await databaseServiceClient.listDatabases({
         parent: params.parent,
