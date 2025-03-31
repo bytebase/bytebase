@@ -20,16 +20,8 @@ import type {
   BatchUpdateDatabasesRequest,
 } from "@/types/proto/v1/database_service";
 import type { InstanceResource } from "@/types/proto/v1/instance_service";
-import {
-  extractDatabaseResourceName,
-  hasProjectPermissionV2,
-  hasWorkspacePermissionV2,
-} from "@/utils";
-import {
-  instanceNamePrefix,
-  projectNamePrefix,
-  workspaceNamePrefix,
-} from "./common";
+import { extractDatabaseResourceName } from "@/utils";
+import { instanceNamePrefix } from "./common";
 import { useDBSchemaV1Store } from "./dbSchema";
 import { useEnvironmentV1Store } from "./environment";
 import { batchGetOrFetchProjects, useProjectV1Store } from "./project";
@@ -46,35 +38,6 @@ export interface DatabaseFilter {
   engines?: Engine[];
   excludeEngines?: Engine[];
 }
-
-const formatListDatabaseParent = async (
-  parent: string
-): Promise<{ parent: string; filter?: DatabaseFilter }> => {
-  if (parent.startsWith(projectNamePrefix)) {
-    const project = await useProjectV1Store().getOrFetchProjectByName(parent);
-    if (!hasProjectPermissionV2(project, "bb.projects.get")) {
-      return {
-        parent: `${workspaceNamePrefix}-`,
-        filter: {
-          project: parent,
-        },
-      };
-    }
-    return { parent };
-  }
-  if (parent.startsWith(instanceNamePrefix)) {
-    if (!hasWorkspacePermissionV2("bb.instances.get")) {
-      return {
-        parent: `${workspaceNamePrefix}-`,
-        filter: {
-          instance: parent,
-        },
-      };
-    }
-    return { parent };
-  }
-  return { parent: `${workspaceNamePrefix}-` };
-};
 
 const getListDatabaseFilter = (filter: DatabaseFilter): string => {
   const params: string[] = [];
@@ -162,20 +125,16 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
     databases: ComposedDatabase[];
     nextPageToken: string;
   }> => {
-    const { parent, filter } = await formatListDatabaseParent(params.parent);
-
     const { databases, nextPageToken } =
       await databaseServiceClient.listDatabases({
-        ...params,
-        parent,
+        parent: params.parent,
+        pageSize: params.pageSize,
+        pageToken: params.pageToken,
         showDeleted: params.filter?.showDeleted,
-        filter: getListDatabaseFilter({
-          ...params.filter,
-          ...filter,
-        }),
+        filter: getListDatabaseFilter(params.filter ?? {}),
       });
-    if (parent.startsWith(instanceNamePrefix)) {
-      removeCacheByInstance(parent);
+    if (params.parent.startsWith(instanceNamePrefix)) {
+      removeCacheByInstance(params.parent);
     }
 
     const composedDatabases = await upsertDatabaseMap(databases);
