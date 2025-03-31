@@ -299,6 +299,8 @@ export interface UpdatePolicyRequest {
    * In this situation, `update_mask` is ignored.
    */
   allowMissing: boolean;
+  /** The description of update operation. */
+  description: string;
 }
 
 export interface DeletePolicyRequest {
@@ -684,7 +686,7 @@ export const CreatePolicyRequest: MessageFns<CreatePolicyRequest> = {
 };
 
 function createBaseUpdatePolicyRequest(): UpdatePolicyRequest {
-  return { policy: undefined, updateMask: undefined, allowMissing: false };
+  return { policy: undefined, updateMask: undefined, allowMissing: false, description: "" };
 }
 
 export const UpdatePolicyRequest: MessageFns<UpdatePolicyRequest> = {
@@ -697,6 +699,9 @@ export const UpdatePolicyRequest: MessageFns<UpdatePolicyRequest> = {
     }
     if (message.allowMissing !== false) {
       writer.uint32(24).bool(message.allowMissing);
+    }
+    if (message.description !== "") {
+      writer.uint32(34).string(message.description);
     }
     return writer;
   },
@@ -732,6 +737,14 @@ export const UpdatePolicyRequest: MessageFns<UpdatePolicyRequest> = {
           message.allowMissing = reader.bool();
           continue;
         }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.description = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -746,6 +759,7 @@ export const UpdatePolicyRequest: MessageFns<UpdatePolicyRequest> = {
       policy: isSet(object.policy) ? Policy.fromJSON(object.policy) : undefined,
       updateMask: isSet(object.updateMask) ? FieldMask.unwrap(FieldMask.fromJSON(object.updateMask)) : undefined,
       allowMissing: isSet(object.allowMissing) ? globalThis.Boolean(object.allowMissing) : false,
+      description: isSet(object.description) ? globalThis.String(object.description) : "",
     };
   },
 
@@ -760,6 +774,9 @@ export const UpdatePolicyRequest: MessageFns<UpdatePolicyRequest> = {
     if (message.allowMissing !== false) {
       obj.allowMissing = message.allowMissing;
     }
+    if (message.description !== "") {
+      obj.description = message.description;
+    }
     return obj;
   },
 
@@ -773,6 +790,7 @@ export const UpdatePolicyRequest: MessageFns<UpdatePolicyRequest> = {
       : undefined;
     message.updateMask = object.updateMask ?? undefined;
     message.allowMissing = object.allowMissing ?? false;
+    message.description = object.description ?? "";
     return message;
   },
 };

@@ -150,6 +150,9 @@ message UpdatePolicyRequest {
   // If set to true, and the policy is not found, a new policy will be created.
   // In this situation, `update_mask` is ignored.
   bool allow_missing = 3;
+
+  // The description of update operation.
+  string description = 4 [ (google.api.field_behavior) = OPTIONAL];
 }
 
 message DeletePolicyRequest {

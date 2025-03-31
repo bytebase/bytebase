@@ -387,7 +387,9 @@ type UpdatePolicyRequest struct {
 	UpdateMask *fieldmaskpb.FieldMask `protobuf:"bytes,2,opt,name=update_mask,json=updateMask,proto3" json:"update_mask,omitempty"`
 	// If set to true, and the policy is not found, a new policy will be created.
 	// In this situation, `update_mask` is ignored.
-	AllowMissing  bool `protobuf:"varint,3,opt,name=allow_missing,json=allowMissing,proto3" json:"allow_missing,omitempty"`
+	AllowMissing bool `protobuf:"varint,3,opt,name=allow_missing,json=allowMissing,proto3" json:"allow_missing,omitempty"`
+	// The description of update operation.
+	Description   string `protobuf:"bytes,4,opt,name=description,proto3" json:"description,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -441,6 +443,13 @@ func (x *UpdatePolicyRequest) GetAllowMissing() bool {
 		return x.AllowMissing
 	}
 	return false
+}
+
+func (x *UpdatePolicyRequest) GetDescription() string {
+	if x != nil {
+		return x.Description
+	}
+	return ""
 }
 
 type DeletePolicyRequest struct {
@@ -1574,12 +1583,13 @@ const file_v1_org_policy_service_proto_rawDesc = "" +
 	"\x13CreatePolicyRequest\x124\n" +
 	"\x06parent\x18\x01 \x01(\tB\x1c\xe2A\x01\x02\xfaA\x15\x12\x13bytebase.com/PolicyR\x06parent\x121\n" +
 	"\x06policy\x18\x02 \x01(\v2\x13.bytebase.v1.PolicyB\x04\xe2A\x01\x02R\x06policy\x12+\n" +
-	"\x04type\x18\x03 \x01(\x0e2\x17.bytebase.v1.PolicyTypeR\x04type\"\xaa\x01\n" +
+	"\x04type\x18\x03 \x01(\x0e2\x17.bytebase.v1.PolicyTypeR\x04type\"\xd2\x01\n" +
 	"\x13UpdatePolicyRequest\x121\n" +
 	"\x06policy\x18\x01 \x01(\v2\x13.bytebase.v1.PolicyB\x04\xe2A\x01\x02R\x06policy\x12;\n" +
 	"\vupdate_mask\x18\x02 \x01(\v2\x1a.google.protobuf.FieldMaskR\n" +
 	"updateMask\x12#\n" +
-	"\rallow_missing\x18\x03 \x01(\bR\fallowMissing\"G\n" +
+	"\rallow_missing\x18\x03 \x01(\bR\fallowMissing\x12&\n" +
+	"\vdescription\x18\x04 \x01(\tB\x04\xe2A\x01\x01R\vdescription\"G\n" +
 	"\x13DeletePolicyRequest\x120\n" +
 	"\x04name\x18\x01 \x01(\tB\x1c\xe2A\x01\x02\xfaA\x15\n" +
 	"\x13bytebase.com/PolicyR\x04name\"D\n" +

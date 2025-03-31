@@ -624,6 +624,11 @@ paths:
                      In this situation, `update_mask` is ignored.
                   schema:
                     type: boolean
+                - name: description
+                  in: query
+                  description: The description of update operation.
+                  schema:
+                    type: string
             requestBody:
                 content:
                     application/json:
@@ -1967,6 +1972,11 @@ paths:
                      In this situation, `update_mask` is ignored.
                   schema:
                     type: boolean
+                - name: description
+                  in: query
+                  description: The description of update operation.
+                  schema:
+                    type: string
             requestBody:
                 content:
                     application/json:
@@ -2781,6 +2791,11 @@ paths:
                      In this situation, `update_mask` is ignored.
                   schema:
                     type: boolean
+                - name: description
+                  in: query
+                  description: The description of update operation.
+                  schema:
+                    type: string
             requestBody:
                 content:
                     application/json:
@@ -3344,6 +3359,11 @@ paths:
                      In this situation, `update_mask` is ignored.
                   schema:
                     type: boolean
+                - name: description
+                  in: query
+                  description: The description of update operation.
+                  schema:
+                    type: string
             requestBody:
                 content:
                     application/json:
@@ -5125,6 +5145,11 @@ paths:
                      In this situation, `update_mask` is ignored.
                   schema:
                     type: boolean
+                - name: description
+                  in: query
+                  description: The description of update operation.
+                  schema:
+                    type: string
             requestBody:
                 content:
                     application/json:
