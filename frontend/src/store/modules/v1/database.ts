@@ -20,11 +20,7 @@ import type {
   BatchUpdateDatabasesRequest,
 } from "@/types/proto/v1/database_service";
 import type { InstanceResource } from "@/types/proto/v1/instance_service";
-import {
-  extractDatabaseResourceName,
-  hasProjectPermissionV2,
-  hasWorkspacePermissionV2,
-} from "@/utils";
+import { extractDatabaseResourceName } from "@/utils";
 import {
   instanceNamePrefix,
   projectNamePrefix,
@@ -47,33 +43,17 @@ export interface DatabaseFilter {
   excludeEngines?: Engine[];
 }
 
-const formatListDatabaseParent = async (
-  parent: string
-): Promise<{ parent: string; filter?: DatabaseFilter }> => {
+const isValidParentName = (parent: string): boolean => {
+  if (parent.startsWith(workspaceNamePrefix)) {
+    return true;
+  }
   if (parent.startsWith(projectNamePrefix)) {
-    const project = await useProjectV1Store().getOrFetchProjectByName(parent);
-    if (!hasProjectPermissionV2(project, "bb.projects.get")) {
-      return {
-        parent: `${workspaceNamePrefix}-`,
-        filter: {
-          project: parent,
-        },
-      };
-    }
-    return { parent };
+    return isValidProjectName(parent);
   }
   if (parent.startsWith(instanceNamePrefix)) {
-    if (!hasWorkspacePermissionV2("bb.instances.get")) {
-      return {
-        parent: `${workspaceNamePrefix}-`,
-        filter: {
-          instance: parent,
-        },
-      };
-    }
-    return { parent };
+    return isValidInstanceName(parent);
   }
-  return { parent: `${workspaceNamePrefix}-` };
+  return false;
 };
 
 const getListDatabaseFilter = (filter: DatabaseFilter): string => {
@@ -162,20 +142,23 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
     databases: ComposedDatabase[];
     nextPageToken: string;
   }> => {
-    const { parent, filter } = await formatListDatabaseParent(params.parent);
+    if (!isValidParentName(params.parent)) {
+      return {
+        databases: [],
+        nextPageToken: "",
+      };
+    }
 
     const { databases, nextPageToken } =
       await databaseServiceClient.listDatabases({
-        ...params,
-        parent,
+        parent: params.parent,
+        pageSize: params.pageSize,
+        pageToken: params.pageToken,
         showDeleted: params.filter?.showDeleted,
-        filter: getListDatabaseFilter({
-          ...params.filter,
-          ...filter,
-        }),
+        filter: getListDatabaseFilter(params.filter ?? {}),
       });
-    if (parent.startsWith(instanceNamePrefix)) {
-      removeCacheByInstance(parent);
+    if (params.parent.startsWith(instanceNamePrefix)) {
+      removeCacheByInstance(params.parent);
     }
 
     const composedDatabases = await upsertDatabaseMap(databases);
