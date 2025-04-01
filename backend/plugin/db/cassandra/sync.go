@@ -14,6 +14,7 @@ func isSystemDatabase(database string) bool {
 	switch database {
 	case
 		"dse_security",
+		"system_traces",
 		"system_auth",
 		"system_distributed",
 		"system_schema",
