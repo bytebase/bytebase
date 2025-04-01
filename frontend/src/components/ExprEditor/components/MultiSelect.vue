@@ -33,7 +33,7 @@ import type { SelectOption } from "naive-ui";
 import { toRef, watch, reactive, computed, watchEffect } from "vue";
 import { type ConditionExpr } from "@/plugins/cel";
 import { useExprEditorContext } from "../context";
-import { useSelectOptions } from "./common";
+import { useSelectOptionConfig } from "./common";
 
 interface LocalState {
   loading: boolean;
@@ -56,7 +56,7 @@ const state = reactive<LocalState>({
   rawOptionList: [],
 });
 
-const optionConfig = useSelectOptions(toRef(props, "expr"));
+const { optionConfig, factor } = useSelectOptionConfig(toRef(props, "expr"));
 
 watchEffect(() => {
   state.rawOptionList = [...optionConfig.value.options];
@@ -88,7 +88,7 @@ const toggleCheckAll = (on: boolean) => {
 };
 
 watch(
-  [state.rawOptionList, () => props.value],
+  [() => state.rawOptionList, () => props.value],
   () => {
     const values = new Set(state.rawOptionList.map((opt) => opt.value));
     const filtered = (props.value as any[]).filter((v) => values.has(v));
@@ -101,7 +101,7 @@ watch(
 );
 
 const handleSearch = useDebounceFn(async (search: string) => {
-  if (!search || !optionConfig.value.search) {
+  if (!optionConfig.value.search) {
     state.rawOptionList = [...optionConfig.value.options];
     return;
   }
@@ -113,5 +113,11 @@ const handleSearch = useDebounceFn(async (search: string) => {
   } finally {
     state.loading = false;
   }
-}, 500);
+}, 200);
+
+watch(
+  () => factor.value,
+  () => handleSearch(""),
+  { immediate: true }
+);
 </script>
