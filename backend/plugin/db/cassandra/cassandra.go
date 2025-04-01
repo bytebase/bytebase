@@ -26,7 +26,7 @@ func newDriver(db.DriverConfig) db.Driver {
 	return &Driver{}
 }
 
-func (d *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
+func (*Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
 	addrs := []string{
 		config.DataSource.Host + ":" + config.DataSource.Port,
 	}
@@ -71,9 +71,9 @@ func (*Driver) GetDB() *sql.DB {
 	panic("GetDB() not supported for cassandra")
 }
 
-func (*Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
+func (*Driver) Execute(context.Context, string, db.ExecuteOptions) (int64, error) {
 	return 0, errors.New("tbd")
 }
-func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
+func (*Driver) QueryConn(context.Context, *sql.Conn, string, db.QueryContext) ([]*v1pb.QueryResult, error) {
 	return nil, errors.New("tbd")
 }
