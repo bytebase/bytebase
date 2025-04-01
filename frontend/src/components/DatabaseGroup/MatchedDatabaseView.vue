@@ -1,15 +1,22 @@
 <template>
-  <div v-if="!hideTitle" class="mb-2 flex flex-row items-center">
+  <div class="mb-2 flex flex-row items-center">
     <span class="font-medium text-main mr-2">{{ $t("common.databases") }}</span>
-    <BBSpin v-if="loading" class="opacity-60" />
+    <BBSpin v-if="state.loading" :size="20" class="opacity-60" />
   </div>
+
+  <p
+    v-if="state.matchingError"
+    class="my-2 text-sm border border-red-600 px-2 py-1 rounded-lg bg-red-50 text-red-600"
+  >
+    {{ state.matchingError }}
+  </p>
 
   <NCollapse
     class="border p-2 rounded-lg"
-    v-model:expanded-names="collapseExpandedNames"
+    v-model:expanded-names="state.collapseExpandedNames"
   >
     <NCollapseItem
-      v-for="(item, i) in databaseLists"
+      v-for="(item, i) in state.databaseMatchLists"
       :key="item.name"
       :title="item.title"
       :disabled="item.databaseNameList.length === 0"
@@ -53,14 +60,19 @@
 </template>
 
 <script lang="ts" setup>
+import { useDebounceFn } from "@vueuse/core";
 import { NButton, NEllipsis, NCollapse, NCollapseItem } from "naive-ui";
-import { ref, watch } from "vue";
+import { ClientError } from "nice-grpc-web";
+import { watch, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBSpin } from "@/bbkit";
 import { DatabaseV1Name, InstanceV1Name } from "@/components/v2";
-import { useDatabaseV1Store } from "@/store";
+import type { ConditionGroupExpr } from "@/plugins/cel";
+import { validateSimpleExpr } from "@/plugins/cel";
+import { useDatabaseV1Store, useDBGroupStore } from "@/store";
+import { isValidDatabaseName } from "@/types";
 
-interface DatabaseList {
+interface DatabaseMatchList {
   index: number;
   loading: boolean;
   databaseNameList: string[];
@@ -68,83 +80,119 @@ interface DatabaseList {
   title: string;
 }
 
+interface LocalState {
+  loading: boolean;
+  matchingError?: string;
+  databaseMatchLists: DatabaseMatchList[];
+  collapseExpandedNames: string[];
+}
+
 const props = defineProps<{
-  matchedDatabaseList: string[];
-  unmatchedDatabaseList: string[];
-  loading?: boolean;
-  hideTitle?: boolean;
+  project: string;
+  expr: ConditionGroupExpr;
 }>();
 
 const { t } = useI18n();
 
-const getInitialState = (): DatabaseList[] => [
+const getInitialState = (): DatabaseMatchList[] => [
   {
     index: 0,
     loading: false,
-    databaseNameList: props.matchedDatabaseList,
+    databaseNameList: [],
     title: t("database-group.matched-database"),
     name: "matched",
   },
   {
     index: 0,
     loading: false,
-    databaseNameList: props.unmatchedDatabaseList,
+    databaseNameList: [],
     title: t("database-group.unmatched-database"),
     name: "unmatched",
   },
 ];
 
-const databaseLists = ref<DatabaseList[]>([]);
+const state = reactive<LocalState>({
+  loading: false,
+  databaseMatchLists: getInitialState(),
+  collapseExpandedNames: [],
+});
 
-const collapseExpandedNames = ref<string[]>([]);
+const dbGroupStore = useDBGroupStore();
 const databaseStore = useDatabaseV1Store();
 
 const getDatabaseList = (i: number) => {
-  const { databaseNameList, index } = databaseLists.value[i];
+  const { databaseNameList, index } = state.databaseMatchLists[i];
   return databaseNameList
     .slice(0, index)
-    .map((databaseName) => databaseStore.getDatabaseByName(databaseName));
+    .map((databaseName) => databaseStore.getDatabaseByName(databaseName))
+    .filter((database) => isValidDatabaseName(database.name));
 };
 
 const loadMore = async (i: number) => {
-  databaseLists.value[i].loading = true;
+  state.databaseMatchLists[i].loading = true;
   try {
-    const previous = databaseLists.value[i].index;
+    const previous = state.databaseMatchLists[i].index;
     const next = previous + 10;
 
     await Promise.all(
-      databaseLists.value[i].databaseNameList
+      state.databaseMatchLists[i].databaseNameList
         .slice(previous, next)
         .map((name) => databaseStore.getOrFetchDatabaseByName(name))
     );
-    databaseLists.value[i].index = next;
+    state.databaseMatchLists[i].index = next;
   } finally {
-    databaseLists.value[i].loading = false;
+    state.databaseMatchLists[i].loading = false;
   }
 };
 
 watch(
-  [() => props.matchedDatabaseList, () => props.unmatchedDatabaseList],
-  async () => {
-    databaseLists.value = getInitialState();
-    await Promise.all(databaseLists.value.map((_, i) => loadMore(i)));
-  },
-  { deep: true, immediate: true }
-);
-
-watch(
-  () => props.matchedDatabaseList.length,
-  () => {
-    collapseExpandedNames.value = [];
-    if (props.matchedDatabaseList.length > 0) {
-      collapseExpandedNames.value.push("matched");
+  [
+    () => state.databaseMatchLists[0].databaseNameList.length,
+    () => state.databaseMatchLists[1].databaseNameList.length,
+  ],
+  ([matchedLength, unmatchedLength]) => {
+    state.collapseExpandedNames = [];
+    if (matchedLength > 0) {
+      state.collapseExpandedNames.push("matched");
     }
-    if (props.unmatchedDatabaseList.length > 0) {
-      collapseExpandedNames.value.push("unmatched");
+    if (unmatchedLength > 0) {
+      state.collapseExpandedNames.push("unmatched");
     }
   },
   {
     immediate: true,
   }
+);
+
+const updateDatabaseMatchingState = useDebounceFn(async () => {
+  if (!validateSimpleExpr(props.expr)) {
+    state.matchingError = undefined;
+    state.databaseMatchLists = getInitialState();
+    return;
+  }
+
+  state.loading = true;
+  try {
+    const result = await dbGroupStore.fetchDatabaseGroupMatchList({
+      projectName: props.project,
+      expr: props.expr,
+    });
+
+    state.matchingError = undefined;
+    state.databaseMatchLists[0].databaseNameList = result.matchedDatabaseList;
+    state.databaseMatchLists[1].databaseNameList = result.unmatchedDatabaseList;
+    await Promise.all(state.databaseMatchLists.map((_, i) => loadMore(i)));
+  } catch (error) {
+    state.matchingError = (error as ClientError).details;
+    state.databaseMatchLists = getInitialState();
+  } finally {
+    state.loading = false;
+  }
+}, 500);
+
+watch(
+  [() => props.project, () => props.expr],
+  () => updateDatabaseMatchingState(),
+  { deep: true, immediate: true }
 );
 </script>
