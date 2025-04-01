@@ -1793,8 +1793,6 @@
     },
     "executing-query": "Ejecutando consulta",
     "request-query": "Solicitar consulta",
-    "previous-row": "Fila anterior",
-    "next-row": "siguiente fila",
     "copy-success": "Copiado al portapapeles",
     "connect-in-new-tab": "Conéctate en una nueva pestaña",
     "copy-name": "Copiar nombre",
@@ -1846,7 +1844,9 @@
     "upload-file": "Subir archivo",
     "copy-selected-results": "Copiar datos seleccionados por {action} o {button}",
     "format-default": "Por defecto",
-    "column-display-format": "Formato de visualización de columna"
+    "column-display-format": "Formato de visualización de columna",
+    "next-row": "siguiente fila",
+    "previous-row": "Fila anterior"
   },
   "schema-editor": {
     "self": "Editor de esquema",
@@ -2455,13 +2455,13 @@
   },
   "database-group": {
     "create": "Crear grupo de bases de datos",
-    "edit": "Editar grupo de bases de datos",
     "matched-database": "Base de datos coincidente",
     "unmatched-database": "Base de datos no coincidente",
     "condition": {
       "self": "Condición"
     },
-    "select": "Seleccionar grupo de bases de datos"
+    "select": "Seleccionar grupo de bases de datos",
+    "no-matched-databases": "No hay bases de datos coincidentes"
   },
   "export-center": {
     "self": "centro de exportacion",
