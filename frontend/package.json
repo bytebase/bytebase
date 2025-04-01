@@ -35,7 +35,7 @@
     "dayjs": "1.11.13",
     "dompurify": "3.2.4",
     "downloadjs": "1.4.7",
-    "elkjs": "^0.9.3",
+    "elkjs": "^0.10.0",
     "emittery": "^1.1.0",
     "file-saver": "^2.0.5",
     "highlight.js": "11.10.0",
