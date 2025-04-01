@@ -1,10 +1,9 @@
 <template>
   <div class="stage" :class="stageClass">
     <TaskStatusIcon
-      :create="isCreating"
       :active="isActiveStage"
       :status="activeTaskInStage.status"
-      :ignore-task-check-status="true"
+      :ignore-plan-check-status="true"
     />
 
     <div class="text" @click="handleClickStage">
@@ -77,9 +76,9 @@ import { PlanCheckRun_Result_Status } from "@/types/proto/v1/plan_service";
 import type { Stage } from "@/types/proto/v1/rollout_service";
 import { task_StatusToJSON } from "@/types/proto/v1/rollout_service";
 import { activeTaskInStageV1 } from "@/utils";
+import { extractEnvironmentResourceName } from "@/utils";
 import TaskStatusIcon from "../TaskStatusIcon.vue";
 import StageSummary from "./StageSummary.vue";
-import { extractEnvironmentResourceName } from "@/utils";
 
 const props = defineProps<{
   stage: Stage;
@@ -141,7 +140,9 @@ const stageClass = computed(() => {
 const stageTitle = computed(() => {
   const { stage } = props;
   return !isCreating.value && isActiveStage.value
-    ? t("issue.stage-select.current", { name: extractEnvironmentResourceName(stage.environment) })
+    ? t("issue.stage-select.current", {
+        name: extractEnvironmentResourceName(stage.environment),
+      })
     : extractEnvironmentResourceName(stage.environment);
 });
 

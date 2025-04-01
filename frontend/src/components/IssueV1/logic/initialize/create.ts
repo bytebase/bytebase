@@ -124,7 +124,7 @@ export const buildPlan = async (params: CreateIssueParams) => {
   let databaseNameList = (query.databaseList ?? "").split(",");
   const databaseGroupName = query.databaseGroupName;
   // Prepare database list if databaseGroupName and changelist are specified.
-  if (query.changelist && databaseGroupName) {
+  if (databaseGroupName) {
     const dbGroup = await useDBGroupStore().getOrFetchDBGroupByName(
       databaseGroupName,
       {
@@ -135,6 +135,7 @@ export const buildPlan = async (params: CreateIssueParams) => {
       databaseNameList = dbGroup.matchedDatabases.map((db) => db.name);
     }
   }
+  // TODO(ed): the database group may match too many databases.
   await batchGetOrFetchDatabases(databaseNameList);
   const plan = Plan.fromPartial({
     name: `${project.name}/plans/${nextUID()}`,
