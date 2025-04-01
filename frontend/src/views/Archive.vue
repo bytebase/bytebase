@@ -23,13 +23,15 @@
         }"
         :bordered="true"
       />
-      <InstanceV1Table
+      <PagedInstanceTable
         v-else-if="state.selectedTab == 'INSTANCE'"
-        key="archived-instance-table"
-        :instance-list="filteredInstanceList"
+        session-key="bb.instance-table.archived"
+        :bordered="true"
         :show-selection="false"
-        :can-assign-license="false"
-        :show-operation="false"
+        :filter="{
+          query: state.searchText,
+          state: State.DELETED,
+        }"
       />
       <EnvironmentV1Table
         v-else-if="state.selectedTab == 'ENVIRONMENT'"
@@ -54,13 +56,9 @@ import {
   SearchBox,
   TabFilter,
   PagedProjectTable,
-  InstanceV1Table,
+  PagedInstanceTable,
 } from "@/components/v2";
-import {
-  useEnvironmentV1Store,
-  useIdentityProviderStore,
-  useInstanceV1List,
-} from "@/store";
+import { useEnvironmentV1Store, useIdentityProviderStore } from "@/store";
 import { State } from "@/types/proto/v1/common";
 import type { IdentityProvider } from "@/types/proto/v1/idp_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
@@ -95,12 +93,6 @@ const environmentList = computed(() => {
   );
 });
 
-const instanceList = computed(() => {
-  return useInstanceV1List(true /** showDeleted */).instanceList.value.filter(
-    (instance) => instance.state === State.DELETED
-  );
-});
-
 const deletedSSOList = computed(() => {
   return useIdentityProviderStore().deletedIdentityProviderList;
 });
@@ -123,18 +115,6 @@ const tabItemList = computed(() => {
   }
 
   return list;
-});
-
-const filteredInstanceList = computed(() => {
-  const keyword = state.searchText.trim();
-  if (!keyword) {
-    return instanceList.value;
-  }
-  return instanceList.value.filter((instance) => {
-    return instance.title
-      .toLowerCase()
-      .includes(state.searchText.toLowerCase());
-  });
 });
 
 const filteredEnvironmentList = computed(() => {

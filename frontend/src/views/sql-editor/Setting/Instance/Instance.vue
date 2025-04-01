@@ -21,13 +21,21 @@
         </NEllipsis>
       </NButton>
     </div>
-    <InstanceV1Table
-      :bordered="false"
-      :loading="!ready"
-      :instance-list="filteredInstanceV1List"
-      :can-assign-license="subscriptionStore.currentPlan !== PlanType.FREE"
-      :on-click="showInstanceDetail"
-    />
+
+    <div class="space-y-2">
+      <InstanceOperations :instance-list="selectedInstanceList" />
+      <PagedInstanceTable
+        session-key="bb.instance-table"
+        :bordered="false"
+        :filter="filter"
+        :footer-class="'mx-4'"
+        :selected-instance-names="Array.from(state.selectedInstance)"
+        :on-click="showInstanceDetail"
+        @update:selected-instance-names="
+          (list) => (state.selectedInstance = new Set(list))
+        "
+      />
+    </div>
 
     <Drawer
       v-model:show="state.detail.show"
@@ -100,22 +108,24 @@ import {
   Form as InstanceFormBody,
   Buttons as InstanceFormButtons,
 } from "@/components/InstanceForm";
-import { Drawer, DrawerContent, InstanceV1Table } from "@/components/v2";
+import {
+  Drawer,
+  DrawerContent,
+  PagedInstanceTable,
+  InstanceOperations,
+} from "@/components/v2";
 import {
   useSubscriptionV1Store,
-  useEnvironmentV1List,
-  useInstanceV1List,
   useInstanceV1Store,
   useAppFeature,
+  useActuatorV1Store,
 } from "@/store";
-import { UNKNOWN_ID } from "@/types";
+import { environmentNamePrefix } from "@/store/modules/v1/common";
+import { isValidInstanceName } from "@/types";
+import { engineFromJSON } from "@/types/proto/v1/common";
 import type { Instance } from "@/types/proto/v1/instance_service";
-import { PlanType } from "@/types/proto/v1/subscription_service";
 import {
   type SearchParams,
-  sortInstanceV1ListByEnvironmentV1,
-  extractEnvironmentResourceName,
-  wrapRefAsPromise,
   extractInstanceResourceName,
   instanceV1Name,
 } from "@/utils";
@@ -127,16 +137,15 @@ interface LocalState {
     show: boolean;
     instance: Instance | undefined;
   };
+  selectedInstance: Set<string>;
 }
 
 const route = useRoute();
 const router = useRouter();
 const { t } = useI18n();
+const actuatorStore = useActuatorV1Store();
 const subscriptionStore = useSubscriptionV1Store();
 const instanceV1Store = useInstanceV1Store();
-const environmentList = useEnvironmentV1List();
-// Users are workspace admins in Bytebase Editor. So we don't need to check permission here.
-const { instanceList, ready } = useInstanceV1List();
 const hideAdvancedFeatures = useAppFeature(
   "bb.feature.sql-editor.hide-advance-instance-features"
 );
@@ -150,70 +159,70 @@ const state = reactive<LocalState>({
     show: false,
     instance: undefined,
   },
+  selectedInstance: new Set(),
 });
 
-const scopeOptions = useCommonSearchScopeOptions(["environment"]);
+const scopeOptions = useCommonSearchScopeOptions(["environment", "engine"]);
 
 const selectedEnvironment = computed(() => {
-  return (
-    state.params.scopes.find((scope) => scope.id === "environment")?.value ??
-    `${UNKNOWN_ID}`
-  );
+  const environmentId = state.params.scopes.find(
+    (scope) => scope.id === "environment"
+  )?.value;
+  if (!environmentId) {
+    return;
+  }
+  return `${environmentNamePrefix}${environmentId}`;
 });
 
-onMounted(() => {
+const selectedEngines = computed(() => {
+  return state.params.scopes
+    .filter((scope) => scope.id === "engine")
+    .map((scope) => engineFromJSON(scope.value));
+});
+
+const filter = computed(() => ({
+  environment: selectedEnvironment.value,
+  query: state.params.query,
+  engines: selectedEngines.value,
+}));
+
+onMounted(async () => {
   if (route.hash === "#add") {
     state.detail.show = true;
     state.detail.instance = undefined;
+    return;
   }
-  wrapRefAsPromise(ready, true).then(() => {
-    const maybeInstanceName = route.hash.replace(/^#*/g, "");
-    if (maybeInstanceName) {
-      const instance = instanceList.value.find(
-        (inst) => inst.name === maybeInstanceName
-      );
+
+  const maybeInstanceName = route.hash.replace(/^#*/g, "");
+  if (isValidInstanceName(maybeInstanceName)) {
+    try {
+      const instance =
+        await instanceV1Store.getOrFetchInstanceByName(maybeInstanceName);
       if (instance) {
         state.detail.show = true;
         state.detail.instance = instance;
       }
+    } finally {
+      // ignore error
     }
-
-    watch(
-      [() => state.detail.show, () => state.detail.instance?.name],
-      ([show, instanceName]) => {
-        if (show) {
-          router.replace({ hash: instanceName ? `#${instanceName}` : "#add" });
-        } else {
-          router.replace({ hash: "" });
-        }
-      }
-    );
-  });
+  }
 });
 
-const filteredInstanceV1List = computed(() => {
-  let list = [...instanceList.value];
-  if (selectedEnvironment.value !== `${UNKNOWN_ID}`) {
-    list = list.filter(
-      (instance) =>
-        extractEnvironmentResourceName(instance.environment) ===
-        selectedEnvironment.value
-    );
+watch(
+  [() => state.detail.show, () => state.detail.instance?.name],
+  ([show, instanceName]) => {
+    if (show) {
+      router.replace({ hash: instanceName ? `#${instanceName}` : "#add" });
+    } else {
+      router.replace({ hash: "" });
+    }
   }
-  const keyword = state.params.query.trim().toLowerCase();
-  if (keyword) {
-    list = list.filter((instance) =>
-      instance.title.toLowerCase().includes(keyword)
-    );
-  }
-
-  return sortInstanceV1ListByEnvironmentV1(list, environmentList.value);
-});
+);
 
 const remainingInstanceCount = computed((): number => {
   return Math.max(
     0,
-    subscriptionStore.instanceCountLimit - instanceV1Store.instanceList.length
+    subscriptionStore.instanceCountLimit - actuatorStore.totalInstanceCount
   );
 });
 
@@ -258,6 +267,12 @@ const showInstanceDetail = (instance: Instance) => {
   state.detail.show = true;
   state.detail.instance = instance;
 };
+
+const selectedInstanceList = computed(() => {
+  return [...state.selectedInstance]
+    .filter((instanceName) => isValidInstanceName(instanceName))
+    .map((instanceName) => instanceV1Store.getInstanceByName(instanceName));
+});
 </script>
 
 <style scoped lang="postcss">

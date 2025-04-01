@@ -70,6 +70,7 @@ import type { SearchParams, SearchScope } from "@/utils";
 import {
   CommonFilterScopeIdList,
   extractProjectResourceName,
+  hasProjectPermissionV2,
   hasWorkspacePermissionV2,
 } from "@/utils";
 import AdvancedSearch from "./AdvancedSearch";
@@ -120,7 +121,7 @@ const pagedDatabaseTableRef = ref<InstanceType<typeof PagedDatabaseTable>>();
 const allowToCreateDB = computed(() => {
   return (
     hasWorkspacePermissionV2("bb.instances.list") &&
-    hasWorkspacePermissionV2("bb.issues.create")
+    hasProjectPermissionV2(props.project, "bb.issues.create")
   );
 });
 

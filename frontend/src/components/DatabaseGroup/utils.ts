@@ -1,11 +1,10 @@
 import type { SelectOption } from "naive-ui";
+import { getRenderOptionFunc } from "@/components/CustomApproval/Settings/components/common";
 import { type OptionConfig } from "@/components/ExprEditor/context";
+import { getInstanceIdOptions } from "@/components/SensitiveData/components/utils";
 import type { Factor } from "@/plugins/cel";
 import { useEnvironmentV1Store, useInstanceV1Store } from "@/store";
-import {
-  extractEnvironmentResourceName,
-  extractInstanceResourceName,
-} from "@/utils";
+import { extractEnvironmentResourceName, getDefaultPagination } from "@/utils";
 
 export const FactorList: Factor[] = [
   "resource.environment_name",
@@ -26,8 +25,22 @@ export const getDatabaseGroupOptionConfigMap = () => {
         options = getEnvironmentOptions();
         break;
       case "resource.instance_id":
-        options = getInstanceIdOptions();
-        break;
+        const store = useInstanceV1Store();
+        map.set(factor, {
+          remote: true,
+          options: [],
+          search: async (keyword: string) => {
+            return store
+              .fetchInstanceList({
+                pageSize: getDefaultPagination(),
+                filter: {
+                  query: keyword,
+                },
+              })
+              .then((resp) => getInstanceIdOptions(resp.instances));
+          },
+        });
+        return map;
     }
     map.set(factor, {
       remote: false,
@@ -44,16 +57,7 @@ const getEnvironmentOptions = () => {
     return {
       label: environmentName,
       value: env.name,
-    };
-  });
-};
-
-const getInstanceIdOptions = () => {
-  return useInstanceV1Store().instanceList.map<SelectOption>((instance) => {
-    const instanceId = extractInstanceResourceName(instance.name);
-    return {
-      label: instanceId,
-      value: instanceId,
+      render: getRenderOptionFunc(env),
     };
   });
 };
