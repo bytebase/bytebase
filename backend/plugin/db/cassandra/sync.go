@@ -50,7 +50,70 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 }
 
 func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetadata, error) {
-	return nil, nil
+	schemaMetadata := &storepb.SchemaMetadata{
+		Name: "",
+	}
+
+	columnMap := map[string][]*storepb.ColumnMetadata{}
+	columnScanner := d.session.Query(`
+		SELECT
+			table_name,
+			column_name,
+			type
+		FROM system_schema.columns
+		WHERE keyspace_name = ?
+		ORDER BY table_name, column_name
+	`, d.config.ConnectionContext.DatabaseName).WithContext(ctx).Iter().Scanner()
+	for columnScanner.Next() {
+		var tableName, columnName, columnType string
+		if err := columnScanner.Scan(
+			&tableName,
+			&columnName,
+			&columnType,
+		); err != nil {
+			return nil, errors.Wrapf(err, "failed to scan column")
+		}
+		columnMap[tableName] = append(columnMap[tableName], &storepb.ColumnMetadata{
+			Name:     columnName,
+			Type:     columnType,
+			Nullable: true,
+		})
+	}
+	if err := columnScanner.Err(); err != nil {
+		return nil, errors.Wrapf(err, "column scanner err")
+	}
+
+	tableScanner := d.session.Query(`
+		SELECT
+			table_name,
+			comment
+		FROM system_schema.tables
+		WHERE keyspace_name = ?
+		ORDER BY table_name
+	`, d.config.ConnectionContext.DatabaseName).WithContext(ctx).Iter().Scanner()
+	for tableScanner.Next() {
+		var tableName, comment string
+		if err := tableScanner.Scan(
+			&tableName,
+			&comment,
+		); err != nil {
+			return nil, errors.Wrapf(err, "failed to scan table")
+		}
+		table := &storepb.TableMetadata{
+			Name:    tableName,
+			Comment: comment,
+			Columns: columnMap[tableName],
+		}
+		schemaMetadata.Tables = append(schemaMetadata.Tables, table)
+	}
+	if err := tableScanner.Err(); err != nil {
+		return nil, errors.Wrapf(err, "table scanner err")
+	}
+
+	return &storepb.DatabaseSchemaMetadata{
+		Name:    d.config.ConnectionContext.DatabaseName,
+		Schemas: []*storepb.SchemaMetadata{schemaMetadata},
+	}, nil
 }
 
 func (d *Driver) getVersion(ctx context.Context) (string, error) {
@@ -62,7 +125,7 @@ func (d *Driver) getVersion(ctx context.Context) (string, error) {
 }
 
 func (d *Driver) getDatabases(ctx context.Context) ([]*storepb.DatabaseSchemaMetadata, error) {
-	scanner := d.session.Query("SELECT keyspace_name FROM system_schema.keyspaces").Iter().Scanner()
+	scanner := d.session.Query("SELECT keyspace_name FROM system_schema.keyspaces").WithContext(ctx).Iter().Scanner()
 
 	var databases []*storepb.DatabaseSchemaMetadata
 	for scanner.Next() {
