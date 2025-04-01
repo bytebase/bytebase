@@ -2455,7 +2455,6 @@
   },
   "database-group": {
     "create": "New database group",
-    "edit": "Edit database group",
     "matched-database": "Matched database",
     "unmatched-database": "Unmatched database",
     "condition": {

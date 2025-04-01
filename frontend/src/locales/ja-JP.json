@@ -2455,7 +2455,6 @@
   },
   "database-group": {
     "create": "新しいデータベースグループを作成する",
-    "edit": "データベースグループの編集",
     "matched-database": "マッチングデータベース",
     "unmatched-database": "データベースが一致しません",
     "condition": {

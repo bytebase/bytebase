@@ -2455,7 +2455,6 @@
   },
   "database-group": {
     "create": "Crear grupo de bases de datos",
-    "edit": "Editar grupo de bases de datos",
     "matched-database": "Base de datos coincidente",
     "unmatched-database": "Base de datos no coincidente",
     "condition": {

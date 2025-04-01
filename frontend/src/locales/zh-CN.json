@@ -2455,7 +2455,6 @@
   },
   "database-group": {
     "create": "新建数据库分组",
-    "edit": "编辑数据库分组",
     "matched-database": "相匹配的数据库",
     "unmatched-database": "不匹配的数据库",
     "condition": {

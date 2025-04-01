@@ -2455,7 +2455,6 @@
   },
   "database-group": {
     "create": "Nhóm cơ sở dữ liệu mới",
-    "edit": "Chỉnh sửa nhóm cơ sở dữ liệu",
     "matched-database": "Cơ sở dữ liệu phù hợp",
     "unmatched-database": "Cơ sở dữ liệu không phù hợp",
     "condition": {
