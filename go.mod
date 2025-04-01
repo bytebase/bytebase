@@ -11,7 +11,7 @@ godebug x509negativeserial=1
 require (
 	cloud.google.com/go/bigquery v1.66.2
 	cloud.google.com/go/cloudsqlconn v1.16.0
-	cloud.google.com/go/secretmanager v1.14.5
+	cloud.google.com/go/secretmanager v1.14.6
 	cloud.google.com/go/spanner v1.76.1
 	gitee.com/chunanyong/dm v1.8.18
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.17.0
@@ -257,7 +257,7 @@ require (
 require (
 	cloud.google.com/go v0.118.3 // indirect
 	cloud.google.com/go/compute/metadata v0.6.0 // indirect
-	cloud.google.com/go/iam v1.4.0 // indirect
+	cloud.google.com/go/iam v1.4.1 // indirect
 	cloud.google.com/go/longrunning v0.6.4 // indirect
 	github.com/ClickHouse/ch-go v0.65.1 // indirect
 	github.com/andybalholm/brotli v1.1.1 // indirect
