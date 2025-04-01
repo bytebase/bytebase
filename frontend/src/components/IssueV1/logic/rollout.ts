@@ -11,7 +11,7 @@ import {
   Task_Type,
 } from "@/types/proto/v1/rollout_service";
 import { extractDatabaseGroupName, hasProjectPermissionV2 } from "@/utils";
-import { specForTask, useIssueContext } from ".";
+import { specForTask } from ".";
 
 export const isGroupingChangeTaskV1 = (issue: ComposedIssue, task: Task) => {
   const spec = specForTask(issue.planEntity, task);
@@ -26,14 +26,10 @@ export const isGroupingChangeTaskV1 = (issue: ComposedIssue, task: Task) => {
 
 export const allowUserToEditStatementForTask = (
   issue: ComposedIssue,
-  task: Task
+  task: Task,
+  planCheckRuns: PlanCheckRun[]
 ): string[] => {
   const user = useCurrentUserV1();
-  const issueContext = useIssueContext();
-  if (!issueContext) {
-    return [];
-  }
-  const { getPlanCheckRunsForTask } = issueContext;
   const denyReasons: string[] = [];
 
   if (
@@ -58,8 +54,7 @@ export const allowUserToEditStatementForTask = (
   // if not creating, we are allowed to edit sql statement only when:
   // - user is the creator
   // - OR user has plans.update permission in the project
-
-  denyReasons.push(...isTaskEditable(task, getPlanCheckRunsForTask(task)));
+  denyReasons.push(...isTaskEditable(task, planCheckRuns));
 
   if (extractUserId(issue.creator) !== user.value.email) {
     if (!hasProjectPermissionV2(issue.projectEntity, "bb.plans.update")) {

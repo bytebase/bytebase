@@ -348,9 +348,13 @@ const isSheetOversize = computed(() => {
   );
 });
 
-const denyEditStatementReasons = computed(() => {
-  return allowUserToEditStatementForTask(issue.value, selectedTask.value);
-});
+const denyEditStatementReasons = computed(() =>
+  allowUserToEditStatementForTask(
+    issue.value,
+    selectedTask.value,
+    context.getPlanCheckRunsForTask(selectedTask.value)
+  )
+);
 
 const shouldShowEditButton = computed(() => {
   // Need not to show "Edit" while the issue is still pending create.
