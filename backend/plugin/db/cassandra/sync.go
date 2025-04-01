@@ -2,7 +2,6 @@ package cassandra
 
 import (
 	"context"
-	"encoding/json"
 	"slices"
 	"strings"
 
@@ -115,14 +114,13 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 			table_name,
 			index_name,
 			kind,
-			options
+			toJson(options)
 		FROM system_schema.indexes
 		WHERE keyspace_name = ?
 		ORDER BY table_name, index_name
 	`, d.config.ConnectionContext.DatabaseName).WithContext(ctx).Iter().Scanner()
 	for indexScanner.Next() {
-		var tableName, indexName, kind string
-		var options map[string]string
+		var tableName, indexName, kind, options string
 		if err := indexScanner.Scan(
 			&tableName,
 			&indexName,
@@ -132,15 +130,11 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 			return nil, errors.Wrapf(err, "failed to scan index")
 		}
 
-		optionsJSON, err := json.Marshal(options)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to marshal index option")
-		}
 		indexMap[tableName] = append(indexMap[tableName], &storepb.IndexMetadata{
 			Name:        indexName,
 			Type:        kind,
-			Expressions: []string{string(optionsJSON)},
-			Definition:  string(optionsJSON),
+			Expressions: []string{options},
+			Definition:  options,
 		})
 	}
 	if err := indexScanner.Err(); err != nil {
