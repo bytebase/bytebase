@@ -2,6 +2,8 @@ package cassandra
 
 import (
 	"context"
+	"slices"
+	"strings"
 
 	"github.com/pkg/errors"
 
@@ -49,26 +51,41 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 	}, nil
 }
 
+type primaryKey struct {
+	name            string
+	clusteringOrder string
+	kind            string
+	position        int
+}
+
 func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetadata, error) {
 	schemaMetadata := &storepb.SchemaMetadata{
 		Name: "",
 	}
 
+	tablePKMap := map[string][]primaryKey{}
 	columnMap := map[string][]*storepb.ColumnMetadata{}
 	columnScanner := d.session.Query(`
 		SELECT
 			table_name,
 			column_name,
+			kind,
+			position,
+			clustering_order,
 			type
 		FROM system_schema.columns
 		WHERE keyspace_name = ?
 		ORDER BY table_name, column_name
 	`, d.config.ConnectionContext.DatabaseName).WithContext(ctx).Iter().Scanner()
 	for columnScanner.Next() {
-		var tableName, columnName, columnType string
+		var tableName, columnName, kind, clusteringOrder, columnType string
+		var position int
 		if err := columnScanner.Scan(
 			&tableName,
 			&columnName,
+			&kind,
+			&position,
+			&clusteringOrder,
 			&columnType,
 		); err != nil {
 			return nil, errors.Wrapf(err, "failed to scan column")
@@ -78,6 +95,14 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 			Type:     columnType,
 			Nullable: true,
 		})
+		if kind != "regular" {
+			tablePKMap[tableName] = append(tablePKMap[tableName], primaryKey{
+				name:            columnName,
+				kind:            kind,
+				clusteringOrder: clusteringOrder,
+				position:        position,
+			})
+		}
 	}
 	if err := columnScanner.Err(); err != nil {
 		return nil, errors.Wrapf(err, "column scanner err")
@@ -104,6 +129,29 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 			Comment: comment,
 			Columns: columnMap[tableName],
 		}
+
+		pks := tablePKMap[tableName]
+		slices.SortFunc(pks, func(a, b primaryKey) int {
+			if a.kind == "partition_key" && b.kind == "clustering" {
+				return -1
+			}
+			if a.kind == "clustering" && b.kind == "partition_key" {
+				return 1
+			}
+			if a.position < b.position {
+				return -1
+			}
+			return 1
+		})
+		pk := &storepb.IndexMetadata{
+			Name:        "PRIMARY KEY",
+			Expressions: getPKExpressions(pks),
+			Descending:  getPKDescending(pks),
+			Primary:     true,
+			Definition:  getPKDefinition(pks),
+		}
+		table.Indexes = append(table.Indexes, pk)
+
 		schemaMetadata.Tables = append(schemaMetadata.Tables, table)
 	}
 	if err := tableScanner.Err(); err != nil {
@@ -114,6 +162,52 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 		Name:    d.config.ConnectionContext.DatabaseName,
 		Schemas: []*storepb.SchemaMetadata{schemaMetadata},
 	}, nil
+}
+
+func getPKExpressions(pks []primaryKey) []string {
+	var partition, clustering []string
+	for _, k := range pks {
+		if k.kind == "partition_key" {
+			partition = append(partition, k.name)
+		} else if k.kind == "clustering" {
+			clustering = append(clustering, k.name)
+		}
+	}
+
+	res := []string{strings.Join(partition, ",")}
+	if len(partition) > 1 {
+		res[0] = "(" + res[0] + ")"
+	}
+	res = append(res, clustering...)
+	return res
+}
+
+func getPKDescending(pks []primaryKey) []bool {
+	res := []bool{false}
+	for _, pk := range pks {
+		if pk.kind == "partition_key" {
+			continue
+		}
+		res = append(res, pk.clusteringOrder == "desc")
+	}
+	return res
+}
+
+func getPKDefinition(pks []primaryKey) string {
+	var partition, clustering []string
+	for _, k := range pks {
+		if k.kind == "partition_key" {
+			partition = append(partition, k.name)
+		} else if k.kind == "clustering" {
+			clustering = append(clustering, k.name)
+		}
+	}
+	if len(partition) == 1 {
+		return "(" + strings.Join(append(partition, clustering...), ",") + ")"
+	}
+	return "(" +
+		strings.Join(append([]string{"(" + strings.Join(partition, ",") + ")"}, clustering...), ",") +
+		")"
 }
 
 func (d *Driver) getVersion(ctx context.Context) (string, error) {
