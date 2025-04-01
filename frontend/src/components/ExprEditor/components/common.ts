@@ -9,18 +9,24 @@ import {
 import { t, te } from "@/plugins/i18n";
 import { useExprEditorContext, type OptionConfig } from "../context";
 
-export const useSelectOptions = (
+export const useSelectOptionConfig = (
   expr: Ref<ConditionExpr>
-): ComputedRef<OptionConfig> => {
+): {
+  optionConfig: ComputedRef<OptionConfig>;
+  factor: ComputedRef<string>;
+} => {
   const context = useExprEditorContext();
   const { optionConfigMap } = context;
 
-  const options = computed(() => {
-    const factor = expr.value.args[0];
-    return optionConfigMap.value.get(factor) || { remote: false, options: [] };
+  const factor = computed(() => expr.value.args[0]);
+
+  const optionConfig = computed(() => {
+    return (
+      optionConfigMap.value.get(factor.value) || { remote: false, options: [] }
+    );
   });
 
-  return options;
+  return { optionConfig, factor };
 };
 
 const stringifyFactor = (factor: Factor) => {
