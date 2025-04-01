@@ -59,8 +59,8 @@ importers:
         specifier: 1.4.7
         version: 1.4.7
       elkjs:
-        specifier: ^0.9.3
-        version: 0.9.3
+        specifier: ^0.10.0
+        version: 0.10.0
       emittery:
         specifier: ^1.1.0
         version: 1.1.0
@@ -2680,8 +2680,8 @@ packages:
   electron-to-chromium@1.5.91:
     resolution: {integrity: sha512-sNSHHyq048PFmZY4S90ax61q+gLCs0X0YmcOII9wG9S2XwbVr+h4VW2wWhnbp/Eys3cCwTxVF292W3qPaxIapQ==}
 
-  elkjs@0.9.3:
-    resolution: {integrity: sha512-f/ZeWvW/BCXbhGEf1Ujp29EASo/lk1FDnETgNKwJrsVvGZhUWCZyg3xLJjAsxfOmt8KjswHmI5EwCQcPMpOYhQ==}
+  elkjs@0.10.0:
+    resolution: {integrity: sha512-v/3r+3Bl2NMrWmVoRTMBtHtWvRISTix/s9EfnsfEWApNrsmNjqgqJOispCGg46BPwIFdkag3N/HYSxJczvCm6w==}
 
   emitter@0.0.2:
     resolution: {integrity: sha512-L1gFY5hZlUaJ0VXsFLPO6KJIJlnu6rOBzbSXxx2f6B7zOShTxxpO+nqH0idbdOoqI2JnWyfn97RPnPgRl7Dz4Q==}
@@ -7337,7 +7337,7 @@ snapshots:
 
   electron-to-chromium@1.5.91: {}
 
-  elkjs@0.9.3: {}
+  elkjs@0.10.0: {}
 
   emitter@0.0.2:
     dependencies:
