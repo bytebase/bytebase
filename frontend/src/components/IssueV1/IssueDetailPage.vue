@@ -15,10 +15,10 @@
 
         <TaskRunSection v-if="!isCreating" />
 
-        <SQLCheckSection v-if="isCreating" @update:advices="advices = $event" />
+        <SQLCheckSection v-if="isCreating" />
         <PlanCheckSection v-if="!isCreating" />
 
-        <StatementSection :advices="advices" />
+        <StatementSection />
 
         <DescriptionSection />
 
@@ -71,8 +71,6 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { type Task } from "@/types/proto/v1/rollout_service";
-import type { Advice } from "@/types/proto/v1/sql_service";
-import { provideSQLCheckContext } from "../SQLCheck";
 import { Drawer } from "../v2";
 import {
   BannerSection,
@@ -90,6 +88,7 @@ import {
   SQLCheckSection,
   IssueCommentSection,
 } from "./components";
+import { provideIssueSQLCheckContext } from "./components/SQLCheckSection/context";
 import type {
   IssueReviewAction,
   IssueStatusAction,
@@ -103,7 +102,6 @@ import {
 
 const containerRef = ref<HTMLElement>();
 const { isCreating, events } = useIssueContext();
-const advices = ref<Advice[]>();
 
 const ongoingIssueReviewAction = ref<{
   action: IssueReviewAction;
@@ -137,7 +135,7 @@ events.on("perform-task-rollout-action", async ({ action, tasks }) => {
   };
 });
 
-provideSQLCheckContext();
+provideIssueSQLCheckContext();
 
 const {
   mode: sidebarMode,

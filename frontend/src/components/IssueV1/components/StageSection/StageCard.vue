@@ -1,9 +1,8 @@
 <template>
   <div class="stage" :class="stageClass">
     <TaskStatusIcon
-      :active="isActiveStage"
+      :task="activeTaskInStage"
       :status="activeTaskInStage.status"
-      :ignore-plan-check-status="true"
     />
 
     <div class="text" @click="handleClickStage">
