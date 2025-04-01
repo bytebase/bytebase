@@ -84,7 +84,8 @@ interface LocalState {
 }
 
 const { t } = useI18n();
-const { issue, isCreating, selectedTask, events } = useIssueContext();
+const context = useIssueContext();
+const { issue, isCreating, selectedTask, events } = context;
 const refreshKey = ref(0);
 
 const spec = computed(
@@ -106,9 +107,13 @@ const optionsEditable = computed(() => {
   return isCreating.value || (showEditButtons.value && state.isEditing);
 });
 
-const denyEditTaskReasons = computed(() => {
-  return allowUserToEditStatementForTask(issue.value, selectedTask.value);
-});
+const denyEditTaskReasons = computed(() =>
+  allowUserToEditStatementForTask(
+    issue.value,
+    selectedTask.value,
+    context.getPlanCheckRunsForTask(selectedTask.value)
+  )
+);
 
 const handleCancelEdit = () => {
   state.isEditing = false;

@@ -103,7 +103,7 @@ const { issue, formatOnSave, events, selectedTask } = useIssueContext();
 const {
   enabled: shouldRunSQLCheck,
   resultMap: checkResultMap,
-  upsertResult,
+  upsertResult: upsertCheckResult,
 } = useIssueSQLCheckContext();
 const sheetStore = useSheetV1Store();
 const loading = ref(false);
@@ -366,8 +366,9 @@ const runSQLCheckForIssue = async () => {
       },
       targets: targets,
     });
+    // Upsert check result for each target.
     for (const r of result?.results || []) {
-      upsertResult(r.target, r);
+      upsertCheckResult(r.target, r);
     }
   }
 
