@@ -2,6 +2,7 @@ package cassandra
 
 import (
 	"context"
+	"encoding/json"
 	"slices"
 	"strings"
 
@@ -108,6 +109,44 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 		return nil, errors.Wrapf(err, "column scanner err")
 	}
 
+	indexMap := map[string][]*storepb.IndexMetadata{}
+	indexScanner := d.session.Query(`
+		SELECT
+			table_name,
+			index_name,
+			kind,
+			options
+		FROM system_schema.indexes
+		WHERE keyspace_name = ?
+		ORDER BY table_name, index_name
+	`, d.config.ConnectionContext.DatabaseName).WithContext(ctx).Iter().Scanner()
+	for indexScanner.Next() {
+		var tableName, indexName, kind string
+		var options map[string]string
+		if err := indexScanner.Scan(
+			&tableName,
+			&indexName,
+			&kind,
+			&options,
+		); err != nil {
+			return nil, errors.Wrapf(err, "failed to scan index")
+		}
+
+		optionsJSON, err := json.Marshal(options)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to marshal index option")
+		}
+		indexMap[tableName] = append(indexMap[tableName], &storepb.IndexMetadata{
+			Name:        indexName,
+			Type:        kind,
+			Expressions: []string{string(optionsJSON)},
+			Definition:  string(optionsJSON),
+		})
+	}
+	if err := indexScanner.Err(); err != nil {
+		return nil, errors.Wrapf(err, "index scanner err")
+	}
+
 	tableScanner := d.session.Query(`
 		SELECT
 			table_name,
@@ -123,11 +162,6 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 			&comment,
 		); err != nil {
 			return nil, errors.Wrapf(err, "failed to scan table")
-		}
-		table := &storepb.TableMetadata{
-			Name:    tableName,
-			Comment: comment,
-			Columns: columnMap[tableName],
 		}
 
 		pks := tablePKMap[tableName]
@@ -150,7 +184,14 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 			Primary:     true,
 			Definition:  getPKDefinition(pks),
 		}
+
+		table := &storepb.TableMetadata{
+			Name:    tableName,
+			Comment: comment,
+			Columns: columnMap[tableName],
+		}
 		table.Indexes = append(table.Indexes, pk)
+		table.Indexes = append(table.Indexes, indexMap[tableName]...)
 
 		schemaMetadata.Tables = append(schemaMetadata.Tables, table)
 	}
