@@ -19,10 +19,10 @@
 import { useDebounceFn } from "@vueuse/core";
 import { NSelect } from "naive-ui";
 import type { SelectOption } from "naive-ui";
-import { toRef, watch, reactive, watchEffect } from "vue";
+import { toRef, watch, reactive } from "vue";
 import { type ConditionExpr } from "@/plugins/cel";
 import { useExprEditorContext } from "../context";
-import { useSelectOptions } from "./common";
+import { useSelectOptionConfig } from "./common";
 
 interface LocalState {
   loading: boolean;
@@ -45,17 +45,16 @@ const state = reactive<LocalState>({
   rawOptionList: [],
 });
 
-const optionConfig = useSelectOptions(toRef(props, "expr"));
-
-watchEffect(() => {
-  state.rawOptionList = [...optionConfig.value.options];
-});
+const { optionConfig, factor } = useSelectOptionConfig(toRef(props, "expr"));
 
 watch(
-  [state.rawOptionList, () => props.value],
+  [() => state.rawOptionList, () => props.value],
   () => {
     if (state.rawOptionList.length === 0) return;
-    if (!state.rawOptionList.find((opt) => opt.value === props.value)) {
+    if (
+      !props.value ||
+      !state.rawOptionList.find((opt) => opt.value === props.value)
+    ) {
       emit("update:value", state.rawOptionList[0].value!);
     }
   },
@@ -63,7 +62,7 @@ watch(
 );
 
 const handleSearch = useDebounceFn(async (search: string) => {
-  if (!search || !optionConfig.value.search) {
+  if (!optionConfig.value.search) {
     state.rawOptionList = [...optionConfig.value.options];
     return;
   }
@@ -75,5 +74,11 @@ const handleSearch = useDebounceFn(async (search: string) => {
   } finally {
     state.loading = false;
   }
-}, 500);
+}, 200);
+
+watch(
+  () => factor.value,
+  () => handleSearch(""),
+  { immediate: true }
+);
 </script>
