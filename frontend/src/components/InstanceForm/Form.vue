@@ -267,7 +267,6 @@
                     adminDataSource.additionalAddresses[index].host
                   "
                   required
-                  :placeholder="$t('instance.sentence.host.snowflake')"
                   class="mt-1 w-full"
                   :disabled="!allowEdit"
                 />
@@ -603,6 +602,9 @@ const currentRedisConnectionType = computed(() => {
 });
 
 const showAdditionalAddresses = computed(() => {
+  if (basicInfo.value.engine === Engine.CASSANDRA) {
+    return true;
+  }
   if (basicInfo.value.engine === Engine.MONGODB && !adminDataSource.value.srv) {
     return true;
   }
