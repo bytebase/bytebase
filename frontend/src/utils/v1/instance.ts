@@ -1,16 +1,14 @@
-import { keyBy, orderBy } from "lodash-es";
 import { computed, unref } from "vue";
 import { t, locale } from "@/plugins/i18n";
-import { useEnvironmentV1Store, useSubscriptionV1Store } from "@/store";
-import type { ComposedInstance, MaybeRef } from "@/types";
+import { useSubscriptionV1Store } from "@/store";
+import type { MaybeRef } from "@/types";
 import {
-  emptyInstance,
   isValidInstanceName,
   languageOfEngineV1,
   unknownInstance,
+  emptyInstance,
 } from "@/types";
 import { Engine, State } from "@/types/proto/v1/common";
-import type { Environment } from "@/types/proto/v1/environment_service";
 import type {
   Instance,
   InstanceResource,
@@ -49,22 +47,6 @@ export const extractInstanceResourceName = (name: string) => {
   return matches?.[1] ?? "";
 };
 
-export const sortInstanceV1List = (
-  instanceList: (ComposedInstance | InstanceResource)[]
-) => {
-  return orderBy(
-    instanceList,
-    [
-      (instance) =>
-        useEnvironmentV1Store().getEnvironmentByName(instance.environment)
-          .order,
-      (instance) => instance.name,
-      (instance) => instance.title,
-    ],
-    ["desc", "asc", "asc"]
-  );
-};
-
 export const readableDataSourceType = (type: DataSourceType): string => {
   if (type === DataSourceType.ADMIN) {
     return t("data-source.admin");
@@ -91,21 +73,6 @@ export const hostPortOfInstanceV1 = (instance: Instance | InstanceResource) => {
     instance.dataSources.find((ds) => ds.type === DataSourceType.ADMIN) ??
     instance.dataSources[0];
   return hostPortOfDataSource(ds);
-};
-
-// Sort the list to put prod items first.
-export const sortInstanceV1ListByEnvironmentV1 = <T extends Instance>(
-  list: T[],
-  environmentList: Environment[]
-): T[] => {
-  const environmentMap = keyBy(environmentList, (env) => env.name);
-
-  return list.sort((a, b) => {
-    const aEnvOrder = environmentMap[a.environment]?.order ?? -1;
-    const bEnvOrder = environmentMap[b.environment]?.order ?? -1;
-
-    return -(aEnvOrder - bEnvOrder);
-  });
 };
 
 export const supportedEngineV1List = () => {
@@ -156,12 +123,8 @@ export const instanceV1HasReadonlyMode = (
   return true;
 };
 
-export const instanceV1HasCreateDatabase = (
-  instanceOrEngine: Instance | InstanceResource | Engine
-): boolean => {
-  const engine = engineOfInstanceV1(instanceOrEngine);
-
-  const excludedList: Engine[] = [
+export const enginesSupportCreateDatabase = () => {
+  const excludedList: Set<Engine> = new Set([
     Engine.REDIS,
     Engine.ORACLE,
     Engine.DM,
@@ -171,9 +134,16 @@ export const instanceV1HasCreateDatabase = (
     Engine.DYNAMODB,
     Engine.DATABRICKS,
     Engine.COSMOSDB,
-  ];
+  ]);
 
-  return !excludedList.includes(engine);
+  return supportedEngineV1List().filter((engine) => !excludedList.has(engine));
+};
+
+export const instanceV1HasCreateDatabase = (
+  instanceOrEngine: Instance | InstanceResource | Engine
+): boolean => {
+  const engine = engineOfInstanceV1(instanceOrEngine);
+  return enginesSupportCreateDatabase().includes(engine);
 };
 
 export const instanceV1HasStructuredQueryResult = (

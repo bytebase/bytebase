@@ -1235,9 +1235,13 @@
     },
     "advanced-search": {
       "scope": {
-        "address": {
-          "title": "地址",
-          "description": "按地址过滤"
+        "host": {
+          "title": "服务器地址",
+          "description": "按实例服务器地址过滤。请输入值然后按 Enter。"
+        },
+        "port": {
+          "title": "端口",
+          "description": "按实例端口过滤。请输入值然后按 Enter。"
         }
       }
     },

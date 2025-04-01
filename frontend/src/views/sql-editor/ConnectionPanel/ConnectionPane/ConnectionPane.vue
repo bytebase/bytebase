@@ -163,8 +163,8 @@ const selectedKeys = computedAsync(async () => {
     if (!node) return [];
     return [node.key];
   } else if (connection.instance) {
-    const instance = useInstanceResourceByName(connection.instance);
-    const nodes = treeStore.nodesByTarget("instance", instance);
+    const { instance } = useInstanceResourceByName(connection.instance);
+    const nodes = treeStore.nodesByTarget("instance", instance.value);
     return nodes.map((node) => node.key);
   }
   return [];

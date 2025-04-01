@@ -1,28 +1,21 @@
 <template>
-  <div class="space-y-2">
-    <InstanceOperations
-      v-if="showOperation"
-      :instance-list="selectedInstanceList"
-    />
-
-    <NDataTable
-      key="instance-table"
-      size="small"
-      :columns="columnList"
-      :data="instanceList"
-      :striped="true"
-      :bordered="bordered"
-      :loading="loading"
-      :row-key="(data: ComposedInstance) => data.name"
-      :checked-row-keys="Array.from(state.selectedInstance)"
-      :row-props="rowProps"
-      :pagination="{ pageSize: 20 }"
-      :paginate-single-page="false"
-      @update:checked-row-keys="
-        (val) => (state.selectedInstance = new Set(val as string[]))
+  <NDataTable
+    key="instance-table"
+    size="small"
+    :columns="columnList"
+    :data="instanceList"
+    :striped="true"
+    :bordered="bordered"
+    :loading="loading"
+    :row-key="(data: ComposedInstance) => data.name"
+    :checked-row-keys="selectedInstanceNames"
+    :row-props="rowProps"
+    :pagination="{ pageSize: 20 }"
+    :paginate-single-page="false"
+    @update:checked-row-keys="
+        (val) => $emit('update:selected-instance-names', val as string[])
       "
-    />
-  </div>
+  />
 </template>
 
 <script setup lang="tsx">
@@ -39,14 +32,12 @@ import { InstanceV1Name } from "@/components/v2";
 import type { ComposedInstance } from "@/types";
 import { urlfy, hostPortOfInstanceV1, hostPortOfDataSource } from "@/utils";
 import EnvironmentV1Name from "../../EnvironmentV1Name.vue";
-import InstanceOperations from "./InstanceOperations.vue";
 
 type InstanceDataTableColumn = DataTableColumn<ComposedInstance> & {
   hide?: boolean;
 };
 
 interface LocalState {
-  selectedInstance: Set<string>;
   dataSourceToggle: Set<string>;
   processing: boolean;
 }
@@ -57,25 +48,32 @@ const props = withDefaults(
     bordered?: boolean;
     loading?: boolean;
     showSelection?: boolean;
-    showOperation?: boolean;
-    canAssignLicense?: boolean;
     defaultExpandDataSource?: string[];
+    selectedInstanceNames?: string[];
+    disabledSelectedInstanceNames?: Set<string>;
+    showAddress?: boolean;
+    showExternalLink?: boolean;
     onClick?: (instance: ComposedInstance, e: MouseEvent) => void;
   }>(),
   {
     bordered: true,
     showSelection: true,
-    showOperation: true,
-    canAssignLicense: true,
     onClick: undefined,
+    showAddress: true,
+    showExternalLink: true,
+    disabledSelectedInstanceNames: () => new Set(),
     defaultExpandDataSource: () => [],
+    selectedInstanceNames: () => [],
   }
 );
+
+defineEmits<{
+  (event: "update:selected-instance-names", val: string[]): void;
+}>();
 
 const { t } = useI18n();
 const router = useRouter();
 const state = reactive<LocalState>({
-  selectedInstance: new Set(),
   dataSourceToggle: new Set(),
   processing: false,
 });
@@ -95,6 +93,8 @@ const columnList = computed((): InstanceDataTableColumn[] => {
   const SELECTION: InstanceDataTableColumn = {
     type: "selection",
     hide: !props.showSelection,
+    disabled: (instance) =>
+      props.disabledSelectedInstanceNames.has(instance.name),
     cellProps: () => {
       return {
         onClick: (e: MouseEvent) => {
@@ -127,6 +127,7 @@ const columnList = computed((): InstanceDataTableColumn[] => {
     key: "address",
     title: t("common.address"),
     resizable: true,
+    hide: !props.showAddress,
     render: (instance) => {
       return (
         <div class={"flex items-start gap-x-2"}>
@@ -159,6 +160,7 @@ const columnList = computed((): InstanceDataTableColumn[] => {
     title: t("instance.external-link"),
     resizable: true,
     width: 150,
+    hide: !props.showExternalLink,
     render: (instance) =>
       instance.externalLink?.trim().length !== 0 && (
         <NButton
@@ -209,10 +211,4 @@ const rowProps = (instance: ComposedInstance) => {
     },
   };
 };
-
-const selectedInstanceList = computed(() => {
-  return props.instanceList.filter((instance) =>
-    state.selectedInstance.has(instance.name)
-  );
-});
 </script>

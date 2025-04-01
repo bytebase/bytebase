@@ -83,7 +83,7 @@ export const extractCoreDatabaseInfoFromDatabaseCreateTask = (
     }
 
     const environmentStore = useEnvironmentV1Store();
-    const instance = useInstanceResourceByName(instanceName);
+    const { instance } = useInstanceResourceByName(instanceName);
     return {
       ...unknownDatabase(),
       name,
@@ -91,11 +91,11 @@ export const extractCoreDatabaseInfoFromDatabaseCreateTask = (
       instance: instanceName,
       project: project.name,
       projectEntity: project,
-      effectiveEnvironment: instance.environment,
+      effectiveEnvironment: instance.value.environment,
       effectiveEnvironmentEntity: environmentStore.getEnvironmentByName(
-        instance.environment
+        instance.value.environment
       ),
-      instanceResource: instance,
+      instanceResource: instance.value,
     };
   };
 

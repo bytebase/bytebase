@@ -1235,9 +1235,13 @@
     },
     "advanced-search": {
       "scope": {
-        "address": {
-          "title": "Địa chỉ",
-          "description": "Lọc theo địa chỉ"
+        "host": {
+          "title": "Chủ nhà",
+          "description": "Lọc theo máy chủ lưu trữ. Vui lòng nhập giá trị rồi nhấn Enter."
+        },
+        "port": {
+          "title": "Cảng",
+          "description": "Lọc theo cổng phiên bản. Vui lòng nhập giá trị rồi nhấn Enter."
         }
       }
     },

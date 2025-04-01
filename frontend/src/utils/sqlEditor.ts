@@ -123,8 +123,8 @@ export const isDisconnectedSQLEditorTab = (tab: SQLEditorTab) => {
   if (!connection.instance) {
     return true;
   }
-  const instance = useInstanceResourceByName(connection.instance);
-  if (instanceV1AllowsCrossDatabaseQuery(instance)) {
+  const { instance } = useInstanceResourceByName(connection.instance);
+  if (instanceV1AllowsCrossDatabaseQuery(instance.value)) {
     // Connecting to instance directly.
     return false;
   }
