@@ -60,6 +60,7 @@ import { BBButtonConfirm } from "@/bbkit";
 import {
   useInstanceV1Store,
   pushNotification,
+  useActuatorV1Store,
   useSubscriptionV1Store,
 } from "@/store";
 import type { ComposedInstance } from "@/types";
@@ -81,6 +82,7 @@ const state = reactive<LocalState>({
 
 const { t } = useI18n();
 const instanceStore = useInstanceV1Store();
+const actuatorStore = useActuatorV1Store();
 const subscriptionStore = useSubscriptionV1Store();
 
 const force = ref(false);
@@ -104,7 +106,7 @@ const archiveOrRestoreInstance = async (archive: boolean) => {
     });
   } else {
     if (
-      subscriptionStore.instanceCountLimit <= instanceStore.instanceList.length
+      subscriptionStore.instanceCountLimit <= actuatorStore.totalInstanceCount
     ) {
       state.showFeatureModal = true;
       return;

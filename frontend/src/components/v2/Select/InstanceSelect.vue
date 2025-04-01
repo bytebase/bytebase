@@ -1,6 +1,8 @@
 <template>
   <ResourceSelect
     v-bind="$attrs"
+    :remote="true"
+    :loading="state.loading"
     :value="instanceName"
     :options="options"
     :placeholder="$t('instance.select')"
@@ -9,41 +11,46 @@
     :fallback-option="false"
     :consistent-menu-width="false"
     class="bb-instance-select"
+    @search="handleSearch"
     @update:value="(val) => $emit('update:instance-name', val)"
   />
 </template>
 
 <script lang="ts" setup>
-import { computed, h, watch } from "vue";
+import { useDebounceFn } from "@vueuse/core";
+import { computed, h, watch, reactive } from "vue";
 import { useI18n } from "vue-i18n";
-import { useInstanceResourceList } from "@/store";
+import { useInstanceV1Store } from "@/store";
 import {
   UNKNOWN_INSTANCE_NAME,
-  isValidEnvironmentName,
+  isValidInstanceName,
   unknownInstance,
+  type ComposedInstance,
 } from "@/types";
 import { type Engine } from "@/types/proto/v1/common";
 import type { InstanceResource } from "@/types/proto/v1/instance_service";
-import { supportedEngineV1List } from "@/utils";
+import { supportedEngineV1List, getDefaultPagination } from "@/utils";
 import { InstanceV1EngineIcon } from "../Model/Instance";
 import ResourceSelect from "./ResourceSelect.vue";
+
+interface LocalState {
+  loading: boolean;
+  rawInstanceList: ComposedInstance[];
+}
 
 const props = withDefaults(
   defineProps<{
     instanceName?: string | undefined;
     environmentName?: string;
-    allowedEngineList?: readonly Engine[];
-    includeAll?: boolean;
+    projectName?: string;
+    allowedEngineList?: Engine[];
     autoReset?: boolean;
-    filter?: (instance: InstanceResource, index: number) => boolean;
   }>(),
   {
     instanceName: undefined,
     environmentName: undefined,
     allowedEngineList: () => supportedEngineV1List(),
-    includeAll: false,
     autoReset: true,
-    filter: undefined,
   }
 );
 
@@ -52,39 +59,64 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const instanceList = useInstanceResourceList();
-
-const rawInstanceList = computed(() => {
-  let list = [...instanceList.value];
-  if (isValidEnvironmentName(props.environmentName)) {
-    list = instanceList.value.filter(
-      (instance) => instance.environment === props.environmentName
-    );
-  }
-  // Filter by engine type
-  list = list.filter((instance) =>
-    props.allowedEngineList.includes(instance.engine)
-  );
-  return list;
+const instanceStore = useInstanceV1Store();
+const state = reactive<LocalState>({
+  loading: true,
+  rawInstanceList: [],
 });
 
-const combinedInstanceList = computed(() => {
-  let list = rawInstanceList.value;
-
-  if (props.filter) {
-    list = list.filter(props.filter);
+const initSelectedInstance = async (instanceName: string) => {
+  if (isValidInstanceName(instanceName)) {
+    const instance = await instanceStore.getOrFetchInstanceByName(instanceName);
+    if (!state.rawInstanceList.find((ins) => ins.name === instance.name)) {
+      state.rawInstanceList.unshift(instance);
+    }
   }
+};
 
-  if (props.instanceName === UNKNOWN_INSTANCE_NAME || props.includeAll) {
-    const dummyAll = {
-      ...unknownInstance(),
-      title: t("instance.all"),
-    };
-    list.unshift(dummyAll);
+const searchInstances = async (name: string) => {
+  const { instances } = await instanceStore.fetchInstanceList({
+    pageSize: getDefaultPagination(),
+    filter: {
+      engines: props.allowedEngineList,
+      query: name,
+      environment: props.environmentName,
+      project: props.projectName,
+    },
+  });
+  return instances;
+};
+
+const handleSearch = useDebounceFn(async (search: string) => {
+  state.loading = true;
+  try {
+    const instances = await searchInstances(search);
+    state.rawInstanceList = instances;
+    if (!search) {
+      if (props.instanceName === UNKNOWN_INSTANCE_NAME) {
+        const dummyAll = {
+          ...unknownInstance(),
+          title: t("instance.all"),
+        };
+        state.rawInstanceList.unshift(dummyAll);
+      } else if (props.instanceName) {
+        await initSelectedInstance(props.instanceName);
+      }
+    }
+  } finally {
+    state.loading = false;
   }
+}, 200);
 
-  return list;
-});
+watch(
+  () => [props.allowedEngineList, props.environmentName, props.projectName],
+  () => {
+    handleSearch("");
+  },
+  {
+    immediate: true,
+  }
+);
 
 const renderLabel = (instance: InstanceResource) => {
   if (instance.name === UNKNOWN_INSTANCE_NAME) {
@@ -105,7 +137,7 @@ const renderLabel = (instance: InstanceResource) => {
 };
 
 const options = computed(() => {
-  return combinedInstanceList.value.map((instance) => {
+  return state.rawInstanceList.map((instance) => {
     return {
       resource: instance,
       value: instance.name,
@@ -121,15 +153,19 @@ const resetInvalidSelection = () => {
   if (!props.autoReset) return;
   if (
     props.instanceName &&
-    !combinedInstanceList.value.find((item) => item.name === props.instanceName)
+    !state.rawInstanceList.find((item) => item.name === props.instanceName)
   ) {
     emit("update:instance-name", undefined);
   }
 };
 
-watch([() => props.instanceName, combinedInstanceList], resetInvalidSelection, {
-  immediate: true,
-});
+watch(
+  [() => props.instanceName, state.rawInstanceList, props.projectName],
+  resetInvalidSelection,
+  {
+    immediate: true,
+  }
+);
 </script>
 
 <style lang="postcss" scoped>

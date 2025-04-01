@@ -18,86 +18,34 @@
             />
           </div>
           <div class="mt-1 text-4xl flex items-center gap-x-2">
-            <span>{{ assignedLicenseCount }}</span>
+            <span>
+              {{ actuatorStore.activatedInstanceCount }}
+            </span>
             <span class="text-xl">/</span>
             <span>{{ totalLicenseCount }}</span>
           </div>
         </div>
-        <BBGrid
-          class="border"
-          :column-list="columnList"
-          :data-source="instanceList"
-          :show-header="true"
-          :custom-header="true"
-          :row-clickable="false"
-        >
-          <template #header>
-            <div role="table-row" class="bb-grid-row bb-grid-header-row group">
-              <div
-                v-for="(column, index) in columnList"
-                :key="index"
-                role="table-cell"
-                class="bb-grid-header-cell capitalize"
-                :class="[column.class]"
-              >
-                <template v-if="index === 0 && canManageSubscription">
-                  <NCheckbox
-                    v-if="instanceList.length > 0"
-                    v-bind="allSelectionState"
-                    :disabled="
-                      !allSelectionState.checked &&
-                      instanceList.length > instanceLicenseCount
-                    "
-                    @update:checked="selectAllInstances($event)"
-                  />
-                </template>
-                <template v-else>{{ column.title }}</template>
-              </div>
-            </div>
-          </template>
-          <template #item="{ item: instance }: { item: InstanceResource }">
-            <div
-              v-if="canManageSubscription"
-              class="bb-grid-cell"
-              @click.stop.prevent
-            >
-              <NCheckbox
-                :checked="isInstanceSelected(instance)"
-                :disabled="
-                  !isInstanceSelected(instance) &&
-                  state.selectedInstance.size == instanceLicenseCount
-                "
-                @update:checked="toggleSelectInstance(instance, $event)"
-              />
-            </div>
-            <div class="bb-grid-cell">
-              <div class="flex items-center gap-x-1">
-                <InstanceV1EngineIcon :instance="instance" />
-                <router-link
-                  :to="`/${instance.name}`"
-                  class="hover:underline"
-                  active-class="link"
-                  exact-active-class="link"
-                >
-                  {{ instanceV1Name(instance) }}
-                </router-link>
-              </div>
-            </div>
-            <div class="bb-grid-cell">
-              <EnvironmentV1Name
-                :environment="
-                  environmentStore.getEnvironmentByName(instance.environment)
-                "
-                :link="false"
-              />
-            </div>
-            <div class="bb-grid-cell">
-              <EllipsisText class="w-10">
-                {{ hostPortOfInstanceV1(instance) }}
-              </EllipsisText>
-            </div>
-          </template>
-        </BBGrid>
+
+        <AdvancedSearch
+          v-model:params="state.params"
+          :autofocus="false"
+          :placeholder="$t('instance.filter-instance-name')"
+          :scope-options="scopeOptions"
+        />
+        <PagedInstanceTable
+          ref="pagedInstanceTableRef"
+          session-key="bb.instance-table"
+          :bordered="true"
+          :filter="filter"
+          :show-address="false"
+          :show-external-link="false"
+          :show-selection="canManageSubscription"
+          :selected-instance-names="Array.from(state.selectedInstance)"
+          :disabled-selected-instance-names="disabledSelectedInstanceNames"
+          @update:selected-instance-names="
+            (list) => (state.selectedInstance = new Set(list))
+          "
+        />
       </div>
 
       <template #footer>
@@ -126,32 +74,26 @@
 </template>
 
 <script lang="ts" setup>
-import { NButton, NCheckbox } from "naive-ui";
+import { NButton } from "naive-ui";
 import { storeToRefs } from "pinia";
-import { reactive, computed, watchEffect } from "vue";
+import { reactive, computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import type { BBGridColumn } from "@/bbkit";
-import { BBGrid } from "@/bbkit";
-import EllipsisText from "@/components/EllipsisText.vue";
-import { EnvironmentV1Name, InstanceV1EngineIcon } from "@/components/v2";
+import AdvancedSearch from "@/components/AdvancedSearch";
+import { useCommonSearchScopeOptions } from "@/components/AdvancedSearch/useCommonSearchScopeOptions";
+import { PagedInstanceTable } from "@/components/v2";
 import { Drawer, DrawerContent } from "@/components/v2";
 import {
   pushNotification,
   useInstanceV1Store,
   useSubscriptionV1Store,
   useDatabaseV1Store,
-  useInstanceResourceList,
-  useEnvironmentV1Store,
+  useActuatorV1Store,
 } from "@/store";
-import {
-  Instance,
-  type InstanceResource,
-} from "@/types/proto/v1/instance_service";
-import {
-  instanceV1Name,
-  hostPortOfInstanceV1,
-  hasWorkspacePermissionV2,
-} from "@/utils";
+import { environmentNamePrefix } from "@/store/modules/v1/common";
+import { engineFromJSON } from "@/types/proto/v1/common";
+import { Instance } from "@/types/proto/v1/instance_service";
+import { PlanType } from "@/types/proto/v1/subscription_service";
+import { type SearchParams, hasWorkspacePermissionV2 } from "@/utils";
 import LearnMoreLink from "./LearnMoreLink.vue";
 
 const props = withDefaults(
@@ -166,6 +108,7 @@ const props = withDefaults(
 );
 
 interface LocalState {
+  params: SearchParams;
   selectedInstance: Set<string>;
   processing: boolean;
 }
@@ -173,57 +116,84 @@ interface LocalState {
 const emit = defineEmits(["dismiss"]);
 
 const state = reactive<LocalState>({
+  params: {
+    query: "",
+    scopes: [],
+  },
   selectedInstance: new Set(),
   processing: false,
 });
-const environmentStore = useEnvironmentV1Store();
+
 const instanceV1Store = useInstanceV1Store();
 const databaseV1Store = useDatabaseV1Store();
 const subscriptionStore = useSubscriptionV1Store();
+const actuatorStore = useActuatorV1Store();
 const { t } = useI18n();
-
-const instanceList = useInstanceResourceList();
+const pagedInstanceTableRef = ref<InstanceType<typeof PagedInstanceTable>>();
 const { instanceLicenseCount } = storeToRefs(subscriptionStore);
 
-const columnList = computed(() => {
-  const resp: BBGridColumn[] = [
-    {
-      title: t("common.name"),
-      width: "minmax(min-content, auto)",
-    },
-    {
-      title: t("common.environment"),
-      width: "minmax(min-content, auto)",
-    },
-    {
-      title: t("common.address"),
-      width: "minmax(min-content, auto)",
-    },
-  ];
-  if (canManageSubscription.value) {
-    resp.unshift({
-      // This column is for selection input.
-      title: "",
-      width: "minmax(auto, 3rem)",
-    });
+const scopeOptions = computed(
+  () => useCommonSearchScopeOptions(["environment", "engine"]).value
+);
+
+const selectedEnvironment = computed(() => {
+  const environmentId = state.params.scopes.find(
+    (scope) => scope.id === "environment"
+  )?.value;
+  if (!environmentId) {
+    return;
   }
-  return resp;
+  return `${environmentNamePrefix}${environmentId}`;
 });
+
+const selectedEngines = computed(() => {
+  return state.params.scopes
+    .filter((scope) => scope.id === "engine")
+    .map((scope) => engineFromJSON(scope.value));
+});
+
+const filter = computed(() => ({
+  environment: selectedEnvironment.value,
+  query: state.params.query,
+  engines: selectedEngines.value,
+}));
 
 const canManageSubscription = computed((): boolean => {
-  return hasWorkspacePermissionV2("bb.instances.update");
+  return (
+    hasWorkspacePermissionV2("bb.instances.update") &&
+    subscriptionStore.currentPlan !== PlanType.FREE
+  );
 });
 
-watchEffect(() => {
-  for (const instance of instanceList.value) {
-    if (instance.activation) {
-      state.selectedInstance.add(instance.name);
-    }
-  }
-  for (const instance of props.selectedInstanceList) {
-    state.selectedInstance.add(instance);
-  }
+const disabledSelectedInstanceNames = computed(() => {
+  return new Set(
+    pagedInstanceTableRef.value?.dataList
+      ?.filter((ins) => ins.activation)
+      ?.map((ins) => ins.name) ?? []
+  );
 });
+
+watch(
+  () => props.selectedInstanceList,
+  () => {
+    for (const instanceName of props.selectedInstanceList) {
+      state.selectedInstance.add(instanceName);
+    }
+  },
+  { immediate: true }
+);
+
+watch(
+  () => pagedInstanceTableRef.value?.dataList ?? [],
+  (dataList) => {
+    for (const instance of dataList) {
+      if (instance.activation) {
+        state.selectedInstance.add(instance.name);
+      }
+    }
+  },
+  { deep: true, immediate: true }
+);
 
 const totalLicenseCount = computed((): string => {
   if (instanceLicenseCount.value === Number.MAX_VALUE) {
@@ -232,55 +202,10 @@ const totalLicenseCount = computed((): string => {
   return `${instanceLicenseCount.value}`;
 });
 
-const assignedLicenseCount = computed((): string => {
-  return `${state.selectedInstance.size}`;
-});
-
-const isInstanceSelected = (instance: InstanceResource): boolean => {
-  return state.selectedInstance.has(instance.name);
-};
-
-const allSelectionState = computed(() => {
-  const checked =
-    state.selectedInstance.size > 0 &&
-    instanceList.value.every((instance) =>
-      state.selectedInstance.has(instance.name)
-    );
-  const indeterminate =
-    !checked &&
-    instanceList.value.some((instance) =>
-      state.selectedInstance.has(instance.name)
-    );
-
-  return {
-    checked,
-    indeterminate,
-  };
-});
-
-const toggleSelectInstance = (
-  instance: InstanceResource,
-  selected: boolean
-) => {
-  if (selected) {
-    state.selectedInstance.add(instance.name);
-  } else {
-    state.selectedInstance.delete(instance.name);
-  }
-};
-
-const selectAllInstances = (selected: boolean): void => {
-  for (const instance of instanceList.value) {
-    toggleSelectInstance(instance, selected);
-  }
-};
-
 const assignmentChanged = computed(() => {
-  for (const instance of instanceList.value) {
-    if (instance.activation && !state.selectedInstance.has(instance.name)) {
-      return true;
-    }
-    if (!instance.activation && state.selectedInstance.has(instance.name)) {
+  for (const instanceName of state.selectedInstance) {
+    const instance = instanceV1Store.getInstanceByName(instanceName);
+    if (!instance.activation) {
       return true;
     }
   }
@@ -297,27 +222,9 @@ const updateAssignment = async () => {
   }
   state.processing = true;
 
-  const selectedInstanceName = new Set(state.selectedInstance);
-  // deactivate instance first to avoid quota limitation.
-  for (const instance of instanceList.value) {
-    if (instance.activation && !selectedInstanceName.has(instance.name)) {
-      // deactivate instance
-      instance.activation = false;
-      const composedInstance = await instanceV1Store.updateInstance(
-        Instance.fromPartial(instance),
-        ["activation"]
-      );
-      databaseV1Store.updateDatabaseInstance(composedInstance);
-    }
-    if (instance.activation && selectedInstanceName.has(instance.name)) {
-      // remove unchanged
-      selectedInstanceName.delete(instance.name);
-    }
-  }
-
-  for (const instanceName of selectedInstanceName.values()) {
-    const instance = instanceList.value.find((i) => i.name === instanceName);
-    if (!instance) {
+  for (const instanceName of state.selectedInstance) {
+    const instance = instanceV1Store.getInstanceByName(instanceName);
+    if (instance.activation) {
       continue;
     }
     // activate instance
@@ -328,6 +235,9 @@ const updateAssignment = async () => {
     );
     databaseV1Store.updateDatabaseInstance(composedInstance);
   }
+
+  // refresh activatedInstanceCount
+  await actuatorStore.fetchServerInfo();
 
   pushNotification({
     module: "bytebase",

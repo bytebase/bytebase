@@ -1,39 +1,70 @@
+import { defineStore } from "pinia";
+import { reactive } from "vue";
 import { instanceServiceClient } from "@/grpcweb";
 import type { ComposedInstance } from "@/types";
-import { unknownEnvironment, unknownInstance } from "@/types";
-import { State } from "@/types/proto/v1/common";
+import {
+  unknownEnvironment,
+  unknownInstance,
+  isValidProjectName,
+  isValidInstanceName,
+  isValidEnvironmentName,
+} from "@/types";
+import type { Engine } from "@/types/proto/v1/common";
+import { State, stateToJSON, engineToJSON } from "@/types/proto/v1/common";
 import type { DataSource, Instance } from "@/types/proto/v1/instance_service";
 import { extractInstanceResourceName, hasWorkspacePermissionV2 } from "@/utils";
-import { defineStore } from "pinia";
-import { computed, reactive, watchEffect } from "vue";
-import { useListCache } from "./cache";
 import { useEnvironmentV1Store } from "./environment";
+
+export interface InstanceFilter {
+  environment?: string;
+  project?: string;
+  host?: string;
+  port?: string;
+  query?: string;
+  engines?: Engine[];
+  state?: State;
+}
+
+const getListInstanceFilter = (params: InstanceFilter) => {
+  const list = [];
+  const search = params.query?.trim().toLowerCase();
+  if (search) {
+    list.push(
+      `(name.matches("${search}") || resource_id.matches("${search}"))`
+    );
+  }
+  if (isValidProjectName(params.project)) {
+    list.push(`project == "${params.project}"`);
+  }
+  if (isValidEnvironmentName(params.environment)) {
+    list.push(`environment == "${params.environment}"`);
+  }
+  if (params.host) {
+    list.push(`host == "${params.host}"`);
+  }
+  if (params.port) {
+    list.push(`port == "${params.port}"`);
+  }
+  if (params.engines && params.engines.length > 0) {
+    // engine filter should be:
+    // engine in ["MYSQL", "POSTGRES"]
+    list.push(
+      `engine in [${params.engines.map((e) => `"${engineToJSON(e)}"`).join(", ")}]`
+    );
+  }
+  if (params.state === State.DELETED) {
+    list.push(`state == "${stateToJSON(params.state)}"`);
+  }
+  return list.join(" && ");
+};
 
 export const useInstanceV1Store = defineStore("instance_v1", () => {
   const instanceMapByName = reactive(new Map<string, ComposedInstance>());
+  const instanceRequestCache = new Map<string, Promise<ComposedInstance>>();
 
   const reset = () => {
     instanceMapByName.clear();
   };
-
-  // Getters
-  const instanceListIncludingDeleted = computed(() => {
-    return Array.from(instanceMapByName.values());
-  });
-  const instanceList = computed(() => {
-    return instanceListIncludingDeleted.value.filter((instance) => {
-      return instance.state === State.ACTIVE;
-    });
-  });
-  const activateInstanceCount = computed(() => {
-    let count = 0;
-    for (const instance of instanceList.value) {
-      if (instance.activation) {
-        count++;
-      }
-    }
-    return count;
-  });
 
   // Actions
   const upsertInstances = async (list: Instance[]) => {
@@ -115,12 +146,21 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
     return instanceMapByName.get(name) ?? unknownInstance();
   };
   const getOrFetchInstanceByName = async (name: string, silent = false) => {
-    const cached = instanceMapByName.get(name);
-    if (cached) {
-      return cached;
+    const cachedData = instanceMapByName.get(name);
+    if (cachedData) {
+      return cachedData;
     }
-    await fetchInstanceByName(name, silent);
-    return getInstanceByName(name);
+    if (
+      !isValidInstanceName(name) ||
+      !hasWorkspacePermissionV2("bb.instances.get")
+    ) {
+      return unknownInstance();
+    }
+    const cached = instanceRequestCache.get(name);
+    if (cached) return cached;
+    const request = fetchInstanceByName(name, silent);
+    instanceRequestCache.set(name, request);
+    return request;
   };
   const createDataSource = async (
     instance: Instance,
@@ -158,11 +198,34 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
     return composed;
   };
 
+  const fetchInstanceList = async (params: {
+    pageSize?: number;
+    pageToken?: string;
+    filter?: InstanceFilter;
+  }) => {
+    if (!hasWorkspacePermissionV2("bb.instances.list")) {
+      return {
+        instances: [],
+        nextPageToken: "",
+      };
+    }
+    const { instances, nextPageToken } =
+      await instanceServiceClient.listInstances({
+        pageSize: params.pageSize,
+        pageToken: params.pageToken,
+        filter: getListInstanceFilter(params.filter ?? {}),
+        showDeleted: params.filter?.state === State.DELETED ? true : false,
+      });
+
+    const composedInstances = await upsertInstances(instances);
+    return {
+      instances: composedInstances,
+      nextPageToken,
+    };
+  };
+
   return {
     reset,
-    instanceListIncludingDeleted,
-    instanceList,
-    activateInstanceCount,
     upsertInstances,
     createInstance,
     updateInstance,
@@ -176,50 +239,9 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
     updateDataSource,
     deleteDataSource,
     listInstanceDatabases,
+    fetchInstanceList,
   };
 });
-
-export const useInstanceV1List = (showDeleted: boolean = false) => {
-  const listCache = useListCache("instance");
-  const store = useInstanceV1Store();
-  const cacheKey = listCache.getCacheKey(showDeleted ? "" : "active");
-
-  const cache = computed(() => listCache.getCache(cacheKey));
-
-  watchEffect(async () => {
-    if (!hasWorkspacePermissionV2("bb.instances.list")) {
-      return;
-    }
-    // Skip if request is already in progress or cache is available.
-    if (cache.value?.isFetching || cache.value) {
-      return;
-    }
-
-    listCache.cacheMap.set(cacheKey, {
-      timestamp: Date.now(),
-      isFetching: true,
-    });
-    const { instances } = await instanceServiceClient.listInstances({
-      showDeleted,
-    });
-    await store.upsertInstances(instances);
-    listCache.cacheMap.set(cacheKey, {
-      timestamp: Date.now(),
-      isFetching: false,
-    });
-  });
-
-  const instanceList = computed(() => {
-    return showDeleted
-      ? store.instanceListIncludingDeleted
-      : store.instanceList;
-  });
-
-  return {
-    instanceList,
-    ready: computed(() => cache.value && !cache.value.isFetching),
-  };
-};
 
 const composeInstance = async (instance: Instance) => {
   const composed = instance as ComposedInstance;

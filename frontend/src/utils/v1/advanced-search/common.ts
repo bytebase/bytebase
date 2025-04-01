@@ -36,7 +36,8 @@ export const AllSearchScopeIdList = [
   "level",
   "actor",
   // instance related search scopes.
-  "address",
+  "host",
+  "port",
   // rollout related search scopes.
   "stage",
 ] as const;

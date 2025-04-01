@@ -42,8 +42,13 @@ import { computed, h, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import InstanceSyncButton from "@/components/Instance/InstanceSyncButton.vue";
 import InstanceAssignment from "@/components/InstanceAssignment.vue";
-import { useInstanceV1Store, pushNotification } from "@/store";
+import {
+  useInstanceV1Store,
+  useSubscriptionV1Store,
+  pushNotification,
+} from "@/store";
 import type { ComposedInstance } from "@/types";
+import { PlanType } from "@/types/proto/v1/subscription_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
 interface Action {
@@ -65,9 +70,14 @@ const props = defineProps<{
 
 const { t } = useI18n();
 const instanceStore = useInstanceV1Store();
+const subscriptionStore = useSubscriptionV1Store();
 const state = reactive<LocalState>({
   loading: false,
   showAssignLicenseDrawer: false,
+});
+
+const canAssignLicense = computed(() => {
+  return subscriptionStore.currentPlan !== PlanType.FREE;
 });
 
 const actions = computed((): Action[] => {
@@ -88,7 +98,10 @@ const actions = computed((): Action[] => {
     },
   ];
 
-  if (hasWorkspacePermissionV2("bb.instances.update")) {
+  if (
+    hasWorkspacePermissionV2("bb.instances.update") &&
+    canAssignLicense.value
+  ) {
     list.push({
       icon: h(GraduationCapIcon),
       text: t("subscription.instance-assignment.assign-license"),
