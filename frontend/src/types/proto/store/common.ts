@@ -39,6 +39,7 @@ export enum Engine {
   COCKROACHDB = "COCKROACHDB",
   COSMOSDB = "COSMOSDB",
   TRINO = "TRINO",
+  CASSANDRA = "CASSANDRA",
   UNRECOGNIZED = "UNRECOGNIZED",
 }
 
@@ -128,6 +129,9 @@ export function engineFromJSON(object: any): Engine {
     case 27:
     case "TRINO":
       return Engine.TRINO;
+    case 28:
+    case "CASSANDRA":
+      return Engine.CASSANDRA;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -193,6 +197,8 @@ export function engineToJSON(object: Engine): string {
       return "COSMOSDB";
     case Engine.TRINO:
       return "TRINO";
+    case Engine.CASSANDRA:
+      return "CASSANDRA";
     case Engine.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
@@ -257,6 +263,8 @@ export function engineToNumber(object: Engine): number {
       return 26;
     case Engine.TRINO:
       return 27;
+    case Engine.CASSANDRA:
+      return 28;
     case Engine.UNRECOGNIZED:
     default:
       return -1;

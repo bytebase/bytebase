@@ -100,6 +100,7 @@ export const supportedEngineV1List = () => {
     Engine.DATABRICKS,
     Engine.COCKROACHDB,
     Engine.COSMOSDB,
+    Engine.CASSANDRA,
   ];
   if (locale.value === "zh-CN") {
     engines.push(Engine.DM);
@@ -369,6 +370,8 @@ export const engineNameV1 = (type: Engine): string => {
       return "Databricks";
     case Engine.COSMOSDB:
       return "CosmosDB";
+    case Engine.CASSANDRA:
+      return "Cassandra"
   }
   return "";
 };
