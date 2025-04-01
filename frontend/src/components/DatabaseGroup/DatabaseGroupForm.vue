@@ -98,11 +98,7 @@ import {
   PROJECT_V1_ROUTE_DATABASE_GROUPS,
   PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL,
 } from "@/router/dashboard/projectV1";
-import {
-  pushNotification,
-  useDBGroupStore,
-  useSubscriptionV1Store,
-} from "@/store";
+import { pushNotification, useDBGroupStore } from "@/store";
 import {
   databaseGroupNamePrefix,
   getProjectNameAndDatabaseGroupName,

@@ -53,7 +53,7 @@
 </template>
 
 <script lang="ts" setup>
-import { NEllipsis, NCollapse, NCollapseItem } from "naive-ui";
+import { NButton, NEllipsis, NCollapse, NCollapseItem } from "naive-ui";
 import { ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBSpin } from "@/bbkit";
