@@ -19,7 +19,7 @@
 import { useDebounceFn } from "@vueuse/core";
 import { NSelect } from "naive-ui";
 import type { SelectOption } from "naive-ui";
-import { toRef, watch, reactive, watchEffect, onMounted } from "vue";
+import { toRef, watch, reactive } from "vue";
 import { type ConditionExpr } from "@/plugins/cel";
 import { useExprEditorContext } from "../context";
 import { useSelectOptionConfig } from "./common";
