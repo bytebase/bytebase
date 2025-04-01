@@ -18,18 +18,13 @@
 </template>
 
 <script lang="tsx" setup>
-import type { ComposedDatabaseGroup } from "@/types";
-import { hasPermissionToCreateChangeDatabaseIssueInProject } from "@/utils";
-import { generateDatabaseGroupIssueRoute } from "@/utils/databaseGroup/issue";
-import {
-  NButton,
-  NDataTable,
-  NDropdown,
-  type DataTableColumn
-} from "naive-ui";
+import { NButton, NDataTable, NDropdown, type DataTableColumn } from "naive-ui";
 import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
+import type { ComposedDatabaseGroup } from "@/types";
+import { hasPermissionToCreateChangeDatabaseIssueInProject } from "@/utils";
+import { generateDatabaseGroupIssueRoute } from "@/utils/databaseGroup/issue";
 
 interface LocalState {
   selectedDatabaseGroupNameList: Set<string>;
@@ -118,10 +113,12 @@ const columnList = computed((): DatabaseGroupDataTableColumn[] => {
               {
                 label: `${t("database.edit-schema")} (DDL)`,
                 key: "bb.issue.database.schema.update",
+                disabled: data.matchedDatabases.length === 0,
               },
               {
                 label: `${t("database.change-data")} (DML)`,
                 key: "bb.issue.database.data.update",
+                disabled: data.matchedDatabases.length === 0,
               },
             ]}
             onSelect={(key) => doDatabaseGroupChangeAction(key, data)}
