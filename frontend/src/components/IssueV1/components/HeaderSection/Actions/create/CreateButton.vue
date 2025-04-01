@@ -25,10 +25,25 @@
     class="fixed inset-0 pointer-events-auto flex flex-col items-center justify-center"
     @click.stop.prevent
   />
+
+  <SQLCheckPanel
+    v-if="showSQLCheckResultPanel && databaseForTask(issue, selectedTask)"
+    :database="databaseForTask(issue, selectedTask)"
+    :advices="checkResultMap[databaseForTask(issue, selectedTask).name].advices"
+    :affected-rows="
+      checkResultMap[databaseForTask(issue, selectedTask).name].affectedRows
+    "
+    :risk-level="
+      checkResultMap[databaseForTask(issue, selectedTask).name].riskLevel
+    "
+    :confirm="sqlCheckConfirmDialog"
+    :override-title="$t('issue.sql-check.sql-review-violations')"
+  />
 </template>
 
 <script setup lang="ts">
 import { NTooltip, NButton } from "naive-ui";
+import { v4 as uuidv4 } from "uuid";
 import { zindexable as vZindexable } from "vdirs";
 import { computed, nextTick, ref, toRaw } from "vue";
 import { useI18n } from "vue-i18n";
@@ -45,10 +60,12 @@ import {
   useIssueContext,
 } from "@/components/IssueV1/logic";
 import formatSQL from "@/components/MonacoEditor/sqlFormatter";
-import { useSQLCheckContext } from "@/components/SQLCheck";
+import { SQLCheckPanel } from "@/components/SQLCheck";
+import { STATEMENT_SKIP_CHECK_THRESHOLD } from "@/components/SQLCheck/common";
 import {
   issueServiceClient,
   planServiceClient,
+  releaseServiceClient,
   rolloutServiceClient,
 } from "@/grpcweb";
 import { emitWindowEvent } from "@/plugins";
@@ -59,8 +76,11 @@ import { dialectOfEngineV1, languageOfEngineV1 } from "@/types";
 import { Issue } from "@/types/proto/v1/issue_service";
 import type { Plan_ExportDataConfig } from "@/types/proto/v1/plan_service";
 import { type Plan_ChangeDatabaseConfig } from "@/types/proto/v1/plan_service";
+import { ReleaseFileType } from "@/types/proto/v1/release_service";
 import type { Sheet } from "@/types/proto/v1/sheet_service";
+import { Advice_Status } from "@/types/proto/v1/sql_service";
 import {
+  defer,
   extractIssueUID,
   extractProjectResourceName,
   extractSheetUID,
@@ -70,16 +90,25 @@ import {
   issueV1Slug,
   setSheetStatement,
   sheetNameOfTaskV1,
+  type Defer,
 } from "@/utils";
+import { getTaskChangeType } from "../../../SQLCheckSection/common";
+import { useIssueSQLCheckContext } from "../../../SQLCheckSection/context";
 
 const MAX_FORMATTABLE_STATEMENT_SIZE = 10000; // 10K characters
 
 const { t } = useI18n();
 const router = useRouter();
-const { issue, formatOnSave } = useIssueContext();
-const { runSQLCheck } = useSQLCheckContext();
+const { issue, formatOnSave, events, selectedTask } = useIssueContext();
+const {
+  enabled: shouldRunSQLCheck,
+  resultMap: checkResultMap,
+  upsertResult,
+} = useIssueSQLCheckContext();
 const sheetStore = useSheetV1Store();
 const loading = ref(false);
+const showSQLCheckResultPanel = ref(false);
+const sqlCheckConfirmDialog = ref<Defer<boolean>>();
 
 const issueCreateErrorList = computed(() => {
   const errorList: string[] = [];
@@ -124,8 +153,8 @@ const issueCreateErrorList = computed(() => {
 
 const doCreateIssue = async () => {
   loading.value = true;
-  const check = runSQLCheck.value;
-  if (check && !(await check())) {
+  // Run SQL check for issue creation.
+  if (!(await runSQLCheckForIssue())) {
     loading.value = false;
     return;
   }
@@ -288,5 +317,85 @@ const emitIssueCreateWindowEvent = async (issue: ComposedIssue) => {
     } as never);
   }
   emitWindowEvent("bb.issue-create", eventParams);
+};
+
+const runSQLCheckForIssue = async () => {
+  if (!shouldRunSQLCheck.value) {
+    return true;
+  }
+
+  const flattenTasks = flattenTaskV1List(issue.value.rolloutEntity);
+  const statementTargetsMap = new Map<string, string[]>();
+  for (const task of flattenTasks) {
+    const sheetName = sheetNameOfTaskV1(task);
+    let sheet: Sheet | undefined;
+    if (extractSheetUID(sheetName).startsWith("-")) {
+      sheet = getLocalSheetByName(sheetName);
+    } else {
+      sheet = await sheetStore.getOrFetchSheetByName(sheetName);
+    }
+    if (!sheet) continue;
+    const statement = getSheetStatement(sheet);
+    const database = databaseForTask(issue.value, task);
+    if (!statement) {
+      continue;
+    }
+    if (statement.length > STATEMENT_SKIP_CHECK_THRESHOLD) {
+      continue;
+    }
+    statementTargetsMap.set(
+      statement,
+      statementTargetsMap.get(statement)?.concat(database.name) ?? [
+        database.name,
+      ]
+    );
+  }
+  for (const [statement, targets] of statementTargetsMap.entries()) {
+    const result = await releaseServiceClient.checkRelease({
+      parent: issue.value.project,
+      release: {
+        files: [
+          {
+            // Use a random uuid to avoid duplication.
+            version: uuidv4(),
+            type: ReleaseFileType.VERSIONED,
+            statement: statement,
+            changeType: getTaskChangeType(issue.value, flattenTasks[0]),
+          },
+        ],
+      },
+      targets: targets,
+    });
+    for (const r of result?.results || []) {
+      upsertResult(r.target, r);
+    }
+  }
+
+  for (const checkResult of Object.values(checkResultMap.value)) {
+    const hasErrors = checkResult.advices.some((advice) => {
+      return advice.status === Advice_Status.ERROR;
+    });
+    // Focus on the first task with error.
+    if (hasErrors) {
+      loading.value = false;
+      const task = flattenTaskV1List(issue.value.rolloutEntity).find((t) => {
+        return t.target === checkResult.target;
+      });
+      if (task) {
+        events.emit("select-task", { task });
+        const d = defer<boolean>();
+        sqlCheckConfirmDialog.value = d;
+        d.promise.finally(() => {
+          sqlCheckConfirmDialog.value = undefined;
+          showSQLCheckResultPanel.value = false;
+        });
+        showSQLCheckResultPanel.value = true;
+        return await d.promise;
+      }
+      return false;
+    }
+  }
+
+  return true;
 };
 </script>

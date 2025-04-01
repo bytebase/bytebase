@@ -17,21 +17,23 @@ import { onBeforeRouteLeave } from "vue-router";
 import { useRouter } from "vue-router";
 import { TaskTypeListWithStatement } from "@/types";
 import { Task_Type } from "@/types/proto/v1/rollout_service";
-import type { Advice } from "@/types/proto/v1/sql_service";
 import { isValidTaskName } from "@/utils";
-import { useIssueContext } from "../../logic";
+import { databaseForTask, useIssueContext } from "../../logic";
+import { useIssueSQLCheckContext } from "../SQLCheckSection/context";
 import EditorView from "./EditorView";
 import SDLView from "./SDLView";
 
-defineProps<{
-  advices?: Advice[];
-}>();
-
-const { isCreating, selectedTask } = useIssueContext();
+const { t } = useI18n();
+const router = useRouter();
+const { issue, isCreating, selectedTask } = useIssueContext();
+const { resultMap } = useIssueSQLCheckContext();
 
 const editorViewRef = ref<InstanceType<typeof EditorView>>();
-const router = useRouter();
-const { t } = useI18n();
+
+const advices = computed(() => {
+  const database = databaseForTask(issue.value, selectedTask.value);
+  return resultMap.value[database.name]?.advices || [];
+});
 
 type ViewMode = "NONE" | "EDITOR" | "SDL";
 
