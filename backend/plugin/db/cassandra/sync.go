@@ -232,9 +232,10 @@ func getPKDescending(pks []primaryKey) []bool {
 func getPKDefinition(pks []primaryKey) string {
 	var partition, clustering []string
 	for _, k := range pks {
-		if k.kind == "partition_key" {
+		switch k.kind {
+		case "partition_key":
 			partition = append(partition, k.name)
-		} else if k.kind == "clustering" {
+		case "clustering":
 			clustering = append(clustering, k.name)
 		}
 	}
