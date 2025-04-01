@@ -9389,6 +9389,7 @@ components:
                         - COCKROACHDB
                         - COSMOSDB
                         - TRINO
+                        - CASSANDRA
                     type: string
                     description: The database engine of the schema.
                     format: enum
@@ -9944,6 +9945,7 @@ components:
                         - COCKROACHDB
                         - COSMOSDB
                         - TRINO
+                        - CASSANDRA
                     type: string
                     format: enum
                 activation:
@@ -10022,6 +10024,7 @@ components:
                         - COCKROACHDB
                         - COSMOSDB
                         - TRINO
+                        - CASSANDRA
                     type: string
                     format: enum
                 engineVersion:
@@ -11419,6 +11422,7 @@ components:
                         - COCKROACHDB
                         - COSMOSDB
                         - TRINO
+                        - CASSANDRA
                     type: string
                     format: enum
                 currentSchema:
@@ -12372,6 +12376,7 @@ components:
                         - COCKROACHDB
                         - COSMOSDB
                         - TRINO
+                        - CASSANDRA
                     type: string
                     format: enum
                 comment:
@@ -12441,6 +12446,7 @@ components:
                         - COCKROACHDB
                         - COSMOSDB
                         - TRINO
+                        - CASSANDRA
                     type: string
                     format: enum
                 enabled:
@@ -12484,6 +12490,7 @@ components:
                         - COCKROACHDB
                         - COSMOSDB
                         - TRINO
+                        - CASSANDRA
                     type: string
                     format: enum
                 category:
@@ -12527,6 +12534,7 @@ components:
                         - COCKROACHDB
                         - COSMOSDB
                         - TRINO
+                        - CASSANDRA
                     type: string
                     format: enum
                 category:
@@ -13008,6 +13016,7 @@ components:
                         - COCKROACHDB
                         - COSMOSDB
                         - TRINO
+                        - CASSANDRA
                     type: string
                     description: The SQL dialect.
                     format: enum

@@ -5,6 +5,7 @@ package server
 import (
 	// Drivers.
 	_ "github.com/bytebase/bytebase/backend/plugin/db/bigquery"
+	_ "github.com/bytebase/bytebase/backend/plugin/db/cassandra"
 	_ "github.com/bytebase/bytebase/backend/plugin/db/clickhouse"
 	_ "github.com/bytebase/bytebase/backend/plugin/db/cockroachdb"
 	_ "github.com/bytebase/bytebase/backend/plugin/db/cosmosdb"

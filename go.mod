@@ -42,6 +42,7 @@ require (
 	github.com/go-ego/gse v0.80.3
 	github.com/go-ldap/ldap/v3 v3.4.10
 	github.com/go-sql-driver/mysql v1.9.0
+	github.com/gocql/gocql v1.7.0
 	github.com/golang-jwt/jwt/v5 v5.2.2
 	github.com/golang-sql/sqlexp v0.1.0
 	github.com/google/cel-go v0.24.1
@@ -173,6 +174,7 @@ require (
 	github.com/google/s2a-go v0.1.9 // indirect
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0 // indirect
 	github.com/gsterjov/go-libsecret v0.0.0-20161001094733-a6f4afe4910c // indirect
+	github.com/hailocab/go-hostpool v0.0.0-20160125115350-e80d13ce29ed // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
@@ -246,6 +248,7 @@ require (
 	golang.org/x/sys v0.31.0 // indirect
 	golang.org/x/term v0.30.0 // indirect
 	gopkg.in/go-jose/go-jose.v2 v2.6.3 // indirect
+	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 )
 
@@ -272,7 +275,6 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sts v1.33.17
 	github.com/aws/smithy-go v1.22.3 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
-	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869 // indirect
 	github.com/bytebase/partiql-parser v0.0.0-20240531101102-1962ff456f2c
 	github.com/bytebase/tsql-parser v0.0.0-20250311085620-1db45111863e
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
