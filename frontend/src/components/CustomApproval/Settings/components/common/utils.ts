@@ -268,7 +268,7 @@ export const getOptionConfigMap = (source: Risk_Source) => {
         const projectStore = useProjectV1Store();
         map.set(factor, {
           remote: true,
-          options: getProjectIdOptions(projectStore.getProjectList()),
+          options: [],
           search: async (keyword: string) => {
             return projectStore
               .fetchProjectList({
