@@ -2455,13 +2455,13 @@
   },
   "database-group": {
     "create": "New database group",
-    "edit": "Edit database group",
     "matched-database": "Matched database",
     "unmatched-database": "Unmatched database",
     "condition": {
       "self": "Condition"
     },
-    "select": "Select database group"
+    "select": "Select database group",
+    "no-matched-databases": "No matched databases"
   },
   "export-center": {
     "self": "Export Center",

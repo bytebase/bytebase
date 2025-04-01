@@ -1728,6 +1728,10 @@
     "vertical-display": "縦型表示",
     "no-history-found": "まだ履歴がありません",
     "search-history": "履歴の検索",
+    "binary-format": "バイナリ形式",
+    "hex-format": "16進形式",
+    "boolean-format": "ブール形式",
+    "text-format": "テキスト形式",
     "hint-tips": {
       "confirm-to-close-unsaved-sheet": {
         "title": "未保存のワークシートを閉じてもよろしいですか?",
@@ -1789,8 +1793,6 @@
     },
     "executing-query": "クエリの実行",
     "request-query": "リクエストクエリ",
-    "previous-row": "前の行",
-    "next-row": "次の行",
     "copy-success": "正常にコピーされました",
     "connect-in-new-tab": "新しいタブで接続する",
     "copy-name": "名前をコピーする",
@@ -1841,12 +1843,10 @@
     },
     "upload-file": "ファイルをアップロードする",
     "copy-selected-results": "選択したデータを{action}または{button}でコピーします",
-    "binary-format": "バイナリ形式",
     "format-default": "デフォルト",
-    "hex-format": "16進形式",
-    "text-format": "テキスト形式",
-    "boolean-format": "ブール形式",
-    "column-display-format": "列表示形式"
+    "column-display-format": "列表示形式",
+    "next-row": "次の行",
+    "previous-row": "前の行"
   },
   "schema-editor": {
     "self": "スキーマエディタ",
@@ -2455,13 +2455,13 @@
   },
   "database-group": {
     "create": "新しいデータベースグループを作成する",
-    "edit": "データベースグループの編集",
     "matched-database": "マッチングデータベース",
     "unmatched-database": "データベースが一致しません",
     "condition": {
       "self": "状態"
     },
-    "select": "データベースグループを選択"
+    "select": "データベースグループを選択",
+    "no-matched-databases": "一致するデータベースはありません"
   },
   "export-center": {
     "self": "エクスポートセンター",

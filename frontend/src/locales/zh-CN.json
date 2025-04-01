@@ -1793,8 +1793,6 @@
     },
     "executing-query": "执行查询",
     "request-query": "请求查询",
-    "previous-row": "上一行",
-    "next-row": "下一行",
     "copy-success": "复制成功",
     "connect-in-new-tab": "在新选项卡中连接",
     "copy-name": "复制名称",
@@ -1846,7 +1844,9 @@
     "upload-file": "上传文件",
     "copy-selected-results": "通过 {action} 或 {button} 来快速复制选定的数据",
     "format-default": "默认",
-    "column-display-format": "列显示格式"
+    "column-display-format": "列显示格式",
+    "next-row": "下一行",
+    "previous-row": "上一行"
   },
   "schema-editor": {
     "self": "Schema 编辑器",
@@ -2455,13 +2455,13 @@
   },
   "database-group": {
     "create": "新建数据库分组",
-    "edit": "编辑数据库分组",
     "matched-database": "相匹配的数据库",
     "unmatched-database": "不匹配的数据库",
     "condition": {
       "self": "条件"
     },
-    "select": "选择数据库组"
+    "select": "选择数据库组",
+    "no-matched-databases": "没有匹配的数据库"
   },
   "export-center": {
     "self": "导出中心",
