@@ -70,6 +70,7 @@ import { DatabaseV1Name, InstanceV1Name } from "@/components/v2";
 import type { ConditionGroupExpr } from "@/plugins/cel";
 import { validateSimpleExpr } from "@/plugins/cel";
 import { useDatabaseV1Store, useDBGroupStore } from "@/store";
+import { isValidDatabaseName } from "@/types";
 
 interface DatabaseMatchList {
   index: number;
@@ -123,7 +124,8 @@ const getDatabaseList = (i: number) => {
   const { databaseNameList, index } = state.databaseMatchLists[i];
   return databaseNameList
     .slice(0, index)
-    .map((databaseName) => databaseStore.getDatabaseByName(databaseName));
+    .map((databaseName) => databaseStore.getDatabaseByName(databaseName))
+    .filter((database) => isValidDatabaseName(database.name));
 };
 
 const loadMore = async (i: number) => {
