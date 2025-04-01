@@ -1235,9 +1235,13 @@
     },
     "advanced-search": {
       "scope": {
-        "address": {
-          "title": "Address",
-          "description": "Filter by address"
+        "host": {
+          "title": "Host",
+          "description": "Filter by instance host. Please input the value then press the Enter."
+        },
+        "port": {
+          "title": "Port",
+          "description": "Filter by instance port. Please input the value then press the Enter."
         }
       }
     },

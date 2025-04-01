@@ -6,14 +6,11 @@
       <div class="space-y-4">
         <TransferSourceSelector
           v-model:transfer-source="state.transferSource"
-          :project="project"
-          :environment-filter="state.environmentFilter"
-          :instance-filter="state.instanceFilter"
-          :search-text="state.searchText"
+          v-model:search-text="state.searchText"
+          v-model:environment="state.environmentFilter"
+          v-model:instance="state.instanceFilter"
+          :source-project-name="sourceProject.name"
           :has-permission-for-default-project="hasPermissionForDefaultProject"
-          @select-environment="state.environmentFilter = $event"
-          @select-instance="state.instanceFilter = $event"
-          @search-text-change="state.searchText = $event"
         />
         <ProjectSelect
           v-if="state.transferSource == 'OTHER'"
@@ -32,7 +29,7 @@
         <div v-else class="w-full relative">
           <PagedDatabaseTable
             mode="PROJECT"
-            :parent="databaseParent"
+            :parent="sourceProjectName"
             :filter="filter"
             :show-selection="true"
             :custom-click="true"
@@ -142,7 +139,7 @@ const state = reactive<LocalState>({
 });
 const { project } = useProjectByName(toRef(props, "projectName"));
 
-const databaseParent = computed(() => {
+const sourceProjectName = computed(() => {
   if (state.transferSource === "DEFAULT") {
     return DEFAULT_PROJECT_NAME;
   }
@@ -151,6 +148,8 @@ const databaseParent = computed(() => {
   }
   return DEFAULT_PROJECT_NAME;
 });
+
+const { project: sourceProject } = useProjectByName(sourceProjectName);
 
 const filter = computed(() => ({
   instance: state.instanceFilter?.name,

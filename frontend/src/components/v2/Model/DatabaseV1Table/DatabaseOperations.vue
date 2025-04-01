@@ -473,7 +473,7 @@ const actions = computed((): DatabaseAction[] => {
         });
         break;
       case "TRANSFER-IN": {
-        if (operationsInProjectDetail.value) {
+        if (operationsInProjectDetail.value && !isInDefaultProject.value) {
           resp.push({
             icon: h(ChevronsDownIcon),
             text: t("quick-action.transfer-in-db"),

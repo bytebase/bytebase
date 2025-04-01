@@ -10,10 +10,10 @@ import { t } from "@/plugins/i18n";
 import {
   useEnvironmentV1List,
   useEnvironmentV1Store,
-  useInstanceResourceList,
+  useInstanceV1Store,
   useProjectV1Store,
 } from "@/store";
-import type { MaybeRef, ComposedProject } from "@/types";
+import type { MaybeRef, ComposedProject, ComposedInstance } from "@/types";
 import { engineToJSON } from "@/types/proto/v1/common";
 import type { SearchScopeId } from "@/utils";
 import {
@@ -30,9 +30,11 @@ export const useCommonSearchScopeOptions = (
   supportOptionIdList: MaybeRef<SearchScopeId[]>
 ) => {
   const projectStore = useProjectV1Store();
+  const instanceStore = useInstanceV1Store();
   const environmentStore = useEnvironmentV1Store();
   const environmentList = useEnvironmentV1List();
   const projectList = ref<ComposedProject[]>([]);
+  const instanceList = ref<ComposedInstance[]>([]);
 
   watchEffect(async () => {
     try {
@@ -45,7 +47,16 @@ export const useCommonSearchScopeOptions = (
     }
   });
 
-  const instanceList = computed(() => useInstanceResourceList().value);
+  watchEffect(async () => {
+    try {
+      const { instances } = await instanceStore.fetchInstanceList({
+        pageSize: getDefaultPagination(),
+      });
+      instanceList.value = instances;
+    } catch {
+      // do nothing
+    }
+  });
 
   // fullScopeOptions provides full search scopes and options.
   // we need this as the source of truth.

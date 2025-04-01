@@ -363,8 +363,8 @@ const mapGroupNode = (
     return mapTreeNodeByType("environment", environment, parent);
   }
   if (factor === "instance") {
-    const instance = useInstanceResourceByName(value);
-    return mapTreeNodeByType("instance", instance, parent);
+    const { instance } = useInstanceResourceByName(value);
+    return mapTreeNodeByType("instance", instance.value, parent);
   }
   // factor is label
   const key = extractLabelFactor(factor);

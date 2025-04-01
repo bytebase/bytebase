@@ -3,7 +3,8 @@ import type { SelectOption } from "naive-ui";
 import { getRenderOptionFunc } from "@/components/CustomApproval/Settings/components/common";
 import type { Factor, Operator } from "@/plugins/cel";
 import { EqualityOperatorList, CollectionOperatorList } from "@/plugins/cel";
-import { useInstanceResourceList, useSettingV1Store } from "@/store";
+import { useSettingV1Store } from "@/store";
+import type { ComposedInstance } from "@/types";
 import type { Algorithm } from "@/types/proto/v1/setting_service";
 import { extractInstanceResourceName } from "@/utils";
 
@@ -26,9 +27,8 @@ export const getClassificationLevelOptions = () => {
   }));
 };
 
-export const getInstanceIdOptions = () => {
-  const instanceList = useInstanceResourceList();
-  return instanceList.value.map<SelectOption>((ins) => {
+export const getInstanceIdOptions = (instanceList: ComposedInstance[]) => {
+  return instanceList.map<SelectOption>((ins) => {
     const instanceId = extractInstanceResourceName(ins.name);
     return {
       label: `${ins.title} (${instanceId})`,

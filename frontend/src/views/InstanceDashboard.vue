@@ -23,13 +23,19 @@
         {{ $t("quick-action.add-instance") }}
       </NButton>
     </div>
-    <InstanceV1Table
-      :bordered="false"
-      :loading="!ready"
-      :instance-list="filteredInstanceV1List"
-      :can-assign-license="subscriptionStore.currentPlan !== PlanType.FREE"
-      :default-expand-data-source="state.dataSourceToggle"
-    />
+    <div class="space-y-2">
+      <InstanceOperations :instance-list="selectedInstanceList" />
+      <PagedInstanceTable
+        session-key="bb.instance-table"
+        :bordered="false"
+        :filter="filter"
+        :footer-class="'mx-4'"
+        :selected-instance-names="Array.from(state.selectedInstance)"
+        @update:selected-instance-names="
+          (list) => (state.selectedInstance = new Set(list))
+        "
+      />
+    </div>
   </div>
   <Drawer
     :auto-focus="true"
@@ -56,14 +62,11 @@
 
 <script lang="tsx" setup>
 import { PlusIcon } from "lucide-vue-next";
-import { NTag, NButton } from "naive-ui";
-import { computed, onMounted, reactive, watch } from "vue";
+import { NButton } from "naive-ui";
+import { computed, onMounted, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import AdvancedSearch from "@/components/AdvancedSearch";
-import type {
-  ScopeOption,
-  ValueOption,
-} from "@/components/AdvancedSearch/types";
+import type { ScopeOption } from "@/components/AdvancedSearch/types";
 import { useCommonSearchScopeOptions } from "@/components/AdvancedSearch/useCommonSearchScopeOptions";
 import { FeatureAttention, FeatureModal } from "@/components/FeatureGuard";
 import {
@@ -71,39 +74,31 @@ import {
   Form as InstanceFormBody,
   Buttons as InstanceFormButtons,
 } from "@/components/InstanceForm/";
-import { InstanceV1Table } from "@/components/v2";
+import { InstanceOperations, PagedInstanceTable } from "@/components/v2";
 import { Drawer, DrawerContent } from "@/components/v2";
 import {
   useUIStateStore,
   useSubscriptionV1Store,
-  useEnvironmentV1List,
-  useInstanceV1List,
   useInstanceV1Store,
-  useInstanceResourceList,
+  useActuatorV1Store,
 } from "@/store";
-import { PlanType } from "@/types/proto/v1/subscription_service";
-import {
-  type SearchParams,
-  hostPortOfDataSource,
-  readableDataSourceType,
-  sortInstanceV1ListByEnvironmentV1,
-  extractEnvironmentResourceName,
-  hasWorkspacePermissionV2,
-} from "@/utils";
+import { environmentNamePrefix } from "@/store/modules/v1/common";
+import { isValidInstanceName } from "@/types";
+import { engineFromJSON } from "@/types/proto/v1/common";
+import { type SearchParams, hasWorkspacePermissionV2 } from "@/utils";
 
 interface LocalState {
   params: SearchParams;
   showCreateDrawer: boolean;
   showFeatureModal: boolean;
-  dataSourceToggle: string[];
+  selectedInstance: Set<string>;
 }
 
 const { t } = useI18n();
 const subscriptionStore = useSubscriptionV1Store();
 const instanceV1Store = useInstanceV1Store();
 const uiStateStore = useUIStateStore();
-const environmentList = useEnvironmentV1List();
-const { instanceList, ready } = useInstanceV1List();
+const actuatorStore = useActuatorV1Store();
 
 const state = reactive<LocalState>({
   params: {
@@ -112,97 +107,65 @@ const state = reactive<LocalState>({
   },
   showCreateDrawer: false,
   showFeatureModal: false,
-  dataSourceToggle: [],
+  selectedInstance: new Set(),
 });
 
 const selectedEnvironment = computed(() => {
-  return (
-    state.params.scopes.find((scope) => scope.id === "environment")?.value ?? ""
-  );
+  const environmentId = state.params.scopes.find(
+    (scope) => scope.id === "environment"
+  )?.value;
+  if (!environmentId) {
+    return;
+  }
+  return `${environmentNamePrefix}${environmentId}`;
 });
 
-const selectedAddress = computed(() => {
-  return (
-    state.params.scopes.find((scope) => scope.id === "address")?.value ?? ""
-  );
+const selectedHost = computed(() => {
+  return state.params.scopes.find((scope) => scope.id === "host")?.value ?? "";
 });
+
+const selectedPort = computed(() => {
+  return state.params.scopes.find((scope) => scope.id === "port")?.value ?? "";
+});
+
+const selectedEngines = computed(() => {
+  return state.params.scopes
+    .filter((scope) => scope.id === "engine")
+    .map((scope) => engineFromJSON(scope.value));
+});
+
+const filter = computed(() => ({
+  environment: selectedEnvironment.value,
+  host: selectedHost.value,
+  port: selectedPort.value,
+  query: state.params.query,
+  engines: selectedEngines.value,
+}));
 
 const showCreateInstanceDrawer = () => {
-  const instanceList = useInstanceResourceList();
-  if (subscriptionStore.instanceCountLimit <= instanceList.value.length) {
+  if (
+    subscriptionStore.instanceCountLimit <= actuatorStore.activatedInstanceCount
+  ) {
     state.showFeatureModal = true;
     return;
   }
   state.showCreateDrawer = true;
 };
 
-watch(
-  () => selectedAddress.value,
-  (selectedAddress) => {
-    if (!selectedAddress) {
-      state.dataSourceToggle = [];
-    }
-  }
-);
-
-const addressOptions = computed(() => {
-  const addressMap: Map<
-    string,
-    {
-      keywords: string[];
-      types: Set<string>;
-    }
-  > = new Map();
-
-  for (const instance of instanceList.value) {
-    for (const ds of instance.dataSources) {
-      const host = hostPortOfDataSource(ds);
-      if (!host) {
-        continue;
-      }
-      if (!addressMap.has(host)) {
-        addressMap.set(host, {
-          keywords: [ds.host, ds.port],
-          types: new Set(),
-        });
-      }
-      addressMap.get(host)?.types?.add(readableDataSourceType(ds.type));
-    }
-  }
-
-  const options: ValueOption[] = [];
-  for (const [host, item] of addressMap.entries()) {
-    options.push({
-      value: host,
-      keywords: [...item.keywords, ...item.types],
-      render: () => {
-        return (
-          <div class={"flex items-center gap-x-2"}>
-            {host}
-            <div class={"flex items-center gap-x-1"}>
-              {[...item.types].map((type) => (
-                <NTag size="small" round>
-                  {type}
-                </NTag>
-              ))}
-            </div>
-          </div>
-        );
-      },
-    });
-  }
-
-  return options;
-});
-
 const scopeOptions = computed((): ScopeOption[] => {
   return [
-    ...useCommonSearchScopeOptions(["environment"]).value,
+    ...useCommonSearchScopeOptions(["environment", "engine"]).value,
     {
-      id: "address",
-      title: t("instance.advanced-search.scope.address.title"),
-      description: t("instance.advanced-search.scope.address.description"),
-      options: addressOptions.value,
+      id: "host",
+      title: t("instance.advanced-search.scope.host.title"),
+      description: t("instance.advanced-search.scope.host.description"),
+      options: [],
+    },
+    {
+      id: "port",
+      title: t("instance.advanced-search.scope.port.title"),
+      description: t("instance.advanced-search.scope.port.description"),
+      options: [],
     },
   ];
 });
@@ -216,41 +179,10 @@ onMounted(() => {
   }
 });
 
-const filteredInstanceV1List = computed(() => {
-  const keyword = state.params.query.trim().toLowerCase();
-  const list = instanceList.value.filter((instance) => {
-    if (keyword) {
-      if (!instance.title.toLowerCase().includes(keyword)) {
-        return false;
-      }
-    }
-    if (selectedEnvironment.value) {
-      if (
-        extractEnvironmentResourceName(instance.environment) !==
-        selectedEnvironment.value
-      ) {
-        return false;
-      }
-    }
-    if (selectedAddress.value) {
-      const matched = instance.dataSources.some(
-        (ds) => hostPortOfDataSource(ds) === selectedAddress.value
-      );
-      if (matched) {
-        state.dataSourceToggle.push(instance.name);
-      }
-      return matched;
-    }
-    return true;
-  });
-
-  return sortInstanceV1ListByEnvironmentV1(list, environmentList.value);
-});
-
 const remainingInstanceCount = computed((): number => {
   return Math.max(
     0,
-    subscriptionStore.instanceCountLimit - instanceV1Store.instanceList.length
+    subscriptionStore.instanceCountLimit - actuatorStore.totalInstanceCount
   );
 });
 
@@ -278,5 +210,11 @@ const instanceCountAttention = computed((): string => {
   }
 
   return `${status} ${upgrade}`;
+});
+
+const selectedInstanceList = computed(() => {
+  return [...state.selectedInstance]
+    .filter((instanceName) => isValidInstanceName(instanceName))
+    .map((instanceName) => instanceV1Store.getInstanceByName(instanceName));
 });
 </script>

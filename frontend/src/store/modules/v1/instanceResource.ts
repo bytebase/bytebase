@@ -1,34 +1,43 @@
 import { uniqBy } from "lodash-es";
-import { computed } from "vue";
-import { unknownInstanceResource } from "@/types";
+import { ref, unref, watchEffect, computed, type MaybeRef } from "vue";
 import type { InstanceResource } from "@/types/proto/v1/instance_service";
 import { useDatabaseV1Store } from "./database";
-import { useInstanceV1List } from "./instance";
-
-// Instance resource list is a list of all instance resources in the database list.
-// Current user should have access to all instance resources in the list.
-export const useInstanceResourceList = () => {
-  const { instanceList } = useInstanceV1List();
-  const { databaseList } = useDatabaseV1Store();
-  return computed(() => {
-    return uniqBy(
-      [
-        ...databaseList.map((db) => db.instanceResource),
-        // Merge possible instance resources from the instance store.
-        ...instanceList.value,
-      ],
-      (i) => i.name
-    ) as InstanceResource[];
-  });
-};
+import { useInstanceV1Store } from "./instance";
 
 // Instance resource list is a list of all instance resources in the database list.
 // Current user should have access to all instance resources in the list.
 export const useInstanceResourceByName = (
-  instanceName: string // Format: instances/{instance}
+  instanceName: MaybeRef<string> // Format: instances/{instance}
 ) => {
-  return (
-    useInstanceResourceList().value.find((i) => i.name === instanceName) ||
-    unknownInstanceResource()
-  );
+  const store = useInstanceV1Store();
+  const databaseStore = useDatabaseV1Store();
+  const ready = ref(false);
+
+  const instanceList = computed(() => {
+    return uniqBy(
+      [...databaseStore.databaseList.map((db) => db.instanceResource)],
+      (i) => i.name
+    ) as InstanceResource[];
+  });
+
+  watchEffect(async () => {
+    ready.value = false;
+    await store.getOrFetchInstanceByName(
+      unref(instanceName),
+      /* silent */ true
+    );
+    ready.value = true;
+  });
+
+  const instance = computed(() => {
+    const instanceFromDb = instanceList.value.find(
+      (i) => i.name === unref(instanceName)
+    );
+    if (instanceFromDb) {
+      return instanceFromDb;
+    }
+    return store.getInstanceByName(unref(instanceName));
+  });
+
+  return { instance, ready };
 };

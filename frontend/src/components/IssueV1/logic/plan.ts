@@ -28,7 +28,7 @@ export const databaseForSpec = (
   if (createDatabaseConfig !== undefined) {
     const instanceName = createDatabaseConfig.target;
     const databaseName = createDatabaseConfig.database;
-    const instance = useInstanceResourceByName(instanceName);
+    const { instance } = useInstanceResourceByName(instanceName);
     return {
       ...unknownDatabase(),
       name: `${instanceName}/databases/${databaseName}`,
@@ -36,11 +36,11 @@ export const databaseForSpec = (
       instance: instanceName,
       project: issue.project,
       projectEntity: issue.projectEntity,
-      effectiveEnvironment: instance.environment,
+      effectiveEnvironment: instance.value.environment,
       effectiveEnvironmentEntity: environmentStore.getEnvironmentByName(
-        instance.environment
+        instance.value.environment
       ),
-      instanceResource: instance,
+      instanceResource: instance.value,
     };
   } else if (
     changeDatabaseConfig !== undefined ||

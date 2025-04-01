@@ -1235,9 +1235,13 @@
     },
     "advanced-search": {
       "scope": {
-        "address": {
-          "title": "住所",
-          "description": "住所でフィルタリング"
+        "host": {
+          "title": "サーバーアドレス",
+          "description": "インスタンス サーバーのアドレスでフィルターします。値を入力してEnterキーを押してください。"
+        },
+        "port": {
+          "title": "ポート",
+          "description": "インスタンス ポートでフィルターします。値を入力してEnterキーを押してください。"
         }
       }
     },
