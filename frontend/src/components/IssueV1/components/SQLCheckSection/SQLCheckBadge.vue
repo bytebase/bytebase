@@ -41,8 +41,8 @@ import { databaseForTask, useIssueContext } from "../../logic";
 import { TaskSpinner } from "../common";
 
 const props = defineProps<{
-  isRunning: boolean;
   advices: Advice[];
+  isRunning?: boolean;
 }>();
 
 defineEmits<{

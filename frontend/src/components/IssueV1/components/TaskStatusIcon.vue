@@ -3,12 +3,10 @@
     class="relative flex flex-shrink-0 items-center justify-center select-none w-6 h-6 overflow-hidden"
     :class="classes"
   >
-    <template v-if="planCheckStatus === PlanCheckRun_Result_Status.ERROR">
+    <template v-if="checkStatus === PlanCheckRun_Result_Status.ERROR">
       <CircleAlertIcon class="text-error" />
     </template>
-    <template
-      v-else-if="planCheckStatus === PlanCheckRun_Result_Status.WARNING"
-    >
+    <template v-else-if="checkStatus === PlanCheckRun_Result_Status.WARNING">
       <TriangleAlertIcon class="text-warning" />
     </template>
     <template
@@ -63,26 +61,51 @@ import { SkipIcon } from "@/components/Icon";
 import { PlanCheckRun_Result_Status } from "@/types/proto/v1/plan_service";
 import type { Task } from "@/types/proto/v1/rollout_service";
 import { Task_Status } from "@/types/proto/v1/rollout_service";
-import { planCheckStatusForTask, useIssueContext } from "../logic";
+import { Advice_Status } from "@/types/proto/v1/sql_service";
+import {
+  databaseForTask,
+  planCheckStatusForTask,
+  useIssueContext,
+} from "../logic";
+import { useIssueSQLCheckContext } from "./SQLCheckSection/context";
 
 const props = defineProps<{
   status: Task_Status;
   task?: Task;
-  ignorePlanCheckStatus?: boolean;
+  ignoreCheckStatus?: boolean;
 }>();
 
-const { isCreating } = useIssueContext();
+const { issue, isCreating } = useIssueContext();
+const { resultMap } = useIssueSQLCheckContext();
 
-const planCheckStatus = computed(() => {
-  if (props.ignorePlanCheckStatus) return undefined;
-  if (isCreating.value) return undefined;
+const checkStatus = computed(() => {
+  if (props.ignoreCheckStatus) return undefined;
   if (!props.task) return undefined;
+  if (isCreating.value) {
+    const checkResult =
+      resultMap.value[databaseForTask(issue.value, props.task).name];
+    if (!checkResult) return undefined;
 
+    if (
+      checkResult.advices.some(
+        (advice) => advice.status === Advice_Status.ERROR
+      )
+    ) {
+      return PlanCheckRun_Result_Status.ERROR;
+    } else if (
+      checkResult.advices.some(
+        (advice) => advice.status === Advice_Status.WARNING
+      )
+    ) {
+      return PlanCheckRun_Result_Status.WARNING;
+    }
+    return undefined;
+  }
   return planCheckStatusForTask(props.task);
 });
 
 const classes = computed((): string => {
-  if (Boolean(planCheckStatus.value)) {
+  if (Boolean(checkStatus.value)) {
     return "";
   }
 
