@@ -16,7 +16,7 @@ concurrency:
 
 jobs:
   golangci-lint:
-    runs-on: depot-ubuntu-24.04-8
+    runs-on: self-hosted
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
@@ -24,8 +24,8 @@ jobs:
         with:
           go-version: '1.24.1'
           cache: false # Caching is slow.
-      - name: Install
-        run: sudo apt-get install -y libkrb5-dev
+      # - name: Install
+      #   run: sudo apt-get install -y libkrb5-dev
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v7
         with:
