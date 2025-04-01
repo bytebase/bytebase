@@ -7,6 +7,6 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-func (d *Driver) Dump(context.Context, io.Writer, *storepb.DatabaseSchemaMetadata) error {
+func (*Driver) Dump(context.Context, io.Writer, *storepb.DatabaseSchemaMetadata) error {
 	return nil
 }
