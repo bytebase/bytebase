@@ -5,6 +5,11 @@
     tabindex="0"
     v-bind="$attrs"
   >
+    <FeatureAttention
+      feature="bb.feature.database-grouping"
+      custom-class="mb-2"
+    />
+
     <main class="flex-1 relative overflow-y-auto space-y-4">
       <div
         class="space-y-2 lg:space-y-0 lg:flex lg:items-center lg:justify-between"
@@ -25,6 +30,7 @@
         </div>
 
         <div
+          v-if="hasDatabaseGroupFeature"
           class="flex flex-row justify-end items-center flex-wrap shrink gap-x-2 gap-y-2"
         >
           <NButton v-if="allowEdit" @click="handleEditDatabaseGroup">
@@ -48,12 +54,6 @@
       </div>
 
       <NDivider />
-
-      <FeatureAttentionForInstanceLicense
-        v-if="existMatchedUnactivateInstance"
-        type="warning"
-        feature="bb.feature.database-grouping"
-      />
 
       <div class="w-full max-w-5xl grid grid-cols-5 gap-x-6">
         <div class="col-span-3">
@@ -89,27 +89,26 @@
 </template>
 
 <script lang="ts" setup>
-import DatabaseGroupPanel from "@/components/DatabaseGroup/DatabaseGroupPanel.vue";
-import MatchedDatabaseView from "@/components/DatabaseGroup/MatchedDatabaseView.vue";
-import {
-  FactorList, factorSupportDropdown,
-  getDatabaseGroupOptionConfigMap
-} from "@/components/DatabaseGroup/utils";
-import ExprEditor from "@/components/ExprEditor";
-import { FeatureAttentionForInstanceLicense } from "@/components/FeatureGuard";
-import {
-  useDBGroupStore,
-  useDatabaseV1Store,
-  useProjectByName,
-  useSubscriptionV1Store,
-} from "@/store";
-import { databaseGroupNamePrefix, projectNamePrefix } from "@/store/modules/v1/common";
-import { DatabaseGroupView } from "@/types/proto/v1/database_group_service";
-import { hasPermissionToCreateChangeDatabaseIssueInProject } from "@/utils";
-import { generateDatabaseGroupIssueRoute } from "@/utils/databaseGroup/issue";
 import { NButton, NDivider } from "naive-ui";
 import { computed, reactive, watchEffect } from "vue";
 import { useRouter } from "vue-router";
+import DatabaseGroupPanel from "@/components/DatabaseGroup/DatabaseGroupPanel.vue";
+import MatchedDatabaseView from "@/components/DatabaseGroup/MatchedDatabaseView.vue";
+import {
+  FactorList,
+  factorSupportDropdown,
+  getDatabaseGroupOptionConfigMap,
+} from "@/components/DatabaseGroup/utils";
+import ExprEditor from "@/components/ExprEditor";
+import FeatureAttention from "@/components/FeatureGuard/FeatureAttention.vue";
+import { useDBGroupStore, useProjectByName, featureToRef } from "@/store";
+import {
+  databaseGroupNamePrefix,
+  projectNamePrefix,
+} from "@/store/modules/v1/common";
+import { DatabaseGroupView } from "@/types/proto/v1/database_group_service";
+import { hasPermissionToCreateChangeDatabaseIssueInProject } from "@/utils";
+import { generateDatabaseGroupIssueRoute } from "@/utils/databaseGroup/issue";
 
 interface LocalState {
   showEditPanel: boolean;
@@ -123,8 +122,6 @@ const props = defineProps<{
 
 const router = useRouter();
 const dbGroupStore = useDBGroupStore();
-const databaseStore = useDatabaseV1Store();
-const subscriptionV1Store = useSubscriptionV1Store();
 const { project } = useProjectByName(
   computed(() => `${projectNamePrefix}${props.projectId}`)
 );
@@ -144,6 +141,8 @@ const hasPermissionToCreateIssue = computed(() => {
   return hasPermissionToCreateChangeDatabaseIssueInProject(project.value);
 });
 
+const hasDatabaseGroupFeature = featureToRef("bb.feature.database-grouping");
+
 watchEffect(async () => {
   await dbGroupStore.getOrFetchDBGroupByName(databaseGroupResourceName.value, {
     skipCache: true,
@@ -152,28 +151,12 @@ watchEffect(async () => {
 });
 
 const matchedDatabaseList = computed(
-  () =>
-    databaseGroup.value?.matchedDatabases.map((db) =>
-      databaseStore.getDatabaseByName(db.name)
-    ) || []
+  () => databaseGroup.value?.matchedDatabases.map((db) => db.name) || []
 );
 
 const unmatchedDatabaseList = computed(
-  () =>
-    databaseGroup.value?.unmatchedDatabases.map((db) =>
-      databaseStore.getDatabaseByName(db.name)
-    ) || []
+  () => databaseGroup.value?.unmatchedDatabases.map((db) => db.name) || []
 );
-
-const existMatchedUnactivateInstance = computed(() => {
-  return matchedDatabaseList.value?.some(
-    (database) =>
-      !subscriptionV1Store.hasInstanceFeature(
-        "bb.feature.database-grouping",
-        database.instanceResource
-      )
-  );
-});
 
 const handleEditDatabaseGroup = () => {
   state.showEditPanel = true;

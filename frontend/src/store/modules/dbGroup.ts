@@ -1,3 +1,8 @@
+import { computedAsync } from "@vueuse/core";
+import { head } from "lodash-es";
+import { defineStore } from "pinia";
+import type { MaybeRef } from "vue";
+import { computed, ref, unref, watchEffect } from "vue";
 import { databaseGroupServiceClient } from "@/grpcweb";
 import type { ConditionGroupExpr } from "@/plugins/cel";
 import {
@@ -12,23 +17,16 @@ import type {
   ComposedProject,
 } from "@/types";
 import { Expr } from "@/types/proto/google/type/expr";
-import { DatabaseGroup, DatabaseGroupView } from "@/types/proto/v1/database_group_service";
+import {
+  DatabaseGroup,
+  DatabaseGroupView,
+} from "@/types/proto/v1/database_group_service";
 import {
   batchConvertCELStringToParsedExpr,
   batchConvertParsedExprToCELString,
 } from "@/utils";
-import { computedAsync } from "@vueuse/core";
-import { head } from "lodash-es";
-import { defineStore } from "pinia";
-import type { MaybeRef } from "vue";
-import { computed, ref, unref, watchEffect } from "vue";
 import { useCache } from "../cache";
-import {
-  batchGetOrFetchDatabases,
-  batchGetOrFetchProjects,
-  useDatabaseV1Store,
-  useProjectV1Store,
-} from "./v1";
+import { batchGetOrFetchProjects, useProjectV1Store } from "./v1";
 import {
   databaseGroupNamePrefix,
   getProjectNameAndDatabaseGroupName,
@@ -61,11 +59,6 @@ const batchComposeDatabaseGroup = async (
     const project = projectStore.getProjectByName(
       `${projectNamePrefix}${projectName}`
     );
-
-    await batchGetOrFetchDatabases([
-      ...databaseGroup.matchedDatabases.map((db) => db.name),
-      ...databaseGroup.unmatchedDatabases.map((db) => db.name),
-    ]);
 
     composedDatabaseGroupMap.set(databaseGroup.name, {
       ...databaseGroup,
@@ -288,28 +281,9 @@ export const useDBGroupStore = defineStore("db-group", () => {
       validateOnly: true,
     });
 
-    const matchedDatabaseList: ComposedDatabase[] = [];
-    const unmatchedDatabaseList: ComposedDatabase[] = [];
-    const databaseStore = useDatabaseV1Store();
-
-    for (const item of result.matchedDatabases) {
-      const database = await databaseStore.getOrFetchDatabaseByName(item.name);
-      if (!database) {
-        continue;
-      }
-
-      matchedDatabaseList.push(database);
-    }
-    for (const item of result.unmatchedDatabases) {
-      const database = await databaseStore.getOrFetchDatabaseByName(item.name);
-      if (database) {
-        unmatchedDatabaseList.push(database);
-      }
-    }
-
     return {
-      matchedDatabaseList,
-      unmatchedDatabaseList,
+      matchedDatabaseList: result.matchedDatabases.map((item) => item.name),
+      unmatchedDatabaseList: result.unmatchedDatabases.map((item) => item.name),
     };
   };
 
