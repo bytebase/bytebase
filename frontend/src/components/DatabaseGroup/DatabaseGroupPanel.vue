@@ -10,7 +10,6 @@
       class="w-[64rem] max-w-[100vw] relative"
     >
       <DatabaseGroupForm
-        ref="formRef"
         :project="project"
         :database-group="props.databaseGroup"
         @dismiss="() => emit('close')"
@@ -23,7 +22,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, ref } from "vue";
+import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { Drawer, DrawerContent } from "@/components/v2";
 import type { ComposedDatabaseGroup, ComposedProject } from "@/types";
@@ -41,7 +40,6 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const formRef = ref<InstanceType<typeof DatabaseGroupForm>>();
 
 const isCreating = computed(() => props.databaseGroup === undefined);
 

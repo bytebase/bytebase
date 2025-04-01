@@ -3,7 +3,6 @@
     <template #body>
       <div>
         <FeatureAttentionForInstanceLicense
-          v-if="existMatchedUnactivateInstance"
           custom-class="mb-4"
           type="warning"
           feature="bb.feature.database-grouping"
@@ -78,6 +77,14 @@
 </template>
 
 <script lang="ts" setup>
+import { useDebounceFn } from "@vueuse/core";
+import { cloneDeep, head, isEqual } from "lodash-es";
+import { Trash2Icon } from "lucide-vue-next";
+import { NButton, NDivider, NInput, useDialog } from "naive-ui";
+import { ClientError, Status } from "nice-grpc-web";
+import { computed, onMounted, reactive, ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
+import { useRouter } from "vue-router";
 import ExprEditor from "@/components/ExprEditor";
 import FormLayout from "@/components/v2/Form/FormLayout.vue";
 import type { ConditionGroupExpr } from "@/plugins/cel";
@@ -91,34 +98,17 @@ import {
   PROJECT_V1_ROUTE_DATABASE_GROUPS,
   PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL,
 } from "@/router/dashboard/projectV1";
-import {
-  pushNotification,
-  useDBGroupStore,
-  useSubscriptionV1Store,
-} from "@/store";
+import { pushNotification, useDBGroupStore } from "@/store";
 import {
   databaseGroupNamePrefix,
   getProjectNameAndDatabaseGroupName,
 } from "@/store/modules/v1/common";
-import type {
-  ComposedDatabase,
-  ComposedProject,
-  ResourceId,
-  ValidatedMessage,
-} from "@/types";
+import type { ComposedProject, ResourceId, ValidatedMessage } from "@/types";
 import { Expr as CELExpr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
 import { Expr } from "@/types/proto/google/type/expr";
 import type { DatabaseGroup } from "@/types/proto/v1/database_group_service";
 import { batchConvertParsedExprToCELString } from "@/utils";
 import { getErrorCode } from "@/utils/grpcweb";
-import { useDebounceFn } from "@vueuse/core";
-import { cloneDeep, head, isEqual } from "lodash-es";
-import { Trash2Icon } from "lucide-vue-next";
-import { NButton, NDivider, NInput, useDialog } from "naive-ui";
-import { ClientError, Status } from "nice-grpc-web";
-import { computed, onMounted, reactive, ref, watch } from "vue";
-import { useI18n } from "vue-i18n";
-import { useRouter } from "vue-router";
 import { FeatureAttentionForInstanceLicense } from "../FeatureGuard";
 import { ResourceIdField } from "../v2";
 import MatchedDatabaseView from "./MatchedDatabaseView.vue";
@@ -149,7 +139,6 @@ type LocalState = {
 
 const { t } = useI18n();
 const dbGroupStore = useDBGroupStore();
-const subscriptionV1Store = useSubscriptionV1Store();
 const state = reactive<LocalState>({
   isRequesting: false,
   resourceId: "",
@@ -221,8 +210,8 @@ const validateResourceId = async (
 };
 
 const matchingError = ref<string | undefined>(undefined);
-const matchedDatabaseList = ref<ComposedDatabase[]>([]);
-const unmatchedDatabaseList = ref<ComposedDatabase[]>([]);
+const matchedDatabaseList = ref<string[]>([]);
+const unmatchedDatabaseList = ref<string[]>([]);
 const updateDatabaseMatchingState = useDebounceFn(async () => {
   if (!validateSimpleExpr(state.expr)) {
     matchingError.value = undefined;
@@ -258,16 +247,6 @@ watch(
   }
 );
 
-const existMatchedUnactivateInstance = computed(() => {
-  return matchedDatabaseList.value.some(
-    (database) =>
-      !subscriptionV1Store.hasInstanceFeature(
-        "bb.feature.database-grouping",
-        database.instanceResource
-      )
-  );
-});
-
 const doDelete = () => {
   dialog.error({
     title: "Confirm to delete",
@@ -290,9 +269,6 @@ const doDelete = () => {
 };
 
 const allowConfirm = computed(() => {
-  if (existMatchedUnactivateInstance.value) {
-    return false;
-  }
   return (
     resourceIdField.value?.resourceId &&
     state.placeholder &&
@@ -304,7 +280,6 @@ const doConfirm = async () => {
   const formState = {
     ...state,
     resourceId: resourceIdField.value?.resourceId || "",
-    existMatchedUnactivateInstance: existMatchedUnactivateInstance.value,
   };
   if (!formState || !allowConfirm.value) {
     return;
@@ -395,7 +370,6 @@ defineExpose({
     return {
       ...state,
       resourceId: resourceIdField.value?.resourceId || "",
-      existMatchedUnactivateInstance: existMatchedUnactivateInstance.value,
     };
   },
 });
