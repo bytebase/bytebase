@@ -108,7 +108,12 @@ import {
   Form as InstanceFormBody,
   Buttons as InstanceFormButtons,
 } from "@/components/InstanceForm";
-import { Drawer, DrawerContent, PagedInstanceTable } from "@/components/v2";
+import {
+  Drawer,
+  DrawerContent,
+  PagedInstanceTable,
+  InstanceOperations,
+} from "@/components/v2";
 import {
   useSubscriptionV1Store,
   useInstanceV1Store,

@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { computed, reactive } from "vue";
+import { reactive } from "vue";
 import { instanceServiceClient } from "@/grpcweb";
 import type { ComposedInstance } from "@/types";
 import {
