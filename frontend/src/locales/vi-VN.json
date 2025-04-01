@@ -1793,8 +1793,6 @@
     },
     "executing-query": "Đang thực hiện truy vấn",
     "request-query": "Yêu cầu truy vấn",
-    "previous-row": "Dòng trước",
-    "next-row": "Dòng tiếp theo",
     "copy-success": "Sao chép thành công",
     "connect-in-new-tab": "Kết nối trong tab mới",
     "copy-name": "Sao chép tên",
@@ -1846,7 +1844,9 @@
     "upload-file": "Tải lên tệp",
     "copy-selected-results": "Sao chép dữ liệu đã chọn bằng {action} hoặc {button}",
     "format-default": "Mặc định",
-    "column-display-format": "Định dạng hiển thị cột"
+    "column-display-format": "Định dạng hiển thị cột",
+    "next-row": "Dòng tiếp theo",
+    "previous-row": "Dòng trước"
   },
   "schema-editor": {
     "self": "Trình soạn thảo lược đồ",
@@ -2455,13 +2455,13 @@
   },
   "database-group": {
     "create": "Nhóm cơ sở dữ liệu mới",
-    "edit": "Chỉnh sửa nhóm cơ sở dữ liệu",
     "matched-database": "Cơ sở dữ liệu phù hợp",
     "unmatched-database": "Cơ sở dữ liệu không phù hợp",
     "condition": {
       "self": "Điều kiện"
     },
-    "select": "Chọn nhóm cơ sở dữ liệu"
+    "select": "Chọn nhóm cơ sở dữ liệu",
+    "no-matched-databases": "Không có cơ sở dữ liệu phù hợp"
   },
   "export-center": {
     "self": "Trung tâm xuất",

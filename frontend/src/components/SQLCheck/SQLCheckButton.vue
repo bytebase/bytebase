@@ -88,6 +88,7 @@ import { providePlanCheckRunContext } from "../PlanCheckRun/context";
 import ErrorList from "../misc/ErrorList.vue";
 import SQLCheckPanel from "./SQLCheckPanel.vue";
 import SQLCheckSummary from "./SQLCheckSummary.vue";
+import { STATEMENT_SKIP_CHECK_THRESHOLD } from "./common";
 import { useSQLCheckContext } from "./context";
 
 const props = withDefaults(
@@ -121,8 +122,6 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-// SKIP_CHECK_THRESHOLD is the MaxSheetCheckSize in the backend.
-const SKIP_CHECK_THRESHOLD = 2 * 1024 * 1024;
 const isRunning = ref(false);
 const showDetailPanel = ref(false);
 const allowForceContinue = ref(true);
@@ -147,7 +146,7 @@ const statementErrors = asyncComputed(async () => {
   if (statement.length === 0) {
     return [t("issue.sql-check.statement-is-required")];
   }
-  if (new Blob([statement]).size > SKIP_CHECK_THRESHOLD) {
+  if (new Blob([statement]).size > STATEMENT_SKIP_CHECK_THRESHOLD) {
     return [t("issue.sql-check.statement-is-too-large")];
   }
   return [];
@@ -213,7 +212,7 @@ const runChecks = async () => {
   isRunning.value = true;
   const { statement, errors } = await props.getStatement();
   allowForceContinue.value = errors.length === 0;
-  if (new Blob([statement]).size > SKIP_CHECK_THRESHOLD) {
+  if (new Blob([statement]).size > STATEMENT_SKIP_CHECK_THRESHOLD) {
     return handleErrors([t("issue.sql-check.statement-is-too-large")]);
   }
   if (errors.length > 0) {

@@ -1,8 +1,8 @@
 <template>
   <DatabaseGroupForm
     class="flex-1"
+    :readonly="false"
     :project="project"
-    :title="$t('database-group.create')"
     @dismiss="() => router.back()"
     @created="(databaseGroupName: string) => {
         router.push({

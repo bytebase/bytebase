@@ -63,7 +63,6 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import type { Task } from "@/types/proto/v1/rollout_service";
-import { provideSQLCheckContext } from "../SQLCheck";
 import { Drawer } from "../v2";
 import {
   BannerSection,
@@ -80,6 +79,7 @@ import {
   DataExportSection,
   TaskRunSection,
 } from "./components";
+import { provideIssueSQLCheckContext } from "./components/SQLCheckSection/context";
 import type {
   IssueReviewAction,
   IssueStatusAction,
@@ -126,7 +126,7 @@ events.on("perform-task-rollout-action", async ({ action, tasks }) => {
   };
 });
 
-provideSQLCheckContext();
+provideIssueSQLCheckContext();
 
 const {
   mode: sidebarMode,
