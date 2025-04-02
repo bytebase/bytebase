@@ -1,0 +1,9 @@
+FROM golang:latest AS builder
+WORKDIR /action-build
+COPY action/ action/
+RUN go build -o bytebase-action ./action/main.go
+
+FROM alpine:latest
+WORKDIR /root/
+COPY --from=builder /action-build/bytebase-action .
+CMD ["./bytebase-action"]
