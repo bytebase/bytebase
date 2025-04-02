@@ -23,9 +23,10 @@
     </div>
     <div
       ref="treeContainerElRef"
-      class="sql-editor-tree--tree flex-1 px-1 pb-1 text-sm overflow-hidden select-none"
+      class="relative sql-editor-tree--tree flex-1 px-1 pb-1 text-sm overflow-hidden select-none"
       :data-height="treeContainerHeight"
     >
+      <MaskSpinner v-if="editrStore.loading" class="!bg-white/75" />
       <NTree
         v-if="treeStore.state === 'READY'"
         ref="treeRef"
@@ -143,11 +144,6 @@ const { height: treeContainerHeight } = useElementSize(
 const treeRef = ref<InstanceType<typeof NTree>>();
 const searchPattern = ref("");
 
-watch(
-  () => searchPattern.value,
-  (search) => editrStore.prepareDatabases(search)
-);
-
 // Highlight the current tab's connection node.
 const selectedKeys = computedAsync(async () => {
   const connection = tabStore.currentTab?.connection;
@@ -169,14 +165,17 @@ const selectedKeys = computedAsync(async () => {
   }
   return [];
 }, []);
+
 const { expandedKeys, hasMissingQueryDatabases, showMissingQueryDatabases } =
   storeToRefs(treeStore);
+
 const upsertExpandedKeys = (key: string) => {
   if (expandedKeys.value.includes(key)) {
     return;
   }
   expandedKeys.value.push(key);
 };
+
 const expandNode = (
   node: SQLEditorTreeNode | undefined,
   keys?: Set<string>
@@ -218,10 +217,6 @@ const expandNodesByType = <T extends SQLEditorTreeNodeType>(
   return nodes;
 };
 
-const canQueryDatabase = (database: ComposedDatabase): boolean => {
-  return isDatabaseV1Queryable(database);
-};
-
 // dynamic render the highlight keywords
 const renderLabel = ({ option }: { option: TreeOption }) => {
   const node = option as any as SQLEditorTreeNode;
@@ -243,7 +238,7 @@ const nodeProps = ({ option }: { option: TreeOption }) => {
         // Check if clicked on the content part.
         // And ignore the fold/unfold arrow.
         if (type === "database") {
-          if (canQueryDatabase(node.meta.target as ComposedDatabase)) {
+          if (isDatabaseV1Queryable(node.meta.target as ComposedDatabase)) {
             setConnection(node, {
               extra: {
                 worksheet: tabStore.currentTab?.worksheet ?? "",
@@ -396,6 +391,13 @@ useEmitteryEventListener(editorEvents, "tree-ready", () => {
 });
 
 onMounted(() => calcDefaultExpandKeys(false));
+
+watch(
+  () => searchPattern.value,
+  (search) =>
+    editrStore.prepareDatabases(search).then(() => calcDefaultExpandKeys(true)),
+  { immediate: true }
+);
 </script>
 
 <style lang="postcss" scoped>

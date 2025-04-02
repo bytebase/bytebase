@@ -5,19 +5,13 @@
   >
     <div
       v-show="!metadata.externalTable"
-      class="w-full flex flex-row gap-x-2 justify-between items-center"
+      class="w-full flex flex-row gap-x-2 justify-end items-center"
     >
-      <div class="flex items-center justify-start gap-2">
-        <DatabaseChooser />
-        <SchemaSelectToolbar simple />
-      </div>
-      <div class="flex items-center justify-end">
-        <SearchBox
-          v-model:value="state.keywords.table"
-          size="small"
-          style="width: 10rem"
-        />
-      </div>
+      <SearchBox
+        v-model:value="state.keywords.table"
+        size="small"
+        style="width: 10rem"
+      />
     </div>
     <ExternalTablesTable
       v-show="!metadata.externalTable"
@@ -76,9 +70,7 @@ import {
   SchemaMetadata,
   ExternalTableMetadata,
 } from "@/types/proto/v1/database_service";
-import DatabaseChooser from "@/views/sql-editor/EditorCommon/DatabaseChooser.vue";
 import { useEditorPanelContext } from "../../context";
-import { SchemaSelectToolbar } from "../common";
 import ExternalTableColumnsTable from "./ExternalTableColumnsTable.vue";
 import ExternalTablesTable from "./ExternalTablesTable.vue";
 
