@@ -1,4 +1,4 @@
-import { head } from "lodash-es";
+import { head, cloneDeep } from "lodash-es";
 import {
   CodeIcon,
   CopyIcon,
@@ -60,6 +60,7 @@ import {
   sortByDictionary,
   supportGetStringSchema,
   toClipboard,
+  defaultSQLEditorTab,
 } from "@/utils";
 import { keyWithPosition } from "../../EditorCommon";
 import {
@@ -410,50 +411,71 @@ export const useDropdown = () => {
 
     const items: DropdownOptionWithTreeNode[] = [];
     if (type === "database" || type === "schema") {
-      const actions: { view: EditorPanelView; icon: () => VNodeChild }[] = [
+      const actions: { view: EditorPanelView; title: string; icon: () => VNodeChild }[] = [
         {
           view: "INFO",
+          title: t("common.info"),
           icon: () => <InfoIcon class="w-4 h-4" />
         },
         {
           view: "TABLES",
+          title: t("db.tables"),
           icon: () => <TableIcon class="w-4 h-4" />
         },
         {
           view: "VIEWS",
+          title: t("db.views"),
           icon: () => <ViewIcon class="w-4 h-4" />
         },
         {
           view: "FUNCTIONS",
+          title: t("db.functions"),
           icon: () => <FunctionIcon class="w-4 h-4" />
         },
         {
           view: "PROCEDURES",
+          title: t("db.procedures"),
           icon: () => <ProcedureIcon class="w-4 h-4" />
         },
         {
           view: "SEQUENCES",
+          title: t("db.sequences"),
           icon: () => <SequenceIcon class="w-4 h-4" />
         },
         {
           view: "PACKAGES",
+          title: t("db.packages"),
           icon: () => <PackageIcon class="w-4 h-4" />
         },
         {
           view: "EXTERNAL_TABLES",
+          title: t("db.external-tables"),
           icon: () => <ExternalTableIcon class="w-4 h-4" />
         },
         {
           view: "DIAGRAM",
+          title: t("schema-diagram.self"),
           icon: () => <SchemaDiagramIcon class="w-4 h-4" />
         },
       ]
       for (const action of actions) {
         items.push({
-          key: action.view.toLowerCase(),
-          label: action.view,
+          key: action.view,
+          label: action.title,
           icon: action.icon,
-          onSelect: () => updateViewState({ view: action.view })
+          onSelect: () => {
+            const tabStore = useSQLEditorTabStore()
+            const fromTab = tabStore.currentTab;
+            const clonedTab = defaultSQLEditorTab();
+            if (fromTab) {
+              clonedTab.connection = cloneDeep(fromTab.connection);
+              clonedTab.treeState = cloneDeep(fromTab.treeState);
+            }
+            clonedTab.status = "CLEAN";
+            clonedTab.title = action.title;
+            tabStore.addTab(clonedTab);
+            nextTick(() => updateViewState({ view: action.view }))
+          }
         })
       }
     }

@@ -9,13 +9,6 @@
             class="py-2 px-2 w-full flex flex-row gap-x-2 justify-between items-center"
           >
             <div class="flex items-center justify-start gap-2">
-              <NButton
-                quaternary
-                size="small"
-                @click="() => updateViewState({ view: 'CODE' })"
-              >
-                <ChevronLeftIcon class="w-5 h-5" />
-              </NButton>
               <DatabaseChooser :disabled="true" />
               <SchemaSelectToolbar simple />
             </div>
@@ -55,8 +48,6 @@
 <script setup lang="ts">
 import { computedAsync } from "@vueuse/core";
 import { first } from "lodash-es";
-import { ChevronLeftIcon } from "lucide-vue-next";
-import { NButton } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { watch } from "vue";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
