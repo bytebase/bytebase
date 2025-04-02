@@ -16,6 +16,6 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./scripts/Dockerfile.action
+          file: scripts/Dockerfile.action
           push: true
           tags: bytebase/bytebase-action:latest
