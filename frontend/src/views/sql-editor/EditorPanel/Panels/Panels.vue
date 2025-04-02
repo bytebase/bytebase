@@ -1,26 +1,45 @@
 <template>
   <div class="flex-1 flex items-stretch overflow-hidden">
-    <GutterBar class="border-r border-control-border" :class="gutterBarClass" />
-
     <div class="flex-1 overflow-y-hidden overflow-x-auto" :class="contentClass">
       <slot v-if="!viewState || viewState.view === 'CODE'" name="code-panel" />
 
-      <template v-if="viewState">
-        <InfoPanel v-if="viewState.view === 'INFO'" :key="tab?.id" />
-        <TablesPanel v-if="viewState.view === 'TABLES'" :key="tab?.id" />
-        <ViewsPanel v-if="viewState.view === 'VIEWS'" :key="tab?.id" />
-        <FunctionsPanel v-if="viewState.view === 'FUNCTIONS'" :key="tab?.id" />
-        <ProceduresPanel
-          v-if="viewState.view === 'PROCEDURES'"
-          :key="tab?.id"
-        />
-        <SequencesPanel v-if="viewState.view === 'SEQUENCES'" :key="tab?.id" />
-        <PackagesPanel v-if="viewState.view === 'PACKAGES'" :key="tab?.id" />
-        <ExternalTablesPanel
-          v-if="viewState.view === 'EXTERNAL_TABLES'"
-          :key="tab?.id"
-        />
-        <DiagramPanel v-if="viewState.view === 'DIAGRAM'" :key="tab?.id" />
+      <template v-if="viewState && viewState.view !== 'CODE'">
+        <div class="h-full flex flex-col">
+          <div
+            class="py-2 px-2 w-full flex flex-row gap-x-2 justify-between items-center"
+          >
+            <div class="flex items-center justify-start gap-2">
+              <DatabaseChooser :disabled="true" />
+              <SchemaSelectToolbar simple />
+            </div>
+          </div>
+          <div class="flex-1">
+            <InfoPanel v-if="viewState.view === 'INFO'" :key="tab?.id" />
+            <TablesPanel v-if="viewState.view === 'TABLES'" :key="tab?.id" />
+            <ViewsPanel v-if="viewState.view === 'VIEWS'" :key="tab?.id" />
+            <FunctionsPanel
+              v-if="viewState.view === 'FUNCTIONS'"
+              :key="tab?.id"
+            />
+            <ProceduresPanel
+              v-if="viewState.view === 'PROCEDURES'"
+              :key="tab?.id"
+            />
+            <SequencesPanel
+              v-if="viewState.view === 'SEQUENCES'"
+              :key="tab?.id"
+            />
+            <PackagesPanel
+              v-if="viewState.view === 'PACKAGES'"
+              :key="tab?.id"
+            />
+            <ExternalTablesPanel
+              v-if="viewState.view === 'EXTERNAL_TABLES'"
+              :key="tab?.id"
+            />
+            <DiagramPanel v-if="viewState.view === 'DIAGRAM'" :key="tab?.id" />
+          </div>
+        </div>
       </template>
     </div>
   </div>
@@ -46,7 +65,7 @@ import {
   nextAnimationFrame,
   type VueClass,
 } from "@/utils";
-import GutterBar from "../GutterBar";
+import DatabaseChooser from "@/views/sql-editor/EditorCommon/DatabaseChooser.vue";
 import { useEditorPanelContext } from "../context";
 import DiagramPanel from "./DiagramPanel";
 import ExternalTablesPanel from "./ExternalTablesPanel";
@@ -57,6 +76,7 @@ import ProceduresPanel from "./ProceduresPanel";
 import SequencesPanel from "./SequencesPanel";
 import TablesPanel from "./TablesPanel";
 import ViewsPanel from "./ViewsPanel";
+import { SchemaSelectToolbar } from "./common";
 
 defineProps<{
   gutterBarClass?: VueClass;

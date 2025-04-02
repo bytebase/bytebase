@@ -1,6 +1,6 @@
 <template>
   <NButton
-    :disabled="!projectContextReady"
+    :disabled="disabled || !projectContextReady"
     type="primary"
     size="small"
     ghost
@@ -69,6 +69,10 @@ const { instance, database } = useConnectionOfCurrentSQLEditorTab();
 const changeConnection = () => {
   showConnectionPanel.value = true;
 };
+
+defineProps<{
+  disabled?: boolean;
+}>();
 </script>
 
 <style lang="postcss" scoped>
