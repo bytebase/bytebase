@@ -201,7 +201,11 @@ func (s *RoleService) DeleteRole(ctx context.Context, request *v1pb.DeleteRoleRe
 	}
 	if len(usedByResources) > 0 {
 		usedBy := []string{}
-		for _, usedResource := range usedByResources {
+		for i, usedResource := range usedByResources {
+			if i >= 10 {
+				// Limit the message length.
+				break
+			}
 			if usedResource.Resource != "" {
 				usedBy = append(usedBy, usedResource.Resource)
 			} else if usedResource.ResourceType == api.PolicyResourceTypeWorkspace {
