@@ -12,9 +12,10 @@ import {
   type Ref,
 } from "vue";
 import { useI18n } from "vue-i18n";
-import { pushNotification } from "@/store";
+import { pushNotification, useConnectionOfCurrentSQLEditorTab } from "@/store";
 import type { QueryRow, RowValue } from "@/types/proto/v1/sql_service";
 import { extractSQLRowValuePlain, isDescendantOf, toClipboard } from "@/utils";
+import { getBinaryFormat, formatBinaryValue, getColumnFormatOverride, detectBinaryFormat } from "../binary-format-store";
 import { useSQLResultViewContext } from "../../context";
 
 export const PREVENT_DISMISS_SELECTION = "bb-prevent-dismiss-selection";
@@ -124,6 +125,10 @@ export const provideSelectionContext = (table: Ref<Table<QueryRow>>) => {
   });
 
   const getValues = () => {
+    // Get the current database name for scoping the binary format
+    const { database } = useConnectionOfCurrentSQLEditorTab();
+    const databaseName = database.value?.name || '';
+    
     if (state.value.rows.length === 1 && state.value.columns.length === 1) {
       const row =
         table.value.getPrePaginationRowModel().rows[state.value.rows[0]];
@@ -134,7 +139,59 @@ export const provideSelectionContext = (table: Ref<Table<QueryRow>>) => {
       if (!cell) {
         return "";
       }
-      return String(extractSQLRowValuePlain(cell.getValue() as RowValue));
+      
+      // Get the cell value
+      const value = cell.getValue() as RowValue;
+      
+      // Special handling for binary data
+      if (value && value.bytesValue) {
+        // Get the result set index if available
+        const setIndex = (resultViewContext.detail?.value?.set) ?? 0;
+        
+        // First check if there's a column format override
+        const columnFormatOverride = getColumnFormatOverride({
+          colIndex: state.value.columns[0],
+          setIndex,
+          databaseName
+        });
+        if (columnFormatOverride) {
+          // Column format overrides take precedence
+          return formatBinaryValue({
+            bytesValue: value.bytesValue,
+            format: columnFormatOverride
+          });
+        }
+        
+        // Then check for cell-specific format
+        const cellFormat = getBinaryFormat({
+          rowIndex: state.value.rows[0],
+          colIndex: state.value.columns[0],
+          setIndex,
+          databaseName
+        });
+        if (cellFormat && cellFormat !== "DEFAULT") {
+          // Use the stored format to format the binary data
+          return formatBinaryValue({
+            bytesValue: value.bytesValue,
+            format: cellFormat
+          });
+        }
+        
+        // If no stored format is found, detect based on content and column type
+        // This ensures copy uses the same auto-detection logic as display
+        const columnType = resultViewContext.columnTypeNames?.value?.[state.value.columns[0]] || '';
+        const detectedFormat = detectBinaryFormat({
+          bytesValue: value.bytesValue,
+          columnType
+        });
+        return formatBinaryValue({
+          bytesValue: value.bytesValue,
+          format: detectedFormat
+        });
+      }
+      
+      // Fall back to default formatting
+      return String(extractSQLRowValuePlain(value));
     } else if (state.value.rows.length > 0) {
       const rows: Row<QueryRow>[] = [];
       for (const row of state.value.rows) {
@@ -148,12 +205,61 @@ export const provideSelectionContext = (table: Ref<Table<QueryRow>>) => {
         return "";
       }
       return rows
-        .map((row) => {
+        .map((row, rowIdx) => {
           const cells = row.getVisibleCells();
           return cells
-            .map((cell) =>
-              String(extractSQLRowValuePlain(cell.getValue() as RowValue))
-            )
+            .map((cell, colIdx) => {
+              const value = cell.getValue() as RowValue;
+              
+              // Special handling for binary data
+              if (value && value.bytesValue) {
+                // Get the result set index if available
+                const setIndex = (resultViewContext.detail?.value?.set) ?? 0;
+                
+                // First check if there's a column format override
+                const columnFormatOverride = getColumnFormatOverride({
+                  colIndex: colIdx,
+                  setIndex,
+                  databaseName
+                });
+                if (columnFormatOverride) {
+                  // Column format overrides take precedence
+                  return formatBinaryValue({
+                    bytesValue: value.bytesValue,
+                    format: columnFormatOverride
+                  });
+                }
+                
+                // Then check for cell-specific format
+                const cellFormat = getBinaryFormat({
+                  rowIndex: state.value.rows[rowIdx],
+                  colIndex: colIdx,
+                  setIndex,
+                  databaseName
+                });
+                if (cellFormat && cellFormat !== "DEFAULT") {
+                  // Use the stored format to format the binary data
+                  return formatBinaryValue({
+                    bytesValue: value.bytesValue,
+                    format: cellFormat
+                  });
+                }
+                
+                // If no stored format is found, detect based on content and column type
+                const columnType = resultViewContext.columnTypeNames?.value?.[colIdx] || '';
+                const detectedFormat = detectBinaryFormat({
+                  bytesValue: value.bytesValue,
+                  columnType
+                });
+                return formatBinaryValue({
+                  bytesValue: value.bytesValue,
+                  format: detectedFormat
+                });
+              }
+              
+              // Fall back to default formatting
+              return String(extractSQLRowValuePlain(value));
+            })
             .join("\t");
         })
         .join("\n");
@@ -173,11 +279,60 @@ export const provideSelectionContext = (table: Ref<Table<QueryRow>>) => {
         return "";
       }
       return values
-        .map((cells) =>
+        .map((cells, rowIdx) =>
           cells
-            .map((cell) =>
-              String(extractSQLRowValuePlain(cell.getValue() as RowValue))
-            )
+            .map((cell, colIdx) => {
+              const value = cell.getValue() as RowValue;
+              
+              // Special handling for binary data
+              if (value && value.bytesValue) {
+                // Get the result set index if available
+                const setIndex = (resultViewContext.detail?.value?.set) ?? 0;
+                
+                // First check if there's a column format override
+                const columnFormatOverride = getColumnFormatOverride({
+                  colIndex: state.value.columns[colIdx],
+                  setIndex,
+                  databaseName
+                });
+                if (columnFormatOverride) {
+                  // Column format overrides take precedence
+                  return formatBinaryValue({
+                    bytesValue: value.bytesValue,
+                    format: columnFormatOverride
+                  });
+                }
+                
+                // Then check for cell-specific format
+                const cellFormat = getBinaryFormat({
+                  rowIndex: rowIdx,
+                  colIndex: state.value.columns[colIdx],
+                  setIndex,
+                  databaseName
+                });
+                if (cellFormat && cellFormat !== "DEFAULT") {
+                  // Use the stored format to format the binary data
+                  return formatBinaryValue({
+                    bytesValue: value.bytesValue,
+                    format: cellFormat
+                  });
+                }
+                
+                // If no stored format is found, detect based on content and column type
+                const columnType = resultViewContext.columnTypeNames?.value?.[state.value.columns[colIdx]] || '';
+                const detectedFormat = detectBinaryFormat({
+                  bytesValue: value.bytesValue,
+                  columnType
+                });
+                return formatBinaryValue({
+                  bytesValue: value.bytesValue,
+                  format: detectedFormat
+                });
+              }
+              
+              // Fall back to default formatting
+              return String(extractSQLRowValuePlain(value));
+            })
             .join("\t")
         )
         .join("\n");
