@@ -6,10 +6,7 @@ import (
 )
 
 func run() error {
-	baseURL := os.Getenv("BYTEBASE_URL")
-	email := os.Getenv("BYTEBASE_SERVICE_ACCOUNT")
-	password := os.Getenv("BYTEBASE_SERVICE_ACCOUNT_SECRET")
-	_, err := NewClient(baseURL, email, password)
+	_, err := NewClient(os.Getenv("BYTEBASE_URL"), os.Getenv("BYTEBASE_SERVICE_ACCOUNT"), os.Getenv("BYTEBASE_SERVICE_ACCOUNT_SECRET"))
 	if err != nil {
 		return err
 	}
