@@ -37,7 +37,6 @@
         :selected-keys="selectedKeys"
         :pattern="mounted ? searchPattern : ''"
         :expand-on-click="true"
-        :default-expand-all="true"
         :node-props="nodeProps"
         :virtual-scroll="true"
         :theme-overrides="{ nodeHeight: '21px' }"
