@@ -12,10 +12,10 @@ import {
   type Ref,
 } from "vue";
 import { useI18n } from "vue-i18n";
-import { pushNotification } from "@/store";
+import { pushNotification, useConnectionOfCurrentSQLEditorTab } from "@/store";
 import type { QueryRow, RowValue } from "@/types/proto/v1/sql_service";
 import { extractSQLRowValuePlain, isDescendantOf, toClipboard } from "@/utils";
-import { getBinaryFormat, formatBinaryValue, getColumnFormatOverride } from "../binary-format-store";
+import { getBinaryFormat, formatBinaryValue, getColumnFormatOverride, detectBinaryFormat } from "../binary-format-store";
 import { useSQLResultViewContext } from "../../context";
 
 export const PREVENT_DISMISS_SELECTION = "bb-prevent-dismiss-selection";
@@ -125,6 +125,10 @@ export const provideSelectionContext = (table: Ref<Table<QueryRow>>) => {
   });
 
   const getValues = () => {
+    // Get the current database name for scoping the binary format
+    const { database } = useConnectionOfCurrentSQLEditorTab();
+    const databaseName = database.value?.name || '';
+    
     if (state.value.rows.length === 1 && state.value.columns.length === 1) {
       const row =
         table.value.getPrePaginationRowModel().rows[state.value.rows[0]];
@@ -145,18 +149,24 @@ export const provideSelectionContext = (table: Ref<Table<QueryRow>>) => {
         const setIndex = (resultViewContext.detail?.value?.set) ?? 0;
         
         // First check if there's a column format override
-        const columnFormatOverride = getColumnFormatOverride(state.value.columns[0], setIndex);
+        const columnFormatOverride = getColumnFormatOverride(state.value.columns[0], setIndex, databaseName);
         if (columnFormatOverride) {
           // Column format overrides take precedence
           return formatBinaryValue(value.bytesValue, columnFormatOverride);
         }
         
         // Then check for cell-specific format
-        const cellFormat = getBinaryFormat(state.value.rows[0], state.value.columns[0], setIndex);
+        const cellFormat = getBinaryFormat(state.value.rows[0], state.value.columns[0], setIndex, databaseName);
         if (cellFormat && cellFormat !== "DEFAULT") {
           // Use the stored format to format the binary data
           return formatBinaryValue(value.bytesValue, cellFormat);
         }
+        
+        // If no stored format is found, detect based on content and column type
+        // This ensures copy uses the same auto-detection logic as display
+        const columnType = resultViewContext.columnTypeNames?.value?.[state.value.columns[0]] || '';
+        const detectedFormat = detectBinaryFormat(value.bytesValue, columnType);
+        return formatBinaryValue(value.bytesValue, detectedFormat);
       }
       
       // Fall back to default formatting
@@ -186,14 +196,14 @@ export const provideSelectionContext = (table: Ref<Table<QueryRow>>) => {
                 const setIndex = (resultViewContext.detail?.value?.set) ?? 0;
                 
                 // First check if there's a column format override
-                const columnFormatOverride = getColumnFormatOverride(colIdx, setIndex);
+                const columnFormatOverride = getColumnFormatOverride(colIdx, setIndex, databaseName);
                 if (columnFormatOverride) {
                   // Column format overrides take precedence
                   return formatBinaryValue(value.bytesValue, columnFormatOverride);
                 }
                 
                 // Then check for cell-specific format
-                const cellFormat = getBinaryFormat(state.value.rows[rowIdx], colIdx, setIndex);
+                const cellFormat = getBinaryFormat(state.value.rows[rowIdx], colIdx, setIndex, databaseName);
                 if (cellFormat && cellFormat !== "DEFAULT") {
                   // Use the stored format to format the binary data
                   return formatBinaryValue(value.bytesValue, cellFormat);
@@ -233,14 +243,14 @@ export const provideSelectionContext = (table: Ref<Table<QueryRow>>) => {
                 const setIndex = (resultViewContext.detail?.value?.set) ?? 0;
                 
                 // First check if there's a column format override
-                const columnFormatOverride = getColumnFormatOverride(state.value.columns[colIdx], setIndex);
+                const columnFormatOverride = getColumnFormatOverride(state.value.columns[colIdx], setIndex, databaseName);
                 if (columnFormatOverride) {
                   // Column format overrides take precedence
                   return formatBinaryValue(value.bytesValue, columnFormatOverride);
                 }
                 
                 // Then check for cell-specific format
-                const cellFormat = getBinaryFormat(rowIdx, state.value.columns[colIdx], setIndex);
+                const cellFormat = getBinaryFormat(rowIdx, state.value.columns[colIdx], setIndex, databaseName);
                 if (cellFormat && cellFormat !== "DEFAULT") {
                   // Use the stored format to format the binary data
                   return formatBinaryValue(value.bytesValue, cellFormat);

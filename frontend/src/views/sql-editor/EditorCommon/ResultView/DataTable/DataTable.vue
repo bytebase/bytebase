@@ -150,7 +150,8 @@ import SensitiveDataIcon from "./common/SensitiveDataIcon.vue";
 import BinaryFormatButton from "./common/BinaryFormatButton.vue";
 import { useSelectionContext } from "./common/selection-logic";
 import useTableColumnWidthLogic from "./useTableResize";
-import { setColumnFormatOverride } from "./binary-format-store";
+import { setColumnFormatOverride, setBinaryFormat, getBinaryFormat } from "./binary-format-store";
+import { useConnectionOfCurrentSQLEditorTab } from "@/store";
 
 const props = defineProps<{
   table: Table<QueryRow>;
@@ -333,7 +334,9 @@ const setColumnFormat = (columnIndex: number, format: string | null) => {
   }
   
   // Store the format in the binary format store for use during copy
-  setColumnFormatOverride(columnIndex, format, props.setIndex);
+  const { database } = useConnectionOfCurrentSQLEditorTab();
+  const databaseName = database.value?.name || '';
+  setColumnFormatOverride(columnIndex, format, props.setIndex, databaseName);
   
   // Force a re-render
   columnFormatOverrides.value = new Map(columnFormatOverrides.value);
@@ -342,6 +345,38 @@ const setColumnFormat = (columnIndex: number, format: string | null) => {
 onMounted(() => {
   nextTick(() => {
     tableResize.reset();
+    
+    // Store auto-detected formats for all binary columns
+    // This ensures the format is available for copy operations
+    const { database } = useConnectionOfCurrentSQLEditorTab();
+    const databaseName = database.value?.name || '';
+    
+    // For each column with binary data, store its server-detected format
+    for (let colIndex = 0; colIndex < props.table.getAllColumns().length; colIndex++) {
+      if (isColumnWithBinaryData(colIndex)) {
+        const serverFormat = getColumnServerFormat(colIndex);
+        if (serverFormat) {
+          // Important: Don't set column format override during initialization
+          // This would override cell-specific formats for all cells in the column
+          // We only want to set it when the user explicitly chooses a format
+          // setColumnFormatOverride(colIndex, serverFormat, props.setIndex, databaseName);
+          
+          // Only set formats for cells that don't already have a format
+          const rows = props.table.getPrePaginationRowModel().rows;
+          rows.forEach((row, rowIndex) => {
+            const cell = row.getVisibleCells()[colIndex];
+            if (cell && cell.getValue<RowValue>()?.bytesValue) {
+              // Check if this cell already has a format before overriding
+              const existingFormat = getBinaryFormat(rowIndex, colIndex, props.setIndex, databaseName);
+              if (!existingFormat) {
+                // Only set if no format exists yet
+                setBinaryFormat(rowIndex, colIndex, serverFormat, props.setIndex, databaseName);
+              }
+            }
+          });
+        }
+      }
+    }
   });
 });
 
