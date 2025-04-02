@@ -1092,8 +1092,7 @@ type LDAPIdentityProviderConfig struct {
 	// UserFilter is the filter to search for users, e.g. "(uid=%s)".
 	UserFilter string `protobuf:"bytes,7,opt,name=user_filter,json=userFilter,proto3" json:"user_filter,omitempty"`
 	// SecurityProtocol is the security protocol to be used for establishing
-	// connections with the LDAP server. It should be either StartTLS or LDAPS, and
-	// cannot be empty.
+	// connections with the LDAP server. It must be StartTLS, LDAPS or None.
 	SecurityProtocol string `protobuf:"bytes,8,opt,name=security_protocol,json=securityProtocol,proto3" json:"security_protocol,omitempty"`
 	// FieldMapping is the mapping of the user attributes returned by the LDAP
 	// server.
