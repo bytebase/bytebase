@@ -28,10 +28,10 @@ func newDriver(db.DriverConfig) db.Driver {
 
 func (*Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
 	addrs := []string{
-		config.DataSource.Host + ":" + config.DataSource.Port,
+		formatAddress(config.DataSource.Host, config.DataSource.Port),
 	}
 	for _, addr := range config.DataSource.AdditionalAddresses {
-		addrs = append(addrs, addr.Host+":"+addr.Port)
+		addrs = append(addrs, formatAddress(addr.Host, addr.Port))
 	}
 	cluster := gocql.NewCluster(addrs...)
 	cluster.Authenticator = gocql.PasswordAuthenticator{
@@ -76,4 +76,11 @@ func (*Driver) Execute(context.Context, string, db.ExecuteOptions) (int64, error
 }
 func (*Driver) QueryConn(context.Context, *sql.Conn, string, db.QueryContext) ([]*v1pb.QueryResult, error) {
 	return nil, errors.New("tbd")
+}
+
+func formatAddress(host, port string) string {
+	if port == "" {
+		return host
+	}
+	return host + ":" + port
 }
