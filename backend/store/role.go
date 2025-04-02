@@ -9,6 +9,7 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
+	api "github.com/bytebase/bytebase/backend/legacyapi"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -29,19 +30,42 @@ type UpdateRoleMessage struct {
 	Permissions *map[string]bool
 }
 
-func (s *Store) CheckRoleInUse(ctx context.Context, role string) (bool, error) {
+type RoleUsedByResource struct {
+	ResourceType api.PolicyResourceType
+	Resource     string
+}
+
+func (s *Store) GetResourcesUsedByRole(ctx context.Context, role string) ([]*RoleUsedByResource, error) {
 	query := `
-		SELECT EXISTS (
-			SELECT 1 FROM policy
-			CROSS JOIN LATERAL jsonb_array_elements(payload->'bindings') AS binding
-			WHERE type = 'bb.policy.iam' AND binding->>'role' = $1
-		);
+		SELECT resource, resource_type FROM policy
+		CROSS JOIN LATERAL jsonb_array_elements(payload->'bindings') AS binding
+		WHERE
+			type = $1 AND
+			COALESCE(jsonb_array_length(binding->'members'), 0) > 0 AND
+			binding->>'role' = $2
+		GROUP BY resource, resource_type;
 	`
-	var exist bool
-	if err := s.db.QueryRowContext(ctx, query, role).Scan(&exist); err != nil {
-		return false, err
+	rows, err := s.db.QueryContext(ctx, query, api.PolicyTypeIAM, role)
+	if err != nil {
+		return nil, err
 	}
-	return exist, nil
+	defer rows.Close()
+
+	var response []*RoleUsedByResource
+	for rows.Next() {
+		var usedByResource RoleUsedByResource
+		if err := rows.Scan(
+			&usedByResource.Resource,
+			&usedByResource.ResourceType,
+		); err != nil {
+			return nil, err
+		}
+		response = append(response, &usedByResource)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return response, nil
 }
 
 // CreateRole creates a new role.

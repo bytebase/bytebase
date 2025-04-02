@@ -2399,8 +2399,8 @@
       "title-placeholder": "Ingrese el título del rol",
       "description-placeholder": "Ingrese la descripción del rol",
       "delete-warning": "Se eliminará el rol \"{name}\". Esta acción no se puede deshacer.",
-      "delete-warning-with-resources": "El rol \"{name}\" está asignado a los siguientes usuarios:",
-      "delete-warning-retry": "Elimine la función de estos usuarios y vuelva a intentarlo."
+      "delete-warning-with-resources": "El rol \"{name}\" lo utilizan los siguientes recursos:",
+      "delete-warning-retry": "Elimine el rol de estos recursos y vuelva a intentarlo."
     },
     "default-workspace-role": "Los usuarios obtendrán el rol de \"Miembro del espacio de trabajo\" de forma predeterminada.",
     "title": "Título",

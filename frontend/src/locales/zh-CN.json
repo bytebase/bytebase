@@ -2399,8 +2399,8 @@
       "title-placeholder": "输入角色称谓",
       "description-placeholder": "输入角色描述",
       "delete-warning": "角色“{name}”将被删除。此操作无法撤消。",
-      "delete-warning-with-resources": "角色“{name}”已分配给以下用户：",
-      "delete-warning-retry": "请从这些用户中删除角色然后重试。"
+      "delete-warning-with-resources": "角色“{name}”已分配给以下资源：",
+      "delete-warning-retry": "请从这些资源中删除该角色后重试。"
     },
     "default-workspace-role": "用户将默认获得“工作区成员”角色",
     "title": "称谓",

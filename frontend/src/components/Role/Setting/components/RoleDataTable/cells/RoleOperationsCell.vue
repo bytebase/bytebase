@@ -4,7 +4,11 @@
       {{ $t("common.edit") }}
     </NButton>
 
-    <NButton v-if="allowDelete" size="tiny" @click="handleDeleteRole">
+    <NButton
+      v-if="allowDelete"
+      size="tiny"
+      @click="() => handleDeleteRole(usersWithRole)"
+    >
       {{ $t("common.delete") }}
     </NButton>
   </div>
@@ -12,11 +16,13 @@
 
 <script lang="tsx" setup>
 import { NButton, useDialog } from "naive-ui";
+import { Status } from "nice-grpc-web";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoleStore, useWorkspaceV1Store, pushNotification } from "@/store";
 import type { Role } from "@/types/proto/v1/role_service";
 import { hasWorkspacePermissionV2, isCustomRole } from "@/utils";
+import { getErrorCode, extractGrpcErrorMessage } from "@/utils/grpcweb";
 import { useCustomRoleSettingContext } from "../../../context";
 
 const props = defineProps<{
@@ -42,7 +48,7 @@ const usersWithRole = computed(() => {
   ];
 });
 
-const handleDeleteRole = async () => {
+const handleDeleteRole = (resources: string[]) => {
   if (!hasCustomRoleFeature.value) {
     showFeatureModal.value = true;
     return;
@@ -52,10 +58,9 @@ const handleDeleteRole = async () => {
     title: t("common.warning"),
     style: "z-index: 100000",
     negativeText: t("common.cancel"),
-    positiveText:
-      usersWithRole.value.length === 0 ? t("common.continue-anyway") : "",
+    positiveText: resources.length === 0 ? t("common.continue-anyway") : "",
     content: () => {
-      if (usersWithRole.value.length === 0) {
+      if (resources.length === 0) {
         return t("role.setting.delete-warning", {
           name: props.role.title,
         });
@@ -68,8 +73,8 @@ const handleDeleteRole = async () => {
             })}
           </p>
           <ul class="list-disc ml-4 textinfolabel">
-            {usersWithRole.value.map((user) => (
-              <li>{user}</li>
+            {resources.map((resource) => (
+              <li>{resource}</li>
             ))}
           </ul>
           <p>{t("role.setting.delete-warning-retry")}</p>
@@ -77,16 +82,30 @@ const handleDeleteRole = async () => {
       );
     },
     onPositiveClick: () => {
-      useRoleStore()
-        .deleteRole(props.role)
-        .then(() => {
-          pushNotification({
-            module: "bytebase",
-            style: "SUCCESS",
-            title: t("common.deleted"),
-          });
-        });
+      onRoleRemove();
     },
   });
+};
+
+const onRoleRemove = async () => {
+  try {
+    await useRoleStore().deleteRole(props.role);
+    pushNotification({
+      module: "bytebase",
+      style: "SUCCESS",
+      title: t("common.deleted"),
+    });
+  } catch (error) {
+    if (getErrorCode(error) === Status.FAILED_PRECONDITION) {
+      console.log("extractGrpcErrorMessage");
+      console.log(extractGrpcErrorMessage(error));
+      const message = extractGrpcErrorMessage(error);
+      const resources =
+        message.split("used by resources: ")[1]?.split(",") ?? [];
+      if (resources.length > 0) {
+        handleDeleteRole(resources);
+      }
+    }
+  }
 };
 </script>

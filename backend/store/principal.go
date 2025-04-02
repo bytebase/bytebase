@@ -223,7 +223,7 @@ func listUserImpl(ctx context.Context, txn *sql.Tx, find *FindUserMessage) ([]*U
 				jsonb_array_elements_text(jsonb_array_elements(policy.payload->'bindings')->'members') AS member,
 				jsonb_array_elements(policy.payload->'bindings')->>'role' AS role
 			FROM policy
-			WHERE ((resource_type = 'PROJECT' AND resource = 'projects/` + *v + `') OR resource_type = 'WORKSPACE') AND type = 'bb.policy.iam'
+			WHERE ((resource_type = '` + string(api.PolicyResourceTypeProject) + `' AND resource = 'projects/` + *v + `') OR resource_type = '` + string(api.PolicyResourceTypeWorkspace) + `') AND type = '` + string(api.PolicyTypeIAM) + `'
 		),
 		project_members AS (
 			SELECT ARRAY_AGG(member) AS members FROM all_members WHERE role LIKE 'roles/project%'
