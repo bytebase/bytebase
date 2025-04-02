@@ -244,11 +244,20 @@ const formattedBinaryValue = computed(() => {
   // Otherwise use auto-detected format
   else {
     // Auto-detect format based on content and column type
-    actualFormat = detectBinaryFormat(newValue.bytesValue, props.columnType);
+    actualFormat = detectBinaryFormat({
+      bytesValue: newValue.bytesValue,
+      columnType: props.columnType
+    });
     
     // Store the auto-detected format for use during copy operations
     const databaseName = database.value?.name || '';
-    setBinaryFormat(props.rowIndex, props.colIndex, actualFormat, props.setIndex, databaseName);
+    setBinaryFormat({
+      rowIndex: props.rowIndex,
+      colIndex: props.colIndex,
+      format: actualFormat,
+      setIndex: props.setIndex,
+      databaseName
+    });
   }
   
   // Skip formatting for DEFAULT (auto) format
@@ -372,7 +381,6 @@ const handleContextMenu = (e: MouseEvent) => {
 
 // Handle format selection from dropdown
 const handleFormatSelect = (key: string) => {
-  
   // Get database name to scope the format to this database
   const databaseName = database.value?.name || '';
 
@@ -380,12 +388,24 @@ const handleFormatSelect = (key: string) => {
   if (key === "DEFAULT") {
     formatOverride.value = null;
     // Also remove from the global store if it exists
-    setBinaryFormat(props.rowIndex, props.colIndex, "DEFAULT", props.setIndex, databaseName);
+    setBinaryFormat({
+      rowIndex: props.rowIndex,
+      colIndex: props.colIndex,
+      format: "DEFAULT",
+      setIndex: props.setIndex,
+      databaseName
+    });
   } else {
     // Otherwise set the override
     formatOverride.value = key;
     // Store the format in the global binary format store
-    setBinaryFormat(props.rowIndex, props.colIndex, key, props.setIndex, databaseName);
+    setBinaryFormat({
+      rowIndex: props.rowIndex,
+      colIndex: props.colIndex,
+      format: key,
+      setIndex: props.setIndex,
+      databaseName
+    });
   }
   
   showFormatMenu.value = false;
@@ -401,22 +421,41 @@ onMounted(() => {
 
   // Store column type information for later format detection
   if (props.columnType) {
-    setColumnType(props.colIndex, props.columnType, props.setIndex, databaseName);
+    setColumnType({
+      colIndex: props.colIndex,
+      columnType: props.columnType,
+      setIndex: props.setIndex,
+      databaseName
+    });
   }
   
   // Only proceed if we have binary data
   if (hasByteData.value) {
     // Check for a saved format and apply it
-    const savedFormat = getBinaryFormat(props.rowIndex, props.colIndex, props.setIndex, databaseName);
+    const savedFormat = getBinaryFormat({
+      rowIndex: props.rowIndex,
+      colIndex: props.colIndex,
+      setIndex: props.setIndex,
+      databaseName
+    });
     
     if (savedFormat && savedFormat !== "DEFAULT") {
       formatOverride.value = savedFormat;
     } else {
       // If no saved format yet, use our shared detection function
-      const detectedFormat = detectBinaryFormat(props.value.bytesValue, props.columnType);
+      const detectedFormat = detectBinaryFormat({
+        bytesValue: props.value.bytesValue,
+        columnType: props.columnType
+      });
       
       // Store this format immediately
-      setBinaryFormat(props.rowIndex, props.colIndex, detectedFormat, props.setIndex, databaseName);
+      setBinaryFormat({
+        rowIndex: props.rowIndex,
+        colIndex: props.colIndex,
+        format: detectedFormat,
+        setIndex: props.setIndex,
+        databaseName
+      });
     }
   }
 });

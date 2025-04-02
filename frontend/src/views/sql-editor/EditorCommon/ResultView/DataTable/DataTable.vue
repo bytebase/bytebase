@@ -336,7 +336,12 @@ const setColumnFormat = (columnIndex: number, format: string | null) => {
   // Store the format in the binary format store for use during copy
   const { database } = useConnectionOfCurrentSQLEditorTab();
   const databaseName = database.value?.name || '';
-  setColumnFormatOverride(columnIndex, format, props.setIndex, databaseName);
+  setColumnFormatOverride({
+    colIndex: columnIndex,
+    format,
+    setIndex: props.setIndex,
+    databaseName
+  });
   
   // Force a re-render
   columnFormatOverrides.value = new Map(columnFormatOverrides.value);
@@ -367,10 +372,21 @@ onMounted(() => {
             const cell = row.getVisibleCells()[colIndex];
             if (cell && cell.getValue<RowValue>()?.bytesValue) {
               // Check if this cell already has a format before overriding
-              const existingFormat = getBinaryFormat(rowIndex, colIndex, props.setIndex, databaseName);
+              const existingFormat = getBinaryFormat({
+                rowIndex,
+                colIndex,
+                setIndex: props.setIndex,
+                databaseName
+              });
               if (!existingFormat) {
                 // Only set if no format exists yet
-                setBinaryFormat(rowIndex, colIndex, serverFormat, props.setIndex, databaseName);
+                setBinaryFormat({
+                  rowIndex,
+                  colIndex,
+                  format: serverFormat,
+                  setIndex: props.setIndex,
+                  databaseName
+                });
               }
             }
           });
