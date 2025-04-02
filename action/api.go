@@ -17,8 +17,8 @@ import (
 //nolint:forbidigo
 var protojsonUnmarshaler = protojson.UnmarshalOptions{DiscardUnknown: true}
 
-// client is the API message for Bytebase API client.
-type client struct {
+// Client is the API message for Bytebase API Client.
+type Client struct {
 	client *http.Client
 
 	url   string
@@ -26,19 +26,20 @@ type client struct {
 }
 
 // NewClient returns the new Bytebase API client.
-func NewClient(url, email, password string) (*client, error) {
-	c := client{
+func NewClient(url, serviceAccount, serviceAccountSecret string) (*Client, error) {
+	c := Client{
 		client: &http.Client{Timeout: 10 * time.Second},
 		url:    url,
 	}
 
-	if err := c.login(email, password); err != nil {
+	if err := c.login(serviceAccount, serviceAccountSecret); err != nil {
 		return nil, err
 	}
 
 	return &c, nil
 }
-func (c *client) doRequest(req *http.Request) ([]byte, error) {
+
+func (c *Client) doRequest(req *http.Request) ([]byte, error) {
 	if c.token != "" {
 		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.token))
 	}
@@ -61,7 +62,7 @@ func (c *client) doRequest(req *http.Request) ([]byte, error) {
 	return body, err
 }
 
-func (c *client) login(email, password string) error {
+func (c *Client) login(email, password string) error {
 	r := &v1pb.LoginRequest{
 		Email:    email,
 		Password: password,
@@ -81,11 +82,38 @@ func (c *client) login(email, password string) error {
 		return errors.Wrapf(err, "failed to login")
 	}
 
-	resp := v1pb.LoginResponse{}
-	if err := protojsonUnmarshaler.Unmarshal(body, &resp); err != nil {
+	resp := &v1pb.LoginResponse{}
+	if err := protojsonUnmarshaler.Unmarshal(body, resp); err != nil {
 		return err
 	}
 	c.token = resp.Token
 
 	return nil
+}
+
+func (c *Client) checkRelease(project string, release *v1pb.Release) (*v1pb.CheckReleaseResponse, error) {
+	r := &v1pb.CheckReleaseRequest{
+		Release: release,
+	}
+	rb, err := protojson.Marshal(r)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", fmt.Sprintf("%s/v1/%s/releases:check", c.url, project), strings.NewReader(string(rb)))
+	if err != nil {
+		return nil, err
+	}
+
+	body, err := c.doRequest(req)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to check release")
+	}
+
+	resp := &v1pb.CheckReleaseResponse{}
+	if err := protojsonUnmarshaler.Unmarshal(body, resp); err != nil {
+		return nil, err
+	}
+
+	return resp, nil
 }
