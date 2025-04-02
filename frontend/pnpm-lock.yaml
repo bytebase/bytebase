@@ -125,8 +125,8 @@ importers:
         specifier: ^1.0.1
         version: 1.0.1
       pev2:
-        specifier: 1.12.1
-        version: 1.12.1(@popperjs/core@2.11.8)(typescript@5.7.3)
+        specifier: 1.14.0
+        version: 1.14.0(@popperjs/core@2.11.8)(typescript@5.7.3)
       pinia:
         specifier: 2.2.8
         version: 2.2.8(typescript@5.7.3)(vue@3.5.13(typescript@5.7.3))
@@ -2225,10 +2225,6 @@ packages:
   asynckit@0.4.0:
     resolution: {integrity: sha512-Oei9OH4tRh0YqU3GxhX79dM/mwVgvbZJaSNaRk+bshkj0S5cfHcgYakreBjrHwatXKbz+IoIdYLxrKim2MjW0Q==}
 
-  asynclist@0.0.3:
-    resolution: {integrity: sha512-JhVUyueBeejaLYkrOVdSkcTLK0Lt/LvzLMQ/S/q5tIjiyvJQHbPdUr+chPsRuP4waleB4/53na28kZCHTHeURw==}
-    engines: {node: '>= 0.4.0'}
-
   autoprefixer@10.4.20:
     resolution: {integrity: sha512-XY25y5xSv/wEoqzDyXXME4AFfkZI0P23z6Fs3YgymDnKJkCGOnkL0iTxCa85UTqaSgfcqyf3UA6+c7wUvx/16g==}
     engines: {node: ^10 || ^12 || >=14}
@@ -2415,6 +2411,10 @@ packages:
   commander@7.2.0:
     resolution: {integrity: sha512-QrWXB+ZQSVPmIWIhtEO9H+gwHaMGYiF5ChvoJ+K9ZGHG/sVsa6yiesAD1GC/x46sET00Xlwo1u49RVVVzvcSkw==}
     engines: {node: '>= 10'}
+
+  component-emitter@2.0.0:
+    resolution: {integrity: sha512-4m5s3Me2xxlVKG9PkZpQqHQR7bgpnN7joDMJ4yvVkVXngjoITG76IaZmzmywSeRTeTpc6N6r3H3+KyUurV8OYw==}
+    engines: {node: '>=18'}
 
   compute-scroll-into-view@3.1.1:
     resolution: {integrity: sha512-VRhuHOLoKYOy4UbilLbUzbYg93XLjv2PncJC50EuTWPA3gaja1UjBsUP/D/9/juV3vQFr6XBEzn9KCAHdUvOHw==}
@@ -2619,14 +2619,6 @@ packages:
   de-indent@1.0.2:
     resolution: {integrity: sha512-e/1zu3xH5MQryN2zdVaF0OrdNLUbvWxzMbi+iNA6Bky7l1RoP8a2fIbRocyHclXt/arDrrR6lL3TqFD9pMQTsg==}
 
-  debug@2.6.9:
-    resolution: {integrity: sha512-bC7ElrdJaJnPbAP+1EotYvqZsb3ecl5wi6Bfi6BJTUcNowp6cvspg0jXznRTKDjm/E7AdgFBVeAPVMNcKGsHMA==}
-    peerDependencies:
-      supports-color: '*'
-    peerDependenciesMeta:
-      supports-color:
-        optional: true
-
   debug@3.2.7:
     resolution: {integrity: sha512-CFjzYYAi4ThfiQvizrFQevTTXHtnCqWfe7x1AhgEscTz6ZbLbfoLRLPugTQyBth6f8ZERVUSyWHFD/7Wu4t1XQ==}
     peerDependencies:
@@ -2738,10 +2730,6 @@ packages:
 
   elkjs@0.10.0:
     resolution: {integrity: sha512-v/3r+3Bl2NMrWmVoRTMBtHtWvRISTix/s9EfnsfEWApNrsmNjqgqJOispCGg46BPwIFdkag3N/HYSxJczvCm6w==}
-
-  emitter@0.0.2:
-    resolution: {integrity: sha512-L1gFY5hZlUaJ0VXsFLPO6KJIJlnu6rOBzbSXxx2f6B7zOShTxxpO+nqH0idbdOoqI2JnWyfn97RPnPgRl7Dz4Q==}
-    engines: {node: '>= 0.4.0'}
 
   emittery@1.1.0:
     resolution: {integrity: sha512-rsX7ktqARv/6UQDgMaLfIqUWAEzzbCQiVh7V9rhDXp6c37yoJcks12NVD+XPkgl4AEavmNhVfrhGoqYwIsMYYA==}
@@ -2908,9 +2896,6 @@ packages:
   esutils@2.0.3:
     resolution: {integrity: sha512-kVscqXk4OCp68SZ0dkgEKVi6/8ij300KBWTJq32P/dYeWTSwK41WyTxalN1eRmA5Z9UU/LX9D7FWSmV9SAYx6g==}
     engines: {node: '>=0.10.0'}
-
-  eventproxy@1.0.0:
-    resolution: {integrity: sha512-GKeEWUQxGNGtSiX6cLI6cWcTYPIsq3JoxNgnTTJXH1gSMLxLU/IuUH2OzxmhFoXVQl1eYh0ukrqL32ygnpJnpQ==}
 
   events@3.3.0:
     resolution: {integrity: sha512-mQw+2fkQbALzQ7V0MY0IqdnXNOeTtP4r0lN9z7AAawCXgqea7bDii20AYrIBrFd/Hx0M2Ocz6S111CaFkUcb0Q==}
@@ -3096,6 +3081,10 @@ packages:
     resolution: {integrity: sha512-SYVnVFswQER+zu1laSya563s+F8VDGt7o35d4utbamowvUNLLMovFqwCLSocpZTz3MgaSRA1IbqRWZv97dtErQ==}
     engines: {node: '>=12.0.0'}
 
+  highlight.js@11.11.1:
+    resolution: {integrity: sha512-Xwwo44whKBVCYoliBQwaPvtd/2tYFkRQtXDWj1nackaV2JPXx3L0+Jvd8/qCJ2p+ML0/XVkJ2q+Mr+UVdpJK5w==}
+    engines: {node: '>=12.0.0'}
+
   html-encoding-sniffer@4.0.0:
     resolution: {integrity: sha512-Y22oTqIU4uuPgEemfz7NDJz6OeKf12Lsu+QC+s3BVpda64lTiMYCyGwg5ki4vFxkMwQdeZDl2adZoqUgdFuTgQ==}
     engines: {node: '>=18'}
@@ -3135,8 +3124,8 @@ packages:
   immediate@3.3.0:
     resolution: {integrity: sha512-HR7EVodfFUdQCTIeySw+WDRFJlPcLOJbXfwwZ7Oom6tjsvZ3bOkCDJHehQC3nxJrv7+f9XecwazynjU8e4Vw3Q==}
 
-  immutable@5.0.3:
-    resolution: {integrity: sha512-P8IdPQHq3lA1xVeBRi5VPqUm5HDgKnx0Ru51wZz5mjxHr5n3RWhjIpOFU7ybkUxfB+5IToy+OLaHYDBIWsv+uw==}
+  immutable@5.1.1:
+    resolution: {integrity: sha512-3jatXi9ObIsPGr3N5hGw/vWWcTkq6hUYhpQz4k0wLC+owqWi/LiugIw9x0EdNZ2yGedKN/HzePiBvaJRXa0Ujg==}
 
   import-fresh@3.3.1:
     resolution: {integrity: sha512-TR3KfrTZTYLPB6jUjfx6MF9WcWrHL9su5TObK4ZkYgBdWKPOFoSoQIdEuTuR82pmtxH2spWG9h6etwfr1pLBqQ==}
@@ -3659,9 +3648,6 @@ packages:
   moo@0.5.2:
     resolution: {integrity: sha512-iSAJLHYKnX41mKcJKjqvnAN9sf0LMDTXDEvFv+ffuRR9a1MIuXLjMNL6EsnDHSkKLTWNqQQ5uo61P4EbU4NU+Q==}
 
-  ms@2.0.0:
-    resolution: {integrity: sha512-Tpp60P6IUJDTuOq/5Z8cdskzJujfwqfOTkrwIwj7IRISpnkJnT6SyJ4PCPnGMoFjC9ddhal5KVIYtAt97ix05A==}
-
   ms@2.1.3:
     resolution: {integrity: sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA==}
 
@@ -3839,8 +3825,8 @@ packages:
     engines: {node: '>=14'}
     hasBin: true
 
-  pev2@1.12.1:
-    resolution: {integrity: sha512-ZnevxICC7Z04vOk/rif3KylQH9SQ8yxhEyxTbGCHmDNgeKSkoV4qG4XfXmzfy+zApbTvmsSbuclS66h/222UZA==}
+  pev2@1.14.0:
+    resolution: {integrity: sha512-ji9KCqDamJfKeqqIPfqcAIg3yVOC7+9Yhb7l8c7ctgBt/3FAjXOj9x66lewzQEmgZa4mZArKZyIHdDdnoVPMdQ==}
 
   picocolors@1.1.1:
     resolution: {integrity: sha512-xceH2snhtb5M9liqDsmEw56le376mTZkEX/jEb/RxNFyegNul7eNslCXP9FDj/Lcu0X8KEyMceP2ntpaHrDEVA==}
@@ -4272,6 +4258,11 @@ packages:
   splitpanes@3.1.5:
     resolution: {integrity: sha512-r3Mq2ITFQ5a2VXLOy4/Sb2Ptp7OfEO8YIbhVJqJXoFc9hc5nTXXkCvtVDjIGbvC0vdE7tse+xTM9BMjsszP6bw==}
 
+  splitpanes@3.2.0:
+    resolution: {integrity: sha512-K+WKxWdqtKShV33gPjQl769wHxB3glypTOReCvYu/AJd38J+abHlpiF8rK6uBNPMrgw5thHZCI5JkEwsAqa9XA==}
+    peerDependencies:
+      vue: ^3.2.0
+
   sql-formatter@15.4.7:
     resolution: {integrity: sha512-gEXbtqN/fXmqlfjKbTO5d5kFj1X7fXyJzU/MD6wfFTCF2IXuIQXO21l2gnryZhtnYBhvQixBIMnFGYn4PZ8a9w==}
     hasBin: true
@@ -4281,6 +4272,9 @@ packages:
 
   std-env@3.8.0:
     resolution: {integrity: sha512-Bc3YwwCB+OzldMxOXJIIvC6cPRWr/LxOp48CdQTOkPyk/t4JWWJbrilwBd7RJzKV8QW7tJkcgAmeuLLJugl5/w==}
+
+  stream@0.0.3:
+    resolution: {integrity: sha512-aMsbn7VKrl4A2T7QAQQbzgN7NVc70vgF5INQrBXqn4dCXN1zy3L9HGgLO5s7PExmdrzTJ8uR/27aviW8or8/+A==}
 
   string-width@4.2.3:
     resolution: {integrity: sha512-wKyQRQpjJ0sIp62ErSZdGsjMJWsap5oRNihHhu6G7JVO/9jIB6UyevL+tXuOqrng8j/cxKTWyWUwvSTriiZz/g==}
@@ -4753,8 +4747,8 @@ packages:
     peerDependencies:
       vue: ^3.2.0
 
-  vue-tippy@6.6.0:
-    resolution: {integrity: sha512-ISRIUQDlcEP05K1nCbvlVcd8yuWS6S3dI91qD0A2slgtwwWjih8Fn9Aymq4SNaHQsdiP5+MLRPZVDxFjKMPgKA==}
+  vue-tippy@6.7.0:
+    resolution: {integrity: sha512-e0w6UA+A+J79GhDYNw5xZjGu7Tc2ksYypwF5RjkJVWgAGNSpXkLVNx4gZ8cMUa8FRHqmGAZxN3ue7MeXgbeZAQ==}
     peerDependencies:
       vue: ^3.2.0
 
@@ -6993,12 +6987,6 @@ snapshots:
 
   asynckit@0.4.0: {}
 
-  asynclist@0.0.3:
-    dependencies:
-      eventproxy: 1.0.0
-    transitivePeerDependencies:
-      - supports-color
-
   autoprefixer@10.4.20(postcss@8.4.47):
     dependencies:
       browserslist: 4.24.4
@@ -7155,6 +7143,7 @@ snapshots:
   chokidar@4.0.3:
     dependencies:
       readdirp: 4.1.2
+    optional: true
 
   clarinet@0.12.6: {}
 
@@ -7214,6 +7203,8 @@ snapshots:
   commander@4.1.1: {}
 
   commander@7.2.0: {}
+
+  component-emitter@2.0.0: {}
 
   compute-scroll-into-view@3.1.1: {}
 
@@ -7435,10 +7426,6 @@ snapshots:
 
   de-indent@1.0.2: {}
 
-  debug@2.6.9:
-    dependencies:
-      ms: 2.0.0
-
   debug@3.2.7:
     dependencies:
       ms: 2.1.3
@@ -7521,12 +7508,6 @@ snapshots:
   electron-to-chromium@1.5.91: {}
 
   elkjs@0.10.0: {}
-
-  emitter@0.0.2:
-    dependencies:
-      asynclist: 0.0.3
-    transitivePeerDependencies:
-      - supports-color
 
   emittery@1.1.0: {}
 
@@ -7737,12 +7718,6 @@ snapshots:
 
   esutils@2.0.3: {}
 
-  eventproxy@1.0.0:
-    dependencies:
-      debug: 2.6.9
-    transitivePeerDependencies:
-      - supports-color
-
   events@3.3.0: {}
 
   evtd@0.2.4: {}
@@ -7905,6 +7880,8 @@ snapshots:
 
   highlight.js@11.10.0: {}
 
+  highlight.js@11.11.1: {}
+
   html-encoding-sniffer@4.0.0:
     dependencies:
       whatwg-encoding: 3.1.1
@@ -7941,7 +7918,8 @@ snapshots:
 
   immediate@3.3.0: {}
 
-  immutable@5.0.3: {}
+  immutable@5.1.1:
+    optional: true
 
   import-fresh@3.3.1:
     dependencies:
@@ -8623,8 +8601,6 @@ snapshots:
 
   moo@0.5.2: {}
 
-  ms@2.0.0: {}
-
   ms@2.1.3: {}
 
   muggle-string@0.4.1: {}
@@ -8800,7 +8776,7 @@ snapshots:
       commander: 10.0.1
       source-map-generator: 0.8.0
 
-  pev2@1.12.1(@popperjs/core@2.11.8)(typescript@5.7.3):
+  pev2@1.14.0(@popperjs/core@2.11.8)(typescript@5.7.3):
     dependencies:
       '@fortawesome/fontawesome-svg-core': 6.7.2
       '@fortawesome/free-solid-svg-icons': 6.7.2
@@ -8809,18 +8785,16 @@ snapshots:
       clarinet: 0.12.6
       d3: 7.9.0
       d3-flextree: 2.1.2
-      emitter: 0.0.2
-      highlight.js: 11.10.0
+      highlight.js: 11.11.1
       humanize-duration: 3.32.1
       lodash: 4.17.21
-      sass: 1.83.4
-      splitpanes: 3.1.5
+      splitpanes: 3.2.0(vue@3.5.13(typescript@5.7.3))
+      stream: 0.0.3
       vue: 3.5.13(typescript@5.7.3)
       vue-clipboard3: 2.0.0
-      vue-tippy: 6.6.0(vue@3.5.13(typescript@5.7.3))
+      vue-tippy: 6.7.0(vue@3.5.13(typescript@5.7.3))
     transitivePeerDependencies:
       - '@popperjs/core'
-      - supports-color
       - typescript
 
   picocolors@1.1.1: {}
@@ -9079,7 +9053,8 @@ snapshots:
     dependencies:
       picomatch: 2.3.1
 
-  readdirp@4.1.2: {}
+  readdirp@4.1.2:
+    optional: true
 
   regenerate-unicode-properties@10.2.0:
     dependencies:
@@ -9214,10 +9189,11 @@ snapshots:
   sass@1.83.4:
     dependencies:
       chokidar: 4.0.3
-      immutable: 5.0.3
+      immutable: 5.1.1
       source-map-js: 1.2.1
     optionalDependencies:
       '@parcel/watcher': 2.5.1
+    optional: true
 
   saxes@6.0.0:
     dependencies:
@@ -9304,6 +9280,10 @@ snapshots:
 
   splitpanes@3.1.5: {}
 
+  splitpanes@3.2.0(vue@3.5.13(typescript@5.7.3)):
+    dependencies:
+      vue: 3.5.13(typescript@5.7.3)
+
   sql-formatter@15.4.7:
     dependencies:
       argparse: 2.0.1
@@ -9313,6 +9293,10 @@ snapshots:
   stackback@0.0.2: {}
 
   std-env@3.8.0: {}
+
+  stream@0.0.3:
+    dependencies:
+      component-emitter: 2.0.0
 
   string-width@4.2.3:
     dependencies:
@@ -9817,7 +9801,7 @@ snapshots:
       '@vue/devtools-api': 6.6.4
       vue: 3.5.13(typescript@5.7.3)
 
-  vue-tippy@6.6.0(vue@3.5.13(typescript@5.7.3)):
+  vue-tippy@6.7.0(vue@3.5.13(typescript@5.7.3)):
     dependencies:
       tippy.js: 6.3.7
       vue: 3.5.13(typescript@5.7.3)
