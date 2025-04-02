@@ -1,6 +1,7 @@
 package elasticsearch
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -139,5 +140,161 @@ POST _test_index`,
 		got, err := p.parse()
 		require.NoError(t, err)
 		a.Equal(tc.got, got, "description: %s", tc.description)
+	}
+}
+
+func TestGetEditorRequest(t *testing.T) {
+	testCases := []struct {
+		description           string
+		content               []string
+		adjustedParsedRequest adjustedParsedRequest
+		want                  *editorRequest
+	}{
+		{
+			description: "cleans up any text following the url",
+			content:     []string{"GET _search // inline comment"},
+			adjustedParsedRequest: adjustedParsedRequest{
+				startLineNumber: 0,
+				endLineNumber:   0,
+			},
+			want: &editorRequest{
+				method: "GET",
+				url:    "_search",
+				data:   nil,
+			},
+		},
+		{
+			description: "doesn't incorrectly removes parts of url params that include whitespaces",
+			content:     []string{`GET _search?query="test test"`},
+			adjustedParsedRequest: adjustedParsedRequest{
+				startLineNumber: 0,
+				endLineNumber:   0,
+			},
+			want: &editorRequest{
+				method: "GET",
+				url:    `_search?query="test test"`,
+				data:   nil,
+			},
+		},
+		{
+			description: "correctly includes the request body",
+			content: []string{
+				"GET _search",
+				"{",
+				"  \"query\": {}",
+				"}",
+			},
+			adjustedParsedRequest: adjustedParsedRequest{
+				startLineNumber: 0,
+				endLineNumber:   3,
+			},
+			want: &editorRequest{
+				method: "GET",
+				url:    `_search`,
+				data: []string{
+					"{\n  \"query\": {}\n}",
+				},
+			},
+		},
+		{
+			description: "correctly handles nested braces",
+			content: []string{
+				"GET _search",
+				"{",
+				`  "query": "{a} {b}"`,
+				"}",
+				"{",
+				`  "query": {}`,
+				"}",
+			},
+			adjustedParsedRequest: adjustedParsedRequest{
+				startLineNumber: 0,
+				endLineNumber:   6,
+			},
+			want: &editorRequest{
+				method: "GET",
+				url:    `_search`,
+				data: []string{
+					"{\n  \"query\": \"{a} {b}\"\n}",
+					"{\n  \"query\": {}\n}",
+				},
+			},
+		},
+		{
+			description: "works for several request bodies",
+			content: []string{
+				"GET _search",
+				"{",
+				`  "query": {}`,
+				"}",
+				"{",
+				`  "query": {}`,
+				"}",
+			},
+			adjustedParsedRequest: adjustedParsedRequest{
+				startLineNumber: 0,
+				endLineNumber:   6,
+			},
+			want: &editorRequest{
+				method: "GET",
+				url:    `_search`,
+				data: []string{
+					"{\n  \"query\": {}\n}",
+					"{\n  \"query\": {}\n}",
+				},
+			},
+		},
+		{
+			description: "splits several json objects",
+			content: []string{
+				"GET _search",
+				`{"query":"test"}`,
+				`{`,
+				`  "query": "test"`,
+				`}`,
+				`{"query":"test"}`,
+			},
+			adjustedParsedRequest: adjustedParsedRequest{
+				startLineNumber: 0,
+				endLineNumber:   5,
+			},
+			want: &editorRequest{
+				method: "GET",
+				url:    `_search`,
+				data: []string{
+					`{"query":"test"}`,
+					"{\n  \"query\": \"test\"\n}",
+					`{"query":"test"}`,
+				},
+			},
+		},
+		{
+			description: "works for invalid json objects",
+			content: []string{
+				"GET _search",
+				`{"query":"test"}`,
+				`{`,
+				`  "query":`,
+				`{`,
+			},
+			adjustedParsedRequest: adjustedParsedRequest{
+				startLineNumber: 0,
+				endLineNumber:   4,
+			},
+			want: &editorRequest{
+				method: "GET",
+				url:    `_search`,
+				data: []string{
+					`{"query":"test"}`,
+					"{\n  \"query\":\n{",
+				},
+			},
+		},
+	}
+
+	a := require.New(t)
+	for _, tc := range testCases {
+		got := getEditorRequest(strings.Join(tc.content, "\n"), tc.adjustedParsedRequest)
+		a.Equal(tc.want, got, "description: %s", tc.description)
 	}
 }

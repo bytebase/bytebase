@@ -1,19 +1,31 @@
 package elasticsearch
 
 import (
+	"encoding/json"
 	"strconv"
 	"strings"
 	"unicode/utf8"
 
+	hjson "github.com/hjson/hjson-go/v4"
 	"github.com/pkg/errors"
-
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 type ParseResult struct {
-	Statement     string
-	BeginPosition *storepb.Position
-	EndPosition   *storepb.Position
+	Request     *Request
+	StartOffset int
+	EndOffset   int
+}
+
+type Request struct {
+	Method string
+	URL    string
+	Data   []string
+}
+
+type editorRequest struct {
+	method string
+	url    string
+	data   []string
 }
 
 // parsedRequest is the range of a request, it is left inclusive and right exclusive.
@@ -22,6 +34,55 @@ type parsedRequest struct {
 	startOffset int
 	// endOffset is the byte offset of the end position.
 	endOffset int
+}
+
+type adjustedParsedRequest struct {
+	// startLineNumber is the line number of the first character of the request, starting from 0.
+	startLineNumber int
+	// endLineNumber is the line number of the end position, starting from 0.
+	endLineNumber int
+}
+
+// See https://sourcegraph.com/github.com/elastic/kibana/-/blob/src/platform/plugins/shared/console/public/application/containers/editor/utils/requests_utils.ts?L76.
+// Combine getRequestStartLineNumber and getRequestEndLineNumber.
+func getAdjustedParsedRequest(r parsedRequest, text string) adjustedParsedRequest {
+	bs := []byte(text)
+	startLineNumber := 0
+	endLineNumber := 0
+	startOffset := r.startOffset
+	// The startOffset is out of range, returning the end of document like
+	// what the model.getPositionAt does.
+	if r.startOffset >= len(bs) {
+		startOffset = len(bs) - 1
+	}
+	for i := 0; i < r.startOffset; i++ {
+		if bs[i] == '\n' {
+			startLineNumber++
+		}
+	}
+
+	if r.endOffset > 0 {
+		// if the parser set an end offset for this request , then find the line number for it.
+		endOffset := r.endOffset
+		if endOffset >= len(bs) {
+			endOffset = len(bs) - 1
+		}
+		for i := startOffset; i < endOffset; i++ {
+			if bs[i] == '\n' {
+				endLineNumber++
+			}
+		}
+	}
+	// TODO(zp): if no end offset, try to find the line before the next request starts.
+	// if the end is empty, go up to find the first non-empty line.
+	lines := strings.Split(text, "\n")
+	for endLineNumber >= 0 && strings.TrimSpace(lines[endLineNumber]) == "" {
+		endLineNumber = endLineNumber - 1
+	}
+	return adjustedParsedRequest{
+		startLineNumber: startLineNumber,
+		endLineNumber:   endLineNumber,
+	}
 }
 
 type parser struct {
@@ -40,7 +101,228 @@ type parser struct {
 
 // ParseElasticsearchREST parses the Elasticsearch REST API request.
 func ParseElasticsearchREST(text string) ([]*ParseResult, error) {
-	return nil, nil
+	p := newParser(text)
+	parsedResults, err := p.parse()
+	if err != nil {
+		return nil, err
+	}
+	var result []*ParseResult
+	for _, parsedResult := range parsedResults {
+		// See https://sourcegraph.com/github.com/elastic/kibana/-/blob/src/platform/plugins/shared/console/public/application/containers/editor/monaco_editor_actions_provider.ts?L261.
+		adjustedOffset := getAdjustedParsedRequest(parsedResult, text)
+		if adjustedOffset.startLineNumber > adjustedOffset.endLineNumber {
+			return nil, errors.Errorf("invalid request range")
+		}
+		editorRequest := getEditorRequest(text, adjustedOffset)
+		if editorRequest == nil {
+			continue
+		}
+		if len(editorRequest.data) > 0 {
+			for i, v := range editorRequest.data {
+				if containsComments(v) {
+					// parse and stringify to remove comments.
+					editorRequest.data[i] = indentData(v)
+				}
+				editorRequest.data[i] = collapseLiteralString(v)
+			}
+		}
+		result = append(result, &ParseResult{
+			Request: &Request{
+				Method: editorRequest.method,
+				URL:    editorRequest.url,
+				Data:   editorRequest.data,
+			},
+			StartOffset: parsedResult.startOffset,
+			EndOffset:   parsedResult.endOffset,
+		})
+	}
+
+	return result, err
+}
+
+func collapseLiteralString(s string) string {
+	splitData := strings.Split(s, `"""`)
+	for idx := 1; idx < len(splitData)-1; idx += 2 {
+		v, err := json.Marshal(splitData[idx])
+		if err != nil {
+			continue
+		}
+		splitData[idx] = string(v)
+	}
+	return strings.Join(splitData, "")
+}
+
+func indentData(s string) string {
+	v := make(map[string]any)
+	if err := hjson.Unmarshal([]byte(s), &v); err != nil {
+		return s
+	}
+	m, err := json.MarshalIndent(v, "", "  ")
+	if err != nil {
+		return s
+	}
+	return string(m)
+}
+
+func containsComments(s string) bool {
+	insideString := false
+	var prevR rune
+	rs := []rune(s)
+	for i, r := range rs {
+		nextR := rune(0)
+		if i+1 < len(rs) {
+			nextR = rs[i+1]
+		}
+
+		if !insideString && r == '"' {
+			insideString = true
+		} else if insideString && r == '"' && prevR != '\\' {
+			insideString = false
+		} else if !insideString {
+			if r == '/' && (nextR == '/' || nextR == '*') {
+				return true
+			}
+		}
+		prevR = r
+	}
+	return false
+}
+
+// See https://sourcegraph.com/github.com/elastic/kibana/-/blob/src/platform/plugins/shared/console/public/application/containers/editor/utils/requests_utils.ts?L204.
+func getEditorRequest(text string, a adjustedParsedRequest) *editorRequest {
+	e := &editorRequest{}
+	lines := strings.Split(text, "\n")
+	methodUrlLine := strings.TrimSpace(lines[a.startLineNumber])
+	if methodUrlLine == "" {
+		return nil
+	}
+	method, url := parseLine(methodUrlLine)
+	if method == "" || url == "" {
+		return nil
+	}
+	e.method = method
+	e.url = url
+
+	if a.endLineNumber <= a.startLineNumber {
+		return e
+	}
+
+	dataString := ""
+	if a.startLineNumber < len(lines)-1 {
+		var validLines []string
+		for i := a.startLineNumber + 1; i <= a.endLineNumber; i++ {
+			validLines = append(validLines, lines[i])
+		}
+		dataString = strings.TrimSpace(strings.Join(validLines, "\n"))
+	}
+
+	data := splitDataIntoJsonObjects(dataString)
+	return &editorRequest{
+		method: method,
+		url:    url,
+		data:   data,
+	}
+}
+
+// Splits a concatenated string of JSON objects into individual JSON objects.
+//
+// This function takes a string containing one or more JSON objects concatenated together,
+// separated by optional whitespace, and splits them into an array of individual JSON strings.
+// It ensures that nested objects and strings containing braces do not interfere with the splitting logic.
+//
+// Example inputs:
+// - '{ "query": "test"} { "query": "test" }' -> ['{ "query": "test"}', '{ "query": "test" }']
+// - '{ "query": "test"}' -> ['{ "query": "test"}']
+// - '{ "query": "{a} {b}"}' -> ['{ "query": "{a} {b}"}']
+func splitDataIntoJsonObjects(s string) []string {
+	var jsonObjects []string
+	// Track the depth of nested braces
+	depth := 0
+	// Holds the current JSON object as we iterate
+	currentObject := ""
+	// Tracks whether the current position is inside a string
+	insideString := false
+	// Iterate through each character in the input string
+	rs := []rune(s)
+	for i, r := range rs {
+		// Append the character to the current JSON object string
+		currentObject += string(r)
+
+		// If the character is a double quote and it is not escaped, toggle the `insideString` state
+		if r == '"' && (i == 0 || rs[i-1] != '\\') {
+			insideString = !insideString
+		} else if !insideString {
+			// Only modify depth if not inside a string
+			if r == '{' {
+				depth++
+			} else if r == '}' {
+				depth--
+			}
+
+			if depth == 0 {
+				jsonObjects = append(jsonObjects, strings.TrimSpace(currentObject))
+				currentObject = ""
+			}
+		}
+	}
+
+	// If there's remaining data in currentObject, add it as the last JSON object.
+	if strings.TrimSpace(currentObject) != "" {
+		jsonObjects = append(jsonObjects, strings.TrimSpace(currentObject))
+	}
+
+	// Filter out any empty strings from the result
+	var result []string
+	for i := 0; i < len(jsonObjects); i++ {
+		if jsonObjects[i] != "" {
+			result = append(result, jsonObjects[i])
+		}
+	}
+	return result
+}
+
+func parseLine(line string) (method string, url string) {
+	line = strings.TrimSpace(line)
+	firstWhitespaceIndex := strings.Index(line, " ")
+	if firstWhitespaceIndex < 0 {
+		// There is no url, only method
+		return line, ""
+	}
+
+	// 1st part is the method
+	method = strings.ToUpper(strings.TrimSpace(line[0:firstWhitespaceIndex]))
+	// 2nd part is the url
+	url, err := removeTrailingWhitespace(strings.TrimSpace(line[firstWhitespaceIndex:]))
+	if err != nil {
+		return "", ""
+	}
+	return method, url
+}
+
+// This function removes any trailing comments, for example:
+// "_search // comment" -> "_search"
+// Ideally the parser would do that, but currently they are included in the url.
+func removeTrailingWhitespace(s string) (string, error) {
+	index := 0
+	whitespaceIndex := -1
+	isQueryParam := false
+	for {
+		r, sz := utf8.DecodeRuneInString(s[index:])
+		if r == utf8.RuneError {
+			break
+		}
+		if r == '"' {
+			isQueryParam = !isQueryParam
+		} else if r == ' ' && !isQueryParam {
+			whitespaceIndex = index
+			break
+		}
+		index += sz
+	}
+	if whitespaceIndex > 0 {
+		return s[:whitespaceIndex], nil
+	}
+	return s, nil
 }
 
 func newParser(text string) *parser {
