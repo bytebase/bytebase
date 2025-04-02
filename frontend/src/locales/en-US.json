@@ -2399,8 +2399,8 @@
       "title-placeholder": "Input role title",
       "description-placeholder": "Input role description",
       "delete-warning": "The role \"{name}\" will be deleted. This action cannot be undone.",
-      "delete-warning-with-resources": "The role \"{name}\" is assigned to following users:",
-      "delete-warning-retry": "Please remove the role from these users then retry again."
+      "delete-warning-with-resources": "The role \"{name}\" is used by following resources:",
+      "delete-warning-retry": "Please remove the role from these resources then retry again."
     },
     "default-workspace-role": "Users will get the \"Workspace Member\" role by default",
     "title": "Title",

@@ -2399,8 +2399,8 @@
       "title-placeholder": "Nhập tiêu đề vai trò",
       "description-placeholder": "Nhập mô tả vai trò",
       "delete-warning": "Vai trò \"{name}\" sẽ bị xóa. Hành động này không thể hoàn tác.",
-      "delete-warning-with-resources": "Vai trò \"{name}\" được gán cho những người dùng sau:",
-      "delete-warning-retry": "Vui lòng xóa vai trò khỏi những người dùng này rồi thử lại."
+      "delete-warning-with-resources": "Vai trò \"{name}\" được sử dụng bởi các tài nguyên sau:",
+      "delete-warning-retry": "Vui lòng xóa vai trò khỏi các tài nguyên này rồi thử lại."
     },
     "default-workspace-role": "Người dùng sẽ nhận được vai trò \"Thành viên không gian làm việc\" theo mặc định",
     "title": "Tiêu đề",

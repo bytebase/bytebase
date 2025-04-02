@@ -2399,8 +2399,8 @@
       "title-placeholder": "役割のタイトルを入力してください",
       "description-placeholder": "役割の説明を入力してください",
       "delete-warning": "ロール「{name}」は削除されます。この操作は元に戻すことができません。",
-      "delete-warning-with-resources": "ロール「{name}」は次のユーザーに割り当てられています:",
-      "delete-warning-retry": "これらのユーザーからロールを削除して、もう一度お試しください。"
+      "delete-warning-with-resources": "ロール「{name}」は次のリソースによって使用されます:",
+      "delete-warning-retry": "これらのリソースからロールを削除して、もう一度お試しください。"
     },
     "default-workspace-role": "ユーザーにはデフォルトで「ワークスペースメンバー」の役割が与えられます",
     "title": "タイトル",
