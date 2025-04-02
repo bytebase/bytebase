@@ -40,12 +40,12 @@ func (s *Store) GetResourcesUsedByRole(ctx context.Context, role string) ([]*Rol
 		SELECT resource, resource_type FROM policy
 		CROSS JOIN LATERAL jsonb_array_elements(payload->'bindings') AS binding
 		WHERE
-			type = 'bb.policy.iam' AND
+			type = $1 AND
 			COALESCE(jsonb_array_length(binding->'members'), 0) > 0 AND
-			binding->>'role' = $1
+			binding->>'role' = $2
 		GROUP BY resource, resource_type;
 	`
-	rows, err := s.db.QueryContext(ctx, query, role)
+	rows, err := s.db.QueryContext(ctx, query, api.PolicyTypeIAM, role)
 	if err != nil {
 		return nil, err
 	}
