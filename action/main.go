@@ -1,13 +1,12 @@
 package main
 
 import (
-	"context"
 	"fmt"
 )
 
 func run() error {
-	ctx := context.Background()
-	if _, err := login(ctx); err != nil {
+	_, err := NewClient("https://demo.bytebase.com", "ci@service.bytebase.com", "bbs_iqysPHMqhNpG4rQ5SFEJ")
+	if err != nil {
 		return err
 	}
 	return nil
