@@ -1,8 +1,5 @@
 import { omit } from "lodash-es";
-import {
-  MonacoLanguageClient,
-  type IConnectionProvider,
-} from "monaco-languageclient";
+import { MonacoLanguageClient } from "monaco-languageclient";
 import type { ExecuteCommandParams } from "vscode-languageclient";
 import { CloseAction, ErrorAction, State } from "vscode-languageclient";
 import {
@@ -126,9 +123,11 @@ const state = {
   clientInitialized: undefined as Promise<MonacoLanguageClient> | undefined,
 };
 
-const createLanguageClient = (
-  connectionProvider: IConnectionProvider
-): MonacoLanguageClient => {
+const createLanguageClient = async (): Promise<MonacoLanguageClient> => {
+  const ws = await connectWebSocket();
+  const socket = toSocket(ws);
+  const reader = new WebSocketMessageReader(socket);
+  const writer = new WebSocketMessageWriter(socket);
   return new MonacoLanguageClient({
     name: "Bytebase Language Client",
     clientOptions: {
@@ -159,24 +158,18 @@ const createLanguageClient = (
         },
       },
     },
-    // create a language client connection from the JSON RPC connection on demand
-    connectionProvider,
+    messageTransports: {
+      reader,
+      writer,
+    },
   });
 };
 
 const createWebSocketAndStartClient = (): {
   languageClient: Promise<MonacoLanguageClient>;
 } => {
-  const languageClient = new Promise<MonacoLanguageClient>((resolve) => {
-    const languageClient = createLanguageClient({
-      async get() {
-        const ws = await connectWebSocket();
-        const socket = toSocket(ws);
-        const reader = new WebSocketMessageReader(socket);
-        const writer = new WebSocketMessageWriter(socket);
-        return { reader, writer };
-      },
-    });
+  const languageClient = new Promise<MonacoLanguageClient>(async (resolve) => {
+    const languageClient = await createLanguageClient();
     languageClient.onDidChangeState((e) => {
       if (e.newState === State.Running) {
         const { lastCommand } = conn;
