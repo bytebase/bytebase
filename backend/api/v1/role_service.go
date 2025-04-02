@@ -3,6 +3,7 @@ package v1
 import (
 	"context"
 	"slices"
+	"strings"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -194,12 +195,24 @@ func (s *RoleService) DeleteRole(ctx context.Context, request *v1pb.DeleteRoleRe
 		return nil, status.Errorf(codes.NotFound, "role not found: %s", roleID)
 	}
 
-	roleInUse, err := s.store.CheckRoleInUse(ctx, request.Name)
+	usedByResources, err := s.store.GetResourcesUsedByRole(ctx, request.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to check if the role is used: %v", err)
 	}
-	if roleInUse {
-		return nil, status.Errorf(codes.FailedPrecondition, "cannot delete because role %s is used by workspace or project", common.FormatRole(roleID))
+	if len(usedByResources) > 0 {
+		usedBy := []string{}
+		for i, usedResource := range usedByResources {
+			if i >= 10 {
+				// Limit the message length.
+				break
+			}
+			if usedResource.Resource != "" {
+				usedBy = append(usedBy, usedResource.Resource)
+			} else if usedResource.ResourceType == api.PolicyResourceTypeWorkspace {
+				usedBy = append(usedBy, "workspace")
+			}
+		}
+		return nil, status.Errorf(codes.FailedPrecondition, "cannot delete because role %s is used by resources: %s", common.FormatRole(roleID), strings.Join(usedBy, ","))
 	}
 
 	if err := s.store.DeleteRole(ctx, roleID); err != nil {
