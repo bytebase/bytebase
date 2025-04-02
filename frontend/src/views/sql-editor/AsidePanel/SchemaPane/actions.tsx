@@ -2,6 +2,7 @@ import { head } from "lodash-es";
 import {
   CodeIcon,
   CopyIcon,
+  InfoIcon,
   ExternalLinkIcon,
   FileCodeIcon,
   FileDiffIcon,
@@ -11,10 +12,20 @@ import {
   LinkIcon,
   SquarePenIcon,
 } from "lucide-vue-next";
+import {
+  FunctionIcon,
+  TableIcon,
+  ViewIcon,
+  ProcedureIcon,
+  ExternalTableIcon,
+  PackageIcon,
+  SequenceIcon,
+} from "@/components/Icon";
+import { SchemaDiagramIcon } from "@/components/SchemaDiagram";
 import { NButton, useDialog, type DropdownOption } from "naive-ui";
 import { computed, h, nextTick, ref } from "vue";
+import type { VNodeChild } from "vue";
 import { useRouter } from "vue-router";
-import TableIcon from "@/components/Icon/TableIcon.vue";
 import formatSQL from "@/components/MonacoEditor/sqlFormatter";
 import { useExecuteSQL } from "@/composables/useExecuteSQL";
 import { t } from "@/plugins/i18n";
@@ -52,6 +63,7 @@ import {
 } from "@/utils";
 import { keyWithPosition } from "../../EditorCommon";
 import {
+  type EditorPanelView,
   useEditorPanelContext,
   type EditorPanelViewState,
 } from "../../EditorPanel";
@@ -366,6 +378,7 @@ export const useActions = () => {
 
 export const useDropdown = () => {
   const router = useRouter();
+  const { updateViewState } = useEditorPanelContext();
   const { events: editorEvents, schemaViewer } = useSQLEditorContext();
   const { selectAllFromTableOrView, viewDetail } = useActions();
   const disallowEditSchema = useAppFeature(
@@ -396,6 +409,55 @@ export const useDropdown = () => {
     }
 
     const items: DropdownOptionWithTreeNode[] = [];
+    if (type === "database" || type === "schema") {
+      const actions: { view: EditorPanelView; icon: () => VNodeChild }[] = [
+        {
+          view: "INFO",
+          icon: () => <InfoIcon class="w-4 h-4" />
+        },
+        {
+          view: "TABLES",
+          icon: () => <TableIcon class="w-4 h-4" />
+        },
+        {
+          view: "VIEWS",
+          icon: () => <ViewIcon class="w-4 h-4" />
+        },
+        {
+          view: "FUNCTIONS",
+          icon: () => <FunctionIcon class="w-4 h-4" />
+        },
+        {
+          view: "PROCEDURES",
+          icon: () => <ProcedureIcon class="w-4 h-4" />
+        },
+        {
+          view: "SEQUENCES",
+          icon: () => <SequenceIcon class="w-4 h-4" />
+        },
+        {
+          view: "PACKAGES",
+          icon: () => <PackageIcon class="w-4 h-4" />
+        },
+        {
+          view: "EXTERNAL_TABLES",
+          icon: () => <ExternalTableIcon class="w-4 h-4" />
+        },
+        {
+          view: "DIAGRAM",
+          icon: () => <SchemaDiagramIcon class="w-4 h-4" />
+        },
+      ]
+      for (const action of actions) {
+        items.push({
+          key: action.view.toLowerCase(),
+          label: action.view,
+          icon: action.icon,
+          onSelect: () => updateViewState({ view: action.view })
+        })
+      }
+    }
+
     if (type === "table" || type === "view") {
       const schema = (target as NodeTarget<"table" | "view">).schema.name;
       const tableOrView = tableOrViewNameForNode(node);
