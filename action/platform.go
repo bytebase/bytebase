@@ -2,11 +2,11 @@ package main
 
 import "os"
 
-// jobPlatform represents the supported CI/CD platforms.
-type jobPlatform int
+// JobPlatform represents the supported CI/CD platforms.
+type JobPlatform int
 
 const (
-	LocalPlatform jobPlatform = iota
+	LocalPlatform JobPlatform = iota
 	GitHub
 	GitLab
 	Bitbucket
@@ -14,7 +14,7 @@ const (
 )
 
 // String returns the string representation of the JobPlatform enum.
-func (p jobPlatform) String() string {
+func (p JobPlatform) String() string {
 	switch p {
 	case GitHub:
 		return "GitHub"
@@ -30,7 +30,7 @@ func (p jobPlatform) String() string {
 }
 
 // getJobPlatform returns the platform where the job is running as a JobPlatform.
-func getJobPlatform() jobPlatform {
+func getJobPlatform() JobPlatform {
 	// https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/store-information-in-variables
 	if os.Getenv("GITHUB_ACTIONS") == "true" {
 		return GitHub
