@@ -5,5 +5,6 @@ import (
 )
 
 func main() {
-	fmt.Println("Hello, World!")
+	platform := getJobPlatform()
+	fmt.Printf("Hello, World - %s!", platform.String())
 }
