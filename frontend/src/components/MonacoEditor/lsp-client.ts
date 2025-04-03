@@ -168,7 +168,7 @@ const createLanguageClient = async (): Promise<MonacoLanguageClient> => {
 const createWebSocketAndStartClient = (): {
   languageClient: Promise<MonacoLanguageClient>;
 } => {
-  const languageClient = new Promise<MonacoLanguageClient>(async (resolve) => {
+  const languageClient = (async () => {
     const languageClient = await createLanguageClient();
     languageClient.onDidChangeState((e) => {
       if (e.newState === State.Running) {
@@ -187,13 +187,15 @@ const createWebSocketAndStartClient = (): {
       }
     });
 
-    languageClient.start().catch((err) => {
+    try {
+      await languageClient.start();
+    } catch (err) {
       // LSP Client startup failed.
       errorNotification(err);
-    });
+    }
 
-    resolve(languageClient);
-  });
+    return languageClient;
+  })();
 
   return {
     languageClient,
