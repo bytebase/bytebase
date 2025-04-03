@@ -364,8 +364,6 @@
         "self": "群组",
         "add-group": "添加组",
         "update-group": "更新组",
-        "delete-warning": "群组“{name}”将被删除。此操作无法撤消。",
-        "delete-warning-with-resources": "以下资源使用了群组“{name}”：",
         "form": {
           "email": "邮箱",
           "email-tips": "邮箱应该是唯一的，并且创建后不能更改。",

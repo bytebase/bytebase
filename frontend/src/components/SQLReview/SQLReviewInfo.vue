@@ -145,7 +145,7 @@ const emit = defineEmits<{
 
 const sqlReviewStore = useSQLReviewStore();
 const { resourceType } = useResourceByName({
-  resource: computed(() => props.attachedResources[0]),
+  resource: computed(() => props.attachedResources[0] ?? ""),
 });
 const { t } = useI18n();
 

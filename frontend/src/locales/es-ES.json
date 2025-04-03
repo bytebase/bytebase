@@ -364,8 +364,6 @@
         "self": "Grupos",
         "add-group": "Añadir grupo",
         "update-group": "Grupo de actualización",
-        "delete-warning": "Se eliminará el grupo \"{name}\". Esta acción no se puede deshacer.",
-        "delete-warning-with-resources": "El grupo \"{name}\" lo utilizan los siguientes recursos:",
         "form": {
           "email": "Correo electrónico",
           "email-tips": "El correo electrónico debe ser único y no se puede cambiar después de su creación.",
