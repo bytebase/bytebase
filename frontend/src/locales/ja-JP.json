@@ -2140,7 +2140,10 @@
     "idp": "アイデンティティプロバイダー",
     "database-group": "データベースのグループ化",
     "changelist": "変更リスト",
-    "review-config": "設定を確認する"
+    "review-config": "設定を確認する",
+    "delete-warning": "「{name}」は削除されます。この操作は元に戻せません。",
+    "delete-warning-with-resources": "「{name}」は次のリソースによって使用されます:",
+    "delete-warning-retry": "これらのリソースから削除して、もう一度お試しください。"
   },
   "resource-id": {
     "self": "{resource} ID",
@@ -2397,10 +2400,7 @@
       "add": "役割の追加",
       "edit": "役割の編集",
       "title-placeholder": "役割のタイトルを入力してください",
-      "description-placeholder": "役割の説明を入力してください",
-      "delete-warning": "ロール「{name}」は削除されます。この操作は元に戻すことができません。",
-      "delete-warning-with-resources": "ロール「{name}」は次のリソースによって使用されます:",
-      "delete-warning-retry": "これらのリソースからロールを削除して、もう一度お試しください。"
+      "description-placeholder": "役割の説明を入力してください"
     },
     "default-workspace-role": "ユーザーにはデフォルトで「ワークスペースメンバー」の役割が与えられます",
     "title": "タイトル",

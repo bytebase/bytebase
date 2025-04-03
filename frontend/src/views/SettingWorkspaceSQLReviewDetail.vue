@@ -63,7 +63,7 @@
           :key="resource"
           :can-remove="false"
         >
-          <SQLReviewAttachedResource :resource="resource" :show-prefix="true" />
+          <Resource :resource="resource" :show-prefix="true" />
         </BBBadge>
       </div>
     </div>
@@ -165,10 +165,10 @@ import {
 import { FeatureAttention } from "@/components/FeatureGuard";
 import { SQLReviewCreation } from "@/components/SQLReview";
 import SQLReviewAttachResourcesPanel from "@/components/SQLReview/components/SQLReviewAttachResourcesPanel.vue";
-import SQLReviewAttachedResource from "@/components/SQLReview/components/SQLReviewAttachedResource.vue";
 import SQLReviewTabsByEngine from "@/components/SQLReview/components/SQLReviewTabsByEngine.vue";
 import SQLRuleTableWithFilter from "@/components/SQLReview/components/SQLRuleTableWithFilter.vue";
 import { rulesToTemplate } from "@/components/SQLReview/components/utils";
+import Resource from "@/components/v2/ResourceOccupiedModal/Resource.vue";
 import { WORKSPACE_ROUTE_SQL_REVIEW } from "@/router/dashboard/workspaceRoutes";
 import {
   pushNotification,

@@ -2140,7 +2140,10 @@
     "idp": "Identity Provider",
     "database-group": "Database Group",
     "changelist": "Changelist",
-    "review-config": "Review Config"
+    "review-config": "Review Config",
+    "delete-warning": "The \"{name}\" will be deleted. This action cannot be undone.",
+    "delete-warning-with-resources": "The \"{name}\" is used by following resources:",
+    "delete-warning-retry": "Please remove it from these resources then retry again."
   },
   "resource-id": {
     "self": "{resource} ID",
@@ -2397,10 +2400,7 @@
       "add": "Add role",
       "edit": "Edit role",
       "title-placeholder": "Input role title",
-      "description-placeholder": "Input role description",
-      "delete-warning": "The role \"{name}\" will be deleted. This action cannot be undone.",
-      "delete-warning-with-resources": "The role \"{name}\" is used by following resources:",
-      "delete-warning-retry": "Please remove the role from these resources then retry again."
+      "description-placeholder": "Input role description"
     },
     "default-workspace-role": "Users will get the \"Workspace Member\" role by default",
     "title": "Title",

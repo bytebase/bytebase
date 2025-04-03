@@ -27,10 +27,7 @@
             :key="resource"
             :can-remove="false"
           >
-            <SQLReviewAttachedResource
-              :show-prefix="true"
-              :resource="resource"
-            />
+            <Resource :show-prefix="true" :resource="resource" />
           </BBBadge>
           <BBBadge
             v-if="!review.enforce"
@@ -70,11 +67,11 @@ import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBBadge, BBButtonConfirm } from "@/bbkit";
+import Resource from "@/components/v2/ResourceOccupiedModal/Resource.vue";
 import { WORKSPACE_ROUTE_SQL_REVIEW_DETAIL } from "@/router/dashboard/workspaceRoutes";
 import { pushNotification, useSQLReviewStore } from "@/store";
 import type { SQLReviewPolicy } from "@/types";
 import { hasWorkspacePermissionV2, sqlReviewPolicySlug } from "@/utils";
-import SQLReviewAttachedResource from "./SQLReviewAttachedResource.vue";
 import SQLReviewPolicyDataTable from "./SQLReviewPolicyDataTable.vue";
 
 defineProps<{
