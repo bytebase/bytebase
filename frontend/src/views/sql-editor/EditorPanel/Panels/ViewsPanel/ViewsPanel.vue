@@ -2,19 +2,13 @@
   <div v-if="metadata?.schema" class="h-full overflow-hidden flex flex-col">
     <div
       v-show="!metadata.view"
-      class="w-full h-[44px] py-2 px-2 border-b flex flex-row gap-x-2 justify-between items-center"
+      class="w-full h-[44px] py-2 px-2 border-b flex flex-row gap-x-2 justify-end items-center"
     >
-      <div class="flex items-center justify-start gap-2">
-        <DatabaseChooser />
-        <SchemaSelectToolbar simple />
-      </div>
-      <div class="flex items-center justify-end">
-        <SearchBox
-          v-model:value="state.keyword"
-          size="small"
-          style="width: 10rem"
-        />
-      </div>
+      <SearchBox
+        v-model:value="state.keyword"
+        size="small"
+        style="width: 10rem"
+      />
     </div>
 
     <ViewsTable
@@ -49,9 +43,7 @@ import {
   ViewMetadata,
   SchemaMetadata,
 } from "@/types/proto/v1/database_service";
-import DatabaseChooser from "@/views/sql-editor/EditorCommon/DatabaseChooser.vue";
 import { useEditorPanelContext } from "../../context";
-import { SchemaSelectToolbar } from "../common";
 import ViewDetail from "./ViewDetail.vue";
 import ViewsTable from "./ViewsTable.vue";
 

@@ -26,6 +26,8 @@ const (
 	SecurityProtocolStartTLS SecurityProtocol = "starttls"
 	// SecurityProtocolLDAPS represents the LDAPS security protocol.
 	SecurityProtocolLDAPS SecurityProtocol = "ldaps"
+	// SecurityProtocolNone means no security protocol.
+	SecurityProtocolNone SecurityProtocol = ""
 )
 
 // IdentityProviderConfig is the configuration to be consumed by the LDAP
@@ -50,8 +52,7 @@ type IdentityProviderConfig struct {
 	// UserFilter is the filter to search for users, e.g. "(uid=%s)".
 	UserFilter string `json:"userFilter"`
 	// SecurityProtocol is the security protocol to be used for establishing
-	// connections with the LDAP server. It should be either StartTLS or LDAPS, and
-	// cannot be empty.
+	// connections with the LDAP server. It must be StartTLS, LDAPS or None.
 	SecurityProtocol SecurityProtocol `json:"securityProtocol"`
 	// FieldMapping is the mapping of the user attributes returned by the LDAP
 	// server.
@@ -111,8 +112,15 @@ func (p *IdentityProvider) dial() (*ldap.Conn, error) {
 			return nil, errors.Errorf("start TLS: %v", err)
 		}
 		return conn, nil
+	case SecurityProtocolNone:
+		url := fmt.Sprintf("ldap://%s:%d", p.config.Host, p.config.Port)
+		conn, err := ldap.DialURL(url)
+		if err != nil {
+			return nil, errors.Errorf("dial: %v", err)
+		}
+		return conn, nil
 	default:
-		return nil, errors.Errorf("unsupported security protocol %q", p.config.SecurityProtocol)
+		return nil, errors.Errorf("unknown security protocol %q", p.config.SecurityProtocol)
 	}
 }
 

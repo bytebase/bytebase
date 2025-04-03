@@ -5,19 +5,13 @@
   >
     <div
       v-show="!metadata.table"
-      class="w-full flex flex-row gap-x-2 justify-between items-center"
+      class="w-full flex flex-row gap-x-2 justify-end items-center"
     >
-      <div class="flex items-center justify-start gap-2">
-        <DatabaseChooser />
-        <SchemaSelectToolbar simple />
-      </div>
-      <div class="flex items-center justify-end">
-        <SearchBox
-          v-model:value="state.keywords.table"
-          size="small"
-          style="width: 10rem"
-        />
-      </div>
+      <SearchBox
+        v-model:value="state.keywords.table"
+        size="small"
+        style="width: 10rem"
+      />
     </div>
     <TablesTable
       v-show="!metadata.table"
@@ -52,9 +46,7 @@ import {
   TableMetadata,
   TablePartitionMetadata,
 } from "@/types/proto/v1/database_service";
-import DatabaseChooser from "@/views/sql-editor/EditorCommon/DatabaseChooser.vue";
 import { useEditorPanelContext } from "../../context";
-import { SchemaSelectToolbar } from "../common";
 import TableDetail from "./TableDetail.vue";
 import TablesTable from "./TablesTable.vue";
 

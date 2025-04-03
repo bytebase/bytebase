@@ -312,8 +312,7 @@ export interface LDAPIdentityProviderConfig {
   userFilter: string;
   /**
    * SecurityProtocol is the security protocol to be used for establishing
-   * connections with the LDAP server. It should be either StartTLS or LDAPS, and
-   * cannot be empty.
+   * connections with the LDAP server. It must be StartTLS, LDAPS or None.
    */
   securityProtocol: string;
   /**

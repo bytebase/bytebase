@@ -13,7 +13,7 @@
 
 <script setup lang="ts">
 import { Plan as pev2 } from "pev2";
-import "pev2/dist/style.css";
+import "pev2/dist/pev2.css";
 import { parse } from "qs";
 import { computed } from "vue";
 import { readExplainFromToken } from "@/utils/pev2";
