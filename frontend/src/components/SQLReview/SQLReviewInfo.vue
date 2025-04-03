@@ -9,7 +9,7 @@
         {{ $t("sql-review.attach-resource.label") }}
       </p>
       <NRadioGroup
-        v-model:value="attachResourceType"
+        v-model:value="resourceType"
         :disabled="!allowChangeAttachedResource"
         class="space-x-2 mt-2"
       >
@@ -17,10 +17,10 @@
         <NRadio value="project">{{ $t("common.project") }}</NRadio>
       </NRadioGroup>
       <BBAttention type="info" class="my-2">
-        {{ $t(`sql-review.attach-resource.label-${attachResourceType}`) }}
+        {{ $t(`sql-review.attach-resource.label-${resourceType}`) }}
       </BBAttention>
       <EnvironmentSelect
-        v-if="attachResourceType === 'environment'"
+        v-if="resourceType === 'environment'"
         class="mt-2"
         required
         name="environment"
@@ -38,7 +38,7 @@
         "
       />
       <ProjectSelect
-        v-if="attachResourceType === 'project'"
+        v-if="resourceType === 'project'"
         class="mt-2"
         style="width: 100%"
         required
@@ -56,12 +56,11 @@
         "
       />
       <DatabaseSelect
-        v-if="attachResourceType === 'database'"
+        v-if="resourceType === 'database'"
         class="mt-2"
         style="width: 100%"
         required
-        :multiple="true"
-        :database-names="attachedResources"
+        :database-name="attachedResources[0]"
         :disabled="!allowChangeAttachedResource"
         :filter="(db: Database, _: number) => filterResource(db.name)"
         @update:database-names="$emit('attached-resources-change', $event)"
@@ -109,24 +108,23 @@
 <script lang="ts" setup>
 import { NRadio, NRadioGroup } from "naive-ui";
 import { Status } from "nice-grpc-common";
-import { ref, watch } from "vue";
+import { ref, watch, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBAttention, BBTextField } from "@/bbkit";
 import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
+import { useResourceByName } from "@/components/v2/ResourceOccupiedModal/useResourceByName";
 import { useSQLReviewStore } from "@/store";
-import {
-  reviewConfigNamePrefix,
-  projectNamePrefix,
-  isDatabaseName,
-} from "@/store/modules/v1/common";
-import type { SQLReviewPolicyTemplateV2 } from "@/types";
-import type { ResourceId, ValidatedMessage } from "@/types";
+import { reviewConfigNamePrefix } from "@/store/modules/v1/common";
+import type {
+  SQLReviewPolicyTemplateV2,
+  ResourceId,
+  ValidatedMessage,
+} from "@/types";
 import type { Database } from "@/types/proto/v1/database_service";
 import type { Environment } from "@/types/proto/v1/environment_service";
 import { getErrorCode } from "@/utils/grpcweb";
 import { DatabaseSelect, EnvironmentSelect, ProjectSelect } from "../v2";
 import { SQLReviewTemplateSelector } from "./components";
-import { type ResourceType } from "./components/useReviewConfigAttachedResource";
 
 const props = defineProps<{
   name: string;
@@ -146,29 +144,13 @@ const emit = defineEmits<{
 }>();
 
 const sqlReviewStore = useSQLReviewStore();
-
-const attachResourceType = ref<ResourceType>(
-  (function (): ResourceType {
-    if (props.attachedResources.length === 0) {
-      return "environment";
-    }
-    if (props.attachedResources.every((resource) => isDatabaseName(resource))) {
-      return "database";
-    }
-    if (
-      props.attachedResources.every((resource) =>
-        resource.startsWith(projectNamePrefix)
-      )
-    ) {
-      return "project";
-    }
-    return "environment";
-  })()
-);
+const { resourceType } = useResourceByName({
+  resource: computed(() => props.attachedResources[0]),
+});
 const { t } = useI18n();
 
 watch(
-  () => attachResourceType.value,
+  () => resourceType.value,
   () => emit("attached-resources-change", [])
 );
 

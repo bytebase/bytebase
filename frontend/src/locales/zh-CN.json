@@ -2140,7 +2140,10 @@
     "idp": "身份提供商",
     "database-group": "数据库分组",
     "changelist": "变更列表",
-    "review-config": "审查配置"
+    "review-config": "审查配置",
+    "delete-warning": "“{name}”将被删除。此操作无法撤消。",
+    "delete-warning-with-resources": "以下资源使用了“{name}”：",
+    "delete-warning-retry": "请将其从这些资源中删除，然后重试。"
   },
   "resource-id": {
     "self": "{resource} ID",
@@ -2397,10 +2400,7 @@
       "add": "添加角色",
       "edit": "编辑角色",
       "title-placeholder": "输入角色称谓",
-      "description-placeholder": "输入角色描述",
-      "delete-warning": "角色“{name}”将被删除。此操作无法撤消。",
-      "delete-warning-with-resources": "角色“{name}”已分配给以下资源：",
-      "delete-warning-retry": "请从这些资源中删除该角色后重试。"
+      "description-placeholder": "输入角色描述"
     },
     "default-workspace-role": "用户将默认获得“工作区成员”角色",
     "title": "称谓",

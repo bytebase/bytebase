@@ -17,12 +17,12 @@ import type { DataTableColumn } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBButtonConfirm } from "@/bbkit";
+import Resource from "@/components/v2/ResourceOccupiedModal/Resource.vue";
 import { pushNotification, useSQLReviewStore } from "@/store";
 import type { SQLReviewPolicy } from "@/types";
 import { SQLReviewRuleLevel } from "@/types/proto/v1/org_policy_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import { getHighlightHTMLByRegExp } from "@/utils";
-import SQLReviewAttachedResource from "./SQLReviewAttachedResource.vue";
 
 const props = withDefaults(
   defineProps<{
@@ -69,7 +69,7 @@ const columns = computed(
               {review.resources.length === 0 && <span>-</span>}
               {review.resources.map((resource) => {
                 return (
-                  <SQLReviewAttachedResource
+                  <Resource
                     key={resource}
                     resource={resource}
                     showPrefix={true}
