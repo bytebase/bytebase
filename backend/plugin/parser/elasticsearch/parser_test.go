@@ -298,3 +298,88 @@ func TestGetEditorRequest(t *testing.T) {
 		a.Equal(tc.want, got, "description: %s", tc.description)
 	}
 }
+
+func TestContainsComments(t *testing.T) {
+	testCases := []struct {
+		description string
+		input       string
+		want        bool
+	}{
+		{
+			description: "should return false for JSON with // and /* inside strings",
+			input: `{
+      "docs": [
+        {
+          "_source": {
+            "trace": {
+              "name": "GET /actuator/health/**"
+            },
+            "transaction": {
+              "outcome": "success"
+            }
+          }
+        },
+        {
+          "_source": {
+            "vulnerability": {
+              "reference": [
+                "https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2020-15778"
+              ]
+            }
+          }
+        }
+      ]
+    }`,
+			want: false,
+		},
+		{
+			description: "should return true for text with actual line comment",
+			input: `{
+      // This is a comment
+      "query": { "match_all": {} }
+    }`,
+			want: true,
+		},
+		{
+			description: "should return true for text with actual block comment",
+			input: `{
+      /* Bulk insert */
+      "index": { "_index": "test" },
+      "field1": "value1"
+    }`,
+			want: true,
+		},
+		{
+			description: "should return false for text without any comments",
+			input: `{
+      "field": "value"
+    }`,
+			want: false,
+		},
+		{
+			description: "should return false for empty string",
+			input:       ``,
+			want:        false,
+		},
+		{
+			description: "should correctly handle escaped quotes within strings",
+			input: `{
+      "field": \"value with \\\"escaped quotes\\\"\"
+    }`,
+			want: false,
+		},
+		{
+			description: "should return true if comment is outside of strings",
+			input: `{
+      "field": "value" // comment here
+    }`,
+			want: true,
+		},
+	}
+
+	a := require.New(t)
+	for _, tc := range testCases {
+		got := containsComments(tc.input)
+		a.Equal(tc.want, got, "description: %s", tc.description)
+	}
+}
