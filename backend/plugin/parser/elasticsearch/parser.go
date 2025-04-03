@@ -63,6 +63,7 @@ func getAdjustedParsedRequest(r parsedRequest, text string) adjustedParsedReques
 
 	if r.endOffset > 0 {
 		// if the parser set an end offset for this request , then find the line number for it.
+		endLineNumber = startLineNumber
 		endOffset := r.endOffset
 		if endOffset >= len(bs) {
 			endOffset = len(bs) - 1
