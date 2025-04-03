@@ -4,7 +4,7 @@ COPY action/ action/
 COPY . .
 RUN go build -ldflags '-extldflags "-static"' -o bytebase-action action/*.go
 
-FROM alpine:latest
+FROM ubuntu:latest
 WORKDIR /
 COPY --from=builder /action-build/bytebase-action /usr/local/bin/bytebase-action
 RUN chmod +x /usr/local/bin/bytebase-action
