@@ -42,9 +42,6 @@ import {
 import { Engine } from "@/types/proto/v1/common";
 import {
   GetSchemaStringRequest_ObjectType,
-  type SchemaMetadata,
-  type TableMetadata,
-  type ViewMetadata,
 } from "@/types/proto/v1/database_service";
 import { DataSource, DataSourceType } from "@/types/proto/v1/instance_service";
 import {
@@ -56,7 +53,6 @@ import {
   generateSimpleSelectAllStatement,
   generateSimpleUpdateStatement,
   instanceV1HasAlterSchema,
-  keyForDependencyColumn,
   sortByDictionary,
   supportGetStringSchema,
   toClipboard,
@@ -638,34 +634,6 @@ export const useDropdown = () => {
     handleClickoutside,
     selectAllFromTableOrView,
   };
-};
-
-const schemaForNode = (
-  node: TreeNode | undefined
-): SchemaMetadata | undefined => {
-  if (!node) return undefined;
-  if (node.meta.type === "schema") {
-    return (node.meta.target as NodeTarget<"schema">).schema;
-  }
-  return schemaForNode(node.parent);
-};
-
-const tableForNode = (
-  node: TreeNode | undefined
-): TableMetadata | undefined => {
-  if (!node) return undefined;
-  if (node.meta.type === "table") {
-    return (node.meta.target as NodeTarget<"table">).table;
-  }
-  return tableForNode(node.parent);
-};
-
-const viewForNode = (node: TreeNode | undefined): ViewMetadata | undefined => {
-  if (!node) return undefined;
-  if (node.meta.type === "view") {
-    return (node.meta.target as NodeTarget<"view">).view;
-  }
-  return viewForNode(node.parent);
 };
 
 const tableOrViewNameForNode = (node: TreeNode) => {
