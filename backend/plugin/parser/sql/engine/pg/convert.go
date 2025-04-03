@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	pgquery "github.com/pganalyze/pg_query_go/v5"
+	pgquery "github.com/pganalyze/pg_query_go/v6"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
@@ -1818,6 +1818,10 @@ func convertDataType(tp *pgquery.TypeName) (ast.DataType, error) {
 				return convertToVarchar(tp.Typmods)
 			case s == "text":
 				return &ast.Text{}
+			case s == "json":
+				return &ast.JSON{}
+			case s == "jsonb":
+				return &ast.JSON{JSONB: true}
 			}
 		}
 		return convertToUnconvertedDataType(tp)

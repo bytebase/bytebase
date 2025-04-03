@@ -72,7 +72,7 @@ require (
 	github.com/microsoft/go-mssqldb v1.8.0
 	github.com/nyaruka/phonenumbers v1.5.0
 	github.com/paulmach/orb v0.11.1
-	github.com/pganalyze/pg_query_go/v5 v5.1.0
+	github.com/pganalyze/pg_query_go/v6 v6.1.0
 	github.com/pingcap/tidb v1.1.0-beta.0.20241125141335-ec8b81b98edc
 	github.com/pingcap/tidb/pkg/parser v0.0.0-20241125141335-ec8b81b98edc
 	github.com/pkg/errors v0.9.1
@@ -104,7 +104,7 @@ require (
 	google.golang.org/genproto/googleapis/api v0.0.0-20250311190419-81fb87f6b8bf
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250311190419-81fb87f6b8bf
 	google.golang.org/grpc v1.71.0
-	google.golang.org/protobuf v1.36.5
+	google.golang.org/protobuf v1.36.6
 	gopkg.in/yaml.v3 v3.0.1
 )
 
@@ -371,33 +371,30 @@ require (
 	nhooyr.io/websocket v1.8.10 // indirect
 )
 
-// copied from pingcap/tidb
-// fix potential security issue(CVE-2020-26160) introduced by indirect dependency.
-replace github.com/dgrijalva/jwt-go => github.com/form3tech-oss/jwt-go v3.2.6-0.20210809144907-32ab6a8243d7+incompatible
-
-replace github.com/github/gh-ost => github.com/bytebase/gh-ost2 v1.1.7-0.20250310031106-33e16ca4b2e0
-
-replace github.com/pingcap/tidb => github.com/bytebase/tidb2 v0.0.0-20231129002249-5bbb6bb83940
-
-replace github.com/pingcap/tidb/pkg/parser => github.com/bytebase/tidb2/pkg/parser v0.0.0-20231129002249-5bbb6bb83940
-
-replace github.com/pganalyze/pg_query_go/v5 => github.com/bytebase/pg_query_go2/v5 v5.0.0-20241024030058-bbe7104c5b4b
-
-replace github.com/mattn/go-oci8 => github.com/bytebase/go-obo v0.0.0-20231026081615-705a7fffbfd2
-
-replace github.com/antlr4-go/antlr/v4 => github.com/bytebase/antlr/v4 v4.0.0-20240827034948-8c385f108920
-
-replace github.com/sourcegraph/go-lsp => github.com/bytebase/go-lsp v0.0.0-20240130071507-c04b5c75010c
-
 replace (
+	github.com/Azure/azure-sdk-for-go/sdk/data/azcosmos => github.com/bytebase/azure-sdk-for-go/sdk/data/azcosmos v0.0.0-20250109032656-87cf24d45689
+
+	github.com/antlr4-go/antlr/v4 => github.com/bytebase/antlr/v4 v4.0.0-20240827034948-8c385f108920
+	// Hive fix.
 	github.com/beltran/gohive => github.com/bytebase/gohive v0.0.0-20240422092929-d76993a958a4
 	github.com/beltran/gosasl => github.com/bytebase/gosasl v0.0.0-20240422091407-6b7481e86f08
+	// copied from pingcap/tidb
+	// fix potential security issue(CVE-2020-26160) introduced by indirect dependency.
+	github.com/dgrijalva/jwt-go => github.com/form3tech-oss/jwt-go v3.2.6-0.20210809144907-32ab6a8243d7+incompatible
+	// Other fixes.
+	github.com/github/gh-ost => github.com/bytebase/gh-ost2 v1.1.7-0.20250310031106-33e16ca4b2e0
+
+	github.com/jackc/pgx/v5 => github.com/bytebase/pgx/v5 v5.0.0-20250212161523-96ff8aed8767
+
+	github.com/mattn/go-oci8 => github.com/bytebase/go-obo v0.0.0-20231026081615-705a7fffbfd2
+
+	github.com/microsoft/go-mssqldb => github.com/bytebase/go-mssqldb v0.0.0-20240801091126-3ff3ca07d898
+
+	github.com/pganalyze/pg_query_go/v6 => github.com/bytebase/pg_query_go2/v6 v6.0.0-20250403034815-22c5b71007ed
+
+	github.com/pingcap/tidb => github.com/bytebase/tidb2 v0.0.0-20231129002249-5bbb6bb83940
+
+	github.com/pingcap/tidb/pkg/parser => github.com/bytebase/tidb2/pkg/parser v0.0.0-20231129002249-5bbb6bb83940
+
+	github.com/youmark/pkcs8 => github.com/bytebase/pkcs8 v0.0.0-20240612095628-fcd0a7484c94
 )
-
-replace github.com/microsoft/go-mssqldb => github.com/bytebase/go-mssqldb v0.0.0-20240801091126-3ff3ca07d898
-
-replace github.com/youmark/pkcs8 => github.com/bytebase/pkcs8 v0.0.0-20240612095628-fcd0a7484c94
-
-replace github.com/Azure/azure-sdk-for-go/sdk/data/azcosmos => github.com/bytebase/azure-sdk-for-go/sdk/data/azcosmos v0.0.0-20250109032656-87cf24d45689
-
-replace github.com/jackc/pgx/v5 => github.com/bytebase/pgx/v5 v5.0.0-20250212161523-96ff8aed8767

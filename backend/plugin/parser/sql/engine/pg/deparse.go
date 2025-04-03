@@ -7,7 +7,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	pgquery "github.com/pganalyze/pg_query_go/v5"
+	pgquery "github.com/pganalyze/pg_query_go/v6"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 )
@@ -1190,6 +1190,14 @@ func deparseDataType(_ DeparseContext, in ast.DataType, buf *strings.Builder) er
 		}
 	case *ast.Text:
 		if _, err := buf.WriteString("text"); err != nil {
+			return err
+		}
+	case *ast.JSON:
+		text := "json"
+		if node.JSONB {
+			text = "jsonb"
+		}
+		if _, err := buf.WriteString(text); err != nil {
 			return err
 		}
 	case *ast.UnconvertedDataType:
