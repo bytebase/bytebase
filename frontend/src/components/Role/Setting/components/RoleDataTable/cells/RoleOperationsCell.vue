@@ -12,6 +12,7 @@
     ref="resourceOccupiedModalRef"
     :target="role.name"
     :resources="resourceOccupied"
+    :show-positive-button="resourceOccupied.length === 0"
     @on-submit="onRoleRemove"
     @on-close="resetState"
   />

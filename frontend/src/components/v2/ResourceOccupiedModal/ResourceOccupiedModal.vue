@@ -3,8 +3,8 @@
     ref="resourceOccupiedModalRef"
     :title="$t('common.warning')"
     :closable="true"
-    :show-positive-btn="resources.length === 0"
-    :positive-text="resources.length === 0 ? $t('common.continue-anyway') : ''"
+    :show-positive-btn="showPositiveButton"
+    :positive-text="$t('common.continue-anyway')"
     :type="'warning'"
     @on-positive-click="() => $emit('on-submit')"
     @on-negative-click="() => $emit('on-close')"
@@ -19,6 +19,7 @@
         <div v-else class="space-y-2">
           <p>
             {{
+              description ||
               $t("resource.delete-warning-with-resources", {
                 name: target,
               })
@@ -33,7 +34,7 @@
               :resource="resource"
             />
           </ul>
-          <p>{{ $t("resource.delete-warning-retry") }}</p>
+          <p v-if="!description">{{ $t("resource.delete-warning-retry") }}</p>
         </div>
       </div>
     </template>
@@ -47,7 +48,9 @@ import Resource from "./Resource.vue";
 
 defineProps<{
   target: string;
+  description?: string;
   resources: string[];
+  showPositiveButton: boolean;
 }>();
 
 defineEmits<{

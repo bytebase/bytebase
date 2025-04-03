@@ -364,8 +364,6 @@
         "self": "Nhóm",
         "add-group": "Thêm nhóm",
         "update-group": "Cập nhật nhóm",
-        "delete-warning": "Nhóm \"{name}\" sẽ bị xóa. Hành động này không thể hoàn tác.",
-        "delete-warning-with-resources": "Nhóm \"{name}\" đang được sử dụng bởi các tài nguyên sau:",
         "form": {
           "email": "Email",
           "email-tips": "Email phải là duy nhất, và không thể thay đổi sau khi tạo.",

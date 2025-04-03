@@ -16,7 +16,7 @@ const props = defineProps<{
 }>();
 
 const { resourcePrefix, resourceComponent } = useResourceByName({
-  resource: computed(() => props.resource),
+  resource: computed(() => props.resource ?? ""),
   link: props.link,
 });
 </script>
