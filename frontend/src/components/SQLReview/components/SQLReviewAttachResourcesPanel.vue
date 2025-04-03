@@ -77,6 +77,7 @@ import {
   EnvironmentSelect,
   ProjectSelect,
 } from "@/components/v2";
+import Resource from "@/components/v2/ResourceOccupiedModal/Resource.vue";
 import { useSQLReviewStore, pushNotification } from "@/store";
 import {
   environmentNamePrefix,
@@ -84,7 +85,6 @@ import {
 } from "@/store/modules/v1/common";
 import type { SQLReviewPolicy } from "@/types";
 import { hasWorkspacePermissionV2 } from "@/utils";
-import SQLReviewAttachedResource from "./SQLReviewAttachedResource.vue";
 
 const props = defineProps<{
   show: boolean;
@@ -147,6 +147,7 @@ const onConfirm = async () => {
   if (resourcesBindingWithOtherPolicy.value.size === 0) {
     await upsertReviewResource();
   } else {
+    // TODO(ed): use ResourceOccupiedModal
     $dialog.warning({
       title: t("common.warning"),
       style: "z-index: 100000",
@@ -169,7 +170,7 @@ const onConfirm = async () => {
             <ul class="list-disc ml-4 textinfolabel">
               {resources.map((resource) => (
                 <li>
-                  <SQLReviewAttachedResource
+                  <Resource
                     resource={resource}
                     link={false}
                     showPrefix={true}

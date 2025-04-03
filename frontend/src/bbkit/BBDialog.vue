@@ -1,6 +1,6 @@
 <template>
   <BBModal
-    v-if="state.visible"
+    :show="state.visible"
     :title="title"
     :subtitle="subtitle"
     :show-close="closable"
@@ -10,11 +10,17 @@
     <slot name="default"></slot>
 
     <div class="pt-4 border-t border-block-border flex justify-end space-x-3">
-      <NButton v-if="showNegativeBtn" @click.prevent="onNegativeClick">
+      <NButton
+        v-if="showNegativeBtn"
+        size="small"
+        @click.prevent="onNegativeClick"
+      >
         {{ negativeText || $t("common.cancel") }}
       </NButton>
       <NButton
-        type="primary"
+        v-if="showPositiveBtn"
+        :type="type"
+        size="small"
         data-label="bb-modal-confirm-button"
         @click.prevent="onPositiveClick"
       >
@@ -26,46 +32,33 @@
 
 <script lang="ts" setup>
 import { NButton } from "naive-ui";
-import type { PropType } from "vue";
 import { reactive } from "vue";
 import type { Defer } from "@/utils";
 import { defer } from "@/utils";
 import BBModal from "./BBModal.vue";
 
-const props = defineProps({
-  title: {
-    type: String,
-    required: true,
-  },
-  subtitle: {
-    type: String,
-    default: "",
-  },
-  closable: {
-    type: Boolean,
-    default: false,
-  },
-  showNegativeBtn: {
-    type: Boolean,
-    default: true,
-  },
-  negativeText: {
-    type: String,
-    default: undefined,
-  },
-  positiveText: {
-    type: String,
-    default: undefined,
-  },
-  onBeforePositiveClick: {
-    type: Function as PropType<() => boolean>,
-    default: undefined,
-  },
-  onBeforeNegativeClick: {
-    type: Function as PropType<() => boolean>,
-    default: undefined,
-  },
-});
+withDefaults(
+  defineProps<{
+    title: string;
+    subtitle?: string;
+    closable?: boolean;
+    showNegativeBtn?: boolean;
+    showPositiveBtn?: boolean;
+    negativeText?: string;
+    positiveText?: string;
+    type: "info" | "warning";
+  }>(),
+  {
+    showNegativeBtn: true,
+    showPositiveBtn: true,
+    type: "info",
+  }
+);
+
+const emit = defineEmits<{
+  (event: "on-positive-click"): void;
+  (event: "on-negative-click"): void;
+}>();
 
 const state = reactive({
   visible: false,
@@ -84,25 +77,17 @@ const open = () => {
 };
 
 const onPositiveClick = () => {
-  if (props.onBeforePositiveClick) {
-    if (!props.onBeforePositiveClick()) {
-      return;
-    }
-  }
-
   state.visible = false;
   state.defer?.resolve(true);
+
+  emit("on-positive-click");
 };
 
 const onNegativeClick = () => {
-  if (props.onBeforeNegativeClick) {
-    if (!props.onBeforeNegativeClick()) {
-      return;
-    }
-  }
-
   state.visible = false;
   state.defer?.resolve(false);
+
+  emit("on-negative-click");
 };
 
 defineExpose({ open });

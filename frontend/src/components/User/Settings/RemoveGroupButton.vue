@@ -146,6 +146,7 @@ const renderProjectResources = (
 
 const handleDeleteGroup = async () => {
   const resources = await getProjectsBindingGroup(props.group);
+  // TODO(ed): use ResourceOccupiedModal
   const $dialog = dialog.create({
     type: "warning",
     title: t("common.warning"),
