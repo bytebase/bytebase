@@ -2,9 +2,10 @@ FROM golang:latest AS builder
 WORKDIR /action-build
 COPY action/ action/
 COPY . .
-RUN go build -o bytebase-action action/*.go
+RUN go build -ldflags '-extldflags "-static"' -o bytebase-action action/*.go
 
 FROM alpine:latest
 WORKDIR /
 COPY --from=builder /action-build/bytebase-action /usr/local/bin/bytebase-action
+RUN chmod +x /usr/local/bin/bytebase-action
 CMD ["bytebase-action"]
