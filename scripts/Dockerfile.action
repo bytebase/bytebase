@@ -1,7 +1,8 @@
 FROM golang:latest AS builder
 WORKDIR /action-build
 COPY action/ action/
-RUN go build -o bytebase-action ./action/main.go
+COPY . .
+RUN go build -o bytebase-action action/*.go
 
 FROM alpine:latest
 WORKDIR /root/
