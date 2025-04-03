@@ -9358,7 +9358,7 @@ When paginating, all other parameters provided to `ListReleases` must match the 
 | type | [ReleaseFileType](#bytebase-v1-ReleaseFileType) |  |  |
 | version | [string](#string) |  |  |
 | change_type | [Release.File.ChangeType](#bytebase-v1-Release-File-ChangeType) |  |  |
-| statement | [string](#string) |  | The statement is used for preview or check purpose. |
+| statement | [bytes](#bytes) |  | The statement is used for preview or check purpose. |
 | statement_size | [int64](#int64) |  |  |
 
 
