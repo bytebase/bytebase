@@ -25,7 +25,11 @@
         </NTag>
         <span class="text-sm">
           {{
-            getFileByName(spec.specReleaseSource?.file || "")?.statement || "-"
+            spec.specReleaseSource?.file
+              ? getReleaseFileStatement(
+                  getFileByName(spec.specReleaseSource.file)!
+                )
+              : "-"
           }}
         </span>
       </div>
@@ -131,6 +135,7 @@ import type {
   Plan_Spec,
   PreviewPlanResponse,
 } from "@/types/proto/v1/plan_service";
+import { getReleaseFileStatement } from "@/utils";
 
 const props = defineProps<{
   release: ComposedRelease;

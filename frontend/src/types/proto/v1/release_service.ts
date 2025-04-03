@@ -269,7 +269,7 @@ export interface Release_File {
   version: string;
   changeType: Release_File_ChangeType;
   /** The statement is used for preview or check purpose. */
-  statement: string;
+  statement: Uint8Array;
   statementSize: Long;
 }
 
@@ -1353,7 +1353,7 @@ function createBaseRelease_File(): Release_File {
     type: ReleaseFileType.TYPE_UNSPECIFIED,
     version: "",
     changeType: Release_File_ChangeType.CHANGE_TYPE_UNSPECIFIED,
-    statement: "",
+    statement: new Uint8Array(0),
     statementSize: Long.ZERO,
   };
 }
@@ -1381,8 +1381,8 @@ export const Release_File: MessageFns<Release_File> = {
     if (message.changeType !== Release_File_ChangeType.CHANGE_TYPE_UNSPECIFIED) {
       writer.uint32(72).int32(release_File_ChangeTypeToNumber(message.changeType));
     }
-    if (message.statement !== "") {
-      writer.uint32(58).string(message.statement);
+    if (message.statement.length !== 0) {
+      writer.uint32(58).bytes(message.statement);
     }
     if (!message.statementSize.equals(Long.ZERO)) {
       writer.uint32(64).int64(message.statementSize.toString());
@@ -1458,7 +1458,7 @@ export const Release_File: MessageFns<Release_File> = {
             break;
           }
 
-          message.statement = reader.string();
+          message.statement = reader.bytes();
           continue;
         }
         case 8: {
@@ -1489,7 +1489,7 @@ export const Release_File: MessageFns<Release_File> = {
       changeType: isSet(object.changeType)
         ? release_File_ChangeTypeFromJSON(object.changeType)
         : Release_File_ChangeType.CHANGE_TYPE_UNSPECIFIED,
-      statement: isSet(object.statement) ? globalThis.String(object.statement) : "",
+      statement: isSet(object.statement) ? bytesFromBase64(object.statement) : new Uint8Array(0),
       statementSize: isSet(object.statementSize) ? Long.fromValue(object.statementSize) : Long.ZERO,
     };
   },
@@ -1517,8 +1517,8 @@ export const Release_File: MessageFns<Release_File> = {
     if (message.changeType !== Release_File_ChangeType.CHANGE_TYPE_UNSPECIFIED) {
       obj.changeType = release_File_ChangeTypeToJSON(message.changeType);
     }
-    if (message.statement !== "") {
-      obj.statement = message.statement;
+    if (message.statement.length !== 0) {
+      obj.statement = base64FromBytes(message.statement);
     }
     if (!message.statementSize.equals(Long.ZERO)) {
       obj.statementSize = (message.statementSize || Long.ZERO).toString();
@@ -1538,7 +1538,7 @@ export const Release_File: MessageFns<Release_File> = {
     message.type = object.type ?? ReleaseFileType.TYPE_UNSPECIFIED;
     message.version = object.version ?? "";
     message.changeType = object.changeType ?? Release_File_ChangeType.CHANGE_TYPE_UNSPECIFIED;
-    message.statement = object.statement ?? "";
+    message.statement = object.statement ?? new Uint8Array(0);
     message.statementSize = (object.statementSize !== undefined && object.statementSize !== null)
       ? Long.fromValue(object.statementSize)
       : Long.ZERO;
@@ -2095,6 +2095,23 @@ export const ReleaseServiceDefinition = {
     },
   },
 } as const;
+
+function bytesFromBase64(b64: string): Uint8Array {
+  const bin = globalThis.atob(b64);
+  const arr = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; ++i) {
+    arr[i] = bin.charCodeAt(i);
+  }
+  return arr;
+}
+
+function base64FromBytes(arr: Uint8Array): string {
+  const bin: string[] = [];
+  arr.forEach((byte) => {
+    bin.push(globalThis.String.fromCharCode(byte));
+  });
+  return globalThis.btoa(bin.join(""));
+}
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 

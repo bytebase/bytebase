@@ -164,7 +164,7 @@ const runCheckInternal = async (statement: string) => {
           // Use a random uuid to avoid duplication.
           version: uuidv4(),
           type: ReleaseFileType.VERSIONED,
-          statement: statement,
+          statement: new TextEncoder().encode(statement),
           // Default to DDL change type.
           changeType: changeType || Release_File_ChangeType.DDL,
         },
