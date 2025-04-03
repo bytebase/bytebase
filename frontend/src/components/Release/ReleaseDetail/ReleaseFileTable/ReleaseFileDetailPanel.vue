@@ -29,7 +29,7 @@
     </p>
     <MonacoEditor
       class="h-auto max-h-[480px] min-h-[120px] border rounded-[3px] text-sm overflow-clip relative"
-      :content="releaseFile.statement"
+      :content="statement"
       :readonly="true"
       :auto-height="{ min: 120, max: 480 }"
     />
@@ -39,19 +39,22 @@
 <script lang="ts" setup>
 import { ClipboardIcon } from "lucide-vue-next";
 import { NDivider } from "naive-ui";
+import { computed } from "vue";
 import { MonacoEditor } from "@/components/MonacoEditor";
 import { pushNotification } from "@/store";
 import { type ComposedRelease } from "@/types";
 import type { Release_File } from "@/types/proto/v1/release_service";
-import { toClipboard } from "@/utils";
+import { getReleaseFileStatement, toClipboard } from "@/utils";
 
 const props = defineProps<{
   release: ComposedRelease;
   releaseFile: Release_File;
 }>();
 
+const statement = computed(() => getReleaseFileStatement(props.releaseFile));
+
 const copyStatement = async () => {
-  toClipboard(props.releaseFile.statement).then(() => {
+  toClipboard(statement.value).then(() => {
     pushNotification({
       module: "bytebase",
       style: "SUCCESS",

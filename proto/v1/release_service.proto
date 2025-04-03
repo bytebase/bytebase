@@ -233,7 +233,7 @@ message Release {
     ChangeType change_type = 9;
 
     // The statement is used for preview or check purpose.
-    string statement = 7;
+    bytes statement = 7;
     int64 statement_size = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
 
     enum ChangeType {

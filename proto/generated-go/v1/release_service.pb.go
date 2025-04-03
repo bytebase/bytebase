@@ -873,7 +873,7 @@ type Release_File struct {
 	Version     string                  `protobuf:"bytes,6,opt,name=version,proto3" json:"version,omitempty"`
 	ChangeType  Release_File_ChangeType `protobuf:"varint,9,opt,name=change_type,json=changeType,proto3,enum=bytebase.v1.Release_File_ChangeType" json:"change_type,omitempty"`
 	// The statement is used for preview or check purpose.
-	Statement     string `protobuf:"bytes,7,opt,name=statement,proto3" json:"statement,omitempty"`
+	Statement     []byte `protobuf:"bytes,7,opt,name=statement,proto3" json:"statement,omitempty"`
 	StatementSize int64  `protobuf:"varint,8,opt,name=statement_size,json=statementSize,proto3" json:"statement_size,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -958,11 +958,11 @@ func (x *Release_File) GetChangeType() Release_File_ChangeType {
 	return Release_File_CHANGE_TYPE_UNSPECIFIED
 }
 
-func (x *Release_File) GetStatement() string {
+func (x *Release_File) GetStatement() []byte {
 	if x != nil {
 		return x.Statement
 	}
-	return ""
+	return nil
 }
 
 func (x *Release_File) GetStatementSize() int64 {
@@ -1099,7 +1099,7 @@ const file_v1_release_service_proto_rawDesc = "" +
 	"\aversion\x18\x06 \x01(\tR\aversion\x12E\n" +
 	"\vchange_type\x18\t \x01(\x0e2$.bytebase.v1.Release.File.ChangeTypeR\n" +
 	"changeType\x12\x1c\n" +
-	"\tstatement\x18\a \x01(\tR\tstatement\x12+\n" +
+	"\tstatement\x18\a \x01(\fR\tstatement\x12+\n" +
 	"\x0estatement_size\x18\b \x01(\x03B\x04\xe2A\x01\x03R\rstatementSize\"J\n" +
 	"\n" +
 	"ChangeType\x12\x1b\n" +
