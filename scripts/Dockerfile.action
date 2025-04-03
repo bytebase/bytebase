@@ -7,4 +7,4 @@ RUN go build -o bytebase-action action/*.go
 FROM alpine:latest
 WORKDIR /
 COPY --from=builder /action-build/bytebase-action /usr/bin/
-CMD ["./bytebase-action"]
+CMD ["bytebase-action"]
