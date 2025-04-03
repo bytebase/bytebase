@@ -42,9 +42,6 @@ import {
 import { Engine } from "@/types/proto/v1/common";
 import {
   GetSchemaStringRequest_ObjectType,
-  type SchemaMetadata,
-  type TableMetadata,
-  type ViewMetadata,
 } from "@/types/proto/v1/database_service";
 import { DataSource, DataSourceType } from "@/types/proto/v1/instance_service";
 import {
@@ -56,7 +53,6 @@ import {
   generateSimpleSelectAllStatement,
   generateSimpleUpdateStatement,
   instanceV1HasAlterSchema,
-  keyForDependencyColumn,
   sortByDictionary,
   supportGetStringSchema,
   toClipboard,
@@ -166,16 +162,28 @@ export const useActions = () => {
     });
     runQuery(db, schema, tableOrViewName, query);
   };
+
+  const openNewTab = ({ title, view }: { title?: string; view?: EditorPanelView }) => {
+    const tabStore = useSQLEditorTabStore();
+    const fromTab = tabStore.currentTab;
+    const clonedTab = defaultSQLEditorTab();
+    if (fromTab) {
+      clonedTab.connection = cloneDeep(fromTab.connection);
+      clonedTab.treeState = cloneDeep(fromTab.treeState);
+    }
+    clonedTab.status = "CLEAN";
+    clonedTab.title = title ?? "";
+    tabStore.addTab(clonedTab);
+    updateViewState({ view });
+  }
+
   const viewDetail = async (node: TreeNode) => {
     const { type, target } = node.meta;
     const SUPPORTED_TYPES: NodeType[] = [
       "schema",
-      "expandable-text",
       "table",
-      "column",
       "external-table",
       "view",
-      "dependency-column",
       "procedure",
       "package",
       "function",
@@ -188,67 +196,16 @@ export const useActions = () => {
     if (!SUPPORTED_TYPES.includes(type)) {
       return;
     }
+
+    openNewTab({
+      title: "View detail"
+    });
+
     if (type === "schema") {
       const schema = (node.meta.target as NodeTarget<"schema">).schema.name;
       updateViewState({
         schema,
       });
-      return;
-    }
-    if (type === "expandable-text") {
-      const { mockType } = target as NodeTarget<"expandable-text">;
-      if (!mockType) return;
-      try {
-        const view = typeToView(mockType);
-        const schema = schemaForNode(node);
-        const vs: Partial<EditorPanelViewState> = {
-          view,
-        };
-        if (typeof schema !== "undefined") {
-          vs.schema = schema.name;
-        }
-        if (
-          mockType === "column" ||
-          mockType === "index" ||
-          mockType === "foreign-key" ||
-          mockType === "partition-table"
-        ) {
-          const table = tableForNode(node);
-          if (typeof table !== "undefined") {
-            vs.detail = { table: table.name };
-            if (mockType === "column") {
-              vs.detail.column = head(table.columns)?.name;
-            }
-            if (mockType === "index") {
-              vs.detail.index = head(table.indexes)?.name;
-            }
-            if (mockType === "foreign-key") {
-              vs.detail.foreignKey = head(table.foreignKeys)?.name;
-            }
-            if (mockType === "partition-table") {
-              vs.detail.partition = head(table.partitions)?.name;
-            }
-          }
-        }
-        if (mockType === "column" || mockType === "dependency-column") {
-          const view = viewForNode(node);
-          if (typeof view !== "undefined") {
-            vs.detail = { view: view.name };
-            if (mockType === "column") {
-              vs.detail.column = head(view.columns)?.name;
-            }
-            if (mockType === "dependency-column") {
-              const dep = head(view.dependencyColumns);
-              if (dep) {
-                vs.detail.dependencyColumn = keyForDependencyColumn(dep);
-              }
-            }
-          }
-        }
-        updateViewState(vs);
-      } catch {
-        // nothing
-      }
       return;
     }
 
@@ -282,60 +239,12 @@ export const useActions = () => {
     ) {
       detail.table = (target as NodeTarget<"table">).table.name;
     }
-    if (type === "column") {
-      const parentType = node.parent?.parent?.meta.type;
-      if (parentType === "table") {
-        detail.table = (target as NodeTarget<"table">).table.name;
-        detail.column = (target as NodeTarget<"column">).column.name;
-      }
-      if (parentType === "external-table") {
-        detail.externalTable = (
-          target as NodeTarget<"external-table">
-        ).externalTable.name;
-        detail.column = (target as NodeTarget<"column">).column.name;
-        updateViewState({
-          view: "EXTERNAL_TABLES",
-        });
-      }
-      if (parentType === "view") {
-        detail.view = (target as NodeTarget<"view">).view.name;
-        detail.column = (target as NodeTarget<"column">).column.name;
-        updateViewState({
-          view: "VIEWS",
-        });
-      }
-    }
     if (type === "trigger") {
       const { trigger, position } = target as NodeTarget<"trigger">;
       detail.trigger = keyWithPosition(trigger.name, position);
     }
     if (type === "view") {
       detail.view = (target as NodeTarget<"view">).view.name;
-    }
-    if (type === "dependency-column") {
-      const { database, dependencyColumn } =
-        target as NodeTarget<"dependency-column">;
-      const depSchema = database.schemas.find(
-        (s) => s.name === dependencyColumn.schema
-      );
-      if (
-        depSchema &&
-        depSchema.views.find((v) => v.name === dependencyColumn.table)
-      ) {
-        updateViewState({
-          view: "VIEWS",
-          schema: dependencyColumn.schema,
-        });
-        detail.view = dependencyColumn.table;
-        detail.column = dependencyColumn.column;
-      } else {
-        updateViewState({
-          view: "TABLES",
-          schema: dependencyColumn.schema,
-        });
-        detail.table = dependencyColumn.table;
-        detail.column = dependencyColumn.column;
-      }
     }
     if (type === "procedure") {
       const { procedure, position } = target as NodeTarget<"procedure">;
@@ -374,14 +283,13 @@ export const useActions = () => {
     });
   };
 
-  return { selectAllFromTableOrView, viewDetail };
+  return { selectAllFromTableOrView, viewDetail, openNewTab };
 };
 
 export const useDropdown = () => {
   const router = useRouter();
-  const { updateViewState } = useEditorPanelContext();
   const { events: editorEvents, schemaViewer } = useSQLEditorContext();
-  const { selectAllFromTableOrView, viewDetail } = useActions();
+  const { selectAllFromTableOrView, viewDetail, openNewTab } = useActions();
   const disallowEditSchema = useAppFeature(
     "bb.feature.sql-editor.disallow-edit-schema"
   );
@@ -464,17 +372,10 @@ export const useDropdown = () => {
           label: action.title,
           icon: action.icon,
           onSelect: () => {
-            const tabStore = useSQLEditorTabStore()
-            const fromTab = tabStore.currentTab;
-            const clonedTab = defaultSQLEditorTab();
-            if (fromTab) {
-              clonedTab.connection = cloneDeep(fromTab.connection);
-              clonedTab.treeState = cloneDeep(fromTab.treeState);
-            }
-            clonedTab.status = "CLEAN";
-            clonedTab.title = action.title;
-            tabStore.addTab(clonedTab);
-            nextTick(() => updateViewState({ view: action.view }))
+            openNewTab({
+              title: action.title,
+              view: action.view,
+            })
           }
         })
       }
@@ -733,34 +634,6 @@ export const useDropdown = () => {
     handleClickoutside,
     selectAllFromTableOrView,
   };
-};
-
-const schemaForNode = (
-  node: TreeNode | undefined
-): SchemaMetadata | undefined => {
-  if (!node) return undefined;
-  if (node.meta.type === "schema") {
-    return (node.meta.target as NodeTarget<"schema">).schema;
-  }
-  return schemaForNode(node.parent);
-};
-
-const tableForNode = (
-  node: TreeNode | undefined
-): TableMetadata | undefined => {
-  if (!node) return undefined;
-  if (node.meta.type === "table") {
-    return (node.meta.target as NodeTarget<"table">).table;
-  }
-  return tableForNode(node.parent);
-};
-
-const viewForNode = (node: TreeNode | undefined): ViewMetadata | undefined => {
-  if (!node) return undefined;
-  if (node.meta.type === "view") {
-    return (node.meta.target as NodeTarget<"view">).view;
-  }
-  return viewForNode(node.parent);
 };
 
 const tableOrViewNameForNode = (node: TreeNode) => {
