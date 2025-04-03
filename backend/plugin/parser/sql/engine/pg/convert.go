@@ -1818,6 +1818,10 @@ func convertDataType(tp *pgquery.TypeName) (ast.DataType, error) {
 				return convertToVarchar(tp.Typmods)
 			case s == "text":
 				return &ast.Text{}
+			case s == "json":
+				return &ast.JSON{}
+			case s == "jsonb":
+				return &ast.JSON{JSONB: true}
 			}
 		}
 		return convertToUnconvertedDataType(tp)

@@ -1192,6 +1192,14 @@ func deparseDataType(_ DeparseContext, in ast.DataType, buf *strings.Builder) er
 		if _, err := buf.WriteString("text"); err != nil {
 			return err
 		}
+	case *ast.JSON:
+		text := "json"
+		if node.JSONB {
+			text = "jsonb"
+		}
+		if _, err := buf.WriteString(text); err != nil {
+			return err
+		}
 	case *ast.UnconvertedDataType:
 		if _, err := buf.WriteString(node.Text()); err != nil {
 			return err
