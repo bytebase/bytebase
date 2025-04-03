@@ -3,11 +3,25 @@ package cassandra
 import (
 	"context"
 	"database/sql"
+	"fmt"
+	"math/big"
+	"time"
 
+	"github.com/cockroachdb/cockroachdb-parser/pkg/util/timeofday"
 	"github.com/gocql/gocql"
 	"github.com/pkg/errors"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/durationpb"
+	"google.golang.org/protobuf/types/known/structpb"
+	"google.golang.org/protobuf/types/known/timestamppb"
+	"gopkg.in/inf.v0"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/plugin/db/util"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
@@ -28,10 +42,10 @@ func newDriver(db.DriverConfig) db.Driver {
 
 func (*Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
 	addrs := []string{
-		config.DataSource.Host + ":" + config.DataSource.Port,
+		formatAddress(config.DataSource.Host, config.DataSource.Port),
 	}
 	for _, addr := range config.DataSource.AdditionalAddresses {
-		addrs = append(addrs, addr.Host+":"+addr.Port)
+		addrs = append(addrs, formatAddress(addr.Host, addr.Port))
 	}
 	cluster := gocql.NewCluster(addrs...)
 	cluster.Authenticator = gocql.PasswordAuthenticator{
@@ -68,12 +82,275 @@ func (d *Driver) Ping(ctx context.Context) error {
 }
 
 func (*Driver) GetDB() *sql.DB {
-	panic("GetDB() not supported for cassandra")
+	return nil
 }
 
 func (*Driver) Execute(context.Context, string, db.ExecuteOptions) (int64, error) {
-	return 0, errors.New("tbd")
+	return 0, status.Errorf(codes.Unimplemented, "Execute unimplemented")
 }
-func (*Driver) QueryConn(context.Context, *sql.Conn, string, db.QueryContext) ([]*v1pb.QueryResult, error) {
-	return nil, errors.New("tbd")
+func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, rawStatement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
+	stmts, err := util.SanitizeSQL(rawStatement)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to split sql")
+	}
+
+	var results []*v1pb.QueryResult
+	for _, stmt := range stmts {
+		startTime := time.Now()
+		queryResult, err := func() (*v1pb.QueryResult, error) {
+			if _, _, err := base.ValidateSQLForEditor(storepb.Engine_CASSANDRA, stmt); err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "support Cassandra SELECT statement only, err: %s", err.Error())
+			}
+			result := &v1pb.QueryResult{}
+			pageSize := 0
+			if queryContext.Limit > 0 {
+				pageSize = queryContext.Limit
+			}
+			var pageState []byte
+			for {
+				nextPageState, err := func() ([]byte, error) {
+					iter := d.session.Query(stmt).WithContext(ctx).PageSize(pageSize).PageState(pageState).Iter()
+					defer iter.Close()
+					nextPageState := iter.PageState()
+
+					if len(result.ColumnNames) == 0 {
+						for _, c := range iter.Columns() {
+							result.ColumnNames = append(result.ColumnNames, c.Name)
+							result.ColumnTypeNames = append(result.ColumnTypeNames, c.TypeInfo.Type().String())
+						}
+					}
+					for {
+						rowData, err := iter.RowData()
+						if err != nil {
+							return nil, errors.Wrap(err, "failed to fetch row data")
+						}
+						if !iter.Scan(rowData.Values...) {
+							break
+						}
+
+						row := &v1pb.QueryRow{}
+						for _, v := range rowData.Values {
+							row.Values = append(row.Values, convertRowValue(v))
+						}
+
+						result.Rows = append(result.Rows, row)
+						n := len(result.Rows)
+						if (n&(n-1) == 0) && int64(proto.Size(result)) > queryContext.MaximumSQLResultSize {
+							result.Error = common.FormatMaximumSQLResultSizeMessage(queryContext.MaximumSQLResultSize)
+							break
+						}
+
+						if queryContext.Limit > 0 && queryContext.Limit == n {
+							return nil, nil
+						}
+					}
+					if err := iter.Close(); err != nil {
+						return nil, errors.Wrapf(err, "iter close err")
+					}
+
+					return nextPageState, nil
+				}()
+				if err != nil {
+					return nil, err
+				}
+				if len(nextPageState) == 0 {
+					break
+				}
+				pageState = nextPageState
+			}
+			return result, nil
+		}()
+		stop := false
+		if err != nil {
+			queryResult = &v1pb.QueryResult{
+				Error: err.Error(),
+			}
+			stop = true
+		}
+		queryResult.Statement = stmt
+		queryResult.Latency = durationpb.New(time.Since(startTime))
+		queryResult.RowsCount = int64(len(queryResult.Rows))
+		results = append(results, queryResult)
+		if stop {
+			break
+		}
+	}
+
+	return results, nil
+}
+
+func convertRowValue(v any) *v1pb.RowValue {
+	switch v := v.(type) {
+	case *string:
+		if v == nil {
+			return util.NullRowValue
+		}
+		return &v1pb.RowValue{
+			Kind: &v1pb.RowValue_StringValue{
+				StringValue: *v,
+			},
+		}
+	case *int64:
+		if v == nil {
+			return util.NullRowValue
+		}
+		return &v1pb.RowValue{
+			Kind: &v1pb.RowValue_Int64Value{
+				Int64Value: *v,
+			},
+		}
+	case *time.Duration:
+		if v == nil {
+			return util.NullRowValue
+		}
+		// time of the day
+		// e.g. '08:12:54'
+		s, ns := v.Nanoseconds()/1_000_000_000, v.Nanoseconds()%1_000_000_000
+		display := timeofday.FromTime(time.Unix(s, ns)).String()
+		return &v1pb.RowValue{
+			Kind: &v1pb.RowValue_StringValue{
+				StringValue: display,
+			},
+		}
+	case *time.Time:
+		if v == nil {
+			return util.NullRowValue
+		}
+		return &v1pb.RowValue{
+			Kind: &v1pb.RowValue_TimestampValue{
+				TimestampValue: &v1pb.RowValue_Timestamp{
+					GoogleTimestamp: timestamppb.New(*v),
+					Accuracy:        3,
+				},
+			},
+		}
+	case *[]byte:
+		if v == nil {
+			return util.NullRowValue
+		}
+		return &v1pb.RowValue{
+			Kind: &v1pb.RowValue_BytesValue{
+				BytesValue: *v,
+			},
+		}
+	case *bool:
+		if v == nil {
+			return util.NullRowValue
+		}
+		return &v1pb.RowValue{
+			Kind: &v1pb.RowValue_BoolValue{
+				BoolValue: *v,
+			},
+		}
+	case *float32:
+		if v == nil {
+			return util.NullRowValue
+		}
+		return &v1pb.RowValue{
+			Kind: &v1pb.RowValue_FloatValue{
+				FloatValue: *v,
+			},
+		}
+	case *float64:
+		if v == nil {
+			return util.NullRowValue
+		}
+		return &v1pb.RowValue{
+			Kind: &v1pb.RowValue_DoubleValue{
+				DoubleValue: *v,
+			},
+		}
+	case *int:
+		if v == nil {
+			return util.NullRowValue
+		}
+		return &v1pb.RowValue{
+			Kind: &v1pb.RowValue_Int64Value{
+				Int64Value: int64(*v),
+			},
+		}
+	case *int16:
+		if v == nil {
+			return util.NullRowValue
+		}
+		return &v1pb.RowValue{
+			Kind: &v1pb.RowValue_Int32Value{
+				Int32Value: int32(*v),
+			},
+		}
+	case *int8:
+		if v == nil {
+			return util.NullRowValue
+		}
+		return &v1pb.RowValue{
+			Kind: &v1pb.RowValue_Int32Value{
+				Int32Value: int32(*v),
+			},
+		}
+	case *gocql.UUID:
+		if v == nil {
+			return util.NullRowValue
+		}
+		return &v1pb.RowValue{
+			Kind: &v1pb.RowValue_StringValue{
+				StringValue: v.String(),
+			},
+		}
+	case **inf.Dec:
+		if v == nil || *v == nil {
+			return util.NullRowValue
+		}
+		return &v1pb.RowValue{
+			Kind: &v1pb.RowValue_StringValue{
+				StringValue: (*v).String(),
+			},
+		}
+	case **big.Int:
+		if v == nil || *v == nil {
+			return util.NullRowValue
+		}
+		return &v1pb.RowValue{
+			Kind: &v1pb.RowValue_StringValue{
+				StringValue: (*v).String(),
+			},
+		}
+	case *gocql.Duration:
+		if v == nil {
+			return util.NullRowValue
+		}
+		display := time.Duration(v.Nanoseconds).String()
+		if v.Days > 0 {
+			display = fmt.Sprintf("%dd%s", v.Days, display)
+		}
+		if v.Months > 0 {
+			display = fmt.Sprintf("%dmo%s", v.Months, display)
+		}
+		return &v1pb.RowValue{
+			Kind: &v1pb.RowValue_StringValue{
+				StringValue: display,
+			},
+		}
+
+	default:
+		value, err := structpb.NewValue(v)
+		if err != nil {
+			return &v1pb.RowValue{
+				Kind: &v1pb.RowValue_StringValue{
+					StringValue: fmt.Sprintf("failed to marshal value, err: %v", err),
+				},
+			}
+		}
+		return &v1pb.RowValue{
+			Kind: &v1pb.RowValue_ValueValue{
+				ValueValue: value,
+			},
+		}
+	}
+}
+
+func formatAddress(host, port string) string {
+	if port == "" {
+		return host
+	}
+	return host + ":" + port
 }
