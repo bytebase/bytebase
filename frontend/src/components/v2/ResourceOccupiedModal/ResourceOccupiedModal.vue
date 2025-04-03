@@ -34,7 +34,7 @@
               :resource="resource"
             />
           </ul>
-          <p>{{ $t("resource.delete-warning-retry") }}</p>
+          <p v-if="!description">{{ $t("resource.delete-warning-retry") }}</p>
         </div>
       </div>
     </template>

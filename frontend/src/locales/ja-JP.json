@@ -364,8 +364,6 @@
         "self": "グループ",
         "add-group": "グループを追加",
         "update-group": "更新グループ",
-        "delete-warning": "グループ「{name}」は削除されます。この操作は元に戻せません。",
-        "delete-warning-with-resources": "次のリソースはグループ '{name}' を使用します:",
         "form": {
           "email": "Eメール",
           "email-tips": "電子メールは一意である必要があり、作成後に変更することはできません。",
