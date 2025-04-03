@@ -40,7 +40,10 @@ func run(platform JobPlatform) error {
 	if err != nil {
 		return err
 	}
-	checkReleaseResponse, err := client.checkRelease(project, &v1pb.Release{Files: releaseFiles})
+	checkReleaseResponse, err := client.checkRelease(project, &v1pb.CheckReleaseRequest{
+		Release: &v1pb.Release{Files: releaseFiles},
+		Targets: []string{targets},
+	})
 	if err != nil {
 		return err
 	}
