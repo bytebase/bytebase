@@ -7,8 +7,8 @@ import (
 	"sort"
 	"strings"
 
-	pgquery "github.com/pganalyze/pg_query_go/v5"
-	pgparser "github.com/pganalyze/pg_query_go/v5/parser"
+	pgquery "github.com/pganalyze/pg_query_go/v6"
+	pgparser "github.com/pganalyze/pg_query_go/v6/parser"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common/log"
