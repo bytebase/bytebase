@@ -10,7 +10,6 @@
     :row-key="(data: ComposedInstance) => data.name"
     :checked-row-keys="selectedInstanceNames"
     :row-props="rowProps"
-    :pagination="{ pageSize: 20 }"
     :paginate-single-page="false"
     @update:checked-row-keys="
         (val) => $emit('update:selected-instance-names', val as string[])

@@ -11883,6 +11883,7 @@ components:
                 statement:
                     type: string
                     description: The statement is used for preview or check purpose.
+                    format: bytes
                 statementSize:
                     readOnly: true
                     type: string

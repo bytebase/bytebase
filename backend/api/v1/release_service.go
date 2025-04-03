@@ -316,7 +316,7 @@ func convertToReleaseFiles(ctx context.Context, s *store.Store, files []*storepb
 			SheetSha256:   f.SheetSha256,
 			Type:          v1pb.ReleaseFileType(f.Type),
 			Version:       f.Version,
-			Statement:     sheet.Statement,
+			Statement:     []byte(sheet.Statement),
 			StatementSize: sheet.Size,
 			ChangeType:    v1pb.Release_File_ChangeType(f.ChangeType),
 		})

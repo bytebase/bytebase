@@ -22,7 +22,7 @@ import { useRouter } from "vue-router";
 import { BBAvatar } from "@/bbkit";
 import { getTimeForPbTimestamp, type ComposedRelease } from "@/types";
 import { State } from "@/types/proto/v1/common";
-import { humanizeTs } from "@/utils";
+import { getReleaseFileStatement, humanizeTs } from "@/utils";
 
 interface LocalState {
   selectedReleaseNameList: Set<string>;
@@ -84,7 +84,7 @@ const columnList = computed(
                   <NTag class="mr-2" v-if="schemaVersion" size="small" round>
                     {file.version}
                   </NTag>
-                  {file.statement}
+                  {getReleaseFileStatement(file)}
                 </p>
               ))}
               {release.files.length > MAX_SHOW_FILES_COUNT && (
