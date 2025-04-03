@@ -2,6 +2,7 @@ package v1
 
 import (
 	"context"
+	"fmt"
 	"slices"
 
 	"github.com/google/uuid"
@@ -67,6 +68,44 @@ func (s *ReleaseService) CreateRelease(ctx context.Context, request *v1pb.Create
 	request.Release.Files, err = validateAndSanitizeReleaseFiles(request.Release.Files)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid release files, err: %v", err)
+	}
+	sheetsToCreate := []*store.SheetMessage{}
+	fileToSheetMap := map[*v1pb.Release_File]*store.SheetMessage{}
+	// Prepare sheets to create for files with missing sheets.
+	for _, file := range request.Release.Files {
+		if file.Sheet == "" {
+			if file.Statement == nil {
+				return nil, status.Errorf(codes.InvalidArgument, "either sheet or statement must be set")
+			}
+			sheet := &store.SheetMessage{
+				Title:     fmt.Sprintf("File %s", file.Path),
+				Statement: string(file.Statement),
+			}
+			sheetsToCreate = append(sheetsToCreate, sheet)
+			fileToSheetMap[file] = sheet
+		}
+	}
+
+	// Batch create sheets if needed.
+	if len(sheetsToCreate) > 0 {
+		createdSheets, err := s.sheetManager.BatchCreateSheet(ctx, sheetsToCreate, project.ResourceID, user.ID)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to create sheets, err: %v", err)
+		}
+		if len(createdSheets) != len(sheetsToCreate) {
+			return nil, status.Errorf(codes.Internal, "failed to create all sheets, expected %d but got %d", len(sheetsToCreate), len(createdSheets))
+		}
+
+		// Map created sheets back to files.
+		for i, sheet := range createdSheets {
+			file := sheetsToCreate[i]
+			for f, s := range fileToSheetMap {
+				if s == file {
+					f.Sheet = common.FormatSheet(project.ResourceID, sheet.UID)
+					break
+				}
+			}
+		}
 	}
 
 	files, err := convertReleaseFiles(ctx, s.store, request.Release.Files)
