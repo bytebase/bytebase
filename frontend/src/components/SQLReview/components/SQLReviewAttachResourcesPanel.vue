@@ -64,11 +64,24 @@
       </template>
     </DrawerContent>
   </Drawer>
+
+  <ResourceOccupiedModal
+    ref="resourceOccupiedModalRef"
+    :target="review.name"
+    :description="
+      $t('sql-review.attach-resource.override-warning', {
+        button: t('common.continue-anyway'),
+      })
+    "
+    :resources="resourcesOccupied"
+    :show-positive-button="true"
+    @on-submit="onSubmit"
+  />
 </template>
 
 <script setup lang="tsx">
 import { cloneDeep } from "lodash-es";
-import { NButton, NDivider, useDialog } from "naive-ui";
+import { NButton, NDivider } from "naive-ui";
 import { watch, ref, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import {
@@ -77,7 +90,7 @@ import {
   EnvironmentSelect,
   ProjectSelect,
 } from "@/components/v2";
-import Resource from "@/components/v2/ResourceOccupiedModal/Resource.vue";
+import ResourceOccupiedModal from "@/components/v2/ResourceOccupiedModal/ResourceOccupiedModal.vue";
 import { useSQLReviewStore, pushNotification } from "@/store";
 import {
   environmentNamePrefix,
@@ -98,7 +111,8 @@ const emit = defineEmits<{
 const resources = ref<string[]>([]);
 const sqlReviewStore = useSQLReviewStore();
 const { t } = useI18n();
-const $dialog = useDialog();
+const resourceOccupiedModalRef =
+  ref<InstanceType<typeof ResourceOccupiedModal>>();
 
 watch(
   () => props.review.resources,
@@ -143,52 +157,29 @@ const resourcesBindingWithOtherPolicy = computed(() => {
   return map;
 });
 
+const resourcesOccupied = computed(() =>
+  [...resourcesBindingWithOtherPolicy.value.values()].reduce(
+    (list, resources) => {
+      list.push(...resources);
+      return list;
+    },
+    []
+  )
+);
+
 const onConfirm = async () => {
-  if (resourcesBindingWithOtherPolicy.value.size === 0) {
+  if (resourcesOccupied.value.length === 0) {
     await upsertReviewResource();
   } else {
-    // TODO(ed): use ResourceOccupiedModal
-    $dialog.warning({
-      title: t("common.warning"),
-      style: "z-index: 100000",
-      negativeText: t("common.cancel"),
-      positiveText: t("common.continue-anyway"),
-      content: () => {
-        const resources = [
-          ...resourcesBindingWithOtherPolicy.value.values(),
-        ].reduce((list, resources) => {
-          list.push(...resources);
-          return list;
-        }, []);
-        return (
-          <div class="space-y-2">
-            <p>
-              {t("sql-review.attach-resource.override-warning", {
-                button: t("common.continue-anyway"),
-              })}
-            </p>
-            <ul class="list-disc ml-4 textinfolabel">
-              {resources.map((resource) => (
-                <li>
-                  <Resource
-                    resource={resource}
-                    link={false}
-                    showPrefix={true}
-                  />
-                </li>
-              ))}
-            </ul>
-          </div>
-        );
-      },
-      onPositiveClick: () => {
-        const map = cloneDeep(resourcesBindingWithOtherPolicy.value);
-        upsertReviewResource().then(() => {
-          sqlReviewStore.removeResourceForReview(map);
-        });
-      },
-    });
+    resourceOccupiedModalRef.value?.open();
   }
+};
+
+const onSubmit = () => {
+  const map = cloneDeep(resourcesBindingWithOtherPolicy.value);
+  upsertReviewResource().then(() => {
+    sqlReviewStore.removeResourceForReview(map);
+  });
 };
 
 const upsertReviewResource = async () => {

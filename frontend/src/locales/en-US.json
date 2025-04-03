@@ -364,8 +364,6 @@
         "self": "Groups",
         "add-group": "Add Group",
         "update-group": "Update Group",
-        "delete-warning": "The group \"{name}\" will be deleted. This action cannot be undone.",
-        "delete-warning-with-resources": "The group \"{name}\" is used by following resources:",
         "form": {
           "email": "Email",
           "email-tips": "The email should be unique, and it cannot be changed after creation.",
