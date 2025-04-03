@@ -15,7 +15,7 @@ import { NDataTable, type DataTableColumn } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { Release_File } from "@/types/proto/v1/release_service";
-import { bytesToString } from "@/utils";
+import { bytesToString, getReleaseFileStatement } from "@/utils";
 
 const props = withDefaults(
   defineProps<{
@@ -77,7 +77,7 @@ const columnList = computed(() => {
       key: "statement",
       title: t("common.statement"),
       ellipsis: true,
-      render: (file) => file.statement,
+      render: (file) => getReleaseFileStatement(file),
     },
   ];
   return columns.filter((column) => !column.hide);

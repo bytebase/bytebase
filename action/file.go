@@ -37,7 +37,7 @@ func getReleaseFiles(pattern string) ([]*v1pb.Release_File, error) {
 			Path:       m,
 			Version:    version,
 			ChangeType: t,
-			Statement:  string(content),
+			Statement:  content,
 		})
 	}
 
