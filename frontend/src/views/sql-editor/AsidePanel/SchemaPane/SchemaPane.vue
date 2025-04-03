@@ -398,7 +398,7 @@ const toggleNode = (node: TreeNode) => {
 };
 
 const singleClick = (node: TreeNode) => {
-  expandNode(node);
+  toggleNode(node);
   if (node.meta.type === "schema") {
     const tab = currentTab.value;
     if (tab) {
