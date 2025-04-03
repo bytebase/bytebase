@@ -69,6 +69,25 @@ func (s *ReleaseService) CreateRelease(ctx context.Context, request *v1pb.Create
 		return nil, status.Errorf(codes.InvalidArgument, "invalid release files, err: %v", err)
 	}
 
+	for _, file := range request.Release.Files {
+		if file.Sheet == "" && file.Statement == nil {
+			return nil, status.Errorf(codes.InvalidArgument, "either sheet or statement must be set")
+		}
+		// If sheet is empty, we'll use the statement to create a new sheet.
+		if file.Sheet == "" {
+			sheet, err := s.sheetManager.CreateSheet(ctx, &store.SheetMessage{
+				ProjectID: project.ResourceID,
+				CreatorID: user.ID,
+				Title:     request.Release.Title,
+				Statement: string(file.Statement),
+			})
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to create sheet, err: %v", err)
+			}
+			file.Sheet = common.FormatSheet(project.ResourceID, sheet.UID)
+		}
+	}
+
 	files, err := convertReleaseFiles(ctx, s.store, request.Release.Files)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to convert files, err: %v", err)
