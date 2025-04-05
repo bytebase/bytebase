@@ -35,6 +35,7 @@ func getReleaseFiles(pattern string) ([]*v1pb.Release_File, error) {
 		}
 		files = append(files, &v1pb.Release_File{
 			Path:       m,
+			Type:       v1pb.ReleaseFileType_VERSIONED,
 			Version:    version,
 			ChangeType: t,
 			Statement:  content,
