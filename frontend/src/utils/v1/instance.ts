@@ -175,6 +175,7 @@ export const instanceV1HasSSL = (
     Engine.MONGODB,
     Engine.ELASTICSEARCH,
     Engine.MSSQL,
+    Engine.CASSANDRA,
   ].includes(engine);
 };
 

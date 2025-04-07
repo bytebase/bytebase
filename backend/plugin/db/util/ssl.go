@@ -9,7 +9,7 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-// GetSslConfig gets the SSL config for connection.
+// GetTLSConfig gets the TLS config for connection.
 func GetTLSConfig(ds *storepb.DataSource) (*tls.Config, error) {
 	if !ds.GetUseSsl() {
 		return nil, nil

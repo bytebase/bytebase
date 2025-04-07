@@ -59,6 +59,16 @@ func (*Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionCon
 	}
 	cluster.Keyspace = config.ConnectionContext.DatabaseName
 
+	if config.DataSource.GetUseSsl() {
+		tlsConfig, err := util.GetTLSConfig(config.DataSource)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get ssl config")
+		}
+		cluster.SslOpts = &gocql.SslOptions{
+			Config: tlsConfig,
+		}
+	}
+
 	session, err := cluster.CreateSession()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create session")
