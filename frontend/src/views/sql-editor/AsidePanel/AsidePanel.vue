@@ -60,14 +60,10 @@
 <script lang="ts" setup>
 import { useElementSize } from "@vueuse/core";
 import { storeToRefs } from "pinia";
-import { computed, ref, watch } from "vue";
+import { computed, ref } from "vue";
 import { ProjectSelect } from "@/components/v2";
 import { SQL_EDITOR_SETTING_PROJECT_MODULE } from "@/router/sqlEditor";
-import {
-  useSQLEditorTreeStore,
-  useSQLEditorStore,
-  useAppFeature,
-} from "@/store";
+import { useSQLEditorStore, useAppFeature } from "@/store";
 import { defaultProject, isValidProjectName } from "@/types";
 import { hasProjectPermissionV2, hasWorkspacePermissionV2 } from "@/utils";
 import { useSQLEditorContext } from "../context";
@@ -77,8 +73,7 @@ import SchemaPane from "./SchemaPane";
 import WorksheetPane from "./WorksheetPane";
 
 const editorStore = useSQLEditorStore();
-const treeStore = useSQLEditorTreeStore();
-const { events, asidePanelTab } = useSQLEditorContext();
+const { asidePanelTab } = useSQLEditorContext();
 const { project, projectContextReady, strictProject } =
   storeToRefs(editorStore);
 const containerRef = ref<HTMLDivElement>();
@@ -90,16 +85,6 @@ const allowAccessDefaultProject = computed(() => {
 });
 const allowCreateProject = computed(() => {
   return hasWorkspacePermissionV2("bb.projects.create");
-});
-
-watch([project, projectContextReady], ([, ready]) => {
-  if (!ready) {
-    treeStore.state = "LOADING";
-  } else {
-    treeStore.buildTree();
-    treeStore.state = "READY";
-    events.emit("tree-ready");
-  }
 });
 
 const handleSwitchProject = (name: string | undefined) => {
