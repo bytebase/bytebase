@@ -1,7 +1,7 @@
 import { computed, type Ref } from "vue";
 import { Engine } from "@/types/proto/v1/common";
 import { DataSourceType } from "@/types/proto/v1/instance_service";
-import { instanceV1HasSSH, instanceV1HasSSL } from "@/utils";
+import { instanceV1HasExtraParameters, instanceV1HasSSH, instanceV1HasSSL } from "@/utils";
 import type { BasicInfo, EditDataSource } from "./common";
 import { defaultPortForEngine } from "./constants";
 
@@ -60,6 +60,9 @@ export const useInstanceSpecs = (
   const hasReadonlyReplicaPort = computed((): boolean => {
     return basicInfo.value.engine !== Engine.SPANNER;
   });
+  const hasExtraParameters = computed((): boolean => {
+    return instanceV1HasExtraParameters(basicInfo.value.engine);
+  });
 
   return {
     showDatabase,
@@ -73,6 +76,7 @@ export const useInstanceSpecs = (
     showAuthenticationDatabase,
     hasReadonlyReplicaHost,
     hasReadonlyReplicaPort,
+    hasExtraParameters
   };
 };
 
