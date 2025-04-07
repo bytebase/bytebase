@@ -2,18 +2,18 @@
   <div class="sql-editor-tree gap-y-1 h-full flex flex-col relative">
     <div class="flex flex-row gap-x-0.5 px-1 items-center">
       <SearchBox
-        :loading="editrStore.loading"
+        :loading="editorStore.loading"
         v-model:search-pattern="searchPattern"
         class="flex-1"
       />
-      <GroupingBar :disabled="editrStore.loading" class="shrink-0" />
+      <GroupingBar :disabled="editorStore.loading" class="shrink-0" />
     </div>
     <div
       v-if="hasMissingQueryDatabases"
       class="flex items-center space-x-2 px-2 py-2"
     >
       <NCheckbox
-        :disabled="editrStore.loading"
+        :disabled="editorStore.loading"
         v-model:checked="showMissingQueryDatabases"
       >
         <span class="textinfolabel text-sm">
@@ -23,25 +23,42 @@
     </div>
     <div
       ref="treeContainerElRef"
-      class="relative sql-editor-tree--tree flex-1 px-1 pb-1 text-sm overflow-hidden select-none"
+      class="relative sql-editor-tree--tree flex-1 px-1 pb-1 text-sm select-none"
       :data-height="treeContainerHeight"
     >
-      <MaskSpinner v-if="editrStore.loading" class="!bg-white/75" />
-      <NTree
+      <div
         v-if="treeStore.state === 'READY'"
-        ref="treeRef"
-        v-model:expanded-keys="expandedKeys"
-        :block-line="true"
-        :data="treeStore.tree"
-        :show-irrelevant-nodes="false"
-        :selected-keys="selectedKeys"
-        :pattern="mounted ? searchPattern : ''"
-        :expand-on-click="true"
-        :node-props="nodeProps"
-        :virtual-scroll="true"
-        :theme-overrides="{ nodeHeight: '21px' }"
-        :render-label="renderLabel"
-      />
+        class="flex flex-col space-y-2 pb-4"
+      >
+        <NTree
+          ref="treeRef"
+          v-model:expanded-keys="expandedKeys"
+          :block-line="true"
+          :data="treeStore.tree"
+          :show-irrelevant-nodes="false"
+          :selected-keys="selectedKeys"
+          :pattern="mounted ? searchPattern : ''"
+          :expand-on-click="true"
+          :node-props="nodeProps"
+          :theme-overrides="{ nodeHeight: '21px' }"
+          :render-label="renderLabel"
+        />
+        <div class="w-full flex items-center justify-center">
+          <NButton
+            quaternary
+            :size="'small'"
+            :loading="editorStore.loading"
+            @click="
+              () =>
+                editorStore
+                  .fetchDatabases(searchPattern)
+                  .then(() => treeStore.buildTree())
+            "
+          >
+            {{ $t("common.load-more") }}
+          </NButton>
+        </div>
+      </div>
     </div>
 
     <NDropdown
@@ -69,9 +86,15 @@
 <script lang="ts" setup>
 import { computedAsync, useElementSize, useMounted } from "@vueuse/core";
 import { head } from "lodash-es";
-import { NTree, NDropdown, NCheckbox, type TreeOption } from "naive-ui";
+import {
+  NButton,
+  NTree,
+  NDropdown,
+  NCheckbox,
+  type TreeOption,
+} from "naive-ui";
 import { storeToRefs } from "pinia";
-import { ref, nextTick, watch, h, onMounted } from "vue";
+import { ref, nextTick, watch, h } from "vue";
 import MaskSpinner from "@/components/misc/MaskSpinner.vue";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import {
@@ -111,7 +134,7 @@ import { setConnection, useDropdown } from "./actions";
 
 const treeStore = useSQLEditorTreeStore();
 const tabStore = useSQLEditorTabStore();
-const editrStore = useSQLEditorStore();
+const editorStore = useSQLEditorStore();
 const databaseStore = useDatabaseV1Store();
 const isLoggedIn = useIsLoggedIn();
 
@@ -390,12 +413,22 @@ useEmitteryEventListener(editorEvents, "tree-ready", () => {
   calcDefaultExpandKeys(true);
 });
 
-onMounted(() => calcDefaultExpandKeys(false));
-
 watch(
-  () => searchPattern.value,
-  (search) =>
-    editrStore.prepareDatabases(search).then(() => calcDefaultExpandKeys(true)),
+  [
+    () => editorStore.project,
+    () => editorStore.projectContextReady,
+    () => searchPattern.value,
+  ],
+  async ([, ready, search]) => {
+    if (!ready) {
+      treeStore.state = "LOADING";
+    } else {
+      await editorStore.prepareDatabases(search);
+      treeStore.buildTree();
+      treeStore.state = "READY";
+      editorEvents.emit("tree-ready");
+    }
+  },
   { immediate: true }
 );
 </script>

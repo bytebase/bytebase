@@ -12,7 +12,7 @@
       :source-filter-placeholder="$t('common.filter-by-name')"
     />
     <div
-      v-if="loading"
+      v-if="initializing"
       class="z-1 absolute inset-0 bg-white bg-opacity-80 flex flex-row justify-center items-center"
     >
       <BBSpin size="large" />
@@ -24,8 +24,9 @@
 import { useDebounceFn } from "@vueuse/core";
 import { orderBy, uniqBy } from "lodash-es";
 import type { TransferRenderSourceList, TreeOption } from "naive-ui";
-import { NTransfer, NTree } from "naive-ui";
+import { NTransfer, NTree, NButton } from "naive-ui";
 import { computed, h, onMounted, ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import { BBSpin } from "@/bbkit";
 import {
   useDatabaseV1Store,
@@ -59,6 +60,7 @@ const emit = defineEmits<{
 
 const databaseStore = useDatabaseV1Store();
 const dbSchemaStore = useDBSchemaV1Store();
+const { t } = useI18n();
 
 const parseResourceToKey = (resource: DatabaseResource): string => {
   const data = [
@@ -87,9 +89,16 @@ const parseResourceToKey = (resource: DatabaseResource): string => {
 const selectedValueList = ref<string[]>([]);
 const expandedKeys = ref<string[]>([]);
 const indeterminateKeys = ref<string[]>([]);
-const loading = ref(true);
+const initializing = ref(true);
 const databaseList = ref<ComposedDatabase[]>([]);
-const searchText = ref<string>("");
+const fetchDataState = ref<{
+  searchText: string;
+  nextPageToken?: string;
+  loading: boolean;
+}>({
+  loading: false,
+  searchText: "",
+});
 
 const cascadeLoopTreeNode = (
   treeNode: DatabaseTreeOption,
@@ -102,20 +111,42 @@ const cascadeLoopTreeNode = (
 };
 
 const fetchDatabaseList = useDebounceFn(async () => {
-  const { databases } = await databaseStore.fetchDatabases({
-    pageSize: getDefaultPagination(),
-    parent: props.projectName,
-    filter: {
-      query: searchText.value,
-    },
-  });
-  databaseList.value = databases;
+  fetchDataState.value.loading = true;
+  const pageToken = fetchDataState.value.nextPageToken;
+
+  try {
+    const { databases, nextPageToken } = await databaseStore.fetchDatabases({
+      pageSize: getDefaultPagination(),
+      pageToken,
+      parent: props.projectName,
+      filter: {
+        query: fetchDataState.value.searchText,
+      },
+    });
+
+    if (pageToken) {
+      databaseList.value.push(...databases);
+    } else {
+      databaseList.value = databases;
+    }
+    fetchDataState.value.nextPageToken = nextPageToken;
+  } finally {
+    fetchDataState.value.loading = false;
+  }
 }, 500);
 
-watch(() => searchText.value, fetchDatabaseList);
+watch(
+  () => fetchDataState.value.searchText,
+  async () => {
+    fetchDataState.value.nextPageToken = "";
+    fetchDatabaseList();
+  },
+  {
+    immediate: true,
+  }
+);
 
 onMounted(async () => {
-  await fetchDatabaseList();
   await batchGetOrFetchDatabases(
     props.databaseResources.map((resource) => resource.databaseFullName)
   );
@@ -126,7 +157,7 @@ onMounted(async () => {
   const input = selectorElement?.querySelector("input");
   if (input) {
     input.addEventListener("input", () => {
-      searchText.value = input.value;
+      fetchDataState.value.searchText = input.value;
     });
   }
 
@@ -204,7 +235,7 @@ onMounted(async () => {
   expandedKeys.value = [...newExpandedKeys];
   indeterminateKeys.value = [...newIndeterminateKeys];
 
-  loading.value = false;
+  initializing.value = false;
 });
 
 const parseKeyToPathes = (key: string): string[] => {
@@ -266,110 +297,136 @@ const onTreeNodeLoad = async (node: TreeOption) => {
 };
 
 const renderSourceList: TransferRenderSourceList = ({ onCheck, pattern }) => {
-  return h(NTree, {
-    keyField: "value",
-    cascade: true,
-    allowCheckingNotLoaded: true,
-    checkable: true,
-    selectable: false,
-    checkOnClick: true,
-    disabled: props.disabled,
-    data: sourceTreeOptions.value,
-    blockLine: true,
-    virtualScroll: true,
-    style: "height: 428px", // since <NTransfer> height is 512
-    renderLabel: ({ option }: { option: TreeOption }) => {
-      return h(Label, {
-        option: option as DatabaseTreeOption,
-        keyword: pattern,
-      });
-    },
-    pattern,
-    showIrrelevantNodes: false,
-    expandedKeys: expandedKeys.value,
-    checkedKeys: selectedValueList.value,
-    indeterminateKeys: indeterminateKeys.value,
-    onLoad: onTreeNodeLoad,
-    onUpdateExpandedKeys: (keys: string[]) => {
-      expandedKeys.value = keys;
-    },
-    onUpdateCheckedKeys: async (
-      checkedKeys: string[],
-      _: Array<TreeOption | null>,
-      meta: { node: TreeOption | null; action: "check" | "uncheck" }
-    ) => {
-      if (!meta.node) {
-        return;
-      }
-
-      const oldIndeterminateKeys = new Set(indeterminateKeys.value);
-      const newCheckedKeys = new Set(checkedKeys);
-      const oldCheckedKeys = new Set(selectedValueList.value);
-      const treeNode = meta.node as DatabaseTreeOption;
-
-      const checkNodeAndAllChildren = async () => {
-        await onTreeNodeLoad(treeNode);
-        // refresh node in case the schema is updated
-        const checkedNode = sourceTransferOptions.value.find(
-          (option) => option.value === treeNode.value
-        );
-        if (checkedNode) {
-          // check and expand all children
-          cascadeLoopTreeNode(checkedNode, (treeNode) => {
-            newCheckedKeys.add(treeNode.value);
-            if (treeNode.children) {
-              expandedKeys.value.push(treeNode.value);
+  return h(
+    "div",
+    { class: "flex flex-col space-y-2 pb-4" },
+    {
+      default: () => [
+        h(NTree, {
+          keyField: "value",
+          cascade: true,
+          allowCheckingNotLoaded: true,
+          checkable: true,
+          selectable: false,
+          checkOnClick: true,
+          disabled: props.disabled,
+          data: sourceTreeOptions.value,
+          blockLine: true,
+          renderLabel: ({ option }: { option: TreeOption }) => {
+            return h(Label, {
+              option: option as DatabaseTreeOption,
+              keyword: pattern,
+            });
+          },
+          pattern,
+          showIrrelevantNodes: false,
+          expandedKeys: expandedKeys.value,
+          checkedKeys: selectedValueList.value,
+          indeterminateKeys: indeterminateKeys.value,
+          onLoad: onTreeNodeLoad,
+          onUpdateExpandedKeys: (keys: string[]) => {
+            expandedKeys.value = keys;
+          },
+          onUpdateCheckedKeys: async (
+            checkedKeys: string[],
+            _: Array<TreeOption | null>,
+            meta: { node: TreeOption | null; action: "check" | "uncheck" }
+          ) => {
+            if (!meta.node) {
+              return;
             }
-          });
-        }
-      };
 
-      if (meta.action === "check") {
-        oldIndeterminateKeys.delete(treeNode.value);
-        await checkNodeAndAllChildren();
+            const oldIndeterminateKeys = new Set(indeterminateKeys.value);
+            const newCheckedKeys = new Set(checkedKeys);
+            const oldCheckedKeys = new Set(selectedValueList.value);
+            const treeNode = meta.node as DatabaseTreeOption;
 
-        const parentPathes = parseKeyToPathes(treeNode.value);
-        parentPathes.pop();
-        while (parentPathes.length > 0) {
-          const parentPath = parentPathes.pop() as string;
-          // If users not manually select the parent,
-          // then DONOT check the parent,
-          // move the parent to the indeterminate keys instead.
-          if (
-            !oldCheckedKeys.has(parentPath) &&
-            newCheckedKeys.has(parentPath)
-          ) {
-            newCheckedKeys.delete(parentPath);
-            oldIndeterminateKeys.add(parentPath);
-          }
-        }
-      } else {
-        if (oldIndeterminateKeys.has(treeNode.value)) {
-          // uncheck an indeterminate key should be check
-          oldIndeterminateKeys.delete(treeNode.value);
+            const checkNodeAndAllChildren = async () => {
+              await onTreeNodeLoad(treeNode);
+              // refresh node in case the schema is updated
+              const checkedNode = sourceTransferOptions.value.find(
+                (option) => option.value === treeNode.value
+              );
+              if (checkedNode) {
+                // check and expand all children
+                cascadeLoopTreeNode(checkedNode, (treeNode) => {
+                  newCheckedKeys.add(treeNode.value);
+                  if (treeNode.children) {
+                    expandedKeys.value.push(treeNode.value);
+                  }
+                });
+              }
+            };
 
-          await checkNodeAndAllChildren();
-        } else {
-          // loop parent pathes to check if we need to update the indeterminate keys
-          const parentPathes = parseKeyToPathes(treeNode.value);
-          parentPathes.pop();
-          while (parentPathes.length > 0) {
-            const parentPath = parentPathes.pop() as string;
-            if (!oldIndeterminateKeys.has(parentPath)) {
-              continue;
+            if (meta.action === "check") {
+              oldIndeterminateKeys.delete(treeNode.value);
+              await checkNodeAndAllChildren();
+
+              const parentPathes = parseKeyToPathes(treeNode.value);
+              parentPathes.pop();
+              while (parentPathes.length > 0) {
+                const parentPath = parentPathes.pop() as string;
+                // If users not manually select the parent,
+                // then DONOT check the parent,
+                // move the parent to the indeterminate keys instead.
+                if (
+                  !oldCheckedKeys.has(parentPath) &&
+                  newCheckedKeys.has(parentPath)
+                ) {
+                  newCheckedKeys.delete(parentPath);
+                  oldIndeterminateKeys.add(parentPath);
+                }
+              }
+            } else {
+              if (oldIndeterminateKeys.has(treeNode.value)) {
+                // uncheck an indeterminate key should be check
+                oldIndeterminateKeys.delete(treeNode.value);
+
+                await checkNodeAndAllChildren();
+              } else {
+                // loop parent pathes to check if we need to update the indeterminate keys
+                const parentPathes = parseKeyToPathes(treeNode.value);
+                parentPathes.pop();
+                while (parentPathes.length > 0) {
+                  const parentPath = parentPathes.pop() as string;
+                  if (!oldIndeterminateKeys.has(parentPath)) {
+                    continue;
+                  }
+                  if (
+                    !checkedKeys.find((key) => key.startsWith(`${parentPath}/`))
+                  ) {
+                    oldIndeterminateKeys.delete(parentPath);
+                  }
+                }
+              }
             }
-            if (!checkedKeys.find((key) => key.startsWith(`${parentPath}/`))) {
-              oldIndeterminateKeys.delete(parentPath);
-            }
-          }
-        }
-      }
 
-      selectedValueList.value = [...newCheckedKeys];
-      onCheck([...newCheckedKeys]);
-      indeterminateKeys.value = [...oldIndeterminateKeys];
-    },
-  });
+            selectedValueList.value = [...newCheckedKeys];
+            onCheck([...newCheckedKeys]);
+            indeterminateKeys.value = [...oldIndeterminateKeys];
+          },
+        }),
+        fetchDataState.value.nextPageToken
+          ? h(
+              "div",
+              { class: "w-full flex items-center justify-center" },
+              h(
+                NButton,
+                {
+                  quaternary: true,
+                  size: "small",
+                  loading: fetchDataState.value.loading,
+                  onClick: fetchDatabaseList,
+                },
+                {
+                  default: () => t("common.load-more"),
+                }
+              )
+            )
+          : undefined,
+      ],
+    }
+  );
 };
 
 const targetTreeOptions = computed(() => {
