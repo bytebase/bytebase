@@ -15,7 +15,17 @@ import (
 func isSystemDatabase(database string) bool {
 	switch database {
 	case
+		"HiveMetaStore",
+		"dse_analytics",
+		"dse_insights",
+		"dse_insights_local",
+		"dse_leases",
+		"dse_perf",
 		"dse_security",
+		"dse_system",
+		"dse_system_local",
+		"dsefs",
+		"solr_admin",
 		"system_traces",
 		"system_auth",
 		"system_distributed",
