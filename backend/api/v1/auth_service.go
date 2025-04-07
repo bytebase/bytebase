@@ -335,18 +335,7 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 			return nil, status.Errorf(codes.InvalidArgument, "missing OAuth2 context")
 		}
 
-		idpConfig := idp.Config.GetOidcConfig()
-		oidcIDP, err := oidc.NewIdentityProvider(
-			ctx,
-			oidc.IdentityProviderConfig{
-				Issuer:        idpConfig.Issuer,
-				ClientID:      idpConfig.ClientId,
-				ClientSecret:  idpConfig.ClientSecret,
-				FieldMapping:  idpConfig.FieldMapping,
-				SkipTLSVerify: idpConfig.SkipTlsVerify,
-				AuthStyle:     idpConfig.GetAuthStyle(),
-			},
-		)
+		oidcIDP, err := oidc.NewIdentityProvider(ctx, idp.Config.GetOidcConfig())
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to create new OIDC identity provider: %v", err)
 		}

@@ -342,6 +342,7 @@ type OIDCIdentityProviderConfig struct {
 	FieldMapping  *FieldMapping          `protobuf:"bytes,4,opt,name=field_mapping,json=fieldMapping,proto3" json:"field_mapping,omitempty"`
 	SkipTlsVerify bool                   `protobuf:"varint,5,opt,name=skip_tls_verify,json=skipTlsVerify,proto3" json:"skip_tls_verify,omitempty"`
 	AuthStyle     OAuth2AuthStyle        `protobuf:"varint,6,opt,name=auth_style,json=authStyle,proto3,enum=bytebase.store.OAuth2AuthStyle" json:"auth_style,omitempty"`
+	Scopes        []string               `protobuf:"bytes,7,rep,name=scopes,proto3" json:"scopes,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -416,6 +417,13 @@ func (x *OIDCIdentityProviderConfig) GetAuthStyle() OAuth2AuthStyle {
 		return x.AuthStyle
 	}
 	return OAuth2AuthStyle_OAUTH2_AUTH_STYLE_UNSPECIFIED
+}
+
+func (x *OIDCIdentityProviderConfig) GetScopes() []string {
+	if x != nil {
+		return x.Scopes
+	}
+	return nil
 }
 
 // LDAPIdentityProviderConfig is the structure for LDAP identity provider config.
@@ -717,7 +725,7 @@ const file_store_idp_proto_rawDesc = "" +
 	"\rfield_mapping\x18\a \x01(\v2\x1c.bytebase.store.FieldMappingR\ffieldMapping\x12&\n" +
 	"\x0fskip_tls_verify\x18\b \x01(\bR\rskipTlsVerify\x12>\n" +
 	"\n" +
-	"auth_style\x18\t \x01(\x0e2\x1f.bytebase.store.OAuth2AuthStyleR\tauthStyle\"\xa1\x02\n" +
+	"auth_style\x18\t \x01(\x0e2\x1f.bytebase.store.OAuth2AuthStyleR\tauthStyle\"\xb9\x02\n" +
 	"\x1aOIDCIdentityProviderConfig\x12\x16\n" +
 	"\x06issuer\x18\x01 \x01(\tR\x06issuer\x12\x1b\n" +
 	"\tclient_id\x18\x02 \x01(\tR\bclientId\x12#\n" +
@@ -725,7 +733,8 @@ const file_store_idp_proto_rawDesc = "" +
 	"\rfield_mapping\x18\x04 \x01(\v2\x1c.bytebase.store.FieldMappingR\ffieldMapping\x12&\n" +
 	"\x0fskip_tls_verify\x18\x05 \x01(\bR\rskipTlsVerify\x12>\n" +
 	"\n" +
-	"auth_style\x18\x06 \x01(\x0e2\x1f.bytebase.store.OAuth2AuthStyleR\tauthStyle\"\xd4\x02\n" +
+	"auth_style\x18\x06 \x01(\x0e2\x1f.bytebase.store.OAuth2AuthStyleR\tauthStyle\x12\x16\n" +
+	"\x06scopes\x18\a \x03(\tR\x06scopes\"\xd4\x02\n" +
 	"\x1aLDAPIdentityProviderConfig\x12\x12\n" +
 	"\x04host\x18\x01 \x01(\tR\x04host\x12\x12\n" +
 	"\x04port\x18\x02 \x01(\x05R\x04port\x12&\n" +

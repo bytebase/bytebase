@@ -53,6 +53,8 @@ message OIDCIdentityProviderConfig {
   bool skip_tls_verify = 5;
 
   OAuth2AuthStyle auth_style = 6;
+
+  repeated string scopes = 7;
 }
 
 // LDAPIdentityProviderConfig is the structure for LDAP identity provider config.

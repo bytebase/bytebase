@@ -23,26 +23,15 @@ import (
 type IdentityProvider struct {
 	client   *http.Client
 	provider *oidc.Provider
-	config   IdentityProviderConfig
-}
-
-// IdentityProviderConfig is the configuration to be consumed by the OIDC
-// Identity Provider.
-type IdentityProviderConfig struct {
-	Issuer        string                  `json:"issuer"`
-	ClientID      string                  `json:"clientId"`
-	ClientSecret  string                  `json:"clientSecret"`
-	FieldMapping  *storepb.FieldMapping   `json:"fieldMapping"`
-	SkipTLSVerify bool                    `json:"skipTlsVerify"`
-	AuthStyle     storepb.OAuth2AuthStyle `json:"authStyle"`
+	config   *storepb.OIDCIdentityProviderConfig
 }
 
 // NewIdentityProvider initializes a new OIDC Identity Provider with the given
 // configuration.
-func NewIdentityProvider(ctx context.Context, config IdentityProviderConfig) (*IdentityProvider, error) {
+func NewIdentityProvider(ctx context.Context, config *storepb.OIDCIdentityProviderConfig) (*IdentityProvider, error) {
 	for v, field := range map[string]string{
 		config.Issuer:                  "issuer",
-		config.ClientID:                "clientId",
+		config.ClientId:                "clientId",
 		config.ClientSecret:            "clientSecret",
 		config.FieldMapping.Identifier: "fieldMapping.identifier",
 	} {
@@ -54,7 +43,7 @@ func NewIdentityProvider(ctx context.Context, config IdentityProviderConfig) (*I
 	client := &http.Client{
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: config.SkipTLSVerify,
+				InsecureSkipVerify: config.SkipTlsVerify,
 			},
 		},
 	}
@@ -70,21 +59,17 @@ func NewIdentityProvider(ctx context.Context, config IdentityProviderConfig) (*I
 	}, nil
 }
 
-// DefaultScopes is a list of scopes that are part of OIDC standard claims, see
-// https://auth0.com/docs/get-started/apis/scopes/openid-connect-scopes#standard-claims.
-var DefaultScopes = []string{oidc.ScopeOpenID, "profile", "email"}
-
 // ExchangeToken returns the exchanged OAuth2 token using the given redirect
 // URL and authorization code.
 func (p *IdentityProvider) ExchangeToken(ctx context.Context, redirectURL, code string) (*oauth2.Token, error) {
 	oauth2Config := oauth2.Config{
-		ClientID:     p.config.ClientID,
+		ClientID:     p.config.ClientId,
 		ClientSecret: p.config.ClientSecret,
 		RedirectURL:  redirectURL,
 
 		// Discovery returns the OAuth2 endpoints.
 		Endpoint: p.provider.Endpoint(),
-		Scopes:   DefaultScopes,
+		Scopes:   p.config.Scopes,
 	}
 
 	authStyle := oauth2.AuthStyleInParams
@@ -113,7 +98,7 @@ func (p *IdentityProvider) UserInfo(ctx context.Context, token *oauth2.Token, no
 	}
 
 	ctx = context.WithValue(ctx, oauth2.HTTPClient, p.client)
-	verifier := p.provider.Verifier(&oidc.Config{ClientID: p.config.ClientID})
+	verifier := p.provider.Verifier(&oidc.Config{ClientID: p.config.ClientId})
 	idToken, err := verifier.Verify(ctx, rawIDToken)
 	if err != nil {
 		return nil, errors.Wrap(err, "verify raw ID Token")

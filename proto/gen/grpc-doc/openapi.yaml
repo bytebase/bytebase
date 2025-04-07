@@ -10902,6 +10902,13 @@ components:
                     type: string
                 clientSecret:
                     type: string
+                scopes:
+                    type: array
+                    items:
+                        type: string
+                    description: |-
+                        The scopes that the OIDC provider supports.
+                         Should be fetched from the well-known configuration file of the OIDC provider.
                 fieldMapping:
                     $ref: '#/components/schemas/FieldMapping'
                 skipTlsVerify:
@@ -10913,14 +10920,6 @@ components:
                         - IN_HEADER
                     type: string
                     format: enum
-                scopes:
-                    readOnly: true
-                    type: array
-                    items:
-                        type: string
-                    description: |-
-                        The scopes that the OIDC provider supports.
-                         Should be fetched from the well-known configuration file of the OIDC provider.
                 authEndpoint:
                     readOnly: true
                     type: string
