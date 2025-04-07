@@ -24,14 +24,14 @@ func TestNewIdentityProvider(t *testing.T) {
 	ctx := context.Background()
 	tests := []struct {
 		name        string
-		config      IdentityProviderConfig
+		config      *storepb.OIDCIdentityProviderConfig
 		containsErr string
 	}{
 		{
 			name: "no issuer",
-			config: IdentityProviderConfig{
+			config: &storepb.OIDCIdentityProviderConfig{
 				Issuer:       "",
-				ClientID:     "test-client-id",
+				ClientId:     "test-client-id",
 				ClientSecret: "test-client-secret",
 				FieldMapping: &storepb.FieldMapping{
 					Identifier: "sub",
@@ -41,9 +41,9 @@ func TestNewIdentityProvider(t *testing.T) {
 		},
 		{
 			name: "no clientId",
-			config: IdentityProviderConfig{
+			config: &storepb.OIDCIdentityProviderConfig{
 				Issuer:       "https://oidc.example.com",
-				ClientID:     "",
+				ClientId:     "",
 				ClientSecret: "test-client-secret",
 				FieldMapping: &storepb.FieldMapping{
 					Identifier: "sub",
@@ -53,9 +53,9 @@ func TestNewIdentityProvider(t *testing.T) {
 		},
 		{
 			name: "no clientSecret",
-			config: IdentityProviderConfig{
+			config: &storepb.OIDCIdentityProviderConfig{
 				Issuer:       "https://oidc.example.com",
-				ClientID:     "test-client-id",
+				ClientId:     "test-client-id",
 				ClientSecret: "",
 				FieldMapping: &storepb.FieldMapping{
 					Identifier: "sub",
@@ -65,9 +65,9 @@ func TestNewIdentityProvider(t *testing.T) {
 		},
 		{
 			name: "no fieldMapping.identifier",
-			config: IdentityProviderConfig{
+			config: &storepb.OIDCIdentityProviderConfig{
 				Issuer:       "https://oidc.example.com",
-				ClientID:     "test-client-id",
+				ClientId:     "test-client-id",
 				ClientSecret: "test-client-secret",
 				FieldMapping: &storepb.FieldMapping{
 					DisplayName: "name",
@@ -199,9 +199,9 @@ func TestIdentityProvider(t *testing.T) {
 	s := newMockServer(t, false, testClientID, testCode, testAccessToken, testNonce, userinfo)
 	oidc, err := NewIdentityProvider(
 		ctx,
-		IdentityProviderConfig{
+		&storepb.OIDCIdentityProviderConfig{
 			Issuer:       s.URL,
-			ClientID:     testClientID,
+			ClientId:     testClientID,
 			ClientSecret: "test-client-secret",
 			FieldMapping: &storepb.FieldMapping{
 				Identifier:  "sub",
@@ -252,9 +252,9 @@ func TestIdentityProvider_SelfSigned(t *testing.T) {
 		s := newMockServer(t, true, testClientID, testCode, testAccessToken, testNonce, userinfo)
 		_, err := NewIdentityProvider(
 			ctx,
-			IdentityProviderConfig{
+			&storepb.OIDCIdentityProviderConfig{
 				Issuer:       s.URL,
-				ClientID:     testClientID,
+				ClientId:     testClientID,
 				ClientSecret: "test-client-secret",
 				FieldMapping: &storepb.FieldMapping{
 					Identifier:  "sub",
@@ -270,16 +270,16 @@ func TestIdentityProvider_SelfSigned(t *testing.T) {
 		s := newMockServer(t, true, testClientID, testCode, testAccessToken, testNonce, userinfo)
 		oidc, err := NewIdentityProvider(
 			ctx,
-			IdentityProviderConfig{
+			&storepb.OIDCIdentityProviderConfig{
 				Issuer:       s.URL,
-				ClientID:     testClientID,
+				ClientId:     testClientID,
 				ClientSecret: "test-client-secret",
 				FieldMapping: &storepb.FieldMapping{
 					Identifier:  "sub",
 					DisplayName: "name",
 					Email:       "email",
 				},
-				SkipTLSVerify: true,
+				SkipTlsVerify: true,
 			},
 		)
 		require.NoError(t, err)

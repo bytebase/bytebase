@@ -967,16 +967,16 @@ func (x *OAuth2IdentityProviderConfig) GetAuthStyle() OAuth2AuthStyle {
 
 // OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
 type OIDCIdentityProviderConfig struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Issuer        string                 `protobuf:"bytes,1,opt,name=issuer,proto3" json:"issuer,omitempty"`
-	ClientId      string                 `protobuf:"bytes,2,opt,name=client_id,json=clientId,proto3" json:"client_id,omitempty"`
-	ClientSecret  string                 `protobuf:"bytes,3,opt,name=client_secret,json=clientSecret,proto3" json:"client_secret,omitempty"`
-	FieldMapping  *FieldMapping          `protobuf:"bytes,5,opt,name=field_mapping,json=fieldMapping,proto3" json:"field_mapping,omitempty"`
-	SkipTlsVerify bool                   `protobuf:"varint,6,opt,name=skip_tls_verify,json=skipTlsVerify,proto3" json:"skip_tls_verify,omitempty"`
-	AuthStyle     OAuth2AuthStyle        `protobuf:"varint,7,opt,name=auth_style,json=authStyle,proto3,enum=bytebase.v1.OAuth2AuthStyle" json:"auth_style,omitempty"`
+	state        protoimpl.MessageState `protogen:"open.v1"`
+	Issuer       string                 `protobuf:"bytes,1,opt,name=issuer,proto3" json:"issuer,omitempty"`
+	ClientId     string                 `protobuf:"bytes,2,opt,name=client_id,json=clientId,proto3" json:"client_id,omitempty"`
+	ClientSecret string                 `protobuf:"bytes,3,opt,name=client_secret,json=clientSecret,proto3" json:"client_secret,omitempty"`
 	// The scopes that the OIDC provider supports.
 	// Should be fetched from the well-known configuration file of the OIDC provider.
-	Scopes []string `protobuf:"bytes,4,rep,name=scopes,proto3" json:"scopes,omitempty"`
+	Scopes        []string        `protobuf:"bytes,4,rep,name=scopes,proto3" json:"scopes,omitempty"`
+	FieldMapping  *FieldMapping   `protobuf:"bytes,5,opt,name=field_mapping,json=fieldMapping,proto3" json:"field_mapping,omitempty"`
+	SkipTlsVerify bool            `protobuf:"varint,6,opt,name=skip_tls_verify,json=skipTlsVerify,proto3" json:"skip_tls_verify,omitempty"`
+	AuthStyle     OAuth2AuthStyle `protobuf:"varint,7,opt,name=auth_style,json=authStyle,proto3,enum=bytebase.v1.OAuth2AuthStyle" json:"auth_style,omitempty"`
 	// The authorization endpoint of the OIDC provider.
 	// Should be fetched from the well-known configuration file of the OIDC provider.
 	AuthEndpoint  string `protobuf:"bytes,8,opt,name=auth_endpoint,json=authEndpoint,proto3" json:"auth_endpoint,omitempty"`
@@ -1035,6 +1035,13 @@ func (x *OIDCIdentityProviderConfig) GetClientSecret() string {
 	return ""
 }
 
+func (x *OIDCIdentityProviderConfig) GetScopes() []string {
+	if x != nil {
+		return x.Scopes
+	}
+	return nil
+}
+
 func (x *OIDCIdentityProviderConfig) GetFieldMapping() *FieldMapping {
 	if x != nil {
 		return x.FieldMapping
@@ -1054,13 +1061,6 @@ func (x *OIDCIdentityProviderConfig) GetAuthStyle() OAuth2AuthStyle {
 		return x.AuthStyle
 	}
 	return OAuth2AuthStyle_OAUTH2_AUTH_STYLE_UNSPECIFIED
-}
-
-func (x *OIDCIdentityProviderConfig) GetScopes() []string {
-	if x != nil {
-		return x.Scopes
-	}
-	return nil
 }
 
 func (x *OIDCIdentityProviderConfig) GetAuthEndpoint() string {
@@ -1337,16 +1337,16 @@ const file_v1_idp_service_proto_rawDesc = "" +
 	"\rfield_mapping\x18\a \x01(\v2\x19.bytebase.v1.FieldMappingR\ffieldMapping\x12&\n" +
 	"\x0fskip_tls_verify\x18\b \x01(\bR\rskipTlsVerify\x12;\n" +
 	"\n" +
-	"auth_style\x18\t \x01(\x0e2\x1c.bytebase.v1.OAuth2AuthStyleR\tauthStyle\"\xe4\x02\n" +
+	"auth_style\x18\t \x01(\x0e2\x1c.bytebase.v1.OAuth2AuthStyleR\tauthStyle\"\xde\x02\n" +
 	"\x1aOIDCIdentityProviderConfig\x12\x16\n" +
 	"\x06issuer\x18\x01 \x01(\tR\x06issuer\x12\x1b\n" +
 	"\tclient_id\x18\x02 \x01(\tR\bclientId\x12#\n" +
-	"\rclient_secret\x18\x03 \x01(\tR\fclientSecret\x12>\n" +
+	"\rclient_secret\x18\x03 \x01(\tR\fclientSecret\x12\x16\n" +
+	"\x06scopes\x18\x04 \x03(\tR\x06scopes\x12>\n" +
 	"\rfield_mapping\x18\x05 \x01(\v2\x19.bytebase.v1.FieldMappingR\ffieldMapping\x12&\n" +
 	"\x0fskip_tls_verify\x18\x06 \x01(\bR\rskipTlsVerify\x12;\n" +
 	"\n" +
-	"auth_style\x18\a \x01(\x0e2\x1c.bytebase.v1.OAuth2AuthStyleR\tauthStyle\x12\x1c\n" +
-	"\x06scopes\x18\x04 \x03(\tB\x04\xe2A\x01\x03R\x06scopes\x12)\n" +
+	"auth_style\x18\a \x01(\x0e2\x1c.bytebase.v1.OAuth2AuthStyleR\tauthStyle\x12)\n" +
 	"\rauth_endpoint\x18\b \x01(\tB\x04\xe2A\x01\x03R\fauthEndpoint\"\xd1\x02\n" +
 	"\x1aLDAPIdentityProviderConfig\x12\x12\n" +
 	"\x04host\x18\x01 \x01(\tR\x04host\x12\x12\n" +

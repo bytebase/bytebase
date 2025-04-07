@@ -386,6 +386,22 @@
       </div>
       <div class="w-full flex flex-col justify-start items-start">
         <p class="textlabel">
+          Scopes
+          <span class="text-red-600">*</span>
+        </p>
+        <p class="textinfolabel">
+          {{ $t("settings.sso.form.scopes-description") }}
+        </p>
+        <BBTextField
+          v-model:value="scopesStringOfConfig"
+          required
+          :disabled="!allowEdit"
+          class="mt-1 w-full"
+          placeholder="e.g. user"
+        />
+      </div>
+      <div class="w-full flex flex-col justify-start items-start">
+        <p class="textlabel">
           {{ $t("settings.sso.form.auth-style.self") }}
           <span class="text-red-600">*</span>
         </p>
@@ -1083,6 +1099,7 @@ const editedIdentityProvider = computed(() => {
   } else if (tempIdentityProvider.type === IdentityProviderType.OIDC) {
     tempIdentityProvider.config!.oidcConfig = {
       ...configForOIDC.value,
+      scopes: scopesStringOfConfig.value.split(" "),
       fieldMapping: FieldMapping.fromPartial(state.fieldMapping),
     };
   } else if (tempIdentityProvider.type === IdentityProviderType.LDAP) {
@@ -1320,6 +1337,7 @@ const updateEditState = (updatedIdentityProvider: IdentityProvider) => {
     configForOIDC.value =
       tempIdentityProvider.config?.oidcConfig ||
       OIDCIdentityProviderConfig.fromPartial({});
+    scopesStringOfConfig.value = configForOIDC.value.scopes.join(" ");
   } else if (tempIdentityProvider.type === IdentityProviderType.LDAP) {
     state.fieldMapping =
       tempIdentityProvider.config?.ldapConfig?.fieldMapping ??
@@ -1394,6 +1412,12 @@ watch(
       identityProvider.value.title = "";
       identityProvider.value.name = "";
       identityProvider.value.domain = "";
+
+      if (state.type === IdentityProviderType.OIDC) {
+        // Default is a list of scopes that are part of OIDC standard claims, see
+        // https://auth0.com/docs/get-started/apis/scopes/openid-connect-scopes#standard-claims.
+        scopesStringOfConfig.value = "openid profile email";
+      }
     }
   },
   {
