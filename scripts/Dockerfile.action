@@ -4,7 +4,8 @@ COPY action/ action/
 COPY . .
 RUN go build -o bytebase-action action/*.go
 
-FROM alpine:latest
-WORKDIR /root/
-COPY --from=builder /action-build/bytebase-action .
-CMD ["./bytebase-action"]
+FROM debian:12-slim
+WORKDIR /
+COPY --from=builder /action-build/bytebase-action /usr/local/bin/bytebase-action
+COPY --from=builder /etc/ssl/certs /etc/ssl/certs
+CMD ["bytebase-action"]

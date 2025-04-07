@@ -9,7 +9,7 @@ import (
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
-func run() error {
+func run(platform JobPlatform) error {
 	url, serviceAccount, serviceAccountSecret := os.Getenv("BYTEBASE_URL"), os.Getenv("BYTEBASE_SERVICE_ACCOUNT"), os.Getenv("BYTEBASE_SERVICE_ACCOUNT_SECRET")
 	if url == "" {
 		return errors.Errorf("environment BYTEBASE_URL is not set")
@@ -40,8 +40,17 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	if _, err := client.checkRelease(project, &v1pb.Release{Files: releaseFiles}); err != nil {
+	checkReleaseResponse, err := client.checkRelease(project, &v1pb.CheckReleaseRequest{
+		Release: &v1pb.Release{Files: releaseFiles},
+		Targets: []string{targets},
+	})
+	if err != nil {
 		return err
+	}
+	if platform == GitLab {
+		if err := writeReleaseCheckToJunitXML(checkReleaseResponse); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -49,7 +58,7 @@ func run() error {
 func main() {
 	platform := getJobPlatform()
 	fmt.Printf("Hello, World - %s!\n", platform.String())
-	if err := run(); err != nil {
+	if err := run(platform); err != nil {
 		panic(err)
 	}
 }
