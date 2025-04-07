@@ -6855,10 +6855,10 @@ OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
 | issuer | [string](#string) |  |  |
 | client_id | [string](#string) |  |  |
 | client_secret | [string](#string) |  |  |
+| scopes | [string](#string) | repeated | The scopes that the OIDC provider supports. Should be fetched from the well-known configuration file of the OIDC provider. |
 | field_mapping | [FieldMapping](#bytebase-v1-FieldMapping) |  |  |
 | skip_tls_verify | [bool](#bool) |  |  |
 | auth_style | [OAuth2AuthStyle](#bytebase-v1-OAuth2AuthStyle) |  |  |
-| scopes | [string](#string) | repeated | The scopes that the OIDC provider supports. Should be fetched from the well-known configuration file of the OIDC provider. |
 | auth_endpoint | [string](#string) |  | The authorization endpoint of the OIDC provider. Should be fetched from the well-known configuration file of the OIDC provider. |
 
 

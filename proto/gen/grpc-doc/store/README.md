@@ -2215,6 +2215,7 @@ OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
 | field_mapping | [FieldMapping](#bytebase-store-FieldMapping) |  |  |
 | skip_tls_verify | [bool](#bool) |  |  |
 | auth_style | [OAuth2AuthStyle](#bytebase-store-OAuth2AuthStyle) |  |  |
+| scopes | [string](#string) | repeated |  |
 
 
 
