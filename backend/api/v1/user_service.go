@@ -707,16 +707,11 @@ func (s *UserService) hasExtraWorkspaceAdmin(ctx context.Context, policy *storep
 				}
 				return activeEndUserCount > 1, nil
 			}
-			uID, err := common.GetUserID(member)
-			if err != nil {
-				return false, status.Errorf(codes.Internal, "failed to get id from member %v with error: %v", member, err.Error())
-			}
-			user, err := s.store.GetUserByID(ctx, uID)
-			if err != nil {
-				return false, status.Errorf(codes.Internal, "failed to get user %v with error: %v", member, err.Error())
-			}
-			if !user.MemberDeleted && user.Type == api.EndUser {
-				return true, nil
+			users := utils.GetUsersByMember(ctx, s.store, member)
+			for _, user := range users {
+				if !user.MemberDeleted && user.Type == api.EndUser {
+					return true, nil
+				}
 			}
 		}
 	}
