@@ -36,25 +36,44 @@ export const useSQLEditorStore = defineStore("sqlEditor", () => {
 
   // `databaseList` is query-able databases scoped by `project`
   const databaseList = ref<ComposedDatabase[]>([]);
-  const loading = ref<boolean>(false);
+  const fetchDataState = ref<{
+    nextPageToken?: string;
+    loading: boolean;
+  }>({
+    loading: false,
+  });
 
-  const prepareDatabases = useDebounceFn(async (name?: string) => {
-    loading.value = true;
+  const fetchDatabases = useDebounceFn(async (name?: string) => {
+    fetchDataState.value.loading = true;
+    const pageToken = fetchDataState.value.nextPageToken;
+
     try {
-      const { databases } = await databaseStore.fetchDatabases({
+      const { databases, nextPageToken } = await databaseStore.fetchDatabases({
         parent: project.value,
+        pageToken,
         pageSize: getDefaultPagination(),
         filter: {
           query: name,
         },
       });
-      databaseList.value = [...databases];
+
+      if (pageToken) {
+        databaseList.value.push(...databases);
+      } else {
+        databaseList.value = [...databases];
+      }
+      fetchDataState.value.nextPageToken = nextPageToken;
     } catch {
       databaseList.value = [];
     } finally {
-      loading.value = false;
+      fetchDataState.value.loading = false;
     }
   }, 500);
+
+  const prepareDatabases = async (name?: string) => {
+    fetchDataState.value.nextPageToken = "";
+    await fetchDatabases(name);
+  };
 
   watchEffect(async () => {
     if (isValidProjectName(project.value)) {
@@ -83,6 +102,7 @@ export const useSQLEditorStore = defineStore("sqlEditor", () => {
     executingHintDatabase,
     redisCommandOption,
     prepareDatabases,
-    loading,
+    fetchDatabases,
+    loading: computed(() => fetchDataState.value.loading),
   };
 });
