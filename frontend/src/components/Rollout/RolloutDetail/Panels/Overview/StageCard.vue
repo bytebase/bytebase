@@ -9,7 +9,7 @@
       class="w-full flex flex-row justify-between items-center gap-2 px-2 pt-2 pb-1"
     >
       <p class="textlabel">
-        {{ extractEnvironmentResourceName(stage.environment) }}
+        {{ environmentStore.getEnvironmentByName(stage.environment).title }}
         <NTag v-if="!isCreated" round size="tiny">Not created</NTag>
       </p>
       <div>
@@ -95,12 +95,12 @@ import { useRouter } from "vue-router";
 import { semanticTaskType } from "@/components/IssueV1";
 import { InstanceV1EngineIcon } from "@/components/v2";
 import { rolloutServiceClient } from "@/grpcweb";
+import { useEnvironmentV1Store } from "@/store";
 import { Stage, type Task } from "@/types/proto/v1/rollout_service";
 import { extractSchemaVersionFromTask } from "@/utils";
 import { useRolloutDetailContext } from "../../context";
 import { databaseForTask } from "../../utils";
 import TaskStatus from "./../kits/TaskStatus.vue";
-import { extractEnvironmentResourceName } from "@/utils";
 
 const props = defineProps<{
   stage: Stage;
@@ -108,9 +108,12 @@ const props = defineProps<{
 
 const router = useRouter();
 const { project, rollout, emmiter } = useRolloutDetailContext();
+const environmentStore = useEnvironmentV1Store();
 
 const isCreated = computed(() => {
-  return rollout.value.stages.some((stage) => stage.environment === props.stage.environment);
+  return rollout.value.stages.some(
+    (stage) => stage.environment === props.stage.environment
+  );
 });
 
 const onTaskClick = (task: Task) => {

@@ -15,7 +15,9 @@
                 {{ $t("common.stage") }}
               </label>
               <div class="textinfolabel break-all">
-                {{ extractEnvironmentResourceName(stage.environment) }}
+                {{
+                  environmentStore.getEnvironmentByName(stage.environment).title
+                }}
               </div>
             </div>
             <div class="contents">
@@ -65,6 +67,10 @@
 </template>
 
 <script setup lang="ts">
+import { cloneDeep, isEqual, uniqBy } from "lodash-es";
+import { NButton, NTooltip } from "naive-ui";
+import { computed, ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import {
   chooseUpdateTarget,
   databaseForTask,
@@ -77,14 +83,14 @@ import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import ErrorList from "@/components/misc/ErrorList.vue";
 import { Drawer, DrawerContent, RichDatabaseName } from "@/components/v2";
 import { planServiceClient } from "@/grpcweb";
-import { pushNotification, useDBGroupStore } from "@/store";
+import {
+  pushNotification,
+  useDBGroupStore,
+  useEnvironmentV1Store,
+} from "@/store";
 import type { Plan_Spec } from "@/types/proto/v1/plan_service";
 import { Task_Type } from "@/types/proto/v1/rollout_service";
-import { extractDatabaseGroupName, extractEnvironmentResourceName } from "@/utils";
-import { cloneDeep, isEqual, uniqBy } from "lodash-es";
-import { NButton, NTooltip } from "naive-ui";
-import { computed, ref, watch } from "vue";
-import { useI18n } from "vue-i18n";
+import { extractDatabaseGroupName } from "@/utils";
 import FlagsForm from "./FlagsForm";
 import { allowChangeTaskGhostFlags, useIssueGhostContext } from "./common";
 
@@ -97,6 +103,7 @@ const {
   dialog,
   events,
 } = useIssueContext();
+const environmentStore = useEnvironmentV1Store();
 const dbGroupStore = useDBGroupStore();
 const isUpdating = ref(false);
 
