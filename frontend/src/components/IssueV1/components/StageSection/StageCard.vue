@@ -70,12 +70,12 @@ import {
   useIssueContext,
 } from "@/components/IssueV1/logic";
 import { planCheckRunSummaryForCheckRunList } from "@/components/PlanCheckRun/common";
+import { useEnvironmentV1Store } from "@/store";
 import { EMPTY_TASK_NAME } from "@/types";
 import { PlanCheckRun_Result_Status } from "@/types/proto/v1/plan_service";
 import type { Stage } from "@/types/proto/v1/rollout_service";
 import { task_StatusToJSON } from "@/types/proto/v1/rollout_service";
 import { activeTaskInStageV1 } from "@/utils";
-import { extractEnvironmentResourceName } from "@/utils";
 import TaskStatusIcon from "../TaskStatusIcon.vue";
 import StageSummary from "./StageSummary.vue";
 
@@ -91,6 +91,7 @@ const {
   events,
   getPlanCheckRunsForTask,
 } = useIssueContext();
+const environmentStore = useEnvironmentV1Store();
 
 const activeTaskInStage = computed(() => {
   return activeTaskInStageV1(props.stage);
@@ -138,11 +139,12 @@ const stageClass = computed(() => {
 
 const stageTitle = computed(() => {
   const { stage } = props;
+  const environment = environmentStore.getEnvironmentByName(stage.environment);
   return !isCreating.value && isActiveStage.value
     ? t("issue.stage-select.current", {
-        name: extractEnvironmentResourceName(stage.environment),
+        name: environment.title,
       })
-    : extractEnvironmentResourceName(stage.environment);
+    : environment.title;
 });
 
 const planCheckStatus = computed((): PlanCheckRun_Result_Status => {

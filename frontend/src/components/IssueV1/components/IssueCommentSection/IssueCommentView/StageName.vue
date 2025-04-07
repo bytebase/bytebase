@@ -1,16 +1,23 @@
 <template>
   <span class="font-medium text-main">
-    {{ extractEnvironmentResourceName(stage.environment) }}
+    {{ environment.title }}
   </span>
 </template>
 
 <script lang="ts" setup>
+import { computed } from "vue";
+import { useEnvironmentV1Store } from "@/store";
 import type { ComposedIssue } from "@/types";
 import type { Stage } from "@/types/proto/v1/rollout_service";
-import { extractEnvironmentResourceName } from "@/utils";
 
-defineProps<{
+const props = defineProps<{
   issue: ComposedIssue;
   stage: Stage;
 }>();
+
+const environmentStore = useEnvironmentV1Store();
+
+const environment = computed(() =>
+  environmentStore.getEnvironmentByName(props.stage.environment)
+);
 </script>

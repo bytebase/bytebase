@@ -28,7 +28,9 @@
               {{ $t("common.stage") }}
             </label>
             <div class="textinfolabel break-all">
-              {{ extractEnvironmentResourceName(stage.environment) }}
+              {{
+                environmentStore.getEnvironmentByName(stage.environment).title
+              }}
             </div>
           </div>
         </template>
@@ -174,13 +176,12 @@ import {
 import PlanCheckRunBar from "@/components/PlanCheckRun/PlanCheckRunBar.vue";
 import { planCheckRunSummaryForCheckRunList } from "@/components/PlanCheckRun/common";
 import { rolloutServiceClient } from "@/grpcweb";
-import { pushNotification } from "@/store";
+import { pushNotification, useEnvironmentV1Store } from "@/store";
 import type { Task, TaskRun } from "@/types/proto/v1/rollout_service";
 import { Task_Status, TaskRun_Status } from "@/types/proto/v1/rollout_service";
 import { ErrorList } from "../common";
 import CommonDrawer from "./CommonDrawer.vue";
 import RolloutTaskDatabaseName from "./RolloutTaskDatabaseName.vue";
-import { extractEnvironmentResourceName } from "@/utils";
 
 type LocalState = {
   loading: boolean;
@@ -200,6 +201,7 @@ const state = reactive<LocalState>({
 });
 const { issue, selectedTask, events, getPlanCheckRunsForTask } =
   useIssueContext();
+const environmentStore = useEnvironmentV1Store();
 const comment = ref("");
 const performActionAnyway = ref(false);
 
