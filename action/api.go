@@ -91,10 +91,7 @@ func (c *Client) login(email, password string) error {
 	return nil
 }
 
-func (c *Client) checkRelease(project string, release *v1pb.Release) (*v1pb.CheckReleaseResponse, error) {
-	r := &v1pb.CheckReleaseRequest{
-		Release: release,
-	}
+func (c *Client) checkRelease(project string, r *v1pb.CheckReleaseRequest) (*v1pb.CheckReleaseResponse, error) {
 	rb, err := protojson.Marshal(r)
 	if err != nil {
 		return nil, err
