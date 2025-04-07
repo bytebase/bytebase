@@ -159,6 +159,7 @@ export interface OIDCIdentityProviderConfig {
   fieldMapping: FieldMapping | undefined;
   skipTlsVerify: boolean;
   authStyle: OAuth2AuthStyle;
+  scopes: string[];
 }
 
 /** LDAPIdentityProviderConfig is the structure for LDAP identity provider config. */
@@ -540,6 +541,7 @@ function createBaseOIDCIdentityProviderConfig(): OIDCIdentityProviderConfig {
     fieldMapping: undefined,
     skipTlsVerify: false,
     authStyle: OAuth2AuthStyle.OAUTH2_AUTH_STYLE_UNSPECIFIED,
+    scopes: [],
   };
 }
 
@@ -562,6 +564,9 @@ export const OIDCIdentityProviderConfig: MessageFns<OIDCIdentityProviderConfig> 
     }
     if (message.authStyle !== OAuth2AuthStyle.OAUTH2_AUTH_STYLE_UNSPECIFIED) {
       writer.uint32(48).int32(oAuth2AuthStyleToNumber(message.authStyle));
+    }
+    for (const v of message.scopes) {
+      writer.uint32(58).string(v!);
     }
     return writer;
   },
@@ -621,6 +626,14 @@ export const OIDCIdentityProviderConfig: MessageFns<OIDCIdentityProviderConfig> 
           message.authStyle = oAuth2AuthStyleFromJSON(reader.int32());
           continue;
         }
+        case 7: {
+          if (tag !== 58) {
+            break;
+          }
+
+          message.scopes.push(reader.string());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -640,6 +653,7 @@ export const OIDCIdentityProviderConfig: MessageFns<OIDCIdentityProviderConfig> 
       authStyle: isSet(object.authStyle)
         ? oAuth2AuthStyleFromJSON(object.authStyle)
         : OAuth2AuthStyle.OAUTH2_AUTH_STYLE_UNSPECIFIED,
+      scopes: globalThis.Array.isArray(object?.scopes) ? object.scopes.map((e: any) => globalThis.String(e)) : [],
     };
   },
 
@@ -663,6 +677,9 @@ export const OIDCIdentityProviderConfig: MessageFns<OIDCIdentityProviderConfig> 
     if (message.authStyle !== OAuth2AuthStyle.OAUTH2_AUTH_STYLE_UNSPECIFIED) {
       obj.authStyle = oAuth2AuthStyleToJSON(message.authStyle);
     }
+    if (message.scopes?.length) {
+      obj.scopes = message.scopes;
+    }
     return obj;
   },
 
@@ -679,6 +696,7 @@ export const OIDCIdentityProviderConfig: MessageFns<OIDCIdentityProviderConfig> 
       : undefined;
     message.skipTlsVerify = object.skipTlsVerify ?? false;
     message.authStyle = object.authStyle ?? OAuth2AuthStyle.OAUTH2_AUTH_STYLE_UNSPECIFIED;
+    message.scopes = object.scopes?.map((e) => e) || [];
     return message;
   },
 };

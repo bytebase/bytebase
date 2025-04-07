@@ -269,14 +269,14 @@ export interface OIDCIdentityProviderConfig {
   issuer: string;
   clientId: string;
   clientSecret: string;
-  fieldMapping: FieldMapping | undefined;
-  skipTlsVerify: boolean;
-  authStyle: OAuth2AuthStyle;
   /**
    * The scopes that the OIDC provider supports.
    * Should be fetched from the well-known configuration file of the OIDC provider.
    */
   scopes: string[];
+  fieldMapping: FieldMapping | undefined;
+  skipTlsVerify: boolean;
+  authStyle: OAuth2AuthStyle;
   /**
    * The authorization endpoint of the OIDC provider.
    * Should be fetched from the well-known configuration file of the OIDC provider.
@@ -1498,10 +1498,10 @@ function createBaseOIDCIdentityProviderConfig(): OIDCIdentityProviderConfig {
     issuer: "",
     clientId: "",
     clientSecret: "",
+    scopes: [],
     fieldMapping: undefined,
     skipTlsVerify: false,
     authStyle: OAuth2AuthStyle.OAUTH2_AUTH_STYLE_UNSPECIFIED,
-    scopes: [],
     authEndpoint: "",
   };
 }
@@ -1517,6 +1517,9 @@ export const OIDCIdentityProviderConfig: MessageFns<OIDCIdentityProviderConfig> 
     if (message.clientSecret !== "") {
       writer.uint32(26).string(message.clientSecret);
     }
+    for (const v of message.scopes) {
+      writer.uint32(34).string(v!);
+    }
     if (message.fieldMapping !== undefined) {
       FieldMapping.encode(message.fieldMapping, writer.uint32(42).fork()).join();
     }
@@ -1525,9 +1528,6 @@ export const OIDCIdentityProviderConfig: MessageFns<OIDCIdentityProviderConfig> 
     }
     if (message.authStyle !== OAuth2AuthStyle.OAUTH2_AUTH_STYLE_UNSPECIFIED) {
       writer.uint32(56).int32(oAuth2AuthStyleToNumber(message.authStyle));
-    }
-    for (const v of message.scopes) {
-      writer.uint32(34).string(v!);
     }
     if (message.authEndpoint !== "") {
       writer.uint32(66).string(message.authEndpoint);
@@ -1566,6 +1566,14 @@ export const OIDCIdentityProviderConfig: MessageFns<OIDCIdentityProviderConfig> 
           message.clientSecret = reader.string();
           continue;
         }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.scopes.push(reader.string());
+          continue;
+        }
         case 5: {
           if (tag !== 42) {
             break;
@@ -1590,14 +1598,6 @@ export const OIDCIdentityProviderConfig: MessageFns<OIDCIdentityProviderConfig> 
           message.authStyle = oAuth2AuthStyleFromJSON(reader.int32());
           continue;
         }
-        case 4: {
-          if (tag !== 34) {
-            break;
-          }
-
-          message.scopes.push(reader.string());
-          continue;
-        }
         case 8: {
           if (tag !== 66) {
             break;
@@ -1620,12 +1620,12 @@ export const OIDCIdentityProviderConfig: MessageFns<OIDCIdentityProviderConfig> 
       issuer: isSet(object.issuer) ? globalThis.String(object.issuer) : "",
       clientId: isSet(object.clientId) ? globalThis.String(object.clientId) : "",
       clientSecret: isSet(object.clientSecret) ? globalThis.String(object.clientSecret) : "",
+      scopes: globalThis.Array.isArray(object?.scopes) ? object.scopes.map((e: any) => globalThis.String(e)) : [],
       fieldMapping: isSet(object.fieldMapping) ? FieldMapping.fromJSON(object.fieldMapping) : undefined,
       skipTlsVerify: isSet(object.skipTlsVerify) ? globalThis.Boolean(object.skipTlsVerify) : false,
       authStyle: isSet(object.authStyle)
         ? oAuth2AuthStyleFromJSON(object.authStyle)
         : OAuth2AuthStyle.OAUTH2_AUTH_STYLE_UNSPECIFIED,
-      scopes: globalThis.Array.isArray(object?.scopes) ? object.scopes.map((e: any) => globalThis.String(e)) : [],
       authEndpoint: isSet(object.authEndpoint) ? globalThis.String(object.authEndpoint) : "",
     };
   },
@@ -1641,6 +1641,9 @@ export const OIDCIdentityProviderConfig: MessageFns<OIDCIdentityProviderConfig> 
     if (message.clientSecret !== "") {
       obj.clientSecret = message.clientSecret;
     }
+    if (message.scopes?.length) {
+      obj.scopes = message.scopes;
+    }
     if (message.fieldMapping !== undefined) {
       obj.fieldMapping = FieldMapping.toJSON(message.fieldMapping);
     }
@@ -1649,9 +1652,6 @@ export const OIDCIdentityProviderConfig: MessageFns<OIDCIdentityProviderConfig> 
     }
     if (message.authStyle !== OAuth2AuthStyle.OAUTH2_AUTH_STYLE_UNSPECIFIED) {
       obj.authStyle = oAuth2AuthStyleToJSON(message.authStyle);
-    }
-    if (message.scopes?.length) {
-      obj.scopes = message.scopes;
     }
     if (message.authEndpoint !== "") {
       obj.authEndpoint = message.authEndpoint;
@@ -1667,12 +1667,12 @@ export const OIDCIdentityProviderConfig: MessageFns<OIDCIdentityProviderConfig> 
     message.issuer = object.issuer ?? "";
     message.clientId = object.clientId ?? "";
     message.clientSecret = object.clientSecret ?? "";
+    message.scopes = object.scopes?.map((e) => e) || [];
     message.fieldMapping = (object.fieldMapping !== undefined && object.fieldMapping !== null)
       ? FieldMapping.fromPartial(object.fieldMapping)
       : undefined;
     message.skipTlsVerify = object.skipTlsVerify ?? false;
     message.authStyle = object.authStyle ?? OAuth2AuthStyle.OAUTH2_AUTH_STYLE_UNSPECIFIED;
-    message.scopes = object.scopes?.map((e) => e) || [];
     message.authEndpoint = object.authEndpoint ?? "";
     return message;
   },

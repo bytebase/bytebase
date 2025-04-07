@@ -241,15 +241,15 @@ message OIDCIdentityProviderConfig {
 
   string client_secret = 3;
 
+  // The scopes that the OIDC provider supports.
+  // Should be fetched from the well-known configuration file of the OIDC provider.
+  repeated string scopes = 4;
+
   FieldMapping field_mapping = 5;
 
   bool skip_tls_verify = 6;
 
   OAuth2AuthStyle auth_style = 7;
-
-  // The scopes that the OIDC provider supports.
-  // Should be fetched from the well-known configuration file of the OIDC provider.
-  repeated string scopes = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The authorization endpoint of the OIDC provider.
   // Should be fetched from the well-known configuration file of the OIDC provider.

@@ -317,17 +317,8 @@ func (s *IdentityProviderService) TestIdentityProvider(ctx context.Context, requ
 		if oauth2Context == nil {
 			return nil, status.Errorf(codes.InvalidArgument, "missing OAuth2 context")
 		}
-		identityProviderConfig := convertIdentityProviderConfigToStore(identityProvider.Config).GetOidcConfig()
-		oidcIdentityProvider, err := oidc.NewIdentityProvider(
-			ctx,
-			oidc.IdentityProviderConfig{
-				Issuer:        identityProviderConfig.Issuer,
-				ClientID:      identityProviderConfig.ClientId,
-				ClientSecret:  identityProviderConfig.ClientSecret,
-				FieldMapping:  identityProviderConfig.FieldMapping,
-				SkipTLSVerify: identityProviderConfig.SkipTlsVerify,
-				AuthStyle:     identityProviderConfig.GetAuthStyle(),
-			})
+		identityProviderConfig := convertIdentityProviderConfigToStore(identityProvider.Config)
+		oidcIdentityProvider, err := oidc.NewIdentityProvider(ctx, identityProviderConfig.GetOidcConfig())
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to create new OIDC identity provider: %v", err)
 		}
@@ -453,7 +444,7 @@ func convertIdentityProviderConfigFromStore(identityProviderConfig *storepb.Iden
 			FieldMapping:  &fieldMapping,
 			SkipTlsVerify: v.SkipTlsVerify,
 			AuthStyle:     v1pb.OAuth2AuthStyle(v.AuthStyle),
-			Scopes:        oidc.DefaultScopes,
+			Scopes:        v.Scopes,
 			AuthEndpoint:  "", // Leave it empty as it's not stored in the database.
 		}
 
@@ -537,6 +528,7 @@ func convertIdentityProviderConfigToStore(identityProviderConfig *v1pb.IdentityP
 					FieldMapping:  &fieldMapping,
 					SkipTlsVerify: v.SkipTlsVerify,
 					AuthStyle:     storepb.OAuth2AuthStyle(v.AuthStyle),
+					Scopes:        v.Scopes,
 				},
 			},
 		}
