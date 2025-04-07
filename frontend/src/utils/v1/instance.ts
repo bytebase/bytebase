@@ -175,6 +175,7 @@ export const instanceV1HasSSL = (
     Engine.MONGODB,
     Engine.ELASTICSEARCH,
     Engine.MSSQL,
+    Engine.CASSANDRA,
   ].includes(engine);
 };
 
@@ -191,6 +192,20 @@ export const instanceV1HasSSH = (
     Engine.REDIS,
   ].includes(engine);
 };
+
+export const instanceV1HasExtraParameters = (
+  instanceOrEngine: Instance | InstanceResource | Engine
+): boolean => {
+  const engine = engineOfInstanceV1(instanceOrEngine);
+  return [
+    Engine.MYSQL,
+    Engine.MARIADB,
+    Engine.OCEANBASE,
+    Engine.POSTGRES,
+    Engine.ORACLE,
+    Engine.MSSQL,
+  ].includes(engine);
+}
 
 export const instanceV1HasCollationAndCharacterSet = (
   instanceOrEngine: Instance | InstanceResource | Engine
