@@ -418,6 +418,9 @@ func newValue(v any) (*structpb.Value, error) {
 		return newListValue(v2), nil
 	default:
 		if reflect.TypeOf(v).Kind() == reflect.Ptr {
+			if reflect.ValueOf(v).IsNil() {
+				return newNullValue(), nil
+			}
 			return newValue(reflect.ValueOf(v).Elem().Interface())
 		}
 		if reflect.TypeOf(v).Kind() == reflect.Slice || reflect.TypeOf(v).Kind() == reflect.Array {
