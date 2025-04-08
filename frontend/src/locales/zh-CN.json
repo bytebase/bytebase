@@ -98,7 +98,6 @@
     "detail": "详情",
     "type": "类型",
     "language": "语言",
-    "change": "变更",
     "sensitive-placeholder": "敏感数据 - 仅写入",
     "enabled": "开启",
     "default": "默认",
