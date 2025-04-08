@@ -1260,6 +1260,14 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.store.EnvironmentSetting"><span class="badge">M</span>EnvironmentSetting</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.EnvironmentSetting.Environment"><span class="badge">M</span>EnvironmentSetting.Environment</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.store.MaximumSQLResultSizeSetting"><span class="badge">M</span>MaximumSQLResultSizeSetting</a>
                 </li>
               
@@ -1326,6 +1334,10 @@
               
                 <li>
                   <a href="#bytebase.store.DatabaseChangeMode"><span class="badge">E</span>DatabaseChangeMode</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.EnvironmentSetting.EnvironmentTier"><span class="badge">E</span>EnvironmentSetting.EnvironmentTier</a>
                 </li>
               
                 <li>
@@ -10914,6 +10926,77 @@ and write back to the schema metadata. </p></td>
 
         
       
+        <h3 id="bytebase.store.EnvironmentSetting">EnvironmentSetting</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>environments</td>
+                  <td><a href="#bytebase.store.EnvironmentSetting.Environment">EnvironmentSetting.Environment</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.EnvironmentSetting.Environment">EnvironmentSetting.Environment</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>title</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The display name of the environment. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The resource id of the environment.
+This value should be 4-63 characters, and valid characters
+are /[a-z][0-9]-/. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>tier</td>
+                  <td><a href="#bytebase.store.EnvironmentSetting.EnvironmentTier">EnvironmentSetting.EnvironmentTier</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>color</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.store.MaximumSQLResultSizeSetting">MaximumSQLResultSizeSetting</h3>
         <p></p>
 
@@ -11653,6 +11736,35 @@ Default to this mode.</p></td>
                 <td>EDITOR</td>
                 <td>2</td>
                 <td><p>A simple database change process in SQL editor. Users can execute SQL directly.</p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="bytebase.store.EnvironmentSetting.EnvironmentTier">EnvironmentSetting.EnvironmentTier</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>ENVIRONMENT_TIER_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>PROTECTED</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>UNPROTECTED</td>
+                <td>2</td>
+                <td><p></p></td>
               </tr>
             
           </tbody>

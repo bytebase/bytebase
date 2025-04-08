@@ -679,6 +679,76 @@ export function aISetting_ProviderToNumber(object: AISetting_Provider): number {
   }
 }
 
+export interface EnvironmentSetting {
+  environments: EnvironmentSetting_Environment[];
+}
+
+export enum EnvironmentSetting_EnvironmentTier {
+  ENVIRONMENT_TIER_UNSPECIFIED = "ENVIRONMENT_TIER_UNSPECIFIED",
+  PROTECTED = "PROTECTED",
+  UNPROTECTED = "UNPROTECTED",
+  UNRECOGNIZED = "UNRECOGNIZED",
+}
+
+export function environmentSetting_EnvironmentTierFromJSON(object: any): EnvironmentSetting_EnvironmentTier {
+  switch (object) {
+    case 0:
+    case "ENVIRONMENT_TIER_UNSPECIFIED":
+      return EnvironmentSetting_EnvironmentTier.ENVIRONMENT_TIER_UNSPECIFIED;
+    case 1:
+    case "PROTECTED":
+      return EnvironmentSetting_EnvironmentTier.PROTECTED;
+    case 2:
+    case "UNPROTECTED":
+      return EnvironmentSetting_EnvironmentTier.UNPROTECTED;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return EnvironmentSetting_EnvironmentTier.UNRECOGNIZED;
+  }
+}
+
+export function environmentSetting_EnvironmentTierToJSON(object: EnvironmentSetting_EnvironmentTier): string {
+  switch (object) {
+    case EnvironmentSetting_EnvironmentTier.ENVIRONMENT_TIER_UNSPECIFIED:
+      return "ENVIRONMENT_TIER_UNSPECIFIED";
+    case EnvironmentSetting_EnvironmentTier.PROTECTED:
+      return "PROTECTED";
+    case EnvironmentSetting_EnvironmentTier.UNPROTECTED:
+      return "UNPROTECTED";
+    case EnvironmentSetting_EnvironmentTier.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+export function environmentSetting_EnvironmentTierToNumber(object: EnvironmentSetting_EnvironmentTier): number {
+  switch (object) {
+    case EnvironmentSetting_EnvironmentTier.ENVIRONMENT_TIER_UNSPECIFIED:
+      return 0;
+    case EnvironmentSetting_EnvironmentTier.PROTECTED:
+      return 1;
+    case EnvironmentSetting_EnvironmentTier.UNPROTECTED:
+      return 2;
+    case EnvironmentSetting_EnvironmentTier.UNRECOGNIZED:
+    default:
+      return -1;
+  }
+}
+
+export interface EnvironmentSetting_Environment {
+  /** The display name of the environment. */
+  title: string;
+  /**
+   * The resource id of the environment.
+   * This value should be 4-63 characters, and valid characters
+   * are /[a-z][0-9]-/.
+   */
+  id: string;
+  tier: EnvironmentSetting_EnvironmentTier;
+  color: string;
+}
+
 function createBaseWorkspaceProfileSetting(): WorkspaceProfileSetting {
   return {
     externalUrl: "",
@@ -4192,6 +4262,178 @@ export const AISetting: MessageFns<AISetting> = {
     message.apiKey = object.apiKey ?? "";
     message.model = object.model ?? "";
     message.version = object.version ?? "";
+    return message;
+  },
+};
+
+function createBaseEnvironmentSetting(): EnvironmentSetting {
+  return { environments: [] };
+}
+
+export const EnvironmentSetting: MessageFns<EnvironmentSetting> = {
+  encode(message: EnvironmentSetting, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    for (const v of message.environments) {
+      EnvironmentSetting_Environment.encode(v!, writer.uint32(10).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): EnvironmentSetting {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseEnvironmentSetting();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.environments.push(EnvironmentSetting_Environment.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): EnvironmentSetting {
+    return {
+      environments: globalThis.Array.isArray(object?.environments)
+        ? object.environments.map((e: any) => EnvironmentSetting_Environment.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: EnvironmentSetting): unknown {
+    const obj: any = {};
+    if (message.environments?.length) {
+      obj.environments = message.environments.map((e) => EnvironmentSetting_Environment.toJSON(e));
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<EnvironmentSetting>): EnvironmentSetting {
+    return EnvironmentSetting.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<EnvironmentSetting>): EnvironmentSetting {
+    const message = createBaseEnvironmentSetting();
+    message.environments = object.environments?.map((e) => EnvironmentSetting_Environment.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseEnvironmentSetting_Environment(): EnvironmentSetting_Environment {
+  return { title: "", id: "", tier: EnvironmentSetting_EnvironmentTier.ENVIRONMENT_TIER_UNSPECIFIED, color: "" };
+}
+
+export const EnvironmentSetting_Environment: MessageFns<EnvironmentSetting_Environment> = {
+  encode(message: EnvironmentSetting_Environment, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.title !== "") {
+      writer.uint32(10).string(message.title);
+    }
+    if (message.id !== "") {
+      writer.uint32(18).string(message.id);
+    }
+    if (message.tier !== EnvironmentSetting_EnvironmentTier.ENVIRONMENT_TIER_UNSPECIFIED) {
+      writer.uint32(24).int32(environmentSetting_EnvironmentTierToNumber(message.tier));
+    }
+    if (message.color !== "") {
+      writer.uint32(34).string(message.color);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): EnvironmentSetting_Environment {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseEnvironmentSetting_Environment();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.title = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.id = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.tier = environmentSetting_EnvironmentTierFromJSON(reader.int32());
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.color = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): EnvironmentSetting_Environment {
+    return {
+      title: isSet(object.title) ? globalThis.String(object.title) : "",
+      id: isSet(object.id) ? globalThis.String(object.id) : "",
+      tier: isSet(object.tier)
+        ? environmentSetting_EnvironmentTierFromJSON(object.tier)
+        : EnvironmentSetting_EnvironmentTier.ENVIRONMENT_TIER_UNSPECIFIED,
+      color: isSet(object.color) ? globalThis.String(object.color) : "",
+    };
+  },
+
+  toJSON(message: EnvironmentSetting_Environment): unknown {
+    const obj: any = {};
+    if (message.title !== "") {
+      obj.title = message.title;
+    }
+    if (message.id !== "") {
+      obj.id = message.id;
+    }
+    if (message.tier !== EnvironmentSetting_EnvironmentTier.ENVIRONMENT_TIER_UNSPECIFIED) {
+      obj.tier = environmentSetting_EnvironmentTierToJSON(message.tier);
+    }
+    if (message.color !== "") {
+      obj.color = message.color;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<EnvironmentSetting_Environment>): EnvironmentSetting_Environment {
+    return EnvironmentSetting_Environment.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<EnvironmentSetting_Environment>): EnvironmentSetting_Environment {
+    const message = createBaseEnvironmentSetting_Environment();
+    message.title = object.title ?? "";
+    message.id = object.id ?? "";
+    message.tier = object.tier ?? EnvironmentSetting_EnvironmentTier.ENVIRONMENT_TIER_UNSPECIFIED;
+    message.color = object.color ?? "";
     return message;
   },
 };

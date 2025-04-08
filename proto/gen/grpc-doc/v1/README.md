@@ -241,6 +241,8 @@
     - [DataClassificationSetting.DataClassificationConfig.ClassificationEntry](#bytebase-v1-DataClassificationSetting-DataClassificationConfig-ClassificationEntry)
     - [DataClassificationSetting.DataClassificationConfig.DataClassification](#bytebase-v1-DataClassificationSetting-DataClassificationConfig-DataClassification)
     - [DataClassificationSetting.DataClassificationConfig.Level](#bytebase-v1-DataClassificationSetting-DataClassificationConfig-Level)
+    - [EnvironmentSetting](#bytebase-v1-EnvironmentSetting)
+    - [EnvironmentSetting.Environment](#bytebase-v1-EnvironmentSetting-Environment)
     - [GetSettingRequest](#bytebase-v1-GetSettingRequest)
     - [GetSettingResponse](#bytebase-v1-GetSettingResponse)
     - [ListSettingsRequest](#bytebase-v1-ListSettingsRequest)
@@ -267,6 +269,7 @@
     - [Algorithm.InnerOuterMask.MaskType](#bytebase-v1-Algorithm-InnerOuterMask-MaskType)
     - [Announcement.AlertLevel](#bytebase-v1-Announcement-AlertLevel)
     - [DatabaseChangeMode](#bytebase-v1-DatabaseChangeMode)
+    - [EnvironmentSetting.EnvironmentTier](#bytebase-v1-EnvironmentSetting-EnvironmentTier)
     - [SMTPMailDeliverySettingValue.Authentication](#bytebase-v1-SMTPMailDeliverySettingValue-Authentication)
     - [SMTPMailDeliverySettingValue.Encryption](#bytebase-v1-SMTPMailDeliverySettingValue-Encryption)
   
@@ -4464,6 +4467,39 @@ ANY means approving any node will proceed.
 
 
 
+<a name="bytebase-v1-EnvironmentSetting"></a>
+
+### EnvironmentSetting
+TODO(p0ny): implement.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| environments | [EnvironmentSetting.Environment](#bytebase-v1-EnvironmentSetting-Environment) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-EnvironmentSetting-Environment"></a>
+
+### EnvironmentSetting.Environment
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| title | [string](#string) |  | The display name of the environment. |
+| id | [string](#string) |  | The resource id of the environment. This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
+| tier | [EnvironmentSetting.EnvironmentTier](#bytebase-v1-EnvironmentSetting-EnvironmentTier) |  |  |
+| color | [string](#string) |  |  |
+
+
+
+
+
+
 <a name="bytebase-v1-GetSettingRequest"></a>
 
 ### GetSettingRequest
@@ -4767,6 +4803,7 @@ The data in setting value.
 | scim_setting | [SCIMSetting](#bytebase-v1-SCIMSetting) |  |  |
 | password_restriction_setting | [PasswordRestrictionSetting](#bytebase-v1-PasswordRestrictionSetting) |  |  |
 | ai_setting | [AISetting](#bytebase-v1-AISetting) |  |  |
+| environment_setting | [EnvironmentSetting](#bytebase-v1-EnvironmentSetting) |  |  |
 
 
 
@@ -4903,6 +4940,19 @@ We support three levels of AlertLevel: INFO, WARNING, and ERROR.
 | DATABASE_CHANGE_MODE_UNSPECIFIED | 0 |  |
 | PIPELINE | 1 | A more advanced database change process, including custom approval workflows and other advanced features. Default to this mode. |
 | EDITOR | 2 | A simple database change process in SQL editor. Users can execute SQL directly. |
+
+
+
+<a name="bytebase-v1-EnvironmentSetting-EnvironmentTier"></a>
+
+### EnvironmentSetting.EnvironmentTier
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| ENVIRONMENT_TIER_UNSPECIFIED | 0 |  |
+| PROTECTED | 1 |  |
+| UNPROTECTED | 2 |  |
 
 
 
