@@ -291,7 +291,7 @@
     "status": {
       "enqueued": "Đang chờ thực thi.",
       "enqueued-with-rollout-time": "Đang chờ thực thi sau {time}.",
-      "waiting-connection": "Đang chờ kết nối phiên làm việc khả dụng. Số lượng kết nối phiên làm việc đã đạt đến giới hạn.",
+      "waiting-connection": "Đang chờ kết nối thể hiện có sẵn. Số lượng kết nối thể hiện đã đạt đến giới hạn được đặt trên Bytebase.",
       "waiting-task": "Đang chờ một tác vụ khác kết thúc."
     }
   },

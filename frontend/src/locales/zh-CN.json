@@ -291,7 +291,7 @@
     "status": {
       "enqueued": "等待执行。",
       "enqueued-with-rollout-time": "等待执行，{time}后执行。",
-      "waiting-connection": "等待可用的实例连接。实例连接数已达到限制。",
+      "waiting-connection": "等待可用的实例连接。实例连接数已达到 Bytebase 上设置的限制。",
       "waiting-task": "等待另一个任务完成。"
     }
   },
