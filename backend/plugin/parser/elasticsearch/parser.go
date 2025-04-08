@@ -2,30 +2,41 @@ package elasticsearch
 
 import (
 	"encoding/json"
+	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"unicode/utf8"
 
 	hjson "github.com/hjson/hjson-go/v4"
 	"github.com/pkg/errors"
+
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 type ParseResult struct {
-	Request     *Request
-	StartOffset int
-	EndOffset   int
+	Requests []*Request
+	Errors   []*base.SyntaxError `yaml:"errors,omitempty"`
 }
 
 type Request struct {
-	Method string
-	URL    string
-	Data   []string `yaml:"data,omitempty"`
+	Method      string
+	URL         string
+	Data        []string `yaml:"data,omitempty"`
+	StartOffset int
+	EndOffset   int
 }
 
 type editorRequest struct {
 	method string
 	url    string
 	data   []string
+}
+
+type syntaxError struct {
+	// byteOffset is the byte offset of the first character of the error occurred, start by 0.
+	byteOffset int
+	message    string
 }
 
 // parsedRequest is the range of a request, it is left inclusive and right exclusive.
@@ -92,7 +103,7 @@ type parser struct {
 	ch       rune
 	escapee  map[rune]string
 	text     string
-	errors   []error
+	errors   []*syntaxError
 	requests []parsedRequest
 	// requestStart is the byte offset of the first character of the request.
 	requestStartOffset int
@@ -101,18 +112,18 @@ type parser struct {
 }
 
 // ParseElasticsearchREST parses the Elasticsearch REST API request.
-func ParseElasticsearchREST(text string) ([]*ParseResult, error) {
+func ParseElasticsearchREST(text string) (*ParseResult, error) {
 	p := newParser(text)
 	parsedResults, err := p.parse()
 	if err != nil {
 		return nil, err
 	}
-	var result []*ParseResult
+	var requests []*Request
 	for _, parsedResult := range parsedResults {
 		// See https://sourcegraph.com/github.com/elastic/kibana/-/blob/src/platform/plugins/shared/console/public/application/containers/editor/monaco_editor_actions_provider.ts?L261.
 		adjustedOffset := getAdjustedParsedRequest(parsedResult, text)
 		if adjustedOffset.startLineNumber > adjustedOffset.endLineNumber {
-			return nil, errors.Errorf("invalid request range")
+			continue
 		}
 		editorRequest := getEditorRequest(text, adjustedOffset)
 		if editorRequest == nil {
@@ -127,18 +138,59 @@ func ParseElasticsearchREST(text string) ([]*ParseResult, error) {
 				editorRequest.data[i] = collapseLiteralString(v)
 			}
 		}
-		result = append(result, &ParseResult{
-			Request: &Request{
-				Method: editorRequest.method,
-				URL:    editorRequest.url,
-				Data:   editorRequest.data,
-			},
+		requests = append(requests, &Request{
+			Method:      editorRequest.method,
+			URL:         editorRequest.url,
+			Data:        editorRequest.data,
 			StartOffset: parsedResult.startOffset,
 			EndOffset:   parsedResult.endOffset,
 		})
 	}
 
-	return result, err
+	// Convert Error
+	var syntaxErrors []*base.SyntaxError
+	sort.Slice(p.errors, func(i, j int) bool {
+		return p.errors[i].byteOffset < p.errors[j].byteOffset
+	})
+
+	for i, err := range p.errors {
+		line := 0
+		column := 0
+		pos := 0
+		if i > 0 {
+			line = syntaxErrors[i-1].Line
+			column = syntaxErrors[i-1].Column
+			pos = p.errors[i-1].byteOffset
+		}
+		boundary := p.errors[i].byteOffset
+		if boundary >= len(text) {
+			boundary = len(text) - 1
+		}
+
+		for j := pos; j <= boundary; j++ {
+			if text[j] == '\n' {
+				if j == boundary {
+					// Decorate the \n position instead of the next line.
+					column++
+					continue
+				}
+				line++
+				column = 0
+			} else {
+				column++
+			}
+		}
+		syntaxErrors = append(syntaxErrors, &base.SyntaxError{
+			Line:    line,
+			Column:  column,
+			Message: err.message,
+		})
+	}
+
+	return &ParseResult{
+		Requests: requests,
+		Errors:   syntaxErrors,
+	}, nil
 }
 
 func collapseLiteralString(s string) string {
@@ -341,7 +393,7 @@ func newParser(text string) *parser {
 			't':  "\t",
 		},
 		text:   text,
-		errors: []error{},
+		errors: []*syntaxError{},
 	}
 }
 
@@ -353,6 +405,7 @@ func (p *parser) parse() ([]parsedRequest, error) {
 	if err := p.multiRequest(); err != nil {
 		return nil, err
 	}
+
 	if err := p.white(); err != nil {
 		return nil, err
 	}
@@ -363,30 +416,76 @@ func (p *parser) parse() ([]parsedRequest, error) {
 }
 
 func (p *parser) multiRequest() error {
+	catch := func(e error) int {
+		p.errors = append(p.errors, &syntaxError{
+			byteOffset: p.at,
+			message:    e.Error(),
+		})
+		if p.at >= len(p.text) {
+			return -1
+		}
+		remain := p.text[p.at:]
+		re := regexp.MustCompile(`(?m)^(POST|HEAD|GET|PUT|DELETE|PATCH)`)
+		match := re.FindStringIndex(remain)
+		if match != nil {
+			return match[0] + p.at
+		}
+		return -1
+	}
 	for p.ch != 0 {
 		if err := p.white(); err != nil {
-			return err
+			if next := catch(err); next >= 0 {
+				if err := p.reset(next); err != nil {
+					return err
+				}
+			} else {
+				return nil
+			}
 		}
 		if p.ch == 0 {
 			continue
 		}
 		if err := p.comment(); err != nil {
-			return err
+			if next := catch(err); next >= 0 {
+				if err := p.reset(next); err != nil {
+					return err
+				}
+			} else {
+				return nil
+			}
 		}
 		if err := p.white(); err != nil {
-			return err
+			if next := catch(err); next >= 0 {
+				if err := p.reset(next); err != nil {
+					return err
+				}
+			} else {
+				return nil
+			}
 		}
 		if p.ch == 0 {
 			continue
 		}
 		if err := p.request(); err != nil {
-			return err
+			if next := catch(err); next >= 0 {
+				if err := p.reset(next); err != nil {
+					return err
+				}
+			} else {
+				return nil
+			}
 		}
 		if err := p.white(); err != nil {
-			return err
+			if next := catch(err); next >= 0 {
+				if err := p.reset(next); err != nil {
+					return err
+				}
+			} else {
+				return nil
+			}
 		}
 	}
-	// TODO(zp): nextMatch.
+
 	return nil
 }
 
@@ -833,6 +932,12 @@ func (p *parser) strictWhite() error {
 func (p *parser) nextOneOf(rs []rune) (rune, error) {
 	if !includes(rs, p.ch) {
 		return 0, errors.Errorf("expected one of %+v instead of '%c'", rs, p.ch)
+	}
+	if p.at >= len(p.text) {
+		// EOF, just increase the at by 1 and set the ch to 0.
+		p.at++
+		p.ch = 0
+		return 0, nil
 	}
 	ch, sz := utf8.DecodeRuneInString(p.text[p.at:])
 	if ch == utf8.RuneError {

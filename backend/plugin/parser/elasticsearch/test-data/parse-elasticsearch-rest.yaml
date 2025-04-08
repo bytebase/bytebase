@@ -1,26 +1,25 @@
 - description: simple
   statement: GET _search
   result:
-    - request:
-        method: GET
-        url: _search
-      startoffset: 0
-      endoffset: 11
+    requests:
+        - method: GET
+          url: _search
+          startoffset: 0
+          endoffset: 11
 - description: several requests
   statement: |-
     GET _search
     POST _test_index
   result:
-    - request:
-        method: GET
-        url: _search
-      startoffset: 0
-      endoffset: 11
-    - request:
-        method: POST
-        url: _test_index
-      startoffset: 12
-      endoffset: 28
+    requests:
+        - method: GET
+          url: _search
+          startoffset: 0
+          endoffset: 11
+        - method: POST
+          url: _test_index
+          startoffset: 12
+          endoffset: 28
 - description: parses a request with a request body
   statement: |-
     GET _search
@@ -30,18 +29,18 @@
       }
     }
   result:
-    - request:
-        method: GET
-        url: _search
-        data:
+    requests:
+        - method: GET
+          url: _search
+          data:
             - |-
               {
                 "query": {
                   "match_all": {}
                 }
               }
-      startoffset: 0
-      endoffset: 52
+          startoffset: 0
+          endoffset: 52
 - description: multiple request
   statement: |-
     GET _search
@@ -72,51 +71,48 @@
       }
     }
   result:
-    - request:
-        method: GET
-        url: _search
-        data:
+    requests:
+        - method: GET
+          url: _search
+          data:
             - |-
               {
                 "query": {
                   "match_all": {}
                 }
               }
-      startoffset: 0
-      endoffset: 52
-    - request:
-        method: GET
-        url: _search
-        data:
+          startoffset: 0
+          endoffset: 52
+        - method: GET
+          url: _search
+          data:
             - |-
               {
                 "query": {
                   "match_all": {}
                 }
               }
-      startoffset: 54
-      endoffset: 106
-    - request:
-        method: GET
-        url: _search
-        data:
+          startoffset: 54
+          endoffset: 106
+        - method: GET
+          url: _search
+          data:
             - |-
               {
                 "query": {
                   "match_all": {}
                 }
               }
-      startoffset: 109
-      endoffset: 161
-    - request:
-        method: GET
-        url: _search
-        data:
+          startoffset: 109
+          endoffset: 161
+        - method: GET
+          url: _search
+          data:
             - |-
               {
                 "query": {
                   "match_all": {}
                 }
               }
-      startoffset: 162
-      endoffset: 214
+          startoffset: 162
+          endoffset: 214
