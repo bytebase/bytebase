@@ -38,6 +38,9 @@ import {
   type ComposedDatabase,
   type Position,
   type SQLEditorConnection,
+  type EditorPanelView,
+  type EditorPanelViewState,
+  typeToView,
 } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import {
@@ -60,9 +63,7 @@ import {
 } from "@/utils";
 import { keyWithPosition } from "../../EditorCommon";
 import {
-  type EditorPanelView,
-  useEditorPanelContext,
-  type EditorPanelViewState,
+  useCurrentTabViewStateContext,
 } from "../../EditorPanel";
 import { useSQLEditorContext } from "../../context";
 import type { NodeTarget, NodeType, TreeNode } from "./common";
@@ -131,7 +132,7 @@ const confirmOverrideStatement = async (
 };
 
 export const useActions = () => {
-  const { updateViewState, typeToView } = useEditorPanelContext();
+  const { updateViewState } = useCurrentTabViewStateContext();
 
   const selectAllFromTableOrView = async (node: TreeNode) => {
     const { target } = (node as TreeNode<"table" | "view">).meta;

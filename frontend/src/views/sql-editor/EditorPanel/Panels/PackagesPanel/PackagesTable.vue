@@ -32,7 +32,7 @@ import type {
 } from "@/types/proto/v1/database_service";
 import { getHighlightHTMLByRegExp, useAutoHeightDataTable } from "@/utils";
 import { keyWithPosition } from "@/views/sql-editor/EditorCommon";
-import { useEditorPanelContext } from "../../context";
+import { useCurrentTabViewStateContext } from "../../context";
 
 type PackageWithPosition = {
   package: PackageMetadata;
@@ -61,7 +61,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const { viewState } = useEditorPanelContext();
+const { viewState } = useCurrentTabViewStateContext();
 
 const packagesWithPosition = computed(() => {
   return props.packages.map<PackageWithPosition>((pack, position) => ({

@@ -36,7 +36,7 @@ import {
   keyForDependencyColumn,
   useAutoHeightDataTable,
 } from "@/utils";
-import { useEditorPanelContext } from "../../context";
+import { useCurrentTabViewStateContext } from "../../context";
 
 const props = defineProps<{
   db: ComposedDatabase;
@@ -46,7 +46,7 @@ const props = defineProps<{
   keyword?: string;
 }>();
 
-const { viewState, updateViewState } = useEditorPanelContext();
+const { viewState, updateViewState } = useCurrentTabViewStateContext();
 const {
   dataTableRef,
   containerElRef,

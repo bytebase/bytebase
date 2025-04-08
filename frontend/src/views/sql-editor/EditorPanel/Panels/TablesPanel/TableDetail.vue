@@ -105,7 +105,7 @@ import type {
   TableMetadata,
 } from "@/types/proto/v1/database_service";
 import { keyWithPosition } from "@/views/sql-editor/EditorCommon";
-import { useEditorPanelContext } from "../../context";
+import { useCurrentTabViewStateContext } from "../../context";
 import ColumnsTable from "./ColumnsTable.vue";
 import ForeignKeysTable from "./ForeignKeysTable.vue";
 import IndexesTable from "./IndexesTable.vue";
@@ -126,7 +126,7 @@ const props = defineProps<{
 }>();
 
 const { t } = useI18n();
-const { viewState, updateViewState } = useEditorPanelContext();
+const { viewState, updateViewState } = useCurrentTabViewStateContext();
 const state = reactive<LocalState>({
   view: "COLUMNS",
   keyword: "",

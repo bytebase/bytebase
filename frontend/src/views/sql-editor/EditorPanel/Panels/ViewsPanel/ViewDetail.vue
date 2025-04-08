@@ -88,7 +88,7 @@ import type {
   ViewMetadata,
 } from "@/types/proto/v1/database_service";
 import { OpenAIButton } from "@/views/sql-editor/EditorCommon";
-import { useEditorPanelContext } from "../../context";
+import { useCurrentTabViewStateContext } from "../../context";
 import ColumnsTable from "./ColumnsTable.vue";
 import DefinitionViewer from "./DefinitionViewer.vue";
 import DependencyColumnsTable from "./DependencyColumnsTable.vue";
@@ -107,7 +107,7 @@ const props = defineProps<{
 }>();
 
 const { t } = useI18n();
-const { viewState, updateViewState } = useEditorPanelContext();
+const { viewState, updateViewState } = useCurrentTabViewStateContext();
 const state = reactive<LocalState>({
   mode: "COLUMNS",
   keyword: "",

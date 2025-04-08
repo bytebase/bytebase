@@ -66,7 +66,7 @@ import {
   type VueClass,
 } from "@/utils";
 import DatabaseChooser from "@/views/sql-editor/EditorCommon/DatabaseChooser.vue";
-import { useEditorPanelContext } from "../context";
+import { useCurrentTabViewStateContext } from "../context";
 import DiagramPanel from "./DiagramPanel";
 import ExternalTablesPanel from "./ExternalTablesPanel";
 import FunctionsPanel from "./FunctionsPanel";
@@ -85,7 +85,7 @@ defineProps<{
 
 const { currentTab: tab } = storeToRefs(useSQLEditorTabStore());
 const { viewState, selectedSchemaName, updateViewState } =
-  useEditorPanelContext();
+  useCurrentTabViewStateContext();
 const { database } = useConnectionOfCurrentSQLEditorTab();
 const { execute } = useExecuteSQL();
 const { events: AIEvents } = useAIContext();

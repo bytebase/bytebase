@@ -79,6 +79,7 @@ import { AIChatToSQL } from "@/plugins/ai";
 import {
   useConnectionOfCurrentSQLEditorTab,
   useSQLEditorTabStore,
+  useTabViewStateStore,
 } from "@/store";
 import type { SQLEditorQueryParams } from "@/types";
 import {
@@ -95,7 +96,6 @@ import { useSQLEditorContext } from "../../context";
 import ReadonlyModeNotSupported from "../ReadonlyModeNotSupported.vue";
 import ResultPanel from "../ResultPanel";
 import Welcome from "../Welcome";
-import { useEditorPanelContext } from "../context";
 
 const SQLEditor = defineAsyncComponent(() => import("./SQLEditor.vue"));
 
@@ -103,7 +103,7 @@ const tabStore = useSQLEditorTabStore();
 const { currentTab: tab, isDisconnected } = storeToRefs(tabStore);
 const { instance } = useConnectionOfCurrentSQLEditorTab();
 const { showAIPanel, AIPanelSize, handleAIPanelResize } = useSQLEditorContext();
-const { cloneViewState } = useEditorPanelContext();
+const { cloneViewState } = useTabViewStateStore();
 const sqlEditorRef = ref<InstanceType<typeof SQLEditor>>();
 
 const allowReadonlyMode = computed(() => {

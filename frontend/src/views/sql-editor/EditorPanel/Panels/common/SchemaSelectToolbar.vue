@@ -38,7 +38,7 @@ import {
   useDBSchemaV1Store,
 } from "@/store";
 import { hasSchemaProperty } from "@/utils";
-import { useEditorPanelContext } from "../../context";
+import { useCurrentTabViewStateContext } from "../../context";
 
 defineOptions({
   inheritAttrs: false,
@@ -50,7 +50,7 @@ defineProps<{
 
 const { t } = useI18n();
 const { database, instance } = useConnectionOfCurrentSQLEditorTab();
-const { selectedSchemaName } = useEditorPanelContext();
+const { selectedSchemaName } = useCurrentTabViewStateContext();
 const databaseMetadata = computed(() => {
   return useDBSchemaV1Store().getDatabaseMetadata(database.value.name);
 });
