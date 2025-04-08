@@ -1099,6 +1099,18 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.EnvironmentSetting"><span class="badge">M</span>EnvironmentSetting</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.EnvironmentSetting.Environment"><span class="badge">M</span>EnvironmentSetting.Environment</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.EnvironmentSetting.Environment.TagsEntry"><span class="badge">M</span>EnvironmentSetting.Environment.TagsEntry</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.GetSettingRequest"><span class="badge">M</span>GetSettingRequest</a>
                 </li>
               
@@ -13113,6 +13125,108 @@ and write back to the schema metadata. </p></td>
 
         
       
+        <h3 id="bytebase.v1.EnvironmentSetting">EnvironmentSetting</h3>
+        <p>TODO(p0ny): implement.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>environments</td>
+                  <td><a href="#bytebase.v1.EnvironmentSetting.Environment">EnvironmentSetting.Environment</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.EnvironmentSetting.Environment">EnvironmentSetting.Environment</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>title</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The display name of the environment. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The resource id of the environment.
+This value should be 4-63 characters, and valid characters
+are /[a-z][0-9]-/. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>tags</td>
+                  <td><a href="#bytebase.v1.EnvironmentSetting.Environment.TagsEntry">EnvironmentSetting.Environment.TagsEntry</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>color</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.EnvironmentSetting.Environment.TagsEntry">EnvironmentSetting.Environment.TagsEntry</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>key</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>value</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.GetSettingRequest">GetSettingRequest</h3>
         <p>The request message for getting a setting.</p>
 
@@ -13876,6 +13990,13 @@ server would not persist the setting value if it is true. </p></td>
                 <tr>
                   <td>ai_setting</td>
                   <td><a href="#bytebase.v1.AISetting">AISetting</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>environment_setting</td>
+                  <td><a href="#bytebase.v1.EnvironmentSetting">EnvironmentSetting</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>

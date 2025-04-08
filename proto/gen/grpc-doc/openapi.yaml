@@ -9467,6 +9467,32 @@ components:
                     format: enum
                 color:
                     type: string
+        EnvironmentSetting:
+            type: object
+            properties:
+                environments:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/EnvironmentSetting_Environment'
+            description: 'TODO(p0ny): implement.'
+        EnvironmentSetting_Environment:
+            type: object
+            properties:
+                title:
+                    type: string
+                    description: The display name of the environment.
+                id:
+                    type: string
+                    description: |-
+                        The resource id of the environment.
+                         This value should be 4-63 characters, and valid characters
+                         are /[a-z][0-9]-/.
+                tags:
+                    type: object
+                    additionalProperties:
+                        type: string
+                color:
+                    type: string
         ExportAuditLogsRequest:
             required:
                 - parent
@@ -13930,6 +13956,8 @@ components:
                     $ref: '#/components/schemas/PasswordRestrictionSetting'
                 aiSetting:
                     $ref: '#/components/schemas/AISetting'
+                environmentSetting:
+                    $ref: '#/components/schemas/EnvironmentSetting'
             description: The data in setting value.
         Webhook:
             required:
