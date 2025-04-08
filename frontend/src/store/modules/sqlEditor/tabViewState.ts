@@ -1,31 +1,12 @@
-import type { MaybeRef } from "@vueuse/core";
-import { watchThrottled } from "@vueuse/core";
-import { head, omit, pick, uniqBy, cloneDeep } from "lodash-es";
-import { defineStore, storeToRefs } from "pinia";
-import {
-  computed,
-  inject,
-  provide,
-  watch,
-  type InjectionKey,
-  type Ref,
-} from "vue";
-import {
-  useConnectionOfCurrentSQLEditorTab,
-  useCurrentUserV1,
-  extractUserId,
-} from "@/store";
-import type { SQLEditorTab } from "@/types";
+import { cloneDeep } from "lodash-es";
+import { defineStore } from "pinia";
+import { computed } from "vue";
+import { useCurrentUserV1, extractUserId } from "@/store";
 import {
   defaultViewState,
   type EditorPanelViewState as ViewState,
 } from "@/types";
-import {
-  instanceV1SupportsExternalTable,
-  instanceV1SupportsPackage,
-  instanceV1SupportsSequence,
-  useDynamicLocalStorage,
-} from "@/utils";
+import { useDynamicLocalStorage } from "@/utils";
 
 export const useTabViewStateStore = defineStore("tabViewState", () => {
   const me = useCurrentUserV1();
