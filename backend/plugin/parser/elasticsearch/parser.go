@@ -19,7 +19,7 @@ type ParseResult struct {
 type Request struct {
 	Method string
 	URL    string
-	Data   []string
+	Data   []string `yaml:"data,omitempty"`
 }
 
 type editorRequest struct {

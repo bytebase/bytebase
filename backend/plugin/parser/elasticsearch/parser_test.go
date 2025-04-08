@@ -19,7 +19,7 @@ func TestParseElasticsearchREST(t *testing.T) {
 
 	var (
 		filepath = "test-data/parse-elasticsearch-rest.yaml"
-		record   = true
+		record   = false
 	)
 
 	a := require.New(t)

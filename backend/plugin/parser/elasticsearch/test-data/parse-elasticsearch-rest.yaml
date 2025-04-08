@@ -4,7 +4,6 @@
     - request:
         method: GET
         url: _search
-        data: []
       startoffset: 0
       endoffset: 11
 - description: several requests
@@ -15,13 +14,11 @@
     - request:
         method: GET
         url: _search
-        data: []
       startoffset: 0
       endoffset: 11
     - request:
         method: POST
         url: _test_index
-        data: []
       startoffset: 12
       endoffset: 28
 - description: parses a request with a request body
