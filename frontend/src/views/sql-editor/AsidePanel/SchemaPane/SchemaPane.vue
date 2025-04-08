@@ -145,7 +145,7 @@ const {
   handleSelect: handleDropdownSelect,
   handleClickoutside: handleDropdownClickoutside,
 } = useDropdown();
-const { selectAllFromTableOrView, viewDetail } = useActions();
+const { selectAllFromTableOrView } = useActions();
 const { currentTab } = storeToRefs(useSQLEditorTabStore());
 const { database } = useConnectionOfCurrentSQLEditorTab();
 const searchPattern = computed({
@@ -408,7 +408,6 @@ const singleClick = (node: TreeNode) => {
       return;
     }
   }
-  viewDetail(node);
 };
 useEmitteryEventListener(nodeClickEvents, "single-click", ({ node }) => {
   singleClick(node);
