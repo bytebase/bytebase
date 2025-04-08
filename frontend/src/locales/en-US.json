@@ -98,7 +98,6 @@
     "detail": "Detail",
     "type": "Type",
     "language": "Language",
-    "change": "Change",
     "sensitive-placeholder": "Sensitive - write only",
     "enabled": "enabled",
     "default": "default",
