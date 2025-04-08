@@ -24,6 +24,7 @@ func TestParseElasticsearchREST(t *testing.T) {
 
 	a := require.New(t)
 	yamlFile, err := os.Open(filepath)
+	a.NoError(err)
 	byteValue, err := io.ReadAll(yamlFile)
 	a.NoError(err)
 	a.NoError(yamlFile.Close())
