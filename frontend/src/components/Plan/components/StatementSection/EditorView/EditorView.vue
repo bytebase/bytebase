@@ -522,7 +522,7 @@ const updateStatement = async (statement: string) => {
   const sheet = Sheet.fromPartial({
     ...createEmptyLocalSheet(),
     title: plan.value.title,
-    engine: await databaseEngineForSpec(project.value, head(specsToPatch)),
+    engine: await databaseEngineForSpec(head(specsToPatch)),
   });
   setSheetStatement(sheet, statement);
   const createdSheet = await useSheetV1Store().createSheet(

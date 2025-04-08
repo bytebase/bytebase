@@ -21,7 +21,9 @@ const props = defineProps<{
 }>();
 
 const router = useRouter();
-const { dbGroupList, ready } = useDBGroupListByProject(props.project.name);
+const { dbGroupList, ready } = useDBGroupListByProject(
+  computed(() => props.project.name)
+);
 
 const filteredDbGroupList = computed(() => {
   const filter = props.filter.trim().toLowerCase();

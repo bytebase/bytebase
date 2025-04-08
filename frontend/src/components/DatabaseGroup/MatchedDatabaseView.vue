@@ -132,7 +132,7 @@ const loadMore = async (i: number) => {
   state.databaseMatchLists[i].loading = true;
   try {
     const previous = state.databaseMatchLists[i].index;
-    const next = previous + 10;
+    const next = previous + 20;
 
     await Promise.all(
       state.databaseMatchLists[i].databaseNameList
