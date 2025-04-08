@@ -233,7 +233,7 @@ func getEditorRequest(text string, a adjustedParsedRequest) *editorRequest {
 // Example inputs:
 // - '{ "query": "test"} { "query": "test" }' -> ['{ "query": "test"}', '{ "query": "test" }']
 // - '{ "query": "test"}' -> ['{ "query": "test"}']
-// - '{ "query": "{a} {b}"}' -> ['{ "query": "{a} {b}"}']
+// - '{ "query": "{a} {b}"}' -> ['{ "query": "{a} {b}"}'].
 func splitDataIntoJSONObjects(s string) []string {
 	var jsonObjects []string
 	// Track the depth of nested braces
@@ -253,9 +253,10 @@ func splitDataIntoJSONObjects(s string) []string {
 			insideString = !insideString
 		} else if !insideString {
 			// Only modify depth if not inside a string
-			if r == '{' {
+			switch r {
+			case '{':
 				depth++
-			} else if r == '}' {
+			case '}':
 				depth--
 			}
 
@@ -731,51 +732,51 @@ func (p *parser) string() (string, error) {
 				return "", err
 			}
 			return p.nextUpTo(`"""`, `failed to find closing '"""'`)
-		} else {
-			for {
-				r, err := p.nextEmptyInput()
-				if err != nil {
+		}
+		for {
+			r, err := p.nextEmptyInput()
+			if err != nil {
+				return "", err
+			}
+			if r == 0 {
+				break
+			}
+			if p.ch == '"' {
+				if _, err := p.nextEmptyInput(); err != nil {
 					return "", err
 				}
-				if r == 0 {
+				return s, nil
+			} else if p.ch == '\\' {
+				if _, err := p.nextEmptyInput(); err != nil {
+					return "", err
+				}
+				if p.ch == 'u' {
+					uffff = 0
+					for i := 0; i < 4; i++ {
+						nextRune, err := p.nextEmptyInput()
+						if err != nil {
+							return "", err
+						}
+						// Parse next rune into hex.
+						hex, err := strconv.ParseUint(string(nextRune), 16, 32)
+						if err != nil {
+							break
+						}
+						uffff = (uffff << 4) + int(hex)
+					}
+					// Treat uffff as UTF-16 encoded rune.
+					s += string(rune(uffff))
+				} else if v, ok := p.escapee[p.ch]; ok {
+					s += v
+				} else {
 					break
 				}
-				if p.ch == '"' {
-					if _, err := p.nextEmptyInput(); err != nil {
-						return "", err
-					}
-					return s, nil
-				} else if p.ch == '\\' {
-					if _, err := p.nextEmptyInput(); err != nil {
-						return "", err
-					}
-					if p.ch == 'u' {
-						uffff = 0
-						for i := 0; i < 4; i++ {
-							nextRune, err := p.nextEmptyInput()
-							if err != nil {
-								return "", err
-							}
-							// Parse next rune into hex.
-							hex, err := strconv.ParseUint(string(nextRune), 16, 32)
-							if err != nil {
-								break
-							}
-							uffff = (uffff << 4) + int(hex)
-						}
-						// Treat uffff as UTF-16 encoded rune.
-						s += string(rune(uffff))
-					} else if v, ok := p.escapee[p.ch]; ok {
-						s += v
-					} else {
-						break
-					}
-				} else {
-					s += string(p.ch)
-				}
+			} else {
+				s += string(p.ch)
 			}
 		}
 	}
+
 	return "", errors.Errorf("bad string")
 }
 
@@ -1026,7 +1027,7 @@ func (p *parser) white() error {
 			if _, err := p.nNextEmptyInput(2); err != nil {
 				return err
 			}
-			for p.ch != 0 && !(p.ch == '*' && p.peek(0) == '/') {
+			for p.ch != 0 && (p.ch != '*' || p.peek(0) != '/') {
 				// Until we have closing tags '*', skip to the next char.
 				if _, err := p.nextEmptyInput(); err != nil {
 					return err
@@ -1056,7 +1057,7 @@ func (p *parser) next(c rune) (rune, error) {
 func (p *parser) nextEmptyInput() (rune, error) {
 	if p.at >= len(p.text) {
 		// EOF
-		p.at += 1
+		p.at++
 		p.ch = 0
 		return 0, nil
 	}
