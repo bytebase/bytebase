@@ -1260,6 +1260,18 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.store.EnvironmentSetting"><span class="badge">M</span>EnvironmentSetting</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.EnvironmentSetting.Environment"><span class="badge">M</span>EnvironmentSetting.Environment</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.EnvironmentSetting.Environment.TagsEntry"><span class="badge">M</span>EnvironmentSetting.Environment.TagsEntry</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.store.MaximumSQLResultSizeSetting"><span class="badge">M</span>MaximumSQLResultSizeSetting</a>
                 </li>
               
@@ -10902,6 +10914,108 @@ and write back to the schema metadata. </p></td>
               
                 <tr>
                   <td>description</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.EnvironmentSetting">EnvironmentSetting</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>environments</td>
+                  <td><a href="#bytebase.store.EnvironmentSetting.Environment">EnvironmentSetting.Environment</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.EnvironmentSetting.Environment">EnvironmentSetting.Environment</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>title</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The display name of the environment. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The resource id of the environment.
+This value should be 4-63 characters, and valid characters
+are /[a-z][0-9]-/. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>tags</td>
+                  <td><a href="#bytebase.store.EnvironmentSetting.Environment.TagsEntry">EnvironmentSetting.Environment.TagsEntry</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>color</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.EnvironmentSetting.Environment.TagsEntry">EnvironmentSetting.Environment.TagsEntry</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>key</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>value</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
