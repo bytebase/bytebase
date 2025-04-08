@@ -162,9 +162,14 @@ func ParseElasticsearchREST(text string) (*ParseResult, error) {
 			column = syntaxErrors[i-1].Column
 			pos = p.errors[i-1].byteOffset
 		}
-		for j := pos; j <= err.byteOffset; j++ {
+		boundary := p.errors[i].byteOffset
+		if boundary >= len(text) {
+			boundary = len(text) - 1
+		}
+
+		for j := pos; j <= boundary; j++ {
 			if text[j] == '\n' {
-				if j == err.byteOffset {
+				if j == boundary {
 					// Decorate the \n position instead of the next line.
 					column++
 					continue
@@ -416,6 +421,9 @@ func (p *parser) multiRequest() error {
 			byteOffset: p.at,
 			message:    e.Error(),
 		})
+		if p.at >= len(p.text) {
+			return -1
+		}
 		remain := p.text[p.at:]
 		re := regexp.MustCompile(`(?m)^(POST|HEAD|GET|PUT|DELETE|PATCH)`)
 		match := re.FindStringIndex(remain)
@@ -924,6 +932,12 @@ func (p *parser) strictWhite() error {
 func (p *parser) nextOneOf(rs []rune) (rune, error) {
 	if !includes(rs, p.ch) {
 		return 0, errors.Errorf("expected one of %+v instead of '%c'", rs, p.ch)
+	}
+	if p.at >= len(p.text) {
+		// EOF, just increase the at by 1 and set the ch to 0.
+		p.at++
+		p.ch = 0
+		return 0, nil
 	}
 	ch, sz := utf8.DecodeRuneInString(p.text[p.at:])
 	if ch == utf8.RuneError {
