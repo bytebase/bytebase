@@ -425,6 +425,8 @@ func (p *parser) multiRequest() error {
 				if err := p.reset(next); err != nil {
 					return err
 				}
+			} else {
+				return nil
 			}
 		}
 		if p.ch == 0 {
@@ -435,6 +437,8 @@ func (p *parser) multiRequest() error {
 				if err := p.reset(next); err != nil {
 					return err
 				}
+			} else {
+				return nil
 			}
 		}
 		if err := p.white(); err != nil {
@@ -442,6 +446,8 @@ func (p *parser) multiRequest() error {
 				if err := p.reset(next); err != nil {
 					return err
 				}
+			} else {
+				return nil
 			}
 		}
 		if p.ch == 0 {
@@ -452,6 +458,8 @@ func (p *parser) multiRequest() error {
 				if err := p.reset(next); err != nil {
 					return err
 				}
+			} else {
+				return nil
 			}
 		}
 		if err := p.white(); err != nil {
@@ -459,6 +467,8 @@ func (p *parser) multiRequest() error {
 				if err := p.reset(next); err != nil {
 					return err
 				}
+			} else {
+				return nil
 			}
 		}
 	}
