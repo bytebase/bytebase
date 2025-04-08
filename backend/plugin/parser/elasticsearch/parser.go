@@ -16,7 +16,7 @@ import (
 
 type ParseResult struct {
 	Requests []*Request
-	Errors   []*base.SyntaxError
+	Errors   []*base.SyntaxError `yaml:"errors,omitempty"`
 }
 
 type Request struct {

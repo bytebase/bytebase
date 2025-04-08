@@ -6,7 +6,6 @@
           url: _search
           startoffset: 0
           endoffset: 11
-    errors: []
 - description: several requests
   statement: |-
     GET _search
@@ -21,7 +20,6 @@
           url: _test_index
           startoffset: 12
           endoffset: 28
-    errors: []
 - description: parses a request with a request body
   statement: |-
     GET _search
@@ -43,7 +41,6 @@
               }
           startoffset: 0
           endoffset: 52
-    errors: []
 - description: multiple request
   statement: |-
     GET _search
@@ -119,4 +116,3 @@
               }
           startoffset: 162
           endoffset: 214
-    errors: []
