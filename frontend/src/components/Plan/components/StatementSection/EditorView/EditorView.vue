@@ -246,7 +246,6 @@ const { t } = useI18n();
 const context = usePlanContext();
 const { isCreating, plan, selectedSpec, formatOnSave, events } =
   usePlanContext();
-const project = computed(() => plan.value.projectEntity);
 const dialog = useDialog();
 const editorContainerElRef = ref<HTMLElement>();
 const monacoEditorRef = ref<InstanceType<typeof MonacoEditor>>();

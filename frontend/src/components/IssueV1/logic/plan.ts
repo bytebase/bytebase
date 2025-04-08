@@ -7,7 +7,6 @@ import {
   useInstanceResourceByName,
 } from "@/store";
 import {
-  type ComposedProject,
   UNKNOWN_ID,
   type ComposedIssue,
   unknownDatabase,

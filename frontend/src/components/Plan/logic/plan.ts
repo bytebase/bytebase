@@ -4,7 +4,6 @@ import {
   useEnvironmentV1Store,
 } from "@/store";
 import {
-  type ComposedProject,
   isValidDatabaseName,
   unknownDatabase,
   unknownEnvironment,
