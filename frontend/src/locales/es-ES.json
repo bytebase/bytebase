@@ -291,7 +291,7 @@
     "status": {
       "enqueued": "Esperando a ser ejecutada.",
       "enqueued-with-rollout-time": "Esperando para ejecutar, {time} para ejecutar.",
-      "waiting-connection": "Esperando conexiones de instancia disponibles. \nEl recuento de conexiones de instancia ha alcanzado el límite.",
+      "waiting-connection": "Esperando conexiones de instancias disponibles. El recuento de conexión de instancia ha alcanzado el límite establecido en Bytebase.",
       "waiting-task": "Esperando a que termine otra tarea."
     }
   },
