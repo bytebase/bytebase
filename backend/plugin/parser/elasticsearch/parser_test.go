@@ -12,9 +12,9 @@ import (
 
 func TestParseElasticsearchREST(t *testing.T) {
 	type testCase struct {
-		Description string         `yaml:"description,omitempty"`
-		Statement   string         `yaml:"statement,omitempty"`
-		Result      []*ParseResult `yaml:"result,omitempty"`
+		Description string       `yaml:"description,omitempty"`
+		Statement   string       `yaml:"statement,omitempty"`
+		Result      *ParseResult `yaml:"result,omitempty"`
 	}
 
 	var (
