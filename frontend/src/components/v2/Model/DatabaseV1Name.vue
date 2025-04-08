@@ -8,7 +8,6 @@
       shouldShowLink && 'hover:underline',
     ]"
   >
-    <span v-if="prefix" class="mr-1 text-gray-400">{{ prefix }}</span>
     <!-- eslint-disable-next-line vue/no-v-html -->
     <span v-html="renderedDatabaseName" />
     <span
@@ -25,7 +24,7 @@ import { NEllipsis } from "naive-ui";
 import { computed } from "vue";
 import { useRouter } from "vue-router";
 import type { ComposedDatabase } from "@/types";
-import { Engine, State } from "@/types/proto/v1/common";
+import { State } from "@/types/proto/v1/common";
 import { autoDatabaseRoute, getHighlightHTMLByRegExp } from "@/utils";
 
 const props = withDefaults(
@@ -61,14 +60,6 @@ const bindings = computed(() => {
     };
   }
   return {};
-});
-
-const prefix = computed(() => {
-  const { database } = props;
-  if (database.instanceResource.engine === Engine.REDIS) {
-    return database.instanceResource.title;
-  }
-  return "";
 });
 
 const renderedDatabaseName = computed(() => {
