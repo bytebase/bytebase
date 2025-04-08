@@ -45,6 +45,7 @@ import {
   useWorkSheetStore,
   pushNotification,
   useSQLEditorTabStore,
+  useTabViewStateStore,
 } from "@/store";
 import {
   Worksheet,
@@ -76,6 +77,7 @@ const worksheetV1Store = useWorkSheetStore();
 const dialog = useDialog();
 const { events } = useSheetContext();
 const { events: editorEvents } = useSQLEditorContext();
+const { removeViewState } = useTabViewStateStore();
 
 const options = computed(() => {
   const options: DropdownOption[] = [];
@@ -203,6 +205,7 @@ const turnSheetToUnsavedTab = (sheet: Worksheet) => {
   const tab = tabStore.tabList.find((tab) => tab.worksheet === sheet.name);
   if (tab) {
     tabStore.removeTab(tab);
+    removeViewState(tab.id);
   }
 };
 </script>

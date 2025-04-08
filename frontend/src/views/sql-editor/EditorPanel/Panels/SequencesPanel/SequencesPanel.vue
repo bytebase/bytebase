@@ -37,11 +37,11 @@ import {
   extractKeyWithPosition,
   keyWithPosition,
 } from "@/views/sql-editor/EditorCommon";
-import { useEditorPanelContext } from "../../context";
+import { useCurrentTabViewStateContext } from "../../context";
 import SequencesTable from "./SequencesTable.vue";
 
 const { database } = useConnectionOfCurrentSQLEditorTab();
-const { viewState, updateViewState } = useEditorPanelContext();
+const { viewState, updateViewState } = useCurrentTabViewStateContext();
 const databaseMetadata = computed(() => {
   return useDBSchemaV1Store().getDatabaseMetadata(database.value.name);
 });

@@ -43,12 +43,12 @@ import {
   ViewMetadata,
   SchemaMetadata,
 } from "@/types/proto/v1/database_service";
-import { useEditorPanelContext } from "../../context";
+import { useCurrentTabViewStateContext } from "../../context";
 import ViewDetail from "./ViewDetail.vue";
 import ViewsTable from "./ViewsTable.vue";
 
 const { database } = useConnectionOfCurrentSQLEditorTab();
-const { viewState, updateViewState } = useEditorPanelContext();
+const { viewState, updateViewState } = useCurrentTabViewStateContext();
 const databaseMetadata = computed(() => {
   return useDBSchemaV1Store().getDatabaseMetadata(database.value.name);
 });

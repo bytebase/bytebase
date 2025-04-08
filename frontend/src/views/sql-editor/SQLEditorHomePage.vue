@@ -89,7 +89,7 @@ import { extractProjectResourceName } from "@/utils";
 import AsidePanel from "./AsidePanel";
 import ConnectionPanel from "./ConnectionPanel";
 import EditorPanel from "./EditorPanel";
-import { provideEditorPanelContext } from "./EditorPanel/context";
+import { provideCurrentTabViewStateContext } from "./EditorPanel/context";
 import { useSheetContext } from "./Sheet";
 import SheetPanel from "./SheetPanel";
 import TabList from "./TabList";
@@ -150,9 +150,7 @@ useEmitteryEventListener(
   }
 );
 
-const editorPanelContext = provideEditorPanelContext({
-  tab: currentTab,
-});
+const editorPanelContext = provideCurrentTabViewStateContext();
 
 useEmitteryEventListener(
   editorEvents,

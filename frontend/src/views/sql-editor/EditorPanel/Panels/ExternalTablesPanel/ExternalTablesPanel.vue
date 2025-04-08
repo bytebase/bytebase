@@ -70,12 +70,12 @@ import {
   SchemaMetadata,
   ExternalTableMetadata,
 } from "@/types/proto/v1/database_service";
-import { useEditorPanelContext } from "../../context";
+import { useCurrentTabViewStateContext } from "../../context";
 import ExternalTableColumnsTable from "./ExternalTableColumnsTable.vue";
 import ExternalTablesTable from "./ExternalTablesTable.vue";
 
 const { database } = useConnectionOfCurrentSQLEditorTab();
-const { viewState, updateViewState } = useEditorPanelContext();
+const { viewState, updateViewState } = useCurrentTabViewStateContext();
 const databaseMetadata = computed(() => {
   return useDBSchemaV1Store().getDatabaseMetadata(database.value.name);
 });

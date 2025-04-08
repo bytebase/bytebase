@@ -30,7 +30,7 @@ import {
   type TableMetadata,
 } from "@/types/proto/v1/database_service";
 import { getHighlightHTMLByRegExp, useAutoHeightDataTable } from "@/utils";
-import { useEditorPanelContext } from "../../context";
+import { useCurrentTabViewStateContext } from "../../context";
 
 type FlattenTablePartitionMetadata = {
   partition: TablePartitionMetadata;
@@ -46,7 +46,7 @@ const props = defineProps<{
 }>();
 
 const { t } = useI18n();
-const { viewState } = useEditorPanelContext();
+const { viewState } = useCurrentTabViewStateContext();
 const {
   dataTableRef,
   containerElRef,

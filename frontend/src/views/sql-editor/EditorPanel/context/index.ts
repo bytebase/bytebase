@@ -1,43 +1,37 @@
-import { cloneDeep, head } from "lodash-es";
+import { head } from "lodash-es";
+import { storeToRefs } from "pinia";
+import { computed, inject, provide, watch, type InjectionKey } from "vue";
 import {
-  computed,
-  inject,
-  provide,
-  reactive,
-  watch,
-  type InjectionKey,
-  type Ref,
-} from "vue";
-import { useConnectionOfCurrentSQLEditorTab } from "@/store";
-import type { SQLEditorTab } from "@/types";
+  useConnectionOfCurrentSQLEditorTab,
+  useSQLEditorTabStore,
+  useTabViewStateStore,
+} from "@/store";
+import {
+  type EditorPanelView,
+  type EditorPanelViewState as ViewState,
+} from "@/types";
 import {
   instanceV1SupportsExternalTable,
   instanceV1SupportsPackage,
   instanceV1SupportsSequence,
 } from "@/utils";
-import {
-  defaultViewState,
-  typeToView,
-  type EditorPanelView,
-  type EditorPanelViewState as ViewState,
-} from "../types";
 
 const KEY = Symbol(
   "bb.sql-editor.editor-panel"
 ) as InjectionKey<EditorPanelContext>;
 
-const viewStateByTab = reactive(new Map</* tab.id */ string, ViewState>());
+export const provideCurrentTabViewStateContext = () => {
+  const tabStore = useSQLEditorTabStore();
+  const tabViewStateStore = useTabViewStateStore();
+  const { currentTab: tab } = storeToRefs(tabStore);
 
-export const provideEditorPanelContext = (base: {
-  tab: Ref<SQLEditorTab | undefined>;
-}) => {
-  const { tab } = base;
   const { instance } = useConnectionOfCurrentSQLEditorTab();
 
   const viewState = computed(() => {
     if (!tab.value) return undefined;
-    return viewStateByTab.get(tab.value.id) ?? defaultViewState();
+    return tabViewStateStore.getViewState(tab.value.id);
   });
+
   const availableViews = computed(() => {
     const views: EditorPanelView[] = [
       "CODE",
@@ -73,20 +67,8 @@ export const provideEditorPanelContext = (base: {
   });
 
   const updateViewState = (patch: Partial<ViewState>) => {
-    const curr = viewState.value;
-    if (!curr) return;
     if (!tab.value) return;
-
-    Object.assign(curr, patch);
-    viewStateByTab.set(tab.value.id, curr);
-  };
-
-  const cloneViewState = (from: string, to: string) => {
-    const vs = viewStateByTab.get(from);
-    if (!vs) return;
-    const cloned = cloneDeep(vs);
-    viewStateByTab.set(to, cloned);
-    return cloned;
+    tabViewStateStore.updateViewState(tab.value.id, patch);
   };
 
   watch(
@@ -111,6 +93,7 @@ export const provideEditorPanelContext = (base: {
     },
     { immediate: true }
   );
+
   watch(
     () => viewState.value?.schema,
     (schema) => {
@@ -124,13 +107,10 @@ export const provideEditorPanelContext = (base: {
   );
 
   const context = {
-    ...base,
     viewState,
     selectedSchemaName,
     availableViews,
     updateViewState,
-    cloneViewState,
-    typeToView,
   };
 
   provide(KEY, context);
@@ -138,8 +118,10 @@ export const provideEditorPanelContext = (base: {
   return context;
 };
 
-export const useEditorPanelContext = () => {
+export const useCurrentTabViewStateContext = () => {
   return inject(KEY)!;
 };
 
-export type EditorPanelContext = ReturnType<typeof provideEditorPanelContext>;
+export type EditorPanelContext = ReturnType<
+  typeof provideCurrentTabViewStateContext
+>;

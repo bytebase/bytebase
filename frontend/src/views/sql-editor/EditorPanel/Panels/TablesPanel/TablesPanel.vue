@@ -46,12 +46,12 @@ import {
   TableMetadata,
   TablePartitionMetadata,
 } from "@/types/proto/v1/database_service";
-import { useEditorPanelContext } from "../../context";
+import { useCurrentTabViewStateContext } from "../../context";
 import TableDetail from "./TableDetail.vue";
 import TablesTable from "./TablesTable.vue";
 
 const { database } = useConnectionOfCurrentSQLEditorTab();
-const { viewState, updateViewState } = useEditorPanelContext();
+const { viewState, updateViewState } = useCurrentTabViewStateContext();
 const databaseMetadata = computed(() => {
   return useDBSchemaV1Store().getDatabaseMetadata(database.value.name);
 });

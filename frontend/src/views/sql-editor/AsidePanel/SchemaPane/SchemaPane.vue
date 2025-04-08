@@ -109,7 +109,7 @@ import {
   findAncestor,
   isDescendantOf,
 } from "@/utils";
-import { useEditorPanelContext } from "../../EditorPanel";
+import { useCurrentTabViewStateContext } from "../../EditorPanel";
 import { useSQLEditorContext } from "../../context";
 import HoverPanel, { provideHoverStateContext } from "./HoverPanel";
 import SyncSchemaButton from "./SyncSchemaButton.vue";
@@ -135,7 +135,7 @@ const { height: treeContainerHeight } = useElementSize(
   }
 );
 const searchPatternByTabId = reactive(new Map<string, string>());
-const { viewState: panelViewState } = useEditorPanelContext();
+const { viewState: panelViewState } = useCurrentTabViewStateContext();
 const { schemaViewer } = useSQLEditorContext();
 const {
   show: showDropdown,
