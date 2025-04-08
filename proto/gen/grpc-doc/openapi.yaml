@@ -9487,13 +9487,10 @@ components:
                         The resource id of the environment.
                          This value should be 4-63 characters, and valid characters
                          are /[a-z][0-9]-/.
-                tier:
-                    enum:
-                        - ENVIRONMENT_TIER_UNSPECIFIED
-                        - PROTECTED
-                        - UNPROTECTED
-                    type: string
-                    format: enum
+                tags:
+                    type: object
+                    additionalProperties:
+                        type: string
                 color:
                     type: string
         ExportAuditLogsRequest:

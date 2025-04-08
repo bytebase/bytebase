@@ -360,13 +360,7 @@ message EnvironmentSetting {
     // This value should be 4-63 characters, and valid characters
     // are /[a-z][0-9]-/.
     string id = 2;
-    EnvironmentTier tier = 3;
+    map<string, string> tags = 3;
     string color = 4;
-  }
-
-  enum EnvironmentTier {
-    ENVIRONMENT_TIER_UNSPECIFIED = 0;
-    PROTECTED = 1;
-    UNPROTECTED = 2;
   }
 }
