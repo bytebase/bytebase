@@ -11,25 +11,77 @@
         'max-height': `${MAX_LIST_HEIGHT}px`,
       }"
     >
-      <TaskCard v-for="(task, i) in taskList" :key="i" :task="task" />
+      <TaskCard
+        v-for="(task, i) in taskList.slice(0, state.index)"
+        :key="i"
+        :task="task"
+      />
+      <div v-if="taskList.length > state.index" class="col-span-full">
+        <NButton
+          size="small"
+          quaternary
+          :loading="state.loading"
+          @click="() => loadMore()"
+        >
+          {{ $t("common.load-more") }}
+        </NButton>
+      </div>
     </div>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { computed, ref } from "vue";
+import { useDebounceFn } from "@vueuse/core";
+import { NButton } from "naive-ui";
+import { computed, ref, reactive, watch } from "vue";
 import { useVerticalScrollState } from "@/composables/useScrollState";
-import { useIssueContext } from "../../logic";
+import { batchGetOrFetchDatabases } from "@/store";
+import { useIssueContext, databaseForTask } from "../../logic";
 import TaskCard from "./TaskCard.vue";
 
 // 3 * lines of cards + 2 * top and bottom padding + 2 * horizontal gaps + jitter
 const MAX_LIST_HEIGHT = 207;
 
-const { selectedStage } = useIssueContext();
+const state = reactive<{ loading: boolean; index: number }>({
+  loading: false,
+  index: 0,
+});
+
+const { selectedStage, issue } = useIssueContext();
 const taskBar = ref<HTMLDivElement>();
 const taskBarScrollState = useVerticalScrollState(taskBar, MAX_LIST_HEIGHT);
 
 const taskList = computed(() => selectedStage.value.tasks);
+
+const loadMore = useDebounceFn(async () => {
+  if (state.index >= taskList.value.length) {
+    return;
+  }
+  state.loading = true;
+  try {
+    const previous = state.index;
+    const next = previous + 20;
+
+    const databaseNames = taskList.value
+      .slice(previous, next)
+      .map((task) => databaseForTask(issue.value, task).name);
+    await batchGetOrFetchDatabases(databaseNames);
+
+    state.index = next;
+  } finally {
+    state.loading = false;
+  }
+}, 500);
+
+watch(
+  () => taskList.value.length,
+  (length) => {
+    if (length > 0) {
+      loadMore();
+    }
+  },
+  { immediate: true }
+);
 </script>
 
 <style scoped lang="postcss">

@@ -8,7 +8,6 @@ import {
   useChangelistStore,
   useCurrentUserV1,
   useDatabaseV1Store,
-  useDBGroupStore,
   useEnvironmentV1Store,
   useProjectV1Store,
   useSheetV1Store,
@@ -25,7 +24,6 @@ import {
   isValidDatabaseName,
   TaskTypeListWithStatement,
 } from "@/types";
-import { DatabaseGroupView } from "@/types/proto/v1/database_group_service";
 import { IssueStatus, Issue_Type } from "@/types/proto/v1/issue_service";
 import {
   Plan,
@@ -121,22 +119,7 @@ const buildIssue = async (params: CreateIssueParams) => {
 
 export const buildPlan = async (params: CreateIssueParams) => {
   const { project, query } = params;
-  let databaseNameList = (query.databaseList ?? "").split(",");
-  const databaseGroupName = query.databaseGroupName;
-  // Prepare database list if databaseGroupName and changelist are specified.
-  if (databaseGroupName) {
-    const dbGroup = await useDBGroupStore().getOrFetchDBGroupByName(
-      databaseGroupName,
-      {
-        view: DatabaseGroupView.DATABASE_GROUP_VIEW_FULL,
-      }
-    );
-    if (dbGroup) {
-      databaseNameList = dbGroup.matchedDatabases.map((db) => db.name);
-    }
-  }
-  // TODO(ed): the database group may match too many databases.
-  await batchGetOrFetchDatabases(databaseNameList);
+  const databaseNameList = (query.databaseList ?? "").split(",");
   const plan = Plan.fromPartial({
     name: `${project.name}/plans/${nextUID()}`,
   });
@@ -215,7 +198,7 @@ export const buildStepsForDatabaseGroup = async (
   const sheetUID = nextUID();
   const sheetName = `${params.project.name}/sheets/${sheetUID}`;
   const sheet = getLocalSheetByName(sheetName);
-  sheet.engine = await databaseEngineForSpec(params.project, databaseGroupName);
+  sheet.engine = await databaseEngineForSpec(databaseGroupName);
   setSheetStatement(sheet, sql);
 
   const spec = await buildSpecForTarget(

@@ -4,7 +4,6 @@ import {
   useEnvironmentV1Store,
 } from "@/store";
 import {
-  type ComposedProject,
   isValidDatabaseName,
   unknownDatabase,
   unknownEnvironment,
@@ -52,7 +51,6 @@ export const sheetNameForSpec = (spec: Plan_Spec): string => {
 };
 
 export const databaseEngineForSpec = async (
-  project: ComposedProject,
   specOrTarget?: Plan_Spec | string
 ) => {
   if (!specOrTarget) return Engine.ENGINE_UNSPECIFIED;
