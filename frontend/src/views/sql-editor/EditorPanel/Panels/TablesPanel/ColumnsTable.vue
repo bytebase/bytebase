@@ -36,7 +36,7 @@ import type {
 } from "@/types/proto/v1/database_service";
 import { getHighlightHTMLByRegExp, useAutoHeightDataTable } from "@/utils";
 import { EllipsisCell } from "../../common";
-import { useEditorPanelContext } from "../../context";
+import { useCurrentTabViewStateContext } from "../../context";
 
 const props = defineProps<{
   db: ComposedDatabase;
@@ -46,7 +46,7 @@ const props = defineProps<{
   keyword?: string;
 }>();
 
-const { viewState } = useEditorPanelContext();
+const { viewState } = useCurrentTabViewStateContext();
 const { containerElRef, virtualListRef, tableBodyHeight, layoutReady } =
   useAutoHeightDataTable();
 const dataTableRef = ref<DataTableInst>();

@@ -29,7 +29,7 @@ import type {
   ExternalTableMetadata,
 } from "@/types/proto/v1/database_service";
 import { getHighlightHTMLByRegExp, useAutoHeightDataTable } from "@/utils";
-import { useEditorPanelContext } from "../../context";
+import { useCurrentTabViewStateContext } from "../../context";
 
 const props = defineProps<{
   db: ComposedDatabase;
@@ -51,7 +51,7 @@ const emit = defineEmits<{
   ): void;
 }>();
 
-const { viewState } = useEditorPanelContext();
+const { viewState } = useCurrentTabViewStateContext();
 const { t } = useI18n();
 const filteredExternalTables = computed(() => {
   const keyword = props.keyword?.trim().toLowerCase();

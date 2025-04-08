@@ -30,7 +30,7 @@ import type {
 } from "@/types/proto/v1/database_service";
 import { getHighlightHTMLByRegExp, useAutoHeightDataTable } from "@/utils";
 import { EllipsisCell } from "../../common";
-import { useEditorPanelContext } from "../../context";
+import { useCurrentTabViewStateContext } from "../../context";
 
 const props = defineProps<{
   db: ComposedDatabase;
@@ -53,7 +53,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const { viewState } = useEditorPanelContext();
+const { viewState } = useCurrentTabViewStateContext();
 
 const filteredViews = computed(() => {
   const keyword = props.keyword?.trim().toLowerCase();

@@ -31,6 +31,7 @@ import {
   useExtendedTabStore,
   type ExtendedTab,
 } from "./extendedTab";
+import { useTabViewStateStore } from "./tabViewState";
 import { useWebTerminalStore } from "./webTerminal";
 
 const LOCAL_STORAGE_KEY_PREFIX = "bb.sql-editor-tab";
@@ -61,6 +62,8 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
     deleteExtendedTab,
     cleanupExtendedTabs,
   } = useExtendedTabStore();
+  const tabViewStateStore = useTabViewStateStore();
+
   const me = useCurrentUserV1();
   const userUID = computed(() => extractUserId(me.value.name));
   const keyNamespace = computed(
@@ -262,7 +265,10 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
         curr.connection = tab.connection;
         curr.worksheet = tab.worksheet;
         curr.mode = tab.mode;
-        if (defaultTitle) {
+        if (
+          defaultTitle &&
+          tabViewStateStore.getViewState(curr.id).view === "CODE"
+        ) {
           curr.title = defaultTitle;
         }
         return;

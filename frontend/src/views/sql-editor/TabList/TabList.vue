@@ -80,6 +80,7 @@ import {
   useAppFeature,
   useSQLEditorStore,
   useSQLEditorTabStore,
+  useTabViewStateStore,
 } from "@/store";
 import type { SQLEditorTab } from "@/types";
 import {
@@ -88,7 +89,6 @@ import {
   suggestedTabTitleForSQLEditorConnection,
   usePreventBackAndForward,
 } from "@/utils";
-import { useEditorPanelContext } from "../EditorPanel";
 import { SettingButton } from "../Setting";
 import { useSheetContext } from "../Sheet";
 import BrandingLogoWrapper from "./BrandingLogoWrapper.vue";
@@ -116,7 +116,7 @@ const { events: sheetEvents } = useSheetContext();
 const scrollbarRef = ref<InstanceType<typeof NScrollbar>>();
 const tabListRef = ref<InstanceType<typeof Draggable>>();
 const { strictProject } = storeToRefs(useSQLEditorStore());
-const { cloneViewState } = useEditorPanelContext();
+const { cloneViewState, removeViewState } = useTabViewStateStore();
 const context = provideTabListContext();
 const contextMenuRef = ref<InstanceType<typeof ContextMenu>>();
 
@@ -215,6 +215,7 @@ const handleRemoveTab = async (
 
   function remove(index: number) {
     tabStore.removeTab(tab);
+    removeViewState(tab.id);
 
     // select a tab near the removed tab.
     const nextIndex = Math.min(index, tabStore.tabList.length - 1);

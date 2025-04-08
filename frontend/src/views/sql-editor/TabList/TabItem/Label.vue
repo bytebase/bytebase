@@ -28,7 +28,11 @@
 import { NEllipsis } from "naive-ui";
 import { computed, nextTick, reactive, ref, watch } from "vue";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
-import { useSQLEditorTabStore, useWorkSheetStore } from "@/store";
+import {
+  useSQLEditorTabStore,
+  useWorkSheetStore,
+  useTabViewStateStore,
+} from "@/store";
 import type { SQLEditorTab } from "@/types";
 import { useTabListContext } from "../context";
 
@@ -48,8 +52,13 @@ const state = reactive<LocalState>({
 
 const tabStore = useSQLEditorTabStore();
 const worksheetV1Store = useWorkSheetStore();
+const tabViewStateStore = useTabViewStateStore();
 const inputRef = ref<HTMLInputElement>();
 const { events } = useTabListContext();
+
+const readonly = computed(
+  () => tabViewStateStore.getViewState(props.tab.id).view !== "CODE"
+);
 
 const isCurrentTab = computed(() => props.tab.id === tabStore.currentTabId);
 
@@ -61,6 +70,9 @@ useEmitteryEventListener(events, "rename-tab", ({ tab }) => {
 });
 
 const beginEdit = () => {
+  if (readonly.value) {
+    return;
+  }
   state.editing = true;
   state.title = props.tab.title;
   nextTick(() => {

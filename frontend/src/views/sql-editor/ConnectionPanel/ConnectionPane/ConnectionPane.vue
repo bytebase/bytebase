@@ -43,7 +43,10 @@
           :theme-overrides="{ nodeHeight: '21px' }"
           :render-label="renderLabel"
         />
-        <div class="w-full flex items-center justify-center">
+        <div
+          v-if="editorStore.canLoadMore"
+          class="w-full flex items-center justify-center"
+        >
           <NButton
             quaternary
             :size="'small'"
