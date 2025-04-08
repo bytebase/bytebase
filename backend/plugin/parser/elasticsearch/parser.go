@@ -78,7 +78,7 @@ func getAdjustedParsedRequest(r parsedRequest, text string) adjustedParsedReques
 	// if the end is empty, go up to find the first non-empty line.
 	lines := strings.Split(text, "\n")
 	for endLineNumber >= 0 && strings.TrimSpace(lines[endLineNumber]) == "" {
-		endLineNumber = endLineNumber - 1
+		endLineNumber--
 	}
 	return adjustedParsedRequest{
 		startLineNumber: startLineNumber,
@@ -193,11 +193,11 @@ func containsComments(s string) bool {
 func getEditorRequest(text string, a adjustedParsedRequest) *editorRequest {
 	e := &editorRequest{}
 	lines := strings.Split(text, "\n")
-	methodUrlLine := strings.TrimSpace(lines[a.startLineNumber])
-	if methodUrlLine == "" {
+	methodURLLine := strings.TrimSpace(lines[a.startLineNumber])
+	if methodURLLine == "" {
 		return nil
 	}
-	method, url := parseLine(methodUrlLine)
+	method, url := parseLine(methodURLLine)
 	if method == "" || url == "" {
 		return nil
 	}
@@ -217,7 +217,7 @@ func getEditorRequest(text string, a adjustedParsedRequest) *editorRequest {
 		dataString = strings.TrimSpace(strings.Join(validLines, "\n"))
 	}
 
-	data := splitDataIntoJsonObjects(dataString)
+	data := splitDataIntoJSONObjects(dataString)
 	return &editorRequest{
 		method: method,
 		url:    url,
@@ -226,7 +226,6 @@ func getEditorRequest(text string, a adjustedParsedRequest) *editorRequest {
 }
 
 // Splits a concatenated string of JSON objects into individual JSON objects.
-//
 // This function takes a string containing one or more JSON objects concatenated together,
 // separated by optional whitespace, and splits them into an array of individual JSON strings.
 // It ensures that nested objects and strings containing braces do not interfere with the splitting logic.
@@ -235,7 +234,7 @@ func getEditorRequest(text string, a adjustedParsedRequest) *editorRequest {
 // - '{ "query": "test"} { "query": "test" }' -> ['{ "query": "test"}', '{ "query": "test" }']
 // - '{ "query": "test"}' -> ['{ "query": "test"}']
 // - '{ "query": "{a} {b}"}' -> ['{ "query": "{a} {b}"}']
-func splitDataIntoJsonObjects(s string) []string {
+func splitDataIntoJSONObjects(s string) []string {
 	var jsonObjects []string
 	// Track the depth of nested braces
 	depth := 0
@@ -478,10 +477,7 @@ func (p *parser) request() error {
 			return err
 		}
 	}
-	if err := p.addRequestEnd(); err != nil {
-		return err
-	}
-	return nil
+	return p.addRequestEnd()
 }
 
 func (p *parser) url() (string, error) {
@@ -800,7 +796,7 @@ func (p *parser) nextUpTo(upTo string, errorMessage string) (string, error) {
 }
 
 func (p *parser) reset(newAt int) error {
-	ch, sz := utf8.DecodeRune([]byte(p.text[newAt:]))
+	ch, sz := utf8.DecodeRuneInString(p.text[newAt:])
 	if ch == utf8.RuneError {
 		if sz == 0 {
 			return errors.Errorf("unexpected empty input")
@@ -993,7 +989,7 @@ func (p *parser) comment() error {
 func (p *parser) peek(offset uint) rune {
 	var peekCh rune
 	for i := uint(0); i <= offset; i++ {
-		peekCh, sz := utf8.DecodeRune([]byte(p.text[p.at:]))
+		peekCh, sz := utf8.DecodeRuneInString(p.text[p.at:])
 		if peekCh == utf8.RuneError {
 			if sz == 0 {
 				return 0
@@ -1032,7 +1028,9 @@ func (p *parser) white() error {
 			}
 			for p.ch != 0 && !(p.ch == '*' && p.peek(0) == '/') {
 				// Until we have closing tags '*', skip to the next char.
-				p.nextEmptyInput()
+				if _, err := p.nextEmptyInput(); err != nil {
+					return err
+				}
 			}
 			if p.ch != 0 {
 				if _, err := p.nNextEmptyInput(2); err != nil {
@@ -1062,7 +1060,7 @@ func (p *parser) nextEmptyInput() (rune, error) {
 		p.ch = 0
 		return 0, nil
 	}
-	nextCh, sz := utf8.DecodeRune([]byte(p.text[p.at:]))
+	nextCh, sz := utf8.DecodeRuneInString(p.text[p.at:])
 	if nextCh == utf8.RuneError {
 		if sz == 0 {
 			return 0, errors.Errorf("unexpected empty input")
