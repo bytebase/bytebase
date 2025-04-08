@@ -18,13 +18,10 @@
 </template>
 
 <script lang="tsx" setup>
-import { NButton, NDataTable, NDropdown, type DataTableColumn } from "naive-ui";
+import { NDataTable, type DataTableColumn } from "naive-ui";
 import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { useRouter } from "vue-router";
 import type { ComposedDatabaseGroup } from "@/types";
-import { hasPermissionToCreateChangeDatabaseIssueInProject } from "@/utils";
-import { generateDatabaseGroupIssueRoute } from "@/utils/databaseGroup/issue";
 
 interface LocalState {
   selectedDatabaseGroupNameList: Set<string>;
@@ -62,7 +59,6 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const router = useRouter();
 const state = reactive<LocalState>({
   selectedDatabaseGroupNameList: new Set(props.selectedDatabaseGroupNames),
 });
@@ -83,6 +79,7 @@ const columnList = computed((): DatabaseGroupDataTableColumn[] => {
   const NAME: DatabaseGroupDataTableColumn = {
     key: "title",
     title: t("common.name"),
+    minWidth: 128,
     render: (data) => {
       return (
         <div class="space-x-2">
@@ -94,53 +91,27 @@ const columnList = computed((): DatabaseGroupDataTableColumn[] => {
   const PROJECT: DatabaseGroupDataTableColumn = {
     key: "project",
     title: t("common.project"),
+    minWidth: 128,
     hide: !props.showProject,
     render: (data) => {
       return <span>{data.projectEntity.title}</span>;
     },
   };
-  const ACTIONS: DatabaseGroupDataTableColumn = {
-    key: "actions",
-    title: "",
-    width: 150,
-    hide: !props.showActions,
+  const EXPRESSION: DatabaseGroupDataTableColumn = {
+    key: "expression",
+    title: t("database.expression"),
+    ellipsis: true,
     render: (data) => {
-      return (
-        <div class="flex justify-end gap-2">
-          <NDropdown
-            trigger="hover"
-            options={[
-              {
-                label: `${t("database.edit-schema")} (DDL)`,
-                key: "bb.issue.database.schema.update",
-                disabled: data.matchedDatabases.length === 0,
-              },
-              {
-                label: `${t("database.change-data")} (DML)`,
-                key: "bb.issue.database.data.update",
-                disabled: data.matchedDatabases.length === 0,
-              },
-            ]}
-            onSelect={(key) => doDatabaseGroupChangeAction(key, data)}
-          >
-            <NButton
-              size="small"
-              disabled={
-                !hasPermissionToCreateChangeDatabaseIssueInProject(
-                  data.projectEntity
-                )
-              }
-            >
-              {t("common.change")}
-            </NButton>
-          </NDropdown>
-        </div>
-      );
+      if (!data.databaseExpr || data.databaseExpr.expression === "") {
+        return <span class="textinfolabel italic">{t("common.empty")}</span>;
+      }
+      return <span class="">{data.databaseExpr.expression}</span>;
     },
   };
 
-  // Maybe we can add more columns here. e.g. matched databases, etc.
-  return [SELECTION, NAME, PROJECT, ACTIONS].filter((column) => !column.hide);
+  return [SELECTION, NAME, PROJECT, EXPRESSION].filter(
+    (column) => !column.hide
+  );
 });
 
 const data = computed(() => {
@@ -171,14 +142,6 @@ const rowProps = (databaseGroup: ComposedDatabaseGroup) => {
       }
     },
   };
-};
-
-const doDatabaseGroupChangeAction = (
-  key: string,
-  databaseGroup: ComposedDatabaseGroup
-) => {
-  const issueRoute = generateDatabaseGroupIssueRoute(key as any, databaseGroup);
-  router.push(issueRoute);
 };
 
 watch(

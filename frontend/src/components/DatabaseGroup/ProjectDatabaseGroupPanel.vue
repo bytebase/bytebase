@@ -3,7 +3,6 @@
     :database-group-list="filteredDbGroupList"
     :custom-click="true"
     :loading="!ready"
-    :show-actions="true"
     @row-click="handleDatabaseGroupClick"
   />
 </template>
