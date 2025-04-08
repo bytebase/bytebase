@@ -5,7 +5,6 @@ linters:
     - exhaustive
     - forbidigo
     - gocritic
-    - godot
     - mirror
     - misspell
     - nilerr
