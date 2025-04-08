@@ -104,5 +104,6 @@ export const useSQLEditorStore = defineStore("sqlEditor", () => {
     prepareDatabases,
     fetchDatabases,
     loading: computed(() => fetchDataState.value.loading),
+    canLoadMore: computed(() => !!fetchDataState.value.nextPageToken),
   };
 });

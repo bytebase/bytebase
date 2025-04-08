@@ -69,7 +69,7 @@ import {
   keyWithPosition,
 } from "@/views/sql-editor/EditorCommon";
 import { EllipsisCell } from "../../common";
-import { useEditorPanelContext } from "../../context";
+import { useCurrentTabViewStateContext } from "../../context";
 import { CodeViewer } from "../common";
 
 type TriggerWithPosition = {
@@ -100,7 +100,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const { viewState, updateViewState } = useEditorPanelContext();
+const { viewState, updateViewState } = useCurrentTabViewStateContext();
 
 const detail = ref<TriggerWithPosition>();
 

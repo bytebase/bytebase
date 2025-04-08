@@ -220,7 +220,7 @@ import {
   instanceV1SupportsSequence,
 } from "@/utils";
 import { keyWithPosition } from "@/views/sql-editor/EditorCommon";
-import { useEditorPanelContext } from "../../context";
+import { useCurrentTabViewStateContext } from "../../context";
 import ExternalTablesTable from "../ExternalTablesPanel/ExternalTablesTable.vue";
 import FunctionsTable from "../FunctionsPanel/FunctionsTable.vue";
 import PackagesTable from "../PackagesPanel/PackagesTable.vue";
@@ -242,7 +242,7 @@ const state = reactive({
 });
 
 const { database } = useConnectionOfCurrentSQLEditorTab();
-const { viewState, updateViewState } = useEditorPanelContext();
+const { viewState, updateViewState } = useCurrentTabViewStateContext();
 const databaseMetadata = computed(() => {
   return useDBSchemaV1Store().getDatabaseMetadata(database.value.name);
 });

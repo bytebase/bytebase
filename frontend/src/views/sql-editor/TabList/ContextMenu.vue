@@ -18,12 +18,14 @@ import type { DropdownOption } from "naive-ui";
 import { NDropdown } from "naive-ui";
 import { computed, nextTick } from "vue";
 import { useI18n } from "vue-i18n";
+import { useTabViewStateStore } from "@/store";
 import type { SQLEditorTab } from "@/types";
 import type { CloseTabAction } from "./context";
 import { useTabListContext } from "./context";
 
 const { t } = useI18n();
 const { contextMenu: state, events } = useTabListContext();
+const tabViewStateStore = useTabViewStateStore();
 
 const options = computed((): DropdownOption[] => {
   if (!state.value) {
@@ -60,17 +62,20 @@ const options = computed((): DropdownOption[] => {
   ];
 
   const { tab } = state.value;
-  if (tab.mode === "WORKSHEET") {
-    const DIVIDER: DropdownOption = {
-      type: "divider",
-      key: "DIVIDER",
-    };
-    const RENAME: DropdownOption = {
-      key: "RENAME",
-      label: t("sql-editor.tab.context-menu.actions.rename"),
-    };
-
-    options.push(DIVIDER, RENAME);
+  if (
+    tab.mode === "WORKSHEET" &&
+    tabViewStateStore.getViewState(tab.id).view === "CODE"
+  ) {
+    options.push(
+      {
+        type: "divider",
+        key: "DIVIDER",
+      },
+      {
+        key: "RENAME",
+        label: t("sql-editor.tab.context-menu.actions.rename"),
+      }
+    );
   }
 
   return options;

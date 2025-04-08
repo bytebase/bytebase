@@ -33,7 +33,7 @@ import type {
 import { useAutoHeightDataTable } from "@/utils";
 import { keyWithPosition } from "@/views/sql-editor/EditorCommon";
 import { EllipsisCell } from "../../common";
-import { useEditorPanelContext } from "../../context";
+import { useCurrentTabViewStateContext } from "../../context";
 
 type SequenceWithPosition = { sequence: SequenceMetadata; position: number };
 
@@ -59,7 +59,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const { viewState } = useEditorPanelContext();
+const { viewState } = useCurrentTabViewStateContext();
 
 const funcsWithPosition = computed(() => {
   return props.sequences.map<SequenceWithPosition>((sequence, position) => ({
