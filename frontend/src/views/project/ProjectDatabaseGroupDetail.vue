@@ -11,7 +11,7 @@
 
     <FeatureAttentionForInstanceLicense
       custom-class="mb-4"
-      type="warning"
+      type="info"
       feature="bb.feature.database-grouping"
     />
 

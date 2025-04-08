@@ -136,10 +136,7 @@ const createSheets = async () => {
     if (uid.startsWith("-")) {
       // The sheet is pending create
       const sheet = getLocalSheetByName(config.sheet);
-      const engine = await databaseEngineForSpec(
-        plan.value.projectEntity,
-        spec
-      );
+      const engine = await databaseEngineForSpec(spec);
       sheet.engine = engine;
       pendingCreateSheetMap.set(sheet.name, sheet);
 
