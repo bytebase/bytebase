@@ -1010,7 +1010,7 @@ func (p *parser) peek(offset uint) rune {
 func (p *parser) white() error {
 	for p.ch != 0 {
 		// Skip whitespace.
-		for p.ch <= ' ' {
+		for p.ch != 0 && p.ch <= ' ' {
 			if _, err := p.nextEmptyInput(); err != nil {
 				return err
 			}
@@ -1020,7 +1020,7 @@ func (p *parser) white() error {
 		// we are on the single line comment.
 		if p.ch == '#' || (p.ch == '/' && p.peek(0) == '/') {
 			// Until we are on the new line, skip to the next char.
-			for p.ch != '\n' {
+			for p.ch != 0 && p.ch != '\n' {
 				if _, err := p.nextEmptyInput(); err != nil {
 					return err
 				}
@@ -1030,7 +1030,7 @@ func (p *parser) white() error {
 			if _, err := p.nNextEmptyInput(2); err != nil {
 				return err
 			}
-			for !(p.ch == '*' && p.peek(0) == '/') {
+			for p.ch != 0 && !(p.ch == '*' && p.peek(0) == '/') {
 				// Until we have closing tags '*', skip to the next char.
 				p.nextEmptyInput()
 			}
