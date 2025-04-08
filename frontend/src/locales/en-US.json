@@ -291,7 +291,7 @@
     "status": {
       "enqueued": "Waiting for execution.",
       "enqueued-with-rollout-time": "Waiting to execute after {time}.",
-      "waiting-connection": "Waiting for available instance connections. The instance connection count has reached the limit.",
+      "waiting-connection": "Waiting for available instance connections. The instance connection count has reached the limit set on Bytebase.",
       "waiting-task": "Waiting for another task to finish."
     }
   },

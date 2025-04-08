@@ -291,7 +291,7 @@
     "status": {
       "enqueued": "処刑を待っています。",
       "enqueued-with-rollout-time": "実行を待機しています。{time} の後に実行されます。",
-      "waiting-connection": "利用可能なインスタンス接続を待機しています。インスタンスの接続数が制限に達しました。",
+      "waiting-connection": "利用可能なインスタンス接続を待っています。インスタンス接続カウントは、Bytebaseの制限設定に達しました。",
       "waiting-task": "別のタスクが完了するのを待っています。"
     }
   },
