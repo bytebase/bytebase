@@ -164,6 +164,11 @@ func ParseElasticsearchREST(text string) (*ParseResult, error) {
 		}
 		for j := pos; j <= err.byteOffset; j++ {
 			if text[j] == '\n' {
+				if j == err.byteOffset {
+					// Decorate the \n position instead of the next line.
+					column++
+					continue
+				}
 				line++
 				column = 0
 			} else {
