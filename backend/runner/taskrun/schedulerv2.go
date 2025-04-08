@@ -117,27 +117,30 @@ func (s *SchedulerV2) scheduleAutoRolloutTasks(ctx context.Context) error {
 		return errors.Wrapf(err, "failed to list environments")
 	}
 
+	var envs []string
 	for _, environment := range environments {
 		policy, err := s.store.GetRolloutPolicy(ctx, environment.ResourceID)
 		if err != nil {
 			return errors.Wrapf(err, "failed to get rollout policy for environment %s", environment.ResourceID)
 		}
-
-		taskIDs, err := s.store.ListTasksToAutoRollout(ctx, []string{environment.ResourceID})
-		if err != nil {
-			return errors.Wrapf(err, "failed to list tasks with zero task run")
+		if policy.Automatic {
+			envs = append(envs, environment.ResourceID)
 		}
-		for _, taskID := range taskIDs {
-			if err := s.scheduleAutoRolloutTask(ctx, policy, taskID); err != nil {
-				slog.Error("failed to schedule auto rollout task", log.BBError(err))
-			}
+	}
+	taskIDs, err := s.store.ListTasksToAutoRollout(ctx, envs)
+	if err != nil {
+		return errors.Wrapf(err, "failed to list tasks with zero task run")
+	}
+	for _, taskID := range taskIDs {
+		if err := s.scheduleAutoRolloutTask(ctx, taskID); err != nil {
+			slog.Error("failed to schedule auto rollout task", log.BBError(err))
 		}
 	}
 
 	return nil
 }
 
-func (s *SchedulerV2) scheduleAutoRolloutTask(ctx context.Context, rolloutPolicy *storepb.RolloutPolicy, taskUID int) error {
+func (s *SchedulerV2) scheduleAutoRolloutTask(ctx context.Context, taskUID int) error {
 	task, err := s.store.GetTaskV2ByID(ctx, taskUID)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get task")
@@ -160,10 +163,6 @@ func (s *SchedulerV2) scheduleAutoRolloutTask(ctx context.Context, rolloutPolicy
 	}
 	if project == nil {
 		return errors.Errorf("project %v not found", pipeline.ProjectID)
-	}
-
-	if !rolloutPolicy.Automatic {
-		return nil
 	}
 
 	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &task.InstanceID})
