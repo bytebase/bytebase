@@ -163,6 +163,7 @@ export interface Value {
   scimSetting?: SCIMSetting | undefined;
   passwordRestrictionSetting?: PasswordRestrictionSetting | undefined;
   aiSetting?: AISetting | undefined;
+  environmentSetting?: EnvironmentSetting | undefined;
 }
 
 export interface SMTPMailDeliverySettingValue {
@@ -788,6 +789,29 @@ export function aISetting_ProviderToNumber(object: AISetting_Provider): number {
   }
 }
 
+/** TODO(p0ny): implement. */
+export interface EnvironmentSetting {
+  environments: EnvironmentSetting_Environment[];
+}
+
+export interface EnvironmentSetting_Environment {
+  /** The display name of the environment. */
+  title: string;
+  /**
+   * The resource id of the environment.
+   * This value should be 4-63 characters, and valid characters
+   * are /[a-z][0-9]-/.
+   */
+  id: string;
+  tags: { [key: string]: string };
+  color: string;
+}
+
+export interface EnvironmentSetting_Environment_TagsEntry {
+  key: string;
+  value: string;
+}
+
 function createBaseListSettingsRequest(): ListSettingsRequest {
   return { pageSize: 0, pageToken: "" };
 }
@@ -1260,6 +1284,7 @@ function createBaseValue(): Value {
     scimSetting: undefined,
     passwordRestrictionSetting: undefined,
     aiSetting: undefined,
+    environmentSetting: undefined,
   };
 }
 
@@ -1306,6 +1331,9 @@ export const Value: MessageFns<Value> = {
     }
     if (message.aiSetting !== undefined) {
       AISetting.encode(message.aiSetting, writer.uint32(130).fork()).join();
+    }
+    if (message.environmentSetting !== undefined) {
+      EnvironmentSetting.encode(message.environmentSetting, writer.uint32(138).fork()).join();
     }
     return writer;
   },
@@ -1429,6 +1457,14 @@ export const Value: MessageFns<Value> = {
           message.aiSetting = AISetting.decode(reader, reader.uint32());
           continue;
         }
+        case 17: {
+          if (tag !== 138) {
+            break;
+          }
+
+          message.environmentSetting = EnvironmentSetting.decode(reader, reader.uint32());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1474,6 +1510,9 @@ export const Value: MessageFns<Value> = {
         ? PasswordRestrictionSetting.fromJSON(object.passwordRestrictionSetting)
         : undefined,
       aiSetting: isSet(object.aiSetting) ? AISetting.fromJSON(object.aiSetting) : undefined,
+      environmentSetting: isSet(object.environmentSetting)
+        ? EnvironmentSetting.fromJSON(object.environmentSetting)
+        : undefined,
     };
   },
 
@@ -1520,6 +1559,9 @@ export const Value: MessageFns<Value> = {
     }
     if (message.aiSetting !== undefined) {
       obj.aiSetting = AISetting.toJSON(message.aiSetting);
+    }
+    if (message.environmentSetting !== undefined) {
+      obj.environmentSetting = EnvironmentSetting.toJSON(message.environmentSetting);
     }
     return obj;
   },
@@ -1578,6 +1620,9 @@ export const Value: MessageFns<Value> = {
         : undefined;
     message.aiSetting = (object.aiSetting !== undefined && object.aiSetting !== null)
       ? AISetting.fromPartial(object.aiSetting)
+      : undefined;
+    message.environmentSetting = (object.environmentSetting !== undefined && object.environmentSetting !== null)
+      ? EnvironmentSetting.fromPartial(object.environmentSetting)
       : undefined;
     return message;
   },
@@ -5247,6 +5292,271 @@ export const AISetting: MessageFns<AISetting> = {
     message.apiKey = object.apiKey ?? "";
     message.model = object.model ?? "";
     message.version = object.version ?? "";
+    return message;
+  },
+};
+
+function createBaseEnvironmentSetting(): EnvironmentSetting {
+  return { environments: [] };
+}
+
+export const EnvironmentSetting: MessageFns<EnvironmentSetting> = {
+  encode(message: EnvironmentSetting, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    for (const v of message.environments) {
+      EnvironmentSetting_Environment.encode(v!, writer.uint32(10).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): EnvironmentSetting {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseEnvironmentSetting();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.environments.push(EnvironmentSetting_Environment.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): EnvironmentSetting {
+    return {
+      environments: globalThis.Array.isArray(object?.environments)
+        ? object.environments.map((e: any) => EnvironmentSetting_Environment.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: EnvironmentSetting): unknown {
+    const obj: any = {};
+    if (message.environments?.length) {
+      obj.environments = message.environments.map((e) => EnvironmentSetting_Environment.toJSON(e));
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<EnvironmentSetting>): EnvironmentSetting {
+    return EnvironmentSetting.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<EnvironmentSetting>): EnvironmentSetting {
+    const message = createBaseEnvironmentSetting();
+    message.environments = object.environments?.map((e) => EnvironmentSetting_Environment.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseEnvironmentSetting_Environment(): EnvironmentSetting_Environment {
+  return { title: "", id: "", tags: {}, color: "" };
+}
+
+export const EnvironmentSetting_Environment: MessageFns<EnvironmentSetting_Environment> = {
+  encode(message: EnvironmentSetting_Environment, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.title !== "") {
+      writer.uint32(10).string(message.title);
+    }
+    if (message.id !== "") {
+      writer.uint32(18).string(message.id);
+    }
+    Object.entries(message.tags).forEach(([key, value]) => {
+      EnvironmentSetting_Environment_TagsEntry.encode({ key: key as any, value }, writer.uint32(26).fork()).join();
+    });
+    if (message.color !== "") {
+      writer.uint32(34).string(message.color);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): EnvironmentSetting_Environment {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseEnvironmentSetting_Environment();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.title = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.id = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          const entry3 = EnvironmentSetting_Environment_TagsEntry.decode(reader, reader.uint32());
+          if (entry3.value !== undefined) {
+            message.tags[entry3.key] = entry3.value;
+          }
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.color = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): EnvironmentSetting_Environment {
+    return {
+      title: isSet(object.title) ? globalThis.String(object.title) : "",
+      id: isSet(object.id) ? globalThis.String(object.id) : "",
+      tags: isObject(object.tags)
+        ? Object.entries(object.tags).reduce<{ [key: string]: string }>((acc, [key, value]) => {
+          acc[key] = String(value);
+          return acc;
+        }, {})
+        : {},
+      color: isSet(object.color) ? globalThis.String(object.color) : "",
+    };
+  },
+
+  toJSON(message: EnvironmentSetting_Environment): unknown {
+    const obj: any = {};
+    if (message.title !== "") {
+      obj.title = message.title;
+    }
+    if (message.id !== "") {
+      obj.id = message.id;
+    }
+    if (message.tags) {
+      const entries = Object.entries(message.tags);
+      if (entries.length > 0) {
+        obj.tags = {};
+        entries.forEach(([k, v]) => {
+          obj.tags[k] = v;
+        });
+      }
+    }
+    if (message.color !== "") {
+      obj.color = message.color;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<EnvironmentSetting_Environment>): EnvironmentSetting_Environment {
+    return EnvironmentSetting_Environment.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<EnvironmentSetting_Environment>): EnvironmentSetting_Environment {
+    const message = createBaseEnvironmentSetting_Environment();
+    message.title = object.title ?? "";
+    message.id = object.id ?? "";
+    message.tags = Object.entries(object.tags ?? {}).reduce<{ [key: string]: string }>((acc, [key, value]) => {
+      if (value !== undefined) {
+        acc[key] = globalThis.String(value);
+      }
+      return acc;
+    }, {});
+    message.color = object.color ?? "";
+    return message;
+  },
+};
+
+function createBaseEnvironmentSetting_Environment_TagsEntry(): EnvironmentSetting_Environment_TagsEntry {
+  return { key: "", value: "" };
+}
+
+export const EnvironmentSetting_Environment_TagsEntry: MessageFns<EnvironmentSetting_Environment_TagsEntry> = {
+  encode(message: EnvironmentSetting_Environment_TagsEntry, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.key !== "") {
+      writer.uint32(10).string(message.key);
+    }
+    if (message.value !== "") {
+      writer.uint32(18).string(message.value);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): EnvironmentSetting_Environment_TagsEntry {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseEnvironmentSetting_Environment_TagsEntry();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.key = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.value = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): EnvironmentSetting_Environment_TagsEntry {
+    return {
+      key: isSet(object.key) ? globalThis.String(object.key) : "",
+      value: isSet(object.value) ? globalThis.String(object.value) : "",
+    };
+  },
+
+  toJSON(message: EnvironmentSetting_Environment_TagsEntry): unknown {
+    const obj: any = {};
+    if (message.key !== "") {
+      obj.key = message.key;
+    }
+    if (message.value !== "") {
+      obj.value = message.value;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<EnvironmentSetting_Environment_TagsEntry>): EnvironmentSetting_Environment_TagsEntry {
+    return EnvironmentSetting_Environment_TagsEntry.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<EnvironmentSetting_Environment_TagsEntry>): EnvironmentSetting_Environment_TagsEntry {
+    const message = createBaseEnvironmentSetting_Environment_TagsEntry();
+    message.key = object.key ?? "";
+    message.value = object.value ?? "";
     return message;
   },
 };

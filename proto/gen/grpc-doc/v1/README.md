@@ -241,6 +241,9 @@
     - [DataClassificationSetting.DataClassificationConfig.ClassificationEntry](#bytebase-v1-DataClassificationSetting-DataClassificationConfig-ClassificationEntry)
     - [DataClassificationSetting.DataClassificationConfig.DataClassification](#bytebase-v1-DataClassificationSetting-DataClassificationConfig-DataClassification)
     - [DataClassificationSetting.DataClassificationConfig.Level](#bytebase-v1-DataClassificationSetting-DataClassificationConfig-Level)
+    - [EnvironmentSetting](#bytebase-v1-EnvironmentSetting)
+    - [EnvironmentSetting.Environment](#bytebase-v1-EnvironmentSetting-Environment)
+    - [EnvironmentSetting.Environment.TagsEntry](#bytebase-v1-EnvironmentSetting-Environment-TagsEntry)
     - [GetSettingRequest](#bytebase-v1-GetSettingRequest)
     - [GetSettingResponse](#bytebase-v1-GetSettingResponse)
     - [ListSettingsRequest](#bytebase-v1-ListSettingsRequest)
@@ -4464,6 +4467,55 @@ ANY means approving any node will proceed.
 
 
 
+<a name="bytebase-v1-EnvironmentSetting"></a>
+
+### EnvironmentSetting
+TODO(p0ny): implement.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| environments | [EnvironmentSetting.Environment](#bytebase-v1-EnvironmentSetting-Environment) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-EnvironmentSetting-Environment"></a>
+
+### EnvironmentSetting.Environment
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| title | [string](#string) |  | The display name of the environment. |
+| id | [string](#string) |  | The resource id of the environment. This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
+| tags | [EnvironmentSetting.Environment.TagsEntry](#bytebase-v1-EnvironmentSetting-Environment-TagsEntry) | repeated |  |
+| color | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-EnvironmentSetting-Environment-TagsEntry"></a>
+
+### EnvironmentSetting.Environment.TagsEntry
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| key | [string](#string) |  |  |
+| value | [string](#string) |  |  |
+
+
+
+
+
+
 <a name="bytebase-v1-GetSettingRequest"></a>
 
 ### GetSettingRequest
@@ -4767,6 +4819,7 @@ The data in setting value.
 | scim_setting | [SCIMSetting](#bytebase-v1-SCIMSetting) |  |  |
 | password_restriction_setting | [PasswordRestrictionSetting](#bytebase-v1-PasswordRestrictionSetting) |  |  |
 | ai_setting | [AISetting](#bytebase-v1-AISetting) |  |  |
+| environment_setting | [EnvironmentSetting](#bytebase-v1-EnvironmentSetting) |  |  |
 
 
 
