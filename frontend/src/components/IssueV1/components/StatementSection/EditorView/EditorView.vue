@@ -260,7 +260,6 @@ const route = useRoute();
 const context = useIssueContext();
 const { events, isCreating, issue, selectedTask, getPlanCheckRunsForTask } =
   context;
-const project = computed(() => issue.value.projectEntity);
 const dialog = useDialog();
 const editorContainerElRef = ref<HTMLElement>();
 const monacoEditorRef = ref<InstanceType<typeof MonacoEditor>>();
@@ -639,7 +638,7 @@ const updateStatement = async (statement: string) => {
   const sheet = Sheet.fromPartial({
     ...createEmptyLocalSheet(),
     title: issue.value.title,
-    engine: await databaseEngineForSpec(project.value, head(specsToPatch)),
+    engine: await databaseEngineForSpec(head(specsToPatch)),
   });
   setSheetStatement(sheet, statement);
   const createdSheet = await useSheetV1Store().createSheet(

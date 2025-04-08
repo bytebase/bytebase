@@ -157,7 +157,7 @@ export const buildStepsForDatabaseGroup = async (
   const sql = params.initialSQL.sql ?? "";
   const sheetCreate = Sheet.fromPartial({
     ...createEmptyLocalSheet(),
-    engine: await databaseEngineForSpec(params.project, databaseGroupName),
+    engine: await databaseEngineForSpec(databaseGroupName),
   });
   setSheetStatement(sheetCreate, sql);
   const sheet = await useSheetV1Store().createSheet(
