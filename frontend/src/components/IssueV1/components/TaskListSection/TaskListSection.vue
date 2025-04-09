@@ -121,9 +121,9 @@ const shouldShowTaskFilter = computed(() => {
 
 const shouldShowCurrentTaskView = computed(() => {
   // Only show the current task view when the selected task is not in the filtered task list.
-  return !filteredTaskList.value
-    .map((task) => task.name)
-    .includes(selectedTask.value.name);
+  return !filteredTaskList.value.some(
+    (task) => task.name === selectedTask.value.name
+  );
 });
 
 const loadMore = useDebounceFn(async () => {
