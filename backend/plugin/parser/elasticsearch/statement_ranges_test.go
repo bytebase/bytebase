@@ -21,7 +21,7 @@ func TestStatementRanges(t *testing.T) {
 
 	var (
 		filepath = "test-data/statement-ranges.yaml"
-		record   = false 
+		record   = false
 	)
 
 	a := require.New(t)
