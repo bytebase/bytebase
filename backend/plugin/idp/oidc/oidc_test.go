@@ -206,7 +206,6 @@ func TestIdentityProvider(t *testing.T) {
 			FieldMapping: &storepb.FieldMapping{
 				Identifier:  "sub",
 				DisplayName: "name",
-				Email:       "email",
 			},
 		},
 	)
@@ -222,7 +221,6 @@ func TestIdentityProvider(t *testing.T) {
 	wantUserInfo := &storepb.IdentityProviderUserInfo{
 		Identifier:  testSubject,
 		DisplayName: testName,
-		Email:       testEmail,
 	}
 	assert.Equal(t, wantUserInfo, userInfo)
 }
@@ -259,7 +257,6 @@ func TestIdentityProvider_SelfSigned(t *testing.T) {
 				FieldMapping: &storepb.FieldMapping{
 					Identifier:  "sub",
 					DisplayName: "name",
-					Email:       "email",
 				},
 			},
 		)
@@ -277,7 +274,6 @@ func TestIdentityProvider_SelfSigned(t *testing.T) {
 				FieldMapping: &storepb.FieldMapping{
 					Identifier:  "sub",
 					DisplayName: "name",
-					Email:       "email",
 				},
 				SkipTlsVerify: true,
 			},
@@ -294,7 +290,6 @@ func TestIdentityProvider_SelfSigned(t *testing.T) {
 		wantUserInfo := &storepb.IdentityProviderUserInfo{
 			Identifier:  testSubject,
 			DisplayName: testName,
-			Email:       testEmail,
 		}
 		assert.Equal(t, wantUserInfo, userInfo)
 	})
