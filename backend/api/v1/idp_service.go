@@ -413,6 +413,7 @@ func convertIdentityProviderConfigFromStore(identityProviderConfig *storepb.Iden
 			Identifier:  v.FieldMapping.Identifier,
 			DisplayName: v.FieldMapping.DisplayName,
 			Phone:       v.FieldMapping.Phone,
+			Groups:      v.FieldMapping.Groups,
 		}
 		return &v1pb.IdentityProviderConfig{
 			Config: &v1pb.IdentityProviderConfig_Oauth2Config{
@@ -434,6 +435,7 @@ func convertIdentityProviderConfigFromStore(identityProviderConfig *storepb.Iden
 			Identifier:  v.FieldMapping.Identifier,
 			DisplayName: v.FieldMapping.DisplayName,
 			Phone:       v.FieldMapping.Phone,
+			Groups:      v.FieldMapping.Groups,
 		}
 		oidcConfig := &v1pb.OIDCIdentityProviderConfig{
 			Issuer:        v.Issuer,
@@ -466,6 +468,7 @@ func convertIdentityProviderConfigFromStore(identityProviderConfig *storepb.Iden
 			Identifier:  v.FieldMapping.Identifier,
 			DisplayName: v.FieldMapping.DisplayName,
 			Phone:       v.FieldMapping.Phone,
+			Groups:      v.FieldMapping.Groups,
 		}
 		return &v1pb.IdentityProviderConfig{
 			Config: &v1pb.IdentityProviderConfig_LdapConfig{
@@ -492,6 +495,7 @@ func convertIdentityProviderConfigToStore(identityProviderConfig *v1pb.IdentityP
 			Identifier:  v.FieldMapping.Identifier,
 			DisplayName: v.FieldMapping.DisplayName,
 			Phone:       v.FieldMapping.Phone,
+			Groups:      v.FieldMapping.Groups,
 		}
 		return &storepb.IdentityProviderConfig{
 			Config: &storepb.IdentityProviderConfig_Oauth2Config{
@@ -513,6 +517,7 @@ func convertIdentityProviderConfigToStore(identityProviderConfig *v1pb.IdentityP
 			Identifier:  v.FieldMapping.Identifier,
 			DisplayName: v.FieldMapping.DisplayName,
 			Phone:       v.FieldMapping.Phone,
+			Groups:      v.FieldMapping.Groups,
 		}
 		return &storepb.IdentityProviderConfig{
 			Config: &storepb.IdentityProviderConfig_OidcConfig{
@@ -532,6 +537,7 @@ func convertIdentityProviderConfigToStore(identityProviderConfig *v1pb.IdentityP
 			Identifier:  v.FieldMapping.Identifier,
 			DisplayName: v.FieldMapping.DisplayName,
 			Phone:       v.FieldMapping.Phone,
+			Groups:      v.FieldMapping.Groups,
 		}
 		return &storepb.IdentityProviderConfig{
 			Config: &storepb.IdentityProviderConfig_LdapConfig{
