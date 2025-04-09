@@ -777,6 +777,7 @@
     "advanced-search": {
       "self": "Advanced search",
       "filter": "Filter",
+      "search": "Input title or id to search",
       "scope": {
         "project": {
           "title": "Project",
@@ -824,7 +825,7 @@
         },
         "database-label": {
           "title": "Label",
-          "description": "Input the \"label key\":\"label value\" then press Enter"
+          "description": "Input the \"key:value\" pair then press Enter"
         },
         "engine": {
           "title": "Engine",

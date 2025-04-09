@@ -39,17 +39,11 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, onMounted } from "vue";
+import { ref, computed } from "vue";
 import AdvancedSearch from "@/components/AdvancedSearch";
 import TimeRange from "@/components/AdvancedSearch/TimeRange.vue";
-import { useUserStore } from "@/store";
-import { User, UserType } from "@/types/proto/v1/user_service";
 import type { SearchParams, SearchScopeId } from "@/utils";
-import {
-  getDefaultPagination,
-  UIIssueFilterScopeIdList,
-  useSearchScopeIdList,
-} from "@/utils";
+import { UIIssueFilterScopeIdList, useSearchScopeIdList } from "@/utils";
 import Status from "./Status.vue";
 import { useIssueSearchScopeOptions } from "./useIssueSearchScopeOptions";
 
@@ -75,7 +69,6 @@ defineEmits<{
 
 const SearchScopeIdList = useSearchScopeIdList();
 const showTimeRange = ref(false);
-const userStore = useUserStore();
 
 const allowedScopes = computed(() => {
   if (props.overrideScopeIdList && props.overrideScopeIdList.length > 0) {
@@ -84,21 +77,8 @@ const allowedScopes = computed(() => {
   return [...UIIssueFilterScopeIdList, ...SearchScopeIdList.value];
 });
 
-const activeUserList = ref<User[]>([]);
-
-onMounted(async () => {
-  const { users } = await userStore.fetchUserList({
-    pageSize: getDefaultPagination(),
-    filter: {
-      types: [UserType.USER],
-    },
-  });
-  activeUserList.value = users;
-});
-
 const scopeOptions = useIssueSearchScopeOptions(
   computed(() => props.params),
-  allowedScopes,
-  activeUserList
+  allowedScopes
 );
 </script>

@@ -777,6 +777,7 @@
     "advanced-search": {
       "self": "Tìm kiếm nâng cao",
       "filter": "Bộ lọc",
+      "search": "Nhập tiêu đề hoặc id để tìm kiếm",
       "scope": {
         "project": {
           "title": "Dự án",
@@ -824,7 +825,7 @@
         },
         "database-label": {
           "title": "Nhãn",
-          "description": "Nhập \"key\":\"value\" rồi nhấn Enter"
+          "description": "Nhập \"key:value\" rồi nhấn Enter"
         },
         "engine": {
           "title": "Động cơ",
