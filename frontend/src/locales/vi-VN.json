@@ -1249,7 +1249,7 @@
   },
   "environment": {
     "select": "Chọn môi trường",
-    "archive": "Lưu trữ môi trường này",
+    "archive": "Xóa môi trường này",
     "archive-info": "Các môi trường đã lưu trữ sẽ không được hiển thị.",
     "create": "Tạo môi trường",
     "restore": "Khôi phục môi trường này",

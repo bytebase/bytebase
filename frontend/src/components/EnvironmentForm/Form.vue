@@ -231,8 +231,9 @@ const allowArchive = computed(() => {
   );
 });
 
+// TODO(p0ny): hard-delete environment.
 const allowRestore = computed(() => {
-  return hasPermission("bb.environments.undelete");
+  return false;
 });
 
 const renderColorPicker = () => {
