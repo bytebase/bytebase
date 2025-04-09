@@ -479,8 +479,7 @@ func redactQueryResponse(r *v1pb.QueryResponse) *v1pb.QueryResponse {
 		return nil
 	}
 	n := &v1pb.QueryResponse{
-		Results:     nil,
-		AllowExport: r.AllowExport,
+		Results: nil,
 	}
 	for _, result := range r.Results {
 		n.Results = append(n.Results, &v1pb.QueryResult{
@@ -494,6 +493,7 @@ func redactQueryResponse(r *v1pb.QueryResponse) *v1pb.QueryResponse {
 			Latency:         result.Latency,
 			Statement:       result.Statement,
 			DetailedError:   result.DetailedError,
+			AllowExport:     result.AllowExport,
 		})
 	}
 	return n

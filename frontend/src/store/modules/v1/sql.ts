@@ -58,7 +58,6 @@ export const useSQLStore = defineStore("sql", () => {
         error: extractGrpcErrorMessage(err),
         results: [],
         advices: getSqlReviewReports(err),
-        allowExport: false,
         status: err instanceof ClientError ? err.code : Status.UNKNOWN,
       };
     }
