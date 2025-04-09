@@ -10,6 +10,8 @@ import (
 
 	"github.com/pkg/errors"
 
+	lsp "github.com/bytebase/lsp-protocol"
+
 	parsererror "github.com/bytebase/bytebase/backend/plugin/parser/errors"
 	"github.com/bytebase/bytebase/backend/store/model"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -24,6 +26,7 @@ var (
 	schemaDiffers           = make(map[storepb.Engine]SchemaDiffFunc)
 	completers              = make(map[storepb.Engine]CompletionFunc)
 	diagnoseCollectors      = make(map[storepb.Engine]DiagnoseFunc)
+	statementRanges         = make(map[storepb.Engine]StatementRangeFunc)
 	spans                   = make(map[storepb.Engine]GetQuerySpanFunc)
 	transformDMLToSelect    = make(map[storepb.Engine]TransformDMLToSelectFunc)
 	generateRestoreSQL      = make(map[storepb.Engine]GenerateRestoreSQLFunc)
@@ -36,6 +39,7 @@ type SplitMultiSQLFunc func(string) ([]SingleSQL, error)
 type SchemaDiffFunc func(ctx DiffContext, oldStmt, newStmt string) (string, error)
 type CompletionFunc func(ctx context.Context, cCtx CompletionContext, statement string, caretLine int, caretOffset int) ([]Candidate, error)
 type DiagnoseFunc func(ctx context.Context, dCtx DiagnoseContext, statement string) ([]Diagnostic, error)
+type StatementRangeFunc func(ctx context.Context, sCtx StatementRangeContext, statement string) ([]Range, error)
 
 // GetQuerySpanFunc is the interface of getting the query span for a query.
 type GetQuerySpanFunc func(ctx context.Context, gCtx GetQuerySpanContext, statement, database, schema string, ignoreCaseSensitive bool) (*QuerySpan, error)
@@ -176,6 +180,23 @@ func Diagnose(ctx context.Context, dCtx DiagnoseContext, engine storepb.Engine, 
 	return f(ctx, dCtx, statement)
 }
 
+func RegisterStatementRangesFunc(engine storepb.Engine, f StatementRangeFunc) {
+	mux.Lock()
+	defer mux.Unlock()
+	if _, dup := statementRanges[engine]; dup {
+		panic(fmt.Sprintf("Register called twice %s", engine))
+	}
+	statementRanges[engine] = f
+}
+
+func GetStatementRanges(ctx context.Context, sCtx StatementRangeContext, engine storepb.Engine, statement string) ([]Range, error) {
+	f, ok := statementRanges[engine]
+	if !ok {
+		return []lsp.Range{}, nil
+	}
+	return f(ctx, sCtx, statement)
+}
+
 func RegisterGetQuerySpan(engine storepb.Engine, f GetQuerySpanFunc) {
 	mux.Lock()
 	defer mux.Unlock()
@@ -270,11 +291,6 @@ type ChangeSummary struct {
 	InsertCount      int
 }
 
-type Range struct {
-	Start int32
-	End   int32
-}
-
 // NewRange creates a new Range with index range of singleSQL in statement.
 func NewRange(statement, singleSQL string) *storepb.Range {
 	statementBytes := []byte(statement)
@@ -325,3 +341,7 @@ func TSQLRecognizeExplainType(spans []*QuerySpan, stmt []string) {
 		}
 	}
 }
+
+type StatementRangeContext struct{}
+
+type Range = lsp.Range
