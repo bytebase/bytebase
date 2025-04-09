@@ -102,7 +102,17 @@ func (h *Handler) handleFileSystemRequest(ctx context.Context, conn *jsonrpc2.Co
 					Ranges: ranges,
 				})
 			case store.Engine_ELASTICSEARCH:
-				
+				ranges, err := base.GetStatementRanges(ctx, base.StatementRangeContext{}, store.Engine_ELASTICSEARCH, string(content))
+				if err != nil {
+					slog.Warn("get statement ranges error", log.BBError(err))
+				}
+				if len(ranges) == 0 {
+					break
+				}
+				return conn.Notify(ctx, string(LSPCustomMethodSQLStatementRanges), &SQLStatementRangesParams{
+					URI:    uri,
+					Ranges: ranges,
+				})
 			default:
 			}
 
