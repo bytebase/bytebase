@@ -42,6 +42,8 @@
       </div>
     </div>
   </div>
+
+  <CurrentTaskSection v-if="shouldShowCurrentTaskView" />
 </template>
 
 <script lang="ts" setup>
@@ -55,6 +57,7 @@ import type { Advice_Status } from "@/types/proto/v1/sql_service";
 import { isDev } from "@/utils";
 import { useIssueContext, databaseForTask } from "../../logic";
 import { useIssueSQLCheckContext } from "../SQLCheckSection/context";
+import CurrentTaskSection from "./CurrentTaskSection.vue";
 import TaskCard from "./TaskCard.vue";
 import TaskFilter from "./TaskFilter.vue";
 import { filterTask } from "./filter";
@@ -81,7 +84,7 @@ const state = reactive<LocalState>({
 const isRequesting = ref(false);
 
 const issueContext = useIssueContext();
-const { selectedStage, issue, selectedTask, events } = issueContext;
+const { selectedStage, issue, selectedTask } = issueContext;
 const sqlCheckContext = useIssueSQLCheckContext();
 const taskBar = ref<HTMLDivElement>();
 const taskBarScrollState = useVerticalScrollState(taskBar, MAX_LIST_HEIGHT);
@@ -116,6 +119,13 @@ const shouldShowTaskFilter = computed(() => {
   return taskList.value.length > 10;
 });
 
+const shouldShowCurrentTaskView = computed(() => {
+  // Only show the current task view when the selected task is not in the filtered task list.
+  return !filteredTaskList.value.some(
+    (task) => task.name === selectedTask.value.name
+  );
+});
+
 const loadMore = useDebounceFn(async () => {
   if (state.index >= filteredTaskList.value.length) {
     return;
@@ -129,15 +139,6 @@ const loadMore = useDebounceFn(async () => {
 watch(
   [() => filteredTaskList.value, () => state.index],
   async () => {
-    // If the selected task is not in the filtered task list, select the first task.
-    // This is to ensure that the selected task is always in the filtered task list.
-    if (
-      !filteredTaskList.value
-        .map((task) => task.name)
-        .includes(selectedTask.value.name)
-    ) {
-      events.emit("select-task", { task: filteredTaskList.value[0] });
-    }
     isRequesting.value = true;
     try {
       await loadMore();
