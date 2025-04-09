@@ -1249,7 +1249,7 @@
   },
   "environment": {
     "select": "Select environment",
-    "archive": "Archive this environment",
+    "archive": "Delete this environment",
     "archive-info": "Archived environments will not be displayed.",
     "create": "Create Environment",
     "restore": "Restore this environment",
