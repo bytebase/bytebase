@@ -500,15 +500,15 @@ func (s *AuthService) syncUserGroups(ctx context.Context, user *store.UserMessag
 			continue
 		}
 
-		var isExist bool
+		var exists bool
 		// Check if the user is already a member of the group.
 		for _, member := range foundGroup.Payload.Members {
 			if member.Member == common.FormatUserUID(user.ID) {
-				isExist = true
+				exists = true
 				break
 			}
 		}
-		if !isExist {
+		if !exists {
 			// Add the user to the group.
 			foundGroup.Payload.Members = append(foundGroup.Payload.Members, &storepb.GroupMember{
 				Role:   storepb.GroupMember_MEMBER,
