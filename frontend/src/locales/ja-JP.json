@@ -231,6 +231,7 @@
     "go-back-home": "ホームページに戻る"
   },
   "task": {
+    "current-task": "現在のタスク",
     "checking": "検査中…",
     "check-result": {
       "title-general": "テスト結果"

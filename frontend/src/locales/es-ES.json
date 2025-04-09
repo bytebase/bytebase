@@ -231,6 +231,7 @@
     "go-back-home": "Volver al inicio"
   },
   "task": {
+    "current-task": "Tarea actual",
     "checking": "Comprobando...",
     "check-result": {
       "title-general": "Comprobar resultado"
