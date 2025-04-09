@@ -189,9 +189,10 @@ func TestIdentityProvider(t *testing.T) {
 	)
 	userinfo, err := json.Marshal(
 		map[string]any{
-			"sub":   testSubject,
-			"name":  testName,
-			"email": testEmail,
+			"sub":    testSubject,
+			"name":   testName,
+			"email":  testEmail,
+			"groups": []any{"Dev", "Admin"},
 		},
 	)
 	require.NoError(t, err)
@@ -206,6 +207,7 @@ func TestIdentityProvider(t *testing.T) {
 			FieldMapping: &storepb.FieldMapping{
 				Identifier:  "sub",
 				DisplayName: "name",
+				Groups:      "groups",
 			},
 		},
 	)
@@ -221,6 +223,7 @@ func TestIdentityProvider(t *testing.T) {
 	wantUserInfo := &storepb.IdentityProviderUserInfo{
 		Identifier:  testSubject,
 		DisplayName: testName,
+		Groups:      []string{"Dev", "Admin"},
 	}
 	assert.Equal(t, wantUserInfo, userInfo)
 }
@@ -239,9 +242,10 @@ func TestIdentityProvider_SelfSigned(t *testing.T) {
 	)
 	userinfo, err := json.Marshal(
 		map[string]any{
-			"sub":   testSubject,
-			"name":  testName,
-			"email": testEmail,
+			"sub":    testSubject,
+			"name":   testName,
+			"email":  testEmail,
+			"groups": []any{"Dev", "Admin"},
 		},
 	)
 	require.NoError(t, err)
@@ -257,6 +261,7 @@ func TestIdentityProvider_SelfSigned(t *testing.T) {
 				FieldMapping: &storepb.FieldMapping{
 					Identifier:  "sub",
 					DisplayName: "name",
+					Groups:      "groups",
 				},
 			},
 		)
@@ -274,6 +279,7 @@ func TestIdentityProvider_SelfSigned(t *testing.T) {
 				FieldMapping: &storepb.FieldMapping{
 					Identifier:  "sub",
 					DisplayName: "name",
+					Groups:      "groups",
 				},
 				SkipTlsVerify: true,
 			},
@@ -290,6 +296,7 @@ func TestIdentityProvider_SelfSigned(t *testing.T) {
 		wantUserInfo := &storepb.IdentityProviderUserInfo{
 			Identifier:  testSubject,
 			DisplayName: testName,
+			Groups:      []string{"Dev", "Admin"},
 		}
 		assert.Equal(t, wantUserInfo, userInfo)
 	})
