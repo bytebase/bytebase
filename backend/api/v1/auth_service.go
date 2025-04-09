@@ -407,6 +407,11 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 			if err != nil {
 				return nil, status.Errorf(codes.Internal, "failed to undelete user: %v", err)
 			}
+			if len(userInfo.Groups) > 0 {
+				if err := s.syncUserGroups(ctx, user, userInfo.Groups); err != nil {
+					return nil, status.Errorf(codes.Internal, "failed to sync user groups: %v", err)
+				}
+			}
 		}
 		return user, nil
 	}
@@ -432,6 +437,11 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to create user, error: %v", err)
+	}
+	if len(userInfo.Groups) > 0 {
+		if err := s.syncUserGroups(ctx, user, userInfo.Groups); err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to sync user groups: %v", err)
+		}
 	}
 	return newUser, nil
 }
@@ -466,4 +476,50 @@ func (s *AuthService) challengeRecoveryCode(ctx context.Context, user *store.Use
 // validateWithCodeAndSecret validates the given code against the given secret.
 func validateWithCodeAndSecret(code, secret string) bool {
 	return totp.Validate(code, secret)
+}
+
+// syncUserGroups syncs the user groups with the given groups.
+// The given groups are the groups that the user belongs to in the identity provider.
+// Supported groups format: ["group1", "group2", ...], ["dev@bb.com", ...]
+func (s *AuthService) syncUserGroups(ctx context.Context, user *store.UserMessage, groups []string) error {
+	groupMessages, err := s.store.ListGroups(ctx, &store.FindGroupMessage{})
+	if err != nil {
+		return status.Error(codes.Internal, err.Error())
+	}
+
+	for _, group := range groups {
+		var foundGroup *store.GroupMessage
+		// Try to find the group by email first, then by title.
+		for _, groupMessage := range groupMessages {
+			if groupMessage.Email == group || groupMessage.Title == group {
+				foundGroup = groupMessage
+				break
+			}
+		}
+		if foundGroup == nil {
+			continue
+		}
+
+		var isExist bool
+		// Check if the user is already a member of the group.
+		for _, member := range foundGroup.Payload.Members {
+			if member.Member == common.FormatUserUID(user.ID) {
+				isExist = true
+				break
+			}
+		}
+		if !isExist {
+			// Add the user to the group.
+			foundGroup.Payload.Members = append(foundGroup.Payload.Members, &storepb.GroupMember{
+				Role:   storepb.GroupMember_MEMBER,
+				Member: common.FormatUserUID(user.ID),
+			})
+			if _, err := s.store.UpdateGroup(ctx, foundGroup.Email, &store.UpdateGroupMessage{
+				Payload: foundGroup.Payload,
+			}); err != nil {
+				return status.Errorf(codes.Internal, "failed to update group %q: %v", foundGroup.Email, err)
+			}
+		}
+	}
+	return nil
 }

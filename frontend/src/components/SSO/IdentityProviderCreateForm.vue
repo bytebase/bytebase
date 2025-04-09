@@ -576,9 +576,7 @@
           placeholder="e.g. login"
         />
         <div class="w-full flex flex-row justify-start items-center text-sm">
-          <heroicons-outline:arrow-right
-            class="mx-1 h-auto w-4 text-gray-300"
-          />
+          <ArrowRightIcon class="mx-2 h-auto w-4 text-gray-300" />
           <p class="flex flex-row justify-start items-center">
             {{ $t("settings.sso.form.identifier") }}
             <span class="text-red-600">*</span>
@@ -601,9 +599,7 @@
           placeholder="e.g. name"
         />
         <div class="w-full flex flex-row justify-start items-center text-sm">
-          <heroicons-outline:arrow-right
-            class="mx-1 h-auto w-4 text-gray-300"
-          />
+          <ArrowRightIcon class="mx-2 h-auto w-4 text-gray-300" />
           <p>
             {{ $t("settings.sso.form.display-name") }}
           </p>
@@ -617,11 +613,26 @@
           placeholder="e.g. phone"
         />
         <div class="w-full flex flex-row justify-start items-center text-sm">
-          <heroicons-outline:arrow-right
-            class="mx-1 h-auto w-4 text-gray-300"
-          />
+          <ArrowRightIcon class="mx-2 h-auto w-4 text-gray-300" />
           <p>
             {{ $t("settings.sso.form.phone") }}
+          </p>
+        </div>
+      </div>
+      <div
+        v-if="state.type === IdentityProviderType.OIDC"
+        class="w-full grid grid-cols-[256px_1fr]"
+      >
+        <BBTextField
+          v-model:value="state.fieldMapping.groups"
+          :disabled="!allowEdit"
+          class="mt-1 w-full"
+          placeholder="e.g. groups"
+        />
+        <div class="w-full flex flex-row justify-start items-center text-sm">
+          <ArrowRightIcon class="mx-2 h-auto w-4 text-gray-300" />
+          <p>
+            {{ $t("settings.sso.form.groups") }}
           </p>
         </div>
       </div>
@@ -698,6 +709,7 @@
 
 <script lang="ts" setup>
 import { cloneDeep, head, isEqual } from "lodash-es";
+import { ArrowRightIcon } from "lucide-vue-next";
 import {
   NRadioGroup,
   NCheckbox,
@@ -884,8 +896,8 @@ const identityProviderTemplateList = computed(
           fieldMapping: {
             identifier: "email",
             displayName: "name",
-            email: "",
             phone: "",
+            groups: "",
           },
         },
       },
@@ -907,8 +919,8 @@ const identityProviderTemplateList = computed(
           fieldMapping: {
             identifier: "email",
             displayName: "name",
-            email: "",
             phone: "",
+            groups: "",
           },
         },
       },
@@ -930,8 +942,8 @@ const identityProviderTemplateList = computed(
           fieldMapping: {
             identifier: "email",
             displayName: "name",
-            email: "",
             phone: "",
+            groups: "",
           },
         },
       },
@@ -955,8 +967,8 @@ const identityProviderTemplateList = computed(
           fieldMapping: {
             identifier: "userPrincipalName",
             displayName: "displayName",
-            email: "",
             phone: "",
+            groups: "",
           },
         },
       },
@@ -978,8 +990,8 @@ const identityProviderTemplateList = computed(
           fieldMapping: {
             identifier: "",
             displayName: "",
-            email: "",
             phone: "",
+            groups: "",
           },
         },
       },

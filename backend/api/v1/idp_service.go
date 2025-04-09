@@ -412,7 +412,6 @@ func convertIdentityProviderConfigFromStore(identityProviderConfig *storepb.Iden
 		fieldMapping := v1pb.FieldMapping{
 			Identifier:  v.FieldMapping.Identifier,
 			DisplayName: v.FieldMapping.DisplayName,
-			Email:       v.FieldMapping.Email,
 			Phone:       v.FieldMapping.Phone,
 		}
 		return &v1pb.IdentityProviderConfig{
@@ -434,7 +433,6 @@ func convertIdentityProviderConfigFromStore(identityProviderConfig *storepb.Iden
 		fieldMapping := v1pb.FieldMapping{
 			Identifier:  v.FieldMapping.Identifier,
 			DisplayName: v.FieldMapping.DisplayName,
-			Email:       v.FieldMapping.Email,
 			Phone:       v.FieldMapping.Phone,
 		}
 		oidcConfig := &v1pb.OIDCIdentityProviderConfig{
@@ -467,7 +465,6 @@ func convertIdentityProviderConfigFromStore(identityProviderConfig *storepb.Iden
 		fieldMapping := v1pb.FieldMapping{
 			Identifier:  v.FieldMapping.Identifier,
 			DisplayName: v.FieldMapping.DisplayName,
-			Email:       v.FieldMapping.Email,
 			Phone:       v.FieldMapping.Phone,
 		}
 		return &v1pb.IdentityProviderConfig{
@@ -494,7 +491,6 @@ func convertIdentityProviderConfigToStore(identityProviderConfig *v1pb.IdentityP
 		fieldMapping := storepb.FieldMapping{
 			Identifier:  v.FieldMapping.Identifier,
 			DisplayName: v.FieldMapping.DisplayName,
-			Email:       v.FieldMapping.Email,
 			Phone:       v.FieldMapping.Phone,
 		}
 		return &storepb.IdentityProviderConfig{
@@ -516,7 +512,6 @@ func convertIdentityProviderConfigToStore(identityProviderConfig *v1pb.IdentityP
 		fieldMapping := storepb.FieldMapping{
 			Identifier:  v.FieldMapping.Identifier,
 			DisplayName: v.FieldMapping.DisplayName,
-			Email:       v.FieldMapping.Email,
 			Phone:       v.FieldMapping.Phone,
 		}
 		return &storepb.IdentityProviderConfig{
@@ -536,7 +531,6 @@ func convertIdentityProviderConfigToStore(identityProviderConfig *v1pb.IdentityP
 		fieldMapping := storepb.FieldMapping{
 			Identifier:  v.FieldMapping.Identifier,
 			DisplayName: v.FieldMapping.DisplayName,
-			Email:       v.FieldMapping.Email,
 			Phone:       v.FieldMapping.Phone,
 		}
 		return &storepb.IdentityProviderConfig{

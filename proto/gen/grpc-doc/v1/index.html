@@ -18845,7 +18845,7 @@ Format: idps/{identity_provider} </p></td>
         
       
         <h3 id="bytebase.v1.FieldMapping">FieldMapping</h3>
-        <p>FieldMapping saves the field names from user info API of identity provider.</p><p>As we save all raw json string of user info response data into `principal.idp_user_info`,</p><p>we can extract the relevant data based with `FieldMapping`.</p><p>e.g. For GitHub authenticated user API, it will return `login`, `name` and `email` in response.</p><p>Then the identifier of FieldMapping will be `login`, display_name will be `name`,</p><p>and email will be `email`.</p><p>reference: https://docs.github.com/en/rest/users/users?apiVersion=2022-11-28#get-the-authenticated-user</p>
+        <p>FieldMapping saves the field names from user info API of identity provider.</p><p>As we save all raw json string of user info response data into `principal.idp_user_info`,</p><p>we can extract the relevant data based with `FieldMapping`.</p>
 
         
           <table class="field-table">
@@ -18865,21 +18865,22 @@ Format: idps/{identity_provider} </p></td>
                   <td>display_name</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>DisplayName is the field name of display name in 3rd-party idp user info. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>email</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Email is the field name of primary email in 3rd-party idp user info. </p></td>
+                  <td><p>DisplayName is the field name of display name in 3rd-party idp user info. Optional. </p></td>
                 </tr>
               
                 <tr>
                   <td>phone</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>Phone is the field name of primary phone in 3rd-party idp user info. </p></td>
+                  <td><p>Phone is the field name of primary phone in 3rd-party idp user info. Optional. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>groups</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Groups is the field name of groups in 3rd-party idp user info. Optional.
+Mainly used for OIDC: https://developer.okta.com/docs/guides/customize-tokens-groups-claim/main/ </p></td>
                 </tr>
               
             </tbody>
