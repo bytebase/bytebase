@@ -6,44 +6,73 @@
     class="flex flex-col overflow-hidden"
     :data-top="containerTop"
   >
-    <div
-      v-if="scopeOption.title"
-      ref="titleRef"
-      class="px-3 py-2 text-sm text-control font-semibold"
-      :data-height="titleHeight"
-    >
-      {{ scopeOption.title }}
+    <div class="px-3 py-2">
+      <div
+        ref="titleRef"
+        class="text-sm text-control font-semibold"
+        :data-height="titleHeight"
+      >
+        {{ scopeOption.title }}
+      </div>
+      <div v-if="scopeOption.search" class="textinfolabel">
+        {{ $t("issue.advanced-search.search") }}
+      </div>
     </div>
-    <div
-      v-if="valueOptions.length > 0"
-      class="flex-1 overflow-hidden"
-      :style="{
-        'max-height': `${maxListHeight}px`,
-      }"
-    >
-      <VirtualList
+    <div v-if="valueOptions.length > 0">
+      <NVirtualList
         ref="virtualListRef"
         :items="valueOptions"
         :key-field="`value`"
         :item-resizable="false"
         :item-size="38"
+        :style="{
+          'max-height': `${maxListHeight}px`,
+        }"
       >
-        <template #default="{ item: option, index }: ListItem">
-          <div
-            class="h-[38px] flex gap-x-2 px-3 items-center cursor-pointer border-t border-block-border overflow-hidden"
-            :class="[index === menuIndex && 'bg-gray-200/75']"
-            :data-index="index"
-            :data-value="option.value"
-            @mouseenter.prevent.stop="$emit('hover-item', index)"
-            @mousedown.prevent.stop="$emit('select-value', option.value)"
-          >
-            <component :is="option.render" class="text-control text-sm" />
-            <span v-if="!option.custom" class="text-control-light text-sm">
-              {{ option.value }}
-            </span>
+        <template
+          #default="{
+            item: option,
+            index,
+          }: {
+            item: ValueOption;
+            index: number;
+          }"
+        >
+          <div class="border-t border-block-border">
+            <div
+              class="h-[38px] flex gap-x-2 px-3 items-center cursor-pointer overflow-hidden"
+              :class="[index === menuIndex && 'bg-gray-200/75']"
+              :data-index="index"
+              :data-value="option.value"
+              @mouseenter.prevent.stop="$emit('hover-item', index)"
+              @mousedown.prevent.stop="$emit('select-value', option.value)"
+            >
+              <component :is="option.render" class="text-control text-sm" />
+              <span v-if="!option.custom" class="text-control-light text-sm">
+                {{ option.value }}
+              </span>
+            </div>
+
+            <div
+              v-if="
+                !!fetchState?.nextPageToken && index === valueOptions.length - 1
+              "
+              class="py-2 px-1 border-t border-block-border"
+            >
+              <NButton
+                quaternary
+                :size="'small'"
+                :loading="fetchState?.loading"
+                @click="() => $emit('fetch-next-page')"
+              >
+                <span class="textinfolabel">
+                  {{ $t("common.load-more") }}
+                </span>
+              </NButton>
+            </div>
           </div>
         </template>
-      </VirtualList>
+      </NVirtualList>
     </div>
     <div v-if="valueOptions.length === 0" class="pb-2">
       <NEmpty />
@@ -57,32 +86,30 @@ import {
   useElementSize,
   useWindowSize,
 } from "@vueuse/core";
-import { NEmpty } from "naive-ui";
+import { NEmpty, NButton, NVirtualList } from "naive-ui";
 import { computed, nextTick, ref, watch } from "vue";
-import { VirtualList } from "vueuc";
-import type { SearchParams } from "@/utils";
 import type { ScopeOption, ValueOption } from "./types";
-
-type ListItem = {
-  item: ValueOption;
-  index: number;
-};
 
 const props = defineProps<{
   show: boolean;
-  params: SearchParams;
   scopeOption?: ScopeOption;
   valueOptions: ValueOption[];
   menuIndex: number;
+  fetchState?: {
+    loading: boolean;
+    nextPageToken?: string;
+  };
 }>();
+
 defineEmits<{
   (event: "select-value", value: string): void;
   (event: "hover-item", index: number): void;
+  (event: "fetch-next-page"): void;
 }>();
 
 const containerRef = ref<HTMLElement>();
 const titleRef = ref<HTMLElement>();
-const virtualListRef = ref<InstanceType<typeof VirtualList>>();
+const virtualListRef = ref<InstanceType<typeof NVirtualList>>();
 const { height: titleHeight } = useElementSize(titleRef, undefined, {
   box: "border-box",
 });
@@ -99,7 +126,7 @@ const maxListHeight = computed(() => {
   );
 });
 
-const highlightedItem = computed((): ListItem | undefined => {
+const highlightedItem = computed(() => {
   if (!props.show) return undefined;
   const options = props.valueOptions;
   const index = props.menuIndex;

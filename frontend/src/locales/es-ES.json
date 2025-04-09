@@ -777,6 +777,7 @@
     "advanced-search": {
       "self": "Búsqueda Avanzada",
       "filter": "Filtrar",
+      "search": "Ingrese título o id para buscar",
       "scope": {
         "project": {
           "title": "Proyecto",
@@ -824,7 +825,7 @@
         },
         "database-label": {
           "title": "Etiqueta",
-          "description": "Ingrese la \"key\":\"value\" y luego presione Enter"
+          "description": "Ingrese la \"key:value\" y luego presione Enter"
         },
         "engine": {
           "title": "Motor",

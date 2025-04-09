@@ -1,9 +1,12 @@
-import { orderBy } from "lodash-es";
-import type { Ref, RenderFunction } from "vue";
+import type { Ref } from "vue";
 import { computed, h, ref, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute } from "vue-router";
 import BBAvatar from "@/bbkit/BBAvatar.vue";
+import type {
+  ScopeOption,
+  ValueOption,
+} from "@/components/AdvancedSearch/types";
 import { useCommonSearchScopeOptions } from "@/components/AdvancedSearch/useCommonSearchScopeOptions";
 import SystemBotTag from "@/components/misc/SystemBotTag.vue";
 import YouTag from "@/components/misc/YouTag.vue";
@@ -12,15 +15,11 @@ import {
   useCurrentUserV1,
   useDatabaseV1Store,
   useProjectV1Store,
+  useUserStore,
 } from "@/store";
-import {
-  SYSTEM_BOT_USER_NAME,
-  UNKNOWN_ID,
-  isValidProjectName,
-  type ComposedDatabase,
-} from "@/types";
+import { SYSTEM_BOT_USER_NAME, UNKNOWN_ID, isValidProjectName } from "@/types";
 import { type Label } from "@/types/proto/v1/project_service";
-import { User } from "@/types/proto/v1/user_service";
+import { UserType } from "@/types/proto/v1/user_service";
 import type { SearchParams, SearchScopeId } from "@/utils";
 import {
   getDefaultPagination,
@@ -29,31 +28,16 @@ import {
   extractProjectResourceName,
 } from "@/utils";
 
-export type ScopeOption = {
-  id: SearchScopeId;
-  title: string;
-  options: ValueOption[];
-  description?: string;
-};
-
-export type ValueOption = {
-  value: string;
-  keywords: string[];
-  bot?: boolean;
-  custom?: boolean;
-  render: RenderFunction;
-};
-
 export const useIssueSearchScopeOptions = (
   params: Ref<SearchParams>,
-  supportOptionIdList: Ref<SearchScopeId[]>,
-  activeUserList: Ref<User[]>
+  supportOptionIdList: Ref<SearchScopeId[]>
 ) => {
   const { t } = useI18n();
   const route = useRoute();
   const me = useCurrentUserV1();
   const databaseV1Store = useDatabaseV1Store();
   const projectStore = useProjectV1Store();
+  const userStore = useUserStore();
 
   const projectName = computed(() => {
     const { projectId } = route?.params ?? {};
@@ -69,7 +53,6 @@ export const useIssueSearchScopeOptions = (
     return undefined;
   });
 
-  const databaseList = ref<ComposedDatabase[]>([]);
   const projectLabels = ref<Label[]>([]);
 
   watchEffect(async () => {
@@ -87,47 +70,53 @@ export const useIssueSearchScopeOptions = (
     projectLabels.value = [...labels.values()];
   });
 
-  watchEffect(async () => {
-    if (!isValidProjectName(projectName.value)) {
-      return;
-    }
-    const { databases } = await databaseV1Store.fetchDatabases({
-      pageSize: getDefaultPagination(),
-      parent: projectName.value!,
-    });
-    databaseList.value = databases;
-  });
-
   const commonScopeOptions = useCommonSearchScopeOptions(supportOptionIdList);
 
-  const principalSearchValueOptions = computed(() => {
-    // Put "you" to the top
-    const sortedUsers = orderBy(
-      activeUserList.value,
-      (user) => (user.name === me.value.name ? -1 : 1),
-      "asc"
-    );
-    return sortedUsers.map<ValueOption>((user) => {
-      return {
-        value: user.email,
-        keywords: [user.email, user.title],
-        bot: user.name === SYSTEM_BOT_USER_NAME,
-        render: () => {
-          const children = [
-            h(BBAvatar, { size: "TINY", username: user.title }),
-            renderSpan(user.title),
-          ];
-          if (user.name === me.value.name) {
-            children.push(h(YouTag));
-          }
-          if (user.name === SYSTEM_BOT_USER_NAME) {
-            children.push(h(SystemBotTag));
-          }
-          return h("div", { class: "flex items-center gap-x-1" }, children);
-        },
-      };
-    });
-  });
+  const searchPrincipalSearchValueOptions = (userTypes: UserType[]) => {
+    return ({
+      keyword,
+      nextPageToken,
+    }: {
+      keyword: string;
+      nextPageToken?: string;
+    }) =>
+      userStore
+        .fetchUserList({
+          pageToken: nextPageToken,
+          pageSize: getDefaultPagination(),
+          filter: {
+            types: userTypes,
+            query: keyword,
+          },
+        })
+        .then((resp) => ({
+          nextPageToken: resp.nextPageToken,
+          options: resp.users.map<ValueOption>((user) => {
+            return {
+              value: user.email,
+              keywords: [user.email, user.title],
+              bot: user.name === SYSTEM_BOT_USER_NAME,
+              render: () => {
+                const children = [
+                  h(BBAvatar, { size: "TINY", username: user.title }),
+                  renderSpan(user.title),
+                ];
+                if (user.name === me.value.name) {
+                  children.push(h(YouTag));
+                }
+                if (user.name === SYSTEM_BOT_USER_NAME) {
+                  children.push(h(SystemBotTag));
+                }
+                return h(
+                  "div",
+                  { class: "flex items-center gap-x-1" },
+                  children
+                );
+              },
+            };
+          }),
+        }));
+  };
 
   // fullScopeOptions provides full search scopes and options.
   // we need this as the source of truth.
@@ -138,29 +127,49 @@ export const useIssueSearchScopeOptions = (
         id: "database",
         title: t("issue.advanced-search.scope.database.title"),
         description: t("issue.advanced-search.scope.database.description"),
-        options: databaseList.value.map((db) => {
-          return {
-            value: db.name,
-            keywords: [
-              db.databaseName,
-              extractInstanceResourceName(db.instance),
-              db.instanceResource.title,
-              extractEnvironmentResourceName(db.effectiveEnvironment),
-              db.effectiveEnvironmentEntity.title,
-              extractProjectResourceName(db.project),
-              db.projectEntity.title,
-            ],
-            custom: true,
-            render: () => {
-              return h("div", { class: "text-sm" }, [
-                h(RichDatabaseName, {
-                  database: db,
-                  showProject: true,
-                }),
-              ]);
-            },
-          };
-        }),
+        search: ({
+          keyword,
+          nextPageToken,
+        }: {
+          keyword: string;
+          nextPageToken?: string;
+        }) => {
+          return databaseV1Store
+            .fetchDatabases({
+              pageToken: nextPageToken,
+              pageSize: getDefaultPagination(),
+              parent: projectName.value!,
+              filter: {
+                query: keyword,
+              },
+            })
+            .then((resp) => ({
+              nextPageToken: resp.nextPageToken,
+              options: resp.databases.map((db) => {
+                return {
+                  value: db.name,
+                  keywords: [
+                    db.databaseName,
+                    extractInstanceResourceName(db.instance),
+                    db.instanceResource.title,
+                    extractEnvironmentResourceName(db.effectiveEnvironment),
+                    db.effectiveEnvironmentEntity.title,
+                    extractProjectResourceName(db.project),
+                    db.projectEntity.title,
+                  ],
+                  custom: true,
+                  render: () => {
+                    return h("div", { class: "text-sm" }, [
+                      h(RichDatabaseName, {
+                        database: db,
+                        showProject: true,
+                      }),
+                    ]);
+                  },
+                };
+              }),
+            }));
+        },
       },
       {
         id: "status",
@@ -206,19 +215,30 @@ export const useIssueSearchScopeOptions = (
         id: "creator",
         title: t("issue.advanced-search.scope.creator.title"),
         description: t("issue.advanced-search.scope.creator.description"),
-        options: principalSearchValueOptions.value,
+        search: searchPrincipalSearchValueOptions([
+          UserType.USER,
+          UserType.SERVICE_ACCOUNT,
+          UserType.SYSTEM_BOT,
+        ]),
       },
       {
         id: "approver",
         title: t("issue.advanced-search.scope.approver.title"),
         description: t("issue.advanced-search.scope.approver.description"),
-        options: principalSearchValueOptions.value.filter((o) => !o.bot),
+        search: searchPrincipalSearchValueOptions([
+          UserType.USER,
+          UserType.SERVICE_ACCOUNT,
+        ]),
       },
       {
         id: "subscriber",
         title: t("issue.advanced-search.scope.subscriber.title"),
         description: t("issue.advanced-search.scope.subscriber.description"),
-        options: principalSearchValueOptions.value,
+        search: searchPrincipalSearchValueOptions([
+          UserType.USER,
+          UserType.SERVICE_ACCOUNT,
+          UserType.SYSTEM_BOT,
+        ]),
       },
       {
         id: "taskType",
@@ -258,9 +278,7 @@ export const useIssueSearchScopeOptions = (
       },
     ];
     const supportOptionIdSet = new Set(supportOptionIdList.value);
-    return scopes.filter(
-      (scope) => supportOptionIdSet.has(scope.id) && scope.options.length > 0
-    );
+    return scopes.filter((scope) => supportOptionIdSet.has(scope.id));
   });
 
   // filteredScopeOptions will filter search options by chosen scope.
@@ -272,13 +290,13 @@ export const useIssueSearchScopeOptions = (
 
     const clone = fullScopeOptions.value.map((scope) => ({
       ...scope,
-      options: scope.options.map((option) => ({
+      options: scope.options?.map((option) => ({
         ...option,
       })),
     }));
     const index = clone.findIndex((scope) => scope.id === "database");
     if (index >= 0) {
-      clone[index].options = clone[index].options.filter((option) => {
+      clone[index].options = clone[index].options?.filter((option) => {
         if (!existedScopes.has("project") && !existedScopes.has("instance")) {
           return true;
         }

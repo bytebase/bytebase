@@ -777,6 +777,7 @@
     "advanced-search": {
       "self": "高度な検索",
       "filter": "フィルター",
+      "search": "検索するにはタイトルまたはIDを入力してください",
       "scope": {
         "project": {
           "title": "プロジェクト",
@@ -824,7 +825,7 @@
         },
         "database-label": {
           "title": "ラベル",
-          "description": "\"key\":\"value\"を入力し、Enterを押します。"
+          "description": "\"key:value\"を入力し、Enterを押します。"
         },
         "engine": {
           "title": "エンジン",

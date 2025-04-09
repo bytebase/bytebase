@@ -1,5 +1,5 @@
 import type { VNode } from "vue";
-import { computed, h, unref, ref, watchEffect } from "vue";
+import { computed, h, unref } from "vue";
 import {
   InstanceV1Name,
   ProjectV1Name,
@@ -13,7 +13,7 @@ import {
   useInstanceV1Store,
   useProjectV1Store,
 } from "@/store";
-import type { MaybeRef, ComposedProject, ComposedInstance } from "@/types";
+import type { MaybeRef } from "@/types";
 import { engineToJSON } from "@/types/proto/v1/common";
 import type { SearchScopeId } from "@/utils";
 import {
@@ -33,30 +33,6 @@ export const useCommonSearchScopeOptions = (
   const instanceStore = useInstanceV1Store();
   const environmentStore = useEnvironmentV1Store();
   const environmentList = useEnvironmentV1List();
-  const projectList = ref<ComposedProject[]>([]);
-  const instanceList = ref<ComposedInstance[]>([]);
-
-  watchEffect(async () => {
-    try {
-      const { projects } = await projectStore.fetchProjectList({
-        pageSize: getDefaultPagination(),
-      });
-      projectList.value = projects;
-    } catch {
-      // do nothing
-    }
-  });
-
-  watchEffect(async () => {
-    try {
-      const { instances } = await instanceStore.fetchInstanceList({
-        pageSize: getDefaultPagination(),
-      });
-      instanceList.value = instances;
-    } catch {
-      // do nothing
-    }
-  });
 
   // fullScopeOptions provides full search scopes and options.
   // we need this as the source of truth.
@@ -66,54 +42,96 @@ export const useCommonSearchScopeOptions = (
         id: "project",
         title: t("issue.advanced-search.scope.project.title"),
         description: t("issue.advanced-search.scope.project.description"),
-        options: projectList.value.map<ValueOption>((project) => {
-          const name = extractProjectResourceName(project.name);
-          return {
-            value: name,
-            keywords: [
-              name,
-              project.title,
-              extractProjectResourceName(project.name),
-            ],
-            render: () => {
-              const children: VNode[] = [
-                h(ProjectV1Name, { project: project, link: false }),
-              ];
-              return h("div", { class: "flex items-center gap-x-2" }, children);
-            },
-          };
-        }),
+        search: ({
+          keyword,
+          nextPageToken,
+        }: {
+          keyword: string;
+          nextPageToken?: string;
+        }) => {
+          return projectStore
+            .fetchProjectList({
+              pageToken: nextPageToken,
+              pageSize: getDefaultPagination(),
+              filter: {
+                query: keyword,
+              },
+            })
+            .then((resp) => ({
+              nextPageToken: resp.nextPageToken,
+              options: resp.projects.map<ValueOption>((project) => {
+                const name = extractProjectResourceName(project.name);
+                return {
+                  value: name,
+                  keywords: [
+                    name,
+                    project.title,
+                    extractProjectResourceName(project.name),
+                  ],
+                  render: () => {
+                    const children: VNode[] = [
+                      h(ProjectV1Name, { project: project, link: false }),
+                    ];
+                    return h(
+                      "div",
+                      { class: "flex items-center gap-x-2" },
+                      children
+                    );
+                  },
+                };
+              }),
+            }));
+        },
       }),
       instance: () => ({
         id: "instance",
         title: t("issue.advanced-search.scope.instance.title"),
         description: t("issue.advanced-search.scope.instance.description"),
-        options: instanceList.value.map((ins) => {
-          const name = extractInstanceResourceName(ins.name);
-          return {
-            value: name,
-            keywords: [
-              name,
-              ins.title,
-              engineToJSON(ins.engine),
-              extractEnvironmentResourceName(ins.environment),
-            ],
-            render: () => {
-              return h("div", { class: "flex items-center gap-x-1" }, [
-                h(InstanceV1Name, {
-                  instance: ins,
-                  link: false,
-                  tooltip: false,
-                }),
-                h(
-                  "span",
-                  {},
-                  `(${environmentV1Name(environmentStore.getEnvironmentByName(ins.environment))})`
-                ),
-              ]);
-            },
-          };
-        }),
+        search: ({
+          keyword,
+          nextPageToken,
+        }: {
+          keyword: string;
+          nextPageToken?: string;
+        }) => {
+          return instanceStore
+            .fetchInstanceList({
+              pageToken: nextPageToken,
+              pageSize: getDefaultPagination(),
+              filter: {
+                query: keyword,
+              },
+            })
+            .then((resp) => ({
+              nextPageToken: resp.nextPageToken,
+              options: resp.instances.map((ins) => {
+                const name = extractInstanceResourceName(ins.name);
+                return {
+                  value: name,
+                  keywords: [
+                    name,
+                    ins.title,
+                    engineToJSON(ins.engine),
+                    extractEnvironmentResourceName(ins.environment),
+                  ],
+                  render: () => {
+                    return h("div", { class: "flex items-center gap-x-1" }, [
+                      h(InstanceV1Name, {
+                        instance: ins,
+                        link: false,
+                        tooltip: false,
+                      }),
+                      h(
+                        "span",
+                        {},
+                        `(${environmentV1Name(environmentStore.getEnvironmentByName(ins.environment))})`
+                      ),
+                    ]);
+                  },
+                };
+              }),
+            }));
+        },
       }),
       environment: () => ({
         id: "environment",
@@ -137,7 +155,6 @@ export const useCommonSearchScopeOptions = (
         description: t(
           "issue.advanced-search.scope.database-label.description"
         ),
-        options: [] as ValueOption[],
         allowMultiple: true,
       }),
       engine: () => ({

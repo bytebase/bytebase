@@ -1,20 +1,18 @@
 <template>
-  <div
-    v-if="options.length > 0"
-    v-show="show"
-    class="overflow-hidden"
-    :style="{
-      'max-height': `${maxListHeight}px`,
-    }"
-  >
-    <VirtualList
+  <div v-if="options.length > 0" v-show="show">
+    <NVirtualList
       ref="virtualListRef"
       :items="options"
       :key-field="`id`"
       :item-resizable="false"
       :item-size="38"
+      :style="{
+        'max-height': `${maxListHeight}px`,
+      }"
     >
-      <template #default="{ item: option, index }: ListItem">
+      <template
+        #default="{ item: option, index }: { item: ScopeOption; index: number }"
+      >
         <div
           class="h-[38px] flex gap-x-1 px-3 items-center cursor-pointer border-t text-sm"
           :class="[
@@ -32,35 +30,30 @@
           <span class="text-control-light">{{ option.description }}</span>
         </div>
       </template>
-    </VirtualList>
+    </NVirtualList>
   </div>
 </template>
 
 <script setup lang="ts">
 import { useElementBounding, useWindowSize } from "@vueuse/core";
+import { NVirtualList } from "naive-ui";
 import { computed, nextTick, ref, watch } from "vue";
-import { VirtualList } from "vueuc";
-import type { SearchParams, SearchScopeId } from "@/utils";
+import type { SearchScopeId } from "@/utils";
 import type { ScopeOption } from "./types";
-
-type ListItem = {
-  item: ScopeOption;
-  index: number;
-};
 
 const props = defineProps<{
   show: boolean;
-  params: SearchParams;
   options: ScopeOption[];
   menuIndex: number;
 }>();
+
 defineEmits<{
   (event: "select-scope", id: SearchScopeId): void;
   (event: "hover-item", index: number): void;
 }>();
 
 const containerRef = ref<HTMLElement>();
-const virtualListRef = ref<InstanceType<typeof VirtualList>>();
+const virtualListRef = ref<InstanceType<typeof NVirtualList>>();
 const { top: containerTop } = useElementBounding(containerRef);
 const { height: windowHeight } = useWindowSize();
 
@@ -74,7 +67,7 @@ const maxListHeight = computed(() => {
   );
 });
 
-const highlightedItem = computed((): ListItem | undefined => {
+const highlightedItem = computed(() => {
   if (!props.show) return undefined;
   const { options, menuIndex: index } = props;
   const item = options[index];
