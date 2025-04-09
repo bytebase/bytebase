@@ -56,7 +56,7 @@ type adjustedParsedRequest struct {
 
 // See https://sourcegraph.com/github.com/elastic/kibana/-/blob/src/platform/plugins/shared/console/public/application/containers/editor/utils/requests_utils.ts?L76.
 // Combine getRequestStartLineNumber and getRequestEndLineNumber.
-func getAdjustedParsedRequest(r parsedRequest, text string) adjustedParsedRequest {
+func getAdjustedParsedRequest(r parsedRequest, text string, nextRequest *parsedRequest) adjustedParsedRequest {
 	bs := []byte(text)
 	startLineNumber := 0
 	endLineNumber := 0
@@ -72,7 +72,7 @@ func getAdjustedParsedRequest(r parsedRequest, text string) adjustedParsedReques
 		}
 	}
 
-	if r.endOffset > 0 {
+	if r.endOffset >= 0 {
 		// if the parser set an end offset for this request , then find the line number for it.
 		endLineNumber = startLineNumber
 		endOffset := r.endOffset
@@ -84,8 +84,51 @@ func getAdjustedParsedRequest(r parsedRequest, text string) adjustedParsedReques
 				endLineNumber++
 			}
 		}
+	} else {
+		// if no end offset, try to find the line before the next request starts.
+		if nextRequest != nil {
+			nextRequestStartLine := 0
+			nextRequestOffset := nextRequest.startOffset
+			if nextRequestOffset >= len(bs) {
+				nextRequestOffset = len(bs) - 1
+			}
+			for i := 0; i < nextRequestOffset; i++ {
+				if bs[i] == '\n' {
+					nextRequestStartLine++
+				}
+			}
+			if nextRequestStartLine > startLineNumber {
+				endLineNumber = nextRequestStartLine - 1
+			} else {
+				endLineNumber = startLineNumber
+			}
+		} else {
+			// If there is no next request, find the end of the text or the line that starts with a method.
+			lines := strings.Split(text, "\n")
+			nextLineNumber := 0
+			for i := 0; i < r.startOffset; i++ {
+				if bs[i] == '\n' {
+					nextLineNumber++
+				}
+			}
+			nextLineNumber++
+			for nextLineNumber < len(lines) {
+				content := strings.TrimSpace(lines[nextLineNumber])
+				startsWithMethodRegex := regexp.MustCompile(`(?i)^\s*(GET|POST|PUT|PATCH|DELETE)`)
+				if startsWithMethodRegex.MatchString(content) {
+					break
+				}
+				nextLineNumber++
+			}
+			// nextLineNumber is now either the line with a method or 1 line after the end of the text
+			// set the end line for this request to the line before nextLineNumber
+			if nextLineNumber > startLineNumber {
+				endLineNumber = nextLineNumber - 1
+			} else {
+				endLineNumber = startLineNumber
+			}
+		}
 	}
-	// TODO(zp): if no end offset, try to find the line before the next request starts.
 	// if the end is empty, go up to find the first non-empty line.
 	lines := strings.Split(text, "\n")
 	for endLineNumber >= 0 && strings.TrimSpace(lines[endLineNumber]) == "" {
@@ -119,9 +162,13 @@ func ParseElasticsearchREST(text string) (*ParseResult, error) {
 		return nil, err
 	}
 	var requests []*Request
-	for _, parsedResult := range parsedResults {
+	for i, parsedResult := range parsedResults {
 		// See https://sourcegraph.com/github.com/elastic/kibana/-/blob/src/platform/plugins/shared/console/public/application/containers/editor/monaco_editor_actions_provider.ts?L261.
-		adjustedOffset := getAdjustedParsedRequest(parsedResult, text)
+		var nextRequest *parsedRequest
+		if i < len(parsedResults)-1 {
+			nextRequest = &parsedResults[i+1]
+		}
+		adjustedOffset := getAdjustedParsedRequest(parsedResult, text, nextRequest)
 		if adjustedOffset.startLineNumber > adjustedOffset.endLineNumber {
 			continue
 		}
@@ -486,25 +533,6 @@ func (p *parser) multiRequest() error {
 		}
 	}
 
-	return nil
-}
-
-func (p *parser) updateRequestEnd() error {
-	if p.at >= len(p.text) {
-		p.requestEndOffset = p.at - 1
-		return nil
-	}
-	previousRune, sz := utf8.DecodeLastRuneInString(p.text[:p.at])
-	if previousRune == utf8.RuneError {
-		if sz == 0 {
-			return errors.Errorf("unexpected empty input")
-		}
-		if sz == 1 {
-			return errors.Errorf("invalid UTF-8 character")
-		}
-		return errors.Errorf("unknown decoding rune error")
-	}
-	p.requestEndOffset = p.at - sz
 	return nil
 }
 
@@ -1066,6 +1094,7 @@ func (p *parser) addRequestStart() error {
 	p.requestStartOffset = p.at - sz
 	p.requests = append(p.requests, parsedRequest{
 		startOffset: p.requestStartOffset,
+		endOffset:   -1,
 	})
 	return nil
 }
@@ -1075,6 +1104,25 @@ func (p *parser) addRequestEnd() error {
 		return errors.Errorf("unexpected empty requests")
 	}
 	p.requests[len(p.requests)-1].endOffset = p.requestEndOffset
+	return nil
+}
+
+func (p *parser) updateRequestEnd() error {
+	if p.at >= len(p.text) {
+		p.requestEndOffset = p.at - 1
+		return nil
+	}
+	previousRune, sz := utf8.DecodeLastRuneInString(p.text[:p.at])
+	if previousRune == utf8.RuneError {
+		if sz == 0 {
+			return errors.Errorf("unexpected empty input")
+		}
+		if sz == 1 {
+			return errors.Errorf("invalid UTF-8 character")
+		}
+		return errors.Errorf("unknown decoding rune error")
+	}
+	p.requestEndOffset = p.at - sz
 	return nil
 }
 
