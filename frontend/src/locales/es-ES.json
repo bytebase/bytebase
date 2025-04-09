@@ -1249,7 +1249,7 @@
   },
   "environment": {
     "select": "Seleccionar entorno",
-    "archive": "Archivar este entorno",
+    "archive": "Eliminar este entorno",
     "archive-info": "Los entornos archivados no se mostrarán.",
     "create": "Crear entorno",
     "restore": "Restaurar este entorno",
