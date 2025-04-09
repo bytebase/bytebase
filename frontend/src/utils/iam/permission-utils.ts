@@ -1,18 +1,10 @@
 import type { ComposedDatabase, ComposedProject } from "@/types";
 import { hasProjectPermissionV2 } from "./permission";
 
-const hasPermissionToCreateRequestGrantIssueInProject = (
-  project: ComposedProject
-) => {
-  return hasProjectPermissionV2(project, "bb.issues.create");
-};
-
 export const hasPermissionToCreateRequestGrantIssue = (
   database: ComposedDatabase
 ) => {
-  return hasPermissionToCreateRequestGrantIssueInProject(
-    database.projectEntity
-  );
+  return hasProjectPermissionV2(database.projectEntity, "bb.issues.create");
 };
 
 export const hasPermissionToCreateChangeDatabaseIssueInProject = (

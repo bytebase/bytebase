@@ -259,13 +259,17 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 		return nil, status.Error(code, queryErr.Error())
 	}
 
-	// AllowExport is a validate only check.
-	checkErr := s.accessCheck(ctx, instance, database, user, spans, queryContext.Limit, request.Explain, true /* isExport */)
-	allowExport := (checkErr == nil)
+	for _, result := range results {
+		// AllowExport is a validate only check.
+		checkErr := s.accessCheck(ctx, instance, database, user, spans, int(result.RowsCount), request.Explain, true /* isExport */)
+		if checkErr != nil {
+			slog.Debug("access check failed for export", log.BBError(err), slog.String("database", database.DatabaseName), slog.Int("limit", queryContext.Limit))
+		}
+		result.AllowExport = checkErr == nil
+	}
 
 	response := &v1pb.QueryResponse{
-		Results:     results,
-		AllowExport: allowExport,
+		Results: results,
 	}
 
 	return response, nil
