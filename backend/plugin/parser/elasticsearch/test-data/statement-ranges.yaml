@@ -1,0 +1,41 @@
+- description: multiple request with empty line
+  statement: |-
+    GET _search
+    {
+      "query": {
+        "match_all": {}
+      }
+    }
+
+    GET _search
+    {
+      "query": {
+        "match_all": {}
+      }
+    }
+
+    GET _search
+    {
+      "query": {
+        "match_all": {}
+      }
+    }
+  result:
+    - start:
+        line: 0
+        character: 0
+      end:
+        line: 5
+        character: 1
+    - start:
+        line: 7
+        character: 0
+      end:
+        line: 12
+        character: 1
+    - start:
+        line: 14
+        character: 0
+      end:
+        line: 19
+        character: 1
