@@ -42,8 +42,9 @@ var (
 				},
 			},
 		},
-		Statement: "SELECT * FROM tech_book",
-		RowsCount: 3,
+		Statement:   "SELECT * FROM tech_book",
+		RowsCount:   3,
+		AllowExport: true,
 	}
 	originData = &v1pb.QueryResult{
 		ColumnNames:     []string{"id", "name", "author"},
