@@ -197,6 +197,22 @@ func (s *Store) GetAISetting(ctx context.Context) (*storepb.AISetting, error) {
 	return aiSetting, nil
 }
 
+func (s *Store) GetEnvironmentSetting(ctx context.Context) (*storepb.EnvironmentSetting, error) {
+	envSetting := &storepb.EnvironmentSetting{}
+	setting, err := s.GetSettingV2(ctx, api.SettingEnvironment)
+	if err != nil {
+		return nil, err
+	}
+	if setting == nil {
+		return envSetting, nil
+	}
+
+	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), envSetting); err != nil {
+		return nil, err
+	}
+	return envSetting, nil
+}
+
 // DeleteCache deletes the cache.
 func (s *Store) DeleteCache() {
 	s.settingCache.Purge()

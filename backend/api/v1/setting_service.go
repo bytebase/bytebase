@@ -78,6 +78,7 @@ var whitelistSettings = []api.SettingName{
 	api.SettingSQLResultSizeLimit,
 	api.SettingSCIM,
 	api.SettingPasswordRestriction,
+	api.SettingEnvironment,
 }
 
 //go:embed mail_templates/testmail/template.html
@@ -591,6 +592,42 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 			return nil, status.Errorf(codes.Internal, "failed to marshal setting for %s with error: %v", apiSettingName, err)
 		}
 		storeSettingValue = string(bytes)
+	case api.SettingEnvironment:
+		if serr := validateEnvironments(request.Setting.Value.GetEnvironmentSetting().GetEnvironments()); serr != nil {
+			return nil, serr.Err()
+		}
+		environmentSetting := &storepb.EnvironmentSetting{}
+		if err := convertProtoToProto(request.Setting.Value.GetEnvironmentSetting(), environmentSetting); err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", apiSettingName, err)
+		}
+
+		oldEnvironmentSetting, err := s.store.GetEnvironmentSetting(ctx)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to get old environment setting with error: %v", err)
+		}
+		newEnvIDMap := map[string]bool{}
+		for _, env := range environmentSetting.Environments {
+			newEnvIDMap[env.Id] = true
+		}
+		for _, env := range oldEnvironmentSetting.Environments {
+			if !newEnvIDMap[env.Id] {
+				// deleted
+				// check if instances are using the environments
+				count, err := s.store.CountInstance(ctx, &store.CountInstanceMessage{EnvironmentID: &env.Id})
+				if err != nil {
+					return nil, status.Error(codes.Internal, err.Error())
+				}
+				if count > 0 {
+					return nil, status.Errorf(codes.FailedPrecondition, "all instances in the environment %v should be deleted first", env.Id)
+				}
+			}
+		}
+
+		bytes, err := protojson.Marshal(environmentSetting)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to marshal setting for %s with error: %v", apiSettingName, err)
+		}
+		storeSettingValue = string(bytes)
 	default:
 		storeSettingValue = request.Setting.Value.GetStringValue()
 	}
@@ -847,6 +884,19 @@ func (s *SettingService) convertToSettingMessage(ctx context.Context, setting *s
 			Value: &v1pb.Value{
 				Value: &v1pb.Value_AiSetting{
 					AiSetting: v1Value,
+				},
+			},
+		}, nil
+	case api.SettingEnvironment:
+		v1Value := new(v1pb.EnvironmentSetting)
+		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), v1Value); err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", setting.Name, err)
+		}
+		return &v1pb.Setting{
+			Name: settingName,
+			Value: &v1pb.Value{
+				Value: &v1pb.Value_EnvironmentSetting{
+					EnvironmentSetting: v1Value,
 				},
 			},
 		}, nil
@@ -1276,6 +1326,23 @@ func validateDomains(domains []string) error {
 		if disallowedDomains[domain] {
 			return errors.Errorf("domain %q is not allowed", domain)
 		}
+	}
+	return nil
+}
+
+func validateEnvironments(envs []*v1pb.EnvironmentSetting_Environment) *status.Status {
+	used := map[string]bool{}
+	for _, env := range envs {
+		if err := api.IsValidEnvironmentName(env.Title); err != nil {
+			return status.Newf(codes.InvalidArgument, "invalid environment title, error %v", err.Error())
+		}
+		if !isValidResourceID(env.Id) {
+			return status.Newf(codes.InvalidArgument, "invalid environment ID %v", env.Id)
+		}
+		if used[env.Id] {
+			return status.Newf(codes.InvalidArgument, "duplicate environment ID %v", env.Id)
+		}
+		used[env.Id] = true
 	}
 	return nil
 }
