@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/pkg/errors"
 
@@ -20,16 +21,17 @@ func run(platform JobPlatform) error {
 	if serviceAccountSecret == "" {
 		return errors.Errorf("environment BYTEBASE_SERVICE_ACCOUNT_SECRET is not set")
 	}
-	project, targets, filePattern := os.Getenv("BYTEBASE_PROJECT"), os.Getenv("BYTEBASE_TARGETS"), os.Getenv("FILE_PATTERN")
+	project, bytebaseTargets, filePattern := os.Getenv("BYTEBASE_PROJECT"), os.Getenv("BYTEBASE_TARGETS"), os.Getenv("FILE_PATTERN")
 	if project == "" {
 		return errors.Errorf("environment BYTEBASE_PROJECT is not set")
 	}
-	if targets == "" {
+	if bytebaseTargets == "" {
 		return errors.Errorf("environment BYTEBASE_TARGETS is not set")
 	}
 	if filePattern == "" {
 		return errors.Errorf("environment FILE_PATTERN is not set")
 	}
+	targets := strings.Split(bytebaseTargets, ",")
 
 	client, err := NewClient(url, serviceAccount, serviceAccountSecret)
 	if err != nil {
@@ -42,7 +44,7 @@ func run(platform JobPlatform) error {
 	}
 	checkReleaseResponse, err := client.checkRelease(project, &v1pb.CheckReleaseRequest{
 		Release: &v1pb.Release{Files: releaseFiles},
-		Targets: []string{targets},
+		Targets: targets,
 	})
 	if err != nil {
 		return err
