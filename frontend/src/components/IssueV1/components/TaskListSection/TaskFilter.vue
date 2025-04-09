@@ -1,0 +1,124 @@
+<template>
+  <div class="w-full flex flex-row gap-4">
+    <div class="flex items-center justify-between">
+      <h3>
+        {{ $t("common.tasks") }}
+        <span>({{ taskList.length }})</span>
+      </h3>
+    </div>
+    <div class="flex flex-row gap-2 items-center">
+      <div
+        class="bg-gray-50 pl-2 p-1 flex flex-row items-center rounded-full gap-1"
+      >
+        <span class="text-xs mr-1 text-gray-600">{{
+          $t("issue.sql-check.sql-checks")
+        }}</span>
+        <template v-for="status in ADVICE_STATUS_FILTERS" :key="status">
+          <NTag
+            v-if="getTaskCount(undefined, status) > 0"
+            @click="
+              emit(
+                'update:adviceStatusList',
+                adviceStatusList.includes(status)
+                  ? adviceStatusList.filter((s) => s !== status)
+                  : [...adviceStatusList, status]
+              )
+            "
+            :size="'small'"
+            round
+            :bordered="adviceStatusList.includes(status)"
+            :type="adviceStatusList.includes(status) ? 'info' : 'default'"
+          >
+            <template #avatar>
+              <AdviceStatusIcon :status="status" />
+            </template>
+            <span class="select-none">{{
+              getTaskCount(undefined, status)
+            }}</span>
+          </NTag>
+        </template>
+      </div>
+      <div
+        v-if="!isCreating"
+        class="bg-gray-50 pl-2 p-1 flex flex-row items-center rounded-full gap-1"
+      >
+        <span class="text-xs mr-1 text-gray-600">{{
+          $t("common.status")
+        }}</span>
+        <template v-for="status in TASK_STATUS_FILTERS" :key="status">
+          <NTag
+            v-if="getTaskCount(status) > 0"
+            @click="
+              emit(
+                'update:taskStatusList',
+                taskStatusList.includes(status)
+                  ? taskStatusList.filter((s) => s !== status)
+                  : [...taskStatusList, status]
+              )
+            "
+            :size="'small'"
+            round
+            :bordered="taskStatusList.includes(status)"
+            :type="taskStatusList.includes(status) ? 'info' : 'default'"
+          >
+            <template #avatar>
+              <TaskStatusIconV1 :status="status" :size="'small'" />
+            </template>
+            <span class="select-none">{{ getTaskCount(status) }}</span>
+          </NTag>
+        </template>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script lang="ts" setup>
+import { NTag } from "naive-ui";
+import { computed } from "vue";
+import { Task_Status } from "@/types/proto/v1/rollout_service";
+import { Advice_Status } from "@/types/proto/v1/sql_service";
+import { useIssueContext } from "../../logic";
+import AdviceStatusIcon from "../SQLCheckSection/AdviceStatusIcon.vue";
+import { useIssueSQLCheckContext } from "../SQLCheckSection/context";
+import TaskStatusIconV1 from "../TaskStatusIconV1.vue";
+import { filterTask } from "./filter";
+
+defineProps<{
+  taskStatusList: Task_Status[];
+  adviceStatusList: Advice_Status[];
+}>();
+
+const emit = defineEmits<{
+  (event: "update:taskStatusList", taskStatusList: Task_Status[]): void;
+  (event: "update:adviceStatusList", adviceStatusList: Advice_Status[]): void;
+}>();
+
+const TASK_STATUS_FILTERS: Task_Status[] = [
+  Task_Status.NOT_STARTED,
+  Task_Status.PENDING,
+  Task_Status.RUNNING,
+  Task_Status.DONE,
+  Task_Status.FAILED,
+  Task_Status.CANCELED,
+  Task_Status.SKIPPED,
+];
+const ADVICE_STATUS_FILTERS: Advice_Status[] = [
+  Advice_Status.UNRECOGNIZED,
+  Advice_Status.SUCCESS,
+  Advice_Status.WARNING,
+  Advice_Status.ERROR,
+];
+
+const issueContext = useIssueContext();
+const sqlCheckContext = useIssueSQLCheckContext();
+
+const { isCreating, selectedStage } = issueContext;
+
+const taskList = computed(() => selectedStage.value.tasks);
+
+const getTaskCount = (status?: Task_Status, adviceStatus?: Advice_Status) => {
+  return taskList.value.filter((task) =>
+    filterTask(issueContext, sqlCheckContext, task, { status, adviceStatus })
+  ).length;
+};
+</script>
