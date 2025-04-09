@@ -1249,7 +1249,7 @@
   },
   "environment": {
     "select": "选择环境",
-    "archive": "归档此环境",
+    "archive": "删除此环境",
     "archive-info": "已归档环境将不再显示。",
     "create": "创建环境",
     "restore": "恢复此环境",
