@@ -11707,9 +11707,6 @@ components:
                     items:
                         $ref: '#/components/schemas/QueryResult'
                     description: The query results.
-                allowExport:
-                    type: boolean
-                    description: The query is allowed to be exported or not.
         QueryResult:
             type: object
             properties:
@@ -11754,6 +11751,9 @@ components:
                     description: The query statement for the result.
                 postgresError:
                     $ref: '#/components/schemas/QueryResult_PostgresError'
+                allowExport:
+                    type: boolean
+                    description: The query result is allowed to be exported or not.
         QueryResult_PostgresError:
             type: object
             properties:

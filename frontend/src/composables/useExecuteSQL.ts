@@ -228,7 +228,6 @@ const useExecuteSQL = () => {
         error: "",
         results: [],
         advices: [],
-        allowExport: false,
       });
     }
     queryContext.results = queryResultMap;
@@ -239,7 +238,6 @@ const useExecuteSQL = () => {
         results: [],
         advices: result.advices,
         status: result.status,
-        allowExport: false,
       });
     };
     const abort = (error: string, advices: Advice[] = []) => {
@@ -248,7 +246,6 @@ const useExecuteSQL = () => {
         results: [],
         advices,
         status: Status.ABORTED,
-        allowExport: false,
       });
       return cleanup();
     };
@@ -294,7 +291,6 @@ const useExecuteSQL = () => {
         // and mock an "Aborted" result for the rest queries.
         fail(database, {
           advices: [],
-          allowExport: false,
           error: "AbortError: The user aborted a request.",
           results: [],
           status: Status.ABORTED,
@@ -317,7 +313,6 @@ const useExecuteSQL = () => {
         if (!dataSourceId) {
           fail(database, {
             advices: [],
-            allowExport: false,
             error:
               "No queriable data source. Please check the data source query policy on environment or project.",
             results: [],

@@ -204,7 +204,6 @@ const createStreamingQueryController = (tab: SQLEditorTab) => {
         events.emit("result", {
           error: "",
           advices: [],
-          allowExport: false,
           ...response,
         });
       },
@@ -216,7 +215,6 @@ const createStreamingQueryController = (tab: SQLEditorTab) => {
           status: extractGrpcStatusCode(error),
           advices: [],
           results: [],
-          allowExport: false,
         };
         if (result.status === Status.ABORTED && !result.error) {
           result.error = "Aborted";

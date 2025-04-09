@@ -181,9 +181,6 @@ message QueryResponse {
 
   // The query results.
   repeated QueryResult results = 1;
-
-  // The query is allowed to be exported or not.
-  bool allow_export = 3;
 }
 
 message QueryOption {
@@ -249,6 +246,9 @@ message QueryResult {
     int32 line = 16;
     string routine = 17;
   }
+
+  // The query result is allowed to be exported or not.
+  bool allow_export = 11;
 }
 
 message QueryRow {
