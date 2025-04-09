@@ -231,6 +231,7 @@
     "go-back-home": "回到主页"
   },
   "task": {
+    "current-task": "当前任务",
     "checking": "检查中…",
     "check-result": {
       "title-general": "检查结果"
