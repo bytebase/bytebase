@@ -662,7 +662,7 @@ watch(visibleValueOptions, (newOptions, oldOptions) => {
 watch(
   () => props.params,
   (params) => {
-    inputText.value = params.query;
+    inputText.value = params.query || inputText.value;
     router.replace({
       query: {
         ...route.query,
