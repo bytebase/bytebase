@@ -341,6 +341,7 @@ const columns = computed(() => {
   return props.result.columnNames.map<ColumnDef<QueryRow, RowValue>>(
     (columnName, index) => {
       const columnType = props.result.columnTypeNames[index] as string;
+
       return {
         id: `${columnName}@${index}`,
         accessorFn: (item) => item.values[index],

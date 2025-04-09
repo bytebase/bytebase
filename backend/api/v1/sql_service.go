@@ -262,9 +262,6 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 	for _, result := range results {
 		// AllowExport is a validate only check.
 		checkErr := s.accessCheck(ctx, instance, database, user, spans, int(result.RowsCount), request.Explain, true /* isExport */)
-		if checkErr != nil {
-			slog.Debug("access check failed for export", log.BBError(err), slog.String("database", database.DatabaseName), slog.Int("limit", queryContext.Limit))
-		}
 		result.AllowExport = checkErr == nil
 	}
 
