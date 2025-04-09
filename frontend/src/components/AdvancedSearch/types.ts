@@ -4,9 +4,13 @@ import type { SearchScopeId } from "@/utils";
 export type ScopeOption = {
   id: SearchScopeId;
   title: string;
-  options: ValueOption[];
+  options?: ValueOption[];
   description?: string;
   allowMultiple?: boolean;
+  search?: (op: {
+    keyword: string;
+    nextPageToken?: string;
+  }) => Promise<{ nextPageToken?: string; options: ValueOption[] }>;
 };
 
 export type ValueOption = {

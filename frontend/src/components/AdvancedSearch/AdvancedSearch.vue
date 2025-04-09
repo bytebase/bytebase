@@ -6,7 +6,6 @@
       :placeholder="placeholder ?? $t('issue.advanced-search.self')"
       style="--n-padding-left: 8px; --n-padding-right: 4px"
       @click="handleInputClick"
-      @blur="hideMenu"
       @keyup="handleKeyUp"
       @keydown="handleKeyDown"
     >
@@ -59,21 +58,21 @@
       >
         <ScopeMenu
           :show="state.menuView === 'scope'"
-          :params="params"
           :options="visibleScopeOptions"
           :menu-index="menuIndex"
           @select-scope="selectScope"
           @hover-item="menuIndex = $event"
         />
         <ValueMenu
-          v-if="visibleValueOptions.length > 0"
+          v-if="visibleValueOptions.length > 0 || currentScopeOption?.search"
           :show="state.menuView === 'value'"
-          :params="params"
           :scope-option="currentScopeOption"
           :value-options="visibleValueOptions"
           :menu-index="menuIndex"
+          :fetch-state="currentFetchState"
           @select-value="selectValue"
           @hover-item="menuIndex = $event"
+          @fetch-next-page="() => handleSearch(currentValueForScope)"
         />
       </div>
     </Transition>
@@ -81,6 +80,7 @@
 </template>
 
 <script lang="ts" setup>
+import { useDebounceFn, onClickOutside } from "@vueuse/core";
 import { useElementSize } from "@vueuse/core";
 import { cloneDeep, last } from "lodash-es";
 import { FilterIcon } from "lucide-vue-next";
@@ -128,6 +128,14 @@ interface LocalState {
   searchText: string;
   currentScope?: SearchScopeId;
   menuView?: "value" | "scope";
+  scopeOptions: ScopeOption[];
+  fetchDataStateMap: Map<
+    SearchScopeId,
+    {
+      loading: boolean;
+      nextPageToken?: string;
+    }
+  >;
 }
 
 const route = useRoute();
@@ -156,7 +164,18 @@ const buildSearchTextByParams = (params: SearchParams | undefined): string => {
 
 const state = reactive<LocalState>({
   searchText: buildSearchTextByParams(props.params),
+  scopeOptions: [],
+  fetchDataStateMap: new Map(),
 });
+
+watch(
+  () => props.scopeOptions,
+  () => {
+    state.scopeOptions = cloneDeep(props.scopeOptions);
+  },
+  { deep: true, immediate: true }
+);
+
 const containerRef = ref<HTMLElement>();
 const tagsContainerRef = ref<HTMLElement>();
 const inputText = ref(props.params.query);
@@ -178,17 +197,78 @@ watch(
 
 const valueOptions = computed(() => {
   if (state.menuView === "value" && currentScopeOption.value) {
-    return currentScopeOption.value.options;
+    return currentScopeOption.value.options ?? [];
   }
   return [];
 });
 
 const currentScopeOption = computed(() => {
   if (state.currentScope) {
-    return props.scopeOptions.find((opt) => opt.id === state.currentScope);
+    return state.scopeOptions.find((opt) => opt.id === state.currentScope);
   }
   return undefined;
 });
+
+const currentValueForScope = computed(() => {
+  if (!state.currentScope) return "";
+  const scopePrefix = `${state.currentScope}:`;
+  return inputText.value.trim().toLowerCase().substring(scopePrefix.length);
+});
+
+const currentFetchState = computed(() => {
+  return state.currentScope
+    ? (state.fetchDataStateMap.get(state.currentScope) ?? {
+        loading: false,
+      })
+    : { loading: false };
+});
+
+const handleSearch = useDebounceFn(async (search: string) => {
+  if (!currentScopeOption.value?.search) {
+    return;
+  }
+
+  const fetchState = { ...currentFetchState.value };
+  if (fetchState.loading) {
+    return;
+  }
+  fetchState.loading = true;
+
+  try {
+    const { options, nextPageToken } = await currentScopeOption.value.search({
+      keyword: search,
+      nextPageToken: fetchState.nextPageToken,
+    });
+    if (!currentScopeOption.value.options) {
+      currentScopeOption.value.options = [];
+    }
+    if (!fetchState.nextPageToken) {
+      currentScopeOption.value.options = [...options];
+    } else {
+      currentScopeOption.value.options.push(...options);
+    }
+    fetchState.nextPageToken = nextPageToken;
+  } finally {
+    fetchState.loading = false;
+    state.fetchDataStateMap.set(currentScopeOption.value.id, fetchState);
+  }
+});
+
+watch(
+  [() => currentScopeOption.value, () => currentValueForScope.value],
+  async ([scopeOption, valueForScope]) => {
+    if (!scopeOption || !scopeOption.search) {
+      return;
+    }
+
+    state.fetchDataStateMap.set(scopeOption.id, {
+      loading: false,
+      nextPageToken: "",
+    });
+    await handleSearch(valueForScope);
+  },
+  { immediate: true }
+);
 
 // availableScopeOptions will hide chosen search scope.
 // For example, if uses already select the instance, we should NOT show the instance scope in the dropdown.
@@ -197,7 +277,7 @@ const availableScopeOptions = computed((): ScopeOption[] => {
     props.params.scopes.map((scope) => scope.id)
   );
 
-  return props.scopeOptions.filter((scope) => {
+  return state.scopeOptions.filter((scope) => {
     if (existedScopes.has(scope.id) && !scope.allowMultiple) {
       return false;
     }
@@ -222,13 +302,11 @@ const visibleScopeOptions = computed(() => {
 
 const visibleValueOptions = computed(() => {
   if (!state.currentScope) return [];
-  const scopePrefix = `${state.currentScope}:`;
-  const keyword = inputText.value
-    .trim()
-    .toLowerCase()
-    .substring(scopePrefix.length);
 
-  if (!keyword) return valueOptions.value;
+  const keyword = currentValueForScope.value;
+  if (!keyword || currentScopeOption.value?.search) {
+    return valueOptions.value;
+  }
 
   // Apply multiple segments of keyword splitted by whitespace
   const terms = keyword.split(/\s+/g);
@@ -278,10 +356,11 @@ const clearable = computed(() => {
 const hideMenu = () => {
   nextTick(() => {
     state.menuView = undefined;
-    state.currentScope = undefined;
     focusedTagId.value = undefined;
   });
 };
+
+onClickOutside(containerRef, hideMenu);
 
 const moveMenuIndex = (delta: -1 | 1) => {
   const options = visibleOptions.value;
@@ -301,6 +380,7 @@ const removeScope = (id: SearchScopeId) => {
   });
   emit("update:params", updated);
 };
+
 const selectScope = (
   id: SearchScopeId | undefined,
   value: string | undefined = undefined
@@ -353,8 +433,9 @@ const selectValue = (value: string) => {
   scrollScopeTagIntoViewIfNeeded(id);
   hideMenu();
 };
+
 const selectScopeFromTag = (id: SearchScopeId) => {
-  if (props.scopeOptions.find((opt) => opt.id === id)) {
+  if (state.scopeOptions.find((opt) => opt.id === id)) {
     // For AdvancedSearch supported scopes
     selectScope(id);
     return;
@@ -384,6 +465,7 @@ const maybeSelectMatchedScope = () => {
   }
   return false;
 };
+
 const maybeDeselectMismatchedScope = () => {
   if (state.menuView === "value" && state.currentScope) {
     if (!inputText.value.startsWith(`${state.currentScope}:`)) {
@@ -397,9 +479,11 @@ const maybeDeselectMismatchedScope = () => {
 };
 
 const maybeEmitIncompleteValue = () => {
-  const updated = cloneDeep(props.params);
-  updated.query = inputText.value;
-  emit("update:params", updated);
+  if (inputText.value !== `${state.currentScope}:`) {
+    const updated = cloneDeep(props.params);
+    updated.query = inputText.value;
+    emit("update:params", updated);
+  }
 };
 
 const handleInputClick = () => {
@@ -548,6 +632,7 @@ watch(
     }
   }
 );
+
 watch(visibleScopeOptions, (newOptions, oldOptions) => {
   if (state.menuView !== "scope") return;
   const highlightedScope = oldOptions[menuIndex.value]?.id;
@@ -560,6 +645,7 @@ watch(visibleScopeOptions, (newOptions, oldOptions) => {
   }
   menuIndex.value = minmax(menuIndex.value, 0, newOptions.length - 1);
 });
+
 watch(visibleValueOptions, (newOptions, oldOptions) => {
   if (state.menuView !== "value") return;
   const highlightedValue = oldOptions[menuIndex.value]?.value;
@@ -572,10 +658,11 @@ watch(visibleValueOptions, (newOptions, oldOptions) => {
   }
   menuIndex.value = minmax(menuIndex.value, 0, newOptions.length - 1);
 });
+
 watch(
   () => props.params,
   (params) => {
-    inputText.value = params.query;
+    inputText.value = params.query || inputText.value;
     router.replace({
       query: {
         ...route.query,

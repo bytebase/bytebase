@@ -777,6 +777,7 @@
     "advanced-search": {
       "self": "高级搜索",
       "filter": "过滤",
+      "search": "输入名称或 ID 来搜索",
       "scope": {
         "project": {
           "title": "项目",
@@ -824,7 +825,7 @@
         },
         "database-label": {
           "title": "标签",
-          "description": "输入\"key\":\"value\"后按下回车"
+          "description": "输入 \"key:value\" 后按下回车"
         },
         "engine": {
           "title": "引擎",
