@@ -231,6 +231,7 @@
     "go-back-home": "Go back home"
   },
   "task": {
+    "current-task": "Current task",
     "checking": "Checking...",
     "check-result": {
       "title-general": "Check result"

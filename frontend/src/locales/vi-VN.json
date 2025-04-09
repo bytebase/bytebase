@@ -231,6 +231,7 @@
     "go-back-home": "Về trang chủ"
   },
   "task": {
+    "current-task": "Nhiệm vụ hiện tại",
     "checking": "Đang kiểm tra...",
     "check-result": {
       "title-general": "Kết quả kiểm tra"

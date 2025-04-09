@@ -1,7 +1,7 @@
 <template>
   <div class="w-full flex flex-row gap-4">
     <div class="flex items-center justify-between">
-      <h3>
+      <h3 class="textlabel">
         {{ $t("common.tasks") }}
         <span>({{ taskList.length }})</span>
       </h3>
@@ -10,7 +10,7 @@
       <div
         class="bg-gray-50 pl-2 p-1 flex flex-row items-center rounded-full gap-1"
       >
-        <span class="text-xs mr-1 text-gray-600">{{
+        <span class="text-sm mr-1 text-gray-600">{{
           $t("issue.sql-check.sql-checks")
         }}</span>
         <template v-for="status in ADVICE_STATUS_FILTERS" :key="status">
@@ -42,7 +42,7 @@
         v-if="!isCreating"
         class="bg-gray-50 pl-2 p-1 flex flex-row items-center rounded-full gap-1"
       >
-        <span class="text-xs mr-1 text-gray-600">{{
+        <span class="text-sm mr-1 text-gray-600">{{
           $t("common.status")
         }}</span>
         <template v-for="status in TASK_STATUS_FILTERS" :key="status">
