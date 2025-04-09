@@ -195,6 +195,29 @@ func (s *Server) getInitSetting(ctx context.Context) error {
 		return err
 	}
 
+	// Init workspace environment setting
+	environmentSettingValue, err := protojson.Marshal(&storepb.EnvironmentSetting{
+		Environments: []*storepb.EnvironmentSetting_Environment{
+			{
+				Title: "Test",
+				Id:    "test",
+			},
+			{
+				Title: "Prod",
+				Id:    "prod",
+			},
+		},
+	})
+	if err != nil {
+		return errors.Wrapf(err, "failed to marshal initial environment setting")
+	}
+	if _, _, err := s.store.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
+		Name:  api.SettingEnvironment,
+		Value: string(environmentSettingValue),
+	}); err != nil {
+		return err
+	}
+
 	return nil
 }
 

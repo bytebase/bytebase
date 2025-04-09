@@ -41,4 +41,6 @@ const (
 	SettingSCIM SettingName = "bb.workspace.scim"
 	// SettingPasswordRestriction is the setting name for password.
 	SettingPasswordRestriction SettingName = "bb.workspace.password-restriction"
+	// SettingEnvironment is the setting name for environments.
+	SettingEnvironment SettingName = "bb.workspace.environment"
 )
