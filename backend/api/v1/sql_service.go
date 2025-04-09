@@ -225,7 +225,21 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 	if request.Schema != nil {
 		queryContext.Schema = *request.Schema
 	}
-	results, spans, duration, queryErr := queryRetry(ctx, s.store, user, instance, database, driver, conn, statement, queryContext, false, s.licenseService, s.accessCheck, s.schemaSyncer, storepb.MaskingExceptionPolicy_MaskingException_QUERY)
+	results, spans, duration, queryErr := queryRetry(
+		ctx,
+		s.store,
+		user,
+		instance,
+		database,
+		driver,
+		conn,
+		statement,
+		queryContext,
+		s.licenseService,
+		s.accessCheck,
+		s.schemaSyncer,
+		storepb.MaskingExceptionPolicy_MaskingException_QUERY,
+	)
 
 	// Update activity.
 	if err = s.createQueryHistory(ctx, database, store.QueryHistoryTypeQuery, statement, user.ID, duration, queryErr); err != nil {
@@ -259,13 +273,14 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 		return nil, status.Error(code, queryErr.Error())
 	}
 
-	// AllowExport is a validate only check.
-	checkErr := s.accessCheck(ctx, instance, database, user, spans, queryContext.Limit, request.Explain, true /* isExport */)
-	allowExport := (checkErr == nil)
+	for _, result := range results {
+		// AllowExport is a validate only check.
+		checkErr := s.accessCheck(ctx, instance, database, user, spans, int(result.RowsCount), request.Explain, true /* isExport */)
+		result.AllowExport = checkErr == nil
+	}
 
 	response := &v1pb.QueryResponse{
-		Results:     results,
-		AllowExport: allowExport,
+		Results: results,
 	}
 
 	return response, nil
@@ -402,7 +417,6 @@ func queryRetry(
 	conn *sql.Conn,
 	statement string,
 	queryContext db.QueryContext,
-	isExport bool,
 	licenseService enterprise.LicenseService,
 	optionalAccessCheck accessCheckFunc,
 	schemaSyncer *schemasync.Syncer,
@@ -435,7 +449,8 @@ func queryRetry(
 			slog.Debug("failed to replace backup table with source", log.BBError(err))
 		}
 		if optionalAccessCheck != nil {
-			if err := optionalAccessCheck(ctx, instance, database, user, spans, queryContext.Limit, queryContext.Explain, isExport); err != nil {
+			// Check query access
+			if err := optionalAccessCheck(ctx, instance, database, user, spans, queryContext.Limit, queryContext.Explain, false); err != nil {
 				return nil, nil, time.Duration(0), err
 			}
 		}
@@ -455,6 +470,7 @@ func queryRetry(
 	if queryContext.Explain {
 		return results, nil, duration, nil
 	}
+
 	syncDatabaseMap := make(map[string]bool)
 	for i, r := range results {
 		if r.Error != "" {
@@ -844,7 +860,21 @@ func DoExport(
 		OperatorEmail:        user.Email,
 		MaximumSQLResultSize: maximumSQLResultSize,
 	}
-	results, spans, duration, queryErr := queryRetry(ctx, stores, user, instance, database, driver, conn, request.Statement, queryContext, true, licenseService, optionalAccessCheck, schemaSyncer, storepb.MaskingExceptionPolicy_MaskingException_EXPORT)
+	results, spans, duration, queryErr := queryRetry(
+		ctx,
+		stores,
+		user,
+		instance,
+		database,
+		driver,
+		conn,
+		request.Statement,
+		queryContext,
+		licenseService,
+		optionalAccessCheck,
+		schemaSyncer,
+		storepb.MaskingExceptionPolicy_MaskingException_EXPORT,
+	)
 	if queryErr != nil {
 		return nil, duration, err
 	}
@@ -852,6 +882,12 @@ func DoExport(
 	if len(results) > 1 {
 		results = results[len(results)-1:]
 	}
+	if len(results) == 1 {
+		if err := optionalAccessCheck(ctx, instance, database, user, spans, int(results[0].RowsCount), queryContext.Explain, true); err != nil {
+			return nil, duration, err
+		}
+	}
+
 	if results[0].GetError() != "" {
 		return nil, duration, errors.New(results[0].GetError())
 	}
