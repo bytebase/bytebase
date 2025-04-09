@@ -6,6 +6,7 @@ import { useIssueContext } from "../../logic";
 
 export type SQLCheckContext = {
   enabled: ComputedRef<boolean>;
+  // Key is the database name.
   resultMap: Ref<Record<string, CheckReleaseResponse_CheckResult>>;
 
   upsertResult: (key: string, result: CheckReleaseResponse_CheckResult) => void;

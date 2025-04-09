@@ -1,30 +1,44 @@
 <template>
   <div class="relative">
     <div
-      ref="taskBar"
-      class="task-list gap-2 px-4 py-2 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 3xl:grid-cols-5 4xl:grid-cols-6 overflow-y-auto"
-      :class="{
-        'more-bottom': taskBarScrollState.bottom,
-        'more-top': taskBarScrollState.top,
-      }"
-      :style="{
-        'max-height': `${MAX_LIST_HEIGHT}px`,
-      }"
+      v-if="shouldShowTaskFilter"
+      class="w-full sticky top-0 z-10 bg-white px-4 pt-2 pb-1"
     >
-      <TaskCard
-        v-for="(task, i) in taskList.slice(0, state.index)"
-        :key="i"
-        :task="task"
+      <TaskFilter
+        v-model:task-status-list="state.taskStatusFilters"
+        v-model:advice-status-list="state.adviceStatusFilters"
       />
-      <div v-if="taskList.length > state.index" class="col-span-full">
-        <NButton
-          size="small"
-          quaternary
-          :loading="state.loading"
-          @click="() => loadMore()"
+    </div>
+    <div class="relative w-full">
+      <div
+        ref="taskBar"
+        class="task-list gap-2 px-4 py-2 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 3xl:grid-cols-5 4xl:grid-cols-6 overflow-y-auto"
+        :class="{
+          'more-bottom': taskBarScrollState.bottom,
+          'more-top': taskBarScrollState.top,
+        }"
+        :style="{
+          'max-height': `${MAX_LIST_HEIGHT}px`,
+        }"
+      >
+        <TaskCard
+          v-for="(task, i) in filteredTaskList.slice(0, state.index)"
+          :key="i"
+          :task="task"
+        />
+        <div
+          v-if="filteredTaskList.length > state.index"
+          class="col-span-full flex flex-row items-center justify-end"
         >
-          {{ $t("common.load-more") }}
-        </NButton>
+          <NButton
+            size="small"
+            quaternary
+            :loading="isRequesting"
+            @click="state.index += TASK_PER_PAGE"
+          >
+            {{ $t("common.load-more") }}
+          </NButton>
+        </div>
       </div>
     </div>
   </div>
@@ -36,62 +50,124 @@ import { NButton } from "naive-ui";
 import { computed, ref, reactive, watch } from "vue";
 import { useVerticalScrollState } from "@/composables/useScrollState";
 import { batchGetOrFetchDatabases } from "@/store";
+import type { Task_Status } from "@/types/proto/v1/rollout_service";
+import type { Advice_Status } from "@/types/proto/v1/sql_service";
+import { isDev } from "@/utils";
 import { useIssueContext, databaseForTask } from "../../logic";
+import { useIssueSQLCheckContext } from "../SQLCheckSection/context";
 import TaskCard from "./TaskCard.vue";
+import TaskFilter from "./TaskFilter.vue";
+import { filterTask } from "./filter";
 
-// 3 * lines of cards + 2 * top and bottom padding + 2 * horizontal gaps + jitter
-const MAX_LIST_HEIGHT = 207;
+interface LocalState {
+  // index is the number of tasks to show.
+  // It is initialized to TASK_PER_PAGE.
+  index: number;
+  taskStatusFilters: Task_Status[];
+  adviceStatusFilters: Advice_Status[];
+}
 
-const state = reactive<{ loading: boolean; index: number }>({
-  loading: false,
-  index: 0,
+const MAX_LIST_HEIGHT = 256;
+
+// The default number of tasks to show per page.
+// This is set to 4 in development mode for easier testing.
+const TASK_PER_PAGE = isDev() ? 20 : 20;
+
+const state = reactive<LocalState>({
+  index: TASK_PER_PAGE,
+  taskStatusFilters: [],
+  adviceStatusFilters: [],
 });
+const isRequesting = ref(false);
 
-const { selectedStage, issue } = useIssueContext();
+const issueContext = useIssueContext();
+const { selectedStage, issue, selectedTask, events } = issueContext;
+const sqlCheckContext = useIssueSQLCheckContext();
 const taskBar = ref<HTMLDivElement>();
 const taskBarScrollState = useVerticalScrollState(taskBar, MAX_LIST_HEIGHT);
 
-const taskList = computed(() => selectedStage.value.tasks);
+const taskList = computed(() => {
+  return selectedStage.value.tasks;
+});
+
+const filteredTaskList = computed(() => {
+  return taskList.value.filter((task) => {
+    if (state.taskStatusFilters.length > 0) {
+      if (!state.taskStatusFilters.includes(task.status)) {
+        return false;
+      }
+    }
+    if (state.adviceStatusFilters.length > 0) {
+      if (
+        !state.adviceStatusFilters.some((status) =>
+          filterTask(issueContext, sqlCheckContext, task, {
+            adviceStatus: status,
+          })
+        )
+      ) {
+        return false;
+      }
+    }
+    return true;
+  });
+});
+
+const shouldShowTaskFilter = computed(() => {
+  return taskList.value.length > 10;
+});
 
 const loadMore = useDebounceFn(async () => {
-  if (state.index >= taskList.value.length) {
+  if (state.index >= filteredTaskList.value.length) {
     return;
   }
-  state.loading = true;
-  try {
-    const previous = state.index;
-    const next = previous + 20;
-
-    const databaseNames = taskList.value
-      .slice(previous, next)
-      .map((task) => databaseForTask(issue.value, task).name);
-    await batchGetOrFetchDatabases(databaseNames);
-
-    state.index = next;
-  } finally {
-    state.loading = false;
-  }
+  const databaseNames = filteredTaskList.value
+    .slice(0, state.index)
+    .map((task) => databaseForTask(issue.value, task).name);
+  await batchGetOrFetchDatabases(databaseNames);
 }, 500);
 
 watch(
-  () => taskList.value.length,
-  (length) => {
-    if (length > 0) {
-      loadMore();
+  [() => filteredTaskList.value, () => state.index],
+  async () => {
+    // If the selected task is not in the filtered task list, select the first task.
+    // This is to ensure that the selected task is always in the filtered task list.
+    if (
+      !filteredTaskList.value
+        .map((task) => task.name)
+        .includes(selectedTask.value.name)
+    ) {
+      events.emit("select-task", { task: filteredTaskList.value[0] });
     }
+    isRequesting.value = true;
+    try {
+      await loadMore();
+    } catch {
+      // Ignore errors
+    }
+    isRequesting.value = false;
   },
   { immediate: true }
+);
+
+watch(
+  () => selectedStage.value.name,
+  () => {
+    // Clear the index when the stage changes.
+    state.index = TASK_PER_PAGE;
+    state.taskStatusFilters = [];
+    state.adviceStatusFilters = [];
+  }
 );
 </script>
 
 <style scoped lang="postcss">
 .task-list::before {
-  @apply absolute top-0 h-4 w-full -ml-2 z-10 pointer-events-none transition-shadow;
+  @apply absolute top-0 h-4 w-full -ml-4 z-10 pointer-events-none transition-shadow;
   content: "";
   box-shadow: none;
 }
 .task-list::after {
-  @apply absolute bottom-0 h-4 w-full -ml-2 z-10 pointer-events-none transition-shadow;
+  @apply absolute bottom-0 h-4 w-full -ml-4 z-10 pointer-events-none transition-shadow;
   content: "";
   box-shadow: none;
 }
