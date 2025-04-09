@@ -27,11 +27,14 @@ import {
 } from "lucide-vue-next";
 import { NTooltip } from "naive-ui";
 import { computed } from "vue";
+import { useI18n } from "vue-i18n";
 import { Advice_Status } from "@/types/proto/v1/sql_service";
 
 const props = defineProps<{
   status: Advice_Status;
 }>();
+
+const { t } = useI18n();
 
 const statusMessage = computed(() => {
   switch (props.status) {
@@ -42,7 +45,7 @@ const statusMessage = computed(() => {
     case Advice_Status.ERROR:
       return "Error";
     default:
-      return "Not Started";
+      return t("issue.sql-check.not-executed-yet");
   }
 });
 </script>
