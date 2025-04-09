@@ -3,7 +3,7 @@
     :class="
       twMerge(
         'task',
-        'group px-2 py-1 pt-2 pr-1 cursor-pointer border rounded lg:flex-1 flex justify-between items-stretch overflow-hidden gap-x-1',
+        'group px-1.5 py-1 cursor-pointer border rounded lg:flex-1 flex justify-between items-stretch overflow-hidden gap-x-1',
         taskClass
       )
     "

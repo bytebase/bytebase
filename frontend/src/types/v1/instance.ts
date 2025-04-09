@@ -68,6 +68,7 @@ export const unknownInstanceResource = (): InstanceResource => {
     ...instance,
     name: UNKNOWN_INSTANCE_NAME,
     environment: UNKNOWN_ENVIRONMENT_NAME,
+    activation: true,
   };
 };
 

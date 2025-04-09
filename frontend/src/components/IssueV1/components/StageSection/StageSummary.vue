@@ -1,8 +1,10 @@
 <template>
-  <div class="!no-underline">
+  <div class="text-gray-500">
     <span>(</span>
-    <span>{{ summary.done + summary.canceled }}</span>
-    <span>/</span>
+    <template v-if="!isCreating">
+      <span>{{ summary.done + summary.canceled }}</span>
+      <span>/</span>
+    </template>
     <span>{{ summary.total }}</span>
     <span>)</span>
   </div>
@@ -12,10 +14,13 @@
 import { computed } from "vue";
 import type { Stage } from "@/types/proto/v1/rollout_service";
 import { Task_Status } from "@/types/proto/v1/rollout_service";
+import { useIssueContext } from "../../logic";
 
 const props = defineProps<{
   stage: Stage;
 }>();
+
+const { isCreating } = useIssueContext();
 
 const summary = computed(() => {
   const tasks = props.stage.tasks;
