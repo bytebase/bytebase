@@ -9,7 +9,7 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
 
-	api "github.com/bytebase/bytebase/backend/base"
+	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -132,9 +132,9 @@ func (s *Store) CreateEnvironmentV2(ctx context.Context, create *EnvironmentMess
 		return nil, err
 	}
 	if _, err := upsertPolicyV2Impl(ctx, tx, &PolicyMessage{
-		ResourceType:      api.PolicyResourceTypeEnvironment,
+		ResourceType:      base.PolicyResourceTypeEnvironment,
 		Resource:          common.FormatEnvironment(create.ResourceID),
-		Type:              api.PolicyTypeEnvironmentTier,
+		Type:              base.PolicyTypeEnvironmentTier,
 		InheritFromParent: true,
 		Payload:           string(payload),
 		Enforce:           true,
@@ -195,9 +195,9 @@ func (s *Store) UpdateEnvironmentV2(ctx context.Context, patch *UpdateEnvironmen
 
 	// TODO(d): consider moving tier to environment table to simplify things.
 	if patch.Protected != nil || patch.Color != nil {
-		resourceType := api.PolicyResourceTypeEnvironment
+		resourceType := base.PolicyResourceTypeEnvironment
 		resource := common.FormatEnvironment(patch.ResourceID)
-		policyType := api.PolicyTypeEnvironmentTier
+		policyType := base.PolicyTypeEnvironmentTier
 		policy, err := s.GetPolicyV2(ctx, &FindPolicyMessage{
 			ResourceType: &resourceType,
 			Type:         &policyType,
