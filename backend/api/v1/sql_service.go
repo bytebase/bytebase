@@ -50,19 +50,6 @@ const (
 	oracleBackupDatabaseName = "BBDATAARCHIVE"
 )
 
-var (
-	queryNewACLSupportEngines = map[storepb.Engine]bool{
-		storepb.Engine_MYSQL:     true,
-		storepb.Engine_POSTGRES:  true,
-		storepb.Engine_ORACLE:    true,
-		storepb.Engine_MSSQL:     true,
-		storepb.Engine_TIDB:      true,
-		storepb.Engine_SNOWFLAKE: true,
-		storepb.Engine_SPANNER:   true,
-		storepb.Engine_BIGQUERY:  true,
-	}
-)
-
 // SQLService is the service for SQL.
 type SQLService struct {
 	v1pb.UnimplementedSQLServiceServer
@@ -183,7 +170,7 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 
 	// Validate the request.
 	// New query ACL experience.
-	if !request.Explain && !queryNewACLSupportEngines[instance.Metadata.GetEngine()] {
+	if !request.Explain && !base.EngineSupportQueryNewACL(instance.Metadata.GetEngine()) {
 		if err := validateQueryRequest(instance, statement); err != nil {
 			return nil, err
 		}
@@ -1237,7 +1224,7 @@ func (s *SQLService) accessCheck(
 
 	for _, span := range spans {
 		// New query ACL experience.
-		if queryNewACLSupportEngines[instance.Metadata.GetEngine()] {
+		if base.EngineSupportQueryNewACL(instance.Metadata.GetEngine()) {
 			var permission iam.Permission
 			switch span.Type {
 			case parserbase.QueryTypeUnknown:
@@ -1538,7 +1525,7 @@ func (s *SQLService) SQLReviewCheck(
 	instance *store.InstanceMessage,
 	database *store.DatabaseMessage,
 ) (storepb.Advice_Status, []*v1pb.Advice, error) {
-	if !isSQLReviewSupported(instance.Metadata.GetEngine()) || database == nil {
+	if !base.EngineSupportSQLReview(instance.Metadata.GetEngine()) || database == nil {
 		return storepb.Advice_SUCCESS, nil, nil
 	}
 

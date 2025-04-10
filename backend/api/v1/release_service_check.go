@@ -13,6 +13,7 @@ import (
 
 	celtypes "github.com/google/cel-go/common/types"
 
+	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
@@ -119,7 +120,7 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, request *v1pb.CheckRe
 			return nil, status.Errorf(codes.NotFound, "instance %q not found", database.InstanceID)
 		}
 		// Continue if the instance is not supported by SQL review.
-		if !isSQLReviewSupported(instance.Metadata.GetEngine()) {
+		if !base.EngineSupportSQLReview(instance.Metadata.GetEngine()) {
 			continue
 		}
 
