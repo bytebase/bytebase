@@ -116,3 +116,17 @@ func EngineSupportStatementReport(e storepb.Engine) bool {
 		return false
 	}
 }
+
+func EngineSupportPriorBackup(e storepb.Engine) bool {
+	switch e {
+	case
+		storepb.Engine_MYSQL,
+		storepb.Engine_TIDB,
+		storepb.Engine_MSSQL,
+		storepb.Engine_ORACLE,
+		storepb.Engine_POSTGRES:
+		return true
+	default:
+		return false
+	}
+}
