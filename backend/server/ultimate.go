@@ -26,6 +26,7 @@ import (
 	_ "github.com/bytebase/bytebase/backend/plugin/db/sqlite"
 	_ "github.com/bytebase/bytebase/backend/plugin/db/starrocks"
 	_ "github.com/bytebase/bytebase/backend/plugin/db/tidb"
+	_ "github.com/bytebase/bytebase/backend/plugin/db/trino"
 
 	// Parsers.
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/bigquery"

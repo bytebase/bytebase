@@ -59,7 +59,7 @@ export const defaultPortForEngine = (engine: Engine) => {
     case Engine.CASSANDRA:
       return "9042";
     case Engine.TRINO:
-      return "8081";  // Default port is 8080, but Bytebase uses 8080
+      return "8080";
   }
     throw new Error("engine port unknown");
 };

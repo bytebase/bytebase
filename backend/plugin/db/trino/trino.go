@@ -3,8 +3,11 @@ package trino
 import (
 	"context"
 	"database/sql"
+	"fmt"
+	"net/url"
 
 	"github.com/pkg/errors"
+	_ "github.com/trinodb/trino-go-client/trino"
 
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -12,7 +15,7 @@ import (
 )
 
 func init() {
-	db.Register(storepb.Engine_CASSANDRA, newDriver)
+	db.Register(storepb.Engine_TRINO, newDriver)
 }
 
 type Driver struct {
@@ -25,24 +28,73 @@ func newDriver(db.DriverConfig) db.Driver {
 }
 
 func (d *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
-	addrs := []string{
-		config.DataSource.Host + ":" + config.DataSource.Port,
+	// Construct Trino DSN
+	var scheme string
+	if config.DataSource.UseSsl {
+		scheme = "https"
+	} else {
+		scheme = "http"
 	}
-	for _, addr := range config.DataSource.AdditionalAddresses {
-		addrs = append(addrs, addr.Host+":"+addr.Port)
+
+	// Build query parameters
+	queryParams := url.Values{}
+	// Add catalog if specified in config
+	if config.DataSource.Database != "" {
+		queryParams.Add("catalog", config.DataSource.Database)
+	}
+
+	// Add user and password
+	user := config.DataSource.Username
+	if user == "" {
+		user = "trino" // default user if not specified
+	}
+
+	password := config.Password
+	if password == "" {
+		password = config.DataSource.Password // try to get from DataSource if not provided directly
+	}
+
+	host := config.DataSource.Host
+	port := config.DataSource.Port
+	if port == "" {
+		port = "8080" // default Trino port
+	}
+
+	// Construct DSN string with user and password if provided
+	var dsn string
+	if password != "" {
+		dsn = fmt.Sprintf("%s://%s:%s@%s:%s", scheme, user, url.QueryEscape(password), host, port)
+	} else {
+		dsn = fmt.Sprintf("%s://%s@%s:%s", scheme, user, host, port)
+	}
+	if len(queryParams) > 0 {
+		dsn = dsn + "?" + queryParams.Encode()
+	}
+
+	// Open connection
+	db, err := sql.Open("trino", dsn)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to connect to Trino")
 	}
 
 	return &Driver{
 		config: config,
+		db:     db,
 	}, nil
 }
 
 func (d *Driver) Close(context.Context) error {
+	if d.db != nil {
+		return d.db.Close()
+	}
 	return nil
 }
 
 func (d *Driver) Ping(ctx context.Context) error {
-	return nil
+	if d.db != nil {
+		return d.db.PingContext(ctx)
+	}
+	return errors.New("database connection not established")
 }
 
 func (d *Driver) GetDB() *sql.DB {
