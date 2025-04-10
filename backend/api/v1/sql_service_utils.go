@@ -5,16 +5,6 @@ import (
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
-// isSQLReviewSupported checks the engine type if SQL review supports it.
-func isSQLReviewSupported(dbType storepb.Engine) bool {
-	switch dbType {
-	case storepb.Engine_POSTGRES, storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_ORACLE, storepb.Engine_OCEANBASE_ORACLE, storepb.Engine_OCEANBASE, storepb.Engine_SNOWFLAKE, storepb.Engine_DM, storepb.Engine_MSSQL:
-		return true
-	default:
-		return false
-	}
-}
-
 func convertChangeType(t v1pb.CheckRequest_ChangeType) storepb.PlanCheckRunConfig_ChangeDatabaseType {
 	switch t {
 	case v1pb.CheckRequest_DDL:

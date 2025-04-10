@@ -1538,7 +1538,7 @@ func (s *SQLService) SQLReviewCheck(
 	instance *store.InstanceMessage,
 	database *store.DatabaseMessage,
 ) (storepb.Advice_Status, []*v1pb.Advice, error) {
-	if !isSQLReviewSupported(instance.Metadata.GetEngine()) || database == nil {
+	if !base.EngineSupportSQLReview(instance.Metadata.GetEngine()) || database == nil {
 		return storepb.Advice_SUCCESS, nil, nil
 	}
 
