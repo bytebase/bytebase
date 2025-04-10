@@ -54,3 +54,29 @@ func EngineSupportMasking(e storepb.Engine) bool {
 		return false
 	}
 }
+
+func EngineSupportAutoComplete(e storepb.Engine) bool {
+	switch e {
+	case
+		storepb.Engine_MYSQL,
+		storepb.Engine_TIDB,
+		storepb.Engine_MARIADB,
+		storepb.Engine_OCEANBASE,
+		storepb.Engine_CLICKHOUSE,
+		storepb.Engine_STARROCKS,
+		storepb.Engine_DORIS,
+		storepb.Engine_POSTGRES,
+		storepb.Engine_REDSHIFT,
+		storepb.Engine_RISINGWAVE,
+		storepb.Engine_COCKROACHDB,
+		storepb.Engine_MSSQL,
+		storepb.Engine_ORACLE,
+		storepb.Engine_DM,
+		storepb.Engine_OCEANBASE_ORACLE,
+		storepb.Engine_SNOWFLAKE,
+		storepb.Engine_DYNAMODB:
+		return true
+	default:
+		return false
+	}
+}
