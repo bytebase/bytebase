@@ -7,8 +7,8 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
 
+	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/common"
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/metric"
 	metriccollector "github.com/bytebase/bytebase/backend/metric/collector"
 	"github.com/bytebase/bytebase/backend/runner/metricreport"
@@ -22,7 +22,7 @@ func (s *Server) getInitSetting(ctx context.Context) error {
 
 	// initial branding
 	if _, _, err := s.store.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
-		Name:  api.SettingBrandingLogo,
+		Name:  base.SettingBrandingLogo,
 		Value: "",
 	}); err != nil {
 		return err
@@ -34,7 +34,7 @@ func (s *Server) getInitSetting(ctx context.Context) error {
 		return errors.Wrap(err, "failed to generate random JWT secret")
 	}
 	if _, _, err := s.store.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
-		Name:  api.SettingAuthSecret,
+		Name:  base.SettingAuthSecret,
 		Value: secret,
 	}); err != nil {
 		return err
@@ -42,7 +42,7 @@ func (s *Server) getInitSetting(ctx context.Context) error {
 
 	// initial workspace
 	if _, _, err := s.store.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
-		Name:  api.SettingWorkspaceID,
+		Name:  base.SettingWorkspaceID,
 		Value: uuid.New().String(),
 	}); err != nil {
 		return err
@@ -60,7 +60,7 @@ func (s *Server) getInitSetting(ctx context.Context) error {
 		return errors.Wrap(err, "failed to marshal initial scim setting")
 	}
 	if _, _, err := s.store.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
-		Name:  api.SettingSCIM,
+		Name:  base.SettingSCIM,
 		Value: string(scimSettingValue),
 	}); err != nil {
 		return err
@@ -79,7 +79,7 @@ func (s *Server) getInitSetting(ctx context.Context) error {
 		return errors.Wrap(err, "failed to marshal initial password validation setting")
 	}
 	if _, _, err := s.store.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
-		Name:  api.SettingPasswordRestriction,
+		Name:  base.SettingPasswordRestriction,
 		Value: string(passwordSettingValue),
 	}); err != nil {
 		return err
@@ -87,7 +87,7 @@ func (s *Server) getInitSetting(ctx context.Context) error {
 
 	// initial license
 	if _, _, err = s.store.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
-		Name:  api.SettingEnterpriseLicense,
+		Name:  base.SettingEnterpriseLicense,
 		Value: "",
 	}); err != nil {
 		return err
@@ -95,7 +95,7 @@ func (s *Server) getInitSetting(ctx context.Context) error {
 
 	// initial IM app
 	if _, _, err := s.store.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
-		Name:  api.SettingAppIM,
+		Name:  base.SettingAppIM,
 		Value: "{}",
 	}); err != nil {
 		return err
@@ -103,7 +103,7 @@ func (s *Server) getInitSetting(ctx context.Context) error {
 
 	// initial watermark setting
 	if _, _, err := s.store.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
-		Name:  api.SettingWatermark,
+		Name:  base.SettingWatermark,
 		Value: "0",
 	}); err != nil {
 		return err
@@ -115,7 +115,7 @@ func (s *Server) getInitSetting(ctx context.Context) error {
 		return errors.Wrap(err, "failed to marshal initial schema template setting")
 	}
 	if _, _, err := s.store.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
-		Name:  api.SettingSchemaTemplate,
+		Name:  base.SettingSchemaTemplate,
 		Value: string(schemaTemplateSettingValue),
 	}); err != nil {
 		return err
@@ -127,7 +127,7 @@ func (s *Server) getInitSetting(ctx context.Context) error {
 		return errors.Wrap(err, "failed to marshal initial data classification setting")
 	}
 	if _, _, err := s.store.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
-		Name:  api.SettingDataClassification,
+		Name:  base.SettingDataClassification,
 		Value: string(dataClassificationSettingValue),
 	}); err != nil {
 		return err
@@ -139,7 +139,7 @@ func (s *Server) getInitSetting(ctx context.Context) error {
 		return errors.Wrap(err, "failed to marshal initial workspace approval setting")
 	}
 	if _, _, err := s.store.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
-		Name: api.SettingWorkspaceApproval,
+		Name: base.SettingWorkspaceApproval,
 		// Value is ""
 		Value: string(approvalSettingValue),
 	}); err != nil {
@@ -147,7 +147,7 @@ func (s *Server) getInitSetting(ctx context.Context) error {
 	}
 
 	// initial workspace profile setting
-	workspaceProfileSetting, err := s.store.GetSettingV2(ctx, api.SettingWorkspaceProfile)
+	workspaceProfileSetting, err := s.store.GetSettingV2(ctx, base.SettingWorkspaceProfile)
 	if err != nil {
 		return err
 	}
@@ -171,7 +171,7 @@ func (s *Server) getInitSetting(ctx context.Context) error {
 	}
 
 	if _, err := s.store.UpsertSettingV2(ctx, &store.SetSettingMessage{
-		Name:  api.SettingWorkspaceProfile,
+		Name:  base.SettingWorkspaceProfile,
 		Value: string(bytes),
 	}); err != nil {
 		return err
@@ -179,17 +179,17 @@ func (s *Server) getInitSetting(ctx context.Context) error {
 
 	// Init workspace IAM policy
 	if _, err := s.store.PatchWorkspaceIamPolicy(ctx, &store.PatchIamPolicyMessage{
-		Member: common.FormatUserUID(api.SystemBotID),
+		Member: common.FormatUserUID(base.SystemBotID),
 		Roles: []string{
-			common.FormatRole(api.WorkspaceAdmin.String()),
+			common.FormatRole(base.WorkspaceAdmin.String()),
 		},
 	}); err != nil {
 		return err
 	}
 	if _, err := s.store.PatchWorkspaceIamPolicy(ctx, &store.PatchIamPolicyMessage{
-		Member: api.AllUsers,
+		Member: base.AllUsers,
 		Roles: []string{
-			common.FormatRole(api.WorkspaceMember.String()),
+			common.FormatRole(base.WorkspaceMember.String()),
 		},
 	}); err != nil {
 		return err
@@ -212,7 +212,7 @@ func (s *Server) getInitSetting(ctx context.Context) error {
 		return errors.Wrapf(err, "failed to marshal initial environment setting")
 	}
 	if _, _, err := s.store.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
-		Name:  api.SettingEnvironment,
+		Name:  base.SettingEnvironment,
 		Value: string(environmentSettingValue),
 	}); err != nil {
 		return err

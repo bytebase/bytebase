@@ -13,9 +13,9 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/durationpb"
 
+	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -30,7 +30,7 @@ func generateEtag(t time.Time) string {
 }
 
 func (s *Store) GetWorkspaceIamPolicy(ctx context.Context) (*IamPolicyMessage, error) {
-	resourceType := api.PolicyResourceTypeWorkspace
+	resourceType := base.PolicyResourceTypeWorkspace
 	return s.getIamPolicy(ctx, &FindPolicyMessage{
 		ResourceType: &resourceType,
 	})
@@ -83,9 +83,9 @@ func (s *Store) PatchWorkspaceIamPolicy(ctx context.Context, patch *PatchIamPoli
 	}
 
 	if _, err := s.CreatePolicyV2(ctx, &PolicyMessage{
-		ResourceType:      api.PolicyResourceTypeWorkspace,
+		ResourceType:      base.PolicyResourceTypeWorkspace,
 		Payload:           string(policyPayload),
-		Type:              api.PolicyTypeIAM,
+		Type:              base.PolicyTypeIAM,
 		InheritFromParent: false,
 		// Enforce cannot be false while creating a policy.
 		Enforce: true,
@@ -97,7 +97,7 @@ func (s *Store) PatchWorkspaceIamPolicy(ctx context.Context, patch *PatchIamPoli
 }
 
 func (s *Store) GetProjectIamPolicy(ctx context.Context, projectID string) (*IamPolicyMessage, error) {
-	resourceType := api.PolicyResourceTypeProject
+	resourceType := base.PolicyResourceTypeProject
 	resource := common.FormatProject(projectID)
 	return s.getIamPolicy(ctx, &FindPolicyMessage{
 		ResourceType: &resourceType,
@@ -106,7 +106,7 @@ func (s *Store) GetProjectIamPolicy(ctx context.Context, projectID string) (*Iam
 }
 
 func (s *Store) getIamPolicy(ctx context.Context, find *FindPolicyMessage) (*IamPolicyMessage, error) {
-	pType := api.PolicyTypeIAM
+	pType := base.PolicyTypeIAM
 	find.Type = &pType
 	policy, err := s.GetPolicyV2(ctx, find)
 	if err != nil {
@@ -131,8 +131,8 @@ func (s *Store) getIamPolicy(ctx context.Context, find *FindPolicyMessage) (*Iam
 
 func (s *Store) GetRolloutPolicy(ctx context.Context, environment string) (*storepb.RolloutPolicy, error) {
 	resource := common.FormatEnvironment(environment)
-	resourceType := api.PolicyResourceTypeEnvironment
-	pType := api.PolicyTypeRollout
+	resourceType := base.PolicyResourceTypeEnvironment
+	pType := base.PolicyTypeRollout
 	policy, err := s.GetPolicyV2(ctx, &FindPolicyMessage{
 		ResourceType: &resourceType,
 		Resource:     &resource,
@@ -154,9 +154,9 @@ func (s *Store) GetRolloutPolicy(ctx context.Context, environment string) (*stor
 }
 
 func (s *Store) GetExportDataPolicy(ctx context.Context) (*storepb.ExportDataPolicy, error) {
-	resourceType := api.PolicyResourceTypeWorkspace
+	resourceType := base.PolicyResourceTypeWorkspace
 	resource := ""
-	pType := api.PolicyTypeExportData
+	pType := base.PolicyTypeExportData
 	policy, err := s.GetPolicyV2(ctx, &FindPolicyMessage{
 		ResourceType: &resourceType,
 		Resource:     &resource,
@@ -180,9 +180,9 @@ func (s *Store) GetExportDataPolicy(ctx context.Context) (*storepb.ExportDataPol
 }
 
 func (s *Store) GetQueryDataPolicy(ctx context.Context) (*storepb.QueryDataPolicy, error) {
-	resourceType := api.PolicyResourceTypeWorkspace
+	resourceType := base.PolicyResourceTypeWorkspace
 	resource := ""
-	pType := api.PolicyTypeQueryData
+	pType := base.PolicyTypeQueryData
 	policy, err := s.GetPolicyV2(ctx, &FindPolicyMessage{
 		ResourceType: &resourceType,
 		Resource:     &resource,
@@ -207,15 +207,15 @@ func (s *Store) GetQueryDataPolicy(ctx context.Context) (*storepb.QueryDataPolic
 // GetReviewConfigForDatabase will get the review config for a database.
 func (s *Store) GetReviewConfigForDatabase(ctx context.Context, database *DatabaseMessage) (*storepb.ReviewConfigPayload, error) {
 	for _, v := range []struct {
-		resourceType api.PolicyResourceType
+		resourceType base.PolicyResourceType
 		resource     string
 	}{
 		{
-			resourceType: api.PolicyResourceTypeEnvironment,
+			resourceType: base.PolicyResourceTypeEnvironment,
 			resource:     common.FormatEnvironment(database.EffectiveEnvironmentID),
 		},
 		{
-			resourceType: api.PolicyResourceTypeProject,
+			resourceType: base.PolicyResourceTypeProject,
 			resource:     common.FormatProject(database.ProjectID),
 		},
 	} {
@@ -234,8 +234,8 @@ func (s *Store) GetReviewConfigForDatabase(ctx context.Context, database *Databa
 	return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("SQL review policy for database %s not found", database.DatabaseName)}
 }
 
-func (s *Store) getReviewConfigByResource(ctx context.Context, resourceType api.PolicyResourceType, resource string) (*storepb.ReviewConfigPayload, error) {
-	pType := api.PolicyTypeTag
+func (s *Store) getReviewConfigByResource(ctx context.Context, resourceType base.PolicyResourceType, resource string) (*storepb.ReviewConfigPayload, error) {
+	pType := base.PolicyTypeTag
 
 	policy, err := s.GetPolicyV2(ctx, &FindPolicyMessage{
 		ResourceType: &resourceType,
@@ -257,7 +257,7 @@ func (s *Store) getReviewConfigByResource(ctx context.Context, resourceType api.
 		return nil, errors.Wrapf(err, "failed to unmarshal tag policy payload")
 	}
 
-	reviewConfigName, ok := payload.Tags[string(api.ReservedTagReviewConfig)]
+	reviewConfigName, ok := payload.Tags[string(base.ReservedTagReviewConfig)]
 	if !ok {
 		return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("review config tag for resource %v/%s not found", resourceType, resource)}
 	}
@@ -282,7 +282,7 @@ func (s *Store) getReviewConfigByResource(ctx context.Context, resourceType api.
 
 // GetMaskingRulePolicy will get the masking rule policy.
 func (s *Store) GetMaskingRulePolicy(ctx context.Context) (*storepb.MaskingRulePolicy, error) {
-	pType := api.PolicyTypeMaskingRule
+	pType := base.PolicyTypeMaskingRule
 	policy, err := s.GetPolicyV2(ctx, &FindPolicyMessage{
 		Type: &pType,
 	})
@@ -304,9 +304,9 @@ func (s *Store) GetMaskingRulePolicy(ctx context.Context) (*storepb.MaskingRuleP
 
 // GetMaskingExceptionPolicyByProject gets the masking exception policy for a project.
 func (s *Store) GetMaskingExceptionPolicyByProject(ctx context.Context, projectID string) (*storepb.MaskingExceptionPolicy, error) {
-	resourceType := api.PolicyResourceTypeProject
+	resourceType := base.PolicyResourceTypeProject
 	resource := common.FormatProject(projectID)
-	pType := api.PolicyTypeMaskingException
+	pType := base.PolicyTypeMaskingException
 	policy, err := s.GetPolicyV2(ctx, &FindPolicyMessage{
 		ResourceType: &resourceType,
 		Resource:     &resource,
@@ -331,10 +331,10 @@ func (s *Store) GetMaskingExceptionPolicyByProject(ctx context.Context, projectI
 // PolicyMessage is the mssage for policy.
 type PolicyMessage struct {
 	Resource          string
-	ResourceType      api.PolicyResourceType
+	ResourceType      base.PolicyResourceType
 	Payload           string
 	InheritFromParent bool
-	Type              api.PolicyType
+	Type              base.PolicyType
 	Enforce           bool
 
 	UpdatedAt time.Time
@@ -342,18 +342,18 @@ type PolicyMessage struct {
 
 // FindPolicyMessage is the message for finding policies.
 type FindPolicyMessage struct {
-	ResourceType *api.PolicyResourceType
+	ResourceType *base.PolicyResourceType
 	Resource     *string
-	Type         *api.PolicyType
+	Type         *base.PolicyType
 	// ShowAll will show all policies regardless of the enforce status.
 	ShowAll bool
 }
 
 // UpdatePolicyMessage is the message for updating a policy.
 type UpdatePolicyMessage struct {
-	ResourceType      api.PolicyResourceType
+	ResourceType      base.PolicyResourceType
 	Resource          string
-	Type              api.PolicyType
+	Type              base.PolicyType
 	InheritFromParent *bool
 	Payload           *string
 	Enforce           *bool

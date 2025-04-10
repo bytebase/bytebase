@@ -8,8 +8,8 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/common"
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
@@ -19,9 +19,9 @@ const (
 	resourceFilterKey = "resource"
 )
 
-var typesMap = map[string]api.AnomalyType{
-	"DATABASE_CONNECTION":   api.AnomalyDatabaseConnection,
-	"DATABASE_SCHEMA_DRIFT": api.AnomalyDatabaseSchemaDrift,
+var typesMap = map[string]base.AnomalyType{
+	"DATABASE_CONNECTION":   base.AnomalyDatabaseConnection,
+	"DATABASE_SCHEMA_DRIFT": base.AnomalyDatabaseSchemaDrift,
 }
 
 // AnomalyService implements the anomaly service.
@@ -131,11 +131,11 @@ func (s *AnomalyService) convertToAnomaly(ctx context.Context, anomaly *store.An
 	return pbAnomaly, nil
 }
 
-func convertAnomalyType(tp api.AnomalyType) v1pb.Anomaly_AnomalyType {
+func convertAnomalyType(tp base.AnomalyType) v1pb.Anomaly_AnomalyType {
 	switch tp {
-	case api.AnomalyDatabaseConnection:
+	case base.AnomalyDatabaseConnection:
 		return v1pb.Anomaly_DATABASE_CONNECTION
-	case api.AnomalyDatabaseSchemaDrift:
+	case base.AnomalyDatabaseSchemaDrift:
 		return v1pb.Anomaly_DATABASE_SCHEMA_DRIFT
 	default:
 		return v1pb.Anomaly_ANOMALY_TYPE_UNSPECIFIED

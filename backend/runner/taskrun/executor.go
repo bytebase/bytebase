@@ -9,12 +9,12 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/state"
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
@@ -283,7 +283,7 @@ func doMigrationWithFunc(
 
 	if stateCfg != nil {
 		switch mc.task.Type {
-		case api.TaskDatabaseSchemaUpdate, api.TaskDatabaseDataUpdate:
+		case base.TaskDatabaseSchemaUpdate, base.TaskDatabaseDataUpdate:
 			switch instance.Metadata.GetEngine() {
 			case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_OCEANBASE,
 				storepb.Engine_STARROCKS, storepb.Engine_DORIS, storepb.Engine_POSTGRES,
@@ -327,12 +327,12 @@ func postMigration(ctx context.Context, stores *store.Store, mc *migrateContext,
 	if err := stores.DeleteAnomalyV2(ctx, &store.DeleteAnomalyMessage{
 		InstanceID:   mc.task.InstanceID,
 		DatabaseName: *mc.task.DatabaseName,
-		Type:         api.AnomalyDatabaseSchemaDrift,
+		Type:         base.AnomalyDatabaseSchemaDrift,
 	}); err != nil && common.ErrorCode(err) != common.NotFound {
 		slog.Error("Failed to archive anomaly",
 			slog.String("instance", instance.ResourceID),
 			slog.String("database", database.DatabaseName),
-			slog.String("type", string(api.AnomalyDatabaseSchemaDrift)),
+			slog.String("type", string(base.AnomalyDatabaseSchemaDrift)),
 			log.BBError(err))
 	}
 
@@ -517,19 +517,19 @@ func endMigration(ctx context.Context, storeInstance *store.Store, mc *migrateCo
 	return nil
 }
 
-func convertTaskType(t api.TaskType) storepb.ChangelogPayload_Type {
+func convertTaskType(t base.TaskType) storepb.ChangelogPayload_Type {
 	switch t {
-	case api.TaskDatabaseDataUpdate:
+	case base.TaskDatabaseDataUpdate:
 		return storepb.ChangelogPayload_DATA
-	case api.TaskDatabaseSchemaBaseline:
+	case base.TaskDatabaseSchemaBaseline:
 		return storepb.ChangelogPayload_BASELINE
-	case api.TaskDatabaseSchemaUpdate:
+	case base.TaskDatabaseSchemaUpdate:
 		return storepb.ChangelogPayload_MIGRATE
-	case api.TaskDatabaseSchemaUpdateGhost:
+	case base.TaskDatabaseSchemaUpdateGhost:
 		return storepb.ChangelogPayload_MIGRATE_GHOST
 
-	case api.TaskDatabaseCreate:
-	case api.TaskDatabaseDataExport:
+	case base.TaskDatabaseCreate:
+	case base.TaskDatabaseDataExport:
 	}
 	return storepb.ChangelogPayload_TYPE_UNSPECIFIED
 }

@@ -16,6 +16,7 @@ import (
 	"google.golang.org/protobuf/testing/protocmp"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
@@ -25,7 +26,6 @@ import (
 	"github.com/bytebase/bytebase/backend/component/sheet"
 	"github.com/bytebase/bytebase/backend/component/state"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -428,9 +428,9 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 						return nil, status.Errorf(codes.Internal, "failed to get task type from spec, err: %v", err)
 					}
 					if newTaskType != task.Type {
-						taskTypes := []api.TaskType{
-							api.TaskDatabaseSchemaUpdate,
-							api.TaskDatabaseSchemaUpdateGhost,
+						taskTypes := []base.TaskType{
+							base.TaskDatabaseSchemaUpdate,
+							base.TaskDatabaseSchemaUpdateGhost,
 						}
 						if !slices.Contains(taskTypes, newTaskType) || !slices.Contains(taskTypes, task.Type) {
 							return nil, status.Errorf(codes.InvalidArgument, "task types in %v are allowed to updated, and they are allowed to be changed to %v", taskTypes, taskTypes)
@@ -441,7 +441,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 					// Flags for gh-ost.
 					if err := func() error {
 						switch newTaskType {
-						case api.TaskDatabaseSchemaUpdateGhost:
+						case base.TaskDatabaseSchemaUpdateGhost:
 						default:
 							return nil
 						}
@@ -502,7 +502,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 
 					// PreUpdateBackupDetail
 					if err := func() error {
-						if newTaskType != api.TaskDatabaseDataUpdate {
+						if newTaskType != base.TaskDatabaseDataUpdate {
 							return nil
 						}
 						config, ok := spec.Config.(*v1pb.Plan_Spec_ChangeDatabaseConfig)
@@ -567,9 +567,9 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 					// Sheet
 					if err := func() error {
 						switch newTaskType {
-						case api.TaskDatabaseSchemaUpdate, api.TaskDatabaseSchemaUpdateGhost, api.TaskDatabaseDataUpdate, api.TaskDatabaseDataExport:
+						case base.TaskDatabaseSchemaUpdate, base.TaskDatabaseSchemaUpdateGhost, base.TaskDatabaseDataUpdate, base.TaskDatabaseDataExport:
 							var oldSheetName string
-							if newTaskType == api.TaskDatabaseDataExport {
+							if newTaskType == base.TaskDatabaseDataExport {
 								config, ok := spec.Config.(*v1pb.Plan_Spec_ExportDataConfig)
 								if !ok {
 									return nil
@@ -626,7 +626,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 
 					// ExportDataConfig
 					if err := func() error {
-						if newTaskType != api.TaskDatabaseDataExport {
+						if newTaskType != base.TaskDatabaseDataExport {
 							return nil
 						}
 						config, ok := spec.Config.(*v1pb.Plan_Spec_ExportDataConfig)
@@ -650,7 +650,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 					// version
 					if err := func() error {
 						switch newTaskType {
-						case api.TaskDatabaseSchemaBaseline, api.TaskDatabaseSchemaUpdate, api.TaskDatabaseSchemaUpdateGhost, api.TaskDatabaseDataUpdate:
+						case base.TaskDatabaseSchemaBaseline, base.TaskDatabaseSchemaUpdate, base.TaskDatabaseSchemaUpdateGhost, base.TaskDatabaseDataUpdate:
 						default:
 							return nil
 						}
@@ -679,7 +679,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 					}
 					if issue != nil {
 						// Do not allow to update task if issue is done or canceled.
-						if issue.Status == api.IssueDone || issue.Status == api.IssueCanceled {
+						if issue.Status == base.IssueDone || issue.Status == base.IssueCanceled {
 							return nil, status.Errorf(codes.FailedPrecondition, "cannot update task because issue %q is %s", issue.Title, issue.Status)
 						}
 					}
@@ -689,7 +689,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 			for _, taskPatch := range taskPatchList {
 				if taskPatch.SheetID != nil || taskPatch.EarliestAllowedTS != nil {
 					task := tasksMap[taskPatch.ID]
-					if task.LatestTaskRunStatus == api.TaskRunPending || task.LatestTaskRunStatus == api.TaskRunRunning || task.LatestTaskRunStatus == api.TaskRunSkipped || task.LatestTaskRunStatus == api.TaskRunDone {
+					if task.LatestTaskRunStatus == base.TaskRunPending || task.LatestTaskRunStatus == base.TaskRunRunning || task.LatestTaskRunStatus == base.TaskRunSkipped || task.LatestTaskRunStatus == base.TaskRunDone {
 						return nil, status.Errorf(codes.FailedPrecondition, "cannot update plan because task %v is %s", task.ID, task.LatestTaskRunStatus)
 					}
 				}
@@ -1368,23 +1368,23 @@ func planHasRelease(plan *v1pb.Plan) bool {
 	return plan.GetReleaseSource().GetRelease() != ""
 }
 
-func getTaskTypeFromSpec(spec *v1pb.Plan_Spec) (api.TaskType, error) {
+func getTaskTypeFromSpec(spec *v1pb.Plan_Spec) (base.TaskType, error) {
 	switch s := spec.Config.(type) {
 	case *v1pb.Plan_Spec_CreateDatabaseConfig:
-		return api.TaskDatabaseCreate, nil
+		return base.TaskDatabaseCreate, nil
 	case *v1pb.Plan_Spec_ChangeDatabaseConfig:
 		switch s.ChangeDatabaseConfig.Type {
 		case v1pb.Plan_ChangeDatabaseConfig_BASELINE:
-			return api.TaskDatabaseSchemaBaseline, nil
+			return base.TaskDatabaseSchemaBaseline, nil
 		case v1pb.Plan_ChangeDatabaseConfig_DATA:
-			return api.TaskDatabaseDataUpdate, nil
+			return base.TaskDatabaseDataUpdate, nil
 		case v1pb.Plan_ChangeDatabaseConfig_MIGRATE:
-			return api.TaskDatabaseSchemaUpdate, nil
+			return base.TaskDatabaseSchemaUpdate, nil
 		case v1pb.Plan_ChangeDatabaseConfig_MIGRATE_GHOST:
-			return api.TaskDatabaseSchemaUpdateGhost, nil
+			return base.TaskDatabaseSchemaUpdateGhost, nil
 		}
 	case *v1pb.Plan_Spec_ExportDataConfig:
-		return api.TaskDatabaseDataExport, nil
+		return base.TaskDatabaseDataExport, nil
 	}
 	return "", errors.Errorf("unknown spec config type")
 }

@@ -10,8 +10,8 @@ import (
 	"google.golang.org/genproto/googleapis/type/expr"
 	"google.golang.org/protobuf/encoding/protojson"
 
+	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/common"
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -154,7 +154,7 @@ func (s *Store) CreateProjectV2(ctx context.Context, create *ProjectMessage, cre
 	policy := &storepb.IamPolicy{
 		Bindings: []*storepb.Binding{
 			{
-				Role: common.FormatRole(api.ProjectOwner.String()),
+				Role: common.FormatRole(base.ProjectOwner.String()),
 				Members: []string{
 					common.FormatUserUID(user.ID),
 				},
@@ -167,10 +167,10 @@ func (s *Store) CreateProjectV2(ctx context.Context, create *ProjectMessage, cre
 		return nil, err
 	}
 	if _, err := s.CreatePolicyV2(ctx, &PolicyMessage{
-		ResourceType:      api.PolicyResourceTypeProject,
+		ResourceType:      base.PolicyResourceTypeProject,
 		Resource:          common.FormatProject(project.ResourceID),
 		Payload:           string(policyPayload),
-		Type:              api.PolicyTypeIAM,
+		Type:              base.PolicyTypeIAM,
 		InheritFromParent: false,
 		// Enforce cannot be false while creating a policy.
 		Enforce: true,

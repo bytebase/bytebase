@@ -9,9 +9,9 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/common"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -35,7 +35,7 @@ func NewReviewConfigService(store *store.Store, licenseService enterprise.Licens
 
 // CreateReviewConfig creates a new review config.
 func (s *ReviewConfigService) CreateReviewConfig(ctx context.Context, request *v1pb.CreateReviewConfigRequest) (*v1pb.ReviewConfig, error) {
-	if err := s.licenseService.IsFeatureEnabled(api.FeatureSQLReview); err != nil {
+	if err := s.licenseService.IsFeatureEnabled(base.FeatureSQLReview); err != nil {
 		return nil, status.Error(codes.PermissionDenied, err.Error())
 	}
 	if err := validateSQLReviewRules(request.ReviewConfig.Rules); err != nil {
@@ -90,7 +90,7 @@ func (s *ReviewConfigService) GetReviewConfig(ctx context.Context, request *v1pb
 
 // UpdateReviewConfig updates the review config.
 func (s *ReviewConfigService) UpdateReviewConfig(ctx context.Context, request *v1pb.UpdateReviewConfigRequest) (*v1pb.ReviewConfig, error) {
-	if err := s.licenseService.IsFeatureEnabled(api.FeatureSQLReview); err != nil {
+	if err := s.licenseService.IsFeatureEnabled(base.FeatureSQLReview); err != nil {
 		return nil, status.Error(codes.PermissionDenied, err.Error())
 	}
 	id, err := common.GetReviewConfigID(request.ReviewConfig.Name)
@@ -181,7 +181,7 @@ func convertToReviewConfigMessage(reviewConfig *v1pb.ReviewConfig) (*store.Revie
 }
 
 func (s *ReviewConfigService) convertToV1ReviewConfig(ctx context.Context, reviewConfigMessage *store.ReviewConfigMessage) (*v1pb.ReviewConfig, error) {
-	policyType := api.PolicyTypeTag
+	policyType := base.PolicyTypeTag
 	tagPolicies, err := s.store.ListPoliciesV2(ctx, &store.FindPolicyMessage{
 		Type:    &policyType,
 		ShowAll: false,
@@ -202,12 +202,12 @@ func (s *ReviewConfigService) convertToV1ReviewConfig(ctx context.Context, revie
 		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(policy.Payload), p); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to unmarshal tag policy, error %v", err)
 		}
-		if p.Tags[string(api.ReservedTagReviewConfig)] != config.Name {
+		if p.Tags[string(base.ReservedTagReviewConfig)] != config.Name {
 			continue
 		}
 
 		switch policy.ResourceType {
-		case api.PolicyResourceTypeEnvironment:
+		case base.PolicyResourceTypeEnvironment:
 			environmentID, err := common.GetEnvironmentID(policy.Resource)
 			if err != nil {
 				return nil, err
@@ -223,7 +223,7 @@ func (s *ReviewConfigService) convertToV1ReviewConfig(ctx context.Context, revie
 				continue
 			}
 			config.Resources = append(config.Resources, common.FormatEnvironment(environment.ResourceID))
-		case api.PolicyResourceTypeProject:
+		case base.PolicyResourceTypeProject:
 			projectID, err := common.GetProjectID(policy.Resource)
 			if err != nil {
 				return nil, err

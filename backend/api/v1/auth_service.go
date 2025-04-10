@@ -18,13 +18,13 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/api/auth"
+	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/iam"
 	"github.com/bytebase/bytebase/backend/component/state"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 	metricapi "github.com/bytebase/bytebase/backend/metric"
 	"github.com/bytebase/bytebase/backend/plugin/idp/ldap"
 	"github.com/bytebase/bytebase/backend/plugin/idp/oauth2"
@@ -130,7 +130,7 @@ func (s *AuthService) Login(ctx context.Context, request *v1pb.LoginRequest) (*v
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to check user roles, error: %v", err)
 	}
-	if !isWorkspaceAdmin && loginUser.Type == api.EndUser && !mfaSecondLogin {
+	if !isWorkspaceAdmin && loginUser.Type == base.EndUser && !mfaSecondLogin {
 		// Disallow password signin for end users.
 		if setting.DisallowPasswordSignin && !loginViaIDP {
 			return nil, status.Errorf(codes.PermissionDenied, "password signin is disallowed")
@@ -144,7 +144,7 @@ func (s *AuthService) Login(ctx context.Context, request *v1pb.LoginRequest) (*v
 	tokenDuration := auth.GetTokenDuration(ctx, s.store)
 	userMFAEnabled := loginUser.MFAConfig != nil && loginUser.MFAConfig.OtpSecret != ""
 	// We only allow MFA login (2-step) when the feature is enabled and user has enabled MFA.
-	if s.licenseService.IsFeatureEnabled(api.Feature2FA) == nil && !mfaSecondLogin && userMFAEnabled {
+	if s.licenseService.IsFeatureEnabled(base.Feature2FA) == nil && !mfaSecondLogin && userMFAEnabled {
 		mfaTempToken, err := auth.GenerateMFATempToken(loginUser.Name, loginUser.ID, s.profile.Mode, s.secret, tokenDuration)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to generate MFA temp token")
@@ -155,13 +155,13 @@ func (s *AuthService) Login(ctx context.Context, request *v1pb.LoginRequest) (*v
 	}
 
 	switch loginUser.Type {
-	case api.EndUser:
+	case base.EndUser:
 		token, err := auth.GenerateAccessToken(loginUser.Name, loginUser.ID, s.profile.Mode, s.secret, tokenDuration)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to generate API access token")
 		}
 		response.Token = token
-	case api.ServiceAccount:
+	case base.ServiceAccount:
 		token, err := auth.GenerateAPIToken(loginUser.Name, loginUser.ID, s.profile.Mode, s.secret)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to generate API access token")
@@ -213,10 +213,10 @@ func (s *AuthService) Login(ctx context.Context, request *v1pb.LoginRequest) (*v
 
 func (s *AuthService) needResetPassword(ctx context.Context, user *store.UserMessage) bool {
 	// Reset password restriction only works for end user with email & password login.
-	if user.Type != api.EndUser {
+	if user.Type != base.EndUser {
 		return false
 	}
-	if err := s.licenseService.IsFeatureEnabled(api.FeaturePasswordRestriction); err != nil {
+	if err := s.licenseService.IsFeatureEnabled(base.FeaturePasswordRestriction); err != nil {
 		return false
 	}
 
@@ -230,7 +230,7 @@ func (s *AuthService) needResetPassword(ctx context.Context, user *store.UserMes
 		if !passwordRestriction.RequireResetPasswordForFirstLogin {
 			return false
 		}
-		count, err := s.store.CountUsers(ctx, api.EndUser)
+		count, err := s.store.CountUsers(ctx, base.EndUser)
 		if err != nil {
 			slog.Error("failed to count end users", log.BBError(err))
 			return false
@@ -411,7 +411,7 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 		return user, nil
 	}
 
-	if err := s.licenseService.IsFeatureEnabled(api.FeatureSSO); err != nil {
+	if err := s.licenseService.IsFeatureEnabled(base.FeatureSSO); err != nil {
 		return nil, status.Error(codes.PermissionDenied, err.Error())
 	}
 	// Create new user from identity provider.
@@ -427,7 +427,7 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 		Name:         userInfo.DisplayName,
 		Email:        email,
 		Phone:        userInfo.Phone,
-		Type:         api.EndUser,
+		Type:         base.EndUser,
 		PasswordHash: string(passwordHash),
 	})
 	if err != nil {

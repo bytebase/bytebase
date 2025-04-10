@@ -1,4 +1,4 @@
-package api
+package base
 
 // TaskType is the type of a task.
 type TaskType string

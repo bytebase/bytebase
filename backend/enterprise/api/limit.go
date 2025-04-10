@@ -5,7 +5,7 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	api "github.com/bytebase/bytebase/backend/legacyapi"
+	"github.com/bytebase/bytebase/backend/base"
 )
 
 //go:embed plan.yaml
@@ -26,7 +26,7 @@ const (
 )
 
 // PlanLimitValues is the plan limit value mapping.
-var PlanLimitValues = map[PlanLimit]map[api.PlanType]int{
+var PlanLimitValues = map[PlanLimit]map[base.PlanType]int{
 	PlanLimitMaximumTask:        {},
 	PlanLimitMaximumEnvironment: {},
 	PlanLimitMaximumInstance:    {},
@@ -34,11 +34,11 @@ var PlanLimitValues = map[PlanLimit]map[api.PlanType]int{
 }
 
 type planLimitConfig struct {
-	Type                    api.PlanType `yaml:"type"`
-	MaximumInstanceCount    int          `yaml:"maximumInstanceCount"`
-	MaximumSeatCount        int          `yaml:"maximumSeatCount"`
-	MaximumTaskCount        int          `yaml:"maximumTaskCount"`
-	MaximumEnvironmentCount int          `yaml:"maximumEnvironmentCount"`
+	Type                    base.PlanType `yaml:"type"`
+	MaximumInstanceCount    int           `yaml:"maximumInstanceCount"`
+	MaximumSeatCount        int           `yaml:"maximumSeatCount"`
+	MaximumTaskCount        int           `yaml:"maximumTaskCount"`
+	MaximumEnvironmentCount int           `yaml:"maximumEnvironmentCount"`
 }
 
 type planConfg struct {
