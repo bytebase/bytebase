@@ -238,8 +238,9 @@ func TestSQLReviewForMySQL(t *testing.T) {
 					},
 				},
 			},
-			Statement: "SELECT count(*) FROM test WHERE 1=1;",
-			RowsCount: 1,
+			Statement:   "SELECT count(*) FROM test WHERE 1=1;",
+			RowsCount:   1,
+			AllowExport: true,
 		}
 	)
 

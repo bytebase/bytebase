@@ -1,3 +1,22 @@
+- description: parse failed
+  statement: "POST /user_bill_history_20250115/_search \n{\"query\": {\"bool\":{\"must\":[{\"range\": {\"created_date\":{\"from\":\"2022-01-01T00:00:00\"}}}, {\"range\": {\"created_date\":{\"lt\":\"2022-12-31T00:00:00\"}}},{\"match_phrase\":{\"user_id\":{\"query\":\"219799\"}}},{\"terms\":{\"type\":[84,54,38]}}]}}, \"from\":0,\"size\":1}\n3333\nPUT /user_bill_history_2024"
+  result:
+    requests:
+        - method: POST
+          url: /user_bill_history_20250115/_search
+          data:
+            - '{"query": {"bool":{"must":[{"range": {"created_date":{"from":"2022-01-01T00:00:00"}}}, {"range": {"created_date":{"lt":"2022-12-31T00:00:00"}}},{"match_phrase":{"user_id":{"query":"219799"}}},{"terms":{"type":[84,54,38]}}]}}, "from":0,"size":1}'
+          startoffset: 0
+          endoffset: 286
+        - method: PUT
+          url: /user_bill_history_2024
+          startoffset: 292
+          endoffset: 319
+    errors:
+        - line: 2
+          column: 2
+          message: expected one of GET/POST/PUT/DELETE/HEAD/PATCH
+          rawmessage: ""
 - description: simple
   statement: GET _search
   result:
