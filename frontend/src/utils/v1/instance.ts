@@ -125,19 +125,24 @@ export const instanceV1HasReadonlyMode = (
 };
 
 export const enginesSupportCreateDatabase = () => {
-  const excludedList: Set<Engine> = new Set([
-    Engine.REDIS,
-    Engine.ORACLE,
-    Engine.DM,
-    Engine.ELASTICSEARCH,
-    Engine.SPANNER,
-    Engine.BIGQUERY,
-    Engine.DYNAMODB,
-    Engine.DATABRICKS,
-    Engine.COSMOSDB,
-  ]);
-
-  return supportedEngineV1List().filter((engine) => !excludedList.has(engine));
+  return [
+    Engine.MYSQL,
+    Engine.POSTGRES,
+    Engine.MSSQL,
+    Engine.SNOWFLAKE,
+    Engine.CLICKHOUSE,
+    Engine.MONGODB,
+    Engine.TIDB,
+    Engine.OCEANBASE,
+    Engine.OCEANBASE_ORACLE,
+    Engine.REDSHIFT,
+    Engine.MARIADB,
+    Engine.STARROCKS,
+    Engine.RISINGWAVE,
+    Engine.HIVE,
+    Engine.COCKROACHDB,
+    Engine.DORIS,
+  ];
 };
 
 export const instanceV1HasCreateDatabase = (
