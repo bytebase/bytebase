@@ -28,7 +28,7 @@ func newDriver(db.DriverConfig) db.Driver {
 	return &Driver{}
 }
 
-func (_ *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
+func (*Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
 	// Construct Trino DSN
 	var scheme string
 	if config.DataSource.UseSsl {

@@ -36,31 +36,37 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 		}
 
 		schemaQuery := fmt.Sprintf("SHOW SCHEMAS FROM %s", catalog)
-		schemaRows, err := d.db.QueryContext(ctx, schemaQuery)
-		if err != nil {
-			// skip catalog if schemas can't be listed
-			continue
-		}
-
-		var schemas []*storepb.SchemaMetadata
-		for schemaRows.Next() {
-			var schemaName string
-			if err := schemaRows.Scan(&schemaName); err != nil {
-				schemaRows.Close()
+		// Use an IIFE (Immediately Invoked Function Expression) to encapsulate the schema query
+		// This lets us use defer for the rows while avoiding the "defer in loop" issue
+		schemas, err := func() ([]*storepb.SchemaMetadata, error) {
+			schemaRows, err := d.db.QueryContext(ctx, schemaQuery)
+			if err != nil {
 				return nil, err
 			}
-			schemas = append(schemas, &storepb.SchemaMetadata{
-				Name: schemaName,
-			})
+			defer schemaRows.Close()
+			
+			var schemas []*storepb.SchemaMetadata
+			for schemaRows.Next() {
+				var schemaName string
+				if err := schemaRows.Scan(&schemaName); err != nil {
+					return nil, err
+				}
+				schemas = append(schemas, &storepb.SchemaMetadata{
+					Name: schemaName,
+				})
+			}
+			// Check for errors from iterating over rows
+			if err := schemaRows.Err(); err != nil {
+				return nil, err
+			}
+			
+			return schemas, nil
+		}()
+		
+		if err != nil {
+			// skip catalog if schemas can't be retrieved
+			continue
 		}
-		// Check for errors from iterating over rows
-		if err := schemaRows.Err(); err != nil {
-			schemaRows.Close()
-			return nil, err
-		}
-
-		// Close the schema rows now that we're done with them
-		schemaRows.Close()
 		
 		database.Schemas = schemas
 		databases = append(databases, database)
@@ -78,7 +84,7 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 }
 
 // func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetadata, error) {
-func (d *Driver) SyncDBSchema(_ context.Context) (*storepb.DatabaseSchemaMetadata, error) {
+func (*Driver) SyncDBSchema(_ context.Context) (*storepb.DatabaseSchemaMetadata, error) {
 	return nil, nil
 }
 
