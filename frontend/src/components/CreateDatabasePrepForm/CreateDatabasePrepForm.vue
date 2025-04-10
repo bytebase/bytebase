@@ -25,7 +25,7 @@
           required
           :disabled="!allowEditInstance"
           :instance-name="state.instanceName"
-          :allowed-engine-list="enginesSupportCreateDatabase()"
+          :allowed-engine-list="supportedEngines"
           @update:instance-name="selectInstance"
         />
       </div>
@@ -243,6 +243,8 @@ const { project } = useProjectByName(
 const isReservedName = computed(() => {
   return state.databaseName.toLowerCase() == "bytebase";
 });
+
+const supportedEngines = computed(() => enginesSupportCreateDatabase());
 
 const allowCreate = computed(() => {
   return (
