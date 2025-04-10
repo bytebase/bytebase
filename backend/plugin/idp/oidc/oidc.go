@@ -141,16 +141,23 @@ func (p *IdentityProvider) UserInfo(ctx context.Context, token *oauth2.Token, no
 	if userInfo.DisplayName == "" {
 		userInfo.DisplayName = userInfo.Identifier
 	}
-	if p.config.FieldMapping.Email != "" {
-		if v, ok := idp.GetValueWithKey(claims, p.config.FieldMapping.Email).(string); ok {
-			userInfo.Email = v
-		}
-	}
 	if p.config.FieldMapping.Phone != "" {
 		if v, ok := idp.GetValueWithKey(claims, p.config.FieldMapping.Phone).(string); ok {
 			// Only set phone if it's valid.
 			if err := common.ValidatePhone(v); err == nil {
 				userInfo.Phone = v
+			}
+		}
+	}
+	if p.config.FieldMapping.Groups != "" {
+		if v, ok := idp.GetValueWithKey(claims, p.config.FieldMapping.Groups).([]any); ok {
+			slog.Debug("User groups", slog.Any("groups", v))
+			userInfo.HasGroups = true
+			for _, group := range v {
+				// Only handle string type here.
+				if groupStr, ok := group.(string); ok {
+					userInfo.Groups = append(userInfo.Groups, groupStr)
+				}
 			}
 		}
 	}

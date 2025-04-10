@@ -451,6 +451,7 @@
         "identifier-tips": "電子メールは一意である必要があります。実際の値がメールボックス形式でない場合は、ドメインと連結されます。",
         "display-name": "バイトベースユーザーのニックネーム",
         "phone": "Bytebase ユーザーの携帯電話番号",
+        "groups": "Bytebaseユーザーグループ",
         "auth-style": {
           "self": "認証パラメータの引き渡し方法",
           "in-params": {

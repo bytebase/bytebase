@@ -451,6 +451,7 @@
         "identifier-tips": "邮箱应该具有唯一性。如果实际值不是邮箱格式，将会和 domain 进行拼接。",
         "display-name": "Bytebase 用户的昵称",
         "phone": "Bytebase 用户的手机号",
+        "groups": "Bytebase 用户的群组",
         "auth-style": {
           "self": "认证参数传递方式",
           "in-params": {
