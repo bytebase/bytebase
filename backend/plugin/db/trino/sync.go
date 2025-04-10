@@ -31,7 +31,7 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 
 	// Try to get a simple test query first to make sure the connection is working
 	fmt.Println("Testing Trino connection with various test queries")
-	
+
 	// Try multiple different query strategies to find one that works with this Trino version
 	testQueries := []struct {
 		description string
@@ -42,7 +42,7 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 			description: "Query with explicit catalog and schema",
 			query: func() string {
 				if d.config.DataSource.Database != "" {
-					return fmt.Sprintf("SELECT 1 FROM %s.information_schema.tables WHERE 1=0", 
+					return fmt.Sprintf("SELECT 1 FROM %s.information_schema.tables WHERE 1=0",
 						d.config.DataSource.Database)
 				}
 				return ""
@@ -77,22 +77,22 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 			query:       "SELECT 1 FROM system.metadata.catalogs LIMIT 1",
 		},
 	}
-	
+
 	success := false
 	var testErr error
-	
+
 	for _, test := range testQueries {
 		if test.query == "" {
 			continue // Skip empty queries (happens if catalog is not set)
 		}
-		
+
 		fmt.Printf("Trying query: %s (%s)\n", test.query, test.description)
-		
-		// Use short timeout for each test query
-		queryCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+
+		// Use short timeout for each test query, with a fresh context for each
+		queryCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		_, err = d.db.ExecContext(queryCtx, test.query)
 		cancel()
-		
+
 		if err == nil {
 			fmt.Printf("Query succeeded: %s\n", test.description)
 			success = true
@@ -102,16 +102,12 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 			testErr = err
 		}
 	}
-	
+
 	if !success {
 		return nil, errors.Wrap(testErr, "failed to execute any test query - connection is not functional")
 	}
-	
-	fmt.Println("Connection test successful - proceeding with metadata retrieval")
 
-	// Get catalogs with a timeout to prevent hanging
-	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
-	defer cancel()
+	fmt.Println("Connection test successful - proceeding with metadata retrieval")
 
 	// This variable is only for collecting catalog info but will NOT be returned
 	// to avoid sync_status constraint issues
@@ -136,7 +132,7 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 			query:       "SELECT table_catalog FROM information_schema.schemata GROUP BY table_catalog",
 		},
 	}
-	
+
 	// If we have a specific catalog configured, add it to the list of catalog strategies
 	if d.config.DataSource.Database != "" {
 		catalogQueries = append([]struct {
@@ -149,58 +145,34 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 			},
 		}, catalogQueries...)
 	}
-	
-	var catalogRows *sql.Rows
+
+	var catalogList []string
 	var catalogErr error
-	var catalogQueryUsed string
-	
-	// Try each catalog query until one works
+
+	// Try each catalog query strategy until one works
 	for _, test := range catalogQueries {
 		fmt.Printf("Trying catalog query: %s (%s)\n", test.query, test.description)
-		
-		// Use a context with timeout for each catalog query
-		catalogCtx, catalogCancel := context.WithTimeout(context.Background(), 5*time.Second)
-		rows, err := d.db.QueryContext(catalogCtx, test.query)
-		catalogCancel()
-		
-		if err == nil {
-			fmt.Printf("Catalog query succeeded: %s\n", test.description)
-			catalogRows = rows
-			catalogQueryUsed = test.description
-			break
-		} else {
+
+		// Use a fresh context for each catalog query attempt
+		catalogCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+
+		// Execute the query
+		var rows *sql.Rows
+		rows, err = d.db.QueryContext(catalogCtx, test.query)
+		if err != nil {
 			fmt.Printf("Catalog query failed: %s - Error: %v\n", test.description, err)
 			catalogErr = err
+			cancel()
+			continue
 		}
-	}
-	
-	// If all catalog queries failed, just use the configured database if available
-	if catalogRows == nil {
-		if catalogErr != nil {
-			slog.Warn("All catalog queries failed", log.BBError(catalogErr))
-		}
-		
-		// If we can't get catalogs but have a database name in config, at least return that
-		if d.config.DataSource.Database != "" {
-			fmt.Printf("Using configured catalog: %s\n", d.config.DataSource.Database)
-			// Create a single catalog/database entry with the configured database name
-			database := &storepb.DatabaseSchemaMetadata{
-				Name: d.config.DataSource.Database,
-				// Add information_schema as fallback since almost all catalogs have it
-				Schemas: []*storepb.SchemaMetadata{
-					{Name: "information_schema"},
-				},
-			}
-			catalogMetadata = append(catalogMetadata, database)
-		}
-	} else {
-		defer catalogRows.Close()
-		fmt.Printf("Processing catalogs from query: %s\n", catalogQueryUsed)
 
-		// Process each catalog
-		for catalogRows.Next() {
+		// Process the results immediately (don't defer processing)
+		fmt.Printf("Catalog query succeeded: %s\n", test.description)
+
+		// Collect all catalogs into a list
+		for rows.Next() {
 			var catalog string
-			if err := catalogRows.Scan(&catalog); err != nil {
+			if err := rows.Scan(&catalog); err != nil {
 				slog.Warn("failed to scan catalog name", log.BBError(err))
 				continue
 			}
@@ -209,126 +181,161 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 			if catalog == "" {
 				continue
 			}
-			
+
 			fmt.Printf("Found catalog: %s\n", catalog)
-
-			// Create minimal database metadata for this catalog
-			database := &storepb.DatabaseSchemaMetadata{
-				Name: catalog,
-			}
-
-			// Only get schemas if we have time left in our context
-			if ctx.Err() == nil {
-				// Get schemas for this catalog but handle errors gracefully
-				func() {
-					// Try multiple schema query strategies to accommodate different Trino versions and configurations
-					schemaQueries := []struct {
-						description string
-						query       string
-					}{
-						{
-							description: "Standard SHOW SCHEMAS",
-							query:       fmt.Sprintf("SHOW SCHEMAS FROM %s", catalog),
-						},
-						{
-							description: "Query information_schema.schemata",
-							query:       fmt.Sprintf("SELECT schema_name FROM %s.information_schema.schemata", catalog),
-						},
-						{
-							description: "Query information_schema with table_schema",
-							query:       fmt.Sprintf("SELECT DISTINCT table_schema FROM %s.information_schema.tables", catalog),
-						},
-						{
-							description: "Query system metadata",
-							query:       fmt.Sprintf("SELECT schema_name FROM system.metadata.schemas WHERE catalog_name = '%s'", catalog),
-						},
-					}
-					
-					var schemaRows *sql.Rows
-					var schemaErr error
-					var schemaQueryUsed string
-					
-					// Try each schema query until one works
-					for _, test := range schemaQueries {
-						// Use a short timeout for schema queries
-						schemaCtx, schemaCancel := context.WithTimeout(context.Background(), 5*time.Second)
-						
-						fmt.Printf("Trying schema query for catalog %s: %s (%s)\n", catalog, test.query, test.description)
-						rows, err := d.db.QueryContext(schemaCtx, test.query)
-						
-						if err == nil {
-							fmt.Printf("Schema query succeeded for catalog %s: %s\n", catalog, test.description)
-							schemaRows = rows
-							schemaQueryUsed = test.description
-							schemaCancel()
-							break
-						} else {
-							fmt.Printf("Schema query failed for catalog %s: %s - Error: %v\n", catalog, test.description, err)
-							schemaErr = err
-							schemaCancel()
-						}
-					}
-					
-					// If all schema queries failed, log and return
-					if schemaRows == nil {
-						if schemaErr != nil {
-							slog.Warn("All schema queries failed for catalog",
-								log.BBError(schemaErr),
-								slog.String("catalog", catalog))
-						}
-						
-						// Add information_schema as fallback since almost all catalogs have it
-						database.Schemas = []*storepb.SchemaMetadata{
-							{Name: "information_schema"},
-						}
-						return
-					}
-					
-					defer schemaRows.Close()
-					fmt.Printf("Processing schemas for catalog %s from query: %s\n", catalog, schemaQueryUsed)
-
-					var schemas []*storepb.SchemaMetadata
-					for schemaRows.Next() {
-						var schemaName string
-						if err := schemaRows.Scan(&schemaName); err != nil {
-							slog.Warn("failed to scan schema name", log.BBError(err))
-							continue
-						}
-						
-						// Skip empty schema names if any
-						if schemaName == "" {
-							continue
-						}
-						
-						fmt.Printf("Found schema: %s.%s\n", catalog, schemaName)
-
-						// Add minimal schema info
-						schemas = append(schemas, &storepb.SchemaMetadata{
-							Name: schemaName,
-						})
-					}
-
-					// Only set schemas if we found some
-					if len(schemas) > 0 {
-						database.Schemas = schemas
-					} else {
-						// Add information_schema as fallback since almost all catalogs have it
-						database.Schemas = []*storepb.SchemaMetadata{
-							{Name: "information_schema"},
-						}
-					}
-				}()
-			}
-
-			catalogMetadata = append(catalogMetadata, database)
+			catalogList = append(catalogList, catalog)
 		}
 
-		if err := catalogRows.Err(); err != nil {
+		// Check for errors from iteration
+		if err := rows.Err(); err != nil {
 			slog.Warn("error iterating catalog rows", log.BBError(err))
+		}
+
+		// Clean up
+		rows.Close()
+		cancel()
+
+		// If we found any catalogs, we can stop trying other queries
+		if len(catalogList) > 0 {
+			break
 		}
 	}
 
-	// Always include at least "system" database for browsing 
+	// If all catalog queries failed or returned no results
+	if len(catalogList) == 0 {
+		if catalogErr != nil {
+			slog.Warn("All catalog queries failed or returned no results", log.BBError(catalogErr))
+		}
+
+		// If we can't get catalogs but have a database name in config, at least use that
+		if d.config.DataSource.Database != "" {
+			fmt.Printf("Using configured catalog: %s\n", d.config.DataSource.Database)
+			catalogList = append(catalogList, d.config.DataSource.Database)
+		} else {
+			// Add system catalog as a fallback
+			catalogList = append(catalogList, "system")
+		}
+	}
+
+	// Process each catalog - now working with a simple list rather than rows
+	for _, catalog := range catalogList {
+		// Create a database metadata entry for this catalog
+		database := &storepb.DatabaseSchemaMetadata{
+			Name: catalog,
+		}
+
+		// Try to get schemas for this catalog using various strategies
+		schemaQueries := []struct {
+			description string
+			query       string
+		}{
+			{
+				description: "Standard SHOW SCHEMAS",
+				query:       fmt.Sprintf("SHOW SCHEMAS FROM %s", catalog),
+			},
+			{
+				description: "Query information_schema.schemata",
+				query:       fmt.Sprintf("SELECT schema_name FROM %s.information_schema.schemata", catalog),
+			},
+			{
+				description: "Query information_schema with table_schema",
+				query:       fmt.Sprintf("SELECT DISTINCT table_schema FROM %s.information_schema.tables", catalog),
+			},
+			{
+				description: "Query system metadata",
+				query:       fmt.Sprintf("SELECT schema_name FROM system.metadata.schemas WHERE catalog_name = '%s'", catalog),
+			},
+		}
+
+		var schemaList []string
+		var schemaErr error
+
+		// Try each schema query strategy
+		for _, test := range schemaQueries {
+			fmt.Printf("Trying schema query for catalog %s: %s (%s)\n", catalog, test.query, test.description)
+
+			// Use a fresh context for each schema query attempt
+			schemaCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+
+			// Execute the query
+			var rows *sql.Rows
+			rows, err = d.db.QueryContext(schemaCtx, test.query)
+			if err != nil {
+				fmt.Printf("Schema query failed for catalog %s: %s - Error: %v\n", catalog, test.description, err)
+				schemaErr = err
+				cancel()
+				continue
+			}
+
+			// Process the results immediately
+			fmt.Printf("Schema query succeeded for catalog %s: %s\n", catalog, test.description)
+
+			// Collect all schemas into a list
+			for rows.Next() {
+				var schema string
+				if err := rows.Scan(&schema); err != nil {
+					slog.Warn("failed to scan schema name", log.BBError(err))
+					continue
+				}
+
+				// Skip empty schemas if any
+				if schema == "" {
+					continue
+				}
+
+				fmt.Printf("Found schema: %s.%s\n", catalog, schema)
+				schemaList = append(schemaList, schema)
+			}
+
+			// Check for errors from iteration
+			if err := rows.Err(); err != nil {
+				slog.Warn("error iterating schema rows",
+					log.BBError(err),
+					slog.String("catalog", catalog))
+			}
+
+			// Clean up
+			rows.Close()
+			cancel()
+
+			// If we found any schemas, we can stop trying other queries
+			if len(schemaList) > 0 {
+				break
+			}
+		}
+
+		// Create schema metadata entries
+		var schemaMetadataList []*storepb.SchemaMetadata
+
+		// If no schemas were found, add information_schema as a fallback
+		if len(schemaList) == 0 {
+			if schemaErr != nil {
+				slog.Warn("All schema queries failed or returned no results for catalog",
+					log.BBError(schemaErr),
+					slog.String("catalog", catalog))
+			}
+
+			// Add information_schema as fallback since almost all catalogs have it
+			schemaMetadataList = append(schemaMetadataList, &storepb.SchemaMetadata{
+				Name: "information_schema",
+			})
+		} else {
+			// Add all the schemas we found
+			for _, schema := range schemaList {
+				schemaMetadataList = append(schemaMetadataList, &storepb.SchemaMetadata{
+					Name: schema,
+				})
+			}
+		}
+
+		// Add the schemas to the database metadata
+		database.Schemas = schemaMetadataList
+
+		// Add this database to our catalog metadata collection
+		catalogMetadata = append(catalogMetadata, database)
+	}
+
+	// Always include at least "system" database for browsing
 	// even if no catalogs were found
 	if len(catalogMetadata) == 0 {
 		// Use a well-known system database that won't be synced
@@ -339,14 +346,14 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 			},
 		})
 	}
-	
+
 	// Create instance metadata
 	instanceMetadata := &storepb.Instance{
 		// Only sync a non-existent database to block actual syncing
 		SyncDatabases: []string{"__bytebase_no_sync__"},
 	}
 
-	// Return a completely empty database list to avoid any 
+	// Return a completely empty database list to avoid any
 	// database creation attempts and sync_status issues
 	return &db.InstanceMetadata{
 		Version:   version,
@@ -397,7 +404,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 		tablesQuery := fmt.Sprintf(
 			"SELECT table_name FROM %s.information_schema.tables WHERE table_schema = '%s'",
 			catalog, schemaName)
-		
+
 		tableRows, err := d.db.QueryContext(ctx, tablesQuery)
 		if err != nil {
 			slog.Warn("failed to list tables for schema",
@@ -433,7 +440,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 					"SELECT column_name, data_type, is_nullable FROM %s.information_schema.columns "+
 						"WHERE table_schema = '%s' AND table_name = '%s'",
 					catalog, schemaName, tableName)
-				
+
 				columnRows, err := d.db.QueryContext(ctx, columnsQuery)
 				if err != nil {
 					slog.Warn("failed to list columns for table",
@@ -558,29 +565,24 @@ func (d *Driver) getVersion(ctx context.Context) (string, error) {
 		versionQueries = append(catalogVersionQueries, versionQueries...)
 	}
 
-	var version string
-	var queryErr error
-
 	for _, test := range versionQueries {
 		fmt.Printf("Trying version query: %s (%s)\n", test.query, test.description)
-		
-		// Use short timeout for version queries
-		versionCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+
+		// Use a fresh context for each attempt to avoid parent context issues
+		versionCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+
+		var version string
 		err := d.db.QueryRowContext(versionCtx, test.query).Scan(&version)
+
+		// Clean up right after use
 		cancel()
-		
+
 		if err == nil {
 			fmt.Printf("Successfully detected version: %s (via %s)\n", version, test.description)
 			return version, nil
 		}
-		
+
 		fmt.Printf("Version query failed: %s - Error: %v\n", test.description, err)
-		queryErr = err
-	}
-	
-	// Log the last error for debugging
-	if queryErr != nil {
-		slog.Debug("All version queries failed", log.BBError(queryErr))
 	}
 
 	// If all queries failed, return a default value rather than error
