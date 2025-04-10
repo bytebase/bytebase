@@ -10,8 +10,8 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
 
+	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/common"
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -50,7 +50,7 @@ type FindProjectWebhookMessage struct {
 	ID           *int
 	ProjectID    *string
 	URL          *string
-	ActivityType *api.ActivityType
+	ActivityType *base.ActivityType
 }
 
 // CreateProjectWebhookV2 creates an instance of ProjectWebhook.
@@ -302,7 +302,7 @@ func (*Store) findProjectWebhookImplV2(ctx context.Context, txn *sql.Tx, find *F
 
 		if v := find.ActivityType; v != nil {
 			for _, activity := range projectWebhook.ActivityList {
-				if api.ActivityType(activity) == *v {
+				if base.ActivityType(activity) == *v {
 					projectWebhooks = append(projectWebhooks, &projectWebhook)
 					break
 				}

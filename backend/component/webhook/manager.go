@@ -11,10 +11,10 @@ import (
 	"github.com/gosimple/slug"
 	"github.com/nyaruka/phonenumbers"
 
+	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/iam"
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/webhook"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
@@ -43,27 +43,27 @@ func NewManager(store *store.Store, iamManager *iam.Manager) *Manager {
 }
 
 func (m *Manager) CreateEvent(ctx context.Context, e *Event) {
-	var activityType api.ActivityType
+	var activityType base.ActivityType
 	//exhaustive:enforce
 	switch e.Type {
 	case EventTypeIssueCreate:
-		activityType = api.ActivityIssueCreate
+		activityType = base.ActivityIssueCreate
 	case EventTypeIssueUpdate:
-		activityType = api.ActivityIssueFieldUpdate
+		activityType = base.ActivityIssueFieldUpdate
 	case EventTypeIssueStatusUpdate:
-		activityType = api.ActivityIssueStatusUpdate
+		activityType = base.ActivityIssueStatusUpdate
 	case EventTypeIssueCommentCreate:
-		activityType = api.ActivityIssueCommentCreate
+		activityType = base.ActivityIssueCommentCreate
 	case EventTypeIssueApprovalCreate:
-		activityType = api.ActivityIssueApprovalNotify
+		activityType = base.ActivityIssueApprovalNotify
 	case EventTypeIssueApprovalPass:
-		activityType = api.ActivityNotifyIssueApproved
+		activityType = base.ActivityNotifyIssueApproved
 	case EventTypeIssueRolloutReady:
-		activityType = api.ActivityNotifyPipelineRollout
+		activityType = base.ActivityNotifyPipelineRollout
 	case EventTypeStageStatusUpdate:
-		activityType = api.ActivityPipelineStageStatusUpdate
+		activityType = base.ActivityPipelineStageStatusUpdate
 	case EventTypeTaskRunStatusUpdate:
-		activityType = api.ActivityPipelineTaskRunStatusUpdate
+		activityType = base.ActivityPipelineTaskRunStatusUpdate
 	default:
 		return
 	}
@@ -91,7 +91,7 @@ func (m *Manager) CreateEvent(ctx context.Context, e *Event) {
 	go m.postWebhookList(ctx, webhookCtx, webhookList)
 }
 
-func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, activityType api.ActivityType) (*webhook.Context, error) {
+func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, activityType base.ActivityType) (*webhook.Context, error) {
 	var webhookCtx webhook.Context
 	var mentions []string
 	var mentionUsers []*store.UserMessage
@@ -158,24 +158,24 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, acti
 	case EventTypeTaskRunStatusUpdate:
 		u := e.TaskRunStatusUpdate
 		switch u.Status {
-		case api.TaskRunPending.String():
+		case base.TaskRunPending.String():
 			title = "Task run started"
 			titleZh = "任务开始"
-		case api.TaskRunRunning.String():
+		case base.TaskRunRunning.String():
 			title = "Task run is running"
 			titleZh = "任务运行中"
-		case api.TaskRunDone.String():
+		case base.TaskRunDone.String():
 			level = webhook.WebhookSuccess
 			title = "Task run completed"
 			titleZh = "任务完成"
-		case api.TaskRunFailed.String():
+		case base.TaskRunFailed.String():
 			level = webhook.WebhookError
 			title = "Task run failed"
 			titleZh = "任务失败"
-		case api.TaskRunCanceled.String():
+		case base.TaskRunCanceled.String():
 			title = "Task run is canceled"
 			titleZh = "任务取消"
-		case api.TaskRunSkipped.String():
+		case base.TaskRunSkipped.String():
 			title = "Task is skipped"
 			titleZh = "任务跳过"
 		default:
@@ -204,11 +204,11 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, acti
 			usersGetters = append(usersGetters, getUsersFromUsers(e.Issue.Creator))
 		} else {
 			for _, workspaceRole := range u.RolloutPolicy.GetRoles() {
-				role := api.Role(strings.TrimPrefix(workspaceRole, "roles/"))
+				role := base.Role(strings.TrimPrefix(workspaceRole, "roles/"))
 				usersGetters = append(usersGetters, m.getUsersFromWorkspaceRole(role))
 			}
 			for _, projectRole := range u.RolloutPolicy.GetRoles() {
-				role := api.Role(strings.TrimPrefix(projectRole, "roles/"))
+				role := base.Role(strings.TrimPrefix(projectRole, "roles/"))
 				usersGetters = append(usersGetters, getUsersFromProjectRole(m.store, role, e.Project.ResourceID))
 			}
 			for _, issueRole := range u.RolloutPolicy.GetIssueRoles() {
@@ -272,18 +272,18 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, acti
 			case storepb.ApprovalNode_GROUP_VALUE_UNSPECIFILED:
 				return nil, errors.Errorf("invalid group value")
 			case storepb.ApprovalNode_WORKSPACE_OWNER:
-				usersGetter = m.getUsersFromWorkspaceRole(api.WorkspaceAdmin)
+				usersGetter = m.getUsersFromWorkspaceRole(base.WorkspaceAdmin)
 			case storepb.ApprovalNode_WORKSPACE_DBA:
-				usersGetter = m.getUsersFromWorkspaceRole(api.WorkspaceDBA)
+				usersGetter = m.getUsersFromWorkspaceRole(base.WorkspaceDBA)
 			case storepb.ApprovalNode_PROJECT_OWNER:
-				usersGetter = getUsersFromProjectRole(m.store, api.ProjectOwner, e.Project.ResourceID)
+				usersGetter = getUsersFromProjectRole(m.store, base.ProjectOwner, e.Project.ResourceID)
 			case storepb.ApprovalNode_PROJECT_MEMBER:
-				usersGetter = getUsersFromProjectRole(m.store, api.ProjectDeveloper, e.Project.ResourceID)
+				usersGetter = getUsersFromProjectRole(m.store, base.ProjectDeveloper, e.Project.ResourceID)
 			default:
 				return nil, errors.Errorf("invalid group value")
 			}
 		case *storepb.ApprovalNode_Role:
-			role := api.Role(strings.TrimPrefix(val.Role, "roles/"))
+			role := base.Role(strings.TrimPrefix(val.Role, "roles/"))
 			usersGetter = getUsersFromProjectRole(m.store, role, e.Project.ResourceID)
 		default:
 			return nil, errors.Errorf("invalid node payload type")
@@ -313,7 +313,7 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, acti
 
 	var mentionEndUsers []*store.UserMessage
 	for _, u := range mentionUsers {
-		if u.Type == api.EndUser {
+		if u.Type == base.EndUser {
 			mentionEndUsers = append(mentionEndUsers, u)
 		}
 	}
@@ -403,7 +403,7 @@ func (m *Manager) postWebhookList(ctx context.Context, webhookCtx *webhook.Conte
 	}
 }
 
-func (m *Manager) getUsersFromWorkspaceRole(role api.Role) func(context.Context) ([]*store.UserMessage, error) {
+func (m *Manager) getUsersFromWorkspaceRole(role base.Role) func(context.Context) ([]*store.UserMessage, error) {
 	return func(ctx context.Context) ([]*store.UserMessage, error) {
 		policyMessage, err := m.store.GetWorkspaceIamPolicy(ctx)
 		if err != nil {
@@ -413,7 +413,7 @@ func (m *Manager) getUsersFromWorkspaceRole(role api.Role) func(context.Context)
 	}
 }
 
-func getUsersFromProjectRole(s *store.Store, role api.Role, projectID string) func(context.Context) ([]*store.UserMessage, error) {
+func getUsersFromProjectRole(s *store.Store, role base.Role, projectID string) func(context.Context) ([]*store.UserMessage, error) {
 	return func(ctx context.Context) ([]*store.UserMessage, error) {
 		policyMessage, err := s.GetProjectIamPolicy(ctx, projectID)
 		if err != nil {
@@ -468,7 +468,7 @@ func maybeGetPhoneFromUser(user *store.UserMessage) (string, error) {
 }
 
 // ChangeIssueStatus changes the status of an issue.
-func ChangeIssueStatus(ctx context.Context, stores *store.Store, webhookManager *Manager, issue *store.IssueMessage, newStatus api.IssueStatus, updater *store.UserMessage, comment string) error {
+func ChangeIssueStatus(ctx context.Context, stores *store.Store, webhookManager *Manager, issue *store.IssueMessage, newStatus base.IssueStatus, updater *store.UserMessage, comment string) error {
 	updateIssueMessage := &store.UpdateIssueMessage{Status: &newStatus}
 	updatedIssue, err := stores.UpdateIssueV2(ctx, issue.UID, updateIssueMessage)
 	if err != nil {

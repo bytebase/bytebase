@@ -1,4 +1,4 @@
-package api
+package base
 
 // SystemBotID is the ID of the system robot.
 const SystemBotID = 1

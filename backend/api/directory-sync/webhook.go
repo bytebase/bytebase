@@ -18,9 +18,9 @@ import (
 	"github.com/labstack/echo/v4"
 
 	v1api "github.com/bytebase/bytebase/backend/api/v1"
+	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -34,7 +34,7 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 		if err := s.validRequestURL(ctx, c); err != nil {
 			return c.String(http.StatusInternalServerError, err.Error())
 		}
-		if err := s.licenseService.IsFeatureEnabled(api.FeaturePasswordRestriction); err != nil {
+		if err := s.licenseService.IsFeatureEnabled(base.FeaturePasswordRestriction); err != nil {
 			return c.String(http.StatusForbidden, err.Error())
 		}
 
@@ -64,7 +64,7 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 			newUser, err := s.store.CreateUser(ctx, &store.UserMessage{
 				Name:          aadUser.DisplayName,
 				Email:         aadUser.UserName,
-				Type:          api.EndUser,
+				Type:          base.EndUser,
 				MemberDeleted: !aadUser.Active,
 				PasswordHash:  string(passwordHash),
 				Profile: &storepb.UserProfile{
@@ -101,7 +101,7 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 		if err := s.validRequestURL(ctx, c); err != nil {
 			return c.String(http.StatusInternalServerError, err.Error())
 		}
-		if err := s.licenseService.IsFeatureEnabled(api.FeaturePasswordRestriction); err != nil {
+		if err := s.licenseService.IsFeatureEnabled(base.FeaturePasswordRestriction); err != nil {
 			return c.String(http.StatusForbidden, err.Error())
 		}
 
@@ -132,7 +132,7 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 		if err := s.validRequestURL(ctx, c); err != nil {
 			return c.String(http.StatusInternalServerError, err.Error())
 		}
-		if err := s.licenseService.IsFeatureEnabled(api.FeaturePasswordRestriction); err != nil {
+		if err := s.licenseService.IsFeatureEnabled(base.FeaturePasswordRestriction); err != nil {
 			return c.String(http.StatusForbidden, err.Error())
 		}
 
@@ -188,7 +188,7 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 		if err := s.validRequestURL(ctx, c); err != nil {
 			return c.String(http.StatusInternalServerError, err.Error())
 		}
-		if err := s.licenseService.IsFeatureEnabled(api.FeaturePasswordRestriction); err != nil {
+		if err := s.licenseService.IsFeatureEnabled(base.FeaturePasswordRestriction); err != nil {
 			return c.String(http.StatusForbidden, err.Error())
 		}
 
@@ -220,7 +220,7 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 		if err := s.validRequestURL(ctx, c); err != nil {
 			return c.String(http.StatusInternalServerError, err.Error())
 		}
-		if err := s.licenseService.IsFeatureEnabled(api.FeaturePasswordRestriction); err != nil {
+		if err := s.licenseService.IsFeatureEnabled(base.FeaturePasswordRestriction); err != nil {
 			return c.String(http.StatusForbidden, err.Error())
 		}
 
@@ -294,7 +294,7 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 		if err := s.validRequestURL(ctx, c); err != nil {
 			return c.String(http.StatusInternalServerError, err.Error())
 		}
-		if err := s.licenseService.IsFeatureEnabled(api.FeaturePasswordRestriction); err != nil {
+		if err := s.licenseService.IsFeatureEnabled(base.FeaturePasswordRestriction); err != nil {
 			return c.String(http.StatusForbidden, err.Error())
 		}
 
@@ -332,7 +332,7 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 		if err := s.validRequestURL(ctx, c); err != nil {
 			return c.String(http.StatusInternalServerError, err.Error())
 		}
-		if err := s.licenseService.IsFeatureEnabled(api.FeaturePasswordRestriction); err != nil {
+		if err := s.licenseService.IsFeatureEnabled(base.FeaturePasswordRestriction); err != nil {
 			return c.String(http.StatusForbidden, err.Error())
 		}
 
@@ -363,7 +363,7 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 		if err := s.validRequestURL(ctx, c); err != nil {
 			return c.String(http.StatusInternalServerError, err.Error())
 		}
-		if err := s.licenseService.IsFeatureEnabled(api.FeaturePasswordRestriction); err != nil {
+		if err := s.licenseService.IsFeatureEnabled(base.FeaturePasswordRestriction); err != nil {
 			return c.String(http.StatusForbidden, err.Error())
 		}
 
@@ -416,7 +416,7 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 		if err := s.validRequestURL(ctx, c); err != nil {
 			return c.String(http.StatusInternalServerError, err.Error())
 		}
-		if err := s.licenseService.IsFeatureEnabled(api.FeaturePasswordRestriction); err != nil {
+		if err := s.licenseService.IsFeatureEnabled(base.FeaturePasswordRestriction); err != nil {
 			return c.String(http.StatusForbidden, err.Error())
 		}
 
@@ -441,7 +441,7 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 		if err := s.validRequestURL(ctx, c); err != nil {
 			return c.String(http.StatusInternalServerError, err.Error())
 		}
-		if err := s.licenseService.IsFeatureEnabled(api.FeaturePasswordRestriction); err != nil {
+		if err := s.licenseService.IsFeatureEnabled(base.FeaturePasswordRestriction); err != nil {
 			return c.String(http.StatusForbidden, err.Error())
 		}
 
@@ -577,7 +577,7 @@ func (s *Service) validRequestURL(ctx context.Context, c echo.Context) error {
 		return errors.Errorf("invalid workspace id %q, my ID %q", workspaceID, myWorkspaceID)
 	}
 
-	scimSetting, err := s.store.GetSettingV2(ctx, api.SettingSCIM)
+	scimSetting, err := s.store.GetSettingV2(ctx, base.SettingSCIM)
 	if err != nil {
 		return errors.Wrapf(err, "failed to find scim setting")
 	}

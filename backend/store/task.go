@@ -13,8 +13,8 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
 
+	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/common"
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -31,11 +31,11 @@ type TaskMessage struct {
 	TaskRunRawList []*TaskRunMessage
 
 	// Domain specific fields
-	Type              api.TaskType
+	Type              base.TaskType
 	Payload           *storepb.TaskPayload
 	EarliestAllowedAt *time.Time
 
-	LatestTaskRunStatus api.TaskRunStatus
+	LatestTaskRunStatus base.TaskRunStatus
 }
 
 func (t *TaskMessage) GetDatabaseName() string {
@@ -60,9 +60,9 @@ type TaskFind struct {
 	DatabaseName *string
 
 	// Domain specific fields
-	TypeList *[]api.TaskType
+	TypeList *[]base.TaskType
 
-	LatestTaskRunStatusList *[]api.TaskRunStatus
+	LatestTaskRunStatusList *[]base.TaskRunStatus
 }
 
 // TaskPatch is the API message for patching a task.
@@ -77,7 +77,7 @@ type TaskPatch struct {
 	DatabaseName            *string
 	EarliestAllowedTS       *time.Time
 	UpdateEarliestAllowedTS bool
-	Type                    *api.TaskType
+	Type                    *base.TaskType
 
 	SheetID               *int
 	SchemaVersion         *string
@@ -281,7 +281,7 @@ func (*Store) listTasksTx(ctx context.Context, txn *sql.Tx, find *TaskFind) ([]*
 		where = append(where, fmt.Sprintf("task.type in (%s)", strings.Join(list, ",")))
 	}
 
-	args = append(args, api.TaskRunNotStarted)
+	args = append(args, base.TaskRunNotStarted)
 	rows, err := txn.QueryContext(ctx, fmt.Sprintf(`
 		SELECT
 			task.id,

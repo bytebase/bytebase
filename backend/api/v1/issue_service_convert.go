@@ -7,8 +7,8 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/common"
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -95,10 +95,10 @@ func (s *IssueService) convertToIssue(ctx context.Context, issue *store.IssueMes
 }
 
 func (s *IssueService) convertToIssueReleasers(ctx context.Context, issue *store.IssueMessage) ([]string, error) {
-	if issue.Type != api.IssueDatabaseGeneral {
+	if issue.Type != base.IssueDatabaseGeneral {
 		return nil, nil
 	}
-	if issue.Status != api.IssueOpen {
+	if issue.Status != base.IssueOpen {
 		return nil, nil
 	}
 	if issue.PipelineUID == nil {
@@ -146,52 +146,52 @@ func (s *IssueService) convertToIssueReleasers(ctx context.Context, issue *store
 	return releasers, nil
 }
 
-func convertToIssueType(t api.IssueType) v1pb.Issue_Type {
+func convertToIssueType(t base.IssueType) v1pb.Issue_Type {
 	switch t {
-	case api.IssueDatabaseGeneral:
+	case base.IssueDatabaseGeneral:
 		return v1pb.Issue_DATABASE_CHANGE
-	case api.IssueGrantRequest:
+	case base.IssueGrantRequest:
 		return v1pb.Issue_GRANT_REQUEST
-	case api.IssueDatabaseDataExport:
+	case base.IssueDatabaseDataExport:
 		return v1pb.Issue_DATABASE_DATA_EXPORT
 	default:
 		return v1pb.Issue_TYPE_UNSPECIFIED
 	}
 }
 
-func convertToAPIIssueType(t v1pb.Issue_Type) (api.IssueType, error) {
+func convertToAPIIssueType(t v1pb.Issue_Type) (base.IssueType, error) {
 	switch t {
 	case v1pb.Issue_DATABASE_CHANGE:
-		return api.IssueDatabaseGeneral, nil
+		return base.IssueDatabaseGeneral, nil
 	case v1pb.Issue_GRANT_REQUEST:
-		return api.IssueGrantRequest, nil
+		return base.IssueGrantRequest, nil
 	case v1pb.Issue_DATABASE_DATA_EXPORT:
-		return api.IssueDatabaseDataExport, nil
+		return base.IssueDatabaseDataExport, nil
 	default:
-		return api.IssueType(""), errors.Errorf("invalid issue type %v", t)
+		return base.IssueType(""), errors.Errorf("invalid issue type %v", t)
 	}
 }
 
-func convertToAPIIssueStatus(status v1pb.IssueStatus) (api.IssueStatus, error) {
+func convertToAPIIssueStatus(status v1pb.IssueStatus) (base.IssueStatus, error) {
 	switch status {
 	case v1pb.IssueStatus_OPEN:
-		return api.IssueOpen, nil
+		return base.IssueOpen, nil
 	case v1pb.IssueStatus_DONE:
-		return api.IssueDone, nil
+		return base.IssueDone, nil
 	case v1pb.IssueStatus_CANCELED:
-		return api.IssueCanceled, nil
+		return base.IssueCanceled, nil
 	default:
-		return api.IssueStatus(""), errors.Errorf("invalid issue status %v", status)
+		return base.IssueStatus(""), errors.Errorf("invalid issue status %v", status)
 	}
 }
 
-func convertToIssueStatus(status api.IssueStatus) v1pb.IssueStatus {
+func convertToIssueStatus(status base.IssueStatus) v1pb.IssueStatus {
 	switch status {
-	case api.IssueOpen:
+	case base.IssueOpen:
 		return v1pb.IssueStatus_OPEN
-	case api.IssueDone:
+	case base.IssueDone:
 		return v1pb.IssueStatus_DONE
-	case api.IssueCanceled:
+	case base.IssueCanceled:
 		return v1pb.IssueStatus_CANCELED
 	default:
 		return v1pb.IssueStatus_ISSUE_STATUS_UNSPECIFIED

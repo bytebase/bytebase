@@ -12,6 +12,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
@@ -19,7 +20,6 @@ import (
 	"github.com/bytebase/bytebase/backend/component/state"
 	"github.com/bytebase/bytebase/backend/component/webhook"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 	metricapi "github.com/bytebase/bytebase/backend/metric"
 	"github.com/bytebase/bytebase/backend/plugin/metric"
 	"github.com/bytebase/bytebase/backend/runner/metricreport"
@@ -145,24 +145,24 @@ func (s *IssueService) getIssueFind(ctx context.Context, filter string, query st
 			if err != nil {
 				return nil, status.Errorf(codes.InvalidArgument, "failed to convert to issue type, err: %v", err)
 			}
-			issueFind.Types = &[]api.IssueType{issueType}
+			issueFind.Types = &[]base.IssueType{issueType}
 		case "task_type":
 			if spec.Operator != ComparatorTypeEqual {
 				return nil, status.Errorf(codes.InvalidArgument, `only support "=" operation for "task_type" filter`)
 			}
 			switch spec.Value {
 			case "DDL":
-				issueFind.TaskTypes = &[]api.TaskType{
-					api.TaskDatabaseSchemaUpdate,
-					api.TaskDatabaseSchemaUpdateGhost,
+				issueFind.TaskTypes = &[]base.TaskType{
+					base.TaskDatabaseSchemaUpdate,
+					base.TaskDatabaseSchemaUpdateGhost,
 				}
 			case "DML":
-				issueFind.TaskTypes = &[]api.TaskType{
-					api.TaskDatabaseDataUpdate,
+				issueFind.TaskTypes = &[]base.TaskType{
+					base.TaskDatabaseDataUpdate,
 				}
 			case "DATA_EXPORT":
-				issueFind.TaskTypes = &[]api.TaskType{
-					api.TaskDatabaseDataExport,
+				issueFind.TaskTypes = &[]base.TaskType{
+					base.TaskDatabaseDataExport,
 				}
 			default:
 				return nil, status.Errorf(codes.InvalidArgument, `unknown value %q`, spec.Value)
@@ -424,8 +424,8 @@ func (s *IssueService) createIssueDatabaseChange(ctx context.Context, request *v
 		PlanUID:     planUID,
 		PipelineUID: rolloutUID,
 		Title:       request.Issue.Title,
-		Status:      api.IssueOpen,
-		Type:        api.IssueDatabaseGeneral,
+		Status:      base.IssueOpen,
+		Type:        base.IssueDatabaseGeneral,
 		Description: request.Issue.Description,
 	}
 
@@ -501,8 +501,8 @@ func (s *IssueService) createIssueGrantRequest(ctx context.Context, request *v1p
 		PlanUID:     nil,
 		PipelineUID: nil,
 		Title:       request.Issue.Title,
-		Status:      api.IssueOpen,
-		Type:        api.IssueGrantRequest,
+		Status:      base.IssueOpen,
+		Type:        base.IssueGrantRequest,
 		Description: request.Issue.Description,
 	}
 
@@ -608,8 +608,8 @@ func (s *IssueService) createIssueDatabaseDataExport(ctx context.Context, reques
 		PlanUID:     planUID,
 		PipelineUID: rolloutUID,
 		Title:       request.Issue.Title,
-		Status:      api.IssueOpen,
-		Type:        api.IssueDatabaseDataExport,
+		Status:      base.IssueOpen,
+		Type:        base.IssueDatabaseDataExport,
 		Description: request.Issue.Description,
 	}
 
@@ -727,7 +727,7 @@ func (s *IssueService) ApproveIssue(ctx context.Context, request *v1pb.ApproveIs
 	}
 
 	// Grant the privilege if the issue is approved.
-	if approved && issue.Type == api.IssueGrantRequest {
+	if approved && issue.Type == base.IssueGrantRequest {
 		if err := utils.UpdateProjectPolicyFromGrantIssue(ctx, s.store, issue, payload.GrantRequest); err != nil {
 			return nil, err
 		}
@@ -828,7 +828,7 @@ func (s *IssueService) ApproveIssue(ctx context.Context, request *v1pb.ApproveIs
 	}()
 
 	// If the issue is a grant request and approved, we will always auto close it.
-	if issue.Type == api.IssueGrantRequest {
+	if issue.Type == base.IssueGrantRequest {
 		if err := func() error {
 			payload := issue.Payload
 			approved, err := utils.CheckApprovalApproved(payload.Approval)
@@ -836,7 +836,7 @@ func (s *IssueService) ApproveIssue(ctx context.Context, request *v1pb.ApproveIs
 				return errors.Wrap(err, "failed to check if the approval is approved")
 			}
 			if approved {
-				if err := webhook.ChangeIssueStatus(ctx, s.store, s.webhookManager, issue, api.IssueDone, s.store.GetSystemBotUser(ctx), ""); err != nil {
+				if err := webhook.ChangeIssueStatus(ctx, s.store, s.webhookManager, issue, base.IssueDone, s.store.GetSystemBotUser(ctx), ""); err != nil {
 					return errors.Wrap(err, "failed to update issue status")
 				}
 			}
@@ -1267,7 +1267,7 @@ func (s *IssueService) BatchUpdateIssuesStatus(ctx context.Context, request *v1p
 
 		// Check if there is any running/pending task runs.
 		if issue.PipelineUID != nil {
-			taskRunStatusList := []api.TaskRunStatus{api.TaskRunRunning, api.TaskRunPending}
+			taskRunStatusList := []base.TaskRunStatus{base.TaskRunRunning, base.TaskRunPending}
 			taskRuns, err := s.store.ListTaskRunsV2(ctx, &store.FindTaskRunMessage{PipelineUID: issue.PipelineUID, Status: &taskRunStatusList})
 			if err != nil {
 				return nil, status.Errorf(codes.Internal, "failed to list task runs, err: %v", err)
@@ -1523,13 +1523,13 @@ func isUserReviewer(ctx context.Context, stores *store.Store, issue *store.Issue
 		case storepb.ApprovalNode_GROUP_VALUE_UNSPECIFILED:
 			return false, errors.Errorf("invalid group value")
 		case storepb.ApprovalNode_WORKSPACE_OWNER:
-			return roles[common.FormatRole(api.WorkspaceAdmin.String())], nil
+			return roles[common.FormatRole(base.WorkspaceAdmin.String())], nil
 		case storepb.ApprovalNode_WORKSPACE_DBA:
-			return roles[common.FormatRole(api.WorkspaceDBA.String())], nil
+			return roles[common.FormatRole(base.WorkspaceDBA.String())], nil
 		case storepb.ApprovalNode_PROJECT_OWNER:
-			return roles[common.FormatRole(api.ProjectOwner.String())], nil
+			return roles[common.FormatRole(base.ProjectOwner.String())], nil
 		case storepb.ApprovalNode_PROJECT_MEMBER:
-			return roles[common.FormatRole(api.ProjectDeveloper.String())], nil
+			return roles[common.FormatRole(base.ProjectDeveloper.String())], nil
 		default:
 			return false, errors.Errorf("invalid group value")
 		}

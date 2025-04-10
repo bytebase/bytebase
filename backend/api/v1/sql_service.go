@@ -20,6 +20,7 @@ import (
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
@@ -28,11 +29,10 @@ import (
 	"github.com/bytebase/bytebase/backend/component/masker"
 	"github.com/bytebase/bytebase/backend/component/sheet"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	"github.com/bytebase/bytebase/backend/plugin/db"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	parserbase "github.com/bytebase/bytebase/backend/plugin/parser/base"
 	mapperparser "github.com/bytebase/bytebase/backend/plugin/parser/mybatis/mapper"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/transform"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
@@ -251,7 +251,7 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 			if errorStatus.Code() != codes.OK && errorStatus.Code() != codes.Unknown {
 				code = errorStatus.Code()
 			}
-		} else if syntaxErr, ok := queryErr.(*base.SyntaxError); ok {
+		} else if syntaxErr, ok := queryErr.(*parserbase.SyntaxError); ok {
 			querySyntaxError, err := status.New(codes.InvalidArgument, queryErr.Error()).WithDetails(
 				&v1pb.PlanCheckRun_Result{
 					Code:    int32(advisor.StatementSyntaxError),
@@ -286,7 +286,7 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 	return response, nil
 }
 
-type accessCheckFunc func(context.Context, *store.InstanceMessage, *store.DatabaseMessage, *store.UserMessage, []*base.QuerySpan, int, bool /* isExplain */, bool /* isExport */) error
+type accessCheckFunc func(context.Context, *store.InstanceMessage, *store.DatabaseMessage, *store.UserMessage, []*parserbase.QuerySpan, int, bool /* isExplain */, bool /* isExport */) error
 
 func extractSourceTable(comment string) (string, string, string, error) {
 	pattern := `\((\w+),\s*(\w+)(?:,\s*(\w+))?\)`
@@ -319,7 +319,7 @@ func getSchemaMetadata(engine storepb.Engine, dbSchema *model.DatabaseSchema) *m
 	}
 }
 
-func replaceBackupTableWithSource(ctx context.Context, stores *store.Store, instance *store.InstanceMessage, database *store.DatabaseMessage, spans []*base.QuerySpan) error {
+func replaceBackupTableWithSource(ctx context.Context, stores *store.Store, instance *store.InstanceMessage, database *store.DatabaseMessage, spans []*parserbase.QuerySpan) error {
 	switch instance.Metadata.GetEngine() {
 	case storepb.Engine_POSTGRES:
 		// Don't need to check the database name for postgres here.
@@ -351,8 +351,8 @@ func replaceBackupTableWithSource(ctx context.Context, stores *store.Store, inst
 	return nil
 }
 
-func generateNewSourceColumnSet(engine storepb.Engine, origin base.SourceColumnSet, schema *model.SchemaMetadata) base.SourceColumnSet {
-	result := make(base.SourceColumnSet)
+func generateNewSourceColumnSet(engine storepb.Engine, origin parserbase.SourceColumnSet, schema *model.SchemaMetadata) parserbase.SourceColumnSet {
+	result := make(parserbase.SourceColumnSet)
 	for column := range origin {
 		if isBackupTable(engine, column) {
 			tableSchema := schema.GetTable(column.Table)
@@ -375,10 +375,10 @@ func generateNewSourceColumnSet(engine storepb.Engine, origin base.SourceColumnS
 	return result
 }
 
-func generateNewColumn(engine storepb.Engine, column base.ColumnResource, database, schema, table string) base.ColumnResource {
+func generateNewColumn(engine storepb.Engine, column parserbase.ColumnResource, database, schema, table string) parserbase.ColumnResource {
 	switch engine {
 	case storepb.Engine_POSTGRES:
-		return base.ColumnResource{
+		return parserbase.ColumnResource{
 			Server:   column.Server,
 			Database: column.Database,
 			Schema:   database,
@@ -386,7 +386,7 @@ func generateNewColumn(engine storepb.Engine, column base.ColumnResource, databa
 			Column:   column.Column,
 		}
 	default:
-		return base.ColumnResource{
+		return parserbase.ColumnResource{
 			Server:   column.Server,
 			Database: database,
 			Schema:   schema,
@@ -396,7 +396,7 @@ func generateNewColumn(engine storepb.Engine, column base.ColumnResource, databa
 	}
 }
 
-func isBackupTable(engine storepb.Engine, column base.ColumnResource) bool {
+func isBackupTable(engine storepb.Engine, column parserbase.ColumnResource) bool {
 	switch engine {
 	case storepb.Engine_POSTGRES:
 		return column.Schema == backupDatabaseName
@@ -421,14 +421,14 @@ func queryRetry(
 	optionalAccessCheck accessCheckFunc,
 	schemaSyncer *schemasync.Syncer,
 	action storepb.MaskingExceptionPolicy_MaskingException_Action,
-) ([]*v1pb.QueryResult, []*base.QuerySpan, time.Duration, error) {
-	var spans []*base.QuerySpan
-	var sensitivePredicateColumns [][]base.ColumnResource
+) ([]*v1pb.QueryResult, []*parserbase.QuerySpan, time.Duration, error) {
+	var spans []*parserbase.QuerySpan
+	var sensitivePredicateColumns [][]parserbase.ColumnResource
 	var err error
 	if !queryContext.Explain {
-		spans, err = base.GetQuerySpan(
+		spans, err = parserbase.GetQuerySpan(
 			ctx,
-			base.GetQuerySpanContext{
+			parserbase.GetQuerySpanContext{
 				InstanceID:                    instance.ResourceID,
 				GetDatabaseMetadataFunc:       BuildGetDatabaseMetadataFunc(stores),
 				ListDatabaseNamesFunc:         BuildListDatabaseNamesFunc(stores),
@@ -454,7 +454,7 @@ func queryRetry(
 				return nil, nil, time.Duration(0), err
 			}
 		}
-		if licenseService.IsFeatureEnabledForInstance(api.FeatureSensitiveData, instance) == nil {
+		if licenseService.IsFeatureEnabledForInstance(base.FeatureSensitiveData, instance) == nil {
 			masker := NewQueryResultMasker(stores)
 			sensitivePredicateColumns, err = masker.ExtractSensitivePredicateColumns(ctx, spans, instance, user, action)
 			if err != nil {
@@ -496,9 +496,9 @@ func queryRetry(
 
 	// Retry getting query span.
 	if len(syncDatabaseMap) > 0 {
-		spans, err = base.GetQuerySpan(
+		spans, err = parserbase.GetQuerySpan(
 			ctx,
-			base.GetQuerySpanContext{
+			parserbase.GetQuerySpanContext{
 				InstanceID:                    instance.ResourceID,
 				GetDatabaseMetadataFunc:       BuildGetDatabaseMetadataFunc(stores),
 				ListDatabaseNamesFunc:         BuildListDatabaseNamesFunc(stores),
@@ -518,7 +518,7 @@ func queryRetry(
 		if err := replaceBackupTableWithSource(ctx, stores, instance, database, spans); err != nil {
 			slog.Debug("failed to replace backup table with source", log.BBError(err))
 		}
-		if licenseService.IsFeatureEnabledForInstance(api.FeatureSensitiveData, instance) == nil {
+		if licenseService.IsFeatureEnabledForInstance(base.FeatureSensitiveData, instance) == nil {
 			masker := NewQueryResultMasker(stores)
 			sensitivePredicateColumns, err = masker.ExtractSensitivePredicateColumns(ctx, spans, instance, user, action)
 			if err != nil {
@@ -538,7 +538,7 @@ func queryRetry(
 		}
 	}
 
-	if licenseService.IsFeatureEnabledForInstance(api.FeatureSensitiveData, instance) == nil && !queryContext.Explain {
+	if licenseService.IsFeatureEnabledForInstance(base.FeatureSensitiveData, instance) == nil && !queryContext.Explain {
 		// TODO(zp): Refactor Document Database and RDBMS to use the same masking logic.
 		if instance.Metadata.GetEngine() == storepb.Engine_COSMOSDB {
 			if len(spans) != 1 {
@@ -662,7 +662,7 @@ func getCosmosDBContainerObjectSchema(ctx context.Context, stores *store.Store, 
 	return nil, nil
 }
 
-func getSensitivePredicateColumnErrorMessages(sensitiveColumns []base.ColumnResource) string {
+func getSensitivePredicateColumnErrorMessages(sensitiveColumns []parserbase.ColumnResource) string {
 	var buf bytes.Buffer
 	_, _ = buf.WriteString("Using sensitive columns in WHERE clause is not allowed: ")
 	for j, column := range sensitiveColumns {
@@ -679,7 +679,7 @@ func executeWithTimeout(ctx context.Context, stores *store.Store, licenseService
 	var timeout time.Duration
 	// For access control feature, we will use the timeout from request and query data policy.
 	// Otherwise, no timeout will be applied.
-	if licenseService.IsFeatureEnabled(api.FeatureAccessControl) == nil {
+	if licenseService.IsFeatureEnabled(base.FeatureAccessControl) == nil {
 		queryDataPolicy, err := stores.GetQueryDataPolicy(ctx)
 		if err != nil {
 			return nil, time.Duration(0), errors.Wrap(err, "failed to get query data policy")
@@ -892,7 +892,7 @@ func DoExport(
 		return nil, duration, errors.New(results[0].GetError())
 	}
 
-	if licenseService.IsFeatureEnabledForInstance(api.FeatureSensitiveData, instance) == nil {
+	if licenseService.IsFeatureEnabledForInstance(base.FeatureSensitiveData, instance) == nil {
 		masker := NewQueryResultMasker(stores)
 		if err := masker.MaskResults(ctx, spans, results, instance, user, storepb.MaskingExceptionPolicy_MaskingException_EXPORT); err != nil {
 			return nil, duration, err
@@ -1109,7 +1109,7 @@ func (s *SQLService) convertToV1QueryHistory(ctx context.Context, history *store
 	}, nil
 }
 
-func BuildGetLinkedDatabaseMetadataFunc(storeInstance *store.Store, engine storepb.Engine) base.GetLinkedDatabaseMetadataFunc {
+func BuildGetLinkedDatabaseMetadataFunc(storeInstance *store.Store, engine storepb.Engine) parserbase.GetLinkedDatabaseMetadataFunc {
 	if engine != storepb.Engine_ORACLE {
 		return nil
 	}
@@ -1179,7 +1179,7 @@ func BuildGetLinkedDatabaseMetadataFunc(storeInstance *store.Store, engine store
 	}
 }
 
-func BuildGetDatabaseMetadataFunc(storeInstance *store.Store) base.GetDatabaseMetadataFunc {
+func BuildGetDatabaseMetadataFunc(storeInstance *store.Store) parserbase.GetDatabaseMetadataFunc {
 	return func(ctx context.Context, instanceID, databaseName string) (string, *model.DatabaseMetadata, error) {
 		database, err := storeInstance.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
 			InstanceID:   &instanceID,
@@ -1202,7 +1202,7 @@ func BuildGetDatabaseMetadataFunc(storeInstance *store.Store) base.GetDatabaseMe
 	}
 }
 
-func BuildListDatabaseNamesFunc(storeInstance *store.Store) base.ListDatabaseNamesFunc {
+func BuildListDatabaseNamesFunc(storeInstance *store.Store) parserbase.ListDatabaseNamesFunc {
 	return func(ctx context.Context, instanceID string) ([]string, error) {
 		databases, err := storeInstance.ListDatabases(ctx, &store.FindDatabaseMessage{
 			InstanceID: &instanceID,
@@ -1223,7 +1223,7 @@ func (s *SQLService) accessCheck(
 	instance *store.InstanceMessage,
 	database *store.DatabaseMessage,
 	user *store.UserMessage,
-	spans []*base.QuerySpan,
+	spans []*parserbase.QuerySpan,
 	limit int,
 	isExplain bool,
 	isExport bool) error {
@@ -1240,23 +1240,23 @@ func (s *SQLService) accessCheck(
 		if queryNewACLSupportEngines[instance.Metadata.GetEngine()] {
 			var permission iam.Permission
 			switch span.Type {
-			case base.QueryTypeUnknown:
+			case parserbase.QueryTypeUnknown:
 				return status.Error(codes.PermissionDenied, "disallowed query type")
-			case base.DDL:
+			case parserbase.DDL:
 				permission = iam.PermissionSQLDdl
-			case base.DML:
+			case parserbase.DML:
 				permission = iam.PermissionSQLDml
-			case base.Explain:
+			case parserbase.Explain:
 				permission = iam.PermissionSQLExplain
-			case base.SelectInfoSchema:
+			case parserbase.SelectInfoSchema:
 				permission = iam.PermissionSQLInfo
-			case base.Select:
+			case parserbase.Select:
 				// Conditional permission check below.
 			}
 			if isExplain {
 				permission = iam.PermissionSQLExplain
 			}
-			if span.Type == base.DDL || span.Type == base.DML {
+			if span.Type == parserbase.DDL || span.Type == parserbase.DML {
 				if err := checkDataSourceQueryPolicy(ctx, s.store, database, span.Type); err != nil {
 					return err
 				}
@@ -1271,7 +1271,7 @@ func (s *SQLService) accessCheck(
 				}
 			}
 		}
-		if span.Type == base.Select {
+		if span.Type == parserbase.Select {
 			for column := range span.SourceColumns {
 				attributes := map[string]any{
 					"request.time":      time.Now(),
@@ -1387,9 +1387,9 @@ func (s *SQLService) prepareRelatedMessage(ctx context.Context, requestName stri
 }
 
 func validateQueryRequest(instance *store.InstanceMessage, statement string) error {
-	ok, _, err := base.ValidateSQLForEditor(instance.Metadata.GetEngine(), statement)
+	ok, _, err := parserbase.ValidateSQLForEditor(instance.Metadata.GetEngine(), statement)
 	if err != nil {
-		syntaxErr, ok := err.(*base.SyntaxError)
+		syntaxErr, ok := err.(*parserbase.SyntaxError)
 		if ok {
 			querySyntaxError, err := status.New(codes.InvalidArgument, syntaxErr.Error()).WithDetails(
 				&v1pb.PlanCheckRun_Result{
@@ -1688,7 +1688,7 @@ func (*SQLService) ParseMyBatisMapper(_ context.Context, request *v1pb.ParseMyBa
 	}
 
 	statement := stringsBuilder.String()
-	singleSQLs, err := base.SplitMultiSQL(storepb.Engine_MYSQL, statement)
+	singleSQLs, err := parserbase.SplitMultiSQL(storepb.Engine_MYSQL, statement)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to split mybatis mapper: %v", err)
 	}
@@ -1753,7 +1753,7 @@ func (*SQLService) DiffMetadata(_ context.Context, request *v1pb.DiffMetadataReq
 		return nil, err
 	}
 
-	diff, err := base.SchemaDiff(convertEngine(request.Engine), base.DiffContext{
+	diff, err := parserbase.SchemaDiff(convertEngine(request.Engine), parserbase.DiffContext{
 		IgnoreCaseSensitive: false,
 		StrictMode:          true,
 	}, sourceSchema, targetSchema)
@@ -1862,8 +1862,8 @@ func checkAndGetDataSourceQueriable(ctx context.Context, storeInstance *store.St
 	if environment == nil {
 		return nil, errors.Errorf("environment %q not found", database.EffectiveEnvironmentID)
 	}
-	dataSourceQueryPolicyType := api.PolicyTypeDataSourceQuery
-	environmentResourceType := api.PolicyResourceTypeEnvironment
+	dataSourceQueryPolicyType := base.PolicyTypeDataSourceQuery
+	environmentResourceType := base.PolicyResourceTypeEnvironment
 	environmentResource := common.FormatEnvironment(environment.ResourceID)
 	environmentPolicy, err := storeInstance.GetPolicyV2(ctx, &store.FindPolicyMessage{
 		ResourceType: &environmentResourceType,
@@ -1881,7 +1881,7 @@ func checkAndGetDataSourceQueriable(ctx context.Context, storeInstance *store.St
 		envAdminDataSourceRestriction = envPayload.DataSourceQueryPolicy.GetAdminDataSourceRestriction()
 	}
 
-	projectResourceType := api.PolicyResourceTypeProject
+	projectResourceType := base.PolicyResourceTypeProject
 	projectResource := common.FormatProject(database.ProjectID)
 	projectPolicy, err := storeInstance.GetPolicyV2(ctx, &store.FindPolicyMessage{
 		ResourceType: &projectResourceType,
@@ -1914,7 +1914,7 @@ func checkAndGetDataSourceQueriable(ctx context.Context, storeInstance *store.St
 	return dataSource, nil
 }
 
-func checkDataSourceQueryPolicy(ctx context.Context, storeInstance *store.Store, database *store.DatabaseMessage, statementTp base.QueryType) error {
+func checkDataSourceQueryPolicy(ctx context.Context, storeInstance *store.Store, database *store.DatabaseMessage, statementTp parserbase.QueryType) error {
 	environment, err := storeInstance.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{
 		ResourceID: &database.EffectiveEnvironmentID,
 	})
@@ -1924,9 +1924,9 @@ func checkDataSourceQueryPolicy(ctx context.Context, storeInstance *store.Store,
 	if environment == nil {
 		return status.Errorf(codes.NotFound, "environment %q not found", database.EffectiveEnvironmentID)
 	}
-	resourceType := api.PolicyResourceTypeEnvironment
+	resourceType := base.PolicyResourceTypeEnvironment
 	environmentResource := common.FormatEnvironment(environment.ResourceID)
-	policyType := api.PolicyTypeDataSourceQuery
+	policyType := base.PolicyTypeDataSourceQuery
 	dataSourceQueryPolicy, err := storeInstance.GetPolicyV2(ctx, &store.FindPolicyMessage{
 		ResourceType: &resourceType,
 		Resource:     &environmentResource,
@@ -1941,11 +1941,11 @@ func checkDataSourceQueryPolicy(ctx context.Context, storeInstance *store.Store,
 			return status.Errorf(codes.Internal, "failed to unmarshal data source query policy payload")
 		}
 		switch statementTp {
-		case base.DDL:
+		case parserbase.DDL:
 			if policy.DisallowDdl {
 				return status.Errorf(codes.PermissionDenied, "disallow execute DDL statement in environment %q", environment.Title)
 			}
-		case base.DML:
+		case parserbase.DML:
 			if policy.DisallowDml {
 				return status.Errorf(codes.PermissionDenied, "disallow execute DML statement in environment %q", environment.Title)
 			}

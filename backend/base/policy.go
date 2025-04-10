@@ -1,4 +1,4 @@
-package api
+package base
 
 // PolicyType is the type or name of a policy.
 type PolicyType string

@@ -7,9 +7,9 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
 
+	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/common"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
@@ -57,7 +57,7 @@ func (s *EnvironmentService) CreateEnvironment(ctx context.Context, request *v1p
 		return nil, status.Errorf(codes.InvalidArgument, "environment must be set")
 	}
 
-	if err := api.IsValidEnvironmentName(request.Environment.Title); err != nil {
+	if err := base.IsValidEnvironmentName(request.Environment.Title); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid environment title, error %v", err.Error())
 	}
 	if !isValidResourceID(request.EnvironmentId) {
@@ -82,7 +82,7 @@ func (s *EnvironmentService) CreateEnvironment(ctx context.Context, request *v1p
 		Color:      request.Environment.Color,
 	}
 	if pendingCreate.Protected || pendingCreate.Color != "" {
-		if err := s.licenseService.IsFeatureEnabled(api.FeatureEnvironmentTierPolicy); err != nil {
+		if err := s.licenseService.IsFeatureEnabled(base.FeatureEnvironmentTierPolicy); err != nil {
 			return nil, status.Error(codes.PermissionDenied, err.Error())
 		}
 	}
@@ -131,7 +131,7 @@ func (s *EnvironmentService) UpdateEnvironment(ctx context.Context, request *v1p
 	}
 
 	if patch.Protected != nil || patch.Color != nil {
-		if err := s.licenseService.IsFeatureEnabled(api.FeatureEnvironmentTierPolicy); err != nil {
+		if err := s.licenseService.IsFeatureEnabled(base.FeatureEnvironmentTierPolicy); err != nil {
 			return nil, status.Error(codes.PermissionDenied, err.Error())
 		}
 	}

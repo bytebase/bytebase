@@ -13,8 +13,8 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
 
+	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/common"
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -36,8 +36,8 @@ func init() {
 type IssueMessage struct {
 	Project         *ProjectMessage
 	Title           string
-	Status          api.IssueStatus
-	Type            api.IssueType
+	Status          base.IssueStatus
+	Type            base.IssueType
 	Description     string
 	Payload         *storepb.IssuePayload
 	Subscribers     []*UserMessage
@@ -60,7 +60,7 @@ type IssueMessage struct {
 // UpdateIssueMessage is the message for updating an issue.
 type UpdateIssueMessage struct {
 	Title       *string
-	Status      *api.IssueStatus
+	Status      *base.IssueStatus
 	Description *string
 	// PayloadUpsert upserts the presented top-level keys.
 	PayloadUpsert *storepb.IssuePayload
@@ -83,10 +83,10 @@ type FindIssueMessage struct {
 	SubscriberID    *int
 	CreatedAtBefore *time.Time
 	CreatedAtAfter  *time.Time
-	Types           *[]api.IssueType
+	Types           *[]base.IssueType
 
-	StatusList []api.IssueStatus
-	TaskTypes  *[]api.TaskType
+	StatusList []base.IssueStatus
+	TaskTypes  *[]base.TaskType
 	// Any of the task in the issue changes the instance with InstanceResourceID.
 	InstanceResourceID *string
 	// Any of the task in the issue changes the database with InstanceID and DatabaseName.
@@ -137,7 +137,7 @@ func (s *Store) GetIssueV2(ctx context.Context, find *FindIssueMessage) (*IssueM
 
 // CreateIssueV2 creates a new issue.
 func (s *Store) CreateIssueV2(ctx context.Context, create *IssueMessage, creatorID int) (*IssueMessage, error) {
-	create.Status = api.IssueOpen
+	create.Status = base.IssueOpen
 
 	payload, err := protojson.Marshal(create.Payload)
 	if err != nil {
@@ -221,7 +221,7 @@ func (s *Store) UpdateIssueV2(ctx context.Context, uid int, patch *UpdateIssueMe
 		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := patch.Status; v != nil {
-		set, args = append(set, fmt.Sprintf("status = $%d", len(args)+1)), append(args, api.IssueStatus(*v))
+		set, args = append(set, fmt.Sprintf("status = $%d", len(args)+1)), append(args, base.IssueStatus(*v))
 	}
 	if v := patch.Description; v != nil {
 		set, args = append(set, fmt.Sprintf("description = $%d", len(args)+1)), append(args, *v)
@@ -565,7 +565,7 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 }
 
 // BatchUpdateIssueStatuses updates the status of multiple issues.
-func (s *Store) BatchUpdateIssueStatuses(ctx context.Context, issueUIDs []int, status api.IssueStatus) error {
+func (s *Store) BatchUpdateIssueStatuses(ctx context.Context, issueUIDs []int, status base.IssueStatus) error {
 	var ids []string
 	for _, id := range issueUIDs {
 		ids = append(ids, fmt.Sprintf("%d", id))

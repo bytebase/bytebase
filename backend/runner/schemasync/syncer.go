@@ -17,11 +17,11 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/state"
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/store/model"
@@ -317,7 +317,7 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessa
 			newDatabase, err := s.store.CreateDatabaseDefault(ctx, &store.DatabaseMessage{
 				InstanceID:   instance.ResourceID,
 				DatabaseName: databaseMetadata.Name,
-				ProjectID:    api.DefaultProjectID,
+				ProjectID:    base.DefaultProjectID,
 			})
 			if err != nil {
 				return nil, nil, nil, errors.Wrapf(err, "failed to create instance %q database %q in sync runner", instance.ResourceID, databaseMetadata.Name)
@@ -573,7 +573,7 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 				ProjectID:    database.ProjectID,
 				InstanceID:   database.InstanceID,
 				DatabaseName: database.DatabaseName,
-				Type:         api.AnomalyDatabaseSchemaDrift,
+				Type:         base.AnomalyDatabaseSchemaDrift,
 			}); err != nil {
 				return errors.Wrapf(err, "failed to create anomaly")
 			}
@@ -581,7 +581,7 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 			err := s.store.DeleteAnomalyV2(ctx, &store.DeleteAnomalyMessage{
 				InstanceID:   database.InstanceID,
 				DatabaseName: database.DatabaseName,
-				Type:         api.AnomalyDatabaseSchemaDrift,
+				Type:         base.AnomalyDatabaseSchemaDrift,
 			})
 			if err != nil && common.ErrorCode(err) != common.NotFound {
 				return errors.Wrapf(err, "failed to close anomaly")
@@ -592,7 +592,7 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 		slog.Error("failed to check anomaly",
 			slog.String("instance", database.InstanceID),
 			slog.String("database", database.DatabaseName),
-			slog.String("type", string(api.AnomalyDatabaseSchemaDrift)),
+			slog.String("type", string(base.AnomalyDatabaseSchemaDrift)),
 			log.BBError(err))
 	}
 	return nil
@@ -641,12 +641,12 @@ func (s *Syncer) upsertDatabaseConnectionAnomaly(ctx context.Context, database *
 			ProjectID:    database.ProjectID,
 			InstanceID:   database.InstanceID,
 			DatabaseName: database.DatabaseName,
-			Type:         api.AnomalyDatabaseConnection,
+			Type:         base.AnomalyDatabaseConnection,
 		}); err != nil {
 			slog.Error("Failed to create anomaly",
 				slog.String("instance", database.InstanceID),
 				slog.String("database", database.DatabaseName),
-				slog.String("type", string(api.AnomalyDatabaseConnection)),
+				slog.String("type", string(base.AnomalyDatabaseConnection)),
 				log.BBError(err))
 		}
 		return
@@ -655,13 +655,13 @@ func (s *Syncer) upsertDatabaseConnectionAnomaly(ctx context.Context, database *
 	err := s.store.DeleteAnomalyV2(ctx, &store.DeleteAnomalyMessage{
 		InstanceID:   database.InstanceID,
 		DatabaseName: database.DatabaseName,
-		Type:         api.AnomalyDatabaseConnection,
+		Type:         base.AnomalyDatabaseConnection,
 	})
 	if err != nil && common.ErrorCode(err) != common.NotFound {
 		slog.Error("Failed to close anomaly",
 			slog.String("instance", database.InstanceID),
 			slog.String("database", database.DatabaseName),
-			slog.String("type", string(api.AnomalyDatabaseConnection)),
+			slog.String("type", string(base.AnomalyDatabaseConnection)),
 			log.BBError(err))
 	}
 }

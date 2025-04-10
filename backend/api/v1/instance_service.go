@@ -16,6 +16,7 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/emptypb"
 
+	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
@@ -23,7 +24,6 @@ import (
 	"github.com/bytebase/bytebase/backend/component/secret"
 	"github.com/bytebase/bytebase/backend/component/state"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 	metricapi "github.com/bytebase/bytebase/backend/metric"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/metric"
@@ -385,7 +385,7 @@ func (s *InstanceService) checkDataSource(instance *store.InstanceMessage, dataS
 		return status.Errorf(codes.InvalidArgument, "data source id is required")
 	}
 
-	if err := s.licenseService.IsFeatureEnabledForInstance(api.FeatureExternalSecretManager, instance); err != nil {
+	if err := s.licenseService.IsFeatureEnabledForInstance(base.FeatureExternalSecretManager, instance); err != nil {
 		missingFeatureError := status.Error(codes.PermissionDenied, err.Error())
 		if dataSource.GetExternalSecret() != nil {
 			return missingFeatureError
@@ -465,17 +465,17 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, request *v1pb.Upda
 			}
 			patch.Metadata.Activation = request.Instance.Activation
 		case "sync_interval":
-			if err := s.licenseService.IsFeatureEnabledForInstance(api.FeatureCustomInstanceSynchronization, instance); err != nil {
+			if err := s.licenseService.IsFeatureEnabledForInstance(base.FeatureCustomInstanceSynchronization, instance); err != nil {
 				return nil, status.Error(codes.PermissionDenied, err.Error())
 			}
 			patch.Metadata.SyncInterval = request.Instance.SyncInterval
 		case "maximum_connections":
-			if err := s.licenseService.IsFeatureEnabledForInstance(api.FeatureCustomInstanceSynchronization, instance); err != nil {
+			if err := s.licenseService.IsFeatureEnabledForInstance(base.FeatureCustomInstanceSynchronization, instance); err != nil {
 				return nil, status.Error(codes.PermissionDenied, err.Error())
 			}
 			patch.Metadata.MaximumConnections = request.Instance.MaximumConnections
 		case "sync_databases":
-			if err := s.licenseService.IsFeatureEnabledForInstance(api.FeatureCustomInstanceSynchronization, instance); err != nil {
+			if err := s.licenseService.IsFeatureEnabledForInstance(base.FeatureCustomInstanceSynchronization, instance); err != nil {
 				return nil, status.Error(codes.PermissionDenied, err.Error())
 			}
 			patch.Metadata.SyncDatabases = request.Instance.SyncDatabases
@@ -518,7 +518,7 @@ func (s *InstanceService) DeleteInstance(ctx context.Context, request *v1pb.Dele
 	}
 	if request.Force {
 		if len(databases) > 0 {
-			defaultProjectID := api.DefaultProjectID
+			defaultProjectID := base.DefaultProjectID
 			if _, err := s.store.BatchUpdateDatabases(ctx, databases, &store.BatchUpdateDatabases{ProjectID: &defaultProjectID}); err != nil {
 				return nil, err
 			}
@@ -526,7 +526,7 @@ func (s *InstanceService) DeleteInstance(ctx context.Context, request *v1pb.Dele
 	} else {
 		var databaseNames []string
 		for _, database := range databases {
-			if database.ProjectID != api.DefaultProjectID {
+			if database.ProjectID != base.DefaultProjectID {
 				databaseNames = append(databaseNames, database.DatabaseName)
 			}
 		}
@@ -684,7 +684,7 @@ func (s *InstanceService) AddDataSource(ctx context.Context, request *v1pb.AddDa
 	if dataSource.GetType() != storepb.DataSourceType_READ_ONLY {
 		return nil, status.Error(codes.InvalidArgument, "only read-only data source can be added.")
 	}
-	if err := s.licenseService.IsFeatureEnabledForInstance(api.FeatureReadReplicaConnection, instance); err != nil {
+	if err := s.licenseService.IsFeatureEnabledForInstance(base.FeatureReadReplicaConnection, instance); err != nil {
 		return nil, status.Error(codes.PermissionDenied, err.Error())
 	}
 
@@ -733,7 +733,7 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 	}
 
 	if dataSource.GetType() == storepb.DataSourceType_READ_ONLY {
-		if err := s.licenseService.IsFeatureEnabledForInstance(api.FeatureReadReplicaConnection, instance); err != nil {
+		if err := s.licenseService.IsFeatureEnabledForInstance(base.FeatureReadReplicaConnection, instance); err != nil {
 			return nil, status.Error(codes.PermissionDenied, err.Error())
 		}
 	}
@@ -836,7 +836,7 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 		return nil, err
 	}
 	if hasSSH {
-		if err := s.licenseService.IsFeatureEnabledForInstance(api.FeatureInstanceSSHConnection, instance); err != nil {
+		if err := s.licenseService.IsFeatureEnabledForInstance(base.FeatureInstanceSSHConnection, instance); err != nil {
 			return nil, status.Error(codes.PermissionDenied, err.Error())
 		}
 	}

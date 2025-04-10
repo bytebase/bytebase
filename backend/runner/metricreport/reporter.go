@@ -10,10 +10,10 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/metric"
 	"github.com/bytebase/bytebase/backend/plugin/metric/segment"
 	"github.com/bytebase/bytebase/backend/store"
@@ -164,14 +164,14 @@ func (m *Reporter) identify(ctx context.Context) (string, error) {
 
 	subscriptionStartDate := ""
 	subscriptionEndDate := ""
-	if subscription.Plan != api.FREE {
+	if subscription.Plan != base.FREE {
 		subscriptionStartDate = time.Unix(subscription.StartedTS, 0).Format(time.RFC3339)
 		subscriptionEndDate = time.Unix(subscription.ExpiresTS, 0).Format(time.RFC3339)
 	}
 
-	user, err := m.store.GetUserByID(ctx, api.PrincipalIDForFirstUser)
+	user, err := m.store.GetUserByID(ctx, base.PrincipalIDForFirstUser)
 	if err != nil {
-		slog.Debug("unable to get the first principal user", slog.Int("id", api.PrincipalIDForFirstUser), log.BBError(err))
+		slog.Debug("unable to get the first principal user", slog.Int("id", base.PrincipalIDForFirstUser), log.BBError(err))
 	}
 	email := ""
 	name := ""

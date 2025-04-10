@@ -10,7 +10,7 @@ import (
 	lru "github.com/hashicorp/golang-lru/v2"
 	"github.com/pkg/errors"
 
-	api "github.com/bytebase/bytebase/backend/legacyapi"
+	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
@@ -31,7 +31,7 @@ type Store struct {
 	issueCache           *lru.Cache[int, *IssueMessage]
 	issueByPipelineCache *lru.Cache[int, *IssueMessage]
 	pipelineCache        *lru.Cache[int, *PipelineMessage]
-	settingCache         *lru.Cache[api.SettingName, *SettingMessage]
+	settingCache         *lru.Cache[base.SettingName, *SettingMessage]
 	idpCache             *lru.Cache[string, *IdentityProviderMessage]
 	risksCache           *lru.Cache[int, []*RiskMessage] // Use 0 as the key.
 	databaseGroupCache   *lru.Cache[string, *DatabaseGroupMessage]
@@ -86,7 +86,7 @@ func New(ctx context.Context, pgURL string, enableCache bool) (*Store, error) {
 	if err != nil {
 		return nil, err
 	}
-	settingCache, err := lru.New[api.SettingName, *SettingMessage](64)
+	settingCache, err := lru.New[base.SettingName, *SettingMessage](64)
 	if err != nil {
 		return nil, err
 	}
@@ -184,7 +184,7 @@ func getInstanceCacheKey(instanceID string) string {
 	return instanceID
 }
 
-func getPolicyCacheKey(resourceType api.PolicyResourceType, resource string, policyType api.PolicyType) string {
+func getPolicyCacheKey(resourceType base.PolicyResourceType, resource string, policyType base.PolicyType) string {
 	return fmt.Sprintf("policies/%s/%s/%s", resourceType, resource, policyType)
 }
 

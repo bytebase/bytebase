@@ -8,9 +8,9 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
 
+	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/common"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
@@ -60,7 +60,7 @@ func (s *RiskService) ListRisks(ctx context.Context, _ *v1pb.ListRisksRequest) (
 
 // CreateRisk creates a risk.
 func (s *RiskService) CreateRisk(ctx context.Context, request *v1pb.CreateRiskRequest) (*v1pb.Risk, error) {
-	if err := s.licenseService.IsFeatureEnabled(api.FeatureCustomApproval); err != nil {
+	if err := s.licenseService.IsFeatureEnabled(base.FeatureCustomApproval); err != nil {
 		return nil, status.Error(codes.PermissionDenied, err.Error())
 	}
 	// Validate the condition.
@@ -83,7 +83,7 @@ func (s *RiskService) CreateRisk(ctx context.Context, request *v1pb.CreateRiskRe
 
 // UpdateRisk updates a risk.
 func (s *RiskService) UpdateRisk(ctx context.Context, request *v1pb.UpdateRiskRequest) (*v1pb.Risk, error) {
-	if err := s.licenseService.IsFeatureEnabled(api.FeatureCustomApproval); err != nil {
+	if err := s.licenseService.IsFeatureEnabled(base.FeatureCustomApproval); err != nil {
 		return nil, status.Error(codes.PermissionDenied, err.Error())
 	}
 	if request.UpdateMask == nil {

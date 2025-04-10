@@ -4,8 +4,8 @@ package config
 import (
 	"sync/atomic"
 
+	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/common"
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 )
 
 // Profile is the configuration to start main server.
@@ -64,8 +64,8 @@ func (prof *Profile) UseEmbedDB() bool {
 }
 
 var saasFeatureControlMap = map[string]bool{
-	string(api.SettingPluginAgent): true,
-	string(api.SettingWorkspaceID): true,
+	string(base.SettingPluginAgent): true,
+	string(base.SettingWorkspaceID): true,
 }
 
 // IsFeatureUnavailable returns if the feature is unavailable in SaaS mode.

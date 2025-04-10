@@ -9,10 +9,10 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
 
+	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/iam"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
@@ -82,7 +82,7 @@ func (s *RoleService) getBuildinRole(roleID string) *store.RoleMessage {
 
 // CreateRole creates a new role.
 func (s *RoleService) CreateRole(ctx context.Context, request *v1pb.CreateRoleRequest) (*v1pb.Role, error) {
-	if err := s.licenseService.IsFeatureEnabled(api.FeatureCustomRole); err != nil {
+	if err := s.licenseService.IsFeatureEnabled(base.FeatureCustomRole); err != nil {
 		return nil, status.Error(codes.PermissionDenied, err.Error())
 	}
 
@@ -119,7 +119,7 @@ func (s *RoleService) CreateRole(ctx context.Context, request *v1pb.CreateRoleRe
 
 // UpdateRole updates an existing role.
 func (s *RoleService) UpdateRole(ctx context.Context, request *v1pb.UpdateRoleRequest) (*v1pb.Role, error) {
-	if err := s.licenseService.IsFeatureEnabled(api.FeatureCustomRole); err != nil {
+	if err := s.licenseService.IsFeatureEnabled(base.FeatureCustomRole); err != nil {
 		return nil, status.Error(codes.PermissionDenied, err.Error())
 	}
 	if request.UpdateMask == nil {
@@ -208,7 +208,7 @@ func (s *RoleService) DeleteRole(ctx context.Context, request *v1pb.DeleteRoleRe
 			}
 			if usedResource.Resource != "" {
 				usedBy = append(usedBy, usedResource.Resource)
-			} else if usedResource.ResourceType == api.PolicyResourceTypeWorkspace {
+			} else if usedResource.ResourceType == base.PolicyResourceTypeWorkspace {
 				usedBy = append(usedBy, "workspace")
 			}
 		}
