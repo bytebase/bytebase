@@ -37,3 +37,20 @@ func EngineSupportQueryNewACL(engine storepb.Engine) bool {
 		return false
 	}
 }
+
+func EngineSupportMasking(e storepb.Engine) bool {
+	switch e {
+	case storepb.Engine_MYSQL,
+		storepb.Engine_POSTGRES,
+		storepb.Engine_ORACLE,
+		storepb.Engine_MSSQL,
+		storepb.Engine_MARIADB,
+		storepb.Engine_OCEANBASE,
+		storepb.Engine_TIDB,
+		storepb.Engine_BIGQUERY,
+		storepb.Engine_SPANNER:
+		return true
+	default:
+		return false
+	}
+}
