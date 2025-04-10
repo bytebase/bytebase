@@ -407,10 +407,10 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 			if err != nil {
 				return nil, status.Errorf(codes.Internal, "failed to undelete user: %v", err)
 			}
-			if userInfo.HasGroups {
-				if err := s.syncUserGroups(ctx, user, userInfo.Groups); err != nil {
-					return nil, status.Errorf(codes.Internal, "failed to sync user groups: %v", err)
-				}
+		}
+		if userInfo.HasGroups {
+			if err := s.syncUserGroups(ctx, user, userInfo.Groups); err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to sync user groups: %v", err)
 			}
 		}
 		return user, nil
