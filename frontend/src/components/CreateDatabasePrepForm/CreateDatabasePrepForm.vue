@@ -24,7 +24,6 @@
           name="instance"
           required
           :disabled="!allowEditInstance"
-          :project-name="project.name"
           :instance-name="state.instanceName"
           :allowed-engine-list="enginesSupportCreateDatabase()"
           @update:instance-name="selectInstance"
