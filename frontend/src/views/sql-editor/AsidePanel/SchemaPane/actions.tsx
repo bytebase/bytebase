@@ -30,7 +30,7 @@ import formatSQL from "@/components/MonacoEditor/sqlFormatter";
 import { useExecuteSQL } from "@/composables/useExecuteSQL";
 import { t } from "@/plugins/i18n";
 import { SQL_EDITOR_DATABASE_MODULE } from "@/router/sqlEditor";
-import { pushNotification, useAppFeature, useSQLEditorTabStore } from "@/store";
+import { pushNotification, useAppFeature, useSQLEditorTabStore, useTabViewStateStore } from "@/store";
 import {
   DEFAULT_SQL_EDITOR_TAB_MODE,
   dialectOfEngineV1,
@@ -60,6 +60,7 @@ import {
   supportGetStringSchema,
   toClipboard,
   defaultSQLEditorTab,
+  isSimilarSQLEditorTab,
 } from "@/utils";
 import { keyWithPosition } from "../../EditorCommon";
 import {
@@ -164,8 +165,10 @@ export const useActions = () => {
     runQuery(db, schema, tableOrViewName, query);
   };
 
-  const openNewTab = ({ title, view }: { title?: string; view?: EditorPanelView }) => {
+  const openNewTab = ({ title, view, schema }: { title?: string; schema?: string; view?: EditorPanelView }) => {
     const tabStore = useSQLEditorTabStore();
+    const tabViewStateStore = useTabViewStateStore();
+
     const fromTab = tabStore.currentTab;
     const clonedTab = defaultSQLEditorTab();
     if (fromTab) {
@@ -174,114 +177,84 @@ export const useActions = () => {
     }
     clonedTab.status = "CLEAN";
     clonedTab.title = title ?? "";
+
+    for (const tab of tabStore.tabList) {
+      if (tab.id === fromTab?.id) {
+        continue;
+      }
+      if (!isSimilarSQLEditorTab(clonedTab, tab, false)) {
+        continue;
+      }
+      if (tab.status !== clonedTab.status) {
+        continue;
+      }
+      const viewState = tabViewStateStore.getViewState(tab.id);
+      if (viewState.view !== view || viewState.schema !== schema) {
+        continue;
+      }
+      tabStore.setCurrentTabId(tab.id);
+      return;
+    }
+
     tabStore.addTab(clonedTab);
-    updateViewState({ view });
+    updateViewState({ view, schema });
   }
 
   const viewDetail = async (node: TreeNode) => {
     const { type, target } = node.meta;
     const SUPPORTED_TYPES: NodeType[] = [
-      "schema",
       "table",
-      "external-table",
       "view",
       "procedure",
-      "package",
       "function",
-      "sequence",
-      "trigger",
-      "index",
-      "foreign-key",
-      "partition-table",
     ] as const;
     if (!SUPPORTED_TYPES.includes(type)) {
       return;
     }
 
-    openNewTab({
-      title: "View detail"
-    });
-
-    if (type === "schema") {
-      const schema = (node.meta.target as NodeTarget<"schema">).schema.name;
-      updateViewState({
-        schema,
-      });
-      return;
-    }
-
     const { schema } = target as NodeTarget<
       | "table"
-      | "column"
       | "view"
       | "procedure"
-      | "package"
       | "function"
-      | "sequence"
-      | "trigger"
-      | "external-table"
-      | "index"
-      | "foreign-key"
-      | "partition-table"
-      | "dependency-column"
     >;
-    updateViewState({
+
+    openNewTab({
+      title: "View detail",
       view: typeToView(type),
       schema: schema.name,
     });
     await nextTick();
+
     const detail: EditorPanelViewState["detail"] = {};
-    if (
-      type === "table" ||
-      type === "index" ||
-      type === "foreign-key" ||
-      type === "trigger" ||
-      type === "partition-table"
-    ) {
-      detail.table = (target as NodeTarget<"table">).table.name;
+    let name = "";
+    switch (type) {
+      case "table":
+        name = (target as NodeTarget<"table">).table.name;
+        detail.table = name;
+        break;
+      case "view":
+        name = (target as NodeTarget<"view">).view.name;
+        detail.view = name;
+        break;
+      case "procedure":
+        const { procedure, position } = target as NodeTarget<"procedure">;
+        name = procedure.name;
+        detail.procedure = keyWithPosition(procedure.name, position);
+        break;
+      case "function":
+        const { function: func, position: funcPosition } = target as NodeTarget<"function">;
+        name = func.name;
+        detail.func = keyWithPosition(func.name, funcPosition);
+        break
     }
-    if (type === "trigger") {
-      const { trigger, position } = target as NodeTarget<"trigger">;
-      detail.trigger = keyWithPosition(trigger.name, position);
-    }
-    if (type === "view") {
-      detail.view = (target as NodeTarget<"view">).view.name;
-    }
-    if (type === "procedure") {
-      const { procedure, position } = target as NodeTarget<"procedure">;
-      detail.procedure = keyWithPosition(procedure.name, position);
-    }
-    if (type === "package") {
-      const { package: pack, position } = target as NodeTarget<"package">;
-      detail.package = keyWithPosition(pack.name, position);
-    }
-    if (type === "function") {
-      const { function: func, position } = target as NodeTarget<"function">;
-      detail.func = keyWithPosition(func.name, position);
-    }
-    if (type === "sequence") {
-      const { sequence, position } = target as NodeTarget<"sequence">;
-      detail.sequence = keyWithPosition(sequence.name, position);
-    }
-    if (type === "external-table") {
-      detail.externalTable = (
-        target as NodeTarget<"external-table">
-      ).externalTable.name;
-    }
-    if (type === "index") {
-      detail.index = (target as NodeTarget<"index">).index.name;
-    }
-    if (type === "foreign-key") {
-      detail.foreignKey = (target as NodeTarget<"foreign-key">).foreignKey.name;
-    }
-    if (type === "partition-table") {
-      detail.partition = (
-        target as NodeTarget<"partition-table">
-      ).partition.name;
-    }
+
     updateViewState({
       detail,
     });
+    if (name) {
+      useSQLEditorTabStore().updateCurrentTab({ title: `Detail for ${name}` })
+    }
   };
 
   return { selectAllFromTableOrView, viewDetail, openNewTab };
@@ -373,9 +346,14 @@ export const useDropdown = () => {
           label: action.title,
           icon: action.icon,
           onSelect: () => {
+            let schema: string | undefined;
+            if (type === "schema") {
+              schema = (node.meta.target as NodeTarget<"schema">).schema.name;
+            }
             openNewTab({
               title: action.title,
               view: action.view,
+              schema,
             })
           }
         })
