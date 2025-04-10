@@ -347,17 +347,14 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 		})
 	}
 
-	// Create instance metadata
-	instanceMetadata := &storepb.Instance{
-		// Only sync a non-existent database to block actual syncing
-		SyncDatabases: []string{"__bytebase_no_sync__"},
-	}
+	// Create minimal instance metadata, following the same pattern as other drivers
+	instanceMetadata := &storepb.Instance{}
 
-	// Return a completely empty database list to avoid any
-	// database creation attempts and sync_status issues
+	// Return the catalog metadata we collected as databases
+	// This will allow them to be displayed in the UI
 	return &db.InstanceMetadata{
 		Version:   version,
-		Databases: []*storepb.DatabaseSchemaMetadata{}, // Empty databases list
+		Databases: catalogMetadata, // Return the catalogs we found
 		Metadata:  instanceMetadata,
 	}, nil
 }
@@ -368,11 +365,15 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 		return nil, errors.New("database connection not established")
 	}
 
-	// For Trino, the database is the catalog
-	catalog := d.config.DataSource.Database
-	if catalog == "" {
-		return nil, errors.New("no catalog specified in connection configuration")
+	// Get the database name from the URL
+	// This will be either the configured catalog or the database Bytebase is trying to sync
+	databaseName, err := d.getDatabaseNameForSync(ctx)
+	if err != nil {
+		return nil, err
 	}
+
+	// Use the database name as the catalog
+	catalog := databaseName
 
 	// Create database metadata
 	dbMeta := &storepb.DatabaseSchemaMetadata{
@@ -510,6 +511,51 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 
 	dbMeta.Schemas = schemas
 	return dbMeta, nil
+}
+
+// getDatabaseNameForSync gets the database name for schema syncing.
+// This handles the case where no catalog is specified in the connection configuration.
+func (d *Driver) getDatabaseNameForSync(ctx context.Context) (string, error) {
+	// First try to use the configured catalog
+	if d.config.DataSource.Database != "" {
+		return d.config.DataSource.Database, nil
+	}
+
+	// If no catalog is configured, get the database name from the Bytebase context
+	// Typically this will be one of the catalogs we returned in SyncInstance
+
+	// For the system catalog, which all Trino installations have
+	if ctx.Value("database") != nil {
+		databaseName, ok := ctx.Value("database").(string)
+		if ok && databaseName != "" {
+			return databaseName, nil
+		}
+	}
+
+	// As a fallback, try to get a list of catalogs and use the first one
+	rows, err := d.db.QueryContext(ctx, "SHOW CATALOGS")
+	if err != nil {
+		return "", errors.Wrap(err, "failed to list catalogs")
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var catalogName string
+		if err := rows.Scan(&catalogName); err != nil {
+			return "", errors.Wrap(err, "failed to scan catalog name")
+		}
+
+		// Skip empty catalog names
+		if catalogName == "" {
+			continue
+		}
+
+		// Return the first non-empty catalog name
+		return catalogName, nil
+	}
+
+	// If we get here, we couldn't find any catalogs
+	return "system", nil // Use "system" as a default fallback
 }
 
 // getVersion gets the Trino server version.
