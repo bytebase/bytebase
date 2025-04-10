@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/pkg/errors"
+
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -58,7 +60,7 @@ func writeReleaseCheckToCodeQualityJSON(resp *v1pb.CheckReleaseResponse) error {
 
 	jsonData, err := json.MarshalIndent(data, "", "  ")
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "error marshaling json")
 	}
 	return os.WriteFile("bytebase_codequality.json", jsonData, 0644)
 }
