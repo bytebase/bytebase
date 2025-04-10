@@ -241,7 +241,6 @@ func TestIdentityProvider(t *testing.T) {
 			FieldMapping: &storepb.FieldMapping{
 				Identifier:  "uid",
 				DisplayName: "displayName",
-				Email:       "mail",
 			},
 		},
 	)
@@ -253,7 +252,6 @@ func TestIdentityProvider(t *testing.T) {
 	wantUserInfo := &storepb.IdentityProviderUserInfo{
 		Identifier:  testUID,
 		DisplayName: testDisplayName,
-		Email:       testMail,
 	}
 	assert.Equal(t, wantUserInfo, userInfo)
 }

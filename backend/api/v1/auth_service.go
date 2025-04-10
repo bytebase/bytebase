@@ -408,6 +408,13 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 				return nil, status.Errorf(codes.Internal, "failed to undelete user: %v", err)
 			}
 		}
+		if userInfo.HasGroups {
+			// Sync user groups with the identity provider.
+			// The userInfo.Groups is the groups that the user belongs to in the identity provider.
+			if err := s.syncUserGroups(ctx, user, userInfo.Groups); err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to sync user groups: %v", err)
+			}
+		}
 		return user, nil
 	}
 
@@ -432,6 +439,13 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to create user, error: %v", err)
+	}
+	if userInfo.HasGroups {
+		// Sync user groups with the identity provider.
+		// The userInfo.Groups is the groups that the user belongs to in the identity provider.
+		if err := s.syncUserGroups(ctx, user, userInfo.Groups); err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to sync user groups: %v", err)
+		}
 	}
 	return newUser, nil
 }
@@ -466,4 +480,52 @@ func (s *AuthService) challengeRecoveryCode(ctx context.Context, user *store.Use
 // validateWithCodeAndSecret validates the given code against the given secret.
 func validateWithCodeAndSecret(code, secret string) bool {
 	return totp.Validate(code, secret)
+}
+
+// syncUserGroups syncs the user groups with the given groups.
+// The given groups are the groups that the user belongs to in the identity provider.
+// Supported groups format: ["group1", "group2", ...], ["dev@bb.com", ...]
+func (s *AuthService) syncUserGroups(ctx context.Context, user *store.UserMessage, groups []string) error {
+	bbGroups, err := s.store.ListGroups(ctx, &store.FindGroupMessage{})
+	if err != nil {
+		return status.Errorf(codes.Internal, "failed to list groups: %v", err)
+	}
+
+	for _, bbGroup := range bbGroups {
+		var isMember bool
+		for _, group := range groups {
+			if bbGroup.Email == group || bbGroup.Title == group {
+				isMember = true
+				break
+			}
+		}
+		var isBBGroupMember bool
+		for _, member := range bbGroup.Payload.Members {
+			if member.Member == common.FormatUserUID(user.ID) {
+				isBBGroupMember = true
+				break
+			}
+		}
+		if isMember != isBBGroupMember {
+			if isMember {
+				// Add the user to the group.
+				bbGroup.Payload.Members = append(bbGroup.Payload.Members, &storepb.GroupMember{
+					Role:   storepb.GroupMember_MEMBER,
+					Member: common.FormatUserUID(user.ID),
+				})
+			} else {
+				// Remove the user from the group.
+				bbGroup.Payload.Members = slices.DeleteFunc(bbGroup.Payload.Members, func(member *storepb.GroupMember) bool {
+					return member.Member == common.FormatUserUID(user.ID)
+				})
+			}
+			if _, err := s.store.UpdateGroup(ctx, bbGroup.Email, &store.UpdateGroupMessage{
+				Payload: bbGroup.Payload,
+			}); err != nil {
+				return status.Errorf(codes.Internal, "failed to update group %q: %v", bbGroup.Email, err)
+			}
+		}
+	}
+
+	return nil
 }
