@@ -189,9 +189,10 @@ func TestIdentityProvider(t *testing.T) {
 	)
 	userinfo, err := json.Marshal(
 		map[string]any{
-			"sub":   testSubject,
-			"name":  testName,
-			"email": testEmail,
+			"sub":    testSubject,
+			"name":   testName,
+			"email":  testEmail,
+			"groups": []any{"Dev", "Admin"},
 		},
 	)
 	require.NoError(t, err)
@@ -206,7 +207,7 @@ func TestIdentityProvider(t *testing.T) {
 			FieldMapping: &storepb.FieldMapping{
 				Identifier:  "sub",
 				DisplayName: "name",
-				Email:       "email",
+				Groups:      "groups",
 			},
 		},
 	)
@@ -222,7 +223,8 @@ func TestIdentityProvider(t *testing.T) {
 	wantUserInfo := &storepb.IdentityProviderUserInfo{
 		Identifier:  testSubject,
 		DisplayName: testName,
-		Email:       testEmail,
+		Groups:      []string{"Dev", "Admin"},
+		HasGroups:   true,
 	}
 	assert.Equal(t, wantUserInfo, userInfo)
 }
@@ -241,9 +243,10 @@ func TestIdentityProvider_SelfSigned(t *testing.T) {
 	)
 	userinfo, err := json.Marshal(
 		map[string]any{
-			"sub":   testSubject,
-			"name":  testName,
-			"email": testEmail,
+			"sub":    testSubject,
+			"name":   testName,
+			"email":  testEmail,
+			"groups": []any{"Dev", "Admin"},
 		},
 	)
 	require.NoError(t, err)
@@ -259,7 +262,7 @@ func TestIdentityProvider_SelfSigned(t *testing.T) {
 				FieldMapping: &storepb.FieldMapping{
 					Identifier:  "sub",
 					DisplayName: "name",
-					Email:       "email",
+					Groups:      "groups",
 				},
 			},
 		)
@@ -277,7 +280,7 @@ func TestIdentityProvider_SelfSigned(t *testing.T) {
 				FieldMapping: &storepb.FieldMapping{
 					Identifier:  "sub",
 					DisplayName: "name",
-					Email:       "email",
+					Groups:      "groups",
 				},
 				SkipTlsVerify: true,
 			},
@@ -294,7 +297,8 @@ func TestIdentityProvider_SelfSigned(t *testing.T) {
 		wantUserInfo := &storepb.IdentityProviderUserInfo{
 			Identifier:  testSubject,
 			DisplayName: testName,
-			Email:       testEmail,
+			Groups:      []string{"Dev", "Admin"},
+			HasGroups:   true,
 		}
 		assert.Equal(t, wantUserInfo, userInfo)
 	})

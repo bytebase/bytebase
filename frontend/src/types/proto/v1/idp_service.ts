@@ -326,21 +326,19 @@ export interface LDAPIdentityProviderConfig {
  * FieldMapping saves the field names from user info API of identity provider.
  * As we save all raw json string of user info response data into `principal.idp_user_info`,
  * we can extract the relevant data based with `FieldMapping`.
- *
- * e.g. For GitHub authenticated user API, it will return `login`, `name` and `email` in response.
- * Then the identifier of FieldMapping will be `login`, display_name will be `name`,
- * and email will be `email`.
- * reference: https://docs.github.com/en/rest/users/users?apiVersion=2022-11-28#get-the-authenticated-user
  */
 export interface FieldMapping {
   /** Identifier is the field name of the unique identifier in 3rd-party idp user info. Required. */
   identifier: string;
-  /** DisplayName is the field name of display name in 3rd-party idp user info. */
+  /** DisplayName is the field name of display name in 3rd-party idp user info. Optional. */
   displayName: string;
-  /** Email is the field name of primary email in 3rd-party idp user info. */
-  email: string;
-  /** Phone is the field name of primary phone in 3rd-party idp user info. */
+  /** Phone is the field name of primary phone in 3rd-party idp user info. Optional. */
   phone: string;
+  /**
+   * Groups is the field name of groups in 3rd-party idp user info. Optional.
+   * Mainly used for OIDC: https://developer.okta.com/docs/guides/customize-tokens-groups-claim/main/
+   */
+  groups: string;
 }
 
 function createBaseGetIdentityProviderRequest(): GetIdentityProviderRequest {
@@ -1879,7 +1877,7 @@ export const LDAPIdentityProviderConfig: MessageFns<LDAPIdentityProviderConfig> 
 };
 
 function createBaseFieldMapping(): FieldMapping {
-  return { identifier: "", displayName: "", email: "", phone: "" };
+  return { identifier: "", displayName: "", phone: "", groups: "" };
 }
 
 export const FieldMapping: MessageFns<FieldMapping> = {
@@ -1890,11 +1888,11 @@ export const FieldMapping: MessageFns<FieldMapping> = {
     if (message.displayName !== "") {
       writer.uint32(18).string(message.displayName);
     }
-    if (message.email !== "") {
-      writer.uint32(26).string(message.email);
-    }
     if (message.phone !== "") {
       writer.uint32(34).string(message.phone);
+    }
+    if (message.groups !== "") {
+      writer.uint32(42).string(message.groups);
     }
     return writer;
   },
@@ -1922,20 +1920,20 @@ export const FieldMapping: MessageFns<FieldMapping> = {
           message.displayName = reader.string();
           continue;
         }
-        case 3: {
-          if (tag !== 26) {
-            break;
-          }
-
-          message.email = reader.string();
-          continue;
-        }
         case 4: {
           if (tag !== 34) {
             break;
           }
 
           message.phone = reader.string();
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.groups = reader.string();
           continue;
         }
       }
@@ -1951,8 +1949,8 @@ export const FieldMapping: MessageFns<FieldMapping> = {
     return {
       identifier: isSet(object.identifier) ? globalThis.String(object.identifier) : "",
       displayName: isSet(object.displayName) ? globalThis.String(object.displayName) : "",
-      email: isSet(object.email) ? globalThis.String(object.email) : "",
       phone: isSet(object.phone) ? globalThis.String(object.phone) : "",
+      groups: isSet(object.groups) ? globalThis.String(object.groups) : "",
     };
   },
 
@@ -1964,11 +1962,11 @@ export const FieldMapping: MessageFns<FieldMapping> = {
     if (message.displayName !== "") {
       obj.displayName = message.displayName;
     }
-    if (message.email !== "") {
-      obj.email = message.email;
-    }
     if (message.phone !== "") {
       obj.phone = message.phone;
+    }
+    if (message.groups !== "") {
+      obj.groups = message.groups;
     }
     return obj;
   },
@@ -1980,8 +1978,8 @@ export const FieldMapping: MessageFns<FieldMapping> = {
     const message = createBaseFieldMapping();
     message.identifier = object.identifier ?? "";
     message.displayName = object.displayName ?? "";
-    message.email = object.email ?? "";
     message.phone = object.phone ?? "";
+    message.groups = object.groups ?? "";
     return message;
   },
 };

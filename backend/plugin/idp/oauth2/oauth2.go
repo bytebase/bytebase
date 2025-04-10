@@ -131,11 +131,6 @@ func (p *IdentityProvider) UserInfo(token string) (*storepb.IdentityProviderUser
 	if userInfo.DisplayName == "" {
 		userInfo.DisplayName = userInfo.Identifier
 	}
-	if p.config.FieldMapping.Email != "" {
-		if v, ok := idp.GetValueWithKey(claims, p.config.FieldMapping.Email).(string); ok {
-			userInfo.Email = v
-		}
-	}
 	if p.config.FieldMapping.Phone != "" {
 		if v, ok := idp.GetValueWithKey(claims, p.config.FieldMapping.Phone).(string); ok {
 			// Only set phone if it's valid.

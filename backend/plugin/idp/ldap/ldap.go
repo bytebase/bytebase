@@ -157,7 +157,7 @@ func (p *IdentityProvider) Authenticate(username, password string) (*storepb.Ide
 			0,
 			false,
 			strings.ReplaceAll(p.config.UserFilter, "%s", username),
-			[]string{"dn", p.config.FieldMapping.Identifier, p.config.FieldMapping.DisplayName, p.config.FieldMapping.Email},
+			[]string{"dn", p.config.FieldMapping.Identifier, p.config.FieldMapping.DisplayName},
 			nil,
 		),
 	)
@@ -181,6 +181,5 @@ func (p *IdentityProvider) Authenticate(username, password string) (*storepb.Ide
 	return &storepb.IdentityProviderUserInfo{
 		Identifier:  identifier,
 		DisplayName: entry.GetAttributeValue(p.config.FieldMapping.DisplayName),
-		Email:       entry.GetAttributeValue(p.config.FieldMapping.Email),
 	}, nil
 }

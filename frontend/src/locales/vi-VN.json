@@ -451,6 +451,7 @@
         "identifier-tips": "Nó phải là một chuỗi duy nhất. Và nếu nó không ở định dạng email, nó sẽ được nối với tên miền.",
         "display-name": "Tên hiển thị của người dùng Bytebase",
         "phone": "Số điện thoại của người dùng Bytebase",
+        "groups": "Nhóm người dùng Bytebase",
         "auth-style": {
           "self": "Kiểu xác thực",
           "in-params": {
