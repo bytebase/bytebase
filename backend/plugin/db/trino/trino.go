@@ -7,6 +7,7 @@ import (
 	"net/url"
 
 	"github.com/pkg/errors"
+	// Import the Trino driver to register it with database/sql
 	_ "github.com/trinodb/trino-go-client/trino"
 
 	"github.com/bytebase/bytebase/backend/plugin/db"
@@ -27,7 +28,7 @@ func newDriver(db.DriverConfig) db.Driver {
 	return &Driver{}
 }
 
-func (d *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
+func (_ *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
 	// Construct Trino DSN
 	var scheme string
 	if config.DataSource.UseSsl {
@@ -101,10 +102,12 @@ func (d *Driver) GetDB() *sql.DB {
 	return d.db
 }
 
-func (*Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
+// func (*Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
+func (*Driver) Execute(_ context.Context, _ string, _ db.ExecuteOptions) (int64, error) {
 	return 0, errors.New("tbd")
 }
 
-func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
+// func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
+func (*Driver) QueryConn(_ context.Context, _ *sql.Conn, _ string, _ db.QueryContext) ([]*v1pb.QueryResult, error) {
 	return nil, errors.New("tbd")
 }

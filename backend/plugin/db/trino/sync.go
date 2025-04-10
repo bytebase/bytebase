@@ -41,21 +41,34 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 			// skip catalog if schemas can't be listed
 			continue
 		}
-		defer schemaRows.Close()
 
 		var schemas []*storepb.SchemaMetadata
 		for schemaRows.Next() {
 			var schemaName string
 			if err := schemaRows.Scan(&schemaName); err != nil {
+				schemaRows.Close()
 				return nil, err
 			}
 			schemas = append(schemas, &storepb.SchemaMetadata{
 				Name: schemaName,
 			})
 		}
-		database.Schemas = schemas
+		// Check for errors from iterating over rows
+		if err := schemaRows.Err(); err != nil {
+			schemaRows.Close()
+			return nil, err
+		}
 
+		// Close the schema rows now that we're done with them
+		schemaRows.Close()
+		
+		database.Schemas = schemas
 		databases = append(databases, database)
+	}
+
+	// Check for errors from iterating over catalog rows
+	if err := catalogRows.Err(); err != nil {
+		return nil, err
 	}
 
 	return &db.InstanceMetadata{
@@ -64,7 +77,8 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 	}, nil
 }
 
-func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetadata, error) {
+// func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetadata, error) {
+func (d *Driver) SyncDBSchema(_ context.Context) (*storepb.DatabaseSchemaMetadata, error) {
 	return nil, nil
 }
 
