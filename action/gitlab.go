@@ -10,17 +10,18 @@ import (
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
+// Define the struct for the inner "lines" object.
 type Lines struct {
 	Begin int `json:"begin"`
 }
 
-// Define the struct for the inner "location" object
+// Define the struct for the inner "location" object.
 type Location struct {
 	Path  string `json:"path"`
 	Lines Lines  `json:"lines"`
 }
 
-// Define the struct for each JSON object in the array
+// Define the struct for each JSON object in the array.
 type Finding struct {
 	Description string   `json:"description"`
 	CheckName   string   `json:"check_name"`
