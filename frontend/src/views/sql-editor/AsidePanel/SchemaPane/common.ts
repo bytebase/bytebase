@@ -486,26 +486,6 @@ const mapColumnNodes = (
   });
   return children;
 };
-const mapDependencyColumnNodes = (
-  target: NodeTarget<"view">,
-  dependencyColumns: DependencyColumn[],
-  parent: TreeNode
-) => {
-  if (dependencyColumns.length === 0) {
-    // Create a "<Empty>" node placeholder
-    return [createDummyNode("column", parent)];
-  }
-
-  const children = dependencyColumns.map((dependencyColumn) => {
-    const node = mapTreeNodeByType(
-      "dependency-column",
-      { ...target, dependencyColumn },
-      parent
-    );
-    return node;
-  });
-  return children;
-};
 const mapIndexNodes = (
   target: NodeTarget<"table">,
   indexes: IndexMetadata[],
@@ -694,19 +674,6 @@ const mapViewNodes = (
       view.columns,
       columnsFolderNode
     );
-    if (view.dependencyColumns.length > 0) {
-      const dependencyColumnsFolderNode = createExpandableTextNode(
-        "dependency-column",
-        viewNode,
-        () => t("schema-editor.index.dependency-columns")
-      );
-      dependencyColumnsFolderNode.children = mapDependencyColumnNodes(
-        viewNode.meta.target,
-        view.dependencyColumns,
-        dependencyColumnsFolderNode
-      );
-      viewNode.children!.push(dependencyColumnsFolderNode);
-    }
     return viewNode;
   });
   if (children.length === 0) {
