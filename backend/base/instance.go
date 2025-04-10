@@ -21,3 +21,19 @@ func EngineSupportSQLReview(engine storepb.Engine) bool {
 		return false
 	}
 }
+
+func EngineSupportQueryNewACL(engine storepb.Engine) bool {
+	switch engine {
+	case storepb.Engine_MYSQL,
+		storepb.Engine_POSTGRES,
+		storepb.Engine_ORACLE,
+		storepb.Engine_MSSQL,
+		storepb.Engine_TIDB,
+		storepb.Engine_SNOWFLAKE,
+		storepb.Engine_SPANNER,
+		storepb.Engine_BIGQUERY:
+		return true
+	default:
+		return false
+	}
+}
