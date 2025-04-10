@@ -224,6 +224,7 @@ func TestIdentityProvider(t *testing.T) {
 		Identifier:  testSubject,
 		DisplayName: testName,
 		Groups:      []string{"Dev", "Admin"},
+		HasGroups:   true,
 	}
 	assert.Equal(t, wantUserInfo, userInfo)
 }
@@ -297,6 +298,7 @@ func TestIdentityProvider_SelfSigned(t *testing.T) {
 			Identifier:  testSubject,
 			DisplayName: testName,
 			Groups:      []string{"Dev", "Admin"},
+			HasGroups:   true,
 		}
 		assert.Equal(t, wantUserInfo, userInfo)
 	})
