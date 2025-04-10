@@ -50,7 +50,7 @@ func run(platform JobPlatform) error {
 		return err
 	}
 	if platform == GitLab {
-		if err := writeReleaseCheckToJunitXML(checkReleaseResponse); err != nil {
+		if err := writeReleaseCheckToCodeQualityJSON(checkReleaseResponse); err != nil {
 			return err
 		}
 	}
