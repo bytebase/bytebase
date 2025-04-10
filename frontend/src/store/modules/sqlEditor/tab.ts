@@ -386,8 +386,6 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
     selectOrAddSimilarNewTab,
     maybeInitProject,
     reset,
-    tabIdListMapByProject,
-    currentTabIdMapByProject,
     isDisconnected,
     isSwitchingTab,
   };
