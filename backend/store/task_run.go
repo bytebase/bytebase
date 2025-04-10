@@ -10,8 +10,8 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/common"
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -20,7 +20,7 @@ type TaskRunMessage struct {
 	TaskUID     int
 	StageUID    int
 	PipelineUID int
-	Status      api.TaskRunStatus
+	Status      base.TaskRunStatus
 	Code        common.Code
 	Result      string
 	ResultProto *storepb.TaskRunResult
@@ -43,7 +43,7 @@ type FindTaskRunMessage struct {
 	TaskUID     *int
 	StageUID    *int
 	PipelineUID *int
-	Status      *[]api.TaskRunStatus
+	Status      *[]base.TaskRunStatus
 }
 
 // TaskRunFind is the API message for finding task runs.
@@ -54,7 +54,7 @@ type TaskRunFind struct {
 	PipelineID *int
 
 	// Domain specific fields
-	StatusList *[]api.TaskRunStatus
+	StatusList *[]base.TaskRunStatus
 }
 
 // TaskRunStatusPatch is the API message for patching a task run.
@@ -65,7 +65,7 @@ type TaskRunStatusPatch struct {
 	UpdaterID int
 
 	// Domain specific fields
-	Status api.TaskRunStatus
+	Status base.TaskRunStatus
 	Code   *common.Code
 	Result *string
 }
@@ -234,7 +234,7 @@ func (s *Store) CreatePendingTaskRuns(ctx context.Context, creates ...*TaskRunMe
 		return errors.Wrapf(err, "failed to get task next attempt")
 	}
 
-	exist, err := s.checkTaskRunsExist(ctx, tx, taskIDs, []api.TaskRunStatus{api.TaskRunPending, api.TaskRunRunning, api.TaskRunDone})
+	exist, err := s.checkTaskRunsExist(ctx, tx, taskIDs, []base.TaskRunStatus{base.TaskRunPending, base.TaskRunRunning, base.TaskRunDone})
 	if err != nil {
 		return errors.Wrapf(err, "failed to check if task runs exist")
 	}
@@ -291,14 +291,14 @@ func (s *Store) createPendingTaskRunsTx(ctx context.Context, txn *sql.Tx, attemp
 
 	// TODO(p0ny): batch create.
 	for i, create := range creates {
-		if err := s.createTaskRunImpl(ctx, txn, create, attempts[i], api.TaskRunPending, create.CreatorID); err != nil {
+		if err := s.createTaskRunImpl(ctx, txn, create, attempts[i], base.TaskRunPending, create.CreatorID); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (*Store) checkTaskRunsExist(ctx context.Context, txn *sql.Tx, taskIDs []int, statuses []api.TaskRunStatus) (bool, error) {
+func (*Store) checkTaskRunsExist(ctx context.Context, txn *sql.Tx, taskIDs []int, statuses []base.TaskRunStatus) (bool, error) {
 	query := `
 	SELECT EXISTS (
 		SELECT 1
@@ -315,7 +315,7 @@ func (*Store) checkTaskRunsExist(ctx context.Context, txn *sql.Tx, taskIDs []int
 }
 
 // createTaskRunImpl creates a new taskRun.
-func (*Store) createTaskRunImpl(ctx context.Context, txn *sql.Tx, create *TaskRunMessage, attempt int, status api.TaskRunStatus, creatorID int) error {
+func (*Store) createTaskRunImpl(ctx context.Context, txn *sql.Tx, create *TaskRunMessage, attempt int, status base.TaskRunStatus, creatorID int) error {
 	query := `
 		INSERT INTO task_run (
 			creator_id,
@@ -350,7 +350,7 @@ func (*Store) patchTaskRunStatusImpl(ctx context.Context, txn *sql.Tx, patch *Ta
 		}
 		set, args = append(set, fmt.Sprintf("result = $%d", len(args)+1)), append(args, result)
 	}
-	if patch.Status == api.TaskRunRunning {
+	if patch.Status == base.TaskRunRunning {
 		set = append(set, "started_at = now()")
 	}
 
@@ -481,7 +481,7 @@ func (s *Store) BatchCancelTaskRuns(ctx context.Context, taskRunIDs []int) error
 		UPDATE task_run
 		SET status = $1
 		WHERE id = ANY($2)`
-	if _, err := s.db.ExecContext(ctx, query, api.TaskRunCanceled, taskRunIDs); err != nil {
+	if _, err := s.db.ExecContext(ctx, query, base.TaskRunCanceled, taskRunIDs); err != nil {
 		return err
 	}
 	return nil

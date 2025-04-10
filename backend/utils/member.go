@@ -6,9 +6,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -23,7 +23,7 @@ func validateIAMBinding(binding *storepb.Binding) bool {
 }
 
 // GetUsersByRoleInIAMPolicy gets users in the iam policy.
-func GetUsersByRoleInIAMPolicy(ctx context.Context, stores *store.Store, role api.Role, policy *storepb.IamPolicy) []*store.UserMessage {
+func GetUsersByRoleInIAMPolicy(ctx context.Context, stores *store.Store, role base.Role, policy *storepb.IamPolicy) []*store.UserMessage {
 	roleFullName := common.FormatRole(role.String())
 	var users []*store.UserMessage
 
@@ -37,7 +37,7 @@ func GetUsersByRoleInIAMPolicy(ctx context.Context, stores *store.Store, role ap
 		}
 
 		for _, member := range binding.Members {
-			if member == api.AllUsers {
+			if member == base.AllUsers {
 				// TODO(d): make it more efficient.
 				allUsers, err := stores.ListUsers(ctx, &store.FindUserMessage{
 					ShowDeleted: false,
@@ -120,7 +120,7 @@ func GetUserIAMPolicyBindings(ctx context.Context, stores *store.Store, user *st
 
 			hasUser := false
 			for _, member := range binding.Members {
-				if member == api.AllUsers {
+				if member == base.AllUsers {
 					hasUser = true
 					break
 				}

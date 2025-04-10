@@ -1,4 +1,4 @@
-package api
+package base
 
 // ActivityType is the type for an activity.
 type ActivityType string

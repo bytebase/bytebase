@@ -21,8 +21,8 @@ import (
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
 	"gopkg.in/yaml.v3"
 
+	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/common"
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -117,7 +117,7 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 			Policy: &v1pb.Policy_TagPolicy{
 				TagPolicy: &v1pb.TagPolicy{
 					Tags: map[string]string{
-						string(api.ReservedTagReviewConfig): createdConfig.Name,
+						string(base.ReservedTagReviewConfig): createdConfig.Name,
 					},
 				},
 			},
@@ -287,7 +287,7 @@ func TestSQLReviewForMySQL(t *testing.T) {
 			Policy: &v1pb.Policy_TagPolicy{
 				TagPolicy: &v1pb.TagPolicy{
 					Tags: map[string]string{
-						string(api.ReservedTagReviewConfig): createdConfig.Name,
+						string(base.ReservedTagReviewConfig): createdConfig.Name,
 					},
 				},
 			},

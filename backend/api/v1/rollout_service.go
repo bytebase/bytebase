@@ -15,6 +15,7 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
@@ -24,9 +25,8 @@ import (
 	"github.com/bytebase/bytebase/backend/component/state"
 	"github.com/bytebase/bytebase/backend/component/webhook"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/db"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	parserbase "github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -613,7 +613,7 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, request *v1pb.BatchR
 		Project: webhook.NewProject(project),
 		Rollout: webhook.NewRollout(rollout),
 		TaskRunStatusUpdate: &webhook.EventTaskRunStatusUpdate{
-			Status: api.TaskRunPending.String(),
+			Status: base.TaskRunPending.String(),
 		},
 	})
 	// Tickle task run scheduler.
@@ -725,7 +725,7 @@ func (s *RolloutService) BatchSkipTasks(ctx context.Context, request *v1pb.Batch
 		Project: webhook.NewProject(project),
 		Rollout: webhook.NewRollout(rollout),
 		TaskRunStatusUpdate: &webhook.EventTaskRunStatusUpdate{
-			Status:        api.TaskRunSkipped.String(),
+			Status:        base.TaskRunSkipped.String(),
 			SkippedReason: request.Reason,
 		},
 	})
@@ -826,15 +826,15 @@ func (s *RolloutService) BatchCancelTaskRuns(ctx context.Context, request *v1pb.
 
 	for _, taskRun := range taskRuns {
 		switch taskRun.Status {
-		case api.TaskRunPending:
-		case api.TaskRunRunning:
+		case base.TaskRunPending:
+		case base.TaskRunRunning:
 		default:
 			return nil, status.Errorf(codes.InvalidArgument, "taskRun %v is not pending or running", taskRun.ID)
 		}
 	}
 
 	for _, taskRun := range taskRuns {
-		if taskRun.Status == api.TaskRunRunning {
+		if taskRun.Status == base.TaskRunRunning {
 			if cancelFunc, ok := s.stateCfg.RunningTaskRunsCancelFunc.Load(taskRun.ID); ok {
 				cancelFunc.(context.CancelFunc)()
 			}
@@ -858,7 +858,7 @@ func (s *RolloutService) BatchCancelTaskRuns(ctx context.Context, request *v1pb.
 		Rollout: webhook.NewRollout(rollout),
 		Project: webhook.NewProject(project),
 		TaskRunStatusUpdate: &webhook.EventTaskRunStatusUpdate{
-			Status: api.TaskRunCanceled.String(),
+			Status: base.TaskRunCanceled.String(),
 		},
 	})
 
@@ -886,7 +886,7 @@ func (s *RolloutService) PreviewTaskRunRollback(ctx context.Context, request *v1
 
 	taskRun := taskRuns[0]
 
-	if taskRun.Status != api.TaskRunDone {
+	if taskRun.Status != base.TaskRunDone {
 		return nil, status.Errorf(codes.InvalidArgument, "task run %v is not done", taskRun.ID)
 	}
 
@@ -919,7 +919,7 @@ func (s *RolloutService) PreviewTaskRunRollback(ctx context.Context, request *v1
 
 	var results []string
 	for _, item := range backupDetail.Items {
-		restore, err := base.GenerateRestoreSQL(ctx, instance.Metadata.GetEngine(), base.RestoreContext{
+		restore, err := parserbase.GenerateRestoreSQL(ctx, instance.Metadata.GetEngine(), parserbase.RestoreContext{
 			InstanceID:              instance.ResourceID,
 			GetDatabaseMetadataFunc: BuildGetDatabaseMetadataFunc(s.store),
 			ListDatabaseNamesFunc:   BuildListDatabaseNamesFunc(s.store),
@@ -1077,7 +1077,7 @@ func GetValidRolloutPolicyForStage(ctx context.Context, stores *store.Store, sta
 // canUserRunStageTasks returns if a user can run the tasks in a stage.
 func (s *RolloutService) canUserRunStageTasks(ctx context.Context, user *store.UserMessage, project *store.ProjectMessage, issue *store.IssueMessage, stage *store.StageMessage, creatorUID int) (bool, error) {
 	// For data export issues, only the creator can run tasks.
-	if issue != nil && issue.Type == api.IssueDatabaseDataExport {
+	if issue != nil && issue.Type == base.IssueDatabaseDataExport {
 		return issue.Creator.ID == user.ID, nil
 	}
 

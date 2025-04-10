@@ -1,4 +1,4 @@
-package api
+package base
 
 // AnomalyType is the type of a task.
 type AnomalyType string

@@ -5,8 +5,8 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/common"
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -21,7 +21,7 @@ func getPlanCheckRunsFromPlan(ctx context.Context, s *store.Store, plan *store.P
 		}
 		skippedSpecIDs = make(map[string]struct{})
 		for _, task := range tasks {
-			if task.LatestTaskRunStatus == api.TaskRunDone {
+			if task.LatestTaskRunStatus == base.TaskRunDone {
 				skippedSpecIDs[task.Payload.GetSpecId()] = struct{}{}
 			}
 		}

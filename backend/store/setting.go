@@ -9,26 +9,26 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 // FindSettingMessage is the message for finding setting.
 type FindSettingMessage struct {
-	Name *api.SettingName
+	Name *base.SettingName
 }
 
 // SetSettingMessage is the message for updating setting.
 type SetSettingMessage struct {
-	Name  api.SettingName
+	Name  base.SettingName
 	Value string
 }
 
 // SettingMessage is the message of setting.
 type SettingMessage struct {
-	Name  api.SettingName
+	Name  base.SettingName
 	Value string
 }
 
@@ -36,7 +36,7 @@ func (s *Store) GetPasswordRestrictionSetting(ctx context.Context) (*storepb.Pas
 	passwordRestriction := &storepb.PasswordRestrictionSetting{
 		MinLength: 8,
 	}
-	setting, err := s.GetSettingV2(ctx, api.SettingPasswordRestriction)
+	setting, err := s.GetSettingV2(ctx, base.SettingPasswordRestriction)
 	if err != nil {
 		return nil, err
 	}
@@ -51,9 +51,9 @@ func (s *Store) GetPasswordRestrictionSetting(ctx context.Context) (*storepb.Pas
 }
 
 func (s *Store) GetMaximumSQLResultLimit(ctx context.Context) int64 {
-	setting, err := s.GetSettingV2(ctx, api.SettingSQLResultSizeLimit)
+	setting, err := s.GetSettingV2(ctx, base.SettingSQLResultSizeLimit)
 	if err != nil {
-		slog.Error("failed to get setting", slog.String("setting", string(api.SettingSQLResultSizeLimit)), log.BBError(err))
+		slog.Error("failed to get setting", slog.String("setting", string(base.SettingSQLResultSizeLimit)), log.BBError(err))
 		return common.DefaultMaximumSQLResultSize
 	}
 	if setting == nil {
@@ -62,7 +62,7 @@ func (s *Store) GetMaximumSQLResultLimit(ctx context.Context) int64 {
 
 	payload := new(storepb.MaximumSQLResultSizeSetting)
 	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), payload); err != nil {
-		slog.Error("failed to unmarshaler setting", slog.String("setting", string(api.SettingSQLResultSizeLimit)), log.BBError(err))
+		slog.Error("failed to unmarshaler setting", slog.String("setting", string(base.SettingSQLResultSizeLimit)), log.BBError(err))
 		return common.DefaultMaximumSQLResultSize
 	}
 	if payload.Limit <= 0 {
@@ -73,12 +73,12 @@ func (s *Store) GetMaximumSQLResultLimit(ctx context.Context) int64 {
 
 // GetWorkspaceGeneralSetting gets the workspace general setting payload.
 func (s *Store) GetWorkspaceGeneralSetting(ctx context.Context) (*storepb.WorkspaceProfileSetting, error) {
-	setting, err := s.GetSettingV2(ctx, api.SettingWorkspaceProfile)
+	setting, err := s.GetSettingV2(ctx, base.SettingWorkspaceProfile)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get setting %v", api.SettingWorkspaceProfile)
+		return nil, errors.Wrapf(err, "failed to get setting %v", base.SettingWorkspaceProfile)
 	}
 	if setting == nil {
-		return nil, errors.Errorf("cannot find setting %v", api.SettingWorkspaceProfile)
+		return nil, errors.Errorf("cannot find setting %v", base.SettingWorkspaceProfile)
 	}
 
 	payload := new(storepb.WorkspaceProfileSetting)
@@ -89,12 +89,12 @@ func (s *Store) GetWorkspaceGeneralSetting(ctx context.Context) (*storepb.Worksp
 }
 
 func (s *Store) GetAppIMSetting(ctx context.Context) (*storepb.AppIMSetting, error) {
-	setting, err := s.GetSettingV2(ctx, api.SettingAppIM)
+	setting, err := s.GetSettingV2(ctx, base.SettingAppIM)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get setting %v", api.SettingAppIM)
+		return nil, errors.Wrapf(err, "failed to get setting %v", base.SettingAppIM)
 	}
 	if setting == nil {
-		return nil, errors.Errorf("cannot find setting %v", api.SettingAppIM)
+		return nil, errors.Errorf("cannot find setting %v", base.SettingAppIM)
 	}
 
 	payload := new(storepb.AppIMSetting)
@@ -106,24 +106,24 @@ func (s *Store) GetAppIMSetting(ctx context.Context) (*storepb.AppIMSetting, err
 
 // GetWorkspaceID finds the workspace id in setting bb.workspace.id.
 func (s *Store) GetWorkspaceID(ctx context.Context) (string, error) {
-	setting, err := s.GetSettingV2(ctx, api.SettingWorkspaceID)
+	setting, err := s.GetSettingV2(ctx, base.SettingWorkspaceID)
 	if err != nil {
-		return "", errors.Wrapf(err, "failed to get setting %v", api.SettingWorkspaceID)
+		return "", errors.Wrapf(err, "failed to get setting %v", base.SettingWorkspaceID)
 	}
 	if setting == nil {
-		return "", errors.Errorf("cannot find setting %v", api.SettingWorkspaceID)
+		return "", errors.Errorf("cannot find setting %v", base.SettingWorkspaceID)
 	}
 	return setting.Value, nil
 }
 
 // GetWorkspaceApprovalSetting gets the workspace approval setting.
 func (s *Store) GetWorkspaceApprovalSetting(ctx context.Context) (*storepb.WorkspaceApprovalSetting, error) {
-	setting, err := s.GetSettingV2(ctx, api.SettingWorkspaceApproval)
+	setting, err := s.GetSettingV2(ctx, base.SettingWorkspaceApproval)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get setting %v", api.SettingWorkspaceApproval)
+		return nil, errors.Wrapf(err, "failed to get setting %v", base.SettingWorkspaceApproval)
 	}
 	if setting == nil {
-		return nil, errors.Errorf("cannot find setting %v", api.SettingWorkspaceApproval)
+		return nil, errors.Errorf("cannot find setting %v", base.SettingWorkspaceApproval)
 	}
 
 	payload := new(storepb.WorkspaceApprovalSetting)
@@ -135,9 +135,9 @@ func (s *Store) GetWorkspaceApprovalSetting(ctx context.Context) (*storepb.Works
 
 // GetSemanticTypesSetting gets the semantic types setting.
 func (s *Store) GetSemanticTypesSetting(ctx context.Context) (*storepb.SemanticTypeSetting, error) {
-	setting, err := s.GetSettingV2(ctx, api.SettingSemanticTypes)
+	setting, err := s.GetSettingV2(ctx, base.SettingSemanticTypes)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get setting %v", api.SettingSemanticTypes)
+		return nil, errors.Wrapf(err, "failed to get setting %v", base.SettingSemanticTypes)
 	}
 	if setting == nil {
 		return &storepb.SemanticTypeSetting{}, nil
@@ -152,9 +152,9 @@ func (s *Store) GetSemanticTypesSetting(ctx context.Context) (*storepb.SemanticT
 
 // GetDataClassificationSetting gets the data classification setting.
 func (s *Store) GetDataClassificationSetting(ctx context.Context) (*storepb.DataClassificationSetting, error) {
-	setting, err := s.GetSettingV2(ctx, api.SettingDataClassification)
+	setting, err := s.GetSettingV2(ctx, base.SettingDataClassification)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get setting %v", api.SettingDataClassification)
+		return nil, errors.Wrapf(err, "failed to get setting %v", base.SettingDataClassification)
 	}
 	if setting == nil {
 		return &storepb.DataClassificationSetting{}, nil
@@ -183,7 +183,7 @@ func (s *Store) GetDataClassificationConfigByID(ctx context.Context, classificat
 
 func (s *Store) GetAISetting(ctx context.Context) (*storepb.AISetting, error) {
 	aiSetting := &storepb.AISetting{}
-	setting, err := s.GetSettingV2(ctx, api.SettingAI)
+	setting, err := s.GetSettingV2(ctx, base.SettingAI)
 	if err != nil {
 		return nil, err
 	}
@@ -199,7 +199,7 @@ func (s *Store) GetAISetting(ctx context.Context) (*storepb.AISetting, error) {
 
 func (s *Store) GetEnvironmentSetting(ctx context.Context) (*storepb.EnvironmentSetting, error) {
 	envSetting := &storepb.EnvironmentSetting{}
-	setting, err := s.GetSettingV2(ctx, api.SettingEnvironment)
+	setting, err := s.GetSettingV2(ctx, base.SettingEnvironment)
 	if err != nil {
 		return nil, err
 	}
@@ -222,7 +222,7 @@ func (s *Store) DeleteCache() {
 }
 
 // GetSettingV2 returns the setting by name.
-func (s *Store) GetSettingV2(ctx context.Context, name api.SettingName) (*SettingMessage, error) {
+func (s *Store) GetSettingV2(ctx context.Context, name base.SettingName) (*SettingMessage, error) {
 	if v, ok := s.settingCache.Get(name); ok && s.enableCache {
 		return v, nil
 	}
@@ -277,7 +277,7 @@ func (s *Store) GetSecret(ctx context.Context) (string, error) {
 	if s.Secret != "" {
 		return s.Secret, nil
 	}
-	setting, err := s.GetSettingV2(ctx, api.SettingAuthSecret)
+	setting, err := s.GetSettingV2(ctx, base.SettingAuthSecret)
 	if err != nil {
 		return "", err
 	}
@@ -368,7 +368,7 @@ func (s *Store) CreateSettingIfNotExistV2(ctx context.Context, create *SettingMe
 }
 
 // DeleteSettingV2 deletes a setting by the name.
-func (s *Store) DeleteSettingV2(ctx context.Context, name api.SettingName) error {
+func (s *Store) DeleteSettingV2(ctx context.Context, name base.SettingName) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return errors.Wrap(err, "failed to begin transaction")

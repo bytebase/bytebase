@@ -23,12 +23,12 @@ import (
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/emptypb"
 
+	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/iam"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 	webhookplugin "github.com/bytebase/bytebase/backend/plugin/webhook"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
@@ -139,7 +139,7 @@ func getListProjectFilter(filter string) (*store.ListResourceFilter, error) {
 			return fmt.Sprintf("project.resource_id = $%d", len(positionalArgs)), nil
 		case "exclude_default":
 			if _, ok := value.(bool); ok {
-				positionalArgs = append(positionalArgs, api.DefaultProjectID)
+				positionalArgs = append(positionalArgs, base.DefaultProjectID)
 				return fmt.Sprintf("project.resource_id != $%d", len(positionalArgs)), nil
 			}
 			return "TRUE", nil
@@ -323,7 +323,7 @@ func (s *ProjectService) UpdateProject(ctx context.Context, request *v1pb.Update
 	if project.Deleted {
 		return nil, status.Errorf(codes.NotFound, "project %q has been deleted", request.Project.Name)
 	}
-	if project.ResourceID == api.DefaultProjectID {
+	if project.ResourceID == base.DefaultProjectID {
 		return nil, status.Errorf(codes.InvalidArgument, "default project cannot be updated")
 	}
 
@@ -343,7 +343,7 @@ func (s *ProjectService) UpdateProject(ctx context.Context, request *v1pb.Update
 	for _, path := range request.UpdateMask.Paths {
 		if slices.Contains(issueProjectSettingFeatureRelatedPaths, path) {
 			// Check if the issue project setting feature is enabled.
-			if err := s.licenseService.IsFeatureEnabled(api.FeatureIssueProjectSetting); err != nil {
+			if err := s.licenseService.IsFeatureEnabled(base.FeatureIssueProjectSetting); err != nil {
 				return nil, status.Error(codes.PermissionDenied, err.Error())
 			}
 		}
@@ -432,7 +432,7 @@ func (s *ProjectService) DeleteProject(ctx context.Context, request *v1pb.Delete
 	if project.Deleted {
 		return nil, status.Errorf(codes.NotFound, "project %q has been deleted", request.Name)
 	}
-	if project.ResourceID == api.DefaultProjectID {
+	if project.ResourceID == base.DefaultProjectID {
 		return nil, status.Errorf(codes.InvalidArgument, "default project cannot be deleted")
 	}
 
@@ -444,7 +444,7 @@ func (s *ProjectService) DeleteProject(ctx context.Context, request *v1pb.Delete
 	// We don't move the sheet to default project because BYTEBASE_ARTIFACT sheets belong to the issue and issue project.
 	if request.Force {
 		if len(databases) > 0 {
-			defaultProject := api.DefaultProjectID
+			defaultProject := base.DefaultProjectID
 			if _, err := s.store.BatchUpdateDatabases(ctx, databases, &store.BatchUpdateDatabases{ProjectID: &defaultProject}); err != nil {
 				return nil, err
 			}
@@ -452,7 +452,7 @@ func (s *ProjectService) DeleteProject(ctx context.Context, request *v1pb.Delete
 		// We don't close the issues because they might be open still.
 	} else {
 		// Return the open issue error first because that's more important than transferring out databases.
-		openIssues, err := s.store.ListIssueV2(ctx, &store.FindIssueMessage{ProjectIDs: &[]string{project.ResourceID}, StatusList: []api.IssueStatus{api.IssueOpen}})
+		openIssues, err := s.store.ListIssueV2(ctx, &store.FindIssueMessage{ProjectIDs: &[]string{project.ResourceID}, StatusList: []base.IssueStatus{base.IssueOpen}})
 		if err != nil {
 			return nil, err
 		}
@@ -598,9 +598,9 @@ func (s *ProjectService) SetIamPolicy(ctx context.Context, request *v1pb.SetIamP
 	}
 	if _, err := s.store.CreatePolicyV2(ctx, &store.PolicyMessage{
 		Resource:          common.FormatProject(project.ResourceID),
-		ResourceType:      api.PolicyResourceTypeProject,
+		ResourceType:      base.PolicyResourceTypeProject,
 		Payload:           string(policyPayload),
-		Type:              api.PolicyTypeIAM,
+		Type:              base.PolicyTypeIAM,
 		InheritFromParent: false,
 		// Enforce cannot be false while creating a policy.
 		Enforce: true,
@@ -935,12 +935,12 @@ func (s *ProjectService) TestWebhook(ctx context.Context, request *v1pb.TestWebh
 		webhookplugin.Context{
 			URL:          webhook.URL,
 			Level:        webhookplugin.WebhookInfo,
-			ActivityType: string(api.ActivityIssueCreate),
+			ActivityType: string(base.ActivityIssueCreate),
 			Title:        fmt.Sprintf("Test webhook %q", webhook.Title),
 			TitleZh:      fmt.Sprintf("测试 webhook %q", webhook.Title),
 			Description:  "This is a test",
 			Link:         fmt.Sprintf("%s/projects/%s/webhooks/%s", setting.ExternalUrl, project.ResourceID, fmt.Sprintf("%s-%d", slug.Make(webhook.Title), webhook.ID)),
-			ActorID:      api.SystemBotID,
+			ActorID:      base.SystemBotID,
 			ActorName:    "Bytebase",
 			ActorEmail:   s.store.GetSystemBotUser(ctx).Email,
 			CreatedTS:    time.Now().Unix(),
@@ -993,47 +993,47 @@ func convertToActivityTypeStrings(types []v1pb.Activity_Type) ([]string, error) 
 		case v1pb.Activity_TYPE_UNSPECIFIED:
 			return nil, common.Errorf(common.Invalid, "activity type must not be unspecified")
 		case v1pb.Activity_TYPE_ISSUE_CREATE:
-			result = append(result, string(api.ActivityIssueCreate))
+			result = append(result, string(base.ActivityIssueCreate))
 		case v1pb.Activity_TYPE_ISSUE_COMMENT_CREATE:
-			result = append(result, string(api.ActivityIssueCommentCreate))
+			result = append(result, string(base.ActivityIssueCommentCreate))
 		case v1pb.Activity_TYPE_ISSUE_FIELD_UPDATE:
-			result = append(result, string(api.ActivityIssueFieldUpdate))
+			result = append(result, string(base.ActivityIssueFieldUpdate))
 		case v1pb.Activity_TYPE_ISSUE_STATUS_UPDATE:
-			result = append(result, string(api.ActivityIssueStatusUpdate))
+			result = append(result, string(base.ActivityIssueStatusUpdate))
 		case v1pb.Activity_TYPE_ISSUE_APPROVAL_NOTIFY:
-			result = append(result, string(api.ActivityIssueApprovalNotify))
+			result = append(result, string(base.ActivityIssueApprovalNotify))
 		case v1pb.Activity_TYPE_ISSUE_PIPELINE_STAGE_STATUS_UPDATE:
-			result = append(result, string(api.ActivityPipelineStageStatusUpdate))
+			result = append(result, string(base.ActivityPipelineStageStatusUpdate))
 		case v1pb.Activity_TYPE_ISSUE_PIPELINE_TASK_STATUS_UPDATE:
-			result = append(result, string(api.ActivityPipelineTaskStatusUpdate))
+			result = append(result, string(base.ActivityPipelineTaskStatusUpdate))
 		case v1pb.Activity_TYPE_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE:
-			result = append(result, string(api.ActivityPipelineTaskRunStatusUpdate))
+			result = append(result, string(base.ActivityPipelineTaskRunStatusUpdate))
 		case v1pb.Activity_TYPE_ISSUE_PIPELINE_TASK_STATEMENT_UPDATE:
-			result = append(result, string(api.ActivityPipelineTaskStatementUpdate))
+			result = append(result, string(base.ActivityPipelineTaskStatementUpdate))
 		case v1pb.Activity_TYPE_ISSUE_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE:
-			result = append(result, string(api.ActivityPipelineTaskEarliestAllowedTimeUpdate))
+			result = append(result, string(base.ActivityPipelineTaskEarliestAllowedTimeUpdate))
 		case v1pb.Activity_TYPE_MEMBER_CREATE:
-			result = append(result, string(api.ActivityMemberCreate))
+			result = append(result, string(base.ActivityMemberCreate))
 		case v1pb.Activity_TYPE_MEMBER_ROLE_UPDATE:
-			result = append(result, string(api.ActivityMemberRoleUpdate))
+			result = append(result, string(base.ActivityMemberRoleUpdate))
 		case v1pb.Activity_TYPE_MEMBER_ACTIVATE:
-			result = append(result, string(api.ActivityMemberActivate))
+			result = append(result, string(base.ActivityMemberActivate))
 		case v1pb.Activity_TYPE_MEMBER_DEACTIVATE:
-			result = append(result, string(api.ActivityMemberDeactivate))
+			result = append(result, string(base.ActivityMemberDeactivate))
 		case v1pb.Activity_TYPE_PROJECT_REPOSITORY_PUSH:
-			result = append(result, string(api.ActivityProjectRepositoryPush))
+			result = append(result, string(base.ActivityProjectRepositoryPush))
 		case v1pb.Activity_TYPE_PROJECT_DATABASE_TRANSFER:
-			result = append(result, string(api.ActivityProjectDatabaseTransfer))
+			result = append(result, string(base.ActivityProjectDatabaseTransfer))
 		case v1pb.Activity_TYPE_PROJECT_MEMBER_CREATE:
-			result = append(result, string(api.ActivityProjectMemberCreate))
+			result = append(result, string(base.ActivityProjectMemberCreate))
 		case v1pb.Activity_TYPE_PROJECT_MEMBER_DELETE:
-			result = append(result, string(api.ActivityProjectMemberDelete))
+			result = append(result, string(base.ActivityProjectMemberDelete))
 		case v1pb.Activity_TYPE_SQL_EDITOR_QUERY:
-			result = append(result, string(api.ActivitySQLQuery))
+			result = append(result, string(base.ActivitySQLQuery))
 		case v1pb.Activity_TYPE_NOTIFY_ISSUE_APPROVED:
-			result = append(result, string(api.ActivityNotifyIssueApproved))
+			result = append(result, string(base.ActivityNotifyIssueApproved))
 		case v1pb.Activity_TYPE_NOTIFY_PIPELINE_ROLLOUT:
-			result = append(result, string(api.ActivityNotifyPipelineRollout))
+			result = append(result, string(base.ActivityNotifyPipelineRollout))
 		default:
 			return nil, common.Errorf(common.Invalid, "unsupported activity type: %v", tp)
 		}
@@ -1045,47 +1045,47 @@ func convertNotificationTypeStrings(types []string) []v1pb.Activity_Type {
 	var result []v1pb.Activity_Type
 	for _, tp := range types {
 		switch tp {
-		case string(api.ActivityIssueCreate):
+		case string(base.ActivityIssueCreate):
 			result = append(result, v1pb.Activity_TYPE_ISSUE_CREATE)
-		case string(api.ActivityIssueCommentCreate):
+		case string(base.ActivityIssueCommentCreate):
 			result = append(result, v1pb.Activity_TYPE_ISSUE_COMMENT_CREATE)
-		case string(api.ActivityIssueFieldUpdate):
+		case string(base.ActivityIssueFieldUpdate):
 			result = append(result, v1pb.Activity_TYPE_ISSUE_FIELD_UPDATE)
-		case string(api.ActivityIssueStatusUpdate):
+		case string(base.ActivityIssueStatusUpdate):
 			result = append(result, v1pb.Activity_TYPE_ISSUE_STATUS_UPDATE)
-		case string(api.ActivityIssueApprovalNotify):
+		case string(base.ActivityIssueApprovalNotify):
 			result = append(result, v1pb.Activity_TYPE_ISSUE_APPROVAL_NOTIFY)
-		case string(api.ActivityPipelineStageStatusUpdate):
+		case string(base.ActivityPipelineStageStatusUpdate):
 			result = append(result, v1pb.Activity_TYPE_ISSUE_PIPELINE_STAGE_STATUS_UPDATE)
-		case string(api.ActivityPipelineTaskStatusUpdate):
+		case string(base.ActivityPipelineTaskStatusUpdate):
 			result = append(result, v1pb.Activity_TYPE_ISSUE_PIPELINE_TASK_STATUS_UPDATE)
-		case string(api.ActivityPipelineTaskRunStatusUpdate):
+		case string(base.ActivityPipelineTaskRunStatusUpdate):
 			result = append(result, v1pb.Activity_TYPE_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE)
-		case string(api.ActivityPipelineTaskStatementUpdate):
+		case string(base.ActivityPipelineTaskStatementUpdate):
 			result = append(result, v1pb.Activity_TYPE_ISSUE_PIPELINE_TASK_STATEMENT_UPDATE)
-		case string(api.ActivityPipelineTaskEarliestAllowedTimeUpdate):
+		case string(base.ActivityPipelineTaskEarliestAllowedTimeUpdate):
 			result = append(result, v1pb.Activity_TYPE_ISSUE_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE)
-		case string(api.ActivityMemberCreate):
+		case string(base.ActivityMemberCreate):
 			result = append(result, v1pb.Activity_TYPE_MEMBER_CREATE)
-		case string(api.ActivityMemberRoleUpdate):
+		case string(base.ActivityMemberRoleUpdate):
 			result = append(result, v1pb.Activity_TYPE_MEMBER_ROLE_UPDATE)
-		case string(api.ActivityMemberActivate):
+		case string(base.ActivityMemberActivate):
 			result = append(result, v1pb.Activity_TYPE_MEMBER_ACTIVATE)
-		case string(api.ActivityMemberDeactivate):
+		case string(base.ActivityMemberDeactivate):
 			result = append(result, v1pb.Activity_TYPE_MEMBER_DEACTIVATE)
-		case string(api.ActivityProjectRepositoryPush):
+		case string(base.ActivityProjectRepositoryPush):
 			result = append(result, v1pb.Activity_TYPE_PROJECT_REPOSITORY_PUSH)
-		case string(api.ActivityProjectDatabaseTransfer):
+		case string(base.ActivityProjectDatabaseTransfer):
 			result = append(result, v1pb.Activity_TYPE_PROJECT_DATABASE_TRANSFER)
-		case string(api.ActivityProjectMemberCreate):
+		case string(base.ActivityProjectMemberCreate):
 			result = append(result, v1pb.Activity_TYPE_PROJECT_MEMBER_CREATE)
-		case string(api.ActivityProjectMemberDelete):
+		case string(base.ActivityProjectMemberDelete):
 			result = append(result, v1pb.Activity_TYPE_PROJECT_MEMBER_DELETE)
-		case string(api.ActivitySQLQuery):
+		case string(base.ActivitySQLQuery):
 			result = append(result, v1pb.Activity_TYPE_SQL_EDITOR_QUERY)
-		case string(api.ActivityNotifyIssueApproved):
+		case string(base.ActivityNotifyIssueApproved):
 			result = append(result, v1pb.Activity_TYPE_NOTIFY_ISSUE_APPROVED)
-		case string(api.ActivityNotifyPipelineRollout):
+		case string(base.ActivityNotifyPipelineRollout):
 			result = append(result, v1pb.Activity_TYPE_NOTIFY_PIPELINE_ROLLOUT)
 		default:
 			result = append(result, v1pb.Activity_TYPE_UNSPECIFIED)
@@ -1275,7 +1275,7 @@ func convertToStoreIamPolicyMember(ctx context.Context, stores *store.Store, mem
 	} else if strings.HasPrefix(member, common.GroupBindingPrefix) {
 		email := strings.TrimPrefix(member, common.GroupBindingPrefix)
 		return common.FormatGroupEmail(email), nil
-	} else if member == api.AllUsers {
+	} else if member == base.AllUsers {
 		return member, nil
 	}
 	return "", status.Errorf(codes.InvalidArgument, "unsupport member %s", member)
@@ -1400,7 +1400,7 @@ func (*ProjectService) validateBindings(bindings []*v1pb.Binding, roles []*v1pb.
 		}
 
 		// Only validate when maximumRoleExpiration is set and the role is SQLEditorUser or ProjectExporter.
-		rolesToValidate := []string{fmt.Sprintf("roles/%s", api.SQLEditorUser), fmt.Sprintf("roles/%s", api.ProjectExporter)}
+		rolesToValidate := []string{fmt.Sprintf("roles/%s", base.SQLEditorUser), fmt.Sprintf("roles/%s", base.ProjectExporter)}
 		if maximumRoleExpiration != nil && binding.Condition != nil && binding.Condition.Expression != "" && slices.Contains(rolesToValidate, binding.Role) {
 			if err := validateIAMPolicyExpression(binding.Condition.Expression, maximumRoleExpiration); err != nil {
 				return err
@@ -1408,8 +1408,8 @@ func (*ProjectService) validateBindings(bindings []*v1pb.Binding, roles []*v1pb.
 		}
 	}
 	// Must contain one owner binding.
-	if _, ok := projectRoleMap[common.FormatRole(api.ProjectOwner.String())]; !ok {
-		return errors.Errorf("IAM Policy must have at least one binding with %s", api.ProjectOwner.String())
+	if _, ok := projectRoleMap[common.FormatRole(base.ProjectOwner.String())]; !ok {
+		return errors.Errorf("IAM Policy must have at least one binding with %s", base.ProjectOwner.String())
 	}
 	return nil
 }
@@ -1509,7 +1509,7 @@ func validateIAMPolicyExpression(expr string, maximumRoleExpiration *durationpb.
 }
 
 func validateMember(member string) error {
-	if member == api.AllUsers {
+	if member == base.AllUsers {
 		return nil
 	}
 

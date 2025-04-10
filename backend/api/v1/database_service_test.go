@@ -8,7 +8,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	api "github.com/bytebase/bytebase/backend/legacyapi"
+	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -176,7 +176,7 @@ func TestListDatabaseFilter(t *testing.T) {
 			input: `(label == "region:asia" || label == "tenant:bytebase") && exclude_unassigned == true`,
 			want: &store.ListResourceFilter{
 				Where: `(((db.metadata->'labels'->>'region' = ANY($1)) OR (db.metadata->'labels'->>'tenant' = ANY($2))) AND (db.project != $3))`,
-				Args:  []any{"asia", "bytebase", api.DefaultProjectID},
+				Args:  []any{"asia", "bytebase", base.DefaultProjectID},
 			},
 		},
 	}

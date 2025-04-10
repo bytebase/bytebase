@@ -7,8 +7,8 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
 
+	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/component/iam"
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -51,7 +51,7 @@ func (s *WorkspaceService) SetIamPolicy(ctx context.Context, request *v1pb.SetIa
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to convert iam policy with error: %v", err.Error())
 	}
-	users := utils.GetUsersByRoleInIAMPolicy(ctx, s.store, api.WorkspaceAdmin, iamPolicy)
+	users := utils.GetUsersByRoleInIAMPolicy(ctx, s.store, base.WorkspaceAdmin, iamPolicy)
 	if !containsActiveEndUser(users) {
 		return nil, status.Errorf(codes.InvalidArgument, "workspace must have at least one admin")
 	}
@@ -62,8 +62,8 @@ func (s *WorkspaceService) SetIamPolicy(ctx context.Context, request *v1pb.SetIa
 	}
 	payloadStr := string(payloadBytes)
 	patch := &store.UpdatePolicyMessage{
-		ResourceType: api.PolicyResourceTypeWorkspace,
-		Type:         api.PolicyTypeIAM,
+		ResourceType: base.PolicyResourceTypeWorkspace,
+		Type:         base.PolicyTypeIAM,
 		Payload:      &payloadStr,
 	}
 
@@ -85,7 +85,7 @@ func (s *WorkspaceService) SetIamPolicy(ctx context.Context, request *v1pb.SetIa
 
 func containsActiveEndUser(users []*store.UserMessage) bool {
 	for _, user := range users {
-		if user.Type == api.EndUser && !user.MemberDeleted {
+		if user.Type == base.EndUser && !user.MemberDeleted {
 			return true
 		}
 	}

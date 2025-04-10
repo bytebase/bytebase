@@ -17,6 +17,7 @@ import (
 	celtypes "github.com/google/cel-go/common/types"
 
 	apiv1 "github.com/bytebase/bytebase/backend/api/v1"
+	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
@@ -24,7 +25,6 @@ import (
 	"github.com/bytebase/bytebase/backend/component/state"
 	"github.com/bytebase/bytebase/backend/component/webhook"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -113,7 +113,7 @@ func (r *Runner) runOnce(ctx context.Context) {
 
 func (r *Runner) retryFindApprovalTemplate(ctx context.Context) {
 	issues, err := r.store.ListIssueV2(ctx, &store.FindIssueMessage{
-		StatusList: []api.IssueStatus{api.IssueOpen},
+		StatusList: []base.IssueStatus{base.IssueOpen},
 	})
 	if err != nil {
 		err := errors.Wrap(err, "failed to list issues")
@@ -137,7 +137,7 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 		// no need to find if
 		// - feature is not enabled
 		// - approval setting rules are empty
-		if r.licenseService.IsFeatureEnabled(api.FeatureCustomApproval) != nil || len(approvalSetting.Rules) == 0 {
+		if r.licenseService.IsFeatureEnabled(base.FeatureCustomApproval) != nil || len(approvalSetting.Rules) == 0 {
 			// nolint:nilerr
 			return nil, 0, true, nil
 		}
@@ -176,11 +176,11 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 	}
 
 	// Grant privilege and close issue similar to actions on issue approval.
-	if issue.Type == api.IssueGrantRequest && approvalTemplate == nil {
+	if issue.Type == base.IssueGrantRequest && approvalTemplate == nil {
 		if err := utils.UpdateProjectPolicyFromGrantIssue(ctx, r.store, issue, payload.GrantRequest); err != nil {
 			return false, err
 		}
-		if err := webhook.ChangeIssueStatus(ctx, r.store, r.webhookManager, issue, api.IssueDone, r.store.GetSystemBotUser(ctx), ""); err != nil {
+		if err := webhook.ChangeIssueStatus(ctx, r.store, r.webhookManager, issue, base.IssueDone, r.store.GetSystemBotUser(ctx), ""); err != nil {
 			return false, errors.Wrap(err, "failed to update issue status")
 		}
 	}
@@ -312,11 +312,11 @@ func (r *Runner) getIssueRisk(ctx context.Context, issue *store.IssueMessage, ri
 	})
 
 	switch issue.Type {
-	case api.IssueGrantRequest:
+	case base.IssueGrantRequest:
 		return r.getGrantRequestIssueRisk(ctx, issue, risks)
-	case api.IssueDatabaseGeneral:
+	case base.IssueDatabaseGeneral:
 		return r.getDatabaseGeneralIssueRisk(ctx, issue, risks)
-	case api.IssueDatabaseDataExport:
+	case base.IssueDatabaseDataExport:
 		return r.getDatabaseDataExportIssueRisk(ctx, issue, risks)
 	default:
 		return 0, store.RiskSourceUnknown, false, errors.Errorf("unknown issue type %v", issue.Type)
@@ -428,7 +428,7 @@ func (r *Runner) getDatabaseGeneralIssueRisk(ctx context.Context, issue *store.I
 			if instance.Deleted {
 				continue
 			}
-			if r.licenseService.IsFeatureEnabledForInstance(api.FeatureCustomApproval, instance) != nil {
+			if r.licenseService.IsFeatureEnabledForInstance(base.FeatureCustomApproval, instance) != nil {
 				// nolint:nilerr
 				return 0, store.RiskSourceUnknown, true, nil
 			}
@@ -445,7 +445,7 @@ func (r *Runner) getDatabaseGeneralIssueRisk(ctx context.Context, issue *store.I
 
 			environmentID := instance.EnvironmentID
 			var databaseName string
-			if task.Type == api.TaskDatabaseCreate {
+			if task.Type == base.TaskDatabaseCreate {
 				databaseName = task.Payload.GetDatabaseName()
 				environmentID = task.Payload.GetEnvironmentId()
 			} else {
@@ -589,7 +589,7 @@ func (r *Runner) getDatabaseDataExportIssueRisk(ctx context.Context, issue *stor
 	var maxRiskLevel int32
 	for _, stage := range pipelineCreate.Stages {
 		for _, task := range stage.TaskList {
-			if task.Type != api.TaskDatabaseDataExport {
+			if task.Type != base.TaskDatabaseDataExport {
 				continue
 			}
 			instance, err := r.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
@@ -601,7 +601,7 @@ func (r *Runner) getDatabaseDataExportIssueRisk(ctx context.Context, issue *stor
 			if instance.Deleted {
 				continue
 			}
-			if r.licenseService.IsFeatureEnabledForInstance(api.FeatureCustomApproval, instance) != nil {
+			if r.licenseService.IsFeatureEnabledForInstance(base.FeatureCustomApproval, instance) != nil {
 				// nolint:nilerr
 				return 0, store.RiskSourceUnknown, true, nil
 			}
@@ -680,9 +680,9 @@ func (r *Runner) getGrantRequestIssueRisk(ctx context.Context, issue *store.Issu
 
 	var riskSource store.RiskSource
 	switch payload.GrantRequest.Role {
-	case common.FormatRole(api.ProjectExporter.String()):
+	case common.FormatRole(base.ProjectExporter.String()):
 		riskSource = store.RiskRequestExport
-	case common.FormatRole(api.SQLEditorUser.String()):
+	case common.FormatRole(base.SQLEditorUser.String()):
 		riskSource = store.RiskRequestQuery
 	default:
 		return 0, store.RiskSourceUnknown, false, errors.Errorf("unknown grant request role %v", payload.GrantRequest.Role)
@@ -777,7 +777,7 @@ func (r *Runner) getGrantRequestIssueRisk(ctx context.Context, issue *store.Issu
 			if instance == nil || instance.Deleted {
 				continue
 			}
-			if r.licenseService.IsFeatureEnabledForInstance(api.FeatureCustomApproval, instance) != nil {
+			if r.licenseService.IsFeatureEnabledForInstance(base.FeatureCustomApproval, instance) != nil {
 				// nolint:nilerr
 				return 0, store.RiskSourceUnknown, true, nil
 			}

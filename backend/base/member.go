@@ -1,4 +1,4 @@
-package api
+package base
 
 // Role is the type of a role.
 type Role string

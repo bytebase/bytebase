@@ -8,10 +8,10 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/common"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	"github.com/bytebase/bytebase/backend/enterprise/plugin"
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
@@ -54,7 +54,7 @@ func (s *LicenseService) StoreLicense(ctx context.Context, patch *enterprise.Sub
 // LoadSubscription will load subscription.
 func (s *LicenseService) LoadSubscription(ctx context.Context) *enterprise.Subscription {
 	if s.cachedSubscription != nil {
-		if s.cachedSubscription.Plan == api.FREE || s.cachedSubscription.IsExpired() {
+		if s.cachedSubscription.Plan == base.FREE || s.cachedSubscription.IsExpired() {
 			// refresh expired subscription
 			s.cachedSubscription = nil
 		}
@@ -69,24 +69,24 @@ func (s *LicenseService) LoadSubscription(ctx context.Context) *enterprise.Subsc
 }
 
 // IsFeatureEnabled returns whether a feature is enabled.
-func (s *LicenseService) IsFeatureEnabled(feature api.FeatureType) error {
-	if !api.Feature(feature, s.GetEffectivePlan()) {
+func (s *LicenseService) IsFeatureEnabled(feature base.FeatureType) error {
+	if !base.Feature(feature, s.GetEffectivePlan()) {
 		return errors.New(feature.AccessErrorMessage())
 	}
 	return nil
 }
 
 // IsFeatureEnabledForInstance returns whether a feature is enabled for the instance.
-func (s *LicenseService) IsFeatureEnabledForInstance(feature api.FeatureType, instance *store.InstanceMessage) error {
+func (s *LicenseService) IsFeatureEnabledForInstance(feature base.FeatureType, instance *store.InstanceMessage) error {
 	plan := s.GetEffectivePlan()
 	// DONOT check instance license fo FREE plan.
-	if plan == api.FREE {
+	if plan == base.FREE {
 		return s.IsFeatureEnabled(feature)
 	}
 	if err := s.IsFeatureEnabled(feature); err != nil {
 		return err
 	}
-	if !api.InstanceLimitFeature[feature] {
+	if !base.InstanceLimitFeature[feature] {
 		// If the feature not exists in the limit map, we just need to check the feature for current plan.
 		return nil
 	}
@@ -106,11 +106,11 @@ func (s *LicenseService) GetInstanceLicenseCount(ctx context.Context) int {
 }
 
 // GetEffectivePlan gets the effective plan.
-func (s *LicenseService) GetEffectivePlan() api.PlanType {
+func (s *LicenseService) GetEffectivePlan() base.PlanType {
 	ctx := context.Background()
 	subscription := s.LoadSubscription(ctx)
 	if expireTime := time.Unix(subscription.ExpiresTS, 0); expireTime.Before(time.Now()) {
-		return api.FREE
+		return base.FREE
 	}
 	return subscription.Plan
 }
@@ -128,9 +128,9 @@ func (s *LicenseService) GetPlanLimitValue(ctx context.Context, name enterprise.
 	}
 
 	switch subscription.Plan {
-	case api.FREE:
+	case base.FREE:
 		return limit
-	case api.TEAM, api.ENTERPRISE:
+	case base.TEAM, base.ENTERPRISE:
 		switch name {
 		case enterprise.PlanLimitMaximumInstance:
 			return limit

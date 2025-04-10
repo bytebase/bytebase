@@ -1,4 +1,4 @@
-package api
+package base
 
 // IssueStatus is the status of an issue.
 type IssueStatus string
