@@ -7,6 +7,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
@@ -18,7 +19,7 @@ import (
 	pgdriver "github.com/bytebase/bytebase/backend/plugin/db/pg"
 	redshiftdriver "github.com/bytebase/bytebase/backend/plugin/db/redshift"
 	tidbdriver "github.com/bytebase/bytebase/backend/plugin/db/tidb"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	parserbase "github.com/bytebase/bytebase/backend/plugin/parser/base"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	"github.com/bytebase/bytebase/backend/plugin/parser/pg"
 	"github.com/bytebase/bytebase/backend/plugin/parser/plsql"
@@ -76,7 +77,7 @@ func (e *StatementReportExecutor) Run(ctx context.Context, config *storepb.PlanC
 	if instance == nil {
 		return nil, errors.Errorf("instance %s not found", config.InstanceId)
 	}
-	if !common.StatementReportEngines[instance.Metadata.GetEngine()] {
+	if !base.EngineSupportStatementReport(instance.Metadata.GetEngine()) {
 		return []*storepb.PlanCheckRunResult_Result{
 			{
 				Status:  storepb.PlanCheckRunResult_Result_SUCCESS,
@@ -262,7 +263,7 @@ func GetSQLSummaryReport(ctx context.Context, stores *store.Store, sheetManager 
 	materials := utils.GetSecretMapFromDatabaseMessage(database)
 	// To avoid leaking the rendered statement, the error message should use the original statement and not the rendered statement.
 	renderedStatement := utils.RenderStatement(statement, materials)
-	changeSummary, err := base.ExtractChangedResources(instance.Metadata.GetEngine(), database.DatabaseName, defaultSchema, databaseSchema, asts, renderedStatement)
+	changeSummary, err := parserbase.ExtractChangedResources(instance.Metadata.GetEngine(), database.DatabaseName, defaultSchema, databaseSchema, asts, renderedStatement)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to extract changed resources")
 	}
@@ -295,7 +296,7 @@ func getUseDatabaseOwner(ctx context.Context, stores *store.Store, instance *sto
 
 type getAffectedRowsFromExplain func(context.Context, string) (int64, error)
 
-func calculateAffectedRows(ctx context.Context, changeSummary *base.ChangeSummary, explainCalculator getAffectedRowsFromExplain) int64 {
+func calculateAffectedRows(ctx context.Context, changeSummary *parserbase.ChangeSummary, explainCalculator getAffectedRowsFromExplain) int64 {
 	var totalAffectedRows int64
 	// Count DMLs.
 	sampleCount := 0
