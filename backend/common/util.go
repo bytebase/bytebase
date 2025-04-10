@@ -39,18 +39,6 @@ const (
 )
 
 var (
-	StatementAdviseEngines = map[storepb.Engine]bool{
-		storepb.Engine_MYSQL:            true,
-		storepb.Engine_TIDB:             true,
-		storepb.Engine_POSTGRES:         true,
-		storepb.Engine_ORACLE:           true,
-		storepb.Engine_OCEANBASE_ORACLE: true,
-		storepb.Engine_OCEANBASE:        true,
-		storepb.Engine_SNOWFLAKE:        true,
-		storepb.Engine_MSSQL:            true,
-		storepb.Engine_DYNAMODB:         true,
-		storepb.Engine_COCKROACHDB:      true,
-	}
 	StatementReportEngines = map[storepb.Engine]bool{
 		storepb.Engine_POSTGRES:         true,
 		storepb.Engine_MYSQL:            true,

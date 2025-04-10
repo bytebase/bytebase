@@ -80,3 +80,22 @@ func EngineSupportAutoComplete(e storepb.Engine) bool {
 		return false
 	}
 }
+
+func EngineSupportStatementAdvise(e storepb.Engine) bool {
+	switch e {
+	case
+		storepb.Engine_MYSQL,
+		storepb.Engine_TIDB,
+		storepb.Engine_POSTGRES,
+		storepb.Engine_ORACLE,
+		storepb.Engine_OCEANBASE_ORACLE,
+		storepb.Engine_OCEANBASE,
+		storepb.Engine_SNOWFLAKE,
+		storepb.Engine_MSSQL,
+		storepb.Engine_DYNAMODB,
+		storepb.Engine_COCKROACHDB:
+		return true
+	default:
+		return false
+	}
+}
