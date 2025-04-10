@@ -9,7 +9,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sourcegraph/jsonrpc2"
 
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	"github.com/bytebase/bytebase/backend/base"
+	parserbase "github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/store/model"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -49,19 +50,11 @@ func (h *Handler) handleTextDocumentCompletion(ctx context.Context, _ *jsonrpc2.
 
 	defaultDatabase := h.getDefaultDatabase()
 	engine := h.getEngineType(ctx)
-	switch engine {
-	case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE, storepb.Engine_CLICKHOUSE, storepb.Engine_STARROCKS, storepb.Engine_DORIS:
-		// Nothing.
-	case storepb.Engine_POSTGRES, storepb.Engine_REDSHIFT, storepb.Engine_RISINGWAVE, storepb.Engine_COCKROACHDB:
-		// Nothing.
-	case storepb.Engine_MSSQL:
-	case storepb.Engine_ORACLE, storepb.Engine_DM, storepb.Engine_OCEANBASE_ORACLE, storepb.Engine_SNOWFLAKE:
-	case storepb.Engine_DYNAMODB:
-	default:
+	if !base.EngineSupportAutoComplete(engine) {
 		slog.Debug("Engine is not supported", slog.String("engine", engine.String()))
 		return newEmptyCompletionList(), nil
 	}
-	candidates, err := base.Completion(ctx, engine, base.CompletionContext{
+	candidates, err := parserbase.Completion(ctx, engine, parserbase.CompletionContext{
 		Scene:             h.getScene(),
 		InstanceID:        h.getInstanceID(),
 		DefaultDatabase:   defaultDatabase,
@@ -104,19 +97,19 @@ func (h *Handler) handleTextDocumentCompletion(ctx context.Context, _ *jsonrpc2.
 	}, nil
 }
 
-func generateSortText(_ lsp.CompletionParams, _ storepb.Engine, candidate base.Candidate) string {
+func generateSortText(_ lsp.CompletionParams, _ storepb.Engine, candidate parserbase.Candidate) string {
 	switch candidate.Type {
-	case base.CandidateTypeColumn:
+	case parserbase.CandidateTypeColumn:
 		return "01" + candidate.Text
-	case base.CandidateTypeSchema:
+	case parserbase.CandidateTypeSchema:
 		return "02" + candidate.Text
-	case base.CandidateTypeTable, base.CandidateTypeForeignTable:
+	case parserbase.CandidateTypeTable, parserbase.CandidateTypeForeignTable:
 		return "03" + candidate.Text
-	case base.CandidateTypeView, base.CandidateTypeMaterializedView:
+	case parserbase.CandidateTypeView, parserbase.CandidateTypeMaterializedView:
 		return "04" + candidate.Text
-	case base.CandidateTypeFunction:
+	case parserbase.CandidateTypeFunction:
 		return "05" + candidate.Text
-	case base.CandidateTypeKeyword:
+	case parserbase.CandidateTypeKeyword:
 		switch candidate.Text {
 		case "SELECT", "SHOW", "SET", "FROM", "WHERE":
 			return "09" + candidate.Text
@@ -128,19 +121,19 @@ func generateSortText(_ lsp.CompletionParams, _ storepb.Engine, candidate base.C
 	}
 }
 
-func convertLSPCompletionItemKind(tp base.CandidateType) lsp.CompletionItemKind {
+func convertLSPCompletionItemKind(tp parserbase.CandidateType) lsp.CompletionItemKind {
 	switch tp {
-	case base.CandidateTypeSchema:
+	case parserbase.CandidateTypeSchema:
 		return lsp.ModuleCompletion
-	case base.CandidateTypeDatabase:
+	case parserbase.CandidateTypeDatabase:
 		return lsp.ClassCompletion
-	case base.CandidateTypeTable, base.CandidateTypeForeignTable:
+	case parserbase.CandidateTypeTable, parserbase.CandidateTypeForeignTable:
 		return lsp.FieldCompletion
-	case base.CandidateTypeColumn:
+	case parserbase.CandidateTypeColumn:
 		return lsp.InterfaceCompletion
-	case base.CandidateTypeFunction:
+	case parserbase.CandidateTypeFunction:
 		return lsp.FunctionCompletion
-	case base.CandidateTypeView, base.CandidateTypeMaterializedView:
+	case parserbase.CandidateTypeView, parserbase.CandidateTypeMaterializedView:
 		return lsp.VariableCompletion
 	default:
 		return lsp.TextCompletion

@@ -13,8 +13,6 @@ import (
 	"github.com/nyaruka/phonenumbers"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
-
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 const (
@@ -36,31 +34,6 @@ const (
 
 	// ExternalURLPlaceholder is the docs link to configure --external-url.
 	ExternalURLPlaceholder = "https://www.bytebase.com/docs/get-started/install/external-url"
-)
-
-var (
-	StatementAdviseEngines = map[storepb.Engine]bool{
-		storepb.Engine_MYSQL:            true,
-		storepb.Engine_TIDB:             true,
-		storepb.Engine_POSTGRES:         true,
-		storepb.Engine_ORACLE:           true,
-		storepb.Engine_OCEANBASE_ORACLE: true,
-		storepb.Engine_OCEANBASE:        true,
-		storepb.Engine_SNOWFLAKE:        true,
-		storepb.Engine_MSSQL:            true,
-		storepb.Engine_DYNAMODB:         true,
-		storepb.Engine_COCKROACHDB:      true,
-	}
-	StatementReportEngines = map[storepb.Engine]bool{
-		storepb.Engine_POSTGRES:         true,
-		storepb.Engine_MYSQL:            true,
-		storepb.Engine_TIDB:             true,
-		storepb.Engine_OCEANBASE:        true,
-		storepb.Engine_ORACLE:           true,
-		storepb.Engine_OCEANBASE_ORACLE: true,
-		storepb.Engine_MSSQL:            true,
-		storepb.Engine_REDSHIFT:         true,
-	}
 )
 
 var letters = []rune("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")

@@ -84,8 +84,7 @@ func (exec *DataUpdateExecutor) RunOnce(ctx context.Context, driverCtx context.C
 
 	var priorBackupDetail *storepb.PriorBackupDetail
 	// Check if we should skip backup or not.
-	switch instance.Metadata.GetEngine() {
-	case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MSSQL, storepb.Engine_ORACLE, storepb.Engine_POSTGRES:
+	if base.EngineSupportPriorBackup(instance.Metadata.GetEngine()) {
 		var backupErr error
 		priorBackupDetail, backupErr = exec.backupData(ctx, driverCtx, statement, task.Payload, task, issueN, instance, database)
 		if backupErr != nil {

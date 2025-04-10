@@ -6,8 +6,9 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/component/masker"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	parserbase "github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -25,7 +26,7 @@ func NewQueryResultMasker(store *store.Store) *QueryResultMasker {
 }
 
 // MaskResults masks the result in-place based on the dynamic masking policy, query-span, instance and action.
-func (s *QueryResultMasker) MaskResults(ctx context.Context, spans []*base.QuerySpan, results []*v1pb.QueryResult, instance *store.InstanceMessage, user *store.UserMessage, action storepb.MaskingExceptionPolicy_MaskingException_Action) error {
+func (s *QueryResultMasker) MaskResults(ctx context.Context, spans []*parserbase.QuerySpan, results []*v1pb.QueryResult, instance *store.InstanceMessage, user *store.UserMessage, action storepb.MaskingExceptionPolicy_MaskingException_Action) error {
 	classificationSetting, err := s.store.GetDataClassificationSetting(ctx)
 	if err != nil {
 		return errors.Wrapf(err, "failed to find classification setting")
@@ -73,7 +74,7 @@ func (s *QueryResultMasker) MaskResults(ctx context.Context, spans []*base.Query
 }
 
 // getMaskersForQuerySpan returns the maskers for the query span.
-func (s *QueryResultMasker) getMaskersForQuerySpan(ctx context.Context, m *maskingLevelEvaluator, instance *store.InstanceMessage, user *store.UserMessage, span *base.QuerySpan, action storepb.MaskingExceptionPolicy_MaskingException_Action) ([]masker.Masker, error) {
+func (s *QueryResultMasker) getMaskersForQuerySpan(ctx context.Context, m *maskingLevelEvaluator, instance *store.InstanceMessage, user *store.UserMessage, span *parserbase.QuerySpan, action storepb.MaskingExceptionPolicy_MaskingException_Action) ([]masker.Masker, error) {
 	if span == nil {
 		return nil, nil
 	}
@@ -128,12 +129,12 @@ func (s *QueryResultMasker) getMaskerForColumnResource(
 	ctx context.Context,
 	m *maskingLevelEvaluator,
 	instance *store.InstanceMessage,
-	sourceColumn base.ColumnResource,
+	sourceColumn parserbase.ColumnResource,
 	maskingExceptionPolicyMap map[string]*storepb.MaskingExceptionPolicy,
 	action storepb.MaskingExceptionPolicy_MaskingException_Action,
 	currentPrincipal *store.UserMessage,
 ) (masker.Masker, error) {
-	if instance != nil && !isMaskingSupported(instance.Metadata.GetEngine()) {
+	if instance != nil && !base.EngineSupportMasking(instance.Metadata.GetEngine()) {
 		return masker.NewNoneMasker(), nil
 	}
 	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
@@ -214,7 +215,7 @@ func (s *QueryResultMasker) getMaskerForColumnResource(
 	return getMaskerByMaskingAlgorithmAndLevel(semanticType.GetAlgorithm()), nil
 }
 
-func (s *QueryResultMasker) getColumnForColumnResource(ctx context.Context, instanceID string, sourceColumn *base.ColumnResource) (*storepb.ColumnMetadata, *storepb.ColumnCatalog, error) {
+func (s *QueryResultMasker) getColumnForColumnResource(ctx context.Context, instanceID string, sourceColumn *parserbase.ColumnResource) (*storepb.ColumnMetadata, *storepb.ColumnCatalog, error) {
 	if sourceColumn == nil {
 		return nil, nil, nil
 	}
@@ -326,23 +327,4 @@ func doMaskResult(maskers []masker.Masker, result *v1pb.QueryResult) {
 
 	result.Sensitive = sensitive
 	result.Masked = sensitive
-}
-
-func isMaskingSupported(e storepb.Engine) bool {
-	var supportedEngines = map[storepb.Engine]bool{
-		storepb.Engine_MYSQL:     true,
-		storepb.Engine_POSTGRES:  true,
-		storepb.Engine_ORACLE:    true,
-		storepb.Engine_MSSQL:     true,
-		storepb.Engine_MARIADB:   true,
-		storepb.Engine_OCEANBASE: true,
-		storepb.Engine_TIDB:      true,
-		storepb.Engine_BIGQUERY:  true,
-		storepb.Engine_SPANNER:   true,
-	}
-
-	if _, ok := supportedEngines[e]; !ok {
-		return false
-	}
-	return true
 }
