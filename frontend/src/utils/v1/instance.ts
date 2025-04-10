@@ -101,6 +101,7 @@ export const supportedEngineV1List = () => {
     Engine.COCKROACHDB,
     Engine.COSMOSDB,
     Engine.CASSANDRA,
+    Engine.TRINO,
   ];
   if (locale.value === "zh-CN") {
     engines.push(Engine.DM);
@@ -392,6 +393,8 @@ export const engineNameV1 = (type: Engine): string => {
       return "CosmosDB";
     case Engine.CASSANDRA:
       return "Cassandra"
+    case Engine.TRINO:
+      return "Trino";
   }
   return "";
 };
