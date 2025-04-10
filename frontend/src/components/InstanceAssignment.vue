@@ -173,12 +173,26 @@ const disabledSelectedInstanceNames = computed(() => {
   );
 });
 
+const selectActivationInstances = (instances: Instance[]) => {
+  for (const instance of instances) {
+    if (instance.activation) {
+      state.selectedInstance.add(instance.name);
+    }
+  }
+};
+
 watch(
-  () => props.selectedInstanceList,
-  () => {
-    for (const instanceName of props.selectedInstanceList) {
+  [() => props.show, () => props.selectedInstanceList],
+  ([show, selectedInstanceList]) => {
+    if (!show) {
+      state.selectedInstance = new Set();
+      return;
+    }
+
+    for (const instanceName of selectedInstanceList) {
       state.selectedInstance.add(instanceName);
     }
+    selectActivationInstances(pagedInstanceTableRef.value?.dataList ?? []);
   },
   { immediate: true }
 );
@@ -186,13 +200,14 @@ watch(
 watch(
   () => pagedInstanceTableRef.value?.dataList ?? [],
   (dataList) => {
+    selectActivationInstances(dataList);
     for (const instance of dataList) {
       if (instance.activation) {
         state.selectedInstance.add(instance.name);
       }
     }
   },
-  { deep: true, immediate: true }
+  { deep: true }
 );
 
 const totalLicenseCount = computed((): string => {
