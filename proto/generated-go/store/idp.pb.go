@@ -638,6 +638,7 @@ type IdentityProviderUserInfo struct {
 	// Groups is the value of groups in 3rd-party idp user info.
 	// Mainly used for OIDC: https://developer.okta.com/docs/guides/customize-tokens-groups-claim/main/
 	Groups        []string `protobuf:"bytes,5,rep,name=groups,proto3" json:"groups,omitempty"`
+	HasGroups     bool     `protobuf:"varint,6,opt,name=has_groups,json=hasGroups,proto3" json:"has_groups,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -700,6 +701,13 @@ func (x *IdentityProviderUserInfo) GetGroups() []string {
 	return nil
 }
 
+func (x *IdentityProviderUserInfo) GetHasGroups() bool {
+	if x != nil {
+		return x.HasGroups
+	}
+	return false
+}
+
 var File_store_idp_proto protoreflect.FileDescriptor
 
 const file_store_idp_proto_rawDesc = "" +
@@ -749,14 +757,16 @@ const file_store_idp_proto_rawDesc = "" +
 	"identifier\x12!\n" +
 	"\fdisplay_name\x18\x02 \x01(\tR\vdisplayName\x12\x14\n" +
 	"\x05phone\x18\x04 \x01(\tR\x05phone\x12\x16\n" +
-	"\x06groups\x18\x05 \x01(\tR\x06groupsJ\x04\b\x03\x10\x04\"\x91\x01\n" +
+	"\x06groups\x18\x05 \x01(\tR\x06groupsJ\x04\b\x03\x10\x04\"\xb0\x01\n" +
 	"\x18IdentityProviderUserInfo\x12\x1e\n" +
 	"\n" +
 	"identifier\x18\x01 \x01(\tR\n" +
 	"identifier\x12!\n" +
 	"\fdisplay_name\x18\x02 \x01(\tR\vdisplayName\x12\x14\n" +
 	"\x05phone\x18\x04 \x01(\tR\x05phone\x12\x16\n" +
-	"\x06groups\x18\x05 \x03(\tR\x06groupsJ\x04\b\x03\x10\x04*^\n" +
+	"\x06groups\x18\x05 \x03(\tR\x06groups\x12\x1d\n" +
+	"\n" +
+	"has_groups\x18\x06 \x01(\bR\thasGroupsJ\x04\b\x03\x10\x04*^\n" +
 	"\x14IdentityProviderType\x12&\n" +
 	"\"IDENTITY_PROVIDER_TYPE_UNSPECIFIED\x10\x00\x12\n" +
 	"\n" +

@@ -2147,6 +2147,7 @@ we can extract the relevant data based with `FieldMapping`.
 | display_name | [string](#string) |  | DisplayName is the value of display name in 3rd-party idp user info. |
 | phone | [string](#string) |  | Phone is the value of primary phone in 3rd-party idp user info. |
 | groups | [string](#string) | repeated | Groups is the value of groups in 3rd-party idp user info. Mainly used for OIDC: https://developer.okta.com/docs/guides/customize-tokens-groups-claim/main/ |
+| has_groups | [bool](#bool) |  |  |
 
 
 

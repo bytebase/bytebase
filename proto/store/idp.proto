@@ -121,6 +121,8 @@ message IdentityProviderUserInfo {
   // Groups is the value of groups in 3rd-party idp user info.
   // Mainly used for OIDC: https://developer.okta.com/docs/guides/customize-tokens-groups-claim/main/
   repeated string groups = 5;
+
+  bool has_groups = 6;
 }
 
 enum OAuth2AuthStyle {

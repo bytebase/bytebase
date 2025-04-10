@@ -232,6 +232,7 @@ export interface IdentityProviderUserInfo {
    * Mainly used for OIDC: https://developer.okta.com/docs/guides/customize-tokens-groups-claim/main/
    */
   groups: string[];
+  hasGroups: boolean;
 }
 
 function createBaseIdentityProviderConfig(): IdentityProviderConfig {
@@ -1011,7 +1012,7 @@ export const FieldMapping: MessageFns<FieldMapping> = {
 };
 
 function createBaseIdentityProviderUserInfo(): IdentityProviderUserInfo {
-  return { identifier: "", displayName: "", phone: "", groups: [] };
+  return { identifier: "", displayName: "", phone: "", groups: [], hasGroups: false };
 }
 
 export const IdentityProviderUserInfo: MessageFns<IdentityProviderUserInfo> = {
@@ -1027,6 +1028,9 @@ export const IdentityProviderUserInfo: MessageFns<IdentityProviderUserInfo> = {
     }
     for (const v of message.groups) {
       writer.uint32(42).string(v!);
+    }
+    if (message.hasGroups !== false) {
+      writer.uint32(48).bool(message.hasGroups);
     }
     return writer;
   },
@@ -1070,6 +1074,14 @@ export const IdentityProviderUserInfo: MessageFns<IdentityProviderUserInfo> = {
           message.groups.push(reader.string());
           continue;
         }
+        case 6: {
+          if (tag !== 48) {
+            break;
+          }
+
+          message.hasGroups = reader.bool();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1085,6 +1097,7 @@ export const IdentityProviderUserInfo: MessageFns<IdentityProviderUserInfo> = {
       displayName: isSet(object.displayName) ? globalThis.String(object.displayName) : "",
       phone: isSet(object.phone) ? globalThis.String(object.phone) : "",
       groups: globalThis.Array.isArray(object?.groups) ? object.groups.map((e: any) => globalThis.String(e)) : [],
+      hasGroups: isSet(object.hasGroups) ? globalThis.Boolean(object.hasGroups) : false,
     };
   },
 
@@ -1102,6 +1115,9 @@ export const IdentityProviderUserInfo: MessageFns<IdentityProviderUserInfo> = {
     if (message.groups?.length) {
       obj.groups = message.groups;
     }
+    if (message.hasGroups !== false) {
+      obj.hasGroups = message.hasGroups;
+    }
     return obj;
   },
 
@@ -1114,6 +1130,7 @@ export const IdentityProviderUserInfo: MessageFns<IdentityProviderUserInfo> = {
     message.displayName = object.displayName ?? "";
     message.phone = object.phone ?? "";
     message.groups = object.groups?.map((e) => e) || [];
+    message.hasGroups = object.hasGroups ?? false;
     return message;
   },
 };

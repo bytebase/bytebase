@@ -152,6 +152,7 @@ func (p *IdentityProvider) UserInfo(ctx context.Context, token *oauth2.Token, no
 	if p.config.FieldMapping.Groups != "" {
 		if v, ok := idp.GetValueWithKey(claims, p.config.FieldMapping.Groups).([]any); ok {
 			slog.Debug("User groups", slog.Any("groups", v))
+			userInfo.HasGroups = true
 			for _, group := range v {
 				// Only handle string type here.
 				if groupStr, ok := group.(string); ok {
