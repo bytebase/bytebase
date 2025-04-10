@@ -44,7 +44,6 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 				return nil, err
 			}
 			defer schemaRows.Close()
-			
 			var schemas []*storepb.SchemaMetadata
 			for schemaRows.Next() {
 				var schemaName string
@@ -59,15 +58,15 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 			if err := schemaRows.Err(); err != nil {
 				return nil, err
 			}
-			
+
 			return schemas, nil
 		}()
-		
+
 		if err != nil {
 			// skip catalog if schemas can't be retrieved
 			continue
 		}
-		
+
 		database.Schemas = schemas
 		databases = append(databases, database)
 	}
