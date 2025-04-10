@@ -409,6 +409,8 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 			}
 		}
 		if userInfo.HasGroups {
+			// Sync user groups with the identity provider.
+			// The userInfo.Groups is the groups that the user belongs to in the identity provider.
 			if err := s.syncUserGroups(ctx, user, userInfo.Groups); err != nil {
 				return nil, status.Errorf(codes.Internal, "failed to sync user groups: %v", err)
 			}
@@ -439,6 +441,8 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 		return nil, status.Errorf(codes.Internal, "failed to create user, error: %v", err)
 	}
 	if userInfo.HasGroups {
+		// Sync user groups with the identity provider.
+		// The userInfo.Groups is the groups that the user belongs to in the identity provider.
 		if err := s.syncUserGroups(ctx, user, userInfo.Groups); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to sync user groups: %v", err)
 		}
@@ -484,7 +488,7 @@ func validateWithCodeAndSecret(code, secret string) bool {
 func (s *AuthService) syncUserGroups(ctx context.Context, user *store.UserMessage, groups []string) error {
 	bbGroups, err := s.store.ListGroups(ctx, &store.FindGroupMessage{})
 	if err != nil {
-		return status.Error(codes.Internal, err.Error())
+		return status.Errorf(codes.Internal, "failed to list groups: %v", err)
 	}
 
 	for _, bbGroup := range bbGroups {
