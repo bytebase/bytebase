@@ -1,7 +1,7 @@
 package main
 
 import (
-	"encoding/xml"
+	"encoding/json"
 	"fmt"
 	"os"
 
@@ -10,68 +10,58 @@ import (
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
-// Testsuite represents the root element of the JUnit XML.
-type Testsuite struct {
-	XMLName   xml.Name   `xml:"testsuite"`
-	Name      string     `xml:"name,attr"`
-	Tests     int        `xml:"tests,attr"`
-	Failures  int        `xml:"failures,attr"`
-	Errors    int        `xml:"errors,attr"`
-	Testcases []Testcase `xml:"testcase"`
+// Define the struct for the inner "lines" object.
+type Lines struct {
+	Begin int `json:"begin"`
 }
 
-// Testcase represents each test case in the JUnit XML.
-type Testcase struct {
-	File      string   `xml:"file,attr"`
-	Name      string   `xml:"name,attr"`
-	ClassName string   `xml:"classname,attr"`
-	Failure   *Failure `xml:"failure,omitempty"`
-	Error     *Error   `xml:"error,omitempty"`
+// Define the struct for the inner "location" object.
+type Location struct {
+	Path  string `json:"path"`
+	Lines Lines  `json:"lines"`
 }
 
-// Failure represents a failed test case.
-type Failure struct {
-	Text string `xml:",chardata"`
+// Define the struct for each JSON object in the array.
+type Finding struct {
+	Description string   `json:"description"`
+	CheckName   string   `json:"check_name"`
+	Fingerprint string   `json:"fingerprint"`
+	Severity    string   `json:"severity"`
+	Location    Location `json:"location"`
 }
 
-// Error represents a test case that resulted in an error.
-type Error struct {
-	Text string `xml:",chardata"`
-}
-
-func writeReleaseCheckToJunitXML(resp *v1pb.CheckReleaseResponse) error {
-	root := Testsuite{
-		Name: "Bytebase SQL review",
-	}
-
+func writeReleaseCheckToCodeQualityJSON(resp *v1pb.CheckReleaseResponse) error {
+	var data []Finding
 	for _, result := range resp.Results {
 		for _, advice := range result.Advices {
-			root.Tests++
-			testcase := Testcase{
-				File:      fmt.Sprintf("%s#L%d", result.File, advice.Line),
-				Name:      advice.Title,
-				ClassName: fmt.Sprintf("%s,%s", result.File, result.Target),
-			}
-
+			var severity string
+			// Valid values are info, minor, major, critical, or blocker.
 			switch advice.Status {
 			case v1pb.Advice_WARNING:
-				root.Failures++
-				testcase.Failure = &Failure{
-					Text: fmt.Sprintf("[%s] Title: %s\nCode: %d, Line: %d\nContent: %s", advice.Status.String(), advice.Title, advice.Code, advice.Line, advice.Content),
-				}
+				severity = "info"
 			case v1pb.Advice_ERROR:
-				root.Errors++
-				testcase.Error = &Error{
-					Text: fmt.Sprintf("[%s] Title: %s\nCode: %d, Line: %d\nContent: %s", advice.Status.String(), advice.Title, advice.Code, advice.Line, advice.Content),
-				}
+				severity = "critical"
+			default:
+				continue
 			}
-			root.Testcases = append(root.Testcases, testcase)
+			data = append(data, Finding{
+				Description: advice.Content,
+				CheckName:   advice.Title,
+				Fingerprint: fmt.Sprintf("%s#%d", result.File, advice.Line),
+				Severity:    severity,
+				Location: Location{
+					Path: result.File,
+					Lines: Lines{
+						Begin: int(advice.Line),
+					},
+				},
+			})
 		}
 	}
-	output, err := xml.MarshalIndent(root, "", "  ")
-	if err != nil {
-		return errors.Wrapf(err, "error marshaling XML")
-	}
 
-	return os.WriteFile("bytebase_junit.xml", []byte(xml.Header+string(output)), 0644)
+	jsonData, err := json.MarshalIndent(data, "", "  ")
+	if err != nil {
+		return errors.Wrapf(err, "error marshaling json")
+	}
+	return os.WriteFile("bytebase_codequality.json", jsonData, 0644)
 }
