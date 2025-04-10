@@ -10,13 +10,13 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
 
+	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/ghost"
 	"github.com/bytebase/bytebase/backend/component/sheet"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
@@ -114,9 +114,9 @@ func transformDatabaseGroupTargetToSpecs(ctx context.Context, s *store.Store, sp
 }
 
 func getTaskCreatesFromSpec(ctx context.Context, s *store.Store, sheetManager *sheet.Manager, licenseService enterprise.LicenseService, dbFactory *dbfactory.DBFactory, spec *storepb.PlanConfig_Spec, project *store.ProjectMessage) ([]*store.TaskMessage, error) {
-	if licenseService.IsFeatureEnabled(api.FeatureTaskScheduleTime) != nil {
+	if licenseService.IsFeatureEnabled(base.FeatureTaskScheduleTime) != nil {
 		if spec.EarliestAllowedTime != nil && !spec.EarliestAllowedTime.AsTime().IsZero() {
-			return nil, errors.New(api.FeatureTaskScheduleTime.AccessErrorMessage())
+			return nil, errors.New(base.FeatureTaskScheduleTime.AccessErrorMessage())
 		}
 	}
 
@@ -218,7 +218,7 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 			return nil, err
 		}
 		sheet, err := sheetManager.CreateSheet(ctx, &store.SheetMessage{
-			CreatorID: api.SystemBotID,
+			CreatorID: base.SystemBotID,
 			ProjectID: project.ResourceID,
 			Title:     fmt.Sprintf("Sheet for creating database %v", databaseName),
 			Statement: statement,
@@ -234,7 +234,7 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 			InstanceID:    instance.ResourceID,
 			DatabaseName:  &databaseName,
 			EnvironmentID: effectiveEnvironmentID,
-			Type:          api.TaskDatabaseCreate,
+			Type:          base.TaskDatabaseCreate,
 			Payload: &storepb.TaskPayload{
 				SpecId:        spec.Id,
 				CharacterSet:  c.CharacterSet,
@@ -317,7 +317,7 @@ func getTaskCreatesFromExportDataConfig(ctx context.Context, s *store.Store, spe
 		InstanceID:    database.InstanceID,
 		DatabaseName:  &database.DatabaseName,
 		EnvironmentID: database.EffectiveEnvironmentID,
-		Type:          api.TaskDatabaseDataExport,
+		Type:          base.TaskDatabaseDataExport,
 		Payload:       payload,
 	}
 	if spec.EarliestAllowedTime.GetSeconds() > 0 {
@@ -360,7 +360,7 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s
 			InstanceID:    database.InstanceID,
 			DatabaseName:  &database.DatabaseName,
 			EnvironmentID: database.EffectiveEnvironmentID,
-			Type:          api.TaskDatabaseSchemaBaseline,
+			Type:          base.TaskDatabaseSchemaBaseline,
 			Payload: &storepb.TaskPayload{
 				SpecId:        spec.Id,
 				SchemaVersion: c.SchemaVersion,
@@ -384,7 +384,7 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s
 			InstanceID:    database.InstanceID,
 			DatabaseName:  &database.DatabaseName,
 			EnvironmentID: database.EffectiveEnvironmentID,
-			Type:          api.TaskDatabaseSchemaUpdate,
+			Type:          base.TaskDatabaseSchemaUpdate,
 			Payload: &storepb.TaskPayload{
 				SpecId:        spec.Id,
 				SheetId:       int32(sheetUID),
@@ -412,7 +412,7 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s
 			InstanceID:    database.InstanceID,
 			DatabaseName:  &database.DatabaseName,
 			EnvironmentID: database.EffectiveEnvironmentID,
-			Type:          api.TaskDatabaseSchemaUpdateGhost,
+			Type:          base.TaskDatabaseSchemaUpdateGhost,
 			Payload: &storepb.TaskPayload{
 				SpecId:        spec.Id,
 				SheetId:       int32(sheetUID),
@@ -442,7 +442,7 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s
 			InstanceID:    database.InstanceID,
 			DatabaseName:  &database.DatabaseName,
 			EnvironmentID: database.EffectiveEnvironmentID,
-			Type:          api.TaskDatabaseDataUpdate,
+			Type:          base.TaskDatabaseDataUpdate,
 			Payload: &storepb.TaskPayload{
 				SpecId:                spec.Id,
 				SheetId:               int32(sheetUID),

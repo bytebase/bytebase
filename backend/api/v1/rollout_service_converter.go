@@ -10,9 +10,9 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/state"
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -592,19 +592,19 @@ func convertToSchedulerInfoWaitingCause(ctx context.Context, s *store.Store, c *
 	}
 }
 
-func convertToTaskRunStatus(status api.TaskRunStatus) v1pb.TaskRun_Status {
+func convertToTaskRunStatus(status base.TaskRunStatus) v1pb.TaskRun_Status {
 	switch status {
-	case api.TaskRunUnknown:
+	case base.TaskRunUnknown:
 		return v1pb.TaskRun_STATUS_UNSPECIFIED
-	case api.TaskRunPending:
+	case base.TaskRunPending:
 		return v1pb.TaskRun_PENDING
-	case api.TaskRunRunning:
+	case base.TaskRunRunning:
 		return v1pb.TaskRun_RUNNING
-	case api.TaskRunDone:
+	case base.TaskRunDone:
 		return v1pb.TaskRun_DONE
-	case api.TaskRunFailed:
+	case base.TaskRunFailed:
 		return v1pb.TaskRun_FAILED
-	case api.TaskRunCanceled:
+	case base.TaskRunCanceled:
 		return v1pb.TaskRun_CANCELED
 	default:
 		return v1pb.TaskRun_STATUS_UNSPECIFIED
@@ -690,15 +690,15 @@ func convertToRollout(ctx context.Context, s *store.Store, project *store.Projec
 
 func convertToTask(ctx context.Context, s *store.Store, project *store.ProjectMessage, task *store.TaskMessage) (*v1pb.Task, error) {
 	switch task.Type {
-	case api.TaskDatabaseCreate:
+	case base.TaskDatabaseCreate:
 		return convertToTaskFromDatabaseCreate(ctx, s, project, task)
-	case api.TaskDatabaseSchemaBaseline:
+	case base.TaskDatabaseSchemaBaseline:
 		return convertToTaskFromSchemaBaseline(ctx, s, project, task)
-	case api.TaskDatabaseSchemaUpdate, api.TaskDatabaseSchemaUpdateGhost:
+	case base.TaskDatabaseSchemaUpdate, base.TaskDatabaseSchemaUpdateGhost:
 		return convertToTaskFromSchemaUpdate(ctx, s, project, task)
-	case api.TaskDatabaseDataUpdate:
+	case base.TaskDatabaseDataUpdate:
 		return convertToTaskFromDataUpdate(ctx, s, project, task)
-	case api.TaskDatabaseDataExport:
+	case base.TaskDatabaseDataExport:
 		return convertToTaskFromDatabaseDataExport(ctx, s, project, task)
 	default:
 		return nil, errors.Errorf("task type %v is not supported", task.Type)
@@ -855,41 +855,41 @@ func convertToTaskFromDatabaseDataExport(ctx context.Context, s *store.Store, pr
 	return v1pbTask, nil
 }
 
-func convertToTaskStatus(latestTaskRunStatus api.TaskRunStatus, skipped bool) v1pb.Task_Status {
+func convertToTaskStatus(latestTaskRunStatus base.TaskRunStatus, skipped bool) v1pb.Task_Status {
 	if skipped {
 		return v1pb.Task_SKIPPED
 	}
 	switch latestTaskRunStatus {
-	case api.TaskRunNotStarted:
+	case base.TaskRunNotStarted:
 		return v1pb.Task_NOT_STARTED
-	case api.TaskRunPending:
+	case base.TaskRunPending:
 		return v1pb.Task_PENDING
-	case api.TaskRunRunning:
+	case base.TaskRunRunning:
 		return v1pb.Task_RUNNING
-	case api.TaskRunDone:
+	case base.TaskRunDone:
 		return v1pb.Task_DONE
-	case api.TaskRunFailed:
+	case base.TaskRunFailed:
 		return v1pb.Task_FAILED
-	case api.TaskRunCanceled:
+	case base.TaskRunCanceled:
 		return v1pb.Task_CANCELED
 	default:
 		return v1pb.Task_STATUS_UNSPECIFIED
 	}
 }
 
-func convertToTaskType(taskType api.TaskType) v1pb.Task_Type {
+func convertToTaskType(taskType base.TaskType) v1pb.Task_Type {
 	switch taskType {
-	case api.TaskDatabaseCreate:
+	case base.TaskDatabaseCreate:
 		return v1pb.Task_DATABASE_CREATE
-	case api.TaskDatabaseSchemaBaseline:
+	case base.TaskDatabaseSchemaBaseline:
 		return v1pb.Task_DATABASE_SCHEMA_BASELINE
-	case api.TaskDatabaseSchemaUpdate:
+	case base.TaskDatabaseSchemaUpdate:
 		return v1pb.Task_DATABASE_SCHEMA_UPDATE
-	case api.TaskDatabaseSchemaUpdateGhost:
+	case base.TaskDatabaseSchemaUpdateGhost:
 		return v1pb.Task_DATABASE_SCHEMA_UPDATE_GHOST
-	case api.TaskDatabaseDataUpdate:
+	case base.TaskDatabaseDataUpdate:
 		return v1pb.Task_DATABASE_DATA_UPDATE
-	case api.TaskDatabaseDataExport:
+	case base.TaskDatabaseDataExport:
 		return v1pb.Task_DATABASE_DATA_EXPORT
 	default:
 		return v1pb.Task_TYPE_UNSPECIFIED

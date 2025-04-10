@@ -19,12 +19,12 @@ import (
 	"google.golang.org/protobuf/testing/protocmp"
 	"google.golang.org/protobuf/types/known/anypb"
 
+	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/state"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/mail"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 	"github.com/bytebase/bytebase/backend/plugin/webhook/dingtalk"
@@ -62,23 +62,23 @@ func NewSettingService(
 }
 
 // Some settings contain secret info so we only return settings that are needed by the client.
-var whitelistSettings = []api.SettingName{
-	api.SettingBrandingLogo,
-	api.SettingWorkspaceID,
-	api.SettingAppIM,
-	api.SettingWatermark,
-	api.SettingAI,
-	api.SettingWorkspaceApproval,
-	api.SettingWorkspaceMailDelivery,
-	api.SettingWorkspaceProfile,
-	api.SettingWorkspaceExternalApproval,
-	api.SettingSchemaTemplate,
-	api.SettingDataClassification,
-	api.SettingSemanticTypes,
-	api.SettingSQLResultSizeLimit,
-	api.SettingSCIM,
-	api.SettingPasswordRestriction,
-	api.SettingEnvironment,
+var whitelistSettings = []base.SettingName{
+	base.SettingBrandingLogo,
+	base.SettingWorkspaceID,
+	base.SettingAppIM,
+	base.SettingWatermark,
+	base.SettingAI,
+	base.SettingWorkspaceApproval,
+	base.SettingWorkspaceMailDelivery,
+	base.SettingWorkspaceProfile,
+	base.SettingWorkspaceExternalApproval,
+	base.SettingSchemaTemplate,
+	base.SettingDataClassification,
+	base.SettingSemanticTypes,
+	base.SettingSQLResultSizeLimit,
+	base.SettingSCIM,
+	base.SettingPasswordRestriction,
+	base.SettingEnvironment,
 }
 
 //go:embed mail_templates/testmail/template.html
@@ -116,7 +116,7 @@ func (s *SettingService) GetSetting(ctx context.Context, request *v1pb.GetSettin
 	if settingName == "" {
 		return nil, status.Errorf(codes.InvalidArgument, "setting name is empty")
 	}
-	apiSettingName := api.SettingName(settingName)
+	apiSettingName := base.SettingName(settingName)
 	if !settingInWhitelist(apiSettingName) {
 		return nil, status.Errorf(codes.InvalidArgument, "setting is not available")
 	}
@@ -153,7 +153,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 	if s.profile.IsFeatureUnavailable(settingName) {
 		return nil, status.Errorf(codes.InvalidArgument, "feature %s is unavailable in current mode", settingName)
 	}
-	apiSettingName := api.SettingName(settingName)
+	apiSettingName := base.SettingName(settingName)
 	existedSetting, err := s.store.GetSettingV2(ctx, apiSettingName)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to find setting %s with error: %v", settingName, err)
@@ -176,7 +176,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 
 	var storeSettingValue string
 	switch apiSettingName {
-	case api.SettingWorkspaceProfile:
+	case base.SettingWorkspaceProfile:
 		if request.UpdateMask == nil {
 			return nil, status.Errorf(codes.InvalidArgument, "update mask is required")
 		}
@@ -195,7 +195,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 				if s.profile.SaaS {
 					return nil, status.Errorf(codes.InvalidArgument, "feature %s is unavailable in current mode", settingName)
 				}
-				if err := s.licenseService.IsFeatureEnabled(api.FeatureDisallowSignup); err != nil {
+				if err := s.licenseService.IsFeatureEnabled(base.FeatureDisallowSignup); err != nil {
 					return nil, status.Error(codes.PermissionDenied, err.Error())
 				}
 				oldSetting.DisallowSignup = payload.DisallowSignup
@@ -212,14 +212,14 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 				}
 				oldSetting.ExternalUrl = payload.ExternalUrl
 			case "value.workspace_profile_setting_value.require_2fa":
-				if err := s.licenseService.IsFeatureEnabled(api.Feature2FA); err != nil {
+				if err := s.licenseService.IsFeatureEnabled(base.Feature2FA); err != nil {
 					return nil, status.Error(codes.PermissionDenied, err.Error())
 				}
 				oldSetting.Require_2Fa = payload.Require_2Fa
 			case "value.workspace_profile_setting_value.outbound_ip_list":
 				// We're not support update outbound_ip_list via api.
 			case "value.workspace_profile_setting_value.token_duration":
-				if err := s.licenseService.IsFeatureEnabled(api.FeatureSecureToken); err != nil {
+				if err := s.licenseService.IsFeatureEnabled(base.FeatureSecureToken); err != nil {
 					return nil, status.Error(codes.PermissionDenied, err.Error())
 				}
 				if payload.TokenDuration != nil && payload.TokenDuration.Seconds > 0 && payload.TokenDuration.AsDuration() < time.Hour {
@@ -227,7 +227,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 				}
 				oldSetting.TokenDuration = payload.TokenDuration
 			case "value.workspace_profile_setting_value.announcement":
-				if err := s.licenseService.IsFeatureEnabled(api.FeatureAnnouncement); err != nil {
+				if err := s.licenseService.IsFeatureEnabled(base.FeatureAnnouncement); err != nil {
 					return nil, status.Error(codes.PermissionDenied, err.Error())
 				}
 				oldSetting.Announcement = payload.Announcement
@@ -246,7 +246,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 				oldSetting.Domains = payload.Domains
 			case "value.workspace_profile_setting_value.enforce_identity_domain":
 				if payload.EnforceIdentityDomain {
-					if err := s.licenseService.IsFeatureEnabled(api.FeatureDomainRestriction); err != nil {
+					if err := s.licenseService.IsFeatureEnabled(base.FeatureDomainRestriction); err != nil {
 						return nil, status.Error(codes.PermissionDenied, err.Error())
 					}
 				}
@@ -278,8 +278,8 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 			return nil, status.Errorf(codes.Internal, "failed to marshal setting for %s with error: %v", apiSettingName, err)
 		}
 		storeSettingValue = string(bytes)
-	case api.SettingWorkspaceApproval:
-		if err := s.licenseService.IsFeatureEnabled(api.FeatureCustomApproval); err != nil {
+	case base.SettingWorkspaceApproval:
+		if err := s.licenseService.IsFeatureEnabled(base.FeatureCustomApproval); err != nil {
 			return nil, status.Error(codes.PermissionDenied, err.Error())
 		}
 
@@ -326,7 +326,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 			return nil, status.Errorf(codes.Internal, "failed to marshal setting for %s with error: %v", apiSettingName, err)
 		}
 		storeSettingValue = string(bytes)
-	case api.SettingWorkspaceMailDelivery:
+	case base.SettingWorkspaceMailDelivery:
 		apiValue := request.Setting.Value.GetSmtpMailDeliverySettingValue()
 		// We will fill the password read from the store if it is not set.
 		if apiValue.Password == nil {
@@ -378,12 +378,12 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 			return nil, status.Errorf(codes.Internal, "failed to marshal setting value for %s with error: %v", apiSettingName, err)
 		}
 		storeSettingValue = string(bytes)
-	case api.SettingBrandingLogo:
-		if err := s.licenseService.IsFeatureEnabled(api.FeatureBranding); err != nil {
+	case base.SettingBrandingLogo:
+		if err := s.licenseService.IsFeatureEnabled(base.FeatureBranding); err != nil {
 			return nil, status.Error(codes.PermissionDenied, err.Error())
 		}
 		storeSettingValue = request.Setting.Value.GetStringValue()
-	case api.SettingPluginAgent:
+	case base.SettingPluginAgent:
 		payload := new(storepb.AgentPluginSetting)
 		if err := convertProtoToProto(request.Setting.Value.GetAgentPluginSettingValue(), payload); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", apiSettingName, err)
@@ -395,7 +395,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 		}
 		storeSettingValue = string(bytes)
 
-	case api.SettingAppIM:
+	case base.SettingAppIM:
 		payload := new(storepb.AppIMSetting)
 		if err := convertProtoToProto(request.Setting.Value.GetAppImSettingValue(), payload); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s, error: %v", apiSettingName, err)
@@ -459,8 +459,8 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 		}
 		storeSettingValue = string(bytes)
 
-	case api.SettingSchemaTemplate:
-		if err := s.licenseService.IsFeatureEnabled(api.FeatureSchemaTemplate); err != nil {
+	case base.SettingSchemaTemplate:
+		if err := s.licenseService.IsFeatureEnabled(base.FeatureSchemaTemplate); err != nil {
 			return nil, status.Error(codes.PermissionDenied, err.Error())
 		}
 		schemaTemplateSetting := request.Setting.Value.GetSchemaTemplateSettingValue()
@@ -481,7 +481,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 			return nil, status.Errorf(codes.Internal, "failed to marshal external approval setting, error: %v", err)
 		}
 		storeSettingValue = string(bytes)
-	case api.SettingDataClassification:
+	case base.SettingDataClassification:
 		payload := new(storepb.DataClassificationSetting)
 		if err := convertProtoToProto(request.Setting.Value.GetDataClassificationSettingValue(), payload); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", apiSettingName, err)
@@ -498,7 +498,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 			return nil, status.Errorf(codes.Internal, "failed to marshal setting for %s with error: %v", apiSettingName, err)
 		}
 		storeSettingValue = string(bytes)
-	case api.SettingSemanticTypes:
+	case base.SettingSemanticTypes:
 		storeSemanticTypeSetting := new(storepb.SemanticTypeSetting)
 		if err := convertProtoToProto(request.Setting.Value.GetSemanticTypeSettingValue(), storeSemanticTypeSetting); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", apiSettingName, err)
@@ -518,12 +518,12 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 			return nil, status.Errorf(codes.Internal, "failed to marshal setting for %s with error: %v", apiSettingName, err)
 		}
 		storeSettingValue = string(bytes)
-	case api.SettingWatermark:
-		if err := s.licenseService.IsFeatureEnabled(api.FeatureWatermark); err != nil {
+	case base.SettingWatermark:
+		if err := s.licenseService.IsFeatureEnabled(base.FeatureWatermark); err != nil {
 			return nil, status.Error(codes.PermissionDenied, err.Error())
 		}
 		storeSettingValue = request.Setting.Value.GetStringValue()
-	case api.SettingSQLResultSizeLimit:
+	case base.SettingSQLResultSizeLimit:
 		maximumSQLResultSizeSetting := new(storepb.MaximumSQLResultSizeSetting)
 		if err := convertProtoToProto(request.Setting.Value.GetMaximumSqlResultSizeSetting(), maximumSQLResultSizeSetting); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", apiSettingName, err)
@@ -536,7 +536,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 			return nil, status.Errorf(codes.Internal, "failed to marshal setting for %s with error: %v", apiSettingName, err)
 		}
 		storeSettingValue = string(bytes)
-	case api.SettingSCIM:
+	case base.SettingSCIM:
 		scimToken, err := common.RandomString(32)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to generate random SCIM secret with error: %v", err)
@@ -548,8 +548,8 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 			return nil, status.Errorf(codes.Internal, "failed to marshal SCIM setting with error: %v", err)
 		}
 		storeSettingValue = string(bytes)
-	case api.SettingPasswordRestriction:
-		if err := s.licenseService.IsFeatureEnabled(api.FeaturePasswordRestriction); err != nil {
+	case base.SettingPasswordRestriction:
+		if err := s.licenseService.IsFeatureEnabled(base.FeaturePasswordRestriction); err != nil {
 			return nil, status.Error(codes.PermissionDenied, err.Error())
 		}
 		passwordSetting := new(storepb.PasswordRestrictionSetting)
@@ -564,7 +564,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 			return nil, status.Errorf(codes.Internal, "failed to marshal setting for %s with error: %v", apiSettingName, err)
 		}
 		storeSettingValue = string(bytes)
-	case api.SettingAI:
+	case base.SettingAI:
 		aiSetting := &storepb.AISetting{}
 		if err := convertProtoToProto(request.Setting.Value.GetAiSetting(), aiSetting); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", apiSettingName, err)
@@ -592,7 +592,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 			return nil, status.Errorf(codes.Internal, "failed to marshal setting for %s with error: %v", apiSettingName, err)
 		}
 		storeSettingValue = string(bytes)
-	case api.SettingEnvironment:
+	case base.SettingEnvironment:
 		if serr := validateEnvironments(request.Setting.Value.GetEnvironmentSetting().GetEnvironments()); serr != nil {
 			return nil, serr.Err()
 		}
@@ -645,7 +645,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 	}
 
 	// it's a temporary solution to map the classification to all projects before we support it in the UX.
-	if apiSettingName == api.SettingDataClassification && len(settingMessage.Value.GetDataClassificationSettingValue().Configs) == 1 {
+	if apiSettingName == base.SettingDataClassification && len(settingMessage.Value.GetDataClassificationSettingValue().Configs) == 1 {
 		classificationID := settingMessage.Value.GetDataClassificationSettingValue().Configs[0].Id
 		projects, err := s.store.ListProjectV2(ctx, &store.FindProjectMessage{ShowDeleted: false})
 		if err != nil {
@@ -679,7 +679,7 @@ func convertProtoToProto(inputPB, outputPB protoreflect.ProtoMessage) error {
 func (s *SettingService) convertToSettingMessage(ctx context.Context, setting *store.SettingMessage) (*v1pb.Setting, error) {
 	settingName := fmt.Sprintf("%s%s", common.SettingNamePrefix, setting.Name)
 	switch setting.Name {
-	case api.SettingWorkspaceMailDelivery:
+	case base.SettingWorkspaceMailDelivery:
 		storeValue := new(storepb.SMTPMailDeliverySetting)
 		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), storeValue); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", setting.Name, err)
@@ -703,7 +703,7 @@ func (s *SettingService) convertToSettingMessage(ctx context.Context, setting *s
 				},
 			},
 		})
-	case api.SettingAppIM:
+	case base.SettingAppIM:
 		storeValue := new(storepb.AppIMSetting)
 		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), storeValue); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", setting.Name, err)
@@ -732,7 +732,7 @@ func (s *SettingService) convertToSettingMessage(ctx context.Context, setting *s
 				},
 			},
 		}, nil
-	case api.SettingPluginAgent:
+	case base.SettingPluginAgent:
 		v1Value := new(v1pb.AgentPluginSetting)
 		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), v1Value); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", setting.Name, err)
@@ -745,7 +745,7 @@ func (s *SettingService) convertToSettingMessage(ctx context.Context, setting *s
 				},
 			},
 		}, nil
-	case api.SettingWorkspaceProfile:
+	case base.SettingWorkspaceProfile:
 		v1Value := new(v1pb.WorkspaceProfileSetting)
 		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), v1Value); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", setting.Name, err)
@@ -758,7 +758,7 @@ func (s *SettingService) convertToSettingMessage(ctx context.Context, setting *s
 				},
 			},
 		}, nil
-	case api.SettingWorkspaceApproval:
+	case base.SettingWorkspaceApproval:
 		storeValue := new(storepb.WorkspaceApprovalSetting)
 		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), storeValue); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", setting.Name, err)
@@ -786,7 +786,7 @@ func (s *SettingService) convertToSettingMessage(ctx context.Context, setting *s
 				},
 			},
 		}, nil
-	case api.SettingSchemaTemplate:
+	case base.SettingSchemaTemplate:
 		value := new(storepb.SchemaTemplateSetting)
 		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), value); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", setting.Name, err)
@@ -804,7 +804,7 @@ func (s *SettingService) convertToSettingMessage(ctx context.Context, setting *s
 				},
 			},
 		}, nil
-	case api.SettingDataClassification:
+	case base.SettingDataClassification:
 		v1Value := new(v1pb.DataClassificationSetting)
 		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), v1Value); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", setting.Name, err)
@@ -817,7 +817,7 @@ func (s *SettingService) convertToSettingMessage(ctx context.Context, setting *s
 				},
 			},
 		}, nil
-	case api.SettingSemanticTypes:
+	case base.SettingSemanticTypes:
 		v1Value := new(v1pb.SemanticTypeSetting)
 		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), v1Value); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", setting.Name, err)
@@ -830,7 +830,7 @@ func (s *SettingService) convertToSettingMessage(ctx context.Context, setting *s
 				},
 			},
 		}, nil
-	case api.SettingSQLResultSizeLimit:
+	case base.SettingSQLResultSizeLimit:
 		v1Value := new(v1pb.MaximumSQLResultSizeSetting)
 		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), v1Value); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", setting.Name, err)
@@ -846,7 +846,7 @@ func (s *SettingService) convertToSettingMessage(ctx context.Context, setting *s
 				},
 			},
 		}, nil
-	case api.SettingSCIM:
+	case base.SettingSCIM:
 		v1Value := new(v1pb.SCIMSetting)
 		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), v1Value); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", setting.Name, err)
@@ -859,7 +859,7 @@ func (s *SettingService) convertToSettingMessage(ctx context.Context, setting *s
 				},
 			},
 		}, nil
-	case api.SettingPasswordRestriction:
+	case base.SettingPasswordRestriction:
 		v1Value := new(v1pb.PasswordRestrictionSetting)
 		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), v1Value); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", setting.Name, err)
@@ -872,7 +872,7 @@ func (s *SettingService) convertToSettingMessage(ctx context.Context, setting *s
 				},
 			},
 		}, nil
-	case api.SettingAI:
+	case base.SettingAI:
 		v1Value := &v1pb.AISetting{}
 		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), v1Value); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", setting.Name, err)
@@ -887,7 +887,7 @@ func (s *SettingService) convertToSettingMessage(ctx context.Context, setting *s
 				},
 			},
 		}, nil
-	case api.SettingEnvironment:
+	case base.SettingEnvironment:
 		v1Value := new(v1pb.EnvironmentSetting)
 		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), v1Value); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", setting.Name, err)
@@ -913,9 +913,9 @@ func (s *SettingService) convertToSettingMessage(ctx context.Context, setting *s
 }
 
 func (s *SettingService) validateSchemaTemplate(ctx context.Context, schemaTemplateSetting *v1pb.SchemaTemplateSetting) error {
-	oldStoreSetting, err := s.store.GetSettingV2(ctx, api.SettingSchemaTemplate)
+	oldStoreSetting, err := s.store.GetSettingV2(ctx, base.SettingSchemaTemplate)
 	if err != nil {
-		return status.Errorf(codes.Internal, "failed to get setting %q: %v", api.SettingSchemaTemplate, err)
+		return status.Errorf(codes.Internal, "failed to get setting %q: %v", base.SettingSchemaTemplate, err)
 	}
 	settingValue := "{}"
 	if oldStoreSetting != nil {
@@ -924,7 +924,7 @@ func (s *SettingService) validateSchemaTemplate(ctx context.Context, schemaTempl
 
 	value := new(storepb.SchemaTemplateSetting)
 	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(settingValue), value); err != nil {
-		return status.Errorf(codes.Internal, "failed to unmarshal setting value for %v with error: %v", api.SettingSchemaTemplate, err)
+		return status.Errorf(codes.Internal, "failed to unmarshal setting value for %v with error: %v", base.SettingSchemaTemplate, err)
 	}
 	v1Value, err := convertSchemaTemplateSetting(value)
 	if err != nil {
@@ -993,7 +993,7 @@ func validateTableMetadata(engine v1pb.Engine, tableMetadata *v1pb.TableMetadata
 	return nil
 }
 
-func settingInWhitelist(name api.SettingName) bool {
+func settingInWhitelist(name base.SettingName) bool {
 	for _, whitelist := range whitelistSettings {
 		if name == whitelist {
 			return true
@@ -1169,9 +1169,9 @@ func stripSensitiveData(setting *v1pb.Setting) (*v1pb.Setting, error) {
 	if err != nil {
 		return nil, err
 	}
-	apiSettingName := api.SettingName(settingName)
+	apiSettingName := base.SettingName(settingName)
 	switch apiSettingName {
-	case api.SettingWorkspaceMailDelivery:
+	case base.SettingWorkspaceMailDelivery:
 		mailDeliveryValue, ok := setting.Value.Value.(*v1pb.Value_SmtpMailDeliverySettingValue)
 		if !ok {
 			return nil, status.Errorf(codes.InvalidArgument, "invalid setting value type: %T", setting.Value.Value)
@@ -1333,7 +1333,7 @@ func validateDomains(domains []string) error {
 func validateEnvironments(envs []*v1pb.EnvironmentSetting_Environment) *status.Status {
 	used := map[string]bool{}
 	for _, env := range envs {
-		if err := api.IsValidEnvironmentName(env.Title); err != nil {
+		if err := base.IsValidEnvironmentName(env.Title); err != nil {
 			return status.Newf(codes.InvalidArgument, "invalid environment title, error %v", err.Error())
 		}
 		if !isValidResourceID(env.Id) {

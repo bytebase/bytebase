@@ -18,10 +18,10 @@ import (
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 
-	api "github.com/bytebase/bytebase/backend/legacyapi"
+	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/oracle"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	parserbase "github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
 	"github.com/bytebase/bytebase/backend/store"
@@ -107,7 +107,7 @@ func (exec *DataUpdateExecutor) RunOnce(ctx context.Context, driverCtx context.C
 							},
 						},
 					},
-				}, api.SystemBotID); err != nil {
+				}, base.SystemBotID); err != nil {
 					slog.Warn("failed to create issue comment", "task", task.ID, log.BBError(err), "backup error", backupErr)
 				}
 			}
@@ -207,7 +207,7 @@ func (exec *DataUpdateExecutor) backupData(
 	}
 	defer driver.Close(driverCtx)
 
-	tc := base.TransformContext{
+	tc := parserbase.TransformContext{
 		InstanceID:              instance.ResourceID,
 		GetDatabaseMetadataFunc: BuildGetDatabaseMetadataFunc(exec.store),
 		ListDatabaseNamesFunc:   BuildListDatabaseNamesFunc(exec.store),
@@ -227,7 +227,7 @@ func (exec *DataUpdateExecutor) backupData(
 	}
 
 	prefix := "_" + time.Now().Format("20060102150405")
-	statements, err := base.TransformDMLToSelect(ctx, instance.Metadata.GetEngine(), tc, originStatement, database.DatabaseName, backupDatabaseName, prefix)
+	statements, err := parserbase.TransformDMLToSelect(ctx, instance.Metadata.GetEngine(), tc, originStatement, database.DatabaseName, backupDatabaseName, prefix)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to transform DML to select")
 	}
@@ -322,7 +322,7 @@ func (exec *DataUpdateExecutor) backupData(
 						},
 					},
 				},
-			}, api.SystemBotID); err != nil {
+			}, base.SystemBotID); err != nil {
 				slog.Warn("failed to create issue comment", "task", task.ID, log.BBError(err))
 			}
 		}
@@ -347,7 +347,7 @@ func (exec *DataUpdateExecutor) backupData(
 	return priorBackupDetail, nil
 }
 
-func BuildGetDatabaseMetadataFunc(storeInstance *store.Store) base.GetDatabaseMetadataFunc {
+func BuildGetDatabaseMetadataFunc(storeInstance *store.Store) parserbase.GetDatabaseMetadataFunc {
 	return func(ctx context.Context, instanceID, databaseName string) (string, *model.DatabaseMetadata, error) {
 		database, err := storeInstance.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
 			InstanceID:   &instanceID,
@@ -370,7 +370,7 @@ func BuildGetDatabaseMetadataFunc(storeInstance *store.Store) base.GetDatabaseMe
 	}
 }
 
-func BuildListDatabaseNamesFunc(storeInstance *store.Store) base.ListDatabaseNamesFunc {
+func BuildListDatabaseNamesFunc(storeInstance *store.Store) parserbase.ListDatabaseNamesFunc {
 	return func(ctx context.Context, instanceID string) ([]string, error) {
 		databases, err := storeInstance.ListDatabases(ctx, &store.FindDatabaseMessage{
 			InstanceID: &instanceID,

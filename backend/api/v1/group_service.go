@@ -7,10 +7,10 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
 
+	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/iam"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -228,7 +228,7 @@ func (s *GroupService) convertToGroupPayload(ctx context.Context, group *v1pb.Gr
 		if user == nil {
 			return nil, status.Errorf(codes.InvalidArgument, "cannot found member %s", member.Member)
 		}
-		if user.Type != api.EndUser {
+		if user.Type != base.EndUser {
 			return nil, status.Errorf(codes.InvalidArgument, "only allow add end users to the group")
 		}
 

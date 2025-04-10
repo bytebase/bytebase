@@ -13,10 +13,10 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/api/auth"
+	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
@@ -69,12 +69,12 @@ func (s *ActuatorService) DeleteCache(_ context.Context, _ *v1pb.DeleteCacheRequ
 
 // GetResourcePackage gets the theme resources.
 func (s *ActuatorService) GetResourcePackage(ctx context.Context, _ *v1pb.GetResourcePackageRequest) (*v1pb.ResourcePackage, error) {
-	brandingSetting, err := s.store.GetSettingV2(ctx, api.SettingBrandingLogo)
+	brandingSetting, err := s.store.GetSettingV2(ctx, base.SettingBrandingLogo)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to find workspace branding: %v", err)
 	}
 	if brandingSetting == nil {
-		return nil, errors.Errorf("cannot find setting %v", api.SettingBrandingLogo)
+		return nil, errors.Errorf("cannot find setting %v", base.SettingBrandingLogo)
 	}
 
 	return &v1pb.ResourcePackage{
@@ -83,7 +83,7 @@ func (s *ActuatorService) GetResourcePackage(ctx context.Context, _ *v1pb.GetRes
 }
 
 func (s *ActuatorService) getServerInfo(ctx context.Context) (*v1pb.ActuatorInfo, error) {
-	count, err := s.store.CountUsers(ctx, api.EndUser)
+	count, err := s.store.CountUsers(ctx, base.EndUser)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -162,8 +162,8 @@ func (s *ActuatorService) getServerInfo(ctx context.Context) (*v1pb.ActuatorInfo
 	return &serverInfo, nil
 }
 
-func (s *ActuatorService) getUsedFeatures(ctx context.Context) ([]api.FeatureType, error) {
-	var features []api.FeatureType
+func (s *ActuatorService) getUsedFeatures(ctx context.Context) ([]base.FeatureType, error) {
+	var features []base.FeatureType
 
 	// idp
 	idps, err := s.store.ListIdentityProviders(ctx, &store.FindIdentityProviderMessage{})
@@ -171,24 +171,24 @@ func (s *ActuatorService) getUsedFeatures(ctx context.Context) ([]api.FeatureTyp
 		return nil, errors.Wrapf(err, "failed to list identity providers")
 	}
 	if len(idps) > 0 {
-		features = append(features, api.FeatureSSO)
+		features = append(features, base.FeatureSSO)
 	}
 
 	// setting
-	brandingLogo, err := s.store.GetSettingV2(ctx, api.SettingBrandingLogo)
+	brandingLogo, err := s.store.GetSettingV2(ctx, base.SettingBrandingLogo)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get branding logo setting")
 	}
 	if brandingLogo != nil && brandingLogo.Value != "" {
-		features = append(features, api.FeatureBranding)
+		features = append(features, base.FeatureBranding)
 	}
 
-	watermark, err := s.store.GetSettingV2(ctx, api.SettingWatermark)
+	watermark, err := s.store.GetSettingV2(ctx, base.SettingWatermark)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get watermark setting")
 	}
 	if watermark != nil && watermark.Value == "1" {
-		features = append(features, api.FeatureWatermark)
+		features = append(features, base.FeatureWatermark)
 	}
 
 	aiSetting, err := s.store.GetAISetting(ctx)
@@ -196,7 +196,7 @@ func (s *ActuatorService) getUsedFeatures(ctx context.Context) ([]api.FeatureTyp
 		return nil, errors.Wrapf(err, "failed to get ai setting")
 	}
 	if aiSetting.ApiKey != "" {
-		features = append(features, api.FeatureAIAssistant)
+		features = append(features, base.FeatureAIAssistant)
 	}
 
 	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
@@ -204,16 +204,16 @@ func (s *ActuatorService) getUsedFeatures(ctx context.Context) ([]api.FeatureTyp
 		return nil, errors.Wrapf(err, "failed to get workspace general setting")
 	}
 	if setting.DisallowSignup && !s.profile.SaaS {
-		features = append(features, api.FeatureDisallowSignup)
+		features = append(features, base.FeatureDisallowSignup)
 	}
 	if setting.Require_2Fa {
-		features = append(features, api.Feature2FA)
+		features = append(features, base.Feature2FA)
 	}
 	if setting.GetTokenDuration().GetSeconds() > 0 && float64(setting.GetTokenDuration().GetSeconds()) != auth.DefaultTokenDuration.Seconds() {
-		features = append(features, api.FeatureSecureToken)
+		features = append(features, base.FeatureSecureToken)
 	}
 	if setting.GetAnnouncement().GetText() != "" {
-		features = append(features, api.FeatureAnnouncement)
+		features = append(features, base.FeatureAnnouncement)
 	}
 
 	// environment tier
@@ -223,7 +223,7 @@ func (s *ActuatorService) getUsedFeatures(ctx context.Context) ([]api.FeatureTyp
 	}
 	for _, env := range environments {
 		if env.Protected {
-			features = append(features, api.FeatureEnvironmentTierPolicy)
+			features = append(features, base.FeatureEnvironmentTierPolicy)
 			break
 		}
 	}
@@ -234,13 +234,13 @@ func (s *ActuatorService) getUsedFeatures(ctx context.Context) ([]api.FeatureTyp
 		return nil, errors.Wrapf(err, "failed to list database groups")
 	}
 	if len(databaseGroups) > 0 {
-		features = append(features, api.FeatureDatabaseGrouping)
+		features = append(features, base.FeatureDatabaseGrouping)
 	}
 	return features, nil
 }
 
-func (s *ActuatorService) getUnlicensedFeatures(features []api.FeatureType) []api.FeatureType {
-	var unlicensedFeatures []api.FeatureType
+func (s *ActuatorService) getUnlicensedFeatures(features []base.FeatureType) []base.FeatureType {
+	var unlicensedFeatures []base.FeatureType
 	for _, feature := range features {
 		if err := s.licenseService.IsFeatureEnabled(feature); err != nil {
 			unlicensedFeatures = append(unlicensedFeatures, feature)

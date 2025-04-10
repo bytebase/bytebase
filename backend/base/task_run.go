@@ -1,4 +1,4 @@
-package api
+package base
 
 // TaskRunStatus is the status of a task run.
 type TaskRunStatus string

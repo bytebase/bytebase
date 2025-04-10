@@ -6,8 +6,8 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/common"
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/resources/postgres"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -32,7 +32,7 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 	// Test Sample Instance
 	testInstance, err := s.store.CreateInstanceV2(ctx, &store.InstanceMessage{
 		ResourceID:    "test-sample-instance",
-		EnvironmentID: api.DefaultTestEnvironmentID,
+		EnvironmentID: base.DefaultTestEnvironmentID,
 		Metadata: &storepb.Instance{
 			Title:        "Test Sample Instance",
 			Engine:       storepb.Engine_POSTGRES,
@@ -93,7 +93,7 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 	// Prod Sample Instance
 	prodInstance, err := s.store.CreateInstanceV2(ctx, &store.InstanceMessage{
 		ResourceID:    "prod-sample-instance",
-		EnvironmentID: api.DefaultProdEnvironmentID,
+		EnvironmentID: base.DefaultProdEnvironmentID,
 		Metadata: &storepb.Instance{
 			Title:        "Prod Sample Instance",
 			Engine:       storepb.Engine_POSTGRES,

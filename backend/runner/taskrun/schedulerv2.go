@@ -11,13 +11,13 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/state"
 	"github.com/bytebase/bytebase/backend/component/webhook"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
@@ -33,7 +33,7 @@ type SchedulerV2 struct {
 	store          *store.Store
 	stateCfg       *state.State
 	webhookManager *webhook.Manager
-	executorMap    map[api.TaskType]Executor
+	executorMap    map[base.TaskType]Executor
 	profile        *config.Profile
 	licenseService enterprise.LicenseService
 }
@@ -51,13 +51,13 @@ func NewSchedulerV2(
 		stateCfg:       stateCfg,
 		webhookManager: webhookManager,
 		profile:        profile,
-		executorMap:    map[api.TaskType]Executor{},
+		executorMap:    map[base.TaskType]Executor{},
 		licenseService: licenseService,
 	}
 }
 
 // Register will register a task executor factory.
-func (s *SchedulerV2) Register(taskType api.TaskType, executorGetter Executor) {
+func (s *SchedulerV2) Register(taskType base.TaskType, executorGetter Executor) {
 	if executorGetter == nil {
 		panic("scheduler: Register executor is nil for task type: " + taskType)
 	}
@@ -178,7 +178,7 @@ func (s *SchedulerV2) scheduleAutoRolloutTask(ctx context.Context, taskUID int) 
 		return err
 	}
 	if issue != nil {
-		if issue.Status != api.IssueOpen {
+		if issue.Status != base.IssueOpen {
 			return nil
 		}
 		approved, err := utils.CheckIssueApproved(issue)
@@ -226,7 +226,7 @@ func (s *SchedulerV2) scheduleAutoRolloutTask(ctx context.Context, taskUID int) 
 	}
 
 	create := &store.TaskRunMessage{
-		CreatorID: api.SystemBotID,
+		CreatorID: base.SystemBotID,
 		TaskUID:   task.ID,
 	}
 	if task.Payload.GetSheetId() != 0 {
@@ -240,7 +240,7 @@ func (s *SchedulerV2) scheduleAutoRolloutTask(ctx context.Context, taskUID int) 
 
 	if issue != nil {
 		tasks := []string{common.FormatTask(issue.Project.ResourceID, task.PipelineID, task.StageID, taskUID)}
-		if err := s.store.CreateIssueCommentTaskUpdateStatus(ctx, issue.UID, tasks, storepb.IssueCommentPayload_TaskUpdate_PENDING, api.SystemBotID, ""); err != nil {
+		if err := s.store.CreateIssueCommentTaskUpdateStatus(ctx, issue.UID, tasks, storepb.IssueCommentPayload_TaskUpdate_PENDING, base.SystemBotID, ""); err != nil {
 			slog.Warn("failed to create issue comment", "issueUID", issue.UID, log.BBError(err))
 		}
 	}
@@ -253,7 +253,7 @@ func (s *SchedulerV2) scheduleAutoRolloutTask(ctx context.Context, taskUID int) 
 		Project: webhook.NewProject(project),
 		TaskRunStatusUpdate: &webhook.EventTaskRunStatusUpdate{
 			Title:  task.GetDatabaseName(),
-			Status: api.TaskRunPending.String(),
+			Status: base.TaskRunPending.String(),
 		},
 	})
 
@@ -262,7 +262,7 @@ func (s *SchedulerV2) scheduleAutoRolloutTask(ctx context.Context, taskUID int) 
 
 func (s *SchedulerV2) schedulePendingTaskRuns(ctx context.Context) error {
 	taskRuns, err := s.store.ListTaskRunsV2(ctx, &store.FindTaskRunMessage{
-		Status: &[]api.TaskRunStatus{api.TaskRunPending},
+		Status: &[]base.TaskRunStatus{base.TaskRunPending},
 	})
 	if err != nil {
 		return errors.Wrapf(err, "failed to list pending tasks")
@@ -327,8 +327,8 @@ func (s *SchedulerV2) schedulePendingTaskRun(ctx context.Context, taskRun *store
 
 	if _, err := s.store.UpdateTaskRunStatus(ctx, &store.TaskRunStatusPatch{
 		ID:        taskRun.ID,
-		UpdaterID: api.SystemBotID,
-		Status:    api.TaskRunRunning,
+		UpdaterID: base.SystemBotID,
+		Status:    base.TaskRunRunning,
 	}); err != nil {
 		return errors.Wrapf(err, "failed to update task run status to running")
 	}
@@ -343,7 +343,7 @@ func (s *SchedulerV2) schedulePendingTaskRun(ctx context.Context, taskRun *store
 
 func (s *SchedulerV2) scheduleRunningTaskRuns(ctx context.Context) error {
 	taskRuns, err := s.store.ListTaskRunsV2(ctx, &store.FindTaskRunMessage{
-		Status: &[]api.TaskRunStatus{api.TaskRunRunning},
+		Status: &[]base.TaskRunStatus{base.TaskRunRunning},
 	})
 	if err != nil {
 		return errors.Wrapf(err, "failed to list pending tasks")
@@ -515,8 +515,8 @@ func (s *SchedulerV2) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRun
 		result := string(resultBytes)
 		taskRunStatusPatch := &store.TaskRunStatusPatch{
 			ID:        taskRun.ID,
-			UpdaterID: api.SystemBotID,
-			Status:    api.TaskRunCanceled,
+			UpdaterID: base.SystemBotID,
+			Status:    base.TaskRunCanceled,
 			Code:      &code,
 			Result:    &result,
 		}
@@ -563,8 +563,8 @@ func (s *SchedulerV2) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRun
 		result := string(resultBytes)
 		taskRunStatusPatch := &store.TaskRunStatusPatch{
 			ID:        taskRun.ID,
-			UpdaterID: api.SystemBotID,
-			Status:    api.TaskRunFailed,
+			UpdaterID: base.SystemBotID,
+			Status:    base.TaskRunFailed,
 			Code:      &code,
 			Result:    &result,
 		}
@@ -588,12 +588,12 @@ func (s *SchedulerV2) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRun
 				return nil
 			}
 			tasks := []string{common.FormatTask(issue.Project.ResourceID, task.PipelineID, task.StageID, task.ID)}
-			return s.store.CreateIssueCommentTaskUpdateStatus(ctx, issue.UID, tasks, storepb.IssueCommentPayload_TaskUpdate_FAILED, api.SystemBotID, "")
+			return s.store.CreateIssueCommentTaskUpdateStatus(ctx, issue.UID, tasks, storepb.IssueCommentPayload_TaskUpdate_FAILED, base.SystemBotID, "")
 		}(); err != nil {
 			slog.Warn("failed to create issue comment", log.BBError(err))
 		}
 
-		s.createActivityForTaskRunStatusUpdate(ctx, task, api.TaskRunFailed, taskRunResult.Detail)
+		s.createActivityForTaskRunStatusUpdate(ctx, task, base.TaskRunFailed, taskRunResult.Detail)
 		return
 	}
 
@@ -611,8 +611,8 @@ func (s *SchedulerV2) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRun
 		result := string(resultBytes)
 		taskRunStatusPatch := &store.TaskRunStatusPatch{
 			ID:        taskRun.ID,
-			UpdaterID: api.SystemBotID,
-			Status:    api.TaskRunDone,
+			UpdaterID: base.SystemBotID,
+			Status:    base.TaskRunDone,
 			Code:      &code,
 			Result:    &result,
 		}
@@ -635,12 +635,12 @@ func (s *SchedulerV2) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRun
 				return nil
 			}
 			tasks := []string{common.FormatTask(issue.Project.ResourceID, task.PipelineID, task.StageID, task.ID)}
-			return s.store.CreateIssueCommentTaskUpdateStatus(ctx, issue.UID, tasks, storepb.IssueCommentPayload_TaskUpdate_DONE, api.SystemBotID, "")
+			return s.store.CreateIssueCommentTaskUpdateStatus(ctx, issue.UID, tasks, storepb.IssueCommentPayload_TaskUpdate_DONE, base.SystemBotID, "")
 		}(); err != nil {
 			slog.Warn("failed to create issue comment", log.BBError(err))
 		}
 
-		s.createActivityForTaskRunStatusUpdate(ctx, task, api.TaskRunDone, "")
+		s.createActivityForTaskRunStatusUpdate(ctx, task, base.TaskRunDone, "")
 		s.stateCfg.TaskSkippedOrDoneChan <- task.ID
 		return
 	}
@@ -764,7 +764,7 @@ func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {
 					_, err := s.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
 						IssueUID: issue.UID,
 						Payload:  p,
-					}, api.SystemBotID)
+					}, base.SystemBotID)
 					return err
 				}(); err != nil {
 					slog.Warn("failed to create issue comment", log.BBError(err))
@@ -799,11 +799,11 @@ func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {
 				if issue.Project.Setting.AutoResolveIssue && pipelineDone {
 					if err := func() error {
 						// For those database data export issues, we don't resolve them automatically.
-						if issue.Type == api.IssueDatabaseDataExport {
+						if issue.Type == base.IssueDatabaseDataExport {
 							return nil
 						}
 
-						newStatus := api.IssueDone
+						newStatus := base.IssueDone
 						updatedIssue, err := s.store.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{Status: &newStatus})
 						if err != nil {
 							return errors.Wrapf(err, "failed to update issue status")
@@ -821,7 +821,7 @@ func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {
 									},
 								},
 							},
-						}, api.SystemBotID); err != nil {
+						}, base.SystemBotID); err != nil {
 							return errors.Wrapf(err, "failed to create issue comment after changing the issue status")
 						}
 
@@ -848,7 +848,7 @@ func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {
 	}
 }
 
-func (s *SchedulerV2) createActivityForTaskRunStatusUpdate(ctx context.Context, task *store.TaskMessage, newStatus api.TaskRunStatus, errDetail string) {
+func (s *SchedulerV2) createActivityForTaskRunStatusUpdate(ctx context.Context, task *store.TaskMessage, newStatus base.TaskRunStatus, errDetail string) {
 	if err := func() error {
 		rollout, err := s.store.GetPipelineV2ByID(ctx, task.PipelineID)
 		if err != nil {
@@ -892,7 +892,7 @@ func (s *SchedulerV2) createActivityForTaskRunStatusUpdate(ctx context.Context, 
 func tasksSkippedOrDone(tasks []*store.TaskMessage) (bool, error) {
 	for _, task := range tasks {
 		skipped := task.Payload.GetSkipped()
-		done := task.LatestTaskRunStatus == api.TaskRunDone
+		done := task.LatestTaskRunStatus == base.TaskRunDone
 		if !skipped && !done {
 			return false, nil
 		}

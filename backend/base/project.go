@@ -1,4 +1,4 @@
-package api
+package base
 
 const (
 	// DefaultProjectID is the resource ID for the default project.

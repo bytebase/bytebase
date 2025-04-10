@@ -9,7 +9,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	api "github.com/bytebase/bytebase/backend/legacyapi"
+	"github.com/bytebase/bytebase/backend/base"
 )
 
 // AnomalyMessage is the message of the anomaly.
@@ -18,7 +18,7 @@ type AnomalyMessage struct {
 	InstanceID   string
 	DatabaseName string
 	// Type is the type of the anomaly.
-	Type api.AnomalyType
+	Type base.AnomalyType
 	// Output only fields.
 	//
 	// UID is the unique identifier of the anomaly.
@@ -32,14 +32,14 @@ type ListAnomalyMessage struct {
 	ProjectID    string
 	InstanceID   *string
 	DatabaseName *string
-	Types        []api.AnomalyType
+	Types        []base.AnomalyType
 }
 
 // DeleteAnomalyMessage is the message to delete an anomaly.
 type DeleteAnomalyMessage struct {
 	InstanceID   string
 	DatabaseName string
-	Type         api.AnomalyType
+	Type         base.AnomalyType
 }
 
 // UpsertActiveAnomalyV2 upserts an instance of anomaly.

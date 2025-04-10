@@ -1,4 +1,4 @@
-package api
+package base
 
 // SettingName is the name of a setting.
 type SettingName string

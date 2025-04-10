@@ -12,12 +12,12 @@ import (
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/sheet"
 
+	"github.com/bytebase/bytebase/backend/base"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	"github.com/bytebase/bytebase/backend/plugin/db"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	parserbase "github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -51,7 +51,7 @@ func (e *StatementAdviseExecutor) Run(ctx context.Context, config *storepb.PlanC
 	if config.ChangeDatabaseType == storepb.PlanCheckRunConfig_CHANGE_DATABASE_TYPE_UNSPECIFIED {
 		return nil, errors.Errorf("change database type is unspecified")
 	}
-	if err := e.licenseService.IsFeatureEnabled(api.FeatureSQLReview); err != nil {
+	if err := e.licenseService.IsFeatureEnabled(base.FeatureSQLReview); err != nil {
 		// nolint:nilerr
 		return []*storepb.PlanCheckRunResult_Result{
 			{
@@ -253,7 +253,7 @@ func (e *StatementAdviseExecutor) runReview(
 	return results, nil
 }
 
-func (e *StatementAdviseExecutor) buildListDatabaseNamesFunc() base.ListDatabaseNamesFunc {
+func (e *StatementAdviseExecutor) buildListDatabaseNamesFunc() parserbase.ListDatabaseNamesFunc {
 	return func(ctx context.Context, instanceID string) ([]string, error) {
 		databases, err := e.store.ListDatabases(ctx, &store.FindDatabaseMessage{
 			InstanceID: &instanceID,

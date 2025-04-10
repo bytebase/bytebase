@@ -20,12 +20,12 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
+	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/iam"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
-	api "github.com/bytebase/bytebase/backend/legacyapi"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	parserbase "github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/transform"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
@@ -215,7 +215,7 @@ func getListDatabaseFilter(filter string) (*store.ListResourceFilter, error) {
 			return fmt.Sprintf("db.metadata->'labels'->>'%s' = ANY($%d)", labelKey, len(positionalArgs)), nil
 		case "exclude_unassigned":
 			if _, ok := value.(bool); ok {
-				positionalArgs = append(positionalArgs, api.DefaultProjectID)
+				positionalArgs = append(positionalArgs, base.DefaultProjectID)
 				return fmt.Sprintf("db.project != $%d", len(positionalArgs)), nil
 			}
 			return "TRUE", nil
@@ -813,7 +813,7 @@ func (s *DatabaseService) DiffSchema(ctx context.Context, request *v1pb.DiffSche
 	}
 
 	strictMode := engine != storepb.Engine_ORACLE
-	diff, err := base.SchemaDiff(engine, base.DiffContext{
+	diff, err := parserbase.SchemaDiff(engine, parserbase.DiffContext{
 		IgnoreCaseSensitive: false,
 		StrictMode:          strictMode,
 	}, source, target)
@@ -1016,7 +1016,7 @@ func (s *DatabaseService) UpdateSecret(ctx context.Context, request *v1pb.Update
 		return nil, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
 	}
 
-	if err := s.licenseService.IsFeatureEnabledForInstance(api.FeatureEncryptedSecrets, instance); err != nil {
+	if err := s.licenseService.IsFeatureEnabledForInstance(base.FeatureEncryptedSecrets, instance); err != nil {
 		return nil, status.Error(codes.PermissionDenied, err.Error())
 	}
 
@@ -1106,7 +1106,7 @@ func (s *DatabaseService) DeleteSecret(ctx context.Context, request *v1pb.Delete
 		return nil, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
 	}
 
-	if err := s.licenseService.IsFeatureEnabledForInstance(api.FeatureEncryptedSecrets, instance); err != nil {
+	if err := s.licenseService.IsFeatureEnabledForInstance(base.FeatureEncryptedSecrets, instance); err != nil {
 		return nil, status.Error(codes.PermissionDenied, err.Error())
 	}
 

@@ -8,8 +8,8 @@ import (
 
 	"google.golang.org/protobuf/encoding/protojson"
 
+	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/common"
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -31,7 +31,7 @@ type UpdateRoleMessage struct {
 }
 
 type RoleUsedByResource struct {
-	ResourceType api.PolicyResourceType
+	ResourceType base.PolicyResourceType
 	Resource     string
 }
 
@@ -45,7 +45,7 @@ func (s *Store) GetResourcesUsedByRole(ctx context.Context, role string) ([]*Rol
 			binding->>'role' = $2
 		GROUP BY resource, resource_type;
 	`
-	rows, err := s.db.QueryContext(ctx, query, api.PolicyTypeIAM, role)
+	rows, err := s.db.QueryContext(ctx, query, base.PolicyTypeIAM, role)
 	if err != nil {
 		return nil, err
 	}

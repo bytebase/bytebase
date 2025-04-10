@@ -28,6 +28,7 @@ import (
 	directorysync "github.com/bytebase/bytebase/backend/api/directory-sync"
 	"github.com/bytebase/bytebase/backend/api/lsp"
 	apiv1 "github.com/bytebase/bytebase/backend/api/v1"
+	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/common/stacktrace"
@@ -40,7 +41,6 @@ import (
 	"github.com/bytebase/bytebase/backend/demo"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	enterprisesvc "github.com/bytebase/bytebase/backend/enterprise/service"
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/migrator"
 	"github.com/bytebase/bytebase/backend/resources/mongoutil"
 	"github.com/bytebase/bytebase/backend/resources/postgres"
@@ -246,12 +246,12 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	s.approvalRunner = approval.NewRunner(stores, sheetManager, s.dbFactory, s.stateCfg, s.webhookManager, s.licenseService)
 
 	s.taskSchedulerV2 = taskrun.NewSchedulerV2(stores, s.stateCfg, s.webhookManager, profile, s.licenseService)
-	s.taskSchedulerV2.Register(api.TaskDatabaseCreate, taskrun.NewDatabaseCreateExecutor(stores, s.dbFactory, s.schemaSyncer, s.stateCfg, profile))
-	s.taskSchedulerV2.Register(api.TaskDatabaseSchemaBaseline, taskrun.NewSchemaBaselineExecutor(stores, s.dbFactory, s.licenseService, s.stateCfg, s.schemaSyncer, profile))
-	s.taskSchedulerV2.Register(api.TaskDatabaseSchemaUpdate, taskrun.NewSchemaUpdateExecutor(stores, s.dbFactory, s.licenseService, s.stateCfg, s.schemaSyncer, profile))
-	s.taskSchedulerV2.Register(api.TaskDatabaseDataUpdate, taskrun.NewDataUpdateExecutor(stores, s.dbFactory, s.licenseService, s.stateCfg, s.schemaSyncer, profile))
-	s.taskSchedulerV2.Register(api.TaskDatabaseDataExport, taskrun.NewDataExportExecutor(stores, s.dbFactory, s.licenseService, s.stateCfg, s.schemaSyncer, profile))
-	s.taskSchedulerV2.Register(api.TaskDatabaseSchemaUpdateGhost, taskrun.NewSchemaUpdateGhostExecutor(stores, s.dbFactory, s.licenseService, s.stateCfg, s.schemaSyncer, s.profile))
+	s.taskSchedulerV2.Register(base.TaskDatabaseCreate, taskrun.NewDatabaseCreateExecutor(stores, s.dbFactory, s.schemaSyncer, s.stateCfg, profile))
+	s.taskSchedulerV2.Register(base.TaskDatabaseSchemaBaseline, taskrun.NewSchemaBaselineExecutor(stores, s.dbFactory, s.licenseService, s.stateCfg, s.schemaSyncer, profile))
+	s.taskSchedulerV2.Register(base.TaskDatabaseSchemaUpdate, taskrun.NewSchemaUpdateExecutor(stores, s.dbFactory, s.licenseService, s.stateCfg, s.schemaSyncer, profile))
+	s.taskSchedulerV2.Register(base.TaskDatabaseDataUpdate, taskrun.NewDataUpdateExecutor(stores, s.dbFactory, s.licenseService, s.stateCfg, s.schemaSyncer, profile))
+	s.taskSchedulerV2.Register(base.TaskDatabaseDataExport, taskrun.NewDataExportExecutor(stores, s.dbFactory, s.licenseService, s.stateCfg, s.schemaSyncer, profile))
+	s.taskSchedulerV2.Register(base.TaskDatabaseSchemaUpdateGhost, taskrun.NewSchemaUpdateGhostExecutor(stores, s.dbFactory, s.licenseService, s.stateCfg, s.schemaSyncer, s.profile))
 
 	s.planCheckScheduler = plancheck.NewScheduler(stores, s.licenseService, s.stateCfg)
 	databaseConnectExecutor := plancheck.NewDatabaseConnectExecutor(stores, s.dbFactory)

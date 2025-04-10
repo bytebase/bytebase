@@ -12,17 +12,17 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var systemBotUser = &UserMessage{
-	ID:    api.SystemBotID,
+	ID:    base.SystemBotID,
 	Name:  "Bytebase",
-	Email: api.SystemBotEmail,
-	Type:  api.SystemBot,
+	Email: base.SystemBotEmail,
+	Type:  base.SystemBot,
 }
 
 // FindUserMessage is the message for finding users.
@@ -30,7 +30,7 @@ type FindUserMessage struct {
 	ID          *int
 	Email       *string
 	ShowDeleted bool
-	Type        *api.PrincipalType
+	Type        *base.PrincipalType
 	Limit       *int
 	Offset      *int
 	Filter      *ListResourceFilter
@@ -54,7 +54,7 @@ type UserMessage struct {
 	// Email must be lower case.
 	Email         string
 	Name          string
-	Type          api.PrincipalType
+	Type          base.PrincipalType
 	PasswordHash  string
 	MemberDeleted bool
 	MFAConfig     *storepb.MFAConfig
@@ -66,16 +66,16 @@ type UserMessage struct {
 }
 
 type UserStat struct {
-	Type    api.PrincipalType
+	Type    base.PrincipalType
 	Deleted bool
 	Count   int
 }
 
 // GetSystemBotUser gets the system bot.
 func (s *Store) GetSystemBotUser(ctx context.Context) *UserMessage {
-	user, err := s.GetUserByID(ctx, api.SystemBotID)
+	user, err := s.GetUserByID(ctx, base.SystemBotID)
 	if err != nil {
-		slog.Error("failed to find system bot", slog.Int("id", api.SystemBotID), log.BBError(err))
+		slog.Error("failed to find system bot", slog.Int("id", base.SystemBotID), log.BBError(err))
 		return systemBotUser
 	}
 	if user == nil {
@@ -203,7 +203,7 @@ func listUserImpl(ctx context.Context, txn *sql.Tx, find *FindUserMessage) ([]*U
 		where, args = append(where, fmt.Sprintf("principal.id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.Email; v != nil {
-		if *v == api.AllUsers {
+		if *v == base.AllUsers {
 			where, args = append(where, fmt.Sprintf("principal.email = $%d", len(args)+1)), append(args, *v)
 		} else {
 			where, args = append(where, fmt.Sprintf("principal.email = $%d", len(args)+1)), append(args, strings.ToLower(*v))
@@ -223,12 +223,12 @@ func listUserImpl(ctx context.Context, txn *sql.Tx, find *FindUserMessage) ([]*U
 				jsonb_array_elements_text(jsonb_array_elements(policy.payload->'bindings')->'members') AS member,
 				jsonb_array_elements(policy.payload->'bindings')->>'role' AS role
 			FROM policy
-			WHERE ((resource_type = '` + string(api.PolicyResourceTypeProject) + `' AND resource = 'projects/` + *v + `') OR resource_type = '` + string(api.PolicyResourceTypeWorkspace) + `') AND type = '` + string(api.PolicyTypeIAM) + `'
+			WHERE ((resource_type = '` + string(base.PolicyResourceTypeProject) + `' AND resource = 'projects/` + *v + `') OR resource_type = '` + string(base.PolicyResourceTypeWorkspace) + `') AND type = '` + string(base.PolicyTypeIAM) + `'
 		),
 		project_members AS (
 			SELECT ARRAY_AGG(member) AS members FROM all_members WHERE role LIKE 'roles/project%'
 		)`
-		join = `INNER JOIN project_members ON (CONCAT('users/', principal.id) = ANY(project_members.members) OR '` + api.AllUsers + `' = ANY(project_members.members))`
+		join = `INNER JOIN project_members ON (CONCAT('users/', principal.id) = ANY(project_members.members) OR '` + base.AllUsers + `' = ANY(project_members.members))`
 	}
 
 	query := with + `
@@ -361,7 +361,7 @@ func (s *Store) CreateUser(ctx context.Context, create *UserMessage) (*UserMessa
 
 // UpdateUser updates a user.
 func (s *Store) UpdateUser(ctx context.Context, currentUser *UserMessage, patch *UpdateUserMessage) (*UserMessage, error) {
-	if currentUser.ID == api.SystemBotID {
+	if currentUser.ID == base.SystemBotID {
 		return nil, errors.Errorf("cannot update system bot")
 	}
 
