@@ -26,7 +26,7 @@
         name="environment"
         :environment-name="attachedResources[0]"
         :disabled="!allowChangeAttachedResource"
-        :filter="(env: Environment, _: number) => filterResource(env.name)"
+        :filter="(env: Environment, _: number) => filterResource(formatEnvironmentName(env.id))"
         @update:environment-name="
           (val: string | undefined) => {
             if (!val) {
@@ -121,7 +121,7 @@ import type {
   ValidatedMessage,
 } from "@/types";
 import type { Database } from "@/types/proto/v1/database_service";
-import type { Environment } from "@/types/proto/v1/environment_service";
+import { formatEnvironmentName, type Environment } from "@/types/v1/environment";
 import { getErrorCode } from "@/utils/grpcweb";
 import { DatabaseSelect, EnvironmentSelect, ProjectSelect } from "../v2";
 import { SQLReviewTemplateSelector } from "./components";

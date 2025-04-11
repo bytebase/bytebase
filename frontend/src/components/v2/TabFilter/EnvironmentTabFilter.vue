@@ -21,8 +21,8 @@
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useEnvironmentV1List } from "@/store";
-import { UNKNOWN_ENVIRONMENT_NAME, unknownEnvironment } from "@/types";
-import type { Environment } from "@/types/proto/v1/environment_service";
+import { formatEnvironmentName, UNKNOWN_ENVIRONMENT_NAME, unknownEnvironment } from "@/types";
+import type { Environment } from "@/types/v1/environment";
 import { EnvironmentV1Name } from "../Model";
 import TabFilter from "./TabFilter.vue";
 import type { TabFilterItem } from "./types";
@@ -47,13 +47,13 @@ defineEmits<{
 }>();
 
 const { t } = useI18n();
-const environmentList = useEnvironmentV1List(false /* !showDeleted */);
+const environmentList = useEnvironmentV1List();
 
 const items = computed(() => {
   const reversedEnvironmentList = [...environmentList.value].reverse();
   const environmentItems =
     reversedEnvironmentList.map<EnvironmentTabFilterItem>((env) => ({
-      value: env.name,
+      value: formatEnvironmentName(env.id),
       label: env.title,
       environment: env,
     }));
@@ -63,7 +63,7 @@ const items = computed(() => {
       title: t("common.all"),
     };
     environmentItems.unshift({
-      value: dummyAll.name,
+      value: formatEnvironmentName(dummyAll.id),
       label: dummyAll.title,
       environment: dummyAll,
     });

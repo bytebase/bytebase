@@ -1,6 +1,6 @@
 import type { TreeOption } from "naive-ui";
 import { t } from "@/plugins/i18n";
-import type { Environment } from "../proto/v1/environment_service";
+import type { Environment } from "../v1/environment";
 import type { InstanceResource } from "../proto/v1/instance_service";
 import type { ComposedDatabase } from "../v1";
 

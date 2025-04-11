@@ -91,10 +91,11 @@ import type { ComposedDatabase, ComposedProject } from "@/types";
 import {
   DEFAULT_PROJECT_NAME,
   defaultProject,
+  formatEnvironmentName,
   isValidProjectName,
 } from "@/types";
 import { UpdateDatabaseRequest } from "@/types/proto/v1/database_service";
-import type { Environment } from "@/types/proto/v1/environment_service";
+import type { Environment } from "@/types/v1/environment";
 import type { InstanceResource } from "@/types/proto/v1/instance_service";
 import { hasProjectPermissionV2 } from "@/utils";
 import { DrawerContent, ProjectSelect } from "../v2";
@@ -153,7 +154,7 @@ const { project: sourceProject } = useProjectByName(sourceProjectName);
 
 const filter = computed(() => ({
   instance: state.instanceFilter?.name,
-  environment: state.environmentFilter?.name,
+  environment: formatEnvironmentName(state.environmentFilter?.id),
   query: state.searchText,
 }));
 

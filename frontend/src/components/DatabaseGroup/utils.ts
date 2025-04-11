@@ -3,8 +3,12 @@ import { getRenderOptionFunc } from "@/components/CustomApproval/Settings/compon
 import { type OptionConfig } from "@/components/ExprEditor/context";
 import { getInstanceIdOptions } from "@/components/SensitiveData/components/utils";
 import type { Factor } from "@/plugins/cel";
-import { useEnvironmentV1Store, useInstanceV1Store } from "@/store";
-import { extractEnvironmentResourceName, getDefaultPagination } from "@/utils";
+import {
+  environmentNamePrefix,
+  useEnvironmentV1Store,
+  useInstanceV1Store,
+} from "@/store";
+import { getDefaultPagination } from "@/utils";
 
 export const FactorList: Factor[] = [
   "resource.environment_name",
@@ -53,11 +57,15 @@ export const getDatabaseGroupOptionConfigMap = () => {
 const getEnvironmentOptions = () => {
   const environmentList = useEnvironmentV1Store().getEnvironmentList();
   return environmentList.map<SelectOption>((env) => {
-    const environmentName = extractEnvironmentResourceName(env.name);
+    const id = env.id;
+    const name = `${environmentNamePrefix}${id}`;
     return {
-      label: environmentName,
-      value: env.name,
-      render: getRenderOptionFunc(env),
+      label: id,
+      value: name,
+      render: getRenderOptionFunc({
+        name: name,
+        title: env.title,
+      }),
     };
   });
 };
