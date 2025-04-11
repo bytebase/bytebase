@@ -108,6 +108,7 @@ export const useSQLEditorTreeStore = defineStore("sqlEditorTree", () => {
   const filteredFactorList = computed(() => {
     return factorList.value.filter((sf) => !sf.disabled).map((sf) => sf.factor);
   });
+
   const availableFactorList = computed(() => {
     const PRESET_FACTORS: Factor[] = hideEnvironments.value
       ? ["instance"]
@@ -149,7 +150,6 @@ export const useSQLEditorTreeStore = defineStore("sqlEditorTree", () => {
 
   const state = ref<TreeState>("UNSET");
   const tree = ref<TreeNode[]>([]);
-  const expandedKeys = ref<string[]>([]);
   const showMissingQueryDatabases = ref<boolean>(false);
 
   const collectNode = <T extends NodeType>(node: TreeNode<T>) => {
@@ -159,6 +159,7 @@ export const useSQLEditorTreeStore = defineStore("sqlEditorTree", () => {
     nodeList.push(node);
     nodeListMapById.set(id, nodeList);
   };
+
   const nodesByTarget = <T extends NodeType>(
     type: T,
     target: NodeTarget<T>
@@ -179,7 +180,6 @@ export const useSQLEditorTreeStore = defineStore("sqlEditorTree", () => {
     tree.value = [];
     factorList.value = defaultFactorList();
     nodeListMapById.clear();
-    expandedKeys.value = [];
     showMissingQueryDatabases.value = false;
     state.value = "UNSET";
   };
@@ -230,7 +230,6 @@ export const useSQLEditorTreeStore = defineStore("sqlEditorTree", () => {
     collectNode,
     nodesByTarget,
     buildTree,
-    expandedKeys,
     hasMissingQueryDatabases,
     showMissingQueryDatabases,
     cleanup,

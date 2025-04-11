@@ -1764,6 +1764,7 @@
     "rows-upper-limit": "到达查询结果条数上限",
     "close-sheet": "关闭工作表",
     "connect": "连接",
+    "connected": "已连接",
     "connect-in-admin-mode": "以管理员模式连接",
     "admin-mode": {
       "self": "管理员模式",
