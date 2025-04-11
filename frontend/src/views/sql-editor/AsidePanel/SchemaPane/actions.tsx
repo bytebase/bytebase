@@ -2,7 +2,6 @@ import { head, cloneDeep } from "lodash-es";
 import {
   CodeIcon,
   CopyIcon,
-  InfoIcon,
   ExternalLinkIcon,
   FileCodeIcon,
   FileDiffIcon,
@@ -13,18 +12,10 @@ import {
   SquarePenIcon,
 } from "lucide-vue-next";
 import {
-  FunctionIcon,
   TableIcon,
-  ViewIcon,
-  ProcedureIcon,
-  ExternalTableIcon,
-  PackageIcon,
-  SequenceIcon,
 } from "@/components/Icon";
-import { SchemaDiagramIcon } from "@/components/SchemaDiagram";
 import { NButton, useDialog, type DropdownOption } from "naive-ui";
 import { computed, h, nextTick, ref } from "vue";
-import type { VNodeChild } from "vue";
 import { useRouter } from "vue-router";
 import formatSQL from "@/components/MonacoEditor/sqlFormatter";
 import { useExecuteSQL } from "@/composables/useExecuteSQL";
