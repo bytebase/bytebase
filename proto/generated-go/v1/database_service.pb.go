@@ -626,7 +626,7 @@ type BatchGetDatabasesRequest struct {
 	// Use "-" as wildcard to batch get databases across parent.
 	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
 	// The list of database names to retrieve.
-	Requests      []string `protobuf:"bytes,2,rep,name=requests,proto3" json:"requests,omitempty"`
+	Names         []string `protobuf:"bytes,2,rep,name=names,proto3" json:"names,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -668,9 +668,9 @@ func (x *BatchGetDatabasesRequest) GetParent() string {
 	return ""
 }
 
-func (x *BatchGetDatabasesRequest) GetRequests() []string {
+func (x *BatchGetDatabasesRequest) GetNames() []string {
 	if x != nil {
-		return x.Requests
+		return x.Names
 	}
 	return nil
 }
@@ -5904,11 +5904,11 @@ const file_v1_database_service_proto_rawDesc = "" +
 	"\x19v1/database_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\x1a\x19v1/instance_service.proto\"H\n" +
 	"\x12GetDatabaseRequest\x122\n" +
 	"\x04name\x18\x01 \x01(\tB\x1e\xe2A\x01\x02\xfaA\x17\n" +
-	"\x15bytebase.com/DatabaseR\x04name\"\x8e\x01\n" +
+	"\x15bytebase.com/DatabaseR\x04name\"\x88\x01\n" +
 	"\x18BatchGetDatabasesRequest\x126\n" +
-	"\x06parent\x18\x01 \x01(\tB\x1e\xe2A\x01\x02\xfaA\x17\x12\x15bytebase.com/DatabaseR\x06parent\x12:\n" +
-	"\brequests\x18\x02 \x03(\tB\x1e\xe2A\x01\x02\xfaA\x17\n" +
-	"\x15bytebase.com/DatabaseR\brequests\"P\n" +
+	"\x06parent\x18\x01 \x01(\tB\x1e\xe2A\x01\x02\xfaA\x17\x12\x15bytebase.com/DatabaseR\x06parent\x124\n" +
+	"\x05names\x18\x02 \x03(\tB\x1e\xe2A\x01\x02\xfaA\x17\n" +
+	"\x15bytebase.com/DatabaseR\x05names\"P\n" +
 	"\x19BatchGetDatabasesResponse\x123\n" +
 	"\tdatabases\x18\x01 \x03(\v2\x15.bytebase.v1.DatabaseR\tdatabases\"\xc5\x01\n" +
 	"\x14ListDatabasesRequest\x126\n" +

@@ -195,7 +195,7 @@ message BatchGetDatabasesRequest {
   ];
 
   // The list of database names to retrieve.
-  repeated string requests = 2 [
+  repeated string names = 2 [
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference) = {type: "bytebase.com/Database"}
   ];

@@ -1846,7 +1846,7 @@ The instance&#39;s `name` field is used to identify the instance to update. Form
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | parent | [string](#string) |  | The parent resource shared by all databases being retrieved. - projects/{project}: batch get databases in a project; - instances/{instances}: batch get databases in a instance; Use &#34;-&#34; as wildcard to batch get databases across parent. |
-| requests | [string](#string) | repeated | The list of database names to retrieve. |
+| names | [string](#string) | repeated | The list of database names to retrieve. |
 
 
 

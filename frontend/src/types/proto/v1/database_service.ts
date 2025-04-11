@@ -89,7 +89,7 @@ export interface BatchGetDatabasesRequest {
    */
   parent: string;
   /** The list of database names to retrieve. */
-  requests: string[];
+  names: string[];
 }
 
 export interface BatchGetDatabasesResponse {
@@ -1872,7 +1872,7 @@ export const GetDatabaseRequest: MessageFns<GetDatabaseRequest> = {
 };
 
 function createBaseBatchGetDatabasesRequest(): BatchGetDatabasesRequest {
-  return { parent: "", requests: [] };
+  return { parent: "", names: [] };
 }
 
 export const BatchGetDatabasesRequest: MessageFns<BatchGetDatabasesRequest> = {
@@ -1880,7 +1880,7 @@ export const BatchGetDatabasesRequest: MessageFns<BatchGetDatabasesRequest> = {
     if (message.parent !== "") {
       writer.uint32(10).string(message.parent);
     }
-    for (const v of message.requests) {
+    for (const v of message.names) {
       writer.uint32(18).string(v!);
     }
     return writer;
@@ -1906,7 +1906,7 @@ export const BatchGetDatabasesRequest: MessageFns<BatchGetDatabasesRequest> = {
             break;
           }
 
-          message.requests.push(reader.string());
+          message.names.push(reader.string());
           continue;
         }
       }
@@ -1921,7 +1921,7 @@ export const BatchGetDatabasesRequest: MessageFns<BatchGetDatabasesRequest> = {
   fromJSON(object: any): BatchGetDatabasesRequest {
     return {
       parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
-      requests: globalThis.Array.isArray(object?.requests) ? object.requests.map((e: any) => globalThis.String(e)) : [],
+      names: globalThis.Array.isArray(object?.names) ? object.names.map((e: any) => globalThis.String(e)) : [],
     };
   },
 
@@ -1930,8 +1930,8 @@ export const BatchGetDatabasesRequest: MessageFns<BatchGetDatabasesRequest> = {
     if (message.parent !== "") {
       obj.parent = message.parent;
     }
-    if (message.requests?.length) {
-      obj.requests = message.requests;
+    if (message.names?.length) {
+      obj.names = message.names;
     }
     return obj;
   },
@@ -1942,7 +1942,7 @@ export const BatchGetDatabasesRequest: MessageFns<BatchGetDatabasesRequest> = {
   fromPartial(object: DeepPartial<BatchGetDatabasesRequest>): BatchGetDatabasesRequest {
     const message = createBaseBatchGetDatabasesRequest();
     message.parent = object.parent ?? "";
-    message.requests = object.requests?.map((e) => e) || [];
+    message.names = object.names?.map((e) => e) || [];
     return message;
   },
 };

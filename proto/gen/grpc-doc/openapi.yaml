@@ -2560,7 +2560,7 @@ paths:
                   required: true
                   schema:
                     type: string
-                - name: requests
+                - name: names
                   in: query
                   description: The list of database names to retrieve.
                   schema:
@@ -4140,7 +4140,7 @@ paths:
                   required: true
                   schema:
                     type: string
-                - name: requests
+                - name: names
                   in: query
                   description: The list of database names to retrieve.
                   schema:
