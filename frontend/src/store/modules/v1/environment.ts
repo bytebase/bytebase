@@ -1,38 +1,112 @@
-import { isEqual, isUndefined, orderBy } from "lodash-es";
+import { orderBy } from "lodash-es";
 import { defineStore } from "pinia";
 import { computed } from "vue";
-import { environmentServiceClient } from "@/grpcweb";
+import { environmentServiceClient, settingServiceClient } from "@/grpcweb";
 import type { ResourceId } from "@/types";
 import { unknownEnvironment } from "@/types";
 import { State } from "@/types/proto/v1/common";
-import type { Environment } from "@/types/proto/v1/environment_service";
+import { Environment } from "@/types/proto/v1/environment_service";
 import { EnvironmentTier } from "@/types/proto/v1/environment_service";
+import {
+  EnvironmentSetting,
+  EnvironmentSetting_Environment,
+} from "@/types/proto/v1/setting_service";
+import { environmentNamePrefix } from "./common";
 
 interface EnvironmentState {
-  environmentMapByName: Map<ResourceId, Environment>;
+  environmentMapById: Map<ResourceId, Environment>;
 }
+
+const getEnvironmentByIdMap = (
+  environments: Environment[]
+): Map<ResourceId, Environment> => {
+  return new Map(
+    environments.map((environment) => [environment.name, environment])
+  );
+};
+
+const convertToEnvironments = (
+  environments: EnvironmentSetting_Environment[]
+): Environment[] => {
+  return environments.map<Environment>((env, i) => {
+    return {
+      name: `${environmentNamePrefix}${env.id}`,
+      title: env.title,
+      order: i,
+      color: env.color,
+      tier: env.tags["protected"] === "protected"
+        ? EnvironmentTier.PROTECTED
+        : EnvironmentTier.UNPROTECTED,
+      state: State.ACTIVE,
+    };
+  });
+};
+
+const convertEnvironments = (
+  environments: Environment[]
+): EnvironmentSetting_Environment[] => {
+  return environments.map((env) => {
+    const res: EnvironmentSetting_Environment = {
+      id: env.name.replace(environmentNamePrefix, ""),
+      title: env.title,
+      color: env.color,
+      tags: {},
+    };
+    if (env.tier === EnvironmentTier.PROTECTED) {
+      res.tags.protected = "protected";
+    }
+    return res;
+  });
+};
+
+const getEnvironmentSetting = async (
+  silent = false
+): Promise<Environment[]> => {
+  const setting = await settingServiceClient.getSetting(
+    {
+      name: "settings/bb.workspace.environment",
+    },
+    { silent }
+  );
+  const settingEnvironments =
+    setting.value?.environmentSetting?.environments ?? [];
+  return convertToEnvironments(settingEnvironments);
+};
+
+const updateEnvironmentSetting = async (
+  environment: EnvironmentSetting
+): Promise<Environment[]> => {
+  const setting = await settingServiceClient.updateSetting({
+    setting: {
+      name: "settings/bb.workspace.environment",
+      value: {
+        environmentSetting: environment,
+      },
+    },
+    updateMask: ["environment_setting"],
+  });
+  const settingEnvironments =
+    setting.value?.environmentSetting?.environments ?? [];
+  return convertToEnvironments(settingEnvironments);
+};
 
 export const useEnvironmentV1Store = defineStore("environment_v1", {
   state: (): EnvironmentState => ({
-    environmentMapByName: new Map(),
+    environmentMapById: new Map(),
   }),
   getters: {
     environmentList(state) {
       return orderBy(
-        Array.from(state.environmentMapByName.values()),
+        Array.from(state.environmentMapById.values()),
         (env) => env.order,
         "asc"
       );
     },
   },
   actions: {
-    async fetchEnvironments(showDeleted = false) {
-      const { environments } = await environmentServiceClient.listEnvironments({
-        showDeleted,
-      });
-      for (const env of environments) {
-        this.environmentMapByName.set(env.name, env);
-      }
+    async fetchEnvironments(_showDeleted = false, silent = false) {
+      const environments = await getEnvironmentSetting(silent);
+      this.environmentMapById = getEnvironmentByIdMap(environments);
       return environments;
     },
     getEnvironmentList(showDeleted = false): Environment[] {
@@ -43,50 +117,81 @@ export const useEnvironmentV1Store = defineStore("environment_v1", {
         return true;
       });
     },
-    async createEnvironment(environment: Partial<Environment>) {
-      const createdEnvironment =
-        await environmentServiceClient.createEnvironment({
-          environment,
-          environmentId: environment.name,
-        });
-      this.environmentMapByName.set(
-        createdEnvironment.name,
-        createdEnvironment
-      );
-      return createdEnvironment;
+    async createEnvironment(
+      environment: Partial<Environment>
+    ): Promise<Environment> {
+      const e: EnvironmentSetting_Environment = {
+        id: environment.name?.replace(environmentNamePrefix, "") ?? "",
+        title: environment.title ?? "",
+        color: environment.color ?? "",
+        tags: {},
+      };
+      if (environment.tier === EnvironmentTier.PROTECTED) {
+        e.tags.protected = "protected";
+      }
+      const newEnvironmentSettingValue = [
+        ...convertEnvironments(this.environmentList),
+        e,
+      ];
+
+      const newEnvironments = await updateEnvironmentSetting({
+        environments: newEnvironmentSettingValue,
+      });
+
+      const newEnvironmentMapById = getEnvironmentByIdMap(newEnvironments);
+      this.environmentMapById = newEnvironmentMapById;
+      const newEnvironment = newEnvironmentMapById.get(environment.name ?? "");
+      if (!newEnvironment) {
+        throw new Error(`environment with name ${environment.name} not found`);
+      }
+      return newEnvironment;
     },
-    async updateEnvironment(update: Partial<Environment>) {
+    async updateEnvironment(
+      update: Partial<Environment>
+    ): Promise<Environment> {
       const originData = await this.getOrFetchEnvironmentByName(
         update.name || ""
       );
       if (!originData) {
         throw new Error(`environment with name ${update.name} not found`);
       }
+      const newEnvironments = await updateEnvironmentSetting({
+        environments: convertEnvironments(
+          this.environmentList.map((environment) => {
+            if (environment.name === update.name) {
+              environment.title = update.title ?? environment.title;
+              environment.color = update.color ?? environment.color;
+              environment.tier = update.tier ?? environment.tier;
+              environment.order = update.order ?? environment.order;
+            }
+            return environment;
+          })
+        ),
+      });
 
-      const environment = await environmentServiceClient.updateEnvironment({
-        environment: update,
-        updateMask: getUpdateMaskFromEnvironments(originData, update),
-      });
-      this.environmentMapByName.set(environment.name, environment);
-      return environment;
-    },
-    async deleteEnvironment(name: string) {
-      await environmentServiceClient.deleteEnvironment({
-        name,
-      });
-      const cachedData = this.getEnvironmentByName(name);
-      if (cachedData) {
-        this.environmentMapByName.set(name, {
-          ...cachedData,
-          state: State.DELETED,
-        });
+      const newEnvironmentMapById = getEnvironmentByIdMap(newEnvironments);
+      this.environmentMapById = newEnvironmentMapById;
+      const newEnvironment = newEnvironmentMapById.get(update.name || "");
+      if (!newEnvironment) {
+        throw new Error(`environment with name ${update.name} not found`);
       }
+      return newEnvironment;
+    },
+    async deleteEnvironment(name: string): Promise<void> {
+      const newEnvironments = await updateEnvironmentSetting({
+        environments: convertEnvironments(
+          this.environmentList.filter(
+            (environment) => environment.name !== name
+          )
+        ),
+      });
+      this.environmentMapById = getEnvironmentByIdMap(newEnvironments);
     },
     async undeleteEnvironment(name: string) {
       const environment = await environmentServiceClient.undeleteEnvironment({
         name,
       });
-      this.environmentMapByName.set(environment.name, environment);
+      this.environmentMapById.set(environment.name, environment);
       return environment;
     },
     async reorderEnvironmentList(orderedEnvironmentList: Environment[]) {
@@ -102,49 +207,27 @@ export const useEnvironmentV1Store = defineStore("environment_v1", {
         })
       );
       updatedEnvironmentList.forEach((environment) => {
-        this.environmentMapByName.set(environment.name, environment);
+        this.environmentMapById.set(environment.name, environment);
       });
       return updatedEnvironmentList;
     },
-    async getOrFetchEnvironmentByName(name: string, silent = false) {
-      const cachedData = this.environmentMapByName.get(name);
+    async getOrFetchEnvironmentByName(
+      name: string,
+      silent = false
+    ): Promise<Environment | undefined> {
+      const cachedData = this.environmentMapById.get(name);
       if (cachedData) {
         return cachedData;
       }
-      const environment = await environmentServiceClient.getEnvironment(
-        {
-          name,
-        },
-        { silent }
-      );
-      this.environmentMapByName.set(environment.name, environment);
+      await this.fetchEnvironments(false, silent);
+      const environment = this.environmentMapById.get(name);
       return environment;
     },
     getEnvironmentByName(name: string) {
-      return this.environmentMapByName.get(name) ?? unknownEnvironment();
+      return this.environmentMapById.get(name) ?? unknownEnvironment();
     },
   },
 });
-
-const getUpdateMaskFromEnvironments = (
-  origin: Environment,
-  update: Partial<Environment>
-): string[] => {
-  const updateMask: string[] = [];
-  if (!isUndefined(update.title) && !isEqual(origin.title, update.title)) {
-    updateMask.push("title");
-  }
-  if (!isUndefined(update.order) && !isEqual(origin.order, update.order)) {
-    updateMask.push("order");
-  }
-  if (!isUndefined(update.tier) && !isEqual(origin.tier, update.tier)) {
-    updateMask.push("tier");
-  }
-  if (!isUndefined(update.color) && !isEqual(origin.color, update.color)) {
-    updateMask.push("color");
-  }
-  return updateMask;
-};
 
 export const useEnvironmentV1List = (showDeleted = false) => {
   const store = useEnvironmentV1Store();
