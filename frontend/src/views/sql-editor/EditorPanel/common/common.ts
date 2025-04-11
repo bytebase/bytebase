@@ -6,7 +6,7 @@ import {
   useDBSchemaV1Store,
 } from "@/store";
 import { hasSchemaProperty } from "@/utils";
-import { useCurrentTabViewStateContext } from "../context";
+import { useCurrentTabViewStateContext } from "../context/viewState";
 
 export const useSelectSchema = () => {
   const { database, instance } = useConnectionOfCurrentSQLEditorTab();

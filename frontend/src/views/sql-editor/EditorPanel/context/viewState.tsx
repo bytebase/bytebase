@@ -1,4 +1,3 @@
-import { head } from "lodash-es";
 import { storeToRefs } from "pinia";
 import { computed, inject, provide, watch, type InjectionKey } from "vue";
 import {
@@ -15,6 +14,19 @@ import {
   instanceV1SupportsPackage,
   instanceV1SupportsSequence,
 } from "@/utils";
+import type { VNodeChild } from "vue";
+import { t } from "@/plugins/i18n";
+import {
+  FunctionIcon,
+  TableIcon,
+  ViewIcon,
+  ProcedureIcon,
+  ExternalTableIcon,
+  PackageIcon,
+  SequenceIcon,
+} from "@/components/Icon";
+import { InfoIcon } from "lucide-vue-next"
+import { SchemaDiagramIcon } from "@/components/SchemaDiagram";
 
 const KEY = Symbol(
   "bb.sql-editor.editor-panel"
@@ -32,26 +44,61 @@ export const provideCurrentTabViewStateContext = () => {
     return tabViewStateStore.getViewState(tab.value.id);
   });
 
-  const availableViews = computed(() => {
-    const views: EditorPanelView[] = [
-      "CODE",
-      "INFO",
-      "TABLES",
-      "VIEWS",
-      "FUNCTIONS",
-      "PROCEDURES",
+  const availableActions = computed(() => {
+    const actions: { view: EditorPanelView; title: string; icon: () => VNodeChild }[] = [
+      {
+        view: "INFO",
+        title: t("common.info"),
+        icon: () => <InfoIcon class="w-4 h-4" />
+      },
+      {
+        view: "TABLES",
+        title: t("db.tables"),
+        icon: () => <TableIcon class="w-4 h-4" />
+      },
+      {
+        view: "VIEWS",
+        title: t("db.views"),
+        icon: () => <ViewIcon class="w-4 h-4" />
+      },
+      {
+        view: "FUNCTIONS",
+        title: t("db.functions"),
+        icon: () => <FunctionIcon class="w-4 h-4" />
+      },
+      {
+        view: "PROCEDURES",
+        title: t("db.procedures"),
+        icon: () => <ProcedureIcon class="w-4 h-4" />
+      },
     ];
     if (instanceV1SupportsSequence(instance.value)) {
-      views.push("SEQUENCES");
+      actions.push({
+        view: "SEQUENCES",
+        title: t("db.sequences"),
+        icon: () => <SequenceIcon class="w-4 h-4" />
+      });
     }
     if (instanceV1SupportsExternalTable(instance.value)) {
-      views.push("EXTERNAL_TABLES");
+      actions.push({
+        view: "EXTERNAL_TABLES",
+        title: t("db.external-tables"),
+        icon: () => <ExternalTableIcon class="w-4 h-4" />
+      });
     }
     if (instanceV1SupportsPackage(instance.value)) {
-      views.push("PACKAGES");
+      actions.push({
+        view: "PACKAGES",
+        title: t("db.packages"),
+        icon: () => <PackageIcon class="w-4 h-4" />
+      });
     }
-    views.push("DIAGRAM");
-    return views;
+    actions.push({
+      view: "DIAGRAM",
+      title: t("schema-diagram.self"),
+      icon: () => <SchemaDiagramIcon class="w-4 h-4" />
+    });
+    return actions;
   });
 
   const selectedSchemaName = computed({
@@ -70,18 +117,6 @@ export const provideCurrentTabViewStateContext = () => {
     if (!tab.value) return;
     tabViewStateStore.updateViewState(tab.value.id, patch);
   };
-
-  watch(
-    [() => viewState.value?.view, availableViews],
-    ([view, availableViews]) => {
-      if (view && !availableViews.includes(view)) {
-        updateViewState({
-          view: head(availableViews),
-        });
-      }
-    },
-    { immediate: true }
-  );
 
   watch(
     () => tab.value?.connection.schema,
@@ -109,7 +144,7 @@ export const provideCurrentTabViewStateContext = () => {
   const context = {
     viewState,
     selectedSchemaName,
-    availableViews,
+    availableActions,
     updateViewState,
   };
 

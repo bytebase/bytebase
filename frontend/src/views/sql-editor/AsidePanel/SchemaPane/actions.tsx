@@ -2,7 +2,6 @@ import { head, cloneDeep } from "lodash-es";
 import {
   CodeIcon,
   CopyIcon,
-  InfoIcon,
   ExternalLinkIcon,
   FileCodeIcon,
   FileDiffIcon,
@@ -13,18 +12,10 @@ import {
   SquarePenIcon,
 } from "lucide-vue-next";
 import {
-  FunctionIcon,
   TableIcon,
-  ViewIcon,
-  ProcedureIcon,
-  ExternalTableIcon,
-  PackageIcon,
-  SequenceIcon,
 } from "@/components/Icon";
-import { SchemaDiagramIcon } from "@/components/SchemaDiagram";
 import { NButton, useDialog, type DropdownOption } from "naive-ui";
 import { computed, h, nextTick, ref } from "vue";
-import type { VNodeChild } from "vue";
 import { useRouter } from "vue-router";
 import formatSQL from "@/components/MonacoEditor/sqlFormatter";
 import { useExecuteSQL } from "@/composables/useExecuteSQL";
@@ -189,7 +180,7 @@ export const useActions = () => {
         continue;
       }
       const viewState = tabViewStateStore.getViewState(tab.id);
-      if (viewState.view !== view || viewState.schema !== schema) {
+      if (viewState.view !== view || (schema && viewState.schema !== schema)) {
         continue;
       }
       tabStore.setCurrentTabId(tab.id);
@@ -262,6 +253,7 @@ export const useActions = () => {
 
 export const useDropdown = () => {
   const router = useRouter();
+  const { availableActions } = useCurrentTabViewStateContext();
   const { events: editorEvents, schemaViewer } = useSQLEditorContext();
   const { selectAllFromTableOrView, viewDetail, openNewTab } = useActions();
   const disallowEditSchema = useAppFeature(
@@ -293,54 +285,7 @@ export const useDropdown = () => {
 
     const items: DropdownOptionWithTreeNode[] = [];
     if (type === "database" || type === "schema") {
-      const actions: { view: EditorPanelView; title: string; icon: () => VNodeChild }[] = [
-        {
-          view: "INFO",
-          title: t("common.info"),
-          icon: () => <InfoIcon class="w-4 h-4" />
-        },
-        {
-          view: "TABLES",
-          title: t("db.tables"),
-          icon: () => <TableIcon class="w-4 h-4" />
-        },
-        {
-          view: "VIEWS",
-          title: t("db.views"),
-          icon: () => <ViewIcon class="w-4 h-4" />
-        },
-        {
-          view: "FUNCTIONS",
-          title: t("db.functions"),
-          icon: () => <FunctionIcon class="w-4 h-4" />
-        },
-        {
-          view: "PROCEDURES",
-          title: t("db.procedures"),
-          icon: () => <ProcedureIcon class="w-4 h-4" />
-        },
-        {
-          view: "SEQUENCES",
-          title: t("db.sequences"),
-          icon: () => <SequenceIcon class="w-4 h-4" />
-        },
-        {
-          view: "PACKAGES",
-          title: t("db.packages"),
-          icon: () => <PackageIcon class="w-4 h-4" />
-        },
-        {
-          view: "EXTERNAL_TABLES",
-          title: t("db.external-tables"),
-          icon: () => <ExternalTableIcon class="w-4 h-4" />
-        },
-        {
-          view: "DIAGRAM",
-          title: t("schema-diagram.self"),
-          icon: () => <SchemaDiagramIcon class="w-4 h-4" />
-        },
-      ]
-      for (const action of actions) {
+      for (const action of availableActions.value) {
         items.push({
           key: action.view,
           label: action.title,

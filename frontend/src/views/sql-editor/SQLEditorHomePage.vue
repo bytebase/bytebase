@@ -89,7 +89,7 @@ import { extractProjectResourceName } from "@/utils";
 import AsidePanel from "./AsidePanel";
 import ConnectionPanel from "./ConnectionPanel";
 import EditorPanel from "./EditorPanel";
-import { provideCurrentTabViewStateContext } from "./EditorPanel/context";
+import { provideCurrentTabViewStateContext } from "./EditorPanel/context/viewState";
 import { useSheetContext } from "./Sheet";
 import SheetPanel from "./SheetPanel";
 import TabList from "./TabList";

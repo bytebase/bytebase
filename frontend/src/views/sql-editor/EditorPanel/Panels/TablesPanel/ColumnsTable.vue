@@ -36,7 +36,7 @@ import type {
 } from "@/types/proto/v1/database_service";
 import { getHighlightHTMLByRegExp, useAutoHeightDataTable } from "@/utils";
 import { EllipsisCell } from "../../common";
-import { useCurrentTabViewStateContext } from "../../context";
+import { useCurrentTabViewStateContext } from "../../context/viewState";
 
 const props = defineProps<{
   db: ComposedDatabase;

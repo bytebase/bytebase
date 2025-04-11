@@ -105,7 +105,7 @@ import type {
   TableMetadata,
 } from "@/types/proto/v1/database_service";
 import { keyWithPosition } from "@/views/sql-editor/EditorCommon";
-import { useCurrentTabViewStateContext } from "../../context";
+import { useCurrentTabViewStateContext } from "../../context/viewState";
 import ColumnsTable from "./ColumnsTable.vue";
 import ForeignKeysTable from "./ForeignKeysTable.vue";
 import IndexesTable from "./IndexesTable.vue";
