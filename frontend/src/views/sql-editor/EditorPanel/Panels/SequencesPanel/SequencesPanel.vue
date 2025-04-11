@@ -37,7 +37,7 @@ import {
   extractKeyWithPosition,
   keyWithPosition,
 } from "@/views/sql-editor/EditorCommon";
-import { useCurrentTabViewStateContext } from "../../context";
+import { useCurrentTabViewStateContext } from "../../context/viewState";
 import SequencesTable from "./SequencesTable.vue";
 
 const { database } = useConnectionOfCurrentSQLEditorTab();

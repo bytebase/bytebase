@@ -33,7 +33,7 @@ import type {
 import { useAutoHeightDataTable } from "@/utils";
 import { keyWithPosition } from "@/views/sql-editor/EditorCommon";
 import { EllipsisCell } from "../../common";
-import { useCurrentTabViewStateContext } from "../../context";
+import { useCurrentTabViewStateContext } from "../../context/viewState";
 
 type SequenceWithPosition = { sequence: SequenceMetadata; position: number };
 
