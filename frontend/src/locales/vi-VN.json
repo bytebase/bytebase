@@ -1252,8 +1252,7 @@
   },
   "environment": {
     "select": "Chọn môi trường",
-    "archive": "Xóa môi trường này",
-    "archive-info": "Các môi trường đã lưu trữ sẽ không được hiển thị.",
+    "delete": "Xóa môi trường này",
     "create": "Tạo môi trường",
     "restore": "Khôi phục môi trường này",
     "successfully-updated-environment": "Đã cập nhật thành công môi trường '{name}'.",

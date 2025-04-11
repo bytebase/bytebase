@@ -114,12 +114,12 @@
         <BBButtonConfirm
           v-if="allowArchive"
           :type="'ARCHIVE'"
-          :button-text="$t('environment.archive')"
-          :ok-text="$t('common.archive')"
+          :button-text="$t('environment.delete')"
+          :ok-text="$t('common.delete')"
           :confirm-title="
-            $t('environment.archive') + ` '${state.environment.title}'?`
+            $t('environment.delete') + ` '${state.environment.title}'?`
           "
-          :confirm-description="$t('environment.archive-info')"
+          :confirm-description="$t('common.cannot-undo-this-action')"
           :require-confirm="true"
           @confirm="archiveEnvironment"
         />
