@@ -5,17 +5,14 @@ import type { WatchCallback } from "vue";
 import { ref, watch } from "vue";
 import { issueServiceClient } from "@/grpcweb";
 import type { ComposedIssue, IssueFilter } from "@/types";
-import { isValidProjectName, PresetRoleType } from "@/types";
+import { PresetRoleType } from "@/types";
 import type { ApprovalStep } from "@/types/proto/v1/issue_service";
 import {
   issueStatusToJSON,
   ApprovalNode_Type,
   ApprovalNode_GroupValue,
 } from "@/types/proto/v1/issue_service";
-import {
-  extractProjectResourceName,
-  memberMapToRolesInProjectIAM,
-} from "@/utils";
+import { memberMapToRolesInProjectIAM } from "@/utils";
 import {
   shallowComposeIssue,
   type ComposeIssueConfig,
@@ -99,14 +96,8 @@ export const useIssueV1Store = defineStore("issue_v1", () => {
       pageSize,
       pageToken,
     });
-
-    const issues = resp.issues.filter((issue) => {
-      const proj = extractProjectResourceName(issue.name);
-      return isValidProjectName(`projects/${proj}`);
-    });
-
     const composedIssues = await Promise.all(
-      issues.map((issue) => shallowComposeIssue(issue, composeIssueConfig))
+      resp.issues.map((issue) => shallowComposeIssue(issue, composeIssueConfig))
     );
     return {
       nextPageToken: resp.nextPageToken,

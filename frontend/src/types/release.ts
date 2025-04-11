@@ -1,10 +1,9 @@
 import { getProjectNameReleaseId } from "@/store/modules/v1/common";
-import { EMPTY_ID, UNKNOWN_ID } from "./const";
-import type { User } from "./proto/v1/user_service";
+import { UNKNOWN_ID } from "./const";
 import { Release } from "./proto/v1/release_service";
-import { emptyUser, unknownUser } from "./v1";
+import type { User } from "./proto/v1/user_service";
+import { unknownUser } from "./v1";
 import {
-  emptyProject,
   UNKNOWN_PROJECT_NAME,
   unknownProject,
   type ComposedProject,
@@ -18,21 +17,6 @@ export interface ComposedRelease extends Release {
 }
 
 export const UNKNOWN_RELEASE_NAME = `${UNKNOWN_PROJECT_NAME}/releases/${UNKNOWN_ID}`;
-
-export const emptyRelease = (): ComposedRelease => {
-  const projectEntity = emptyProject();
-  const release = Release.fromJSON({
-    name: `${projectEntity.name}/releases/${EMPTY_ID}`,
-    uid: String(EMPTY_ID),
-    project: projectEntity.name,
-  });
-  return {
-    ...release,
-    project: projectEntity.name,
-    projectEntity,
-    creatorEntity: emptyUser(),
-  };
-};
 
 export const unknownRelease = (): ComposedRelease => {
   const projectEntity = unknownProject();

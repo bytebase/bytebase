@@ -1,5 +1,4 @@
 import { t } from "@/plugins/i18n";
-import { EMPTY_ID } from "../const";
 import {
   Activity_Type,
   Webhook,
@@ -8,10 +7,7 @@ import {
 
 export const emptyProjectWebhook = () => {
   return Webhook.fromJSON({
-    name: `projects/${EMPTY_ID}/webhooks/${EMPTY_ID}`,
     type: Webhook_Type.SLACK,
-    title: "",
-    url: "",
     notificationTypes: [Activity_Type.TYPE_ISSUE_STATUS_UPDATE],
   });
 };

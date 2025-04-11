@@ -2508,7 +2508,6 @@
     "name": "Changelist name",
     "name-placeholder": "My changelist",
     "error": {
-      "project-is-required": "Project is required",
       "name-is-required": "Changelist name is required",
       "invalid-resource-id": "Invalid resource Id",
       "nothing-changed": "Nothing changed",

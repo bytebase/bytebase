@@ -2508,7 +2508,6 @@
     "name": "变更列表名称",
     "name-placeholder": "我的变更列表",
     "error": {
-      "project-is-required": "项目不能为空",
       "name-is-required": "变更列表名称不能为空",
       "invalid-resource-id": "无效的资源 ID",
       "nothing-changed": "无任何改变",

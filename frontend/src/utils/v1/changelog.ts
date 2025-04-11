@@ -3,7 +3,7 @@ import Long from "long";
 import { t } from "@/plugins/i18n";
 import { useDBSchemaV1Store, useDatabaseV1Store } from "@/store";
 import type { ComposedDatabase } from "@/types";
-import { EMPTY_ID, UNKNOWN_ID } from "@/types";
+import { UNKNOWN_ID } from "@/types";
 import { type AffectedTable, EmptyAffectedTable } from "@/types";
 import { Changelog_Type } from "@/types/proto/v1/database_service";
 import { Changelog } from "@/types/proto/v1/database_service";
@@ -31,7 +31,7 @@ export const isValidChangelogName = (name: string | undefined) => {
     return false;
   }
   const uid = extractChangelogUID(name);
-  return uid && uid !== String(EMPTY_ID) && uid !== String(UNKNOWN_ID);
+  return uid && uid !== String(UNKNOWN_ID);
 };
 
 export const changelogLink = (changelog: Changelog): string => {

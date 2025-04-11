@@ -157,14 +157,8 @@ import {
   ProjectSelect,
   ResourceIdField,
 } from "@/components/v2";
-import {
-  pushNotification,
-  useChangelistStore,
-  useProjectV1Store,
-  useSheetV1Store,
-} from "@/store";
+import { pushNotification, useChangelistStore, useSheetV1Store } from "@/store";
 import type { ResourceId, ValidatedMessage } from "@/types";
-import { isValidProjectName } from "@/types";
 import type { ComposedProject } from "@/types";
 import {
   Changelist,
@@ -187,7 +181,7 @@ interface LocalState {
 }
 
 const props = defineProps<{
-  project?: ComposedProject;
+  project: ComposedProject;
   disableProjectSelect?: boolean;
 }>();
 
@@ -199,7 +193,7 @@ const state = reactive<LocalState>({
 });
 
 const title = ref("");
-const projectName = ref<string | undefined>(props.project?.name);
+const projectName = ref<string>(props.project.name);
 const isLoading = ref(false);
 const resourceId = ref("");
 const resourceIdField = ref<InstanceType<typeof ResourceIdField>>();
@@ -213,9 +207,6 @@ const encodingOptions = computed(() =>
 
 const errors = asyncComputed(() => {
   const errors: string[] = [];
-  if (!isValidProjectName(projectName.value)) {
-    errors.push(t("changelist.error.project-is-required"));
-  }
   if (!title.value.trim()) {
     errors.push(t("changelist.error.name-is-required"));
   }
@@ -233,13 +224,8 @@ const validateResourceId = async (
     return [];
   }
 
-  if (!projectName.value) return [];
-  const project = await useProjectV1Store().getOrFetchProjectByName(
-    projectName.value
-  );
-
   try {
-    const name = `${project.name}/changelists/${resourceId}`;
+    const name = `${projectName.value}/changelists/${resourceId}`;
     const maybeExistedChangelist =
       await useChangelistStore().getOrFetchChangelistByName(
         name,
@@ -305,9 +291,6 @@ const doCreate = async () => {
 
   isLoading.value = true;
   try {
-    const project = await useProjectV1Store().getOrFetchProjectByName(
-      projectName.value!
-    );
     const createdSheets = await Promise.all(
       files.value.map(async (f) => {
         const { name, arrayBuffer } = f;
@@ -318,7 +301,7 @@ const doCreate = async () => {
         const content = new TextDecoder(state.encoding).decode(arrayBuffer);
         setSheetStatement(sheet, content);
         const created = await useSheetV1Store().createSheet(
-          project.name,
+          projectName.value,
           sheet
         );
         return created;
@@ -331,7 +314,7 @@ const doCreate = async () => {
     );
 
     const created = await useChangelistStore().createChangelist({
-      parent: project.name,
+      parent: projectName.value,
       changelist: Changelist.fromPartial({
         description: title.value,
         changes,
@@ -346,7 +329,7 @@ const doCreate = async () => {
     });
 
     router.push(
-      `/${project.name}/changelists/${extractChangelistResourceName(
+      `/${projectName.value}/changelists/${extractChangelistResourceName(
         created.name
       )}`
     );
