@@ -18,7 +18,7 @@
         class="factor"
         style="--n-padding: 0 8px 0 2px; --n-icon-margin: 6px 2px 6px 0"
         @toggle-disabled="toggleDisabled(sf, index)"
-        @remove="remove(sf, index)"
+        @remove="remove(index)"
       >
         <template #icon>
           <GripVerticalIcon
@@ -53,7 +53,7 @@ const toggleDisabled = (factor: StatefulFactor, _index: number) => {
   events.emit("tree-ready");
 };
 
-const remove = (factor: StatefulFactor, index: number) => {
+const remove = (index: number) => {
   factorList.value.splice(index, 1);
   treeStore.buildTree();
   events.emit("tree-ready");
