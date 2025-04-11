@@ -486,6 +486,14 @@
             <ul>
               
                 <li>
+                  <a href="#bytebase.v1.BatchGetDatabasesRequest"><span class="badge">M</span>BatchGetDatabasesRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.BatchGetDatabasesResponse"><span class="badge">M</span>BatchGetDatabasesResponse</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.BatchUpdateDatabasesRequest"><span class="badge">M</span>BatchUpdateDatabasesRequest</a>
                 </li>
               
@@ -5881,6 +5889,64 @@ Format: instances/{instance} </p></td>
       <p></p>
 
       
+        <h3 id="bytebase.v1.BatchGetDatabasesRequest">BatchGetDatabasesRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>parent</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The parent resource shared by all databases being retrieved.
+- projects/{project}: batch get databases in a project;
+- instances/{instances}: batch get databases in a instance;
+Use &#34;-&#34; as wildcard to batch get databases across parent. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>names</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
+                  <td><p>The list of database names to retrieve. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.BatchGetDatabasesResponse">BatchGetDatabasesResponse</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>databases</td>
+                  <td><a href="#bytebase.v1.Database">Database</a></td>
+                  <td>repeated</td>
+                  <td><p>The databases from the specified request. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.BatchUpdateDatabasesRequest">BatchUpdateDatabasesRequest</h3>
         <p></p>
 
@@ -9713,6 +9779,13 @@ The API will default to the BASIC view.</p></td>
               </tr>
             
               <tr>
+                <td>BatchGetDatabases</td>
+                <td><a href="#bytebase.v1.BatchGetDatabasesRequest">BatchGetDatabasesRequest</a></td>
+                <td><a href="#bytebase.v1.BatchGetDatabasesResponse">BatchGetDatabasesResponse</a></td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
                 <td>ListDatabases</td>
                 <td><a href="#bytebase.v1.ListDatabasesRequest">ListDatabasesRequest</a></td>
                 <td><a href="#bytebase.v1.ListDatabasesResponse">ListDatabasesResponse</a></td>
@@ -9855,6 +9928,23 @@ The API will default to the BASIC view.</p></td>
                 <td>GetDatabase</td>
                 <td>GET</td>
                 <td>/v1/{name=instances/*/databases/*}</td>
+                <td></td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>BatchGetDatabases</td>
+                <td>GET</td>
+                <td>/v1/{parent=projects/*}/databases:batchGet</td>
+                <td></td>
+              </tr>
+              
+              <tr>
+                <td>BatchGetDatabases</td>
+                <td>GET</td>
+                <td>/v1/{parent=instances/*}/databases:batchGet</td>
                 <td></td>
               </tr>
               

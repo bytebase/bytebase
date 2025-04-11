@@ -80,6 +80,23 @@ export interface GetDatabaseRequest {
   name: string;
 }
 
+export interface BatchGetDatabasesRequest {
+  /**
+   * The parent resource shared by all databases being retrieved.
+   * - projects/{project}: batch get databases in a project;
+   * - instances/{instances}: batch get databases in a instance;
+   * Use "-" as wildcard to batch get databases across parent.
+   */
+  parent: string;
+  /** The list of database names to retrieve. */
+  names: string[];
+}
+
+export interface BatchGetDatabasesResponse {
+  /** The databases from the specified request. */
+  databases: Database[];
+}
+
 export interface ListDatabasesRequest {
   /**
    * - projects/{project}: list databases in a project, require "bb.projects.get" permission.
@@ -1850,6 +1867,144 @@ export const GetDatabaseRequest: MessageFns<GetDatabaseRequest> = {
   fromPartial(object: DeepPartial<GetDatabaseRequest>): GetDatabaseRequest {
     const message = createBaseGetDatabaseRequest();
     message.name = object.name ?? "";
+    return message;
+  },
+};
+
+function createBaseBatchGetDatabasesRequest(): BatchGetDatabasesRequest {
+  return { parent: "", names: [] };
+}
+
+export const BatchGetDatabasesRequest: MessageFns<BatchGetDatabasesRequest> = {
+  encode(message: BatchGetDatabasesRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.parent !== "") {
+      writer.uint32(10).string(message.parent);
+    }
+    for (const v of message.names) {
+      writer.uint32(18).string(v!);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): BatchGetDatabasesRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseBatchGetDatabasesRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.parent = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.names.push(reader.string());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): BatchGetDatabasesRequest {
+    return {
+      parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
+      names: globalThis.Array.isArray(object?.names) ? object.names.map((e: any) => globalThis.String(e)) : [],
+    };
+  },
+
+  toJSON(message: BatchGetDatabasesRequest): unknown {
+    const obj: any = {};
+    if (message.parent !== "") {
+      obj.parent = message.parent;
+    }
+    if (message.names?.length) {
+      obj.names = message.names;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<BatchGetDatabasesRequest>): BatchGetDatabasesRequest {
+    return BatchGetDatabasesRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<BatchGetDatabasesRequest>): BatchGetDatabasesRequest {
+    const message = createBaseBatchGetDatabasesRequest();
+    message.parent = object.parent ?? "";
+    message.names = object.names?.map((e) => e) || [];
+    return message;
+  },
+};
+
+function createBaseBatchGetDatabasesResponse(): BatchGetDatabasesResponse {
+  return { databases: [] };
+}
+
+export const BatchGetDatabasesResponse: MessageFns<BatchGetDatabasesResponse> = {
+  encode(message: BatchGetDatabasesResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    for (const v of message.databases) {
+      Database.encode(v!, writer.uint32(10).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): BatchGetDatabasesResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseBatchGetDatabasesResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.databases.push(Database.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): BatchGetDatabasesResponse {
+    return {
+      databases: globalThis.Array.isArray(object?.databases)
+        ? object.databases.map((e: any) => Database.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: BatchGetDatabasesResponse): unknown {
+    const obj: any = {};
+    if (message.databases?.length) {
+      obj.databases = message.databases.map((e) => Database.toJSON(e));
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<BatchGetDatabasesResponse>): BatchGetDatabasesResponse {
+    return BatchGetDatabasesResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<BatchGetDatabasesResponse>): BatchGetDatabasesResponse {
+    const message = createBaseBatchGetDatabasesResponse();
+    message.databases = object.databases?.map((e) => Database.fromPartial(e)) || [];
     return message;
   },
 };
@@ -9967,6 +10122,115 @@ export const DatabaseServiceDefinition = {
               47,
               42,
               125,
+            ]),
+          ],
+        },
+      },
+    },
+    batchGetDatabases: {
+      name: "BatchGetDatabases",
+      requestType: BatchGetDatabasesRequest,
+      requestStream: false,
+      responseType: BatchGetDatabasesResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          800010: [new Uint8Array([16, 98, 98, 46, 100, 97, 116, 97, 98, 97, 115, 101, 115, 46, 103, 101, 116])],
+          800016: [new Uint8Array([1])],
+          578365826: [
+            new Uint8Array([
+              91,
+              90,
+              45,
+              18,
+              43,
+              47,
+              118,
+              49,
+              47,
+              123,
+              112,
+              97,
+              114,
+              101,
+              110,
+              116,
+              61,
+              105,
+              110,
+              115,
+              116,
+              97,
+              110,
+              99,
+              101,
+              115,
+              47,
+              42,
+              125,
+              47,
+              100,
+              97,
+              116,
+              97,
+              98,
+              97,
+              115,
+              101,
+              115,
+              58,
+              98,
+              97,
+              116,
+              99,
+              104,
+              71,
+              101,
+              116,
+              18,
+              42,
+              47,
+              118,
+              49,
+              47,
+              123,
+              112,
+              97,
+              114,
+              101,
+              110,
+              116,
+              61,
+              112,
+              114,
+              111,
+              106,
+              101,
+              99,
+              116,
+              115,
+              47,
+              42,
+              125,
+              47,
+              100,
+              97,
+              116,
+              97,
+              98,
+              97,
+              115,
+              101,
+              115,
+              58,
+              98,
+              97,
+              116,
+              99,
+              104,
+              71,
+              101,
+              116,
             ]),
           ],
         },
