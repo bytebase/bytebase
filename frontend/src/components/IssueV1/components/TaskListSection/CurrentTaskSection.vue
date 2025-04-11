@@ -11,7 +11,7 @@
         <template
           v-if="
             database &&
-            instanceEnvironment.name !== database.effectiveEnvironment
+            formatEnvironmentName(instanceEnvironment.id) !== database.effectiveEnvironment
           "
           #prefix
         >
@@ -85,7 +85,7 @@ import {
   InstanceV1Name,
 } from "@/components/v2";
 import { useDatabaseV1Store, useEnvironmentV1Store } from "@/store";
-import { isValidDatabaseName, unknownEnvironment } from "@/types";
+import { formatEnvironmentName, isValidDatabaseName, unknownEnvironment } from "@/types";
 import { Task_Status, Task_Type } from "@/types/proto/v1/rollout_service";
 import { extractInstanceResourceName } from "@/utils";
 

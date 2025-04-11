@@ -16,17 +16,14 @@
 import { NTooltip } from "naive-ui";
 import { computed } from "vue";
 import { featureToRef } from "@/store";
-import type { Environment } from "@/types/proto/v1/environment_service";
-import { EnvironmentTier } from "@/types/proto/v1/environment_service";
+import type { Environment } from "@/types/v1/environment";
 
 const props = withDefaults(
   defineProps<{
     environment: Environment;
-    tier?: EnvironmentTier;
     tooltip?: boolean;
   }>(),
   {
-    tier: EnvironmentTier.UNPROTECTED,
     tooltip: false,
   }
 );
@@ -39,6 +36,6 @@ const enabled = computed((): boolean => {
   if (!hasEnvironmentTierPolicyFeature.value) {
     return false;
   }
-  return (props.environment?.tier ?? props.tier) === EnvironmentTier.PROTECTED;
+  return props.environment?.tags?.protected === "protected"
 });
 </script>

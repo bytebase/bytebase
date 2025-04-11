@@ -90,6 +90,7 @@ import {
   useDatabaseV1Store,
   useEnvironmentV1List,
   batchGetOrFetchDatabases,
+  environmentNamePrefix,
 } from "@/store";
 import type { ComposedDatabase, ComposedProject } from "@/types";
 import { isValidDatabaseName } from "@/types";
@@ -118,7 +119,7 @@ const props = defineProps<{
 }>();
 
 const databaseStore = useDatabaseV1Store();
-const environmentList = useEnvironmentV1List(false /* !showDeleted */);
+const environmentList = useEnvironmentV1List();
 const allAnomalyList = ref<Anomaly[]>([]);
 const loading = ref(true);
 
@@ -193,7 +194,7 @@ const databaseAnomalySummaryList = computed((): Summary[] => {
 
   const list: Summary[] = [];
   for (const environment of environmentList.value) {
-    const summary = envMap.get(environment.name);
+    const summary = envMap.get(`${environmentNamePrefix}${environment.id}`);
     if (summary) {
       list.push(summary);
     }

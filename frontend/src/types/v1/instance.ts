@@ -1,6 +1,6 @@
 import { EMPTY_ID, UNKNOWN_ID } from "../const";
 import { Engine, State } from "../proto/v1/common";
-import type { Environment } from "../proto/v1/environment_service";
+import type { Environment } from "@/types/v1/environment";
 import { Instance, InstanceResource } from "../proto/v1/instance_service";
 import {
   EMPTY_ENVIRONMENT_NAME,
@@ -8,6 +8,7 @@ import {
   UNKNOWN_ENVIRONMENT_NAME,
   unknownEnvironment,
 } from "./environment";
+import { environmentNamePrefix } from "@/store";
 
 export const EMPTY_INSTANCE_NAME = `instances/${EMPTY_ID}`;
 export const UNKNOWN_INSTANCE_NAME = `instances/${UNKNOWN_ID}`;
@@ -24,7 +25,7 @@ export const emptyInstance = (): ComposedInstance => {
     state: State.ACTIVE,
     title: "",
     engine: Engine.MYSQL,
-    environment: environmentEntity.name,
+    environment: `${environmentNamePrefix}${environmentEntity.id}`,
   });
   return {
     ...instance,
@@ -39,7 +40,7 @@ export const unknownInstance = (): ComposedInstance => {
     name: UNKNOWN_INSTANCE_NAME,
     uid: String(UNKNOWN_ID),
     title: "<<Unknown instance>>",
-    environment: environmentEntity.name,
+    environment: `${environmentNamePrefix}${environmentEntity.id}`,
   };
   return {
     ...instance,

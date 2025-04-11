@@ -217,14 +217,6 @@ func getRequestResource(request any) string {
 		return r.Name
 	case *v1pb.UpdateRiskRequest:
 		return r.GetRisk().GetName()
-	case *v1pb.CreateEnvironmentRequest:
-		return r.GetEnvironment().GetName()
-	case *v1pb.UpdateEnvironmentRequest:
-		return r.GetEnvironment().GetName()
-	case *v1pb.DeleteEnvironmentRequest:
-		return r.Name
-	case *v1pb.UndeleteEnvironmentRequest:
-		return r.Name
 	case *v1pb.CreateInstanceRequest:
 		return r.GetInstance().GetName()
 	case *v1pb.UpdateInstanceRequest:

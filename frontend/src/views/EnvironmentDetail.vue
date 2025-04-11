@@ -1,16 +1,10 @@
 <template>
-  <div v-if="state.environment.state == State.DELETED" class="mb-2 -mt-4">
-    <ArchiveBanner />
-  </div>
-
   <EnvironmentForm
-    v-if="state.rolloutPolicy && state.environmentTier"
+    v-if="state.rolloutPolicy"
     :environment="state.environment"
     :rollout-policy="state.rolloutPolicy"
-    :environment-tier="state.environmentTier"
     @update="doUpdate"
     @archive="doArchive"
-    @restore="doRestore"
     @update-policy="updatePolicy"
   >
     <EnvironmentFormBody
@@ -27,10 +21,9 @@
 </template>
 
 <script lang="ts" setup>
-import { cloneDeep } from "lodash-es";
-import { reactive, watch, watchEffect } from "vue";
+import { cloneDeep, isEqual } from "lodash-es";
+import { computed, reactive, watch, watchEffect } from "vue";
 import { useRouter } from "vue-router";
-import ArchiveBanner from "@/components/ArchiveBanner.vue";
 import {
   EnvironmentForm,
   Form as EnvironmentFormBody,
@@ -43,24 +36,19 @@ import {
   usePolicyV1Store,
   getEmptyRolloutPolicy,
 } from "@/store/modules/v1/policy";
-import { unknownEnvironment } from "@/types";
-import { State } from "@/types/proto/v1/common";
-import type {
-  Environment,
-  EnvironmentTier,
-} from "@/types/proto/v1/environment_service";
+import { formatEnvironmentName, unknownEnvironment } from "@/types";
 import type { Policy } from "@/types/proto/v1/org_policy_service";
 import {
   PolicyType,
   PolicyResourceType,
 } from "@/types/proto/v1/org_policy_service";
-import { extractEnvironmentResourceName, type VueClass } from "@/utils";
+import type { Environment } from "@/types/v1/environment";
+import { type VueClass } from "@/utils";
 
 interface LocalState {
   environment: Environment;
   showArchiveModal: boolean;
   rolloutPolicy?: Policy;
-  environmentTier?: EnvironmentTier;
 }
 
 const props = defineProps<{
@@ -85,6 +73,10 @@ const state = reactive<LocalState>({
   showArchiveModal: false,
 });
 
+const stateEnvironmentName = computed(() => {
+  return formatEnvironmentName(state.environment.id);
+});
+
 const prepareEnvironment = async () => {
   await environmentV1Store.getOrFetchEnvironmentByName(
     `${environmentNamePrefix}${props.environmentName}`
@@ -98,7 +90,7 @@ watch(() => props.environmentName, prepareEnvironment, {
 const preparePolicy = () => {
   policyV1Store
     .fetchPolicies({
-      parent: state.environment.name,
+      parent: stateEnvironmentName.value,
       resourceType: PolicyResourceType.ENVIRONMENT,
     })
     .then((policies) => {
@@ -108,12 +100,10 @@ const preparePolicy = () => {
       state.rolloutPolicy =
         rolloutPolicy ||
         getEmptyRolloutPolicy(
-          state.environment.name,
+          stateEnvironmentName.value,
           PolicyResourceType.ENVIRONMENT
         );
     });
-
-  state.environmentTier = state.environment.tier;
 };
 
 watchEffect(preparePolicy);
@@ -127,8 +117,8 @@ const doUpdate = (environmentPatch: Environment) => {
   if (environmentPatch.title !== pendingUpdate.title) {
     pendingUpdate.title = environmentPatch.title;
   }
-  if (environmentPatch.tier !== pendingUpdate.tier) {
-    pendingUpdate.tier = environmentPatch.tier;
+  if (!isEqual(environmentPatch.tags, pendingUpdate.tags)) {
+    pendingUpdate.tags = environmentPatch.tags;
   }
   if (environmentPatch.color !== pendingUpdate.color) {
     pendingUpdate.color = environmentPatch.color;
@@ -140,25 +130,13 @@ const doUpdate = (environmentPatch: Environment) => {
 };
 
 const doArchive = (environment: Environment) => {
-  environmentV1Store.deleteEnvironment(environment.name).then(() => {
-    emit("archive", environment);
-    environment.state = State.DELETED;
-    assignEnvironment(environment);
-    router.replace({
-      name: ENVIRONMENT_V1_ROUTE_DASHBOARD,
-    });
-  });
-};
-
-const doRestore = (environment: Environment) => {
   environmentV1Store
-    .undeleteEnvironment(environment.name)
-    .then((environment) => {
+    .deleteEnvironment(formatEnvironmentName(environment.id))
+    .then(() => {
+      emit("archive", environment);
       assignEnvironment(environment);
-      const id = extractEnvironmentResourceName(environment.name);
       router.replace({
         name: ENVIRONMENT_V1_ROUTE_DASHBOARD,
-        hash: `#${id}`,
       });
     });
 };
@@ -171,7 +149,7 @@ const updatePolicy = async (params: {
   const { environment, policyType, policy } = params;
 
   const updatedPolicy = await policyV1Store.upsertPolicy({
-    parentPath: environment.name,
+    parentPath: formatEnvironmentName(environment.id),
     policy,
   });
   switch (policyType) {

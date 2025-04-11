@@ -88,9 +88,7 @@ const prepareList = async () => {
 watchEffect(prepareList);
 
 const environmentList = computed(() => {
-  return environmentStore.environmentList.filter(
-    (env) => env.state === State.DELETED
-  );
+  return environmentStore.environmentList;
 });
 
 const deletedSSOList = computed(() => {
