@@ -38,7 +38,7 @@ import {
   useDBSchemaV1Store,
 } from "@/store";
 import { hasSchemaProperty } from "@/utils";
-import { useCurrentTabViewStateContext } from "../../context";
+import { useCurrentTabViewStateContext } from "../../context/viewState";
 
 defineOptions({
   inheritAttrs: false,

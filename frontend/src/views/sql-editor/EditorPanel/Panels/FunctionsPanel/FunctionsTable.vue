@@ -30,7 +30,7 @@ import type {
 } from "@/types/proto/v1/database_service";
 import { getHighlightHTMLByRegExp, useAutoHeightDataTable } from "@/utils";
 import { keyWithPosition } from "@/views/sql-editor/EditorCommon";
-import { useCurrentTabViewStateContext } from "../../context";
+import { useCurrentTabViewStateContext } from "../../context/viewState";
 
 type FunctionWithPosition = { func: FunctionMetadata; position: number };
 

@@ -220,7 +220,7 @@ import {
   instanceV1SupportsSequence,
 } from "@/utils";
 import { keyWithPosition } from "@/views/sql-editor/EditorCommon";
-import { useCurrentTabViewStateContext } from "../../context";
+import { useCurrentTabViewStateContext } from "../../context/viewState";
 import ExternalTablesTable from "../ExternalTablesPanel/ExternalTablesTable.vue";
 import FunctionsTable from "../FunctionsPanel/FunctionsTable.vue";
 import PackagesTable from "../PackagesPanel/PackagesTable.vue";

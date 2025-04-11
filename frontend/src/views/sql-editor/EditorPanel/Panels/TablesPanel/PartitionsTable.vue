@@ -30,7 +30,7 @@ import {
   type TableMetadata,
 } from "@/types/proto/v1/database_service";
 import { getHighlightHTMLByRegExp, useAutoHeightDataTable } from "@/utils";
-import { useCurrentTabViewStateContext } from "../../context";
+import { useCurrentTabViewStateContext } from "../../context/viewState";
 
 type FlattenTablePartitionMetadata = {
   partition: TablePartitionMetadata;
