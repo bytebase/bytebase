@@ -159,10 +159,10 @@ export const useEnvironmentV1Store = defineStore("environment_v1", {
         environments: convertEnvironments(
           this.environmentList.map((environment) => {
             if (environment.name === update.name) {
-              environment.title = update.title || environment.title;
-              environment.color = update.color || environment.color;
-              environment.tier = update.tier || environment.tier;
-              environment.order = update.order || environment.order;
+              environment.title = update.title ?? environment.title;
+              environment.color = update.color ?? environment.color;
+              environment.tier = update.tier ?? environment.tier;
+              environment.order = update.order ?? environment.order;
             }
             return environment;
           })
