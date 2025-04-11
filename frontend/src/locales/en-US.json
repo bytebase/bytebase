@@ -1252,8 +1252,7 @@
   },
   "environment": {
     "select": "Select environment",
-    "archive": "Delete this environment",
-    "archive-info": "Archived environments will not be displayed.",
+    "delete": "Delete this environment",
     "create": "Create Environment",
     "restore": "Restore this environment",
     "successfully-updated-environment": "Successfully updated environment '{name}'.",
