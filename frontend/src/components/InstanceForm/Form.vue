@@ -86,8 +86,8 @@
             class="mt-1 w-full"
             required="true"
             :environment-name="
-              isValidEnvironmentName(environment.name)
-                ? environment.name
+              isValidEnvironmentName(`${environmentNamePrefix}${environment.id}`)
+                ? `${environmentNamePrefix}${environment.id}`
                 : undefined
             "
             :disabled="!allowEdit"
@@ -497,7 +497,7 @@ import {
   useSubscriptionV1Store,
   pushNotification,
 } from "@/store";
-import { instanceNamePrefix } from "@/store/modules/v1/common";
+import { environmentNamePrefix, instanceNamePrefix } from "@/store/modules/v1/common";
 import type { ResourceId, ValidatedMessage, ComposedInstance } from "@/types";
 import { UNKNOWN_ID, isValidEnvironmentName } from "@/types";
 import type { Duration } from "@/types/proto/google/protobuf/duration";

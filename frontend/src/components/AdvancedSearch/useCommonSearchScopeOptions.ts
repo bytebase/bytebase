@@ -8,6 +8,7 @@ import {
 } from "@/components/v2";
 import { t } from "@/plugins/i18n";
 import {
+  environmentNamePrefix,
   useEnvironmentV1List,
   useEnvironmentV1Store,
   useInstanceV1Store,
@@ -139,8 +140,8 @@ export const useCommonSearchScopeOptions = (
         description: t("issue.advanced-search.scope.environment.description"),
         options: environmentList.value.map((env) => {
           return {
-            value: extractEnvironmentResourceName(env.name),
-            keywords: [env.name, env.title],
+            value: env.id,
+            keywords: [`${environmentNamePrefix}${env.id}`, env.title],
             render: () =>
               h(EnvironmentV1Name, {
                 environment: env,
