@@ -70,7 +70,7 @@ import {
   SchemaMetadata,
   ExternalTableMetadata,
 } from "@/types/proto/v1/database_service";
-import { useCurrentTabViewStateContext } from "../../context";
+import { useCurrentTabViewStateContext } from "../../context/viewState";
 import ExternalTableColumnsTable from "./ExternalTableColumnsTable.vue";
 import ExternalTablesTable from "./ExternalTablesTable.vue";
 

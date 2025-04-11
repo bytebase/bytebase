@@ -66,7 +66,7 @@ import {
   type VueClass,
 } from "@/utils";
 import DatabaseChooser from "@/views/sql-editor/EditorCommon/DatabaseChooser.vue";
-import { useCurrentTabViewStateContext } from "../context";
+import { useCurrentTabViewStateContext } from "../context/viewState.tsx";
 import DiagramPanel from "./DiagramPanel";
 import ExternalTablesPanel from "./ExternalTablesPanel";
 import FunctionsPanel from "./FunctionsPanel";
@@ -79,7 +79,6 @@ import ViewsPanel from "./ViewsPanel";
 import { SchemaSelectToolbar } from "./common";
 
 defineProps<{
-  gutterBarClass?: VueClass;
   contentClass?: VueClass;
 }>();
 
