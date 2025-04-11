@@ -3,7 +3,7 @@ import { orderBy } from "lodash-es";
 import { defineStore } from "pinia";
 import { planServiceClient } from "@/grpcweb";
 import { useUserStore } from "@/store";
-import { EMPTY_ID, isValidProjectName, UNKNOWN_ID } from "@/types";
+import { EMPTY_ID, UNKNOWN_ID } from "@/types";
 import { unknownUser } from "@/types";
 import type { Plan } from "@/types/proto/v1/plan_service";
 import {
@@ -124,14 +124,8 @@ export const usePlanStore = defineStore("plan", () => {
       pageSize,
       pageToken,
     });
-
-    const plans = resp.plans.filter((plan) => {
-      const proj = extractProjectResourceName(plan.name);
-      return isValidProjectName(`projects/${proj}`);
-    });
-
     const composedPlans = await Promise.all(
-      plans.map((plan) => composePlan(plan))
+      resp.plans.map((plan) => composePlan(plan))
     );
     return {
       nextPageToken: resp.nextPageToken,
