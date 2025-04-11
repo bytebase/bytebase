@@ -23,6 +23,15 @@ service DatabaseService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  rpc BatchGetDatabases(BatchGetDatabasesRequest) returns (BatchGetDatabasesResponse) {
+    option (google.api.http) = {
+      get: "/v1/{parent=projects/*}/databases:batchGet"
+      additional_bindings: {get: "/v1/{parent=instances/*}/databases:batchGet"}
+    };
+    option (bytebase.v1.permission) = "bb.databases.get";
+    option (bytebase.v1.auth_method) = IAM;
+  }
+
   rpc ListDatabases(ListDatabasesRequest) returns (ListDatabasesResponse) {
     option (google.api.http) = {
       get: "/v1/{parent=projects/*}/databases"
@@ -173,6 +182,28 @@ message GetDatabaseRequest {
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference) = {type: "bytebase.com/Database"}
   ];
+}
+
+message BatchGetDatabasesRequest {
+  // The parent resource shared by all databases being retrieved.
+  // - projects/{project}: batch get databases in a project;
+  // - instances/{instances}: batch get databases in a instance;
+  // Use "-" as wildcard to batch get databases across parent.
+  string parent = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {child_type: "bytebase.com/Database"}
+  ];
+
+  // The list of database names to retrieve.
+  repeated string names = 2 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Database"}
+  ];
+}
+
+message BatchGetDatabasesResponse {
+  // The databases from the specified request.
+  repeated Database databases = 1;
 }
 
 message ListDatabasesRequest {
