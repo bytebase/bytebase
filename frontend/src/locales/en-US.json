@@ -1764,6 +1764,7 @@
     "rows-upper-limit": "reached the limit of query results",
     "close-sheet": "Close sheet",
     "connect": "Connect",
+    "connected": "Connected",
     "connect-in-admin-mode": "Connect in admin mode",
     "admin-mode": {
       "self": "Admin mode",

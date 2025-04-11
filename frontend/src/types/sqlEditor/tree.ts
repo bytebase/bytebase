@@ -60,12 +60,6 @@ export const isValidSQLEditorTreeFactor = (
   return false;
 };
 
-export const ExpandableTreeNodeTypes: readonly SQLEditorTreeNodeType[] = [
-  "instance",
-  "environment",
-  "label",
-] as const;
-
 export const ConnectableTreeNodeTypes: readonly SQLEditorTreeNodeType[] = [
   "database",
 ] as const;
