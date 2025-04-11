@@ -3,6 +3,7 @@ import type monaco from "monaco-editor";
 import { unref, watchEffect } from "vue";
 import type { MaybeRef } from "@/types";
 import { callCssVariable, escapeMarkdown } from "@/utils";
+import { batchConvertPositionToMonacoPosition } from "@/utils/v1/position";
 import type { AdviceOption, MonacoModule } from "../types";
 
 export const useAdvices = (
@@ -17,14 +18,36 @@ export const useAdvices = (
         _advices.map((m) => m.severity),
         (s) => levelOfSeverity(s)
       ) ?? "WARNING";
+    const content = editor.getModel()?.getValue() ?? "";
+    const protoStartPositions = _advices.map((advice) => {
+      return {
+        line: advice.startLineNumber,
+        column: advice.startColumn,
+      };
+    });
+    const protoEndPositions = _advices.map((advice) => {
+      return {
+        line: advice.endLineNumber,
+        column: advice.endColumn,
+      };
+    });
+    const monacoStartPosition = batchConvertPositionToMonacoPosition(
+      protoStartPositions,
+      content
+    );
+    const monacoEndPosition = batchConvertPositionToMonacoPosition(
+      protoEndPositions,
+      content
+    );
+
     const decorators = editor.createDecorationsCollection(
-      _advices.map((advice) => {
+      _advices.map((advice, index) => {
         return {
           range: new monaco.Range(
-            advice.startLineNumber,
-            advice.startColumn,
-            advice.endLineNumber,
-            advice.endColumn
+            monacoStartPosition[index].lineNumber,
+            monacoStartPosition[index].column,
+            monacoEndPosition[index].lineNumber,
+            monacoEndPosition[index].column
           ),
           options: {
             className:
