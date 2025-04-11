@@ -1,10 +1,10 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"net/http"
-	"strings"
 	"time"
 
 	"google.golang.org/protobuf/encoding/protojson"
@@ -72,7 +72,7 @@ func (c *Client) login(email, password string) error {
 		return err
 	}
 
-	req, err := http.NewRequest("POST", fmt.Sprintf("%s/v1/auth/login", c.url), strings.NewReader(string(rb)))
+	req, err := http.NewRequest("POST", fmt.Sprintf("%s/v1/auth/login", c.url), bytes.NewReader(rb))
 	if err != nil {
 		return err
 	}
@@ -97,7 +97,7 @@ func (c *Client) checkRelease(project string, r *v1pb.CheckReleaseRequest) (*v1p
 		return nil, err
 	}
 
-	req, err := http.NewRequest("POST", fmt.Sprintf("%s/v1/%s/releases:check", c.url, project), strings.NewReader(string(rb)))
+	req, err := http.NewRequest("POST", fmt.Sprintf("%s/v1/%s/releases:check", c.url, project), bytes.NewReader(rb))
 	if err != nil {
 		return nil, err
 	}
