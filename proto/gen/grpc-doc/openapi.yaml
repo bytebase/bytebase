@@ -2548,6 +2548,38 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
+    /v1/instances/{instance}/databases:batchGet:
+        get:
+            tags:
+                - DatabaseService
+            operationId: DatabaseService_BatchGetDatabases
+            parameters:
+                - name: instance
+                  in: path
+                  description: The instance id.
+                  required: true
+                  schema:
+                    type: string
+                - name: names
+                  in: query
+                  description: The list of database names to retrieve.
+                  schema:
+                    type: array
+                    items:
+                        type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/BatchGetDatabasesResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
     /v1/instances/{instance}/databases:batchUpdate:
         post:
             tags:
@@ -4090,6 +4122,38 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/ListDatabasesResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v1/projects/{project}/databases:batchGet:
+        get:
+            tags:
+                - DatabaseService
+            operationId: DatabaseService_BatchGetDatabases
+            parameters:
+                - name: project
+                  in: path
+                  description: The project id.
+                  required: true
+                  schema:
+                    type: string
+                - name: names
+                  in: query
+                  description: The list of database names to retrieve.
+                  schema:
+                    type: array
+                    items:
+                        type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/BatchGetDatabasesResponse'
                 default:
                     description: Default error response
                     content:
@@ -8340,6 +8404,14 @@ components:
                     type: array
                     items:
                         type: string
+        BatchGetDatabasesResponse:
+            type: object
+            properties:
+                databases:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/Database'
+                    description: The databases from the specified request.
         BatchGetIamPolicyResponse:
             type: object
             properties:
