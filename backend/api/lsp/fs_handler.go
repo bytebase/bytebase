@@ -13,7 +13,6 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	"github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 // GetFS returns the file system.
@@ -93,27 +92,16 @@ func (h *Handler) handleFileSystemRequest(ctx context.Context, conn *jsonrpc2.Co
 			}); err != nil {
 				return err
 			}
-			switch h.getEngineType(ctx) {
-			case store.Engine_POSTGRES:
-				// TODO(zp): Simple PostgreSQL splitter, replace it with our regular splitter later.
-				ranges := getSQLStatementRangesUTF16Position(content)
-				return conn.Notify(ctx, string(LSPCustomMethodSQLStatementRanges), &SQLStatementRangesParams{
+			statementRanges, err := base.GetStatementRanges(ctx, base.StatementRangeContext{}, h.getEngineType(ctx), string(content))
+			if err != nil {
+				slog.Warn("get statement ranges error", log.BBError(err))
+			} else if len(statementRanges) != 0 {
+				if err := conn.Notify(ctx, string(LSPCustomMethodSQLStatementRanges), &SQLStatementRangesParams{
 					URI:    uri,
-					Ranges: ranges,
-				})
-			case store.Engine_ELASTICSEARCH:
-				ranges, err := base.GetStatementRanges(ctx, base.StatementRangeContext{}, store.Engine_ELASTICSEARCH, string(content))
-				if err != nil {
-					slog.Warn("get statement ranges error", log.BBError(err))
+					Ranges: statementRanges,
+				}); err != nil {
+					return err
 				}
-				if len(ranges) == 0 {
-					break
-				}
-				return conn.Notify(ctx, string(LSPCustomMethodSQLStatementRanges), &SQLStatementRangesParams{
-					URI:    uri,
-					Ranges: ranges,
-				})
-			default:
 			}
 
 			return nil
