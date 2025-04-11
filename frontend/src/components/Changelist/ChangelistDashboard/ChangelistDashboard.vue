@@ -1,6 +1,6 @@
 <template>
   <div class="flex flex-col gap-y-4">
-    <NavBar :disable-project-select="!!project" :allow-create="allowCreate" />
+    <NavBar :allow-create="allowCreate" />
     <ChangelistDataTable
       :changelists="filteredChangelists"
       :loading="isFetching"

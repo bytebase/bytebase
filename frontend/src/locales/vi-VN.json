@@ -2508,7 +2508,6 @@
     "name": "Tên danh sách thay đổi",
     "name-placeholder": "Danh sách thay đổi của tôi",
     "error": {
-      "project-is-required": "Dự án là bắt buộc",
       "name-is-required": "Tên danh sách thay đổi là bắt buộc",
       "invalid-resource-id": "ID tài nguyên không hợp lệ",
       "nothing-changed": "Không có gì thay đổi",

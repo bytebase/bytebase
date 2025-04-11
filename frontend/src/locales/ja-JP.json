@@ -2508,7 +2508,6 @@
     "name": "リスト名の変更",
     "name-placeholder": "私の変更リスト",
     "error": {
-      "project-is-required": "項目を空にすることはできません",
       "name-is-required": "変更リスト名を空にすることはできません",
       "invalid-resource-id": "無効なリソース ID",
       "nothing-changed": "変化なし",
