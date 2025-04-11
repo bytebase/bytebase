@@ -36,7 +36,6 @@ import {
   Form as EnvironmentFormBody,
   Buttons as EnvironmentFormButtons,
 } from "@/components/EnvironmentForm";
-import { ENVIRONMENT_V1_ROUTE_DETAIL } from "@/router/dashboard/environmentV1";
 import { ENVIRONMENT_V1_ROUTE_DASHBOARD } from "@/router/dashboard/workspaceRoutes";
 import { environmentNamePrefix } from "@/store/modules/v1/common";
 import { useEnvironmentV1Store } from "@/store/modules/v1/environment";
@@ -146,10 +145,7 @@ const doArchive = (environment: Environment) => {
     environment.state = State.DELETED;
     assignEnvironment(environment);
     router.replace({
-      name: ENVIRONMENT_V1_ROUTE_DETAIL,
-      params: {
-        environmentName: extractEnvironmentResourceName(environment.name),
-      },
+      name: ENVIRONMENT_V1_ROUTE_DASHBOARD,
     });
   });
 };
