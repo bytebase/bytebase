@@ -6,7 +6,14 @@
     <EnvironmentNode :node="node" :factors="factors" :keyword="keyword" />
   </template>
   <template v-if="type === 'database'">
-    <DatabaseNode :node="node" :factors="factors" :keyword="keyword" />
+    <DatabaseNode
+      :node="node"
+      :factors="factors"
+      :keyword="keyword"
+      :connected="
+        connectedDatabases.has((node as TreeNode<'database'>).meta.target.name)
+      "
+    />
   </template>
   <template v-if="type === 'label'">
     <LabelNode :node="node" :factors="factors" :keyword="keyword" />
@@ -28,6 +35,7 @@ const props = defineProps<{
   node: TreeNode;
   factors: Factor[];
   keyword: string;
+  connectedDatabases: Set<string>;
 }>();
 
 const type = computed(() => props.node.meta.type);

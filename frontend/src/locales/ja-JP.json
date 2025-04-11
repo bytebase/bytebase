@@ -1764,6 +1764,7 @@
     "rows-upper-limit": "クエリ結果の数が上限に達しました",
     "close-sheet": "ワークシートを閉じる",
     "connect": "接続する",
+    "connected": "接続",
     "connect-in-admin-mode": "管理者モードで接続する",
     "admin-mode": {
       "self": "管理者モード",

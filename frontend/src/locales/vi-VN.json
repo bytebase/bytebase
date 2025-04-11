@@ -1764,6 +1764,7 @@
     "rows-upper-limit": "đã đạt đến giới hạn kết quả truy vấn",
     "close-sheet": "Đóng trang tính",
     "connect": "Kết nối",
+    "connected": "Đã kết nối",
     "connect-in-admin-mode": "Kết nối ở chế độ quản trị",
     "admin-mode": {
       "self": "Chế độ quản trị",

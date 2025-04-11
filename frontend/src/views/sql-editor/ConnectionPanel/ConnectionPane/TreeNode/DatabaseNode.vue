@@ -23,6 +23,7 @@
       <span v-if="!hasInstanceContext" class="text-control-light">
         ({{ database.instanceResource.title }})
       </span>
+      <span v-if="connected"> ({{ $t("sql-editor.connected") }}) </span>
     </span>
     <RequestQueryButton
       v-if="showRequestQueryButton"
@@ -51,6 +52,7 @@ const props = defineProps<{
   node: TreeNode;
   factors: Factor[];
   keyword: string;
+  connected: boolean;
 }>();
 
 const disallowRequestQuery = useAppFeature(
