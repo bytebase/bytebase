@@ -10,9 +10,9 @@
   />
 
   <MaskingAlgorithmsCreateDrawer
-    :show="!!state.pendingEditSemanticIndex"
+    :show="state.pendingEditSemanticIndex !== undefined"
     :algorithm="
-      state.pendingEditSemanticIndex
+      state.pendingEditSemanticIndex !== undefined
         ? getMaskingType(
             semanticItemList[state.pendingEditSemanticIndex].item.algorithm
           )
