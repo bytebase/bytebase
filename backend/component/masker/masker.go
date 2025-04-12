@@ -12,6 +12,8 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/structpb"
 
+	"github.com/pkg/errors"
+
 	"github.com/bytebase/bytebase/backend/common/log"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -627,7 +629,7 @@ func maskProtoValue(m Masker, value *structpb.Value) *structpb.Value {
 	return nil
 }
 
-func NewInnerOuterMasker(storeMaskerType storepb.Algorithm_InnerOuterMask_MaskType, prefixLen, suffixLen int32, substitution string) *InnerOuterMasker {
+func NewInnerOuterMasker(storeMaskerType storepb.Algorithm_InnerOuterMask_MaskType, prefixLen, suffixLen int32, substitution string) (*InnerOuterMasker, error) {
 	var maskerType int32
 	switch storeMaskerType {
 	case storepb.Algorithm_InnerOuterMask_INNER:
@@ -635,7 +637,7 @@ func NewInnerOuterMasker(storeMaskerType storepb.Algorithm_InnerOuterMask_MaskTy
 	case storepb.Algorithm_InnerOuterMask_OUTER:
 		maskerType = InnerOuterMaskerTypeOuter
 	default:
-		return nil
+		return nil, errors.Errorf("invalid masker type %s", storeMaskerType)
 	}
 
 	return &InnerOuterMasker{
@@ -643,7 +645,7 @@ func NewInnerOuterMasker(storeMaskerType storepb.Algorithm_InnerOuterMask_MaskTy
 		prefixLen:    prefixLen,
 		suffixLen:    suffixLen,
 		substitution: substitution,
-	}
+	}, nil
 }
 
 type InnerOuterMaskerType = int32
