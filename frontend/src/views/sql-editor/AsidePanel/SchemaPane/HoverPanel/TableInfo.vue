@@ -1,10 +1,10 @@
 <template>
   <div class="min-w-[14rem] max-w-[18rem] gap-y-1">
     <InfoItem :title="$t('common.name')">
-      {{ name }}
+      {{ table.name }}
     </InfoItem>
-    <InfoItem v-if="engine" :title="$t('database.engine')">
-      {{ engine }}
+    <InfoItem :title="$t('database.engine')">
+      <RichEngineName :engine="instanceEngine" />
     </InfoItem>
     <InfoItem :title="$t('database.row-count-estimate')">
       {{ table.rowCount }}
@@ -26,39 +26,19 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
+import { RichEngineName } from "@/components/v2";
 import type { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
-import type {
-  DatabaseMetadata,
-  SchemaMetadata,
-  TableMetadata,
-} from "@/types/proto/v1/database_service";
-import { bytesToString, hasSchemaProperty } from "@/utils";
+import type { TableMetadata } from "@/types/proto/v1/database_service";
+import { bytesToString } from "@/utils";
 import InfoItem from "./InfoItem.vue";
 
 const props = defineProps<{
   db: ComposedDatabase;
-  database: DatabaseMetadata;
-  schema: SchemaMetadata;
   table: TableMetadata;
 }>();
 
 const instanceEngine = computed(() => props.db.instanceResource.engine);
-
-const name = computed(() => {
-  const { schema, table } = props;
-  if (hasSchemaProperty(instanceEngine.value)) {
-    return `${schema.name}.${table.name}`;
-  }
-  return table.name;
-});
-
-const engine = computed(() => {
-  if ([Engine.POSTGRES, Engine.SNOWFLAKE].includes(instanceEngine.value)) {
-    return "";
-  }
-  return props.table.engine;
-});
 
 const indexSize = computed(() => {
   if ([Engine.CLICKHOUSE, Engine.SNOWFLAKE].includes(instanceEngine.value)) {

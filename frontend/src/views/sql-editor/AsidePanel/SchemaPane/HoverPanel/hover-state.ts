@@ -1,9 +1,7 @@
 import type { ComposedDatabase } from "@/types";
 import type {
   ColumnMetadata,
-  DatabaseMetadata,
   ExternalTableMetadata,
-  SchemaMetadata,
   TableMetadata,
   TablePartitionMetadata,
   ViewMetadata,
@@ -17,8 +15,6 @@ export const KEY = "schema-pane";
 
 export type HoverState = {
   db: ComposedDatabase;
-  database: DatabaseMetadata;
-  schema: SchemaMetadata;
   table?: TableMetadata;
   externalTable?: ExternalTableMetadata;
   view?: ViewMetadata;

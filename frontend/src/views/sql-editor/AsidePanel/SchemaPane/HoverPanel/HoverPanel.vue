@@ -10,41 +10,18 @@
     }"
   >
     <template v-if="state">
-      <ColumnInfo
-        v-if="state.column"
-        :db="state.db"
-        :database="state.database"
-        :schema="state.schema"
-        :column="state.column"
-      />
+      <ColumnInfo v-if="state.column" :db="state.db" :column="state.column" />
       <TablePartitionInfo
         v-else-if="state.table && state.partition"
         :db="state.db"
-        :database="state.database"
-        :schema="state.schema"
-        :table="state.table"
         :partition="state.partition"
       />
-      <TableInfo
-        v-else-if="state.table"
-        :db="state.db"
-        :database="state.database"
-        :schema="state.schema"
-        :table="state.table"
-      />
+      <TableInfo v-else-if="state.table" :db="state.db" :table="state.table" />
       <ExternalTableInfo
         v-else-if="state.externalTable"
-        :db="state.db"
-        :database="state.database"
-        :schema="state.schema"
         :external-table="state.externalTable"
       />
-      <CommonText
-        v-else-if="state.view"
-        :db="state.db"
-        :database="state.database"
-        :content="state.view.comment"
-      />
+      <CommonText v-else-if="state.view" :content="state.view.comment" />
     </template>
   </div>
 </template>

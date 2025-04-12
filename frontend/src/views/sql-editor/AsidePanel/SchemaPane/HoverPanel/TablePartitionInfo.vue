@@ -19,18 +19,12 @@
 import type { ComposedDatabase } from "@/types";
 import {
   tablePartitionMetadata_TypeToJSON,
-  type DatabaseMetadata,
-  type SchemaMetadata,
-  type TableMetadata,
   type TablePartitionMetadata,
 } from "@/types/proto/v1/database_service";
 import InfoItem from "./InfoItem.vue";
 
 defineProps<{
   db: ComposedDatabase;
-  database: DatabaseMetadata;
-  schema: SchemaMetadata;
-  table: TableMetadata;
   partition: TablePartitionMetadata;
 }>();
 </script>

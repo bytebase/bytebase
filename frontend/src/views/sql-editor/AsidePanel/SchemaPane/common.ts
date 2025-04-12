@@ -44,7 +44,6 @@ export type NodeType =
 
 export type RichDatabaseMetadata = {
   db: ComposedDatabase;
-  database: DatabaseMetadata;
 };
 export type RichSchemaMetadata = RichDatabaseMetadata & {
   schema: SchemaMetadata;
@@ -156,7 +155,6 @@ export type NodeMeta<T extends NodeType = NodeType> = {
 export type TreeNode<T extends NodeType = NodeType> = TreeOption & {
   key: string;
   meta: NodeMeta<T>;
-  parent?: TreeNode;
   children?: TreeNode[];
 };
 
@@ -403,14 +401,12 @@ const isLeafNodeType = (type: NodeType) => {
 export const mapTreeNodeByType = <T extends NodeType>(
   type: T,
   target: NodeTarget<T>,
-  parent: TreeNode | undefined,
   overrides: Partial<TreeNode<T>> | undefined = undefined
 ): TreeNode<T> => {
   const key = keyForNodeTarget(type, target);
   const node: TreeNode<T> = {
     key,
     meta: { type, target },
-    parent,
     label: readableTextForNodeTarget(type, target),
     isLeaf: isLeafNodeType(type),
     ...overrides,
@@ -430,122 +426,120 @@ const createDummyNode = (
     | "procedure"
     | "package"
     | "function",
-  parent: TreeNode,
-  key: string | number = 0,
-  error: unknown | undefined = undefined
+  parentKey: string,
+  key: string | number = 0
 ) => {
   return mapTreeNodeByType(
     "error",
     {
-      id: `${parent.key}/dummy-${type}-${key}`,
+      id: `${parentKey}/dummy-${type}-${key}`,
       expandable: false,
       mockType: type,
-      error,
       text: () => "",
     },
-    parent,
     {
       disabled: true,
     }
   );
 };
+
 const createExpandableTextNode = (
   type: NodeType,
-  parent: TreeNode,
+  parentKey: string,
   text: () => string,
   render?: RenderFunction
 ) => {
-  return mapTreeNodeByType(
-    "expandable-text",
-    {
-      id: `${parent.key}/${type}`,
-      mockType: type,
-      expandable: true,
-      text,
-      render,
-    },
-    parent
-  );
+  return mapTreeNodeByType("expandable-text", {
+    id: `${parentKey}/${type}`,
+    mockType: type,
+    expandable: true,
+    text,
+    render,
+  });
 };
+
 const mapColumnNodes = (
   target:
     | NodeTarget<"table">
     | NodeTarget<"external-table">
     | NodeTarget<"view">,
   columns: ColumnMetadata[],
-  parent: TreeNode
+  parentKey: string
 ) => {
   if (columns.length === 0) {
     // Create a "<Empty>" columns node placeholder
-    return [createDummyNode("column", parent)];
+    return [createDummyNode("column", parentKey)];
   }
 
   const children = columns.map((column) => {
-    const node = mapTreeNodeByType("column", { ...target, column }, parent);
+    const node = mapTreeNodeByType("column", { ...target, column });
     return node;
   });
   return children;
 };
+
 const mapIndexNodes = (
   target: NodeTarget<"table">,
   indexes: IndexMetadata[],
-  parent: TreeNode
+  parentKey: string
 ) => {
   if (indexes.length === 0) {
     // Create a "<Empty>" index node placeholder
-    return [createDummyNode("index", parent)];
+    return [createDummyNode("index", parentKey)];
   }
 
   const children = indexes.map((index) => {
-    const node = mapTreeNodeByType("index", { ...target, index }, parent);
+    const node = mapTreeNodeByType("index", { ...target, index });
     return node;
   });
   return children;
 };
+
 const mapForeignKeyNodes = (
   target: NodeTarget<"table">,
   foreignKeys: ForeignKeyMetadata[],
-  parent: TreeNode
+  parentKey: string
 ) => {
   if (foreignKeys.length === 0) {
     // Create a "<Empty>" foreignKey node placeholder
-    return [createDummyNode("foreign-key", parent)];
+    return [createDummyNode("foreign-key", parentKey)];
   }
 
   const children = foreignKeys.map((foreignKey) => {
-    const node = mapTreeNodeByType(
-      "foreign-key",
-      { ...target, foreignKey },
-      parent
-    );
+    const node = mapTreeNodeByType("foreign-key", { ...target, foreignKey });
     return node;
   });
   return children;
 };
-const mapTableNodes = (target: NodeTarget<"schema">, parent: TreeNode) => {
+
+const mapTableNodes = (target: NodeTarget<"schema">, parentKey: string) => {
   const { schema } = target;
   const children = schema.tables.map((table) => {
-    const node = mapTreeNodeByType("table", { ...target, table }, parent);
-    const columnsFolderNode = createExpandableTextNode("column", node, () =>
-      t("database.columns")
+    const node = mapTreeNodeByType("table", { ...target, table });
+    const columnsFolderNode = createExpandableTextNode(
+      "column",
+      parentKey,
+      () => t("database.columns")
     );
     node.children = [columnsFolderNode];
     // Map column columns
     columnsFolderNode.children = mapColumnNodes(
       node.meta.target,
       table.columns,
-      columnsFolderNode
+      columnsFolderNode.key
     );
 
     // Map indexes
     if (table.indexes.length > 0) {
-      const indexesFolderNode = createExpandableTextNode("index", node, () =>
-        t("database.indexes")
+      const indexesFolderNode = createExpandableTextNode(
+        "index",
+        parentKey,
+        () => t("database.indexes")
       );
       indexesFolderNode.children = mapIndexNodes(
         node.meta.target,
         table.indexes,
-        indexesFolderNode
+        indexesFolderNode.key
       );
       node.children.push(indexesFolderNode);
     }
@@ -554,23 +548,23 @@ const mapTableNodes = (target: NodeTarget<"schema">, parent: TreeNode) => {
     if (table.foreignKeys.length > 0) {
       const foreignKeysFolderNode = createExpandableTextNode(
         "foreign-key",
-        node,
+        parentKey,
         () => t("database.foreign-keys")
       );
       foreignKeysFolderNode.children = mapForeignKeyNodes(
         node.meta.target,
         table.foreignKeys,
-        foreignKeysFolderNode
+        foreignKeysFolderNode.key
       );
       node.children.push(foreignKeysFolderNode);
     }
 
     // Show "Triggers" if there's at least 1 function
     if (table.triggers.length > 0) {
-      const triggerNode = createExpandableTextNode("trigger", parent, () =>
+      const triggerNode = createExpandableTextNode("trigger", parentKey, () =>
         t("db.triggers")
       );
-      triggerNode.children = mapTriggerNodes(node.meta.target, triggerNode);
+      triggerNode.children = mapTriggerNodes(node.meta.target, triggerNode.key);
       node.children.push(triggerNode);
     }
 
@@ -578,19 +572,21 @@ const mapTableNodes = (target: NodeTarget<"schema">, parent: TreeNode) => {
     if (table.partitions.length > 0) {
       const partitionsFolderNode = createExpandableTextNode(
         "partition-table",
-        node,
+        parentKey,
         () => t("db.partitions")
       );
       partitionsFolderNode.children = [];
       for (const partition of table.partitions) {
-        const subnode = mapTreeNodeByType(
-          "partition-table",
-          { ...node.meta.target, partition },
-          node
-        );
+        const subnode = mapTreeNodeByType("partition-table", {
+          ...node.meta.target,
+          partition,
+        });
         if (partition.subpartitions.length > 0) {
           subnode.isLeaf = false;
-          subnode.children = mapPartitionTableNodes(partition, subnode);
+          subnode.children = mapPartitionTableNodes(
+            partition,
+            subnode.meta.target
+          );
         } else {
           subnode.isLeaf = true;
         }
@@ -601,22 +597,19 @@ const mapTableNodes = (target: NodeTarget<"schema">, parent: TreeNode) => {
     return node;
   });
   if (children.length === 0) {
-    return [createDummyNode("table", parent)];
+    return [createDummyNode("table", parentKey)];
   }
   return children;
 };
-const mapExternalTableNodes = (
-  target: NodeTarget<"schema">,
-  parent: TreeNode
-) => {
+
+const mapExternalTableNodes = (target: NodeTarget<"schema">) => {
   const { schema } = target;
   const externalTableNodes = schema.externalTables.map((externalTable) => {
-    const node = mapTreeNodeByType(
-      "external-table",
-      { ...target, externalTable },
-      parent
-    );
-    const folderNode = createExpandableTextNode("column", node, () =>
+    const node = mapTreeNodeByType("external-table", {
+      ...target,
+      externalTable,
+    });
+    const folderNode = createExpandableTextNode("column", node.key, () =>
       t("database.columns")
     );
     node.children = [folderNode];
@@ -625,31 +618,28 @@ const mapExternalTableNodes = (
     folderNode.children = mapColumnNodes(
       node.meta.target,
       externalTable.columns,
-      folderNode
+      folderNode.key
     );
 
     return node;
   });
   return externalTableNodes;
 };
+
 // Map partition-table-level partitions.
 const mapPartitionTableNodes = (
   parentPartition: TablePartitionMetadata,
-  parent: TreeNode<"partition-table">
+  target: RichPartitionTableMetadata
 ) => {
   const children = parentPartition.subpartitions.map((partition) => {
-    const node = mapTreeNodeByType(
-      "partition-table",
-      {
-        ...parent.meta.target,
-        parentPartition,
-        partition,
-      },
-      parent
-    );
+    const node = mapTreeNodeByType("partition-table", {
+      ...target,
+      parentPartition,
+      partition,
+    });
     if (partition.subpartitions.length > 0) {
       node.isLeaf = false;
-      node.children = mapPartitionTableNodes(partition, node);
+      node.children = mapPartitionTableNodes(partition, node.meta.target);
     } else {
       node.isLeaf = true;
     }
@@ -657,102 +647,89 @@ const mapPartitionTableNodes = (
   });
   return children;
 };
-const mapViewNodes = (
-  target: NodeTarget<"schema">,
-  parent: TreeNode<"expandable-text">
-) => {
+
+const mapViewNodes = (target: NodeTarget<"schema">, parentKey: string) => {
   const { schema } = target;
   const children = schema.views.map((view) => {
-    const viewNode = mapTreeNodeByType("view", { ...target, view }, parent);
-    const columnsFolderNode = createExpandableTextNode("column", viewNode, () =>
-      t("database.columns")
+    const viewNode = mapTreeNodeByType("view", { ...target, view });
+    const columnsFolderNode = createExpandableTextNode(
+      "column",
+      viewNode.key,
+      () => t("database.columns")
     );
     viewNode.children = [columnsFolderNode];
     // Map column columns
     columnsFolderNode.children = mapColumnNodes(
       viewNode.meta.target,
       view.columns,
-      columnsFolderNode
+      columnsFolderNode.key
     );
     return viewNode;
   });
   if (children.length === 0) {
-    return [createDummyNode("view", parent)];
+    return [createDummyNode("view", parentKey)];
   }
   return children;
 };
-const mapProcedureNodes = (
-  target: NodeTarget<"schema">,
-  parent: TreeNode<"expandable-text">
-) => {
+
+const mapProcedureNodes = (target: NodeTarget<"schema">, parentKey: string) => {
   const { schema } = target;
   const children = schema.procedures.map((procedure, position) =>
-    mapTreeNodeByType("procedure", { ...target, procedure, position }, parent)
+    mapTreeNodeByType("procedure", { ...target, procedure, position })
   );
   if (children.length === 0) {
-    return [createDummyNode("procedure", parent)];
+    return [createDummyNode("procedure", parentKey)];
   }
   return children;
 };
-const mapPackageNodes = (
-  target: NodeTarget<"schema">,
-  parent: TreeNode<"expandable-text">
-) => {
+
+const mapPackageNodes = (target: NodeTarget<"schema">, parentKey: string) => {
   const { schema } = target;
   const children = schema.packages.map((pack, position) =>
-    mapTreeNodeByType("package", { ...target, package: pack, position }, parent)
+    mapTreeNodeByType("package", { ...target, package: pack, position })
   );
   if (children.length === 0) {
-    return [createDummyNode("package", parent)];
+    return [createDummyNode("package", parentKey)];
   }
   return children;
 };
-const mapFunctionNodes = (
-  target: NodeTarget<"schema">,
-  parent: TreeNode<"expandable-text">
-) => {
+
+const mapFunctionNodes = (target: NodeTarget<"schema">, parentKey: string) => {
   const { schema } = target;
   const children = schema.functions.map((func, position) =>
-    mapTreeNodeByType(
-      "function",
-      { ...target, function: func, position },
-      parent
-    )
+    mapTreeNodeByType("function", { ...target, function: func, position })
   );
   if (children.length === 0) {
-    return [createDummyNode("function", parent)];
+    return [createDummyNode("function", parentKey)];
   }
   return children;
 };
-const mapSequenceNodes = (
-  target: NodeTarget<"schema">,
-  parent: TreeNode<"expandable-text">
-) => {
+
+const mapSequenceNodes = (target: NodeTarget<"schema">, parentKey: string) => {
   const { schema } = target;
   const children = schema.sequences.map((sequence, position) =>
-    mapTreeNodeByType("sequence", { ...target, sequence, position }, parent)
+    mapTreeNodeByType("sequence", { ...target, sequence, position })
   );
   if (children.length === 0) {
-    return [createDummyNode("function", parent)];
+    return [createDummyNode("function", parentKey)];
   }
   return children;
 };
-const mapTriggerNodes = (
-  target: NodeTarget<"table">,
-  parent: TreeNode<"expandable-text">
-) => {
+
+const mapTriggerNodes = (target: NodeTarget<"table">, parentKey: string) => {
   const { table } = target;
   const children = table.triggers.map((trigger, position) =>
-    mapTreeNodeByType("trigger", { ...target, trigger, position }, parent)
+    mapTreeNodeByType("trigger", { ...target, trigger, position })
   );
   if (children.length === 0) {
-    return [createDummyNode("function", parent)];
+    return [createDummyNode("function", parentKey)];
   }
   return children;
 };
+
 const buildSchemaNodeChildren = (
   target: NodeTarget<"schema">,
-  parent: TreeNode<"schema"> | TreeNode<"database">
+  parentKey: string
 ) => {
   const { schema } = target;
   if (
@@ -762,75 +739,72 @@ const buildSchemaNodeChildren = (
     schema.procedures.length === 0 &&
     schema.functions.length === 0
   ) {
-    return [createDummyNode("table", parent)];
+    return [createDummyNode("table", parentKey)];
   }
 
   const children: TreeNode[] = [];
 
   // Always show "Tables" node
   // If no tables, show "<Empty>"
-  const tablesNode = createExpandableTextNode("table", parent, () =>
+  const tablesNode = createExpandableTextNode("table", parentKey, () =>
     t("db.tables")
   );
-  tablesNode.children = mapTableNodes(target, tablesNode);
+  tablesNode.children = mapTableNodes(target, tablesNode.key);
   children.push(tablesNode);
 
   // Only show "External Tables" node if the schema do have external tables.
   if (schema.externalTables.length > 0) {
     const externalTablesNode = createExpandableTextNode(
       "external-table",
-      parent,
+      parentKey,
       () => t("db.external-tables")
     );
-    externalTablesNode.children = mapExternalTableNodes(
-      target,
-      externalTablesNode
-    );
+    externalTablesNode.children = mapExternalTableNodes(target);
     children.push(externalTablesNode);
   }
 
   // Only show "Views" node if the schema do have views.
   if (schema.views.length > 0) {
-    const viewsNode = createExpandableTextNode("view", parent, () =>
+    const viewsNode = createExpandableTextNode("view", parentKey, () =>
       t("db.views")
     );
-    viewsNode.children = mapViewNodes(target, viewsNode);
+    viewsNode.children = mapViewNodes(target, viewsNode.key);
     children.push(viewsNode);
   }
 
   // Show "Procedures" if there's at least 1 procedure
   if (schema.procedures.length > 0) {
-    const procedureNode = createExpandableTextNode("procedure", parent, () =>
+    const procedureNode = createExpandableTextNode("procedure", parentKey, () =>
       t("db.procedures")
     );
-    procedureNode.children = mapProcedureNodes(target, procedureNode);
+    procedureNode.children = mapProcedureNodes(target, procedureNode.key);
     children.push(procedureNode);
   }
 
   // Show "Packages" if there's at least 1 package
   if (schema.packages.length > 0) {
-    const packageNode = createExpandableTextNode("package", parent, () =>
+    const packageNode = createExpandableTextNode("package", parentKey, () =>
       t("db.packages")
     );
-    packageNode.children = mapPackageNodes(target, packageNode);
+    packageNode.children = mapPackageNodes(target, packageNode.key);
     children.push(packageNode);
   }
 
   // Show "Functions" if there's at least 1 function
   if (schema.functions.length > 0) {
-    const functionNode = createExpandableTextNode("function", parent, () =>
+    const functionNode = createExpandableTextNode("function", parentKey, () =>
       t("db.functions")
     );
-    functionNode.children = mapFunctionNodes(target, functionNode);
+    functionNode.children = mapFunctionNodes(target, functionNode.key);
     children.push(functionNode);
   }
 
   // Show "Sequences" if there's at least 1 function
   if (schema.sequences.length > 0) {
-    const sequenceNode = createExpandableTextNode("sequence", parent, () =>
+    const sequenceNode = createExpandableTextNode("sequence", parentKey, () =>
       t("db.sequences")
     );
-    sequenceNode.children = mapSequenceNodes(target, sequenceNode);
+    sequenceNode.children = mapSequenceNodes(target, sequenceNode.key);
     children.push(sequenceNode);
   }
 
@@ -840,18 +814,13 @@ export const buildDatabaseSchemaTree = (
   database: ComposedDatabase,
   metadata: DatabaseMetadata
 ) => {
-  const dummyRoot = mapTreeNodeByType(
-    "database",
-    {
-      db: database,
-      database: metadata,
-    },
-    /* parent */ undefined
-  );
+  const dummyRoot = mapTreeNodeByType("database", {
+    db: database,
+  });
   const { schemas } = metadata;
   if (schemas.length === 0) {
     // Empty database, show "<Empty>"
-    return [createDummyNode("table", dummyRoot)];
+    return [createDummyNode("table", dummyRoot.key)];
   }
 
   if (schemas.length === 1 && schemas[0].name === "") {
@@ -860,27 +829,23 @@ export const buildDatabaseSchemaTree = (
     // node's children
     return buildSchemaNodeChildren(
       { ...dummyRoot.meta.target, schema },
-      dummyRoot
+      dummyRoot.key
     );
   } else {
     // Multiple schema database
     return schemas.map((schema) => {
-      const schemaNode = mapTreeNodeByType(
-        "schema",
-        { ...dummyRoot.meta.target, schema },
-        dummyRoot
-      );
+      const schemaNode = mapTreeNodeByType("schema", {
+        ...dummyRoot.meta.target,
+        schema,
+      });
 
       schemaNode.children = buildSchemaNodeChildren(
         schemaNode.meta.target,
-        schemaNode
+        schemaNode.key
       );
       return schemaNode;
     });
   }
-
-  console.error("should never reach this line");
-  return [];
 };
 
 export const useClickEvents = () => {

@@ -244,7 +244,7 @@ export const useActions = () => {
       detail,
     });
     if (name) {
-      useSQLEditorTabStore().updateCurrentTab({ title: `Detail for ${name}` })
+      useSQLEditorTabStore().updateCurrentTab({ title: `Detail for ${type} ${name}` })
     }
   };
 
@@ -284,19 +284,16 @@ export const useDropdown = () => {
     }
 
     const items: DropdownOptionWithTreeNode[] = [];
-    if (type === "database" || type === "schema") {
+    if (type === "schema") {
       for (const action of availableActions.value) {
         items.push({
           key: action.view,
           label: action.title,
           icon: action.icon,
           onSelect: () => {
-            let schema: string | undefined;
-            if (type === "schema") {
-              schema = (node.meta.target as NodeTarget<"schema">).schema.name;
-            }
+            const schema = (node.meta.target as NodeTarget<"schema">).schema.name;
             openNewTab({
-              title: action.title,
+              title: `[schema ${schema}] ${action.title}`,
               view: action.view,
               schema,
             })

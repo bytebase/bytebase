@@ -33,17 +33,11 @@ import { computed } from "vue";
 import { getColumnDefaultValuePlaceholder } from "@/components/SchemaEditorLite";
 import type { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
-import type {
-  ColumnMetadata,
-  DatabaseMetadata,
-  SchemaMetadata,
-} from "@/types/proto/v1/database_service";
+import type { ColumnMetadata } from "@/types/proto/v1/database_service";
 import InfoItem from "./InfoItem.vue";
 
 const props = defineProps<{
   db: ComposedDatabase;
-  database: DatabaseMetadata;
-  schema: SchemaMetadata;
   column: ColumnMetadata;
 }>();
 

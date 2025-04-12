@@ -13,11 +13,7 @@
         />
       </div>
       <div class="shrink-0 flex items-center">
-        <SyncSchemaButton
-          :database="database"
-          :metadata="metadata"
-          size="small"
-        />
+        <SyncSchemaButton size="small" />
       </div>
     </div>
 
@@ -373,14 +369,9 @@ watchEffect(() => {
 // bottom-up recursively
 const expandNode = (node: TreeNode) => {
   const keysToExpand: string[] = [];
-  const walk = (node: TreeNode | undefined) => {
-    if (!node) return;
-    if (ExpandableNodeTypes.includes(node.meta.type)) {
-      keysToExpand.push(node.key);
-    }
-    walk(node.parent);
-  };
-  walk(node);
+  if (ExpandableNodeTypes.includes(node.meta.type)) {
+    keysToExpand.push(node.key);
+  }
   upsertExpandedKeys(keysToExpand);
 };
 const collapseNode = (node: TreeNode) => {
