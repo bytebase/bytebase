@@ -616,7 +616,10 @@ func buildSemanticTypeToMaskerMap(ctx context.Context, stores *store.Store) (map
 		return nil, errors.Wrap(err, "failed to get semantic types setting")
 	}
 	for _, semanticType := range semanticTypesSetting.GetTypes() {
-		masker := getMaskerByMaskingAlgorithmAndLevel(semanticType.GetAlgorithm())
+		masker, err := getMaskerByMaskingAlgorithmAndLevel(semanticType.GetAlgorithm())
+		if err != nil {
+			return nil, err
+		}
 		semanticTypeToMasker[semanticType.GetId()] = masker
 	}
 
