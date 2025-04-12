@@ -503,15 +503,21 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 		if err := convertProtoToProto(request.Setting.Value.GetSemanticTypeSettingValue(), storeSemanticTypeSetting); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", apiSettingName, err)
 		}
-		idMap := make(map[string]struct{})
+		idMap := make(map[string]bool)
 		for _, tp := range storeSemanticTypeSetting.Types {
 			if tp.Title == "" {
 				return nil, status.Errorf(codes.InvalidArgument, "category title cannot be empty: %s", tp.Id)
 			}
-			if _, ok := idMap[tp.Id]; ok {
+			if idMap[tp.Id] {
 				return nil, status.Errorf(codes.InvalidArgument, "duplicate semantic type id: %s", tp.Id)
 			}
-			idMap[tp.Id] = struct{}{}
+			m, ok := tp.GetAlgorithm().GetMask().(*storepb.Algorithm_InnerOuterMask_)
+			if ok && m.InnerOuterMask != nil {
+				if m.InnerOuterMask.Type == storepb.Algorithm_InnerOuterMask_MASK_TYPE_UNSPECIFIED {
+					return nil, status.Errorf(codes.InvalidArgument, "inner outer mask type has to be specified")
+				}
+			}
+			idMap[tp.Id] = true
 		}
 		bytes, err := protojson.Marshal(storeSemanticTypeSetting)
 		if err != nil {
