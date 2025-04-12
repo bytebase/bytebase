@@ -212,7 +212,7 @@ func (s *QueryResultMasker) getMaskerForColumnResource(
 	}
 
 	semanticType := m.semanticTypesMap[semanticTypeID]
-	return getMaskerByMaskingAlgorithmAndLevel(semanticType.GetAlgorithm()), nil
+	return getMaskerByMaskingAlgorithmAndLevel(semanticType.GetAlgorithm())
 }
 
 func (s *QueryResultMasker) getColumnForColumnResource(ctx context.Context, instanceID string, sourceColumn *parserbase.ColumnResource) (*storepb.ColumnMetadata, *storepb.ColumnCatalog, error) {
@@ -267,22 +267,22 @@ func (s *QueryResultMasker) getColumnForColumnResource(ctx context.Context, inst
 	return columnMetadata, columnConfig, nil
 }
 
-func getMaskerByMaskingAlgorithmAndLevel(algorithm *storepb.Algorithm) masker.Masker {
+func getMaskerByMaskingAlgorithmAndLevel(algorithm *storepb.Algorithm) (masker.Masker, error) {
 	if algorithm == nil {
-		return masker.NewNoneMasker()
+		return masker.NewNoneMasker(), nil
 	}
 
 	switch m := algorithm.Mask.(type) {
 	case *storepb.Algorithm_FullMask_:
-		return masker.NewFullMasker(m.FullMask.Substitution)
+		return masker.NewFullMasker(m.FullMask.Substitution), nil
 	case *storepb.Algorithm_RangeMask_:
-		return masker.NewRangeMasker(convertRangeMaskSlices(m.RangeMask.Slices))
+		return masker.NewRangeMasker(convertRangeMaskSlices(m.RangeMask.Slices)), nil
 	case *storepb.Algorithm_Md5Mask:
-		return masker.NewMD5Masker(m.Md5Mask.Salt)
+		return masker.NewMD5Masker(m.Md5Mask.Salt), nil
 	case *storepb.Algorithm_InnerOuterMask_:
 		return masker.NewInnerOuterMasker(m.InnerOuterMask.Type, m.InnerOuterMask.PrefixLen, m.InnerOuterMask.SuffixLen, m.InnerOuterMask.Substitution)
 	}
-	return masker.NewNoneMasker()
+	return masker.NewNoneMasker(), nil
 }
 
 func convertRangeMaskSlices(slices []*storepb.Algorithm_RangeMask_Slice) []*masker.MaskRangeSlice {
