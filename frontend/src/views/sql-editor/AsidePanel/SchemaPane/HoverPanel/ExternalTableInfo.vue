@@ -1,22 +1,35 @@
 <template>
   <div class="min-w-[14rem] max-w-[18rem] gap-y-1">
     <InfoItem :title="$t('common.name')">
-      {{ externalTable.name }}
+      {{ externalTableMetadata.name }}
     </InfoItem>
     <InfoItem :title="$t('database.external-server-name')">
-      {{ externalTable.externalServerName }}
+      {{ externalTableMetadata.externalServerName }}
     </InfoItem>
     <InfoItem :title="$t('database.external-database-name')">
-      {{ externalTable.externalDatabaseName }}
+      {{ externalTableMetadata.externalDatabaseName }}
     </InfoItem>
   </div>
 </template>
 
 <script setup lang="ts">
-import type { ExternalTableMetadata } from "@/types/proto/v1/database_service";
+import { computed } from "vue";
+import { useDBSchemaV1Store } from "@/store";
 import InfoItem from "./InfoItem.vue";
 
-defineProps<{
-  externalTable: ExternalTableMetadata;
+const props = defineProps<{
+  database: string;
+  schema?: string;
+  externalTable: string;
 }>();
+
+const dbSchema = useDBSchemaV1Store();
+
+const externalTableMetadata = computed(() =>
+  dbSchema.getExternalTableMetadata({
+    database: props.database,
+    schema: props.schema,
+    externalTable: props.externalTable,
+  })
+);
 </script>

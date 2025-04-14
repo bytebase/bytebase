@@ -10,18 +10,38 @@
     }"
   >
     <template v-if="state">
-      <ColumnInfo v-if="state.column" :db="state.db" :column="state.column" />
+      <ColumnInfo
+        v-if="state.column && state.table"
+        :database="state.database"
+        :schema="state.schema"
+        :table="state.table"
+        :column="state.column"
+      />
       <TablePartitionInfo
         v-else-if="state.table && state.partition"
-        :db="state.db"
+        :database="state.database"
+        :schema="state.schema"
+        :table="state.table"
         :partition="state.partition"
       />
-      <TableInfo v-else-if="state.table" :db="state.db" :table="state.table" />
+      <TableInfo
+        v-else-if="state.table"
+        :database="state.database"
+        :schema="state.schema"
+        :table="state.table"
+      />
       <ExternalTableInfo
         v-else-if="state.externalTable"
+        :database="state.database"
+        :schema="state.schema"
         :external-table="state.externalTable"
       />
-      <CommonText v-else-if="state.view" :content="state.view.comment" />
+      <ViewInfo
+        v-else-if="state.view"
+        :database="state.database"
+        :schema="state.schema"
+        :view="state.view"
+      />
     </template>
   </div>
 </template>
@@ -33,10 +53,10 @@ import { computed, ref } from "vue";
 import type { Position } from "@/types";
 import { minmax } from "@/utils";
 import ColumnInfo from "./ColumnInfo.vue";
-import CommonText from "./CommonText.vue";
 import ExternalTableInfo from "./ExternalTableInfo.vue";
 import TableInfo from "./TableInfo.vue";
 import TablePartitionInfo from "./TablePartitionInfo.vue";
+import ViewInfo from "./ViewInfo.vue";
 import { useHoverStateContext } from "./hover-state";
 
 const props = defineProps<{
@@ -64,10 +84,11 @@ const show = computed(() => {
     state.value !== undefined &&
     position.value.x !== 0 &&
     position.value.y !== 0;
-  if (show && state.value?.view) {
-    const comment = state.value.view.comment;
-    if (!comment) return false;
-  }
+  // TODO(ed):
+  // if (show && state.value?.view) {
+  //   const comment = state.value.view.comment;
+  //   if (!comment) return false;
+  // }
   return show;
 });
 

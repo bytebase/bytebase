@@ -54,7 +54,7 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
-import type { TreeNode } from "../common";
+import type { TreeNode } from "../tree";
 import ColumnNode from "./ColumnNode.vue";
 import DatabaseNode from "./DatabaseNode.vue";
 import DependencyColumnNode from "./DependencyColumnNode.vue";

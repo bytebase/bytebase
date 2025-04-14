@@ -7,18 +7,11 @@ import type {
   ColumnMetadata,
   DatabaseMetadata,
   DependencyColumn,
-  ExternalTableMetadata,
   ForeignKeyMetadata,
-  FunctionMetadata,
   IndexMetadata,
-  PackageMetadata,
-  ProcedureMetadata,
   SchemaMetadata,
-  SequenceMetadata,
   TableMetadata,
   TablePartitionMetadata,
-  TriggerMetadata,
-  ViewMetadata,
 } from "@/types/proto/v1/database_service";
 import { keyForDependencyColumn } from "@/utils";
 import { keyWithPosition } from "../../EditorCommon";
@@ -43,58 +36,57 @@ export type NodeType =
   | "error"; // Error nodes to display "<Empty>" or "Cannot fetch ..." etc.
 
 export type RichDatabaseMetadata = {
-  db: ComposedDatabase;
+  database: string;
 };
 export type RichSchemaMetadata = RichDatabaseMetadata & {
-  schema: SchemaMetadata;
+  schema: string;
 };
 export type RichTableMetadata = RichSchemaMetadata & {
-  table: TableMetadata;
+  table: string;
 };
 export type RichExternalTableMetadata = RichSchemaMetadata & {
-  externalTable: ExternalTableMetadata;
+  externalTable: string;
 };
 export type RichColumnMetadata = (
   | RichTableMetadata
   | RichExternalTableMetadata
   | RichViewMetadata
 ) & {
-  column: ColumnMetadata;
+  column: string;
 };
 export type RichDependencyColumnMetadata = RichViewMetadata & {
   dependencyColumn: DependencyColumn;
 };
 export type RichIndexMetadata = RichTableMetadata & {
-  index: IndexMetadata;
+  index: string;
 };
 export type RichForeignKeyMetadata = RichTableMetadata & {
-  foreignKey: ForeignKeyMetadata;
+  foreignKey: string;
 };
 export type RichPartitionTableMetadata = RichTableMetadata & {
-  parentPartition?: TablePartitionMetadata;
-  partition: TablePartitionMetadata;
+  partition: string;
 };
 export type RichTriggerMetadata = RichTableMetadata & {
-  trigger: TriggerMetadata;
+  trigger: string;
   position: number;
 };
 export type RichViewMetadata = RichSchemaMetadata & {
-  view: ViewMetadata;
+  view: string;
 };
 export type RichSequenceMetadata = RichSchemaMetadata & {
-  sequence: SequenceMetadata;
+  sequence: string;
   position: number;
 };
 export type RichProcedureMetadata = RichSchemaMetadata & {
-  procedure: ProcedureMetadata;
+  procedure: string;
   position: number;
 };
 export type RichPackageMetadata = RichSchemaMetadata & {
-  package: PackageMetadata;
+  package: string;
   position: number;
 };
 export type RichFunctionMetadata = RichSchemaMetadata & {
-  function: FunctionMetadata;
+  function: string;
   position: number;
 };
 export type TextTarget<E extends boolean = any, S extends boolean = any> = {
@@ -166,6 +158,7 @@ export const ExpandableNodeTypes: readonly NodeType[] = [
   "partition-table",
   "expandable-text",
 ] as const;
+
 export const LeafNodeTypes: readonly NodeType[] = [
   "column",
   "index",
@@ -183,215 +176,136 @@ export const keyForNodeTarget = <T extends NodeType>(
   type: T,
   target: NodeTarget<T>
 ): string => {
-  if (type === "database") {
-    const { db } = target as NodeTarget<"database">;
-    return db.name;
+  const { database } = target as NodeTarget<"database">;
+
+  switch (type) {
+    case "database":
+      return database;
+    case "schema":
+      const { schema } = target as NodeTarget<"schema">;
+      return [database, `schemas/${schema}`].join("/");
+    case "table":
+      const { table } = target as NodeTarget<"table">;
+      return [
+        keyForNodeTarget("schema", target as NodeTarget<"schema">),
+        `tables/${table}`,
+      ].join("/");
+    case "external-table":
+      const { externalTable } = target as NodeTarget<"external-table">;
+      return [
+        keyForNodeTarget("schema", target as NodeTarget<"schema">),
+        `externalTables/${externalTable}`,
+      ].join("/");
+    case "view":
+      const { view } = target as NodeTarget<"view">;
+      return [
+        keyForNodeTarget("schema", target as NodeTarget<"schema">),
+        `views/${view}`,
+      ].join("/");
+    case "procedure":
+      const { procedure, position } = target as NodeTarget<"procedure">;
+      return [
+        keyForNodeTarget("schema", target as NodeTarget<"schema">),
+        `procedures/${keyWithPosition(procedure, position)}`,
+      ].join("/");
+    case "package":
+      const { package: pack, position: pos } = target as NodeTarget<"package">;
+      return [
+        keyForNodeTarget("schema", target as NodeTarget<"schema">),
+        `packages/${keyWithPosition(pack, pos)}`,
+      ].join("/");
+    case "function":
+      const { function: func, position: fp } = target as NodeTarget<"function">;
+      return [
+        keyForNodeTarget("schema", target as NodeTarget<"schema">),
+        `functions/${keyWithPosition(func, fp)}`,
+      ].join("/");
+    case "sequence":
+      const { sequence, position: sp } = target as NodeTarget<"sequence">;
+      return [
+        keyForNodeTarget("schema", target as NodeTarget<"schema">),
+        `sequences/${keyWithPosition(sequence, sp)}`,
+      ].join("/");
+    case "trigger":
+      const { trigger, position: tp } = target as NodeTarget<"trigger">;
+      return [
+        keyForNodeTarget("table", target as NodeTarget<"table">),
+        `triggers/${keyWithPosition(trigger, tp)}`,
+      ].join("/");
+    case "index":
+      const { index } = target as NodeTarget<"index">;
+      return [
+        keyForNodeTarget("table", target as NodeTarget<"table">),
+        `indexes/${index}`,
+      ].join("/");
+    case "foreign-key":
+      const { foreignKey } = target as NodeTarget<"foreign-key">;
+      return [
+        keyForNodeTarget("table", target as NodeTarget<"table">),
+        `foreignKeys/${foreignKey}`,
+      ].join("/");
+    case "partition-table":
+      const { partition } = target as NodeTarget<"partition-table">;
+      return [
+        keyForNodeTarget("table", target as NodeTarget<"table">),
+        `partitionTables/${partition}`,
+      ].join("/");
+    case "dependency-column":
+      const { dependencyColumn } = target as NodeTarget<"dependency-column">;
+      return [
+        keyForNodeTarget("view", target as NodeTarget<"view">),
+        `dependencyColumns/${keyForDependencyColumn(dependencyColumn)}`,
+      ].join("/");
+    case "column":
+      const { column } = target as NodeTarget<"column">;
+      const key = `columns/${column}`;
+      if ("table" in target) {
+        return [
+          keyForNodeTarget("table", target as NodeTarget<"table">),
+          key,
+        ].join("/");
+      } else if ("external-table" in target) {
+        return [
+          keyForNodeTarget(
+            "external-table",
+            target as NodeTarget<"external-table">
+          ),
+          key,
+        ].join("/");
+      } else if ("view" in target) {
+        return [
+          keyForNodeTarget("view", target as NodeTarget<"view">),
+          key,
+        ].join("/");
+      }
+      return "";
+    default:
+      const { id } = target as NodeTarget<"expandable-text" | "error">;
+      return `${type}/${id}`;
   }
-  if (type === "schema") {
-    const { db, schema } = target as NodeTarget<"schema">;
-    return [db.name, `schemas/${schema.name}`].join("/");
-  }
-  if (type === "table") {
-    const { db, schema, table } = target as NodeTarget<"table">;
-    return [db.name, `schemas/${schema.name}`, `tables/${table.name}`].join(
-      "/"
-    );
-  }
-  if (type === "external-table") {
-    const { db, schema, externalTable } =
-      target as NodeTarget<"external-table">;
-    return [
-      db.name,
-      `schemas/${schema.name}`,
-      `externalTables/${externalTable.name}`,
-    ].join("/");
-  }
-  if (type === "column") {
-    const parentKey =
-      "table" in target
-        ? keyForNodeTarget("table", target as NodeTarget<"table">)
-        : "external-table" in target
-          ? keyForNodeTarget(
-              "external-table",
-              target as NodeTarget<"external-table">
-            )
-          : "view" in target
-            ? keyForNodeTarget("view", target as NodeTarget<"view">)
-            : ""; // Fall back to empty string.
-    const { column } = target as NodeTarget<"column">;
-    return [parentKey, `columns/${column.name}`].join("/");
-  }
-  if (type === "dependency-column") {
-    const { db, schema, view, dependencyColumn } =
-      target as NodeTarget<"dependency-column">;
-    return [
-      db.name,
-      `schemas/${schema.name}`,
-      `views/${view.name}`,
-      `dependencyColumns/${keyForDependencyColumn(dependencyColumn)}`,
-    ].join("/");
-  }
-  if (type === "index") {
-    const { db, schema, table, index } = target as NodeTarget<"index">;
-    return [
-      db.name,
-      `schemas/${schema.name}`,
-      `tables/${table.name}`,
-      `indexes/${index.name}`,
-    ].join("/");
-  }
-  if (type === "foreign-key") {
-    const { db, schema, table, foreignKey } =
-      target as NodeTarget<"foreign-key">;
-    return [
-      db.name,
-      `schemas/${schema.name}`,
-      `tables/${table}`,
-      `foreignKeys/${foreignKey.name}`,
-    ].join("/");
-  }
-  if (type === "partition-table") {
-    const { db, schema, table, partition } =
-      target as NodeTarget<"partition-table">;
-    return [
-      db.name,
-      `schemas/${schema.name}`,
-      `tables/${table.name}`,
-      `partitionTables/${partition.name}`,
-    ].join("/");
-  }
-  if (type === "view") {
-    const { db, schema, view } = target as NodeTarget<"view">;
-    return [db.name, `schemas/${schema.name}`, `views/${view.name}`].join("/");
-  }
-  if (type === "procedure") {
-    const { db, schema, procedure, position } =
-      target as NodeTarget<"procedure">;
-    return [
-      db.name,
-      `schemas/${schema.name}`,
-      `procedures/${keyWithPosition(procedure.name, position)}`,
-    ].join("/");
-  }
-  if (type === "package") {
-    const {
-      db,
-      schema,
-      package: pack,
-      position,
-    } = target as NodeTarget<"package">;
-    return [
-      db.name,
-      `schemas/${schema.name}`,
-      `packages/${keyWithPosition(pack.name, position)}`,
-    ].join("/");
-  }
-  if (type === "function") {
-    const {
-      db,
-      schema,
-      function: func,
-      position,
-    } = target as NodeTarget<"function">;
-    return [
-      db.name,
-      `schemas/${schema.name}`,
-      `functions/${keyWithPosition(func.name, position)}`,
-    ].join("/");
-  }
-  if (type === "sequence") {
-    const { db, schema, sequence, position } = target as NodeTarget<"sequence">;
-    return [
-      db.name,
-      `schemas/${schema.name}`,
-      `sequences/${keyWithPosition(sequence.name, position)}`,
-    ].join("/");
-  }
-  if (type === "trigger") {
-    const { db, schema, table, trigger, position } =
-      target as NodeTarget<"trigger">;
-    return [
-      db.name,
-      `schemas/${schema.name}`,
-      `tables/${table.name}`,
-      `triggers/${keyWithPosition(trigger.name, position)}`,
-    ].join("/");
-  }
-  if (type === "expandable-text") {
-    const { id } = target as NodeTarget<"expandable-text">;
-    return `expandableTexts/${id}`;
-  }
-  if (type === "error") {
-    const { id } = target as NodeTarget<"error">;
-    return `errors/${id}`;
-  }
-  console.assert(false, "should never reach this line");
-  return "";
 };
 
-const readableTextForNodeTarget = <T extends NodeType>(
+export const readableTextForNodeTarget = <T extends NodeType>(
   type: T,
   target: NodeTarget<T>
 ): string => {
-  if (type === "database") {
-    return (target as NodeTarget<"database">).db.databaseName;
+  switch (type) {
+    case "error":
+      // Use empty strings for error nodes to make them unsearchable
+      return "";
+    case "expandable-text":
+      const { text, searchable } = target as TextTarget;
+      if (!searchable) return "";
+      return text();
+    case "dependency-column":
+      const dep = (target as NodeTarget<"dependency-column">).dependencyColumn;
+      const parts = [dep.table, dep.column];
+      if (dep.schema) parts.unshift(dep.schema);
+      return parts.join(".");
+    default:
+      const key = keyForNodeTarget(type, target);
+      return key.split("/").slice(-1)[0];
   }
-  if (type === "schema") {
-    return (target as RichSchemaMetadata).schema.name;
-  }
-  if (type === "table") {
-    return (target as RichTableMetadata).table.name;
-  }
-  if (type === "external-table") {
-    return (target as RichExternalTableMetadata).externalTable.name;
-  }
-  if (type === "column") {
-    return (target as RichColumnMetadata).column.name;
-  }
-  if (type === "index") {
-    return (target as RichIndexMetadata).index.name;
-  }
-  if (type === "foreign-key") {
-    return (target as RichForeignKeyMetadata).foreignKey.name;
-  }
-  if (type === "partition-table") {
-    return (target as RichPartitionTableMetadata).partition.name;
-  }
-  if (type === "view") {
-    return (target as RichViewMetadata).view.name;
-  }
-  if (type === "dependency-column") {
-    const dep = (target as RichDependencyColumnMetadata).dependencyColumn;
-    const parts = [dep.table, dep.column];
-    if (dep.schema) parts.unshift(dep.schema);
-    return parts.join(".");
-  }
-  if (type === "procedure") {
-    return (target as RichProcedureMetadata).procedure.name;
-  }
-  if (type === "package") {
-    return (target as RichPackageMetadata).package.name;
-  }
-  if (type === "function") {
-    return (target as RichFunctionMetadata).function.name;
-  }
-  if (type === "sequence") {
-    return (target as RichSequenceMetadata).sequence.name;
-  }
-  if (type === "trigger") {
-    return (target as RichTriggerMetadata).trigger.name;
-  }
-  if (type === "expandable-text") {
-    const { text, searchable } = target as TextTarget;
-    if (!searchable) return "";
-    return text();
-  }
-  if (type === "error") {
-    // Use empty strings for error nodes to make them unsearchable
-    return "";
-  }
-  console.assert(false, "should never reach this line");
-  return "";
 };
 
 const isLeafNodeType = (type: NodeType) => {
@@ -415,17 +329,8 @@ export const mapTreeNodeByType = <T extends NodeType>(
   return node;
 };
 
-const createDummyNode = (
-  type:
-    | "column"
-    | "dependency-column"
-    | "index"
-    | "foreign-key"
-    | "table"
-    | "view"
-    | "procedure"
-    | "package"
-    | "function",
+const createDummyNode = <T extends NodeType>(
+  type: T,
   parentKey: string,
   key: string | number = 0
 ) => {
@@ -472,7 +377,10 @@ const mapColumnNodes = (
   }
 
   const children = columns.map((column) => {
-    const node = mapTreeNodeByType("column", { ...target, column });
+    const node = mapTreeNodeByType("column", {
+      ...target,
+      column: column.name,
+    });
     return node;
   });
   return children;
@@ -489,7 +397,7 @@ const mapIndexNodes = (
   }
 
   const children = indexes.map((index) => {
-    const node = mapTreeNodeByType("index", { ...target, index });
+    const node = mapTreeNodeByType("index", { ...target, index: index.name });
     return node;
   });
   return children;
@@ -506,16 +414,25 @@ const mapForeignKeyNodes = (
   }
 
   const children = foreignKeys.map((foreignKey) => {
-    const node = mapTreeNodeByType("foreign-key", { ...target, foreignKey });
+    const node = mapTreeNodeByType("foreign-key", {
+      ...target,
+      foreignKey: foreignKey.name,
+    });
     return node;
   });
   return children;
 };
 
-const mapTableNodes = (target: NodeTarget<"schema">, parentKey: string) => {
-  const { schema } = target;
+const mapTableNodes = (
+  schema: SchemaMetadata,
+  target: NodeTarget<"schema">,
+  parentKey: string
+) => {
   const children = schema.tables.map((table) => {
-    const node = mapTreeNodeByType("table", { ...target, table });
+    const node = mapTreeNodeByType("table", {
+      ...target,
+      table: table.name,
+    });
     const columnsFolderNode = createExpandableTextNode(
       "column",
       parentKey,
@@ -564,7 +481,11 @@ const mapTableNodes = (target: NodeTarget<"schema">, parentKey: string) => {
       const triggerNode = createExpandableTextNode("trigger", parentKey, () =>
         t("db.triggers")
       );
-      triggerNode.children = mapTriggerNodes(node.meta.target, triggerNode.key);
+      triggerNode.children = mapTriggerNodes(
+        table,
+        node.meta.target,
+        triggerNode.key
+      );
       node.children.push(triggerNode);
     }
 
@@ -579,7 +500,7 @@ const mapTableNodes = (target: NodeTarget<"schema">, parentKey: string) => {
       for (const partition of table.partitions) {
         const subnode = mapTreeNodeByType("partition-table", {
           ...node.meta.target,
-          partition,
+          partition: partition.name,
         });
         if (partition.subpartitions.length > 0) {
           subnode.isLeaf = false;
@@ -602,12 +523,14 @@ const mapTableNodes = (target: NodeTarget<"schema">, parentKey: string) => {
   return children;
 };
 
-const mapExternalTableNodes = (target: NodeTarget<"schema">) => {
-  const { schema } = target;
+const mapExternalTableNodes = (
+  schema: SchemaMetadata,
+  target: NodeTarget<"schema">
+) => {
   const externalTableNodes = schema.externalTables.map((externalTable) => {
     const node = mapTreeNodeByType("external-table", {
       ...target,
-      externalTable,
+      externalTable: externalTable.name,
     });
     const folderNode = createExpandableTextNode("column", node.key, () =>
       t("database.columns")
@@ -634,8 +557,7 @@ const mapPartitionTableNodes = (
   const children = parentPartition.subpartitions.map((partition) => {
     const node = mapTreeNodeByType("partition-table", {
       ...target,
-      parentPartition,
-      partition,
+      partition: partition.name,
     });
     if (partition.subpartitions.length > 0) {
       node.isLeaf = false;
@@ -648,10 +570,16 @@ const mapPartitionTableNodes = (
   return children;
 };
 
-const mapViewNodes = (target: NodeTarget<"schema">, parentKey: string) => {
-  const { schema } = target;
+const mapViewNodes = (
+  schema: SchemaMetadata,
+  target: NodeTarget<"schema">,
+  parentKey: string
+) => {
   const children = schema.views.map((view) => {
-    const viewNode = mapTreeNodeByType("view", { ...target, view });
+    const viewNode = mapTreeNodeByType("view", {
+      ...target,
+      view: view.name,
+    });
     const columnsFolderNode = createExpandableTextNode(
       "column",
       viewNode.key,
@@ -672,10 +600,17 @@ const mapViewNodes = (target: NodeTarget<"schema">, parentKey: string) => {
   return children;
 };
 
-const mapProcedureNodes = (target: NodeTarget<"schema">, parentKey: string) => {
-  const { schema } = target;
+const mapProcedureNodes = (
+  schema: SchemaMetadata,
+  target: NodeTarget<"schema">,
+  parentKey: string
+) => {
   const children = schema.procedures.map((procedure, position) =>
-    mapTreeNodeByType("procedure", { ...target, procedure, position })
+    mapTreeNodeByType("procedure", {
+      ...target,
+      procedure: procedure.name,
+      position,
+    })
   );
   if (children.length === 0) {
     return [createDummyNode("procedure", parentKey)];
@@ -683,10 +618,17 @@ const mapProcedureNodes = (target: NodeTarget<"schema">, parentKey: string) => {
   return children;
 };
 
-const mapPackageNodes = (target: NodeTarget<"schema">, parentKey: string) => {
-  const { schema } = target;
+const mapPackageNodes = (
+  schema: SchemaMetadata,
+  target: NodeTarget<"schema">,
+  parentKey: string
+) => {
   const children = schema.packages.map((pack, position) =>
-    mapTreeNodeByType("package", { ...target, package: pack, position })
+    mapTreeNodeByType("package", {
+      ...target,
+      package: pack.name,
+      position,
+    })
   );
   if (children.length === 0) {
     return [createDummyNode("package", parentKey)];
@@ -694,10 +636,17 @@ const mapPackageNodes = (target: NodeTarget<"schema">, parentKey: string) => {
   return children;
 };
 
-const mapFunctionNodes = (target: NodeTarget<"schema">, parentKey: string) => {
-  const { schema } = target;
+const mapFunctionNodes = (
+  schema: SchemaMetadata,
+  target: NodeTarget<"schema">,
+  parentKey: string
+) => {
   const children = schema.functions.map((func, position) =>
-    mapTreeNodeByType("function", { ...target, function: func, position })
+    mapTreeNodeByType("function", {
+      ...target,
+      function: func.name,
+      position,
+    })
   );
   if (children.length === 0) {
     return [createDummyNode("function", parentKey)];
@@ -705,10 +654,17 @@ const mapFunctionNodes = (target: NodeTarget<"schema">, parentKey: string) => {
   return children;
 };
 
-const mapSequenceNodes = (target: NodeTarget<"schema">, parentKey: string) => {
-  const { schema } = target;
+const mapSequenceNodes = (
+  schema: SchemaMetadata,
+  target: NodeTarget<"schema">,
+  parentKey: string
+) => {
   const children = schema.sequences.map((sequence, position) =>
-    mapTreeNodeByType("sequence", { ...target, sequence, position })
+    mapTreeNodeByType("sequence", {
+      ...target,
+      sequence: sequence.name,
+      position,
+    })
   );
   if (children.length === 0) {
     return [createDummyNode("function", parentKey)];
@@ -716,10 +672,13 @@ const mapSequenceNodes = (target: NodeTarget<"schema">, parentKey: string) => {
   return children;
 };
 
-const mapTriggerNodes = (target: NodeTarget<"table">, parentKey: string) => {
-  const { table } = target;
+const mapTriggerNodes = (
+  table: TableMetadata,
+  target: NodeTarget<"table">,
+  parentKey: string
+) => {
   const children = table.triggers.map((trigger, position) =>
-    mapTreeNodeByType("trigger", { ...target, trigger, position })
+    mapTreeNodeByType("trigger", { ...target, trigger: trigger.name, position })
   );
   if (children.length === 0) {
     return [createDummyNode("function", parentKey)];
@@ -728,10 +687,10 @@ const mapTriggerNodes = (target: NodeTarget<"table">, parentKey: string) => {
 };
 
 const buildSchemaNodeChildren = (
+  schema: SchemaMetadata,
   target: NodeTarget<"schema">,
   parentKey: string
 ) => {
-  const { schema } = target;
   if (
     schema.tables.length === 0 &&
     schema.externalTables.length === 0 &&
@@ -749,7 +708,7 @@ const buildSchemaNodeChildren = (
   const tablesNode = createExpandableTextNode("table", parentKey, () =>
     t("db.tables")
   );
-  tablesNode.children = mapTableNodes(target, tablesNode.key);
+  tablesNode.children = mapTableNodes(schema, target, tablesNode.key);
   children.push(tablesNode);
 
   // Only show "External Tables" node if the schema do have external tables.
@@ -759,7 +718,7 @@ const buildSchemaNodeChildren = (
       parentKey,
       () => t("db.external-tables")
     );
-    externalTablesNode.children = mapExternalTableNodes(target);
+    externalTablesNode.children = mapExternalTableNodes(schema, target);
     children.push(externalTablesNode);
   }
 
@@ -768,7 +727,7 @@ const buildSchemaNodeChildren = (
     const viewsNode = createExpandableTextNode("view", parentKey, () =>
       t("db.views")
     );
-    viewsNode.children = mapViewNodes(target, viewsNode.key);
+    viewsNode.children = mapViewNodes(schema, target, viewsNode.key);
     children.push(viewsNode);
   }
 
@@ -777,7 +736,11 @@ const buildSchemaNodeChildren = (
     const procedureNode = createExpandableTextNode("procedure", parentKey, () =>
       t("db.procedures")
     );
-    procedureNode.children = mapProcedureNodes(target, procedureNode.key);
+    procedureNode.children = mapProcedureNodes(
+      schema,
+      target,
+      procedureNode.key
+    );
     children.push(procedureNode);
   }
 
@@ -786,7 +749,7 @@ const buildSchemaNodeChildren = (
     const packageNode = createExpandableTextNode("package", parentKey, () =>
       t("db.packages")
     );
-    packageNode.children = mapPackageNodes(target, packageNode.key);
+    packageNode.children = mapPackageNodes(schema, target, packageNode.key);
     children.push(packageNode);
   }
 
@@ -795,7 +758,7 @@ const buildSchemaNodeChildren = (
     const functionNode = createExpandableTextNode("function", parentKey, () =>
       t("db.functions")
     );
-    functionNode.children = mapFunctionNodes(target, functionNode.key);
+    functionNode.children = mapFunctionNodes(schema, target, functionNode.key);
     children.push(functionNode);
   }
 
@@ -804,18 +767,19 @@ const buildSchemaNodeChildren = (
     const sequenceNode = createExpandableTextNode("sequence", parentKey, () =>
       t("db.sequences")
     );
-    sequenceNode.children = mapSequenceNodes(target, sequenceNode.key);
+    sequenceNode.children = mapSequenceNodes(schema, target, sequenceNode.key);
     children.push(sequenceNode);
   }
 
   return children;
 };
+
 export const buildDatabaseSchemaTree = (
   database: ComposedDatabase,
   metadata: DatabaseMetadata
 ) => {
   const dummyRoot = mapTreeNodeByType("database", {
-    db: database,
+    database: database.name,
   });
   const { schemas } = metadata;
   if (schemas.length === 0) {
@@ -828,7 +792,8 @@ export const buildDatabaseSchemaTree = (
     // A single schema database, should render tables as views directly as a database
     // node's children
     return buildSchemaNodeChildren(
-      { ...dummyRoot.meta.target, schema },
+      schema,
+      { ...dummyRoot.meta.target, schema: schema.name },
       dummyRoot.key
     );
   } else {
@@ -836,53 +801,15 @@ export const buildDatabaseSchemaTree = (
     return schemas.map((schema) => {
       const schemaNode = mapTreeNodeByType("schema", {
         ...dummyRoot.meta.target,
-        schema,
+        schema: schema.name,
       });
 
       schemaNode.children = buildSchemaNodeChildren(
+        schema,
         schemaNode.meta.target,
         schemaNode.key
       );
       return schemaNode;
     });
   }
-};
-
-export const useClickEvents = () => {
-  const DELAY = 250;
-  const state = ref<{
-    timeout: ReturnType<typeof setTimeout>;
-    node: TreeNode;
-  }>();
-  const events = new Emittery<{
-    "single-click": { node: TreeNode };
-    "double-click": { node: TreeNode };
-  }>();
-
-  const clear = () => {
-    if (!state.value) return;
-    clearTimeout(state.value.timeout);
-    state.value = undefined;
-  };
-  const queue = (node: TreeNode) => {
-    state.value = {
-      timeout: setTimeout(() => {
-        events.emit("single-click", { node });
-        clear();
-      }, DELAY),
-      node,
-    };
-  };
-
-  const handleClick = (node: TreeNode) => {
-    if (state.value && state.value.node.key === node.key) {
-      events.emit("double-click", { node });
-      clear();
-      return;
-    }
-    clear();
-    queue(node);
-  };
-
-  return { events, handleClick };
 };

@@ -1,16 +1,16 @@
 <template>
   <div class="min-w-[14rem] max-w-[18rem] gap-y-1">
     <InfoItem :title="$t('common.name')">
-      {{ table.name }}
+      {{ tableMetadata.name }}
     </InfoItem>
     <InfoItem :title="$t('database.engine')">
       <RichEngineName :engine="instanceEngine" />
     </InfoItem>
     <InfoItem :title="$t('database.row-count-estimate')">
-      {{ table.rowCount }}
+      {{ tableMetadata.rowCount }}
     </InfoItem>
     <InfoItem :title="$t('database.data-size')">
-      {{ bytesToString(table.dataSize.toNumber()) }}
+      {{ bytesToString(tableMetadata.dataSize.toNumber()) }}
     </InfoItem>
     <InfoItem v-if="indexSize" :title="$t('database.index-size')">
       {{ indexSize }}
@@ -27,24 +27,37 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { RichEngineName } from "@/components/v2";
-import type { ComposedDatabase } from "@/types";
+import { useDBSchemaV1Store, useDatabaseV1Store } from "@/store";
 import { Engine } from "@/types/proto/v1/common";
-import type { TableMetadata } from "@/types/proto/v1/database_service";
 import { bytesToString } from "@/utils";
 import InfoItem from "./InfoItem.vue";
 
 const props = defineProps<{
-  db: ComposedDatabase;
-  table: TableMetadata;
+  database: string;
+  schema?: string;
+  table: string;
 }>();
 
-const instanceEngine = computed(() => props.db.instanceResource.engine);
+const dbSchema = useDBSchemaV1Store();
+const databaseStore = useDatabaseV1Store();
+
+const instanceEngine = computed(
+  () => databaseStore.getDatabaseByName(props.database).instanceResource.engine
+);
+
+const tableMetadata = computed(() =>
+  dbSchema.getTableMetadata({
+    database: props.database,
+    schema: props.schema,
+    table: props.table,
+  })
+);
 
 const indexSize = computed(() => {
   if ([Engine.CLICKHOUSE, Engine.SNOWFLAKE].includes(instanceEngine.value)) {
     return "";
   }
-  return bytesToString(props.table.indexSize.toNumber());
+  return bytesToString(tableMetadata.value.indexSize.toNumber());
 });
 
 const collation = computed(() => {
@@ -55,10 +68,10 @@ const collation = computed(() => {
   ) {
     return "";
   }
-  return props.table.collation;
+  return tableMetadata.value.collation;
 });
 
 const comment = computed(() => {
-  return props.table.userComment;
+  return tableMetadata.value.userComment;
 });
 </script>

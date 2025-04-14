@@ -7,6 +7,9 @@ import { UNKNOWN_ID, EMPTY_ID, UNKNOWN_INSTANCE_NAME } from "@/types";
 import {
   TableMetadata,
   DatabaseMetadata,
+  ExternalTableMetadata,
+  ViewMetadata,
+  SchemaMetadata,
 } from "@/types/proto/v1/database_service";
 import { extractDatabaseResourceName } from "@/utils";
 
@@ -191,10 +194,31 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
 
     return promise;
   };
+
   const getSchemaList = (database: string) => {
     return getCache(database)?.schemas ?? [];
   };
-  const getTableList = (database: string, schema?: string) => {
+
+  const getSchemaMetadata = ({
+    database,
+    schema,
+  }: {
+    database: string;
+    schema: string;
+  }) => {
+    return (
+      getSchemaList(database).find((s) => s.name === schema) ??
+      SchemaMetadata.create()
+    );
+  };
+
+  const getTableList = ({
+    database,
+    schema,
+  }: {
+    database: string;
+    schema?: string;
+  }) => {
     const databaseMetadata = getCache(database);
     if (!databaseMetadata) {
       return [];
@@ -208,15 +232,20 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
 
     return databaseMetadata.schemas.flatMap((s) => s.tables);
   };
-  const getTableByName = (database: string, table: string, schema?: string) => {
-    const databaseMetadata = getCache(database);
-    if (!databaseMetadata) {
-      return undefined;
-    }
 
-    const tableList = getTableList(database, schema);
-    return tableList.find((t) => t.name === table);
+  const getTableMetadata = ({
+    database,
+    table,
+    schema,
+  }: {
+    database: string;
+    table: string;
+    schema?: string;
+  }) => {
+    const tableList = getTableList({ database, schema });
+    return tableList.find((t) => t.name === table) ?? TableMetadata.create();
   };
+
   const getOrFetchTableMetadata = async ({
     database,
     schema,
@@ -243,7 +272,7 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
     const metadataResourceName = ensureDatabaseMetadataResourceName(database);
 
     if (!skipCache) {
-      const existedTable = getTableByName(database, table, schema);
+      const existedTable = getTableMetadata({ database, table, schema });
       if (existedTable && existedTable.columns.length > 0) {
         return existedTable;
       }
@@ -284,7 +313,14 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
     );
     return promise;
   };
-  const getExternalTableList = (database: string, schema?: string) => {
+
+  const getExternalTableList = ({
+    database,
+    schema,
+  }: {
+    database: string;
+    schema?: string;
+  }) => {
     const databaseMetadata = getCache(database);
     if (!databaseMetadata) {
       return [];
@@ -299,6 +335,23 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
 
     return databaseMetadata.schemas.flatMap((s) => s.externalTables);
   };
+
+  const getExternalTableMetadata = ({
+    database,
+    schema,
+    externalTable,
+  }: {
+    database: string;
+    schema?: string;
+    externalTable: string;
+  }) => {
+    return (
+      getExternalTableList({ database, schema }).find(
+        (metadata) => metadata.name === externalTable
+      ) ?? ExternalTableMetadata.create()
+    );
+  };
+
   const getOrFetchExternalTableList = async (
     database: string,
     schema?: string
@@ -306,9 +359,16 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
     if (!getCache(database)) {
       await getOrFetchDatabaseMetadata({ database });
     }
-    return getExternalTableList(database, schema);
+    return getExternalTableList({ database, schema });
   };
-  const getViewList = (database: string, schema?: string) => {
+
+  const getViewList = ({
+    database,
+    schema,
+  }: {
+    database: string;
+    schema?: string;
+  }) => {
     const databaseMetadata = getCache(database);
     if (!databaseMetadata) {
       return [];
@@ -322,6 +382,22 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
 
     return databaseMetadata.schemas.flatMap((s) => s.views);
   };
+
+  const getViewMetadata = ({
+    database,
+    schema,
+    view,
+  }: {
+    database: string;
+    schema?: string;
+    view: string;
+  }) => {
+    return (
+      getViewList({ database, schema }).find((v) => v.name === view) ??
+      ViewMetadata.create()
+    );
+  };
+
   const getExtensionList = (database: string) => {
     const databaseMetadata = getCache(database);
     if (!databaseMetadata) {
@@ -330,7 +406,14 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
 
     return databaseMetadata.extensions;
   };
-  const getFunctionList = (database: string, schema?: string) => {
+
+  const getFunctionList = ({
+    database,
+    schema,
+  }: {
+    database: string;
+    schema?: string;
+  }) => {
     const databaseMetadata = getCache(database);
     if (!databaseMetadata) {
       return [];
@@ -361,11 +444,15 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
     getDatabaseMetadata,
     getOrFetchDatabaseMetadata,
     getSchemaList,
+    getSchemaMetadata,
     getTableList,
+    getTableMetadata,
     getOrFetchTableMetadata,
     getExternalTableList,
+    getExternalTableMetadata,
     getOrFetchExternalTableList,
     getViewList,
+    getViewMetadata,
     getExtensionList,
     getFunctionList,
     removeCache,

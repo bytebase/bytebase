@@ -170,7 +170,6 @@
 <script lang="ts" setup>
 import { head } from "lodash-es";
 import { NSelect } from "naive-ui";
-import type { PropType } from "vue";
 import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
@@ -200,27 +199,20 @@ import { SearchBox } from "../v2";
 import DatabaseOverviewInfo from "./DatabaseOverviewInfo.vue";
 
 interface LocalState {
-  selectedSchemaName: string;
+  selectedSchemaName?: string;
   tableNameSearchKeyword: string;
   externalTableNameSearchKeyword: string;
 }
 
-const props = defineProps({
-  database: {
-    required: true,
-    type: Object as PropType<ComposedDatabase>,
-  },
-  anomalyList: {
-    required: true,
-    type: Object as PropType<Anomaly[]>,
-  },
-});
+const props = defineProps<{
+  database: ComposedDatabase;
+  anomalyList: Anomaly[];
+}>();
 
 const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
 const state = reactive<LocalState>({
-  selectedSchemaName: "",
   tableNameSearchKeyword: "",
   externalTableNameSearchKeyword: "",
 });
@@ -289,25 +281,17 @@ const schemaNameOptions = computed(() => {
 });
 
 const tableList = computed(() => {
-  if (hasSchemaPropertyV1.value) {
-    return (
-      schemaList.value.find(
-        (schema) => schema.name === state.selectedSchemaName
-      )?.tables || []
-    );
-  }
-  return dbSchemaStore.getTableList(props.database.name);
+  return dbSchemaStore.getTableList({
+    database: props.database.name,
+    schema: state.selectedSchemaName,
+  });
 });
 
 const viewList = computed(() => {
-  if (hasSchemaPropertyV1.value) {
-    return (
-      schemaList.value.find(
-        (schema) => schema.name === state.selectedSchemaName
-      )?.views || []
-    );
-  }
-  return dbSchemaStore.getViewList(props.database.name);
+  return dbSchemaStore.getViewList({
+    database: props.database.name,
+    schema: state.selectedSchemaName,
+  });
 });
 
 const dbExtensionList = computed(() => {
@@ -315,21 +299,17 @@ const dbExtensionList = computed(() => {
 });
 
 const externalTableList = computed(() => {
-  return dbSchemaStore.getExternalTableList(
-    props.database.name,
-    state.selectedSchemaName
-  );
+  return dbSchemaStore.getExternalTableList({
+    database: props.database.name,
+    schema: state.selectedSchemaName,
+  });
 });
 
 const functionList = computed(() => {
-  if (hasSchemaPropertyV1.value) {
-    return (
-      schemaList.value.find(
-        (schema) => schema.name === state.selectedSchemaName
-      )?.functions || []
-    );
-  }
-  return dbSchemaStore.getFunctionList(props.database.name);
+  return dbSchemaStore.getFunctionList({
+    database: props.database.name,
+    schema: state.selectedSchemaName,
+  });
 });
 
 const streamList = computed(() => {
