@@ -1205,6 +1205,7 @@ DatabaseMetadata is the metadata for databases.
 | backup_available | [bool](#bool) |  |  |
 | datashare | [bool](#bool) |  |  |
 | secrets | [Secret](#bytebase-store-Secret) | repeated |  |
+| drifted | [bool](#bool) |  | The schema is drifted from the source of truth. |
 
 
 
