@@ -12,6 +12,7 @@ export interface Environment extends EnvironmentSetting_Environment {
 
 export const emptyEnvironment = (): Environment => {
   return {
+    name: EMPTY_ENVIRONMENT_NAME,
     id: String(EMPTY_ID),
     order: 0,
     title: "",
