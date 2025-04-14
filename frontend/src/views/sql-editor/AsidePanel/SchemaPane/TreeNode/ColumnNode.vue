@@ -47,7 +47,7 @@ const tableMetadata = computed(() => {
     const { database, schema, table } = target.value;
     return dbSchema.getTableMetadata({ database, schema, table });
   }
-  return;
+  return undefined;
 });
 
 const columnMetadata = computed(() => {
@@ -67,7 +67,7 @@ const columnMetadata = computed(() => {
       .find((v) => v.name === view)
       ?.columns.find((c) => c.name === column);
   }
-  return;
+  return undefined;
 });
 
 const isPrimaryKey = computed(() => {

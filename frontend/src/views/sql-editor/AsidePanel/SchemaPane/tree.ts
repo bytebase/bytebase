@@ -1,6 +1,5 @@
-import Emittery from "emittery";
 import type { TreeOption } from "naive-ui";
-import { ref, type RenderFunction } from "vue";
+import { type RenderFunction } from "vue";
 import { t } from "@/plugins/i18n";
 import type { ComposedDatabase } from "@/types";
 import type {
