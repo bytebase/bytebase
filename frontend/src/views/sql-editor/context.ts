@@ -3,9 +3,9 @@ import Emittery from "emittery";
 import type { InjectionKey, Ref } from "vue";
 import { inject, provide, ref } from "vue";
 import { useSQLEditorStore } from "@/store";
-import type { ComposedDatabase, SQLEditorTab } from "@/types";
-import type { Worksheet } from "@/types/proto/v1/worksheet_service";
+import type { SQLEditorTab } from "@/types";
 import type { GetSchemaStringRequest_ObjectType } from "@/types/proto/v1/database_service";
+import type { Worksheet } from "@/types/proto/v1/worksheet_service";
 
 export type AsidePanelTab = "SCHEMA" | "WORKSHEET" | "HISTORY";
 
@@ -45,7 +45,6 @@ export type SQLEditorContext = {
   AIPanelSize: Ref<number>;
   schemaViewer: Ref<
     | {
-        database: ComposedDatabase;
         schema?: string;
         object?: string;
         type?: GetSchemaStringRequest_ObjectType;

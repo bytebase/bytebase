@@ -1,42 +1,35 @@
 <template>
   <div class="min-w-[14rem] max-w-[18rem] gap-y-1">
     <InfoItem :title="$t('common.name')">
-      {{ name }}
+      {{ externalTableMetadata.name }}
     </InfoItem>
     <InfoItem :title="$t('database.external-server-name')">
-      {{ externalTable.externalServerName }}
+      {{ externalTableMetadata.externalServerName }}
     </InfoItem>
     <InfoItem :title="$t('database.external-database-name')">
-      {{ externalTable.externalDatabaseName }}
+      {{ externalTableMetadata.externalDatabaseName }}
     </InfoItem>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed } from "vue";
-import type { ComposedDatabase } from "@/types";
-import type {
-  DatabaseMetadata,
-  SchemaMetadata,
-  ExternalTableMetadata,
-} from "@/types/proto/v1/database_service";
-import { hasSchemaProperty } from "@/utils";
+import { useDBSchemaV1Store } from "@/store";
 import InfoItem from "./InfoItem.vue";
 
 const props = defineProps<{
-  db: ComposedDatabase;
-  database: DatabaseMetadata;
-  schema: SchemaMetadata;
-  externalTable: ExternalTableMetadata;
+  database: string;
+  schema?: string;
+  externalTable: string;
 }>();
 
-const instanceEngine = computed(() => props.db.instanceResource.engine);
+const dbSchema = useDBSchemaV1Store();
 
-const name = computed(() => {
-  const { schema, externalTable } = props;
-  if (hasSchemaProperty(instanceEngine.value)) {
-    return `${schema.name}.${externalTable.name}`;
-  }
-  return externalTable.name;
-});
+const externalTableMetadata = computed(() =>
+  dbSchema.getExternalTableMetadata({
+    database: props.database,
+    schema: props.schema,
+    externalTable: props.externalTable,
+  })
+);
 </script>

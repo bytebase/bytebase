@@ -1,6 +1,6 @@
 <template>
   <CommonNode
-    :text="target.sequence.name"
+    :text="target.sequence"
     :keyword="keyword"
     :highlight="true"
     :indent="0"
@@ -14,7 +14,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { SequenceIcon } from "@/components/Icon";
-import type { TreeNode } from "../common";
+import type { TreeNode } from "../tree";
 import CommonNode from "./CommonNode.vue";
 
 const props = defineProps<{

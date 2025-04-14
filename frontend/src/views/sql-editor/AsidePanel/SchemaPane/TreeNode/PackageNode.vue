@@ -1,6 +1,6 @@
 <template>
   <CommonNode
-    :text="target.package.name"
+    :text="target.package"
     :keyword="keyword"
     :highlight="true"
     :indent="0"
@@ -14,7 +14,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { PackageIcon } from "@/components/Icon";
-import type { TreeNode } from "../common";
+import type { TreeNode } from "../tree";
 import CommonNode from "./CommonNode.vue";
 
 const props = defineProps<{
