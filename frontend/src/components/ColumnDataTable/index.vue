@@ -18,7 +18,6 @@ import { h } from "vue";
 import { useI18n } from "vue-i18n";
 import { getColumnDefaultValuePlaceholder } from "@/components/SchemaEditorLite";
 import {
-  useSettingV1Store,
   useSubscriptionV1Store,
   useDatabaseCatalog,
   getColumnCatalog,
@@ -30,15 +29,11 @@ import type {
   TableMetadata,
 } from "@/types/proto/v1/database_service";
 import type { DataClassificationSetting_DataClassificationConfig } from "@/types/proto/v1/setting_service";
-import { DataClassificationSetting_DataClassificationConfig as DataClassificationConfig } from "@/types/proto/v1/setting_service";
 import { hasProjectPermissionV2 } from "@/utils";
 import ClassificationCell from "./ClassificationCell.vue";
 import LabelsCell from "./LabelsCell.vue";
 import SemanticTypeCell from "./SemanticTypeCell.vue";
-import {
-  updateColumnCatalog,
-  supportSetClassificationFromComment,
-} from "./utils";
+import { updateColumnCatalog } from "./utils";
 
 defineOptions({
   name: "ColumnDataTable",
@@ -66,7 +61,6 @@ const engine = computed(() => {
   return props.database.instanceResource.engine;
 });
 const subscriptionV1Store = useSubscriptionV1Store();
-const settingStore = useSettingV1Store();
 
 const hasSensitiveDataFeature = computed(() => {
   return subscriptionV1Store.hasFeature("bb.feature.sensitive-data");
@@ -90,21 +84,7 @@ const showSensitiveColumn = computed(() => {
 });
 
 const showClassificationColumn = computed(() => {
-  return (
-    !props.isExternalTable &&
-    props.classificationConfig &&
-    hasSensitiveDataFeature.value
-  );
-});
-
-const setClassificationFromComment = computed(() => {
-  const classificationConfig = settingStore.getProjectClassification(
-    props.database.projectEntity.dataClassificationConfigId
-  );
-  return supportSetClassificationFromComment(
-    engine.value,
-    classificationConfig?.classificationFromConfig ?? false
-  );
+  return !props.isExternalTable && hasSensitiveDataFeature.value;
 });
 
 const showLabelsColumn = computed(() => {
@@ -178,12 +158,9 @@ const columns = computed(() => {
         );
         return h(ClassificationCell, {
           classification: columnCatalog.classification,
-          classificationConfig:
-            props.classificationConfig ??
-            DataClassificationConfig.fromPartial({}),
-          readonly:
-            setClassificationFromComment.value ||
-            !hasDatabaseCatalogPermission.value,
+          classificationConfig: props.classificationConfig,
+          engine: engine.value,
+          readonly: !hasDatabaseCatalogPermission.value,
           onApply: (id: string) => onClassificationIdApply(column.name, id),
         });
       },
