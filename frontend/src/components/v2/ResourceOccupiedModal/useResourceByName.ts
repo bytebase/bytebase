@@ -18,6 +18,7 @@ import {
   isValidEnvironmentName,
   isValidDatabaseName,
   isValidProjectName,
+  formatEnvironmentName,
 } from "@/types";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
@@ -103,7 +104,7 @@ export const useResourceByName = ({
         const environment = environmentV1Store.getEnvironmentByName(
           resource.value
         );
-        if (!isValidEnvironmentName(environment.name)) {
+        if (!isValidEnvironmentName(formatEnvironmentName(environment.id))) {
           return h("div", resource.value);
         }
         return h(EnvironmentV1Name, { environment, link });
