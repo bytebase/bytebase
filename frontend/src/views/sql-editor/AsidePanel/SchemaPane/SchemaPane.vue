@@ -13,11 +13,7 @@
         />
       </div>
       <div class="shrink-0 flex items-center">
-        <SyncSchemaButton
-          :database="database"
-          :metadata="metadata"
-          size="small"
-        />
+        <SyncSchemaButton size="small" />
       </div>
     </div>
 
@@ -60,12 +56,13 @@
 
     <BBModal :show="!!schemaViewer" @close="schemaViewer = undefined">
       <template v-if="schemaViewer" #title>
-        <RichDatabaseName :database="schemaViewer.database" />
+        <RichDatabaseName :database="database" />
       </template>
       <TableSchemaViewer
         v-if="schemaViewer"
         style="width: calc(100vw - 12rem); height: calc(100vh - 12rem)"
         v-bind="schemaViewer"
+        :database="database"
       />
     </BBModal>
 
@@ -115,13 +112,13 @@ import HoverPanel, { provideHoverStateContext } from "./HoverPanel";
 import SyncSchemaButton from "./SyncSchemaButton.vue";
 import { Label } from "./TreeNode";
 import { useDropdown, useActions } from "./actions";
+import { useClickEvents } from "./click";
 import {
   type NodeTarget,
   type TreeNode,
   buildDatabaseSchemaTree,
   ExpandableNodeTypes,
-  useClickEvents,
-} from "./common";
+} from "./tree";
 
 const mounted = useMounted();
 const searchBoxRef = ref<InstanceType<typeof SearchBox>>();
@@ -373,14 +370,9 @@ watchEffect(() => {
 // bottom-up recursively
 const expandNode = (node: TreeNode) => {
   const keysToExpand: string[] = [];
-  const walk = (node: TreeNode | undefined) => {
-    if (!node) return;
-    if (ExpandableNodeTypes.includes(node.meta.type)) {
-      keysToExpand.push(node.key);
-    }
-    walk(node.parent);
-  };
-  walk(node);
+  if (ExpandableNodeTypes.includes(node.meta.type)) {
+    keysToExpand.push(node.key);
+  }
   upsertExpandedKeys(keysToExpand);
 };
 const collapseNode = (node: TreeNode) => {
@@ -399,9 +391,7 @@ const singleClick = (node: TreeNode) => {
   if (node.meta.type === "schema") {
     const tab = currentTab.value;
     if (tab) {
-      tab.connection.schema = (
-        node.meta.target as NodeTarget<"schema">
-      ).schema.name;
+      tab.connection.schema = (node.meta.target as NodeTarget<"schema">).schema;
       return;
     }
   }

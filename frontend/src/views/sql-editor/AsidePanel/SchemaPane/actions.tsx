@@ -21,7 +21,14 @@ import formatSQL from "@/components/MonacoEditor/sqlFormatter";
 import { useExecuteSQL } from "@/composables/useExecuteSQL";
 import { t } from "@/plugins/i18n";
 import { SQL_EDITOR_DATABASE_MODULE } from "@/router/sqlEditor";
-import { pushNotification, useAppFeature, useSQLEditorTabStore, useTabViewStateStore } from "@/store";
+import {
+  pushNotification,
+  useAppFeature,
+  useSQLEditorTabStore,
+  useTabViewStateStore,
+  useDBSchemaV1Store,
+  useDatabaseV1Store,
+} from "@/store";
 import {
   DEFAULT_SQL_EDITOR_TAB_MODE,
   dialectOfEngineV1,
@@ -58,7 +65,8 @@ import {
   useCurrentTabViewStateContext,
 } from "../../EditorPanel";
 import { useSQLEditorContext } from "../../context";
-import type { NodeTarget, NodeType, TreeNode } from "./common";
+import type { NodeTarget, NodeType, TreeNode } from "./tree";
+import { readableTextForNodeTarget } from "./tree"
 
 type DropdownOptionWithTreeNode = DropdownOption & {
   onSelect?: () => void;
@@ -125,20 +133,22 @@ const confirmOverrideStatement = async (
 
 export const useActions = () => {
   const { updateViewState } = useCurrentTabViewStateContext();
+  const databaseStore = useDatabaseV1Store();
 
   const selectAllFromTableOrView = async (node: TreeNode) => {
-    const { target } = (node as TreeNode<"table" | "view">).meta;
+    const { target, type } = (node as TreeNode<"table" | "view">).meta;
     if (!targetSupportsGenerateSQL(target)) {
       return;
     }
 
-    const schema = target.schema.name;
-    const tableOrViewName = tableOrViewNameForNode(node);
+    const schema = target.schema;
+    const tableOrViewName = readableTextForNodeTarget(type, target);
     if (!tableOrViewName) {
       return;
     }
 
-    const { db } = target;
+    const { database } = target;
+    const db = databaseStore.getDatabaseByName(database);
     const { engine } = db.instanceResource;
 
     const query = await formatCode(
@@ -203,17 +213,11 @@ export const useActions = () => {
       return;
     }
 
-    const { schema } = target as NodeTarget<
-      | "table"
-      | "view"
-      | "procedure"
-      | "function"
-    >;
-
+    const { schema } = target as NodeTarget<"schema">;
     openNewTab({
       title: "View detail",
       view: typeToView(type),
-      schema: schema.name,
+      schema: schema,
     });
     await nextTick();
 
@@ -221,22 +225,22 @@ export const useActions = () => {
     let name = "";
     switch (type) {
       case "table":
-        name = (target as NodeTarget<"table">).table.name;
+        name = (target as NodeTarget<"table">).table;
         detail.table = name;
         break;
       case "view":
-        name = (target as NodeTarget<"view">).view.name;
+        name = (target as NodeTarget<"view">).view;
         detail.view = name;
         break;
       case "procedure":
         const { procedure, position } = target as NodeTarget<"procedure">;
-        name = procedure.name;
-        detail.procedure = keyWithPosition(procedure.name, position);
+        name = procedure;
+        detail.procedure = keyWithPosition(procedure, position);
         break;
       case "function":
         const { function: func, position: funcPosition } = target as NodeTarget<"function">;
-        name = func.name;
-        detail.func = keyWithPosition(func.name, funcPosition);
+        name = func;
+        detail.func = keyWithPosition(func, funcPosition);
         break
     }
 
@@ -244,7 +248,7 @@ export const useActions = () => {
       detail,
     });
     if (name) {
-      useSQLEditorTabStore().updateCurrentTab({ title: `Detail for ${name}` })
+      useSQLEditorTabStore().updateCurrentTab({ title: `Detail for ${type} ${name}` })
     }
   };
 
@@ -253,6 +257,8 @@ export const useActions = () => {
 
 export const useDropdown = () => {
   const router = useRouter();
+  const dbSchema = useDBSchemaV1Store();
+  const databaseStore = useDatabaseV1Store();
   const { availableActions } = useCurrentTabViewStateContext();
   const { events: editorEvents, schemaViewer } = useSQLEditorContext();
   const { selectAllFromTableOrView, viewDetail, openNewTab } = useActions();
@@ -277,26 +283,25 @@ export const useDropdown = () => {
       return [];
     }
     const { type, target } = node.meta;
+    const { database, schema } = target as NodeTarget<"schema">;
 
     // Don't show any context menu actions for disabled nodes
-    if (node.disabled) {
+    if (node.disabled || !database) {
       return [];
     }
 
+    const db = databaseStore.getDatabaseByName(database);
+
     const items: DropdownOptionWithTreeNode[] = [];
-    if (type === "database" || type === "schema") {
+    if (type === "schema") {
       for (const action of availableActions.value) {
         items.push({
           key: action.view,
           label: action.title,
           icon: action.icon,
           onSelect: () => {
-            let schema: string | undefined;
-            if (type === "schema") {
-              schema = (node.meta.target as NodeTarget<"schema">).schema.name;
-            }
             openNewTab({
-              title: action.title,
+              title: `[schema ${schema}] ${action.title}`,
               view: action.view,
               schema,
             })
@@ -306,8 +311,7 @@ export const useDropdown = () => {
     }
 
     if (type === "table" || type === "view") {
-      const schema = (target as NodeTarget<"table" | "view">).schema.name;
-      const tableOrView = tableOrViewNameForNode(node);
+      const tableOrView = readableTextForNodeTarget(type, target as NodeTarget<"table" | "view">);
       items.push({
         key: "copy-name",
         label: t("sql-editor.copy-name"),
@@ -318,7 +322,7 @@ export const useDropdown = () => {
         },
       });
       if (type === 'view') {
-       const {db, schema, view} = target as NodeTarget<"view">;
+       const { view } = target as NodeTarget<"view">;
        if (supportGetStringSchema(db.instanceResource.engine)) {
           items.push({
             key: "view-schema-text",
@@ -326,9 +330,8 @@ export const useDropdown = () => {
             icon: () => <CodeIcon class="w-4 h-4" />,
             onSelect: () => {
               schemaViewer.value = {
-                database: db,
-                schema: schema.name,
-                object: view.name,
+                schema,
+                object: view,
                 type: GetSchemaStringRequest_ObjectType.VIEW
               };
             },
@@ -337,15 +340,16 @@ export const useDropdown = () => {
       }
 
       if (type === "table") {
-        const { db, schema, table } = target as NodeTarget<"table">;
+        const { table } = target as NodeTarget<"table">;
 
         items.push({
           key: "copy-all-column-names",
           label: t("sql-editor.copy-all-column-names"),
           icon: () => <CopyIcon class="w-4 h-4" />,
           onSelect: () => {
-            const names = table.columns.map((col) => col.name).join(", ");
-            copyToClipboard(names);
+            const tableMetadata = dbSchema.getTableMetadata({ database, schema, table })
+            const name = tableMetadata.columns.map((col) => col.name).join(", ");
+            copyToClipboard(name);
           },
         });
 
@@ -356,9 +360,8 @@ export const useDropdown = () => {
             icon: () => <CodeIcon class="w-4 h-4" />,
             onSelect: () => {
               schemaViewer.value = {
-                database: db,
-                schema: schema.name,
-                object: table.name,
+                schema,
+                object: table,
                 type: GetSchemaStringRequest_ObjectType.TABLE,
               };
             },
@@ -374,8 +377,8 @@ export const useDropdown = () => {
               onSelect: () => {
                 editorEvents.emit("alter-schema", {
                   databaseName: db.name,
-                  schema: schema.name,
-                  table: table.name,
+                  schema: schema,
+                  table: table,
                 });
               },
             });
@@ -394,8 +397,8 @@ export const useDropdown = () => {
                   database: db.databaseName,
                 },
                 query: {
-                  table: table.name,
-                  schema: schema.name,
+                  table: table,
+                  schema: schema,
                 },
               });
               const url = new URL(route.href, window.location.origin).href;
@@ -436,8 +439,10 @@ export const useDropdown = () => {
           },
         });
         if (type === "table") {
-          const { schema, table } = target as NodeTarget<"table">;
-          const columns = table.columns.map((column) => column.name);
+          const { table } = target as NodeTarget<"table">;
+          const tableMetadata = dbSchema.getTableMetadata({ database, schema, table })
+          const columns = tableMetadata.columns.map((column) => column.name);
+
           generateSQLChildren.push({
             key: "generate-sql--insert",
             label: "INSERT",
@@ -446,8 +451,8 @@ export const useDropdown = () => {
               const statement = await formatCode(
                 generateSimpleInsertStatement(
                   engine,
-                  schema.name,
-                  table.name,
+                  schema,
+                  table,
                   columns
                 ),
                 engine
@@ -463,8 +468,8 @@ export const useDropdown = () => {
               const statement = await formatCode(
                 generateSimpleUpdateStatement(
                   engine,
-                  schema.name,
-                  table.name,
+                  schema,
+                  table,
                   columns
                 ),
                 engine
@@ -478,7 +483,7 @@ export const useDropdown = () => {
             icon: () => <FileMinusIcon class="w-4 h-4" />,
             onSelect: async () => {
               const statement = await formatCode(
-                generateSimpleDeleteStatement(engine, schema.name, table.name),
+                generateSimpleDeleteStatement(engine, schema, table),
                 engine
               );
               applyContentToCurrentTabOrCopyToClipboard(statement, $d);
@@ -560,17 +565,9 @@ export const useDropdown = () => {
   };
 };
 
-const tableOrViewNameForNode = (node: TreeNode) => {
-  const { type, target } = node.meta;
-  return type === "table"
-    ? (target as NodeTarget<"table">).table.name
-    : type === "view"
-      ? (target as NodeTarget<"view">).view.name
-      : "";
-};
-
 const engineForTarget = (target: NodeTarget) => {
-  return (target as NodeTarget<"database">).db.instanceResource.engine;
+  const { database } = target as NodeTarget<"database">
+  return useDatabaseV1Store().getDatabaseByName(database).instanceResource.engine;
 };
 
 const targetSupportsGenerateSQL = (target: NodeTarget) => {

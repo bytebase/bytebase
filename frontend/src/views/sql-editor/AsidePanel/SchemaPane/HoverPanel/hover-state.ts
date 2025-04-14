@@ -1,13 +1,3 @@
-import type { ComposedDatabase } from "@/types";
-import type {
-  ColumnMetadata,
-  DatabaseMetadata,
-  ExternalTableMetadata,
-  SchemaMetadata,
-  TableMetadata,
-  TablePartitionMetadata,
-  ViewMetadata,
-} from "@/types/proto/v1/database_service";
 import {
   useHoverStateContext as _useHoverStateContext,
   provideHoverStateContext as _provideHoverStateContext,
@@ -16,14 +6,13 @@ import {
 export const KEY = "schema-pane";
 
 export type HoverState = {
-  db: ComposedDatabase;
-  database: DatabaseMetadata;
-  schema: SchemaMetadata;
-  table?: TableMetadata;
-  externalTable?: ExternalTableMetadata;
-  view?: ViewMetadata;
-  column?: ColumnMetadata;
-  partition?: TablePartitionMetadata;
+  database: string;
+  schema?: string;
+  table?: string;
+  externalTable?: string;
+  view?: string;
+  column?: string;
+  partition?: string;
 };
 
 export const useHoverStateContext = () => {
