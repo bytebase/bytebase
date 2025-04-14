@@ -412,6 +412,9 @@ message Database {
 
   // The database is available for DML prior backup.
   bool backup_available = 11 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The schema is drifted from the source of truth.
+  bool drifted = 12 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 // DatabaseMetadata is the metadata for databases.
