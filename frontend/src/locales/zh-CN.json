@@ -1491,12 +1491,12 @@
         "content": "这将删除这些已应用的修改，但不会影响数据库 Schema。此操作无法撤消。"
       }
     },
-    "not-found": "找不到数据库"
-  },
-  "anomaly": {
-    "types": {
-    },
-    "action": {
+    "not-found": "找不到数据库",
+    "drifted": {
+      "schema-drift-detected": {
+        "self": "检测到 Schema 偏差",
+        "description": "当前数据库 Schema 与 Bytebase 中记录的 Schema 不一致。请及时检查并修复以避免潜在问题。"
+      }
     }
   },
   "project": {
