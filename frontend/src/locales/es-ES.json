@@ -94,7 +94,6 @@
     "query": "Consulta",
     "transfer": "Transferir",
     "schema": "Esquema",
-    "anomalies": "Anomalías",
     "detail": "Detalle",
     "type": "Tipo",
     "language": "Idioma",
@@ -1359,7 +1358,6 @@
   "database": {
     "sync-database": "Sincronizar base de datos",
     "select": "Seleccionar base de datos",
-    "no-anomalies-detected": "No se detectaron anomalías",
     "sync-status": "Estado de sincronización",
     "last-successful-sync": "Última sincronización exitosa",
     "filter-database": "Filtrar base de datos",
@@ -1496,18 +1494,10 @@
     "not-found": "No se puede encontrar la base de datos"
   },
   "anomaly": {
-    "attention-desc": "Bytebase detecta periódicamente anomalías según el intervalo de escaneo de la instancia y muestra los hallazgos aquí.",
-    "table-placeholder": "¡Hurra, no se detectaron anomalías de {type}!",
     "types": {
-      "connection-failure": "Fallo de conexión",
-      "schema-drift": "Variación de esquema"
     },
     "action": {
-      "check-instance": "Ver instancia",
-      "view-diff": "Ver diferencia"
-    },
-    "last-seen": "Último visto",
-    "first-seen": "Primero visto"
+    }
   },
   "project": {
     "table": {

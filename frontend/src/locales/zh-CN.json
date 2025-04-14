@@ -94,7 +94,6 @@
     "query": "查询",
     "transfer": "转移",
     "schema": "Schema",
-    "anomalies": "异常",
     "detail": "详情",
     "type": "类型",
     "language": "语言",
@@ -1359,7 +1358,6 @@
   "database": {
     "sync-database": "同步数据库",
     "select": "选择数据库",
-    "no-anomalies-detected": "没有检测到异常",
     "sync-status": "同步状态",
     "last-successful-sync": "最后一次成功的同步",
     "filter-database": "过滤数据库",
@@ -1496,18 +1494,10 @@
     "not-found": "找不到数据库"
   },
   "anomaly": {
-    "attention-desc": "Bytebase 会根据实例配置的扫描间隔检测异常，并且展示在这里。",
-    "table-placeholder": "很棒，没有检测到{type}异常！",
     "types": {
-      "connection-failure": "连接失败",
-      "schema-drift": "Schema 偏差"
     },
     "action": {
-      "check-instance": "检查实例",
-      "view-diff": "查看差异"
-    },
-    "last-seen": "上次出现",
-    "first-seen": "首次出现"
+    }
   },
   "project": {
     "table": {

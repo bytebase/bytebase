@@ -94,7 +94,6 @@
     "query": "Truy vấn",
     "transfer": "Chuyển",
     "schema": "Lược đồ",
-    "anomalies": "Bất thường",
     "detail": "Chi tiết",
     "type": "Loại",
     "language": "Ngôn ngữ",
@@ -1359,7 +1358,6 @@
   "database": {
     "sync-database": "Đồng bộ cơ sở dữ liệu",
     "select": "Chọn cơ sở dữ liệu",
-    "no-anomalies-detected": "Không phát hiện thấy bất thường",
     "sync-status": "Trạng thái đồng bộ",
     "last-successful-sync": "Lần đồng bộ thành công cuối cùng",
     "filter-database": "Lọc cơ sở dữ liệu",
@@ -1496,18 +1494,10 @@
     "not-found": "Không tìm thấy cơ sở dữ liệu"
   },
   "anomaly": {
-    "attention-desc": "Bytebase định kỳ phát hiện các bất thường dựa trên khoảng thời gian quét phiên bản và hiển thị các phát hiện ở đây.",
-    "table-placeholder": "Hoan hô, không phát hiện thấy bất thường {type} nào!",
     "types": {
-      "connection-failure": "Lỗi kết nối",
-      "schema-drift": "Độ lệch lược đồ"
     },
     "action": {
-      "check-instance": "Kiểm tra phiên bản",
-      "view-diff": "Xem khác biệt"
-    },
-    "last-seen": "Lần cuối thấy",
-    "first-seen": "Lần đầu thấy"
+    }
   },
   "project": {
     "table": {
