@@ -196,7 +196,8 @@ export const useEnvironmentV1Store = defineStore("environment_v1", {
       return environment;
     },
     getEnvironmentByName(name: string) {
-      return this.environmentMapById.get(name) ?? unknownEnvironment();
+      const id = name.replace(environmentNamePrefix, "");
+      return this.environmentMapById.get(id) ?? unknownEnvironment();
     },
   },
 });
