@@ -211,7 +211,6 @@ import { NCode, NConfigProvider } from "naive-ui";
 import { reactive, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBAttention } from "@/bbkit";
-import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import { pushNotification } from "@/store";
 import {
   languageOfEngineV1,
