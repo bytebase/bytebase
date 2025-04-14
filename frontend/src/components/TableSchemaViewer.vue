@@ -40,13 +40,9 @@ import { nextTick } from "vue";
 import { useI18n } from "vue-i18n";
 import { MonacoEditor } from "@/components/MonacoEditor";
 import { databaseServiceClient } from "@/grpcweb";
-import {
-  pushNotification,
-} from "@/store";
+import { pushNotification } from "@/store";
 import type { ComposedDatabase } from "@/types";
-import {
-  GetSchemaStringRequest_ObjectType,
-} from "@/types/proto/v1/database_service";
+import type { GetSchemaStringRequest_ObjectType } from "@/types/proto/v1/database_service";
 import { hasSchemaProperty } from "@/utils";
 
 const props = defineProps<{
@@ -88,7 +84,7 @@ onMounted(async () => {
       type: props.type,
       schema: props.schema,
       object: props.object,
-    })
+    });
     schemaString.value = response.schemaString.trim();
   });
 });

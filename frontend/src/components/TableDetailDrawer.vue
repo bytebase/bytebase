@@ -94,7 +94,8 @@
                     class="!w-[32rem] !h-[20rem]"
                     :database="database"
                     :schema="schemaName"
-                    :table="tableName"
+                    :object="tableName"
+                    :type="GetSchemaStringRequest_ObjectType.TABLE"
                   />
                 </NPopover>
               </dl>
@@ -334,6 +335,7 @@ import {
   ObjectSchema_Type,
   ObjectSchema_StructKind,
 } from "@/types/proto/v1/database_catalog_service";
+import { GetSchemaStringRequest_ObjectType } from "@/types/proto/v1/database_service";
 import type { DataClassificationSetting_DataClassificationConfig } from "@/types/proto/v1/setting_service";
 import {
   bytesToString,
