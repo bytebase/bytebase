@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 
+	"github.com/pkg/errors"
+
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -25,9 +27,10 @@ func loggingReleaseChecks(resp *v1pb.CheckReleaseResponse) error {
 		if len(advices) > 0 {
 			fmt.Printf("%s with %s has %d advices\n", result.File, result.Target, len(advices))
 			for _, advice := range result.Advices {
-				if advice.Status == v1pb.Advice_WARNING {
+				switch advice.Status {
+				case v1pb.Advice_WARNING:
 					hasWarning = true
-				} else if advice.Status == v1pb.Advice_ERROR {
+				case v1pb.Advice_ERROR:
 					hasError = true
 				}
 
@@ -60,7 +63,7 @@ func loggingReleaseChecks(resp *v1pb.CheckReleaseResponse) error {
 	}
 
 	if hasError {
-		return fmt.Errorf("SQL review failed with errors")
+		return errors.Errorf("SQL review failed with errors")
 	}
 	return nil
 }
