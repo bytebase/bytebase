@@ -28,6 +28,7 @@ const convertToEnvironments = (
 ): Environment[] => {
   return environments.map<Environment>((env, i) => {
     return {
+      name: `${environmentNamePrefix}${env.id}`,
       id: env.id,
       title: env.title,
       order: i,
@@ -41,6 +42,7 @@ const convertEnvironment = (
   env: Environment
 ): EnvironmentSetting_Environment => {
   const res: EnvironmentSetting_Environment = {
+    name: env.name,
     id: env.id,
     title: env.title,
     color: env.color,
@@ -112,6 +114,7 @@ export const useEnvironmentV1Store = defineStore("environment_v1", {
       environment: Partial<Environment>
     ): Promise<Environment> {
       const e: EnvironmentSetting_Environment = {
+        name: "",
         id: environment.id ?? "",
         title: environment.title ?? "",
         color: environment.color ?? "",
