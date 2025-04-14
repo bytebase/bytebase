@@ -9,4 +9,4 @@ title: 「インスタンス」とは？
 #### Learn more
 
 - [インスタンスの追加](https://www.bytebase.com/docs/get-started/step-by-step/add-an-instance)
-- [MySQL テストインスタンスを追加する](https://www.bytebase.com/docs/tutorials/local-mysql-instance)
+- [MySQL テストインスタンスを追加する](https://www.bytebase.com/docs/get-started/step-by-step/add-an-instance/)
