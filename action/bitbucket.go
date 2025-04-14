@@ -74,7 +74,7 @@ func createBitbucketReport(checkResponse *v1pb.CheckReleaseResponse) error {
 		if err != nil {
 			return errors.Wrapf(err, "failed to create Bitbucket report, status code: %d, and failed to read response body: %v", resp.StatusCode, err)
 		}
-		return errors.Wrapf(err, "failed to create Bitbucket report, status code: %d, response body: %s", resp.StatusCode, string(bodyBytes))
+		return errors.Errorf("failed to create Bitbucket report, status code: %d, response body: %s", resp.StatusCode, string(bodyBytes))
 	}
 	return nil
 }
