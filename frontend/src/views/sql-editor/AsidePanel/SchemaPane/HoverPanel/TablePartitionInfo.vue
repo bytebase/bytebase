@@ -1,36 +1,47 @@
 <template>
   <div class="min-w-[14rem] max-w-[18rem] gap-y-1">
     <InfoItem :title="$t('common.name')">
-      {{ partition.name }}
+      {{ partitionMetadata.name }}
     </InfoItem>
     <InfoItem :title="$t('schema-editor.table-partition.type')">
-      {{ tablePartitionMetadata_TypeToJSON(partition.type) }}
+      {{ tablePartitionMetadata_TypeToJSON(partitionMetadata.type) }}
     </InfoItem>
     <InfoItem :title="$t('schema-editor.table-partition.expression')">
-      <code>{{ partition.expression }}</code>
+      <code>{{ partitionMetadata.expression }}</code>
     </InfoItem>
     <InfoItem :title="$t('schema-editor.table-partition.value')">
-      {{ partition.value }}
+      {{ partitionMetadata.value }}
     </InfoItem>
   </div>
 </template>
 
 <script setup lang="ts">
-import type { ComposedDatabase } from "@/types";
+import { computed } from "vue";
+import { useDBSchemaV1Store } from "@/store";
 import {
   tablePartitionMetadata_TypeToJSON,
-  type DatabaseMetadata,
-  type SchemaMetadata,
-  type TableMetadata,
-  type TablePartitionMetadata,
+  TablePartitionMetadata,
 } from "@/types/proto/v1/database_service";
 import InfoItem from "./InfoItem.vue";
 
-defineProps<{
-  db: ComposedDatabase;
-  database: DatabaseMetadata;
-  schema: SchemaMetadata;
-  table: TableMetadata;
-  partition: TablePartitionMetadata;
+const props = defineProps<{
+  database: string;
+  schema?: string;
+  table: string;
+  partition: string;
 }>();
+
+const dbSchema = useDBSchemaV1Store();
+
+const partitionMetadata = computed(
+  () =>
+    dbSchema
+      .getTableMetadata({
+        database: props.database,
+        schema: props.schema,
+        table: props.table,
+      })
+      .partitions.find((p) => p.name === props.partition) ??
+    TablePartitionMetadata.create()
+);
 </script>

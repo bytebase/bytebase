@@ -13,7 +13,8 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { InstanceV1EngineIcon } from "@/components/v2";
-import type { TreeNode } from "../common";
+import { useDatabaseV1Store } from "@/store";
+import type { TreeNode } from "../tree";
 import CommonNode from "./CommonNode.vue";
 
 const props = defineProps<{
@@ -21,7 +22,11 @@ const props = defineProps<{
   keyword: string;
 }>();
 
-const database = computed(
-  () => (props.node as TreeNode<"database">).meta.target.db
+const databaseStore = useDatabaseV1Store();
+
+const database = computed(() =>
+  databaseStore.getDatabaseByName(
+    (props.node as TreeNode<"database">).meta.target.database
+  )
 );
 </script>
