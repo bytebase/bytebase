@@ -1253,7 +1253,6 @@
     "select": "Select environment",
     "delete": "Delete this environment",
     "create": "Create Environment",
-    "restore": "Restore this environment",
     "successfully-updated-environment": "Successfully updated environment '{name}'.",
     "production-environment": "Production environment",
     "access-control": {
