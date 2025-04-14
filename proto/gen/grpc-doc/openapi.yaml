@@ -9327,6 +9327,10 @@ components:
                     readOnly: true
                     type: boolean
                     description: The database is available for DML prior backup.
+                drifted:
+                    readOnly: true
+                    type: boolean
+                    description: The schema is drifted from the source of truth.
         DatabaseCatalog:
             type: object
             properties:
@@ -9394,6 +9398,9 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/Secret'
+                drifted:
+                    type: boolean
+                    description: The schema is drifted from the source of truth.
             description: DatabaseMetadata is the metadata for databases.
         DatabaseSchema:
             type: object

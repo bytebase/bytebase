@@ -305,6 +305,8 @@ export interface Database {
     | undefined;
   /** The database is available for DML prior backup. */
   backupAvailable: boolean;
+  /** The schema is drifted from the source of truth. */
+  drifted: boolean;
 }
 
 export interface Database_LabelsEntry {
@@ -2860,6 +2862,7 @@ function createBaseDatabase(): Database {
     labels: {},
     instanceResource: undefined,
     backupAvailable: false,
+    drifted: false,
   };
 }
 
@@ -2894,6 +2897,9 @@ export const Database: MessageFns<Database> = {
     }
     if (message.backupAvailable !== false) {
       writer.uint32(88).bool(message.backupAvailable);
+    }
+    if (message.drifted !== false) {
+      writer.uint32(96).bool(message.drifted);
     }
     return writer;
   },
@@ -2988,6 +2994,14 @@ export const Database: MessageFns<Database> = {
           message.backupAvailable = reader.bool();
           continue;
         }
+        case 12: {
+          if (tag !== 96) {
+            break;
+          }
+
+          message.drifted = reader.bool();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3014,6 +3028,7 @@ export const Database: MessageFns<Database> = {
         : {},
       instanceResource: isSet(object.instanceResource) ? InstanceResource.fromJSON(object.instanceResource) : undefined,
       backupAvailable: isSet(object.backupAvailable) ? globalThis.Boolean(object.backupAvailable) : false,
+      drifted: isSet(object.drifted) ? globalThis.Boolean(object.drifted) : false,
     };
   },
 
@@ -3055,6 +3070,9 @@ export const Database: MessageFns<Database> = {
     if (message.backupAvailable !== false) {
       obj.backupAvailable = message.backupAvailable;
     }
+    if (message.drifted !== false) {
+      obj.drifted = message.drifted;
+    }
     return obj;
   },
 
@@ -3082,6 +3100,7 @@ export const Database: MessageFns<Database> = {
       ? InstanceResource.fromPartial(object.instanceResource)
       : undefined;
     message.backupAvailable = object.backupAvailable ?? false;
+    message.drifted = object.drifted ?? false;
     return message;
   },
 };
