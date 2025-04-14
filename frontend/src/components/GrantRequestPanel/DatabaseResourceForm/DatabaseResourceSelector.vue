@@ -1,5 +1,11 @@
 <template>
-  <div class="w-full relative">
+  <div class="w-full relative space-y-2">
+    <AdvancedSearch
+      v-model:params="params"
+      :autofocus="false"
+      :placeholder="$t('database.filter-database')"
+      :scope-options="scopeOptions"
+    />
     <NTransfer
       id="database-resource-selector"
       v-model:value="selectedValueList"
@@ -8,8 +14,6 @@
       :options="sourceTransferOptions"
       :render-source-list="renderSourceList"
       :render-target-list="renderTargetList"
-      :source-filterable="true"
-      :source-filter-placeholder="$t('common.filter-by-name')"
     />
     <div
       v-if="initializing"
@@ -28,13 +32,26 @@ import { NTransfer, NTree, NButton } from "naive-ui";
 import { computed, h, onMounted, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBSpin } from "@/bbkit";
+import AdvancedSearch from "@/components/AdvancedSearch";
+import { useCommonSearchScopeOptions } from "@/components/AdvancedSearch/useCommonSearchScopeOptions";
 import {
+  type DatabaseFilter,
   useDatabaseV1Store,
   useDBSchemaV1Store,
   batchGetOrFetchDatabases,
 } from "@/store";
+import {
+  instanceNamePrefix,
+  environmentNamePrefix,
+} from "@/store/modules/v1/common";
 import type { ComposedDatabase, DatabaseResource } from "@/types";
-import { getDefaultPagination } from "@/utils";
+import { engineFromJSON } from "@/types/proto/v1/common";
+import {
+  getDefaultPagination,
+  type SearchParams,
+  CommonFilterScopeIdList,
+  extractProjectResourceName,
+} from "@/utils";
 import Label from "./Label.vue";
 import type { DatabaseTreeOption } from "./common";
 import {
@@ -62,6 +79,13 @@ const databaseStore = useDatabaseV1Store();
 const dbSchemaStore = useDBSchemaV1Store();
 const { t } = useI18n();
 
+const scopeOptions = useCommonSearchScopeOptions([
+  ...CommonFilterScopeIdList,
+  "project",
+  "database-label",
+  "engine",
+]);
+
 const parseResourceToKey = (resource: DatabaseResource): string => {
   const data = [
     resource.databaseFullName,
@@ -86,18 +110,36 @@ const parseResourceToKey = (resource: DatabaseResource): string => {
   return data.join("/");
 };
 
+const getInitParams = (): SearchParams => {
+  return {
+    query: "",
+    scopes: [
+      {
+        id: "project",
+        value: extractProjectResourceName(props.projectName),
+        readonly: true,
+      },
+    ],
+  };
+};
+
+const params = ref<SearchParams>(getInitParams());
+watch(
+  () => props.projectName,
+  () => (params.value = getInitParams()),
+  { immediate: true }
+);
+
 const selectedValueList = ref<string[]>([]);
 const expandedKeys = ref<string[]>([]);
 const indeterminateKeys = ref<string[]>([]);
 const initializing = ref(true);
 const databaseList = ref<ComposedDatabase[]>([]);
 const fetchDataState = ref<{
-  searchText: string;
   nextPageToken?: string;
   loading: boolean;
 }>({
   loading: false,
-  searchText: "",
 });
 
 const cascadeLoopTreeNode = (
@@ -110,6 +152,48 @@ const cascadeLoopTreeNode = (
   }
 };
 
+const selectedInstance = computed(() => {
+  const instanceId = params.value.scopes.find(
+    (scope) => scope.id === "instance"
+  )?.value;
+  if (!instanceId) {
+    return;
+  }
+  return `${instanceNamePrefix}${instanceId}`;
+});
+
+const selectedEnvironment = computed(() => {
+  const environmentId = params.value.scopes.find(
+    (scope) => scope.id === "environment"
+  )?.value;
+  if (!environmentId) {
+    return;
+  }
+  return `${environmentNamePrefix}${environmentId}`;
+});
+
+const selectedLabels = computed(() => {
+  return params.value.scopes
+    .filter((scope) => scope.id === "database-label")
+    .map((scope) => scope.value);
+});
+
+const selectedEngines = computed(() => {
+  return params.value.scopes
+    .filter((scope) => scope.id === "engine")
+    .map((scope) => engineFromJSON(scope.value));
+});
+
+const databaseFilter = computed(
+  (): DatabaseFilter => ({
+    instance: selectedInstance.value,
+    environment: selectedEnvironment.value,
+    query: params.value.query,
+    labels: selectedLabels.value,
+    engines: selectedEngines.value,
+  })
+);
+
 const fetchDatabaseList = useDebounceFn(async () => {
   fetchDataState.value.loading = true;
   const pageToken = fetchDataState.value.nextPageToken;
@@ -119,9 +203,7 @@ const fetchDatabaseList = useDebounceFn(async () => {
       pageSize: getDefaultPagination(),
       pageToken,
       parent: props.projectName,
-      filter: {
-        query: fetchDataState.value.searchText,
-      },
+      filter: databaseFilter.value,
     });
 
     if (pageToken) {
@@ -136,12 +218,24 @@ const fetchDatabaseList = useDebounceFn(async () => {
 }, 500);
 
 watch(
-  () => fetchDataState.value.searchText,
+  () => databaseFilter.value,
   async () => {
     fetchDataState.value.nextPageToken = "";
-    fetchDatabaseList();
+    await fetchDatabaseList();
+    if (!params.value.query && params.value.scopes.length === 1) {
+      databaseList.value = uniqBy(
+        [
+          ...databaseList.value,
+          ...props.databaseResources.map((resource) =>
+            databaseStore.getDatabaseByName(resource.databaseFullName)
+          ),
+        ],
+        (db) => db.name
+      );
+    }
   },
   {
+    deep: true,
     immediate: true,
   }
 );
@@ -149,26 +243,6 @@ watch(
 onMounted(async () => {
   await batchGetOrFetchDatabases(
     props.databaseResources.map((resource) => resource.databaseFullName)
-  );
-
-  // I really don't want to do this.
-  // But the transfer component not support native search callback.
-  const selectorElement = document.getElementById("database-resource-selector");
-  const input = selectorElement?.querySelector("input");
-  if (input) {
-    input.addEventListener("input", () => {
-      fetchDataState.value.searchText = input.value;
-    });
-  }
-
-  databaseList.value = uniqBy(
-    [
-      ...databaseList.value,
-      ...props.databaseResources.map((resource) =>
-        databaseStore.getDatabaseByName(resource.databaseFullName)
-      ),
-    ],
-    (db) => db.name
   );
 
   const selectedKeys = props.databaseResources.map(parseResourceToKey);

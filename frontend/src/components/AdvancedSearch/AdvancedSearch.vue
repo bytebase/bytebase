@@ -612,6 +612,14 @@ onMounted(() => {
   const { qs } = route.query;
   if (typeof qs === "string" && qs.length > 0) {
     const params = buildSearchParamsBySearchText(qs);
+    const existedScopes = props.params.scopes.reduce((map, scope) => {
+      map.set(scope.id, scope.readonly ?? false);
+      return map;
+    }, new Map<SearchScopeId, boolean>());
+    params.scopes = params.scopes.map((scope) => ({
+      ...scope,
+      readonly: existedScopes.get(scope.id),
+    }));
     emit("update:params", params);
   }
 });
