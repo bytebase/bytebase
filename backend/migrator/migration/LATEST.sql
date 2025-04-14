@@ -391,24 +391,6 @@ CREATE INDEX idx_query_history_creator_id_created_at_project_id ON query_history
 
 ALTER SEQUENCE query_history_id_seq RESTART WITH 101;
 
--- Anomaly
--- anomaly stores various anomalies found by the scanner.
--- For now, anomaly can be associated with a particular instance or database.
-CREATE TABLE anomaly (
-    id serial PRIMARY KEY,
-    updated_at timestamptz NOT NULL DEFAULT now(),
-    project text NOT NULL,
-    instance text NOT NULL,
-    db_name text NOT NULL,
-    type text NOT NULL CHECK (type LIKE 'bb.anomaly.%'),
-    payload jsonb NOT NULL DEFAULT '{}',
-    CONSTRAINT anomaly_instance_db_name_fkey FOREIGN KEY(instance, db_name) REFERENCES db(instance, name)
-);
-
-CREATE UNIQUE INDEX idx_anomaly_unique_project_instance_dn_name_type ON anomaly(project, instance, db_name, type);
-
-ALTER SEQUENCE anomaly_id_seq RESTART WITH 101;
-
 -- worksheet table stores worksheets in SQL Editor.
 CREATE TABLE worksheet (
     id serial PRIMARY KEY,

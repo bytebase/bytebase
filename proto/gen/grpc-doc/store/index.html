@@ -233,25 +233,6 @@
         
           
           <li>
-            <a href="#store%2fanomaly.proto">store/anomaly.proto</a>
-            <ul>
-              
-                <li>
-                  <a href="#bytebase.store.AnomalyConnectionPayload"><span class="badge">M</span>AnomalyConnectionPayload</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.AnomalyDatabaseSchemaDriftPayload"><span class="badge">M</span>AnomalyDatabaseSchemaDriftPayload</a>
-                </li>
-              
-              
-              
-              
-            </ul>
-          </li>
-        
-          
-          <li>
             <a href="#store%2fapproval.proto">store/approval.proto</a>
             <ul>
               
@@ -2037,82 +2018,6 @@ TODO: use range instead. </p></td>
             
           </tbody>
         </table>
-      
-
-      
-
-      
-    
-      
-      <div class="file-heading">
-        <h2 id="store/anomaly.proto">store/anomaly.proto</h2><a href="#title">Top</a>
-      </div>
-      <p></p>
-
-      
-        <h3 id="bytebase.store.AnomalyConnectionPayload">AnomalyConnectionPayload</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>detail</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Connection failure detail </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.store.AnomalyDatabaseSchemaDriftPayload">AnomalyDatabaseSchemaDriftPayload</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>version</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The schema version corresponds to the expected schema </p></td>
-                </tr>
-              
-                <tr>
-                  <td>expect</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The expected latest schema stored in the migration history table </p></td>
-                </tr>
-              
-                <tr>
-                  <td>actual</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The actual schema dumped from the database </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-
       
 
       
