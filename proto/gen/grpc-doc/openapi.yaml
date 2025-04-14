@@ -9271,15 +9271,15 @@ components:
         EnvironmentSetting_Environment:
             type: object
             properties:
-                title:
-                    type: string
-                    description: The display name of the environment.
                 id:
                     type: string
                     description: |-
                         The resource id of the environment.
                          This value should be 4-63 characters, and valid characters
                          are /[a-z][0-9]-/.
+                title:
+                    type: string
+                    description: The display name of the environment.
                 tags:
                     type: object
                     additionalProperties:
