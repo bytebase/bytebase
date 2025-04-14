@@ -13137,7 +13137,7 @@ and write back to the schema metadata. </p></td>
         
       
         <h3 id="bytebase.v1.EnvironmentSetting">EnvironmentSetting</h3>
-        <p>TODO(p0ny): implement.</p>
+        <p></p>
 
         
           <table class="field-table">
@@ -13171,10 +13171,12 @@ and write back to the schema metadata. </p></td>
             <tbody>
               
                 <tr>
-                  <td>title</td>
+                  <td>name</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The display name of the environment. </p></td>
+                  <td><p>The resource name of the environment.
+Format: environments/{environment}.
+Output only. </p></td>
                 </tr>
               
                 <tr>
@@ -13184,6 +13186,13 @@ and write back to the schema metadata. </p></td>
                   <td><p>The resource id of the environment.
 This value should be 4-63 characters, and valid characters
 are /[a-z][0-9]-/. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>title</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The display name of the environment. </p></td>
                 </tr>
               
                 <tr>

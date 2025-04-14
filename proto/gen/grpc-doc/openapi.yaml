@@ -9268,7 +9268,6 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/EnvironmentSetting_Environment'
-            description: 'TODO(p0ny): implement.'
         EnvironmentSetting_Environment:
             type: object
             properties:

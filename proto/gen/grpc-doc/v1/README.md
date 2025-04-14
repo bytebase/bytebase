@@ -4481,7 +4481,7 @@ ANY means approving any node will proceed.
 <a name="bytebase-v1-EnvironmentSetting"></a>
 
 ### EnvironmentSetting
-TODO(p0ny): implement.
+
 
 
 | Field | Type | Label | Description |
@@ -4501,8 +4501,9 @@ TODO(p0ny): implement.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| title | [string](#string) |  | The display name of the environment. |
+| name | [string](#string) |  | The resource name of the environment. Format: environments/{environment}. Output only. |
 | id | [string](#string) |  | The resource id of the environment. This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
+| title | [string](#string) |  | The display name of the environment. |
 | tags | [EnvironmentSetting.Environment.TagsEntry](#bytebase-v1-EnvironmentSetting-Environment-TagsEntry) | repeated |  |
 | color | [string](#string) |  |  |
 

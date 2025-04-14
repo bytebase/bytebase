@@ -495,18 +495,21 @@ message AISetting {
   string version = 6;
 }
 
-// TODO(p0ny): implement.
 message EnvironmentSetting {
   repeated Environment environments = 1;
 
   message Environment {
-    // The display name of the environment.
-    string title = 1;
+    // The resource name of the environment.
+    // Format: environments/{environment}.
+    // Output only.
+    string name = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
     // The resource id of the environment.
     // This value should be 4-63 characters, and valid characters
     // are /[a-z][0-9]-/.
     string id = 2;
-    map<string, string> tags = 3;
-    string color = 4;
+    // The display name of the environment.
+    string title = 3;
+    map<string, string> tags = 4;
+    string color = 5;
   }
 }
