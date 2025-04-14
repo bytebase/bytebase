@@ -2,7 +2,6 @@ package trino
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -14,6 +13,22 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db"
 
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
+)
+
+// Define context key types to avoid lint issues
+type contextKey string
+
+const (
+	explicitDbNameKey contextKey = "explicitDbName"
+	databaseKey       contextKey = "database"
+	resourceIDKey     contextKey = "resourceID"
+	nameKey           contextKey = "name"
+	requestNameKey    contextKey = "requestName"
+	databaseNameKey   contextKey = "databaseName"
+	checkKey          contextKey = "check"
+	pathKey           contextKey = "path"
+	statementKey      contextKey = "statement"
+	resourceIdKey     contextKey = "resourceId" // lowercase 'd' in original API
 )
 
 // SyncInstance syncs the Trino instance metadata.
@@ -33,20 +48,20 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 	// Verify connection with a simple test query
 	testQuery := "SELECT 1"
 	if d.config.DataSource.Database != "" {
-		testQuery = fmt.Sprintf("SELECT 1 FROM %s.information_schema.tables WHERE 1=0", 
+		testQuery = fmt.Sprintf("SELECT 1 FROM %s.information_schema.tables WHERE 1=0",
 			d.config.DataSource.Database)
 	}
-	
+
 	queryCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	_, err = d.db.ExecContext(queryCtx, testQuery)
 	cancel()
-	
+
 	if err != nil {
 		// Try fallback query if first attempt fails
 		fallbackCtx, fallbackCancel := context.WithTimeout(context.Background(), 5*time.Second)
 		_, err = d.db.ExecContext(fallbackCtx, "SHOW CATALOGS")
 		fallbackCancel()
-		
+
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to execute test query - connection is not functional")
 		}
@@ -58,7 +73,7 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 
 	// Get catalog list
 	var catalogList []string
-	
+
 	// If we have a specific catalog configured, use it
 	if d.config.DataSource.Database != "" {
 		catalogList = append(catalogList, d.config.DataSource.Database)
@@ -67,7 +82,7 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 		catalogCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		rows, err := d.db.QueryContext(catalogCtx, "SHOW CATALOGS")
 		defer cancel()
-		
+
 		if err == nil {
 			// Process catalogs
 			for rows.Next() {
@@ -78,13 +93,13 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 			}
 			rows.Close()
 		}
-		
+
 		// If we couldn't get any catalogs, try alternative query
 		if len(catalogList) == 0 {
 			catalogCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			rows, err := d.db.QueryContext(catalogCtx, "SELECT catalog_name FROM system.metadata.catalogs")
 			defer cancel()
-			
+
 			if err == nil {
 				for rows.Next() {
 					var catalog string
@@ -95,7 +110,7 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 				rows.Close()
 			}
 		}
-		
+
 		// If still no catalogs, add system as fallback
 		if len(catalogList) == 0 {
 			catalogList = append(catalogList, "system")
@@ -109,81 +124,40 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 			Name: catalog,
 		}
 
-		// Try to get schemas for this catalog using various strategies
-		schemaQueries := []struct {
-			description string
-			query       string
-		}{
-			{
-				description: "Standard SHOW SCHEMAS",
-				query:       fmt.Sprintf("SHOW SCHEMAS FROM %s", catalog),
-			},
-			{
-				description: "Query information_schema.schemata",
-				query:       fmt.Sprintf("SELECT schema_name FROM %s.information_schema.schemata", catalog),
-			},
-			{
-				description: "Query information_schema with table_schema",
-				query:       fmt.Sprintf("SELECT DISTINCT table_schema FROM %s.information_schema.tables", catalog),
-			},
-			{
-				description: "Query system metadata",
-				query:       fmt.Sprintf("SELECT schema_name FROM system.metadata.schemas WHERE catalog_name = '%s'", catalog),
-			},
-		}
-
+		// Get schemas for this catalog
 		var schemaList []string
-		var schemaErr error
 
-		// Try each schema query strategy
-		for _, test := range schemaQueries {
+		// Try standard query first
+		schemaCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		rows, err := d.db.QueryContext(schemaCtx, fmt.Sprintf("SHOW SCHEMAS FROM %s", catalog))
 
-			// Use a fresh context for each schema query attempt
-			schemaCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-
-			// Execute the query
-			var rows *sql.Rows
-			rows, err = d.db.QueryContext(schemaCtx, test.query)
-			if err != nil {
-
-				schemaErr = err
-				cancel()
-				continue
-			}
-
-			// Process the results immediately
-
-			// Collect all schemas into a list
+		if err == nil {
 			for rows.Next() {
 				var schema string
-				if err := rows.Scan(&schema); err != nil {
-					slog.Warn("failed to scan schema name", log.BBError(err))
-					continue
+				if err := rows.Scan(&schema); err == nil && schema != "" {
+					schemaList = append(schemaList, schema)
 				}
-
-				// Skip empty schemas if any
-				if schema == "" {
-					continue
-				}
-
-				schemaList = append(schemaList, schema)
 			}
-
-			// Check for errors from iteration
-			if err := rows.Err(); err != nil {
-				slog.Warn("error iterating schema rows",
-					log.BBError(err),
-					slog.String("catalog", catalog))
-			}
-
-			// Clean up
 			rows.Close()
-			cancel()
+		}
+		cancel()
 
-			// If we found any schemas, we can stop trying other queries
-			if len(schemaList) > 0 {
-				break
+		// If that didn't work, try backup approach
+		if len(schemaList) == 0 {
+			backupCtx, backupCancel := context.WithTimeout(context.Background(), 5*time.Second)
+			rows, err := d.db.QueryContext(backupCtx, fmt.Sprintf(
+				"SELECT schema_name FROM %s.information_schema.schemata", catalog))
+
+			if err == nil {
+				for rows.Next() {
+					var schema string
+					if err := rows.Scan(&schema); err == nil && schema != "" {
+						schemaList = append(schemaList, schema)
+					}
+				}
+				rows.Close()
 			}
+			backupCancel()
 		}
 
 		// Create schema metadata entries
@@ -191,13 +165,6 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 
 		// If no schemas were found, add information_schema as a fallback
 		if len(schemaList) == 0 {
-			if schemaErr != nil {
-				slog.Warn("All schema queries failed or returned no results for catalog",
-					log.BBError(schemaErr),
-					slog.String("catalog", catalog))
-			}
-
-			// Add information_schema as fallback since almost all catalogs have it
 			schemaMetadataList = append(schemaMetadataList, &storepb.SchemaMetadata{
 				Name: "information_schema",
 			})
@@ -242,8 +209,6 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 		SyncDatabases: syncDatabases,
 	}
 
-	// Debug information
-
 	// Return catalog metadata for display in the UI
 	return &db.InstanceMetadata{
 		Version:   version,
@@ -274,21 +239,19 @@ func extractExpectedDatabaseName(ctx context.Context, defaultName string) string
 	// Check all the common patterns for where Bytebase might have included the expected database name
 
 	// First check if there's an explicit DB name in the context
-	if explicitDBName, ok := ctx.Value("explicitDbName").(string); ok && explicitDBName != "" {
-
+	if explicitDBName, ok := ctx.Value(explicitDbNameKey).(string); ok && explicitDBName != "" {
 		return explicitDBName
 	}
 
 	// Second, check resources with full path format: "instances/NAME/databases/DBNAME"
 
 	// Try database context value
-	if dbPath, ok := ctx.Value("database").(string); ok && dbPath != "" {
+	if dbPath, ok := ctx.Value(databaseKey).(string); ok && dbPath != "" {
 		if strings.Contains(dbPath, "/databases/") {
 			parts := strings.Split(dbPath, "/")
 			for i, part := range parts {
 				if part == "databases" && i+1 < len(parts) {
 					dbName := parts[i+1]
-
 					return dbName
 				}
 			}
@@ -296,13 +259,12 @@ func extractExpectedDatabaseName(ctx context.Context, defaultName string) string
 	}
 
 	// Try resourceID context value
-	if resourceID, ok := ctx.Value("resourceID").(string); ok && resourceID != "" {
+	if resourceID, ok := ctx.Value(resourceIDKey).(string); ok && resourceID != "" {
 		if strings.Contains(resourceID, "/databases/") {
 			parts := strings.Split(resourceID, "/")
 			for i, part := range parts {
 				if part == "databases" && i+1 < len(parts) {
 					dbName := parts[i+1]
-
 					return dbName
 				}
 			}
@@ -310,13 +272,12 @@ func extractExpectedDatabaseName(ctx context.Context, defaultName string) string
 	}
 
 	// Try name context value
-	if name, ok := ctx.Value("name").(string); ok && name != "" {
+	if name, ok := ctx.Value(nameKey).(string); ok && name != "" {
 		if strings.Contains(name, "/databases/") {
 			parts := strings.Split(name, "/")
 			for i, part := range parts {
 				if part == "databases" && i+1 < len(parts) {
 					dbName := parts[i+1]
-
 					return dbName
 				}
 			}
@@ -324,15 +285,14 @@ func extractExpectedDatabaseName(ctx context.Context, defaultName string) string
 	}
 
 	// If we can't find it in any of the paths, check if requestName has the database
-	if reqName, ok := ctx.Value("requestName").(string); ok && reqName != "" {
+	if reqName, ok := ctx.Value(requestNameKey).(string); ok && reqName != "" {
 		if dbName, found := extractDatabaseNameFromResourcePath(reqName); found {
-
 			return dbName
 		}
 	}
 
 	// Finally, check databaseName context directly
-	if dbName, ok := ctx.Value("databaseName").(string); ok && dbName != "" {
+	if dbName, ok := ctx.Value(databaseNameKey).(string); ok && dbName != "" {
 		return dbName
 	}
 
@@ -350,35 +310,35 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 	isSQLCheck := false
 
 	// Case 1: Check if this is coming from SQL check with a path pattern in name
-	if name, ok := ctx.Value("name").(string); ok && name != "" {
+	if name, ok := ctx.Value(nameKey).(string); ok && name != "" {
 		if dbName, found := extractDatabaseNameFromResourcePath(name); found {
-			ctx = context.WithValue(ctx, "check", true)
-			ctx = context.WithValue(ctx, "requestName", name)
-			ctx = context.WithValue(ctx, "explicitDbName", dbName)
+			ctx = context.WithValue(ctx, checkKey, true)
+			ctx = context.WithValue(ctx, requestNameKey, name)
+			ctx = context.WithValue(ctx, explicitDbNameKey, dbName)
 			isSQLCheck = true
 		}
 	}
 
 	// Case 2: Standard check for missing database info
 	if !isSQLCheck &&
-		ctx.Value("database") == nil && ctx.Value("databaseName") == nil &&
-		ctx.Value("resourceId") == nil && ctx.Value("resourceID") == nil {
-		ctx = context.WithValue(ctx, "check", true)
+		ctx.Value(databaseKey) == nil && ctx.Value(databaseNameKey) == nil &&
+		ctx.Value(resourceIdKey) == nil && ctx.Value(resourceIDKey) == nil {
+		ctx = context.WithValue(ctx, checkKey, true)
 		isSQLCheck = true
 	}
 
 	// Case 3: Check if method name or path suggests SQL check
 	if !isSQLCheck {
-		if reqPath, ok := ctx.Value("path").(string); ok && reqPath != "" {
+		if reqPath, ok := ctx.Value(pathKey).(string); ok && reqPath != "" {
 			if strings.Contains(reqPath, "sql/check") || strings.Contains(reqPath, "/v1/SQLService/Check") {
-				ctx = context.WithValue(ctx, "check", true)
+				ctx = context.WithValue(ctx, checkKey, true)
 				isSQLCheck = true
 			}
 		}
 
-		if !isSQLCheck && ctx.Value("statement") != nil {
-			if statement, ok := ctx.Value("statement").(string); ok && strings.Contains(strings.ToUpper(statement), "INFORMATION_SCHEMA") {
-				ctx = context.WithValue(ctx, "check", true)
+		if !isSQLCheck && ctx.Value(statementKey) != nil {
+			if statement, ok := ctx.Value(statementKey).(string); ok && strings.Contains(strings.ToUpper(statement), "INFORMATION_SCHEMA") {
+				ctx = context.WithValue(ctx, checkKey, true)
 				isSQLCheck = true
 			}
 		}
@@ -396,7 +356,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 		expectedDBName := extractExpectedDatabaseName(ctx, databaseName)
 
 		// Honor the user-selected catalog from the database path
-		if dbPathStr := fmt.Sprintf("%v", ctx.Value("database")); dbPathStr != "<nil>" && dbPathStr != "" {
+		if dbPathStr := fmt.Sprintf("%v", ctx.Value(databaseKey)); dbPathStr != "<nil>" && dbPathStr != "" {
 			if dbPathParts := strings.Split(dbPathStr, "/"); len(dbPathParts) > 0 {
 				for i, part := range dbPathParts {
 					if part == "databases" && i+1 < len(dbPathParts) {
@@ -696,7 +656,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 	dbMeta.Schemas = schemas
 
 	// If this is a SQL check context, ensure we have standard structure with information_schema
-	if ctx.Value("check") != nil {
+	if ctx.Value(checkKey) != nil {
 		// Ensure we have information_schema with standard tables
 		var hasInfoSchema bool
 		for _, schema := range dbMeta.Schemas {
@@ -742,7 +702,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 // This handles the case where no catalog is specified in the connection configuration.
 func (d *Driver) getDatabaseNameForSync(ctx context.Context) (string, error) {
 	// First check if a resourceID is in the context
-	resourceID, ok := ctx.Value("resourceID").(string)
+	resourceID, ok := ctx.Value(resourceIDKey).(string)
 	if ok && resourceID != "" {
 		if dbName, found := extractDatabaseNameFromResourcePath(resourceID); found {
 			return dbName, nil
@@ -750,8 +710,8 @@ func (d *Driver) getDatabaseNameForSync(ctx context.Context) (string, error) {
 	}
 
 	// Check if database name is in context directly as "database"
-	if ctx.Value("database") != nil {
-		dbName, ok := ctx.Value("database").(string)
+	if ctx.Value(databaseKey) != nil {
+		dbName, ok := ctx.Value(databaseKey).(string)
 		if ok && dbName != "" {
 			// First check if it's a path like "instances/instance-id/databases/database-name"
 			if dbResult, found := extractDatabaseNameFromResourcePath(dbName); found {
@@ -768,29 +728,29 @@ func (d *Driver) getDatabaseNameForSync(ctx context.Context) (string, error) {
 	}
 
 	// Check if databaseName is in context
-	if ctx.Value("databaseName") != nil {
-		dbName, ok := ctx.Value("databaseName").(string)
+	if ctx.Value(databaseNameKey) != nil {
+		dbName, ok := ctx.Value(databaseNameKey).(string)
 		if ok && dbName != "" {
 			return dbName, nil
 		}
 	}
 
 	// For SQL checks, we need to handle special cases
-	if ctx.Value("check") != nil {
+	if ctx.Value(checkKey) != nil {
 		// First priority: check if we have an explicitly provided database name
-		if explicitDbName, ok := ctx.Value("explicitDbName").(string); ok && explicitDbName != "" {
+		if explicitDbName, ok := ctx.Value(explicitDbNameKey).(string); ok && explicitDbName != "" {
 			return explicitDbName, nil
 		}
 
 		// Second priority: Look for request name pattern
-		if reqName, ok := ctx.Value("requestName").(string); ok && reqName != "" {
+		if reqName, ok := ctx.Value(requestNameKey).(string); ok && reqName != "" {
 			if dbName, found := extractDatabaseNameFromResourcePath(reqName); found {
 				return dbName, nil
 			}
 		}
 
 		// Third priority: Look for name context value
-		if reqName, ok := ctx.Value("name").(string); ok && reqName != "" {
+		if reqName, ok := ctx.Value(nameKey).(string); ok && reqName != "" {
 			if dbName, found := extractDatabaseNameFromResourcePath(reqName); found {
 				return dbName, nil
 			}
@@ -875,14 +835,14 @@ func (d *Driver) getVersion(ctx context.Context) (string, error) {
 		versionCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
 		var version string
 		err := d.db.QueryRowContext(versionCtx, fmt.Sprintf(
-			"SELECT VERSION() FROM %s.information_schema.tables WHERE 1=0", 
+			"SELECT VERSION() FROM %s.information_schema.tables WHERE 1=0",
 			d.config.DataSource.Database)).Scan(&version)
 		cancel()
 		if err == nil {
 			return version, nil
 		}
 	}
-	
+
 	// Try standard version queries
 	queries := []string{
 		"SELECT VERSION()",
@@ -890,7 +850,7 @@ func (d *Driver) getVersion(ctx context.Context) (string, error) {
 		"SELECT version FROM system.runtime.nodes LIMIT 1",
 		"SELECT query_engine_version FROM system.metadata.query_engine LIMIT 1",
 	}
-	
+
 	for _, query := range queries {
 		versionCtx, cancel := context.WithTimeout(ctx, 3*time.Second)
 		var version string
