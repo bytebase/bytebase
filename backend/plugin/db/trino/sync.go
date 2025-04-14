@@ -19,7 +19,7 @@ import (
 type contextKey string
 
 const (
-	explicitDbNameKey contextKey = "explicitDbName"
+	explicitDBNameKey contextKey = "explicitDbName"
 	databaseKey       contextKey = "database"
 	resourceIDKey     contextKey = "resourceID"
 	nameKey           contextKey = "name"
@@ -84,6 +84,7 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 		defer cancel()
 
 		if err == nil {
+			defer rows.Close()
 			// Process catalogs
 			for rows.Next() {
 				var catalog string
@@ -95,7 +96,6 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 			if err := rows.Err(); err != nil {
 				slog.Warn("error iterating catalog rows", log.BBError(err))
 			}
-			rows.Close()
 		}
 
 		// If we couldn't get any catalogs, try alternative query
@@ -105,6 +105,7 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 			defer cancel()
 
 			if err == nil {
+				defer rows.Close()
 				for rows.Next() {
 					var catalog string
 					if err := rows.Scan(&catalog); err == nil && catalog != "" {
@@ -115,7 +116,6 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 				if err := rows.Err(); err != nil {
 					slog.Warn("error iterating catalog rows", log.BBError(err))
 				}
-				rows.Close()
 			}
 		}
 
@@ -140,6 +140,7 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 		rows, err := d.db.QueryContext(schemaCtx, fmt.Sprintf("SHOW SCHEMAS FROM %s", catalog))
 
 		if err == nil {
+			defer rows.Close()
 			for rows.Next() {
 				var schema string
 				if err := rows.Scan(&schema); err == nil && schema != "" {
@@ -150,7 +151,6 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 			if err := rows.Err(); err != nil {
 				slog.Warn("error iterating schema rows", log.BBError(err))
 			}
-			rows.Close()
 		}
 		cancel()
 
@@ -161,6 +161,7 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 				"SELECT schema_name FROM %s.information_schema.schemata", catalog))
 
 			if err == nil {
+				defer rows.Close()
 				for rows.Next() {
 					var schema string
 					if err := rows.Scan(&schema); err == nil && schema != "" {
@@ -171,7 +172,6 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 				if err := rows.Err(); err != nil {
 					slog.Warn("error iterating schema rows", log.BBError(err))
 				}
-				rows.Close()
 			}
 			backupCancel()
 		}
@@ -255,7 +255,7 @@ func extractExpectedDatabaseName(ctx context.Context, defaultName string) string
 	// Check all the common patterns for where Bytebase might have included the expected database name
 
 	// First check if there's an explicit DB name in the context
-	if explicitDBName, ok := ctx.Value(explicitDbNameKey).(string); ok && explicitDBName != "" {
+	if explicitDBName, ok := ctx.Value(explicitDBNameKey).(string); ok && explicitDBName != "" {
 		return explicitDBName
 	}
 
@@ -330,7 +330,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 		if dbName, found := extractDatabaseNameFromResourcePath(name); found {
 			ctx = context.WithValue(ctx, checkKey, true)
 			ctx = context.WithValue(ctx, requestNameKey, name)
-			ctx = context.WithValue(ctx, explicitDbNameKey, dbName)
+			ctx = context.WithValue(ctx, explicitDBNameKey, dbName)
 			isSQLCheck = true
 		}
 	}
@@ -782,7 +782,7 @@ func (d *Driver) getDatabaseNameForSync(ctx context.Context) (string, error) {
 	// For SQL checks, we need to handle special cases
 	if ctx.Value(checkKey) != nil {
 		// First priority: check if we have an explicitly provided database name
-		if explicitDbName, ok := ctx.Value(explicitDbNameKey).(string); ok && explicitDbName != "" {
+		if explicitDbName, ok := ctx.Value(explicitDBNameKey).(string); ok && explicitDbName != "" {
 			return explicitDbName, nil
 		}
 
