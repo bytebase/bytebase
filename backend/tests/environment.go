@@ -46,6 +46,7 @@ func (ctl *controller) createEnvironment(ctx context.Context, id, title string) 
 	_, err = ctl.settingServiceClient.UpdateSetting(ctx,
 		&v1pb.UpdateSettingRequest{
 			Setting: &v1pb.Setting{
+				Name: "settings/bb.workspace.environment",
 				Value: &v1pb.Value{
 					Value: &v1pb.Value_EnvironmentSetting{
 						EnvironmentSetting: &v1pb.EnvironmentSetting{

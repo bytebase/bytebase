@@ -3,6 +3,7 @@ package tests
 import (
 	"context"
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -253,7 +254,7 @@ CREATE TABLE "public"."book" (
 	defer func() {
 		_ = ctl.Close(ctx)
 	}()
-	environmentName := t.Name()
+	environmentName := strings.ToLower(t.Name())
 	environment, err := ctl.createEnvironment(ctx, environmentName, environmentName)
 	a.NoError(err)
 
