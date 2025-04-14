@@ -23,11 +23,14 @@
         :actions="null"
         :update-value-on-close="true"
         type="datetime"
-        :is-date-disabled="(date: number) => date < Date.now()"
+        :is-date-disabled="isDateDisabled"
         clearable
         @update:value="(val) => (state.expirationTimestampInMS = val)"
       />
-      <span v-if="maximumRoleExpiration" class="ml-3 textinfolabel">
+      <span
+        v-if="maximumRoleExpiration && enableExpirationLimit"
+        class="ml-3 textinfolabel"
+      >
         {{ $t("settings.general.workspace.maximum-role-expiration.self") }}:
         {{ $t("common.date.days", { days: maximumRoleExpiration }) }}
       </span>
@@ -36,6 +39,7 @@
 </template>
 
 <script lang="ts" setup>
+import dayjs from "dayjs";
 import { NRadio, NRadioGroup, NDatePicker } from "naive-ui";
 import { computed, reactive, watch, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
@@ -53,6 +57,7 @@ interface LocalState {
 
 const props = defineProps<{
   timestampInMs?: number;
+  enableExpirationLimit: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -75,6 +80,16 @@ const maximumRoleExpiration = computed(() => {
   return Math.floor(seconds / (60 * 60 * 24));
 });
 
+const isDateDisabled = (date: number) => {
+  if (date < Date.now()) {
+    return true;
+  }
+  if (!maximumRoleExpiration.value) {
+    return false;
+  }
+  return date > dayjs().add(maximumRoleExpiration.value, "days").valueOf();
+};
+
 const options = computed((): ExpirationOption[] => {
   let options = [
     {
@@ -94,7 +109,7 @@ const options = computed((): ExpirationOption[] => {
       label: t("common.date.days", { days: 90 }),
     },
   ];
-  if (maximumRoleExpiration.value) {
+  if (maximumRoleExpiration.value && props.enableExpirationLimit) {
     options = options.filter(
       (option) => option.value < maximumRoleExpiration.value!
     );

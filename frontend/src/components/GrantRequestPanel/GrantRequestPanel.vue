@@ -44,6 +44,7 @@
           </span>
           <ExpirationSelector
             v-model:timestamp-in-ms="state.expirationTimestampInMS"
+            :enable-expiration-limit="true"
             class="grid-cols-3 sm:grid-cols-4"
           />
         </div>
