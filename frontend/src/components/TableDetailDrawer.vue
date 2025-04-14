@@ -117,7 +117,7 @@
                   </dd>
                 </div>
 
-                <div v-if="classificationConfig" class="col-span-1">
+                <div class="col-span-1">
                   <dt class="text-sm font-medium text-control-light">
                     {{ $t("database.classification.self") }}
                   </dt>
@@ -125,7 +125,7 @@
                     <ClassificationCell
                       :classification="tableCatalog.classification"
                       :classification-config="classificationConfig"
-                      :readonly="!allowSetClassification"
+                      :engine="instanceEngine"
                       @apply="
                         (id: string) =>
                           $emit('apply-classification', tableName, id)
@@ -369,7 +369,6 @@ const props = defineProps<{
   databaseName: string;
   schemaName: string;
   tableName: string;
-  allowSetClassification: boolean;
   classificationConfig?: DataClassificationSetting_DataClassificationConfig;
 }>();
 

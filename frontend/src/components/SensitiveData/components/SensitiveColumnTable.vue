@@ -157,6 +157,7 @@ const dataTableColumns = computed(() => {
           <ClassificationCell
             classification={item.classificationId}
             classificationConfig={classificationConfig.value}
+            engine={props.database.instanceResource.engine}
             readonly={!props.showOperation || item.disableClassification}
             onApply={(id: string) => onClassificationIdApply(item, id)}
           />
