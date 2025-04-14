@@ -646,8 +646,13 @@ func writeTable(out *strings.Builder, table *storepb.TableMetadata) error {
 		}
 	}
 
-	if _, err := fmt.Fprintf(out, "\n) ENGINE=%s", table.Engine); err != nil {
+	if _, err := out.WriteString("\n)"); err != nil {
 		return err
+	}
+	if table.Engine != "" {
+		if _, err := fmt.Fprintf(out, " ENGINE=%s", table.Engine); err != nil {
+			return err
+		}
 	}
 
 	if table.Charset != "" {
