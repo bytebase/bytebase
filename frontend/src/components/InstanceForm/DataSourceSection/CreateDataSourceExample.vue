@@ -82,7 +82,7 @@
           </template>
         </i18n-t>
         <LearnMoreLink
-          url="https://www.bytebase.com/docs/tutorials/local-mysql-instance?source=console"
+          url="https://www.bytebase.com/docs/get-started/step-by-step/add-an-instance/?source=console"
           class="ml-1 text-sm"
         />
       </template>
