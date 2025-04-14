@@ -1,30 +1,5 @@
 <template>
   <div class="space-y-6 divide-y divide-block-border">
-    <div v-if="anomalySectionList.length > 0">
-      <div class="text-lg leading-6 font-medium text-main mb-4 flex flex-row">
-        {{ $t("common.anomalies") }}
-        <span class="ml-2 textinfolabel items-center flex">
-          {{ $t("anomaly.attention-desc") }}
-          <a
-            href="https://www.bytebase.com/docs/change-database/drift-detection?source=console"
-            target="_blank"
-            class="ml-1 normal-link inline-flex flex-row items-center"
-          >
-            {{ $t("common.learn-more") }}
-            <heroicons-outline:external-link class="w-4 h-4" />
-          </a>
-        </span>
-      </div>
-      <AnomalyTable :anomaly-section-list="anomalySectionList" />
-    </div>
-    <div
-      v-else
-      class="text-lg leading-6 font-medium text-main mb-4 flex flex-row"
-    >
-      {{ $t("database.no-anomalies-detected") }}
-      <heroicons-outline:check-circle class="ml-1 w-6 h-6 text-success" />
-    </div>
-
     <!-- Description list -->
     <DatabaseOverviewInfo :database="database" class="pt-4" />
 
@@ -173,8 +148,6 @@ import { NSelect } from "naive-ui";
 import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
-import type { BBTableSectionDataSource } from "@/bbkit/types";
-import AnomalyTable from "@/components/AnomalyCenter/AnomalyTable.vue";
 import DBExtensionDataTable from "@/components/DBExtensionDataTable.vue";
 import { useDatabaseDetailContext } from "@/components/Database/context";
 import ExternalTableDataTable from "@/components/ExternalTableDataTable.vue";
@@ -257,17 +230,6 @@ watch(
   },
   { immediate: true }
 );
-
-const anomalySectionList = computed((): BBTableSectionDataSource<Anomaly>[] => {
-  const list: BBTableSectionDataSource<Anomaly>[] = [];
-  if (props.anomalyList.length > 0) {
-    list.push({
-      title: props.database.name,
-      list: props.anomalyList,
-    });
-  }
-  return list;
-});
 
 const schemaList = computed(() => {
   return dbSchemaStore.getSchemaList(props.database.name);
