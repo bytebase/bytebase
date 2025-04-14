@@ -9,6 +9,7 @@ on:
       - 'backend/**'
       - 'go.mod'
       - 'proto/**/*.go'
+      - 'action/**'
 
 jobs:
   go-tests:
