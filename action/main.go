@@ -58,6 +58,10 @@ func run(platform JobPlatform) error {
 		if err := loggingReleaseChecks(checkReleaseResponse); err != nil {
 			return err
 		}
+	case Bitbucket:
+		if err := createBitbucketReport(checkReleaseResponse); err != nil {
+			return err
+		}
 	}
 	return nil
 }
