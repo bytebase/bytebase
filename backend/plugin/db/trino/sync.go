@@ -28,7 +28,7 @@ const (
 	checkKey          contextKey = "check"
 	pathKey           contextKey = "path"
 	statementKey      contextKey = "statement"
-	resourceIdKey     contextKey = "resourceId" // lowercase 'd' in original API
+	resourceIDKey2    contextKey = "resourceId" // lowercase 'd' to match existing code
 )
 
 // SyncInstance syncs the Trino instance metadata.
@@ -91,6 +91,10 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 					catalogList = append(catalogList, catalog)
 				}
 			}
+			// Check for errors from rows iteration
+			if err := rows.Err(); err != nil {
+				slog.Warn("error iterating catalog rows", log.BBError(err))
+			}
 			rows.Close()
 		}
 
@@ -106,6 +110,10 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 					if err := rows.Scan(&catalog); err == nil && catalog != "" {
 						catalogList = append(catalogList, catalog)
 					}
+				}
+				// Check for errors from rows iteration
+				if err := rows.Err(); err != nil {
+					slog.Warn("error iterating catalog rows", log.BBError(err))
 				}
 				rows.Close()
 			}
@@ -138,6 +146,10 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 					schemaList = append(schemaList, schema)
 				}
 			}
+			// Check for errors from rows iteration
+			if err := rows.Err(); err != nil {
+				slog.Warn("error iterating schema rows", log.BBError(err))
+			}
 			rows.Close()
 		}
 		cancel()
@@ -154,6 +166,10 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 					if err := rows.Scan(&schema); err == nil && schema != "" {
 						schemaList = append(schemaList, schema)
 					}
+				}
+				// Check for errors from rows iteration
+				if err := rows.Err(); err != nil {
+					slog.Warn("error iterating schema rows", log.BBError(err))
 				}
 				rows.Close()
 			}
@@ -322,7 +338,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 	// Case 2: Standard check for missing database info
 	if !isSQLCheck &&
 		ctx.Value(databaseKey) == nil && ctx.Value(databaseNameKey) == nil &&
-		ctx.Value(resourceIdKey) == nil && ctx.Value(resourceIDKey) == nil {
+		ctx.Value(resourceIDKey2) == nil && ctx.Value(resourceIDKey) == nil {
 		ctx = context.WithValue(ctx, checkKey, true)
 		isSQLCheck = true
 	}
@@ -417,6 +433,10 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 											})
 										}
 									}
+									// Check for errors from rows iteration
+									if err := columnRows.Err(); err != nil {
+										slog.Warn("error iterating column rows", log.BBError(err))
+									}
 									columnRows.Close()
 
 									if len(columns) > 0 {
@@ -427,6 +447,10 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 								tables = append(tables, table)
 							}
 						}
+						// Check for errors from rows iteration
+						if err := tableRows.Err(); err != nil {
+							slog.Warn("error iterating table rows", log.BBError(err))
+						}
 						tableRows.Close()
 					}
 
@@ -435,6 +459,10 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 						Tables: tables,
 					})
 				}
+			}
+			// Check for errors from rows iteration
+			if err := schemaRows.Err(); err != nil {
+				slog.Warn("error iterating schema rows", log.BBError(err))
 			}
 			schemaRows.Close()
 		}
@@ -585,6 +613,10 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 							})
 						}
 					}
+					// Check for errors from rows iteration
+					if err := jdbcColumnRows.Err(); err != nil {
+						slog.Warn("error iterating JDBC column rows", log.BBError(err))
+					}
 					jdbcColumnRows.Close()
 
 					if len(columns) > 0 {
@@ -633,6 +665,10 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 							Nullable: isNullable == "YES",
 						})
 					}
+					// Check for errors from rows iteration
+					if err := columnRows.Err(); err != nil {
+						slog.Warn("error iterating column rows", log.BBError(err))
+					}
 
 					if len(columns) > 0 {
 						table.Columns = columns
@@ -640,6 +676,10 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 				}()
 
 				tables = append(tables, table)
+			}
+			// Check for errors from rows iteration
+			if err := tableRows.Err(); err != nil {
+				slog.Warn("error iterating table rows", log.BBError(err))
 			}
 
 			schema.Tables = tables
@@ -683,6 +723,10 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 							Name: tableName,
 						})
 					}
+				}
+				// Check for errors from rows iteration
+				if err := infoTablesRows.Err(); err != nil {
+					slog.Warn("error iterating information_schema tables rows", log.BBError(err))
 				}
 				infoTablesRows.Close()
 			}
@@ -772,6 +816,10 @@ func (d *Driver) getDatabaseNameForSync(ctx context.Context) (string, error) {
 					catalogs = append(catalogs, catalog)
 				}
 			}
+			// Check for errors from rows iteration
+			if err := catalogRows.Err(); err != nil {
+				slog.Warn("error iterating catalog rows", log.BBError(err))
+			}
 
 			if len(catalogs) > 0 {
 				return catalogs[0], nil
@@ -813,6 +861,10 @@ func (d *Driver) getDatabaseNameForSync(ctx context.Context) (string, error) {
 		if catalogName == "system" || catalogName == "tpch" || catalogName == "hive" || catalogName == "mysql" {
 			return catalogName, nil
 		}
+	}
+	// Check for errors from rows iteration
+	if err := rows.Err(); err != nil {
+		slog.Warn("error iterating catalog rows", log.BBError(err))
 	}
 
 	// If we found any catalogs, use the first one
