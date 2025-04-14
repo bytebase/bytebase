@@ -53,6 +53,10 @@ func run(platform JobPlatform) error {
 		if err := writeReleaseCheckToCodeQualityJSON(checkReleaseResponse); err != nil {
 			return err
 		}
+	} else if platform == AzureDevOps {
+		if err := loggingReleaseChecks(checkReleaseResponse); err != nil {
+			return err
+		}
 	}
 	return nil
 }
