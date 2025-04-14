@@ -30,7 +30,24 @@ func loggingReleaseChecks(resp *v1pb.CheckReleaseResponse) error {
 				} else if advice.Status == v1pb.Advice_ERROR {
 					hasError = true
 				}
-				fmt.Printf("* (%s) %d - %s: %s\n", advice.Status.String(), advice.Code, advice.Title, advice.Content)
+
+				var position string
+				switch {
+				case advice.StartPosition != nil && advice.EndPosition != nil:
+					start := advice.StartPosition
+					end := advice.EndPosition
+					if start.Line == end.Line && start.Column == end.Column {
+						position = fmt.Sprintf("line %d, col %d", start.Line, start.Column)
+					} else {
+						position = fmt.Sprintf("line %d, col %d to line %d, col %d",
+							start.Line, start.Column, end.Line, end.Column)
+					}
+				case advice.Line != 0 || advice.Column != 0:
+					position = fmt.Sprintf("line %d, col %d", advice.Line, advice.Column)
+				default:
+					position = "unknown position"
+				}
+				fmt.Printf("* (%s) Code %d - %s (%s): %s\n", advice.Status.String(), advice.Code, advice.Title, position, advice.Content)
 			}
 		}
 	}
