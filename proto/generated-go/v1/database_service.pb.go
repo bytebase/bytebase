@@ -1430,8 +1430,10 @@ type Database struct {
 	InstanceResource *InstanceResource `protobuf:"bytes,10,opt,name=instance_resource,json=instanceResource,proto3" json:"instance_resource,omitempty"`
 	// The database is available for DML prior backup.
 	BackupAvailable bool `protobuf:"varint,11,opt,name=backup_available,json=backupAvailable,proto3" json:"backup_available,omitempty"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
+	// The schema is drifted from the source of truth.
+	Drifted       bool `protobuf:"varint,12,opt,name=drifted,proto3" json:"drifted,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *Database) Reset() {
@@ -1530,6 +1532,13 @@ func (x *Database) GetInstanceResource() *InstanceResource {
 func (x *Database) GetBackupAvailable() bool {
 	if x != nil {
 		return x.BackupAvailable
+	}
+	return false
+}
+
+func (x *Database) GetDrifted() bool {
+	if x != nil {
+		return x.Drifted
 	}
 	return false
 }
@@ -5952,7 +5961,7 @@ const file_v1_database_service_proto_rawDesc = "" +
 	"sdl_format\x18\x04 \x01(\bR\tsdlFormatB\b\n" +
 	"\x06target\"(\n" +
 	"\x12DiffSchemaResponse\x12\x12\n" +
-	"\x04diff\x18\x01 \x01(\tR\x04diff\"\x92\x05\n" +
+	"\x04diff\x18\x01 \x01(\tR\x04diff\"\xb2\x05\n" +
 	"\bDatabase\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12.\n" +
 	"\x05state\x18\x03 \x01(\x0e2\x12.bytebase.v1.StateB\x04\xe2A\x01\x03R\x05state\x12R\n" +
@@ -5964,7 +5973,8 @@ const file_v1_database_service_proto_rawDesc = "" +
 	"\x06labels\x18\t \x03(\v2!.bytebase.v1.Database.LabelsEntryR\x06labels\x12P\n" +
 	"\x11instance_resource\x18\n" +
 	" \x01(\v2\x1d.bytebase.v1.InstanceResourceB\x04\xe2A\x01\x03R\x10instanceResource\x12/\n" +
-	"\x10backup_available\x18\v \x01(\bB\x04\xe2A\x01\x03R\x0fbackupAvailable\x1a9\n" +
+	"\x10backup_available\x18\v \x01(\bB\x04\xe2A\x01\x03R\x0fbackupAvailable\x12\x1e\n" +
+	"\adrifted\x18\f \x01(\bB\x04\xe2A\x01\x03R\adrifted\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01:E\xeaAB\n" +

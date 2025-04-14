@@ -2126,6 +2126,7 @@ ColumnMetadata is the metadata for columns.
 | labels | [Database.LabelsEntry](#bytebase-v1-Database-LabelsEntry) | repeated | Labels will be used for deployment and policy control. |
 | instance_resource | [InstanceResource](#bytebase-v1-InstanceResource) |  | The instance resource. |
 | backup_available | [bool](#bool) |  | The database is available for DML prior backup. |
+| drifted | [bool](#bool) |  | The schema is drifted from the source of truth. |
 
 
 
