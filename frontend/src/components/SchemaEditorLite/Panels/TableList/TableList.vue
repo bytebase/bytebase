@@ -68,7 +68,6 @@ import type {
   TableMetadata,
 } from "@/types/proto/v1/database_service";
 import type { SchemaTemplateSetting_TableTemplate } from "@/types/proto/v1/setting_service";
-import { DataClassificationSetting_DataClassificationConfig as DataClassificationConfig } from "@/types/proto/v1/setting_service";
 import TableTemplates from "@/views/SchemaTemplate/TableTemplates.vue";
 import { useSchemaEditorContext } from "../../context";
 import { markUUID } from "../common";
@@ -278,9 +277,8 @@ const columns = computed(() => {
           classification: catalog.classification,
           readonly: readonly.value,
           disabled: isDroppedSchema.value || isDroppedTable(table),
-          classificationConfig:
-            classificationConfig.value ??
-            DataClassificationConfig.fromPartial({}),
+          engine: engine.value,
+          classificationConfig: classificationConfig.value,
           onApply: (id: string) => {
             state.activeTable = table;
             onClassificationSelect(id);

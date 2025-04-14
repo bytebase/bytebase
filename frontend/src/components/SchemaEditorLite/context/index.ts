@@ -62,9 +62,6 @@ export const provideSchemaEditorContext = (params: {
       engine: Engine,
       classificationFromConfig: boolean
     ) => {
-      if (!classificationConfig.value) {
-        return false;
-      }
       return supportSetClassificationFromComment(
         engine,
         classificationFromConfig

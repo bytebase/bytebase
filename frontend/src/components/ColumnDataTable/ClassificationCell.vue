@@ -4,7 +4,7 @@
       :classification="classification"
       :classification-config="classificationConfig"
     />
-    <template v-if="!readonly && !disabled">
+    <template v-if="!readonly && !disabled && !setClassificationFromComment">
       <NPopconfirm v-if="classification" @positive-click="removeClassification">
         <template #trigger>
           <MiniActionButton>
@@ -17,13 +17,14 @@
           </div>
         </template>
       </NPopconfirm>
-      <MiniActionButton @click.prevent="openDrawer">
+      <MiniActionButton v-if="classificationConfig" @click.prevent="openDrawer">
         <PencilIcon class="w-3 h-3" />
       </MiniActionButton>
     </template>
   </div>
 
   <SelectClassificationDrawer
+    v-if="classificationConfig"
     :show="showClassificationDrawer"
     :classification-config="classificationConfig"
     @dismiss="showClassificationDrawer = false"
@@ -34,17 +35,20 @@
 <script lang="ts" setup>
 import { PencilIcon, XIcon } from "lucide-vue-next";
 import { NPopconfirm } from "naive-ui";
-import { ref } from "vue";
+import { ref, computed } from "vue";
 import ClassificationLevelBadge from "@/components/SchemaTemplate/ClassificationLevelBadge.vue";
 import { MiniActionButton } from "@/components/v2";
+import type { Engine } from "@/types/proto/v1/common";
 import type { DataClassificationSetting_DataClassificationConfig as DataClassificationConfig } from "@/types/proto/v1/setting_service";
 import SelectClassificationDrawer from "../SchemaTemplate/SelectClassificationDrawer.vue";
+import { supportSetClassificationFromComment } from "./utils";
 
-defineProps<{
+const props = defineProps<{
   classification?: string | undefined;
   readonly?: boolean;
   disabled?: boolean;
-  classificationConfig: DataClassificationConfig;
+  classificationConfig?: DataClassificationConfig;
+  engine: Engine;
 }>();
 
 const emit = defineEmits<{
@@ -62,4 +66,11 @@ const removeClassification = (e: MouseEvent) => {
   e.stopPropagation();
   emit("apply", "");
 };
+
+const setClassificationFromComment = computed(() => {
+  return supportSetClassificationFromComment(
+    props.engine,
+    props.classificationConfig?.classificationFromConfig ?? false
+  );
+});
 </script>
