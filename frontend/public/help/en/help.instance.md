@@ -9,4 +9,4 @@ title: What is 'Instance' ?
 #### Learn more
 
 - [Add an Instance](https://www.bytebase.com/docs/get-started/step-by-step/add-an-instance)
-- [Add a MySQL Testing Instance](https://www.bytebase.com/docs/tutorials/local-mysql-instance)
+- [Add a MySQL Testing Instance](https://www.bytebase.com/docs/get-started/step-by-step/add-an-instance/)

@@ -1491,12 +1491,12 @@
         "content": "This will delete these applied revisions and the database schema will not be changed. This action cannot be undone."
       }
     },
-    "not-found": "Cannot found the database"
-  },
-  "anomaly": {
-    "types": {
-    },
-    "action": {
+    "not-found": "Cannot found the database",
+    "drifted": {
+      "schema-drift-detected": {
+        "self": "Schema drift detected",
+        "description": "The schema is different from the last applied schema. This may cause application errors and should be resolved."
+      }
     }
   },
   "project": {

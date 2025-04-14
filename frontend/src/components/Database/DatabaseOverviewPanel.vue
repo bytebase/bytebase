@@ -1,7 +1,7 @@
 <template>
   <div class="space-y-6 divide-y divide-block-border">
     <!-- Description list -->
-    <DatabaseOverviewInfo :database="database" class="pt-4" />
+    <DatabaseOverviewInfo :database="database" />
 
     <div v-if="allowGetSchema" class="py-6">
       <div
