@@ -63,6 +63,10 @@
       <span>{{ $t("common.expiration") }}</span>
       <ExpirationSelector
         v-model:timestamp-in-ms="state.expirationTimestampInMS"
+        :enable-expiration-limit="
+          state.role === PresetRoleType.SQL_EDITOR_USER ||
+          state.role === PresetRoleType.PROJECT_EXPORTER
+        "
         class="grid-cols-3 sm:grid-cols-4"
       />
     </div>
