@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -12,6 +13,19 @@ import (
 
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
+
+// Annotation represents the structure of a Bitbucket Code Insights annotation.
+// https://developer.atlassian.com/cloud/bitbucket/rest/api-group-reports/#api-repositories-workspace-repo-slug-commit-commit-reports-reportid-annotations-post
+type Annotation struct {
+	ExternalID     string `json:"external_id"`
+	Title          string `json:"title"`
+	Summary        string `json:"summary"`
+	AnnotationType string `json:"annotation_type"`
+	Severity       string `json:"severity"`
+	Result         string `json:"result,omitempty"`
+	Path           string `json:"path,omitempty"`
+	Line           int    `json:"line,omitempty"`
+}
 
 func createBitbucketReport(checkResponse *v1pb.CheckReleaseResponse) error {
 	repoOwner := os.Getenv("BITBUCKET_REPO_OWNER")
@@ -29,7 +43,7 @@ func createBitbucketReport(checkResponse *v1pb.CheckReleaseResponse) error {
 	}
 	client := &http.Client{Transport: transport}
 
-	targetURL := fmt.Sprintf("http://api.bitbucket.org/2.0/repositories/%s/%s/commit/%s/reports/bytebase", repoOwner, repoSlug, commit)
+	reportURL := fmt.Sprintf("http://api.bitbucket.org/2.0/repositories/%s/%s/commit/%s/reports/bytebase", repoOwner, repoSlug, commit)
 	var warningCount, errorCount int
 	for _, result := range checkResponse.Results {
 		for _, advice := range result.Advices {
@@ -49,7 +63,7 @@ func createBitbucketReport(checkResponse *v1pb.CheckReleaseResponse) error {
 	} else if warningCount > 0 {
 		details = fmt.Sprintf("This pull request introduces %d warnings.", warningCount)
 	}
-	requestData := fmt.Sprintf(`{
+	reportData := fmt.Sprintf(`{
 		"title": "Bytebase SQL Review",
 		"details": "%s",
 		"report_type": "TEST",
@@ -57,18 +71,59 @@ func createBitbucketReport(checkResponse *v1pb.CheckReleaseResponse) error {
 		"result": "%s",
 		"data": []
 	}`, details, result)
-	req, err := http.NewRequest("PUT", targetURL, bytes.NewBufferString(requestData))
+	if err := sendPutRequest(client, reportURL, reportData); err != nil {
+		return err
+	}
+
+	var data []Annotation
+	count := 0
+	for _, result := range checkResponse.Results {
+		for _, advice := range result.Advices {
+			var severity, res string
+			// result: PASSED, FAILED, IGNORED, SKIPPED.
+			// severity: HIGH, MEDIUM, LOW, CRITICAL.
+			switch advice.Status {
+			case v1pb.Advice_WARNING:
+				res = "IGNORED"
+				severity = "LOW"
+			case v1pb.Advice_ERROR:
+				res = "FAILED"
+				severity = "HIGH"
+			default:
+				continue
+			}
+			data = append(data, Annotation{
+				ExternalID:     fmt.Sprintf("bytebase-check-%d", count),
+				Title:          advice.Title,
+				Summary:        advice.Content,
+				AnnotationType: "CODE_SMELL",
+				Severity:       severity,
+				Result:         res,
+				Path:           result.File,
+				Line:           int(advice.Line),
+			})
+			count++
+		}
+	}
+	annotationsData, err := json.MarshalIndent(data, "", "  ")
+	if err != nil {
+		return errors.Wrapf(err, "error marshaling json")
+	}
+	annotationsURL := fmt.Sprintf("https://api.bitbucket.org/2.0/repositories/%s/%s/commit/%s/reports/bytebase/annotations", repoOwner, repoSlug, commit)
+	return sendPutRequest(client, annotationsURL, string(annotationsData))
+}
+
+func sendPutRequest(client *http.Client, url, data string) error {
+	req, err := http.NewRequest("PUT", url, bytes.NewBufferString(data))
 	if err != nil {
 		return err
 	}
 	req.Header.Set("Content-Type", "application/json")
-
 	resp, err := client.Do(req)
 	if err != nil {
 		return err
 	}
 	defer resp.Body.Close()
-
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		bodyBytes, err := io.ReadAll(resp.Body)
 		if err != nil {
