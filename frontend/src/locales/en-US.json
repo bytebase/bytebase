@@ -94,7 +94,6 @@
     "query": "Query",
     "transfer": "Transfer",
     "schema": "Schema",
-    "anomalies": "Anomalies",
     "detail": "Detail",
     "type": "Type",
     "language": "Language",
@@ -1359,7 +1358,6 @@
   "database": {
     "sync-database": "Sync database",
     "select": "Select database",
-    "no-anomalies-detected": "No anomalies detected",
     "sync-status": "Sync status",
     "last-successful-sync": "Last successful sync",
     "filter-database": "Filter database",
@@ -1496,18 +1494,10 @@
     "not-found": "Cannot found the database"
   },
   "anomaly": {
-    "attention-desc": "Bytebase periodically detects anomalies based on the instance scan interval, and surfaces the findings here.",
-    "table-placeholder": "Hooray, no {type} anomaly detected!",
     "types": {
-      "connection-failure": "Connection failure",
-      "schema-drift": "Schema drift"
     },
     "action": {
-      "check-instance": "Check instance",
-      "view-diff": "View diff"
-    },
-    "last-seen": "Last seen",
-    "first-seen": "First seen"
+    }
   },
   "project": {
     "table": {

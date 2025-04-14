@@ -94,7 +94,6 @@
     "query": "お問い合わせ",
     "transfer": "移行",
     "schema": "スキーマ",
-    "anomalies": "異常",
     "detail": "詳細",
     "type": "タイプ",
     "language": "言語",
@@ -1359,7 +1358,6 @@
   "database": {
     "sync-database": "データベースを同期",
     "select": "データベースの選択",
-    "no-anomalies-detected": "例外は検出されませんでした",
     "sync-status": "同期ステータス",
     "last-successful-sync": "最後に成功した同期",
     "filter-database": "フィルターデータベース",
@@ -1496,18 +1494,10 @@
     "not-found": "データベースが見つかりません"
   },
   "anomaly": {
-    "attention-desc": "Bytebase は、インスタンスに設定されたスキャン間隔に基づいて異常を検出し、ここに表示します。",
-    "table-placeholder": "すばらしいです。{type} 例外は検出されませんでした。",
     "types": {
-      "connection-failure": "接続に失敗しました",
-      "schema-drift": "スキーマの逸脱"
     },
     "action": {
-      "check-instance": "インスタンスをチェックする",
-      "view-diff": "違いを表示する"
-    },
-    "last-seen": "最後に見たのは",
-    "first-seen": "第一印象"
+    }
   },
   "project": {
     "table": {

@@ -20,7 +20,6 @@ export const PROJECT_V1_ROUTE_PLAN_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.plan.
 export const PROJECT_V1_ROUTE_CHANGELISTS = `${PROJECT_V1_ROUTE_DASHBOARD}.changelist`;
 export const PROJECT_V1_ROUTE_CHANGELIST_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.changelist.detail`;
 export const PROJECT_V1_ROUTE_SYNC_SCHEMA = `${PROJECT_V1_ROUTE_DASHBOARD}.sync-schema`;
-export const PROJECT_V1_ROUTE_ANOMALIES = `${PROJECT_V1_ROUTE_DASHBOARD}.anomalies`;
 export const PROJECT_V1_ROUTE_AUDIT_LOGS = `${PROJECT_V1_ROUTE_DASHBOARD}.audit-logs`;
 export const PROJECT_V1_ROUTE_WEBHOOKS = `${PROJECT_V1_ROUTE_DASHBOARD}.webhook`;
 export const PROJECT_V1_ROUTE_WEBHOOK_CREATE = `${PROJECT_V1_ROUTE_DASHBOARD}.webhook.create`;
@@ -202,16 +201,6 @@ const projectV1Routes: RouteRecordRaw[] = [
         },
         component: () =>
           import("@/views/project/ProjectSyncDatabasePanelV1.vue"),
-        props: true,
-      },
-      {
-        path: "anomalies",
-        name: PROJECT_V1_ROUTE_ANOMALIES,
-        meta: {
-          overrideTitle: true,
-        },
-        component: () =>
-          import("@/views/project/ProjectAnomalyCenterDashboard.vue"),
         props: true,
       },
       {
