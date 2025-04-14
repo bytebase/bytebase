@@ -66,7 +66,6 @@ const props = defineProps<{
   projectName: string;
   includeCloumn: boolean;
   databaseResources: DatabaseResource[];
-  params?: SearchParams;
 }>();
 
 const emit = defineEmits<{
