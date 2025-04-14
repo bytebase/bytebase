@@ -109,7 +109,7 @@ const options = computed((): ExpirationOption[] => {
       label: t("common.date.days", { days: 90 }),
     },
   ];
-  if (maximumRoleExpiration.value) {
+  if (maximumRoleExpiration.value && props.enableExpirationLimit) {
     options = options.filter(
       (option) => option.value < maximumRoleExpiration.value!
     );
