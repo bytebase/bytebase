@@ -77,7 +77,6 @@ import type {
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto/v1/database_service";
-import { DataClassificationSetting_DataClassificationConfig as DataClassificationConfig } from "@/types/proto/v1/setting_service";
 import ColumnDefaultValueExpressionModal from "../../Modals/ColumnDefaultValueExpressionModal.vue";
 import { useSchemaEditorContext } from "../../context";
 import type { EditStatus } from "../../types";
@@ -407,9 +406,8 @@ const columns = computed(() => {
           classification: config.classification,
           readonly: props.readonly,
           disabled: props.disableChangeTable,
-          classificationConfig:
-            classificationConfig.value ??
-            DataClassificationConfig.fromPartial({}),
+          engine: props.engine,
+          classificationConfig: classificationConfig.value,
           onApply: (id: string) => {
             state.pendingUpdateColumn = column;
             onClassificationSelect(id);

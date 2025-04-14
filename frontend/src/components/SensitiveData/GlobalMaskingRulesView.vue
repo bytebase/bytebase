@@ -338,12 +338,8 @@ const factorList = computed((): Factor[] => {
     "database_name",
     "table_name",
     "column_name",
+    "classification_level",
   ];
-
-  const classificationOptions = getClassificationLevelOptions();
-  if (classificationOptions.length > 0) {
-    list.push("classification_level");
-  }
 
   return list;
 });
