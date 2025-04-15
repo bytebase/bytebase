@@ -408,7 +408,8 @@ export const hasSchemaProperty = (databaseEngine: Engine) => {
     databaseEngine === Engine.REDSHIFT ||
     databaseEngine === Engine.RISINGWAVE ||
     databaseEngine === Engine.COCKROACHDB ||
-    databaseEngine === Engine.SPANNER
+    databaseEngine === Engine.SPANNER ||
+    databaseEngine === Engine.TRINO
   );
 };
 
