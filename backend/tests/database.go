@@ -9,7 +9,7 @@ import (
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
-func (ctl *controller) createDatabaseV2(ctx context.Context, project *v1pb.Project, instance *v1pb.Instance, environment *v1pb.Environment, databaseName string, owner string) error {
+func (ctl *controller) createDatabaseV2(ctx context.Context, project *v1pb.Project, instance *v1pb.Instance, environment *v1pb.EnvironmentSetting_Environment, databaseName string, owner string) error {
 	characterSet, collation := "utf8mb4", "utf8mb4_general_ci"
 	if instance.Engine == v1pb.Engine_POSTGRES {
 		characterSet = "UTF8"

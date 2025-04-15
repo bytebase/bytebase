@@ -81,10 +81,6 @@
             <span class="text-red-600"> YOUR_DB_PWD </span>
           </template>
         </i18n-t>
-        <LearnMoreLink
-          url="https://www.bytebase.com/docs/get-started/step-by-step/add-an-instance/?source=console"
-          class="ml-1 text-sm"
-        />
       </template>
       <template v-else-if="props.engine === Engine.CLICKHOUSE">
         <i18n-t
@@ -215,7 +211,6 @@ import { NCode, NConfigProvider } from "naive-ui";
 import { reactive, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBAttention } from "@/bbkit";
-import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import { pushNotification } from "@/store";
 import {
   languageOfEngineV1,

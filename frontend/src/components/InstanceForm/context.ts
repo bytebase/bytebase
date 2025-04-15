@@ -1,5 +1,6 @@
 import { instanceServiceClient } from "@/grpcweb";
 import {
+  environmentNamePrefix,
   pushNotification,
   useEnvironmentV1Store,
   useSubscriptionV1Store,
@@ -203,7 +204,7 @@ export const provideInstanceFormContext = (baseContext: {
     if (!hasWorkspacePermissionV2("bb.instances.create")) {
       return false;
     }
-    if (!isValidEnvironmentName(environment.value.name)) {
+    if (!isValidEnvironmentName(`${environmentNamePrefix}${environment.value.id}`)) {
       return false;
     }
     if (basicInfo.value.engine === Engine.SPANNER) {

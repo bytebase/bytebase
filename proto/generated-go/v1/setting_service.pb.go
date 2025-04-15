@@ -2100,7 +2100,6 @@ func (x *AISetting) GetVersion() string {
 	return ""
 }
 
-// TODO(p0ny): implement.
 type EnvironmentSetting struct {
 	state         protoimpl.MessageState            `protogen:"open.v1"`
 	Environments  []*EnvironmentSetting_Environment `protobuf:"bytes,1,rep,name=environments,proto3" json:"environments,omitempty"`
@@ -3271,14 +3270,18 @@ func (x *Algorithm_RangeMask_Slice) GetSubstitution() string {
 
 type EnvironmentSetting_Environment struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The display name of the environment.
-	Title string `protobuf:"bytes,1,opt,name=title,proto3" json:"title,omitempty"`
+	// The resource name of the environment.
+	// Format: environments/{environment}.
+	// Output only.
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// The resource id of the environment.
 	// This value should be 4-63 characters, and valid characters
 	// are /[a-z][0-9]-/.
-	Id            string            `protobuf:"bytes,2,opt,name=id,proto3" json:"id,omitempty"`
-	Tags          map[string]string `protobuf:"bytes,3,rep,name=tags,proto3" json:"tags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Color         string            `protobuf:"bytes,4,opt,name=color,proto3" json:"color,omitempty"`
+	Id string `protobuf:"bytes,2,opt,name=id,proto3" json:"id,omitempty"`
+	// The display name of the environment.
+	Title         string            `protobuf:"bytes,3,opt,name=title,proto3" json:"title,omitempty"`
+	Tags          map[string]string `protobuf:"bytes,4,rep,name=tags,proto3" json:"tags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Color         string            `protobuf:"bytes,5,opt,name=color,proto3" json:"color,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -3313,9 +3316,9 @@ func (*EnvironmentSetting_Environment) Descriptor() ([]byte, []int) {
 	return file_v1_setting_service_proto_rawDescGZIP(), []int{22, 0}
 }
 
-func (x *EnvironmentSetting_Environment) GetTitle() string {
+func (x *EnvironmentSetting_Environment) GetName() string {
 	if x != nil {
-		return x.Title
+		return x.Name
 	}
 	return ""
 }
@@ -3323,6 +3326,13 @@ func (x *EnvironmentSetting_Environment) GetTitle() string {
 func (x *EnvironmentSetting_Environment) GetId() string {
 	if x != nil {
 		return x.Id
+	}
+	return ""
+}
+
+func (x *EnvironmentSetting_Environment) GetTitle() string {
+	if x != nil {
+		return x.Title
 	}
 	return ""
 }
@@ -3593,14 +3603,15 @@ const file_v1_setting_service_proto_rawDesc = "" +
 	"\x06CLAUDE\x10\x02\x12\n" +
 	"\n" +
 	"\x06GEMINI\x10\x03\x12\x10\n" +
-	"\fAZURE_OPENAI\x10\x04\"\xb5\x02\n" +
+	"\fAZURE_OPENAI\x10\x04\"\xcf\x02\n" +
 	"\x12EnvironmentSetting\x12O\n" +
-	"\fenvironments\x18\x01 \x03(\v2+.bytebase.v1.EnvironmentSetting.EnvironmentR\fenvironments\x1a\xcd\x01\n" +
-	"\vEnvironment\x12\x14\n" +
-	"\x05title\x18\x01 \x01(\tR\x05title\x12\x0e\n" +
-	"\x02id\x18\x02 \x01(\tR\x02id\x12I\n" +
-	"\x04tags\x18\x03 \x03(\v25.bytebase.v1.EnvironmentSetting.Environment.TagsEntryR\x04tags\x12\x14\n" +
-	"\x05color\x18\x04 \x01(\tR\x05color\x1a7\n" +
+	"\fenvironments\x18\x01 \x03(\v2+.bytebase.v1.EnvironmentSetting.EnvironmentR\fenvironments\x1a\xe7\x01\n" +
+	"\vEnvironment\x12\x18\n" +
+	"\x04name\x18\x01 \x01(\tB\x04\xe2A\x01\x03R\x04name\x12\x0e\n" +
+	"\x02id\x18\x02 \x01(\tR\x02id\x12\x14\n" +
+	"\x05title\x18\x03 \x01(\tR\x05title\x12I\n" +
+	"\x04tags\x18\x04 \x03(\v25.bytebase.v1.EnvironmentSetting.Environment.TagsEntryR\x04tags\x12\x14\n" +
+	"\x05color\x18\x05 \x01(\tR\x05color\x1a7\n" +
 	"\tTagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01*T\n" +

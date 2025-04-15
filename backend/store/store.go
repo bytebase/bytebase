@@ -23,7 +23,6 @@ type Store struct {
 	Secret               string
 	userIDCache          *lru.Cache[int, *UserMessage]
 	userEmailCache       *lru.Cache[string, *UserMessage]
-	environmentCache     *lru.Cache[string, *EnvironmentMessage]
 	instanceCache        *lru.Cache[string, *InstanceMessage]
 	databaseCache        *lru.Cache[string, *DatabaseMessage]
 	projectCache         *lru.Cache[string, *ProjectMessage]
@@ -51,10 +50,6 @@ func New(ctx context.Context, pgURL string, enableCache bool) (*Store, error) {
 		return nil, err
 	}
 	userEmailCache, err := lru.New[string, *UserMessage](32768)
-	if err != nil {
-		return nil, err
-	}
-	environmentCache, err := lru.New[string, *EnvironmentMessage](32)
 	if err != nil {
 		return nil, err
 	}
@@ -151,7 +146,6 @@ func New(ctx context.Context, pgURL string, enableCache bool) (*Store, error) {
 		// Cache.
 		userIDCache:          userIDCache,
 		userEmailCache:       userEmailCache,
-		environmentCache:     environmentCache,
 		instanceCache:        instanceCache,
 		databaseCache:        databaseCache,
 		projectCache:         projectCache,

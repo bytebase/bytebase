@@ -51,7 +51,6 @@ func configureGrpcRouters(
 		profile,
 		metricReporter,
 		licenseService))
-	v1pb.RegisterEnvironmentServiceServer(grpcServer, apiv1.NewEnvironmentService(stores, licenseService))
 	v1pb.RegisterInstanceServiceServer(grpcServer, apiv1.NewInstanceService(
 		stores,
 		licenseService,
@@ -127,9 +126,6 @@ func configureGrpcRouters(
 		return err
 	}
 	if err := v1pb.RegisterDatabaseCatalogServiceHandler(ctx, mux, grpcConn); err != nil {
-		return err
-	}
-	if err := v1pb.RegisterEnvironmentServiceHandler(ctx, mux, grpcConn); err != nil {
 		return err
 	}
 	if err := v1pb.RegisterGroupServiceHandler(ctx, mux, grpcConn); err != nil {
