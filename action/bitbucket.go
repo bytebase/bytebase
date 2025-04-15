@@ -55,7 +55,6 @@ func createBitbucketReport(checkResponse *v1pb.CheckReleaseResponse) error {
 
 	reportURL := fmt.Sprintf("http://api.bitbucket.org/2.0/repositories/%s/%s/commit/%s/reports/bytebase", repoOwner, repoSlug, commit)
 	var warningCount, errorCount int
-	checkResponse.RiskLevel.String()
 	for _, result := range checkResponse.Results {
 		for _, advice := range result.Advices {
 			switch advice.Status {
@@ -71,13 +70,13 @@ func createBitbucketReport(checkResponse *v1pb.CheckReleaseResponse) error {
 	var riskDetail string
 	switch checkResponse.RiskLevel {
 	case v1pb.CheckReleaseResponse_LOW:
-		riskDetail = "🟢 Low"
+		riskDetail = "Low"
 	case v1pb.CheckReleaseResponse_MODERATE:
-		riskDetail = "🟡 Moderate"
+		riskDetail = "Moderate"
 	case v1pb.CheckReleaseResponse_HIGH:
-		riskDetail = "🔴 High"
+		riskDetail = "High"
 	default:
-		riskDetail = "⚪ None"
+		riskDetail = "None"
 	}
 	details := fmt.Sprintf(`• Total Affected Rows: %d
 • Overall Risk Level: %s
