@@ -124,7 +124,7 @@ func TestWriteCreateTable(t *testing.T) {
 			},
 			expected: `CREATE TABLE IF NOT EXISTS "schema"."table" (
     "col1" integer NOT NULL
-);\n\n`,
+);`,
 		},
 	}
 
