@@ -68,6 +68,7 @@ func createBitbucketReport(checkResponse *v1pb.CheckReleaseResponse) error {
 		"details": "%s",
 		"report_type": "TEST",
 		"reporter": "bytebase",
+		"details": "everybody in say hello",
 		"result": "%s",
 		"data": []
 	}`, details, result)
