@@ -71,9 +71,7 @@ func (checker *namingIdentifierNoKeywordChecker) EnterPureIdentifier(ctx *mysql.
 	identifier := trimBackTicks(textNode.GetText())
 	advice := checker.checkIdentifier(identifier)
 	if advice != nil {
-		advice.StartPosition = &storepb.Position{
-			Line: int32(checker.baseLine + ctx.GetStart().GetLine()),
-		}
+		advice.StartPosition = advisor.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine())
 		checker.adviceList = append(checker.adviceList, advice)
 	}
 }
@@ -83,9 +81,7 @@ func (checker *namingIdentifierNoKeywordChecker) EnterIdentifierKeyword(ctx *mys
 	identifier := ctx.GetText()
 	advice := checker.checkIdentifier(identifier)
 	if advice != nil {
-		advice.StartPosition = &storepb.Position{
-			Line: int32(checker.baseLine + ctx.GetStart().GetLine()),
-		}
+		advice.StartPosition = advisor.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine())
 		checker.adviceList = append(checker.adviceList, advice)
 	}
 }
