@@ -32,8 +32,6 @@ func (m *GatewayResponseModifier) Modify(ctx context.Context, response http.Resp
 		}
 	}
 	m.processMetadata(ctx, md, GatewayMetadataAccessTokenKey, AccessTokenCookieName, true /* httpOnly */, isHTTPS, response)
-	// TODO(steven): remove me please.
-	m.processMetadata(ctx, md, GatewayMetadataUserIDKey, UserIDCookieName, false /* httpOnly */, isHTTPS, response)
 	return nil
 }
 

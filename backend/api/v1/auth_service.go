@@ -183,7 +183,6 @@ func (s *AuthService) Login(ctx context.Context, request *v1pb.LoginRequest) (*v
 		}
 		if err := grpc.SetHeader(ctx, metadata.New(map[string]string{
 			auth.GatewayMetadataAccessTokenKey:   response.Token,
-			auth.GatewayMetadataUserIDKey:        fmt.Sprintf("%d", loginUser.ID),
 			auth.GatewayMetadataRequestOriginKey: origin,
 		})); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to set grpc header, error: %v", err)
@@ -266,7 +265,6 @@ func (s *AuthService) Logout(ctx context.Context, _ *v1pb.LogoutRequest) (*empty
 
 	if err := grpc.SetHeader(ctx, metadata.New(map[string]string{
 		auth.GatewayMetadataAccessTokenKey: "",
-		auth.GatewayMetadataUserIDKey:      "",
 	})); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to set grpc header, error: %v", err)
 	}
