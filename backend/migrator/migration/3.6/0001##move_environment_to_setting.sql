@@ -1,8 +1,8 @@
-ALTER TABLE instance DROP CONSTRAINT instance_environment_fkey;
+ALTER TABLE instance DROP CONSTRAINT IF EXISTS instance_environment_fkey;
 
-ALTER TABLE db DROP CONSTRAINT db_environment_fkey;
+ALTER TABLE db DROP CONSTRAINT IF EXISTS db_environment_fkey;
 
-ALTER TABLE stage DROP CONSTRAINT stage_environment_fkey;
+ALTER TABLE stage DROP CONSTRAINT IF EXISTS stage_environment_fkey;
 
 
 INSERT INTO setting (
@@ -10,7 +10,11 @@ INSERT INTO setting (
     value
 ) SELECT 
     'bb.workspace.environment',
-    jsonb_agg(v) FROM (
+    jsonb_build_object(
+        'environments',
+        jsonb_agg(v)
+    )
+    FROM (
         SELECT 
             jsonb_build_object('title', name) ||
             jsonb_build_object('id', resource_id) ||
