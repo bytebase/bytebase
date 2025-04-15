@@ -956,14 +956,16 @@
           "task-run-status-update": "ステータスアップデート",
           "transaction-control": "トランザクション制御",
           "database-sync": "データベースの同期",
-          "prior-backup": "事前のバックアップ"
+          "prior-backup": "事前のバックアップ",
+          "retry-info": "情報を再試行します"
         },
         "estimated-affected-rows-n": "推定影響行数: {n}",
         "prior-backup-tables": "以前のバックアップテーブル",
         "status-update": {
           "waiting": "実行の準備完了",
           "running": "処刑される"
-        }
+        },
+        "retry-info": "ロックタイムアウトのためにretrying（{n}/{m}を試行）。"
       },
       "task-run-session": {
         "blocking-sessions": {
@@ -1627,6 +1629,10 @@
         "postgres-database-tenant-mode": {
           "self": "Postgres データベーステナントモード",
           "description": "Postgres データベーステナントモード。有効にすると、問題はデータベースのOWNERによって実行されます。無効にすると、このイシューはインスタンス接続ユーザーによって実行されます。"
+        },
+        "max-retries": {
+          "self": "ロックタイムアウトの最大レトリカウント",
+          "description": "タスクを実行するときのロックタイムアウトの最大再試行カウント。デフォルト値は0です。"
         }
       }
     },

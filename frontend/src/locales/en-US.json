@@ -956,14 +956,16 @@
           "task-run-status-update": "Status update",
           "transaction-control": "Transaction control",
           "database-sync": "Database sync",
-          "prior-backup": "Prior backup"
+          "prior-backup": "Prior backup",
+          "retry-info": "Retry information"
         },
         "estimated-affected-rows-n": "Estimated affected rows: {n}",
         "prior-backup-tables": "Prior backup tables",
         "status-update": {
           "waiting": "Ready to be executed",
           "running": "Being executed"
-        }
+        },
+        "retry-info":"Retrying (attempt {n}/{m}) due to lock timeout."
       },
       "task-run-session": {
         "blocking-sessions": {
@@ -1627,6 +1629,10 @@
         "postgres-database-tenant-mode": {
           "self": "Postgres database tenant mode",
           "description": "The tenant mode for Postgres database. If enable, the issue will be run by the database OWNER. Otherwise, the issue will be run by the instance connection user."
+        },
+        "max-retries": {
+          "self": "Maximum retries count for lock timeout",
+          "description": "The maximum retries count for lock timeout when running the task. The default value is 0."
         }
       }
     },
