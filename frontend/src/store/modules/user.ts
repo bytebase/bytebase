@@ -65,6 +65,12 @@ export const useUserStore = defineStore("user", () => {
     return getOrFetchUserByIdentifier(SYSTEM_BOT_USER_NAME);
   });
 
+  const fetchCurrentUser = async () => {
+    const user = await userServiceClient.getCurrentUser({});
+    setUser(user);
+    return user;
+  };
+
   const fetchUserList = async (params: {
     pageSize: number;
     pageToken?: string;
@@ -167,6 +173,7 @@ export const useUserStore = defineStore("user", () => {
   return {
     allUser,
     systemBotUser,
+    fetchCurrentUser,
     fetchUserList,
     createUser,
     updateUser,
