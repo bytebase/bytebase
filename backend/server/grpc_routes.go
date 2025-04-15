@@ -68,7 +68,6 @@ func configureGrpcRouters(
 	v1pb.RegisterWorkspaceServiceServer(grpcServer, apiv1.NewWorkspaceService(stores, iamManager))
 	v1pb.RegisterIdentityProviderServiceServer(grpcServer, apiv1.NewIdentityProviderService(stores, licenseService))
 	v1pb.RegisterSettingServiceServer(grpcServer, apiv1.NewSettingService(stores, profile, licenseService, stateCfg))
-	v1pb.RegisterAnomalyServiceServer(grpcServer, apiv1.NewAnomalyService(stores))
 	sqlService := apiv1.NewSQLService(stores, sheetManager, schemaSyncer, dbFactory, licenseService, profile, iamManager)
 	v1pb.RegisterSQLServiceServer(grpcServer, sqlService)
 	v1pb.RegisterRiskServiceServer(grpcServer, apiv1.NewRiskService(stores, licenseService))
@@ -107,9 +106,6 @@ func configureGrpcRouters(
 		return err
 	}
 	if err := v1pb.RegisterUserServiceHandler(ctx, mux, grpcConn); err != nil {
-		return err
-	}
-	if err := v1pb.RegisterAnomalyServiceHandler(ctx, mux, grpcConn); err != nil {
 		return err
 	}
 	if err := v1pb.RegisterAuditLogServiceHandler(ctx, mux, grpcConn); err != nil {

@@ -3567,37 +3567,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
-    /v1/projects/{project}/anomalies:search:
-        post:
-            tags:
-                - AnomalyService
-            operationId: AnomalyService_SearchAnomalies
-            parameters:
-                - name: project
-                  in: path
-                  description: The project id.
-                  required: true
-                  schema:
-                    type: string
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/SearchAnomaliesRequest'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/SearchAnomaliesResponse'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
     /v1/projects/{project}/auditLogs:export:
         post:
             tags:
@@ -8111,38 +8080,6 @@ components:
                 link:
                     type: string
                     description: The optional link, user can follow the link to check extra details
-        Anomaly:
-            required:
-                - resource
-            type: object
-            properties:
-                resource:
-                    type: string
-                    description: |-
-                        The resource that is the target of the operation.
-                         Format:
-                         - Database: instances/{instance}/databases/{database}
-                type:
-                    enum:
-                        - ANOMALY_TYPE_UNSPECIFIED
-                        - DATABASE_CONNECTION
-                        - DATABASE_SCHEMA_DRIFT
-                    type: string
-                    description: type is the type of the anomaly.
-                    format: enum
-                severity:
-                    enum:
-                        - ANOMALY_SEVERITY_UNSPECIFIED
-                        - MEDIUM
-                        - HIGH
-                        - CRITICAL
-                    type: string
-                    description: severity is the severity of the anomaly.
-                    format: enum
-                createTime:
-                    readOnly: true
-                    type: string
-                    format: date-time
         AppIMSetting:
             type: object
             properties:
@@ -12644,56 +12581,6 @@ components:
                     $ref: '#/components/schemas/TableMetadata'
                 catalog:
                     $ref: '#/components/schemas/TableCatalog'
-        SearchAnomaliesRequest:
-            required:
-                - parent
-            type: object
-            properties:
-                parent:
-                    type: string
-                    description: |-
-                        The parent resource whose anomalies are to be listed.
-                         Format: projects/{project}
-                filter:
-                    type: string
-                    description: |-
-                        filter is the filter to apply on the search anomaly request,
-                         follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax.
-                         Only support filter by resource and type for now.
-                         For example:
-                         Search the anomalies of a specific resource: 'resource="instances/{instance}/databases/{database}".'
-                         Search the specified types of anomalies: 'type="MIGRATION_SCHEMA".'
-                pageSize:
-                    type: integer
-                    description: |-
-                        Not used.
-                         The maximum number of anomalies to return. The service may return fewer than
-                         this value.
-                         If unspecified, at most 10 anomalies will be returned.
-                         The maximum value is 1000; values above 1000 will be coerced to 1000.
-                    format: int32
-                pageToken:
-                    type: string
-                    description: |-
-                        Not used.
-                         A page token, received from a previous `SearchAnomalies` call.
-                         Provide this to retrieve the subsequent page.
-
-                         When paginating, all other parameters provided to `SearchAnomalies` must match
-                         the call that provided the page token.
-        SearchAnomaliesResponse:
-            type: object
-            properties:
-                anomalies:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/Anomaly'
-                    description: anomalies is the list of anomalies.
-                nextPageToken:
-                    type: string
-                    description: |-
-                        Not used. A token, which can be sent as `page_token` to retrieve the next page.
-                         If this field is omitted, there are no subsequent pages.
         SearchAuditLogsRequest:
             required:
                 - parent
@@ -14281,7 +14168,6 @@ components:
                     format: enum
 tags:
     - name: ActuatorService
-    - name: AnomalyService
     - name: AuditLogService
     - name: AuthService
     - name: CelService

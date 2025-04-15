@@ -103,7 +103,7 @@ func TestGetSQLStatementRangesUTF16Position(t *testing.T) {
 
 
 
-SELECT * FROM public.anomaly;`),
+SELECT * FROM public.workday;`),
 			ranges: []lsp.Range{
 				{Start: lsp.Position{Line: 0, Character: 0}, End: lsp.Position{Line: 1, Character: 0}},
 				{Start: lsp.Position{Line: 4, Character: 0}, End: lsp.Position{Line: 4, Character: 30}},

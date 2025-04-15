@@ -159,7 +159,6 @@ import ViewDataTable from "@/components/ViewDataTable.vue";
 import { SQL_EDITOR_SETTING_DATABASES_MODULE } from "@/router/sqlEditor";
 import { useDBSchemaV1Store } from "@/store";
 import type { ComposedDatabase } from "@/types";
-import type { Anomaly } from "@/types/proto/v1/anomaly_service";
 import { Engine } from "@/types/proto/v1/common";
 import {
   hasSchemaProperty,
@@ -179,7 +178,6 @@ interface LocalState {
 
 const props = defineProps<{
   database: ComposedDatabase;
-  anomalyList: Anomaly[];
 }>();
 
 const { t } = useI18n();
