@@ -216,7 +216,7 @@ const introList = computed(() => {
       done: computed(() =>
         uiStateStore.getIntroStateByKey("environment.visit")
       ),
-      requiredPermissions: ["bb.environments.list"],
+      requiredPermissions: ["bb.settings.get"],
     },
     {
       name: computed(() => t("quick-start.visit-instance")),

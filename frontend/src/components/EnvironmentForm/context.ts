@@ -80,7 +80,7 @@ export const provideEnvironmentFormContext = (baseContext: {
   });
 
   const allowEdit = computed(() => {
-    return create.value || hasWorkspacePermissionV2("bb.environments.update");
+    return create.value || hasWorkspacePermissionV2("bb.settings.set");
   });
 
   watch(environment, (cur) => {

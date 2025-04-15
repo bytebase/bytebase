@@ -208,7 +208,7 @@ const hasEnvironmentPolicyFeature = computed(() =>
 
 const allowArchive = computed(() => {
   return (
-    hasPermission("bb.environments.delete") && environmentList.value.length > 1
+    hasPermission("bb.settings.set") && environmentList.value.length > 1
   );
 });
 
