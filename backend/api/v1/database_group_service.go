@@ -80,18 +80,18 @@ func (s *DatabaseGroupService) CreateDatabaseGroup(ctx context.Context, request 
 	}
 	if request.ValidateOnly {
 		return s.convertStoreToAPIDatabaseGroupFull(ctx, storeDatabaseGroup, projectResourceID)
-	} else {
-		user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
-		if !ok {
-			return nil, status.Errorf(codes.Internal, "user not found")
-		}
-		ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionProjectsUpdate, user, project.ResourceID)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to check permission with error: %v", err.Error())
-		}
-		if !ok {
-			return nil, status.Errorf(codes.PermissionDenied, "user does not have permission %q", iam.PermissionProjectsUpdate)
-		}
+	}
+
+	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "user not found")
+	}
+	hasPermission, err := s.iamManager.CheckPermission(ctx, iam.PermissionProjectsUpdate, user, project.ResourceID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to check permission with error: %v", err.Error())
+	}
+	if !hasPermission {
+		return nil, status.Errorf(codes.PermissionDenied, "user does not have permission %q", iam.PermissionProjectsUpdate)
 	}
 
 	databaseGroup, err := s.store.CreateDatabaseGroup(ctx, storeDatabaseGroup)
