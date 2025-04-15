@@ -10,54 +10,45 @@ import {
   AUTH_MFA_MODULE,
 } from "@/router/auth";
 import { SQL_EDITOR_HOME_MODULE } from "@/router/sqlEditor";
-import { useAppFeature, useUserStore, useSettingV1Store } from "@/store";
-import { unknownUser } from "@/types";
+import { useAppFeature, useSettingV1Store, useUserStore } from "@/store";
+import { UNKNOWN_USER_NAME, unknownUser } from "@/types";
 import type { LoginRequest } from "@/types/proto/v1/auth_service";
 import { LoginResponse } from "@/types/proto/v1/auth_service";
 import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
 import { User, UserType } from "@/types/proto/v1/user_service";
-import { getIntCookie } from "@/utils";
 
 export const useAuthStore = defineStore("auth_v1", () => {
   const userStore = useUserStore();
-  const currentUserId = ref<number | undefined>();
   const showLoginModal = ref<boolean>(false);
+  // Format: users/{user}. {user} is a system-generated unique ID.
+  const currentUserName = ref<string | undefined>(undefined);
 
-  const currentUser = computed(() => {
-    if (currentUserId.value) {
-      return (
-        userStore.getUserByIdentifier(`${currentUserId.value}`) ?? unknownUser()
-      );
-    }
-    return unknownUser();
+  const isLoggedIn = computed(() => {
+    return (
+      Boolean(currentUserName.value) &&
+      currentUserName.value !== UNKNOWN_USER_NAME
+    );
   });
 
-  const isLoggedIn = () => {
-    return getUserIdFromCookie() != undefined;
-  };
-
-  const getUserIdFromCookie = () => {
-    return getIntCookie("user");
-  };
-
   const requireResetPassword = computed(() => {
-    if (!currentUserId.value) {
+    if (!isLoggedIn.value) {
       return false;
     }
     return useLocalStorage<boolean>(
-      `${currentUserId.value}.require_reset_password`,
+      `${currentUserName.value}.require_reset_password`,
       false
     ).value;
   });
 
   const setRequireResetPassword = (requireResetPassword: boolean) => {
-    if (currentUserId.value) {
-      const needResetPasswordCache = useLocalStorage<boolean>(
-        `${currentUserId.value}.require_reset_password`,
-        false
-      );
-      needResetPasswordCache.value = requireResetPassword;
+    if (!isLoggedIn.value) {
+      return false;
     }
+    const needResetPasswordCache = useLocalStorage<boolean>(
+      `${currentUserName.value}.require_reset_password`,
+      false
+    );
+    needResetPasswordCache.value = requireResetPassword;
   };
 
   const getRedirectQuery = () => {
@@ -70,7 +61,6 @@ export const useAuthStore = defineStore("auth_v1", () => {
     redirect: string = ""
   ) => {
     const { data } = await axios.post<LoginResponse>("/v1/auth/login", request);
-
     const redirectUrl = redirect || getRedirectQuery();
     if (data.mfaTempToken) {
       return router.push({
@@ -82,7 +72,7 @@ export const useAuthStore = defineStore("auth_v1", () => {
       });
     }
 
-    await restoreUser();
+    await fetchCurrentUser();
     setRequireResetPassword(data.requireResetPassword);
 
     await useSettingV1Store().getOrFetchSettingByName(
@@ -112,7 +102,6 @@ export const useAuthStore = defineStore("auth_v1", () => {
 
       return router.replace(nextPage);
     }
-    showLoginModal.value = false;
   };
 
   const signup = async (request: Partial<User>) => {
@@ -134,7 +123,6 @@ export const useAuthStore = defineStore("auth_v1", () => {
   const logout = async () => {
     try {
       await axios.post("/v1/auth/logout");
-      showLoginModal.value = false;
     } catch {
       // nothing
     } finally {
@@ -151,25 +139,22 @@ export const useAuthStore = defineStore("auth_v1", () => {
     }
   };
 
-  const restoreUser = async () => {
-    currentUserId.value = getUserIdFromCookie();
-    if (currentUserId.value) {
-      await useUserStore().getOrFetchUserByIdentifier(
-        String(currentUserId.value),
-        true // silent
-      );
+  const fetchCurrentUser = async () => {
+    try {
+      const currentUser = await userStore.fetchCurrentUser();
+      currentUserName.value = currentUser.name;
+    } catch {
+      // do nothing.
     }
   };
 
   return {
-    currentUser,
-    currentUserId,
+    currentUserName,
     isLoggedIn,
-    getUserIdFromCookie,
     login,
     signup,
     logout,
-    restoreUser,
+    fetchCurrentUser,
     requireResetPassword,
     setRequireResetPassword,
     showLoginModal,
@@ -178,10 +163,10 @@ export const useAuthStore = defineStore("auth_v1", () => {
 
 export const useCurrentUserV1 = () => {
   const authStore = useAuthStore();
-  return computed(() => authStore.currentUser);
-};
-
-export const useIsLoggedIn = () => {
-  const store = useAuthStore();
-  return computed(() => store.isLoggedIn() && store.currentUser.name !== "");
+  const userStore = useUserStore();
+  return computed(
+    () =>
+      userStore.getUserByIdentifier(authStore.currentUserName || "") ||
+      unknownUser()
+  );
 };

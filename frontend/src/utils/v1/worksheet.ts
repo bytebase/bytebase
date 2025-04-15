@@ -1,4 +1,4 @@
-import { useAuthStore, useProjectV1Store } from "@/store";
+import { useCurrentUserV1, useProjectV1Store } from "@/store";
 import { extractUserId } from "@/store/modules/v1/common";
 import { UNKNOWN_PROJECT_NAME } from "@/types";
 import type { Worksheet } from "@/types/proto/v1/worksheet_service";
@@ -16,9 +16,9 @@ export const extractWorksheetUID = (name: string) => {
 // PROJECT_WRITE: workspace Owner/DBA and all members in the project.
 // PROJECT_READ: workspace Owner/DBA and all members in the project.
 export const isWorksheetReadableV1 = (sheet: Worksheet) => {
-  const authStore = useAuthStore();
+  const currentUser = useCurrentUserV1();
 
-  if (extractUserId(sheet.creator) === authStore.currentUser.email) {
+  if (extractUserId(sheet.creator) === currentUser.value.email) {
     // Always readable to the creator
     return true;
   }
@@ -47,9 +47,9 @@ export const isWorksheetReadableV1 = (sheet: Worksheet) => {
 // PROJECT_WRITE: workspace Owner/DBA and all members in the project.
 // PROJECT_READ: workspace Owner/DBA and project owner.
 export const isWorksheetWritableV1 = (sheet: Worksheet) => {
-  const authStore = useAuthStore();
+  const currentUser = useCurrentUserV1();
 
-  if (extractUserId(sheet.creator) === authStore.currentUser.email) {
+  if (extractUserId(sheet.creator) === currentUser.value.email) {
     // Always writable to the creator
     return true;
   }

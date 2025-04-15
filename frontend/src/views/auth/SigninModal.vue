@@ -22,14 +22,27 @@
 
 <script lang="tsx" setup>
 import { NButton } from "naive-ui";
+import { watch } from "vue";
+import { useRoute } from "vue-router";
 import { BBModal } from "@/bbkit";
 import { useAuthStore } from "@/store";
 import Signin from "@/views/auth/Signin.vue";
 
+const route = useRoute();
 const authStore = useAuthStore();
 
 const logout = () => {
   authStore.showLoginModal = false;
   authStore.logout();
 };
+
+// Auto-close the modal when the route changed.
+watch(
+  () => route.name,
+  () => {
+    if (authStore.showLoginModal) {
+      authStore.showLoginModal = false;
+    }
+  }
+);
 </script>
