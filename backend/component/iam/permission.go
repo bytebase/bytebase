@@ -24,12 +24,6 @@ const (
 	PermissionDatabasesList             Permission = "bb.databases.list"
 	PermissionDatabasesSync             Permission = "bb.databases.sync"
 	PermissionDatabasesUpdate           Permission = "bb.databases.update"
-	PermissionEnvironmentsCreate        Permission = "bb.environments.create"
-	PermissionEnvironmentsDelete        Permission = "bb.environments.delete"
-	PermissionEnvironmentsGet           Permission = "bb.environments.get"
-	PermissionEnvironmentsList          Permission = "bb.environments.list"
-	PermissionEnvironmentsUndelete      Permission = "bb.environments.undelete"
-	PermissionEnvironmentsUpdate        Permission = "bb.environments.update"
 	PermissionIdentityProvidersCreate   Permission = "bb.identityProviders.create"
 	PermissionIdentityProvidersDelete   Permission = "bb.identityProviders.delete"
 	PermissionIdentityProvidersGet      Permission = "bb.identityProviders.get"
@@ -153,12 +147,6 @@ var allPermissions = []Permission{
 	PermissionDatabasesList,
 	PermissionDatabasesSync,
 	PermissionDatabasesUpdate,
-	PermissionEnvironmentsCreate,
-	PermissionEnvironmentsDelete,
-	PermissionEnvironmentsGet,
-	PermissionEnvironmentsList,
-	PermissionEnvironmentsUndelete,
-	PermissionEnvironmentsUpdate,
 	PermissionIdentityProvidersCreate,
 	PermissionIdentityProvidersDelete,
 	PermissionIdentityProvidersGet,

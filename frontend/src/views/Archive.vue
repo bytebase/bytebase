@@ -104,7 +104,7 @@ const tabItemList = computed(() => {
     list.push({ value: "INSTANCE", label: t("common.instance") });
   }
 
-  if (hasWorkspacePermissionV2("bb.environments.undelete")) {
+  if (hasWorkspacePermissionV2("bb.settings.set")) {
     list.push({ value: "ENVIRONMENT", label: t("common.environment") });
   }
 
