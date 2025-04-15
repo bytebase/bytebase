@@ -131,7 +131,7 @@ func TestWriteCreateTable(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var buf strings.Builder
-			err := writeCreateTable(&buf, tt.catalog, tt.schema, tt.table)
+			err := writeCreateTable(&buf, tt.schema, tt.table)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expected, buf.String())
 		})

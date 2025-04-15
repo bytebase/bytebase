@@ -20,7 +20,7 @@ func GetDatabaseDefinition(_ schema.GetDefinitionContext, metadata *storepb.Data
 	for _, schema := range metadata.Schemas {
 		// Process tables in the schema
 		for _, table := range schema.Tables {
-			if err := writeCreateTable(&buf, metadata.Name, schema.Name, table); err != nil {
+			if err := writeCreateTable(&buf, schema.Name, table); err != nil {
 				return "", err
 			}
 			buf.WriteString("\n\n")
@@ -31,9 +31,9 @@ func GetDatabaseDefinition(_ schema.GetDefinitionContext, metadata *storepb.Data
 }
 
 // writeCreateTable generates CREATE TABLE statement
-func writeCreateTable(buf *strings.Builder, catalog string, schema string, table *storepb.TableMetadata) error {
+func writeCreateTable(buf *strings.Builder, schema string, table *storepb.TableMetadata) error {
 	// Begin CREATE TABLE statement
-	createTable := fmt.Sprintf("CREATE TABLE IF NOT EXISTS \"%s\".\"%s\".\"%s\" (\n", catalog, schema, table.Name)
+	createTable := fmt.Sprintf("CREATE TABLE IF NOT EXISTS \"%s\".\"%s\" (\n", schema, table.Name)
 
 	if _, err := buf.WriteString(createTable); err != nil {
 		return err
