@@ -1006,11 +1006,10 @@ func GetPipelineCreate(ctx context.Context, s *store.Store, sheetManager *sheet.
 			return nil, errors.Wrap(err, "failed to get task creates from spec")
 		}
 		for _, t := range tc {
-			e, err := s.GetEnvironmentByID(ctx, t.EnvironmentID)
-			if err != nil {
-				return nil, status.Error(codes.Internal, err.Error())
+			environmentIndex, ok := environmentIndex[t.EnvironmentID]
+			if !ok {
+				continue
 			}
-			environmentIndex := environmentIndex[e.Id]
 			stages[environmentIndex].TaskList = append(stages[environmentIndex].TaskList, t)
 		}
 	}
