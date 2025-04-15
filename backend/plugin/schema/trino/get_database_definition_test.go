@@ -40,7 +40,7 @@ func TestGetDatabaseDefinition(t *testing.T) {
 			expected: `CREATE TABLE IF NOT EXISTS "testcatalog"."testschema"."testtable" (
     "id" bigint NOT NULL,
     "name" varchar
-);`,
+);\n\n`,
 		},
 		{
 			name:    "Empty columns",
@@ -51,7 +51,7 @@ func TestGetDatabaseDefinition(t *testing.T) {
 				Columns: []*storepb.ColumnMetadata{},
 			},
 			expected: `CREATE TABLE IF NOT EXISTS "testcatalog"."testschema"."empty_table" (
-);`,
+);\n\n`,
 		},
 		{
 			name:    "Special characters in identifiers",
@@ -69,7 +69,7 @@ func TestGetDatabaseDefinition(t *testing.T) {
 			},
 			expected: `CREATE TABLE IF NOT EXISTS "test-catalog"."test_schema"."test.table" (
     "id-field" bigint NOT NULL
-);`,
+);\n\n`,
 		},
 	}
 
@@ -116,7 +116,7 @@ func TestWriteCreateTable(t *testing.T) {
 			},
 			expected: `CREATE TABLE IF NOT EXISTS "catalog"."schema"."table" (
     "col1" integer NOT NULL
-);`,
+);\n\n`,
 		},
 	}
 
