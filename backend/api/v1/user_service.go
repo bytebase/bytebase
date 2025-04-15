@@ -301,7 +301,7 @@ func (s *UserService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 		}
 		ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionUsersCreate, callerUser)
 		if err != nil {
-			return nil, err
+			return nil, status.Errorf(codes.Internal, "failed to check permission with error: %v", err.Error())
 		}
 		if !ok {
 			return nil, status.Errorf(codes.PermissionDenied, "user does not have permission %q", iam.PermissionUsersCreate)
@@ -475,7 +475,7 @@ func (s *UserService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 	if callerUser.ID != userID {
 		ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionUsersUpdate, callerUser)
 		if err != nil {
-			return nil, err
+			return nil, status.Errorf(codes.Internal, "failed to check permission with error: %v", err.Error())
 		}
 		if !ok {
 			return nil, status.Errorf(codes.PermissionDenied, "user does not have permission %q", iam.PermissionUsersUpdate)
@@ -632,7 +632,7 @@ func (s *UserService) DeleteUser(ctx context.Context, request *v1pb.DeleteUserRe
 	}
 	ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionUsersDelete, callerUser)
 	if err != nil {
-		return nil, err
+		return nil, status.Errorf(codes.Internal, "failed to check permission with error: %v", err.Error())
 	}
 	if !ok {
 		return nil, status.Errorf(codes.PermissionDenied, "user does not have permission %q", iam.PermissionUsersDelete)
@@ -730,7 +730,7 @@ func (s *UserService) UndeleteUser(ctx context.Context, request *v1pb.UndeleteUs
 	}
 	ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionUsersUndelete, callerUser)
 	if err != nil {
-		return nil, err
+		return nil, status.Errorf(codes.Internal, "failed to check permission with error: %v", err.Error())
 	}
 	if !ok {
 		return nil, status.Errorf(codes.PermissionDenied, "user does not have permission %q", iam.PermissionUsersUndelete)

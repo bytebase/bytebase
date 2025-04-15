@@ -562,7 +562,7 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, request *v1pb.BatchR
 	// the user has bb.taskruns.create permission.
 	ok, err = s.iamManager.CheckPermission(ctx, iam.PermissionTaskRunsCreate, user)
 	if err != nil {
-		return nil, err
+		return nil, status.Errorf(codes.Internal, "failed to check permission with error: %v", err.Error())
 	}
 	if !ok {
 		if issueN != nil {
