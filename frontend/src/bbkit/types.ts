@@ -8,14 +8,7 @@ export type BBButtonType =
   | "DANGER"
   | "SUCCESS";
 
-export type BBButtonConfirmType =
-  | "NORMAL"
-  | "DELETE"
-  | "ARCHIVE"
-  | "RESTORE"
-  | "DISABLE"
-  | "EDIT"
-  | "CLONE";
+export type BBButtonConfirmType = "NORMAL" | "DELETE" | "ARCHIVE" | "RESTORE";
 
 export type BBTableColumn = {
   title: string;
