@@ -21,8 +21,9 @@ func init() {
 }
 
 type Driver struct {
-	config db.ConnectionConfig
-	db     *sql.DB
+	config       db.ConnectionConfig
+	db           *sql.DB
+	databaseName string
 }
 
 func newDriver(db.DriverConfig) db.Driver {
@@ -92,10 +93,19 @@ func (*Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionCon
 	db.SetMaxIdleConns(10)
 	db.SetMaxOpenConns(20)
 
-	return &Driver{
+	d := &Driver{
 		config: config,
 		db:     db,
-	}, nil
+	}
+	if config.ConnectionContext.DatabaseName != "" {
+		d.databaseName = config.ConnectionContext.DatabaseName
+	} else if config.DataSource.Database != "" {
+		d.databaseName = config.DataSource.Database
+	} else {
+		d.databaseName = "system"
+	}
+
+	return d, nil
 }
 
 func (d *Driver) Close(context.Context) error {

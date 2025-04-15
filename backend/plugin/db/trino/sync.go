@@ -3,31 +3,13 @@ package trino
 import (
 	"context"
 	"fmt"
-	"log/slog"
-	"strings"
 	"time"
 
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
-)
-
-type contextKey string
-
-const (
-	explicitDBNameKey contextKey = "explicitDbName"
-	databaseKey       contextKey = "database"
-	resourceIDKey     contextKey = "resourceID"
-	nameKey           contextKey = "name"
-	requestNameKey    contextKey = "requestName"
-	databaseNameKey   contextKey = "databaseName"
-	checkKey          contextKey = "check"
-	pathKey           contextKey = "path"
-	statementKey      contextKey = "statement"
-	resourceIDKey2    contextKey = "resourceId"
 )
 
 // SyncInstance syncs the instance.
@@ -49,35 +31,16 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 		})
 	}
 
-	if len(catalogMetadata) == 0 {
-		catalogMetadata = append(catalogMetadata, &storepb.DatabaseSchemaMetadata{
-			Name:    "system",
-			Schemas: []*storepb.SchemaMetadata{},
-		})
-	}
-
-	var syncDatabases []string
-	for _, db := range catalogMetadata {
-		syncDatabases = append(syncDatabases, db.Name)
-	}
-
 	return &db.InstanceMetadata{
 		Version:   version,
 		Databases: catalogMetadata,
-		Metadata: &storepb.Instance{
-			SyncDatabases: syncDatabases,
-		},
+		Metadata:  &storepb.Instance{},
 	}, nil
 }
 
 // SyncDBSchema syncs a single database schema.
 func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetadata, error) {
-	databaseName, err := d.getDatabaseNameForSync(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	catalog := databaseName
+	catalog := d.databaseName
 	dbMeta := &storepb.DatabaseSchemaMetadata{
 		Name: catalog,
 	}
@@ -213,86 +176,4 @@ func (d *Driver) fetchTablesForSchema(ctx context.Context, schema string) ([]*st
 	}
 
 	return tables, nil
-}
-
-func (d *Driver) getDatabaseNameForSync(ctx context.Context) (string, error) {
-	resourceID, ok := ctx.Value(resourceIDKey).(string)
-	if ok && resourceID != "" {
-		if dbName, found := extractDatabaseNameFromResourcePath(resourceID); found {
-			return dbName, nil
-		}
-	}
-
-	if ctx.Value(databaseKey) != nil {
-		dbName, ok := ctx.Value(databaseKey).(string)
-		if ok && dbName != "" {
-			if dbResult, found := extractDatabaseNameFromResourcePath(dbName); found {
-				return dbResult, nil
-			}
-
-			parts := strings.Split(dbName, "/")
-			if len(parts) > 0 {
-				return parts[len(parts)-1], nil
-			}
-		}
-	}
-
-	if ctx.Value(databaseNameKey) != nil {
-		if dbName, ok := ctx.Value(databaseNameKey).(string); ok && dbName != "" {
-			return dbName, nil
-		}
-	}
-
-	if ctx.Value(checkKey) != nil {
-		if explicitDBName, ok := ctx.Value(explicitDBNameKey).(string); ok && explicitDBName != "" {
-			return explicitDBName, nil
-		}
-
-		for _, key := range []contextKey{requestNameKey, nameKey} {
-			if reqName, ok := ctx.Value(key).(string); ok && reqName != "" {
-				if dbName, found := extractDatabaseNameFromResourcePath(reqName); found {
-					return dbName, nil
-				}
-			}
-		}
-
-		if d.config.DataSource.Database != "" {
-			return d.config.DataSource.Database, nil
-		}
-
-		catalogs, err := d.queryStringValues(ctx, "SHOW CATALOGS")
-		if err != nil {
-			slog.Warn("failed to query catalogs", log.BBError(err))
-		}
-
-		if len(catalogs) > 0 {
-			return catalogs[0], nil
-		}
-
-		return "system", nil
-	}
-
-	if d.config.DataSource.Database != "" {
-		return d.config.DataSource.Database, nil
-	}
-
-	foundCatalogs, err := d.queryStringValues(ctx, "SHOW CATALOGS")
-	if err != nil || len(foundCatalogs) == 0 {
-		return "system", err
-	}
-
-	return foundCatalogs[0], nil
-}
-
-func extractDatabaseNameFromResourcePath(path string) (string, bool) {
-	if path == "" {
-		return "", false
-	}
-
-	parts := strings.Split(path, "/")
-	if len(parts) >= 4 && parts[len(parts)-2] == "databases" {
-		return parts[len(parts)-1], true
-	}
-
-	return "", false
 }
