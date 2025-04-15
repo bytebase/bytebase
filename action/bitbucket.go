@@ -21,7 +21,6 @@ type Report struct {
 	ReportType string `json:"report_type"`
 	Reporter   string `json:"reporter"`
 	Result     string `json:"result"`
-	Data       []any  `json:"data"`
 }
 
 // Annotation represents the structure of a Bitbucket Code Insights annotation.
@@ -88,7 +87,7 @@ func createBitbucketReport(checkResponse *v1pb.CheckReleaseResponse) error {
 	if errorCount > 0 {
 		result = "FAILED"
 	}
-	report := &Report{
+	report := Report{
 		Title:      "Bytebase SQL Review",
 		Details:    "hello???",
 		ReportType: "TEST",
