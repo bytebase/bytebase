@@ -44,13 +44,11 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx context.Context, checkCtx adv
 
 	if len(checkCtx.Statements) > common.MaxSheetCheckSize {
 		adviceList = append(adviceList, &storepb.Advice{
-			Status:  level,
-			Title:   title,
-			Content: fmt.Sprintf("The size of the SQL statements exceeds the maximum limit of %d bytes for backup", common.MaxSheetCheckSize),
-			Code:    advisor.BuiltinPriorBackupCheck.Int32(),
-			StartPosition: &storepb.Position{
-				Line: 1,
-			},
+			Status:        level,
+			Title:         title,
+			Content:       fmt.Sprintf("The size of the SQL statements exceeds the maximum limit of %d bytes for backup", common.MaxSheetCheckSize),
+			Code:          advisor.BuiltinPriorBackupCheck.Int32(),
+			StartPosition: advisor.DefaultPosition,
 		})
 	}
 
@@ -72,13 +70,11 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx context.Context, checkCtx adv
 	databaseName := extractDatabaseName(checkCtx.PreUpdateBackupDetail.Database)
 	if !advisor.DatabaseExists(ctx, checkCtx, databaseName) {
 		adviceList = append(adviceList, &storepb.Advice{
-			Status:  level,
-			Title:   title,
-			Content: fmt.Sprintf("Need database %q to do prior backup but it does not exist", checkCtx.PreUpdateBackupDetail.Database),
-			Code:    advisor.DatabaseNotExists.Int32(),
-			StartPosition: &storepb.Position{
-				Line: 1,
-			},
+			Status:        level,
+			Title:         title,
+			Content:       fmt.Sprintf("Need database %q to do prior backup but it does not exist", checkCtx.PreUpdateBackupDetail.Database),
+			Code:          advisor.DatabaseNotExists.Int32(),
+			StartPosition: advisor.DefaultPosition,
 		})
 	}
 
@@ -100,13 +96,11 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx context.Context, checkCtx adv
 			}
 			if stmtType != item.StatementType {
 				adviceList = append(adviceList, &storepb.Advice{
-					Status:  level,
-					Title:   title,
-					Content: fmt.Sprintf("Prior backup cannot handle mixed DML statements on the same table %q", key),
-					Code:    advisor.BuiltinPriorBackupCheck.Int32(),
-					StartPosition: &storepb.Position{
-						Line: 1,
-					},
+					Status:        level,
+					Title:         title,
+					Content:       fmt.Sprintf("Prior backup cannot handle mixed DML statements on the same table %q", key),
+					Code:          advisor.BuiltinPriorBackupCheck.Int32(),
+					StartPosition: advisor.DefaultPosition,
 				})
 				break
 			}
