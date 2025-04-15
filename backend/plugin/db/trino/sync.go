@@ -2,13 +2,10 @@ package trino
 
 import (
 	"context"
-	"fmt"
-	"time"
 
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/db"
-
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -50,11 +47,28 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 		return nil, errors.Wrapf(err, "failed to get schema list for catalog %s", catalog)
 	}
 
+	// Fetch all tables in all schemas in one query
+	allTables, err := d.fetchAllTablesForCatalog(ctx, catalog, schemaNames)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to fetch tables for catalog %s", catalog)
+	}
+
+	// Fetch all columns for all tables in one query
+	allColumns, err := d.fetchAllColumnsForCatalog(ctx, catalog)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to fetch columns for catalog %s", catalog)
+	}
+
+	// Organize the data into schemas
 	var schemas []*storepb.SchemaMetadata
 	for _, schemaName := range schemaNames {
-		tables, err := d.fetchTablesForSchema(ctx, schemaName)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to fetch tables for schema %s", schemaName)
+		tables := allTables[schemaName]
+
+		// Add column metadata to each table
+		for i, table := range tables {
+			if columns, ok := allColumns[schemaName+"."+table.Name]; ok {
+				tables[i].Columns = columns
+			}
 		}
 
 		schemas = append(schemas, &storepb.SchemaMetadata{
@@ -77,11 +91,8 @@ func (d *Driver) getVersion(ctx context.Context) (string, error) {
 	return version, nil
 }
 
-func (d *Driver) queryStringValues(ctx context.Context, query string) ([]string, error) {
-	queryCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
-	defer cancel()
-
-	rows, err := d.db.QueryContext(queryCtx, query)
+func (d *Driver) queryStringValues(ctx context.Context, query string, args ...any) ([]string, error) {
+	rows, err := d.db.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -111,69 +122,73 @@ func (d *Driver) getCatalogList(ctx context.Context) ([]string, error) {
 }
 
 func (d *Driver) getSchemaList(ctx context.Context, catalog string) ([]string, error) {
-	query := fmt.Sprintf("SELECT DISTINCT table_schem FROM system.jdbc.schemas WHERE table_catalog = '%s' ORDER BY table_schem", catalog)
-	return d.queryStringValues(ctx, query)
+	query := "SELECT table_schem FROM system.jdbc.schemas WHERE table_catalog = ? ORDER BY table_schem"
+	return d.queryStringValues(ctx, query, catalog)
 }
 
-func (d *Driver) queryColumns(ctx context.Context, query string) ([]*storepb.ColumnMetadata, error) {
-	queryCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
-	defer cancel()
+func (d *Driver) fetchAllTablesForCatalog(ctx context.Context, catalog string, schemas []string) (map[string][]*storepb.TableMetadata, error) {
+	query := "SELECT table_schem, table_name FROM system.jdbc.tables WHERE table_cat = ? AND table_type = 'TABLE' ORDER BY table_schem, table_name"
 
-	rows, err := d.db.QueryContext(queryCtx, query)
+	rows, err := d.db.QueryContext(ctx, query, catalog)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed to query tables for catalog")
 	}
 	defer rows.Close()
 
-	var columns []*storepb.ColumnMetadata
+	allTables := make(map[string][]*storepb.TableMetadata)
+	for _, schema := range schemas {
+		allTables[schema] = []*storepb.TableMetadata{}
+	}
+
 	for rows.Next() {
-		var name, dataType, isNullable string
-		if err := rows.Scan(&name, &dataType, &isNullable); err != nil {
+		var schemaName, tableName string
+		if err := rows.Scan(&schemaName, &tableName); err != nil {
+			return nil, errors.Wrap(err, "failed to scan table row")
+		}
+
+		if tableName != "" {
+			table := &storepb.TableMetadata{Name: tableName}
+			allTables[schemaName] = append(allTables[schemaName], table)
+		}
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, errors.Wrap(err, "error during table row iteration")
+	}
+
+	return allTables, nil
+}
+
+func (d *Driver) fetchAllColumnsForCatalog(ctx context.Context, catalog string) (map[string][]*storepb.ColumnMetadata, error) {
+	query := "SELECT table_schem, table_name, column_name, type_name, is_nullable FROM system.jdbc.columns WHERE table_cat = ? ORDER BY table_schem, table_name, ordinal_position"
+
+	rows, err := d.db.QueryContext(ctx, query, catalog)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to query columns for catalog")
+	}
+	defer rows.Close()
+
+	allColumns := make(map[string][]*storepb.ColumnMetadata)
+
+	for rows.Next() {
+		var schemaName, tableName, columnName, dataType, isNullable string
+		if err := rows.Scan(&schemaName, &tableName, &columnName, &dataType, &isNullable); err != nil {
 			return nil, errors.Wrap(err, "failed to scan column row")
 		}
-		columns = append(columns, &storepb.ColumnMetadata{
-			Name:     name,
+
+		column := &storepb.ColumnMetadata{
+			Name:     columnName,
 			Type:     dataType,
 			Nullable: isNullable == "YES",
-		})
+		}
+
+		tableKey := schemaName + "." + tableName
+		allColumns[tableKey] = append(allColumns[tableKey], column)
 	}
 
 	if err := rows.Err(); err != nil {
 		return nil, errors.Wrap(err, "error during column row iteration")
 	}
 
-	return columns, nil
-}
-
-func (d *Driver) fetchColumnsForTable(ctx context.Context, schema, table string) ([]*storepb.ColumnMetadata, error) {
-	query := fmt.Sprintf(
-		"SELECT column_name, type_name as data_type, is_nullable "+
-			"FROM system.jdbc.columns "+
-			"WHERE table_schem = '%s' AND table_name = '%s' "+
-			"ORDER BY ordinal_position",
-		schema, table)
-
-	return d.queryColumns(ctx, query)
-}
-
-func (d *Driver) fetchTablesForSchema(ctx context.Context, schema string) ([]*storepb.TableMetadata, error) {
-	query := fmt.Sprintf("SELECT DISTINCT table_name FROM system.jdbc.tables WHERE table_schem = '%s' AND table_type = 'TABLE' ORDER BY table_name", schema)
-	tableNames, err := d.queryStringValues(ctx, query)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to query tables for schema")
-	}
-
-	var tables []*storepb.TableMetadata
-	for _, tableName := range tableNames {
-		if tableName != "" {
-			table := &storepb.TableMetadata{Name: tableName}
-			columns, err := d.fetchColumnsForTable(ctx, schema, tableName)
-			if err == nil && len(columns) > 0 {
-				table.Columns = columns
-			}
-			tables = append(tables, table)
-		}
-	}
-
-	return tables, nil
+	return allColumns, nil
 }

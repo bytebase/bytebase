@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -40,7 +41,9 @@ func TestGetDatabaseDefinition(t *testing.T) {
 			expected: `CREATE TABLE IF NOT EXISTS "testcatalog"."testschema"."testtable" (
     "id" bigint NOT NULL,
     "name" varchar
-);\n\n`,
+);
+
+`,
 		},
 		{
 			name:    "Empty columns",
@@ -51,7 +54,10 @@ func TestGetDatabaseDefinition(t *testing.T) {
 				Columns: []*storepb.ColumnMetadata{},
 			},
 			expected: `CREATE TABLE IF NOT EXISTS "testcatalog"."testschema"."empty_table" (
-);\n\n`,
+
+);
+
+`,
 		},
 		{
 			name:    "Special characters in identifiers",
@@ -69,12 +75,14 @@ func TestGetDatabaseDefinition(t *testing.T) {
 			},
 			expected: `CREATE TABLE IF NOT EXISTS "test-catalog"."test_schema"."test.table" (
     "id-field" bigint NOT NULL
-);\n\n`,
+);
+
+`,
 		},
 	}
-
+	a := require.New(t)
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+		t.Run(tt.name, func(_ *testing.T) {
 			metadata := &storepb.DatabaseSchemaMetadata{
 				Name: tt.catalog,
 				Schemas: []*storepb.SchemaMetadata{
@@ -86,8 +94,8 @@ func TestGetDatabaseDefinition(t *testing.T) {
 			}
 
 			result, err := GetDatabaseDefinition(schema.GetDefinitionContext{}, metadata)
-			assert.NoError(t, err)
-			assert.Equal(t, tt.expected, result)
+			a.NoError(err)
+			a.Equal(tt.expected, result, tt.name)
 		})
 	}
 }

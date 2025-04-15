@@ -23,6 +23,7 @@ func GetDatabaseDefinition(_ schema.GetDefinitionContext, metadata *storepb.Data
 			if err := writeCreateTable(&buf, metadata.Name, schema.Name, table); err != nil {
 				return "", err
 			}
+			buf.WriteString("\n\n")
 		}
 	}
 
@@ -55,7 +56,7 @@ func writeCreateTable(buf *strings.Builder, catalog string, schema string, table
 	}
 
 	// Close the CREATE TABLE statement
-	if _, err := buf.WriteString("\n);\n\n"); err != nil {
+	if _, err := buf.WriteString("\n);"); err != nil {
 		return err
 	}
 
