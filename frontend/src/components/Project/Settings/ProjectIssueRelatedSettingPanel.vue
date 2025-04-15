@@ -371,12 +371,6 @@ const updateMask = computed(() => {
 const handleInput = (value: number | null) => {
   if (value === null) return;
   if (value === undefined) return;
-  if (value < 0) {
-      state.executionRetryPolicy = Project_ExecutionRetryPolicy.create({
-        maximumRetries: 0,
-      });
-      return;
-    }
   state.executionRetryPolicy = Project_ExecutionRetryPolicy.create({
       maximumRetries: value,
   });
