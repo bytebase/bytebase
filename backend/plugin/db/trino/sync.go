@@ -44,14 +44,8 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 
 	var catalogMetadata []*storepb.DatabaseSchemaMetadata
 	for _, catalog := range catalogList {
-		schemaList, err := d.getSchemaList(ctx, catalog)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get schema list for catalog %s", catalog)
-		}
-
 		catalogMetadata = append(catalogMetadata, &storepb.DatabaseSchemaMetadata{
-			Name:    catalog,
-			Schemas: createSchemaMetadata(schemaList),
+			Name: catalog,
 		})
 	}
 
@@ -78,19 +72,9 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 
 // SyncDBSchema syncs a single database schema.
 func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetadata, error) {
-	if d.db == nil {
-		return nil, errors.New("database connection not established")
-	}
-
-	ctx, isSQLCheck := detectSQLCheck(ctx)
-
 	databaseName, err := d.getDatabaseNameForSync(ctx)
 	if err != nil {
 		return nil, err
-	}
-
-	if isSQLCheck {
-		return d.processSQLCheck(ctx, databaseName)
 	}
 
 	catalog := databaseName
@@ -121,26 +105,13 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 }
 
 func (d *Driver) getVersion(ctx context.Context) (string, error) {
-	queries := []string{
-		"SELECT VERSION()",
-		"SELECT node_version FROM system.runtime.nodes LIMIT 1",
-		"SELECT version FROM system.runtime.nodes LIMIT 1",
-		"SELECT query_engine_version FROM system.metadata.query_engine LIMIT 1",
-	}
+	query := "SELECT VERSION()"
+	var version string
 
-	var lastErr error
-	for _, query := range queries {
-		versionCtx, cancel := context.WithTimeout(ctx, 3*time.Second)
-		var version string
-		err := d.db.QueryRowContext(versionCtx, query).Scan(&version)
-		cancel()
-		if err == nil {
-			return version, nil
-		}
-		lastErr = err
+	if err := d.db.QueryRowContext(ctx, query).Scan(&version); err != nil {
+		return "", err
 	}
-
-	return "", errors.Wrap(lastErr, "failed to get Trino version")
+	return version, nil
 }
 
 func (d *Driver) queryStringValues(ctx context.Context, query string) ([]string, error) {
@@ -172,49 +143,13 @@ func (d *Driver) queryStringValues(ctx context.Context, query string) ([]string,
 }
 
 func (d *Driver) getCatalogList(ctx context.Context) ([]string, error) {
-	if d.config.DataSource.Database != "" {
-		return []string{d.config.DataSource.Database}, nil
-	}
-
-	catalogList, err := d.queryStringValues(ctx, "SHOW CATALOGS")
-	if err == nil && len(catalogList) > 0 {
-		return catalogList, nil
-	}
-
-	catalogList, err = d.queryStringValues(ctx, "SELECT catalog_name FROM system.metadata.catalogs")
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to query system.metadata.catalogs")
-	}
-
-	if len(catalogList) > 0 {
-		return catalogList, nil
-	}
-
-	return []string{"system"}, nil
+	query := "SELECT name FROM system.metadata.catalogs ORDER BY name"
+	return d.queryStringValues(ctx, query)
 }
 
 func (d *Driver) getSchemaList(ctx context.Context, catalog string) ([]string, error) {
-	query := fmt.Sprintf("SHOW SCHEMAS FROM %s", catalog)
-	schemaList, err := d.queryStringValues(ctx, query)
-	if err == nil && len(schemaList) > 0 {
-		return schemaList, nil
-	}
-
-	query = fmt.Sprintf("SELECT table_schem FROM system.jdbc.schemas WHERE table_catalog = '%s'", catalog)
-	schemaList, err = d.queryStringValues(ctx, query)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to query schema list")
-	}
-
-	return schemaList, nil
-}
-
-func createSchemaMetadata(schemaList []string) []*storepb.SchemaMetadata {
-	var schemas []*storepb.SchemaMetadata
-	for _, schema := range schemaList {
-		schemas = append(schemas, &storepb.SchemaMetadata{Name: schema})
-	}
-	return schemas
+	query := fmt.Sprintf("SELECT DISTINCT table_schem FROM system.jdbc.schemas WHERE table_catalog = '%s' ORDER BY table_schem", catalog)
+	return d.queryStringValues(ctx, query)
 }
 
 func (d *Driver) queryColumns(ctx context.Context, query string) ([]*storepb.ColumnMetadata, error) {
@@ -251,14 +186,15 @@ func (d *Driver) fetchColumnsForTable(ctx context.Context, schema, table string)
 	query := fmt.Sprintf(
 		"SELECT column_name, type_name as data_type, is_nullable "+
 			"FROM system.jdbc.columns "+
-			"WHERE table_schem = '%s' AND table_name = '%s'",
+			"WHERE table_schem = '%s' AND table_name = '%s' "+
+			"ORDER BY ordinal_position",
 		schema, table)
 
 	return d.queryColumns(ctx, query)
 }
 
 func (d *Driver) fetchTablesForSchema(ctx context.Context, schema string) ([]*storepb.TableMetadata, error) {
-	query := fmt.Sprintf("SELECT DISTINCT table_name FROM system.jdbc.tables WHERE table_schem = '%s' AND table_type = 'TABLE'", schema)
+	query := fmt.Sprintf("SELECT DISTINCT table_name FROM system.jdbc.tables WHERE table_schem = '%s' AND table_type = 'TABLE' ORDER BY table_name", schema)
 	tableNames, err := d.queryStringValues(ctx, query)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to query tables for schema")
@@ -277,75 +213,6 @@ func (d *Driver) fetchTablesForSchema(ctx context.Context, schema string) ([]*st
 	}
 
 	return tables, nil
-}
-
-func detectSQLCheck(ctx context.Context) (context.Context, bool) {
-	if name, ok := ctx.Value(nameKey).(string); ok && name != "" {
-		if dbName, found := extractDatabaseNameFromResourcePath(name); found {
-			ctx = context.WithValue(ctx, checkKey, true)
-			ctx = context.WithValue(ctx, requestNameKey, name)
-			ctx = context.WithValue(ctx, explicitDBNameKey, dbName)
-			return ctx, true
-		}
-	}
-
-	if ctx.Value(databaseKey) == nil && ctx.Value(databaseNameKey) == nil &&
-		ctx.Value(resourceIDKey2) == nil && ctx.Value(resourceIDKey) == nil {
-		ctx = context.WithValue(ctx, checkKey, true)
-		return ctx, true
-	}
-
-	if reqPath, ok := ctx.Value(pathKey).(string); ok &&
-		(strings.Contains(reqPath, "sql/check") || strings.Contains(reqPath, "/v1/SQLService/Check")) {
-		ctx = context.WithValue(ctx, checkKey, true)
-		return ctx, true
-	}
-
-	if statement, ok := ctx.Value(statementKey).(string); ok &&
-		strings.Contains(strings.ToUpper(statement), "INFORMATION_SCHEMA") {
-		ctx = context.WithValue(ctx, checkKey, true)
-		return ctx, true
-	}
-
-	return ctx, false
-}
-
-func (d *Driver) processSQLCheck(ctx context.Context, databaseName string) (*storepb.DatabaseSchemaMetadata, error) {
-	expectedDBName := extractExpectedDatabaseName(ctx, databaseName)
-
-	if dbPathStr := fmt.Sprintf("%v", ctx.Value(databaseKey)); dbPathStr != "<nil>" && dbPathStr != "" {
-		if dbPathParts := strings.Split(dbPathStr, "/"); len(dbPathParts) > 0 {
-			for i, part := range dbPathParts {
-				if part == "databases" && i+1 < len(dbPathParts) {
-					expectedDBName = dbPathParts[i+1]
-					break
-				}
-			}
-		}
-	}
-
-	var schemas []*storepb.SchemaMetadata
-	schemaNames, err := d.getSchemaList(ctx, expectedDBName)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get schema list for SQL check on catalog %s", expectedDBName)
-	}
-
-	for _, schemaName := range schemaNames {
-		tables, err := d.fetchTablesForSchema(ctx, schemaName)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to fetch tables for schema %s during SQL check", schemaName)
-		}
-
-		schemas = append(schemas, &storepb.SchemaMetadata{
-			Name:   schemaName,
-			Tables: tables,
-		})
-	}
-
-	return &storepb.DatabaseSchemaMetadata{
-		Name:    expectedDBName,
-		Schemas: schemas,
-	}, nil
 }
 
 func (d *Driver) getDatabaseNameForSync(ctx context.Context) (string, error) {
@@ -428,35 +295,4 @@ func extractDatabaseNameFromResourcePath(path string) (string, bool) {
 	}
 
 	return "", false
-}
-
-func extractExpectedDatabaseName(ctx context.Context, defaultName string) string {
-	if explicitDBName, ok := ctx.Value(explicitDBNameKey).(string); ok && explicitDBName != "" {
-		return explicitDBName
-	}
-
-	for _, key := range []contextKey{databaseKey, resourceIDKey, nameKey} {
-		if value, ok := ctx.Value(key).(string); ok && value != "" {
-			if strings.Contains(value, "/databases/") {
-				parts := strings.Split(value, "/")
-				for i, part := range parts {
-					if part == "databases" && i+1 < len(parts) {
-						return parts[i+1]
-					}
-				}
-			}
-		}
-	}
-
-	if reqName, ok := ctx.Value(requestNameKey).(string); ok && reqName != "" {
-		if dbName, found := extractDatabaseNameFromResourcePath(reqName); found {
-			return dbName
-		}
-	}
-
-	if dbName, ok := ctx.Value(databaseNameKey).(string); ok && dbName != "" {
-		return dbName
-	}
-
-	return defaultName
 }
