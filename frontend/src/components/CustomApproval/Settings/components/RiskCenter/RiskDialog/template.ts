@@ -6,7 +6,6 @@ import { t, te } from "@/plugins/i18n";
 import { useEnvironmentV1List } from "@/store";
 import { PresetRiskLevel } from "@/types";
 import { Risk_Source } from "@/types/proto/v1/risk_service";
-import { extractEnvironmentResourceName } from "@/utils";
 
 /*
 
@@ -48,10 +47,7 @@ export const useRuleTemplates = () => {
         expr: wrapAsGroup({
           type: ExprType.Condition,
           operator: "_==_",
-          args: [
-            "environment_id",
-            extractEnvironmentResourceName(prod.value.name),
-          ],
+          args: ["environment_id", prod.value.id],
         }),
         level: PresetRiskLevel.HIGH,
         source: Risk_Source.SOURCE_UNSPECIFIED,
@@ -64,10 +60,7 @@ export const useRuleTemplates = () => {
         expr: wrapAsGroup({
           type: ExprType.Condition,
           operator: "_==_",
-          args: [
-            "environment_id",
-            extractEnvironmentResourceName(dev.value.name),
-          ],
+          args: ["environment_id", dev.value.id],
         }),
         level: PresetRiskLevel.LOW,
         source: Risk_Source.SOURCE_UNSPECIFIED,
@@ -85,10 +78,7 @@ export const useRuleTemplates = () => {
             {
               type: ExprType.Condition,
               operator: "_==_",
-              args: [
-                "environment_id",
-                extractEnvironmentResourceName(prod.value.name),
-              ],
+              args: ["environment_id", prod.value.id],
             },
             {
               type: ExprType.Condition,
@@ -115,10 +105,7 @@ export const useRuleTemplates = () => {
         expr: wrapAsGroup({
           type: ExprType.Condition,
           operator: "_==_",
-          args: [
-            "environment_id",
-            extractEnvironmentResourceName(prod.value.name),
-          ],
+          args: ["environment_id", prod.value.id],
         }),
         level: PresetRiskLevel.MODERATE,
         source: Risk_Source.CREATE_DATABASE,

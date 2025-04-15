@@ -7,7 +7,7 @@
     :data="environmentList"
     :striped="true"
     :bordered="bordered"
-    :row-key="(data: Environment) => data.name"
+    :row-key="(data: Environment) => data.id"
     :row-props="rowProps"
     :paginate-single-page="false"
   />
@@ -18,7 +18,7 @@ import { NDataTable, type DataTableColumn } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import type { Environment } from "@/types/proto/v1/environment_service";
+import { formatEnvironmentName, type Environment } from "@/types/v1/environment";
 import { EnvironmentV1Name } from ".";
 
 withDefaults(
@@ -39,7 +39,7 @@ const rowProps = (environment: Environment) => {
   return {
     style: "cursor: pointer;",
     onClick: (e: MouseEvent) => {
-      const url = `/${environment.name}`;
+      const url = `/${formatEnvironmentName(environment.id)}`;
       if (e.ctrlKey || e.metaKey) {
         window.open(url, "_blank");
       } else {
@@ -57,7 +57,7 @@ const columnList = computed((): DataTableColumn<Environment>[] => {
       resizable: true,
       ellipsis: true,
       render: (env) => {
-        return env.name;
+        return formatEnvironmentName(env.id);
       },
     },
     {

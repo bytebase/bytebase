@@ -71,7 +71,6 @@ type controller struct {
 	authServiceClient            v1pb.AuthServiceClient
 	userServiceClient            v1pb.UserServiceClient
 	settingServiceClient         v1pb.SettingServiceClient
-	environmentServiceClient     v1pb.EnvironmentServiceClient
 	instanceServiceClient        v1pb.InstanceServiceClient
 	databaseServiceClient        v1pb.DatabaseServiceClient
 	databaseCatalogServiceClient v1pb.DatabaseCatalogServiceClient
@@ -255,7 +254,6 @@ func (ctl *controller) start(ctx context.Context, port int) (context.Context, er
 	ctl.authServiceClient = v1pb.NewAuthServiceClient(ctl.grpcConn)
 	ctl.userServiceClient = v1pb.NewUserServiceClient(ctl.grpcConn)
 	ctl.settingServiceClient = v1pb.NewSettingServiceClient(ctl.grpcConn)
-	ctl.environmentServiceClient = v1pb.NewEnvironmentServiceClient(ctl.grpcConn)
 	ctl.instanceServiceClient = v1pb.NewInstanceServiceClient(ctl.grpcConn)
 	ctl.databaseServiceClient = v1pb.NewDatabaseServiceClient(ctl.grpcConn)
 	ctl.databaseCatalogServiceClient = v1pb.NewDatabaseCatalogServiceClient(ctl.grpcConn)

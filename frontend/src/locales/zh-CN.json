@@ -1253,7 +1253,6 @@
     "select": "选择环境",
     "delete": "删除此环境",
     "create": "创建环境",
-    "restore": "恢复此环境",
     "successfully-updated-environment": "环境'{name}'更新成功",
     "production-environment": "生产环境",
     "access-control": {

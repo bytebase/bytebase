@@ -1253,7 +1253,6 @@
     "select": "Chọn môi trường",
     "delete": "Xóa môi trường này",
     "create": "Tạo môi trường",
-    "restore": "Khôi phục môi trường này",
     "successfully-updated-environment": "Đã cập nhật thành công môi trường '{name}'.",
     "production-environment": "Môi trường sản xuất",
     "access-control": {

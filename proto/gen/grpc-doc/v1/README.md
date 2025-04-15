@@ -370,20 +370,6 @@
   
     - [DatabaseGroupService](#bytebase-v1-DatabaseGroupService)
   
-- [v1/environment_service.proto](#v1_environment_service-proto)
-    - [CreateEnvironmentRequest](#bytebase-v1-CreateEnvironmentRequest)
-    - [DeleteEnvironmentRequest](#bytebase-v1-DeleteEnvironmentRequest)
-    - [Environment](#bytebase-v1-Environment)
-    - [GetEnvironmentRequest](#bytebase-v1-GetEnvironmentRequest)
-    - [ListEnvironmentsRequest](#bytebase-v1-ListEnvironmentsRequest)
-    - [ListEnvironmentsResponse](#bytebase-v1-ListEnvironmentsResponse)
-    - [UndeleteEnvironmentRequest](#bytebase-v1-UndeleteEnvironmentRequest)
-    - [UpdateEnvironmentRequest](#bytebase-v1-UpdateEnvironmentRequest)
-  
-    - [EnvironmentTier](#bytebase-v1-EnvironmentTier)
-  
-    - [EnvironmentService](#bytebase-v1-EnvironmentService)
-  
 - [v1/group_service.proto](#v1_group_service-proto)
     - [CreateGroupRequest](#bytebase-v1-CreateGroupRequest)
     - [DeleteGroupRequest](#bytebase-v1-DeleteGroupRequest)
@@ -4495,7 +4481,7 @@ ANY means approving any node will proceed.
 <a name="bytebase-v1-EnvironmentSetting"></a>
 
 ### EnvironmentSetting
-TODO(p0ny): implement.
+
 
 
 | Field | Type | Label | Description |
@@ -4515,8 +4501,9 @@ TODO(p0ny): implement.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| title | [string](#string) |  | The display name of the environment. |
+| name | [string](#string) |  | The resource name of the environment. Format: environments/{environment}. Output only. |
 | id | [string](#string) |  | The resource id of the environment. This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
+| title | [string](#string) |  | The display name of the environment. |
 | tags | [EnvironmentSetting.Environment.TagsEntry](#bytebase-v1-EnvironmentSetting-Environment-TagsEntry) | repeated |  |
 | color | [string](#string) |  |  |
 
@@ -6235,186 +6222,6 @@ The database group&#39;s `name` field is used to identify the database group to 
 | CreateDatabaseGroup | [CreateDatabaseGroupRequest](#bytebase-v1-CreateDatabaseGroupRequest) | [DatabaseGroup](#bytebase-v1-DatabaseGroup) |  |
 | UpdateDatabaseGroup | [UpdateDatabaseGroupRequest](#bytebase-v1-UpdateDatabaseGroupRequest) | [DatabaseGroup](#bytebase-v1-DatabaseGroup) |  |
 | DeleteDatabaseGroup | [DeleteDatabaseGroupRequest](#bytebase-v1-DeleteDatabaseGroupRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
-
- 
-
-
-
-<a name="v1_environment_service-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## v1/environment_service.proto
-
-
-
-<a name="bytebase-v1-CreateEnvironmentRequest"></a>
-
-### CreateEnvironmentRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| environment | [Environment](#bytebase-v1-Environment) |  | The environment to create. |
-| environment_id | [string](#string) |  | The ID to use for the environment, which will become the final component of the environment&#39;s resource name.
-
-This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
-
-
-
-
-
-
-<a name="bytebase-v1-DeleteEnvironmentRequest"></a>
-
-### DeleteEnvironmentRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the environment to delete. Format: environments/{environment} |
-
-
-
-
-
-
-<a name="bytebase-v1-Environment"></a>
-
-### Environment
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the environment. Format: environments/{environment} |
-| state | [State](#bytebase-v1-State) |  |  |
-| title | [string](#string) |  |  |
-| order | [int32](#int32) |  |  |
-| tier | [EnvironmentTier](#bytebase-v1-EnvironmentTier) |  |  |
-| color | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-GetEnvironmentRequest"></a>
-
-### GetEnvironmentRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the environment to retrieve. Format: environments/{environment} |
-
-
-
-
-
-
-<a name="bytebase-v1-ListEnvironmentsRequest"></a>
-
-### ListEnvironmentsRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| page_size | [int32](#int32) |  | Not used. The maximum number of environments to return. The service may return fewer than this value. If unspecified, at most 10 environments will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | Not used. A page token, received from a previous `ListEnvironments` call. Provide this to retrieve the subsequent page.
-
-When paginating, all other parameters provided to `ListEnvironments` must match the call that provided the page token. |
-| show_deleted | [bool](#bool) |  | Show deleted environments if specified. |
-
-
-
-
-
-
-<a name="bytebase-v1-ListEnvironmentsResponse"></a>
-
-### ListEnvironmentsResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| environments | [Environment](#bytebase-v1-Environment) | repeated | The environments from the specified request. |
-| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
-
-
-
-
-
-
-<a name="bytebase-v1-UndeleteEnvironmentRequest"></a>
-
-### UndeleteEnvironmentRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the deleted environment. Format: environments/{environment} |
-
-
-
-
-
-
-<a name="bytebase-v1-UpdateEnvironmentRequest"></a>
-
-### UpdateEnvironmentRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| environment | [Environment](#bytebase-v1-Environment) |  | The environment to update.
-
-The environment&#39;s `name` field is used to identify the environment to update. Format: environments/{environment} |
-| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
-
-
-
-
-
- 
-
-
-<a name="bytebase-v1-EnvironmentTier"></a>
-
-### EnvironmentTier
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| ENVIRONMENT_TIER_UNSPECIFIED | 0 |  |
-| PROTECTED | 1 |  |
-| UNPROTECTED | 2 |  |
-
-
- 
-
- 
-
-
-<a name="bytebase-v1-EnvironmentService"></a>
-
-### EnvironmentService
-
-
-| Method Name | Request Type | Response Type | Description |
-| ----------- | ------------ | ------------- | ------------|
-| GetEnvironment | [GetEnvironmentRequest](#bytebase-v1-GetEnvironmentRequest) | [Environment](#bytebase-v1-Environment) |  |
-| ListEnvironments | [ListEnvironmentsRequest](#bytebase-v1-ListEnvironmentsRequest) | [ListEnvironmentsResponse](#bytebase-v1-ListEnvironmentsResponse) |  |
-| CreateEnvironment | [CreateEnvironmentRequest](#bytebase-v1-CreateEnvironmentRequest) | [Environment](#bytebase-v1-Environment) |  |
-| UpdateEnvironment | [UpdateEnvironmentRequest](#bytebase-v1-UpdateEnvironmentRequest) | [Environment](#bytebase-v1-Environment) |  |
-| DeleteEnvironment | [DeleteEnvironmentRequest](#bytebase-v1-DeleteEnvironmentRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
-| UndeleteEnvironment | [UndeleteEnvironmentRequest](#bytebase-v1-UndeleteEnvironmentRequest) | [Environment](#bytebase-v1-Environment) |  |
 
  
 

@@ -15,7 +15,10 @@
       <heroicons-outline:database />
 
       <EnvironmentV1Name
-        v-if="instanceEnvironment.name !== database.effectiveEnvironment"
+        v-if="
+          formatEnvironmentName(instanceEnvironment.id) !==
+          database.effectiveEnvironment
+        "
         :environment="instanceEnvironment"
         :link="false"
         :show-icon="false"
@@ -36,7 +39,11 @@ import {
   EnvironmentV1Name,
 } from "@/components/v2";
 import { useDatabaseV1Store, useEnvironmentV1Store } from "@/store";
-import { isValidDatabaseName, unknownEnvironment } from "@/types";
+import {
+  formatEnvironmentName,
+  isValidDatabaseName,
+  unknownEnvironment,
+} from "@/types";
 import type { Worksheet } from "@/types/proto/v1/worksheet_service";
 
 const props = defineProps<{

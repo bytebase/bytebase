@@ -53,19 +53,6 @@ CREATE UNIQUE INDEX idx_role_unique_resource_id on role (resource_id);
 
 ALTER SEQUENCE role_id_seq RESTART WITH 101;
 
--- Environment
-CREATE TABLE environment (
-    id serial PRIMARY KEY,
-    deleted boolean NOT NULL DEFAULT FALSE,
-    name text NOT NULL,
-    "order" integer NOT NULL CHECK ("order" >= 0),
-    resource_id text NOT NULL
-);
-
-CREATE UNIQUE INDEX idx_environment_unique_resource_id ON environment(resource_id);
-
-ALTER SEQUENCE environment_id_seq RESTART WITH 101;
-
 -- Policy
 -- policy stores the policies for each resources.
 CREATE TABLE policy (
@@ -114,7 +101,7 @@ ALTER SEQUENCE project_webhook_id_seq RESTART WITH 101;
 CREATE TABLE instance (
     id serial PRIMARY KEY,
     deleted boolean NOT NULL DEFAULT FALSE,
-    environment text REFERENCES environment(resource_id),
+    environment text,
     resource_id text NOT NULL,
     metadata jsonb NOT NULL DEFAULT '{}'
 );
@@ -131,7 +118,7 @@ CREATE TABLE db (
     project text NOT NULL REFERENCES project(resource_id),
     instance text NOT NULL REFERENCES instance(resource_id),
     name text NOT NULL,
-    environment text REFERENCES environment(resource_id),
+    environment text,
     metadata jsonb NOT NULL DEFAULT '{}'
 );
 
@@ -202,7 +189,7 @@ ALTER SEQUENCE pipeline_id_seq RESTART WITH 101;
 CREATE TABLE stage (
     id serial PRIMARY KEY,
     pipeline_id integer NOT NULL REFERENCES pipeline(id),
-    environment text NOT NULL REFERENCES environment(resource_id)
+    environment text
 );
 
 CREATE INDEX idx_stage_pipeline_id ON stage(pipeline_id);
@@ -557,9 +544,3 @@ ALTER SEQUENCE principal_id_seq RESTART WITH 101;
 INSERT INTO project (id, name, resource_id) VALUES (1, 'Default', 'default');
 
 ALTER SEQUENCE project_id_seq RESTART WITH 101;
-
--- Create "test" and "prod" environments
-INSERT INTO environment (id, name, "order", resource_id) VALUES (101, 'Test', 0, 'test');
-INSERT INTO environment (id, name, "order", resource_id) VALUES (102, 'Prod', 1, 'prod');
-
-ALTER SEQUENCE environment_id_seq RESTART WITH 103;

@@ -16,8 +16,8 @@
 <script lang="tsx" setup>
 import { computed } from "vue";
 import { useEnvironmentV1Store } from "@/store";
-import { State } from "@/types/proto/v1/common";
-import type { Environment } from "@/types/proto/v1/environment_service";
+import { formatEnvironmentName } from "@/types";
+import type { Environment } from "@/types/v1/environment";
 import { EnvironmentV1Name } from "../Model";
 import ResourceSelect from "./ResourceSelect.vue";
 
@@ -49,19 +49,12 @@ defineEmits<{
 const environmentV1Store = useEnvironmentV1Store();
 
 const rawEnvironmentList = computed(() => {
-  const list = environmentV1Store.getEnvironmentList(true /* showDeleted */);
+  const list = environmentV1Store.getEnvironmentList();
   return list;
 });
 
 const combinedEnvironmentList = computed(() => {
-  let list = rawEnvironmentList.value.filter((environment) => {
-    if (props.includeArchived) return true;
-    if (environment.state === State.ACTIVE) return true;
-    // ARCHIVED
-    if (environment.name === props.environmentName) return true;
-    return false;
-  });
-
+  let list = rawEnvironmentList.value;
   if (props.filter) {
     list = list.filter(props.filter);
   }
@@ -72,8 +65,11 @@ const combinedEnvironmentList = computed(() => {
 const options = computed(() => {
   return combinedEnvironmentList.value.map((environment) => {
     return {
-      resource: environment,
-      value: environment.name,
+      resource: {
+        ...environment,
+        name: formatEnvironmentName(environment.id),
+      },
+      value: formatEnvironmentName(environment.id),
       label: environment.title,
     };
   });
