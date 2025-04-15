@@ -15,7 +15,7 @@ import (
 
 var (
 	DefaultPosition = &storepb.Position{
-		Line: 1,
+		Line: 0,
 	}
 )
 
