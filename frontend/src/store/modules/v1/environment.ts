@@ -190,12 +190,13 @@ export const useEnvironmentV1Store = defineStore("environment_v1", {
       name: string,
       silent = false
     ): Promise<Environment | undefined> {
-      const cachedData = this.environmentMapById.get(name);
+      const id = name.replace(environmentNamePrefix, "");
+      const cachedData = this.environmentMapById.get(id);
       if (cachedData) {
         return cachedData;
       }
       await this.fetchEnvironments(false, silent);
-      const environment = this.environmentMapById.get(name);
+      const environment = this.environmentMapById.get(id);
       return environment;
     },
     getEnvironmentByName(name: string) {
