@@ -23,6 +23,13 @@ service UserService {
     option (bytebase.v1.auth_method) = CUSTOM;
   }
 
+  // Get the current authenticated user.
+  rpc GetCurrentUser(google.protobuf.Empty) returns (User) {
+    option (google.api.http) = {get: "/v1/users/me"};
+    option (bytebase.v1.allow_without_credential) = true;
+    option (bytebase.v1.auth_method) = CUSTOM;
+  }
+
   // List all users.
   // Any authenticated user can list users.
   rpc ListUsers(ListUsersRequest) returns (ListUsersResponse) {

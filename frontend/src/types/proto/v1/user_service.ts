@@ -1169,6 +1169,21 @@ export const UserServiceDefinition = {
         },
       },
     },
+    /** Get the current authenticated user. */
+    getCurrentUser: {
+      name: "GetCurrentUser",
+      requestType: Empty,
+      requestStream: false,
+      responseType: User,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          800000: [new Uint8Array([1])],
+          800016: [new Uint8Array([2])],
+          578365826: [new Uint8Array([14, 18, 12, 47, 118, 49, 47, 117, 115, 101, 114, 115, 47, 109, 101])],
+        },
+      },
+    },
     /**
      * List all users.
      * Any authenticated user can list users.

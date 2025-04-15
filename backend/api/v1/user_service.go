@@ -88,6 +88,15 @@ func (s *UserService) GetUser(ctx context.Context, request *v1pb.GetUserRequest)
 	return convertToUser(user), nil
 }
 
+// GetCurrentUser gets the current authenticated user.
+func (*UserService) GetCurrentUser(ctx context.Context, _ *emptypb.Empty) (*v1pb.User, error) {
+	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+	if !ok || user == nil {
+		return nil, status.Errorf(codes.Unauthenticated, "authenticated user not found")
+	}
+	return convertToUser(user), nil
+}
+
 // ListUsers lists all users.
 func (s *UserService) ListUsers(ctx context.Context, request *v1pb.ListUsersRequest) (*v1pb.ListUsersResponse, error) {
 	offset, err := parseLimitAndOffset(&pageSize{
