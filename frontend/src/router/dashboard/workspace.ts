@@ -91,7 +91,7 @@ const workspaceRoutes: RouteRecordRaw[] = [
     name: ENVIRONMENT_V1_ROUTE_DASHBOARD,
     meta: {
       title: () => t("common.environments"),
-      requiredPermissionList: () => ["bb.environments.list"],
+      requiredPermissionList: () => ["bb.settings.get"],
     },
     components: {
       content: () => import("@/views/EnvironmentDashboard.vue"),

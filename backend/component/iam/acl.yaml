@@ -23,12 +23,6 @@ roles:
       - bb.databases.list
       - bb.databases.sync
       - bb.databases.update
-      - bb.environments.create
-      - bb.environments.delete
-      - bb.environments.get
-      - bb.environments.list
-      - bb.environments.undelete
-      - bb.environments.update
       - bb.identityProviders.create
       - bb.identityProviders.delete
       - bb.identityProviders.get
@@ -152,12 +146,6 @@ roles:
       - bb.databases.list
       - bb.databases.sync
       - bb.databases.update
-      - bb.environments.create
-      - bb.environments.delete
-      - bb.environments.get
-      - bb.environments.list
-      - bb.environments.undelete
-      - bb.environments.update
       - bb.identityProviders.create
       - bb.identityProviders.delete
       - bb.identityProviders.get
@@ -252,8 +240,6 @@ roles:
   - name: roles/workspaceMember
     title: Workspace member
     permissions:
-      - bb.environments.get
-      - bb.environments.list
       - bb.instanceRoles.get
       - bb.instanceRoles.list
       - bb.policies.get
