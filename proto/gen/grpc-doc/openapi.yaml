@@ -260,168 +260,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
-    /v1/environments:
-        get:
-            tags:
-                - EnvironmentService
-            operationId: EnvironmentService_ListEnvironments
-            parameters:
-                - name: pageSize
-                  in: query
-                  description: |-
-                    Not used.
-                     The maximum number of environments to return. The service may return fewer than
-                     this value.
-                     If unspecified, at most 10 environments will be returned.
-                     The maximum value is 1000; values above 1000 will be coerced to 1000.
-                  schema:
-                    type: integer
-                    format: int32
-                - name: pageToken
-                  in: query
-                  description: |-
-                    Not used.
-                     A page token, received from a previous `ListEnvironments` call.
-                     Provide this to retrieve the subsequent page.
-
-                     When paginating, all other parameters provided to `ListEnvironments` must match
-                     the call that provided the page token.
-                  schema:
-                    type: string
-                - name: showDeleted
-                  in: query
-                  description: Show deleted environments if specified.
-                  schema:
-                    type: boolean
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/ListEnvironmentsResponse'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
-        post:
-            tags:
-                - EnvironmentService
-            operationId: EnvironmentService_CreateEnvironment
-            parameters:
-                - name: environmentId
-                  in: query
-                  description: |-
-                    The ID to use for the environment, which will become the final component of
-                     the environment's resource name.
-
-                     This value should be 4-63 characters, and valid characters
-                     are /[a-z][0-9]-/.
-                  schema:
-                    type: string
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/Environment'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Environment'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
-    /v1/environments/{environment}:
-        get:
-            tags:
-                - EnvironmentService
-            operationId: EnvironmentService_GetEnvironment
-            parameters:
-                - name: environment
-                  in: path
-                  description: The environment id.
-                  required: true
-                  schema:
-                    type: string
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Environment'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
-        delete:
-            tags:
-                - EnvironmentService
-            operationId: EnvironmentService_DeleteEnvironment
-            parameters:
-                - name: environment
-                  in: path
-                  description: The environment id.
-                  required: true
-                  schema:
-                    type: string
-            responses:
-                "200":
-                    description: OK
-                    content: {}
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
-        patch:
-            tags:
-                - EnvironmentService
-            operationId: EnvironmentService_UpdateEnvironment
-            parameters:
-                - name: environment
-                  in: path
-                  description: The environment id.
-                  required: true
-                  schema:
-                    type: string
-                - name: updateMask
-                  in: query
-                  description: The list of fields to update.
-                  schema:
-                    type: string
-                    format: field-mask
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/Environment'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Environment'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
     /v1/environments/{environment}/policies:
         get:
             tags:
@@ -637,37 +475,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Policy'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
-    /v1/environments/{environment}:undelete:
-        post:
-            tags:
-                - EnvironmentService
-            operationId: EnvironmentService_UndeleteEnvironment
-            parameters:
-                - name: environment
-                  in: path
-                  description: The environment id.
-                  required: true
-                  schema:
-                    type: string
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/UndeleteEnvironmentRequest'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Environment'
                 default:
                     description: Default error response
                     content:
@@ -9454,35 +9261,6 @@ components:
             properties:
                 active:
                     type: boolean
-        Environment:
-            type: object
-            properties:
-                name:
-                    type: string
-                    description: |-
-                        The name of the environment.
-                         Format: environments/{environment}
-                state:
-                    enum:
-                        - STATE_UNSPECIFIED
-                        - ACTIVE
-                        - DELETED
-                    type: string
-                    format: enum
-                title:
-                    type: string
-                order:
-                    type: integer
-                    format: int32
-                tier:
-                    enum:
-                        - ENVIRONMENT_TIER_UNSPECIFIED
-                        - PROTECTED
-                        - UNPROTECTED
-                    type: string
-                    format: enum
-                color:
-                    type: string
         EnvironmentSetting:
             type: object
             properties:
@@ -9490,19 +9268,18 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/EnvironmentSetting_Environment'
-            description: 'TODO(p0ny): implement.'
         EnvironmentSetting_Environment:
             type: object
             properties:
-                title:
-                    type: string
-                    description: The display name of the environment.
                 id:
                     type: string
                     description: |-
                         The resource id of the environment.
                          This value should be 4-63 characters, and valid characters
                          are /[a-z][0-9]-/.
+                title:
+                    type: string
+                    description: The display name of the environment.
                 tags:
                     type: object
                     additionalProperties:
@@ -10498,19 +10275,6 @@ components:
                     items:
                         $ref: '#/components/schemas/Database'
                     description: The databases from the specified request.
-                nextPageToken:
-                    type: string
-                    description: |-
-                        A token, which can be sent as `page_token` to retrieve the next page.
-                         If this field is omitted, there are no subsequent pages.
-        ListEnvironmentsResponse:
-            type: object
-            properties:
-                environments:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/Environment'
-                    description: The environments from the specified request.
                 nextPageToken:
                     type: string
                     description: |-
@@ -13721,16 +13485,6 @@ components:
                     type: string
                 skipDump:
                     type: boolean
-        UndeleteEnvironmentRequest:
-            required:
-                - name
-            type: object
-            properties:
-                name:
-                    type: string
-                    description: |-
-                        The name of the deleted environment.
-                         Format: environments/{environment}
         UndeleteIdentityProviderRequest:
             required:
                 - name
@@ -14175,7 +13929,6 @@ tags:
     - name: DatabaseCatalogService
     - name: DatabaseGroupService
     - name: DatabaseService
-    - name: EnvironmentService
     - name: GroupService
     - name: IdentityProviderService
     - name: InstanceRoleService

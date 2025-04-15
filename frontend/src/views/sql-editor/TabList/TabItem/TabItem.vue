@@ -38,7 +38,10 @@
 <script lang="ts" setup>
 import { computed, reactive } from "vue";
 import { useSQLEditorTabStore } from "@/store";
-import { type SQLEditorTab, UNKNOWN_ENVIRONMENT_NAME } from "@/types";
+import {
+  type SQLEditorTab,
+  UNKNOWN_ID,
+} from "@/types";
 import { connectionForSQLEditorTab, hexToRgb } from "@/utils";
 import AdminLabel from "./AdminLabel.vue";
 import Label from "./Label.vue";
@@ -70,7 +73,7 @@ const isCurrentTab = computed(() => props.tab.id === tabStore.currentTabId);
 const environment = computed(() => {
   const { database } = connectionForSQLEditorTab(props.tab);
   const environment = database?.effectiveEnvironmentEntity;
-  if (environment?.name === UNKNOWN_ENVIRONMENT_NAME) {
+  if (environment?.id === String(UNKNOWN_ID)) {
     return;
   }
   return environment;

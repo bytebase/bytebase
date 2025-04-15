@@ -5,7 +5,6 @@ import {
 } from "@/store/modules/v1/common";
 import { QueryPermissionQueryAny, UNKNOWN_ID } from "@/types";
 import type { ComposedDatabase, QueryPermission } from "@/types";
-import { State } from "@/types/proto/v1/common";
 import {
   hasPermissionToCreateChangeDatabaseIssue,
   hasWorkspacePermissionV2,
@@ -44,10 +43,8 @@ export const extractDatabaseResourceName = (
   };
 };
 
-export const isArchivedDatabaseV1 = (db: ComposedDatabase): boolean => {
-  if (db.effectiveEnvironmentEntity.state === State.DELETED) {
-    return true;
-  }
+// TODO(p0ny): remove
+export const isArchivedDatabaseV1 = (_db: ComposedDatabase): boolean => {
   return false;
 };
 

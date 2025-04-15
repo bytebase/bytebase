@@ -6,7 +6,6 @@ import { ChangelistServiceDefinition } from "@/types/proto/v1/changelist_service
 import { DatabaseCatalogServiceDefinition } from "@/types/proto/v1/database_catalog_service";
 import { DatabaseGroupServiceDefinition } from "@/types/proto/v1/database_group_service";
 import { DatabaseServiceDefinition } from "@/types/proto/v1/database_service";
-import { EnvironmentServiceDefinition } from "@/types/proto/v1/environment_service";
 import { GroupServiceDefinition } from "@/types/proto/v1/group_service";
 import { IdentityProviderServiceDefinition } from "@/types/proto/v1/idp_service";
 import { InstanceRoleServiceDefinition } from "@/types/proto/v1/instance_role_service";
@@ -83,11 +82,6 @@ export const userServiceClient = clientFactory.create(
 
 export const roleServiceClient = clientFactory.create(
   RoleServiceDefinition,
-  channel
-);
-
-export const environmentServiceClient = clientFactory.create(
-  EnvironmentServiceDefinition,
   channel
 );
 

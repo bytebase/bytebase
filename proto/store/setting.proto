@@ -354,12 +354,12 @@ message EnvironmentSetting {
   repeated Environment environments = 1;
 
   message Environment {
-    // The display name of the environment.
-    string title = 1;
     // The resource id of the environment.
     // This value should be 4-63 characters, and valid characters
     // are /[a-z][0-9]-/.
-    string id = 2;
+    string id = 1;
+    // The display name of the environment.
+    string title = 2;
     map<string, string> tags = 3;
     string color = 4;
   }
