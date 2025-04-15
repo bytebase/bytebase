@@ -161,10 +161,10 @@ const state = reactive<LocalState>({
 });
 
 const allowCreate = computed(() => {
-  return hasWorkspacePermissionV2("bb.environments.create");
+  return hasWorkspacePermissionV2("bb.settings.set");
 });
 const allowReorder = computed(() => {
-  return hasWorkspacePermissionV2("bb.environments.update");
+  return hasWorkspacePermissionV2("bb.settings.set");
 });
 
 const selectEnvironmentOnHash = () => {

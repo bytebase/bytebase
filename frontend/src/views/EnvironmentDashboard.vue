@@ -28,8 +28,8 @@
         >
           <NButton
             v-if="
-              hasWorkspacePermissionV2('bb.environments.list') &&
-              hasWorkspacePermissionV2('bb.environments.update')
+              hasWorkspacePermissionV2('bb.settings.get') &&
+              hasWorkspacePermissionV2('bb.settings.set')
             "
             @click="startReorder"
           >
@@ -39,7 +39,7 @@
             {{ $t("common.reorder") }}
           </NButton>
           <NButton
-            v-if="hasWorkspacePermissionV2('bb.environments.create')"
+            v-if="hasWorkspacePermissionV2('bb.settings.set')"
             type="primary"
             @click="createEnvironment"
           >
