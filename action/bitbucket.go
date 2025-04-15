@@ -109,7 +109,7 @@ func createBitbucketReport(checkResponse *v1pb.CheckReleaseResponse) error {
 	if err != nil {
 		return errors.Wrapf(err, "error marshaling json")
 	}
-	annotationsURL := fmt.Sprintf("https://api.bitbucket.org/2.0/repositories/%s/%s/commit/%s/reports/bytebase/annotations", repoOwner, repoSlug, commit)
+	annotationsURL := fmt.Sprintf("http://api.bitbucket.org/2.0/repositories/%s/%s/commit/%s/reports/bytebase/annotations", repoOwner, repoSlug, commit)
 	return sendPutRequest(client, annotationsURL, string(annotationsData))
 }
 
