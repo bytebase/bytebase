@@ -754,6 +754,7 @@ func getIndexesAndConstraints(txn *sql.Tx, schemaName string) (map[db.TableKey][
 			index.Expressions = indexExpressionMap[indexKey]
 		} else {
 			index.Expressions = indexColumnMap[indexKey]
+			index.Descending = descendingMap[indexKey]
 		}
 		index.Visible = true
 		if visibility.Valid && visibility.String == "INVISIBLE" {
