@@ -1,5 +1,4 @@
 import { ActuatorServiceDefinition } from "@/types/proto/v1/actuator_service";
-import { AnomalyServiceDefinition } from "@/types/proto/v1/anomaly_service";
 import { AuditLogServiceDefinition } from "@/types/proto/v1/audit_log_service";
 import { AuthServiceDefinition } from "@/types/proto/v1/auth_service";
 import { CelServiceDefinition } from "@/types/proto/v1/cel_service";
@@ -37,7 +36,6 @@ const AUDIT_TAG_CODE = "800024";
 // Format: /bytebase.v1.ServiceName/MethodName
 export const ALL_METHODS_WITH_AUDIT = [
   ActuatorServiceDefinition,
-  AnomalyServiceDefinition,
   AuditLogServiceDefinition,
   AuthServiceDefinition,
   CelServiceDefinition,

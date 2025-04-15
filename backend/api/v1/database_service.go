@@ -458,6 +458,25 @@ func (s *DatabaseService) UpdateDatabase(ctx context.Context, request *v1pb.Upda
 				unsetEnvironment := ""
 				patch.EnvironmentID = &unsetEnvironment
 			}
+		case "drifted":
+			// Create a new base schema.
+			syncHistory, err := s.schemaSyncer.SyncDatabaseSchemaToHistory(ctx, databaseMessage)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to sync database metadata and schema")
+			}
+			if _, err := s.store.CreateChangelog(ctx, &store.ChangelogMessage{
+				InstanceID:   databaseMessage.InstanceID,
+				DatabaseName: databaseMessage.DatabaseName,
+				Status:       store.ChangelogStatusDone,
+				// TODO(d): Revisit the previous sync history UID.
+				PrevSyncHistoryUID: &syncHistory,
+				SyncHistoryUID:     &syncHistory,
+				Payload: &storepb.ChangelogPayload{
+					Type: storepb.ChangelogPayload_BASELINE,
+				}}); err != nil {
+				return nil, errors.Wrapf(err, "failed to create changelog")
+			}
+			patch.Metadata.Drifted = false
 		}
 	}
 
