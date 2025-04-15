@@ -89,7 +89,7 @@ func (s *UserService) GetUser(ctx context.Context, request *v1pb.GetUserRequest)
 }
 
 // GetCurrentUser gets the current authenticated user.
-func (s *UserService) GetCurrentUser(ctx context.Context, request *emptypb.Empty) (*v1pb.User, error) {
+func (s *UserService) GetCurrentUser(ctx context.Context, _ *emptypb.Empty) (*v1pb.User, error) {
 	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
 	if !ok || user == nil {
 		return nil, status.Errorf(codes.Unauthenticated, "authenticated user not found")
