@@ -69,13 +69,13 @@ func createBitbucketReport(checkResponse *v1pb.CheckReleaseResponse) error {
 	var riskDetail string
 	switch checkResponse.RiskLevel {
 	case v1pb.CheckReleaseResponse_LOW:
-		riskDetail = "Low"
+		riskDetail = "🟢 Low"
 	case v1pb.CheckReleaseResponse_MODERATE:
-		riskDetail = "Moderate"
+		riskDetail = "🟡 Moderate"
 	case v1pb.CheckReleaseResponse_HIGH:
-		riskDetail = "High"
+		riskDetail = "🔴 High"
 	default:
-		riskDetail = "None"
+		riskDetail = "⚪ None"
 	}
 	details := fmt.Sprintf(`• Total Affected Rows: %d
 		• Overall Risk Level: %s
