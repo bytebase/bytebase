@@ -221,7 +221,6 @@ interface LocalState {
 
 const getInitialLocalState = (): LocalState => {
   const project = props.project;
-  console.log(project)
   return {
     issueLabels: [...cloneDeep(project.issueLabels)],
     allowModifyStatement: project.allowModifyStatement,
