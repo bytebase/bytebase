@@ -43,9 +43,6 @@ func (*Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionCon
 	}
 
 	password := config.Password
-	if password == "" {
-		password = config.DataSource.Password
-	}
 
 	// Set host and port
 	host := config.DataSource.Host
@@ -61,10 +58,14 @@ func (*Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionCon
 	if password != "" {
 		queryParams.Add("password", password)
 	}
-	if config.DataSource.Database != "" {
-		queryParams.Add("catalog", config.DataSource.Database)
+	database := config.DataSource.Database
+	if config.ConnectionContext.DatabaseName != "" {
+		database = config.ConnectionContext.DatabaseName
 	}
-	queryParams.Add("binary_format", "hex")
+	if database == "" {
+		database = "system"
+	}
+	queryParams.Add("catalog", database)
 
 	// Build DSN
 	var dsn string

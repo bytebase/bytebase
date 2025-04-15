@@ -98,17 +98,9 @@ func (d *Driver) Dump(ctx context.Context, out io.Writer, dbSchema *storepb.Data
 			return errors.Wrap(err, "failed to write no-schemas message")
 		}
 	} else {
-		tablesFound := false
 		for _, schema := range dbSchema.Schemas {
 			if len(schema.Tables) > 0 {
-				tablesFound = true
 				break
-			}
-		}
-
-		if !tablesFound {
-			if _, err := io.WriteString(out, "-- No tables found in any schemas\n"); err != nil {
-				return errors.Wrap(err, "failed to write no-tables message")
 			}
 		}
 	}
