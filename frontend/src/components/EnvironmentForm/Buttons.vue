@@ -43,7 +43,6 @@ const {
   state,
   environment,
   rolloutPolicy,
-  environmentTier,
   create,
   resourceIdField,
   allowEdit,
@@ -55,7 +54,6 @@ const {
 const revertEnvironment = () => {
   state.value.environment = cloneDeep(environment.value);
   state.value.rolloutPolicy = cloneDeep(rolloutPolicy.value);
-  state.value.environmentTier = cloneDeep(environmentTier.value);
   events.emit("revert-access-control");
   events.emit("revert-sql-review");
 };
@@ -63,12 +61,13 @@ const revertEnvironment = () => {
 const createEnvironment = () => {
   events.emit("create", {
     environment: {
-      name: resourceIdField.value?.resourceId,
+      id: resourceIdField.value?.resourceId,
       title: state.value.environment.title,
       color: state.value.environment.color,
+      tags: state.value.environment.tags,
+      order: state.value.environment.order,
     },
     rolloutPolicy: state.value.rolloutPolicy,
-    environmentTier: state.value.environmentTier,
   });
 };
 
@@ -87,13 +86,13 @@ const updateEnvironment = () => {
   const env = cloneDeep(environment.value);
   if (
     state.value.environment.title !== env.title ||
-    state.value.environmentTier !== env.tier ||
+    !isEqual(state.value.environment.tags, env.tags) ||
     state.value.environment.color !== env.color
   ) {
     const environmentPatch = {
       ...env,
       title: state.value.environment.title,
-      tier: state.value.environmentTier,
+      tags: state.value.environment.tags,
       color: state.value.environment.color,
     };
     events.emit("update", environmentPatch);

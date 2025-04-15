@@ -80,7 +80,6 @@
       :create="true"
       :environment="getEnvironmentCreate()"
       :rollout-policy="DEFAULT_NEW_ROLLOUT_POLICY"
-      :environment-tier="defaultEnvironmentTier"
       @create="doCreate"
       @cancel="state.showCreateModal = false"
     >
@@ -119,23 +118,20 @@ import { EnvironmentV1Name } from "@/components/v2";
 import { SQL_EDITOR_SETTING_ENVIRONMENT_MODULE } from "@/router/sqlEditor";
 import {
   useEnvironmentV1Store,
-  defaultEnvironmentTier,
   useEnvironmentV1List,
 } from "@/store";
 import {
   usePolicyV1Store,
   getEmptyRolloutPolicy,
 } from "@/store/modules/v1/policy";
-import { emptyEnvironment } from "@/types";
+import { emptyEnvironment, formatEnvironmentName } from "@/types";
 import type {
   Environment,
-  EnvironmentTier,
-} from "@/types/proto/v1/environment_service";
+} from "@/types/v1/environment";
 import type { Policy } from "@/types/proto/v1/org_policy_service";
 import { PolicyResourceType } from "@/types/proto/v1/org_policy_service";
 import {
   arraySwap,
-  extractEnvironmentResourceName,
   hasWorkspacePermissionV2,
 } from "@/utils";
 import EnvironmentDetail from "@/views/EnvironmentDetail.vue";
@@ -175,9 +171,7 @@ const selectEnvironmentOnHash = () => {
   if (environmentList.value.length > 0) {
     if (route.hash) {
       for (let i = 0; i < environmentList.value.length; i++) {
-        const id = extractEnvironmentResourceName(
-          environmentList.value[i].name
-        );
+        const id = environmentList.value[i].id;
         if (id === route.hash.slice(1)) {
           selectEnvironment(i);
           break;
@@ -192,7 +186,7 @@ const selectEnvironmentOnHash = () => {
 const orderChanged = computed(() => {
   for (let i = 0; i < state.reorderedEnvironmentList.length; i++) {
     if (
-      state.reorderedEnvironmentList[i].name != environmentList.value[i].name
+      state.reorderedEnvironmentList[i].id != environmentList.value[i].id
     ) {
       return true;
     }
@@ -236,7 +230,7 @@ const tabItemList = computed((): BBTabItem[] => {
       : environmentList.value;
     return list.map((item, index: number): BBTabItem => {
       const title = `${index + 1}. ${item.title}`;
-      const id = extractEnvironmentResourceName(item.name);
+      const id = item.id
       return { title, id, data: item };
     });
   }
@@ -254,21 +248,20 @@ const handleClickCreateEnvironment = () => {
 const doCreate = async (params: {
   environment: Partial<Environment>;
   rolloutPolicy: Policy;
-  environmentTier: EnvironmentTier;
 }) => {
-  const { environment, rolloutPolicy, environmentTier } = params;
+  const { environment, rolloutPolicy } = params;
   const createdEnvironment = await environmentV1Store.createEnvironment({
-    name: environment.name,
+    id: environment.id,
     title: environment.title,
     color: environment.color,
     order: environmentList.value.length,
-    tier: environmentTier,
+    tags: environment.tags,
   });
   await environmentV1Store.fetchEnvironments();
 
   const requests = [
     policyV1Store.upsertPolicy({
-      parentPath: createdEnvironment.name,
+      parentPath: formatEnvironmentName(createdEnvironment.id),
       policy: rolloutPolicy,
     }),
   ];
@@ -284,7 +277,7 @@ const doArchive = (/* environment: Environment */) => {
 };
 
 const selectEnvironment = (index: number) => {
-  const id = extractEnvironmentResourceName(environmentList.value[index].name);
+  const id = environmentList.value[index].id;
   onTabChange(id);
 };
 

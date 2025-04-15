@@ -1253,7 +1253,6 @@
     "select": "Seleccionar entorno",
     "delete": "Eliminar este entorno",
     "create": "Crear entorno",
-    "restore": "Restaurar este entorno",
     "successfully-updated-environment": "entorno '{name}' actualizado exitosamente.",
     "production-environment": "Entorno de producción",
     "access-control": {

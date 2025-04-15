@@ -76,7 +76,7 @@
     :title="$t('quick-action.create-db')"
   >
     <CreateDatabasePrepPanel
-      :environment-name="environment?.name"
+      :environment-name="formatEnvironmentName(environment?.id)"
       :instance-name="instance.name"
       @dismiss="state.showCreateDatabaseModal = false"
     />
@@ -120,7 +120,11 @@ import {
   projectNamePrefix,
   environmentNamePrefix,
 } from "@/store/modules/v1/common";
-import { type ComposedDatabase, isValidDatabaseName } from "@/types";
+import {
+  type ComposedDatabase,
+  formatEnvironmentName,
+  isValidDatabaseName,
+} from "@/types";
 import { State } from "@/types/proto/v1/common";
 import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
 import {

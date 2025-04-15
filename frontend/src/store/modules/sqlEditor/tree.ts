@@ -17,8 +17,9 @@ import {
   extractSQLEditorLabelFactor as extractLabelFactor,
   unknownEnvironment,
   LeafTreeNodeTypes,
+  formatEnvironmentName,
 } from "@/types";
-import type { Environment } from "@/types/proto/v1/environment_service";
+import type { Environment } from "@/types/v1/environment";
 import type { InstanceResource } from "@/types/proto/v1/instance_service";
 import { getSemanticLabelValue, groupBy, isDatabaseV1Queryable } from "@/utils";
 import {
@@ -253,14 +254,16 @@ export const idForSQLEditorTreeNodeTarget = <T extends NodeType>(
   type: T,
   target: NodeTarget<T>
 ) => {
-  if (type === "instance" || type === "environment" || type === "database") {
+  if (type === "instance" || type === "database") {
     return (
       target as
         | ComposedProject
         | InstanceResource
-        | Environment
         | ComposedDatabase
     ).name;
+  }
+  if (type === "environment") {
+    return formatEnvironmentName((target as Environment).id);
   }
   if (type === "label") {
     const kv = target as NodeTarget<"label">;

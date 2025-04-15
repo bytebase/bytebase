@@ -17,6 +17,7 @@ import { Task_Status } from "@/types/proto/v1/rollout_service";
 import { type SearchParams } from "@/utils";
 import { useRolloutDetailContext } from "../../context";
 import { databaseForTask } from "../../utils";
+import { formatEnvironmentName } from "@/types";
 
 defineProps<{
   params: SearchParams;
@@ -59,11 +60,11 @@ const scopeOptions = computed((): ScopeOption[] => {
         databasesFromTasks.value.map(
           (database) => database.effectiveEnvironmentEntity
         ),
-        (env) => env.name
+        (env) => formatEnvironmentName(env.id)
       ).map((environment) => {
         return {
-          value: environment.name,
-          keywords: [environment.name, environment.title],
+          value: formatEnvironmentName(environment.id),
+          keywords: [formatEnvironmentName(environment.id), environment.title],
           render: () => environment.title,
         };
       }),

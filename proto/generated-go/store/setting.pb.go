@@ -2550,12 +2550,12 @@ func (x *AppIMSetting_DingTalk) GetRobotCode() string {
 
 type EnvironmentSetting_Environment struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The display name of the environment.
-	Title string `protobuf:"bytes,1,opt,name=title,proto3" json:"title,omitempty"`
 	// The resource id of the environment.
 	// This value should be 4-63 characters, and valid characters
 	// are /[a-z][0-9]-/.
-	Id            string            `protobuf:"bytes,2,opt,name=id,proto3" json:"id,omitempty"`
+	Id string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	// The display name of the environment.
+	Title         string            `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
 	Tags          map[string]string `protobuf:"bytes,3,rep,name=tags,proto3" json:"tags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Color         string            `protobuf:"bytes,4,opt,name=color,proto3" json:"color,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -2592,16 +2592,16 @@ func (*EnvironmentSetting_Environment) Descriptor() ([]byte, []int) {
 	return file_store_setting_proto_rawDescGZIP(), []int{14, 0}
 }
 
-func (x *EnvironmentSetting_Environment) GetTitle() string {
+func (x *EnvironmentSetting_Environment) GetId() string {
 	if x != nil {
-		return x.Title
+		return x.Id
 	}
 	return ""
 }
 
-func (x *EnvironmentSetting_Environment) GetId() string {
+func (x *EnvironmentSetting_Environment) GetTitle() string {
 	if x != nil {
-		return x.Id
+		return x.Title
 	}
 	return ""
 }
@@ -2823,9 +2823,9 @@ const file_store_setting_proto_rawDesc = "" +
 	"\fAZURE_OPENAI\x10\x04\"\xbb\x02\n" +
 	"\x12EnvironmentSetting\x12R\n" +
 	"\fenvironments\x18\x01 \x03(\v2..bytebase.store.EnvironmentSetting.EnvironmentR\fenvironments\x1a\xd0\x01\n" +
-	"\vEnvironment\x12\x14\n" +
-	"\x05title\x18\x01 \x01(\tR\x05title\x12\x0e\n" +
-	"\x02id\x18\x02 \x01(\tR\x02id\x12L\n" +
+	"\vEnvironment\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x14\n" +
+	"\x05title\x18\x02 \x01(\tR\x05title\x12L\n" +
 	"\x04tags\x18\x03 \x03(\v28.bytebase.store.EnvironmentSetting.Environment.TagsEntryR\x04tags\x12\x14\n" +
 	"\x05color\x18\x04 \x01(\tR\x05color\x1a7\n" +
 	"\tTagsEntry\x12\x10\n" +

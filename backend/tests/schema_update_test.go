@@ -254,12 +254,8 @@ CREATE TABLE "public"."book" (
 	defer func() {
 		_ = ctl.Close(ctx)
 	}()
-	environmentName := t.Name()
-	environment, err := ctl.environmentServiceClient.CreateEnvironment(ctx,
-		&v1pb.CreateEnvironmentRequest{
-			Environment:   &v1pb.Environment{Title: environmentName},
-			EnvironmentId: strings.ToLower(environmentName),
-		})
+	environmentName := strings.ToLower(t.Name())
+	environment, err := ctl.createEnvironment(ctx, environmentName, environmentName)
 	a.NoError(err)
 
 	for _, test := range tests {

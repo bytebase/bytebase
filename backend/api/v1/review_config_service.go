@@ -212,17 +212,14 @@ func (s *ReviewConfigService) convertToV1ReviewConfig(ctx context.Context, revie
 			if err != nil {
 				return nil, err
 			}
-			environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{
-				ResourceID:  &environmentID,
-				ShowDeleted: false,
-			})
+			environment, err := s.store.GetEnvironmentByID(ctx, environmentID)
 			if err != nil {
 				return nil, status.Errorf(codes.Internal, "failed to get environment %s with error: %v", environmentID, err)
 			}
 			if environment == nil {
 				continue
 			}
-			config.Resources = append(config.Resources, common.FormatEnvironment(environment.ResourceID))
+			config.Resources = append(config.Resources, common.FormatEnvironment(environment.Id))
 		case base.PolicyResourceTypeProject:
 			projectID, err := common.GetProjectID(policy.Resource)
 			if err != nil {

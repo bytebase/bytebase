@@ -1,16 +1,14 @@
 import { orderBy } from "lodash-es";
 import { defineStore } from "pinia";
 import { computed } from "vue";
-import { environmentServiceClient, settingServiceClient } from "@/grpcweb";
+import { settingServiceClient } from "@/grpcweb";
 import type { ResourceId } from "@/types";
 import { unknownEnvironment } from "@/types";
-import { State } from "@/types/proto/v1/common";
-import { Environment } from "@/types/proto/v1/environment_service";
-import { EnvironmentTier } from "@/types/proto/v1/environment_service";
 import {
   EnvironmentSetting,
   EnvironmentSetting_Environment,
 } from "@/types/proto/v1/setting_service";
+import type { Environment } from "@/types/v1/environment";
 import { environmentNamePrefix } from "./common";
 
 interface EnvironmentState {
@@ -21,7 +19,7 @@ const getEnvironmentByIdMap = (
   environments: Environment[]
 ): Map<ResourceId, Environment> => {
   return new Map(
-    environments.map((environment) => [environment.name, environment])
+    environments.map((environment) => [environment.id, environment])
   );
 };
 
@@ -31,32 +29,32 @@ const convertToEnvironments = (
   return environments.map<Environment>((env, i) => {
     return {
       name: `${environmentNamePrefix}${env.id}`,
+      id: env.id,
       title: env.title,
       order: i,
       color: env.color,
-      tier: env.tags["protected"] === "protected"
-        ? EnvironmentTier.PROTECTED
-        : EnvironmentTier.UNPROTECTED,
-      state: State.ACTIVE,
+      tags: env.tags,
     };
   });
+};
+
+const convertEnvironment = (
+  env: Environment
+): EnvironmentSetting_Environment => {
+  const res: EnvironmentSetting_Environment = {
+    name: env.name,
+    id: env.id,
+    title: env.title,
+    color: env.color,
+    tags: env.tags,
+  };
+  return res;
 };
 
 const convertEnvironments = (
   environments: Environment[]
 ): EnvironmentSetting_Environment[] => {
-  return environments.map((env) => {
-    const res: EnvironmentSetting_Environment = {
-      id: env.name.replace(environmentNamePrefix, ""),
-      title: env.title,
-      color: env.color,
-      tags: {},
-    };
-    if (env.tier === EnvironmentTier.PROTECTED) {
-      res.tags.protected = "protected";
-    }
-    return res;
-  });
+  return environments.map(convertEnvironment);
 };
 
 const getEnvironmentSetting = async (
@@ -109,26 +107,19 @@ export const useEnvironmentV1Store = defineStore("environment_v1", {
       this.environmentMapById = getEnvironmentByIdMap(environments);
       return environments;
     },
-    getEnvironmentList(showDeleted = false): Environment[] {
-      return this.environmentList.filter((environment: Environment) => {
-        if (environment.state == State.DELETED && !showDeleted) {
-          return false;
-        }
-        return true;
-      });
+    getEnvironmentList(): Environment[] {
+      return this.environmentList;
     },
     async createEnvironment(
       environment: Partial<Environment>
     ): Promise<Environment> {
       const e: EnvironmentSetting_Environment = {
-        id: environment.name?.replace(environmentNamePrefix, "") ?? "",
+        name: "",
+        id: environment.id ?? "",
         title: environment.title ?? "",
         color: environment.color ?? "",
-        tags: {},
+        tags: environment.tags ?? {},
       };
-      if (environment.tier === EnvironmentTier.PROTECTED) {
-        e.tags.protected = "protected";
-      }
       const newEnvironmentSettingValue = [
         ...convertEnvironments(this.environmentList),
         e,
@@ -140,9 +131,9 @@ export const useEnvironmentV1Store = defineStore("environment_v1", {
 
       const newEnvironmentMapById = getEnvironmentByIdMap(newEnvironments);
       this.environmentMapById = newEnvironmentMapById;
-      const newEnvironment = newEnvironmentMapById.get(environment.name ?? "");
+      const newEnvironment = newEnvironmentMapById.get(environment.id ?? "");
       if (!newEnvironment) {
-        throw new Error(`environment with name ${environment.name} not found`);
+        throw new Error(`environment with id ${environment.id} not found`);
       }
       return newEnvironment;
     },
@@ -150,18 +141,18 @@ export const useEnvironmentV1Store = defineStore("environment_v1", {
       update: Partial<Environment>
     ): Promise<Environment> {
       const originData = await this.getOrFetchEnvironmentByName(
-        update.name || ""
+        update.id || ""
       );
       if (!originData) {
-        throw new Error(`environment with name ${update.name} not found`);
+        throw new Error(`environment with id ${update.id} not found`);
       }
       const newEnvironments = await updateEnvironmentSetting({
         environments: convertEnvironments(
           this.environmentList.map((environment) => {
-            if (environment.name === update.name) {
+            if (environment.id === update.id) {
               environment.title = update.title ?? environment.title;
               environment.color = update.color ?? environment.color;
-              environment.tier = update.tier ?? environment.tier;
+              environment.tags = update.tags ?? environment.tags;
               environment.order = update.order ?? environment.order;
             }
             return environment;
@@ -171,45 +162,29 @@ export const useEnvironmentV1Store = defineStore("environment_v1", {
 
       const newEnvironmentMapById = getEnvironmentByIdMap(newEnvironments);
       this.environmentMapById = newEnvironmentMapById;
-      const newEnvironment = newEnvironmentMapById.get(update.name || "");
+      const newEnvironment = newEnvironmentMapById.get(update.id ?? "");
       if (!newEnvironment) {
-        throw new Error(`environment with name ${update.name} not found`);
+        throw new Error(`environment with id ${update.id} not found`);
       }
       return newEnvironment;
     },
     async deleteEnvironment(name: string): Promise<void> {
+      const id = name.replace(environmentNamePrefix, "");
       const newEnvironments = await updateEnvironmentSetting({
         environments: convertEnvironments(
-          this.environmentList.filter(
-            (environment) => environment.name !== name
-          )
+          this.environmentList.filter((environment) => environment.id !== id)
         ),
       });
       this.environmentMapById = getEnvironmentByIdMap(newEnvironments);
     },
-    async undeleteEnvironment(name: string) {
-      const environment = await environmentServiceClient.undeleteEnvironment({
-        name,
+    async reorderEnvironmentList(
+      orderedEnvironmentList: Environment[]
+    ): Promise<Environment[]> {
+      const newEnvironments = await updateEnvironmentSetting({
+        environments: convertEnvironments(orderedEnvironmentList),
       });
-      this.environmentMapById.set(environment.name, environment);
-      return environment;
-    },
-    async reorderEnvironmentList(orderedEnvironmentList: Environment[]) {
-      const updatedEnvironmentList = await Promise.all(
-        orderedEnvironmentList.map((environment, order) => {
-          return environmentServiceClient.updateEnvironment({
-            environment: {
-              ...environment,
-              order,
-            },
-            updateMask: ["order"],
-          });
-        })
-      );
-      updatedEnvironmentList.forEach((environment) => {
-        this.environmentMapById.set(environment.name, environment);
-      });
-      return updatedEnvironmentList;
+      this.environmentMapById = getEnvironmentByIdMap(newEnvironments);
+      return newEnvironments;
     },
     async getOrFetchEnvironmentByName(
       name: string,
@@ -224,14 +199,13 @@ export const useEnvironmentV1Store = defineStore("environment_v1", {
       return environment;
     },
     getEnvironmentByName(name: string) {
-      return this.environmentMapById.get(name) ?? unknownEnvironment();
+      const id = name.replace(environmentNamePrefix, "");
+      return this.environmentMapById.get(id) ?? unknownEnvironment();
     },
   },
 });
 
-export const useEnvironmentV1List = (showDeleted = false) => {
+export const useEnvironmentV1List = () => {
   const store = useEnvironmentV1Store();
-  return computed(() => store.getEnvironmentList(showDeleted));
+  return computed(() => store.getEnvironmentList());
 };
-
-export const defaultEnvironmentTier = EnvironmentTier.UNPROTECTED;
