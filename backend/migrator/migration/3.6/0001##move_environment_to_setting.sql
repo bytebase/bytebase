@@ -12,7 +12,7 @@ INSERT INTO setting (
     'bb.workspace.environment',
     jsonb_build_object(
         'environments',
-        jsonb_agg(v)
+        jsonb_agg(environments.v)
     )
     FROM (
         SELECT 
@@ -26,7 +26,7 @@ INSERT INTO setting (
         LEFT JOIN policy ON (policy.resource = 'environments/'||environment.resource_id AND policy.type = 'bb.policy.environment-tier')
         WHERE environment.deleted IS FALSE
         ORDER BY environment."order" ASC
-    )
+    ) AS environments
 ON CONFLICT (name) DO UPDATE SET value = EXCLUDED.value;
 
 
