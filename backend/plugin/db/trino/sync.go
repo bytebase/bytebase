@@ -84,28 +84,10 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 		defer cancel()
 
 		if err == nil {
-			defer rows.Close()
-			// Process catalogs
-			for rows.Next() {
-				var catalog string
-				if err := rows.Scan(&catalog); err == nil && catalog != "" {
-					catalogList = append(catalogList, catalog)
-				}
-			}
-			// Check for errors from rows iteration
-			if err := rows.Err(); err != nil {
-				slog.Warn("error iterating catalog rows", log.BBError(err))
-			}
-		}
-
-		// If we couldn't get any catalogs, try alternative query
-		if len(catalogList) == 0 {
-			catalogCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-			rows, err := d.db.QueryContext(catalogCtx, "SELECT catalog_name FROM system.metadata.catalogs")
-			defer cancel()
-
-			if err == nil {
+			// Use a closure to ensure rows is closed properly
+			func() {
 				defer rows.Close()
+				// Process catalogs
 				for rows.Next() {
 					var catalog string
 					if err := rows.Scan(&catalog); err == nil && catalog != "" {
@@ -116,6 +98,30 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 				if err := rows.Err(); err != nil {
 					slog.Warn("error iterating catalog rows", log.BBError(err))
 				}
+			}()
+		}
+
+		// If we couldn't get any catalogs, try alternative query
+		if len(catalogList) == 0 {
+			catalogCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			rows, err := d.db.QueryContext(catalogCtx, "SELECT catalog_name FROM system.metadata.catalogs")
+			defer cancel()
+
+			if err == nil {
+				// Use a closure to ensure rows is closed properly
+				func() {
+					defer rows.Close()
+					for rows.Next() {
+						var catalog string
+						if err := rows.Scan(&catalog); err == nil && catalog != "" {
+							catalogList = append(catalogList, catalog)
+						}
+					}
+					// Check for errors from rows iteration
+					if err := rows.Err(); err != nil {
+						slog.Warn("error iterating catalog rows", log.BBError(err))
+					}
+				}()
 			}
 		}
 
@@ -140,27 +146,8 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 		rows, err := d.db.QueryContext(schemaCtx, fmt.Sprintf("SHOW SCHEMAS FROM %s", catalog))
 
 		if err == nil {
-			defer rows.Close()
-			for rows.Next() {
-				var schema string
-				if err := rows.Scan(&schema); err == nil && schema != "" {
-					schemaList = append(schemaList, schema)
-				}
-			}
-			// Check for errors from rows iteration
-			if err := rows.Err(); err != nil {
-				slog.Warn("error iterating schema rows", log.BBError(err))
-			}
-		}
-		cancel()
-
-		// If that didn't work, try backup approach
-		if len(schemaList) == 0 {
-			backupCtx, backupCancel := context.WithTimeout(context.Background(), 5*time.Second)
-			rows, err := d.db.QueryContext(backupCtx, fmt.Sprintf(
-				"SELECT schema_name FROM %s.information_schema.schemata", catalog))
-
-			if err == nil {
+			// Use a closure to ensure rows is closed properly
+			func() {
 				defer rows.Close()
 				for rows.Next() {
 					var schema string
@@ -172,6 +159,31 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 				if err := rows.Err(); err != nil {
 					slog.Warn("error iterating schema rows", log.BBError(err))
 				}
+			}()
+		}
+		cancel()
+
+		// If that didn't work, try backup approach
+		if len(schemaList) == 0 {
+			backupCtx, backupCancel := context.WithTimeout(context.Background(), 5*time.Second)
+			rows, err := d.db.QueryContext(backupCtx, fmt.Sprintf(
+				"SELECT schema_name FROM %s.information_schema.schemata", catalog))
+
+			if err == nil {
+				// Use a closure to ensure rows is closed properly
+				func() {
+					defer rows.Close()
+					for rows.Next() {
+						var schema string
+						if err := rows.Scan(&schema); err == nil && schema != "" {
+							schemaList = append(schemaList, schema)
+						}
+					}
+					// Check for errors from rows iteration
+					if err := rows.Err(); err != nil {
+						slog.Warn("error iterating schema rows", log.BBError(err))
+					}
+				}()
 			}
 			backupCancel()
 		}
@@ -391,6 +403,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 		schemaRows, err := d.db.QueryContext(ctx, schemasQuery)
 
 		if err == nil {
+			defer schemaRows.Close()
 			for schemaRows.Next() {
 				var schemaName string
 				if err := schemaRows.Scan(&schemaName); err == nil && schemaName != "" {
@@ -400,58 +413,62 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 
 					var tables []*storepb.TableMetadata
 					if tableErr == nil {
-						// Process tables for this schema
-						for tableRows.Next() {
-							var tableName string
-							if scanErr := tableRows.Scan(&tableName); scanErr == nil && tableName != "" {
-								// Create table metadata
-								table := &storepb.TableMetadata{
-									Name: tableName,
+						// Use a closure to properly close tableRows
+						func() {
+							defer tableRows.Close()
+							// Process tables for this schema
+							for tableRows.Next() {
+								var tableName string
+								if scanErr := tableRows.Scan(&tableName); scanErr == nil && tableName != "" {
+									// Create table metadata
+									table := &storepb.TableMetadata{
+										Name: tableName,
+									}
+
+									// Fetch columns using system.jdbc.columns for better performance
+									columnsQuery := fmt.Sprintf(
+										"SELECT column_name, type_name as data_type, 'YES' as is_nullable "+
+											"FROM system.jdbc.columns "+
+											"WHERE table_schem = '%s' AND table_name = '%s'",
+										schemaName, tableName)
+
+									columnCtx, columnCancel := context.WithTimeout(context.Background(), 30*time.Second)
+									columnRows, columnErr := d.db.QueryContext(columnCtx, columnsQuery)
+									columnCancel()
+
+									if columnErr == nil {
+										func() {
+											defer columnRows.Close()
+											var columns []*storepb.ColumnMetadata
+
+											for columnRows.Next() {
+												var name, dataType, isNullable string
+												if err := columnRows.Scan(&name, &dataType, &isNullable); err == nil {
+													columns = append(columns, &storepb.ColumnMetadata{
+														Name:     name,
+														Type:     dataType,
+														Nullable: isNullable == "YES",
+													})
+												}
+											}
+											// Check for errors from rows iteration
+											if err := columnRows.Err(); err != nil {
+												slog.Warn("error iterating column rows", log.BBError(err))
+											}
+											if len(columns) > 0 {
+												table.Columns = columns
+											}
+										}()
+									}
+
+									tables = append(tables, table)
 								}
-
-								// Fetch columns using system.jdbc.columns for better performance
-								columnsQuery := fmt.Sprintf(
-									"SELECT column_name, type_name as data_type, 'YES' as is_nullable "+
-										"FROM system.jdbc.columns "+
-										"WHERE table_schem = '%s' AND table_name = '%s'",
-									schemaName, tableName)
-
-								columnCtx, columnCancel := context.WithTimeout(context.Background(), 30*time.Second)
-								columnRows, columnErr := d.db.QueryContext(columnCtx, columnsQuery)
-								columnCancel()
-
-								if columnErr == nil {
-									var columns []*storepb.ColumnMetadata
-
-									for columnRows.Next() {
-										var name, dataType, isNullable string
-										if err := columnRows.Scan(&name, &dataType, &isNullable); err == nil {
-											columns = append(columns, &storepb.ColumnMetadata{
-												Name:     name,
-												Type:     dataType,
-												Nullable: isNullable == "YES",
-											})
-										}
-									}
-									// Check for errors from rows iteration
-									if err := columnRows.Err(); err != nil {
-										slog.Warn("error iterating column rows", log.BBError(err))
-									}
-									columnRows.Close()
-
-									if len(columns) > 0 {
-										table.Columns = columns
-									}
-								}
-
-								tables = append(tables, table)
 							}
-						}
-						// Check for errors from rows iteration
-						if err := tableRows.Err(); err != nil {
-							slog.Warn("error iterating table rows", log.BBError(err))
-						}
-						tableRows.Close()
+							// Check for errors from rows iteration
+							if err := tableRows.Err(); err != nil {
+								slog.Warn("error iterating table rows", log.BBError(err))
+							}
+						}()
 					}
 
 					allSchemas = append(allSchemas, &storepb.SchemaMetadata{
@@ -464,7 +481,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 			if err := schemaRows.Err(); err != nil {
 				slog.Warn("error iterating schema rows", log.BBError(err))
 			}
-			schemaRows.Close()
+			// Note: schemaRows.Close() handled by defer at the beginning of the function
 		}
 
 		// Add standard information_schema if needed
@@ -617,7 +634,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 					if err := jdbcColumnRows.Err(); err != nil {
 						slog.Warn("error iterating JDBC column rows", log.BBError(err))
 					}
-					jdbcColumnRows.Close()
+					func() { defer jdbcColumnRows.Close() }()
 
 					if len(columns) > 0 {
 						table.Columns = columns
@@ -716,19 +733,21 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 
 			var infoTables []*storepb.TableMetadata
 			if infoErr == nil {
-				for infoTablesRows.Next() {
-					var tableName string
-					if scanErr := infoTablesRows.Scan(&tableName); scanErr == nil && tableName != "" {
-						infoTables = append(infoTables, &storepb.TableMetadata{
-							Name: tableName,
-						})
+				func() {
+					defer infoTablesRows.Close()
+					for infoTablesRows.Next() {
+						var tableName string
+						if scanErr := infoTablesRows.Scan(&tableName); scanErr == nil && tableName != "" {
+							infoTables = append(infoTables, &storepb.TableMetadata{
+								Name: tableName,
+							})
+						}
 					}
-				}
-				// Check for errors from rows iteration
-				if err := infoTablesRows.Err(); err != nil {
-					slog.Warn("error iterating information_schema tables rows", log.BBError(err))
-				}
-				infoTablesRows.Close()
+					// Check for errors from rows iteration
+					if err := infoTablesRows.Err(); err != nil {
+						slog.Warn("error iterating information_schema tables rows", log.BBError(err))
+					}
+				}()
 			}
 
 			// Add information_schema even if empty - tables will be discovered as needed
@@ -782,8 +801,8 @@ func (d *Driver) getDatabaseNameForSync(ctx context.Context) (string, error) {
 	// For SQL checks, we need to handle special cases
 	if ctx.Value(checkKey) != nil {
 		// First priority: check if we have an explicitly provided database name
-		if explicitDbName, ok := ctx.Value(explicitDBNameKey).(string); ok && explicitDbName != "" {
-			return explicitDbName, nil
+		if explicitDBName, ok := ctx.Value(explicitDBNameKey).(string); ok && explicitDBName != "" {
+			return explicitDBName, nil
 		}
 
 		// Second priority: Look for request name pattern
