@@ -30,7 +30,7 @@ func GetDatabaseDefinition(_ schema.GetDefinitionContext, metadata *storepb.Data
 	return buf.String(), nil
 }
 
-// writeCreateTable generates CREATE TABLE statements
+// writeCreateTable generates CREATE TABLE statement
 func writeCreateTable(buf *strings.Builder, schema string, table *storepb.TableMetadata) error {
 	// Begin CREATE TABLE statement
 	createTable := fmt.Sprintf("CREATE TABLE IF NOT EXISTS \"%s\".\"%s\" (\n", schema, table.Name)
