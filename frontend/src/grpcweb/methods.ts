@@ -1,12 +1,10 @@
 import { ActuatorServiceDefinition } from "@/types/proto/v1/actuator_service";
-import { AnomalyServiceDefinition } from "@/types/proto/v1/anomaly_service";
 import { AuditLogServiceDefinition } from "@/types/proto/v1/audit_log_service";
 import { AuthServiceDefinition } from "@/types/proto/v1/auth_service";
 import { CelServiceDefinition } from "@/types/proto/v1/cel_service";
 import { ChangelistServiceDefinition } from "@/types/proto/v1/changelist_service";
 import { DatabaseGroupServiceDefinition } from "@/types/proto/v1/database_group_service";
 import { DatabaseServiceDefinition } from "@/types/proto/v1/database_service";
-import { EnvironmentServiceDefinition } from "@/types/proto/v1/environment_service";
 import { GroupServiceDefinition } from "@/types/proto/v1/group_service";
 import { IdentityProviderServiceDefinition } from "@/types/proto/v1/idp_service";
 import { InstanceServiceDefinition } from "@/types/proto/v1/instance_service";
@@ -37,14 +35,12 @@ const AUDIT_TAG_CODE = "800024";
 // Format: /bytebase.v1.ServiceName/MethodName
 export const ALL_METHODS_WITH_AUDIT = [
   ActuatorServiceDefinition,
-  AnomalyServiceDefinition,
   AuditLogServiceDefinition,
   AuthServiceDefinition,
   CelServiceDefinition,
   ChangelistServiceDefinition,
   DatabaseGroupServiceDefinition,
   DatabaseServiceDefinition,
-  EnvironmentServiceDefinition,
   GroupServiceDefinition,
   IdentityProviderServiceDefinition,
   InstanceServiceDefinition,

@@ -684,14 +684,14 @@ export interface EnvironmentSetting {
 }
 
 export interface EnvironmentSetting_Environment {
-  /** The display name of the environment. */
-  title: string;
   /**
    * The resource id of the environment.
    * This value should be 4-63 characters, and valid characters
    * are /[a-z][0-9]-/.
    */
   id: string;
+  /** The display name of the environment. */
+  title: string;
   tags: { [key: string]: string };
   color: string;
 }
@@ -4281,16 +4281,16 @@ export const EnvironmentSetting: MessageFns<EnvironmentSetting> = {
 };
 
 function createBaseEnvironmentSetting_Environment(): EnvironmentSetting_Environment {
-  return { title: "", id: "", tags: {}, color: "" };
+  return { id: "", title: "", tags: {}, color: "" };
 }
 
 export const EnvironmentSetting_Environment: MessageFns<EnvironmentSetting_Environment> = {
   encode(message: EnvironmentSetting_Environment, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.title !== "") {
-      writer.uint32(10).string(message.title);
-    }
     if (message.id !== "") {
-      writer.uint32(18).string(message.id);
+      writer.uint32(10).string(message.id);
+    }
+    if (message.title !== "") {
+      writer.uint32(18).string(message.title);
     }
     Object.entries(message.tags).forEach(([key, value]) => {
       EnvironmentSetting_Environment_TagsEntry.encode({ key: key as any, value }, writer.uint32(26).fork()).join();
@@ -4313,7 +4313,7 @@ export const EnvironmentSetting_Environment: MessageFns<EnvironmentSetting_Envir
             break;
           }
 
-          message.title = reader.string();
+          message.id = reader.string();
           continue;
         }
         case 2: {
@@ -4321,7 +4321,7 @@ export const EnvironmentSetting_Environment: MessageFns<EnvironmentSetting_Envir
             break;
           }
 
-          message.id = reader.string();
+          message.title = reader.string();
           continue;
         }
         case 3: {
@@ -4354,8 +4354,8 @@ export const EnvironmentSetting_Environment: MessageFns<EnvironmentSetting_Envir
 
   fromJSON(object: any): EnvironmentSetting_Environment {
     return {
-      title: isSet(object.title) ? globalThis.String(object.title) : "",
       id: isSet(object.id) ? globalThis.String(object.id) : "",
+      title: isSet(object.title) ? globalThis.String(object.title) : "",
       tags: isObject(object.tags)
         ? Object.entries(object.tags).reduce<{ [key: string]: string }>((acc, [key, value]) => {
           acc[key] = String(value);
@@ -4368,11 +4368,11 @@ export const EnvironmentSetting_Environment: MessageFns<EnvironmentSetting_Envir
 
   toJSON(message: EnvironmentSetting_Environment): unknown {
     const obj: any = {};
-    if (message.title !== "") {
-      obj.title = message.title;
-    }
     if (message.id !== "") {
       obj.id = message.id;
+    }
+    if (message.title !== "") {
+      obj.title = message.title;
     }
     if (message.tags) {
       const entries = Object.entries(message.tags);
@@ -4394,8 +4394,8 @@ export const EnvironmentSetting_Environment: MessageFns<EnvironmentSetting_Envir
   },
   fromPartial(object: DeepPartial<EnvironmentSetting_Environment>): EnvironmentSetting_Environment {
     const message = createBaseEnvironmentSetting_Environment();
-    message.title = object.title ?? "";
     message.id = object.id ?? "";
+    message.title = object.title ?? "";
     message.tags = Object.entries(object.tags ?? {}).reduce<{ [key: string]: string }>((acc, [key, value]) => {
       if (value !== undefined) {
         acc[key] = globalThis.String(value);

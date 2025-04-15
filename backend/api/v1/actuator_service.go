@@ -217,12 +217,12 @@ func (s *ActuatorService) getUsedFeatures(ctx context.Context) ([]base.FeatureTy
 	}
 
 	// environment tier
-	environments, err := s.store.ListEnvironmentV2(ctx, &store.FindEnvironmentMessage{})
+	environments, err := s.store.GetEnvironmentSetting(ctx)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to list environments")
+		return nil, errors.Wrapf(err, "failed to get environment setting")
 	}
-	for _, env := range environments {
-		if env.Protected {
+	for _, env := range environments.GetEnvironments() {
+		if v, ok := env.Tags["protected"]; ok && v == "protected" {
 			features = append(features, base.FeatureEnvironmentTierPolicy)
 			break
 		}

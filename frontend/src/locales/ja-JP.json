@@ -1253,7 +1253,6 @@
     "select": "環境を選ぶ",
     "delete": "この環境を削除します",
     "create": "環境を作成する",
-    "restore": "この環境を復元する",
     "successfully-updated-environment": "環境「{name}」は正常に更新されました",
     "production-environment": "本番環境",
     "access-control": {

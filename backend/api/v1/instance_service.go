@@ -434,20 +434,14 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, request *v1pb.Upda
 			if err != nil {
 				return nil, status.Error(codes.InvalidArgument, err.Error())
 			}
-			environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{
-				ResourceID:  &environmentID,
-				ShowDeleted: true,
-			})
+			environment, err := s.store.GetEnvironmentByID(ctx, environmentID)
 			if err != nil {
 				return nil, status.Error(codes.Internal, err.Error())
 			}
 			if environment == nil {
 				return nil, status.Errorf(codes.NotFound, "environment %q not found", environmentID)
 			}
-			if environment.Deleted {
-				return nil, status.Errorf(codes.FailedPrecondition, "environment %q is deleted", environmentID)
-			}
-			patch.EnvironmentID = &environment.ResourceID
+			patch.EnvironmentID = &environmentID
 		case "external_link":
 			patch.Metadata.ExternalLink = request.Instance.ExternalLink
 		case "data_sources":

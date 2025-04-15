@@ -440,24 +440,37 @@ func (s *DatabaseService) UpdateDatabase(ctx context.Context, request *v1pb.Upda
 				if err != nil {
 					return nil, status.Error(codes.InvalidArgument, err.Error())
 				}
-				environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{
-					ResourceID:  &environmentID,
-					ShowDeleted: true,
-				})
+				environment, err := s.store.GetEnvironmentByID(ctx, environmentID)
 				if err != nil {
 					return nil, status.Error(codes.Internal, err.Error())
 				}
 				if environment == nil {
 					return nil, status.Errorf(codes.NotFound, "environment %q not found", environmentID)
 				}
-				if environment.Deleted {
-					return nil, status.Errorf(codes.FailedPrecondition, "environment %q is deleted", environmentID)
-				}
 				patch.EnvironmentID = &environmentID
 			} else {
 				unsetEnvironment := ""
 				patch.EnvironmentID = &unsetEnvironment
 			}
+		case "drifted":
+			// Create a new base schema.
+			syncHistory, err := s.schemaSyncer.SyncDatabaseSchemaToHistory(ctx, databaseMessage)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to sync database metadata and schema")
+			}
+			if _, err := s.store.CreateChangelog(ctx, &store.ChangelogMessage{
+				InstanceID:   databaseMessage.InstanceID,
+				DatabaseName: databaseMessage.DatabaseName,
+				Status:       store.ChangelogStatusDone,
+				// TODO(d): Revisit the previous sync history UID.
+				PrevSyncHistoryUID: &syncHistory,
+				SyncHistoryUID:     &syncHistory,
+				Payload: &storepb.ChangelogPayload{
+					Type: storepb.ChangelogPayload_BASELINE,
+				}}); err != nil {
+				return nil, errors.Wrapf(err, "failed to create changelog")
+			}
+			patch.Metadata.Drifted = false
 		}
 	}
 
@@ -595,18 +608,12 @@ func (s *DatabaseService) BatchUpdateDatabases(ctx context.Context, request *v1p
 		}
 	}
 	if batchUpdate.EnvironmentID != nil && *batchUpdate.EnvironmentID != "" {
-		environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{
-			ResourceID:  batchUpdate.EnvironmentID,
-			ShowDeleted: true,
-		})
+		environment, err := s.store.GetEnvironmentByID(ctx, *batchUpdate.EnvironmentID)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
 		if environment == nil {
 			return nil, status.Errorf(codes.NotFound, "environment %q not found", *batchUpdate.EnvironmentID)
-		}
-		if environment.Deleted {
-			return nil, status.Errorf(codes.FailedPrecondition, "environment %q is deleted", *batchUpdate.EnvironmentID)
 		}
 	}
 

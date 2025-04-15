@@ -112,19 +112,19 @@ func (s *SchedulerV2) runOnce(ctx context.Context) {
 }
 
 func (s *SchedulerV2) scheduleAutoRolloutTasks(ctx context.Context) error {
-	environments, err := s.store.ListEnvironmentV2(ctx, &store.FindEnvironmentMessage{ShowDeleted: true})
+	environments, err := s.store.GetEnvironmentSetting(ctx)
 	if err != nil {
 		return errors.Wrapf(err, "failed to list environments")
 	}
 
 	var envs []string
-	for _, environment := range environments {
-		policy, err := s.store.GetRolloutPolicy(ctx, environment.ResourceID)
+	for _, environment := range environments.GetEnvironments() {
+		policy, err := s.store.GetRolloutPolicy(ctx, environment.Id)
 		if err != nil {
-			return errors.Wrapf(err, "failed to get rollout policy for environment %s", environment.ResourceID)
+			return errors.Wrapf(err, "failed to get rollout policy for environment %s", environment.Id)
 		}
 		if policy.Automatic {
-			envs = append(envs, environment.ResourceID)
+			envs = append(envs, environment.Id)
 		}
 	}
 	taskIDs, err := s.store.ListTasksToAutoRollout(ctx, envs)

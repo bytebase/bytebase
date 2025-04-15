@@ -154,7 +154,7 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 	if dbEnvironmentID != "" {
 		effectiveEnvironmentID = dbEnvironmentID
 	}
-	environment, err := s.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &effectiveEnvironmentID})
+	environment, err := s.GetEnvironmentByID(ctx, effectiveEnvironmentID)
 	if err != nil {
 		return nil, err
 	}

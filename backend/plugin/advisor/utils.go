@@ -13,6 +13,12 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
+var (
+	DefaultPosition = &storepb.Position{
+		Line: 0,
+	}
+)
+
 // NormalizeStatement limit the max length of the statements.
 func NormalizeStatement(statement string) string {
 	maxLength := 1000

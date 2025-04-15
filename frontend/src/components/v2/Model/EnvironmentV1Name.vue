@@ -25,7 +25,7 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 import { useRouter } from "vue-router";
-import type { Environment } from "@/types/proto/v1/environment_service";
+import type { Environment } from "@/types/v1/environment";
 import type { VueClass } from "@/utils";
 import {
   autoEnvironmentRoute,

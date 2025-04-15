@@ -8,6 +8,6 @@
       title: statement.check-set-role-variable
       content: No SET ROLE statement found.
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition: null
