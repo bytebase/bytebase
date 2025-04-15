@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"syscall"
 
+	"github.com/jackc/pgconn"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
@@ -220,6 +221,11 @@ func start() {
 
 	s, err = server.NewServer(ctx, profile)
 	if err != nil {
+		var pge *pgconn.PgError
+		if errors.As(err, &pge) {
+			slog.Error("Cannot new server", log.BBError(err), "detail", pge.Detail, "hint", pge.Hint)
+			return
+		}
 		slog.Error("Cannot new server", log.BBError(err))
 		return
 	}
