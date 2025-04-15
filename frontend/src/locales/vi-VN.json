@@ -956,14 +956,16 @@
           "task-run-status-update": "Cập nhật trạng thái",
           "transaction-control": "Kiểm soát giao dịch",
           "database-sync": "Đồng bộ cơ sở dữ liệu",
-          "prior-backup": "Sao lưu trước"
+          "prior-backup": "Sao lưu trước",
+          "retry-info": "Thông tin thử lại"
         },
         "estimated-affected-rows-n": "Số dòng bị ảnh hưởng ước tính: {n}",
         "prior-backup-tables": "Bảng sao lưu trước",
         "status-update": {
           "waiting": "Sẵn sàng để thực thi",
           "running": "Đang được thực thi"
-        }
+        },
+        "retry-info": "Thử lại (cố gắng {n}/{m}) do thời gian chờ khóa."
       },
       "task-run-session": {
         "blocking-sessions": {
@@ -1627,6 +1629,10 @@
         "postgres-database-tenant-mode": {
           "self": "Chế độ đối tượng thuê cơ sở dữ liệu Postgres",
           "description": "Chế độ đối tượng thuê cho cơ sở dữ liệu Postgres. Nếu bật, vấn đề sẽ được chạy bởi CHỦ SỞ HỮU cơ sở dữ liệu. Nếu không, vấn đề sẽ được chạy bởi người dùng kết nối phiên bản."
+        },
+        "max-retries": {
+          "self": "Số lần thử lại tối đa cho thời gian chờ khóa",
+          "description": "Tối đa nhớ lại số lượng thời gian chờ khóa khi chạy tác vụ. Giá trị mặc định là 0."
         }
       }
     },

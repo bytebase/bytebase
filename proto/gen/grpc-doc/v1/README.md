@@ -492,6 +492,7 @@
     - [ListProjectsRequest](#bytebase-v1-ListProjectsRequest)
     - [ListProjectsResponse](#bytebase-v1-ListProjectsResponse)
     - [Project](#bytebase-v1-Project)
+    - [Project.ExecutionRetryPolicy](#bytebase-v1-Project-ExecutionRetryPolicy)
     - [RemoveWebhookRequest](#bytebase-v1-RemoveWebhookRequest)
     - [SearchProjectsRequest](#bytebase-v1-SearchProjectsRequest)
     - [SearchProjectsResponse](#bytebase-v1-SearchProjectsResponse)
@@ -644,6 +645,7 @@
     - [TaskRunLogEntry.CommandExecute.CommandResponse](#bytebase-v1-TaskRunLogEntry-CommandExecute-CommandResponse)
     - [TaskRunLogEntry.DatabaseSync](#bytebase-v1-TaskRunLogEntry-DatabaseSync)
     - [TaskRunLogEntry.PriorBackup](#bytebase-v1-TaskRunLogEntry-PriorBackup)
+    - [TaskRunLogEntry.RetryInfo](#bytebase-v1-TaskRunLogEntry-RetryInfo)
     - [TaskRunLogEntry.SchemaDump](#bytebase-v1-TaskRunLogEntry-SchemaDump)
     - [TaskRunLogEntry.TaskRunStatusUpdate](#bytebase-v1-TaskRunLogEntry-TaskRunStatusUpdate)
     - [TaskRunLogEntry.TransactionControl](#bytebase-v1-TaskRunLogEntry-TransactionControl)
@@ -8060,6 +8062,22 @@ When paginating, all other parameters provided to `ListProjects` must match the 
 | skip_backup_errors | [bool](#bool) |  | Whether to skip backup errors and continue the data migration. |
 | postgres_database_tenant_mode | [bool](#bool) |  | Whether to enable the database tenant mode for PostgreSQL. If enabled, the issue will be created with the pre-appended &#34;set role &lt;db_owner&gt;&#34; statement. |
 | allow_self_approval | [bool](#bool) |  | Whether to allow the issue creator to self-approve the issue. |
+| execution_retry_policy | [Project.ExecutionRetryPolicy](#bytebase-v1-Project-ExecutionRetryPolicy) |  | Execution retry policy for the task run. |
+
+
+
+
+
+
+<a name="bytebase-v1-Project-ExecutionRetryPolicy"></a>
+
+### Project.ExecutionRetryPolicy
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| maximum_retries | [int32](#int32) |  | The maximum number of retries for the lock timeout issue. |
 
 
 
@@ -10296,6 +10314,7 @@ When paginating, all other parameters provided to `ListTaskRuns` must match the 
 | task_run_status_update | [TaskRunLogEntry.TaskRunStatusUpdate](#bytebase-v1-TaskRunLogEntry-TaskRunStatusUpdate) |  |  |
 | transaction_control | [TaskRunLogEntry.TransactionControl](#bytebase-v1-TaskRunLogEntry-TransactionControl) |  |  |
 | prior_backup | [TaskRunLogEntry.PriorBackup](#bytebase-v1-TaskRunLogEntry-PriorBackup) |  |  |
+| retry_info | [TaskRunLogEntry.RetryInfo](#bytebase-v1-TaskRunLogEntry-RetryInfo) |  |  |
 
 
 
@@ -10366,6 +10385,23 @@ When paginating, all other parameters provided to `ListTaskRuns` must match the 
 | end_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | prior_backup_detail | [TaskRun.PriorBackupDetail](#bytebase-v1-TaskRun-PriorBackupDetail) |  |  |
 | error | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-TaskRunLogEntry-RetryInfo"></a>
+
+### TaskRunLogEntry.RetryInfo
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| error | [string](#string) |  |  |
+| retry_count | [int32](#int32) |  |  |
+| maximum_retries | [int32](#int32) |  |  |
 
 
 
@@ -10590,6 +10626,7 @@ Read from `pg_stat_activity`
 | TASK_RUN_STATUS_UPDATE | 4 |  |
 | TRANSACTION_CONTROL | 5 |  |
 | PRIOR_BACKUP | 6 |  |
+| RETRY_INFO | 7 |  |
 
 
  

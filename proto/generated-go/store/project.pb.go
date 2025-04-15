@@ -101,8 +101,10 @@ type Project struct {
 	PostgresDatabaseTenantMode bool `protobuf:"varint,9,opt,name=postgres_database_tenant_mode,json=postgresDatabaseTenantMode,proto3" json:"postgres_database_tenant_mode,omitempty"`
 	// Whether to allow the issue creator to self-approve the issue.
 	AllowSelfApproval bool `protobuf:"varint,10,opt,name=allow_self_approval,json=allowSelfApproval,proto3" json:"allow_self_approval,omitempty"`
-	unknownFields     protoimpl.UnknownFields
-	sizeCache         protoimpl.SizeCache
+	// Execution retry policy for the task run.
+	ExecutionRetryPolicy *Project_ExecutionRetryPolicy `protobuf:"bytes,11,opt,name=execution_retry_policy,json=executionRetryPolicy,proto3" json:"execution_retry_policy,omitempty"`
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
 }
 
 func (x *Project) Reset() {
@@ -198,6 +200,58 @@ func (x *Project) GetAllowSelfApproval() bool {
 	return false
 }
 
+func (x *Project) GetExecutionRetryPolicy() *Project_ExecutionRetryPolicy {
+	if x != nil {
+		return x.ExecutionRetryPolicy
+	}
+	return nil
+}
+
+type Project_ExecutionRetryPolicy struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The maximum number of retries for the lock timeout issue.
+	MaximumRetries int32 `protobuf:"varint,1,opt,name=maximum_retries,json=maximumRetries,proto3" json:"maximum_retries,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *Project_ExecutionRetryPolicy) Reset() {
+	*x = Project_ExecutionRetryPolicy{}
+	mi := &file_store_project_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Project_ExecutionRetryPolicy) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Project_ExecutionRetryPolicy) ProtoMessage() {}
+
+func (x *Project_ExecutionRetryPolicy) ProtoReflect() protoreflect.Message {
+	mi := &file_store_project_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Project_ExecutionRetryPolicy.ProtoReflect.Descriptor instead.
+func (*Project_ExecutionRetryPolicy) Descriptor() ([]byte, []int) {
+	return file_store_project_proto_rawDescGZIP(), []int{1, 0}
+}
+
+func (x *Project_ExecutionRetryPolicy) GetMaximumRetries() int32 {
+	if x != nil {
+		return x.MaximumRetries
+	}
+	return 0
+}
+
 var File_store_project_proto protoreflect.FileDescriptor
 
 const file_store_project_proto_rawDesc = "" +
@@ -206,7 +260,7 @@ const file_store_project_proto_rawDesc = "" +
 	"\x05Label\x12\x14\n" +
 	"\x05value\x18\x01 \x01(\tR\x05value\x12\x14\n" +
 	"\x05color\x18\x02 \x01(\tR\x05color\x12\x14\n" +
-	"\x05group\x18\x03 \x01(\tR\x05group\"\xda\x03\n" +
+	"\x05group\x18\x03 \x01(\tR\x05group\"\xff\x04\n" +
 	"\aProject\x128\n" +
 	"\fissue_labels\x18\x02 \x03(\v2\x15.bytebase.store.LabelR\vissueLabels\x12,\n" +
 	"\x12force_issue_labels\x18\x03 \x01(\bR\x10forceIssueLabels\x124\n" +
@@ -217,7 +271,10 @@ const file_store_project_proto_rawDesc = "" +
 	"\x12skip_backup_errors\x18\b \x01(\bR\x10skipBackupErrors\x12A\n" +
 	"\x1dpostgres_database_tenant_mode\x18\t \x01(\bR\x1apostgresDatabaseTenantMode\x12.\n" +
 	"\x13allow_self_approval\x18\n" +
-	" \x01(\bR\x11allowSelfApprovalJ\x04\b\x01\x10\x02B\x14Z\x12generated-go/storeb\x06proto3"
+	" \x01(\bR\x11allowSelfApproval\x12b\n" +
+	"\x16execution_retry_policy\x18\v \x01(\v2,.bytebase.store.Project.ExecutionRetryPolicyR\x14executionRetryPolicy\x1a?\n" +
+	"\x14ExecutionRetryPolicy\x12'\n" +
+	"\x0fmaximum_retries\x18\x01 \x01(\x05R\x0emaximumRetriesJ\x04\b\x01\x10\x02B\x14Z\x12generated-go/storeb\x06proto3"
 
 var (
 	file_store_project_proto_rawDescOnce sync.Once
@@ -231,18 +288,20 @@ func file_store_project_proto_rawDescGZIP() []byte {
 	return file_store_project_proto_rawDescData
 }
 
-var file_store_project_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_store_project_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
 var file_store_project_proto_goTypes = []any{
-	(*Label)(nil),   // 0: bytebase.store.Label
-	(*Project)(nil), // 1: bytebase.store.Project
+	(*Label)(nil),                        // 0: bytebase.store.Label
+	(*Project)(nil),                      // 1: bytebase.store.Project
+	(*Project_ExecutionRetryPolicy)(nil), // 2: bytebase.store.Project.ExecutionRetryPolicy
 }
 var file_store_project_proto_depIdxs = []int32{
 	0, // 0: bytebase.store.Project.issue_labels:type_name -> bytebase.store.Label
-	1, // [1:1] is the sub-list for method output_type
-	1, // [1:1] is the sub-list for method input_type
-	1, // [1:1] is the sub-list for extension type_name
-	1, // [1:1] is the sub-list for extension extendee
-	0, // [0:1] is the sub-list for field type_name
+	2, // 1: bytebase.store.Project.execution_retry_policy:type_name -> bytebase.store.Project.ExecutionRetryPolicy
+	2, // [2:2] is the sub-list for method output_type
+	2, // [2:2] is the sub-list for method input_type
+	2, // [2:2] is the sub-list for extension type_name
+	2, // [2:2] is the sub-list for extension extendee
+	0, // [0:2] is the sub-list for field type_name
 }
 
 func init() { file_store_project_proto_init() }
@@ -256,7 +315,7 @@ func file_store_project_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_store_project_proto_rawDesc), len(file_store_project_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   2,
+			NumMessages:   3,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

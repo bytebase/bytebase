@@ -27,52 +27,50 @@
       <FeatureBadge feature="bb.feature.issue-project-setting" />
     </h3>
     <div class="w-full flex flex-col justify-start items-start gap-2">
-      <div>
-        <NCheckbox
-          v-model:checked="state.allowModifyStatement"
-          size="large"
-          :disabled="!allowUpdateIssueProjectSetting || loading"
-          :label="
-            $t('project.settings.issue-related.allow-modify-statement.self')
-          "
-        />
-        <p class="text-sm text-gray-400 pl-6 ml-0.5">
-          {{
-            $t(
-              "project.settings.issue-related.allow-modify-statement.description"
-            )
-          }}
-        </p>
+        <div>
+        <div class="flex items-center gap-x-2">
+          <Switch
+            v-model:value="state.allowModifyStatement"
+            :text="true"
+            :disabled="!allowUpdateIssueProjectSetting || loading"
+          />
+          <span class="textlabel">
+            {{$t('project.settings.issue-related.allow-modify-statement.self')}}
+          </span>
+        </div>
+        <div class="mt-1 mb-3 text-sm text-gray-400">
+          {{ $t("project.settings.issue-related.allow-modify-statement.description") }}
+        </div>
       </div>
       <div>
-        <NCheckbox
-          v-model:checked="state.autoResolveIssue"
-          size="large"
-          :disabled="!allowUpdateIssueProjectSetting || loading"
-          :label="$t('project.settings.issue-related.auto-resolve-issue.self')"
-        />
-        <p class="text-sm text-gray-400 pl-6 ml-0.5">
-          {{
-            $t("project.settings.issue-related.auto-resolve-issue.description")
-          }}
-        </p>
+        <div class="flex items-center gap-x-2">
+          <Switch
+            v-model:value="state.autoResolveIssue"
+            :text="true"
+            :disabled="!allowUpdateIssueProjectSetting || loading"
+          />
+          <span class="textlabel">
+            {{$t('project.settings.issue-related.auto-resolve-issue.self')}}
+          </span>
+        </div>
+        <div class="mt-1 mb-3 text-sm text-gray-400">
+          {{ $t("project.settings.issue-related.auto-resolve-issue.description") }}
+        </div>
       </div>
       <div>
-        <NCheckbox
-          v-model:checked="state.forceIssueLabels"
-          size="large"
-          :disabled="
+        <div class="flex items-center gap-x-2">
+          <Switch
+            v-model:value="state.forceIssueLabels"
+            :text="true"
+            :disabled="
             !allowUpdateIssueProjectSetting ||
             state.issueLabels.length === 0 ||
             loading
           "
-        >
-          <template #default>
-            <div class="flex items-center gap-x-2">
+          />
+          <div class="textlabel flex items-center gap-x-2">
               {{
-                $t(
-                  "project.settings.issue-related.labels.force-issue-labels.self"
-                )
+                $t("project.settings.issue-related.labels.force-issue-labels.self")
               }}
               <NTooltip v-if="allowEdit && state.issueLabels.length === 0">
                 <template #trigger>
@@ -85,86 +83,107 @@
                 }}
               </NTooltip>
             </div>
-          </template>
-        </NCheckbox>
-        <p class="text-sm text-gray-400 pl-6 ml-0.5">
-          {{
-            $t(
-              "project.settings.issue-related.labels.force-issue-labels.description"
-            )
-          }}
-        </p>
+        </div>
+        <div class="mt-1 mb-3 text-sm text-gray-400">
+          {{ $t("project.settings.issue-related.labels.force-issue-labels.description") }}
+        </div>
       </div>
       <div>
-        <NCheckbox
-          v-model:checked="state.enforceIssueTitle"
-          size="large"
-          :disabled="!allowUpdateIssueProjectSetting || loading"
-          :label="$t('project.settings.issue-related.enforce-issue-title.self')"
-        />
-        <p class="text-sm text-gray-400 pl-6 ml-0.5">
-          {{
-            $t("project.settings.issue-related.enforce-issue-title.description")
-          }}
-        </p>
+        <div class="flex items-center gap-x-2">
+          <Switch
+            v-model:value="state.enforceIssueTitle"
+            :text="true"
+            :disabled="!allowUpdateIssueProjectSetting || loading"
+          />
+          <span class="textlabel">
+            {{$t('project.settings.issue-related.enforce-issue-title.self')}}
+          </span>
+        </div>
+        <div class="mt-1 mb-3 text-sm text-gray-400">
+          {{ $t("project.settings.issue-related.enforce-issue-title.description") }}
+        </div>
       </div>
       <div>
-        <NCheckbox
-          v-model:checked="state.allowSelfApproval"
-          size="large"
-          :disabled="!allowUpdateIssueProjectSetting || loading"
-          :label="$t('project.settings.issue-related.allow-self-approval.self')"
-        />
-        <p class="text-sm text-gray-400 pl-6 ml-0.5">
-          {{
-            $t("project.settings.issue-related.allow-self-approval.description")
-          }}
-        </p>
+        <div class="flex items-center gap-x-2">
+          <Switch
+            v-model:value="state.allowSelfApproval"
+            :text="true"
+            :disabled="!allowUpdateIssueProjectSetting || loading"
+          />
+          <span class="textlabel">
+            {{$t('project.settings.issue-related.allow-self-approval.self')}}
+          </span>
+        </div>
+        <div class="mt-1 mb-3 text-sm text-gray-400">
+          {{ $t("project.settings.issue-related.allow-self-approval.description") }}
+        </div>
       </div>
       <div>
-        <NCheckbox
-          v-model:checked="state.autoEnableBackup"
-          size="large"
-          :disabled="!allowUpdateIssueProjectSetting || loading"
-          :label="$t('project.settings.issue-related.auto-enable-backup.self')"
-        />
-        <p class="text-sm text-gray-400 pl-6 ml-0.5">
-          {{
-            $t("project.settings.issue-related.auto-enable-backup.description")
-          }}
-        </p>
+        <div class="flex items-center gap-x-2">
+          <Switch
+            v-model:value="state.autoEnableBackup"
+            :text="true"
+            :disabled="!allowUpdateIssueProjectSetting || loading"
+          />
+          <span class="textlabel">
+            {{$t('project.settings.issue-related.auto-enable-backup.self')}}
+          </span>
+        </div>
+        <div class="mt-1 mb-3 text-sm text-gray-400">
+          {{ $t("project.settings.issue-related.auto-enable-backup.description") }}
+        </div>
       </div>
       <div>
-        <NCheckbox
-          v-model:checked="state.skipBackupErrors"
-          size="large"
-          :disabled="!allowUpdateIssueProjectSetting || loading"
-          :label="$t('project.settings.issue-related.skip-backup-errors.self')"
-        />
-        <p class="text-sm text-gray-400 pl-6 ml-0.5">
-          {{
-            $t("project.settings.issue-related.skip-backup-errors.description")
-          }}
-        </p>
+        <div class="flex items-center gap-x-2">
+          <Switch
+            v-model:value="state.skipBackupErrors"
+            :text="true"
+            :disabled="!allowUpdateIssueProjectSetting || loading"
+          />
+          <span class="textlabel">
+            {{$t('project.settings.issue-related.skip-backup-errors.self')}}
+          </span>
+        </div>
+        <div class="mt-1 mb-3 text-sm text-gray-400">
+          {{ $t("project.settings.issue-related.skip-backup-errors.description") }}
+        </div>
       </div>
       <div>
-        <NCheckbox
-          v-model:checked="state.postgresDatabaseTenantMode"
-          size="large"
-          :disabled="!allowUpdateIssueProjectSetting || loading"
-          :label="
-            $t(
-              'project.settings.issue-related.postgres-database-tenant-mode.self'
-            )
-          "
-        />
-        <p class="text-sm text-gray-400 pl-6 ml-0.5">
-          {{
-            $t(
-              "project.settings.issue-related.postgres-database-tenant-mode.description"
-            )
-          }}
+        <div class="flex items-center gap-x-2">
+          <Switch
+            v-model:value="state.postgresDatabaseTenantMode"
+            :text="true"
+            :disabled="!allowUpdateIssueProjectSetting || loading"
+          />
+          <span class="textlabel">
+            {{$t('project.settings.issue-related.postgres-database-tenant-mode.self')}}
+          </span>
+        </div>
+        <div class="mt-1 mb-3 text-sm text-gray-400">
+          {{ $t("project.settings.issue-related.postgres-database-tenant-mode.description") }}
+        </div>
+      </div>
+      <div>
+        <p class="">
+          <span class="textlabel">
+            {{ $t("project.settings.issue-related.max-retries.self") }}
+          </span>
         </p>
+        <p class="mt-1 mb-3 text-sm text-gray-400">
+            {{ $t("project.settings.issue-related.max-retries.description") }}
+        </p>
+        <div class="mt-3 w-full flex flex-row justify-start items-center gap-4">
+          <NInputNumber
+            :value="state.executionRetryPolicy?.maximumRetries ?? 0"
+            :disabled="!allowUpdateIssueProjectSetting || loading"
+            class="w-60"
+            :min="0"
+            :precision="0"
+            @update:value="handleInput"
+          >
+            <template #suffix> Times </template>
+          </NInputNumber>
+        </div>
       </div>
     </div>
   </div>
@@ -177,14 +196,15 @@ import {
   NDynamicTags,
   NTag,
   NColorPicker,
-  NCheckbox,
   NTooltip,
+  NInputNumber,
 } from "naive-ui";
 import { computed, reactive, ref } from "vue";
 import { FeatureBadge } from "@/components/FeatureGuard";
 import { hasFeature, useProjectV1Store } from "@/store";
 import type { ComposedProject } from "@/types";
-import { Label } from "@/types/proto/v1/project_service";
+import { Label, Project_ExecutionRetryPolicy } from "@/types/proto/v1/project_service";
+import { Switch } from "@/components/v2";
 
 interface LocalState {
   issueLabels: Label[];
@@ -196,6 +216,7 @@ interface LocalState {
   autoEnableBackup: boolean;
   skipBackupErrors: boolean;
   postgresDatabaseTenantMode: boolean;
+  executionRetryPolicy: Project_ExecutionRetryPolicy | undefined;
 }
 
 const getInitialLocalState = (): LocalState => {
@@ -210,6 +231,7 @@ const getInitialLocalState = (): LocalState => {
     autoEnableBackup: project.autoEnableBackup,
     skipBackupErrors: project.skipBackupErrors,
     postgresDatabaseTenantMode: project.postgresDatabaseTenantMode,
+    executionRetryPolicy: project.executionRetryPolicy,
   };
 };
 
@@ -340,8 +362,19 @@ const updateMask = computed(() => {
   ) {
     mask.push("postgres_database_tenant_mode");
   }
+  if (!isEqual(state.executionRetryPolicy?.maximumRetries ?? 0, props.project.executionRetryPolicy?.maximumRetries ?? 0)) {
+    mask.push("execution_retry_policy");
+  }
   return mask;
 });
+
+const handleInput = (value: number | null) => {
+  if (value === null) return;
+  if (value === undefined) return;
+  state.executionRetryPolicy = Project_ExecutionRetryPolicy.create({
+      maximumRetries: value,
+  });
+};
 
 defineExpose({
   isDirty: valueChanged,

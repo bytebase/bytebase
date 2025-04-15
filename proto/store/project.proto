@@ -35,4 +35,12 @@ message Project {
 
   // Whether to allow the issue creator to self-approve the issue.
   bool allow_self_approval = 10;
+
+  // Execution retry policy for the task run.
+  ExecutionRetryPolicy execution_retry_policy = 11;
+
+  message ExecutionRetryPolicy {
+    // The maximum number of retries for the lock timeout issue.
+    int32 maximum_retries = 1;
+  }
 }

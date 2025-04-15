@@ -956,14 +956,16 @@
           "task-run-status-update": "Actualización de estado",
           "transaction-control": "Control de transacciones",
           "database-sync": "Sincronización de base de datos",
-          "prior-backup": "Copia de seguridad previa"
+          "prior-backup": "Copia de seguridad previa",
+          "retry-info": "Reintento de información"
         },
         "estimated-affected-rows-n": "Filas afectadas estimadas: {n}",
         "prior-backup-tables": "Tablas de respaldo anteriores",
         "status-update": {
           "waiting": "Listo para ser ejecutado",
           "running": "Ser ejecutado"
-        }
+        },
+        "retry-info": "Vuelto (intento {n}/{m}) debido al tiempo de espera de bloqueo."
       },
       "task-run-session": {
         "blocking-sessions": {
@@ -1627,6 +1629,10 @@
         "postgres-database-tenant-mode": {
           "self": "Modo inquilino de base de datos Postgres",
           "description": "Modo de base de datos de inquilino de Postgres. Si se habilita, el problema será ejecutado por el OWNER de la base de datos. De lo contrario, la tarea será ejecutada por el usuario de conexión de la instancia."
+        },
+        "max-retries": {
+          "self": "Los reintentos máximos cuentan para el tiempo de espera de bloqueo",
+          "description": "Las reintentos máximas cuentan para el tiempo de espera de bloqueo al ejecutar la tarea. El valor predeterminado es 0."
         }
       }
     },
