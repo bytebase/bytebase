@@ -88,9 +88,7 @@ const prepareList = async () => {
 watchEffect(prepareList);
 
 const environmentList = computed(() => {
-  return environmentStore.environmentList.filter(
-    (env) => env.state === State.DELETED
-  );
+  return environmentStore.environmentList;
 });
 
 const deletedSSOList = computed(() => {
@@ -106,7 +104,7 @@ const tabItemList = computed(() => {
     list.push({ value: "INSTANCE", label: t("common.instance") });
   }
 
-  if (hasWorkspacePermissionV2("bb.environments.undelete")) {
+  if (hasWorkspacePermissionV2("bb.settings.set")) {
     list.push({ value: "ENVIRONMENT", label: t("common.environment") });
   }
 

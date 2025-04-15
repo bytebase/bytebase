@@ -49,13 +49,11 @@ func (*StatementCheckSetRoleVariable) Check(_ context.Context, checkCtx advisor.
 
 	if !hasSetRole {
 		return []*storepb.Advice{{
-			Status:  level,
-			Code:    advisor.StatementCheckSetRoleVariable.Int32(),
-			Title:   string(checkCtx.Rule.Type),
-			Content: "No SET ROLE statement found.",
-			StartPosition: &storepb.Position{
-				Line: 1,
-			},
+			Status:        level,
+			Code:          advisor.StatementCheckSetRoleVariable.Int32(),
+			Title:         string(checkCtx.Rule.Type),
+			Content:       "No SET ROLE statement found.",
+			StartPosition: advisor.DefaultPosition,
 		}}, nil
 	}
 

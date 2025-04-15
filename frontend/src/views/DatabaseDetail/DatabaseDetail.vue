@@ -4,6 +4,21 @@
     tabindex="0"
     v-bind="$attrs"
   >
+    <BBAttention
+      v-if="database.drifted"
+      type="warning"
+      :title="$t('database.drifted.schema-drift-detected.self')"
+      :description="$t('database.drifted.schema-drift-detected.description')"
+      :link="'https://www.bytebase.com/docs/change-database/drift-detection/?source=console'"
+      :action-text="
+        database.project !== DEFAULT_PROJECT_NAME
+          ? $t('changelog.establish-baseline')
+          : ''
+      "
+      @click="doCreateBaselineIssue"
+    >
+    </BBAttention>
+
     <main class="flex-1 relative">
       <!-- Highlight Panel -->
       <div
@@ -95,7 +110,6 @@
             :type="'default'"
             :text="false"
             :database="database"
-            @finish="updateAnomalyList"
           />
           <NButton
             v-if="allowTransferDatabase"
@@ -125,7 +139,6 @@
         <DatabaseOverviewPanel
           class="mt-2"
           :database="database"
-          :anomaly-list="anomalyList"
         />
       </NTabPane>
       <NTabPane
@@ -208,9 +221,10 @@ import { useClipboard } from "@vueuse/core";
 import dayjs from "dayjs";
 import { ArrowRightLeftIcon, ClipboardCopyIcon } from "lucide-vue-next";
 import { NButton, NTabPane, NTabs } from "naive-ui";
-import { computed, reactive, watch, ref, watchEffect } from "vue";
+import { computed, reactive, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import { useRouter, useRoute } from "vue-router";
-import { BBModal } from "@/bbkit";
+import { BBAttention, BBModal } from "@/bbkit";
 import SchemaEditorModal from "@/components/AlterSchemaPrepForm/SchemaEditorModal.vue";
 import DatabaseChangelogPanel from "@/components/Database/DatabaseChangelogPanel.vue";
 import DatabaseOverviewPanel from "@/components/Database/DatabaseOverviewPanel.vue";
@@ -233,7 +247,6 @@ import {
 } from "@/components/v2";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
-  useAnomalyV1Store,
   useAppFeature,
   useEnvironmentV1Store,
   useDatabaseV1ByName,
@@ -246,9 +259,8 @@ import {
 import {
   UNKNOWN_PROJECT_NAME,
   unknownEnvironment,
-  isValidDatabaseName,
+  DEFAULT_PROJECT_NAME,
 } from "@/types";
-import type { Anomaly } from "@/types/proto/v1/anomaly_service";
 import { State } from "@/types/proto/v1/common";
 import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
 import {
@@ -284,6 +296,7 @@ const props = defineProps<{
   databaseName: string;
 }>();
 
+const { t } = useI18n();
 const router = useRouter();
 
 const state = reactive<LocalState>({
@@ -295,7 +308,6 @@ const state = reactive<LocalState>({
   selectedTab: "overview",
 });
 const route = useRoute();
-const anomalyList = ref<Anomaly[]>([]);
 const {
   allowSyncDatabase,
   allowUpdateDatabase,
@@ -339,15 +351,6 @@ const { database, ready } = useDatabaseV1ByName(
 );
 
 const project = computed(() => database.value.projectEntity);
-
-watchEffect(async () => {
-  if (isValidDatabaseName(database.value.name)) {
-    anomalyList.value = await useAnomalyV1Store().fetchAnomalyList(
-      database.value.project,
-      { database: database.value.name }
-    );
-  }
-});
 
 const hasSchemaDiagramFeature = computed((): boolean => {
   return instanceV1HasAlterSchema(database.value.instanceResource);
@@ -407,13 +410,6 @@ const handleGotoSQLEditorFailed = () => {
   state.showIncorrectProjectModal = true;
 };
 
-const updateAnomalyList = async () => {
-  anomalyList.value = await useAnomalyV1Store().fetchAnomalyList(
-    database.value.project,
-    { database: database.value.name }
-  );
-};
-
 const environment = computed(() => {
   return (
     useEnvironmentV1Store().getEnvironmentByName(
@@ -437,6 +433,23 @@ const handleCopyDatabaseName = (name: string) => {
       style: "SUCCESS",
       title: "Database full name copied.",
     });
+  });
+};
+
+const doCreateBaselineIssue = () => {
+  router.push({
+    name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
+    params: {
+      projectId: extractProjectResourceName(database.value.project),
+      issueSlug: "create",
+    },
+    query: {
+      template: "bb.issue.database.schema.baseline",
+      name: t("changelog.establish-database-baseline", {
+        name: database.value.databaseName,
+      }),
+      databaseList: database.value.name,
+    },
   });
 };
 </script>

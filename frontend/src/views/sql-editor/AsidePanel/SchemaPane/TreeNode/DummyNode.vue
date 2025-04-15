@@ -15,7 +15,7 @@
 import { NPopover } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import type { TreeNode } from "../common";
+import type { TreeNode } from "../tree";
 
 const props = defineProps<{
   node: TreeNode;

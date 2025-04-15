@@ -127,7 +127,7 @@ const sqlEditorRoutes: RouteRecordRaw[] = [
             path: "environment",
             name: SQL_EDITOR_SETTING_ENVIRONMENT_MODULE,
             meta: {
-              requiredPermissionList: () => ["bb.environments.list"],
+              requiredPermissionList: () => ["bb.settings.get"],
             },
             component: () => import("../views/sql-editor/Setting/Environment"),
           },

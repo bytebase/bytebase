@@ -94,7 +94,6 @@
     "query": "Truy vấn",
     "transfer": "Chuyển",
     "schema": "Lược đồ",
-    "anomalies": "Bất thường",
     "detail": "Chi tiết",
     "type": "Loại",
     "language": "Ngôn ngữ",
@@ -1254,10 +1253,8 @@
   },
   "environment": {
     "select": "Chọn môi trường",
-    "archive": "Xóa môi trường này",
-    "archive-info": "Các môi trường đã lưu trữ sẽ không được hiển thị.",
+    "delete": "Xóa môi trường này",
     "create": "Tạo môi trường",
-    "restore": "Khôi phục môi trường này",
     "successfully-updated-environment": "Đã cập nhật thành công môi trường '{name}'.",
     "production-environment": "Môi trường sản xuất",
     "access-control": {
@@ -1362,7 +1359,6 @@
   "database": {
     "sync-database": "Đồng bộ cơ sở dữ liệu",
     "select": "Chọn cơ sở dữ liệu",
-    "no-anomalies-detected": "Không phát hiện thấy bất thường",
     "sync-status": "Trạng thái đồng bộ",
     "last-successful-sync": "Lần đồng bộ thành công cuối cùng",
     "filter-database": "Lọc cơ sở dữ liệu",
@@ -1496,21 +1492,13 @@
         "content": "Thao tác này sẽ xóa các bản sửa đổi đã áp dụng này và lược đồ cơ sở dữ liệu sẽ không bị thay đổi. Hành động này không thể hoàn tác."
       }
     },
-    "not-found": "Không tìm thấy cơ sở dữ liệu"
-  },
-  "anomaly": {
-    "attention-desc": "Bytebase định kỳ phát hiện các bất thường dựa trên khoảng thời gian quét phiên bản và hiển thị các phát hiện ở đây.",
-    "table-placeholder": "Hoan hô, không phát hiện thấy bất thường {type} nào!",
-    "types": {
-      "connection-failure": "Lỗi kết nối",
-      "schema-drift": "Độ lệch lược đồ"
-    },
-    "action": {
-      "check-instance": "Kiểm tra phiên bản",
-      "view-diff": "Xem khác biệt"
-    },
-    "last-seen": "Lần cuối thấy",
-    "first-seen": "Lần đầu thấy"
+    "not-found": "Không tìm thấy cơ sở dữ liệu",
+    "drifted": {
+      "schema-drift-detected": {
+        "self": "Đã phát hiện sự trôi dạt của sơ đồ",
+        "description": "Sơ đồ khác với sơ đồ được áp dụng lần cuối. Điều này có thể gây ra lỗi ứng dụng và cần được giải quyết."
+      }
+    }
   },
   "project": {
     "table": {
@@ -1770,6 +1758,7 @@
     "rows-upper-limit": "đã đạt đến giới hạn kết quả truy vấn",
     "close-sheet": "Đóng trang tính",
     "connect": "Kết nối",
+    "connected": "Đã kết nối",
     "connect-in-admin-mode": "Kết nối ở chế độ quản trị",
     "admin-mode": {
       "self": "Chế độ quản trị",

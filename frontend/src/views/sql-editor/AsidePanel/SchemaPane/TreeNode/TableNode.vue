@@ -1,5 +1,5 @@
 <template>
-  <CommonNode :text="target.table.name" :keyword="keyword" :highlight="true">
+  <CommonNode :text="target.table" :keyword="keyword" :highlight="true">
     <template #icon>
       <TableIcon class="w-4 h-4" />
     </template>
@@ -9,7 +9,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { TableIcon } from "@/components/Icon";
-import type { TreeNode } from "../common";
+import type { TreeNode } from "../tree";
 import CommonNode from "./CommonNode.vue";
 
 const props = defineProps<{

@@ -102,12 +102,17 @@
             <span
               class="normal-link"
               @click="
-                handleClickPlanCheckDetailLine(
+                convertPositionLineToMonacoLine(
                   row.checkResult.sqlReviewReport!.line
                 )
               "
             >
-              Line {{ row.checkResult.sqlReviewReport.line }}
+              Line
+              {{
+                convertPositionLineToMonacoLine(
+                  row.checkResult.sqlReviewReport.line
+                )
+              }}
             </span>
           </div>
         </div>
@@ -186,11 +191,18 @@
             class="ml-1 normal-link"
             @click="
               handleClickPlanCheckDetailLine(
-                row.checkResult.sqlReviewReport!.line
+                convertPositionLineToMonacoLine(
+                  row.checkResult.sqlReviewReport!.line
+                )
               )
             "
           >
-            Line {{ row.checkResult.sqlReviewReport.line }}
+            Line
+            {{
+              convertPositionLineToMonacoLine(
+                row.checkResult.sqlReviewReport.line
+              )
+            }}
           </span>
         </template>
       </div>
@@ -252,6 +264,7 @@ import {
   PlanCheckRun_Result_Status,
   PlanCheckRun_Status,
 } from "@/types/proto/v1/plan_service";
+import { convertPositionLineToMonacoLine } from "@/utils/v1/position";
 import { usePlanCheckRunContext } from "./context";
 import { OnlineMigrationDetail } from "./detail";
 

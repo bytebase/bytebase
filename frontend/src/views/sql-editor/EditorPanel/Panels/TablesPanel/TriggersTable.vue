@@ -69,7 +69,7 @@ import {
   keyWithPosition,
 } from "@/views/sql-editor/EditorCommon";
 import { EllipsisCell } from "../../common";
-import { useCurrentTabViewStateContext } from "../../context";
+import { useCurrentTabViewStateContext } from "../../context/viewState";
 import { CodeViewer } from "../common";
 
 type TriggerWithPosition = {

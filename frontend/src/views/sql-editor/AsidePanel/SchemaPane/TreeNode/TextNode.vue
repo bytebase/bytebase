@@ -14,7 +14,7 @@
 import { isFunction } from "lodash-es";
 import { FolderIcon } from "lucide-vue-next";
 import { computed } from "vue";
-import type { TreeNode } from "../common";
+import type { TreeNode } from "../tree";
 import CommonNode from "./CommonNode.vue";
 
 const props = defineProps<{

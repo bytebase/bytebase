@@ -1,6 +1,6 @@
 <template>
-  <div class="flex flex-col space-y-4">
-    <div class="px-4 flex items-center space-x-2">
+  <div class="flex flex-col space-y-4 px-4">
+    <div class="flex items-center space-x-2">
       <SearchBox
         v-model:value="state.searchText"
         style="max-width: 100%"
@@ -23,8 +23,7 @@
         query: state.searchText,
         excludeDefault: true,
       }"
-      :footer-class="'mx-4'"
-      :bordered="false"
+      bordered
     />
   </div>
   <Drawer

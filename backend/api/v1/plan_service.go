@@ -1314,12 +1314,12 @@ func getPlanSpecDatabaseGroups(steps []*storepb.PlanConfig_Step) []string {
 func getPlanDeployment(ctx context.Context, s *store.Store, steps []*storepb.PlanConfig_Step, project *store.ProjectMessage) (*storepb.PlanConfig_Deployment, error) {
 	snapshot := &storepb.PlanConfig_Deployment{}
 
-	environments, err := s.ListEnvironmentV2(ctx, &store.FindEnvironmentMessage{})
+	environments, err := s.GetEnvironmentSetting(ctx)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to list environments")
 	}
-	for _, e := range environments {
-		snapshot.Environments = append(snapshot.Environments, e.ResourceID)
+	for _, e := range environments.GetEnvironments() {
+		snapshot.Environments = append(snapshot.Environments, e.Id)
 	}
 
 	databaseGroups := getPlanSpecDatabaseGroups(steps)

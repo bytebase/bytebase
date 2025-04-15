@@ -616,7 +616,10 @@ func buildSemanticTypeToMaskerMap(ctx context.Context, stores *store.Store) (map
 		return nil, errors.Wrap(err, "failed to get semantic types setting")
 	}
 	for _, semanticType := range semanticTypesSetting.GetTypes() {
-		masker := getMaskerByMaskingAlgorithmAndLevel(semanticType.GetAlgorithm())
+		masker, err := getMaskerByMaskingAlgorithmAndLevel(semanticType.GetAlgorithm())
+		if err != nil {
+			return nil, err
+		}
 		semanticTypeToMasker[semanticType.GetId()] = masker
 	}
 
@@ -1251,7 +1254,7 @@ func (s *SQLService) accessCheck(
 			if permission != "" {
 				ok, err := s.iamManager.CheckPermission(ctx, permission, user, project.ResourceID)
 				if err != nil {
-					return err
+					return status.Errorf(codes.Internal, "failed to check permission with error: %v", err.Error())
 				}
 				if !ok {
 					return status.Errorf(codes.PermissionDenied, "user %q does not have permission %q on project %q", user.Email, permission, project.ResourceID)
@@ -1842,7 +1845,7 @@ func checkAndGetDataSourceQueriable(ctx context.Context, storeInstance *store.St
 	}
 
 	var envAdminDataSourceRestriction, projectAdminDataSourceRestriction v1pb.DataSourceQueryPolicy_Restriction
-	environment, err := storeInstance.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &database.EffectiveEnvironmentID})
+	environment, err := storeInstance.GetEnvironmentByID(ctx, database.EffectiveEnvironmentID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get environment")
 	}
@@ -1851,7 +1854,7 @@ func checkAndGetDataSourceQueriable(ctx context.Context, storeInstance *store.St
 	}
 	dataSourceQueryPolicyType := base.PolicyTypeDataSourceQuery
 	environmentResourceType := base.PolicyResourceTypeEnvironment
-	environmentResource := common.FormatEnvironment(environment.ResourceID)
+	environmentResource := common.FormatEnvironment(environment.Id)
 	environmentPolicy, err := storeInstance.GetPolicyV2(ctx, &store.FindPolicyMessage{
 		ResourceType: &environmentResourceType,
 		Resource:     &environmentResource,
@@ -1902,9 +1905,7 @@ func checkAndGetDataSourceQueriable(ctx context.Context, storeInstance *store.St
 }
 
 func checkDataSourceQueryPolicy(ctx context.Context, storeInstance *store.Store, database *store.DatabaseMessage, statementTp parserbase.QueryType) error {
-	environment, err := storeInstance.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{
-		ResourceID: &database.EffectiveEnvironmentID,
-	})
+	environment, err := storeInstance.GetEnvironmentByID(ctx, database.EffectiveEnvironmentID)
 	if err != nil {
 		return err
 	}
@@ -1912,7 +1913,7 @@ func checkDataSourceQueryPolicy(ctx context.Context, storeInstance *store.Store,
 		return status.Errorf(codes.NotFound, "environment %q not found", database.EffectiveEnvironmentID)
 	}
 	resourceType := base.PolicyResourceTypeEnvironment
-	environmentResource := common.FormatEnvironment(environment.ResourceID)
+	environmentResource := common.FormatEnvironment(environment.Id)
 	policyType := base.PolicyTypeDataSourceQuery
 	dataSourceQueryPolicy, err := storeInstance.GetPolicyV2(ctx, &store.FindPolicyMessage{
 		ResourceType: &resourceType,

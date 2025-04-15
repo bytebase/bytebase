@@ -94,7 +94,8 @@
                     class="!w-[32rem] !h-[20rem]"
                     :database="database"
                     :schema="schemaName"
-                    :table="tableName"
+                    :object="tableName"
+                    :type="GetSchemaStringRequest_ObjectType.TABLE"
                   />
                 </NPopover>
               </dl>
@@ -117,7 +118,7 @@
                   </dd>
                 </div>
 
-                <div v-if="classificationConfig" class="col-span-1">
+                <div class="col-span-1">
                   <dt class="text-sm font-medium text-control-light">
                     {{ $t("database.classification.self") }}
                   </dt>
@@ -125,7 +126,7 @@
                     <ClassificationCell
                       :classification="tableCatalog.classification"
                       :classification-config="classificationConfig"
-                      :readonly="!allowSetClassification"
+                      :engine="instanceEngine"
                       @apply="
                         (id: string) =>
                           $emit('apply-classification', tableName, id)
@@ -334,6 +335,7 @@ import {
   ObjectSchema_Type,
   ObjectSchema_StructKind,
 } from "@/types/proto/v1/database_catalog_service";
+import { GetSchemaStringRequest_ObjectType } from "@/types/proto/v1/database_service";
 import type { DataClassificationSetting_DataClassificationConfig } from "@/types/proto/v1/setting_service";
 import {
   bytesToString,
@@ -369,7 +371,6 @@ const props = defineProps<{
   databaseName: string;
   schemaName: string;
   tableName: string;
-  allowSetClassification: boolean;
   classificationConfig?: DataClassificationSetting_DataClassificationConfig;
 }>();
 

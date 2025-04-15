@@ -20,6 +20,8 @@ export interface DatabaseMetadata {
   backupAvailable: boolean;
   datashare: boolean;
   secrets: Secret[];
+  /** The schema is drifted from the source of truth. */
+  drifted: boolean;
 }
 
 export interface DatabaseMetadata_LabelsEntry {
@@ -1097,7 +1099,7 @@ export interface ObjectSchema_ArrayKind {
 }
 
 function createBaseDatabaseMetadata(): DatabaseMetadata {
-  return { labels: {}, lastSyncTime: undefined, backupAvailable: false, datashare: false, secrets: [] };
+  return { labels: {}, lastSyncTime: undefined, backupAvailable: false, datashare: false, secrets: [], drifted: false };
 }
 
 export const DatabaseMetadata: MessageFns<DatabaseMetadata> = {
@@ -1116,6 +1118,9 @@ export const DatabaseMetadata: MessageFns<DatabaseMetadata> = {
     }
     for (const v of message.secrets) {
       Secret.encode(v!, writer.uint32(42).fork()).join();
+    }
+    if (message.drifted !== false) {
+      writer.uint32(48).bool(message.drifted);
     }
     return writer;
   },
@@ -1170,6 +1175,14 @@ export const DatabaseMetadata: MessageFns<DatabaseMetadata> = {
           message.secrets.push(Secret.decode(reader, reader.uint32()));
           continue;
         }
+        case 6: {
+          if (tag !== 48) {
+            break;
+          }
+
+          message.drifted = reader.bool();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1191,6 +1204,7 @@ export const DatabaseMetadata: MessageFns<DatabaseMetadata> = {
       backupAvailable: isSet(object.backupAvailable) ? globalThis.Boolean(object.backupAvailable) : false,
       datashare: isSet(object.datashare) ? globalThis.Boolean(object.datashare) : false,
       secrets: globalThis.Array.isArray(object?.secrets) ? object.secrets.map((e: any) => Secret.fromJSON(e)) : [],
+      drifted: isSet(object.drifted) ? globalThis.Boolean(object.drifted) : false,
     };
   },
 
@@ -1217,6 +1231,9 @@ export const DatabaseMetadata: MessageFns<DatabaseMetadata> = {
     if (message.secrets?.length) {
       obj.secrets = message.secrets.map((e) => Secret.toJSON(e));
     }
+    if (message.drifted !== false) {
+      obj.drifted = message.drifted;
+    }
     return obj;
   },
 
@@ -1237,6 +1254,7 @@ export const DatabaseMetadata: MessageFns<DatabaseMetadata> = {
     message.backupAvailable = object.backupAvailable ?? false;
     message.datashare = object.datashare ?? false;
     message.secrets = object.secrets?.map((e) => Secret.fromPartial(e)) || [];
+    message.drifted = object.drifted ?? false;
     return message;
   },
 };

@@ -52,7 +52,7 @@ import {
   extractKeyWithPosition,
   keyWithPosition,
 } from "@/views/sql-editor/EditorCommon";
-import { useCurrentTabViewStateContext } from "../../context";
+import { useCurrentTabViewStateContext } from "../../context/viewState";
 import { CodeViewer } from "../common";
 import PackagesTable from "./PackagesTable.vue";
 

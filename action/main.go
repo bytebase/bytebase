@@ -49,8 +49,17 @@ func run(platform JobPlatform) error {
 	if err != nil {
 		return err
 	}
-	if platform == GitLab {
+	switch platform {
+	case GitLab:
 		if err := writeReleaseCheckToCodeQualityJSON(checkReleaseResponse); err != nil {
+			return err
+		}
+	case AzureDevOps:
+		if err := loggingReleaseChecks(checkReleaseResponse); err != nil {
+			return err
+		}
+	case Bitbucket:
+		if err := createBitbucketReport(checkReleaseResponse); err != nil {
 			return err
 		}
 	}

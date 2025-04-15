@@ -18,10 +18,6 @@
   
     - [Advice.Status](#bytebase-store-Advice-Status)
   
-- [store/anomaly.proto](#store_anomaly-proto)
-    - [AnomalyConnectionPayload](#bytebase-store-AnomalyConnectionPayload)
-    - [AnomalyDatabaseSchemaDriftPayload](#bytebase-store-AnomalyDatabaseSchemaDriftPayload)
-  
 - [store/approval.proto](#store_approval-proto)
     - [ApprovalFlow](#bytebase-store-ApprovalFlow)
     - [ApprovalNode](#bytebase-store-ApprovalNode)
@@ -525,54 +521,6 @@ offset.
 | WARNING | 2 |  |
 | ERROR | 3 |  |
 
-
- 
-
- 
-
- 
-
-
-
-<a name="store_anomaly-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## store/anomaly.proto
-
-
-
-<a name="bytebase-store-AnomalyConnectionPayload"></a>
-
-### AnomalyConnectionPayload
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| detail | [string](#string) |  | Connection failure detail |
-
-
-
-
-
-
-<a name="bytebase-store-AnomalyDatabaseSchemaDriftPayload"></a>
-
-### AnomalyDatabaseSchemaDriftPayload
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| version | [string](#string) |  | The schema version corresponds to the expected schema |
-| expect | [string](#string) |  | The expected latest schema stored in the migration history table |
-| actual | [string](#string) |  | The actual schema dumped from the database |
-
-
-
-
-
- 
 
  
 
@@ -1207,6 +1155,7 @@ DatabaseMetadata is the metadata for databases.
 | backup_available | [bool](#bool) |  |  |
 | datashare | [bool](#bool) |  |  |
 | secrets | [Secret](#bytebase-store-Secret) | repeated |  |
+| drifted | [bool](#bool) |  | The schema is drifted from the source of truth. |
 
 
 
@@ -4274,8 +4223,8 @@ RestrictIssueCreationForSQLReviewPolicy is the policy configuration for restrict
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| title | [string](#string) |  | The display name of the environment. |
 | id | [string](#string) |  | The resource id of the environment. This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
+| title | [string](#string) |  | The display name of the environment. |
 | tags | [EnvironmentSetting.Environment.TagsEntry](#bytebase-store-EnvironmentSetting-Environment-TagsEntry) | repeated |  |
 | color | [string](#string) |  |  |
 

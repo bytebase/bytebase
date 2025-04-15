@@ -5,7 +5,11 @@ import { h, type VNode } from "vue";
 import { type OptionConfig } from "@/components/ExprEditor/context";
 import { type Factor, SQLTypeList } from "@/plugins/cel";
 import { t } from "@/plugins/i18n";
-import { useEnvironmentV1Store, useProjectV1Store } from "@/store";
+import {
+  environmentNamePrefix,
+  useEnvironmentV1Store,
+  useProjectV1Store,
+} from "@/store";
 import {
   PresetRiskLevelList,
   DEFAULT_PROJECT_NAME,
@@ -16,7 +20,6 @@ import type { Risk } from "@/types/proto/v1/risk_service";
 import { Risk_Source, risk_SourceToJSON } from "@/types/proto/v1/risk_service";
 import {
   engineNameV1,
-  extractEnvironmentResourceName,
   extractProjectResourceName,
   supportedEngineV1List,
   getDefaultPagination,
@@ -196,11 +199,14 @@ export const getRenderOptionFunc = (resource: {
 export const getEnvironmentIdOptions = () => {
   const environmentList = useEnvironmentV1Store().getEnvironmentList();
   return environmentList.map<SelectOption>((env) => {
-    const environmentId = extractEnvironmentResourceName(env.name);
+    const environmentId = env.id;
     return {
       label: `${env.title} (${environmentId})`,
       value: environmentId,
-      render: getRenderOptionFunc(env),
+      render: getRenderOptionFunc({
+        name: `${environmentNamePrefix}${env.id}`,
+        title: env.title,
+      }),
     };
   });
 };

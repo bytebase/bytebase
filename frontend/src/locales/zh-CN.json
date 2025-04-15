@@ -94,7 +94,6 @@
     "query": "查询",
     "transfer": "转移",
     "schema": "Schema",
-    "anomalies": "异常",
     "detail": "详情",
     "type": "类型",
     "language": "语言",
@@ -1254,10 +1253,8 @@
   },
   "environment": {
     "select": "选择环境",
-    "archive": "删除此环境",
-    "archive-info": "已归档环境将不再显示。",
+    "delete": "删除此环境",
     "create": "创建环境",
-    "restore": "恢复此环境",
     "successfully-updated-environment": "环境'{name}'更新成功",
     "production-environment": "生产环境",
     "access-control": {
@@ -1362,7 +1359,6 @@
   "database": {
     "sync-database": "同步数据库",
     "select": "选择数据库",
-    "no-anomalies-detected": "没有检测到异常",
     "sync-status": "同步状态",
     "last-successful-sync": "最后一次成功的同步",
     "filter-database": "过滤数据库",
@@ -1496,21 +1492,13 @@
         "content": "这将删除这些已应用的修改，但不会影响数据库 Schema。此操作无法撤消。"
       }
     },
-    "not-found": "找不到数据库"
-  },
-  "anomaly": {
-    "attention-desc": "Bytebase 会根据实例配置的扫描间隔检测异常，并且展示在这里。",
-    "table-placeholder": "很棒，没有检测到{type}异常！",
-    "types": {
-      "connection-failure": "连接失败",
-      "schema-drift": "Schema 偏差"
-    },
-    "action": {
-      "check-instance": "检查实例",
-      "view-diff": "查看差异"
-    },
-    "last-seen": "上次出现",
-    "first-seen": "首次出现"
+    "not-found": "找不到数据库",
+    "drifted": {
+      "schema-drift-detected": {
+        "self": "检测到 Schema 偏差",
+        "description": "当前数据库 Schema 与 Bytebase 中记录的 Schema 不一致。请及时检查并修复以避免潜在问题。"
+      }
+    }
   },
   "project": {
     "table": {
@@ -1770,6 +1758,7 @@
     "rows-upper-limit": "到达查询结果条数上限",
     "close-sheet": "关闭工作表",
     "connect": "连接",
+    "connected": "已连接",
     "connect-in-admin-mode": "以管理员模式连接",
     "admin-mode": {
       "self": "管理员模式",

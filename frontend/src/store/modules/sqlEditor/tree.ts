@@ -17,8 +17,9 @@ import {
   extractSQLEditorLabelFactor as extractLabelFactor,
   unknownEnvironment,
   LeafTreeNodeTypes,
+  formatEnvironmentName,
 } from "@/types";
-import type { Environment } from "@/types/proto/v1/environment_service";
+import type { Environment } from "@/types/v1/environment";
 import type { InstanceResource } from "@/types/proto/v1/instance_service";
 import { getSemanticLabelValue, groupBy, isDatabaseV1Queryable } from "@/utils";
 import {
@@ -108,6 +109,7 @@ export const useSQLEditorTreeStore = defineStore("sqlEditorTree", () => {
   const filteredFactorList = computed(() => {
     return factorList.value.filter((sf) => !sf.disabled).map((sf) => sf.factor);
   });
+
   const availableFactorList = computed(() => {
     const PRESET_FACTORS: Factor[] = hideEnvironments.value
       ? ["instance"]
@@ -149,7 +151,6 @@ export const useSQLEditorTreeStore = defineStore("sqlEditorTree", () => {
 
   const state = ref<TreeState>("UNSET");
   const tree = ref<TreeNode[]>([]);
-  const expandedKeys = ref<string[]>([]);
   const showMissingQueryDatabases = ref<boolean>(false);
 
   const collectNode = <T extends NodeType>(node: TreeNode<T>) => {
@@ -159,6 +160,7 @@ export const useSQLEditorTreeStore = defineStore("sqlEditorTree", () => {
     nodeList.push(node);
     nodeListMapById.set(id, nodeList);
   };
+
   const nodesByTarget = <T extends NodeType>(
     type: T,
     target: NodeTarget<T>
@@ -179,7 +181,6 @@ export const useSQLEditorTreeStore = defineStore("sqlEditorTree", () => {
     tree.value = [];
     factorList.value = defaultFactorList();
     nodeListMapById.clear();
-    expandedKeys.value = [];
     showMissingQueryDatabases.value = false;
     state.value = "UNSET";
   };
@@ -230,7 +231,6 @@ export const useSQLEditorTreeStore = defineStore("sqlEditorTree", () => {
     collectNode,
     nodesByTarget,
     buildTree,
-    expandedKeys,
     hasMissingQueryDatabases,
     showMissingQueryDatabases,
     cleanup,
@@ -254,14 +254,16 @@ export const idForSQLEditorTreeNodeTarget = <T extends NodeType>(
   type: T,
   target: NodeTarget<T>
 ) => {
-  if (type === "instance" || type === "environment" || type === "database") {
+  if (type === "instance" || type === "database") {
     return (
       target as
         | ComposedProject
         | InstanceResource
-        | Environment
         | ComposedDatabase
     ).name;
+  }
+  if (type === "environment") {
+    return formatEnvironmentName((target as Environment).id);
   }
   if (type === "label") {
     const kv = target as NodeTarget<"label">;

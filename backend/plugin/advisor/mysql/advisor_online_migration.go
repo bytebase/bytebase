@@ -62,13 +62,13 @@ func (*OnlineMigrationAdvisor) Check(ctx context.Context, checkCtx advisor.Conte
 	if checkCtx.ChangeType == storepb.PlanCheckRunConfig_DDL_GHOST {
 		if !advisor.DatabaseExists(ctx, checkCtx, ghostDatabaseName) {
 			return []*storepb.Advice{
-				{Status: level,
-					Title:   title,
-					Content: fmt.Sprintf("Needs database %q to save temporary data for online migration but it does not exist", ghostDatabaseName),
-					Code:    advisor.DatabaseNotExists.Int32(),
-					StartPosition: &storepb.Position{
-						Line: 0,
-					}},
+				{
+					Status:        level,
+					Title:         title,
+					Content:       fmt.Sprintf("Needs database %q to save temporary data for online migration but it does not exist", ghostDatabaseName),
+					Code:          advisor.DatabaseNotExists.Int32(),
+					StartPosition: advisor.DefaultPosition,
+				},
 			}, nil
 		}
 	}

@@ -7,7 +7,7 @@
         </p>
         <EnvironmentSelect
           class="mt-1 max-w-md"
-          :environment-name="environment?.name"
+          :environment-name="`${environmentNamePrefix}${environment.id}`"
           :disabled="!allowUpdateDatabase"
           :render-suffix="
             (env: string) =>
@@ -47,6 +47,7 @@ import {
   useEnvironmentV1Store,
   pushNotification,
   useAppFeature,
+  environmentNamePrefix,
 } from "@/store";
 import { type ComposedDatabase } from "@/types";
 import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";

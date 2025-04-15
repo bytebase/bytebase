@@ -233,25 +233,6 @@
         
           
           <li>
-            <a href="#store%2fanomaly.proto">store/anomaly.proto</a>
-            <ul>
-              
-                <li>
-                  <a href="#bytebase.store.AnomalyConnectionPayload"><span class="badge">M</span>AnomalyConnectionPayload</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.AnomalyDatabaseSchemaDriftPayload"><span class="badge">M</span>AnomalyDatabaseSchemaDriftPayload</a>
-                </li>
-              
-              
-              
-              
-            </ul>
-          </li>
-        
-          
-          <li>
             <a href="#store%2fapproval.proto">store/approval.proto</a>
             <ul>
               
@@ -2053,82 +2034,6 @@ TODO: use range instead. </p></td>
     
       
       <div class="file-heading">
-        <h2 id="store/anomaly.proto">store/anomaly.proto</h2><a href="#title">Top</a>
-      </div>
-      <p></p>
-
-      
-        <h3 id="bytebase.store.AnomalyConnectionPayload">AnomalyConnectionPayload</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>detail</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Connection failure detail </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.store.AnomalyDatabaseSchemaDriftPayload">AnomalyDatabaseSchemaDriftPayload</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>version</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The schema version corresponds to the expected schema </p></td>
-                </tr>
-              
-                <tr>
-                  <td>expect</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The expected latest schema stored in the migration history table </p></td>
-                </tr>
-              
-                <tr>
-                  <td>actual</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The actual schema dumped from the database </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-
-      
-
-      
-
-      
-    
-      
-      <div class="file-heading">
         <h2 id="store/approval.proto">store/approval.proto</h2><a href="#title">Top</a>
       </div>
       <p></p>
@@ -3559,6 +3464,13 @@ classification and user_comment is parsed from the comment. </p></td>
                   <td><a href="#bytebase.store.Secret">Secret</a></td>
                   <td>repeated</td>
                   <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>drifted</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>The schema is drifted from the source of truth. </p></td>
                 </tr>
               
             </tbody>
@@ -11009,19 +10921,19 @@ and write back to the schema metadata. </p></td>
             <tbody>
               
                 <tr>
-                  <td>title</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The display name of the environment. </p></td>
-                </tr>
-              
-                <tr>
                   <td>id</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The resource id of the environment.
 This value should be 4-63 characters, and valid characters
 are /[a-z][0-9]-/. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>title</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The display name of the environment. </p></td>
                 </tr>
               
                 <tr>

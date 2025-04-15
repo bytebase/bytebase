@@ -562,7 +562,7 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, request *v1pb.BatchR
 	// the user has bb.taskruns.create permission.
 	ok, err = s.iamManager.CheckPermission(ctx, iam.PermissionTaskRunsCreate, user)
 	if err != nil {
-		return nil, err
+		return nil, status.Errorf(codes.Internal, "failed to check permission with error: %v", err.Error())
 	}
 	if !ok {
 		if issueN != nil {
@@ -965,12 +965,12 @@ func GetPipelineCreate(ctx context.Context, s *store.Store, sheetManager *sheet.
 	// Step 2 - list snapshot environments.
 	snapshotEnvironments := deployment.GetEnvironments()
 	if len(snapshotEnvironments) == 0 {
-		environments, err := s.ListEnvironmentV2(ctx, &store.FindEnvironmentMessage{})
+		environments, err := s.GetEnvironmentSetting(ctx)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to list environments")
 		}
-		for _, e := range environments {
-			snapshotEnvironments = append(snapshotEnvironments, e.ResourceID)
+		for _, e := range environments.GetEnvironments() {
+			snapshotEnvironments = append(snapshotEnvironments, e.Id)
 		}
 	}
 	environmentIndex := make(map[string]int)
@@ -1006,11 +1006,11 @@ func GetPipelineCreate(ctx context.Context, s *store.Store, sheetManager *sheet.
 			return nil, errors.Wrap(err, "failed to get task creates from spec")
 		}
 		for _, t := range tc {
-			e, err := s.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &t.EnvironmentID})
+			e, err := s.GetEnvironmentByID(ctx, t.EnvironmentID)
 			if err != nil {
 				return nil, status.Error(codes.Internal, err.Error())
 			}
-			environmentIndex := environmentIndex[e.ResourceID]
+			environmentIndex := environmentIndex[e.Id]
 			stages[environmentIndex].TaskList = append(stages[environmentIndex].TaskList, t)
 		}
 	}
@@ -1037,12 +1037,12 @@ func getPipelineCreateToTargetStage(ctx context.Context, s *store.Store, snapsho
 		return nil, errors.Wrapf(err, "failed to get environment id from %q", *targetEnvironment)
 	}
 	if len(snapshotEnvironments) == 0 {
-		environments, err := s.ListEnvironmentV2(ctx, &store.FindEnvironmentMessage{})
+		environments, err := s.GetEnvironmentSetting(ctx)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to list environments")
 		}
-		for _, e := range environments {
-			snapshotEnvironments = append(snapshotEnvironments, e.ResourceID)
+		for _, e := range environments.GetEnvironments() {
+			snapshotEnvironments = append(snapshotEnvironments, e.Id)
 		}
 	}
 

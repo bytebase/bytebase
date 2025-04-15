@@ -7,7 +7,7 @@
       :text-class="link ? 'hover:underline' : ''"
     >
       <template
-        v-if="instanceEnvironment.name !== database.effectiveEnvironment"
+        v-if="formatEnvironmentName(instanceEnvironment.id) !== database.effectiveEnvironment"
         #prefix
       >
         <EnvironmentV1Name
@@ -53,7 +53,7 @@ import {
   InstanceV1Name,
 } from "@/components/v2";
 import { useEnvironmentV1Store } from "@/store";
-import { unknownEnvironment, type ComposedDatabase } from "@/types";
+import { formatEnvironmentName, unknownEnvironment, type ComposedDatabase } from "@/types";
 
 const props = withDefaults(
   defineProps<{

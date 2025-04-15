@@ -32,12 +32,12 @@
       >
         <NTree
           ref="treeRef"
-          v-model:expanded-keys="expandedKeys"
           :block-line="true"
           :data="treeStore.tree"
           :show-irrelevant-nodes="false"
           :selected-keys="selectedKeys"
           :pattern="mounted ? searchPattern : ''"
+          :default-expand-all="true"
           :expand-on-click="true"
           :node-props="nodeProps"
           :theme-overrides="{ nodeHeight: '21px' }"
@@ -87,7 +87,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computedAsync, useElementSize, useMounted } from "@vueuse/core";
+import { useElementSize, useMounted } from "@vueuse/core";
 import { head } from "lodash-es";
 import {
   NButton,
@@ -97,32 +97,20 @@ import {
   type TreeOption,
 } from "naive-ui";
 import { storeToRefs } from "pinia";
-import { ref, nextTick, watch, h } from "vue";
+import { ref, nextTick, watch, h, computed } from "vue";
 import MaskSpinner from "@/components/misc/MaskSpinner.vue";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import {
   useDatabaseV1Store,
-  useIsLoggedIn,
   useSQLEditorTabStore,
   resolveOpeningDatabaseListFromSQLEditorTabList,
   useSQLEditorTreeStore,
   useSQLEditorStore,
   idForSQLEditorTreeNodeTarget,
-  useConnectionOfCurrentSQLEditorTab,
   useInstanceResourceByName,
 } from "@/store";
-import type {
-  ComposedDatabase,
-  SQLEditorTreeNode,
-  SQLEditorTreeNodeTarget,
-  SQLEditorTreeNodeType,
-} from "@/types";
-import {
-  DEFAULT_SQL_EDITOR_TAB_MODE,
-  ExpandableTreeNodeTypes,
-  isValidDatabaseName,
-  isValidInstanceName,
-} from "@/types";
+import type { ComposedDatabase, SQLEditorTreeNode } from "@/types";
+import { DEFAULT_SQL_EDITOR_TAB_MODE } from "@/types";
 import { findAncestor, isDescendantOf, isDatabaseV1Queryable } from "@/utils";
 import { useSQLEditorContext } from "../../context";
 import {
@@ -139,7 +127,6 @@ const treeStore = useSQLEditorTreeStore();
 const tabStore = useSQLEditorTabStore();
 const editorStore = useSQLEditorStore();
 const databaseStore = useDatabaseV1Store();
-const isLoggedIn = useIsLoggedIn();
 
 const editorContext = useSQLEditorContext();
 const { events: editorEvents, showConnectionPanel } = editorContext;
@@ -169,9 +156,10 @@ const { height: treeContainerHeight } = useElementSize(
 );
 const treeRef = ref<InstanceType<typeof NTree>>();
 const searchPattern = ref("");
+const selectedKeys = ref<string[]>([]);
 
 // Highlight the current tab's connection node.
-const selectedKeys = computedAsync(async () => {
+const getSelectedKeys = async () => {
   const connection = tabStore.currentTab?.connection;
   if (!connection) {
     return [];
@@ -190,58 +178,14 @@ const selectedKeys = computedAsync(async () => {
     return nodes.map((node) => node.key);
   }
   return [];
-}, []);
+};
 
-const { expandedKeys, hasMissingQueryDatabases, showMissingQueryDatabases } =
+const connectedDatabases = computed(() =>
+  resolveOpeningDatabaseListFromSQLEditorTabList()
+);
+
+const { hasMissingQueryDatabases, showMissingQueryDatabases } =
   storeToRefs(treeStore);
-
-const upsertExpandedKeys = (key: string) => {
-  if (expandedKeys.value.includes(key)) {
-    return;
-  }
-  expandedKeys.value.push(key);
-};
-
-const expandNode = (
-  node: SQLEditorTreeNode | undefined,
-  keys?: Set<string>
-) => {
-  if (!node) {
-    return;
-  }
-  if (ExpandableTreeNodeTypes.includes(node.meta.type)) {
-    if (keys) {
-      keys.add(node.key);
-    } else {
-      upsertExpandedKeys(node.key);
-    }
-  }
-};
-const expandNodeRecursively = (
-  node: SQLEditorTreeNode | undefined,
-  keys?: Set<string>
-) => {
-  if (!node) {
-    return;
-  }
-  expandNode(node, keys);
-
-  if (node.parent) {
-    expandNodeRecursively(node.parent, keys);
-  }
-};
-const expandNodesByType = <T extends SQLEditorTreeNodeType>(
-  type: T,
-  target: SQLEditorTreeNodeTarget<T>
-) => {
-  const nodes = treeStore.nodesByTarget(type, target);
-
-  nodes.forEach((node) => {
-    expandNodeRecursively(node);
-  });
-
-  return nodes;
-};
 
 // dynamic render the highlight keywords
 const renderLabel = ({ option }: { option: TreeOption }) => {
@@ -250,6 +194,7 @@ const renderLabel = ({ option }: { option: TreeOption }) => {
     node,
     factors: treeStore.filteredFactorList,
     keyword: searchPattern.value ?? "",
+    connectedDatabases: connectedDatabases.value,
   });
 };
 
@@ -333,31 +278,6 @@ const nodeProps = ({ option }: { option: TreeOption }) => {
   };
 };
 
-// Open corresponding tree node when the connection changed.
-const { instance, database } = useConnectionOfCurrentSQLEditorTab();
-watch(
-  [isLoggedIn, instance, database, () => treeStore.state],
-  ([isLoggedIn, instance, database, treeState]) => {
-    if (!isLoggedIn) {
-      // Don't go further and cleanup the state if we signed out.
-      // treeStore.expandedKeys = [];
-      expandedKeys.value = [];
-      return;
-    }
-
-    if (treeState !== "READY") {
-      return;
-    }
-    if (isValidInstanceName(instance.name)) {
-      expandNodesByType("instance", instance);
-    }
-    if (isValidDatabaseName(database.name)) {
-      expandNodesByType("database", database);
-    }
-  },
-  { immediate: true }
-);
-
 watch(
   selectedKeys,
   (keys) => {
@@ -370,50 +290,8 @@ watch(
   { immediate: true }
 );
 
-const calcDefaultExpandKeys = async (override = false) => {
-  await nextTick();
-  if (expandedKeys.value.length > 0 && !override) {
-    // keep as-is
-    return;
-  }
-  const openingDatabaseList = resolveOpeningDatabaseListFromSQLEditorTabList();
-  const keys = new Set<string>();
-  // Recursively expand opening databases' parent nodes
-  openingDatabaseList.forEach((meta) => {
-    const db = meta.target;
-    const nodes = treeStore.nodesByTarget("database", db);
-    nodes.forEach((node) => expandNodeRecursively(node.parent, keys));
-  });
-  if (keys.size === 0) {
-    // Try expand till the first database node
-    const dfsWalk = (node: SQLEditorTreeNode) => {
-      if (node.meta.type === "database") {
-        expandNodeRecursively(node.parent, keys);
-        return true;
-      }
-      if (!node.children) return false;
-      for (let i = 0; i < node.children.length; i++) {
-        const child = node.children[i] as SQLEditorTreeNode;
-        if (dfsWalk(child)) {
-          return true;
-        }
-      }
-      return false;
-    };
-    for (let i = 0; i < treeStore.tree.length; i++) {
-      const node = treeStore.tree[i];
-      if (dfsWalk(node)) {
-        break;
-      }
-    }
-  }
-
-  await nextTick();
-  expandedKeys.value = Array.from(keys);
-};
-
-useEmitteryEventListener(editorEvents, "tree-ready", () => {
-  calcDefaultExpandKeys(true);
+useEmitteryEventListener(editorEvents, "tree-ready", async () => {
+  selectedKeys.value = await getSelectedKeys();
 });
 
 watch(

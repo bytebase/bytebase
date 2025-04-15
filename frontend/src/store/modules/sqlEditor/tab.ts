@@ -1,11 +1,10 @@
 import type { MaybeRef } from "@vueuse/core";
 import { watchThrottled } from "@vueuse/core";
-import { head, omit, pick, uniqBy } from "lodash-es";
+import { head, omit, pick } from "lodash-es";
 import { defineStore, storeToRefs } from "pinia";
 import { computed, nextTick, reactive, ref, unref, watch } from "vue";
 import type {
   SQLEditorConnection,
-  SQLEditorTreeNodeMeta,
   CoreSQLEditorTab,
   SQLEditorTab,
 } from "@/types";
@@ -448,15 +447,14 @@ export const useConnectionOfCurrentSQLEditorTab = () => {
 export const resolveOpeningDatabaseListFromSQLEditorTabList = () => {
   const { tabList } = useSQLEditorTabStore();
   const databaseStore = useDatabaseV1Store();
-  return uniqBy(
-    tabList.flatMap<SQLEditorTreeNodeMeta<"database">>((tab) => {
-      const { database } = tab.connection;
-      if (database) {
-        const db = databaseStore.getDatabaseByName(database);
-        return [{ type: "database", target: db }];
-      }
-      return [];
-    }),
-    (meta) => meta.target.name
-  );
+  const databaseSet = new Set<string>();
+
+  for (const tab of tabList) {
+    const { database } = tab.connection;
+    if (database) {
+      const db = databaseStore.getDatabaseByName(database);
+      databaseSet.add(db.name);
+    }
+  }
+  return databaseSet;
 };

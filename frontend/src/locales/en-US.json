@@ -94,7 +94,6 @@
     "query": "Query",
     "transfer": "Transfer",
     "schema": "Schema",
-    "anomalies": "Anomalies",
     "detail": "Detail",
     "type": "Type",
     "language": "Language",
@@ -1254,10 +1253,8 @@
   },
   "environment": {
     "select": "Select environment",
-    "archive": "Delete this environment",
-    "archive-info": "Archived environments will not be displayed.",
+    "delete": "Delete this environment",
     "create": "Create Environment",
-    "restore": "Restore this environment",
     "successfully-updated-environment": "Successfully updated environment '{name}'.",
     "production-environment": "Production environment",
     "access-control": {
@@ -1362,7 +1359,6 @@
   "database": {
     "sync-database": "Sync database",
     "select": "Select database",
-    "no-anomalies-detected": "No anomalies detected",
     "sync-status": "Sync status",
     "last-successful-sync": "Last successful sync",
     "filter-database": "Filter database",
@@ -1496,21 +1492,13 @@
         "content": "This will delete these applied revisions and the database schema will not be changed. This action cannot be undone."
       }
     },
-    "not-found": "Cannot found the database"
-  },
-  "anomaly": {
-    "attention-desc": "Bytebase periodically detects anomalies based on the instance scan interval, and surfaces the findings here.",
-    "table-placeholder": "Hooray, no {type} anomaly detected!",
-    "types": {
-      "connection-failure": "Connection failure",
-      "schema-drift": "Schema drift"
-    },
-    "action": {
-      "check-instance": "Check instance",
-      "view-diff": "View diff"
-    },
-    "last-seen": "Last seen",
-    "first-seen": "First seen"
+    "not-found": "Cannot found the database",
+    "drifted": {
+      "schema-drift-detected": {
+        "self": "Schema drift detected",
+        "description": "The schema is different from the last applied schema. This may cause application errors and should be resolved."
+      }
+    }
   },
   "project": {
     "table": {
@@ -1770,6 +1758,7 @@
     "rows-upper-limit": "reached the limit of query results",
     "close-sheet": "Close sheet",
     "connect": "Connect",
+    "connected": "Connected",
     "connect-in-admin-mode": "Connect in admin mode",
     "admin-mode": {
       "self": "Admin mode",

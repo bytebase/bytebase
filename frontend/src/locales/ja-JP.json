@@ -94,7 +94,6 @@
     "query": "お問い合わせ",
     "transfer": "移行",
     "schema": "スキーマ",
-    "anomalies": "異常",
     "detail": "詳細",
     "type": "タイプ",
     "language": "言語",
@@ -1254,10 +1253,8 @@
   },
   "environment": {
     "select": "環境を選ぶ",
-    "archive": "この環境を削除します",
-    "archive-info": "アーカイブされた環境は表示されなくなります。",
+    "delete": "この環境を削除します",
     "create": "環境を作成する",
-    "restore": "この環境を復元する",
     "successfully-updated-environment": "環境「{name}」は正常に更新されました",
     "production-environment": "本番環境",
     "access-control": {
@@ -1362,7 +1359,6 @@
   "database": {
     "sync-database": "データベースを同期",
     "select": "データベースの選択",
-    "no-anomalies-detected": "例外は検出されませんでした",
     "sync-status": "同期ステータス",
     "last-successful-sync": "最後に成功した同期",
     "filter-database": "フィルターデータベース",
@@ -1496,21 +1492,13 @@
         "content": "これにより、適用されたリビジョンが削除され、データベース スキーマは変更されません。このアクションは元に戻せません。"
       }
     },
-    "not-found": "データベースが見つかりません"
-  },
-  "anomaly": {
-    "attention-desc": "Bytebase は、インスタンスに設定されたスキャン間隔に基づいて異常を検出し、ここに表示します。",
-    "table-placeholder": "すばらしいです。{type} 例外は検出されませんでした。",
-    "types": {
-      "connection-failure": "接続に失敗しました",
-      "schema-drift": "スキーマの逸脱"
-    },
-    "action": {
-      "check-instance": "インスタンスをチェックする",
-      "view-diff": "違いを表示する"
-    },
-    "last-seen": "最後に見たのは",
-    "first-seen": "第一印象"
+    "not-found": "データベースが見つかりません",
+    "drifted": {
+      "schema-drift-detected": {
+        "self": "スキーマドリフトが検出されました",
+        "description": "スキーマが最後に適用されたスキーマと異なります。アプリケーションエラーが発生する可能性があるため、解決する必要があります。"
+      }
+    }
   },
   "project": {
     "table": {
@@ -1770,6 +1758,7 @@
     "rows-upper-limit": "クエリ結果の数が上限に達しました",
     "close-sheet": "ワークシートを閉じる",
     "connect": "接続する",
+    "connected": "接続",
     "connect-in-admin-mode": "管理者モードで接続する",
     "admin-mode": {
       "self": "管理者モード",

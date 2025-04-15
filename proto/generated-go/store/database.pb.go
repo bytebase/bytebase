@@ -408,8 +408,10 @@ type DatabaseMetadata struct {
 	BackupAvailable bool                   `protobuf:"varint,3,opt,name=backup_available,json=backupAvailable,proto3" json:"backup_available,omitempty"`
 	Datashare       bool                   `protobuf:"varint,4,opt,name=datashare,proto3" json:"datashare,omitempty"`
 	Secrets         []*Secret              `protobuf:"bytes,5,rep,name=secrets,proto3" json:"secrets,omitempty"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
+	// The schema is drifted from the source of truth.
+	Drifted       bool `protobuf:"varint,6,opt,name=drifted,proto3" json:"drifted,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *DatabaseMetadata) Reset() {
@@ -475,6 +477,13 @@ func (x *DatabaseMetadata) GetSecrets() []*Secret {
 		return x.Secrets
 	}
 	return nil
+}
+
+func (x *DatabaseMetadata) GetDrifted() bool {
+	if x != nil {
+		return x.Drifted
+	}
+	return false
 }
 
 // DatabaseSchemaMetadata is the schema metadata for databases.
@@ -3779,13 +3788,14 @@ var File_store_database_proto protoreflect.FileDescriptor
 
 const file_store_database_proto_rawDesc = "" +
 	"\n" +
-	"\x14store/database.proto\x12\x0ebytebase.store\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1egoogle/protobuf/wrappers.proto\x1a\x12store/common.proto\"\xd0\x02\n" +
+	"\x14store/database.proto\x12\x0ebytebase.store\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1egoogle/protobuf/wrappers.proto\x1a\x12store/common.proto\"\xea\x02\n" +
 	"\x10DatabaseMetadata\x12D\n" +
 	"\x06labels\x18\x01 \x03(\v2,.bytebase.store.DatabaseMetadata.LabelsEntryR\x06labels\x12@\n" +
 	"\x0elast_sync_time\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\flastSyncTime\x12)\n" +
 	"\x10backup_available\x18\x03 \x01(\bR\x0fbackupAvailable\x12\x1c\n" +
 	"\tdatashare\x18\x04 \x01(\bR\tdatashare\x120\n" +
-	"\asecrets\x18\x05 \x03(\v2\x16.bytebase.store.SecretR\asecrets\x1a9\n" +
+	"\asecrets\x18\x05 \x03(\v2\x16.bytebase.store.SecretR\asecrets\x12\x18\n" +
+	"\adrifted\x18\x06 \x01(\bR\adrifted\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x96\x03\n" +

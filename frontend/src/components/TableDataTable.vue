@@ -18,7 +18,6 @@
     :schema-name="schemaName"
     :table-name="state.selectedTableName ?? ''"
     :classification-config="classificationConfig"
-    :allow-set-classification="!setClassificationFromComment"
     @apply-classification="
       (table: string, id: string) => onClassificationIdApply(table, id)
     "
@@ -34,11 +33,9 @@ import { computed, reactive, onMounted, h, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 import ClassificationCell from "@/components/ColumnDataTable/ClassificationCell.vue";
+import { updateTableCatalog } from "@/components/ColumnDataTable/utils";
 import {
-  updateTableCatalog,
-  supportSetClassificationFromComment,
-} from "@/components/ColumnDataTable/utils";
-import {
+  featureToRef,
   useSettingV1Store,
   useDatabaseCatalog,
   getTableCatalog,
@@ -46,7 +43,6 @@ import {
 import type { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import type { TableMetadata } from "@/types/proto/v1/database_service";
-import { DataClassificationSetting_DataClassificationConfig as DataClassificationConfig } from "@/types/proto/v1/setting_service";
 import { bytesToString, hasSchemaProperty } from "@/utils";
 import TableDetailDrawer from "./TableDetailDrawer.vue";
 
@@ -104,25 +100,13 @@ const classificationConfig = computed(() => {
   );
 });
 
+const hasSensitiveDataFeature = featureToRef("bb.feature.sensitive-data");
+
 const engine = computed(() => props.database.instanceResource.engine);
 
 const isPostgres = computed(
   () => engine.value === Engine.POSTGRES || engine.value === Engine.RISINGWAVE
 );
-
-const hasClassificationProperty = computed(() => {
-  return !!classificationConfig.value;
-});
-
-const setClassificationFromComment = computed(() => {
-  const classificationConfig = settingStore.getProjectClassification(
-    props.database.projectEntity.dataClassificationConfigId
-  );
-  return supportSetClassificationFromComment(
-    engine.value,
-    classificationConfig?.classificationFromConfig ?? false
-  );
-});
 
 const hasEngineProperty = computed(() => {
   return !isPostgres.value;
@@ -171,7 +155,7 @@ const columns = computed(() => {
     {
       key: "classification",
       title: t("database.classification.self"),
-      hide: !hasClassificationProperty.value,
+      hide: !hasSensitiveDataFeature.value,
       resizable: true,
       minWidth: 140,
       render: (table) => {
@@ -182,10 +166,8 @@ const columns = computed(() => {
         );
         return h(ClassificationCell, {
           classification: tableCatalog.classification,
-          classificationConfig:
-            classificationConfig.value ??
-            DataClassificationConfig.fromPartial({}),
-          readonly: setClassificationFromComment.value,
+          classificationConfig: classificationConfig.value,
+          engine: engine.value,
           onApply: (id: string) => onClassificationIdApply(table.name, id),
         });
       },

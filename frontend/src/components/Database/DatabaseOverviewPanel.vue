@@ -1,32 +1,7 @@
 <template>
   <div class="space-y-6 divide-y divide-block-border">
-    <div v-if="anomalySectionList.length > 0">
-      <div class="text-lg leading-6 font-medium text-main mb-4 flex flex-row">
-        {{ $t("common.anomalies") }}
-        <span class="ml-2 textinfolabel items-center flex">
-          {{ $t("anomaly.attention-desc") }}
-          <a
-            href="https://www.bytebase.com/docs/change-database/drift-detection?source=console"
-            target="_blank"
-            class="ml-1 normal-link inline-flex flex-row items-center"
-          >
-            {{ $t("common.learn-more") }}
-            <heroicons-outline:external-link class="w-4 h-4" />
-          </a>
-        </span>
-      </div>
-      <AnomalyTable :anomaly-section-list="anomalySectionList" />
-    </div>
-    <div
-      v-else
-      class="text-lg leading-6 font-medium text-main mb-4 flex flex-row"
-    >
-      {{ $t("database.no-anomalies-detected") }}
-      <heroicons-outline:check-circle class="ml-1 w-6 h-6 text-success" />
-    </div>
-
     <!-- Description list -->
-    <DatabaseOverviewInfo :database="database" class="pt-4" />
+    <DatabaseOverviewInfo :database="database" />
 
     <div v-if="allowGetSchema" class="py-6">
       <div
@@ -170,12 +145,9 @@
 <script lang="ts" setup>
 import { head } from "lodash-es";
 import { NSelect } from "naive-ui";
-import type { PropType } from "vue";
 import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
-import type { BBTableSectionDataSource } from "@/bbkit/types";
-import AnomalyTable from "@/components/AnomalyCenter/AnomalyTable.vue";
 import DBExtensionDataTable from "@/components/DBExtensionDataTable.vue";
 import { useDatabaseDetailContext } from "@/components/Database/context";
 import ExternalTableDataTable from "@/components/ExternalTableDataTable.vue";
@@ -187,7 +159,6 @@ import ViewDataTable from "@/components/ViewDataTable.vue";
 import { SQL_EDITOR_SETTING_DATABASES_MODULE } from "@/router/sqlEditor";
 import { useDBSchemaV1Store } from "@/store";
 import type { ComposedDatabase } from "@/types";
-import type { Anomaly } from "@/types/proto/v1/anomaly_service";
 import { Engine } from "@/types/proto/v1/common";
 import {
   hasSchemaProperty,
@@ -200,27 +171,19 @@ import { SearchBox } from "../v2";
 import DatabaseOverviewInfo from "./DatabaseOverviewInfo.vue";
 
 interface LocalState {
-  selectedSchemaName: string;
+  selectedSchemaName?: string;
   tableNameSearchKeyword: string;
   externalTableNameSearchKeyword: string;
 }
 
-const props = defineProps({
-  database: {
-    required: true,
-    type: Object as PropType<ComposedDatabase>,
-  },
-  anomalyList: {
-    required: true,
-    type: Object as PropType<Anomaly[]>,
-  },
-});
+const props = defineProps<{
+  database: ComposedDatabase;
+}>();
 
 const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
 const state = reactive<LocalState>({
-  selectedSchemaName: "",
   tableNameSearchKeyword: "",
   externalTableNameSearchKeyword: "",
 });
@@ -266,17 +229,6 @@ watch(
   { immediate: true }
 );
 
-const anomalySectionList = computed((): BBTableSectionDataSource<Anomaly>[] => {
-  const list: BBTableSectionDataSource<Anomaly>[] = [];
-  if (props.anomalyList.length > 0) {
-    list.push({
-      title: props.database.name,
-      list: props.anomalyList,
-    });
-  }
-  return list;
-});
-
 const schemaList = computed(() => {
   return dbSchemaStore.getSchemaList(props.database.name);
 });
@@ -289,25 +241,17 @@ const schemaNameOptions = computed(() => {
 });
 
 const tableList = computed(() => {
-  if (hasSchemaPropertyV1.value) {
-    return (
-      schemaList.value.find(
-        (schema) => schema.name === state.selectedSchemaName
-      )?.tables || []
-    );
-  }
-  return dbSchemaStore.getTableList(props.database.name);
+  return dbSchemaStore.getTableList({
+    database: props.database.name,
+    schema: state.selectedSchemaName,
+  });
 });
 
 const viewList = computed(() => {
-  if (hasSchemaPropertyV1.value) {
-    return (
-      schemaList.value.find(
-        (schema) => schema.name === state.selectedSchemaName
-      )?.views || []
-    );
-  }
-  return dbSchemaStore.getViewList(props.database.name);
+  return dbSchemaStore.getViewList({
+    database: props.database.name,
+    schema: state.selectedSchemaName,
+  });
 });
 
 const dbExtensionList = computed(() => {
@@ -315,21 +259,17 @@ const dbExtensionList = computed(() => {
 });
 
 const externalTableList = computed(() => {
-  return dbSchemaStore.getExternalTableList(
-    props.database.name,
-    state.selectedSchemaName
-  );
+  return dbSchemaStore.getExternalTableList({
+    database: props.database.name,
+    schema: state.selectedSchemaName,
+  });
 });
 
 const functionList = computed(() => {
-  if (hasSchemaPropertyV1.value) {
-    return (
-      schemaList.value.find(
-        (schema) => schema.name === state.selectedSchemaName
-      )?.functions || []
-    );
-  }
-  return dbSchemaStore.getFunctionList(props.database.name);
+  return dbSchemaStore.getFunctionList({
+    database: props.database.name,
+    schema: state.selectedSchemaName,
+  });
 });
 
 const streamList = computed(() => {

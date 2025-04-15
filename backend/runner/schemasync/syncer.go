@@ -356,11 +356,9 @@ func (s *Syncer) SyncDatabaseSchemaToHistory(ctx context.Context, database *stor
 	}
 	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{})
 	if err != nil {
-		s.upsertDatabaseConnectionAnomaly(ctx, database, err)
 		return 0, err
 	}
 	defer driver.Close(ctx)
-	s.upsertDatabaseConnectionAnomaly(ctx, database, nil)
 	// Sync database schema
 	deadlineCtx, cancelFunc := context.WithDeadline(ctx, time.Now().Add(syncTimeout))
 	defer cancelFunc()
@@ -460,11 +458,9 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 	}
 	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{})
 	if err != nil {
-		s.upsertDatabaseConnectionAnomaly(ctx, database, err)
 		return err
 	}
 	defer driver.Close(ctx)
-	s.upsertDatabaseConnectionAnomaly(ctx, database, nil)
 	// Sync database schema
 	deadlineCtx, cancelFunc := context.WithDeadline(ctx, time.Now().Add(syncTimeout))
 	defer cancelFunc()
@@ -472,6 +468,11 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 	if err != nil {
 		return errors.Wrapf(err, "failed to sync database schema for database %q", database.DatabaseName)
 	}
+	var schemaBuf bytes.Buffer
+	if err := driver.Dump(deadlineCtx, &schemaBuf, databaseMetadata); err != nil {
+		return errors.Wrapf(err, "failed to dump database schema for database %q", database.DatabaseName)
+	}
+	rawDump := schemaBuf.Bytes()
 
 	dbSchema, err := s.store.GetDBSchema(ctx, database.InstanceID, database.DatabaseName)
 	if err != nil {
@@ -514,6 +515,11 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 	metadata.LastSyncTime = timestamppb.New(time.Now())
 	metadata.BackupAvailable = s.hasBackupSchema(ctx, instance, databaseMetadata)
 	metadata.Datashare = databaseMetadata.Datashare
+	drifted, err := s.getSchemaDrifted(ctx, instance, database, string(rawDump))
+	if err != nil {
+		return errors.Wrapf(err, "failed to get schema drifted for database %q", database.DatabaseName)
+	}
+	metadata.Drifted = drifted
 	if _, err := s.store.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
 		InstanceID:   database.InstanceID,
 		DatabaseName: database.DatabaseName,
@@ -522,12 +528,6 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 	}); err != nil {
 		return errors.Wrapf(err, "failed to update database %q for instance %q", database.DatabaseName, database.InstanceID)
 	}
-
-	var schemaBuf bytes.Buffer
-	if err := driver.Dump(ctx, &schemaBuf, databaseMetadata); err != nil {
-		return errors.Wrapf(err, "failed to dump database schema for database %q", database.DatabaseName)
-	}
-	rawDump := schemaBuf.Bytes()
 
 	if err := s.store.UpsertDBSchema(ctx,
 		database.InstanceID, database.DatabaseName,
@@ -541,61 +541,36 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 		return errors.Wrapf(err, "failed to upsert database schema for database %q", database.DatabaseName)
 	}
 
-	// Check schema drift
-	if err := func() error {
-		// Redis and MongoDB are schemaless.
-		if disableSchemaDriftAnomalyCheck(instance.Metadata.GetEngine()) {
-			return nil
-		}
-		limit := 1
-		list, err := s.store.ListChangelogs(ctx, &store.FindChangelogMessage{
-			InstanceID:     &database.InstanceID,
-			DatabaseName:   &database.DatabaseName,
-			TypeList:       []string{string(db.Migrate), string(db.Baseline)},
-			HasSyncHistory: true,
-			Limit:          &limit,
-			ShowFull:       true,
-		})
-		if err != nil {
-			return errors.Wrapf(err, "failed to list changelogs")
-		}
-		if len(list) == 0 {
-			return nil
-		}
-
-		changelog := list[0]
-		if changelog.SyncHistoryUID == nil {
-			return errors.Errorf("expect sync history but get nil")
-		}
-		latestSchema := string(rawDump)
-		if changelog.Schema != latestSchema {
-			if _, err = s.store.UpsertActiveAnomalyV2(ctx, &store.AnomalyMessage{
-				ProjectID:    database.ProjectID,
-				InstanceID:   database.InstanceID,
-				DatabaseName: database.DatabaseName,
-				Type:         base.AnomalyDatabaseSchemaDrift,
-			}); err != nil {
-				return errors.Wrapf(err, "failed to create anomaly")
-			}
-		} else {
-			err := s.store.DeleteAnomalyV2(ctx, &store.DeleteAnomalyMessage{
-				InstanceID:   database.InstanceID,
-				DatabaseName: database.DatabaseName,
-				Type:         base.AnomalyDatabaseSchemaDrift,
-			})
-			if err != nil && common.ErrorCode(err) != common.NotFound {
-				return errors.Wrapf(err, "failed to close anomaly")
-			}
-		}
-		return nil
-	}(); err != nil {
-		slog.Error("failed to check anomaly",
-			slog.String("instance", database.InstanceID),
-			slog.String("database", database.DatabaseName),
-			slog.String("type", string(base.AnomalyDatabaseSchemaDrift)),
-			log.BBError(err))
-	}
 	return nil
+}
+
+func (s *Syncer) getSchemaDrifted(ctx context.Context, instance *store.InstanceMessage, database *store.DatabaseMessage, rawDump string) (bool, error) {
+	// Redis and MongoDB are schemaless.
+	if disableSchemaDriftCheck(instance.Metadata.GetEngine()) {
+		return false, nil
+	}
+	limit := 1
+	list, err := s.store.ListChangelogs(ctx, &store.FindChangelogMessage{
+		InstanceID:     &database.InstanceID,
+		DatabaseName:   &database.DatabaseName,
+		TypeList:       []string{string(db.Migrate), string(db.Baseline)},
+		HasSyncHistory: true,
+		Limit:          &limit,
+		ShowFull:       true,
+	})
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to list changelogs")
+	}
+	if len(list) == 0 {
+		return false, nil
+	}
+
+	changelog := list[0]
+	if changelog.SyncHistoryUID == nil {
+		return false, errors.Errorf("expect sync history but get nil")
+	}
+	latestSchema := string(rawDump)
+	return changelog.Schema != latestSchema, nil
 }
 
 func (s *Syncer) hasBackupSchema(ctx context.Context, instance *store.InstanceMessage, dbSchema *storepb.DatabaseSchemaMetadata) bool {
@@ -633,37 +608,6 @@ func (s *Syncer) hasBackupSchema(ctx context.Context, instance *store.InstanceMe
 		return backupDB != nil
 	}
 	return false
-}
-
-func (s *Syncer) upsertDatabaseConnectionAnomaly(ctx context.Context, database *store.DatabaseMessage, connErr error) {
-	if connErr != nil {
-		if _, err := s.store.UpsertActiveAnomalyV2(ctx, &store.AnomalyMessage{
-			ProjectID:    database.ProjectID,
-			InstanceID:   database.InstanceID,
-			DatabaseName: database.DatabaseName,
-			Type:         base.AnomalyDatabaseConnection,
-		}); err != nil {
-			slog.Error("Failed to create anomaly",
-				slog.String("instance", database.InstanceID),
-				slog.String("database", database.DatabaseName),
-				slog.String("type", string(base.AnomalyDatabaseConnection)),
-				log.BBError(err))
-		}
-		return
-	}
-
-	err := s.store.DeleteAnomalyV2(ctx, &store.DeleteAnomalyMessage{
-		InstanceID:   database.InstanceID,
-		DatabaseName: database.DatabaseName,
-		Type:         base.AnomalyDatabaseConnection,
-	})
-	if err != nil && common.ErrorCode(err) != common.NotFound {
-		slog.Error("Failed to close anomaly",
-			slog.String("instance", database.InstanceID),
-			slog.String("database", database.DatabaseName),
-			slog.String("type", string(base.AnomalyDatabaseConnection)),
-			log.BBError(err))
-	}
 }
 
 func setClassificationAndUserCommentFromComment(dbSchema *storepb.DatabaseSchemaMetadata, databaseConfig *model.DatabaseConfig, classificationConfig *storepb.DataClassificationSetting_DataClassificationConfig) {
@@ -736,7 +680,7 @@ func getOrDefaultLastSyncTime(t *timestamppb.Timestamp) time.Time {
 	return time.Unix(0, 0)
 }
 
-func disableSchemaDriftAnomalyCheck(dbTp storepb.Engine) bool {
+func disableSchemaDriftCheck(dbTp storepb.Engine) bool {
 	m := map[storepb.Engine]struct{}{
 		storepb.Engine_MONGODB:    {},
 		storepb.Engine_REDIS:      {},
