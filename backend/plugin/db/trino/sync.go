@@ -66,7 +66,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 
 		// Add column metadata to each table
 		for i, table := range tables {
-			tableKey := TableKey{Schema: schemaName, Table: table.Name}
+			tableKey := db.TableKey{Schema: schemaName, Table: table.Name}
 			if columns, ok := allColumns[tableKey]; ok {
 				tables[i].Columns = columns
 			}
@@ -127,12 +127,6 @@ func (d *Driver) getSchemaList(ctx context.Context, catalog string) ([]string, e
 	return d.queryStringValues(ctx, query, catalog)
 }
 
-// TableKey is a composite key for tables
-type TableKey struct {
-	Schema string
-	Table  string
-}
-
 func (d *Driver) fetchAllTablesForCatalog(ctx context.Context, catalog string, schemas []string) (map[string][]*storepb.TableMetadata, error) {
 	query := "SELECT table_schem, table_name FROM system.jdbc.tables WHERE table_cat = ? AND table_type = 'TABLE' ORDER BY table_schem, table_name"
 
@@ -161,7 +155,7 @@ func (d *Driver) fetchAllTablesForCatalog(ctx context.Context, catalog string, s
 	return allTables, nil
 }
 
-func (d *Driver) fetchAllColumnsForCatalog(ctx context.Context, catalog string) (map[TableKey][]*storepb.ColumnMetadata, error) {
+func (d *Driver) fetchAllColumnsForCatalog(ctx context.Context, catalog string) (map[db.TableKey][]*storepb.ColumnMetadata, error) {
 	query := "SELECT table_schem, table_name, column_name, type_name, is_nullable FROM system.jdbc.columns WHERE table_cat = ? ORDER BY table_schem, table_name, ordinal_position"
 
 	rows, err := d.db.QueryContext(ctx, query, catalog)
@@ -170,7 +164,7 @@ func (d *Driver) fetchAllColumnsForCatalog(ctx context.Context, catalog string) 
 	}
 	defer rows.Close()
 
-	allColumns := make(map[TableKey][]*storepb.ColumnMetadata)
+	allColumns := make(map[db.TableKey][]*storepb.ColumnMetadata)
 
 	for rows.Next() {
 		var schemaName, tableName, columnName, dataType, isNullable string
@@ -184,7 +178,7 @@ func (d *Driver) fetchAllColumnsForCatalog(ctx context.Context, catalog string) 
 			Nullable: isNullable == "YES",
 		}
 
-		tableKey := TableKey{Schema: schemaName, Table: tableName}
+		tableKey := db.TableKey{Schema: schemaName, Table: tableName}
 		allColumns[tableKey] = append(allColumns[tableKey], column)
 	}
 
