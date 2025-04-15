@@ -71,7 +71,7 @@ func createBitbucketReport(checkResponse *v1pb.CheckReleaseResponse) error {
 		"result": "%s",
 		"data": []
 	}`, details, result)
-	if err := sendPutRequest(client, reportURL, reportData); err != nil {
+	if err := sendPutRequest(client, http.MethodPut, reportURL, reportData); err != nil {
 		return err
 	}
 
@@ -109,12 +109,12 @@ func createBitbucketReport(checkResponse *v1pb.CheckReleaseResponse) error {
 	if err != nil {
 		return errors.Wrapf(err, "error marshaling json")
 	}
-	annotationsURL := fmt.Sprintf("https://api.bitbucket.org/2.0/repositories/%s/%s/commit/%s/reports/bytebase/annotations", repoOwner, repoSlug, commit)
-	return sendPutRequest(client, annotationsURL, string(annotationsData))
+	annotationsURL := fmt.Sprintf("http://api.bitbucket.org/2.0/repositories/%s/%s/commit/%s/reports/bytebase/annotations", repoOwner, repoSlug, commit)
+	return sendPutRequest(client, http.MethodPost, annotationsURL, string(annotationsData))
 }
 
-func sendPutRequest(client *http.Client, url, data string) error {
-	req, err := http.NewRequest("PUT", url, bytes.NewBufferString(data))
+func sendPutRequest(client *http.Client, method, url, data string) error {
+	req, err := http.NewRequest(method, url, bytes.NewBufferString(data))
 	if err != nil {
 		return err
 	}
