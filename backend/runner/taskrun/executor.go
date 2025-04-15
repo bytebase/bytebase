@@ -279,8 +279,8 @@ func doMigrationWithFunc(
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to get project %v for database %v", database.ProjectID, database.DatabaseName)
 	}
-	if project != nil && project.Setting != nil && project.Setting.ExecutionRetryPolicy != nil {
-		opts.MaximumRetries = int(project.Setting.ExecutionRetryPolicy.MaximumRetries)
+	if project != nil && project.Setting != nil {
+		opts.MaximumRetries = int(project.Setting.GetExecutionRetryPolicy().GetMaximumRetries())
 	}
 
 	opts.SetConnectionID = func(id string) {
