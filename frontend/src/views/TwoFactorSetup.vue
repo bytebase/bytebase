@@ -91,7 +91,7 @@ import TwoFactorSecretModal from "@/components/TwoFactorSecretModal.vue";
 import { StepTab } from "@/components/v2";
 import { AUTH_2FA_SETUP_MODULE } from "@/router/auth";
 import { SETTING_ROUTE_PROFILE } from "@/router/dashboard/workspaceSetting";
-import { pushNotification, useAuthStore, useUserStore } from "@/store";
+import { pushNotification, useCurrentUserV1, useUserStore } from "@/store";
 import { UpdateUserRequest } from "@/types/proto/v1/user_service";
 
 const issuerName = "Bytebase";
@@ -115,7 +115,6 @@ const props = defineProps<{
 
 const { t } = useI18n();
 const router = useRouter();
-const authStore = useAuthStore();
 const userStore = useUserStore();
 const state = reactive<LocalState>({
   currentStep: SETUP_AUTH_APP_STEP,
@@ -124,6 +123,7 @@ const state = reactive<LocalState>({
   otpCode: "",
   recoveryCodesDownloaded: false,
 });
+const currentUser = useCurrentUserV1();
 
 const stepTabList = computed(() => {
   return [
@@ -131,7 +131,7 @@ const stepTabList = computed(() => {
     { title: t("two-factor.setup-steps.download-recovery-codes.self") },
   ];
 });
-const currentUser = computed(() => authStore.currentUser);
+
 const allowNext = computed(() => {
   if (state.currentStep === SETUP_AUTH_APP_STEP) {
     return state.otpCode.length >= 6;

@@ -2,6 +2,7 @@ import { ClientError, ServerError, Status } from "nice-grpc-common";
 import type { ClientMiddleware } from "nice-grpc-web";
 import { router } from "@/router";
 import { useAuthStore } from "@/store";
+import { UserServiceDefinition } from "@/types/proto/v1/user_service";
 
 export type IgnoreErrorsOptions = {
   /**
@@ -36,6 +37,13 @@ export const authInterceptorMiddleware: ClientMiddleware<IgnoreErrorsOptions> =
           // omit specified errors
         } else {
           if (code === Status.UNAUTHENTICATED) {
+            // Skip show login modal when the request is to get current user.
+            if (
+              call.method.path ===
+              `/${UserServiceDefinition.fullName}/${UserServiceDefinition.methods.getCurrentUser.name}`
+            ) {
+              return;
+            }
             // When receiving 401 and is returned by our server, it means the current
             // login user's token becomes invalid. Thus we force the user to login again.
             useAuthStore().showLoginModal = true;

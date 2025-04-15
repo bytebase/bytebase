@@ -155,18 +155,6 @@ export function randomString(
   return result;
 }
 
-export function getIntCookie(name: string): number | undefined {
-  const list = document.cookie.split(";");
-  for (let i = 0; i < list.length; i++) {
-    const parts = list[i].split("=");
-    if (parts[0].trim() == name) {
-      return parts.length > 1 ? parseInt(parts[1]) : undefined;
-    }
-  }
-
-  return undefined;
-}
-
 export function getHighlightHTMLByKeyWords(s: string, k: string) {
   if (!k) return s;
   return s.replaceAll(k, `<b class="text-accent">${k}</b>`);

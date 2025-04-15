@@ -157,10 +157,7 @@
             <FeatureBadge :feature="'bb.feature.2fa'" custom-class="ml-2" />
           </span>
           <div class="space-x-2">
-            <NButton
-              v-if="user.email === currentUserV1.email"
-              @click="enable2FA"
-            >
+            <NButton v-if="user.email === currentUser.email" @click="enable2FA">
               {{ isMFAEnabled ? $t("common.edit") : $t("common.enable") }}
             </NButton>
             <NButton v-if="isMFAEnabled" @click="disable2FA">
@@ -197,7 +194,7 @@
           </p>
           <RegenerateRecoveryCodesView
             v-if="state.showRegenerateRecoveryCodesView"
-            :recovery-codes="authStore.currentUser.recoveryCodes"
+            :recovery-codes="currentUser.recoveryCodes"
             @close="state.showRegenerateRecoveryCodesView = false"
           />
         </template>
@@ -247,7 +244,6 @@ import {
   featureToRef,
   pushNotification,
   useActuatorV1Store,
-  useAuthStore,
   useCurrentUserV1,
   useSettingV1Store,
   useUserStore,
@@ -284,8 +280,7 @@ const { t } = useI18n();
 const router = useRouter();
 const actuatorStore = useActuatorV1Store();
 const settingV1Store = useSettingV1Store();
-const authStore = useAuthStore();
-const currentUserV1 = useCurrentUserV1();
+const currentUser = useCurrentUserV1();
 const userStore = useUserStore();
 const workspaceStore = useWorkspaceV1Store();
 const permissionStore = usePermissionStore();
@@ -338,21 +333,21 @@ const isMFAEnabled = computed(() => {
 
 // only user can regenerate their recovery-codes.
 const showRegenerateRecoveryCodes = computed(() => {
-  return user.value.mfaEnabled && user.value.name === currentUserV1.value.name;
+  return user.value.mfaEnabled && user.value.name === currentUser.value.name;
 });
 
 const user = computedAsync(() => {
   if (props.principalEmail) {
     return userStore.getOrFetchUserByIdentifier(props.principalEmail);
   }
-  return currentUserV1.value;
+  return currentUser.value;
 }, unknownUser());
 
 const userRoles = computed(() => {
   return [...workspaceStore.getWorkspaceRolesByEmail(user.value.email)];
 });
 
-const isSelf = computed(() => currentUserV1.value.name === user.value.name);
+const isSelf = computed(() => currentUser.value.name === user.value.name);
 
 // User can change her own info.
 // Besides, owner can also change anyone's info. This is for resetting password in case user forgets.

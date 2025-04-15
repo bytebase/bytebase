@@ -66,13 +66,12 @@ export const router = createRouter({
 router.beforeEach((to, from, next) => {
   console.debug("Router %s -> %s", from.name, to.name);
 
+  const actuatorStore = useActuatorV1Store();
+  const authStore = useAuthStore();
+  const routerStore = useRouterStore();
   const disallowNavigateAwaySQLEditor = useAppFeature(
     "bb.feature.disallow-navigate-to-console"
   );
-
-  const authStore = useAuthStore();
-  const routerStore = useRouterStore();
-  const isLoggedIn = authStore.isLoggedIn();
 
   const fromModule = from.name
     ? from.name.toString().split(".")[0]
@@ -119,7 +118,7 @@ router.beforeEach((to, from, next) => {
     import("@/plugins/ai/store").then(({ useConversationStore }) => {
       useConversationStore().reset();
     });
-    if (isLoggedIn) {
+    if (authStore.isLoggedIn) {
       if (typeof to.query.redirect === "string") {
         location.replace(to.query.redirect);
         return;
@@ -130,7 +129,7 @@ router.beforeEach((to, from, next) => {
     }
     return;
   } else {
-    if (!isLoggedIn) {
+    if (!authStore.isLoggedIn) {
       const query: any = {
         ...(to.query || {}),
       };
@@ -168,10 +167,9 @@ router.beforeEach((to, from, next) => {
   }
 
   const currentUserV1 = useCurrentUserV1();
-  const serverInfo = useActuatorV1Store().serverInfo;
 
   // If 2FA is required, redirect to MFA setup page if the user has not enabled 2FA.
-  if (hasFeature("bb.feature.2fa") && serverInfo?.require2fa) {
+  if (hasFeature("bb.feature.2fa") && actuatorStore.serverInfo?.require2fa) {
     const user = currentUserV1.value;
     if (user && !user.mfaEnabled) {
       next({
