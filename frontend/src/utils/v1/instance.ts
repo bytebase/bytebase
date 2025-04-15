@@ -210,8 +210,9 @@ export const instanceV1HasExtraParameters = (
     Engine.POSTGRES,
     Engine.ORACLE,
     Engine.MSSQL,
+    Engine.MONGODB,
   ].includes(engine);
-}
+};
 
 export const instanceV1HasCollationAndCharacterSet = (
   instanceOrEngine: Instance | InstanceResource | Engine
@@ -392,7 +393,7 @@ export const engineNameV1 = (type: Engine): string => {
     case Engine.COSMOSDB:
       return "CosmosDB";
     case Engine.CASSANDRA:
-      return "Cassandra"
+      return "Cassandra";
     case Engine.TRINO:
       return "Trino";
   }

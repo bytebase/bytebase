@@ -227,6 +227,13 @@ func getBasicMongoDBConnectionURI(connConfig db.ConnectionConfig) string {
 	if connConfig.DataSource.GetDirectConnection() {
 		values.Add("directConnection", "true")
 	}
+
+	for k, v := range connConfig.DataSource.GetExtraConnectionParameters() {
+		if k == "" {
+			continue
+		}
+		values.Add(k, v)
+	}
 	u.RawQuery = values.Encode()
 
 	return u.String()
