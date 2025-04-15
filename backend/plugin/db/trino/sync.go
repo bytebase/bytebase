@@ -17,7 +17,7 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 		return nil, errors.Wrap(err, "failed to get Trino version")
 	}
 
-	catalogList, err := d.getCatalogList(ctx)
+	catalogList, err := d.getCatalog(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get catalog list")
 	}
@@ -115,7 +115,7 @@ func (d *Driver) queryStringValues(ctx context.Context, query string, args ...an
 	return results, nil
 }
 
-func (d *Driver) getCatalogList(ctx context.Context) ([]string, error) {
+func (d *Driver) getCatalog(ctx context.Context) ([]string, error) {
 	query := "SELECT name FROM system.metadata.catalogs ORDER BY name"
 	return d.queryStringValues(ctx, query)
 }
