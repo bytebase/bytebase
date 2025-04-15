@@ -1254,7 +1254,7 @@ func (s *SQLService) accessCheck(
 			if permission != "" {
 				ok, err := s.iamManager.CheckPermission(ctx, permission, user, project.ResourceID)
 				if err != nil {
-					return err
+					return status.Errorf(codes.Internal, "failed to check permission with error: %v", err.Error())
 				}
 				if !ok {
 					return status.Errorf(codes.PermissionDenied, "user %q does not have permission %q on project %q", user.Email, permission, project.ResourceID)

@@ -617,7 +617,7 @@ const file_v1_database_group_service_proto_rawDesc = "" +
 	"\x14DatabaseGroupService\x12\xb5\x01\n" +
 	"\x12ListDatabaseGroups\x12&.bytebase.v1.ListDatabaseGroupsRequest\x1a'.bytebase.v1.ListDatabaseGroupsResponse\"N\xdaA\x06parent\x8a\xea0\x0fbb.projects.get\x90\xea0\x01\x82\xd3\xe4\x93\x02(\x12&/v1/{parent=projects/*}/databaseGroups\x12\xa2\x01\n" +
 	"\x10GetDatabaseGroup\x12$.bytebase.v1.GetDatabaseGroupRequest\x1a\x1a.bytebase.v1.DatabaseGroup\"L\xdaA\x04name\x8a\xea0\x0fbb.projects.get\x90\xea0\x01\x82\xd3\xe4\x93\x02(\x12&/v1/{name=projects/*/databaseGroups/*}\x12\xcf\x01\n" +
-	"\x13CreateDatabaseGroup\x12'.bytebase.v1.CreateDatabaseGroupRequest\x1a\x1a.bytebase.v1.DatabaseGroup\"s\xdaA\x14parent,databaseGroup\x8a\xea0\x12bb.projects.update\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x028:\x0edatabase_group\"&/v1/{parent=projects/*}/databaseGroups\x12\xe5\x01\n" +
+	"\x13CreateDatabaseGroup\x12'.bytebase.v1.CreateDatabaseGroupRequest\x1a\x1a.bytebase.v1.DatabaseGroup\"s\xdaA\x14parent,databaseGroup\x8a\xea0\x12bb.projects.update\x90\xea0\x02\x98\xea0\x01\x82\xd3\xe4\x93\x028:\x0edatabase_group\"&/v1/{parent=projects/*}/databaseGroups\x12\xe5\x01\n" +
 	"\x13UpdateDatabaseGroup\x12'.bytebase.v1.UpdateDatabaseGroupRequest\x1a\x1a.bytebase.v1.DatabaseGroup\"\x88\x01\xdaA\x1adatabase_group,update_mask\x8a\xea0\x12bb.projects.update\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02G:\x0edatabase_group25/v1/{database_group.name=projects/*/databaseGroups/*}\x12\xab\x01\n" +
 	"\x13DeleteDatabaseGroup\x12'.bytebase.v1.DeleteDatabaseGroupRequest\x1a\x16.google.protobuf.Empty\"S\xdaA\x04name\x8a\xea0\x12bb.projects.update\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02(*&/v1/{name=projects/*/databaseGroups/*}B\x11Z\x0fgenerated-go/v1b\x06proto3"
 

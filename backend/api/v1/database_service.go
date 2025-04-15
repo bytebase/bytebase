@@ -315,7 +315,7 @@ func (s *DatabaseService) ListDatabases(ctx context.Context, request *v1pb.ListD
 		}
 		ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionProjectsGet, user, p)
 		if err != nil {
-			return nil, err
+			return nil, status.Errorf(codes.Internal, "failed to check permission with error: %v", err.Error())
 		}
 		if !ok {
 			return nil, status.Errorf(codes.PermissionDenied, "user does not have permission %q", iam.PermissionProjectsGet)
@@ -324,7 +324,7 @@ func (s *DatabaseService) ListDatabases(ctx context.Context, request *v1pb.ListD
 	case strings.HasPrefix(request.Parent, common.WorkspacePrefix):
 		ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionDatabasesList, user)
 		if err != nil {
-			return nil, err
+			return nil, status.Errorf(codes.Internal, "failed to check permission with error: %v", err.Error())
 		}
 		if !ok {
 			return nil, status.Errorf(codes.PermissionDenied, "user does not have permission %q", iam.PermissionDatabasesList)
@@ -332,7 +332,7 @@ func (s *DatabaseService) ListDatabases(ctx context.Context, request *v1pb.ListD
 	case strings.HasPrefix(request.Parent, common.InstanceNamePrefix):
 		ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionInstancesGet, user)
 		if err != nil {
-			return nil, err
+			return nil, status.Errorf(codes.Internal, "failed to check permission with error: %v", err.Error())
 		}
 		if !ok {
 			return nil, status.Errorf(codes.PermissionDenied, "user does not have permission %q", iam.PermissionInstancesGet)

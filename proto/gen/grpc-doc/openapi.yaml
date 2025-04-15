@@ -919,7 +919,7 @@ paths:
                 - name: filter
                   in: query
                   description: |-
-                    Filter the project.
+                    Filter the instance.
                      Supported filters:
                      - name
                      - resource_id
