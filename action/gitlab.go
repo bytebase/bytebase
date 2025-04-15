@@ -56,7 +56,7 @@ func writeReleaseCheckToCodeQualityJSON(resp *v1pb.CheckReleaseResponse) error {
 	default:
 		riskDetail = "⚪ None"
 	}
-	details := fmt.Sprintf(`• Total Affected Rows: %d
+	details := fmt.Sprintf(`Summary: • Total Affected Rows: %d
 • Overall Risk Level: %s
 • Advices Statistics: %d Error(s), %d Warning(s)`, resp.GetAffectedRows(), riskDetail, errorCount, warningCount)
 	data = append(data, Finding{
