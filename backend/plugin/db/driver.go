@@ -234,6 +234,9 @@ type ExecuteOptions struct {
 	// Record the connection id first before executing.
 	SetConnectionID    func(id string)
 	DeleteConnectionID func()
+
+	// The maximum number of retries for lock timeout statements.
+	MaximumRetries int
 }
 
 func (o *ExecuteOptions) LogDatabaseSyncStart() {
@@ -322,6 +325,23 @@ func (o *ExecuteOptions) LogCommandResponse(commandIndexes []int32, affectedRows
 	})
 	if err != nil {
 		slog.Warn("failed to log command response", log.BBError(err))
+	}
+}
+
+func (o *ExecuteOptions) LogRetryInfo(err error, retryCount int) {
+	if o == nil || o.CreateTaskRunLog == nil {
+		return
+	}
+	err = o.CreateTaskRunLog(time.Now(), &storepb.TaskRunLog{
+		Type: storepb.TaskRunLog_RETRY_INFO,
+		RetryInfo: &storepb.TaskRunLog_RetryInfo{
+			Error:          err.Error(),
+			RetryCount:     int32(retryCount),
+			MaximumRetries: int32(o.MaximumRetries),
+		},
+	})
+	if err != nil {
+		slog.Warn("failed to log retry info", log.BBError(err))
 	}
 }
 

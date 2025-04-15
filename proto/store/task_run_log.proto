@@ -19,6 +19,7 @@ message TaskRunLog {
     TRANSACTION_CONTROL = 8;
     PRIOR_BACKUP_START = 9;
     PRIOR_BACKUP_END = 10;
+    RETRY_INFO = 11;
   }
   Type type = 1;
   string deploy_id = 12;
@@ -32,6 +33,7 @@ message TaskRunLog {
   TransactionControl transaction_control = 9;
   PriorBackupStart prior_backup_start = 10;
   PriorBackupEnd prior_backup_end = 11;
+  RetryInfo retry_info = 13;
 
   message SchemaDumpStart {}
   message SchemaDumpEnd {
@@ -78,5 +80,10 @@ message TaskRunLog {
   message PriorBackupEnd {
     PriorBackupDetail prior_backup_detail = 1;
     string error = 2;
+  }
+  message RetryInfo {
+    string error = 1;
+    int32 retry_count = 2;
+    int32 maximum_retries = 3;
   }
 }

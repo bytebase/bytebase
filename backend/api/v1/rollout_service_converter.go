@@ -1026,6 +1026,18 @@ func convertToTaskRunLogEntries(logs []*store.TaskRunLog) []*v1pb.TaskRunLogEntr
 			prev.PriorBackup.EndTime = timestamppb.New(l.T)
 			prev.PriorBackup.Error = l.Payload.PriorBackupEnd.Error
 			prev.PriorBackup.PriorBackupDetail = convertToTaskRunPriorBackupDetail(l.Payload.PriorBackupEnd.PriorBackupDetail)
+		case storepb.TaskRunLog_RETRY_INFO:
+			e := &v1pb.TaskRunLogEntry{
+				Type:     v1pb.TaskRunLogEntry_RETRY_INFO,
+				LogTime:  timestamppb.New(l.T),
+				DeployId: l.Payload.DeployId,
+				RetryInfo: &v1pb.TaskRunLogEntry_RetryInfo{
+					RetryCount:     l.Payload.RetryInfo.RetryCount,
+					MaximumRetries: l.Payload.RetryInfo.MaximumRetries,
+					Error:          l.Payload.RetryInfo.Error,
+				},
+			}
+			entries = append(entries, e)
 		}
 	}
 

@@ -206,6 +206,13 @@ export interface Project {
   postgresDatabaseTenantMode: boolean;
   /** Whether to allow the issue creator to self-approve the issue. */
   allowSelfApproval: boolean;
+  /** Execution retry policy for the task run. */
+  executionRetryPolicy: Project_ExecutionRetryPolicy | undefined;
+}
+
+export interface Project_ExecutionRetryPolicy {
+  /** The maximum number of retries for the lock timeout issue. */
+  maximumRetries: number;
 }
 
 export interface AddWebhookRequest {
@@ -1662,6 +1669,7 @@ function createBaseProject(): Project {
     skipBackupErrors: false,
     postgresDatabaseTenantMode: false,
     allowSelfApproval: false,
+    executionRetryPolicy: undefined,
   };
 }
 
@@ -1708,6 +1716,9 @@ export const Project: MessageFns<Project> = {
     }
     if (message.allowSelfApproval !== false) {
       writer.uint32(168).bool(message.allowSelfApproval);
+    }
+    if (message.executionRetryPolicy !== undefined) {
+      Project_ExecutionRetryPolicy.encode(message.executionRetryPolicy, writer.uint32(178).fork()).join();
     }
     return writer;
   },
@@ -1831,6 +1842,14 @@ export const Project: MessageFns<Project> = {
           message.allowSelfApproval = reader.bool();
           continue;
         }
+        case 22: {
+          if (tag !== 178) {
+            break;
+          }
+
+          message.executionRetryPolicy = Project_ExecutionRetryPolicy.decode(reader, reader.uint32());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1864,6 +1883,9 @@ export const Project: MessageFns<Project> = {
         ? globalThis.Boolean(object.postgresDatabaseTenantMode)
         : false,
       allowSelfApproval: isSet(object.allowSelfApproval) ? globalThis.Boolean(object.allowSelfApproval) : false,
+      executionRetryPolicy: isSet(object.executionRetryPolicy)
+        ? Project_ExecutionRetryPolicy.fromJSON(object.executionRetryPolicy)
+        : undefined,
     };
   },
 
@@ -1911,6 +1933,9 @@ export const Project: MessageFns<Project> = {
     if (message.allowSelfApproval !== false) {
       obj.allowSelfApproval = message.allowSelfApproval;
     }
+    if (message.executionRetryPolicy !== undefined) {
+      obj.executionRetryPolicy = Project_ExecutionRetryPolicy.toJSON(message.executionRetryPolicy);
+    }
     return obj;
   },
 
@@ -1933,6 +1958,67 @@ export const Project: MessageFns<Project> = {
     message.skipBackupErrors = object.skipBackupErrors ?? false;
     message.postgresDatabaseTenantMode = object.postgresDatabaseTenantMode ?? false;
     message.allowSelfApproval = object.allowSelfApproval ?? false;
+    message.executionRetryPolicy = (object.executionRetryPolicy !== undefined && object.executionRetryPolicy !== null)
+      ? Project_ExecutionRetryPolicy.fromPartial(object.executionRetryPolicy)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseProject_ExecutionRetryPolicy(): Project_ExecutionRetryPolicy {
+  return { maximumRetries: 0 };
+}
+
+export const Project_ExecutionRetryPolicy: MessageFns<Project_ExecutionRetryPolicy> = {
+  encode(message: Project_ExecutionRetryPolicy, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.maximumRetries !== 0) {
+      writer.uint32(8).int32(message.maximumRetries);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): Project_ExecutionRetryPolicy {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseProject_ExecutionRetryPolicy();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.maximumRetries = reader.int32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): Project_ExecutionRetryPolicy {
+    return { maximumRetries: isSet(object.maximumRetries) ? globalThis.Number(object.maximumRetries) : 0 };
+  },
+
+  toJSON(message: Project_ExecutionRetryPolicy): unknown {
+    const obj: any = {};
+    if (message.maximumRetries !== 0) {
+      obj.maximumRetries = Math.round(message.maximumRetries);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<Project_ExecutionRetryPolicy>): Project_ExecutionRetryPolicy {
+    return Project_ExecutionRetryPolicy.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<Project_ExecutionRetryPolicy>): Project_ExecutionRetryPolicy {
+    const message = createBaseProject_ExecutionRetryPolicy();
+    message.maximumRetries = object.maximumRetries ?? 0;
     return message;
   },
 };

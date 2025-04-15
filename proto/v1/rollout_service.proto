@@ -558,6 +558,7 @@ message TaskRunLogEntry {
     TASK_RUN_STATUS_UPDATE = 4;
     TRANSACTION_CONTROL = 5;
     PRIOR_BACKUP = 6;
+    RETRY_INFO = 7;
   }
   Type type = 1;
   google.protobuf.Timestamp log_time = 6;
@@ -568,6 +569,7 @@ message TaskRunLogEntry {
   TaskRunStatusUpdate task_run_status_update = 5;
   TransactionControl transaction_control = 7;
   PriorBackup prior_backup = 8;
+  RetryInfo retry_info = 9;
 
   message SchemaDump {
     google.protobuf.Timestamp start_time = 1;
@@ -624,6 +626,12 @@ message TaskRunLogEntry {
     google.protobuf.Timestamp end_time = 2;
     TaskRun.PriorBackupDetail prior_backup_detail = 3;
     string error = 4;
+  }
+
+  message RetryInfo {
+    string error = 1;
+    int32 retry_count = 2;
+    int32 maximum_retries = 3;
   }
 }
 

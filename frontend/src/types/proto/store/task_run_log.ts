@@ -24,6 +24,7 @@ export interface TaskRunLog {
   transactionControl: TaskRunLog_TransactionControl | undefined;
   priorBackupStart: TaskRunLog_PriorBackupStart | undefined;
   priorBackupEnd: TaskRunLog_PriorBackupEnd | undefined;
+  retryInfo: TaskRunLog_RetryInfo | undefined;
 }
 
 export enum TaskRunLog_Type {
@@ -38,6 +39,7 @@ export enum TaskRunLog_Type {
   TRANSACTION_CONTROL = "TRANSACTION_CONTROL",
   PRIOR_BACKUP_START = "PRIOR_BACKUP_START",
   PRIOR_BACKUP_END = "PRIOR_BACKUP_END",
+  RETRY_INFO = "RETRY_INFO",
   UNRECOGNIZED = "UNRECOGNIZED",
 }
 
@@ -76,6 +78,9 @@ export function taskRunLog_TypeFromJSON(object: any): TaskRunLog_Type {
     case 10:
     case "PRIOR_BACKUP_END":
       return TaskRunLog_Type.PRIOR_BACKUP_END;
+    case 11:
+    case "RETRY_INFO":
+      return TaskRunLog_Type.RETRY_INFO;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -107,6 +112,8 @@ export function taskRunLog_TypeToJSON(object: TaskRunLog_Type): string {
       return "PRIOR_BACKUP_START";
     case TaskRunLog_Type.PRIOR_BACKUP_END:
       return "PRIOR_BACKUP_END";
+    case TaskRunLog_Type.RETRY_INFO:
+      return "RETRY_INFO";
     case TaskRunLog_Type.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
@@ -137,6 +144,8 @@ export function taskRunLog_TypeToNumber(object: TaskRunLog_Type): number {
       return 9;
     case TaskRunLog_Type.PRIOR_BACKUP_END:
       return 10;
+    case TaskRunLog_Type.RETRY_INFO:
+      return 11;
     case TaskRunLog_Type.UNRECOGNIZED:
     default:
       return -1;
@@ -307,6 +316,12 @@ export interface TaskRunLog_PriorBackupEnd {
   error: string;
 }
 
+export interface TaskRunLog_RetryInfo {
+  error: string;
+  retryCount: number;
+  maximumRetries: number;
+}
+
 function createBaseTaskRunLog(): TaskRunLog {
   return {
     type: TaskRunLog_Type.TYPE_UNSPECIFIED,
@@ -321,6 +336,7 @@ function createBaseTaskRunLog(): TaskRunLog {
     transactionControl: undefined,
     priorBackupStart: undefined,
     priorBackupEnd: undefined,
+    retryInfo: undefined,
   };
 }
 
@@ -361,6 +377,9 @@ export const TaskRunLog: MessageFns<TaskRunLog> = {
     }
     if (message.priorBackupEnd !== undefined) {
       TaskRunLog_PriorBackupEnd.encode(message.priorBackupEnd, writer.uint32(90).fork()).join();
+    }
+    if (message.retryInfo !== undefined) {
+      TaskRunLog_RetryInfo.encode(message.retryInfo, writer.uint32(106).fork()).join();
     }
     return writer;
   },
@@ -468,6 +487,14 @@ export const TaskRunLog: MessageFns<TaskRunLog> = {
           message.priorBackupEnd = TaskRunLog_PriorBackupEnd.decode(reader, reader.uint32());
           continue;
         }
+        case 13: {
+          if (tag !== 106) {
+            break;
+          }
+
+          message.retryInfo = TaskRunLog_RetryInfo.decode(reader, reader.uint32());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -509,6 +536,7 @@ export const TaskRunLog: MessageFns<TaskRunLog> = {
       priorBackupEnd: isSet(object.priorBackupEnd)
         ? TaskRunLog_PriorBackupEnd.fromJSON(object.priorBackupEnd)
         : undefined,
+      retryInfo: isSet(object.retryInfo) ? TaskRunLog_RetryInfo.fromJSON(object.retryInfo) : undefined,
     };
   },
 
@@ -550,6 +578,9 @@ export const TaskRunLog: MessageFns<TaskRunLog> = {
     if (message.priorBackupEnd !== undefined) {
       obj.priorBackupEnd = TaskRunLog_PriorBackupEnd.toJSON(message.priorBackupEnd);
     }
+    if (message.retryInfo !== undefined) {
+      obj.retryInfo = TaskRunLog_RetryInfo.toJSON(message.retryInfo);
+    }
     return obj;
   },
 
@@ -589,6 +620,9 @@ export const TaskRunLog: MessageFns<TaskRunLog> = {
       : undefined;
     message.priorBackupEnd = (object.priorBackupEnd !== undefined && object.priorBackupEnd !== null)
       ? TaskRunLog_PriorBackupEnd.fromPartial(object.priorBackupEnd)
+      : undefined;
+    message.retryInfo = (object.retryInfo !== undefined && object.retryInfo !== null)
+      ? TaskRunLog_RetryInfo.fromPartial(object.retryInfo)
       : undefined;
     return message;
   },
@@ -1265,6 +1299,98 @@ export const TaskRunLog_PriorBackupEnd: MessageFns<TaskRunLog_PriorBackupEnd> = 
       ? PriorBackupDetail.fromPartial(object.priorBackupDetail)
       : undefined;
     message.error = object.error ?? "";
+    return message;
+  },
+};
+
+function createBaseTaskRunLog_RetryInfo(): TaskRunLog_RetryInfo {
+  return { error: "", retryCount: 0, maximumRetries: 0 };
+}
+
+export const TaskRunLog_RetryInfo: MessageFns<TaskRunLog_RetryInfo> = {
+  encode(message: TaskRunLog_RetryInfo, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.error !== "") {
+      writer.uint32(10).string(message.error);
+    }
+    if (message.retryCount !== 0) {
+      writer.uint32(16).int32(message.retryCount);
+    }
+    if (message.maximumRetries !== 0) {
+      writer.uint32(24).int32(message.maximumRetries);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): TaskRunLog_RetryInfo {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseTaskRunLog_RetryInfo();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.error = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.retryCount = reader.int32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.maximumRetries = reader.int32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): TaskRunLog_RetryInfo {
+    return {
+      error: isSet(object.error) ? globalThis.String(object.error) : "",
+      retryCount: isSet(object.retryCount) ? globalThis.Number(object.retryCount) : 0,
+      maximumRetries: isSet(object.maximumRetries) ? globalThis.Number(object.maximumRetries) : 0,
+    };
+  },
+
+  toJSON(message: TaskRunLog_RetryInfo): unknown {
+    const obj: any = {};
+    if (message.error !== "") {
+      obj.error = message.error;
+    }
+    if (message.retryCount !== 0) {
+      obj.retryCount = Math.round(message.retryCount);
+    }
+    if (message.maximumRetries !== 0) {
+      obj.maximumRetries = Math.round(message.maximumRetries);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<TaskRunLog_RetryInfo>): TaskRunLog_RetryInfo {
+    return TaskRunLog_RetryInfo.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<TaskRunLog_RetryInfo>): TaskRunLog_RetryInfo {
+    const message = createBaseTaskRunLog_RetryInfo();
+    message.error = object.error ?? "";
+    message.retryCount = object.retryCount ?? 0;
+    message.maximumRetries = object.maximumRetries ?? 0;
     return message;
   },
 };
