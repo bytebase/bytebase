@@ -55,7 +55,7 @@ func writeCreateTable(buf *strings.Builder, catalog string, schema string, table
 	}
 
 	// Close the CREATE TABLE statement
-	if _, err := buf.WriteString("\n);"); err != nil {
+	if _, err := buf.WriteString("\n);\n\n"); err != nil {
 		return err
 	}
 

@@ -57,6 +57,7 @@ import (
 	_ "github.com/bytebase/bytebase/backend/plugin/schema/pg"
 	_ "github.com/bytebase/bytebase/backend/plugin/schema/redshift"
 	_ "github.com/bytebase/bytebase/backend/plugin/schema/tidb"
+	_ "github.com/bytebase/bytebase/backend/plugin/schema/trino"
 
 	// Transformers.
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/sql/transform/mysql"
