@@ -68,13 +68,11 @@ func (*BuiltinPriorBackupCheckAdvisor) Check(_ context.Context, checkCtx advisor
 	name := extractDatabaseName(checkCtx.PreUpdateBackupDetail.Database)
 	if !checkCtx.Catalog.Origin.HasSchema(name) {
 		adviceList = append(adviceList, &storepb.Advice{
-			Status:  level,
-			Title:   title,
-			Content: fmt.Sprintf("Need schema %q to do prior backup but it does not exist", name),
-			Code:    advisor.SchemaNotExists.Int32(),
-			StartPosition: &storepb.Position{
-				Line: 0,
-			},
+			Status:        level,
+			Title:         title,
+			Content:       fmt.Sprintf("Need schema %q to do prior backup but it does not exist", name),
+			Code:          advisor.SchemaNotExists.Int32(),
+			StartPosition: advisor.DefaultPosition,
 		})
 	}
 
@@ -98,13 +96,11 @@ func (*BuiltinPriorBackupCheckAdvisor) Check(_ context.Context, checkCtx advisor
 			}
 			if statementType != item.table.StatementType {
 				adviceList = append(adviceList, &storepb.Advice{
-					Status:  level,
-					Title:   title,
-					Content: fmt.Sprintf("The statement type is not the same for all statements on the same table %q", key),
-					Code:    advisor.BuiltinPriorBackupCheck.Int32(),
-					StartPosition: &storepb.Position{
-						Line: 1,
-					},
+					Status:        level,
+					Title:         title,
+					Content:       fmt.Sprintf("The statement type is not the same for all statements on the same table %q", key),
+					Code:          advisor.BuiltinPriorBackupCheck.Int32(),
+					StartPosition: advisor.DefaultPosition,
 				})
 				break
 			}
