@@ -101,6 +101,7 @@ func (*BuiltinPriorBackupCheckAdvisor) Check(_ context.Context, checkCtx advisor
 					Content:       fmt.Sprintf("The statement type is not the same for all statements on the same table %q", key),
 					Code:          advisor.BuiltinPriorBackupCheck.Int32(),
 					StartPosition: advisor.DefaultPosition,
+					EndPosition:   &storepb.Position{},
 				})
 				break
 			}
