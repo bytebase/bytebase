@@ -623,6 +623,13 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 				if count > 0 {
 					return nil, status.Errorf(codes.FailedPrecondition, "all instances in the environment %v should be deleted first", env.Id)
 				}
+				uses, err := s.store.CheckDatabaseUseEnvironment(ctx, env.Id)
+				if err != nil {
+					return nil, status.Error(codes.Internal, err.Error())
+				}
+				if uses {
+					return nil, status.Errorf(codes.FailedPrecondition, "all databases in the environment %v should be deleted first", env.Id)
+				}
 			}
 		}
 
