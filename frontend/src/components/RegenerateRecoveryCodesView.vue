@@ -19,9 +19,9 @@
 
 <script lang="ts" setup>
 import { NButton } from "naive-ui";
-import { computed, onMounted, reactive } from "vue";
+import { onMounted, reactive } from "vue";
 import { useI18n } from "vue-i18n";
-import { pushNotification, useAuthStore, useUserStore } from "@/store";
+import { pushNotification, useCurrentUserV1, useUserStore } from "@/store";
 import { UpdateUserRequest } from "@/types/proto/v1/user_service";
 import RecoveryCodesView from "./RecoveryCodesView.vue";
 
@@ -41,13 +41,11 @@ const props = withDefaults(
 const emit = defineEmits(["close"]);
 
 const { t } = useI18n();
-const authStore = useAuthStore();
 const userStore = useUserStore();
 const state = reactive<LocalState>({
   recoveryCodesDownloaded: false,
 });
-
-const currentUser = computed(() => authStore.currentUser);
+const currentUser = useCurrentUserV1();
 
 onMounted(() => {
   regenerateTempMfaSecret();

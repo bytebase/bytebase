@@ -1,10 +1,10 @@
 import { computed, unref, watchEffect } from "vue";
 import {
   candidatesOfApprovalStepV1,
-  useAuthStore,
   batchGetOrFetchUsers,
+  useCurrentUserV1,
+  userNamePrefix,
 } from "@/store";
-import { userNamePrefix } from "@/store/modules/v1/common";
 import type {
   ReviewFlow,
   MaybeRef,
@@ -96,8 +96,10 @@ export const useWrappedReviewStepsV1 = (
   issue: MaybeRef<ComposedIssue>,
   context: ReviewContext
 ) => {
+  const currentUser = useCurrentUserV1();
+  // Format: users/{email}
   const currentUserName = computed(
-    () => `${userNamePrefix}${useAuthStore().currentUser.email}`
+    () => `${userNamePrefix}${currentUser.value.email}`
   );
 
   watchEffect(async () => {

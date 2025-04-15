@@ -280,7 +280,10 @@ func getTablesTx(txn *sql.Tx, dbName string) ([]*TableSchema, error) {
 		tables = append(tables, &tbl)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "rows err")
+	}
+	if err := rows.Close(); err != nil {
+		return nil, errors.Wrapf(err, "failed to close rows")
 	}
 	for _, tbl := range tables {
 		stmt, err := getTableStmt(txn, dbName, tbl.Name, tbl.TableType)
