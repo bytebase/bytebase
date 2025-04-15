@@ -154,7 +154,7 @@ message ListInstancesRequest {
   // Show deleted instances if specified.
   bool show_deleted = 3;
 
-  // Filter the project.
+  // Filter the instance.
   // Supported filters:
   // - name
   // - resource_id
