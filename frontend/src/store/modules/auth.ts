@@ -20,6 +20,7 @@ import { User, UserType } from "@/types/proto/v1/user_service";
 export const useAuthStore = defineStore("auth_v1", () => {
   const userStore = useUserStore();
   const showLoginModal = ref<boolean>(false);
+  // Format: users/{user}. {user} is a system-generated unique ID.
   const currentUserName = ref<string | undefined>(undefined);
 
   const isLoggedIn = computed(() => {
