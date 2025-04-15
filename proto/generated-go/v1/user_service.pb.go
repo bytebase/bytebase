@@ -759,9 +759,10 @@ const file_v1_user_service_proto_rawDesc = "" +
 	"\x04USER\x10\x01\x12\x0e\n" +
 	"\n" +
 	"SYSTEM_BOT\x10\x02\x12\x13\n" +
-	"\x0fSERVICE_ACCOUNT\x10\x032\xb2\x05\n" +
+	"\x0fSERVICE_ACCOUNT\x10\x032\x8d\x06\n" +
 	"\vUserService\x12`\n" +
-	"\aGetUser\x12\x1b.bytebase.v1.GetUserRequest\x1a\x11.bytebase.v1.User\"%\xdaA\x04name\x90\xea0\x02\x82\xd3\xe4\x93\x02\x14\x12\x12/v1/{name=users/*}\x12j\n" +
+	"\aGetUser\x12\x1b.bytebase.v1.GetUserRequest\x1a\x11.bytebase.v1.User\"%\xdaA\x04name\x90\xea0\x02\x82\xd3\xe4\x93\x02\x14\x12\x12/v1/{name=users/*}\x12Y\n" +
+	"\x0eGetCurrentUser\x12\x16.google.protobuf.Empty\x1a\x11.bytebase.v1.User\"\x1c\x80\xea0\x01\x90\xea0\x02\x82\xd3\xe4\x93\x02\x0e\x12\f/v1/users/me\x12j\n" +
 	"\tListUsers\x12\x1d.bytebase.v1.ListUsersRequest\x1a\x1e.bytebase.v1.ListUsersResponse\"\x1e\xdaA\x06parent\x90\xea0\x02\x82\xd3\xe4\x93\x02\v\x12\t/v1/users\x12k\n" +
 	"\n" +
 	"CreateUser\x12\x1e.bytebase.v1.CreateUserRequest\x1a\x11.bytebase.v1.User\"*\xdaA\x04user\x80\xea0\x01\x90\xea0\x02\x98\xea0\x01\x82\xd3\xe4\x93\x02\x11:\x04user\"\t/v1/users\x12\x81\x01\n" +
@@ -812,19 +813,21 @@ var file_v1_user_service_proto_depIdxs = []int32{
 	12, // 7: bytebase.v1.User.Profile.last_login_time:type_name -> google.protobuf.Timestamp
 	12, // 8: bytebase.v1.User.Profile.last_change_password_time:type_name -> google.protobuf.Timestamp
 	1,  // 9: bytebase.v1.UserService.GetUser:input_type -> bytebase.v1.GetUserRequest
-	2,  // 10: bytebase.v1.UserService.ListUsers:input_type -> bytebase.v1.ListUsersRequest
-	4,  // 11: bytebase.v1.UserService.CreateUser:input_type -> bytebase.v1.CreateUserRequest
-	5,  // 12: bytebase.v1.UserService.UpdateUser:input_type -> bytebase.v1.UpdateUserRequest
-	6,  // 13: bytebase.v1.UserService.DeleteUser:input_type -> bytebase.v1.DeleteUserRequest
-	7,  // 14: bytebase.v1.UserService.UndeleteUser:input_type -> bytebase.v1.UndeleteUserRequest
-	8,  // 15: bytebase.v1.UserService.GetUser:output_type -> bytebase.v1.User
-	3,  // 16: bytebase.v1.UserService.ListUsers:output_type -> bytebase.v1.ListUsersResponse
-	8,  // 17: bytebase.v1.UserService.CreateUser:output_type -> bytebase.v1.User
-	8,  // 18: bytebase.v1.UserService.UpdateUser:output_type -> bytebase.v1.User
-	13, // 19: bytebase.v1.UserService.DeleteUser:output_type -> google.protobuf.Empty
-	8,  // 20: bytebase.v1.UserService.UndeleteUser:output_type -> bytebase.v1.User
-	15, // [15:21] is the sub-list for method output_type
-	9,  // [9:15] is the sub-list for method input_type
+	13, // 10: bytebase.v1.UserService.GetCurrentUser:input_type -> google.protobuf.Empty
+	2,  // 11: bytebase.v1.UserService.ListUsers:input_type -> bytebase.v1.ListUsersRequest
+	4,  // 12: bytebase.v1.UserService.CreateUser:input_type -> bytebase.v1.CreateUserRequest
+	5,  // 13: bytebase.v1.UserService.UpdateUser:input_type -> bytebase.v1.UpdateUserRequest
+	6,  // 14: bytebase.v1.UserService.DeleteUser:input_type -> bytebase.v1.DeleteUserRequest
+	7,  // 15: bytebase.v1.UserService.UndeleteUser:input_type -> bytebase.v1.UndeleteUserRequest
+	8,  // 16: bytebase.v1.UserService.GetUser:output_type -> bytebase.v1.User
+	8,  // 17: bytebase.v1.UserService.GetCurrentUser:output_type -> bytebase.v1.User
+	3,  // 18: bytebase.v1.UserService.ListUsers:output_type -> bytebase.v1.ListUsersResponse
+	8,  // 19: bytebase.v1.UserService.CreateUser:output_type -> bytebase.v1.User
+	8,  // 20: bytebase.v1.UserService.UpdateUser:output_type -> bytebase.v1.User
+	13, // 21: bytebase.v1.UserService.DeleteUser:output_type -> google.protobuf.Empty
+	8,  // 22: bytebase.v1.UserService.UndeleteUser:output_type -> bytebase.v1.User
+	16, // [16:23] is the sub-list for method output_type
+	9,  // [9:16] is the sub-list for method input_type
 	9,  // [9:9] is the sub-list for extension type_name
 	9,  // [9:9] is the sub-list for extension extendee
 	0,  // [0:9] is the sub-list for field type_name
