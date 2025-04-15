@@ -152,11 +152,6 @@ func (d *Driver) fetchAllTablesForCatalog(ctx context.Context, catalog string, s
 		if err := rows.Scan(&schemaName, &tableName); err != nil {
 			return nil, errors.Wrap(err, "failed to scan table row")
 		}
-
-		if tableName != "" {
-			table := &storepb.TableMetadata{Name: tableName}
-			allTables[schemaName] = append(allTables[schemaName], table)
-		}
 	}
 
 	if err := rows.Err(); err != nil {
