@@ -32,18 +32,9 @@ const (
 
 // SyncInstance syncs the instance.
 func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
-	if d.db == nil {
-		return nil, errors.New("database connection not established")
-	}
-
 	version, err := d.getVersion(ctx)
 	if err != nil {
-		slog.Warn("failed to get Trino version", log.BBError(err))
-		version = "Trino (version unknown)"
-	}
-
-	if err := d.verifyConnection(ctx); err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed to get Trino version")
 	}
 
 	catalogList, err := d.getCatalogList(ctx)
@@ -114,7 +105,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 
 	var schemas []*storepb.SchemaMetadata
 	for _, schemaName := range schemaNames {
-		tables, err := d.fetchTablesForSchema(ctx, catalog, schemaName)
+		tables, err := d.fetchTablesForSchema(ctx, schemaName)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to fetch tables for schema %s", schemaName)
 		}
@@ -129,31 +120,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 	return dbMeta, nil
 }
 
-func (d *Driver) verifyConnection(ctx context.Context) error {
-	queryCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
-	_, err := d.db.ExecContext(queryCtx, "SELECT 1")
-	cancel()
-
-	if err == nil {
-		return nil
-	}
-
-	fallbackCtx, fallbackCancel := context.WithTimeout(ctx, 5*time.Second)
-	_, err = d.db.ExecContext(fallbackCtx, "SHOW CATALOGS")
-	fallbackCancel()
-
-	if err != nil {
-		return errors.Wrap(err, "connection not functional")
-	}
-
-	return nil
-}
-
 func (d *Driver) getVersion(ctx context.Context) (string, error) {
-	if d.db == nil {
-		return "", errors.New("database connection not established")
-	}
-
 	queries := []string{
 		"SELECT VERSION()",
 		"SELECT node_version FROM system.runtime.nodes LIMIT 1",
@@ -161,6 +128,7 @@ func (d *Driver) getVersion(ctx context.Context) (string, error) {
 		"SELECT query_engine_version FROM system.metadata.query_engine LIMIT 1",
 	}
 
+	var lastErr error
 	for _, query := range queries {
 		versionCtx, cancel := context.WithTimeout(ctx, 3*time.Second)
 		var version string
@@ -169,9 +137,10 @@ func (d *Driver) getVersion(ctx context.Context) (string, error) {
 		if err == nil {
 			return version, nil
 		}
+		lastErr = err
 	}
 
-	return "Trino (version unknown)", nil
+	return "", errors.Wrap(lastErr, "failed to get Trino version")
 }
 
 func (d *Driver) queryStringValues(ctx context.Context, query string) ([]string, error) {
@@ -278,81 +247,33 @@ func (d *Driver) queryColumns(ctx context.Context, query string) ([]*storepb.Col
 	return columns, nil
 }
 
-func (d *Driver) fetchColumnsForTable(ctx context.Context, catalog, schema, table string) ([]*storepb.ColumnMetadata, error) {
-	jdbcQuery := fmt.Sprintf(
-		"SELECT column_name, type_name as data_type, 'YES' as is_nullable "+
+func (d *Driver) fetchColumnsForTable(ctx context.Context, schema, table string) ([]*storepb.ColumnMetadata, error) {
+	query := fmt.Sprintf(
+		"SELECT column_name, type_name as data_type, is_nullable "+
 			"FROM system.jdbc.columns "+
 			"WHERE table_schem = '%s' AND table_name = '%s'",
 		schema, table)
 
-	columns, err := d.queryColumns(ctx, jdbcQuery)
-	if err == nil && len(columns) > 0 {
-		return columns, nil
-	}
-
-	describeQueries := []string{
-		fmt.Sprintf("DESCRIBE %s.%s.%s", catalog, schema, table),
-		fmt.Sprintf("DESCRIBE %s.%s", schema, table),
-	}
-
-	var lastErr error
-	for _, query := range describeQueries {
-		columns, err = d.queryColumns(ctx, query)
-		if err == nil && len(columns) > 0 {
-			return columns, nil
-		}
-		if err != nil {
-			lastErr = err
-		}
-	}
-
-	if lastErr != nil {
-		return nil, errors.Wrap(lastErr, "failed to fetch columns for table")
-	}
-
-	return []*storepb.ColumnMetadata{}, nil
+	return d.queryColumns(ctx, query)
 }
 
-func (d *Driver) fetchTablesForSchema(ctx context.Context, catalog, schema string) ([]*storepb.TableMetadata, error) {
+func (d *Driver) fetchTablesForSchema(ctx context.Context, schema string) ([]*storepb.TableMetadata, error) {
+	query := fmt.Sprintf("SELECT DISTINCT table_name FROM system.jdbc.tables WHERE table_schem = '%s' AND table_type = 'TABLE'", schema)
+	tableNames, err := d.queryStringValues(ctx, query)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to query tables for schema")
+	}
+
 	var tables []*storepb.TableMetadata
-
-	queries := []string{
-		fmt.Sprintf("SHOW TABLES FROM %s.%s", catalog, schema),
-		fmt.Sprintf("SELECT table_name FROM system.jdbc.tables WHERE table_schem = '%s'", schema),
-	}
-
-	var lastErr error
-	for _, query := range queries {
-		tableNames, err := d.queryStringValues(ctx, query)
-		if err != nil {
-			lastErr = err
-			continue
-		}
-
-		for _, tableName := range tableNames {
-			if tableName != "" {
-				table := &storepb.TableMetadata{Name: tableName}
-				columns, err := d.fetchColumnsForTable(ctx, catalog, schema, tableName)
-				if err != nil {
-					slog.Debug("failed to fetch columns for table",
-						slog.String("catalog", catalog),
-						slog.String("schema", schema),
-						slog.String("table", tableName),
-						log.BBError(err))
-				} else if len(columns) > 0 {
-					table.Columns = columns
-				}
-				tables = append(tables, table)
+	for _, tableName := range tableNames {
+		if tableName != "" {
+			table := &storepb.TableMetadata{Name: tableName}
+			columns, err := d.fetchColumnsForTable(ctx, schema, tableName)
+			if err == nil && len(columns) > 0 {
+				table.Columns = columns
 			}
+			tables = append(tables, table)
 		}
-
-		if len(tables) > 0 {
-			return tables, nil
-		}
-	}
-
-	if lastErr != nil && len(tables) == 0 {
-		return nil, errors.Wrap(lastErr, "failed to fetch tables for schema")
 	}
 
 	return tables, nil
@@ -410,7 +331,7 @@ func (d *Driver) processSQLCheck(ctx context.Context, databaseName string) (*sto
 	}
 
 	for _, schemaName := range schemaNames {
-		tables, err := d.fetchTablesForSchema(ctx, expectedDBName, schemaName)
+		tables, err := d.fetchTablesForSchema(ctx, schemaName)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to fetch tables for schema %s during SQL check", schemaName)
 		}
