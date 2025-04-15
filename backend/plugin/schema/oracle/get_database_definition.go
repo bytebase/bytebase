@@ -201,7 +201,7 @@ func writeIndex(buf *strings.Builder, table string, index *storepb.IndexMetadata
 			if _, err := buf.WriteString(`"`); err != nil {
 				return err
 			}
-			if len(index.Descending) > i && index.Descending[i] {
+			if i < len(index.Descending) && index.Descending[i] {
 				if _, err := buf.WriteString(` DESC`); err != nil {
 					return err
 				}
