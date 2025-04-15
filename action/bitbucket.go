@@ -67,28 +67,30 @@ func createBitbucketReport(checkResponse *v1pb.CheckReleaseResponse) error {
 			}
 		}
 	}
-	var riskDetail string
-	switch checkResponse.RiskLevel {
-	case v1pb.CheckReleaseResponse_LOW:
-		riskDetail = "Low"
-	case v1pb.CheckReleaseResponse_MODERATE:
-		riskDetail = "Moderate"
-	case v1pb.CheckReleaseResponse_HIGH:
-		riskDetail = "High"
-	default:
-		riskDetail = "None"
-	}
-	details := fmt.Sprintf(`• Total Affected Rows: %d
-• Overall Risk Level: %s
-• Advices Statistics: %d Error(s), %d Warning(s)
-`, checkResponse.GetAffectedRows(), riskDetail, errorCount, warningCount)
+	/*
+			var riskDetail string
+			switch checkResponse.RiskLevel {
+			case v1pb.CheckReleaseResponse_LOW:
+				riskDetail = "Low"
+			case v1pb.CheckReleaseResponse_MODERATE:
+				riskDetail = "Moderate"
+			case v1pb.CheckReleaseResponse_HIGH:
+				riskDetail = "High"
+			default:
+				riskDetail = "None"
+			}
+			details := fmt.Sprintf(`• Total Affected Rows: %d
+		• Overall Risk Level: %s
+		• Advices Statistics: %d Error(s), %d Warning(s)
+		`, checkResponse.GetAffectedRows(), riskDetail, errorCount, warningCount)
+	*/
 	result := "PASSED"
 	if errorCount > 0 {
 		result = "FAILED"
 	}
 	report := &Report{
 		Title:      "Bytebase SQL Review",
-		Details:    details,
+		Details:    "hello???",
 		ReportType: "TEST",
 		Reporter:   "bytebase",
 		Result:     result,
