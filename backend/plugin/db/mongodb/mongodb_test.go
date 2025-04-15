@@ -77,6 +77,26 @@ func TestGetMongoDBConnectionURL(t *testing.T) {
 		{
 			connConfig: db.ConnectionConfig{
 				DataSource: &storepb.DataSource{
+					Host:     "cluster0.sample.mongodb.net",
+					Port:     "",
+					Username: "bytebase",
+					Password: "passwd",
+					Srv:      true,
+					ExtraConnectionParameters: map[string]string{
+						"readPreference":     "secondary",
+						"readPreferenceTags": "dc:ny",
+					},
+				},
+				ConnectionContext: db.ConnectionContext{
+					DatabaseName: "sampleDB",
+				},
+				Password: "passwd",
+			},
+			want: "mongodb+srv://bytebase:passwd@cluster0.sample.mongodb.net/sampleDB?appName=bytebase&authSource=admin&readPreference=secondary&readPreferenceTags=dc%3Any",
+		},
+		{
+			connConfig: db.ConnectionConfig{
+				DataSource: &storepb.DataSource{
 					Host:                   "cluster0.sample.mongodb.net",
 					Port:                   "",
 					Username:               "bytebase",
