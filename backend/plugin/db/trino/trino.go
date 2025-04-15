@@ -94,17 +94,10 @@ func (*Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionCon
 	db.SetMaxOpenConns(20)
 
 	d := &Driver{
-		config: config,
-		db:     db,
+		config:       config,
+		db:           db,
+		databaseName: config.ConnectionContext.DatabaseName,
 	}
-	if config.ConnectionContext.DatabaseName != "" {
-		d.databaseName = config.ConnectionContext.DatabaseName
-	} else if config.DataSource.Database != "" {
-		d.databaseName = config.DataSource.Database
-	} else {
-		d.databaseName = "system"
-	}
-
 	return d, nil
 }
 

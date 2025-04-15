@@ -6,6 +6,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -42,21 +43,21 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 		Name: catalog,
 	}
 
-	schemaNames, err := d.getSchemaList(ctx, catalog)
+	schemaNames, err := d.getSchemaList(ctx)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get schema list for catalog %s", catalog)
+		return nil, errors.Wrapf(err, "failed to get schema list for catalog %s", d.databaseName)
 	}
 
 	// Fetch all tables in all schemas in one query
-	allTables, err := d.fetchAllTablesForCatalog(ctx, catalog, schemaNames)
+	allTables, err := d.fetchAllTablesForCatalog(ctx, schemaNames)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to fetch tables for catalog %s", catalog)
+		return nil, errors.Wrapf(err, "failed to fetch tables for catalog %s", d.databaseName)
 	}
 
 	// Fetch all columns for all tables in one query
-	allColumns, err := d.fetchAllColumnsForCatalog(ctx, catalog)
+	allColumns, err := d.fetchAllColumnsForCatalog(ctx)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to fetch columns for catalog %s", catalog)
+		return nil, errors.Wrapf(err, "failed to fetch columns for catalog %s", d.databaseName)
 	}
 
 	// Organize the data into schemas
@@ -122,15 +123,15 @@ func (d *Driver) getCatalogList(ctx context.Context) ([]string, error) {
 	return d.queryStringValues(ctx, query)
 }
 
-func (d *Driver) getSchemaList(ctx context.Context, catalog string) ([]string, error) {
+func (d *Driver) getSchemaList(ctx context.Context) ([]string, error) {
 	query := "SELECT table_schem FROM system.jdbc.schemas WHERE table_catalog = ? ORDER BY table_schem"
-	return d.queryStringValues(ctx, query, catalog)
+	return d.queryStringValues(ctx, query, d.databaseName)
 }
 
-func (d *Driver) fetchAllTablesForCatalog(ctx context.Context, catalog string, schemas []string) (map[string][]*storepb.TableMetadata, error) {
+func (d *Driver) fetchAllTablesForCatalog(ctx context.Context, schemas []string) (map[string][]*storepb.TableMetadata, error) {
 	query := "SELECT table_schem, table_name FROM system.jdbc.tables WHERE table_cat = ? AND table_type = 'TABLE' ORDER BY table_schem, table_name"
 
-	rows, err := d.db.QueryContext(ctx, query, catalog)
+	rows, err := d.db.QueryContext(ctx, query, d.databaseName)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to query tables for catalog")
 	}
@@ -146,6 +147,8 @@ func (d *Driver) fetchAllTablesForCatalog(ctx context.Context, catalog string, s
 		if err := rows.Scan(&schemaName, &tableName); err != nil {
 			return nil, errors.Wrap(err, "failed to scan table row")
 		}
+		table := &storepb.TableMetadata{Name: tableName}
+		allTables[schemaName] = append(allTables[schemaName], table)
 	}
 
 	if err := rows.Err(); err != nil {
@@ -155,10 +158,10 @@ func (d *Driver) fetchAllTablesForCatalog(ctx context.Context, catalog string, s
 	return allTables, nil
 }
 
-func (d *Driver) fetchAllColumnsForCatalog(ctx context.Context, catalog string) (map[db.TableKey][]*storepb.ColumnMetadata, error) {
+func (d *Driver) fetchAllColumnsForCatalog(ctx context.Context) (map[db.TableKey][]*storepb.ColumnMetadata, error) {
 	query := "SELECT table_schem, table_name, column_name, type_name, is_nullable FROM system.jdbc.columns WHERE table_cat = ? ORDER BY table_schem, table_name, ordinal_position"
 
-	rows, err := d.db.QueryContext(ctx, query, catalog)
+	rows, err := d.db.QueryContext(ctx, query, d.databaseName)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to query columns for catalog")
 	}
@@ -172,10 +175,14 @@ func (d *Driver) fetchAllColumnsForCatalog(ctx context.Context, catalog string) 
 			return nil, errors.Wrap(err, "failed to scan column row")
 		}
 
+		isNullBool, err := util.ConvertYesNo(isNullable)
+		if err != nil {
+			return nil, err
+		}
 		column := &storepb.ColumnMetadata{
 			Name:     columnName,
 			Type:     dataType,
-			Nullable: isNullable == "YES",
+			Nullable: isNullBool,
 		}
 
 		tableKey := db.TableKey{Schema: schemaName, Table: tableName}
