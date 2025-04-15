@@ -78,8 +78,8 @@ func createBitbucketReport(checkResponse *v1pb.CheckReleaseResponse) error {
 		riskDetail = "⚪ None"
 	}
 	details := fmt.Sprintf(`• Total Affected Rows: %d
-	• Overall Risk Level: %s
-	• Advices Statistics: %d Error(s), %d Warning(s)`, checkResponse.GetAffectedRows(), riskDetail, errorCount, warningCount)
+• Overall Risk Level: %s
+• Advices Statistics: %d Error(s), %d Warning(s)`, checkResponse.GetAffectedRows(), riskDetail, errorCount, warningCount)
 	result := "PASSED"
 	if errorCount > 0 {
 		result = "FAILED"
