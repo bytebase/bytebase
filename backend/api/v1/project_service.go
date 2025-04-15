@@ -411,6 +411,10 @@ func (s *ProjectService) UpdateProject(ctx context.Context, request *v1pb.Update
 			projectSettings := project.Setting
 			projectSettings.AllowSelfApproval = request.Project.AllowSelfApproval
 			patch.Setting = projectSettings
+		case "execution_retry_policy":
+			projectSettings := project.Setting
+			projectSettings.ExecutionRetryPolicy = convertToStoreExecutionRetryPolicy(request.Project.ExecutionRetryPolicy)
+			patch.Setting = projectSettings
 		default:
 			return nil, status.Errorf(codes.InvalidArgument, `unsupport update_mask "%s"`, path)
 		}
@@ -1318,6 +1322,29 @@ func convertToProject(projectMessage *store.ProjectMessage) *v1pb.Project {
 		SkipBackupErrors:           projectMessage.Setting.SkipBackupErrors,
 		PostgresDatabaseTenantMode: projectMessage.Setting.PostgresDatabaseTenantMode,
 		AllowSelfApproval:          projectMessage.Setting.AllowSelfApproval,
+		ExecutionRetryPolicy:       convertToV1ExecutionRetryPolicy(projectMessage.Setting.ExecutionRetryPolicy),
+	}
+}
+
+func convertToV1ExecutionRetryPolicy(policy *storepb.Project_ExecutionRetryPolicy) *v1pb.Project_ExecutionRetryPolicy {
+	if policy == nil {
+		return &v1pb.Project_ExecutionRetryPolicy{
+			MaximumRetries: 0,
+		}
+	}
+	return &v1pb.Project_ExecutionRetryPolicy{
+		MaximumRetries: policy.MaximumRetries,
+	}
+}
+
+func convertToStoreExecutionRetryPolicy(policy *v1pb.Project_ExecutionRetryPolicy) *storepb.Project_ExecutionRetryPolicy {
+	if policy == nil {
+		return &storepb.Project_ExecutionRetryPolicy{
+			MaximumRetries: 0,
+		}
+	}
+	return &storepb.Project_ExecutionRetryPolicy{
+		MaximumRetries: policy.MaximumRetries,
 	}
 }
 

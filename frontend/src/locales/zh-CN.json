@@ -956,14 +956,16 @@
           "task-run-status-update": "状态更新",
           "transaction-control": "事务控制",
           "database-sync": "数据库同步",
-          "prior-backup": "数据预备份"
+          "prior-backup": "数据预备份",
+          "retry-info": "重试信息"
         },
         "estimated-affected-rows-n": "预估影响行数：{n}",
         "prior-backup-tables": "数据预备份相关的表",
         "status-update": {
           "waiting": "准备就绪，等待执行",
           "running": "开始执行"
-        }
+        },
+        "retry-info": "锁超时重试（尝试{n}/{m}）。"
       },
       "task-run-session": {
         "blocking-sessions": {
@@ -1627,6 +1629,10 @@
         "postgres-database-tenant-mode": {
           "self": "Postgres 数据库租户模式",
           "description": "Postgres 数据库租户模式。如果启用，该工单将由数据库 OWNER 运行。否则，该工单将由实例连接用户运行。"
+        },
+        "max-retries": {
+          "self": "锁超时的最大重试数",
+          "description": "运行任务时锁超时的最大重试数。默认值为0。"
         }
       }
     },

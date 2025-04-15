@@ -2058,6 +2058,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.Project.ExecutionRetryPolicy"><span class="badge">M</span>Project.ExecutionRetryPolicy</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.RemoveWebhookRequest"><span class="badge">M</span>RemoveWebhookRequest</a>
                 </li>
               
@@ -2637,6 +2641,10 @@
               
                 <li>
                   <a href="#bytebase.v1.TaskRunLogEntry.PriorBackup"><span class="badge">M</span>TaskRunLogEntry.PriorBackup</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.TaskRunLogEntry.RetryInfo"><span class="badge">M</span>TaskRunLogEntry.RetryInfo</a>
                 </li>
               
                 <li>
@@ -22386,6 +22394,37 @@ If enabled, the issue will be created with the pre-appended &#34;set role &lt;db
                   <td><p>Whether to allow the issue creator to self-approve the issue. </p></td>
                 </tr>
               
+                <tr>
+                  <td>execution_retry_policy</td>
+                  <td><a href="#bytebase.v1.Project.ExecutionRetryPolicy">Project.ExecutionRetryPolicy</a></td>
+                  <td></td>
+                  <td><p>Execution retry policy for the task run. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.Project.ExecutionRetryPolicy">Project.ExecutionRetryPolicy</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>maximum_retries</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>The maximum number of retries for the lock timeout issue. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -28284,6 +28323,13 @@ Format: instances/{instance}/databases/{database} </p></td>
                   <td><p> </p></td>
                 </tr>
               
+                <tr>
+                  <td>retry_info</td>
+                  <td><a href="#bytebase.v1.TaskRunLogEntry.RetryInfo">TaskRunLogEntry.RetryInfo</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -28447,6 +28493,44 @@ Format: instances/{instance}/databases/{database} </p></td>
                 <tr>
                   <td>error</td>
                   <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.TaskRunLogEntry.RetryInfo">TaskRunLogEntry.RetryInfo</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>error</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>retry_count</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>maximum_retries</td>
+                  <td><a href="#int32">int32</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
@@ -29048,6 +29132,12 @@ Format: instances/{instance}/databases/{database} </p></td>
               <tr>
                 <td>PRIOR_BACKUP</td>
                 <td>6</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>RETRY_INFO</td>
+                <td>7</td>
                 <td><p></p></td>
               </tr>
             

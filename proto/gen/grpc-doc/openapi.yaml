@@ -11399,6 +11399,17 @@ components:
                 allowSelfApproval:
                     type: boolean
                     description: Whether to allow the issue creator to self-approve the issue.
+                executionRetryPolicy:
+                    allOf:
+                        - $ref: '#/components/schemas/Project_ExecutionRetryPolicy'
+                    description: Execution retry policy for the task run.
+        Project_ExecutionRetryPolicy:
+            type: object
+            properties:
+                maximumRetries:
+                    type: integer
+                    description: The maximum number of retries for the lock timeout issue.
+                    format: int32
         QueryDataPolicy:
             type: object
             properties:
@@ -13228,6 +13239,7 @@ components:
                         - TRANSACTION_CONTROL
                         - PRIOR_BACKUP_START
                         - PRIOR_BACKUP_END
+                        - RETRY_INFO
                     type: string
                     format: enum
                 deployId:
@@ -13252,6 +13264,8 @@ components:
                     $ref: '#/components/schemas/TaskRunLog_PriorBackupStart'
                 priorBackupEnd:
                     $ref: '#/components/schemas/TaskRunLog_PriorBackupEnd'
+                retryInfo:
+                    $ref: '#/components/schemas/TaskRunLog_RetryInfo'
         TaskRunLog_CommandExecute:
             type: object
             properties:
@@ -13301,6 +13315,17 @@ components:
         TaskRunLog_PriorBackupStart:
             type: object
             properties: {}
+        TaskRunLog_RetryInfo:
+            type: object
+            properties:
+                error:
+                    type: string
+                retryCount:
+                    type: integer
+                    format: int32
+                maximumRetries:
+                    type: integer
+                    format: int32
         TaskRunLog_SchemaDumpEnd:
             type: object
             properties:

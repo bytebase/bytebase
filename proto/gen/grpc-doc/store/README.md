@@ -218,6 +218,7 @@
 - [store/project.proto](#store_project-proto)
     - [Label](#bytebase-store-Label)
     - [Project](#bytebase-store-Project)
+    - [Project.ExecutionRetryPolicy](#bytebase-store-Project-ExecutionRetryPolicy)
   
 - [store/project_webhook.proto](#store_project_webhook-proto)
     - [ProjectWebhookPayload](#bytebase-store-ProjectWebhookPayload)
@@ -313,6 +314,7 @@
     - [TaskRunLog.DatabaseSyncStart](#bytebase-store-TaskRunLog-DatabaseSyncStart)
     - [TaskRunLog.PriorBackupEnd](#bytebase-store-TaskRunLog-PriorBackupEnd)
     - [TaskRunLog.PriorBackupStart](#bytebase-store-TaskRunLog-PriorBackupStart)
+    - [TaskRunLog.RetryInfo](#bytebase-store-TaskRunLog-RetryInfo)
     - [TaskRunLog.SchemaDumpEnd](#bytebase-store-TaskRunLog-SchemaDumpEnd)
     - [TaskRunLog.SchemaDumpStart](#bytebase-store-TaskRunLog-SchemaDumpStart)
     - [TaskRunLog.TaskRunStatusUpdate](#bytebase-store-TaskRunLog-TaskRunStatusUpdate)
@@ -3563,6 +3565,22 @@ RestrictIssueCreationForSQLReviewPolicy is the policy configuration for restrict
 | skip_backup_errors | [bool](#bool) |  | Whether to skip backup errors and continue the data migration. |
 | postgres_database_tenant_mode | [bool](#bool) |  | Whether to enable the database tenant mode for PostgreSQL. If enabled, the issue will be created with the pre-appended &#34;set role &lt;db_owner&gt;&#34; statement. |
 | allow_self_approval | [bool](#bool) |  | Whether to allow the issue creator to self-approve the issue. |
+| execution_retry_policy | [Project.ExecutionRetryPolicy](#bytebase-store-Project-ExecutionRetryPolicy) |  | Execution retry policy for the task run. |
+
+
+
+
+
+
+<a name="bytebase-store-Project-ExecutionRetryPolicy"></a>
+
+### Project.ExecutionRetryPolicy
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| maximum_retries | [int32](#int32) |  | The maximum number of retries for the lock timeout issue. |
 
 
 
@@ -4849,6 +4867,7 @@ TODO(zp): Use common Position instead.
 | transaction_control | [TaskRunLog.TransactionControl](#bytebase-store-TaskRunLog-TransactionControl) |  |  |
 | prior_backup_start | [TaskRunLog.PriorBackupStart](#bytebase-store-TaskRunLog-PriorBackupStart) |  |  |
 | prior_backup_end | [TaskRunLog.PriorBackupEnd](#bytebase-store-TaskRunLog-PriorBackupEnd) |  |  |
+| retry_info | [TaskRunLog.RetryInfo](#bytebase-store-TaskRunLog-RetryInfo) |  |  |
 
 
 
@@ -4933,6 +4952,23 @@ TODO(zp): Use common Position instead.
 
 ### TaskRunLog.PriorBackupStart
 
+
+
+
+
+
+
+<a name="bytebase-store-TaskRunLog-RetryInfo"></a>
+
+### TaskRunLog.RetryInfo
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| error | [string](#string) |  |  |
+| retry_count | [int32](#int32) |  |  |
+| maximum_retries | [int32](#int32) |  |  |
 
 
 
@@ -5042,6 +5078,7 @@ TODO(zp): Use common Position instead.
 | TRANSACTION_CONTROL | 8 |  |
 | PRIOR_BACKUP_START | 9 |  |
 | PRIOR_BACKUP_END | 10 |  |
+| RETRY_INFO | 11 |  |
 
 
  

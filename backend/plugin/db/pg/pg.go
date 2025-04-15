@@ -320,7 +320,6 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 	var nonTransactionAndSetRoleStmts []string
 	var nonTransactionAndSetRoleStmtsIndex []int32
 	var isPlsql bool
-	oneshot := true
 	// HACK(p0ny): always split for pg
 	//nolint
 	if true || len(statement) <= common.MaxSheetCheckSize {
@@ -336,11 +335,6 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 		// https://www.postgresql.org/docs/current/plpgsql-control-structures.html
 		if len(singleSQLs) == 1 && isPlSQLBlock(singleSQLs[0].Text) {
 			isPlsql = true
-		}
-		// HACK(p0ny): always split for pg
-		//nolint
-		if false && len(commands) <= common.MaximumCommands {
-			oneshot = false
 		}
 
 		var tmpCommands []base.SingleSQL
@@ -368,17 +362,60 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 		}
 		commands, originalIndex = tmpCommands, tmpOriginalIndex
 	}
-	// HACK(p0ny): always split for pg
-	//nolint
-	if false && oneshot {
-		commands = []base.SingleSQL{
-			{
-				Text: statement,
-			},
-		}
-		originalIndex = []int32{0}
+
+	affectedRows, err := d.tryExecute(ctx, owner, statement, commands, originalIndex, nonTransactionAndSetRoleStmts, nonTransactionAndSetRoleStmtsIndex, opts, isPlsql)
+	if err == nil {
+		return affectedRows, nil
+	}
+	if !errors.As(err, &LockTimeoutError{}) {
+		return affectedRows, err
 	}
 
+	// Lock timeout retries.
+	for i := range opts.MaximumRetries {
+		// Random retry interval.
+		interval := (150 + (i+1)*100/opts.MaximumRetries) * int(time.Millisecond)
+		time.Sleep(time.Duration(interval))
+
+		// Log retry info.
+		opts.LogRetryInfo(err, i+1)
+
+		// Do retry.
+		affectedRows, err = d.tryExecute(ctx, owner, statement, commands, originalIndex, nonTransactionAndSetRoleStmts, nonTransactionAndSetRoleStmtsIndex, opts, isPlsql)
+		if err == nil {
+			break
+		}
+		if !errors.As(err, &LockTimeoutError{}) {
+			break
+		}
+	}
+
+	return affectedRows, err
+}
+
+type LockTimeoutError struct {
+	Message string
+}
+
+func (e *LockTimeoutError) Error() string {
+	return e.Message
+}
+
+func isLockTimeoutError(message string) bool {
+	return strings.Contains(message, "canceling statement due to lock timeout")
+}
+
+func (d *Driver) tryExecute(
+	ctx context.Context,
+	owner string,
+	statement string,
+	commands []base.SingleSQL,
+	originalIndex []int32,
+	nonTransactionAndSetRoleStmts []string,
+	nonTransactionAndSetRoleStmtsIndex []int32,
+	opts db.ExecuteOptions,
+	isPlsql bool,
+) (int64, error) {
 	conn, err := d.db.Conn(ctx)
 	if err != nil {
 		return 0, errors.Wrapf(err, "failed to get connection")
@@ -492,6 +529,11 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 			return nil
 		})
 		if err != nil {
+			if isLockTimeoutError(err.Error()) {
+				return 0, &LockTimeoutError{
+					Message: err.Error(),
+				}
+			}
 			return 0, err
 		}
 	}

@@ -10,6 +10,7 @@ import {
   type TaskRunLogEntry_DatabaseSync,
   TaskRunLogEntry,
   TaskRunLogEntry_PriorBackup,
+  TaskRunLogEntry_RetryInfo,
 } from "@/types/proto/v1/rollout_service";
 
 export type FlattenLogEntry = {
@@ -29,6 +30,7 @@ export type FlattenLogEntry = {
   transactionControl?: TaskRunLogEntry_TransactionControl;
   databaseSync?: TaskRunLogEntry_DatabaseSync;
   priorBackup?: TaskRunLogEntry_PriorBackup;
+  retryInfo?: TaskRunLogEntry_RetryInfo;
 };
 
 export const displayTaskRunLogEntryType = (type: TaskRunLogEntry_Type) => {
@@ -50,6 +52,9 @@ export const displayTaskRunLogEntryType = (type: TaskRunLogEntry_Type) => {
   if (type === TaskRunLogEntry_Type.PRIOR_BACKUP) {
     return t("issue.task-run.task-run-log.entry-type.prior-backup");
   }
+  if (type === TaskRunLogEntry_Type.RETRY_INFO) {
+    return t("issue.task-run.task-run-log.entry-type.retry-info");
+  }
 
   console.warn(
     `[displayTaskRunLogEntryType] should never reach this line: type=${taskRunLogEntry_TypeToJSON(type)}`
@@ -70,6 +75,7 @@ export const convertTaskRunLogEntryToFlattenLogEntries = (
     databaseSync,
     deployId,
     priorBackup,
+    retryInfo,
   } = entry;
   const flattenLogEntries: FlattenLogEntry[] = [];
   if (
@@ -154,6 +160,17 @@ export const convertTaskRunLogEntryToFlattenLogEntries = (
       startTime: getDateForPbTimestamp(priorBackup.startTime),
       endTime: getDateForPbTimestamp(priorBackup.endTime),
       priorBackup: priorBackup,
+    });
+  }
+  if (type === TaskRunLogEntry_Type.RETRY_INFO && retryInfo) {
+    flattenLogEntries.push({
+      batch,
+      deployId,
+      serial: 0,
+      type: TaskRunLogEntry_Type.RETRY_INFO,
+      startTime: getDateForPbTimestamp(entry.logTime),
+      endTime: undefined,
+      retryInfo,
     });
   }
   return flattenLogEntries;

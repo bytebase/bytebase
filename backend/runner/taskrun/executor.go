@@ -275,6 +275,14 @@ func doMigrationWithFunc(
 
 	opts := db.ExecuteOptions{}
 
+	project, err := stores.GetProjectV2(ctx, &store.FindProjectMessage{ResourceID: &database.ProjectID})
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to get project %v for database %v", database.ProjectID, database.DatabaseName)
+	}
+	if project != nil && project.Setting != nil {
+		opts.MaximumRetries = int(project.Setting.GetExecutionRetryPolicy().GetMaximumRetries())
+	}
+
 	opts.SetConnectionID = func(id string) {
 		stateCfg.TaskRunConnectionID.Store(mc.taskRunUID, id)
 	}
