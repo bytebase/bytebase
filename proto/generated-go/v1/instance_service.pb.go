@@ -397,7 +397,7 @@ type ListInstancesRequest struct {
 	PageToken string `protobuf:"bytes,2,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
 	// Show deleted instances if specified.
 	ShowDeleted bool `protobuf:"varint,3,opt,name=show_deleted,json=showDeleted,proto3" json:"show_deleted,omitempty"`
-	// Filter the project.
+	// Filter the instance.
 	// Supported filters:
 	// - name
 	// - resource_id

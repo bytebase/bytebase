@@ -1031,7 +1031,7 @@ export const DatabaseGroupServiceDefinition = {
           800010: [
             new Uint8Array([18, 98, 98, 46, 112, 114, 111, 106, 101, 99, 116, 115, 46, 117, 112, 100, 97, 116, 101]),
           ],
-          800016: [new Uint8Array([1])],
+          800016: [new Uint8Array([2])],
           800024: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
