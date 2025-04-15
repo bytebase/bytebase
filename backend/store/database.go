@@ -387,7 +387,7 @@ func (*Store) listDatabaseImplV2(ctx context.Context, txn *sql.Tx, find *FindDat
 			db.project,
 			COALESCE(
 				db.environment,
-				instance.environment,
+				instance.environment
 			),
 			db.environment,
 			db.instance,
