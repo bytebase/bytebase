@@ -38,7 +38,7 @@ func TestGetDatabaseDefinition(t *testing.T) {
 					},
 				},
 			},
-			expected: `CREATE TABLE IF NOT EXISTS "testcatalog"."testschema"."testtable" (
+			expected: `CREATE TABLE IF NOT EXISTS "testschema"."testtable" (
     "id" bigint NOT NULL,
     "name" varchar
 );
@@ -53,7 +53,7 @@ func TestGetDatabaseDefinition(t *testing.T) {
 				Name:    "empty_table",
 				Columns: []*storepb.ColumnMetadata{},
 			},
-			expected: `CREATE TABLE IF NOT EXISTS "testcatalog"."testschema"."empty_table" (
+			expected: `CREATE TABLE IF NOT EXISTS "testschema"."empty_table" (
 
 );
 
@@ -73,7 +73,7 @@ func TestGetDatabaseDefinition(t *testing.T) {
 					},
 				},
 			},
-			expected: `CREATE TABLE IF NOT EXISTS "test-catalog"."test_schema"."test.table" (
+			expected: `CREATE TABLE IF NOT EXISTS "test_schema"."test.table" (
     "id-field" bigint NOT NULL
 );
 
