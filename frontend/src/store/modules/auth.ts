@@ -61,7 +61,6 @@ export const useAuthStore = defineStore("auth_v1", () => {
     redirect: string = ""
   ) => {
     const { data } = await axios.post<LoginResponse>("/v1/auth/login", request);
-
     const redirectUrl = redirect || getRedirectQuery();
     if (data.mfaTempToken) {
       return router.push({
@@ -103,7 +102,6 @@ export const useAuthStore = defineStore("auth_v1", () => {
 
       return router.replace(nextPage);
     }
-    showLoginModal.value = false;
   };
 
   const signup = async (request: Partial<User>) => {
@@ -125,7 +123,6 @@ export const useAuthStore = defineStore("auth_v1", () => {
   const logout = async () => {
     try {
       await axios.post("/v1/auth/logout");
-      showLoginModal.value = false;
     } catch {
       // nothing
     } finally {

@@ -109,6 +109,7 @@ router.beforeEach((to, from, next) => {
     to.name === AUTH_SIGNIN_ADMIN_MODULE ||
     to.name === AUTH_SIGNUP_MODULE ||
     to.name === AUTH_MFA_MODULE ||
+    to.name === AUTH_PASSWORD_RESET_MODULE ||
     to.name === AUTH_PASSWORD_FORGOT_MODULE
   ) {
     useSQLEditorTabStore().reset();
@@ -118,15 +119,7 @@ router.beforeEach((to, from, next) => {
     import("@/plugins/ai/store").then(({ useConversationStore }) => {
       useConversationStore().reset();
     });
-    if (authStore.isLoggedIn) {
-      if (typeof to.query.redirect === "string") {
-        location.replace(to.query.redirect);
-        return;
-      }
-      next({ name: WORKSPACE_ROOT_MODULE, replace: true });
-    } else {
-      next();
-    }
+    next();
     return;
   } else {
     if (!authStore.isLoggedIn) {
