@@ -10,6 +10,7 @@ import (
 	"github.com/pingcap/tidb/pkg/parser/ast"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -125,7 +126,7 @@ func (checker *columnTypeDisallowListChecker) Enter(in ast.Node) (ast.Node, bool
 			Code:          advisor.DisabledColumnType.Int32(),
 			Title:         checker.title,
 			Content:       fmt.Sprintf("Disallow column type %s but column `%s`.`%s` is", column.tp, column.table, column.column),
-			StartPosition: advisor.ConvertANTLRLineToPosition(column.line),
+			StartPosition: common.ConvertANTLRLineToPosition(column.line),
 		})
 	}
 

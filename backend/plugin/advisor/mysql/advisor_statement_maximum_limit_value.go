@@ -10,6 +10,7 @@ import (
 
 	mysql "github.com/bytebase/mysql-parser"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -108,7 +109,7 @@ func (checker *statementMaximumLimitValueChecker) EnterLimitClause(ctx *mysql.Li
 				Code:          advisor.StatementExceedMaximumLimitValue.Int32(),
 				Title:         checker.title,
 				Content:       fmt.Sprintf("The limit value %d exceeds the maximum allowed value %d", limitValue, checker.limitMaxValue),
-				StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
+				StartPosition: common.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
 			})
 		}
 	}

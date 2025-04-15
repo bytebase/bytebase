@@ -10,6 +10,7 @@ import (
 	parser "github.com/bytebase/plsql-parser"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -83,7 +84,7 @@ func (l *namingTableListener) EnterCreate_table(ctx *parser.Create_tableContext)
 			Code:          advisor.NamingTableConventionMismatch.Int32(),
 			Title:         l.title,
 			Content:       fmt.Sprintf(`"%s" mismatches table naming convention, naming format should be %q`, tableName, l.format),
-			StartPosition: advisor.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
+			StartPosition: common.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
 		})
 	}
 	if l.maxLength > 0 && len(tableName) > l.maxLength {
@@ -92,7 +93,7 @@ func (l *namingTableListener) EnterCreate_table(ctx *parser.Create_tableContext)
 			Code:          advisor.NamingTableConventionMismatch.Int32(),
 			Title:         l.title,
 			Content:       fmt.Sprintf("\"%s\" mismatches table naming convention, its length should be within %d characters", tableName, l.maxLength),
-			StartPosition: advisor.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
+			StartPosition: common.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
 		})
 	}
 }
@@ -112,7 +113,7 @@ func (l *namingTableListener) EnterAlter_table_properties(ctx *parser.Alter_tabl
 			Code:          advisor.NamingTableConventionMismatch.Int32(),
 			Title:         l.title,
 			Content:       fmt.Sprintf(`"%s" mismatches table naming convention, naming format should be %q`, tableName, l.format),
-			StartPosition: advisor.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
+			StartPosition: common.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
 		})
 	}
 	if l.maxLength > 0 && len(tableName) > l.maxLength {
@@ -121,7 +122,7 @@ func (l *namingTableListener) EnterAlter_table_properties(ctx *parser.Alter_tabl
 			Code:          advisor.NamingTableConventionMismatch.Int32(),
 			Title:         l.title,
 			Content:       fmt.Sprintf("\"%s\" mismatches table naming convention, its length should be within %d characters", tableName, l.maxLength),
-			StartPosition: advisor.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
+			StartPosition: common.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
 		})
 	}
 }

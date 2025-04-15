@@ -9,6 +9,7 @@ import (
 	parser "github.com/bytebase/tsql-parser"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/parser/tsql"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -59,7 +60,7 @@ func (checker *DisallowCrossDBQueriesChecker) EnterTable_source_item(ctx *parser
 				Code:          advisor.StatementDisallowCrossDBQueries.Int32(),
 				Title:         checker.title,
 				Content:       fmt.Sprintf("Cross database queries (target databse: '%s', current database: '%s') are prohibited", fullTblName.Database, checker.curDB),
-				StartPosition: advisor.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
+				StartPosition: common.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
 			})
 		}
 		// Ignore internal error...

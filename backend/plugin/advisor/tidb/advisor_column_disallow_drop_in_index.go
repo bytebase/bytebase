@@ -9,6 +9,7 @@ import (
 	"github.com/pingcap/tidb/pkg/parser/ast"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -109,7 +110,7 @@ func (checker *columnDisallowDropInIndexChecker) dropColumn(in ast.Node) (ast.No
 						Code:          advisor.DropIndexColumn.Int32(),
 						Title:         checker.title,
 						Content:       fmt.Sprintf("`%s`.`%s` cannot drop index column", table, colName),
-						StartPosition: advisor.ConvertANTLRLineToPosition(checker.line),
+						StartPosition: common.ConvertANTLRLineToPosition(checker.line),
 					})
 				}
 			}

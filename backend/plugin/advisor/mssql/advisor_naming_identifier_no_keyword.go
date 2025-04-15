@@ -9,6 +9,7 @@ import (
 	parser "github.com/bytebase/tsql-parser"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	tsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -91,7 +92,7 @@ func (l *namingIdentifierNoKeywordChecker) EnterId_(ctx *parser.Id_Context) {
 			Code:          advisor.NameIsKeywordIdentifier.Int32(),
 			Title:         l.title,
 			Content:       fmt.Sprintf("Identifier [%s] is a keyword identifier and should be avoided.", normalizedID),
-			StartPosition: advisor.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
+			StartPosition: common.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
 		})
 	}
 }

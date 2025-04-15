@@ -9,6 +9,7 @@ import (
 
 	mysql "github.com/bytebase/mysql-parser"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -74,7 +75,7 @@ func (checker *tableDisallowSetCharsetChecker) EnterCreateTable(ctx *mysql.Creat
 					Code:          advisor.DisallowSetCharset.Int32(),
 					Title:         checker.title,
 					Content:       fmt.Sprintf("Set charset on tables is disallowed, but \"%s\" uses", checker.text),
-					StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
+					StartPosition: common.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
 				})
 			}
 		}
@@ -104,7 +105,7 @@ func (checker *tableDisallowSetCharsetChecker) EnterAlterTable(ctx *mysql.AlterT
 				Code:          advisor.DisallowSetCharset.Int32(),
 				Title:         checker.title,
 				Content:       fmt.Sprintf("Set charset on tables is disallowed, but \"%s\" uses", checker.text),
-				StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
+				StartPosition: common.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
 			})
 		}
 	}

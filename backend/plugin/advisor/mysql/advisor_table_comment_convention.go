@@ -89,7 +89,7 @@ func (checker *tableCommentConventionChecker) EnterCreateTable(ctx *mysql.Create
 			Code:          advisor.CommentEmpty.Int32(),
 			Title:         checker.title,
 			Content:       fmt.Sprintf("Table `%s` requires comments", tableName),
-			StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
+			StartPosition: common.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
 		})
 	}
 	if checker.payload.MaxLength >= 0 && len(comment) > checker.payload.MaxLength {
@@ -98,7 +98,7 @@ func (checker *tableCommentConventionChecker) EnterCreateTable(ctx *mysql.Create
 			Code:          advisor.CommentTooLong.Int32(),
 			Title:         checker.title,
 			Content:       fmt.Sprintf("The length of table `%s` comment should be within %d characters", tableName, checker.payload.MaxLength),
-			StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
+			StartPosition: common.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
 		})
 	}
 	if checker.payload.RequiredClassification {
@@ -108,7 +108,7 @@ func (checker *tableCommentConventionChecker) EnterCreateTable(ctx *mysql.Create
 				Code:          advisor.CommentMissingClassification.Int32(),
 				Title:         checker.title,
 				Content:       fmt.Sprintf("Table `%s` comment requires classification", tableName),
-				StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
+				StartPosition: common.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
 			})
 		}
 	}

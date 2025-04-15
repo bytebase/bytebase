@@ -6,6 +6,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
@@ -112,7 +113,7 @@ func (checker *tableRequirePKChecker) Visit(node ast.Node) ast.Visitor {
 				missingPK.Name,
 				checker.text,
 			),
-			StartPosition: advisor.ConvertANTLRLineToPosition(node.LastLine()),
+			StartPosition: common.ConvertANTLRLineToPosition(node.LastLine()),
 		})
 	}
 

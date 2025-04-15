@@ -8,6 +8,7 @@ import (
 	parser "github.com/bytebase/snowsql-parser"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -70,7 +71,7 @@ func (l *selectNoSelectAllChecker) EnterSelect_list_elem(ctx *parser.Select_list
 				Code:          advisor.StatementSelectAll.Int32(),
 				Title:         l.title,
 				Content:       "Avoid using SELECT *.",
-				StartPosition: advisor.ConvertANTLRLineToPosition(v.STAR().GetSymbol().GetLine()),
+				StartPosition: common.ConvertANTLRLineToPosition(v.STAR().GetSymbol().GetLine()),
 			})
 		}
 	}

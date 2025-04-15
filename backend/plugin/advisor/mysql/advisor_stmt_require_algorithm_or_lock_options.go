@@ -7,6 +7,7 @@ import (
 	mysql "github.com/bytebase/mysql-parser"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -86,7 +87,7 @@ func (checker *RequireAlgorithmOptionChecker) ExitAlterTable(*mysql.AlterTableCo
 			Code:          int32(checker.errorCode),
 			Title:         checker.title,
 			Content:       "ALTER TABLE statement should include " + checker.requiredOption + " option",
-			StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + checker.line),
+			StartPosition: common.ConvertANTLRLineToPosition(checker.baseLine + checker.line),
 		})
 	}
 	checker.inAlterTableStatement = false

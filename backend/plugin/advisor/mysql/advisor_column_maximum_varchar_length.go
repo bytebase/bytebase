@@ -10,6 +10,7 @@ import (
 
 	mysql "github.com/bytebase/mysql-parser"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -98,7 +99,7 @@ func (checker *columnMaximumVarcharLengthChecker) EnterCreateTable(ctx *mysql.Cr
 				Code:          advisor.VarcharLengthExceedsLimit.Int32(),
 				Title:         checker.title,
 				Content:       fmt.Sprintf("The length of the VARCHAR column `%s.%s` is bigger than %d", tableName, columnName, checker.maximum),
-				StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + tableElement.GetStart().GetLine()),
+				StartPosition: common.ConvertANTLRLineToPosition(checker.baseLine + tableElement.GetStart().GetLine()),
 			})
 		}
 	}
@@ -183,7 +184,7 @@ func (checker *columnMaximumVarcharLengthChecker) EnterAlterTable(ctx *mysql.Alt
 					Code:          advisor.VarcharLengthExceedsLimit.Int32(),
 					Title:         checker.title,
 					Content:       fmt.Sprintf("The length of the VARCHAR column `%s.%s` is bigger than %d", tableName, columnName, checker.maximum),
-					StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
+					StartPosition: common.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
 				})
 			}
 		}

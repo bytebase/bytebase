@@ -8,6 +8,7 @@ import (
 	parser "github.com/bytebase/tsql-parser"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -70,7 +71,7 @@ func generateAdviceOnFunctionUsing(c *DisallowFuncAndCalculationsChecker, ctx an
 		Code:          advisor.StatementDisallowFunctionsAndCalculations.Int32(),
 		Title:         c.title,
 		Content:       fmt.Sprintf("Calling function '%s' in 'WHERE' clause is not allowed", ctx.GetText()),
-		StartPosition: advisor.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
+		StartPosition: common.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
 	}
 }
 
@@ -84,7 +85,7 @@ func generateAdviceOnPerformingCalculations(c *DisallowFuncAndCalculationsChecke
 		Code:          advisor.StatementDisallowFunctionsAndCalculations.Int32(),
 		Title:         c.title,
 		Content:       "Performing calculations in 'WHERE' clause is not allowed",
-		StartPosition: advisor.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
+		StartPosition: common.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
 	}
 }
 

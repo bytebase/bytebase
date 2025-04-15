@@ -69,7 +69,7 @@ func (*TableCommentConventionAdvisor) Check(_ context.Context, checkCtx advisor.
 					Code:          advisor.CommentEmpty.Int32(),
 					Title:         checker.title,
 					Content:       fmt.Sprintf("Comment is required for table `%s`", stringifyTableDef(createTableStmt.Name)),
-					StartPosition: advisor.ConvertANTLRLineToPosition(createTableStmt.LastLine()),
+					StartPosition: common.ConvertANTLRLineToPosition(createTableStmt.LastLine()),
 				})
 			}
 		} else {
@@ -80,7 +80,7 @@ func (*TableCommentConventionAdvisor) Check(_ context.Context, checkCtx advisor.
 					Code:          advisor.CommentTooLong.Int32(),
 					Title:         checker.title,
 					Content:       fmt.Sprintf("Table `%s` comment is too long. The length of comment should be within %d characters", stringifyTableDef(createTableStmt.Name), checker.payload.MaxLength),
-					StartPosition: advisor.ConvertANTLRLineToPosition(commentStmt.LastLine()),
+					StartPosition: common.ConvertANTLRLineToPosition(commentStmt.LastLine()),
 				})
 			}
 			if checker.payload.RequiredClassification {
@@ -90,7 +90,7 @@ func (*TableCommentConventionAdvisor) Check(_ context.Context, checkCtx advisor.
 						Code:          advisor.CommentMissingClassification.Int32(),
 						Title:         checker.title,
 						Content:       fmt.Sprintf("Table `%s` comment requires classification", stringifyTableDef(createTableStmt.Name)),
-						StartPosition: advisor.ConvertANTLRLineToPosition(commentStmt.LastLine()),
+						StartPosition: common.ConvertANTLRLineToPosition(commentStmt.LastLine()),
 					})
 				}
 			}

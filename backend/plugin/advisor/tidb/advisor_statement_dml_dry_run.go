@@ -82,7 +82,7 @@ func (checker *statementDmlDryRunChecker) Enter(in ast.Node) (ast.Node, bool) {
 				Code:          advisor.StatementDMLDryRunFailed.Int32(),
 				Title:         checker.title,
 				Content:       fmt.Sprintf("\"%s\" dry runs failed: %s", node.Text(), err.Error()),
-				StartPosition: advisor.ConvertANTLRLineToPosition(checker.line),
+				StartPosition: common.ConvertANTLRLineToPosition(checker.line),
 			})
 		}
 	}

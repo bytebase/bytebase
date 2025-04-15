@@ -11,6 +11,7 @@ import (
 	parser "github.com/bytebase/plsql-parser"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -106,7 +107,7 @@ func (l *columnRequireListener) ExitCreate_table(ctx *parser.Create_tableContext
 		Code:          advisor.NoRequiredColumn.Int32(),
 		Title:         l.title,
 		Content:       fmt.Sprintf("Table %q requires columns: %s", tableName, strings.Join(missingColumns, ", ")),
-		StartPosition: advisor.ConvertANTLRLineToPosition(ctx.GetStop().GetLine()),
+		StartPosition: common.ConvertANTLRLineToPosition(ctx.GetStop().GetLine()),
 	})
 }
 
@@ -143,7 +144,7 @@ func (l *columnRequireListener) ExitAlter_table(ctx *parser.Alter_tableContext) 
 		Code:          advisor.NoRequiredColumn.Int32(),
 		Title:         l.title,
 		Content:       fmt.Sprintf("Table %q requires columns: %s", tableName, strings.Join(missingColumns, ", ")),
-		StartPosition: advisor.ConvertANTLRLineToPosition(ctx.GetStop().GetLine()),
+		StartPosition: common.ConvertANTLRLineToPosition(ctx.GetStop().GetLine()),
 	})
 }
 

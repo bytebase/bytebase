@@ -11,6 +11,7 @@ import (
 
 	mysql "github.com/bytebase/mysql-parser"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -91,7 +92,7 @@ func (checker *insertMustSpecifyColumnChecker) EnterInsertStatement(ctx *mysql.I
 		Code:          advisor.InsertNotSpecifyColumn.Int32(),
 		Title:         checker.title,
 		Content:       fmt.Sprintf("The INSERT statement must specify columns but \"%s\" does not", checker.text),
-		StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
+		StartPosition: common.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
 	})
 }
 
@@ -102,7 +103,7 @@ func (checker *insertMustSpecifyColumnChecker) EnterSelectItemList(ctx *mysql.Se
 			Code:          advisor.InsertNotSpecifyColumn.Int32(),
 			Title:         checker.title,
 			Content:       fmt.Sprintf("The INSERT statement must specify columns but \"%s\" does not", checker.text),
-			StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
+			StartPosition: common.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
 		})
 	}
 }

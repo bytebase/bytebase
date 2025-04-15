@@ -9,6 +9,7 @@ import (
 
 	mysql "github.com/bytebase/mysql-parser"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -82,7 +83,7 @@ func (checker *tableRequireCharsetChecker) EnterCreateTable(ctx *mysql.CreateTab
 			Code:          advisor.NoCharset.Int32(),
 			Title:         checker.title,
 			Content:       fmt.Sprintf("Table %s does not have a character set specified", tableName),
-			StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
+			StartPosition: common.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
 		})
 	}
 }

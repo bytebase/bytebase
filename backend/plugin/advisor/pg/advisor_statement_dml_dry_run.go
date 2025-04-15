@@ -88,7 +88,7 @@ func (checker *statementDmlDryRunChecker) Visit(in ast.Node) ast.Visitor {
 				Code:          advisor.StatementDMLDryRunFailed.Int32(),
 				Title:         checker.title,
 				Content:       fmt.Sprintf("\"%s\" dry runs failed: %s", node.Text(), err.Error()),
-				StartPosition: advisor.ConvertANTLRLineToPosition(node.LastLine()),
+				StartPosition: common.ConvertANTLRLineToPosition(node.LastLine()),
 			})
 		}
 	}

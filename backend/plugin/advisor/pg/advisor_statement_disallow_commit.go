@@ -8,6 +8,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -63,7 +64,7 @@ func (checker *statementDisallowCommitChecker) Visit(in ast.Node) ast.Visitor {
 			Code:          advisor.StatementDisallowCommit.Int32(),
 			Title:         checker.title,
 			Content:       fmt.Sprintf("Commit is not allowed, related statement: \"%s\"", in.Text()),
-			StartPosition: advisor.ConvertANTLRLineToPosition(in.LastLine()),
+			StartPosition: common.ConvertANTLRLineToPosition(in.LastLine()),
 		})
 	}
 

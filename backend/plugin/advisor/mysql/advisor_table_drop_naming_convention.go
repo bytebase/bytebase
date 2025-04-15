@@ -9,6 +9,7 @@ import (
 	mysql "github.com/bytebase/mysql-parser"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -84,7 +85,7 @@ func (checker *namingDropTableConventionChecker) EnterDropTable(ctx *mysql.DropT
 				Code:          advisor.TableDropNamingConventionMismatch.Int32(),
 				Title:         checker.title,
 				Content:       fmt.Sprintf("`%s` mismatches drop table naming convention, naming format should be %q", tableName, checker.format),
-				StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
+				StartPosition: common.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
 			})
 		}
 	}

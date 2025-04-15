@@ -8,6 +8,7 @@ import (
 	mysql "github.com/bytebase/mysql-parser"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -109,7 +110,7 @@ func (checker *tableDisallowDMLChecker) checkTableName(tableName string, line in
 				Code:          advisor.TableDisallowDML.Int32(),
 				Title:         checker.title,
 				Content:       fmt.Sprintf("DML is disallowed on table %s.", tableName),
-				StartPosition: advisor.ConvertANTLRLineToPosition(line),
+				StartPosition: common.ConvertANTLRLineToPosition(line),
 			})
 			return
 		}

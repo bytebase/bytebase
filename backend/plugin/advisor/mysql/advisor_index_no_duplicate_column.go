@@ -11,6 +11,7 @@ import (
 
 	mysql "github.com/bytebase/mysql-parser"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -159,7 +160,7 @@ func (checker *indexNoDuplicateColumnChecker) EnterCreateIndex(ctx *mysql.Create
 			Code:          advisor.DuplicateColumnInIndex.Int32(),
 			Title:         checker.title,
 			Content:       fmt.Sprintf("%s`%s` has duplicate column `%s`.`%s`", indexType, indexName, tableName, column),
-			StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
+			StartPosition: common.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
 		})
 	}
 }
@@ -211,7 +212,7 @@ func (checker *indexNoDuplicateColumnChecker) handleConstraintDef(tableName stri
 			Code:          advisor.DuplicateColumnInIndex.Int32(),
 			Title:         checker.title,
 			Content:       fmt.Sprintf("%s`%s` has duplicate column `%s`.`%s`", indexType, indexName, tableName, column),
-			StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
+			StartPosition: common.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
 		})
 	}
 }

@@ -9,6 +9,7 @@ import (
 
 	mysql "github.com/bytebase/mysql-parser"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -92,7 +93,7 @@ func (checker *statementWhereDisallowUsingFunctionChecker) EnterFunctionCall(ctx
 			Code:          advisor.DisabledFunction.Int32(),
 			Title:         checker.title,
 			Content:       fmt.Sprintf("Function is disallowed in where clause, but \"%s\" uses", checker.text),
-			StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
+			StartPosition: common.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
 		})
 	}
 }

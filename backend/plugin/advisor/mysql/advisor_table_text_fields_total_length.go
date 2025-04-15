@@ -12,6 +12,7 @@ import (
 
 	mysql "github.com/bytebase/mysql-parser"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
@@ -92,7 +93,7 @@ func (checker *tableFieldsMaximumVarcharLengthChecker) EnterCreateTable(ctx *mys
 			Code:          advisor.IndexCountExceedsLimit.Int32(),
 			Title:         checker.title,
 			Content:       fmt.Sprintf("Table %q total text column length (%d) exceeds the limit (%d).", tableName, total, checker.maximum),
-			StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
+			StartPosition: common.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
 		})
 	}
 }
@@ -126,7 +127,7 @@ func (checker *tableFieldsMaximumVarcharLengthChecker) EnterAlterTable(ctx *mysq
 			Code:          advisor.TotalTextLengthExceedsLimit.Int32(),
 			Title:         checker.title,
 			Content:       fmt.Sprintf("Table %q total text column length (%d) exceeds the limit (%d).", tableName, total, checker.maximum),
-			StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
+			StartPosition: common.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
 		})
 	}
 }

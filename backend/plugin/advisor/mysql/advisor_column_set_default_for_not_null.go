@@ -11,6 +11,7 @@ import (
 
 	mysql "github.com/bytebase/mysql-parser"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -123,7 +124,7 @@ func (checker *columnSetDefaultForNotNullChecker) EnterCreateTable(ctx *mysql.Cr
 				Code:          advisor.NotNullColumnWithNoDefault.Int32(),
 				Title:         checker.title,
 				Content:       fmt.Sprintf("Column `%s`.`%s` is NOT NULL but doesn't have DEFAULT", tableName, columnName),
-				StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + tableElement.GetStart().GetLine()),
+				StartPosition: common.ConvertANTLRLineToPosition(checker.baseLine + tableElement.GetStart().GetLine()),
 			})
 		}
 	}
@@ -136,7 +137,7 @@ func (checker *columnSetDefaultForNotNullChecker) checkFieldDefinition(tableName
 			Code:          advisor.NotNullColumnWithNoDefault.Int32(),
 			Title:         checker.title,
 			Content:       fmt.Sprintf("Column `%s`.`%s` is NOT NULL but doesn't have DEFAULT", tableName, columnName),
-			StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
+			StartPosition: common.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
 		})
 	}
 }

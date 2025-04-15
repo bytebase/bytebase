@@ -12,6 +12,7 @@ import (
 
 	mysql "github.com/bytebase/mysql-parser"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -167,7 +168,7 @@ func (checker *namingAutoIncrementColumnChecker) checkFieldDefinition(tableName,
 			Code:          advisor.NamingAutoIncrementColumnConventionMismatch.Int32(),
 			Title:         checker.title,
 			Content:       fmt.Sprintf("`%s`.`%s` mismatches auto_increment column naming convention, naming format should be %q", tableName, columnName, checker.format),
-			StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
+			StartPosition: common.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
 		})
 	}
 	if checker.maxLength > 0 && len(columnName) > checker.maxLength {
@@ -176,7 +177,7 @@ func (checker *namingAutoIncrementColumnChecker) checkFieldDefinition(tableName,
 			Code:          advisor.NamingAutoIncrementColumnConventionMismatch.Int32(),
 			Title:         checker.title,
 			Content:       fmt.Sprintf("`%s`.`%s` mismatches auto_increment column naming convention, its length should be within %d characters", tableName, columnName, checker.maxLength),
-			StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
+			StartPosition: common.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
 		})
 	}
 }
