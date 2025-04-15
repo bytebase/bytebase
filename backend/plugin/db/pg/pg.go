@@ -367,7 +367,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 	if err == nil {
 		return affectedRows, nil
 	}
-	if _, ok := err.(*LockTimeoutError); !ok {
+	if !errors.As(err, &LockTimeoutError{}) {
 		return affectedRows, err
 	}
 
@@ -385,7 +385,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 		if err == nil {
 			break
 		}
-		if _, ok := err.(*LockTimeoutError); !ok {
+		if !errors.As(err, &LockTimeoutError{}) {
 			break
 		}
 	}
