@@ -112,7 +112,7 @@
     >
       <BBButtonConfirm
         v-if="allowArchive"
-        :type="'ARCHIVE'"
+        :type="'DELETE'"
         :button-text="$t('environment.delete')"
         :ok-text="$t('common.delete')"
         :confirm-title="
@@ -207,11 +207,8 @@ const hasEnvironmentPolicyFeature = computed(() =>
 );
 
 const allowArchive = computed(() => {
-  return (
-    hasPermission("bb.settings.set") && environmentList.value.length > 1
-  );
+  return hasPermission("bb.settings.set") && environmentList.value.length > 1;
 });
-
 
 const renderColorPicker = () => {
   return (

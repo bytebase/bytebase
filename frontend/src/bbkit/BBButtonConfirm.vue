@@ -15,15 +15,9 @@
     "
   >
     <template v-if="!hideIcon">
-      <heroicons-outline:trash v-if="type == 'DELETE'" class="w-4 h-4" />
-      <heroicons-outline:archive v-if="type == 'ARCHIVE'" class="w-4 h-4" />
-      <heroicons-outline:reply v-if="type == 'RESTORE'" class="w-4 h-4" />
-      <heroicons-outline:minus-circle
-        v-if="type == 'DISABLE'"
-        class="w-4 h-4"
-      />
-      <heroicons-outline:pencil v-if="type == 'EDIT'" class="w-4 h-4" />
-      <heroicons-outline:duplicate v-if="type == 'CLONE'" class="w-4 h-4" />
+      <Trash2Icon v-if="type == 'DELETE'" class="w-4 h-4" />
+      <ArchiveIcon v-if="type == 'ARCHIVE'" class="w-4 h-4" />
+      <Undo2Icon v-if="type == 'RESTORE'" class="w-4 h-4" />
     </template>
     <span v-if="buttonText" :class="[!hideIcon && 'ml-1']">
       {{ buttonText }}
@@ -31,11 +25,7 @@
   </NButton>
   <BBAlert
     v-model:show="state.showModal"
-    :type="
-      type == 'DELETE' || type == 'ARCHIVE' || type == 'DISABLE'
-        ? 'warning'
-        : 'info'
-    "
+    :type="type == 'DELETE' || type == 'ARCHIVE' ? 'warning' : 'info'"
     :ok-text="okText"
     :title="confirmTitle"
     :description="confirmDescription"
@@ -52,6 +42,7 @@
 </template>
 
 <script lang="ts" setup>
+import { ArchiveIcon, Trash2Icon, Undo2Icon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
