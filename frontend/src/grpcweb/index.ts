@@ -1,20 +1,11 @@
-import { errorDetailsClientMiddleware } from "nice-grpc-error-details";
-import {
-  createChannel,
-  createClientFactory,
-  FetchTransport,
-  WebsocketTransport,
-} from "nice-grpc-web";
 import { ActuatorServiceDefinition } from "@/types/proto/v1/actuator_service";
-import { AnomalyServiceDefinition } from "@/types/proto/v1/anomaly_service";
 import { AuditLogServiceDefinition } from "@/types/proto/v1/audit_log_service";
 import { AuthServiceDefinition } from "@/types/proto/v1/auth_service";
-import { UserServiceDefinition } from "@/types/proto/v1/user_service";
 import { CelServiceDefinition } from "@/types/proto/v1/cel_service";
 import { ChangelistServiceDefinition } from "@/types/proto/v1/changelist_service";
+import { DatabaseCatalogServiceDefinition } from "@/types/proto/v1/database_catalog_service";
 import { DatabaseGroupServiceDefinition } from "@/types/proto/v1/database_group_service";
 import { DatabaseServiceDefinition } from "@/types/proto/v1/database_service";
-import { DatabaseCatalogServiceDefinition } from "@/types/proto/v1/database_catalog_service";
 import { EnvironmentServiceDefinition } from "@/types/proto/v1/environment_service";
 import { GroupServiceDefinition } from "@/types/proto/v1/group_service";
 import { IdentityProviderServiceDefinition } from "@/types/proto/v1/idp_service";
@@ -33,8 +24,16 @@ import { SettingServiceDefinition } from "@/types/proto/v1/setting_service";
 import { SheetServiceDefinition } from "@/types/proto/v1/sheet_service";
 import { SQLServiceDefinition } from "@/types/proto/v1/sql_service";
 import { SubscriptionServiceDefinition } from "@/types/proto/v1/subscription_service";
+import { UserServiceDefinition } from "@/types/proto/v1/user_service";
 import { WorksheetServiceDefinition } from "@/types/proto/v1/worksheet_service";
 import { WorkspaceServiceDefinition } from "@/types/proto/v1/workspace_service";
+import { errorDetailsClientMiddleware } from "nice-grpc-error-details";
+import {
+  createChannel,
+  createClientFactory,
+  FetchTransport,
+  WebsocketTransport,
+} from "nice-grpc-web";
 import {
   authInterceptorMiddleware,
   errorNotificationMiddleware,
@@ -184,11 +183,6 @@ export const subscriptionServiceClient = clientFactory.create(
 
 export const actuatorServiceClient = clientFactory.create(
   ActuatorServiceDefinition,
-  channel
-);
-
-export const anomalyServiceClient = clientFactory.create(
-  AnomalyServiceDefinition,
   channel
 );
 

@@ -12,7 +12,6 @@ module.exports = {
     // "w-xxx" is used by BBTab
     // "bg-xxx", "text-xxx" is used by BBAttention TaskCheckBadgeBar BBBadge
     // "hover:bg-xxx", "hover:border-xxx" is used by TaskCheckBadgeBar BBBadge
-    // "grid-cols-xxx" is used by AnomalyCenterDashboard
     { pattern: /^w-/ },
     { pattern: /^pl-/ },
     { pattern: /^(bg|border)-gray-/, variants: ["hover"] },
