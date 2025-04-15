@@ -51,13 +51,23 @@ func (*Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionCon
 		port = "8080" // default Trino port
 	}
 
-	// Build query parameters
-	queryParams := url.Values{}
-	queryParams.Add("source", "bytebase")
-	queryParams.Add("user", user)
-	if password != "" {
-		queryParams.Add("password", password)
+	// Build URL with query parameters
+	u := &url.URL{
+		Scheme: scheme,
+		Host:   fmt.Sprintf("%s:%s", host, port),
 	}
+
+	// Set user info based on whether password exists
+	if password != "" {
+		u.User = url.UserPassword(user, password)
+	} else {
+		u.User = url.User(user)
+	}
+
+	// Add query parameters
+	query := u.Query()
+	query.Add("source", "bytebase")
+
 	database := config.DataSource.Database
 	if config.ConnectionContext.DatabaseName != "" {
 		database = config.ConnectionContext.DatabaseName
@@ -65,16 +75,11 @@ func (*Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionCon
 	if database == "" {
 		database = "system"
 	}
-	queryParams.Add("catalog", database)
+	query.Add("catalog", database)
+	u.RawQuery = query.Encode()
 
-	// Build DSN
-	var dsn string
-	if password != "" {
-		dsn = fmt.Sprintf("%s://%s:%s@%s:%s", scheme, user, url.QueryEscape(password), host, port)
-	} else {
-		dsn = fmt.Sprintf("%s://%s@%s:%s", scheme, user, host, port)
-	}
-	dsn = dsn + "?" + queryParams.Encode()
+	// Get DSN from URL
+	dsn := u.String()
 
 	// Connect using the Trino driver
 	db, err := sql.Open("trino", dsn)
@@ -86,11 +91,6 @@ func (*Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionCon
 	db.SetConnMaxLifetime(30 * time.Second)
 	db.SetMaxIdleConns(10)
 	db.SetMaxOpenConns(20)
-
-	// Ping with short timeout - don't fail if ping fails
-	pingCtx, cancel := context.WithTimeout(context.Background(), 8*time.Second)
-	defer cancel()
-	_ = db.PingContext(pingCtx)
 
 	return &Driver{
 		config: config,
