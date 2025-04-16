@@ -104,9 +104,10 @@ export const useIssueV1Store = defineStore("issue_v1", () => {
 
   const fetchIssueByName = async (
     name: string,
-    composeIssueConfig?: ComposeIssueConfig
+    composeIssueConfig?: ComposeIssueConfig,
+    silent: boolean = false
   ) => {
-    const issue = await issueServiceClient.getIssue({ name });
+    const issue = await issueServiceClient.getIssue({ name }, { silent });
     return shallowComposeIssue(issue, composeIssueConfig);
   };
 
