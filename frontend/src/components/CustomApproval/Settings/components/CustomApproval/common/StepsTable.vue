@@ -12,7 +12,7 @@
       <div class="bb-grid-cell">
         <RoleSelect
           v-if="editable"
-          :suffix="false"
+          :suffix="''"
           :value="step.nodes[0]?.role"
           style="width: 80%"
           @update:value="

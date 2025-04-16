@@ -14,7 +14,7 @@
 import type { SelectGroupOption, SelectOption } from "naive-ui";
 import { NSelect } from "naive-ui";
 import { computed } from "vue";
-import { useI18n } from "vue-i18n";
+import { t } from "@/plugins/i18n";
 import { useAppFeature, useRoleStore } from "@/store";
 import {
   PRESET_PROJECT_ROLES,
@@ -30,14 +30,17 @@ const props = withDefaults(
     disabled?: boolean;
     clearable?: boolean;
     multiple?: boolean;
-    suffix?: boolean;
+    suffix?: string;
     size?: "tiny" | "small" | "medium" | "large";
   }>(),
   {
     clearable: true,
     value: undefined,
     multiple: false,
-    suffix: true,
+    suffix: () =>
+      ` (${t("common.optional")}, ${t(
+        "role.project-roles.apply-to-all-projects"
+      ).toLocaleLowerCase()})`,
     size: "medium",
   }
 );
@@ -46,7 +49,6 @@ defineEmits<{
   (event: "update:value", val: string | string[]): void;
 }>();
 
-const { t } = useI18n();
 const roleStore = useRoleStore();
 const hideProjectRoles = useAppFeature("bb.feature.members.hide-project-roles");
 
@@ -67,13 +69,7 @@ const availableRoleOptions = computed(
       {
         type: "group",
         key: "project-roles",
-        label:
-          t("role.project-roles.self") +
-          (props.suffix
-            ? ` (${t("common.optional")}, ${t(
-                "role.project-roles.apply-to-all-projects"
-              ).toLocaleLowerCase()})`
-            : ""),
+        label: t("role.project-roles.self") + props.suffix,
         children: PRESET_PROJECT_ROLES.map((role) => ({
           label: displayRoleTitle(role),
           value: role,
@@ -90,13 +86,7 @@ const availableRoleOptions = computed(
       roleGroups.push({
         type: "group",
         key: "custom-roles",
-        label:
-          t("role.custom-roles.self") +
-          (props.suffix
-            ? ` (${t("common.optional")}, ${t(
-                "role.project-roles.apply-to-all-projects"
-              ).toLocaleLowerCase()})`
-            : ""),
+        label: t("role.custom-roles.self") + props.suffix,
         children: customRoles.map((role) => ({
           label: displayRoleTitle(role),
           value: role,
