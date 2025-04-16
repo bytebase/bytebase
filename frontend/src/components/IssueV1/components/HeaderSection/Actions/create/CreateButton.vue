@@ -146,7 +146,7 @@ const issueCreateErrorList = computed(() => {
       issue.value.projectEntity.issueLabels
     ).length === 0
   ) {
-    errorList.push(t("project.settings.labels.force-issue-labels"));
+    errorList.push(t("project.settings.issue-related.labels.force-issue-labels.warning"));
   }
   return errorList;
 });
