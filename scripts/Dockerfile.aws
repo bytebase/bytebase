@@ -1,4 +1,4 @@
-FROM node:22.14.0 AS frontend
+FROM node:23.11.0-slim AS frontend
 
 RUN npm i -g pnpm@10.7.0
 
