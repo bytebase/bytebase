@@ -1,8 +1,4 @@
-<<<<<<< HEAD
 FROM node:23.11.0-slim AS frontend
-=======
-FROM node:22.14.0 AS frontend
->>>>>>> main
 
 RUN npm i -g pnpm@10.7.0
 
