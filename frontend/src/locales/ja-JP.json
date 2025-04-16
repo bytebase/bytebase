@@ -421,7 +421,6 @@
       "description": "シングル サインオン (SSO) は、ユーザーが他のアプリケーションや Web サイトからログインできるようにする認証方法です。",
       "archive": "この SSO をアーカイブする",
       "archive-info": "アーカイブされた SSO は表示されなくなります。",
-      "restore": "この SSO を復元する",
       "form": {
         "type": "タイプ",
         "learn-more-with-user-doc": "設定方法の詳細については、こちらをご覧ください",

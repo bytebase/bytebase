@@ -20,7 +20,6 @@ type IdentityProviderMessage struct {
 	Domain     string
 	Type       storepb.IdentityProviderType
 	Config     *storepb.IdentityProviderConfig
-	Deleted    bool
 }
 
 func getConfigBytes(config *storepb.IdentityProviderConfig) ([]byte, error) {
@@ -39,8 +38,7 @@ func getConfigBytes(config *storepb.IdentityProviderConfig) ([]byte, error) {
 
 // FindIdentityProviderMessage is the message for finding identity providers.
 type FindIdentityProviderMessage struct {
-	ResourceID  *string
-	ShowDeleted bool
+	ResourceID *string
 }
 
 // UpdateIdentityProviderMessage is the message for updating an identity provider.
@@ -50,7 +48,6 @@ type UpdateIdentityProviderMessage struct {
 	Title  *string
 	Domain *string
 	Config *storepb.IdentityProviderConfig
-	Delete *bool
 }
 
 // CreateIdentityProvider creates an identity provider.
@@ -106,8 +103,6 @@ func (s *Store) GetIdentityProvider(ctx context.Context, find *FindIdentityProvi
 			return v, nil
 		}
 	}
-	// We will always return the resource regardless of its deleted state.
-	find.ShowDeleted = true
 
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
@@ -191,15 +186,11 @@ func (*Store) updateIdentityProviderImpl(ctx context.Context, txn *sql.Tx, patch
 		}
 		set, args = append(set, fmt.Sprintf("config = $%d", len(args)+1)), append(args, string(configBytes))
 	}
-	if v := patch.Delete; v != nil {
-		set, args = append(set, fmt.Sprintf("deleted = $%d", len(args)+1)), append(args, *v)
-	}
 	args = append(args, patch.ResourceID)
 
 	identityProvider := &IdentityProviderMessage{}
 	var identityProviderType string
 	var identityProviderConfig string
-	var deleted bool
 	if err := txn.QueryRowContext(ctx, fmt.Sprintf(`
 		UPDATE idp
 		SET `+strings.Join(set, ", ")+`
@@ -209,8 +200,7 @@ func (*Store) updateIdentityProviderImpl(ctx context.Context, txn *sql.Tx, patch
 			name,
 			domain,
 			type,
-			config,
-			deleted
+			config
 	`, len(args)),
 		args...,
 	).Scan(
@@ -219,7 +209,6 @@ func (*Store) updateIdentityProviderImpl(ctx context.Context, txn *sql.Tx, patch
 		&identityProvider.Domain,
 		&identityProviderType,
 		&identityProviderConfig,
-		&deleted,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("identity provider ID not found: %s", patch.ResourceID)}
@@ -229,7 +218,6 @@ func (*Store) updateIdentityProviderImpl(ctx context.Context, txn *sql.Tx, patch
 
 	identityProvider.Type = convertIdentityProviderType(identityProviderType)
 	identityProvider.Config = convertIdentityProviderConfigString(identityProvider.Type, identityProviderConfig)
-	identityProvider.Deleted = deleted
 	return identityProvider, nil
 }
 
@@ -238,9 +226,6 @@ func (*Store) listIdentityProvidersImpl(ctx context.Context, txn *sql.Tx, find *
 	if v := find.ResourceID; v != nil {
 		where, args = append(where, fmt.Sprintf("resource_id = $%d", len(args)+1)), append(args, *v)
 	}
-	if !find.ShowDeleted {
-		where, args = append(where, fmt.Sprintf("deleted = $%d", len(args)+1)), append(args, false)
-	}
 
 	rows, err := txn.QueryContext(ctx, `
 		SELECT
@@ -248,8 +233,7 @@ func (*Store) listIdentityProvidersImpl(ctx context.Context, txn *sql.Tx, find *
 			name,
 			domain,
 			type,
-			config,
-			deleted
+			config
 		FROM idp
 		WHERE `+strings.Join(where, " AND ")+` ORDER BY id ASC`,
 		args...,
@@ -270,7 +254,6 @@ func (*Store) listIdentityProvidersImpl(ctx context.Context, txn *sql.Tx, find *
 			&identityProviderMessage.Domain,
 			&identityProviderType,
 			&identityProviderConfig,
-			&identityProviderMessage.Deleted,
 		); err != nil {
 			return nil, err
 		}
@@ -283,6 +266,28 @@ func (*Store) listIdentityProvidersImpl(ctx context.Context, txn *sql.Tx, find *
 	}
 
 	return identityProviderMessages, nil
+}
+
+func (s *Store) DeleteIdentityProvider(ctx context.Context, resourceID string) error {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	if _, err := tx.ExecContext(ctx, `
+		DELETE FROM idp
+		WHERE resource_id = $1
+	`, resourceID); err != nil {
+		return err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+
+	s.idpCache.Remove(resourceID)
+	return nil
 }
 
 func convertIdentityProviderType(identityProviderType string) storepb.IdentityProviderType {

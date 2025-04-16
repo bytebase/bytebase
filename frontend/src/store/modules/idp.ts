@@ -1,8 +1,7 @@
+import { identityProviderClient } from "@/grpcweb";
+import type { IdentityProvider } from "@/types/proto/v1/idp_service";
 import { isEqual, isUndefined } from "lodash-es";
 import { defineStore } from "pinia";
-import { identityProviderClient } from "@/grpcweb";
-import { State } from "@/types/proto/v1/common";
-import type { IdentityProvider } from "@/types/proto/v1/idp_service";
 
 interface IdentityProviderState {
   identityProviderMapByName: Map<string, IdentityProvider>;
@@ -14,21 +13,13 @@ export const useIdentityProviderStore = defineStore("idp", {
   }),
   getters: {
     identityProviderList(state) {
-      return Array.from(state.identityProviderMapByName.values()).filter(
-        (idp) => idp.state === State.ACTIVE
-      );
-    },
-    deletedIdentityProviderList(state) {
-      return Array.from(state.identityProviderMapByName.values()).filter(
-        (idp) => idp.state === State.DELETED
-      );
+      return Array.from(state.identityProviderMapByName.values());
     },
   },
   actions: {
-    async fetchIdentityProviderList(showDeleted = false) {
+    async fetchIdentityProviderList() {
       const { identityProviders } =
         await identityProviderClient.listIdentityProviders({
-          showDeleted,
         });
       for (const identityProvider of identityProviders) {
         this.identityProviderMapByName.set(
@@ -94,21 +85,8 @@ export const useIdentityProviderStore = defineStore("idp", {
       });
       const cachedData = this.getIdentityProviderByName(name);
       if (cachedData) {
-        this.identityProviderMapByName.set(name, {
-          ...cachedData,
-          state: State.DELETED,
-        });
+        this.identityProviderMapByName.delete(name);
       }
-    },
-    async undeleteIdentityProvider(name: string) {
-      const identityProvider =
-        await identityProviderClient.undeleteIdentityProvider({
-          name,
-        });
-      this.identityProviderMapByName.set(
-        identityProvider.name,
-        identityProvider
-      );
     },
   },
 });

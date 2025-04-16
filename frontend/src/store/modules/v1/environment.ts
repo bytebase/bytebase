@@ -1,6 +1,3 @@
-import { orderBy } from "lodash-es";
-import { defineStore } from "pinia";
-import { computed } from "vue";
 import { settingServiceClient } from "@/grpcweb";
 import type { ResourceId } from "@/types";
 import { unknownEnvironment } from "@/types";
@@ -9,6 +6,9 @@ import {
   EnvironmentSetting_Environment,
 } from "@/types/proto/v1/setting_service";
 import type { Environment } from "@/types/v1/environment";
+import { orderBy } from "lodash-es";
+import { defineStore } from "pinia";
+import { computed } from "vue";
 import { environmentNamePrefix } from "./common";
 
 interface EnvironmentState {
@@ -102,7 +102,7 @@ export const useEnvironmentV1Store = defineStore("environment_v1", {
     },
   },
   actions: {
-    async fetchEnvironments(_showDeleted = false, silent = false) {
+    async fetchEnvironments(silent = false) {
       const environments = await getEnvironmentSetting(silent);
       this.environmentMapById = getEnvironmentByIdMap(environments);
       return environments;
@@ -195,7 +195,7 @@ export const useEnvironmentV1Store = defineStore("environment_v1", {
       if (cachedData) {
         return cachedData;
       }
-      await this.fetchEnvironments(false, silent);
+      await this.fetchEnvironments(silent);
       const environment = this.environmentMapById.get(id);
       return environment;
     },

@@ -691,11 +691,6 @@ paths:
                      the call that provided the page token.
                   schema:
                     type: string
-                - name: showDeleted
-                  in: query
-                  description: Show deleted identity providers if specified.
-                  schema:
-                    type: boolean
             responses:
                 "200":
                     description: OK
@@ -840,37 +835,6 @@ paths:
                     application/json:
                         schema:
                             $ref: '#/components/schemas/IdentityProvider'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/IdentityProvider'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
-    /v1/idps/{idp}:undelete:
-        post:
-            tags:
-                - IdentityProviderService
-            operationId: IdentityProviderService_UndeleteIdentityProvider
-            parameters:
-                - name: idp
-                  in: path
-                  description: The idp id.
-                  required: true
-                  schema:
-                    type: string
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/UndeleteIdentityProviderRequest'
                 required: true
             responses:
                 "200":
@@ -9650,13 +9614,6 @@ components:
                     description: |-
                         The name of the identity provider.
                          Format: idps/{idp}
-                state:
-                    enum:
-                        - STATE_UNSPECIFIED
-                        - ACTIVE
-                        - DELETED
-                    type: string
-                    format: enum
                 title:
                     type: string
                 domain:
@@ -13529,16 +13486,6 @@ components:
                     type: string
                 skipDump:
                     type: boolean
-        UndeleteIdentityProviderRequest:
-            required:
-                - name
-            type: object
-            properties:
-                name:
-                    type: string
-                    description: |-
-                        The name of the deleted identity provider.
-                         Format: idps/{identity_provider}
         UndeleteInstanceRequest:
             required:
                 - name
