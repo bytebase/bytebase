@@ -133,11 +133,15 @@ func TestGetPossibleColumnResources(t *testing.T) {
 		p := parser.NewGoogleSQLParser(stream)
 		// Remove default error listener and add our own error listener.
 		lexer.RemoveErrorListeners()
-		lexerErrorListener := &base.ParseErrorListener{}
+		lexerErrorListener := &base.ParseErrorListener{
+			Statement: tc.inputExpr,
+		}
 		lexer.AddErrorListener(lexerErrorListener)
 
 		p.RemoveErrorListeners()
-		parserErrorListener := &base.ParseErrorListener{}
+		parserErrorListener := &base.ParseErrorListener{
+			Statement: tc.inputExpr,
+		}
 		p.AddErrorListener(parserErrorListener)
 
 		p.BuildParseTrees = true

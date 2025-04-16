@@ -1148,7 +1148,9 @@ func skipHeadingSQLWithoutSemicolon(statement string, caretLine int, caretOffset
 	lexer := plsql.NewPlSqlLexer(input)
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
 	lexer.RemoveErrorListeners()
-	lexerErrorListener := &base.ParseErrorListener{}
+	lexerErrorListener := &base.ParseErrorListener{
+		Statement: statement,
+	}
 	lexer.AddErrorListener(lexerErrorListener)
 
 	stream.Fill()

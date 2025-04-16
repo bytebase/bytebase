@@ -27,18 +27,22 @@ func SplitSQL(statement string) ([]base.SingleSQL, error) {
 	if err != nil {
 		slog.Info("failed to split PostgreSQL statement", "statement", statement)
 		// Use parser to split statement.
-		return splitByParser(lexer, stream)
+		return splitByParser(statement, lexer, stream)
 	}
 	return list, nil
 }
 
-func splitByParser(lexer *parser.PostgreSQLLexer, stream *antlr.CommonTokenStream) ([]base.SingleSQL, error) {
+func splitByParser(statement string, lexer *parser.PostgreSQLLexer, stream *antlr.CommonTokenStream) ([]base.SingleSQL, error) {
 	p := parser.NewPostgreSQLParser(stream)
-	lexerErrorListener := &base.ParseErrorListener{}
+	lexerErrorListener := &base.ParseErrorListener{
+		Statement: statement,
+	}
 	lexer.RemoveErrorListeners()
 	lexer.AddErrorListener(lexerErrorListener)
 
-	parserErrorListener := &base.ParseErrorListener{}
+	parserErrorListener := &base.ParseErrorListener{
+		Statement: statement,
+	}
 	p.RemoveErrorListeners()
 	p.AddErrorListener(parserErrorListener)
 
