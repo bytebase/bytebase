@@ -11,7 +11,7 @@ import type {
   ComposedIssue,
   WrappedReviewStep,
 } from "@/types";
-import { emptyFlow, PresetRoleType } from "@/types";
+import { emptyFlow } from "@/types";
 import type { ApprovalNode, Issue } from "@/types/proto/v1/issue_service";
 import {
   ApprovalNode_Type,
