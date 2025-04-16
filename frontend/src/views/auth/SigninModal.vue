@@ -25,17 +25,8 @@ import { NButton } from "naive-ui";
 import { computed } from "vue";
 import { useRoute } from "vue-router";
 import { BBModal } from "@/bbkit";
-import {
-  AUTH_MFA_MODULE,
-  AUTH_OAUTH_CALLBACK_MODULE,
-  AUTH_OIDC_CALLBACK_MODULE,
-  AUTH_PASSWORD_FORGOT_MODULE,
-  AUTH_PASSWORD_RESET_MODULE,
-  AUTH_SIGNIN_ADMIN_MODULE,
-  AUTH_SIGNIN_MODULE,
-  AUTH_SIGNUP_MODULE,
-} from "@/router/auth";
 import { useAuthStore } from "@/store";
+import { isAuthRelatedRoute } from "@/utils/auth";
 import Signin from "@/views/auth/Signin.vue";
 
 const route = useRoute();
@@ -48,19 +39,7 @@ const logout = () => {
 
 const shouldShow = computed(() => {
   // Do not show the modal when the user is in auth related pages.
-  if (
-    route.name &&
-    [
-      AUTH_SIGNIN_MODULE,
-      AUTH_SIGNIN_ADMIN_MODULE,
-      AUTH_SIGNUP_MODULE,
-      AUTH_MFA_MODULE,
-      AUTH_PASSWORD_RESET_MODULE,
-      AUTH_PASSWORD_FORGOT_MODULE,
-      AUTH_OAUTH_CALLBACK_MODULE,
-      AUTH_OIDC_CALLBACK_MODULE,
-    ].includes(route.name.toString())
-  ) {
+  if (route.name && isAuthRelatedRoute(route.name as string)) {
     return false;
   }
 
