@@ -278,14 +278,11 @@ func partiqlSyntaxCheck(statement string) (any, []*storepb.Advice) {
 		if syntaxErr, ok := err.(*base.SyntaxError); ok {
 			return nil, []*storepb.Advice{
 				{
-					Status:  storepb.Advice_WARNING,
-					Code:    StatementSyntaxErrorCode,
-					Title:   SyntaxErrorTitle,
-					Content: syntaxErr.Message,
-					StartPosition: &storepb.Position{
-						Line:   int32(syntaxErr.Position.GetLine()),
-						Column: int32(syntaxErr.Position.GetColumn()),
-					},
+					Status:        storepb.Advice_WARNING,
+					Code:          StatementSyntaxErrorCode,
+					Title:         SyntaxErrorTitle,
+					Content:       syntaxErr.Message,
+					StartPosition: syntaxErr.Position,
 				},
 			}
 		}
@@ -312,14 +309,11 @@ func mssqlSyntaxCheck(statement string) (any, []*storepb.Advice) {
 		if syntaxErr, ok := err.(*base.SyntaxError); ok {
 			return nil, []*storepb.Advice{
 				{
-					Status:  storepb.Advice_WARNING,
-					Code:    StatementSyntaxErrorCode,
-					Title:   SyntaxErrorTitle,
-					Content: syntaxErr.Message,
-					StartPosition: &storepb.Position{
-						Line:   int32(syntaxErr.Position.GetLine()),
-						Column: int32(syntaxErr.Position.GetColumn()),
-					},
+					Status:        storepb.Advice_WARNING,
+					Code:          StatementSyntaxErrorCode,
+					Title:         SyntaxErrorTitle,
+					Content:       syntaxErr.Message,
+					StartPosition: syntaxErr.Position,
 				},
 			}
 		}
@@ -346,14 +340,11 @@ func snowflakeSyntaxCheck(statement string) (any, []*storepb.Advice) {
 		if syntaxErr, ok := err.(*base.SyntaxError); ok {
 			return nil, []*storepb.Advice{
 				{
-					Status:  storepb.Advice_WARNING,
-					Code:    StatementSyntaxErrorCode,
-					Title:   SyntaxErrorTitle,
-					Content: syntaxErr.Message,
-					StartPosition: &storepb.Position{
-						Line:   int32(syntaxErr.Position.GetLine()),
-						Column: int32(syntaxErr.Position.GetColumn()),
-					},
+					Status:        storepb.Advice_WARNING,
+					Code:          StatementSyntaxErrorCode,
+					Title:         SyntaxErrorTitle,
+					Content:       syntaxErr.Message,
+					StartPosition: syntaxErr.Position,
 				},
 			}
 		}
@@ -379,14 +370,11 @@ func oracleSyntaxCheck(statement string) (any, []*storepb.Advice) {
 		if syntaxErr, ok := err.(*base.SyntaxError); ok {
 			return nil, []*storepb.Advice{
 				{
-					Status:  storepb.Advice_WARNING,
-					Code:    StatementSyntaxErrorCode,
-					Title:   SyntaxErrorTitle,
-					Content: syntaxErr.Message,
-					StartPosition: &storepb.Position{
-						Line:   int32(syntaxErr.Position.GetLine()),
-						Column: int32(syntaxErr.Position.GetColumn()),
-					},
+					Status:        storepb.Advice_WARNING,
+					Code:          StatementSyntaxErrorCode,
+					Title:         SyntaxErrorTitle,
+					Content:       syntaxErr.Message,
+					StartPosition: syntaxErr.Position,
 				},
 			}
 		}
@@ -472,14 +460,11 @@ func mysqlSyntaxCheck(statement string) (any, []*storepb.Advice) {
 		if syntaxErr, ok := err.(*base.SyntaxError); ok {
 			return nil, []*storepb.Advice{
 				{
-					Status:  storepb.Advice_ERROR,
-					Code:    StatementSyntaxErrorCode,
-					Title:   SyntaxErrorTitle,
-					Content: syntaxErr.Message,
-					StartPosition: &storepb.Position{
-						Line:   int32(syntaxErr.Position.GetLine()),
-						Column: int32(syntaxErr.Position.GetColumn()),
-					},
+					Status:        storepb.Advice_ERROR,
+					Code:          StatementSyntaxErrorCode,
+					Title:         SyntaxErrorTitle,
+					Content:       syntaxErr.Message,
+					StartPosition: syntaxErr.Position,
 				},
 			}
 		}
@@ -543,7 +528,7 @@ func tidbSyntaxCheck(statement string) (any, []*storepb.Advice) {
 					Title:   "Parse error",
 					Content: relocationTiDBErrorLine(err.Error(), baseLine),
 					StartPosition: &storepb.Position{
-						Line: int32(baseLine + 1),
+						Line: int32(baseLine),
 					},
 				},
 			}
