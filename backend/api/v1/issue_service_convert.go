@@ -242,30 +242,8 @@ func convertToApprovalStep(step *storepb.ApprovalStep) *v1pb.ApprovalStep {
 func convertToApprovalNode(node *storepb.ApprovalNode) *v1pb.ApprovalNode {
 	v1node := &v1pb.ApprovalNode{}
 	v1node.Type = v1pb.ApprovalNode_Type(node.Type)
-	switch payload := node.Payload.(type) {
-	case *storepb.ApprovalNode_GroupValue_:
-		v1node.Role = common.FormatRole(convertToRoleByGroupValue(payload.GroupValue).String())
-	case *storepb.ApprovalNode_Role:
-		v1node.Role = payload.Role
-	}
+	v1node.Role = node.Role
 	return v1node
-}
-
-func convertToRoleByGroupValue(v storepb.ApprovalNode_GroupValue) base.Role {
-	switch v {
-	case storepb.ApprovalNode_GROUP_VALUE_UNSPECIFILED:
-		return base.UnknownRole
-	case storepb.ApprovalNode_WORKSPACE_OWNER:
-		return base.WorkspaceAdmin
-	case storepb.ApprovalNode_WORKSPACE_DBA:
-		return base.WorkspaceDBA
-	case storepb.ApprovalNode_PROJECT_OWNER:
-		return base.ProjectOwner
-	case storepb.ApprovalNode_PROJECT_MEMBER:
-		return base.ProjectDeveloper
-	default:
-		return base.UnknownRole
-	}
 }
 
 func convertToGrantRequest(ctx context.Context, s *store.Store, v *storepb.GrantRequest) (*v1pb.GrantRequest, error) {

@@ -262,10 +262,6 @@
               
               
                 <li>
-                  <a href="#bytebase.store.ApprovalNode.GroupValue"><span class="badge">E</span>ApprovalNode.GroupValue</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.store.ApprovalNode.Type"><span class="badge">E</span>ApprovalNode.Type</a>
                 </li>
               
@@ -2081,17 +2077,10 @@ TODO: use range instead. </p></td>
                 </tr>
               
                 <tr>
-                  <td>group_value</td>
-                  <td><a href="#bytebase.store.ApprovalNode.GroupValue">ApprovalNode.GroupValue</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
                   <td>role</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>Format: roles/{role} </p></td>
+                  <td><p> </p></td>
                 </tr>
               
             </tbody>
@@ -2262,47 +2251,6 @@ If `true`, other fields are available. </p></td>
         
       
 
-      
-        <h3 id="bytebase.store.ApprovalNode.GroupValue">ApprovalNode.GroupValue</h3>
-        <p>The predefined user groups are:</p><p>- WORKSPACE_OWNER</p><p>- WORKSPACE_DBA</p><p>- PROJECT_OWNER</p><p>- PROJECT_MEMBER</p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>GROUP_VALUE_UNSPECIFILED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>WORKSPACE_OWNER</td>
-                <td>1</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>WORKSPACE_DBA</td>
-                <td>2</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>PROJECT_OWNER</td>
-                <td>3</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>PROJECT_MEMBER</td>
-                <td>4</td>
-                <td><p></p></td>
-              </tr>
-            
-          </tbody>
-        </table>
       
         <h3 id="bytebase.store.ApprovalNode.Type">ApprovalNode.Type</h3>
         <p>Type of the ApprovalNode.</p><p>type determines who should approve this node.</p><p>ANY_IN_GROUP means the ApprovalNode can be approved by an user from our predefined user group.</p><p>See GroupValue below for the predefined user groups.</p>
