@@ -132,25 +132,14 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 	}
 	defer conn.Close()
 
-	if opts.SetConnectionID != nil {
-		var sessionID string
-		if err := conn.QueryRowContext(ctx, "SELECT current_session").Scan(&sessionID); err != nil {
-			return 0, errors.Wrap(err, "failed to get session id")
-		}
-		opts.SetConnectionID(sessionID)
-		if opts.DeleteConnectionID != nil {
-			defer opts.DeleteConnectionID()
-		}
-	}
-
 	rawStmts, err := util.SanitizeSQL(statement)
 	if err != nil {
 		return 0, errors.Wrapf(err, "failed to split sql")
 	}
 
-	var singleSQLs []base.SingleSQL
-	for _, stmt := range rawStmts {
-		singleSQLs = append(singleSQLs, base.SingleSQL{Text: stmt})
+	singleSQLs := make([]base.SingleSQL, len(rawStmts))
+	for i, stmt := range rawStmts {
+		singleSQLs[i] = base.SingleSQL{Text: stmt}
 	}
 
 	commands, originalIndex := base.FilterEmptySQLWithIndexes(singleSQLs)
@@ -159,32 +148,11 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 	}
 
 	var totalRowsAffected int64
-
-	tx, err := conn.BeginTx(ctx, nil)
-	if err != nil {
-		opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_BEGIN, err.Error())
-		return 0, errors.Wrap(err, "failed to begin transaction")
-	}
-	opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_BEGIN, "")
-
-	committed := false
-	defer func() {
-		if committed {
-			return
-		}
-		rerr := tx.Rollback()
-		var errMsg string
-		if rerr != nil {
-			errMsg = rerr.Error()
-		}
-		opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_ROLLBACK, errMsg)
-	}()
-
 	for i, command := range commands {
 		indexes := []int32{originalIndex[i]}
 		opts.LogCommandExecute(indexes)
 
-		result, err := tx.ExecContext(ctx, command.Text)
+		result, err := conn.ExecContext(ctx, command.Text)
 		if err != nil {
 			opts.LogCommandResponse(indexes, 0, []int32{0}, err.Error())
 			return totalRowsAffected, errors.Wrapf(err, "failed to execute statement")
@@ -198,13 +166,6 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 		totalRowsAffected += rowsAffected
 		opts.LogCommandResponse(indexes, int32(rowsAffected), []int32{int32(rowsAffected)}, "")
 	}
-
-	if err := tx.Commit(); err != nil {
-		opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_COMMIT, err.Error())
-		return totalRowsAffected, errors.Wrap(err, "failed to commit transaction")
-	}
-	opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_COMMIT, "")
-	committed = true
 
 	return totalRowsAffected, nil
 }
