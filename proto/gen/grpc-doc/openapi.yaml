@@ -7946,18 +7946,8 @@ components:
                         - ANY_IN_GROUP
                     type: string
                     format: enum
-                groupValue:
-                    enum:
-                        - GROUP_VALUE_UNSPECIFILED
-                        - WORKSPACE_OWNER
-                        - WORKSPACE_DBA
-                        - PROJECT_OWNER
-                        - PROJECT_MEMBER
-                    type: string
-                    format: enum
                 role:
                     type: string
-                    description: 'Format: roles/{role}'
         ApprovalStep:
             type: object
             properties:

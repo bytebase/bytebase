@@ -2299,12 +2299,7 @@
         "order": "注文",
         "approver": "承認者",
         "add": "ノードの追加",
-        "delete": "承認ノードの削除",
-        "select-approver": "承認者の選択",
-        "roles": {
-          "system": "システムの役割",
-          "custom": "カスタムロール"
-        }
+        "delete": "承認ノードの削除"
       },
       "view-approval-flow": "承認フローを見る",
       "skip": "手動承認をスキップする",

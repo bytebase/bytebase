@@ -2299,12 +2299,7 @@
         "order": "顺序",
         "approver": "审批人",
         "add": "增加节点",
-        "delete": "删除审批节点",
-        "select-approver": "选择审批人",
-        "roles": {
-          "system": "系统角色",
-          "custom": "自定义角色"
-        }
+        "delete": "删除审批节点"
       },
       "view-approval-flow": "查看审批流",
       "skip": "跳过人工审批",

@@ -964,7 +964,7 @@
           "waiting": "Ready to be executed",
           "running": "Being executed"
         },
-        "retry-info":"Retrying (attempt {n}/{m}) due to lock timeout."
+        "retry-info": "Retrying (attempt {n}/{m}) due to lock timeout."
       },
       "task-run-session": {
         "blocking-sessions": {
@@ -2299,12 +2299,7 @@
         "order": "Order",
         "approver": "Approver",
         "add": "Add node",
-        "delete": "Delete approval node",
-        "select-approver": "Select approver",
-        "roles": {
-          "system": "System Roles",
-          "custom": "Custom Roles"
-        }
+        "delete": "Delete approval node"
       },
       "view-approval-flow": "View approval flow",
       "skip": "Skip manual approval",

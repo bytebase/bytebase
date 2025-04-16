@@ -2299,12 +2299,7 @@
         "order": "Thứ tự",
         "approver": "Người phê duyệt",
         "add": "Thêm nút",
-        "delete": "Xóa nút phê duyệt",
-        "select-approver": "Chọn người phê duyệt",
-        "roles": {
-          "system": "Vai trò hệ thống",
-          "custom": "Vai trò tùy chỉnh"
-        }
+        "delete": "Xóa nút phê duyệt"
       },
       "view-approval-flow": "Xem quy trình phê duyệt",
       "skip": "Bỏ qua phê duyệt thủ công",
