@@ -51,7 +51,7 @@
       </Pane>
     </Splitpanes>
 
-    <Quickstart v-if="!hideQuickStart" />
+    <Quickstart />
 
     <Drawer v-model:show="showSheetPanel">
       <DrawerContent :title="$t('sql-editor.sheet.self')">
@@ -80,11 +80,7 @@ import Quickstart from "@/components/Quickstart.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
-import {
-  useAppFeature,
-  useDatabaseV1Store,
-  useSQLEditorTabStore,
-} from "@/store";
+import { useDatabaseV1Store, useSQLEditorTabStore } from "@/store";
 import { extractProjectResourceName } from "@/utils";
 import AsidePanel from "./AsidePanel";
 import ConnectionPanel from "./ConnectionPanel";
@@ -114,7 +110,6 @@ const {
 const { showPanel: showSheetPanel } = useSheetContext();
 
 const { currentTab, isDisconnected } = storeToRefs(tabStore);
-const hideQuickStart = useAppFeature("bb.feature.hide-quick-start");
 const isFetchingSheet = computed(() => false /* editorStore.isFetchingSheet */);
 
 const { width: windowWidth } = useWindowSize();
