@@ -23,6 +23,11 @@ func TestValidateQuery(t *testing.T) {
 			valid:     false,
 			allQuery:  false,
 		},
+		{
+			statement: "memory usage hello",
+			valid:     true,
+			allQuery:  true,
+		},
 	}
 
 	for _, test := range tests {

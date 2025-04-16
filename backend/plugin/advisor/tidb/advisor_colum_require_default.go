@@ -11,6 +11,7 @@ import (
 	"github.com/pingcap/tidb/pkg/parser/types"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -109,7 +110,7 @@ func (checker *columRequireDefaultChecker) Enter(in ast.Node) (ast.Node, bool) {
 			Code:          advisor.NoDefault.Int32(),
 			Title:         checker.title,
 			Content:       fmt.Sprintf("Column `%s`.`%s` doesn't have DEFAULT.", column.table, column.column),
-			StartPosition: advisor.ConvertANTLRLineToPosition(column.line),
+			StartPosition: common.ConvertANTLRLineToPosition(column.line),
 		})
 	}
 

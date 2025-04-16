@@ -1,7 +1,4 @@
 <template>
-  <div v-if="isDeleted" class="w-full sticky top-0 mb-4">
-    <ArchiveBanner />
-  </div>
   <div class="w-full space-y-4">
     <div class="w-full flex flex-row justify-between items-center">
       <div class="textinfolabel mr-4">
@@ -39,12 +36,10 @@
 <script lang="ts" setup>
 import { computed, reactive, ref, watchEffect } from "vue";
 import { BBSpin } from "@/bbkit";
-import ArchiveBanner from "@/components/ArchiveBanner.vue";
 import { FeatureModal } from "@/components/FeatureGuard";
 import IdentityProviderCreateForm from "@/components/SSO/IdentityProviderCreateForm.vue";
 import { useIdentityProviderStore } from "@/store/modules/idp";
 import { ssoNamePrefix } from "@/store/modules/v1/common";
-import { State } from "@/types/proto/v1/common";
 import type { IdentityProvider } from "@/types/proto/v1/idp_service";
 
 const props = defineProps<{
@@ -82,9 +77,5 @@ watchEffect(async () => {
 
 const currentIdentityProvider = computed(() => {
   return identityProviderStore.getIdentityProviderByName(ssoName.value);
-});
-
-const isDeleted = computed(() => {
-  return currentIdentityProvider.value?.state == State.DELETED;
 });
 </script>

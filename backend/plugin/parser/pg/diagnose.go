@@ -23,7 +23,7 @@ func Diagnose(_ context.Context, _ base.DiagnoseContext, statement string) ([]ba
 	diagnostics := make([]base.Diagnostic, 0)
 	syntaxError := parsePostgreSQLStatement(statement)
 	if syntaxError != nil {
-		diagnostics = append(diagnostics, base.ConvertSyntaxErrorToDiagnostic(syntaxError))
+		diagnostics = append(diagnostics, base.ConvertSyntaxErrorToDiagnostic(syntaxError, statement))
 	}
 
 	return diagnostics, nil
@@ -41,12 +41,15 @@ func parsePostgreSQLStatement(statement string) *base.SyntaxError {
 	lexer := parser.NewPostgreSQLLexer(antlr.NewInputStream(statement))
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
 	p := parser.NewPostgreSQLParser(stream)
-	lexerErrorListener := &base.ParseErrorListener{}
+	lexerErrorListener := &base.ParseErrorListener{
+		Statement: statement,
+	}
 	lexer.RemoveErrorListeners()
 	lexer.AddErrorListener(lexerErrorListener)
 
 	parserErrorListener := &base.ParseErrorListener{
-		BaseLine: 0,
+		Statement: statement,
+		BaseLine:  0,
 	}
 	p.RemoveErrorListeners()
 	p.AddErrorListener(parserErrorListener)

@@ -22,7 +22,7 @@ func Diagnose(_ context.Context, _ base.DiagnoseContext, statement string) ([]ba
 	diagnostics := make([]base.Diagnostic, 0)
 	syntaxError := parsePLSQLStatement(statement)
 	if syntaxError != nil {
-		diagnostics = append(diagnostics, base.ConvertSyntaxErrorToDiagnostic(syntaxError))
+		diagnostics = append(diagnostics, base.ConvertSyntaxErrorToDiagnostic(syntaxError, statement))
 	}
 
 	return diagnostics, nil
@@ -42,11 +42,15 @@ func parsePLSQLStatement(statement string) *base.SyntaxError {
 	p := parser.NewPlSqlParser(stream)
 	p.SetVersion12(true)
 
-	lexerErrorListener := &base.ParseErrorListener{}
+	lexerErrorListener := &base.ParseErrorListener{
+		Statement: statement,
+	}
 	lexer.RemoveErrorListeners()
 	lexer.AddErrorListener(lexerErrorListener)
 
-	parserErrorListener := &base.ParseErrorListener{}
+	parserErrorListener := &base.ParseErrorListener{
+		Statement: statement,
+	}
 	p.RemoveErrorListeners()
 	p.AddErrorListener(parserErrorListener)
 

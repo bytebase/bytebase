@@ -9,6 +9,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
@@ -91,7 +92,7 @@ func (checker *columnRequireDefaultChecker) generateAdvice() []*storepb.Advice {
 				Code:          advisor.NoDefault.Int32(),
 				Title:         checker.title,
 				Content:       fmt.Sprintf("Column %q.%q in schema %q doesn't have DEFAULT", column.table, column.name, column.schema),
-				StartPosition: advisor.ConvertANTLRLineToPosition(column.line),
+				StartPosition: common.ConvertANTLRLineToPosition(column.line),
 			})
 		}
 	}

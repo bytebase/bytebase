@@ -7,6 +7,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -65,7 +66,7 @@ func (checker *statementAddCheckNotValidChecker) Visit(in ast.Node) ast.Visitor 
 				Code:          advisor.StatementAddCheckWithValidation.Int32(),
 				Title:         checker.title,
 				Content:       "Adding check constraints with validation will block reads and writes. You can add check constraints not valid and then validate separately",
-				StartPosition: advisor.ConvertANTLRLineToPosition(checker.line),
+				StartPosition: common.ConvertANTLRLineToPosition(checker.line),
 			})
 		}
 	}

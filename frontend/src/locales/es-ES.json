@@ -421,7 +421,6 @@
       "description": "Inicio de Sesión Único (SSO) es un método de autenticación que permite a los usuarios autenticarse en múltiples aplicaciones y sitios web a través de un solo conjunto de credenciales.",
       "archive": "Archivar este SSO",
       "archive-info": "Los SSO archivados no se mostrarán.",
-      "restore": "Restaurar este SSO",
       "form": {
         "type": "Tipo",
         "learn-more-with-user-doc": "Obtenga más información sobre la configuración",
@@ -1319,8 +1318,8 @@
       "title": "Has iniciado sesión como otro usuario",
       "content": "Lo redirigiremos a la página de inicio."
     },
-    "token-expired-title": "Token caducado",
-    "token-expired-description": "El token ha expirado, por favor inicie sesión nuevamente"
+    "token-expired-title": "Token expirado",
+    "token-expired-description": "El token ha expirado, por favor inicia sesión nuevamente"
   },
   "policy": {
     "rollout": {
@@ -2300,12 +2299,7 @@
         "order": "Orden",
         "approver": "Aprobador",
         "add": "Agregar nodo",
-        "delete": "Eliminar nodo de aprobación",
-        "select-approver": "Seleccionar aprobador",
-        "roles": {
-          "system": "Funciones del sistema",
-          "custom": "Funciones personalizadas"
-        }
+        "delete": "Eliminar nodo de aprobación"
       },
       "view-approval-flow": "Ver flujo de aprobación",
       "skip": "Omitir aprobación manual",

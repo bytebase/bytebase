@@ -247,8 +247,8 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 					Status:  v1pb.PlanCheckRun_Result_ERROR,
 					Report: &v1pb.PlanCheckRun_Result_SqlReviewReport_{
 						SqlReviewReport: &v1pb.PlanCheckRun_Result_SqlReviewReport{
-							Line:   int32(syntaxErr.Line),
-							Column: int32(syntaxErr.Column),
+							Line:   int32(syntaxErr.Position.GetLine()),
+							Column: int32(syntaxErr.Position.GetColumn()),
 						},
 					},
 				},
@@ -873,8 +873,10 @@ func DoExport(
 		results = results[len(results)-1:]
 	}
 	if len(results) == 1 {
-		if err := optionalAccessCheck(ctx, instance, database, user, spans, int(results[0].RowsCount), queryContext.Explain, true); err != nil {
-			return nil, duration, err
+		if optionalAccessCheck != nil {
+			if err := optionalAccessCheck(ctx, instance, database, user, spans, int(results[0].RowsCount), queryContext.Explain, true); err != nil {
+				return nil, duration, err
+			}
 		}
 	}
 
@@ -1389,8 +1391,8 @@ func validateQueryRequest(instance *store.InstanceMessage, statement string) err
 					Status:  v1pb.PlanCheckRun_Result_ERROR,
 					Report: &v1pb.PlanCheckRun_Result_SqlReviewReport_{
 						SqlReviewReport: &v1pb.PlanCheckRun_Result_SqlReviewReport{
-							Line:   int32(syntaxErr.Line),
-							Column: int32(syntaxErr.Column),
+							Line:   int32(syntaxErr.Position.GetLine()),
+							Column: int32(syntaxErr.Position.GetColumn()),
 						},
 					},
 				},
@@ -1403,7 +1405,12 @@ func validateQueryRequest(instance *store.InstanceMessage, statement string) err
 		return err
 	}
 	if !ok {
-		return nonSelectSQLError.Err()
+		switch instance.Metadata.GetEngine() {
+		case storepb.Engine_REDIS, storepb.Engine_MONGODB:
+			return nonReadOnlyCommandError.Err()
+		default:
+			return nonSelectSQLError.Err()
+		}
 	}
 	return nil
 }

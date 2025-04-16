@@ -926,10 +926,6 @@
               
               
                 <li>
-                  <a href="#bytebase.v1.ApprovalNode.GroupValue"><span class="badge">E</span>ApprovalNode.GroupValue</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.ApprovalNode.Type"><span class="badge">E</span>ApprovalNode.Type</a>
                 </li>
               
@@ -1698,10 +1694,6 @@
               
                 <li>
                   <a href="#bytebase.v1.TestIdentityProviderResponse"><span class="badge">M</span>TestIdentityProviderResponse</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.UndeleteIdentityProviderRequest"><span class="badge">M</span>UndeleteIdentityProviderRequest</a>
                 </li>
               
                 <li>
@@ -10123,17 +10115,10 @@ The API will default to the BASIC view.</p></td>
                 </tr>
               
                 <tr>
-                  <td>group_value</td>
-                  <td><a href="#bytebase.v1.ApprovalNode.GroupValue">ApprovalNode.GroupValue</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
                   <td>role</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>Format: roles/{role} </p></td>
+                  <td><p> </p></td>
                 </tr>
               
             </tbody>
@@ -11449,47 +11434,6 @@ Format: projects/{project}/issues/{issue} </p></td>
         
       
 
-      
-        <h3 id="bytebase.v1.ApprovalNode.GroupValue">ApprovalNode.GroupValue</h3>
-        <p>The predefined user groups are:</p><p>- WORKSPACE_OWNER</p><p>- WORKSPACE_DBA</p><p>- PROJECT_OWNER</p><p>- PROJECT_MEMBER</p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>GROUP_VALUE_UNSPECIFILED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>WORKSPACE_OWNER</td>
-                <td>1</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>WORKSPACE_DBA</td>
-                <td>2</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>PROJECT_OWNER</td>
-                <td>3</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>PROJECT_MEMBER</td>
-                <td>4</td>
-                <td><p></p></td>
-              </tr>
-            
-          </tbody>
-        </table>
       
         <h3 id="bytebase.v1.ApprovalNode.Type">ApprovalNode.Type</h3>
         <p>Type of the ApprovalNode.</p><p>type determines who should approve this node.</p><p>ANY_IN_GROUP means the ApprovalNode can be approved by an user from our predefined user group.</p><p>See GroupValue below for the predefined user groups.</p>
@@ -18253,13 +18197,6 @@ Format: idps/{idp} </p></td>
                 </tr>
               
                 <tr>
-                  <td>state</td>
-                  <td><a href="#bytebase.v1.State">State</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
                   <td>title</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
@@ -18449,13 +18386,6 @@ Provide this to retrieve the subsequent page.
 
 When paginating, all other parameters provided to `ListIdentityProviders` must match
 the call that provided the page token. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>show_deleted</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>Show deleted identity providers if specified. </p></td>
                 </tr>
               
             </tbody>
@@ -18714,31 +18644,6 @@ Should be fetched from the well-known configuration file of the OIDC provider. <
 
         
       
-        <h3 id="bytebase.v1.UndeleteIdentityProviderRequest">UndeleteIdentityProviderRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The name of the deleted identity provider.
-Format: idps/{identity_provider} </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.v1.UpdateIdentityProviderRequest">UpdateIdentityProviderRequest</h3>
         <p></p>
 
@@ -18889,13 +18794,6 @@ This is an optional style described in the OAuth2 RFC 6749 section 2.3.1.</p></t
               </tr>
             
               <tr>
-                <td>UndeleteIdentityProvider</td>
-                <td><a href="#bytebase.v1.UndeleteIdentityProviderRequest">UndeleteIdentityProviderRequest</a></td>
-                <td><a href="#bytebase.v1.IdentityProvider">IdentityProvider</a></td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
                 <td>TestIdentityProvider</td>
                 <td><a href="#bytebase.v1.TestIdentityProviderRequest">TestIdentityProviderRequest</a></td>
                 <td><a href="#bytebase.v1.TestIdentityProviderResponse">TestIdentityProviderResponse</a></td>
@@ -18967,16 +18865,6 @@ This is an optional style described in the OAuth2 RFC 6749 section 2.3.1.</p></t
                 <td>DELETE</td>
                 <td>/v1/{name=idps/*}</td>
                 <td></td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>UndeleteIdentityProvider</td>
-                <td>POST</td>
-                <td>/v1/{name=idps/*}:undelete</td>
-                <td>*</td>
               </tr>
               
             

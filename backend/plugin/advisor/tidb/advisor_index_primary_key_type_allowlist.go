@@ -10,6 +10,7 @@ import (
 	"github.com/pingcap/tidb/pkg/parser/ast"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	tidbparser "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
@@ -119,7 +120,7 @@ func (v *indexPrimaryKeyTypeAllowlistChecker) Enter(in ast.Node) (ast.Node, bool
 			Code:          advisor.IndexPKType.Int32(),
 			Title:         v.title,
 			Content:       fmt.Sprintf("The column `%s` in table `%s` is one of the primary key, but its type \"%s\" is not in allowlist", pd.column, pd.table, pd.columnType),
-			StartPosition: advisor.ConvertANTLRLineToPosition(pd.line),
+			StartPosition: common.ConvertANTLRLineToPosition(pd.line),
 		})
 	}
 	return in, false

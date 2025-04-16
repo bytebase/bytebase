@@ -9,6 +9,7 @@ import (
 	parser "github.com/bytebase/tsql-parser"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	tsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -82,7 +83,7 @@ func (l *tableRequirePkChecker) generateAdvice() ([]*storepb.Advice, error) {
 				Code:          advisor.TableNoPK.Int32(),
 				Title:         l.title,
 				Content:       fmt.Sprintf("Table %s requires PRIMARY KEY.", l.tableOriginalName[tableName]),
-				StartPosition: advisor.ConvertANTLRLineToPosition(l.tableLine[tableName]),
+				StartPosition: common.ConvertANTLRLineToPosition(l.tableLine[tableName]),
 			})
 		}
 	}

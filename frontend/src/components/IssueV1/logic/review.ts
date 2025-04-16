@@ -11,10 +11,9 @@ import type {
   ComposedIssue,
   WrappedReviewStep,
 } from "@/types";
-import { emptyFlow, PresetRoleType } from "@/types";
+import { emptyFlow } from "@/types";
 import type { ApprovalNode, Issue } from "@/types/proto/v1/issue_service";
 import {
-  ApprovalNode_GroupValue,
   ApprovalNode_Type,
   Issue_Approver_Status,
 } from "@/types/proto/v1/issue_service";
@@ -167,24 +166,12 @@ export const useWrappedReviewStepsV1 = (
 };
 
 export const displayReviewRoleTitle = (node: ApprovalNode) => {
-  const {
-    type,
-    groupValue = ApprovalNode_GroupValue.UNRECOGNIZED,
-    role,
-  } = node;
+  const { type, role } = node;
   if (type !== ApprovalNode_Type.ANY_IN_GROUP) {
     return "";
   }
 
-  if (groupValue === ApprovalNode_GroupValue.WORKSPACE_OWNER) {
-    return displayRoleTitle(PresetRoleType.WORKSPACE_ADMIN);
-  } else if (groupValue === ApprovalNode_GroupValue.WORKSPACE_DBA) {
-    return displayRoleTitle(PresetRoleType.WORKSPACE_DBA);
-  } else if (groupValue === ApprovalNode_GroupValue.PROJECT_OWNER) {
-    return displayRoleTitle(PresetRoleType.PROJECT_OWNER);
-  } else if (groupValue === ApprovalNode_GroupValue.PROJECT_MEMBER) {
-    return displayRoleTitle(PresetRoleType.PROJECT_DEVELOPER);
-  } else if (role) {
+  if (role) {
     return displayRoleTitle(role);
   }
   return "";

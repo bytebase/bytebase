@@ -78,7 +78,7 @@ func (checker *tableCommentConventionChecker) Enter(in ast.Node) (ast.Node, bool
 				Code:          advisor.CommentEmpty.Int32(),
 				Title:         checker.title,
 				Content:       fmt.Sprintf("Table `%s` requires comments", node.Table.Name.O),
-				StartPosition: advisor.ConvertANTLRLineToPosition(checker.line),
+				StartPosition: common.ConvertANTLRLineToPosition(checker.line),
 			})
 		}
 		if checker.payload.MaxLength >= 0 && len(comment) > checker.payload.MaxLength {
@@ -87,7 +87,7 @@ func (checker *tableCommentConventionChecker) Enter(in ast.Node) (ast.Node, bool
 				Code:          advisor.CommentTooLong.Int32(),
 				Title:         checker.title,
 				Content:       fmt.Sprintf("The length of table `%s` comment should be within %d characters", node.Table.Name.O, checker.payload.MaxLength),
-				StartPosition: advisor.ConvertANTLRLineToPosition(checker.line),
+				StartPosition: common.ConvertANTLRLineToPosition(checker.line),
 			})
 		}
 		if checker.payload.RequiredClassification {
@@ -97,7 +97,7 @@ func (checker *tableCommentConventionChecker) Enter(in ast.Node) (ast.Node, bool
 					Code:          advisor.CommentMissingClassification.Int32(),
 					Title:         checker.title,
 					Content:       fmt.Sprintf("Table `%s` comment requires classification", node.Table.Name.O),
-					StartPosition: advisor.ConvertANTLRLineToPosition(checker.line),
+					StartPosition: common.ConvertANTLRLineToPosition(checker.line),
 				})
 			}
 		}

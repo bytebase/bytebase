@@ -13,8 +13,9 @@
           startoffset: 292
           endoffset: 319
     errors:
-        - line: 2
-          column: 2
+        - position:
+            line: 2
+            column: 2
           message: expected one of GET/POST/PUT/DELETE/HEAD/PATCH
           rawmessage: ""
 - description: simple

@@ -149,7 +149,7 @@ func (checker *statementQueryMinumumPlanLevelChecker) EnterSelectStatement(ctx *
 			Code:          advisor.StatementExplainQueryFailed.Int32(),
 			Title:         checker.title,
 			Content:       fmt.Sprintf("Failed to explain query: %s, with error: %s", query, err),
-			StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
+			StartPosition: common.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
 		})
 	} else {
 		explainTypes, err := getQueryExplainTypes(res)
@@ -159,7 +159,7 @@ func (checker *statementQueryMinumumPlanLevelChecker) EnterSelectStatement(ctx *
 				Code:          advisor.Internal.Int32(),
 				Title:         checker.title,
 				Content:       fmt.Sprintf("Failed to check explain type column: %s, with error: %s", query, err),
-				StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
+				StartPosition: common.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
 			})
 		} else if len(explainTypes) > 0 {
 			overused, overusedType := false, ExplainTypeAll
@@ -176,7 +176,7 @@ func (checker *statementQueryMinumumPlanLevelChecker) EnterSelectStatement(ctx *
 					Code:          advisor.StatementUnwantedQueryPlanLevel.Int32(),
 					Title:         checker.title,
 					Content:       fmt.Sprintf("Overused query plan level detected %s, minimum plan level: %s", overusedType.String(), checker.explainType.String()),
-					StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
+					StartPosition: common.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
 				})
 			}
 		}

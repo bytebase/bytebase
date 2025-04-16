@@ -5,19 +5,16 @@ import type { WatchCallback } from "vue";
 import { ref, watch } from "vue";
 import { issueServiceClient } from "@/grpcweb";
 import type { ComposedIssue, IssueFilter } from "@/types";
-import { PresetRoleType } from "@/types";
 import type { ApprovalStep } from "@/types/proto/v1/issue_service";
 import {
   issueStatusToJSON,
   ApprovalNode_Type,
-  ApprovalNode_GroupValue,
 } from "@/types/proto/v1/issue_service";
 import { memberMapToRolesInProjectIAM } from "@/utils";
 import {
   shallowComposeIssue,
   type ComposeIssueConfig,
 } from "./experimental-issue";
-import { useWorkspaceV1Store } from "./workspace";
 
 export type ListIssueParams = {
   find: IssueFilter;
@@ -120,74 +117,24 @@ export const useIssueV1Store = defineStore("issue_v1", () => {
   };
 });
 
-const convertApprovalNodeGroupToRole = (
-  group: ApprovalNode_GroupValue
-): string => {
-  switch (group) {
-    case ApprovalNode_GroupValue.PROJECT_MEMBER:
-      return PresetRoleType.PROJECT_DEVELOPER;
-    case ApprovalNode_GroupValue.PROJECT_OWNER:
-      return PresetRoleType.PROJECT_OWNER;
-    case ApprovalNode_GroupValue.WORKSPACE_DBA:
-      return PresetRoleType.WORKSPACE_DBA;
-    case ApprovalNode_GroupValue.WORKSPACE_OWNER:
-      return PresetRoleType.WORKSPACE_ADMIN;
-  }
-  return "";
-};
-
 // candidatesOfApprovalStepV1 return user name list in users/{email} format.
 // The list could includs users/ALL_USERS_USER_EMAIL
 export const candidatesOfApprovalStepV1 = (
   issue: ComposedIssue,
   step: ApprovalStep
 ) => {
-  const workspaceStore = useWorkspaceV1Store();
   const project = issue.projectEntity;
 
   const candidates = step.nodes.flatMap((node) => {
-    const {
-      type,
-      groupValue = ApprovalNode_GroupValue.UNRECOGNIZED,
-      role,
-    } = node;
+    const { type, role } = node;
     if (type !== ApprovalNode_Type.ANY_IN_GROUP) return [];
 
-    const candidatesForSystemRoles = (groupValue: ApprovalNode_GroupValue) => {
-      if (
-        groupValue === ApprovalNode_GroupValue.PROJECT_MEMBER ||
-        groupValue === ApprovalNode_GroupValue.PROJECT_OWNER
-      ) {
-        const targetRole = convertApprovalNodeGroupToRole(groupValue);
-        const projectMembersMap = memberMapToRolesInProjectIAM(
-          project.iamPolicy,
-          targetRole
-        );
-        return [...projectMembersMap.keys()];
-      }
-      if (
-        groupValue === ApprovalNode_GroupValue.WORKSPACE_DBA ||
-        groupValue === ApprovalNode_GroupValue.WORKSPACE_OWNER
-      ) {
-        return [
-          ...(workspaceStore.roleMapToUsers.get(
-            convertApprovalNodeGroupToRole(groupValue)
-          ) ?? new Set()),
-        ];
-      }
-      return [];
-    };
-
-    const candidatesForCustomRoles = (role: string) => {
+    const candidatesForRoles = (role: string) => {
       const memberMap = memberMapToRolesInProjectIAM(project.iamPolicy, role);
       return [...memberMap.keys()];
     };
-
-    if (groupValue !== ApprovalNode_GroupValue.UNRECOGNIZED) {
-      return candidatesForSystemRoles(groupValue);
-    }
     if (role) {
-      return candidatesForCustomRoles(role);
+      return candidatesForRoles(role);
     }
     return [];
   });

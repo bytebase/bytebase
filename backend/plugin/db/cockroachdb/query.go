@@ -25,7 +25,7 @@ func makeValueByTypeName(typeName string, _ *sql.ColumnType) any {
 	case "FLOAT", "DOUBLE", "FLOAT4", "FLOAT8":
 		return new(sql.NullFloat64)
 	case "DATE":
-		return new(sql.NullTime)
+		return new(pgtype.Date)
 	case "TIMESTAMP", "TIMESTAMPTZ":
 		return new(pgtype.Timestamptz)
 	case "BIT", "VARBIT":
@@ -87,9 +87,16 @@ func convertValue(typeName string, columnType *sql.ColumnType, value any) *v1pb.
 				},
 			}
 		}
-	case *sql.NullTime:
+	case *pgtype.Date:
 		if raw.Valid {
-			if columnType.DatabaseTypeName() == "DATE" {
+			if raw.InfinityModifier != pgtype.Finite {
+				return &v1pb.RowValue{
+					Kind: &v1pb.RowValue_StringValue{
+						StringValue: raw.InfinityModifier.String(),
+					},
+				}
+			}
+			if typeName == "DATE" {
 				return &v1pb.RowValue{
 					Kind: &v1pb.RowValue_StringValue{
 						StringValue: raw.Time.Format(time.DateOnly),
@@ -97,7 +104,6 @@ func convertValue(typeName string, columnType *sql.ColumnType, value any) *v1pb.
 				}
 			}
 		}
-
 	case *pgtype.Timestamptz:
 		if raw.Valid {
 			if raw.InfinityModifier != pgtype.Finite {

@@ -5,6 +5,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -53,7 +54,7 @@ func (*StatementCheckSetRoleVariable) Check(_ context.Context, checkCtx advisor.
 			Code:          advisor.StatementCheckSetRoleVariable.Int32(),
 			Title:         string(checkCtx.Rule.Type),
 			Content:       "No SET ROLE statement found.",
-			StartPosition: advisor.DefaultPosition,
+			StartPosition: common.FirstLinePosition,
 		}}, nil
 	}
 

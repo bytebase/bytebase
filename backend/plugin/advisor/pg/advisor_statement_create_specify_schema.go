@@ -5,6 +5,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -59,7 +60,7 @@ func (c *statementCreateSpecifySchemaChecker) Visit(node ast.Node) ast.Visitor {
 				Code:          advisor.StatementCreateWithoutSchemaName.Int32(),
 				Title:         c.title,
 				Content:       "Table schema should be specified.",
-				StartPosition: advisor.ConvertANTLRLineToPosition(node.LastLine()),
+				StartPosition: common.ConvertANTLRLineToPosition(node.LastLine()),
 			})
 		}
 	case *ast.CreateExtensionStmt:
@@ -69,7 +70,7 @@ func (c *statementCreateSpecifySchemaChecker) Visit(node ast.Node) ast.Visitor {
 				Code:          advisor.StatementCreateWithoutSchemaName.Int32(),
 				Title:         c.title,
 				Content:       "Extension schema should be specified.",
-				StartPosition: advisor.ConvertANTLRLineToPosition(node.LastLine()),
+				StartPosition: common.ConvertANTLRLineToPosition(node.LastLine()),
 			})
 		}
 	case *ast.CreateFunctionStmt:
@@ -79,7 +80,7 @@ func (c *statementCreateSpecifySchemaChecker) Visit(node ast.Node) ast.Visitor {
 				Code:          advisor.StatementCreateWithoutSchemaName.Int32(),
 				Title:         c.title,
 				Content:       "Function schema should be specified.",
-				StartPosition: advisor.ConvertANTLRLineToPosition(node.LastLine()),
+				StartPosition: common.ConvertANTLRLineToPosition(node.LastLine()),
 			})
 		}
 	case *ast.CreateIndexStmt:
@@ -89,7 +90,7 @@ func (c *statementCreateSpecifySchemaChecker) Visit(node ast.Node) ast.Visitor {
 				Code:          advisor.StatementCreateWithoutSchemaName.Int32(),
 				Title:         c.title,
 				Content:       "Table schema for index should be specified.",
-				StartPosition: advisor.ConvertANTLRLineToPosition(node.LastLine()),
+				StartPosition: common.ConvertANTLRLineToPosition(node.LastLine()),
 			})
 		}
 	case *ast.CreateSequenceStmt:
@@ -99,7 +100,7 @@ func (c *statementCreateSpecifySchemaChecker) Visit(node ast.Node) ast.Visitor {
 				Code:          advisor.StatementCreateWithoutSchemaName.Int32(),
 				Title:         c.title,
 				Content:       "Sequence schema should be specified.",
-				StartPosition: advisor.ConvertANTLRLineToPosition(node.LastLine()),
+				StartPosition: common.ConvertANTLRLineToPosition(node.LastLine()),
 			})
 		}
 	case *ast.CreateTriggerStmt:
@@ -109,7 +110,7 @@ func (c *statementCreateSpecifySchemaChecker) Visit(node ast.Node) ast.Visitor {
 				Code:          advisor.StatementCreateWithoutSchemaName.Int32(),
 				Title:         c.title,
 				Content:       "Table schema for trigger should be specified.",
-				StartPosition: advisor.ConvertANTLRLineToPosition(node.LastLine()),
+				StartPosition: common.ConvertANTLRLineToPosition(node.LastLine()),
 			})
 		}
 	}

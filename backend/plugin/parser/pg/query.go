@@ -11,6 +11,7 @@ import (
 	pgparser "github.com/pganalyze/pg_query_go/v6/parser"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
@@ -197,32 +198,18 @@ func extractRangeVarFromJSON(currentDatabase string, currentSchema string, jsonD
 
 func convertToSyntaxError(statement string, err error) *base.SyntaxError {
 	if pgErr, ok := err.(*pgparser.Error); ok {
-		line, column := getLineAndColumn(statement, pgErr.Cursorpos)
+		position := common.ConvertPGParserErrorCursorPosToPosition(pgErr.Cursorpos, statement)
 		return &base.SyntaxError{
-			Line:    line,
-			Column:  column,
-			Message: pgErr.Message,
+			Position: position,
+			Message:  pgErr.Message,
 		}
 	}
 
 	return &base.SyntaxError{
-		Line:    1,
-		Column:  0,
+		Position: &storepb.Position{
+			Line:   0,
+			Column: 0,
+		},
 		Message: err.Error(),
 	}
-}
-
-func getLineAndColumn(statement string, pos int) (int, int) {
-	var line, column int
-	runes := []rune(statement)
-	for i := 0; i < pos && i < len(runes); i++ {
-		if runes[i] == '\n' {
-			line++
-			column = 0
-		} else {
-			column++
-		}
-	}
-
-	return line + 1, column
 }
