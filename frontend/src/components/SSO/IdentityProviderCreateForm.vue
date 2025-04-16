@@ -653,10 +653,10 @@
         <template v-if="!isCreating">
           <BBButtonConfirm
             :type="'ARCHIVE'"
-            :button-text="$t('settings.sso.archive')"
-            :ok-text="$t('common.archive')"
-            :confirm-title="$t('settings.sso.archive')"
-            :confirm-description="$t('settings.sso.archive-info')"
+            :button-text="$t('settings.sso.delete')"
+            :ok-text="$t('common.delete')"
+            :confirm-title="$t('settings.sso.delete')"
+            :confirm-description="$t('common.cannot-undo-this-action')"
             :require-confirm="true"
             @confirm="handleDeleteButtonClick"
           />
