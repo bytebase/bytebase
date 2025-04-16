@@ -266,28 +266,8 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, acti
 
 		var usersGetter func(ctx context.Context) ([]*store.UserMessage, error)
 
-		switch val := node.Payload.(type) {
-		case *storepb.ApprovalNode_GroupValue_:
-			switch val.GroupValue {
-			case storepb.ApprovalNode_GROUP_VALUE_UNSPECIFILED:
-				return nil, errors.Errorf("invalid group value")
-			case storepb.ApprovalNode_WORKSPACE_OWNER:
-				usersGetter = m.getUsersFromWorkspaceRole(base.WorkspaceAdmin)
-			case storepb.ApprovalNode_WORKSPACE_DBA:
-				usersGetter = m.getUsersFromWorkspaceRole(base.WorkspaceDBA)
-			case storepb.ApprovalNode_PROJECT_OWNER:
-				usersGetter = getUsersFromProjectRole(m.store, base.ProjectOwner, e.Project.ResourceID)
-			case storepb.ApprovalNode_PROJECT_MEMBER:
-				usersGetter = getUsersFromProjectRole(m.store, base.ProjectDeveloper, e.Project.ResourceID)
-			default:
-				return nil, errors.Errorf("invalid group value")
-			}
-		case *storepb.ApprovalNode_Role:
-			role := base.Role(strings.TrimPrefix(val.Role, "roles/"))
-			usersGetter = getUsersFromProjectRole(m.store, role, e.Project.ResourceID)
-		default:
-			return nil, errors.Errorf("invalid node payload type")
-		}
+		role := base.Role(strings.TrimPrefix(node.Role, "roles/"))
+		usersGetter = getUsersFromProjectRole(m.store, role, e.Project.ResourceID)
 
 		users, err := usersGetter(ctx)
 		if err != nil {
