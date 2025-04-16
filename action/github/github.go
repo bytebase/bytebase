@@ -52,7 +52,7 @@ func upsertComment(resp *v1pb.CheckReleaseResponse, ghe *githubEnv) error {
 	for _, comment := range comments {
 		if comment.User.ID == githubActionUserID && strings.HasPrefix(comment.Body, commentHeader) {
 			// update the comment
-			if err := c.updateComment(ghe.Repo, ghe.PR, comment.ID, buildCommentMessage(resp)); err != nil {
+			if err := c.updateComment(ghe.Repo, comment.ID, buildCommentMessage(resp)); err != nil {
 				return errors.Wrapf(err, "failed to update comment")
 			}
 			return nil

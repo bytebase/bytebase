@@ -11,7 +11,7 @@ import (
 )
 
 type githubClient struct {
-	apiUrl string
+	apiURL string
 	token  string
 	client *http.Client
 }
@@ -24,9 +24,9 @@ type comment struct {
 	} `json:"user"`
 }
 
-func newClient(apiUrl, token string) *githubClient {
+func newClient(apiURL, token string) *githubClient {
 	return &githubClient{
-		apiUrl: apiUrl,
+		apiURL: apiURL,
 		token:  token,
 		client: &http.Client{},
 	}
@@ -41,7 +41,7 @@ func (g *githubClient) createComment(repo, pr, msg string) error {
 		return errors.Wrap(err, "failed to marshal request body")
 	}
 
-	url := fmt.Sprintf("%s/repos/%s/issues/%s/comments", g.apiUrl, repo, pr)
+	url := fmt.Sprintf("%s/repos/%s/issues/%s/comments", g.apiURL, repo, pr)
 	req, err := http.NewRequest("POST", url, bytes.NewReader(bodyBytes))
 	if err != nil {
 		return errors.Wrap(err, "failed to create request")
@@ -64,7 +64,7 @@ func (g *githubClient) createComment(repo, pr, msg string) error {
 }
 
 func (g *githubClient) listComments(repo, pr string) ([]comment, error) {
-	url := fmt.Sprintf("%s/repos/%s/issues/%s/comments", g.apiUrl, repo, pr)
+	url := fmt.Sprintf("%s/repos/%s/issues/%s/comments", g.apiURL, repo, pr)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create request")
@@ -97,7 +97,7 @@ func (g *githubClient) listComments(repo, pr string) ([]comment, error) {
 	return comments, nil
 }
 
-func (g *githubClient) updateComment(repo, pr string, commentID int64, msg string) error {
+func (g *githubClient) updateComment(repo string, commentID int64, msg string) error {
 	body := map[string]string{
 		"body": msg,
 	}
@@ -106,7 +106,7 @@ func (g *githubClient) updateComment(repo, pr string, commentID int64, msg strin
 		return errors.Wrap(err, "failed to marshal request body")
 	}
 
-	url := fmt.Sprintf("%s/repos/%s/issues/comments/%d", g.apiUrl, repo, commentID)
+	url := fmt.Sprintf("%s/repos/%s/issues/comments/%d", g.apiURL, repo, commentID)
 	req, err := http.NewRequest("PATCH", url, bytes.NewReader(bodyBytes))
 	if err != nil {
 		return errors.Wrap(err, "failed to create request")
