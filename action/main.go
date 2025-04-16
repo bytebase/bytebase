@@ -50,6 +50,10 @@ func run(platform JobPlatform) error {
 		return err
 	}
 	switch platform {
+	case GitHub:
+		if err := writeAnnotations(checkReleaseResponse); err != nil {
+			return err
+		}
 	case GitLab:
 		if err := writeReleaseCheckToCodeQualityJSON(checkReleaseResponse); err != nil {
 			return err
