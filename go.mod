@@ -35,6 +35,7 @@ require (
 	github.com/bytebase/postgresql-parser v0.0.0-20250213053010-aeb8220eb3bb
 	github.com/bytebase/snowsql-parser v0.0.0-20250124075214-562d62e69c35
 	github.com/bytebase/tidb-parser v0.0.0-20240821091609-162fffe2a839
+	github.com/caarlos0/env/v11 v11.3.1
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/cockroachdb/cockroachdb-parser v0.23.2
 	github.com/coreos/go-oidc v2.3.0+incompatible
