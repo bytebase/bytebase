@@ -13,7 +13,7 @@ export const useIdentityProviderStore = defineStore("idp", {
   }),
   getters: {
     identityProviderList(state) {
-      return state.identityProviderMapByName.values();
+      return Array.from(state.identityProviderMapByName.values());
     },
   },
   actions: {
