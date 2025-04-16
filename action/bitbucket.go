@@ -14,6 +14,15 @@ import (
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
+// Define a struct for the report data
+type Report struct {
+	Title      string `json:"title"`
+	Details    string `json:"details"`
+	ReportType string `json:"report_type"`
+	Reporter   string `json:"reporter"`
+	Result     string `json:"result"`
+}
+
 // Annotation represents the structure of a Bitbucket Code Insights annotation.
 // https://developer.atlassian.com/cloud/bitbucket/rest/api-group-reports/#api-repositories-workspace-repo-slug-commit-commit-reports-reportid-annotations-post
 type Annotation struct {
@@ -57,20 +66,36 @@ func createBitbucketReport(checkResponse *v1pb.CheckReleaseResponse) error {
 			}
 		}
 	}
-	result, details := "PASSED", "This pull request has passed all checks."
-	if errorCount > 0 {
-		result, details = "FAILED", fmt.Sprintf("This pull request introduces %d errors and %d warnings.", errorCount, warningCount)
-	} else if warningCount > 0 {
-		details = fmt.Sprintf("This pull request introduces %d warnings.", warningCount)
+	var riskDetail string
+	switch checkResponse.RiskLevel {
+	case v1pb.CheckReleaseResponse_LOW:
+		riskDetail = "🟢 Low"
+	case v1pb.CheckReleaseResponse_MODERATE:
+		riskDetail = "🟡 Moderate"
+	case v1pb.CheckReleaseResponse_HIGH:
+		riskDetail = "🔴 High"
+	default:
+		riskDetail = "⚪ None"
 	}
-	reportData := fmt.Sprintf(`{
-		"title": "Bytebase SQL Review",
-		"details": "%s",
-		"report_type": "TEST",
-		"reporter": "bytebase",
-		"result": "%s",
-		"data": []
-	}`, details, result)
+	details := fmt.Sprintf(`• Total Affected Rows: %d
+• Overall Risk Level: %s
+• Advices Statistics: %d Error(s), %d Warning(s)`, checkResponse.GetAffectedRows(), riskDetail, errorCount, warningCount)
+	result := "PASSED"
+	if errorCount > 0 {
+		result = "FAILED"
+	}
+	report := Report{
+		Title:      "Bytebase SQL Review",
+		Details:    details,
+		ReportType: "TEST",
+		Reporter:   "bytebase",
+		Result:     result,
+	}
+	reportDataBytes, err := json.Marshal(report)
+	if err != nil {
+		return errors.Wrap(err, "failed to marshal report data")
+	}
+	reportData := string(reportDataBytes)
 	if err := sendPutRequest(client, http.MethodPut, reportURL, reportData); err != nil {
 		return err
 	}
