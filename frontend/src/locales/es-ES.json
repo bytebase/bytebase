@@ -419,8 +419,7 @@
     "sso": {
       "create": "Crear SSO",
       "description": "Inicio de Sesión Único (SSO) es un método de autenticación que permite a los usuarios autenticarse en múltiples aplicaciones y sitios web a través de un solo conjunto de credenciales.",
-      "archive": "Archivar este SSO",
-      "archive-info": "Los SSO archivados no se mostrarán.",
+      "delete": "Eliminar este SSO",
       "form": {
         "type": "Tipo",
         "learn-more-with-user-doc": "Obtenga más información sobre la configuración",
