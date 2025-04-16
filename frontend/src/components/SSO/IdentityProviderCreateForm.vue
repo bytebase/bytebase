@@ -638,7 +638,6 @@
       </div>
       <div class="mt-4">
         <NButton
-          v-if="!isDeleted"
           :disabled="!allowTestConnection"
           @click="testConnection"
         >
@@ -653,7 +652,6 @@
       <div class="space-x-4 flex flex-row justify-start items-center">
         <template v-if="!isCreating">
           <BBButtonConfirm
-            v-if="!isDeleted"
             :type="'ARCHIVE'"
             :button-text="$t('settings.sso.archive')"
             :ok-text="$t('common.archive')"
@@ -665,7 +663,6 @@
         </template>
       </div>
       <div
-        v-if="!isDeleted"
         class="space-x-3 flex flex-row justify-end items-center"
       >
         <template v-if="isCreating">
@@ -735,7 +732,6 @@ import type {
   ValidatedMessage,
 } from "@/types";
 import { planTypeToString } from "@/types";
-import { State } from "@/types/proto/v1/common";
 import {
   FieldMapping,
   IdentityProvider,
@@ -839,10 +835,6 @@ const externalUrl = computed(
 
 const isCreating = computed(() => {
   return currentIdentityProvider.value === undefined;
-});
-
-const isDeleted = computed(() => {
-  return currentIdentityProvider.value?.state === State.DELETED;
 });
 
 const resourceId = computed(() => {
@@ -1052,11 +1044,8 @@ const isFormCompleted = computed(() => {
 const allowEdit = computed(() => {
   if (isCreating.value) {
     return hasWorkspacePermissionV2("bb.identityProviders.create");
-  } else if (!isDeleted.value) {
-    return hasWorkspacePermissionV2("bb.identityProviders.update");
-  } else {
-    return false;
   }
+  return hasWorkspacePermissionV2("bb.identityProviders.update");
 });
 
 const allowCreate = computed(() => {
