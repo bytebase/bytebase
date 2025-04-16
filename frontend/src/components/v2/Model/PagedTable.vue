@@ -118,7 +118,7 @@ const onPageSizeChange = (size: number) => {
 };
 
 const fetchData = async (refresh = false) => {
-  if (!authStore.isLoggedIn || authStore.unauthenticatedOccured) {
+  if (!authStore.isLoggedIn || authStore.unauthenticatedOccurred) {
     return;
   }
 
@@ -178,7 +178,7 @@ fetchData(true);
 watch(
   () => authStore.authSessionKey,
   () => {
-    if (!authStore.isLoggedIn || authStore.unauthenticatedOccured) {
+    if (!authStore.isLoggedIn || authStore.unauthenticatedOccurred) {
       return;
     }
     // Reset session when logging status changed.

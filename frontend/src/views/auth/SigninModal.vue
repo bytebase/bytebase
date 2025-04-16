@@ -42,7 +42,7 @@ const route = useRoute();
 const authStore = useAuthStore();
 
 const logout = () => {
-  authStore.unauthenticatedOccured = false;
+  authStore.unauthenticatedOccurred = false;
   authStore.logout();
 };
 
@@ -64,6 +64,6 @@ const shouldShow = computed(() => {
     return false;
   }
 
-  return Boolean(authStore.unauthenticatedOccured);
+  return Boolean(authStore.unauthenticatedOccurred);
 });
 </script>

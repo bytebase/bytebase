@@ -21,7 +21,7 @@ import { User, UserType } from "@/types/proto/v1/user_service";
 export const useAuthStore = defineStore("auth_v1", () => {
   const userStore = useUserStore();
   const authSessionKey = ref<string>(uniqueId());
-  const unauthenticatedOccured = ref<boolean>(false);
+  const unauthenticatedOccurred = ref<boolean>(false);
   // Format: users/{user}. {user} is a system-generated unique ID.
   const currentUserName = ref<string | undefined>(undefined);
 
@@ -65,7 +65,7 @@ export const useAuthStore = defineStore("auth_v1", () => {
     const { data } = await axios.post<LoginResponse>("/v1/auth/login", request);
     const redirectUrl = redirect || getRedirectQuery();
     if (data.mfaTempToken) {
-      unauthenticatedOccured.value = false;
+      unauthenticatedOccurred.value = false;
       return router.push({
         name: AUTH_MFA_MODULE,
         query: {
@@ -83,7 +83,7 @@ export const useAuthStore = defineStore("auth_v1", () => {
       true // silent
     );
 
-    if (!unauthenticatedOccured.value) {
+    if (!unauthenticatedOccurred.value) {
       const mode = useAppFeature("bb.feature.database-change-mode");
       let nextPage = redirectUrl || "/";
       if (mode.value === DatabaseChangeMode.EDITOR) {
@@ -102,7 +102,7 @@ export const useAuthStore = defineStore("auth_v1", () => {
       }
       return router.replace(nextPage);
     }
-    unauthenticatedOccured.value = false;
+    unauthenticatedOccurred.value = false;
   };
 
   const signup = async (request: Partial<User>) => {
@@ -154,7 +154,7 @@ export const useAuthStore = defineStore("auth_v1", () => {
   return {
     currentUserName,
     isLoggedIn,
-    unauthenticatedOccured,
+    unauthenticatedOccurred,
     requireResetPassword,
     authSessionKey,
     login,
