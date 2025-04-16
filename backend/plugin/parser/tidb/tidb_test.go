@@ -121,5 +121,5 @@ func TestTiDBParserError(t *testing.T) {
 	require.True(t, ok)
 	require.Equal(t, int32(0), syntaxErr.Position.GetLine())
 	require.Equal(t, int32(22), syntaxErr.Position.GetColumn())
-	require.Equal(t, `line 1 column 15 near "TO world;" `, syntaxErr.Message)
+	require.Equal(t, `line 1 column 23 near "TO world;" `, syntaxErr.Message)
 }
