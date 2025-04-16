@@ -25,7 +25,7 @@ func Diagnose(_ context.Context, _ base.DiagnoseContext, statement string) ([]ba
 			// TODO(zp): unify the position in diagnose.
 			start := *common.ConvertPositionToUTF16Position(err.Position, statement)
 			end := start
-			end.Character += 1
+			end.Character++
 			diagnostics = append(diagnostics, base.Diagnostic{
 				Range: lsp.Range{
 					Start: start,

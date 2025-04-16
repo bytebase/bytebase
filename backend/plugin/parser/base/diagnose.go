@@ -15,7 +15,7 @@ type Diagnostic = lsp.Diagnostic
 func ConvertSyntaxErrorToDiagnostic(err *SyntaxError, statement string) Diagnostic {
 	start := *common.ConvertPositionToUTF16Position(err.Position, statement)
 	end := start
-	end.Character += 1
+	end.Character++
 	message := err.Message
 	if err.RawMessage != "" {
 		// Use RawMessage which created by antlr runtime, do not need our fine-tuned message
