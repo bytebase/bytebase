@@ -128,7 +128,6 @@ import {
 } from "@/store";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
 import type { FeatureType } from "@/types";
-import { State } from "@/types/proto/v1/common";
 import { type WorkspaceProfileSetting } from "@/types/proto/v1/setting_service";
 import { FeatureBadge, FeatureModal } from "../FeatureGuard";
 import PasswordRestrictionSetting from "./PasswordRestrictionSetting.vue";
@@ -181,8 +180,7 @@ watchEffect(async () => {
 
 const existActiveIdentityProvider = computed(() => {
   return (
-    idpStore.identityProviderList.filter((idp) => idp.state === State.ACTIVE)
-      .length > 0
+    idpStore.identityProviderList.length > 0
   );
 });
 
