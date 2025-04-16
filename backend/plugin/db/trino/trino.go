@@ -9,14 +9,11 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/durationpb"
-	"google.golang.org/protobuf/types/known/structpb"
 
 	// Import Trino driver for side effects
 	_ "github.com/trinodb/trino-go-client/trino"
 
-	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -165,18 +162,23 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 }
 
 // QueryConn executes a query using the provided connection.
-func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, rawStatement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
-	stmts, err := util.SanitizeSQL(rawStatement)
+func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
+	stmts, err := util.SanitizeSQL(statement)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to split sql")
+	}
+
+	if queryContext.Schema != "" {
+		if _, err := conn.ExecContext(ctx, fmt.Sprintf("USE %s", queryContext.Schema)); err != nil {
+			return nil, errors.Wrapf(err, "failed to set schema")
+		}
 	}
 
 	var results []*v1pb.QueryResult
 	for _, stmt := range stmts {
 		startTime := time.Now()
 		queryResult, err := func() (*v1pb.QueryResult, error) {
-			trimmed := strings.TrimSpace(stmt)
-			upperStmt := strings.ToUpper(trimmed)
+			upperStmt := strings.ToUpper(strings.TrimSpace(stmt))
 			isQuery := strings.HasPrefix(upperStmt, "SELECT") ||
 				strings.HasPrefix(upperStmt, "SHOW") ||
 				strings.HasPrefix(upperStmt, "DESCRIBE") ||
@@ -192,80 +194,15 @@ func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, rawStatement str
 			}
 
 			if isQuery {
-				// Add catalog.schema qualification for unqualified table references if needed
-				if strings.Contains(upperStmt, " FROM ") &&
-					!strings.Contains(upperStmt, ".") &&
-					d.databaseName != "" && queryContext.Schema != "" {
-					fromIndex := strings.Index(upperStmt, " FROM ")
-					if fromIndex != -1 {
-						beforeFrom := stmt[:fromIndex+6]
-						afterFrom := stmt[fromIndex+6:]
-
-						tableEnd := len(afterFrom)
-						if spaceIndex := strings.Index(afterFrom, " "); spaceIndex != -1 {
-							tableEnd = spaceIndex
-						}
-						tableName := afterFrom[:tableEnd]
-						restOfQuery := afterFrom[tableEnd:]
-
-						qualifiedTable := fmt.Sprintf("%s.%s.%s", d.databaseName, queryContext.Schema, tableName)
-						stmt = beforeFrom + qualifiedTable + restOfQuery
-					}
-				}
-
 				rows, err := conn.QueryContext(ctx, stmt)
 				if err != nil {
 					return nil, err
 				}
 				defer rows.Close()
 
-				columnNames, err := rows.Columns()
+				result, err := util.RowsToQueryResult(rows, makeValueByTypeName, convertValue, queryContext.MaximumSQLResultSize)
 				if err != nil {
 					return nil, err
-				}
-
-				columnTypes, err := rows.ColumnTypes()
-				if err != nil {
-					return nil, err
-				}
-
-				result := &v1pb.QueryResult{
-					ColumnNames: columnNames,
-				}
-
-				for _, cType := range columnTypes {
-					result.ColumnTypeNames = append(result.ColumnTypeNames,
-						strings.ToUpper(cType.DatabaseTypeName()))
-				}
-
-				for rows.Next() {
-					if queryContext.MaximumSQLResultSize > 0 &&
-						len(result.Rows) > 0 &&
-						int64(proto.Size(result)) > queryContext.MaximumSQLResultSize {
-						result.Error = common.FormatMaximumSQLResultSizeMessage(queryContext.MaximumSQLResultSize)
-						break
-					}
-
-					rowValues := make([]any, len(columnNames))
-					scanValues := make([]any, len(columnNames))
-					for i := range rowValues {
-						scanValues[i] = &rowValues[i]
-					}
-
-					if err := rows.Scan(scanValues...); err != nil {
-						return nil, err
-					}
-
-					row := &v1pb.QueryRow{}
-					for _, val := range rowValues {
-						row.Values = append(row.Values, convertToRowValue(val))
-					}
-
-					result.Rows = append(result.Rows, row)
-
-					if queryContext.Limit > 0 && len(result.Rows) >= int(queryContext.Limit) {
-						break
-					}
 				}
 
 				if err := rows.Err(); err != nil {
@@ -307,78 +244,4 @@ func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, rawStatement str
 	}
 
 	return results, nil
-}
-
-// convertToRowValue converts a value to a RowValue for the query result.
-func convertToRowValue(v any) *v1pb.RowValue {
-	if v == nil {
-		return &v1pb.RowValue{
-			Kind: &v1pb.RowValue_NullValue{
-				NullValue: structpb.NullValue_NULL_VALUE,
-			},
-		}
-	}
-
-	switch val := v.(type) {
-	case string:
-		return &v1pb.RowValue{
-			Kind: &v1pb.RowValue_StringValue{
-				StringValue: val,
-			},
-		}
-	case []byte:
-		return &v1pb.RowValue{
-			Kind: &v1pb.RowValue_BytesValue{
-				BytesValue: val,
-			},
-		}
-	case int64:
-		return &v1pb.RowValue{
-			Kind: &v1pb.RowValue_Int64Value{
-				Int64Value: val,
-			},
-		}
-	case int:
-		return &v1pb.RowValue{
-			Kind: &v1pb.RowValue_Int64Value{
-				Int64Value: int64(val),
-			},
-		}
-	case int32:
-		return &v1pb.RowValue{
-			Kind: &v1pb.RowValue_Int32Value{
-				Int32Value: val,
-			},
-		}
-	case float64:
-		return &v1pb.RowValue{
-			Kind: &v1pb.RowValue_DoubleValue{
-				DoubleValue: val,
-			},
-		}
-	case float32:
-		return &v1pb.RowValue{
-			Kind: &v1pb.RowValue_FloatValue{
-				FloatValue: val,
-			},
-		}
-	case bool:
-		return &v1pb.RowValue{
-			Kind: &v1pb.RowValue_BoolValue{
-				BoolValue: val,
-			},
-		}
-	case time.Time:
-		return &v1pb.RowValue{
-			Kind: &v1pb.RowValue_StringValue{
-				StringValue: val.Format(time.RFC3339),
-			},
-		}
-	default:
-		return &v1pb.RowValue{
-			Kind: &v1pb.RowValue_StringValue{
-				StringValue: fmt.Sprintf("%v", val),
-			},
-		}
-	}
 }
