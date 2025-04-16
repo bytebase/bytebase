@@ -122,21 +122,30 @@ export const useWorkSheetStore = defineStore("worksheet_v1", () => {
     }
     return cacheByUID.getEntity([uid, view]);
   };
-  const fetchWorksheetByName = async (name: string) => {
+  const fetchWorksheetByName = async (
+    name: string,
+    silent: boolean = false
+  ) => {
     const uid = extractWorksheetUID(name);
     if (uid.startsWith("-") || !uid) {
       return undefined;
     }
     try {
-      const worksheet = await worksheetServiceClient.getWorksheet({
-        name,
-      });
+      const worksheet = await worksheetServiceClient.getWorksheet(
+        {
+          name,
+        },
+        { silent }
+      );
       return worksheet;
     } catch {
       return undefined;
     }
   };
-  const getOrFetchWorksheetByName = async (name: string) => {
+  const getOrFetchWorksheetByName = async (
+    name: string,
+    silent: boolean = false
+  ) => {
     const uid = extractWorksheetUID(name);
     if (uid.startsWith("-") || !uid) {
       return undefined;
@@ -150,7 +159,7 @@ export const useWorkSheetStore = defineStore("worksheet_v1", () => {
       return request;
     }
 
-    const promise = fetchWorksheetByName(name);
+    const promise = fetchWorksheetByName(name, silent);
     cacheByUID.setRequest([uid, "FULL"], promise);
     promise.then((worksheet) => {
       if (!worksheet) {
