@@ -25,7 +25,7 @@
     <div>
       <label
         for="password"
-        class="flex justify-between text-sm font-medium leading-5 text-control"
+        class="flex justify-between text-sm font-medium leading-5 gap-4 text-control"
       >
         <div>
           {{ $t("common.password") }}
