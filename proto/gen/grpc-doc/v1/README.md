@@ -196,7 +196,6 @@
     - [UpdateIssueCommentRequest](#bytebase-v1-UpdateIssueCommentRequest)
     - [UpdateIssueRequest](#bytebase-v1-UpdateIssueRequest)
   
-    - [ApprovalNode.GroupValue](#bytebase-v1-ApprovalNode-GroupValue)
     - [ApprovalNode.Type](#bytebase-v1-ApprovalNode-Type)
     - [ApprovalStep.Type](#bytebase-v1-ApprovalStep-Type)
     - [Issue.Approver.Status](#bytebase-v1-Issue-Approver-Status)
@@ -3278,8 +3277,7 @@ LIST, HASH (https://www.postgresql.org/docs/current/ddl-partitioning.html)
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | type | [ApprovalNode.Type](#bytebase-v1-ApprovalNode-Type) |  |  |
-| group_value | [ApprovalNode.GroupValue](#bytebase-v1-ApprovalNode-GroupValue) |  |  |
-| role | [string](#string) |  | Format: roles/{role} |
+| role | [string](#string) |  |  |
 
 
 
@@ -3804,25 +3802,6 @@ The issue&#39;s `name` field is used to identify the issue to update. Format: pr
 
 
  
-
-
-<a name="bytebase-v1-ApprovalNode-GroupValue"></a>
-
-### ApprovalNode.GroupValue
-The predefined user groups are:
-- WORKSPACE_OWNER
-- WORKSPACE_DBA
-- PROJECT_OWNER
-- PROJECT_MEMBER
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| GROUP_VALUE_UNSPECIFILED | 0 |  |
-| WORKSPACE_OWNER | 1 |  |
-| WORKSPACE_DBA | 2 |  |
-| PROJECT_OWNER | 3 |  |
-| PROJECT_MEMBER | 4 |  |
-
 
 
 <a name="bytebase-v1-ApprovalNode-Type"></a>
