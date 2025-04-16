@@ -4,7 +4,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, watch } from "vue";
+import { onMounted, onUnmounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { isAuthRelatedRoute } from "@/utils/auth";
 import SigninModal from "@/views/auth/SigninModal.vue";
@@ -20,10 +20,12 @@ const router = useRouter();
 const authStore = useAuthStore();
 const workspaceStore = useWorkspaceV1Store();
 
+const authCheckIntervalId = ref<NodeJS.Timeout>();
+
 onMounted(() => {
   // Periodically checks if the user's session is still valid.
   // Skips check if user is not logged in or on an auth-related route.
-  setInterval(async () => {
+  authCheckIntervalId.value = setInterval(async () => {
     if (!authStore.isLoggedIn || authStore.unauthenticatedOccurred) {
       return;
     }
@@ -45,6 +47,13 @@ onMounted(() => {
       });
     }
   }, CHECK_AUTHORIZATION_INTERVAL);
+});
+
+onUnmounted(() => {
+  // Clean up the interval when component is unmounted.
+  if (authCheckIntervalId.value) {
+    clearInterval(authCheckIntervalId.value);
+  }
 });
 
 // When current user changed, we need to redirect to the workspace root page.
