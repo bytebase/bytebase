@@ -47,7 +47,7 @@ FROM alpine:3.21 AS decompressor
 ARG TARGETARCH
 
 RUN apk add --no-cache xz
-  COPY ./backend/resources /tmp/bytebase/resources/
+COPY ./backend/resources /tmp/bytebase/resources/
 # These paths must match the paths in backened/resources/utils/utils_dir.go.
 # The real resource dir is decided by the backend at runtime. But we can only extract these at build time. 
 # we extract resources to a specific dir here and the backend will create symlinks at runtime.
