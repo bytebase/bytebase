@@ -119,7 +119,7 @@
       </div>
     </div>
 
-    <Quickstart v-if="!hideQuickStart" />
+    <Quickstart />
   </div>
 
   <TrialModal
@@ -187,7 +187,6 @@ const sidebarView = computed(() => {
 
 const hideSidebar = useAppFeature("bb.feature.console.hide-sidebar");
 const hideHeader = useAppFeature("bb.feature.console.hide-header");
-const hideQuickStart = useAppFeature("bb.feature.hide-quick-start");
 const hideReleaseRemind = useAppFeature("bb.feature.hide-release-remind");
 
 actuatorStore.tryToRemindRelease().then((openRemindModal) => {
