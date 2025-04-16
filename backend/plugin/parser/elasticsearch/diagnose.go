@@ -5,6 +5,7 @@ import (
 
 	lsp "github.com/bytebase/lsp-protocol"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -22,19 +23,13 @@ func Diagnose(_ context.Context, _ base.DiagnoseContext, statement string) ([]ba
 	for _, err := range parseResult.Errors {
 		if err != nil {
 			// TODO(zp): unify the position in diagnose.
+			start := *common.ConvertPositionToUTF16Position(err.Position, statement)
+			end := start
+			end.Character++
 			diagnostics = append(diagnostics, base.Diagnostic{
 				Range: lsp.Range{
-					Start: lsp.Position{
-						// Convert to zero-based.
-						Line:      uint32(err.Line),
-						Character: uint32(err.Column),
-					},
-					End: lsp.Position{
-						// Convert to zero-based.
-						Line: uint32(err.Line),
-						// The end position is exclusive.
-						Character: uint32(err.Column) + 1,
-					},
+					Start: start,
+					End:   end,
 				},
 				Severity: lsp.SeverityError,
 				Source:   "Syntax check",

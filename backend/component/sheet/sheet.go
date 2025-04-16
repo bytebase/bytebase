@@ -283,8 +283,8 @@ func partiqlSyntaxCheck(statement string) (any, []*storepb.Advice) {
 					Title:   SyntaxErrorTitle,
 					Content: syntaxErr.Message,
 					StartPosition: &storepb.Position{
-						Line:   int32(syntaxErr.Line),
-						Column: int32(syntaxErr.Column),
+						Line:   int32(syntaxErr.Position.GetLine()),
+						Column: int32(syntaxErr.Position.GetColumn()),
 					},
 				},
 			}
@@ -317,8 +317,8 @@ func mssqlSyntaxCheck(statement string) (any, []*storepb.Advice) {
 					Title:   SyntaxErrorTitle,
 					Content: syntaxErr.Message,
 					StartPosition: &storepb.Position{
-						Line:   int32(syntaxErr.Line),
-						Column: int32(syntaxErr.Column),
+						Line:   int32(syntaxErr.Position.GetLine()),
+						Column: int32(syntaxErr.Position.GetColumn()),
 					},
 				},
 			}
@@ -351,8 +351,8 @@ func snowflakeSyntaxCheck(statement string) (any, []*storepb.Advice) {
 					Title:   SyntaxErrorTitle,
 					Content: syntaxErr.Message,
 					StartPosition: &storepb.Position{
-						Line:   int32(syntaxErr.Line),
-						Column: int32(syntaxErr.Column),
+						Line:   int32(syntaxErr.Position.GetLine()),
+						Column: int32(syntaxErr.Position.GetColumn()),
 					},
 				},
 			}
@@ -384,8 +384,8 @@ func oracleSyntaxCheck(statement string) (any, []*storepb.Advice) {
 					Title:   SyntaxErrorTitle,
 					Content: syntaxErr.Message,
 					StartPosition: &storepb.Position{
-						Line:   int32(syntaxErr.Line),
-						Column: int32(syntaxErr.Column),
+						Line:   int32(syntaxErr.Position.GetLine()),
+						Column: int32(syntaxErr.Position.GetColumn()),
 					},
 				},
 			}
@@ -477,8 +477,8 @@ func mysqlSyntaxCheck(statement string) (any, []*storepb.Advice) {
 					Title:   SyntaxErrorTitle,
 					Content: syntaxErr.Message,
 					StartPosition: &storepb.Position{
-						Line:   int32(syntaxErr.Line),
-						Column: int32(syntaxErr.Column),
+						Line:   int32(syntaxErr.Position.GetLine()),
+						Column: int32(syntaxErr.Position.GetColumn()),
 					},
 				},
 			}
