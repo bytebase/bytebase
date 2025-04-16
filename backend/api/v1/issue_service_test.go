@@ -19,9 +19,7 @@ func TestConvertToApprovalNode(t *testing.T) {
 		{
 			node: &storepb.ApprovalNode{
 				Type: storepb.ApprovalNode_ANY_IN_GROUP,
-				Payload: &storepb.ApprovalNode_GroupValue_{
-					GroupValue: storepb.ApprovalNode_WORKSPACE_DBA,
-				},
+				Role: common.FormatRole(base.WorkspaceDBA.String()),
 			},
 			want: &v1pb.ApprovalNode{
 				Type: v1pb.ApprovalNode_ANY_IN_GROUP,
