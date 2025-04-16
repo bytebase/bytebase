@@ -61,7 +61,7 @@ const columns = computed(
           memberBinding.type === "groups",
         renderExpand: (memberBinding: MemberBinding) => {
           return (
-            <div class="pl-20">
+            <div class="pl-20 space-y-2">
               {memberBinding.group?.members.map((member) => {
                 const user =
                   userStore.getUserByIdentifier(member.member) ?? unknownUser();
