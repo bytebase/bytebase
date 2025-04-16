@@ -9,6 +9,7 @@ import (
 	parser "github.com/bytebase/plsql-parser"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -91,7 +92,7 @@ func (l *columnTypeDisallowListListener) EnterColumn_definition(ctx *parser.Colu
 			Code:          advisor.DisabledColumnType.Int32(),
 			Title:         l.title,
 			Content:       fmt.Sprintf("Disallow column type %s but column \"%s\" is", ctx.Datatype().GetText(), normalizeIdentifier(ctx.Column_name(), l.currentDatabase)),
-			StartPosition: advisor.ConvertANTLRLineToPosition(ctx.Datatype().GetStart().GetLine()),
+			StartPosition: common.ConvertANTLRLineToPosition(ctx.Datatype().GetStart().GetLine()),
 		})
 	}
 	if ctx.Regular_id() != nil {
@@ -102,7 +103,7 @@ func (l *columnTypeDisallowListListener) EnterColumn_definition(ctx *parser.Colu
 					Code:          advisor.DisabledColumnType.Int32(),
 					Title:         l.title,
 					Content:       fmt.Sprintf("Disallow column type %s but column \"%s\" is", ctx.Regular_id().GetText(), normalizeIdentifier(ctx.Column_name(), l.currentDatabase)),
-					StartPosition: advisor.ConvertANTLRLineToPosition(ctx.Regular_id().GetStart().GetLine()),
+					StartPosition: common.ConvertANTLRLineToPosition(ctx.Regular_id().GetStart().GetLine()),
 				})
 				break
 			}
@@ -118,7 +119,7 @@ func (l *columnTypeDisallowListListener) EnterModify_col_properties(ctx *parser.
 			Code:          advisor.DisabledColumnType.Int32(),
 			Title:         l.title,
 			Content:       fmt.Sprintf("Disallow column type %s but column \"%s\" is", ctx.Datatype().GetText(), normalizeIdentifier(ctx.Column_name(), l.currentDatabase)),
-			StartPosition: advisor.ConvertANTLRLineToPosition(ctx.Datatype().GetStart().GetLine()),
+			StartPosition: common.ConvertANTLRLineToPosition(ctx.Datatype().GetStart().GetLine()),
 		})
 	}
 }

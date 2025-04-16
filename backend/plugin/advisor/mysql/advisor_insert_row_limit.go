@@ -113,7 +113,7 @@ func (checker *insertRowLimitChecker) handleInsertQueryExpression(ctx mysql.IIns
 			Code:          advisor.InsertTooManyRows.Int32(),
 			Title:         checker.title,
 			Content:       fmt.Sprintf("\"%s\" dry runs failed: %s", checker.text, err.Error()),
-			StartPosition: advisor.ConvertANTLRLineToPosition(checker.line),
+			StartPosition: common.ConvertANTLRLineToPosition(checker.line),
 		})
 		return
 	}
@@ -124,7 +124,7 @@ func (checker *insertRowLimitChecker) handleInsertQueryExpression(ctx mysql.IIns
 			Code:          advisor.Internal.Int32(),
 			Title:         checker.title,
 			Content:       fmt.Sprintf("failed to get row count for \"%s\": %s", checker.text, err.Error()),
-			StartPosition: advisor.ConvertANTLRLineToPosition(checker.line),
+			StartPosition: common.ConvertANTLRLineToPosition(checker.line),
 		})
 	} else if rowCount > int64(checker.maxRow) {
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{
@@ -132,7 +132,7 @@ func (checker *insertRowLimitChecker) handleInsertQueryExpression(ctx mysql.IIns
 			Code:          advisor.InsertTooManyRows.Int32(),
 			Title:         checker.title,
 			Content:       fmt.Sprintf("\"%s\" inserts %d rows. The count exceeds %d.", checker.text, rowCount, checker.maxRow),
-			StartPosition: advisor.ConvertANTLRLineToPosition(checker.line),
+			StartPosition: common.ConvertANTLRLineToPosition(checker.line),
 		})
 	}
 }
@@ -155,7 +155,7 @@ func (checker *insertRowLimitChecker) handleNoInsertQueryExpression(ctx mysql.II
 			Code:          advisor.InsertTooManyRows.Int32(),
 			Title:         checker.title,
 			Content:       fmt.Sprintf("\"%s\" inserts %d rows. The count exceeds %d.", checker.text, len(allValues), checker.maxRow),
-			StartPosition: advisor.ConvertANTLRLineToPosition(checker.line),
+			StartPosition: common.ConvertANTLRLineToPosition(checker.line),
 		})
 	}
 }

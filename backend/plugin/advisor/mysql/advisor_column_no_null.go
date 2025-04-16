@@ -9,6 +9,7 @@ import (
 	mysql "github.com/bytebase/mysql-parser"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
@@ -99,7 +100,7 @@ func (checker *columnNoNullChecker) generateAdvice() []*storepb.Advice {
 				Code:          advisor.ColumnCannotNull.Int32(),
 				Title:         checker.title,
 				Content:       fmt.Sprintf("`%s`.`%s` cannot have NULL value", column.tableName, column.columnName),
-				StartPosition: advisor.ConvertANTLRLineToPosition(column.line),
+				StartPosition: common.ConvertANTLRLineToPosition(column.line),
 			})
 		}
 	}

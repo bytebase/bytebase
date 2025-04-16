@@ -9,6 +9,7 @@ import (
 	parser "github.com/bytebase/tsql-parser"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	tsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -73,7 +74,7 @@ func (l *namingTableNoKeywordChecker) EnterCreate_table(ctx *parser.Create_table
 			Code:          advisor.NameIsKeywordIdentifier.Int32(),
 			Title:         l.title,
 			Content:       fmt.Sprintf("Table name [%s] is a reserved keyword and should be avoided.", normalizedTableName),
-			StartPosition: advisor.ConvertANTLRLineToPosition(tableName.GetStart().GetLine()),
+			StartPosition: common.ConvertANTLRLineToPosition(tableName.GetStart().GetLine()),
 		})
 	}
 }

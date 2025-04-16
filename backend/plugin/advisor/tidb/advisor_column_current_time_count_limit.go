@@ -12,6 +12,7 @@ import (
 	"github.com/pingcap/tidb/pkg/parser/mysql"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -91,7 +92,7 @@ func (checker *columnCurrentTimeCountLimitChecker) generateAdvice() []*storepb.A
 				Code:          advisor.DefaultCurrentTimeColumnCountExceedsLimit.Int32(),
 				Title:         checker.title,
 				Content:       fmt.Sprintf("Table `%s` has %d DEFAULT CURRENT_TIMESTAMP() columns. The count greater than %d.", table.tableName, table.defaultCurrentTimeCount, maxDefaultCurrentTimeColumCount),
-				StartPosition: advisor.ConvertANTLRLineToPosition(table.line),
+				StartPosition: common.ConvertANTLRLineToPosition(table.line),
 			})
 		}
 		if table.onUpdateCurrentTimeCount > maxOnUpdateCurrentTimeColumnCount {
@@ -100,7 +101,7 @@ func (checker *columnCurrentTimeCountLimitChecker) generateAdvice() []*storepb.A
 				Code:          advisor.OnUpdateCurrentTimeColumnCountExceedsLimit.Int32(),
 				Title:         checker.title,
 				Content:       fmt.Sprintf("Table `%s` has %d ON UPDATE CURRENT_TIMESTAMP() columns. The count greater than %d.", table.tableName, table.onUpdateCurrentTimeCount, maxOnUpdateCurrentTimeColumnCount),
-				StartPosition: advisor.ConvertANTLRLineToPosition(table.line),
+				StartPosition: common.ConvertANTLRLineToPosition(table.line),
 			})
 		}
 	}

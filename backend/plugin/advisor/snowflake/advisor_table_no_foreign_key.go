@@ -9,6 +9,7 @@ import (
 	parser "github.com/bytebase/snowsql-parser"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	snowsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/snowflake"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -87,7 +88,7 @@ func (l *tableNoForeignKeyChecker) generateAdvice() ([]*storepb.Advice, error) {
 				Code:          advisor.TableHasFK.Int32(),
 				Title:         l.title,
 				Content:       fmt.Sprintf("FOREIGN KEY is not allowed in the table %s.", l.tableOriginalName[tableName]),
-				StartPosition: advisor.ConvertANTLRLineToPosition(l.tableLine[tableName]),
+				StartPosition: common.ConvertANTLRLineToPosition(l.tableLine[tableName]),
 			})
 		}
 	}

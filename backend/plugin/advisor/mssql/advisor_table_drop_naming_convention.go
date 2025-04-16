@@ -10,6 +10,7 @@ import (
 	parser "github.com/bytebase/tsql-parser"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	tsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -85,7 +86,7 @@ func (l *tableDropNamingConventionChecker) EnterDrop_table(ctx *parser.Drop_tabl
 				Code:          advisor.TableDropNamingConventionMismatch.Int32(),
 				Title:         l.title,
 				Content:       fmt.Sprintf("[%s] mismatches drop table naming convention, naming format should be %q", normalizedTableName, l.format),
-				StartPosition: advisor.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
+				StartPosition: common.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
 			})
 		}
 	}

@@ -9,6 +9,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
@@ -78,7 +79,7 @@ func (checker *columnDefaultDisallowVolatileChecker) generateAdvice() []*storepb
 			Code:          advisor.NoDefault.Int32(),
 			Title:         checker.title,
 			Content:       fmt.Sprintf("Column %q.%q in schema %q has volatile DEFAULT", column.table, column.name, column.schema),
-			StartPosition: advisor.ConvertANTLRLineToPosition(column.line),
+			StartPosition: common.ConvertANTLRLineToPosition(column.line),
 		})
 	}
 

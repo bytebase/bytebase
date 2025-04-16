@@ -8,6 +8,7 @@ import (
 	"github.com/pingcap/tidb/pkg/parser/ast"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -118,7 +119,7 @@ func (v *namingColumnConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 				Code:          advisor.NamingColumnConventionMismatch.Int32(),
 				Title:         v.title,
 				Content:       fmt.Sprintf("`%s`.`%s` mismatches column naming convention, naming format should be %q", tableName, column.name, v.format),
-				StartPosition: advisor.ConvertANTLRLineToPosition(column.line),
+				StartPosition: common.ConvertANTLRLineToPosition(column.line),
 			})
 		}
 		if v.maxLength > 0 && len(column.name) > v.maxLength {
@@ -127,7 +128,7 @@ func (v *namingColumnConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 				Code:          advisor.NamingColumnConventionMismatch.Int32(),
 				Title:         v.title,
 				Content:       fmt.Sprintf("`%s`.`%s` mismatches column naming convention, its length should be within %d characters", tableName, column.name, v.maxLength),
-				StartPosition: advisor.ConvertANTLRLineToPosition(column.line),
+				StartPosition: common.ConvertANTLRLineToPosition(column.line),
 			})
 		}
 	}

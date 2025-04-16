@@ -17,9 +17,12 @@ linters:
       explicit-exhaustive-switch: true
     forbidigo:
       forbid:
-        - pattern: fmt\.Errorf(# Please use errors\.Wrap\|Wrapf\|Errorf instead)?
-        - pattern: ioutil\.ReadDir(# Please use os\.ReadDir)?
+        - pattern: fmt\.Errorf
+          msg: Please use errors\.Wrap\|Wrapf\|Errorf instead
+        - pattern: ioutil\.ReadDir
+          msg: Please use os\.ReadDir instead
         - pattern: protojson\.Unmarshal?
+          msg: Please use ProtojsonUnmarshaler instead
     gocritic:
       disabled-checks:
         - ifElseChain

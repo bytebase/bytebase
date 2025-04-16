@@ -10,6 +10,7 @@ import (
 	parser "github.com/bytebase/snowsql-parser"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	snowsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/snowflake"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -118,7 +119,7 @@ func (l *migrationCompatibilityChecker) EnterDrop_table(ctx *parser.Drop_tableCo
 		Code:          advisor.CompatibilityDropTable.Int32(),
 		Title:         l.title,
 		Content:       fmt.Sprintf("Drop table %q may cause incompatibility with the existing data and code", normalizedFullDropTableName),
-		StartPosition: advisor.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
+		StartPosition: common.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
 	})
 }
 
@@ -138,7 +139,7 @@ func (l *migrationCompatibilityChecker) EnterDrop_schema(ctx *parser.Drop_schema
 		Code:          advisor.CompatibilityDropSchema.Int32(),
 		Title:         l.title,
 		Content:       fmt.Sprintf("Drop schema %q may cause incompatibility with the existing data and code", normalizedFullDropSchemaName),
-		StartPosition: advisor.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
+		StartPosition: common.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
 	})
 }
 
@@ -158,7 +159,7 @@ func (l *migrationCompatibilityChecker) EnterDrop_database(ctx *parser.Drop_data
 		Code:          advisor.CompatibilityDropDatabase.Int32(),
 		Title:         l.title,
 		Content:       fmt.Sprintf("Drop database %q may cause incompatibility with the existing data and code", normalizedFullDropDatabaseName),
-		StartPosition: advisor.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
+		StartPosition: common.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
 	})
 }
 
@@ -182,6 +183,6 @@ func (l *migrationCompatibilityChecker) EnterAlter_table(ctx *parser.Alter_table
 		Code:          advisor.CompatibilityDropColumn.Int32(),
 		Title:         l.title,
 		Content:       fmt.Sprintf("Drop column %s may cause incompatibility with the existing data and code", strings.Join(normalizedAllColumnNames, ",")),
-		StartPosition: advisor.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
+		StartPosition: common.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
 	})
 }

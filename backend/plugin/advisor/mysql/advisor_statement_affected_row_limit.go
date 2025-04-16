@@ -111,7 +111,7 @@ func (checker *statementAffectedRowLimitChecker) handleStmt(lineNumber int) {
 			Code:          advisor.StatementAffectedRowExceedsLimit.Int32(),
 			Title:         checker.title,
 			Content:       fmt.Sprintf("\"%s\" dry runs failed: %s", checker.text, err.Error()),
-			StartPosition: advisor.ConvertANTLRLineToPosition(lineNumber),
+			StartPosition: common.ConvertANTLRLineToPosition(lineNumber),
 		})
 	} else {
 		rowCount, err := getRows(res)
@@ -121,7 +121,7 @@ func (checker *statementAffectedRowLimitChecker) handleStmt(lineNumber int) {
 				Code:          advisor.Internal.Int32(),
 				Title:         checker.title,
 				Content:       fmt.Sprintf("failed to get row count for \"%s\": %s", checker.text, err.Error()),
-				StartPosition: advisor.ConvertANTLRLineToPosition(lineNumber),
+				StartPosition: common.ConvertANTLRLineToPosition(lineNumber),
 			})
 		} else if rowCount > int64(checker.maxRow) {
 			checker.adviceList = append(checker.adviceList, &storepb.Advice{
@@ -129,7 +129,7 @@ func (checker *statementAffectedRowLimitChecker) handleStmt(lineNumber int) {
 				Code:          advisor.StatementAffectedRowExceedsLimit.Int32(),
 				Title:         checker.title,
 				Content:       fmt.Sprintf("\"%s\" affected %d rows (estimated). The count exceeds %d.", checker.text, rowCount, checker.maxRow),
-				StartPosition: advisor.ConvertANTLRLineToPosition(lineNumber),
+				StartPosition: common.ConvertANTLRLineToPosition(lineNumber),
 			})
 		}
 	}

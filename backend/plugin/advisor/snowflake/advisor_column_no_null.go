@@ -9,6 +9,7 @@ import (
 	parser "github.com/bytebase/snowsql-parser"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	snowsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/snowflake"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
@@ -84,7 +85,7 @@ func (l *columnNoNullChecker) ExitCreate_table(*parser.Create_tableContext) {
 			Code:          advisor.ColumnCannotNull.Int32(),
 			Title:         l.title,
 			Content:       fmt.Sprintf("Column %s is nullable, which is not allowed.", normalizedColumnName),
-			StartPosition: advisor.ConvertANTLRLineToPosition(columnNullableLine),
+			StartPosition: common.ConvertANTLRLineToPosition(columnNullableLine),
 		})
 	}
 	l.currentOriginalTableName = ""
@@ -140,7 +141,7 @@ func (l *columnNoNullChecker) ExitAlter_table(*parser.Alter_tableContext) {
 			Code:          advisor.ColumnCannotNull.Int32(),
 			Title:         l.title,
 			Content:       fmt.Sprintf("Column %s is nullable, which is not allowed.", normalizedColumnName),
-			StartPosition: advisor.ConvertANTLRLineToPosition(columnNullableLine),
+			StartPosition: common.ConvertANTLRLineToPosition(columnNullableLine),
 		})
 	}
 	l.currentOriginalTableName = ""
@@ -185,7 +186,7 @@ func (l *columnNoNullChecker) ExitAlter_table_alter_column(*parser.Alter_table_a
 			Code:          advisor.ColumnCannotNull.Int32(),
 			Title:         l.title,
 			Content:       fmt.Sprintf("After dropping NOT NULL of column %s, it will be nullable, which is not allowed.", normalizedColumnName),
-			StartPosition: advisor.ConvertANTLRLineToPosition(columnNullableLine),
+			StartPosition: common.ConvertANTLRLineToPosition(columnNullableLine),
 		})
 	}
 	l.currentOriginalTableName = ""

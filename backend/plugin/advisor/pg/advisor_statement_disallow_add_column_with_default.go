@@ -7,6 +7,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -66,7 +67,7 @@ func (checker *statementDisallowAddColumnWithDefaultChecker) Visit(in ast.Node) 
 					Code:          advisor.StatementAddColumnWithDefault.Int32(),
 					Title:         checker.title,
 					Content:       "Adding column with DEFAULT will locked the whole table and rewriting each rows",
-					StartPosition: advisor.ConvertANTLRLineToPosition(checker.line),
+					StartPosition: common.ConvertANTLRLineToPosition(checker.line),
 				})
 			}
 		}

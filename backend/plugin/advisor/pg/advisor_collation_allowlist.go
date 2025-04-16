@@ -8,6 +8,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -120,7 +121,7 @@ func (checker *collationAllowlistChecker) Visit(in ast.Node) ast.Visitor {
 			Code:          code.Int32(),
 			Title:         checker.title,
 			Content:       fmt.Sprintf("Use disabled collation \"%s\", related statement \"%s\"", disabledCollation, checker.text),
-			StartPosition: advisor.ConvertANTLRLineToPosition(line),
+			StartPosition: common.ConvertANTLRLineToPosition(line),
 		})
 	}
 

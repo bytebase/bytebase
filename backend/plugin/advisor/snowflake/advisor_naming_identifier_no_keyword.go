@@ -9,6 +9,7 @@ import (
 	parser "github.com/bytebase/snowsql-parser"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	snowsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/snowflake"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -107,7 +108,7 @@ func (l *namingIdentifierNoKeywordChecker) EnterColumn_decl_item_list(ctx *parse
 					Code:          advisor.NameIsKeywordIdentifier.Int32(),
 					Title:         l.title,
 					Content:       fmt.Sprintf("Identifier %s is a keyword and should be avoided", originalID.GetText()),
-					StartPosition: advisor.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
+					StartPosition: common.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
 				})
 			}
 		}
@@ -128,7 +129,7 @@ func (l *namingIdentifierNoKeywordChecker) EnterAlter_table(ctx *parser.Alter_ta
 			Code:          advisor.NameIsKeywordIdentifier.Int32(),
 			Title:         l.title,
 			Content:       fmt.Sprintf("Identifier %s is a keyword and should be avoided", renameToID.GetText()),
-			StartPosition: advisor.ConvertANTLRLineToPosition(renameToID.GetStart().GetLine()),
+			StartPosition: common.ConvertANTLRLineToPosition(renameToID.GetStart().GetLine()),
 		})
 	}
 }

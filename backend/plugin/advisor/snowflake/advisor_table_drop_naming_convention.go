@@ -10,6 +10,7 @@ import (
 	parser "github.com/bytebase/snowsql-parser"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	snowsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/snowflake"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -79,7 +80,7 @@ func (l *tableDropNamingConventionChecker) EnterDrop_table(ctx *parser.Drop_tabl
 			Code:          advisor.TableDropNamingConventionMismatch.Int32(),
 			Title:         l.title,
 			Content:       fmt.Sprintf("%q mismatches drop table naming convention, naming format should be %q", normalizedObjectName, l.format),
-			StartPosition: advisor.ConvertANTLRLineToPosition(ctx.Object_name().GetO().GetStart().GetLine()),
+			StartPosition: common.ConvertANTLRLineToPosition(ctx.Object_name().GetO().GetStart().GetLine()),
 		})
 	}
 }

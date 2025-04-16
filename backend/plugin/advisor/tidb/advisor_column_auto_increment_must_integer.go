@@ -11,6 +11,7 @@ import (
 	"github.com/pingcap/tidb/pkg/parser/types"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -112,7 +113,7 @@ func (checker *columnAutoIncrementMustIntegerChecker) Enter(in ast.Node) (ast.No
 			Code:          advisor.AutoIncrementColumnNotInteger.Int32(),
 			Title:         checker.title,
 			Content:       fmt.Sprintf("Auto-increment column `%s`.`%s` requires integer type", column.table, column.column),
-			StartPosition: advisor.ConvertANTLRLineToPosition(checker.line),
+			StartPosition: common.ConvertANTLRLineToPosition(checker.line),
 		})
 	}
 

@@ -12,6 +12,7 @@ import (
 
 	mysql "github.com/bytebase/mysql-parser"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
@@ -178,7 +179,7 @@ func (checker *indexPrimaryKeyTypeAllowlistChecker) checkFieldDefinition(tableNa
 					Code:          advisor.IndexPKType.Int32(),
 					Title:         checker.title,
 					Content:       fmt.Sprintf("The column `%s` in table `%s` is one of the primary key, but its type \"%s\" is not in allowlist", columnName, tableName, columnType),
-					StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
+					StartPosition: common.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
 				})
 			}
 		}
@@ -207,7 +208,7 @@ func (checker *indexPrimaryKeyTypeAllowlistChecker) checkConstraintDef(tableName
 				Code:          advisor.IndexPKType.Int32(),
 				Title:         checker.title,
 				Content:       fmt.Sprintf("The column `%s` in table `%s` is one of the primary key, but its type \"%s\" is not in allowlist", columnName, tableName, columnType),
-				StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
+				StartPosition: common.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
 			})
 		}
 	}

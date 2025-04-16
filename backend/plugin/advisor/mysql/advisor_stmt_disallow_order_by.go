@@ -11,6 +11,7 @@ import (
 
 	mysql "github.com/bytebase/mysql-parser"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -89,6 +90,6 @@ func (checker *disallowOrderByChecker) handleOrderByClause(code advisor.Code, li
 		Code:          code.Int32(),
 		Title:         checker.title,
 		Content:       fmt.Sprintf("ORDER BY clause is forbidden in DELETE and UPDATE statements, but \"%s\" uses", checker.text),
-		StartPosition: advisor.ConvertANTLRLineToPosition(checker.line + lineNumber),
+		StartPosition: common.ConvertANTLRLineToPosition(checker.line + lineNumber),
 	})
 }

@@ -8,6 +8,7 @@ import (
 	parser "github.com/bytebase/tsql-parser"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -69,7 +70,7 @@ func (l *whereRequirementForUpdateDeleteChecker) EnterDelete_statement(ctx *pars
 			Code:          advisor.StatementNoWhere.Int32(),
 			Title:         l.title,
 			Content:       "WHERE clause is required for DELETE statement.",
-			StartPosition: advisor.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
+			StartPosition: common.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
 		})
 	}
 }
@@ -82,7 +83,7 @@ func (l *whereRequirementForUpdateDeleteChecker) EnterUpdate_statement(ctx *pars
 			Code:          advisor.StatementNoWhere.Int32(),
 			Title:         l.title,
 			Content:       "WHERE clause is required for UPDATE statement.",
-			StartPosition: advisor.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
+			StartPosition: common.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
 		})
 	}
 }

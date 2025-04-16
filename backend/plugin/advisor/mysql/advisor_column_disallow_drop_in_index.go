@@ -11,6 +11,7 @@ import (
 
 	mysql "github.com/bytebase/mysql-parser"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
@@ -152,7 +153,7 @@ func (checker *columnDisallowDropInIndexChecker) EnterAlterTable(ctx *mysql.Alte
 				Code:          advisor.DropIndexColumn.Int32(),
 				Title:         checker.title,
 				Content:       fmt.Sprintf("`%s`.`%s` cannot drop index column", tableName, columnName),
-				StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + item.GetStart().GetLine()),
+				StartPosition: common.ConvertANTLRLineToPosition(checker.baseLine + item.GetStart().GetLine()),
 			})
 		}
 	}

@@ -8,6 +8,7 @@ import (
 	parser "github.com/bytebase/plsql-parser"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -71,7 +72,7 @@ func (l *insertMustSpecifyColumnListener) EnterInsert_into_clause(ctx *parser.In
 			Code:          advisor.InsertNotSpecifyColumn.Int32(),
 			Title:         l.title,
 			Content:       "INSERT statement should specify column name.",
-			StartPosition: advisor.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
+			StartPosition: common.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
 		})
 	}
 }

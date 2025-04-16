@@ -10,6 +10,7 @@ import (
 	mysql "github.com/bytebase/mysql-parser"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -109,6 +110,6 @@ func (checker *statementDisallowLimitChecker) handleLimitClause(code advisor.Cod
 		Code:          code.Int32(),
 		Title:         checker.title,
 		Content:       fmt.Sprintf("LIMIT clause is forbidden in INSERT, UPDATE and DELETE statement, but \"%s\" uses", checker.text),
-		StartPosition: advisor.ConvertANTLRLineToPosition(checker.line + lineNumber),
+		StartPosition: common.ConvertANTLRLineToPosition(checker.line + lineNumber),
 	})
 }

@@ -8,6 +8,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -72,7 +73,7 @@ func (checker *columnDisallowChangingTypeChecker) Visit(in ast.Node) ast.Visitor
 			Code:          code.Int32(),
 			Title:         checker.title,
 			Content:       fmt.Sprintf("The statement \"%s\" changes column type", checker.text),
-			StartPosition: advisor.ConvertANTLRLineToPosition(checker.line),
+			StartPosition: common.ConvertANTLRLineToPosition(checker.line),
 		})
 	}
 

@@ -10,6 +10,7 @@ import (
 	parser "github.com/bytebase/tsql-parser"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	tsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -119,7 +120,7 @@ func (l *columnRequireChecker) ExitCreate_table(ctx *parser.Create_tableContext)
 			Code:          advisor.NoRequiredColumn.Int32(),
 			Title:         l.title,
 			Content:       fmt.Sprintf("Table %s missing required column %q", l.currentOriginalTableName, column),
-			StartPosition: advisor.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
+			StartPosition: common.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
 		})
 	}
 
@@ -142,7 +143,7 @@ func (l *columnRequireChecker) EnterAlter_table(ctx *parser.Alter_tableContext) 
 				Code:          advisor.NoRequiredColumn.Int32(),
 				Title:         l.title,
 				Content:       fmt.Sprintf("Table %s missing required column %q", tableName, normalizedColumnName),
-				StartPosition: advisor.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
+				StartPosition: common.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
 			})
 		}
 	}
