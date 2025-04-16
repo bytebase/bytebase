@@ -49,7 +49,7 @@ func parsePostgreSQLStatement(statement string) *base.SyntaxError {
 
 	parserErrorListener := &base.ParseErrorListener{
 		Statement: statement,
-		BaseLine: 0,
+		BaseLine:  0,
 	}
 	p.RemoveErrorListeners()
 	p.AddErrorListener(parserErrorListener)

@@ -67,14 +67,14 @@ func parseSingleStatement(baseLine int, statement string) (antlr.Tree, *antlr.Co
 
 	lexerErrorListener := &base.ParseErrorListener{
 		Statement: statement,
-		BaseLine: baseLine,
+		BaseLine:  baseLine,
 	}
 	lexer.RemoveErrorListeners()
 	lexer.AddErrorListener(lexerErrorListener)
 
 	parserErrorListener := &base.ParseErrorListener{
 		Statement: statement,
-		BaseLine: baseLine,
+		BaseLine:  baseLine,
 	}
 	p.RemoveErrorListeners()
 	p.AddErrorListener(parserErrorListener)

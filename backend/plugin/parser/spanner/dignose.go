@@ -40,14 +40,14 @@ func parseGoogleSQLStatement(statement string) *base.SyntaxError {
 	p := parser.NewGoogleSQLParser(stream)
 	lexerErrorListener := &base.ParseErrorListener{
 		Statement: statement,
-		BaseLine: 0,
+		BaseLine:  0,
 	}
 	lexer.RemoveErrorListeners()
 	lexer.AddErrorListener(lexerErrorListener)
 
 	parserErrorListener := &base.ParseErrorListener{
 		Statement: statement,
-		BaseLine: 0,
+		BaseLine:  0,
 	}
 	p.RemoveErrorListeners()
 	p.AddErrorListener(parserErrorListener)

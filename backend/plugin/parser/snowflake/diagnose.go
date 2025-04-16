@@ -40,14 +40,14 @@ func parseSnowflakeStatement(statement string) *base.SyntaxError {
 	p := parser.NewSnowflakeParser(stream)
 	lexerErrorListener := &base.ParseErrorListener{
 		Statement: statement,
-		BaseLine: 0,
+		BaseLine:  0,
 	}
 	lexer.RemoveErrorListeners()
 	lexer.AddErrorListener(lexerErrorListener)
 
 	parserErrorListener := &base.ParseErrorListener{
 		Statement: statement,
-		BaseLine: 0,
+		BaseLine:  0,
 	}
 	p.RemoveErrorListeners()
 	p.AddErrorListener(parserErrorListener)
