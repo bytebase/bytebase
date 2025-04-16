@@ -24,18 +24,20 @@ import {
 } from "@/types";
 import { displayRoleTitle } from "@/utils";
 
-withDefaults(
+const props = withDefaults(
   defineProps<{
     value?: string[] | string | undefined;
     disabled?: boolean;
     clearable?: boolean;
     multiple?: boolean;
+    suffix?: boolean;
     size?: "tiny" | "small" | "medium" | "large";
   }>(),
   {
     clearable: true,
     value: undefined,
     multiple: false,
+    suffix: true,
     size: "medium",
   }
 );
@@ -65,9 +67,13 @@ const availableRoleOptions = computed(
       {
         type: "group",
         key: "project-roles",
-        label: `${t("role.project-roles.self")} (${t("common.optional")}, ${t(
-          "role.project-roles.apply-to-all-projects"
-        ).toLocaleLowerCase()})`,
+        label:
+          t("role.project-roles.self") +
+          (props.suffix
+            ? ` (${t("common.optional")}, ${t(
+                "role.project-roles.apply-to-all-projects"
+              ).toLocaleLowerCase()})`
+            : ""),
         children: PRESET_PROJECT_ROLES.map((role) => ({
           label: displayRoleTitle(role),
           value: role,
@@ -84,9 +90,13 @@ const availableRoleOptions = computed(
       roleGroups.push({
         type: "group",
         key: "custom-roles",
-        label: `${t("role.custom-roles.self")} (${t("common.optional")}, ${t(
-          "role.project-roles.apply-to-all-projects"
-        ).toLocaleLowerCase()})`,
+        label:
+          t("role.custom-roles.self") +
+          (props.suffix
+            ? ` (${t("common.optional")}, ${t(
+                "role.project-roles.apply-to-all-projects"
+              ).toLocaleLowerCase()})`
+            : ""),
         children: customRoles.map((role) => ({
           label: displayRoleTitle(role),
           value: role,
