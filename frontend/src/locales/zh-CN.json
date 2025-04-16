@@ -1317,9 +1317,7 @@
     "login-as-another": {
       "title": "您已以其他用户身份登录",
       "content": "我们将把您重定向到主页。"
-    },
-    "token-expired-title": "Token 已过期",
-    "token-expired-description": "Token 已过期，请重新登录"
+    }
   },
   "policy": {
     "rollout": {
