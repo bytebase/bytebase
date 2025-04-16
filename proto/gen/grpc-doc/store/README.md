@@ -26,7 +26,6 @@
     - [IssuePayloadApproval](#bytebase-store-IssuePayloadApproval)
     - [IssuePayloadApproval.Approver](#bytebase-store-IssuePayloadApproval-Approver)
   
-    - [ApprovalNode.GroupValue](#bytebase-store-ApprovalNode-GroupValue)
     - [ApprovalNode.Type](#bytebase-store-ApprovalNode-Type)
     - [ApprovalStep.Type](#bytebase-store-ApprovalStep-Type)
     - [IssuePayloadApproval.Approver.Status](#bytebase-store-IssuePayloadApproval-Approver-Status)
@@ -561,8 +560,7 @@ offset.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | type | [ApprovalNode.Type](#bytebase-store-ApprovalNode-Type) |  |  |
-| group_value | [ApprovalNode.GroupValue](#bytebase-store-ApprovalNode-GroupValue) |  |  |
-| role | [string](#string) |  | Format: roles/{role} |
+| role | [string](#string) |  |  |
 
 
 
@@ -639,25 +637,6 @@ IssuePayloadApproval records the approval template used and the approval history
 
 
  
-
-
-<a name="bytebase-store-ApprovalNode-GroupValue"></a>
-
-### ApprovalNode.GroupValue
-The predefined user groups are:
-- WORKSPACE_OWNER
-- WORKSPACE_DBA
-- PROJECT_OWNER
-- PROJECT_MEMBER
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| GROUP_VALUE_UNSPECIFILED | 0 |  |
-| WORKSPACE_OWNER | 1 |  |
-| WORKSPACE_DBA | 2 |  |
-| PROJECT_OWNER | 3 |  |
-| PROJECT_MEMBER | 4 |  |
-
 
 
 <a name="bytebase-store-ApprovalNode-Type"></a>

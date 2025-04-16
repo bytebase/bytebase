@@ -1516,26 +1516,5 @@ func isUserReviewer(ctx context.Context, stores *store.Store, issue *store.Issue
 	}
 
 	roles := utils.GetUserFormattedRolesMap(ctx, stores, user, policies...)
-
-	switch val := node.Payload.(type) {
-	case *storepb.ApprovalNode_GroupValue_:
-		switch val.GroupValue {
-		case storepb.ApprovalNode_GROUP_VALUE_UNSPECIFILED:
-			return false, errors.Errorf("invalid group value")
-		case storepb.ApprovalNode_WORKSPACE_OWNER:
-			return roles[common.FormatRole(base.WorkspaceAdmin.String())], nil
-		case storepb.ApprovalNode_WORKSPACE_DBA:
-			return roles[common.FormatRole(base.WorkspaceDBA.String())], nil
-		case storepb.ApprovalNode_PROJECT_OWNER:
-			return roles[common.FormatRole(base.ProjectOwner.String())], nil
-		case storepb.ApprovalNode_PROJECT_MEMBER:
-			return roles[common.FormatRole(base.ProjectDeveloper.String())], nil
-		default:
-			return false, errors.Errorf("invalid group value")
-		}
-	case *storepb.ApprovalNode_Role:
-		return roles[val.Role], nil
-	default:
-		return false, errors.Errorf("invalid node payload type")
-	}
+	return roles[node.Role], nil
 }
