@@ -25,8 +25,6 @@ jobs:
         with:
           go-version: '1.24.2'
           cache: false # Caching is slow.
-      # - name: Install
-      #   run: sudo apt-get install -y libkrb5-dev
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v7
         with:
