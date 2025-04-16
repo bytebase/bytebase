@@ -16,6 +16,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
@@ -131,34 +132,42 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 	}
 	defer conn.Close()
 
-	if opts.SetConnectionID != nil {
-		var sessionID string
-		if err := conn.QueryRowContext(ctx, "SELECT current_session").Scan(&sessionID); err != nil {
-			return 0, errors.Wrap(err, "failed to get session id")
-		}
-		opts.SetConnectionID(sessionID)
-
-		if opts.DeleteConnectionID != nil {
-			defer opts.DeleteConnectionID()
-		}
+	rawStmts, err := util.SanitizeSQL(statement)
+	if err != nil {
+		return 0, errors.Wrapf(err, "failed to split sql")
 	}
 
-	opts.LogCommandExecute([]int32{0})
-
-	result, err := conn.ExecContext(ctx, statement)
-	if err != nil {
-		opts.LogCommandResponse([]int32{0}, 0, []int32{0}, err.Error())
-		return 0, errors.Wrap(err, "failed to execute statement")
+	singleSQLs := make([]base.SingleSQL, len(rawStmts))
+	for i, stmt := range rawStmts {
+		singleSQLs[i] = base.SingleSQL{Text: stmt}
 	}
 
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		opts.LogCommandResponse([]int32{0}, 0, []int32{0}, "")
+	commands, originalIndex := base.FilterEmptySQLWithIndexes(singleSQLs)
+	if len(commands) == 0 {
 		return 0, nil
 	}
 
-	opts.LogCommandResponse([]int32{0}, int32(rowsAffected), []int32{int32(rowsAffected)}, "")
-	return rowsAffected, nil
+	var totalRowsAffected int64
+	for i, command := range commands {
+		indexes := []int32{originalIndex[i]}
+		opts.LogCommandExecute(indexes)
+
+		result, err := conn.ExecContext(ctx, command.Text)
+		if err != nil {
+			opts.LogCommandResponse(indexes, 0, []int32{0}, err.Error())
+			return totalRowsAffected, errors.Wrapf(err, "failed to execute statement")
+		}
+
+		rowsAffected, err := result.RowsAffected()
+		if err != nil {
+			rowsAffected = 0
+		}
+
+		totalRowsAffected += rowsAffected
+		opts.LogCommandResponse(indexes, int32(rowsAffected), []int32{int32(rowsAffected)}, "")
+	}
+
+	return totalRowsAffected, nil
 }
 
 // QueryConn executes a query using the provided connection.
