@@ -58,26 +58,27 @@ type ParseErrorListener struct {
 
 // SyntaxError returns the errors.
 func (l *ParseErrorListener) SyntaxError(_ antlr.Recognizer, token any, line, column int, message string, _ antlr.RecognitionException) {
-	if l.Err == nil {
-		errMessage := ""
-		if token, ok := token.(*antlr.CommonToken); ok {
-			stream := token.GetInputStream()
-			start := token.GetStart() - 40
-			if start < 0 {
-				start = 0
-			}
-			stop := token.GetStop()
-			if stop >= stream.Size() {
-				stop = stream.Size() - 1
-			}
-			errMessage = fmt.Sprintf("related text: %s", stream.GetTextFromInterval(antlr.NewInterval(start, stop)))
+	if l.Err != nil {
+		return
+	}
+	errMessage := ""
+	if token, ok := token.(*antlr.CommonToken); ok {
+		stream := token.GetInputStream()
+		start := token.GetStart() - 40
+		if start < 0 {
+			start = 0
 		}
-		l.Err = &SyntaxError{
-			Line:       line + l.BaseLine,
-			Column:     column,
-			Message:    fmt.Sprintf("Syntax error at line %d:%d \n%s", line+l.BaseLine, column, errMessage),
-			RawMessage: message,
+		stop := token.GetStop()
+		if stop >= stream.Size() {
+			stop = stream.Size() - 1
 		}
+		errMessage = fmt.Sprintf("related text: %s", stream.GetTextFromInterval(antlr.NewInterval(start, stop)))
+	}
+	l.Err = &SyntaxError{
+		Line:       line + l.BaseLine,
+		Column:     column,
+		Message:    fmt.Sprintf("Syntax error at line %d:%d \n%s", line+l.BaseLine, column, errMessage),
+		RawMessage: message,
 	}
 }
 
