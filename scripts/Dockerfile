@@ -1,6 +1,6 @@
 FROM node:23.11.0-slim AS frontend
 
-RUN npm i -g pnpm@10.7.0
+RUN npm i -g pnpm@10.8.1
 
 WORKDIR /frontend-build
 
@@ -42,12 +42,11 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then CC=aarch64-linux-gnu-gcc && CC_FOR_TARG
   -ldflags="-w -s -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.version=${VERSION}' -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.gitcommit=${GIT_COMMIT}'" \
   -o bytebase ./backend/bin/server/main.go
 
-FROM debian:bookworm-slim AS decompressor
+FROM alpine:3.21 AS decompressor
 
 ARG TARGETARCH
 
-RUN apt-get update
-RUN apt-get install -y xz-utils
+RUN apk add --no-cache xz
 COPY ./backend/resources /tmp/bytebase/resources/
 # These paths must match the paths in backened/resources/utils/utils_dir.go.
 # The real resource dir is decided by the backend at runtime. But we can only extract these at build time. 
