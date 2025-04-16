@@ -18,4 +18,15 @@ var (
 			},
 		},
 	)
+	// nonReadOnlyCommandError returns an error indicating a non-read-only command error.
+	nonReadOnlyCommandError, _ = status.New(codes.InvalidArgument, "Support read-only command statements only").WithDetails(
+		&errdetails.BadRequest{
+			FieldViolations: []*errdetails.BadRequest_FieldViolation{
+				{
+					Field:       "statement",
+					Description: "statement must be read-only command statement",
+				},
+			},
+		},
+	)
 )
