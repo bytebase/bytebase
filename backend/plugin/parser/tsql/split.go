@@ -40,11 +40,15 @@ func splitByParser(statement string) ([]base.SingleSQL, error) {
 
 	// Remove default error listener and add our own error listener.
 	lexer.RemoveErrorListeners()
-	lexerErrorListener := &base.ParseErrorListener{}
+	lexerErrorListener := &base.ParseErrorListener{
+		Statement: statement,
+	}
 	lexer.AddErrorListener(lexerErrorListener)
 
 	p.RemoveErrorListeners()
-	parserErrorListener := &base.ParseErrorListener{}
+	parserErrorListener := &base.ParseErrorListener{
+		Statement: statement,
+	}
 	p.AddErrorListener(parserErrorListener)
 
 	p.BuildParseTrees = true

@@ -180,7 +180,9 @@ func parseSingleStatement(baseLine int, statement string) (antlr.Tree, *antlr.Co
 
 func mysqlAddSemicolonIfNeeded(sql string) string {
 	lexer := parser.NewMySQLLexer(antlr.NewInputStream(sql))
-	lexerErrorListener := &base.ParseErrorListener{}
+	lexerErrorListener := &base.ParseErrorListener{
+		Statement: sql,
+	}
 	lexer.RemoveErrorListeners()
 	lexer.AddErrorListener(lexerErrorListener)
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
