@@ -2,7 +2,7 @@ module github.com/bytebase/bytebase
 
 go 1.24.0
 
-toolchain go1.24.1
+toolchain go1.24.2
 
 // workaround mssql-docker default TLS cert negative serial number problem
 // https://github.com/microsoft/mssql-docker/issues/895
