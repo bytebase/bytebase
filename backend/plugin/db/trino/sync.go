@@ -106,6 +106,7 @@ func (d *Driver) queryStringValues(ctx context.Context, query string, args ...an
 		if err := rows.Scan(&value); err != nil {
 			return nil, errors.Wrap(err, "failed to scan row")
 		}
+		results = append(results, value)
 	}
 
 	if err := rows.Err(); err != nil {
