@@ -128,6 +128,8 @@ import {
   useUIStateStore,
   useProjectV1Store,
   useActuatorV1Store,
+  useIssueV1Store,
+  useWorkSheetStore,
 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import type { Permission } from "@/types";
@@ -140,6 +142,8 @@ import {
 
 // The name of the sample project.
 const SAMPLE_PROJECT_NAME = "project-sample";
+const SAMPLE_ISSUE_ID = "101";
+const SAMPLE_SHEET_ID = "101";
 
 type IntroItem = {
   name: string | Ref<string>;
@@ -154,6 +158,8 @@ const { t } = useI18n();
 const projectStore = useProjectV1Store();
 const uiStateStore = useUIStateStore();
 const actuatorStore = useActuatorV1Store();
+const issueStore = useIssueV1Store();
+const worksheetStore = useWorkSheetStore();
 const hideQuickStart = useAppFeature("bb.feature.hide-quick-start");
 
 const sampleProject = computedAsync(async () => {
@@ -167,6 +173,42 @@ const sampleProject = computedAsync(async () => {
   return project;
 });
 
+const sampleIssue = computedAsync(async () => {
+  if (!sampleProject.value) {
+    return;
+  }
+  if (!hasProjectPermissionV2(sampleProject.value, "bb.issues.get")) {
+    return;
+  }
+  const issue = await issueStore.fetchIssueByName(
+    `${sampleProject.value.name}/issues/${SAMPLE_ISSUE_ID}`,
+    {
+      // Don't need to fetch the plan and rollout.
+      withPlan: false,
+      withRollout: false,
+    },
+    true /* silent */
+  );
+  return issue;
+});
+
+const sampleWorksheet = computedAsync(async () => {
+  if (!sampleProject.value) {
+    return;
+  }
+  if (!hasProjectPermissionV2(sampleProject.value, "bb.worksheets.get")) {
+    return;
+  }
+  if (!hasProjectPermissionV2(sampleProject.value, "bb.sql.select")) {
+    return;
+  }
+  const sheet = await worksheetStore.getOrFetchWorksheetByName(
+    `${sampleProject.value.name}/sheets/${SAMPLE_SHEET_ID}`,
+    true /* silent */
+  );
+  return sheet;
+});
+
 const introList = computed(() => {
   const introList: IntroItem[] = [
     {
@@ -177,13 +219,11 @@ const introList = computed(() => {
           projectId: extractProjectResourceName(
             sampleProject.value?.name ?? UNKNOWN_PROJECT_NAME
           ),
-          issueSlug: "101",
+          issueSlug: SAMPLE_ISSUE_ID,
         },
       },
       done: computed(() => uiStateStore.getIntroStateByKey("issue.visit")),
-      hide:
-        !sampleProject.value ||
-        !hasProjectPermissionV2(sampleProject.value, "bb.issues.get"),
+      hide: !sampleIssue.value,
     },
     {
       name: computed(() => t("quick-start.query-data")),
@@ -191,13 +231,11 @@ const introList = computed(() => {
         name: SQL_EDITOR_WORKSHEET_MODULE,
         params: {
           project: SAMPLE_PROJECT_NAME,
-          sheet: "101",
+          sheet: SAMPLE_SHEET_ID,
         },
       },
       done: computed(() => uiStateStore.getIntroStateByKey("data.query")),
-      hide:
-        !sampleProject.value ||
-        !hasProjectPermissionV2(sampleProject.value, "bb.sql.select"),
+      hide: !sampleWorksheet.value,
     },
     {
       name: computed(() => t("quick-start.visit-project")),
