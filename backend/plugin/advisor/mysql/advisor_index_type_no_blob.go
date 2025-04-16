@@ -12,6 +12,7 @@ import (
 
 	mysql "github.com/bytebase/mysql-parser"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
@@ -240,7 +241,7 @@ func (checker *indexTypeNoBlobChecker) addAdvice(tableName, columnName, columnTy
 			Code:          advisor.IndexTypeNoBlob.Int32(),
 			Title:         checker.title,
 			Content:       fmt.Sprintf("Columns in index must not be BLOB but `%s`.`%s` is %s", tableName, columnName, columnType),
-			StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + lineNumber),
+			StartPosition: common.ConvertANTLRLineToPosition(checker.baseLine + lineNumber),
 		})
 	}
 }

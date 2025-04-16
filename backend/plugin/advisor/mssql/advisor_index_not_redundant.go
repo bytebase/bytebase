@@ -8,6 +8,7 @@ import (
 	parser "github.com/bytebase/tsql-parser"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/parser/tsql"
 
@@ -100,7 +101,7 @@ func (checker *IndexNotRedundantChecker) EnterCreate_index(ctx *parser.Create_in
 			Code:   advisor.RedundantIndex.Int32(),
 			Content: fmt.Sprintf("Redundant indexes with the same prefix ('%s' and '%s') in '%s.%s' is not allowed",
 				metaIdxName, statIdxName, findIdxKey.schemaName, findIdxKey.tblName),
-			StartPosition: advisor.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
+			StartPosition: common.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
 		})
 	}
 }

@@ -9,6 +9,7 @@ import (
 
 	mysql "github.com/bytebase/mysql-parser"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -85,7 +86,7 @@ func (checker *columnRequireCharsetChecker) EnterCreateTable(ctx *mysql.CreateTa
 					Code:          advisor.NoCharset.Int32(),
 					Title:         checker.title,
 					Content:       fmt.Sprintf("Column %s does not have a character set specified", columnName),
-					StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + columnDefinition.GetStart().GetLine()),
+					StartPosition: common.ConvertANTLRLineToPosition(checker.baseLine + columnDefinition.GetStart().GetLine()),
 				})
 			}
 		}
@@ -111,7 +112,7 @@ func (checker *columnRequireCharsetChecker) EnterAlterTable(ctx *mysql.AlterTabl
 					Code:          advisor.NoCharset.Int32(),
 					Title:         checker.title,
 					Content:       fmt.Sprintf("Column %s does not have a character set specified", columnName),
-					StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + alterListItem.GetStart().GetLine()),
+					StartPosition: common.ConvertANTLRLineToPosition(checker.baseLine + alterListItem.GetStart().GetLine()),
 				})
 			}
 		}

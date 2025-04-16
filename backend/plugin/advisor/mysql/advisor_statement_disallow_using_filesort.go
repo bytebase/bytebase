@@ -88,7 +88,7 @@ func (checker *disallowUsingFilesortChecker) EnterSelectStatement(ctx *mysql.Sel
 			Code:          advisor.StatementExplainQueryFailed.Int32(),
 			Title:         checker.title,
 			Content:       fmt.Sprintf("Failed to explain query: %s, with error: %s", query, err),
-			StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
+			StartPosition: common.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
 		})
 	} else {
 		hasUsingFilesort, tables, err := hasUsingFilesortInExtraColumn(res)
@@ -98,7 +98,7 @@ func (checker *disallowUsingFilesortChecker) EnterSelectStatement(ctx *mysql.Sel
 				Code:          advisor.Internal.Int32(),
 				Title:         checker.title,
 				Content:       fmt.Sprintf("Failed to check extra column: %s, with error: %s", query, err),
-				StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
+				StartPosition: common.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
 			})
 		} else if hasUsingFilesort {
 			checker.adviceList = append(checker.adviceList, &storepb.Advice{
@@ -106,7 +106,7 @@ func (checker *disallowUsingFilesortChecker) EnterSelectStatement(ctx *mysql.Sel
 				Code:          advisor.StatementHasUsingFilesort.Int32(),
 				Title:         checker.title,
 				Content:       fmt.Sprintf("Using filesort detected on table(s): %s", tables),
-				StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
+				StartPosition: common.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
 			})
 		}
 	}

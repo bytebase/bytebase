@@ -124,7 +124,7 @@ func (l *columnCommentConventionListener) generateAdvices() ([]*storepb.Advice, 
 					Code:          advisor.CommentEmpty.Int32(),
 					Title:         l.title,
 					Content:       fmt.Sprintf("Comment is required for column %s", normalizeIdentifierName(columnName)),
-					StartPosition: advisor.ConvertANTLRLineToPosition(l.columnLine[columnName]),
+					StartPosition: common.ConvertANTLRLineToPosition(l.columnLine[columnName]),
 				})
 			}
 		} else {
@@ -134,7 +134,7 @@ func (l *columnCommentConventionListener) generateAdvices() ([]*storepb.Advice, 
 					Code:          advisor.CommentTooLong.Int32(),
 					Title:         l.title,
 					Content:       fmt.Sprintf("Column %s comment is too long. The length of comment should be within %d characters", normalizeIdentifierName(columnName), l.payload.MaxLength),
-					StartPosition: advisor.ConvertANTLRLineToPosition(l.columnLine[columnName]),
+					StartPosition: common.ConvertANTLRLineToPosition(l.columnLine[columnName]),
 				})
 			}
 			if l.payload.RequiredClassification {
@@ -144,7 +144,7 @@ func (l *columnCommentConventionListener) generateAdvices() ([]*storepb.Advice, 
 						Code:          advisor.CommentMissingClassification.Int32(),
 						Title:         l.title,
 						Content:       fmt.Sprintf("Column %s comment requires classification", normalizeIdentifierName(columnName)),
-						StartPosition: advisor.ConvertANTLRLineToPosition(l.columnLine[columnName]),
+						StartPosition: common.ConvertANTLRLineToPosition(l.columnLine[columnName]),
 					})
 				}
 			}

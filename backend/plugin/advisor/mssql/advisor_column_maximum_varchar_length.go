@@ -12,6 +12,7 @@ import (
 	parser "github.com/bytebase/tsql-parser"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	tsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
@@ -113,7 +114,7 @@ func (l *columnMaximumVarcharLengthChecker) EnterData_type(ctx *parser.Data_type
 			Code:          advisor.VarcharLengthExceedsLimit.Int32(),
 			Title:         l.title,
 			Content:       fmt.Sprintf("The maximum varchar length is %d.", l.maximum),
-			StartPosition: advisor.ConvertANTLRLineToPosition(line),
+			StartPosition: common.ConvertANTLRLineToPosition(line),
 		})
 	}
 }

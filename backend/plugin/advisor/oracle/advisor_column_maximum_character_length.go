@@ -10,6 +10,7 @@ import (
 	parser "github.com/bytebase/plsql-parser"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -98,6 +99,6 @@ func (l *columnMaximumCharacterLengthListener) EnterDatatype(ctx *parser.Datatyp
 		Code:          advisor.CharLengthExceedsLimit.Int32(),
 		Title:         l.title,
 		Content:       fmt.Sprintf("The maximum character length is %d.", l.maximum),
-		StartPosition: advisor.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
+		StartPosition: common.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
 	})
 }

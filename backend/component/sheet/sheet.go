@@ -243,13 +243,11 @@ func syntaxCheck(dbType storepb.Engine, statement string) (any, []*storepb.Advic
 	}
 	return nil, []*storepb.Advice{
 		{
-			Status:  storepb.Advice_ERROR,
-			Code:    InternalErrorCode,
-			Title:   "Unsupported database type",
-			Content: fmt.Sprintf("Unsupported database type %s", dbType),
-			StartPosition: &storepb.Position{
-				Line: 1,
-			},
+			Status:        storepb.Advice_ERROR,
+			Code:          InternalErrorCode,
+			Title:         "Unsupported database type",
+			Content:       fmt.Sprintf("Unsupported database type %s", dbType),
+			StartPosition: common.FirstLinePosition,
 		},
 	}
 }
@@ -259,13 +257,11 @@ func cockroachdbSyntaxCheck(statement string) (any, []*storepb.Advice) {
 	if err != nil {
 		return nil, []*storepb.Advice{
 			{
-				Status:  storepb.Advice_WARNING,
-				Code:    InternalErrorCode,
-				Title:   "Parse error",
-				Content: err.Error(),
-				StartPosition: &storepb.Position{
-					Line: 1,
-				},
+				Status:        storepb.Advice_WARNING,
+				Code:          InternalErrorCode,
+				Title:         "Parse error",
+				Content:       err.Error(),
+				StartPosition: common.FirstLinePosition,
 			},
 		}
 	}
@@ -295,13 +291,11 @@ func partiqlSyntaxCheck(statement string) (any, []*storepb.Advice) {
 		}
 		return nil, []*storepb.Advice{
 			{
-				Status:  storepb.Advice_WARNING,
-				Code:    InternalErrorCode,
-				Title:   "Parse error",
-				Content: err.Error(),
-				StartPosition: &storepb.Position{
-					Line: 1,
-				},
+				Status:        storepb.Advice_WARNING,
+				Code:          InternalErrorCode,
+				Title:         "Parse error",
+				Content:       err.Error(),
+				StartPosition: common.FirstLinePosition,
 			},
 		}
 	}
@@ -331,13 +325,11 @@ func mssqlSyntaxCheck(statement string) (any, []*storepb.Advice) {
 		}
 		return nil, []*storepb.Advice{
 			{
-				Status:  storepb.Advice_WARNING,
-				Code:    InternalErrorCode,
-				Title:   "Parse error",
-				Content: err.Error(),
-				StartPosition: &storepb.Position{
-					Line: 1,
-				},
+				Status:        storepb.Advice_WARNING,
+				Code:          InternalErrorCode,
+				Title:         "Parse error",
+				Content:       err.Error(),
+				StartPosition: common.FirstLinePosition,
 			},
 		}
 	}
@@ -367,13 +359,11 @@ func snowflakeSyntaxCheck(statement string) (any, []*storepb.Advice) {
 		}
 		return nil, []*storepb.Advice{
 			{
-				Status:  storepb.Advice_WARNING,
-				Code:    InternalErrorCode,
-				Title:   "Parse error",
-				Content: err.Error(),
-				StartPosition: &storepb.Position{
-					Line: 1,
-				},
+				Status:        storepb.Advice_WARNING,
+				Code:          InternalErrorCode,
+				Title:         "Parse error",
+				Content:       err.Error(),
+				StartPosition: common.FirstLinePosition,
 			},
 		}
 	}
@@ -402,13 +392,11 @@ func oracleSyntaxCheck(statement string) (any, []*storepb.Advice) {
 		}
 		return nil, []*storepb.Advice{
 			{
-				Status:  storepb.Advice_WARNING,
-				Code:    InternalErrorCode,
-				Title:   "Parse error",
-				Content: err.Error(),
-				StartPosition: &storepb.Position{
-					Line: 1,
-				},
+				Status:        storepb.Advice_WARNING,
+				Code:          InternalErrorCode,
+				Title:         "Parse error",
+				Content:       err.Error(),
+				StartPosition: common.FirstLinePosition,
 			},
 		}
 	}
@@ -497,13 +485,11 @@ func mysqlSyntaxCheck(statement string) (any, []*storepb.Advice) {
 		}
 		return nil, []*storepb.Advice{
 			{
-				Status:  storepb.Advice_ERROR,
-				Code:    InternalErrorCode,
-				Title:   "Parse error",
-				Content: err.Error(),
-				StartPosition: &storepb.Position{
-					Line: 1,
-				},
+				Status:        storepb.Advice_ERROR,
+				Code:          InternalErrorCode,
+				Title:         "Parse error",
+				Content:       err.Error(),
+				StartPosition: common.FirstLinePosition,
 			},
 		}
 	}
@@ -534,13 +520,11 @@ func tidbSyntaxCheck(statement string) (any, []*storepb.Advice) {
 	if err != nil {
 		return nil, []*storepb.Advice{
 			{
-				Status:  storepb.Advice_WARNING,
-				Code:    InternalErrorCode,
-				Title:   "Syntax error",
-				Content: err.Error(),
-				StartPosition: &storepb.Position{
-					Line: 1,
-				},
+				Status:        storepb.Advice_WARNING,
+				Code:          InternalErrorCode,
+				Title:         "Syntax error",
+				Content:       err.Error(),
+				StartPosition: common.FirstLinePosition,
 			},
 		}
 	}

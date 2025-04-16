@@ -9,6 +9,7 @@ import (
 	"github.com/pingcap/tidb/pkg/parser/ast"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -68,7 +69,7 @@ func (checker *insertMustSpecifyColumnChecker) Enter(in ast.Node) (ast.Node, boo
 				Code:          advisor.InsertNotSpecifyColumn.Int32(),
 				Title:         checker.title,
 				Content:       fmt.Sprintf("The INSERT statement must specify columns but \"%s\" does not", checker.text),
-				StartPosition: advisor.ConvertANTLRLineToPosition(checker.line),
+				StartPosition: common.ConvertANTLRLineToPosition(checker.line),
 			})
 		}
 	}

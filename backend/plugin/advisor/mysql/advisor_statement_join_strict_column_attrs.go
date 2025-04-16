@@ -10,6 +10,7 @@ import (
 
 	mysql "github.com/bytebase/mysql-parser"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	"github.com/bytebase/bytebase/backend/store/model"
@@ -204,7 +205,7 @@ func (checker *statementJoinStrictColumnAttrsChecker) checkColumnAttrs(leftColum
 			Code:          advisor.StatementJoinColumnAttrsNotMatch.Int32(),
 			Title:         checker.title,
 			Content:       fmt.Sprintf("%s.%s and %s.%s column fields do not match", leftColumnAttr.Table, leftColumnAttr.Column, rightColumnAttr.Table, rightColumnAttr.Column),
-			StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine),
+			StartPosition: common.ConvertANTLRLineToPosition(checker.baseLine),
 		})
 	}
 }

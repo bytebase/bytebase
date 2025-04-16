@@ -8,6 +8,7 @@ import (
 	parser "github.com/bytebase/tsql-parser"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -70,7 +71,7 @@ func (l *whereRequirementForSelectChecker) EnterQuery_specification(ctx *parser.
 			Code:          advisor.StatementNoWhere.Int32(),
 			Title:         l.title,
 			Content:       "WHERE clause is required for SELETE statement.",
-			StartPosition: advisor.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
+			StartPosition: common.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
 		})
 	}
 }

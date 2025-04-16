@@ -9,6 +9,7 @@ import (
 	parser "github.com/bytebase/tsql-parser"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	tsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -96,7 +97,7 @@ func (l *columnNoNullChecker) ExitCreate_table(_ *parser.Create_tableContext) {
 			Code:          advisor.ColumnCannotNull.Int32(),
 			Title:         l.title,
 			Content:       fmt.Sprintf("Column [%s] is nullable, which is not allowed.", columnName),
-			StartPosition: advisor.ConvertANTLRLineToPosition(l.currentTableColumnIsNullableLine[columnName]),
+			StartPosition: common.ConvertANTLRLineToPosition(l.currentTableColumnIsNullableLine[columnName]),
 		})
 	}
 
@@ -172,7 +173,7 @@ func (l *columnNoNullChecker) ExitAlter_table(_ *parser.Alter_tableContext) {
 			Code:          advisor.ColumnCannotNull.Int32(),
 			Title:         l.title,
 			Content:       fmt.Sprintf("Column [%s] is nullable, which is not allowed.", columnName),
-			StartPosition: advisor.ConvertANTLRLineToPosition(l.currentTableColumnIsNullableLine[columnName]),
+			StartPosition: common.ConvertANTLRLineToPosition(l.currentTableColumnIsNullableLine[columnName]),
 		})
 	}
 

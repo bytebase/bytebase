@@ -11,6 +11,7 @@ import (
 	"github.com/pingcap/tidb/pkg/parser/types"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -139,7 +140,7 @@ func (v *indexPkTypeChecker) Enter(in ast.Node) (ast.Node, bool) {
 			Code:          advisor.IndexPKType.Int32(),
 			Title:         v.title,
 			Content:       fmt.Sprintf("Columns in primary key must be INT/BIGINT but `%s`.`%s` is %s", pd.table, pd.column, pd.columnType),
-			StartPosition: advisor.ConvertANTLRLineToPosition(pd.line),
+			StartPosition: common.ConvertANTLRLineToPosition(pd.line),
 		})
 	}
 	return in, false

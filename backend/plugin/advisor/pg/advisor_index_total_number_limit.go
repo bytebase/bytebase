@@ -9,6 +9,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
@@ -108,7 +109,7 @@ func (checker *indexTotalNumberLimitChecker) generateAdvice() []*storepb.Advice 
 				Code:          advisor.IndexCountExceedsLimit.Int32(),
 				Title:         checker.title,
 				Content:       fmt.Sprintf("The count of index in table %q.%q should be no more than %d, but found %d", table.schema, table.table, checker.max, tableInfo.CountIndex()),
-				StartPosition: advisor.ConvertANTLRLineToPosition(table.line),
+				StartPosition: common.ConvertANTLRLineToPosition(table.line),
 			})
 		}
 	}

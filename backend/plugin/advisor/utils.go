@@ -13,12 +13,6 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-var (
-	DefaultPosition = &storepb.Position{
-		Line: 0,
-	}
-)
-
 // NormalizeStatement limit the max length of the statements.
 func NormalizeStatement(statement string) string {
 	maxLength := 1000
@@ -168,14 +162,4 @@ func DatabaseExists(ctx context.Context, checkCtx Context, database string) bool
 	}
 
 	return false
-}
-
-func ConvertANTLRLineToPosition(line int) *storepb.Position {
-	positionLine := line - 1
-	if line == 0 {
-		positionLine = 0
-	}
-	return &storepb.Position{
-		Line: int32(positionLine),
-	}
 }

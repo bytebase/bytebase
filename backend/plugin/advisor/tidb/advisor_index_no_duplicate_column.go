@@ -9,6 +9,7 @@ import (
 	"github.com/pingcap/tidb/pkg/parser/ast"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -128,7 +129,7 @@ func (checker *indexNoDuplicateColumnChecker) Enter(in ast.Node) (ast.Node, bool
 			Code:          advisor.DuplicateColumnInIndex.Int32(),
 			Title:         checker.title,
 			Content:       fmt.Sprintf("%s `%s` has duplicate column `%s`.`%s`", column.tp, column.index, column.table, column.column),
-			StartPosition: advisor.ConvertANTLRLineToPosition(column.line),
+			StartPosition: common.ConvertANTLRLineToPosition(column.line),
 		})
 	}
 

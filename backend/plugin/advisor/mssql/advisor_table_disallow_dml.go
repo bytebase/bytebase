@@ -9,6 +9,7 @@ import (
 	parser "github.com/bytebase/tsql-parser"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	tsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -113,7 +114,7 @@ func (checker *tableDisallowDMLChecker) checkTableName(normalizedTableName strin
 				Code:          advisor.TableDisallowDML.Int32(),
 				Title:         checker.title,
 				Content:       fmt.Sprintf("DML is disallowed on table %s.", normalizedTableName),
-				StartPosition: advisor.ConvertANTLRLineToPosition(line),
+				StartPosition: common.ConvertANTLRLineToPosition(line),
 			})
 			return
 		}

@@ -9,6 +9,7 @@ import (
 	parser "github.com/bytebase/plsql-parser"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -74,7 +75,7 @@ func (l *namingTableNoKeywordListener) EnterCreate_table(ctx *parser.Create_tabl
 			Code:          advisor.NameIsKeywordIdentifier.Int32(),
 			Title:         l.title,
 			Content:       fmt.Sprintf("Table name %q is a keyword identifier and should be avoided.", tableName),
-			StartPosition: advisor.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
+			StartPosition: common.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
 		})
 	}
 }
@@ -91,7 +92,7 @@ func (l *namingTableNoKeywordListener) EnterAlter_table_properties(ctx *parser.A
 			Code:          advisor.NameIsKeywordIdentifier.Int32(),
 			Title:         l.title,
 			Content:       fmt.Sprintf("Table name %q is a keyword identifier and should be avoided.", tableName),
-			StartPosition: advisor.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
+			StartPosition: common.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
 		})
 	}
 }

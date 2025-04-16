@@ -8,6 +8,7 @@ import (
 
 	parser "github.com/bytebase/plsql-parser"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -52,7 +53,7 @@ func (*StatementDisallowMixInDMLAdvisor) Check(_ context.Context, checkCtx advis
 					Title:         title,
 					Content:       "Data change can only run DML",
 					Code:          advisor.StatementDisallowMixDDLDML.Int32(),
-					StartPosition: advisor.ConvertANTLRLineToPosition(stmt.GetStart().GetLine()),
+					StartPosition: common.ConvertANTLRLineToPosition(stmt.GetStart().GetLine()),
 				})
 			}
 		}

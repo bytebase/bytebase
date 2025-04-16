@@ -12,6 +12,7 @@ import (
 
 	mysql "github.com/bytebase/mysql-parser"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
@@ -154,7 +155,7 @@ func (checker *columnDisallowChangingTypeChecker) changeColumnType(tableName, co
 			Code:          advisor.ChangeColumnType.Int32(),
 			Title:         checker.title,
 			Content:       fmt.Sprintf("\"%s\" changes column type", checker.text),
-			StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + dataType.GetStart().GetLine()),
+			StartPosition: common.ConvertANTLRLineToPosition(checker.baseLine + dataType.GetStart().GetLine()),
 		})
 	}
 }

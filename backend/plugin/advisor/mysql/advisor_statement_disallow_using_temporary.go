@@ -88,7 +88,7 @@ func (checker *disallowUsingTemporaryChecker) EnterSelectStatement(ctx *mysql.Se
 			Code:          advisor.StatementExplainQueryFailed.Int32(),
 			Title:         checker.title,
 			Content:       fmt.Sprintf("Failed to explain query: %s, with error: %s", query, err),
-			StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
+			StartPosition: common.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
 		})
 	} else {
 		hasUsingTemporary, tables, err := hasUsingTemporaryInExtraColumn(res)
@@ -98,7 +98,7 @@ func (checker *disallowUsingTemporaryChecker) EnterSelectStatement(ctx *mysql.Se
 				Code:          advisor.Internal.Int32(),
 				Title:         checker.title,
 				Content:       fmt.Sprintf("Failed to check extra column: %s, with error: %s", query, err),
-				StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
+				StartPosition: common.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
 			})
 		} else if hasUsingTemporary {
 			checker.adviceList = append(checker.adviceList, &storepb.Advice{
@@ -106,7 +106,7 @@ func (checker *disallowUsingTemporaryChecker) EnterSelectStatement(ctx *mysql.Se
 				Code:          advisor.StatementHasUsingTemporary.Int32(),
 				Title:         checker.title,
 				Content:       fmt.Sprintf("Using temporary detected on table(s): %s", tables),
-				StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
+				StartPosition: common.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
 			})
 		}
 	}

@@ -99,7 +99,7 @@ func (checker *statementAffectedRowLimitChecker) Visit(in ast.Node) ast.Visitor 
 				Code:          advisor.InsertTooManyRows.Int32(),
 				Title:         checker.title,
 				Content:       fmt.Sprintf("\"%s\" dry runs failed: %s", checker.text, err.Error()),
-				StartPosition: advisor.ConvertANTLRLineToPosition(node.LastLine()),
+				StartPosition: common.ConvertANTLRLineToPosition(node.LastLine()),
 			})
 		} else {
 			rowCount, err := getAffectedRows(res)
@@ -109,7 +109,7 @@ func (checker *statementAffectedRowLimitChecker) Visit(in ast.Node) ast.Visitor 
 					Code:          advisor.Internal.Int32(),
 					Title:         checker.title,
 					Content:       fmt.Sprintf("failed to get row count for \"%s\": %s", checker.text, err.Error()),
-					StartPosition: advisor.ConvertANTLRLineToPosition(node.LastLine()),
+					StartPosition: common.ConvertANTLRLineToPosition(node.LastLine()),
 				})
 			} else if rowCount > int64(checker.maxRow) {
 				code = advisor.StatementAffectedRowExceedsLimit
@@ -124,7 +124,7 @@ func (checker *statementAffectedRowLimitChecker) Visit(in ast.Node) ast.Visitor 
 			Code:          code.Int32(),
 			Title:         checker.title,
 			Content:       fmt.Sprintf("The statement \"%s\" affected %d rows (estimated). The count exceeds %d.", checker.text, rows, checker.maxRow),
-			StartPosition: advisor.ConvertANTLRLineToPosition(in.LastLine()),
+			StartPosition: common.ConvertANTLRLineToPosition(in.LastLine()),
 		})
 	}
 	return checker

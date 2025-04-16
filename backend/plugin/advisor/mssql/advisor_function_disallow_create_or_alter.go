@@ -7,6 +7,7 @@ import (
 	parser "github.com/bytebase/tsql-parser"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -53,6 +54,6 @@ func (checker *FunctionDisallowCreateOrAlterChecker) EnterCreate_or_alter_functi
 		Code:          advisor.DisallowCreateFunction.Int32(),
 		Title:         checker.title,
 		Content:       "Creating or altering functions is prohibited",
-		StartPosition: advisor.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
+		StartPosition: common.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
 	})
 }

@@ -9,6 +9,7 @@ import (
 	"github.com/pingcap/tidb/pkg/parser/ast"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -76,7 +77,7 @@ func (checker *columnAutoIncrementInitialValueChecker) Enter(in ast.Node) (ast.N
 						Code:          advisor.AutoIncrementColumnInitialValueNotMatch.Int32(),
 						Title:         checker.title,
 						Content:       fmt.Sprintf("The initial auto-increment value in table `%s` is %v, which doesn't equal %v", createTable.Table.Name.O, option.UintValue, checker.value),
-						StartPosition: advisor.ConvertANTLRLineToPosition(checker.line),
+						StartPosition: common.ConvertANTLRLineToPosition(checker.line),
 					})
 				}
 			}

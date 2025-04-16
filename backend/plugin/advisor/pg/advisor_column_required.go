@@ -8,6 +8,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -106,7 +107,7 @@ func (checker *columnRequirementChecker) Visit(node ast.Node) ast.Visitor {
 			Code:          advisor.NoRequiredColumn.Int32(),
 			Title:         checker.title,
 			Content:       fmt.Sprintf("Table %q requires columns: %s", table.Name, strings.Join(missingColumns, ", ")),
-			StartPosition: advisor.ConvertANTLRLineToPosition(node.LastLine()),
+			StartPosition: common.ConvertANTLRLineToPosition(node.LastLine()),
 		})
 	}
 
