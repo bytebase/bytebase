@@ -32,13 +32,46 @@ type Finding struct {
 
 func writeReleaseCheckToCodeQualityJSON(resp *v1pb.CheckReleaseResponse) error {
 	var data []Finding
+	var warningCount, errorCount int
+	for _, result := range resp.Results {
+		for _, advice := range result.Advices {
+			switch advice.Status {
+			case v1pb.Advice_WARNING:
+				warningCount++
+			case v1pb.Advice_ERROR:
+				errorCount++
+			default:
+				continue
+			}
+		}
+	}
+	var riskDetail string
+	switch resp.RiskLevel {
+	case v1pb.CheckReleaseResponse_LOW:
+		riskDetail = "🟢 Low"
+	case v1pb.CheckReleaseResponse_MODERATE:
+		riskDetail = "🟡 Moderate"
+	case v1pb.CheckReleaseResponse_HIGH:
+		riskDetail = "🔴 High"
+	default:
+		riskDetail = "⚪ None"
+	}
+	details := fmt.Sprintf(`Summary: • Total Affected Rows: %d
+• Overall Risk Level: %s
+• Advices Statistics: %d Error(s), %d Warning(s)`, resp.GetAffectedRows(), riskDetail, errorCount, warningCount)
+	data = append(data, Finding{
+		Description: details,
+		CheckName:   "Summary",
+		Fingerprint: "summary",
+		Severity:    "info",
+	})
 	for _, result := range resp.Results {
 		for _, advice := range result.Advices {
 			var severity string
 			// Valid values are info, minor, major, critical, or blocker.
 			switch advice.Status {
 			case v1pb.Advice_WARNING:
-				severity = "info"
+				severity = "minor"
 			case v1pb.Advice_ERROR:
 				severity = "critical"
 			default:
