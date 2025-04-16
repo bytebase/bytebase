@@ -399,7 +399,6 @@
     - [OIDCIdentityProviderConfig](#bytebase-v1-OIDCIdentityProviderConfig)
     - [TestIdentityProviderRequest](#bytebase-v1-TestIdentityProviderRequest)
     - [TestIdentityProviderResponse](#bytebase-v1-TestIdentityProviderResponse)
-    - [UndeleteIdentityProviderRequest](#bytebase-v1-UndeleteIdentityProviderRequest)
     - [UpdateIdentityProviderRequest](#bytebase-v1-UpdateIdentityProviderRequest)
   
     - [IdentityProviderType](#bytebase-v1-IdentityProviderType)
@@ -6494,7 +6493,6 @@ we can extract the relevant data based with `FieldMapping`.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name of the identity provider. Format: idps/{idp} |
-| state | [State](#bytebase-v1-State) |  |  |
 | title | [string](#string) |  |  |
 | domain | [string](#string) |  |  |
 | type | [IdentityProviderType](#bytebase-v1-IdentityProviderType) |  |  |
@@ -6557,7 +6555,6 @@ LDAPIdentityProviderConfig is the structure for LDAP identity provider config.
 | page_token | [string](#string) |  | Not used. A page token, received from a previous `ListIdentityProviders` call. Provide this to retrieve the subsequent page.
 
 When paginating, all other parameters provided to `ListIdentityProviders` must match the call that provided the page token. |
-| show_deleted | [bool](#bool) |  | Show deleted identity providers if specified. |
 
 
 
@@ -6666,21 +6663,6 @@ OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
 
 
 
-<a name="bytebase-v1-UndeleteIdentityProviderRequest"></a>
-
-### UndeleteIdentityProviderRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the deleted identity provider. Format: idps/{identity_provider} |
-
-
-
-
-
-
 <a name="bytebase-v1-UpdateIdentityProviderRequest"></a>
 
 ### UpdateIdentityProviderRequest
@@ -6744,7 +6726,6 @@ The identity provider&#39;s `name` field is used to identify the identity provid
 | CreateIdentityProvider | [CreateIdentityProviderRequest](#bytebase-v1-CreateIdentityProviderRequest) | [IdentityProvider](#bytebase-v1-IdentityProvider) |  |
 | UpdateIdentityProvider | [UpdateIdentityProviderRequest](#bytebase-v1-UpdateIdentityProviderRequest) | [IdentityProvider](#bytebase-v1-IdentityProvider) |  |
 | DeleteIdentityProvider | [DeleteIdentityProviderRequest](#bytebase-v1-DeleteIdentityProviderRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
-| UndeleteIdentityProvider | [UndeleteIdentityProviderRequest](#bytebase-v1-UndeleteIdentityProviderRequest) | [IdentityProvider](#bytebase-v1-IdentityProvider) |  |
 | TestIdentityProvider | [TestIdentityProviderRequest](#bytebase-v1-TestIdentityProviderRequest) | [TestIdentityProviderResponse](#bytebase-v1-TestIdentityProviderResponse) |  |
 
  

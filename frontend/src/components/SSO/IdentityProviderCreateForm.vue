@@ -662,16 +662,6 @@
             :require-confirm="true"
             @confirm="handleDeleteButtonClick"
           />
-          <BBButtonConfirm
-            v-else
-            :type="'RESTORE'"
-            :button-text="$t('settings.sso.restore')"
-            :ok-text="$t('common.restore')"
-            :confirm-title="$t('settings.sso.restore')"
-            :confirm-description="''"
-            :require-confirm="true"
-            @confirm="handleRestoreButtonClick"
-          />
         </template>
       </div>
       <div
@@ -1294,29 +1284,6 @@ const handleDeleteButtonClick = async () => {
   }
   router.push({
     name: WORKSPACE_ROUTE_SSO,
-  });
-};
-
-const handleRestoreButtonClick = async () => {
-  if (!currentIdentityProvider.value) {
-    return;
-  }
-  if (!hasWorkspacePermissionV2("bb.identityProviders.undelete")) {
-    pushNotification({
-      module: "bytebase",
-      style: "WARN",
-      title: "Permission denied",
-    });
-    return;
-  }
-
-  await identityProviderStore.undeleteIdentityProvider(
-    currentIdentityProvider.value.name
-  );
-  pushNotification({
-    module: "bytebase",
-    style: "SUCCESS",
-    title: "Restore SSO succeed",
   });
 };
 
