@@ -1,0 +1,188 @@
+package github
+
+import (
+	"fmt"
+	"strings"
+
+	"github.com/caarlos0/env/v11"
+	"github.com/pkg/errors"
+
+	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
+)
+
+const maxCommentLength = 65536
+const commentHeader = `<!--BYTEBASE_MARKER-DO_NOT_EDIT-->`
+const githubActionUserID = 41898282
+
+type githubEnv struct {
+	APIUrl string `env:"GITHUB_API_URL,required,notEmpty"`
+	Repo   string `env:"GITHUB_REPOSITORY,required,notEmpty"`
+	PR     string `env:"GITHUB_PR_NUMBER"`
+	Token  string `env:"GITHUB_TOKEN,required,notEmpty"`
+}
+
+func CreateCommentAndAnnotation(resp *v1pb.CheckReleaseResponse) error {
+	ghe, err := env.ParseAs[githubEnv]()
+	if err != nil {
+		return errors.Wrap(err, "failed to parse GitHub environment variables")
+	}
+	// Write annotations to the pull request.
+	if err := writeAnnotations(resp); err != nil {
+		return err
+	}
+	// Upsert a comment on the pull request with the check results.
+	if err := upsertComment(resp, &ghe); err != nil {
+		fmt.Printf("failed to upsert comment on the pull request: %v\n", err)
+		return nil
+	}
+	return nil
+}
+
+func upsertComment(resp *v1pb.CheckReleaseResponse, ghe *githubEnv) error {
+	if ghe.PR == "" {
+		fmt.Println("No pull request number found in the environment variables.\nI won't create a comment.\nPass GITHUB_PR_NUMBER to create a comment.")
+		return nil
+	}
+	// upsert the comment
+	c := newClient(ghe.APIUrl, ghe.Token)
+	comments, err := c.listComments(ghe.Repo, ghe.PR)
+	if err != nil {
+		return errors.Wrapf(err, "failed to list comments")
+	}
+	for _, comment := range comments {
+		if comment.User.ID == githubActionUserID && strings.HasPrefix(comment.Body, commentHeader) {
+			// update the comment
+			if err := c.updateComment(ghe.Repo, comment.ID, buildCommentMessage(resp)); err != nil {
+				return errors.Wrapf(err, "failed to update comment")
+			}
+			return nil
+		}
+	}
+
+	// create a new comment
+	if err := c.createComment(ghe.Repo, ghe.PR, buildCommentMessage(resp)); err != nil {
+		return errors.Wrapf(err, "failed to create comment")
+	}
+	return nil
+}
+
+func buildCommentMessage(resp *v1pb.CheckReleaseResponse) string {
+	var errorCount, warningCount int
+	for _, result := range resp.Results {
+		for _, advice := range result.Advices {
+			switch advice.Status {
+			case v1pb.Advice_WARNING:
+				warningCount++
+			case v1pb.Advice_ERROR:
+				errorCount++
+			}
+		}
+	}
+
+	var sb strings.Builder
+	_, _ = sb.WriteString(commentHeader + "\n")
+	_, _ = sb.WriteString("## SQL Review Summary\n\n")
+	_, _ = sb.WriteString(fmt.Sprintf("* Total Affected Rows: **%d**\n", resp.AffectedRows))
+	_, _ = sb.WriteString(fmt.Sprintf("* Overall Risk Level: **%s**\n", formatRiskLevel(resp.RiskLevel)))
+	_, _ = sb.WriteString(fmt.Sprintf("* Advices Statistics: **%d Error(s), %d Warning(s)**\n", errorCount, warningCount))
+	_, _ = sb.WriteString("### Detailed Results\n")
+	_, _ = sb.WriteString(`
+<table>
+  <thead>
+    <tr>
+      <th>File</th>
+      <th>Target</th>
+      <th>Affected Rows</th>
+      <th>Risk Level</th>
+      <th>Advices</th>
+    </tr>
+  </thead>
+  <tbody>`)
+	for _, result := range resp.Results {
+		if sb.Len() > maxCommentLength-1000 {
+			break
+		}
+		var errorCount, warningCount int
+		for _, advice := range result.Advices {
+			switch advice.Status {
+			case v1pb.Advice_WARNING:
+				warningCount++
+			case v1pb.Advice_ERROR:
+				errorCount++
+			}
+		}
+		counts := []string{}
+		if errorCount > 0 {
+			counts = append(counts, fmt.Sprintf("%d Error(s)", errorCount))
+		}
+		if warningCount > 0 {
+			counts = append(counts, fmt.Sprintf("%d Warning(s)", warningCount))
+		}
+		adviceCell := "-"
+		if len(counts) > 0 {
+			adviceCell = strings.Join(counts, ", ")
+		}
+
+		_, _ = sb.WriteString(fmt.Sprintf(`<tr>
+<td>%s</td>
+<td>%s</td>
+<td>%d</td>
+<td>%s</td>
+<td>%s</td>
+</tr>`, result.File, result.Target, result.AffectedRows, formatRiskLevel(result.RiskLevel), adviceCell))
+	}
+	_, _ = sb.WriteString("</tbody></table>")
+	return sb.String()
+}
+
+func writeAnnotations(resp *v1pb.CheckReleaseResponse) error {
+	// annotation template
+	// `::${advice.status} file=${file},line=${advice.line},col=${advice.column},title=${advice.title} (${advice.code})::${advice.content}. Targets: ${targets.join(', ')} https://www.bytebase.com/docs/reference/error-code/advisor#${advice.code}`
+	for _, result := range resp.Results {
+		for _, advice := range result.Advices {
+			var sb strings.Builder
+			_, _ = sb.WriteString("::")
+			switch advice.Status {
+			case v1pb.Advice_WARNING:
+				_, _ = sb.WriteString("warning ")
+			case v1pb.Advice_ERROR:
+				_, _ = sb.WriteString("error ")
+			default:
+				continue
+			}
+
+			_, _ = sb.WriteString(" file=")
+			_, _ = sb.WriteString(result.File)
+			_, _ = sb.WriteString(",line=")
+			_, _ = sb.WriteString(string(advice.Line))
+			_, _ = sb.WriteString(",col=")
+			_, _ = sb.WriteString(string(advice.Column))
+			_, _ = sb.WriteString(",title=")
+			_, _ = sb.WriteString(advice.Title)
+			_, _ = sb.WriteString(" (")
+			_, _ = sb.WriteString(string(advice.Code))
+			_, _ = sb.WriteString(")::")
+			_, _ = sb.WriteString(advice.Content)
+			_, _ = sb.WriteString(". Targets: ")
+			_, _ = sb.WriteString(result.Target)
+			_, _ = sb.WriteString(" ")
+			_, _ = sb.WriteString(" https://www.bytebase.com/docs/reference/error-code/advisor#")
+			_, _ = sb.WriteString(string(advice.Code))
+			fmt.Println(sb.String())
+		}
+	}
+	return nil
+}
+
+func formatRiskLevel(r v1pb.CheckReleaseResponse_RiskLevel) string {
+	switch r {
+	case v1pb.CheckReleaseResponse_LOW:
+		return "🟢 Low"
+	case v1pb.CheckReleaseResponse_MODERATE:
+		return "🟡 Moderate"
+	case v1pb.CheckReleaseResponse_HIGH:
+		return "🔴 High"
+	default:
+		return "⚪ None"
+	}
+}
