@@ -1405,7 +1405,12 @@ func validateQueryRequest(instance *store.InstanceMessage, statement string) err
 		return err
 	}
 	if !ok {
-		return nonSelectSQLError.Err()
+		switch instance.Metadata.GetEngine() {
+		case storepb.Engine_REDIS, storepb.Engine_MONGODB:
+			return nonReadOnlyCommandError.Err()
+		default:
+			return nonSelectSQLError.Err()
+		}
 	}
 	return nil
 }
