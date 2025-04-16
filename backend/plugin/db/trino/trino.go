@@ -5,13 +5,17 @@ import (
 	"database/sql"
 	"fmt"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/types/known/durationpb"
+
 	// Import Trino driver for side effects
 	_ "github.com/trinodb/trino-go-client/trino"
 
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
@@ -119,12 +123,125 @@ func (d *Driver) GetDB() *sql.DB {
 	return d.db
 }
 
-// func (*Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
-func (*Driver) Execute(_ context.Context, _ string, _ db.ExecuteOptions) (int64, error) {
-	return 0, errors.New("tbd")
+// Execute executes the SQL statement with the given options.
+func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
+	conn, err := d.db.Conn(ctx)
+	if err != nil {
+		return 0, errors.Wrap(err, "failed to get connection")
+	}
+	defer conn.Close()
+
+	if opts.SetConnectionID != nil {
+		var sessionID string
+		if err := conn.QueryRowContext(ctx, "SELECT current_session").Scan(&sessionID); err != nil {
+			return 0, errors.Wrap(err, "failed to get session id")
+		}
+		opts.SetConnectionID(sessionID)
+
+		if opts.DeleteConnectionID != nil {
+			defer opts.DeleteConnectionID()
+		}
+	}
+
+	opts.LogCommandExecute([]int32{0})
+
+	result, err := conn.ExecContext(ctx, statement)
+	if err != nil {
+		opts.LogCommandResponse([]int32{0}, 0, []int32{0}, err.Error())
+		return 0, errors.Wrap(err, "failed to execute statement")
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		opts.LogCommandResponse([]int32{0}, 0, []int32{0}, "")
+		return 0, nil
+	}
+
+	opts.LogCommandResponse([]int32{0}, int32(rowsAffected), []int32{int32(rowsAffected)}, "")
+	return rowsAffected, nil
 }
 
-// func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
-func (*Driver) QueryConn(_ context.Context, _ *sql.Conn, _ string, _ db.QueryContext) ([]*v1pb.QueryResult, error) {
-	return nil, errors.New("tbd")
+// QueryConn executes a query using the provided connection.
+func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
+	stmts, err := util.SanitizeSQL(statement)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to split sql")
+	}
+
+	if queryContext.Schema != "" {
+		if _, err := conn.ExecContext(ctx, fmt.Sprintf("USE %s", queryContext.Schema)); err != nil {
+			return nil, errors.Wrapf(err, "failed to set schema")
+		}
+	}
+
+	var results []*v1pb.QueryResult
+	for _, stmt := range stmts {
+		startTime := time.Now()
+		queryResult, err := func() (*v1pb.QueryResult, error) {
+			upperStmt := strings.ToUpper(strings.TrimSpace(stmt))
+			isQuery := strings.HasPrefix(upperStmt, "SELECT") ||
+				strings.HasPrefix(upperStmt, "SHOW") ||
+				strings.HasPrefix(upperStmt, "DESCRIBE") ||
+				strings.HasPrefix(upperStmt, "EXPLAIN")
+
+			if queryContext.Explain {
+				stmt = fmt.Sprintf("EXPLAIN %s", stmt)
+				isQuery = true
+			}
+
+			if isQuery && queryContext.Limit > 0 && !strings.Contains(upperStmt, " LIMIT ") {
+				stmt = fmt.Sprintf("%s LIMIT %d", stmt, queryContext.Limit)
+			}
+
+			if isQuery {
+				rows, err := conn.QueryContext(ctx, stmt)
+				if err != nil {
+					return nil, err
+				}
+				defer rows.Close()
+
+				result, err := util.RowsToQueryResult(rows, makeValueByTypeName, convertValue, queryContext.MaximumSQLResultSize)
+				if err != nil {
+					return nil, err
+				}
+
+				if err := rows.Err(); err != nil {
+					return nil, err
+				}
+
+				return result, nil
+			}
+
+			result, err := conn.ExecContext(ctx, stmt)
+			if err != nil {
+				return nil, err
+			}
+
+			affectedRows, err := result.RowsAffected()
+			if err != nil {
+				affectedRows = 0
+			}
+
+			return util.BuildAffectedRowsResult(affectedRows), nil
+		}()
+
+		stop := false
+		if err != nil {
+			queryResult = &v1pb.QueryResult{
+				Error: err.Error(),
+			}
+			stop = true
+		}
+
+		queryResult.Statement = stmt
+		queryResult.Latency = durationpb.New(time.Since(startTime))
+		queryResult.RowsCount = int64(len(queryResult.Rows))
+		results = append(results, queryResult)
+
+		if stop {
+			break
+		}
+	}
+
+	return results, nil
 }
