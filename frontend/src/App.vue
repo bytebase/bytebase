@@ -15,13 +15,7 @@
         <OverlayStackManager>
           <NotificationContext>
             <AuthContext>
-              <router-view v-if="initialized" />
-              <div
-                v-else
-                class="fixed inset-0 bg-white flex flex-col items-center justify-center"
-              >
-                <NSpin />
-              </div>
+              <router-view />
             </AuthContext>
           </NotificationContext>
         </OverlayStackManager>
@@ -33,14 +27,13 @@
 <script lang="ts" setup>
 import { cloneDeep, isEqual } from "lodash-es";
 import {
-  NSpin,
   NConfigProvider,
   NDialogProvider,
   NNotificationProvider,
 } from "naive-ui";
 import { ServerError } from "nice-grpc-common";
 import { ClientError, Status } from "nice-grpc-web";
-import { onErrorCaptured, onMounted, ref, watchEffect } from "vue";
+import { onErrorCaptured, watchEffect } from "vue";
 import { watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import Watermark from "@/components/misc/Watermark.vue";
@@ -51,11 +44,7 @@ import NotificationContext from "./NotificationContext.vue";
 import OverlayStackManager from "./components/misc/OverlayStackManager.vue";
 import { overrideAppProfile } from "./customAppProfile";
 import { t } from "./plugins/i18n";
-import {
-  useAuthStore,
-  useNotificationStore,
-  useWorkspaceV1Store,
-} from "./store";
+import { useNotificationStore } from "./store";
 import { isDev } from "./utils";
 
 // Show at most 3 notifications to prevent excessive notification when shit hits the fan.
@@ -64,18 +53,7 @@ const MAX_NOTIFICATION_DISPLAY_COUNT = 3;
 const route = useRoute();
 const router = useRouter();
 const { key } = provideAppRootContext();
-const authStore = useAuthStore();
 const notificationStore = useNotificationStore();
-const workspaceStore = useWorkspaceV1Store();
-const initialized = ref(false);
-
-onMounted(async () => {
-  if (authStore.isLoggedIn) {
-    await workspaceStore.fetchIamPolicy();
-  }
-
-  initialized.value = true;
-});
 
 watchEffect(async () => {
   // Override app profile.
