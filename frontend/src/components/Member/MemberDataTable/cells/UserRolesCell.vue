@@ -22,7 +22,7 @@
 </template>
 
 <script lang="ts" setup>
-import { orderBy } from "lodash-es";
+import { orderBy, uniqBy } from "lodash-es";
 import { Building2Icon } from "lucide-vue-next";
 import { NTag, NTooltip } from "naive-ui";
 import { computed } from "vue";
@@ -38,6 +38,9 @@ const workspaceLevelRoles = computed(() => {
 });
 
 const projectRoleBindings = computed(() => {
-  return orderBy(props.role.projectRoleBindings, ["role"]);
+  return orderBy(
+    uniqBy(props.role.projectRoleBindings, (binding) => binding.role),
+    ["role"]
+  );
 });
 </script>

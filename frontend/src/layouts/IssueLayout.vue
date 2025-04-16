@@ -30,7 +30,7 @@
       </div>
     </div>
 
-    <Quickstart v-if="!hideQuickStart" />
+    <Quickstart />
   </div>
 </template>
 
@@ -44,7 +44,6 @@ import { provideBodyLayoutContext } from "./common";
 const mainContainerRef = ref<HTMLDivElement>();
 
 const hideHeader = useAppFeature("bb.feature.console.hide-header");
-const hideQuickStart = useAppFeature("bb.feature.hide-quick-start");
 
 const { mainContainerClasses } = provideBodyLayoutContext({
   mainContainerRef,
