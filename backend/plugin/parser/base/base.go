@@ -84,7 +84,8 @@ func (l *ParseErrorListener) SyntaxError(_ antlr.Recognizer, token any, line, co
 				Line:   int32(line + l.BaseLine),
 				Column: int32(column),
 			},
-			Message: fmt.Sprintf("Syntax error at line %d:%d \n%s", line+l.BaseLine, column, errMessage),
+			RawMessage: message,
+			Message:    fmt.Sprintf("Syntax error at line %d:%d \n%s", line+l.BaseLine, column, errMessage),
 		}
 		return
 	}
@@ -99,7 +100,8 @@ func (l *ParseErrorListener) SyntaxError(_ antlr.Recognizer, token any, line, co
 			Line:   p.Line,
 			Column: p.Column,
 		},
-		Message: fmt.Sprintf("Syntax error at line %d:%d \n%s", p.Line, p.Column, errMessage),
+		RawMessage: message,
+		Message:    fmt.Sprintf("Syntax error at line %d:%d \n%s", p.Line, p.Column, errMessage),
 	}
 }
 

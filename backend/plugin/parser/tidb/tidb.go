@@ -66,12 +66,14 @@ func parseSingleStatement(baseLine int, statement string) (antlr.Tree, *antlr.Co
 	p := parser.NewTiDBParser(stream)
 
 	lexerErrorListener := &base.ParseErrorListener{
+		Statement: statement,
 		BaseLine: baseLine,
 	}
 	lexer.RemoveErrorListeners()
 	lexer.AddErrorListener(lexerErrorListener)
 
 	parserErrorListener := &base.ParseErrorListener{
+		Statement: statement,
 		BaseLine: baseLine,
 	}
 	p.RemoveErrorListeners()

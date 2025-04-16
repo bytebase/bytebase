@@ -16,6 +16,12 @@ func ConvertSyntaxErrorToDiagnostic(err *SyntaxError, statement string) Diagnost
 	start := *common.ConvertPositionToUTF16Position(err.Position, statement)
 	end := start
 	end.Character += 1
+	message := err.Message
+	if err.RawMessage != "" {
+		// Use RawMessage which created by antlr runtime, do not need our fine-tuned message
+		// because we had indicated the error position in the message.
+		message = err.RawMessage
+	}
 	return Diagnostic{
 		Range: lsp.Range{
 			Start: start,
@@ -23,8 +29,6 @@ func ConvertSyntaxErrorToDiagnostic(err *SyntaxError, statement string) Diagnost
 		},
 		Severity: lsp.SeverityError,
 		Source:   "Syntax check",
-		// Use RawMessage which created by antlr runtime, do not need our fine-tuned message
-		// because we had indicated the error position in the message.
-		Message: err.RawMessage,
+		Message:  message,
 	}
 }
