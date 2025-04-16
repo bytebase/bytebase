@@ -9,7 +9,6 @@ import "google/api/resource.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/field_mask.proto";
 import "v1/annotation.proto";
-import "v1/common.proto";
 
 option go_package = "generated-go/v1";
 
@@ -58,16 +57,6 @@ service IdentityProviderService {
     option (bytebase.v1.audit) = true;
   }
 
-  rpc UndeleteIdentityProvider(UndeleteIdentityProviderRequest) returns (IdentityProvider) {
-    option (google.api.http) = {
-      post: "/v1/{name=idps/*}:undelete"
-      body: "*"
-    };
-    option (bytebase.v1.permission) = "bb.identityProviders.undelete";
-    option (bytebase.v1.auth_method) = IAM;
-    option (bytebase.v1.audit) = true;
-  }
-
   rpc TestIdentityProvider(TestIdentityProviderRequest) returns (TestIdentityProviderResponse) {
     option (google.api.http) = {
       post: "/v1/idps/*:test"
@@ -100,9 +89,6 @@ message ListIdentityProvidersRequest {
   // When paginating, all other parameters provided to `ListIdentityProviders` must match
   // the call that provided the page token.
   string page_token = 2;
-
-  // Show deleted identity providers if specified.
-  bool show_deleted = 3;
 }
 
 message ListIdentityProvidersResponse {
@@ -149,15 +135,6 @@ message DeleteIdentityProviderRequest {
   ];
 }
 
-message UndeleteIdentityProviderRequest {
-  // The name of the deleted identity provider.
-  // Format: idps/{identity_provider}
-  string name = 1 [
-    (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference) = {type: "bytebase.com/IdP"}
-  ];
-}
-
 message TestIdentityProviderRequest {
   // The identity provider to test connection including uncreated.
   IdentityProvider identity_provider = 1;
@@ -185,8 +162,6 @@ message IdentityProvider {
   // The name of the identity provider.
   // Format: idps/{idp}
   string name = 1;
-
-  State state = 3;
 
   string title = 4;
 

@@ -456,23 +456,7 @@ message ApprovalNode {
   }
   Type type = 1;
 
-  // The predefined user groups are:
-  // - WORKSPACE_OWNER
-  // - WORKSPACE_DBA
-  // - PROJECT_OWNER
-  // - PROJECT_MEMBER
-  enum GroupValue {
-    GROUP_VALUE_UNSPECIFILED = 0;
-    WORKSPACE_OWNER = 1;
-    WORKSPACE_DBA = 2;
-    PROJECT_OWNER = 3;
-    PROJECT_MEMBER = 4;
-  }
-  oneof payload {
-    GroupValue group_value = 2;
-    // Format: roles/{role}
-    string role = 3;
-  }
+  string role = 2;
 }
 
 message ListIssueCommentsRequest {

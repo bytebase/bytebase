@@ -496,9 +496,6 @@ func (s *UserService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 	for _, path := range request.UpdateMask.Paths {
 		switch path {
 		case "email":
-			if user.Profile.Source != "" {
-				return nil, status.Errorf(codes.InvalidArgument, "cannot change email for external user")
-			}
 			if err := validateEmailWithDomains(ctx, s.licenseService, s.store, request.User.Email, user.Type == base.ServiceAccount, false); err != nil {
 				return nil, err
 			}

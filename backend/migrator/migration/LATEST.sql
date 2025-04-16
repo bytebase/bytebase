@@ -1,7 +1,6 @@
 -- idp stores generic identity provider.
 CREATE TABLE idp (
   id serial PRIMARY KEY,
-  deleted boolean NOT NULL DEFAULT FALSE,
   resource_id text NOT NULL,
   name text NOT NULL,
   domain text NOT NULL,

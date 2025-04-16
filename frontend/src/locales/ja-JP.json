@@ -421,7 +421,6 @@
       "description": "シングル サインオン (SSO) は、ユーザーが他のアプリケーションや Web サイトからログインできるようにする認証方法です。",
       "archive": "この SSO をアーカイブする",
       "archive-info": "アーカイブされた SSO は表示されなくなります。",
-      "restore": "この SSO を復元する",
       "form": {
         "type": "タイプ",
         "learn-more-with-user-doc": "設定方法の詳細については、こちらをご覧ください",
@@ -1320,7 +1319,7 @@
       "content": "ホームページへリダイレクトさせていただきます。"
     },
     "token-expired-title": "トークンの有効期限が切れました",
-    "token-expired-description": "トークンの有効期限が切れています。再度ログインしてください"
+    "token-expired-description": "トークンの有効期限が切れています。再度ログインしてください。"
   },
   "policy": {
     "rollout": {
@@ -2300,12 +2299,7 @@
         "order": "注文",
         "approver": "承認者",
         "add": "ノードの追加",
-        "delete": "承認ノードの削除",
-        "select-approver": "承認者の選択",
-        "roles": {
-          "system": "システムの役割",
-          "custom": "カスタムロール"
-        }
+        "delete": "承認ノードの削除"
       },
       "view-approval-flow": "承認フローを見る",
       "skip": "手動承認をスキップする",

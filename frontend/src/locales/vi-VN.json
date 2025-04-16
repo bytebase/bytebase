@@ -421,7 +421,6 @@
       "description": "Đăng nhập một lần (SSO) là một phương thức xác thực cho phép người dùng xác thực với nhiều ứng dụng và trang web bằng một thông tin đăng nhập duy nhất.",
       "archive": "Lưu trữ SSO này",
       "archive-info": "SSO đã lưu trữ sẽ không được hiển thị.",
-      "restore": "Khôi phục SSO này",
       "form": {
         "type": "Loại",
         "learn-more-with-user-doc": "Tìm hiểu thêm về cấu hình",
@@ -1319,7 +1318,7 @@
       "title": "Bạn đã đăng nhập với tư cách người dùng khác",
       "content": "Chúng tôi sẽ chuyển hướng bạn đến trang chủ."
     },
-    "token-expired-title": "Mã thông báo hết hạn",
+    "token-expired-title": "Mã thông báo đã hết hạn",
     "token-expired-description": "Mã thông báo đã hết hạn, vui lòng đăng nhập lại"
   },
   "policy": {
@@ -2300,12 +2299,7 @@
         "order": "Thứ tự",
         "approver": "Người phê duyệt",
         "add": "Thêm nút",
-        "delete": "Xóa nút phê duyệt",
-        "select-approver": "Chọn người phê duyệt",
-        "roles": {
-          "system": "Vai trò hệ thống",
-          "custom": "Vai trò tùy chỉnh"
-        }
+        "delete": "Xóa nút phê duyệt"
       },
       "view-approval-flow": "Xem quy trình phê duyệt",
       "skip": "Bỏ qua phê duyệt thủ công",

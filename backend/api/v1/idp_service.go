@@ -52,8 +52,8 @@ func (s *IdentityProviderService) GetIdentityProvider(ctx context.Context, reque
 }
 
 // ListIdentityProviders lists all identity providers.
-func (s *IdentityProviderService) ListIdentityProviders(ctx context.Context, request *v1pb.ListIdentityProvidersRequest) (*v1pb.ListIdentityProvidersResponse, error) {
-	identityProviders, err := s.store.ListIdentityProviders(ctx, &store.FindIdentityProviderMessage{ShowDeleted: request.ShowDeleted})
+func (s *IdentityProviderService) ListIdentityProviders(ctx context.Context, _ *v1pb.ListIdentityProvidersRequest) (*v1pb.ListIdentityProvidersResponse, error) {
+	identityProviders, err := s.store.ListIdentityProviders(ctx, &store.FindIdentityProviderMessage{})
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -137,9 +137,6 @@ func (s *IdentityProviderService) UpdateIdentityProvider(ctx context.Context, re
 	if err != nil {
 		return nil, err
 	}
-	if identityProviderMessage.Deleted {
-		return nil, status.Errorf(codes.NotFound, "identity provider %q has been deleted", request.IdentityProvider.Name)
-	}
 
 	patch := &store.UpdateIdentityProviderMessage{
 		ResourceID: identityProviderMessage.ResourceID,
@@ -195,46 +192,11 @@ func (s *IdentityProviderService) DeleteIdentityProvider(ctx context.Context, re
 	if err != nil {
 		return nil, err
 	}
-	if identityProvider.Deleted {
-		return nil, status.Errorf(codes.NotFound, "identity provider %q has been deleted", request.Name)
-	}
 
-	patch := &store.UpdateIdentityProviderMessage{
-		ResourceID: identityProvider.ResourceID,
-		Delete:     &deletePatch,
-	}
-	if _, err := s.store.UpdateIdentityProvider(ctx, patch); err != nil {
+	if err := s.store.DeleteIdentityProvider(ctx, identityProvider.ResourceID); err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 	return &emptypb.Empty{}, nil
-}
-
-// UndeleteIdentityProvider undeletes an identity provider.
-func (s *IdentityProviderService) UndeleteIdentityProvider(ctx context.Context, request *v1pb.UndeleteIdentityProviderRequest) (*v1pb.IdentityProvider, error) {
-	identityProviderMessage, err := s.getIdentityProviderMessage(ctx, request.Name)
-	if err != nil {
-		return nil, err
-	}
-	if !identityProviderMessage.Deleted {
-		return nil, status.Errorf(codes.InvalidArgument, "identity provider %q is active", request.Name)
-	}
-	if err := s.checkFeatureAvailable(v1pb.IdentityProviderType(identityProviderMessage.Type)); err != nil {
-		return nil, err
-	}
-
-	patch := &store.UpdateIdentityProviderMessage{
-		ResourceID: identityProviderMessage.ResourceID,
-		Delete:     &undeletePatch,
-	}
-	identityProviderMessage, err = s.store.UpdateIdentityProvider(ctx, patch)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-	identityProvider, err := convertToIdentityProvider(identityProviderMessage)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to convert identity provider: %v", err)
-	}
-	return identityProvider, nil
 }
 
 func (s *IdentityProviderService) checkFeatureAvailable(ssoType v1pb.IdentityProviderType) error {
@@ -399,7 +361,6 @@ func convertToIdentityProvider(identityProvider *store.IdentityProviderMessage) 
 	}
 	return &v1pb.IdentityProvider{
 		Name:   fmt.Sprintf("%s%s", common.IdentityProviderNamePrefix, identityProvider.ResourceID),
-		State:  convertDeletedToState(identityProvider.Deleted),
 		Title:  identityProvider.Title,
 		Domain: identityProvider.Domain,
 		Type:   identityProviderType,

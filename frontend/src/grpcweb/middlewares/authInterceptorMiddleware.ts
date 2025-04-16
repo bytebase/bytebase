@@ -46,7 +46,7 @@ export const authInterceptorMiddleware: ClientMiddleware<IgnoreErrorsOptions> =
             }
             // When receiving 401 and is returned by our server, it means the current
             // login user's token becomes invalid. Thus we force the user to login again.
-            useAuthStore().showLoginModal = true;
+            useAuthStore().unauthenticatedOccurred = true;
           } else if (code === Status.PERMISSION_DENIED) {
             // Jump to 403 page
             router.push({ name: "error.403" });

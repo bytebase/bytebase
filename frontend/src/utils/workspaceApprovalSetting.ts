@@ -8,7 +8,7 @@ import {
   isConditionGroupExpr,
   resolveCELExpr,
 } from "@/plugins/cel";
-import { t, te } from "@/plugins/i18n";
+import { t } from "@/plugins/i18n";
 import { useUserStore } from "@/store";
 import { userNamePrefix } from "@/store/modules/v1/common";
 import { extractUserId } from "@/store/modules/v1/common";
@@ -17,15 +17,17 @@ import {
   DEFAULT_RISK_LEVEL,
   UNKNOWN_USER_NAME,
   SYSTEM_BOT_EMAIL,
+  PresetRoleType,
 } from "@/types";
 import type { LocalApprovalConfig, LocalApprovalRule } from "@/types";
 import { PresetRiskLevelList, useSupportedSourceList } from "@/types";
 import { Expr as CELExpr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
 import { Expr } from "@/types/proto/google/type/expr";
-import type { ApprovalNode } from "@/types/proto/v1/issue_service";
+import type {
+  ApprovalNode,
+  ApprovalStep,
+} from "@/types/proto/v1/issue_service";
 import {
-  ApprovalNode_GroupValue,
-  approvalNode_GroupValueToJSON,
   ApprovalNode_Type,
   ApprovalStep_Type,
 } from "@/types/proto/v1/issue_service";
@@ -43,24 +45,12 @@ import {
 } from "@/utils";
 import { displayRoleTitle } from "./role";
 
-export const approvalNodeGroupValueText = (group: ApprovalNode_GroupValue) => {
-  const name = approvalNode_GroupValueToJSON(group);
-  const keypath = `dynamic.custom-approval.approval-flow.node.group.${name}`;
-  if (te(keypath)) {
-    return t(keypath);
-  }
-  return name;
-};
-
 export const approvalNodeRoleText = (role: string) => {
   return displayRoleTitle(role);
 };
 
 export const approvalNodeText = (node: ApprovalNode): string => {
-  const { groupValue, role } = node;
-  if (groupValue && groupValue !== ApprovalNode_GroupValue.UNRECOGNIZED) {
-    return approvalNodeGroupValueText(groupValue);
-  }
+  const { role } = node;
   if (role) {
     return approvalNodeRoleText(role);
   }
@@ -310,23 +300,25 @@ export const seedWorkspaceApprovalSetting = () => {
   const generateRule = (
     title: string,
     description: string,
-    roles: ApprovalNode_GroupValue[]
+    roles: string[]
   ): ApprovalRule => {
-    return ApprovalRule.fromJSON({
+    return ApprovalRule.fromPartial({
       template: {
         title,
         description,
         creator: `${userNamePrefix}${useUserStore().systemBotUser?.email ?? SYSTEM_BOT_EMAIL}`,
         flow: {
-          steps: roles.map((role) => ({
-            type: ApprovalStep_Type.ANY,
-            nodes: [
-              {
-                type: ApprovalNode_Type.ANY_IN_GROUP,
-                groupValue: role,
-              },
-            ],
-          })),
+          steps: roles.map(
+            (role): ApprovalStep => ({
+              type: ApprovalStep_Type.ALL,
+              nodes: [
+                {
+                  type: ApprovalNode_Type.ANY_IN_GROUP,
+                  role,
+                },
+              ],
+            })
+          ),
         },
       },
     });
@@ -334,41 +326,38 @@ export const seedWorkspaceApprovalSetting = () => {
   type Preset = {
     title?: string;
     description: string;
-    roles: ApprovalNode_GroupValue[];
+    roles: string[];
   };
   const presets: Preset[] = [
     {
       description: "owner-dba",
-      roles: [
-        ApprovalNode_GroupValue.PROJECT_OWNER,
-        ApprovalNode_GroupValue.WORKSPACE_DBA,
-      ],
+      roles: [PresetRoleType.PROJECT_OWNER, PresetRoleType.WORKSPACE_DBA],
     },
     {
       description: "owner",
-      roles: [ApprovalNode_GroupValue.PROJECT_OWNER],
+      roles: [PresetRoleType.PROJECT_OWNER],
     },
     {
       description: "dba",
-      roles: [ApprovalNode_GroupValue.WORKSPACE_DBA],
+      roles: [PresetRoleType.WORKSPACE_DBA],
     },
     {
       description: "admin",
-      roles: [ApprovalNode_GroupValue.WORKSPACE_OWNER],
+      roles: [PresetRoleType.WORKSPACE_ADMIN],
     },
     {
       description: "owner-dba-admin",
       roles: [
-        ApprovalNode_GroupValue.PROJECT_OWNER,
-        ApprovalNode_GroupValue.WORKSPACE_DBA,
-        ApprovalNode_GroupValue.WORKSPACE_OWNER,
+        PresetRoleType.PROJECT_OWNER,
+        PresetRoleType.WORKSPACE_DBA,
+        PresetRoleType.WORKSPACE_ADMIN,
       ],
     },
   ];
   return presets.map((preset) => {
     const title =
       preset.title ??
-      preset.roles.map((role) => approvalNodeGroupValueText(role)).join(" -> ");
+      preset.roles.map((role) => approvalNodeRoleText(role)).join(" -> ");
     const keypath = `custom-approval.approval-flow.presets.${preset.description}`;
     const description = t(keypath);
     return generateRule(title, description, preset.roles);

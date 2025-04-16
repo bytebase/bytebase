@@ -873,8 +873,10 @@ func DoExport(
 		results = results[len(results)-1:]
 	}
 	if len(results) == 1 {
-		if err := optionalAccessCheck(ctx, instance, database, user, spans, int(results[0].RowsCount), queryContext.Explain, true); err != nil {
-			return nil, duration, err
+		if optionalAccessCheck != nil {
+			if err := optionalAccessCheck(ctx, instance, database, user, spans, int(results[0].RowsCount), queryContext.Explain, true); err != nil {
+				return nil, duration, err
+			}
 		}
 	}
 
