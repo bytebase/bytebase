@@ -7,6 +7,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/action/github"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -51,7 +52,7 @@ func run(platform JobPlatform) error {
 	}
 	switch platform {
 	case GitHub:
-		if err := writeAnnotations(checkReleaseResponse); err != nil {
+		if err := github.CreateCommentAndAnnotation(checkReleaseResponse); err != nil {
 			return err
 		}
 	case GitLab:

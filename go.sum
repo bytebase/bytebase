@@ -872,6 +872,8 @@ github.com/bytebase/tidb2/pkg/parser v0.0.0-20231129002249-5bbb6bb83940 h1:PZ22F
 github.com/bytebase/tidb2/pkg/parser v0.0.0-20231129002249-5bbb6bb83940/go.mod h1:yRkiqLFwIqibYg2P7h4bclHjHcJiIFRLKhGRyBcKYus=
 github.com/bytebase/tsql-parser v0.0.0-20250311085620-1db45111863e h1:R7yllkuKkKLbsbZx/OPN985g3QWHrwz4ixq7OGnn2Tw=
 github.com/bytebase/tsql-parser v0.0.0-20250311085620-1db45111863e/go.mod h1:L9qgmrnVenkm/SL/fmyUSXK5+iMT1ctn/EsMqItSGVk=
+github.com/caarlos0/env/v11 v11.3.1 h1:cArPWC15hWmEt+gWk7YBi7lEXTXCvpaSdCiZE2X5mCA=
+github.com/caarlos0/env/v11 v11.3.1/go.mod h1:qupehSf/Y0TUTsxKywqRt/vJjN5nz6vauiYEUUr8P4U=
 github.com/casbin/casbin/v2 v2.1.2/go.mod h1:YcPU1XXisHhLzuxH9coDNf2FbKpjGlbCg3n9yuLkIJQ=
 github.com/cenkalti/backoff v2.2.1+incompatible/go.mod h1:90ReRw6GdpyfrHakVjL/QHaoyV4aDUVVkXQJJJ3NXXM=
 github.com/cenkalti/backoff/v3 v3.0.0/go.mod h1:cIeZDE3IrqwwJl6VUwCN6trj1oXrTS4rc0ij+ULvLYs=
