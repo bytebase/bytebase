@@ -1317,7 +1317,9 @@
     "login-as-another": {
       "title": "You have logged in as another user",
       "content": "We will refirect you to the home page."
-    }
+    },
+    "token-expired-title": "Token expired",
+    "token-expired-description": "Token has expired, please login again"
   },
   "policy": {
     "rollout": {

@@ -6,26 +6,45 @@
 <script setup lang="ts">
 import { onMounted, watch } from "vue";
 import { useRouter } from "vue-router";
+import { isAuthRelatedRoute } from "@/utils/auth";
 import SigninModal from "@/views/auth/SigninModal.vue";
 import { t } from "./plugins/i18n";
 import { AUTH_PASSWORD_RESET_MODULE } from "./router/auth";
 import { WORKSPACE_ROOT_MODULE } from "./router/dashboard/workspaceRoutes";
 import { useAuthStore, pushNotification, useWorkspaceV1Store } from "./store";
 
+// Check authorization every 60 seconds.
+const CHECK_AUTHORIZATION_INTERVAL = 60 * 1000;
+
 const router = useRouter();
 const authStore = useAuthStore();
 const workspaceStore = useWorkspaceV1Store();
 
 onMounted(() => {
-  if (!authStore.isLoggedIn) {
-    return;
-  }
-  if (authStore.requireResetPassword) {
-    router.replace({
-      name: AUTH_PASSWORD_RESET_MODULE,
-    });
-    return;
-  }
+  // Periodically checks if the user's session is still valid.
+  // Skips check if user is not logged in or on an auth-related route.
+  setInterval(async () => {
+    if (!authStore.isLoggedIn || authStore.unauthenticatedOccurred) {
+      return;
+    }
+    if (
+      router.currentRoute.value.name &&
+      isAuthRelatedRoute(router.currentRoute.value.name.toString())
+    ) {
+      return;
+    }
+
+    const user = await authStore.fetchCurrentUser();
+    if (!user) {
+      authStore.unauthenticatedOccurred = true;
+      pushNotification({
+        module: "bytebase",
+        style: "WARN",
+        title: t("auth.token-expired-title"),
+        description: t("auth.token-expired-description"),
+      });
+    }
+  }, CHECK_AUTHORIZATION_INTERVAL);
 });
 
 // When current user changed, we need to redirect to the workspace root page.
@@ -55,8 +74,16 @@ watch(
 watch(
   () => authStore.isLoggedIn,
   async () => {
-    if (authStore.isLoggedIn) {
-      await workspaceStore.fetchIamPolicy();
+    if (!authStore.isLoggedIn) {
+      return;
+    }
+
+    await workspaceStore.fetchIamPolicy();
+    if (authStore.requireResetPassword) {
+      router.replace({
+        name: AUTH_PASSWORD_RESET_MODULE,
+      });
+      return;
     }
   },
   {

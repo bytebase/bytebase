@@ -83,6 +83,8 @@ export const useAuthStore = defineStore("auth_v1", () => {
       true // silent
     );
 
+    // After user login, we need to reset the auth session key.
+    authSessionKey.value = uniqueId();
     if (!unauthenticatedOccurred.value) {
       const mode = useAppFeature("bb.feature.database-change-mode");
       let nextPage = redirectUrl || "/";
@@ -142,10 +144,9 @@ export const useAuthStore = defineStore("auth_v1", () => {
 
   const fetchCurrentUser = async () => {
     try {
-      const currentUser = await userStore.fetchCurrentUser();
-      currentUserName.value = currentUser.name;
-      // After user login, we need to reset the auth session key.
-      authSessionKey.value = uniqueId();
+      const user = await userStore.fetchCurrentUser();
+      currentUserName.value = user.name;
+      return user;
     } catch {
       // do nothing.
     }

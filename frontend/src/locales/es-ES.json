@@ -1317,7 +1317,9 @@
     "login-as-another": {
       "title": "Has iniciado sesión como otro usuario",
       "content": "Lo redirigiremos a la página de inicio."
-    }
+    },
+    "token-expired-title": "Token expirado",
+    "token-expired-description": "El token ha expirado, por favor inicia sesión nuevamente"
   },
   "policy": {
     "rollout": {
