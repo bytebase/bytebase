@@ -1,6 +1,6 @@
 FROM node:23.11.0-slim AS frontend
 
-RUN npm i -g pnpm@10.7.0
+RUN npm i -g pnpm@10.8.1
 
 WORKDIR /frontend-build
 
