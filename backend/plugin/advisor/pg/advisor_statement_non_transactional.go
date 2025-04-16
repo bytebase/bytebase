@@ -5,6 +5,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/db/pg"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
@@ -46,7 +47,7 @@ func (*NonTransactionalAdvisor) Check(_ context.Context, checkCtx advisor.Contex
 				Code:          advisor.StatementNonTransactional.Int32(),
 				Title:         checker.title,
 				Content:       "This statement is non-transactional",
-				StartPosition: advisor.ConvertANTLRLineToPosition(checker.line),
+				StartPosition: common.ConvertANTLRLineToPosition(checker.line),
 			})
 		}
 	}

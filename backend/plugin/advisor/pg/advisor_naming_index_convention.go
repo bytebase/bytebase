@@ -7,6 +7,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
@@ -89,7 +90,7 @@ func (checker *namingIndexConventionChecker) Visit(node ast.Node) ast.Visitor {
 				Code:          advisor.NamingIndexConventionMismatch.Int32(),
 				Title:         checker.title,
 				Content:       fmt.Sprintf("Index in table %q mismatches the naming convention, expect %q but found %q", indexData.tableName, regex, indexData.indexName),
-				StartPosition: advisor.ConvertANTLRLineToPosition(node.LastLine()),
+				StartPosition: common.ConvertANTLRLineToPosition(node.LastLine()),
 			})
 		}
 		if checker.maxLength > 0 && len(indexData.indexName) > checker.maxLength {
@@ -98,7 +99,7 @@ func (checker *namingIndexConventionChecker) Visit(node ast.Node) ast.Visitor {
 				Code:          advisor.NamingIndexConventionMismatch.Int32(),
 				Title:         checker.title,
 				Content:       fmt.Sprintf("Index %q in table %q mismatches the naming convention, its length should be within %d characters", indexData.indexName, indexData.tableName, checker.maxLength),
-				StartPosition: advisor.ConvertANTLRLineToPosition(node.LastLine()),
+				StartPosition: common.ConvertANTLRLineToPosition(node.LastLine()),
 			})
 		}
 	}

@@ -10,6 +10,7 @@ import (
 
 	mysql "github.com/bytebase/mysql-parser"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -164,6 +165,6 @@ func (c *useInnoDBChecker) addAdvice(content string, lineNumber int) {
 		Code:          advisor.NotInnoDBEngine.Int32(),
 		Title:         c.title,
 		Content:       fmt.Sprintf("\"%s;\" doesn't use InnoDB engine", content),
-		StartPosition: advisor.ConvertANTLRLineToPosition(lineNumber),
+		StartPosition: common.ConvertANTLRLineToPosition(lineNumber),
 	})
 }

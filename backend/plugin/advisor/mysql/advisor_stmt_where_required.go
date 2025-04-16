@@ -8,6 +8,7 @@ import (
 	mysql "github.com/bytebase/mysql-parser"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -100,6 +101,6 @@ func (checker *whereRequirementChecker) handleWhereClause(lineNumber int) {
 		Code:          advisor.StatementNoWhere.Int32(),
 		Title:         checker.title,
 		Content:       fmt.Sprintf("\"%s\" requires WHERE clause", checker.text),
-		StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + lineNumber),
+		StartPosition: common.ConvertANTLRLineToPosition(checker.baseLine + lineNumber),
 	})
 }

@@ -10,6 +10,7 @@ import (
 	parser "github.com/bytebase/snowsql-parser"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -98,7 +99,7 @@ func (l *columnMaximumVarcharLengthChecker) EnterData_type(ctx *parser.Data_type
 			Code:          advisor.VarcharLengthExceedsLimit.Int32(),
 			Title:         l.title,
 			Content:       fmt.Sprintf("The maximum varchar length is %d.", l.maximum),
-			StartPosition: advisor.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
+			StartPosition: common.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
 		})
 	}
 }

@@ -7,6 +7,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -141,7 +142,7 @@ func (checker *columnTypeDisallowListChecker) Visit(in ast.Node) ast.Visitor {
 			Code:          advisor.DisabledColumnType.Int32(),
 			Title:         checker.title,
 			Content:       fmt.Sprintf("Disallow column type %s but column \"%s\".\"%s\" is", column.tp, column.table, column.column),
-			StartPosition: advisor.ConvertANTLRLineToPosition(column.line),
+			StartPosition: common.ConvertANTLRLineToPosition(column.line),
 		})
 	}
 	return checker

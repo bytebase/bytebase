@@ -6,6 +6,12 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
+var (
+	FirstLinePosition = &storepb.Position{
+		Line: 0,
+	}
+)
+
 // ANTLRPosition is a position in a text expressed as one-based line and
 // zero-based column character (code point) offset integrated with ANTLR4.
 type ANTLRPosition struct {
@@ -98,5 +104,15 @@ func ConvertANTLRPositionToPosition(a *ANTLRPosition, text string) *storepb.Posi
 	return &storepb.Position{
 		Line:   line,
 		Column: byteOffset,
+	}
+}
+
+func ConvertANTLRLineToPosition(line int) *storepb.Position {
+	positionLine := line - 1
+	if line == 0 {
+		positionLine = 0
+	}
+	return &storepb.Position{
+		Line: int32(positionLine),
 	}
 }

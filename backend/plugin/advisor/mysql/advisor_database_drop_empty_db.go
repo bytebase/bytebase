@@ -8,6 +8,7 @@ import (
 	mysql "github.com/bytebase/mysql-parser"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
@@ -80,7 +81,7 @@ func (checker *allowDropEmptyDBChecker) EnterDropDatabase(ctx *mysql.DropDatabas
 			Code:          advisor.NotCurrentDatabase.Int32(),
 			Title:         checker.title,
 			Content:       fmt.Sprintf("Database `%s` that is trying to be deleted is not the current database `%s`", dbName, checker.catalog.Origin.DatabaseName()),
-			StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
+			StartPosition: common.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
 		})
 	} else if !checker.catalog.Origin.HasNoTable() {
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{
@@ -88,7 +89,7 @@ func (checker *allowDropEmptyDBChecker) EnterDropDatabase(ctx *mysql.DropDatabas
 			Code:          advisor.DatabaseNotEmpty.Int32(),
 			Title:         checker.title,
 			Content:       fmt.Sprintf("Database `%s` is not allowed to drop if not empty", dbName),
-			StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
+			StartPosition: common.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
 		})
 	}
 }

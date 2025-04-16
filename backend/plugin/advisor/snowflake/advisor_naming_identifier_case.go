@@ -10,6 +10,7 @@ import (
 	parser "github.com/bytebase/snowsql-parser"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	snowsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/snowflake"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -109,7 +110,7 @@ func (l *namingIdentifierCaseChecker) EnterColumn_decl_item_list(ctx *parser.Col
 					Code:          advisor.NamingCaseMismatch.Int32(),
 					Title:         l.title,
 					Content:       fmt.Sprintf("Identifier %q should be upper case", originalColName),
-					StartPosition: advisor.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
+					StartPosition: common.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
 				})
 			}
 		}
@@ -130,7 +131,7 @@ func (l *namingIdentifierCaseChecker) EnterAlter_table(ctx *parser.Alter_tableCo
 			Code:          advisor.NamingCaseMismatch.Int32(),
 			Title:         l.title,
 			Content:       fmt.Sprintf("Identifier %q should be upper case", renameToColName),
-			StartPosition: advisor.ConvertANTLRLineToPosition(renameToID.GetStart().GetLine()),
+			StartPosition: common.ConvertANTLRLineToPosition(renameToID.GetStart().GetLine()),
 		})
 	}
 }

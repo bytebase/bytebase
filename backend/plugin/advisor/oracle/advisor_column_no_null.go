@@ -10,6 +10,7 @@ import (
 	parser "github.com/bytebase/plsql-parser"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -81,7 +82,7 @@ func (l *columnNoNullListener) generateAdvice() ([]*storepb.Advice, error) {
 			Code:          advisor.ColumnCannotNull.Int32(),
 			Title:         l.title,
 			Content:       fmt.Sprintf("Column %q is nullable, which is not allowed.", lastIdentifier(columnID)),
-			StartPosition: advisor.ConvertANTLRLineToPosition(line),
+			StartPosition: common.ConvertANTLRLineToPosition(line),
 		})
 	}
 

@@ -7,6 +7,7 @@ import (
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -52,7 +53,7 @@ func (*StatementDisallowMixInDDLAdvisor) Check(_ context.Context, checkCtx advis
 				Title:         title,
 				Content:       fmt.Sprintf("Alter schema can only run DDL, \"%s\" is not DDL", checker.Text),
 				Code:          advisor.StatementDisallowMixDDLDML.Int32(),
-				StartPosition: advisor.ConvertANTLRLineToPosition(stmt.BaseLine),
+				StartPosition: common.ConvertANTLRLineToPosition(stmt.BaseLine),
 			})
 		}
 	}

@@ -6,6 +6,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -79,7 +80,7 @@ func (checker *whereRequirementForUpdateDeleteChecker) Visit(node ast.Node) ast.
 			Code:          code.Int32(),
 			Title:         checker.title,
 			Content:       fmt.Sprintf("\"%s\" requires WHERE clause", checker.text),
-			StartPosition: advisor.ConvertANTLRLineToPosition(checker.line),
+			StartPosition: common.ConvertANTLRLineToPosition(checker.line),
 		})
 	}
 	return checker

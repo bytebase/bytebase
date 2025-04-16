@@ -8,6 +8,7 @@ import (
 	"github.com/pingcap/tidb/pkg/parser/ast"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -135,7 +136,7 @@ func (v *tableRequirePKChecker) generateAdviceList() []*storepb.Advice {
 				Code:          advisor.TableNoPK.Int32(),
 				Title:         v.title,
 				Content:       fmt.Sprintf("Table `%s` requires PRIMARY KEY", tableName),
-				StartPosition: advisor.ConvertANTLRLineToPosition(v.line[tableName]),
+				StartPosition: common.ConvertANTLRLineToPosition(v.line[tableName]),
 			})
 		}
 	}

@@ -10,6 +10,7 @@ import (
 	parser "github.com/bytebase/tsql-parser"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	tsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -117,7 +118,7 @@ func (l *migrationCompatibilityChecker) EnterDrop_table(ctx *parser.Drop_tableCo
 				Code:          advisor.CompatibilityDropSchema.Int32(),
 				Title:         l.title,
 				Content:       fmt.Sprintf("Drop table %s may cause incompatibility with the existing data and code", normalizedTableName),
-				StartPosition: advisor.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
+				StartPosition: common.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
 			})
 		}
 		delete(l.normalizedNewCreateTableNameMap, normalizedTableName)
@@ -134,7 +135,7 @@ func (l *migrationCompatibilityChecker) EnterDrop_schema(ctx *parser.Drop_schema
 			Code:          advisor.CompatibilityDropSchema.Int32(),
 			Title:         l.title,
 			Content:       fmt.Sprintf("Drop schema %s may cause incompatibility with the existing data and code", normalizedSchemaName),
-			StartPosition: advisor.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
+			StartPosition: common.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
 		})
 	}
 	delete(l.normalizedNewCreateSchemaNameMap, normalizedSchemaName)
@@ -149,7 +150,7 @@ func (l *migrationCompatibilityChecker) EnterDrop_database(ctx *parser.Drop_data
 			Code:          advisor.CompatibilityDropSchema.Int32(),
 			Title:         l.title,
 			Content:       fmt.Sprintf("Drop database %s may cause incompatibility with the existing data and code", normalizedDatabaseName),
-			StartPosition: advisor.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
+			StartPosition: common.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
 		})
 	}
 	delete(l.normalizedNewCreateDatabaseNameMap, normalizedDatabaseName)
@@ -175,7 +176,7 @@ func (l *migrationCompatibilityChecker) EnterAlter_table(ctx *parser.Alter_table
 			Code:          advisor.CompatibilityDropSchema.Int32(),
 			Title:         l.title,
 			Content:       fmt.Sprintf("Drop column %s may cause incompatibility with the existing data and code", placeholder),
-			StartPosition: advisor.ConvertANTLRLineToPosition(ctx.COLUMN().GetSymbol().GetLine()),
+			StartPosition: common.ConvertANTLRLineToPosition(ctx.COLUMN().GetSymbol().GetLine()),
 		})
 		return
 	}
@@ -192,7 +193,7 @@ func (l *migrationCompatibilityChecker) EnterAlter_table(ctx *parser.Alter_table
 			Code:          advisor.CompatibilityAlterColumn.Int32(),
 			Title:         l.title,
 			Content:       fmt.Sprintf("Alter COLUMN %s may cause incompatibility with the existing data and code", normalizedColumnName),
-			StartPosition: advisor.ConvertANTLRLineToPosition(ctx.COLUMN().GetSymbol().GetLine()),
+			StartPosition: common.ConvertANTLRLineToPosition(ctx.COLUMN().GetSymbol().GetLine()),
 		})
 		return
 	}
@@ -222,7 +223,7 @@ func (l *migrationCompatibilityChecker) EnterAlter_table(ctx *parser.Alter_table
 				Code:          code.Int32(),
 				Title:         l.title,
 				Content:       fmt.Sprintf("%s may cause incompatibility with the existing data and code", operation),
-				StartPosition: advisor.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
+				StartPosition: common.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
 			})
 		}
 		return
@@ -234,7 +235,7 @@ func (l *migrationCompatibilityChecker) EnterAlter_table(ctx *parser.Alter_table
 				Code:          advisor.CompatibilityAddForeignKey.Int32(),
 				Title:         l.title,
 				Content:       "Add FOREIGN KEY WITH NO CHECK may cause incompatibility with the existing data and code",
-				StartPosition: advisor.ConvertANTLRLineToPosition(ctx.FOREIGN().GetSymbol().GetLine()),
+				StartPosition: common.ConvertANTLRLineToPosition(ctx.FOREIGN().GetSymbol().GetLine()),
 			})
 			return
 		}
@@ -244,7 +245,7 @@ func (l *migrationCompatibilityChecker) EnterAlter_table(ctx *parser.Alter_table
 				Code:          advisor.CompatibilityAddForeignKey.Int32(),
 				Title:         l.title,
 				Content:       "Add CHECK WITH NO CHECK may cause incompatibility with the existing data and code",
-				StartPosition: advisor.ConvertANTLRLineToPosition(ctx.CHECK(0).GetSymbol().GetLine()),
+				StartPosition: common.ConvertANTLRLineToPosition(ctx.CHECK(0).GetSymbol().GetLine()),
 			})
 			return
 		}
@@ -292,6 +293,6 @@ func (l *migrationCompatibilityChecker) EnterExecute_body(ctx *parser.Execute_bo
 		Code:          advisor.CompatibilityRenameTable.Int32(),
 		Title:         l.title,
 		Content:       "sp_rename may cause incompatibility with the existing data and code, and break scripts and stored procedures.",
-		StartPosition: advisor.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
+		StartPosition: common.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
 	})
 }

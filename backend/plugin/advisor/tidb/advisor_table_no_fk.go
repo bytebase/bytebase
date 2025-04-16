@@ -7,6 +7,7 @@ import (
 	"github.com/pingcap/tidb/pkg/parser/ast"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -63,7 +64,7 @@ func (checker *tableNoFKChecker) Enter(in ast.Node) (ast.Node, bool) {
 					Code:          advisor.TableHasFK.Int32(),
 					Title:         checker.title,
 					Content:       fmt.Sprintf("Foreign key is not allowed in the table `%s`", node.Table.Name),
-					StartPosition: advisor.ConvertANTLRLineToPosition(constraint.OriginTextPosition()),
+					StartPosition: common.ConvertANTLRLineToPosition(constraint.OriginTextPosition()),
 				})
 			}
 		}
@@ -75,7 +76,7 @@ func (checker *tableNoFKChecker) Enter(in ast.Node) (ast.Node, bool) {
 					Code:          advisor.TableHasFK.Int32(),
 					Title:         checker.title,
 					Content:       fmt.Sprintf("Foreign key is not allowed in the table `%s`", node.Table.Name),
-					StartPosition: advisor.ConvertANTLRLineToPosition(in.OriginTextPosition()),
+					StartPosition: common.ConvertANTLRLineToPosition(in.OriginTextPosition()),
 				})
 			}
 		}

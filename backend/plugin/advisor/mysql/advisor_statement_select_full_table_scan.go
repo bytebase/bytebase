@@ -89,7 +89,7 @@ func (checker *statementSelectFullTableScanChecker) EnterSelectStatement(ctx *my
 			Code:          advisor.StatementCheckSelectFullTableScanFailed.Int32(),
 			Title:         checker.title,
 			Content:       fmt.Sprintf("Failed to check full table scan: %s, with error: %s", query, err),
-			StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
+			StartPosition: common.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
 		})
 	} else {
 		hasFullScan, tables, err := hasTableFullScan(res)
@@ -99,7 +99,7 @@ func (checker *statementSelectFullTableScanChecker) EnterSelectStatement(ctx *my
 				Code:          advisor.Internal.Int32(),
 				Title:         checker.title,
 				Content:       fmt.Sprintf("Failed to check full table scan: %s, with error: %s", query, err),
-				StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
+				StartPosition: common.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
 			})
 		} else if hasFullScan {
 			checker.adviceList = append(checker.adviceList, &storepb.Advice{
@@ -107,7 +107,7 @@ func (checker *statementSelectFullTableScanChecker) EnterSelectStatement(ctx *my
 				Code:          advisor.StatementHasTableFullScan.Int32(),
 				Title:         checker.title,
 				Content:       fmt.Sprintf("Full table scan detected on table(s): %s", tables),
-				StartPosition: advisor.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
+				StartPosition: common.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
 			})
 		}
 	}

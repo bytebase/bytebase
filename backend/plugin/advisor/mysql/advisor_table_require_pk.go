@@ -10,6 +10,7 @@ import (
 
 	mysql "github.com/bytebase/mysql-parser"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
@@ -206,7 +207,7 @@ func (checker *tableRequirePKChecker) generateAdviceList() []*storepb.Advice {
 				Code:          advisor.TableNoPK.Int32(),
 				Title:         checker.title,
 				Content:       fmt.Sprintf("Table `%s` requires PRIMARY KEY", tableName),
-				StartPosition: advisor.ConvertANTLRLineToPosition(checker.line[tableName]),
+				StartPosition: common.ConvertANTLRLineToPosition(checker.line[tableName]),
 			})
 		}
 	}

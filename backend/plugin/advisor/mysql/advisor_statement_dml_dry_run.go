@@ -109,7 +109,7 @@ func (checker *statementDmlDryRunChecker) handleStmt(text string, lineNumber int
 			Code:          advisor.StatementDMLDryRunFailed.Int32(),
 			Title:         checker.title,
 			Content:       fmt.Sprintf("\"%s\" dry runs failed: %s", text, err.Error()),
-			StartPosition: advisor.ConvertANTLRLineToPosition(checker.line + lineNumber),
+			StartPosition: common.ConvertANTLRLineToPosition(checker.line + lineNumber),
 		})
 	}
 }

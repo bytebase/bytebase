@@ -8,6 +8,7 @@ import (
 	"github.com/pingcap/tidb/pkg/parser/ast"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -82,7 +83,7 @@ func (checker *columnNoNullChecker) generateAdvice() []*storepb.Advice {
 				Code:          advisor.ColumnCannotNull.Int32(),
 				Title:         checker.title,
 				Content:       fmt.Sprintf("`%s`.`%s` cannot have NULL value", column.tableName, column.columnName),
-				StartPosition: advisor.ConvertANTLRLineToPosition(column.line),
+				StartPosition: common.ConvertANTLRLineToPosition(column.line),
 			})
 		}
 	}

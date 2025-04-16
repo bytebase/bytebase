@@ -8,6 +8,7 @@ import (
 	"github.com/pingcap/tidb/pkg/parser/ast"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -70,7 +71,7 @@ func (v *namingDropTableConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 					Code:          advisor.TableDropNamingConventionMismatch.Int32(),
 					Title:         v.title,
 					Content:       fmt.Sprintf("`%s` mismatches drop table naming convention, naming format should be %q", table.Name.O, v.format),
-					StartPosition: advisor.ConvertANTLRLineToPosition(node.OriginTextPosition()),
+					StartPosition: common.ConvertANTLRLineToPosition(node.OriginTextPosition()),
 				})
 			}
 		}
