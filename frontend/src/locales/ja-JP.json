@@ -1317,9 +1317,7 @@
     "login-as-another": {
       "title": "別のユーザーとしてログインしています",
       "content": "ホームページへリダイレクトさせていただきます。"
-    },
-    "token-expired-title": "トークンの有効期限が切れました",
-    "token-expired-description": "トークンの有効期限が切れています。再度ログインしてください"
+    }
   },
   "policy": {
     "rollout": {

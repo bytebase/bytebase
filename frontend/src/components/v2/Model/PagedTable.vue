@@ -52,8 +52,6 @@ type SessionState = {
   pageSize: number;
 };
 
-const SESSION_LIFE = 1 * 60 * 1000; // 1 minute
-
 const props = withDefaults(
   defineProps<{
     // A unique key to identify the session state.
@@ -120,7 +118,7 @@ const onPageSizeChange = (size: number) => {
 };
 
 const fetchData = async (refresh = false) => {
-  if (!authStore.isLoggedIn) {
+  if (!authStore.isLoggedIn || authStore.unauthenticatedOccurred) {
     return;
   }
 
@@ -175,17 +173,17 @@ const fetchNextPage = () => {
   fetchData(false);
 };
 
-if (Date.now() - sessionState.value.updatedTs > SESSION_LIFE) {
-  // Reset session if it's outdated.
-  resetSession();
-}
 fetchData(true);
 
 watch(
-  () => authStore.currentUserName,
+  () => authStore.authSessionKey,
   () => {
+    if (!authStore.isLoggedIn || authStore.unauthenticatedOccurred) {
+      return;
+    }
     // Reset session when logging status changed.
     resetSession();
+    refresh();
   }
 );
 

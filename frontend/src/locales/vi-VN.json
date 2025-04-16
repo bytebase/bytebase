@@ -1317,9 +1317,7 @@
     "login-as-another": {
       "title": "Bạn đã đăng nhập với tư cách người dùng khác",
       "content": "Chúng tôi sẽ chuyển hướng bạn đến trang chủ."
-    },
-    "token-expired-title": "Mã thông báo hết hạn",
-    "token-expired-description": "Mã thông báo đã hết hạn, vui lòng đăng nhập lại"
+    }
   },
   "policy": {
     "rollout": {

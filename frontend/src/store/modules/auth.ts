@@ -1,5 +1,6 @@
 import { useLocalStorage } from "@vueuse/core";
 import axios from "axios";
+import { uniqueId } from "lodash-es";
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
 import { userServiceClient } from "@/grpcweb";
@@ -19,7 +20,8 @@ import { User, UserType } from "@/types/proto/v1/user_service";
 
 export const useAuthStore = defineStore("auth_v1", () => {
   const userStore = useUserStore();
-  const showLoginModal = ref<boolean>(false);
+  const authSessionKey = ref<string>(uniqueId());
+  const unauthenticatedOccurred = ref<boolean>(false);
   // Format: users/{user}. {user} is a system-generated unique ID.
   const currentUserName = ref<string | undefined>(undefined);
 
@@ -63,6 +65,7 @@ export const useAuthStore = defineStore("auth_v1", () => {
     const { data } = await axios.post<LoginResponse>("/v1/auth/login", request);
     const redirectUrl = redirect || getRedirectQuery();
     if (data.mfaTempToken) {
+      unauthenticatedOccurred.value = false;
       return router.push({
         name: AUTH_MFA_MODULE,
         query: {
@@ -77,20 +80,18 @@ export const useAuthStore = defineStore("auth_v1", () => {
 
     await useSettingV1Store().getOrFetchSettingByName(
       "bb.workspace.profile",
-      /* silent */ true
+      true // silent
     );
 
-    if (!showLoginModal.value) {
-      let nextPage = redirectUrl || "/";
+    if (!unauthenticatedOccurred.value) {
       const mode = useAppFeature("bb.feature.database-change-mode");
-
+      let nextPage = redirectUrl || "/";
       if (mode.value === DatabaseChangeMode.EDITOR) {
         const route = router.resolve({
           name: SQL_EDITOR_HOME_MODULE,
         });
         nextPage = route.fullPath;
       }
-
       if (data.requireResetPassword) {
         return router.push({
           name: AUTH_PASSWORD_RESET_MODULE,
@@ -99,9 +100,9 @@ export const useAuthStore = defineStore("auth_v1", () => {
           },
         });
       }
-
       return router.replace(nextPage);
     }
+    unauthenticatedOccurred.value = false;
   };
 
   const signup = async (request: Partial<User>) => {
@@ -143,6 +144,8 @@ export const useAuthStore = defineStore("auth_v1", () => {
     try {
       const currentUser = await userStore.fetchCurrentUser();
       currentUserName.value = currentUser.name;
+      // After user login, we need to reset the auth session key.
+      authSessionKey.value = uniqueId();
     } catch {
       // do nothing.
     }
@@ -151,13 +154,14 @@ export const useAuthStore = defineStore("auth_v1", () => {
   return {
     currentUserName,
     isLoggedIn,
+    unauthenticatedOccurred,
+    requireResetPassword,
+    authSessionKey,
     login,
     signup,
     logout,
     fetchCurrentUser,
-    requireResetPassword,
     setRequireResetPassword,
-    showLoginModal,
   };
 });
 
