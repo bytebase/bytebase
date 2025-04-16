@@ -593,11 +593,7 @@ export function approvalStep_TypeToNumber(object: ApprovalStep_Type): number {
 
 export interface ApprovalNode {
   type: ApprovalNode_Type;
-  groupValue?:
-    | ApprovalNode_GroupValue
-    | undefined;
-  /** Format: roles/{role} */
-  role?: string | undefined;
+  role: string;
 }
 
 /**
@@ -646,82 +642,6 @@ export function approvalNode_TypeToNumber(object: ApprovalNode_Type): number {
     case ApprovalNode_Type.ANY_IN_GROUP:
       return 1;
     case ApprovalNode_Type.UNRECOGNIZED:
-    default:
-      return -1;
-  }
-}
-
-/**
- * The predefined user groups are:
- * - WORKSPACE_OWNER
- * - WORKSPACE_DBA
- * - PROJECT_OWNER
- * - PROJECT_MEMBER
- */
-export enum ApprovalNode_GroupValue {
-  GROUP_VALUE_UNSPECIFILED = "GROUP_VALUE_UNSPECIFILED",
-  WORKSPACE_OWNER = "WORKSPACE_OWNER",
-  WORKSPACE_DBA = "WORKSPACE_DBA",
-  PROJECT_OWNER = "PROJECT_OWNER",
-  PROJECT_MEMBER = "PROJECT_MEMBER",
-  UNRECOGNIZED = "UNRECOGNIZED",
-}
-
-export function approvalNode_GroupValueFromJSON(object: any): ApprovalNode_GroupValue {
-  switch (object) {
-    case 0:
-    case "GROUP_VALUE_UNSPECIFILED":
-      return ApprovalNode_GroupValue.GROUP_VALUE_UNSPECIFILED;
-    case 1:
-    case "WORKSPACE_OWNER":
-      return ApprovalNode_GroupValue.WORKSPACE_OWNER;
-    case 2:
-    case "WORKSPACE_DBA":
-      return ApprovalNode_GroupValue.WORKSPACE_DBA;
-    case 3:
-    case "PROJECT_OWNER":
-      return ApprovalNode_GroupValue.PROJECT_OWNER;
-    case 4:
-    case "PROJECT_MEMBER":
-      return ApprovalNode_GroupValue.PROJECT_MEMBER;
-    case -1:
-    case "UNRECOGNIZED":
-    default:
-      return ApprovalNode_GroupValue.UNRECOGNIZED;
-  }
-}
-
-export function approvalNode_GroupValueToJSON(object: ApprovalNode_GroupValue): string {
-  switch (object) {
-    case ApprovalNode_GroupValue.GROUP_VALUE_UNSPECIFILED:
-      return "GROUP_VALUE_UNSPECIFILED";
-    case ApprovalNode_GroupValue.WORKSPACE_OWNER:
-      return "WORKSPACE_OWNER";
-    case ApprovalNode_GroupValue.WORKSPACE_DBA:
-      return "WORKSPACE_DBA";
-    case ApprovalNode_GroupValue.PROJECT_OWNER:
-      return "PROJECT_OWNER";
-    case ApprovalNode_GroupValue.PROJECT_MEMBER:
-      return "PROJECT_MEMBER";
-    case ApprovalNode_GroupValue.UNRECOGNIZED:
-    default:
-      return "UNRECOGNIZED";
-  }
-}
-
-export function approvalNode_GroupValueToNumber(object: ApprovalNode_GroupValue): number {
-  switch (object) {
-    case ApprovalNode_GroupValue.GROUP_VALUE_UNSPECIFILED:
-      return 0;
-    case ApprovalNode_GroupValue.WORKSPACE_OWNER:
-      return 1;
-    case ApprovalNode_GroupValue.WORKSPACE_DBA:
-      return 2;
-    case ApprovalNode_GroupValue.PROJECT_OWNER:
-      return 3;
-    case ApprovalNode_GroupValue.PROJECT_MEMBER:
-      return 4;
-    case ApprovalNode_GroupValue.UNRECOGNIZED:
     default:
       return -1;
   }
@@ -2933,7 +2853,7 @@ export const ApprovalStep: MessageFns<ApprovalStep> = {
 };
 
 function createBaseApprovalNode(): ApprovalNode {
-  return { type: ApprovalNode_Type.TYPE_UNSPECIFIED, groupValue: undefined, role: undefined };
+  return { type: ApprovalNode_Type.TYPE_UNSPECIFIED, role: "" };
 }
 
 export const ApprovalNode: MessageFns<ApprovalNode> = {
@@ -2941,11 +2861,8 @@ export const ApprovalNode: MessageFns<ApprovalNode> = {
     if (message.type !== ApprovalNode_Type.TYPE_UNSPECIFIED) {
       writer.uint32(8).int32(approvalNode_TypeToNumber(message.type));
     }
-    if (message.groupValue !== undefined) {
-      writer.uint32(16).int32(approvalNode_GroupValueToNumber(message.groupValue));
-    }
-    if (message.role !== undefined) {
-      writer.uint32(26).string(message.role);
+    if (message.role !== "") {
+      writer.uint32(18).string(message.role);
     }
     return writer;
   },
@@ -2966,15 +2883,7 @@ export const ApprovalNode: MessageFns<ApprovalNode> = {
           continue;
         }
         case 2: {
-          if (tag !== 16) {
-            break;
-          }
-
-          message.groupValue = approvalNode_GroupValueFromJSON(reader.int32());
-          continue;
-        }
-        case 3: {
-          if (tag !== 26) {
+          if (tag !== 18) {
             break;
           }
 
@@ -2993,8 +2902,7 @@ export const ApprovalNode: MessageFns<ApprovalNode> = {
   fromJSON(object: any): ApprovalNode {
     return {
       type: isSet(object.type) ? approvalNode_TypeFromJSON(object.type) : ApprovalNode_Type.TYPE_UNSPECIFIED,
-      groupValue: isSet(object.groupValue) ? approvalNode_GroupValueFromJSON(object.groupValue) : undefined,
-      role: isSet(object.role) ? globalThis.String(object.role) : undefined,
+      role: isSet(object.role) ? globalThis.String(object.role) : "",
     };
   },
 
@@ -3003,10 +2911,7 @@ export const ApprovalNode: MessageFns<ApprovalNode> = {
     if (message.type !== ApprovalNode_Type.TYPE_UNSPECIFIED) {
       obj.type = approvalNode_TypeToJSON(message.type);
     }
-    if (message.groupValue !== undefined) {
-      obj.groupValue = approvalNode_GroupValueToJSON(message.groupValue);
-    }
-    if (message.role !== undefined) {
+    if (message.role !== "") {
       obj.role = message.role;
     }
     return obj;
@@ -3018,8 +2923,7 @@ export const ApprovalNode: MessageFns<ApprovalNode> = {
   fromPartial(object: DeepPartial<ApprovalNode>): ApprovalNode {
     const message = createBaseApprovalNode();
     message.type = object.type ?? ApprovalNode_Type.TYPE_UNSPECIFIED;
-    message.groupValue = object.groupValue ?? undefined;
-    message.role = object.role ?? undefined;
+    message.role = object.role ?? "";
     return message;
   },
 };

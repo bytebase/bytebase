@@ -12,11 +12,15 @@
       <div class="bb-grid-cell">
         <RoleSelect
           v-if="editable"
-          v-model:value="step.nodes[0]"
+          :suffix="''"
+          :value="step.nodes[0]?.role"
           style="width: 80%"
           @update:value="
-            (node) => {
-              step.nodes[0] = node;
+            (role) => {
+              step.nodes[0] = {
+                type: ApprovalNode_Type.ANY_IN_GROUP,
+                role: role as string,
+              };
               $emit('update');
             }
           "
@@ -66,9 +70,10 @@ import { NButton } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBGrid, type BBGridColumn } from "@/bbkit";
+import { RoleSelect } from "@/components/v2";
+import { PresetRoleType } from "@/types";
 import type { ApprovalFlow } from "@/types/proto/v1/issue_service";
 import {
-  ApprovalNode_GroupValue,
   ApprovalNode_Type,
   ApprovalStep,
   ApprovalStep_Type,
@@ -76,7 +81,6 @@ import {
 import { approvalNodeText } from "@/utils";
 import { SpinnerButton } from "../../common";
 import { useCustomApprovalContext } from "../context";
-import RoleSelect from "./RoleSelect.vue";
 
 const props = defineProps<{
   flow: ApprovalFlow;
@@ -127,7 +131,7 @@ const addStep = () => {
       nodes: [
         {
           type: ApprovalNode_Type.ANY_IN_GROUP,
-          groupValue: ApprovalNode_GroupValue.WORKSPACE_OWNER,
+          role: PresetRoleType.WORKSPACE_ADMIN,
         },
       ],
     })
