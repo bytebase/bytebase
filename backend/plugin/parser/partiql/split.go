@@ -16,14 +16,18 @@ func init() {
 
 func SplitSQL(statement string) ([]base.SingleSQL, error) {
 	lexer := parser.NewPartiQLLexer(antlr.NewInputStream(statement))
-	lexerErrorListener := &base.ParseErrorListener{}
+	lexerErrorListener := &base.ParseErrorListener{
+		Statement: statement,
+	}
 	lexer.RemoveErrorListeners()
 	lexer.AddErrorListener(lexerErrorListener)
 
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
 
 	p := parser.NewPartiQLParserParser(stream)
-	parserErrorListener := &base.ParseErrorListener{}
+	parserErrorListener := &base.ParseErrorListener{
+		Statement: statement,
+	}
 	p.RemoveErrorListeners()
 	p.AddErrorListener(parserErrorListener)
 

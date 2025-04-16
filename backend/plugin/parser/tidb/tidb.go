@@ -18,6 +18,7 @@ import (
 
 	parser "github.com/bytebase/tidb-parser"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/plugin/parser/tokenizer"
 )
@@ -225,9 +226,8 @@ func convertParserError(parserErr error) error {
 		return parserErr
 	}
 	return &base.SyntaxError{
-		Line:    line,
-		Column:  column,
-		Message: parserErr.Error(),
+		Position: common.ConvertTiDBParserErrorPositionToPosition(line, column),
+		Message:  parserErr.Error(),
 	}
 }
 
@@ -300,7 +300,9 @@ func TypeString(tp byte) string {
 
 func tidbAddSemicolonIfNeeded(sql string) string {
 	lexer := parser.NewTiDBLexer(antlr.NewInputStream(sql))
-	lexerErrorListener := &base.ParseErrorListener{}
+	lexerErrorListener := &base.ParseErrorListener{
+		Statement: sql,
+	}
 	lexer.RemoveErrorListeners()
 	lexer.AddErrorListener(lexerErrorListener)
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)

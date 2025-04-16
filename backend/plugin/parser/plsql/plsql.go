@@ -54,11 +54,15 @@ func ParsePLSQL(sql string) (antlr.Tree, *antlr.CommonTokenStream, error) {
 	p := parser.NewPlSqlParser(stream)
 	p.SetVersion12(true)
 
-	lexerErrorListener := &base.ParseErrorListener{}
+	lexerErrorListener := &base.ParseErrorListener{
+		Statement: sql,
+	}
 	lexer.RemoveErrorListeners()
 	lexer.AddErrorListener(lexerErrorListener)
 
-	parserErrorListener := &base.ParseErrorListener{}
+	parserErrorListener := &base.ParseErrorListener{
+		Statement: sql,
+	}
 	p.RemoveErrorListeners()
 	p.AddErrorListener(parserErrorListener)
 

@@ -20,7 +20,7 @@ func Diagnose(_ context.Context, _ base.DiagnoseContext, statement string) ([]ba
 	diagnostics := make([]base.Diagnostic, 0)
 	syntaxError := parseSnowflakeStatement(statement)
 	if syntaxError != nil {
-		diagnostics = append(diagnostics, base.ConvertSyntaxErrorToDiagnostic(syntaxError))
+		diagnostics = append(diagnostics, base.ConvertSyntaxErrorToDiagnostic(syntaxError, statement))
 	}
 
 	return diagnostics, nil

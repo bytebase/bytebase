@@ -4,6 +4,9 @@ import (
 	"fmt"
 
 	"github.com/antlr4-go/antlr/v4"
+
+	"github.com/bytebase/bytebase/backend/common"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 // SingleSQL is a separate SQL split from multi-SQL.
@@ -39,8 +42,7 @@ type SingleSQL struct {
 
 // SyntaxError is a syntax error.
 type SyntaxError struct {
-	Line       int
-	Column     int
+	Position   *storepb.Position
 	Message    string
 	RawMessage string
 }
@@ -52,8 +54,9 @@ func (e *SyntaxError) Error() string {
 
 // ParseErrorListener is a custom error listener for PLSQL parser.
 type ParseErrorListener struct {
-	BaseLine int
-	Err      *SyntaxError
+	BaseLine  int
+	Err       *SyntaxError
+	Statement string
 }
 
 // SyntaxError returns the errors.
@@ -61,6 +64,7 @@ func (l *ParseErrorListener) SyntaxError(_ antlr.Recognizer, token any, line, co
 	if l.Err != nil {
 		return
 	}
+
 	errMessage := ""
 	if token, ok := token.(*antlr.CommonToken); ok {
 		stream := token.GetInputStream()
@@ -74,11 +78,28 @@ func (l *ParseErrorListener) SyntaxError(_ antlr.Recognizer, token any, line, co
 		}
 		errMessage = fmt.Sprintf("related text: %s", stream.GetTextFromInterval(antlr.NewInterval(start, stop)))
 	}
+	if l.Statement == "" {
+		l.Err = &SyntaxError{
+			Position: &storepb.Position{
+				Line:   int32(line + l.BaseLine),
+				Column: int32(column),
+			},
+			Message: fmt.Sprintf("Syntax error at line %d:%d \n%s", line+l.BaseLine, column, errMessage),
+		}
+		return
+	}
+
+	p := common.ConvertANTLRPositionToPosition(&common.ANTLRPosition{
+		Line:   int32(line),
+		Column: int32(column),
+	}, l.Statement)
+	p.Line += int32(l.BaseLine)
 	l.Err = &SyntaxError{
-		Line:       line + l.BaseLine,
-		Column:     column,
-		Message:    fmt.Sprintf("Syntax error at line %d:%d \n%s", line+l.BaseLine, column, errMessage),
-		RawMessage: message,
+		Position: &storepb.Position{
+			Line:   p.Line,
+			Column: p.Column,
+		},
+		Message: fmt.Sprintf("Syntax error at line %d:%d \n%s", p.Line, p.Column, errMessage),
 	}
 }
 

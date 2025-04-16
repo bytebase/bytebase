@@ -28,7 +28,7 @@ func SplitSQL(statement string) ([]base.SingleSQL, error) {
 	if err != nil {
 		slog.Info("failed to split MySQL statement, use parser instead", "statement", statement)
 		// Use parser to split statement.
-		return splitByParser(lexer, stream)
+		return splitByParser(statement, lexer, stream)
 	}
 	return list, nil
 }
@@ -162,13 +162,17 @@ func hasDelimiterStatement(stream *antlr.CommonTokenStream) bool {
 	return false
 }
 
-func splitByParser(lexer *parser.MySQLLexer, stream *antlr.CommonTokenStream) ([]base.SingleSQL, error) {
+func splitByParser(statement string, lexer *parser.MySQLLexer, stream *antlr.CommonTokenStream) ([]base.SingleSQL, error) {
 	p := parser.NewMySQLParser(stream)
-	lexerErrorListener := &base.ParseErrorListener{}
+	lexerErrorListener := &base.ParseErrorListener{
+		Statement: statement,
+	}
 	lexer.RemoveErrorListeners()
 	lexer.AddErrorListener(lexerErrorListener)
 
-	parserErrorListener := &base.ParseErrorListener{}
+	parserErrorListener := &base.ParseErrorListener{
+		Statement: statement,
+	}
 	p.RemoveErrorListeners()
 	p.AddErrorListener(parserErrorListener)
 
