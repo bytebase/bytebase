@@ -128,41 +128,34 @@ func (d *Driver) GetDB() *sql.DB {
 
 // Execute executes the SQL statement with the given options.
 func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
-	// Get a dedicated connection from the pool
 	conn, err := d.db.Conn(ctx)
 	if err != nil {
 		return 0, errors.Wrap(err, "failed to get connection")
 	}
 	defer conn.Close()
 
-	// Set connection ID if callback provided
 	if opts.SetConnectionID != nil {
-		// Use current_session as an identifier for Trino
-		var sessionId string
-		if err := conn.QueryRowContext(ctx, "SELECT current_session").Scan(&sessionId); err != nil {
+		var sessionID string
+		if err := conn.QueryRowContext(ctx, "SELECT current_session").Scan(&sessionID); err != nil {
 			return 0, errors.Wrap(err, "failed to get session id")
 		}
-		opts.SetConnectionID(sessionId)
+		opts.SetConnectionID(sessionID)
 
 		if opts.DeleteConnectionID != nil {
 			defer opts.DeleteConnectionID()
 		}
 	}
 
-	// Log command execution
 	opts.LogCommandExecute([]int32{0})
 
-	// Execute the statement
 	result, err := conn.ExecContext(ctx, statement)
 	if err != nil {
 		opts.LogCommandResponse([]int32{0}, 0, []int32{0}, err.Error())
 		return 0, errors.Wrap(err, "failed to execute statement")
 	}
 
-	// Get rows affected
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
-		// Some Trino operations don't return affected rows
 		opts.LogCommandResponse([]int32{0}, 0, []int32{0}, "")
 		return 0, nil
 	}
@@ -182,7 +175,6 @@ func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, rawStatement str
 	for _, stmt := range stmts {
 		startTime := time.Now()
 		queryResult, err := func() (*v1pb.QueryResult, error) {
-			// Determine if this is a query and apply explain/limit if needed
 			trimmed := strings.TrimSpace(stmt)
 			upperStmt := strings.ToUpper(trimmed)
 			isQuery := strings.HasPrefix(upperStmt, "SELECT") ||
@@ -190,26 +182,43 @@ func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, rawStatement str
 				strings.HasPrefix(upperStmt, "DESCRIBE") ||
 				strings.HasPrefix(upperStmt, "EXPLAIN")
 
-			// Apply explain if needed
 			if queryContext.Explain {
 				stmt = fmt.Sprintf("EXPLAIN %s", stmt)
 				isQuery = true
 			}
 
-			// Apply limit for SELECT queries if needed
 			if isQuery && queryContext.Limit > 0 && !strings.Contains(upperStmt, " LIMIT ") {
 				stmt = fmt.Sprintf("%s LIMIT %d", stmt, queryContext.Limit)
 			}
 
 			if isQuery {
-				// Run as a query that returns rows
+				// Add catalog.schema qualification for unqualified table references if needed
+				if strings.Contains(upperStmt, " FROM ") &&
+					!strings.Contains(upperStmt, ".") &&
+					d.databaseName != "" && queryContext.Schema != "" {
+					fromIndex := strings.Index(upperStmt, " FROM ")
+					if fromIndex != -1 {
+						beforeFrom := stmt[:fromIndex+6]
+						afterFrom := stmt[fromIndex+6:]
+
+						tableEnd := len(afterFrom)
+						if spaceIndex := strings.Index(afterFrom, " "); spaceIndex != -1 {
+							tableEnd = spaceIndex
+						}
+						tableName := afterFrom[:tableEnd]
+						restOfQuery := afterFrom[tableEnd:]
+
+						qualifiedTable := fmt.Sprintf("%s.%s.%s", d.databaseName, queryContext.Schema, tableName)
+						stmt = beforeFrom + qualifiedTable + restOfQuery
+					}
+				}
+
 				rows, err := conn.QueryContext(ctx, stmt)
 				if err != nil {
 					return nil, err
 				}
 				defer rows.Close()
 
-				// Get columns and create result structure
 				columnNames, err := rows.Columns()
 				if err != nil {
 					return nil, err
@@ -220,20 +229,16 @@ func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, rawStatement str
 					return nil, err
 				}
 
-				// Create result with column information
 				result := &v1pb.QueryResult{
 					ColumnNames: columnNames,
 				}
 
-				// Add column types
 				for _, cType := range columnTypes {
 					result.ColumnTypeNames = append(result.ColumnTypeNames,
 						strings.ToUpper(cType.DatabaseTypeName()))
 				}
 
-				// Process rows
 				for rows.Next() {
-					// Check if we've exceeded the maximum result size
 					if queryContext.MaximumSQLResultSize > 0 &&
 						len(result.Rows) > 0 &&
 						int64(proto.Size(result)) > queryContext.MaximumSQLResultSize {
@@ -241,30 +246,23 @@ func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, rawStatement str
 						break
 					}
 
-					// Create a slice to hold the row values
-					rowValues := make([]interface{}, len(columnNames))
-					scanValues := make([]interface{}, len(columnNames))
+					rowValues := make([]any, len(columnNames))
+					scanValues := make([]any, len(columnNames))
 					for i := range rowValues {
 						scanValues[i] = &rowValues[i]
 					}
 
-					// Scan the row
 					if err := rows.Scan(scanValues...); err != nil {
 						return nil, err
 					}
 
-					// Create a query row
 					row := &v1pb.QueryRow{}
-
-					// Convert each column value
 					for _, val := range rowValues {
 						row.Values = append(row.Values, convertToRowValue(val))
 					}
 
-					// Add row to result
 					result.Rows = append(result.Rows, row)
 
-					// Stop if we've reached the requested limit
 					if queryContext.Limit > 0 && len(result.Rows) >= int(queryContext.Limit) {
 						break
 					}
@@ -275,37 +273,19 @@ func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, rawStatement str
 				}
 
 				return result, nil
-			} else {
-				// Run as a statement that doesn't return rows
-				result, err := conn.ExecContext(ctx, stmt)
-				if err != nil {
-					return nil, err
-				}
-
-				// Get affected rows
-				affectedRows, err := result.RowsAffected()
-				if err != nil {
-					// Some operations don't return affected rows
-					affectedRows = 0
-				}
-
-				// Create a result with affected rows count
-				return &v1pb.QueryResult{
-					ColumnNames:     []string{"Affected Rows"},
-					ColumnTypeNames: []string{"INT"},
-					Rows: []*v1pb.QueryRow{
-						{
-							Values: []*v1pb.RowValue{
-								{
-									Kind: &v1pb.RowValue_Int64Value{
-										Int64Value: affectedRows,
-									},
-								},
-							},
-						},
-					},
-				}, nil
 			}
+
+			result, err := conn.ExecContext(ctx, stmt)
+			if err != nil {
+				return nil, err
+			}
+
+			affectedRows, err := result.RowsAffected()
+			if err != nil {
+				affectedRows = 0
+			}
+
+			return util.BuildAffectedRowsResult(affectedRows), nil
 		}()
 
 		stop := false
@@ -330,7 +310,7 @@ func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, rawStatement str
 }
 
 // convertToRowValue converts a value to a RowValue for the query result.
-func convertToRowValue(v interface{}) *v1pb.RowValue {
+func convertToRowValue(v any) *v1pb.RowValue {
 	if v == nil {
 		return &v1pb.RowValue{
 			Kind: &v1pb.RowValue_NullValue{
@@ -395,7 +375,6 @@ func convertToRowValue(v interface{}) *v1pb.RowValue {
 			},
 		}
 	default:
-		// For any other type, convert to string
 		return &v1pb.RowValue{
 			Kind: &v1pb.RowValue_StringValue{
 				StringValue: fmt.Sprintf("%v", val),
