@@ -419,8 +419,7 @@
     "sso": {
       "create": "Tạo SSO",
       "description": "Đăng nhập một lần (SSO) là một phương thức xác thực cho phép người dùng xác thực với nhiều ứng dụng và trang web bằng một thông tin đăng nhập duy nhất.",
-      "archive": "Lưu trữ SSO này",
-      "archive-info": "SSO đã lưu trữ sẽ không được hiển thị.",
+      "delete": "xóa SSO này đi",
       "form": {
         "type": "Loại",
         "learn-more-with-user-doc": "Tìm hiểu thêm về cấu hình",

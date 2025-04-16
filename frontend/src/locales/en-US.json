@@ -419,8 +419,7 @@
     "sso": {
       "create": "Create SSO",
       "description": "Single Sign-On (SSO) is an authentication method that enables users to authenticate with multiple applications and websites via a single set of credentials.",
-      "archive": "Archive this SSO",
-      "archive-info": "Archived SSO will not be displayed.",
+      "delete": "Delete this SSO",
       "form": {
         "type": "Type",
         "learn-more-with-user-doc": "Learn more about the configuration",

@@ -419,8 +419,7 @@
     "sso": {
       "create": "创建 SSO",
       "description": "单点登录（SSO）是一种认证方法，使用户能够通过其他应用程序和网站来进行登录。",
-      "archive": "归档该 SSO",
-      "archive-info": "已归档 SSO 将不再显示。",
+      "delete": "删除该 SSO",
       "form": {
         "type": "类型",
         "learn-more-with-user-doc": "了解更多如何配置",
