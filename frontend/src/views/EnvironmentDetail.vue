@@ -4,7 +4,7 @@
     :environment="state.environment"
     :rollout-policy="state.rolloutPolicy"
     @update="doUpdate"
-    @archive="doArchive"
+    @archive="doDelete"
     @update-policy="updatePolicy"
   >
     <EnvironmentFormBody
@@ -59,7 +59,7 @@ const props = defineProps<{
   buttonsClass?: VueClass;
 }>();
 
-const emit = defineEmits(["archive"]);
+const emit = defineEmits(["delete"]);
 
 const router = useRouter();
 const environmentV1Store = useEnvironmentV1Store();
@@ -129,11 +129,11 @@ const doUpdate = (environmentPatch: Environment) => {
   });
 };
 
-const doArchive = (environment: Environment) => {
+const doDelete = (environment: Environment) => {
   environmentV1Store
     .deleteEnvironment(formatEnvironmentName(environment.id))
     .then(() => {
-      emit("archive", environment);
+      emit("delete", environment);
       assignEnvironment(environment);
       router.replace({
         name: ENVIRONMENT_V1_ROUTE_DASHBOARD,
