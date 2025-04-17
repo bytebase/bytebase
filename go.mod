@@ -1,8 +1,6 @@
 module github.com/bytebase/bytebase
 
-go 1.24.0
-
-toolchain go1.24.2
+go 1.24.2
 
 // workaround mssql-docker default TLS cert negative serial number problem
 // https://github.com/microsoft/mssql-docker/issues/895
@@ -35,6 +33,7 @@ require (
 	github.com/bytebase/postgresql-parser v0.0.0-20250213053010-aeb8220eb3bb
 	github.com/bytebase/snowsql-parser v0.0.0-20250124075214-562d62e69c35
 	github.com/bytebase/tidb-parser v0.0.0-20240821091609-162fffe2a839
+	github.com/bytebase/trino-parser v0.0.0-20250417182305-ce3ac48add9d
 	github.com/caarlos0/env/v11 v11.3.1
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/cockroachdb/cockroachdb-parser v0.23.2
