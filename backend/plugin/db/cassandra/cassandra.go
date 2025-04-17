@@ -41,7 +41,7 @@ type Driver struct {
 	session *gocql.Session
 }
 
-func newDriver(db.DriverConfig) db.Driver {
+func newDriver() db.Driver {
 	return &Driver{}
 }
 
