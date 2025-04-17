@@ -1,7 +1,9 @@
 package github
 
 import (
+	"encoding/json"
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/caarlos0/env/v11"
@@ -17,8 +19,9 @@ const githubActionUserID = 41898282
 type githubEnv struct {
 	APIUrl string `env:"GITHUB_API_URL,required,notEmpty"`
 	Repo   string `env:"GITHUB_REPOSITORY,required,notEmpty"`
-	PR     string `env:"GITHUB_PR_NUMBER"`
 	Token  string `env:"GITHUB_TOKEN,required,notEmpty"`
+
+	eventPath string `env:"GITHUB_EVENT_PATH,required,notEmpty"`
 }
 
 func CreateCommentAndAnnotation(resp *v1pb.CheckReleaseResponse) error {
@@ -38,14 +41,38 @@ func CreateCommentAndAnnotation(resp *v1pb.CheckReleaseResponse) error {
 	return nil
 }
 
+func getPRNumberFromEventFile(eventPath string) (string, error) {
+	eventFile, err := os.ReadFile(eventPath)
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to read event file %s", eventPath)
+	}
+	var event struct {
+		PullRequest struct {
+			Number int `json:"number"`
+		} `json:"pull_request"`
+	}
+	if err := json.Unmarshal(eventFile, &event); err != nil {
+		return "", errors.Wrapf(err, "failed to unmarshal event file %s", eventPath)
+	}
+	if event.PullRequest.Number == 0 {
+		return "", errors.New("no pull request number found in the event file")
+	}
+	return fmt.Sprintf("%d", event.PullRequest.Number), nil
+}
+
 func upsertComment(resp *v1pb.CheckReleaseResponse, ghe *githubEnv) error {
-	if ghe.PR == "" {
-		fmt.Println("No pull request number found in the environment variables.\nI won't create a comment.\nPass GITHUB_PR_NUMBER to create a comment.")
+	pr, err := getPRNumberFromEventFile(ghe.eventPath)
+	if err != nil {
+		fmt.Println("::warning failed to get pull request number from event file, will not create a comment.")
+		return nil
+	}
+	if pr == "" {
+		fmt.Println("::warning no pull request number found in the environment variables, will not create a comment.")
 		return nil
 	}
 	// upsert the comment
 	c := newClient(ghe.APIUrl, ghe.Token)
-	comments, err := c.listComments(ghe.Repo, ghe.PR)
+	comments, err := c.listComments(ghe.Repo, pr)
 	if err != nil {
 		return errors.Wrapf(err, "failed to list comments")
 	}
@@ -60,7 +87,7 @@ func upsertComment(resp *v1pb.CheckReleaseResponse, ghe *githubEnv) error {
 	}
 
 	// create a new comment
-	if err := c.createComment(ghe.Repo, ghe.PR, buildCommentMessage(resp)); err != nil {
+	if err := c.createComment(ghe.Repo, pr, buildCommentMessage(resp)); err != nil {
 		return errors.Wrapf(err, "failed to create comment")
 	}
 	return nil
