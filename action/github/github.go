@@ -67,7 +67,7 @@ func upsertComment(resp *v1pb.CheckReleaseResponse, ghe *githubEnv) error {
 	}
 	pr, err := getPRNumberFromEventFile(ghe.EventPath)
 	if err != nil {
-		fmt.Println("::warning failed to get pull request number from event file, will not create a comment.")
+		fmt.Printf("::warning failed to get pull request number from event file, will not create a comment. error: %v", err.Error())
 		return nil
 	}
 	if pr == "" {
