@@ -117,7 +117,7 @@ func (d *Driver) queryStringValues(ctx context.Context, query string, args ...an
 }
 
 func (d *Driver) getCatalog(ctx context.Context) ([]string, error) {
-	query := "SELECT name FROM system.metadata.catalogs ORDER BY name"
+	query := "SELECT catalog_name FROM system.metadata.catalogs ORDER BY catalog_name"
 	return d.queryStringValues(ctx, query)
 }
 
