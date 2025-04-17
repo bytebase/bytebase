@@ -35,7 +35,7 @@ service DatabaseGroupService {
     };
     option (google.api.method_signature) = "parent,databaseGroup";
     option (bytebase.v1.permission) = "bb.projects.update";
-    option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.auth_method) = CUSTOM;
     option (bytebase.v1.audit) = true;
   }
 
