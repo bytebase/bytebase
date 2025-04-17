@@ -275,69 +275,8 @@ func unpackGoMSSQLDBError(err gomssqldb.Error) error {
 	return errors.Errorf("%s", strings.Join(msgs, "\n"))
 }
 
-// explainSingleStatement executes a SHOWPLAN_ALL for a SQL statement
-func (*Driver) explainSingleStatement(ctx context.Context, conn *sql.Conn, sql string, maximumResultSize int64) (*v1pb.QueryResult, error) {
-	startTime := time.Now()
-	// Enable SHOWPLAN_ALL mode
-	if _, err := conn.ExecContext(ctx, "SET SHOWPLAN_ALL ON"); err != nil {
-		return nil, errors.Wrap(err, "failed to enable SHOWPLAN_ALL mode")
-	}
-
-	// Ensure SHOWPLAN_ALL is turned off after execution
-	defer func() {
-		if _, err := conn.ExecContext(ctx, "SET SHOWPLAN_ALL OFF"); err != nil {
-			slog.Warn("failed to disable SHOWPLAN_ALL mode", log.BBError(err))
-		}
-	}()
-
-	// Execute query to get execution plan
-	rows, err := conn.QueryContext(ctx, sql)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to get execution plan")
-	}
-	defer rows.Close()
-
-	// Convert to query result
-	r, err := util.RowsToQueryResult(rows, makeValueByTypeName, convertValue, maximumResultSize)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to convert execution plan results")
-	}
-
-	if err = rows.Err(); err != nil {
-		return nil, errors.Wrap(err, "error after processing rows")
-	}
-
-	// Add metadata
-	r.Statement = sql
-	r.Latency = durationpb.New(time.Since(startTime))
-	r.RowsCount = int64(len(r.Rows))
-
-	return r, nil
-}
-
 func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
-	// Special handling for EXPLAIN queries in MSSQL
-	if queryContext.Explain {
-		// Split the SQL into individual statements
-		singleSQLs, err := tsqlparser.SplitSQL(statement)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to split SQL for EXPLAIN")
-		}
-		singleSQLs = base.FilterEmptySQL(singleSQLs)
-
-		var results []*v1pb.QueryResult
-
-		// Process each statement individually
-		for _, singleSQL := range singleSQLs {
-			r, err := d.explainSingleStatement(ctx, conn, singleSQL.Text, queryContext.MaximumSQLResultSize)
-			if err != nil {
-				return results, err
-			}
-			results = append(results, r)
-		}
-
-		return results, nil
-	}
+	// Special handling for EXPLAIN queries in MSSQL is now integrated into queryBatch
 
 	// Regular query processing (unchanged)
 	batch := NewBatch(statement)
@@ -392,6 +331,69 @@ func (*Driver) queryBatch(ctx context.Context, conn *sql.Conn, batch string, que
 	if len(singleSQLs) == 0 {
 		return nil, nil
 	}
+
+	// Special handling for EXPLAIN queries in MSSQL using SHOWPLAN_ALL
+	if queryContext.Explain {
+		// Enable SHOWPLAN_ALL mode once for all statements
+		if _, err := conn.ExecContext(ctx, "SET SHOWPLAN_ALL ON"); err != nil {
+			return nil, errors.Wrap(err, "failed to enable SHOWPLAN_ALL mode")
+		}
+		// Ensure SHOWPLAN_ALL is turned off after processing
+		defer func() {
+			if _, err := conn.ExecContext(ctx, "SET SHOWPLAN_ALL OFF"); err != nil {
+				slog.Warn("failed to disable SHOWPLAN_ALL mode", log.BBError(err))
+			}
+		}()
+
+		var results []*v1pb.QueryResult
+
+		// Process each statement with SHOWPLAN_ALL enabled
+		for _, singleSQL := range singleSQLs {
+			startTime := time.Now()
+
+			queryResult, err := func() (*v1pb.QueryResult, error) {
+				// Execute query to get execution plan
+				rows, err := conn.QueryContext(ctx, singleSQL.Text)
+				if err != nil {
+					return nil, errors.Wrap(err, "failed to get execution plan")
+				}
+				defer rows.Close()
+
+				// Convert to query result
+				r, err := util.RowsToQueryResult(rows, makeValueByTypeName, convertValue, queryContext.MaximumSQLResultSize)
+				if err != nil {
+					return nil, errors.Wrap(err, "failed to convert execution plan results")
+				}
+
+				if err = rows.Err(); err != nil {
+					return nil, errors.Wrap(err, "error after processing rows")
+				}
+
+				return r, nil
+			}()
+
+			stop := false
+			if err != nil {
+				queryResult = &v1pb.QueryResult{
+					Error: err.Error(),
+				}
+				stop = true
+			}
+
+			queryResult.Statement = singleSQL.Text
+			queryResult.Latency = durationpb.New(time.Since(startTime))
+			queryResult.RowsCount = int64(len(queryResult.Rows))
+
+			results = append(results, queryResult)
+			if stop {
+				break
+			}
+		}
+
+		return results, nil
+	}
+
+	// Regular query processing for non-EXPLAIN queries
 	var stmtTypes []stmtType
 	batchBuf := new(strings.Builder)
 	for _, singleSQL := range singleSQLs {
@@ -402,7 +404,7 @@ func (*Driver) queryBatch(ctx context.Context, conn *sql.Conn, batch string, que
 		stmtTypes = append(stmtTypes, stmtType)
 		// Before sending the batch to server, we add the limit clause to the statement.
 		s := singleSQL.Text
-		if !queryContext.Explain && queryContext.Limit > 0 {
+		if queryContext.Limit > 0 {
 			s = getStatementWithResultLimit(s, queryContext.Limit)
 		}
 		if _, err := batchBuf.WriteString(s); err != nil {
