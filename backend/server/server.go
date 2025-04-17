@@ -42,7 +42,6 @@ import (
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	enterprisesvc "github.com/bytebase/bytebase/backend/enterprise/service"
 	"github.com/bytebase/bytebase/backend/migrator"
-	"github.com/bytebase/bytebase/backend/resources/mongoutil"
 	"github.com/bytebase/bytebase/backend/resources/postgres"
 	"github.com/bytebase/bytebase/backend/runner/approval"
 	"github.com/bytebase/bytebase/backend/runner/metricreport"
@@ -122,12 +121,6 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	var err error
 	if err = os.MkdirAll(profile.ResourceDir, os.ModePerm); err != nil {
 		return nil, errors.Wrapf(err, "failed to create directory: %q", profile.ResourceDir)
-	}
-
-	// Install mongoutil.
-	mongoBinDir, err := mongoutil.Install(profile.ResourceDir)
-	if err != nil {
-		return nil, errors.Wrap(err, "cannot install mongo utility binaries")
 	}
 
 	// Installs the Postgres and utility binaries and creates the 'activeProfile.pgUser' user/database
@@ -211,7 +204,7 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 		return nil, errors.Wrapf(err, "failed to create iam manager")
 	}
 	s.webhookManager = webhook.NewManager(stores, s.iamManager)
-	s.dbFactory = dbfactory.New(s.store, mongoBinDir)
+	s.dbFactory = dbfactory.New(s.store)
 
 	// Configure echo server.
 	s.echoServer = echo.New()
