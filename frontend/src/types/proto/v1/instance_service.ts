@@ -104,7 +104,7 @@ export interface ListInstancesRequest {
   /** Show deleted instances if specified. */
   showDeleted: boolean;
   /**
-   * Filter the project.
+   * Filter the instance.
    * Supported filters:
    * - name
    * - resource_id
