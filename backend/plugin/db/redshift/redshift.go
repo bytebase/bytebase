@@ -60,7 +60,7 @@ type Driver struct {
 	datashare        bool
 }
 
-func newDriver(db.DriverConfig) db.Driver {
+func newDriver() db.Driver {
 	return &Driver{}
 }
 

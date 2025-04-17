@@ -49,7 +49,7 @@ type Driver struct {
 	connectionCtx db.ConnectionContext
 }
 
-func newDriver(db.DriverConfig) db.Driver {
+func newDriver() db.Driver {
 	return &Driver{}
 }
 

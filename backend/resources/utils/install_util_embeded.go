@@ -12,7 +12,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-// InstallImpl installs mongoutil, mysqlutil, postgres in resourceDir.
+// InstallImpl installs postgres in resourceDir.
 func InstallImpl(resourceDir, utilDir, tarName, version string, resources embed.FS) error {
 	tmpDir := path.Join(resourceDir, fmt.Sprintf("tmp-%s", version))
 	if err := os.RemoveAll(tmpDir); err != nil {

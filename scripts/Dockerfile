@@ -46,8 +46,6 @@ COPY ./backend/resources /tmp/bytebase/resources/
 # These paths must match the paths in backened/resources/utils/utils_dir.go.
 # The real resource dir is decided by the backend at runtime. But we can only extract these at build time. 
 # we extract resources to a specific dir here and the backend will create symlinks at runtime.
-RUN mkdir -p /var/opt/bytebase/resources/mongoutil-1.6.1-linux-${TARGETARCH}/
-RUN tar -Jxf /tmp/bytebase/resources/mongoutil/mongoutil-1.6.1-linux-${TARGETARCH}.txz -C /var/opt/bytebase/resources/mongoutil-1.6.1-linux-${TARGETARCH}/
 RUN mkdir -p /var/opt/bytebase/resources/postgres-linux-${TARGETARCH}-16
 RUN tar -Jxf /tmp/bytebase/resources/postgres/postgres-linux-${TARGETARCH}.txz -C /var/opt/bytebase/resources/postgres-linux-${TARGETARCH}-16/
 
@@ -68,9 +66,14 @@ RUN addgroup --gid 113 --system bytebase && adduser --uid 113 --system bytebase 
 RUN mkdir -p /var/opt/bytebase
 # Directory to store the demo data.
 RUN mkdir -p /var/opt/bytebase/pgdata-demo
-# Our HEALTHCHECK instruction in dockerfile needs curl.
 RUN apt-get update
-RUN DEBIAN_FRONTEND=noninteractive apt-get install -y locales curl psmisc procps libncurses5 krb5-user libkrb5-dev
+RUN apt-get install -y gnupg locales curl psmisc procps libncurses5 krb5-user libkrb5-dev
+# Install mongosh.
+RUN curl -fsSL https://www.mongodb.org/static/pgp/server-8.0.asc | gpg -o /usr/share/keyrings/mongodb-server-8.0.gpg --dearmor
+RUN echo "deb [ signed-by=/usr/share/keyrings/mongodb-server-8.0.gpg ] http://repo.mongodb.org/apt/debian bookworm/mongodb-org/8.0 main" | tee /etc/apt/sources.list.d/mongodb-org-8.0.list
+RUN apt-get update
+RUN apt-get install -y  mongodb-mongosh
+
 # Generate en_US.UTF-8 locale which is needed to start postgres server.
 # Fix the posgres server issue (invalid value for parameter "lc_messages": "en_US.UTF-8").
 RUN echo "en_US.UTF-8 UTF-8" > /etc/locale.gen && locale-gen
