@@ -50,8 +50,7 @@ const emit = defineEmits<{
       policy: Policy;
     }
   ): void;
-  (event: "archive", environment: Environment): void;
-  (event: "restore", environment: Environment): void;
+  (event: "delete", environment: Environment): void;
   (event: "cancel"): void;
 }>();
 
@@ -135,11 +134,8 @@ useEmitteryEventListener(events, "update-policy", (params) => {
 
   emit("update-policy", params);
 });
-useEmitteryEventListener(events, "archive", (environment) => {
-  emit("archive", environment);
-});
-useEmitteryEventListener(events, "restore", (environment) => {
-  emit("restore", environment);
+useEmitteryEventListener(events, "delete", (environment) => {
+  emit("delete", environment);
 });
 useEmitteryEventListener(events, "cancel", () => {
   emit("cancel");
