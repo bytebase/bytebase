@@ -18,6 +18,8 @@ export default [
   },
   {
     rules: {
+      "no-console": ["error", { allow: ["warn", "error", "debug", "assert"] }],
+      "no-debugger": "error",
       "no-empty-pattern": "error",
       "vue/no-ref-as-operand": "error",
       "no-useless-escape": "error",
