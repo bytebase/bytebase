@@ -275,20 +275,92 @@ func unpackGoMSSQLDBError(err gomssqldb.Error) error {
 	return errors.Errorf("%s", strings.Join(msgs, "\n"))
 }
 
-func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
-	// Special handling for EXPLAIN queries in MSSQL is now integrated into queryBatch
+// processExplainQuery executes a query with SHOWPLAN_ALL enabled and returns the execution plan
+func processExplainQuery(ctx context.Context, conn *sql.Conn, statement string, maximumSQLResultSize int64) ([]*v1pb.QueryResult, error) {
+	// Enable SHOWPLAN_ALL mode
+	if _, err := conn.ExecContext(ctx, "SET SHOWPLAN_ALL ON"); err != nil {
+		return nil, errors.Wrap(err, "failed to enable SHOWPLAN_ALL mode")
+	}
+	// Ensure SHOWPLAN_ALL is turned off after processing
+	defer func() {
+		if _, err := conn.ExecContext(ctx, "SET SHOWPLAN_ALL OFF"); err != nil {
+			slog.Warn("failed to disable SHOWPLAN_ALL mode", log.BBError(err))
+		}
+	}()
 
-	// Regular query processing (unchanged)
+	singleSQLs, err := tsqlparser.SplitSQL(statement)
+	if err != nil {
+		return nil, err
+	}
+	singleSQLs = base.FilterEmptySQL(singleSQLs)
+	if len(singleSQLs) == 0 {
+		return nil, nil
+	}
+
+	var results []*v1pb.QueryResult
+
+	for _, singleSQL := range singleSQLs {
+		startTime := time.Now()
+
+		queryResult, err := func() (*v1pb.QueryResult, error) {
+			rows, err := conn.QueryContext(ctx, singleSQL.Text)
+			if err != nil {
+				return nil, errors.Wrap(err, "failed to get execution plan")
+			}
+			defer rows.Close()
+
+			r, err := util.RowsToQueryResult(rows, makeValueByTypeName, convertValue, maximumSQLResultSize)
+			if err != nil {
+				return nil, errors.Wrap(err, "failed to convert execution plan results")
+			}
+
+			if err = rows.Err(); err != nil {
+				return nil, err
+			}
+
+			return r, nil
+		}()
+
+		stop := false
+		if err != nil {
+			queryResult = &v1pb.QueryResult{
+				Error: err.Error(),
+			}
+			stop = true
+		}
+
+		queryResult.Statement = singleSQL.Text
+		queryResult.Latency = durationpb.New(time.Since(startTime))
+		queryResult.RowsCount = int64(len(queryResult.Rows))
+
+		results = append(results, queryResult)
+		if stop {
+			break
+		}
+	}
+
+	return results, nil
+}
+
+func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
 	batch := NewBatch(statement)
 	var results []*v1pb.QueryResult
+
 	for {
 		command, err := batch.Next()
 		if err != nil {
 			if err == io.EOF {
 				v := batch.String()
 				if v != "" {
-					// Query the last batch.
-					qr, err := d.queryBatch(ctx, conn, v, queryContext)
+					var qr []*v1pb.QueryResult
+					var err error
+
+					if queryContext.Explain {
+						qr, err = processExplainQuery(ctx, conn, v, queryContext.MaximumSQLResultSize)
+					} else {
+						qr, err = d.queryBatch(ctx, conn, v, queryContext)
+					}
+
 					results = append(results, qr...)
 					if err != nil {
 						return results, err
@@ -305,8 +377,15 @@ func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string
 		switch v := command.(type) {
 		case *tsqlbatch.GoCommand:
 			stmt := batch.String()
-			// Query the batch.
-			qr, err := d.queryBatch(ctx, conn, stmt, queryContext)
+			var qr []*v1pb.QueryResult
+			var err error
+
+			if queryContext.Explain {
+				qr, err = processExplainQuery(ctx, conn, stmt, queryContext.MaximumSQLResultSize)
+			} else {
+				qr, err = d.queryBatch(ctx, conn, stmt, queryContext)
+			}
+
 			results = append(results, qr...)
 			if err != nil {
 				return results, err
@@ -332,68 +411,6 @@ func (*Driver) queryBatch(ctx context.Context, conn *sql.Conn, batch string, que
 		return nil, nil
 	}
 
-	// Special handling for EXPLAIN queries in MSSQL using SHOWPLAN_ALL
-	if queryContext.Explain {
-		// Enable SHOWPLAN_ALL mode once for all statements
-		if _, err := conn.ExecContext(ctx, "SET SHOWPLAN_ALL ON"); err != nil {
-			return nil, errors.Wrap(err, "failed to enable SHOWPLAN_ALL mode")
-		}
-		// Ensure SHOWPLAN_ALL is turned off after processing
-		defer func() {
-			if _, err := conn.ExecContext(ctx, "SET SHOWPLAN_ALL OFF"); err != nil {
-				slog.Warn("failed to disable SHOWPLAN_ALL mode", log.BBError(err))
-			}
-		}()
-
-		var results []*v1pb.QueryResult
-
-		// Process each statement with SHOWPLAN_ALL enabled
-		for _, singleSQL := range singleSQLs {
-			startTime := time.Now()
-
-			queryResult, err := func() (*v1pb.QueryResult, error) {
-				// Execute query to get execution plan
-				rows, err := conn.QueryContext(ctx, singleSQL.Text)
-				if err != nil {
-					return nil, errors.Wrap(err, "failed to get execution plan")
-				}
-				defer rows.Close()
-
-				// Convert to query result
-				r, err := util.RowsToQueryResult(rows, makeValueByTypeName, convertValue, queryContext.MaximumSQLResultSize)
-				if err != nil {
-					return nil, errors.Wrap(err, "failed to convert execution plan results")
-				}
-
-				if err = rows.Err(); err != nil {
-					return nil, errors.Wrap(err, "error after processing rows")
-				}
-
-				return r, nil
-			}()
-
-			stop := false
-			if err != nil {
-				queryResult = &v1pb.QueryResult{
-					Error: err.Error(),
-				}
-				stop = true
-			}
-
-			queryResult.Statement = singleSQL.Text
-			queryResult.Latency = durationpb.New(time.Since(startTime))
-			queryResult.RowsCount = int64(len(queryResult.Rows))
-
-			results = append(results, queryResult)
-			if stop {
-				break
-			}
-		}
-
-		return results, nil
-	}
-
-	// Regular query processing for non-EXPLAIN queries
 	var stmtTypes []stmtType
 	batchBuf := new(strings.Builder)
 	for _, singleSQL := range singleSQLs {
