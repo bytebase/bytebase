@@ -50,7 +50,7 @@ type Driver struct {
 	certFilePath string
 }
 
-func newDriver(db.DriverConfig) db.Driver {
+func newDriver() db.Driver {
 	return &Driver{}
 }
 
@@ -343,6 +343,9 @@ func processExplainQuery(ctx context.Context, conn *sql.Conn, statement string, 
 }
 
 func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
+	// Special handling for EXPLAIN queries in MSSQL is now integrated into queryBatch
+
+	// Regular query processing (unchanged)
 	batch := NewBatch(statement)
 	var results []*v1pb.QueryResult
 

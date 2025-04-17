@@ -33,7 +33,7 @@ type Driver struct {
 	Client      *databricks.WorkspaceClient
 }
 
-func NewDatabricksDriver(db.DriverConfig) db.Driver {
+func NewDatabricksDriver() db.Driver {
 	return &Driver{}
 }
 

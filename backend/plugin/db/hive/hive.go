@@ -26,7 +26,7 @@ import (
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
-func hiveDriverFunc(db.DriverConfig) db.Driver {
+func hiveDriverFunc() db.Driver {
 	return &Driver{}
 }
 

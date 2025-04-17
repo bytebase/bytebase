@@ -52,7 +52,7 @@ type Driver struct {
 	db *sql.DB
 }
 
-func newDriver(db.DriverConfig) db.Driver {
+func newDriver() db.Driver {
 	return &Driver{}
 }
 

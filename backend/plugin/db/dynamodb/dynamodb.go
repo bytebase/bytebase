@@ -38,7 +38,7 @@ type Driver struct {
 	awsConfig aws.Config
 }
 
-func newDriver(_ db.DriverConfig) db.Driver {
+func newDriver() db.Driver {
 	return &Driver{}
 }
 

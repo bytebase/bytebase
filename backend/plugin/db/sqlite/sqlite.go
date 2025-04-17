@@ -39,7 +39,7 @@ type Driver struct {
 	databaseName  string
 }
 
-func newDriver(db.DriverConfig) db.Driver {
+func newDriver() db.Driver {
 	return &Driver{}
 }
 

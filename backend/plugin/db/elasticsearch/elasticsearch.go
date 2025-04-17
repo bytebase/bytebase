@@ -25,7 +25,7 @@ import (
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
-func elasticsearchDriverFunc(db.DriverConfig) db.Driver {
+func elasticsearchDriverFunc() db.Driver {
 	return &Driver{}
 }
 
