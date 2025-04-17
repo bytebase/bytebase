@@ -458,7 +458,7 @@ func (s *WorksheetService) canWriteWorksheet(ctx context.Context, worksheet *sto
 	}
 	ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionWorksheetsManage, user)
 	if err != nil {
-		return false, err
+		return false, status.Errorf(codes.Internal, "failed to check permission with error: %v", err.Error())
 	}
 	if ok {
 		return true, nil
@@ -476,7 +476,7 @@ func (s *WorksheetService) canWriteWorksheet(ctx context.Context, worksheet *sto
 		}
 		ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionWorksheetsGet, user, project.ResourceID)
 		if err != nil {
-			return false, err
+			return false, status.Errorf(codes.Internal, "failed to check permission with error: %v", err.Error())
 		}
 		if ok {
 			return true, nil
@@ -503,7 +503,7 @@ func (s *WorksheetService) canReadWorksheet(ctx context.Context, worksheet *stor
 	}
 	ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionWorksheetsManage, user)
 	if err != nil {
-		return false, err
+		return false, status.Errorf(codes.Internal, "failed to check permission with error: %v", err.Error())
 	}
 	if ok {
 		return true, nil
@@ -521,7 +521,7 @@ func (s *WorksheetService) canReadWorksheet(ctx context.Context, worksheet *stor
 		}
 		ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionWorksheetsGet, user, project.ResourceID)
 		if err != nil {
-			return false, err
+			return false, status.Errorf(codes.Internal, "failed to check permission with error: %v", err.Error())
 		}
 		if ok {
 			return true, nil
