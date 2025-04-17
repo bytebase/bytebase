@@ -40,8 +40,7 @@ export const provideEnvironmentFormContext = (baseContext: {
     "revert-access-control": undefined;
     "update-sql-review": undefined;
     "revert-sql-review": undefined;
-    archive: Environment;
-    restore: Environment;
+    delete: Environment;
     cancel: undefined;
   }>();
   const { create, environment, rolloutPolicy } = baseContext;

@@ -120,7 +120,7 @@
         "
         :confirm-description="$t('common.cannot-undo-this-action')"
         :require-confirm="true"
-        @confirm="archiveEnvironment"
+        @confirm="deleteEnvironment"
       />
       <div v-else></div>
     </div>
@@ -278,8 +278,8 @@ const validateResourceId = async (
   return [];
 };
 
-const archiveEnvironment = () => {
-  events.emit("archive", state.value.environment);
+const deleteEnvironment = () => {
+  events.emit("delete", state.value.environment);
 };
 
 useEmitteryEventListener(events, "update-access-control", async () => {
