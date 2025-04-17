@@ -23,3 +23,5 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Imports**: Use organized imports (sorted by the import path)
 - **Formatting**: Use linting/formatting tools before committing
 - **Error Handling**: Be explicit but concise about error cases
+- **Go Resources**: Always use `defer` for resource cleanup like `rows.Close()` (sqlclosecheck)
+- **Go Defer**: Avoid using `defer` inside loops (revive) - use IIFE or scope properly
