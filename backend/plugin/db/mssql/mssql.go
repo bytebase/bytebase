@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"time"
 
 	// Import MSSQL driver.
 
@@ -20,6 +21,7 @@ import (
 	// Kerberos Active Directory authentication outside Windows.
 	_ "github.com/microsoft/go-mssqldb/integratedauth/krb5"
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/types/known/durationpb"
 
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
@@ -273,7 +275,71 @@ func unpackGoMSSQLDBError(err gomssqldb.Error) error {
 	return errors.Errorf("%s", strings.Join(msgs, "\n"))
 }
 
+// explainSingleStatement executes a SHOWPLAN_ALL for a SQL statement
+func (*Driver) explainSingleStatement(ctx context.Context, conn *sql.Conn, sql string, maximumResultSize int64) (*v1pb.QueryResult, error) {
+	startTime := time.Now()
+	// Enable SHOWPLAN_ALL mode
+	if _, err := conn.ExecContext(ctx, "SET SHOWPLAN_ALL ON"); err != nil {
+		return nil, errors.Wrap(err, "failed to enable SHOWPLAN_ALL mode")
+	}
+
+	// Ensure SHOWPLAN_ALL is turned off after execution
+	defer func() {
+		if _, err := conn.ExecContext(ctx, "SET SHOWPLAN_ALL OFF"); err != nil {
+			slog.Warn("failed to disable SHOWPLAN_ALL mode", log.BBError(err))
+		}
+	}()
+
+	// Execute query to get execution plan
+	rows, err := conn.QueryContext(ctx, sql)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get execution plan")
+	}
+	defer rows.Close()
+
+	// Convert to query result
+	r, err := util.RowsToQueryResult(rows, makeValueByTypeName, convertValue, maximumResultSize)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to convert execution plan results")
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, errors.Wrap(err, "error after processing rows")
+	}
+
+	// Add metadata
+	r.Statement = sql
+	r.Latency = durationpb.New(time.Since(startTime))
+	r.RowsCount = int64(len(r.Rows))
+
+	return r, nil
+}
+
 func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
+	// Special handling for EXPLAIN queries in MSSQL
+	if queryContext.Explain {
+		// Split the SQL into individual statements
+		singleSQLs, err := tsqlparser.SplitSQL(statement)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to split SQL for EXPLAIN")
+		}
+		singleSQLs = base.FilterEmptySQL(singleSQLs)
+
+		var results []*v1pb.QueryResult
+
+		// Process each statement individually
+		for _, singleSQL := range singleSQLs {
+			r, err := d.explainSingleStatement(ctx, conn, singleSQL.Text, queryContext.MaximumSQLResultSize)
+			if err != nil {
+				return results, err
+			}
+			results = append(results, r)
+		}
+
+		return results, nil
+	}
+
+	// Regular query processing (unchanged)
 	batch := NewBatch(statement)
 	var results []*v1pb.QueryResult
 	for {

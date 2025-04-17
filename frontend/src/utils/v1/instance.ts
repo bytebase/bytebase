@@ -258,6 +258,7 @@ export const instanceV1AllowsExplain = (
     Engine.COCKROACHDB,
     Engine.DM,
     Engine.HIVE,
+    Engine.MSSQL,
     Engine.OCEANBASE_ORACLE,
     Engine.ORACLE,
     Engine.POSTGRES,
