@@ -6,8 +6,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/bytebase/bytebase/backend/resources/mongoutil"
-
 	"github.com/bytebase/bytebase/backend/resources/postgres"
 )
 
@@ -24,9 +22,6 @@ func TestMain(m *testing.M) {
 func startMain(ctx context.Context, m *testing.M) (int, error) {
 	resourceDir = os.TempDir()
 	if _, err := postgres.Install(resourceDir); err != nil {
-		return 0, err
-	}
-	if _, err := mongoutil.Install(resourceDir); err != nil {
 		return 0, err
 	}
 

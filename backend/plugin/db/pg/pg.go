@@ -49,8 +49,7 @@ func init() {
 
 // Driver is the Postgres driver.
 type Driver struct {
-	dbBinDir string
-	config   db.ConnectionConfig
+	config db.ConnectionConfig
 
 	db        *sql.DB
 	sshClient *ssh.Client
@@ -61,10 +60,8 @@ type Driver struct {
 	connectionCtx    db.ConnectionContext
 }
 
-func newDriver(config db.DriverConfig) db.Driver {
-	return &Driver{
-		dbBinDir: config.DBBinDir,
-	}
+func newDriver() db.Driver {
+	return &Driver{}
 }
 
 // Open opens a Postgres driver.

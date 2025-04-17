@@ -22,15 +22,3 @@ https://github.com/zonkyio/embedded-postgres-binaries
 ./gradlew clean install -Pversion=16.0.0 -PpgVersion=16.0 -ParchName=arm64v8
 
 Darwin should bring in "lib/libpq*".
-
-### mongoutil
-
-We embed mongoutil to execute the MongoDB commands input by users. It only contains the mongosh executable and the depending libs.
-
-monogoutil-linux-arm64 used for Linux x86_64: https://downloads.mongodb.com/compass/mongosh-1.6.1-linux-arm64.tgz, extract bin/mongosh, bin/mongosh_crypt_v1.so.
-
-monogoutil-linux-x86_64 used for Linux x86_64: https://downloads.mongodb.com/compass/mongosh-1.6.1-linux-x64.tgz, extract bin/mongosh, bin/mongosh_crypt_v1.so.
-
-monogoutil-darwin-arm64 used for MacOS Apple Silicon: https://downloads.mongodb.com/compass/mongosh-1.6.1-darwin-arm64.zip, extract bin/mongosh, bin/mongosh_crypt_v1.dylib.
-
-monogoutil-darwin-x86_64 used for MacOS Intel Silicon: https://downloads.mongodb.com/compass/mongosh-1.6.1-darwin-x64.zip, extract bin/mongosh, bin/mongosh_crypt_v1.dylib.

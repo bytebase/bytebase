@@ -66,13 +66,7 @@ var (
 	drivers   = make(map[storepb.Engine]driverFunc)
 )
 
-// DriverConfig is the driver configuration.
-type DriverConfig struct {
-	// The directiory contains db specific utilites, mongosh for MongoDB.
-	DBBinDir string
-}
-
-type driverFunc func(DriverConfig) Driver
+type driverFunc func() Driver
 
 // MigrationType is the type of a migration.
 type MigrationType string
@@ -210,7 +204,7 @@ func Register(dbType storepb.Engine, f driverFunc) {
 }
 
 // Open opens a database specified by its database driver type and connection config without verifying the connection.
-func Open(ctx context.Context, dbType storepb.Engine, driverConfig DriverConfig, connectionConfig ConnectionConfig) (Driver, error) {
+func Open(ctx context.Context, dbType storepb.Engine, connectionConfig ConnectionConfig) (Driver, error) {
 	driversMu.RLock()
 	f, ok := drivers[dbType]
 	driversMu.RUnlock()
@@ -218,7 +212,7 @@ func Open(ctx context.Context, dbType storepb.Engine, driverConfig DriverConfig,
 		return nil, errors.Errorf("db: unknown driver %v", dbType)
 	}
 
-	driver, err := f(driverConfig).Open(ctx, dbType, connectionConfig)
+	driver, err := f().Open(ctx, dbType, connectionConfig)
 	if err != nil {
 		return nil, err
 	}

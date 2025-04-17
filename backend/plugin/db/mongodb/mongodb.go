@@ -25,7 +25,6 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
-	"github.com/bytebase/bytebase/backend/resources/mongoutil"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
@@ -38,14 +37,13 @@ func init() {
 
 // Driver is the MongoDB driver.
 type Driver struct {
-	dbBinDir     string
 	connCfg      db.ConnectionConfig
 	client       *mongo.Client
 	databaseName string
 }
 
-func newDriver(dc db.DriverConfig) db.Driver {
-	return &Driver{dbBinDir: dc.DBBinDir}
+func newDriver() db.Driver {
+	return &Driver{}
 }
 
 // Open opens a MongoDB driver.
@@ -169,7 +167,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, _ db.ExecuteOpti
 	}
 	mongoshArgs = append(mongoshArgs, "--file", tempFile.Name())
 
-	mongoshCmd := exec.CommandContext(ctx, mongoutil.GetMongoshPath(d.dbBinDir), mongoshArgs...)
+	mongoshCmd := exec.CommandContext(ctx, "mongosh", mongoshArgs...)
 	var errContent bytes.Buffer
 	mongoshCmd.Stderr = &errContent
 	if err := mongoshCmd.Run(); err != nil {
@@ -266,7 +264,7 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 	evalArg = fmt.Sprintf(`'%s'`, evalArg)
 
 	mongoshArgs := []string{
-		mongoutil.GetMongoshPath(d.dbBinDir),
+		"mongosh",
 		// quote the connectionURI because we execute the mongosh via sh, and the multi-queries part contains '&', which will be translated to the background process.
 		fmt.Sprintf(`"%s"`, connectionURI),
 		"--quiet",

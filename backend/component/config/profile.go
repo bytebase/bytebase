@@ -31,7 +31,7 @@ type Profile struct {
 	Debug bool
 	// DataDir is the directory stores the data including Bytebase's own database, backups, etc.
 	DataDir string
-	// ResourceDir is the directory stores the resources including embedded postgres, mysqlutil, mongoutil and etc.
+	// ResourceDir is the directory that stores resources, including embedded Postgres.
 	ResourceDir string
 	// Demo mode.
 	Demo bool

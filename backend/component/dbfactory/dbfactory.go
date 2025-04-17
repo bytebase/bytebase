@@ -14,15 +14,13 @@ import (
 
 // DBFactory is the factory for building database driver.
 type DBFactory struct {
-	mongoBinDir string
-	store       *store.Store
+	store *store.Store
 }
 
 // New creates a new database driver factory.
-func New(store *store.Store, mongoBinDir string) *DBFactory {
+func New(store *store.Store) *DBFactory {
 	return &DBFactory{
-		mongoBinDir: mongoBinDir,
-		store:       store,
+		store: store,
 	}
 }
 
@@ -40,12 +38,7 @@ func (d *DBFactory) GetAdminDatabaseDriver(ctx context.Context, instance *store.
 }
 
 // GetDataSourceDriver returns the database driver for a data source.
-func (d *DBFactory) GetDataSourceDriver(ctx context.Context, instance *store.InstanceMessage, dataSource *storepb.DataSource, connectionContext db.ConnectionContext) (db.Driver, error) {
-	dbBinDir := ""
-	if instance.Metadata.GetEngine() == storepb.Engine_MONGODB {
-		dbBinDir = d.mongoBinDir
-	}
-
+func (*DBFactory) GetDataSourceDriver(ctx context.Context, instance *store.InstanceMessage, dataSource *storepb.DataSource, connectionContext db.ConnectionContext) (db.Driver, error) {
 	password, err := secretlib.ReplaceExternalSecret(ctx, dataSource.GetPassword(), dataSource.GetExternalSecret())
 	if err != nil {
 		return nil, err
@@ -56,9 +49,6 @@ func (d *DBFactory) GetDataSourceDriver(ctx context.Context, instance *store.Ins
 	driver, err := db.Open(
 		ctx,
 		instance.Metadata.GetEngine(),
-		db.DriverConfig{
-			DBBinDir: dbBinDir,
-		},
 		db.ConnectionConfig{
 			DataSource:        dataSource,
 			ConnectionContext: connectionContext,
