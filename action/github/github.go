@@ -21,17 +21,19 @@ type githubEnv struct {
 	Repo   string `env:"GITHUB_REPOSITORY,required,notEmpty"`
 	Token  string `env:"GITHUB_TOKEN,required,notEmpty"`
 
-	eventPath string `env:"GITHUB_EVENT_PATH,required,notEmpty"`
+	EventName string `env:"GITHUB_EVENT_NAME,required,notEmpty"`
+	EventPath string `env:"GITHUB_EVENT_PATH,required,notEmpty"`
 }
 
 func CreateCommentAndAnnotation(resp *v1pb.CheckReleaseResponse) error {
-	ghe, err := env.ParseAs[githubEnv]()
-	if err != nil {
-		return errors.Wrap(err, "failed to parse GitHub environment variables")
-	}
 	// Write annotations to the pull request.
 	if err := writeAnnotations(resp); err != nil {
 		return err
+	}
+
+	ghe, err := env.ParseAs[githubEnv]()
+	if err != nil {
+		return errors.Wrap(err, "failed to parse GitHub environment variables")
 	}
 	// Upsert a comment on the pull request with the check results.
 	if err := upsertComment(resp, &ghe); err != nil {
@@ -47,21 +49,23 @@ func getPRNumberFromEventFile(eventPath string) (string, error) {
 		return "", errors.Wrapf(err, "failed to read event file %s", eventPath)
 	}
 	var event struct {
-		PullRequest struct {
-			Number int `json:"number"`
-		} `json:"pull_request"`
+		Number int64 `json:"number"`
 	}
 	if err := json.Unmarshal(eventFile, &event); err != nil {
 		return "", errors.Wrapf(err, "failed to unmarshal event file %s", eventPath)
 	}
-	if event.PullRequest.Number == 0 {
+	if event.Number == 0 {
 		return "", errors.New("no pull request number found in the event file")
 	}
-	return fmt.Sprintf("%d", event.PullRequest.Number), nil
+	return fmt.Sprintf("%d", event.Number), nil
 }
 
 func upsertComment(resp *v1pb.CheckReleaseResponse, ghe *githubEnv) error {
-	pr, err := getPRNumberFromEventFile(ghe.eventPath)
+	if ghe.EventName != "pull_request" {
+		fmt.Println("::warning not a pull request event, will not create a comment.")
+		return nil
+	}
+	pr, err := getPRNumberFromEventFile(ghe.EventPath)
 	if err != nil {
 		fmt.Println("::warning failed to get pull request number from event file, will not create a comment.")
 		return nil
