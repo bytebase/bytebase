@@ -148,64 +148,82 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, request *v1pb.CheckRe
 				continue
 			}
 
-			checkResult := &v1pb.CheckReleaseResponse_CheckResult{
-				File:   file.Path,
-				Target: fmt.Sprintf("instances/%s/databases/%s", instance.ResourceID, database.DatabaseName),
-			}
-			statement := string(file.Statement)
-
-			// Check if any syntax error in the statement.
-			_, syntaxAdvices := s.sheetManager.GetASTsForChecks(instance.Metadata.GetEngine(), statement)
-			if len(syntaxAdvices) > 0 {
-				for _, advice := range syntaxAdvices {
-					checkResult.Advices = append(checkResult.Advices, convertToV1Advice(advice))
+			checkResult, err := func() (*v1pb.CheckReleaseResponse_CheckResult, error) {
+				checkResult := &v1pb.CheckReleaseResponse_CheckResult{
+					File:   file.Path,
+					Target: fmt.Sprintf("instances/%s/databases/%s", instance.ResourceID, database.DatabaseName),
 				}
-			} else {
-				changeType := storepb.PlanCheckRunConfig_DDL
-				switch file.ChangeType {
-				case v1pb.Release_File_DDL_GHOST:
-					changeType = storepb.PlanCheckRunConfig_DDL_GHOST
-				case v1pb.Release_File_DML:
-					changeType = storepb.PlanCheckRunConfig_DML
-				}
+				statement := string(file.Statement)
 
-				// Get SQL summary report for the statement and target database.
-				// Including affected rows.
-				summaryReport, err := plancheck.GetSQLSummaryReport(ctx, s.store, s.sheetManager, s.dbFactory, database, statement)
-				if err != nil {
-					return nil, status.Errorf(codes.Internal, "failed to get SQL summary report, error: %v", err)
-				}
-				if summaryReport != nil {
-					checkResult.AffectedRows = summaryReport.AffectedRows
-					response.AffectedRows += summaryReport.AffectedRows
+				// Check if any syntax error in the statement.
+				_, syntaxAdvices := s.sheetManager.GetASTsForChecks(instance.Metadata.GetEngine(), statement)
+				if len(syntaxAdvices) > 0 {
+					for _, advice := range syntaxAdvices {
+						checkResult.Advices = append(checkResult.Advices, convertToV1Advice(advice))
+					}
+				} else {
+					changeType := storepb.PlanCheckRunConfig_DDL
+					switch file.ChangeType {
+					case v1pb.Release_File_DDL_GHOST:
+						changeType = storepb.PlanCheckRunConfig_DDL_GHOST
+					case v1pb.Release_File_DML:
+						changeType = storepb.PlanCheckRunConfig_DML
+					}
 
-					riskLevel, err := s.calculateRiskLevel(
-						ctx,
-						instance,
-						database,
-						changeType,
-						summaryReport,
-						statement,
-					)
+					// Get SQL summary report for the statement and target database.
+					// Including affected rows.
+					summaryReport, err := plancheck.GetSQLSummaryReport(ctx, s.store, s.sheetManager, s.dbFactory, database, statement)
 					if err != nil {
-						return nil, status.Errorf(codes.Internal, "failed to calculate risk level, error: %v", err)
+						return nil, status.Errorf(codes.Internal, "failed to get SQL summary report, error: %v", err)
 					}
-					if riskLevel > maxRiskLevel {
-						maxRiskLevel = riskLevel
+					if summaryReport != nil {
+						checkResult.AffectedRows = summaryReport.AffectedRows
+						response.AffectedRows += summaryReport.AffectedRows
+
+						riskLevel, err := s.calculateRiskLevel(
+							ctx,
+							instance,
+							database,
+							changeType,
+							summaryReport,
+							statement,
+						)
+						if err != nil {
+							return nil, status.Errorf(codes.Internal, "failed to calculate risk level, error: %v", err)
+						}
+						if riskLevel > maxRiskLevel {
+							maxRiskLevel = riskLevel
+						}
+						riskLevelEnum, err := convertRiskLevel(riskLevel)
+						if err != nil {
+							return nil, status.Errorf(codes.Internal, "failed to convert risk level, error: %v", err)
+						}
+						checkResult.RiskLevel = riskLevelEnum
 					}
-					riskLevelEnum, err := convertRiskLevel(riskLevel)
+					adviceStatus, sqlReviewAdvices, err := s.runSQLReviewCheckForFile(ctx, catalog, instance, database, changeType, statement)
 					if err != nil {
-						return nil, status.Errorf(codes.Internal, "failed to convert risk level, error: %v", err)
+						return nil, status.Errorf(codes.Internal, "failed to check SQL review: %v", err)
 					}
-					checkResult.RiskLevel = riskLevelEnum
+					// If the advice status is not SUCCESS, we will add the file and advices to the response.
+					if adviceStatus != storepb.Advice_SUCCESS {
+						checkResult.Advices = sqlReviewAdvices
+					}
 				}
-				adviceStatus, sqlReviewAdvices, err := s.runSQLReviewCheckForFile(ctx, catalog, instance, database, changeType, statement)
-				if err != nil {
-					return nil, status.Errorf(codes.Internal, "failed to check SQL review: %v", err)
-				}
-				// If the advice status is not SUCCESS, we will add the file and advices to the response.
-				if adviceStatus != storepb.Advice_SUCCESS {
-					checkResult.Advices = sqlReviewAdvices
+				return checkResult, nil
+			}()
+
+			if err != nil {
+				checkResult = &v1pb.CheckReleaseResponse_CheckResult{
+					File:   file.Path,
+					Target: common.FormatDatabase(instance.ResourceID, database.DatabaseName),
+					Advices: []*v1pb.Advice{
+						{
+							Status:  v1pb.Advice_ERROR,
+							Code:    advisor.Internal.Int32(),
+							Title:   "Failed to check",
+							Content: err.Error(),
+						},
+					},
 				}
 			}
 
