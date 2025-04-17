@@ -118,6 +118,12 @@ var (
 		tsqlparser.TSqlParserRULE_full_table_name:  true,
 		tsqlparser.TSqlParserRULE_asterisk:         true,
 		tsqlparser.TSqlParserRULE_full_column_name: true,
+
+		// The following rules are not used in the completion, we add them to the preferred rules to avoid deep recursion.
+		// Ignore xml_data_type_methods to avoid column completion in FROM clause.
+		tsqlparser.TSqlParserRULE_xml_data_type_methods: true,
+		// Ignore nodes_method to avoid column completion in FROM clause.
+		tsqlparser.TSqlParserRULE_nodes_method: true,
 	}
 )
 

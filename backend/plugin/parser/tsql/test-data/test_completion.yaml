@@ -3,30 +3,6 @@
     select count(1) from t1 where id; SELECT * FROM |
     select * from QRTZ_J0B_DETAILS qjd where J0B_NAME like '%gray';
   want:
-    - text: EmployeeId
-      type: COLUMN
-      definition: Company.dbo.Address | int, NOT NULL
-      comment: ""
-    - text: Id
-      type: COLUMN
-      definition: Company.MySchema.SalaryLevel | int, NOT NULL
-      comment: ""
-    - text: Id
-      type: COLUMN
-      definition: Company.dbo.Employees | int, NOT NULL
-      comment: ""
-    - text: Name
-      type: COLUMN
-      definition: Company.dbo.Employees | varchar, NOT NULL
-      comment: ""
-    - text: SalaryUpBound
-      type: COLUMN
-      definition: Company.MySchema.SalaryLevel | int, NOT NULL
-      comment: ""
-    - text: Street
-      type: COLUMN
-      definition: Company.dbo.Address | varchar, NOT NULL
-      comment: ""
     - text: Company
       type: DATABASE
       definition: ""
@@ -48,10 +24,6 @@
       definition: ""
       comment: ""
     - text: Employees
-      type: TABLE
-      definition: ""
-      comment: ""
-    - text: qjd
       type: TABLE
       definition: ""
       comment: ""
@@ -241,14 +213,6 @@
 - description: Completion should not consider CTE if no schema specified
   input: WITH MyCTE_01 AS (SELECT * FROM dbo.Employees) SELECT * FROM MySchema.|
   want:
-    - text: Id
-      type: COLUMN
-      definition: Company.MySchema.SalaryLevel | int, NOT NULL
-      comment: ""
-    - text: SalaryUpBound
-      type: COLUMN
-      definition: Company.MySchema.SalaryLevel | int, NOT NULL
-      comment: ""
     - text: SalaryLevel
       type: TABLE
       definition: ""
@@ -256,30 +220,6 @@
 - description: Completion should consider CTE if no schema specified
   input: WITH MyCTE_01 AS (SELECT * FROM dbo.Employees) SELECT * FROM |
   want:
-    - text: EmployeeId
-      type: COLUMN
-      definition: Company.dbo.Address | int, NOT NULL
-      comment: ""
-    - text: Id
-      type: COLUMN
-      definition: Company.MySchema.SalaryLevel | int, NOT NULL
-      comment: ""
-    - text: Id
-      type: COLUMN
-      definition: Company.dbo.Employees | int, NOT NULL
-      comment: ""
-    - text: Name
-      type: COLUMN
-      definition: Company.dbo.Employees | varchar, NOT NULL
-      comment: ""
-    - text: SalaryUpBound
-      type: COLUMN
-      definition: Company.MySchema.SalaryLevel | int, NOT NULL
-      comment: ""
-    - text: Street
-      type: COLUMN
-      definition: Company.dbo.Address | varchar, NOT NULL
-      comment: ""
     - text: Company
       type: DATABASE
       definition: ""
@@ -311,22 +251,6 @@
 - description: Completion table in specify schema
   input: SELECT * FROM dbo.|
   want:
-    - text: EmployeeId
-      type: COLUMN
-      definition: Company.dbo.Address | int, NOT NULL
-      comment: ""
-    - text: Id
-      type: COLUMN
-      definition: Company.dbo.Employees | int, NOT NULL
-      comment: ""
-    - text: Name
-      type: COLUMN
-      definition: Company.dbo.Employees | varchar, NOT NULL
-      comment: ""
-    - text: Street
-      type: COLUMN
-      definition: Company.dbo.Address | varchar, NOT NULL
-      comment: ""
     - text: Address
       type: TABLE
       definition: ""
@@ -338,30 +262,6 @@
 - description: Completion table for simple select
   input: SELECT * FROM |
   want:
-    - text: EmployeeId
-      type: COLUMN
-      definition: Company.dbo.Address | int, NOT NULL
-      comment: ""
-    - text: Id
-      type: COLUMN
-      definition: Company.MySchema.SalaryLevel | int, NOT NULL
-      comment: ""
-    - text: Id
-      type: COLUMN
-      definition: Company.dbo.Employees | int, NOT NULL
-      comment: ""
-    - text: Name
-      type: COLUMN
-      definition: Company.dbo.Employees | varchar, NOT NULL
-      comment: ""
-    - text: SalaryUpBound
-      type: COLUMN
-      definition: Company.MySchema.SalaryLevel | int, NOT NULL
-      comment: ""
-    - text: Street
-      type: COLUMN
-      definition: Company.dbo.Address | varchar, NOT NULL
-      comment: ""
     - text: Company
       type: DATABASE
       definition: ""
