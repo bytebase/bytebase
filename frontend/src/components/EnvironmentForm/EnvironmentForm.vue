@@ -81,8 +81,6 @@ onBeforeRouteLeave((to, from, next) => {
 });
 
 useEmitteryEventListener(events, "create", (params) => {
-  console.log(params)
-  debugger;
   const { rolloutPolicy, environment } = params;
   if (environment.tags?.protected === "protected") {
     if (!hasFeature("bb.feature.custom-approval")) {
