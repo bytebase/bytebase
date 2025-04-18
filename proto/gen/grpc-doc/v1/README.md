@@ -86,6 +86,8 @@
 - [v1/database_service.proto](#v1_database_service-proto)
     - [BatchGetDatabasesRequest](#bytebase-v1-BatchGetDatabasesRequest)
     - [BatchGetDatabasesResponse](#bytebase-v1-BatchGetDatabasesResponse)
+    - [BatchSyncDatabasesRequest](#bytebase-v1-BatchSyncDatabasesRequest)
+    - [BatchSyncDatabasesResponse](#bytebase-v1-BatchSyncDatabasesResponse)
     - [BatchUpdateDatabasesRequest](#bytebase-v1-BatchUpdateDatabasesRequest)
     - [BatchUpdateDatabasesResponse](#bytebase-v1-BatchUpdateDatabasesResponse)
     - [ChangedResourceDatabase](#bytebase-v1-ChangedResourceDatabase)
@@ -1844,6 +1846,32 @@ The instance&#39;s `name` field is used to identify the instance to update. Form
 
 
 
+<a name="bytebase-v1-BatchSyncDatabasesRequest"></a>
+
+### BatchSyncDatabasesRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The parent resource shared by all databases being updated. Format: instances/{instance} If the operation spans parents, a dash (-) may be accepted as a wildcard. |
+| names | [string](#string) | repeated | The list of database names to retrieve. |
+
+
+
+
+
+
+<a name="bytebase-v1-BatchSyncDatabasesResponse"></a>
+
+### BatchSyncDatabasesResponse
+
+
+
+
+
+
+
 <a name="bytebase-v1-BatchUpdateDatabasesRequest"></a>
 
 ### BatchUpdateDatabasesRequest
@@ -3228,6 +3256,7 @@ LIST, HASH (https://www.postgresql.org/docs/current/ddl-partitioning.html)
 | UpdateDatabase | [UpdateDatabaseRequest](#bytebase-v1-UpdateDatabaseRequest) | [Database](#bytebase-v1-Database) |  |
 | BatchUpdateDatabases | [BatchUpdateDatabasesRequest](#bytebase-v1-BatchUpdateDatabasesRequest) | [BatchUpdateDatabasesResponse](#bytebase-v1-BatchUpdateDatabasesResponse) |  |
 | SyncDatabase | [SyncDatabaseRequest](#bytebase-v1-SyncDatabaseRequest) | [SyncDatabaseResponse](#bytebase-v1-SyncDatabaseResponse) |  |
+| BatchSyncDatabases | [BatchSyncDatabasesRequest](#bytebase-v1-BatchSyncDatabasesRequest) | [BatchSyncDatabasesResponse](#bytebase-v1-BatchSyncDatabasesResponse) |  |
 | GetDatabaseMetadata | [GetDatabaseMetadataRequest](#bytebase-v1-GetDatabaseMetadataRequest) | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) |  |
 | GetDatabaseSchema | [GetDatabaseSchemaRequest](#bytebase-v1-GetDatabaseSchemaRequest) | [DatabaseSchema](#bytebase-v1-DatabaseSchema) |  |
 | DiffSchema | [DiffSchemaRequest](#bytebase-v1-DiffSchemaRequest) | [DiffSchemaResponse](#bytebase-v1-DiffSchemaResponse) |  |
