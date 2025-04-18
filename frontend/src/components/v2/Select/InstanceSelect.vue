@@ -109,7 +109,11 @@ const handleSearch = useDebounceFn(async (search: string) => {
 }, 200);
 
 watch(
-  () => [props.allowedEngineList, props.environmentName, props.projectName],
+  [
+    () => props.allowedEngineList,
+    () => props.environmentName,
+    () => props.projectName,
+  ],
   () => {
     handleSearch("");
   },
@@ -160,7 +164,11 @@ const resetInvalidSelection = () => {
 };
 
 watch(
-  [() => props.instanceName, state.rawInstanceList, props.projectName],
+  [
+    () => props.instanceName,
+    () => state.rawInstanceList,
+    () => props.projectName,
+  ],
   resetInvalidSelection,
   {
     immediate: true,

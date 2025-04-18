@@ -76,7 +76,9 @@
     :title="$t('quick-action.create-db')"
   >
     <CreateDatabasePrepPanel
-      :environment-name="formatEnvironmentName(environment?.id)"
+      :environment-name="
+        environment ? formatEnvironmentName(environment.id) : undefined
+      "
       :instance-name="instance.name"
       @dismiss="state.showCreateDatabaseModal = false"
     />
