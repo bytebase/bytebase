@@ -670,14 +670,14 @@ func (s *DatabaseService) GetDatabaseMetadata(ctx context.Context, request *v1pb
 	}
 	if dbSchema == nil {
 		if err := s.schemaSyncer.SyncDatabaseSchema(ctx, database); err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to sync database schema for database %q, error %v", request.Name, err)
+			return nil, status.Errorf(codes.Internal, "failed to sync database schema for database %q, error %v", name, err)
 		}
 		newDBSchema, err := s.store.GetDBSchema(ctx, database.InstanceID, database.DatabaseName)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
 		if newDBSchema == nil {
-			return nil, status.Errorf(codes.NotFound, "database schema %q not found", request.Name)
+			return nil, status.Errorf(codes.NotFound, "database schema %q not found", name)
 		}
 		dbSchema = newDBSchema
 	}
