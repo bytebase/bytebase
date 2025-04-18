@@ -134,6 +134,7 @@ func EngineSupportPriorBackup(e storepb.Engine) bool {
 func EngineSupportCreateDatabase(e storepb.Engine) bool {
 	switch e {
 	case
+		storepb.Engine_SQLITE,
 		storepb.Engine_MYSQL,
 		storepb.Engine_POSTGRES,
 		storepb.Engine_MSSQL,
