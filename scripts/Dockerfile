@@ -9,7 +9,7 @@ COPY . .
 RUN pnpm --dir ./frontend i
 RUN pnpm --dir ./frontend release-docker
 
-FROM golang:1.24.2 AS backend
+FROM golang:1.24.2-alpine3.21 AS backend
 ADD go.mod go.sum /
 RUN go mod download
 
@@ -18,9 +18,7 @@ ARG VERSION
 ARG GIT_COMMIT
 ARG RELEASE="release"
 
-RUN apt-get update
-RUN apt-get install -y gcc
-RUN apt-get install -y libkrb5-dev
+RUN apk add --no-cache build-base krb5-dev binutils-gold
 
 WORKDIR /backend-build
 
@@ -38,7 +36,7 @@ RUN go build \
   -o bytebase ./backend/bin/server/main.go
 
 # Use debian because mysql requires glibc.
-FROM debian:bookworm-slim AS monolithic
+FROM alpine:3.21 AS monolithic
 
 ARG TARGETARCH
 ARG VERSION
@@ -54,23 +52,17 @@ RUN addgroup --gid 113 --system bytebase && adduser --uid 113 --system bytebase 
 RUN mkdir -p /var/opt/bytebase
 # Directory to store the demo data.
 RUN mkdir -p /var/opt/bytebase/pgdata-demo
-RUN apt-get update
-RUN apt-get install -y gnupg locales curl psmisc procps libncurses5 krb5-user libkrb5-dev
+RUN apk update
+RUN apk add --no-cache gnupg curl psmisc procps ncurses krb5
 # Install postgresql.
-RUN apt-get install -y postgresql-common
-RUN /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
-RUN apt-get -y install postgresql-16
-RUN rm -rf /var/lib/postgresql/
-ENV PATH="$PATH:/usr/lib/postgresql/16/bin/"
+RUN apk add postgresql16
 # Generate en_US.UTF-8 locale which is needed to start postgres server.
 # Fix the posgres server issue (invalid value for parameter "lc_messages": "en_US.UTF-8").
-RUN echo "en_US.UTF-8 UTF-8" > /etc/locale.gen && locale-gen
+#RUN echo "en_US.UTF-8 UTF-8" > /etc/locale.gen && locale-gen
 
 # Install mongosh.
-RUN curl -fsSL https://www.mongodb.org/static/pgp/server-8.0.asc | gpg -o /usr/share/keyrings/mongodb-server-8.0.gpg --dearmor
-RUN echo "deb [ signed-by=/usr/share/keyrings/mongodb-server-8.0.gpg ] http://repo.mongodb.org/apt/debian bookworm/mongodb-org/8.0 main" | tee /etc/apt/sources.list.d/mongodb-org-8.0.list
-RUN apt-get update
-RUN apt-get install -y mongodb-mongosh
+RUN apk add --no-cache npm
+RUN npm install -g mongosh
 
 # The file indicates running in docker environment.
 RUN touch /etc/bb.env
