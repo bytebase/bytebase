@@ -59,6 +59,8 @@ func EngineSupportQueryNewACL(engine storepb.Engine) bool {
 		storepb.Engine_BIGQUERY:
 		return true
 	case
+		storepb.Engine_ENGINE_UNSPECIFIED,
+		storepb.Engine_CASSANDRA,
 		storepb.Engine_SQLITE,
 		storepb.Engine_MONGODB,
 		storepb.Engine_REDIS,
@@ -99,6 +101,8 @@ func EngineSupportMasking(e storepb.Engine) bool {
 		storepb.Engine_SPANNER:
 		return true
 	case
+		storepb.Engine_ENGINE_UNSPECIFIED,
+		storepb.Engine_CASSANDRA,
 		storepb.Engine_SQLITE,
 		storepb.Engine_MONGODB,
 		storepb.Engine_REDIS,
@@ -181,6 +185,7 @@ func EngineSupportStatementAdvise(e storepb.Engine) bool {
 		return true
 	case
 		storepb.Engine_ENGINE_UNSPECIFIED,
+		storepb.Engine_DM,
 		storepb.Engine_CASSANDRA,
 		storepb.Engine_SQLITE,
 		storepb.Engine_MONGODB,
@@ -219,6 +224,8 @@ func EngineSupportStatementReport(e storepb.Engine) bool {
 		return true
 	case
 		storepb.Engine_ENGINE_UNSPECIFIED,
+		storepb.Engine_DM,
+		storepb.Engine_SNOWFLAKE,
 		storepb.Engine_CASSANDRA,
 		storepb.Engine_SQLITE,
 		storepb.Engine_MONGODB,
@@ -255,6 +262,7 @@ func EngineSupportPriorBackup(e storepb.Engine) bool {
 		return true
 	case
 		storepb.Engine_ENGINE_UNSPECIFIED,
+		storepb.Engine_SNOWFLAKE,
 		storepb.Engine_CASSANDRA,
 		storepb.Engine_SQLITE,
 		storepb.Engine_MONGODB,
@@ -305,6 +313,11 @@ func EngineSupportCreateDatabase(e storepb.Engine) bool {
 		storepb.Engine_DORIS:
 		return true
 	case
+		storepb.Engine_ENGINE_UNSPECIFIED,
+		storepb.Engine_CASSANDRA,
+		storepb.Engine_SPANNER,
+		storepb.Engine_BIGQUERY,
+		storepb.Engine_DYNAMODB,
 		storepb.Engine_REDIS,
 		storepb.Engine_ORACLE,
 		storepb.Engine_DM,
