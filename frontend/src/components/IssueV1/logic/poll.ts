@@ -1,3 +1,4 @@
+import { isEqual } from "lodash-es";
 import { watch } from "vue";
 import { databaseForTask } from "@/components/IssueV1/logic";
 import { useProgressivePoll } from "@/composables/useProgressivePoll";
@@ -61,7 +62,9 @@ export const usePollIssue = () => {
         clearCache(updatedIssue);
       }
 
-      issue.value = updatedIssue;
+      if (!isEqual(issue.value, updatedIssue)) {
+        issue.value = updatedIssue;
+      }
     });
   };
 
