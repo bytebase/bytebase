@@ -135,7 +135,6 @@ export const enginesSupportCreateDatabase = () => {
     Engine.MONGODB,
     Engine.TIDB,
     Engine.OCEANBASE,
-    Engine.OCEANBASE_ORACLE,
     Engine.REDSHIFT,
     Engine.MARIADB,
     Engine.STARROCKS,
