@@ -39,13 +39,6 @@ type DatabaseCreateExecutor struct {
 	profile      *config.Profile
 }
 
-var cannotCreateDatabase = map[storepb.Engine]bool{
-	storepb.Engine_REDIS:            true,
-	storepb.Engine_ORACLE:           true,
-	storepb.Engine_DM:               true,
-	storepb.Engine_OCEANBASE_ORACLE: true,
-}
-
 // RunOnce will run the database create task executor once.
 func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, _ int) (terminated bool, result *storepb.TaskRunResult, err error) {
 	sheetID := int(task.Payload.GetSheetId())
