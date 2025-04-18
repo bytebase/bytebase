@@ -6,7 +6,6 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/config"
 )
 
@@ -28,7 +27,6 @@ func getBaseProfile(dataDir string) *config.Profile {
 		Debug:              flags.debug,
 		IsDocker:           isDocker(),
 		DataDir:            dataDir,
-		ResourceDir:        common.GetResourceDir(dataDir),
 		Demo:               flags.demo,
 		Version:            version,
 		GitCommit:          gitcommit,

@@ -7,7 +7,6 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
-	"os"
 	"path"
 	"sync"
 	"time"
@@ -106,7 +105,6 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	slog.Info("-----Config BEGIN-----")
 	slog.Info(fmt.Sprintf("mode=%s", profile.Mode))
 	slog.Info(fmt.Sprintf("dataDir=%s", profile.DataDir))
-	slog.Info(fmt.Sprintf("resourceDir=%s", profile.ResourceDir))
 	slog.Info(fmt.Sprintf("demo=%v", profile.Demo))
 	slog.Info(fmt.Sprintf("instanceRunUUID=%s", profile.DeployID))
 	slog.Info("-----Config END-------")
@@ -118,18 +116,6 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 		}
 	}()
 
-	var err error
-	if err = os.MkdirAll(profile.ResourceDir, os.ModePerm); err != nil {
-		return nil, errors.Wrapf(err, "failed to create directory: %q", profile.ResourceDir)
-	}
-
-	// Installs the Postgres and utility binaries and creates the 'activeProfile.pgUser' user/database
-	// to store Bytebase's own metadata.
-	pgBinDir, err := postgres.Install(profile.ResourceDir)
-	if err != nil {
-		return nil, err
-	}
-
 	var pgURL string
 	if profile.UseEmbedDB() {
 		pgDataDir := path.Join(profile.DataDir, "pgdata")
@@ -137,7 +123,7 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 			pgDataDir = path.Join(profile.DataDir, "pgdata-demo")
 		}
 
-		stopper, err := postgres.StartMetadataInstance(ctx, pgBinDir, pgDataDir, profile.DatastorePort, profile.Mode)
+		stopper, err := postgres.StartMetadataInstance(ctx, pgDataDir, profile.DatastorePort, profile.Mode)
 		if err != nil {
 			return nil, err
 		}
@@ -152,7 +138,7 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	if profile.SampleDatabasePort != 0 {
 		// Only create batch sample databases in demo mode. For normal mode, user starts from the free version
 		// and batch databases are useless because batch requires enterprise license.
-		stopper := postgres.StartAllSampleInstances(ctx, pgBinDir, profile.DataDir, profile.SampleDatabasePort)
+		stopper := postgres.StartAllSampleInstances(ctx, profile.DataDir, profile.SampleDatabasePort)
 		s.stopper = append(s.stopper, stopper...)
 	}
 

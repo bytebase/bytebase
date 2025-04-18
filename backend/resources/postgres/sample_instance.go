@@ -35,7 +35,7 @@ var (
 )
 
 // StartAllSampleInstances starts all postgres sample instances.
-func StartAllSampleInstances(ctx context.Context, pgBinDir, dataDir string, basePort int) []func() {
+func StartAllSampleInstances(ctx context.Context, dataDir string, basePort int) []func() {
 	sampleData, err := loadSampleData()
 	if err != nil {
 		slog.Error("failed to load sample data", log.BBError(err))
@@ -48,18 +48,18 @@ func StartAllSampleInstances(ctx context.Context, pgBinDir, dataDir string, base
 		port := basePort + i
 		dataDir := path.Join(dataDir, "pgdata-sample", env)
 
-		if err := initDB(pgBinDir, dataDir, SampleUser); err != nil {
+		if err := initDB(dataDir, SampleUser); err != nil {
 			slog.Error("failed to init sample instance", log.BBError(err))
 			continue
 		}
 
 		slog.Info(fmt.Sprintf("Start sample instance %v at port %d", env, port))
-		if err := start(port, pgBinDir, dataDir, true /* serverLog */); err != nil {
+		if err := start(port, dataDir, true /* serverLog */); err != nil {
 			slog.Error("failed to start sample instance", log.BBError(err))
 			continue
 		}
 		stoppers = append(stoppers, func() {
-			if err := stop(pgBinDir, dataDir); err != nil {
+			if err := stop(dataDir); err != nil {
 				panic(err)
 			}
 		})

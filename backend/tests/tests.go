@@ -97,9 +97,6 @@ var (
 	externalPgPort string
 
 	nextDatabaseNumber = 20210113
-
-	// resourceDir is the shared resource directory.
-	resourceDir string
 )
 
 func getTestPort() int {
@@ -134,7 +131,7 @@ func (ctl *controller) StartServerWithExternalPg(ctx context.Context) (context.C
 
 	pgURL := fmt.Sprintf("postgresql://postgres:root-password@%s:%s/%s", externalPgHost, externalPgPort, databaseName)
 	serverPort := getTestPort()
-	profile := getTestProfileWithExternalPg(resourceDir, serverPort, pgURL)
+	profile := getTestProfileWithExternalPg(serverPort, pgURL)
 	server, err := server.NewServer(ctx, profile)
 	if err != nil {
 		return nil, err
@@ -210,13 +207,12 @@ func (ctl *controller) initWorkspaceProfile(ctx context.Context) error {
 // GetTestProfileWithExternalPg will return a profile for testing with external Postgres.
 // We require port as an argument of GetTestProfile so that test can run in parallel in different ports,
 // pgURL for connect to Postgres.
-func getTestProfileWithExternalPg(resourceDir string, port int, pgURL string) *component.Profile {
+func getTestProfileWithExternalPg(port int, pgURL string) *component.Profile {
 	return &component.Profile{
 		Mode:               common.ReleaseModeDev,
 		ExternalURL:        fmt.Sprintf("http://localhost:%d", port),
 		Port:               port,
 		SampleDatabasePort: 0,
-		ResourceDir:        resourceDir,
 		PgURL:              pgURL,
 	}
 }

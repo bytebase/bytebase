@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"fmt"
 	"math/big"
-	"path"
 	"strconv"
 	"strings"
 	"unicode/utf8"
@@ -75,11 +74,6 @@ func HasPrefixes(src string, prefixes ...string) bool {
 // GetPostgresSocketDir returns the postgres socket directory of Bytebase.
 func GetPostgresSocketDir() string {
 	return "/tmp"
-}
-
-// GetResourceDir returns the resource directory of Bytebase.
-func GetResourceDir(dataDir string) string {
-	return path.Join(dataDir, "resources")
 }
 
 // TruncateString truncates the string to have a maximum length of `limit` characters.

@@ -91,7 +91,6 @@ require (
 	github.com/tmc/grpc-websocket-proxy v0.0.0-20220101234140-673ab2c3ae75
 	github.com/trinodb/trino-go-client v0.323.0
 	github.com/vjeantet/ldapserver v1.0.1
-	github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8
 	github.com/xuri/excelize/v2 v2.9.0
 	github.com/yterajima/go-sitemap v0.4.0
 	github.com/zeebo/xxh3 v1.0.2
