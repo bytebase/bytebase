@@ -188,6 +188,12 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
       }
     }
   };
+  const batchSyncDatabases = async (databases: string[]) => {
+    await databaseServiceClient.batchSyncDatabases({
+      parent: `${instanceNamePrefix}-`,
+      names: databases,
+    });
+  };
   const syncDatabase = async (database: string, refresh = false) => {
     await databaseServiceClient.syncDatabase({
       name: database,
@@ -255,6 +261,7 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
     removeCacheByInstance,
     upsertDatabaseMap,
     syncDatabase,
+    batchSyncDatabases,
     getDatabaseByName,
     fetchDatabaseByName,
     getOrFetchDatabaseByName,

@@ -75,6 +75,15 @@ service DatabaseService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  rpc BatchSyncDatabases(BatchSyncDatabasesRequest) returns (BatchSyncDatabasesResponse) {
+    option (google.api.http) = {
+      post: "/v1/{parent=instances/*}/databases:batchSync"
+      body: "*"
+    };
+    option (bytebase.v1.permission) = "bb.databases.sync";
+    option (bytebase.v1.auth_method) = IAM;
+  }
+
   rpc GetDatabaseMetadata(GetDatabaseMetadataRequest) returns (DatabaseMetadata) {
     option (google.api.http) = {get: "/v1/{name=instances/*/databases/*/metadata}"};
     option (bytebase.v1.permission) = "bb.databases.getSchema";
@@ -294,6 +303,21 @@ message BatchUpdateDatabasesResponse {
   // Databases updated.
   repeated Database databases = 1;
 }
+
+message BatchSyncDatabasesRequest {
+  // The parent resource shared by all databases being updated.
+  // Format: instances/{instance}
+  // If the operation spans parents, a dash (-) may be accepted as a wildcard.
+  string parent = 1;
+
+  // The list of database names to retrieve.
+  repeated string names = 2 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Database"}
+  ];
+}
+
+message BatchSyncDatabasesResponse {}
 
 message SyncDatabaseRequest {
   // The name of the database to sync.
