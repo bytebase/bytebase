@@ -7,76 +7,22 @@ import (
 	"os"
 	"os/exec"
 	"os/user"
-	"path"
 	"path/filepath"
-	"runtime"
 	"strconv"
 	"syscall"
 
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/resources/utils"
 )
-
-const (
-	currentVersion = "16"
-)
-
-// Install will extract the postgres and utility tar in resourceDir.
-// Returns the bin directory on success.
-func Install(resourceDir string) (string, error) {
-	pkgNamePrefix, err := getTarName()
-	if err != nil {
-		return "", err
-	}
-	tarName := pkgNamePrefix + ".txz"
-
-	var pgBaseDir string
-	if currentVersion == "14" {
-		pgBaseDir = path.Join(resourceDir, pkgNamePrefix)
-	} else {
-		pgBaseDir = path.Join(resourceDir, fmt.Sprintf("%s-%s", pkgNamePrefix, currentVersion))
-	}
-
-	if _, err := os.Stat(pgBaseDir); err != nil {
-		if !os.IsNotExist(err) {
-			return "", errors.Wrapf(err, "failed to check postgres binary base directory path %q", pgBaseDir)
-		}
-
-		slog.Info("Installing PostgreSQL utilities...")
-		version := fmt.Sprintf("%s%s", pkgNamePrefix, currentVersion)
-		if err := utils.InstallImpl(resourceDir, pgBaseDir, tarName, version, resources); err != nil {
-			return "", errors.Wrap(err, "cannot install postgres")
-		}
-	}
-
-	pgBinDir := path.Join(pgBaseDir, "bin")
-	return pgBinDir, nil
-}
-
-func getTarName() (string, error) {
-	switch {
-	case runtime.GOOS == "darwin" && runtime.GOARCH == "arm64":
-		return "postgres-darwin-arm64", nil
-	case runtime.GOOS == "linux" && runtime.GOARCH == "amd64":
-		return "postgres-linux-amd64", nil
-	case runtime.GOOS == "linux" && runtime.GOARCH == "arm64":
-		return "postgres-linux-arm64", nil
-	default:
-		return "", errors.Errorf("unsupported combination of OS %q and ARCH %q", runtime.GOOS, runtime.GOARCH)
-	}
-}
 
 // start starts a postgres database instance.
 // If port is 0, then it will choose a random unused port.
-func start(port int, binDir, dataDir string, serverLog bool) (err error) {
-	pgbin := filepath.Join(binDir, "pg_ctl")
-
+func start(port int, dataDir string, serverLog bool) (err error) {
 	// See -p -k -h option definitions in the link below.
 	// https://www.postgresql.org/docs/current/app-postgres.html
 	// We also set max_connections to 500 for tests.
-	p := exec.Command(pgbin, "start", "-w",
+	p := exec.Command("pg_ctl", "start", "-w",
 		"-D", dataDir,
 		"-o", fmt.Sprintf(`-p %d -k %s -N 500 -h ""`, port, common.GetPostgresSocketDir()))
 
@@ -104,9 +50,8 @@ func start(port int, binDir, dataDir string, serverLog bool) (err error) {
 }
 
 // stop stops a postgres instance, outputs to stdout and stderr.
-func stop(pgBinDir, pgDataDir string) error {
-	pgbin := filepath.Join(pgBinDir, "pg_ctl")
-	p := exec.Command(pgbin, "stop", "-w", "-D", pgDataDir)
+func stop(pgDataDir string) error {
+	p := exec.Command("pg_ctl", "stop", "-w", "-D", pgDataDir)
 	uid, _, sameUser, err := shouldSwitchUser()
 	if err != nil {
 		return err
@@ -125,7 +70,7 @@ func stop(pgBinDir, pgDataDir string) error {
 }
 
 // initDB inits a postgres database if not yet.
-func initDB(pgBinDir, pgDataDir, pgUser string) error {
+func initDB(pgDataDir, pgUser string) error {
 	versionPath := filepath.Join(pgDataDir, "PG_VERSION")
 	_, err := os.Stat(versionPath)
 	if err != nil && !os.IsNotExist(err) {
@@ -181,8 +126,7 @@ func initDB(pgBinDir, pgDataDir, pgUser string) error {
 		"-U", pgUser,
 		"-D", pgDataDir,
 	}
-	initDBBinary := filepath.Join(pgBinDir, "initdb")
-	p := exec.Command(initDBBinary, args...)
+	p := exec.Command("initdb", args...)
 	p.Env = append(os.Environ(),
 		"LC_ALL=en_US.UTF-8",
 		"LC_CTYPE=en_US.UTF-8",
