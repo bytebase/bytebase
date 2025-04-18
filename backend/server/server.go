@@ -7,7 +7,6 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
-	"os"
 	"path"
 	"sync"
 	"time"
@@ -106,7 +105,6 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	slog.Info("-----Config BEGIN-----")
 	slog.Info(fmt.Sprintf("mode=%s", profile.Mode))
 	slog.Info(fmt.Sprintf("dataDir=%s", profile.DataDir))
-	slog.Info(fmt.Sprintf("resourceDir=%s", profile.ResourceDir))
 	slog.Info(fmt.Sprintf("demo=%v", profile.Demo))
 	slog.Info(fmt.Sprintf("instanceRunUUID=%s", profile.DeployID))
 	slog.Info("-----Config END-------")
@@ -117,11 +115,6 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 			_ = s.Shutdown(ctx)
 		}
 	}()
-
-	var err error
-	if err = os.MkdirAll(profile.ResourceDir, os.ModePerm); err != nil {
-		return nil, errors.Wrapf(err, "failed to create directory: %q", profile.ResourceDir)
-	}
 
 	var pgURL string
 	if profile.UseEmbedDB() {
