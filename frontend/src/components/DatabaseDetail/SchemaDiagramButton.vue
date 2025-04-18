@@ -9,12 +9,12 @@
   </div>
 
   <BBModal
-    v-if="state.show"
+    v-if="open"
     :title="$t('schema-diagram.self')"
     class="h-[calc(100vh-40px)] !max-h-[calc(100vh-40px)]"
     header-class="!border-0"
     container-class="flex-1 !pt-0"
-    @close="state.show = false"
+    @close="open = false"
   >
     <div class="w-[80vw] h-full">
       <SchemaDiagram
@@ -26,36 +26,24 @@
 </template>
 
 <script setup lang="ts">
-import { reactive } from "vue";
+import { ref } from "vue";
 import { BBModal } from "@/bbkit";
 import { SchemaDiagram, SchemaDiagramIcon } from "@/components/SchemaDiagram";
 import { useDBSchemaV1Store } from "@/store";
 import type { ComposedDatabase } from "@/types";
 
-type LocalState = {
-  show: boolean;
-  fetchLast: boolean;
-};
-
 const props = defineProps<{
   database: ComposedDatabase;
 }>();
 
-const state = reactive<LocalState>({
-  show: false,
-  fetchLast: false,
-});
-
+const open = ref<boolean>(false);
 const dbSchemaStore = useDBSchemaV1Store();
 
 const openModal = async () => {
-  if (!state.fetchLast) {
-    await dbSchemaStore.getOrFetchDatabaseMetadata({
-      database: props.database.name,
-      skipCache: true,
-    });
-    state.fetchLast = true;
-  }
-  state.show = true;
+  await dbSchemaStore.getOrFetchDatabaseMetadata({
+    database: props.database.name,
+    skipCache: false,
+  });
+  open.value = true;
 };
 </script>

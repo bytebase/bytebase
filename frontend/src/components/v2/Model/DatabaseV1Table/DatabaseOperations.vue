@@ -343,10 +343,7 @@ const syncSchema = async () => {
     await useGracefulRequest(async () => {
       const requests = props.databases.map((db) => {
         databaseStore.syncDatabase(db.name).then(() => {
-          dbSchemaStore.getOrFetchDatabaseMetadata({
-            database: db.name,
-            skipCache: true,
-          });
+          dbSchemaStore.removeCache(db.name);
         });
       });
       await Promise.all(requests);
