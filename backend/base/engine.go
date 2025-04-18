@@ -130,3 +130,34 @@ func EngineSupportPriorBackup(e storepb.Engine) bool {
 		return false
 	}
 }
+
+func EngineSupportCreateDatabase(e storepb.Engine) bool {
+	switch e {
+	case
+		storepb.Engine_SQLITE,
+		storepb.Engine_MYSQL,
+		storepb.Engine_POSTGRES,
+		storepb.Engine_MSSQL,
+		storepb.Engine_SNOWFLAKE,
+		storepb.Engine_CLICKHOUSE,
+		storepb.Engine_MONGODB,
+		storepb.Engine_TIDB,
+		storepb.Engine_OCEANBASE,
+		storepb.Engine_REDSHIFT,
+		storepb.Engine_MARIADB,
+		storepb.Engine_STARROCKS,
+		storepb.Engine_RISINGWAVE,
+		storepb.Engine_HIVE,
+		storepb.Engine_COCKROACHDB,
+		storepb.Engine_DORIS:
+		return true
+	case
+		storepb.Engine_REDIS,
+		storepb.Engine_ORACLE,
+		storepb.Engine_DM,
+		storepb.Engine_OCEANBASE_ORACLE:
+		return false
+	default:
+		return false
+	}
+}

@@ -8,6 +8,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
@@ -38,13 +39,6 @@ type DatabaseCreateExecutor struct {
 	profile      *config.Profile
 }
 
-var cannotCreateDatabase = map[storepb.Engine]bool{
-	storepb.Engine_REDIS:            true,
-	storepb.Engine_ORACLE:           true,
-	storepb.Engine_DM:               true,
-	storepb.Engine_OCEANBASE_ORACLE: true,
-}
-
 // RunOnce will run the database create task executor once.
 func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, _ int) (terminated bool, result *storepb.TaskRunResult, err error) {
 	sheetID := int(task.Payload.GetSheetId())
@@ -70,8 +64,8 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, driverCtx conte
 		return true, nil, err
 	}
 
-	if cannotCreateDatabase[instance.Metadata.GetEngine()] {
-		return true, nil, errors.Errorf("Creating database is not supported")
+	if !base.EngineSupportCreateDatabase(instance.Metadata.GetEngine()) {
+		return true, nil, errors.Errorf("creating database is not supported for engine %v", instance.Metadata.GetEngine().String())
 	}
 
 	pipeline, err := exec.store.GetPipelineV2ByID(ctx, task.PipelineID)
