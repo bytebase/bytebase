@@ -100,7 +100,7 @@ func (*Driver) GetDB() *sql.DB {
 	return nil
 }
 
-func (d *Driver) Execute(ctx context.Context, rawStatement string, opts db.ExecuteOptions) (int64, error) {
+func (d *Driver) Execute(ctx context.Context, rawStatement string, _ db.ExecuteOptions) (int64, error) {
 	stmts, err := util.SanitizeSQL(rawStatement)
 	if err != nil {
 		return 0, errors.Wrapf(err, "failed to split sql")
