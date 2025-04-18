@@ -194,6 +194,20 @@ export interface BatchUpdateDatabasesResponse {
   databases: Database[];
 }
 
+export interface BatchSyncDatabasesRequest {
+  /**
+   * The parent resource shared by all databases being updated.
+   * Format: instances/{instance}
+   * If the operation spans parents, a dash (-) may be accepted as a wildcard.
+   */
+  parent: string;
+  /** The list of database names to retrieve. */
+  names: string[];
+}
+
+export interface BatchSyncDatabasesResponse {
+}
+
 export interface SyncDatabaseRequest {
   /**
    * The name of the database to sync.
@@ -2427,6 +2441,125 @@ export const BatchUpdateDatabasesResponse: MessageFns<BatchUpdateDatabasesRespon
   fromPartial(object: DeepPartial<BatchUpdateDatabasesResponse>): BatchUpdateDatabasesResponse {
     const message = createBaseBatchUpdateDatabasesResponse();
     message.databases = object.databases?.map((e) => Database.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseBatchSyncDatabasesRequest(): BatchSyncDatabasesRequest {
+  return { parent: "", names: [] };
+}
+
+export const BatchSyncDatabasesRequest: MessageFns<BatchSyncDatabasesRequest> = {
+  encode(message: BatchSyncDatabasesRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.parent !== "") {
+      writer.uint32(10).string(message.parent);
+    }
+    for (const v of message.names) {
+      writer.uint32(18).string(v!);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): BatchSyncDatabasesRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseBatchSyncDatabasesRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.parent = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.names.push(reader.string());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): BatchSyncDatabasesRequest {
+    return {
+      parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
+      names: globalThis.Array.isArray(object?.names) ? object.names.map((e: any) => globalThis.String(e)) : [],
+    };
+  },
+
+  toJSON(message: BatchSyncDatabasesRequest): unknown {
+    const obj: any = {};
+    if (message.parent !== "") {
+      obj.parent = message.parent;
+    }
+    if (message.names?.length) {
+      obj.names = message.names;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<BatchSyncDatabasesRequest>): BatchSyncDatabasesRequest {
+    return BatchSyncDatabasesRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<BatchSyncDatabasesRequest>): BatchSyncDatabasesRequest {
+    const message = createBaseBatchSyncDatabasesRequest();
+    message.parent = object.parent ?? "";
+    message.names = object.names?.map((e) => e) || [];
+    return message;
+  },
+};
+
+function createBaseBatchSyncDatabasesResponse(): BatchSyncDatabasesResponse {
+  return {};
+}
+
+export const BatchSyncDatabasesResponse: MessageFns<BatchSyncDatabasesResponse> = {
+  encode(_: BatchSyncDatabasesResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): BatchSyncDatabasesResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseBatchSyncDatabasesResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(_: any): BatchSyncDatabasesResponse {
+    return {};
+  },
+
+  toJSON(_: BatchSyncDatabasesResponse): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create(base?: DeepPartial<BatchSyncDatabasesResponse>): BatchSyncDatabasesResponse {
+    return BatchSyncDatabasesResponse.fromPartial(base ?? {});
+  },
+  fromPartial(_: DeepPartial<BatchSyncDatabasesResponse>): BatchSyncDatabasesResponse {
+    const message = createBaseBatchSyncDatabasesResponse();
     return message;
   },
 };
@@ -10613,6 +10746,73 @@ export const DatabaseServiceDefinition = {
               125,
               58,
               115,
+              121,
+              110,
+              99,
+            ]),
+          ],
+        },
+      },
+    },
+    batchSyncDatabases: {
+      name: "BatchSyncDatabases",
+      requestType: BatchSyncDatabasesRequest,
+      requestStream: false,
+      responseType: BatchSyncDatabasesResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          800010: [new Uint8Array([17, 98, 98, 46, 100, 97, 116, 97, 98, 97, 115, 101, 115, 46, 115, 121, 110, 99])],
+          800016: [new Uint8Array([1])],
+          578365826: [
+            new Uint8Array([
+              49,
+              58,
+              1,
+              42,
+              34,
+              44,
+              47,
+              118,
+              49,
+              47,
+              123,
+              112,
+              97,
+              114,
+              101,
+              110,
+              116,
+              61,
+              105,
+              110,
+              115,
+              116,
+              97,
+              110,
+              99,
+              101,
+              115,
+              47,
+              42,
+              125,
+              47,
+              100,
+              97,
+              116,
+              97,
+              98,
+              97,
+              115,
+              101,
+              115,
+              58,
+              98,
+              97,
+              116,
+              99,
+              104,
+              83,
               121,
               110,
               99,

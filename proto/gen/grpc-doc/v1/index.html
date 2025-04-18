@@ -494,6 +494,14 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.BatchSyncDatabasesRequest"><span class="badge">M</span>BatchSyncDatabasesRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.BatchSyncDatabasesResponse"><span class="badge">M</span>BatchSyncDatabasesResponse</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.BatchUpdateDatabasesRequest"><span class="badge">M</span>BatchUpdateDatabasesRequest</a>
                 </li>
               
@@ -5861,6 +5869,46 @@ Use &#34;-&#34; as wildcard to batch get databases across parent. </p></td>
 
         
       
+        <h3 id="bytebase.v1.BatchSyncDatabasesRequest">BatchSyncDatabasesRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>parent</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The parent resource shared by all databases being updated.
+Format: instances/{instance}
+If the operation spans parents, a dash (-) may be accepted as a wildcard. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>names</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
+                  <td><p>The list of database names to retrieve. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.BatchSyncDatabasesResponse">BatchSyncDatabasesResponse</h3>
+        <p></p>
+
+        
+
+        
+      
         <h3 id="bytebase.v1.BatchUpdateDatabasesRequest">BatchUpdateDatabasesRequest</h3>
         <p></p>
 
@@ -9735,6 +9783,13 @@ The API will default to the BASIC view.</p></td>
               </tr>
             
               <tr>
+                <td>BatchSyncDatabases</td>
+                <td><a href="#bytebase.v1.BatchSyncDatabasesRequest">BatchSyncDatabasesRequest</a></td>
+                <td><a href="#bytebase.v1.BatchSyncDatabasesResponse">BatchSyncDatabasesResponse</a></td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
                 <td>GetDatabaseMetadata</td>
                 <td><a href="#bytebase.v1.GetDatabaseMetadataRequest">GetDatabaseMetadataRequest</a></td>
                 <td><a href="#bytebase.v1.DatabaseMetadata">DatabaseMetadata</a></td>
@@ -9920,6 +9975,16 @@ The API will default to the BASIC view.</p></td>
                 <td>SyncDatabase</td>
                 <td>POST</td>
                 <td>/v1/{name=instances/*/databases/*}:sync</td>
+                <td>*</td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>BatchSyncDatabases</td>
+                <td>POST</td>
+                <td>/v1/{parent=instances/*}/databases:batchSync</td>
                 <td>*</td>
               </tr>
               

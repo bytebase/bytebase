@@ -328,7 +328,6 @@ const generateMultiDb = async (
   });
 };
 
-// TODO: batch request
 const syncSchema = async () => {
   if (state.loading) {
     return;
@@ -341,17 +340,17 @@ const syncSchema = async () => {
   try {
     state.loading = true;
     await useGracefulRequest(async () => {
-      const requests = props.databases.map((db) => {
-        databaseStore.syncDatabase(db.name).then(() => {
-          dbSchemaStore.removeCache(db.name);
-        });
-      });
-      await Promise.all(requests);
-      pushNotification({
-        module: "bytebase",
-        style: "SUCCESS",
-        title: t("db.successfully-synced-schema"),
-      });
+      await databaseStore.batchSyncDatabases(
+        props.databases.map((db) => db.name)
+      );
+      for (const db of props.databases) {
+        dbSchemaStore.removeCache(db.name);
+      }
+    });
+    pushNotification({
+      module: "bytebase",
+      style: "SUCCESS",
+      title: t("db.successfully-synced-schema"),
     });
   } catch {
     pushNotification({

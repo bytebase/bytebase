@@ -2351,6 +2351,37 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
+    /v1/instances/{instance}/databases:batchSync:
+        post:
+            tags:
+                - DatabaseService
+            operationId: DatabaseService_BatchSyncDatabases
+            parameters:
+                - name: instance
+                  in: path
+                  description: The instance id.
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/BatchSyncDatabasesRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/BatchSyncDatabasesResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
     /v1/instances/{instance}/databases:batchUpdate:
         post:
             tags:
@@ -8195,6 +8226,25 @@ components:
                 reason:
                     type: string
         BatchSkipTasksResponse:
+            type: object
+            properties: {}
+        BatchSyncDatabasesRequest:
+            required:
+                - names
+            type: object
+            properties:
+                parent:
+                    type: string
+                    description: |-
+                        The parent resource shared by all databases being updated.
+                         Format: instances/{instance}
+                         If the operation spans parents, a dash (-) may be accepted as a wildcard.
+                names:
+                    type: array
+                    items:
+                        type: string
+                    description: The list of database names to retrieve.
+        BatchSyncDatabasesResponse:
             type: object
             properties: {}
         BatchSyncInstancesRequest:
