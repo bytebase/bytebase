@@ -21,7 +21,9 @@
       <NInputGroup style="width: auto">
         <EnvironmentSelect
           class="!w-40"
-          :environment-name="formatEnvironmentName(environment?.id)"
+          :environment-name="
+            environment ? formatEnvironmentName(environment.id) : undefined
+          "
           @update:environment-name="changeEnvironmentFilter"
         />
         <InstanceSelect
@@ -48,9 +50,13 @@
 import { NInputGroup, NRadio, NRadioGroup } from "naive-ui";
 import { InstanceSelect, SearchBox } from "@/components/v2";
 import { useEnvironmentV1Store, useInstanceResourceByName } from "@/store";
-import { formatEnvironmentName, isValidEnvironmentName, isValidInstanceName } from "@/types";
-import type { Environment } from "@/types/v1/environment";
+import {
+  formatEnvironmentName,
+  isValidEnvironmentName,
+  isValidInstanceName,
+} from "@/types";
 import type { InstanceResource } from "@/types/proto/v1/instance_service";
+import type { Environment } from "@/types/v1/environment";
 import EnvironmentSelect from "../v2/Select/EnvironmentSelect.vue";
 import type { TransferSource } from "./utils";
 
