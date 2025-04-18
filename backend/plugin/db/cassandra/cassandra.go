@@ -100,8 +100,19 @@ func (*Driver) GetDB() *sql.DB {
 	return nil
 }
 
-func (*Driver) Execute(context.Context, string, db.ExecuteOptions) (int64, error) {
-	return 0, status.Errorf(codes.Unimplemented, "Execute unimplemented")
+func (d *Driver) Execute(ctx context.Context, rawStatement string, _ db.ExecuteOptions) (int64, error) {
+	stmts, err := util.SanitizeSQL(rawStatement)
+	if err != nil {
+		return 0, errors.Wrapf(err, "failed to split sql")
+	}
+
+	for _, stmt := range stmts {
+		if err := d.session.Query(stmt).WithContext(ctx).Exec(); err != nil {
+			return 0, errors.Wrapf(err, "failed to execute")
+		}
+	}
+
+	return 0, nil
 }
 func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, rawStatement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
 	stmts, err := util.SanitizeSQL(rawStatement)
