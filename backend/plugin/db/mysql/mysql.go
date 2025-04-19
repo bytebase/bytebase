@@ -16,7 +16,7 @@ import (
 	"strings"
 	"time"
 
-	"cloud.google.com/go/cloudsqlconn"
+	secretmanager "cloud.google.com/go/secretmanager/apiv1"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/feature/rds/auth"
 	"github.com/go-sql-driver/mysql"
@@ -24,6 +24,7 @@ import (
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 	"golang.org/x/crypto/ssh"
+	"golang.org/x/oauth2/google"
 	"google.golang.org/protobuf/types/known/durationpb"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -204,17 +205,20 @@ func getRDSConnection(ctx context.Context, connCfg db.ConnectionConfig) (string,
 }
 
 func getCloudSQLConnection(ctx context.Context, connCfg db.ConnectionConfig) (string, error) {
-	d, err := cloudsqlconn.NewDialer(ctx, cloudsqlconn.WithIAMAuthN())
+	dbEndpoint := fmt.Sprintf("%s:%s", connCfg.DataSource.Host, connCfg.DataSource.Port)
+	// Find default credentials in GKE, fallback to GOOGLE_APPLICATION_CREDENTIALS envionment.
+	// https://pkg.go.dev/golang.org/x/oauth2/google#FindDefaultCredentialsWithParams
+	creds, err := google.FindDefaultCredentials(ctx, secretmanager.DefaultAuthScopes()...)
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to get GCP credentials")
+	}
+	token, err := creds.TokenSource.Token()
 	if err != nil {
 		return "", err
 	}
-	mysql.RegisterDialContext("cloudsqlconn",
-		func(ctx context.Context, _ string) (net.Conn, error) {
-			return d.Dial(ctx, connCfg.DataSource.Host)
-		})
-
-	return fmt.Sprintf("%s:empty@cloudsqlconn(localhost:3306)/%s?parseTime=true",
-		connCfg.DataSource.Username, connCfg.ConnectionContext.DatabaseName), nil
+	return fmt.Sprintf("%s:%s@tcp(%s)/%s?allowCleartextPasswords=true",
+		connCfg.DataSource.Username, token.AccessToken, dbEndpoint, connCfg.ConnectionContext.DatabaseName,
+	), nil
 }
 
 // Close closes the driver.
