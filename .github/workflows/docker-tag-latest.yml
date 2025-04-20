@@ -29,3 +29,33 @@ jobs:
           echo version: ${RELEASE_VERSION}
           docker buildx imagetools create -t registry.cn-shanghai.aliyuncs.com/bytebase/bytebase:latest bytebase/bytebase:${RELEASE_VERSION}
           docker buildx imagetools create -t registry.cn-shanghai.aliyuncs.com/bytebase/bytebase:${RELEASE_VERSION} bytebase/bytebase:${RELEASE_VERSION}
+
+  build-demo-image:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Login to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - uses: depot/setup-action@v1
+      - name: Build and push
+        id: docker_build
+        uses: depot/build-push-action@v1
+        with:
+          context: .
+          project: ${{ secrets.DEPOT_PROJECT}}
+          token: ${{ secrets.DEPOT_TOKEN }}
+          file: scripts/Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: |
+            bytebaseci/bytebase-demo:${{ env.IMAGE_VERSION }}
+          build-args: |
+            VERSION=${{ env.VERSION }}
+            GIT_COMMIT=${{ env.GIT_COMMIT }}
+            RELEASE=dev
