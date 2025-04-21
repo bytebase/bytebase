@@ -16,9 +16,9 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 	"google.golang.org/protobuf/types/known/durationpb"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -47,7 +47,7 @@ func newDriver() db.Driver {
 }
 
 // Open opens a MongoDB driver.
-func (d *Driver) Open(ctx context.Context, _ storepb.Engine, connCfg db.ConnectionConfig) (db.Driver, error) {
+func (d *Driver) Open(_ context.Context, _ storepb.Engine, connCfg db.ConnectionConfig) (db.Driver, error) {
 	connectionURI := getBasicMongoDBConnectionURI(connCfg)
 	opts := options.Client().ApplyURI(connectionURI)
 	tlscfg, err := util.GetTLSConfig(connCfg.DataSource)
@@ -59,7 +59,7 @@ func (d *Driver) Open(ctx context.Context, _ storepb.Engine, connCfg db.Connecti
 		tlscfg.InsecureSkipVerify = true
 		opts.SetTLSConfig(tlscfg)
 	}
-	client, err := mongo.Connect(ctx, opts)
+	client, err := mongo.Connect(opts)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create MongoDB client")
 	}
