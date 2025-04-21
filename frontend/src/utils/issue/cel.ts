@@ -1,4 +1,5 @@
-import { cloneDeep } from "lodash-es";
+import dayjs from "dayjs";
+import { cloneDeep, head } from "lodash-es";
 import type { SimpleExpr } from "@/plugins/cel";
 import { isRawStringExpr, resolveCELExpr } from "@/plugins/cel";
 import {
@@ -7,7 +8,12 @@ import {
 } from "@/store/modules/v1/common";
 import type { DatabaseResource } from "@/types";
 import type { Expr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
-import { batchConvertCELStringToParsedExpr } from "@/utils";
+import { Expr as ConditionExpr } from "@/types/proto/google/type/expr";
+import {
+  batchConvertCELStringToParsedExpr,
+  displayRoleTitle,
+  extractDatabaseResourceName,
+} from "@/utils";
 
 interface DatabaseLevelCondition {
   database: string[];
@@ -35,6 +41,94 @@ export interface ConditionExpression {
   rowLimit?: number;
   exportFormat?: string;
 }
+
+const getDatabaseResourceName = (databaseResource: DatabaseResource) => {
+  const { databaseName } = extractDatabaseResourceName(
+    databaseResource.databaseFullName
+  );
+  if (databaseResource.table) {
+    if (databaseResource.schema) {
+      return `${databaseName}.${databaseResource.schema}.${databaseResource.table}`;
+    } else {
+      return `${databaseName}.${databaseResource.table}`;
+    }
+  } else if (databaseResource.schema) {
+    return `${databaseName}.${databaseResource.schema}`;
+  } else {
+    return databaseName;
+  }
+};
+
+const buildConditionTitle = ({
+  role,
+  databaseResources,
+  expirationTimestampInMS,
+}: {
+  role: string;
+  databaseResources?: DatabaseResource[];
+  expirationTimestampInMS?: number;
+}): string => {
+  const title = [displayRoleTitle(role)];
+
+  let conditionSuffix = "";
+  if (!databaseResources || databaseResources.length === 0) {
+    conditionSuffix = `All databases`;
+  } else if (databaseResources.length <= 3) {
+    const databaseResourceNames = databaseResources.map((ds) =>
+      getDatabaseResourceName(ds)
+    );
+    conditionSuffix = `${databaseResourceNames.join(", ")}`;
+  } else {
+    const firstDatabaseResourceName = getDatabaseResourceName(
+      head(databaseResources)!
+    );
+    conditionSuffix = `${firstDatabaseResourceName} and ${
+      databaseResources.length - 1
+    } more`;
+  }
+  title.push(conditionSuffix);
+
+  if (expirationTimestampInMS) {
+    title.push(
+      `${dayjs().format("L")}-${dayjs(expirationTimestampInMS).format("L")}`
+    );
+  }
+
+  return title.join(" ");
+};
+
+export const buildConditionExpr = ({
+  title,
+  role,
+  description,
+  expirationTimestampInMS,
+  databaseResources,
+  rowLimit,
+}: {
+  title?: string;
+  role: string;
+  description: string;
+  expirationTimestampInMS?: number;
+  databaseResources?: DatabaseResource[];
+  rowLimit?: number;
+}): ConditionExpr => {
+  const expresson = stringifyConditionExpression({
+    expirationTimestampInMS,
+    databaseResources,
+    rowLimit,
+  });
+  return ConditionExpr.create({
+    title:
+      title ||
+      buildConditionTitle({
+        role,
+        databaseResources,
+        expirationTimestampInMS,
+      }),
+    description: description,
+    expression: expresson || undefined,
+  });
+};
 
 export const stringifyDatabaseResources = (resources: DatabaseResource[]) => {
   const conditionList: DatabaseResourceCondition[] = [];
@@ -92,25 +186,26 @@ export const stringifyDatabaseResources = (resources: DatabaseResource[]) => {
   return cel;
 };
 
-export const stringifyConditionExpression = (
-  conditionExpression: ConditionExpression
-): string => {
+export const stringifyConditionExpression = ({
+  expirationTimestampInMS,
+  databaseResources,
+  rowLimit,
+}: {
+  expirationTimestampInMS?: number;
+  databaseResources?: DatabaseResource[];
+  rowLimit?: number;
+}): string => {
   const expression: string[] = [];
-  if (
-    conditionExpression.databaseResources !== undefined &&
-    conditionExpression.databaseResources.length > 0
-  ) {
+  if (databaseResources !== undefined && databaseResources.length > 0) {
+    expression.push(stringifyDatabaseResources(databaseResources));
+  }
+  if (expirationTimestampInMS) {
     expression.push(
-      stringifyDatabaseResources(conditionExpression.databaseResources)
+      `request.time < timestamp("${dayjs(expirationTimestampInMS).toISOString()}")`
     );
   }
-  if (conditionExpression.expiredTime !== undefined) {
-    expression.push(
-      `request.time < timestamp("${conditionExpression.expiredTime}")`
-    );
-  }
-  if (conditionExpression.rowLimit !== undefined) {
-    expression.push(`request.row_limit <= ${conditionExpression.rowLimit}`);
+  if (rowLimit) {
+    expression.push(`request.row_limit <= ${rowLimit}`);
   }
   return expression.join(" && ");
 };

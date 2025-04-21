@@ -128,12 +128,10 @@ import {
 } from "@/store";
 import type { ComposedProject, DatabaseResource } from "@/types";
 import { PresetRoleType } from "@/types";
-import { Expr } from "@/types/proto/google/type/expr";
 import { State } from "@/types/proto/v1/common";
 import type { Binding } from "@/types/proto/v1/iam_policy";
 import { displayRoleTitle } from "@/utils";
-import { convertFromExpr } from "@/utils/issue/cel";
-import { stringifyDatabaseResources } from "@/utils/issue/cel";
+import { convertFromExpr, buildConditionExpr } from "@/utils/issue/cel";
 import { getBindingIdentifier } from "../utils";
 
 const props = defineProps<{
@@ -231,13 +229,24 @@ const handleDeleteRole = async () => {
 
 const handleUpdateRole = async () => {
   const member = props.binding.members[0];
+
   const newBinding = cloneDeep(props.binding);
-  if (!newBinding.condition) {
-    newBinding.condition = Expr.fromPartial({});
-  }
-  newBinding.condition.title = state.title;
-  newBinding.condition.description = state.description;
   newBinding.members = [member];
+  newBinding.condition = buildConditionExpr({
+    title: state.title,
+    role: props.binding.role,
+    description: state.description,
+    expirationTimestampInMS: state.expirationTimestamp,
+    rowLimit:
+      props.binding.role === PresetRoleType.PROJECT_EXPORTER
+        ? state.maxRowCount
+        : undefined,
+    databaseResources:
+      props.binding.role === PresetRoleType.SQL_EDITOR_USER ||
+      props.binding.role === PresetRoleType.PROJECT_EXPORTER
+        ? state.databaseResources
+        : undefined,
+  });
 
   const policy = cloneDeep(iamPolicy.value);
   const oldBindingIndex = policy.bindings.findIndex(
@@ -252,33 +261,6 @@ const handleUpdateRole = async () => {
     if (policy.bindings[oldBindingIndex].members.length === 0) {
       policy.bindings.splice(oldBindingIndex, 1);
     }
-  }
-
-  const expression: string[] = [];
-  if (state.expirationTimestamp) {
-    expression.push(
-      `request.time < timestamp("${new Date(
-        state.expirationTimestamp
-      ).toISOString()}")`
-    );
-  }
-  if (
-    props.binding.role === PresetRoleType.SQL_EDITOR_USER ||
-    props.binding.role === PresetRoleType.PROJECT_EXPORTER
-  ) {
-    if (state.databaseResources) {
-      expression.push(stringifyDatabaseResources(state.databaseResources));
-    }
-  }
-  if (props.binding.role === PresetRoleType.PROJECT_EXPORTER) {
-    if (state.maxRowCount) {
-      expression.push(`request.row_limit <= ${state.maxRowCount}`);
-    }
-  }
-  if (expression.length > 0) {
-    newBinding.condition.expression = expression.join(" && ");
-  } else {
-    newBinding.condition.expression = "";
   }
 
   policy.bindings.push(newBinding);
