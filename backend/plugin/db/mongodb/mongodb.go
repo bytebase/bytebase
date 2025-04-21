@@ -402,7 +402,7 @@ func getSimpleStatementResult(data []byte) (*v1pb.QueryResult, error) {
 	}
 
 	for _, v := range rows {
-		r, err := bson.MarshalExtJSONIndent(v, true, false, "", "  ")
+		r, err := bson.MarshalExtJSONIndent(v, false, false, "", "  ")
 		if err != nil {
 			return nil, err
 		}
@@ -417,7 +417,9 @@ func getSimpleStatementResult(data []byte) (*v1pb.QueryResult, error) {
 
 func convertRows(data []byte) ([]any, error) {
 	var a any
-	if err := bson.UnmarshalExtJSON(data, true, &a); err != nil {
+	// Set canonical to false in order to accept both canonical and relaxed format.
+	// https://www.mongodb.com/docs/manual/reference/mongodb-extended-json/
+	if err := bson.UnmarshalExtJSON(data, false, &a); err != nil {
 		return nil, err
 	}
 
