@@ -345,12 +345,6 @@ export const buildSpecForTarget = async (
       spec.changeDatabaseConfig.schemaVersion = version;
     }
   }
-  if (template === "bb.issue.database.schema.baseline") {
-    spec.changeDatabaseConfig = Plan_ChangeDatabaseConfig.fromJSON({
-      target,
-      type: Plan_ChangeDatabaseConfig_Type.BASELINE,
-    });
-  }
   if (template === "bb.issue.database.data.export") {
     spec.exportDataConfig = Plan_ExportDataConfig.fromJSON({
       target,
