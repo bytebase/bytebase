@@ -220,6 +220,16 @@ func getListDatabaseFilter(filter string) (*store.ListResourceFilter, error) {
 			labelValues := strings.Split(keyVal[1], ",")
 			positionalArgs = append(positionalArgs, labelValues)
 			return fmt.Sprintf("db.metadata->'labels'->>'%s' = ANY($%d)", labelKey, len(positionalArgs)), nil
+		case "drifted":
+			drifted, ok := value.(bool)
+			if !ok {
+				return "", status.Errorf(codes.InvalidArgument, "invalid drifted filter %q", value)
+			}
+			condition := "IS"
+			if !drifted {
+				condition = "IS NOT"
+			}
+			return fmt.Sprintf("(db.metadata->>'drifted')::boolean %s TRUE", condition), nil
 		case "exclude_unassigned":
 			if _, ok := value.(bool); ok {
 				positionalArgs = append(positionalArgs, base.DefaultProjectID)
