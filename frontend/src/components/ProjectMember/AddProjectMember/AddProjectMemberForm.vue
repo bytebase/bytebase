@@ -75,8 +75,7 @@
 
 <script lang="ts" setup>
 /* eslint-disable vue/no-mutating-props */
-import dayjs from "dayjs";
-import { head, isUndefined } from "lodash-es";
+import { isUndefined } from "lodash-es";
 import { NInput, NButton } from "naive-ui";
 import { computed, reactive, watch } from "vue";
 import ExpirationSelector from "@/components/ExpirationSelector.vue";
@@ -86,10 +85,8 @@ import MembersBindingSelect from "@/components/Member/MembersBindingSelect.vue";
 import { ProjectRoleSelect } from "@/components/v2/Select";
 import type { ComposedProject, DatabaseResource } from "@/types";
 import { PresetRoleType } from "@/types";
-import { Expr } from "@/types/proto/google/type/expr";
 import type { Binding } from "@/types/proto/v1/iam_policy";
-import { displayRoleTitle, extractDatabaseResourceName } from "@/utils";
-import { stringifyDatabaseResources } from "@/utils/issue/cel";
+import { buildConditionExpr } from "@/utils/issue/cel";
 
 const props = defineProps<{
   project: ComposedProject;
@@ -139,94 +136,29 @@ watch(
 watch(
   () => state,
   () => {
-    const conditionName = generateConditionTitle();
     props.binding.members = state.memberList;
     if (state.role) {
       props.binding.role = state.role;
     }
-    const expression: string[] = [];
-    if (state.expirationTimestampInMS && state.expirationTimestampInMS > 0) {
-      expression.push(
-        `request.time < timestamp("${dayjs(state.expirationTimestampInMS).toISOString()}")`
-      );
-    }
-    if (
-      state.role === PresetRoleType.SQL_EDITOR_USER ||
-      state.role === PresetRoleType.PROJECT_EXPORTER
-    ) {
-      if (state.databaseResources) {
-        expression.push(stringifyDatabaseResources(state.databaseResources));
-      }
-    }
-    if (state.role === PresetRoleType.PROJECT_EXPORTER) {
-      if (state.maxRowCount) {
-        expression.push(`request.row_limit <= ${state.maxRowCount}`);
-      }
-    }
-    props.binding.condition = Expr.create({
-      title: conditionName,
+    props.binding.condition = buildConditionExpr({
+      role: state.role ?? "",
       description: state.reason,
-      expression: expression.length > 0 ? expression.join(" && ") : undefined,
+      expirationTimestampInMS: state.expirationTimestampInMS,
+      rowLimit:
+        state.role === PresetRoleType.PROJECT_EXPORTER
+          ? state.maxRowCount
+          : undefined,
+      databaseResources:
+        state.role === PresetRoleType.SQL_EDITOR_USER ||
+        state.role === PresetRoleType.PROJECT_EXPORTER
+          ? state.databaseResources
+          : undefined,
     });
   },
   {
     deep: true,
   }
 );
-
-const generateConditionTitle = () => {
-  if (!state.role) {
-    return "";
-  }
-
-  const title = [displayRoleTitle(state.role)];
-  if (
-    state.role === PresetRoleType.SQL_EDITOR_USER ||
-    state.role === PresetRoleType.PROJECT_EXPORTER
-  ) {
-    let conditionSuffix = "";
-    if (!state.databaseResources || state.databaseResources.length === 0) {
-      conditionSuffix = `All databases`;
-    } else if (state.databaseResources.length <= 3) {
-      const databaseResourceNames = state.databaseResources.map((ds) =>
-        getDatabaseResourceName(ds)
-      );
-      conditionSuffix = `${databaseResourceNames.join(", ")}`;
-    } else {
-      const firstDatabaseResourceName = getDatabaseResourceName(
-        head(state.databaseResources)!
-      );
-      conditionSuffix = `${firstDatabaseResourceName} and ${
-        state.databaseResources.length - 1
-      } more`;
-    }
-    title.push(conditionSuffix);
-  }
-  if (state.expirationTimestampInMS && state.expirationTimestampInMS > 0) {
-    title.push(
-      `${dayjs().format("L")}-${dayjs(state.expirationTimestampInMS).format("L")}`
-    );
-  }
-
-  return title.join(" ");
-};
-
-const getDatabaseResourceName = (databaseResource: DatabaseResource) => {
-  const { databaseName } = extractDatabaseResourceName(
-    databaseResource.databaseFullName
-  );
-  if (databaseResource.table) {
-    if (databaseResource.schema) {
-      return `${databaseName}.${databaseResource.schema}.${databaseResource.table}`;
-    } else {
-      return `${databaseName}.${databaseResource.table}`;
-    }
-  } else if (databaseResource.schema) {
-    return `${databaseName}.${databaseResource.schema}`;
-  } else {
-    return databaseName;
-  }
-};
 
 defineExpose({
   allowConfirm: computed(() => {

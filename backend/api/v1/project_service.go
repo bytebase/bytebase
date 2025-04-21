@@ -1204,6 +1204,9 @@ func convertToV1IamPolicy(ctx context.Context, stores *store.Store, iamPolicy *s
 			}
 			members = append(members, memberInBinding)
 		}
+		if len(members) == 0 {
+			continue
+		}
 		v1pbBinding := &v1pb.Binding{
 			Role:      binding.Role,
 			Members:   members,
@@ -1247,6 +1250,9 @@ func convertToStoreIamPolicy(ctx context.Context, stores *store.Store, iamPolicy
 				return nil, err
 			}
 			members = append(members, storeMember)
+		}
+		if len(members) == 0 {
+			continue
 		}
 
 		storeBinding := &storepb.Binding{
@@ -1407,10 +1413,6 @@ func (*ProjectService) validateBindings(bindings []*v1pb.Binding, roles []*v1pb.
 		}
 		if !existingRoles[binding.Role] {
 			return errors.Errorf("IAM Binding role %s does not exist", binding.Role)
-		}
-		// Each of the bindings must contain at least one member.
-		if len(binding.Members) == 0 {
-			return errors.Errorf("Each IAM binding must have at least one member")
 		}
 
 		// Users within each binding must be unique.
