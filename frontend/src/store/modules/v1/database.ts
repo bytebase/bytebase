@@ -20,7 +20,7 @@ import type {
   BatchUpdateDatabasesRequest,
 } from "@/types/proto/v1/database_service";
 import type { InstanceResource } from "@/types/proto/v1/instance_service";
-import { extractDatabaseResourceName } from "@/utils";
+import { extractDatabaseResourceName, isNullOrUndefined } from "@/utils";
 import {
   instanceNamePrefix,
   projectNamePrefix,
@@ -41,6 +41,7 @@ export interface DatabaseFilter {
   labels?: string[];
   engines?: Engine[];
   excludeEngines?: Engine[];
+  drifted?: boolean;
 }
 
 const isValidParentName = (parent: string): boolean => {
@@ -82,6 +83,9 @@ const getListDatabaseFilter = (filter: DatabaseFilter): string => {
     params.push(
       `!(engine in [${filter.excludeEngines.map((e) => `"${engineToJSON(e)}"`).join(", ")}])`
     );
+  }
+  if (!isNullOrUndefined(filter.drifted)) {
+    params.push(`drifted == ${filter.drifted}`);
   }
   const keyword = filter.query?.trim()?.toLowerCase();
   if (keyword) {

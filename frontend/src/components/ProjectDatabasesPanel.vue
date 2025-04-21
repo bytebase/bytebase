@@ -129,6 +129,7 @@ const scopeOptions = useCommonSearchScopeOptions([
   ...CommonFilterScopeIdList,
   "database-label",
   "engine",
+  "drifted",
 ]);
 
 const selectedInstance = computed(() => {
@@ -163,12 +164,23 @@ const selectedEngines = computed(() => {
     .map((scope) => engineFromJSON(scope.value));
 });
 
+const selectedDriftedValue = computed(() => {
+  const driftedValue = state.params.scopes.find(
+    (scope) => scope.id === "drifted"
+  )?.value;
+  if (driftedValue === undefined) {
+    return undefined;
+  }
+  return driftedValue === "true" ? true : false;
+});
+
 const filter = computed(() => ({
   instance: selectedInstance.value,
   environment: selectedEnvironment.value,
   query: state.params.query,
   labels: selectedLabels.value,
   engines: selectedEngines.value,
+  drifted: selectedDriftedValue.value,
 }));
 
 const selectedDatabases = computed((): ComposedDatabase[] => {

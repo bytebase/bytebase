@@ -1492,6 +1492,7 @@
     },
     "not-found": "Không tìm thấy cơ sở dữ liệu",
     "drifted": {
+      "self": "Sơ đồ trôi dạt",
       "schema-drift-detected": {
         "self": "Đã phát hiện sự trôi dạt của sơ đồ",
         "description": "Sơ đồ khác với sơ đồ được áp dụng lần cuối. Điều này có thể gây ra lỗi ứng dụng và cần được giải quyết."
