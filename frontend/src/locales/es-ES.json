@@ -1492,6 +1492,7 @@
     },
     "not-found": "No se puede encontrar la base de datos",
     "drifted": {
+      "self": "El esquema se desvió",
       "schema-drift-detected": {
         "self": "Se detectó una desviación del esquema",
         "description": "El esquema es diferente del último aplicado. Esto puede causar errores de aplicación y debe solucionarse."
