@@ -1495,6 +1495,10 @@
       "schema-drift-detected": {
         "self": "Schema drift detected",
         "description": "The schema is different from the last applied schema. This may cause application errors and should be resolved."
+      },
+      "new-baseline": {
+        "self": "New baseline",
+        "successfully-established": "Successfully established new baseline"
       }
     }
   },

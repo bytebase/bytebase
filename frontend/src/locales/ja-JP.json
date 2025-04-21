@@ -1495,6 +1495,10 @@
       "schema-drift-detected": {
         "self": "スキーマドリフトが検出されました",
         "description": "スキーマが最後に適用されたスキーマと異なります。アプリケーションエラーが発生する可能性があるため、解決する必要があります。"
+      },
+      "new-baseline": {
+        "self": "新しいベースライン",
+        "successfully-established": "新しいベースラインを確立しました"
       }
     }
   },
