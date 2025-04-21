@@ -107,7 +107,7 @@
     </div>
 
     <div
-      v-if="!create && !hideArchiveRestore"
+      v-if="!create"
       class="mt-6 border-t border-block-border flex justify-between items-center pt-4 pb-2"
     >
       <BBButtonConfirm
@@ -152,13 +152,11 @@ import { useEnvironmentFormContext } from "./context";
 
 withDefaults(
   defineProps<{
-    hideArchiveRestore?: boolean;
     features?: Array<
       "BASE" | "TIER" | "ROLLOUT_POLICY" | "SQL_REVIEW" | "ACCESS_CONTROL"
     >;
   }>(),
   {
-    hideArchiveRestore: false,
     features: () => [
       "BASE",
       "TIER",
