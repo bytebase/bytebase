@@ -320,6 +320,7 @@ const generateMultiDb = async (
     | "bb.issue.database.data.update"
     | "bb.issue.database.data.export"
 ) => {
+  // Check if any database is drifted.
   if (props.databases.some((d) => d.drifted)) {
     const confirmed = await showDatabaseDriftedWarningDialog();
     if (!confirmed) {
