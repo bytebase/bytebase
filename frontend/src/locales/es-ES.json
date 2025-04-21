@@ -987,6 +987,10 @@
       "create-database": "Crear base de datos",
       "request-querier-role": "Rol de consultador de solicitudes",
       "request-exporter-role": "Solicitar función de exportación"
+    },
+    "schema-drift-detected": {
+      "self": "Se detectó una desviación del esquema",
+      "description": "Las bases de datos seleccionadas presentan una desviación de esquema. Asegúrese de que la desviación sea la esperada y de que sea segura para su aplicación."
     }
   },
   "quick-action": {
