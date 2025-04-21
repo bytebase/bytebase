@@ -78,7 +78,7 @@ func TestValidateBindings(t *testing.T) {
 			},
 			wantErr: true,
 		},
-		// Each binding must contain at least one member.
+		// Binding members can be empty.
 		{
 			bindings: []*v1pb.Binding{
 				{
@@ -98,7 +98,7 @@ func TestValidateBindings(t *testing.T) {
 					Name: "role/projectDeveloper",
 				},
 			},
-			wantErr: true,
+			wantErr: false,
 		},
 		// Must contain one owner binding.
 		{

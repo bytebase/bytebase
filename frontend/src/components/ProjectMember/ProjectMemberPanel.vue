@@ -81,9 +81,9 @@
   />
 
   <ProjectMemberRolePanel
-    v-if="state.editingMember"
+    v-if="pendingEditMember"
     :project="project"
-    :binding="state.editingMember"
+    :binding="pendingEditMember"
     @revoke-binding="revokeMember"
     @close="state.editingMember = undefined"
   />
@@ -125,7 +125,7 @@ interface LocalState {
   selectedMembers: string[];
   showInactiveMemberList: boolean;
   showAddMemberPanel: boolean;
-  editingMember?: MemberBinding;
+  editingMember?: string;
 }
 
 const props = defineProps<{
@@ -179,8 +179,12 @@ const memberBindings = computed(() => {
 });
 
 const selectMember = (binding: MemberBinding) => {
-  state.editingMember = binding;
+  state.editingMember = binding.binding;
 };
+
+const pendingEditMember = computed(() => {
+  return memberBindings.value.find((m) => m.binding === state.editingMember);
+});
 
 const revokeMember = async (binding: MemberBinding) => {
   const policy = cloneDeep(iamPolicy.value);
@@ -189,9 +193,6 @@ const revokeMember = async (binding: MemberBinding) => {
       return member !== binding.binding;
     });
   }
-  policy.bindings = policy.bindings.filter(
-    (binding) => binding.members.length > 0
-  );
   await projectIamPolicyStore.updateProjectIamPolicy(
     projectResourceName.value,
     policy
@@ -235,9 +236,6 @@ const handleRevokeSelectedMembers = () => {
           (member) => !state.selectedMembers.includes(member)
         );
       }
-      policy.bindings = policy.bindings.filter(
-        (binding) => binding.members.length > 0
-      );
       projectIamPolicyStore.updateProjectIamPolicy(
         projectResourceName.value,
         policy

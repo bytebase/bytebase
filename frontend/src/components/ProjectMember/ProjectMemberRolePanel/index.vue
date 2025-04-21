@@ -83,7 +83,9 @@
               :data-source="role.singleBindingList"
               class="border"
             >
-              <template #item="{ item }: SingleBindingRow">
+              <template
+                #item="{ item, row }: { item: SingleBinding; row: number }"
+              >
                 <div class="bb-grid-cell">
                   <span
                     :class="[
@@ -140,7 +142,7 @@
                         text
                         class="cursor-pointer opacity-60 hover:opacity-100"
                         :disabled="!allowDeleteCondition(item)"
-                        @click="handleDeleteCondition(item)"
+                        @click="handleDeleteCondition(role, row)"
                       >
                         <heroicons-outline:trash class="w-4 h-4" />
                       </NButton>
@@ -212,7 +214,6 @@ import { Building2Icon } from "lucide-vue-next";
 import { NButton, NTag, NTooltip, useDialog } from "naive-ui";
 import { computed, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import type { BBGridRow } from "@/bbkit";
 import { BBButtonConfirm, BBGrid } from "@/bbkit";
 import type { MemberBinding } from "@/components/Member/types";
 import GroupMemberNameCell from "@/components/User/Settings/UserDataTableByGroup/cells/GroupMemberNameCell.vue";
@@ -237,10 +238,7 @@ import {
   hasProjectPermissionV2,
   memberMapToRolesInProjectIAM,
 } from "@/utils";
-import {
-  convertFromExpr,
-  stringifyConditionExpression,
-} from "@/utils/issue/cel";
+import { buildConditionExpr, convertFromExpr } from "@/utils/issue/cel";
 import AddProjectMembersPanel from "../AddProjectMember/AddProjectMembersPanel.vue";
 import EditProjectRolePanel from "./EditProjectRolePanel.vue";
 import RoleDescription from "./RoleDescription.vue";
@@ -249,11 +247,10 @@ import RoleExpiredTip from "./RoleExpiredTip.vue";
 interface SingleBinding {
   databaseResource?: DatabaseResource;
   expiration?: Date;
-  description?: string;
+  description: string;
+  rowLimit?: number;
   rawBinding: Binding;
 }
-
-type SingleBindingRow = BBGridRow<SingleBinding>;
 
 interface LocalState {
   showAddMemberPanel: boolean;
@@ -396,16 +393,9 @@ const handleDeleteRole = (role: string) => {
         if (binding.role !== role) {
           continue;
         }
-        if (binding.members.includes(props.binding.binding)) {
-          binding.members = binding.members.filter((member) => {
-            return member !== props.binding.binding;
-          });
-        }
-        if (binding.members.length === 0) {
-          policy.bindings = policy.bindings.filter(
-            (item) => !isEqual(item, binding)
-          );
-        }
+        binding.members = binding.members.filter((member) => {
+          return member !== props.binding.binding;
+        });
       }
       await projectIamPolicyStore.updateProjectIamPolicy(
         projectResourceName.value,
@@ -427,10 +417,18 @@ const allowDeleteCondition = (singleBinding: SingleBinding) => {
   return true;
 };
 
-const handleDeleteCondition = async (singleBinding: SingleBinding) => {
+const handleDeleteCondition = async (
+  item: {
+    role: string;
+    singleBindingList: SingleBinding[];
+  },
+  index: number
+) => {
+  const singleBinding = item.singleBindingList[index];
   const conditionName =
     singleBinding.rawBinding.condition?.title ||
     displayRoleTitle(singleBinding.rawBinding.role);
+
   const title = t("project.members.revoke-role-from-user", {
     role: conditionName,
     user: props.binding.title,
@@ -449,32 +447,36 @@ const handleDeleteCondition = async (singleBinding: SingleBinding) => {
       if (!rawBinding) {
         return;
       }
-
+      // Simply remove the member from original binding.
       rawBinding.members = rawBinding.members.filter((member) => {
         return member !== props.binding.binding;
       });
 
-      if (rawBinding.members.length === 0) {
-        policy.bindings = policy.bindings.filter(
-          (binding) => !isEqual(binding, rawBinding)
-        );
-      } else {
-        if (rawBinding.parsedExpr) {
-          const conditionExpr = convertFromExpr(rawBinding.parsedExpr);
-          if (conditionExpr.databaseResources) {
-            conditionExpr.databaseResources =
-              conditionExpr.databaseResources.filter(
-                (resource) => !isEqual(resource, singleBinding.databaseResource)
-              );
-            if (conditionExpr.databaseResources.length !== 0) {
-              const newBinding = cloneDeep(rawBinding);
-              newBinding.members = [props.binding.binding];
-              newBinding.condition!.expression =
-                stringifyConditionExpression(conditionExpr);
-              policy.bindings.push(newBinding);
-            }
-          }
+      // Build new bindings with the remaining conditions
+      const bindingList = item.singleBindingList.filter((b, i) => {
+        if (i === index) {
+          return false;
         }
+        return isEqual(b.rawBinding, singleBinding.rawBinding);
+      });
+      if (bindingList.length > 0) {
+        const databaseResources = bindingList
+          .filter((b) => b.databaseResource)
+          .map((b) => b.databaseResource) as DatabaseResource[];
+
+        policy.bindings.push(
+          Binding.fromPartial({
+            role: item.role,
+            members: [props.binding.binding],
+            condition: buildConditionExpr({
+              role: item.role,
+              description: bindingList[0].description,
+              expirationTimestampInMS: bindingList[0].expiration?.getTime(),
+              rowLimit: bindingList[0].rowLimit,
+              databaseResources: databaseResources,
+            }),
+          })
+        );
       }
 
       await projectIamPolicyStore.updateProjectIamPolicy(
@@ -548,16 +550,13 @@ const checkRoleExpired = (role: SingleBinding) => {
 };
 
 watch(
-  () => [iamPolicy.value?.bindings],
+  () => props.binding,
   async () => {
     const tempRoleList: {
       role: string;
       singleBindingList: SingleBinding[];
     }[] = [];
-    const rawBindingList = iamPolicy.value?.bindings?.filter((binding) => {
-      return binding.members.includes(props.binding.binding);
-    });
-    for (const rawBinding of rawBindingList) {
+    for (const rawBinding of props.binding.projectRoleBindings) {
       const singleBindingList = [];
       const singleBinding: SingleBinding = {
         description: rawBinding.condition?.description || "",
@@ -569,6 +568,7 @@ watch(
         if (conditionExpr.expiredTime) {
           singleBinding.expiration = new Date(conditionExpr.expiredTime);
         }
+        singleBinding.rowLimit = conditionExpr.rowLimit;
         if (
           Array.isArray(conditionExpr.databaseResources) &&
           conditionExpr.databaseResources.length > 0
@@ -610,11 +610,10 @@ watch(
       if (!PRESET_ROLES.includes(b.role)) return 1;
       return PRESET_ROLES.indexOf(a.role) - PRESET_ROLES.indexOf(b.role);
     });
+
     roleList.value = tempRoleList;
   },
-  {
-    immediate: true,
-  }
+  { immediate: true, deep: true }
 );
 
 const groupMembers = computed(() => {
