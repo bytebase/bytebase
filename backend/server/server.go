@@ -312,7 +312,9 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	configureEchoRouters(s.echoServer, s.grpcServer, s.lspServer, directorySyncServer, mux, profile)
 
 	// Configure grpc prometheus metrics.
-	prometheus.DefaultRegisterer.MustRegister(srvMetrics)
+	if err := prometheus.DefaultRegisterer.Register(srvMetrics); err != nil && errors.Is(err, prometheus.AlreadyRegisteredError{}) {
+		return nil, err
+	}
 	srvMetrics.InitializeMetrics(s.grpcServer)
 
 	serverStarted = true
