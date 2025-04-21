@@ -4,12 +4,11 @@
     :environment="state.environment"
     :rollout-policy="state.rolloutPolicy"
     @update="doUpdate"
-    @archive="doDelete"
+    @delete="doDelete"
     @update-policy="updatePolicy"
   >
     <EnvironmentFormBody
       :features="features"
-      :hide-archive-restore="hideArchiveRestore"
       class="w-full px-4 pb-4"
       :class="bodyClass"
     />
@@ -23,15 +22,13 @@
 <script lang="ts" setup>
 import { cloneDeep, isEqual } from "lodash-es";
 import { computed, reactive, watch, watchEffect } from "vue";
-import { useRouter } from "vue-router";
 import {
   EnvironmentForm,
   Form as EnvironmentFormBody,
   Buttons as EnvironmentFormButtons,
 } from "@/components/EnvironmentForm";
-import { ENVIRONMENT_V1_ROUTE_DASHBOARD } from "@/router/dashboard/workspaceRoutes";
+import { useEnvironmentV1Store } from "@/store";
 import { environmentNamePrefix } from "@/store/modules/v1/common";
-import { useEnvironmentV1Store } from "@/store/modules/v1/environment";
 import {
   usePolicyV1Store,
   getEmptyRolloutPolicy,
@@ -54,14 +51,14 @@ interface LocalState {
 const props = defineProps<{
   features?: InstanceType<typeof EnvironmentFormBody>["features"];
   environmentName: string;
-  hideArchiveRestore?: boolean;
   bodyClass?: VueClass;
   buttonsClass?: VueClass;
 }>();
 
-const emit = defineEmits(["delete"]);
+const emit = defineEmits<{
+  (event: "delete", environment: Environment): void;
+}>();
 
-const router = useRouter();
 const environmentV1Store = useEnvironmentV1Store();
 const policyV1Store = usePolicyV1Store();
 
@@ -130,15 +127,7 @@ const doUpdate = (environmentPatch: Environment) => {
 };
 
 const doDelete = (environment: Environment) => {
-  environmentV1Store
-    .deleteEnvironment(formatEnvironmentName(environment.id))
-    .then(() => {
-      emit("delete", environment);
-      assignEnvironment(environment);
-      router.replace({
-        name: ENVIRONMENT_V1_ROUTE_DASHBOARD,
-      });
-    });
+  emit("delete", environment);
 };
 
 const updatePolicy = async (params: {
