@@ -987,6 +987,10 @@
       "create-database": "创建数据库",
       "request-querier-role": "申请查询者角色",
       "request-exporter-role": "申请导出者角色"
+    },
+    "schema-drift-detected": {
+      "self": "检测到 Schema 偏差",
+      "description": "所选数据库存在 Schema 偏差，请在变更前确保该偏差符合预期。"
     }
   },
   "quick-action": {

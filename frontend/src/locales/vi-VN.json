@@ -987,6 +987,10 @@
       "create-database": "Tạo cơ sở dữ liệu",
       "request-querier-role": "Yêu cầu vai trò người truy vấn",
       "request-exporter-role": "Yêu cầu vai trò người xuất"
+    },
+    "schema-drift-detected": {
+      "self": "Đã phát hiện sự trôi dạt của sơ đồ",
+      "description": "Cơ sở dữ liệu được chọn có sự trôi dạt lược đồ. Vui lòng đảm bảo rằng sự trôi dạt này được mong đợi và an toàn để áp dụng."
     }
   },
   "quick-action": {

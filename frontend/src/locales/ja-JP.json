@@ -987,6 +987,10 @@
       "create-database": "データベースを作成する",
       "request-querier-role": "リクエストクエリーロール",
       "request-exporter-role": "エクスポートロールのリクエスト"
+    },
+    "schema-drift-detected": {
+      "self": "スキーマドリフトが検出されました",
+      "description": "選択したデータベースにはスキーマドリフトがあります。ドリフトが想定どおりであり、適用しても安全であることを確認してください。"
     }
   },
   "quick-action": {
