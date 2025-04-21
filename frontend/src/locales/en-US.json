@@ -987,6 +987,10 @@
       "create-database": "Create database",
       "request-querier-role": "Request querier role",
       "request-exporter-role": "Request exporter role"
+    },
+    "schema-drift-detected": {
+      "self": "Schema drift detected",
+      "description": "The selected database(s) has schema drift. Please make sure the drift is expected and safe to apply."
     }
   },
   "quick-action": {
