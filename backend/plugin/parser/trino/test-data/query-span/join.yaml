@@ -1,0 +1,167 @@
+- description: "Simple JOIN"
+  statement: "SELECT u.id, u.name, o.order_id FROM users u JOIN orders o ON u.id = o.user_id;"
+  defaultDatabase: "catalog1"
+  metadata: '{"name":"catalog1","schemas":[{"name":"public","tables":[{"name":"users","columns":[{"name":"id","type":"integer"},{"name":"name","type":"varchar"}]},{"name":"orders","columns":[{"name":"order_id","type":"integer"},{"name":"user_id","type":"integer"}]}]}]}'
+  querySpan:
+    type: "SELECT"
+    sourceColumns:
+      "catalog1.public.users.id": true
+      "catalog1.public.users.name": true
+      "catalog1.public.users": true
+      "catalog1.public.orders.order_id": true
+      "catalog1.public.orders.user_id": true
+      "catalog1.public.orders": true
+    results:
+      - name: "id"
+        isPlainField: true
+        sourceColumns:
+          "catalog1.public.users.id": true
+      - name: "name"
+        isPlainField: true
+        sourceColumns:
+          "catalog1.public.users.name": true
+      - name: "order_id"
+        isPlainField: true
+        sourceColumns:
+          "catalog1.public.orders.order_id": true
+
+- description: "LEFT JOIN"
+  statement: "SELECT u.id, u.name, o.order_id FROM users u LEFT JOIN orders o ON u.id = o.user_id;"
+  defaultDatabase: "catalog1"
+  metadata: '{"name":"catalog1","schemas":[{"name":"public","tables":[{"name":"users","columns":[{"name":"id","type":"integer"},{"name":"name","type":"varchar"}]},{"name":"orders","columns":[{"name":"order_id","type":"integer"},{"name":"user_id","type":"integer"}]}]}]}'
+  querySpan:
+    type: "SELECT"
+    sourceColumns:
+      "catalog1.public.users.id": true
+      "catalog1.public.users.name": true
+      "catalog1.public.users": true
+      "catalog1.public.orders.order_id": true
+      "catalog1.public.orders.user_id": true
+      "catalog1.public.orders": true
+    results:
+      - name: "id"
+        isPlainField: true
+        sourceColumns:
+          "catalog1.public.users.id": true
+      - name: "name"
+        isPlainField: true
+        sourceColumns:
+          "catalog1.public.users.name": true
+      - name: "order_id"
+        isPlainField: true
+        sourceColumns:
+          "catalog1.public.orders.order_id": true
+
+- description: "RIGHT JOIN"
+  statement: "SELECT u.id, u.name, o.order_id FROM users u RIGHT JOIN orders o ON u.id = o.user_id;"
+  defaultDatabase: "catalog1"
+  metadata: '{"name":"catalog1","schemas":[{"name":"public","tables":[{"name":"users","columns":[{"name":"id","type":"integer"},{"name":"name","type":"varchar"}]},{"name":"orders","columns":[{"name":"order_id","type":"integer"},{"name":"user_id","type":"integer"}]}]}]}'
+  querySpan:
+    type: "SELECT"
+    sourceColumns:
+      "catalog1.public.users.id": true
+      "catalog1.public.users.name": true
+      "catalog1.public.users": true
+      "catalog1.public.orders.order_id": true
+      "catalog1.public.orders.user_id": true
+      "catalog1.public.orders": true
+    results:
+      - name: "id"
+        isPlainField: true
+        sourceColumns:
+          "catalog1.public.users.id": true
+      - name: "name"
+        isPlainField: true
+        sourceColumns:
+          "catalog1.public.users.name": true
+      - name: "order_id"
+        isPlainField: true
+        sourceColumns:
+          "catalog1.public.orders.order_id": true
+
+- description: "FULL OUTER JOIN"
+  statement: "SELECT u.id, u.name, o.order_id FROM users u FULL OUTER JOIN orders o ON u.id = o.user_id;"
+  defaultDatabase: "catalog1"
+  metadata: '{"name":"catalog1","schemas":[{"name":"public","tables":[{"name":"users","columns":[{"name":"id","type":"integer"},{"name":"name","type":"varchar"}]},{"name":"orders","columns":[{"name":"order_id","type":"integer"},{"name":"user_id","type":"integer"}]}]}]}'
+  querySpan:
+    type: "SELECT"
+    sourceColumns:
+      "catalog1.public.users.id": true
+      "catalog1.public.users.name": true
+      "catalog1.public.users": true
+      "catalog1.public.orders.order_id": true
+      "catalog1.public.orders.user_id": true
+      "catalog1.public.orders": true
+    results:
+      - name: "id"
+        isPlainField: true
+        sourceColumns:
+          "catalog1.public.users.id": true
+      - name: "name"
+        isPlainField: true
+        sourceColumns:
+          "catalog1.public.users.name": true
+      - name: "order_id"
+        isPlainField: true
+        sourceColumns:
+          "catalog1.public.orders.order_id": true
+
+- description: "CROSS JOIN"
+  statement: "SELECT u.id, u.name, o.order_id FROM users u CROSS JOIN orders o;"
+  defaultDatabase: "catalog1"
+  metadata: '{"name":"catalog1","schemas":[{"name":"public","tables":[{"name":"users","columns":[{"name":"id","type":"integer"},{"name":"name","type":"varchar"}]},{"name":"orders","columns":[{"name":"order_id","type":"integer"},{"name":"user_id","type":"integer"}]}]}]}'
+  querySpan:
+    type: "SELECT"
+    sourceColumns:
+      "catalog1.public.users.id": true
+      "catalog1.public.users.name": true
+      "catalog1.public.users": true
+      "catalog1.public.orders.order_id": true
+      "catalog1.public.orders": true
+    results:
+      - name: "id"
+        isPlainField: true
+        sourceColumns:
+          "catalog1.public.users.id": true
+      - name: "name"
+        isPlainField: true
+        sourceColumns:
+          "catalog1.public.users.name": true
+      - name: "order_id"
+        isPlainField: true
+        sourceColumns:
+          "catalog1.public.orders.order_id": true
+
+- description: "Multiple JOINs"
+  statement: "SELECT u.id, u.name, o.order_id, i.item_name FROM users u JOIN orders o ON u.id = o.user_id JOIN order_items i ON o.order_id = i.order_id;"
+  defaultDatabase: "catalog1"
+  metadata: '{"name":"catalog1","schemas":[{"name":"public","tables":[{"name":"users","columns":[{"name":"id","type":"integer"},{"name":"name","type":"varchar"}]},{"name":"orders","columns":[{"name":"order_id","type":"integer"},{"name":"user_id","type":"integer"}]},{"name":"order_items","columns":[{"name":"order_id","type":"integer"},{"name":"item_name","type":"varchar"}]}]}]}'
+  querySpan:
+    type: "SELECT"
+    sourceColumns:
+      "catalog1.public.users.id": true
+      "catalog1.public.users.name": true
+      "catalog1.public.users": true
+      "catalog1.public.orders.order_id": true
+      "catalog1.public.orders.user_id": true
+      "catalog1.public.orders": true
+      "catalog1.public.order_items.order_id": true
+      "catalog1.public.order_items.item_name": true
+      "catalog1.public.order_items": true
+    results:
+      - name: "id"
+        isPlainField: true
+        sourceColumns:
+          "catalog1.public.users.id": true
+      - name: "name"
+        isPlainField: true
+        sourceColumns:
+          "catalog1.public.users.name": true
+      - name: "order_id"
+        isPlainField: true
+        sourceColumns:
+          "catalog1.public.orders.order_id": true
+      - name: "item_name"
+        isPlainField: true
+        sourceColumns:
+          "catalog1.public.order_items.item_name": true

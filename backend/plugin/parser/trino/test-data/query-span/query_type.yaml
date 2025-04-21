@@ -1,0 +1,126 @@
+- description: "SELECT"
+  statement: "SELECT id, name FROM users;"
+  defaultDatabase: "catalog1"
+  metadata: '{"name":"catalog1","schemas":[{"name":"public","tables":[{"name":"users","columns":[{"name":"id","type":"integer"},{"name":"name","type":"varchar"}]}]}]}'
+  querySpan:
+    type: "SELECT"
+    sourceColumns:
+      "catalog1.public.users.id": true
+      "catalog1.public.users.name": true
+      "catalog1.public.users": true
+    results:
+      - name: "id"
+        isPlainField: true
+        sourceColumns:
+          "catalog1.public.users.id": true
+      - name: "name"
+        isPlainField: true
+        sourceColumns:
+          "catalog1.public.users.name": true
+
+- description: "INSERT"
+  statement: "INSERT INTO users (id, name) VALUES (1, 'John');"
+  defaultDatabase: "catalog1"
+  metadata: '{"name":"catalog1","schemas":[{"name":"public","tables":[{"name":"users","columns":[{"name":"id","type":"integer"},{"name":"name","type":"varchar"}]}]}]}'
+  querySpan:
+    type: "DML"
+    sourceColumns:
+      "catalog1.public.users": true
+    results: []
+
+- description: "UPDATE"
+  statement: "UPDATE users SET name = 'Jane' WHERE id = 1;"
+  defaultDatabase: "catalog1"
+  metadata: '{"name":"catalog1","schemas":[{"name":"public","tables":[{"name":"users","columns":[{"name":"id","type":"integer"},{"name":"name","type":"varchar"}]}]}]}'
+  querySpan:
+    type: "DML"
+    sourceColumns:
+      "catalog1.public.users.id": true
+      "catalog1.public.users.name": true
+      "catalog1.public.users": true
+    results: []
+
+- description: "DELETE"
+  statement: "DELETE FROM users WHERE id = 1;"
+  defaultDatabase: "catalog1"
+  metadata: '{"name":"catalog1","schemas":[{"name":"public","tables":[{"name":"users","columns":[{"name":"id","type":"integer"},{"name":"name","type":"varchar"}]}]}]}'
+  querySpan:
+    type: "DML"
+    sourceColumns:
+      "catalog1.public.users.id": true
+      "catalog1.public.users": true
+    results: []
+
+- description: "CREATE TABLE"
+  statement: "CREATE TABLE new_table (id INT, name VARCHAR);"
+  defaultDatabase: "catalog1"
+  metadata: '{"name":"catalog1","schemas":[{"name":"public","tables":[{"name":"users","columns":[{"name":"id","type":"integer"},{"name":"name","type":"varchar"}]}]}]}'
+  querySpan:
+    type: "DDL"
+    sourceColumns: {}
+    results: []
+
+- description: "DROP TABLE"
+  statement: "DROP TABLE users;"
+  defaultDatabase: "catalog1"
+  metadata: '{"name":"catalog1","schemas":[{"name":"public","tables":[{"name":"users","columns":[{"name":"id","type":"integer"},{"name":"name","type":"varchar"}]}]}]}'
+  querySpan:
+    type: "DDL"
+    sourceColumns:
+      "catalog1.public.users": true
+    results: []
+
+- description: "CREATE VIEW"
+  statement: "CREATE VIEW user_view AS SELECT id, name FROM users;"
+  defaultDatabase: "catalog1"
+  metadata: '{"name":"catalog1","schemas":[{"name":"public","tables":[{"name":"users","columns":[{"name":"id","type":"integer"},{"name":"name","type":"varchar"}]}]}]}'
+  querySpan:
+    type: "DDL"
+    sourceColumns:
+      "catalog1.public.users.id": true
+      "catalog1.public.users.name": true
+      "catalog1.public.users": true
+    results: []
+
+- description: "ALTER TABLE"
+  statement: "ALTER TABLE users ADD COLUMN email VARCHAR;"
+  defaultDatabase: "catalog1"
+  metadata: '{"name":"catalog1","schemas":[{"name":"public","tables":[{"name":"users","columns":[{"name":"id","type":"integer"},{"name":"name","type":"varchar"}]}]}]}'
+  querySpan:
+    type: "DDL"
+    sourceColumns:
+      "catalog1.public.users": true
+    results: []
+
+- description: "EXPLAIN"
+  statement: "EXPLAIN SELECT id, name FROM users;"
+  defaultDatabase: "catalog1"
+  metadata: '{"name":"catalog1","schemas":[{"name":"public","tables":[{"name":"users","columns":[{"name":"id","type":"integer"},{"name":"name","type":"varchar"}]}]}]}'
+  querySpan:
+    type: "EXPLAIN"
+    sourceColumns:
+      "catalog1.public.users.id": true
+      "catalog1.public.users.name": true
+      "catalog1.public.users": true
+    results: []
+
+- description: "EXPLAIN ANALYZE"
+  statement: "EXPLAIN ANALYZE SELECT id, name FROM users;"
+  defaultDatabase: "catalog1"
+  metadata: '{"name":"catalog1","schemas":[{"name":"public","tables":[{"name":"users","columns":[{"name":"id","type":"integer"},{"name":"name","type":"varchar"}]}]}]}'
+  querySpan:
+    type: "SELECT"
+    sourceColumns:
+      "catalog1.public.users.id": true
+      "catalog1.public.users.name": true
+      "catalog1.public.users": true
+    results: []
+
+- description: "SHOW TABLES"
+  statement: "SHOW TABLES;"
+  defaultDatabase: "catalog1"
+  metadata: '{"name":"catalog1","schemas":[{"name":"public","tables":[{"name":"users","columns":[{"name":"id","type":"integer"},{"name":"name","type":"varchar"}]}]}]}'
+  querySpan:
+    type: "SELECT_INFO_SCHEMA"
+    sourceColumns: {}
+    results: []

@@ -1,0 +1,72 @@
+- description: Simple SELECT
+  statement: SELECT id, name FROM users;
+  defaultDatabase: catalog1
+  metadata: '{"name":"catalog1","schemas":[{"name":"public","tables":[{"name":"users","columns":[{"name":"id","type":"integer"},{"name":"name","type":"varchar"}]}]}]}'
+  querySpan:
+    type: 1
+    results:
+        - name: id
+          sourcecolumns: []
+          isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
+        - name: name
+          sourcecolumns: []
+          isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
+    sourcecolumns:
+        - server: ""
+          database: catalog1
+          schema: default
+          table: users
+          column: ""
+    predicatecolumns: []
+- description: SELECT with alias
+  statement: SELECT u.id AS user_id, u.name FROM users u;
+  defaultDatabase: catalog1
+  metadata: '{"name":"catalog1","schemas":[{"name":"public","tables":[{"name":"users","columns":[{"name":"id","type":"integer"},{"name":"name","type":"varchar"}]}]}]}'
+  querySpan:
+    type: 1
+    results:
+        - name: user_id
+          sourcecolumns: []
+          isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
+        - name: u.name
+          sourcecolumns: []
+          isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
+    sourcecolumns:
+        - server: ""
+          database: catalog1
+          schema: default
+          table: users
+          column: ""
+    predicatecolumns: []
+- description: SELECT from schema.table
+  statement: SELECT id, name FROM public.users;
+  defaultDatabase: catalog1
+  metadata: '{"name":"catalog1","schemas":[{"name":"public","tables":[{"name":"users","columns":[{"name":"id","type":"integer"},{"name":"name","type":"varchar"}]}]}]}'
+  querySpan:
+    type: 1
+    results:
+        - name: id
+          sourcecolumns: []
+          isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
+        - name: name
+          sourcecolumns: []
+          isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
+    sourcecolumns:
+        - server: ""
+          database: catalog1
+          schema: public
+          table: users
+          column: ""
+    predicatecolumns: []

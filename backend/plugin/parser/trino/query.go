@@ -91,7 +91,7 @@ func (l *resourceExtractListener) EnterTableName(ctx *parser.TableNameContext) {
 
 	// Extract table name from qualified name
 	if ctx.QualifiedName() != nil {
-		parts := l.extractQualifiedNameParts(ctx.QualifiedName())
+		parts := getQualifiedNameParts(ctx.QualifiedName())
 
 		switch len(parts) {
 		case 1:
@@ -123,8 +123,8 @@ func (l *resourceExtractListener) EnterTableName(ctx *parser.TableNameContext) {
 	}
 }
 
-// extractQualifiedNameParts extracts the parts of a qualified name.
-func (l *resourceExtractListener) extractQualifiedNameParts(ctx parser.IQualifiedNameContext) []string {
+// getQualifiedNameParts extracts the parts of a qualified name.
+func getQualifiedNameParts(ctx parser.IQualifiedNameContext) []string {
 	if ctx == nil {
 		return nil
 	}
