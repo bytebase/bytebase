@@ -7,26 +7,32 @@
       type: DATABASE
       definition: ""
       comment: ""
+      priority: 0
     - text: School
       type: DATABASE
       definition: ""
       comment: ""
+      priority: 0
     - text: MySchema
       type: SCHEMA
       definition: ""
       comment: ""
+      priority: 0
     - text: dbo
       type: SCHEMA
       definition: ""
       comment: ""
+      priority: 0
     - text: Address
       type: TABLE
       definition: ""
       comment: ""
+      priority: 0
     - text: Employees
       type: TABLE
       definition: ""
       comment: ""
+      priority: 0
 - description: Column alias can be used in order by clause
   input: SELECT Id AS IdAlias, Name FROM Employees ORDER BY |;
   want:
@@ -34,54 +40,67 @@
       type: COLUMN
       definition: Company.dbo.Address | int, NOT NULL
       comment: ""
+      priority: 1
     - text: Id
       type: COLUMN
       definition: Company.MySchema.SalaryLevel | int, NOT NULL
       comment: ""
+      priority: 1
     - text: Id
       type: COLUMN
       definition: Company.dbo.Employees | int, NOT NULL
       comment: ""
+      priority: 0
     - text: IdAlias
       type: COLUMN
       definition: ""
       comment: ""
+      priority: 0
     - text: Name
       type: COLUMN
       definition: Company.dbo.Employees | varchar, NOT NULL
       comment: ""
+      priority: 0
     - text: SalaryUpBound
       type: COLUMN
       definition: Company.MySchema.SalaryLevel | int, NOT NULL
       comment: ""
+      priority: 1
     - text: Street
       type: COLUMN
       definition: Company.dbo.Address | varchar, NOT NULL
       comment: ""
+      priority: 1
     - text: Company
       type: DATABASE
       definition: ""
       comment: ""
+      priority: 0
     - text: School
       type: DATABASE
       definition: ""
       comment: ""
+      priority: 0
     - text: MySchema
       type: SCHEMA
       definition: ""
       comment: ""
+      priority: 0
     - text: dbo
       type: SCHEMA
       definition: ""
       comment: ""
+      priority: 0
     - text: Address
       type: TABLE
       definition: ""
       comment: ""
+      priority: 0
     - text: Employees
       type: TABLE
       definition: ""
       comment: ""
+      priority: 0
 - description: Table alias referenced by select item
   input: SELECT tableAlias.| FROM Employees AS tableAlias;
   want:
@@ -89,10 +108,12 @@
       type: COLUMN
       definition: Company.dbo.Employees | int, NOT NULL
       comment: ""
+      priority: 0
     - text: Name
       type: COLUMN
       definition: Company.dbo.Employees | varchar, NOT NULL
       comment: ""
+      priority: 0
 - description: Full column name considering CTE
   input: WITH MyCTE_01 AS (SELECT * FROM dbo.Employees) SELECT MyCTE_01.| FROM MyCTE_01;
   want:
@@ -100,10 +121,12 @@
       type: COLUMN
       definition: ""
       comment: ""
+      priority: 0
     - text: Name
       type: COLUMN
       definition: ""
       comment: ""
+      priority: 0
 - description: Full column name
   input: SELECT | FROM Employees;
   want:
@@ -111,50 +134,62 @@
       type: COLUMN
       definition: Company.dbo.Address | int, NOT NULL
       comment: ""
+      priority: 1
     - text: Id
       type: COLUMN
       definition: Company.MySchema.SalaryLevel | int, NOT NULL
       comment: ""
+      priority: 1
     - text: Id
       type: COLUMN
       definition: Company.dbo.Employees | int, NOT NULL
       comment: ""
+      priority: 0
     - text: Name
       type: COLUMN
       definition: Company.dbo.Employees | varchar, NOT NULL
       comment: ""
+      priority: 0
     - text: SalaryUpBound
       type: COLUMN
       definition: Company.MySchema.SalaryLevel | int, NOT NULL
       comment: ""
+      priority: 1
     - text: Street
       type: COLUMN
       definition: Company.dbo.Address | varchar, NOT NULL
       comment: ""
+      priority: 1
     - text: Company
       type: DATABASE
       definition: ""
       comment: ""
+      priority: 0
     - text: School
       type: DATABASE
       definition: ""
       comment: ""
+      priority: 0
     - text: MySchema
       type: SCHEMA
       definition: ""
       comment: ""
+      priority: 0
     - text: dbo
       type: SCHEMA
       definition: ""
       comment: ""
+      priority: 0
     - text: Address
       type: TABLE
       definition: ""
       comment: ""
+      priority: 0
     - text: Employees
       type: TABLE
       definition: ""
       comment: ""
+      priority: 0
 - description: Asterisk appearred in select item list
   input: WITH MyCTE_01 AS (SELECT * FROM dbo.Employees) SELECT |.* FROM MyCTE_01 JOIN dbo.Address ON MyCTE_01.EmployeeID = dbo.Address.EmployeeID
   want:
@@ -162,54 +197,67 @@
       type: COLUMN
       definition: Company.dbo.Address | int, NOT NULL
       comment: ""
+      priority: 0
     - text: Id
       type: COLUMN
       definition: Company.MySchema.SalaryLevel | int, NOT NULL
       comment: ""
+      priority: 1
     - text: Id
       type: COLUMN
       definition: Company.dbo.Employees | int, NOT NULL
       comment: ""
+      priority: 0
     - text: Name
       type: COLUMN
       definition: Company.dbo.Employees | varchar, NOT NULL
       comment: ""
+      priority: 0
     - text: SalaryUpBound
       type: COLUMN
       definition: Company.MySchema.SalaryLevel | int, NOT NULL
       comment: ""
+      priority: 1
     - text: Street
       type: COLUMN
       definition: Company.dbo.Address | varchar, NOT NULL
       comment: ""
+      priority: 0
     - text: Company
       type: DATABASE
       definition: ""
       comment: ""
+      priority: 0
     - text: School
       type: DATABASE
       definition: ""
       comment: ""
+      priority: 0
     - text: MySchema
       type: SCHEMA
       definition: ""
       comment: ""
+      priority: 0
     - text: dbo
       type: SCHEMA
       definition: ""
       comment: ""
+      priority: 0
     - text: Address
       type: TABLE
       definition: ""
       comment: ""
+      priority: 0
     - text: Employees
       type: TABLE
       definition: ""
       comment: ""
+      priority: 0
     - text: MyCTE_01
       type: TABLE
       definition: ""
       comment: ""
+      priority: 0
 - description: Completion should not consider CTE if no schema specified
   input: WITH MyCTE_01 AS (SELECT * FROM dbo.Employees) SELECT * FROM MySchema.|
   want:
@@ -217,6 +265,7 @@
       type: TABLE
       definition: ""
       comment: ""
+      priority: 0
 - description: Completion should consider CTE if no schema specified
   input: WITH MyCTE_01 AS (SELECT * FROM dbo.Employees) SELECT * FROM |
   want:
@@ -224,30 +273,37 @@
       type: DATABASE
       definition: ""
       comment: ""
+      priority: 0
     - text: School
       type: DATABASE
       definition: ""
       comment: ""
+      priority: 0
     - text: MySchema
       type: SCHEMA
       definition: ""
       comment: ""
+      priority: 0
     - text: dbo
       type: SCHEMA
       definition: ""
       comment: ""
+      priority: 0
     - text: Address
       type: TABLE
       definition: ""
       comment: ""
+      priority: 0
     - text: Employees
       type: TABLE
       definition: ""
       comment: ""
+      priority: 0
     - text: MyCTE_01
       type: TABLE
       definition: ""
       comment: ""
+      priority: 0
 - description: Completion table in specify schema
   input: SELECT * FROM dbo.|
   want:
@@ -255,10 +311,12 @@
       type: TABLE
       definition: ""
       comment: ""
+      priority: 0
     - text: Employees
       type: TABLE
       definition: ""
       comment: ""
+      priority: 0
 - description: Completion table for simple select
   input: SELECT * FROM |
   want:
@@ -266,23 +324,29 @@
       type: DATABASE
       definition: ""
       comment: ""
+      priority: 0
     - text: School
       type: DATABASE
       definition: ""
       comment: ""
+      priority: 0
     - text: MySchema
       type: SCHEMA
       definition: ""
       comment: ""
+      priority: 0
     - text: dbo
       type: SCHEMA
       definition: ""
       comment: ""
+      priority: 0
     - text: Address
       type: TABLE
       definition: ""
       comment: ""
+      priority: 0
     - text: Employees
       type: TABLE
       definition: ""
       comment: ""
+      priority: 0
