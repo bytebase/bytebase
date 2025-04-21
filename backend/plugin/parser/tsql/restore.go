@@ -128,6 +128,39 @@ func (g *generator) EnterDelete_statement(ctx *parser.Delete_statementContext) {
 	}
 }
 
+func disjoint(a []string, b map[string]bool) bool {
+	for _, item := range a {
+		if _, ok := b[item]; ok {
+			return false
+		}
+	}
+	return true
+}
+
+func (g *generator) findDisjointUniqueKey(updateColumns []string) ([]string, error) {
+	columnMap := make(map[string]bool)
+	for _, column := range updateColumns {
+		columnMap[column] = true
+	}
+	if g.pk != nil {
+		if disjoint(g.pk.GetProto().Expressions, columnMap) {
+			return g.pk.GetProto().Expressions, nil
+		}
+	}
+	for _, index := range g.table.GetProto().Indexes {
+		if index.Primary {
+			continue
+		}
+		if !index.Unique {
+			continue
+		}
+		if disjoint(index.Expressions, columnMap) {
+			return index.Expressions, nil
+		}
+	}
+	return nil, errors.Errorf("no disjoint unique key found for %s.%s.%s", g.originalDatabase, g.originalSchema, g.originalTable)
+}
+
 func (g *generator) EnterUpdate_statement(ctx *parser.Update_statementContext) {
 	if IsTopLevel(ctx.GetParent()) && g.isFirst {
 		g.isFirst = false
@@ -144,15 +177,10 @@ func (g *generator) EnterUpdate_statement(ctx *parser.Update_statementContext) {
 			return
 		}
 
-		pkMap := make(map[string]bool)
-		for _, column := range g.pk.GetProto().Expressions {
-			pkMap[column] = true
-		}
-		for _, column := range l.result {
-			if pkMap[column] {
-				g.err = errors.Errorf("primary key column %s is updated for %s.%s.%s", column, g.originalDatabase, g.originalSchema, g.originalTable)
-				return
-			}
+		uk, err := g.findDisjointUniqueKey(l.result)
+		if err != nil {
+			g.err = err
+			return
 		}
 
 		var buf strings.Builder
@@ -160,7 +188,7 @@ func (g *generator) EnterUpdate_statement(ctx *parser.Update_statementContext) {
 			g.err = err
 			return
 		}
-		for i, column := range g.pk.GetProto().Expressions {
+		for i, column := range uk {
 			if i > 0 {
 				if _, err := fmt.Fprintf(&buf, " AND"); err != nil {
 					g.err = err
