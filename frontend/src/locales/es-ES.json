@@ -1495,6 +1495,10 @@
       "schema-drift-detected": {
         "self": "Se detectó una desviación del esquema",
         "description": "El esquema es diferente del último aplicado. Esto puede causar errores de aplicación y debe solucionarse."
+      },
+      "new-baseline": {
+        "self": "Nueva línea base",
+        "successfully-established": "Se estableció con éxito una nueva línea base"
       }
     }
   },
