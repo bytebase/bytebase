@@ -100,24 +100,24 @@ func (h *Handler) handleTextDocumentCompletion(ctx context.Context, _ *jsonrpc2.
 func generateSortText(_ lsp.CompletionParams, _ storepb.Engine, candidate parserbase.Candidate) string {
 	switch candidate.Type {
 	case parserbase.CandidateTypeColumn:
-		return "01" + candidate.Text
+		return "01" + candidate.TextWithPriority()
 	case parserbase.CandidateTypeSchema:
-		return "02" + candidate.Text
+		return "02" + candidate.TextWithPriority()
 	case parserbase.CandidateTypeTable, parserbase.CandidateTypeForeignTable:
-		return "03" + candidate.Text
+		return "03" + candidate.TextWithPriority()
 	case parserbase.CandidateTypeView, parserbase.CandidateTypeMaterializedView:
-		return "04" + candidate.Text
+		return "04" + candidate.TextWithPriority()
 	case parserbase.CandidateTypeFunction:
-		return "05" + candidate.Text
+		return "05" + candidate.TextWithPriority()
 	case parserbase.CandidateTypeKeyword:
 		switch candidate.Text {
 		case "SELECT", "SHOW", "SET", "FROM", "WHERE":
-			return "09" + candidate.Text
+			return "09" + candidate.TextWithPriority()
 		default:
-			return "10" + candidate.Text
+			return "10" + candidate.TextWithPriority()
 		}
 	default:
-		return "10" + string(candidate.Type) + candidate.Text
+		return "10" + string(candidate.Type) + candidate.TextWithPriority()
 	}
 }
 
