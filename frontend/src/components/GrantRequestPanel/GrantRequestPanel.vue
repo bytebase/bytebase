@@ -98,7 +98,7 @@ import {
   Issue_Type,
 } from "@/types/proto/v1/issue_service";
 import { generateIssueTitle } from "@/utils";
-import { stringifyDatabaseResources } from "@/utils/issue/cel";
+import { stringifyConditionExpression } from "@/utils/issue/cel";
 import DatabaseResourceForm from "./DatabaseResourceForm/index.vue";
 import MaxRowCountSelect from "./MaxRowCountSelect.vue";
 
@@ -197,35 +197,27 @@ const doCreateIssue = async () => {
   const project = await useProjectV1Store().getOrFetchProjectByName(
     props.projectName
   );
-  const expression: string[] = [];
-  if (state.databaseResources) {
-    expression.push(stringifyDatabaseResources(state.databaseResources));
-  }
-  const expirationTimestampInMS = state.expirationTimestampInMS;
-  if (expirationTimestampInMS && expirationTimestampInMS > 0) {
-    expression.push(
-      `request.time < timestamp("${dayjs(
-        expirationTimestampInMS
-      ).toISOString()}")`
-    );
-  }
-  if (props.role === PresetRoleType.PROJECT_EXPORTER) {
-    expression.push(`request.row_limit <= ${state.maxRowCount}`);
-  }
 
+  const expression = stringifyConditionExpression({
+    databaseResources: state.databaseResources,
+    expirationTimestampInMS: state.expirationTimestampInMS,
+    rowLimit:
+      props.role === PresetRoleType.PROJECT_EXPORTER
+        ? state.maxRowCount
+        : undefined,
+  });
   newIssue.grantRequest = GrantRequest.fromPartial({
     role: props.role,
     user: `users/${currentUser.value.email}`,
   });
-  if (expression.length > 0) {
-    const celExpressionString = expression.join(" && ");
+  if (expression) {
     newIssue.grantRequest.condition = Expr.fromPartial({
-      expression: celExpressionString,
+      expression,
     });
   }
-  if (expirationTimestampInMS && expirationTimestampInMS > 0) {
+  if (state.expirationTimestampInMS) {
     newIssue.grantRequest.expiration = Duration.fromPartial({
-      seconds: dayjs(expirationTimestampInMS).unix() - dayjs().unix(),
+      seconds: dayjs(state.expirationTimestampInMS).unix() - dayjs().unix(),
     });
   }
 
