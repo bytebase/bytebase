@@ -14,8 +14,8 @@
         :custom-click="true"
         :parent="project.name"
         :filter="filter"
-        @update:selected-databases="
-          databaseSelectState.selectedDatabaseNameList = Array.from($event)
+        v-model:selected-database-names="
+          databaseSelectState.selectedDatabaseNameList
         "
       />
     </NTabPane>

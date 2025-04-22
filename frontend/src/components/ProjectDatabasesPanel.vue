@@ -35,7 +35,7 @@
       :show-selection="true"
       :filter="filter"
       :parent="project.name"
-      @update:selected-databases="handleDatabasesSelectionChanged"
+      v-model:selected-database-names="state.selectedDatabaseNames"
     />
   </div>
   <Drawer
@@ -78,7 +78,7 @@ import { useCommonSearchScopeOptions } from "./AdvancedSearch/useCommonSearchSco
 import { DatabaseOperations } from "./v2";
 
 interface LocalState {
-  selectedDatabaseNames: Set<string>;
+  selectedDatabaseNames: string[];
   params: SearchParams;
   showCreateDrawer: boolean;
 }
@@ -98,7 +98,7 @@ const readonlyScopes = computed((): SearchScope[] => [
 const databaseStore = useDatabaseV1Store();
 
 const state = reactive<LocalState>({
-  selectedDatabaseNames: new Set(),
+  selectedDatabaseNames: [],
   params: {
     query: "",
     scopes: [...readonlyScopes.value],
@@ -184,14 +184,8 @@ const filter = computed(() => ({
 }));
 
 const selectedDatabases = computed((): ComposedDatabase[] => {
-  return [...state.selectedDatabaseNames]
+  return state.selectedDatabaseNames
     .map((databaseName) => databaseStore.getDatabaseByName(databaseName))
     .filter((database) => isValidDatabaseName(database.name));
 });
-
-const handleDatabasesSelectionChanged = (
-  selectedDatabaseNameList: Set<string>
-): void => {
-  state.selectedDatabaseNames = selectedDatabaseNameList;
-};
 </script>

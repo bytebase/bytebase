@@ -26,7 +26,8 @@
           :custom-click="true"
           :filter="filter"
           :parent="projectName"
-          @update:selected-databases="handleDatabasesSelectionChanged"
+          :selected-database-names="[state.selectedDatabaseName]"
+          @update:selected-database-names="handleDatabasesSelectionChanged"
         />
       </div>
     </div>

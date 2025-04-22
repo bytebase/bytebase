@@ -15,7 +15,6 @@
         :keyword="filter.query"
         :custom-click="true"
         @row-click="handleDatabaseClick"
-        @update:selected-databases="$emit('update:selected-databases', $event)"
       />
     </template>
   </PagedTable>
@@ -49,7 +48,6 @@ const props = withDefaults(
 
 const emit = defineEmits<{
   (event: "row-click", e: MouseEvent, val: ComposedDatabase): void;
-  (event: "update:selected-databases", val: Set<string>): void;
 }>();
 
 const databaseStore = useDatabaseV1Store();

@@ -82,8 +82,7 @@
           :filter="filter"
           :parent="project.name"
           :schemaless="true"
-          :selected-database-names="state.selectedDatabaseNames"
-          @update:selected-databases="handleDatabaseRowCheck"
+          v-model:selected-database-names="state.selectedDatabaseNames"
         />
       </div>
     </div>
