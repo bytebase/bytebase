@@ -6,19 +6,13 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
-func loggingReleaseChecks(resp *v1pb.CheckReleaseResponse, files []*v1pb.Release_File) error {
+func loggingReleaseChecks(resp *v1pb.CheckReleaseResponse) error {
 	if resp == nil || len(resp.Results) == 0 {
 		fmt.Println("No check results found.")
 		return nil
-	}
-
-	fpMap := make(map[string]*v1pb.Release_File)
-	for _, file := range files {
-		fpMap[file.Path] = file
 	}
 
 	hasError := false
@@ -31,8 +25,6 @@ func loggingReleaseChecks(resp *v1pb.CheckReleaseResponse, files []*v1pb.Release
 			}
 		}
 
-		fp := result.File
-		file := fpMap[fp]
 		if len(advices) > 0 {
 			fmt.Printf("%s with %s has %d advices\n", result.File, result.Target, len(advices))
 			for _, advice := range result.Advices {
@@ -42,17 +34,8 @@ func loggingReleaseChecks(resp *v1pb.CheckReleaseResponse, files []*v1pb.Release
 				case v1pb.Advice_ERROR:
 					hasError = true
 				}
-				line, column := int(advice.Line), int(advice.Column)
-				if file != nil {
-					p := common.ConvertPositionToGitHubAnnotationPosition(&storepb.Position{
-						Line:   int32(line),
-						Column: int32(column),
-					}, string(file.Statement))
-					line = p.Line
-					column = p.Col
-				}
 
-				position := fmt.Sprintf("line %d, col %d", line, column)
+				position := fmt.Sprintf("line %d", common.ConvertLineToAzureLoggingCommandLine(int(advice.Line)))
 				fmt.Printf("* (%s) Code %d - %s (%s): %s\n", advice.Status.String(), advice.Code, advice.Title, position, advice.Content)
 			}
 		}

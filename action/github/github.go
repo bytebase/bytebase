@@ -11,7 +11,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -28,9 +27,9 @@ type githubEnv struct {
 	EventPath string `env:"GITHUB_EVENT_PATH,required,notEmpty"`
 }
 
-func CreateCommentAndAnnotation(resp *v1pb.CheckReleaseResponse, files []*v1pb.Release_File) error {
+func CreateCommentAndAnnotation(resp *v1pb.CheckReleaseResponse) error {
 	// Write annotations to the pull request.
-	if err := writeAnnotations(resp, files); err != nil {
+	if err := writeAnnotations(resp); err != nil {
 		return err
 	}
 
@@ -169,16 +168,10 @@ func buildCommentMessage(resp *v1pb.CheckReleaseResponse) string {
 	return sb.String()
 }
 
-func writeAnnotations(resp *v1pb.CheckReleaseResponse, files []*v1pb.Release_File) error {
-	fpMap := make(map[string]*v1pb.Release_File)
-	for _, file := range files {
-		fpMap[file.Path] = file
-	}
+func writeAnnotations(resp *v1pb.CheckReleaseResponse) error {
 	// annotation template
 	// `::${advice.status} file=${file},line=${advice.line},col=${advice.column},title=${advice.title} (${advice.code})::${advice.content}. Targets: ${targets.join(', ')} https://www.bytebase.com/docs/reference/error-code/advisor#${advice.code}`
 	for _, result := range resp.Results {
-		fp := result.File
-		file := fpMap[fp]
 		for _, advice := range result.Advices {
 			var sb strings.Builder
 			_, _ = sb.WriteString("::")
@@ -190,22 +183,11 @@ func writeAnnotations(resp *v1pb.CheckReleaseResponse, files []*v1pb.Release_Fil
 			default:
 				continue
 			}
-			line, column := int(advice.Line), int(advice.Column)
-			if file != nil {
-				p := common.ConvertPositionToGitHubAnnotationPosition(&storepb.Position{
-					Line:   int32(line),
-					Column: int32(column),
-				}, string(file.Statement))
-				line = p.Line
-				column = p.Col
-			}
 
 			_, _ = sb.WriteString(" file=")
 			_, _ = sb.WriteString(result.File)
 			_, _ = sb.WriteString(",line=")
-			_, _ = sb.WriteString(strconv.Itoa(line))
-			_, _ = sb.WriteString(",col=")
-			_, _ = sb.WriteString(strconv.Itoa(column))
+			_, _ = sb.WriteString(strconv.Itoa(common.ConvertLineToGitHubAnnotationPosition(int(advice.Line))))
 			_, _ = sb.WriteString(",title=")
 			_, _ = sb.WriteString(advice.Title)
 			_, _ = sb.WriteString(" (")
