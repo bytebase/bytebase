@@ -1039,11 +1039,6 @@ type Advice struct {
 	Title string `protobuf:"bytes,3,opt,name=title,proto3" json:"title,omitempty"`
 	// The advice content.
 	Content string `protobuf:"bytes,4,opt,name=content,proto3" json:"content,omitempty"`
-	// The advice line number in the SQL statement.
-	Line int32 `protobuf:"varint,5,opt,name=line,proto3" json:"line,omitempty"`
-	// The advice column number in the SQL statement.
-	Column int32 `protobuf:"varint,6,opt,name=column,proto3" json:"column,omitempty"`
-	// To supersede `line` and `column` above.
 	// The start_position is inclusive and the end_position is exclusive.
 	// TODO: use range instead
 	StartPosition *Position `protobuf:"bytes,8,opt,name=start_position,json=startPosition,proto3" json:"start_position,omitempty"`
@@ -1108,20 +1103,6 @@ func (x *Advice) GetContent() string {
 		return x.Content
 	}
 	return ""
-}
-
-func (x *Advice) GetLine() int32 {
-	if x != nil {
-		return x.Line
-	}
-	return 0
-}
-
-func (x *Advice) GetColumn() int32 {
-	if x != nil {
-		return x.Column
-	}
-	return 0
 }
 
 func (x *Advice) GetStartPosition() *Position {
@@ -2665,21 +2646,19 @@ const file_v1_sql_service_proto_rawDesc = "" +
 	"\x04zone\x18\x02 \x01(\tR\x04zone\x12\x16\n" +
 	"\x06offset\x18\x03 \x01(\x05R\x06offset\x12\x1a\n" +
 	"\baccuracy\x18\x04 \x01(\x05R\baccuracyB\x06\n" +
-	"\x04kind\"\xf1\x02\n" +
+	"\x04kind\"\xd1\x02\n" +
 	"\x06Advice\x122\n" +
 	"\x06status\x18\x01 \x01(\x0e2\x1a.bytebase.v1.Advice.StatusR\x06status\x12\x12\n" +
 	"\x04code\x18\x02 \x01(\x05R\x04code\x12\x14\n" +
 	"\x05title\x18\x03 \x01(\tR\x05title\x12\x18\n" +
-	"\acontent\x18\x04 \x01(\tR\acontent\x12\x12\n" +
-	"\x04line\x18\x05 \x01(\x05R\x04line\x12\x16\n" +
-	"\x06column\x18\x06 \x01(\x05R\x06column\x12<\n" +
+	"\acontent\x18\x04 \x01(\tR\acontent\x12<\n" +
 	"\x0estart_position\x18\b \x01(\v2\x15.bytebase.v1.PositionR\rstartPosition\x128\n" +
 	"\fend_position\x18\t \x01(\v2\x15.bytebase.v1.PositionR\vendPosition\"E\n" +
 	"\x06Status\x12\x16\n" +
 	"\x12STATUS_UNSPECIFIED\x10\x00\x12\v\n" +
 	"\aSUCCESS\x10\x01\x12\v\n" +
 	"\aWARNING\x10\x02\x12\t\n" +
-	"\x05ERROR\x10\x03J\x04\b\a\x10\b\"\x88\x02\n" +
+	"\x05ERROR\x10\x03J\x04\b\a\x10\bJ\x04\b\x05\x10\x06J\x04\b\x06\x10\a\"\x88\x02\n" +
 	"\rExportRequest\x122\n" +
 	"\x04name\x18\x01 \x01(\tB\x1e\xe2A\x01\x02\xfaA\x17\n" +
 	"\x15bytebase.com/DatabaseR\x04name\x12\x1c\n" +

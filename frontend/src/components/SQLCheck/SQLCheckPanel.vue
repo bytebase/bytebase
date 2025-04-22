@@ -168,8 +168,8 @@ const planCheckRun = computed((): PlanCheckRun => {
         code: advice.code,
         content: advice.content,
         sqlReviewReport: PlanCheckRun_Result_SqlReviewReport.fromPartial({
-          line: advice.line,
-          column: advice.column,
+          line: advice.startPosition?.line ?? 0,
+          column: advice.startPosition?.column ?? Number.MAX_SAFE_INTEGER,
         }),
       });
     }),
