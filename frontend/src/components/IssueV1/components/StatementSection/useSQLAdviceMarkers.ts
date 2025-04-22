@@ -20,8 +20,8 @@ export const useSQLAdviceMarkers = (
       if (!advices) return [];
       if (!advices.value) return [];
       return advices.value.map<AdviceOption>((advice) => {
-        const line = advice.line;
-        const column = advice.column ?? Number.MAX_SAFE_INTEGER;
+        const line = advice.startPosition?.line ?? 0;
+        const column = advice.startPosition?.column ?? Number.MAX_SAFE_INTEGER;
         const code = advice.code;
         return {
           severity: advice.status === Advice_Status.ERROR ? "ERROR" : "WARNING",
