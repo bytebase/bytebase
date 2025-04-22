@@ -138,7 +138,7 @@ func getListProjectFilter(filter string) (*store.ListResourceFilter, error) {
 			positionalArgs = append(positionalArgs, value.(string))
 			return fmt.Sprintf("project.resource_id = $%d", len(positionalArgs)), nil
 		case "exclude_default":
-			if _, ok := value.(bool); ok {
+			if excludeDefault, ok := value.(bool); excludeDefault && ok {
 				positionalArgs = append(positionalArgs, base.DefaultProjectID)
 				return fmt.Sprintf("project.resource_id != $%d", len(positionalArgs)), nil
 			}
