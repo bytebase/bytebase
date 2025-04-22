@@ -7,6 +7,7 @@
     :options="availableRoleOptions"
     :max-tag-count="'responsive'"
     :filterable="true"
+    :render-label="renderLabel"
     :placeholder="$t('settings.members.select-role', multiple ? 2 : 1)"
     @update:value="onValueUpdate"
   />
@@ -20,7 +21,9 @@
 <script setup lang="tsx">
 import type { SelectGroupOption, SelectOption } from "naive-ui";
 import { NSelect } from "naive-ui";
-import { computed, ref } from "vue";
+import { computed, ref, h } from "vue";
+import FeatureBadge from "@/components/FeatureGuard/FeatureBadge.vue";
+import FeatureModal from "@/components/FeatureGuard/FeatureModal.vue";
 import { t } from "@/plugins/i18n";
 import { useAppFeature, useRoleStore, featureToRef } from "@/store";
 import {
@@ -109,6 +112,28 @@ const availableRoleOptions = computed(
     return roleGroups;
   }
 );
+
+const renderLabel = (option: SelectOption) => {
+  const label = h("span", {}, option.label as string);
+  if (hasCustomRoleFeature.value || !option.value) {
+    return label;
+  }
+  if (PRESET_ROLES.includes(option.value as string)) {
+    return label;
+  }
+
+  const icon = h(FeatureBadge, {
+    feature: "bb.feature.custom-approval",
+    clickable: false,
+  });
+  return h(
+    "div",
+    {
+      class: "flex items-center gap-1",
+    },
+    [label, icon]
+  );
+};
 
 const includeCustomRole = (values: string[]) => {
   return values.some((val) => !PRESET_ROLES.includes(val));
