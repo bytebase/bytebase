@@ -7,6 +7,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -85,7 +86,7 @@ func writeReleaseCheckToCodeQualityJSON(resp *v1pb.CheckReleaseResponse) error {
 				Location: Location{
 					Path: result.File,
 					Lines: Lines{
-						Begin: int(advice.Line),
+						Begin: common.ConvertLineToActionLine(int(advice.Line)),
 					},
 				},
 			})

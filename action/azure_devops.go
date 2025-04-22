@@ -5,6 +5,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -34,22 +35,7 @@ func loggingReleaseChecks(resp *v1pb.CheckReleaseResponse) error {
 					hasError = true
 				}
 
-				var position string
-				switch {
-				case advice.StartPosition != nil && advice.EndPosition != nil:
-					start := advice.StartPosition
-					end := advice.EndPosition
-					if start.Line == end.Line && start.Column == end.Column {
-						position = fmt.Sprintf("line %d, col %d", start.Line, start.Column)
-					} else {
-						position = fmt.Sprintf("line %d, col %d to line %d, col %d",
-							start.Line, start.Column, end.Line, end.Column)
-					}
-				case advice.Line != 0 || advice.Column != 0:
-					position = fmt.Sprintf("line %d, col %d", advice.Line, advice.Column)
-				default:
-					position = "unknown position"
-				}
+				position := fmt.Sprintf("line %d", common.ConvertLineToActionLine(int(advice.Line)))
 				fmt.Printf("* (%s) Code %d - %s (%s): %s\n", advice.Status.String(), advice.Code, advice.Title, position, advice.Content)
 			}
 		}
