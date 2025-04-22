@@ -8460,9 +8460,7 @@ TYPE_PROJECT_REPOSITORY_PUSH represents Bytebase receiving a push event from the
 | code | [int32](#int32) |  | The advice code. |
 | title | [string](#string) |  | The advice title. |
 | content | [string](#string) |  | The advice content. |
-| line | [int32](#int32) |  | The advice line number in the SQL statement. |
-| column | [int32](#int32) |  | The advice column number in the SQL statement. |
-| start_position | [Position](#bytebase-v1-Position) |  | To supersede `line` and `column` above. The start_position is inclusive and the end_position is exclusive. TODO: use range instead |
+| start_position | [Position](#bytebase-v1-Position) |  | The start_position is inclusive and the end_position is exclusive. TODO: use range instead |
 | end_position | [Position](#bytebase-v1-Position) |  |  |
 
 

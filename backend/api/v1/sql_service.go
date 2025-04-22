@@ -1649,8 +1649,6 @@ func convertToV1Advice(advice *storepb.Advice) *v1pb.Advice {
 		Code:          int32(advice.Code),
 		Title:         advice.Title,
 		Content:       advice.Content,
-		Line:          int32(advice.GetStartPosition().GetLine()),
-		Column:        int32(advice.GetStartPosition().GetColumn()),
 		StartPosition: convertToPosition(advice.StartPosition),
 		EndPosition:   convertToPosition(advice.EndPosition),
 	}
