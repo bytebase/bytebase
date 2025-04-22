@@ -43,5 +43,6 @@
   "gopls": {
     "formatting.local": "github.com/bytebase/bytebase"
   },
-  "go.testTimeout": "300s"
+  "go.testTimeout": "300s",
+  "workbench.editor.enablePreview": false
 }
