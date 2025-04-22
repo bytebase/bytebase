@@ -29,7 +29,9 @@
         </template>
       </NPopover>
     </template>
-    <div class="w-128 max-h-128 overflow-y-auto p-1 pb-2">
+    <div
+      class="max-w-[calc(100vw-10rem)] w-192 max-h-128 overflow-y-auto p-1 pb-2"
+    >
       <p class="text-gray-500 mb-1 w-full leading-4">
         {{
           $t("sql-editor.batch-query.description", {
@@ -168,13 +170,16 @@ const handleTriggerClick = () => {
   }
 };
 
-watch(state.selectedDatabaseNames, () => {
-  tabStore.updateCurrentTab({
-    batchQueryContext: {
-      databases: state.selectedDatabaseNames,
-    },
-  });
-});
+watch(
+  () => state.selectedDatabaseNames,
+  () => {
+    tabStore.updateCurrentTab({
+      batchQueryContext: {
+        databases: state.selectedDatabaseNames,
+      },
+    });
+  }
+);
 
 watch(
   () => currentTab.value?.batchQueryContext?.databases,

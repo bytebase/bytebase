@@ -165,11 +165,6 @@ func (g *generator) EnterUpdate_statement(ctx *parser.Update_statementContext) {
 	if IsTopLevel(ctx.GetParent()) && g.isFirst {
 		g.isFirst = false
 
-		if g.pk == nil {
-			g.err = errors.Errorf("primary key not found for %s.%s.%s", g.originalDatabase, g.originalSchema, g.originalTable)
-			return
-		}
-
 		l := &updateElemListener{}
 		antlr.ParseTreeWalkerDefault.Walk(l, ctx)
 		if l.err != nil {
