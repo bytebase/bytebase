@@ -489,6 +489,7 @@ func (s *AuthService) syncUserGroups(ctx context.Context, user *store.UserMessag
 		return status.Errorf(codes.Internal, "failed to list groups: %v", err)
 	}
 
+	groupChanged := false
 	for _, bbGroup := range bbGroups {
 		var isMember bool
 		for _, group := range groups {
@@ -522,6 +523,14 @@ func (s *AuthService) syncUserGroups(ctx context.Context, user *store.UserMessag
 			}); err != nil {
 				return status.Errorf(codes.Internal, "failed to update group %q: %v", bbGroup.Email, err)
 			}
+			groupChanged = true
+		}
+	}
+
+	// Reload IAM cache if group membership changed.
+	if groupChanged {
+		if err := s.iamManager.ReloadCache(ctx); err != nil {
+			return status.Errorf(codes.Internal, "failed to reload IAM cache: %v", err)
 		}
 	}
 
