@@ -247,3 +247,9 @@ func ConvertLineToGitLabQualityReportLine(line int) int {
 	}
 	return line + 1
 }
+
+type AzureLoggingCommandPosition = GitHubAnnotationPosition
+
+func ConvertPositionToAzureLoggingCommandPosition(p *storepb.Position, text string) *AzureLoggingCommandPosition {
+	return ConvertPositionToGitHubAnnotationPosition(p, text)
+}

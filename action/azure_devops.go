@@ -5,13 +5,20 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
-func loggingReleaseChecks(resp *v1pb.CheckReleaseResponse) error {
+func loggingReleaseChecks(resp *v1pb.CheckReleaseResponse, files []*v1pb.Release_File) error {
 	if resp == nil || len(resp.Results) == 0 {
 		fmt.Println("No check results found.")
 		return nil
+	}
+
+	fpMap := make(map[string]*v1pb.Release_File)
+	for _, file := range files {
+		fpMap[file.Path] = file
 	}
 
 	hasError := false
@@ -24,6 +31,8 @@ func loggingReleaseChecks(resp *v1pb.CheckReleaseResponse) error {
 			}
 		}
 
+		fp := result.File
+		file := fpMap[fp]
 		if len(advices) > 0 {
 			fmt.Printf("%s with %s has %d advices\n", result.File, result.Target, len(advices))
 			for _, advice := range result.Advices {
@@ -33,6 +42,15 @@ func loggingReleaseChecks(resp *v1pb.CheckReleaseResponse) error {
 				case v1pb.Advice_ERROR:
 					hasError = true
 				}
+				line, column := int(advice.Line), int(advice.Column)
+				if file != nil {
+					p := common.ConvertPositionToGitHubAnnotationPosition(&storepb.Position{
+						Line:   int32(line),
+						Column: int32(column),
+					}, string(file.Statement))
+					line = p.Line
+					column = p.Col
+				}
 
 				var position string
 				switch {
@@ -40,13 +58,13 @@ func loggingReleaseChecks(resp *v1pb.CheckReleaseResponse) error {
 					start := advice.StartPosition
 					end := advice.EndPosition
 					if start.Line == end.Line && start.Column == end.Column {
-						position = fmt.Sprintf("line %d, col %d", start.Line, start.Column)
+						position = fmt.Sprintf("line %d, col %d", line, column)
 					} else {
-						position = fmt.Sprintf("line %d, col %d to line %d, col %d",
-							start.Line, start.Column, end.Line, end.Column)
+						position = fmt.Sprintf("line %d, col %d",
+							line, column)
 					}
 				case advice.Line != 0 || advice.Column != 0:
-					position = fmt.Sprintf("line %d, col %d", advice.Line, advice.Column)
+					position = fmt.Sprintf("line %d, col %d", line, column)
 				default:
 					position = "unknown position"
 				}

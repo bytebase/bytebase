@@ -60,7 +60,7 @@ func run(platform JobPlatform) error {
 			return err
 		}
 	case AzureDevOps:
-		if err := loggingReleaseChecks(checkReleaseResponse); err != nil {
+		if err := loggingReleaseChecks(checkReleaseResponse, releaseFiles); err != nil {
 			return err
 		}
 	case Bitbucket:
