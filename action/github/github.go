@@ -187,7 +187,7 @@ func writeAnnotations(resp *v1pb.CheckReleaseResponse) error {
 			_, _ = sb.WriteString(" file=")
 			_, _ = sb.WriteString(result.File)
 			_, _ = sb.WriteString(",line=")
-			_, _ = sb.WriteString(strconv.Itoa(common.ConvertLineToActionLine(int(advice.Line))))
+			_, _ = sb.WriteString(strconv.Itoa(common.ConvertLineToActionLine(int(advice.GetStartPosition().GetLine()))))
 			_, _ = sb.WriteString(",title=")
 			_, _ = sb.WriteString(advice.Title)
 			_, _ = sb.WriteString(" (")

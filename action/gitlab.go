@@ -81,12 +81,12 @@ func writeReleaseCheckToCodeQualityJSON(resp *v1pb.CheckReleaseResponse) error {
 			data = append(data, Finding{
 				Description: advice.Content,
 				CheckName:   advice.Title,
-				Fingerprint: fmt.Sprintf("%s#%d", result.File, advice.Line),
+				Fingerprint: fmt.Sprintf("%s#%d", result.File, advice.GetStartPosition().GetLine()),
 				Severity:    severity,
 				Location: Location{
 					Path: result.File,
 					Lines: Lines{
-						Begin: common.ConvertLineToActionLine(int(advice.Line)),
+						Begin: common.ConvertLineToActionLine(int(advice.GetStartPosition().GetLine())),
 					},
 				},
 			})

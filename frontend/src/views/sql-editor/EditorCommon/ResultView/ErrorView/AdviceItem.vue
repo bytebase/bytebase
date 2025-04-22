@@ -52,13 +52,13 @@ const title = computed(() => {
 const position = computed(() => {
   const { advice, executeParams } = props;
   const [startLine, startColumn] = positionWithOffset(
-    advice.startPosition?.line ?? advice.line,
-    advice.startPosition?.column ?? advice.column,
+    advice.startPosition?.line ?? 0,
+    advice.startPosition?.column ?? Number.MAX_SAFE_INTEGER,
     executeParams?.selection
   );
   const [endLine, endColumn] = positionWithOffset(
-    advice.endPosition?.line ?? advice.line,
-    advice.endPosition?.column ?? advice.column,
+    advice.endPosition?.line ?? 0,
+    advice.endPosition?.column ?? Number.MAX_SAFE_INTEGER,
     executeParams?.selection
   );
   return {
