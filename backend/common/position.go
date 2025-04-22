@@ -253,3 +253,10 @@ type AzureLoggingCommandPosition = GitHubAnnotationPosition
 func ConvertPositionToAzureLoggingCommandPosition(p *storepb.Position, text string) *AzureLoggingCommandPosition {
 	return ConvertPositionToGitHubAnnotationPosition(p, text)
 }
+
+func ConvertLineToBitBucketLine(line int) int {
+	if line < 0 {
+		return 1
+	}
+	return line + 1
+}
