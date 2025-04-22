@@ -96,6 +96,23 @@ func (s *DatabaseService) getDatabaseMessage(ctx context.Context, name string) (
 	return databaseMessage, nil
 }
 
+func (s *DatabaseService) BatchGetDatabases(ctx context.Context, request *v1pb.BatchGetDatabasesRequest) (*v1pb.BatchGetDatabasesResponse, error) {
+	// TODO(steven): Filter out the databases based on `request.parent`.
+	databases := make([]*v1pb.Database, 0, len(request.Names))
+	for _, name := range request.Names {
+		databaseMessage, err := s.getDatabaseMessage(ctx, name)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to get database %q with error: %v", name, err.Error())
+		}
+		database, err := s.convertToDatabase(ctx, databaseMessage)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to convert database, error: %v", err)
+		}
+		databases = append(databases, database)
+	}
+	return &v1pb.BatchGetDatabasesResponse{Databases: databases}, nil
+}
+
 func getVariableAndValueFromExpr(expr celast.Expr) (string, any) {
 	var variable string
 	var value any
