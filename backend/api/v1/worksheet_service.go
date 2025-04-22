@@ -188,11 +188,7 @@ func (s *WorksheetService) getListSheetFilter(ctx context.Context, callerID int,
 		case "starred":
 			if starred, ok := value.(bool); ok {
 				positionalArgs = append(positionalArgs, callerID)
-				if starred {
-					return fmt.Sprintf("worksheet.id IN (SELECT worksheet_id FROM worksheet_organizer WHERE principal_id = $%d AND starred = true)", len(positionalArgs)), nil
-				} else {
-					return fmt.Sprintf("worksheet.id IN (SELECT worksheet_id FROM worksheet_organizer WHERE principal_id = $%d AND starred = false)", len(positionalArgs)), nil
-				}
+				return fmt.Sprintf("worksheet.id IN (SELECT worksheet_id FROM worksheet_organizer WHERE principal_id = $%d AND starred = %v)", len(positionalArgs), starred), nil
 			}
 			return "TRUE", nil
 		case "visibility":
