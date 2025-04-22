@@ -240,3 +240,10 @@ func ConvertPositionToGitHubAnnotationPosition(p *storepb.Position, text string)
 		Col:  characterIndex,
 	}
 }
+
+func ConvertLineToGitLabQualityReportLine(line int) int {
+	if line < 0 {
+		return 1
+	}
+	return line + 1
+}
