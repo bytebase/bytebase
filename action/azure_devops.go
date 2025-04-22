@@ -52,22 +52,7 @@ func loggingReleaseChecks(resp *v1pb.CheckReleaseResponse, files []*v1pb.Release
 					column = p.Col
 				}
 
-				var position string
-				switch {
-				case advice.StartPosition != nil && advice.EndPosition != nil:
-					start := advice.StartPosition
-					end := advice.EndPosition
-					if start.Line == end.Line && start.Column == end.Column {
-						position = fmt.Sprintf("line %d, col %d", line, column)
-					} else {
-						position = fmt.Sprintf("line %d, col %d",
-							line, column)
-					}
-				case advice.Line != 0 || advice.Column != 0:
-					position = fmt.Sprintf("line %d, col %d", line, column)
-				default:
-					position = "unknown position"
-				}
+				position := fmt.Sprintf("line %d, col %d", line, column)
 				fmt.Printf("* (%s) Code %d - %s (%s): %s\n", advice.Status.String(), advice.Code, advice.Title, position, advice.Content)
 			}
 		}
