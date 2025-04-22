@@ -103,7 +103,7 @@ type Project struct {
 	AllowSelfApproval bool `protobuf:"varint,10,opt,name=allow_self_approval,json=allowSelfApproval,proto3" json:"allow_self_approval,omitempty"`
 	// Execution retry policy for the task run.
 	ExecutionRetryPolicy *Project_ExecutionRetryPolicy `protobuf:"bytes,11,opt,name=execution_retry_policy,json=executionRetryPolicy,proto3" json:"execution_retry_policy,omitempty"`
-	// The maximum number of rows to sample during CI data validation.
+	// The maximum number of databases to sample during CI data validation.
 	// Without specification, sampling is disabled, resulting in a full validation.
 	CiSamplingSize int32 `protobuf:"varint,12,opt,name=ci_sampling_size,json=ciSamplingSize,proto3" json:"ci_sampling_size,omitempty"`
 	unknownFields  protoimpl.UnknownFields

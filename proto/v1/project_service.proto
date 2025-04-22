@@ -340,7 +340,7 @@ message Project {
     int32 maximum_retries = 1;
   }
 
-  // The maximum number of rows to sample during CI data validation.
+  // The maximum databases of rows to sample during CI data validation.
   // Without specification, sampling is disabled, resulting in a full validation.
   int32 ci_sampling_size = 23;
 }

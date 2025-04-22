@@ -42,7 +42,7 @@ export interface Project {
     | Project_ExecutionRetryPolicy
     | undefined;
   /**
-   * The maximum number of rows to sample during CI data validation.
+   * The maximum number of databases to sample during CI data validation.
    * Without specification, sampling is disabled, resulting in a full validation.
    */
   ciSamplingSize: number;

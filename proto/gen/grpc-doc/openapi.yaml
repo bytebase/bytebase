@@ -11409,7 +11409,7 @@ components:
                 ciSamplingSize:
                     type: integer
                     description: |-
-                        The maximum number of rows to sample during CI data validation.
+                        The maximum number of databases to sample during CI data validation.
                          Without specification, sampling is disabled, resulting in a full validation.
                     format: int32
         Project_ExecutionRetryPolicy:
