@@ -198,30 +198,7 @@ func ConvertPGParserErrorCursorPosToPosition(cursorPos int, text string) *storep
 	}
 }
 
-// ConvertLineToGitHubAnnotationPosition converts position to GitHub annotation position which
-// line starts by 1.
-func ConvertLineToGitHubAnnotationPosition(line int) int {
-	if line < 0 {
-		return 1
-	}
-	return line + 1
-}
-
-func ConvertLineToGitLabQualityReportLine(line int) int {
-	if line < 0 {
-		return 1
-	}
-	return line + 1
-}
-
-func ConvertLineToAzureLoggingCommandLine(line int) int {
-	if line < 0 {
-		return 1
-	}
-	return line + 1
-}
-
-func ConvertLineToBitBucketLine(line int) int {
+func ConvertLineToActionLine(line int) int {
 	if line < 0 {
 		return 1
 	}

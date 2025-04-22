@@ -86,7 +86,7 @@ func writeReleaseCheckToCodeQualityJSON(resp *v1pb.CheckReleaseResponse) error {
 				Location: Location{
 					Path: result.File,
 					Lines: Lines{
-						Begin: common.ConvertLineToGitLabQualityReportLine(int(advice.Line)),
+						Begin: common.ConvertLineToActionLine(int(advice.Line)),
 					},
 				},
 			})

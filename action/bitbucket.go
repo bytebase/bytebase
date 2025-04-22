@@ -126,7 +126,7 @@ func createBitbucketReport(checkResponse *v1pb.CheckReleaseResponse) error {
 				Severity:       severity,
 				Result:         res,
 				Path:           result.File,
-				Line:           common.ConvertLineToBitBucketLine(int(advice.Line)),
+				Line:           common.ConvertLineToActionLine(int(advice.Line)),
 			})
 			count++
 		}
