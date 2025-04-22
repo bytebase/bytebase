@@ -11,6 +11,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Frontend lint: `pnpm --dir frontend lint`
 - Frontend type check: `pnpm --dir frontend type-check`
 - Frontend test: `pnpm --dir frontend test`
+- Go lint command: `g ./path/to/package/...` - This custom alias runs linting tools for Go code
 
 ## Code Style
 - **General**: Follow Google style guides for all languages
@@ -25,3 +26,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Error Handling**: Be explicit but concise about error cases
 - **Go Resources**: Always use `defer` for resource cleanup like `rows.Close()` (sqlclosecheck)
 - **Go Defer**: Avoid using `defer` inside loops (revive) - use IIFE or scope properly
+
+## Common Go Lint Rules
+Always follow these guidelines to avoid common linting errors:
+
+- **File Formatting**: Run `go fmt` on files before committing to ensure proper formatting
+- **Unused Parameters**: Prefix unused parameters with underscore (e.g., `func foo(_ *Bar)`)
+- **Modern Go Conventions**: Use `any` instead of `interface{}` (since Go 1.18)
+- **Confusing Naming**: Avoid similar names that differ only by capitalization
+- **Identical Branches**: Don't use if-else branches that contain identical code
+- **Unused Functions**: Mark unused functions with `// nolint:unused` comment if needed for future use
+- **Function Receivers**: Don't create unnecessary function receivers; use regular functions if receiver is unused
+- **Proper Import Ordering**: Maintain correct grouping and ordering of imports
+- **Consistency**: Keep function signatures, naming, and patterns consistent with existing code
+- **Export Rules**: Only export (capitalize) functions and types that need to be used outside the package
