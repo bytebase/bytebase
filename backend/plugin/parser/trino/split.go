@@ -7,7 +7,11 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-// SplitSQL splits the SQL statement into a list of single SQL.
+func init() {
+	base.RegisterSplitterFunc(storepb.Engine_TRINO, SplitSQL)
+}
+
+// SplitSQL splits the SQL statement into a list of single SQL statements.
 func SplitSQL(statement string) ([]base.SingleSQL, error) {
 	// Trino uses semicolon (;) as statement delimiter.
 	statement = strings.TrimSpace(statement)
@@ -18,28 +22,45 @@ func SplitSQL(statement string) ([]base.SingleSQL, error) {
 	// Tokenize the statement to handle quoted strings and comments properly
 	var result []base.SingleSQL
 	var currentStmt strings.Builder
-	var inSingleQuote, inDoubleQuote, inBlockComment bool
+	var inSingleQuote, inDoubleQuote, inBlockComment, inLineComment bool
 	var lastChar rune
 
 	for i, char := range statement {
-		currentStmt.WriteRune(char)
-
-		// Handle string literals
-		if char == '\'' && lastChar != '\\' && !inDoubleQuote && !inBlockComment {
-			inSingleQuote = !inSingleQuote
-		} else if char == '"' && lastChar != '\\' && !inSingleQuote && !inBlockComment {
-			inDoubleQuote = !inDoubleQuote
+		// Handle line comments
+		if char == '\n' && inLineComment {
+			inLineComment = false
 		}
 
-		// Handle block comments
-		if char == '*' && lastChar == '/' && !inSingleQuote && !inDoubleQuote {
-			inBlockComment = true
-		} else if char == '/' && lastChar == '*' && inBlockComment {
-			inBlockComment = false
+		// Only add character to current statement if not in a line comment
+		if !inLineComment {
+			currentStmt.WriteRune(char)
+		}
+
+		// Handle string literals (only if we're not in a comment)
+		if !inBlockComment && !inLineComment {
+			if char == '\'' && lastChar != '\\' && !inDoubleQuote {
+				inSingleQuote = !inSingleQuote
+			} else if char == '"' && lastChar != '\\' && !inSingleQuote {
+				inDoubleQuote = !inDoubleQuote
+			}
+		}
+
+		// Handle comments (only if we're not in a string literal)
+		if !inSingleQuote && !inDoubleQuote {
+			// Line comments
+			if char == '-' && lastChar == '-' && !inBlockComment && !inLineComment {
+				inLineComment = true
+			}
+			// Block comments
+			if char == '*' && lastChar == '/' && !inLineComment {
+				inBlockComment = true
+			} else if char == '/' && lastChar == '*' && inBlockComment {
+				inBlockComment = false
+			}
 		}
 
 		// Split at semicolons outside of quotes and comments
-		if char == ';' && !inSingleQuote && !inDoubleQuote && !inBlockComment {
+		if char == ';' && !inSingleQuote && !inDoubleQuote && !inBlockComment && !inLineComment {
 			sql := currentStmt.String()
 			result = append(result, base.SingleSQL{
 				Text:     sql,
@@ -56,11 +77,10 @@ func SplitSQL(statement string) ([]base.SingleSQL, error) {
 	if currentStmt.Len() > 0 {
 		sql := currentStmt.String()
 		if strings.TrimSpace(sql) != "" {
-			lastPos := len(statement)
 			result = append(result, base.SingleSQL{
 				Text:     sql,
-				BaseLine: countLines(statement[:lastPos-len(sql)]),
-				LastLine: countLines(statement[:lastPos]),
+				BaseLine: countLines(statement[:len(statement)-len(sql)]),
+				LastLine: countLines(statement),
 			})
 		}
 	}
@@ -68,10 +88,7 @@ func SplitSQL(statement string) ([]base.SingleSQL, error) {
 	return result, nil
 }
 
+// countLines counts the number of newlines in a string
 func countLines(s string) int {
 	return strings.Count(s, "\n")
-}
-
-func init() {
-	base.RegisterSplitterFunc(storepb.Engine_TRINO, SplitSQL)
 }

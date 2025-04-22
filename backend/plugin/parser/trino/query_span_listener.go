@@ -8,7 +8,7 @@ import (
 
 // trinoQuerySpanListener walks the parse tree to extract query span information.
 type trinoQuerySpanListener struct {
-	*parser.BaseTrinoParserListener
+	parser.BaseTrinoParserListener
 
 	extractor *querySpanExtractor
 	results   []base.QuerySpanResult
@@ -18,23 +18,22 @@ type trinoQuerySpanListener struct {
 // newTrinoQuerySpanListener creates a new listener with the given extractor.
 func newTrinoQuerySpanListener(extractor *querySpanExtractor) *trinoQuerySpanListener {
 	return &trinoQuerySpanListener{
-		BaseTrinoParserListener: &parser.BaseTrinoParserListener{},
-		extractor:               extractor,
-		results:                 []base.QuerySpanResult{},
+		extractor: extractor,
+		results:   []base.QuerySpanResult{},
 	}
 }
 
 // EnterTableName processes table references in the query.
 func (l *trinoQuerySpanListener) EnterTableName(ctx *parser.TableNameContext) {
 	if l.err != nil {
-		return // Skip if already encountered an error
+		return
 	}
 
-	// Extract database, schema, and table name from the qualified name
 	if ctx.QualifiedName() == nil {
 		return
 	}
 
+	// Extract database, schema, and table name
 	db, schema, table := ExtractDatabaseSchemaName(
 		ctx.QualifiedName(),
 		l.extractor.defaultDatabase,
@@ -45,7 +44,6 @@ func (l *trinoQuerySpanListener) EnterTableName(ctx *parser.TableNameContext) {
 	tableMeta, err := l.extractor.findTableSchema(db, schema, table)
 	if err != nil {
 		// We don't set l.err here because table references might be CTEs or subqueries
-		// that won't be found via metadata lookup
 		return
 	}
 
@@ -59,19 +57,6 @@ func (l *trinoQuerySpanListener) EnterTableName(ctx *parser.TableNameContext) {
 		}
 		l.extractor.addSourceColumn(colResource)
 	}
-}
-
-// EnterSelectItem processes SELECT items in the query.
-func (l *trinoQuerySpanListener) EnterSelectItem(_ *parser.SelectItemContext) {
-	if l.err != nil {
-		return
-	}
-
-	// The SelectItemContext should be either SelectAll or SelectSingle
-	// Let the appropriate Enter* method handle the details
-
-	// The specific methods for child rules will be called automatically
-	// EnterSelectSingle or EnterSelectAll
 }
 
 // EnterSelectAll handles all cases of SELECT * expressions.
@@ -92,17 +77,18 @@ func (l *trinoQuerySpanListener) EnterSelectAll(_ *parser.SelectAllContext) {
 
 // EnterSelectSingle processes individual SELECT items.
 func (l *trinoQuerySpanListener) EnterSelectSingle(ctx *parser.SelectSingleContext) {
+	if l.err != nil {
+		return
+	}
+
 	// Get column name and alias
 	var resultName string
 	var sourceColumns base.SourceColumnSet
 	isPlainField := false
 
 	if ctx.Expression() != nil {
-		// For now, just use the expression text regardless of expression type
+		// For now, just use the expression text as the result name
 		resultName = ctx.Expression().GetText()
-
-		// In a more complete implementation, we would handle different expression types differently
-		// and extract column references from the expression
 	}
 
 	// Override with alias if provided

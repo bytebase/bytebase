@@ -29,7 +29,6 @@ type querySpanExtractor struct {
 	sourceColumns base.SourceColumnSet
 
 	// Table sources for resolving columns
-	// These follow the pattern in other database parsers
 	tableSourcesFrom  []base.TableSource
 	outerTableSources []base.TableSource
 }
@@ -56,11 +55,11 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string)
 	// Parse the statement
 	result, err := ParseTrino(statement)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to parse Trino statement: %s", statement)
+		return nil, errors.Wrapf(err, "failed to parse Trino statement")
 	}
 
 	if result.Tree == nil {
-		return nil, errors.Errorf("failed to parse Trino statement: %s, no parse tree found", statement)
+		return nil, errors.New("failed to parse Trino statement, no parse tree found")
 	}
 
 	// Determine query type
@@ -81,17 +80,8 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string)
 		}, nil
 	}
 
-	// Special handling for EXPLAIN ANALYZE which executes the query
-	if isExplainAnalyze {
-		return &base.QuerySpan{
-			Type:          queryType,
-			SourceColumns: accessTables,
-			Results:       []base.QuerySpanResult{},
-		}, nil
-	}
-
-	// For EXPLAIN, return a basic span
-	if queryType == base.Explain {
+	// Special handling for EXPLAIN/ANALYZE
+	if isExplainAnalyze || queryType == base.Explain {
 		return &base.QuerySpan{
 			Type:          queryType,
 			SourceColumns: accessTables,
@@ -128,9 +118,8 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string)
 func (q *querySpanExtractor) extractAccessedTables(tree antlr.Tree) base.SourceColumnSet {
 	resources := make(base.SourceColumnSet)
 	tableListener := &tableExtractorListener{
-		BaseTrinoParserListener: &parser.BaseTrinoParserListener{},
-		extractor:               q,
-		resources:               resources,
+		extractor: q,
+		resources: resources,
 	}
 
 	antlr.ParseTreeWalkerDefault.Walk(tableListener, tree)
@@ -178,105 +167,6 @@ func (q *querySpanExtractor) getDatabaseMetadata(database string) (*model.Databa
 // addSourceColumn adds a column to the tracked source columns.
 func (q *querySpanExtractor) addSourceColumn(col base.ColumnResource) {
 	q.sourceColumns[col] = true
-}
-
-// getFieldColumnSource resolves a column from either outer table sources or tableSourcesFrom
-// TODO: Implement when needed for more complex query span extraction
-// nolint:unused
-func (q *querySpanExtractor) getFieldColumnSource(database, table, column string) (base.SourceColumnSet, error) {
-	findInTableSource := func(tableSource base.TableSource) (base.SourceColumnSet, bool) {
-		if q.ignoreCaseSensitive {
-			if database != "" && !strings.EqualFold(database, tableSource.GetDatabaseName()) {
-				return nil, false
-			}
-			if table != "" && !strings.EqualFold(table, tableSource.GetTableName()) {
-				return nil, false
-			}
-		} else {
-			if database != "" && database != tableSource.GetDatabaseName() {
-				return nil, false
-			}
-			if table != "" && table != tableSource.GetTableName() {
-				return nil, false
-			}
-		}
-
-		for _, field := range tableSource.GetQuerySpanResult() {
-			if q.ignoreCaseSensitive {
-				if strings.EqualFold(field.Name, column) {
-					return field.SourceColumns, true
-				}
-			} else {
-				if field.Name == column {
-					return field.SourceColumns, true
-				}
-			}
-		}
-
-		return nil, false
-	}
-
-	// Search in outer table sources first (for subqueries)
-	for i := len(q.outerTableSources) - 1; i >= 0; i-- {
-		if sourceColumns, ok := findInTableSource(q.outerTableSources[i]); ok {
-			return sourceColumns, nil
-		}
-	}
-
-	// Then search in current from clause table sources
-	for i := len(q.tableSourcesFrom) - 1; i >= 0; i-- {
-		if sourceColumns, ok := findInTableSource(q.tableSourcesFrom[i]); ok {
-			return sourceColumns, nil
-		}
-	}
-
-	// Not found
-	return make(base.SourceColumnSet), &parsererror.ResourceNotFoundError{
-		Database: &database,
-		Table:    &table,
-		Column:   &column,
-	}
-}
-
-// getAllTableColumnSources gets all column sources for a table
-// TODO: Implement when needed for more complex query span extraction
-// nolint:unused
-func (q *querySpanExtractor) getAllTableColumnSources(database, table string) ([]base.QuerySpanResult, bool) {
-	findInTableSource := func(tableSource base.TableSource) ([]base.QuerySpanResult, bool) {
-		if q.ignoreCaseSensitive {
-			if database != "" && !strings.EqualFold(database, tableSource.GetDatabaseName()) {
-				return nil, false
-			}
-			if table != "" && !strings.EqualFold(table, tableSource.GetTableName()) {
-				return nil, false
-			}
-		} else {
-			if database != "" && database != tableSource.GetDatabaseName() {
-				return nil, false
-			}
-			if table != "" && table != tableSource.GetTableName() {
-				return nil, false
-			}
-		}
-
-		return tableSource.GetQuerySpanResult(), true
-	}
-
-	// Search in outer table sources first (for subqueries)
-	for i := len(q.outerTableSources) - 1; i >= 0; i-- {
-		if result, ok := findInTableSource(q.outerTableSources[i]); ok {
-			return result, true
-		}
-	}
-
-	// Then search in current from clause table sources
-	for i := len(q.tableSourcesFrom) - 1; i >= 0; i-- {
-		if result, ok := findInTableSource(q.tableSourcesFrom[i]); ok {
-			return result, true
-		}
-	}
-
-	return nil, false
 }
 
 // findTableSchema locates a table or view and returns its metadata.
@@ -328,7 +218,6 @@ func (q *querySpanExtractor) findTableSchema(db, schema, name string) (*model.Ta
 
 	if viewMeta != nil {
 		// For views, return an empty table metadata with the columns from the view
-		// In a full implementation, we would parse the view definition
 		return &model.TableMetadata{}, nil
 	}
 
@@ -342,19 +231,10 @@ func (q *querySpanExtractor) findTableSchema(db, schema, name string) (*model.Ta
 
 // tableExtractorListener extracts table resources from the parse tree
 type tableExtractorListener struct {
-	*parser.BaseTrinoParserListener
+	parser.BaseTrinoParserListener
 
 	extractor *querySpanExtractor
 	resources base.SourceColumnSet
-}
-
-// nolint:unused
-func newTableExtractorListener(extractor *querySpanExtractor, resources base.SourceColumnSet) *tableExtractorListener {
-	return &tableExtractorListener{
-		BaseTrinoParserListener: &parser.BaseTrinoParserListener{},
-		extractor:               extractor,
-		resources:               resources,
-	}
 }
 
 // EnterTableName is called when the parser enters a table name

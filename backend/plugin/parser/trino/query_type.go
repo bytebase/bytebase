@@ -36,7 +36,7 @@ const (
 
 // queryTypeListener is a parser listener for determining the query type
 type queryTypeListener struct {
-	*parser.BaseTrinoParserListener
+	parser.BaseTrinoParserListener
 
 	allSystems       bool
 	result           base.QueryType
@@ -66,8 +66,7 @@ func getQueryType(node any, allSystems bool) (base.QueryType, bool) {
 		result:     base.QueryTypeUnknown,
 	}
 
-	walker := antlr.ParseTreeWalkerDefault
-	walker.Walk(listener, stmtCtx)
+	antlr.ParseTreeWalkerDefault.Walk(listener, stmtCtx)
 
 	return listener.result, listener.isExplainAnalyze
 }
@@ -83,13 +82,8 @@ func (l *queryTypeListener) EnterStatementDefault(ctx *parser.StatementDefaultCo
 }
 
 // EnterExplain is called when entering an ExplainContext rule.
-func (l *queryTypeListener) EnterExplain(ctx *parser.ExplainContext) {
+func (l *queryTypeListener) EnterExplain(_ *parser.ExplainContext) {
 	l.result = base.Explain
-
-	// Check if this is an EXPLAIN of a query that accesses system tables
-	if l.allSystems || containsSystemSchema(ctx.GetText()) {
-		l.result = base.Explain
-	}
 }
 
 // EnterExplainAnalyze is called when entering an ExplainAnalyzeContext rule.

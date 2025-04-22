@@ -25,7 +25,7 @@ func ParseTrino(sql string) (*ParseResult, error) {
 		sql += ";"
 	}
 
-	// Create lexer and parser with error listeners
+	// Create lexer and parser
 	lexer := parser.NewTrinoLexer(antlr.NewInputStream(sql))
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
 	p := parser.NewTrinoParser(stream)
@@ -74,11 +74,6 @@ func NormalizeTrinoIdentifier(ident string) string {
 	return strings.ToLower(ident)
 }
 
-// NormalizeTrinoTableRef returns the normalized database and table name.
-func NormalizeTrinoTableRef(ctx parser.IQualifiedNameContext) (string, string, string) {
-	return ExtractDatabaseSchemaName(ctx, "", "")
-}
-
 // ExtractQualifiedNameParts extracts the parts of a qualified name.
 func ExtractQualifiedNameParts(ctx parser.IQualifiedNameContext) []string {
 	if ctx == nil {
@@ -98,38 +93,25 @@ func ExtractQualifiedNameParts(ctx parser.IQualifiedNameContext) []string {
 // ExtractDatabaseSchemaName extracts catalog/database, schema, and table/name parts from qualified name.
 func ExtractDatabaseSchemaName(ctx parser.IQualifiedNameContext, defaultDatabase, defaultSchema string) (string, string, string) {
 	parts := ExtractQualifiedNameParts(ctx)
-	var db, schema, name string
 
 	switch len(parts) {
 	case 1:
 		// Just name (table/column)
-		db = defaultDatabase
-		schema = defaultSchema
-		name = parts[0]
+		return defaultDatabase, defaultSchema, parts[0]
 	case 2:
 		// schema.name
-		db = defaultDatabase
-		schema = parts[0]
-		name = parts[1]
+		return defaultDatabase, parts[0], parts[1]
 	case 3:
 		// catalog.schema.name (Trino's model)
-		db = parts[0]
-		schema = parts[1]
-		name = parts[2]
+		return parts[0], parts[1], parts[2]
 	default:
 		// Handle invalid cases
 		if len(parts) > 0 {
-			name = parts[len(parts)-1]
+			name := parts[len(parts)-1]
+			if len(parts) > 3 {
+				return parts[0], parts[1], name
+			}
 		}
+		return defaultDatabase, defaultSchema, ""
 	}
-
-	// Apply defaults if parts were missing
-	if schema == "" {
-		schema = defaultSchema
-	}
-	if db == "" {
-		db = defaultDatabase
-	}
-
-	return db, schema, name
 }

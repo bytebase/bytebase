@@ -86,56 +86,22 @@ type resourceExtractListener struct {
 
 // EnterTableName is called when a tableName node is entered
 func (l *resourceExtractListener) EnterTableName(ctx *parser.TableNameContext) {
-	// Extract the qualified name parts
-	var catalog, schema, table string
-
-	// Extract table name from qualified name
-	if ctx.QualifiedName() != nil {
-		parts := getQualifiedNameParts(ctx.QualifiedName())
-
-		switch len(parts) {
-		case 1:
-			// Just table name
-			catalog = l.currentDatabase
-			schema = l.currentSchema
-			table = parts[0]
-		case 2:
-			// schema.table
-			catalog = l.currentDatabase
-			schema = parts[0]
-			table = parts[1]
-		case 3:
-			// catalog.schema.table
-			catalog = parts[0]
-			schema = parts[1]
-			table = parts[2]
-		default:
-			return
-		}
-
-		resource := base.SchemaResource{
-			Database: catalog,
-			Schema:   schema,
-			Table:    table,
-		}
-
-		l.resourceMap[resource.String()] = resource
-	}
-}
-
-// getQualifiedNameParts extracts the parts of a qualified name.
-func getQualifiedNameParts(ctx parser.IQualifiedNameContext) []string {
-	if ctx == nil {
-		return nil
+	if ctx.QualifiedName() == nil {
+		return
 	}
 
-	var parts []string
-	for _, ident := range ctx.AllIdentifier() {
-		if ident != nil {
-			// Normalize the identifier according to Trino rules
-			parts = append(parts, NormalizeTrinoIdentifier(ident.GetText()))
-		}
+	// Extract the database, schema, and table name
+	catalog, schema, table := ExtractDatabaseSchemaName(
+		ctx.QualifiedName(),
+		l.currentDatabase,
+		l.currentSchema,
+	)
+
+	resource := base.SchemaResource{
+		Database: catalog,
+		Schema:   schema,
+		Table:    table,
 	}
 
-	return parts
+	l.resourceMap[resource.String()] = resource
 }
