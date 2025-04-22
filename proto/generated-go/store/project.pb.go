@@ -103,8 +103,11 @@ type Project struct {
 	AllowSelfApproval bool `protobuf:"varint,10,opt,name=allow_self_approval,json=allowSelfApproval,proto3" json:"allow_self_approval,omitempty"`
 	// Execution retry policy for the task run.
 	ExecutionRetryPolicy *Project_ExecutionRetryPolicy `protobuf:"bytes,11,opt,name=execution_retry_policy,json=executionRetryPolicy,proto3" json:"execution_retry_policy,omitempty"`
-	unknownFields        protoimpl.UnknownFields
-	sizeCache            protoimpl.SizeCache
+	// The maximum number of databases to sample during CI data validation.
+	// Without specification, sampling is disabled, resulting in a full validation.
+	CiSamplingSize int32 `protobuf:"varint,12,opt,name=ci_sampling_size,json=ciSamplingSize,proto3" json:"ci_sampling_size,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *Project) Reset() {
@@ -207,6 +210,13 @@ func (x *Project) GetExecutionRetryPolicy() *Project_ExecutionRetryPolicy {
 	return nil
 }
 
+func (x *Project) GetCiSamplingSize() int32 {
+	if x != nil {
+		return x.CiSamplingSize
+	}
+	return 0
+}
+
 type Project_ExecutionRetryPolicy struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The maximum number of retries for the lock timeout issue.
@@ -260,7 +270,7 @@ const file_store_project_proto_rawDesc = "" +
 	"\x05Label\x12\x14\n" +
 	"\x05value\x18\x01 \x01(\tR\x05value\x12\x14\n" +
 	"\x05color\x18\x02 \x01(\tR\x05color\x12\x14\n" +
-	"\x05group\x18\x03 \x01(\tR\x05group\"\xff\x04\n" +
+	"\x05group\x18\x03 \x01(\tR\x05group\"\xa9\x05\n" +
 	"\aProject\x128\n" +
 	"\fissue_labels\x18\x02 \x03(\v2\x15.bytebase.store.LabelR\vissueLabels\x12,\n" +
 	"\x12force_issue_labels\x18\x03 \x01(\bR\x10forceIssueLabels\x124\n" +
@@ -272,7 +282,8 @@ const file_store_project_proto_rawDesc = "" +
 	"\x1dpostgres_database_tenant_mode\x18\t \x01(\bR\x1apostgresDatabaseTenantMode\x12.\n" +
 	"\x13allow_self_approval\x18\n" +
 	" \x01(\bR\x11allowSelfApproval\x12b\n" +
-	"\x16execution_retry_policy\x18\v \x01(\v2,.bytebase.store.Project.ExecutionRetryPolicyR\x14executionRetryPolicy\x1a?\n" +
+	"\x16execution_retry_policy\x18\v \x01(\v2,.bytebase.store.Project.ExecutionRetryPolicyR\x14executionRetryPolicy\x12(\n" +
+	"\x10ci_sampling_size\x18\f \x01(\x05R\x0eciSamplingSize\x1a?\n" +
 	"\x14ExecutionRetryPolicy\x12'\n" +
 	"\x0fmaximum_retries\x18\x01 \x01(\x05R\x0emaximumRetriesJ\x04\b\x01\x10\x02B\x14Z\x12generated-go/storeb\x06proto3"
 

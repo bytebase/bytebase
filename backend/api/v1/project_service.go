@@ -339,6 +339,7 @@ func (s *ProjectService) UpdateProject(ctx context.Context, request *v1pb.Update
 		"auto_enable_backup",
 		"skip_backup_errors",
 		"postgres_database_tenant_mode",
+		"ci_sampling_size",
 	}
 	for _, path := range request.UpdateMask.Paths {
 		if slices.Contains(issueProjectSettingFeatureRelatedPaths, path) {
@@ -414,6 +415,10 @@ func (s *ProjectService) UpdateProject(ctx context.Context, request *v1pb.Update
 		case "execution_retry_policy":
 			projectSettings := project.Setting
 			projectSettings.ExecutionRetryPolicy = convertToStoreExecutionRetryPolicy(request.Project.ExecutionRetryPolicy)
+			patch.Setting = projectSettings
+		case "ci_sampling_size":
+			projectSettings := project.Setting
+			projectSettings.CiSamplingSize = request.Project.CiSamplingSize
 			patch.Setting = projectSettings
 		default:
 			return nil, status.Errorf(codes.InvalidArgument, `unsupport update_mask "%s"`, path)
@@ -1329,6 +1334,7 @@ func convertToProject(projectMessage *store.ProjectMessage) *v1pb.Project {
 		PostgresDatabaseTenantMode: projectMessage.Setting.PostgresDatabaseTenantMode,
 		AllowSelfApproval:          projectMessage.Setting.AllowSelfApproval,
 		ExecutionRetryPolicy:       convertToV1ExecutionRetryPolicy(projectMessage.Setting.ExecutionRetryPolicy),
+		CiSamplingSize:             projectMessage.Setting.CiSamplingSize,
 	}
 }
 
@@ -1363,6 +1369,7 @@ func convertToProjectMessage(resourceID string, project *v1pb.Project) (*store.P
 		SkipBackupErrors:           project.SkipBackupErrors,
 		PostgresDatabaseTenantMode: project.PostgresDatabaseTenantMode,
 		AllowSelfApproval:          project.AllowSelfApproval,
+		CiSamplingSize:             project.CiSamplingSize,
 	}
 	return &store.ProjectMessage{
 		ResourceID: resourceID,
