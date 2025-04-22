@@ -1640,6 +1640,10 @@
         "max-retries": {
           "self": "Maximum retries count for lock timeout",
           "description": "The maximum retries count for lock timeout when running the task. The default value is 0."
+        },
+        "ci-sampling-size": {
+          "self": "CI Data Sampling Size",
+          "description": "The maximum number of databases to sample during CI data validation. When disabled (zero), full validation will be performed."
         }
       }
     },

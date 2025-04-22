@@ -1640,6 +1640,10 @@
         "max-retries": {
           "self": "Số lần thử lại tối đa cho thời gian chờ khóa",
           "description": "Tối đa nhớ lại số lượng thời gian chờ khóa khi chạy tác vụ. Giá trị mặc định là 0."
+        },
+        "ci-sampling-size": {
+          "self": "Kích thước lấy mẫu dữ liệu CI",
+          "description": "Số lượng cơ sở dữ liệu tối đa để lấy mẫu trong quá trình xác thực dữ liệu CI. \nKhi bị vô hiệu hóa (không), xác thực đầy đủ sẽ được thực hiện."
         }
       }
     },
