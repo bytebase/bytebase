@@ -357,15 +357,15 @@ const updateAdvices = (
 ) => {
   tab.editorState.advices = advices.map<AdviceOption>((advice) => {
     const [startLine, startColumn] = positionWithOffset(
-      advice.startPosition?.line ?? advice.line,
-      advice.startPosition?.column ?? advice.column,
+      advice.startPosition?.line ?? 1,
+      advice.startPosition?.column ?? Number.MAX_SAFE_INTEGER,
       params.selection
     );
     const [endLine, endColumn] = positionWithOffset(
-      advice.endPosition?.line ?? advice.startPosition?.line ?? advice.line,
+      advice.endPosition?.line ?? advice.startPosition?.line ?? 1,
       advice.endPosition?.column ??
         advice.startPosition?.column ??
-        advice.column,
+        Number.MAX_SAFE_INTEGER,
       params.selection
     );
     const code = advice.code;

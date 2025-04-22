@@ -35,7 +35,7 @@ func loggingReleaseChecks(resp *v1pb.CheckReleaseResponse) error {
 					hasError = true
 				}
 
-				position := fmt.Sprintf("line %d", common.ConvertLineToActionLine(int(advice.Line)))
+				position := fmt.Sprintf("line %d", common.ConvertLineToActionLine(int(advice.GetStartPosition().GetLine())))
 				fmt.Printf("* (%s) Code %d - %s (%s): %s\n", advice.Status.String(), advice.Code, advice.Title, position, advice.Content)
 			}
 		}
