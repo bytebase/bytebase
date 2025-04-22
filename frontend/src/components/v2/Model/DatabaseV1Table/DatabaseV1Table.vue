@@ -46,10 +46,10 @@ const props = withDefaults(
     showSelection?: boolean;
     singleSelection?: boolean;
     schemaless?: boolean;
-    customClick?: boolean;
     rowClickable?: boolean;
     selectedDatabaseNames?: string[];
     keyword?: string;
+    rowClick?: (e: MouseEvent, val: ComposedDatabase) => void;
   }>(),
   {
     mode: "ALL",
@@ -62,7 +62,6 @@ const props = withDefaults(
 );
 
 const emit = defineEmits<{
-  (event: "row-click", e: MouseEvent, val: ComposedDatabase): void;
   (event: "update:selected-database-names", val: string[]): void;
 }>();
 
@@ -181,11 +180,6 @@ const rowProps = (database: ComposedDatabase) => {
         return;
       }
 
-      if (props.customClick) {
-        emit("row-click", e, database);
-        return;
-      }
-
       if (props.singleSelection) {
         emit("update:selected-database-names", [database.name]);
       } else {
@@ -196,6 +190,10 @@ const rowProps = (database: ComposedDatabase) => {
           selectedDatabaseNameList.add(database.name);
         }
         emit("update:selected-database-names", [...selectedDatabaseNameList]);
+      }
+
+      if (props.rowClick) {
+        props.rowClick(e, database);
       }
     },
   };

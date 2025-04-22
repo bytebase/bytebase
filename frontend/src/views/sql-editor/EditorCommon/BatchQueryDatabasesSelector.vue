@@ -82,6 +82,7 @@
           :filter="filter"
           :parent="project.name"
           :schemaless="true"
+          :custom-click="true"
           v-model:selected-database-names="state.selectedDatabaseNames"
         />
       </div>

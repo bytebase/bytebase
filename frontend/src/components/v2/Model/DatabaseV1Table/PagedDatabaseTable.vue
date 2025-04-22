@@ -13,8 +13,7 @@
         :loading="loading"
         :database-list="list"
         :keyword="filter.query"
-        :custom-click="true"
-        @row-click="handleDatabaseClick"
+        :row-click="handleDatabaseClick"
       />
     </template>
   </PagedTable>

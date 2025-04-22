@@ -141,12 +141,12 @@ const filter = computed(() => ({
 }));
 
 const handleDatabasesSelectionChanged = (
-  selectedDatabaseNameList: Set<string>
+  selectedDatabaseNameList: string[]
 ): void => {
-  if (selectedDatabaseNameList.size !== 1) {
+  if (selectedDatabaseNameList.length !== 1) {
     return;
   }
-  state.selectedDatabaseName = Array.from(selectedDatabaseNameList)[0];
+  state.selectedDatabaseName = selectedDatabaseNameList[0];
 };
 
 const navigateToIssuePage = async () => {
