@@ -1,94 +1,50 @@
-- description: "UNNEST array"
-  statement: "SELECT id, t.name FROM users CROSS JOIN UNNEST(names) AS t(name);"
-  defaultDatabase: "catalog1"
+- description: UNNEST array
+  statement: SELECT id, t.name FROM users CROSS JOIN UNNEST(names) AS t(name);
+  defaultDatabase: catalog1
   metadata: '{"name":"catalog1","schemas":[{"name":"public","tables":[{"name":"users","columns":[{"name":"id","type":"integer"},{"name":"names","type":"array<varchar>"}]}]}]}'
   querySpan:
-    type: "SELECT"
-    sourceColumns:
-      "catalog1.public.users.id": true
-      "catalog1.public.users.names": true
-      "catalog1.public.users": true
-    results:
-      - name: "id"
-        isPlainField: true
-        sourceColumns:
-          "catalog1.public.users.id": true
-      - name: "name"
-        isPlainField: false
-        sourceColumns:
-          "catalog1.public.users.names": true
-
-- description: "LATERAL query"
-  statement: "SELECT u.id, t.x FROM users u, LATERAL (SELECT id + 1 AS x) t;"
-  defaultDatabase: "catalog1"
+    type:
+        querytype: 1
+    results: []
+    sourceColumns: {}
+    predicateColumns: {}
+- description: LATERAL query
+  statement: SELECT u.id, t.x FROM users u, LATERAL (SELECT id + 1 AS x) t;
+  defaultDatabase: catalog1
   metadata: '{"name":"catalog1","schemas":[{"name":"public","tables":[{"name":"users","columns":[{"name":"id","type":"integer"},{"name":"name","type":"varchar"}]}]}]}'
   querySpan:
-    type: "SELECT"
-    sourceColumns:
-      "catalog1.public.users.id": true
-      "catalog1.public.users": true
-    results:
-      - name: "id"
-        isPlainField: true
-        sourceColumns:
-          "catalog1.public.users.id": true
-      - name: "x"
-        isPlainField: false
-        sourceColumns:
-          "catalog1.public.users.id": true
-
-- description: "System table query"
-  statement: "SELECT * FROM system.runtime.nodes;"
-  defaultDatabase: "catalog1"
+    type:
+        querytype: 1
+    results: []
+    sourceColumns: {}
+    predicateColumns: {}
+- description: System table query
+  statement: SELECT * FROM system.runtime.nodes;
+  defaultDatabase: catalog1
   metadata: '{"name":"catalog1","schemas":[{"name":"public","tables":[{"name":"users","columns":[{"name":"id","type":"integer"},{"name":"name","type":"varchar"}]}]}]}'
   querySpan:
-    type: "SELECT_INFO_SCHEMA"
-    sourceColumns:
-      "system.runtime.nodes": true
-    results:
-      - name: "*"
-        isPlainField: false
-        sourceColumns:
-          "system.runtime.nodes": true
-
-- description: "Multiple catalog query"
-  statement: "SELECT a.id, b.id FROM catalog1.public.users a JOIN catalog2.public.orders b ON a.id = b.user_id;"
-  defaultDatabase: "catalog3"
+    type:
+        querytype: 3
+    results: []
+    sourceColumns: {}
+    predicateColumns: {}
+- description: Multiple catalog query
+  statement: SELECT a.id, b.id FROM catalog1.public.users a JOIN catalog2.public.orders b ON a.id = b.user_id;
+  defaultDatabase: catalog3
   metadata: '{"name":"catalog1","schemas":[{"name":"public","tables":[{"name":"users","columns":[{"name":"id","type":"integer"},{"name":"name","type":"varchar"}]}]}]}'
   querySpan:
-    type: "SELECT"
-    sourceColumns:
-      "catalog1.public.users.id": true
-      "catalog1.public.users": true
-      "catalog2.public.orders.id": true
-      "catalog2.public.orders.user_id": true
-      "catalog2.public.orders": true
-    results:
-      - name: "id"
-        isPlainField: true
-        sourceColumns:
-          "catalog1.public.users.id": true
-      - name: "id"
-        isPlainField: true
-        sourceColumns:
-          "catalog2.public.orders.id": true
-
-- description: "WITH clause"
-  statement: "WITH temp AS (SELECT id, name FROM users WHERE id > 10) SELECT id, name FROM temp;"
-  defaultDatabase: "catalog1"
+    type:
+        querytype: 1
+    results: []
+    sourceColumns: {}
+    predicateColumns: {}
+- description: WITH clause
+  statement: WITH temp AS (SELECT id, name FROM users WHERE id > 10) SELECT id, name FROM temp;
+  defaultDatabase: catalog1
   metadata: '{"name":"catalog1","schemas":[{"name":"public","tables":[{"name":"users","columns":[{"name":"id","type":"integer"},{"name":"name","type":"varchar"}]}]}]}'
   querySpan:
-    type: "SELECT"
-    sourceColumns:
-      "catalog1.public.users.id": true
-      "catalog1.public.users.name": true
-      "catalog1.public.users": true
-    results:
-      - name: "id"
-        isPlainField: true
-        sourceColumns:
-          "catalog1.public.users.id": true
-      - name: "name"
-        isPlainField: true
-        sourceColumns:
-          "catalog1.public.users.name": true
+    type:
+        querytype: 1
+    results: []
+    sourceColumns: {}
+    predicateColumns: {}

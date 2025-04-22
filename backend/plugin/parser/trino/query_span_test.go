@@ -2,268 +2,228 @@ package trino
 
 import (
 	"context"
+	"io"
+	"os"
+	"strings"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/pkg/errors"
+	"github.com/stretchr/testify/require"
+	"gopkg.in/yaml.v3"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	"github.com/bytebase/bytebase/backend/store/model"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-// TestTrinoQuerySpanTypes tests the query span extraction for different Trino SQL statement types.
-func TestTrinoQuerySpanTypes(t *testing.T) {
-	testCases := []struct {
-		name     string
-		sql      string
-		database string
-		schema   string
-		wantType base.QueryType
-	}{
-		// SELECT queries
-		{
-			name:     "Simple SELECT",
-			sql:      "SELECT id, name FROM users;",
-			database: "catalog1",
-			schema:   "public",
-			wantType: base.Select,
-		},
-		{
-			name:     "SELECT with JOIN",
-			sql:      "SELECT u.id, u.name, o.order_id FROM users u JOIN orders o ON u.id = o.user_id;",
-			database: "catalog1",
-			schema:   "public",
-			wantType: base.Select,
-		},
-		{
-			name:     "SELECT with subquery",
-			sql:      "SELECT id, name FROM (SELECT id, name FROM users) t;",
-			database: "catalog1",
-			schema:   "public",
-			wantType: base.Select,
-		},
-		{
-			name:     "SELECT with CTE",
-			sql:      "WITH temp AS (SELECT id, name FROM users) SELECT id, name FROM temp;",
-			database: "catalog1",
-			schema:   "public",
-			wantType: base.Select,
-		},
-		{
-			name:     "SELECT from system tables",
-			sql:      "SELECT * FROM system.runtime.nodes;",
-			database: "catalog1",
-			schema:   "public",
-			wantType: base.SelectInfoSchema,
-		},
-
-		// DML queries
-		{
-			name:     "INSERT",
-			sql:      "INSERT INTO users (id, name) VALUES (1, 'John');",
-			database: "catalog1",
-			schema:   "public",
-			wantType: base.DML,
-		},
-		{
-			name:     "UPDATE",
-			sql:      "UPDATE users SET name = 'Jane' WHERE id = 1;",
-			database: "catalog1",
-			schema:   "public",
-			wantType: base.DML,
-		},
-		{
-			name:     "DELETE",
-			sql:      "DELETE FROM users WHERE id = 1;",
-			database: "catalog1",
-			schema:   "public",
-			wantType: base.DML,
-		},
-
-		// DDL queries
-		{
-			name:     "CREATE TABLE",
-			sql:      "CREATE TABLE new_table (id INT, name VARCHAR);",
-			database: "catalog1",
-			schema:   "public",
-			wantType: base.DDL,
-		},
-		{
-			name:     "DROP TABLE",
-			sql:      "DROP TABLE users;",
-			database: "catalog1",
-			schema:   "public",
-			wantType: base.DDL,
-		},
-		{
-			name:     "ALTER TABLE",
-			sql:      "ALTER TABLE users ADD COLUMN email VARCHAR;",
-			database: "catalog1",
-			schema:   "public",
-			wantType: base.DDL,
-		},
-		{
-			name:     "CREATE VIEW",
-			sql:      "CREATE VIEW user_view AS SELECT id, name FROM users;",
-			database: "catalog1",
-			schema:   "public",
-			wantType: base.DDL,
-		},
-
-		// Special queries
-		{
-			name:     "EXPLAIN",
-			sql:      "EXPLAIN SELECT id, name FROM users;",
-			database: "catalog1",
-			schema:   "public",
-			wantType: base.Explain,
-		},
-		{
-			name:     "EXPLAIN ANALYZE",
-			sql:      "EXPLAIN ANALYZE SELECT id, name FROM users;",
-			database: "catalog1",
-			schema:   "public",
-			wantType: base.Select,
-		},
-		{
-			name:     "SHOW TABLES",
-			sql:      "SHOW TABLES;",
-			database: "catalog1",
-			schema:   "public",
-			wantType: base.SelectInfoSchema,
-		},
-
-		// Trino-specific features
-		{
-			name:     "UNNEST array",
-			sql:      "SELECT id, t.name FROM users CROSS JOIN UNNEST(names) AS t(name);",
-			database: "catalog1",
-			schema:   "public",
-			wantType: base.Select,
-		},
-		{
-			name:     "Multiple catalog query",
-			sql:      "SELECT a.id, b.id FROM catalog1.public.users a JOIN catalog2.public.orders b ON a.id = b.user_id;",
-			database: "catalog3",
-			schema:   "public",
-			wantType: base.Select,
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			// Create a mock GetQuerySpanContext
-			gCtx := base.GetQuerySpanContext{
-				InstanceID: "test-instance",
-				Engine:     storepb.Engine_TRINO,
-				// No metadata function provided - mock implementation will handle this
-			}
-
-			// Get query span
-			span, err := GetQuerySpan(context.Background(), gCtx, tc.sql, tc.database, tc.schema, true)
-			if assert.NoError(t, err) {
-				assert.Equal(t, tc.wantType, span.Type, "Incorrect query type for SQL: %s", tc.sql)
-			}
-		})
-	}
+// CustomQueryType allows for both string and int representations of query types in YAML
+type CustomQueryType struct {
+	base.QueryType
 }
 
-// TestTrinoQuerySpanSources tests source column resolution for common Trino SQL queries.
-func TestTrinoQuerySpanSources(t *testing.T) {
-	testCases := []struct {
-		name              string
-		sql               string
-		database          string
-		schema            string
-		expectTableSource string
-	}{
-		{
-			name:              "SELECT with simple table",
-			sql:               "SELECT id, name FROM users;",
-			database:          "catalog1",
-			schema:            "public",
-			expectTableSource: "catalog1.public.users",
-		},
-		{
-			name:              "SELECT with qualified schema",
-			sql:               "SELECT id, name FROM public.users;",
-			database:          "catalog1",
-			schema:            "default",
-			expectTableSource: "catalog1.public.users",
-		},
-		{
-			name:              "SELECT with fully qualified name",
-			sql:               "SELECT id, name FROM catalog1.public.users;",
-			database:          "catalog2",
-			schema:            "default",
-			expectTableSource: "catalog1.public.users",
-		},
+// NestedQueryType is a helper type for the nested structure in the YAML
+type NestedQueryType struct {
+	QueryType int `yaml:"querytype"`
+}
+
+// UnmarshalYAML implements the yaml.Unmarshaler interface
+func (c *CustomQueryType) UnmarshalYAML(value *yaml.Node) error {
+	// Check for scalar first
+	if value.Kind == yaml.ScalarNode {
+		var strValue string
+		if err := value.Decode(&strValue); err == nil {
+			// Convert string QueryType to int
+			switch strings.ToUpper(strValue) {
+			case "SELECT":
+				c.QueryType = base.Select
+			case "EXPLAIN":
+				c.QueryType = base.Explain
+			case "SELECT_INFO_SCHEMA":
+				c.QueryType = base.SelectInfoSchema
+			case "DDL":
+				c.QueryType = base.DDL
+			case "DML":
+				c.QueryType = base.DML
+			default:
+				c.QueryType = base.QueryTypeUnknown
+			}
+			return nil
+		}
+
+		// Try to unmarshal as int
+		var intValue int
+		if err := value.Decode(&intValue); err == nil {
+			c.QueryType = base.QueryType(intValue)
+			return nil
+		}
 	}
 
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			// Create a mock GetQuerySpanContext
-			gCtx := base.GetQuerySpanContext{
-				InstanceID: "test-instance",
-				Engine:     storepb.Engine_TRINO,
-				// No metadata function provided
+	// Handle nested mapping node
+	if value.Kind == yaml.MappingNode {
+		var nested NestedQueryType
+		if err := value.Decode(&nested); err == nil {
+			c.QueryType = base.QueryType(nested.QueryType)
+			return nil
+		}
+	}
+
+	return errors.New("unable to decode QueryType")
+}
+
+// CustomYamlQuerySpan mimics base.YamlQuerySpan but with custom QueryType
+type CustomYamlQuerySpan struct {
+	Type             CustomQueryType             `yaml:"type"`
+	Results          []CustomYamlQuerySpanResult `yaml:"results"`
+	SourceColumns    map[string]bool             `yaml:"sourceColumns"`
+	PredicateColumns map[string]bool             `yaml:"predicateColumns"`
+}
+
+// CustomYamlQuerySpanResult mimics base.YamlQuerySpanResult but with maps for source columns
+type CustomYamlQuerySpanResult struct {
+	Name             string          `yaml:"name"`
+	SourceColumns    map[string]bool `yaml:"sourceColumns"`
+	IsPlainField     bool            `yaml:"isPlainField"`
+	SourceFieldPaths []any           `yaml:"sourceFieldPaths"`
+	SelectAsterisk   bool            `yaml:"selectAsterisk"`
+}
+
+// ToBaseYamlQuerySpan converts CustomYamlQuerySpan to base.YamlQuerySpan
+func (c *CustomYamlQuerySpan) ToBaseYamlQuerySpan() *base.YamlQuerySpan {
+	result := &base.YamlQuerySpan{
+		Type:             c.Type.QueryType,
+		Results:          []base.YamlQuerySpanResult{},
+		SourceColumns:    []base.ColumnResource{},
+		PredicateColumns: []base.ColumnResource{},
+	}
+
+	for _, r := range c.Results {
+		baseResult := base.YamlQuerySpanResult{
+			Name:             r.Name,
+			SourceColumns:    []base.ColumnResource{},
+			IsPlainField:     r.IsPlainField,
+			SelectAsterisk:   r.SelectAsterisk,
+			SourceFieldPaths: []base.YamlQuerySpanResultSourceFieldPaths{},
+		}
+		result.Results = append(result.Results, baseResult)
+	}
+
+	return result
+}
+
+func TestGetQuerySpanFromYAML(t *testing.T) {
+	type testCase struct {
+		Description        string `yaml:"description,omitempty"`
+		Statement          string `yaml:"statement,omitempty"`
+		DefaultDatabase    string `yaml:"defaultDatabase,omitempty"`
+		IgnoreCaseSensitve bool   `yaml:"ignoreCaseSensitive,omitempty"`
+		// Metadata is the protojson encoded storepb.DatabaseSchemaMetadata,
+		// if it's empty, we will use the defaultDatabaseMetadata.
+		Metadata  string               `yaml:"metadata,omitempty"`
+		QuerySpan *CustomYamlQuerySpan `yaml:"querySpan,omitempty"`
+	}
+
+	var (
+		record        = false
+		testDataPaths = []string{
+			"test-data/query-span/query_type.yaml",
+			"test-data/query-span/standard.yaml",
+			"test-data/query-span/case-sensitivity.yaml",
+			"test-data/query-span/join.yaml",
+			"test-data/query-span/trino-specific.yaml",
+		}
+	)
+
+	a := require.New(t)
+	for _, testDataPath := range testDataPaths {
+		testDataPath := testDataPath
+
+		yamlFile, err := os.Open(testDataPath)
+		a.NoError(err)
+
+		var testCases []testCase
+		byteValue, err := io.ReadAll(yamlFile)
+		a.NoError(err)
+		a.NoError(yamlFile.Close())
+		a.NoError(yaml.Unmarshal(byteValue, &testCases))
+
+		for i, tc := range testCases {
+			metadata := &storepb.DatabaseSchemaMetadata{}
+			a.NoErrorf(common.ProtojsonUnmarshaler.Unmarshal([]byte(tc.Metadata), metadata), "cases %d", i+1)
+			databaseMetadataGetter, databaseNameLister := buildMockDatabaseMetadataGetter([]*storepb.DatabaseSchemaMetadata{metadata})
+			result, err := GetQuerySpan(context.TODO(), base.GetQuerySpanContext{
+				GetDatabaseMetadataFunc: databaseMetadataGetter,
+				ListDatabaseNamesFunc:   databaseNameLister,
+				Engine:                  storepb.Engine_TRINO,
+			}, tc.Statement, tc.DefaultDatabase, "", tc.IgnoreCaseSensitve)
+			a.NoErrorf(err, "statement: %s", tc.Statement)
+
+			// Verify the query type is correct
+			if tc.QuerySpan != nil {
+				a.Equal(tc.QuerySpan.Type.QueryType, result.Type,
+					"Query type mismatch for statement: %s", tc.Statement)
 			}
 
-			// Get query span
-			span, err := GetQuerySpan(context.Background(), gCtx, tc.sql, tc.database, tc.schema, true)
-			if assert.NoError(t, err) {
-				// Check that the expected table source is in the source columns
-				found := false
-				for sourceCol := range span.SourceColumns {
-					resource := base.ColumnResource{
-						Database: sourceCol.Database,
-						Schema:   sourceCol.Schema,
-						Table:    sourceCol.Table,
-					}
-					if resource.String() == tc.expectTableSource {
-						found = true
-						break
-					}
+			if record {
+				// When recording, use the standard ToYaml result
+				resultYaml := result.ToYaml()
+
+				// Convert to our custom type for YAML serialization
+				custom := &CustomYamlQuerySpan{
+					Type:          CustomQueryType{QueryType: resultYaml.Type},
+					SourceColumns: make(map[string]bool),
+					Results:       []CustomYamlQuerySpanResult{},
 				}
-				assert.True(t, found, "Expected table source %s not found in source columns", tc.expectTableSource)
-			}
-		})
-	}
-}
 
-// TestTrinoCaseSensitivity tests case sensitivity handling in Trino SQL parsing.
-func TestTrinoCaseSensitivity(t *testing.T) {
-	// The test's behavior depends on implementation details, but we can at least
-	// verify that ignoring case sensitivity allows us to query case-insensitively
+				// Convert source columns to map for YAML
+				for _, col := range resultYaml.SourceColumns {
+					custom.SourceColumns[col.String()] = true
+				}
 
-	testSQL := "SELECT id, name FROM Users;" // Note the uppercase 'Users'
-	database := "catalog1"
-	schema := "public"
+				// Convert results
+				for _, r := range resultYaml.Results {
+					customResult := CustomYamlQuerySpanResult{
+						Name:           r.Name,
+						IsPlainField:   r.IsPlainField,
+						SelectAsterisk: r.SelectAsterisk,
+						SourceColumns:  make(map[string]bool),
+					}
+					for _, col := range r.SourceColumns {
+						customResult.SourceColumns[col.String()] = true
+					}
+					custom.Results = append(custom.Results, customResult)
+				}
 
-	// Case 1: Ignore case sensitivity
-	gCtx := base.GetQuerySpanContext{
-		InstanceID: "test-instance",
-		Engine:     storepb.Engine_TRINO,
-	}
-
-	// With case sensitivity ignored
-	spanIgnoreCase, err := GetQuerySpan(context.Background(), gCtx, testSQL, database, schema, true)
-	if assert.NoError(t, err) {
-		assert.Equal(t, base.Select, spanIgnoreCase.Type)
-
-		// Check if the table appears in source columns (lowercase 'users')
-		foundTable := false
-		expectedResource := "catalog1.public.users"
-		for sourceCol := range spanIgnoreCase.SourceColumns {
-			resource := base.ColumnResource{
-				Database: sourceCol.Database,
-				Schema:   sourceCol.Schema,
-				Table:    sourceCol.Table,
-			}
-			if resource.String() == expectedResource {
-				foundTable = true
-				break
+				testCases[i].QuerySpan = custom
 			}
 		}
-		assert.True(t, foundTable, "Case-insensitive query should find 'users' table")
+
+		if record {
+			byteValue, err := yaml.Marshal(testCases)
+			a.NoError(err)
+			err = os.WriteFile(testDataPath, byteValue, 0644)
+			a.NoError(err)
+		}
 	}
+}
+
+func buildMockDatabaseMetadataGetter(databaseMetadata []*storepb.DatabaseSchemaMetadata) (base.GetDatabaseMetadataFunc, base.ListDatabaseNamesFunc) {
+	return func(_ context.Context, _, databaseName string) (string, *model.DatabaseMetadata, error) {
+			m := make(map[string]*model.DatabaseMetadata)
+			for _, metadata := range databaseMetadata {
+				m[metadata.Name] = model.NewDatabaseMetadata(metadata, true /* isObjectCaseSensitive */, true /* isDetailCaseSensitive */)
+			}
+
+			if databaseMetadata, ok := m[databaseName]; ok {
+				return "", databaseMetadata, nil
+			}
+
+			return "", nil, errors.Errorf("database %q not found", databaseName)
+		}, func(_ context.Context, _ string) ([]string, error) {
+			var names []string
+			for _, metadata := range databaseMetadata {
+				names = append(names, metadata.Name)
+			}
+			return names, nil
+		}
 }

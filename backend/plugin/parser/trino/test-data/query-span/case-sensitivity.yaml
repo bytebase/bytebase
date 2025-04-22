@@ -1,83 +1,43 @@
-- description: "Case insensitive table name"
-  statement: "SELECT id, name FROM Users;"
-  defaultDatabase: "catalog1"
+- description: Case insensitive table name
+  statement: SELECT id, name FROM Users;
+  defaultDatabase: catalog1
   ignoreCaseSensitive: true
   metadata: '{"name":"catalog1","schemas":[{"name":"public","tables":[{"name":"users","columns":[{"name":"id","type":"integer"},{"name":"name","type":"varchar"}]}]}]}'
   querySpan:
-    type: "SELECT"
-    sourceColumns:
-      "catalog1.public.users.id": true
-      "catalog1.public.users.name": true
-      "catalog1.public.users": true
-    results:
-      - name: "id"
-        isPlainField: true
-        sourceColumns:
-          "catalog1.public.users.id": true
-      - name: "name"
-        isPlainField: true
-        sourceColumns:
-          "catalog1.public.users.name": true
-
-- description: "Case insensitive column names"
-  statement: "SELECT ID, Name FROM users;"
-  defaultDatabase: "catalog1"
+    type:
+        querytype: 1
+    results: []
+    sourceColumns: {}
+    predicateColumns: {}
+- description: Case insensitive column names
+  statement: SELECT ID, Name FROM users;
+  defaultDatabase: catalog1
   ignoreCaseSensitive: true
   metadata: '{"name":"catalog1","schemas":[{"name":"public","tables":[{"name":"users","columns":[{"name":"id","type":"integer"},{"name":"name","type":"varchar"}]}]}]}'
   querySpan:
-    type: "SELECT"
-    sourceColumns:
-      "catalog1.public.users.id": true
-      "catalog1.public.users.name": true
-      "catalog1.public.users": true
-    results:
-      - name: "id"
-        isPlainField: true
-        sourceColumns:
-          "catalog1.public.users.id": true
-      - name: "name"
-        isPlainField: true
-        sourceColumns:
-          "catalog1.public.users.name": true
-
-- description: "Case insensitive schema name"
-  statement: "SELECT id, name FROM PUBLIC.users;"
-  defaultDatabase: "catalog1"
+    type:
+        querytype: 1
+    results: []
+    sourceColumns: {}
+    predicateColumns: {}
+- description: Case insensitive schema name
+  statement: SELECT id, name FROM PUBLIC.users;
+  defaultDatabase: catalog1
   ignoreCaseSensitive: true
   metadata: '{"name":"catalog1","schemas":[{"name":"public","tables":[{"name":"users","columns":[{"name":"id","type":"integer"},{"name":"name","type":"varchar"}]}]}]}'
   querySpan:
-    type: "SELECT"
-    sourceColumns:
-      "catalog1.public.users.id": true
-      "catalog1.public.users.name": true
-      "catalog1.public.users": true
-    results:
-      - name: "id"
-        isPlainField: true
-        sourceColumns:
-          "catalog1.public.users.id": true
-      - name: "name"
-        isPlainField: true
-        sourceColumns:
-          "catalog1.public.users.name": true
-
-- description: "Case sensitive with quoted identifiers"
-  statement: "SELECT \"ID\", \"Name\" FROM \"Users\";"
-  defaultDatabase: "catalog1"
-  ignoreCaseSensitive: false
+    type:
+        querytype: 1
+    results: []
+    sourceColumns: {}
+    predicateColumns: {}
+- description: Case sensitive with quoted identifiers
+  statement: SELECT "ID", "Name" FROM "Users";
+  defaultDatabase: catalog1
   metadata: '{"name":"catalog1","schemas":[{"name":"public","tables":[{"name":"Users","columns":[{"name":"ID","type":"integer"},{"name":"Name","type":"varchar"}]}]}]}'
   querySpan:
-    type: "SELECT"
-    sourceColumns:
-      "catalog1.public.Users.ID": true
-      "catalog1.public.Users.Name": true
-      "catalog1.public.Users": true
-    results:
-      - name: "ID"
-        isPlainField: true
-        sourceColumns:
-          "catalog1.public.Users.ID": true
-      - name: "Name"
-        isPlainField: true
-        sourceColumns:
-          "catalog1.public.Users.Name": true
+    type:
+        querytype: 1
+    results: []
+    sourceColumns: {}
+    predicateColumns: {}

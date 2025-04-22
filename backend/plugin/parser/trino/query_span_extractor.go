@@ -26,11 +26,15 @@ type querySpanExtractor struct {
 	metaCache map[string]*model.DatabaseMetadata
 
 	// Parse results
-	sourceColumns base.SourceColumnSet
+	sourceColumns    base.SourceColumnSet
+	predicateColumns base.SourceColumnSet
 
 	// Table sources for resolving columns
 	tableSourcesFrom  []base.TableSource
 	outerTableSources []base.TableSource
+
+	// CTEs for handling WITH clauses
+	ctes []*base.PseudoTable
 }
 
 // newQuerySpanExtractor creates a new Trino query span extractor.
@@ -42,8 +46,10 @@ func newQuerySpanExtractor(defaultDatabase, defaultSchema string, gCtx base.GetQ
 		ignoreCaseSensitive: ignoreCaseSensitive,
 		metaCache:           make(map[string]*model.DatabaseMetadata),
 		sourceColumns:       make(base.SourceColumnSet),
+		predicateColumns:    make(base.SourceColumnSet),
 		tableSourcesFrom:    []base.TableSource{},
 		outerTableSources:   []base.TableSource{},
+		ctes:                []*base.PseudoTable{},
 	}
 }
 
@@ -51,6 +57,10 @@ func newQuerySpanExtractor(defaultDatabase, defaultSchema string, gCtx base.GetQ
 func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string) (*base.QuerySpan, error) {
 	q.ctx = ctx
 	q.statement = statement
+	q.sourceColumns = make(base.SourceColumnSet)
+	q.predicateColumns = make(base.SourceColumnSet)
+	q.tableSourcesFrom = []base.TableSource{}
+	q.ctes = []*base.PseudoTable{}
 
 	// Parse the statement
 	result, err := ParseTrino(statement)
@@ -89,7 +99,7 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string)
 		}, nil
 	}
 
-	// Use ANTLR listener to extract source columns
+	// Use ANTLR listener to extract source columns and results
 	listener := newTrinoQuerySpanListener(q)
 	antlr.ParseTreeWalkerDefault.Walk(listener, result.Tree)
 
@@ -106,12 +116,72 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string)
 		return nil, listener.err
 	}
 
-	// Create the query span with extracted sources
+	// Process all table references to ensure we have full column information
+	fullSourceColumns := q.expandTableReferencesToColumns(accessTables)
+
+	// Create the final query span with properly processed predicate columns
+	// For data access control, we need to ensure that all predicates are fully qualified
+	fullPredicateColumns := make(base.SourceColumnSet)
+
+	// Add every predicate column from our tracked set
+	for col := range q.predicateColumns {
+		// For each predicate column, find the fully qualified version in source columns
+		if col.Column != "" {
+			for sourceCol := range fullSourceColumns {
+				// Match column name and ensure table matches if specified
+				if sourceCol.Column == col.Column {
+					if col.Table == "" || col.Table == sourceCol.Table {
+						fullPredicateColumns[sourceCol] = true
+					}
+				}
+			}
+		}
+	}
+
+	// Return the complete query span
 	return &base.QuerySpan{
-		Type:          queryType,
-		SourceColumns: accessTables,
-		Results:       listener.results,
+		Type:             queryType,
+		SourceColumns:    fullSourceColumns,
+		PredicateColumns: fullPredicateColumns,
+		Results:          listener.results,
 	}, nil
+}
+
+// expandTableReferencesToColumns expands table references to individual columns
+func (q *querySpanExtractor) expandTableReferencesToColumns(accessTables base.SourceColumnSet) base.SourceColumnSet {
+	fullSourceColumns := make(base.SourceColumnSet)
+
+	// First, copy all explicitly collected source columns
+	for col := range q.sourceColumns {
+		fullSourceColumns[col] = true
+	}
+
+	// Expand table references to columns
+	for resource := range accessTables {
+		// Check if this is a table reference (has no column set)
+		if resource.Column == "" {
+			// Get the database metadata to find all columns for this table
+			db, schema, table := resource.Database, resource.Schema, resource.Table
+			tableMeta, err := q.findTableSchema(db, schema, table)
+			if err == nil && tableMeta != nil {
+				// Add each column from the table as a source column with full path
+				for _, col := range tableMeta.GetColumns() {
+					colResource := base.ColumnResource{
+						Database: db,
+						Schema:   schema,
+						Table:    table,
+						Column:   col.Name,
+					}
+					fullSourceColumns[colResource] = true
+				}
+			}
+		} else {
+			// This is already a column reference, keep it
+			fullSourceColumns[resource] = true
+		}
+	}
+
+	return fullSourceColumns
 }
 
 // extractAccessedTables analyzes the parse tree to find all table resources accessed
@@ -169,6 +239,11 @@ func (q *querySpanExtractor) addSourceColumn(col base.ColumnResource) {
 	q.sourceColumns[col] = true
 }
 
+// addPredicateColumn adds a column to the tracked predicate columns.
+func (q *querySpanExtractor) addPredicateColumn(col base.ColumnResource) {
+	q.predicateColumns[col] = true
+}
+
 // findTableSchema locates a table or view and returns its metadata.
 func (q *querySpanExtractor) findTableSchema(db, schema, name string) (*model.TableMetadata, error) {
 	// Get database metadata
@@ -217,8 +292,10 @@ func (q *querySpanExtractor) findTableSchema(db, schema, name string) (*model.Ta
 	}
 
 	if viewMeta != nil {
-		// For views, return an empty table metadata with the columns from the view
-		return &model.TableMetadata{}, nil
+		// For views, return a table metadata with columns from the view
+		tableMeta := &model.TableMetadata{}
+		// In a more complete implementation, we would add columns from the view here
+		return tableMeta, nil
 	}
 
 	// Not found
