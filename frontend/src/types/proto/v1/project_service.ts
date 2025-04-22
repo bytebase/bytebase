@@ -207,7 +207,14 @@ export interface Project {
   /** Whether to allow the issue creator to self-approve the issue. */
   allowSelfApproval: boolean;
   /** Execution retry policy for the task run. */
-  executionRetryPolicy: Project_ExecutionRetryPolicy | undefined;
+  executionRetryPolicy:
+    | Project_ExecutionRetryPolicy
+    | undefined;
+  /**
+   * The maximum databases of rows to sample during CI data validation.
+   * Without specification, sampling is disabled, resulting in a full validation.
+   */
+  ciSamplingSize: number;
 }
 
 export interface Project_ExecutionRetryPolicy {
@@ -1670,6 +1677,7 @@ function createBaseProject(): Project {
     postgresDatabaseTenantMode: false,
     allowSelfApproval: false,
     executionRetryPolicy: undefined,
+    ciSamplingSize: 0,
   };
 }
 
@@ -1719,6 +1727,9 @@ export const Project: MessageFns<Project> = {
     }
     if (message.executionRetryPolicy !== undefined) {
       Project_ExecutionRetryPolicy.encode(message.executionRetryPolicy, writer.uint32(178).fork()).join();
+    }
+    if (message.ciSamplingSize !== 0) {
+      writer.uint32(184).int32(message.ciSamplingSize);
     }
     return writer;
   },
@@ -1850,6 +1861,14 @@ export const Project: MessageFns<Project> = {
           message.executionRetryPolicy = Project_ExecutionRetryPolicy.decode(reader, reader.uint32());
           continue;
         }
+        case 23: {
+          if (tag !== 184) {
+            break;
+          }
+
+          message.ciSamplingSize = reader.int32();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1886,6 +1905,7 @@ export const Project: MessageFns<Project> = {
       executionRetryPolicy: isSet(object.executionRetryPolicy)
         ? Project_ExecutionRetryPolicy.fromJSON(object.executionRetryPolicy)
         : undefined,
+      ciSamplingSize: isSet(object.ciSamplingSize) ? globalThis.Number(object.ciSamplingSize) : 0,
     };
   },
 
@@ -1936,6 +1956,9 @@ export const Project: MessageFns<Project> = {
     if (message.executionRetryPolicy !== undefined) {
       obj.executionRetryPolicy = Project_ExecutionRetryPolicy.toJSON(message.executionRetryPolicy);
     }
+    if (message.ciSamplingSize !== 0) {
+      obj.ciSamplingSize = Math.round(message.ciSamplingSize);
+    }
     return obj;
   },
 
@@ -1961,6 +1984,7 @@ export const Project: MessageFns<Project> = {
     message.executionRetryPolicy = (object.executionRetryPolicy !== undefined && object.executionRetryPolicy !== null)
       ? Project_ExecutionRetryPolicy.fromPartial(object.executionRetryPolicy)
       : undefined;
+    message.ciSamplingSize = object.ciSamplingSize ?? 0;
     return message;
   },
 };
