@@ -52,6 +52,7 @@ const placeholder = computed(() => {
   return "NO_DATA";
 });
 
+// For data export issue, there should be only 1 database.
 watch(
   () => database.value.name,
   async (databaseName) => {
