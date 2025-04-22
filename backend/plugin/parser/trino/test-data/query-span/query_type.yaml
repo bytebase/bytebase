@@ -1,0 +1,110 @@
+- description: SELECT
+  statement: SELECT id, name FROM users;
+  defaultDatabase: catalog1
+  metadata: '{"name":"catalog1","schemas":[{"name":"public","tables":[{"name":"users","columns":[{"name":"id","type":"integer"},{"name":"name","type":"varchar"}]}]}]}'
+  querySpan:
+    type:
+        querytype: 1
+    results: []
+    sourceColumns: {}
+    predicateColumns: {}
+- description: INSERT
+  statement: INSERT INTO users (id, name) VALUES (1, 'John');
+  defaultDatabase: catalog1
+  metadata: '{"name":"catalog1","schemas":[{"name":"public","tables":[{"name":"users","columns":[{"name":"id","type":"integer"},{"name":"name","type":"varchar"}]}]}]}'
+  querySpan:
+    type:
+        querytype: 5
+    results: []
+    sourceColumns: {}
+    predicateColumns: {}
+- description: UPDATE
+  statement: UPDATE users SET name = 'Jane' WHERE id = 1;
+  defaultDatabase: catalog1
+  metadata: '{"name":"catalog1","schemas":[{"name":"public","tables":[{"name":"users","columns":[{"name":"id","type":"integer"},{"name":"name","type":"varchar"}]}]}]}'
+  querySpan:
+    type:
+        querytype: 5
+    results: []
+    sourceColumns: {}
+    predicateColumns: {}
+- description: DELETE
+  statement: DELETE FROM users WHERE id = 1;
+  defaultDatabase: catalog1
+  metadata: '{"name":"catalog1","schemas":[{"name":"public","tables":[{"name":"users","columns":[{"name":"id","type":"integer"},{"name":"name","type":"varchar"}]}]}]}'
+  querySpan:
+    type:
+        querytype: 5
+    results: []
+    sourceColumns: {}
+    predicateColumns: {}
+- description: CREATE TABLE
+  statement: CREATE TABLE new_table (id INT, name VARCHAR);
+  defaultDatabase: catalog1
+  metadata: '{"name":"catalog1","schemas":[{"name":"public","tables":[{"name":"users","columns":[{"name":"id","type":"integer"},{"name":"name","type":"varchar"}]}]}]}'
+  querySpan:
+    type:
+        querytype: 4
+    results: []
+    sourceColumns: {}
+    predicateColumns: {}
+- description: DROP TABLE
+  statement: DROP TABLE users;
+  defaultDatabase: catalog1
+  metadata: '{"name":"catalog1","schemas":[{"name":"public","tables":[{"name":"users","columns":[{"name":"id","type":"integer"},{"name":"name","type":"varchar"}]}]}]}'
+  querySpan:
+    type:
+        querytype: 4
+    results: []
+    sourceColumns: {}
+    predicateColumns: {}
+- description: CREATE VIEW
+  statement: CREATE VIEW user_view AS SELECT id, name FROM users;
+  defaultDatabase: catalog1
+  metadata: '{"name":"catalog1","schemas":[{"name":"public","tables":[{"name":"users","columns":[{"name":"id","type":"integer"},{"name":"name","type":"varchar"}]}]}]}'
+  querySpan:
+    type:
+        querytype: 4
+    results: []
+    sourceColumns: {}
+    predicateColumns: {}
+- description: ALTER TABLE
+  statement: ALTER TABLE users ADD COLUMN email VARCHAR;
+  defaultDatabase: catalog1
+  metadata: '{"name":"catalog1","schemas":[{"name":"public","tables":[{"name":"users","columns":[{"name":"id","type":"integer"},{"name":"name","type":"varchar"}]}]}]}'
+  querySpan:
+    type:
+        querytype: 4
+    results: []
+    sourceColumns: {}
+    predicateColumns: {}
+- description: EXPLAIN
+  statement: EXPLAIN SELECT id, name FROM users;
+  defaultDatabase: catalog1
+  metadata: '{"name":"catalog1","schemas":[{"name":"public","tables":[{"name":"users","columns":[{"name":"id","type":"integer"},{"name":"name","type":"varchar"}]}]}]}'
+  querySpan:
+    type:
+        querytype: 2
+    results: []
+    sourceColumns: {}
+    predicateColumns: {}
+- description: EXPLAIN ANALYZE
+  statement: EXPLAIN ANALYZE SELECT id, name FROM users;
+  defaultDatabase: catalog1
+  metadata: '{"name":"catalog1","schemas":[{"name":"public","tables":[{"name":"users","columns":[{"name":"id","type":"integer"},{"name":"name","type":"varchar"}]}]}]}'
+  querySpan:
+    type:
+        querytype: 1
+    results: []
+    sourceColumns: {}
+    predicateColumns: {}
+- description: SHOW TABLES
+  statement: SHOW TABLES;
+  defaultDatabase: catalog1
+  metadata: '{"name":"catalog1","schemas":[{"name":"public","tables":[{"name":"users","columns":[{"name":"id","type":"integer"},{"name":"name","type":"varchar"}]}]}]}'
+  querySpan:
+    type:
+        querytype: 3
+    results: []
+    sourceColumns: {}
+    predicateColumns: {}
