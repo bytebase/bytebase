@@ -248,7 +248,7 @@ func getListDatabaseFilter(filter string) (*store.ListResourceFilter, error) {
 			}
 			return fmt.Sprintf("(db.metadata->>'drifted')::boolean %s TRUE", condition), nil
 		case "exclude_unassigned":
-			if _, ok := value.(bool); ok {
+			if excludeUnassigned, ok := value.(bool); excludeUnassigned && ok {
 				positionalArgs = append(positionalArgs, base.DefaultProjectID)
 				return fmt.Sprintf("db.project != $%d", len(positionalArgs)), nil
 			}

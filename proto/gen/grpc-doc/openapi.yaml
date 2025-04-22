@@ -1095,6 +1095,7 @@ paths:
                      - engine
                      - label
                      - exclude_unassigned: Not show unassigned databases if specified
+                     - drifted
 
                      For example:
                      environment == "environments/{environment resource id}"
@@ -1108,6 +1109,7 @@ paths:
                      label == "tenant:asia,europe"
                      label == "region:asia" && label == "tenant:bytebase"
                      exclude_unassigned == true
+                     drifted == true
                      You can combine filter conditions like:
                      environment == "environments/prod" && name.matches("employee")
                   schema:
@@ -3864,6 +3866,7 @@ paths:
                      - engine
                      - label
                      - exclude_unassigned: Not show unassigned databases if specified
+                     - drifted
 
                      For example:
                      environment == "environments/{environment resource id}"
@@ -3877,6 +3880,7 @@ paths:
                      label == "tenant:asia,europe"
                      label == "region:asia" && label == "tenant:bytebase"
                      exclude_unassigned == true
+                     drifted == true
                      You can combine filter conditions like:
                      environment == "environments/prod" && name.matches("employee")
                   schema:
@@ -7448,6 +7452,7 @@ paths:
                      - engine
                      - label
                      - exclude_unassigned: Not show unassigned databases if specified
+                     - drifted
 
                      For example:
                      environment == "environments/{environment resource id}"
@@ -7461,6 +7466,7 @@ paths:
                      label == "tenant:asia,europe"
                      label == "region:asia" && label == "tenant:bytebase"
                      exclude_unassigned == true
+                     drifted == true
                      You can combine filter conditions like:
                      environment == "environments/prod" && name.matches("employee")
                   schema:
@@ -8243,7 +8249,7 @@ components:
                     type: array
                     items:
                         type: string
-                    description: The list of database names to retrieve.
+                    description: The list of database names to sync.
         BatchSyncDatabasesResponse:
             type: object
             properties: {}
@@ -12623,11 +12629,18 @@ components:
                     type: string
                     description: |-
                         To filter the search result.
-                         Format: only support the following spec for now:
-                         - `creator = users/{email}`, `creator != users/{email}`
-                         - `starred = true`, `starred = false`.
-                         - `visibility = "VISIBILITY_PRIVATE"`, `visibility = "VISIBILITY_PROJECT_READ | VISIBILITY_PROJECT_WRITE"`, etc.
-                         Not support empty filter for now.
+                         Supported filter:
+                         - creator
+                         - starred
+                         - visibility
+
+                         For example:
+                         creator == "users/{email}"
+                         creator != "users/{email}"
+                         starred == true
+                         starred == false
+                         visibility in ["VISIBILITY_PRIVATE", "VISIBILITY_PROJECT_READ", "VISIBILITY_PROJECT_WRITE"]
+                         visibility == "VISIBILITY_PRIVATE"
                 pageSize:
                     type: integer
                     description: |-
