@@ -52,7 +52,7 @@ func run(platform JobPlatform) error {
 	}
 	switch platform {
 	case GitHub:
-		if err := github.CreateCommentAndAnnotation(checkReleaseResponse); err != nil {
+		if err := github.CreateCommentAndAnnotation(checkReleaseResponse, releaseFiles); err != nil {
 			return err
 		}
 	case GitLab:

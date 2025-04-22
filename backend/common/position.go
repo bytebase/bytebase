@@ -197,3 +197,46 @@ func ConvertPGParserErrorCursorPosToPosition(cursorPos int, text string) *storep
 		Column: int32(column),
 	}
 }
+
+// GitHub annotation position's line starts by 1, col starts by 1 and calculated in character index.
+// https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/workflow-commands-for-github-actions#setting-a-warning-message
+type GitHubAnnotationPosition struct {
+	Line int
+	Col  int
+}
+
+// ConvertPositionToGitHubAnnotationPosition converts position to GitHub annotation position which
+// line starts by 1 and column starts by 1 and calculated in character index.
+func ConvertPositionToGitHubAnnotationPosition(p *storepb.Position, text string) *GitHubAnnotationPosition {
+	if p == nil {
+		return &GitHubAnnotationPosition{
+			Line: 1,
+			Col:  1,
+		}
+	}
+	lineNumber := 1
+	if p.Line >= 0 {
+		lineNumber = int(p.Line) + 1
+	}
+	lines := strings.Split(text, "\n")
+	if lineNumber > len(lines) {
+		lineNumber = len(lines)
+	}
+	line := lines[lineNumber-1]
+	byteOffset := p.Column
+	if byteOffset >= int32(len(line)) {
+		byteOffset = int32(len(line) - 1)
+	}
+	characterIndex := 1
+	for byteIndex := range line {
+		if byteIndex >= int(byteOffset) {
+			break
+		}
+		characterIndex++
+	}
+
+	return &GitHubAnnotationPosition{
+		Line: lineNumber,
+		Col:  characterIndex,
+	}
+}
