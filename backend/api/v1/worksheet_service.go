@@ -12,6 +12,10 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"github.com/google/cel-go/cel"
+	celast "github.com/google/cel-go/common/ast"
+	celoperators "github.com/google/cel-go/common/operators"
+
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/iam"
@@ -141,6 +145,127 @@ func (s *WorksheetService) GetWorksheet(ctx context.Context, request *v1pb.GetWo
 	return v1pbWorksheet, nil
 }
 
+func (s *WorksheetService) getListSheetFilter(ctx context.Context, callerID int, filter string) (*store.ListResourceFilter, error) {
+	if filter == "" {
+		return nil, nil
+	}
+	e, err := cel.NewEnv()
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to create cel env")
+	}
+	ast, iss := e.Parse(filter)
+	if iss != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "failed to parse filter %v, error: %v", filter, iss.String())
+	}
+
+	var getFilter func(expr celast.Expr) (string, error)
+	var positionalArgs []any
+
+	getUserID := func(name string) (int, error) {
+		creatorEmail := strings.TrimPrefix(name, "users/")
+		if creatorEmail == "" {
+			return 0, status.Errorf(codes.InvalidArgument, "invalid empty creator identifier")
+		}
+		user, err := s.store.GetUserByEmail(ctx, creatorEmail)
+		if err != nil {
+			return 0, status.Errorf(codes.Internal, "failed to get user: %v", err)
+		}
+		if user == nil {
+			return 0, status.Errorf(codes.NotFound, "user with email %s not found", creatorEmail)
+		}
+		return user.ID, nil
+	}
+
+	parseToSQL := func(variable, value any) (string, error) {
+		switch variable {
+		case "creator":
+			userID, err := getUserID(value.(string))
+			if err != nil {
+				return "", err
+			}
+			positionalArgs = append(positionalArgs, userID)
+			return fmt.Sprintf("worksheet.creator_id = $%d", len(positionalArgs)), nil
+		case "starred":
+			if starred, ok := value.(bool); ok {
+				positionalArgs = append(positionalArgs, callerID)
+				return fmt.Sprintf("worksheet.id IN (SELECT worksheet_id FROM worksheet_organizer WHERE principal_id = $%d AND starred = %v)", len(positionalArgs), starred), nil
+			}
+			return "TRUE", nil
+		case "visibility":
+			visibility, err := convertToStoreWorksheetVisibility(v1pb.Worksheet_Visibility(v1pb.Worksheet_Visibility_value[value.(string)]))
+			if err != nil {
+				return "", err
+			}
+			positionalArgs = append(positionalArgs, visibility)
+			return fmt.Sprintf("worksheet.visibility = $%d", len(positionalArgs)), nil
+		default:
+			return "", status.Errorf(codes.InvalidArgument, "unsupport variable %q", variable)
+		}
+	}
+
+	getFilter = func(expr celast.Expr) (string, error) {
+		switch expr.Kind() {
+		case celast.CallKind:
+			functionName := expr.AsCall().FunctionName()
+			switch functionName {
+			case celoperators.LogicalOr:
+				return getSubConditionFromExpr(expr, getFilter, "OR")
+			case celoperators.LogicalAnd:
+				return getSubConditionFromExpr(expr, getFilter, "AND")
+			case celoperators.Equals:
+				variable, value := getVariableAndValueFromExpr(expr)
+				return parseToSQL(variable, value)
+			case celoperators.NotEquals:
+				variable, value := getVariableAndValueFromExpr(expr)
+				if variable != "creator" {
+					return "", status.Errorf(codes.InvalidArgument, `only "creator" support "!=" operator`)
+				}
+				userID, err := getUserID(value.(string))
+				if err != nil {
+					return "", err
+				}
+				positionalArgs = append(positionalArgs, userID)
+				return fmt.Sprintf("worksheet.creator_id != $%d", len(positionalArgs)), nil
+			case celoperators.In:
+				variable, value := getVariableAndValueFromExpr(expr)
+				if variable != "visibility" {
+					return "", status.Errorf(codes.InvalidArgument, `only "visibility" support "visibility in [xx]" filter`)
+				}
+				rawList, ok := value.([]any)
+				if !ok {
+					return "", status.Errorf(codes.InvalidArgument, "invalid visibility value %q", value)
+				}
+				if len(rawList) == 0 {
+					return "", status.Errorf(codes.InvalidArgument, "empty visibility filter")
+				}
+				visibilityList := []string{}
+				for _, raw := range rawList {
+					visibility, err := convertToStoreWorksheetVisibility(v1pb.Worksheet_Visibility(v1pb.Worksheet_Visibility_value[raw.(string)]))
+					if err != nil {
+						return "", err
+					}
+					visibilityList = append(visibilityList, fmt.Sprintf(`'%s'`, visibility))
+				}
+				return fmt.Sprintf(`worksheet.visibility IN (%s)`, strings.Join(visibilityList, ",")), nil
+			default:
+				return "", status.Errorf(codes.InvalidArgument, "unexpected function %v", functionName)
+			}
+		default:
+			return "", status.Errorf(codes.InvalidArgument, "unexpected expr kind %v", expr.Kind())
+		}
+	}
+
+	where, err := getFilter(ast.NativeRep().Expr())
+	if err != nil {
+		return nil, err
+	}
+
+	return &store.ListResourceFilter{
+		Args:  positionalArgs,
+		Where: "(" + where + ")",
+	}, nil
+}
+
 // SearchWorksheets returns a list of worksheets based on the search filters.
 func (s *WorksheetService) SearchWorksheets(ctx context.Context, request *v1pb.SearchWorksheetsRequest) (*v1pb.SearchWorksheetsResponse, error) {
 	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
@@ -158,59 +283,12 @@ func (s *WorksheetService) SearchWorksheets(ctx context.Context, request *v1pb.S
 		return nil, status.Errorf(codes.InvalidArgument, "filter should not be empty")
 	}
 
-	specs, err := ParseFilter(request.Filter)
+	filter, err := s.getListSheetFilter(ctx, principalID, request.Filter)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
-	for _, spec := range specs {
-		switch spec.Key {
-		case "creator":
-			creatorEmail := strings.TrimPrefix(spec.Value, "users/")
-			if creatorEmail == "" {
-				return nil, status.Errorf(codes.InvalidArgument, "invalid empty creator identifier")
-			}
-			user, err := s.store.GetUserByEmail(ctx, creatorEmail)
-			if err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to get user: %v", err)
-			}
-			if user == nil {
-				return nil, status.Errorf(codes.NotFound, "user with email %s not found", creatorEmail)
-			}
-			switch spec.Operator {
-			case ComparatorTypeEqual:
-				worksheetFind.CreatorID = &user.ID
-			case ComparatorTypeNotEqual:
-				worksheetFind.ExcludedCreatorID = &user.ID
-			default:
-				return nil, status.Errorf(codes.InvalidArgument, "invalid operator %q for creator", spec.Operator)
-			}
-		case "starred":
-			if spec.Operator != ComparatorTypeEqual {
-				return nil, status.Errorf(codes.InvalidArgument, "invalid operator %q for starred", spec.Operator)
-			}
-			switch spec.Value {
-			case "true":
-				worksheetFind.OrganizerPrincipalIDStarred = &principalID
-			case "false":
-				worksheetFind.OrganizerPrincipalIDNotStarred = &principalID
-			default:
-				return nil, status.Errorf(codes.InvalidArgument, "invalid value %q for starred", spec.Value)
-			}
-		case "visibility":
-			if spec.Operator != ComparatorTypeEqual {
-				return nil, status.Errorf(codes.InvalidArgument, "invalid operator %q for starred", spec.Operator)
-			}
-			for _, rawVisibility := range strings.Split(spec.Value, " | ") {
-				visibility, err := convertToStoreWorksheetVisibility(v1pb.Worksheet_Visibility(v1pb.Worksheet_Visibility_value[rawVisibility]))
-				if err != nil {
-					return nil, err
-				}
-				worksheetFind.Visibilities = append(worksheetFind.Visibilities, visibility)
-			}
-		default:
-			return nil, status.Errorf(codes.InvalidArgument, "invalid filter key %q", spec.Key)
-		}
-	}
+	worksheetFind.Filter = filter
+
 	worksheetList, err := s.store.ListWorkSheets(ctx, worksheetFind, principalID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to list worksheets: %v", err)
