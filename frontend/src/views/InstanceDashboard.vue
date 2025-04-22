@@ -30,6 +30,7 @@
         :bordered="false"
         :filter="filter"
         :footer-class="'mx-4'"
+        :on-click="onRowClick"
         :selected-instance-names="Array.from(state.selectedInstance)"
         @update:selected-instance-names="
           (list) => (state.selectedInstance = new Set(list))
@@ -43,11 +44,15 @@
     :show="state.showCreateDrawer"
     @close="state.showCreateDrawer = false"
   >
-    <InstanceForm :drawer="true" @dismiss="state.showCreateDrawer = false">
+    <InstanceForm
+      :hide-advanced-features="hideAdvancedFeatures"
+      :drawer="true"
+      @dismiss="state.showCreateDrawer = false"
+    >
       <DrawerContent :title="$t('quick-action.add-instance')">
         <InstanceFormBody />
         <template #footer>
-          <InstanceFormButtons />
+          <InstanceFormButtons :on-created="onInstanceCreated" />
         </template>
       </DrawerContent>
     </InstanceForm>
@@ -65,6 +70,7 @@ import { PlusIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { computed, onMounted, reactive } from "vue";
 import { useI18n } from "vue-i18n";
+import { useRouter } from "vue-router";
 import AdvancedSearch from "@/components/AdvancedSearch";
 import type { ScopeOption } from "@/components/AdvancedSearch/types";
 import { useCommonSearchScopeOptions } from "@/components/AdvancedSearch/useCommonSearchScopeOptions";
@@ -77,6 +83,7 @@ import {
 import { InstanceOperations, PagedInstanceTable } from "@/components/v2";
 import { Drawer, DrawerContent } from "@/components/v2";
 import {
+  useAppFeature,
   useUIStateStore,
   useSubscriptionV1Store,
   useInstanceV1Store,
@@ -85,6 +92,7 @@ import {
 import { environmentNamePrefix } from "@/store/modules/v1/common";
 import { isValidInstanceName } from "@/types";
 import { engineFromJSON } from "@/types/proto/v1/common";
+import type { Instance } from "@/types/proto/v1/instance_service";
 import { type SearchParams, hasWorkspacePermissionV2 } from "@/utils";
 
 interface LocalState {
@@ -94,11 +102,16 @@ interface LocalState {
   selectedInstance: Set<string>;
 }
 
+const props = defineProps<{
+  onRowClick?: (instance: Instance) => void;
+}>();
+
 const { t } = useI18n();
 const subscriptionStore = useSubscriptionV1Store();
 const instanceV1Store = useInstanceV1Store();
 const uiStateStore = useUIStateStore();
 const actuatorStore = useActuatorV1Store();
+const router = useRouter();
 
 const state = reactive<LocalState>({
   params: {
@@ -109,6 +122,18 @@ const state = reactive<LocalState>({
   showFeatureModal: false,
   selectedInstance: new Set(),
 });
+
+const hideAdvancedFeatures = useAppFeature(
+  "bb.feature.sql-editor.hide-advance-instance-features"
+);
+
+const onInstanceCreated = (instance: Instance) => {
+  if (props.onRowClick) {
+    return props.onRowClick(instance);
+  }
+  router.push(`/${instance.name}`);
+  state.showCreateDrawer = false;
+};
 
 const selectedEnvironment = computed(() => {
   const environmentId = state.params.scopes.find(
