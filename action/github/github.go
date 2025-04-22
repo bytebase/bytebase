@@ -4,11 +4,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/caarlos0/env/v11"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -185,9 +187,7 @@ func writeAnnotations(resp *v1pb.CheckReleaseResponse) error {
 			_, _ = sb.WriteString(" file=")
 			_, _ = sb.WriteString(result.File)
 			_, _ = sb.WriteString(",line=")
-			_, _ = sb.WriteString(string(advice.Line))
-			_, _ = sb.WriteString(",col=")
-			_, _ = sb.WriteString(string(advice.Column))
+			_, _ = sb.WriteString(strconv.Itoa(common.ConvertLineToActionLine(int(advice.Line))))
 			_, _ = sb.WriteString(",title=")
 			_, _ = sb.WriteString(advice.Title)
 			_, _ = sb.WriteString(" (")
