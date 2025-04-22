@@ -32,7 +32,7 @@
             :parent="projectName"
             :custom-click="true"
             :show-sql-editor-button="false"
-            @update:selected-databases="handleDatabasesSelectionChanged"
+            v-model:selected-database-names="state.selectedDatabaseNames"
           />
         </div>
       </div>
@@ -103,7 +103,7 @@
 </template>
 
 <script lang="ts" setup>
-import { uniqBy } from "lodash-es";
+import { uniq, uniqBy } from "lodash-es";
 import { NButton, NCheckbox, NTooltip } from "naive-ui";
 import { computed, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
@@ -133,7 +133,7 @@ import SchemaEditorModal from "./SchemaEditorModal.vue";
 
 type LocalState = {
   showSchemaLessDatabaseList: boolean;
-  selectedDatabaseNames: Set<string>;
+  selectedDatabaseNames: string[];
   showSchemaEditorModal: boolean;
   params: SearchParams;
   // planOnly is used to indicate whether only to create plan.
@@ -178,7 +178,7 @@ const readonlyScopes = computed((): SearchScope[] => [
 ]);
 
 const state = reactive<LocalState>({
-  selectedDatabaseNames: new Set<string>(),
+  selectedDatabaseNames: [],
   showSchemaLessDatabaseList: false,
   showSchemaEditorModal: false,
   params: {
@@ -232,7 +232,7 @@ const isEditSchema = computed((): boolean => {
 });
 
 const flattenSelectedDatabaseNameList = computed(() => {
-  return [...state.selectedDatabaseNames];
+  return uniq(state.selectedDatabaseNames);
 });
 
 const flattenSelectedProjectList = computed(() => {
@@ -297,12 +297,6 @@ const generateMultiDb = async () => {
     },
     query,
   });
-};
-
-const handleDatabasesSelectionChanged = (
-  selectedDatabaseNameList: Set<string>
-) => {
-  state.selectedDatabaseNames = selectedDatabaseNameList;
 };
 
 const cancel = () => {

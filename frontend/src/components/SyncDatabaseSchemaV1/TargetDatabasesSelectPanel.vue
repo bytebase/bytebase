@@ -25,10 +25,7 @@
         :parent="project"
         :filter="filter"
         :custom-click="true"
-        :selected-database-names="state.selectedDatabaseNameList"
-        @update:selected-databases="
-          state.selectedDatabaseNameList = Array.from($event)
-        "
+        v-model:selected-database-names="state.selectedDatabaseNameList"
       />
 
       <template #footer>

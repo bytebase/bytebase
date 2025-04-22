@@ -8,28 +8,22 @@
     :bordered="bordered"
     :loading="loading"
     :row-key="(data: ComposedDatabase) => data.name"
-    :checked-row-keys="Array.from(state.selectedDatabaseNameList)"
+    :checked-row-keys="props.selectedDatabaseNames"
     :row-props="rowProps"
     @update:checked-row-keys="
-      (val) => (state.selectedDatabaseNameList = new Set(val as string[]))
+      (val) => $emit('update:selected-database-names', val as string[])
     "
   />
 </template>
 
 <script setup lang="tsx">
 import { NDataTable, type DataTableColumn } from "naive-ui";
-import { computed, reactive } from "vue";
-import { watch } from "vue";
+import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { EnvironmentV1Name, InstanceV1Name } from "@/components/v2";
 import type { ComposedDatabase } from "@/types";
 import { hostPortOfInstanceV1 } from "@/utils";
 import { DatabaseNameCell, ProjectNameCell, DatabaseLabelsCell } from "./cells";
-
-interface LocalState {
-  // The selected database name list.
-  selectedDatabaseNameList: Set<string>;
-}
 
 type DatabaseDataTableColumn = DataTableColumn<ComposedDatabase> & {
   hide?: boolean;
@@ -52,10 +46,10 @@ const props = withDefaults(
     showSelection?: boolean;
     singleSelection?: boolean;
     schemaless?: boolean;
-    customClick?: boolean;
     rowClickable?: boolean;
     selectedDatabaseNames?: string[];
     keyword?: string;
+    rowClick?: (e: MouseEvent, val: ComposedDatabase) => void;
   }>(),
   {
     mode: "ALL",
@@ -68,14 +62,10 @@ const props = withDefaults(
 );
 
 const emit = defineEmits<{
-  (event: "row-click", e: MouseEvent, val: ComposedDatabase): void;
-  (event: "update:selected-databases", val: Set<string>): void;
+  (event: "update:selected-database-names", val: string[]): void;
 }>();
 
 const { t } = useI18n();
-const state = reactive<LocalState>({
-  selectedDatabaseNameList: new Set(props.selectedDatabaseNames),
-});
 
 const columnList = computed((): DatabaseDataTableColumn[] => {
   const SELECTION: DatabaseDataTableColumn = {
@@ -190,32 +180,22 @@ const rowProps = (database: ComposedDatabase) => {
         return;
       }
 
-      if (props.customClick) {
-        emit("row-click", e, database);
-        return;
-      }
-
       if (props.singleSelection) {
-        state.selectedDatabaseNameList = new Set([database.name]);
+        emit("update:selected-database-names", [database.name]);
       } else {
-        const selectedDatabaseNameList = new Set(
-          Array.from(state.selectedDatabaseNameList)
-        );
+        const selectedDatabaseNameList = new Set(props.selectedDatabaseNames);
         if (selectedDatabaseNameList.has(database.name)) {
           selectedDatabaseNameList.delete(database.name);
         } else {
           selectedDatabaseNameList.add(database.name);
         }
-        state.selectedDatabaseNameList = selectedDatabaseNameList;
+        emit("update:selected-database-names", [...selectedDatabaseNameList]);
+      }
+
+      if (props.rowClick) {
+        props.rowClick(e, database);
       }
     },
   };
 };
-
-watch(
-  () => state.selectedDatabaseNameList,
-  () => {
-    emit("update:selected-databases", state.selectedDatabaseNameList);
-  }
-);
 </script>
