@@ -188,7 +188,6 @@ const rowProps = (database: ComposedDatabase) => {
 
       if (props.singleSelection) {
         emit("update:selected-database-names", [database.name]);
-        // state.selectedDatabaseNameList = new Set([database.name]);
       } else {
         const selectedDatabaseNameList = new Set(props.selectedDatabaseNames);
         if (selectedDatabaseNameList.has(database.name)) {
