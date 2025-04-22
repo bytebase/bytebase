@@ -154,10 +154,6 @@ const showBatchQuerySelector = computed(() => {
   );
 });
 
-const handleDatabaseRowCheck = (keys: Set<string>) => {
-  state.selectedDatabaseNames = [...keys];
-};
-
 const handleUncheckDatabaseRow = (databaseName: string) => {
   state.selectedDatabaseNames = state.selectedDatabaseNames.filter(
     (name) => name !== databaseName
