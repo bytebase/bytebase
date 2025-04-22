@@ -441,7 +441,7 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 	if userInfo.HasGroups {
 		// Sync user groups with the identity provider.
 		// The userInfo.Groups is the groups that the user belongs to in the identity provider.
-		if err := s.syncUserGroups(ctx, user, userInfo.Groups); err != nil {
+		if err := s.syncUserGroups(ctx, newUser, userInfo.Groups); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to sync user groups: %v", err)
 		}
 	}
