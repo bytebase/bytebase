@@ -36,6 +36,7 @@
 
 <script lang="tsx" setup>
 import { reactive } from "vue";
+import { EngineIcon } from "@/components/Icon";
 import { Drawer, DrawerContent } from "@/components/v2";
 import type { Instance } from "@/types/proto/v1/instance_service";
 import { extractInstanceResourceName, instanceV1Name } from "@/utils";
