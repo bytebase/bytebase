@@ -69,7 +69,7 @@ type FindPlanCheckRunMessage struct {
 }
 
 // CreatePlanCheckRuns creates new plan check runs.
-func (s *Store) CreatePlanCheckRuns(ctx context.Context, creates ...*PlanCheckRunMessage) error {
+func (s *Store) CreatePlanCheckRuns(ctx context.Context, plan *PlanMessage, creates ...*PlanCheckRunMessage) error {
 	if len(creates) == 0 {
 		return nil
 	}
@@ -112,10 +112,18 @@ func (s *Store) CreatePlanCheckRuns(ctx context.Context, creates ...*PlanCheckRu
 			return err
 		}
 	}
-	if _, err := s.db.ExecContext(ctx, query.String(), values...); err != nil {
+	txn, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer txn.Rollback()
+	if _, err := txn.ExecContext(ctx, "DELETE FROM plan_check_run WHERE plan_id = $1", plan.UID); err != nil {
+		return errors.Wrapf(err, "failed to delete plan check run for plan %d", plan.UID)
+	}
+	if _, err := txn.ExecContext(ctx, query.String(), values...); err != nil {
 		return errors.Wrapf(err, "failed to execute insert")
 	}
-	return nil
+	return txn.Commit()
 }
 
 // ListPlanCheckRuns returns a list of plan check runs based on find.
