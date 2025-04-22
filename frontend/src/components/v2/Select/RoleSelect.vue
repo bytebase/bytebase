@@ -1,5 +1,6 @@
 <template>
   <NSelect
+    v-bind="$attrs"
     :value="value"
     :multiple="multiple"
     :disabled="disabled"
