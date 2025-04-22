@@ -5892,7 +5892,7 @@ If the operation spans parents, a dash (-) may be accepted as a wildcard. </p></
                   <td>names</td>
                   <td><a href="#string">string</a></td>
                   <td>repeated</td>
-                  <td><p>The list of database names to retrieve. </p></td>
+                  <td><p>The list of database names to sync. </p></td>
                 </tr>
               
             </tbody>
@@ -7880,6 +7880,7 @@ Supported filter:
 - engine
 - label
 - exclude_unassigned: Not show unassigned databases if specified
+- drifted
 
 For example:
 environment == &#34;environments/{environment resource id}&#34;
@@ -7893,6 +7894,7 @@ label == &#34;region:asia&#34;
 label == &#34;tenant:asia,europe&#34;
 label == &#34;region:asia&#34; &amp;&amp; label == &#34;tenant:bytebase&#34;
 exclude_unassigned == true
+drifted == true
 You can combine filter conditions like:
 environment == &#34;environments/prod&#34; &amp;&amp; name.matches(&#34;employee&#34;) </p></td>
                 </tr>
@@ -29856,11 +29858,18 @@ Format: worksheets/{worksheet} </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>To filter the search result.
-Format: only support the following spec for now:
-- `creator = users/{email}`, `creator != users/{email}`
-- `starred = true`, `starred = false`.
-- `visibility = &#34;VISIBILITY_PRIVATE&#34;`, `visibility = &#34;VISIBILITY_PROJECT_READ | VISIBILITY_PROJECT_WRITE&#34;`, etc.
-Not support empty filter for now. </p></td>
+Supported filter:
+- creator
+- starred
+- visibility
+
+For example:
+creator == &#34;users/{email}&#34;
+creator != &#34;users/{email}&#34;
+starred == true
+starred == false
+visibility in [&#34;VISIBILITY_PRIVATE&#34;, &#34;VISIBILITY_PROJECT_READ&#34;, &#34;VISIBILITY_PROJECT_WRITE&#34;]
+visibility == &#34;VISIBILITY_PRIVATE&#34; </p></td>
                 </tr>
               
                 <tr>
