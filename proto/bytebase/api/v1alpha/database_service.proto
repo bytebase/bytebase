@@ -1,0 +1,1558 @@
+syntax = "proto3";
+
+package bytebase.api.v1alpha;
+
+import "google/api/annotations.proto";
+import "google/api/client.proto";
+import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/field_mask.proto";
+import "google/protobuf/timestamp.proto";
+import "api/v1alpha/annotation.proto";
+import "api/v1alpha/common.proto";
+import "api/v1alpha/instance_service.proto";
+
+option go_package = "generated-go/v1";
+
+service DatabaseService {
+  rpc GetDatabase(GetDatabaseRequest) returns (Database) {
+    option (google.api.http) = {get: "/v1/{name=instances/*/databases/*}"};
+    option (google.api.method_signature) = "name";
+    option (bytebase.api.v1alpha.permission) = "bb.databases.get";
+    option (bytebase.api.v1alpha.auth_method) = IAM;
+  }
+
+  rpc BatchGetDatabases(BatchGetDatabasesRequest) returns (BatchGetDatabasesResponse) {
+    option (google.api.http) = {
+      get: "/v1/{parent=projects/*}/databases:batchGet"
+      additional_bindings: {get: "/v1/{parent=instances/*}/databases:batchGet"}
+    };
+    option (bytebase.api.v1alpha.permission) = "bb.databases.get";
+    option (bytebase.api.v1alpha.auth_method) = IAM;
+  }
+
+  rpc ListDatabases(ListDatabasesRequest) returns (ListDatabasesResponse) {
+    option (google.api.http) = {
+      get: "/v1/{parent=projects/*}/databases"
+
+      additional_bindings: {get: "/v1/{parent=instances/*}/databases"}
+      additional_bindings: {get: "/v1/{parent=workspaces/*}/databases"}
+    };
+
+    option (google.api.method_signature) = "";
+    option (bytebase.api.v1alpha.permission) = "bb.databases.list";
+    option (bytebase.api.v1alpha.auth_method) = CUSTOM;
+  }
+
+  rpc UpdateDatabase(UpdateDatabaseRequest) returns (Database) {
+    option (google.api.http) = {
+      patch: "/v1/{database.name=instances/*/databases/*}"
+      body: "database"
+    };
+    option (google.api.method_signature) = "database,update_mask";
+    option (bytebase.api.v1alpha.permission) = "bb.databases.update";
+    option (bytebase.api.v1alpha.auth_method) = IAM;
+    option (bytebase.api.v1alpha.audit) = true;
+  }
+
+  rpc BatchUpdateDatabases(BatchUpdateDatabasesRequest) returns (BatchUpdateDatabasesResponse) {
+    option (google.api.http) = {
+      post: "/v1/{parent=instances/*}/databases:batchUpdate"
+      body: "*"
+    };
+    option (bytebase.api.v1alpha.permission) = "bb.databases.update";
+    option (bytebase.api.v1alpha.auth_method) = IAM;
+    option (bytebase.api.v1alpha.audit) = true;
+  }
+
+  rpc SyncDatabase(SyncDatabaseRequest) returns (SyncDatabaseResponse) {
+    option (google.api.http) = {
+      post: "/v1/{name=instances/*/databases/*}:sync"
+      body: "*"
+    };
+    option (bytebase.api.v1alpha.permission) = "bb.databases.sync";
+    option (bytebase.api.v1alpha.auth_method) = IAM;
+  }
+
+  rpc BatchSyncDatabases(BatchSyncDatabasesRequest) returns (BatchSyncDatabasesResponse) {
+    option (google.api.http) = {
+      post: "/v1/{parent=instances/*}/databases:batchSync"
+      body: "*"
+    };
+    option (bytebase.api.v1alpha.permission) = "bb.databases.sync";
+    option (bytebase.api.v1alpha.auth_method) = IAM;
+  }
+
+  rpc GetDatabaseMetadata(GetDatabaseMetadataRequest) returns (DatabaseMetadata) {
+    option (google.api.http) = {get: "/v1/{name=instances/*/databases/*/metadata}"};
+    option (bytebase.api.v1alpha.permission) = "bb.databases.getSchema";
+    option (bytebase.api.v1alpha.auth_method) = IAM;
+  }
+
+  rpc GetDatabaseSchema(GetDatabaseSchemaRequest) returns (DatabaseSchema) {
+    option (google.api.http) = {get: "/v1/{name=instances/*/databases/*/schema}"};
+    option (bytebase.api.v1alpha.permission) = "bb.databases.getSchema";
+    option (bytebase.api.v1alpha.auth_method) = IAM;
+  }
+
+  rpc DiffSchema(DiffSchemaRequest) returns (DiffSchemaResponse) {
+    option (google.api.http) = {
+      post: "/v1/{name=instances/*/databases/*}:diffSchema"
+      body: "*"
+
+      additional_bindings: {
+        post: "/v1/{name=instances/*/databases/*/changelogs/*}:diffSchema"
+        body: "*"
+      }
+    };
+    // TODO(d): secure it.
+    option (bytebase.api.v1alpha.permission) = "bb.databases.get";
+    option (bytebase.api.v1alpha.auth_method) = IAM;
+  }
+
+  rpc ListSecrets(ListSecretsRequest) returns (ListSecretsResponse) {
+    option (google.api.http) = {get: "/v1/{parent=instances/*/databases/*}/secrets"};
+    option (google.api.method_signature) = "parent";
+    option (bytebase.api.v1alpha.permission) = "bb.databaseSecrets.list";
+    option (bytebase.api.v1alpha.auth_method) = IAM;
+  }
+
+  rpc UpdateSecret(UpdateSecretRequest) returns (Secret) {
+    option (google.api.http) = {
+      patch: "/v1/{secret.name=instances/*/databases/*/secrets/*}"
+      body: "secret"
+    };
+    option (bytebase.api.v1alpha.permission) = "bb.databaseSecrets.update";
+    option (bytebase.api.v1alpha.auth_method) = IAM;
+    option (bytebase.api.v1alpha.audit) = true;
+  }
+
+  rpc DeleteSecret(DeleteSecretRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {delete: "/v1/{name=instances/*/databases/*/secrets/*}"};
+    option (bytebase.api.v1alpha.permission) = "bb.databaseSecrets.delete";
+    option (bytebase.api.v1alpha.auth_method) = IAM;
+    option (bytebase.api.v1alpha.audit) = true;
+  }
+
+  rpc ListRevisions(ListRevisionsRequest) returns (ListRevisionsResponse) {
+    option (google.api.http) = {get: "/v1/{parent=instances/*/databases/*}/revisions"};
+    option (google.api.method_signature) = "parent";
+    option (bytebase.api.v1alpha.permission) = "bb.revisions.list";
+    option (bytebase.api.v1alpha.auth_method) = IAM;
+  }
+  rpc GetRevision(GetRevisionRequest) returns (Revision) {
+    option (google.api.http) = {get: "/v1/{name=instances/*/databases/*/revisions/*}"};
+    option (google.api.method_signature) = "name";
+    option (bytebase.api.v1alpha.permission) = "bb.revisions.get";
+    option (bytebase.api.v1alpha.auth_method) = IAM;
+  }
+  rpc CreateRevision(CreateRevisionRequest) returns (Revision) {
+    option (google.api.http) = {
+      post: "/v1/{parent=instances/*/databases/*}/revisions"
+      body: "revision"
+    };
+    option (bytebase.api.v1alpha.permission) = "bb.revisions.create";
+    option (bytebase.api.v1alpha.auth_method) = IAM;
+  }
+  rpc DeleteRevision(DeleteRevisionRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {delete: "/v1/{name=instances/*/databases/*/revisions/*}"};
+    option (google.api.method_signature) = "name";
+    option (bytebase.api.v1alpha.permission) = "bb.revisions.delete";
+    option (bytebase.api.v1alpha.auth_method) = IAM;
+  }
+
+  rpc ListChangelogs(ListChangelogsRequest) returns (ListChangelogsResponse) {
+    option (google.api.http) = {get: "/v1/{parent=instances/*/databases/*}/changelogs"};
+    option (google.api.method_signature) = "parent";
+    option (bytebase.api.v1alpha.permission) = "bb.changelogs.list";
+    option (bytebase.api.v1alpha.auth_method) = IAM;
+  }
+
+  rpc GetChangelog(GetChangelogRequest) returns (Changelog) {
+    option (google.api.http) = {get: "/v1/{name=instances/*/databases/*/changelogs/*}"};
+    option (google.api.method_signature) = "name";
+    option (bytebase.api.v1alpha.permission) = "bb.changelogs.get";
+    option (bytebase.api.v1alpha.auth_method) = IAM;
+  }
+
+  rpc GetSchemaString(GetSchemaStringRequest) returns (GetSchemaStringResponse) {
+    option (google.api.http) = {get: "/v1/{name=instances/*/databases/*/schemaString}"};
+    option (google.api.method_signature) = "name";
+    option (bytebase.api.v1alpha.permission) = "bb.databases.getSchema";
+    option (bytebase.api.v1alpha.auth_method) = IAM;
+  }
+}
+
+message GetDatabaseRequest {
+  // The name of the database to retrieve.
+  // Format: instances/{instance}/databases/{database}
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Database"}
+  ];
+}
+
+message BatchGetDatabasesRequest {
+  // The parent resource shared by all databases being retrieved.
+  // - projects/{project}: batch get databases in a project;
+  // - instances/{instances}: batch get databases in a instance;
+  // Use "-" as wildcard to batch get databases across parent.
+  string parent = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {child_type: "bytebase.com/Database"}
+  ];
+
+  // The list of database names to retrieve.
+  repeated string names = 2 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Database"}
+  ];
+}
+
+message BatchGetDatabasesResponse {
+  // The databases from the specified request.
+  repeated Database databases = 1;
+}
+
+message ListDatabasesRequest {
+  // - projects/{project}: list databases in a project, require "bb.projects.get" permission.
+  // - workspaces/-: list databases in the workspace, require "bb.databases.list" permission.
+  // - instances/{instances}: list databases in a instance, require "bb.instances.get" permission
+  string parent = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {child_type: "bytebase.com/Database"}
+  ];
+
+  // The maximum number of databases to return. The service may return fewer
+  // than this value.
+  // If unspecified, at most 10 databases will be returned.
+  // The maximum value is 1000; values above 1000 will be coerced to 1000.
+  int32 page_size = 2;
+
+  // A page token, received from a previous `ListDatabases` call.
+  // Provide this to retrieve the subsequent page.
+  //
+  // When paginating, all other parameters provided to `ListDatabases` must
+  // match the call that provided the page token.
+  string page_token = 3;
+
+  // Filter is used to filter databases returned in the list.
+  // Supported filter:
+  // - environment
+  // - name
+  // - project
+  // - instance
+  // - engine
+  // - label
+  // - exclude_unassigned: Not show unassigned databases if specified
+  // - drifted
+  //
+  // For example:
+  // environment == "environments/{environment resource id}"
+  // project == "projects/{project resource id}"
+  // instance == "instances/{instance resource id}"
+  // name.matches("database name")
+  // engine == "MYSQL"
+  // engine in ["MYSQL", "POSTGRES"]
+  // !(engine in ["MYSQL", "POSTGRES"])
+  // label == "region:asia"
+  // label == "tenant:asia,europe"
+  // label == "region:asia" && label == "tenant:bytebase"
+  // exclude_unassigned == true
+  // drifted == true
+  // You can combine filter conditions like:
+  // environment == "environments/prod" && name.matches("employee")
+  string filter = 4;
+
+  // Show deleted database if specified.
+  bool show_deleted = 5;
+}
+
+message ListDatabasesResponse {
+  // The databases from the specified request.
+  repeated Database databases = 1;
+
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+message UpdateDatabaseRequest {
+  // The database to update.
+  //
+  // The database's `name` field is used to identify the database to update.
+  // Format: instances/{instance}/databases/{database}
+  Database database = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The list of fields to update.
+  google.protobuf.FieldMask update_mask = 2;
+}
+
+message BatchUpdateDatabasesRequest {
+  // The parent resource shared by all databases being updated.
+  // Format: instances/{instance}
+  // If the operation spans parents, a dash (-) may be accepted as a wildcard.
+  // We only support updating the project of databases for now.
+  string parent = 1;
+
+  // The request message specifying the resources to update.
+  // A maximum of 1000 databases can be modified in a batch.
+  repeated UpdateDatabaseRequest requests = 2 [(google.api.field_behavior) = REQUIRED];
+}
+
+message BatchUpdateDatabasesResponse {
+  // Databases updated.
+  repeated Database databases = 1;
+}
+
+message BatchSyncDatabasesRequest {
+  // The parent resource shared by all databases being updated.
+  // Format: instances/{instance}
+  // If the operation spans parents, a dash (-) may be accepted as a wildcard.
+  string parent = 1;
+
+  // The list of database names to sync.
+  repeated string names = 2 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Database"}
+  ];
+}
+
+message BatchSyncDatabasesResponse {}
+
+message SyncDatabaseRequest {
+  // The name of the database to sync.
+  // Format: instances/{instance}/databases/{database}
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Database"}
+  ];
+}
+
+message SyncDatabaseResponse {}
+
+message GetDatabaseMetadataRequest {
+  // The name of the database to retrieve metadata.
+  // Format: instances/{instance}/databases/{database}/metadata
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/DatabaseMetadata"}
+  ];
+
+  // Filter is used to filter databases returned in the list.
+  // Supported filter:
+  // - schema
+  // - table
+  //
+  // For example:
+  // schema == "schema-a"
+  // table == "table-a"
+  // schema == "schema-a" && table == "table-a"
+  // The filter used for a specific schema object such as
+  // "schemas/schema-a/tables/table-a".
+  // The column masking level will only be returned when a table filter is used.
+  string filter = 2;
+}
+
+message GetDatabaseSchemaRequest {
+  // The name of the database to retrieve schema.
+  // Format: instances/{instance}/databases/{database}/schema
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/DatabaseSchema"}
+  ];
+
+  // Format the schema dump into SDL format.
+  bool sdl_format = 2;
+}
+
+message DiffSchemaRequest {
+  // The name of the database or changelog.
+  // Format:
+  // database: instances/{instance}/databases/{database}
+  // changelog: instances/{instance}/databases/{database}/changelogs/{changelog}
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Database"}
+  ];
+
+  oneof target {
+    // The target schema.
+    string schema = 2;
+
+    // The resource name of the changelog
+    // Format:
+    // instances/{instance}/databases/{database}/changelogs/{changelog}
+    string changelog = 3;
+  }
+
+  // Format the schema dump into SDL format.
+  bool sdl_format = 4;
+}
+
+message DiffSchemaResponse {
+  string diff = 1;
+}
+
+message Database {
+  option (google.api.resource) = {
+    type: "bytebase.com/Database"
+    pattern: "instances/{instance}/databases/{database}"
+  };
+
+  reserved 2;
+
+  // The name of the database.
+  // Format: instances/{instance}/databases/{database}
+  // {database} is the database name in the instance.
+  string name = 1;
+
+  // The existence of a database.
+  State state = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The latest synchronization time.
+  google.protobuf.Timestamp successful_sync_time = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The project for a database.
+  // Format: projects/{project}
+  string project = 5;
+
+  // The version of database schema.
+  string schema_version = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The environment resource.
+  // Format: environments/prod where prod is the environment resource ID.
+  string environment = 7 [(google.api.field_behavior) = OPTIONAL];
+
+  // The effective environment based on environment tag above and environment
+  // tag on the instance. Inheritance follows
+  // https://cloud.google.com/resource-manager/docs/tags/tags-overview.
+  string effective_environment = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Labels will be used for deployment and policy control.
+  map<string, string> labels = 9;
+
+  // The instance resource.
+  InstanceResource instance_resource = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The database is available for DML prior backup.
+  bool backup_available = 11 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The schema is drifted from the source of truth.
+  bool drifted = 12 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+// DatabaseMetadata is the metadata for databases.
+message DatabaseMetadata {
+  option (google.api.resource) = {
+    type: "bytebase.com/DatabaseMetadata"
+    pattern: "bytebase.com/Database/databases/{database}/metadata"
+  };
+
+  // The database metadata name.
+  //
+  // Format: instances/{instance}/databases/{database}/metadata
+  string name = 1;
+
+  // The schemas is the list of schemas in a database.
+  repeated SchemaMetadata schemas = 2;
+
+  // The character_set is the character set of a database.
+  string character_set = 3;
+
+  // The collation is the collation of a database.
+  string collation = 4;
+
+  // The extensions is the list of extensions in a database.
+  repeated ExtensionMetadata extensions = 5;
+
+  string owner = 7;
+}
+
+// SchemaMetadata is the metadata for schemas.
+// This is the concept of schema in Postgres, but it's a no-op for MySQL.
+message SchemaMetadata {
+  // The name is the schema name.
+  // It is an empty string for databases without such concept such as MySQL.
+  string name = 1;
+
+  // The tables is the list of tables in a schema.
+  repeated TableMetadata tables = 2;
+
+  // The external_tables is the list of external tables in a schema.
+  repeated ExternalTableMetadata external_tables = 3;
+
+  // The views is the list of views in a schema.
+  repeated ViewMetadata views = 4;
+
+  // The functions is the list of functions in a schema.
+  repeated FunctionMetadata functions = 5;
+
+  // The procedures is the list of procedures in a schema.
+  repeated ProcedureMetadata procedures = 6;
+
+  // The streams is the list of streams in a schema, currently, only used for
+  // Snowflake.
+  repeated StreamMetadata streams = 7;
+
+  // The routines is the list of routines in a schema, currently, only used for
+  // Snowflake.
+  repeated TaskMetadata tasks = 8;
+
+  // The materialized_views is the list of materialized views in a schema.
+  repeated MaterializedViewMetadata materialized_views = 9;
+
+  // The packages is the list of packages in a schema.
+  repeated PackageMetadata packages = 10;
+
+  string owner = 11;
+
+  // The sequences is the list of sequences in a schema, sorted by name.
+  repeated SequenceMetadata sequences = 13;
+
+  repeated EventMetadata events = 14;
+
+  repeated EnumTypeMetadata enum_types = 15;
+
+  bool skip_dump = 16;
+}
+
+message EnumTypeMetadata {
+  // The name of a type.
+  string name = 1;
+
+  // The enum values of a type.
+  repeated string values = 2;
+
+  string comment = 3;
+
+  bool skip_dump = 4;
+}
+
+message EventMetadata {
+  // The name of the event.
+  string name = 1;
+
+  // The schedule of the event.
+  string definition = 2;
+
+  // The time zone of the event.
+  string time_zone = 3;
+
+  string sql_mode = 4;
+
+  string character_set_client = 5;
+
+  string collation_connection = 6;
+}
+
+message SequenceMetadata {
+  // The name of a sequence.
+  string name = 1;
+
+  // The data type of a sequence.
+  string data_type = 2;
+
+  // The start value of a sequence.
+  string start = 3;
+
+  // The minimum value of a sequence.
+  string min_value = 4;
+
+  // The maximum value of a sequence.
+  string max_value = 5;
+
+  // Increment value of a sequence.
+  string increment = 6;
+
+  // Cycle is whether the sequence cycles.
+  bool cycle = 7;
+
+  // Cache size of a sequence.
+  string cache_size = 8;
+
+  // Last value of a sequence.
+  string last_value = 9;
+
+  // The owner table of the sequence.
+  string owner_table = 10;
+
+  // The owner column of the sequence.
+  string owner_column = 11;
+
+  string comment = 12;
+
+  bool skip_dump = 13;
+}
+
+message TriggerMetadata {
+  // The name is the name of the trigger.
+  string name = 1;
+
+  // The event is the event of the trigger, such as INSERT, UPDATE, DELETE,
+  // TRUNCATE.
+  string event = 3;
+
+  // The timing is the timing of the trigger, such as BEFORE, AFTER.
+  string timing = 4;
+
+  // The body is the body of the trigger.
+  string body = 5;
+
+  string sql_mode = 6;
+
+  string character_set_client = 7;
+
+  string collation_connection = 8;
+
+  string comment = 9;
+
+  bool skip_dump = 10;
+}
+
+message ExternalTableMetadata {
+  // The name is the name of a external table.
+  string name = 1;
+
+  // The external_server_name is the name of the external server.
+  string external_server_name = 2;
+
+  // The external_database_name is the name of the external database.
+  string external_database_name = 3;
+
+  // The columns is the ordered list of columns in a foreign table.
+  repeated ColumnMetadata columns = 4;
+}
+
+// TableMetadata is the metadata for tables.
+message TableMetadata {
+  // The name is the name of a table.
+  string name = 1;
+
+  // The columns is the ordered list of columns in a table.
+  repeated ColumnMetadata columns = 2;
+
+  // The indexes is the list of indexes in a table.
+  repeated IndexMetadata indexes = 3;
+
+  // The engine is the engine of a table.
+  string engine = 4;
+
+  // The collation is the collation of a table.
+  string collation = 5;
+
+  // The character set of table.
+  string charset = 17;
+
+  // The row_count is the estimated number of rows of a table.
+  int64 row_count = 6;
+
+  // The data_size is the estimated data size of a table.
+  int64 data_size = 7;
+
+  // The index_size is the estimated index size of a table.
+  int64 index_size = 8;
+
+  // The data_free is the estimated free data size of a table.
+  int64 data_free = 9;
+
+  // The create_options is the create option of a table.
+  string create_options = 10;
+
+  // The comment is the comment of a table.
+  // classification and user_comment is parsed from the comment.
+  string comment = 11;
+
+  // The user_comment is the user comment of a table parsed from the comment.
+  string user_comment = 14;
+
+  // The foreign_keys is the list of foreign keys in a table.
+  repeated ForeignKeyMetadata foreign_keys = 12;
+
+  // The partitions is the list of partitions in a table.
+  repeated TablePartitionMetadata partitions = 15;
+
+  // The check_constraints is the list of check constraints in a table.
+  repeated CheckConstraintMetadata check_constraints = 16;
+
+  string owner = 18;
+
+  // The sorting_keys is a tuple of column names or arbitrary expressions. ClickHouse specific field.
+  // Reference: https://clickhouse.com/docs/en/engines/table-engines/mergetree-family/mergetree#order_by
+  repeated string sorting_keys = 19;
+
+  repeated TriggerMetadata triggers = 20;
+
+  bool skip_dump = 21;
+}
+
+// CheckConstraintMetadata is the metadata for check constraints.
+message CheckConstraintMetadata {
+  // The name is the name of a check constraint.
+  string name = 1;
+
+  // The expression is the expression of a check constraint.
+  string expression = 2;
+}
+
+// TablePartitionMetadata is the metadata for table partitions.
+message TablePartitionMetadata {
+  // The name is the name of a table partition.
+  string name = 1;
+
+  // Type is the type of a table partition, some database engines may not
+  // support all types. Only avilable for the following database engines now:
+  // MySQL: RANGE, RANGE COLUMNS, LIST, LIST COLUMNS, HASH, LINEAR HASH, KEY,
+  // LINEAR_KEY
+  // (https://dev.mysql.com/doc/refman/8.0/en/partitioning-types.html) TiDB:
+  // RANGE, RANGE COLUMNS, LIST, LIST COLUMNS, HASH, KEY PostgreSQL: RANGE,
+  // LIST, HASH (https://www.postgresql.org/docs/current/ddl-partitioning.html)
+  enum Type {
+    TYPE_UNSPECIFIED = 0;
+    RANGE = 1;
+    RANGE_COLUMNS = 2;
+    LIST = 3;
+    LIST_COLUMNS = 4;
+    HASH = 5;
+    LINEAR_HASH = 6;
+    KEY = 7;
+    LINEAR_KEY = 8;
+  }
+
+  // The type of a table partition.
+  Type type = 2;
+
+  // The expression is the expression of a table partition.
+  // For PostgreSQL, the expression is the text of {FOR VALUES
+  // partition_bound_spec}, see
+  // https://www.postgresql.org/docs/current/sql-createtable.html. For MySQL,
+  // the expression is the `expr` or `column_list` of the following syntax.
+  // PARTITION BY
+  //    { [LINEAR] HASH(expr)
+  //    | [LINEAR] KEY [ALGORITHM={1 | 2}] (column_list)
+  //    | RANGE{(expr) | COLUMNS(column_list)}
+  //    | LIST{(expr) | COLUMNS(column_list)} }.
+  string expression = 3;
+
+  // The value is the value of a table partition.
+  // For MySQL, the value is for RANGE and LIST partition types,
+  // - For a RANGE partition, it contains the value set in the partition's
+  // VALUES LESS THAN clause, which can be either an integer or MAXVALUE.
+  // - For a LIST partition, this column contains the values defined in the
+  // partition's VALUES IN clause, which is a list of comma-separated integer
+  // values.
+  // - For others, it's an empty string.
+  string value = 4;
+
+  // The use_default is whether the users use the default partition, it stores
+  // the different value for different database engines. For MySQL, it's [INT]
+  // type, 0 means not use default partition, otherwise, it's equals to number
+  // in syntax [SUB]PARTITION {number}.
+  string use_default = 5;
+
+  // The subpartitions is the list of subpartitions in a table partition.
+  repeated TablePartitionMetadata subpartitions = 6;
+
+  repeated IndexMetadata indexes = 7;
+}
+
+// ColumnMetadata is the metadata for columns.
+message ColumnMetadata {
+  // The name is the name of a column.
+  string name = 1;
+
+  // The position is the position in columns.
+  int32 position = 2;
+
+  bool has_default = 3;
+
+  // The default is the default value of a column.
+  oneof default {
+    bool default_null = 4;
+    string default_string = 5;
+    string default_expression = 6;
+  }
+
+  // Oracle specific metadata.
+  // The default_on_null is the default on null of a column.
+  bool default_on_null = 18;
+
+  // The on_update is the on update action of a column.
+  // For MySQL like databases, it's only supported for TIMESTAMP columns with
+  // CURRENT_TIMESTAMP as on update value.
+  string on_update = 15;
+
+  // The nullable is the nullable of a column.
+  bool nullable = 7;
+
+  // The type is the type of a column.
+  string type = 8;
+
+  // The character_set is the character_set of a column.
+  string character_set = 9;
+
+  // The collation is the collation of a column.
+  string collation = 10;
+
+  // The comment is the comment of a column.
+  // classification and user_comment is parsed from the comment.
+  string comment = 11;
+
+  // The user_comment is the user comment of a column parsed from the comment.
+  string user_comment = 13;
+
+  // The generation is the generation of a column.
+  GenerationMetadata generation = 16;
+
+  bool is_identity = 19;
+
+  enum IdentityGeneration {
+    IDENTITY_GENERATION_UNSPECIFIED = 0;
+    ALWAYS = 1;
+    BY_DEFAULT = 2;
+  }
+
+  // The identity_generation is for identity columns, PG only.
+  IdentityGeneration identity_generation = 17;
+
+  // The identity_seed is for identity columns, MSSQL only.
+  int64 identity_seed = 20;
+
+  // The identity_increment is for identity columns, MSSQL only.
+  int64 identity_increment = 21;
+}
+
+message GenerationMetadata {
+  enum Type {
+    TYPE_UNSPECIFIED = 0;
+    TYPE_VIRTUAL = 1;
+    TYPE_STORED = 2;
+  }
+
+  Type type = 1;
+  string expression = 2;
+}
+
+// ViewMetadata is the metadata for views.
+message ViewMetadata {
+  // The name is the name of a view.
+  string name = 1;
+
+  // The definition is the definition of a view.
+  string definition = 2;
+
+  // The comment is the comment of a view.
+  string comment = 3;
+
+  // The dependency_columns is the list of dependency columns of a view.
+  repeated DependencyColumn dependency_columns = 4;
+
+  // The columns is the ordered list of columns in a table.
+  repeated ColumnMetadata columns = 5;
+
+  // The triggers is the list of triggers in a view.
+  repeated TriggerMetadata triggers = 6;
+
+  bool skip_dump = 7;
+}
+
+// DependencyColumn is the metadata for dependency columns.
+message DependencyColumn {
+  // The schema is the schema of a reference column.
+  string schema = 1;
+
+  // The table is the table of a reference column.
+  string table = 2;
+
+  // The column is the name of a reference column.
+  string column = 3;
+}
+
+// MaterializedViewMetadata is the metadata for materialized views.
+message MaterializedViewMetadata {
+  // The name is the name of a materialized view.
+  string name = 1;
+
+  // The definition is the definition of a materialized view.
+  string definition = 2;
+
+  // The comment is the comment of a materialized view.
+  string comment = 3;
+
+  // The dependency_columns is the list of dependency columns of a materialized
+  // view.
+  repeated DependencyColumn dependency_columns = 4;
+
+  // The columns is the ordered list of columns in a table.
+  repeated TriggerMetadata triggers = 5;
+
+  // The indexes is the list of indexes in a table.
+  repeated IndexMetadata indexes = 6;
+
+  bool skip_dump = 7;
+}
+
+message DependencyTable {
+  // The schema is the schema of a reference table.
+  string schema = 1;
+
+  // The table is the name of a reference table.
+  string table = 2;
+}
+
+// FunctionMetadata is the metadata for functions.
+message FunctionMetadata {
+  // The name is the name of a function.
+  string name = 1;
+
+  // The definition is the definition of a function.
+  string definition = 2;
+
+  // The signature is the name with the number and type of input arguments the
+  // function takes.
+  string signature = 3;
+
+  // MySQL specific metadata.
+  string character_set_client = 4;
+
+  string collation_connection = 5;
+
+  string database_collation = 6;
+
+  string sql_mode = 7;
+
+  string comment = 8;
+
+  // The dependency_tables is the list of dependency tables of a function.
+  // For PostgreSQL, it's the list of tables that the function depends on the return type definition.
+  repeated DependencyTable dependency_tables = 9;
+
+  bool skip_dump = 10;
+}
+
+// ProcedureMetadata is the metadata for procedures.
+message ProcedureMetadata {
+  // The name is the name of a procedure.
+  string name = 1;
+
+  // The definition is the definition of a procedure.
+  string definition = 2;
+
+  // The signature is the name with the number and type of input arguments the
+  // function takes.
+  string signature = 3;
+
+  // MySQL specific metadata.
+  string character_set_client = 4;
+
+  string collation_connection = 5;
+
+  string database_collation = 6;
+
+  string sql_mode = 7;
+
+  bool skip_dump = 8;
+}
+
+// PackageMetadata is the metadata for packages.
+message PackageMetadata {
+  // The name is the name of a package.
+  string name = 1;
+
+  // The definition is the definition of a package.
+  string definition = 2;
+}
+
+message TaskMetadata {
+  // The name is the name of a task.
+  string name = 1;
+
+  // The id is the snowflake-generated id of a task.
+  // Example: 01ad32a0-1bb6-5e93-0000-000000000001
+  string id = 2;
+
+  // The owner of the task.
+  string owner = 3;
+
+  // The comment of the task.
+  string comment = 4;
+
+  // The warehouse of the task.
+  string warehouse = 5;
+
+  // The schedule interval of the task.
+  string schedule = 6;
+
+  // The predecessor tasks of the task.
+  repeated string predecessors = 7;
+
+  enum State {
+    STATE_UNSPECIFIED = 0;
+    STATE_STARTED = 1;
+    STATE_SUSPENDED = 2;
+  }
+  // The state of the task.
+  State state = 8;
+
+  // The condition of the task.
+  string condition = 9;
+
+  // The definition of the task.
+  string definition = 10;
+}
+
+message StreamMetadata {
+  // The name is the name of a stream.
+  string name = 1;
+
+  // The table_name is the name of the table/view that the stream is created on.
+  string table_name = 2;
+
+  // The owner of the stream.
+  string owner = 3;
+
+  // The comment of the stream.
+  string comment = 4;
+
+  enum Type {
+    TYPE_UNSPECIFIED = 0;
+    TYPE_DELTA = 1;
+  }
+  // The type of the stream.
+  Type type = 5;
+
+  // Indicates whether the stream was last read before the `stale_after` time.
+  bool stale = 6;
+
+  enum Mode {
+    MODE_UNSPECIFIED = 0;
+    MODE_DEFAULT = 1;
+    MODE_APPEND_ONLY = 2;
+    MODE_INSERT_ONLY = 3;
+  }
+  // The mode of the stream.
+  Mode mode = 7;
+
+  // The definition of the stream.
+  string definition = 8;
+}
+
+// IndexMetadata is the metadata for indexes.
+message IndexMetadata {
+  // The name is the name of an index.
+  string name = 1;
+
+  // The expressions are the ordered columns or expressions of an index.
+  // This could refer to a column or an expression.
+  repeated string expressions = 2;
+
+  // The key_lengths are the ordered key lengths of an index.
+  // If the key length is not specified, it's -1.
+  repeated int64 key_length = 9;
+
+  // The descending is the ordered descending of an index.
+  repeated bool descending = 10;
+
+  // The type is the type of an index.
+  string type = 3;
+
+  // The unique is whether the index is unique.
+  bool unique = 4;
+
+  // The primary is whether the index is a primary key index.
+  bool primary = 5;
+
+  // The visible is whether the index is visible.
+  bool visible = 6;
+
+  // The comment is the comment of an index.
+  string comment = 7;
+
+  // The definition of an index.
+  string definition = 8;
+
+  // The schema name of the parent index.
+  string parent_index_schema = 11;
+
+  // The index name of the parent index.
+  string parent_index_name = 12;
+
+  // The number of granules in the block. It's a ClickHouse specific field.
+  int64 granularity = 13;
+
+  // It's a PostgreSQL specific field.
+  // The unique constraint and unique index are not the same thing in PostgreSQL.
+  bool is_constraint = 14;
+}
+
+// ExtensionMetadata is the metadata for extensions.
+message ExtensionMetadata {
+  // The name is the name of an extension.
+  string name = 1;
+
+  // The schema is the extension that is installed to. But the extension usage
+  // is not limited to the schema.
+  string schema = 2;
+
+  // The version is the version of an extension.
+  string version = 3;
+
+  // The description is the description of an extension.
+  string description = 4;
+}
+
+// ForeignKeyMetadata is the metadata for foreign keys.
+message ForeignKeyMetadata {
+  // The name is the name of a foreign key.
+  string name = 1;
+
+  // The columns are the ordered referencing columns of a foreign key.
+  repeated string columns = 2;
+
+  // The referenced_schema is the referenced schema name of a foreign key.
+  // It is an empty string for databases without such concept such as MySQL.
+  string referenced_schema = 3;
+
+  // The referenced_table is the referenced table name of a foreign key.
+  string referenced_table = 4;
+
+  // The referenced_columns are the ordered referenced columns of a foreign key.
+  repeated string referenced_columns = 5;
+
+  // The on_delete is the on delete action of a foreign key.
+  string on_delete = 6;
+
+  // The on_update is the on update action of a foreign key.
+  string on_update = 7;
+
+  // The match_type is the match type of a foreign key.
+  // The match_type is the PostgreSQL specific field.
+  // It's empty string for other databases.
+  string match_type = 8;
+}
+
+// DatabaseSchema is the metadata for databases.
+message DatabaseSchema {
+  // The schema dump from database.
+  string schema = 1;
+}
+
+message ListSecretsRequest {
+  // The parent of the secret.
+  // Format: instances/{instance}/databases/{database}
+  string parent = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Database"}
+  ];
+
+  // Not used.
+  // The maximum number of secrets to return. The service may return fewer than
+  // this value.
+  // If unspecified, at most 10 secrets will be returned.
+  // The maximum value is 1000; values above 1000 will be coerced to 1000.
+  int32 page_size = 2;
+
+  // Not used.
+  // A page token, received from a previous `ListSecrets` call.
+  // Provide this to retrieve the subsequent page.
+  //
+  // When paginating, all other parameters provided to `ListSecrets` must match
+  // the call that provided the page token.
+  string page_token = 3;
+}
+
+message ListSecretsResponse {
+  // The list of secrets.
+  repeated Secret secrets = 1;
+
+  // Not used. A token, which can be sent as `page_token` to retrieve the next
+  // page. If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+message UpdateSecretRequest {
+  // The secret to be created or updated.
+  Secret secret = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The mask of the fields to be updated.
+  google.protobuf.FieldMask update_mask = 2;
+
+  // If true, the secret will be created if it does not exist.
+  bool allow_missing = 3;
+}
+
+message DeleteSecretRequest {
+  // The name of the secret to be deleted.
+  // Format:
+  // instances/{instance}/databases/{database}/secrets/{secret}
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Database"}
+  ];
+}
+
+// Secret is the secret of the database now.
+message Secret {
+  option (google.api.resource) = {
+    type: "bytebase.com/DatabaseSecret"
+    pattern: "instances/{instance}/databases/{database}/secrets/{secret}"
+  };
+
+  // name is the unique name of the secret, which is specified by the client.
+  // Format:
+  // instances/{instance}/databases/{database}/secrets/{secret}
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // Not used. The timestamp when the secret resource was created initially.
+  google.protobuf.Timestamp created_time = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Not used. The timestamp when the secret resource was updated.
+  google.protobuf.Timestamp updated_time = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The value of the secret.
+  string value = 4 [(google.api.field_behavior) = INPUT_ONLY];
+
+  // The description of the secret.
+  string description = 5;
+}
+
+message ChangedResources {
+  repeated ChangedResourceDatabase databases = 1;
+}
+
+message ChangedResourceDatabase {
+  string name = 1;
+
+  repeated ChangedResourceSchema schemas = 2;
+}
+
+message ChangedResourceSchema {
+  string name = 1;
+
+  repeated ChangedResourceTable tables = 2;
+
+  repeated ChangedResourceView views = 3;
+
+  repeated ChangedResourceFunction functions = 4;
+
+  repeated ChangedResourceProcedure procedures = 5;
+}
+
+message ChangedResourceTable {
+  string name = 1;
+
+  // The ranges of sub-strings correspond to the statements on the sheet.
+  repeated Range ranges = 3;
+}
+
+message ChangedResourceView {
+  string name = 1;
+
+  // The ranges of sub-strings correspond to the statements on the sheet.
+  repeated Range ranges = 2;
+}
+
+message ChangedResourceFunction {
+  string name = 1;
+
+  // The ranges of sub-strings correspond to the statements on the sheet.
+  repeated Range ranges = 2;
+}
+
+message ChangedResourceProcedure {
+  string name = 1;
+
+  // The ranges of sub-strings correspond to the statements on the sheet.
+  repeated Range ranges = 2;
+}
+
+message ListRevisionsRequest {
+  // The parent of the revisions.
+  // Format: instances/{instance}/databases/{database}
+  string parent = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Database"}
+  ];
+
+  // The maximum number of revisions to return. The service may return fewer
+  // than this value. If unspecified, at most 10 revisions will be returned. The
+  // maximum value is 1000; values above 1000 will be coerced to 1000.
+  int32 page_size = 2;
+
+  // A page token, received from a previous `ListRevisions` call.
+  // Provide this to retrieve the subsequent page.
+  //
+  // When paginating, all other parameters provided to `ListRevisions` must
+  // match the call that provided the page token.
+  string page_token = 3;
+
+  bool show_deleted = 4;
+}
+
+message ListRevisionsResponse {
+  repeated Revision revisions = 1;
+
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+message CreateRevisionRequest {
+  // Format: instances/{instance}/databases/{database}
+  string parent = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Database"}
+  ];
+
+  // The revision to create.
+  Revision revision = 2 [(google.api.field_behavior) = REQUIRED];
+}
+
+message GetRevisionRequest {
+  // The name of the revision.
+  // Format: instances/{instance}/databases/{database}/revisions/{revision}
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Revision"}
+  ];
+}
+
+message DeleteRevisionRequest {
+  // The name of the revision to delete.
+  // Format: instances/{instance}/databases/{database}/revisions/{revision}
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Revision"}
+  ];
+}
+
+message Revision {
+  option (google.api.resource) = {
+    type: "bytebase.com/Revision"
+    pattern: "instances/{instance}/databases/{database}/revisions/{revision}"
+  };
+
+  // Format: instances/{instance}/databases/{database}/revisions/{revision}
+  string name = 1;
+
+  // Format: projects/{project}/releases/{release}
+  // Can be empty.
+  string release = 2 [(google.api.resource_reference) = {type: "bytebase.com/Release"}];
+
+  google.protobuf.Timestamp create_time = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Format: users/hello@world.com
+  // Can be empty.
+  string deleter = 5;
+
+  // Can be empty.
+  google.protobuf.Timestamp delete_time = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Format: projects/{project}/releases/{release}/files/{id}
+  // Can be empty.
+  string file = 7;
+
+  string version = 8;
+
+  // The sheet that holds the content.
+  // Format: projects/{project}/sheets/{sheet}
+  string sheet = 9 [(google.api.resource_reference) = {type: "bytebase.com/Sheet"}];
+  // The SHA256 hash value of the sheet.
+  string sheet_sha256 = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // The statement is used for preview purpose.
+  string statement = 11 [(google.api.field_behavior) = OUTPUT_ONLY];
+  int64 statement_size = 12 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The issue associated with the revision.
+  // Can be empty.
+  // Format: projects/{project}/issues/{issue}
+  string issue = 13 [(google.api.resource_reference) = {type: "bytebase.com/Issue"}];
+
+  // The task run associated with the revision.
+  // Can be empty.
+  // Format:
+  // projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
+  string task_run = 14 [(google.api.resource_reference) = {type: "bytebase.com/TaskRun"}];
+}
+
+enum ChangelogView {
+  // The default / unset value.
+  // The API will default to the BASIC view.
+  CHANGELOG_VIEW_UNSPECIFIED = 0;
+  CHANGELOG_VIEW_BASIC = 1;
+  CHANGELOG_VIEW_FULL = 2;
+}
+
+message ListChangelogsRequest {
+  // The parent of the changelogs.
+  // Format: instances/{instance}/databases/{database}
+  string parent = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Database"}
+  ];
+
+  // The maximum number of changelogs to return. The service may return fewer
+  // than this value. If unspecified, at most 10 changelogs will be returned.
+  // The maximum value is 1000; values above 1000 will be coerced to 1000.
+  int32 page_size = 2;
+
+  // A page token, received from the previous call.
+  // Provide this to retrieve the subsequent page.
+  //
+  // When paginating, all other parameters provided must match
+  // the call that provided the page token.
+  string page_token = 3;
+
+  ChangelogView view = 4;
+
+  // The filter of the changelogs.
+  // follow the
+  // [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form)
+  // syntax. Support filter by type, source or table. For example: table =
+  // "tableExists('{database}', '{schema}', '{table}')" table =
+  // "tableExists('db', 'public', 'table1') || tableExists('db', 'public',
+  // 'table2')"
+  //
+  // The table filter follow the CEL syntax.
+  // currently, we have one function for CEL:
+  // - tableExists(database, schema, table): return true if the table exists in
+  // changed resources.
+  //
+  // examples:
+  // Use
+  //   tableExists("db", "public", "table1")
+  // to filter the changelogs which have the table "table1" in the schema
+  // "public" of the database "db". For MySQL, the schema is always "", such as
+  // tableExists("db", "", "table1").
+  //
+  // Combine multiple functions with "&&" and "||", we MUST use the Disjunctive
+  // Normal Form(DNF). In other words, the CEL expression consists of several
+  // parts connected by OR operators. For example, the following expression is
+  // valid:
+  // (
+  //  tableExists("db", "public", "table1") &&
+  //  tableExists("db", "public", "table2")
+  // ) || (
+  //  tableExists("db", "public", "table3")
+  // )
+  string filter = 5;
+}
+
+message ListChangelogsResponse {
+  // The list of changelogs.
+  repeated Changelog changelogs = 1;
+
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+message GetChangelogRequest {
+  // The name of the changelog to retrieve.
+  // Format: instances/{instance}/databases/{database}/changelogs/{changelog}
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/DatabaseChangelog"}
+  ];
+
+  ChangelogView view = 2;
+
+  // Format the schema dump into SDL format.
+  bool sdl_format = 3;
+}
+
+message Changelog {
+  option (google.api.resource) = {
+    type: "bytebase.com/DatabaseChangelog"
+    pattern: "instances/{instance}/databases/{database}/changelogs/{changelog}"
+  };
+
+  // Format: instances/{instance}/databases/{database}/changelogs/{changelog}
+  string name = 1;
+
+  google.protobuf.Timestamp create_time = 3;
+
+  enum Status {
+    STATUS_UNSPECIFIED = 0;
+    PENDING = 1;
+    DONE = 2;
+    FAILED = 3;
+  }
+  Status status = 4;
+
+  // The statement is used for preview purpose.
+  string statement = 5;
+  int64 statement_size = 6;
+  // The name of the sheet resource.
+  // Format: projects/{project}/sheets/{sheet}
+  string statement_sheet = 7;
+  string schema = 8;
+  int64 schema_size = 9;
+  string prev_schema = 10;
+  int64 prev_schema_size = 11;
+
+  // Format: projects/{project}/issues/{issue}
+  string issue = 12;
+  // Format: projects/{projects}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
+  string task_run = 13;
+
+  // Could be empty
+  string version = 14;
+  // Could be empty
+  // Or present but not found if deleted
+  string revision = 15;
+
+  ChangedResources changed_resources = 16;
+
+  enum Type {
+    TYPE_UNSPECIFIED = 0;
+    BASELINE = 1;
+    MIGRATE = 2;
+    MIGRATE_SDL = 3;
+    MIGRATE_GHOST = 4;
+    DATA = 6;
+  }
+  Type type = 17;
+}
+
+message GetSchemaStringRequest {
+  // The name of the database.
+  // Format: instances/{instance}/databases/{database}
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Database"}
+  ];
+
+  // This API is used to generate the schema string for the database.
+  // It can accept the two types of input:
+  // 1. The type, schema and object are required.
+  // 2. The metadata is required.
+  // For the first type, the schema string is generated based on the db schema in the backend.
+  // For the second type, the schema string is generated based on the metadata.
+
+  enum ObjectType {
+    OBJECT_TYPE_UNSPECIFIED = 0;
+    DATABASE = 1;
+    SCHEMA = 2;
+    TABLE = 3;
+    VIEW = 4;
+    MATERIALIZED_VIEW = 5;
+    FUNCTION = 6;
+    PROCEDURE = 7;
+    SEQUENCE = 8;
+  }
+  ObjectType type = 2;
+  // It's empty for DATABASE.
+  string schema = 3;
+  // It's empty for DATABASE and SCHEMA.
+  string object = 4;
+
+  // If use the metadata to generate the schema string, the type is OBJECT_TYPE_UNSPECIFIED.
+  // Also the schema and object are empty.
+  DatabaseMetadata metadata = 5;
+}
+
+message GetSchemaStringResponse {
+  string schema_string = 1;
+}

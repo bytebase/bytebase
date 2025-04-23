@@ -61,7 +61,7 @@ var File_store_db_group_proto protoreflect.FileDescriptor
 
 const file_store_db_group_proto_rawDesc = "" +
 	"\n" +
-	"\x14store/db_group.proto\x12\x0ebytebase.store\"\x16\n" +
+	"\x14store/db_group.proto\x12\x17bytebase.internal.store\"\x16\n" +
 	"\x14DatabaseGroupPayloadB\x14Z\x12generated-go/storeb\x06proto3"
 
 var (
@@ -78,7 +78,7 @@ func file_store_db_group_proto_rawDescGZIP() []byte {
 
 var file_store_db_group_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
 var file_store_db_group_proto_goTypes = []any{
-	(*DatabaseGroupPayload)(nil), // 0: bytebase.store.DatabaseGroupPayload
+	(*DatabaseGroupPayload)(nil), // 0: bytebase.internal.store.DatabaseGroupPayload
 }
 var file_store_db_group_proto_depIdxs = []int32{
 	0, // [0:0] is the sub-list for method output_type

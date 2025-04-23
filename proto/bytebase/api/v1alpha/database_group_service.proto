@@ -1,0 +1,188 @@
+syntax = "proto3";
+
+package bytebase.api.v1alpha;
+
+import "google/api/annotations.proto";
+import "google/api/client.proto";
+import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/field_mask.proto";
+import "google/type/expr.proto";
+import "api/v1alpha/annotation.proto";
+
+option go_package = "generated-go/v1";
+
+service DatabaseGroupService {
+  rpc ListDatabaseGroups(ListDatabaseGroupsRequest) returns (ListDatabaseGroupsResponse) {
+    option (google.api.http) = {get: "/v1/{parent=projects/*}/databaseGroups"};
+    option (google.api.method_signature) = "parent";
+    option (bytebase.api.v1alpha.permission) = "bb.projects.get";
+    option (bytebase.api.v1alpha.auth_method) = IAM;
+  }
+
+  rpc GetDatabaseGroup(GetDatabaseGroupRequest) returns (DatabaseGroup) {
+    option (google.api.http) = {get: "/v1/{name=projects/*/databaseGroups/*}"};
+    option (google.api.method_signature) = "name";
+    option (bytebase.api.v1alpha.permission) = "bb.projects.get";
+    option (bytebase.api.v1alpha.auth_method) = IAM;
+  }
+
+  rpc CreateDatabaseGroup(CreateDatabaseGroupRequest) returns (DatabaseGroup) {
+    option (google.api.http) = {
+      post: "/v1/{parent=projects/*}/databaseGroups"
+      body: "database_group"
+    };
+    option (google.api.method_signature) = "parent,databaseGroup";
+    option (bytebase.api.v1alpha.permission) = "bb.projects.update";
+    option (bytebase.api.v1alpha.auth_method) = CUSTOM;
+    option (bytebase.api.v1alpha.audit) = true;
+  }
+
+  rpc UpdateDatabaseGroup(UpdateDatabaseGroupRequest) returns (DatabaseGroup) {
+    option (google.api.http) = {
+      patch: "/v1/{database_group.name=projects/*/databaseGroups/*}"
+      body: "database_group"
+    };
+    option (google.api.method_signature) = "database_group,update_mask";
+    option (bytebase.api.v1alpha.permission) = "bb.projects.update";
+    option (bytebase.api.v1alpha.auth_method) = IAM;
+    option (bytebase.api.v1alpha.audit) = true;
+  }
+
+  rpc DeleteDatabaseGroup(DeleteDatabaseGroupRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {delete: "/v1/{name=projects/*/databaseGroups/*}"};
+    option (google.api.method_signature) = "name";
+    option (bytebase.api.v1alpha.permission) = "bb.projects.update";
+    option (bytebase.api.v1alpha.auth_method) = IAM;
+    option (bytebase.api.v1alpha.audit) = true;
+  }
+}
+
+message ListDatabaseGroupsRequest {
+  // The parent resource whose database groups are to be listed.
+  // Format: projects/{project}
+  string parent = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Project"}
+  ];
+
+  // Not used.
+  // The maximum number of database groups to return. The service may return fewer than
+  // this value.
+  // If unspecified, at most 50 database groups will be returned.
+  // The maximum value is 1000; values above 1000 will be coerced to 1000.
+  int32 page_size = 2;
+
+  // Not used.
+  // A page token, received from a previous `ListDatabaseGroups` call.
+  // Provide this to retrieve the subsequent page.
+  //
+  // When paginating, all other parameters provided to `ListDatabaseGroups` must match
+  // the call that provided the page token.
+  string page_token = 3;
+}
+
+message ListDatabaseGroupsResponse {
+  // database_groups is the list of database groups.
+  repeated DatabaseGroup database_groups = 1;
+
+  // Not used. A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+message GetDatabaseGroupRequest {
+  // The name of the database group to retrieve.
+  // Format: projects/{project}/databaseGroups/{databaseGroup}
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/DatabaseGroup"}
+  ];
+
+  // The view to return. Defaults to DATABASE_GROUP_VIEW_BASIC.
+  DatabaseGroupView view = 2;
+}
+
+message CreateDatabaseGroupRequest {
+  // The parent resource where this database group will be created.
+  // Format: projects/{project}
+  string parent = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Project"}
+  ];
+
+  // The database group to create.
+  DatabaseGroup database_group = 2 [(google.api.field_behavior) = REQUIRED];
+
+  // The ID to use for the database group, which will become the final component of
+  // the database group's resource name.
+  //
+  // This value should be 4-63 characters, and valid characters
+  // are /[a-z][0-9]-/.
+  string database_group_id = 3;
+
+  // If set, validate the create request and preview the full database group response, but do not actually create it.
+  bool validate_only = 4;
+}
+
+message UpdateDatabaseGroupRequest {
+  // The database group to update.
+  //
+  // The database group's `name` field is used to identify the database group to update.
+  // Format: projects/{project}/databaseGroups/{databaseGroup}
+  DatabaseGroup database_group = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The list of fields to update.
+  google.protobuf.FieldMask update_mask = 2;
+}
+
+message DeleteDatabaseGroupRequest {
+  // The name of the database group to delete.
+  // Format: projects/{project}/databaseGroups/{databaseGroup}
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/DatabaseGroup"}
+  ];
+}
+
+enum DatabaseGroupView {
+  // The default / unset value.
+  // The API will default to the BASIC view.
+  DATABASE_GROUP_VIEW_UNSPECIFIED = 0;
+
+  // Include basic information about the database group, but exclude the list of matched databases and unmatched databases.
+  DATABASE_GROUP_VIEW_BASIC = 1;
+
+  // Include everything.
+  DATABASE_GROUP_VIEW_FULL = 2;
+}
+
+message DatabaseGroup {
+  option (google.api.resource) = {
+    type: "bytebase.com/DatabaseGroup"
+    pattern: "projects/{project}/databaseGroups/{databaseGroup}"
+  };
+
+  // The name of the database group.
+  // Format: projects/{project}/databaseGroups/{databaseGroup}
+  string name = 1;
+
+  // The short name used in actual databases specified by users.
+  // For example, the placeholder for db1_2010, db1_2021, db1_2023 will be "db1".
+  string database_placeholder = 2;
+
+  // The condition that is associated with this database group.
+  google.type.Expr database_expr = 3;
+
+  message Database {
+    // The resource name of the database.
+    // Format: instances/{instance}/databases/{database}
+    string name = 1;
+  }
+  // The list of databases that match the database group condition.
+  repeated Database matched_databases = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The list of databases that match the database group condition.
+  repeated Database unmatched_databases = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
+}

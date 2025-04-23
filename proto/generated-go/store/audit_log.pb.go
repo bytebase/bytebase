@@ -97,14 +97,14 @@ type AuditLog struct {
 	// - projects/{project}
 	// - workspaces/{workspace}
 	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
-	// e.g. /bytebase.v1.SQLService/Query
+	// e.g. /bytebase.api.v1alphaSQLService/Query
 	Method string `protobuf:"bytes,2,opt,name=method,proto3" json:"method,omitempty"`
 	// resource name
 	// projects/{project}
 	Resource string `protobuf:"bytes,3,opt,name=resource,proto3" json:"resource,omitempty"`
 	// Format: users/{userUID}.
 	User     string            `protobuf:"bytes,4,opt,name=user,proto3" json:"user,omitempty"`
-	Severity AuditLog_Severity `protobuf:"varint,5,opt,name=severity,proto3,enum=bytebase.store.AuditLog_Severity" json:"severity,omitempty"`
+	Severity AuditLog_Severity `protobuf:"varint,5,opt,name=severity,proto3,enum=bytebase.internal.store.AuditLog_Severity" json:"severity,omitempty"`
 	// Marshalled request.
 	Request string `protobuf:"bytes,6,opt,name=request,proto3" json:"request,omitempty"`
 	// Marshalled response.
@@ -279,19 +279,19 @@ var File_store_audit_log_proto protoreflect.FileDescriptor
 
 const file_store_audit_log_proto_rawDesc = "" +
 	"\n" +
-	"\x15store/audit_log.proto\x12\x0ebytebase.store\x1a\x19google/protobuf/any.proto\x1a\x17google/rpc/status.proto\"\x8a\x04\n" +
+	"\x15store/audit_log.proto\x12\x17bytebase.internal.store\x1a\x19google/protobuf/any.proto\x1a\x17google/rpc/status.proto\"\x9c\x04\n" +
 	"\bAuditLog\x12\x16\n" +
 	"\x06parent\x18\x01 \x01(\tR\x06parent\x12\x16\n" +
 	"\x06method\x18\x02 \x01(\tR\x06method\x12\x1a\n" +
 	"\bresource\x18\x03 \x01(\tR\bresource\x12\x12\n" +
-	"\x04user\x18\x04 \x01(\tR\x04user\x12=\n" +
-	"\bseverity\x18\x05 \x01(\x0e2!.bytebase.store.AuditLog.SeverityR\bseverity\x12\x18\n" +
+	"\x04user\x18\x04 \x01(\tR\x04user\x12F\n" +
+	"\bseverity\x18\x05 \x01(\x0e2*.bytebase.internal.store.AuditLog.SeverityR\bseverity\x12\x18\n" +
 	"\arequest\x18\x06 \x01(\tR\arequest\x12\x1a\n" +
 	"\bresponse\x18\a \x01(\tR\bresponse\x12*\n" +
 	"\x06status\x18\b \x01(\v2\x12.google.rpc.StatusR\x06status\x127\n" +
 	"\fservice_data\x18\n" +
-	" \x01(\v2\x14.google.protobuf.AnyR\vserviceData\x12J\n" +
-	"\x10request_metadata\x18\v \x01(\v2\x1f.bytebase.store.RequestMetadataR\x0frequestMetadata\"x\n" +
+	" \x01(\v2\x14.google.protobuf.AnyR\vserviceData\x12S\n" +
+	"\x10request_metadata\x18\v \x01(\v2(.bytebase.internal.store.RequestMetadataR\x0frequestMetadata\"x\n" +
 	"\bSeverity\x12\v\n" +
 	"\aDEFAULT\x10\x00\x12\t\n" +
 	"\x05DEBUG\x10\x01\x12\b\n" +
@@ -322,17 +322,17 @@ func file_store_audit_log_proto_rawDescGZIP() []byte {
 var file_store_audit_log_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
 var file_store_audit_log_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
 var file_store_audit_log_proto_goTypes = []any{
-	(AuditLog_Severity)(0),  // 0: bytebase.store.AuditLog.Severity
-	(*AuditLog)(nil),        // 1: bytebase.store.AuditLog
-	(*RequestMetadata)(nil), // 2: bytebase.store.RequestMetadata
+	(AuditLog_Severity)(0),  // 0: bytebase.internal.store.AuditLog.Severity
+	(*AuditLog)(nil),        // 1: bytebase.internal.store.AuditLog
+	(*RequestMetadata)(nil), // 2: bytebase.internal.store.RequestMetadata
 	(*status.Status)(nil),   // 3: google.rpc.Status
 	(*anypb.Any)(nil),       // 4: google.protobuf.Any
 }
 var file_store_audit_log_proto_depIdxs = []int32{
-	0, // 0: bytebase.store.AuditLog.severity:type_name -> bytebase.store.AuditLog.Severity
-	3, // 1: bytebase.store.AuditLog.status:type_name -> google.rpc.Status
-	4, // 2: bytebase.store.AuditLog.service_data:type_name -> google.protobuf.Any
-	2, // 3: bytebase.store.AuditLog.request_metadata:type_name -> bytebase.store.RequestMetadata
+	0, // 0: bytebase.internal.store.AuditLog.severity:type_name -> bytebase.internal.store.AuditLog.Severity
+	3, // 1: bytebase.internal.store.AuditLog.status:type_name -> google.rpc.Status
+	4, // 2: bytebase.internal.store.AuditLog.service_data:type_name -> google.protobuf.Any
+	2, // 3: bytebase.internal.store.AuditLog.request_metadata:type_name -> bytebase.internal.store.RequestMetadata
 	4, // [4:4] is the sub-list for method output_type
 	4, // [4:4] is the sub-list for method input_type
 	4, // [4:4] is the sub-list for extension type_name

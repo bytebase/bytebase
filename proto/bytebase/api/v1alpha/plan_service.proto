@@ -1,0 +1,537 @@
+syntax = "proto3";
+
+package bytebase.api.v1alpha;
+
+import "google/api/annotations.proto";
+import "google/api/client.proto";
+import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
+import "google/protobuf/field_mask.proto";
+import "google/protobuf/timestamp.proto";
+import "api/v1alpha/annotation.proto";
+import "api/v1alpha/common.proto";
+import "api/v1alpha/database_service.proto";
+
+option go_package = "generated-go/v1";
+
+service PlanService {
+  rpc GetPlan(GetPlanRequest) returns (Plan) {
+    option (google.api.http) = {get: "/v1/{name=projects/*/plans/*}"};
+    option (google.api.method_signature) = "name";
+    option (bytebase.api.v1alpha.permission) = "bb.plans.get";
+    option (bytebase.api.v1alpha.auth_method) = IAM;
+  }
+
+  rpc ListPlans(ListPlansRequest) returns (ListPlansResponse) {
+    option (google.api.http) = {get: "/v1/{parent=projects/*}/plans"};
+    option (google.api.method_signature) = "parent";
+    option (bytebase.api.v1alpha.permission) = "bb.plans.list";
+    option (bytebase.api.v1alpha.auth_method) = IAM;
+  }
+
+  // Search for plans that the caller has the bb.plans.get permission on and also satisfy the specified filter & query.
+  rpc SearchPlans(SearchPlansRequest) returns (SearchPlansResponse) {
+    option (google.api.http) = {
+      post: "/v1/{parent=projects/*}/plans:search"
+      body: "*"
+    };
+    option (google.api.method_signature) = "parent";
+    option (bytebase.api.v1alpha.permission) = "bb.plans.get";
+    option (bytebase.api.v1alpha.auth_method) = CUSTOM;
+  }
+
+  rpc CreatePlan(CreatePlanRequest) returns (Plan) {
+    option (google.api.http) = {
+      post: "/v1/{parent=projects/*}/plans"
+      body: "plan"
+    };
+    option (google.api.method_signature) = "parent,plan";
+    option (bytebase.api.v1alpha.permission) = "bb.plans.create";
+    option (bytebase.api.v1alpha.auth_method) = IAM;
+    option (bytebase.api.v1alpha.audit) = true;
+  }
+
+  // UpdatePlan updates the plan.
+  // The plan creator and the user with bb.plans.update permission on the project can update the plan.
+  rpc UpdatePlan(UpdatePlanRequest) returns (Plan) {
+    option (google.api.http) = {
+      patch: "/v1/{plan.name=projects/*/plans/*}"
+      body: "plan"
+    };
+    option (google.api.method_signature) = "plan,update_mask";
+    option (bytebase.api.v1alpha.permission) = "bb.plans.update";
+    option (bytebase.api.v1alpha.auth_method) = CUSTOM;
+    option (bytebase.api.v1alpha.audit) = true;
+  }
+
+  rpc ListPlanCheckRuns(ListPlanCheckRunsRequest) returns (ListPlanCheckRunsResponse) {
+    option (google.api.http) = {get: "/v1/{parent=projects/*/plans/*}/planCheckRuns"};
+    option (google.api.method_signature) = "parent";
+    option (bytebase.api.v1alpha.permission) = "bb.planCheckRuns.list";
+    option (bytebase.api.v1alpha.auth_method) = IAM;
+  }
+
+  rpc RunPlanChecks(RunPlanChecksRequest) returns (RunPlanChecksResponse) {
+    option (google.api.http) = {
+      post: "/v1/{name=projects/*/plans/*}:runPlanChecks"
+      body: "*"
+    };
+    option (google.api.method_signature) = "name";
+    option (bytebase.api.v1alpha.permission) = "bb.planCheckRuns.run";
+    option (bytebase.api.v1alpha.auth_method) = IAM;
+  }
+
+  rpc BatchCancelPlanCheckRuns(BatchCancelPlanCheckRunsRequest) returns (BatchCancelPlanCheckRunsResponse) {
+    option (google.api.http) = {
+      post: "/v1/{parent=projects/*/plans/*}/planCheckRuns:batchCancel"
+      body: "*"
+    };
+    option (google.api.method_signature) = "parent";
+    option (bytebase.api.v1alpha.permission) = "bb.planCheckRuns.run";
+    option (bytebase.api.v1alpha.auth_method) = IAM;
+  }
+
+  rpc PreviewPlan(PreviewPlanRequest) returns (PreviewPlanResponse) {
+    option (google.api.http) = {
+      post: "/v1/{project=projects/*}:previewPlan"
+      body: "*"
+    };
+    option (bytebase.api.v1alpha.permission) = "bb.plans.preview";
+    option (bytebase.api.v1alpha.auth_method) = IAM;
+  }
+}
+
+message GetPlanRequest {
+  // The name of the plan to retrieve.
+  // Format: projects/{project}/plans/{plan}
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Plan"}
+  ];
+}
+
+message ListPlansRequest {
+  // The parent, which owns this collection of plans.
+  // Format: projects/{project}
+  // Use "projects/-" to list all plans from all projects.
+  string parent = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Project"}
+  ];
+
+  // The maximum number of plans to return. The service may return fewer than
+  // this value.
+  // If unspecified, at most 10 plans will be returned.
+  // The maximum value is 1000; values above 1000 will be coerced to 1000.
+  int32 page_size = 2;
+
+  // A page token, received from a previous `ListPlans` call.
+  // Provide this to retrieve the subsequent page.
+  //
+  // When paginating, all other parameters provided to `ListPlans` must match
+  // the call that provided the page token.
+  string page_token = 3;
+}
+
+message ListPlansResponse {
+  // The plans from the specified request.
+  repeated Plan plans = 1;
+
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+message SearchPlansRequest {
+  // The parent, which owns this collection of plans.
+  // Format: projects/{project}
+  // Use "projects/-" to list all plans from all projects.
+  string parent = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The maximum number of plans to return. The service may return fewer than
+  // this value.
+  // If unspecified, at most 10 plans will be returned.
+  // The maximum value is 1000; values above 1000 will be coerced to 1000.
+  int32 page_size = 2;
+
+  // A page token, received from a previous `SearchPlans` call.
+  // Provide this to retrieve the subsequent page.
+  //
+  // When paginating, all other parameters provided to `SearchPlans` must match
+  // the call that provided the page token.
+  string page_token = 3;
+
+  // Filter is used to filter plans returned in the list.
+  string filter = 4;
+}
+
+message SearchPlansResponse {
+  // The plans from the specified request.
+  repeated Plan plans = 1;
+
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+message CreatePlanRequest {
+  // The parent project where this plan will be created.
+  // Format: projects/{project}
+  string parent = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Project"}
+  ];
+
+  // The plan to create.
+  Plan plan = 2 [(google.api.field_behavior) = REQUIRED];
+}
+
+message UpdatePlanRequest {
+  // The plan to update.
+  //
+  // The plan's `name` field is used to identify the plan to update.
+  // Format: projects/{project}/plans/{plan}
+  Plan plan = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The list of fields to update.
+  google.protobuf.FieldMask update_mask = 2 [(google.api.field_behavior) = REQUIRED];
+}
+
+message Plan {
+  option (google.api.resource) = {
+    type: "bytebase.com/Plan"
+    pattern: "projects/{project}/plans/{plan}"
+  };
+
+  reserved 2;
+
+  // The name of the plan.
+  // `plan` is a system generated ID.
+  // Format: projects/{project}/plans/{plan}
+  string name = 1;
+
+  // The resource name of the issue associated with this plan.
+  // Format: projects/{project}/issues/{issue}
+  string issue = 3;
+
+  string title = 4;
+  string description = 5;
+
+  repeated Step steps = 6;
+
+  message Step {
+    string title = 2;
+    repeated Spec specs = 1;
+  }
+
+  message Spec {
+    // earliest_allowed_time the earliest execution time of the change.
+    google.protobuf.Timestamp earliest_allowed_time = 4;
+    // A UUID4 string that uniquely identifies the Spec.
+    string id = 5;
+
+    SpecReleaseSource spec_release_source = 8;
+
+    oneof config {
+      CreateDatabaseConfig create_database_config = 1;
+      ChangeDatabaseConfig change_database_config = 2;
+      ExportDataConfig export_data_config = 7;
+    }
+  }
+
+  // Format: users/hello@world.com
+  string creator = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  google.protobuf.Timestamp create_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  google.protobuf.Timestamp update_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The status count of the latest plan check runs.
+  // Keys are:
+  // - SUCCESS
+  // - WARNING
+  // - ERROR
+  map<string, int32> plan_check_run_status_count = 11 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  ReleaseSource release_source = 12;
+
+  Deployment deployment = 13;
+
+  message CreateDatabaseConfig {
+    // The resource name of the instance on which the database is created.
+    // Format: instances/{instance}
+    string target = 1 [(google.api.field_behavior) = REQUIRED];
+    // The name of the database to create.
+    string database = 2 [(google.api.field_behavior) = REQUIRED];
+    // table is the name of the table, if it is not empty, Bytebase should create a table after creating the database.
+    // For example, in MongoDB, it only creates the database when we first store data in that database.
+    string table = 3 [(google.api.field_behavior) = OPTIONAL];
+    // character_set is the character set of the database.
+    string character_set = 4 [(google.api.field_behavior) = OPTIONAL];
+    // collation is the collation of the database.
+    string collation = 5 [(google.api.field_behavior) = OPTIONAL];
+    // cluster is the cluster of the database. This is only applicable to ClickHouse for "ON CLUSTER <<cluster>>".
+    string cluster = 6 [(google.api.field_behavior) = OPTIONAL];
+    // owner is the owner of the database. This is only applicable to Postgres for "WITH OWNER <<owner>>".
+    string owner = 7 [(google.api.field_behavior) = OPTIONAL];
+    // The environment resource.
+    // Format: environments/prod where prod is the environment resource ID.
+    string environment = 9 [(google.api.field_behavior) = OPTIONAL];
+  }
+
+  message ChangeDatabaseConfig {
+    reserved 5, 6;
+
+    // The resource name of the target.
+    // Format: instances/{instance-id}/databases/{database-name}.
+    // Format: projects/{project}/databaseGroups/{databaseGroup}.
+    string target = 1;
+    // The resource name of the sheet.
+    // Format: projects/{project}/sheets/{sheet}
+    string sheet = 2;
+    // Type is the database change type.
+    enum Type {
+      TYPE_UNSPECIFIED = 0;
+      // Used for establishing schema baseline, this is used when
+      // 1. Onboard the database into Bytebase since Bytebase needs to know the current database schema.
+      // 2. Had schema drift and need to re-establish the baseline.
+      BASELINE = 1;
+      // Used for DDL changes including CREATE DATABASE.
+      MIGRATE = 2;
+      // Used for schema changes via state-based schema migration including CREATE DATABASE.
+      MIGRATE_SDL = 3;
+      // Used for DDL changes using gh-ost.
+      MIGRATE_GHOST = 4;
+      // Used for DML change.
+      DATA = 6;
+    }
+    Type type = 3;
+    // schema_version is parsed from file name.
+    // It is automatically generated in the UI workflow.
+    string schema_version = 4;
+
+    map<string, string> ghost_flags = 7;
+
+    message PreUpdateBackupDetail {
+      // The database for keeping the backup data.
+      // Format: instances/{instance}/databases/{database}
+      string database = 1;
+    }
+    // If set, a backup of the modified data will be created automatically before any changes are applied.
+    optional PreUpdateBackupDetail pre_update_backup_detail = 8;
+  }
+
+  message ExportDataConfig {
+    // The resource name of the target.
+    // Format: instances/{instance-id}/databases/{database-name}
+    string target = 1;
+    // The resource name of the sheet.
+    // Format: projects/{project}/sheets/{sheet}
+    string sheet = 2;
+    // The format of the exported file.
+    ExportFormat format = 3;
+    // The zip password provide by users.
+    // Leave it empty if no needs to encrypt the zip file.
+    optional string password = 4;
+  }
+
+  message Deployment {
+    // The environments deploy order.
+    repeated string environments = 1;
+    // The database group mapping.
+    repeated DatabaseGroupMapping database_group_mappings = 2;
+
+    message DatabaseGroupMapping {
+      // Format: projects/{project}/databaseGroups/{databaseGroup}.
+      string database_group = 1;
+      // Format: instances/{instance-id}/databases/{database-name}.
+      repeated string databases = 2;
+    }
+  }
+
+  message ReleaseSource {
+    // The release.
+    // Format: projects/{project}/releases/{release}
+    string release = 1 [(google.api.resource_reference) = {type: "bytebase.com/Release"}];
+  }
+
+  message SpecReleaseSource {
+    // Format: projects/{project}/releases/{release}/files/{file}
+    // {file} is URL path escaped.
+    string file = 1;
+  }
+}
+
+message ListPlanCheckRunsRequest {
+  // The parent, which owns this collection of plan check runs.
+  // Format: projects/{project}/plans/{plan}
+  string parent = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Plan"}
+  ];
+
+  // Not used.
+  // The maximum number of plan check runs to return. The service may return fewer than
+  // this value.
+  // If unspecified, at most 10 plan check runs will be returned.
+  // The maximum value is 1000; values above 1000 will be coerced to 1000.
+  int32 page_size = 2;
+
+  // Not used.
+  // A page token, received from a previous `ListPlanCheckRuns` call.
+  // Provide this to retrieve the subsequent page.
+  //
+  // When paginating, all other parameters provided to `ListPlanCheckRuns` must match
+  // the call that provided the page token.
+  string page_token = 3;
+
+  // If set to true, only the latest plan check run will be returned.
+  bool latest_only = 4;
+}
+
+message ListPlanCheckRunsResponse {
+  // The plan check runs from the specified request.
+  repeated PlanCheckRun plan_check_runs = 1;
+
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+message RunPlanChecksRequest {
+  // The plan to run plan checks.
+  // Format: projects/{project}/plans/{plan}
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Plan"}
+  ];
+}
+
+message RunPlanChecksResponse {}
+
+message BatchCancelPlanCheckRunsRequest {
+  // The name of the parent of the planChecks.
+  // Format: projects/{project}/plans/{plan}
+  string parent = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Plan"}
+  ];
+  // TODO(d): update this API.
+  // The planCheckRuns to cancel.
+  // Format: projects/{project}/plans/{plan}/planCheckRuns/{planCheckRun}
+  repeated string plan_check_runs = 2;
+}
+
+message BatchCancelPlanCheckRunsResponse {}
+
+message PreviewPlanRequest {
+  // The name of the project.
+  // Format: projects/{project}
+  string project = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Project"}
+  ];
+
+  // The release used for preview.
+  string release = 2 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Release"}
+  ];
+
+  // The targets to deploy.
+  // Can be database or databaseGroup.
+  // Format:
+  // projects/{project}/databaseGroups/{databaseGroup}
+  // instances/{instance}/databases/{database}
+  repeated string targets = 3 [(google.api.field_behavior) = REQUIRED];
+
+  bool allow_out_of_order = 4;
+}
+
+message PreviewPlanResponse {
+  Plan plan = 1;
+
+  // The out of order files of each database.
+  repeated DatabaseFiles out_of_order_files = 2;
+  // The applied but modified files of each database.
+  repeated DatabaseFiles applied_but_modified_files = 3;
+
+  message DatabaseFiles {
+    string database = 1;
+    // Format: projects/{project}/releases/{release}/files/{file_id}
+    repeated string files = 2;
+  }
+}
+
+message PlanCheckRun {
+  reserved 2;
+
+  // Format: projects/{project}/plans/{plan}/planCheckRuns/{planCheckRun}
+  string name = 1;
+
+  enum Type {
+    TYPE_UNSPECIFIED = 0;
+    DATABASE_STATEMENT_FAKE_ADVISE = 1;
+    DATABASE_STATEMENT_ADVISE = 3;
+    DATABASE_STATEMENT_SUMMARY_REPORT = 5;
+    DATABASE_CONNECT = 6;
+    DATABASE_GHOST_SYNC = 7;
+  }
+  Type type = 3;
+
+  enum Status {
+    STATUS_UNSPECIFIED = 0;
+    RUNNING = 1;
+    DONE = 2;
+    FAILED = 3;
+    CANCELED = 4;
+  }
+  Status status = 4;
+
+  // Format: instances/{instance}/databases/{database}
+  string target = 5;
+
+  // Format: project/{project}/sheets/{sheet}
+  string sheet = 6;
+
+  repeated Result results = 7;
+  // error is set if the Status is FAILED.
+  string error = 8;
+
+  google.protobuf.Timestamp create_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  message Result {
+    enum Status {
+      STATUS_UNSPECIFIED = 0;
+      ERROR = 1;
+      WARNING = 2;
+      SUCCESS = 3;
+    }
+    Status status = 1;
+    string title = 2;
+    string content = 3;
+    int32 code = 4;
+
+    oneof report {
+      SqlSummaryReport sql_summary_report = 5;
+      SqlReviewReport sql_review_report = 6;
+    }
+    message SqlSummaryReport {
+      reserved 1;
+      // statement_types are the types of statements that are found in the sql.
+      repeated string statement_types = 2;
+      int32 affected_rows = 3;
+      ChangedResources changed_resources = 4;
+    }
+    message SqlReviewReport {
+      reserved 3, 4;
+
+      int32 line = 1;
+      int32 column = 2;
+      // 1-based Position of the SQL statement.
+      // To supersede `line` and `column` above.
+      Position start_position = 5;
+      Position end_position = 6;
+    }
+  }
+}

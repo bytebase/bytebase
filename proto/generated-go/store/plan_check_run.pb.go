@@ -180,7 +180,7 @@ func (x *PreUpdateBackupDetail) GetDatabase() string {
 type PlanCheckRunConfig struct {
 	state              protoimpl.MessageState                `protogen:"open.v1"`
 	SheetUid           int32                                 `protobuf:"varint,1,opt,name=sheet_uid,json=sheetUid,proto3" json:"sheet_uid,omitempty"`
-	ChangeDatabaseType PlanCheckRunConfig_ChangeDatabaseType `protobuf:"varint,2,opt,name=change_database_type,json=changeDatabaseType,proto3,enum=bytebase.store.PlanCheckRunConfig_ChangeDatabaseType" json:"change_database_type,omitempty"`
+	ChangeDatabaseType PlanCheckRunConfig_ChangeDatabaseType `protobuf:"varint,2,opt,name=change_database_type,json=changeDatabaseType,proto3,enum=bytebase.internal.store.PlanCheckRunConfig_ChangeDatabaseType" json:"change_database_type,omitempty"`
 	InstanceId         string                                `protobuf:"bytes,3,opt,name=instance_id,json=instanceId,proto3" json:"instance_id,omitempty"`
 	DatabaseName       string                                `protobuf:"bytes,4,opt,name=database_name,json=databaseName,proto3" json:"database_name,omitempty"`
 	// Deprecated: Marked as deprecated in store/plan_check_run.proto.
@@ -326,7 +326,7 @@ func (x *PlanCheckRunResult) GetError() string {
 
 type PlanCheckRunResult_Result struct {
 	state   protoimpl.MessageState           `protogen:"open.v1"`
-	Status  PlanCheckRunResult_Result_Status `protobuf:"varint,1,opt,name=status,proto3,enum=bytebase.store.PlanCheckRunResult_Result_Status" json:"status,omitempty"`
+	Status  PlanCheckRunResult_Result_Status `protobuf:"varint,1,opt,name=status,proto3,enum=bytebase.internal.store.PlanCheckRunResult_Result_Status" json:"status,omitempty"`
 	Title   string                           `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
 	Content string                           `protobuf:"bytes,3,opt,name=content,proto3" json:"content,omitempty"`
 	Code    int32                            `protobuf:"varint,4,opt,name=code,proto3" json:"code,omitempty"`
@@ -573,19 +573,19 @@ var File_store_plan_check_run_proto protoreflect.FileDescriptor
 
 const file_store_plan_check_run_proto_rawDesc = "" +
 	"\n" +
-	"\x1astore/plan_check_run.proto\x12\x0ebytebase.store\x1a\x15store/changelog.proto\x1a\x12store/common.proto\"3\n" +
+	"\x1astore/plan_check_run.proto\x12\x17bytebase.internal.store\x1a\x15store/changelog.proto\x1a\x12store/common.proto\"3\n" +
 	"\x15PreUpdateBackupDetail\x12\x1a\n" +
-	"\bdatabase\x18\x01 \x01(\tR\bdatabase\"\xba\x05\n" +
+	"\bdatabase\x18\x01 \x01(\tR\bdatabase\"\xd5\x05\n" +
 	"\x12PlanCheckRunConfig\x12\x1b\n" +
-	"\tsheet_uid\x18\x01 \x01(\x05R\bsheetUid\x12g\n" +
-	"\x14change_database_type\x18\x02 \x01(\x0e25.bytebase.store.PlanCheckRunConfig.ChangeDatabaseTypeR\x12changeDatabaseType\x12\x1f\n" +
+	"\tsheet_uid\x18\x01 \x01(\x05R\bsheetUid\x12p\n" +
+	"\x14change_database_type\x18\x02 \x01(\x0e2>.bytebase.internal.store.PlanCheckRunConfig.ChangeDatabaseTypeR\x12changeDatabaseType\x12\x1f\n" +
 	"\vinstance_id\x18\x03 \x01(\tR\n" +
 	"instanceId\x12#\n" +
 	"\rdatabase_name\x18\x04 \x01(\tR\fdatabaseName\x125\n" +
-	"\x12database_group_uid\x18\x05 \x01(\x03B\x02\x18\x01H\x00R\x10databaseGroupUid\x88\x01\x01\x12S\n" +
-	"\vghost_flags\x18\x06 \x03(\v22.bytebase.store.PlanCheckRunConfig.GhostFlagsEntryR\n" +
-	"ghostFlags\x12c\n" +
-	"\x18pre_update_backup_detail\x18\a \x01(\v2%.bytebase.store.PreUpdateBackupDetailH\x01R\x15preUpdateBackupDetail\x88\x01\x01\x1a=\n" +
+	"\x12database_group_uid\x18\x05 \x01(\x03B\x02\x18\x01H\x00R\x10databaseGroupUid\x88\x01\x01\x12\\\n" +
+	"\vghost_flags\x18\x06 \x03(\v2;.bytebase.internal.store.PlanCheckRunConfig.GhostFlagsEntryR\n" +
+	"ghostFlags\x12l\n" +
+	"\x18pre_update_backup_detail\x18\a \x01(\v2..bytebase.internal.store.PreUpdateBackupDetailH\x01R\x15preUpdateBackupDetail\x88\x01\x01\x1a=\n" +
 	"\x0fGhostFlagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"t\n" +
@@ -598,26 +598,26 @@ const file_store_plan_check_run_proto_rawDesc = "" +
 	"\n" +
 	"SQL_EDITOR\x10\x05B\x15\n" +
 	"\x13_database_group_uidB\x1b\n" +
-	"\x19_pre_update_backup_detail\"\xb0\a\n" +
-	"\x12PlanCheckRunResult\x12C\n" +
-	"\aresults\x18\x01 \x03(\v2).bytebase.store.PlanCheckRunResult.ResultR\aresults\x12\x14\n" +
-	"\x05error\x18\x02 \x01(\tR\x05error\x1a\xbe\x06\n" +
-	"\x06Result\x12H\n" +
-	"\x06status\x18\x01 \x01(\x0e20.bytebase.store.PlanCheckRunResult.Result.StatusR\x06status\x12\x14\n" +
+	"\x19_pre_update_backup_detail\"\xef\a\n" +
+	"\x12PlanCheckRunResult\x12L\n" +
+	"\aresults\x18\x01 \x03(\v22.bytebase.internal.store.PlanCheckRunResult.ResultR\aresults\x12\x14\n" +
+	"\x05error\x18\x02 \x01(\tR\x05error\x1a\xf4\x06\n" +
+	"\x06Result\x12Q\n" +
+	"\x06status\x18\x01 \x01(\x0e29.bytebase.internal.store.PlanCheckRunResult.Result.StatusR\x06status\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12\x18\n" +
 	"\acontent\x18\x03 \x01(\tR\acontent\x12\x12\n" +
-	"\x04code\x18\x04 \x01(\x05R\x04code\x12j\n" +
-	"\x12sql_summary_report\x18\x05 \x01(\v2:.bytebase.store.PlanCheckRunResult.Result.SqlSummaryReportH\x00R\x10sqlSummaryReport\x12g\n" +
-	"\x11sql_review_report\x18\x06 \x01(\v29.bytebase.store.PlanCheckRunResult.Result.SqlReviewReportH\x00R\x0fsqlReviewReport\x1a\xb5\x01\n" +
+	"\x04code\x18\x04 \x01(\x05R\x04code\x12s\n" +
+	"\x12sql_summary_report\x18\x05 \x01(\v2C.bytebase.internal.store.PlanCheckRunResult.Result.SqlSummaryReportH\x00R\x10sqlSummaryReport\x12p\n" +
+	"\x11sql_review_report\x18\x06 \x01(\v2B.bytebase.internal.store.PlanCheckRunResult.Result.SqlReviewReportH\x00R\x0fsqlReviewReport\x1a\xbe\x01\n" +
 	"\x10SqlSummaryReport\x12'\n" +
 	"\x0fstatement_types\x18\x02 \x03(\tR\x0estatementTypes\x12#\n" +
-	"\raffected_rows\x18\x03 \x01(\x05R\faffectedRows\x12M\n" +
-	"\x11changed_resources\x18\x04 \x01(\v2 .bytebase.store.ChangedResourcesR\x10changedResourcesJ\x04\b\x01\x10\x02\x1a\xc7\x01\n" +
+	"\raffected_rows\x18\x03 \x01(\x05R\faffectedRows\x12V\n" +
+	"\x11changed_resources\x18\x04 \x01(\v2).bytebase.internal.store.ChangedResourcesR\x10changedResourcesJ\x04\b\x01\x10\x02\x1a\xd9\x01\n" +
 	"\x0fSqlReviewReport\x12\x12\n" +
 	"\x04line\x18\x01 \x01(\x05R\x04line\x12\x16\n" +
-	"\x06column\x18\x02 \x01(\x05R\x06column\x12?\n" +
-	"\x0estart_position\x18\b \x01(\v2\x18.bytebase.store.PositionR\rstartPosition\x12;\n" +
-	"\fend_position\x18\t \x01(\v2\x18.bytebase.store.PositionR\vendPositionJ\x04\b\x03\x10\x04J\x04\b\x04\x10\x05\"E\n" +
+	"\x06column\x18\x02 \x01(\x05R\x06column\x12H\n" +
+	"\x0estart_position\x18\b \x01(\v2!.bytebase.internal.store.PositionR\rstartPosition\x12D\n" +
+	"\fend_position\x18\t \x01(\v2!.bytebase.internal.store.PositionR\vendPositionJ\x04\b\x03\x10\x04J\x04\b\x04\x10\x05\"E\n" +
 	"\x06Status\x12\x16\n" +
 	"\x12STATUS_UNSPECIFIED\x10\x00\x12\t\n" +
 	"\x05ERROR\x10\x01\x12\v\n" +
@@ -640,29 +640,29 @@ func file_store_plan_check_run_proto_rawDescGZIP() []byte {
 var file_store_plan_check_run_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
 var file_store_plan_check_run_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
 var file_store_plan_check_run_proto_goTypes = []any{
-	(PlanCheckRunConfig_ChangeDatabaseType)(0),         // 0: bytebase.store.PlanCheckRunConfig.ChangeDatabaseType
-	(PlanCheckRunResult_Result_Status)(0),              // 1: bytebase.store.PlanCheckRunResult.Result.Status
-	(*PreUpdateBackupDetail)(nil),                      // 2: bytebase.store.PreUpdateBackupDetail
-	(*PlanCheckRunConfig)(nil),                         // 3: bytebase.store.PlanCheckRunConfig
-	(*PlanCheckRunResult)(nil),                         // 4: bytebase.store.PlanCheckRunResult
-	nil,                                                // 5: bytebase.store.PlanCheckRunConfig.GhostFlagsEntry
-	(*PlanCheckRunResult_Result)(nil),                  // 6: bytebase.store.PlanCheckRunResult.Result
-	(*PlanCheckRunResult_Result_SqlSummaryReport)(nil), // 7: bytebase.store.PlanCheckRunResult.Result.SqlSummaryReport
-	(*PlanCheckRunResult_Result_SqlReviewReport)(nil),  // 8: bytebase.store.PlanCheckRunResult.Result.SqlReviewReport
-	(*ChangedResources)(nil),                           // 9: bytebase.store.ChangedResources
-	(*Position)(nil),                                   // 10: bytebase.store.Position
+	(PlanCheckRunConfig_ChangeDatabaseType)(0),         // 0: bytebase.internal.store.PlanCheckRunConfig.ChangeDatabaseType
+	(PlanCheckRunResult_Result_Status)(0),              // 1: bytebase.internal.store.PlanCheckRunResult.Result.Status
+	(*PreUpdateBackupDetail)(nil),                      // 2: bytebase.internal.store.PreUpdateBackupDetail
+	(*PlanCheckRunConfig)(nil),                         // 3: bytebase.internal.store.PlanCheckRunConfig
+	(*PlanCheckRunResult)(nil),                         // 4: bytebase.internal.store.PlanCheckRunResult
+	nil,                                                // 5: bytebase.internal.store.PlanCheckRunConfig.GhostFlagsEntry
+	(*PlanCheckRunResult_Result)(nil),                  // 6: bytebase.internal.store.PlanCheckRunResult.Result
+	(*PlanCheckRunResult_Result_SqlSummaryReport)(nil), // 7: bytebase.internal.store.PlanCheckRunResult.Result.SqlSummaryReport
+	(*PlanCheckRunResult_Result_SqlReviewReport)(nil),  // 8: bytebase.internal.store.PlanCheckRunResult.Result.SqlReviewReport
+	(*ChangedResources)(nil),                           // 9: bytebase.internal.store.ChangedResources
+	(*Position)(nil),                                   // 10: bytebase.internal.store.Position
 }
 var file_store_plan_check_run_proto_depIdxs = []int32{
-	0,  // 0: bytebase.store.PlanCheckRunConfig.change_database_type:type_name -> bytebase.store.PlanCheckRunConfig.ChangeDatabaseType
-	5,  // 1: bytebase.store.PlanCheckRunConfig.ghost_flags:type_name -> bytebase.store.PlanCheckRunConfig.GhostFlagsEntry
-	2,  // 2: bytebase.store.PlanCheckRunConfig.pre_update_backup_detail:type_name -> bytebase.store.PreUpdateBackupDetail
-	6,  // 3: bytebase.store.PlanCheckRunResult.results:type_name -> bytebase.store.PlanCheckRunResult.Result
-	1,  // 4: bytebase.store.PlanCheckRunResult.Result.status:type_name -> bytebase.store.PlanCheckRunResult.Result.Status
-	7,  // 5: bytebase.store.PlanCheckRunResult.Result.sql_summary_report:type_name -> bytebase.store.PlanCheckRunResult.Result.SqlSummaryReport
-	8,  // 6: bytebase.store.PlanCheckRunResult.Result.sql_review_report:type_name -> bytebase.store.PlanCheckRunResult.Result.SqlReviewReport
-	9,  // 7: bytebase.store.PlanCheckRunResult.Result.SqlSummaryReport.changed_resources:type_name -> bytebase.store.ChangedResources
-	10, // 8: bytebase.store.PlanCheckRunResult.Result.SqlReviewReport.start_position:type_name -> bytebase.store.Position
-	10, // 9: bytebase.store.PlanCheckRunResult.Result.SqlReviewReport.end_position:type_name -> bytebase.store.Position
+	0,  // 0: bytebase.internal.store.PlanCheckRunConfig.change_database_type:type_name -> bytebase.internal.store.PlanCheckRunConfig.ChangeDatabaseType
+	5,  // 1: bytebase.internal.store.PlanCheckRunConfig.ghost_flags:type_name -> bytebase.internal.store.PlanCheckRunConfig.GhostFlagsEntry
+	2,  // 2: bytebase.internal.store.PlanCheckRunConfig.pre_update_backup_detail:type_name -> bytebase.internal.store.PreUpdateBackupDetail
+	6,  // 3: bytebase.internal.store.PlanCheckRunResult.results:type_name -> bytebase.internal.store.PlanCheckRunResult.Result
+	1,  // 4: bytebase.internal.store.PlanCheckRunResult.Result.status:type_name -> bytebase.internal.store.PlanCheckRunResult.Result.Status
+	7,  // 5: bytebase.internal.store.PlanCheckRunResult.Result.sql_summary_report:type_name -> bytebase.internal.store.PlanCheckRunResult.Result.SqlSummaryReport
+	8,  // 6: bytebase.internal.store.PlanCheckRunResult.Result.sql_review_report:type_name -> bytebase.internal.store.PlanCheckRunResult.Result.SqlReviewReport
+	9,  // 7: bytebase.internal.store.PlanCheckRunResult.Result.SqlSummaryReport.changed_resources:type_name -> bytebase.internal.store.ChangedResources
+	10, // 8: bytebase.internal.store.PlanCheckRunResult.Result.SqlReviewReport.start_position:type_name -> bytebase.internal.store.Position
+	10, // 9: bytebase.internal.store.PlanCheckRunResult.Result.SqlReviewReport.end_position:type_name -> bytebase.internal.store.Position
 	10, // [10:10] is the sub-list for method output_type
 	10, // [10:10] is the sub-list for method input_type
 	10, // [10:10] is the sub-list for extension type_name

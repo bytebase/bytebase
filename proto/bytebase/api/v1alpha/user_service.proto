@@ -1,0 +1,239 @@
+syntax = "proto3";
+
+package bytebase.api.v1alpha;
+
+import "google/api/annotations.proto";
+import "google/api/client.proto";
+import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/field_mask.proto";
+import "google/protobuf/timestamp.proto";
+import "api/v1alpha/annotation.proto";
+import "api/v1alpha/common.proto";
+
+option go_package = "generated-go/v1";
+
+service UserService {
+  // Get the user.
+  // Any authenticated user can get the user.
+  rpc GetUser(GetUserRequest) returns (User) {
+    option (google.api.http) = {get: "/v1/{name=users/*}"};
+    option (google.api.method_signature) = "name";
+    option (bytebase.api.v1alpha.auth_method) = CUSTOM;
+  }
+
+  // Get the current authenticated user.
+  rpc GetCurrentUser(google.protobuf.Empty) returns (User) {
+    option (google.api.http) = {get: "/v1/users/me"};
+    option (bytebase.api.v1alpha.allow_without_credential) = true;
+    option (bytebase.api.v1alpha.auth_method) = CUSTOM;
+  }
+
+  // List all users.
+  // Any authenticated user can list users.
+  rpc ListUsers(ListUsersRequest) returns (ListUsersResponse) {
+    option (google.api.http) = {get: "/v1/users"};
+    option (google.api.method_signature) = "parent";
+    option (bytebase.api.v1alpha.auth_method) = CUSTOM;
+  }
+
+  // Create a user.
+  // When Disallow Signup is enabled, only the caller with bb.users.create on the workspace can create a user.
+  // Otherwise, any unauthenticated user can create a user.
+  rpc CreateUser(CreateUserRequest) returns (User) {
+    option (google.api.http) = {
+      post: "/v1/users"
+      body: "user"
+    };
+    option (google.api.method_signature) = "user";
+    option (bytebase.api.v1alpha.allow_without_credential) = true;
+    option (bytebase.api.v1alpha.auth_method) = CUSTOM;
+    option (bytebase.api.v1alpha.audit) = true;
+  }
+
+  // Only the user itself and the user with bb.users.update permission on the workspace can update the user.
+  rpc UpdateUser(UpdateUserRequest) returns (User) {
+    option (google.api.http) = {
+      patch: "/v1/{user.name=users/*}"
+      body: "user"
+    };
+    option (google.api.method_signature) = "user,update_mask";
+    option (bytebase.api.v1alpha.auth_method) = CUSTOM;
+    option (bytebase.api.v1alpha.audit) = true;
+  }
+
+  // Only the user with bb.users.delete permission on the workspace can delete the user.
+  // The last remaining workspace admin cannot be deleted.
+  rpc DeleteUser(DeleteUserRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {delete: "/v1/{name=users/*}"};
+    option (google.api.method_signature) = "name";
+    option (bytebase.api.v1alpha.auth_method) = CUSTOM;
+    option (bytebase.api.v1alpha.audit) = true;
+  }
+
+  // Only the user with bb.users.undelete permission on the workspace can undelete the user.
+  rpc UndeleteUser(UndeleteUserRequest) returns (User) {
+    option (google.api.http) = {
+      post: "/v1/{name=users/*}:undelete"
+      body: "*"
+    };
+    option (bytebase.api.v1alpha.auth_method) = CUSTOM;
+    option (bytebase.api.v1alpha.audit) = true;
+  }
+}
+
+message GetUserRequest {
+  // The name of the user to retrieve.
+  // Format: users/{user uid or user email}
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/User"}
+  ];
+}
+
+message ListUsersRequest {
+  // The maximum number of users to return. The service may return fewer than
+  // this value.
+  // If unspecified, at most 10 users will be returned.
+  // The maximum value is 1000; values above 1000 will be coerced to 1000.
+  int32 page_size = 1;
+
+  // A page token, received from a previous `ListUsers` call.
+  // Provide this to retrieve the subsequent page.
+  //
+  // When paginating, all other parameters provided to `ListUsers` must match
+  // the call that provided the page token.
+  string page_token = 2;
+
+  // Show deleted users if specified.
+  bool show_deleted = 3;
+
+  // Filter is used to filter users returned in the list.
+  // Supported filter:
+  // - name
+  // - email
+  // - user_type
+  // - state
+  // - project
+  //
+  // For example:
+  // name == "ed"
+  // name.matches("ed")
+  // email == "ed@bytebase.com"
+  // email.matches("ed")
+  // user_type == "SERVICE_ACCOUNT"
+  // user_type in ["SERVICE_ACCOUNT", "USER"]
+  // !(user_type in ["SERVICE_ACCOUNT", "USER"])
+  // state == "DELETED"
+  // project == "projects/sample-project"
+  // You can combine filter conditions like:
+  // name.matches("ed") && project == "projects/sample-project"
+  // (name == "ed" || email == "ed@bytebase.com") && project == "projects/sample-project"
+  string filter = 4;
+}
+
+message ListUsersResponse {
+  // The users from the specified request.
+  repeated User users = 1;
+
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+message CreateUserRequest {
+  // The user to create.
+  User user = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message UpdateUserRequest {
+  // The user to update.
+  //
+  // The user's `name` field is used to identify the user to update.
+  // Format: users/{user}
+  User user = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The list of fields to update.
+  google.protobuf.FieldMask update_mask = 2;
+
+  // The otp_code is used to verify the user's identity by MFA.
+  optional string otp_code = 3;
+
+  // The regenerate_temp_mfa_secret flag means to regenerate temporary MFA secret for user.
+  // This is used for MFA setup. The temporary MFA secret and recovery codes will be returned in the response.
+  bool regenerate_temp_mfa_secret = 4;
+
+  // The regenerate_recovery_codes flag means to regenerate recovery codes for user.
+  bool regenerate_recovery_codes = 5;
+}
+
+message DeleteUserRequest {
+  // The name of the user to delete.
+  // Format: users/{user}
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/User"}
+  ];
+}
+
+message UndeleteUserRequest {
+  // The name of the deleted user.
+  // Format: users/{user}
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/User"}
+  ];
+}
+
+message User {
+  option (google.api.resource) = {
+    type: "bytebase.com/User"
+    pattern: "users/{user}"
+  };
+
+  // The name of the user.
+  // Format: users/{user}. {user} is a system-generated unique ID.
+  string name = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  State state = 2;
+
+  string email = 3;
+
+  string title = 4;
+
+  UserType user_type = 5;
+
+  string password = 7 [(google.api.field_behavior) = INPUT_ONLY];
+
+  string service_key = 8 [(google.api.field_behavior) = INPUT_ONLY];
+
+  // The mfa_enabled flag means if the user has enabled MFA.
+  bool mfa_enabled = 9;
+
+  // The mfa_secret is the temporary secret using in two phase verification.
+  string mfa_secret = 10;
+
+  // The recovery_codes is the temporary recovery codes using in two phase verification.
+  repeated string recovery_codes = 11;
+
+  // Should be a valid E.164 compliant phone number.
+  // Could be empty.
+  string phone = 12;
+
+  message Profile {
+    google.protobuf.Timestamp last_login_time = 1;
+    google.protobuf.Timestamp last_change_password_time = 2;
+    // source means where the user comes from. For now we support Entra ID SCIM sync, so the source could be Entra ID.
+    string source = 3;
+  }
+
+  Profile profile = 13;
+}
+
+enum UserType {
+  USER_TYPE_UNSPECIFIED = 0;
+  USER = 1;
+  SYSTEM_BOT = 2;
+  SERVICE_ACCOUNT = 3;
+}

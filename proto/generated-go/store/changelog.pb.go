@@ -93,7 +93,7 @@ type ChangelogPayload struct {
 	// Format: projects/{project}/sheets/{sheet}
 	Sheet         string                `protobuf:"bytes,5,opt,name=sheet,proto3" json:"sheet,omitempty"`
 	Version       string                `protobuf:"bytes,6,opt,name=version,proto3" json:"version,omitempty"`
-	Type          ChangelogPayload_Type `protobuf:"varint,7,opt,name=type,proto3,enum=bytebase.store.ChangelogPayload_Type" json:"type,omitempty"`
+	Type          ChangelogPayload_Type `protobuf:"varint,7,opt,name=type,proto3,enum=bytebase.internal.store.ChangelogPayload_Type" json:"type,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -574,49 +574,49 @@ var File_store_changelog_proto protoreflect.FileDescriptor
 
 const file_store_changelog_proto_rawDesc = "" +
 	"\n" +
-	"\x15store/changelog.proto\x12\x0ebytebase.store\x1a\x12store/common.proto\"\x80\x03\n" +
+	"\x15store/changelog.proto\x12\x17bytebase.internal.store\x1a\x12store/common.proto\"\x92\x03\n" +
 	"\x10ChangelogPayload\x12\x19\n" +
 	"\btask_run\x18\x01 \x01(\tR\ataskRun\x12\x14\n" +
 	"\x05issue\x18\x02 \x01(\tR\x05issue\x12\x1a\n" +
-	"\brevision\x18\x03 \x01(\x03R\brevision\x12M\n" +
-	"\x11changed_resources\x18\x04 \x01(\v2 .bytebase.store.ChangedResourcesR\x10changedResources\x12\x14\n" +
+	"\brevision\x18\x03 \x01(\x03R\brevision\x12V\n" +
+	"\x11changed_resources\x18\x04 \x01(\v2).bytebase.internal.store.ChangedResourcesR\x10changedResources\x12\x14\n" +
 	"\x05sheet\x18\x05 \x01(\tR\x05sheet\x12\x18\n" +
-	"\aversion\x18\x06 \x01(\tR\aversion\x129\n" +
-	"\x04type\x18\a \x01(\x0e2%.bytebase.store.ChangelogPayload.TypeR\x04type\"e\n" +
+	"\aversion\x18\x06 \x01(\tR\aversion\x12B\n" +
+	"\x04type\x18\a \x01(\x0e2..bytebase.internal.store.ChangelogPayload.TypeR\x04type\"e\n" +
 	"\x04Type\x12\x14\n" +
 	"\x10TYPE_UNSPECIFIED\x10\x00\x12\f\n" +
 	"\bBASELINE\x10\x01\x12\v\n" +
 	"\aMIGRATE\x10\x02\x12\x0f\n" +
 	"\vMIGRATE_SDL\x10\x03\x12\x11\n" +
 	"\rMIGRATE_GHOST\x10\x04\x12\b\n" +
-	"\x04DATA\x10\x06\"Y\n" +
-	"\x10ChangedResources\x12E\n" +
-	"\tdatabases\x18\x01 \x03(\v2'.bytebase.store.ChangedResourceDatabaseR\tdatabases\"n\n" +
+	"\x04DATA\x10\x06\"b\n" +
+	"\x10ChangedResources\x12N\n" +
+	"\tdatabases\x18\x01 \x03(\v20.bytebase.internal.store.ChangedResourceDatabaseR\tdatabases\"w\n" +
 	"\x17ChangedResourceDatabase\x12\x12\n" +
-	"\x04name\x18\x01 \x01(\tR\x04name\x12?\n" +
-	"\aschemas\x18\x02 \x03(\v2%.bytebase.store.ChangedResourceSchemaR\aschemas\"\xb5\x02\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12H\n" +
+	"\aschemas\x18\x02 \x03(\v2..bytebase.internal.store.ChangedResourceSchemaR\aschemas\"\xd9\x02\n" +
 	"\x15ChangedResourceSchema\x12\x12\n" +
-	"\x04name\x18\x01 \x01(\tR\x04name\x12<\n" +
-	"\x06tables\x18\x02 \x03(\v2$.bytebase.store.ChangedResourceTableR\x06tables\x129\n" +
-	"\x05views\x18\x03 \x03(\v2#.bytebase.store.ChangedResourceViewR\x05views\x12E\n" +
-	"\tfunctions\x18\x04 \x03(\v2'.bytebase.store.ChangedResourceFunctionR\tfunctions\x12H\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12E\n" +
+	"\x06tables\x18\x02 \x03(\v2-.bytebase.internal.store.ChangedResourceTableR\x06tables\x12B\n" +
+	"\x05views\x18\x03 \x03(\v2,.bytebase.internal.store.ChangedResourceViewR\x05views\x12N\n" +
+	"\tfunctions\x18\x04 \x03(\v20.bytebase.internal.store.ChangedResourceFunctionR\tfunctions\x12Q\n" +
 	"\n" +
-	"procedures\x18\x05 \x03(\v2(.bytebase.store.ChangedResourceProcedureR\n" +
-	"procedures\"x\n" +
+	"procedures\x18\x05 \x03(\v21.bytebase.internal.store.ChangedResourceProcedureR\n" +
+	"procedures\"\x81\x01\n" +
 	"\x14ChangedResourceTable\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1d\n" +
 	"\n" +
-	"table_rows\x18\x02 \x01(\x03R\ttableRows\x12-\n" +
-	"\x06ranges\x18\x03 \x03(\v2\x15.bytebase.store.RangeR\x06ranges\"X\n" +
+	"table_rows\x18\x02 \x01(\x03R\ttableRows\x126\n" +
+	"\x06ranges\x18\x03 \x03(\v2\x1e.bytebase.internal.store.RangeR\x06ranges\"a\n" +
 	"\x13ChangedResourceView\x12\x12\n" +
-	"\x04name\x18\x01 \x01(\tR\x04name\x12-\n" +
-	"\x06ranges\x18\x02 \x03(\v2\x15.bytebase.store.RangeR\x06ranges\"\\\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x126\n" +
+	"\x06ranges\x18\x02 \x03(\v2\x1e.bytebase.internal.store.RangeR\x06ranges\"e\n" +
 	"\x17ChangedResourceFunction\x12\x12\n" +
-	"\x04name\x18\x01 \x01(\tR\x04name\x12-\n" +
-	"\x06ranges\x18\x02 \x03(\v2\x15.bytebase.store.RangeR\x06ranges\"]\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x126\n" +
+	"\x06ranges\x18\x02 \x03(\v2\x1e.bytebase.internal.store.RangeR\x06ranges\"f\n" +
 	"\x18ChangedResourceProcedure\x12\x12\n" +
-	"\x04name\x18\x01 \x01(\tR\x04name\x12-\n" +
-	"\x06ranges\x18\x02 \x03(\v2\x15.bytebase.store.RangeR\x06rangesB\x14Z\x12generated-go/storeb\x06proto3"
+	"\x04name\x18\x01 \x01(\tR\x04name\x126\n" +
+	"\x06ranges\x18\x02 \x03(\v2\x1e.bytebase.internal.store.RangeR\x06rangesB\x14Z\x12generated-go/storeb\x06proto3"
 
 var (
 	file_store_changelog_proto_rawDescOnce sync.Once
@@ -633,30 +633,30 @@ func file_store_changelog_proto_rawDescGZIP() []byte {
 var file_store_changelog_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
 var file_store_changelog_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
 var file_store_changelog_proto_goTypes = []any{
-	(ChangelogPayload_Type)(0),       // 0: bytebase.store.ChangelogPayload.Type
-	(*ChangelogPayload)(nil),         // 1: bytebase.store.ChangelogPayload
-	(*ChangedResources)(nil),         // 2: bytebase.store.ChangedResources
-	(*ChangedResourceDatabase)(nil),  // 3: bytebase.store.ChangedResourceDatabase
-	(*ChangedResourceSchema)(nil),    // 4: bytebase.store.ChangedResourceSchema
-	(*ChangedResourceTable)(nil),     // 5: bytebase.store.ChangedResourceTable
-	(*ChangedResourceView)(nil),      // 6: bytebase.store.ChangedResourceView
-	(*ChangedResourceFunction)(nil),  // 7: bytebase.store.ChangedResourceFunction
-	(*ChangedResourceProcedure)(nil), // 8: bytebase.store.ChangedResourceProcedure
-	(*Range)(nil),                    // 9: bytebase.store.Range
+	(ChangelogPayload_Type)(0),       // 0: bytebase.internal.store.ChangelogPayload.Type
+	(*ChangelogPayload)(nil),         // 1: bytebase.internal.store.ChangelogPayload
+	(*ChangedResources)(nil),         // 2: bytebase.internal.store.ChangedResources
+	(*ChangedResourceDatabase)(nil),  // 3: bytebase.internal.store.ChangedResourceDatabase
+	(*ChangedResourceSchema)(nil),    // 4: bytebase.internal.store.ChangedResourceSchema
+	(*ChangedResourceTable)(nil),     // 5: bytebase.internal.store.ChangedResourceTable
+	(*ChangedResourceView)(nil),      // 6: bytebase.internal.store.ChangedResourceView
+	(*ChangedResourceFunction)(nil),  // 7: bytebase.internal.store.ChangedResourceFunction
+	(*ChangedResourceProcedure)(nil), // 8: bytebase.internal.store.ChangedResourceProcedure
+	(*Range)(nil),                    // 9: bytebase.internal.store.Range
 }
 var file_store_changelog_proto_depIdxs = []int32{
-	2,  // 0: bytebase.store.ChangelogPayload.changed_resources:type_name -> bytebase.store.ChangedResources
-	0,  // 1: bytebase.store.ChangelogPayload.type:type_name -> bytebase.store.ChangelogPayload.Type
-	3,  // 2: bytebase.store.ChangedResources.databases:type_name -> bytebase.store.ChangedResourceDatabase
-	4,  // 3: bytebase.store.ChangedResourceDatabase.schemas:type_name -> bytebase.store.ChangedResourceSchema
-	5,  // 4: bytebase.store.ChangedResourceSchema.tables:type_name -> bytebase.store.ChangedResourceTable
-	6,  // 5: bytebase.store.ChangedResourceSchema.views:type_name -> bytebase.store.ChangedResourceView
-	7,  // 6: bytebase.store.ChangedResourceSchema.functions:type_name -> bytebase.store.ChangedResourceFunction
-	8,  // 7: bytebase.store.ChangedResourceSchema.procedures:type_name -> bytebase.store.ChangedResourceProcedure
-	9,  // 8: bytebase.store.ChangedResourceTable.ranges:type_name -> bytebase.store.Range
-	9,  // 9: bytebase.store.ChangedResourceView.ranges:type_name -> bytebase.store.Range
-	9,  // 10: bytebase.store.ChangedResourceFunction.ranges:type_name -> bytebase.store.Range
-	9,  // 11: bytebase.store.ChangedResourceProcedure.ranges:type_name -> bytebase.store.Range
+	2,  // 0: bytebase.internal.store.ChangelogPayload.changed_resources:type_name -> bytebase.internal.store.ChangedResources
+	0,  // 1: bytebase.internal.store.ChangelogPayload.type:type_name -> bytebase.internal.store.ChangelogPayload.Type
+	3,  // 2: bytebase.internal.store.ChangedResources.databases:type_name -> bytebase.internal.store.ChangedResourceDatabase
+	4,  // 3: bytebase.internal.store.ChangedResourceDatabase.schemas:type_name -> bytebase.internal.store.ChangedResourceSchema
+	5,  // 4: bytebase.internal.store.ChangedResourceSchema.tables:type_name -> bytebase.internal.store.ChangedResourceTable
+	6,  // 5: bytebase.internal.store.ChangedResourceSchema.views:type_name -> bytebase.internal.store.ChangedResourceView
+	7,  // 6: bytebase.internal.store.ChangedResourceSchema.functions:type_name -> bytebase.internal.store.ChangedResourceFunction
+	8,  // 7: bytebase.internal.store.ChangedResourceSchema.procedures:type_name -> bytebase.internal.store.ChangedResourceProcedure
+	9,  // 8: bytebase.internal.store.ChangedResourceTable.ranges:type_name -> bytebase.internal.store.Range
+	9,  // 9: bytebase.internal.store.ChangedResourceView.ranges:type_name -> bytebase.internal.store.Range
+	9,  // 10: bytebase.internal.store.ChangedResourceFunction.ranges:type_name -> bytebase.internal.store.Range
+	9,  // 11: bytebase.internal.store.ChangedResourceProcedure.ranges:type_name -> bytebase.internal.store.Range
 	12, // [12:12] is the sub-list for method output_type
 	12, // [12:12] is the sub-list for method input_type
 	12, // [12:12] is the sub-list for extension type_name

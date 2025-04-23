@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package bytebase.internal.store;
+
+option go_package = "generated-go/store";
+
+message GroupMember {
+  // Member is the principal who belong to this group.
+  //
+  // Format: users/{userUID}.
+  string member = 1;
+
+  enum Role {
+    ROLE_UNSPECIFIED = 0;
+    OWNER = 1;
+    MEMBER = 2;
+  }
+
+  Role role = 2;
+}
+
+message GroupPayload {
+  repeated GroupMember members = 1;
+  // source means where the group comes from. For now we support Entra ID SCIM sync, so the source could be Entra ID.
+  string source = 2;
+}

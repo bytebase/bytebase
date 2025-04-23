@@ -1,0 +1,103 @@
+syntax = "proto3";
+
+package bytebase.api.v1alpha;
+
+import "google/api/annotations.proto";
+import "google/api/client.proto";
+import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
+import "api/v1alpha/annotation.proto";
+
+option go_package = "generated-go/v1";
+
+service InstanceRoleService {
+  rpc GetInstanceRole(GetInstanceRoleRequest) returns (InstanceRole) {
+    option (google.api.http) = {get: "/v1/{name=instances/*/roles/*}"};
+    option (google.api.method_signature) = "name";
+    option (bytebase.api.v1alpha.permission) = "bb.instanceRoles.get";
+    option (bytebase.api.v1alpha.auth_method) = IAM;
+  }
+
+  rpc ListInstanceRoles(ListInstanceRolesRequest) returns (ListInstanceRolesResponse) {
+    option (google.api.http) = {get: "/v1/{parent=instances/*}/roles"};
+    option (google.api.method_signature) = "parent";
+    option (bytebase.api.v1alpha.permission) = "bb.instanceRoles.get";
+    option (bytebase.api.v1alpha.auth_method) = IAM;
+  }
+}
+
+message GetInstanceRoleRequest {
+  // The name of the role to retrieve.
+  // Format: instances/{instance}/roles/{role name}
+  // The role name is the unique name for the role.
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/InstanceRole"}
+  ];
+}
+
+message ListInstanceRolesRequest {
+  // The parent, which owns this collection of roles.
+  // Format: instances/{instance}
+  string parent = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Instance"}
+  ];
+
+  // Not used.
+  // The maximum number of roles to return. The service may return fewer than
+  // this value.
+  // If unspecified, at most 10 roles will be returned.
+  // The maximum value is 1000; values above 1000 will be coerced to 1000.
+  int32 page_size = 2;
+
+  // Not used.
+  // A page token, received from a previous `ListInstanceRoles` call.
+  // Provide this to retrieve the subsequent page.
+  //
+  // When paginating, all other parameters provided to `ListInstanceRoles` must match
+  // the call that provided the page token.
+  string page_token = 3;
+
+  // Refresh will refresh and return the latest data.
+  bool refresh = 4;
+}
+
+message ListInstanceRolesResponse {
+  // The roles from the specified request.
+  repeated InstanceRole roles = 1;
+
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+// InstanceRole is the API message for instance role.
+message InstanceRole {
+  option (google.api.resource) = {
+    type: "bytebase.com/InstanceRole"
+    pattern: "instances/{instance}/roles/{role}"
+  };
+
+  // The name of the role.
+  // Format: instances/{instance}/roles/{role}
+  // The role name is the unique name for the role.
+  string name = 1;
+
+  // The role name. It's unique within the instance.
+  string role_name = 2;
+
+  // The role password.
+  optional string password = 3 [(google.api.field_behavior) = INPUT_ONLY];
+
+  // The connection count limit for this role.
+  optional int32 connection_limit = 4;
+
+  // The expiration for the role's password.
+  optional string valid_until = 5;
+
+  // The role attribute.
+  // For PostgreSQL, it containt super_user, no_inherit, create_role, create_db, can_login, replication and bypass_rls. Docs: https://www.postgresql.org/docs/current/role-attributes.html
+  // For MySQL, it's the global privileges as GRANT statements, which means it only contains "GRANT ... ON *.* TO ...". Docs: https://dev.mysql.com/doc/refman/8.0/en/grant.html
+  optional string attribute = 6;
+}

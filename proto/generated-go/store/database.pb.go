@@ -1272,7 +1272,7 @@ type TaskMetadata struct {
 	// The predecessor tasks of the task.
 	Predecessors []string `protobuf:"bytes,7,rep,name=predecessors,proto3" json:"predecessors,omitempty"`
 	// The state of the task.
-	State TaskMetadata_State `protobuf:"varint,8,opt,name=state,proto3,enum=bytebase.store.TaskMetadata_State" json:"state,omitempty"`
+	State TaskMetadata_State `protobuf:"varint,8,opt,name=state,proto3,enum=bytebase.internal.store.TaskMetadata_State" json:"state,omitempty"`
 	// The condition of the task.
 	Condition string `protobuf:"bytes,9,opt,name=condition,proto3" json:"condition,omitempty"`
 	// The definition of the task.
@@ -1392,11 +1392,11 @@ type StreamMetadata struct {
 	// The comment of the stream.
 	Comment string `protobuf:"bytes,4,opt,name=comment,proto3" json:"comment,omitempty"`
 	// The type of the stream.
-	Type StreamMetadata_Type `protobuf:"varint,5,opt,name=type,proto3,enum=bytebase.store.StreamMetadata_Type" json:"type,omitempty"`
+	Type StreamMetadata_Type `protobuf:"varint,5,opt,name=type,proto3,enum=bytebase.internal.store.StreamMetadata_Type" json:"type,omitempty"`
 	// Indicates whether the stream was last read before the `stale_after` time.
 	Stale bool `protobuf:"varint,6,opt,name=stale,proto3" json:"stale,omitempty"`
 	// The mode of the stream.
-	Mode StreamMetadata_Mode `protobuf:"varint,7,opt,name=mode,proto3,enum=bytebase.store.StreamMetadata_Mode" json:"mode,omitempty"`
+	Mode StreamMetadata_Mode `protobuf:"varint,7,opt,name=mode,proto3,enum=bytebase.internal.store.StreamMetadata_Mode" json:"mode,omitempty"`
 	// The definition of the stream.
 	Definition    string `protobuf:"bytes,8,opt,name=definition,proto3" json:"definition,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -1837,7 +1837,7 @@ type TablePartitionMetadata struct {
 	// The name is the name of a table partition.
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// The type of a table partition.
-	Type TablePartitionMetadata_Type `protobuf:"varint,2,opt,name=type,proto3,enum=bytebase.store.TablePartitionMetadata_Type" json:"type,omitempty"`
+	Type TablePartitionMetadata_Type `protobuf:"varint,2,opt,name=type,proto3,enum=bytebase.internal.store.TablePartitionMetadata_Type" json:"type,omitempty"`
 	// The expression is the expression of a table partition.
 	// For PostgreSQL, the expression is the text of {FOR VALUES
 	// partition_bound_spec}, see
@@ -1989,7 +1989,7 @@ type ColumnMetadata struct {
 	Generation *GenerationMetadata `protobuf:"bytes,14,opt,name=generation,proto3" json:"generation,omitempty"`
 	IsIdentity bool                `protobuf:"varint,17,opt,name=is_identity,json=isIdentity,proto3" json:"is_identity,omitempty"`
 	// The identity_generation is for identity columns, PG only.
-	IdentityGeneration ColumnMetadata_IdentityGeneration `protobuf:"varint,15,opt,name=identity_generation,json=identityGeneration,proto3,enum=bytebase.store.ColumnMetadata_IdentityGeneration" json:"identity_generation,omitempty"`
+	IdentityGeneration ColumnMetadata_IdentityGeneration `protobuf:"varint,15,opt,name=identity_generation,json=identityGeneration,proto3,enum=bytebase.internal.store.ColumnMetadata_IdentityGeneration" json:"identity_generation,omitempty"`
 	// The identity_seed is for identity columns, MSSQL only.
 	IdentitySeed int64 `protobuf:"varint,18,opt,name=identity_seed,json=identitySeed,proto3" json:"identity_seed,omitempty"`
 	// The identity_increment is for identity columns, MSSQL only.
@@ -2193,7 +2193,7 @@ func (*ColumnMetadata_DefaultExpression) isColumnMetadata_DefaultValue() {}
 
 type GenerationMetadata struct {
 	state         protoimpl.MessageState  `protogen:"open.v1"`
-	Type          GenerationMetadata_Type `protobuf:"varint,1,opt,name=type,proto3,enum=bytebase.store.GenerationMetadata_Type" json:"type,omitempty"`
+	Type          GenerationMetadata_Type `protobuf:"varint,1,opt,name=type,proto3,enum=bytebase.internal.store.GenerationMetadata_Type" json:"type,omitempty"`
 	Expression    string                  `protobuf:"bytes,2,opt,name=expression,proto3" json:"expression,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -3503,7 +3503,7 @@ type ColumnCatalog struct {
 	Classification string            `protobuf:"bytes,4,opt,name=classification,proto3" json:"classification,omitempty"`
 	ObjectSchema   *ObjectSchema     `protobuf:"bytes,5,opt,name=object_schema,json=objectSchema,proto3,oneof" json:"object_schema,omitempty"`
 	// Deprecated.
-	MaskingLevel MaskingLevel `protobuf:"varint,6,opt,name=masking_level,json=maskingLevel,proto3,enum=bytebase.store.MaskingLevel" json:"masking_level,omitempty"`
+	MaskingLevel MaskingLevel `protobuf:"varint,6,opt,name=masking_level,json=maskingLevel,proto3,enum=bytebase.internal.store.MaskingLevel" json:"masking_level,omitempty"`
 	// Deprecated.
 	FullMaskingAlgorithmId string `protobuf:"bytes,7,opt,name=full_masking_algorithm_id,json=fullMaskingAlgorithmId,proto3" json:"full_masking_algorithm_id,omitempty"`
 	// Deprecated.
@@ -3600,7 +3600,7 @@ func (x *ColumnCatalog) GetPartialMaskingAlgorithmId() string {
 
 type ObjectSchema struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	Type  ObjectSchema_Type      `protobuf:"varint,1,opt,name=type,proto3,enum=bytebase.store.ObjectSchema_Type" json:"type,omitempty"`
+	Type  ObjectSchema_Type      `protobuf:"varint,1,opt,name=type,proto3,enum=bytebase.internal.store.ObjectSchema_Type" json:"type,omitempty"`
 	// Types that are valid to be assigned to Kind:
 	//
 	//	*ObjectSchema_StructKind_
@@ -3788,52 +3788,52 @@ var File_store_database_proto protoreflect.FileDescriptor
 
 const file_store_database_proto_rawDesc = "" +
 	"\n" +
-	"\x14store/database.proto\x12\x0ebytebase.store\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1egoogle/protobuf/wrappers.proto\x1a\x12store/common.proto\"\xea\x02\n" +
-	"\x10DatabaseMetadata\x12D\n" +
-	"\x06labels\x18\x01 \x03(\v2,.bytebase.store.DatabaseMetadata.LabelsEntryR\x06labels\x12@\n" +
+	"\x14store/database.proto\x12\x17bytebase.internal.store\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1egoogle/protobuf/wrappers.proto\x1a\x12store/common.proto\"\xfc\x02\n" +
+	"\x10DatabaseMetadata\x12M\n" +
+	"\x06labels\x18\x01 \x03(\v25.bytebase.internal.store.DatabaseMetadata.LabelsEntryR\x06labels\x12@\n" +
 	"\x0elast_sync_time\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\flastSyncTime\x12)\n" +
 	"\x10backup_available\x18\x03 \x01(\bR\x0fbackupAvailable\x12\x1c\n" +
-	"\tdatashare\x18\x04 \x01(\bR\tdatashare\x120\n" +
-	"\asecrets\x18\x05 \x03(\v2\x16.bytebase.store.SecretR\asecrets\x12\x18\n" +
+	"\tdatashare\x18\x04 \x01(\bR\tdatashare\x129\n" +
+	"\asecrets\x18\x05 \x03(\v2\x1f.bytebase.internal.store.SecretR\asecrets\x12\x18\n" +
 	"\adrifted\x18\x06 \x01(\bR\adrifted\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x96\x03\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xb1\x03\n" +
 	"\x16DatabaseSchemaMetadata\x12\x12\n" +
-	"\x04name\x18\x01 \x01(\tR\x04name\x128\n" +
-	"\aschemas\x18\x02 \x03(\v2\x1e.bytebase.store.SchemaMetadataR\aschemas\x12#\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12A\n" +
+	"\aschemas\x18\x02 \x03(\v2'.bytebase.internal.store.SchemaMetadataR\aschemas\x12#\n" +
 	"\rcharacter_set\x18\x03 \x01(\tR\fcharacterSet\x12\x1c\n" +
-	"\tcollation\x18\x04 \x01(\tR\tcollation\x12A\n" +
+	"\tcollation\x18\x04 \x01(\tR\tcollation\x12J\n" +
 	"\n" +
-	"extensions\x18\x05 \x03(\v2!.bytebase.store.ExtensionMetadataR\n" +
+	"extensions\x18\x05 \x03(\v2*.bytebase.internal.store.ExtensionMetadataR\n" +
 	"extensions\x12\x1c\n" +
 	"\tdatashare\x18\x06 \x01(\bR\tdatashare\x12!\n" +
-	"\fservice_name\x18\a \x01(\tR\vserviceName\x12Q\n" +
-	"\x10linked_databases\x18\b \x03(\v2&.bytebase.store.LinkedDatabaseMetadataR\x0flinkedDatabases\x12\x14\n" +
+	"\fservice_name\x18\a \x01(\tR\vserviceName\x12Z\n" +
+	"\x10linked_databases\x18\b \x03(\v2/.bytebase.internal.store.LinkedDatabaseMetadataR\x0flinkedDatabases\x12\x14\n" +
 	"\x05owner\x18\t \x01(\tR\x05owner\"\\\n" +
 	"\x16LinkedDatabaseMetadata\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1a\n" +
 	"\busername\x18\x02 \x01(\tR\busername\x12\x12\n" +
-	"\x04host\x18\x03 \x01(\tR\x04host\"\xd1\x06\n" +
+	"\x04host\x18\x03 \x01(\tR\x04host\"\xbd\a\n" +
 	"\x0eSchemaMetadata\x12\x12\n" +
-	"\x04name\x18\x01 \x01(\tR\x04name\x125\n" +
-	"\x06tables\x18\x02 \x03(\v2\x1d.bytebase.store.TableMetadataR\x06tables\x12N\n" +
-	"\x0fexternal_tables\x18\x03 \x03(\v2%.bytebase.store.ExternalTableMetadataR\x0eexternalTables\x122\n" +
-	"\x05views\x18\x04 \x03(\v2\x1c.bytebase.store.ViewMetadataR\x05views\x12>\n" +
-	"\tfunctions\x18\x05 \x03(\v2 .bytebase.store.FunctionMetadataR\tfunctions\x12A\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12>\n" +
+	"\x06tables\x18\x02 \x03(\v2&.bytebase.internal.store.TableMetadataR\x06tables\x12W\n" +
+	"\x0fexternal_tables\x18\x03 \x03(\v2..bytebase.internal.store.ExternalTableMetadataR\x0eexternalTables\x12;\n" +
+	"\x05views\x18\x04 \x03(\v2%.bytebase.internal.store.ViewMetadataR\x05views\x12G\n" +
+	"\tfunctions\x18\x05 \x03(\v2).bytebase.internal.store.FunctionMetadataR\tfunctions\x12J\n" +
 	"\n" +
-	"procedures\x18\x06 \x03(\v2!.bytebase.store.ProcedureMetadataR\n" +
-	"procedures\x128\n" +
-	"\astreams\x18\a \x03(\v2\x1e.bytebase.store.StreamMetadataR\astreams\x122\n" +
-	"\x05tasks\x18\b \x03(\v2\x1c.bytebase.store.TaskMetadataR\x05tasks\x12W\n" +
-	"\x12materialized_views\x18\t \x03(\v2(.bytebase.store.MaterializedViewMetadataR\x11materializedViews\x12>\n" +
+	"procedures\x18\x06 \x03(\v2*.bytebase.internal.store.ProcedureMetadataR\n" +
+	"procedures\x12A\n" +
+	"\astreams\x18\a \x03(\v2'.bytebase.internal.store.StreamMetadataR\astreams\x12;\n" +
+	"\x05tasks\x18\b \x03(\v2%.bytebase.internal.store.TaskMetadataR\x05tasks\x12`\n" +
+	"\x12materialized_views\x18\t \x03(\v21.bytebase.internal.store.MaterializedViewMetadataR\x11materializedViews\x12G\n" +
 	"\tsequences\x18\n" +
-	" \x03(\v2 .bytebase.store.SequenceMetadataR\tsequences\x12;\n" +
-	"\bpackages\x18\v \x03(\v2\x1f.bytebase.store.PackageMetadataR\bpackages\x12\x14\n" +
-	"\x05owner\x18\f \x01(\tR\x05owner\x125\n" +
-	"\x06events\x18\x0e \x03(\v2\x1d.bytebase.store.EventMetadataR\x06events\x12?\n" +
+	" \x03(\v2).bytebase.internal.store.SequenceMetadataR\tsequences\x12D\n" +
+	"\bpackages\x18\v \x03(\v2(.bytebase.internal.store.PackageMetadataR\bpackages\x12\x14\n" +
+	"\x05owner\x18\f \x01(\tR\x05owner\x12>\n" +
+	"\x06events\x18\x0e \x03(\v2&.bytebase.internal.store.EventMetadataR\x06events\x12H\n" +
 	"\n" +
-	"enum_types\x18\x0f \x03(\v2 .bytebase.store.EnumTypeMetadataR\tenumTypes\x12\x1b\n" +
+	"enum_types\x18\x0f \x03(\v2).bytebase.internal.store.EnumTypeMetadataR\tenumTypes\x12\x1b\n" +
 	"\tskip_dump\x18\x10 \x01(\bR\bskipDump\"u\n" +
 	"\x10EnumTypeMetadata\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x16\n" +
@@ -3877,7 +3877,7 @@ const file_store_database_proto_rawDesc = "" +
 	"\x14collation_connection\x18\b \x01(\tR\x13collationConnection\x12\x18\n" +
 	"\acomment\x18\t \x01(\tR\acomment\x12\x1b\n" +
 	"\tskip_dump\x18\n" +
-	" \x01(\bR\bskipDump\"\x80\x03\n" +
+	" \x01(\bR\bskipDump\"\x89\x03\n" +
 	"\fTaskMetadata\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x0e\n" +
 	"\x02id\x18\x02 \x01(\tR\x02id\x12\x14\n" +
@@ -3885,8 +3885,8 @@ const file_store_database_proto_rawDesc = "" +
 	"\acomment\x18\x04 \x01(\tR\acomment\x12\x1c\n" +
 	"\twarehouse\x18\x05 \x01(\tR\twarehouse\x12\x1a\n" +
 	"\bschedule\x18\x06 \x01(\tR\bschedule\x12\"\n" +
-	"\fpredecessors\x18\a \x03(\tR\fpredecessors\x128\n" +
-	"\x05state\x18\b \x01(\x0e2\".bytebase.store.TaskMetadata.StateR\x05state\x12\x1c\n" +
+	"\fpredecessors\x18\a \x03(\tR\fpredecessors\x12A\n" +
+	"\x05state\x18\b \x01(\x0e2+.bytebase.internal.store.TaskMetadata.StateR\x05state\x12\x1c\n" +
 	"\tcondition\x18\t \x01(\tR\tcondition\x12\x1e\n" +
 	"\n" +
 	"definition\x18\n" +
@@ -3895,16 +3895,16 @@ const file_store_database_proto_rawDesc = "" +
 	"\x05State\x12\x15\n" +
 	"\x11STATE_UNSPECIFIED\x10\x00\x12\x11\n" +
 	"\rSTATE_STARTED\x10\x01\x12\x13\n" +
-	"\x0fSTATE_SUSPENDED\x10\x02\"\xa5\x03\n" +
+	"\x0fSTATE_SUSPENDED\x10\x02\"\xb7\x03\n" +
 	"\x0eStreamMetadata\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1d\n" +
 	"\n" +
 	"table_name\x18\x02 \x01(\tR\ttableName\x12\x14\n" +
 	"\x05owner\x18\x03 \x01(\tR\x05owner\x12\x18\n" +
-	"\acomment\x18\x04 \x01(\tR\acomment\x127\n" +
-	"\x04type\x18\x05 \x01(\x0e2#.bytebase.store.StreamMetadata.TypeR\x04type\x12\x14\n" +
-	"\x05stale\x18\x06 \x01(\bR\x05stale\x127\n" +
-	"\x04mode\x18\a \x01(\x0e2#.bytebase.store.StreamMetadata.ModeR\x04mode\x12\x1e\n" +
+	"\acomment\x18\x04 \x01(\tR\acomment\x12@\n" +
+	"\x04type\x18\x05 \x01(\x0e2,.bytebase.internal.store.StreamMetadata.TypeR\x04type\x12\x14\n" +
+	"\x05stale\x18\x06 \x01(\bR\x05stale\x12@\n" +
+	"\x04mode\x18\a \x01(\x0e2,.bytebase.internal.store.StreamMetadata.ModeR\x04mode\x12\x1e\n" +
 	"\n" +
 	"definition\x18\b \x01(\tR\n" +
 	"definition\",\n" +
@@ -3916,11 +3916,11 @@ const file_store_database_proto_rawDesc = "" +
 	"\x10MODE_UNSPECIFIED\x10\x00\x12\x10\n" +
 	"\fMODE_DEFAULT\x10\x01\x12\x14\n" +
 	"\x10MODE_APPEND_ONLY\x10\x02\x12\x14\n" +
-	"\x10MODE_INSERT_ONLY\x10\x03\"\xb8\x06\n" +
+	"\x10MODE_INSERT_ONLY\x10\x03\"\xee\x06\n" +
 	"\rTableMetadata\x12\x12\n" +
-	"\x04name\x18\x01 \x01(\tR\x04name\x128\n" +
-	"\acolumns\x18\x02 \x03(\v2\x1e.bytebase.store.ColumnMetadataR\acolumns\x127\n" +
-	"\aindexes\x18\x03 \x03(\v2\x1d.bytebase.store.IndexMetadataR\aindexes\x12\x16\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12A\n" +
+	"\acolumns\x18\x02 \x03(\v2'.bytebase.internal.store.ColumnMetadataR\acolumns\x12@\n" +
+	"\aindexes\x18\x03 \x03(\v2&.bytebase.internal.store.IndexMetadataR\aindexes\x12\x16\n" +
 	"\x06engine\x18\x04 \x01(\tR\x06engine\x12\x1c\n" +
 	"\tcollation\x18\x05 \x01(\tR\tcollation\x12\x18\n" +
 	"\acharset\x18\x11 \x01(\tR\acharset\x12\x1b\n" +
@@ -3932,37 +3932,37 @@ const file_store_database_proto_rawDesc = "" +
 	"\x0ecreate_options\x18\n" +
 	" \x01(\tR\rcreateOptions\x12\x18\n" +
 	"\acomment\x18\v \x01(\tR\acomment\x12!\n" +
-	"\fuser_comment\x18\x0e \x01(\tR\vuserComment\x12E\n" +
-	"\fforeign_keys\x18\f \x03(\v2\".bytebase.store.ForeignKeyMetadataR\vforeignKeys\x12F\n" +
+	"\fuser_comment\x18\x0e \x01(\tR\vuserComment\x12N\n" +
+	"\fforeign_keys\x18\f \x03(\v2+.bytebase.internal.store.ForeignKeyMetadataR\vforeignKeys\x12O\n" +
 	"\n" +
-	"partitions\x18\x0f \x03(\v2&.bytebase.store.TablePartitionMetadataR\n" +
-	"partitions\x12T\n" +
-	"\x11check_constraints\x18\x10 \x03(\v2'.bytebase.store.CheckConstraintMetadataR\x10checkConstraints\x12\x14\n" +
+	"partitions\x18\x0f \x03(\v2/.bytebase.internal.store.TablePartitionMetadataR\n" +
+	"partitions\x12]\n" +
+	"\x11check_constraints\x18\x10 \x03(\v20.bytebase.internal.store.CheckConstraintMetadataR\x10checkConstraints\x12\x14\n" +
 	"\x05owner\x18\x12 \x01(\tR\x05owner\x12!\n" +
-	"\fsorting_keys\x18\x13 \x03(\tR\vsortingKeys\x12;\n" +
-	"\btriggers\x18\x14 \x03(\v2\x1f.bytebase.store.TriggerMetadataR\btriggers\x12\x1b\n" +
+	"\fsorting_keys\x18\x13 \x03(\tR\vsortingKeys\x12D\n" +
+	"\btriggers\x18\x14 \x03(\v2(.bytebase.internal.store.TriggerMetadataR\btriggers\x12\x1b\n" +
 	"\tskip_dump\x18\x15 \x01(\bR\bskipDump\"M\n" +
 	"\x17CheckConstraintMetadata\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1e\n" +
 	"\n" +
 	"expression\x18\x02 \x01(\tR\n" +
-	"expression\"\xcd\x01\n" +
+	"expression\"\xd6\x01\n" +
 	"\x15ExternalTableMetadata\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x120\n" +
 	"\x14external_server_name\x18\x02 \x01(\tR\x12externalServerName\x124\n" +
-	"\x16external_database_name\x18\x03 \x01(\tR\x14externalDatabaseName\x128\n" +
-	"\acolumns\x18\x04 \x03(\v2\x1e.bytebase.store.ColumnMetadataR\acolumns\"\xd8\x03\n" +
+	"\x16external_database_name\x18\x03 \x01(\tR\x14externalDatabaseName\x12A\n" +
+	"\acolumns\x18\x04 \x03(\v2'.bytebase.internal.store.ColumnMetadataR\acolumns\"\xf3\x03\n" +
 	"\x16TablePartitionMetadata\x12\x12\n" +
-	"\x04name\x18\x01 \x01(\tR\x04name\x12?\n" +
-	"\x04type\x18\x02 \x01(\x0e2+.bytebase.store.TablePartitionMetadata.TypeR\x04type\x12\x1e\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12H\n" +
+	"\x04type\x18\x02 \x01(\x0e24.bytebase.internal.store.TablePartitionMetadata.TypeR\x04type\x12\x1e\n" +
 	"\n" +
 	"expression\x18\x03 \x01(\tR\n" +
 	"expression\x12\x14\n" +
 	"\x05value\x18\x04 \x01(\tR\x05value\x12\x1f\n" +
 	"\vuse_default\x18\x05 \x01(\tR\n" +
-	"useDefault\x12L\n" +
-	"\rsubpartitions\x18\x06 \x03(\v2&.bytebase.store.TablePartitionMetadataR\rsubpartitions\x127\n" +
-	"\aindexes\x18\a \x03(\v2\x1d.bytebase.store.IndexMetadataR\aindexes\"\x8a\x01\n" +
+	"useDefault\x12U\n" +
+	"\rsubpartitions\x18\x06 \x03(\v2/.bytebase.internal.store.TablePartitionMetadataR\rsubpartitions\x12@\n" +
+	"\aindexes\x18\a \x03(\v2&.bytebase.internal.store.IndexMetadataR\aindexes\"\x8a\x01\n" +
 	"\x04Type\x12\x14\n" +
 	"\x10TYPE_UNSPECIFIED\x10\x00\x12\t\n" +
 	"\x05RANGE\x10\x01\x12\x11\n" +
@@ -3973,7 +3973,7 @@ const file_store_database_proto_rawDesc = "" +
 	"\vLINEAR_HASH\x10\x06\x12\a\n" +
 	"\x03KEY\x10\a\x12\x0e\n" +
 	"\n" +
-	"LINEAR_KEY\x10\b\"\xca\x06\n" +
+	"LINEAR_KEY\x10\b\"\xdc\x06\n" +
 	"\x0eColumnMetadata\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1a\n" +
 	"\bposition\x18\x02 \x01(\x05R\bposition\x128\n" +
@@ -3988,13 +3988,13 @@ const file_store_database_proto_rawDesc = "" +
 	"\tcollation\x18\t \x01(\tR\tcollation\x12\x18\n" +
 	"\acomment\x18\n" +
 	" \x01(\tR\acomment\x12!\n" +
-	"\fuser_comment\x18\f \x01(\tR\vuserComment\x12B\n" +
+	"\fuser_comment\x18\f \x01(\tR\vuserComment\x12K\n" +
 	"\n" +
-	"generation\x18\x0e \x01(\v2\".bytebase.store.GenerationMetadataR\n" +
+	"generation\x18\x0e \x01(\v2+.bytebase.internal.store.GenerationMetadataR\n" +
 	"generation\x12\x1f\n" +
 	"\vis_identity\x18\x11 \x01(\bR\n" +
-	"isIdentity\x12b\n" +
-	"\x13identity_generation\x18\x0f \x01(\x0e21.bytebase.store.ColumnMetadata.IdentityGenerationR\x12identityGeneration\x12#\n" +
+	"isIdentity\x12k\n" +
+	"\x13identity_generation\x18\x0f \x01(\x0e2:.bytebase.internal.store.ColumnMetadata.IdentityGenerationR\x12identityGeneration\x12#\n" +
 	"\ridentity_seed\x18\x12 \x01(\x03R\fidentitySeed\x12-\n" +
 	"\x12identity_increment\x18\x13 \x01(\x03R\x11identityIncrement\"U\n" +
 	"\x12IdentityGeneration\x12#\n" +
@@ -4003,43 +4003,43 @@ const file_store_database_proto_rawDesc = "" +
 	"\x06ALWAYS\x10\x01\x12\x0e\n" +
 	"\n" +
 	"BY_DEFAULT\x10\x02B\x0f\n" +
-	"\rdefault_value\"\xb2\x01\n" +
-	"\x12GenerationMetadata\x12;\n" +
-	"\x04type\x18\x01 \x01(\x0e2'.bytebase.store.GenerationMetadata.TypeR\x04type\x12\x1e\n" +
+	"\rdefault_value\"\xbb\x01\n" +
+	"\x12GenerationMetadata\x12D\n" +
+	"\x04type\x18\x01 \x01(\x0e20.bytebase.internal.store.GenerationMetadata.TypeR\x04type\x12\x1e\n" +
 	"\n" +
 	"expression\x18\x02 \x01(\tR\n" +
 	"expression\"?\n" +
 	"\x04Type\x12\x14\n" +
 	"\x10TYPE_UNSPECIFIED\x10\x00\x12\x10\n" +
 	"\fTYPE_VIRTUAL\x10\x01\x12\x0f\n" +
-	"\vTYPE_STORED\x10\x02\"\xc1\x02\n" +
+	"\vTYPE_STORED\x10\x02\"\xdc\x02\n" +
 	"\fViewMetadata\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1e\n" +
 	"\n" +
 	"definition\x18\x02 \x01(\tR\n" +
 	"definition\x12\x18\n" +
-	"\acomment\x18\x03 \x01(\tR\acomment\x12O\n" +
-	"\x12dependency_columns\x18\x04 \x03(\v2 .bytebase.store.DependencyColumnR\x11dependencyColumns\x128\n" +
-	"\acolumns\x18\x05 \x03(\v2\x1e.bytebase.store.ColumnMetadataR\acolumns\x12;\n" +
-	"\btriggers\x18\x06 \x03(\v2\x1f.bytebase.store.TriggerMetadataR\btriggers\x12\x1b\n" +
+	"\acomment\x18\x03 \x01(\tR\acomment\x12X\n" +
+	"\x12dependency_columns\x18\x04 \x03(\v2).bytebase.internal.store.DependencyColumnR\x11dependencyColumns\x12A\n" +
+	"\acolumns\x18\x05 \x03(\v2'.bytebase.internal.store.ColumnMetadataR\acolumns\x12D\n" +
+	"\btriggers\x18\x06 \x03(\v2(.bytebase.internal.store.TriggerMetadataR\btriggers\x12\x1b\n" +
 	"\tskip_dump\x18\a \x01(\bR\bskipDump\"X\n" +
 	"\x10DependencyColumn\x12\x16\n" +
 	"\x06schema\x18\x01 \x01(\tR\x06schema\x12\x14\n" +
 	"\x05table\x18\x02 \x01(\tR\x05table\x12\x16\n" +
-	"\x06column\x18\x03 \x01(\tR\x06column\"\xcc\x02\n" +
+	"\x06column\x18\x03 \x01(\tR\x06column\"\xe7\x02\n" +
 	"\x18MaterializedViewMetadata\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1e\n" +
 	"\n" +
 	"definition\x18\x02 \x01(\tR\n" +
 	"definition\x12\x18\n" +
-	"\acomment\x18\x03 \x01(\tR\acomment\x12O\n" +
-	"\x12dependency_columns\x18\x04 \x03(\v2 .bytebase.store.DependencyColumnR\x11dependencyColumns\x12;\n" +
-	"\btriggers\x18\x05 \x03(\v2\x1f.bytebase.store.TriggerMetadataR\btriggers\x127\n" +
-	"\aindexes\x18\x06 \x03(\v2\x1d.bytebase.store.IndexMetadataR\aindexes\x12\x1b\n" +
+	"\acomment\x18\x03 \x01(\tR\acomment\x12X\n" +
+	"\x12dependency_columns\x18\x04 \x03(\v2).bytebase.internal.store.DependencyColumnR\x11dependencyColumns\x12D\n" +
+	"\btriggers\x18\x05 \x03(\v2(.bytebase.internal.store.TriggerMetadataR\btriggers\x12@\n" +
+	"\aindexes\x18\x06 \x03(\v2&.bytebase.internal.store.IndexMetadataR\aindexes\x12\x1b\n" +
 	"\tskip_dump\x18\a \x01(\bR\bskipDump\"?\n" +
 	"\x0fDependencyTable\x12\x16\n" +
 	"\x06schema\x18\x01 \x01(\tR\x06schema\x12\x14\n" +
-	"\x05table\x18\x02 \x01(\tR\x05table\"\x98\x03\n" +
+	"\x05table\x18\x02 \x01(\tR\x05table\"\xa1\x03\n" +
 	"\x10FunctionMetadata\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1e\n" +
 	"\n" +
@@ -4050,8 +4050,8 @@ const file_store_database_proto_rawDesc = "" +
 	"\x14collation_connection\x18\x05 \x01(\tR\x13collationConnection\x12-\n" +
 	"\x12database_collation\x18\x06 \x01(\tR\x11databaseCollation\x12\x19\n" +
 	"\bsql_mode\x18\a \x01(\tR\asqlMode\x12\x18\n" +
-	"\acomment\x18\b \x01(\tR\acomment\x12L\n" +
-	"\x11dependency_tables\x18\t \x03(\v2\x1f.bytebase.store.DependencyTableR\x10dependencyTables\x12\x1b\n" +
+	"\acomment\x18\b \x01(\tR\acomment\x12U\n" +
+	"\x11dependency_tables\x18\t \x03(\v2(.bytebase.internal.store.DependencyTableR\x10dependencyTables\x12\x1b\n" +
 	"\tskip_dump\x18\n" +
 	" \x01(\bR\bskipDump\"\xb1\x02\n" +
 	"\x11ProcedureMetadata\x12\x12\n" +
@@ -4112,49 +4112,49 @@ const file_store_database_proto_rawDesc = "" +
 	"\x06Secret\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value\x12 \n" +
-	"\vdescription\x18\x03 \x01(\tR\vdescription\"c\n" +
+	"\vdescription\x18\x03 \x01(\tR\vdescription\"l\n" +
 	"\x0eDatabaseConfig\x12\x12\n" +
-	"\x04name\x18\x01 \x01(\tR\x04name\x127\n" +
-	"\aschemas\x18\x02 \x03(\v2\x1d.bytebase.store.SchemaCatalogR\aschemasJ\x04\b\x03\x10\x04\"Y\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12@\n" +
+	"\aschemas\x18\x02 \x03(\v2&.bytebase.internal.store.SchemaCatalogR\aschemasJ\x04\b\x03\x10\x04\"b\n" +
 	"\rSchemaCatalog\x12\x12\n" +
-	"\x04name\x18\x01 \x01(\tR\x04name\x124\n" +
-	"\x06tables\x18\x02 \x03(\v2\x1c.bytebase.store.TableCatalogR\x06tables\"\xdd\x01\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12=\n" +
+	"\x06tables\x18\x02 \x03(\v2%.bytebase.internal.store.TableCatalogR\x06tables\"\xef\x01\n" +
 	"\fTableCatalog\x12\x12\n" +
-	"\x04name\x18\x01 \x01(\tR\x04name\x127\n" +
-	"\acolumns\x18\x02 \x03(\v2\x1d.bytebase.store.ColumnCatalogR\acolumns\x12F\n" +
-	"\robject_schema\x18\a \x01(\v2\x1c.bytebase.store.ObjectSchemaH\x00R\fobjectSchema\x88\x01\x01\x12&\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12@\n" +
+	"\acolumns\x18\x02 \x03(\v2&.bytebase.internal.store.ColumnCatalogR\acolumns\x12O\n" +
+	"\robject_schema\x18\a \x01(\v2%.bytebase.internal.store.ObjectSchemaH\x00R\fobjectSchema\x88\x01\x01\x12&\n" +
 	"\x0eclassification\x18\x03 \x01(\tR\x0eclassificationB\x10\n" +
-	"\x0e_object_schema\"\x87\x04\n" +
+	"\x0e_object_schema\"\xa2\x04\n" +
 	"\rColumnCatalog\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12#\n" +
-	"\rsemantic_type\x18\x02 \x01(\tR\fsemanticType\x12A\n" +
-	"\x06labels\x18\x03 \x03(\v2).bytebase.store.ColumnCatalog.LabelsEntryR\x06labels\x12&\n" +
-	"\x0eclassification\x18\x04 \x01(\tR\x0eclassification\x12F\n" +
-	"\robject_schema\x18\x05 \x01(\v2\x1c.bytebase.store.ObjectSchemaH\x00R\fobjectSchema\x88\x01\x01\x12A\n" +
-	"\rmasking_level\x18\x06 \x01(\x0e2\x1c.bytebase.store.MaskingLevelR\fmaskingLevel\x129\n" +
+	"\rsemantic_type\x18\x02 \x01(\tR\fsemanticType\x12J\n" +
+	"\x06labels\x18\x03 \x03(\v22.bytebase.internal.store.ColumnCatalog.LabelsEntryR\x06labels\x12&\n" +
+	"\x0eclassification\x18\x04 \x01(\tR\x0eclassification\x12O\n" +
+	"\robject_schema\x18\x05 \x01(\v2%.bytebase.internal.store.ObjectSchemaH\x00R\fobjectSchema\x88\x01\x01\x12J\n" +
+	"\rmasking_level\x18\x06 \x01(\x0e2%.bytebase.internal.store.MaskingLevelR\fmaskingLevel\x129\n" +
 	"\x19full_masking_algorithm_id\x18\a \x01(\tR\x16fullMaskingAlgorithmId\x12?\n" +
 	"\x1cpartial_masking_algorithm_id\x18\b \x01(\tR\x19partialMaskingAlgorithmId\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x10\n" +
-	"\x0e_object_schema\"\xe5\x04\n" +
-	"\fObjectSchema\x125\n" +
-	"\x04type\x18\x01 \x01(\x0e2!.bytebase.store.ObjectSchema.TypeR\x04type\x12J\n" +
-	"\vstruct_kind\x18\x02 \x01(\v2'.bytebase.store.ObjectSchema.StructKindH\x00R\n" +
-	"structKind\x12G\n" +
+	"\x0e_object_schema\"\x9b\x05\n" +
+	"\fObjectSchema\x12>\n" +
+	"\x04type\x18\x01 \x01(\x0e2*.bytebase.internal.store.ObjectSchema.TypeR\x04type\x12S\n" +
+	"\vstruct_kind\x18\x02 \x01(\v20.bytebase.internal.store.ObjectSchema.StructKindH\x00R\n" +
+	"structKind\x12P\n" +
 	"\n" +
-	"array_kind\x18\x03 \x01(\v2&.bytebase.store.ObjectSchema.ArrayKindH\x00R\tarrayKind\x12#\n" +
-	"\rsemantic_type\x18\x04 \x01(\tR\fsemanticType\x1a\xc2\x01\n" +
+	"array_kind\x18\x03 \x01(\v2/.bytebase.internal.store.ObjectSchema.ArrayKindH\x00R\tarrayKind\x12#\n" +
+	"\rsemantic_type\x18\x04 \x01(\tR\fsemanticType\x1a\xd4\x01\n" +
 	"\n" +
-	"StructKind\x12W\n" +
+	"StructKind\x12`\n" +
 	"\n" +
-	"properties\x18\x01 \x03(\v27.bytebase.store.ObjectSchema.StructKind.PropertiesEntryR\n" +
-	"properties\x1a[\n" +
+	"properties\x18\x01 \x03(\v2@.bytebase.internal.store.ObjectSchema.StructKind.PropertiesEntryR\n" +
+	"properties\x1ad\n" +
 	"\x0fPropertiesEntry\x12\x10\n" +
-	"\x03key\x18\x01 \x01(\tR\x03key\x122\n" +
-	"\x05value\x18\x02 \x01(\v2\x1c.bytebase.store.ObjectSchemaR\x05value:\x028\x01\x1a=\n" +
-	"\tArrayKind\x120\n" +
-	"\x04kind\x18\x01 \x01(\v2\x1c.bytebase.store.ObjectSchemaR\x04kind\"X\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12;\n" +
+	"\x05value\x18\x02 \x01(\v2%.bytebase.internal.store.ObjectSchemaR\x05value:\x028\x01\x1aF\n" +
+	"\tArrayKind\x129\n" +
+	"\x04kind\x18\x01 \x01(\v2%.bytebase.internal.store.ObjectSchemaR\x04kind\"X\n" +
 	"\x04Type\x12\x14\n" +
 	"\x10TYPE_UNSPECIFIED\x10\x00\x12\n" +
 	"\n" +
@@ -4182,111 +4182,111 @@ func file_store_database_proto_rawDescGZIP() []byte {
 var file_store_database_proto_enumTypes = make([]protoimpl.EnumInfo, 7)
 var file_store_database_proto_msgTypes = make([]protoimpl.MessageInfo, 38)
 var file_store_database_proto_goTypes = []any{
-	(TaskMetadata_State)(0),                // 0: bytebase.store.TaskMetadata.State
-	(StreamMetadata_Type)(0),               // 1: bytebase.store.StreamMetadata.Type
-	(StreamMetadata_Mode)(0),               // 2: bytebase.store.StreamMetadata.Mode
-	(TablePartitionMetadata_Type)(0),       // 3: bytebase.store.TablePartitionMetadata.Type
-	(ColumnMetadata_IdentityGeneration)(0), // 4: bytebase.store.ColumnMetadata.IdentityGeneration
-	(GenerationMetadata_Type)(0),           // 5: bytebase.store.GenerationMetadata.Type
-	(ObjectSchema_Type)(0),                 // 6: bytebase.store.ObjectSchema.Type
-	(*DatabaseMetadata)(nil),               // 7: bytebase.store.DatabaseMetadata
-	(*DatabaseSchemaMetadata)(nil),         // 8: bytebase.store.DatabaseSchemaMetadata
-	(*LinkedDatabaseMetadata)(nil),         // 9: bytebase.store.LinkedDatabaseMetadata
-	(*SchemaMetadata)(nil),                 // 10: bytebase.store.SchemaMetadata
-	(*EnumTypeMetadata)(nil),               // 11: bytebase.store.EnumTypeMetadata
-	(*EventMetadata)(nil),                  // 12: bytebase.store.EventMetadata
-	(*SequenceMetadata)(nil),               // 13: bytebase.store.SequenceMetadata
-	(*TriggerMetadata)(nil),                // 14: bytebase.store.TriggerMetadata
-	(*TaskMetadata)(nil),                   // 15: bytebase.store.TaskMetadata
-	(*StreamMetadata)(nil),                 // 16: bytebase.store.StreamMetadata
-	(*TableMetadata)(nil),                  // 17: bytebase.store.TableMetadata
-	(*CheckConstraintMetadata)(nil),        // 18: bytebase.store.CheckConstraintMetadata
-	(*ExternalTableMetadata)(nil),          // 19: bytebase.store.ExternalTableMetadata
-	(*TablePartitionMetadata)(nil),         // 20: bytebase.store.TablePartitionMetadata
-	(*ColumnMetadata)(nil),                 // 21: bytebase.store.ColumnMetadata
-	(*GenerationMetadata)(nil),             // 22: bytebase.store.GenerationMetadata
-	(*ViewMetadata)(nil),                   // 23: bytebase.store.ViewMetadata
-	(*DependencyColumn)(nil),               // 24: bytebase.store.DependencyColumn
-	(*MaterializedViewMetadata)(nil),       // 25: bytebase.store.MaterializedViewMetadata
-	(*DependencyTable)(nil),                // 26: bytebase.store.DependencyTable
-	(*FunctionMetadata)(nil),               // 27: bytebase.store.FunctionMetadata
-	(*ProcedureMetadata)(nil),              // 28: bytebase.store.ProcedureMetadata
-	(*PackageMetadata)(nil),                // 29: bytebase.store.PackageMetadata
-	(*IndexMetadata)(nil),                  // 30: bytebase.store.IndexMetadata
-	(*ExtensionMetadata)(nil),              // 31: bytebase.store.ExtensionMetadata
-	(*ForeignKeyMetadata)(nil),             // 32: bytebase.store.ForeignKeyMetadata
-	(*InstanceRoleMetadata)(nil),           // 33: bytebase.store.InstanceRoleMetadata
-	(*Secret)(nil),                         // 34: bytebase.store.Secret
-	(*DatabaseConfig)(nil),                 // 35: bytebase.store.DatabaseConfig
-	(*SchemaCatalog)(nil),                  // 36: bytebase.store.SchemaCatalog
-	(*TableCatalog)(nil),                   // 37: bytebase.store.TableCatalog
-	(*ColumnCatalog)(nil),                  // 38: bytebase.store.ColumnCatalog
-	(*ObjectSchema)(nil),                   // 39: bytebase.store.ObjectSchema
-	nil,                                    // 40: bytebase.store.DatabaseMetadata.LabelsEntry
-	nil,                                    // 41: bytebase.store.ColumnCatalog.LabelsEntry
-	(*ObjectSchema_StructKind)(nil),        // 42: bytebase.store.ObjectSchema.StructKind
-	(*ObjectSchema_ArrayKind)(nil),         // 43: bytebase.store.ObjectSchema.ArrayKind
-	nil,                                    // 44: bytebase.store.ObjectSchema.StructKind.PropertiesEntry
+	(TaskMetadata_State)(0),                // 0: bytebase.internal.store.TaskMetadata.State
+	(StreamMetadata_Type)(0),               // 1: bytebase.internal.store.StreamMetadata.Type
+	(StreamMetadata_Mode)(0),               // 2: bytebase.internal.store.StreamMetadata.Mode
+	(TablePartitionMetadata_Type)(0),       // 3: bytebase.internal.store.TablePartitionMetadata.Type
+	(ColumnMetadata_IdentityGeneration)(0), // 4: bytebase.internal.store.ColumnMetadata.IdentityGeneration
+	(GenerationMetadata_Type)(0),           // 5: bytebase.internal.store.GenerationMetadata.Type
+	(ObjectSchema_Type)(0),                 // 6: bytebase.internal.store.ObjectSchema.Type
+	(*DatabaseMetadata)(nil),               // 7: bytebase.internal.store.DatabaseMetadata
+	(*DatabaseSchemaMetadata)(nil),         // 8: bytebase.internal.store.DatabaseSchemaMetadata
+	(*LinkedDatabaseMetadata)(nil),         // 9: bytebase.internal.store.LinkedDatabaseMetadata
+	(*SchemaMetadata)(nil),                 // 10: bytebase.internal.store.SchemaMetadata
+	(*EnumTypeMetadata)(nil),               // 11: bytebase.internal.store.EnumTypeMetadata
+	(*EventMetadata)(nil),                  // 12: bytebase.internal.store.EventMetadata
+	(*SequenceMetadata)(nil),               // 13: bytebase.internal.store.SequenceMetadata
+	(*TriggerMetadata)(nil),                // 14: bytebase.internal.store.TriggerMetadata
+	(*TaskMetadata)(nil),                   // 15: bytebase.internal.store.TaskMetadata
+	(*StreamMetadata)(nil),                 // 16: bytebase.internal.store.StreamMetadata
+	(*TableMetadata)(nil),                  // 17: bytebase.internal.store.TableMetadata
+	(*CheckConstraintMetadata)(nil),        // 18: bytebase.internal.store.CheckConstraintMetadata
+	(*ExternalTableMetadata)(nil),          // 19: bytebase.internal.store.ExternalTableMetadata
+	(*TablePartitionMetadata)(nil),         // 20: bytebase.internal.store.TablePartitionMetadata
+	(*ColumnMetadata)(nil),                 // 21: bytebase.internal.store.ColumnMetadata
+	(*GenerationMetadata)(nil),             // 22: bytebase.internal.store.GenerationMetadata
+	(*ViewMetadata)(nil),                   // 23: bytebase.internal.store.ViewMetadata
+	(*DependencyColumn)(nil),               // 24: bytebase.internal.store.DependencyColumn
+	(*MaterializedViewMetadata)(nil),       // 25: bytebase.internal.store.MaterializedViewMetadata
+	(*DependencyTable)(nil),                // 26: bytebase.internal.store.DependencyTable
+	(*FunctionMetadata)(nil),               // 27: bytebase.internal.store.FunctionMetadata
+	(*ProcedureMetadata)(nil),              // 28: bytebase.internal.store.ProcedureMetadata
+	(*PackageMetadata)(nil),                // 29: bytebase.internal.store.PackageMetadata
+	(*IndexMetadata)(nil),                  // 30: bytebase.internal.store.IndexMetadata
+	(*ExtensionMetadata)(nil),              // 31: bytebase.internal.store.ExtensionMetadata
+	(*ForeignKeyMetadata)(nil),             // 32: bytebase.internal.store.ForeignKeyMetadata
+	(*InstanceRoleMetadata)(nil),           // 33: bytebase.internal.store.InstanceRoleMetadata
+	(*Secret)(nil),                         // 34: bytebase.internal.store.Secret
+	(*DatabaseConfig)(nil),                 // 35: bytebase.internal.store.DatabaseConfig
+	(*SchemaCatalog)(nil),                  // 36: bytebase.internal.store.SchemaCatalog
+	(*TableCatalog)(nil),                   // 37: bytebase.internal.store.TableCatalog
+	(*ColumnCatalog)(nil),                  // 38: bytebase.internal.store.ColumnCatalog
+	(*ObjectSchema)(nil),                   // 39: bytebase.internal.store.ObjectSchema
+	nil,                                    // 40: bytebase.internal.store.DatabaseMetadata.LabelsEntry
+	nil,                                    // 41: bytebase.internal.store.ColumnCatalog.LabelsEntry
+	(*ObjectSchema_StructKind)(nil),        // 42: bytebase.internal.store.ObjectSchema.StructKind
+	(*ObjectSchema_ArrayKind)(nil),         // 43: bytebase.internal.store.ObjectSchema.ArrayKind
+	nil,                                    // 44: bytebase.internal.store.ObjectSchema.StructKind.PropertiesEntry
 	(*timestamppb.Timestamp)(nil),          // 45: google.protobuf.Timestamp
 	(*wrapperspb.StringValue)(nil),         // 46: google.protobuf.StringValue
-	(MaskingLevel)(0),                      // 47: bytebase.store.MaskingLevel
+	(MaskingLevel)(0),                      // 47: bytebase.internal.store.MaskingLevel
 }
 var file_store_database_proto_depIdxs = []int32{
-	40, // 0: bytebase.store.DatabaseMetadata.labels:type_name -> bytebase.store.DatabaseMetadata.LabelsEntry
-	45, // 1: bytebase.store.DatabaseMetadata.last_sync_time:type_name -> google.protobuf.Timestamp
-	34, // 2: bytebase.store.DatabaseMetadata.secrets:type_name -> bytebase.store.Secret
-	10, // 3: bytebase.store.DatabaseSchemaMetadata.schemas:type_name -> bytebase.store.SchemaMetadata
-	31, // 4: bytebase.store.DatabaseSchemaMetadata.extensions:type_name -> bytebase.store.ExtensionMetadata
-	9,  // 5: bytebase.store.DatabaseSchemaMetadata.linked_databases:type_name -> bytebase.store.LinkedDatabaseMetadata
-	17, // 6: bytebase.store.SchemaMetadata.tables:type_name -> bytebase.store.TableMetadata
-	19, // 7: bytebase.store.SchemaMetadata.external_tables:type_name -> bytebase.store.ExternalTableMetadata
-	23, // 8: bytebase.store.SchemaMetadata.views:type_name -> bytebase.store.ViewMetadata
-	27, // 9: bytebase.store.SchemaMetadata.functions:type_name -> bytebase.store.FunctionMetadata
-	28, // 10: bytebase.store.SchemaMetadata.procedures:type_name -> bytebase.store.ProcedureMetadata
-	16, // 11: bytebase.store.SchemaMetadata.streams:type_name -> bytebase.store.StreamMetadata
-	15, // 12: bytebase.store.SchemaMetadata.tasks:type_name -> bytebase.store.TaskMetadata
-	25, // 13: bytebase.store.SchemaMetadata.materialized_views:type_name -> bytebase.store.MaterializedViewMetadata
-	13, // 14: bytebase.store.SchemaMetadata.sequences:type_name -> bytebase.store.SequenceMetadata
-	29, // 15: bytebase.store.SchemaMetadata.packages:type_name -> bytebase.store.PackageMetadata
-	12, // 16: bytebase.store.SchemaMetadata.events:type_name -> bytebase.store.EventMetadata
-	11, // 17: bytebase.store.SchemaMetadata.enum_types:type_name -> bytebase.store.EnumTypeMetadata
-	0,  // 18: bytebase.store.TaskMetadata.state:type_name -> bytebase.store.TaskMetadata.State
-	1,  // 19: bytebase.store.StreamMetadata.type:type_name -> bytebase.store.StreamMetadata.Type
-	2,  // 20: bytebase.store.StreamMetadata.mode:type_name -> bytebase.store.StreamMetadata.Mode
-	21, // 21: bytebase.store.TableMetadata.columns:type_name -> bytebase.store.ColumnMetadata
-	30, // 22: bytebase.store.TableMetadata.indexes:type_name -> bytebase.store.IndexMetadata
-	32, // 23: bytebase.store.TableMetadata.foreign_keys:type_name -> bytebase.store.ForeignKeyMetadata
-	20, // 24: bytebase.store.TableMetadata.partitions:type_name -> bytebase.store.TablePartitionMetadata
-	18, // 25: bytebase.store.TableMetadata.check_constraints:type_name -> bytebase.store.CheckConstraintMetadata
-	14, // 26: bytebase.store.TableMetadata.triggers:type_name -> bytebase.store.TriggerMetadata
-	21, // 27: bytebase.store.ExternalTableMetadata.columns:type_name -> bytebase.store.ColumnMetadata
-	3,  // 28: bytebase.store.TablePartitionMetadata.type:type_name -> bytebase.store.TablePartitionMetadata.Type
-	20, // 29: bytebase.store.TablePartitionMetadata.subpartitions:type_name -> bytebase.store.TablePartitionMetadata
-	30, // 30: bytebase.store.TablePartitionMetadata.indexes:type_name -> bytebase.store.IndexMetadata
-	46, // 31: bytebase.store.ColumnMetadata.default:type_name -> google.protobuf.StringValue
-	22, // 32: bytebase.store.ColumnMetadata.generation:type_name -> bytebase.store.GenerationMetadata
-	4,  // 33: bytebase.store.ColumnMetadata.identity_generation:type_name -> bytebase.store.ColumnMetadata.IdentityGeneration
-	5,  // 34: bytebase.store.GenerationMetadata.type:type_name -> bytebase.store.GenerationMetadata.Type
-	24, // 35: bytebase.store.ViewMetadata.dependency_columns:type_name -> bytebase.store.DependencyColumn
-	21, // 36: bytebase.store.ViewMetadata.columns:type_name -> bytebase.store.ColumnMetadata
-	14, // 37: bytebase.store.ViewMetadata.triggers:type_name -> bytebase.store.TriggerMetadata
-	24, // 38: bytebase.store.MaterializedViewMetadata.dependency_columns:type_name -> bytebase.store.DependencyColumn
-	14, // 39: bytebase.store.MaterializedViewMetadata.triggers:type_name -> bytebase.store.TriggerMetadata
-	30, // 40: bytebase.store.MaterializedViewMetadata.indexes:type_name -> bytebase.store.IndexMetadata
-	26, // 41: bytebase.store.FunctionMetadata.dependency_tables:type_name -> bytebase.store.DependencyTable
-	36, // 42: bytebase.store.DatabaseConfig.schemas:type_name -> bytebase.store.SchemaCatalog
-	37, // 43: bytebase.store.SchemaCatalog.tables:type_name -> bytebase.store.TableCatalog
-	38, // 44: bytebase.store.TableCatalog.columns:type_name -> bytebase.store.ColumnCatalog
-	39, // 45: bytebase.store.TableCatalog.object_schema:type_name -> bytebase.store.ObjectSchema
-	41, // 46: bytebase.store.ColumnCatalog.labels:type_name -> bytebase.store.ColumnCatalog.LabelsEntry
-	39, // 47: bytebase.store.ColumnCatalog.object_schema:type_name -> bytebase.store.ObjectSchema
-	47, // 48: bytebase.store.ColumnCatalog.masking_level:type_name -> bytebase.store.MaskingLevel
-	6,  // 49: bytebase.store.ObjectSchema.type:type_name -> bytebase.store.ObjectSchema.Type
-	42, // 50: bytebase.store.ObjectSchema.struct_kind:type_name -> bytebase.store.ObjectSchema.StructKind
-	43, // 51: bytebase.store.ObjectSchema.array_kind:type_name -> bytebase.store.ObjectSchema.ArrayKind
-	44, // 52: bytebase.store.ObjectSchema.StructKind.properties:type_name -> bytebase.store.ObjectSchema.StructKind.PropertiesEntry
-	39, // 53: bytebase.store.ObjectSchema.ArrayKind.kind:type_name -> bytebase.store.ObjectSchema
-	39, // 54: bytebase.store.ObjectSchema.StructKind.PropertiesEntry.value:type_name -> bytebase.store.ObjectSchema
+	40, // 0: bytebase.internal.store.DatabaseMetadata.labels:type_name -> bytebase.internal.store.DatabaseMetadata.LabelsEntry
+	45, // 1: bytebase.internal.store.DatabaseMetadata.last_sync_time:type_name -> google.protobuf.Timestamp
+	34, // 2: bytebase.internal.store.DatabaseMetadata.secrets:type_name -> bytebase.internal.store.Secret
+	10, // 3: bytebase.internal.store.DatabaseSchemaMetadata.schemas:type_name -> bytebase.internal.store.SchemaMetadata
+	31, // 4: bytebase.internal.store.DatabaseSchemaMetadata.extensions:type_name -> bytebase.internal.store.ExtensionMetadata
+	9,  // 5: bytebase.internal.store.DatabaseSchemaMetadata.linked_databases:type_name -> bytebase.internal.store.LinkedDatabaseMetadata
+	17, // 6: bytebase.internal.store.SchemaMetadata.tables:type_name -> bytebase.internal.store.TableMetadata
+	19, // 7: bytebase.internal.store.SchemaMetadata.external_tables:type_name -> bytebase.internal.store.ExternalTableMetadata
+	23, // 8: bytebase.internal.store.SchemaMetadata.views:type_name -> bytebase.internal.store.ViewMetadata
+	27, // 9: bytebase.internal.store.SchemaMetadata.functions:type_name -> bytebase.internal.store.FunctionMetadata
+	28, // 10: bytebase.internal.store.SchemaMetadata.procedures:type_name -> bytebase.internal.store.ProcedureMetadata
+	16, // 11: bytebase.internal.store.SchemaMetadata.streams:type_name -> bytebase.internal.store.StreamMetadata
+	15, // 12: bytebase.internal.store.SchemaMetadata.tasks:type_name -> bytebase.internal.store.TaskMetadata
+	25, // 13: bytebase.internal.store.SchemaMetadata.materialized_views:type_name -> bytebase.internal.store.MaterializedViewMetadata
+	13, // 14: bytebase.internal.store.SchemaMetadata.sequences:type_name -> bytebase.internal.store.SequenceMetadata
+	29, // 15: bytebase.internal.store.SchemaMetadata.packages:type_name -> bytebase.internal.store.PackageMetadata
+	12, // 16: bytebase.internal.store.SchemaMetadata.events:type_name -> bytebase.internal.store.EventMetadata
+	11, // 17: bytebase.internal.store.SchemaMetadata.enum_types:type_name -> bytebase.internal.store.EnumTypeMetadata
+	0,  // 18: bytebase.internal.store.TaskMetadata.state:type_name -> bytebase.internal.store.TaskMetadata.State
+	1,  // 19: bytebase.internal.store.StreamMetadata.type:type_name -> bytebase.internal.store.StreamMetadata.Type
+	2,  // 20: bytebase.internal.store.StreamMetadata.mode:type_name -> bytebase.internal.store.StreamMetadata.Mode
+	21, // 21: bytebase.internal.store.TableMetadata.columns:type_name -> bytebase.internal.store.ColumnMetadata
+	30, // 22: bytebase.internal.store.TableMetadata.indexes:type_name -> bytebase.internal.store.IndexMetadata
+	32, // 23: bytebase.internal.store.TableMetadata.foreign_keys:type_name -> bytebase.internal.store.ForeignKeyMetadata
+	20, // 24: bytebase.internal.store.TableMetadata.partitions:type_name -> bytebase.internal.store.TablePartitionMetadata
+	18, // 25: bytebase.internal.store.TableMetadata.check_constraints:type_name -> bytebase.internal.store.CheckConstraintMetadata
+	14, // 26: bytebase.internal.store.TableMetadata.triggers:type_name -> bytebase.internal.store.TriggerMetadata
+	21, // 27: bytebase.internal.store.ExternalTableMetadata.columns:type_name -> bytebase.internal.store.ColumnMetadata
+	3,  // 28: bytebase.internal.store.TablePartitionMetadata.type:type_name -> bytebase.internal.store.TablePartitionMetadata.Type
+	20, // 29: bytebase.internal.store.TablePartitionMetadata.subpartitions:type_name -> bytebase.internal.store.TablePartitionMetadata
+	30, // 30: bytebase.internal.store.TablePartitionMetadata.indexes:type_name -> bytebase.internal.store.IndexMetadata
+	46, // 31: bytebase.internal.store.ColumnMetadata.default:type_name -> google.protobuf.StringValue
+	22, // 32: bytebase.internal.store.ColumnMetadata.generation:type_name -> bytebase.internal.store.GenerationMetadata
+	4,  // 33: bytebase.internal.store.ColumnMetadata.identity_generation:type_name -> bytebase.internal.store.ColumnMetadata.IdentityGeneration
+	5,  // 34: bytebase.internal.store.GenerationMetadata.type:type_name -> bytebase.internal.store.GenerationMetadata.Type
+	24, // 35: bytebase.internal.store.ViewMetadata.dependency_columns:type_name -> bytebase.internal.store.DependencyColumn
+	21, // 36: bytebase.internal.store.ViewMetadata.columns:type_name -> bytebase.internal.store.ColumnMetadata
+	14, // 37: bytebase.internal.store.ViewMetadata.triggers:type_name -> bytebase.internal.store.TriggerMetadata
+	24, // 38: bytebase.internal.store.MaterializedViewMetadata.dependency_columns:type_name -> bytebase.internal.store.DependencyColumn
+	14, // 39: bytebase.internal.store.MaterializedViewMetadata.triggers:type_name -> bytebase.internal.store.TriggerMetadata
+	30, // 40: bytebase.internal.store.MaterializedViewMetadata.indexes:type_name -> bytebase.internal.store.IndexMetadata
+	26, // 41: bytebase.internal.store.FunctionMetadata.dependency_tables:type_name -> bytebase.internal.store.DependencyTable
+	36, // 42: bytebase.internal.store.DatabaseConfig.schemas:type_name -> bytebase.internal.store.SchemaCatalog
+	37, // 43: bytebase.internal.store.SchemaCatalog.tables:type_name -> bytebase.internal.store.TableCatalog
+	38, // 44: bytebase.internal.store.TableCatalog.columns:type_name -> bytebase.internal.store.ColumnCatalog
+	39, // 45: bytebase.internal.store.TableCatalog.object_schema:type_name -> bytebase.internal.store.ObjectSchema
+	41, // 46: bytebase.internal.store.ColumnCatalog.labels:type_name -> bytebase.internal.store.ColumnCatalog.LabelsEntry
+	39, // 47: bytebase.internal.store.ColumnCatalog.object_schema:type_name -> bytebase.internal.store.ObjectSchema
+	47, // 48: bytebase.internal.store.ColumnCatalog.masking_level:type_name -> bytebase.internal.store.MaskingLevel
+	6,  // 49: bytebase.internal.store.ObjectSchema.type:type_name -> bytebase.internal.store.ObjectSchema.Type
+	42, // 50: bytebase.internal.store.ObjectSchema.struct_kind:type_name -> bytebase.internal.store.ObjectSchema.StructKind
+	43, // 51: bytebase.internal.store.ObjectSchema.array_kind:type_name -> bytebase.internal.store.ObjectSchema.ArrayKind
+	44, // 52: bytebase.internal.store.ObjectSchema.StructKind.properties:type_name -> bytebase.internal.store.ObjectSchema.StructKind.PropertiesEntry
+	39, // 53: bytebase.internal.store.ObjectSchema.ArrayKind.kind:type_name -> bytebase.internal.store.ObjectSchema
+	39, // 54: bytebase.internal.store.ObjectSchema.StructKind.PropertiesEntry.value:type_name -> bytebase.internal.store.ObjectSchema
 	55, // [55:55] is the sub-list for method output_type
 	55, // [55:55] is the sub-list for method input_type
 	55, // [55:55] is the sub-list for extension type_name

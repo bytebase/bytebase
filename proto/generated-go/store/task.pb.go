@@ -42,7 +42,7 @@ type TaskPayload struct {
 	TaskReleaseSource *TaskReleaseSource `protobuf:"bytes,13,opt,name=task_release_source,json=taskReleaseSource,proto3" json:"task_release_source,omitempty"`
 	// Export data fields.
 	Password      string       `protobuf:"bytes,14,opt,name=password,proto3" json:"password,omitempty"`
-	Format        ExportFormat `protobuf:"varint,15,opt,name=format,proto3,enum=bytebase.store.ExportFormat" json:"format,omitempty"`
+	Format        ExportFormat `protobuf:"varint,15,opt,name=format,proto3,enum=bytebase.internal.store.ExportFormat" json:"format,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -231,7 +231,7 @@ var File_store_task_proto protoreflect.FileDescriptor
 
 const file_store_task_proto_rawDesc = "" +
 	"\n" +
-	"\x10store/task.proto\x12\x0ebytebase.store\x1a\x12store/common.proto\x1a\x1astore/plan_check_run.proto\"\xd4\x05\n" +
+	"\x10store/task.proto\x12\x17bytebase.internal.store\x1a\x12store/common.proto\x1a\x1astore/plan_check_run.proto\"\xf8\x05\n" +
 	"\vTaskPayload\x12\x18\n" +
 	"\askipped\x18\x01 \x01(\bR\askipped\x12%\n" +
 	"\x0eskipped_reason\x18\x02 \x01(\tR\rskippedReason\x12\x17\n" +
@@ -244,12 +244,12 @@ const file_store_task_proto_rawDesc = "" +
 	"\rcharacter_set\x18\b \x01(\tR\fcharacterSet\x12\x1c\n" +
 	"\tcollation\x18\t \x01(\tR\tcollation\x12%\n" +
 	"\x0eschema_version\x18\n" +
-	" \x01(\tR\rschemaVersion\x12^\n" +
-	"\x18pre_update_backup_detail\x18\v \x01(\v2%.bytebase.store.PreUpdateBackupDetailR\x15preUpdateBackupDetail\x12<\n" +
-	"\x05flags\x18\f \x03(\v2&.bytebase.store.TaskPayload.FlagsEntryR\x05flags\x12Q\n" +
-	"\x13task_release_source\x18\r \x01(\v2!.bytebase.store.TaskReleaseSourceR\x11taskReleaseSource\x12\x1a\n" +
-	"\bpassword\x18\x0e \x01(\tR\bpassword\x124\n" +
-	"\x06format\x18\x0f \x01(\x0e2\x1c.bytebase.store.ExportFormatR\x06format\x1a8\n" +
+	" \x01(\tR\rschemaVersion\x12g\n" +
+	"\x18pre_update_backup_detail\x18\v \x01(\v2..bytebase.internal.store.PreUpdateBackupDetailR\x15preUpdateBackupDetail\x12E\n" +
+	"\x05flags\x18\f \x03(\v2/.bytebase.internal.store.TaskPayload.FlagsEntryR\x05flags\x12Z\n" +
+	"\x13task_release_source\x18\r \x01(\v2*.bytebase.internal.store.TaskReleaseSourceR\x11taskReleaseSource\x12\x1a\n" +
+	"\bpassword\x18\x0e \x01(\tR\bpassword\x12=\n" +
+	"\x06format\x18\x0f \x01(\x0e2%.bytebase.internal.store.ExportFormatR\x06format\x1a8\n" +
 	"\n" +
 	"FlagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
@@ -271,17 +271,17 @@ func file_store_task_proto_rawDescGZIP() []byte {
 
 var file_store_task_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
 var file_store_task_proto_goTypes = []any{
-	(*TaskPayload)(nil),           // 0: bytebase.store.TaskPayload
-	(*TaskReleaseSource)(nil),     // 1: bytebase.store.TaskReleaseSource
-	nil,                           // 2: bytebase.store.TaskPayload.FlagsEntry
-	(*PreUpdateBackupDetail)(nil), // 3: bytebase.store.PreUpdateBackupDetail
-	(ExportFormat)(0),             // 4: bytebase.store.ExportFormat
+	(*TaskPayload)(nil),           // 0: bytebase.internal.store.TaskPayload
+	(*TaskReleaseSource)(nil),     // 1: bytebase.internal.store.TaskReleaseSource
+	nil,                           // 2: bytebase.internal.store.TaskPayload.FlagsEntry
+	(*PreUpdateBackupDetail)(nil), // 3: bytebase.internal.store.PreUpdateBackupDetail
+	(ExportFormat)(0),             // 4: bytebase.internal.store.ExportFormat
 }
 var file_store_task_proto_depIdxs = []int32{
-	3, // 0: bytebase.store.TaskPayload.pre_update_backup_detail:type_name -> bytebase.store.PreUpdateBackupDetail
-	2, // 1: bytebase.store.TaskPayload.flags:type_name -> bytebase.store.TaskPayload.FlagsEntry
-	1, // 2: bytebase.store.TaskPayload.task_release_source:type_name -> bytebase.store.TaskReleaseSource
-	4, // 3: bytebase.store.TaskPayload.format:type_name -> bytebase.store.ExportFormat
+	3, // 0: bytebase.internal.store.TaskPayload.pre_update_backup_detail:type_name -> bytebase.internal.store.PreUpdateBackupDetail
+	2, // 1: bytebase.internal.store.TaskPayload.flags:type_name -> bytebase.internal.store.TaskPayload.FlagsEntry
+	1, // 2: bytebase.internal.store.TaskPayload.task_release_source:type_name -> bytebase.internal.store.TaskReleaseSource
+	4, // 3: bytebase.internal.store.TaskPayload.format:type_name -> bytebase.internal.store.ExportFormat
 	4, // [4:4] is the sub-list for method output_type
 	4, // [4:4] is the sub-list for method input_type
 	4, // [4:4] is the sub-list for extension type_name

@@ -378,9 +378,9 @@ func (x *MaskingRulePolicy) GetRules() []*MaskingRulePolicy_MaskingRule {
 type SQLReviewRule struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Type          string                 `protobuf:"bytes,1,opt,name=type,proto3" json:"type,omitempty"`
-	Level         SQLReviewRuleLevel     `protobuf:"varint,2,opt,name=level,proto3,enum=bytebase.store.SQLReviewRuleLevel" json:"level,omitempty"`
+	Level         SQLReviewRuleLevel     `protobuf:"varint,2,opt,name=level,proto3,enum=bytebase.internal.store.SQLReviewRuleLevel" json:"level,omitempty"`
 	Payload       string                 `protobuf:"bytes,3,opt,name=payload,proto3" json:"payload,omitempty"`
-	Engine        Engine                 `protobuf:"varint,4,opt,name=engine,proto3,enum=bytebase.store.Engine" json:"engine,omitempty"`
+	Engine        Engine                 `protobuf:"varint,4,opt,name=engine,proto3,enum=bytebase.internal.store.Engine" json:"engine,omitempty"`
 	Comment       string                 `protobuf:"bytes,5,opt,name=comment,proto3" json:"comment,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -614,7 +614,7 @@ func (x *IamPolicy) GetBindings() []*Binding {
 // EnvironmentTierPolicy is the tier of an environment.
 type EnvironmentTierPolicy struct {
 	state           protoimpl.MessageState                `protogen:"open.v1"`
-	EnvironmentTier EnvironmentTierPolicy_EnvironmentTier `protobuf:"varint,1,opt,name=environment_tier,json=environmentTier,proto3,enum=bytebase.store.EnvironmentTierPolicy_EnvironmentTier" json:"environment_tier,omitempty"`
+	EnvironmentTier EnvironmentTierPolicy_EnvironmentTier `protobuf:"varint,1,opt,name=environment_tier,json=environmentTier,proto3,enum=bytebase.internal.store.EnvironmentTierPolicy_EnvironmentTier" json:"environment_tier,omitempty"`
 	Color           string                                `protobuf:"bytes,2,opt,name=color,proto3" json:"color,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
@@ -848,7 +848,7 @@ func (x *RestrictIssueCreationForSQLReviewPolicy) GetDisallow() bool {
 // DataSourceQueryPolicy is the policy configuration for running statements in the SQL editor.
 type DataSourceQueryPolicy struct {
 	state                      protoimpl.MessageState            `protogen:"open.v1"`
-	AdminDataSourceRestriction DataSourceQueryPolicy_Restriction `protobuf:"varint,1,opt,name=admin_data_source_restriction,json=adminDataSourceRestriction,proto3,enum=bytebase.store.DataSourceQueryPolicy_Restriction" json:"admin_data_source_restriction,omitempty"`
+	AdminDataSourceRestriction DataSourceQueryPolicy_Restriction `protobuf:"varint,1,opt,name=admin_data_source_restriction,json=adminDataSourceRestriction,proto3,enum=bytebase.internal.store.DataSourceQueryPolicy_Restriction" json:"admin_data_source_restriction,omitempty"`
 	// Disallow running DDL statements in the SQL editor.
 	DisallowDdl bool `protobuf:"varint,2,opt,name=disallow_ddl,json=disallowDdl,proto3" json:"disallow_ddl,omitempty"`
 	// Disallow running DML statements in the SQL editor.
@@ -911,7 +911,7 @@ func (x *DataSourceQueryPolicy) GetDisallowDml() bool {
 type MaskingExceptionPolicy_MaskingException struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// action is the action that the user can access sensitive data.
-	Action MaskingExceptionPolicy_MaskingException_Action `protobuf:"varint,1,opt,name=action,proto3,enum=bytebase.store.MaskingExceptionPolicy_MaskingException_Action" json:"action,omitempty"`
+	Action MaskingExceptionPolicy_MaskingException_Action `protobuf:"varint,1,opt,name=action,proto3,enum=bytebase.internal.store.MaskingExceptionPolicy_MaskingException_Action" json:"action,omitempty"`
 	// Member is the principal who bind to this exception policy instance.
 	//
 	// Format: users/{userUID} or groups/{group email}
@@ -1038,48 +1038,48 @@ var File_store_policy_proto protoreflect.FileDescriptor
 
 const file_store_policy_proto_rawDesc = "" +
 	"\n" +
-	"\x12store/policy.proto\x12\x0ebytebase.store\x1a\x1egoogle/protobuf/duration.proto\x1a\x16google/type/expr.proto\x1a\x12store/common.proto\"d\n" +
+	"\x12store/policy.proto\x12\x17bytebase.internal.store\x1a\x1egoogle/protobuf/duration.proto\x1a\x16google/type/expr.proto\x1a\x12store/common.proto\"d\n" +
 	"\rRolloutPolicy\x12\x1c\n" +
 	"\tautomatic\x18\x01 \x01(\bR\tautomatic\x12\x14\n" +
 	"\x05roles\x18\x02 \x03(\tR\x05roles\x12\x1f\n" +
 	"\vissue_roles\x18\x03 \x03(\tR\n" +
-	"issueRoles\"\xef\x02\n" +
-	"\x16MaskingExceptionPolicy\x12f\n" +
-	"\x12masking_exceptions\x18\x01 \x03(\v27.bytebase.store.MaskingExceptionPolicy.MaskingExceptionR\x11maskingExceptions\x1a\xec\x01\n" +
-	"\x10MaskingException\x12V\n" +
-	"\x06action\x18\x01 \x01(\x0e2>.bytebase.store.MaskingExceptionPolicy.MaskingException.ActionR\x06action\x12\x16\n" +
+	"issueRoles\"\x81\x03\n" +
+	"\x16MaskingExceptionPolicy\x12o\n" +
+	"\x12masking_exceptions\x18\x01 \x03(\v2@.bytebase.internal.store.MaskingExceptionPolicy.MaskingExceptionR\x11maskingExceptions\x1a\xf5\x01\n" +
+	"\x10MaskingException\x12_\n" +
+	"\x06action\x18\x01 \x01(\x0e2G.bytebase.internal.store.MaskingExceptionPolicy.MaskingException.ActionR\x06action\x12\x16\n" +
 	"\x06member\x18\x04 \x01(\tR\x06member\x12/\n" +
 	"\tcondition\x18\x05 \x01(\v2\x11.google.type.ExprR\tcondition\"7\n" +
 	"\x06Action\x12\x16\n" +
 	"\x12ACTION_UNSPECIFIED\x10\x00\x12\t\n" +
 	"\x05QUERY\x10\x01\x12\n" +
 	"\n" +
-	"\x06EXPORT\x10\x02\"\xcd\x01\n" +
-	"\x11MaskingRulePolicy\x12C\n" +
-	"\x05rules\x18\x01 \x03(\v2-.bytebase.store.MaskingRulePolicy.MaskingRuleR\x05rules\x1as\n" +
+	"\x06EXPORT\x10\x02\"\xd6\x01\n" +
+	"\x11MaskingRulePolicy\x12L\n" +
+	"\x05rules\x18\x01 \x03(\v26.bytebase.internal.store.MaskingRulePolicy.MaskingRuleR\x05rules\x1as\n" +
 	"\vMaskingRule\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12/\n" +
 	"\tcondition\x18\x02 \x01(\v2\x11.google.type.ExprR\tcondition\x12#\n" +
-	"\rsemantic_type\x18\x03 \x01(\tR\fsemanticType\"\xc1\x01\n" +
+	"\rsemantic_type\x18\x03 \x01(\tR\fsemanticType\"\xd3\x01\n" +
 	"\rSQLReviewRule\x12\x12\n" +
-	"\x04type\x18\x01 \x01(\tR\x04type\x128\n" +
-	"\x05level\x18\x02 \x01(\x0e2\".bytebase.store.SQLReviewRuleLevelR\x05level\x12\x18\n" +
-	"\apayload\x18\x03 \x01(\tR\apayload\x12.\n" +
-	"\x06engine\x18\x04 \x01(\x0e2\x16.bytebase.store.EngineR\x06engine\x12\x18\n" +
-	"\acomment\x18\x05 \x01(\tR\acomment\"}\n" +
-	"\tTagPolicy\x127\n" +
-	"\x04tags\x18\x01 \x03(\v2#.bytebase.store.TagPolicy.TagsEntryR\x04tags\x1a7\n" +
+	"\x04type\x18\x01 \x01(\tR\x04type\x12A\n" +
+	"\x05level\x18\x02 \x01(\x0e2+.bytebase.internal.store.SQLReviewRuleLevelR\x05level\x12\x18\n" +
+	"\apayload\x18\x03 \x01(\tR\apayload\x127\n" +
+	"\x06engine\x18\x04 \x01(\x0e2\x1f.bytebase.internal.store.EngineR\x06engine\x12\x18\n" +
+	"\acomment\x18\x05 \x01(\tR\acomment\"\x86\x01\n" +
+	"\tTagPolicy\x12@\n" +
+	"\x04tags\x18\x01 \x03(\v2,.bytebase.internal.store.TagPolicy.TagsEntryR\x04tags\x1a7\n" +
 	"\tTagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"h\n" +
 	"\aBinding\x12\x12\n" +
 	"\x04role\x18\x01 \x01(\tR\x04role\x12\x18\n" +
 	"\amembers\x18\x02 \x03(\tR\amembers\x12/\n" +
-	"\tcondition\x18\x03 \x01(\v2\x11.google.type.ExprR\tcondition\"@\n" +
-	"\tIamPolicy\x123\n" +
-	"\bbindings\x18\x01 \x03(\v2\x17.bytebase.store.BindingR\bbindings\"\xe4\x01\n" +
-	"\x15EnvironmentTierPolicy\x12`\n" +
-	"\x10environment_tier\x18\x01 \x01(\x0e25.bytebase.store.EnvironmentTierPolicy.EnvironmentTierR\x0fenvironmentTier\x12\x14\n" +
+	"\tcondition\x18\x03 \x01(\v2\x11.google.type.ExprR\tcondition\"I\n" +
+	"\tIamPolicy\x12<\n" +
+	"\bbindings\x18\x01 \x03(\v2 .bytebase.internal.store.BindingR\bbindings\"\xed\x01\n" +
+	"\x15EnvironmentTierPolicy\x12i\n" +
+	"\x10environment_tier\x18\x01 \x01(\x0e2>.bytebase.internal.store.EnvironmentTierPolicy.EnvironmentTierR\x0fenvironmentTier\x12\x14\n" +
 	"\x05color\x18\x02 \x01(\tR\x05color\"S\n" +
 	"\x0fEnvironmentTier\x12 \n" +
 	"\x1cENVIRONMENT_TIER_UNSPECIFIED\x10\x00\x12\r\n" +
@@ -1092,9 +1092,9 @@ const file_store_policy_proto_rawDesc = "" +
 	"\x0fQueryDataPolicy\x123\n" +
 	"\atimeout\x18\x01 \x01(\v2\x19.google.protobuf.DurationR\atimeout\"E\n" +
 	"'RestrictIssueCreationForSQLReviewPolicy\x12\x1a\n" +
-	"\bdisallow\x18\x01 \x01(\bR\bdisallow\"\x9b\x02\n" +
-	"\x15DataSourceQueryPolicy\x12t\n" +
-	"\x1dadmin_data_source_restriction\x18\x01 \x01(\x0e21.bytebase.store.DataSourceQueryPolicy.RestrictionR\x1aadminDataSourceRestriction\x12!\n" +
+	"\bdisallow\x18\x01 \x01(\bR\bdisallow\"\xa4\x02\n" +
+	"\x15DataSourceQueryPolicy\x12}\n" +
+	"\x1dadmin_data_source_restriction\x18\x01 \x01(\x0e2:.bytebase.internal.store.DataSourceQueryPolicy.RestrictionR\x1aadminDataSourceRestriction\x12!\n" +
 	"\fdisallow_ddl\x18\x02 \x01(\bR\vdisallowDdl\x12!\n" +
 	"\fdisallow_dml\x18\x03 \x01(\bR\vdisallowDml\"F\n" +
 	"\vRestriction\x12\x1b\n" +
@@ -1122,44 +1122,44 @@ func file_store_policy_proto_rawDescGZIP() []byte {
 var file_store_policy_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
 var file_store_policy_proto_msgTypes = make([]protoimpl.MessageInfo, 16)
 var file_store_policy_proto_goTypes = []any{
-	(SQLReviewRuleLevel)(0),                             // 0: bytebase.store.SQLReviewRuleLevel
-	(MaskingExceptionPolicy_MaskingException_Action)(0), // 1: bytebase.store.MaskingExceptionPolicy.MaskingException.Action
-	(EnvironmentTierPolicy_EnvironmentTier)(0),          // 2: bytebase.store.EnvironmentTierPolicy.EnvironmentTier
-	(DataSourceQueryPolicy_Restriction)(0),              // 3: bytebase.store.DataSourceQueryPolicy.Restriction
-	(*RolloutPolicy)(nil),                               // 4: bytebase.store.RolloutPolicy
-	(*MaskingExceptionPolicy)(nil),                      // 5: bytebase.store.MaskingExceptionPolicy
-	(*MaskingRulePolicy)(nil),                           // 6: bytebase.store.MaskingRulePolicy
-	(*SQLReviewRule)(nil),                               // 7: bytebase.store.SQLReviewRule
-	(*TagPolicy)(nil),                                   // 8: bytebase.store.TagPolicy
-	(*Binding)(nil),                                     // 9: bytebase.store.Binding
-	(*IamPolicy)(nil),                                   // 10: bytebase.store.IamPolicy
-	(*EnvironmentTierPolicy)(nil),                       // 11: bytebase.store.EnvironmentTierPolicy
-	(*DisableCopyDataPolicy)(nil),                       // 12: bytebase.store.DisableCopyDataPolicy
-	(*ExportDataPolicy)(nil),                            // 13: bytebase.store.ExportDataPolicy
-	(*QueryDataPolicy)(nil),                             // 14: bytebase.store.QueryDataPolicy
-	(*RestrictIssueCreationForSQLReviewPolicy)(nil),     // 15: bytebase.store.RestrictIssueCreationForSQLReviewPolicy
-	(*DataSourceQueryPolicy)(nil),                       // 16: bytebase.store.DataSourceQueryPolicy
-	(*MaskingExceptionPolicy_MaskingException)(nil),     // 17: bytebase.store.MaskingExceptionPolicy.MaskingException
-	(*MaskingRulePolicy_MaskingRule)(nil),               // 18: bytebase.store.MaskingRulePolicy.MaskingRule
-	nil,                                                 // 19: bytebase.store.TagPolicy.TagsEntry
-	(Engine)(0),                                         // 20: bytebase.store.Engine
+	(SQLReviewRuleLevel)(0),                             // 0: bytebase.internal.store.SQLReviewRuleLevel
+	(MaskingExceptionPolicy_MaskingException_Action)(0), // 1: bytebase.internal.store.MaskingExceptionPolicy.MaskingException.Action
+	(EnvironmentTierPolicy_EnvironmentTier)(0),          // 2: bytebase.internal.store.EnvironmentTierPolicy.EnvironmentTier
+	(DataSourceQueryPolicy_Restriction)(0),              // 3: bytebase.internal.store.DataSourceQueryPolicy.Restriction
+	(*RolloutPolicy)(nil),                               // 4: bytebase.internal.store.RolloutPolicy
+	(*MaskingExceptionPolicy)(nil),                      // 5: bytebase.internal.store.MaskingExceptionPolicy
+	(*MaskingRulePolicy)(nil),                           // 6: bytebase.internal.store.MaskingRulePolicy
+	(*SQLReviewRule)(nil),                               // 7: bytebase.internal.store.SQLReviewRule
+	(*TagPolicy)(nil),                                   // 8: bytebase.internal.store.TagPolicy
+	(*Binding)(nil),                                     // 9: bytebase.internal.store.Binding
+	(*IamPolicy)(nil),                                   // 10: bytebase.internal.store.IamPolicy
+	(*EnvironmentTierPolicy)(nil),                       // 11: bytebase.internal.store.EnvironmentTierPolicy
+	(*DisableCopyDataPolicy)(nil),                       // 12: bytebase.internal.store.DisableCopyDataPolicy
+	(*ExportDataPolicy)(nil),                            // 13: bytebase.internal.store.ExportDataPolicy
+	(*QueryDataPolicy)(nil),                             // 14: bytebase.internal.store.QueryDataPolicy
+	(*RestrictIssueCreationForSQLReviewPolicy)(nil),     // 15: bytebase.internal.store.RestrictIssueCreationForSQLReviewPolicy
+	(*DataSourceQueryPolicy)(nil),                       // 16: bytebase.internal.store.DataSourceQueryPolicy
+	(*MaskingExceptionPolicy_MaskingException)(nil),     // 17: bytebase.internal.store.MaskingExceptionPolicy.MaskingException
+	(*MaskingRulePolicy_MaskingRule)(nil),               // 18: bytebase.internal.store.MaskingRulePolicy.MaskingRule
+	nil,                                                 // 19: bytebase.internal.store.TagPolicy.TagsEntry
+	(Engine)(0),                                         // 20: bytebase.internal.store.Engine
 	(*expr.Expr)(nil),                                   // 21: google.type.Expr
 	(*durationpb.Duration)(nil),                         // 22: google.protobuf.Duration
 }
 var file_store_policy_proto_depIdxs = []int32{
-	17, // 0: bytebase.store.MaskingExceptionPolicy.masking_exceptions:type_name -> bytebase.store.MaskingExceptionPolicy.MaskingException
-	18, // 1: bytebase.store.MaskingRulePolicy.rules:type_name -> bytebase.store.MaskingRulePolicy.MaskingRule
-	0,  // 2: bytebase.store.SQLReviewRule.level:type_name -> bytebase.store.SQLReviewRuleLevel
-	20, // 3: bytebase.store.SQLReviewRule.engine:type_name -> bytebase.store.Engine
-	19, // 4: bytebase.store.TagPolicy.tags:type_name -> bytebase.store.TagPolicy.TagsEntry
-	21, // 5: bytebase.store.Binding.condition:type_name -> google.type.Expr
-	9,  // 6: bytebase.store.IamPolicy.bindings:type_name -> bytebase.store.Binding
-	2,  // 7: bytebase.store.EnvironmentTierPolicy.environment_tier:type_name -> bytebase.store.EnvironmentTierPolicy.EnvironmentTier
-	22, // 8: bytebase.store.QueryDataPolicy.timeout:type_name -> google.protobuf.Duration
-	3,  // 9: bytebase.store.DataSourceQueryPolicy.admin_data_source_restriction:type_name -> bytebase.store.DataSourceQueryPolicy.Restriction
-	1,  // 10: bytebase.store.MaskingExceptionPolicy.MaskingException.action:type_name -> bytebase.store.MaskingExceptionPolicy.MaskingException.Action
-	21, // 11: bytebase.store.MaskingExceptionPolicy.MaskingException.condition:type_name -> google.type.Expr
-	21, // 12: bytebase.store.MaskingRulePolicy.MaskingRule.condition:type_name -> google.type.Expr
+	17, // 0: bytebase.internal.store.MaskingExceptionPolicy.masking_exceptions:type_name -> bytebase.internal.store.MaskingExceptionPolicy.MaskingException
+	18, // 1: bytebase.internal.store.MaskingRulePolicy.rules:type_name -> bytebase.internal.store.MaskingRulePolicy.MaskingRule
+	0,  // 2: bytebase.internal.store.SQLReviewRule.level:type_name -> bytebase.internal.store.SQLReviewRuleLevel
+	20, // 3: bytebase.internal.store.SQLReviewRule.engine:type_name -> bytebase.internal.store.Engine
+	19, // 4: bytebase.internal.store.TagPolicy.tags:type_name -> bytebase.internal.store.TagPolicy.TagsEntry
+	21, // 5: bytebase.internal.store.Binding.condition:type_name -> google.type.Expr
+	9,  // 6: bytebase.internal.store.IamPolicy.bindings:type_name -> bytebase.internal.store.Binding
+	2,  // 7: bytebase.internal.store.EnvironmentTierPolicy.environment_tier:type_name -> bytebase.internal.store.EnvironmentTierPolicy.EnvironmentTier
+	22, // 8: bytebase.internal.store.QueryDataPolicy.timeout:type_name -> google.protobuf.Duration
+	3,  // 9: bytebase.internal.store.DataSourceQueryPolicy.admin_data_source_restriction:type_name -> bytebase.internal.store.DataSourceQueryPolicy.Restriction
+	1,  // 10: bytebase.internal.store.MaskingExceptionPolicy.MaskingException.action:type_name -> bytebase.internal.store.MaskingExceptionPolicy.MaskingException.Action
+	21, // 11: bytebase.internal.store.MaskingExceptionPolicy.MaskingException.condition:type_name -> google.type.Expr
+	21, // 12: bytebase.internal.store.MaskingRulePolicy.MaskingRule.condition:type_name -> google.type.Expr
 	13, // [13:13] is the sub-list for method output_type
 	13, // [13:13] is the sub-list for method input_type
 	13, // [13:13] is the sub-list for extension type_name

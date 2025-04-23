@@ -235,7 +235,7 @@ type OAuth2IdentityProviderConfig struct {
 	Scopes        []string               `protobuf:"bytes,6,rep,name=scopes,proto3" json:"scopes,omitempty"`
 	FieldMapping  *FieldMapping          `protobuf:"bytes,7,opt,name=field_mapping,json=fieldMapping,proto3" json:"field_mapping,omitempty"`
 	SkipTlsVerify bool                   `protobuf:"varint,8,opt,name=skip_tls_verify,json=skipTlsVerify,proto3" json:"skip_tls_verify,omitempty"`
-	AuthStyle     OAuth2AuthStyle        `protobuf:"varint,9,opt,name=auth_style,json=authStyle,proto3,enum=bytebase.store.OAuth2AuthStyle" json:"auth_style,omitempty"`
+	AuthStyle     OAuth2AuthStyle        `protobuf:"varint,9,opt,name=auth_style,json=authStyle,proto3,enum=bytebase.internal.store.OAuth2AuthStyle" json:"auth_style,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -341,7 +341,7 @@ type OIDCIdentityProviderConfig struct {
 	ClientSecret  string                 `protobuf:"bytes,3,opt,name=client_secret,json=clientSecret,proto3" json:"client_secret,omitempty"`
 	FieldMapping  *FieldMapping          `protobuf:"bytes,4,opt,name=field_mapping,json=fieldMapping,proto3" json:"field_mapping,omitempty"`
 	SkipTlsVerify bool                   `protobuf:"varint,5,opt,name=skip_tls_verify,json=skipTlsVerify,proto3" json:"skip_tls_verify,omitempty"`
-	AuthStyle     OAuth2AuthStyle        `protobuf:"varint,6,opt,name=auth_style,json=authStyle,proto3,enum=bytebase.store.OAuth2AuthStyle" json:"auth_style,omitempty"`
+	AuthStyle     OAuth2AuthStyle        `protobuf:"varint,6,opt,name=auth_style,json=authStyle,proto3,enum=bytebase.internal.store.OAuth2AuthStyle" json:"auth_style,omitempty"`
 	Scopes        []string               `protobuf:"bytes,7,rep,name=scopes,proto3" json:"scopes,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -712,34 +712,34 @@ var File_store_idp_proto protoreflect.FileDescriptor
 
 const file_store_idp_proto_rawDesc = "" +
 	"\n" +
-	"\x0fstore/idp.proto\x12\x0ebytebase.store\"\x95\x02\n" +
-	"\x16IdentityProviderConfig\x12S\n" +
-	"\roauth2_config\x18\x01 \x01(\v2,.bytebase.store.OAuth2IdentityProviderConfigH\x00R\foauth2Config\x12M\n" +
-	"\voidc_config\x18\x02 \x01(\v2*.bytebase.store.OIDCIdentityProviderConfigH\x00R\n" +
-	"oidcConfig\x12M\n" +
-	"\vldap_config\x18\x03 \x01(\v2*.bytebase.store.LDAPIdentityProviderConfigH\x00R\n" +
+	"\x0fstore/idp.proto\x12\x17bytebase.internal.store\"\xb0\x02\n" +
+	"\x16IdentityProviderConfig\x12\\\n" +
+	"\roauth2_config\x18\x01 \x01(\v25.bytebase.internal.store.OAuth2IdentityProviderConfigH\x00R\foauth2Config\x12V\n" +
+	"\voidc_config\x18\x02 \x01(\v23.bytebase.internal.store.OIDCIdentityProviderConfigH\x00R\n" +
+	"oidcConfig\x12V\n" +
+	"\vldap_config\x18\x03 \x01(\v23.bytebase.internal.store.LDAPIdentityProviderConfigH\x00R\n" +
 	"ldapConfigB\b\n" +
-	"\x06config\"\xff\x02\n" +
+	"\x06config\"\x91\x03\n" +
 	"\x1cOAuth2IdentityProviderConfig\x12\x19\n" +
 	"\bauth_url\x18\x01 \x01(\tR\aauthUrl\x12\x1b\n" +
 	"\ttoken_url\x18\x02 \x01(\tR\btokenUrl\x12\"\n" +
 	"\ruser_info_url\x18\x03 \x01(\tR\vuserInfoUrl\x12\x1b\n" +
 	"\tclient_id\x18\x04 \x01(\tR\bclientId\x12#\n" +
 	"\rclient_secret\x18\x05 \x01(\tR\fclientSecret\x12\x16\n" +
-	"\x06scopes\x18\x06 \x03(\tR\x06scopes\x12A\n" +
-	"\rfield_mapping\x18\a \x01(\v2\x1c.bytebase.store.FieldMappingR\ffieldMapping\x12&\n" +
-	"\x0fskip_tls_verify\x18\b \x01(\bR\rskipTlsVerify\x12>\n" +
+	"\x06scopes\x18\x06 \x03(\tR\x06scopes\x12J\n" +
+	"\rfield_mapping\x18\a \x01(\v2%.bytebase.internal.store.FieldMappingR\ffieldMapping\x12&\n" +
+	"\x0fskip_tls_verify\x18\b \x01(\bR\rskipTlsVerify\x12G\n" +
 	"\n" +
-	"auth_style\x18\t \x01(\x0e2\x1f.bytebase.store.OAuth2AuthStyleR\tauthStyle\"\xb9\x02\n" +
+	"auth_style\x18\t \x01(\x0e2(.bytebase.internal.store.OAuth2AuthStyleR\tauthStyle\"\xcb\x02\n" +
 	"\x1aOIDCIdentityProviderConfig\x12\x16\n" +
 	"\x06issuer\x18\x01 \x01(\tR\x06issuer\x12\x1b\n" +
 	"\tclient_id\x18\x02 \x01(\tR\bclientId\x12#\n" +
-	"\rclient_secret\x18\x03 \x01(\tR\fclientSecret\x12A\n" +
-	"\rfield_mapping\x18\x04 \x01(\v2\x1c.bytebase.store.FieldMappingR\ffieldMapping\x12&\n" +
-	"\x0fskip_tls_verify\x18\x05 \x01(\bR\rskipTlsVerify\x12>\n" +
+	"\rclient_secret\x18\x03 \x01(\tR\fclientSecret\x12J\n" +
+	"\rfield_mapping\x18\x04 \x01(\v2%.bytebase.internal.store.FieldMappingR\ffieldMapping\x12&\n" +
+	"\x0fskip_tls_verify\x18\x05 \x01(\bR\rskipTlsVerify\x12G\n" +
 	"\n" +
-	"auth_style\x18\x06 \x01(\x0e2\x1f.bytebase.store.OAuth2AuthStyleR\tauthStyle\x12\x16\n" +
-	"\x06scopes\x18\a \x03(\tR\x06scopes\"\xd4\x02\n" +
+	"auth_style\x18\x06 \x01(\x0e2(.bytebase.internal.store.OAuth2AuthStyleR\tauthStyle\x12\x16\n" +
+	"\x06scopes\x18\a \x03(\tR\x06scopes\"\xdd\x02\n" +
 	"\x1aLDAPIdentityProviderConfig\x12\x12\n" +
 	"\x04host\x18\x01 \x01(\tR\x04host\x12\x12\n" +
 	"\x04port\x18\x02 \x01(\x05R\x04port\x12&\n" +
@@ -749,8 +749,8 @@ const file_store_idp_proto_rawDesc = "" +
 	"\abase_dn\x18\x06 \x01(\tR\x06baseDn\x12\x1f\n" +
 	"\vuser_filter\x18\a \x01(\tR\n" +
 	"userFilter\x12+\n" +
-	"\x11security_protocol\x18\b \x01(\tR\x10securityProtocol\x12A\n" +
-	"\rfield_mapping\x18\t \x01(\v2\x1c.bytebase.store.FieldMappingR\ffieldMapping\"\x85\x01\n" +
+	"\x11security_protocol\x18\b \x01(\tR\x10securityProtocol\x12J\n" +
+	"\rfield_mapping\x18\t \x01(\v2%.bytebase.internal.store.FieldMappingR\ffieldMapping\"\x85\x01\n" +
 	"\fFieldMapping\x12\x1e\n" +
 	"\n" +
 	"identifier\x18\x01 \x01(\tR\n" +
@@ -793,24 +793,24 @@ func file_store_idp_proto_rawDescGZIP() []byte {
 var file_store_idp_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
 var file_store_idp_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_store_idp_proto_goTypes = []any{
-	(IdentityProviderType)(0),            // 0: bytebase.store.IdentityProviderType
-	(OAuth2AuthStyle)(0),                 // 1: bytebase.store.OAuth2AuthStyle
-	(*IdentityProviderConfig)(nil),       // 2: bytebase.store.IdentityProviderConfig
-	(*OAuth2IdentityProviderConfig)(nil), // 3: bytebase.store.OAuth2IdentityProviderConfig
-	(*OIDCIdentityProviderConfig)(nil),   // 4: bytebase.store.OIDCIdentityProviderConfig
-	(*LDAPIdentityProviderConfig)(nil),   // 5: bytebase.store.LDAPIdentityProviderConfig
-	(*FieldMapping)(nil),                 // 6: bytebase.store.FieldMapping
-	(*IdentityProviderUserInfo)(nil),     // 7: bytebase.store.IdentityProviderUserInfo
+	(IdentityProviderType)(0),            // 0: bytebase.internal.store.IdentityProviderType
+	(OAuth2AuthStyle)(0),                 // 1: bytebase.internal.store.OAuth2AuthStyle
+	(*IdentityProviderConfig)(nil),       // 2: bytebase.internal.store.IdentityProviderConfig
+	(*OAuth2IdentityProviderConfig)(nil), // 3: bytebase.internal.store.OAuth2IdentityProviderConfig
+	(*OIDCIdentityProviderConfig)(nil),   // 4: bytebase.internal.store.OIDCIdentityProviderConfig
+	(*LDAPIdentityProviderConfig)(nil),   // 5: bytebase.internal.store.LDAPIdentityProviderConfig
+	(*FieldMapping)(nil),                 // 6: bytebase.internal.store.FieldMapping
+	(*IdentityProviderUserInfo)(nil),     // 7: bytebase.internal.store.IdentityProviderUserInfo
 }
 var file_store_idp_proto_depIdxs = []int32{
-	3, // 0: bytebase.store.IdentityProviderConfig.oauth2_config:type_name -> bytebase.store.OAuth2IdentityProviderConfig
-	4, // 1: bytebase.store.IdentityProviderConfig.oidc_config:type_name -> bytebase.store.OIDCIdentityProviderConfig
-	5, // 2: bytebase.store.IdentityProviderConfig.ldap_config:type_name -> bytebase.store.LDAPIdentityProviderConfig
-	6, // 3: bytebase.store.OAuth2IdentityProviderConfig.field_mapping:type_name -> bytebase.store.FieldMapping
-	1, // 4: bytebase.store.OAuth2IdentityProviderConfig.auth_style:type_name -> bytebase.store.OAuth2AuthStyle
-	6, // 5: bytebase.store.OIDCIdentityProviderConfig.field_mapping:type_name -> bytebase.store.FieldMapping
-	1, // 6: bytebase.store.OIDCIdentityProviderConfig.auth_style:type_name -> bytebase.store.OAuth2AuthStyle
-	6, // 7: bytebase.store.LDAPIdentityProviderConfig.field_mapping:type_name -> bytebase.store.FieldMapping
+	3, // 0: bytebase.internal.store.IdentityProviderConfig.oauth2_config:type_name -> bytebase.internal.store.OAuth2IdentityProviderConfig
+	4, // 1: bytebase.internal.store.IdentityProviderConfig.oidc_config:type_name -> bytebase.internal.store.OIDCIdentityProviderConfig
+	5, // 2: bytebase.internal.store.IdentityProviderConfig.ldap_config:type_name -> bytebase.internal.store.LDAPIdentityProviderConfig
+	6, // 3: bytebase.internal.store.OAuth2IdentityProviderConfig.field_mapping:type_name -> bytebase.internal.store.FieldMapping
+	1, // 4: bytebase.internal.store.OAuth2IdentityProviderConfig.auth_style:type_name -> bytebase.internal.store.OAuth2AuthStyle
+	6, // 5: bytebase.internal.store.OIDCIdentityProviderConfig.field_mapping:type_name -> bytebase.internal.store.FieldMapping
+	1, // 6: bytebase.internal.store.OIDCIdentityProviderConfig.auth_style:type_name -> bytebase.internal.store.OAuth2AuthStyle
+	6, // 7: bytebase.internal.store.LDAPIdentityProviderConfig.field_mapping:type_name -> bytebase.internal.store.FieldMapping
 	8, // [8:8] is the sub-list for method output_type
 	8, // [8:8] is the sub-list for method input_type
 	8, // [8:8] is the sub-list for extension type_name

@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package bytebase.internal.store;
+
+option go_package = "generated-go/store";
+
+message ProjectWebhookPayload {
+  // if direct_message is set, the notification is sent directly
+  // to the persons and url will be ignored.
+  // IM integration setting should be set for this function to work.
+  bool direct_message = 1;
+}

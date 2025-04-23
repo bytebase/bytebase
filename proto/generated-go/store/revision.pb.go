@@ -112,7 +112,7 @@ var File_store_revision_proto protoreflect.FileDescriptor
 
 const file_store_revision_proto_rawDesc = "" +
 	"\n" +
-	"\x14store/revision.proto\x12\x0ebytebase.store\x1a\x19google/api/resource.proto\"\xe2\x01\n" +
+	"\x14store/revision.proto\x12\x17bytebase.internal.store\x1a\x19google/api/resource.proto\"\xe2\x01\n" +
 	"\x0fRevisionPayload\x123\n" +
 	"\arelease\x18\x01 \x01(\tB\x19\xfaA\x16\n" +
 	"\x14bytebase.com/ReleaseR\arelease\x12\x12\n" +
@@ -137,7 +137,7 @@ func file_store_revision_proto_rawDescGZIP() []byte {
 
 var file_store_revision_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
 var file_store_revision_proto_goTypes = []any{
-	(*RevisionPayload)(nil), // 0: bytebase.store.RevisionPayload
+	(*RevisionPayload)(nil), // 0: bytebase.internal.store.RevisionPayload
 }
 var file_store_revision_proto_depIdxs = []int32{
 	0, // [0:0] is the sub-list for method output_type

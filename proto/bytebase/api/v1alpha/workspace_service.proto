@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+package bytebase.api.v1alpha;
+
+import "google/api/annotations.proto";
+import "api/v1alpha/annotation.proto";
+import "api/v1alpha/iam_policy.proto";
+
+option go_package = "generated-go/v1";
+
+service WorkspaceService {
+  rpc GetIamPolicy(GetIamPolicyRequest) returns (IamPolicy) {
+    option (google.api.http) = {get: "/v1/{resource=workspaces/*}:getIamPolicy"};
+    option (bytebase.api.v1alpha.permission) = "bb.workspaces.getIamPolicy";
+    option (bytebase.api.v1alpha.auth_method) = IAM;
+  }
+
+  rpc SetIamPolicy(SetIamPolicyRequest) returns (IamPolicy) {
+    option (google.api.http) = {
+      post: "/v1/{resource=workspaces/*}:setIamPolicy"
+      body: "*"
+    };
+    option (bytebase.api.v1alpha.permission) = "bb.workspaces.setIamPolicy";
+    option (bytebase.api.v1alpha.auth_method) = IAM;
+    option (bytebase.api.v1alpha.audit) = true;
+  }
+}

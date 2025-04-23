@@ -1,0 +1,164 @@
+syntax = "proto3";
+
+package bytebase.api.v1alpha;
+
+import "google/api/annotations.proto";
+import "google/api/client.proto";
+import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/field_mask.proto";
+import "api/v1alpha/annotation.proto";
+
+option go_package = "generated-go/v1";
+
+service GroupService {
+  rpc GetGroup(GetGroupRequest) returns (Group) {
+    option (google.api.http) = {get: "/v1/{name=groups/*}"};
+    option (google.api.method_signature) = "name";
+    option (bytebase.api.v1alpha.permission) = "bb.groups.get";
+    option (bytebase.api.v1alpha.auth_method) = IAM;
+  }
+
+  rpc ListGroups(ListGroupsRequest) returns (ListGroupsResponse) {
+    option (google.api.http) = {get: "/v1/groups"};
+    option (google.api.method_signature) = "";
+    option (bytebase.api.v1alpha.permission) = "bb.groups.list";
+    option (bytebase.api.v1alpha.auth_method) = IAM;
+  }
+
+  rpc CreateGroup(CreateGroupRequest) returns (Group) {
+    option (google.api.http) = {
+      post: "/v1/groups"
+      body: "group"
+    };
+    option (google.api.method_signature) = "group";
+    option (bytebase.api.v1alpha.permission) = "bb.groups.create";
+    option (bytebase.api.v1alpha.auth_method) = IAM;
+    option (bytebase.api.v1alpha.audit) = true;
+  }
+
+  // UpdateGroup updates the group.
+  // Users with "bb.groups.update" permission on the workspace or the group owner can access this method.
+  rpc UpdateGroup(UpdateGroupRequest) returns (Group) {
+    option (google.api.http) = {
+      patch: "/v1/{group.name=groups/*}"
+      body: "group"
+    };
+    option (google.api.method_signature) = "group,update_mask";
+    option (bytebase.api.v1alpha.permission) = "bb.groups.update";
+    option (bytebase.api.v1alpha.auth_method) = CUSTOM;
+    option (bytebase.api.v1alpha.audit) = true;
+  }
+
+  rpc DeleteGroup(DeleteGroupRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {delete: "/v1/{name=groups/*}"};
+    option (google.api.method_signature) = "name";
+    option (bytebase.api.v1alpha.permission) = "bb.groups.delete";
+    option (bytebase.api.v1alpha.auth_method) = CUSTOM;
+    option (bytebase.api.v1alpha.audit) = true;
+  }
+}
+
+message GetGroupRequest {
+  // The name of the group to retrieve.
+  // Format: groups/{email}
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Group"}
+  ];
+}
+
+message ListGroupsRequest {
+  // Not used.
+  // The maximum number of groups to return. The service may return fewer than
+  // this value.
+  // If unspecified, at most 10 groups will be returned.
+  // The maximum value is 1000; values above 1000 will be coerced to 1000.
+  int32 page_size = 1;
+
+  // Not used.
+  // A page token, received from a previous `ListGroups` call.
+  // Provide this to retrieve the subsequent page.
+  //
+  // When paginating, all other parameters provided to `ListGroups` must match
+  // the call that provided the page token.
+  string page_token = 2;
+}
+
+message ListGroupsResponse {
+  // The groups from the specified request.
+  repeated Group groups = 1;
+
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+message CreateGroupRequest {
+  // The group to create.
+  Group group = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The email to use for the group, which will become the final component
+  // of the group's resource name.
+  string group_email = 2 [(google.api.field_behavior) = REQUIRED];
+}
+
+message UpdateGroupRequest {
+  // The group to update.
+  //
+  // The group's `name` field is used to identify the group to update.
+  // Format: groups/{email}
+  Group group = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The list of fields to update.
+  google.protobuf.FieldMask update_mask = 2;
+
+  // If set to true, and the group is not found, a new group will be created.
+  // In this situation, `update_mask` is ignored.
+  bool allow_missing = 3;
+}
+
+message DeleteGroupRequest {
+  // The name of the group to delete.
+  // Format: groups/{email}
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Group"}
+  ];
+}
+
+message GroupMember {
+  // Member is the principal who belong to this group.
+  //
+  // Format: users/hello@world.com
+  string member = 1;
+
+  enum Role {
+    ROLE_UNSPECIFIED = 0;
+    OWNER = 1;
+    MEMBER = 2;
+  }
+
+  Role role = 2;
+}
+
+message Group {
+  option (google.api.resource) = {
+    type: "bytebase.com/Group"
+    pattern: "groups/{group}"
+  };
+
+  // The name of the group to retrieve.
+  // Format: groups/{group}, group is an email.
+  string name = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  string title = 2;
+
+  string description = 3;
+
+  repeated GroupMember members = 5;
+
+  // source means where the group comes from. For now we support Entra ID SCIM sync, so the source could be Entra ID.
+  string source = 7;
+}

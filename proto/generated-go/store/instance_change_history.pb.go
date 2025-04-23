@@ -69,9 +69,9 @@ var File_store_instance_change_history_proto protoreflect.FileDescriptor
 
 const file_store_instance_change_history_proto_rawDesc = "" +
 	"\n" +
-	"#store/instance_change_history.proto\x12\x0ebytebase.store\x1a\x15store/changelog.proto\"m\n" +
-	"\x1cInstanceChangeHistoryPayload\x12M\n" +
-	"\x11changed_resources\x18\x01 \x01(\v2 .bytebase.store.ChangedResourcesR\x10changedResourcesB\x14Z\x12generated-go/storeb\x06proto3"
+	"#store/instance_change_history.proto\x12\x17bytebase.internal.store\x1a\x15store/changelog.proto\"v\n" +
+	"\x1cInstanceChangeHistoryPayload\x12V\n" +
+	"\x11changed_resources\x18\x01 \x01(\v2).bytebase.internal.store.ChangedResourcesR\x10changedResourcesB\x14Z\x12generated-go/storeb\x06proto3"
 
 var (
 	file_store_instance_change_history_proto_rawDescOnce sync.Once
@@ -87,11 +87,11 @@ func file_store_instance_change_history_proto_rawDescGZIP() []byte {
 
 var file_store_instance_change_history_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
 var file_store_instance_change_history_proto_goTypes = []any{
-	(*InstanceChangeHistoryPayload)(nil), // 0: bytebase.store.InstanceChangeHistoryPayload
-	(*ChangedResources)(nil),             // 1: bytebase.store.ChangedResources
+	(*InstanceChangeHistoryPayload)(nil), // 0: bytebase.internal.store.InstanceChangeHistoryPayload
+	(*ChangedResources)(nil),             // 1: bytebase.internal.store.ChangedResources
 }
 var file_store_instance_change_history_proto_depIdxs = []int32{
-	1, // 0: bytebase.store.InstanceChangeHistoryPayload.changed_resources:type_name -> bytebase.store.ChangedResources
+	1, // 0: bytebase.internal.store.InstanceChangeHistoryPayload.changed_resources:type_name -> bytebase.internal.store.ChangedResources
 	1, // [1:1] is the sub-list for method output_type
 	1, // [1:1] is the sub-list for method input_type
 	1, // [1:1] is the sub-list for extension type_name

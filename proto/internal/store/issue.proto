@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package bytebase.internal.store;
+
+import "google/protobuf/duration.proto";
+import "google/type/expr.proto";
+import "store/approval.proto";
+
+option go_package = "generated-go/store";
+
+message IssuePayload {
+  IssuePayloadApproval approval = 1;
+  GrantRequest grant_request = 2;
+  repeated string labels = 3;
+}
+
+message GrantRequest {
+  // The requested role.
+  // Format: roles/EXPORTER.
+  string role = 1;
+  // The user to be granted.
+  // Format: users/{userUID}.
+  string user = 2;
+  google.type.Expr condition = 3;
+  google.protobuf.Duration expiration = 4;
+}

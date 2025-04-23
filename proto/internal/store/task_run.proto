@@ -1,0 +1,58 @@
+syntax = "proto3";
+
+package bytebase.internal.store;
+
+import "google/protobuf/timestamp.proto";
+import "store/common.proto";
+
+option go_package = "generated-go/store";
+
+message TaskRunResult {
+  string detail = 1;
+  // Format: instances/{instance}/databases/{database}/changelogs/{changelog}
+  string changelog = 8;
+  string version = 3;
+
+  // The following fields are used for error reporting.
+  Position start_position = 4;
+  Position end_position = 5;
+
+  // The uid of the export archive.
+  int32 export_archive_uid = 6;
+
+  // The prior backup detail that will be used to rollback the task run.
+  PriorBackupDetail prior_backup_detail = 7;
+}
+
+message PriorBackupDetail {
+  message Item {
+    message Table {
+      // The database information.
+      // Format: instances/{instance}/databases/{database}
+      string database = 1;
+      string schema = 2;
+      string table = 3;
+    }
+
+    // The original table information.
+    Table source_table = 1;
+    // The target backup table information.
+    Table target_table = 2;
+    Position start_position = 3;
+    Position end_position = 4;
+  }
+
+  repeated Item items = 1;
+}
+
+message SchedulerInfo {
+  google.protobuf.Timestamp report_time = 1;
+
+  message WaitingCause {
+    oneof cause {
+      bool connection_limit = 1;
+      int32 task_uid = 2;
+    }
+  }
+  WaitingCause waiting_cause = 2;
+}

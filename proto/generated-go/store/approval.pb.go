@@ -237,7 +237,7 @@ type IssuePayloadApproval struct {
 	// If `true`, other fields are available.
 	ApprovalFindingDone  bool                           `protobuf:"varint,3,opt,name=approval_finding_done,json=approvalFindingDone,proto3" json:"approval_finding_done,omitempty"`
 	ApprovalFindingError string                         `protobuf:"bytes,4,opt,name=approval_finding_error,json=approvalFindingError,proto3" json:"approval_finding_error,omitempty"`
-	RiskLevel            IssuePayloadApproval_RiskLevel `protobuf:"varint,5,opt,name=risk_level,json=riskLevel,proto3,enum=bytebase.store.IssuePayloadApproval_RiskLevel" json:"risk_level,omitempty"`
+	RiskLevel            IssuePayloadApproval_RiskLevel `protobuf:"varint,5,opt,name=risk_level,json=riskLevel,proto3,enum=bytebase.internal.store.IssuePayloadApproval_RiskLevel" json:"risk_level,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -421,7 +421,7 @@ func (x *ApprovalFlow) GetSteps() []*ApprovalStep {
 
 type ApprovalStep struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Type          ApprovalStep_Type      `protobuf:"varint,1,opt,name=type,proto3,enum=bytebase.store.ApprovalStep_Type" json:"type,omitempty"`
+	Type          ApprovalStep_Type      `protobuf:"varint,1,opt,name=type,proto3,enum=bytebase.internal.store.ApprovalStep_Type" json:"type,omitempty"`
 	Nodes         []*ApprovalNode        `protobuf:"bytes,2,rep,name=nodes,proto3" json:"nodes,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -473,7 +473,7 @@ func (x *ApprovalStep) GetNodes() []*ApprovalNode {
 
 type ApprovalNode struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Type          ApprovalNode_Type      `protobuf:"varint,1,opt,name=type,proto3,enum=bytebase.store.ApprovalNode_Type" json:"type,omitempty"`
+	Type          ApprovalNode_Type      `protobuf:"varint,1,opt,name=type,proto3,enum=bytebase.internal.store.ApprovalNode_Type" json:"type,omitempty"`
 	Role          string                 `protobuf:"bytes,2,opt,name=role,proto3" json:"role,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -526,7 +526,7 @@ func (x *ApprovalNode) GetRole() string {
 type IssuePayloadApproval_Approver struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The new status.
-	Status IssuePayloadApproval_Approver_Status `protobuf:"varint,1,opt,name=status,proto3,enum=bytebase.store.IssuePayloadApproval_Approver_Status" json:"status,omitempty"`
+	Status IssuePayloadApproval_Approver_Status `protobuf:"varint,1,opt,name=status,proto3,enum=bytebase.internal.store.IssuePayloadApproval_Approver_Status" json:"status,omitempty"`
 	// The principal id of the approver.
 	PrincipalId   int32 `protobuf:"varint,2,opt,name=principal_id,json=principalId,proto3" json:"principal_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -581,16 +581,16 @@ var File_store_approval_proto protoreflect.FileDescriptor
 
 const file_store_approval_proto_rawDesc = "" +
 	"\n" +
-	"\x14store/approval.proto\x12\x0ebytebase.store\"\x80\x05\n" +
-	"\x14IssuePayloadApproval\x12O\n" +
-	"\x12approval_templates\x18\x01 \x03(\v2 .bytebase.store.ApprovalTemplateR\x11approvalTemplates\x12K\n" +
-	"\tapprovers\x18\x02 \x03(\v2-.bytebase.store.IssuePayloadApproval.ApproverR\tapprovers\x122\n" +
+	"\x14store/approval.proto\x12\x17bytebase.internal.store\"\xa4\x05\n" +
+	"\x14IssuePayloadApproval\x12X\n" +
+	"\x12approval_templates\x18\x01 \x03(\v2).bytebase.internal.store.ApprovalTemplateR\x11approvalTemplates\x12T\n" +
+	"\tapprovers\x18\x02 \x03(\v26.bytebase.internal.store.IssuePayloadApproval.ApproverR\tapprovers\x122\n" +
 	"\x15approval_finding_done\x18\x03 \x01(\bR\x13approvalFindingDone\x124\n" +
-	"\x16approval_finding_error\x18\x04 \x01(\tR\x14approvalFindingError\x12M\n" +
+	"\x16approval_finding_error\x18\x04 \x01(\tR\x14approvalFindingError\x12V\n" +
 	"\n" +
-	"risk_level\x18\x05 \x01(\x0e2..bytebase.store.IssuePayloadApproval.RiskLevelR\triskLevel\x1a\xc6\x01\n" +
-	"\bApprover\x12L\n" +
-	"\x06status\x18\x01 \x01(\x0e24.bytebase.store.IssuePayloadApproval.Approver.StatusR\x06status\x12!\n" +
+	"risk_level\x18\x05 \x01(\x0e27.bytebase.internal.store.IssuePayloadApproval.RiskLevelR\triskLevel\x1a\xcf\x01\n" +
+	"\bApprover\x12U\n" +
+	"\x06status\x18\x01 \x01(\x0e2=.bytebase.internal.store.IssuePayloadApproval.Approver.StatusR\x06status\x12!\n" +
 	"\fprincipal_id\x18\x02 \x01(\x05R\vprincipalId\"I\n" +
 	"\x06Status\x12\x16\n" +
 	"\x12STATUS_UNSPECIFIED\x10\x00\x12\v\n" +
@@ -601,24 +601,24 @@ const file_store_approval_proto_rawDesc = "" +
 	"\x16RISK_LEVEL_UNSPECIFIED\x10\x00\x12\a\n" +
 	"\x03LOW\x10\x01\x12\f\n" +
 	"\bMODERATE\x10\x02\x12\b\n" +
-	"\x04HIGH\x10\x03\"\x9b\x01\n" +
-	"\x10ApprovalTemplate\x120\n" +
-	"\x04flow\x18\x01 \x01(\v2\x1c.bytebase.store.ApprovalFlowR\x04flow\x12\x14\n" +
+	"\x04HIGH\x10\x03\"\xa4\x01\n" +
+	"\x10ApprovalTemplate\x129\n" +
+	"\x04flow\x18\x01 \x01(\v2%.bytebase.internal.store.ApprovalFlowR\x04flow\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12 \n" +
 	"\vdescription\x18\x03 \x01(\tR\vdescription\x12\x1d\n" +
 	"\n" +
-	"creator_id\x18\x04 \x01(\x05R\tcreatorId\"B\n" +
-	"\fApprovalFlow\x122\n" +
-	"\x05steps\x18\x01 \x03(\v2\x1c.bytebase.store.ApprovalStepR\x05steps\"\xa9\x01\n" +
-	"\fApprovalStep\x125\n" +
-	"\x04type\x18\x01 \x01(\x0e2!.bytebase.store.ApprovalStep.TypeR\x04type\x122\n" +
-	"\x05nodes\x18\x02 \x03(\v2\x1c.bytebase.store.ApprovalNodeR\x05nodes\".\n" +
+	"creator_id\x18\x04 \x01(\x05R\tcreatorId\"K\n" +
+	"\fApprovalFlow\x12;\n" +
+	"\x05steps\x18\x01 \x03(\v2%.bytebase.internal.store.ApprovalStepR\x05steps\"\xbb\x01\n" +
+	"\fApprovalStep\x12>\n" +
+	"\x04type\x18\x01 \x01(\x0e2*.bytebase.internal.store.ApprovalStep.TypeR\x04type\x12;\n" +
+	"\x05nodes\x18\x02 \x03(\v2%.bytebase.internal.store.ApprovalNodeR\x05nodes\".\n" +
 	"\x04Type\x12\x14\n" +
 	"\x10TYPE_UNSPECIFIED\x10\x00\x12\a\n" +
 	"\x03ALL\x10\x01\x12\a\n" +
-	"\x03ANY\x10\x02\"\x89\x01\n" +
-	"\fApprovalNode\x125\n" +
-	"\x04type\x18\x01 \x01(\x0e2!.bytebase.store.ApprovalNode.TypeR\x04type\x12\x12\n" +
+	"\x03ANY\x10\x02\"\x92\x01\n" +
+	"\fApprovalNode\x12>\n" +
+	"\x04type\x18\x01 \x01(\x0e2*.bytebase.internal.store.ApprovalNode.TypeR\x04type\x12\x12\n" +
 	"\x04role\x18\x02 \x01(\tR\x04role\".\n" +
 	"\x04Type\x12\x14\n" +
 	"\x10TYPE_UNSPECIFIED\x10\x00\x12\x10\n" +
@@ -639,27 +639,27 @@ func file_store_approval_proto_rawDescGZIP() []byte {
 var file_store_approval_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
 var file_store_approval_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_store_approval_proto_goTypes = []any{
-	(IssuePayloadApproval_RiskLevel)(0),       // 0: bytebase.store.IssuePayloadApproval.RiskLevel
-	(IssuePayloadApproval_Approver_Status)(0), // 1: bytebase.store.IssuePayloadApproval.Approver.Status
-	(ApprovalStep_Type)(0),                    // 2: bytebase.store.ApprovalStep.Type
-	(ApprovalNode_Type)(0),                    // 3: bytebase.store.ApprovalNode.Type
-	(*IssuePayloadApproval)(nil),              // 4: bytebase.store.IssuePayloadApproval
-	(*ApprovalTemplate)(nil),                  // 5: bytebase.store.ApprovalTemplate
-	(*ApprovalFlow)(nil),                      // 6: bytebase.store.ApprovalFlow
-	(*ApprovalStep)(nil),                      // 7: bytebase.store.ApprovalStep
-	(*ApprovalNode)(nil),                      // 8: bytebase.store.ApprovalNode
-	(*IssuePayloadApproval_Approver)(nil),     // 9: bytebase.store.IssuePayloadApproval.Approver
+	(IssuePayloadApproval_RiskLevel)(0),       // 0: bytebase.internal.store.IssuePayloadApproval.RiskLevel
+	(IssuePayloadApproval_Approver_Status)(0), // 1: bytebase.internal.store.IssuePayloadApproval.Approver.Status
+	(ApprovalStep_Type)(0),                    // 2: bytebase.internal.store.ApprovalStep.Type
+	(ApprovalNode_Type)(0),                    // 3: bytebase.internal.store.ApprovalNode.Type
+	(*IssuePayloadApproval)(nil),              // 4: bytebase.internal.store.IssuePayloadApproval
+	(*ApprovalTemplate)(nil),                  // 5: bytebase.internal.store.ApprovalTemplate
+	(*ApprovalFlow)(nil),                      // 6: bytebase.internal.store.ApprovalFlow
+	(*ApprovalStep)(nil),                      // 7: bytebase.internal.store.ApprovalStep
+	(*ApprovalNode)(nil),                      // 8: bytebase.internal.store.ApprovalNode
+	(*IssuePayloadApproval_Approver)(nil),     // 9: bytebase.internal.store.IssuePayloadApproval.Approver
 }
 var file_store_approval_proto_depIdxs = []int32{
-	5, // 0: bytebase.store.IssuePayloadApproval.approval_templates:type_name -> bytebase.store.ApprovalTemplate
-	9, // 1: bytebase.store.IssuePayloadApproval.approvers:type_name -> bytebase.store.IssuePayloadApproval.Approver
-	0, // 2: bytebase.store.IssuePayloadApproval.risk_level:type_name -> bytebase.store.IssuePayloadApproval.RiskLevel
-	6, // 3: bytebase.store.ApprovalTemplate.flow:type_name -> bytebase.store.ApprovalFlow
-	7, // 4: bytebase.store.ApprovalFlow.steps:type_name -> bytebase.store.ApprovalStep
-	2, // 5: bytebase.store.ApprovalStep.type:type_name -> bytebase.store.ApprovalStep.Type
-	8, // 6: bytebase.store.ApprovalStep.nodes:type_name -> bytebase.store.ApprovalNode
-	3, // 7: bytebase.store.ApprovalNode.type:type_name -> bytebase.store.ApprovalNode.Type
-	1, // 8: bytebase.store.IssuePayloadApproval.Approver.status:type_name -> bytebase.store.IssuePayloadApproval.Approver.Status
+	5, // 0: bytebase.internal.store.IssuePayloadApproval.approval_templates:type_name -> bytebase.internal.store.ApprovalTemplate
+	9, // 1: bytebase.internal.store.IssuePayloadApproval.approvers:type_name -> bytebase.internal.store.IssuePayloadApproval.Approver
+	0, // 2: bytebase.internal.store.IssuePayloadApproval.risk_level:type_name -> bytebase.internal.store.IssuePayloadApproval.RiskLevel
+	6, // 3: bytebase.internal.store.ApprovalTemplate.flow:type_name -> bytebase.internal.store.ApprovalFlow
+	7, // 4: bytebase.internal.store.ApprovalFlow.steps:type_name -> bytebase.internal.store.ApprovalStep
+	2, // 5: bytebase.internal.store.ApprovalStep.type:type_name -> bytebase.internal.store.ApprovalStep.Type
+	8, // 6: bytebase.internal.store.ApprovalStep.nodes:type_name -> bytebase.internal.store.ApprovalNode
+	3, // 7: bytebase.internal.store.ApprovalNode.type:type_name -> bytebase.internal.store.ApprovalNode.Type
+	1, // 8: bytebase.internal.store.IssuePayloadApproval.Approver.status:type_name -> bytebase.internal.store.IssuePayloadApproval.Approver.Status
 	9, // [9:9] is the sub-list for method output_type
 	9, // [9:9] is the sub-list for method input_type
 	9, // [9:9] is the sub-list for extension type_name

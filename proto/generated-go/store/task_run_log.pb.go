@@ -202,7 +202,7 @@ func (TaskRunLog_TransactionControl_Type) EnumDescriptor() ([]byte, []int) {
 
 type TaskRunLog struct {
 	state               protoimpl.MessageState          `protogen:"open.v1"`
-	Type                TaskRunLog_Type                 `protobuf:"varint,1,opt,name=type,proto3,enum=bytebase.store.TaskRunLog_Type" json:"type,omitempty"`
+	Type                TaskRunLog_Type                 `protobuf:"varint,1,opt,name=type,proto3,enum=bytebase.internal.store.TaskRunLog_Type" json:"type,omitempty"`
 	DeployId            string                          `protobuf:"bytes,12,opt,name=deploy_id,json=deployId,proto3" json:"deploy_id,omitempty"`
 	SchemaDumpStart     *TaskRunLog_SchemaDumpStart     `protobuf:"bytes,2,opt,name=schema_dump_start,json=schemaDumpStart,proto3" json:"schema_dump_start,omitempty"`
 	SchemaDumpEnd       *TaskRunLog_SchemaDumpEnd       `protobuf:"bytes,3,opt,name=schema_dump_end,json=schemaDumpEnd,proto3" json:"schema_dump_end,omitempty"`
@@ -618,7 +618,7 @@ func (x *TaskRunLog_DatabaseSyncEnd) GetError() string {
 
 type TaskRunLog_TaskRunStatusUpdate struct {
 	state         protoimpl.MessageState                `protogen:"open.v1"`
-	Status        TaskRunLog_TaskRunStatusUpdate_Status `protobuf:"varint,1,opt,name=status,proto3,enum=bytebase.store.TaskRunLog_TaskRunStatusUpdate_Status" json:"status,omitempty"`
+	Status        TaskRunLog_TaskRunStatusUpdate_Status `protobuf:"varint,1,opt,name=status,proto3,enum=bytebase.internal.store.TaskRunLog_TaskRunStatusUpdate_Status" json:"status,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -662,7 +662,7 @@ func (x *TaskRunLog_TaskRunStatusUpdate) GetStatus() TaskRunLog_TaskRunStatusUpd
 
 type TaskRunLog_TransactionControl struct {
 	state         protoimpl.MessageState             `protogen:"open.v1"`
-	Type          TaskRunLog_TransactionControl_Type `protobuf:"varint,1,opt,name=type,proto3,enum=bytebase.store.TaskRunLog_TransactionControl_Type" json:"type,omitempty"`
+	Type          TaskRunLog_TransactionControl_Type `protobuf:"varint,1,opt,name=type,proto3,enum=bytebase.internal.store.TaskRunLog_TransactionControl_Type" json:"type,omitempty"`
 	Error         string                             `protobuf:"bytes,2,opt,name=error,proto3" json:"error,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -864,24 +864,24 @@ var File_store_task_run_log_proto protoreflect.FileDescriptor
 
 const file_store_task_run_log_proto_rawDesc = "" +
 	"\n" +
-	"\x18store/task_run_log.proto\x12\x0ebytebase.store\x1a\x14store/task_run.proto\"\xfa\x11\n" +
+	"\x18store/task_run_log.proto\x12\x17bytebase.internal.store\x1a\x14store/task_run.proto\"\x82\x13\n" +
 	"\n" +
-	"TaskRunLog\x123\n" +
-	"\x04type\x18\x01 \x01(\x0e2\x1f.bytebase.store.TaskRunLog.TypeR\x04type\x12\x1b\n" +
-	"\tdeploy_id\x18\f \x01(\tR\bdeployId\x12V\n" +
-	"\x11schema_dump_start\x18\x02 \x01(\v2*.bytebase.store.TaskRunLog.SchemaDumpStartR\x0fschemaDumpStart\x12P\n" +
-	"\x0fschema_dump_end\x18\x03 \x01(\v2(.bytebase.store.TaskRunLog.SchemaDumpEndR\rschemaDumpEnd\x12R\n" +
-	"\x0fcommand_execute\x18\x04 \x01(\v2).bytebase.store.TaskRunLog.CommandExecuteR\x0ecommandExecute\x12U\n" +
-	"\x10command_response\x18\x05 \x01(\v2*.bytebase.store.TaskRunLog.CommandResponseR\x0fcommandResponse\x12\\\n" +
-	"\x13database_sync_start\x18\x06 \x01(\v2,.bytebase.store.TaskRunLog.DatabaseSyncStartR\x11databaseSyncStart\x12V\n" +
-	"\x11database_sync_end\x18\a \x01(\v2*.bytebase.store.TaskRunLog.DatabaseSyncEndR\x0fdatabaseSyncEnd\x12c\n" +
-	"\x16task_run_status_update\x18\b \x01(\v2..bytebase.store.TaskRunLog.TaskRunStatusUpdateR\x13taskRunStatusUpdate\x12^\n" +
-	"\x13transaction_control\x18\t \x01(\v2-.bytebase.store.TaskRunLog.TransactionControlR\x12transactionControl\x12Y\n" +
+	"TaskRunLog\x12<\n" +
+	"\x04type\x18\x01 \x01(\x0e2(.bytebase.internal.store.TaskRunLog.TypeR\x04type\x12\x1b\n" +
+	"\tdeploy_id\x18\f \x01(\tR\bdeployId\x12_\n" +
+	"\x11schema_dump_start\x18\x02 \x01(\v23.bytebase.internal.store.TaskRunLog.SchemaDumpStartR\x0fschemaDumpStart\x12Y\n" +
+	"\x0fschema_dump_end\x18\x03 \x01(\v21.bytebase.internal.store.TaskRunLog.SchemaDumpEndR\rschemaDumpEnd\x12[\n" +
+	"\x0fcommand_execute\x18\x04 \x01(\v22.bytebase.internal.store.TaskRunLog.CommandExecuteR\x0ecommandExecute\x12^\n" +
+	"\x10command_response\x18\x05 \x01(\v23.bytebase.internal.store.TaskRunLog.CommandResponseR\x0fcommandResponse\x12e\n" +
+	"\x13database_sync_start\x18\x06 \x01(\v25.bytebase.internal.store.TaskRunLog.DatabaseSyncStartR\x11databaseSyncStart\x12_\n" +
+	"\x11database_sync_end\x18\a \x01(\v23.bytebase.internal.store.TaskRunLog.DatabaseSyncEndR\x0fdatabaseSyncEnd\x12l\n" +
+	"\x16task_run_status_update\x18\b \x01(\v27.bytebase.internal.store.TaskRunLog.TaskRunStatusUpdateR\x13taskRunStatusUpdate\x12g\n" +
+	"\x13transaction_control\x18\t \x01(\v26.bytebase.internal.store.TaskRunLog.TransactionControlR\x12transactionControl\x12b\n" +
 	"\x12prior_backup_start\x18\n" +
-	" \x01(\v2+.bytebase.store.TaskRunLog.PriorBackupStartR\x10priorBackupStart\x12S\n" +
-	"\x10prior_backup_end\x18\v \x01(\v2).bytebase.store.TaskRunLog.PriorBackupEndR\x0epriorBackupEnd\x12C\n" +
+	" \x01(\v24.bytebase.internal.store.TaskRunLog.PriorBackupStartR\x10priorBackupStart\x12\\\n" +
+	"\x10prior_backup_end\x18\v \x01(\v22.bytebase.internal.store.TaskRunLog.PriorBackupEndR\x0epriorBackupEnd\x12L\n" +
 	"\n" +
-	"retry_info\x18\r \x01(\v2$.bytebase.store.TaskRunLog.RetryInfoR\tretryInfo\x1a\x11\n" +
+	"retry_info\x18\r \x01(\v2-.bytebase.internal.store.TaskRunLog.RetryInfoR\tretryInfo\x1a\x11\n" +
 	"\x0fSchemaDumpStart\x1a%\n" +
 	"\rSchemaDumpEnd\x12\x14\n" +
 	"\x05error\x18\x01 \x01(\tR\x05error\x1a9\n" +
@@ -894,15 +894,15 @@ const file_store_task_run_log_proto_rawDesc = "" +
 	"\x11all_affected_rows\x18\x04 \x03(\x05R\x0fallAffectedRows\x1a\x13\n" +
 	"\x11DatabaseSyncStart\x1a'\n" +
 	"\x0fDatabaseSyncEnd\x12\x14\n" +
-	"\x05error\x18\x01 \x01(\tR\x05error\x1a\xb0\x01\n" +
-	"\x13TaskRunStatusUpdate\x12M\n" +
-	"\x06status\x18\x01 \x01(\x0e25.bytebase.store.TaskRunLog.TaskRunStatusUpdate.StatusR\x06status\"J\n" +
+	"\x05error\x18\x01 \x01(\tR\x05error\x1a\xb9\x01\n" +
+	"\x13TaskRunStatusUpdate\x12V\n" +
+	"\x06status\x18\x01 \x01(\x0e2>.bytebase.internal.store.TaskRunLog.TaskRunStatusUpdate.StatusR\x06status\"J\n" +
 	"\x06Status\x12\x16\n" +
 	"\x12STATUS_UNSPECIFIED\x10\x00\x12\x13\n" +
 	"\x0fRUNNING_WAITING\x10\x01\x12\x13\n" +
-	"\x0fRUNNING_RUNNING\x10\x02\x1a\xb5\x01\n" +
-	"\x12TransactionControl\x12F\n" +
-	"\x04type\x18\x01 \x01(\x0e22.bytebase.store.TaskRunLog.TransactionControl.TypeR\x04type\x12\x14\n" +
+	"\x0fRUNNING_RUNNING\x10\x02\x1a\xbe\x01\n" +
+	"\x12TransactionControl\x12O\n" +
+	"\x04type\x18\x01 \x01(\x0e2;.bytebase.internal.store.TaskRunLog.TransactionControl.TypeR\x04type\x12\x14\n" +
 	"\x05error\x18\x02 \x01(\tR\x05error\"A\n" +
 	"\x04Type\x12\x14\n" +
 	"\x10TYPE_UNSPECIFIED\x10\x00\x12\t\n" +
@@ -910,9 +910,9 @@ const file_store_task_run_log_proto_rawDesc = "" +
 	"\n" +
 	"\x06COMMIT\x10\x02\x12\f\n" +
 	"\bROLLBACK\x10\x03\x1a\x12\n" +
-	"\x10PriorBackupStart\x1ay\n" +
-	"\x0ePriorBackupEnd\x12Q\n" +
-	"\x13prior_backup_detail\x18\x01 \x01(\v2!.bytebase.store.PriorBackupDetailR\x11priorBackupDetail\x12\x14\n" +
+	"\x10PriorBackupStart\x1a\x82\x01\n" +
+	"\x0ePriorBackupEnd\x12Z\n" +
+	"\x13prior_backup_detail\x18\x01 \x01(\v2*.bytebase.internal.store.PriorBackupDetailR\x11priorBackupDetail\x12\x14\n" +
 	"\x05error\x18\x02 \x01(\tR\x05error\x1ak\n" +
 	"\tRetryInfo\x12\x14\n" +
 	"\x05error\x18\x01 \x01(\tR\x05error\x12\x1f\n" +
@@ -950,39 +950,39 @@ func file_store_task_run_log_proto_rawDescGZIP() []byte {
 var file_store_task_run_log_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
 var file_store_task_run_log_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
 var file_store_task_run_log_proto_goTypes = []any{
-	(TaskRunLog_Type)(0),                       // 0: bytebase.store.TaskRunLog.Type
-	(TaskRunLog_TaskRunStatusUpdate_Status)(0), // 1: bytebase.store.TaskRunLog.TaskRunStatusUpdate.Status
-	(TaskRunLog_TransactionControl_Type)(0),    // 2: bytebase.store.TaskRunLog.TransactionControl.Type
-	(*TaskRunLog)(nil),                         // 3: bytebase.store.TaskRunLog
-	(*TaskRunLog_SchemaDumpStart)(nil),         // 4: bytebase.store.TaskRunLog.SchemaDumpStart
-	(*TaskRunLog_SchemaDumpEnd)(nil),           // 5: bytebase.store.TaskRunLog.SchemaDumpEnd
-	(*TaskRunLog_CommandExecute)(nil),          // 6: bytebase.store.TaskRunLog.CommandExecute
-	(*TaskRunLog_CommandResponse)(nil),         // 7: bytebase.store.TaskRunLog.CommandResponse
-	(*TaskRunLog_DatabaseSyncStart)(nil),       // 8: bytebase.store.TaskRunLog.DatabaseSyncStart
-	(*TaskRunLog_DatabaseSyncEnd)(nil),         // 9: bytebase.store.TaskRunLog.DatabaseSyncEnd
-	(*TaskRunLog_TaskRunStatusUpdate)(nil),     // 10: bytebase.store.TaskRunLog.TaskRunStatusUpdate
-	(*TaskRunLog_TransactionControl)(nil),      // 11: bytebase.store.TaskRunLog.TransactionControl
-	(*TaskRunLog_PriorBackupStart)(nil),        // 12: bytebase.store.TaskRunLog.PriorBackupStart
-	(*TaskRunLog_PriorBackupEnd)(nil),          // 13: bytebase.store.TaskRunLog.PriorBackupEnd
-	(*TaskRunLog_RetryInfo)(nil),               // 14: bytebase.store.TaskRunLog.RetryInfo
-	(*PriorBackupDetail)(nil),                  // 15: bytebase.store.PriorBackupDetail
+	(TaskRunLog_Type)(0),                       // 0: bytebase.internal.store.TaskRunLog.Type
+	(TaskRunLog_TaskRunStatusUpdate_Status)(0), // 1: bytebase.internal.store.TaskRunLog.TaskRunStatusUpdate.Status
+	(TaskRunLog_TransactionControl_Type)(0),    // 2: bytebase.internal.store.TaskRunLog.TransactionControl.Type
+	(*TaskRunLog)(nil),                         // 3: bytebase.internal.store.TaskRunLog
+	(*TaskRunLog_SchemaDumpStart)(nil),         // 4: bytebase.internal.store.TaskRunLog.SchemaDumpStart
+	(*TaskRunLog_SchemaDumpEnd)(nil),           // 5: bytebase.internal.store.TaskRunLog.SchemaDumpEnd
+	(*TaskRunLog_CommandExecute)(nil),          // 6: bytebase.internal.store.TaskRunLog.CommandExecute
+	(*TaskRunLog_CommandResponse)(nil),         // 7: bytebase.internal.store.TaskRunLog.CommandResponse
+	(*TaskRunLog_DatabaseSyncStart)(nil),       // 8: bytebase.internal.store.TaskRunLog.DatabaseSyncStart
+	(*TaskRunLog_DatabaseSyncEnd)(nil),         // 9: bytebase.internal.store.TaskRunLog.DatabaseSyncEnd
+	(*TaskRunLog_TaskRunStatusUpdate)(nil),     // 10: bytebase.internal.store.TaskRunLog.TaskRunStatusUpdate
+	(*TaskRunLog_TransactionControl)(nil),      // 11: bytebase.internal.store.TaskRunLog.TransactionControl
+	(*TaskRunLog_PriorBackupStart)(nil),        // 12: bytebase.internal.store.TaskRunLog.PriorBackupStart
+	(*TaskRunLog_PriorBackupEnd)(nil),          // 13: bytebase.internal.store.TaskRunLog.PriorBackupEnd
+	(*TaskRunLog_RetryInfo)(nil),               // 14: bytebase.internal.store.TaskRunLog.RetryInfo
+	(*PriorBackupDetail)(nil),                  // 15: bytebase.internal.store.PriorBackupDetail
 }
 var file_store_task_run_log_proto_depIdxs = []int32{
-	0,  // 0: bytebase.store.TaskRunLog.type:type_name -> bytebase.store.TaskRunLog.Type
-	4,  // 1: bytebase.store.TaskRunLog.schema_dump_start:type_name -> bytebase.store.TaskRunLog.SchemaDumpStart
-	5,  // 2: bytebase.store.TaskRunLog.schema_dump_end:type_name -> bytebase.store.TaskRunLog.SchemaDumpEnd
-	6,  // 3: bytebase.store.TaskRunLog.command_execute:type_name -> bytebase.store.TaskRunLog.CommandExecute
-	7,  // 4: bytebase.store.TaskRunLog.command_response:type_name -> bytebase.store.TaskRunLog.CommandResponse
-	8,  // 5: bytebase.store.TaskRunLog.database_sync_start:type_name -> bytebase.store.TaskRunLog.DatabaseSyncStart
-	9,  // 6: bytebase.store.TaskRunLog.database_sync_end:type_name -> bytebase.store.TaskRunLog.DatabaseSyncEnd
-	10, // 7: bytebase.store.TaskRunLog.task_run_status_update:type_name -> bytebase.store.TaskRunLog.TaskRunStatusUpdate
-	11, // 8: bytebase.store.TaskRunLog.transaction_control:type_name -> bytebase.store.TaskRunLog.TransactionControl
-	12, // 9: bytebase.store.TaskRunLog.prior_backup_start:type_name -> bytebase.store.TaskRunLog.PriorBackupStart
-	13, // 10: bytebase.store.TaskRunLog.prior_backup_end:type_name -> bytebase.store.TaskRunLog.PriorBackupEnd
-	14, // 11: bytebase.store.TaskRunLog.retry_info:type_name -> bytebase.store.TaskRunLog.RetryInfo
-	1,  // 12: bytebase.store.TaskRunLog.TaskRunStatusUpdate.status:type_name -> bytebase.store.TaskRunLog.TaskRunStatusUpdate.Status
-	2,  // 13: bytebase.store.TaskRunLog.TransactionControl.type:type_name -> bytebase.store.TaskRunLog.TransactionControl.Type
-	15, // 14: bytebase.store.TaskRunLog.PriorBackupEnd.prior_backup_detail:type_name -> bytebase.store.PriorBackupDetail
+	0,  // 0: bytebase.internal.store.TaskRunLog.type:type_name -> bytebase.internal.store.TaskRunLog.Type
+	4,  // 1: bytebase.internal.store.TaskRunLog.schema_dump_start:type_name -> bytebase.internal.store.TaskRunLog.SchemaDumpStart
+	5,  // 2: bytebase.internal.store.TaskRunLog.schema_dump_end:type_name -> bytebase.internal.store.TaskRunLog.SchemaDumpEnd
+	6,  // 3: bytebase.internal.store.TaskRunLog.command_execute:type_name -> bytebase.internal.store.TaskRunLog.CommandExecute
+	7,  // 4: bytebase.internal.store.TaskRunLog.command_response:type_name -> bytebase.internal.store.TaskRunLog.CommandResponse
+	8,  // 5: bytebase.internal.store.TaskRunLog.database_sync_start:type_name -> bytebase.internal.store.TaskRunLog.DatabaseSyncStart
+	9,  // 6: bytebase.internal.store.TaskRunLog.database_sync_end:type_name -> bytebase.internal.store.TaskRunLog.DatabaseSyncEnd
+	10, // 7: bytebase.internal.store.TaskRunLog.task_run_status_update:type_name -> bytebase.internal.store.TaskRunLog.TaskRunStatusUpdate
+	11, // 8: bytebase.internal.store.TaskRunLog.transaction_control:type_name -> bytebase.internal.store.TaskRunLog.TransactionControl
+	12, // 9: bytebase.internal.store.TaskRunLog.prior_backup_start:type_name -> bytebase.internal.store.TaskRunLog.PriorBackupStart
+	13, // 10: bytebase.internal.store.TaskRunLog.prior_backup_end:type_name -> bytebase.internal.store.TaskRunLog.PriorBackupEnd
+	14, // 11: bytebase.internal.store.TaskRunLog.retry_info:type_name -> bytebase.internal.store.TaskRunLog.RetryInfo
+	1,  // 12: bytebase.internal.store.TaskRunLog.TaskRunStatusUpdate.status:type_name -> bytebase.internal.store.TaskRunLog.TaskRunStatusUpdate.Status
+	2,  // 13: bytebase.internal.store.TaskRunLog.TransactionControl.type:type_name -> bytebase.internal.store.TaskRunLog.TransactionControl.Type
+	15, // 14: bytebase.internal.store.TaskRunLog.PriorBackupEnd.prior_backup_detail:type_name -> bytebase.internal.store.PriorBackupDetail
 	15, // [15:15] is the sub-list for method output_type
 	15, // [15:15] is the sub-list for method input_type
 	15, // [15:15] is the sub-list for extension type_name

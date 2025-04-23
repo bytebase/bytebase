@@ -1,0 +1,5 @@
+syntax = "proto3";
+
+package bytebase.internal.store;
+
+option go_package = "generated-go/store";

@@ -1,8 +1,8 @@
 version: v2
 modules:
-  - path: v1
-    name: buf.build/bytebase/bytebase
-  - path: store
+  - path: bytebase
+    name: buf.build/bytebase/bytebase.api.v1alpha
+  - path: internal
 
 deps:
   - buf.build/googleapis/googleapis

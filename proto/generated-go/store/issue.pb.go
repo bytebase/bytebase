@@ -159,10 +159,10 @@ var File_store_issue_proto protoreflect.FileDescriptor
 
 const file_store_issue_proto_rawDesc = "" +
 	"\n" +
-	"\x11store/issue.proto\x12\x0ebytebase.store\x1a\x1egoogle/protobuf/duration.proto\x1a\x16google/type/expr.proto\x1a\x14store/approval.proto\"\xab\x01\n" +
-	"\fIssuePayload\x12@\n" +
-	"\bapproval\x18\x01 \x01(\v2$.bytebase.store.IssuePayloadApprovalR\bapproval\x12A\n" +
-	"\rgrant_request\x18\x02 \x01(\v2\x1c.bytebase.store.GrantRequestR\fgrantRequest\x12\x16\n" +
+	"\x11store/issue.proto\x12\x17bytebase.internal.store\x1a\x1egoogle/protobuf/duration.proto\x1a\x16google/type/expr.proto\x1a\x14store/approval.proto\"\xbd\x01\n" +
+	"\fIssuePayload\x12I\n" +
+	"\bapproval\x18\x01 \x01(\v2-.bytebase.internal.store.IssuePayloadApprovalR\bapproval\x12J\n" +
+	"\rgrant_request\x18\x02 \x01(\v2%.bytebase.internal.store.GrantRequestR\fgrantRequest\x12\x16\n" +
 	"\x06labels\x18\x03 \x03(\tR\x06labels\"\xa2\x01\n" +
 	"\fGrantRequest\x12\x12\n" +
 	"\x04role\x18\x01 \x01(\tR\x04role\x12\x12\n" +
@@ -186,17 +186,17 @@ func file_store_issue_proto_rawDescGZIP() []byte {
 
 var file_store_issue_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
 var file_store_issue_proto_goTypes = []any{
-	(*IssuePayload)(nil),         // 0: bytebase.store.IssuePayload
-	(*GrantRequest)(nil),         // 1: bytebase.store.GrantRequest
-	(*IssuePayloadApproval)(nil), // 2: bytebase.store.IssuePayloadApproval
+	(*IssuePayload)(nil),         // 0: bytebase.internal.store.IssuePayload
+	(*GrantRequest)(nil),         // 1: bytebase.internal.store.GrantRequest
+	(*IssuePayloadApproval)(nil), // 2: bytebase.internal.store.IssuePayloadApproval
 	(*expr.Expr)(nil),            // 3: google.type.Expr
 	(*durationpb.Duration)(nil),  // 4: google.protobuf.Duration
 }
 var file_store_issue_proto_depIdxs = []int32{
-	2, // 0: bytebase.store.IssuePayload.approval:type_name -> bytebase.store.IssuePayloadApproval
-	1, // 1: bytebase.store.IssuePayload.grant_request:type_name -> bytebase.store.GrantRequest
-	3, // 2: bytebase.store.GrantRequest.condition:type_name -> google.type.Expr
-	4, // 3: bytebase.store.GrantRequest.expiration:type_name -> google.protobuf.Duration
+	2, // 0: bytebase.internal.store.IssuePayload.approval:type_name -> bytebase.internal.store.IssuePayloadApproval
+	1, // 1: bytebase.internal.store.IssuePayload.grant_request:type_name -> bytebase.internal.store.GrantRequest
+	3, // 2: bytebase.internal.store.GrantRequest.condition:type_name -> google.type.Expr
+	4, // 3: bytebase.internal.store.GrantRequest.expiration:type_name -> google.protobuf.Duration
 	4, // [4:4] is the sub-list for method output_type
 	4, // [4:4] is the sub-list for method input_type
 	4, // [4:4] is the sub-list for extension type_name

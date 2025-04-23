@@ -1,0 +1,48 @@
+syntax = "proto3";
+
+package bytebase.internal.store;
+
+import "google/api/resource.proto";
+import "store/common.proto";
+
+option go_package = "generated-go/store";
+
+message ReleasePayload {
+  string title = 1;
+
+  repeated File files = 2;
+
+  VCSSource vcs_source = 3;
+
+  message File {
+    // The unique identifier for the file.
+    string id = 1;
+    // The path of the file. e.g. `2.2/V0001_create_table.sql`.
+    string path = 2;
+    // The sheet that holds the content.
+    // Format: projects/{project}/sheets/{sheet}
+    string sheet = 3 [(google.api.resource_reference) = {type: "bytebase.com/Sheet"}];
+    // The SHA256 hash value of the sheet.
+    string sheet_sha256 = 4;
+    ReleaseFileType type = 5;
+    string version = 6;
+    ChangeType change_type = 7;
+
+    enum ChangeType {
+      CHANGE_TYPE_UNSPECIFIED = 0;
+      DDL = 1;
+      DDL_GHOST = 2;
+      DML = 3;
+    }
+  }
+
+  message VCSSource {
+    VCSType vcs_type = 1;
+    string url = 2;
+  }
+}
+
+enum ReleaseFileType {
+  TYPE_UNSPECIFIED = 0;
+  VERSIONED = 1;
+}

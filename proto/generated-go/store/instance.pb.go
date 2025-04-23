@@ -338,7 +338,7 @@ func (DataSourceExternalSecret_AppRoleAuthOption_SecretType) EnumDescriptor() ([
 type Instance struct {
 	state        protoimpl.MessageState `protogen:"open.v1"`
 	Title        string                 `protobuf:"bytes,1,opt,name=title,proto3" json:"title,omitempty"`
-	Engine       Engine                 `protobuf:"varint,2,opt,name=engine,proto3,enum=bytebase.store.Engine" json:"engine,omitempty"`
+	Engine       Engine                 `protobuf:"varint,2,opt,name=engine,proto3,enum=bytebase.internal.store.Engine" json:"engine,omitempty"`
 	Activation   bool                   `protobuf:"varint,3,opt,name=activation,proto3" json:"activation,omitempty"`
 	Version      string                 `protobuf:"bytes,4,opt,name=version,proto3" json:"version,omitempty"`
 	ExternalLink string                 `protobuf:"bytes,5,opt,name=external_link,json=externalLink,proto3" json:"external_link,omitempty"`
@@ -552,7 +552,7 @@ func (x *InstanceRole) GetAttribute() string {
 type DataSource struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
 	Id                 string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	Type               DataSourceType         `protobuf:"varint,2,opt,name=type,proto3,enum=bytebase.store.DataSourceType" json:"type,omitempty"`
+	Type               DataSourceType         `protobuf:"varint,2,opt,name=type,proto3,enum=bytebase.internal.store.DataSourceType" json:"type,omitempty"`
 	Username           string                 `protobuf:"bytes,3,opt,name=username,proto3" json:"username,omitempty"`
 	Password           string                 `protobuf:"bytes,37,opt,name=password,proto3" json:"password,omitempty"`
 	ObfuscatedPassword string                 `protobuf:"bytes,4,opt,name=obfuscated_password,json=obfuscatedPassword,proto3" json:"obfuscated_password,omitempty"`
@@ -595,7 +595,7 @@ type DataSource struct {
 	AuthenticationPrivateKey           string                        `protobuf:"bytes,43,opt,name=authentication_private_key,json=authenticationPrivateKey,proto3" json:"authentication_private_key,omitempty"`
 	ObfuscatedAuthenticationPrivateKey string                        `protobuf:"bytes,20,opt,name=obfuscated_authentication_private_key,json=obfuscatedAuthenticationPrivateKey,proto3" json:"obfuscated_authentication_private_key,omitempty"`
 	ExternalSecret                     *DataSourceExternalSecret     `protobuf:"bytes,21,opt,name=external_secret,json=externalSecret,proto3" json:"external_secret,omitempty"`
-	AuthenticationType                 DataSource_AuthenticationType `protobuf:"varint,22,opt,name=authentication_type,json=authenticationType,proto3,enum=bytebase.store.DataSource_AuthenticationType" json:"authentication_type,omitempty"`
+	AuthenticationType                 DataSource_AuthenticationType `protobuf:"varint,22,opt,name=authentication_type,json=authenticationType,proto3,enum=bytebase.internal.store.DataSource_AuthenticationType" json:"authentication_type,omitempty"`
 	// Types that are valid to be assigned to IamExtension:
 	//
 	//	*DataSource_ClientSecretCredential_
@@ -615,7 +615,7 @@ type DataSource struct {
 	MasterUsername           string               `protobuf:"bytes,32,opt,name=master_username,json=masterUsername,proto3" json:"master_username,omitempty"`
 	MasterPassword           string               `protobuf:"bytes,44,opt,name=master_password,json=masterPassword,proto3" json:"master_password,omitempty"`
 	ObfuscatedMasterPassword string               `protobuf:"bytes,33,opt,name=obfuscated_master_password,json=obfuscatedMasterPassword,proto3" json:"obfuscated_master_password,omitempty"`
-	RedisType                DataSource_RedisType `protobuf:"varint,34,opt,name=redis_type,json=redisType,proto3,enum=bytebase.store.DataSource_RedisType" json:"redis_type,omitempty"`
+	RedisType                DataSource_RedisType `protobuf:"varint,34,opt,name=redis_type,json=redisType,proto3,enum=bytebase.internal.store.DataSource_RedisType" json:"redis_type,omitempty"`
 	// Cluster is the cluster name for the data source. Used by CockroachDB.
 	Cluster string `protobuf:"bytes,35,opt,name=cluster,proto3" json:"cluster,omitempty"`
 	// Extra connection parameters for the database connection.
@@ -1142,9 +1142,9 @@ func (x *KerberosConfig) GetKdcTransportProtocol() string {
 
 type DataSourceExternalSecret struct {
 	state      protoimpl.MessageState              `protogen:"open.v1"`
-	SecretType DataSourceExternalSecret_SecretType `protobuf:"varint,1,opt,name=secret_type,json=secretType,proto3,enum=bytebase.store.DataSourceExternalSecret_SecretType" json:"secret_type,omitempty"`
+	SecretType DataSourceExternalSecret_SecretType `protobuf:"varint,1,opt,name=secret_type,json=secretType,proto3,enum=bytebase.internal.store.DataSourceExternalSecret_SecretType" json:"secret_type,omitempty"`
 	Url        string                              `protobuf:"bytes,2,opt,name=url,proto3" json:"url,omitempty"`
-	AuthType   DataSourceExternalSecret_AuthType   `protobuf:"varint,3,opt,name=auth_type,json=authType,proto3,enum=bytebase.store.DataSourceExternalSecret_AuthType" json:"auth_type,omitempty"`
+	AuthType   DataSourceExternalSecret_AuthType   `protobuf:"varint,3,opt,name=auth_type,json=authType,proto3,enum=bytebase.internal.store.DataSourceExternalSecret_AuthType" json:"auth_type,omitempty"`
 	// Types that are valid to be assigned to AuthOption:
 	//
 	//	*DataSourceExternalSecret_AppRole
@@ -1398,7 +1398,7 @@ type DataSourceExternalSecret_AppRoleAuthOption struct {
 	RoleId string                 `protobuf:"bytes,1,opt,name=role_id,json=roleId,proto3" json:"role_id,omitempty"`
 	// the secret id for the role without ttl.
 	SecretId string                                                `protobuf:"bytes,2,opt,name=secret_id,json=secretId,proto3" json:"secret_id,omitempty"`
-	Type     DataSourceExternalSecret_AppRoleAuthOption_SecretType `protobuf:"varint,3,opt,name=type,proto3,enum=bytebase.store.DataSourceExternalSecret_AppRoleAuthOption_SecretType" json:"type,omitempty"`
+	Type     DataSourceExternalSecret_AppRoleAuthOption_SecretType `protobuf:"varint,3,opt,name=type,proto3,enum=bytebase.internal.store.DataSourceExternalSecret_AppRoleAuthOption_SecretType" json:"type,omitempty"`
 	// The path where the approle auth method is mounted.
 	MountPath     string `protobuf:"bytes,4,opt,name=mount_path,json=mountPath,proto3" json:"mount_path,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -1467,23 +1467,23 @@ var File_store_instance_proto protoreflect.FileDescriptor
 
 const file_store_instance_proto_rawDesc = "" +
 	"\n" +
-	"\x14store/instance.proto\x12\x0ebytebase.store\x1a\x1egoogle/protobuf/duration.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x12store/common.proto\"\xbc\x04\n" +
+	"\x14store/instance.proto\x12\x17bytebase.internal.store\x1a\x1egoogle/protobuf/duration.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x12store/common.proto\"\xd7\x04\n" +
 	"\bInstance\x12\x14\n" +
-	"\x05title\x18\x01 \x01(\tR\x05title\x12.\n" +
-	"\x06engine\x18\x02 \x01(\x0e2\x16.bytebase.store.EngineR\x06engine\x12\x1e\n" +
+	"\x05title\x18\x01 \x01(\tR\x05title\x127\n" +
+	"\x06engine\x18\x02 \x01(\x0e2\x1f.bytebase.internal.store.EngineR\x06engine\x12\x1e\n" +
 	"\n" +
 	"activation\x18\x03 \x01(\bR\n" +
 	"activation\x12\x18\n" +
 	"\aversion\x18\x04 \x01(\tR\aversion\x12#\n" +
-	"\rexternal_link\x18\x05 \x01(\tR\fexternalLink\x12=\n" +
-	"\fdata_sources\x18\x06 \x03(\v2\x1a.bytebase.store.DataSourceR\vdataSources\x12>\n" +
+	"\rexternal_link\x18\x05 \x01(\tR\fexternalLink\x12F\n" +
+	"\fdata_sources\x18\x06 \x03(\v2#.bytebase.internal.store.DataSourceR\vdataSources\x12>\n" +
 	"\rsync_interval\x18\a \x01(\v2\x19.google.protobuf.DurationR\fsyncInterval\x12/\n" +
 	"\x13maximum_connections\x18\b \x01(\x05R\x12maximumConnections\x12%\n" +
 	"\x0esync_databases\x18\t \x03(\tR\rsyncDatabases\x12>\n" +
 	"\x1cmysql_lower_case_table_names\x18\n" +
 	" \x01(\x05R\x18mysqlLowerCaseTableNames\x12@\n" +
-	"\x0elast_sync_time\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\flastSyncTime\x122\n" +
-	"\x05roles\x18\f \x03(\v2\x1c.bytebase.store.InstanceRoleR\x05roles\"\xce\x01\n" +
+	"\x0elast_sync_time\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\flastSyncTime\x12;\n" +
+	"\x05roles\x18\f \x03(\v2%.bytebase.internal.store.InstanceRoleR\x05roles\"\xce\x01\n" +
 	"\fInstanceRole\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12.\n" +
 	"\x10connection_limit\x18\x02 \x01(\x05H\x00R\x0fconnectionLimit\x88\x01\x01\x12$\n" +
@@ -1493,11 +1493,11 @@ const file_store_instance_proto_rawDesc = "" +
 	"\x11_connection_limitB\x0e\n" +
 	"\f_valid_untilB\f\n" +
 	"\n" +
-	"_attribute\"\xef\x13\n" +
+	"_attribute\"\xb8\x14\n" +
 	"\n" +
 	"DataSource\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\x122\n" +
-	"\x04type\x18\x02 \x01(\x0e2\x1e.bytebase.store.DataSourceTypeR\x04type\x12\x1a\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12;\n" +
+	"\x04type\x18\x02 \x01(\x0e2'.bytebase.internal.store.DataSourceTypeR\x04type\x12\x1a\n" +
 	"\busername\x18\x03 \x01(\tR\busername\x12\x1a\n" +
 	"\bpassword\x18% \x01(\tR\bpassword\x12/\n" +
 	"\x13obfuscated_password\x18\x04 \x01(\tR\x12obfuscatedPassword\x12\x17\n" +
@@ -1526,13 +1526,13 @@ const file_store_instance_proto_rawDesc = "" +
 	"\x0fssh_private_key\x18* \x01(\tR\rsshPrivateKey\x12;\n" +
 	"\x1aobfuscated_ssh_private_key\x18\x13 \x01(\tR\x17obfuscatedSshPrivateKey\x12<\n" +
 	"\x1aauthentication_private_key\x18+ \x01(\tR\x18authenticationPrivateKey\x12Q\n" +
-	"%obfuscated_authentication_private_key\x18\x14 \x01(\tR\"obfuscatedAuthenticationPrivateKey\x12Q\n" +
-	"\x0fexternal_secret\x18\x15 \x01(\v2(.bytebase.store.DataSourceExternalSecretR\x0eexternalSecret\x12^\n" +
-	"\x13authentication_type\x18\x16 \x01(\x0e2-.bytebase.store.DataSource.AuthenticationTypeR\x12authenticationType\x12m\n" +
-	"\x18client_secret_credential\x18\x17 \x01(\v21.bytebase.store.DataSource.ClientSecretCredentialH\x00R\x16clientSecretCredential\x12;\n" +
-	"\vsasl_config\x18\x18 \x01(\v2\x1a.bytebase.store.SASLConfigR\n" +
-	"saslConfig\x12U\n" +
-	"\x14additional_addresses\x18\x1a \x03(\v2\".bytebase.store.DataSource.AddressR\x13additionalAddresses\x12+\n" +
+	"%obfuscated_authentication_private_key\x18\x14 \x01(\tR\"obfuscatedAuthenticationPrivateKey\x12Z\n" +
+	"\x0fexternal_secret\x18\x15 \x01(\v21.bytebase.internal.store.DataSourceExternalSecretR\x0eexternalSecret\x12g\n" +
+	"\x13authentication_type\x18\x16 \x01(\x0e26.bytebase.internal.store.DataSource.AuthenticationTypeR\x12authenticationType\x12v\n" +
+	"\x18client_secret_credential\x18\x17 \x01(\v2:.bytebase.internal.store.DataSource.ClientSecretCredentialH\x00R\x16clientSecretCredential\x12D\n" +
+	"\vsasl_config\x18\x18 \x01(\v2#.bytebase.internal.store.SASLConfigR\n" +
+	"saslConfig\x12^\n" +
+	"\x14additional_addresses\x18\x1a \x03(\v2+.bytebase.internal.store.DataSource.AddressR\x13additionalAddresses\x12+\n" +
 	"\x11direct_connection\x18\x1b \x01(\bR\x10directConnection\x12\x16\n" +
 	"\x06region\x18\x1c \x01(\tR\x06region\x12!\n" +
 	"\fwarehouse_id\x18\x1d \x01(\tR\vwarehouseId\x12\x1f\n" +
@@ -1540,11 +1540,11 @@ const file_store_instance_proto_rawDesc = "" +
 	"masterName\x12'\n" +
 	"\x0fmaster_username\x18  \x01(\tR\x0emasterUsername\x12'\n" +
 	"\x0fmaster_password\x18, \x01(\tR\x0emasterPassword\x12<\n" +
-	"\x1aobfuscated_master_password\x18! \x01(\tR\x18obfuscatedMasterPassword\x12C\n" +
+	"\x1aobfuscated_master_password\x18! \x01(\tR\x18obfuscatedMasterPassword\x12L\n" +
 	"\n" +
-	"redis_type\x18\" \x01(\x0e2$.bytebase.store.DataSource.RedisTypeR\tredisType\x12\x18\n" +
-	"\acluster\x18# \x01(\tR\acluster\x12y\n" +
-	"\x1bextra_connection_parameters\x18$ \x03(\v29.bytebase.store.DataSource.ExtraConnectionParametersEntryR\x19extraConnectionParameters\x1a\xb1\x01\n" +
+	"redis_type\x18\" \x01(\x0e2-.bytebase.internal.store.DataSource.RedisTypeR\tredisType\x12\x18\n" +
+	"\acluster\x18# \x01(\tR\acluster\x12\x82\x01\n" +
+	"\x1bextra_connection_parameters\x18$ \x03(\v2B.bytebase.internal.store.DataSource.ExtraConnectionParametersEntryR\x19extraConnectionParameters\x1a\xb1\x01\n" +
 	"\x16ClientSecretCredential\x12\x1b\n" +
 	"\ttenant_id\x18\x01 \x01(\tR\btenantId\x12\x1b\n" +
 	"\tclient_id\x18\x02 \x01(\tR\bclientId\x12#\n" +
@@ -1568,11 +1568,11 @@ const file_store_instance_proto_rawDesc = "" +
 	"STANDALONE\x10\x01\x12\f\n" +
 	"\bSENTINEL\x10\x02\x12\v\n" +
 	"\aCLUSTER\x10\x03B\x0f\n" +
-	"\riam_extension\"Z\n" +
+	"\riam_extension\"c\n" +
 	"\n" +
-	"SASLConfig\x12?\n" +
+	"SASLConfig\x12H\n" +
 	"\n" +
-	"krb_config\x18\x01 \x01(\v2\x1e.bytebase.store.KerberosConfigH\x00R\tkrbConfigB\v\n" +
+	"krb_config\x18\x01 \x01(\v2'.bytebase.internal.store.KerberosConfigH\x00R\tkrbConfigB\v\n" +
 	"\tmechanism\"\xe0\x01\n" +
 	"\x0eKerberosConfig\x12\x18\n" +
 	"\aprimary\x18\x01 \x01(\tR\aprimary\x12\x1a\n" +
@@ -1581,23 +1581,23 @@ const file_store_instance_proto_rawDesc = "" +
 	"\x06keytab\x18\x04 \x01(\fR\x06keytab\x12\x19\n" +
 	"\bkdc_host\x18\x05 \x01(\tR\akdcHost\x12\x19\n" +
 	"\bkdc_port\x18\x06 \x01(\tR\akdcPort\x124\n" +
-	"\x16kdc_transport_protocol\x18\a \x01(\tR\x14kdcTransportProtocol\"\x81\a\n" +
-	"\x18DataSourceExternalSecret\x12T\n" +
-	"\vsecret_type\x18\x01 \x01(\x0e23.bytebase.store.DataSourceExternalSecret.SecretTypeR\n" +
+	"\x16kdc_transport_protocol\x18\a \x01(\tR\x14kdcTransportProtocol\"\xa5\a\n" +
+	"\x18DataSourceExternalSecret\x12]\n" +
+	"\vsecret_type\x18\x01 \x01(\x0e2<.bytebase.internal.store.DataSourceExternalSecret.SecretTypeR\n" +
 	"secretType\x12\x10\n" +
-	"\x03url\x18\x02 \x01(\tR\x03url\x12N\n" +
-	"\tauth_type\x18\x03 \x01(\x0e21.bytebase.store.DataSourceExternalSecret.AuthTypeR\bauthType\x12W\n" +
-	"\bapp_role\x18\x04 \x01(\v2:.bytebase.store.DataSourceExternalSecret.AppRoleAuthOptionH\x00R\aappRole\x12\x16\n" +
+	"\x03url\x18\x02 \x01(\tR\x03url\x12W\n" +
+	"\tauth_type\x18\x03 \x01(\x0e2:.bytebase.internal.store.DataSourceExternalSecret.AuthTypeR\bauthType\x12`\n" +
+	"\bapp_role\x18\x04 \x01(\v2C.bytebase.internal.store.DataSourceExternalSecret.AppRoleAuthOptionH\x00R\aappRole\x12\x16\n" +
 	"\x05token\x18\x05 \x01(\tH\x00R\x05token\x12\x1f\n" +
 	"\vengine_name\x18\x06 \x01(\tR\n" +
 	"engineName\x12\x1f\n" +
 	"\vsecret_name\x18\a \x01(\tR\n" +
 	"secretName\x12*\n" +
-	"\x11password_key_name\x18\b \x01(\tR\x0fpasswordKeyName\x1a\x8a\x02\n" +
+	"\x11password_key_name\x18\b \x01(\tR\x0fpasswordKeyName\x1a\x93\x02\n" +
 	"\x11AppRoleAuthOption\x12\x17\n" +
 	"\arole_id\x18\x01 \x01(\tR\x06roleId\x12\x1b\n" +
-	"\tsecret_id\x18\x02 \x01(\tR\bsecretId\x12Y\n" +
-	"\x04type\x18\x03 \x01(\x0e2E.bytebase.store.DataSourceExternalSecret.AppRoleAuthOption.SecretTypeR\x04type\x12\x1d\n" +
+	"\tsecret_id\x18\x02 \x01(\tR\bsecretId\x12b\n" +
+	"\x04type\x18\x03 \x01(\x0e2N.bytebase.internal.store.DataSourceExternalSecret.AppRoleAuthOption.SecretTypeR\x04type\x12\x1d\n" +
 	"\n" +
 	"mount_path\x18\x04 \x01(\tR\tmountPath\"E\n" +
 	"\n" +
@@ -1636,45 +1636,45 @@ func file_store_instance_proto_rawDescGZIP() []byte {
 var file_store_instance_proto_enumTypes = make([]protoimpl.EnumInfo, 6)
 var file_store_instance_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
 var file_store_instance_proto_goTypes = []any{
-	(DataSourceType)(0),                                        // 0: bytebase.store.DataSourceType
-	(DataSource_AuthenticationType)(0),                         // 1: bytebase.store.DataSource.AuthenticationType
-	(DataSource_RedisType)(0),                                  // 2: bytebase.store.DataSource.RedisType
-	(DataSourceExternalSecret_SecretType)(0),                   // 3: bytebase.store.DataSourceExternalSecret.SecretType
-	(DataSourceExternalSecret_AuthType)(0),                     // 4: bytebase.store.DataSourceExternalSecret.AuthType
-	(DataSourceExternalSecret_AppRoleAuthOption_SecretType)(0), // 5: bytebase.store.DataSourceExternalSecret.AppRoleAuthOption.SecretType
-	(*Instance)(nil),                                           // 6: bytebase.store.Instance
-	(*InstanceRole)(nil),                                       // 7: bytebase.store.InstanceRole
-	(*DataSource)(nil),                                         // 8: bytebase.store.DataSource
-	(*SASLConfig)(nil),                                         // 9: bytebase.store.SASLConfig
-	(*KerberosConfig)(nil),                                     // 10: bytebase.store.KerberosConfig
-	(*DataSourceExternalSecret)(nil),                           // 11: bytebase.store.DataSourceExternalSecret
-	(*DataSource_ClientSecretCredential)(nil),                  // 12: bytebase.store.DataSource.ClientSecretCredential
-	(*DataSource_Address)(nil),                                 // 13: bytebase.store.DataSource.Address
-	nil,                                                        // 14: bytebase.store.DataSource.ExtraConnectionParametersEntry
-	(*DataSourceExternalSecret_AppRoleAuthOption)(nil),         // 15: bytebase.store.DataSourceExternalSecret.AppRoleAuthOption
-	(Engine)(0),                                                // 16: bytebase.store.Engine
+	(DataSourceType)(0),                                        // 0: bytebase.internal.store.DataSourceType
+	(DataSource_AuthenticationType)(0),                         // 1: bytebase.internal.store.DataSource.AuthenticationType
+	(DataSource_RedisType)(0),                                  // 2: bytebase.internal.store.DataSource.RedisType
+	(DataSourceExternalSecret_SecretType)(0),                   // 3: bytebase.internal.store.DataSourceExternalSecret.SecretType
+	(DataSourceExternalSecret_AuthType)(0),                     // 4: bytebase.internal.store.DataSourceExternalSecret.AuthType
+	(DataSourceExternalSecret_AppRoleAuthOption_SecretType)(0), // 5: bytebase.internal.store.DataSourceExternalSecret.AppRoleAuthOption.SecretType
+	(*Instance)(nil),                                           // 6: bytebase.internal.store.Instance
+	(*InstanceRole)(nil),                                       // 7: bytebase.internal.store.InstanceRole
+	(*DataSource)(nil),                                         // 8: bytebase.internal.store.DataSource
+	(*SASLConfig)(nil),                                         // 9: bytebase.internal.store.SASLConfig
+	(*KerberosConfig)(nil),                                     // 10: bytebase.internal.store.KerberosConfig
+	(*DataSourceExternalSecret)(nil),                           // 11: bytebase.internal.store.DataSourceExternalSecret
+	(*DataSource_ClientSecretCredential)(nil),                  // 12: bytebase.internal.store.DataSource.ClientSecretCredential
+	(*DataSource_Address)(nil),                                 // 13: bytebase.internal.store.DataSource.Address
+	nil,                                                        // 14: bytebase.internal.store.DataSource.ExtraConnectionParametersEntry
+	(*DataSourceExternalSecret_AppRoleAuthOption)(nil),         // 15: bytebase.internal.store.DataSourceExternalSecret.AppRoleAuthOption
+	(Engine)(0),                                                // 16: bytebase.internal.store.Engine
 	(*durationpb.Duration)(nil),                                // 17: google.protobuf.Duration
 	(*timestamppb.Timestamp)(nil),                              // 18: google.protobuf.Timestamp
 }
 var file_store_instance_proto_depIdxs = []int32{
-	16, // 0: bytebase.store.Instance.engine:type_name -> bytebase.store.Engine
-	8,  // 1: bytebase.store.Instance.data_sources:type_name -> bytebase.store.DataSource
-	17, // 2: bytebase.store.Instance.sync_interval:type_name -> google.protobuf.Duration
-	18, // 3: bytebase.store.Instance.last_sync_time:type_name -> google.protobuf.Timestamp
-	7,  // 4: bytebase.store.Instance.roles:type_name -> bytebase.store.InstanceRole
-	0,  // 5: bytebase.store.DataSource.type:type_name -> bytebase.store.DataSourceType
-	11, // 6: bytebase.store.DataSource.external_secret:type_name -> bytebase.store.DataSourceExternalSecret
-	1,  // 7: bytebase.store.DataSource.authentication_type:type_name -> bytebase.store.DataSource.AuthenticationType
-	12, // 8: bytebase.store.DataSource.client_secret_credential:type_name -> bytebase.store.DataSource.ClientSecretCredential
-	9,  // 9: bytebase.store.DataSource.sasl_config:type_name -> bytebase.store.SASLConfig
-	13, // 10: bytebase.store.DataSource.additional_addresses:type_name -> bytebase.store.DataSource.Address
-	2,  // 11: bytebase.store.DataSource.redis_type:type_name -> bytebase.store.DataSource.RedisType
-	14, // 12: bytebase.store.DataSource.extra_connection_parameters:type_name -> bytebase.store.DataSource.ExtraConnectionParametersEntry
-	10, // 13: bytebase.store.SASLConfig.krb_config:type_name -> bytebase.store.KerberosConfig
-	3,  // 14: bytebase.store.DataSourceExternalSecret.secret_type:type_name -> bytebase.store.DataSourceExternalSecret.SecretType
-	4,  // 15: bytebase.store.DataSourceExternalSecret.auth_type:type_name -> bytebase.store.DataSourceExternalSecret.AuthType
-	15, // 16: bytebase.store.DataSourceExternalSecret.app_role:type_name -> bytebase.store.DataSourceExternalSecret.AppRoleAuthOption
-	5,  // 17: bytebase.store.DataSourceExternalSecret.AppRoleAuthOption.type:type_name -> bytebase.store.DataSourceExternalSecret.AppRoleAuthOption.SecretType
+	16, // 0: bytebase.internal.store.Instance.engine:type_name -> bytebase.internal.store.Engine
+	8,  // 1: bytebase.internal.store.Instance.data_sources:type_name -> bytebase.internal.store.DataSource
+	17, // 2: bytebase.internal.store.Instance.sync_interval:type_name -> google.protobuf.Duration
+	18, // 3: bytebase.internal.store.Instance.last_sync_time:type_name -> google.protobuf.Timestamp
+	7,  // 4: bytebase.internal.store.Instance.roles:type_name -> bytebase.internal.store.InstanceRole
+	0,  // 5: bytebase.internal.store.DataSource.type:type_name -> bytebase.internal.store.DataSourceType
+	11, // 6: bytebase.internal.store.DataSource.external_secret:type_name -> bytebase.internal.store.DataSourceExternalSecret
+	1,  // 7: bytebase.internal.store.DataSource.authentication_type:type_name -> bytebase.internal.store.DataSource.AuthenticationType
+	12, // 8: bytebase.internal.store.DataSource.client_secret_credential:type_name -> bytebase.internal.store.DataSource.ClientSecretCredential
+	9,  // 9: bytebase.internal.store.DataSource.sasl_config:type_name -> bytebase.internal.store.SASLConfig
+	13, // 10: bytebase.internal.store.DataSource.additional_addresses:type_name -> bytebase.internal.store.DataSource.Address
+	2,  // 11: bytebase.internal.store.DataSource.redis_type:type_name -> bytebase.internal.store.DataSource.RedisType
+	14, // 12: bytebase.internal.store.DataSource.extra_connection_parameters:type_name -> bytebase.internal.store.DataSource.ExtraConnectionParametersEntry
+	10, // 13: bytebase.internal.store.SASLConfig.krb_config:type_name -> bytebase.internal.store.KerberosConfig
+	3,  // 14: bytebase.internal.store.DataSourceExternalSecret.secret_type:type_name -> bytebase.internal.store.DataSourceExternalSecret.SecretType
+	4,  // 15: bytebase.internal.store.DataSourceExternalSecret.auth_type:type_name -> bytebase.internal.store.DataSourceExternalSecret.AuthType
+	15, // 16: bytebase.internal.store.DataSourceExternalSecret.app_role:type_name -> bytebase.internal.store.DataSourceExternalSecret.AppRoleAuthOption
+	5,  // 17: bytebase.internal.store.DataSourceExternalSecret.AppRoleAuthOption.type:type_name -> bytebase.internal.store.DataSourceExternalSecret.AppRoleAuthOption.SecretType
 	18, // [18:18] is the sub-list for method output_type
 	18, // [18:18] is the sub-list for method input_type
 	18, // [18:18] is the sub-list for extension type_name

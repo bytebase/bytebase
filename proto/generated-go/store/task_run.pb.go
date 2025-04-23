@@ -432,30 +432,30 @@ var File_store_task_run_proto protoreflect.FileDescriptor
 
 const file_store_task_run_proto_rawDesc = "" +
 	"\n" +
-	"\x14store/task_run.proto\x12\x0ebytebase.store\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x12store/common.proto\"\xde\x02\n" +
+	"\x14store/task_run.proto\x12\x17bytebase.internal.store\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x12store/common.proto\"\xf9\x02\n" +
 	"\rTaskRunResult\x12\x16\n" +
 	"\x06detail\x18\x01 \x01(\tR\x06detail\x12\x1c\n" +
 	"\tchangelog\x18\b \x01(\tR\tchangelog\x12\x18\n" +
-	"\aversion\x18\x03 \x01(\tR\aversion\x12?\n" +
-	"\x0estart_position\x18\x04 \x01(\v2\x18.bytebase.store.PositionR\rstartPosition\x12;\n" +
-	"\fend_position\x18\x05 \x01(\v2\x18.bytebase.store.PositionR\vendPosition\x12,\n" +
-	"\x12export_archive_uid\x18\x06 \x01(\x05R\x10exportArchiveUid\x12Q\n" +
-	"\x13prior_backup_detail\x18\a \x01(\v2!.bytebase.store.PriorBackupDetailR\x11priorBackupDetail\"\xcd\x03\n" +
-	"\x11PriorBackupDetail\x12<\n" +
-	"\x05items\x18\x01 \x03(\v2&.bytebase.store.PriorBackupDetail.ItemR\x05items\x1a\xf9\x02\n" +
-	"\x04Item\x12O\n" +
-	"\fsource_table\x18\x01 \x01(\v2,.bytebase.store.PriorBackupDetail.Item.TableR\vsourceTable\x12O\n" +
-	"\ftarget_table\x18\x02 \x01(\v2,.bytebase.store.PriorBackupDetail.Item.TableR\vtargetTable\x12?\n" +
-	"\x0estart_position\x18\x03 \x01(\v2\x18.bytebase.store.PositionR\rstartPosition\x12;\n" +
-	"\fend_position\x18\x04 \x01(\v2\x18.bytebase.store.PositionR\vendPosition\x1aQ\n" +
+	"\aversion\x18\x03 \x01(\tR\aversion\x12H\n" +
+	"\x0estart_position\x18\x04 \x01(\v2!.bytebase.internal.store.PositionR\rstartPosition\x12D\n" +
+	"\fend_position\x18\x05 \x01(\v2!.bytebase.internal.store.PositionR\vendPosition\x12,\n" +
+	"\x12export_archive_uid\x18\x06 \x01(\x05R\x10exportArchiveUid\x12Z\n" +
+	"\x13prior_backup_detail\x18\a \x01(\v2*.bytebase.internal.store.PriorBackupDetailR\x11priorBackupDetail\"\xfa\x03\n" +
+	"\x11PriorBackupDetail\x12E\n" +
+	"\x05items\x18\x01 \x03(\v2/.bytebase.internal.store.PriorBackupDetail.ItemR\x05items\x1a\x9d\x03\n" +
+	"\x04Item\x12X\n" +
+	"\fsource_table\x18\x01 \x01(\v25.bytebase.internal.store.PriorBackupDetail.Item.TableR\vsourceTable\x12X\n" +
+	"\ftarget_table\x18\x02 \x01(\v25.bytebase.internal.store.PriorBackupDetail.Item.TableR\vtargetTable\x12H\n" +
+	"\x0estart_position\x18\x03 \x01(\v2!.bytebase.internal.store.PositionR\rstartPosition\x12D\n" +
+	"\fend_position\x18\x04 \x01(\v2!.bytebase.internal.store.PositionR\vendPosition\x1aQ\n" +
 	"\x05Table\x12\x1a\n" +
 	"\bdatabase\x18\x01 \x01(\tR\bdatabase\x12\x16\n" +
 	"\x06schema\x18\x02 \x01(\tR\x06schema\x12\x14\n" +
-	"\x05table\x18\x03 \x01(\tR\x05table\"\x80\x02\n" +
+	"\x05table\x18\x03 \x01(\tR\x05table\"\x89\x02\n" +
 	"\rSchedulerInfo\x12;\n" +
 	"\vreport_time\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
-	"reportTime\x12O\n" +
-	"\rwaiting_cause\x18\x02 \x01(\v2*.bytebase.store.SchedulerInfo.WaitingCauseR\fwaitingCause\x1aa\n" +
+	"reportTime\x12X\n" +
+	"\rwaiting_cause\x18\x02 \x01(\v23.bytebase.internal.store.SchedulerInfo.WaitingCauseR\fwaitingCause\x1aa\n" +
 	"\fWaitingCause\x12+\n" +
 	"\x10connection_limit\x18\x01 \x01(\bH\x00R\x0fconnectionLimit\x12\x1b\n" +
 	"\btask_uid\x18\x02 \x01(\x05H\x00R\ataskUidB\a\n" +
@@ -475,26 +475,26 @@ func file_store_task_run_proto_rawDescGZIP() []byte {
 
 var file_store_task_run_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_store_task_run_proto_goTypes = []any{
-	(*TaskRunResult)(nil),                // 0: bytebase.store.TaskRunResult
-	(*PriorBackupDetail)(nil),            // 1: bytebase.store.PriorBackupDetail
-	(*SchedulerInfo)(nil),                // 2: bytebase.store.SchedulerInfo
-	(*PriorBackupDetail_Item)(nil),       // 3: bytebase.store.PriorBackupDetail.Item
-	(*PriorBackupDetail_Item_Table)(nil), // 4: bytebase.store.PriorBackupDetail.Item.Table
-	(*SchedulerInfo_WaitingCause)(nil),   // 5: bytebase.store.SchedulerInfo.WaitingCause
-	(*Position)(nil),                     // 6: bytebase.store.Position
+	(*TaskRunResult)(nil),                // 0: bytebase.internal.store.TaskRunResult
+	(*PriorBackupDetail)(nil),            // 1: bytebase.internal.store.PriorBackupDetail
+	(*SchedulerInfo)(nil),                // 2: bytebase.internal.store.SchedulerInfo
+	(*PriorBackupDetail_Item)(nil),       // 3: bytebase.internal.store.PriorBackupDetail.Item
+	(*PriorBackupDetail_Item_Table)(nil), // 4: bytebase.internal.store.PriorBackupDetail.Item.Table
+	(*SchedulerInfo_WaitingCause)(nil),   // 5: bytebase.internal.store.SchedulerInfo.WaitingCause
+	(*Position)(nil),                     // 6: bytebase.internal.store.Position
 	(*timestamppb.Timestamp)(nil),        // 7: google.protobuf.Timestamp
 }
 var file_store_task_run_proto_depIdxs = []int32{
-	6,  // 0: bytebase.store.TaskRunResult.start_position:type_name -> bytebase.store.Position
-	6,  // 1: bytebase.store.TaskRunResult.end_position:type_name -> bytebase.store.Position
-	1,  // 2: bytebase.store.TaskRunResult.prior_backup_detail:type_name -> bytebase.store.PriorBackupDetail
-	3,  // 3: bytebase.store.PriorBackupDetail.items:type_name -> bytebase.store.PriorBackupDetail.Item
-	7,  // 4: bytebase.store.SchedulerInfo.report_time:type_name -> google.protobuf.Timestamp
-	5,  // 5: bytebase.store.SchedulerInfo.waiting_cause:type_name -> bytebase.store.SchedulerInfo.WaitingCause
-	4,  // 6: bytebase.store.PriorBackupDetail.Item.source_table:type_name -> bytebase.store.PriorBackupDetail.Item.Table
-	4,  // 7: bytebase.store.PriorBackupDetail.Item.target_table:type_name -> bytebase.store.PriorBackupDetail.Item.Table
-	6,  // 8: bytebase.store.PriorBackupDetail.Item.start_position:type_name -> bytebase.store.Position
-	6,  // 9: bytebase.store.PriorBackupDetail.Item.end_position:type_name -> bytebase.store.Position
+	6,  // 0: bytebase.internal.store.TaskRunResult.start_position:type_name -> bytebase.internal.store.Position
+	6,  // 1: bytebase.internal.store.TaskRunResult.end_position:type_name -> bytebase.internal.store.Position
+	1,  // 2: bytebase.internal.store.TaskRunResult.prior_backup_detail:type_name -> bytebase.internal.store.PriorBackupDetail
+	3,  // 3: bytebase.internal.store.PriorBackupDetail.items:type_name -> bytebase.internal.store.PriorBackupDetail.Item
+	7,  // 4: bytebase.internal.store.SchedulerInfo.report_time:type_name -> google.protobuf.Timestamp
+	5,  // 5: bytebase.internal.store.SchedulerInfo.waiting_cause:type_name -> bytebase.internal.store.SchedulerInfo.WaitingCause
+	4,  // 6: bytebase.internal.store.PriorBackupDetail.Item.source_table:type_name -> bytebase.internal.store.PriorBackupDetail.Item.Table
+	4,  // 7: bytebase.internal.store.PriorBackupDetail.Item.target_table:type_name -> bytebase.internal.store.PriorBackupDetail.Item.Table
+	6,  // 8: bytebase.internal.store.PriorBackupDetail.Item.start_position:type_name -> bytebase.internal.store.Position
+	6,  // 9: bytebase.internal.store.PriorBackupDetail.Item.end_position:type_name -> bytebase.internal.store.Position
 	10, // [10:10] is the sub-list for method output_type
 	10, // [10:10] is the sub-list for method input_type
 	10, // [10:10] is the sub-list for extension type_name

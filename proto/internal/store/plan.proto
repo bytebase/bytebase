@@ -1,0 +1,141 @@
+syntax = "proto3";
+
+package bytebase.internal.store;
+
+import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
+import "google/protobuf/timestamp.proto";
+import "store/common.proto";
+import "store/plan_check_run.proto";
+
+option go_package = "generated-go/store";
+
+message PlanConfig {
+  repeated Step steps = 1;
+
+  ReleaseSource release_source = 3;
+
+  Deployment deployment = 4;
+
+  message Step {
+    // Use the title if set.
+    // Use a generated title if empty.
+    string title = 2;
+    repeated Spec specs = 1;
+  }
+  message Spec {
+    // earliest_allowed_time the earliest execution time of the change.
+    google.protobuf.Timestamp earliest_allowed_time = 4;
+    // A UUID4 string that uniquely identifies the Spec.
+    string id = 5;
+
+    SpecReleaseSource spec_release_source = 8;
+
+    oneof config {
+      CreateDatabaseConfig create_database_config = 1;
+      ChangeDatabaseConfig change_database_config = 2;
+      ExportDataConfig export_data_config = 7;
+    }
+  }
+
+  message CreateDatabaseConfig {
+    // The resource name of the instance on which the database is created.
+    // Format: instances/{instance}
+    string target = 1 [(google.api.field_behavior) = REQUIRED];
+    // The name of the database to create.
+    string database = 2 [(google.api.field_behavior) = REQUIRED];
+    // table is the name of the table, if it is not empty, Bytebase should create a table after creating the database.
+    // For example, in MongoDB, it only creates the database when we first store data in that database.
+    string table = 3 [(google.api.field_behavior) = OPTIONAL];
+    // character_set is the character set of the database.
+    string character_set = 4 [(google.api.field_behavior) = OPTIONAL];
+    // collation is the collation of the database.
+    string collation = 5 [(google.api.field_behavior) = OPTIONAL];
+    // cluster is the cluster of the database. This is only applicable to ClickHouse for "ON CLUSTER <<cluster>>".
+    string cluster = 6 [(google.api.field_behavior) = OPTIONAL];
+    // owner is the owner of the database. This is only applicable to Postgres for "WITH OWNER <<owner>>".
+    string owner = 7 [(google.api.field_behavior) = OPTIONAL];
+    // backup is the resource name of the backup.
+    // Format: instances/{instance}/databases/{database}/backups/{backup-name}
+    string backup = 8 [(google.api.field_behavior) = OPTIONAL];
+    // The environment resource.
+    // Format: environments/prod where prod is the environment resource ID.
+    string environment = 9 [(google.api.field_behavior) = OPTIONAL];
+  }
+
+  message ChangeDatabaseConfig {
+    reserved 5, 6;
+
+    // The resource name of the target.
+    // Format: instances/{instance-id}/databases/{database-name}.
+    // Format: projects/{project}/databaseGroups/{databaseGroup}.
+    string target = 1;
+    // The resource name of the sheet.
+    // Format: projects/{project}/sheets/{sheet}
+    string sheet = 2;
+    // Type is the database change type.
+    enum Type {
+      TYPE_UNSPECIFIED = 0;
+      // Used for establishing schema baseline, this is used when
+      // 1. Onboard the database into Bytebase since Bytebase needs to know the current database schema.
+      // 2. Had schema drift and need to re-establish the baseline.
+      BASELINE = 1;
+      // Used for DDL changes including CREATE DATABASE.
+      MIGRATE = 2;
+      // Used for schema changes via state-based schema migration including CREATE DATABASE.
+      MIGRATE_SDL = 3;
+      // Used for DDL changes using gh-ost.
+      MIGRATE_GHOST = 4;
+      // Used for DML change.
+      DATA = 6;
+    }
+    Type type = 3;
+    // schema_version is parsed from file name.
+    // It is automatically generated in the UI workflow.
+    string schema_version = 4;
+
+    map<string, string> ghost_flags = 7;
+
+    // If set, a backup of the modified data will be created automatically before any changes are applied.
+    optional PreUpdateBackupDetail pre_update_backup_detail = 8;
+  }
+
+  message ExportDataConfig {
+    // The resource name of the target.
+    // Format: instances/{instance-id}/databases/{database-name}
+    string target = 1;
+    // The resource name of the sheet.
+    // Format: projects/{project}/sheets/{sheet}
+    string sheet = 2;
+    // The format of the exported file.
+    ExportFormat format = 3;
+    // The zip password provide by users.
+    // Leave it empty if no needs to encrypt the zip file.
+    optional string password = 4;
+  }
+
+  message ReleaseSource {
+    // The release.
+    // Format: projects/{project}/releases/{release}
+    string release = 1 [(google.api.resource_reference) = {type: "bytebase.com/Release"}];
+  }
+
+  message SpecReleaseSource {
+    // Format: projects/{project}/releases/{release}/files/{id}
+    string file = 1;
+  }
+
+  message Deployment {
+    // The environments deploy order.
+    repeated string environments = 1;
+    // The database group mapping.
+    repeated DatabaseGroupMapping database_group_mappings = 2;
+
+    message DatabaseGroupMapping {
+      // Format: projects/{project}/databaseGroups/{databaseGroup}.
+      string database_group = 1;
+      // Format: instances/{instance-id}/databases/{database-name}.
+      repeated string databases = 2;
+    }
+  }
+}

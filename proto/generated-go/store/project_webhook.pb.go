@@ -72,7 +72,7 @@ var File_store_project_webhook_proto protoreflect.FileDescriptor
 
 const file_store_project_webhook_proto_rawDesc = "" +
 	"\n" +
-	"\x1bstore/project_webhook.proto\x12\x0ebytebase.store\">\n" +
+	"\x1bstore/project_webhook.proto\x12\x17bytebase.internal.store\">\n" +
 	"\x15ProjectWebhookPayload\x12%\n" +
 	"\x0edirect_message\x18\x01 \x01(\bR\rdirectMessageB\x14Z\x12generated-go/storeb\x06proto3"
 
@@ -90,7 +90,7 @@ func file_store_project_webhook_proto_rawDescGZIP() []byte {
 
 var file_store_project_webhook_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
 var file_store_project_webhook_proto_goTypes = []any{
-	(*ProjectWebhookPayload)(nil), // 0: bytebase.store.ProjectWebhookPayload
+	(*ProjectWebhookPayload)(nil), // 0: bytebase.internal.store.ProjectWebhookPayload
 }
 var file_store_project_webhook_proto_depIdxs = []int32{
 	0, // [0:0] is the sub-list for method output_type

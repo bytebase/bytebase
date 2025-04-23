@@ -77,7 +77,7 @@ func (Advice_Status) EnumDescriptor() ([]byte, []int) {
 type Advice struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The advice status.
-	Status Advice_Status `protobuf:"varint,1,opt,name=status,proto3,enum=bytebase.store.Advice_Status" json:"status,omitempty"`
+	Status Advice_Status `protobuf:"varint,1,opt,name=status,proto3,enum=bytebase.internal.store.Advice_Status" json:"status,omitempty"`
 	// The advice code.
 	Code int32 `protobuf:"varint,2,opt,name=code,proto3" json:"code,omitempty"`
 	// The advice title.
@@ -168,14 +168,14 @@ var File_store_advice_proto protoreflect.FileDescriptor
 
 const file_store_advice_proto_rawDesc = "" +
 	"\n" +
-	"\x12store/advice.proto\x12\x0ebytebase.store\x1a\x12store/common.proto\"\xce\x02\n" +
-	"\x06Advice\x125\n" +
-	"\x06status\x18\x01 \x01(\x0e2\x1d.bytebase.store.Advice.StatusR\x06status\x12\x12\n" +
+	"\x12store/advice.proto\x12\x17bytebase.internal.store\x1a\x12store/common.proto\"\xe9\x02\n" +
+	"\x06Advice\x12>\n" +
+	"\x06status\x18\x01 \x01(\x0e2&.bytebase.internal.store.Advice.StatusR\x06status\x12\x12\n" +
 	"\x04code\x18\x02 \x01(\x05R\x04code\x12\x14\n" +
 	"\x05title\x18\x03 \x01(\tR\x05title\x12\x18\n" +
-	"\acontent\x18\x04 \x01(\tR\acontent\x12?\n" +
-	"\x0estart_position\x18\x06 \x01(\v2\x18.bytebase.store.PositionR\rstartPosition\x12;\n" +
-	"\fend_position\x18\a \x01(\v2\x18.bytebase.store.PositionR\vendPosition\"E\n" +
+	"\acontent\x18\x04 \x01(\tR\acontent\x12H\n" +
+	"\x0estart_position\x18\x06 \x01(\v2!.bytebase.internal.store.PositionR\rstartPosition\x12D\n" +
+	"\fend_position\x18\a \x01(\v2!.bytebase.internal.store.PositionR\vendPosition\"E\n" +
 	"\x06Status\x12\x16\n" +
 	"\x12STATUS_UNSPECIFIED\x10\x00\x12\v\n" +
 	"\aSUCCESS\x10\x01\x12\v\n" +
@@ -197,14 +197,14 @@ func file_store_advice_proto_rawDescGZIP() []byte {
 var file_store_advice_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
 var file_store_advice_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
 var file_store_advice_proto_goTypes = []any{
-	(Advice_Status)(0), // 0: bytebase.store.Advice.Status
-	(*Advice)(nil),     // 1: bytebase.store.Advice
-	(*Position)(nil),   // 2: bytebase.store.Position
+	(Advice_Status)(0), // 0: bytebase.internal.store.Advice.Status
+	(*Advice)(nil),     // 1: bytebase.internal.store.Advice
+	(*Position)(nil),   // 2: bytebase.internal.store.Position
 }
 var file_store_advice_proto_depIdxs = []int32{
-	0, // 0: bytebase.store.Advice.status:type_name -> bytebase.store.Advice.Status
-	2, // 1: bytebase.store.Advice.start_position:type_name -> bytebase.store.Position
-	2, // 2: bytebase.store.Advice.end_position:type_name -> bytebase.store.Position
+	0, // 0: bytebase.internal.store.Advice.status:type_name -> bytebase.internal.store.Advice.Status
+	2, // 1: bytebase.internal.store.Advice.start_position:type_name -> bytebase.internal.store.Position
+	2, // 2: bytebase.internal.store.Advice.end_position:type_name -> bytebase.internal.store.Position
 	3, // [3:3] is the sub-list for method output_type
 	3, // [3:3] is the sub-list for method input_type
 	3, // [3:3] is the sub-list for extension type_name

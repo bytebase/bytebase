@@ -69,9 +69,9 @@ var File_store_review_config_proto protoreflect.FileDescriptor
 
 const file_store_review_config_proto_rawDesc = "" +
 	"\n" +
-	"\x19store/review_config.proto\x12\x0ebytebase.store\x1a\x12store/policy.proto\"^\n" +
-	"\x13ReviewConfigPayload\x12G\n" +
-	"\x10sql_review_rules\x18\x01 \x03(\v2\x1d.bytebase.store.SQLReviewRuleR\x0esqlReviewRulesB\x14Z\x12generated-go/storeb\x06proto3"
+	"\x19store/review_config.proto\x12\x17bytebase.internal.store\x1a\x12store/policy.proto\"g\n" +
+	"\x13ReviewConfigPayload\x12P\n" +
+	"\x10sql_review_rules\x18\x01 \x03(\v2&.bytebase.internal.store.SQLReviewRuleR\x0esqlReviewRulesB\x14Z\x12generated-go/storeb\x06proto3"
 
 var (
 	file_store_review_config_proto_rawDescOnce sync.Once
@@ -87,11 +87,11 @@ func file_store_review_config_proto_rawDescGZIP() []byte {
 
 var file_store_review_config_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
 var file_store_review_config_proto_goTypes = []any{
-	(*ReviewConfigPayload)(nil), // 0: bytebase.store.ReviewConfigPayload
-	(*SQLReviewRule)(nil),       // 1: bytebase.store.SQLReviewRule
+	(*ReviewConfigPayload)(nil), // 0: bytebase.internal.store.ReviewConfigPayload
+	(*SQLReviewRule)(nil),       // 1: bytebase.internal.store.SQLReviewRule
 }
 var file_store_review_config_proto_depIdxs = []int32{
-	1, // 0: bytebase.store.ReviewConfigPayload.sql_review_rules:type_name -> bytebase.store.SQLReviewRule
+	1, // 0: bytebase.internal.store.ReviewConfigPayload.sql_review_rules:type_name -> bytebase.internal.store.SQLReviewRule
 	1, // [1:1] is the sub-list for method output_type
 	1, // [1:1] is the sub-list for method input_type
 	1, // [1:1] is the sub-list for extension type_name

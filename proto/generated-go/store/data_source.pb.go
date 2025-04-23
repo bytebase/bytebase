@@ -24,7 +24,7 @@ var File_store_data_source_proto protoreflect.FileDescriptor
 
 const file_store_data_source_proto_rawDesc = "" +
 	"\n" +
-	"\x17store/data_source.proto\x12\x0ebytebase.storeB\x14Z\x12generated-go/storeb\x06proto3"
+	"\x17store/data_source.proto\x12\x17bytebase.internal.storeB\x14Z\x12generated-go/storeb\x06proto3"
 
 var file_store_data_source_proto_goTypes = []any{}
 var file_store_data_source_proto_depIdxs = []int32{

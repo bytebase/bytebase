@@ -76,7 +76,7 @@ type GroupMember struct {
 	//
 	// Format: users/{userUID}.
 	Member        string           `protobuf:"bytes,1,opt,name=member,proto3" json:"member,omitempty"`
-	Role          GroupMember_Role `protobuf:"varint,2,opt,name=role,proto3,enum=bytebase.store.GroupMember_Role" json:"role,omitempty"`
+	Role          GroupMember_Role `protobuf:"varint,2,opt,name=role,proto3,enum=bytebase.internal.store.GroupMember_Role" json:"role,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -182,17 +182,17 @@ var File_store_group_proto protoreflect.FileDescriptor
 
 const file_store_group_proto_rawDesc = "" +
 	"\n" +
-	"\x11store/group.proto\x12\x0ebytebase.store\"\x90\x01\n" +
+	"\x11store/group.proto\x12\x17bytebase.internal.store\"\x99\x01\n" +
 	"\vGroupMember\x12\x16\n" +
-	"\x06member\x18\x01 \x01(\tR\x06member\x124\n" +
-	"\x04role\x18\x02 \x01(\x0e2 .bytebase.store.GroupMember.RoleR\x04role\"3\n" +
+	"\x06member\x18\x01 \x01(\tR\x06member\x12=\n" +
+	"\x04role\x18\x02 \x01(\x0e2).bytebase.internal.store.GroupMember.RoleR\x04role\"3\n" +
 	"\x04Role\x12\x14\n" +
 	"\x10ROLE_UNSPECIFIED\x10\x00\x12\t\n" +
 	"\x05OWNER\x10\x01\x12\n" +
 	"\n" +
-	"\x06MEMBER\x10\x02\"]\n" +
-	"\fGroupPayload\x125\n" +
-	"\amembers\x18\x01 \x03(\v2\x1b.bytebase.store.GroupMemberR\amembers\x12\x16\n" +
+	"\x06MEMBER\x10\x02\"f\n" +
+	"\fGroupPayload\x12>\n" +
+	"\amembers\x18\x01 \x03(\v2$.bytebase.internal.store.GroupMemberR\amembers\x12\x16\n" +
 	"\x06source\x18\x02 \x01(\tR\x06sourceB\x14Z\x12generated-go/storeb\x06proto3"
 
 var (
@@ -210,13 +210,13 @@ func file_store_group_proto_rawDescGZIP() []byte {
 var file_store_group_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
 var file_store_group_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
 var file_store_group_proto_goTypes = []any{
-	(GroupMember_Role)(0), // 0: bytebase.store.GroupMember.Role
-	(*GroupMember)(nil),   // 1: bytebase.store.GroupMember
-	(*GroupPayload)(nil),  // 2: bytebase.store.GroupPayload
+	(GroupMember_Role)(0), // 0: bytebase.internal.store.GroupMember.Role
+	(*GroupMember)(nil),   // 1: bytebase.internal.store.GroupMember
+	(*GroupPayload)(nil),  // 2: bytebase.internal.store.GroupPayload
 }
 var file_store_group_proto_depIdxs = []int32{
-	0, // 0: bytebase.store.GroupMember.role:type_name -> bytebase.store.GroupMember.Role
-	1, // 1: bytebase.store.GroupPayload.members:type_name -> bytebase.store.GroupMember
+	0, // 0: bytebase.internal.store.GroupMember.role:type_name -> bytebase.internal.store.GroupMember.Role
+	1, // 1: bytebase.internal.store.GroupPayload.members:type_name -> bytebase.internal.store.GroupMember
 	2, // [2:2] is the sub-list for method output_type
 	2, // [2:2] is the sub-list for method input_type
 	2, // [2:2] is the sub-list for extension type_name

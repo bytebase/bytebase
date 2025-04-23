@@ -266,13 +266,13 @@ var File_store_project_proto protoreflect.FileDescriptor
 
 const file_store_project_proto_rawDesc = "" +
 	"\n" +
-	"\x13store/project.proto\x12\x0ebytebase.store\"I\n" +
+	"\x13store/project.proto\x12\x17bytebase.internal.store\"I\n" +
 	"\x05Label\x12\x14\n" +
 	"\x05value\x18\x01 \x01(\tR\x05value\x12\x14\n" +
 	"\x05color\x18\x02 \x01(\tR\x05color\x12\x14\n" +
-	"\x05group\x18\x03 \x01(\tR\x05group\"\xa9\x05\n" +
-	"\aProject\x128\n" +
-	"\fissue_labels\x18\x02 \x03(\v2\x15.bytebase.store.LabelR\vissueLabels\x12,\n" +
+	"\x05group\x18\x03 \x01(\tR\x05group\"\xbb\x05\n" +
+	"\aProject\x12A\n" +
+	"\fissue_labels\x18\x02 \x03(\v2\x1e.bytebase.internal.store.LabelR\vissueLabels\x12,\n" +
 	"\x12force_issue_labels\x18\x03 \x01(\bR\x10forceIssueLabels\x124\n" +
 	"\x16allow_modify_statement\x18\x04 \x01(\bR\x14allowModifyStatement\x12,\n" +
 	"\x12auto_resolve_issue\x18\x05 \x01(\bR\x10autoResolveIssue\x12.\n" +
@@ -281,8 +281,8 @@ const file_store_project_proto_rawDesc = "" +
 	"\x12skip_backup_errors\x18\b \x01(\bR\x10skipBackupErrors\x12A\n" +
 	"\x1dpostgres_database_tenant_mode\x18\t \x01(\bR\x1apostgresDatabaseTenantMode\x12.\n" +
 	"\x13allow_self_approval\x18\n" +
-	" \x01(\bR\x11allowSelfApproval\x12b\n" +
-	"\x16execution_retry_policy\x18\v \x01(\v2,.bytebase.store.Project.ExecutionRetryPolicyR\x14executionRetryPolicy\x12(\n" +
+	" \x01(\bR\x11allowSelfApproval\x12k\n" +
+	"\x16execution_retry_policy\x18\v \x01(\v25.bytebase.internal.store.Project.ExecutionRetryPolicyR\x14executionRetryPolicy\x12(\n" +
 	"\x10ci_sampling_size\x18\f \x01(\x05R\x0eciSamplingSize\x1a?\n" +
 	"\x14ExecutionRetryPolicy\x12'\n" +
 	"\x0fmaximum_retries\x18\x01 \x01(\x05R\x0emaximumRetriesJ\x04\b\x01\x10\x02B\x14Z\x12generated-go/storeb\x06proto3"
@@ -301,13 +301,13 @@ func file_store_project_proto_rawDescGZIP() []byte {
 
 var file_store_project_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
 var file_store_project_proto_goTypes = []any{
-	(*Label)(nil),                        // 0: bytebase.store.Label
-	(*Project)(nil),                      // 1: bytebase.store.Project
-	(*Project_ExecutionRetryPolicy)(nil), // 2: bytebase.store.Project.ExecutionRetryPolicy
+	(*Label)(nil),                        // 0: bytebase.internal.store.Label
+	(*Project)(nil),                      // 1: bytebase.internal.store.Project
+	(*Project_ExecutionRetryPolicy)(nil), // 2: bytebase.internal.store.Project.ExecutionRetryPolicy
 }
 var file_store_project_proto_depIdxs = []int32{
-	0, // 0: bytebase.store.Project.issue_labels:type_name -> bytebase.store.Label
-	2, // 1: bytebase.store.Project.execution_retry_policy:type_name -> bytebase.store.Project.ExecutionRetryPolicy
+	0, // 0: bytebase.internal.store.Project.issue_labels:type_name -> bytebase.internal.store.Label
+	2, // 1: bytebase.internal.store.Project.execution_retry_policy:type_name -> bytebase.internal.store.Project.ExecutionRetryPolicy
 	2, // [2:2] is the sub-list for method output_type
 	2, // [2:2] is the sub-list for method input_type
 	2, // [2:2] is the sub-list for extension type_name

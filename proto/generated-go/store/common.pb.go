@@ -475,7 +475,7 @@ var File_store_common_proto protoreflect.FileDescriptor
 
 const file_store_common_proto_rawDesc = "" +
 	"\n" +
-	"\x12store/common.proto\x12\x0ebytebase.store\"9\n" +
+	"\x12store/common.proto\x12\x17bytebase.internal.store\"9\n" +
 	"\tPageToken\x12\x14\n" +
 	"\x05limit\x18\x01 \x01(\x05R\x05limit\x12\x16\n" +
 	"\x06offset\x18\x02 \x01(\x05R\x06offset\"6\n" +
@@ -556,13 +556,13 @@ func file_store_common_proto_rawDescGZIP() []byte {
 var file_store_common_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
 var file_store_common_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
 var file_store_common_proto_goTypes = []any{
-	(Engine)(0),       // 0: bytebase.store.Engine
-	(VCSType)(0),      // 1: bytebase.store.VCSType
-	(MaskingLevel)(0), // 2: bytebase.store.MaskingLevel
-	(ExportFormat)(0), // 3: bytebase.store.ExportFormat
-	(*PageToken)(nil), // 4: bytebase.store.PageToken
-	(*Position)(nil),  // 5: bytebase.store.Position
-	(*Range)(nil),     // 6: bytebase.store.Range
+	(Engine)(0),       // 0: bytebase.internal.store.Engine
+	(VCSType)(0),      // 1: bytebase.internal.store.VCSType
+	(MaskingLevel)(0), // 2: bytebase.internal.store.MaskingLevel
+	(ExportFormat)(0), // 3: bytebase.internal.store.ExportFormat
+	(*PageToken)(nil), // 4: bytebase.internal.store.PageToken
+	(*Position)(nil),  // 5: bytebase.internal.store.Position
+	(*Range)(nil),     // 6: bytebase.internal.store.Range
 }
 var file_store_common_proto_depIdxs = []int32{
 	0, // [0:0] is the sub-list for method output_type

@@ -78,7 +78,7 @@ var File_store_query_history_proto protoreflect.FileDescriptor
 
 const file_store_query_history_proto_rawDesc = "" +
 	"\n" +
-	"\x19store/query_history.proto\x12\x0ebytebase.store\x1a\x1egoogle/protobuf/duration.proto\"q\n" +
+	"\x19store/query_history.proto\x12\x17bytebase.internal.store\x1a\x1egoogle/protobuf/duration.proto\"q\n" +
 	"\x13QueryHistoryPayload\x12\x19\n" +
 	"\x05error\x18\x01 \x01(\tH\x00R\x05error\x88\x01\x01\x125\n" +
 	"\bduration\x18\x02 \x01(\v2\x19.google.protobuf.DurationR\bdurationB\b\n" +
@@ -98,11 +98,11 @@ func file_store_query_history_proto_rawDescGZIP() []byte {
 
 var file_store_query_history_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
 var file_store_query_history_proto_goTypes = []any{
-	(*QueryHistoryPayload)(nil), // 0: bytebase.store.QueryHistoryPayload
+	(*QueryHistoryPayload)(nil), // 0: bytebase.internal.store.QueryHistoryPayload
 	(*durationpb.Duration)(nil), // 1: google.protobuf.Duration
 }
 var file_store_query_history_proto_depIdxs = []int32{
-	1, // 0: bytebase.store.QueryHistoryPayload.duration:type_name -> google.protobuf.Duration
+	1, // 0: bytebase.internal.store.QueryHistoryPayload.duration:type_name -> google.protobuf.Duration
 	1, // [1:1] is the sub-list for method output_type
 	1, // [1:1] is the sub-list for method input_type
 	1, // [1:1] is the sub-list for extension type_name

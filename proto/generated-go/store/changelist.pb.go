@@ -142,11 +142,11 @@ var File_store_changelist_proto protoreflect.FileDescriptor
 
 const file_store_changelist_proto_rawDesc = "" +
 	"\n" +
-	"\x16store/changelist.proto\x12\x0ebytebase.store\"\xbd\x01\n" +
+	"\x16store/changelist.proto\x12\x17bytebase.internal.store\"\xc6\x01\n" +
 	"\n" +
 	"Changelist\x12 \n" +
-	"\vdescription\x18\x01 \x01(\tR\vdescription\x12;\n" +
-	"\achanges\x18\x02 \x03(\v2!.bytebase.store.Changelist.ChangeR\achanges\x1aP\n" +
+	"\vdescription\x18\x01 \x01(\tR\vdescription\x12D\n" +
+	"\achanges\x18\x02 \x03(\v2*.bytebase.internal.store.Changelist.ChangeR\achanges\x1aP\n" +
 	"\x06Change\x12\x14\n" +
 	"\x05sheet\x18\x01 \x01(\tR\x05sheet\x12\x16\n" +
 	"\x06source\x18\x02 \x01(\tR\x06source\x12\x18\n" +
@@ -166,11 +166,11 @@ func file_store_changelist_proto_rawDescGZIP() []byte {
 
 var file_store_changelist_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
 var file_store_changelist_proto_goTypes = []any{
-	(*Changelist)(nil),        // 0: bytebase.store.Changelist
-	(*Changelist_Change)(nil), // 1: bytebase.store.Changelist.Change
+	(*Changelist)(nil),        // 0: bytebase.internal.store.Changelist
+	(*Changelist_Change)(nil), // 1: bytebase.internal.store.Changelist.Change
 }
 var file_store_changelist_proto_depIdxs = []int32{
-	1, // 0: bytebase.store.Changelist.changes:type_name -> bytebase.store.Changelist.Change
+	1, // 0: bytebase.internal.store.Changelist.changes:type_name -> bytebase.internal.store.Changelist.Change
 	1, // [1:1] is the sub-list for method output_type
 	1, // [1:1] is the sub-list for method input_type
 	1, // [1:1] is the sub-list for extension type_name

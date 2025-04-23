@@ -1,0 +1,495 @@
+syntax = "proto3";
+
+package bytebase.api.v1alpha;
+
+import "google/api/annotations.proto";
+import "google/api/client.proto";
+import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/field_mask.proto";
+import "api/v1alpha/annotation.proto";
+import "api/v1alpha/common.proto";
+import "api/v1alpha/iam_policy.proto";
+
+option go_package = "generated-go/v1";
+
+service ProjectService {
+  rpc GetProject(GetProjectRequest) returns (Project) {
+    option (google.api.http) = {get: "/v1/{name=projects/*}"};
+    option (google.api.method_signature) = "name";
+    option (bytebase.api.v1alpha.permission) = "bb.projects.get";
+    option (bytebase.api.v1alpha.auth_method) = IAM;
+  }
+
+  rpc ListProjects(ListProjectsRequest) returns (ListProjectsResponse) {
+    option (google.api.http) = {get: "/v1/projects"};
+    option (google.api.method_signature) = "";
+    option (bytebase.api.v1alpha.permission) = "bb.projects.list";
+    option (bytebase.api.v1alpha.auth_method) = IAM;
+  }
+
+  rpc SearchProjects(SearchProjectsRequest) returns (SearchProjectsResponse) {
+    option (google.api.http) = {
+      post: "/v1/projects:search"
+      body: "*"
+    };
+    option (google.api.method_signature) = "";
+    option (bytebase.api.v1alpha.auth_method) = CUSTOM;
+    // TODO(d): secure it.
+  }
+
+  rpc CreateProject(CreateProjectRequest) returns (Project) {
+    option (google.api.http) = {
+      post: "/v1/projects"
+      body: "project"
+    };
+    option (google.api.method_signature) = "";
+    option (bytebase.api.v1alpha.permission) = "bb.projects.create";
+    option (bytebase.api.v1alpha.auth_method) = IAM;
+  }
+
+  rpc UpdateProject(UpdateProjectRequest) returns (Project) {
+    option (google.api.http) = {
+      patch: "/v1/{project.name=projects/*}"
+      body: "project"
+    };
+    option (google.api.method_signature) = "project,update_mask";
+    option (bytebase.api.v1alpha.permission) = "bb.projects.update";
+    option (bytebase.api.v1alpha.auth_method) = IAM;
+  }
+
+  rpc DeleteProject(DeleteProjectRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {delete: "/v1/{name=projects/*}"};
+    option (google.api.method_signature) = "name";
+    option (bytebase.api.v1alpha.permission) = "bb.projects.delete";
+    option (bytebase.api.v1alpha.auth_method) = IAM;
+  }
+
+  rpc UndeleteProject(UndeleteProjectRequest) returns (Project) {
+    option (google.api.http) = {
+      post: "/v1/{name=projects/*}:undelete"
+      body: "*"
+    };
+    option (bytebase.api.v1alpha.permission) = "bb.projects.undelete";
+    option (bytebase.api.v1alpha.auth_method) = IAM;
+  }
+
+  rpc GetIamPolicy(GetIamPolicyRequest) returns (IamPolicy) {
+    option (google.api.http) = {get: "/v1/{resource=projects/*}:getIamPolicy"};
+    option (bytebase.api.v1alpha.permission) = "bb.projects.getIamPolicy";
+    option (bytebase.api.v1alpha.auth_method) = IAM;
+  }
+
+  // Deprecated.
+  rpc BatchGetIamPolicy(BatchGetIamPolicyRequest) returns (BatchGetIamPolicyResponse) {
+    option (google.api.http) = {get: "/v1/{scope=*/*}/iamPolicies:batchGet"};
+    option (bytebase.api.v1alpha.permission) = "bb.projects.getIamPolicy";
+    option (bytebase.api.v1alpha.auth_method) = CUSTOM;
+  }
+
+  rpc SetIamPolicy(SetIamPolicyRequest) returns (IamPolicy) {
+    option (google.api.http) = {
+      post: "/v1/{resource=projects/*}:setIamPolicy"
+      body: "*"
+    };
+    option (bytebase.api.v1alpha.permission) = "bb.projects.setIamPolicy";
+    option (bytebase.api.v1alpha.auth_method) = IAM;
+    option (bytebase.api.v1alpha.audit) = true;
+  }
+
+  rpc AddWebhook(AddWebhookRequest) returns (Project) {
+    option (google.api.http) = {
+      post: "/v1/{project=projects/*}:addWebhook"
+      body: "*"
+    };
+    option (bytebase.api.v1alpha.permission) = "bb.projects.update";
+    option (bytebase.api.v1alpha.auth_method) = IAM;
+  }
+
+  rpc UpdateWebhook(UpdateWebhookRequest) returns (Project) {
+    option (google.api.http) = {
+      post: "/v1/{webhook.name=projects/*/webhooks/*}:updateWebhook"
+      body: "*"
+    };
+    option (google.api.method_signature) = "webhook,update_mask";
+    option (bytebase.api.v1alpha.permission) = "bb.projects.update";
+    option (bytebase.api.v1alpha.auth_method) = IAM;
+  }
+
+  rpc RemoveWebhook(RemoveWebhookRequest) returns (Project) {
+    option (google.api.http) = {
+      post: "/v1/{webhook.name=projects/*/webhooks/*}:removeWebhook"
+      body: "*"
+    };
+    option (bytebase.api.v1alpha.permission) = "bb.projects.update";
+    option (bytebase.api.v1alpha.auth_method) = IAM;
+  }
+
+  rpc TestWebhook(TestWebhookRequest) returns (TestWebhookResponse) {
+    option (google.api.http) = {
+      post: "/v1/{project=projects/*}:testWebhook"
+      body: "*"
+    };
+    option (bytebase.api.v1alpha.permission) = "bb.projects.update";
+    option (bytebase.api.v1alpha.auth_method) = IAM;
+  }
+}
+
+message GetProjectRequest {
+  // The name of the project to retrieve.
+  // Format: projects/{project}
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Project"}
+  ];
+}
+
+message ListProjectsRequest {
+  // The maximum number of projects to return. The service may return fewer than
+  // this value.
+  // If unspecified, at most 10 projects will be returned.
+  // The maximum value is 1000; values above 1000 will be coerced to 1000.
+  int32 page_size = 1;
+
+  // A page token, received from a previous `ListProjects` call.
+  // Provide this to retrieve the subsequent page.
+  //
+  // When paginating, all other parameters provided to `ListProjects` must match
+  // the call that provided the page token.
+  string page_token = 2;
+
+  // Show deleted projects if specified.
+  bool show_deleted = 3;
+
+  // Filter the project.
+  // Check filter for SearchProjectsRequest for details.
+  string filter = 4;
+}
+
+message ListProjectsResponse {
+  // The projects from the specified request.
+  repeated Project projects = 1;
+
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+message SearchProjectsRequest {
+  // Show deleted projects if specified.
+  bool show_deleted = 1;
+
+  // Filter the project.
+  // Supported filters:
+  // - name
+  // - resource_id
+  // - exclude_default: if not include the default project.
+  // - state
+  //
+  // For example:
+  // name = "project name"
+  // name.matches("project name")
+  // resource_id = "project id"
+  // resource_id.matches("project id")
+  // exclude_default == true
+  // state == "DELETED"
+  // You can combine filter conditions like:
+  // name = "project name" && resource_id.matches("project id")
+  // name.matches("project name") || resource_id = "project id"
+  string filter = 2;
+
+  // The maximum number of projects to return. The service may return fewer than
+  // this value.
+  // If unspecified, at most 10 projects will be returned.
+  // The maximum value is 1000; values above 1000 will be coerced to 1000.
+  int32 page_size = 3;
+
+  // A page token, received from a previous `SearchProjects` call.
+  // Provide this to retrieve the subsequent page.
+  //
+  // When paginating, all other parameters provided to `SearchProjects` must match
+  // the call that provided the page token.
+  string page_token = 4;
+}
+
+message SearchProjectsResponse {
+  // The projects from the specified request.
+  repeated Project projects = 1;
+
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+message CreateProjectRequest {
+  // The project to create.
+  Project project = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The ID to use for the project, which will become the final component of
+  // the project's resource name.
+  //
+  // This value should be 4-63 characters, and valid characters
+  // are /[a-z][0-9]-/.
+  string project_id = 2;
+}
+
+message UpdateProjectRequest {
+  // The project to update.
+  //
+  // The project's `name` field is used to identify the project to update.
+  // Format: projects/{project}
+  Project project = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The list of fields to update.
+  google.protobuf.FieldMask update_mask = 2;
+}
+
+message DeleteProjectRequest {
+  // The name of the project to delete.
+  // Format: projects/{project}
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Project"}
+  ];
+
+  // If set to true, any databases and sheets from this project will also be moved to default project, and all open issues will be closed.
+  bool force = 2;
+}
+
+message UndeleteProjectRequest {
+  // The name of the deleted project.
+  // Format: projects/{project}
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Project"}
+  ];
+}
+
+message BatchGetIamPolicyRequest {
+  // The scope of the batch get. Typically it's "projects/-".
+  string scope = 1 [(google.api.field_behavior) = REQUIRED];
+
+  repeated string names = 2;
+}
+
+message BatchGetIamPolicyResponse {
+  message PolicyResult {
+    string project = 1;
+
+    IamPolicy policy = 2;
+  }
+  repeated PolicyResult policy_results = 1;
+}
+
+message Label {
+  string value = 1;
+  string color = 2;
+  string group = 3;
+}
+
+message Project {
+  option (google.api.resource) = {
+    type: "bytebase.com/Project"
+    pattern: "projects/{project}"
+  };
+
+  reserved 2;
+  // The name of the project.
+  // Format: projects/{project}
+  string name = 1;
+
+  State state = 3;
+
+  // The title or name of a project. It's not unique within the workspace.
+  string title = 4;
+
+  repeated Webhook webhooks = 11;
+
+  string data_classification_config_id = 12;
+
+  repeated Label issue_labels = 13;
+
+  // Force issue labels to be used when creating an issue.
+  bool force_issue_labels = 14;
+  // Allow modifying statement after issue is created.
+  bool allow_modify_statement = 15;
+  // Enable auto resolve issue.
+  bool auto_resolve_issue = 16;
+  // Enforce issue title created by user instead of generated by Bytebase.
+  bool enforce_issue_title = 17;
+
+  // Whether to automatically enable backup.
+  bool auto_enable_backup = 18;
+
+  // Whether to skip backup errors and continue the data migration.
+  bool skip_backup_errors = 19;
+
+  // Whether to enable the database tenant mode for PostgreSQL.
+  // If enabled, the issue will be created with the pre-appended "set role <db_owner>" statement.
+  bool postgres_database_tenant_mode = 20;
+
+  // Whether to allow the issue creator to self-approve the issue.
+  bool allow_self_approval = 21;
+
+  // Execution retry policy for the task run.
+  ExecutionRetryPolicy execution_retry_policy = 22;
+
+  message ExecutionRetryPolicy {
+    // The maximum number of retries for the lock timeout issue.
+    int32 maximum_retries = 1;
+  }
+
+  // The maximum databases of rows to sample during CI data validation.
+  // Without specification, sampling is disabled, resulting in a full validation.
+  int32 ci_sampling_size = 23;
+}
+
+message AddWebhookRequest {
+  // The name of the project to add the webhook to.
+  // Format: projects/{project}
+  string project = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Project"}
+  ];
+
+  // The webhook to add.
+  Webhook webhook = 2 [(google.api.field_behavior) = REQUIRED];
+}
+
+message UpdateWebhookRequest {
+  // The webhook to modify.
+  Webhook webhook = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The list of fields to update.
+  google.protobuf.FieldMask update_mask = 2;
+}
+
+message RemoveWebhookRequest {
+  // The webhook to remove. Identified by its url.
+  Webhook webhook = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message TestWebhookRequest {
+  // The name of the project which owns the webhook to test.
+  // Format: projects/{project}
+  string project = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Project"}
+  ];
+
+  // The webhook to test. Identified by its url.
+  Webhook webhook = 2 [(google.api.field_behavior) = REQUIRED];
+}
+
+message TestWebhookResponse {
+  // The result of the test, empty if the test is successful.
+  string error = 1;
+}
+
+message Webhook {
+  option (google.api.resource) = {
+    type: "bytebase.com/Webhook"
+    pattern: "projects/{project}/webhooks/{webhook}"
+  };
+
+  // name is the name of the webhook, generated by the server.
+  // format: projects/{project}/webhooks/{webhook}
+  string name = 1;
+
+  enum Type {
+    TYPE_UNSPECIFIED = 0;
+    SLACK = 1;
+    DISCORD = 2;
+    TEAMS = 3;
+    DINGTALK = 4;
+    FEISHU = 5;
+    WECOM = 6;
+    LARK = 8;
+  }
+  // type is the type of the webhook.
+  Type type = 2 [(google.api.field_behavior) = REQUIRED];
+
+  // title is the title of the webhook.
+  string title = 3 [(google.api.field_behavior) = REQUIRED];
+
+  // url is the url of the webhook, should be unique within the project.
+  string url = 4 [(google.api.field_behavior) = REQUIRED];
+
+  // if direct_message is set, the notification is sent directly
+  // to the persons and url will be ignored.
+  // IM integration setting should be set for this function to work.
+  bool direct_message = 6;
+
+  // notification_types is the list of activities types that the webhook is interested in.
+  // Bytebase will only send notifications to the webhook if the activity type is in the list.
+  // It should not be empty, and should be a subset of the following:
+  // - TYPE_ISSUE_CREATED
+  // - TYPE_ISSUE_STATUS_UPDATE
+  // - TYPE_ISSUE_PIPELINE_STAGE_UPDATE
+  // - TYPE_ISSUE_PIPELINE_TASK_STATUS_UPDATE
+  // - TYPE_ISSUE_FIELD_UPDATE
+  // - TYPE_ISSUE_COMMENT_CREATE
+  repeated Activity.Type notification_types = 5 [(google.api.field_behavior) = UNORDERED_LIST];
+}
+
+// TODO(zp): move to activity later.
+message Activity {
+  enum Type {
+    TYPE_UNSPECIFIED = 0;
+    // Notifications via webhooks.
+    //
+    // TYPE_NOTIFY_ISSUE_APPROVED represents the issue approved notification.
+    TYPE_NOTIFY_ISSUE_APPROVED = 23;
+    // TYPE_NOTIFY_PIPELINE_ROLLOUT represents the pipeline rollout notification.
+    TYPE_NOTIFY_PIPELINE_ROLLOUT = 24;
+    // Issue related activity types.
+    //
+    // TYPE_ISSUE_CREATE represents creating an issue.
+    TYPE_ISSUE_CREATE = 1;
+    // TYPE_ISSUE_COMMENT_CREATE represents commenting on an issue.
+    TYPE_ISSUE_COMMENT_CREATE = 2;
+    // TYPE_ISSUE_FIELD_UPDATE represents updating the issue field, likes title, description, etc.
+    TYPE_ISSUE_FIELD_UPDATE = 3;
+    // TYPE_ISSUE_STATUS_UPDATE represents the issue status change, including OPEN, CLOSE, CANCEL fow now.
+    TYPE_ISSUE_STATUS_UPDATE = 4;
+    // TYPE_ISSUE_APPROVAL_NOTIFY is the type for notifying issue approval.
+    TYPE_ISSUE_APPROVAL_NOTIFY = 21;
+    // TYPE_ISSUE_PIPELINE_STAGE_STATUS_UPDATE represents the pipeline stage status change, including BEGIN, END for now.
+    TYPE_ISSUE_PIPELINE_STAGE_STATUS_UPDATE = 5;
+    // TYPE_ISSUE_PIPELINE_TASK_STATUS_UPDATE represents the pipeline task status change, including PENDING, PENDING_APPROVAL, RUNNING, SUCCESS, FAILURE, CANCELED for now.
+    TYPE_ISSUE_PIPELINE_TASK_STATUS_UPDATE = 6;
+    // TYPE_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE represents the pipeline task run status change, including PENDING, RUNNING, DONE, FAILED, CANCELED.
+    TYPE_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE = 22;
+    // TYPE_ISSUE_PIPELINE_TASK_STATEMENT_UPDATE represents the manual update of the task statement.
+    TYPE_ISSUE_PIPELINE_TASK_STATEMENT_UPDATE = 8;
+    // TYPE_ISSUE_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE represents the manual update of the task earliest allowed time.
+    TYPE_ISSUE_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE = 9;
+
+    // Member related activity types.
+    //
+    // TYPE_MEMBER_CREATE represents creating a members.
+    TYPE_MEMBER_CREATE = 10;
+    // TYPE_MEMBER_ROLE_UPDATE represents updating the member role, for example, from ADMIN to MEMBER.
+    TYPE_MEMBER_ROLE_UPDATE = 11;
+    // TYPE_MEMBER_ACTIVATE represents activating a deactivated member.
+    TYPE_MEMBER_ACTIVATE = 12;
+    // TYPE_MEMBER_DEACTIVATE represents deactivating an active member.
+    TYPE_MEMBER_DEACTIVATE = 13;
+
+    // Project related activity types.
+    //
+    // TYPE_PROJECT_REPOSITORY_PUSH represents Bytebase receiving a push event from the project repository.
+    TYPE_PROJECT_REPOSITORY_PUSH = 14;
+    // TYPE_PROJECT_DATABASE_TRANFER represents transfering the database from one project to another.
+    TYPE_PROJECT_DATABASE_TRANSFER = 15;
+    // TYPE_PROJECT_MEMBER_CREATE represents adding a member to the project.
+    TYPE_PROJECT_MEMBER_CREATE = 16;
+    // TYPE_PROJECT_MEMBER_DELETE represents removing a member from the project.
+    TYPE_PROJECT_MEMBER_DELETE = 17;
+
+    // SQL Editor related activity types.
+    // TYPE_SQL_EDITOR_QUERY represents executing query in SQL Editor.
+    TYPE_SQL_EDITOR_QUERY = 19;
+  }
+}

@@ -24,7 +24,7 @@ const (
 type ExportArchivePayload struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The exported file format. e.g. JSON, CSV, SQL
-	FileFormat    ExportFormat `protobuf:"varint,1,opt,name=file_format,json=fileFormat,proto3,enum=bytebase.store.ExportFormat" json:"file_format,omitempty"`
+	FileFormat    ExportFormat `protobuf:"varint,1,opt,name=file_format,json=fileFormat,proto3,enum=bytebase.internal.store.ExportFormat" json:"file_format,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -70,9 +70,9 @@ var File_store_export_archive_proto protoreflect.FileDescriptor
 
 const file_store_export_archive_proto_rawDesc = "" +
 	"\n" +
-	"\x1astore/export_archive.proto\x12\x0ebytebase.store\x1a\x12store/common.proto\"U\n" +
-	"\x14ExportArchivePayload\x12=\n" +
-	"\vfile_format\x18\x01 \x01(\x0e2\x1c.bytebase.store.ExportFormatR\n" +
+	"\x1astore/export_archive.proto\x12\x17bytebase.internal.store\x1a\x12store/common.proto\"^\n" +
+	"\x14ExportArchivePayload\x12F\n" +
+	"\vfile_format\x18\x01 \x01(\x0e2%.bytebase.internal.store.ExportFormatR\n" +
 	"fileFormatB\x14Z\x12generated-go/storeb\x06proto3"
 
 var (
@@ -89,11 +89,11 @@ func file_store_export_archive_proto_rawDescGZIP() []byte {
 
 var file_store_export_archive_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
 var file_store_export_archive_proto_goTypes = []any{
-	(*ExportArchivePayload)(nil), // 0: bytebase.store.ExportArchivePayload
-	(ExportFormat)(0),            // 1: bytebase.store.ExportFormat
+	(*ExportArchivePayload)(nil), // 0: bytebase.internal.store.ExportArchivePayload
+	(ExportFormat)(0),            // 1: bytebase.internal.store.ExportFormat
 }
 var file_store_export_archive_proto_depIdxs = []int32{
-	1, // 0: bytebase.store.ExportArchivePayload.file_format:type_name -> bytebase.store.ExportFormat
+	1, // 0: bytebase.internal.store.ExportArchivePayload.file_format:type_name -> bytebase.internal.store.ExportFormat
 	1, // [1:1] is the sub-list for method output_type
 	1, // [1:1] is the sub-list for method input_type
 	1, // [1:1] is the sub-list for extension type_name

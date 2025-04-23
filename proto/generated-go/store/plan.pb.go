@@ -457,7 +457,7 @@ type PlanConfig_ChangeDatabaseConfig struct {
 	// The resource name of the sheet.
 	// Format: projects/{project}/sheets/{sheet}
 	Sheet string                               `protobuf:"bytes,2,opt,name=sheet,proto3" json:"sheet,omitempty"`
-	Type  PlanConfig_ChangeDatabaseConfig_Type `protobuf:"varint,3,opt,name=type,proto3,enum=bytebase.store.PlanConfig_ChangeDatabaseConfig_Type" json:"type,omitempty"`
+	Type  PlanConfig_ChangeDatabaseConfig_Type `protobuf:"varint,3,opt,name=type,proto3,enum=bytebase.internal.store.PlanConfig_ChangeDatabaseConfig_Type" json:"type,omitempty"`
 	// schema_version is parsed from file name.
 	// It is automatically generated in the UI workflow.
 	SchemaVersion string            `protobuf:"bytes,4,opt,name=schema_version,json=schemaVersion,proto3" json:"schema_version,omitempty"`
@@ -549,7 +549,7 @@ type PlanConfig_ExportDataConfig struct {
 	// Format: projects/{project}/sheets/{sheet}
 	Sheet string `protobuf:"bytes,2,opt,name=sheet,proto3" json:"sheet,omitempty"`
 	// The format of the exported file.
-	Format ExportFormat `protobuf:"varint,3,opt,name=format,proto3,enum=bytebase.store.ExportFormat" json:"format,omitempty"`
+	Format ExportFormat `protobuf:"varint,3,opt,name=format,proto3,enum=bytebase.internal.store.ExportFormat" json:"format,omitempty"`
 	// The zip password provide by users.
 	// Leave it empty if no needs to encrypt the zip file.
 	Password      *string `protobuf:"bytes,4,opt,name=password,proto3,oneof" json:"password,omitempty"`
@@ -818,24 +818,24 @@ var File_store_plan_proto protoreflect.FileDescriptor
 
 const file_store_plan_proto_rawDesc = "" +
 	"\n" +
-	"\x10store/plan.proto\x12\x0ebytebase.store\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x12store/common.proto\x1a\x1astore/plan_check_run.proto\"\xde\x11\n" +
+	"\x10store/plan.proto\x12\x17bytebase.internal.store\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x12store/common.proto\x1a\x1astore/plan_check_run.proto\"\xd3\x12\n" +
 	"\n" +
-	"PlanConfig\x125\n" +
-	"\x05steps\x18\x01 \x03(\v2\x1f.bytebase.store.PlanConfig.StepR\x05steps\x12O\n" +
-	"\x0erelease_source\x18\x03 \x01(\v2(.bytebase.store.PlanConfig.ReleaseSourceR\rreleaseSource\x12E\n" +
+	"PlanConfig\x12>\n" +
+	"\x05steps\x18\x01 \x03(\v2(.bytebase.internal.store.PlanConfig.StepR\x05steps\x12X\n" +
+	"\x0erelease_source\x18\x03 \x01(\v21.bytebase.internal.store.PlanConfig.ReleaseSourceR\rreleaseSource\x12N\n" +
 	"\n" +
-	"deployment\x18\x04 \x01(\v2%.bytebase.store.PlanConfig.DeploymentR\n" +
-	"deployment\x1aS\n" +
+	"deployment\x18\x04 \x01(\v2..bytebase.internal.store.PlanConfig.DeploymentR\n" +
+	"deployment\x1a\\\n" +
 	"\x04Step\x12\x14\n" +
-	"\x05title\x18\x02 \x01(\tR\x05title\x125\n" +
-	"\x05specs\x18\x01 \x03(\v2\x1f.bytebase.store.PlanConfig.SpecR\x05specs\x1a\xfd\x03\n" +
+	"\x05title\x18\x02 \x01(\tR\x05title\x12>\n" +
+	"\x05specs\x18\x01 \x03(\v2(.bytebase.internal.store.PlanConfig.SpecR\x05specs\x1a\xa1\x04\n" +
 	"\x04Spec\x12N\n" +
 	"\x15earliest_allowed_time\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\x13earliestAllowedTime\x12\x0e\n" +
-	"\x02id\x18\x05 \x01(\tR\x02id\x12\\\n" +
-	"\x13spec_release_source\x18\b \x01(\v2,.bytebase.store.PlanConfig.SpecReleaseSourceR\x11specReleaseSource\x12g\n" +
-	"\x16create_database_config\x18\x01 \x01(\v2/.bytebase.store.PlanConfig.CreateDatabaseConfigH\x00R\x14createDatabaseConfig\x12g\n" +
-	"\x16change_database_config\x18\x02 \x01(\v2/.bytebase.store.PlanConfig.ChangeDatabaseConfigH\x00R\x14changeDatabaseConfig\x12[\n" +
-	"\x12export_data_config\x18\a \x01(\v2+.bytebase.store.PlanConfig.ExportDataConfigH\x00R\x10exportDataConfigB\b\n" +
+	"\x02id\x18\x05 \x01(\tR\x02id\x12e\n" +
+	"\x13spec_release_source\x18\b \x01(\v25.bytebase.internal.store.PlanConfig.SpecReleaseSourceR\x11specReleaseSource\x12p\n" +
+	"\x16create_database_config\x18\x01 \x01(\v28.bytebase.internal.store.PlanConfig.CreateDatabaseConfigH\x00R\x14createDatabaseConfig\x12p\n" +
+	"\x16change_database_config\x18\x02 \x01(\v28.bytebase.internal.store.PlanConfig.ChangeDatabaseConfigH\x00R\x14changeDatabaseConfig\x12d\n" +
+	"\x12export_data_config\x18\a \x01(\v24.bytebase.internal.store.PlanConfig.ExportDataConfigH\x00R\x10exportDataConfigB\b\n" +
 	"\x06config\x1a\xc3\x02\n" +
 	"\x14CreateDatabaseConfig\x12\x1c\n" +
 	"\x06target\x18\x01 \x01(\tB\x04\xe2A\x01\x02R\x06target\x12 \n" +
@@ -846,15 +846,15 @@ const file_store_plan_proto_rawDesc = "" +
 	"\acluster\x18\x06 \x01(\tB\x04\xe2A\x01\x01R\acluster\x12\x1a\n" +
 	"\x05owner\x18\a \x01(\tB\x04\xe2A\x01\x01R\x05owner\x12\x1c\n" +
 	"\x06backup\x18\b \x01(\tB\x04\xe2A\x01\x01R\x06backup\x12&\n" +
-	"\venvironment\x18\t \x01(\tB\x04\xe2A\x01\x01R\venvironment\x1a\xcb\x04\n" +
+	"\venvironment\x18\t \x01(\tB\x04\xe2A\x01\x01R\venvironment\x1a\xe6\x04\n" +
 	"\x14ChangeDatabaseConfig\x12\x16\n" +
 	"\x06target\x18\x01 \x01(\tR\x06target\x12\x14\n" +
-	"\x05sheet\x18\x02 \x01(\tR\x05sheet\x12H\n" +
-	"\x04type\x18\x03 \x01(\x0e24.bytebase.store.PlanConfig.ChangeDatabaseConfig.TypeR\x04type\x12%\n" +
-	"\x0eschema_version\x18\x04 \x01(\tR\rschemaVersion\x12`\n" +
-	"\vghost_flags\x18\a \x03(\v2?.bytebase.store.PlanConfig.ChangeDatabaseConfig.GhostFlagsEntryR\n" +
-	"ghostFlags\x12c\n" +
-	"\x18pre_update_backup_detail\x18\b \x01(\v2%.bytebase.store.PreUpdateBackupDetailH\x00R\x15preUpdateBackupDetail\x88\x01\x01\x1a=\n" +
+	"\x05sheet\x18\x02 \x01(\tR\x05sheet\x12Q\n" +
+	"\x04type\x18\x03 \x01(\x0e2=.bytebase.internal.store.PlanConfig.ChangeDatabaseConfig.TypeR\x04type\x12%\n" +
+	"\x0eschema_version\x18\x04 \x01(\tR\rschemaVersion\x12i\n" +
+	"\vghost_flags\x18\a \x03(\v2H.bytebase.internal.store.PlanConfig.ChangeDatabaseConfig.GhostFlagsEntryR\n" +
+	"ghostFlags\x12l\n" +
+	"\x18pre_update_backup_detail\x18\b \x01(\v2..bytebase.internal.store.PreUpdateBackupDetailH\x00R\x15preUpdateBackupDetail\x88\x01\x01\x1a=\n" +
 	"\x0fGhostFlagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"e\n" +
@@ -865,22 +865,22 @@ const file_store_plan_proto_rawDesc = "" +
 	"\vMIGRATE_SDL\x10\x03\x12\x11\n" +
 	"\rMIGRATE_GHOST\x10\x04\x12\b\n" +
 	"\x04DATA\x10\x06B\x1b\n" +
-	"\x19_pre_update_backup_detailJ\x04\b\x05\x10\x06J\x04\b\x06\x10\a\x1a\xa4\x01\n" +
+	"\x19_pre_update_backup_detailJ\x04\b\x05\x10\x06J\x04\b\x06\x10\a\x1a\xad\x01\n" +
 	"\x10ExportDataConfig\x12\x16\n" +
 	"\x06target\x18\x01 \x01(\tR\x06target\x12\x14\n" +
-	"\x05sheet\x18\x02 \x01(\tR\x05sheet\x124\n" +
-	"\x06format\x18\x03 \x01(\x0e2\x1c.bytebase.store.ExportFormatR\x06format\x12\x1f\n" +
+	"\x05sheet\x18\x02 \x01(\tR\x05sheet\x12=\n" +
+	"\x06format\x18\x03 \x01(\x0e2%.bytebase.internal.store.ExportFormatR\x06format\x12\x1f\n" +
 	"\bpassword\x18\x04 \x01(\tH\x00R\bpassword\x88\x01\x01B\v\n" +
 	"\t_password\x1aD\n" +
 	"\rReleaseSource\x123\n" +
 	"\arelease\x18\x01 \x01(\tB\x19\xfaA\x16\n" +
 	"\x14bytebase.com/ReleaseR\arelease\x1a'\n" +
 	"\x11SpecReleaseSource\x12\x12\n" +
-	"\x04file\x18\x01 \x01(\tR\x04file\x1a\x81\x02\n" +
+	"\x04file\x18\x01 \x01(\tR\x04file\x1a\x8a\x02\n" +
 	"\n" +
 	"Deployment\x12\"\n" +
-	"\fenvironments\x18\x01 \x03(\tR\fenvironments\x12r\n" +
-	"\x17database_group_mappings\x18\x02 \x03(\v2:.bytebase.store.PlanConfig.Deployment.DatabaseGroupMappingR\x15databaseGroupMappings\x1a[\n" +
+	"\fenvironments\x18\x01 \x03(\tR\fenvironments\x12{\n" +
+	"\x17database_group_mappings\x18\x02 \x03(\v2C.bytebase.internal.store.PlanConfig.Deployment.DatabaseGroupMappingR\x15databaseGroupMappings\x1a[\n" +
 	"\x14DatabaseGroupMapping\x12%\n" +
 	"\x0edatabase_group\x18\x01 \x01(\tR\rdatabaseGroup\x12\x1c\n" +
 	"\tdatabases\x18\x02 \x03(\tR\tdatabasesB\x14Z\x12generated-go/storeb\x06proto3"
@@ -900,37 +900,37 @@ func file_store_plan_proto_rawDescGZIP() []byte {
 var file_store_plan_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
 var file_store_plan_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
 var file_store_plan_proto_goTypes = []any{
-	(PlanConfig_ChangeDatabaseConfig_Type)(0),          // 0: bytebase.store.PlanConfig.ChangeDatabaseConfig.Type
-	(*PlanConfig)(nil),                                 // 1: bytebase.store.PlanConfig
-	(*PlanConfig_Step)(nil),                            // 2: bytebase.store.PlanConfig.Step
-	(*PlanConfig_Spec)(nil),                            // 3: bytebase.store.PlanConfig.Spec
-	(*PlanConfig_CreateDatabaseConfig)(nil),            // 4: bytebase.store.PlanConfig.CreateDatabaseConfig
-	(*PlanConfig_ChangeDatabaseConfig)(nil),            // 5: bytebase.store.PlanConfig.ChangeDatabaseConfig
-	(*PlanConfig_ExportDataConfig)(nil),                // 6: bytebase.store.PlanConfig.ExportDataConfig
-	(*PlanConfig_ReleaseSource)(nil),                   // 7: bytebase.store.PlanConfig.ReleaseSource
-	(*PlanConfig_SpecReleaseSource)(nil),               // 8: bytebase.store.PlanConfig.SpecReleaseSource
-	(*PlanConfig_Deployment)(nil),                      // 9: bytebase.store.PlanConfig.Deployment
-	nil,                                                // 10: bytebase.store.PlanConfig.ChangeDatabaseConfig.GhostFlagsEntry
-	(*PlanConfig_Deployment_DatabaseGroupMapping)(nil), // 11: bytebase.store.PlanConfig.Deployment.DatabaseGroupMapping
+	(PlanConfig_ChangeDatabaseConfig_Type)(0),          // 0: bytebase.internal.store.PlanConfig.ChangeDatabaseConfig.Type
+	(*PlanConfig)(nil),                                 // 1: bytebase.internal.store.PlanConfig
+	(*PlanConfig_Step)(nil),                            // 2: bytebase.internal.store.PlanConfig.Step
+	(*PlanConfig_Spec)(nil),                            // 3: bytebase.internal.store.PlanConfig.Spec
+	(*PlanConfig_CreateDatabaseConfig)(nil),            // 4: bytebase.internal.store.PlanConfig.CreateDatabaseConfig
+	(*PlanConfig_ChangeDatabaseConfig)(nil),            // 5: bytebase.internal.store.PlanConfig.ChangeDatabaseConfig
+	(*PlanConfig_ExportDataConfig)(nil),                // 6: bytebase.internal.store.PlanConfig.ExportDataConfig
+	(*PlanConfig_ReleaseSource)(nil),                   // 7: bytebase.internal.store.PlanConfig.ReleaseSource
+	(*PlanConfig_SpecReleaseSource)(nil),               // 8: bytebase.internal.store.PlanConfig.SpecReleaseSource
+	(*PlanConfig_Deployment)(nil),                      // 9: bytebase.internal.store.PlanConfig.Deployment
+	nil,                                                // 10: bytebase.internal.store.PlanConfig.ChangeDatabaseConfig.GhostFlagsEntry
+	(*PlanConfig_Deployment_DatabaseGroupMapping)(nil), // 11: bytebase.internal.store.PlanConfig.Deployment.DatabaseGroupMapping
 	(*timestamppb.Timestamp)(nil),                      // 12: google.protobuf.Timestamp
-	(*PreUpdateBackupDetail)(nil),                      // 13: bytebase.store.PreUpdateBackupDetail
-	(ExportFormat)(0),                                  // 14: bytebase.store.ExportFormat
+	(*PreUpdateBackupDetail)(nil),                      // 13: bytebase.internal.store.PreUpdateBackupDetail
+	(ExportFormat)(0),                                  // 14: bytebase.internal.store.ExportFormat
 }
 var file_store_plan_proto_depIdxs = []int32{
-	2,  // 0: bytebase.store.PlanConfig.steps:type_name -> bytebase.store.PlanConfig.Step
-	7,  // 1: bytebase.store.PlanConfig.release_source:type_name -> bytebase.store.PlanConfig.ReleaseSource
-	9,  // 2: bytebase.store.PlanConfig.deployment:type_name -> bytebase.store.PlanConfig.Deployment
-	3,  // 3: bytebase.store.PlanConfig.Step.specs:type_name -> bytebase.store.PlanConfig.Spec
-	12, // 4: bytebase.store.PlanConfig.Spec.earliest_allowed_time:type_name -> google.protobuf.Timestamp
-	8,  // 5: bytebase.store.PlanConfig.Spec.spec_release_source:type_name -> bytebase.store.PlanConfig.SpecReleaseSource
-	4,  // 6: bytebase.store.PlanConfig.Spec.create_database_config:type_name -> bytebase.store.PlanConfig.CreateDatabaseConfig
-	5,  // 7: bytebase.store.PlanConfig.Spec.change_database_config:type_name -> bytebase.store.PlanConfig.ChangeDatabaseConfig
-	6,  // 8: bytebase.store.PlanConfig.Spec.export_data_config:type_name -> bytebase.store.PlanConfig.ExportDataConfig
-	0,  // 9: bytebase.store.PlanConfig.ChangeDatabaseConfig.type:type_name -> bytebase.store.PlanConfig.ChangeDatabaseConfig.Type
-	10, // 10: bytebase.store.PlanConfig.ChangeDatabaseConfig.ghost_flags:type_name -> bytebase.store.PlanConfig.ChangeDatabaseConfig.GhostFlagsEntry
-	13, // 11: bytebase.store.PlanConfig.ChangeDatabaseConfig.pre_update_backup_detail:type_name -> bytebase.store.PreUpdateBackupDetail
-	14, // 12: bytebase.store.PlanConfig.ExportDataConfig.format:type_name -> bytebase.store.ExportFormat
-	11, // 13: bytebase.store.PlanConfig.Deployment.database_group_mappings:type_name -> bytebase.store.PlanConfig.Deployment.DatabaseGroupMapping
+	2,  // 0: bytebase.internal.store.PlanConfig.steps:type_name -> bytebase.internal.store.PlanConfig.Step
+	7,  // 1: bytebase.internal.store.PlanConfig.release_source:type_name -> bytebase.internal.store.PlanConfig.ReleaseSource
+	9,  // 2: bytebase.internal.store.PlanConfig.deployment:type_name -> bytebase.internal.store.PlanConfig.Deployment
+	3,  // 3: bytebase.internal.store.PlanConfig.Step.specs:type_name -> bytebase.internal.store.PlanConfig.Spec
+	12, // 4: bytebase.internal.store.PlanConfig.Spec.earliest_allowed_time:type_name -> google.protobuf.Timestamp
+	8,  // 5: bytebase.internal.store.PlanConfig.Spec.spec_release_source:type_name -> bytebase.internal.store.PlanConfig.SpecReleaseSource
+	4,  // 6: bytebase.internal.store.PlanConfig.Spec.create_database_config:type_name -> bytebase.internal.store.PlanConfig.CreateDatabaseConfig
+	5,  // 7: bytebase.internal.store.PlanConfig.Spec.change_database_config:type_name -> bytebase.internal.store.PlanConfig.ChangeDatabaseConfig
+	6,  // 8: bytebase.internal.store.PlanConfig.Spec.export_data_config:type_name -> bytebase.internal.store.PlanConfig.ExportDataConfig
+	0,  // 9: bytebase.internal.store.PlanConfig.ChangeDatabaseConfig.type:type_name -> bytebase.internal.store.PlanConfig.ChangeDatabaseConfig.Type
+	10, // 10: bytebase.internal.store.PlanConfig.ChangeDatabaseConfig.ghost_flags:type_name -> bytebase.internal.store.PlanConfig.ChangeDatabaseConfig.GhostFlagsEntry
+	13, // 11: bytebase.internal.store.PlanConfig.ChangeDatabaseConfig.pre_update_backup_detail:type_name -> bytebase.internal.store.PreUpdateBackupDetail
+	14, // 12: bytebase.internal.store.PlanConfig.ExportDataConfig.format:type_name -> bytebase.internal.store.ExportFormat
+	11, // 13: bytebase.internal.store.PlanConfig.Deployment.database_group_mappings:type_name -> bytebase.internal.store.PlanConfig.Deployment.DatabaseGroupMapping
 	14, // [14:14] is the sub-list for method output_type
 	14, // [14:14] is the sub-list for method input_type
 	14, // [14:14] is the sub-list for extension type_name

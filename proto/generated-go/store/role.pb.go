@@ -69,7 +69,7 @@ var File_store_role_proto protoreflect.FileDescriptor
 
 const file_store_role_proto_rawDesc = "" +
 	"\n" +
-	"\x10store/role.proto\x12\x0ebytebase.store\"3\n" +
+	"\x10store/role.proto\x12\x17bytebase.internal.store\"3\n" +
 	"\x0fRolePermissions\x12 \n" +
 	"\vpermissions\x18\x01 \x03(\tR\vpermissionsB\x14Z\x12generated-go/storeb\x06proto3"
 
@@ -87,7 +87,7 @@ func file_store_role_proto_rawDescGZIP() []byte {
 
 var file_store_role_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
 var file_store_role_proto_goTypes = []any{
-	(*RolePermissions)(nil), // 0: bytebase.store.RolePermissions
+	(*RolePermissions)(nil), // 0: bytebase.internal.store.RolePermissions
 }
 var file_store_role_proto_depIdxs = []int32{
 	0, // [0:0] is the sub-list for method output_type

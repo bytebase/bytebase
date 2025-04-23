@@ -191,9 +191,9 @@ type ReleasePayload_File struct {
 	Sheet string `protobuf:"bytes,3,opt,name=sheet,proto3" json:"sheet,omitempty"`
 	// The SHA256 hash value of the sheet.
 	SheetSha256   string                         `protobuf:"bytes,4,opt,name=sheet_sha256,json=sheetSha256,proto3" json:"sheet_sha256,omitempty"`
-	Type          ReleaseFileType                `protobuf:"varint,5,opt,name=type,proto3,enum=bytebase.store.ReleaseFileType" json:"type,omitempty"`
+	Type          ReleaseFileType                `protobuf:"varint,5,opt,name=type,proto3,enum=bytebase.internal.store.ReleaseFileType" json:"type,omitempty"`
 	Version       string                         `protobuf:"bytes,6,opt,name=version,proto3" json:"version,omitempty"`
-	ChangeType    ReleasePayload_File_ChangeType `protobuf:"varint,7,opt,name=change_type,json=changeType,proto3,enum=bytebase.store.ReleasePayload_File_ChangeType" json:"change_type,omitempty"`
+	ChangeType    ReleasePayload_File_ChangeType `protobuf:"varint,7,opt,name=change_type,json=changeType,proto3,enum=bytebase.internal.store.ReleasePayload_File_ChangeType" json:"change_type,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -279,7 +279,7 @@ func (x *ReleasePayload_File) GetChangeType() ReleasePayload_File_ChangeType {
 
 type ReleasePayload_VCSSource struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	VcsType       VCSType                `protobuf:"varint,1,opt,name=vcs_type,json=vcsType,proto3,enum=bytebase.store.VCSType" json:"vcs_type,omitempty"`
+	VcsType       VCSType                `protobuf:"varint,1,opt,name=vcs_type,json=vcsType,proto3,enum=bytebase.internal.store.VCSType" json:"vcs_type,omitempty"`
 	Url           string                 `protobuf:"bytes,2,opt,name=url,proto3" json:"url,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -333,30 +333,30 @@ var File_store_release_proto protoreflect.FileDescriptor
 
 const file_store_release_proto_rawDesc = "" +
 	"\n" +
-	"\x13store/release.proto\x12\x0ebytebase.store\x1a\x19google/api/resource.proto\x1a\x12store/common.proto\"\xe8\x04\n" +
+	"\x13store/release.proto\x12\x17bytebase.internal.store\x1a\x19google/api/resource.proto\x1a\x12store/common.proto\"\x95\x05\n" +
 	"\x0eReleasePayload\x12\x14\n" +
-	"\x05title\x18\x01 \x01(\tR\x05title\x129\n" +
-	"\x05files\x18\x02 \x03(\v2#.bytebase.store.ReleasePayload.FileR\x05files\x12G\n" +
+	"\x05title\x18\x01 \x01(\tR\x05title\x12B\n" +
+	"\x05files\x18\x02 \x03(\v2,.bytebase.internal.store.ReleasePayload.FileR\x05files\x12P\n" +
 	"\n" +
-	"vcs_source\x18\x03 \x01(\v2(.bytebase.store.ReleasePayload.VCSSourceR\tvcsSource\x1a\xe8\x02\n" +
+	"vcs_source\x18\x03 \x01(\v21.bytebase.internal.store.ReleasePayload.VCSSourceR\tvcsSource\x1a\xfa\x02\n" +
 	"\x04File\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04path\x18\x02 \x01(\tR\x04path\x12-\n" +
 	"\x05sheet\x18\x03 \x01(\tB\x17\xfaA\x14\n" +
 	"\x12bytebase.com/SheetR\x05sheet\x12!\n" +
-	"\fsheet_sha256\x18\x04 \x01(\tR\vsheetSha256\x123\n" +
-	"\x04type\x18\x05 \x01(\x0e2\x1f.bytebase.store.ReleaseFileTypeR\x04type\x12\x18\n" +
-	"\aversion\x18\x06 \x01(\tR\aversion\x12O\n" +
-	"\vchange_type\x18\a \x01(\x0e2..bytebase.store.ReleasePayload.File.ChangeTypeR\n" +
+	"\fsheet_sha256\x18\x04 \x01(\tR\vsheetSha256\x12<\n" +
+	"\x04type\x18\x05 \x01(\x0e2(.bytebase.internal.store.ReleaseFileTypeR\x04type\x12\x18\n" +
+	"\aversion\x18\x06 \x01(\tR\aversion\x12X\n" +
+	"\vchange_type\x18\a \x01(\x0e27.bytebase.internal.store.ReleasePayload.File.ChangeTypeR\n" +
 	"changeType\"J\n" +
 	"\n" +
 	"ChangeType\x12\x1b\n" +
 	"\x17CHANGE_TYPE_UNSPECIFIED\x10\x00\x12\a\n" +
 	"\x03DDL\x10\x01\x12\r\n" +
 	"\tDDL_GHOST\x10\x02\x12\a\n" +
-	"\x03DML\x10\x03\x1aQ\n" +
-	"\tVCSSource\x122\n" +
-	"\bvcs_type\x18\x01 \x01(\x0e2\x17.bytebase.store.VCSTypeR\avcsType\x12\x10\n" +
+	"\x03DML\x10\x03\x1aZ\n" +
+	"\tVCSSource\x12;\n" +
+	"\bvcs_type\x18\x01 \x01(\x0e2 .bytebase.internal.store.VCSTypeR\avcsType\x12\x10\n" +
 	"\x03url\x18\x02 \x01(\tR\x03url*6\n" +
 	"\x0fReleaseFileType\x12\x14\n" +
 	"\x10TYPE_UNSPECIFIED\x10\x00\x12\r\n" +
@@ -377,19 +377,19 @@ func file_store_release_proto_rawDescGZIP() []byte {
 var file_store_release_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
 var file_store_release_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
 var file_store_release_proto_goTypes = []any{
-	(ReleaseFileType)(0),                // 0: bytebase.store.ReleaseFileType
-	(ReleasePayload_File_ChangeType)(0), // 1: bytebase.store.ReleasePayload.File.ChangeType
-	(*ReleasePayload)(nil),              // 2: bytebase.store.ReleasePayload
-	(*ReleasePayload_File)(nil),         // 3: bytebase.store.ReleasePayload.File
-	(*ReleasePayload_VCSSource)(nil),    // 4: bytebase.store.ReleasePayload.VCSSource
-	(VCSType)(0),                        // 5: bytebase.store.VCSType
+	(ReleaseFileType)(0),                // 0: bytebase.internal.store.ReleaseFileType
+	(ReleasePayload_File_ChangeType)(0), // 1: bytebase.internal.store.ReleasePayload.File.ChangeType
+	(*ReleasePayload)(nil),              // 2: bytebase.internal.store.ReleasePayload
+	(*ReleasePayload_File)(nil),         // 3: bytebase.internal.store.ReleasePayload.File
+	(*ReleasePayload_VCSSource)(nil),    // 4: bytebase.internal.store.ReleasePayload.VCSSource
+	(VCSType)(0),                        // 5: bytebase.internal.store.VCSType
 }
 var file_store_release_proto_depIdxs = []int32{
-	3, // 0: bytebase.store.ReleasePayload.files:type_name -> bytebase.store.ReleasePayload.File
-	4, // 1: bytebase.store.ReleasePayload.vcs_source:type_name -> bytebase.store.ReleasePayload.VCSSource
-	0, // 2: bytebase.store.ReleasePayload.File.type:type_name -> bytebase.store.ReleaseFileType
-	1, // 3: bytebase.store.ReleasePayload.File.change_type:type_name -> bytebase.store.ReleasePayload.File.ChangeType
-	5, // 4: bytebase.store.ReleasePayload.VCSSource.vcs_type:type_name -> bytebase.store.VCSType
+	3, // 0: bytebase.internal.store.ReleasePayload.files:type_name -> bytebase.internal.store.ReleasePayload.File
+	4, // 1: bytebase.internal.store.ReleasePayload.vcs_source:type_name -> bytebase.internal.store.ReleasePayload.VCSSource
+	0, // 2: bytebase.internal.store.ReleasePayload.File.type:type_name -> bytebase.internal.store.ReleaseFileType
+	1, // 3: bytebase.internal.store.ReleasePayload.File.change_type:type_name -> bytebase.internal.store.ReleasePayload.File.ChangeType
+	5, // 4: bytebase.internal.store.ReleasePayload.VCSSource.vcs_type:type_name -> bytebase.internal.store.VCSType
 	5, // [5:5] is the sub-list for method output_type
 	5, // [5:5] is the sub-list for method input_type
 	5, // [5:5] is the sub-list for extension type_name

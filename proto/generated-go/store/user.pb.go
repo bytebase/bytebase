@@ -160,7 +160,7 @@ var File_store_user_proto protoreflect.FileDescriptor
 
 const file_store_user_proto_rawDesc = "" +
 	"\n" +
-	"\x10store/user.proto\x12\x0ebytebase.store\x1a\x1fgoogle/protobuf/timestamp.proto\"\xa9\x01\n" +
+	"\x10store/user.proto\x12\x17bytebase.internal.store\x1a\x1fgoogle/protobuf/timestamp.proto\"\xa9\x01\n" +
 	"\tMFAConfig\x12\x1d\n" +
 	"\n" +
 	"otp_secret\x18\x01 \x01(\tR\totpSecret\x12&\n" +
@@ -186,13 +186,13 @@ func file_store_user_proto_rawDescGZIP() []byte {
 
 var file_store_user_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
 var file_store_user_proto_goTypes = []any{
-	(*MFAConfig)(nil),             // 0: bytebase.store.MFAConfig
-	(*UserProfile)(nil),           // 1: bytebase.store.UserProfile
+	(*MFAConfig)(nil),             // 0: bytebase.internal.store.MFAConfig
+	(*UserProfile)(nil),           // 1: bytebase.internal.store.UserProfile
 	(*timestamppb.Timestamp)(nil), // 2: google.protobuf.Timestamp
 }
 var file_store_user_proto_depIdxs = []int32{
-	2, // 0: bytebase.store.UserProfile.last_login_time:type_name -> google.protobuf.Timestamp
-	2, // 1: bytebase.store.UserProfile.last_change_password_time:type_name -> google.protobuf.Timestamp
+	2, // 0: bytebase.internal.store.UserProfile.last_login_time:type_name -> google.protobuf.Timestamp
+	2, // 1: bytebase.internal.store.UserProfile.last_change_password_time:type_name -> google.protobuf.Timestamp
 	2, // [2:2] is the sub-list for method output_type
 	2, // [2:2] is the sub-list for method input_type
 	2, // [2:2] is the sub-list for extension type_name

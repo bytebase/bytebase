@@ -24,7 +24,7 @@ const (
 type SheetPayload struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The SQL dialect.
-	Engine Engine `protobuf:"varint,3,opt,name=engine,proto3,enum=bytebase.store.Engine" json:"engine,omitempty"`
+	Engine Engine `protobuf:"varint,3,opt,name=engine,proto3,enum=bytebase.internal.store.Engine" json:"engine,omitempty"`
 	// The start and end position of each command in the sheet statement.
 	Commands      []*SheetCommand `protobuf:"bytes,4,rep,name=commands,proto3" json:"commands,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -131,10 +131,10 @@ var File_store_sheet_proto protoreflect.FileDescriptor
 
 const file_store_sheet_proto_rawDesc = "" +
 	"\n" +
-	"\x11store/sheet.proto\x12\x0ebytebase.store\x1a\x12store/common.proto\"x\n" +
-	"\fSheetPayload\x12.\n" +
-	"\x06engine\x18\x03 \x01(\x0e2\x16.bytebase.store.EngineR\x06engine\x128\n" +
-	"\bcommands\x18\x04 \x03(\v2\x1c.bytebase.store.SheetCommandR\bcommands\"6\n" +
+	"\x11store/sheet.proto\x12\x17bytebase.internal.store\x1a\x12store/common.proto\"\x8a\x01\n" +
+	"\fSheetPayload\x127\n" +
+	"\x06engine\x18\x03 \x01(\x0e2\x1f.bytebase.internal.store.EngineR\x06engine\x12A\n" +
+	"\bcommands\x18\x04 \x03(\v2%.bytebase.internal.store.SheetCommandR\bcommands\"6\n" +
 	"\fSheetCommand\x12\x14\n" +
 	"\x05start\x18\x01 \x01(\x05R\x05start\x12\x10\n" +
 	"\x03end\x18\x02 \x01(\x05R\x03endB\x14Z\x12generated-go/storeb\x06proto3"
@@ -153,13 +153,13 @@ func file_store_sheet_proto_rawDescGZIP() []byte {
 
 var file_store_sheet_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
 var file_store_sheet_proto_goTypes = []any{
-	(*SheetPayload)(nil), // 0: bytebase.store.SheetPayload
-	(*SheetCommand)(nil), // 1: bytebase.store.SheetCommand
-	(Engine)(0),          // 2: bytebase.store.Engine
+	(*SheetPayload)(nil), // 0: bytebase.internal.store.SheetPayload
+	(*SheetCommand)(nil), // 1: bytebase.internal.store.SheetCommand
+	(Engine)(0),          // 2: bytebase.internal.store.Engine
 }
 var file_store_sheet_proto_depIdxs = []int32{
-	2, // 0: bytebase.store.SheetPayload.engine:type_name -> bytebase.store.Engine
-	1, // 1: bytebase.store.SheetPayload.commands:type_name -> bytebase.store.SheetCommand
+	2, // 0: bytebase.internal.store.SheetPayload.engine:type_name -> bytebase.internal.store.Engine
+	1, // 1: bytebase.internal.store.SheetPayload.commands:type_name -> bytebase.internal.store.SheetCommand
 	2, // [2:2] is the sub-list for method output_type
 	2, // [2:2] is the sub-list for method input_type
 	2, // [2:2] is the sub-list for extension type_name

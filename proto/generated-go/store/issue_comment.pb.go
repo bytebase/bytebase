@@ -327,7 +327,7 @@ func (*IssueCommentPayload_TaskPriorBackup_) isIssueCommentPayload_Event() {}
 
 type IssueCommentPayload_Approval struct {
 	state         protoimpl.MessageState              `protogen:"open.v1"`
-	Status        IssueCommentPayload_Approval_Status `protobuf:"varint,1,opt,name=status,proto3,enum=bytebase.store.IssueCommentPayload_Approval_Status" json:"status,omitempty"`
+	Status        IssueCommentPayload_Approval_Status `protobuf:"varint,1,opt,name=status,proto3,enum=bytebase.internal.store.IssueCommentPayload_Approval_Status" json:"status,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -375,8 +375,8 @@ type IssueCommentPayload_IssueUpdate struct {
 	ToTitle         *string                                      `protobuf:"bytes,2,opt,name=to_title,json=toTitle,proto3,oneof" json:"to_title,omitempty"`
 	FromDescription *string                                      `protobuf:"bytes,3,opt,name=from_description,json=fromDescription,proto3,oneof" json:"from_description,omitempty"`
 	ToDescription   *string                                      `protobuf:"bytes,4,opt,name=to_description,json=toDescription,proto3,oneof" json:"to_description,omitempty"`
-	FromStatus      *IssueCommentPayload_IssueUpdate_IssueStatus `protobuf:"varint,5,opt,name=from_status,json=fromStatus,proto3,enum=bytebase.store.IssueCommentPayload_IssueUpdate_IssueStatus,oneof" json:"from_status,omitempty"`
-	ToStatus        *IssueCommentPayload_IssueUpdate_IssueStatus `protobuf:"varint,6,opt,name=to_status,json=toStatus,proto3,enum=bytebase.store.IssueCommentPayload_IssueUpdate_IssueStatus,oneof" json:"to_status,omitempty"`
+	FromStatus      *IssueCommentPayload_IssueUpdate_IssueStatus `protobuf:"varint,5,opt,name=from_status,json=fromStatus,proto3,enum=bytebase.internal.store.IssueCommentPayload_IssueUpdate_IssueStatus,oneof" json:"from_status,omitempty"`
+	ToStatus        *IssueCommentPayload_IssueUpdate_IssueStatus `protobuf:"varint,6,opt,name=to_status,json=toStatus,proto3,enum=bytebase.internal.store.IssueCommentPayload_IssueUpdate_IssueStatus,oneof" json:"to_status,omitempty"`
 	FromLabels      []string                                     `protobuf:"bytes,7,rep,name=from_labels,json=fromLabels,proto3" json:"from_labels,omitempty"`
 	ToLabels        []string                                     `protobuf:"bytes,8,rep,name=to_labels,json=toLabels,proto3" json:"to_labels,omitempty"`
 	unknownFields   protoimpl.UnknownFields
@@ -522,7 +522,7 @@ type IssueCommentPayload_TaskUpdate struct {
 	ToSheet                 *string                                `protobuf:"bytes,3,opt,name=to_sheet,json=toSheet,proto3,oneof" json:"to_sheet,omitempty"`
 	FromEarliestAllowedTime *timestamppb.Timestamp                 `protobuf:"bytes,4,opt,name=from_earliest_allowed_time,json=fromEarliestAllowedTime,proto3,oneof" json:"from_earliest_allowed_time,omitempty"`
 	ToEarliestAllowedTime   *timestamppb.Timestamp                 `protobuf:"bytes,5,opt,name=to_earliest_allowed_time,json=toEarliestAllowedTime,proto3,oneof" json:"to_earliest_allowed_time,omitempty"`
-	ToStatus                *IssueCommentPayload_TaskUpdate_Status `protobuf:"varint,6,opt,name=to_status,json=toStatus,proto3,enum=bytebase.store.IssueCommentPayload_TaskUpdate_Status,oneof" json:"to_status,omitempty"`
+	ToStatus                *IssueCommentPayload_TaskUpdate_Status `protobuf:"varint,6,opt,name=to_status,json=toStatus,proto3,enum=bytebase.internal.store.IssueCommentPayload_TaskUpdate_Status,oneof" json:"to_status,omitempty"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
 }
@@ -731,31 +731,31 @@ var File_store_issue_comment_proto protoreflect.FileDescriptor
 
 const file_store_issue_comment_proto_rawDesc = "" +
 	"\n" +
-	"\x19store/issue_comment.proto\x12\x0ebytebase.store\x1a\x1fgoogle/protobuf/timestamp.proto\"\xf2\x10\n" +
+	"\x19store/issue_comment.proto\x12\x17bytebase.internal.store\x1a\x1fgoogle/protobuf/timestamp.proto\"\xcc\x11\n" +
 	"\x13IssueCommentPayload\x12\x18\n" +
-	"\acomment\x18\x01 \x01(\tR\acomment\x12J\n" +
-	"\bapproval\x18\x02 \x01(\v2,.bytebase.store.IssueCommentPayload.ApprovalH\x00R\bapproval\x12T\n" +
-	"\fissue_update\x18\x03 \x01(\v2/.bytebase.store.IssueCommentPayload.IssueUpdateH\x00R\vissueUpdate\x12K\n" +
-	"\tstage_end\x18\x04 \x01(\v2,.bytebase.store.IssueCommentPayload.StageEndH\x00R\bstageEnd\x12Q\n" +
-	"\vtask_update\x18\x05 \x01(\v2..bytebase.store.IssueCommentPayload.TaskUpdateH\x00R\n" +
-	"taskUpdate\x12a\n" +
-	"\x11task_prior_backup\x18\x06 \x01(\v23.bytebase.store.IssueCommentPayload.TaskPriorBackupH\x00R\x0ftaskPriorBackup\x1a\xa2\x01\n" +
-	"\bApproval\x12K\n" +
-	"\x06status\x18\x01 \x01(\x0e23.bytebase.store.IssueCommentPayload.Approval.StatusR\x06status\"I\n" +
+	"\acomment\x18\x01 \x01(\tR\acomment\x12S\n" +
+	"\bapproval\x18\x02 \x01(\v25.bytebase.internal.store.IssueCommentPayload.ApprovalH\x00R\bapproval\x12]\n" +
+	"\fissue_update\x18\x03 \x01(\v28.bytebase.internal.store.IssueCommentPayload.IssueUpdateH\x00R\vissueUpdate\x12T\n" +
+	"\tstage_end\x18\x04 \x01(\v25.bytebase.internal.store.IssueCommentPayload.StageEndH\x00R\bstageEnd\x12Z\n" +
+	"\vtask_update\x18\x05 \x01(\v27.bytebase.internal.store.IssueCommentPayload.TaskUpdateH\x00R\n" +
+	"taskUpdate\x12j\n" +
+	"\x11task_prior_backup\x18\x06 \x01(\v2<.bytebase.internal.store.IssueCommentPayload.TaskPriorBackupH\x00R\x0ftaskPriorBackup\x1a\xab\x01\n" +
+	"\bApproval\x12T\n" +
+	"\x06status\x18\x01 \x01(\x0e2<.bytebase.internal.store.IssueCommentPayload.Approval.StatusR\x06status\"I\n" +
 	"\x06Status\x12\x16\n" +
 	"\x12STATUS_UNSPECIFIED\x10\x00\x12\v\n" +
 	"\aPENDING\x10\x01\x12\f\n" +
 	"\bAPPROVED\x10\x02\x12\f\n" +
-	"\bREJECTED\x10\x03\x1a\xde\x04\n" +
+	"\bREJECTED\x10\x03\x1a\xf0\x04\n" +
 	"\vIssueUpdate\x12\"\n" +
 	"\n" +
 	"from_title\x18\x01 \x01(\tH\x00R\tfromTitle\x88\x01\x01\x12\x1e\n" +
 	"\bto_title\x18\x02 \x01(\tH\x01R\atoTitle\x88\x01\x01\x12.\n" +
 	"\x10from_description\x18\x03 \x01(\tH\x02R\x0ffromDescription\x88\x01\x01\x12*\n" +
-	"\x0eto_description\x18\x04 \x01(\tH\x03R\rtoDescription\x88\x01\x01\x12a\n" +
-	"\vfrom_status\x18\x05 \x01(\x0e2;.bytebase.store.IssueCommentPayload.IssueUpdate.IssueStatusH\x04R\n" +
-	"fromStatus\x88\x01\x01\x12]\n" +
-	"\tto_status\x18\x06 \x01(\x0e2;.bytebase.store.IssueCommentPayload.IssueUpdate.IssueStatusH\x05R\btoStatus\x88\x01\x01\x12\x1f\n" +
+	"\x0eto_description\x18\x04 \x01(\tH\x03R\rtoDescription\x88\x01\x01\x12j\n" +
+	"\vfrom_status\x18\x05 \x01(\x0e2D.bytebase.internal.store.IssueCommentPayload.IssueUpdate.IssueStatusH\x04R\n" +
+	"fromStatus\x88\x01\x01\x12f\n" +
+	"\tto_status\x18\x06 \x01(\x0e2D.bytebase.internal.store.IssueCommentPayload.IssueUpdate.IssueStatusH\x05R\btoStatus\x88\x01\x01\x12\x1f\n" +
 	"\vfrom_labels\x18\a \x03(\tR\n" +
 	"fromLabels\x12\x1b\n" +
 	"\tto_labels\x18\b \x03(\tR\btoLabels\"M\n" +
@@ -772,7 +772,7 @@ const file_store_issue_comment_proto_rawDesc = "" +
 	"\n" +
 	"_to_status\x1a \n" +
 	"\bStageEnd\x12\x14\n" +
-	"\x05stage\x18\x01 \x01(\tR\x05stage\x1a\xca\x04\n" +
+	"\x05stage\x18\x01 \x01(\tR\x05stage\x1a\xd3\x04\n" +
 	"\n" +
 	"TaskUpdate\x12\x14\n" +
 	"\x05tasks\x18\x01 \x03(\tR\x05tasks\x12\"\n" +
@@ -780,8 +780,8 @@ const file_store_issue_comment_proto_rawDesc = "" +
 	"from_sheet\x18\x02 \x01(\tH\x00R\tfromSheet\x88\x01\x01\x12\x1e\n" +
 	"\bto_sheet\x18\x03 \x01(\tH\x01R\atoSheet\x88\x01\x01\x12\\\n" +
 	"\x1afrom_earliest_allowed_time\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampH\x02R\x17fromEarliestAllowedTime\x88\x01\x01\x12X\n" +
-	"\x18to_earliest_allowed_time\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampH\x03R\x15toEarliestAllowedTime\x88\x01\x01\x12W\n" +
-	"\tto_status\x18\x06 \x01(\x0e25.bytebase.store.IssueCommentPayload.TaskUpdate.StatusH\x04R\btoStatus\x88\x01\x01\"k\n" +
+	"\x18to_earliest_allowed_time\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampH\x03R\x15toEarliestAllowedTime\x88\x01\x01\x12`\n" +
+	"\tto_status\x18\x06 \x01(\x0e2>.bytebase.internal.store.IssueCommentPayload.TaskUpdate.StatusH\x04R\btoStatus\x88\x01\x01\"k\n" +
 	"\x06Status\x12\x16\n" +
 	"\x12STATUS_UNSPECIFIED\x10\x00\x12\v\n" +
 	"\aPENDING\x10\x01\x12\v\n" +
@@ -796,10 +796,10 @@ const file_store_issue_comment_proto_rawDesc = "" +
 	"\x1b_from_earliest_allowed_timeB\x1b\n" +
 	"\x19_to_earliest_allowed_timeB\f\n" +
 	"\n" +
-	"_to_status\x1a\x9d\x02\n" +
+	"_to_status\x1a\xa6\x02\n" +
 	"\x0fTaskPriorBackup\x12\x12\n" +
-	"\x04task\x18\x01 \x01(\tR\x04task\x12Q\n" +
-	"\x06tables\x18\x02 \x03(\v29.bytebase.store.IssueCommentPayload.TaskPriorBackup.TableR\x06tables\x12(\n" +
+	"\x04task\x18\x01 \x01(\tR\x04task\x12Z\n" +
+	"\x06tables\x18\x02 \x03(\v2B.bytebase.internal.store.IssueCommentPayload.TaskPriorBackup.TableR\x06tables\x12(\n" +
 	"\roriginal_line\x18\x03 \x01(\x05H\x00R\foriginalLine\x88\x01\x01\x12\x1a\n" +
 	"\bdatabase\x18\x04 \x01(\tR\bdatabase\x12\x14\n" +
 	"\x05error\x18\x05 \x01(\tR\x05error\x1a5\n" +
@@ -824,31 +824,31 @@ func file_store_issue_comment_proto_rawDescGZIP() []byte {
 var file_store_issue_comment_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
 var file_store_issue_comment_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
 var file_store_issue_comment_proto_goTypes = []any{
-	(IssueCommentPayload_Approval_Status)(0),          // 0: bytebase.store.IssueCommentPayload.Approval.Status
-	(IssueCommentPayload_IssueUpdate_IssueStatus)(0),  // 1: bytebase.store.IssueCommentPayload.IssueUpdate.IssueStatus
-	(IssueCommentPayload_TaskUpdate_Status)(0),        // 2: bytebase.store.IssueCommentPayload.TaskUpdate.Status
-	(*IssueCommentPayload)(nil),                       // 3: bytebase.store.IssueCommentPayload
-	(*IssueCommentPayload_Approval)(nil),              // 4: bytebase.store.IssueCommentPayload.Approval
-	(*IssueCommentPayload_IssueUpdate)(nil),           // 5: bytebase.store.IssueCommentPayload.IssueUpdate
-	(*IssueCommentPayload_StageEnd)(nil),              // 6: bytebase.store.IssueCommentPayload.StageEnd
-	(*IssueCommentPayload_TaskUpdate)(nil),            // 7: bytebase.store.IssueCommentPayload.TaskUpdate
-	(*IssueCommentPayload_TaskPriorBackup)(nil),       // 8: bytebase.store.IssueCommentPayload.TaskPriorBackup
-	(*IssueCommentPayload_TaskPriorBackup_Table)(nil), // 9: bytebase.store.IssueCommentPayload.TaskPriorBackup.Table
+	(IssueCommentPayload_Approval_Status)(0),          // 0: bytebase.internal.store.IssueCommentPayload.Approval.Status
+	(IssueCommentPayload_IssueUpdate_IssueStatus)(0),  // 1: bytebase.internal.store.IssueCommentPayload.IssueUpdate.IssueStatus
+	(IssueCommentPayload_TaskUpdate_Status)(0),        // 2: bytebase.internal.store.IssueCommentPayload.TaskUpdate.Status
+	(*IssueCommentPayload)(nil),                       // 3: bytebase.internal.store.IssueCommentPayload
+	(*IssueCommentPayload_Approval)(nil),              // 4: bytebase.internal.store.IssueCommentPayload.Approval
+	(*IssueCommentPayload_IssueUpdate)(nil),           // 5: bytebase.internal.store.IssueCommentPayload.IssueUpdate
+	(*IssueCommentPayload_StageEnd)(nil),              // 6: bytebase.internal.store.IssueCommentPayload.StageEnd
+	(*IssueCommentPayload_TaskUpdate)(nil),            // 7: bytebase.internal.store.IssueCommentPayload.TaskUpdate
+	(*IssueCommentPayload_TaskPriorBackup)(nil),       // 8: bytebase.internal.store.IssueCommentPayload.TaskPriorBackup
+	(*IssueCommentPayload_TaskPriorBackup_Table)(nil), // 9: bytebase.internal.store.IssueCommentPayload.TaskPriorBackup.Table
 	(*timestamppb.Timestamp)(nil),                     // 10: google.protobuf.Timestamp
 }
 var file_store_issue_comment_proto_depIdxs = []int32{
-	4,  // 0: bytebase.store.IssueCommentPayload.approval:type_name -> bytebase.store.IssueCommentPayload.Approval
-	5,  // 1: bytebase.store.IssueCommentPayload.issue_update:type_name -> bytebase.store.IssueCommentPayload.IssueUpdate
-	6,  // 2: bytebase.store.IssueCommentPayload.stage_end:type_name -> bytebase.store.IssueCommentPayload.StageEnd
-	7,  // 3: bytebase.store.IssueCommentPayload.task_update:type_name -> bytebase.store.IssueCommentPayload.TaskUpdate
-	8,  // 4: bytebase.store.IssueCommentPayload.task_prior_backup:type_name -> bytebase.store.IssueCommentPayload.TaskPriorBackup
-	0,  // 5: bytebase.store.IssueCommentPayload.Approval.status:type_name -> bytebase.store.IssueCommentPayload.Approval.Status
-	1,  // 6: bytebase.store.IssueCommentPayload.IssueUpdate.from_status:type_name -> bytebase.store.IssueCommentPayload.IssueUpdate.IssueStatus
-	1,  // 7: bytebase.store.IssueCommentPayload.IssueUpdate.to_status:type_name -> bytebase.store.IssueCommentPayload.IssueUpdate.IssueStatus
-	10, // 8: bytebase.store.IssueCommentPayload.TaskUpdate.from_earliest_allowed_time:type_name -> google.protobuf.Timestamp
-	10, // 9: bytebase.store.IssueCommentPayload.TaskUpdate.to_earliest_allowed_time:type_name -> google.protobuf.Timestamp
-	2,  // 10: bytebase.store.IssueCommentPayload.TaskUpdate.to_status:type_name -> bytebase.store.IssueCommentPayload.TaskUpdate.Status
-	9,  // 11: bytebase.store.IssueCommentPayload.TaskPriorBackup.tables:type_name -> bytebase.store.IssueCommentPayload.TaskPriorBackup.Table
+	4,  // 0: bytebase.internal.store.IssueCommentPayload.approval:type_name -> bytebase.internal.store.IssueCommentPayload.Approval
+	5,  // 1: bytebase.internal.store.IssueCommentPayload.issue_update:type_name -> bytebase.internal.store.IssueCommentPayload.IssueUpdate
+	6,  // 2: bytebase.internal.store.IssueCommentPayload.stage_end:type_name -> bytebase.internal.store.IssueCommentPayload.StageEnd
+	7,  // 3: bytebase.internal.store.IssueCommentPayload.task_update:type_name -> bytebase.internal.store.IssueCommentPayload.TaskUpdate
+	8,  // 4: bytebase.internal.store.IssueCommentPayload.task_prior_backup:type_name -> bytebase.internal.store.IssueCommentPayload.TaskPriorBackup
+	0,  // 5: bytebase.internal.store.IssueCommentPayload.Approval.status:type_name -> bytebase.internal.store.IssueCommentPayload.Approval.Status
+	1,  // 6: bytebase.internal.store.IssueCommentPayload.IssueUpdate.from_status:type_name -> bytebase.internal.store.IssueCommentPayload.IssueUpdate.IssueStatus
+	1,  // 7: bytebase.internal.store.IssueCommentPayload.IssueUpdate.to_status:type_name -> bytebase.internal.store.IssueCommentPayload.IssueUpdate.IssueStatus
+	10, // 8: bytebase.internal.store.IssueCommentPayload.TaskUpdate.from_earliest_allowed_time:type_name -> google.protobuf.Timestamp
+	10, // 9: bytebase.internal.store.IssueCommentPayload.TaskUpdate.to_earliest_allowed_time:type_name -> google.protobuf.Timestamp
+	2,  // 10: bytebase.internal.store.IssueCommentPayload.TaskUpdate.to_status:type_name -> bytebase.internal.store.IssueCommentPayload.TaskUpdate.Status
+	9,  // 11: bytebase.internal.store.IssueCommentPayload.TaskPriorBackup.tables:type_name -> bytebase.internal.store.IssueCommentPayload.TaskPriorBackup.Table
 	12, // [12:12] is the sub-list for method output_type
 	12, // [12:12] is the sub-list for method input_type
 	12, // [12:12] is the sub-list for extension type_name

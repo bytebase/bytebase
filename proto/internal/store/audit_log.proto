@@ -1,0 +1,65 @@
+syntax = "proto3";
+
+package bytebase.internal.store;
+
+import "google/protobuf/any.proto";
+import "google/rpc/status.proto";
+
+option go_package = "generated-go/store";
+
+message AuditLog {
+  // The project or workspace the audit log belongs to.
+  // Formats:
+  // - projects/{project}
+  // - workspaces/{workspace}
+  string parent = 1;
+
+  // e.g. /bytebase.api.v1alphaSQLService/Query
+  string method = 2;
+
+  // resource name
+  // projects/{project}
+  string resource = 3;
+
+  // Format: users/{userUID}.
+  string user = 4;
+
+  Severity severity = 5;
+
+  // Marshalled request.
+  string request = 6;
+
+  // Marshalled response.
+  // Some fields are omitted because they are too large or contain sensitive information.
+  string response = 7;
+
+  google.rpc.Status status = 8;
+
+  // service-specific data about the request, response, and other activities.
+  google.protobuf.Any service_data = 10;
+
+  // Metadata about the operation.
+  RequestMetadata request_metadata = 11;
+
+  enum Severity {
+    DEFAULT = 0;
+    DEBUG = 1;
+    INFO = 2;
+    NOTICE = 3;
+    WARNING = 4;
+    ERROR = 5;
+    CRITICAL = 6;
+    ALERT = 7;
+    EMERGENCY = 8;
+  }
+}
+
+// Metadata about the request.
+message RequestMetadata {
+  // The IP address of the caller.
+  string caller_ip = 1;
+
+  // The user agent of the caller.
+  // This information is not authenticated and should be treated accordingly.
+  string caller_supplied_user_agent = 2;
+}
