@@ -231,7 +231,7 @@ func (exec *DataUpdateExecutor) backupData(
 		return nil, errors.Wrap(err, "failed to transform DML to select")
 	}
 
-	prependStatement, err := getPrependStatements(instance.Metadata.GetEngine(), originStatement)
+	prependStatements, err := getPrependStatements(instance.Metadata.GetEngine(), originStatement)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get pre append statements")
 	}
@@ -243,8 +243,8 @@ func (exec *DataUpdateExecutor) backupData(
 	}
 	for _, statement := range statements {
 		backupStatement := statement.Statement
-		if prependStatement != "" {
-			backupStatement = prependStatement + backupStatement
+		if prependStatements != "" {
+			backupStatement = prependStatements + backupStatement
 		}
 		if _, err := driver.Execute(driverCtx, backupStatement, db.ExecuteOptions{}); err != nil {
 			return nil, errors.Wrapf(err, "failed to execute backup statement %q", backupStatement)
