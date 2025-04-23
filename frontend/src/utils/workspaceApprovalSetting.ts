@@ -26,19 +26,19 @@ import { Expr } from "@/types/proto/google/type/expr";
 import type {
   ApprovalNode,
   ApprovalStep,
-} from "@/types/proto/v1/issue_service";
+} from "@/types/proto/api/v1alpha/issue_service";
 import {
   ApprovalNode_Type,
   ApprovalStep_Type,
-} from "@/types/proto/v1/issue_service";
+} from "@/types/proto/api/v1alpha/issue_service";
 import {
   Risk_Source,
   risk_SourceFromJSON,
-} from "@/types/proto/v1/risk_service";
+} from "@/types/proto/api/v1alpha/risk_service";
 import {
   WorkspaceApprovalSetting,
   WorkspaceApprovalSetting_Rule as ApprovalRule,
-} from "@/types/proto/v1/setting_service";
+} from "@/types/proto/api/v1alpha/setting_service";
 import {
   batchConvertCELStringToParsedExpr,
   batchConvertParsedExprToCELString,

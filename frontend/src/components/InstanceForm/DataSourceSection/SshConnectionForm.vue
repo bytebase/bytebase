@@ -102,7 +102,7 @@ import { useI18n } from "vue-i18n";
 import { FeatureModal } from "@/components/FeatureGuard";
 import DroppableTextarea from "@/components/misc/DroppableTextarea.vue";
 import { useSubscriptionV1Store } from "@/store";
-import type { Instance } from "@/types/proto/v1/instance_service";
+import type { Instance } from "@/types/proto/api/v1alpha/instance_service";
 import { onlyAllowNumber } from "@/utils";
 
 const SshTypes = ["NONE", "TUNNEL", "TUNNEL+PK"] as const;

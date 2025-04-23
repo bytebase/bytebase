@@ -21,7 +21,7 @@ import type { ComposedDatabase } from "@/types";
 import type {
   PlanCheckRun,
   PlanCheckRun_Type,
-} from "@/types/proto/v1/plan_service";
+} from "@/types/proto/api/v1alpha/plan_service";
 import PlanCheckRunPanel from "./PlanCheckRunPanel.vue";
 
 defineProps<{

@@ -46,7 +46,7 @@ import {
   PagedProjectTable,
   PagedInstanceTable,
 } from "@/components/v2";
-import { State } from "@/types/proto/v1/common";
+import { State } from "@/types/proto/api/v1alpha/common";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
 type LocalTabType = "PROJECT" | "INSTANCE";

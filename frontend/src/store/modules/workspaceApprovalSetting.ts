@@ -3,8 +3,8 @@ import { defineStore } from "pinia";
 import { ref } from "vue";
 import { settingServiceClient } from "@/grpcweb";
 import type { LocalApprovalConfig, LocalApprovalRule } from "@/types";
-import type { Risk_Source } from "@/types/proto/v1/risk_service";
-import type { Setting } from "@/types/proto/v1/setting_service";
+import type { Risk_Source } from "@/types/proto/api/v1alpha/risk_service";
+import type { Setting } from "@/types/proto/api/v1alpha/setting_service";
 import {
   resolveLocalApprovalConfig,
   buildWorkspaceApprovalSetting,

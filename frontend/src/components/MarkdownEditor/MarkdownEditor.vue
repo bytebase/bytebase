@@ -108,7 +108,7 @@ import { NButton, NTooltip } from "naive-ui";
 import { nextTick, ref, reactive, watch, toRef } from "vue";
 import { useI18n } from "vue-i18n";
 import type { ComposedIssue, ComposedProject } from "@/types";
-import { Task_Status } from "@/types/proto/v1/rollout_service";
+import { Task_Status } from "@/types/proto/api/v1alpha/rollout_service";
 import {
   activeTaskInRollout,
   extractIssueUID,

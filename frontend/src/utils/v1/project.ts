@@ -1,6 +1,6 @@
 import { DEFAULT_PROJECT_NAME } from "@/types";
-import { State } from "@/types/proto/v1/common";
-import type { Project } from "@/types/proto/v1/project_service";
+import { State } from "@/types/proto/api/v1alpha/common";
+import type { Project } from "@/types/proto/api/v1alpha/project_service";
 
 export const extractProjectResourceName = (name: string) => {
   const pattern = /(?:^|\/)projects\/([^/]+)(?:$|\/)/;

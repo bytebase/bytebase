@@ -15,12 +15,12 @@ import {
   useIssueCommentStore,
   extractUserId,
 } from "@/store";
-import { Engine } from "@/types/proto/v1/common";
+import { Engine } from "@/types/proto/api/v1alpha/common";
 import {
   Task_Status,
   Task_Type,
   TaskRun_Status,
-} from "@/types/proto/v1/rollout_service";
+} from "@/types/proto/api/v1alpha/rollout_service";
 import { hasProjectPermissionV2, isDatabaseChangeRelatedIssue } from "@/utils";
 
 const PRE_BACKUP_AVAILABLE_ENGINES = [

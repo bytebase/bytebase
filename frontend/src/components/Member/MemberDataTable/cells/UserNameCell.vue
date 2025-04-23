@@ -52,7 +52,7 @@ import YouTag from "@/components/misc/YouTag.vue";
 import { useCurrentUserV1, usePermissionStore } from "@/store";
 import { SYSTEM_BOT_USER_NAME } from "@/types";
 import { unknownUser } from "@/types";
-import { User, UserType } from "@/types/proto/v1/user_service";
+import { User, UserType } from "@/types/proto/api/v1alpha/user_service";
 import type { MemberBinding } from "../../types";
 
 const props = defineProps<{

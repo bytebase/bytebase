@@ -13,10 +13,10 @@ import {
   unknownEnvironment,
   isValidDatabaseName,
 } from "@/types";
-import { InstanceResource } from "@/types/proto/v1/instance_service";
-import { IssueStatus } from "@/types/proto/v1/issue_service";
-import type { Plan } from "@/types/proto/v1/plan_service";
-import { Task, Task_Status, Task_Type } from "@/types/proto/v1/rollout_service";
+import { InstanceResource } from "@/types/proto/api/v1alpha/instance_service";
+import { IssueStatus } from "@/types/proto/api/v1alpha/issue_service";
+import type { Plan } from "@/types/proto/api/v1alpha/plan_service";
+import { Task, Task_Status, Task_Type } from "@/types/proto/api/v1alpha/rollout_service";
 import {
   defer,
   extractDatabaseResourceName,

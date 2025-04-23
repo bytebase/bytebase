@@ -86,9 +86,9 @@ import {
   useChangelogStore,
   useLocalSheetStore,
 } from "@/store";
-import type { Changelist_Change as Change } from "@/types/proto/v1/changelist_service";
-import { Changelist } from "@/types/proto/v1/changelist_service";
-import { ChangelogView } from "@/types/proto/v1/database_service";
+import type { Changelist_Change as Change } from "@/types/proto/api/v1alpha/changelist_service";
+import { Changelist } from "@/types/proto/api/v1alpha/changelist_service";
+import { ChangelogView } from "@/types/proto/api/v1alpha/database_service";
 import {
   getChangelistChangeSourceType,
   getSheetStatement,

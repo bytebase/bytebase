@@ -9,7 +9,7 @@ import {
   DatabaseCatalog,
   TableCatalog,
   TableCatalog_Columns,
-} from "@/types/proto/v1/database_catalog_service";
+} from "@/types/proto/api/v1alpha/database_catalog_service";
 import { extractDatabaseResourceName, hasProjectPermissionV2 } from "@/utils";
 import { useDatabaseV1Store } from "./database";
 

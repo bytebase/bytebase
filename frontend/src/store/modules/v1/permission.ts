@@ -7,7 +7,7 @@ import {
   type ComposedProject,
   type Permission,
 } from "@/types";
-import { type User } from "@/types/proto/v1/user_service";
+import { type User } from "@/types/proto/api/v1alpha/user_service";
 import { roleListInIAM } from "@/utils";
 import { useCurrentUserV1 } from "../auth";
 import { useRoleStore } from "../role";

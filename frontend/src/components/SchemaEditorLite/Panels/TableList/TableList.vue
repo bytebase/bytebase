@@ -61,13 +61,13 @@ import type { ComposedDatabase } from "@/types";
 import {
   TableCatalog,
   TableCatalog_Columns,
-} from "@/types/proto/v1/database_catalog_service";
+} from "@/types/proto/api/v1alpha/database_catalog_service";
 import type {
   DatabaseMetadata,
   SchemaMetadata,
   TableMetadata,
-} from "@/types/proto/v1/database_service";
-import type { SchemaTemplateSetting_TableTemplate } from "@/types/proto/v1/setting_service";
+} from "@/types/proto/api/v1alpha/database_service";
+import type { SchemaTemplateSetting_TableTemplate } from "@/types/proto/api/v1alpha/setting_service";
 import TableTemplates from "@/views/SchemaTemplate/TableTemplates.vue";
 import { useSchemaEditorContext } from "../../context";
 import { markUUID } from "../common";

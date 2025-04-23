@@ -5,12 +5,12 @@ import { policyServiceClient } from "@/grpcweb";
 import { policyNamePrefix } from "@/store/modules/v1/common";
 import type { MaybeRef } from "@/types";
 import { UNKNOWN_USER_NAME } from "@/types";
-import { Policy } from "@/types/proto/v1/org_policy_service";
+import { Policy } from "@/types/proto/api/v1alpha/org_policy_service";
 import {
   PolicyType,
   PolicyResourceType,
   policyTypeToJSON,
-} from "@/types/proto/v1/org_policy_service";
+} from "@/types/proto/api/v1alpha/org_policy_service";
 import { useCurrentUserV1 } from "../auth";
 
 interface PolicyState {

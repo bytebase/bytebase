@@ -18,8 +18,8 @@ import {
   useUserStore,
 } from "@/store";
 import { SYSTEM_BOT_USER_NAME, UNKNOWN_ID, isValidProjectName } from "@/types";
-import { type Label } from "@/types/proto/v1/project_service";
-import { UserType } from "@/types/proto/v1/user_service";
+import { type Label } from "@/types/proto/api/v1alpha/project_service";
+import { UserType } from "@/types/proto/api/v1alpha/user_service";
 import type { SearchParams, SearchScopeId } from "@/utils";
 import {
   getDefaultPagination,

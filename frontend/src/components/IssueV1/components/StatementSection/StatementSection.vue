@@ -16,7 +16,7 @@ import { useI18n } from "vue-i18n";
 import { onBeforeRouteLeave } from "vue-router";
 import { useRouter } from "vue-router";
 import { TaskTypeListWithStatement } from "@/types";
-import { Task_Type } from "@/types/proto/v1/rollout_service";
+import { Task_Type } from "@/types/proto/api/v1alpha/rollout_service";
 import { isValidTaskName } from "@/utils";
 import { databaseForTask, useIssueContext } from "../../logic";
 import { useIssueSQLCheckContext } from "../SQLCheckSection/context";

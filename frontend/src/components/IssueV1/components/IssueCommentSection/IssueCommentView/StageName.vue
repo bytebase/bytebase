@@ -8,7 +8,7 @@
 import { computed } from "vue";
 import { useEnvironmentV1Store } from "@/store";
 import type { ComposedIssue } from "@/types";
-import type { Stage } from "@/types/proto/v1/rollout_service";
+import type { Stage } from "@/types/proto/api/v1alpha/rollout_service";
 
 const props = defineProps<{
   issue: ComposedIssue;

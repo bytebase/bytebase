@@ -224,7 +224,7 @@ import { computed, reactive, ref } from "vue";
 import { FeatureBadge } from "@/components/FeatureGuard";
 import { hasFeature, useProjectV1Store } from "@/store";
 import type { ComposedProject } from "@/types";
-import { Label, Project_ExecutionRetryPolicy } from "@/types/proto/v1/project_service";
+import { Label, Project_ExecutionRetryPolicy } from "@/types/proto/api/v1alpha/project_service";
 import { Switch } from "@/components/v2";
 
 interface LocalState {

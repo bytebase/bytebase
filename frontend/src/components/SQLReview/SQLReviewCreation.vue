@@ -72,8 +72,8 @@ import {
   ruleIsAvailableInSubscription,
   TEMPLATE_LIST_V2 as builtInTemplateList,
 } from "@/types";
-import { Engine } from "@/types/proto/v1/common";
-import { SQLReviewRuleLevel } from "@/types/proto/v1/org_policy_service";
+import { Engine } from "@/types/proto/api/v1alpha/common";
+import { SQLReviewRuleLevel } from "@/types/proto/api/v1alpha/org_policy_service";
 import { hasWorkspacePermissionV2, sqlReviewPolicySlug } from "@/utils";
 import SQLReviewConfig from "./SQLReviewConfig.vue";
 import SQLReviewInfo from "./SQLReviewInfo.vue";

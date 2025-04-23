@@ -5,7 +5,7 @@ import { ExprType, wrapAsGroup } from "@/plugins/cel";
 import { t, te } from "@/plugins/i18n";
 import { useEnvironmentV1List } from "@/store";
 import { PresetRiskLevel } from "@/types";
-import { Risk_Source } from "@/types/proto/v1/risk_service";
+import { Risk_Source } from "@/types/proto/api/v1alpha/risk_service";
 
 /*
 

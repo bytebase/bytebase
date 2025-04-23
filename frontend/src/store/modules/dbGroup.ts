@@ -20,7 +20,7 @@ import { Expr } from "@/types/proto/google/type/expr";
 import {
   DatabaseGroup,
   DatabaseGroupView,
-} from "@/types/proto/v1/database_group_service";
+} from "@/types/proto/api/v1alpha/database_group_service";
 import {
   batchConvertCELStringToParsedExpr,
   batchConvertParsedExprToCELString,

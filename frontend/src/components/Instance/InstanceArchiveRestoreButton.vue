@@ -64,7 +64,7 @@ import {
   useSubscriptionV1Store,
 } from "@/store";
 import type { ComposedInstance } from "@/types";
-import { State } from "@/types/proto/v1/common";
+import { State } from "@/types/proto/api/v1alpha/common";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import { FeatureModal } from "../FeatureGuard";
 

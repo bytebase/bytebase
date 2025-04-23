@@ -5,11 +5,11 @@ import type { WatchCallback } from "vue";
 import { ref, watch } from "vue";
 import { issueServiceClient } from "@/grpcweb";
 import type { ComposedIssue, IssueFilter } from "@/types";
-import type { ApprovalStep } from "@/types/proto/v1/issue_service";
+import type { ApprovalStep } from "@/types/proto/api/v1alpha/issue_service";
 import {
   issueStatusToJSON,
   ApprovalNode_Type,
-} from "@/types/proto/v1/issue_service";
+} from "@/types/proto/api/v1alpha/issue_service";
 import { memberMapToRolesInProjectIAM } from "@/utils";
 import {
   shallowComposeIssue,

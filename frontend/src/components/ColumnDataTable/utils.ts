@@ -1,13 +1,13 @@
 import { cloneDeep } from "lodash-es";
 import { t } from "@/plugins/i18n";
 import { pushNotification, useDatabaseCatalogV1Store } from "@/store";
-import { Engine } from "@/types/proto/v1/common";
+import { Engine } from "@/types/proto/api/v1alpha/common";
 import {
   SchemaCatalog,
   ColumnCatalog,
   TableCatalog,
   TableCatalog_Columns,
-} from "@/types/proto/v1/database_catalog_service";
+} from "@/types/proto/api/v1alpha/database_catalog_service";
 
 export const supportClassificationFromCommentFeature = (engine: Engine) => {
   return engine === Engine.MYSQL || engine === Engine.POSTGRES;

@@ -27,7 +27,7 @@ import {
   useRoleStore,
   useSettingV1Store,
 } from "@/store";
-import { PolicyResourceType } from "@/types/proto/v1/org_policy_service";
+import { PolicyResourceType } from "@/types/proto/api/v1alpha/org_policy_service";
 import { provideSheetContext } from "@/views/sql-editor/Sheet";
 import { provideSQLEditorContext } from "@/views/sql-editor/context";
 

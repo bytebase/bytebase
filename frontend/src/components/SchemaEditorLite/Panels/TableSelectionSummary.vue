@@ -10,7 +10,7 @@ import type { ComposedDatabase } from "@/types";
 import type {
   DatabaseMetadata,
   SchemaMetadata,
-} from "@/types/proto/v1/database_service";
+} from "@/types/proto/api/v1alpha/database_service";
 import { useSchemaEditorContext } from "../context";
 
 const props = defineProps<{

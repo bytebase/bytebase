@@ -1,5 +1,5 @@
 import type { SQLEditorTab } from "@/types";
-import type { Worksheet } from "@/types/proto/v1/worksheet_service";
+import type { Worksheet } from "@/types/proto/api/v1alpha/worksheet_service";
 import { extractWorksheetUID } from "@/utils";
 import type { SheetViewMode } from "../../Sheet";
 

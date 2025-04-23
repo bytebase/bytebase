@@ -69,11 +69,11 @@ import DatabaseGroupIcon from "@/components/DatabaseGroupIcon.vue";
 import { planCheckRunSummaryForCheckRunList } from "@/components/PlanCheckRun/common";
 import { InstanceV1Name } from "@/components/v2";
 import { useDBGroupStore } from "@/store";
-import { DatabaseGroupView } from "@/types/proto/v1/database_group_service";
+import { DatabaseGroupView } from "@/types/proto/api/v1alpha/database_group_service";
 import {
   PlanCheckRun_Result_Status,
   type Plan_Spec,
-} from "@/types/proto/v1/plan_service";
+} from "@/types/proto/api/v1alpha/plan_service";
 import {
   databaseForSpec,
   isDatabaseChangeSpec,

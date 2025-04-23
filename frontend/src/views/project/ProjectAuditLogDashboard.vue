@@ -59,8 +59,8 @@ import {
   pushNotification,
 } from "@/store";
 import { type SearchAuditLogsParams } from "@/types";
-import type { AuditLog } from "@/types/proto/v1/audit_log_service";
-import { ExportFormat } from "@/types/proto/v1/common";
+import type { AuditLog } from "@/types/proto/api/v1alpha/audit_log_service";
+import { ExportFormat } from "@/types/proto/api/v1alpha/common";
 import type { SearchParams, SearchScope } from "@/utils";
 
 interface LocalState {

@@ -216,9 +216,9 @@ import { planServiceClient } from "@/grpcweb";
 import { hasFeature, pushNotification, useSheetV1Store } from "@/store";
 import type { SQLDialect } from "@/types";
 import { EMPTY_ID, dialectOfEngineV1 } from "@/types";
-import type { Plan_Spec } from "@/types/proto/v1/plan_service";
-import { Sheet } from "@/types/proto/v1/sheet_service";
-import type { Advice } from "@/types/proto/v1/sql_service";
+import type { Plan_Spec } from "@/types/proto/api/v1alpha/plan_service";
+import { Sheet } from "@/types/proto/api/v1alpha/sheet_service";
+import type { Advice } from "@/types/proto/api/v1alpha/sql_service";
 import {
   defer,
   getSheetStatement,

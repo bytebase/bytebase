@@ -32,8 +32,8 @@ import { CheckIcon, XIcon } from "lucide-vue-next";
 import { computed } from "vue";
 import { getColumnDefaultValuePlaceholder } from "@/components/SchemaEditorLite";
 import { useDBSchemaV1Store, useDatabaseV1Store } from "@/store";
-import { Engine } from "@/types/proto/v1/common";
-import { ColumnMetadata } from "@/types/proto/v1/database_service";
+import { Engine } from "@/types/proto/api/v1alpha/common";
+import { ColumnMetadata } from "@/types/proto/api/v1alpha/database_service";
 import InfoItem from "./InfoItem.vue";
 
 const props = defineProps<{

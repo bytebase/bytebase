@@ -10,9 +10,9 @@ import {
   isValidUserName,
   unknownUser,
 } from "@/types";
-import { State, stateToJSON } from "@/types/proto/v1/common";
-import type { UpdateUserRequest, User } from "@/types/proto/v1/user_service";
-import { UserType, userTypeToJSON } from "@/types/proto/v1/user_service";
+import { State, stateToJSON } from "@/types/proto/api/v1alpha/common";
+import type { UpdateUserRequest, User } from "@/types/proto/api/v1alpha/user_service";
+import { UserType, userTypeToJSON } from "@/types/proto/api/v1alpha/user_service";
 import { ensureUserFullName } from "@/utils";
 import { useActuatorV1Store } from "./v1/actuator";
 import { userNamePrefix, extractUserId } from "./v1/common";

@@ -92,8 +92,8 @@ import {
   formatEnvironmentName,
   isValidProjectName,
 } from "@/types";
-import { UpdateDatabaseRequest } from "@/types/proto/v1/database_service";
-import type { InstanceResource } from "@/types/proto/v1/instance_service";
+import { UpdateDatabaseRequest } from "@/types/proto/api/v1alpha/database_service";
+import type { InstanceResource } from "@/types/proto/api/v1alpha/instance_service";
 import type { Environment } from "@/types/v1/environment";
 import { hasProjectPermissionV2 } from "@/utils";
 import { DrawerContent, ProjectSelect } from "../v2";

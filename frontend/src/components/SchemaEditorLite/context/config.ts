@@ -6,7 +6,7 @@ import {
   TableCatalog,
   TableCatalog_Columns,
   ColumnCatalog,
-} from "@/types/proto/v1/database_catalog_service";
+} from "@/types/proto/api/v1alpha/database_catalog_service";
 import type { EditTarget } from "../types";
 import { keyForResourceName } from "./common";
 

@@ -17,8 +17,8 @@ import { NTag } from "naive-ui";
 import { computed } from "vue";
 import { useGroupStore } from "@/store";
 import { extractUserId } from "@/store/modules/v1/common";
-import type { Group } from "@/types/proto/v1/group_service";
-import { type User } from "@/types/proto/v1/user_service";
+import type { Group } from "@/types/proto/api/v1alpha/group_service";
+import { type User } from "@/types/proto/api/v1alpha/user_service";
 
 const props = defineProps<{
   user: User;

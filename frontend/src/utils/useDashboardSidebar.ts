@@ -44,7 +44,7 @@ import {
   SETTING_ROUTE_WORKSPACE_ARCHIVE,
 } from "@/router/dashboard/workspaceSetting";
 import { useAppFeature, usePermissionStore } from "@/store";
-import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
+import { DatabaseChangeMode } from "@/types/proto/api/v1alpha/setting_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
 export interface DashboardSidebarItem extends SidebarItem {

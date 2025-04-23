@@ -120,7 +120,7 @@ import type {
   ResourceId,
   ValidatedMessage,
 } from "@/types";
-import type { Database } from "@/types/proto/v1/database_service";
+import type { Database } from "@/types/proto/api/v1alpha/database_service";
 import { formatEnvironmentName, type Environment } from "@/types/v1/environment";
 import { getErrorCode } from "@/utils/grpcweb";
 import { DatabaseSelect, EnvironmentSelect, ProjectSelect } from "../v2";

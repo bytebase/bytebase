@@ -183,11 +183,11 @@ import {
   isValidProjectName,
   UNKNOWN_PROJECT_NAME,
 } from "@/types";
-import { Engine } from "@/types/proto/v1/common";
-import type { InstanceRole } from "@/types/proto/v1/instance_role_service";
-import { Issue, Issue_Type } from "@/types/proto/v1/issue_service";
-import type { Plan_CreateDatabaseConfig } from "@/types/proto/v1/plan_service";
-import { Plan, Plan_Spec } from "@/types/proto/v1/plan_service";
+import { Engine } from "@/types/proto/api/v1alpha/common";
+import type { InstanceRole } from "@/types/proto/api/v1alpha/instance_role_service";
+import { Issue, Issue_Type } from "@/types/proto/api/v1alpha/issue_service";
+import type { Plan_CreateDatabaseConfig } from "@/types/proto/api/v1alpha/plan_service";
+import { Plan, Plan_Spec } from "@/types/proto/api/v1alpha/plan_service";
 import {
   instanceV1HasCollationAndCharacterSet,
   enginesSupportCreateDatabase,

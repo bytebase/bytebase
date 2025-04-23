@@ -99,7 +99,7 @@ import { NInput, NTooltip } from "naive-ui";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
-import { type PasswordRestrictionSetting } from "@/types/proto/v1/setting_service";
+import { type PasswordRestrictionSetting } from "@/types/proto/api/v1alpha/setting_service";
 
 const props = withDefaults(
   defineProps<{

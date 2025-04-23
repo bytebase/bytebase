@@ -47,7 +47,7 @@ import UserRolesCell from "@/components/Member/MemberDataTable/cells/UserRolesCe
 import type { MemberRole } from "@/components/Member/types";
 import { WORKSPACE_ROUTE_USERS } from "@/router/dashboard/workspaceRoutes";
 import { extractGroupEmail, extractUserId, useCurrentUserV1 } from "@/store";
-import { Group } from "@/types/proto/v1/group_service";
+import { Group } from "@/types/proto/api/v1alpha/group_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
 const props = withDefaults(

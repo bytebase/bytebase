@@ -1,5 +1,5 @@
 import { useSQLStore } from "@/store";
-import type { ExportRequest } from "@/types/proto/v1/sql_service";
+import type { ExportRequest } from "@/types/proto/api/v1alpha/sql_service";
 
 export const useExportData = () => {
   const sqlStore = useSQLStore();

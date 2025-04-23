@@ -25,7 +25,7 @@ import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import ResourceOccupiedModal from "@/components/v2/ResourceOccupiedModal/ResourceOccupiedModal.vue";
 import { useRoleStore, useWorkspaceV1Store, pushNotification } from "@/store";
-import type { Role } from "@/types/proto/v1/role_service";
+import type { Role } from "@/types/proto/api/v1alpha/role_service";
 import { hasWorkspacePermissionV2, isCustomRole } from "@/utils";
 import { getErrorCode, extractGrpcErrorMessage } from "@/utils/grpcweb";
 import { useCustomRoleSettingContext } from "../../../context";

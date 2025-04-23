@@ -2,7 +2,7 @@ import { orderBy } from "lodash-es";
 import { stringify } from "uuid";
 import type { SQLResultSetV1 } from "@/types";
 import { NullValue } from "@/types/proto/google/protobuf/struct";
-import { QueryRow, RowValue } from "@/types/proto/v1/sql_service";
+import { QueryRow, RowValue } from "@/types/proto/api/v1alpha/sql_service";
 
 type NoSQLRowData = {
   key: string;

@@ -15,7 +15,7 @@ import { asyncComputed } from "@vueuse/core";
 import { computed } from "vue";
 import { useCurrentUserV1 } from "@/store";
 import { PresetRoleType } from "@/types";
-import { IssueStatus } from "@/types/proto/v1/issue_service";
+import { IssueStatus } from "@/types/proto/api/v1alpha/issue_service";
 import { isGrantRequestIssue } from "@/utils";
 import { useIssueContext } from "../../../logic";
 import { CreateButton } from "./create";

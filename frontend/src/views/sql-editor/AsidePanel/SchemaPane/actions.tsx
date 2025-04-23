@@ -40,11 +40,11 @@ import {
   type EditorPanelViewState,
   typeToView,
 } from "@/types";
-import { Engine } from "@/types/proto/v1/common";
+import { Engine } from "@/types/proto/api/v1alpha/common";
 import {
   GetSchemaStringRequest_ObjectType,
-} from "@/types/proto/v1/database_service";
-import { DataSource, DataSourceType } from "@/types/proto/v1/instance_service";
+} from "@/types/proto/api/v1alpha/database_service";
+import { DataSource, DataSourceType } from "@/types/proto/api/v1alpha/instance_service";
 import {
   defer,
   extractInstanceResourceName,

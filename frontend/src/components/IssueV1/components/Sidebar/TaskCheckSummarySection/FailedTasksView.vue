@@ -37,8 +37,8 @@ import { databaseForTask, useIssueContext } from "@/components/IssueV1";
 import {
   PlanCheckRun_Result_Status,
   type PlanCheckRun,
-} from "@/types/proto/v1/plan_service";
-import type { Task } from "@/types/proto/v1/rollout_service";
+} from "@/types/proto/api/v1alpha/plan_service";
+import type { Task } from "@/types/proto/api/v1alpha/rollout_service";
 import { flattenTaskV1List } from "@/utils";
 
 const props = defineProps<{

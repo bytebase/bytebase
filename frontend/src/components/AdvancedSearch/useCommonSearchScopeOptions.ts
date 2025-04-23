@@ -15,7 +15,7 @@ import {
   useProjectV1Store,
 } from "@/store";
 import type { MaybeRef } from "@/types";
-import { engineToJSON } from "@/types/proto/v1/common";
+import { engineToJSON } from "@/types/proto/api/v1alpha/common";
 import type { SearchScopeId } from "@/utils";
 import {
   environmentV1Name,

@@ -35,7 +35,7 @@ import { BBAvatar } from "@/bbkit";
 import EllipsisText from "@/components/EllipsisText.vue";
 import VCSIcon from "@/components/VCS/VCSIcon.vue";
 import { getDateForPbTimestamp } from "@/types";
-import { VCSType } from "@/types/proto/v1/common";
+import { VCSType } from "@/types/proto/api/v1alpha/common";
 import { humanizeDate } from "@/utils";
 import { useReleaseDetailContext } from "./context";
 

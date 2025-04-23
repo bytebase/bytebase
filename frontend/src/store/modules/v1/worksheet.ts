@@ -7,8 +7,8 @@ import { UNKNOWN_ID } from "@/types";
 import type {
   Worksheet,
   WorksheetOrganizer,
-} from "@/types/proto/v1/worksheet_service";
-import { Worksheet_Visibility } from "@/types/proto/v1/worksheet_service";
+} from "@/types/proto/api/v1alpha/worksheet_service";
+import { Worksheet_Visibility } from "@/types/proto/api/v1alpha/worksheet_service";
 import {
   extractWorksheetUID,
   getSheetStatement,

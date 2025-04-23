@@ -104,7 +104,7 @@ import {
   useWorkSheetAndTabStore,
 } from "@/store";
 import type { AccessOption } from "@/types";
-import { Worksheet_Visibility } from "@/types/proto/v1/worksheet_service";
+import { Worksheet_Visibility } from "@/types/proto/api/v1alpha/worksheet_service";
 import { extractProjectResourceName, extractWorksheetUID } from "@/utils";
 
 const { t } = useI18n();

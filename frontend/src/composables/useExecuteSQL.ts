@@ -21,13 +21,13 @@ import type {
   SQLEditorTab,
 } from "@/types";
 import { isValidDatabaseName } from "@/types";
-import { Engine } from "@/types/proto/v1/common";
+import { Engine } from "@/types/proto/api/v1alpha/common";
 import {
   Advice,
   Advice_Status,
   advice_StatusToJSON,
   CheckRequest_ChangeType,
-} from "@/types/proto/v1/sql_service";
+} from "@/types/proto/api/v1alpha/sql_service";
 import {
   emptySQLEditorTabQueryContext,
   ensureDataSourceSelection,

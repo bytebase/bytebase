@@ -183,7 +183,7 @@ import {
   ruleIsAvailableInSubscription,
   convertRuleMapToPolicyRuleList,
 } from "@/types";
-import type { Engine } from "@/types/proto/v1/common";
+import type { Engine } from "@/types/proto/api/v1alpha/common";
 import { hasWorkspacePermissionV2, sqlReviewNameFromSlug } from "@/utils";
 
 const props = defineProps<{

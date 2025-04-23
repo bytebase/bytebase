@@ -87,7 +87,7 @@ import {
   DEFAULT_PROJECT_NAME,
   isValidProjectName,
 } from "@/types";
-import { UpdateDatabaseRequest } from "@/types/proto/v1/database_service";
+import { UpdateDatabaseRequest } from "@/types/proto/api/v1alpha/database_service";
 import { autoProjectRoute } from "@/utils";
 import DatabaseV1Table from "../v2/Model/DatabaseV1Table/DatabaseV1Table.vue";
 

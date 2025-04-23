@@ -35,7 +35,7 @@ import {
   Release,
   Release_File,
   ReleaseFileType,
-} from "@/types/proto/v1/release_service";
+} from "@/types/proto/api/v1alpha/release_service";
 import FileToCreateTable from "./FileToCreateTable";
 import { provideReleaseCreateContext } from "./context";
 

@@ -96,7 +96,7 @@ import { semanticTaskType } from "@/components/IssueV1";
 import { InstanceV1EngineIcon } from "@/components/v2";
 import { rolloutServiceClient } from "@/grpcweb";
 import { useEnvironmentV1Store } from "@/store";
-import { Stage, type Task } from "@/types/proto/v1/rollout_service";
+import { Stage, type Task } from "@/types/proto/api/v1alpha/rollout_service";
 import { extractSchemaVersionFromTask } from "@/utils";
 import { useRolloutDetailContext } from "../../context";
 import { databaseForTask } from "../../utils";

@@ -4,9 +4,9 @@ import { v4 as uuidv4 } from "uuid";
 import type { InjectionKey, Ref, ComputedRef } from "vue";
 import { inject, provide } from "vue";
 import type { ComposedIssue, ReviewFlow } from "@/types";
-import type { Issue_Approver_Status } from "@/types/proto/v1/issue_service";
-import type { PlanCheckRun } from "@/types/proto/v1/plan_service";
-import type { Stage, Task } from "@/types/proto/v1/rollout_service";
+import type { Issue_Approver_Status } from "@/types/proto/api/v1alpha/issue_service";
+import type { PlanCheckRun } from "@/types/proto/api/v1alpha/plan_service";
+import type { Stage, Task } from "@/types/proto/api/v1alpha/rollout_service";
 import type {
   IssueReviewAction,
   IssueStatusAction,

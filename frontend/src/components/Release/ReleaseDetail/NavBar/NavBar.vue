@@ -12,7 +12,7 @@
 
 <script setup lang="ts">
 import ArchiveBanner from "@/components/ArchiveBanner.vue";
-import { State } from "@/types/proto/v1/common";
+import { State } from "@/types/proto/api/v1alpha/common";
 import { useReleaseDetailContext } from "../context";
 import ApplyToDatabaseButton from "./ApplyToDatabaseButton.vue";
 import TitleEditor from "./TitleEditor.vue";

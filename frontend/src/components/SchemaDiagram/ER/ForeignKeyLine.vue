@@ -15,7 +15,7 @@
 
 <script lang="ts" setup>
 import { computed, onMounted, ref } from "vue";
-import type { TableMetadata } from "@/types/proto/v1/database_service";
+import type { TableMetadata } from "@/types/proto/api/v1alpha/database_service";
 import type { VueClass } from "@/utils";
 import type { SegmentOverlap1D } from "../common";
 import {

@@ -45,7 +45,7 @@ import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBGrid, type BBGridColumn } from "@/bbkit";
 import { pushNotification, useRiskStore } from "@/store";
-import type { Risk } from "@/types/proto/v1/risk_service";
+import type { Risk } from "@/types/proto/api/v1alpha/risk_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import { SpinnerButton, SpinnerSwitch, levelText } from "../common";
 import { useRiskCenterContext } from "./context";

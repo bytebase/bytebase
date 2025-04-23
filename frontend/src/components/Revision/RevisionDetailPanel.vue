@@ -62,7 +62,7 @@ import {
   useSheetV1Store,
 } from "@/store";
 import { getDateForPbTimestamp, type ComposedDatabase } from "@/types";
-import type { TaskRun } from "@/types/proto/v1/rollout_service";
+import type { TaskRun } from "@/types/proto/api/v1alpha/rollout_service";
 import {
   extractIssueUID,
   getSheetStatement,

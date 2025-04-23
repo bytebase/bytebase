@@ -5,8 +5,8 @@ import {
   PlanCheckRun,
   PlanCheckRun_Result_Status,
   PlanCheckRun_Type,
-} from "@/types/proto/v1/plan_service";
-import { Advice_Status, type Advice } from "@/types/proto/v1/sql_service";
+} from "@/types/proto/api/v1alpha/plan_service";
+import { Advice_Status, type Advice } from "@/types/proto/api/v1alpha/sql_service";
 import { extractPlanCheckRunUID } from "@/utils";
 import { type IssueContext } from "../../logic";
 

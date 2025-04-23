@@ -13,7 +13,7 @@ import {
 } from "vue";
 import { useI18n } from "vue-i18n";
 import { pushNotification, useConnectionOfCurrentSQLEditorTab } from "@/store";
-import type { QueryRow, RowValue } from "@/types/proto/v1/sql_service";
+import type { QueryRow, RowValue } from "@/types/proto/api/v1alpha/sql_service";
 import { extractSQLRowValuePlain, isDescendantOf, toClipboard } from "@/utils";
 import { getBinaryFormat, formatBinaryValue, getColumnFormatOverride, detectBinaryFormat } from "../binary-format-store";
 import { useSQLResultViewContext } from "../../context";

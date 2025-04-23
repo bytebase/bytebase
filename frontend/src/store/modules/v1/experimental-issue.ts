@@ -15,9 +15,9 @@ import {
   unknownIssue,
   UNKNOWN_ID,
 } from "@/types";
-import type { Issue } from "@/types/proto/v1/issue_service";
-import type { Plan } from "@/types/proto/v1/plan_service";
-import { TaskRunLog, type Rollout } from "@/types/proto/v1/rollout_service";
+import type { Issue } from "@/types/proto/api/v1alpha/issue_service";
+import type { Plan } from "@/types/proto/api/v1alpha/plan_service";
+import { TaskRunLog, type Rollout } from "@/types/proto/api/v1alpha/rollout_service";
 import { extractProjectResourceName, hasProjectPermissionV2 } from "@/utils";
 import { DEFAULT_PAGE_SIZE } from "../common";
 

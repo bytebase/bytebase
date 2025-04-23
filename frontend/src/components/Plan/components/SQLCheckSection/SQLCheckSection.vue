@@ -33,9 +33,9 @@
 import { computed } from "vue";
 import { databaseForSpec } from "@/components/Plan/logic";
 import { SQLCheckButton } from "@/components/SQLCheck";
-import { Plan_ChangeDatabaseConfig_Type } from "@/types/proto/v1/plan_service";
-import { Release_File_ChangeType } from "@/types/proto/v1/release_service";
-import { Advice } from "@/types/proto/v1/sql_service";
+import { Plan_ChangeDatabaseConfig_Type } from "@/types/proto/api/v1alpha/plan_service";
+import { Release_File_ChangeType } from "@/types/proto/api/v1alpha/release_service";
+import { Advice } from "@/types/proto/api/v1alpha/sql_service";
 import { usePlanContext } from "../../logic";
 import { useSpecSheet } from "../StatementSection/useSpecSheet";
 import SQLCheckBadge from "./SQLCheckBadge.vue";

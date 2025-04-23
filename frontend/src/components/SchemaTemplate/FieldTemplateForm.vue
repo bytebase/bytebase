@@ -261,12 +261,12 @@ import {
   MiniActionButton,
 } from "@/components/v2";
 import { useSettingV1Store, useNotificationStore } from "@/store";
-import { ColumnCatalog } from "@/types/proto/v1/database_catalog_service";
-import { ColumnMetadata } from "@/types/proto/v1/database_service";
+import { ColumnCatalog } from "@/types/proto/api/v1alpha/database_catalog_service";
+import { ColumnMetadata } from "@/types/proto/api/v1alpha/database_service";
 import {
   SchemaTemplateSetting,
   SchemaTemplateSetting_FieldTemplate,
-} from "@/types/proto/v1/setting_service";
+} from "@/types/proto/api/v1alpha/setting_service";
 import {
   getDataTypeSuggestionList,
   convertKVListToLabels,

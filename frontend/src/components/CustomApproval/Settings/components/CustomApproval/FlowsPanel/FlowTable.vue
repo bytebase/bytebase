@@ -64,7 +64,7 @@ import { BBGrid, BBModal, type BBGridColumn } from "@/bbkit";
 import SystemLabel from "@/components/SystemLabel.vue";
 import { pushNotification, useWorkspaceApprovalSettingStore } from "@/store";
 import type { LocalApprovalRule } from "@/types";
-import type { ApprovalFlow } from "@/types/proto/v1/issue_service";
+import type { ApprovalFlow } from "@/types/proto/api/v1alpha/issue_service";
 import { isReadonlyApprovalRule } from "@/utils";
 import { SpinnerButton } from "../../common";
 import { StepsTable } from "../common";

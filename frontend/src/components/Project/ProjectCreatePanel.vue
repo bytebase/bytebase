@@ -71,7 +71,7 @@ import { projectNamePrefix } from "@/store/modules/v1/common";
 import { useProjectV1Store } from "@/store/modules/v1/project";
 import type { ResourceId, ValidatedMessage, ComposedProject } from "@/types";
 import { emptyProject } from "@/types";
-import type { Project } from "@/types/proto/v1/project_service";
+import type { Project } from "@/types/proto/api/v1alpha/project_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import { getErrorCode } from "@/utils/grpcweb";
 

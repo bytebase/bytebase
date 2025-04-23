@@ -45,7 +45,7 @@
 <script setup lang="ts">
 import { NButton } from "naive-ui";
 import { Drawer, DrawerContent } from "@/components/v2";
-import { type Engine, engineFromJSON } from "@/types/proto/v1/common";
+import { type Engine, engineFromJSON } from "@/types/proto/api/v1alpha/common";
 import { ruleTemplateMapV2 } from "@/types/sqlReview";
 import type { RuleTemplateV2 } from "@/types/sqlReview";
 import SQLReviewTabsByEngine from "./SQLReviewTabsByEngine.vue";

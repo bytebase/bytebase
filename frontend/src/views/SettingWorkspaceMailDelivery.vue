@@ -197,11 +197,11 @@ import { BBSpin, BBTextField } from "@/bbkit";
 import FormLayout from "@/components/v2/Form/FormLayout.vue";
 import { pushNotification } from "@/store";
 import { useWorkspaceMailDeliverySettingStore } from "@/store/modules/workspaceMailDeliverySetting";
-import type { SMTPMailDeliverySettingValue } from "@/types/proto/v1/setting_service";
+import type { SMTPMailDeliverySettingValue } from "@/types/proto/api/v1alpha/setting_service";
 import {
   SMTPMailDeliverySettingValue_Authentication,
   SMTPMailDeliverySettingValue_Encryption,
-} from "@/types/proto/v1/setting_service";
+} from "@/types/proto/api/v1alpha/setting_service";
 
 interface LocalState {
   originMailDeliverySetting?: SMTPMailDeliverySettingValue;

@@ -86,7 +86,7 @@ import {
 import type { ComposedProject, ResourceId, ValidatedMessage } from "@/types";
 import { Expr as CELExpr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
 import { Expr } from "@/types/proto/google/type/expr";
-import type { DatabaseGroup } from "@/types/proto/v1/database_group_service";
+import type { DatabaseGroup } from "@/types/proto/api/v1alpha/database_group_service";
 import { batchConvertParsedExprToCELString } from "@/utils";
 import { getErrorCode } from "@/utils/grpcweb";
 import { ResourceIdField } from "../v2";

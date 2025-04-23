@@ -158,14 +158,14 @@ import SchemaDiagram, { SchemaDiagramIcon } from "@/components/SchemaDiagram";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { hasFeature } from "@/store";
 import type { ComposedDatabase } from "@/types";
-import { Engine } from "@/types/proto/v1/common";
+import { Engine } from "@/types/proto/api/v1alpha/common";
 import type {
   ColumnMetadata,
   DatabaseMetadata,
   SchemaMetadata,
   TableMetadata,
-} from "@/types/proto/v1/database_service";
-import type { SchemaTemplateSetting_TableTemplate } from "@/types/proto/v1/setting_service";
+} from "@/types/proto/api/v1alpha/database_service";
+import type { SchemaTemplateSetting_TableTemplate } from "@/types/proto/api/v1alpha/setting_service";
 import TableTemplates from "@/views/SchemaTemplate/TableTemplates.vue";
 import TableNameModal from "../Modals/TableNameModal.vue";
 import { useSchemaEditorContext } from "../context";

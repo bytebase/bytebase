@@ -39,8 +39,8 @@ import type { ComposedDatabase } from "@/types";
 import type {
   DatabaseMetadata,
   SchemaMetadata,
-} from "@/types/proto/v1/database_service";
-import { ViewMetadata } from "@/types/proto/v1/database_service";
+} from "@/types/proto/api/v1alpha/database_service";
+import { ViewMetadata } from "@/types/proto/api/v1alpha/database_service";
 import { useSchemaEditorContext } from "../context";
 
 // View name must start with a non-space character, end with a non-space character.

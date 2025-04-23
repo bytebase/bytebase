@@ -28,7 +28,7 @@ import { PROJECT_V1_ROUTE_DETAIL } from "@/router/dashboard/projectV1";
 import { PROJECT_V1_ROUTE_DASHBOARD } from "@/router/dashboard/workspaceRoutes";
 import { getProjectName } from "@/store/modules/v1/common";
 import type { ComposedProject } from "@/types";
-import type { Project } from "@/types/proto/v1/project_service";
+import type { Project } from "@/types/proto/api/v1alpha/project_service";
 import { extractProjectResourceName, getHighlightHTMLByRegExp } from "@/utils";
 
 type ProjectDataTableColumn = DataTableColumn<ComposedProject> & {

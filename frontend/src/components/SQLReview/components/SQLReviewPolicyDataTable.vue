@@ -20,7 +20,7 @@ import { BBButtonConfirm } from "@/bbkit";
 import Resource from "@/components/v2/ResourceOccupiedModal/Resource.vue";
 import { pushNotification, useSQLReviewStore } from "@/store";
 import type { SQLReviewPolicy } from "@/types";
-import { SQLReviewRuleLevel } from "@/types/proto/v1/org_policy_service";
+import { SQLReviewRuleLevel } from "@/types/proto/api/v1alpha/org_policy_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import { getHighlightHTMLByRegExp } from "@/utils";
 

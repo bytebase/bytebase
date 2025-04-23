@@ -20,7 +20,7 @@ import { useRouter } from "vue-router";
 import { semanticTaskType } from "@/components/IssueV1";
 import { EnvironmentV1Name, InstanceV1EngineIcon } from "@/components/v2";
 import { type ComposedRollout } from "@/types";
-import type { Task } from "@/types/proto/v1/rollout_service";
+import type { Task } from "@/types/proto/api/v1alpha/rollout_service";
 import { extractSchemaVersionFromTask } from "@/utils";
 import TaskStatus from "../Panels/kits/TaskStatus.vue";
 import { databaseForTask } from "../utils";

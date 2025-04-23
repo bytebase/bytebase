@@ -56,12 +56,12 @@ import {
   useInstanceV1Store,
   useSubscriptionV1Store,
 } from "@/store";
-import { Engine } from "@/types/proto/v1/common";
+import { Engine } from "@/types/proto/api/v1alpha/common";
 import {
   DataSource,
   DataSourceType,
   Instance,
-} from "@/types/proto/v1/instance_service";
+} from "@/types/proto/api/v1alpha/instance_service";
 import { defer, isValidSpannerHost } from "@/utils";
 import { cloneDeep, isEqual } from "lodash-es";
 import { NButton } from "naive-ui";

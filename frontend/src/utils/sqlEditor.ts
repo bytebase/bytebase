@@ -20,15 +20,15 @@ import {
   isValidInstanceName,
   UNKNOWN_DATABASE_NAME,
 } from "@/types";
-import { Engine } from "@/types/proto/v1/common";
+import { Engine } from "@/types/proto/api/v1alpha/common";
 import {
   DataSourceType,
   type InstanceResource,
-} from "@/types/proto/v1/instance_service";
+} from "@/types/proto/api/v1alpha/instance_service";
 import {
   DataSourceQueryPolicy_Restriction,
   PolicyType,
-} from "@/types/proto/v1/org_policy_service";
+} from "@/types/proto/api/v1alpha/org_policy_service";
 import { instanceV1AllowsCrossDatabaseQuery } from "./v1/instance";
 
 export const defaultSQLEditorTab = (): SQLEditorTab => {

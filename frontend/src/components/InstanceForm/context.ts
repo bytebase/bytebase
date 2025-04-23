@@ -10,15 +10,15 @@ import {
   unknownEnvironment,
   type FeatureType,
 } from "@/types";
-import { Engine, State } from "@/types/proto/v1/common";
-import type { DataSource, Instance } from "@/types/proto/v1/instance_service";
+import { Engine, State } from "@/types/proto/api/v1alpha/common";
+import type { DataSource, Instance } from "@/types/proto/api/v1alpha/instance_service";
 import {
   DataSourceExternalSecret_AuthType,
   DataSourceExternalSecret_SecretType,
   DataSourceType,
   DataSource_AuthenticationType,
   DataSource_RedisType,
-} from "@/types/proto/v1/instance_service";
+} from "@/types/proto/api/v1alpha/instance_service";
 import {
   extractInstanceResourceName,
   hasWorkspacePermissionV2,

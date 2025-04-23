@@ -6,7 +6,7 @@ import {
   instanceNamePrefix,
 } from "@/store/modules/v1/common";
 import type { ComposedDatabase, DatabaseResource } from "@/types";
-import type { TableMetadata } from "@/types/proto/v1/database_service";
+import type { TableMetadata } from "@/types/proto/api/v1alpha/database_service";
 import { hasSchemaProperty } from "@/utils";
 
 export type DatabaseResourceType =

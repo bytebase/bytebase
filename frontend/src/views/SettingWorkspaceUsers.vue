@@ -211,10 +211,10 @@ import {
   useActuatorV1Store,
 } from "@/store";
 import { groupNamePrefix } from "@/store/modules/v1/common";
-import { State } from "@/types/proto/v1/common";
-import type { Group } from "@/types/proto/v1/group_service";
-import { WorkspaceProfileSetting } from "@/types/proto/v1/setting_service";
-import { type User } from "@/types/proto/v1/user_service";
+import { State } from "@/types/proto/api/v1alpha/common";
+import type { Group } from "@/types/proto/api/v1alpha/group_service";
+import { WorkspaceProfileSetting } from "@/types/proto/api/v1alpha/setting_service";
+import { type User } from "@/types/proto/api/v1alpha/user_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
 const tabList = ["USERS", "GROUPS"] as const;

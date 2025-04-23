@@ -24,7 +24,7 @@ import { useI18n } from "vue-i18n";
 import { issueServiceClient } from "@/grpcweb";
 import { emitWindowEvent } from "@/plugins";
 import { pushNotification } from "@/store";
-import { Issue } from "@/types/proto/v1/issue_service";
+import { Issue } from "@/types/proto/api/v1alpha/issue_service";
 import { useIssueContext } from "../../logic";
 
 type ViewMode = "EDIT" | "VIEW";

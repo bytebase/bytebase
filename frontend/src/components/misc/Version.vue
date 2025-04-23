@@ -68,7 +68,7 @@ import {
   useAppFeature,
   useSubscriptionV1Store,
 } from "@/store";
-import { PlanType } from "@/types/proto/v1/subscription_service";
+import { PlanType } from "@/types/proto/api/v1alpha/subscription_service";
 import { autoSubscriptionRoute, hasWorkspacePermissionV2 } from "@/utils";
 import { Volume2Icon } from "lucide-vue-next";
 import { NTooltip, type TooltipProps } from "naive-ui";

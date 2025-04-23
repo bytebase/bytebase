@@ -53,7 +53,7 @@
 import { computed } from "vue";
 import { useDBSchemaV1Store } from "@/store";
 import { getDateForPbTimestamp, type ComposedDatabase } from "@/types";
-import { Engine, State } from "@/types/proto/v1/common";
+import { Engine, State } from "@/types/proto/api/v1alpha/common";
 import { instanceV1HasCollationAndCharacterSet } from "@/utils";
 
 const props = defineProps<{

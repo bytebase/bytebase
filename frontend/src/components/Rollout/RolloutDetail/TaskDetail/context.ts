@@ -3,7 +3,7 @@ import type { ComputedRef, InjectionKey } from "vue";
 import { computed, inject, provide, ref, watchEffect } from "vue";
 import { rolloutServiceClient } from "@/grpcweb";
 import { getDateForPbTimestamp, unknownStage, unknownTask } from "@/types";
-import type { Stage, Task, TaskRun } from "@/types/proto/v1/rollout_service";
+import type { Stage, Task, TaskRun } from "@/types/proto/api/v1alpha/rollout_service";
 import { isValidTaskName } from "@/utils";
 import { useRolloutDetailContext } from "../context";
 import { stageForTask } from "./utils";

@@ -21,7 +21,7 @@ import { useDBSchemaV1Store } from "@/store";
 import {
   tablePartitionMetadata_TypeToJSON,
   TablePartitionMetadata,
-} from "@/types/proto/v1/database_service";
+} from "@/types/proto/api/v1alpha/database_service";
 import InfoItem from "./InfoItem.vue";
 
 const props = defineProps<{

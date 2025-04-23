@@ -1,5 +1,5 @@
-import type { OAuth2IdentityProviderConfig } from "@/types/proto/v1/idp_service";
-import { IdentityProviderType } from "@/types/proto/v1/idp_service";
+import type { OAuth2IdentityProviderConfig } from "@/types/proto/api/v1alpha/idp_service";
+import { IdentityProviderType } from "@/types/proto/api/v1alpha/idp_service";
 
 export const identityProviderTypeToString = (
   type: IdentityProviderType

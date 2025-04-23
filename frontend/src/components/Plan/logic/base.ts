@@ -5,7 +5,7 @@ import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { PROJECT_V1_ROUTE_REVIEW_CENTER_DETAIL } from "@/router/dashboard/projectV1";
 import { useUIStateStore } from "@/store";
-import type { Plan_Spec } from "@/types/proto/v1/plan_service";
+import type { Plan_Spec } from "@/types/proto/api/v1alpha/plan_service";
 import { emptyPlanSpec } from "@/types/v1/issue/plan";
 import { flattenSpecList } from "@/utils";
 import type { PlanContext, PlanEvents } from "./context";

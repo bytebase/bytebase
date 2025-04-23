@@ -23,7 +23,7 @@ import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { planServiceClient } from "@/grpcweb";
 import { pushNotification, useCurrentUserV1, extractUserId } from "@/store";
-import { Plan } from "@/types/proto/v1/plan_service";
+import { Plan } from "@/types/proto/api/v1alpha/plan_service";
 import { hasProjectPermissionV2 } from "@/utils";
 import { usePlanContext } from "../../logic";
 

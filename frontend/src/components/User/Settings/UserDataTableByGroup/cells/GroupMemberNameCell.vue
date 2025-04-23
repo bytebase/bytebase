@@ -62,10 +62,10 @@ import SystemBotTag from "@/components/misc/SystemBotTag.vue";
 import YouTag from "@/components/misc/YouTag.vue";
 import { useCurrentUserV1, usePermissionStore } from "@/store";
 import { SYSTEM_BOT_USER_NAME } from "@/types";
-import { UserType, type User } from "@/types/proto/v1/user_service";
+import { UserType, type User } from "@/types/proto/api/v1alpha/user_service";
 import {
   GroupMember_Role,
-} from "@/types/proto/v1/group_service";
+} from "@/types/proto/api/v1alpha/group_service";
 
 withDefaults(
   defineProps<{

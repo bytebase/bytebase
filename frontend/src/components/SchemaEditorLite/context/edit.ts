@@ -8,7 +8,7 @@ import type {
   TableMetadata,
   TablePartitionMetadata,
   ViewMetadata,
-} from "@/types/proto/v1/database_service";
+} from "@/types/proto/api/v1alpha/database_service";
 import type { EditStatus } from "../types";
 import { keyForResource } from "./common";
 

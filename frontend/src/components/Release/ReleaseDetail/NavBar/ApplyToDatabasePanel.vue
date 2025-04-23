@@ -102,11 +102,11 @@ import { StepTab } from "@/components/v2";
 import { planServiceClient } from "@/grpcweb";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { useDatabaseV1Store, useDBGroupStore } from "@/store";
-import { DatabaseGroup } from "@/types/proto/v1/database_group_service";
+import { DatabaseGroup } from "@/types/proto/api/v1alpha/database_group_service";
 import {
   PreviewPlanResponse,
   type Plan_Spec,
-} from "@/types/proto/v1/plan_service";
+} from "@/types/proto/api/v1alpha/plan_service";
 import {
   extractProjectResourceName,
   generateIssueTitle,

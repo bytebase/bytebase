@@ -1,12 +1,12 @@
 import { emptyUser, unknownUser } from "@/types";
 import { EMPTY_ID, UNKNOWN_ID } from "@/types/const";
-import { type User } from "@/types/proto/v1/user_service";
+import { type User } from "@/types/proto/api/v1alpha/user_service";
 import {
   Plan,
   PlanCheckRun,
   Plan_Spec,
   Plan_Step,
-} from "@/types/proto/v1/plan_service";
+} from "@/types/proto/api/v1alpha/plan_service";
 import {
   EMPTY_PROJECT_NAME,
   UNKNOWN_PROJECT_NAME,

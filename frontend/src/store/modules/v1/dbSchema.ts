@@ -10,7 +10,7 @@ import {
   ExternalTableMetadata,
   ViewMetadata,
   SchemaMetadata,
-} from "@/types/proto/v1/database_service";
+} from "@/types/proto/api/v1alpha/database_service";
 import { extractDatabaseResourceName } from "@/utils";
 
 type DatabaseMetadataCacheKey = [string /* database metadata resource name */];

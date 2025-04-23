@@ -53,7 +53,7 @@ import { NSelect } from "naive-ui";
 import { computed, onMounted, reactive } from "vue";
 import { Drawer, DrawerContent, ErrorTipsButton } from "@/components/v2";
 import { useReleaseStore, useSheetV1Store } from "@/store";
-import { Release_File } from "@/types/proto/v1/release_service";
+import { Release_File } from "@/types/proto/api/v1alpha/release_service";
 import ReleaseFileTable from "../../ReleaseDetail/ReleaseFileTable/ReleaseFileTable.vue";
 import { useReleaseCreateContext, type FileToCreate } from "../context";
 

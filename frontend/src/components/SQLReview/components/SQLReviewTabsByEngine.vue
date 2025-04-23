@@ -31,7 +31,7 @@ import { NTabs, NTabPane } from "naive-ui";
 import { ref, watch, computed } from "vue";
 import { RichEngineName } from "@/components/v2";
 import type { RuleTemplateV2 } from "@/types";
-import { Engine } from "@/types/proto/v1/common";
+import { Engine } from "@/types/proto/api/v1alpha/common";
 import { supportedEngineV1List } from "@/utils";
 
 const selectedEngine = ref<Engine>(Engine.UNRECOGNIZED);

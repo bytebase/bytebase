@@ -19,7 +19,7 @@ import {
   AdminExecuteRequest,
   AdminExecuteResponse,
   QueryResult,
-} from "@/types/proto/v1/sql_service";
+} from "@/types/proto/api/v1alpha/sql_service";
 import {
   extractGrpcErrorMessage,
   getErrorCode as extractGrpcStatusCode,

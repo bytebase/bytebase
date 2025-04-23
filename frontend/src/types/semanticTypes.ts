@@ -2,7 +2,7 @@ import { t } from "@/plugins/i18n";
 import {
   SemanticTypeSetting_SemanticType,
   Algorithm,
-} from "@/types/proto/v1/setting_service";
+} from "@/types/proto/api/v1alpha/setting_service";
 import buildInSemanticTypes from "./semantic-types.yaml";
 
 interface BuildInSemantic {

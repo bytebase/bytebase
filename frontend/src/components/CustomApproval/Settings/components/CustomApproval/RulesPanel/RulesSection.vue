@@ -39,7 +39,7 @@ import { BBGrid, type BBGridColumn } from "@/bbkit";
 import { pushNotification, useWorkspaceApprovalSettingStore } from "@/store";
 import type { ParsedApprovalRule } from "@/types";
 import { DEFAULT_RISK_LEVEL, PresetRiskLevelList } from "@/types";
-import type { Risk_Source } from "@/types/proto/v1/risk_service";
+import type { Risk_Source } from "@/types/proto/api/v1alpha/risk_service";
 import { levelText, sourceText, useRiskFilter } from "../../common";
 import { useCustomApprovalContext } from "../context";
 import RiskTips from "./RiskTips.vue";

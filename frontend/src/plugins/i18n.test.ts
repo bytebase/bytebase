@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
-import { engineToJSON } from "@/types/proto/v1/common";
-import { sQLReviewRuleLevelToJSON } from "@/types/proto/v1/org_policy_service";
+import { engineToJSON } from "@/types/proto/api/v1alpha/common";
+import { sQLReviewRuleLevelToJSON } from "@/types/proto/api/v1alpha/org_policy_service";
 import { TEMPLATE_LIST_V2, getRuleLocalizationKey } from "../types/sqlReview";
 import { mergedLocalMessage } from "./i18n-messages";
 

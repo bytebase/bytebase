@@ -28,8 +28,8 @@ import { pushNotification, useChangelistStore, useSheetV1Store } from "@/store";
 import {
   Changelist_Change as Change,
   Changelist,
-} from "@/types/proto/v1/changelist_service";
-import { Sheet } from "@/types/proto/v1/sheet_service";
+} from "@/types/proto/api/v1alpha/changelist_service";
+import { Sheet } from "@/types/proto/api/v1alpha/sheet_service";
 import { setSheetStatement } from "@/utils";
 import { useChangelistDetailContext } from "../context";
 

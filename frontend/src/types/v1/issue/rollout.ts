@@ -5,7 +5,7 @@ import {
   Task_Type,
   TaskRun,
   TaskRunLog,
-} from "@/types/proto/v1/rollout_service";
+} from "@/types/proto/api/v1alpha/rollout_service";
 import { EMPTY_ROLLOUT_NAME, UNKNOWN_ROLLOUT_NAME } from "@/types/rollout";
 import {
   EMPTY_ENVIRONMENT_NAME,

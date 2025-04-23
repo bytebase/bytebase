@@ -42,7 +42,7 @@ import {
   DatabaseMetadata,
   ViewMetadata,
   SchemaMetadata,
-} from "@/types/proto/v1/database_service";
+} from "@/types/proto/api/v1alpha/database_service";
 import { useCurrentTabViewStateContext } from "../../context/viewState";
 import ViewDetail from "./ViewDetail.vue";
 import ViewsTable from "./ViewsTable.vue";

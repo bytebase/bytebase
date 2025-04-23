@@ -33,7 +33,7 @@ import { useRouter } from "vue-router";
 import type {
   Instance,
   InstanceResource,
-} from "@/types/proto/v1/instance_service";
+} from "@/types/proto/api/v1alpha/instance_service";
 import {
   autoInstanceRoute,
   hasWorkspacePermissionV2,

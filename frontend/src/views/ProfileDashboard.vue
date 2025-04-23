@@ -255,12 +255,12 @@ import {
   SYSTEM_BOT_USER_NAME,
   ALL_USERS_USER_EMAIL,
 } from "@/types";
-import { State } from "@/types/proto/v1/common";
+import { State } from "@/types/proto/api/v1alpha/common";
 import {
   UpdateUserRequest,
   UserType,
   type User,
-} from "@/types/proto/v1/user_service";
+} from "@/types/proto/api/v1alpha/user_service";
 import { displayRoleTitle, hasWorkspacePermissionV2, sortRoles } from "@/utils";
 
 interface LocalState {

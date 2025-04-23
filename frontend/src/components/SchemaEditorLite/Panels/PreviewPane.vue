@@ -56,11 +56,11 @@ import { MonacoEditor } from "@/components/MonacoEditor";
 import MaskSpinner from "@/components/misc/MaskSpinner.vue";
 import { databaseServiceClient } from "@/grpcweb";
 import type { ComposedDatabase } from "@/types";
-import type { DatabaseCatalog } from "@/types/proto/v1/database_catalog_service";
+import type { DatabaseCatalog } from "@/types/proto/api/v1alpha/database_catalog_service";
 import {
   DatabaseMetadata,
   SchemaMetadata,
-} from "@/types/proto/v1/database_service";
+} from "@/types/proto/api/v1alpha/database_service";
 import { minmax } from "@/utils";
 import { extractGrpcErrorMessage } from "@/utils/grpcweb";
 import { useSchemaEditorContext } from "../context";

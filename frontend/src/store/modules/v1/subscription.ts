@@ -8,13 +8,13 @@ import { PLANS, getDateForPbTimestamp, instanceLimitFeature } from "@/types";
 import type {
   Instance,
   InstanceResource,
-} from "@/types/proto/v1/instance_service";
-import type { Subscription } from "@/types/proto/v1/subscription_service";
+} from "@/types/proto/api/v1alpha/instance_service";
+import type { Subscription } from "@/types/proto/api/v1alpha/subscription_service";
 import {
   PlanType,
   planTypeFromJSON,
   planTypeToNumber,
-} from "@/types/proto/v1/subscription_service";
+} from "@/types/proto/api/v1alpha/subscription_service";
 import { useSettingV1Store } from "./setting";
 
 // The threshold of days before the license expiration date to show the warning.

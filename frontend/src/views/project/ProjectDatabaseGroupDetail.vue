@@ -75,7 +75,7 @@ import {
   databaseGroupNamePrefix,
   projectNamePrefix,
 } from "@/store/modules/v1/common";
-import { DatabaseGroupView } from "@/types/proto/v1/database_group_service";
+import { DatabaseGroupView } from "@/types/proto/api/v1alpha/database_group_service";
 import { hasPermissionToCreateChangeDatabaseIssueInProject } from "@/utils";
 import { generateDatabaseGroupIssueRoute } from "@/utils/databaseGroup/issue";
 

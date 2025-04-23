@@ -21,7 +21,7 @@ import { computed, reactive, ref, watch } from "vue";
 import { databaseForTask, useIssueContext } from "@/components/IssueV1/logic";
 import { instanceRoleServiceClient } from "@/grpcweb";
 import { DEFAULT_PAGE_SIZE } from "@/store/modules/common";
-import type { InstanceRole } from "@/types/proto/v1/instance_role_service";
+import type { InstanceRole } from "@/types/proto/api/v1alpha/instance_role_service";
 import { useEditorContext } from "./context";
 
 /**

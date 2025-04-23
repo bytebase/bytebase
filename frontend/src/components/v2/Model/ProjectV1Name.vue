@@ -16,7 +16,7 @@
 import { NPerformantEllipsis } from "naive-ui";
 import { computed } from "vue";
 import { useRouter } from "vue-router";
-import type { Project } from "@/types/proto/v1/project_service";
+import type { Project } from "@/types/proto/api/v1alpha/project_service";
 import {
   autoProjectRoute,
   getHighlightHTMLByRegExp,

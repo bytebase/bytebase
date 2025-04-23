@@ -2,12 +2,12 @@ import dayjs from "dayjs";
 import Long from "long";
 import { getDateForPbTimestamp } from "@/types";
 import { NullValue } from "@/types/proto/google/protobuf/struct";
-import { Engine } from "@/types/proto/v1/common";
+import { Engine } from "@/types/proto/api/v1alpha/common";
 import {
   RowValue,
   type RowValue_Timestamp,
   type RowValue_TimestampTZ,
-} from "@/types/proto/v1/sql_service";
+} from "@/types/proto/api/v1alpha/sql_service";
 import { isNullOrUndefined } from "../util";
 
 // extractSQLRowValuePlain extracts a plain value from a RowValue.

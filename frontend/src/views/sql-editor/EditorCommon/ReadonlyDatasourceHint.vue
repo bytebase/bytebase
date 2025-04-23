@@ -34,7 +34,7 @@ import { isValidInstanceName } from "@/types";
 import {
   DataSourceType,
   InstanceResource,
-} from "@/types/proto/v1/instance_service";
+} from "@/types/proto/api/v1alpha/instance_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import { useSidebarItems as useSettingItems } from "../Setting/Sidebar";
 

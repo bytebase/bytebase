@@ -16,7 +16,7 @@ import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import {
   GroupMember_Role,
-} from "@/types/proto/v1/group_service";
+} from "@/types/proto/api/v1alpha/group_service";
 
 defineProps<{
   value: GroupMember_Role;

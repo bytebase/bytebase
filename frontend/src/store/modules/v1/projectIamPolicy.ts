@@ -11,8 +11,8 @@ import {
   type QueryPermission,
 } from "@/types";
 import type { Expr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
-import { IamPolicy } from "@/types/proto/v1/iam_policy";
-import type { User } from "@/types/proto/v1/user_service";
+import { IamPolicy } from "@/types/proto/api/v1alpha/iam_policy";
+import type { User } from "@/types/proto/api/v1alpha/user_service";
 import { getUserEmailListInBinding } from "@/utils";
 import { convertFromExpr } from "@/utils/issue/cel";
 import { useCurrentUserV1 } from "../auth";

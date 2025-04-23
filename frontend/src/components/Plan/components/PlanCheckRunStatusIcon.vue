@@ -29,7 +29,7 @@
 <script lang="ts" setup>
 import type { PropType } from "vue";
 import { computed } from "vue";
-import { PlanCheckRun_Result_Status } from "@/types/proto/v1/plan_service";
+import { PlanCheckRun_Result_Status } from "@/types/proto/api/v1alpha/plan_service";
 import type { ComposedPlan } from "@/types/v1/issue/plan";
 
 export type SizeType = "small" | "normal";

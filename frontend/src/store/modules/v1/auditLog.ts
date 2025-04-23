@@ -4,7 +4,7 @@ import type { BinaryLike } from "node:crypto";
 import { defineStore } from "pinia";
 import { auditLogServiceClient } from "@/grpcweb";
 import type { SearchAuditLogsParams } from "@/types";
-import type { ExportFormat } from "@/types/proto/v1/common";
+import type { ExportFormat } from "@/types/proto/api/v1alpha/common";
 import { userNamePrefix } from "./common";
 
 dayjs.extend(utc);

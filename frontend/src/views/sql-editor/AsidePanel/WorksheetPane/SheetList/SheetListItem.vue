@@ -20,7 +20,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { useSQLEditorTabStore } from "@/store";
-import type { Worksheet } from "@/types/proto/v1/worksheet_service";
+import type { Worksheet } from "@/types/proto/api/v1alpha/worksheet_service";
 import type { SheetViewMode } from "@/views/sql-editor/Sheet";
 import {
   Dropdown,

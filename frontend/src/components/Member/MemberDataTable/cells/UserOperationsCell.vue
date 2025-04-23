@@ -37,7 +37,7 @@ import { PencilIcon, Trash2Icon } from "lucide-vue-next";
 import { NButton, NPopconfirm } from "naive-ui";
 import { computed } from "vue";
 import { unknownUser, SYSTEM_BOT_USER_NAME } from "@/types";
-import { State } from "@/types/proto/v1/common";
+import { State } from "@/types/proto/api/v1alpha/common";
 import type { MemberBinding } from "../../types";
 
 const props = defineProps<{

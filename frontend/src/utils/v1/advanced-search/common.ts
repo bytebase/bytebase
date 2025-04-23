@@ -1,7 +1,7 @@
 import { cloneDeep, pullAt, without } from "lodash-es";
 import { computed } from "vue";
 import { useAppFeature } from "@/store";
-import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
+import { DatabaseChangeMode } from "@/types/proto/api/v1alpha/setting_service";
 
 export type SemanticIssueStatus = "OPEN" | "CLOSED";
 

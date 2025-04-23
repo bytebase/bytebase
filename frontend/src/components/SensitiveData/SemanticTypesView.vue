@@ -43,7 +43,7 @@ import { v4 as uuidv4 } from "uuid";
 import { computed, reactive, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { featureToRef, pushNotification, useSettingV1Store } from "@/store";
-import { SemanticTypeSetting_SemanticType } from "@/types/proto/v1/setting_service";
+import { SemanticTypeSetting_SemanticType } from "@/types/proto/api/v1alpha/setting_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import SemanticTemplateDrawer from "./components/SemanticTemplateDrawer.vue";
 import type { SemanticItem } from "./components/SemanticTypesTable.vue";

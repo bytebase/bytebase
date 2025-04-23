@@ -38,8 +38,8 @@ import {
 } from "@/store";
 import { extractUserId } from "@/store/modules/v1/common";
 import { getGroupEmailInBinding } from "@/types";
-import { type Group, GroupMember_Role } from "@/types/proto/v1/group_service";
-import { PolicyType } from "@/types/proto/v1/org_policy_service";
+import { type Group, GroupMember_Role } from "@/types/proto/api/v1alpha/group_service";
+import { PolicyType } from "@/types/proto/api/v1alpha/org_policy_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
 const props = defineProps<{

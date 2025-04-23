@@ -19,8 +19,8 @@
 import { computedAsync } from "@vueuse/core";
 import PrincipalAvatar from "@/components/PrincipalAvatar.vue";
 import { useCurrentUserV1, useUserStore } from "@/store";
-import { State } from "@/types/proto/v1/common";
-import { UserType } from "@/types/proto/v1/user_service";
+import { State } from "@/types/proto/api/v1alpha/common";
+import { UserType } from "@/types/proto/api/v1alpha/user_service";
 
 const props = defineProps<{
   // candidate in users/{email} format.

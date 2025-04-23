@@ -55,7 +55,7 @@ import {
   isValidEnvironmentName,
   isValidInstanceName,
 } from "@/types";
-import type { InstanceResource } from "@/types/proto/v1/instance_service";
+import type { InstanceResource } from "@/types/proto/api/v1alpha/instance_service";
 import type { Environment } from "@/types/v1/environment";
 import EnvironmentSelect from "../v2/Select/EnvironmentSelect.vue";
 import type { TransferSource } from "./utils";

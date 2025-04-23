@@ -10,8 +10,8 @@ import {
 } from "@/store";
 import { useListCache } from "@/store/modules/v1/cache";
 import type { ComposedIssue } from "@/types";
-import { IssueStatus } from "@/types/proto/v1/issue_service";
-import { Task_Type } from "@/types/proto/v1/rollout_service";
+import { IssueStatus } from "@/types/proto/api/v1alpha/issue_service";
+import { Task_Type } from "@/types/proto/api/v1alpha/rollout_service";
 import { extractIssueUID, extractProjectResourceName } from "@/utils";
 import { flattenTaskV1List } from "@/utils";
 import { useIssueContext } from "./context";

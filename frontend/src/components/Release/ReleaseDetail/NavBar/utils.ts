@@ -1,8 +1,8 @@
 import { issueServiceClient, rolloutServiceClient } from "@/grpcweb";
 import { useCurrentUserV1 } from "@/store";
 import { emptyIssue, type ComposedIssue } from "@/types";
-import { Issue, Issue_Type, IssueStatus } from "@/types/proto/v1/issue_service";
-import type { Plan } from "@/types/proto/v1/plan_service";
+import { Issue, Issue_Type, IssueStatus } from "@/types/proto/api/v1alpha/issue_service";
+import type { Plan } from "@/types/proto/api/v1alpha/plan_service";
 
 export const createIssueFromPlan = async (project: string, plan: Plan) => {
   const me = useCurrentUserV1();

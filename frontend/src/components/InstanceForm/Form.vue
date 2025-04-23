@@ -501,10 +501,10 @@ import { environmentNamePrefix, instanceNamePrefix } from "@/store/modules/v1/co
 import type { ResourceId, ValidatedMessage, ComposedInstance } from "@/types";
 import { UNKNOWN_ID, isValidEnvironmentName } from "@/types";
 import type { Duration } from "@/types/proto/google/protobuf/duration";
-import { Engine } from "@/types/proto/v1/common";
-import { DataSource_AuthenticationType } from "@/types/proto/v1/instance_service";
-import { DataSource_RedisType } from "@/types/proto/v1/instance_service";
-import { PlanType } from "@/types/proto/v1/subscription_service";
+import { Engine } from "@/types/proto/api/v1alpha/common";
+import { DataSource_AuthenticationType } from "@/types/proto/api/v1alpha/instance_service";
+import { DataSource_RedisType } from "@/types/proto/api/v1alpha/instance_service";
+import { PlanType } from "@/types/proto/api/v1alpha/subscription_service";
 import {
   isDev,
   extractInstanceResourceName,

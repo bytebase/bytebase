@@ -173,7 +173,7 @@ import {
   useActuatorV1Store,
 } from "@/store";
 import { ENTERPRISE_INQUIRE_LINK } from "@/types";
-import { PlanType } from "@/types/proto/v1/subscription_service";
+import { PlanType } from "@/types/proto/api/v1alpha/subscription_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
 interface LocalState {

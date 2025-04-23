@@ -90,7 +90,7 @@ import MembersBindingSelect from "@/components/Member/MembersBindingSelect.vue";
 import { RoleSelect } from "@/components/v2/Select";
 import type { ComposedProject, DatabaseResource } from "@/types";
 import { PresetRoleType } from "@/types";
-import type { Binding } from "@/types/proto/v1/iam_policy";
+import type { Binding } from "@/types/proto/api/v1alpha/iam_policy";
 import { buildConditionExpr } from "@/utils/issue/cel";
 
 const props = defineProps<{

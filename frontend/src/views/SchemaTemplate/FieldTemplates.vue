@@ -76,14 +76,14 @@ import FieldTemplateView from "@/components/SchemaTemplate/FieldTemplateView.vue
 import { engineList } from "@/components/SchemaTemplate/utils";
 import { Drawer, SearchBox } from "@/components/v2";
 import { useSettingV1Store } from "@/store";
-import { Engine } from "@/types/proto/v1/common";
+import { Engine } from "@/types/proto/api/v1alpha/common";
 import {
   ColumnMetadata,
-} from "@/types/proto/v1/database_service";
+} from "@/types/proto/api/v1alpha/database_service";
 import {
   ColumnCatalog,
-} from "@/types/proto/v1/database_catalog_service";
-import type { SchemaTemplateSetting_FieldTemplate } from "@/types/proto/v1/setting_service";
+} from "@/types/proto/api/v1alpha/database_catalog_service";
+import type { SchemaTemplateSetting_FieldTemplate } from "@/types/proto/api/v1alpha/setting_service";
 
 interface LocalState {
   template: SchemaTemplateSetting_FieldTemplate;

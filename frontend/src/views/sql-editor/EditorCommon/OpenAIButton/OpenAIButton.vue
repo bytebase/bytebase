@@ -65,7 +65,7 @@ import {
   useSettingV1Store,
   useSQLEditorTabStore,
 } from "@/store";
-import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
+import { DatabaseChangeMode } from "@/types/proto/api/v1alpha/setting_service";
 import { hasWorkspacePermissionV2, nextAnimationFrame } from "@/utils";
 import { useSQLEditorContext } from "../../context";
 import Button from "./Button.vue";

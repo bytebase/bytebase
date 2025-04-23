@@ -5,7 +5,7 @@ import { planServiceClient } from "@/grpcweb";
 import { useUserStore } from "@/store";
 import { EMPTY_ID, UNKNOWN_ID } from "@/types";
 import { unknownUser } from "@/types";
-import type { Plan } from "@/types/proto/v1/plan_service";
+import type { Plan } from "@/types/proto/api/v1alpha/plan_service";
 import {
   emptyPlan,
   unknownPlan,

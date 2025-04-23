@@ -19,7 +19,7 @@ import {
   useDBSchemaV1Store,
   useSQLEditorTabStore,
 } from "@/store";
-import { Engine } from "@/types/proto/v1/common";
+import { Engine } from "@/types/proto/api/v1alpha/common";
 import ConnectChooser from "./ConnectChooser.vue";
 
 const OptionValueUnspecified = "-1";

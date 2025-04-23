@@ -177,7 +177,7 @@ import { computed, nextTick, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { DrawerContent } from "@/components/v2";
 import { pushNotification } from "@/store";
-import type { RowValue } from "@/types/proto/v1/sql_service";
+import type { RowValue } from "@/types/proto/api/v1alpha/sql_service";
 import { extractSQLRowValuePlain } from "@/utils";
 import { useSQLResultViewContext } from "../context";
 import PrettyJSON from "./PrettyJSON.vue";

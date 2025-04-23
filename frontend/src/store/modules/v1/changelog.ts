@@ -8,7 +8,7 @@ import {
   GetChangelogRequest,
   ListChangelogsRequest,
   type Changelog,
-} from "@/types/proto/v1/database_service";
+} from "@/types/proto/api/v1alpha/database_service";
 import { extractChangelogUID } from "@/utils/v1/changelog";
 import { DEFAULT_PAGE_SIZE } from "../common";
 

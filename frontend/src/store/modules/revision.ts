@@ -2,7 +2,7 @@ import { defineStore } from "pinia";
 import { computed, reactive } from "vue";
 import { databaseServiceClient } from "@/grpcweb";
 import type { Pagination } from "@/types";
-import { Revision } from "@/types/proto/v1/database_service";
+import { Revision } from "@/types/proto/api/v1alpha/database_service";
 import { DEFAULT_PAGE_SIZE } from "./common";
 import { revisionNamePrefix } from "./v1/common";
 

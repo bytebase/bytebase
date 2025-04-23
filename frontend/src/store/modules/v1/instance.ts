@@ -9,9 +9,9 @@ import {
   isValidInstanceName,
   isValidEnvironmentName,
 } from "@/types";
-import type { Engine } from "@/types/proto/v1/common";
-import { State, stateToJSON, engineToJSON } from "@/types/proto/v1/common";
-import type { DataSource, Instance } from "@/types/proto/v1/instance_service";
+import type { Engine } from "@/types/proto/api/v1alpha/common";
+import { State, stateToJSON, engineToJSON } from "@/types/proto/api/v1alpha/common";
+import type { DataSource, Instance } from "@/types/proto/api/v1alpha/instance_service";
 import { extractInstanceResourceName, hasWorkspacePermissionV2 } from "@/utils";
 import { useEnvironmentV1Store } from "./environment";
 

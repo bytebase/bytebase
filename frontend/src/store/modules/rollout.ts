@@ -4,7 +4,7 @@ import { computed, reactive, ref, unref, watch } from "vue";
 import { rolloutServiceClient } from "@/grpcweb";
 import type { MaybeRef, Pagination, ComposedRollout } from "@/types";
 import { isValidRolloutName, unknownRollout, unknownUser } from "@/types";
-import type { Rollout } from "@/types/proto/v1/rollout_service";
+import type { Rollout } from "@/types/proto/api/v1alpha/rollout_service";
 import { DEFAULT_PAGE_SIZE } from "./common";
 import { useUserStore, batchGetOrFetchUsers } from "./user";
 import { useProjectV1Store, batchGetOrFetchProjects } from "./v1";

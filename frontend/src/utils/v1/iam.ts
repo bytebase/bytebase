@@ -5,7 +5,7 @@ import {
   PresetRoleType,
   groupBindingPrefix,
 } from "@/types";
-import type { IamPolicy, Binding } from "@/types/proto/v1/iam_policy";
+import type { IamPolicy, Binding } from "@/types/proto/api/v1alpha/iam_policy";
 import { convertFromExpr } from "@/utils/issue/cel";
 
 export const isBindingPolicyExpired = (binding: Binding): boolean => {

@@ -59,8 +59,8 @@ import { NButton, NPopconfirm } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useUserStore, pushNotification, useCurrentUserV1 } from "@/store";
-import { State } from "@/types/proto/v1/common";
-import { type User, UserType } from "@/types/proto/v1/user_service";
+import { State } from "@/types/proto/api/v1alpha/common";
+import { type User, UserType } from "@/types/proto/api/v1alpha/user_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
 const props = defineProps<{

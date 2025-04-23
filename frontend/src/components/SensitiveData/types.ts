@@ -3,10 +3,10 @@ import type {
   TableCatalog,
   ColumnCatalog,
   ObjectSchema,
-} from "@/types/proto/v1/database_catalog_service";
-import type { Group } from "@/types/proto/v1/group_service";
-import type { MaskingExceptionPolicy_MaskingException_Action } from "@/types/proto/v1/org_policy_service";
-import { type User } from "@/types/proto/v1/user_service";
+} from "@/types/proto/api/v1alpha/database_catalog_service";
+import type { Group } from "@/types/proto/api/v1alpha/group_service";
+import type { MaskingExceptionPolicy_MaskingException_Action } from "@/types/proto/api/v1alpha/org_policy_service";
+import { type User } from "@/types/proto/api/v1alpha/user_service";
 
 export interface MaskData {
   schema: string;

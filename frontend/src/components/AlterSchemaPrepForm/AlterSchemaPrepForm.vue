@@ -119,7 +119,7 @@ import {
   environmentNamePrefix,
 } from "@/store/modules/v1/common";
 import type { FeatureType } from "@/types";
-import { Engine } from "@/types/proto/v1/common";
+import { Engine } from "@/types/proto/api/v1alpha/common";
 import type { SearchParams, SearchScope } from "@/utils";
 import {
   allowUsingSchemaEditor,

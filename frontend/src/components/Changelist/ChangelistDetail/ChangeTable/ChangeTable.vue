@@ -38,7 +38,7 @@ import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import type { BBGridColumn, BBGridRow } from "@/bbkit";
 import { BBGrid } from "@/bbkit";
-import type { Changelist_Change as Change } from "@/types/proto/v1/changelist_service";
+import type { Changelist_Change as Change } from "@/types/proto/api/v1alpha/changelist_service";
 import DatabaseForChange from "./DatabaseForChange.vue";
 import RemoveChangeButton from "./RemoveChangeButton.vue";
 import ReorderButtons from "./ReorderButtons.vue";

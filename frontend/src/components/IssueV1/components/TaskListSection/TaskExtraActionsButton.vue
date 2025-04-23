@@ -32,7 +32,7 @@ import {
   getApplicableTaskRolloutActionList,
   useIssueContext,
 } from "@/components/IssueV1/logic";
-import type { Task } from "@/types/proto/v1/rollout_service";
+import type { Task } from "@/types/proto/api/v1alpha/rollout_service";
 import { DropdownItemWithErrorList } from "../common";
 
 type ExtraTaskRolloutActionDropdownOption = DropdownOption & {

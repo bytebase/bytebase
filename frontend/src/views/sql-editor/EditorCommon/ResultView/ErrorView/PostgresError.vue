@@ -18,7 +18,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import type { SQLResultSetV1 } from "@/types";
-import type { QueryResult_PostgresError } from "@/types/proto/v1/sql_service";
+import type { QueryResult_PostgresError } from "@/types/proto/api/v1alpha/sql_service";
 
 const props = defineProps<{
   resultSet: SQLResultSetV1;

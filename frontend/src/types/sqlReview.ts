@@ -1,11 +1,11 @@
 import { t, te } from "@/plugins/i18n";
-import type { Engine } from "@/types/proto/v1/common";
-import { engineFromJSON } from "@/types/proto/v1/common";
+import type { Engine } from "@/types/proto/api/v1alpha/common";
+import { engineFromJSON } from "@/types/proto/api/v1alpha/common";
 import {
   SQLReviewRuleLevel,
   sQLReviewRuleLevelFromJSON,
-} from "@/types/proto/v1/org_policy_service";
-import type { PlanType } from "@/types/proto/v1/subscription_service";
+} from "@/types/proto/api/v1alpha/org_policy_service";
+import type { PlanType } from "@/types/proto/api/v1alpha/subscription_service";
 import sqlReviewSchema from "./sql-review-schema.yaml";
 import sqlReviewDevTemplate from "./sql-review.dev.yaml";
 import sqlReviewProdTemplate from "./sql-review.prod.yaml";

@@ -174,7 +174,7 @@ import {
   type ComposedDatabase,
   type ComposedProject,
 } from "@/types";
-import { Engine } from "@/types/proto/v1/common";
+import { Engine } from "@/types/proto/api/v1alpha/common";
 import { toClipboard } from "@/utils";
 import DiffViewPanel from "./DiffViewPanel.vue";
 import SourceSchemaInfo from "./SourceSchemaInfo.vue";

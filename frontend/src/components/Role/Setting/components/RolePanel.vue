@@ -115,7 +115,7 @@ import { pushNotification, useRoleStore } from "@/store";
 import { roleNamePrefix } from "@/store/modules/v1/common";
 import type { ValidatedMessage } from "@/types";
 import { PERMISSIONS } from "@/types";
-import { Role } from "@/types/proto/v1/role_service";
+import { Role } from "@/types/proto/api/v1alpha/role_service";
 import { extractRoleResourceName } from "@/utils";
 import { displayPermissionTitle } from "@/utils/permission";
 import { useCustomRoleSettingContext } from "../context";

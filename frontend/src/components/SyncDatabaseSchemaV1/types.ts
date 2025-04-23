@@ -1,4 +1,4 @@
-import { Engine } from "@/types/proto/v1/common";
+import { Engine } from "@/types/proto/api/v1alpha/common";
 
 export enum SourceSchemaType {
   SCHEMA_HISTORY_VERSION,

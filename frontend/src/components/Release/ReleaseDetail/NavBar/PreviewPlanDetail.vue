@@ -134,7 +134,7 @@ import type { ComposedRelease } from "@/types";
 import type {
   Plan_Spec,
   PreviewPlanResponse,
-} from "@/types/proto/v1/plan_service";
+} from "@/types/proto/api/v1alpha/plan_service";
 import { getReleaseFileStatement } from "@/utils";
 
 const props = defineProps<{

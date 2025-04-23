@@ -49,7 +49,7 @@ import { NTag, NTooltip } from "naive-ui";
 import { computed } from "vue";
 import { semanticTaskType } from "@/components/IssueV1";
 import { InstanceV1EngineIcon } from "@/components/v2";
-import { Task_Status } from "@/types/proto/v1/rollout_service";
+import { Task_Status } from "@/types/proto/api/v1alpha/rollout_service";
 import { extractSchemaVersionFromTask } from "@/utils";
 import TaskStatus from "../Panels/kits/TaskStatus.vue";
 import { useRolloutDetailContext } from "../context";

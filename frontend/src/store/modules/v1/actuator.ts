@@ -16,10 +16,10 @@ import {
 import type {
   ActuatorInfo,
   ResourcePackage,
-} from "@/types/proto/v1/actuator_service";
-import { State } from "@/types/proto/v1/common";
-import { PasswordRestrictionSetting } from "@/types/proto/v1/setting_service";
-import { UserType } from "@/types/proto/v1/user_service";
+} from "@/types/proto/api/v1alpha/actuator_service";
+import { State } from "@/types/proto/api/v1alpha/common";
+import { PasswordRestrictionSetting } from "@/types/proto/api/v1alpha/setting_service";
+import { UserType } from "@/types/proto/api/v1alpha/user_service";
 import { semverCompare } from "@/utils";
 
 const EXTERNAL_URL_PLACEHOLDER =

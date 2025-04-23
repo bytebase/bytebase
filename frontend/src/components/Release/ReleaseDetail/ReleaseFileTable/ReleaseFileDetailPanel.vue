@@ -43,7 +43,7 @@ import { computed } from "vue";
 import { MonacoEditor } from "@/components/MonacoEditor";
 import { pushNotification } from "@/store";
 import { type ComposedRelease } from "@/types";
-import type { Release_File } from "@/types/proto/v1/release_service";
+import type { Release_File } from "@/types/proto/api/v1alpha/release_service";
 import { getReleaseFileStatement, toClipboard } from "@/utils";
 
 const props = defineProps<{

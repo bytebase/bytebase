@@ -1017,8 +1017,8 @@ import { FeatureBadge } from "@/components/FeatureGuard";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import DroppableTextarea from "@/components/misc/DroppableTextarea.vue";
 import type { DataSourceOptions } from "@/types/dataSource";
-import { Engine } from "@/types/proto/v1/common";
-import type { DataSource } from "@/types/proto/v1/instance_service";
+import { Engine } from "@/types/proto/api/v1alpha/common";
+import type { DataSource } from "@/types/proto/api/v1alpha/instance_service";
 import {
   SASLConfig,
   KerberosConfig,
@@ -1030,8 +1030,8 @@ import {
   DataSourceExternalSecret_AppRoleAuthOption_SecretType,
   DataSource_AuthenticationType,
   DataSource_ClientSecretCredential,
-} from "@/types/proto/v1/instance_service";
-import { DataSource_RedisType } from "@/types/proto/v1/instance_service";
+} from "@/types/proto/api/v1alpha/instance_service";
+import { DataSource_RedisType } from "@/types/proto/api/v1alpha/instance_service";
 import { onlyAllowNumber } from "@/utils";
 import type { EditDataSource } from "../common";
 import { useInstanceFormContext } from "../context";

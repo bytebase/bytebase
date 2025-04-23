@@ -741,8 +741,8 @@ import {
   OAuth2IdentityProviderConfig,
   OIDCIdentityProviderConfig,
   LDAPIdentityProviderConfig,
-} from "@/types/proto/v1/idp_service";
-import { PlanType } from "@/types/proto/v1/subscription_service";
+} from "@/types/proto/api/v1alpha/idp_service";
+import { PlanType } from "@/types/proto/api/v1alpha/subscription_service";
 import type { OAuth2IdentityProviderTemplate } from "@/utils";
 import {
   hasWorkspacePermissionV2,

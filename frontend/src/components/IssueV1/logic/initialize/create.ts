@@ -24,7 +24,7 @@ import {
   isValidDatabaseName,
   TaskTypeListWithStatement,
 } from "@/types";
-import { IssueStatus, Issue_Type } from "@/types/proto/v1/issue_service";
+import { IssueStatus, Issue_Type } from "@/types/proto/api/v1alpha/issue_service";
 import {
   Plan,
   Plan_ChangeDatabaseConfig,
@@ -32,9 +32,9 @@ import {
   Plan_ExportDataConfig,
   Plan_Spec,
   Plan_Step,
-} from "@/types/proto/v1/plan_service";
-import type { Stage } from "@/types/proto/v1/rollout_service";
-import { Rollout, Task_Type } from "@/types/proto/v1/rollout_service";
+} from "@/types/proto/api/v1alpha/plan_service";
+import type { Stage } from "@/types/proto/api/v1alpha/rollout_service";
+import { Rollout, Task_Type } from "@/types/proto/api/v1alpha/rollout_service";
 import {
   extractProjectResourceName,
   extractSheetUID,

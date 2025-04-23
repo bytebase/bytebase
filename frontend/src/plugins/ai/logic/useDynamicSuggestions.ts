@@ -2,7 +2,7 @@ import { head, uniq, values } from "lodash-es";
 import { computed, reactive, ref } from "vue";
 import { hashCode } from "@/bbkit/BBUtil";
 import { sqlServiceClient } from "@/grpcweb";
-import { type AICompletionRequest_Message } from "@/types/proto/v1/sql_service";
+import { type AICompletionRequest_Message } from "@/types/proto/api/v1alpha/sql_service";
 import { WebStorageHelper } from "@/utils";
 import { useAIContext } from "./context";
 import * as promptUtils from "./prompt";

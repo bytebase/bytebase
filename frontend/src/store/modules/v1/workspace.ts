@@ -4,7 +4,7 @@ import { ref, computed } from "vue";
 import { workspaceServiceClient } from "@/grpcweb";
 import { userNamePrefix } from "@/store/modules/v1/common";
 import { groupBindingPrefix, PresetRoleType } from "@/types";
-import { IamPolicy, Binding } from "@/types/proto/v1/iam_policy";
+import { IamPolicy, Binding } from "@/types/proto/api/v1alpha/iam_policy";
 import { roleListInIAM, getUserEmailListInBinding } from "@/utils";
 import { extractUserId } from "./common";
 import { extractGroupEmail } from "./group";

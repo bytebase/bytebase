@@ -8,16 +8,16 @@ import {
   unknownInstance,
   emptyInstance,
 } from "@/types";
-import { Engine, State } from "@/types/proto/v1/common";
+import { Engine, State } from "@/types/proto/api/v1alpha/common";
 import type {
   Instance,
   InstanceResource,
-} from "@/types/proto/v1/instance_service";
+} from "@/types/proto/api/v1alpha/instance_service";
 import {
   DataSourceType,
   type DataSource,
-} from "@/types/proto/v1/instance_service";
-import { PlanType } from "@/types/proto/v1/subscription_service";
+} from "@/types/proto/api/v1alpha/instance_service";
+import { PlanType } from "@/types/proto/api/v1alpha/subscription_service";
 
 export function instanceV1Name(instance: Instance | InstanceResource) {
   const store = useSubscriptionV1Store();

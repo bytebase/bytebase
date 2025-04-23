@@ -1,5 +1,5 @@
-import type { Sheet } from "@/types/proto/v1/sheet_service";
-import type { Worksheet } from "@/types/proto/v1/worksheet_service";
+import type { Sheet } from "@/types/proto/api/v1alpha/sheet_service";
+import type { Worksheet } from "@/types/proto/api/v1alpha/worksheet_service";
 import { getStatementSize } from "@/utils";
 
 export const extractSheetUID = (name: string) => {

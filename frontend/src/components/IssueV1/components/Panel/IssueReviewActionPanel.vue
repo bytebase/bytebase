@@ -112,7 +112,7 @@ import {
 import PlanCheckRunBar from "@/components/PlanCheckRun/PlanCheckRunBar.vue";
 import RequiredStar from "@/components/RequiredStar.vue";
 import { issueServiceClient } from "@/grpcweb";
-import { Issue_Approver_Status } from "@/types/proto/v1/issue_service";
+import { Issue_Approver_Status } from "@/types/proto/api/v1alpha/issue_service";
 import { ErrorList } from "../common";
 import CommonDrawer from "./CommonDrawer.vue";
 

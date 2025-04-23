@@ -121,12 +121,12 @@ import { NButton, NDivider, NInput, NRadioGroup, NRadio } from "naive-ui";
 import { computed, onMounted, ref } from "vue";
 import EngineIcon from "@/components/Icon/EngineIcon.vue";
 import { pushNotification, useSettingV1Store } from "@/store";
-import { Engine } from "@/types/proto/v1/common";
-import type { SchemaTemplateSetting_FieldTemplate } from "@/types/proto/v1/setting_service";
+import { Engine } from "@/types/proto/api/v1alpha/common";
+import type { SchemaTemplateSetting_FieldTemplate } from "@/types/proto/api/v1alpha/setting_service";
 import {
   SchemaTemplateSetting,
   SchemaTemplateSetting_ColumnType,
-} from "@/types/proto/v1/setting_service";
+} from "@/types/proto/api/v1alpha/setting_service";
 import { getDataTypeSuggestionList } from "@/utils";
 import ColumnTypesUpdateFailedModal from "./ColumnTypesUpdateFailedModal.vue";
 

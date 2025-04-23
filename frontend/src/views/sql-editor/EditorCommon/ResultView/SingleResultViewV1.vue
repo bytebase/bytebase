@@ -204,15 +204,15 @@ import {
 import { useExportData } from "@/store/modules/export";
 import type { ComposedDatabase, SQLEditorQueryParams } from "@/types";
 import { isValidDatabaseName, isValidInstanceName } from "@/types";
-import { ExportFormat } from "@/types/proto/v1/common";
-import { Engine } from "@/types/proto/v1/common";
-import { PolicyType } from "@/types/proto/v1/org_policy_service";
-import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
+import { ExportFormat } from "@/types/proto/api/v1alpha/common";
+import { Engine } from "@/types/proto/api/v1alpha/common";
+import { PolicyType } from "@/types/proto/api/v1alpha/org_policy_service";
+import { DatabaseChangeMode } from "@/types/proto/api/v1alpha/setting_service";
 import type {
   QueryResult,
   QueryRow,
   RowValue,
-} from "@/types/proto/v1/sql_service";
+} from "@/types/proto/api/v1alpha/sql_service";
 import {
   compareQueryRowValues,
   createExplainToken,

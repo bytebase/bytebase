@@ -137,12 +137,12 @@ import {
   useProjectV1Store,
   useInstanceV1Store,
 } from "@/store";
-import type { Policy } from "@/types/proto/v1/org_policy_service";
+import type { Policy } from "@/types/proto/api/v1alpha/org_policy_service";
 import {
   PolicyType,
   PolicyResourceType,
   MaskingRulePolicy_MaskingRule,
-} from "@/types/proto/v1/org_policy_service";
+} from "@/types/proto/api/v1alpha/org_policy_service";
 import {
   arraySwap,
   hasWorkspacePermissionV2,

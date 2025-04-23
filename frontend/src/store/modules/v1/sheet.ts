@@ -4,8 +4,8 @@ import { sheetServiceClient } from "@/grpcweb";
 import { useCache } from "@/store/cache";
 import type { MaybeRef } from "@/types";
 import { UNKNOWN_ID } from "@/types";
-import { Engine, engineToJSON } from "@/types/proto/v1/common";
-import type { Sheet } from "@/types/proto/v1/sheet_service";
+import { Engine, engineToJSON } from "@/types/proto/api/v1alpha/common";
+import type { Sheet } from "@/types/proto/api/v1alpha/sheet_service";
 import { extractSheetUID, getSheetStatement } from "@/utils";
 
 export type SheetView = "FULL" | "BASIC";

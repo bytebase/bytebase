@@ -34,7 +34,7 @@ import { storeToRefs } from "pinia";
 import { reactive, watch } from "vue";
 import { sqlServiceClient } from "@/grpcweb";
 import { useSQLEditorTabStore } from "@/store";
-import { type AICompletionRequest_Message } from "@/types/proto/v1/sql_service";
+import { type AICompletionRequest_Message } from "@/types/proto/api/v1alpha/sql_service";
 import { nextAnimationFrame } from "@/utils";
 import { onConnectionChanged, useAIContext, useCurrentChat } from "../logic";
 import * as promptUtils from "../logic/prompt";

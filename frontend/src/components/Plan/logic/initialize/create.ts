@@ -20,8 +20,8 @@ import {
   Plan_ChangeDatabaseConfig_Type,
   Plan_Spec,
   Plan_Step,
-} from "@/types/proto/v1/plan_service";
-import { Sheet } from "@/types/proto/v1/sheet_service";
+} from "@/types/proto/api/v1alpha/plan_service";
+import { Sheet } from "@/types/proto/api/v1alpha/sheet_service";
 import {
   extractSheetUID,
   generateSQLForChangeToDatabase,

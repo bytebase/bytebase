@@ -32,7 +32,7 @@ import {
   DatabaseMetadata,
   SchemaMetadata,
   SequenceMetadata,
-} from "@/types/proto/v1/database_service";
+} from "@/types/proto/api/v1alpha/database_service";
 import {
   extractKeyWithPosition,
   keyWithPosition,

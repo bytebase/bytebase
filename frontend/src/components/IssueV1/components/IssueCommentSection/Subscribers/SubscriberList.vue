@@ -44,9 +44,9 @@ import { updateIssueSubscribers, useIssueContext } from "@/components/IssueV1";
 import UserAvatar from "@/components/User/UserAvatar.vue";
 import { useUserStore } from "@/store";
 import { unknownUser } from "@/types";
-import { State } from "@/types/proto/v1/common";
-import { type User } from "@/types/proto/v1/user_service";
-import { UserType } from "@/types/proto/v1/user_service";
+import { State } from "@/types/proto/api/v1alpha/common";
+import { type User } from "@/types/proto/api/v1alpha/user_service";
+import { UserType } from "@/types/proto/api/v1alpha/user_service";
 import { getDefaultPagination } from "@/utils";
 import SubscriberListItem from "./SubscriberListItem.vue";
 

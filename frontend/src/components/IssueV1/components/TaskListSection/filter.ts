@@ -1,5 +1,5 @@
-import type { Task, Task_Status } from "@/types/proto/v1/rollout_service";
-import { Advice_Status } from "@/types/proto/v1/sql_service";
+import type { Task, Task_Status } from "@/types/proto/api/v1alpha/rollout_service";
+import { Advice_Status } from "@/types/proto/api/v1alpha/sql_service";
 import { type IssueContext } from "../../logic";
 import { type SQLCheckContext } from "../SQLCheckSection/context";
 

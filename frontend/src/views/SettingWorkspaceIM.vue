@@ -56,7 +56,7 @@ import { BBAttention } from "@/bbkit";
 import BBTextField from "@/bbkit/BBTextField.vue";
 import WebhookTypeIcon from "@/components/Project/WebhookTypeIcon.vue";
 import { useSettingV1Store, pushNotification } from "@/store";
-import { Webhook_Type } from "@/types/proto/v1/project_service";
+import { Webhook_Type } from "@/types/proto/api/v1alpha/project_service";
 import {
   AppIMSetting,
   AppIMSetting_Feishu,
@@ -64,7 +64,7 @@ import {
   AppIMSetting_Lark,
   AppIMSetting_Wecom,
   AppIMSetting_DingTalk,
-} from "@/types/proto/v1/setting_service";
+} from "@/types/proto/api/v1alpha/setting_service";
 
 interface LocalState {
   selectedTab: Webhook_Type;

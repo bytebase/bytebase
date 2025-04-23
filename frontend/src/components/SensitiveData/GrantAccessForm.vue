@@ -102,13 +102,13 @@ import { Expr } from "@/types/proto/google/type/expr";
 import type {
   Policy,
   MaskingExceptionPolicy_MaskingException,
-} from "@/types/proto/v1/org_policy_service";
+} from "@/types/proto/api/v1alpha/org_policy_service";
 import {
   PolicyType,
   PolicyResourceType,
   MaskingExceptionPolicy_MaskingException_Action,
   maskingExceptionPolicy_MaskingException_ActionToJSON,
-} from "@/types/proto/v1/org_policy_service";
+} from "@/types/proto/api/v1alpha/org_policy_service";
 import type { SensitiveColumn } from "./types";
 import {
   getExpressionsForDatabaseResource,

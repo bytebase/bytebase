@@ -76,10 +76,10 @@ import TableTemplateView from "@/components/SchemaTemplate/TableTemplateView.vue
 import { engineList } from "@/components/SchemaTemplate/utils";
 import { Drawer, SearchBox } from "@/components/v2";
 import { useSettingV1Store } from "@/store";
-import { Engine } from "@/types/proto/v1/common";
-import { TableMetadata } from "@/types/proto/v1/database_service";
-import { TableCatalog } from "@/types/proto/v1/database_catalog_service";
-import type { SchemaTemplateSetting_TableTemplate } from "@/types/proto/v1/setting_service";
+import { Engine } from "@/types/proto/api/v1alpha/common";
+import { TableMetadata } from "@/types/proto/api/v1alpha/database_service";
+import { TableCatalog } from "@/types/proto/api/v1alpha/database_catalog_service";
+import type { SchemaTemplateSetting_TableTemplate } from "@/types/proto/api/v1alpha/setting_service";
 
 interface LocalState {
   template: SchemaTemplateSetting_TableTemplate;

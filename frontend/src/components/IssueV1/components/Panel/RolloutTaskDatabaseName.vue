@@ -19,7 +19,7 @@
 import { NPerformantEllipsis } from "naive-ui";
 import { computed } from "vue";
 import { InstanceV1Name } from "@/components/v2";
-import type { Task } from "@/types/proto/v1/rollout_service";
+import type { Task } from "@/types/proto/api/v1alpha/rollout_service";
 import { databaseForTask, useIssueContext } from "../../logic";
 
 const props = defineProps<{

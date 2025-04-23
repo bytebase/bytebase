@@ -24,7 +24,7 @@ import { BBAvatar } from "@/bbkit";
 import HumanizeDate from "@/components/misc/HumanizeDate.vue";
 import { useUserStore } from "@/store";
 import { getDateForPbTimestamp } from "@/types";
-import type { Changelist } from "@/types/proto/v1/changelist_service";
+import type { Changelist } from "@/types/proto/api/v1alpha/changelist_service";
 import { extractChangelistResourceName } from "@/utils";
 import { projectForChangelist } from "../ChangelistDetail/common";
 

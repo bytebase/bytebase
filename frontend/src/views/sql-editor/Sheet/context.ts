@@ -11,7 +11,7 @@ import {
   useWorkSheetStore,
 } from "@/store";
 import type { SQLEditorTab } from "@/types";
-import type { Worksheet } from "@/types/proto/v1/worksheet_service";
+import type { Worksheet } from "@/types/proto/api/v1alpha/worksheet_service";
 import {
   emptySQLEditorConnection,
   getSheetStatement,

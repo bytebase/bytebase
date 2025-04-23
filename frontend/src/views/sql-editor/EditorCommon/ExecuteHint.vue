@@ -62,7 +62,7 @@ import {
   useStorageStore,
 } from "@/store";
 import type { ComposedDatabase } from "@/types";
-import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
+import { DatabaseChangeMode } from "@/types/proto/api/v1alpha/setting_service";
 import { extractProjectResourceName, hasWorkspacePermissionV2 } from "@/utils";
 import AdminModeButton from "./AdminModeButton.vue";
 

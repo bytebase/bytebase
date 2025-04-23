@@ -23,7 +23,7 @@ import {
   IssueComment_TaskUpdate,
   IssueComment_TaskUpdate_Status,
   IssueStatus,
-} from "@/types/proto/v1/issue_service";
+} from "@/types/proto/api/v1alpha/issue_service";
 import { findStageByName, findTaskByName } from "@/utils";
 import StageName from "./StageName.vue";
 import StatementUpdate from "./StatementUpdate.vue";

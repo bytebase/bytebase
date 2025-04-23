@@ -91,8 +91,8 @@ import {
 } from "@/store";
 import type { ComposedProject } from "@/types";
 import { isValidDatabaseName, isValidEnvironmentName } from "@/types";
-import { Engine } from "@/types/proto/v1/common";
-import { ChangelogView } from "@/types/proto/v1/database_service";
+import { Engine } from "@/types/proto/api/v1alpha/common";
+import { ChangelogView } from "@/types/proto/api/v1alpha/database_service";
 import { extractProjectResourceName, generateIssueTitle } from "@/utils";
 import {
   extractDatabaseNameAndChangelogUID,

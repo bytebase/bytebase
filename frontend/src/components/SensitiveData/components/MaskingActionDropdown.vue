@@ -17,7 +17,7 @@ import { useI18n } from "vue-i18n";
 import {
   type MaskingExceptionPolicy_MaskingException_Action as Action,
   maskingExceptionPolicy_MaskingException_ActionToJSON as actionToJSON,
-} from "@/types/proto/v1/org_policy_service";
+} from "@/types/proto/api/v1alpha/org_policy_service";
 
 const props = defineProps<{
   disabled?: boolean;

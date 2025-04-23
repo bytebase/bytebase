@@ -73,9 +73,9 @@ import { getColumnDefaultValuePlaceholder } from "@/components/SchemaEditorLite"
 import { MiniActionButton } from "@/components/v2";
 import { DatabaseLabelsCell } from "@/components/v2/Model/DatabaseV1Table/cells";
 import { useSettingV1Store } from "@/store";
-import type { Engine } from "@/types/proto/v1/common";
-import type { SchemaTemplateSetting_FieldTemplate } from "@/types/proto/v1/setting_service";
-import { SchemaTemplateSetting } from "@/types/proto/v1/setting_service";
+import type { Engine } from "@/types/proto/api/v1alpha/common";
+import type { SchemaTemplateSetting_FieldTemplate } from "@/types/proto/api/v1alpha/setting_service";
+import { SchemaTemplateSetting } from "@/types/proto/api/v1alpha/setting_service";
 import { EngineIcon } from "../Icon";
 import ClassificationLevelBadge from "./ClassificationLevelBadge.vue";
 import { classificationConfig } from "./utils";

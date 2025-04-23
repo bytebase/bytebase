@@ -203,13 +203,13 @@ import {
 } from "@/components/v2";
 import { useSettingV1Store, pushNotification } from "@/store";
 import { unknownProject } from "@/types";
-import { TableCatalog } from "@/types/proto/v1/database_catalog_service";
-import { ColumnMetadata } from "@/types/proto/v1/database_service";
+import { TableCatalog } from "@/types/proto/api/v1alpha/database_catalog_service";
+import { ColumnMetadata } from "@/types/proto/api/v1alpha/database_service";
 import {
   SchemaTemplateSetting_TableTemplate,
   type SchemaTemplateSetting_FieldTemplate,
-} from "@/types/proto/v1/setting_service";
-import { SchemaTemplateSetting } from "@/types/proto/v1/setting_service";
+} from "@/types/proto/api/v1alpha/setting_service";
+import { SchemaTemplateSetting } from "@/types/proto/api/v1alpha/setting_service";
 import { arraySwap, instanceV1AllowsReorderColumns } from "@/utils";
 import FieldTemplates from "@/views/SchemaTemplate/FieldTemplates.vue";
 import ClassificationLevelBadge from "./ClassificationLevelBadge.vue";

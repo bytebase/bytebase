@@ -44,7 +44,7 @@ import { restartAppRoot } from "@/AppRootContext";
 import { BBButtonConfirm } from "@/bbkit";
 import { useProjectV1Store } from "@/store";
 import type { ComposedProject } from "@/types";
-import { State } from "@/types/proto/v1/common";
+import { State } from "@/types/proto/api/v1alpha/common";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
 const props = defineProps<{

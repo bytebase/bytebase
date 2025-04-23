@@ -26,7 +26,7 @@
 
 <script setup lang="ts">
 import { NRadio, NRadioGroup } from "naive-ui";
-import { Announcement_AlertLevel } from "@/types/proto/v1/setting_service";
+import { Announcement_AlertLevel } from "@/types/proto/api/v1alpha/setting_service";
 
 defineProps<{
   level?: Announcement_AlertLevel;

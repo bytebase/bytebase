@@ -78,14 +78,14 @@ import {
 } from "@/store";
 import { getTimeForPbTimestamp } from "@/types";
 import { Timestamp } from "@/types/proto/google/protobuf/timestamp";
-import { IssueStatus } from "@/types/proto/v1/issue_service";
-import type { Plan_Spec } from "@/types/proto/v1/plan_service";
+import { IssueStatus } from "@/types/proto/api/v1alpha/issue_service";
+import type { Plan_Spec } from "@/types/proto/api/v1alpha/plan_service";
 import {
   type Task,
   TaskRun_Status,
   Task_Status,
   task_StatusToJSON,
-} from "@/types/proto/v1/rollout_service";
+} from "@/types/proto/api/v1alpha/rollout_service";
 import {
   defer,
   flattenTaskV1List,

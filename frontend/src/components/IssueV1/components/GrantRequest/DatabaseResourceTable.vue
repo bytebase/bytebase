@@ -37,7 +37,7 @@ import { BBGrid, type BBGridColumn } from "@/bbkit";
 import { EnvironmentV1Name, InstanceV1Name } from "@/components/v2";
 import { useDatabaseV1Store, batchGetOrFetchDatabases } from "@/store";
 import type { DatabaseResource } from "@/types";
-import type { DatabaseGroup } from "@/types/proto/v1/database_group_service";
+import type { DatabaseGroup } from "@/types/proto/api/v1alpha/database_group_service";
 
 const props = defineProps<{
   databaseResourceList: DatabaseResource[];

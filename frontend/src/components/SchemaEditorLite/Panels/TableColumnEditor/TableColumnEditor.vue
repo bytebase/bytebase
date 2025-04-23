@@ -68,15 +68,15 @@ import SemanticTypesDrawer from "@/components/SensitiveData/components/SemanticT
 import { InlineInput } from "@/components/v2";
 import { useSettingV1Store, hasFeature } from "@/store";
 import type { ComposedDatabase } from "@/types";
-import { Engine } from "@/types/proto/v1/common";
-import { ColumnCatalog } from "@/types/proto/v1/database_catalog_service";
+import { Engine } from "@/types/proto/api/v1alpha/common";
+import { ColumnCatalog } from "@/types/proto/api/v1alpha/database_catalog_service";
 import type {
   ColumnMetadata,
   DatabaseMetadata,
   ForeignKeyMetadata,
   SchemaMetadata,
   TableMetadata,
-} from "@/types/proto/v1/database_service";
+} from "@/types/proto/api/v1alpha/database_service";
 import ColumnDefaultValueExpressionModal from "../../Modals/ColumnDefaultValueExpressionModal.vue";
 import { useSchemaEditorContext } from "../../context";
 import type { EditStatus } from "../../types";

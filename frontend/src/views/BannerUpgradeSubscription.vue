@@ -84,7 +84,7 @@ import { planTypeToString } from "@/types";
 import {
   PlanType,
   planTypeToNumber,
-} from "@/types/proto/v1/subscription_service";
+} from "@/types/proto/api/v1alpha/subscription_service";
 
 interface LocalState {
   showModal: boolean;

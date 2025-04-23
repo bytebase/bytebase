@@ -7,7 +7,7 @@ import type {
   CreateChangelistRequest,
   DeepPartial,
   ListChangelistsRequest,
-} from "@/types/proto/v1/changelist_service";
+} from "@/types/proto/api/v1alpha/changelist_service";
 import { ResourceComposer, isChangelogChangeSource } from "@/utils";
 import { batchGetOrFetchUsers } from "../user";
 import { useChangelogStore } from "./changelog";

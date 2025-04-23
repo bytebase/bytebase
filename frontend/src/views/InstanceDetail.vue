@@ -127,8 +127,8 @@ import {
   formatEnvironmentName,
   isValidDatabaseName,
 } from "@/types";
-import { State } from "@/types/proto/v1/common";
-import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
+import { State } from "@/types/proto/api/v1alpha/common";
+import { DatabaseChangeMode } from "@/types/proto/api/v1alpha/setting_service";
 import {
   instanceV1HasCreateDatabase,
   instanceV1Name,

@@ -18,15 +18,15 @@ import {
   SQL_EDITOR_SETTING_USERS_MODULE,
 } from "@/router/sqlEditor";
 import { useAppFeature } from "@/store";
-import type { User } from "@/types/proto/v1/user_service";
-import type { Database } from "@/types/proto/v1/database_service";
+import type { User } from "@/types/proto/api/v1alpha/user_service";
+import type { Database } from "@/types/proto/api/v1alpha/database_service";
 import { formatEnvironmentName, type Environment } from "@/types/v1/environment";
 import type {
   Instance,
   InstanceResource,
-} from "@/types/proto/v1/instance_service";
-import type { Project } from "@/types/proto/v1/project_service";
-import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
+} from "@/types/proto/api/v1alpha/instance_service";
+import type { Project } from "@/types/proto/api/v1alpha/project_service";
+import { DatabaseChangeMode } from "@/types/proto/api/v1alpha/setting_service";
 import {
   extractDatabaseResourceName,
   extractInstanceResourceName,

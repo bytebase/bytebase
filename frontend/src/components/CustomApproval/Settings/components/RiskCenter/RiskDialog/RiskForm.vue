@@ -107,7 +107,7 @@ import {
 } from "@/plugins/cel";
 import { useSupportedSourceList } from "@/types";
 import { Expr } from "@/types/proto/google/type/expr";
-import { Risk, Risk_Source } from "@/types/proto/v1/risk_service";
+import { Risk, Risk_Source } from "@/types/proto/api/v1alpha/risk_service";
 import {
   batchConvertCELStringToParsedExpr,
   batchConvertParsedExprToCELString,

@@ -135,7 +135,7 @@ import {
   useWorkspaceV1Store,
 } from "@/store";
 import { emptyUser } from "@/types";
-import { UserType, User } from "@/types/proto/v1/user_service";
+import { UserType, User } from "@/types/proto/api/v1alpha/user_service";
 import UserPassword from "./UserPassword.vue";
 
 interface LocalState {

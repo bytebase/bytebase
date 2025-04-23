@@ -1,7 +1,7 @@
 import type { DropdownOption } from "naive-ui";
 import { t } from "@/plugins/i18n";
-import { Engine } from "@/types/proto/v1/common";
-import type { ColumnMetadata } from "@/types/proto/v1/database_service";
+import { Engine } from "@/types/proto/api/v1alpha/common";
+import type { ColumnMetadata } from "@/types/proto/api/v1alpha/database_service";
 import type { ColumnDefaultValue } from "@/types/v1/schemaEditor";
 
 type DefaultValue = Pick<

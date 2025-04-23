@@ -5,7 +5,7 @@ import type { Factor, Operator } from "@/plugins/cel";
 import { EqualityOperatorList, CollectionOperatorList } from "@/plugins/cel";
 import { useSettingV1Store } from "@/store";
 import type { ComposedInstance } from "@/types";
-import type { Algorithm } from "@/types/proto/v1/setting_service";
+import type { Algorithm } from "@/types/proto/api/v1alpha/setting_service";
 import { extractInstanceResourceName } from "@/utils";
 
 export const getClassificationLevelOptions = () => {

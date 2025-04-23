@@ -142,7 +142,7 @@ import {
   FeatureBadgeForInstanceLicense,
 } from "@/components/FeatureGuard";
 import { useSubscriptionV1Store } from "@/store";
-import { type QueryRow, type RowValue } from "@/types/proto/v1/sql_service";
+import { type QueryRow, type RowValue } from "@/types/proto/api/v1alpha/sql_service";
 import { useSQLResultViewContext } from "../context";
 import TableCell from "./TableCell.vue";
 import ColumnSortedIcon from "./common/ColumnSortedIcon.vue";

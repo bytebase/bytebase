@@ -231,8 +231,8 @@ import {
 } from "@/store";
 import type { ComposedProject, DatabaseResource } from "@/types";
 import { PresetRoleType, PRESET_ROLES } from "@/types";
-import { State } from "@/types/proto/v1/common";
-import { Binding } from "@/types/proto/v1/iam_policy";
+import { State } from "@/types/proto/api/v1alpha/common";
+import { Binding } from "@/types/proto/api/v1alpha/iam_policy";
 import {
   displayRoleTitle,
   hasProjectPermissionV2,

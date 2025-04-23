@@ -210,7 +210,7 @@ import {
   useSubscriptionV1Store,
 } from "@/store";
 import { type ComposedDatabase } from "@/types";
-import { Secret } from "@/types/proto/v1/database_service";
+import { Secret } from "@/types/proto/api/v1alpha/database_service";
 
 export type Detail = {
   secret: Secret;

@@ -24,7 +24,7 @@ import { NEllipsis } from "naive-ui";
 import { computed } from "vue";
 import { useRouter } from "vue-router";
 import type { ComposedDatabase } from "@/types";
-import { State } from "@/types/proto/v1/common";
+import { State } from "@/types/proto/api/v1alpha/common";
 import { autoDatabaseRoute, getHighlightHTMLByRegExp } from "@/utils";
 
 const props = withDefaults(

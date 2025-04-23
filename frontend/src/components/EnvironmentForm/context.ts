@@ -5,7 +5,7 @@ import type { InjectionKey, Ref } from "vue";
 import { provide, inject, computed, ref, watch } from "vue";
 import type { ResourceIdField } from "@/components/v2";
 import type { FeatureType } from "@/types";
-import { PolicyType, type Policy } from "@/types/proto/v1/org_policy_service";
+import { PolicyType, type Policy } from "@/types/proto/api/v1alpha/org_policy_service";
 import type { Environment } from "@/types/v1/environment";
 import { hasWorkspacePermissionV2 } from "@/utils";
 

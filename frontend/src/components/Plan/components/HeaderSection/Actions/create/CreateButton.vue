@@ -46,8 +46,8 @@ import { planServiceClient } from "@/grpcweb";
 import { PROJECT_V1_ROUTE_REVIEW_CENTER_DETAIL } from "@/router/dashboard/projectV1";
 import { useDatabaseV1Store, useSheetV1Store } from "@/store";
 import { dialectOfEngineV1, languageOfEngineV1 } from "@/types";
-import { type Plan_ChangeDatabaseConfig } from "@/types/proto/v1/plan_service";
-import type { Sheet } from "@/types/proto/v1/sheet_service";
+import { type Plan_ChangeDatabaseConfig } from "@/types/proto/api/v1alpha/plan_service";
+import type { Sheet } from "@/types/proto/api/v1alpha/sheet_service";
 import type { ComposedPlan } from "@/types/v1/issue/plan";
 import {
   extractProjectResourceName,

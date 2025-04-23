@@ -17,8 +17,8 @@ import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener
 import { hasFeature } from "@/store";
 import { VirtualRoleType } from "@/types";
 import type { Environment } from "@/types/v1/environment";
-import type { Policy } from "@/types/proto/v1/org_policy_service";
-import { PolicyType } from "@/types/proto/v1/org_policy_service";
+import type { Policy } from "@/types/proto/api/v1alpha/org_policy_service";
+import { PolicyType } from "@/types/proto/api/v1alpha/org_policy_service";
 import { FeatureModal } from "../FeatureGuard";
 import { provideEnvironmentFormContext } from "./context";
 

@@ -1,7 +1,7 @@
 import {
   PlanType,
   planTypeFromJSON,
-} from "@/types/proto/v1/subscription_service";
+} from "@/types/proto/api/v1alpha/subscription_service";
 import planData from "./plan.yaml";
 
 // Check api/plan.go to understand what each feature means.

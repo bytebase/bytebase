@@ -27,7 +27,7 @@ import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { getSSOId } from "@/store/modules/v1/common";
-import type { IdentityProvider } from "@/types/proto/v1/idp_service";
+import type { IdentityProvider } from "@/types/proto/api/v1alpha/idp_service";
 import SettingWorkspaceSSO from "@/views/SettingWorkspaceSSO.vue";
 import SettingWorkspaceSSODetail from "@/views/SettingWorkspaceSSODetail.vue";
 

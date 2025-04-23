@@ -13,7 +13,7 @@ import {
   Rollout,
   type Task,
   type Stage,
-} from "@/types/proto/v1/rollout_service";
+} from "@/types/proto/api/v1alpha/rollout_service";
 import { flattenTaskV1List } from "@/utils";
 
 type Events = {

@@ -73,12 +73,12 @@ import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { useDatabaseV1Store, useSheetV1Store } from "@/store";
 import type { ComposedIssue } from "@/types";
 import { dialectOfEngineV1, languageOfEngineV1 } from "@/types";
-import { Issue } from "@/types/proto/v1/issue_service";
-import type { Plan_ExportDataConfig } from "@/types/proto/v1/plan_service";
-import { type Plan_ChangeDatabaseConfig } from "@/types/proto/v1/plan_service";
-import { ReleaseFileType } from "@/types/proto/v1/release_service";
-import type { Sheet } from "@/types/proto/v1/sheet_service";
-import { Advice_Status } from "@/types/proto/v1/sql_service";
+import { Issue } from "@/types/proto/api/v1alpha/issue_service";
+import type { Plan_ExportDataConfig } from "@/types/proto/api/v1alpha/plan_service";
+import { type Plan_ChangeDatabaseConfig } from "@/types/proto/api/v1alpha/plan_service";
+import { ReleaseFileType } from "@/types/proto/api/v1alpha/release_service";
+import type { Sheet } from "@/types/proto/api/v1alpha/sheet_service";
+import { Advice_Status } from "@/types/proto/api/v1alpha/sql_service";
 import {
   defer,
   extractIssueUID,

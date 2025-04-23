@@ -323,7 +323,7 @@ import {
   Algorithm_InnerOuterMask,
   Algorithm_RangeMask_Slice,
   Algorithm_InnerOuterMask_MaskType,
-} from "@/types/proto/v1/setting_service";
+} from "@/types/proto/api/v1alpha/setting_service";
 import type { MaskingType } from "./utils";
 import { getMaskingType } from "./utils";
 

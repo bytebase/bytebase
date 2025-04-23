@@ -45,9 +45,9 @@ import { issueServiceClient, rolloutServiceClient } from "@/grpcweb";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { useCurrentUserV1, usePolicyV1Store } from "@/store";
 import { emptyIssue, type ComposedIssue } from "@/types";
-import { Issue, IssueStatus, Issue_Type } from "@/types/proto/v1/issue_service";
-import { PolicyType } from "@/types/proto/v1/org_policy_service";
-import { PlanCheckRun_Result_Status } from "@/types/proto/v1/plan_service";
+import { Issue, IssueStatus, Issue_Type } from "@/types/proto/api/v1alpha/issue_service";
+import { PolicyType } from "@/types/proto/api/v1alpha/org_policy_service";
+import { PlanCheckRun_Result_Status } from "@/types/proto/api/v1alpha/plan_service";
 import {
   extractProjectResourceName,
   hasProjectPermissionV2,

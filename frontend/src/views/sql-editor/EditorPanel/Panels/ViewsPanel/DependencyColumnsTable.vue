@@ -29,7 +29,7 @@ import type {
   DependencyColumn,
   SchemaMetadata,
   ViewMetadata,
-} from "@/types/proto/v1/database_service";
+} from "@/types/proto/api/v1alpha/database_service";
 import {
   getHighlightHTMLByRegExp,
   hasSchemaProperty,

@@ -3,7 +3,7 @@ import { issueServiceClient } from "@/grpcweb";
 import { t } from "@/plugins/i18n";
 import { pushNotification, useCurrentUserV1 } from "@/store";
 import { userNamePrefix } from "@/store/modules/v1/common";
-import { Issue } from "@/types/proto/v1/issue_service";
+import { Issue } from "@/types/proto/api/v1alpha/issue_service";
 
 export const updateIssueSubscribers = async (
   issue: Issue,

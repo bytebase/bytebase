@@ -11,8 +11,8 @@ import {
   EMPTY_ID,
   UNKNOWN_ID,
 } from "@/types";
-import type { Rollout, Stage, Task } from "@/types/proto/v1/rollout_service";
-import { Task_Status } from "@/types/proto/v1/rollout_service";
+import type { Rollout, Stage, Task } from "@/types/proto/api/v1alpha/rollout_service";
+import { Task_Status } from "@/types/proto/api/v1alpha/rollout_service";
 import { extractProjectResourceName } from "../project";
 import { extractIssueUID, flattenTaskV1List, issueV1Slug } from "./issue";
 

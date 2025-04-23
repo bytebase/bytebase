@@ -2,7 +2,7 @@ import { orderBy } from "lodash-es";
 import { defineStore } from "pinia";
 import { computed, reactive } from "vue";
 import { groupServiceClient } from "@/grpcweb";
-import type { Group } from "@/types/proto/v1/group_service";
+import type { Group } from "@/types/proto/api/v1alpha/group_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import { batchGetOrFetchUsers } from "../user";
 import { groupNamePrefix } from "./common";

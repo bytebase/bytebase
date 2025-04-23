@@ -69,7 +69,7 @@ import { BBAttention, BBSpin } from "@/bbkit";
 import DownloadSheetButton from "@/components/Sheet/DownloadSheetButton.vue";
 import { Drawer, DrawerContent, ErrorTipsButton } from "@/components/v2";
 import { pushNotification, useSheetV1Store } from "@/store";
-import { Sheet } from "@/types/proto/v1/sheet_service";
+import { Sheet } from "@/types/proto/api/v1alpha/sheet_service";
 import {
   getSheetStatement,
   setSheetStatement,

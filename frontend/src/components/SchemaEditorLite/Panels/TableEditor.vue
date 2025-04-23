@@ -203,20 +203,20 @@ import type { ComposedDatabase } from "@/types";
 import {
   DatabaseCatalog,
   SchemaCatalog,
-} from "@/types/proto/v1/database_catalog_service";
+} from "@/types/proto/api/v1alpha/database_catalog_service";
 import {
   DatabaseMetadata,
   type ForeignKeyMetadata,
   type SchemaMetadata,
   type TableMetadata,
-} from "@/types/proto/v1/database_service";
+} from "@/types/proto/api/v1alpha/database_service";
 import {
   ColumnMetadata,
   IndexMetadata,
   TablePartitionMetadata,
   TablePartitionMetadata_Type,
-} from "@/types/proto/v1/database_service";
-import type { SchemaTemplateSetting_FieldTemplate } from "@/types/proto/v1/setting_service";
+} from "@/types/proto/api/v1alpha/database_service";
+import type { SchemaTemplateSetting_FieldTemplate } from "@/types/proto/api/v1alpha/setting_service";
 import {
   arraySwap,
   instanceV1AllowsReorderColumns,

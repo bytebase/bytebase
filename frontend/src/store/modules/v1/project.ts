@@ -12,11 +12,11 @@ import {
   DEFAULT_PROJECT_NAME,
   isValidProjectName,
 } from "@/types";
-import { State, stateToJSON } from "@/types/proto/v1/common";
+import { State, stateToJSON } from "@/types/proto/api/v1alpha/common";
 import type {
   Project,
   ListProjectsResponse,
-} from "@/types/proto/v1/project_service";
+} from "@/types/proto/api/v1alpha/project_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import { useProjectIamPolicyStore } from "./projectIamPolicy";
 

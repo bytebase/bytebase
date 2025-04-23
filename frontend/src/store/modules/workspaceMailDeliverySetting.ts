@@ -4,7 +4,7 @@ import { settingServiceClient } from "@/grpcweb";
 import type {
   SMTPMailDeliverySettingValue,
   Setting,
-} from "@/types/proto/v1/setting_service";
+} from "@/types/proto/api/v1alpha/setting_service";
 
 const SETTING_NAME = "settings/bb.workspace.mail-delivery";
 

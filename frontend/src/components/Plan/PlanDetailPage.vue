@@ -21,7 +21,7 @@
 
 <script setup lang="ts">
 import { ref } from "vue";
-import type { Advice } from "@/types/proto/v1/sql_service";
+import type { Advice } from "@/types/proto/api/v1alpha/sql_service";
 import { provideSQLCheckContext } from "../SQLCheck";
 import {
   HeaderSection,

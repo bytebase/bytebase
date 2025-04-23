@@ -47,7 +47,7 @@ import {
   DatabaseMetadata,
   PackageMetadata,
   SchemaMetadata,
-} from "@/types/proto/v1/database_service";
+} from "@/types/proto/api/v1alpha/database_service";
 import {
   extractKeyWithPosition,
   keyWithPosition,

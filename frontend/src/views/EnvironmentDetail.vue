@@ -34,11 +34,11 @@ import {
   getEmptyRolloutPolicy,
 } from "@/store/modules/v1/policy";
 import { formatEnvironmentName, unknownEnvironment } from "@/types";
-import type { Policy } from "@/types/proto/v1/org_policy_service";
+import type { Policy } from "@/types/proto/api/v1alpha/org_policy_service";
 import {
   PolicyType,
   PolicyResourceType,
-} from "@/types/proto/v1/org_policy_service";
+} from "@/types/proto/api/v1alpha/org_policy_service";
 import type { Environment } from "@/types/v1/environment";
 import { type VueClass } from "@/utils";
 

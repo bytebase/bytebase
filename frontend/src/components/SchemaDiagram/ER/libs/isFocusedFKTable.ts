@@ -1,4 +1,4 @@
-import type { TableMetadata } from "@/types/proto/v1/database_service";
+import type { TableMetadata } from "@/types/proto/api/v1alpha/database_service";
 import type { ForeignKey } from "../../types";
 
 export const isFocusedForeignTable = (

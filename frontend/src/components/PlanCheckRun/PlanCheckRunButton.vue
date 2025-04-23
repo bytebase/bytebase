@@ -14,7 +14,7 @@ import { computed } from "vue";
 import {
   PlanCheckRun,
   PlanCheckRun_Status,
-} from "@/types/proto/v1/plan_service";
+} from "@/types/proto/api/v1alpha/plan_service";
 
 const props = defineProps<{
   planCheckRunList: PlanCheckRun[];

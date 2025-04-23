@@ -13,7 +13,7 @@
 import { computed } from "vue";
 import { usePlanContext } from "@/components/Plan/logic";
 import { useAppFeature } from "@/store";
-import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
+import { DatabaseChangeMode } from "@/types/proto/api/v1alpha/setting_service";
 import { extractIssueUID } from "@/utils";
 import { CreateButton, CreateIssueButton } from "./create";
 

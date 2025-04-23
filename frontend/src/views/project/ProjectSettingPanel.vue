@@ -7,7 +7,7 @@ import { computed, watchEffect } from "vue";
 import ProjectSettingPanel from "@/components/ProjectSettingPanel.vue";
 import { usePolicyV1Store, useProjectByName } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
-import { PolicyResourceType } from "@/types/proto/v1/org_policy_service";
+import { PolicyResourceType } from "@/types/proto/api/v1alpha/org_policy_service";
 
 const props = defineProps<{
   projectId: string;

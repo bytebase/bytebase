@@ -33,7 +33,7 @@ import {
   allUsersUser,
   isValidUserName,
 } from "@/types";
-import { UserType, type User } from "@/types/proto/v1/user_service";
+import { UserType, type User } from "@/types/proto/api/v1alpha/user_service";
 import { getDefaultPagination, ensureUserFullName } from "@/utils";
 import ResourceSelect from "./ResourceSelect.vue";
 

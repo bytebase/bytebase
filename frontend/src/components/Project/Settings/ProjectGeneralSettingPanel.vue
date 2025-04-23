@@ -32,7 +32,7 @@ import { computed, reactive } from "vue";
 import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
 import { useProjectV1Store } from "@/store";
 import { DEFAULT_PROJECT_NAME } from "@/types";
-import type { Project } from "@/types/proto/v1/project_service";
+import type { Project } from "@/types/proto/api/v1alpha/project_service";
 import { extractProjectResourceName } from "@/utils";
 
 interface LocalState {

@@ -120,17 +120,17 @@ import {
   useSQLEditorStore,
 } from "@/store";
 import { isValidDatabaseName } from "@/types";
-import { Engine } from "@/types/proto/v1/common";
+import { Engine } from "@/types/proto/api/v1alpha/common";
 import {
   DataSource,
   DataSourceType,
   DataSource_RedisType,
-} from "@/types/proto/v1/instance_service";
+} from "@/types/proto/api/v1alpha/instance_service";
 import {
   DataSourceQueryPolicy_Restriction,
   PolicyType,
-} from "@/types/proto/v1/org_policy_service";
-import { QueryOption_RedisRunCommandsOn } from "@/types/proto/v1/sql_service";
+} from "@/types/proto/api/v1alpha/org_policy_service";
+import { QueryOption_RedisRunCommandsOn } from "@/types/proto/api/v1alpha/sql_service";
 import { ensureDataSourceSelection, readableDataSourceType } from "@/utils";
 import { getAdminDataSourceRestrictionOfDatabase } from "@/utils";
 import ResultLimitSelect from "./ResultLimitSelect.vue";

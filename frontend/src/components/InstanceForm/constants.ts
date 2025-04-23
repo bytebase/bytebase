@@ -1,5 +1,5 @@
 import { computed } from "vue";
-import { Engine } from "@/types/proto/v1/common";
+import { Engine } from "@/types/proto/api/v1alpha/common";
 import { supportedEngineV1List } from "@/utils";
 
 export const defaultPortForEngine = (engine: Engine) => {

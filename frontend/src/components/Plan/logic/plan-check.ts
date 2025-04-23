@@ -1,4 +1,4 @@
-import type { Plan_Spec } from "@/types/proto/v1/plan_service";
+import type { Plan_Spec } from "@/types/proto/api/v1alpha/plan_service";
 import type { ComposedPlan } from "@/types/v1/issue/plan";
 import { sheetNameForSpec, databaseForSpec } from ".";
 

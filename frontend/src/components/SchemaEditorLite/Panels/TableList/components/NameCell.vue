@@ -10,7 +10,7 @@
 
 <script lang="ts" setup>
 import { NPerformantEllipsis } from "naive-ui";
-import type { TableMetadata } from "@/types/proto/v1/database_service";
+import type { TableMetadata } from "@/types/proto/api/v1alpha/database_service";
 
 defineProps<{
   table: TableMetadata;

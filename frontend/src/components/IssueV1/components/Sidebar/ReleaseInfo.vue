@@ -22,7 +22,7 @@ import { PackageIcon } from "lucide-vue-next";
 import { useIssueContext } from "@/components/IssueV1";
 import { useReleaseByName } from "@/store";
 import { isValidReleaseName } from "@/types";
-import { State } from "@/types/proto/v1/common";
+import { State } from "@/types/proto/api/v1alpha/common";
 
 const { issue } = useIssueContext();
 

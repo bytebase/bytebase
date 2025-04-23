@@ -22,7 +22,7 @@ import { NTooltip, NTag } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useIssueContext } from "@/components/IssueV1";
-import { Issue_RiskLevel } from "@/types/proto/v1/issue_service";
+import { Issue_RiskLevel } from "@/types/proto/api/v1alpha/issue_service";
 
 const { t } = useI18n();
 const { issue, isCreating } = useIssueContext();

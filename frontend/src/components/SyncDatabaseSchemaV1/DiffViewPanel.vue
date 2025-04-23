@@ -61,7 +61,7 @@ import { NTabs, NTab } from "naive-ui";
 import { ref } from "vue";
 import { MonacoEditor } from "@/components/MonacoEditor";
 import { dialectOfEngineV1 } from "@/types";
-import type { Engine } from "@/types/proto/v1/common";
+import type { Engine } from "@/types/proto/api/v1alpha/common";
 import SchemaDiffViewer from "./SchemaDiffViewer.vue";
 
 defineProps<{

@@ -5,8 +5,8 @@ import { useDBSchemaV1Store, useDatabaseV1Store } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import { UNKNOWN_ID } from "@/types";
 import { type AffectedTable, EmptyAffectedTable } from "@/types";
-import { Changelog_Type } from "@/types/proto/v1/database_service";
-import { Changelog } from "@/types/proto/v1/database_service";
+import { Changelog_Type } from "@/types/proto/api/v1alpha/database_service";
+import { Changelog } from "@/types/proto/api/v1alpha/database_service";
 import { databaseV1Url, extractDatabaseResourceName } from "./database";
 
 export const extractChangelogUID = (name: string) => {

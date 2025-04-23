@@ -1,4 +1,4 @@
-import { TablePartitionMetadata_Type } from "@/types/proto/v1/database_service";
+import { TablePartitionMetadata_Type } from "@/types/proto/api/v1alpha/database_service";
 
 export const PartitionTypesSupportSubPartition: readonly TablePartitionMetadata_Type[] =
   [

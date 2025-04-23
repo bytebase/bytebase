@@ -17,7 +17,7 @@ import { WrenchIcon } from "lucide-vue-next";
 import { computed } from "vue";
 import { useWorkSheetStore } from "@/store";
 import type { SQLEditorTab } from "@/types";
-import { Worksheet_Visibility } from "@/types/proto/v1/worksheet_service";
+import { Worksheet_Visibility } from "@/types/proto/api/v1alpha/worksheet_service";
 import { SheetConnectionIcon } from "../../EditorCommon";
 
 const props = defineProps<{

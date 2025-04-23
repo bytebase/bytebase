@@ -27,7 +27,7 @@ import type {
   DatabaseMetadata,
   SchemaMetadata,
   ExternalTableMetadata,
-} from "@/types/proto/v1/database_service";
+} from "@/types/proto/api/v1alpha/database_service";
 import { getHighlightHTMLByRegExp, useAutoHeightDataTable } from "@/utils";
 import { useCurrentTabViewStateContext } from "../../context/viewState";
 

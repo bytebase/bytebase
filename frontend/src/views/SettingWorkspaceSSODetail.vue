@@ -40,7 +40,7 @@ import { FeatureModal } from "@/components/FeatureGuard";
 import IdentityProviderCreateForm from "@/components/SSO/IdentityProviderCreateForm.vue";
 import { useIdentityProviderStore } from "@/store/modules/idp";
 import { ssoNamePrefix } from "@/store/modules/v1/common";
-import type { IdentityProvider } from "@/types/proto/v1/idp_service";
+import type { IdentityProvider } from "@/types/proto/api/v1alpha/idp_service";
 
 const props = defineProps<{
   ssoId?: string;

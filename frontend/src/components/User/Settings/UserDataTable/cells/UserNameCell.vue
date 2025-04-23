@@ -90,7 +90,7 @@ import {
   usePermissionStore,
 } from "@/store";
 import { SYSTEM_BOT_USER_NAME } from "@/types";
-import { UserType, type User } from "@/types/proto/v1/user_service";
+import { UserType, type User } from "@/types/proto/api/v1alpha/user_service";
 import { hasWorkspacePermissionV2, toClipboard } from "@/utils";
 
 defineProps<{

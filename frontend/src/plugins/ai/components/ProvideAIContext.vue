@@ -10,7 +10,7 @@ import {
   useSettingV1Store,
   useSQLEditorTabStore,
 } from "@/store";
-import { AISetting } from "@/types/proto/v1/setting_service";
+import { AISetting } from "@/types/proto/api/v1alpha/setting_service";
 import { wrapRefAsPromise } from "@/utils";
 import Emittery from "emittery";
 import { storeToRefs } from "pinia";

@@ -48,7 +48,7 @@ import {
   pushNotification,
 } from "@/store";
 import type { ComposedInstance } from "@/types";
-import { PlanType } from "@/types/proto/v1/subscription_service";
+import { PlanType } from "@/types/proto/api/v1alpha/subscription_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
 interface Action {

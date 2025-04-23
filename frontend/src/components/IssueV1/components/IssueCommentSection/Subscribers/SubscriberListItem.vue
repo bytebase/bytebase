@@ -10,7 +10,7 @@
 
 <script setup lang="ts">
 import UserAvatar from "@/components/User/UserAvatar.vue";
-import { type User } from "@/types/proto/v1/user_service";
+import { type User } from "@/types/proto/api/v1alpha/user_service";
 
 defineProps<{
   user: User;

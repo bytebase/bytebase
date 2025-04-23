@@ -24,7 +24,7 @@ import { useDatabaseV1Store } from "@/store";
 import { workspaceNamePrefix } from "@/store/modules/v1/common";
 import type { ComposedDatabase } from "@/types";
 import { isValidDatabaseName, unknownDatabase } from "@/types";
-import { type Engine } from "@/types/proto/v1/common";
+import { type Engine } from "@/types/proto/api/v1alpha/common";
 import {
   instanceV1Name,
   supportedEngineV1List,

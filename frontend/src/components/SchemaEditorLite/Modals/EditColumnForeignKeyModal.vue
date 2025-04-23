@@ -88,8 +88,8 @@ import type {
   DatabaseMetadata,
   SchemaMetadata,
   TableMetadata,
-} from "@/types/proto/v1/database_service";
-import { ForeignKeyMetadata } from "@/types/proto/v1/database_service";
+} from "@/types/proto/api/v1alpha/database_service";
+import { ForeignKeyMetadata } from "@/types/proto/api/v1alpha/database_service";
 import { hasSchemaProperty } from "@/utils";
 import { useSchemaEditorContext } from "../context";
 import {

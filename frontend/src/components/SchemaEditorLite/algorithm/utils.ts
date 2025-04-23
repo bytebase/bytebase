@@ -3,12 +3,12 @@ import {
   SchemaCatalog,
   TableCatalog_Columns,
   DatabaseCatalog,
-} from "@/types/proto/v1/database_catalog_service";
+} from "@/types/proto/api/v1alpha/database_catalog_service";
 import type {
   DatabaseMetadata,
   SchemaMetadata,
   TableMetadata,
-} from "@/types/proto/v1/database_service";
+} from "@/types/proto/api/v1alpha/database_service";
 import { keyBy } from "@/utils";
 
 export const cleanupUnusedCatalog = (

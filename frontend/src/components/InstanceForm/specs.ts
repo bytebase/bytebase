@@ -1,6 +1,6 @@
 import { computed, type Ref } from "vue";
-import { Engine } from "@/types/proto/v1/common";
-import { DataSourceType } from "@/types/proto/v1/instance_service";
+import { Engine } from "@/types/proto/api/v1alpha/common";
+import { DataSourceType } from "@/types/proto/api/v1alpha/instance_service";
 import { instanceV1HasExtraParameters, instanceV1HasSSH, instanceV1HasSSL } from "@/utils";
 import type { BasicInfo, EditDataSource } from "./common";
 import { defaultPortForEngine } from "./constants";

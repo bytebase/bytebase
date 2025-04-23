@@ -7,8 +7,8 @@ import type {
   Value as SettingValue,
   WorkspaceProfileSetting,
   DataClassificationSetting_DataClassificationConfig,
-} from "@/types/proto/v1/setting_service";
-import { PasswordRestrictionSetting } from "@/types/proto/v1/setting_service";
+} from "@/types/proto/api/v1alpha/setting_service";
+import { PasswordRestrictionSetting } from "@/types/proto/api/v1alpha/setting_service";
 import type { SettingName } from "@/types/setting";
 import { useActuatorV1Store } from "./actuator";
 

@@ -159,7 +159,7 @@ import ViewDataTable from "@/components/ViewDataTable.vue";
 import { SQL_EDITOR_SETTING_DATABASES_MODULE } from "@/router/sqlEditor";
 import { useDBSchemaV1Store } from "@/store";
 import type { ComposedDatabase } from "@/types";
-import { Engine } from "@/types/proto/v1/common";
+import { Engine } from "@/types/proto/api/v1alpha/common";
 import {
   hasSchemaProperty,
   instanceV1SupportsPackage,

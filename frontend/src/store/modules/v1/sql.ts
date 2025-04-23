@@ -3,9 +3,9 @@ import { RichClientError } from "nice-grpc-error-details";
 import { defineStore } from "pinia";
 import { sqlServiceClient } from "@/grpcweb";
 import type { SQLResultSetV1 } from "@/types";
-import { PlanCheckRun_Result } from "@/types/proto/v1/plan_service";
-import type { ExportRequest, QueryRequest } from "@/types/proto/v1/sql_service";
-import { Advice, Advice_Status } from "@/types/proto/v1/sql_service";
+import { PlanCheckRun_Result } from "@/types/proto/api/v1alpha/plan_service";
+import type { ExportRequest, QueryRequest } from "@/types/proto/api/v1alpha/sql_service";
+import { Advice, Advice_Status } from "@/types/proto/api/v1alpha/sql_service";
 import { extractGrpcErrorMessage } from "@/utils/grpcweb";
 
 const getSqlReviewReports = (err: unknown): Advice[] => {

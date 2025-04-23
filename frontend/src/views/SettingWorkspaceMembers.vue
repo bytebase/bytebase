@@ -103,7 +103,7 @@ import {
   usePermissionStore,
 } from "@/store";
 import { userBindingPrefix, PresetRoleType } from "@/types";
-import { User, UserType } from "@/types/proto/v1/user_service";
+import { User, UserType } from "@/types/proto/api/v1alpha/user_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
 interface LocalState {

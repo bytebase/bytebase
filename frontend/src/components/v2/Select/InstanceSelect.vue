@@ -27,8 +27,8 @@ import {
   unknownInstance,
   type ComposedInstance,
 } from "@/types";
-import { type Engine } from "@/types/proto/v1/common";
-import type { InstanceResource } from "@/types/proto/v1/instance_service";
+import { type Engine } from "@/types/proto/api/v1alpha/common";
+import type { InstanceResource } from "@/types/proto/api/v1alpha/instance_service";
 import { supportedEngineV1List, getDefaultPagination } from "@/utils";
 import { InstanceV1EngineIcon } from "../Model/Instance";
 import ResourceSelect from "./ResourceSelect.vue";

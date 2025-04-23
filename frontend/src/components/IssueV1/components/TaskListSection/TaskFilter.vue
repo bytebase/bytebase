@@ -75,8 +75,8 @@
 <script lang="ts" setup>
 import { NTag } from "naive-ui";
 import { computed } from "vue";
-import { Task_Status } from "@/types/proto/v1/rollout_service";
-import { Advice_Status } from "@/types/proto/v1/sql_service";
+import { Task_Status } from "@/types/proto/api/v1alpha/rollout_service";
+import { Advice_Status } from "@/types/proto/api/v1alpha/sql_service";
 import { useIssueContext } from "../../logic";
 import AdviceStatusIcon from "../SQLCheckSection/AdviceStatusIcon.vue";
 import { useIssueSQLCheckContext } from "../SQLCheckSection/context";

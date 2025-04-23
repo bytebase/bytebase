@@ -15,8 +15,8 @@
 
 <script setup lang="ts">
 import { DATASOURCE_READONLY_USER_NAME } from "@/types";
-import { Engine } from "@/types/proto/v1/common";
-import { DataSourceType } from "@/types/proto/v1/instance_service";
+import { Engine } from "@/types/proto/api/v1alpha/common";
+import { DataSourceType } from "@/types/proto/api/v1alpha/instance_service";
 import { wrapEditDataSource } from "../common";
 import { useInstanceFormContext } from "../context";
 import CreateReadOnlyDataSourceTips from "./CreateReadOnlyDataSourceTips.vue";

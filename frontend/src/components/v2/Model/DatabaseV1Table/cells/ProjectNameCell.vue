@@ -25,8 +25,8 @@
 <script setup lang="ts">
 import { NTooltip } from "naive-ui";
 import { ProjectV1Name } from "@/components/v2";
-import { State } from "@/types/proto/v1/common";
-import type { Project } from "@/types/proto/v1/project_service";
+import { State } from "@/types/proto/api/v1alpha/common";
+import type { Project } from "@/types/proto/api/v1alpha/project_service";
 import type { Mode } from "../DatabaseV1Table.vue";
 
 withDefaults(

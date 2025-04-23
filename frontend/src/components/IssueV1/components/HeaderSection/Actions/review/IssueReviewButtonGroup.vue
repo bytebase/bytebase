@@ -34,7 +34,7 @@ import { useCurrentUserV1, useAppFeature, extractUserId } from "@/store";
 import {
   IssueStatus,
   Issue_Approver_Status,
-} from "@/types/proto/v1/issue_service";
+} from "@/types/proto/api/v1alpha/issue_service";
 import {
   isDatabaseChangeRelatedIssue,
   hasWorkspacePermissionV2,

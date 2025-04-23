@@ -6,8 +6,8 @@ import { useRoute, useRouter } from "vue-router";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { useUIStateStore } from "@/store";
 import { emptyStage, emptyTask } from "@/types";
-import type { PlanCheckRun } from "@/types/proto/v1/plan_service";
-import { Stage, Task } from "@/types/proto/v1/rollout_service";
+import type { PlanCheckRun } from "@/types/proto/api/v1alpha/plan_service";
+import { Stage, Task } from "@/types/proto/api/v1alpha/rollout_service";
 import {
   activeStageInRollout,
   activeTaskInStageV1,

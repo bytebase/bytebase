@@ -10,8 +10,8 @@ import {
   unknownEnvironment,
   type ComposedProject,
 } from "@/types";
-import { State } from "@/types/proto/v1/common";
-import { Task_Type, type Task } from "@/types/proto/v1/rollout_service";
+import { State } from "@/types/proto/api/v1alpha/common";
+import { Task_Type, type Task } from "@/types/proto/api/v1alpha/rollout_service";
 import { extractDatabaseResourceName } from "@/utils";
 
 export const databaseForTask = (project: ComposedProject, task: Task) => {

@@ -50,7 +50,7 @@ import {
 import {
   Worksheet,
   Worksheet_Visibility,
-} from "@/types/proto/v1/worksheet_service";
+} from "@/types/proto/api/v1alpha/worksheet_service";
 import {
   isWorksheetWritableV1,
   getSheetStatement,

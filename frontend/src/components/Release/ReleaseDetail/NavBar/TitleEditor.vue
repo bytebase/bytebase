@@ -21,8 +21,8 @@ import type { CSSProperties } from "vue";
 import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { pushNotification, useReleaseStore } from "@/store";
-import { State } from "@/types/proto/v1/common";
-import { Release } from "@/types/proto/v1/release_service";
+import { State } from "@/types/proto/api/v1alpha/common";
+import { Release } from "@/types/proto/api/v1alpha/release_service";
 import { useReleaseDetailContext } from "../context";
 
 const { t } = useI18n();

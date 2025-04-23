@@ -2,22 +2,22 @@ import { cloneDeep } from "lodash-es";
 import { computed, reactive } from "vue";
 import { useSettingV1Store } from "@/store";
 import { unknownDatabase, type ComposedDatabase } from "@/types";
-import { Engine } from "@/types/proto/v1/common";
+import { Engine } from "@/types/proto/api/v1alpha/common";
 import {
   DatabaseCatalog,
   SchemaCatalog,
   TableCatalog,
   TableCatalog_Columns,
-} from "@/types/proto/v1/database_catalog_service";
+} from "@/types/proto/api/v1alpha/database_catalog_service";
 import {
   DatabaseMetadata,
   SchemaMetadata,
   TableMetadata,
-} from "@/types/proto/v1/database_service";
+} from "@/types/proto/api/v1alpha/database_service";
 import {
   SchemaTemplateSetting_TableTemplate,
   DataClassificationSetting_DataClassificationConfig,
-} from "@/types/proto/v1/setting_service";
+} from "@/types/proto/api/v1alpha/setting_service";
 
 export const engineList = [Engine.MYSQL, Engine.POSTGRES];
 

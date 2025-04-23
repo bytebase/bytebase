@@ -30,14 +30,14 @@ import { computed, reactive } from "vue";
 import { useIssueContext } from "@/components/IssueV1";
 import { issueServiceClient } from "@/grpcweb";
 import { useExportData } from "@/store/modules/export";
-import { ExportFormat, exportFormatToJSON } from "@/types/proto/v1/common";
-import { IssueStatus } from "@/types/proto/v1/issue_service";
+import { ExportFormat, exportFormatToJSON } from "@/types/proto/api/v1alpha/common";
+import { IssueStatus } from "@/types/proto/api/v1alpha/issue_service";
 import {
   Plan_ExportDataConfig,
   Plan_Spec,
-} from "@/types/proto/v1/plan_service";
-import { TaskRun_ExportArchiveStatus } from "@/types/proto/v1/rollout_service";
-import { ExportRequest } from "@/types/proto/v1/sql_service";
+} from "@/types/proto/api/v1alpha/plan_service";
+import { TaskRun_ExportArchiveStatus } from "@/types/proto/api/v1alpha/rollout_service";
+import { ExportRequest } from "@/types/proto/api/v1alpha/sql_service";
 
 interface LocalState {
   isExporting: boolean;

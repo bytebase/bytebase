@@ -25,8 +25,8 @@
 <script lang="ts" setup>
 import { NCheckbox } from "naive-ui";
 import { computed } from "vue";
-import { SQLReviewRuleLevel } from "@/types/proto/v1/org_policy_service";
-import { sQLReviewRuleLevelToJSON } from "@/types/proto/v1/org_policy_service";
+import { SQLReviewRuleLevel } from "@/types/proto/api/v1alpha/org_policy_service";
+import { sQLReviewRuleLevelToJSON } from "@/types/proto/api/v1alpha/org_policy_service";
 import type { RuleListWithCategory } from "./SQLReviewCategoryTabFilter.vue";
 import SQLRuleLevelBadge from "./SQLRuleLevelBadge.vue";
 

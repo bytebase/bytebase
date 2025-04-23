@@ -86,7 +86,7 @@ import {
   DEFAULT_PROJECT_NAME,
   PresetRoleType,
 } from "@/types";
-import { State } from "@/types/proto/v1/common";
+import { State } from "@/types/proto/api/v1alpha/common";
 import { hasProjectPermissionV2 } from "@/utils";
 
 interface LocalState {

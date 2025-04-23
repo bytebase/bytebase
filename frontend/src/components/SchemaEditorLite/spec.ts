@@ -1,4 +1,4 @@
-import { Engine } from "@/types/proto/v1/common";
+import { Engine } from "@/types/proto/api/v1alpha/common";
 import { hasSchemaProperty } from "@/utils";
 
 export const engineSupportsEditIndexes = (engine: Engine) => {

@@ -22,7 +22,7 @@ import {
   tablePartitionMetadata_TypeToJSON,
   type TablePartitionMetadata,
   TablePartitionMetadata_Type,
-} from "@/types/proto/v1/database_service";
+} from "@/types/proto/api/v1alpha/database_service";
 
 const props = defineProps<{
   readonly?: boolean;

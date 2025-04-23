@@ -81,7 +81,7 @@ import { SearchBox, DatabaseSelect } from "@/components/v2";
 import { PROJECT_V1_ROUTE_MASKING_EXEMPTION_CREATE } from "@/router/dashboard/projectV1";
 import { useProjectByName, hasFeature } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
-import { MaskingExceptionPolicy_MaskingException_Action as Action } from "@/types/proto/v1/org_policy_service";
+import { MaskingExceptionPolicy_MaskingException_Action as Action } from "@/types/proto/api/v1alpha/org_policy_service";
 import { hasProjectPermissionV2 } from "@/utils";
 
 interface LocalState {

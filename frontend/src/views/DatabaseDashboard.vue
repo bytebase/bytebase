@@ -74,8 +74,8 @@ import {
 } from "@/store/modules/v1/common";
 import type { ComposedDatabase } from "@/types";
 import { DEFAULT_PROJECT_NAME, isValidDatabaseName } from "@/types";
-import { engineFromJSON } from "@/types/proto/v1/common";
-import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
+import { engineFromJSON } from "@/types/proto/api/v1alpha/common";
+import { DatabaseChangeMode } from "@/types/proto/api/v1alpha/setting_service";
 import type { SearchParams } from "@/utils";
 import {
   CommonFilterScopeIdList,

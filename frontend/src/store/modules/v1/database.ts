@@ -12,14 +12,14 @@ import {
   unknownEnvironment,
   unknownInstanceResource,
 } from "@/types";
-import { type Engine, engineToJSON } from "@/types/proto/v1/common";
+import { type Engine, engineToJSON } from "@/types/proto/api/v1alpha/common";
 import type {
   Database,
   UpdateDatabaseRequest,
   DiffSchemaRequest,
   BatchUpdateDatabasesRequest,
-} from "@/types/proto/v1/database_service";
-import type { InstanceResource } from "@/types/proto/v1/instance_service";
+} from "@/types/proto/api/v1alpha/database_service";
+import type { InstanceResource } from "@/types/proto/api/v1alpha/instance_service";
 import { extractDatabaseResourceName, isNullOrUndefined } from "@/utils";
 import {
   instanceNamePrefix,

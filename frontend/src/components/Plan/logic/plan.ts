@@ -8,8 +8,8 @@ import {
   unknownDatabase,
   unknownEnvironment,
 } from "@/types";
-import { Engine, State } from "@/types/proto/v1/common";
-import type { Plan_Spec } from "@/types/proto/v1/plan_service";
+import { Engine, State } from "@/types/proto/api/v1alpha/common";
+import type { Plan_Spec } from "@/types/proto/api/v1alpha/plan_service";
 import type { ComposedPlan } from "@/types/v1/issue/plan";
 import { extractDatabaseResourceName, extractDatabaseGroupName } from "@/utils";
 

@@ -163,9 +163,9 @@ import type { ComposedProject } from "@/types";
 import {
   Changelist,
   Changelist_Change as Change,
-} from "@/types/proto/v1/changelist_service";
-import { Engine } from "@/types/proto/v1/common";
-import { Sheet } from "@/types/proto/v1/sheet_service";
+} from "@/types/proto/api/v1alpha/changelist_service";
+import { Engine } from "@/types/proto/api/v1alpha/common";
+import { Sheet } from "@/types/proto/api/v1alpha/sheet_service";
 import {
   ENCODINGS,
   extractChangelistResourceName,

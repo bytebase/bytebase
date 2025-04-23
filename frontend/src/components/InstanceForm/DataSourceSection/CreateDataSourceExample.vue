@@ -217,11 +217,11 @@ import {
   DATASOURCE_ADMIN_USER_NAME,
   DATASOURCE_READONLY_USER_NAME,
 } from "@/types";
-import { Engine } from "@/types/proto/v1/common";
+import { Engine } from "@/types/proto/api/v1alpha/common";
 import {
   DataSourceType,
   DataSource_AuthenticationType,
-} from "@/types/proto/v1/instance_service";
+} from "@/types/proto/api/v1alpha/instance_service";
 import { engineNameV1, toClipboard } from "@/utils";
 
 interface LocalState {

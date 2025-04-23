@@ -1,4 +1,4 @@
-import type { Binding } from "@/types/proto/v1/iam_policy";
+import type { Binding } from "@/types/proto/api/v1alpha/iam_policy";
 import { displayRoleTitle } from "@/utils";
 
 export const getBindingIdentifier = (binding: Binding): string => {

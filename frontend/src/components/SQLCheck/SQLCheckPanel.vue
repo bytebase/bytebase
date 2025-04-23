@@ -61,17 +61,17 @@ import { BBModal } from "@/bbkit";
 import PlanCheckRunDetail from "@/components/PlanCheckRun/PlanCheckRunDetail.vue";
 import { usePolicyV1Store } from "@/store";
 import type { ComposedDatabase } from "@/types";
-import { PolicyType } from "@/types/proto/v1/org_policy_service";
+import { PolicyType } from "@/types/proto/api/v1alpha/org_policy_service";
 import {
   PlanCheckRun,
   PlanCheckRun_Result,
   PlanCheckRun_Result_Status,
   PlanCheckRun_Result_SqlReviewReport,
   PlanCheckRun_Status,
-} from "@/types/proto/v1/plan_service";
-import { CheckReleaseResponse_RiskLevel } from "@/types/proto/v1/release_service";
-import type { Advice } from "@/types/proto/v1/sql_service";
-import { Advice_Status } from "@/types/proto/v1/sql_service";
+} from "@/types/proto/api/v1alpha/plan_service";
+import { CheckReleaseResponse_RiskLevel } from "@/types/proto/api/v1alpha/release_service";
+import type { Advice } from "@/types/proto/api/v1alpha/sql_service";
+import { Advice_Status } from "@/types/proto/api/v1alpha/sql_service";
 import type { Defer } from "@/utils";
 
 const props = withDefaults(

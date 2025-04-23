@@ -24,7 +24,7 @@ import { useIssueContext } from "@/components/IssueV1";
 import {
   PlanCheckRun_Type,
   type PlanCheckRun,
-} from "@/types/proto/v1/plan_service";
+} from "@/types/proto/api/v1alpha/plan_service";
 import {
   flattenTaskV1List,
   isDatabaseChangeRelatedIssue,

@@ -2,7 +2,7 @@ import { defineStore } from "pinia";
 import { reactive } from "vue";
 import { sqlServiceClient } from "@/grpcweb";
 import { isValidProjectName, isValidDatabaseName } from "@/types";
-import type { QueryHistory } from "@/types/proto/v1/sql_service";
+import type { QueryHistory } from "@/types/proto/api/v1alpha/sql_service";
 
 export interface QueryHistoryFilter {
   statement?: string;

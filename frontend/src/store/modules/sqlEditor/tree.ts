@@ -20,7 +20,7 @@ import {
   formatEnvironmentName,
 } from "@/types";
 import type { Environment } from "@/types/v1/environment";
-import type { InstanceResource } from "@/types/proto/v1/instance_service";
+import type { InstanceResource } from "@/types/proto/api/v1alpha/instance_service";
 import { getSemanticLabelValue, groupBy, isDatabaseV1Queryable } from "@/utils";
 import {
   useAppFeature,

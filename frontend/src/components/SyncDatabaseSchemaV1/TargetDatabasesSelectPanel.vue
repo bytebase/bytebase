@@ -73,7 +73,7 @@ import {
   instanceNamePrefix,
   environmentNamePrefix,
 } from "@/store/modules/v1/common";
-import type { Engine } from "@/types/proto/v1/common";
+import type { Engine } from "@/types/proto/api/v1alpha/common";
 import { CommonFilterScopeIdList, extractProjectResourceName } from "@/utils";
 import type { SearchParams, SearchScope } from "@/utils";
 import AdvancedSearch from "../AdvancedSearch";

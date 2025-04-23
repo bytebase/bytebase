@@ -102,7 +102,7 @@ import {
 import ErrorList from "@/components/misc/ErrorList.vue";
 import { issueServiceClient } from "@/grpcweb";
 import { pushNotification } from "@/store";
-import { Task_Status } from "@/types/proto/v1/rollout_service";
+import { Task_Status } from "@/types/proto/api/v1alpha/rollout_service";
 import { flattenTaskV1List } from "@/utils";
 import CommonDrawer from "./CommonDrawer.vue";
 

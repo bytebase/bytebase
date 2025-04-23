@@ -7,7 +7,7 @@ import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { TabFilter } from "@/components/v2";
 import { useSupportedSourceList } from "@/types";
-import { Risk_Source } from "@/types/proto/v1/risk_service";
+import { Risk_Source } from "@/types/proto/api/v1alpha/risk_service";
 import { sourceText } from "../../common";
 import { useRiskFilter } from "./context";
 

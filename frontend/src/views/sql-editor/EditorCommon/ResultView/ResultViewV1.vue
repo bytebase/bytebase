@@ -128,8 +128,8 @@ import type {
   SQLResultSetV1,
   DatabaseResource,
 } from "@/types";
-import { PolicyType } from "@/types/proto/v1/org_policy_service";
-import type { QueryResult } from "@/types/proto/v1/sql_service";
+import { PolicyType } from "@/types/proto/api/v1alpha/org_policy_service";
+import type { QueryResult } from "@/types/proto/api/v1alpha/sql_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import DetailPanel from "./DetailPanel";
 import EmptyView from "./EmptyView.vue";

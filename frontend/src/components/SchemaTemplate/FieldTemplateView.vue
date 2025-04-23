@@ -48,8 +48,8 @@
 import { NCheckbox, NEmpty } from "naive-ui";
 import { reactive, computed } from "vue";
 import { useI18n } from "vue-i18n";
-import type { Engine } from "@/types/proto/v1/common";
-import type { SchemaTemplateSetting_FieldTemplate } from "@/types/proto/v1/setting_service";
+import type { Engine } from "@/types/proto/api/v1alpha/common";
+import type { SchemaTemplateSetting_FieldTemplate } from "@/types/proto/api/v1alpha/setting_service";
 import FieldTemplateTable from "./FieldTemplateTable.vue";
 
 interface LocalState {

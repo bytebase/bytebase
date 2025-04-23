@@ -128,8 +128,8 @@ import {
 } from "@/store";
 import type { ComposedProject, DatabaseResource } from "@/types";
 import { PresetRoleType } from "@/types";
-import { State } from "@/types/proto/v1/common";
-import type { Binding } from "@/types/proto/v1/iam_policy";
+import { State } from "@/types/proto/api/v1alpha/common";
+import type { Binding } from "@/types/proto/api/v1alpha/iam_policy";
 import { displayRoleTitle } from "@/utils";
 import { convertFromExpr, buildConditionExpr } from "@/utils/issue/cel";
 import { getBindingIdentifier } from "../utils";

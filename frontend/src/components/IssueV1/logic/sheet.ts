@@ -1,5 +1,5 @@
 import { reactive } from "vue";
-import { Sheet } from "@/types/proto/v1/sheet_service";
+import { Sheet } from "@/types/proto/api/v1alpha/sheet_service";
 
 const sheetsByName = reactive(new Map<string, Sheet>());
 

@@ -114,8 +114,8 @@ import {
   getEmptyRolloutPolicy,
 } from "@/store/modules/v1/policy";
 import { emptyEnvironment, formatEnvironmentName } from "@/types";
-import type { Policy } from "@/types/proto/v1/org_policy_service";
-import { PolicyResourceType } from "@/types/proto/v1/org_policy_service";
+import type { Policy } from "@/types/proto/api/v1alpha/org_policy_service";
+import { PolicyResourceType } from "@/types/proto/api/v1alpha/org_policy_service";
 import type { Environment } from "@/types/v1/environment";
 import { arraySwap, hasWorkspacePermissionV2 } from "@/utils";
 import EnvironmentDetail from "@/views/EnvironmentDetail.vue";

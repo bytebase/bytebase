@@ -1,6 +1,6 @@
-import type { Engine } from "@/types/proto/v1/common";
-import type { DatabaseMetadata } from "@/types/proto/v1/database_service";
-import type { AISetting } from "@/types/proto/v1/setting_service";
+import type { Engine } from "@/types/proto/api/v1alpha/common";
+import type { DatabaseMetadata } from "@/types/proto/api/v1alpha/database_service";
+import type { AISetting } from "@/types/proto/api/v1alpha/setting_service";
 import type Emittery from "emittery";
 import type { Ref } from "vue";
 import type { Conversation } from "./conversation";

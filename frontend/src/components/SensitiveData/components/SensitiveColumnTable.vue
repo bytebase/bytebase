@@ -27,7 +27,7 @@ import {
   useDatabaseCatalog,
 } from "@/store";
 import type { ComposedDatabase } from "@/types";
-import { DataClassificationSetting_DataClassificationConfig as DataClassificationConfig } from "@/types/proto/v1/setting_service";
+import { DataClassificationSetting_DataClassificationConfig as DataClassificationConfig } from "@/types/proto/api/v1alpha/setting_service";
 import { autoDatabaseRoute } from "@/utils";
 
 const props = defineProps<{

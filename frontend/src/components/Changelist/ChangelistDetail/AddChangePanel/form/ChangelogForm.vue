@@ -63,12 +63,12 @@ import {
 import {
   Changelist_Change,
   type Changelist_Change as Change,
-} from "@/types/proto/v1/changelist_service";
+} from "@/types/proto/api/v1alpha/changelist_service";
 import {
   Changelog,
   Changelog_Status,
   Changelog_Type,
-} from "@/types/proto/v1/database_service";
+} from "@/types/proto/api/v1alpha/database_service";
 import { extractDatabaseResourceName, extractIssueUID } from "@/utils";
 import ChangelogDetailPanel from "../../ChangelogDetailPanel";
 import { useChangelistDetailContext } from "../../context";

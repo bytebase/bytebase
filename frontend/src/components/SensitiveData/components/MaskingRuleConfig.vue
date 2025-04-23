@@ -101,8 +101,8 @@ import {
 } from "@/plugins/cel";
 import { useSettingV1Store } from "@/store";
 import { Expr } from "@/types/proto/google/type/expr";
-import type { MaskingRulePolicy_MaskingRule } from "@/types/proto/v1/org_policy_service";
-import type { SemanticTypeSetting_SemanticType as SemanticType } from "@/types/proto/v1/setting_service";
+import type { MaskingRulePolicy_MaskingRule } from "@/types/proto/api/v1alpha/org_policy_service";
+import type { SemanticTypeSetting_SemanticType as SemanticType } from "@/types/proto/api/v1alpha/setting_service";
 import {
   batchConvertCELStringToParsedExpr,
   batchConvertParsedExprToCELString,

@@ -18,17 +18,17 @@ import {
   extractUserId,
 } from "@/store";
 import type { ComposedDatabase, ComposedIssue } from "@/types";
-import { Engine } from "@/types/proto/v1/common";
-import { IssueStatus } from "@/types/proto/v1/issue_service";
+import { Engine } from "@/types/proto/api/v1alpha/common";
+import { IssueStatus } from "@/types/proto/api/v1alpha/issue_service";
 import {
   Plan_ChangeDatabaseConfig_Type,
   type Plan_Spec,
-} from "@/types/proto/v1/plan_service";
-import type { Task } from "@/types/proto/v1/rollout_service";
+} from "@/types/proto/api/v1alpha/plan_service";
+import type { Task } from "@/types/proto/api/v1alpha/rollout_service";
 import {
   Task_Status,
   task_StatusToJSON,
-} from "@/types/proto/v1/rollout_service";
+} from "@/types/proto/api/v1alpha/rollout_service";
 import {
   flattenTaskV1List,
   getSheetStatement,

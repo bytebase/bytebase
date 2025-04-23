@@ -19,7 +19,7 @@ import IssueLabelSelector from "@/components/IssueV1/components/IssueLabelSelect
 import { useIssueContext } from "@/components/IssueV1/logic";
 import { issueServiceClient } from "@/grpcweb";
 import { pushNotification } from "@/store";
-import { Issue } from "@/types/proto/v1/issue_service";
+import { Issue } from "@/types/proto/api/v1alpha/issue_service";
 
 const { isCreating, issue, allowEditIssue } = useIssueContext();
 const { t } = useI18n();

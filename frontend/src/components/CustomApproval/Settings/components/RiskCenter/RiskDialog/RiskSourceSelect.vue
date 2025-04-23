@@ -14,7 +14,7 @@
 import type { SelectOption } from "naive-ui";
 import { NSelect, type SelectProps } from "naive-ui";
 import { computed } from "vue";
-import type { Risk_Source } from "@/types/proto/v1/risk_service";
+import type { Risk_Source } from "@/types/proto/api/v1alpha/risk_service";
 import { sourceText } from "../../common";
 import { useRiskCenterContext } from "../context";
 

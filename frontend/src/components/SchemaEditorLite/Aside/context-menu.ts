@@ -3,7 +3,7 @@ import type { DropdownOption } from "naive-ui";
 import { computed, reactive, type Ref } from "vue";
 import { useI18n } from "vue-i18n";
 import type { ComposedDatabase } from "@/types";
-import { Engine } from "@/types/proto/v1/common";
+import { Engine } from "@/types/proto/api/v1alpha/common";
 import { isDescendantOf } from "@/utils";
 import { useSchemaEditorContext } from "../context";
 import { engineSupportsMultiSchema } from "../spec";

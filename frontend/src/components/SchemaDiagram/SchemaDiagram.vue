@@ -40,7 +40,7 @@ import type {
   DatabaseMetadata,
   SchemaMetadata,
   TableMetadata,
-} from "@/types/proto/v1/database_service";
+} from "@/types/proto/api/v1alpha/database_service";
 import Canvas from "./Canvas";
 import type { GraphNodeItem, GraphEdgeItem } from "./ER";
 import { ForeignKeyLine, TableNode, autoLayout } from "./ER";

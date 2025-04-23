@@ -29,7 +29,7 @@ import { NButton } from "naive-ui";
 import { computed, watch } from "vue";
 import { useRiskStore } from "@/store";
 import { PresetRiskLevelList, useSupportedSourceList } from "@/types";
-import { Risk, Risk_Source } from "@/types/proto/v1/risk_service";
+import { Risk, Risk_Source } from "@/types/proto/api/v1alpha/risk_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import { RiskFilter, orderByLevelDesc, useRiskFilter } from "../common";
 import RiskSection from "./RiskSection.vue";

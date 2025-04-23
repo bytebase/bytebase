@@ -15,7 +15,7 @@ import type { BBBadgeStyle } from "@/bbkit/BBBadge.vue";
 import {
   SQLReviewRuleLevel,
   sQLReviewRuleLevelToJSON,
-} from "@/types/proto/v1/org_policy_service";
+} from "@/types/proto/api/v1alpha/org_policy_service";
 
 const props = withDefaults(
   defineProps<{

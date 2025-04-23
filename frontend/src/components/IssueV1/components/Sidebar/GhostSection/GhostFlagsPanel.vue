@@ -88,8 +88,8 @@ import {
   useDBGroupStore,
   useEnvironmentV1Store,
 } from "@/store";
-import type { Plan_Spec } from "@/types/proto/v1/plan_service";
-import { Task_Type } from "@/types/proto/v1/rollout_service";
+import type { Plan_Spec } from "@/types/proto/api/v1alpha/plan_service";
+import { Task_Type } from "@/types/proto/api/v1alpha/rollout_service";
 import { extractDatabaseGroupName } from "@/utils";
 import FlagsForm from "./FlagsForm";
 import { allowChangeTaskGhostFlags, useIssueGhostContext } from "./common";

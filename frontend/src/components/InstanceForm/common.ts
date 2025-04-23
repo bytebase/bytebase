@@ -6,10 +6,10 @@ import {
   UNKNOWN_ENVIRONMENT_NAME,
   UNKNOWN_INSTANCE_NAME,
 } from "@/types";
-import { Engine, State } from "@/types/proto/v1/common";
-import type { DataSource, Instance } from "@/types/proto/v1/instance_service";
-import { DataSourceType } from "@/types/proto/v1/instance_service";
-import { PlanType } from "@/types/proto/v1/subscription_service";
+import { Engine, State } from "@/types/proto/api/v1alpha/common";
+import type { DataSource, Instance } from "@/types/proto/api/v1alpha/instance_service";
+import { DataSourceType } from "@/types/proto/api/v1alpha/instance_service";
+import { PlanType } from "@/types/proto/api/v1alpha/subscription_service";
 import { calcUpdateMask } from "@/utils";
 
 export type BasicInfo = Omit<Instance, "dataSources" | "engineVersion">;

@@ -75,13 +75,13 @@ import { useI18n } from "vue-i18n";
 import { BBSpin } from "@/bbkit";
 import { releaseServiceClient } from "@/grpcweb";
 import type { ComposedDatabase } from "@/types";
-import type { DatabaseMetadata } from "@/types/proto/v1/database_service";
+import type { DatabaseMetadata } from "@/types/proto/api/v1alpha/database_service";
 import {
   CheckReleaseResponse,
   Release_File_ChangeType,
   ReleaseFileType,
-} from "@/types/proto/v1/release_service";
-import { Advice, Advice_Status } from "@/types/proto/v1/sql_service";
+} from "@/types/proto/api/v1alpha/release_service";
+import { Advice, Advice_Status } from "@/types/proto/api/v1alpha/sql_service";
 import type { Defer, VueStyle } from "@/utils";
 import { defer } from "@/utils";
 import { providePlanCheckRunContext } from "../PlanCheckRun/context";

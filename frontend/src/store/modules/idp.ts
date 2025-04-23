@@ -1,5 +1,5 @@
 import { identityProviderClient } from "@/grpcweb";
-import type { IdentityProvider } from "@/types/proto/v1/idp_service";
+import type { IdentityProvider } from "@/types/proto/api/v1alpha/idp_service";
 import { isEqual, isUndefined } from "lodash-es";
 import { defineStore } from "pinia";
 

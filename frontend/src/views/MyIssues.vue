@@ -156,7 +156,7 @@ import {
   useRefreshIssueList,
 } from "@/store";
 import { planTypeToString, type ComposedIssue } from "@/types";
-import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
+import { DatabaseChangeMode } from "@/types/proto/api/v1alpha/setting_service";
 import type { SearchParams, SearchScopeId, SemanticIssueStatus } from "@/utils";
 import {
   buildIssueFilterBySearchParams,

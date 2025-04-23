@@ -4,7 +4,7 @@ import { issueServiceClient } from "@/grpcweb";
 import type {
   IssueComment,
   ListIssueCommentsRequest,
-} from "@/types/proto/v1/issue_service";
+} from "@/types/proto/api/v1alpha/issue_service";
 import {
   getProjectIdIssueIdIssueCommentId,
   issueNamePrefix,

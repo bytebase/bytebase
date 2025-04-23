@@ -12,11 +12,11 @@ import type {
   WrappedReviewStep,
 } from "@/types";
 import { emptyFlow } from "@/types";
-import type { ApprovalNode, Issue } from "@/types/proto/v1/issue_service";
+import type { ApprovalNode, Issue } from "@/types/proto/api/v1alpha/issue_service";
 import {
   ApprovalNode_Type,
   Issue_Approver_Status,
-} from "@/types/proto/v1/issue_service";
+} from "@/types/proto/api/v1alpha/issue_service";
 import { displayRoleTitle } from "@/utils";
 import { isUserIncludedInList } from "@/utils";
 import type { ReviewContext } from "./context";

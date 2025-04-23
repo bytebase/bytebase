@@ -128,8 +128,8 @@ import { planTypeToString, ENTERPRISE_INQUIRE_LINK } from "@/types";
 import type {
   Instance,
   InstanceResource,
-} from "@/types/proto/v1/instance_service";
-import { PlanType } from "@/types/proto/v1/subscription_service";
+} from "@/types/proto/api/v1alpha/instance_service";
+import { PlanType } from "@/types/proto/api/v1alpha/subscription_service";
 import { autoSubscriptionRoute, hasWorkspacePermissionV2 } from "@/utils";
 import InstanceAssignment from "../InstanceAssignment.vue";
 import WeChatQRModal from "../WeChatQRModal.vue";

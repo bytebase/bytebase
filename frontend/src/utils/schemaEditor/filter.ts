@@ -4,7 +4,7 @@ import {
   IndexMetadata,
   TableMetadata,
   TablePartitionMetadata,
-} from "@/types/proto/v1/database_service";
+} from "@/types/proto/api/v1alpha/database_service";
 
 export const ComparableTableFields: (keyof TableMetadata)[] = [
   "name",

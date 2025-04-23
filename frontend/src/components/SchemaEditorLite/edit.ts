@@ -1,11 +1,11 @@
 import { MD5 } from "crypto-js";
 import { pull, pullAt } from "lodash-es";
-import { Engine } from "@/types/proto/v1/common";
+import { Engine } from "@/types/proto/api/v1alpha/common";
 import type {
   ForeignKeyMetadata,
   TableMetadata,
-} from "@/types/proto/v1/database_service";
-import { IndexMetadata } from "@/types/proto/v1/database_service";
+} from "@/types/proto/api/v1alpha/database_service";
+import { IndexMetadata } from "@/types/proto/api/v1alpha/database_service";
 import { getFixedPrimaryKey, upsertArray } from "@/utils";
 
 export const upsertColumnPrimaryKey = (

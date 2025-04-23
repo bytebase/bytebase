@@ -4,8 +4,8 @@ import {
   getGroupEmailInBinding,
   groupBindingPrefix,
 } from "@/types";
-import { State } from "@/types/proto/v1/common";
-import { IamPolicy } from "@/types/proto/v1/iam_policy";
+import { State } from "@/types/proto/api/v1alpha/common";
+import { IamPolicy } from "@/types/proto/api/v1alpha/iam_policy";
 import type { MemberBinding } from "./types";
 
 const getMemberBinding = async (

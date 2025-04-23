@@ -22,7 +22,7 @@ import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import type { BBGridColumn } from "@/bbkit";
 import { BBGrid } from "@/bbkit";
-import type { InstanceRole } from "@/types/proto/v1/instance_role_service";
+import type { InstanceRole } from "@/types/proto/api/v1alpha/instance_role_service";
 
 defineProps<{
   instanceRoleList: InstanceRole[];

@@ -20,7 +20,7 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 import { useSettingV1Store } from "@/store";
-import { Announcement_AlertLevel } from "@/types/proto/v1/setting_service";
+import { Announcement_AlertLevel } from "@/types/proto/api/v1alpha/setting_service";
 import { urlfy } from "@/utils";
 
 const settingV1Store = useSettingV1Store();

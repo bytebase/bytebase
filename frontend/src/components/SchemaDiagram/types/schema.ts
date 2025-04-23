@@ -2,7 +2,7 @@ import type {
   ForeignKeyMetadata,
   SchemaMetadata,
   TableMetadata,
-} from "@/types/proto/v1/database_service";
+} from "@/types/proto/api/v1alpha/database_service";
 
 export type ForeignKey = {
   from: {

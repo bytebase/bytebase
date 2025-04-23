@@ -20,7 +20,7 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { WORKSPACE_ROUTE_SSO_DETAIL } from "@/router/dashboard/workspaceRoutes";
 import { getSSOId } from "@/store/modules/v1/common";
-import type { IdentityProvider } from "@/types/proto/v1/idp_service";
+import type { IdentityProvider } from "@/types/proto/api/v1alpha/idp_service";
 
 withDefaults(
   defineProps<{

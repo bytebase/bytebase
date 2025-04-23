@@ -2,7 +2,7 @@ import { computedAsync } from "@vueuse/core";
 import { computed, ref } from "vue";
 import { useSheetV1Store } from "@/store";
 import { ESTABLISH_BASELINE_SQL } from "@/types";
-import { Task_Type } from "@/types/proto/v1/rollout_service";
+import { Task_Type } from "@/types/proto/api/v1alpha/rollout_service";
 import {
   extractSheetUID,
   getSheetStatement,

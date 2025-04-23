@@ -44,9 +44,9 @@ import type { ErrorItem } from "@/components/misc/ErrorList.vue";
 import { default as ErrorList } from "@/components/misc/ErrorList.vue";
 import { planServiceClient } from "@/grpcweb";
 import { hasFeature, pushNotification, useIssueCommentStore } from "@/store";
-import { Engine } from "@/types/proto/v1/common";
-import { Plan_ChangeDatabaseConfig_Type } from "@/types/proto/v1/plan_service";
-import { Task_Status } from "@/types/proto/v1/rollout_service";
+import { Engine } from "@/types/proto/api/v1alpha/common";
+import { Plan_ChangeDatabaseConfig_Type } from "@/types/proto/api/v1alpha/plan_service";
+import { Task_Status } from "@/types/proto/api/v1alpha/rollout_service";
 import { engineNameV1, hasWorkspacePermissionV2 } from "@/utils";
 import {
   allowGhostForTask,

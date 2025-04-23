@@ -29,7 +29,7 @@
 import type { TreeOption } from "naive-ui";
 import { NTree } from "naive-ui";
 import { computed, reactive, h } from "vue";
-import type { DataClassificationSetting_DataClassificationConfig } from "@/types/proto/v1/setting_service";
+import type { DataClassificationSetting_DataClassificationConfig } from "@/types/proto/api/v1alpha/setting_service";
 import { getHighlightHTMLByKeyWords } from "@/utils";
 import { SearchBox } from "../v2";
 import ClassificationLevelBadge from "./ClassificationLevelBadge.vue";

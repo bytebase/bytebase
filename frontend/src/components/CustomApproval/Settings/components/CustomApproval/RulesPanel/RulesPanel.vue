@@ -15,7 +15,7 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 import { useSupportedSourceList } from "@/types";
-import { Risk_Source } from "@/types/proto/v1/risk_service";
+import { Risk_Source } from "@/types/proto/api/v1alpha/risk_service";
 import { RiskFilter, useRiskFilter } from "../../common";
 import RulesSection from "./RulesSection.vue";
 

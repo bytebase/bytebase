@@ -96,7 +96,7 @@ import {
   GrantRequest,
   Issue,
   Issue_Type,
-} from "@/types/proto/v1/issue_service";
+} from "@/types/proto/api/v1alpha/issue_service";
 import { generateIssueTitle } from "@/utils";
 import { stringifyConditionExpression } from "@/utils/issue/cel";
 import DatabaseResourceForm from "./DatabaseResourceForm/index.vue";

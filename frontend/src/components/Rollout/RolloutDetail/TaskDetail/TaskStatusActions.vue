@@ -46,8 +46,8 @@ import { rolloutServiceClient } from "@/grpcweb";
 import {
   Issue_Approver_Status,
   IssueStatus,
-} from "@/types/proto/v1/issue_service";
-import { Task_Status } from "@/types/proto/v1/rollout_service";
+} from "@/types/proto/api/v1alpha/issue_service";
+import { Task_Status } from "@/types/proto/api/v1alpha/rollout_service";
 import { useRolloutDetailContext } from "../context";
 import { useTaskDetailContext } from "./context";
 import { stageForTask } from "./utils";

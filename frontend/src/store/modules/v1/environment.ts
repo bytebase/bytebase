@@ -4,7 +4,7 @@ import { unknownEnvironment } from "@/types";
 import {
   EnvironmentSetting,
   EnvironmentSetting_Environment,
-} from "@/types/proto/v1/setting_service";
+} from "@/types/proto/api/v1alpha/setting_service";
 import type { Environment } from "@/types/v1/environment";
 import { orderBy } from "lodash-es";
 import { defineStore } from "pinia";

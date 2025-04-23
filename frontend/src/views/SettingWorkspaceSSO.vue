@@ -60,7 +60,7 @@ import {
 import { featureToRef } from "@/store";
 import { useIdentityProviderStore } from "@/store/modules/idp";
 import { getSSOId } from "@/store/modules/v1/common";
-import type { IdentityProvider } from "@/types/proto/v1/idp_service";
+import type { IdentityProvider } from "@/types/proto/api/v1alpha/idp_service";
 import {
   hasWorkspacePermissionV2,
   identityProviderTypeToString,

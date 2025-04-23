@@ -102,8 +102,8 @@ import { featureToRef, useSettingV1Store, pushNotification } from "@/store";
 import {
   DataClassificationSetting_DataClassificationConfig_Level as ClassificationLevel,
   DataClassificationSetting_DataClassificationConfig_DataClassification as DataClassification,
-} from "@/types/proto/v1/setting_service";
-import { DataClassificationSetting_DataClassificationConfig } from "@/types/proto/v1/setting_service";
+} from "@/types/proto/api/v1alpha/setting_service";
+import { DataClassificationSetting_DataClassificationConfig } from "@/types/proto/api/v1alpha/setting_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import LearnMoreLink from "../LearnMoreLink.vue";
 import ClassificationTree from "../SchemaTemplate/ClassificationTree.vue";

@@ -28,7 +28,7 @@
 import { computed } from "vue";
 import { RichEngineName } from "@/components/v2";
 import { useDBSchemaV1Store, useDatabaseV1Store } from "@/store";
-import { Engine } from "@/types/proto/v1/common";
+import { Engine } from "@/types/proto/api/v1alpha/common";
 import { bytesToString } from "@/utils";
 import InfoItem from "./InfoItem.vue";
 

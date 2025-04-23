@@ -60,7 +60,7 @@ import {
 } from "@/store";
 import type { SQLDialect, SQLEditorQueryParams, SQLEditorTab } from "@/types";
 import { dialectOfEngineV1 } from "@/types";
-import { Advice_Status, type Advice } from "@/types/proto/v1/sql_service";
+import { Advice_Status, type Advice } from "@/types/proto/api/v1alpha/sql_service";
 import {
   nextAnimationFrame,
   useInstanceV1EditorLanguage,

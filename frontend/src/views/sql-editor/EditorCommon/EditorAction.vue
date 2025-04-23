@@ -172,7 +172,7 @@ import {
   type FeatureType,
   type SQLEditorQueryParams,
 } from "@/types";
-import { Engine } from "@/types/proto/v1/common";
+import { Engine } from "@/types/proto/api/v1alpha/common";
 import { keyboardShortcutStr, isWorksheetWritableV1 } from "@/utils";
 import { useSQLEditorContext } from "../context";
 import AdminModeButton from "./AdminModeButton.vue";

@@ -13,10 +13,10 @@ import {
 import { SQL_EDITOR_HOME_MODULE } from "@/router/sqlEditor";
 import { useAppFeature, useSettingV1Store, useUserStore } from "@/store";
 import { UNKNOWN_USER_NAME, unknownUser } from "@/types";
-import type { LoginRequest } from "@/types/proto/v1/auth_service";
-import { LoginResponse } from "@/types/proto/v1/auth_service";
-import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
-import { User, UserType } from "@/types/proto/v1/user_service";
+import type { LoginRequest } from "@/types/proto/api/v1alpha/auth_service";
+import { LoginResponse } from "@/types/proto/api/v1alpha/auth_service";
+import { DatabaseChangeMode } from "@/types/proto/api/v1alpha/setting_service";
+import { User, UserType } from "@/types/proto/api/v1alpha/user_service";
 
 export const useAuthStore = defineStore("auth_v1", () => {
   const userStore = useUserStore();

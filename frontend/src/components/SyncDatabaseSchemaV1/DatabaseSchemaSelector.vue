@@ -78,11 +78,11 @@ import {
   isValidDatabaseName,
   type ComposedProject,
 } from "@/types";
-import type { Changelog } from "@/types/proto/v1/database_service";
+import type { Changelog } from "@/types/proto/api/v1alpha/database_service";
 import {
   Changelog_Type,
   changelog_TypeToJSON,
-} from "@/types/proto/v1/database_service";
+} from "@/types/proto/api/v1alpha/database_service";
 import {
   extractChangelogUID,
   isValidChangelogName,

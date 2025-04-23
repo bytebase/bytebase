@@ -135,7 +135,7 @@ import { DEFAULT_PROJECT_NAME } from "@/types";
 import {
   Database,
   UpdateDatabaseRequest,
-} from "@/types/proto/v1/database_service";
+} from "@/types/proto/api/v1alpha/database_service";
 import {
   isArchivedDatabaseV1,
   instanceV1HasAlterSchema,

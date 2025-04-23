@@ -85,7 +85,7 @@ import BytebaseLogo from "@/components/BytebaseLogo.vue";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import { SQL_EDITOR_HOME_MODULE } from "@/router/sqlEditor";
 import { useSettingV1Store } from "@/store";
-import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
+import { DatabaseChangeMode } from "@/types/proto/api/v1alpha/setting_service";
 import AuthFooter from "@/views/auth/AuthFooter.vue";
 
 const router = useRouter();

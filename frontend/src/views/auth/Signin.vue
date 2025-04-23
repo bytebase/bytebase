@@ -190,8 +190,8 @@ import {
   useIdentityProviderStore,
 } from "@/store";
 import { idpNamePrefix } from "@/store/modules/v1/common";
-import type { IdentityProvider } from "@/types/proto/v1/idp_service";
-import { IdentityProviderType } from "@/types/proto/v1/idp_service";
+import type { IdentityProvider } from "@/types/proto/api/v1alpha/idp_service";
+import { IdentityProviderType } from "@/types/proto/api/v1alpha/idp_service";
 import { openWindowForSSO } from "@/utils";
 import AuthFooter from "./AuthFooter.vue";
 

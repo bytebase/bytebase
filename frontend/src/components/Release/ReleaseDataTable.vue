@@ -21,7 +21,7 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBAvatar } from "@/bbkit";
 import { getTimeForPbTimestamp, type ComposedRelease } from "@/types";
-import { State } from "@/types/proto/v1/common";
+import { State } from "@/types/proto/api/v1alpha/common";
 import { getReleaseFileStatement, humanizeTs } from "@/utils";
 
 interface LocalState {

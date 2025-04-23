@@ -38,8 +38,8 @@ import { NPopconfirm } from "naive-ui";
 import { ref, computed } from "vue";
 import ClassificationLevelBadge from "@/components/SchemaTemplate/ClassificationLevelBadge.vue";
 import { MiniActionButton } from "@/components/v2";
-import type { Engine } from "@/types/proto/v1/common";
-import type { DataClassificationSetting_DataClassificationConfig as DataClassificationConfig } from "@/types/proto/v1/setting_service";
+import type { Engine } from "@/types/proto/api/v1alpha/common";
+import type { DataClassificationSetting_DataClassificationConfig as DataClassificationConfig } from "@/types/proto/api/v1alpha/setting_service";
 import SelectClassificationDrawer from "../SchemaTemplate/SelectClassificationDrawer.vue";
 import { supportSetClassificationFromComment } from "./utils";
 

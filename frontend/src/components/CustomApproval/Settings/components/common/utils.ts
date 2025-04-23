@@ -16,8 +16,8 @@ import {
   useSupportedSourceList,
   type ComposedProject,
 } from "@/types";
-import type { Risk } from "@/types/proto/v1/risk_service";
-import { Risk_Source, risk_SourceToJSON } from "@/types/proto/v1/risk_service";
+import type { Risk } from "@/types/proto/api/v1alpha/risk_service";
+import { Risk_Source, risk_SourceToJSON } from "@/types/proto/api/v1alpha/risk_service";
 import {
   engineNameV1,
   extractProjectResourceName,

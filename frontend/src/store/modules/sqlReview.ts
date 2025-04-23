@@ -12,8 +12,8 @@ import type {
 import {
   PolicyType,
   policyTypeToJSON,
-} from "@/types/proto/v1/org_policy_service";
-import { ReviewConfig } from "@/types/proto/v1/review_config_service";
+} from "@/types/proto/api/v1alpha/org_policy_service";
+import { ReviewConfig } from "@/types/proto/api/v1alpha/review_config_service";
 import { usePolicyV1Store } from "./v1/policy";
 
 const reviewConfigTagName = "bb.tag.review_config";

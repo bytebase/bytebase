@@ -72,12 +72,12 @@ import { useI18n } from "vue-i18n";
 import { BBGrid, type BBGridColumn } from "@/bbkit";
 import { RoleSelect } from "@/components/v2";
 import { PresetRoleType } from "@/types";
-import type { ApprovalFlow } from "@/types/proto/v1/issue_service";
+import type { ApprovalFlow } from "@/types/proto/api/v1alpha/issue_service";
 import {
   ApprovalNode_Type,
   ApprovalStep,
   ApprovalStep_Type,
-} from "@/types/proto/v1/issue_service";
+} from "@/types/proto/api/v1alpha/issue_service";
 import { approvalNodeText } from "@/utils";
 import { SpinnerButton } from "../../common";
 import { useCustomApprovalContext } from "../context";

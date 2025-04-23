@@ -8,7 +8,7 @@ import ProjectMemberPanel from "@/components/ProjectMember/ProjectMemberPanel.vu
 import { useProjectByName } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { DEFAULT_PROJECT_NAME } from "@/types";
-import { State } from "@/types/proto/v1/common";
+import { State } from "@/types/proto/api/v1alpha/common";
 import { hasProjectPermissionV2 } from "@/utils";
 
 const props = defineProps<{

@@ -225,11 +225,11 @@ import {
   TaskTypeListWithStatement,
   dialectOfEngineV1,
 } from "@/types";
-import { IssueStatus } from "@/types/proto/v1/issue_service";
-import type { Task } from "@/types/proto/v1/rollout_service";
-import { Task_Type } from "@/types/proto/v1/rollout_service";
-import { Sheet } from "@/types/proto/v1/sheet_service";
-import type { Advice } from "@/types/proto/v1/sql_service";
+import { IssueStatus } from "@/types/proto/api/v1alpha/issue_service";
+import type { Task } from "@/types/proto/api/v1alpha/rollout_service";
+import { Task_Type } from "@/types/proto/api/v1alpha/rollout_service";
+import { Sheet } from "@/types/proto/api/v1alpha/sheet_service";
+import type { Advice } from "@/types/proto/api/v1alpha/sql_service";
 import {
   defer,
   flattenTaskV1List,

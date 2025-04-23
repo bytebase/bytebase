@@ -10,7 +10,7 @@ import { ref } from "vue";
 import { nextTick } from "vue";
 import { useRouter } from "vue-router";
 import { EMPTY_ID } from "@/types";
-import type { Advice } from "@/types/proto/v1/sql_service";
+import type { Advice } from "@/types/proto/api/v1alpha/sql_service";
 import { usePlanContext } from "../../logic";
 import EditorView from "./EditorView";
 

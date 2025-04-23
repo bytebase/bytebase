@@ -39,7 +39,7 @@
 import { FileIcon, HistoryIcon } from "lucide-vue-next";
 import { computed } from "vue";
 import { useChangelogStore } from "@/store";
-import type { Changelist_Change as Change } from "@/types/proto/v1/changelist_service";
+import type { Changelist_Change as Change } from "@/types/proto/api/v1alpha/changelist_service";
 import { extractIssueUID, getChangelistChangeSourceType } from "@/utils";
 
 const props = defineProps<{

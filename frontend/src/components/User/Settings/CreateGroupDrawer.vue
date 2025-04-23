@@ -155,7 +155,7 @@ import {
   Group,
   GroupMember,
   GroupMember_Role,
-} from "@/types/proto/v1/group_service";
+} from "@/types/proto/api/v1alpha/group_service";
 import { isValidEmail, hasWorkspacePermissionV2 } from "@/utils";
 import RemoveGroupButton from "./RemoveGroupButton.vue";
 import GroupMemberRoleSelect from "./UserDataTableByGroup/cells/GroupMemberRoleSelect.vue";

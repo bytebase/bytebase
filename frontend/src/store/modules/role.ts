@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
 import { ref } from "vue";
 import { roleServiceClient } from "@/grpcweb";
-import type { Role } from "@/types/proto/v1/role_service";
+import type { Role } from "@/types/proto/api/v1alpha/role_service";
 import { useGracefulRequest } from "./utils";
 
 export const useRoleStore = defineStore("role", () => {

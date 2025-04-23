@@ -93,8 +93,8 @@ import { type ComposedDatabase } from "@/types";
 import {
   ObjectSchema_Type,
   type ObjectSchema,
-} from "@/types/proto/v1/database_catalog_service";
-import { PolicyType } from "@/types/proto/v1/org_policy_service";
+} from "@/types/proto/api/v1alpha/database_catalog_service";
+import { PolicyType } from "@/types/proto/api/v1alpha/org_policy_service";
 import { hasProjectPermissionV2, instanceV1MaskingForNoSQL } from "@/utils";
 
 const props = defineProps<{

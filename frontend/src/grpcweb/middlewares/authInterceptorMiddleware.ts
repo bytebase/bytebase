@@ -2,7 +2,7 @@ import { ClientError, ServerError, Status } from "nice-grpc-common";
 import type { ClientMiddleware } from "nice-grpc-web";
 import { router } from "@/router";
 import { useAuthStore } from "@/store";
-import { UserServiceDefinition } from "@/types/proto/v1/user_service";
+import { UserServiceDefinition } from "@/types/proto/api/v1alpha/user_service";
 
 export type IgnoreErrorsOptions = {
   /**

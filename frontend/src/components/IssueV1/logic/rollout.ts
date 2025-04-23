@@ -2,14 +2,14 @@ import { planCheckRunSummaryForCheckRunList } from "@/components/PlanCheckRun/co
 import { t } from "@/plugins/i18n";
 import { useCurrentUserV1, extractUserId } from "@/store";
 import type { ComposedIssue } from "@/types";
-import { IssueStatus, Issue_Type } from "@/types/proto/v1/issue_service";
-import type { PlanCheckRun } from "@/types/proto/v1/plan_service";
-import type { Task } from "@/types/proto/v1/rollout_service";
+import { IssueStatus, Issue_Type } from "@/types/proto/api/v1alpha/issue_service";
+import type { PlanCheckRun } from "@/types/proto/api/v1alpha/plan_service";
+import type { Task } from "@/types/proto/api/v1alpha/rollout_service";
 import {
   Task_Status,
   task_StatusToJSON,
   Task_Type,
-} from "@/types/proto/v1/rollout_service";
+} from "@/types/proto/api/v1alpha/rollout_service";
 import { extractDatabaseGroupName, hasProjectPermissionV2 } from "@/utils";
 import { specForTask } from ".";
 
