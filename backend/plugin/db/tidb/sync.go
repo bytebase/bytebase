@@ -491,10 +491,6 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 func convertCollationToCharset(collation string) string {
 	// See mappings from "SHOW CHARACTER SET;".
 	tokens := strings.Split(collation, "_")
-	if len(tokens) == 0 {
-		return collation
-	}
-	return tokens[0]
 }
 
 func setColumnMetadataDefault(column *storepb.ColumnMetadata, defaultStr sql.NullString, nullableBool bool, extra string) {
