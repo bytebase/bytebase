@@ -60,7 +60,7 @@
         v-else
         class="w-full flex items-center justify-center py-8 textinfolabel"
       >
-        {{ $t("common.no-data") }}
+        {{ $t("sql-editor.no-history-found") }}
       </div>
     </template>
   </div>
