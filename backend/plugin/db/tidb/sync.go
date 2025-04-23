@@ -50,7 +50,7 @@ var (
 
 // SyncInstance syncs the instance.
 func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
-	version, _, err := d.getVersion(ctx)
+	version, err := d.getVersion(ctx)
 	if err != nil {
 		return nil, err
 	}
