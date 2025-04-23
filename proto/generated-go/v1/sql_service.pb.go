@@ -1735,16 +1735,22 @@ type SearchQueryHistoriesRequest struct {
 	// A page token, received from a previous `ListQueryHistory` call.
 	// Provide this to retrieve the subsequent page.
 	PageToken string `protobuf:"bytes,2,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
-	// filter is the filter to apply on the search query history,
-	// follow the
-	// [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form)
-	// syntax. Support filter by:
-	//   - database, for example:
-	//     database = "instances/{instance}/databases/{database}"
-	//   - instance, for example:
-	//     instance = "instances/{instance}"
-	//   - type, for example:
-	//     type = "QUERY"
+	// Filter is the filter to apply on the search query history
+	// Supported filter:
+	// - project
+	// - database
+	// - instance
+	// - type
+	// - statement
+	//
+	// For example:
+	// project == "projects/{project}"
+	// database == "instances/{instance}/databases/{database}"
+	// instance == "instances/{instance}"
+	// type == "QUERY"
+	// type == "EXPORT"
+	// statement.matches("select")
+	// type == "QUERY" && statement.matches("select")
 	Filter        string `protobuf:"bytes,3,opt,name=filter,proto3" json:"filter,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
