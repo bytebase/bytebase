@@ -1736,7 +1736,7 @@
     "rows": "row | rows",
     "vertical-display": "Vertical display",
     "no-history-found": "No history found",
-    "search-history": "Search History",
+    "search-history-by-statement": "Search by statement",
     "binary-format": "Binary format",
     "hex-format": "Hexadecimal format",
     "boolean-format": "Boolean format",

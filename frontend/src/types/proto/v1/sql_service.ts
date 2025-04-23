@@ -537,16 +537,22 @@ export interface SearchQueryHistoriesRequest {
    */
   pageToken: string;
   /**
-   * filter is the filter to apply on the search query history,
-   * follow the
-   * [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form)
-   * syntax. Support filter by:
-   * - database, for example:
-   *    database = "instances/{instance}/databases/{database}"
-   * - instance, for example:
-   *    instance = "instances/{instance}"
-   * - type, for example:
-   *    type = "QUERY"
+   * Filter is the filter to apply on the search query history
+   * Supported filter:
+   * - project
+   * - database
+   * - instance
+   * - type
+   * - statement
+   *
+   * For example:
+   * project == "projects/{project}"
+   * database == "instances/{instance}/databases/{database}"
+   * instance == "instances/{instance}"
+   * type == "QUERY"
+   * type == "EXPORT"
+   * statement.matches("select")
+   * type == "QUERY" && statement.matches("select")
    */
   filter: string;
 }

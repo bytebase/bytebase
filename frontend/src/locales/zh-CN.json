@@ -1736,7 +1736,7 @@
     "rows": "条记录",
     "vertical-display": "竖向展示",
     "no-history-found": "暂无历史记录",
-    "search-history": "搜索历史记录",
+    "search-history-by-statement": "搜索 SQL 语句",
     "binary-format": "二进制格式",
     "hex-format": "十六进制格式",
     "boolean-format": "布尔格式",
