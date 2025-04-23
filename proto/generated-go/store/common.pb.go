@@ -313,6 +313,7 @@ func (ExportFormat) EnumDescriptor() ([]byte, []int) {
 // Used internally for obfuscating the page token.
 type PageToken struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
+	Aaaaa         string                 `protobuf:"bytes,128,opt,name=aaaaa,proto3" json:"aaaaa,omitempty"`
 	Limit         int32                  `protobuf:"varint,1,opt,name=limit,proto3" json:"limit,omitempty"`
 	Offset        int32                  `protobuf:"varint,2,opt,name=offset,proto3" json:"offset,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -347,6 +348,13 @@ func (x *PageToken) ProtoReflect() protoreflect.Message {
 // Deprecated: Use PageToken.ProtoReflect.Descriptor instead.
 func (*PageToken) Descriptor() ([]byte, []int) {
 	return file_store_common_proto_rawDescGZIP(), []int{0}
+}
+
+func (x *PageToken) GetAaaaa() string {
+	if x != nil {
+		return x.Aaaaa
+	}
+	return ""
 }
 
 func (x *PageToken) GetLimit() int32 {
@@ -475,8 +483,9 @@ var File_store_common_proto protoreflect.FileDescriptor
 
 const file_store_common_proto_rawDesc = "" +
 	"\n" +
-	"\x12store/common.proto\x12\x0ebytebase.store\"9\n" +
-	"\tPageToken\x12\x14\n" +
+	"\x12store/common.proto\x12\x0ebytebase.store\"P\n" +
+	"\tPageToken\x12\x15\n" +
+	"\x05aaaaa\x18\x80\x01 \x01(\tR\x05aaaaa\x12\x14\n" +
 	"\x05limit\x18\x01 \x01(\x05R\x05limit\x12\x16\n" +
 	"\x06offset\x18\x02 \x01(\x05R\x06offset\"6\n" +
 	"\bPosition\x12\x12\n" +
