@@ -1736,7 +1736,7 @@
     "rows": "記録",
     "vertical-display": "縦型表示",
     "no-history-found": "まだ履歴がありません",
-    "search-history": "履歴の検索",
+    "search-history-by-statement": "ステートメントで検索",
     "binary-format": "バイナリ形式",
     "hex-format": "16進形式",
     "boolean-format": "ブール形式",
