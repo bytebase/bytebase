@@ -11,29 +11,6 @@ import Long from "long";
 export const protobufPackage = "google.api";
 
 /**
- * Defines the HTTP configuration for an API service. It contains a list of
- * [HttpRule][google.api.HttpRule], each specifying the mapping of an RPC method
- * to one or more HTTP REST API methods.
- */
-export interface Http {
-  /**
-   * A list of HTTP configuration rules that apply to individual API methods.
-   *
-   * **NOTE:** All service configuration rules follow "last one wins" order.
-   */
-  rules: HttpRule[];
-  /**
-   * When set to true, URL path parameters will be fully URI-decoded except in
-   * cases of single segment matches in reserved expansion, where "%2F" will be
-   * left encoded.
-   *
-   * The default behavior is to not decode RFC 6570 reserved characters in multi
-   * segment matches.
-   */
-  fullyDecodeReservedExpansion: boolean;
-}
-
-/**
  * # gRPC Transcoding
  *
  * gRPC Transcoding is a feature for mapping between a gRPC method and one or
@@ -379,84 +356,6 @@ export interface CustomHttpPattern {
   /** The path matched by this custom verb. */
   path: string;
 }
-
-function createBaseHttp(): Http {
-  return { rules: [], fullyDecodeReservedExpansion: false };
-}
-
-export const Http: MessageFns<Http> = {
-  encode(message: Http, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    for (const v of message.rules) {
-      HttpRule.encode(v!, writer.uint32(10).fork()).join();
-    }
-    if (message.fullyDecodeReservedExpansion !== false) {
-      writer.uint32(16).bool(message.fullyDecodeReservedExpansion);
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): Http {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseHttp();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.rules.push(HttpRule.decode(reader, reader.uint32()));
-          continue;
-        }
-        case 2: {
-          if (tag !== 16) {
-            break;
-          }
-
-          message.fullyDecodeReservedExpansion = reader.bool();
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): Http {
-    return {
-      rules: globalThis.Array.isArray(object?.rules) ? object.rules.map((e: any) => HttpRule.fromJSON(e)) : [],
-      fullyDecodeReservedExpansion: isSet(object.fullyDecodeReservedExpansion)
-        ? globalThis.Boolean(object.fullyDecodeReservedExpansion)
-        : false,
-    };
-  },
-
-  toJSON(message: Http): unknown {
-    const obj: any = {};
-    if (message.rules?.length) {
-      obj.rules = message.rules.map((e) => HttpRule.toJSON(e));
-    }
-    if (message.fullyDecodeReservedExpansion !== false) {
-      obj.fullyDecodeReservedExpansion = message.fullyDecodeReservedExpansion;
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<Http>): Http {
-    return Http.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<Http>): Http {
-    const message = createBaseHttp();
-    message.rules = object.rules?.map((e) => HttpRule.fromPartial(e)) || [];
-    message.fullyDecodeReservedExpansion = object.fullyDecodeReservedExpansion ?? false;
-    return message;
-  },
-};
 
 function createBaseHttpRule(): HttpRule {
   return {
