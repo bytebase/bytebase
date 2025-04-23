@@ -146,7 +146,8 @@ func (d *Driver) getVersion(ctx context.Context) (string, string, error) {
 }
 
 func parseVersion(version string) (string, string, error) {
-	if loc := regexp.MustCompile(`^\d+.\d+.\d+`).FindStringIndex(version); loc != nil {
+	// Examples: 8.0.11-TiDB-v8.5.0, 8.0.11-TiDB-v7.5.2-serverless.
+	if loc := regexp.MustCompile(`v\d+.\d+.\d+`).FindStringIndex(version); loc != nil {
 		return version[loc[0]:loc[1]], version[loc[1]:], nil
 	}
 	return "", "", errors.Errorf("failed to parse version %q", version)
