@@ -114,11 +114,8 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 		})
 		if err != nil {
 			return 0, &db.ErrorWithPosition{
-				Err: errors.Wrap(err, "failed to execute statement"),
-				Start: &storepb.Position{
-					Line:   int32(statement.FirstStatementLine),
-					Column: int32(statement.FirstStatementColumn),
-				},
+				Err:   errors.Wrap(err, "failed to execute statement"),
+				Start: statement.Start,
 				End: &storepb.Position{
 					Line:   int32(statement.LastLine),
 					Column: int32(statement.LastColumn),

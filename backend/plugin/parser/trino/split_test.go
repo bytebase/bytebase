@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 type splitTestData struct {
@@ -37,12 +38,11 @@ func TestTrinoSplitMultiSQL(t *testing.T) {
 						LastColumn: 19,
 					},
 					{
-						Text:                 " SELECT * FROM orders;",
-						BaseLine:             0,
-						FirstStatementLine:   0,
-						FirstStatementColumn: 21,
-						LastLine:             0,
-						LastColumn:           41,
+						Text:       " SELECT * FROM orders;",
+						BaseLine:   0,
+						Start:      &storepb.Position{Line: 0, Column: 21},
+						LastLine:   0,
+						LastColumn: 41,
 					},
 				},
 			},
@@ -68,10 +68,9 @@ func TestTrinoSplitMultiSQL(t *testing.T) {
 				name 
 			FROM users 
 			WHERE status = 'active';`,
-						FirstStatementLine:   2,
-						FirstStatementColumn: 3,
-						LastLine:             6,
-						LastColumn:           26,
+						Start:      &storepb.Position{Line: 2, Column: 3},
+						LastLine:   6,
+						LastColumn: 26,
 					},
 					{
 						Text: `
@@ -79,11 +78,10 @@ func TestTrinoSplitMultiSQL(t *testing.T) {
 			/* This is a multi-line
 			   comment */
 			SELECT * FROM orders;`,
-						BaseLine:             6,
-						FirstStatementLine:   10,
-						FirstStatementColumn: 3,
-						LastLine:             10,
-						LastColumn:           23,
+						BaseLine:   6,
+						Start:      &storepb.Position{Line: 10, Column: 3},
+						LastLine:   10,
+						LastColumn: 23,
 					},
 				},
 			},
@@ -113,11 +111,10 @@ func TestTrinoSplitMultiSQL(t *testing.T) {
 						Text: `
 			
 			SELECT * FROM products;`,
-						BaseLine:             5,
-						FirstStatementLine:   7,
-						FirstStatementColumn: 3,
-						LastLine:             7,
-						LastColumn:           25,
+						BaseLine:   5,
+						Start:      &storepb.Position{Line: 7, Column: 3},
+						LastLine:   7,
+						LastColumn: 25,
 					},
 				},
 			},

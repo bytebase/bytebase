@@ -12,6 +12,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
+	"github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 const (
@@ -610,11 +611,14 @@ func (t *Tokenizer) SplitStandardMultiSQL() ([]base.SingleSQL, error) {
 			text := t.getString(startPos, t.pos()-startPos)
 			if t.f == nil {
 				res = append(res, base.SingleSQL{
-					Text:                 text,
-					LastLine:             t.line - 1,             // Convert to 0-based.
-					FirstStatementLine:   firstStatementLine - 1, // Convert to 0-based.
-					FirstStatementColumn: firstStatementColumn,
-					Empty:                t.emptyStatement,
+					Text:     text,
+					LastLine: t.line - 1, // Convert to 0-based.
+					//TODO(zp/position): fix column, use bytes instead of rune.
+					Start: &store.Position{
+						Line:   int32(firstStatementLine - 1), // Convert to 0-based.
+						Column: int32(firstStatementColumn),
+					},
+					Empty: t.emptyStatement,
 				})
 			}
 			t.skipBlank()
@@ -643,10 +647,13 @@ func (t *Tokenizer) SplitStandardMultiSQL() ([]base.SingleSQL, error) {
 						// but we want to get the line of last line of the SQL
 						// which means the line of ')'.
 						// So we need minus the aboveNonBlankLineDistance.
-						LastLine:             t.line - t.aboveNonBlankLineDistance() - 1, // Convert to 0-based.
-						FirstStatementLine:   firstStatementLine - 1,                     // Convert to 0-based.
-						FirstStatementColumn: firstStatementColumn,
-						Empty:                t.emptyStatement,
+						LastLine: t.line - t.aboveNonBlankLineDistance() - 1, // Convert to 0-based.
+						// TODO(zp/position): fix column, use bytes instead of rune.
+						Start: &store.Position{
+							Line:   int32(firstStatementLine - 1), // Convert to 0-based.
+							Column: int32(firstStatementColumn),
+						},
+						Empty: t.emptyStatement,
 					})
 				}
 				if err := t.processStreaming(s); err != nil {

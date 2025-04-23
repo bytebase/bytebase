@@ -6,6 +6,7 @@ import (
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/plsql-parser"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -61,14 +62,19 @@ func SplitSQL(statement string) ([]base.SingleSQL, error) {
 			}
 
 			result = append(result, base.SingleSQL{
-				Text:                 text,
-				FirstStatementLine:   stmt.GetStart().GetLine(),
-				FirstStatementColumn: stmt.GetStart().GetColumn(),
-				LastLine:             lastLine,
-				LastColumn:           lastColumn,
-				Empty:                base.IsEmpty(tokens.GetAllTokens()[stmt.GetStart().GetTokenIndex():stmt.GetStop().GetTokenIndex()+1], parser.PlSqlParserSEMICOLON),
-				ByteOffsetStart:      byteOffsetStart,
-				ByteOffsetEnd:        byteOffsetEnd,
+				Text: text,
+				Start: common.ConvertANTLRPositionToPosition(
+					&common.ANTLRPosition{
+						Line:   int32(stmt.GetStart().GetLine()),
+						Column: int32(stmt.GetStart().GetColumn()),
+					},
+					statement,
+				),
+				LastLine:        lastLine,
+				LastColumn:      lastColumn,
+				Empty:           base.IsEmpty(tokens.GetAllTokens()[stmt.GetStart().GetTokenIndex():stmt.GetStop().GetTokenIndex()+1], parser.PlSqlParserSEMICOLON),
+				ByteOffsetStart: byteOffsetStart,
+				ByteOffsetEnd:   byteOffsetEnd,
 			})
 			byteOffsetStart = byteOffsetEnd
 			prevStopTokenIndex = stmt.GetStop().GetTokenIndex()

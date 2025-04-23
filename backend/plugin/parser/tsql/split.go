@@ -4,6 +4,7 @@ import (
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/tsql-parser"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/plugin/parser/tokenizer"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -73,13 +74,18 @@ func splitByParser(statement string) ([]base.SingleSQL, error) {
 			pos := goStmt.GetStop().GetTokenIndex()
 			line, col := base.FirstDefaultChannelTokenPosition(tokens[start : pos+1])
 			result = append(result, base.SingleSQL{
-				Text:                 stream.GetTextFromTokens(tokens[start], tokens[pos]),
-				BaseLine:             tokens[start].GetLine() - 1,
-				LastLine:             tokens[pos].GetLine() - 1,
-				LastColumn:           tokens[pos].GetColumn(),
-				FirstStatementLine:   line,
-				FirstStatementColumn: col,
-				Empty:                false,
+				Text:       stream.GetTextFromTokens(tokens[start], tokens[pos]),
+				BaseLine:   tokens[start].GetLine() - 1,
+				LastLine:   tokens[pos].GetLine() - 1,
+				LastColumn: tokens[pos].GetColumn(),
+				Start: common.ConvertANTLRPositionToPosition(
+					&common.ANTLRPosition{
+						Line:   int32(line),
+						Column: int32(col),
+					},
+					statement,
+				),
+				Empty: false,
 			})
 			start = pos + 1
 		}
@@ -89,7 +95,7 @@ func splitByParser(statement string) ([]base.SingleSQL, error) {
 	// First batch_without_go.
 	b := tree.AllBatch_without_go()[0]
 	var r []base.SingleSQL
-	r, start = splitBatchWithoutGo(b, tokens, stream, start)
+	r, start = splitBatchWithoutGo(b, tokens, stream, start, statement)
 	result = append(result, r...)
 
 	goIdx := 0
@@ -111,18 +117,23 @@ func splitByParser(statement string) ([]base.SingleSQL, error) {
 				pos := goStmt.GetStop().GetTokenIndex()
 				line, col := base.FirstDefaultChannelTokenPosition(tokens[start : pos+1])
 				result = append(result, base.SingleSQL{
-					Text:                 stream.GetTextFromTokens(tokens[start], tokens[pos]),
-					BaseLine:             tokens[start].GetLine() - 1,
-					LastLine:             tokens[pos].GetLine() - 1,
-					LastColumn:           tokens[pos].GetColumn(),
-					FirstStatementLine:   line,
-					FirstStatementColumn: col,
-					Empty:                false,
+					Text:       stream.GetTextFromTokens(tokens[start], tokens[pos]),
+					BaseLine:   tokens[start].GetLine() - 1,
+					LastLine:   tokens[pos].GetLine() - 1,
+					LastColumn: tokens[pos].GetColumn(),
+					Start: common.ConvertANTLRPositionToPosition(
+						&common.ANTLRPosition{
+							Line:   int32(line),
+							Column: int32(col),
+						},
+						statement,
+					),
+					Empty: false,
 				})
 				start = pos + 1
 			}
 
-			r, start = splitBatchWithoutGo(b, tokens, stream, start)
+			r, start = splitBatchWithoutGo(b, tokens, stream, start, statement)
 			result = append(result, r...)
 		}
 	}
@@ -133,13 +144,18 @@ func splitByParser(statement string) ([]base.SingleSQL, error) {
 			pos := goStmt.GetStop().GetTokenIndex()
 			line, col := base.FirstDefaultChannelTokenPosition(tokens[start : pos+1])
 			result = append(result, base.SingleSQL{
-				Text:                 stream.GetTextFromTokens(tokens[start], tokens[pos]),
-				BaseLine:             tokens[start].GetLine() - 1,
-				LastLine:             tokens[pos].GetLine() - 1,
-				LastColumn:           tokens[pos].GetColumn(),
-				FirstStatementLine:   line,
-				FirstStatementColumn: col,
-				Empty:                false,
+				Text:       stream.GetTextFromTokens(tokens[start], tokens[pos]),
+				BaseLine:   tokens[start].GetLine() - 1,
+				LastLine:   tokens[pos].GetLine() - 1,
+				LastColumn: tokens[pos].GetColumn(),
+				Start: common.ConvertANTLRPositionToPosition(
+					&common.ANTLRPosition{
+						Line:   int32(line),
+						Column: int32(col),
+					},
+					statement,
+				),
+				Empty: false,
 			})
 			start = pos + 1
 		}
@@ -148,7 +164,7 @@ func splitByParser(statement string) ([]base.SingleSQL, error) {
 	return result, nil
 }
 
-func splitBatchWithoutGo(b parser.IBatch_without_goContext, tokens []antlr.Token, stream *antlr.CommonTokenStream, start int) ([]base.SingleSQL, int) {
+func splitBatchWithoutGo(b parser.IBatch_without_goContext, tokens []antlr.Token, stream *antlr.CommonTokenStream, start int, statement string) ([]base.SingleSQL, int) {
 	var result []base.SingleSQL
 	switch {
 	case b.Batch_level_statement() == nil && b.Execute_body_batch() == nil:
@@ -157,13 +173,18 @@ func splitBatchWithoutGo(b parser.IBatch_without_goContext, tokens []antlr.Token
 			pos := sqlClause.GetStop().GetTokenIndex()
 			line, col := base.FirstDefaultChannelTokenPosition(tokens[start : pos+1])
 			result = append(result, base.SingleSQL{
-				Text:                 stream.GetTextFromTokens(tokens[start], tokens[pos]),
-				BaseLine:             tokens[start].GetLine() - 1,
-				LastLine:             tokens[pos].GetLine() - 1,
-				LastColumn:           tokens[pos].GetColumn(),
-				FirstStatementLine:   line,
-				FirstStatementColumn: col,
-				Empty:                false,
+				Text:       stream.GetTextFromTokens(tokens[start], tokens[pos]),
+				BaseLine:   tokens[start].GetLine() - 1,
+				LastLine:   tokens[pos].GetLine() - 1,
+				LastColumn: tokens[pos].GetColumn(),
+				Start: common.ConvertANTLRPositionToPosition(
+					&common.ANTLRPosition{
+						Line:   int32(line),
+						Column: int32(col),
+					},
+					statement,
+				),
+				Empty: false,
 			})
 			start = pos + 1
 		}
@@ -171,39 +192,54 @@ func splitBatchWithoutGo(b parser.IBatch_without_goContext, tokens []antlr.Token
 		pos := b.Batch_level_statement().GetStop().GetTokenIndex()
 		line, col := base.FirstDefaultChannelTokenPosition(tokens[start : pos+1])
 		result = append(result, base.SingleSQL{
-			Text:                 stream.GetTextFromTokens(tokens[start], tokens[pos]),
-			BaseLine:             tokens[start].GetLine() - 1,
-			LastLine:             tokens[pos].GetLine() - 1,
-			LastColumn:           tokens[pos].GetColumn(),
-			FirstStatementLine:   line,
-			FirstStatementColumn: col,
-			Empty:                false,
+			Text:       stream.GetTextFromTokens(tokens[start], tokens[pos]),
+			BaseLine:   tokens[start].GetLine() - 1,
+			LastLine:   tokens[pos].GetLine() - 1,
+			LastColumn: tokens[pos].GetColumn(),
+			Start: common.ConvertANTLRPositionToPosition(
+				&common.ANTLRPosition{
+					Line:   int32(line),
+					Column: int32(col),
+				},
+				statement,
+			),
+			Empty: false,
 		})
 		start = pos + 1
 	case b.Execute_body_batch() != nil:
 		pos := b.Execute_body_batch().GetStop().GetTokenIndex()
 		line, col := base.FirstDefaultChannelTokenPosition(tokens[start : pos+1])
 		result = append(result, base.SingleSQL{
-			Text:                 stream.GetTextFromTokens(tokens[start], tokens[pos]),
-			BaseLine:             tokens[start].GetLine() - 1,
-			LastLine:             tokens[pos].GetLine() - 1,
-			LastColumn:           tokens[pos].GetColumn(),
-			FirstStatementLine:   line,
-			FirstStatementColumn: col,
-			Empty:                false,
+			Text:       stream.GetTextFromTokens(tokens[start], tokens[pos]),
+			BaseLine:   tokens[start].GetLine() - 1,
+			LastLine:   tokens[pos].GetLine() - 1,
+			LastColumn: tokens[pos].GetColumn(),
+			Start: common.ConvertANTLRPositionToPosition(
+				&common.ANTLRPosition{
+					Line:   int32(line),
+					Column: int32(col),
+				},
+				statement,
+			),
+			Empty: false,
 		})
 		start = pos + 1
 		for _, sqlClause := range b.AllSql_clauses() {
 			pos := sqlClause.GetStop().GetTokenIndex()
 			line, col := base.FirstDefaultChannelTokenPosition(tokens[start : pos+1])
 			result = append(result, base.SingleSQL{
-				Text:                 stream.GetTextFromTokens(tokens[start], tokens[pos]),
-				BaseLine:             tokens[start].GetLine() - 1,
-				LastLine:             tokens[pos].GetLine() - 1,
-				LastColumn:           tokens[pos].GetColumn(),
-				FirstStatementLine:   line,
-				FirstStatementColumn: col,
-				Empty:                false,
+				Text:       stream.GetTextFromTokens(tokens[start], tokens[pos]),
+				BaseLine:   tokens[start].GetLine() - 1,
+				LastLine:   tokens[pos].GetLine() - 1,
+				LastColumn: tokens[pos].GetColumn(),
+				Start: common.ConvertANTLRPositionToPosition(
+					&common.ANTLRPosition{
+						Line:   int32(line),
+						Column: int32(col),
+					},
+					statement,
+				),
+				Empty: false,
 			})
 			start = pos + 1
 		}

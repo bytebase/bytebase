@@ -15,12 +15,8 @@ type SingleSQL struct {
 	// BaseLine is the line number of the first line of the SQL in the original SQL.
 	// HINT: ZERO based.
 	BaseLine int
-	// FirstStatementLine is the line number of the first non-comment and non-blank line of the SQL in the original SQL.
-	// HINT: ZERO based.
-	FirstStatementLine int
-	// FirstStatementColumn is the column number of the first non-comment and non-blank line of the SQL in the original SQL.
-	// HINT: ZERO based.
-	FirstStatementColumn int
+	// The inclusive start position of the SQL starts in the original SQL.
+	Start *storepb.Position
 	// LastLine is the line number of the last line of the SQL in the original SQL.
 	// HINT: ZERO based.
 	LastLine int
