@@ -11,7 +11,7 @@
             v-if="isCreating"
             v-model:value="state.memberList"
             :required="true"
-            :include-all-users="false"
+            :include-all-users="true"
             :include-service-account="true"
           />
           <div v-else class="w-full space-y-2">
@@ -81,6 +81,7 @@ import {
   pushNotification,
   useWorkspaceV1Store,
 } from "@/store";
+import { PresetRoleType } from "@/types";
 import MembersBindingSelect from "./MembersBindingSelect.vue";
 import { type MemberBinding } from "./types";
 
@@ -186,7 +187,8 @@ const handleRevoke = async () => {
   await workspaceStore.patchIamPolicy([
     {
       member: memberListInBinding.value[0],
-      roles: [],
+      // TODO(ed): no default member role.
+      roles: [PresetRoleType.WORKSPACE_MEMBER],
     },
   ]);
   pushNotification({
