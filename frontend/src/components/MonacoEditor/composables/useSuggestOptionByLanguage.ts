@@ -1,28 +1,27 @@
-import type monaco from "monaco-editor";
-import type { ISuggestOptions } from "vscode/vscode/vs/editor/common/config/editorOptions";
+import { editor } from "monaco-editor";
 import { watchEffect } from "vue";
 import type { MonacoModule } from "../types";
 import { useTextModelLanguage } from "./common";
 
 export const useSuggestOptionByLanguage = (
   monaco: MonacoModule,
-  editor: monaco.editor.IStandaloneCodeEditor
+  editor: editor.IStandaloneCodeEditor
 ) => {
   const language = useTextModelLanguage(editor);
 
-  const defaultSuggestOption: ISuggestOptions = {
+  const defaultSuggestOption: editor.ISuggestOptions = {
     ...editor.getOption(monaco.editor.EditorOption.suggest),
     preview: true,
   };
 
   watchEffect(() => {
     if (language.value === "javascript") {
-      // Disable default auto-complete suggestions for javascript (MongoDB)
+      // Disable default auto-complete suggestions for javascript (MongoDB).
       editor.updateOptions({
         suggest: overrideAllFields(defaultSuggestOption, false),
       });
     } else {
-      // Enable built-in auto-complete suggestions otherwise
+      // Enable built-in auto-complete suggestions otherwise.
       editor.updateOptions({
         suggest: defaultSuggestOption,
       });

@@ -52,6 +52,7 @@
 
 <script lang="ts" setup>
 import dayjs from "dayjs";
+import * as monaco from "monaco-editor";
 import { NPopover } from "naive-ui";
 import {
   onMounted,
@@ -85,7 +86,7 @@ import {
   useOverrideSuggestIcons,
   type FormatContentOptions,
 } from "./composables";
-import monaco, { createMonacoEditor } from "./editor";
+import { createMonacoEditor } from "./editor";
 import type {
   AdviceOption,
   IStandaloneCodeEditor,
@@ -185,6 +186,13 @@ onMounted(async () => {
         ...props.options,
       },
     });
+
+    console.log("asdasda", {
+      options: {
+        readOnly: props.readonly,
+        ...props.options,
+      },
+    });
     editorRef.value = editor;
 
     // Use "plugin" composable features
@@ -262,5 +270,9 @@ defineExpose({
 }
 .bb-monaco-editor :deep(.monaco-editor .peekview-title .dirname) {
   margin-left: 0 !important;
+}
+.bb-monaco-editor :deep(.monaco-editor) {
+  outline: none !important;
+  box-shadow: none !important;
 }
 </style>

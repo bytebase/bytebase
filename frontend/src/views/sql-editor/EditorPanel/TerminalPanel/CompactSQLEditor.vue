@@ -277,7 +277,7 @@ useEmitteryEventListener(editorEvents, "format-content", () => {
 
 const EDITOR_OPTIONS = computed<Editor.IStandaloneEditorConstructionOptions>(
   () => ({
-    theme: "bb-dark",
+    theme: "vs-dark",
     minimap: {
       enabled: false,
     },

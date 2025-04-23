@@ -1,25 +1,10 @@
-import { buildWorkerDefinition } from "monaco-editor-workers";
-import "monaco-editor/esm/vs/basic-languages/javascript/javascript.contribution.js";
-import "monaco-editor/esm/vs/basic-languages/redis/redis.contribution.js";
-import "monaco-editor/esm/vs/basic-languages/sql/sql.contribution.js";
-import "monaco-editor/esm/vs/basic-languages/typescript/typescript.contribution.js";
-import "monaco-editor/esm/vs/editor/editor.all.js";
-import * as monaco from "monaco-editor/esm/vs/editor/editor.api.js";
-import "monaco-editor/esm/vs/editor/standalone/browser/standaloneCodeEditorService";
-import "monaco-editor/esm/vs/language/typescript/monaco.contribution.js";
+import * as monaco from "monaco-editor";
 import { defer } from "@/utils";
 import { initializeMonacoServices } from "./services";
-import { getBBTheme } from "./themes/bb";
-import { getBBDarkTheme } from "./themes/bb-dark";
-import type { MonacoModule } from "./types";
-
-export default monaco as MonacoModule;
 
 const state = {
   themeInitialized: false,
 };
-
-buildWorkerDefinition("/monaco-workers", import.meta.url, true);
 
 const MonacoEditorReadyDefer = defer<void>();
 
@@ -28,21 +13,11 @@ export const MonacoEditorReady = MonacoEditorReadyDefer.promise;
 const initializeTheme = () => {
   if (state.themeInitialized) return;
 
-  monaco.editor.defineTheme("bb", getBBTheme());
-  monaco.editor.defineTheme("bb-dark", getBBDarkTheme());
-
   state.themeInitialized = true;
 };
 
 const initialize = async () => {
   await initializeMonacoServices();
-
-  try {
-    const { initializeLSPClient } = await import("./lsp-client");
-    await initializeLSPClient();
-  } catch (err) {
-    console.error("[MonacoEditor] initialize", err);
-  }
   initializeTheme();
 };
 
@@ -52,11 +27,31 @@ export const createMonacoEditor = async (config: {
 }): Promise<monaco.editor.IStandaloneCodeEditor> => {
   await initialize();
 
+  // Initialize LSP client.
+  try {
+    const { initializeLSPClient } = await import("./lsp-client");
+    await initializeLSPClient();
+  } catch (err) {
+    console.error("[MonacoEditor] Failed to initialize LSP client", err);
+  }
+
   // create monaco editor
   const editor = monaco.editor.create(config.container, {
     ...defaultEditorOptions(),
     ...config.options,
   });
+
+  console.log(
+    "[MonacoEditor] Editor created",
+    {
+      ...defaultEditorOptions(),
+      ...config.options,
+    },
+    {
+      ...defaultEditorOptions(),
+      ...config.options,
+    }.lineNumbers
+  );
 
   MonacoEditorReadyDefer.resolve(undefined);
 
@@ -87,7 +82,7 @@ export const defaultEditorOptions =
       renderValidationDecorations: "on",
       // Learn more: https://github.com/microsoft/monaco-editor/issues/4270
       accessibilitySupport: "off",
-      theme: "bb",
+      theme: "vs",
       tabSize: 2,
       insertSpaces: true,
       autoClosingQuotes: "never",
@@ -126,7 +121,7 @@ export const defaultDiffEditorOptions =
       // Learn more: https://github.com/microsoft/monaco-editor/issues/4270
       accessibilitySupport: "off",
       renderValidationDecorations: "on",
-      theme: "bb",
+      theme: "vs",
       autoClosingQuotes: "never",
       folding: false,
       automaticLayout: true,
