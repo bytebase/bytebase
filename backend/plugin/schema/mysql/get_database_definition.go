@@ -616,7 +616,7 @@ func writeTable(out *strings.Builder, table *storepb.TableMetadata) error {
 				return err
 			}
 		}
-		if err := printColumnClause(out, column); err != nil {
+		if err := printColumnClause(out, column, table); err != nil {
 			return err
 		}
 	}
@@ -1104,18 +1104,18 @@ func isAutoIncrement(column *storepb.ColumnMetadata) bool {
 	return strings.EqualFold(column.GetDefaultExpression(), autoIncrementSymbol)
 }
 
-func printColumnClause(buf *strings.Builder, column *storepb.ColumnMetadata) error {
+func printColumnClause(buf *strings.Builder, column *storepb.ColumnMetadata, table *storepb.TableMetadata) error {
 	if _, err := fmt.Fprintf(buf, "  `%s` %s", column.Name, column.Type); err != nil {
 		return err
 	}
 
-	if column.CharacterSet != "" {
+	if column.CharacterSet != "" && column.CharacterSet != table.Charset {
 		if _, err := fmt.Fprintf(buf, " CHARACTER SET %s", column.CharacterSet); err != nil {
 			return err
 		}
 	}
 
-	if column.Collation != "" {
+	if column.Collation != "" && column.Collation != table.Collation {
 		if _, err := fmt.Fprintf(buf, " COLLATE %s", column.Collation); err != nil {
 			return err
 		}
@@ -1137,11 +1137,7 @@ func printColumnClause(buf *strings.Builder, column *storepb.ColumnMetadata) err
 		}
 	}
 
-	if column.Nullable {
-		if _, err := fmt.Fprintf(buf, " NULL"); err != nil {
-			return err
-		}
-	} else {
+	if !column.Nullable {
 		if _, err := fmt.Fprintf(buf, " NOT NULL"); err != nil {
 			return err
 		}
