@@ -1405,10 +1405,6 @@
                   <a href="#bytebase.store.TaskRunResult"><span class="badge">M</span>TaskRunResult</a>
                 </li>
               
-                <li>
-                  <a href="#bytebase.store.TaskRunResult.Position"><span class="badge">M</span>TaskRunResult.Position</a>
-                </li>
-              
               
               
               
@@ -12246,14 +12242,14 @@ Format: instances/{instance}/databases/{database} </p></td>
               
                 <tr>
                   <td>start_position</td>
-                  <td><a href="#bytebase.store.TaskRunResult.Position">TaskRunResult.Position</a></td>
+                  <td><a href="#bytebase.store.Position">Position</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>The following fields are used for error reporting. </p></td>
                 </tr>
               
                 <tr>
                   <td>end_position</td>
-                  <td><a href="#bytebase.store.TaskRunResult.Position">TaskRunResult.Position</a></td>
+                  <td><a href="#bytebase.store.Position">Position</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
@@ -12270,37 +12266,6 @@ Format: instances/{instance}/databases/{database} </p></td>
                   <td><a href="#bytebase.store.PriorBackupDetail">PriorBackupDetail</a></td>
                   <td></td>
                   <td><p>The prior backup detail that will be used to rollback the task run. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.store.TaskRunResult.Position">TaskRunResult.Position</h3>
-        <p>The following fields are used for error reporting.</p><p>TODO(zp): Use common Position instead.</p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>line</td>
-                  <td><a href="#int32">int32</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>column</td>
-                  <td><a href="#int32">int32</a></td>
-                  <td></td>
-                  <td><p> </p></td>
                 </tr>
               
             </tbody>
