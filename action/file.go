@@ -29,7 +29,7 @@ func getReleaseFiles(pattern string) ([]*v1pb.Release_File, error) {
 			t = v1pb.Release_File_DDL_GHOST
 		}
 		version := ""
-		fields := strings.Fields(base)
+		fields := strings.Split(base, "_")
 		if len(fields) > 0 {
 			version = fields[0]
 		}
