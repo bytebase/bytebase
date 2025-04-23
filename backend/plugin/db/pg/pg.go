@@ -494,11 +494,11 @@ func (d *Driver) tryExecute(
 
 					return &db.ErrorWithPosition{
 						Err: errors.Wrapf(err, "failed to execute context in a transaction"),
-						Start: &storepb.TaskRunResult_Position{
+						Start: &storepb.Position{
 							Line:   int32(command.FirstStatementLine),
 							Column: int32(command.FirstStatementColumn),
 						},
-						End: &storepb.TaskRunResult_Position{
+						End: &storepb.Position{
 							Line:   int32(command.LastLine),
 							Column: int32(command.LastColumn),
 						},
