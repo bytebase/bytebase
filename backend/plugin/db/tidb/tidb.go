@@ -132,24 +132,25 @@ func (d *Driver) GetDB() *sql.DB {
 }
 
 // getVersion gets the version.
-func (d *Driver) getVersion(ctx context.Context) (string, string, error) {
+func (d *Driver) getVersion(ctx context.Context) (string, error) {
 	query := "SELECT VERSION()"
 	var version string
 	if err := d.db.QueryRowContext(ctx, query).Scan(&version); err != nil {
 		if err == sql.ErrNoRows {
-			return "", "", common.FormatDBErrorEmptyRowWithQuery(query)
+			return "", common.FormatDBErrorEmptyRowWithQuery(query)
 		}
-		return "", "", util.FormatErrorWithQuery(err, query)
+		return "", util.FormatErrorWithQuery(err, query)
 	}
 
 	return parseVersion(version)
 }
 
-func parseVersion(version string) (string, string, error) {
-	if loc := regexp.MustCompile(`^\d+.\d+.\d+`).FindStringIndex(version); loc != nil {
-		return version[loc[0]:loc[1]], version[loc[1]:], nil
+func parseVersion(version string) (string, error) {
+	// Examples: 8.0.11-TiDB-v8.5.0, 8.0.11-TiDB-v7.5.2-serverless.
+	if loc := regexp.MustCompile(`v\d+\.\d+\.\d+`).FindStringIndex(version); loc != nil {
+		return version[loc[0]:loc[1]], nil
 	}
-	return "", "", errors.Errorf("failed to parse version %q", version)
+	return "", errors.Errorf("failed to parse version %q", version)
 }
 
 // Execute executes a SQL statement.
