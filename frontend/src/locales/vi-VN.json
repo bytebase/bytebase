@@ -1736,7 +1736,7 @@
     "rows": "dòng | dòng",
     "vertical-display": "Hiển thị dọc",
     "no-history-found": "Không tìm thấy lịch sử",
-    "search-history": "Tìm kiếm Lịch sử",
+    "search-history-by-statement": "Tìm kiếm theo câu lệnh",
     "binary-format": "Định dạng nhị phân",
     "hex-format": "Định dạng thập lục phân",
     "boolean-format": "Định dạng Boolean",

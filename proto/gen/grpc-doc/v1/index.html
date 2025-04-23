@@ -24571,16 +24571,22 @@ Provide this to retrieve the subsequent page. </p></td>
                   <td>filter</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>filter is the filter to apply on the search query history,
-follow the
-[ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form)
-syntax. Support filter by:
-- database, for example:
-   database = &#34;instances/{instance}/databases/{database}&#34;
-- instance, for example:
-   instance = &#34;instances/{instance}&#34;
-- type, for example:
-   type = &#34;QUERY&#34; </p></td>
+                  <td><p>Filter is the filter to apply on the search query history
+Supported filter:
+- project
+- database
+- instance
+- type
+- statement
+
+For example:
+project == &#34;projects/{project}&#34;
+database == &#34;instances/{instance}/databases/{database}&#34;
+instance == &#34;instances/{instance}&#34;
+type == &#34;QUERY&#34;
+type == &#34;EXPORT&#34;
+statement.matches(&#34;select&#34;)
+type == &#34;QUERY&#34; &amp;&amp; statement.matches(&#34;select&#34;) </p></td>
                 </tr>
               
             </tbody>
