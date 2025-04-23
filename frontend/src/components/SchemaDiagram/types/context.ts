@@ -29,6 +29,8 @@ export type SchemaDiagramContext = {
   panning: Ref<boolean>;
   geometries: Ref<Set<Geometry>>;
   focusedTables: Ref<Set<TableMetadata>>;
+  selectedSchemaNames: Ref<string[]>;
+  selectedSchemas: Ref<SchemaMetadata[]>;
 
   // Methods
   idOfTable: (table: TableMetadata) => string;
