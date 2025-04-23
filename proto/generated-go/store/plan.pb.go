@@ -92,7 +92,6 @@ func (PlanConfig_ChangeDatabaseConfig_Type) EnumDescriptor() ([]byte, []int) {
 type PlanConfig struct {
 	state         protoimpl.MessageState    `protogen:"open.v1"`
 	Steps         []*PlanConfig_Step        `protobuf:"bytes,1,rep,name=steps,proto3" json:"steps,omitempty"`
-	Haahah        string                    `protobuf:"bytes,102,opt,name=haahah,proto3" json:"haahah,omitempty"`
 	ReleaseSource *PlanConfig_ReleaseSource `protobuf:"bytes,3,opt,name=release_source,json=releaseSource,proto3" json:"release_source,omitempty"`
 	Deployment    *PlanConfig_Deployment    `protobuf:"bytes,4,opt,name=deployment,proto3" json:"deployment,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -134,13 +133,6 @@ func (x *PlanConfig) GetSteps() []*PlanConfig_Step {
 		return x.Steps
 	}
 	return nil
-}
-
-func (x *PlanConfig) GetHaahah() string {
-	if x != nil {
-		return x.Haahah
-	}
-	return ""
 }
 
 func (x *PlanConfig) GetReleaseSource() *PlanConfig_ReleaseSource {
@@ -826,11 +818,10 @@ var File_store_plan_proto protoreflect.FileDescriptor
 
 const file_store_plan_proto_rawDesc = "" +
 	"\n" +
-	"\x10store/plan.proto\x12\x0ebytebase.store\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x12store/common.proto\x1a\x1astore/plan_check_run.proto\"\xf6\x11\n" +
+	"\x10store/plan.proto\x12\x0ebytebase.store\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x12store/common.proto\x1a\x1astore/plan_check_run.proto\"\xde\x11\n" +
 	"\n" +
 	"PlanConfig\x125\n" +
-	"\x05steps\x18\x01 \x03(\v2\x1f.bytebase.store.PlanConfig.StepR\x05steps\x12\x16\n" +
-	"\x06haahah\x18f \x01(\tR\x06haahah\x12O\n" +
+	"\x05steps\x18\x01 \x03(\v2\x1f.bytebase.store.PlanConfig.StepR\x05steps\x12O\n" +
 	"\x0erelease_source\x18\x03 \x01(\v2(.bytebase.store.PlanConfig.ReleaseSourceR\rreleaseSource\x12E\n" +
 	"\n" +
 	"deployment\x18\x04 \x01(\v2%.bytebase.store.PlanConfig.DeploymentR\n" +

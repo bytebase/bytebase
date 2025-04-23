@@ -2967,7 +2967,6 @@ InstanceRole is the API message for instance role.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | steps | [PlanConfig.Step](#bytebase-store-PlanConfig-Step) | repeated |  |
-| haahah | [string](#string) |  |  |
 | release_source | [PlanConfig.ReleaseSource](#bytebase-store-PlanConfig-ReleaseSource) |  |  |
 | deployment | [PlanConfig.Deployment](#bytebase-store-PlanConfig-Deployment) |  |  |
 

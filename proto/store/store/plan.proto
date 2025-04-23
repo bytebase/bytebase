@@ -13,8 +13,6 @@ option go_package = "generated-go/store";
 message PlanConfig {
   repeated Step steps = 1;
 
-  string haahah = 102;
-
   ReleaseSource release_source = 3;
 
   Deployment deployment = 4;
