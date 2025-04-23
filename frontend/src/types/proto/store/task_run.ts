@@ -17,23 +17,15 @@ export interface TaskRunResult {
   /** Format: instances/{instance}/databases/{database}/changelogs/{changelog} */
   changelog: string;
   version: string;
-  startPosition: TaskRunResult_Position | undefined;
+  /** The following fields are used for error reporting. */
+  startPosition: Position | undefined;
   endPosition:
-    | TaskRunResult_Position
+    | Position
     | undefined;
   /** The uid of the export archive. */
   exportArchiveUid: number;
   /** The prior backup detail that will be used to rollback the task run. */
   priorBackupDetail: PriorBackupDetail | undefined;
-}
-
-/**
- * The following fields are used for error reporting.
- * TODO(zp): Use common Position instead.
- */
-export interface TaskRunResult_Position {
-  line: number;
-  column: number;
 }
 
 export interface PriorBackupDetail {
@@ -95,10 +87,10 @@ export const TaskRunResult: MessageFns<TaskRunResult> = {
       writer.uint32(26).string(message.version);
     }
     if (message.startPosition !== undefined) {
-      TaskRunResult_Position.encode(message.startPosition, writer.uint32(34).fork()).join();
+      Position.encode(message.startPosition, writer.uint32(34).fork()).join();
     }
     if (message.endPosition !== undefined) {
-      TaskRunResult_Position.encode(message.endPosition, writer.uint32(42).fork()).join();
+      Position.encode(message.endPosition, writer.uint32(42).fork()).join();
     }
     if (message.exportArchiveUid !== 0) {
       writer.uint32(48).int32(message.exportArchiveUid);
@@ -145,7 +137,7 @@ export const TaskRunResult: MessageFns<TaskRunResult> = {
             break;
           }
 
-          message.startPosition = TaskRunResult_Position.decode(reader, reader.uint32());
+          message.startPosition = Position.decode(reader, reader.uint32());
           continue;
         }
         case 5: {
@@ -153,7 +145,7 @@ export const TaskRunResult: MessageFns<TaskRunResult> = {
             break;
           }
 
-          message.endPosition = TaskRunResult_Position.decode(reader, reader.uint32());
+          message.endPosition = Position.decode(reader, reader.uint32());
           continue;
         }
         case 6: {
@@ -186,8 +178,8 @@ export const TaskRunResult: MessageFns<TaskRunResult> = {
       detail: isSet(object.detail) ? globalThis.String(object.detail) : "",
       changelog: isSet(object.changelog) ? globalThis.String(object.changelog) : "",
       version: isSet(object.version) ? globalThis.String(object.version) : "",
-      startPosition: isSet(object.startPosition) ? TaskRunResult_Position.fromJSON(object.startPosition) : undefined,
-      endPosition: isSet(object.endPosition) ? TaskRunResult_Position.fromJSON(object.endPosition) : undefined,
+      startPosition: isSet(object.startPosition) ? Position.fromJSON(object.startPosition) : undefined,
+      endPosition: isSet(object.endPosition) ? Position.fromJSON(object.endPosition) : undefined,
       exportArchiveUid: isSet(object.exportArchiveUid) ? globalThis.Number(object.exportArchiveUid) : 0,
       priorBackupDetail: isSet(object.priorBackupDetail)
         ? PriorBackupDetail.fromJSON(object.priorBackupDetail)
@@ -207,10 +199,10 @@ export const TaskRunResult: MessageFns<TaskRunResult> = {
       obj.version = message.version;
     }
     if (message.startPosition !== undefined) {
-      obj.startPosition = TaskRunResult_Position.toJSON(message.startPosition);
+      obj.startPosition = Position.toJSON(message.startPosition);
     }
     if (message.endPosition !== undefined) {
-      obj.endPosition = TaskRunResult_Position.toJSON(message.endPosition);
+      obj.endPosition = Position.toJSON(message.endPosition);
     }
     if (message.exportArchiveUid !== 0) {
       obj.exportArchiveUid = Math.round(message.exportArchiveUid);
@@ -230,91 +222,15 @@ export const TaskRunResult: MessageFns<TaskRunResult> = {
     message.changelog = object.changelog ?? "";
     message.version = object.version ?? "";
     message.startPosition = (object.startPosition !== undefined && object.startPosition !== null)
-      ? TaskRunResult_Position.fromPartial(object.startPosition)
+      ? Position.fromPartial(object.startPosition)
       : undefined;
     message.endPosition = (object.endPosition !== undefined && object.endPosition !== null)
-      ? TaskRunResult_Position.fromPartial(object.endPosition)
+      ? Position.fromPartial(object.endPosition)
       : undefined;
     message.exportArchiveUid = object.exportArchiveUid ?? 0;
     message.priorBackupDetail = (object.priorBackupDetail !== undefined && object.priorBackupDetail !== null)
       ? PriorBackupDetail.fromPartial(object.priorBackupDetail)
       : undefined;
-    return message;
-  },
-};
-
-function createBaseTaskRunResult_Position(): TaskRunResult_Position {
-  return { line: 0, column: 0 };
-}
-
-export const TaskRunResult_Position: MessageFns<TaskRunResult_Position> = {
-  encode(message: TaskRunResult_Position, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.line !== 0) {
-      writer.uint32(8).int32(message.line);
-    }
-    if (message.column !== 0) {
-      writer.uint32(16).int32(message.column);
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): TaskRunResult_Position {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseTaskRunResult_Position();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 8) {
-            break;
-          }
-
-          message.line = reader.int32();
-          continue;
-        }
-        case 2: {
-          if (tag !== 16) {
-            break;
-          }
-
-          message.column = reader.int32();
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): TaskRunResult_Position {
-    return {
-      line: isSet(object.line) ? globalThis.Number(object.line) : 0,
-      column: isSet(object.column) ? globalThis.Number(object.column) : 0,
-    };
-  },
-
-  toJSON(message: TaskRunResult_Position): unknown {
-    const obj: any = {};
-    if (message.line !== 0) {
-      obj.line = Math.round(message.line);
-    }
-    if (message.column !== 0) {
-      obj.column = Math.round(message.column);
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<TaskRunResult_Position>): TaskRunResult_Position {
-    return TaskRunResult_Position.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<TaskRunResult_Position>): TaskRunResult_Position {
-    const message = createBaseTaskRunResult_Position();
-    message.line = object.line ?? 0;
-    message.column = object.column ?? 0;
     return message;
   },
 };
