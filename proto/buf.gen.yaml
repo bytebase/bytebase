@@ -1,4 +1,5 @@
 version: v2
+clean: true
 plugins:
   - remote: buf.build/protocolbuffers/go
     out: generated-go
@@ -12,6 +13,18 @@ plugins:
   - remote: buf.build/community/pseudomuto-doc:v1.5.1
     out: gen/grpc-doc
     opt: markdown,README.md,source_relative
+  - remote: buf.build/community/stephenh-ts-proto:v2.3.0
+    out: ../frontend/src/types/proto
+    opt:
+      - env=browser
+      - outputServices=generic-definitions
+      - useExactTypes=false
+      - esModuleInterop=true
+      - forceLong=long
+      - stringEnums=true
+      - useDate=false
+    types:
+      - bytebase.v1
   - remote: buf.build/community/pseudomuto-doc:v1.5.1
     out: gen/grpc-doc
     opt: html,index.html,source_relative
