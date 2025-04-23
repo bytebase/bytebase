@@ -2,8 +2,8 @@
 // versions:
 //   protoc-gen-ts_proto  v2.3.0
 //   protoc               unknown
-// source: google/api/client.proto
+// source: store/data_source.proto
 
 /* eslint-disable */
 
-export const protobufPackage = "google.api";
+export const protobufPackage = "bytebase.store";
