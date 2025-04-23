@@ -952,7 +952,7 @@ type Project struct {
 	// Whether to skip backup errors and continue the data migration.
 	SkipBackupErrors bool `protobuf:"varint,19,opt,name=skip_backup_errors,json=skipBackupErrors,proto3" json:"skip_backup_errors,omitempty"`
 	// Whether to enable the database tenant mode for PostgreSQL.
-	// If enabled, the issue will be created with the pre-appended "set role <db_owner>" statement.
+	// If enabled, the issue will be created with the prepend "set role <db_owner>" statement.
 	PostgresDatabaseTenantMode bool `protobuf:"varint,20,opt,name=postgres_database_tenant_mode,json=postgresDatabaseTenantMode,proto3" json:"postgres_database_tenant_mode,omitempty"`
 	// Whether to allow the issue creator to self-approve the issue.
 	AllowSelfApproval bool `protobuf:"varint,21,opt,name=allow_self_approval,json=allowSelfApproval,proto3" json:"allow_self_approval,omitempty"`
