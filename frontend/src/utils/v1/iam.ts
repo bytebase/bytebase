@@ -4,6 +4,7 @@ import { roleNamePrefix, userNamePrefix } from "@/store/modules/v1/common";
 import {
   PresetRoleType,
   groupBindingPrefix,
+  ALL_USERS_USER_EMAIL,
 } from "@/types";
 import type { IamPolicy, Binding } from "@/types/proto/v1/iam_policy";
 import { convertFromExpr } from "@/utils/issue/cel";
@@ -123,11 +124,14 @@ export const roleListInIAM = ({
         return false;
       }
       const emailList = getUserEmailListInBinding({ binding, ignoreGroup });
-      return emailList.includes(email);
+      return (
+        emailList.includes(ALL_USERS_USER_EMAIL) || emailList.includes(email)
+      );
     })
     .map((binding) => binding.role);
 
   if (!roles.some((role) => role.startsWith(`${roleNamePrefix}workspace`))) {
+    // TODO(ed): no default workspace member role.
     roles.push(PresetRoleType.WORKSPACE_MEMBER);
   }
 
