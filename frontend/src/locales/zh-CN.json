@@ -987,6 +987,10 @@
       "create-database": "创建数据库",
       "request-querier-role": "申请查询者角色",
       "request-exporter-role": "申请导出者角色"
+    },
+    "schema-drift-detected": {
+      "self": "检测到 Schema 偏差",
+      "description": "所选数据库存在 Schema 偏差，请在变更前确保该偏差符合预期。"
     }
   },
   "quick-action": {
@@ -1492,9 +1496,14 @@
     },
     "not-found": "找不到数据库",
     "drifted": {
+      "self": "Schema 偏差",
       "schema-drift-detected": {
         "self": "检测到 Schema 偏差",
         "description": "当前数据库 Schema 与 Bytebase 中记录的 Schema 不一致。请及时检查并修复以避免潜在问题。"
+      },
+      "new-baseline": {
+        "self": "建立新基线",
+        "successfully-established": "成功建立新的基线"
       }
     }
   },
@@ -1631,6 +1640,10 @@
         "max-retries": {
           "self": "锁超时的最大重试数",
           "description": "运行任务时锁超时的最大重试数。默认值为0。"
+        },
+        "ci-sampling-size": {
+          "self": "CI 数据采样大小",
+          "description": "在CI数据验证期间，要采样的数据库数量的最大数量。\n禁用（零）时，将执行完整验证。"
         }
       }
     },
@@ -1723,7 +1736,7 @@
     "rows": "条记录",
     "vertical-display": "竖向展示",
     "no-history-found": "暂无历史记录",
-    "search-history": "搜索历史记录",
+    "search-history-by-statement": "搜索 SQL 语句",
     "binary-format": "二进制格式",
     "hex-format": "十六进制格式",
     "boolean-format": "布尔格式",

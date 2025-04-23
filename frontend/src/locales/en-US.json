@@ -987,6 +987,10 @@
       "create-database": "Create database",
       "request-querier-role": "Request querier role",
       "request-exporter-role": "Request exporter role"
+    },
+    "schema-drift-detected": {
+      "self": "Schema drift detected",
+      "description": "The selected database(s) has schema drift. Please make sure the drift is expected and safe to apply."
     }
   },
   "quick-action": {
@@ -1492,9 +1496,14 @@
     },
     "not-found": "Cannot found the database",
     "drifted": {
+      "self": "Schema drifted",
       "schema-drift-detected": {
         "self": "Schema drift detected",
         "description": "The schema is different from the last applied schema. This may cause application errors and should be resolved."
+      },
+      "new-baseline": {
+        "self": "New baseline",
+        "successfully-established": "Successfully established new baseline"
       }
     }
   },
@@ -1631,6 +1640,10 @@
         "max-retries": {
           "self": "Maximum retries count for lock timeout",
           "description": "The maximum retries count for lock timeout when running the task. The default value is 0."
+        },
+        "ci-sampling-size": {
+          "self": "CI Data Sampling Size",
+          "description": "The maximum number of databases to sample during CI data validation. When disabled (zero), full validation will be performed."
         }
       }
     },
@@ -1723,7 +1736,7 @@
     "rows": "row | rows",
     "vertical-display": "Vertical display",
     "no-history-found": "No history found",
-    "search-history": "Search History",
+    "search-history-by-statement": "Search by statement",
     "binary-format": "Binary format",
     "hex-format": "Hexadecimal format",
     "boolean-format": "Boolean format",

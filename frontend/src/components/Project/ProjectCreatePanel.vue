@@ -82,7 +82,6 @@ interface LocalState {
 }
 
 const props = defineProps<{
-  simple?: boolean;
   onCreated?: (project: ComposedProject) => void;
 }>();
 

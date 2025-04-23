@@ -273,7 +273,7 @@ func (s *PlanService) CreatePlan(ctx context.Context, request *v1pb.CreatePlanRe
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to get plan check runs for plan, error: %v", err)
 		}
-		if err := s.store.CreatePlanCheckRuns(ctx, planCheckRuns...); err != nil {
+		if err := s.store.CreatePlanCheckRuns(ctx, plan, planCheckRuns...); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to create plan check runs, error: %v", err)
 		}
 	}
@@ -783,7 +783,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to get plan check runs for plan, error: %v", err)
 		}
-		if err := s.store.CreatePlanCheckRuns(ctx, planCheckRuns...); err != nil {
+		if err := s.store.CreatePlanCheckRuns(ctx, updatedPlan, planCheckRuns...); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to create plan check runs, error: %v", err)
 		}
 	}
@@ -802,8 +802,7 @@ func (s *PlanService) ListPlanCheckRuns(ctx context.Context, request *v1pb.ListP
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	planCheckRuns, err := s.store.ListPlanCheckRuns(ctx, &store.FindPlanCheckRunMessage{
-		PlanUID:    &planUID,
-		LatestOnly: request.LatestOnly,
+		PlanUID: &planUID,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to list plan check runs, error: %v", err)
@@ -846,7 +845,7 @@ func (s *PlanService) RunPlanChecks(ctx context.Context, request *v1pb.RunPlanCh
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get plan check runs for plan, error: %v", err)
 	}
-	if err := s.store.CreatePlanCheckRuns(ctx, planCheckRuns...); err != nil {
+	if err := s.store.CreatePlanCheckRuns(ctx, plan, planCheckRuns...); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to create plan check runs, error: %v", err)
 	}
 

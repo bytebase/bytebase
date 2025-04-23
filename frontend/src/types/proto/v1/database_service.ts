@@ -129,6 +129,7 @@ export interface ListDatabasesRequest {
    * - engine
    * - label
    * - exclude_unassigned: Not show unassigned databases if specified
+   * - drifted
    *
    * For example:
    * environment == "environments/{environment resource id}"
@@ -142,6 +143,7 @@ export interface ListDatabasesRequest {
    * label == "tenant:asia,europe"
    * label == "region:asia" && label == "tenant:bytebase"
    * exclude_unassigned == true
+   * drifted == true
    * You can combine filter conditions like:
    * environment == "environments/prod" && name.matches("employee")
    */
@@ -201,7 +203,7 @@ export interface BatchSyncDatabasesRequest {
    * If the operation spans parents, a dash (-) may be accepted as a wildcard.
    */
   parent: string;
-  /** The list of database names to retrieve. */
+  /** The list of database names to sync. */
   names: string[];
 }
 

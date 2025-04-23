@@ -54,6 +54,7 @@ type FindQueryHistoryMessage struct {
 
 	Limit  *int
 	Offset *int
+	Filter *ListResourceFilter
 }
 
 // CreateQueryHistory creates the query history.
@@ -105,6 +106,10 @@ func (s *Store) CreateQueryHistory(ctx context.Context, create *QueryHistoryMess
 // ListQueryHistories lists the query history.
 func (s *Store) ListQueryHistories(ctx context.Context, find *FindQueryHistoryMessage) ([]*QueryHistoryMessage, error) {
 	where, args := []string{"TRUE"}, []any{}
+	if filter := find.Filter; filter != nil {
+		where = append(where, filter.Where)
+		args = append(args, filter.Args...)
+	}
 
 	if v := find.CreatorUID; v != nil {
 		where, args = append(where, fmt.Sprintf("query_history.creator_id = $%d", len(args)+1)), append(args, *v)

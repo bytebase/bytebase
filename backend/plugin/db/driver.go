@@ -358,8 +358,8 @@ func (o *ExecuteOptions) LogTransactionControl(t storepb.TaskRunLog_TransactionC
 // ErrorWithPosition is the error with the position information.
 type ErrorWithPosition struct {
 	Err   error
-	Start *storepb.TaskRunResult_Position
-	End   *storepb.TaskRunResult_Position
+	Start *storepb.Position
+	End   *storepb.Position
 }
 
 func (e *ErrorWithPosition) Error() string {

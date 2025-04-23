@@ -24,6 +24,8 @@
         excludeDefault: true,
       }"
       bordered
+      :prevent-default="!!onRowClick"
+      @row-click="onRowClick"
     />
   </div>
   <Drawer
@@ -32,7 +34,10 @@
     :show="state.showCreateDrawer"
     @close="state.showCreateDrawer = false"
   >
-    <ProjectCreatePanel @dismiss="state.showCreateDrawer = false" />
+    <ProjectCreatePanel
+      :on-created="handleCreated"
+      @dismiss="state.showCreateDrawer = false"
+    />
   </Drawer>
 </template>
 
@@ -40,10 +45,12 @@
 import { PlusIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { onMounted, reactive } from "vue";
+import { useRouter } from "vue-router";
 import ProjectCreatePanel from "@/components/Project/ProjectCreatePanel.vue";
 import { SearchBox, PagedProjectTable } from "@/components/v2";
 import { Drawer } from "@/components/v2";
 import { useUIStateStore } from "@/store";
+import type { ComposedProject } from "@/types";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
 interface LocalState {
@@ -51,10 +58,15 @@ interface LocalState {
   showCreateDrawer: boolean;
 }
 
+const props = defineProps<{
+  onRowClick?: (project: ComposedProject) => void;
+}>();
+
 const state = reactive<LocalState>({
   searchText: "",
   showCreateDrawer: false,
 });
+const router = useRouter();
 
 onMounted(() => {
   const uiStateStore = useUIStateStore();
@@ -65,4 +77,15 @@ onMounted(() => {
     });
   }
 });
+
+const handleCreated = async (project: ComposedProject) => {
+  if (props.onRowClick) {
+    return props.onRowClick(project);
+  }
+  const url = {
+    path: `/${project.name}`,
+  };
+  router.push(url);
+  state.showCreateDrawer = false;
+};
 </script>

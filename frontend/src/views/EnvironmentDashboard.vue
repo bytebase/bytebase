@@ -18,7 +18,7 @@
         <EnvironmentDetail
           v-if="!state.reorder"
           :environment-name="item.id"
-          @archive="doArchive"
+          @delete="doDelete"
         />
       </NTabPane>
       <template #suffix>
@@ -92,6 +92,7 @@ import {
 } from "lucide-vue-next";
 import { NTabs, NTabPane, NButton } from "naive-ui";
 import { onMounted, computed, reactive, watch, h } from "vue";
+import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import type { BBTabItem } from "@/bbkit/types";
 import {
@@ -101,28 +102,22 @@ import {
 } from "@/components/EnvironmentForm";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { EnvironmentV1Name, MiniActionButton } from "@/components/v2";
-import { useBodyLayoutContext } from "@/layouts/common";
-import { ENVIRONMENT_V1_ROUTE_DASHBOARD } from "@/router/dashboard/workspaceRoutes";
 import {
   useUIStateStore,
   useEnvironmentV1Store,
   useEnvironmentV1List,
   environmentNamePrefix,
+  pushNotification,
 } from "@/store";
 import {
   usePolicyV1Store,
   getEmptyRolloutPolicy,
 } from "@/store/modules/v1/policy";
-import { emptyEnvironment } from "@/types";
-import type {
-  Environment,
-} from "@/types/v1/environment";
+import { emptyEnvironment, formatEnvironmentName } from "@/types";
 import type { Policy } from "@/types/proto/v1/org_policy_service";
 import { PolicyResourceType } from "@/types/proto/v1/org_policy_service";
-import {
-  arraySwap,
-  hasWorkspacePermissionV2,
-} from "@/utils";
+import type { Environment } from "@/types/v1/environment";
+import { arraySwap, hasWorkspacePermissionV2 } from "@/utils";
 import EnvironmentDetail from "@/views/EnvironmentDetail.vue";
 
 const DEFAULT_NEW_ROLLOUT_POLICY: Policy = getEmptyRolloutPolicy(
@@ -137,13 +132,11 @@ interface LocalState {
   reorder: boolean;
 }
 
+const { t } = useI18n();
 const environmentV1Store = useEnvironmentV1Store();
 const uiStateStore = useUIStateStore();
 const policyV1Store = usePolicyV1Store();
 const router = useRouter();
-
-const { overrideMainContainerClass } = useBodyLayoutContext();
-overrideMainContainerClass("!pb-0");
 
 const state = reactive<LocalState>({
   selectedId: "",
@@ -153,19 +146,18 @@ const state = reactive<LocalState>({
 });
 
 const selectEnvironmentOnHash = () => {
-  if (environmentList.value.length > 0) {
-    if (router.currentRoute.value.hash) {
-      for (let i = 0; i < environmentList.value.length; i++) {
-        const id = environmentList.value[i].id
-        if (id === router.currentRoute.value.hash.slice(1)) {
-          selectEnvironment(i);
-          break;
-        }
-      }
-    } else {
-      selectEnvironment(0);
+  if (environmentList.value.length <= 0) {
+    return;
+  }
+  const target = router.currentRoute.value.hash.slice(1);
+  for (let i = 0; i < environmentList.value.length; i++) {
+    const id = environmentList.value[i].id;
+    if (id === target) {
+      selectEnvironment(i);
+      return;
     }
   }
+  selectEnvironment(0);
 };
 
 onMounted(() => {
@@ -182,9 +174,7 @@ onMounted(() => {
 watch(
   () => router.currentRoute.value.hash,
   () => {
-    if (router.currentRoute.value.name == ENVIRONMENT_V1_ROUTE_DASHBOARD) {
-      selectEnvironmentOnHash();
-    }
+    selectEnvironmentOnHash();
   }
 );
 
@@ -197,7 +187,7 @@ const tabItemList = computed((): BBTabItem[] => {
       : environmentList.value;
     return list.map((item, index: number): BBTabItem => {
       const title = `${index + 1}. ${item.title}`;
-      const id = item.id
+      const id = item.id;
       return { title, id, data: item };
     });
   }
@@ -228,7 +218,7 @@ const doCreate = async (params: {
 
   const requests = [
     policyV1Store.upsertPolicy({
-      parentPath:`${environmentNamePrefix}${createdEnvironment.id}`,
+      parentPath: `${environmentNamePrefix}${createdEnvironment.id}`,
       policy: rolloutPolicy,
     }),
   ];
@@ -254,9 +244,7 @@ const reorderEnvironment = (sourceIndex: number, targetIndex: number) => {
 
 const orderChanged = computed(() => {
   for (let i = 0; i < state.reorderedEnvironmentList.length; i++) {
-    if (
-      state.reorderedEnvironmentList[i].id!= environmentList.value[i].id
-    ) {
+    if (state.reorderedEnvironmentList[i].id != environmentList.value[i].id) {
       return true;
     }
   }
@@ -275,7 +263,15 @@ const doReorder = () => {
     });
 };
 
-const doArchive = (/* environment: Environment */) => {
+const doDelete = async (environment: Environment) => {
+  await environmentV1Store.deleteEnvironment(
+    formatEnvironmentName(environment.id)
+  );
+  pushNotification({
+    module: "bytebase",
+    style: "SUCCESS",
+    title: t("common.deleted"),
+  });
   if (environmentList.value.length > 0) {
     selectEnvironment(0);
   }
@@ -289,7 +285,7 @@ const selectEnvironment = (index: number) => {
 const onTabChange = (id: string) => {
   state.selectedId = id;
   router.replace({
-    name: ENVIRONMENT_V1_ROUTE_DASHBOARD,
+    name: router.currentRoute.value.name,
     hash: "#" + id,
   });
 };

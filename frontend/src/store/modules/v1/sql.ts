@@ -23,8 +23,10 @@ const getSqlReviewReports = (err: unknown): Advice[] => {
             code: sqlReviewReport.code,
             title: sqlReviewReport.title || "SQL Review Failed",
             content: sqlReviewReport.content,
-            line: sqlReviewReport.sqlReviewReport?.line,
-            column: sqlReviewReport.sqlReviewReport?.column,
+            startPosition: {
+              line: sqlReviewReport.sqlReviewReport?.line,
+              column: sqlReviewReport.sqlReviewReport?.column,
+            },
           })
         );
       }

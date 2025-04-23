@@ -33,9 +33,7 @@
             :filter="filter"
             :show-selection="true"
             :custom-click="true"
-            @update:selected-databases="
-              state.selectedDatabaseNameList = Array.from($event)
-            "
+            v-model:selected-database-names="state.selectedDatabaseNameList"
           />
         </div>
       </div>

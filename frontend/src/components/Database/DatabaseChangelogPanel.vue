@@ -103,7 +103,7 @@
       })
     "
     :description="$t('changelog.establish-baseline-description')"
-    @ok="doCreateBaseline"
+    @ok="updateDatabaseDrift"
     @cancel="state.showBaselineModal = false"
   />
 </template>
@@ -125,11 +125,12 @@ import {
 import { useDatabaseDetailContext } from "@/components/Database/context";
 import { TooltipButton } from "@/components/v2";
 import PagedTable from "@/components/v2/Model/PagedTable.vue";
+import { PROJECT_V1_ROUTE_SYNC_SCHEMA } from "@/router/dashboard/projectV1";
 import {
-  PROJECT_V1_ROUTE_ISSUE_DETAIL,
-  PROJECT_V1_ROUTE_SYNC_SCHEMA,
-} from "@/router/dashboard/projectV1";
-import { useChangelogStore } from "@/store";
+  pushNotification,
+  useChangelogStore,
+  useDatabaseV1Store,
+} from "@/store";
 import type { ComposedDatabase, Table, SearchChangeLogParams } from "@/types";
 import { DEFAULT_PROJECT_NAME, getDateForPbTimestamp } from "@/types";
 import {
@@ -157,6 +158,7 @@ const props = defineProps<{
 const { t } = useI18n();
 const router = useRouter();
 const changelogStore = useChangelogStore();
+const databaseStore = useDatabaseV1Store();
 const changedlogPagedTable =
   ref<ComponentExposed<typeof PagedTable<Changelog>>>();
 
@@ -303,22 +305,19 @@ const handleExportChangelogs = async () => {
   state.isExporting = false;
 };
 
-const doCreateBaseline = () => {
-  state.showBaselineModal = false;
-
-  router.push({
-    name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
-    params: {
-      projectId: extractProjectResourceName(props.database.project),
-      issueSlug: "create",
+const updateDatabaseDrift = async () => {
+  await databaseStore.updateDatabase({
+    database: {
+      ...props.database,
+      drifted: false,
     },
-    query: {
-      template: "bb.issue.database.schema.baseline",
-      name: t("changelog.establish-database-baseline", {
-        name: props.database.databaseName,
-      }),
-      databaseList: props.database.name,
-    },
+    updateMask: ["drifted"],
   });
+  pushNotification({
+    module: "bytebase",
+    style: "SUCCESS",
+    title: t("database.drifted.new-baseline.successfully-established"),
+  });
+  state.showBaselineModal = false;
 };
 </script>

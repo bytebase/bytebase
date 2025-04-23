@@ -89,11 +89,18 @@ export interface DeleteWorksheetRequest {
 export interface SearchWorksheetsRequest {
   /**
    * To filter the search result.
-   * Format: only support the following spec for now:
-   * - `creator = users/{email}`, `creator != users/{email}`
-   * - `starred = true`, `starred = false`.
-   * - `visibility = "VISIBILITY_PRIVATE"`, `visibility = "VISIBILITY_PROJECT_READ | VISIBILITY_PROJECT_WRITE"`, etc.
-   * Not support empty filter for now.
+   * Supported filter:
+   * - creator
+   * - starred
+   * - visibility
+   *
+   * For example:
+   * creator == "users/{email}"
+   * creator != "users/{email}"
+   * starred == true
+   * starred == false
+   * visibility in ["VISIBILITY_PRIVATE", "VISIBILITY_PROJECT_READ", "VISIBILITY_PROJECT_WRITE"]
+   * visibility == "VISIBILITY_PRIVATE"
    */
   filter: string;
   /**

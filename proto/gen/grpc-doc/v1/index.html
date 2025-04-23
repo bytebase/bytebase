@@ -5892,7 +5892,7 @@ If the operation spans parents, a dash (-) may be accepted as a wildcard. </p></
                   <td>names</td>
                   <td><a href="#string">string</a></td>
                   <td>repeated</td>
-                  <td><p>The list of database names to retrieve. </p></td>
+                  <td><p>The list of database names to sync. </p></td>
                 </tr>
               
             </tbody>
@@ -7880,6 +7880,7 @@ Supported filter:
 - engine
 - label
 - exclude_unassigned: Not show unassigned databases if specified
+- drifted
 
 For example:
 environment == &#34;environments/{environment resource id}&#34;
@@ -7893,6 +7894,7 @@ label == &#34;region:asia&#34;
 label == &#34;tenant:asia,europe&#34;
 label == &#34;region:asia&#34; &amp;&amp; label == &#34;tenant:bytebase&#34;
 exclude_unassigned == true
+drifted == true
 You can combine filter conditions like:
 environment == &#34;environments/prod&#34; &amp;&amp; name.matches(&#34;employee&#34;) </p></td>
                 </tr>
@@ -22337,7 +22339,7 @@ Format: projects/{project} </p></td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
                   <td><p>Whether to enable the database tenant mode for PostgreSQL.
-If enabled, the issue will be created with the pre-appended &#34;set role &lt;db_owner&gt;&#34; statement. </p></td>
+If enabled, the issue will be created with the prepend &#34;set role &lt;db_owner&gt;&#34; statement. </p></td>
                 </tr>
               
                 <tr>
@@ -22352,6 +22354,14 @@ If enabled, the issue will be created with the pre-appended &#34;set role &lt;db
                   <td><a href="#bytebase.v1.Project.ExecutionRetryPolicy">Project.ExecutionRetryPolicy</a></td>
                   <td></td>
                   <td><p>Execution retry policy for the task run. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>ci_sampling_size</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>The maximum databases of rows to sample during CI data validation.
+Without specification, sampling is disabled, resulting in a full validation. </p></td>
                 </tr>
               
             </tbody>
@@ -23488,25 +23498,10 @@ CosmosDB only. </p></td>
                 </tr>
               
                 <tr>
-                  <td>line</td>
-                  <td><a href="#int32">int32</a></td>
-                  <td></td>
-                  <td><p>The advice line number in the SQL statement. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>column</td>
-                  <td><a href="#int32">int32</a></td>
-                  <td></td>
-                  <td><p>The advice column number in the SQL statement. </p></td>
-                </tr>
-              
-                <tr>
                   <td>start_position</td>
                   <td><a href="#bytebase.v1.Position">Position</a></td>
                   <td></td>
-                  <td><p>To supersede `line` and `column` above.
-The start_position is inclusive and the end_position is exclusive.
+                  <td><p>The start_position is inclusive and the end_position is exclusive.
 TODO: use range instead </p></td>
                 </tr>
               
@@ -24576,16 +24571,22 @@ Provide this to retrieve the subsequent page. </p></td>
                   <td>filter</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>filter is the filter to apply on the search query history,
-follow the
-[ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form)
-syntax. Support filter by:
-- database, for example:
-   database = &#34;instances/{instance}/databases/{database}&#34;
-- instance, for example:
-   instance = &#34;instances/{instance}&#34;
-- type, for example:
-   type = &#34;QUERY&#34; </p></td>
+                  <td><p>Filter is the filter to apply on the search query history
+Supported filter:
+- project
+- database
+- instance
+- type
+- statement
+
+For example:
+project == &#34;projects/{project}&#34;
+database == &#34;instances/{instance}/databases/{database}&#34;
+instance == &#34;instances/{instance}&#34;
+type == &#34;QUERY&#34;
+type == &#34;EXPORT&#34;
+statement.matches(&#34;select&#34;)
+type == &#34;QUERY&#34; &amp;&amp; statement.matches(&#34;select&#34;) </p></td>
                 </tr>
               
             </tbody>
@@ -29871,11 +29872,18 @@ Format: worksheets/{worksheet} </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>To filter the search result.
-Format: only support the following spec for now:
-- `creator = users/{email}`, `creator != users/{email}`
-- `starred = true`, `starred = false`.
-- `visibility = &#34;VISIBILITY_PRIVATE&#34;`, `visibility = &#34;VISIBILITY_PROJECT_READ | VISIBILITY_PROJECT_WRITE&#34;`, etc.
-Not support empty filter for now. </p></td>
+Supported filter:
+- creator
+- starred
+- visibility
+
+For example:
+creator == &#34;users/{email}&#34;
+creator != &#34;users/{email}&#34;
+starred == true
+starred == false
+visibility in [&#34;VISIBILITY_PRIVATE&#34;, &#34;VISIBILITY_PROJECT_READ&#34;, &#34;VISIBILITY_PROJECT_WRITE&#34;]
+visibility == &#34;VISIBILITY_PRIVATE&#34; </p></td>
                 </tr>
               
                 <tr>

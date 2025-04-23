@@ -548,6 +548,10 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 		if err != nil {
 			return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to update group, error %v", err))
 		}
+		// Reload IAM cache to make sure the group members are updated.
+		if err := s.iamManager.ReloadCache(ctx); err != nil {
+			return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to reload iam cache, error %v", err))
+		}
 
 		return c.JSON(http.StatusOK, convertToAADGroup(updatedGroup))
 	})

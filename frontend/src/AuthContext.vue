@@ -12,9 +12,11 @@ import { t } from "./plugins/i18n";
 import { AUTH_PASSWORD_RESET_MODULE } from "./router/auth";
 import { WORKSPACE_ROOT_MODULE } from "./router/dashboard/workspaceRoutes";
 import { useAuthStore, pushNotification, useWorkspaceV1Store } from "./store";
+import { isDev } from "./utils";
 
-// Check authorization every 60 seconds.
-const CHECK_AUTHORIZATION_INTERVAL = 60 * 1000;
+// This interval is used to check if the user's session is still valid.
+// In development, it checks every minute, while in production, it checks every 5 minutes.
+const CHECK_AUTHORIZATION_INTERVAL = isDev() ? 60 * 1000 : 60 * 1000 * 5;
 
 const router = useRouter();
 const authStore = useAuthStore();

@@ -29,7 +29,9 @@
         </template>
       </NPopover>
     </template>
-    <div class="w-128 max-h-128 overflow-y-auto p-1 pb-2">
+    <div
+      class="max-w-[calc(100vw-10rem)] w-192 max-h-128 overflow-y-auto p-1 pb-2"
+    >
       <p class="text-gray-500 mb-1 w-full leading-4">
         {{
           $t("sql-editor.batch-query.description", {
@@ -80,8 +82,8 @@
           :filter="filter"
           :parent="project.name"
           :schemaless="true"
-          :selected-database-names="state.selectedDatabaseNames"
-          @update:selected-databases="handleDatabaseRowCheck"
+          :custom-click="true"
+          v-model:selected-database-names="state.selectedDatabaseNames"
         />
       </div>
     </div>
@@ -152,10 +154,6 @@ const showBatchQuerySelector = computed(() => {
   );
 });
 
-const handleDatabaseRowCheck = (keys: Set<string>) => {
-  state.selectedDatabaseNames = [...keys];
-};
-
 const handleUncheckDatabaseRow = (databaseName: string) => {
   state.selectedDatabaseNames = state.selectedDatabaseNames.filter(
     (name) => name !== databaseName
@@ -168,13 +166,16 @@ const handleTriggerClick = () => {
   }
 };
 
-watch(state.selectedDatabaseNames, () => {
-  tabStore.updateCurrentTab({
-    batchQueryContext: {
-      databases: state.selectedDatabaseNames,
-    },
-  });
-});
+watch(
+  () => state.selectedDatabaseNames,
+  () => {
+    tabStore.updateCurrentTab({
+      batchQueryContext: {
+        databases: state.selectedDatabaseNames,
+      },
+    });
+  }
+);
 
 watch(
   () => currentTab.value?.batchQueryContext?.databases,

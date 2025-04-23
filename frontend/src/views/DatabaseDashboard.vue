@@ -39,8 +39,8 @@
         :parent="'workspaces/-'"
         :footer-class="'mx-4'"
         :custom-click="!!onClickDatabase"
+        v-model:selected-database-names="state.selectedDatabaseNameList"
         @row-click="onClickDatabase"
-        @update:selected-databases="handleDatabasesSelectionChanged"
       />
     </div>
   </div>
@@ -84,7 +84,7 @@ import {
 } from "@/utils";
 
 interface LocalState {
-  selectedDatabaseNameList: Set<string>;
+  selectedDatabaseNameList: string[];
   params: SearchParams;
   showCreateDrawer: boolean;
 }
@@ -116,7 +116,7 @@ const defaultSearchParams = () => {
 };
 
 const state = reactive<LocalState>({
-  selectedDatabaseNameList: new Set(),
+  selectedDatabaseNameList: [],
   showCreateDrawer: false,
   params: defaultSearchParams(),
 });
@@ -197,14 +197,8 @@ onMounted(() => {
 });
 
 const selectedDatabases = computed((): ComposedDatabase[] => {
-  return [...state.selectedDatabaseNameList]
+  return state.selectedDatabaseNameList
     .filter((databaseName) => isValidDatabaseName(databaseName))
     .map((databaseName) => databaseStore.getDatabaseByName(databaseName));
 });
-
-const handleDatabasesSelectionChanged = (
-  selectedDatabaseNameList: Set<string>
-): void => {
-  state.selectedDatabaseNameList = selectedDatabaseNameList;
-};
 </script>

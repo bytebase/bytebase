@@ -1,0 +1,123 @@
+- description: Simple WHERE clause predicate extraction
+  statement: SELECT id, name FROM users WHERE status = 'active' AND company_id = 5;
+  defaultDatabase: catalog1
+  metadata: '{"name":"catalog1","schemas":[{"name":"public","tables":[{"name":"users","columns":[{"name":"id","type":"integer"},{"name":"name","type":"varchar"},{"name":"status","type":"varchar"},{"name":"company_id","type":"integer"}]}]}]}'
+  querySpan:
+    type:
+        querytype: 1
+    results: []
+    sourceColumns:
+      "catalog1.public.users.id": true
+      "catalog1.public.users.name": true
+      "catalog1.public.users.status": true
+      "catalog1.public.users.company_id": true
+    predicateColumns:
+      "catalog1.public.users.status": true
+      "catalog1.public.users.company_id": true
+
+- description: JOIN predicate extraction
+  statement: SELECT u.id, u.name, o.order_id FROM users u JOIN orders o ON u.id = o.user_id AND o.status = 'shipped';
+  defaultDatabase: catalog1
+  metadata: '{"name":"catalog1","schemas":[{"name":"public","tables":[{"name":"users","columns":[{"name":"id","type":"integer"},{"name":"name","type":"varchar"}]},{"name":"orders","columns":[{"name":"order_id","type":"integer"},{"name":"user_id","type":"integer"},{"name":"status","type":"varchar"}]}]}]}'
+  querySpan:
+    type:
+        querytype: 1
+    results: []
+    sourceColumns:
+      "catalog1.public.users.id": true
+      "catalog1.public.users.name": true
+      "catalog1.public.orders.order_id": true
+      "catalog1.public.orders.user_id": true
+      "catalog1.public.orders.status": true
+    predicateColumns:
+      "catalog1.public.users.id": true
+      "catalog1.public.orders.user_id": true
+      "catalog1.public.orders.status": true
+
+- description: Complex predicate with functions
+  statement: SELECT id, name FROM users WHERE LOWER(status) = 'active' AND company_id BETWEEN 5 AND 10;
+  defaultDatabase: catalog1
+  metadata: '{"name":"catalog1","schemas":[{"name":"public","tables":[{"name":"users","columns":[{"name":"id","type":"integer"},{"name":"name","type":"varchar"},{"name":"status","type":"varchar"},{"name":"company_id","type":"integer"}]}]}]}'
+  querySpan:
+    type:
+        querytype: 1
+    results: []
+    sourceColumns:
+      "catalog1.public.users.id": true
+      "catalog1.public.users.name": true
+      "catalog1.public.users.status": true
+      "catalog1.public.users.company_id": true
+    predicateColumns:
+      "catalog1.public.users.status": true
+      "catalog1.public.users.company_id": true
+
+- description: UNION query predicate extraction
+  statement: SELECT id, name FROM users WHERE status = 'active' UNION SELECT id, name FROM employees WHERE department = 'Sales';
+  defaultDatabase: catalog1
+  metadata: '{"name":"catalog1","schemas":[{"name":"public","tables":[{"name":"users","columns":[{"name":"id","type":"integer"},{"name":"name","type":"varchar"},{"name":"status","type":"varchar"}]},{"name":"employees","columns":[{"name":"id","type":"integer"},{"name":"name","type":"varchar"},{"name":"department","type":"varchar"}]}]}]}'
+  querySpan:
+    type:
+        querytype: 1
+    results: []
+    sourceColumns:
+      "catalog1.public.users.id": true
+      "catalog1.public.users.name": true
+      "catalog1.public.users.status": true
+      "catalog1.public.employees.id": true
+      "catalog1.public.employees.name": true
+      "catalog1.public.employees.department": true
+    predicateColumns:
+      "catalog1.public.users.status": true
+      "catalog1.public.employees.department": true
+
+- description: Subquery predicate extraction
+  statement: SELECT id, name FROM users WHERE company_id IN (SELECT id FROM companies WHERE region = 'EU');
+  defaultDatabase: catalog1
+  metadata: '{"name":"catalog1","schemas":[{"name":"public","tables":[{"name":"users","columns":[{"name":"id","type":"integer"},{"name":"name","type":"varchar"},{"name":"company_id","type":"integer"}]},{"name":"companies","columns":[{"name":"id","type":"integer"},{"name":"region","type":"varchar"}]}]}]}'
+  querySpan:
+    type:
+        querytype: 1
+    results: []
+    sourceColumns:
+      "catalog1.public.users.id": true
+      "catalog1.public.users.name": true
+      "catalog1.public.users.company_id": true
+      "catalog1.public.companies.id": true
+      "catalog1.public.companies.region": true
+    predicateColumns:
+      "catalog1.public.users.company_id": true
+      "catalog1.public.companies.id": true
+      "catalog1.public.companies.region": true
+
+- description: WITH clause predicate extraction
+  statement: WITH active_users AS (SELECT id, name FROM users WHERE status = 'active') SELECT id, name FROM active_users WHERE id > 1000;
+  defaultDatabase: catalog1
+  metadata: '{"name":"catalog1","schemas":[{"name":"public","tables":[{"name":"users","columns":[{"name":"id","type":"integer"},{"name":"name","type":"varchar"},{"name":"status","type":"varchar"}]}]}]}'
+  querySpan:
+    type:
+        querytype: 1
+    results: []
+    sourceColumns:
+      "catalog1.public.users.id": true
+      "catalog1.public.users.name": true
+      "catalog1.public.users.status": true
+    predicateColumns:
+      "catalog1.public.users.status": true
+      "catalog1.public.users.id": true
+
+- description: Qualified column references in predicates
+  statement: SELECT u.id, u.name FROM users u WHERE u.status = 'active' AND u.company_id = 5;
+  defaultDatabase: catalog1
+  metadata: '{"name":"catalog1","schemas":[{"name":"public","tables":[{"name":"users","columns":[{"name":"id","type":"integer"},{"name":"name","type":"varchar"},{"name":"status","type":"varchar"},{"name":"company_id","type":"integer"}]}]}]}'
+  querySpan:
+    type:
+        querytype: 1
+    results: []
+    sourceColumns:
+      "catalog1.public.users.id": true
+      "catalog1.public.users.name": true
+      "catalog1.public.users.status": true
+      "catalog1.public.users.company_id": true
+    predicateColumns:
+      "catalog1.public.users.status": true
+      "catalog1.public.users.company_id": true

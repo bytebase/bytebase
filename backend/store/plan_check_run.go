@@ -61,15 +61,14 @@ type PlanCheckRunMessage struct {
 
 // FindPlanCheckRunMessage is the message for finding plan check runs.
 type FindPlanCheckRunMessage struct {
-	PlanUID    *int64
-	UIDs       *[]int
-	Status     *[]PlanCheckRunStatus
-	Type       *[]PlanCheckRunType
-	LatestOnly bool
+	PlanUID *int64
+	UIDs    *[]int
+	Status  *[]PlanCheckRunStatus
+	Type    *[]PlanCheckRunType
 }
 
 // CreatePlanCheckRuns creates new plan check runs.
-func (s *Store) CreatePlanCheckRuns(ctx context.Context, creates ...*PlanCheckRunMessage) error {
+func (s *Store) CreatePlanCheckRuns(ctx context.Context, plan *PlanMessage, creates ...*PlanCheckRunMessage) error {
 	if len(creates) == 0 {
 		return nil
 	}
@@ -112,10 +111,18 @@ func (s *Store) CreatePlanCheckRuns(ctx context.Context, creates ...*PlanCheckRu
 			return err
 		}
 	}
-	if _, err := s.db.ExecContext(ctx, query.String(), values...); err != nil {
+	txn, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer txn.Rollback()
+	if _, err := txn.ExecContext(ctx, "DELETE FROM plan_check_run WHERE plan_id = $1", plan.UID); err != nil {
+		return errors.Wrapf(err, "failed to delete plan check run for plan %d", plan.UID)
+	}
+	if _, err := txn.ExecContext(ctx, query.String(), values...); err != nil {
 		return errors.Wrapf(err, "failed to execute insert")
 	}
-	return nil
+	return txn.Commit()
 }
 
 // ListPlanCheckRuns returns a list of plan check runs based on find.
@@ -136,16 +143,8 @@ func (s *Store) ListPlanCheckRuns(ctx context.Context, find *FindPlanCheckRunMes
 		where = append(where, fmt.Sprintf("plan_check_run.type = ANY($%d)", len(args)+1))
 		args = append(args, *v)
 	}
-	var distinctOn, orderBy string
-	if find.LatestOnly {
-		distinctOn = "DISTINCT ON (plan_check_run.type, plan_check_run.config->>'instanceId', plan_check_run.config->>'databaseName', plan_check_run.config->>'sheetUid')"
-		orderBy = "ORDER BY plan_check_run.type, plan_check_run.config->>'instanceId', plan_check_run.config->>'databaseName', plan_check_run.config->>'sheetUid', plan_check_run.id DESC"
-	} else {
-		orderBy = "ORDER BY plan_check_run.id DESC"
-	}
 	query := fmt.Sprintf(`
 SELECT
-	%s
 	plan_check_run.id,
 	plan_check_run.created_at,
 	plan_check_run.updated_at,
@@ -156,7 +155,7 @@ SELECT
 	plan_check_run.result
 FROM plan_check_run
 WHERE %s
-%s`, distinctOn, strings.Join(where, " AND "), orderBy)
+ORDER BY plan_check_run.id ASC`, strings.Join(where, " AND "))
 	rows, err := s.db.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err

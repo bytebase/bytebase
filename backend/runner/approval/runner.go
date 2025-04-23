@@ -343,9 +343,8 @@ func (r *Runner) getDatabaseGeneralIssueRisk(ctx context.Context, issue *store.I
 	}
 
 	planCheckRuns, err := r.store.ListPlanCheckRuns(ctx, &store.FindPlanCheckRunMessage{
-		PlanUID:    &plan.UID,
-		Type:       &[]store.PlanCheckRunType{store.PlanCheckDatabaseStatementSummaryReport},
-		LatestOnly: true,
+		PlanUID: &plan.UID,
+		Type:    &[]store.PlanCheckRunType{store.PlanCheckDatabaseStatementSummaryReport},
 	})
 	if err != nil {
 		return 0, store.RiskSourceUnknown, false, errors.Wrapf(err, "failed to list plan check runs for plan %v", plan.UID)

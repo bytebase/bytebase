@@ -746,6 +746,7 @@ type ListDatabasesRequest struct {
 	// - engine
 	// - label
 	// - exclude_unassigned: Not show unassigned databases if specified
+	// - drifted
 	//
 	// For example:
 	// environment == "environments/{environment resource id}"
@@ -759,6 +760,7 @@ type ListDatabasesRequest struct {
 	// label == "tenant:asia,europe"
 	// label == "region:asia" && label == "tenant:bytebase"
 	// exclude_unassigned == true
+	// drifted == true
 	// You can combine filter conditions like:
 	// environment == "environments/prod" && name.matches("employee")
 	Filter string `protobuf:"bytes,4,opt,name=filter,proto3" json:"filter,omitempty"`
@@ -1054,7 +1056,7 @@ type BatchSyncDatabasesRequest struct {
 	// Format: instances/{instance}
 	// If the operation spans parents, a dash (-) may be accepted as a wildcard.
 	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
-	// The list of database names to retrieve.
+	// The list of database names to sync.
 	Names         []string `protobuf:"bytes,2,rep,name=names,proto3" json:"names,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache

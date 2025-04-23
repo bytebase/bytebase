@@ -1,0 +1,43 @@
+- description: Case insensitive table name
+  statement: SELECT id, name FROM Users;
+  defaultDatabase: catalog1
+  ignoreCaseSensitive: true
+  metadata: '{"name":"catalog1","schemas":[{"name":"public","tables":[{"name":"users","columns":[{"name":"id","type":"integer"},{"name":"name","type":"varchar"}]}]}]}'
+  querySpan:
+    type:
+        querytype: 1
+    results: []
+    sourceColumns: {}
+    predicateColumns: {}
+- description: Case insensitive column names
+  statement: SELECT ID, Name FROM users;
+  defaultDatabase: catalog1
+  ignoreCaseSensitive: true
+  metadata: '{"name":"catalog1","schemas":[{"name":"public","tables":[{"name":"users","columns":[{"name":"id","type":"integer"},{"name":"name","type":"varchar"}]}]}]}'
+  querySpan:
+    type:
+        querytype: 1
+    results: []
+    sourceColumns: {}
+    predicateColumns: {}
+- description: Case insensitive schema name
+  statement: SELECT id, name FROM PUBLIC.users;
+  defaultDatabase: catalog1
+  ignoreCaseSensitive: true
+  metadata: '{"name":"catalog1","schemas":[{"name":"public","tables":[{"name":"users","columns":[{"name":"id","type":"integer"},{"name":"name","type":"varchar"}]}]}]}'
+  querySpan:
+    type:
+        querytype: 1
+    results: []
+    sourceColumns: {}
+    predicateColumns: {}
+- description: Case sensitive with quoted identifiers
+  statement: SELECT "ID", "Name" FROM "Users";
+  defaultDatabase: catalog1
+  metadata: '{"name":"catalog1","schemas":[{"name":"public","tables":[{"name":"Users","columns":[{"name":"ID","type":"integer"},{"name":"Name","type":"varchar"}]}]}]}'
+  querySpan:
+    type:
+        querytype: 1
+    results: []
+    sourceColumns: {}
+    predicateColumns: {}

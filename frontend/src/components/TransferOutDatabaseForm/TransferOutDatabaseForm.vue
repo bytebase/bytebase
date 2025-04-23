@@ -18,10 +18,7 @@
           <DatabaseV1Table
             :database-list="databaseList"
             :show-selection="true"
-            :selected-database-names="selectedDatabaseNameList"
-            @update:selected-databases="
-              selectedDatabaseNameList = Array.from($event)
-            "
+            v-model:selected-database-names="selectedDatabaseNameList"
           />
         </div>
         <NDivider class="w-full py-2" />

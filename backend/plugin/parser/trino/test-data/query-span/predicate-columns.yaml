@@ -1,0 +1,135 @@
+# Test cases for predicate column extraction in Trino parser
+# These tests focus on the ability to identify columns used in predicate contexts
+# like WHERE clauses, JOIN conditions, and HAVING clauses.
+
+- description: Basic WHERE clause predicate extraction
+  statement: |
+    SELECT id, name 
+    FROM users 
+    WHERE active = true AND age > 18
+  defaultDatabase: catalog1
+  metadata: '{"name":"catalog1","schemas":[{"name":"public","tables":[{"name":"users","columns":[{"name":"id","type":"integer"},{"name":"name","type":"varchar"},{"name":"active","type":"boolean"},{"name":"age","type":"integer"}]}]}]}'
+  querySpan:
+    type:
+        querytype: 1
+    sourceColumns:
+      "catalog1.public.users.id": true
+      "catalog1.public.users.name": true
+      "catalog1.public.users.active": true
+      "catalog1.public.users.age": true
+    predicateColumns:
+      "catalog1.public.users.active": true
+      "catalog1.public.users.age": true
+
+- description: JOIN with predicate columns
+  statement: |
+    SELECT u.id, u.name, o.order_id 
+    FROM users u 
+    JOIN orders o ON u.id = o.user_id 
+    WHERE u.active = true
+  defaultDatabase: catalog1
+  metadata: '{"name":"catalog1","schemas":[{"name":"public","tables":[{"name":"users","columns":[{"name":"id","type":"integer"},{"name":"name","type":"varchar"},{"name":"active","type":"boolean"}]},{"name":"orders","columns":[{"name":"order_id","type":"integer"},{"name":"user_id","type":"integer"}]}]}]}'
+  querySpan:
+    type:
+        querytype: 1
+    sourceColumns:
+      "catalog1.public.users.id": true
+      "catalog1.public.users.name": true
+      "catalog1.public.users.active": true
+      "catalog1.public.orders.order_id": true
+      "catalog1.public.orders.user_id": true
+    predicateColumns:
+      "catalog1.public.users.id": true
+      "catalog1.public.orders.user_id": true
+      "catalog1.public.users.active": true
+
+- description: HAVING clause predicate extraction
+  statement: |
+    SELECT department, COUNT(*) as count 
+    FROM employees 
+    GROUP BY department 
+    HAVING COUNT(*) > 10
+  defaultDatabase: catalog1
+  metadata: '{"name":"catalog1","schemas":[{"name":"public","tables":[{"name":"employees","columns":[{"name":"id","type":"integer"},{"name":"name","type":"varchar"},{"name":"department","type":"varchar"}]}]}]}'
+  querySpan:
+    type:
+        querytype: 1
+    sourceColumns:
+      "catalog1.public.employees.department": true
+    predicateColumns: {}
+
+- description: IN clause predicate extraction
+  statement: |
+    SELECT id, name 
+    FROM users 
+    WHERE department IN ('Sales', 'Marketing', 'Engineering')
+  defaultDatabase: catalog1
+  metadata: '{"name":"catalog1","schemas":[{"name":"public","tables":[{"name":"users","columns":[{"name":"id","type":"integer"},{"name":"name","type":"varchar"},{"name":"department","type":"varchar"}]}]}]}'
+  querySpan:
+    type:
+        querytype: 1
+    sourceColumns:
+      "catalog1.public.users.id": true
+      "catalog1.public.users.name": true
+      "catalog1.public.users.department": true
+    predicateColumns:
+      "catalog1.public.users.department": true
+
+- description: Subquery predicates
+  statement: |
+    SELECT id, name 
+    FROM users 
+    WHERE department_id IN (
+      SELECT id FROM departments WHERE active = true
+    )
+  defaultDatabase: catalog1
+  metadata: '{"name":"catalog1","schemas":[{"name":"public","tables":[{"name":"users","columns":[{"name":"id","type":"integer"},{"name":"name","type":"varchar"},{"name":"department_id","type":"integer"}]},{"name":"departments","columns":[{"name":"id","type":"integer"},{"name":"active","type":"boolean"}]}]}]}'
+  querySpan:
+    type:
+        querytype: 1
+    sourceColumns:
+      "catalog1.public.users.id": true
+      "catalog1.public.users.name": true
+      "catalog1.public.users.department_id": true
+      "catalog1.public.departments.id": true
+      "catalog1.public.departments.active": true
+    predicateColumns:
+      "catalog1.public.users.department_id": true
+      "catalog1.public.departments.id": true
+      "catalog1.public.departments.active": true
+
+- description: BETWEEN clause predicate extraction
+  statement: |
+    SELECT id, name 
+    FROM orders 
+    WHERE order_date BETWEEN '2023-01-01' AND '2023-12-31'
+  defaultDatabase: catalog1
+  metadata: '{"name":"catalog1","schemas":[{"name":"public","tables":[{"name":"orders","columns":[{"name":"id","type":"integer"},{"name":"name","type":"varchar"},{"name":"order_date","type":"date"}]}]}]}'
+  querySpan:
+    type:
+        querytype: 1
+    sourceColumns:
+      "catalog1.public.orders.id": true
+      "catalog1.public.orders.name": true
+      "catalog1.public.orders.order_date": true
+    predicateColumns:
+      "catalog1.public.orders.order_date": true
+
+- description: Complex expression with function calls
+  statement: |
+    SELECT id, name 
+    FROM users 
+    WHERE LOWER(email) LIKE '%example.com' AND DATE_TRUNC('month', registered_at) > '2023-01-01'
+  defaultDatabase: catalog1
+  metadata: '{"name":"catalog1","schemas":[{"name":"public","tables":[{"name":"users","columns":[{"name":"id","type":"integer"},{"name":"name","type":"varchar"},{"name":"email","type":"varchar"},{"name":"registered_at","type":"timestamp"}]}]}]}'
+  querySpan:
+    type:
+        querytype: 1
+    sourceColumns:
+      "catalog1.public.users.id": true
+      "catalog1.public.users.name": true
+      "catalog1.public.users.email": true
+      "catalog1.public.users.registered_at": true
+    predicateColumns:
+      "catalog1.public.users.email": true
+      "catalog1.public.users.registered_at": true

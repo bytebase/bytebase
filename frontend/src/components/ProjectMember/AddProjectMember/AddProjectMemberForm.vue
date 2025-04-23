@@ -20,7 +20,12 @@
         <span>{{ $t("settings.members.assign-role") }}</span>
         <span class="text-red-600">*</span>
       </div>
-      <ProjectRoleSelect v-model:role="state.role" class="mt-2" />
+      <RoleSelect
+        v-model:value="state.role"
+        class="mt-2"
+        :include-workspace-roles="false"
+        :suffix="''"
+      />
     </div>
     <div class="w-full">
       <span>{{ $t("common.reason") }}</span>
@@ -82,7 +87,7 @@ import ExpirationSelector from "@/components/ExpirationSelector.vue";
 import QuerierDatabaseResourceForm from "@/components/GrantRequestPanel/DatabaseResourceForm/index.vue";
 import MaxRowCountSelect from "@/components/GrantRequestPanel/MaxRowCountSelect.vue";
 import MembersBindingSelect from "@/components/Member/MembersBindingSelect.vue";
-import { ProjectRoleSelect } from "@/components/v2/Select";
+import { RoleSelect } from "@/components/v2/Select";
 import type { ComposedProject, DatabaseResource } from "@/types";
 import { PresetRoleType } from "@/types";
 import type { Binding } from "@/types/proto/v1/iam_policy";

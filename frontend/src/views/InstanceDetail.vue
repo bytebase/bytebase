@@ -61,7 +61,7 @@
             :show-selection="true"
             :filter="filter"
             :parent="instance.name"
-            @update:selected-databases="handleDatabasesSelectionChanged"
+            v-model:selected-database-names="state.selectedDatabaseNameList"
           />
         </div>
       </NTabPane>
@@ -144,7 +144,7 @@ const isInstanceHash = (x: any): x is InstanceHash =>
 interface LocalState {
   showCreateDatabaseModal: boolean;
   syncingSchema: boolean;
-  selectedDatabaseNameList: Set<string>;
+  selectedDatabaseNameList: string[];
   params: SearchParams;
   selectedTab: InstanceHash;
 }
@@ -178,7 +178,7 @@ const readonlyScopes = computed((): SearchScope[] => [
 const state = reactive<LocalState>({
   showCreateDatabaseModal: false,
   syncingSchema: false,
-  selectedDatabaseNameList: new Set(),
+  selectedDatabaseNameList: [],
   params: {
     query: "",
     scopes: [...readonlyScopes.value],
@@ -295,14 +295,8 @@ const createDatabase = () => {
 
 useTitle(computed(() => instance.value.title));
 
-const handleDatabasesSelectionChanged = (
-  selectedDatabaseNameList: Set<string>
-): void => {
-  state.selectedDatabaseNameList = selectedDatabaseNameList;
-};
-
 const selectedDatabases = computed((): ComposedDatabase[] => {
-  return [...state.selectedDatabaseNameList]
+  return state.selectedDatabaseNameList
     .map((databaseName) => databaseStore.getDatabaseByName(databaseName))
     .filter((database) => isValidDatabaseName(database.name));
 });

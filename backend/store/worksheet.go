@@ -53,23 +53,10 @@ type WorkSheetMessage struct {
 type FindWorkSheetMessage struct {
 	UID *int
 
-	// Used to find the creator's sheet list.
-	// When finding shared PROJECT/PUBLIC sheets, this value should be empty.
-	// It does not make sense to set both `CreatorID` and `ExcludedCreatorID`.
-	CreatorID *int
-	// Used to find the sheets that are not created by the creator.
-	ExcludedCreatorID *int
-
 	// LoadFull is used if we want to load the full sheet.
 	LoadFull bool
 
-	// Domain fields
-	Visibilities []WorkSheetVisibility
-
-	// Used to find (un)starred sheet list, could be PRIVATE/PROJECT/PUBLIC sheet.
-	// For now, we only need the starred sheets.
-	OrganizerPrincipalIDStarred    *int
-	OrganizerPrincipalIDNotStarred *int
+	Filter *ListResourceFilter
 }
 
 // PatchWorkSheetMessage is the message to patch a sheet.
@@ -102,33 +89,15 @@ func (s *Store) GetWorkSheet(ctx context.Context, find *FindWorkSheetMessage, cu
 // ListWorkSheets returns a list of sheets.
 func (s *Store) ListWorkSheets(ctx context.Context, find *FindWorkSheetMessage, currentPrincipalID int) ([]*WorkSheetMessage, error) {
 	where, args := []string{"TRUE"}, []any{}
+	if filter := find.Filter; filter != nil {
+		where = append(where, filter.Where)
+		args = append(args, filter.Args...)
+	}
 
 	if v := find.UID; v != nil {
 		where, args = append(where, fmt.Sprintf("worksheet.id = $%d", len(args)+1)), append(args, *v)
 	}
 
-	// Standard fields
-	if v := find.CreatorID; v != nil {
-		where, args = append(where, fmt.Sprintf("worksheet.creator_id = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := find.ExcludedCreatorID; v != nil {
-		where, args = append(where, fmt.Sprintf("worksheet.creator_id != $%d", len(args)+1)), append(args, *v)
-	}
-
-	// Domain fields
-	visibilitiesWhere := []string{}
-	for _, v := range find.Visibilities {
-		visibilitiesWhere, args = append(visibilitiesWhere, fmt.Sprintf("visibility = $%d", len(args)+1)), append(args, v)
-	}
-	if len(visibilitiesWhere) > 0 {
-		where = append(where, fmt.Sprintf("(%s)", strings.Join(visibilitiesWhere, " OR ")))
-	}
-	if v := find.OrganizerPrincipalIDStarred; v != nil {
-		where, args = append(where, fmt.Sprintf("worksheet.id IN (SELECT worksheet_id FROM worksheet_organizer WHERE principal_id = $%d AND starred = true)", len(args)+1)), append(args, *v)
-	}
-	if v := find.OrganizerPrincipalIDNotStarred; v != nil {
-		where, args = append(where, fmt.Sprintf("worksheet.id IN (SELECT worksheet_id FROM worksheet_organizer WHERE principal_id = $%d AND starred = false)", len(args)+1)), append(args, *v)
-	}
 	statementField := fmt.Sprintf("LEFT(worksheet.statement, %d)", common.MaxSheetSize)
 	if find.LoadFull {
 		statementField = "worksheet.statement"

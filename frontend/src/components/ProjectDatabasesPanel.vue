@@ -35,7 +35,7 @@
       :show-selection="true"
       :filter="filter"
       :parent="project.name"
-      @update:selected-databases="handleDatabasesSelectionChanged"
+      v-model:selected-database-names="state.selectedDatabaseNames"
     />
   </div>
   <Drawer
@@ -78,7 +78,7 @@ import { useCommonSearchScopeOptions } from "./AdvancedSearch/useCommonSearchSco
 import { DatabaseOperations } from "./v2";
 
 interface LocalState {
-  selectedDatabaseNames: Set<string>;
+  selectedDatabaseNames: string[];
   params: SearchParams;
   showCreateDrawer: boolean;
 }
@@ -98,7 +98,7 @@ const readonlyScopes = computed((): SearchScope[] => [
 const databaseStore = useDatabaseV1Store();
 
 const state = reactive<LocalState>({
-  selectedDatabaseNames: new Set(),
+  selectedDatabaseNames: [],
   params: {
     query: "",
     scopes: [...readonlyScopes.value],
@@ -129,6 +129,7 @@ const scopeOptions = useCommonSearchScopeOptions([
   ...CommonFilterScopeIdList,
   "database-label",
   "engine",
+  "drifted",
 ]);
 
 const selectedInstance = computed(() => {
@@ -163,23 +164,28 @@ const selectedEngines = computed(() => {
     .map((scope) => engineFromJSON(scope.value));
 });
 
+const selectedDriftedValue = computed(() => {
+  const driftedValue = state.params.scopes.find(
+    (scope) => scope.id === "drifted"
+  )?.value;
+  if (driftedValue === undefined) {
+    return undefined;
+  }
+  return driftedValue === "true" ? true : false;
+});
+
 const filter = computed(() => ({
   instance: selectedInstance.value,
   environment: selectedEnvironment.value,
   query: state.params.query,
   labels: selectedLabels.value,
   engines: selectedEngines.value,
+  drifted: selectedDriftedValue.value,
 }));
 
 const selectedDatabases = computed((): ComposedDatabase[] => {
-  return [...state.selectedDatabaseNames]
+  return state.selectedDatabaseNames
     .map((databaseName) => databaseStore.getDatabaseByName(databaseName))
     .filter((database) => isValidDatabaseName(database.name));
 });
-
-const handleDatabasesSelectionChanged = (
-  selectedDatabaseNameList: Set<string>
-): void => {
-  state.selectedDatabaseNames = selectedDatabaseNameList;
-};
 </script>

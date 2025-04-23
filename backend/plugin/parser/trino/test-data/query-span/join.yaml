@@ -1,0 +1,60 @@
+- description: Simple JOIN
+  statement: SELECT u.id, u.name, o.order_id FROM users u JOIN orders o ON u.id = o.user_id;
+  defaultDatabase: catalog1
+  metadata: '{"name":"catalog1","schemas":[{"name":"public","tables":[{"name":"users","columns":[{"name":"id","type":"integer"},{"name":"name","type":"varchar"}]},{"name":"orders","columns":[{"name":"order_id","type":"integer"},{"name":"user_id","type":"integer"}]}]}]}'
+  querySpan:
+    type:
+        querytype: 1
+    results: []
+    sourceColumns: {}
+    predicateColumns: {}
+- description: LEFT JOIN
+  statement: SELECT u.id, u.name, o.order_id FROM users u LEFT JOIN orders o ON u.id = o.user_id;
+  defaultDatabase: catalog1
+  metadata: '{"name":"catalog1","schemas":[{"name":"public","tables":[{"name":"users","columns":[{"name":"id","type":"integer"},{"name":"name","type":"varchar"}]},{"name":"orders","columns":[{"name":"order_id","type":"integer"},{"name":"user_id","type":"integer"}]}]}]}'
+  querySpan:
+    type:
+        querytype: 1
+    results: []
+    sourceColumns: {}
+    predicateColumns: {}
+- description: RIGHT JOIN
+  statement: SELECT u.id, u.name, o.order_id FROM users u RIGHT JOIN orders o ON u.id = o.user_id;
+  defaultDatabase: catalog1
+  metadata: '{"name":"catalog1","schemas":[{"name":"public","tables":[{"name":"users","columns":[{"name":"id","type":"integer"},{"name":"name","type":"varchar"}]},{"name":"orders","columns":[{"name":"order_id","type":"integer"},{"name":"user_id","type":"integer"}]}]}]}'
+  querySpan:
+    type:
+        querytype: 1
+    results: []
+    sourceColumns: {}
+    predicateColumns: {}
+- description: FULL OUTER JOIN
+  statement: SELECT u.id, u.name, o.order_id FROM users u FULL OUTER JOIN orders o ON u.id = o.user_id;
+  defaultDatabase: catalog1
+  metadata: '{"name":"catalog1","schemas":[{"name":"public","tables":[{"name":"users","columns":[{"name":"id","type":"integer"},{"name":"name","type":"varchar"}]},{"name":"orders","columns":[{"name":"order_id","type":"integer"},{"name":"user_id","type":"integer"}]}]}]}'
+  querySpan:
+    type:
+        querytype: 1
+    results: []
+    sourceColumns: {}
+    predicateColumns: {}
+- description: CROSS JOIN
+  statement: SELECT u.id, u.name, o.order_id FROM users u CROSS JOIN orders o;
+  defaultDatabase: catalog1
+  metadata: '{"name":"catalog1","schemas":[{"name":"public","tables":[{"name":"users","columns":[{"name":"id","type":"integer"},{"name":"name","type":"varchar"}]},{"name":"orders","columns":[{"name":"order_id","type":"integer"},{"name":"user_id","type":"integer"}]}]}]}'
+  querySpan:
+    type:
+        querytype: 1
+    results: []
+    sourceColumns: {}
+    predicateColumns: {}
+- description: Multiple JOINs
+  statement: SELECT u.id, u.name, o.order_id, i.item_name FROM users u JOIN orders o ON u.id = o.user_id JOIN order_items i ON o.order_id = i.order_id;
+  defaultDatabase: catalog1
+  metadata: '{"name":"catalog1","schemas":[{"name":"public","tables":[{"name":"users","columns":[{"name":"id","type":"integer"},{"name":"name","type":"varchar"}]},{"name":"orders","columns":[{"name":"order_id","type":"integer"},{"name":"user_id","type":"integer"}]},{"name":"order_items","columns":[{"name":"order_id","type":"integer"},{"name":"item_name","type":"varchar"}]}]}]}'
+  querySpan:
+    type:
+        querytype: 1
+    results: []
+    sourceColumns: {}
+    predicateColumns: {}

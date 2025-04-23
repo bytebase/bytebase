@@ -295,11 +295,29 @@ func (m CompletionMap) insertAllColumns(c *Completer) {
 						Text:       c.quotedIdentifierIfNeeded(column.Name),
 						Definition: definition,
 						Comment:    comment,
+						Priority:   c.getPriority(c.defaultDatabase, schema, table),
 					}
 				}
 			}
 		}
 	}
+}
+
+func (c *Completer) getPriority(database string, schema string, table string) int {
+	if database == "" {
+		database = c.defaultDatabase
+	}
+	if schema == "" {
+		schema = c.defaultSchema
+	}
+	if c.referenceMap == nil {
+		return 1
+	}
+	if c.referenceMap[fmt.Sprintf("%s.%s.%s", database, schema, table)] {
+		// The higher priority.
+		return 0
+	}
+	return 1
 }
 
 func (m CompletionMap) insertMetadataColumns(c *Completer, linkedServer string, database string, schema string, table string) {
@@ -370,6 +388,7 @@ func (m CompletionMap) insertMetadataColumns(c *Completer, linkedServer string, 
 					Text:       c.quotedIdentifierIfNeeded(column.Name),
 					Definition: definition,
 					Comment:    comment,
+					Priority:   c.getPriority(c.defaultDatabase, schema, table),
 				}
 			}
 		}
@@ -482,6 +501,7 @@ type Completer struct {
 	// references is the flattened table references.
 	// It's helpful to look up the table reference.
 	references         []base.TableReference
+	referenceMap       map[string]bool
 	cteCache           map[int][]*base.VirtualTableReference
 	cteTables          []*base.VirtualTableReference
 	caretTokenIsQuoted quotedType
@@ -1260,8 +1280,25 @@ func notEmptySQLCount(list []base.SingleSQL) int {
 }
 
 func (c *Completer) takeReferencesSnapshot() {
+	if c.referenceMap == nil {
+		c.referenceMap = make(map[string]bool)
+	}
 	for _, references := range c.referencesStack {
 		c.references = append(c.references, references...)
+		for _, reference := range references {
+			if r, ok := reference.(*base.PhysicalTableReference); ok {
+				database := r.Database
+				if database == "" {
+					database = c.defaultDatabase
+				}
+				schema := r.Schema
+				if schema == "" {
+					schema = c.defaultSchema
+				}
+				tableID := fmt.Sprintf("%s.%s.%s", database, schema, r.Table)
+				c.referenceMap[tableID] = true
+			}
+		}
 	}
 }
 

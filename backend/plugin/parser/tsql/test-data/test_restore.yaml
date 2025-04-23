@@ -1,4 +1,35 @@
 - input: |-
+    UPDATE t_generated SET b = 1 WHERE a = 1;
+    UPDATE t_generated SET b = 2 WHERE a = 2;
+    UPDATE t_generated SET b = 3 WHERE a = 3;
+    UPDATE t_generated SET b = 4 WHERE a = 4;
+    UPDATE t_generated SET b = 5 WHERE a = 5;
+    UPDATE t_generated SET b = 6 WHERE a = 6;
+    UPDATE t_generated SET b = 7 WHERE a = 7;
+  backupdatabase: bbarchive
+  backuptable: prefix_t_generated
+  originaldatabase: db
+  originalschema: dbo
+  originaltable: t_generated
+  result: |-
+    /*
+    Original SQL:
+    UPDATE t_generated SET b = 1 WHERE a = 1;
+    UPDATE t_generated SET b = 2 WHERE a = 2;
+    UPDATE t_generated SET b = 3 WHERE a = 3;
+    UPDATE t_generated SET b = 4 WHERE a = 4;
+    UPDATE t_generated SET b = 5 WHERE a = 5;
+    UPDATE t_generated SET b = 6 WHERE a = 6;
+    UPDATE t_generated SET b = 7 WHERE a = 7;
+    */
+    MERGE INTO [db].[dbo].[t_generated] AS t
+    USING [bbarchive].[dbo].[prefix_t_generated] AS b
+      ON t.[a] = b.[a]
+    WHEN MATCHED THEN
+      UPDATE SET t.[b] = b.[b]
+    WHEN NOT MATCHED THEN
+     INSERT ([a], [b]) VALUES (b.[a], b.[b]);
+- input: |-
     UPDATE t_generated SET a = 1 WHERE b = 1;
     UPDATE t_generated SET a = 2 WHERE b = 2;
     UPDATE t_generated SET a = 3 WHERE b = 3;

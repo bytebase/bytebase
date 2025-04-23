@@ -364,7 +364,8 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 	if err == nil {
 		return affectedRows, nil
 	}
-	if !errors.As(err, &LockTimeoutError{}) {
+	var lockErr *LockTimeoutError
+	if !errors.As(err, &lockErr) {
 		return affectedRows, err
 	}
 
@@ -382,7 +383,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 		if err == nil {
 			break
 		}
-		if !errors.As(err, &LockTimeoutError{}) {
+		if !errors.As(err, &lockErr) {
 			break
 		}
 	}
@@ -493,11 +494,11 @@ func (d *Driver) tryExecute(
 
 					return &db.ErrorWithPosition{
 						Err: errors.Wrapf(err, "failed to execute context in a transaction"),
-						Start: &storepb.TaskRunResult_Position{
+						Start: &storepb.Position{
 							Line:   int32(command.FirstStatementLine),
 							Column: int32(command.FirstStatementColumn),
 						},
-						End: &storepb.TaskRunResult_Position{
+						End: &storepb.Position{
 							Line:   int32(command.LastLine),
 							Column: int32(command.LastColumn),
 						},

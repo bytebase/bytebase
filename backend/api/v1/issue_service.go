@@ -1117,7 +1117,7 @@ func (s *IssueService) UpdateIssue(ctx context.Context, request *v1pb.UpdateIssu
 				if err != nil {
 					return nil, status.Errorf(codes.Internal, "failed to get plan check runs for plan, error: %v", err)
 				}
-				if err := s.store.CreatePlanCheckRuns(ctx, planCheckRuns...); err != nil {
+				if err := s.store.CreatePlanCheckRuns(ctx, plan, planCheckRuns...); err != nil {
 					return nil, status.Errorf(codes.Internal, "failed to create plan check runs, error: %v", err)
 				}
 			}

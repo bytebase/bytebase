@@ -5,12 +5,7 @@ import {
   planServiceClient,
   rolloutServiceClient,
 } from "@/grpcweb";
-import {
-  useProjectV1Store,
-  useUserStore,
-  batchGetOrFetchUsers,
-  batchGetOrFetchDatabases,
-} from "@/store";
+import { useProjectV1Store, useUserStore, batchGetOrFetchUsers } from "@/store";
 import type { ComposedIssue, ComposedProject, ComposedTaskRun } from "@/types";
 import {
   emptyIssue,
@@ -79,18 +74,6 @@ export const composeIssue = async (
       issue.rolloutEntity = await rolloutServiceClient.getRollout({
         name: issue.rollout,
       });
-
-      const databaseList = issue.rolloutEntity.stages.reduce(
-        (databaseList, stage) => {
-          databaseList.push(...stage.tasks.map((task) => task.target));
-          return databaseList;
-        },
-        [] as string[]
-      );
-      // TODO(ed): temporary solution to ensure the databases.
-      // For normal issues, users can fetch the databases per page in the task cards.
-      // We can change to the BatchGetDatabases API later.
-      await batchGetOrFetchDatabases(databaseList.slice(0, 50));
     }
 
     if (hasProjectPermissionV2(projectEntity, "bb.taskRuns.list")) {

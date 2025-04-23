@@ -11,9 +11,11 @@ import (
 	"sync"
 	"time"
 
+	grpcprom "github.com/grpc-ecosystem/go-grpc-middleware/providers/prometheus"
 	grpcruntime "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/soheilhy/cmux"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -259,12 +261,14 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	recoveryUnaryInterceptor := recovery.UnaryServerInterceptor(recovery.WithRecoveryHandler(onPanic))
 	recoveryStreamInterceptor := recovery.StreamServerInterceptor(recovery.WithRecoveryHandler(onPanic))
 	grpc.EnableTracing = true
+	srvMetrics := grpcprom.NewServerMetrics(grpcprom.WithServerHandlingTimeHistogram())
 	s.grpcServer = grpc.NewServer(
 		// Override the maximum receiving message size to 100M for uploading large sheets.
 		grpc.MaxRecvMsgSize(100*1024*1024),
 		grpc.InitialWindowSize(100000000),
 		grpc.InitialConnWindowSize(100000000),
 		grpc.ChainUnaryInterceptor(
+			srvMetrics.UnaryServerInterceptor(),
 			debugProvider.DebugInterceptor,
 			authProvider.AuthenticationInterceptor,
 			aclProvider.ACLInterceptor,
@@ -272,6 +276,7 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 			recoveryUnaryInterceptor,
 		),
 		grpc.ChainStreamInterceptor(
+			srvMetrics.StreamServerInterceptor(),
 			debugProvider.DebugStreamInterceptor,
 			authProvider.AuthenticationStreamInterceptor,
 			aclProvider.ACLStreamInterceptor,
@@ -305,6 +310,14 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 
 	// Configure echo server routes.
 	configureEchoRouters(s.echoServer, s.grpcServer, s.lspServer, directorySyncServer, mux, profile)
+
+	// Configure grpc prometheus metrics.
+	if err := prometheus.DefaultRegisterer.Register(srvMetrics); err != nil {
+		if _, ok := err.(prometheus.AlreadyRegisteredError); !ok {
+			return nil, err
+		}
+	}
+	srvMetrics.InitializeMetrics(s.grpcServer)
 
 	serverStarted = true
 	return s, nil

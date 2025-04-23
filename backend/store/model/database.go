@@ -809,6 +809,14 @@ func (t *TableMetadata) GetIndex(name string) *IndexMetadata {
 	return t.internalIndexes[nameID]
 }
 
+func (t *TableMetadata) ListIndexes() []*IndexMetadata {
+	var result []*IndexMetadata
+	for _, index := range t.internalIndexes {
+		result = append(result, index)
+	}
+	return result
+}
+
 func (t *TableMetadata) GetPrimaryKey() *IndexMetadata {
 	for _, index := range t.internalIndexes {
 		if index.proto.Primary {

@@ -185,6 +185,27 @@
           </NInputNumber>
         </div>
       </div>
+      <div>
+        <p class="">
+          <span class="textlabel">
+            {{ $t("project.settings.issue-related.ci-sampling-size.self") }}
+          </span>
+        </p>
+        <p class="mt-1 mb-3 text-sm text-gray-400">
+            {{ $t("project.settings.issue-related.ci-sampling-size.description") }}
+        </p>
+        <div class="mt-3 w-full flex flex-row justify-start items-center gap-4">
+          <NInputNumber
+            :value="state.ciSamplingSize"
+            :disabled="!allowUpdateIssueProjectSetting || loading"
+            class="w-60"
+            :min="0"
+            :precision="0"
+            @update:value="handleCiSamplingSizeInput"
+          >
+          </NInputNumber>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -217,6 +238,7 @@ interface LocalState {
   skipBackupErrors: boolean;
   postgresDatabaseTenantMode: boolean;
   executionRetryPolicy: Project_ExecutionRetryPolicy | undefined;
+  ciSamplingSize: number;
 }
 
 const getInitialLocalState = (): LocalState => {
@@ -232,6 +254,7 @@ const getInitialLocalState = (): LocalState => {
     skipBackupErrors: project.skipBackupErrors,
     postgresDatabaseTenantMode: project.postgresDatabaseTenantMode,
     executionRetryPolicy: project.executionRetryPolicy,
+    ciSamplingSize: project.ciSamplingSize || 0,
   };
 };
 
@@ -365,6 +388,9 @@ const updateMask = computed(() => {
   if (!isEqual(state.executionRetryPolicy?.maximumRetries ?? 0, props.project.executionRetryPolicy?.maximumRetries ?? 0)) {
     mask.push("execution_retry_policy");
   }
+  if (!isEqual(state.ciSamplingSize, props.project.ciSamplingSize || 0)) {
+    mask.push("ci_sampling_size");
+  }
   return mask;
 });
 
@@ -374,6 +400,11 @@ const handleInput = (value: number | null) => {
   state.executionRetryPolicy = Project_ExecutionRetryPolicy.create({
       maximumRetries: value,
   });
+};
+
+const handleCiSamplingSizeInput = (value: number | null) => {
+  if (value === null || value === undefined) return;
+  state.ciSamplingSize = value;
 };
 
 defineExpose({

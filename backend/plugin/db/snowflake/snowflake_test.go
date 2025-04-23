@@ -25,7 +25,7 @@ func TestBuildSnowflakeDSN(t *testing.T) {
 				},
 				Password: "pwd",
 			},
-			want: "bytebase:pwd@nb47110.ap-southeast-1.snowflakecomputing.com:443?database=%22%22&ocspFailOpen=true&region=ap-southeast-1&validateDefaultParameters=true",
+			want: "bytebase:pwd@nb47110.ap-southeast-1.snowflakecomputing.com:443?ocspFailOpen=true&region=ap-southeast-1&validateDefaultParameters=true",
 		},
 		{
 			input: db.ConnectionConfig{
@@ -52,7 +52,7 @@ func TestBuildSnowflakeDSN(t *testing.T) {
 				},
 				Password: "pwd",
 			},
-			want: "bytebase:pwd@10.0.0.1:443?account=nb47110&database=%22%22&ocspFailOpen=true&region=ap-southeast-1&validateDefaultParameters=true",
+			want: "bytebase:pwd@10.0.0.1:443?account=nb47110&ocspFailOpen=true&region=ap-southeast-1&validateDefaultParameters=true",
 		},
 		{
 			input: db.ConnectionConfig{

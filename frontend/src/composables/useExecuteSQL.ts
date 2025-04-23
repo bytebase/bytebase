@@ -58,6 +58,7 @@ const useExecuteSQL = () => {
   const databaseStore = useDatabaseV1Store();
   const tabStore = useSQLEditorTabStore();
   const sqlEditorStore = useSQLEditorStore();
+  const queryHistoryStore = useSQLEditorQueryHistoryStore();
   const sqlCheckStyle = useAppFeature("bb.feature.sql-editor.sql-check-style");
 
   const notify = (
@@ -368,16 +369,23 @@ const useExecuteSQL = () => {
           }
         } else {
           queryResultMap.set(database.name, markRaw(resultSet));
+          // After all the queries are executed, we update the tab with the latest query result map.
+          // Refresh the query history list when the query executed successfully
+          // (with or without warnings).
+          queryHistoryStore.resetPageToken({
+            project: sqlEditorStore.project,
+            database: database.name,
+          });
+          queryHistoryStore.fetchQueryHistoryList({
+            project: sqlEditorStore.project,
+            database: database.name,
+          });
         }
       } catch (error: any) {
         fail(database, error.response?.data?.message ?? String(error));
       }
     }
 
-    // After all the queries are executed, we update the tab with the latest query result map.
-    // Refresh the query history list when the query executed successfully
-    // (with or without warnings).
-    useSQLEditorQueryHistoryStore().fetchQueryHistoryList();
     cleanup();
   };
 

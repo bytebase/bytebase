@@ -96,6 +96,23 @@ func (s *DatabaseService) getDatabaseMessage(ctx context.Context, name string) (
 	return databaseMessage, nil
 }
 
+func (s *DatabaseService) BatchGetDatabases(ctx context.Context, request *v1pb.BatchGetDatabasesRequest) (*v1pb.BatchGetDatabasesResponse, error) {
+	// TODO(steven): Filter out the databases based on `request.parent`.
+	databases := make([]*v1pb.Database, 0, len(request.Names))
+	for _, name := range request.Names {
+		databaseMessage, err := s.getDatabaseMessage(ctx, name)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to get database %q with error: %v", name, err.Error())
+		}
+		database, err := s.convertToDatabase(ctx, databaseMessage)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to convert database, error: %v", err)
+		}
+		databases = append(databases, database)
+	}
+	return &v1pb.BatchGetDatabasesResponse{Databases: databases}, nil
+}
+
 func getVariableAndValueFromExpr(expr celast.Expr) (string, any) {
 	var variable string
 	var value any
@@ -220,8 +237,18 @@ func getListDatabaseFilter(filter string) (*store.ListResourceFilter, error) {
 			labelValues := strings.Split(keyVal[1], ",")
 			positionalArgs = append(positionalArgs, labelValues)
 			return fmt.Sprintf("db.metadata->'labels'->>'%s' = ANY($%d)", labelKey, len(positionalArgs)), nil
+		case "drifted":
+			drifted, ok := value.(bool)
+			if !ok {
+				return "", status.Errorf(codes.InvalidArgument, "invalid drifted filter %q", value)
+			}
+			condition := "IS"
+			if !drifted {
+				condition = "IS NOT"
+			}
+			return fmt.Sprintf("(db.metadata->>'drifted')::boolean %s TRUE", condition), nil
 		case "exclude_unassigned":
-			if _, ok := value.(bool); ok {
+			if excludeUnassigned, ok := value.(bool); excludeUnassigned && ok {
 				positionalArgs = append(positionalArgs, base.DefaultProjectID)
 				return fmt.Sprintf("db.project != $%d", len(positionalArgs)), nil
 			}

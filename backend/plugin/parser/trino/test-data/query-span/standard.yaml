@@ -1,0 +1,30 @@
+- description: Simple SELECT
+  statement: SELECT id, name FROM users;
+  defaultDatabase: catalog1
+  metadata: '{"name":"catalog1","schemas":[{"name":"public","tables":[{"name":"users","columns":[{"name":"id","type":"integer"},{"name":"name","type":"varchar"}]}]}]}'
+  querySpan:
+    type:
+        querytype: 1
+    results: []
+    sourceColumns: {}
+    predicateColumns: {}
+- description: SELECT with alias
+  statement: SELECT u.id AS user_id, u.name FROM users u;
+  defaultDatabase: catalog1
+  metadata: '{"name":"catalog1","schemas":[{"name":"public","tables":[{"name":"users","columns":[{"name":"id","type":"integer"},{"name":"name","type":"varchar"}]}]}]}'
+  querySpan:
+    type:
+        querytype: 1
+    results: []
+    sourceColumns: {}
+    predicateColumns: {}
+- description: SELECT from schema.table
+  statement: SELECT id, name FROM public.users;
+  defaultDatabase: catalog1
+  metadata: '{"name":"catalog1","schemas":[{"name":"public","tables":[{"name":"users","columns":[{"name":"id","type":"integer"},{"name":"name","type":"varchar"}]}]}]}'
+  querySpan:
+    type:
+        querytype: 1
+    results: []
+    sourceColumns: {}
+    predicateColumns: {}

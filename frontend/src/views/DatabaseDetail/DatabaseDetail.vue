@@ -12,12 +12,11 @@
       :link="'https://www.bytebase.com/docs/change-database/drift-detection/?source=console'"
       :action-text="
         database.project !== DEFAULT_PROJECT_NAME
-          ? $t('changelog.establish-baseline')
-          : ''
+          ? $t('database.drifted.new-baseline.self')
+          : undefined
       "
-      @click="doCreateBaselineIssue"
-    >
-    </BBAttention>
+      @click="updateDatabaseDrift"
+    />
 
     <main class="flex-1 relative">
       <!-- Highlight Panel -->
@@ -136,10 +135,7 @@
 
     <NTabs v-if="ready" v-model:value="state.selectedTab">
       <NTabPane name="overview" :tab="$t('common.overview')">
-        <DatabaseOverviewPanel
-          class="mt-2"
-          :database="database"
-        />
+        <DatabaseOverviewPanel class="mt-2" :database="database" />
       </NTabPane>
       <NTabPane
         v-if="
@@ -251,6 +247,7 @@ import {
   useEnvironmentV1Store,
   useDatabaseV1ByName,
   pushNotification,
+  useDatabaseV1Store,
 } from "@/store";
 import {
   databaseNamePrefix,
@@ -298,6 +295,7 @@ const props = defineProps<{
 
 const { t } = useI18n();
 const router = useRouter();
+const databaseStore = useDatabaseV1Store();
 
 const state = reactive<LocalState>({
   showTransferDatabaseModal: false,
@@ -436,20 +434,18 @@ const handleCopyDatabaseName = (name: string) => {
   });
 };
 
-const doCreateBaselineIssue = () => {
-  router.push({
-    name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
-    params: {
-      projectId: extractProjectResourceName(database.value.project),
-      issueSlug: "create",
+const updateDatabaseDrift = async () => {
+  await databaseStore.updateDatabase({
+    database: {
+      ...database.value,
+      drifted: false,
     },
-    query: {
-      template: "bb.issue.database.schema.baseline",
-      name: t("changelog.establish-database-baseline", {
-        name: database.value.databaseName,
-      }),
-      databaseList: database.value.name,
-    },
+    updateMask: ["drifted"],
+  });
+  pushNotification({
+    module: "bytebase",
+    style: "SUCCESS",
+    title: t("database.drifted.new-baseline.successfully-established"),
   });
 };
 </script>

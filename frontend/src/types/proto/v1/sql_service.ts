@@ -279,12 +279,7 @@ export interface Advice {
   title: string;
   /** The advice content. */
   content: string;
-  /** The advice line number in the SQL statement. */
-  line: number;
-  /** The advice column number in the SQL statement. */
-  column: number;
   /**
-   * To supersede `line` and `column` above.
    * The start_position is inclusive and the end_position is exclusive.
    * TODO: use range instead
    */
@@ -542,16 +537,22 @@ export interface SearchQueryHistoriesRequest {
    */
   pageToken: string;
   /**
-   * filter is the filter to apply on the search query history,
-   * follow the
-   * [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form)
-   * syntax. Support filter by:
-   * - database, for example:
-   *    database = "instances/{instance}/databases/{database}"
-   * - instance, for example:
-   *    instance = "instances/{instance}"
-   * - type, for example:
-   *    type = "QUERY"
+   * Filter is the filter to apply on the search query history
+   * Supported filter:
+   * - project
+   * - database
+   * - instance
+   * - type
+   * - statement
+   *
+   * For example:
+   * project == "projects/{project}"
+   * database == "instances/{instance}/databases/{database}"
+   * instance == "instances/{instance}"
+   * type == "QUERY"
+   * type == "EXPORT"
+   * statement.matches("select")
+   * type == "QUERY" && statement.matches("select")
    */
   filter: string;
 }
@@ -2291,8 +2292,6 @@ function createBaseAdvice(): Advice {
     code: 0,
     title: "",
     content: "",
-    line: 0,
-    column: 0,
     startPosition: undefined,
     endPosition: undefined,
   };
@@ -2311,12 +2310,6 @@ export const Advice: MessageFns<Advice> = {
     }
     if (message.content !== "") {
       writer.uint32(34).string(message.content);
-    }
-    if (message.line !== 0) {
-      writer.uint32(40).int32(message.line);
-    }
-    if (message.column !== 0) {
-      writer.uint32(48).int32(message.column);
     }
     if (message.startPosition !== undefined) {
       Position.encode(message.startPosition, writer.uint32(66).fork()).join();
@@ -2366,22 +2359,6 @@ export const Advice: MessageFns<Advice> = {
           message.content = reader.string();
           continue;
         }
-        case 5: {
-          if (tag !== 40) {
-            break;
-          }
-
-          message.line = reader.int32();
-          continue;
-        }
-        case 6: {
-          if (tag !== 48) {
-            break;
-          }
-
-          message.column = reader.int32();
-          continue;
-        }
         case 8: {
           if (tag !== 66) {
             break;
@@ -2413,8 +2390,6 @@ export const Advice: MessageFns<Advice> = {
       code: isSet(object.code) ? globalThis.Number(object.code) : 0,
       title: isSet(object.title) ? globalThis.String(object.title) : "",
       content: isSet(object.content) ? globalThis.String(object.content) : "",
-      line: isSet(object.line) ? globalThis.Number(object.line) : 0,
-      column: isSet(object.column) ? globalThis.Number(object.column) : 0,
       startPosition: isSet(object.startPosition) ? Position.fromJSON(object.startPosition) : undefined,
       endPosition: isSet(object.endPosition) ? Position.fromJSON(object.endPosition) : undefined,
     };
@@ -2434,12 +2409,6 @@ export const Advice: MessageFns<Advice> = {
     if (message.content !== "") {
       obj.content = message.content;
     }
-    if (message.line !== 0) {
-      obj.line = Math.round(message.line);
-    }
-    if (message.column !== 0) {
-      obj.column = Math.round(message.column);
-    }
     if (message.startPosition !== undefined) {
       obj.startPosition = Position.toJSON(message.startPosition);
     }
@@ -2458,8 +2427,6 @@ export const Advice: MessageFns<Advice> = {
     message.code = object.code ?? 0;
     message.title = object.title ?? "";
     message.content = object.content ?? "";
-    message.line = object.line ?? 0;
-    message.column = object.column ?? 0;
     message.startPosition = (object.startPosition !== undefined && object.startPosition !== null)
       ? Position.fromPartial(object.startPosition)
       : undefined;

@@ -1,0 +1,50 @@
+- description: UNNEST array
+  statement: SELECT id, t.name FROM users CROSS JOIN UNNEST(names) AS t(name);
+  defaultDatabase: catalog1
+  metadata: '{"name":"catalog1","schemas":[{"name":"public","tables":[{"name":"users","columns":[{"name":"id","type":"integer"},{"name":"names","type":"array<varchar>"}]}]}]}'
+  querySpan:
+    type:
+        querytype: 1
+    results: []
+    sourceColumns: {}
+    predicateColumns: {}
+- description: LATERAL query
+  statement: SELECT u.id, t.x FROM users u, LATERAL (SELECT id + 1 AS x) t;
+  defaultDatabase: catalog1
+  metadata: '{"name":"catalog1","schemas":[{"name":"public","tables":[{"name":"users","columns":[{"name":"id","type":"integer"},{"name":"name","type":"varchar"}]}]}]}'
+  querySpan:
+    type:
+        querytype: 1
+    results: []
+    sourceColumns: {}
+    predicateColumns: {}
+- description: System table query
+  statement: SELECT * FROM system.runtime.nodes;
+  defaultDatabase: catalog1
+  metadata: '{"name":"catalog1","schemas":[{"name":"public","tables":[{"name":"users","columns":[{"name":"id","type":"integer"},{"name":"name","type":"varchar"}]}]}]}'
+  querySpan:
+    type:
+        querytype: 3
+    results: []
+    sourceColumns: {}
+    predicateColumns: {}
+- description: Multiple catalog query
+  statement: SELECT a.id, b.id FROM catalog1.public.users a JOIN catalog2.public.orders b ON a.id = b.user_id;
+  defaultDatabase: catalog3
+  metadata: '{"name":"catalog1","schemas":[{"name":"public","tables":[{"name":"users","columns":[{"name":"id","type":"integer"},{"name":"name","type":"varchar"}]}]}]}'
+  querySpan:
+    type:
+        querytype: 1
+    results: []
+    sourceColumns: {}
+    predicateColumns: {}
+- description: WITH clause
+  statement: WITH temp AS (SELECT id, name FROM users WHERE id > 10) SELECT id, name FROM temp;
+  defaultDatabase: catalog1
+  metadata: '{"name":"catalog1","schemas":[{"name":"public","tables":[{"name":"users","columns":[{"name":"id","type":"integer"},{"name":"name","type":"varchar"}]}]}]}'
+  querySpan:
+    type:
+        querytype: 1
+    results: []
+    sourceColumns: {}
+    predicateColumns: {}

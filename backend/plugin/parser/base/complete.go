@@ -37,6 +37,12 @@ type Candidate struct {
 	Type       CandidateType
 	Definition string
 	Comment    string
+	// The smaller the number, the higher the priority.
+	Priority int
+}
+
+func (c Candidate) TextWithPriority() string {
+	return fmt.Sprintf("%d.%s", c.Priority, c.Text)
 }
 
 func (c Candidate) String() string {
