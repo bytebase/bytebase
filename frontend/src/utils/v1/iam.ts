@@ -92,9 +92,6 @@ export const memberMapToRolesInProjectIAM = (
 
   // Handle workspace level project roles.
   for (const [role, userSet] of workspaceStore.roleMapToUsers.entries()) {
-    if (PRESET_WORKSPACE_ROLES.includes(role)) {
-      continue;
-    }
     if (targetRole && role !== targetRole) {
       continue;
     }
