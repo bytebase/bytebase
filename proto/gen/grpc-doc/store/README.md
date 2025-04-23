@@ -303,7 +303,6 @@
     - [SchedulerInfo](#bytebase-store-SchedulerInfo)
     - [SchedulerInfo.WaitingCause](#bytebase-store-SchedulerInfo-WaitingCause)
     - [TaskRunResult](#bytebase-store-TaskRunResult)
-    - [TaskRunResult.Position](#bytebase-store-TaskRunResult-Position)
   
 - [store/task_run_log.proto](#store_task_run_log-proto)
     - [TaskRunLog](#bytebase-store-TaskRunLog)
@@ -4784,27 +4783,10 @@ We support three types of SMTP encryption: NONE, STARTTLS, and SSL/TLS.
 | detail | [string](#string) |  |  |
 | changelog | [string](#string) |  | Format: instances/{instance}/databases/{database}/changelogs/{changelog} |
 | version | [string](#string) |  |  |
-| start_position | [TaskRunResult.Position](#bytebase-store-TaskRunResult-Position) |  |  |
-| end_position | [TaskRunResult.Position](#bytebase-store-TaskRunResult-Position) |  |  |
+| start_position | [Position](#bytebase-store-Position) |  | The following fields are used for error reporting. |
+| end_position | [Position](#bytebase-store-Position) |  |  |
 | export_archive_uid | [int32](#int32) |  | The uid of the export archive. |
 | prior_backup_detail | [PriorBackupDetail](#bytebase-store-PriorBackupDetail) |  | The prior backup detail that will be used to rollback the task run. |
-
-
-
-
-
-
-<a name="bytebase-store-TaskRunResult-Position"></a>
-
-### TaskRunResult.Position
-The following fields are used for error reporting.
-TODO(zp): Use common Position instead.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| line | [int32](#int32) |  |  |
-| column | [int32](#int32) |  |  |
 
 
 
