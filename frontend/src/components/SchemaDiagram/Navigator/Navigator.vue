@@ -6,7 +6,7 @@
     >
       <div class="p-1 space-y-2">
         <SchemaSelector
-          v-if="databaseMetadata.schemas.length > 1"
+          v-if="hasSchemaProperty(database.instanceResource.engine)"
           :schemas="databaseMetadata.schemas"
           v-model:value="selectedSchemaNames"
         />
@@ -41,6 +41,7 @@
 <script lang="ts" setup>
 import { NInput } from "naive-ui";
 import { reactive } from "vue";
+import { hasSchemaProperty } from "@/utils";
 import { useSchemaDiagramContext } from "../common";
 import SchemaSelector from "./SchemaSelector.vue";
 import Tree from "./Tree.vue";
@@ -55,5 +56,6 @@ const state = reactive<LocalState>({
   keyword: "",
 });
 
-const { databaseMetadata, selectedSchemaNames } = useSchemaDiagramContext();
+const { databaseMetadata, selectedSchemaNames, database } =
+  useSchemaDiagramContext();
 </script>
