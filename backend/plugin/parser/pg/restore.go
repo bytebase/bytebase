@@ -46,15 +46,15 @@ func GenerateRestoreSQL(ctx context.Context, rCtx base.RestoreContext, statement
 		sqlForComment += "..."
 	}
 
-	preAppendStatements, err := getPreAppendStatements(statement)
+	prependStatements, err := getPrependStatements(statement)
 	if err != nil {
-		return "", errors.Wrap(err, "failed to get pre-append statements")
+		return "", errors.Wrap(err, "failed to get prepend statements")
 	}
 
-	return doGenerate(ctx, rCtx, sqlForComment, tree, backupItem, preAppendStatements)
+	return doGenerate(ctx, rCtx, sqlForComment, tree, backupItem, prependStatements)
 }
 
-func doGenerate(ctx context.Context, rCtx base.RestoreContext, sqlForComment string, tree *ParseResult, backupItem *storepb.PriorBackupDetail_Item, preAppendStatements string) (string, error) {
+func doGenerate(ctx context.Context, rCtx base.RestoreContext, sqlForComment string, tree *ParseResult, backupItem *storepb.PriorBackupDetail_Item, prependStatements string) (string, error) {
 	_, sourceDatabase, err := common.GetInstanceDatabaseID(backupItem.SourceTable.Database)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get source database ID for %s", backupItem.SourceTable.Database)
@@ -102,8 +102,8 @@ func doGenerate(ctx context.Context, rCtx base.RestoreContext, sqlForComment str
 		return "", g.err
 	}
 
-	if len(preAppendStatements) > 0 {
-		return fmt.Sprintf("%s\n/*\nOriginal SQL:\n%s\n*/\n%s", preAppendStatements, sqlForComment, g.result), nil
+	if len(prependStatements) > 0 {
+		return fmt.Sprintf("%s\n/*\nOriginal SQL:\n%s\n*/\n%s", prependStatements, sqlForComment, g.result), nil
 	}
 	return fmt.Sprintf("/*\nOriginal SQL:\n%s\n*/\n%s", sqlForComment, g.result), nil
 }
@@ -259,7 +259,7 @@ func inRange(start, end, targetStart, targetEnd *storepb.Position) bool {
 	return true
 }
 
-func getPreAppendStatements(statement string) (string, error) {
+func getPrependStatements(statement string) (string, error) {
 	nodes, err := pgrawparser.Parse(pgrawparser.ParseContext{}, statement)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to parse statement")
