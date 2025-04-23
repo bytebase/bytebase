@@ -4,7 +4,6 @@ import { roleNamePrefix, userNamePrefix } from "@/store/modules/v1/common";
 import {
   PresetRoleType,
   groupBindingPrefix,
-  PRESET_WORKSPACE_ROLES,
 } from "@/types";
 import type { IamPolicy, Binding } from "@/types/proto/v1/iam_policy";
 import { convertFromExpr } from "@/utils/issue/cel";
@@ -92,9 +91,6 @@ export const memberMapToRolesInProjectIAM = (
 
   // Handle workspace level project roles.
   for (const [role, userSet] of workspaceStore.roleMapToUsers.entries()) {
-    if (PRESET_WORKSPACE_ROLES.includes(role)) {
-      continue;
-    }
     if (targetRole && role !== targetRole) {
       continue;
     }
