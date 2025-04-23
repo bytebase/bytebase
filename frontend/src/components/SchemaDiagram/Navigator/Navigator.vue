@@ -2,10 +2,16 @@
   <div class="relative h-full">
     <div
       class="bb-schema-diagram--navigator--main h-full bg-white overflow-hidden border-y border-gray-200 flex flex-col transition-all"
-      :class="[state.expand ? 'w-60 shadow border-l' : 'w-0']"
+      :class="[state.expand ? 'w-72 shadow border-l' : 'w-0']"
     >
-      <div class="p-1">
+      <div class="p-1 space-y-2">
+        <SchemaSelector
+          v-if="databaseMetadata.schemas.length > 1"
+          :schemas="databaseMetadata.schemas"
+          v-model:value="selectedSchemaNames"
+        />
         <NInput
+          :size="'small'"
           v-model:value="state.keyword"
           :placeholder="$t('common.search')"
         >
@@ -35,6 +41,8 @@
 <script lang="ts" setup>
 import { NInput } from "naive-ui";
 import { reactive } from "vue";
+import { useSchemaDiagramContext } from "../common";
+import SchemaSelector from "./SchemaSelector.vue";
 import Tree from "./Tree.vue";
 
 type LocalState = {
@@ -46,4 +54,6 @@ const state = reactive<LocalState>({
   expand: true,
   keyword: "",
 });
+
+const { databaseMetadata, selectedSchemaNames } = useSchemaDiagramContext();
 </script>

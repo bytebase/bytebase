@@ -36,7 +36,7 @@ const props = withDefaults(
 );
 
 const context = useSchemaDiagramContext();
-const { databaseMetadata, events } = context;
+const { databaseMetadata, selectedSchemas, events } = context;
 
 const isFlatTree = computed(() => {
   const { schemas } = databaseMetadata.value;
@@ -44,7 +44,7 @@ const isFlatTree = computed(() => {
 });
 
 const treeData = computed(() => {
-  const schemaNodeList = databaseMetadata.value.schemas.map<TreeNode<"schema">>(
+  const schemaNodeList = selectedSchemas.value.map<TreeNode<"schema">>(
     (schema) => {
       const children = schema.tables.map<TreeNode<"table">>((table) => {
         return {
