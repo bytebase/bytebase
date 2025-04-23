@@ -233,7 +233,7 @@ func (exec *DataUpdateExecutor) backupData(
 
 	prependStatements, err := getPrependStatements(instance.Metadata.GetEngine(), originStatement)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get pre append statements")
+		return nil, errors.Wrap(err, "failed to get prepend statements")
 	}
 
 	priorBackupDetail := &storepb.PriorBackupDetail{}

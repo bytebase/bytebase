@@ -48,7 +48,7 @@ func GenerateRestoreSQL(ctx context.Context, rCtx base.RestoreContext, statement
 
 	prependStatements, err := getPrependStatements(statement)
 	if err != nil {
-		return "", errors.Wrap(err, "failed to get pre-append statements")
+		return "", errors.Wrap(err, "failed to get prepend statements")
 	}
 
 	return doGenerate(ctx, rCtx, sqlForComment, tree, backupItem, prependStatements)
