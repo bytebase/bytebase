@@ -11,8 +11,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/testing/protocmp"
 
+	v1pb "github.com/bytebase/bytebase/proto/generated-go/api/v1alpha"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
-	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 func TestSchemaAndDataUpdate(t *testing.T) {

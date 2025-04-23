@@ -20,11 +20,11 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { RouterLink } from "vue-router";
 import { getDateForPbTimestamp } from "@/types";
-import type { Changelog } from "@/types/proto/v1/database_service";
+import type { Changelog } from "@/types/proto/api/v1alpha/database_service";
 import {
   Changelog_Status,
   Changelog_Type,
-} from "@/types/proto/v1/database_service";
+} from "@/types/proto/api/v1alpha/database_service";
 import {
   extractIssueUID,
   getAffectedTableDisplayName,

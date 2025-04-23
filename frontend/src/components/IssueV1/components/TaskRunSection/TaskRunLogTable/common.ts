@@ -11,7 +11,7 @@ import {
   TaskRunLogEntry,
   TaskRunLogEntry_PriorBackup,
   TaskRunLogEntry_RetryInfo,
-} from "@/types/proto/v1/rollout_service";
+} from "@/types/proto/api/v1alpha/rollout_service";
 
 export type FlattenLogEntry = {
   batch: number;

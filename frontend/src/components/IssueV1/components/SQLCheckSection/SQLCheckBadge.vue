@@ -35,8 +35,8 @@ import { CheckIcon, TriangleAlertIcon, CircleAlertIcon } from "lucide-vue-next";
 import { NTag } from "naive-ui";
 import { computed, ref } from "vue";
 import { SQLCheckPanel } from "@/components/SQLCheck";
-import type { Advice } from "@/types/proto/v1/sql_service";
-import { Advice_Status } from "@/types/proto/v1/sql_service";
+import type { Advice } from "@/types/proto/api/v1alpha/sql_service";
+import { Advice_Status } from "@/types/proto/api/v1alpha/sql_service";
 import { databaseForTask, useIssueContext } from "../../logic";
 import { TaskSpinner } from "../common";
 

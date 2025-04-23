@@ -19,7 +19,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 	"github.com/bytebase/bytebase/backend/utils"
-	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
+	v1pb "github.com/bytebase/bytebase/proto/generated-go/api/v1alpha"
 )
 
 func makeValueByTypeName(typeName string, _ *sql.ColumnType) any {

@@ -22,7 +22,7 @@ import { NButton } from "naive-ui";
 import { onMounted, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { pushNotification, useCurrentUserV1, useUserStore } from "@/store";
-import { UpdateUserRequest } from "@/types/proto/v1/user_service";
+import { UpdateUserRequest } from "@/types/proto/api/v1alpha/user_service";
 import RecoveryCodesView from "./RecoveryCodesView.vue";
 
 interface LocalState {

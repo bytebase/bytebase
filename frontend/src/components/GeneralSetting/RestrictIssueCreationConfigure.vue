@@ -35,7 +35,7 @@ import {
 import {
   PolicyResourceType,
   PolicyType,
-} from "@/types/proto/v1/org_policy_service";
+} from "@/types/proto/api/v1alpha/org_policy_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import { FeatureBadge } from "../FeatureGuard";
 import { Switch } from "../v2";

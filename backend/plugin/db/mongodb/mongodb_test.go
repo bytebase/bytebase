@@ -10,8 +10,8 @@ import (
 	"google.golang.org/protobuf/types/known/durationpb"
 
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	v1pb "github.com/bytebase/bytebase/proto/generated-go/api/v1alpha"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
-	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 func TestGetMongoDBConnectionURL(t *testing.T) {

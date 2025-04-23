@@ -36,7 +36,7 @@ import {
   type ComposedTaskRun,
   getTimeForPbTimestamp,
 } from "@/types";
-import { TaskRun_Status, Task_Type } from "@/types/proto/v1/rollout_service";
+import { TaskRun_Status, Task_Type } from "@/types/proto/api/v1alpha/rollout_service";
 import { databaseV1Url, extractTaskUID, flattenTaskV1List } from "@/utils";
 import { extractChangelogUID } from "@/utils/v1/changelog";
 import { databaseForTask, specForTask, useIssueContext } from "../../logic";

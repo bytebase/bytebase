@@ -61,8 +61,8 @@ import { NTooltip } from "naive-ui";
 import type { PropType } from "vue";
 import { computed } from "vue";
 import type { ComposedIssue } from "@/types";
-import { IssueStatus, issueStatusToJSON } from "@/types/proto/v1/issue_service";
-import { Task_Status } from "@/types/proto/v1/rollout_service";
+import { IssueStatus, issueStatusToJSON } from "@/types/proto/api/v1alpha/issue_service";
+import { Task_Status } from "@/types/proto/api/v1alpha/rollout_service";
 import { isUnfinishedResolvedTask as checkUnfinishedResolvedTask } from "../logic";
 
 export type SizeType = "small" | "normal";

@@ -105,8 +105,8 @@ import { computed, reactive } from "vue";
 import { AnnouncementLevelSelect } from "@/components/v2";
 import { featureToRef } from "@/store";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
-import { Announcement } from "@/types/proto/v1/setting_service";
-import { Announcement_AlertLevel } from "@/types/proto/v1/setting_service";
+import { Announcement } from "@/types/proto/api/v1alpha/setting_service";
+import { Announcement_AlertLevel } from "@/types/proto/api/v1alpha/setting_service";
 import { FeatureBadge } from "../FeatureGuard";
 
 const props = defineProps<{

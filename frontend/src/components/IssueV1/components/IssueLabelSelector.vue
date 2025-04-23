@@ -52,7 +52,7 @@ import { computed, h } from "vue";
 import { PROJECT_V1_ROUTE_SETTINGS } from "@/router/dashboard/projectV1";
 import { getProjectName } from "@/store/modules/v1/common";
 import type { ComposedProject } from "@/types";
-import { Label } from "@/types/proto/v1/project_service";
+import { Label } from "@/types/proto/api/v1alpha/project_service";
 import { hasProjectPermissionV2 } from "@/utils";
 
 type IssueLabelOption = SelectOption & {

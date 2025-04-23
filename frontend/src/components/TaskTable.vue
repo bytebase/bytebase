@@ -41,8 +41,8 @@ import { useI18n } from "vue-i18n";
 import { BBTable, BBTableCell } from "@/bbkit";
 import DefinitionView from "@/components/DefinitionView.vue";
 import type { ComposedDatabase } from "@/types";
-import type { TaskMetadata } from "@/types/proto/v1/database_service";
-import { TaskMetadata_State } from "@/types/proto/v1/database_service";
+import type { TaskMetadata } from "@/types/proto/api/v1alpha/database_service";
+import { TaskMetadata_State } from "@/types/proto/api/v1alpha/database_service";
 
 defineProps({
   database: {

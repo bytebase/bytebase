@@ -60,7 +60,7 @@ import { useLanguage } from "@/composables/useLanguage";
 import { SETTING_ROUTE_WORKSPACE_SUBSCRIPTION } from "@/router/dashboard/workspaceSetting";
 import { useSubscriptionV1Store } from "@/store";
 import { planTypeToString, ENTERPRISE_INQUIRE_LINK } from "@/types";
-import { PlanType } from "@/types/proto/v1/subscription_service";
+import { PlanType } from "@/types/proto/api/v1alpha/subscription_service";
 import WeChatQRModal from "./WeChatQRModal.vue";
 
 interface LocalState {

@@ -27,8 +27,8 @@ import (
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
+	v1pb "github.com/bytebase/bytebase/proto/generated-go/api/v1alpha"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
-	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 // Runner is the runner for finding approval templates for issues.

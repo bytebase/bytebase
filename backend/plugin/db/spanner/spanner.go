@@ -20,8 +20,8 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/utils"
+	v1pb "github.com/bytebase/bytebase/proto/generated-go/api/v1alpha"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
-	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"

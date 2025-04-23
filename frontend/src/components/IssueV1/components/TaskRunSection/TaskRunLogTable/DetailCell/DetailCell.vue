@@ -17,8 +17,8 @@
 <script setup lang="ts">
 import { NEllipsis } from "naive-ui";
 import { computed } from "vue";
-import { TaskRunLogEntry_Type } from "@/types/proto/v1/rollout_service";
-import type { Sheet } from "@/types/proto/v1/sheet_service";
+import { TaskRunLogEntry_Type } from "@/types/proto/api/v1alpha/rollout_service";
+import type { Sheet } from "@/types/proto/api/v1alpha/sheet_service";
 import type { FlattenLogEntry } from "../common";
 import AffectedRowsCell from "./AffectedRowsCell.vue";
 import DatabaseSyncCell from "./DatabaseSyncCell.vue";

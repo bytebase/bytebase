@@ -70,7 +70,7 @@
 
 <script setup lang="ts">
 import { ref } from "vue";
-import { type Task } from "@/types/proto/v1/rollout_service";
+import { type Task } from "@/types/proto/api/v1alpha/rollout_service";
 import { Drawer } from "../v2";
 import {
   BannerSection,

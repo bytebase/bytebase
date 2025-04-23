@@ -152,12 +152,12 @@ import {
   useDatabaseV1ByName,
 } from "@/store";
 import { getDateForPbTimestamp } from "@/types";
-import { Engine } from "@/types/proto/v1/common";
-import type { Changelog } from "@/types/proto/v1/database_service";
+import { Engine } from "@/types/proto/api/v1alpha/common";
+import type { Changelog } from "@/types/proto/api/v1alpha/database_service";
 import {
   changelog_TypeToJSON,
   ChangelogView,
-} from "@/types/proto/v1/database_service";
+} from "@/types/proto/api/v1alpha/database_service";
 import {
   extractIssueUID,
   toClipboard,

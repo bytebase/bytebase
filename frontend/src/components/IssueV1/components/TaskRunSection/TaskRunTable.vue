@@ -36,7 +36,7 @@ import {
   type ComposedTaskRun,
 } from "@/types";
 import { Duration } from "@/types/proto/google/protobuf/duration";
-import { TaskRun_Status } from "@/types/proto/v1/rollout_service";
+import { TaskRun_Status } from "@/types/proto/api/v1alpha/rollout_service";
 import { humanizeDurationV1, sheetNameOfTaskV1 } from "@/utils";
 import { useIssueContext } from "../../logic";
 import TaskRunComment from "./TaskRunComment.vue";

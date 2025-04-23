@@ -1,8 +1,8 @@
 package v1
 
 import (
+	v1pb "github.com/bytebase/bytebase/proto/generated-go/api/v1alpha"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
-	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 func convertToPosition(position *storepb.Position) *v1pb.Position {

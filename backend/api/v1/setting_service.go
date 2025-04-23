@@ -33,8 +33,8 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/webhook/slack"
 	"github.com/bytebase/bytebase/backend/plugin/webhook/wecom"
 	"github.com/bytebase/bytebase/backend/store"
+	v1pb "github.com/bytebase/bytebase/proto/generated-go/api/v1alpha"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
-	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 // SettingService implements the setting service.

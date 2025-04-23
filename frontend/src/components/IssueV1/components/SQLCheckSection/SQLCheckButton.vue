@@ -60,8 +60,8 @@ import { releaseServiceClient } from "@/grpcweb";
 import {
   CheckReleaseResponse,
   ReleaseFileType,
-} from "@/types/proto/v1/release_service";
-import { Advice, Advice_Status } from "@/types/proto/v1/sql_service";
+} from "@/types/proto/api/v1alpha/release_service";
+import { Advice, Advice_Status } from "@/types/proto/api/v1alpha/sql_service";
 import type { Defer, VueStyle } from "@/utils";
 import { defer } from "@/utils";
 import { databaseForTask, useIssueContext } from "../../logic";

@@ -128,7 +128,7 @@ import {
 } from "@/store";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
 import type { FeatureType } from "@/types";
-import { type WorkspaceProfileSetting } from "@/types/proto/v1/setting_service";
+import { type WorkspaceProfileSetting } from "@/types/proto/api/v1alpha/setting_service";
 import { FeatureBadge, FeatureModal } from "../FeatureGuard";
 import PasswordRestrictionSetting from "./PasswordRestrictionSetting.vue";
 import SignInFrequencySetting from "./SignInFrequencySetting.vue";

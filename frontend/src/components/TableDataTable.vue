@@ -41,8 +41,8 @@ import {
   getTableCatalog,
 } from "@/store/modules";
 import type { ComposedDatabase } from "@/types";
-import { Engine } from "@/types/proto/v1/common";
-import type { TableMetadata } from "@/types/proto/v1/database_service";
+import { Engine } from "@/types/proto/api/v1alpha/common";
+import type { TableMetadata } from "@/types/proto/api/v1alpha/database_service";
 import { bytesToString, hasSchemaProperty } from "@/utils";
 import TableDetailDrawer from "./TableDetailDrawer.vue";
 

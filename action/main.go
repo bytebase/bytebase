@@ -8,7 +8,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/action/github"
-	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
+	v1pb "github.com/bytebase/bytebase/proto/generated-go/api/v1alpha"
 )
 
 func run(platform JobPlatform) error {

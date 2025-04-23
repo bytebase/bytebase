@@ -21,8 +21,8 @@ import (
 	"github.com/bytebase/bytebase/backend/runner/plancheck"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
+	v1pb "github.com/bytebase/bytebase/proto/generated-go/api/v1alpha"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
-	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 func (s *ReleaseService) CheckRelease(ctx context.Context, request *v1pb.CheckReleaseRequest) (*v1pb.CheckReleaseResponse, error) {

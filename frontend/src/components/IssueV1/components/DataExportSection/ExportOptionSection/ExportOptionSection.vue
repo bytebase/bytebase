@@ -70,11 +70,11 @@ import {
 import ErrorList from "@/components/misc/ErrorList.vue";
 import { planServiceClient } from "@/grpcweb";
 import { pushNotification } from "@/store";
-import { IssueStatus } from "@/types/proto/v1/issue_service";
+import { IssueStatus } from "@/types/proto/api/v1alpha/issue_service";
 import {
   Plan_Spec,
   Plan_ExportDataConfig,
-} from "@/types/proto/v1/plan_service";
+} from "@/types/proto/api/v1alpha/plan_service";
 import ExportFormatSelector from "./ExportFormatSelector.vue";
 import ExportPasswordInputer from "./ExportPasswordInputer.vue";
 

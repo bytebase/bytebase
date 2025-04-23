@@ -164,7 +164,7 @@ import { useSettingV1Store } from "@/store/modules/v1/setting";
 import {
   AISetting,
   AISetting_Provider,
-} from "@/types/proto/v1/setting_service";
+} from "@/types/proto/api/v1alpha/setting_service";
 import { FeatureBadge } from "../FeatureGuard";
 
 interface LocalState {

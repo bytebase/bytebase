@@ -28,7 +28,7 @@ import {
 import { NTooltip } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { Advice_Status } from "@/types/proto/v1/sql_service";
+import { Advice_Status } from "@/types/proto/api/v1alpha/sql_service";
 
 const props = defineProps<{
   status: Advice_Status;

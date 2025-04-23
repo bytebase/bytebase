@@ -87,7 +87,7 @@ import type { FeatureType } from "@/types";
 import {
   PolicyType,
   PolicyResourceType,
-} from "@/types/proto/v1/org_policy_service";
+} from "@/types/proto/api/v1alpha/org_policy_service";
 import { FeatureBadge, FeatureModal } from "../FeatureGuard";
 import DomainRestrictionSetting from "./DomainRestrictionSetting.vue";
 import MaximumRoleExpirationSetting from "./MaximumRoleExpirationSetting.vue";

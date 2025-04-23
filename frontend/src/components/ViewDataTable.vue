@@ -17,7 +17,7 @@ import type { PropType } from "vue";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import type { ComposedDatabase } from "@/types";
-import type { ViewMetadata } from "@/types/proto/v1/database_service";
+import type { ViewMetadata } from "@/types/proto/api/v1alpha/database_service";
 import { hasSchemaProperty } from "@/utils";
 import EllipsisSQLView from "./EllipsisSQLView.vue";
 

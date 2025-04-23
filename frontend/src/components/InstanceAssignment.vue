@@ -90,9 +90,9 @@ import {
   useActuatorV1Store,
 } from "@/store";
 import { environmentNamePrefix } from "@/store/modules/v1/common";
-import { engineFromJSON } from "@/types/proto/v1/common";
-import { Instance } from "@/types/proto/v1/instance_service";
-import { PlanType } from "@/types/proto/v1/subscription_service";
+import { engineFromJSON } from "@/types/proto/api/v1alpha/common";
+import { Instance } from "@/types/proto/api/v1alpha/instance_service";
+import { PlanType } from "@/types/proto/api/v1alpha/subscription_service";
 import { type SearchParams, hasWorkspacePermissionV2 } from "@/utils";
 import LearnMoreLink from "./LearnMoreLink.vue";
 

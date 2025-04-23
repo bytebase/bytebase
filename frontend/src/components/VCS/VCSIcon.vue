@@ -4,7 +4,7 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
-import { VCSType } from "@/types/proto/v1/common";
+import { VCSType } from "@/types/proto/api/v1alpha/common";
 
 const props = defineProps<{
   customClass?: string;

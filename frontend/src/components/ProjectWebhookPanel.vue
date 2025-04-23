@@ -31,8 +31,8 @@ import {
   PROJECT_V1_ROUTE_WEBHOOK_DETAIL,
 } from "@/router/dashboard/projectV1";
 import { projectWebhookV1ActivityItemList } from "@/types";
-import type { Project, Webhook } from "@/types/proto/v1/project_service";
-import { activity_TypeToJSON } from "@/types/proto/v1/project_service";
+import type { Project, Webhook } from "@/types/proto/api/v1alpha/project_service";
+import { activity_TypeToJSON } from "@/types/proto/api/v1alpha/project_service";
 import { projectWebhookV1Slug } from "@/utils";
 
 defineProps<{

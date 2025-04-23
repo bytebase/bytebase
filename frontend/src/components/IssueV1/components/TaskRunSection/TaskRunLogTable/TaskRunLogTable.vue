@@ -19,8 +19,8 @@ import { rolloutServiceClient } from "@/grpcweb";
 import {
   type TaskRun,
   TaskRunLogEntry_Type,
-} from "@/types/proto/v1/rollout_service";
-import type { Sheet } from "@/types/proto/v1/sheet_service";
+} from "@/types/proto/api/v1alpha/rollout_service";
+import type { Sheet } from "@/types/proto/api/v1alpha/sheet_service";
 import DetailCell, { detailCellRowSpan } from "./DetailCell";
 import DurationCell from "./DurationCell.vue";
 import LogTimeCell from "./LogTimeCell.vue";

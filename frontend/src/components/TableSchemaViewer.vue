@@ -42,7 +42,7 @@ import { MonacoEditor } from "@/components/MonacoEditor";
 import { databaseServiceClient } from "@/grpcweb";
 import { pushNotification } from "@/store";
 import type { ComposedDatabase } from "@/types";
-import type { GetSchemaStringRequest_ObjectType } from "@/types/proto/v1/database_service";
+import type { GetSchemaStringRequest_ObjectType } from "@/types/proto/api/v1alpha/database_service";
 import { hasSchemaProperty } from "@/utils";
 
 const props = defineProps<{

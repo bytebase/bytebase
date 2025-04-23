@@ -16,7 +16,7 @@ import { NDataTable } from "naive-ui";
 import type { PropType } from "vue";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import type { ExtensionMetadata } from "@/types/proto/v1/database_service";
+import type { ExtensionMetadata } from "@/types/proto/api/v1alpha/database_service";
 
 defineProps({
   dbExtensionList: {

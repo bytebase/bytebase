@@ -48,8 +48,8 @@ import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import TextOverflowPopover from "@/components/misc/TextOverflowPopover.vue";
 import { pushNotification } from "@/store";
-import { TaskRunLogEntry_Type } from "@/types/proto/v1/rollout_service";
-import type { Sheet } from "@/types/proto/v1/sheet_service";
+import { TaskRunLogEntry_Type } from "@/types/proto/api/v1alpha/rollout_service";
+import type { Sheet } from "@/types/proto/api/v1alpha/sheet_service";
 import { extractSheetCommandByIndex, toClipboard } from "@/utils";
 import type { FlattenLogEntry } from "./common";
 

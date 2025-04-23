@@ -65,7 +65,7 @@ import {
 } from "@/store/modules/v1/common";
 import type { ComposedDatabase, ComposedProject } from "@/types";
 import { isValidDatabaseName } from "@/types";
-import { engineFromJSON } from "@/types/proto/v1/common";
+import { engineFromJSON } from "@/types/proto/api/v1alpha/common";
 import type { SearchParams, SearchScope } from "@/utils";
 import {
   CommonFilterScopeIdList,

@@ -11,7 +11,7 @@ import {
   taskRunListForTask,
 } from "@/components/IssueV1/logic";
 import { rolloutServiceClient } from "@/grpcweb";
-import { TaskRun_Status } from "@/types/proto/v1/rollout_service";
+import { TaskRun_Status } from "@/types/proto/api/v1alpha/rollout_service";
 import TaskRunTable from "./TaskRunTable.vue";
 
 const { issue, selectedTask } = useIssueContext();

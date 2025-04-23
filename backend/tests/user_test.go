@@ -10,7 +10,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/base"
 
-	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
+	v1pb "github.com/bytebase/bytebase/proto/generated-go/api/v1alpha"
 )
 
 func TestDeleteUser(t *testing.T) {

@@ -13,8 +13,8 @@ import (
 
 	"github.com/pkg/errors"
 
+	v1pb "github.com/bytebase/bytebase/proto/generated-go/api/v1alpha"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
-	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 // openAIRequest represents the payload for OpenAI API requests.

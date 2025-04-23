@@ -55,7 +55,7 @@ import { getDateForPbTimestamp } from "@/types";
 import {
   TaskRunSession_Postgres,
   TaskRunSession_Postgres_Session,
-} from "@/types/proto/v1/rollout_service";
+} from "@/types/proto/api/v1alpha/rollout_service";
 import { StatementCell, TimeCell } from "./Cells";
 
 const props = defineProps<{

@@ -25,7 +25,7 @@
 
 <script lang="ts" setup>
 import type { PropType } from "vue";
-import { Changelog_Status } from "@/types/proto/v1/database_service";
+import { Changelog_Status } from "@/types/proto/api/v1alpha/database_service";
 
 const props = defineProps({
   status: {

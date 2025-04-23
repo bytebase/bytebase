@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
+	v1pb "github.com/bytebase/bytebase/proto/generated-go/api/v1alpha"
 )
 
 func getReleaseFiles(pattern string) ([]*v1pb.Release_File, error) {

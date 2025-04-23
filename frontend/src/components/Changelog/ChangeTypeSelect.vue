@@ -11,7 +11,7 @@
 <script setup lang="tsx">
 import { NSelect } from "naive-ui";
 import { computed } from "vue";
-import { Changelog_Type } from "@/types/proto/v1/database_service";
+import { Changelog_Type } from "@/types/proto/api/v1alpha/database_service";
 
 defineProps<{
   changeType?: Changelog_Type;

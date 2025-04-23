@@ -180,7 +180,7 @@ import { computed, ref, reactive } from "vue";
 import { featureToRef } from "@/store";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
 import { Duration } from "@/types/proto/google/protobuf/duration";
-import { PasswordRestrictionSetting } from "@/types/proto/v1/setting_service";
+import { PasswordRestrictionSetting } from "@/types/proto/api/v1alpha/setting_service";
 import { FeatureBadge, FeatureModal } from "../FeatureGuard";
 
 const DEFAULT_MIN_LENGTH = 8;

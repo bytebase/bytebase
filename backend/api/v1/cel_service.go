@@ -10,7 +10,7 @@ import (
 	"github.com/google/cel-go/cel"
 
 	"github.com/bytebase/bytebase/backend/common"
-	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
+	v1pb "github.com/bytebase/bytebase/proto/generated-go/api/v1alpha"
 )
 
 // CelService represents a service for managing CEL.

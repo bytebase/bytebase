@@ -328,15 +328,15 @@ import {
   useDatabaseCatalogV1Store,
 } from "@/store";
 import { DEFAULT_PROJECT_NAME, defaultProject } from "@/types";
-import { Engine } from "@/types/proto/v1/common";
+import { Engine } from "@/types/proto/api/v1alpha/common";
 import {
   TableCatalog,
   ObjectSchema,
   ObjectSchema_Type,
   ObjectSchema_StructKind,
-} from "@/types/proto/v1/database_catalog_service";
-import { GetSchemaStringRequest_ObjectType } from "@/types/proto/v1/database_service";
-import type { DataClassificationSetting_DataClassificationConfig } from "@/types/proto/v1/setting_service";
+} from "@/types/proto/api/v1alpha/database_catalog_service";
+import { GetSchemaStringRequest_ObjectType } from "@/types/proto/api/v1alpha/database_service";
+import type { DataClassificationSetting_DataClassificationConfig } from "@/types/proto/api/v1alpha/setting_service";
 import {
   bytesToString,
   instanceV1HasCollationAndCharacterSet,

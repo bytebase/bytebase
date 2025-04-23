@@ -40,7 +40,7 @@ import { NTag, NTooltip } from "naive-ui";
 import { computed } from "vue";
 import { useIssueContext, databaseForTask } from "@/components/IssueV1/logic";
 import { TaskTypeListWithStatement } from "@/types";
-import { Task_Type } from "@/types/proto/v1/rollout_service";
+import { Task_Type } from "@/types/proto/api/v1alpha/rollout_service";
 import SQLCheckBadge from "./SQLCheckBadge.vue";
 import SQLCheckButton from "./SQLCheckButton.vue";
 import { useIssueSQLCheckContext } from "./context";

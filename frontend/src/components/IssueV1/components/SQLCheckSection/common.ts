@@ -1,7 +1,7 @@
 import type { ComposedIssue } from "@/types";
-import { Plan_ChangeDatabaseConfig_Type } from "@/types/proto/v1/plan_service";
-import { Release_File_ChangeType } from "@/types/proto/v1/release_service";
-import type { Task } from "@/types/proto/v1/rollout_service";
+import { Plan_ChangeDatabaseConfig_Type } from "@/types/proto/api/v1alpha/plan_service";
+import { Release_File_ChangeType } from "@/types/proto/api/v1alpha/release_service";
+import type { Task } from "@/types/proto/api/v1alpha/rollout_service";
 import { specForTask } from "../../logic";
 
 export const getTaskChangeType = (

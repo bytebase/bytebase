@@ -3,8 +3,8 @@ package v1
 import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
+	v1pb "github.com/bytebase/bytebase/proto/generated-go/api/v1alpha"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
-	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 func convertStoreDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata, filter *metadataFilter) (*v1pb.DatabaseMetadata, error) {

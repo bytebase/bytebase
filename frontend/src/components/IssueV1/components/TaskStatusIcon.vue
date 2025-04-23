@@ -58,10 +58,10 @@
 import { CircleAlertIcon, TriangleAlertIcon } from "lucide-vue-next";
 import { computed } from "vue";
 import { SkipIcon } from "@/components/Icon";
-import { PlanCheckRun_Result_Status } from "@/types/proto/v1/plan_service";
-import type { Task } from "@/types/proto/v1/rollout_service";
-import { Task_Status } from "@/types/proto/v1/rollout_service";
-import { Advice_Status } from "@/types/proto/v1/sql_service";
+import { PlanCheckRun_Result_Status } from "@/types/proto/api/v1alpha/plan_service";
+import type { Task } from "@/types/proto/api/v1alpha/rollout_service";
+import { Task_Status } from "@/types/proto/api/v1alpha/rollout_service";
+import { Advice_Status } from "@/types/proto/api/v1alpha/sql_service";
 import {
   databaseForTask,
   planCheckStatusForTask,

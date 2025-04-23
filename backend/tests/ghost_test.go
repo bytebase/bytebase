@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"testing"
 
-	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
+	v1pb "github.com/bytebase/bytebase/proto/generated-go/api/v1alpha"
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/stretchr/testify/require"

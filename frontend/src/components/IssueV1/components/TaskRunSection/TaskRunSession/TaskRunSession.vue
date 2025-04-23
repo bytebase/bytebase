@@ -19,7 +19,7 @@ import { computedAsync } from "@vueuse/core";
 import { computed, ref } from "vue";
 import { BBSpin } from "@/bbkit";
 import { rolloutServiceClient } from "@/grpcweb";
-import { TaskRun_Status, type TaskRun } from "@/types/proto/v1/rollout_service";
+import { TaskRun_Status, type TaskRun } from "@/types/proto/api/v1alpha/rollout_service";
 import PostgresSessionTable from "./PostgresSessionTable.vue";
 
 const props = defineProps<{

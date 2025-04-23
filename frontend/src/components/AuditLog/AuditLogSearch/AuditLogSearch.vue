@@ -30,8 +30,8 @@ import { ProjectV1Name } from "@/components/v2";
 import { ALL_METHODS_WITH_AUDIT } from "@/grpcweb/methods";
 import { useCurrentUserV1, useProjectV1Store, useUserStore } from "@/store";
 import { SYSTEM_BOT_USER_NAME } from "@/types";
-import { AuditLog_Severity } from "@/types/proto/v1/audit_log_service";
-import { UserType } from "@/types/proto/v1/user_service";
+import { AuditLog_Severity } from "@/types/proto/api/v1alpha/audit_log_service";
+import { UserType } from "@/types/proto/api/v1alpha/user_service";
 import {
   getDefaultPagination,
   extractProjectResourceName,

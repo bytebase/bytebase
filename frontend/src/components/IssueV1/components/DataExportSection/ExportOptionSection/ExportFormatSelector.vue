@@ -16,7 +16,7 @@
 import { NRadioGroup, NRadio } from "naive-ui";
 import { computed } from "vue";
 import { onMounted } from "vue";
-import { ExportFormat, exportFormatToJSON } from "@/types/proto/v1/common";
+import { ExportFormat, exportFormatToJSON } from "@/types/proto/api/v1alpha/common";
 
 const props = defineProps<{
   format: ExportFormat;

@@ -77,7 +77,7 @@ import { useRenderMarkdown } from "@/components/MarkdownEditor";
 import { issueServiceClient } from "@/grpcweb";
 import { emitWindowEvent } from "@/plugins";
 import { pushNotification } from "@/store";
-import { Issue } from "@/types/proto/v1/issue_service";
+import { Issue } from "@/types/proto/api/v1alpha/issue_service";
 import { isGrantRequestIssue } from "@/utils";
 import { useIssueContext } from "../../logic";
 

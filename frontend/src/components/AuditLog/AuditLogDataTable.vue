@@ -18,8 +18,8 @@ import BBAvatar from "@/bbkit/BBAvatar.vue";
 import { useProjectV1Store, useUserStore } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { getDateForPbTimestamp } from "@/types";
-import { AuditData, type AuditLog } from "@/types/proto/v1/audit_log_service";
-import { Setting } from "@/types/proto/v1/setting_service";
+import { AuditData, type AuditLog } from "@/types/proto/api/v1alpha/audit_log_service";
+import { Setting } from "@/types/proto/api/v1alpha/setting_service";
 import { extractProjectResourceName } from "@/utils";
 import JSONStringView from "./JSONStringView.vue";
 

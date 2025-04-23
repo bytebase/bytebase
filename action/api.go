@@ -11,7 +11,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
+	v1pb "github.com/bytebase/bytebase/proto/generated-go/api/v1alpha"
 )
 
 //nolint:forbidigo

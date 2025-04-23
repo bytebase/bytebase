@@ -22,7 +22,7 @@ import {
   useAppFeature,
   useSubscriptionV1Store,
 } from "@/store";
-import { PlanType } from "@/types/proto/v1/subscription_service";
+import { PlanType } from "@/types/proto/api/v1alpha/subscription_service";
 import { isDev } from "@/utils";
 import BannerAnnouncement from "@/views/BannerAnnouncement.vue";
 import BannerDemo from "@/views/BannerDemo.vue";

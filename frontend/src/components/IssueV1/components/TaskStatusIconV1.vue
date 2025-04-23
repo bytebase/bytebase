@@ -61,7 +61,7 @@
 import { NTooltip } from "naive-ui";
 import { computed } from "vue";
 import { SkipIcon } from "@/components/Icon";
-import { Task_Status } from "@/types/proto/v1/rollout_service";
+import { Task_Status } from "@/types/proto/api/v1alpha/rollout_service";
 import { useIssueContext } from "../logic";
 
 const props = withDefaults(

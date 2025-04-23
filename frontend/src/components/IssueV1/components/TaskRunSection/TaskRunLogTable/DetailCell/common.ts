@@ -1,4 +1,4 @@
-import { TaskRunLogEntry_Type } from "@/types/proto/v1/rollout_service";
+import { TaskRunLogEntry_Type } from "@/types/proto/api/v1alpha/rollout_service";
 import type { FlattenLogEntry } from "../common";
 
 export const detailCellRowSpan = (entry: FlattenLogEntry) => {

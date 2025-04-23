@@ -20,8 +20,8 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
+	v1pb "github.com/bytebase/bytebase/proto/generated-go/api/v1alpha"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
-	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 
 	// Register OceanBase Oracle mode driver.
 	_ "github.com/mattn/go-oci8"

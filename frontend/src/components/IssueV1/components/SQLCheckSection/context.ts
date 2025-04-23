@@ -1,7 +1,7 @@
 import type { ComputedRef, InjectionKey, Ref } from "vue";
 import { computed, inject, provide, ref } from "vue";
-import { Issue_Type } from "@/types/proto/v1/issue_service";
-import type { CheckReleaseResponse_CheckResult } from "@/types/proto/v1/release_service";
+import { Issue_Type } from "@/types/proto/api/v1alpha/issue_service";
+import type { CheckReleaseResponse_CheckResult } from "@/types/proto/api/v1alpha/release_service";
 import { useIssueContext } from "../../logic";
 
 export type SQLCheckContext = {
