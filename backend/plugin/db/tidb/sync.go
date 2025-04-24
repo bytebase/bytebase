@@ -438,6 +438,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 				Comment:       comment,
 				Charset:       convertCollationToCharset(collation),
 				Partitions:    partitionTables[key],
+				ShardingInfo:  shardingInfo,
 			}
 			if tableCollation.Valid {
 				tableMetadata.Collation = tableCollation.String

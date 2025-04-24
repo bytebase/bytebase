@@ -13051,6 +13051,9 @@ components:
                         $ref: '#/components/schemas/TriggerMetadata'
                 skipDump:
                     type: boolean
+                shardingInfo:
+                    type: string
+                    description: https://docs.pingcap.com/tidb/stable/information-schema-tables/
             description: TableMetadata is the metadata for tables.
         TablePartitionMetadata:
             type: object

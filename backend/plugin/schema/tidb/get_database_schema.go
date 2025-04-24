@@ -662,6 +662,12 @@ func writeTable(out *strings.Builder, table *storepb.TableMetadata) error {
 		}
 	}
 
+	if strings.HasPrefix(table.ShardingInfo, "SHARD_BITS=") {
+		if _, err := fmt.Fprintf(out, " /*T! %s */", strings.ReplaceAll(table.ShardingInfo, "SHARD_BITS", "SHARD_ROW_ID_BITS")); err != nil {
+			return err
+		}
+	}
+
 	if table.Comment != "" {
 		if _, err := fmt.Fprintf(out, " COMMENT='%s'", table.Comment); err != nil {
 			return err
