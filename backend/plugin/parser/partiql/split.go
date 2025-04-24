@@ -53,32 +53,29 @@ func SplitSQL(statement string) ([]base.SingleSQL, error) {
 	start := 0
 	for _, semi := range tree.AllCOLON_SEMI() {
 		pos := semi.GetSymbol().GetTokenIndex()
-		line, col := base.FirstDefaultChannelTokenPosition(tokens[start : pos+1])
+		antlrPosition := base.FirstDefaultChannelTokenPosition(tokens[start : pos+1])
 		// From antlr4, the line is ONE based, and the column is ZERO based.
 		// So we should minus 1 for the line.
 		result = append(result, base.SingleSQL{
 			Text:     stream.GetTextFromTokens(tokens[start], tokens[pos]),
 			BaseLine: tokens[start].GetLine() - 1,
 			End:      common.ConvertANTLRPositionToPosition(&common.ANTLRPosition{Line: int32(tokens[pos].GetLine()), Column: int32(tokens[pos].GetColumn())}, statement),
-			Start: common.ConvertANTLRPositionToPosition(&common.ANTLRPosition{
-				Line:   int32(line),
-				Column: int32(col),
-			}, statement),
-			Empty: base.IsEmpty(tokens[start:pos+1], parser.PartiQLLexerCOLON_SEMI),
+			Start:    common.ConvertANTLRPositionToPosition(antlrPosition, statement),
+			Empty:    base.IsEmpty(tokens[start:pos+1], parser.PartiQLLexerCOLON_SEMI),
 		})
 		start = pos + 1
 	}
 	// For the last statement, it may not end with semicolon symbol, EOF symbol instead.
 	eofPos := len(tokens) - 1
 	if start < eofPos {
-		line, col := base.FirstDefaultChannelTokenPosition(tokens[start:])
+		antlrPosition := base.FirstDefaultChannelTokenPosition(tokens[start:])
 		// From antlr4, the line is ONE based, and the column is ZERO based.
 		// So we should minus 1 for the line.
 		result = append(result, base.SingleSQL{
 			Text:     stream.GetTextFromTokens(tokens[start], tokens[eofPos-1]),
 			BaseLine: tokens[start].GetLine() - 1,
 			End:      common.ConvertANTLRPositionToPosition(&common.ANTLRPosition{Line: int32(tokens[eofPos].GetLine()), Column: int32(tokens[eofPos].GetColumn())}, statement),
-			Start:    common.ConvertANTLRPositionToPosition(&common.ANTLRPosition{Line: int32(line), Column: int32(col)}, statement),
+			Start:    common.ConvertANTLRPositionToPosition(antlrPosition, statement),
 			Empty:    base.IsEmpty(tokens[start:eofPos], parser.PartiQLLexerCOLON_SEMI),
 		})
 	}

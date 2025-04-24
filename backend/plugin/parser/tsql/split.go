@@ -72,7 +72,7 @@ func splitByParser(statement string) ([]base.SingleSQL, error) {
 		// Go statement only.
 		for _, goStmt := range tree.AllGo_statement() {
 			pos := goStmt.GetStop().GetTokenIndex()
-			line, col := base.FirstDefaultChannelTokenPosition(tokens[start : pos+1])
+			antlrPosition := base.FirstDefaultChannelTokenPosition(tokens[start : pos+1])
 			result = append(result, base.SingleSQL{
 				Text:     stream.GetTextFromTokens(tokens[start], tokens[pos]),
 				BaseLine: tokens[start].GetLine() - 1,
@@ -83,13 +83,7 @@ func splitByParser(statement string) ([]base.SingleSQL, error) {
 					},
 					statement,
 				),
-				Start: common.ConvertANTLRPositionToPosition(
-					&common.ANTLRPosition{
-						Line:   int32(line),
-						Column: int32(col),
-					},
-					statement,
-				),
+				Start: common.ConvertANTLRPositionToPosition(antlrPosition, statement),
 				Empty: false,
 			})
 			start = pos + 1
@@ -120,7 +114,7 @@ func splitByParser(statement string) ([]base.SingleSQL, error) {
 
 			for _, goStmt := range goStmts {
 				pos := goStmt.GetStop().GetTokenIndex()
-				line, col := base.FirstDefaultChannelTokenPosition(tokens[start : pos+1])
+				antlrPosition := base.FirstDefaultChannelTokenPosition(tokens[start : pos+1])
 				result = append(result, base.SingleSQL{
 					Text:     stream.GetTextFromTokens(tokens[start], tokens[pos]),
 					BaseLine: tokens[start].GetLine() - 1,
@@ -131,13 +125,7 @@ func splitByParser(statement string) ([]base.SingleSQL, error) {
 						},
 						statement,
 					),
-					Start: common.ConvertANTLRPositionToPosition(
-						&common.ANTLRPosition{
-							Line:   int32(line),
-							Column: int32(col),
-						},
-						statement,
-					),
+					Start: common.ConvertANTLRPositionToPosition(antlrPosition, statement),
 					Empty: false,
 				})
 				start = pos + 1
@@ -152,7 +140,7 @@ func splitByParser(statement string) ([]base.SingleSQL, error) {
 		// Last go statement.
 		for _, goStmt := range tree.AllGo_statement()[goIdx:] {
 			pos := goStmt.GetStop().GetTokenIndex()
-			line, col := base.FirstDefaultChannelTokenPosition(tokens[start : pos+1])
+			antlrPosition := base.FirstDefaultChannelTokenPosition(tokens[start : pos+1])
 			result = append(result, base.SingleSQL{
 				Text:     stream.GetTextFromTokens(tokens[start], tokens[pos]),
 				BaseLine: tokens[start].GetLine() - 1,
@@ -163,13 +151,7 @@ func splitByParser(statement string) ([]base.SingleSQL, error) {
 					},
 					statement,
 				),
-				Start: common.ConvertANTLRPositionToPosition(
-					&common.ANTLRPosition{
-						Line:   int32(line),
-						Column: int32(col),
-					},
-					statement,
-				),
+				Start: common.ConvertANTLRPositionToPosition(antlrPosition, statement),
 				Empty: false,
 			})
 			start = pos + 1
@@ -186,7 +168,7 @@ func splitBatchWithoutGo(b parser.IBatch_without_goContext, tokens []antlr.Token
 		// All sql_clauses.
 		for _, sqlClause := range b.AllSql_clauses() {
 			pos := sqlClause.GetStop().GetTokenIndex()
-			line, col := base.FirstDefaultChannelTokenPosition(tokens[start : pos+1])
+			antlrPosition := base.FirstDefaultChannelTokenPosition(tokens[start : pos+1])
 			result = append(result, base.SingleSQL{
 				Text:     stream.GetTextFromTokens(tokens[start], tokens[pos]),
 				BaseLine: tokens[start].GetLine() - 1,
@@ -197,20 +179,14 @@ func splitBatchWithoutGo(b parser.IBatch_without_goContext, tokens []antlr.Token
 					},
 					statement,
 				),
-				Start: common.ConvertANTLRPositionToPosition(
-					&common.ANTLRPosition{
-						Line:   int32(line),
-						Column: int32(col),
-					},
-					statement,
-				),
+				Start: common.ConvertANTLRPositionToPosition(antlrPosition, statement),
 				Empty: false,
 			})
 			start = pos + 1
 		}
 	case b.Batch_level_statement() != nil:
 		pos := b.Batch_level_statement().GetStop().GetTokenIndex()
-		line, col := base.FirstDefaultChannelTokenPosition(tokens[start : pos+1])
+		antlrPosition := base.FirstDefaultChannelTokenPosition(tokens[start : pos+1])
 		result = append(result, base.SingleSQL{
 			Text:     stream.GetTextFromTokens(tokens[start], tokens[pos]),
 			BaseLine: tokens[start].GetLine() - 1,
@@ -221,19 +197,13 @@ func splitBatchWithoutGo(b parser.IBatch_without_goContext, tokens []antlr.Token
 				},
 				statement,
 			),
-			Start: common.ConvertANTLRPositionToPosition(
-				&common.ANTLRPosition{
-					Line:   int32(line),
-					Column: int32(col),
-				},
-				statement,
-			),
+			Start: common.ConvertANTLRPositionToPosition(antlrPosition, statement),
 			Empty: false,
 		})
 		start = pos + 1
 	case b.Execute_body_batch() != nil:
 		pos := b.Execute_body_batch().GetStop().GetTokenIndex()
-		line, col := base.FirstDefaultChannelTokenPosition(tokens[start : pos+1])
+		antlrPosition := base.FirstDefaultChannelTokenPosition(tokens[start : pos+1])
 		result = append(result, base.SingleSQL{
 			Text:     stream.GetTextFromTokens(tokens[start], tokens[pos]),
 			BaseLine: tokens[start].GetLine() - 1,
@@ -244,19 +214,13 @@ func splitBatchWithoutGo(b parser.IBatch_without_goContext, tokens []antlr.Token
 				},
 				statement,
 			),
-			Start: common.ConvertANTLRPositionToPosition(
-				&common.ANTLRPosition{
-					Line:   int32(line),
-					Column: int32(col),
-				},
-				statement,
-			),
+			Start: common.ConvertANTLRPositionToPosition(antlrPosition, statement),
 			Empty: false,
 		})
 		start = pos + 1
 		for _, sqlClause := range b.AllSql_clauses() {
 			pos := sqlClause.GetStop().GetTokenIndex()
-			line, col := base.FirstDefaultChannelTokenPosition(tokens[start : pos+1])
+			antlrPosition := base.FirstDefaultChannelTokenPosition(tokens[start : pos+1])
 			result = append(result, base.SingleSQL{
 				Text:     stream.GetTextFromTokens(tokens[start], tokens[pos]),
 				BaseLine: tokens[start].GetLine() - 1,
@@ -267,13 +231,7 @@ func splitBatchWithoutGo(b parser.IBatch_without_goContext, tokens []antlr.Token
 					},
 					statement,
 				),
-				Start: common.ConvertANTLRPositionToPosition(
-					&common.ANTLRPosition{
-						Line:   int32(line),
-						Column: int32(col),
-					},
-					statement,
-				),
+				Start: common.ConvertANTLRPositionToPosition(antlrPosition, statement),
 				Empty: false,
 			})
 			start = pos + 1

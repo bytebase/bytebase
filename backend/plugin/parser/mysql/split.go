@@ -58,7 +58,7 @@ func splitDelimiterModeSQL(stream *antlr.CommonTokenStream, statement string) ([
 
 		// Deal with normal statement.
 		if delimiter == ";" && token.GetTokenType() == parser.MySQLLexerSEMICOLON_SYMBOL {
-			line, col := base.FirstDefaultChannelTokenPosition(tokens[start : i+1])
+			antlrPosition := base.FirstDefaultChannelTokenPosition(tokens[start : i+1])
 			// From antlr4, the line is ONE based, and the column is ZERO based.
 			// So we should minus 1 for the line.
 			result = append(result, base.SingleSQL{
@@ -68,10 +68,7 @@ func splitDelimiterModeSQL(stream *antlr.CommonTokenStream, statement string) ([
 					Line:   int32(tokens[i].GetLine()),
 					Column: int32(tokens[i].GetColumn()),
 				}, statement),
-				Start: common.ConvertANTLRPositionToPosition(&common.ANTLRPosition{
-					Line:   int32(line),
-					Column: int32(col),
-				}, statement),
+				Start: common.ConvertANTLRPositionToPosition(antlrPosition, statement),
 				Empty: base.IsEmpty(tokens[start:i+1], parser.MySQLLexerSEMICOLON_SYMBOL),
 			})
 			i++
@@ -85,7 +82,7 @@ func splitDelimiterModeSQL(stream *antlr.CommonTokenStream, statement string) ([
 		}
 
 		if newStart, ok := tryMatchDelimiter(stream, i, delimiter); ok {
-			line, col := base.FirstDefaultChannelTokenPosition(tokens[start:newStart])
+			antlrPosition := base.FirstDefaultChannelTokenPosition(tokens[start:newStart])
 			// From antlr4, the line is ONE based, and the column is ZERO based.
 			// So we should minus 1 for the line.
 			result = append(result, base.SingleSQL{
@@ -96,10 +93,7 @@ func splitDelimiterModeSQL(stream *antlr.CommonTokenStream, statement string) ([
 					Line:   int32(tokens[newStart-1].GetLine()),
 					Column: int32(tokens[newStart-1].GetColumn()),
 				}, statement),
-				Start: common.ConvertANTLRPositionToPosition(&common.ANTLRPosition{
-					Line:   int32(line),
-					Column: int32(col),
-				}, statement),
+				Start: common.ConvertANTLRPositionToPosition(antlrPosition, statement),
 				Empty: base.IsEmpty(tokens[start:i], parser.MySQLLexerSEMICOLON_SYMBOL),
 			})
 			i = newStart
@@ -112,7 +106,7 @@ func splitDelimiterModeSQL(stream *antlr.CommonTokenStream, statement string) ([
 
 	endPos := len(tokens) - 1
 	if start < endPos {
-		line, col := base.FirstDefaultChannelTokenPosition(tokens[start:])
+		antlrPosition := base.FirstDefaultChannelTokenPosition(tokens[start:])
 		// From antlr4, the line is ONE based, and the column is ZERO based.
 		// So we should minus 1 for the line.
 		result = append(result, base.SingleSQL{
@@ -122,10 +116,7 @@ func splitDelimiterModeSQL(stream *antlr.CommonTokenStream, statement string) ([
 				Line:   int32(tokens[endPos-1].GetLine()),
 				Column: int32(tokens[endPos-1].GetColumn()),
 			}, statement),
-			Start: common.ConvertANTLRPositionToPosition(&common.ANTLRPosition{
-				Line:   int32(line),
-				Column: int32(col),
-			}, statement),
+			Start: common.ConvertANTLRPositionToPosition(antlrPosition, statement),
 			Empty: base.IsEmpty(tokens[start:endPos], parser.MySQLLexerSEMICOLON_SYMBOL),
 		})
 	}
@@ -207,7 +198,7 @@ func splitByParser(statement string, lexer *parser.MySQLLexer, stream *antlr.Com
 	start := 0
 	for _, semicolon := range tree.AllSEMICOLON_SYMBOL() {
 		pos := semicolon.GetSymbol().GetStart()
-		line, col := base.FirstDefaultChannelTokenPosition(tokens[start : pos+1])
+		antlrPosition := base.FirstDefaultChannelTokenPosition(tokens[start : pos+1])
 		// From antlr4, the line is ONE based, and the column is ZERO based.
 		// So we should minus 1 for the line.
 		result = append(result, base.SingleSQL{
@@ -217,10 +208,7 @@ func splitByParser(statement string, lexer *parser.MySQLLexer, stream *antlr.Com
 				Line:   int32(tokens[pos].GetLine()),
 				Column: int32(tokens[pos].GetColumn()),
 			}, statement),
-			Start: common.ConvertANTLRPositionToPosition(&common.ANTLRPosition{
-				Line:   int32(line),
-				Column: int32(col),
-			}, statement),
+			Start: common.ConvertANTLRPositionToPosition(antlrPosition, statement),
 			Empty: base.IsEmpty(tokens[start:pos+1], parser.MySQLLexerSEMICOLON_SYMBOL),
 		})
 		start = pos + 1
@@ -228,7 +216,7 @@ func splitByParser(statement string, lexer *parser.MySQLLexer, stream *antlr.Com
 	// For the last statement, it may not end with semicolon symbol, EOF symbol instead.
 	eofPos := len(tokens) - 1
 	if start < eofPos {
-		line, col := base.FirstDefaultChannelTokenPosition(tokens[start:])
+		antlrPosition := base.FirstDefaultChannelTokenPosition(tokens[start:])
 		// From antlr4, the line is ONE based, and the column is ZERO based.
 		// So we should minus 1 for the line.
 		result = append(result, base.SingleSQL{
@@ -238,10 +226,7 @@ func splitByParser(statement string, lexer *parser.MySQLLexer, stream *antlr.Com
 				Line:   int32(tokens[eofPos-1].GetLine()),
 				Column: int32(tokens[eofPos-1].GetColumn()),
 			}, statement),
-			Start: common.ConvertANTLRPositionToPosition(&common.ANTLRPosition{
-				Line:   int32(line),
-				Column: int32(col),
-			}, statement),
+			Start: common.ConvertANTLRPositionToPosition(antlrPosition, statement),
 			Empty: base.IsEmpty(tokens[start:eofPos], parser.MySQLLexerSEMICOLON_SYMBOL),
 		})
 	}
@@ -389,7 +374,7 @@ func splitMySQLStatement(stream *antlr.CommonTokenStream, statement string) ([]b
 
 	start := 0
 	for _, pos := range semicolonStack {
-		line, col := base.FirstDefaultChannelTokenPosition(tokens[start : pos+1])
+		antlrPosition := base.FirstDefaultChannelTokenPosition(tokens[start : pos+1])
 		// From antlr4, the line is ONE based, and the column is ZERO based.
 		// So we should minus 1 for the line.
 		result = append(result, base.SingleSQL{
@@ -399,7 +384,7 @@ func splitMySQLStatement(stream *antlr.CommonTokenStream, statement string) ([]b
 				Line:   int32(tokens[pos].GetLine()),
 				Column: int32(tokens[pos].GetColumn()),
 			}, statement),
-			Start: common.ConvertANTLRPositionToPosition(&common.ANTLRPosition{Line: int32(line), Column: int32(col)}, statement),
+			Start: common.ConvertANTLRPositionToPosition(antlrPosition, statement),
 			Empty: base.IsEmpty(tokens[start:pos+1], parser.MySQLLexerSEMICOLON_SYMBOL),
 		})
 		start = pos + 1
@@ -407,7 +392,7 @@ func splitMySQLStatement(stream *antlr.CommonTokenStream, statement string) ([]b
 	// For the last statement, it may not end with semicolon symbol, EOF symbol instead.
 	eofPos := len(tokens) - 1
 	if start < eofPos {
-		line, col := base.FirstDefaultChannelTokenPosition(tokens[start:])
+		antlrPosition := base.FirstDefaultChannelTokenPosition(tokens[start:])
 		// From antlr4, the line is ONE based, and the column is ZERO based.
 		// So we should minus 1 for the line.
 		result = append(result, base.SingleSQL{
@@ -417,7 +402,7 @@ func splitMySQLStatement(stream *antlr.CommonTokenStream, statement string) ([]b
 				Line:   int32(tokens[eofPos-1].GetLine()),
 				Column: int32(tokens[eofPos-1].GetColumn()),
 			}, statement),
-			Start: common.ConvertANTLRPositionToPosition(&common.ANTLRPosition{Line: int32(line), Column: int32(col)}, statement),
+			Start: common.ConvertANTLRPositionToPosition(antlrPosition, statement),
 			Empty: base.IsEmpty(tokens[start:eofPos], parser.MySQLLexerSEMICOLON_SYMBOL),
 		})
 	}

@@ -60,8 +60,8 @@ func TestBigQuerySplitMultiSQL(t *testing.T) {
 	for _, tc := range testCases {
 		got, err := SplitSQL(tc.statement)
 		if err != nil {
-			t.Errorf("unexpected error: %v", err)
+			t.Errorf("unexpected error: %v, statement: %s", err, tc.statement)
 		}
-		require.Equal(t, tc.want.res, got)
+		require.Equalf(t, tc.want.res, got, "statement: %s", tc.statement)
 	}
 }
