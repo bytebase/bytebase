@@ -1,11 +1,13 @@
 package main
 
 import (
+	"log/slog"
 	"os"
 
 	"github.com/spf13/cobra"
 
 	"github.com/bytebase/bytebase/action/github"
+	"github.com/bytebase/bytebase/backend/common/log"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -92,5 +94,8 @@ func runCI(*cobra.Command, []string) error {
 }
 
 func main() {
-	cmd.Execute()
+	if err := cmd.Execute(); err != nil {
+		slog.Error("failed to execute command", log.BBError(err))
+		os.Exit(1)
+	}
 }
