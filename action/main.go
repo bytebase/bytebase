@@ -1,51 +1,71 @@
 package main
 
 import (
-	"fmt"
 	"os"
-	"strings"
 
-	"github.com/pkg/errors"
+	"github.com/spf13/cobra"
 
 	"github.com/bytebase/bytebase/action/github"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
-func run(platform JobPlatform) error {
-	url, serviceAccount, serviceAccountSecret := os.Getenv("BYTEBASE_URL"), os.Getenv("BYTEBASE_SERVICE_ACCOUNT"), os.Getenv("BYTEBASE_SERVICE_ACCOUNT_SECRET")
-	if url == "" {
-		return errors.Errorf("environment BYTEBASE_URL is not set")
-	}
-	if serviceAccount == "" {
-		return errors.Errorf("environment BYTEBASE_SERVICE_ACCOUNT is not set")
-	}
-	if serviceAccountSecret == "" {
-		return errors.Errorf("environment BYTEBASE_SERVICE_ACCOUNT_SECRET is not set")
-	}
-	project, bytebaseTargets, filePattern := os.Getenv("BYTEBASE_PROJECT"), os.Getenv("BYTEBASE_TARGETS"), os.Getenv("FILE_PATTERN")
-	if project == "" {
-		return errors.Errorf("environment BYTEBASE_PROJECT is not set")
-	}
-	if bytebaseTargets == "" {
-		return errors.Errorf("environment BYTEBASE_TARGETS is not set")
-	}
-	if filePattern == "" {
-		return errors.Errorf("environment FILE_PATTERN is not set")
-	}
-	targets := strings.Split(bytebaseTargets, ",")
+var (
+	Config struct {
+		// bytebase-action flags
+		URL                  string
+		ServiceAccount       string
+		ServiceAccountSecret string
+		Project              string
+		Targets              []string
 
-	client, err := NewClient(url, serviceAccount, serviceAccountSecret)
+		// bytebase-action check flags
+		FilePattern string
+	}
+	cmd = &cobra.Command{
+		Use:   "bytebase-action",
+		Short: "Bytebase action",
+	}
+)
+
+func init() {
+	// bytebase-action flags
+	cmd.PersistentFlags().StringVar(&Config.URL, "url", "https://demo.bytebase.com", "Bytebase URL")
+	cmd.PersistentFlags().StringVar(&Config.ServiceAccount, "service-account", "ci@service.bytebase.com", "Bytebase Service account")
+	cmd.PersistentFlags().StringVar(&Config.ServiceAccountSecret, "service-account-secret", os.Getenv("BYTEBASE_SERVICE_ACCOUNT_SECRET"), "Bytebase Service account secret")
+	// cmd.MarkPersistentFlagRequired("service-account-secret")
+	cmd.PersistentFlags().StringVar(&Config.Project, "project", "projects/project-sample", "Bytebase project")
+	cmd.PersistentFlags().StringSliceVar(&Config.Targets, "targets", []string{"instances/test-sample-instance/databases/hr_test", "instances/prod-sample-instance/databases/hr_prod"}, "Bytebase targets")
+
+	// bytebase-action check flags
+	cmdCheck := &cobra.Command{
+		Use:   "check",
+		Short: "Check the release files",
+		Args:  cobra.NoArgs,
+		RunE:  runCI,
+	}
+	cmdCheck.PersistentFlags().StringVar(&Config.FilePattern, "file-pattern", "", "File pattern to glob migration files")
+
+	cmd.AddCommand(cmdCheck)
+}
+
+func Execute() error {
+	return cmd.Execute()
+}
+
+func runCI(*cobra.Command, []string) error {
+	platform := getJobPlatform()
+	client, err := NewClient(Config.URL, Config.ServiceAccount, Config.ServiceAccountSecret)
 	if err != nil {
 		return err
 	}
 
-	releaseFiles, err := getReleaseFiles(filePattern)
+	releaseFiles, err := getReleaseFiles(Config.FilePattern)
 	if err != nil {
 		return err
 	}
-	checkReleaseResponse, err := client.checkRelease(project, &v1pb.CheckReleaseRequest{
+	checkReleaseResponse, err := client.checkRelease(Config.Project, &v1pb.CheckReleaseRequest{
 		Release: &v1pb.Release{Files: releaseFiles},
-		Targets: targets,
+		Targets: Config.Targets,
 	})
 	if err != nil {
 		return err
@@ -72,9 +92,5 @@ func run(platform JobPlatform) error {
 }
 
 func main() {
-	platform := getJobPlatform()
-	fmt.Printf("Hello, World - %s!\n", platform.String())
-	if err := run(platform); err != nil {
-		panic(err)
-	}
+	cmd.Execute()
 }
