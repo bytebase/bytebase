@@ -58,7 +58,7 @@ func doGenerate(ctx context.Context, rCtx base.RestoreContext, sqlForComment str
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get target database ID for %s", backupItem.TargetTable.Database)
 	}
-	generatedColumns, normalColumns, normalColumnsExceptPrimary, err := classifyColumns(ctx, rCtx.GetDatabaseMetadataFunc, rCtx.ListDatabaseNamesFunc, rCtx.IsCaseSensitive, rCtx.InstanceID, &TableReference{
+	generatedColumns, normalColumns, err := classifyColumns(ctx, rCtx.GetDatabaseMetadataFunc, rCtx.ListDatabaseNamesFunc, rCtx.IsCaseSensitive, rCtx.InstanceID, &TableReference{
 		Database: sourceDatabase,
 		Table:    backupItem.SourceTable.Table,
 	})
@@ -67,15 +67,14 @@ func doGenerate(ctx context.Context, rCtx base.RestoreContext, sqlForComment str
 	}
 
 	g := &generator{
-		ctx:                        ctx,
-		rCtx:                       rCtx,
-		backupDatabase:             targetDatabase,
-		backupTable:                backupItem.TargetTable.Table,
-		originalDatabase:           sourceDatabase,
-		originalTable:              backupItem.SourceTable.Table,
-		generatedColumns:           generatedColumns,
-		normalColumns:              normalColumns,
-		normalColumnsExceptPrimary: normalColumnsExceptPrimary,
+		ctx:              ctx,
+		rCtx:             rCtx,
+		backupDatabase:   targetDatabase,
+		backupTable:      backupItem.TargetTable.Table,
+		originalDatabase: sourceDatabase,
+		originalTable:    backupItem.SourceTable.Table,
+		generatedColumns: generatedColumns,
+		normalColumns:    normalColumns,
 	}
 	var buf strings.Builder
 	antlr.ParseTreeWalkerDefault.Walk(g, parseResult.Tree)
@@ -179,15 +178,14 @@ type generator struct {
 	ctx  context.Context
 	rCtx base.RestoreContext
 
-	backupDatabase             string
-	backupTable                string
-	originalDatabase           string
-	originalTable              string
-	generatedColumns           []string
-	normalColumns              []string
-	normalColumnsExceptPrimary []string
-	result                     string
-	err                        error
+	backupDatabase   string
+	backupTable      string
+	originalDatabase string
+	originalTable    string
+	generatedColumns []string
+	normalColumns    []string
+	result           string
+	err              error
 }
 
 func (g *generator) EnterDeleteStatement(ctx *parser.DeleteStatementContext) {
@@ -207,14 +205,58 @@ func (g *generator) EnterDeleteStatement(ctx *parser.DeleteStatementContext) {
 	}
 }
 
-func (g *generator) EnterUpdateStatement(ctx *parser.UpdateStatementContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
+func (g *generator) hasDisjointUniqueKey(updateColumns []string) (bool, error) {
+	columnMap := make(map[string]bool)
+	for _, column := range updateColumns {
+		columnMap[strings.ToLower(column)] = true
 	}
 
-	if len(g.normalColumns) == len(g.normalColumnsExceptPrimary) {
-		// No primary key, we can't do ON DUPLICATE KEY UPDATE.
-		g.err = errors.Errorf("primary key not found for %s.%s", g.originalDatabase, g.originalTable)
+	if g.rCtx.GetDatabaseMetadataFunc == nil {
+		return false, errors.Errorf("GetDatabaseMetadataFunc is nil")
+	}
+
+	_, metadata, err := g.rCtx.GetDatabaseMetadataFunc(g.ctx, g.rCtx.InstanceID, g.originalDatabase)
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to get database metadata for %s", g.originalDatabase)
+	}
+
+	if metadata == nil {
+		return false, errors.Errorf("database metadata is nil for %s", g.originalDatabase)
+	}
+
+	schema := metadata.GetSchema("")
+	if schema == nil {
+		return false, errors.Errorf("schema is nil for %s", g.originalDatabase)
+	}
+
+	tableMetadata := schema.GetTable(g.originalTable)
+	if tableMetadata == nil {
+		return false, errors.Errorf("table metadata is nil for %s.%s", g.originalDatabase, g.originalTable)
+	}
+
+	for _, index := range tableMetadata.GetProto().Indexes {
+		if !index.Primary && !index.Unique {
+			continue
+		}
+		if disjoint(index.Expressions, columnMap) {
+			return true, nil
+		}
+	}
+
+	return false, nil
+}
+
+func disjoint(a []string, b map[string]bool) bool {
+	for _, item := range a {
+		if _, ok := b[strings.ToLower(item)]; ok {
+			return false
+		}
+	}
+	return true
+}
+
+func (g *generator) EnterUpdateStatement(ctx *parser.UpdateStatementContext) {
+	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
 
@@ -224,6 +266,28 @@ func (g *generator) EnterUpdateStatement(ctx *parser.UpdateStatementContext) {
 	}
 
 	antlr.ParseTreeWalkerDefault.Walk(singleTables, ctx.TableReferenceList())
+
+	updateItems := &updateItemListener{
+		database:      g.originalDatabase,
+		normalColumns: g.normalColumns,
+	}
+	for _, table := range singleTables.singleTables {
+		if strings.EqualFold(table.Table, g.originalTable) {
+			updateItems.table = table
+			break
+		}
+	}
+	antlr.ParseTreeWalkerDefault.Walk(updateItems, ctx.UpdateList())
+
+	has, err := g.hasDisjointUniqueKey(updateItems.result)
+	if err != nil {
+		g.err = err
+		return
+	}
+	if !has {
+		g.err = errors.Errorf("no disjoint unique key found for %s.%s", g.originalDatabase, g.originalTable)
+		return
+	}
 
 	var buf strings.Builder
 	if len(g.generatedColumns) == 0 {
@@ -243,7 +307,7 @@ func (g *generator) EnterUpdateStatement(ctx *parser.UpdateStatementContext) {
 		}
 	}
 
-	for i, field := range g.normalColumnsExceptPrimary {
+	for i, field := range updateItems.result {
 		if i > 0 {
 			if _, err := buf.WriteString(", "); err != nil {
 				g.err = err
@@ -261,4 +325,35 @@ func (g *generator) EnterUpdateStatement(ctx *parser.UpdateStatementContext) {
 		return
 	}
 	g.result = buf.String()
+}
+
+type updateItemListener struct {
+	*parser.BaseMySQLParserListener
+	normalColumns []string
+	database      string
+	table         *TableReference
+	result        []string
+}
+
+func (l *updateItemListener) EnterUpdateElement(ctx *parser.UpdateElementContext) {
+	database, table, column := NormalizeMySQLColumnRef(ctx.ColumnRef())
+
+	if database != "" && !strings.EqualFold(database, l.database) {
+		return
+	}
+
+	if table == "" {
+		for _, c := range l.normalColumns {
+			if strings.EqualFold(c, column) {
+				l.result = append(l.result, column)
+				return
+			}
+		}
+		return
+	}
+
+	if l.table.Alias == table || strings.EqualFold(l.table.Table, table) {
+		l.result = append(l.result, column)
+		return
+	}
 }
