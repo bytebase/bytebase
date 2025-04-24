@@ -20,6 +20,7 @@ import (
 	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/state"
 	"github.com/bytebase/bytebase/backend/plugin/db"
@@ -41,10 +42,11 @@ const (
 )
 
 // NewSyncer creates a schema syncer.
-func NewSyncer(stores *store.Store, dbFactory *dbfactory.DBFactory, stateCfg *state.State) *Syncer {
+func NewSyncer(stores *store.Store, dbFactory *dbfactory.DBFactory, profile config.Profile, stateCfg *state.State) *Syncer {
 	return &Syncer{
 		store:     stores,
 		dbFactory: dbFactory,
+		profile:   profile,
 		stateCfg:  stateCfg,
 	}
 }
@@ -55,6 +57,7 @@ type Syncer struct {
 
 	store           *store.Store
 	dbFactory       *dbfactory.DBFactory
+	profile         config.Profile
 	stateCfg        *state.State
 	databaseSyncMap sync.Map // map[string]*store.DatabaseMessage
 }
@@ -569,6 +572,9 @@ func (s *Syncer) getSchemaDrifted(ctx context.Context, instance *store.InstanceM
 	}
 
 	changelog := list[0]
+	if changelog.Payload.GetGitCommit() != s.profile.GitCommit {
+		return false, nil
+	}
 	if changelog.SyncHistoryUID == nil {
 		return false, errors.Errorf("expect sync history but get nil")
 	}
