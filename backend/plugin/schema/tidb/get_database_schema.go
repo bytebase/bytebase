@@ -616,7 +616,7 @@ func writeTable(out *strings.Builder, table *storepb.TableMetadata) error {
 		}
 	}
 
-	if err := printPrimaryKeyClause(out, table.Indexes); err != nil {
+	if err := printPrimaryKeyClause(out, table); err != nil {
 		return err
 	}
 
@@ -1067,8 +1067,8 @@ func printIndexKeyPart(buf *strings.Builder, expr string, length int64, descendi
 	return nil
 }
 
-func printPrimaryKeyClause(buf *strings.Builder, indexes []*storepb.IndexMetadata) error {
-	for _, index := range indexes {
+func printPrimaryKeyClause(buf *strings.Builder, table *storepb.TableMetadata) error {
+	for _, index := range table.GetIndexes() {
 		if index.Primary {
 			if _, err := fmt.Fprintf(buf, ",\n  PRIMARY KEY ("); err != nil {
 				return err
@@ -1092,6 +1092,9 @@ func printPrimaryKeyClause(buf *strings.Builder, indexes []*storepb.IndexMetadat
 				}
 			}
 			if _, err := fmt.Fprintf(buf, ")"); err != nil {
+				return err
+			}
+			if _, err := fmt.Fprintf(buf, " /*T![clustered_index] %s */", table.PrimaryKeyType); err != nil {
 				return err
 			}
 			return nil

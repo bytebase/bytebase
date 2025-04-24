@@ -1532,9 +1532,12 @@ type TableMetadata struct {
 	Triggers    []*TriggerMetadata `protobuf:"bytes,20,rep,name=triggers,proto3" json:"triggers,omitempty"`
 	SkipDump    bool               `protobuf:"varint,21,opt,name=skip_dump,json=skipDump,proto3" json:"skip_dump,omitempty"`
 	// https://docs.pingcap.com/tidb/stable/information-schema-tables/
-	ShardingInfo  string `protobuf:"bytes,22,opt,name=sharding_info,json=shardingInfo,proto3" json:"sharding_info,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	ShardingInfo string `protobuf:"bytes,22,opt,name=sharding_info,json=shardingInfo,proto3" json:"sharding_info,omitempty"`
+	// https://docs.pingcap.com/tidb/stable/clustered-indexes/#clustered-indexes
+	// CLUSTERED or NONCLUSTERED.
+	PrimaryKeyType string `protobuf:"bytes,23,opt,name=primary_key_type,json=primaryKeyType,proto3" json:"primary_key_type,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *TableMetadata) Reset() {
@@ -1710,6 +1713,13 @@ func (x *TableMetadata) GetSkipDump() bool {
 func (x *TableMetadata) GetShardingInfo() string {
 	if x != nil {
 		return x.ShardingInfo
+	}
+	return ""
+}
+
+func (x *TableMetadata) GetPrimaryKeyType() string {
+	if x != nil {
+		return x.PrimaryKeyType
 	}
 	return ""
 }
@@ -3925,7 +3935,7 @@ const file_store_database_proto_rawDesc = "" +
 	"\x10MODE_UNSPECIFIED\x10\x00\x12\x10\n" +
 	"\fMODE_DEFAULT\x10\x01\x12\x14\n" +
 	"\x10MODE_APPEND_ONLY\x10\x02\x12\x14\n" +
-	"\x10MODE_INSERT_ONLY\x10\x03\"\xdd\x06\n" +
+	"\x10MODE_INSERT_ONLY\x10\x03\"\x87\a\n" +
 	"\rTableMetadata\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x128\n" +
 	"\acolumns\x18\x02 \x03(\v2\x1e.bytebase.store.ColumnMetadataR\acolumns\x127\n" +
@@ -3951,7 +3961,8 @@ const file_store_database_proto_rawDesc = "" +
 	"\fsorting_keys\x18\x13 \x03(\tR\vsortingKeys\x12;\n" +
 	"\btriggers\x18\x14 \x03(\v2\x1f.bytebase.store.TriggerMetadataR\btriggers\x12\x1b\n" +
 	"\tskip_dump\x18\x15 \x01(\bR\bskipDump\x12#\n" +
-	"\rsharding_info\x18\x16 \x01(\tR\fshardingInfo\"M\n" +
+	"\rsharding_info\x18\x16 \x01(\tR\fshardingInfo\x12(\n" +
+	"\x10primary_key_type\x18\x17 \x01(\tR\x0eprimaryKeyType\"M\n" +
 	"\x17CheckConstraintMetadata\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1e\n" +
 	"\n" +
