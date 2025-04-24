@@ -514,6 +514,8 @@ export interface TableMetadata {
   sortingKeys: string[];
   triggers: TriggerMetadata[];
   skipDump: boolean;
+  /** https://docs.pingcap.com/tidb/stable/information-schema-tables/ */
+  shardingInfo: string;
 }
 
 /** CheckConstraintMetadata is the metadata for check constraints. */
@@ -4620,6 +4622,7 @@ function createBaseTableMetadata(): TableMetadata {
     sortingKeys: [],
     triggers: [],
     skipDump: false,
+    shardingInfo: "",
   };
 }
 
@@ -4684,6 +4687,9 @@ export const TableMetadata: MessageFns<TableMetadata> = {
     }
     if (message.skipDump !== false) {
       writer.uint32(168).bool(message.skipDump);
+    }
+    if (message.shardingInfo !== "") {
+      writer.uint32(178).string(message.shardingInfo);
     }
     return writer;
   },
@@ -4855,6 +4861,14 @@ export const TableMetadata: MessageFns<TableMetadata> = {
           message.skipDump = reader.bool();
           continue;
         }
+        case 22: {
+          if (tag !== 178) {
+            break;
+          }
+
+          message.shardingInfo = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -4900,6 +4914,7 @@ export const TableMetadata: MessageFns<TableMetadata> = {
         ? object.triggers.map((e: any) => TriggerMetadata.fromJSON(e))
         : [],
       skipDump: isSet(object.skipDump) ? globalThis.Boolean(object.skipDump) : false,
+      shardingInfo: isSet(object.shardingInfo) ? globalThis.String(object.shardingInfo) : "",
     };
   },
 
@@ -4965,6 +4980,9 @@ export const TableMetadata: MessageFns<TableMetadata> = {
     if (message.skipDump !== false) {
       obj.skipDump = message.skipDump;
     }
+    if (message.shardingInfo !== "") {
+      obj.shardingInfo = message.shardingInfo;
+    }
     return obj;
   },
 
@@ -5001,6 +5019,7 @@ export const TableMetadata: MessageFns<TableMetadata> = {
     message.sortingKeys = object.sortingKeys?.map((e) => e) || [];
     message.triggers = object.triggers?.map((e) => TriggerMetadata.fromPartial(e)) || [];
     message.skipDump = object.skipDump ?? false;
+    message.shardingInfo = object.shardingInfo ?? "";
     return message;
   },
 };

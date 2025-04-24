@@ -685,6 +685,9 @@ message TableMetadata {
   repeated TriggerMetadata triggers = 20;
 
   bool skip_dump = 21;
+
+  // https://docs.pingcap.com/tidb/stable/information-schema-tables/
+  string sharding_info = 22;
 }
 
 // CheckConstraintMetadata is the metadata for check constraints.
