@@ -94,6 +94,7 @@ type ChangelogPayload struct {
 	Sheet         string                `protobuf:"bytes,5,opt,name=sheet,proto3" json:"sheet,omitempty"`
 	Version       string                `protobuf:"bytes,6,opt,name=version,proto3" json:"version,omitempty"`
 	Type          ChangelogPayload_Type `protobuf:"varint,7,opt,name=type,proto3,enum=bytebase.store.ChangelogPayload_Type" json:"type,omitempty"`
+	GitCommit     string                `protobuf:"bytes,8,opt,name=git_commit,json=gitCommit,proto3" json:"git_commit,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -175,6 +176,13 @@ func (x *ChangelogPayload) GetType() ChangelogPayload_Type {
 		return x.Type
 	}
 	return ChangelogPayload_TYPE_UNSPECIFIED
+}
+
+func (x *ChangelogPayload) GetGitCommit() string {
+	if x != nil {
+		return x.GitCommit
+	}
+	return ""
 }
 
 type ChangedResources struct {
@@ -574,7 +582,7 @@ var File_store_changelog_proto protoreflect.FileDescriptor
 
 const file_store_changelog_proto_rawDesc = "" +
 	"\n" +
-	"\x15store/changelog.proto\x12\x0ebytebase.store\x1a\x12store/common.proto\"\x80\x03\n" +
+	"\x15store/changelog.proto\x12\x0ebytebase.store\x1a\x12store/common.proto\"\x9f\x03\n" +
 	"\x10ChangelogPayload\x12\x19\n" +
 	"\btask_run\x18\x01 \x01(\tR\ataskRun\x12\x14\n" +
 	"\x05issue\x18\x02 \x01(\tR\x05issue\x12\x1a\n" +
@@ -582,7 +590,9 @@ const file_store_changelog_proto_rawDesc = "" +
 	"\x11changed_resources\x18\x04 \x01(\v2 .bytebase.store.ChangedResourcesR\x10changedResources\x12\x14\n" +
 	"\x05sheet\x18\x05 \x01(\tR\x05sheet\x12\x18\n" +
 	"\aversion\x18\x06 \x01(\tR\aversion\x129\n" +
-	"\x04type\x18\a \x01(\x0e2%.bytebase.store.ChangelogPayload.TypeR\x04type\"e\n" +
+	"\x04type\x18\a \x01(\x0e2%.bytebase.store.ChangelogPayload.TypeR\x04type\x12\x1d\n" +
+	"\n" +
+	"git_commit\x18\b \x01(\tR\tgitCommit\"e\n" +
 	"\x04Type\x12\x14\n" +
 	"\x10TYPE_UNSPECIFIED\x10\x00\x12\f\n" +
 	"\bBASELINE\x10\x01\x12\v\n" +
