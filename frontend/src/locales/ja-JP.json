@@ -2157,7 +2157,7 @@
     "cannot-be-changed-later": "作成後に変更することはできません。",
     "validation": {
       "duplicated": "{resource} ID はすでに存在します。別のIDを使用してください。",
-      "pattern": "{resource} ID には小文字、数字、ハイフンのみを含めることができます。小文字で始める必要があります。",
+      "pattern": "{resource} ID には、小文字、数字、またはハイフンを持つことができます。\n小文字から始めて、文字または番号で終わる必要があります。",
       "minlength": "{resource} ID には少なくとも 1 文字が含まれている必要があります。",
       "overflow": "{resource} ID は 64 文字未満である必要があります。"
     }

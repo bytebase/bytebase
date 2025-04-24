@@ -2157,7 +2157,7 @@
     "cannot-be-changed-later": "创建之后无法修改。",
     "validation": {
       "duplicated": "{resource} ID 已存在。请使用其他 ID。",
-      "pattern": "{resource} ID 只能包含小写字母、数字和连字符。它必须以一个小写字母开头。",
+      "pattern": "{Resource} ID 可以具有小写字母，数字或连字符。\n它必须从小写字母开始，并以字母或数字结尾。",
       "minlength": "{resource} ID 至少包含 1 个字符。",
       "overflow": "{resource} ID 应该少于 64 个字符。"
     }
