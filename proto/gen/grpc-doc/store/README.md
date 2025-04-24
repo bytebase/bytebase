@@ -964,6 +964,7 @@ Metadata about the request.
 | sheet | [string](#string) |  | The sheet that holds the content. Format: projects/{project}/sheets/{sheet} |
 | version | [string](#string) |  |  |
 | type | [ChangelogPayload.Type](#bytebase-store-ChangelogPayload-Type) |  |  |
+| git_commit | [string](#string) |  |  |
 
 
 
