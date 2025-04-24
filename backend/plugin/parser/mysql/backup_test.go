@@ -93,8 +93,16 @@ func buildFixedMockDatabaseMetadataGetterAndLister() (base.GetDatabaseMetadataFu
 						{
 							Name:    "PRIMARY",
 							Primary: true,
+							Unique:  true,
 							Expressions: []string{
 								"b",
+							},
+						},
+						{
+							Name:   "uk_a",
+							Unique: true,
+							Expressions: []string{
+								"a",
 							},
 						},
 					},
@@ -146,6 +154,13 @@ func buildFixedMockDatabaseMetadataGetterAndLister() (base.GetDatabaseMetadataFu
 							Primary: true,
 							Expressions: []string{
 								"c",
+							},
+						},
+						{
+							Name:   "PRIMARY",
+							Unique: true,
+							Expressions: []string{
+								"a",
 							},
 						},
 					},
