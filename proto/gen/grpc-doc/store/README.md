@@ -1690,6 +1690,7 @@ TableMetadata is the metadata for tables.
 | sorting_keys | [string](#string) | repeated | The sorting_keys is a tuple of column names or arbitrary expressions. ClickHouse specific field. Reference: https://clickhouse.com/docs/en/engines/table-engines/mergetree-family/mergetree#order_by |
 | triggers | [TriggerMetadata](#bytebase-store-TriggerMetadata) | repeated |  |
 | skip_dump | [bool](#bool) |  |  |
+| sharding_info | [string](#string) |  | https://docs.pingcap.com/tidb/stable/information-schema-tables/ |
 
 
 
