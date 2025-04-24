@@ -575,7 +575,7 @@ func (s *Syncer) getSchemaDrifted(ctx context.Context, instance *store.InstanceM
 
 	changelog := list[0]
 	if changelog.Payload.GetGitCommit() != s.profile.GitCommit {
-		return false, skipped, nil
+		return false, true, nil
 	}
 	if changelog.SyncHistoryUID == nil {
 		return false, false, errors.Errorf("expect sync history but get nil")
