@@ -2437,9 +2437,12 @@ type TableMetadata struct {
 	Triggers    []*TriggerMetadata `protobuf:"bytes,20,rep,name=triggers,proto3" json:"triggers,omitempty"`
 	SkipDump    bool               `protobuf:"varint,21,opt,name=skip_dump,json=skipDump,proto3" json:"skip_dump,omitempty"`
 	// https://docs.pingcap.com/tidb/stable/information-schema-tables/
-	ShardingInfo  string `protobuf:"bytes,22,opt,name=sharding_info,json=shardingInfo,proto3" json:"sharding_info,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	ShardingInfo string `protobuf:"bytes,22,opt,name=sharding_info,json=shardingInfo,proto3" json:"sharding_info,omitempty"`
+	// https://docs.pingcap.com/tidb/stable/clustered-indexes/#clustered-indexes
+	// CLUSTERED or NONCLUSTERED.
+	PrimaryKeyType string `protobuf:"bytes,23,opt,name=primary_key_type,json=primaryKeyType,proto3" json:"primary_key_type,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *TableMetadata) Reset() {
@@ -2615,6 +2618,13 @@ func (x *TableMetadata) GetSkipDump() bool {
 func (x *TableMetadata) GetShardingInfo() string {
 	if x != nil {
 		return x.ShardingInfo
+	}
+	return ""
+}
+
+func (x *TableMetadata) GetPrimaryKeyType() string {
+	if x != nil {
+		return x.PrimaryKeyType
 	}
 	return ""
 }
@@ -6164,7 +6174,7 @@ const file_v1_database_service_proto_rawDesc = "" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x120\n" +
 	"\x14external_server_name\x18\x02 \x01(\tR\x12externalServerName\x124\n" +
 	"\x16external_database_name\x18\x03 \x01(\tR\x14externalDatabaseName\x125\n" +
-	"\acolumns\x18\x04 \x03(\v2\x1b.bytebase.v1.ColumnMetadataR\acolumns\"\xcb\x06\n" +
+	"\acolumns\x18\x04 \x03(\v2\x1b.bytebase.v1.ColumnMetadataR\acolumns\"\xf5\x06\n" +
 	"\rTableMetadata\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x125\n" +
 	"\acolumns\x18\x02 \x03(\v2\x1b.bytebase.v1.ColumnMetadataR\acolumns\x124\n" +
@@ -6190,7 +6200,8 @@ const file_v1_database_service_proto_rawDesc = "" +
 	"\fsorting_keys\x18\x13 \x03(\tR\vsortingKeys\x128\n" +
 	"\btriggers\x18\x14 \x03(\v2\x1c.bytebase.v1.TriggerMetadataR\btriggers\x12\x1b\n" +
 	"\tskip_dump\x18\x15 \x01(\bR\bskipDump\x12#\n" +
-	"\rsharding_info\x18\x16 \x01(\tR\fshardingInfo\"M\n" +
+	"\rsharding_info\x18\x16 \x01(\tR\fshardingInfo\x12(\n" +
+	"\x10primary_key_type\x18\x17 \x01(\tR\x0eprimaryKeyType\"M\n" +
 	"\x17CheckConstraintMetadata\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1e\n" +
 	"\n" +

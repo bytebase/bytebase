@@ -1692,6 +1692,7 @@ TableMetadata is the metadata for tables.
 | triggers | [TriggerMetadata](#bytebase-store-TriggerMetadata) | repeated |  |
 | skip_dump | [bool](#bool) |  |  |
 | sharding_info | [string](#string) |  | https://docs.pingcap.com/tidb/stable/information-schema-tables/ |
+| primary_key_type | [string](#string) |  | https://docs.pingcap.com/tidb/stable/clustered-indexes/#clustered-indexes CLUSTERED or NONCLUSTERED. |
 
 
 

@@ -358,7 +358,8 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 			IFNULL(DATA_FREE, 0),
 			IFNULL(CREATE_OPTIONS, ''),
 			QUOTE(IFNULL(TABLE_COMMENT, '')),
-			IFNULL(TIDB_ROW_ID_SHARDING_INFO, '')
+			IFNULL(TIDB_ROW_ID_SHARDING_INFO, ''),
+			IFNULL(TIDB_PK_TYPE, '')
 		FROM information_schema.TABLES
 		WHERE TABLE_SCHEMA = ?
 		ORDER BY TABLE_NAME`
@@ -369,7 +370,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 	}
 	defer tableRows.Close()
 	for tableRows.Next() {
-		var tableName, tableType, engine, collation, createOptions, comment, shardingInfo string
+		var tableName, tableType, engine, collation, createOptions, comment, shardingInfo, pkType string
 		var rowCount, dataSize, indexSize, dataFree int64
 		// Workaround TiDB bug https://github.com/pingcap/tidb/issues/27970
 		var tableCollation sql.NullString
@@ -385,6 +386,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 			&createOptions,
 			&comment,
 			&shardingInfo,
+			&pkType,
 		); err != nil {
 			return nil, err
 		}
@@ -424,20 +426,21 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 			}
 
 			tableMetadata := &storepb.TableMetadata{
-				Name:          tableName,
-				Columns:       columns,
-				ForeignKeys:   foreignKeysMap[key],
-				Engine:        engine,
-				Collation:     collation,
-				RowCount:      rowCount,
-				DataSize:      dataSize,
-				IndexSize:     indexSize,
-				DataFree:      dataFree,
-				CreateOptions: createOptions,
-				Comment:       comment,
-				Charset:       convertCollationToCharset(collation),
-				Partitions:    partitionTables[key],
-				ShardingInfo:  shardingInfo,
+				Name:           tableName,
+				Columns:        columns,
+				ForeignKeys:    foreignKeysMap[key],
+				Engine:         engine,
+				Collation:      collation,
+				RowCount:       rowCount,
+				DataSize:       dataSize,
+				IndexSize:      indexSize,
+				DataFree:       dataFree,
+				CreateOptions:  createOptions,
+				Comment:        comment,
+				Charset:        convertCollationToCharset(collation),
+				Partitions:     partitionTables[key],
+				ShardingInfo:   shardingInfo,
+				PrimaryKeyType: pkType,
 			}
 			if tableCollation.Valid {
 				tableMetadata.Collation = tableCollation.String
