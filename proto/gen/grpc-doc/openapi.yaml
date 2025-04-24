@@ -13054,6 +13054,11 @@ components:
                 shardingInfo:
                     type: string
                     description: https://docs.pingcap.com/tidb/stable/information-schema-tables/
+                primaryKeyType:
+                    type: string
+                    description: |-
+                        https://docs.pingcap.com/tidb/stable/clustered-indexes/#clustered-indexes
+                         CLUSTERED or NONCLUSTERED.
             description: TableMetadata is the metadata for tables.
         TablePartitionMetadata:
             type: object
