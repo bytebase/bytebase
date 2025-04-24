@@ -30,6 +30,21 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, request *v1pb.CheckRe
 		return nil, status.Errorf(codes.InvalidArgument, "targets cannot be empty")
 	}
 
+	projectID, err := common.GetProjectID(request.GetParent())
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+		ResourceID:  &projectID,
+		ShowDeleted: true,
+	})
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	if project == nil {
+		return nil, status.Errorf(codes.NotFound, "project %q not found", projectID)
+	}
+
 	var targetDatabases []*store.DatabaseMessage
 	for _, target := range request.Targets {
 		// Handle database target.
@@ -95,8 +110,11 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, request *v1pb.CheckRe
 		}
 	}
 
+	if project.Setting.GetCiSamplingSize() > 0 && len(targetDatabases) > int(project.Setting.GetCiSamplingSize()) {
+		targetDatabases = targetDatabases[:project.Setting.GetCiSamplingSize()]
+	}
+
 	// Validate and sanitize release files.
-	var err error
 	request.Release.Files, err = validateAndSanitizeReleaseFiles(request.Release.Files)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid release files, err: %v", err)
