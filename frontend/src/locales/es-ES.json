@@ -2157,7 +2157,7 @@
     "cannot-be-changed-later": "No se puede cambiar posteriormente.",
     "validation": {
       "duplicated": "El ID de {resource} ya existe. Por favor, elige otro.",
-      "pattern": "El ID de {resource} solo puede contener letras minúsculas, números y guiones. Debe comenzar con una letra minúscula.",
+      "pattern": "La identificación {recurso} puede tener letras, dígitos o guiones minúsculas. Debe comenzar con una letra minúscula y terminar con una letra o número.",
       "minlength": "El ID de {resource} es demasiado corto. Debe tener al menos 1 carácter.",
       "overflow": "El ID de {resource} es demasiado largo. Debe tener menos de 64 caracteres."
     }
