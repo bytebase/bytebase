@@ -1,4 +1,34 @@
 - input: |-
+    UPDATE T_GENERATED SET b = 1 WHERE a = 1;
+    UPDATE T_GENERATED SET b = 2 WHERE a = 2;
+    UPDATE T_GENERATED SET b = 3 WHERE a = 3;
+    UPDATE T_GENERATED SET b = 4 WHERE a = 4;
+    UPDATE T_GENERATED SET b = 5 WHERE a = 5;
+    UPDATE T_GENERATED SET b = 6 WHERE a = 6;
+    UPDATE T_GENERATED SET b = 7 WHERE a = 7;
+  backupdatabase: bbarchive
+  backuptable: prefix_T_GENERATED
+  originaldatabase: DB
+  originaltable: T_GENERATED
+  result: |-
+    /*
+    Original SQL:
+    UPDATE T_GENERATED SET b = 1 WHERE a = 1;
+    UPDATE T_GENERATED SET b = 2 WHERE a = 2;
+    UPDATE T_GENERATED SET b = 3 WHERE a = 3;
+    UPDATE T_GENERATED SET b = 4 WHERE a = 4;
+    UPDATE T_GENERATED SET b = 5 WHERE a = 5;
+    UPDATE T_GENERATED SET b = 6 WHERE a = 6;
+    UPDATE T_GENERATED SET b = 7 WHERE a = 7
+    */
+    MERGE INTO "DB"."T_GENERATED" t
+    USING "bbarchive"."prefix_T_GENERATED" b
+      ON( t."A" = b."A")
+    WHEN MATCHED THEN
+      UPDATE SET t."B" = b."B"
+    WHEN NOT MATCHED THEN
+     INSERT ("A", "B") VALUES (b."A", b."B");
+- input: |-
     UPDATE T_GENERATED SET a = 1 WHERE b = 1;
     UPDATE T_GENERATED SET a = 2 WHERE b = 2;
     UPDATE T_GENERATED SET a = 3 WHERE b = 3;
