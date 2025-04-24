@@ -417,6 +417,7 @@ func (t *Tokenizer) SplitTiDBMultiSQL() ([]base.SingleSQL, error) {
 	var res []base.SingleSQL
 	delimiter := []rune{';'}
 
+	// TODO(zp):Start position.
 	t.skipBlank()
 	t.emptyStatement = true
 	startPos := t.cursor
