@@ -320,8 +320,9 @@ func TestMySQLSplitMultiSQL(t *testing.T) {
 			want: resData{
 				res: []base.SingleSQL{
 					{
-						Text: `select * from t;`,
-						End:  &storepb.Position{Line: 0, Column: 15},
+						Text:  `select * from t;`,
+						Start: &storepb.Position{Line: 0, Column: 0},
+						End:   &storepb.Position{Line: 0, Column: 15},
 					},
 					{
 						Text:  `select "\"" where true;`,
@@ -373,8 +374,9 @@ func TestMySQLSplitMultiSQL(t *testing.T) {
 			want: resData{
 				res: []base.SingleSQL{
 					{
-						Text: `select * from t;`,
-						End:  &storepb.Position{Line: 0, Column: 15},
+						Text:  `select * from t;`,
+						Start: &storepb.Position{Line: 0, Column: 0},
+						End:   &storepb.Position{Line: 0, Column: 15},
 					},
 					{
 						Text:  "\n\t\t\t/* sdfasdf */;",
@@ -423,7 +425,8 @@ func TestMySQLSplitMultiSQL(t *testing.T) {
 		   RETURN income;
 
 		END ;`,
-						End: &storepb.Position{Line: 13, Column: 6},
+						Start: &storepb.Position{Line: 0, Column: 0},
+						End:   &storepb.Position{Line: 13, Column: 6},
 					},
 				},
 			},
@@ -433,8 +436,9 @@ func TestMySQLSplitMultiSQL(t *testing.T) {
 			want: resData{
 				res: []base.SingleSQL{
 					{
-						Text: bigSQL,
-						End:  &storepb.Position{Line: 0, Column: int32(len(bigSQL) - 1)},
+						Text:  bigSQL,
+						Start: &storepb.Position{Line: 0, Column: 0},
+						End:   &storepb.Position{Line: 0, Column: int32(len(bigSQL) - 1)},
 					},
 				},
 			},
@@ -445,13 +449,13 @@ func TestMySQLSplitMultiSQL(t *testing.T) {
 				res: []base.SingleSQL{
 					{
 						Text:  "    CREATE TABLE t(a int);",
-						End:   &storepb.Position{Line: 0, Column: 25},
 						Start: &storepb.Position{Line: 0, Column: 4},
+						End:   &storepb.Position{Line: 0, Column: 25},
 					},
 					{
 						Text:  " CREATE TABLE t1(a int)",
-						End:   &storepb.Position{Line: 0, Column: 48},
 						Start: &storepb.Position{Line: 0, Column: 27},
+						End:   &storepb.Position{Line: 0, Column: 48},
 					},
 				},
 			},
@@ -462,13 +466,14 @@ func TestMySQLSplitMultiSQL(t *testing.T) {
 			want: resData{
 				res: []base.SingleSQL{
 					{
-						Text: "CREATE TABLE `tech_Book`(id int, name varchar(255));",
-						End:  &storepb.Position{Line: 0, Column: 51},
+						Text:  "CREATE TABLE `tech_Book`(id int, name varchar(255));",
+						Start: &storepb.Position{Line: 0, Column: 0},
+						End:   &storepb.Position{Line: 0, Column: 51},
 					},
 					{
 						Text:  "\nINSERT INTO `tech_Book` VALUES (0, 'abce_ksdf'), (1, 'lks''kjsafa\\'jdfl;\"ka');",
-						End:   &storepb.Position{Line: 1, Column: 77},
 						Start: &storepb.Position{Line: 1, Column: 0},
+						End:   &storepb.Position{Line: 1, Column: 77},
 					},
 				},
 			},
@@ -485,20 +490,20 @@ func TestMySQLSplitMultiSQL(t *testing.T) {
 				res: []base.SingleSQL{
 					{
 						Text:  "\n\t\t\t\t\t\t/* this is the comment. */\n\t\t\t\t\t\tCREATE /* inline comment */TABLE tech_Book(id int, name varchar(255));",
-						End:   &storepb.Position{Line: 2, Column: 75},
 						Start: &storepb.Position{Line: 2, Column: 6},
+						End:   &storepb.Position{Line: 2, Column: 75},
 					},
 					{
 						Text:     "\n\t\t\t\t\t\t-- this is the comment.\n\t\t\t\t\t\tINSERT INTO tech_Book VALUES (0, 'abce_ksdf'), (1, 'lks''kjsafa\\'jdfl;\"ka');",
+						Start:    &storepb.Position{Line: 4, Column: 6},
 						BaseLine: 2,
 						End:      &storepb.Position{Line: 4, Column: 81},
-						Start:    &storepb.Position{Line: 4, Column: 6},
 					},
 					{
 						Text:     "\n\t\t\t\t\t\t# this is the comment.\n\t\t\t\t\t\tINSERT INTO tech_Book VALUES (0, 'abce_ksdf'), (1, 'lks''kjsafa\\'jdfl;\"ka');",
 						BaseLine: 4,
-						End:      &storepb.Position{Line: 6, Column: 81},
 						Start:    &storepb.Position{Line: 6, Column: 6},
+						End:      &storepb.Position{Line: 6, Column: 81},
 					},
 				},
 			},
@@ -518,27 +523,27 @@ func TestMySQLSplitMultiSQL(t *testing.T) {
 				res: []base.SingleSQL{
 					{
 						Text:  "# test for defining stored programs\n\t\t\t\t\t\tCREATE PROCEDURE dorepeat(p1 INT)\n\t\t\t\t\t\tBEGIN\n\t\t\t\t\t\t\tSET @x = 0;\n\t\t\t\t\t\t\tREPEAT SET @x = @x + 1; UNTIL @x > p1 END REPEAT;\n\t\t\t\t\t\tEND\n\t\t\t\t\t\t;",
-						End:   &storepb.Position{Line: 6, Column: 6},
 						Start: &storepb.Position{Line: 1, Column: 6},
+						End:   &storepb.Position{Line: 6, Column: 6},
 					},
 					{
 						Text:     "\n\t\t\t\t\t\tCALL dorepeat(1000);",
 						BaseLine: 6,
-						End:      &storepb.Position{Line: 7, Column: 25},
 						Start:    &storepb.Position{Line: 7, Column: 6},
+						End:      &storepb.Position{Line: 7, Column: 25},
 					},
 					{
 						Text:     "\n\t\t\t\t\t\tSELECT @x;",
 						BaseLine: 7,
-						End:      &storepb.Position{Line: 8, Column: 15},
 						Start:    &storepb.Position{Line: 8, Column: 6},
+						End:      &storepb.Position{Line: 8, Column: 15},
 					},
 					{
 						Text:     "\n\t\t\t\t\t\t",
 						BaseLine: 8,
+						Start:    &storepb.Position{Line: 9, Column: 6},
 						// TODO(zp): Wait, but why the start position is larger than the end position?
 						End:   &storepb.Position{Line: 9, Column: 5},
-						Start: &storepb.Position{Line: 9, Column: 6},
 						Empty: true,
 					},
 				},
@@ -560,26 +565,26 @@ func TestMySQLSplitMultiSQL(t *testing.T) {
 				res: []base.SingleSQL{
 					{
 						Text:  "# test for defining stored programs\n\t\t\t\t\t\tCREATE PROCEDURE dorepeat(p1 INT)\n\t\t\t\t\t\t/* This is a comment */\n\t\t\t\t\t\tBEGIN\n\t\t\t\t\t\t\tSET @x = 0;\n\t\t\t\t\t\t\tREPEAT SET @x = @x + 1; UNTIL @x > p1 END REPEAT;\n\t\t\t\t\t\tEND\n\t\t\t\t\t\t;",
-						Start: &storepb.Position{Line: 1, Column: 6},
 						End:   &storepb.Position{Line: 7, Column: 6},
+						Start: &storepb.Position{Line: 1, Column: 6},
 					},
 					{
 						Text:     "\n\t\t\t\t\t\tCALL dorepeat(1000);",
 						BaseLine: 7,
-						End:      &storepb.Position{Line: 8, Column: 25},
 						Start:    &storepb.Position{Line: 8, Column: 6},
+						End:      &storepb.Position{Line: 8, Column: 25},
 					},
 					{
 						Text:     "\n\t\t\t\t\t\tSELECT @x;",
 						BaseLine: 8,
-						End:      &storepb.Position{Line: 9, Column: 15},
 						Start:    &storepb.Position{Line: 9, Column: 6},
+						End:      &storepb.Position{Line: 9, Column: 15},
 					},
 					{
 						Text:     "\n\t\t\t\t\t\t",
 						BaseLine: 9,
-						End:      &storepb.Position{Line: 10, Column: 5},
 						Start:    &storepb.Position{Line: 10, Column: 6},
+						End:      &storepb.Position{Line: 10, Column: 5},
 						Empty:    true,
 					},
 				},
@@ -591,14 +596,16 @@ func TestMySQLSplitMultiSQL(t *testing.T) {
 			want: resData{
 				res: []base.SingleSQL{
 					{
-						Text: "CREATE TABLE t\r\n(a int);",
-						End:  &storepb.Position{Line: 1, Column: 7},
+						Text:     "CREATE TABLE t\r\n(a int);",
+						BaseLine: 0,
+						Start:    &storepb.Position{Line: 0, Column: 0},
+						End:      &storepb.Position{Line: 1, Column: 7},
 					},
 					{
 						Text:     "\r\nCREATE TABLE t1(b int);",
 						BaseLine: 1,
-						End:      &storepb.Position{Line: 2, Column: 22},
 						Start:    &storepb.Position{Line: 2, Column: 0},
+						End:      &storepb.Position{Line: 2, Column: 22},
 					},
 				},
 			},
