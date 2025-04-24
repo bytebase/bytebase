@@ -45,7 +45,7 @@ const (
 	mysqlNoAction = "NO ACTION"
 
 	autoIncrementSymbol = "AUTO_INCREMENT"
-	autoRandSymbol      = "AUTO_RANDOM"
+	autoRandomSymbol    = "AUTO_RANDOM"
 )
 
 func init() {
@@ -1105,6 +1105,10 @@ func isAutoIncrement(column *storepb.ColumnMetadata) bool {
 	return strings.EqualFold(column.GetDefaultExpression(), autoIncrementSymbol)
 }
 
+func isAutoRandom(column *storepb.ColumnMetadata) bool {
+	return strings.HasPrefix(column.GetDefaultExpression(), autoRandomSymbol)
+}
+
 func printColumnClause(buf *strings.Builder, column *storepb.ColumnMetadata, table *storepb.TableMetadata) error {
 	if _, err := fmt.Fprintf(buf, "  `%s` %s", column.Name, column.Type); err != nil {
 		return err
@@ -1144,13 +1148,17 @@ func printColumnClause(buf *strings.Builder, column *storepb.ColumnMetadata, tab
 		}
 	}
 
-	if err := printDefaultClause(buf, column); err != nil {
-		return err
-	}
-
-	// Handle auto_increment.
-	if isAutoIncrement(column) {
+	switch {
+	case isAutoIncrement(column):
 		if _, err := fmt.Fprintf(buf, " %s", autoIncrementSymbol); err != nil {
+			return err
+		}
+	case isAutoRandom(column):
+		if _, err := fmt.Fprintf(buf, " /*T![auto_rand] %s */", column.GetDefaultExpression()); err != nil {
+			return err
+		}
+	default:
+		if err := printDefaultClause(buf, column); err != nil {
 			return err
 		}
 	}
