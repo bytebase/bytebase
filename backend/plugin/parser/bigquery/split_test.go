@@ -25,12 +25,11 @@ func TestBigQuerySplitMultiSQL(t *testing.T) {
 			want: resData{
 				res: []base.SingleSQL{
 					{
-						Text:       "SELECT 1",
-						BaseLine:   0,
-						LastLine:   0,
-						LastColumn: 7,
-						Start:      &storepb.Position{Line: 0, Column: 0},
-						Empty:      false,
+						Text:     "SELECT 1",
+						BaseLine: 0,
+						Start:    &storepb.Position{Line: 0, Column: 0},
+						End:      &storepb.Position{Line: 0, Column: 7},
+						Empty:    false,
 					},
 				},
 			},
@@ -40,20 +39,18 @@ func TestBigQuerySplitMultiSQL(t *testing.T) {
 			want: resData{
 				res: []base.SingleSQL{
 					{
-						Text:       "SELECT 1;",
-						BaseLine:   0,
-						LastLine:   0,
-						LastColumn: 8,
-						Start:      &storepb.Position{Line: 0, Column: 0},
-						Empty:      false,
+						Text:     "SELECT 1;",
+						BaseLine: 0,
+						Start:    &storepb.Position{Line: 0, Column: 0},
+						End:      &storepb.Position{Line: 0, Column: 8},
+						Empty:    false,
 					},
 					{
-						Text:       "\n SELECT\n 33;",
-						BaseLine:   0,
-						LastLine:   2,
-						LastColumn: 3,
-						Start:      &storepb.Position{Line: 1, Column: 1},
-						Empty:      false,
+						Text:     "\n SELECT\n 33;",
+						BaseLine: 0,
+						Start:    &storepb.Position{Line: 1, Column: 1},
+						End:      &storepb.Position{Line: 2, Column: 3},
+						Empty:    false,
 					},
 				},
 			},

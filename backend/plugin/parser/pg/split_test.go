@@ -42,12 +42,11 @@ func TestPGSplitMultiSQL(t *testing.T) {
 			want: resData{
 				res: []base.SingleSQL{
 					{
-						Text:       "-- klsjdfjasldf\n\t\t\t-- klsjdflkjaskldfj\n\t\t\t",
-						BaseLine:   0,
-						Start:      &storepb.Position{Line: 2, Column: 3},
-						LastLine:   2,
-						LastColumn: 2,
-						Empty:      true,
+						Text:     "-- klsjdfjasldf\n\t\t\t-- klsjdflkjaskldfj\n\t\t\t",
+						BaseLine: 0,
+						Start:    &storepb.Position{Line: 2, Column: 3},
+						End:      &storepb.Position{Line: 2, Column: 2},
+						Empty:    true,
 					},
 				},
 			},
@@ -58,16 +57,14 @@ func TestPGSplitMultiSQL(t *testing.T) {
 			want: resData{
 				res: []base.SingleSQL{
 					{
-						Text:       `select * from t;`,
-						LastLine:   0,
-						LastColumn: 15,
+						Text: `select * from t;`,
+						End:  &storepb.Position{Line: 0, Column: 15},
 					},
 					{
-						Text:       "\n\t\t\t/* sdfasdf */",
-						LastLine:   1,
-						LastColumn: 3,
-						Start:      &storepb.Position{Line: 1, Column: 16},
-						Empty:      true,
+						Text:  "\n\t\t\t/* sdfasdf */",
+						End:   &storepb.Position{Line: 1, Column: 3},
+						Start: &storepb.Position{Line: 1, Column: 16},
+						Empty: true,
 					},
 				},
 			},
@@ -79,23 +76,20 @@ func TestPGSplitMultiSQL(t *testing.T) {
 			want: resData{
 				res: []base.SingleSQL{
 					{
-						Text:       `select * from t;`,
-						LastLine:   0,
-						LastColumn: 15,
+						Text: `select * from t;`,
+						End:  &storepb.Position{Line: 0, Column: 15},
 					},
 					{
-						Text:       "\n\t\t\t/* sdfasdf */;",
-						Start:      &storepb.Position{Line: 1, Column: 16},
-						LastLine:   1,
-						LastColumn: 16,
-						Empty:      true,
+						Text:  "\n\t\t\t/* sdfasdf */;",
+						Start: &storepb.Position{Line: 1, Column: 16},
+						End:   &storepb.Position{Line: 1, Column: 16},
+						Empty: true,
 					},
 					{
-						Text:       "\n\t\t\tselect * from t;",
-						BaseLine:   1,
-						Start:      &storepb.Position{Line: 2, Column: 3},
-						LastLine:   2,
-						LastColumn: 18,
+						Text:     "\n\t\t\tselect * from t;",
+						BaseLine: 1,
+						Start:    &storepb.Position{Line: 2, Column: 3},
+						End:      &storepb.Position{Line: 2, Column: 18},
 					},
 				},
 			},
@@ -105,9 +99,8 @@ func TestPGSplitMultiSQL(t *testing.T) {
 			want: resData{
 				res: []base.SingleSQL{
 					{
-						Text:       bigSQL,
-						LastLine:   0,
-						LastColumn: len(bigSQL) - 1,
+						Text: bigSQL,
+						End:  &storepb.Position{Line: 0, Column: int32(len(bigSQL)) - 1},
 					},
 				},
 			},
@@ -117,15 +110,14 @@ func TestPGSplitMultiSQL(t *testing.T) {
 			want: resData{
 				res: []base.SingleSQL{
 					{
-						Text:       "    CREATE TABLE t(a int);",
-						Start:      &storepb.Position{Line: 0, Column: 4},
-						LastLine:   0,
-						LastColumn: 25,
+						Text:  "    CREATE TABLE t(a int);",
+						Start: &storepb.Position{Line: 0, Column: 4},
+						End:   &storepb.Position{Line: 0, Column: 25},
 					},
 					{
-						Text:       " CREATE TABLE t1(a int)",
-						Start:      &storepb.Position{Line: 0, Column: 27},
-						LastColumn: 48,
+						Text:  " CREATE TABLE t1(a int)",
+						Start: &storepb.Position{Line: 0, Column: 27},
+						End:   &storepb.Position{Line: 0, Column: 48},
 					},
 				},
 			},
@@ -136,15 +128,13 @@ func TestPGSplitMultiSQL(t *testing.T) {
 			want: resData{
 				res: []base.SingleSQL{
 					{
-						Text:       `CREATE TABLE "tech_Book"(id int, name varchar(255));`,
-						LastLine:   0,
-						LastColumn: 51,
+						Text: `CREATE TABLE "tech_Book"(id int, name varchar(255));`,
+						End:  &storepb.Position{Line: 0, Column: 51},
 					},
 					{
-						Text:       "\n\t\t\t\t\t\tINSERT INTO \"tech_Book\" VALUES (0, 'abce_ksdf'), (1, 'lks''kjsafajdfl;\"ka');",
-						Start:      &storepb.Position{Line: 1, Column: 6},
-						LastLine:   1,
-						LastColumn: 81,
+						Text:  "\n\t\t\t\t\t\tINSERT INTO \"tech_Book\" VALUES (0, 'abce_ksdf'), (1, 'lks''kjsafajdfl;\"ka');",
+						Start: &storepb.Position{Line: 1, Column: 6},
+						End:   &storepb.Position{Line: 1, Column: 81},
 					},
 				},
 			},
@@ -158,17 +148,15 @@ func TestPGSplitMultiSQL(t *testing.T) {
 			want: resData{
 				res: []base.SingleSQL{
 					{
-						Text:       "\n\t\t\t\t\t\t/* this is the comment. */\n\t\t\t\t\t\tCREATE /* inline comment */TABLE \"tech_Book\"(id int, name varchar(255));",
-						Start:      &storepb.Position{Line: 2, Column: 6},
-						LastLine:   2,
-						LastColumn: 77,
+						Text:  "\n\t\t\t\t\t\t/* this is the comment. */\n\t\t\t\t\t\tCREATE /* inline comment */TABLE \"tech_Book\"(id int, name varchar(255));",
+						Start: &storepb.Position{Line: 2, Column: 6},
+						End:   &storepb.Position{Line: 2, Column: 77},
 					},
 					{
-						Text:       "\n\t\t\t\t\t\t-- this is the comment.\n\t\t\t\t\t\tINSERT INTO \"tech_Book\" VALUES (0, 'abce_ksdf'), (1, 'lks''kjsafajdfl;\"ka');",
-						BaseLine:   2,
-						Start:      &storepb.Position{Line: 4, Column: 6},
-						LastLine:   4,
-						LastColumn: 81,
+						Text:     "\n\t\t\t\t\t\t-- this is the comment.\n\t\t\t\t\t\tINSERT INTO \"tech_Book\" VALUES (0, 'abce_ksdf'), (1, 'lks''kjsafajdfl;\"ka');",
+						BaseLine: 2,
+						Start:    &storepb.Position{Line: 4, Column: 6},
+						End:      &storepb.Position{Line: 4, Column: 81},
 					},
 				},
 			},
@@ -194,15 +182,13 @@ func TestPGSplitMultiSQL(t *testing.T) {
 						-- this is the comment
 						INSERT INTO tbl VALUES ('fasf_bkdjlfa');
 						$$;`,
-						LastLine:   7,
-						LastColumn: 8,
+						End: &storepb.Position{Line: 7, Column: 8},
 					},
 					{
-						Text:       "\n\t\t\t\t\t\tCREATE TABLE t(a int);",
-						BaseLine:   7,
-						Start:      &storepb.Position{Line: 8, Column: 6},
-						LastLine:   8,
-						LastColumn: 27,
+						Text:     "\n\t\t\t\t\t\tCREATE TABLE t(a int);",
+						BaseLine: 7,
+						Start:    &storepb.Position{Line: 8, Column: 6},
+						End:      &storepb.Position{Line: 8, Column: 27},
 					},
 				},
 			},
@@ -228,15 +214,13 @@ func TestPGSplitMultiSQL(t *testing.T) {
 						-- this is the comment
 						INSERT INTO tbl VALUES ('fasf_bkdjlfa');
 						$tag_name$;`,
-						LastLine:   7,
-						LastColumn: 16,
+						End: &storepb.Position{Line: 7, Column: 16},
 					},
 					{
-						Text:       "\n\t\t\t\t\t\tCREATE TABLE t(a int);",
-						BaseLine:   7,
-						Start:      &storepb.Position{Line: 8, Column: 6},
-						LastLine:   8,
-						LastColumn: 27,
+						Text:     "\n\t\t\t\t\t\tCREATE TABLE t(a int);",
+						BaseLine: 7,
+						Start:    &storepb.Position{Line: 8, Column: 6},
+						End:      &storepb.Position{Line: 8, Column: 27},
 					},
 				},
 			},
@@ -247,16 +231,14 @@ func TestPGSplitMultiSQL(t *testing.T) {
 			want: resData{
 				res: []base.SingleSQL{
 					{
-						Text:       "CREATE TABLE t\r\n(a int);",
-						LastLine:   1,
-						LastColumn: 7,
+						Text: "CREATE TABLE t\r\n(a int);",
+						End:  &storepb.Position{Line: 1, Column: 7},
 					},
 					{
-						Text:       "\r\nCREATE TABLE t1(b int);",
-						BaseLine:   1,
-						Start:      &storepb.Position{Line: 2, Column: 0},
-						LastLine:   2,
-						LastColumn: 22,
+						Text:     "\r\nCREATE TABLE t1(b int);",
+						BaseLine: 1,
+						Start:    &storepb.Position{Line: 2, Column: 0},
+						End:      &storepb.Position{Line: 2, Column: 22},
 					},
 				},
 			},
@@ -270,9 +252,8 @@ func TestPGSplitMultiSQL(t *testing.T) {
 			want: resData{
 				res: []base.SingleSQL{
 					{
-						Text:       "INSERT INTO \"public\".\"table\"(\"id\",\"content\")\n\t\t\tVALUES\n\t\t\t(12,'table column name () { :xna,sydfn,,kasdfyn;}; /////test string/// 0'),\n\t\t\t(133,'knuandfan public table id'';create table t(a int, b int);set @text=''\\\\\\\\kdaminxkljasdfiebkla.unkonwn''+''abcdef.xyz\\\\''; local xxxyy.abcddd.mysql @text;------- '),\n\t\t\t(1444,'table t xyz abc a''a\\\\\\\\\\\\\\\\''b\"c>?>xxxxxx%}}%%>c<[[?${12344556778990{%}}cake\\\\');",
-						LastLine:   4,
-						LastColumn: 91,
+						Text: "INSERT INTO \"public\".\"table\"(\"id\",\"content\")\n\t\t\tVALUES\n\t\t\t(12,'table column name () { :xna,sydfn,,kasdfyn;}; /////test string/// 0'),\n\t\t\t(133,'knuandfan public table id'';create table t(a int, b int);set @text=''\\\\\\\\kdaminxkljasdfiebkla.unkonwn''+''abcdef.xyz\\\\''; local xxxyy.abcddd.mysql @text;------- '),\n\t\t\t(1444,'table t xyz abc a''a\\\\\\\\\\\\\\\\''b\"c>?>xxxxxx%}}%%>c<[[?${12344556778990{%}}cake\\\\');",
+						End:  &storepb.Position{Line: 4, Column: 91},
 					},
 				},
 			},
@@ -282,11 +263,10 @@ func TestPGSplitMultiSQL(t *testing.T) {
 			want: resData{
 				res: []base.SingleSQL{
 					{
-						Text:       "INSERT INTO t VALUES ('klajfas)",
-						LastLine:   0,
-						LastColumn: 22,
-						Start:      &storepb.Position{Line: 0, Column: 0},
-						Empty:      false,
+						Text:  "INSERT INTO t VALUES ('klajfas)",
+						End:   &storepb.Position{Line: 0, Column: 22},
+						Start: &storepb.Position{Line: 0, Column: 0},
+						Empty: false,
 					},
 				},
 			},
@@ -296,9 +276,8 @@ func TestPGSplitMultiSQL(t *testing.T) {
 			want: resData{
 				res: []base.SingleSQL{
 					{
-						Text:       "INSERT INTO \"t VALUES ('klajfas)",
-						LastLine:   0,
-						LastColumn: 12,
+						Text: "INSERT INTO \"t VALUES ('klajfas)",
+						End:  &storepb.Position{Line: 0, Column: 12},
 					},
 				},
 			},
@@ -308,12 +287,11 @@ func TestPGSplitMultiSQL(t *testing.T) {
 			want: resData{
 				res: []base.SingleSQL{
 					{
-						Text:       "/*INSERT INTO \"t VALUES ('klajfas)",
-						BaseLine:   0,
-						Start:      &storepb.Position{Line: 0, Column: 0},
-						LastLine:   0,
-						LastColumn: 0,
-						Empty:      false,
+						Text:     "/*INSERT INTO \"t VALUES ('klajfas)",
+						BaseLine: 0,
+						Start:    &storepb.Position{Line: 0, Column: 0},
+						End:      &storepb.Position{Line: 0, Column: 0},
+						Empty:    false,
 					},
 				},
 			},
@@ -323,8 +301,8 @@ func TestPGSplitMultiSQL(t *testing.T) {
 			want: resData{
 				res: []base.SingleSQL{
 					{
-						Text:       "$$INSERT INTO \"t VALUES ('klajfas)",
-						LastColumn: 2,
+						Text: "$$INSERT INTO \"t VALUES ('klajfas)",
+						End:  &storepb.Position{Line: 0, Column: 2},
 					},
 				},
 			},

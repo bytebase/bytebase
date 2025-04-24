@@ -74,10 +74,15 @@ func splitByParser(statement string) ([]base.SingleSQL, error) {
 			pos := goStmt.GetStop().GetTokenIndex()
 			line, col := base.FirstDefaultChannelTokenPosition(tokens[start : pos+1])
 			result = append(result, base.SingleSQL{
-				Text:       stream.GetTextFromTokens(tokens[start], tokens[pos]),
-				BaseLine:   tokens[start].GetLine() - 1,
-				LastLine:   tokens[pos].GetLine() - 1,
-				LastColumn: tokens[pos].GetColumn(),
+				Text:     stream.GetTextFromTokens(tokens[start], tokens[pos]),
+				BaseLine: tokens[start].GetLine() - 1,
+				End: common.ConvertANTLRPositionToPosition(
+					&common.ANTLRPosition{
+						Line:   int32(tokens[pos].GetLine()),
+						Column: int32(tokens[pos].GetColumn()),
+					},
+					statement,
+				),
 				Start: common.ConvertANTLRPositionToPosition(
 					&common.ANTLRPosition{
 						Line:   int32(line),
@@ -117,10 +122,15 @@ func splitByParser(statement string) ([]base.SingleSQL, error) {
 				pos := goStmt.GetStop().GetTokenIndex()
 				line, col := base.FirstDefaultChannelTokenPosition(tokens[start : pos+1])
 				result = append(result, base.SingleSQL{
-					Text:       stream.GetTextFromTokens(tokens[start], tokens[pos]),
-					BaseLine:   tokens[start].GetLine() - 1,
-					LastLine:   tokens[pos].GetLine() - 1,
-					LastColumn: tokens[pos].GetColumn(),
+					Text:     stream.GetTextFromTokens(tokens[start], tokens[pos]),
+					BaseLine: tokens[start].GetLine() - 1,
+					End: common.ConvertANTLRPositionToPosition(
+						&common.ANTLRPosition{
+							Line:   int32(tokens[pos].GetLine()),
+							Column: int32(tokens[pos].GetColumn()),
+						},
+						statement,
+					),
 					Start: common.ConvertANTLRPositionToPosition(
 						&common.ANTLRPosition{
 							Line:   int32(line),
@@ -144,10 +154,15 @@ func splitByParser(statement string) ([]base.SingleSQL, error) {
 			pos := goStmt.GetStop().GetTokenIndex()
 			line, col := base.FirstDefaultChannelTokenPosition(tokens[start : pos+1])
 			result = append(result, base.SingleSQL{
-				Text:       stream.GetTextFromTokens(tokens[start], tokens[pos]),
-				BaseLine:   tokens[start].GetLine() - 1,
-				LastLine:   tokens[pos].GetLine() - 1,
-				LastColumn: tokens[pos].GetColumn(),
+				Text:     stream.GetTextFromTokens(tokens[start], tokens[pos]),
+				BaseLine: tokens[start].GetLine() - 1,
+				End: common.ConvertANTLRPositionToPosition(
+					&common.ANTLRPosition{
+						Line:   int32(tokens[pos].GetLine()),
+						Column: int32(tokens[pos].GetColumn()),
+					},
+					statement,
+				),
 				Start: common.ConvertANTLRPositionToPosition(
 					&common.ANTLRPosition{
 						Line:   int32(line),
@@ -173,10 +188,15 @@ func splitBatchWithoutGo(b parser.IBatch_without_goContext, tokens []antlr.Token
 			pos := sqlClause.GetStop().GetTokenIndex()
 			line, col := base.FirstDefaultChannelTokenPosition(tokens[start : pos+1])
 			result = append(result, base.SingleSQL{
-				Text:       stream.GetTextFromTokens(tokens[start], tokens[pos]),
-				BaseLine:   tokens[start].GetLine() - 1,
-				LastLine:   tokens[pos].GetLine() - 1,
-				LastColumn: tokens[pos].GetColumn(),
+				Text:     stream.GetTextFromTokens(tokens[start], tokens[pos]),
+				BaseLine: tokens[start].GetLine() - 1,
+				End: common.ConvertANTLRPositionToPosition(
+					&common.ANTLRPosition{
+						Line:   int32(tokens[pos].GetLine()),
+						Column: int32(tokens[pos].GetColumn()),
+					},
+					statement,
+				),
 				Start: common.ConvertANTLRPositionToPosition(
 					&common.ANTLRPosition{
 						Line:   int32(line),
@@ -192,10 +212,15 @@ func splitBatchWithoutGo(b parser.IBatch_without_goContext, tokens []antlr.Token
 		pos := b.Batch_level_statement().GetStop().GetTokenIndex()
 		line, col := base.FirstDefaultChannelTokenPosition(tokens[start : pos+1])
 		result = append(result, base.SingleSQL{
-			Text:       stream.GetTextFromTokens(tokens[start], tokens[pos]),
-			BaseLine:   tokens[start].GetLine() - 1,
-			LastLine:   tokens[pos].GetLine() - 1,
-			LastColumn: tokens[pos].GetColumn(),
+			Text:     stream.GetTextFromTokens(tokens[start], tokens[pos]),
+			BaseLine: tokens[start].GetLine() - 1,
+			End: common.ConvertANTLRPositionToPosition(
+				&common.ANTLRPosition{
+					Line:   int32(tokens[pos].GetLine()),
+					Column: int32(tokens[pos].GetColumn()),
+				},
+				statement,
+			),
 			Start: common.ConvertANTLRPositionToPosition(
 				&common.ANTLRPosition{
 					Line:   int32(line),
@@ -210,10 +235,15 @@ func splitBatchWithoutGo(b parser.IBatch_without_goContext, tokens []antlr.Token
 		pos := b.Execute_body_batch().GetStop().GetTokenIndex()
 		line, col := base.FirstDefaultChannelTokenPosition(tokens[start : pos+1])
 		result = append(result, base.SingleSQL{
-			Text:       stream.GetTextFromTokens(tokens[start], tokens[pos]),
-			BaseLine:   tokens[start].GetLine() - 1,
-			LastLine:   tokens[pos].GetLine() - 1,
-			LastColumn: tokens[pos].GetColumn(),
+			Text:     stream.GetTextFromTokens(tokens[start], tokens[pos]),
+			BaseLine: tokens[start].GetLine() - 1,
+			End: common.ConvertANTLRPositionToPosition(
+				&common.ANTLRPosition{
+					Line:   int32(tokens[pos].GetLine()),
+					Column: int32(tokens[pos].GetColumn()),
+				},
+				statement,
+			),
 			Start: common.ConvertANTLRPositionToPosition(
 				&common.ANTLRPosition{
 					Line:   int32(line),
@@ -228,10 +258,15 @@ func splitBatchWithoutGo(b parser.IBatch_without_goContext, tokens []antlr.Token
 			pos := sqlClause.GetStop().GetTokenIndex()
 			line, col := base.FirstDefaultChannelTokenPosition(tokens[start : pos+1])
 			result = append(result, base.SingleSQL{
-				Text:       stream.GetTextFromTokens(tokens[start], tokens[pos]),
-				BaseLine:   tokens[start].GetLine() - 1,
-				LastLine:   tokens[pos].GetLine() - 1,
-				LastColumn: tokens[pos].GetColumn(),
+				Text:     stream.GetTextFromTokens(tokens[start], tokens[pos]),
+				BaseLine: tokens[start].GetLine() - 1,
+				End: common.ConvertANTLRPositionToPosition(
+					&common.ANTLRPosition{
+						Line:   int32(tokens[pos].GetLine()),
+						Column: int32(tokens[pos].GetColumn()),
+					},
+					statement,
+				),
 				Start: common.ConvertANTLRPositionToPosition(
 					&common.ANTLRPosition{
 						Line:   int32(line),

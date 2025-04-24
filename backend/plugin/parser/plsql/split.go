@@ -70,8 +70,13 @@ func SplitSQL(statement string) ([]base.SingleSQL, error) {
 					},
 					statement,
 				),
-				LastLine:        lastLine,
-				LastColumn:      lastColumn,
+				End: common.ConvertANTLRPositionToPosition(
+					&common.ANTLRPosition{
+						Line:   int32(lastLine),
+						Column: int32(lastColumn),
+					},
+					statement,
+				),
 				Empty:           base.IsEmpty(tokens.GetAllTokens()[stmt.GetStart().GetTokenIndex():stmt.GetStop().GetTokenIndex()+1], parser.PlSqlParserSEMICOLON),
 				ByteOffsetStart: byteOffsetStart,
 				ByteOffsetEnd:   byteOffsetEnd,
@@ -97,10 +102,15 @@ func SplitSQLForCompletion(statement string) ([]base.SingleSQL, error) {
 				stopIndex := stmt.GetStop().GetTokenIndex()
 				lastToken := tokens.Get(stopIndex)
 				result[len(result)-1] = base.SingleSQL{
-					Text:       lastResult.Text + tokens.GetTextFromTokens(stmt.GetStart(), lastToken),
-					LastLine:   lastToken.GetLine(),
-					LastColumn: lastToken.GetColumn(),
-					Empty:      false,
+					Text: lastResult.Text + tokens.GetTextFromTokens(stmt.GetStart(), lastToken),
+					End: common.ConvertANTLRPositionToPosition(
+						&common.ANTLRPosition{
+							Line:   int32(lastToken.GetLine()),
+							Column: int32(lastToken.GetColumn()),
+						},
+						statement,
+					),
+					Empty: false,
 				}
 				continue
 			}
@@ -113,10 +123,15 @@ func SplitSQLForCompletion(statement string) ([]base.SingleSQL, error) {
 			lastColumn = lastToken.GetColumn()
 
 			result = append(result, base.SingleSQL{
-				Text:       tokens.GetTextFromTokens(stmt.GetStart(), lastToken),
-				LastLine:   lastLine,
-				LastColumn: lastColumn,
-				Empty:      base.IsEmpty(tokens.GetAllTokens()[stmt.GetStart().GetTokenIndex():stmt.GetStop().GetTokenIndex()+1], parser.PlSqlParserSEMICOLON),
+				Text: tokens.GetTextFromTokens(stmt.GetStart(), lastToken),
+				End: common.ConvertANTLRPositionToPosition(
+					&common.ANTLRPosition{
+						Line:   int32(lastLine),
+						Column: int32(lastColumn),
+					},
+					statement,
+				),
+				Empty: base.IsEmpty(tokens.GetAllTokens()[stmt.GetStart().GetTokenIndex():stmt.GetStop().GetTokenIndex()+1], parser.PlSqlParserSEMICOLON),
 			})
 		}
 	}

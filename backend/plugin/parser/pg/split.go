@@ -72,10 +72,12 @@ func splitByParser(statement string, lexer *parser.PostgreSQLLexer, stream *antl
 		// From antlr4, the line is ONE based, and the column is ZERO based.
 		// So we should minus 1 for the line.
 		result = append(result, base.SingleSQL{
-			Text:       stream.GetTextFromTokens(tokens[start], tokens[pos]),
-			BaseLine:   tokens[start].GetLine() - 1,
-			LastLine:   tokens[pos].GetLine() - 1,
-			LastColumn: tokens[pos].GetColumn(),
+			Text:     stream.GetTextFromTokens(tokens[start], tokens[pos]),
+			BaseLine: tokens[start].GetLine() - 1,
+			End: common.ConvertANTLRPositionToPosition(&common.ANTLRPosition{
+				Line:   int32(tokens[pos].GetLine()),
+				Column: int32(tokens[pos].GetColumn()),
+			}, statement),
 			Start: common.ConvertANTLRPositionToPosition(&common.ANTLRPosition{
 				Line:   int32(line),
 				Column: int32(col),
@@ -91,10 +93,12 @@ func splitByParser(statement string, lexer *parser.PostgreSQLLexer, stream *antl
 		// From antlr4, the line is ONE based, and the column is ZERO based.
 		// So we should minus 1 for the line.
 		result = append(result, base.SingleSQL{
-			Text:       stream.GetTextFromTokens(tokens[start], tokens[eofPos-1]),
-			BaseLine:   tokens[start].GetLine() - 1,
-			LastLine:   tokens[eofPos-1].GetLine() - 1,
-			LastColumn: tokens[eofPos-1].GetColumn(),
+			Text:     stream.GetTextFromTokens(tokens[start], tokens[eofPos-1]),
+			BaseLine: tokens[start].GetLine() - 1,
+			End: common.ConvertANTLRPositionToPosition(&common.ANTLRPosition{
+				Line:   int32(tokens[eofPos-1].GetLine()),
+				Column: int32(tokens[eofPos-1].GetColumn()),
+			}, statement),
 			Start: common.ConvertANTLRPositionToPosition(&common.ANTLRPosition{
 				Line:   int32(line),
 				Column: int32(col),
@@ -191,10 +195,12 @@ func splitSQLImpl(stream *antlr.CommonTokenStream, statement string) ([]base.Sin
 		// From antlr4, the line is ONE based, and the column is ZERO based.
 		// So we should minus 1 for the line.
 		result = append(result, base.SingleSQL{
-			Text:       stream.GetTextFromTokens(tokens[start], tokens[pos]),
-			BaseLine:   tokens[start].GetLine() - 1,
-			LastLine:   tokens[pos].GetLine() - 1,
-			LastColumn: tokens[pos].GetColumn(),
+			Text:     stream.GetTextFromTokens(tokens[start], tokens[pos]),
+			BaseLine: tokens[start].GetLine() - 1,
+			End: common.ConvertANTLRPositionToPosition(&common.ANTLRPosition{
+				Line:   int32(tokens[pos].GetLine()),
+				Column: int32(tokens[pos].GetColumn()),
+			}, statement),
 			Start: common.ConvertANTLRPositionToPosition(&common.ANTLRPosition{
 				Line:   int32(line),
 				Column: int32(col),
@@ -210,10 +216,12 @@ func splitSQLImpl(stream *antlr.CommonTokenStream, statement string) ([]base.Sin
 		// From antlr4, the line is ONE based, and the column is ZERO based.
 		// So we should minus 1 for the line.
 		result = append(result, base.SingleSQL{
-			Text:       stream.GetTextFromTokens(tokens[start], tokens[eofPos-1]),
-			BaseLine:   tokens[start].GetLine() - 1,
-			LastLine:   tokens[eofPos-1].GetLine() - 1,
-			LastColumn: tokens[eofPos-1].GetColumn(),
+			Text:     stream.GetTextFromTokens(tokens[start], tokens[eofPos-1]),
+			BaseLine: tokens[start].GetLine() - 1,
+			End: common.ConvertANTLRPositionToPosition(&common.ANTLRPosition{
+				Line:   int32(tokens[eofPos-1].GetLine()),
+				Column: int32(tokens[eofPos-1].GetColumn()),
+			}, statement),
 			Start: common.ConvertANTLRPositionToPosition(&common.ANTLRPosition{
 				Line:   int32(line),
 				Column: int32(col),

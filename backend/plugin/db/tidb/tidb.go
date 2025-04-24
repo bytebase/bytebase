@@ -247,10 +247,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 				return &db.ErrorWithPosition{
 					Err:   errors.Wrapf(err, "failed to execute context in a transaction"),
 					Start: command.Start,
-					End: &storepb.Position{
-						Line:   int32(command.LastLine),
-						Column: int32(command.LastColumn),
-					},
+					End:   command.End,
 				}
 			}
 

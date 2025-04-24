@@ -33,16 +33,14 @@ func TestTrinoSplitMultiSQL(t *testing.T) {
 			want: resData{
 				res: []base.SingleSQL{
 					{
-						Text:       "SELECT * FROM users;",
-						LastLine:   0,
-						LastColumn: 19,
+						Text: "SELECT * FROM users;",
+						End:  &storepb.Position{Line: 0, Column: 19},
 					},
 					{
-						Text:       " SELECT * FROM orders;",
-						BaseLine:   0,
-						Start:      &storepb.Position{Line: 0, Column: 21},
-						LastLine:   0,
-						LastColumn: 41,
+						Text:     " SELECT * FROM orders;",
+						BaseLine: 0,
+						Start:    &storepb.Position{Line: 0, Column: 21},
+						End:      &storepb.Position{Line: 0, Column: 41},
 					},
 				},
 			},
@@ -68,9 +66,8 @@ func TestTrinoSplitMultiSQL(t *testing.T) {
 				name 
 			FROM users 
 			WHERE status = 'active';`,
-						Start:      &storepb.Position{Line: 2, Column: 3},
-						LastLine:   6,
-						LastColumn: 26,
+						Start: &storepb.Position{Line: 2, Column: 3},
+						End:   &storepb.Position{Line: 6, Column: 26},
 					},
 					{
 						Text: `
@@ -78,10 +75,9 @@ func TestTrinoSplitMultiSQL(t *testing.T) {
 			/* This is a multi-line
 			   comment */
 			SELECT * FROM orders;`,
-						BaseLine:   6,
-						Start:      &storepb.Position{Line: 10, Column: 3},
-						LastLine:   10,
-						LastColumn: 23,
+						BaseLine: 6,
+						Start:    &storepb.Position{Line: 10, Column: 3},
+						End:      &storepb.Position{Line: 10, Column: 23},
 					},
 				},
 			},
@@ -104,17 +100,15 @@ func TestTrinoSplitMultiSQL(t *testing.T) {
 			SELECT u.id, u.name, o.order_id 
 			FROM users u
 			JOIN orders_cte o ON u.id = o.user_id;`,
-						LastLine:   5,
-						LastColumn: 41,
+						End: &storepb.Position{Line: 5, Column: 41},
 					},
 					{
 						Text: `
 			
 			SELECT * FROM products;`,
-						BaseLine:   5,
-						Start:      &storepb.Position{Line: 7, Column: 3},
-						LastLine:   7,
-						LastColumn: 25,
+						BaseLine: 5,
+						Start:    &storepb.Position{Line: 7, Column: 3},
+						End:      &storepb.Position{Line: 7, Column: 25},
 					},
 				},
 			},

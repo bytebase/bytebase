@@ -33,19 +33,17 @@ func TestOracleSplitMultiSQL(t *testing.T) {
 				res: []base.SingleSQL{
 					{
 						Text:            `select * from t`,
-						LastLine:        2,
 						ByteOffsetStart: 5,
 						ByteOffsetEnd:   20,
 						Start:           &storepb.Position{Line: 2, Column: 4},
-						LastColumn:      18,
+						End:             &storepb.Position{Line: 2, Column: 18},
 					},
 					{
 						Text:            `create table table$1 (id int)`,
-						LastLine:        3,
 						ByteOffsetStart: 26,
 						ByteOffsetEnd:   56,
 						Start:           &storepb.Position{Line: 3, Column: 4},
-						LastColumn:      32,
+						End:             &storepb.Position{Line: 3, Column: 32},
 					},
 				},
 			},
@@ -64,7 +62,7 @@ ONLINE;`,
 				res: []base.SingleSQL{
 					{
 						Text:          "ALTER TABLE DATA.TEST\nMODIFY PARTITION BY RANGE (TXN_DATE)\nINTERVAL (NUMTODSINTERVAL(1, 'DAY'))\n(\n\tPARTITION TEST_PO VALUES LESS THAN (\n\t\tTO_DATE('2000-01-01 00:00:00', 'SYYYY-MM-DD HH24:MI:SS', 'NLS_CALENDAR=GREGORIAN')\n\t)\n)\nONLINE",
-						LastLine:      9,
+						End:           &storepb.Position{Line: 9, Column: 0},
 						ByteOffsetEnd: 233,
 						Start:         &storepb.Position{Line: 1, Column: 0},
 					},

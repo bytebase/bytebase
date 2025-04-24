@@ -124,7 +124,7 @@ func parseInputStream(input *antlr.InputStream, statement string) ([]*ParseResul
 			Tokens:   tokens,
 			BaseLine: s.BaseLine,
 		})
-		baseLine = s.LastLine
+		baseLine = int(s.End.GetLine())
 	}
 
 	return result, nil

@@ -440,7 +440,7 @@ func (t *Tokenizer) SplitTiDBMultiSQL() ([]base.SingleSQL, error) {
 						// but we want to get the line of last line of the SQL
 						// which means the line of ')'.
 						// So we need minus the aboveNonBlankLineDistance.
-						LastLine:        t.line - t.aboveNonBlankLineDistance(),
+						End:             &store.Position{Line: int32(t.line - t.aboveNonBlankLineDistance())},
 						Empty:           t.emptyStatement,
 						ByteOffsetStart: t.getByteOffset(int(startPos)),
 						ByteOffsetEnd:   t.getByteOffset(int(t.pos())),
@@ -456,16 +456,16 @@ func (t *Tokenizer) SplitTiDBMultiSQL() ([]base.SingleSQL, error) {
 				baseline := 0
 				for _, sql := range res {
 					lines := strings.Split(sql.Text, "\n")
-					if lap := sql.LastLine - len(lines) - baseline; lap > 0 {
+					if lap := int(sql.End.GetLine()) - len(lines) - baseline; lap > 0 {
 						newRes = append(newRes, base.SingleSQL{
 							Text:     strings.Repeat("\n", lap-1),
 							BaseLine: baseline,
-							LastLine: baseline + lap,
+							End:      &store.Position{Line: int32(baseline + lap)},
 							Empty:    true,
 						})
 					}
 					newRes = append(newRes, sql)
-					baseline = sql.LastLine
+					baseline = int(sql.End.GetLine())
 				}
 				return newRes, t.readErr
 			}
@@ -476,7 +476,7 @@ func (t *Tokenizer) SplitTiDBMultiSQL() ([]base.SingleSQL, error) {
 			if t.f == nil {
 				res = append(res, base.SingleSQL{
 					Text:            text,
-					LastLine:        t.line,
+					End:             &store.Position{Line: int32(t.line)},
 					Empty:           t.emptyStatement,
 					ByteOffsetStart: t.getByteOffset(int(startPos)),
 					ByteOffsetEnd:   t.getByteOffset(int(t.pos())),
@@ -500,9 +500,9 @@ func (t *Tokenizer) SplitTiDBMultiSQL() ([]base.SingleSQL, error) {
 						line--
 					}
 					res = append(res, base.SingleSQL{
-						Text:     v,
-						LastLine: line,
-						Empty:    true,
+						Text:  v,
+						End:   &store.Position{Line: int32(line)},
+						Empty: true,
 					})
 				}
 				startPos = t.pos()
@@ -516,7 +516,7 @@ func (t *Tokenizer) SplitTiDBMultiSQL() ([]base.SingleSQL, error) {
 			if t.f == nil {
 				res = append(res, base.SingleSQL{
 					Text:            text,
-					LastLine:        t.line,
+					End:             &store.Position{Line: int32(t.line)},
 					Empty:           false,
 					ByteOffsetStart: t.getByteOffset(int(startPos)),
 					ByteOffsetEnd:   t.getByteOffset(int(t.pos())),
@@ -611,8 +611,10 @@ func (t *Tokenizer) SplitStandardMultiSQL() ([]base.SingleSQL, error) {
 			text := t.getString(startPos, t.pos()-startPos)
 			if t.f == nil {
 				res = append(res, base.SingleSQL{
-					Text:     text,
-					LastLine: t.line - 1, // Convert to 0-based.
+					Text: text,
+					End: &store.Position{
+						Line: int32(t.line - 1), // Convert to 0-based.
+					},
 					//TODO(zp/position): fix column, use bytes instead of rune.
 					Start: &store.Position{
 						Line:   int32(firstStatementLine - 1), // Convert to 0-based.
@@ -647,7 +649,7 @@ func (t *Tokenizer) SplitStandardMultiSQL() ([]base.SingleSQL, error) {
 						// but we want to get the line of last line of the SQL
 						// which means the line of ')'.
 						// So we need minus the aboveNonBlankLineDistance.
-						LastLine: t.line - t.aboveNonBlankLineDistance() - 1, // Convert to 0-based.
+						End: &store.Position{Line: int32(t.line - t.aboveNonBlankLineDistance() - 1)},
 						// TODO(zp/position): fix column, use bytes instead of rune.
 						Start: &store.Position{
 							Line:   int32(firstStatementLine - 1), // Convert to 0-based.
@@ -725,9 +727,9 @@ func (t *Tokenizer) SplitPostgreSQLMultiSQL() ([]base.SingleSQL, error) {
 			text := t.getString(startPos, t.pos()-startPos)
 			if t.f == nil {
 				res = append(res, base.SingleSQL{
-					Text:     text,
-					LastLine: t.line,
-					Empty:    t.emptyStatement,
+					Text:  text,
+					End:   &store.Position{Line: int32(t.line - 1)},
+					Empty: t.emptyStatement,
 				})
 			}
 			t.skipBlank()
@@ -754,8 +756,10 @@ func (t *Tokenizer) SplitPostgreSQLMultiSQL() ([]base.SingleSQL, error) {
 						// but we want to get the line of last line of the SQL
 						// which means the line of ')'.
 						// So we need minus the aboveNonBlankLineDistance.
-						LastLine: t.line - t.aboveNonBlankLineDistance(),
-						Empty:    t.emptyStatement,
+						End: &store.Position{
+							Line: int32(t.line - t.aboveNonBlankLineDistance()),
+						},
+						Empty: t.emptyStatement,
 					})
 				}
 				if err := t.processStreaming(s); err != nil {

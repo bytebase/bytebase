@@ -17,12 +17,8 @@ type SingleSQL struct {
 	BaseLine int
 	// The inclusive start position of the SQL starts in the original SQL.
 	Start *storepb.Position
-	// LastLine is the line number of the last line of the SQL in the original SQL.
-	// HINT: ZERO based.
-	LastLine int
-	// LastColumn is the column number of the last line of the SQL in the original SQL.
-	// HINT: ZERO based.
-	LastColumn int
+	// The inclusive end position of the SQL ends in the original SQL.
+	End *storepb.Position
 	// The sql is empty, such as `/* comments */;` or just `;`.
 	Empty bool
 

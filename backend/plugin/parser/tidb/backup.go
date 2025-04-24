@@ -76,10 +76,7 @@ func prepareTransformation(databaseName, statement string) ([]statementInfo, err
 					table:         table.table,
 					tree:          table.tree,
 					startPosition: item.Start,
-					endPosition: &store.Position{
-						Line:   int32(item.LastLine) + 1,
-						Column: int32(item.LastColumn),
-					},
+					endPosition:   item.End,
 				})
 			}
 		}

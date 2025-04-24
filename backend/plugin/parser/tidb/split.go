@@ -95,10 +95,15 @@ func splitDelimiterModeSQL(stream *antlr.CommonTokenStream, statement string) ([
 			// From antlr4, the line is ONE based, and the column is ZERO based.
 			// So we should minus 1 for the line.
 			result = append(result, base.SingleSQL{
-				Text:       stream.GetTextFromTokens(tokens[start], tokens[i]),
-				BaseLine:   tokens[start].GetLine() - 1,
-				LastLine:   tokens[i].GetLine() - 1,
-				LastColumn: tokens[i].GetColumn(),
+				Text:     stream.GetTextFromTokens(tokens[start], tokens[i]),
+				BaseLine: tokens[start].GetLine() - 1,
+				End: common.ConvertANTLRPositionToPosition(
+					&common.ANTLRPosition{
+						Line:   int32(tokens[i].GetLine()),
+						Column: int32(tokens[i].GetColumn()),
+					},
+					statement,
+				),
 				Start: common.ConvertANTLRPositionToPosition(
 					&common.ANTLRPosition{
 						Line:   int32(line),
@@ -124,10 +129,15 @@ func splitDelimiterModeSQL(stream *antlr.CommonTokenStream, statement string) ([
 			// So we should minus 1 for the line.
 			result = append(result, base.SingleSQL{
 				// Use a single semicolon instead of the user defined delimiter.
-				Text:       stream.GetTextFromTokens(tokens[start], tokens[i-1]) + ";",
-				BaseLine:   tokens[start].GetLine() - 1,
-				LastLine:   tokens[newStart-1].GetLine() - 1,
-				LastColumn: tokens[newStart-1].GetColumn(),
+				Text:     stream.GetTextFromTokens(tokens[start], tokens[i-1]) + ";",
+				BaseLine: tokens[start].GetLine() - 1,
+				End: common.ConvertANTLRPositionToPosition(
+					&common.ANTLRPosition{
+						Line:   int32(tokens[newStart-1].GetLine()),
+						Column: int32(tokens[newStart-1].GetColumn()),
+					},
+					statement,
+				),
 				Start: common.ConvertANTLRPositionToPosition(
 					&common.ANTLRPosition{
 						Line:   int32(line),
@@ -151,10 +161,15 @@ func splitDelimiterModeSQL(stream *antlr.CommonTokenStream, statement string) ([
 		// From antlr4, the line is ONE based, and the column is ZERO based.
 		// So we should minus 1 for the line.
 		result = append(result, base.SingleSQL{
-			Text:       stream.GetTextFromTokens(tokens[start], tokens[endPos-1]),
-			BaseLine:   tokens[start].GetLine() - 1,
-			LastLine:   tokens[endPos-1].GetLine() - 1,
-			LastColumn: tokens[endPos-1].GetColumn(),
+			Text:     stream.GetTextFromTokens(tokens[start], tokens[endPos-1]),
+			BaseLine: tokens[start].GetLine() - 1,
+			End: common.ConvertANTLRPositionToPosition(
+				&common.ANTLRPosition{
+					Line:   int32(tokens[endPos-1].GetLine()),
+					Column: int32(tokens[endPos-1].GetColumn()),
+				},
+				statement,
+			),
 			Start: common.ConvertANTLRPositionToPosition(
 				&common.ANTLRPosition{
 					Line:   int32(line),
@@ -314,10 +329,15 @@ func splitTiDBStatement(stream *antlr.CommonTokenStream, statement string) ([]ba
 		// From antlr4, the line is ONE based, and the column is ZERO based.
 		// So we should minus 1 for the line.
 		result = append(result, base.SingleSQL{
-			Text:       stream.GetTextFromTokens(tokens[start], tokens[pos]),
-			BaseLine:   tokens[start].GetLine() - 1,
-			LastLine:   tokens[pos].GetLine() - 1,
-			LastColumn: tokens[pos].GetColumn(),
+			Text:     stream.GetTextFromTokens(tokens[start], tokens[pos]),
+			BaseLine: tokens[start].GetLine() - 1,
+			End: common.ConvertANTLRPositionToPosition(
+				&common.ANTLRPosition{
+					Line:   int32(tokens[pos].GetLine()),
+					Column: int32(tokens[pos].GetColumn()),
+				},
+				statement,
+			),
 			Start: common.ConvertANTLRPositionToPosition(
 				&common.ANTLRPosition{
 					Line:   int32(line),
@@ -334,12 +354,17 @@ func splitTiDBStatement(stream *antlr.CommonTokenStream, statement string) ([]ba
 	if start < eofPos {
 		line, col := base.FirstDefaultChannelTokenPosition(tokens[start:])
 		// From antlr4, the line is ONE based, and the column is ZERO based.
-		// So we should minus 1 for the line.
+		// So we should minus 1 for the line.s
 		result = append(result, base.SingleSQL{
-			Text:       stream.GetTextFromTokens(tokens[start], tokens[eofPos-1]),
-			BaseLine:   tokens[start].GetLine() - 1,
-			LastLine:   tokens[eofPos-1].GetLine() - 1,
-			LastColumn: tokens[eofPos-1].GetColumn(),
+			Text:     stream.GetTextFromTokens(tokens[start], tokens[eofPos-1]),
+			BaseLine: tokens[start].GetLine() - 1,
+			End: common.ConvertANTLRPositionToPosition(
+				&common.ANTLRPosition{
+					Line:   int32(tokens[eofPos-1].GetLine()),
+					Column: int32(tokens[eofPos-1].GetColumn()),
+				},
+				statement,
+			),
 			Start: common.ConvertANTLRPositionToPosition(
 				&common.ANTLRPosition{
 					Line:   int32(line),
