@@ -20,6 +20,7 @@ import (
 	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/state"
 	"github.com/bytebase/bytebase/backend/plugin/db"
@@ -41,10 +42,11 @@ const (
 )
 
 // NewSyncer creates a schema syncer.
-func NewSyncer(stores *store.Store, dbFactory *dbfactory.DBFactory, stateCfg *state.State) *Syncer {
+func NewSyncer(stores *store.Store, dbFactory *dbfactory.DBFactory, profile *config.Profile, stateCfg *state.State) *Syncer {
 	return &Syncer{
 		store:     stores,
 		dbFactory: dbFactory,
+		profile:   profile,
 		stateCfg:  stateCfg,
 	}
 }
@@ -55,6 +57,7 @@ type Syncer struct {
 
 	store           *store.Store
 	dbFactory       *dbfactory.DBFactory
+	profile         *config.Profile
 	stateCfg        *state.State
 	databaseSyncMap sync.Map // map[string]*store.DatabaseMessage
 }
@@ -518,11 +521,13 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 	metadata.LastSyncTime = timestamppb.New(time.Now())
 	metadata.BackupAvailable = s.hasBackupSchema(ctx, instance, databaseMetadata)
 	metadata.Datashare = databaseMetadata.Datashare
-	drifted, err := s.getSchemaDrifted(ctx, instance, database, string(rawDump))
+	drifted, skipped, err := s.getSchemaDrifted(ctx, instance, database, string(rawDump))
 	if err != nil {
 		return errors.Wrapf(err, "failed to get schema drifted for database %q", database.DatabaseName)
 	}
-	metadata.Drifted = drifted
+	if !skipped {
+		metadata.Drifted = drifted
+	}
 	if _, err := s.store.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
 		InstanceID:   database.InstanceID,
 		DatabaseName: database.DatabaseName,
@@ -547,10 +552,10 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 	return nil
 }
 
-func (s *Syncer) getSchemaDrifted(ctx context.Context, instance *store.InstanceMessage, database *store.DatabaseMessage, rawDump string) (bool, error) {
+func (s *Syncer) getSchemaDrifted(ctx context.Context, instance *store.InstanceMessage, database *store.DatabaseMessage, rawDump string) (drifted bool, skipped bool, err error) {
 	// Redis and MongoDB are schemaless.
 	if disableSchemaDriftCheck(instance.Metadata.GetEngine()) {
-		return false, nil
+		return false, false, nil
 	}
 	limit := 1
 	list, err := s.store.ListChangelogs(ctx, &store.FindChangelogMessage{
@@ -562,18 +567,21 @@ func (s *Syncer) getSchemaDrifted(ctx context.Context, instance *store.InstanceM
 		ShowFull:       true,
 	})
 	if err != nil {
-		return false, errors.Wrapf(err, "failed to list changelogs")
+		return false, false, errors.Wrapf(err, "failed to list changelogs")
 	}
 	if len(list) == 0 {
-		return false, nil
+		return false, false, nil
 	}
 
 	changelog := list[0]
+	if changelog.Payload.GetGitCommit() != s.profile.GitCommit {
+		return false, true, nil
+	}
 	if changelog.SyncHistoryUID == nil {
-		return false, errors.Errorf("expect sync history but get nil")
+		return false, false, errors.Errorf("expect sync history but get nil")
 	}
 	latestSchema := string(rawDump)
-	return changelog.Schema != latestSchema, nil
+	return changelog.Schema != latestSchema, false, nil
 }
 
 func (s *Syncer) hasBackupSchema(ctx context.Context, instance *store.InstanceMessage, dbSchema *storepb.DatabaseSchemaMetadata) bool {

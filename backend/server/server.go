@@ -223,7 +223,7 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	)
 
 	s.metricReporter = metricreport.NewReporter(s.store, s.licenseService, s.profile)
-	s.schemaSyncer = schemasync.NewSyncer(stores, s.dbFactory, s.stateCfg)
+	s.schemaSyncer = schemasync.NewSyncer(stores, s.dbFactory, s.profile, s.stateCfg)
 	s.approvalRunner = approval.NewRunner(stores, sheetManager, s.dbFactory, s.stateCfg, s.webhookManager, s.licenseService)
 
 	s.taskSchedulerV2 = taskrun.NewSchedulerV2(stores, s.stateCfg, s.webhookManager, profile, s.licenseService)
