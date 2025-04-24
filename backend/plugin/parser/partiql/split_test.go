@@ -48,7 +48,7 @@ func TestSplitSQL(t *testing.T) {
 			Text:     "\n\tDELETE FROM Music WHERE Artist = 'Pink Floyd' AND SongTitle = 'Money02'",
 			BaseLine: 3,
 			Start:    &storepb.Position{Line: 4, Column: 1},
-			End:      &storepb.Position{Line: 4, Column: 63},
+			End:      &storepb.Position{Line: 4, Column: 72},
 			Empty:    false,
 		},
 	}

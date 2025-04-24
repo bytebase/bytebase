@@ -61,7 +61,7 @@ ok  	github.com/bytebase/bytebase/backend/api/lsp	(cached)
 === RUN   TestListUserFilter
 --- PASS: TestListUserFilter (0.00s)
 PASS
-ok  	github.com/bytebase/bytebase/backend/api/v1	3.526s
+ok  	github.com/bytebase/bytebase/backend/api/v1	(cached)
 ?   	github.com/bytebase/bytebase/backend/base	[no test files]
 ?   	github.com/bytebase/bytebase/backend/bin/server	[no test files]
 ?   	github.com/bytebase/bytebase/backend/bin/server/cmd	[no test files]
@@ -156,7 +156,7 @@ ok  	github.com/bytebase/bytebase/backend/api/v1	3.526s
 === RUN   TestValidatePhone
 --- PASS: TestValidatePhone (0.00s)
 PASS
-ok  	github.com/bytebase/bytebase/backend/common	0.536s
+ok  	github.com/bytebase/bytebase/backend/common	(cached)
 ?   	github.com/bytebase/bytebase/backend/common/log	[no test files]
 === RUN   TestTakeStacktrace
 --- PASS: TestTakeStacktrace (0.00s)
@@ -203,7 +203,7 @@ ok  	github.com/bytebase/bytebase/backend/component/masker	(cached)
 === RUN   TestGetVersionFromPath
 --- PASS: TestGetVersionFromPath (0.00s)
 PASS
-ok  	github.com/bytebase/bytebase/backend/migrator	2.182s
+ok  	github.com/bytebase/bytebase/backend/migrator	(cached)
 ?   	github.com/bytebase/bytebase/backend/plugin/advisor	[no test files]
 === RUN   TestTiDBWalkThrough
 --- PASS: TestTiDBWalkThrough (0.01s)
@@ -214,30 +214,30 @@ ok  	github.com/bytebase/bytebase/backend/migrator	2.182s
 === RUN   TestPostgreSQLWalkThrough
 --- PASS: TestPostgreSQLWalkThrough (0.01s)
 PASS
-ok  	github.com/bytebase/bytebase/backend/plugin/advisor/catalog	2.840s
+ok  	github.com/bytebase/bytebase/backend/plugin/advisor/catalog	(cached)
 ?   	github.com/bytebase/bytebase/backend/plugin/advisor/generator	[no test files]
 === RUN   TestMSSQLRules
 --- PASS: TestMSSQLRules (0.51s)
 PASS
-ok  	github.com/bytebase/bytebase/backend/plugin/advisor/mssql	3.048s
+ok  	github.com/bytebase/bytebase/backend/plugin/advisor/mssql	(cached)
 === RUN   TestGetTextLength
 --- PASS: TestGetTextLength (0.00s)
 === RUN   TestMySQLRules
 --- PASS: TestMySQLRules (0.26s)
 PASS
-ok  	github.com/bytebase/bytebase/backend/plugin/advisor/mysql	11.131s
+ok  	github.com/bytebase/bytebase/backend/plugin/advisor/mysql	(cached)
 ?   	github.com/bytebase/bytebase/backend/plugin/advisor/oceanbase	[no test files]
 === RUN   TestOracleRules
 --- PASS: TestOracleRules (0.48s)
 PASS
-ok  	github.com/bytebase/bytebase/backend/plugin/advisor/oracle	4.023s
+ok  	github.com/bytebase/bytebase/backend/plugin/advisor/oracle	(cached)
 === RUN   TestPostgreSQLRules
     utils_for_tests.go:256: 
         	Error Trace:	/Users/h3n4l/OpenSource/bytebase/backend/plugin/advisor/utils_for_tests.go:256
         	            				/Users/h3n4l/OpenSource/bytebase/backend/plugin/advisor/pg/pg_rules_test.go:69
         	Error:      	Not equal: 
-        	            	expected: []*store.Advice{(*store.Advice)(0x1400a8abc80)}
-        	            	actual  : []*store.Advice{(*store.Advice)(0x1400a8f8ae0)}
+        	            	expected: []*store.Advice{(*store.Advice)(0x1400ef443c0)}
+        	            	actual  : []*store.Advice{(*store.Advice)(0x1400ef451a0)}
         	            	
         	            	Diff:
         	            	--- Expected
@@ -250,17 +250,17 @@ ok  	github.com/bytebase/bytebase/backend/plugin/advisor/oracle	4.023s
         	Test:       	TestPostgreSQLRules
         	Messages:   	rule: column.required, statements: ALTER TABLE tech_book ADD COLUMN creator_id int;
         	            	ALTER TABLE tech_book RENAME COLUMN creator_id TO creator;
---- FAIL: TestPostgreSQLRules (0.07s)
+--- FAIL: TestPostgreSQLRules (0.05s)
 FAIL
-FAIL	github.com/bytebase/bytebase/backend/plugin/advisor/pg	8.789s
+FAIL	github.com/bytebase/bytebase/backend/plugin/advisor/pg	2.677s
 === RUN   TestSnowflakeRules
 --- PASS: TestSnowflakeRules (0.51s)
 PASS
-ok  	github.com/bytebase/bytebase/backend/plugin/advisor/snowflake	5.741s
+ok  	github.com/bytebase/bytebase/backend/plugin/advisor/snowflake	(cached)
 === RUN   TestTiDBRules
 --- PASS: TestTiDBRules (0.02s)
 PASS
-ok  	github.com/bytebase/bytebase/backend/plugin/advisor/tidb	6.962s
+ok  	github.com/bytebase/bytebase/backend/plugin/advisor/tidb	(cached)
 ?   	github.com/bytebase/bytebase/backend/plugin/db	[no test files]
 === RUN   TestEncodeOperatorEmail
 --- PASS: TestEncodeOperatorEmail (0.00s)
@@ -276,7 +276,7 @@ ok  	github.com/bytebase/bytebase/backend/plugin/db/bigquery	(cached)
 2025/04/24 16:22:47 ERROR invalid postgres version version=hello
 --- PASS: TestIsAtLeastPG10 (0.00s)
 PASS
-ok  	github.com/bytebase/bytebase/backend/plugin/db/cockroachdb	1.615s
+ok  	github.com/bytebase/bytebase/backend/plugin/db/cockroachdb	(cached)
 ?   	github.com/bytebase/bytebase/backend/plugin/db/cosmosdb	[no test files]
 ?   	github.com/bytebase/bytebase/backend/plugin/db/databricks	[no test files]
 ?   	github.com/bytebase/bytebase/backend/plugin/db/dm	[no test files]
@@ -294,7 +294,7 @@ ok  	github.com/bytebase/bytebase/backend/plugin/db/mongodb	(cached)
 === RUN   TestGetStatementWithResultLimit
 --- PASS: TestGetStatementWithResultLimit (0.41s)
 PASS
-ok  	github.com/bytebase/bytebase/backend/plugin/db/mssql	8.645s
+ok  	github.com/bytebase/bytebase/backend/plugin/db/mssql	(cached)
 === RUN   TestParseVersion
 --- PASS: TestParseVersion (0.00s)
 === RUN   TestGetStatementWithResultLimit
@@ -304,14 +304,14 @@ ok  	github.com/bytebase/bytebase/backend/plugin/db/mssql	8.645s
 === RUN   TestGetViewDefFromCreateView
 --- PASS: TestGetViewDefFromCreateView (0.00s)
 PASS
-ok  	github.com/bytebase/bytebase/backend/plugin/db/mysql	9.068s
+ok  	github.com/bytebase/bytebase/backend/plugin/db/mysql	(cached)
 ?   	github.com/bytebase/bytebase/backend/plugin/db/obo	[no test files]
 === RUN   TestParseVersion
 --- PASS: TestParseVersion (0.00s)
 === RUN   TestGetStatementWithResultLimit
 --- PASS: TestGetStatementWithResultLimit (1.09s)
 PASS
-ok  	github.com/bytebase/bytebase/backend/plugin/db/oracle	10.903s
+ok  	github.com/bytebase/bytebase/backend/plugin/db/oracle	(cached)
 === RUN   TestGetDatabaseInCreateDatabaseStatement
 --- PASS: TestGetDatabaseInCreateDatabaseStatement (0.00s)
 === RUN   TestPadZeroes
@@ -320,22 +320,22 @@ ok  	github.com/bytebase/bytebase/backend/plugin/db/oracle	10.903s
 2025/04/24 16:22:59 ERROR invalid postgres version version=hello
 --- PASS: TestIsAtLeastPG10 (0.00s)
 PASS
-ok  	github.com/bytebase/bytebase/backend/plugin/db/pg	10.589s
+ok  	github.com/bytebase/bytebase/backend/plugin/db/pg	(cached)
 ?   	github.com/bytebase/bytebase/backend/plugin/db/redis	[no test files]
 === RUN   TestGetPgVersionAndRedshiftVersion
 --- PASS: TestGetPgVersionAndRedshiftVersion (0.00s)
 PASS
-ok  	github.com/bytebase/bytebase/backend/plugin/db/redshift	10.623s
+ok  	github.com/bytebase/bytebase/backend/plugin/db/redshift	(cached)
 === RUN   TestGetDatabaseInCreateDatabaseStatement
 --- PASS: TestGetDatabaseInCreateDatabaseStatement (0.00s)
 PASS
-ok  	github.com/bytebase/bytebase/backend/plugin/db/risingwave	9.966s
+ok  	github.com/bytebase/bytebase/backend/plugin/db/risingwave	(cached)
 === RUN   TestGetStatementWithResultLimit
 --- PASS: TestGetStatementWithResultLimit (0.50s)
 === RUN   TestBuildSnowflakeDSN
 --- PASS: TestBuildSnowflakeDSN (0.00s)
 PASS
-ok  	github.com/bytebase/bytebase/backend/plugin/db/snowflake	10.057s
+ok  	github.com/bytebase/bytebase/backend/plugin/db/snowflake	(cached)
 === RUN   TestGetDatabaseFromDSN
 --- PASS: TestGetDatabaseFromDSN (0.00s)
 === RUN   TestGetColumnTypeName
@@ -350,7 +350,7 @@ ok  	github.com/bytebase/bytebase/backend/plugin/db/spanner	(cached)
 === RUN   TestParseVersion
 --- PASS: TestParseVersion (0.00s)
 PASS
-ok  	github.com/bytebase/bytebase/backend/plugin/db/starrocks	7.979s
+ok  	github.com/bytebase/bytebase/backend/plugin/db/starrocks	(cached)
 === RUN   TestGetTemporaryView
 --- PASS: TestGetTemporaryView (0.00s)
 === RUN   TestExcludeSchemaAutoValue
@@ -364,7 +364,7 @@ ok  	github.com/bytebase/bytebase/backend/plugin/db/starrocks	7.979s
 === RUN   TestIsNonTransactionStatement
 --- PASS: TestIsNonTransactionStatement (0.00s)
 PASS
-ok  	github.com/bytebase/bytebase/backend/plugin/db/tidb	7.845s
+ok  	github.com/bytebase/bytebase/backend/plugin/db/tidb	(cached)
 ?   	github.com/bytebase/bytebase/backend/plugin/db/trino	[no test files]
 === RUN   TestRemoveCommentsAndTrim
 --- PASS: TestRemoveCommentsAndTrim (0.00s)
@@ -467,7 +467,7 @@ ok  	github.com/bytebase/bytebase/backend/plugin/idp/oidc	(cached)
 === RUN   TestString
 --- PASS: TestString (0.00s)
 PASS
-ok  	github.com/bytebase/bytebase/backend/plugin/parser/base	6.661s
+ok  	github.com/bytebase/bytebase/backend/plugin/parser/base	(cached)
 === RUN   TestGetQuerySpan
 --- PASS: TestGetQuerySpan (0.20s)
 === RUN   TestGetPossibleColumnResources
@@ -475,17 +475,17 @@ ok  	github.com/bytebase/bytebase/backend/plugin/parser/base	6.661s
 === RUN   TestBigQuerySplitMultiSQL
 --- PASS: TestBigQuerySplitMultiSQL (0.00s)
 PASS
-ok  	github.com/bytebase/bytebase/backend/plugin/parser/bigquery	7.343s
+ok  	github.com/bytebase/bytebase/backend/plugin/parser/bigquery	(cached)
 === RUN   TestSplitSQLStatement
 --- PASS: TestSplitSQLStatement (0.00s)
 PASS
-ok  	github.com/bytebase/bytebase/backend/plugin/parser/cockroachdb	7.143s
+ok  	github.com/bytebase/bytebase/backend/plugin/parser/cockroachdb	(cached)
 === RUN   TestPredicateInWhere
 --- PASS: TestPredicateInWhere (0.00s)
 === RUN   TestGetQuerySpan
 --- PASS: TestGetQuerySpan (0.00s)
 PASS
-ok  	github.com/bytebase/bytebase/backend/plugin/parser/cosmosdb	5.339s
+ok  	github.com/bytebase/bytebase/backend/plugin/parser/cosmosdb	0.450s
 === RUN   TestParseElasticsearchREST
 --- PASS: TestParseElasticsearchREST (0.00s)
 === RUN   TestParse
@@ -497,7 +497,7 @@ ok  	github.com/bytebase/bytebase/backend/plugin/parser/cosmosdb	5.339s
 === RUN   TestStatementRanges
 --- PASS: TestStatementRanges (0.00s)
 PASS
-ok  	github.com/bytebase/bytebase/backend/plugin/parser/elasticsearch	5.665s
+ok  	github.com/bytebase/bytebase/backend/plugin/parser/elasticsearch	(cached)
 ?   	github.com/bytebase/bytebase/backend/plugin/parser/errors	[no test files]
 === RUN   TestExtractEnvironmentIDs
 --- PASS: TestExtractEnvironmentIDs (0.00s)
@@ -508,14 +508,14 @@ ok  	github.com/bytebase/bytebase/backend/plugin/parser/mybatis/configuration	(c
 === RUN   TestRestoreWithLineMapping
 --- PASS: TestRestoreWithLineMapping (0.00s)
 PASS
-ok  	github.com/bytebase/bytebase/backend/plugin/parser/mybatis/mapper	4.498s
+ok  	github.com/bytebase/bytebase/backend/plugin/parser/mybatis/mapper	(cached)
 ?   	github.com/bytebase/bytebase/backend/plugin/parser/mybatis/mapper/ast	[no test files]
 === RUN   TestBackup
     backup_test.go:60: 
         	Error Trace:	/Users/h3n4l/OpenSource/bytebase/backend/plugin/parser/mysql/backup_test.go:60
         	Error:      	Not equal: 
-        	            	expected: []base.BackupStatement{base.BackupStatement{Statement:"CREATE TABLE `backupDB`.`_rollback_test_db` LIKE `db`.`test`;\nINSERT INTO `backupDB`.`_rollback_test_db`  WITH t_cte AS (\n  SELECT * FROM test WHERE test.b1 > 10\n) SELECT `test`.* FROM test, t_cte WHERE test.b1 = t_cte.b1 and test.b1 = 1\n  UNION DISTINCT\n  WITH t_cte AS (\n  SELECT * FROM test WHERE test.b1 > 10\n) SELECT `test`.* FROM test, t_cte WHERE test.b1 = t_cte.b1 and test.b1 = 2\n  UNION DISTINCT\n  WITH t_cte AS (\n  SELECT * FROM test WHERE test.b1 > 10\n) SELECT `test`.* FROM test, t_cte WHERE test.b1 = t_cte.b1 and test.b1 = 3\n  UNION DISTINCT\n  WITH t_cte AS (\n  SELECT * FROM test WHERE test.b1 > 10\n) SELECT `test`.* FROM test, t_cte WHERE test.b1 = t_cte.b1 and test.b1 = 4\n  UNION DISTINCT\n  WITH t_cte AS (\n  SELECT * FROM test WHERE test.b1 > 10\n) SELECT `test`.* FROM test, t_cte WHERE test.b1 = t_cte.b1 and test.b1 = 5\n  UNION DISTINCT\n  WITH t_cte AS (\n  SELECT * FROM test WHERE test.b1 > 10\n) SELECT `test`.* FROM test, t_cte WHERE test.b1 = t_cte.b1 and test.b1 = 6;", SourceSchema:"", SourceTableName:"test", TargetTableName:"_rollback_test_db", StartPosition:(*store.Position)(0x14000456120), EndPosition:(*store.Position)(0x14000456180)}}
-        	            	actual  : []base.BackupStatement{base.BackupStatement{Statement:"CREATE TABLE `backupDB`.`_rollback_test_db` LIKE `db`.`test`;\nINSERT INTO `backupDB`.`_rollback_test_db`  WITH t_cte AS (\n  SELECT * FROM test WHERE test.b1 > 10\n) SELECT `test`.* FROM test, t_cte WHERE test.b1 = t_cte.b1 and test.b1 = 1\n  UNION DISTINCT\n  WITH t_cte AS (\n  SELECT * FROM test WHERE test.b1 > 10\n) SELECT `test`.* FROM test, t_cte WHERE test.b1 = t_cte.b1 and test.b1 = 2\n  UNION DISTINCT\n  WITH t_cte AS (\n  SELECT * FROM test WHERE test.b1 > 10\n) SELECT `test`.* FROM test, t_cte WHERE test.b1 = t_cte.b1 and test.b1 = 3\n  UNION DISTINCT\n  WITH t_cte AS (\n  SELECT * FROM test WHERE test.b1 > 10\n) SELECT `test`.* FROM test, t_cte WHERE test.b1 = t_cte.b1 and test.b1 = 4\n  UNION DISTINCT\n  WITH t_cte AS (\n  SELECT * FROM test WHERE test.b1 > 10\n) SELECT `test`.* FROM test, t_cte WHERE test.b1 = t_cte.b1 and test.b1 = 5\n  UNION DISTINCT\n  WITH t_cte AS (\n  SELECT * FROM test WHERE test.b1 > 10\n) SELECT `test`.* FROM test, t_cte WHERE test.b1 = t_cte.b1 and test.b1 = 6;", SourceSchema:"", SourceTableName:"test", TargetTableName:"_rollback_test_db", StartPosition:(*store.Position)(0x14000886d50), EndPosition:(*store.Position)(0x14000886f00)}}
+        	            	expected: []base.BackupStatement{base.BackupStatement{Statement:"CREATE TABLE `backupDB`.`_rollback_test_db` LIKE `db`.`test`;\nINSERT INTO `backupDB`.`_rollback_test_db`  WITH t_cte AS (\n  SELECT * FROM test WHERE test.b1 > 10\n) SELECT `test`.* FROM test, t_cte WHERE test.b1 = t_cte.b1 and test.b1 = 1\n  UNION DISTINCT\n  WITH t_cte AS (\n  SELECT * FROM test WHERE test.b1 > 10\n) SELECT `test`.* FROM test, t_cte WHERE test.b1 = t_cte.b1 and test.b1 = 2\n  UNION DISTINCT\n  WITH t_cte AS (\n  SELECT * FROM test WHERE test.b1 > 10\n) SELECT `test`.* FROM test, t_cte WHERE test.b1 = t_cte.b1 and test.b1 = 3\n  UNION DISTINCT\n  WITH t_cte AS (\n  SELECT * FROM test WHERE test.b1 > 10\n) SELECT `test`.* FROM test, t_cte WHERE test.b1 = t_cte.b1 and test.b1 = 4\n  UNION DISTINCT\n  WITH t_cte AS (\n  SELECT * FROM test WHERE test.b1 > 10\n) SELECT `test`.* FROM test, t_cte WHERE test.b1 = t_cte.b1 and test.b1 = 5\n  UNION DISTINCT\n  WITH t_cte AS (\n  SELECT * FROM test WHERE test.b1 > 10\n) SELECT `test`.* FROM test, t_cte WHERE test.b1 = t_cte.b1 and test.b1 = 6;", SourceSchema:"", SourceTableName:"test", TargetTableName:"_rollback_test_db", StartPosition:(*store.Position)(0x14000206150), EndPosition:(*store.Position)(0x140002061b0)}}
+        	            	actual  : []base.BackupStatement{base.BackupStatement{Statement:"CREATE TABLE `backupDB`.`_rollback_test_db` LIKE `db`.`test`;\nINSERT INTO `backupDB`.`_rollback_test_db`  WITH t_cte AS (\n  SELECT * FROM test WHERE test.b1 > 10\n) SELECT `test`.* FROM test, t_cte WHERE test.b1 = t_cte.b1 and test.b1 = 1\n  UNION DISTINCT\n  WITH t_cte AS (\n  SELECT * FROM test WHERE test.b1 > 10\n) SELECT `test`.* FROM test, t_cte WHERE test.b1 = t_cte.b1 and test.b1 = 2\n  UNION DISTINCT\n  WITH t_cte AS (\n  SELECT * FROM test WHERE test.b1 > 10\n) SELECT `test`.* FROM test, t_cte WHERE test.b1 = t_cte.b1 and test.b1 = 3\n  UNION DISTINCT\n  WITH t_cte AS (\n  SELECT * FROM test WHERE test.b1 > 10\n) SELECT `test`.* FROM test, t_cte WHERE test.b1 = t_cte.b1 and test.b1 = 4\n  UNION DISTINCT\n  WITH t_cte AS (\n  SELECT * FROM test WHERE test.b1 > 10\n) SELECT `test`.* FROM test, t_cte WHERE test.b1 = t_cte.b1 and test.b1 = 5\n  UNION DISTINCT\n  WITH t_cte AS (\n  SELECT * FROM test WHERE test.b1 > 10\n) SELECT `test`.* FROM test, t_cte WHERE test.b1 = t_cte.b1 and test.b1 = 6;", SourceSchema:"", SourceTableName:"test", TargetTableName:"_rollback_test_db", StartPosition:(*store.Position)(0x1400092cd50), EndPosition:(*store.Position)(0x1400092cf00)}}
         	            	
         	            	Diff:
         	            	--- Expected
@@ -559,7 +559,7 @@ ok  	github.com/bytebase/bytebase/backend/plugin/parser/mybatis/mapper	4.498s
 === RUN   TestSchemaDiffIndex
 --- PASS: TestSchemaDiffIndex (0.01s)
 === RUN   TestSchemaDiffView
---- PASS: TestSchemaDiffView (0.02s)
+--- PASS: TestSchemaDiffView (0.03s)
 === RUN   TestSchemaDiffFunction
 --- PASS: TestSchemaDiffFunction (0.01s)
 === RUN   TestSchemaDiffProcedure
@@ -611,37 +611,7 @@ ok  	github.com/bytebase/bytebase/backend/plugin/parser/mybatis/mapper	4.498s
         	            	UPDATE t_generated SET a = 7 WHERE b = 7;
 --- FAIL: TestRestore (0.00s)
 === RUN   TestMySQLSplitMultiSQL
-    split_test.go:614: 
-        	Error Trace:	/Users/h3n4l/OpenSource/bytebase/backend/plugin/parser/mysql/split_test.go:614
-        	Error:      	Not equal: 
-        	            	expected: mysql.resData{res:[]base.SingleSQL{base.SingleSQL{Text:"select * from t;", BaseLine:0, Start:(*store.Position)(nil), End:(*store.Position)(0x1400310c960), Empty:false, ByteOffsetStart:0, ByteOffsetEnd:0}, base.SingleSQL{Text:"select \"\\\"\" where true;", BaseLine:0, Start:(*store.Position)(0x1400310c990), End:(*store.Position)(0x1400310c9c0), Empty:false, ByteOffsetStart:0, ByteOffsetEnd:0}}, err:""}
-        	            	actual  : mysql.resData{res:[]base.SingleSQL{base.SingleSQL{Text:"select * from t;", BaseLine:0, Start:(*store.Position)(0x14003307560), End:(*store.Position)(0x14003307530), Empty:false, ByteOffsetStart:0, ByteOffsetEnd:0}, base.SingleSQL{Text:"select \"\\\"\" where true;", BaseLine:0, Start:(*store.Position)(0x140033075c0), End:(*store.Position)(0x14003307590), Empty:false, ByteOffsetStart:0, ByteOffsetEnd:0}}, err:""}
-        	            	
-        	            	Diff:
-        	            	--- Expected
-        	            	+++ Actual
-        	            	@@ -5,3 +5,17 @@
-        	            	    BaseLine: (int) 0,
-        	            	-   Start: (*store.Position)(<nil>),
-        	            	+   Start: (*store.Position)({
-        	            	+    state: (impl.MessageState) {
-        	            	+     NoUnkeyedLiterals: (pragma.NoUnkeyedLiterals) {
-        	            	+     },
-        	            	+     DoNotCompare: (pragma.DoNotCompare) {
-        	            	+     },
-        	            	+     DoNotCopy: (pragma.DoNotCopy) {
-        	            	+     },
-        	            	+     atomicMessageInfo: (*impl.MessageInfo)(<nil>)
-        	            	+    },
-        	            	+    Line: (int32) 0,
-        	            	+    Column: (int32) 0,
-        	            	+    unknownFields: ([]uint8) <nil>,
-        	            	+    sizeCache: (int32) 0
-        	            	+   }),
-        	            	    End: (*store.Position)({
-        	Test:       	TestMySQLSplitMultiSQL
-        	Messages:   	select * from t;select "\"" where true;
---- FAIL: TestMySQLSplitMultiSQL (0.00s)
+--- PASS: TestMySQLSplitMultiSQL (0.02s)
 === RUN   TestSplitMySQLStatements
 --- PASS: TestSplitMySQLStatements (0.00s)
 === RUN   TestGetStatementType
@@ -683,15 +653,15 @@ ok  	github.com/bytebase/bytebase/backend/plugin/parser/mybatis/mapper	4.498s
     statement_type_test.go:38: DROP PROCEDURE citycount;
 --- PASS: TestGetStatementType (0.01s)
 FAIL
-FAIL	github.com/bytebase/bytebase/backend/plugin/parser/mysql	0.732s
+FAIL	github.com/bytebase/bytebase/backend/plugin/parser/mysql	2.026s
 === RUN   TestCompletion
---- PASS: TestCompletion (0.02s)
+--- PASS: TestCompletion (0.01s)
 === RUN   TestSplitSQL
     split_test.go:58: 
         	Error Trace:	/Users/h3n4l/OpenSource/bytebase/backend/plugin/parser/partiql/split_test.go:58
         	Error:      	Not equal: 
-        	            	expected: []base.SingleSQL{base.SingleSQL{Text:"DELETE FROM Music WHERE Artist = 'Pink Floyd' AND SongTitle = 'Money';", BaseLine:0, Start:(*store.Position)(0x1401772db00), End:(*store.Position)(0x1401772db30), Empty:false, ByteOffsetStart:0, ByteOffsetEnd:0}, base.SingleSQL{Text:"\n\tINSERT INTO Music VALUE {'AlbumTitle': 'The Dark Side of the Moon', 'Artist': 'Pink Floyd', 'Awards': 300, 'SongTitle': 'Money'};", BaseLine:0, Start:(*store.Position)(0x1401772db60), End:(*store.Position)(0x1401772db90), Empty:false, ByteOffsetStart:0, ByteOffsetEnd:0}, base.SingleSQL{Text:"\n\tINSERT INTO Music VALUE {'AlbumTitle': 'The Dark Side of the Moon', 'Artist': 'Pink Floyd', 'Awards': 300, 'SongTitle': 'Money02'};", BaseLine:1, Start:(*store.Position)(0x1401772dbc0), End:(*store.Position)(0x1401772dbf0), Empty:false, ByteOffsetStart:0, ByteOffsetEnd:0}, base.SingleSQL{Text:"\n\tINSERT INTO Music VALUE {'AlbumTitle': 'The Dark Side of the Moon', 'Artist': 'Pink Floyd', 'Awards': 300, 'SongTitle': 'Money03'};", BaseLine:2, Start:(*store.Position)(0x1401772dc20), End:(*store.Position)(0x1401772dc50), Empty:false, ByteOffsetStart:0, ByteOffsetEnd:0}, base.SingleSQL{Text:"\n\tDELETE FROM Music WHERE Artist = 'Pink Floyd' AND SongTitle = 'Money02'", BaseLine:3, Start:(*store.Position)(0x1401772dc80), End:(*store.Position)(0x1401772dcb0), Empty:false, ByteOffsetStart:0, ByteOffsetEnd:0}}
-        	            	actual  : []base.SingleSQL{base.SingleSQL{Text:"DELETE FROM Music WHERE Artist = 'Pink Floyd' AND SongTitle = 'Money';", BaseLine:0, Start:(*store.Position)(0x14017b81c80), End:(*store.Position)(0x14017b81c50), Empty:false, ByteOffsetStart:0, ByteOffsetEnd:0}, base.SingleSQL{Text:"\n\tINSERT INTO Music VALUE {'AlbumTitle': 'The Dark Side of the Moon', 'Artist': 'Pink Floyd', 'Awards': 300, 'SongTitle': 'Money'};", BaseLine:0, Start:(*store.Position)(0x14017b81ce0), End:(*store.Position)(0x14017b81cb0), Empty:false, ByteOffsetStart:0, ByteOffsetEnd:0}, base.SingleSQL{Text:"\n\tINSERT INTO Music VALUE {'AlbumTitle': 'The Dark Side of the Moon', 'Artist': 'Pink Floyd', 'Awards': 300, 'SongTitle': 'Money02'};", BaseLine:1, Start:(*store.Position)(0x14017b81d40), End:(*store.Position)(0x14017b81d10), Empty:false, ByteOffsetStart:0, ByteOffsetEnd:0}, base.SingleSQL{Text:"\n\tINSERT INTO Music VALUE {'AlbumTitle': 'The Dark Side of the Moon', 'Artist': 'Pink Floyd', 'Awards': 300, 'SongTitle': 'Money03'};", BaseLine:2, Start:(*store.Position)(0x14017b81da0), End:(*store.Position)(0x14017b81d70), Empty:false, ByteOffsetStart:0, ByteOffsetEnd:0}, base.SingleSQL{Text:"\n\tDELETE FROM Music WHERE Artist = 'Pink Floyd' AND SongTitle = 'Money02'", BaseLine:3, Start:(*store.Position)(0x14017b81e00), End:(*store.Position)(0x14017b81dd0), Empty:false, ByteOffsetStart:0, ByteOffsetEnd:0}}
+        	            	expected: []base.SingleSQL{base.SingleSQL{Text:"DELETE FROM Music WHERE Artist = 'Pink Floyd' AND SongTitle = 'Money';", BaseLine:0, Start:(*store.Position)(0x1400da7e390), End:(*store.Position)(0x1400da7e3c0), Empty:false, ByteOffsetStart:0, ByteOffsetEnd:0}, base.SingleSQL{Text:"\n\tINSERT INTO Music VALUE {'AlbumTitle': 'The Dark Side of the Moon', 'Artist': 'Pink Floyd', 'Awards': 300, 'SongTitle': 'Money'};", BaseLine:0, Start:(*store.Position)(0x1400da7e3f0), End:(*store.Position)(0x1400da7e420), Empty:false, ByteOffsetStart:0, ByteOffsetEnd:0}, base.SingleSQL{Text:"\n\tINSERT INTO Music VALUE {'AlbumTitle': 'The Dark Side of the Moon', 'Artist': 'Pink Floyd', 'Awards': 300, 'SongTitle': 'Money02'};", BaseLine:1, Start:(*store.Position)(0x1400da7e450), End:(*store.Position)(0x1400da7e480), Empty:false, ByteOffsetStart:0, ByteOffsetEnd:0}, base.SingleSQL{Text:"\n\tINSERT INTO Music VALUE {'AlbumTitle': 'The Dark Side of the Moon', 'Artist': 'Pink Floyd', 'Awards': 300, 'SongTitle': 'Money03'};", BaseLine:2, Start:(*store.Position)(0x1400da7e4b0), End:(*store.Position)(0x1400da7e4e0), Empty:false, ByteOffsetStart:0, ByteOffsetEnd:0}, base.SingleSQL{Text:"\n\tDELETE FROM Music WHERE Artist = 'Pink Floyd' AND SongTitle = 'Money02'", BaseLine:3, Start:(*store.Position)(0x1400da7e510), End:(*store.Position)(0x1400da7e540), Empty:false, ByteOffsetStart:0, ByteOffsetEnd:0}}
+        	            	actual  : []base.SingleSQL{base.SingleSQL{Text:"DELETE FROM Music WHERE Artist = 'Pink Floyd' AND SongTitle = 'Money';", BaseLine:0, Start:(*store.Position)(0x1400df4c510), End:(*store.Position)(0x1400df4c4e0), Empty:false, ByteOffsetStart:0, ByteOffsetEnd:0}, base.SingleSQL{Text:"\n\tINSERT INTO Music VALUE {'AlbumTitle': 'The Dark Side of the Moon', 'Artist': 'Pink Floyd', 'Awards': 300, 'SongTitle': 'Money'};", BaseLine:0, Start:(*store.Position)(0x1400df4c570), End:(*store.Position)(0x1400df4c540), Empty:false, ByteOffsetStart:0, ByteOffsetEnd:0}, base.SingleSQL{Text:"\n\tINSERT INTO Music VALUE {'AlbumTitle': 'The Dark Side of the Moon', 'Artist': 'Pink Floyd', 'Awards': 300, 'SongTitle': 'Money02'};", BaseLine:1, Start:(*store.Position)(0x1400df4c5d0), End:(*store.Position)(0x1400df4c5a0), Empty:false, ByteOffsetStart:0, ByteOffsetEnd:0}, base.SingleSQL{Text:"\n\tINSERT INTO Music VALUE {'AlbumTitle': 'The Dark Side of the Moon', 'Artist': 'Pink Floyd', 'Awards': 300, 'SongTitle': 'Money03'};", BaseLine:2, Start:(*store.Position)(0x1400df4c630), End:(*store.Position)(0x1400df4c600), Empty:false, ByteOffsetStart:0, ByteOffsetEnd:0}, base.SingleSQL{Text:"\n\tDELETE FROM Music WHERE Artist = 'Pink Floyd' AND SongTitle = 'Money02'", BaseLine:3, Start:(*store.Position)(0x1400df4c690), End:(*store.Position)(0x1400df4c660), Empty:false, ByteOffsetStart:0, ByteOffsetEnd:0}}
         	            	
         	            	Diff:
         	            	--- Expected
@@ -702,17 +672,17 @@ FAIL	github.com/bytebase/bytebase/backend/plugin/parser/mysql	0.732s
         	            	+   Column: (int32) 72,
         	            	    unknownFields: ([]uint8) <nil>,
         	Test:       	TestSplitSQL
---- FAIL: TestSplitSQL (0.01s)
+--- FAIL: TestSplitSQL (0.00s)
 FAIL
-FAIL	github.com/bytebase/bytebase/backend/plugin/parser/partiql	1.716s
+FAIL	github.com/bytebase/bytebase/backend/plugin/parser/partiql	1.081s
 === RUN   TestBackup
 --- PASS: TestBackup (0.05s)
 === RUN   TestCompletion
---- PASS: TestCompletion (0.06s)
+--- PASS: TestCompletion (0.05s)
 === RUN   TestComputeDiff
---- PASS: TestComputeDiff (0.02s)
+--- PASS: TestComputeDiff (0.01s)
 === RUN   TestPostgreSQLParser
---- PASS: TestPostgreSQLParser (0.02s)
+--- PASS: TestPostgreSQLParser (0.01s)
 === RUN   TestGetQuerySpan
 --- PASS: TestGetQuerySpan (0.04s)
 === RUN   TestValidateSQLForEditor
@@ -722,13 +692,13 @@ FAIL	github.com/bytebase/bytebase/backend/plugin/parser/partiql	1.716s
 === RUN   TestExtractChangedResources
 --- PASS: TestExtractChangedResources (0.00s)
 === RUN   TestRestore
---- PASS: TestRestore (0.01s)
+--- PASS: TestRestore (0.02s)
 === RUN   TestPGSplitMultiSQL
     split_test.go:318: 
         	Error Trace:	/Users/h3n4l/OpenSource/bytebase/backend/plugin/parser/pg/split_test.go:318
         	Error:      	Not equal: 
-        	            	expected: pg.resData{res:[]base.SingleSQL{base.SingleSQL{Text:"select * from t;", BaseLine:0, Start:(*store.Position)(nil), End:(*store.Position)(0x1400304e4b0), Empty:false, ByteOffsetStart:0, ByteOffsetEnd:0}, base.SingleSQL{Text:"\n\t\t\t/* sdfasdf */", BaseLine:0, Start:(*store.Position)(0x1400304e510), End:(*store.Position)(0x1400304e4e0), Empty:true, ByteOffsetStart:0, ByteOffsetEnd:0}}, err:""}
-        	            	actual  : pg.resData{res:[]base.SingleSQL{base.SingleSQL{Text:"select * from t;", BaseLine:0, Start:(*store.Position)(0x1400304ee70), End:(*store.Position)(0x1400304ee40), Empty:false, ByteOffsetStart:0, ByteOffsetEnd:0}, base.SingleSQL{Text:"\n\t\t\t/* sdfasdf */", BaseLine:0, Start:(*store.Position)(0x1400304eed0), End:(*store.Position)(0x1400304eea0), Empty:true, ByteOffsetStart:0, ByteOffsetEnd:0}}, err:""}
+        	            	expected: pg.resData{res:[]base.SingleSQL{base.SingleSQL{Text:"select * from t;", BaseLine:0, Start:(*store.Position)(nil), End:(*store.Position)(0x14000ec8000), Empty:false, ByteOffsetStart:0, ByteOffsetEnd:0}, base.SingleSQL{Text:"\n\t\t\t/* sdfasdf */", BaseLine:0, Start:(*store.Position)(0x14000ec8060), End:(*store.Position)(0x14000ec8030), Empty:true, ByteOffsetStart:0, ByteOffsetEnd:0}}, err:""}
+        	            	actual  : pg.resData{res:[]base.SingleSQL{base.SingleSQL{Text:"select * from t;", BaseLine:0, Start:(*store.Position)(0x14000ec93b0), End:(*store.Position)(0x14000ec9380), Empty:false, ByteOffsetStart:0, ByteOffsetEnd:0}, base.SingleSQL{Text:"\n\t\t\t/* sdfasdf */", BaseLine:0, Start:(*store.Position)(0x14000ec9410), End:(*store.Position)(0x14000ec93e0), Empty:true, ByteOffsetStart:0, ByteOffsetEnd:0}}, err:""}
         	            	
         	            	Diff:
         	            	--- Expected
@@ -757,21 +727,21 @@ FAIL	github.com/bytebase/bytebase/backend/plugin/parser/partiql	1.716s
         	            				/* sdfasdf */
 --- FAIL: TestPGSplitMultiSQL (0.01s)
 FAIL
-FAIL	github.com/bytebase/bytebase/backend/plugin/parser/pg	1.355s
+FAIL	github.com/bytebase/bytebase/backend/plugin/parser/pg	1.537s
 === RUN   TestBackup
---- PASS: TestBackup (0.30s)
+--- PASS: TestBackup (0.27s)
 === RUN   TestCompletion
---- PASS: TestCompletion (0.49s)
+--- PASS: TestCompletion (0.43s)
 === RUN   TestPLSQLDiffer
---- PASS: TestPLSQLDiffer (0.05s)
+--- PASS: TestPLSQLDiffer (0.06s)
 === RUN   TestPlSQLDifferNonStrict
---- PASS: TestPlSQLDifferNonStrict (0.01s)
+--- PASS: TestPlSQLDifferNonStrict (0.02s)
 === RUN   TestPLSQLParser
 --- PASS: TestPLSQLParser (0.00s)
 === RUN   TestGetQuerySpan
---- PASS: TestGetQuerySpan (0.83s)
+--- PASS: TestGetQuerySpan (0.70s)
 === RUN   TestExtractOracleResourceList
---- PASS: TestExtractOracleResourceList (0.06s)
+--- PASS: TestExtractOracleResourceList (0.04s)
 === RUN   TestExtractChangedResources
 --- PASS: TestExtractChangedResources (0.00s)
 === RUN   TestRestore
@@ -801,8 +771,8 @@ FAIL	github.com/bytebase/bytebase/backend/plugin/parser/pg	1.355s
     split_test.go:80: 
         	Error Trace:	/Users/h3n4l/OpenSource/bytebase/backend/plugin/parser/plsql/split_test.go:80
         	Error:      	Not equal: 
-        	            	expected: plsql.resData{res:[]base.SingleSQL{base.SingleSQL{Text:"select * from t", BaseLine:0, Start:(*store.Position)(0x14003687920), End:(*store.Position)(0x14003687980), Empty:false, ByteOffsetStart:5, ByteOffsetEnd:20}, base.SingleSQL{Text:"create table table$1 (id int)", BaseLine:0, Start:(*store.Position)(0x140036879e0), End:(*store.Position)(0x14003687a40), Empty:false, ByteOffsetStart:26, ByteOffsetEnd:56}}, err:""}
-        	            	actual  : plsql.resData{res:[]base.SingleSQL{base.SingleSQL{Text:"select * from t", BaseLine:0, Start:(*store.Position)(0x14003697860), End:(*store.Position)(0x140036978c0), Empty:false, ByteOffsetStart:5, ByteOffsetEnd:20}, base.SingleSQL{Text:"create table table$1 (id int)", BaseLine:0, Start:(*store.Position)(0x14003697920), End:(*store.Position)(0x14003697980), Empty:false, ByteOffsetStart:26, ByteOffsetEnd:56}}, err:""}
+        	            	expected: plsql.resData{res:[]base.SingleSQL{base.SingleSQL{Text:"select * from t", BaseLine:0, Start:(*store.Position)(0x14003a39710), End:(*store.Position)(0x14003a39770), Empty:false, ByteOffsetStart:5, ByteOffsetEnd:20}, base.SingleSQL{Text:"create table table$1 (id int)", BaseLine:0, Start:(*store.Position)(0x14003a397d0), End:(*store.Position)(0x14003a39830), Empty:false, ByteOffsetStart:26, ByteOffsetEnd:56}}, err:""}
+        	            	actual  : plsql.resData{res:[]base.SingleSQL{base.SingleSQL{Text:"select * from t", BaseLine:0, Start:(*store.Position)(0x14003a3d650), End:(*store.Position)(0x14003a3d6b0), Empty:false, ByteOffsetStart:5, ByteOffsetEnd:20}, base.SingleSQL{Text:"create table table$1 (id int)", BaseLine:0, Start:(*store.Position)(0x14003a3d710), End:(*store.Position)(0x14003a3d770), Empty:false, ByteOffsetStart:26, ByteOffsetEnd:56}}, err:""}
         	            	
         	            	Diff:
         	            	--- Expected
@@ -894,11 +864,11 @@ FAIL	github.com/bytebase/bytebase/backend/plugin/parser/pg	1.355s
         	            				
 --- FAIL: TestOracleSplitMultiSQL (0.00s)
 === RUN   TestGetStatementType
---- PASS: TestGetStatementType (0.08s)
+--- PASS: TestGetStatementType (0.10s)
 === RUN   TestStringsManipulate
 --- PASS: TestStringsManipulate (0.01s)
 FAIL
-FAIL	github.com/bytebase/bytebase/backend/plugin/parser/plsql	3.121s
+FAIL	github.com/bytebase/bytebase/backend/plugin/parser/plsql	3.341s
 === RUN   TestValidateQuery
 --- PASS: TestValidateQuery (0.00s)
 PASS
@@ -922,13 +892,13 @@ ok  	github.com/bytebase/bytebase/backend/plugin/parser/redis	(cached)
 === RUN   TestParseSnowSQL
 --- PASS: TestParseSnowSQL (0.03s)
 PASS
-ok  	github.com/bytebase/bytebase/backend/plugin/parser/snowflake	2.442s
+ok  	github.com/bytebase/bytebase/backend/plugin/parser/snowflake	(cached)
 === RUN   TestGetQuerySpan
 --- PASS: TestGetQuerySpan (0.17s)
 === RUN   TestGetPossibleColumnResources
 --- PASS: TestGetPossibleColumnResources (0.00s)
 PASS
-ok  	github.com/bytebase/bytebase/backend/plugin/parser/spanner	3.288s
+ok  	github.com/bytebase/bytebase/backend/plugin/parser/spanner	(cached)
 ?   	github.com/bytebase/bytebase/backend/plugin/parser/sql/ast	[no test files]
 === RUN   TestPGConvertCreateMaterializedViewStmt
 --- PASS: TestPGConvertCreateMaterializedViewStmt (0.00s)
@@ -1042,7 +1012,7 @@ ok  	github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg	(cached)
 === RUN   TestCheck
 --- PASS: TestCheck (0.00s)
 PASS
-ok  	github.com/bytebase/bytebase/backend/plugin/parser/sql/transform/mysql	4.343s
+ok  	github.com/bytebase/bytebase/backend/plugin/parser/sql/transform/mysql	(cached)
 === RUN   TestValidateSQLForStandard
 --- PASS: TestValidateSQLForStandard (0.00s)
 === RUN   TestApplyMultiStatements
@@ -1053,8 +1023,8 @@ ok  	github.com/bytebase/bytebase/backend/plugin/parser/standard	(cached)
     backup_test.go:60: 
         	Error Trace:	/Users/h3n4l/OpenSource/bytebase/backend/plugin/parser/tidb/backup_test.go:60
         	Error:      	Not equal: 
-        	            	expected: []base.BackupStatement{base.BackupStatement{Statement:"CREATE TABLE `backupDB`.`_rollback_test_db` LIKE `db`.`test`;\nINSERT INTO `backupDB`.`_rollback_test_db`  SELECT `test`.* FROM test WHERE test.b1 = 1\n  UNION ALL\n  SELECT `test`.* FROM test WHERE test.b1 = 2\n  UNION ALL\n  SELECT `test`.* FROM test WHERE test.b1 = 3\n  UNION ALL\n  SELECT `test`.* FROM test WHERE test.b1 = 4\n  UNION ALL\n  SELECT `test`.* FROM test WHERE test.b1 = 5\n  UNION ALL\n  SELECT `test`.* FROM test WHERE test.b1 = 6\n  UNION ALL\n  SELECT `test`.* FROM test WHERE test.b1 = 7;", SourceSchema:"", SourceTableName:"test", TargetTableName:"_rollback_test_db", StartPosition:(*store.Position)(0x1400476eea0), EndPosition:(*store.Position)(0x1400476ef60)}}
-        	            	actual  : []base.BackupStatement{base.BackupStatement{Statement:"CREATE TABLE `backupDB`.`_rollback_test_db` LIKE `db`.`test`;\nINSERT INTO `backupDB`.`_rollback_test_db`  SELECT `test`.* FROM test WHERE test.b1 = 1\n  UNION ALL\n  SELECT `test`.* FROM test WHERE test.b1 = 2\n  UNION ALL\n  SELECT `test`.* FROM test WHERE test.b1 = 3\n  UNION ALL\n  SELECT `test`.* FROM test WHERE test.b1 = 4\n  UNION ALL\n  SELECT `test`.* FROM test WHERE test.b1 = 5\n  UNION ALL\n  SELECT `test`.* FROM test WHERE test.b1 = 6\n  UNION ALL\n  SELECT `test`.* FROM test WHERE test.b1 = 7;", SourceSchema:"", SourceTableName:"test", TargetTableName:"_rollback_test_db", StartPosition:(*store.Position)(0x140048871a0), EndPosition:(*store.Position)(0x140048875c0)}}
+        	            	expected: []base.BackupStatement{base.BackupStatement{Statement:"CREATE TABLE `backupDB`.`_rollback_test_db` LIKE `db`.`test`;\nINSERT INTO `backupDB`.`_rollback_test_db`  SELECT `test`.* FROM test WHERE test.b1 = 1\n  UNION ALL\n  SELECT `test`.* FROM test WHERE test.b1 = 2\n  UNION ALL\n  SELECT `test`.* FROM test WHERE test.b1 = 3\n  UNION ALL\n  SELECT `test`.* FROM test WHERE test.b1 = 4\n  UNION ALL\n  SELECT `test`.* FROM test WHERE test.b1 = 5\n  UNION ALL\n  SELECT `test`.* FROM test WHERE test.b1 = 6\n  UNION ALL\n  SELECT `test`.* FROM test WHERE test.b1 = 7;", SourceSchema:"", SourceTableName:"test", TargetTableName:"_rollback_test_db", StartPosition:(*store.Position)(0x14004827c80), EndPosition:(*store.Position)(0x14004827d40)}}
+        	            	actual  : []base.BackupStatement{base.BackupStatement{Statement:"CREATE TABLE `backupDB`.`_rollback_test_db` LIKE `db`.`test`;\nINSERT INTO `backupDB`.`_rollback_test_db`  SELECT `test`.* FROM test WHERE test.b1 = 1\n  UNION ALL\n  SELECT `test`.* FROM test WHERE test.b1 = 2\n  UNION ALL\n  SELECT `test`.* FROM test WHERE test.b1 = 3\n  UNION ALL\n  SELECT `test`.* FROM test WHERE test.b1 = 4\n  UNION ALL\n  SELECT `test`.* FROM test WHERE test.b1 = 5\n  UNION ALL\n  SELECT `test`.* FROM test WHERE test.b1 = 6\n  UNION ALL\n  SELECT `test`.* FROM test WHERE test.b1 = 7;", SourceSchema:"", SourceTableName:"test", TargetTableName:"_rollback_test_db", StartPosition:(*store.Position)(0x14004841c80), EndPosition:(*store.Position)(0x14004842120)}}
         	            	
         	            	Diff:
         	            	--- Expected
@@ -1077,7 +1047,7 @@ ok  	github.com/bytebase/bytebase/backend/plugin/parser/standard	(cached)
         	            	UPDATE test SET test.c1 = 5 WHERE test.b1 = 5;
         	            	UPDATE test SET test.c1 = 6 WHERE test.b1 = 6;
         	            	UPDATE test SET test.c1 = 7 WHERE test.b1 = 7;
---- FAIL: TestBackup (0.03s)
+--- FAIL: TestBackup (0.01s)
 === RUN   TestColumnExist
 --- PASS: TestColumnExist (0.01s)
 === RUN   TestColumnType
@@ -1107,7 +1077,7 @@ ok  	github.com/bytebase/bytebase/backend/plugin/parser/standard	(cached)
 === RUN   TestCheckConstraint
 --- PASS: TestCheckConstraint (0.00s)
 === RUN   TestConstraint
---- PASS: TestConstraint (0.00s)
+--- PASS: TestConstraint (0.01s)
 === RUN   TestTable
 --- PASS: TestTable (0.00s)
 === RUN   TestSchemaDiffPartition
@@ -1127,13 +1097,13 @@ ok  	github.com/bytebase/bytebase/backend/plugin/parser/standard	(cached)
 === RUN   TestTiDBParserError
 --- PASS: TestTiDBParserError (0.00s)
 FAIL
-FAIL	github.com/bytebase/bytebase/backend/plugin/parser/tidb	2.889s
+FAIL	github.com/bytebase/bytebase/backend/plugin/parser/tidb	1.901s
 === RUN   TestSplitTiDBMultiSQL
     tokenizer_test.go:47: 
         	Error Trace:	/Users/h3n4l/OpenSource/bytebase/backend/plugin/parser/tokenizer/tokenizer_test.go:47
         	Error:      	Not equal: 
         	            	expected: []base.SingleSQL{base.SingleSQL{Text:"-- comment", BaseLine:0, Start:(*store.Position)(nil), End:(*store.Position)(nil), Empty:true, ByteOffsetStart:0, ByteOffsetEnd:0}, base.SingleSQL{Text:"DELIMITER ;", BaseLine:0, Start:(*store.Position)(nil), End:(*store.Position)(nil), Empty:false, ByteOffsetStart:11, ByteOffsetEnd:22}}
-        	            	actual  : []base.SingleSQL{base.SingleSQL{Text:"-- comment", BaseLine:0, Start:(*store.Position)(nil), End:(*store.Position)(0x140003e0120), Empty:true, ByteOffsetStart:0, ByteOffsetEnd:0}, base.SingleSQL{Text:"DELIMITER ;", BaseLine:0, Start:(*store.Position)(nil), End:(*store.Position)(0x140003e0150), Empty:false, ByteOffsetStart:11, ByteOffsetEnd:22}}
+        	            	actual  : []base.SingleSQL{base.SingleSQL{Text:"-- comment", BaseLine:0, Start:(*store.Position)(nil), End:(*store.Position)(0x1400042a120), Empty:true, ByteOffsetStart:0, ByteOffsetEnd:0}, base.SingleSQL{Text:"DELIMITER ;", BaseLine:0, Start:(*store.Position)(nil), End:(*store.Position)(0x1400042a150), Empty:false, ByteOffsetStart:11, ByteOffsetEnd:22}}
         	            	
         	            	Diff:
         	            	--- Expected
@@ -1180,7 +1150,7 @@ FAIL	github.com/bytebase/bytebase/backend/plugin/parser/tidb	2.889s
         	Messages:   	Split comment and delimiter
 --- FAIL: TestSplitTiDBMultiSQL (0.00s)
 FAIL
-FAIL	github.com/bytebase/bytebase/backend/plugin/parser/tokenizer	2.936s
+FAIL	github.com/bytebase/bytebase/backend/plugin/parser/tokenizer	0.398s
 === RUN   TestDiagnose
 === RUN   TestDiagnose/Valid_SELECT_statement
 === RUN   TestDiagnose/Valid_CREATE_TABLE_statement
@@ -1378,9 +1348,9 @@ FAIL	github.com/bytebase/bytebase/backend/plugin/parser/tokenizer	2.936s
 === RUN   TestTrinoSplitMultiSQL
 --- PASS: TestTrinoSplitMultiSQL (0.00s)
 PASS
-ok  	github.com/bytebase/bytebase/backend/plugin/parser/trino	2.628s
+ok  	github.com/bytebase/bytebase/backend/plugin/parser/trino	(cached)
 === RUN   TestBackup
---- PASS: TestBackup (0.08s)
+--- PASS: TestBackup (0.07s)
 === RUN   TestCompletion
 --- PASS: TestCompletion (0.12s)
 === RUN   TestTSQLDiffer
@@ -1388,7 +1358,7 @@ ok  	github.com/bytebase/bytebase/backend/plugin/parser/trino	2.628s
 === RUN   TestGetQuerySpan
 --- PASS: TestGetQuerySpan (0.21s)
 === RUN   TestExtractMSSQLNormalizedResourceListFromSelectStatement
---- PASS: TestExtractMSSQLNormalizedResourceListFromSelectStatement (0.03s)
+--- PASS: TestExtractMSSQLNormalizedResourceListFromSelectStatement (0.04s)
 === RUN   TestExtractChangedResources
 --- PASS: TestExtractChangedResources (0.01s)
 === RUN   TestRestore
@@ -1416,11 +1386,11 @@ ok  	github.com/bytebase/bytebase/backend/plugin/parser/trino	2.628s
         	            	UPDATE t_generated SET b = 7 WHERE a = 7;
 --- FAIL: TestRestore (0.01s)
 === RUN   TestSplitSQL
---- PASS: TestSplitSQL (0.02s)
+--- PASS: TestSplitSQL (0.01s)
 === RUN   TestGetStatementType
---- PASS: TestGetStatementType (0.04s)
+--- PASS: TestGetStatementType (0.03s)
 FAIL
-FAIL	github.com/bytebase/bytebase/backend/plugin/parser/tsql	1.837s
+FAIL	github.com/bytebase/bytebase/backend/plugin/parser/tsql	2.936s
 === RUN   TestBuildGoCommands
 --- PASS: TestBuildGoCommands (0.00s)
 === RUN   TestBatch
@@ -1485,7 +1455,7 @@ ok  	github.com/bytebase/bytebase/backend/store	(cached)
 --- PASS: TestBuildTablesMetadata (0.00s)
 PASS
 ok  	github.com/bytebase/bytebase/backend/store/model	(cached)
-2025/04/24 16:23:39 github.com/testcontainers/testcontainers-go - Connected to docker: 
+2025/04/24 16:31:09 github.com/testcontainers/testcontainers-go - Connected to docker: 
   Server Version: 28.0.1
   API Version: 1.48
   Operating System: Docker Desktop
@@ -1495,131 +1465,131 @@ ok  	github.com/bytebase/bytebase/backend/store/model	(cached)
   Testcontainers for Go Version: v0.36.0
   Resolved Docker Host: unix:///var/run/docker.sock
   Resolved Docker Socket Path: /var/run/docker.sock
-  Test SessionID: c89f4d78ebc57a9dc8583e952287fa463d40a49ff0d939b8d64c5bb8181a2dc7
-  Test ProcessID: b7d8a690-568b-4d69-af32-7a1c06f26dc0
-2025/04/24 16:23:39 🐳 Creating container for image postgres:16-alpine
-2025/04/24 16:23:39 🐳 Creating container for image testcontainers/ryuk:0.11.0
-2025/04/24 16:23:39 ✅ Container created: 76d24c1e05c9
-2025/04/24 16:23:39 🐳 Starting container: 76d24c1e05c9
-2025/04/24 16:23:39 ✅ Container started: 76d24c1e05c9
-2025/04/24 16:23:39 ⏳ Waiting for container id 76d24c1e05c9 image: testcontainers/ryuk:0.11.0. Waiting for: &{Port:8080/tcp timeout:<nil> PollInterval:100ms skipInternalCheck:false}
-2025/04/24 16:23:40 🔔 Container is ready: 76d24c1e05c9
-2025/04/24 16:23:40 ✅ Container created: 807b446b5c0d
-2025/04/24 16:23:40 🐳 Starting container: 807b446b5c0d
-2025/04/24 16:23:40 ✅ Container started: 807b446b5c0d
-2025/04/24 16:23:40 🔔 Container is ready: 807b446b5c0d
+  Test SessionID: 1489900843ce4354fcdf5ce15941a9f2ee62413c75ced4559b8df0a2af356738
+  Test ProcessID: 5fad592b-38cc-4ac0-a7c5-db92f93ccd08
+2025/04/24 16:31:09 🐳 Creating container for image postgres:16-alpine
+2025/04/24 16:31:09 🐳 Creating container for image testcontainers/ryuk:0.11.0
+2025/04/24 16:31:09 ✅ Container created: 0b3e585eddf7
+2025/04/24 16:31:09 🐳 Starting container: 0b3e585eddf7
+2025/04/24 16:31:09 ✅ Container started: 0b3e585eddf7
+2025/04/24 16:31:09 ⏳ Waiting for container id 0b3e585eddf7 image: testcontainers/ryuk:0.11.0. Waiting for: &{Port:8080/tcp timeout:<nil> PollInterval:100ms skipInternalCheck:false}
+2025/04/24 16:31:09 🔔 Container is ready: 0b3e585eddf7
+2025/04/24 16:31:09 ✅ Container created: 767cd2421f77
+2025/04/24 16:31:09 🐳 Starting container: 767cd2421f77
+2025/04/24 16:31:09 ✅ Container started: 767cd2421f77
+2025/04/24 16:31:09 🔔 Container is ready: 767cd2421f77
 === RUN   TestFilterChangeHistoryByResources
 === PAUSE TestFilterChangeHistoryByResources
 === RUN   TestDataSource
-2025/04/24 16:23:43 INFO -----Config BEGIN-----
-2025/04/24 16:23:43 INFO mode=dev
-2025/04/24 16:23:43 INFO dataDir=
-2025/04/24 16:23:43 INFO demo=false
-2025/04/24 16:23:43 INFO instanceRunUUID=
-2025/04/24 16:23:43 INFO -----Config END-------
-2025/04/24 16:23:43 INFO Initialized database schema with version 3.6.4.
-2025/04/24 16:23:43 INFO Skip embedding frontend, build with 'embed_frontend' tag if you want embedded frontend.
-2025/04/24 16:23:43 INFO TaskSkippedOrDoneListener started
-2025/04/24 16:23:43 INFO Stopping Bytebase...
-2025/04/24 16:23:43 INFO Stopping web server...
-2025/04/24 16:23:43 ERROR mux server listen error error="accept tcp [::]:12810: use of closed network connection"
-2025/04/24 16:23:43 ERROR http server listen error error="mux: server closed"
---- PASS: TestDataSource (0.58s)
+2025/04/24 16:31:12 INFO -----Config BEGIN-----
+2025/04/24 16:31:12 INFO mode=dev
+2025/04/24 16:31:12 INFO dataDir=
+2025/04/24 16:31:12 INFO demo=false
+2025/04/24 16:31:12 INFO instanceRunUUID=
+2025/04/24 16:31:12 INFO -----Config END-------
+2025/04/24 16:31:12 INFO Initialized database schema with version 3.6.4.
+2025/04/24 16:31:12 INFO Skip embedding frontend, build with 'embed_frontend' tag if you want embedded frontend.
+2025/04/24 16:31:12 INFO TaskSkippedOrDoneListener started
+2025/04/24 16:31:13 INFO Stopping Bytebase...
+2025/04/24 16:31:13 INFO Stopping web server...
+2025/04/24 16:31:13 ERROR mux server listen error error="accept tcp [::]:6810: use of closed network connection"
+2025/04/24 16:31:13 ERROR http server listen error error="mux: server closed"
+--- PASS: TestDataSource (0.62s)
 === RUN   TestExternalSecretManager
 === PAUSE TestExternalSecretManager
 === RUN   TestDatabaseEnvironment
-2025/04/24 16:23:43 INFO -----Config BEGIN-----
-2025/04/24 16:23:43 INFO mode=dev
-2025/04/24 16:23:43 INFO dataDir=
-2025/04/24 16:23:43 INFO demo=false
-2025/04/24 16:23:43 INFO instanceRunUUID=
-2025/04/24 16:23:43 INFO -----Config END-------
-2025/04/24 16:23:43 INFO Initialized database schema with version 3.6.4.
-2025/04/24 16:23:43 INFO Skip embedding frontend, build with 'embed_frontend' tag if you want embedded frontend.
-{"time":"2025-04-24T16:23:43.929987+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"requests_total could not be registered in Prometheus: duplicate metrics collector registration attempted"}
-{"time":"2025-04-24T16:23:43.930032+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"request_duration_seconds could not be registered in Prometheus: duplicate metrics collector registration attempted"}
-{"time":"2025-04-24T16:23:43.93005+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"response_size_bytes could not be registered in Prometheus: duplicate metrics collector registration attempted"}
-{"time":"2025-04-24T16:23:43.930064+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"request_size_bytes could not be registered in Prometheus: duplicate metrics collector registration attempted"}
-2025/04/24 16:23:43 INFO TaskSkippedOrDoneListener started
-2025/04/24 16:23:47 INFO Stopping Bytebase...
-2025/04/24 16:23:47 INFO Stopping web server...
-2025/04/24 16:23:47 ERROR mux server listen error error="accept tcp [::]:12812: use of closed network connection"
-2025/04/24 16:23:47 ERROR http server listen error error="mux: server closed"
---- PASS: TestDatabaseEnvironment (3.72s)
+2025/04/24 16:31:13 INFO -----Config BEGIN-----
+2025/04/24 16:31:13 INFO mode=dev
+2025/04/24 16:31:13 INFO dataDir=
+2025/04/24 16:31:13 INFO demo=false
+2025/04/24 16:31:13 INFO instanceRunUUID=
+2025/04/24 16:31:13 INFO -----Config END-------
+2025/04/24 16:31:13 INFO Initialized database schema with version 3.6.4.
+2025/04/24 16:31:13 INFO Skip embedding frontend, build with 'embed_frontend' tag if you want embedded frontend.
+{"time":"2025-04-24T16:31:13.534077+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"requests_total could not be registered in Prometheus: duplicate metrics collector registration attempted"}
+{"time":"2025-04-24T16:31:13.534102+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"request_duration_seconds could not be registered in Prometheus: duplicate metrics collector registration attempted"}
+{"time":"2025-04-24T16:31:13.53412+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"response_size_bytes could not be registered in Prometheus: duplicate metrics collector registration attempted"}
+{"time":"2025-04-24T16:31:13.534136+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"request_size_bytes could not be registered in Prometheus: duplicate metrics collector registration attempted"}
+2025/04/24 16:31:13 INFO TaskSkippedOrDoneListener started
+2025/04/24 16:31:17 INFO Stopping Bytebase...
+2025/04/24 16:31:17 INFO Stopping web server...
+2025/04/24 16:31:17 ERROR mux server listen error error="accept tcp [::]:6812: use of closed network connection"
+2025/04/24 16:31:17 ERROR http server listen error error="mux: server closed"
+--- PASS: TestDatabaseEnvironment (3.76s)
 === RUN   TestGhostSchemaUpdate
 === PAUSE TestGhostSchemaUpdate
 === RUN   TestCreateDatabaseGroup
 === PAUSE TestCreateDatabaseGroup
 === RUN   TestArchiveProject
-2025/04/24 16:23:47 INFO -----Config BEGIN-----
-2025/04/24 16:23:47 INFO mode=dev
-2025/04/24 16:23:47 INFO dataDir=
-2025/04/24 16:23:47 INFO demo=false
-2025/04/24 16:23:47 INFO instanceRunUUID=
-2025/04/24 16:23:47 INFO -----Config END-------
-2025/04/24 16:23:47 INFO Initialized database schema with version 3.6.4.
-2025/04/24 16:23:47 INFO Skip embedding frontend, build with 'embed_frontend' tag if you want embedded frontend.
-{"time":"2025-04-24T16:23:47.667019+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"requests_total could not be registered in Prometheus: duplicate metrics collector registration attempted"}
-{"time":"2025-04-24T16:23:47.667038+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"request_duration_seconds could not be registered in Prometheus: duplicate metrics collector registration attempted"}
-{"time":"2025-04-24T16:23:47.66705+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"response_size_bytes could not be registered in Prometheus: duplicate metrics collector registration attempted"}
-{"time":"2025-04-24T16:23:47.667061+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"request_size_bytes could not be registered in Prometheus: duplicate metrics collector registration attempted"}
-2025/04/24 16:23:47 INFO TaskSkippedOrDoneListener started
+2025/04/24 16:31:17 INFO -----Config BEGIN-----
+2025/04/24 16:31:17 INFO mode=dev
+2025/04/24 16:31:17 INFO dataDir=
+2025/04/24 16:31:17 INFO demo=false
+2025/04/24 16:31:17 INFO instanceRunUUID=
+2025/04/24 16:31:17 INFO -----Config END-------
+2025/04/24 16:31:17 INFO Initialized database schema with version 3.6.4.
+2025/04/24 16:31:17 INFO Skip embedding frontend, build with 'embed_frontend' tag if you want embedded frontend.
+{"time":"2025-04-24T16:31:17.346394+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"requests_total could not be registered in Prometheus: duplicate metrics collector registration attempted"}
+{"time":"2025-04-24T16:31:17.346415+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"request_duration_seconds could not be registered in Prometheus: duplicate metrics collector registration attempted"}
+{"time":"2025-04-24T16:31:17.346438+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"response_size_bytes could not be registered in Prometheus: duplicate metrics collector registration attempted"}
+{"time":"2025-04-24T16:31:17.346449+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"request_size_bytes could not be registered in Prometheus: duplicate metrics collector registration attempted"}
+2025/04/24 16:31:17 INFO TaskSkippedOrDoneListener started
 === RUN   TestArchiveProject/ArchiveProjectWithDatbase
-2025/04/24 16:23:49 ERROR unknown error method=/bytebase.v1.ProjectService/DeleteProject error="rpc error: code = FailedPrecondition desc = transfer all databases to the default project before deleting the project" latency=5ms
+2025/04/24 16:31:18 ERROR unknown error method=/bytebase.v1.ProjectService/DeleteProject error="rpc error: code = FailedPrecondition desc = transfer all databases to the default project before deleting the project" latency=4ms
 === RUN   TestArchiveProject/ArchiveProjectWithOpenIssue
-2025/04/24 16:23:49 ERROR unknown error method=/bytebase.v1.ProjectService/DeleteProject error="rpc error: code = FailedPrecondition desc = resolve all open issues before deleting the project" latency=3ms
-2025/04/24 16:23:49 INFO Stopping Bytebase...
-2025/04/24 16:23:49 INFO Stopping web server...
-2025/04/24 16:23:49 ERROR mux server listen error error="accept tcp [::]:12814: use of closed network connection"
-2025/04/24 16:23:49 ERROR http server listen error error="mux: server closed"
---- PASS: TestArchiveProject (1.80s)
+2025/04/24 16:31:18 ERROR unknown error method=/bytebase.v1.ProjectService/DeleteProject error="rpc error: code = FailedPrecondition desc = resolve all open issues before deleting the project" latency=3ms
+2025/04/24 16:31:18 INFO Stopping Bytebase...
+2025/04/24 16:31:18 INFO Stopping web server...
+2025/04/24 16:31:18 ERROR mux server listen error error="accept tcp [::]:6814: use of closed network connection"
+2025/04/24 16:31:18 ERROR http server listen error error="mux: server closed"
+--- PASS: TestArchiveProject (1.86s)
     --- PASS: TestArchiveProject/ArchiveProjectWithDatbase (1.26s)
-    --- PASS: TestArchiveProject/ArchiveProjectWithOpenIssue (0.03s)
+    --- PASS: TestArchiveProject/ArchiveProjectWithOpenIssue (0.02s)
 === RUN   TestSchemaAndDataUpdate
 === PAUSE TestSchemaAndDataUpdate
 === RUN   TestGetLatestSchema
-2025/04/24 16:23:49 INFO -----Config BEGIN-----
-2025/04/24 16:23:49 INFO mode=dev
-2025/04/24 16:23:49 INFO dataDir=
-2025/04/24 16:23:49 INFO demo=false
-2025/04/24 16:23:49 INFO instanceRunUUID=
-2025/04/24 16:23:49 INFO -----Config END-------
-2025/04/24 16:23:49 INFO Initialized database schema with version 3.6.4.
-2025/04/24 16:23:49 INFO Skip embedding frontend, build with 'embed_frontend' tag if you want embedded frontend.
-{"time":"2025-04-24T16:23:49.457224+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"requests_total could not be registered in Prometheus: duplicate metrics collector registration attempted"}
-{"time":"2025-04-24T16:23:49.457243+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"request_duration_seconds could not be registered in Prometheus: duplicate metrics collector registration attempted"}
-{"time":"2025-04-24T16:23:49.457252+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"response_size_bytes could not be registered in Prometheus: duplicate metrics collector registration attempted"}
-{"time":"2025-04-24T16:23:49.45726+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"request_size_bytes could not be registered in Prometheus: duplicate metrics collector registration attempted"}
-2025/04/24 16:23:49 INFO TaskSkippedOrDoneListener started
+2025/04/24 16:31:18 INFO -----Config BEGIN-----
+2025/04/24 16:31:18 INFO mode=dev
+2025/04/24 16:31:18 INFO dataDir=
+2025/04/24 16:31:18 INFO demo=false
+2025/04/24 16:31:18 INFO instanceRunUUID=
+2025/04/24 16:31:18 INFO -----Config END-------
+2025/04/24 16:31:19 INFO Initialized database schema with version 3.6.4.
+2025/04/24 16:31:19 INFO Skip embedding frontend, build with 'embed_frontend' tag if you want embedded frontend.
+{"time":"2025-04-24T16:31:19.138973+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"requests_total could not be registered in Prometheus: duplicate metrics collector registration attempted"}
+{"time":"2025-04-24T16:31:19.138991+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"request_duration_seconds could not be registered in Prometheus: duplicate metrics collector registration attempted"}
+{"time":"2025-04-24T16:31:19.139006+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"response_size_bytes could not be registered in Prometheus: duplicate metrics collector registration attempted"}
+{"time":"2025-04-24T16:31:19.139034+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"request_size_bytes could not be registered in Prometheus: duplicate metrics collector registration attempted"}
+2025/04/24 16:31:19 INFO TaskSkippedOrDoneListener started
 === RUN   TestGetLatestSchema/MySQL
-2025/04/24 16:23:49 🐳 Creating container for image mysql:8.0.33
-2025/04/24 16:23:49 ✅ Container created: 887cef495e0e
-2025/04/24 16:23:49 🐳 Starting container: 887cef495e0e
-2025/04/24 16:23:49 ✅ Container started: 887cef495e0e
-2025/04/24 16:23:49 🔔 Container is ready: 887cef495e0e
+2025/04/24 16:31:19 🐳 Creating container for image mysql:8.0.33
+2025/04/24 16:31:19 ✅ Container created: 17ac68acb0c2
+2025/04/24 16:31:19 🐳 Starting container: 17ac68acb0c2
+2025/04/24 16:31:19 ✅ Container started: 17ac68acb0c2
+2025/04/24 16:31:19 🔔 Container is ready: 17ac68acb0c2
     schema_update_test.go:288: 
         	Error Trace:	/Users/h3n4l/OpenSource/bytebase/backend/tests/schema_update_test.go:288
         	Error:      	Received unexpected error:
         	            	port "3306/tcp" not found
         	Test:       	TestGetLatestSchema/MySQL
 === RUN   TestGetLatestSchema/PostgreSQL
-2025/04/24 16:23:49 🐳 Creating container for image postgres:16-alpine
-2025/04/24 16:23:49 ✅ Container created: dbd14d9261ff
-2025/04/24 16:23:49 🐳 Starting container: dbd14d9261ff
-2025/04/24 16:23:50 ✅ Container started: dbd14d9261ff
-2025/04/24 16:23:50 🔔 Container is ready: dbd14d9261ff
+2025/04/24 16:31:19 🐳 Creating container for image postgres:16-alpine
+2025/04/24 16:31:19 ✅ Container created: 7c0c97f05a53
+2025/04/24 16:31:19 🐳 Starting container: 7c0c97f05a53
+2025/04/24 16:31:19 ✅ Container started: 7c0c97f05a53
+2025/04/24 16:31:19 🔔 Container is ready: 7c0c97f05a53
     schema_update_test.go:271: 
         	Error Trace:	/Users/h3n4l/OpenSource/bytebase/backend/tests/schema_update_test.go:271
         	Error:      	Received unexpected error:
         	            	port "5432/tcp" not found
         	Test:       	TestGetLatestSchema/PostgreSQL
-2025/04/24 16:23:50 INFO Stopping Bytebase...
-2025/04/24 16:23:50 INFO Stopping web server...
-2025/04/24 16:23:50 ERROR mux server listen error error="accept tcp [::]:12816: use of closed network connection"
-2025/04/24 16:23:50 ERROR http server listen error error="mux: server closed"
---- FAIL: TestGetLatestSchema (0.78s)
-    --- FAIL: TestGetLatestSchema/MySQL (0.13s)
-    --- FAIL: TestGetLatestSchema/PostgreSQL (0.14s)
+2025/04/24 16:31:19 INFO Stopping Bytebase...
+2025/04/24 16:31:19 INFO Stopping web server...
+2025/04/24 16:31:19 ERROR mux server listen error error="accept tcp [::]:6816: use of closed network connection"
+2025/04/24 16:31:19 ERROR http server listen error error="mux: server closed"
+--- FAIL: TestGetLatestSchema (0.76s)
+    --- FAIL: TestGetLatestSchema/MySQL (0.14s)
+    --- FAIL: TestGetLatestSchema/PostgreSQL (0.12s)
 === RUN   TestMarkTaskAsDone
 === PAUSE TestMarkTaskAsDone
 === RUN   TestSensitiveData
@@ -1633,24 +1603,24 @@ ok  	github.com/bytebase/bytebase/backend/store/model	(cached)
 === RUN   TestSQLReviewForMySQL
 === PAUSE TestSQLReviewForMySQL
 === RUN   TestSubscription
-2025/04/24 16:23:50 INFO -----Config BEGIN-----
-2025/04/24 16:23:50 INFO mode=dev
-2025/04/24 16:23:50 INFO dataDir=
-2025/04/24 16:23:50 INFO demo=false
-2025/04/24 16:23:50 INFO instanceRunUUID=
-2025/04/24 16:23:50 INFO -----Config END-------
-2025/04/24 16:23:50 INFO Initialized database schema with version 3.6.4.
-2025/04/24 16:23:50 INFO Skip embedding frontend, build with 'embed_frontend' tag if you want embedded frontend.
-{"time":"2025-04-24T16:23:50.366273+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"requests_total could not be registered in Prometheus: duplicate metrics collector registration attempted"}
-{"time":"2025-04-24T16:23:50.36629+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"request_duration_seconds could not be registered in Prometheus: duplicate metrics collector registration attempted"}
-{"time":"2025-04-24T16:23:50.366308+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"response_size_bytes could not be registered in Prometheus: duplicate metrics collector registration attempted"}
-{"time":"2025-04-24T16:23:50.366318+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"request_size_bytes could not be registered in Prometheus: duplicate metrics collector registration attempted"}
-2025/04/24 16:23:50 INFO TaskSkippedOrDoneListener started
-2025/04/24 16:23:50 INFO Stopping Bytebase...
-2025/04/24 16:23:50 INFO Stopping web server...
-2025/04/24 16:23:50 ERROR mux server listen error error="accept tcp [::]:12818: use of closed network connection"
-2025/04/24 16:23:50 ERROR http server listen error error="mux: server closed"
---- PASS: TestSubscription (0.62s)
+2025/04/24 16:31:19 INFO -----Config BEGIN-----
+2025/04/24 16:31:19 INFO mode=dev
+2025/04/24 16:31:19 INFO dataDir=
+2025/04/24 16:31:19 INFO demo=false
+2025/04/24 16:31:19 INFO instanceRunUUID=
+2025/04/24 16:31:19 INFO -----Config END-------
+2025/04/24 16:31:19 INFO Initialized database schema with version 3.6.4.
+2025/04/24 16:31:20 INFO Skip embedding frontend, build with 'embed_frontend' tag if you want embedded frontend.
+{"time":"2025-04-24T16:31:20.036257+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"requests_total could not be registered in Prometheus: duplicate metrics collector registration attempted"}
+{"time":"2025-04-24T16:31:20.036275+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"request_duration_seconds could not be registered in Prometheus: duplicate metrics collector registration attempted"}
+{"time":"2025-04-24T16:31:20.036288+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"response_size_bytes could not be registered in Prometheus: duplicate metrics collector registration attempted"}
+{"time":"2025-04-24T16:31:20.036301+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"request_size_bytes could not be registered in Prometheus: duplicate metrics collector registration attempted"}
+2025/04/24 16:31:20 INFO TaskSkippedOrDoneListener started
+2025/04/24 16:31:20 INFO Stopping Bytebase...
+2025/04/24 16:31:20 INFO Stopping web server...
+2025/04/24 16:31:20 ERROR mux server listen error error="accept tcp [::]:6818: use of closed network connection"
+2025/04/24 16:31:20 ERROR http server listen error error="mux: server closed"
+--- PASS: TestSubscription (0.61s)
 === RUN   TestSyncSchema
 === PAUSE TestSyncSchema
 === RUN   TestSyncerForPostgreSQL
@@ -1660,235 +1630,235 @@ ok  	github.com/bytebase/bytebase/backend/store/model	(cached)
 === RUN   TestDatabaseGroup
 === PAUSE TestDatabaseGroup
 === RUN   TestDeleteUser
-2025/04/24 16:23:50 INFO -----Config BEGIN-----
-2025/04/24 16:23:50 INFO mode=dev
-2025/04/24 16:23:50 INFO dataDir=
-2025/04/24 16:23:50 INFO demo=false
-2025/04/24 16:23:50 INFO instanceRunUUID=
-2025/04/24 16:23:50 INFO -----Config END-------
-2025/04/24 16:23:50 INFO Initialized database schema with version 3.6.4.
-2025/04/24 16:23:50 INFO Skip embedding frontend, build with 'embed_frontend' tag if you want embedded frontend.
-{"time":"2025-04-24T16:23:50.894427+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"requests_total could not be registered in Prometheus: duplicate metrics collector registration attempted"}
-{"time":"2025-04-24T16:23:50.894442+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"request_duration_seconds could not be registered in Prometheus: duplicate metrics collector registration attempted"}
-{"time":"2025-04-24T16:23:50.894454+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"response_size_bytes could not be registered in Prometheus: duplicate metrics collector registration attempted"}
-{"time":"2025-04-24T16:23:50.894464+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"request_size_bytes could not be registered in Prometheus: duplicate metrics collector registration attempted"}
-2025/04/24 16:23:50 INFO TaskSkippedOrDoneListener started
-2025/04/24 16:23:51 INFO Stopping Bytebase...
-2025/04/24 16:23:51 INFO Stopping web server...
-2025/04/24 16:23:51 ERROR mux server listen error error="accept tcp [::]:12820: use of closed network connection"
-2025/04/24 16:23:51 ERROR http server listen error error="mux: server closed"
---- PASS: TestDeleteUser (0.73s)
+2025/04/24 16:31:20 INFO -----Config BEGIN-----
+2025/04/24 16:31:20 INFO mode=dev
+2025/04/24 16:31:20 INFO dataDir=
+2025/04/24 16:31:20 INFO demo=false
+2025/04/24 16:31:20 INFO instanceRunUUID=
+2025/04/24 16:31:20 INFO -----Config END-------
+2025/04/24 16:31:20 INFO Initialized database schema with version 3.6.4.
+2025/04/24 16:31:20 INFO Skip embedding frontend, build with 'embed_frontend' tag if you want embedded frontend.
+{"time":"2025-04-24T16:31:20.570657+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"requests_total could not be registered in Prometheus: duplicate metrics collector registration attempted"}
+{"time":"2025-04-24T16:31:20.570689+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"request_duration_seconds could not be registered in Prometheus: duplicate metrics collector registration attempted"}
+{"time":"2025-04-24T16:31:20.570713+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"response_size_bytes could not be registered in Prometheus: duplicate metrics collector registration attempted"}
+{"time":"2025-04-24T16:31:20.570733+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"request_size_bytes could not be registered in Prometheus: duplicate metrics collector registration attempted"}
+2025/04/24 16:31:20 INFO TaskSkippedOrDoneListener started
+2025/04/24 16:31:21 INFO Stopping Bytebase...
+2025/04/24 16:31:21 INFO Stopping web server...
+2025/04/24 16:31:21 ERROR mux server listen error error="accept tcp [::]:6820: use of closed network connection"
+2025/04/24 16:31:21 ERROR http server listen error error="mux: server closed"
+--- PASS: TestDeleteUser (0.75s)
 === CONT  TestFilterChangeHistoryByResources
 === CONT  TestSQLExport
 === CONT  TestSyncerForPostgreSQL
-=== CONT  TestDatabaseGroup
 === CONT  TestSQLReviewForMySQL
+=== CONT  TestSyncSchema
+=== CONT  TestAdminQueryAffectedRows
 === CONT  TestSQLReviewForPostgreSQL
 === CONT  TestSyncerForMySQL
+=== CONT  TestDatabaseGroup
 === CONT  TestSchemaAndDataUpdate
-=== CONT  TestSyncSchema
-=== CONT  TestGhostSchemaUpdate
 === CONT  TestSensitiveData
-=== CONT  TestAdminQueryAffectedRows
-2025/04/24 16:23:51 INFO -----Config BEGIN-----
-2025/04/24 16:23:51 INFO mode=dev
-2025/04/24 16:23:51 INFO dataDir=
-2025/04/24 16:23:51 INFO demo=false
-2025/04/24 16:23:51 INFO instanceRunUUID=
-2025/04/24 16:23:51 INFO -----Config END-------
-2025/04/24 16:23:51 INFO -----Config BEGIN-----
-2025/04/24 16:23:51 INFO mode=dev
-2025/04/24 16:23:51 INFO dataDir=
-2025/04/24 16:23:51 INFO demo=false
-2025/04/24 16:23:51 INFO instanceRunUUID=
-2025/04/24 16:23:51 INFO -----Config END-------
-2025/04/24 16:23:51 INFO -----Config BEGIN-----
-2025/04/24 16:23:51 INFO mode=dev
-2025/04/24 16:23:51 INFO dataDir=
-2025/04/24 16:23:51 INFO demo=false
-2025/04/24 16:23:51 INFO instanceRunUUID=
-2025/04/24 16:23:51 INFO -----Config END-------
-2025/04/24 16:23:51 INFO -----Config BEGIN-----
-2025/04/24 16:23:51 INFO mode=dev
-2025/04/24 16:23:51 INFO dataDir=
-2025/04/24 16:23:51 INFO demo=false
-2025/04/24 16:23:51 INFO instanceRunUUID=
-2025/04/24 16:23:51 INFO -----Config END-------
-2025/04/24 16:23:51 INFO -----Config BEGIN-----
-2025/04/24 16:23:51 INFO mode=dev
-2025/04/24 16:23:51 INFO dataDir=
-2025/04/24 16:23:51 INFO demo=false
-2025/04/24 16:23:51 INFO instanceRunUUID=
-2025/04/24 16:23:51 INFO -----Config END-------
-2025/04/24 16:23:51 INFO -----Config BEGIN-----
-2025/04/24 16:23:51 INFO mode=dev
-2025/04/24 16:23:51 INFO dataDir=
-2025/04/24 16:23:51 INFO demo=false
-2025/04/24 16:23:51 INFO instanceRunUUID=
-2025/04/24 16:23:51 INFO -----Config END-------
-2025/04/24 16:23:51 INFO -----Config BEGIN-----
-2025/04/24 16:23:51 INFO mode=dev
-2025/04/24 16:23:51 INFO dataDir=
-2025/04/24 16:23:51 INFO demo=false
-2025/04/24 16:23:51 INFO instanceRunUUID=
-2025/04/24 16:23:51 INFO -----Config END-------
-2025/04/24 16:23:51 INFO -----Config BEGIN-----
-2025/04/24 16:23:51 INFO mode=dev
-2025/04/24 16:23:51 INFO dataDir=
-2025/04/24 16:23:51 INFO demo=false
-2025/04/24 16:23:51 INFO instanceRunUUID=
-2025/04/24 16:23:51 INFO -----Config END-------
-2025/04/24 16:23:51 INFO -----Config BEGIN-----
-2025/04/24 16:23:51 INFO mode=dev
-2025/04/24 16:23:51 INFO dataDir=
-2025/04/24 16:23:51 INFO demo=false
-2025/04/24 16:23:51 INFO instanceRunUUID=
-2025/04/24 16:23:51 INFO -----Config END-------
-2025/04/24 16:23:51 INFO -----Config BEGIN-----
-2025/04/24 16:23:51 INFO mode=dev
-2025/04/24 16:23:51 INFO dataDir=
-2025/04/24 16:23:51 INFO demo=false
-2025/04/24 16:23:51 INFO instanceRunUUID=
-2025/04/24 16:23:51 INFO -----Config END-------
-2025/04/24 16:23:51 INFO -----Config BEGIN-----
-2025/04/24 16:23:51 INFO mode=dev
-2025/04/24 16:23:51 INFO dataDir=
-2025/04/24 16:23:51 INFO demo=false
-2025/04/24 16:23:51 INFO instanceRunUUID=
-2025/04/24 16:23:51 INFO -----Config END-------
-2025/04/24 16:23:51 INFO -----Config BEGIN-----
-2025/04/24 16:23:51 INFO mode=dev
-2025/04/24 16:23:51 INFO dataDir=
-2025/04/24 16:23:51 INFO demo=false
-2025/04/24 16:23:51 INFO instanceRunUUID=
-2025/04/24 16:23:51 INFO -----Config END-------
-2025/04/24 16:23:52 INFO Initialized database schema with version 3.6.4.
-2025/04/24 16:23:52 INFO Initialized database schema with version 3.6.4.
-2025/04/24 16:23:52 INFO Initialized database schema with version 3.6.4.
-2025/04/24 16:23:52 INFO Initialized database schema with version 3.6.4.
-2025/04/24 16:23:52 INFO Initialized database schema with version 3.6.4.
-2025/04/24 16:23:52 INFO Initialized database schema with version 3.6.4.
-2025/04/24 16:23:52 INFO Initialized database schema with version 3.6.4.
-2025/04/24 16:23:52 INFO Initialized database schema with version 3.6.4.
-2025/04/24 16:23:52 INFO Initialized database schema with version 3.6.4.
-2025/04/24 16:23:52 INFO Initialized database schema with version 3.6.4.
-2025/04/24 16:23:52 INFO Initialized database schema with version 3.6.4.
-2025/04/24 16:23:52 INFO Initialized database schema with version 3.6.4.
-2025/04/24 16:23:52 INFO Skip embedding frontend, build with 'embed_frontend' tag if you want embedded frontend.
-{"time":"2025-04-24T16:23:52.121337+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"requests_total could not be registered in Prometheus: duplicate metrics collector registration attempted"}
-{"time":"2025-04-24T16:23:52.121356+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"request_duration_seconds could not be registered in Prometheus: duplicate metrics collector registration attempted"}
-{"time":"2025-04-24T16:23:52.121368+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"response_size_bytes could not be registered in Prometheus: duplicate metrics collector registration attempted"}
-{"time":"2025-04-24T16:23:52.121377+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"request_size_bytes could not be registered in Prometheus: duplicate metrics collector registration attempted"}
-2025/04/24 16:23:52 INFO TaskSkippedOrDoneListener started
-2025/04/24 16:23:52 INFO Skip embedding frontend, build with 'embed_frontend' tag if you want embedded frontend.
-{"time":"2025-04-24T16:23:52.140546+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"requests_total could not be registered in Prometheus: duplicate metrics collector registration attempted"}
-{"time":"2025-04-24T16:23:52.140562+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"request_duration_seconds could not be registered in Prometheus: duplicate metrics collector registration attempted"}
-{"time":"2025-04-24T16:23:52.140577+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"response_size_bytes could not be registered in Prometheus: duplicate metrics collector registration attempted"}
-{"time":"2025-04-24T16:23:52.140586+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"request_size_bytes could not be registered in Prometheus: duplicate metrics collector registration attempted"}
-2025/04/24 16:23:52 INFO Skip embedding frontend, build with 'embed_frontend' tag if you want embedded frontend.
-2025/04/24 16:23:52 INFO Skip embedding frontend, build with 'embed_frontend' tag if you want embedded frontend.
-{"time":"2025-04-24T16:23:52.141401+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"requests_total could not be registered in Prometheus: duplicate metrics collector registration attempted"}
-{"time":"2025-04-24T16:23:52.141403+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"requests_total could not be registered in Prometheus: duplicate metrics collector registration attempted"}
-{"time":"2025-04-24T16:23:52.141417+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"request_duration_seconds could not be registered in Prometheus: duplicate metrics collector registration attempted"}
-{"time":"2025-04-24T16:23:52.141426+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"response_size_bytes could not be registered in Prometheus: duplicate metrics collector registration attempted"}
-{"time":"2025-04-24T16:23:52.141439+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"request_size_bytes could not be registered in Prometheus: duplicate metrics collector registration attempted"}
-{"time":"2025-04-24T16:23:52.141474+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"request_duration_seconds could not be registered in Prometheus: duplicate metrics collector registration attempted"}
-{"time":"2025-04-24T16:23:52.141485+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"response_size_bytes could not be registered in Prometheus: duplicate metrics collector registration attempted"}
-{"time":"2025-04-24T16:23:52.141493+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"request_size_bytes could not be registered in Prometheus: duplicate metrics collector registration attempted"}
-2025/04/24 16:23:52 INFO TaskSkippedOrDoneListener started
-2025/04/24 16:23:52 INFO TaskSkippedOrDoneListener started
-2025/04/24 16:23:52 INFO TaskSkippedOrDoneListener started
-2025/04/24 16:23:52 INFO Skip embedding frontend, build with 'embed_frontend' tag if you want embedded frontend.
-{"time":"2025-04-24T16:23:52.153981+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"requests_total could not be registered in Prometheus: duplicate metrics collector registration attempted"}
-{"time":"2025-04-24T16:23:52.153993+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"request_duration_seconds could not be registered in Prometheus: duplicate metrics collector registration attempted"}
-{"time":"2025-04-24T16:23:52.154003+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"response_size_bytes could not be registered in Prometheus: duplicate metrics collector registration attempted"}
-{"time":"2025-04-24T16:23:52.154011+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"request_size_bytes could not be registered in Prometheus: duplicate metrics collector registration attempted"}
-2025/04/24 16:23:52 INFO Skip embedding frontend, build with 'embed_frontend' tag if you want embedded frontend.
-{"time":"2025-04-24T16:23:52.158138+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"requests_total could not be registered in Prometheus: duplicate metrics collector registration attempted"}
-{"time":"2025-04-24T16:23:52.158153+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"request_duration_seconds could not be registered in Prometheus: duplicate metrics collector registration attempted"}
-{"time":"2025-04-24T16:23:52.158167+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"response_size_bytes could not be registered in Prometheus: duplicate metrics collector registration attempted"}
-{"time":"2025-04-24T16:23:52.158175+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"request_size_bytes could not be registered in Prometheus: duplicate metrics collector registration attempted"}
-2025/04/24 16:23:52 INFO Skip embedding frontend, build with 'embed_frontend' tag if you want embedded frontend.
-2025/04/24 16:23:52 INFO Skip embedding frontend, build with 'embed_frontend' tag if you want embedded frontend.
-{"time":"2025-04-24T16:23:52.158833+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"requests_total could not be registered in Prometheus: duplicate metrics collector registration attempted"}
-{"time":"2025-04-24T16:23:52.158837+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"requests_total could not be registered in Prometheus: duplicate metrics collector registration attempted"}
-{"time":"2025-04-24T16:23:52.158846+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"request_duration_seconds could not be registered in Prometheus: duplicate metrics collector registration attempted"}
-{"time":"2025-04-24T16:23:52.158854+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"response_size_bytes could not be registered in Prometheus: duplicate metrics collector registration attempted"}
-{"time":"2025-04-24T16:23:52.158862+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"request_size_bytes could not be registered in Prometheus: duplicate metrics collector registration attempted"}
-2025/04/24 16:23:52 INFO TaskSkippedOrDoneListener started
-{"time":"2025-04-24T16:23:52.159169+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"request_duration_seconds could not be registered in Prometheus: duplicate metrics collector registration attempted"}
-{"time":"2025-04-24T16:23:52.1592+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"response_size_bytes could not be registered in Prometheus: duplicate metrics collector registration attempted"}
-{"time":"2025-04-24T16:23:52.159227+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"request_size_bytes could not be registered in Prometheus: duplicate metrics collector registration attempted"}
-2025/04/24 16:23:52 INFO TaskSkippedOrDoneListener started
-2025/04/24 16:23:52 INFO TaskSkippedOrDoneListener started
-2025/04/24 16:23:52 INFO TaskSkippedOrDoneListener started
-2025/04/24 16:23:52 INFO Skip embedding frontend, build with 'embed_frontend' tag if you want embedded frontend.
-{"time":"2025-04-24T16:23:52.169918+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"requests_total could not be registered in Prometheus: duplicate metrics collector registration attempted"}
-{"time":"2025-04-24T16:23:52.169945+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"request_duration_seconds could not be registered in Prometheus: duplicate metrics collector registration attempted"}
-{"time":"2025-04-24T16:23:52.169957+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"response_size_bytes could not be registered in Prometheus: duplicate metrics collector registration attempted"}
-{"time":"2025-04-24T16:23:52.169971+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"request_size_bytes could not be registered in Prometheus: duplicate metrics collector registration attempted"}
-2025/04/24 16:23:52 INFO TaskSkippedOrDoneListener started
-2025/04/24 16:23:52 INFO Skip embedding frontend, build with 'embed_frontend' tag if you want embedded frontend.
-{"time":"2025-04-24T16:23:52.178493+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"requests_total could not be registered in Prometheus: duplicate metrics collector registration attempted"}
-{"time":"2025-04-24T16:23:52.178517+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"request_duration_seconds could not be registered in Prometheus: duplicate metrics collector registration attempted"}
-{"time":"2025-04-24T16:23:52.17853+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"response_size_bytes could not be registered in Prometheus: duplicate metrics collector registration attempted"}
-{"time":"2025-04-24T16:23:52.17854+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"request_size_bytes could not be registered in Prometheus: duplicate metrics collector registration attempted"}
-2025/04/24 16:23:52 INFO TaskSkippedOrDoneListener started
-2025/04/24 16:23:52 INFO Skip embedding frontend, build with 'embed_frontend' tag if you want embedded frontend.
-{"time":"2025-04-24T16:23:52.214149+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"requests_total could not be registered in Prometheus: duplicate metrics collector registration attempted"}
-{"time":"2025-04-24T16:23:52.214165+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"request_duration_seconds could not be registered in Prometheus: duplicate metrics collector registration attempted"}
-{"time":"2025-04-24T16:23:52.214179+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"response_size_bytes could not be registered in Prometheus: duplicate metrics collector registration attempted"}
-{"time":"2025-04-24T16:23:52.214187+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"request_size_bytes could not be registered in Prometheus: duplicate metrics collector registration attempted"}
-2025/04/24 16:23:52 INFO TaskSkippedOrDoneListener started
-2025/04/24 16:23:52 INFO Skip embedding frontend, build with 'embed_frontend' tag if you want embedded frontend.
-{"time":"2025-04-24T16:23:52.216862+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"requests_total could not be registered in Prometheus: duplicate metrics collector registration attempted"}
-{"time":"2025-04-24T16:23:52.216869+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"request_duration_seconds could not be registered in Prometheus: duplicate metrics collector registration attempted"}
-{"time":"2025-04-24T16:23:52.216875+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"response_size_bytes could not be registered in Prometheus: duplicate metrics collector registration attempted"}
-{"time":"2025-04-24T16:23:52.216881+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"request_size_bytes could not be registered in Prometheus: duplicate metrics collector registration attempted"}
-2025/04/24 16:23:52 INFO TaskSkippedOrDoneListener started
-2025/04/24 16:23:52 🐳 Creating container for image postgres:16-alpine
-2025/04/24 16:23:52 🐳 Creating container for image mysql:8.0.33
-2025/04/24 16:23:52 🐳 Creating container for image mysql:8.0.33
-2025/04/24 16:23:52 🐳 Creating container for image mysql:8.0.33
-2025/04/24 16:23:52 🐳 Creating container for image mysql:8.0.33
-2025/04/24 16:23:52 🐳 Creating container for image mysql:8.0.33
-2025/04/24 16:23:52 🐳 Creating container for image postgres:16-alpine
-2025/04/24 16:23:52 🐳 Creating container for image postgres:16-alpine
-2025/04/24 16:23:52 🐳 Creating container for image mysql:8.0.33
-2025/04/24 16:23:52 🐳 Creating container for image postgres:16-alpine
-2025/04/24 16:23:52 ✅ Container created: f6534a120990
-2025/04/24 16:23:52 🐳 Starting container: f6534a120990
-2025/04/24 16:23:52 ✅ Container created: 3cefdc6ee8f5
-2025/04/24 16:23:52 🐳 Starting container: 3cefdc6ee8f5
-2025/04/24 16:23:52 ✅ Container created: 64ff50a51748
-2025/04/24 16:23:52 🐳 Starting container: 64ff50a51748
-2025/04/24 16:23:52 ✅ Container created: 048f2ff6b541
-2025/04/24 16:23:52 🐳 Starting container: 048f2ff6b541
-2025/04/24 16:23:52 ✅ Container created: b28c5831fd9b
-2025/04/24 16:23:52 🐳 Starting container: b28c5831fd9b
-2025/04/24 16:23:52 ✅ Container created: ba6e8a19c9a5
-2025/04/24 16:23:52 🐳 Starting container: ba6e8a19c9a5
-2025/04/24 16:23:52 ✅ Container created: cf7a35398798
-2025/04/24 16:23:52 🐳 Starting container: cf7a35398798
-2025/04/24 16:23:52 ✅ Container created: ff55696243c3
-2025/04/24 16:23:52 🐳 Starting container: ff55696243c3
-2025/04/24 16:23:52 ✅ Container created: 5db100094f32
-2025/04/24 16:23:52 🐳 Starting container: 5db100094f32
-2025/04/24 16:23:52 ✅ Container created: 990ba77166d6
-2025/04/24 16:23:52 🐳 Starting container: 990ba77166d6
-2025/04/24 16:23:52 ✅ Container started: 3cefdc6ee8f5
-2025/04/24 16:23:52 🔔 Container is ready: 3cefdc6ee8f5
-2025/04/24 16:23:52 ✅ Container started: f6534a120990
+=== CONT  TestGhostSchemaUpdate
+2025/04/24 16:31:21 INFO -----Config BEGIN-----
+2025/04/24 16:31:21 INFO mode=dev
+2025/04/24 16:31:21 INFO dataDir=
+2025/04/24 16:31:21 INFO demo=false
+2025/04/24 16:31:21 INFO instanceRunUUID=
+2025/04/24 16:31:21 INFO -----Config END-------
+2025/04/24 16:31:21 INFO -----Config BEGIN-----
+2025/04/24 16:31:21 INFO mode=dev
+2025/04/24 16:31:21 INFO dataDir=
+2025/04/24 16:31:21 INFO demo=false
+2025/04/24 16:31:21 INFO instanceRunUUID=
+2025/04/24 16:31:21 INFO -----Config END-------
+2025/04/24 16:31:21 INFO -----Config BEGIN-----
+2025/04/24 16:31:21 INFO mode=dev
+2025/04/24 16:31:21 INFO dataDir=
+2025/04/24 16:31:21 INFO demo=false
+2025/04/24 16:31:21 INFO instanceRunUUID=
+2025/04/24 16:31:21 INFO -----Config END-------
+2025/04/24 16:31:21 INFO -----Config BEGIN-----
+2025/04/24 16:31:21 INFO mode=dev
+2025/04/24 16:31:21 INFO dataDir=
+2025/04/24 16:31:21 INFO demo=false
+2025/04/24 16:31:21 INFO instanceRunUUID=
+2025/04/24 16:31:21 INFO -----Config END-------
+2025/04/24 16:31:21 INFO -----Config BEGIN-----
+2025/04/24 16:31:21 INFO mode=dev
+2025/04/24 16:31:21 INFO dataDir=
+2025/04/24 16:31:21 INFO demo=false
+2025/04/24 16:31:21 INFO instanceRunUUID=
+2025/04/24 16:31:21 INFO -----Config END-------
+2025/04/24 16:31:21 INFO -----Config BEGIN-----
+2025/04/24 16:31:21 INFO mode=dev
+2025/04/24 16:31:21 INFO dataDir=
+2025/04/24 16:31:21 INFO demo=false
+2025/04/24 16:31:21 INFO instanceRunUUID=
+2025/04/24 16:31:21 INFO -----Config END-------
+2025/04/24 16:31:21 INFO -----Config BEGIN-----
+2025/04/24 16:31:21 INFO mode=dev
+2025/04/24 16:31:21 INFO dataDir=
+2025/04/24 16:31:21 INFO demo=false
+2025/04/24 16:31:21 INFO instanceRunUUID=
+2025/04/24 16:31:21 INFO -----Config END-------
+2025/04/24 16:31:21 INFO -----Config BEGIN-----
+2025/04/24 16:31:21 INFO mode=dev
+2025/04/24 16:31:21 INFO dataDir=
+2025/04/24 16:31:21 INFO demo=false
+2025/04/24 16:31:21 INFO instanceRunUUID=
+2025/04/24 16:31:21 INFO -----Config END-------
+2025/04/24 16:31:21 INFO -----Config BEGIN-----
+2025/04/24 16:31:21 INFO mode=dev
+2025/04/24 16:31:21 INFO dataDir=
+2025/04/24 16:31:21 INFO demo=false
+2025/04/24 16:31:21 INFO instanceRunUUID=
+2025/04/24 16:31:21 INFO -----Config END-------
+2025/04/24 16:31:21 INFO -----Config BEGIN-----
+2025/04/24 16:31:21 INFO mode=dev
+2025/04/24 16:31:21 INFO dataDir=
+2025/04/24 16:31:21 INFO demo=false
+2025/04/24 16:31:21 INFO instanceRunUUID=
+2025/04/24 16:31:21 INFO -----Config END-------
+2025/04/24 16:31:21 INFO -----Config BEGIN-----
+2025/04/24 16:31:21 INFO mode=dev
+2025/04/24 16:31:21 INFO dataDir=
+2025/04/24 16:31:21 INFO demo=false
+2025/04/24 16:31:21 INFO instanceRunUUID=
+2025/04/24 16:31:21 INFO -----Config END-------
+2025/04/24 16:31:21 INFO -----Config BEGIN-----
+2025/04/24 16:31:21 INFO mode=dev
+2025/04/24 16:31:21 INFO dataDir=
+2025/04/24 16:31:21 INFO demo=false
+2025/04/24 16:31:21 INFO instanceRunUUID=
+2025/04/24 16:31:21 INFO -----Config END-------
+2025/04/24 16:31:21 INFO Initialized database schema with version 3.6.4.
+2025/04/24 16:31:21 INFO Initialized database schema with version 3.6.4.
+2025/04/24 16:31:21 INFO Initialized database schema with version 3.6.4.
+2025/04/24 16:31:21 INFO Initialized database schema with version 3.6.4.
+2025/04/24 16:31:21 INFO Initialized database schema with version 3.6.4.
+2025/04/24 16:31:21 INFO Initialized database schema with version 3.6.4.
+2025/04/24 16:31:21 INFO Initialized database schema with version 3.6.4.
+2025/04/24 16:31:21 INFO Initialized database schema with version 3.6.4.
+2025/04/24 16:31:21 INFO Initialized database schema with version 3.6.4.
+2025/04/24 16:31:21 INFO Initialized database schema with version 3.6.4.
+2025/04/24 16:31:21 INFO Initialized database schema with version 3.6.4.
+2025/04/24 16:31:21 INFO Initialized database schema with version 3.6.4.
+2025/04/24 16:31:21 INFO Skip embedding frontend, build with 'embed_frontend' tag if you want embedded frontend.
+{"time":"2025-04-24T16:31:21.864553+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"requests_total could not be registered in Prometheus: duplicate metrics collector registration attempted"}
+{"time":"2025-04-24T16:31:21.864623+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"request_duration_seconds could not be registered in Prometheus: duplicate metrics collector registration attempted"}
+{"time":"2025-04-24T16:31:21.864644+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"response_size_bytes could not be registered in Prometheus: duplicate metrics collector registration attempted"}
+{"time":"2025-04-24T16:31:21.864721+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"request_size_bytes could not be registered in Prometheus: duplicate metrics collector registration attempted"}
+2025/04/24 16:31:21 INFO TaskSkippedOrDoneListener started
+2025/04/24 16:31:21 INFO Skip embedding frontend, build with 'embed_frontend' tag if you want embedded frontend.
+{"time":"2025-04-24T16:31:21.882477+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"requests_total could not be registered in Prometheus: duplicate metrics collector registration attempted"}
+{"time":"2025-04-24T16:31:21.882491+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"request_duration_seconds could not be registered in Prometheus: duplicate metrics collector registration attempted"}
+{"time":"2025-04-24T16:31:21.882497+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"response_size_bytes could not be registered in Prometheus: duplicate metrics collector registration attempted"}
+{"time":"2025-04-24T16:31:21.882502+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"request_size_bytes could not be registered in Prometheus: duplicate metrics collector registration attempted"}
+2025/04/24 16:31:21 INFO TaskSkippedOrDoneListener started
+2025/04/24 16:31:21 INFO Skip embedding frontend, build with 'embed_frontend' tag if you want embedded frontend.
+{"time":"2025-04-24T16:31:21.890783+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"requests_total could not be registered in Prometheus: duplicate metrics collector registration attempted"}
+{"time":"2025-04-24T16:31:21.890794+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"request_duration_seconds could not be registered in Prometheus: duplicate metrics collector registration attempted"}
+{"time":"2025-04-24T16:31:21.890799+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"response_size_bytes could not be registered in Prometheus: duplicate metrics collector registration attempted"}
+{"time":"2025-04-24T16:31:21.890803+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"request_size_bytes could not be registered in Prometheus: duplicate metrics collector registration attempted"}
+2025/04/24 16:31:21 INFO TaskSkippedOrDoneListener started
+2025/04/24 16:31:21 INFO Skip embedding frontend, build with 'embed_frontend' tag if you want embedded frontend.
+{"time":"2025-04-24T16:31:21.904991+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"requests_total could not be registered in Prometheus: duplicate metrics collector registration attempted"}
+{"time":"2025-04-24T16:31:21.905031+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"request_duration_seconds could not be registered in Prometheus: duplicate metrics collector registration attempted"}
+{"time":"2025-04-24T16:31:21.905049+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"response_size_bytes could not be registered in Prometheus: duplicate metrics collector registration attempted"}
+{"time":"2025-04-24T16:31:21.905078+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"request_size_bytes could not be registered in Prometheus: duplicate metrics collector registration attempted"}
+2025/04/24 16:31:21 INFO TaskSkippedOrDoneListener started
+2025/04/24 16:31:21 INFO Skip embedding frontend, build with 'embed_frontend' tag if you want embedded frontend.
+{"time":"2025-04-24T16:31:21.910804+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"requests_total could not be registered in Prometheus: duplicate metrics collector registration attempted"}
+{"time":"2025-04-24T16:31:21.910818+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"request_duration_seconds could not be registered in Prometheus: duplicate metrics collector registration attempted"}
+{"time":"2025-04-24T16:31:21.910827+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"response_size_bytes could not be registered in Prometheus: duplicate metrics collector registration attempted"}
+{"time":"2025-04-24T16:31:21.910834+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"request_size_bytes could not be registered in Prometheus: duplicate metrics collector registration attempted"}
+2025/04/24 16:31:21 INFO TaskSkippedOrDoneListener started
+2025/04/24 16:31:21 INFO Skip embedding frontend, build with 'embed_frontend' tag if you want embedded frontend.
+{"time":"2025-04-24T16:31:21.913819+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"requests_total could not be registered in Prometheus: duplicate metrics collector registration attempted"}
+{"time":"2025-04-24T16:31:21.913827+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"request_duration_seconds could not be registered in Prometheus: duplicate metrics collector registration attempted"}
+{"time":"2025-04-24T16:31:21.913831+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"response_size_bytes could not be registered in Prometheus: duplicate metrics collector registration attempted"}
+{"time":"2025-04-24T16:31:21.913846+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"request_size_bytes could not be registered in Prometheus: duplicate metrics collector registration attempted"}
+2025/04/24 16:31:21 INFO TaskSkippedOrDoneListener started
+2025/04/24 16:31:21 INFO Skip embedding frontend, build with 'embed_frontend' tag if you want embedded frontend.
+{"time":"2025-04-24T16:31:21.92019+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"requests_total could not be registered in Prometheus: duplicate metrics collector registration attempted"}
+{"time":"2025-04-24T16:31:21.920197+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"request_duration_seconds could not be registered in Prometheus: duplicate metrics collector registration attempted"}
+{"time":"2025-04-24T16:31:21.920202+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"response_size_bytes could not be registered in Prometheus: duplicate metrics collector registration attempted"}
+{"time":"2025-04-24T16:31:21.920209+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"request_size_bytes could not be registered in Prometheus: duplicate metrics collector registration attempted"}
+2025/04/24 16:31:21 INFO Skip embedding frontend, build with 'embed_frontend' tag if you want embedded frontend.
+{"time":"2025-04-24T16:31:21.920898+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"requests_total could not be registered in Prometheus: duplicate metrics collector registration attempted"}
+{"time":"2025-04-24T16:31:21.920905+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"request_duration_seconds could not be registered in Prometheus: duplicate metrics collector registration attempted"}
+{"time":"2025-04-24T16:31:21.920909+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"response_size_bytes could not be registered in Prometheus: duplicate metrics collector registration attempted"}
+{"time":"2025-04-24T16:31:21.920914+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"request_size_bytes could not be registered in Prometheus: duplicate metrics collector registration attempted"}
+2025/04/24 16:31:21 INFO TaskSkippedOrDoneListener started
+2025/04/24 16:31:21 INFO TaskSkippedOrDoneListener started
+2025/04/24 16:31:21 INFO Skip embedding frontend, build with 'embed_frontend' tag if you want embedded frontend.
+{"time":"2025-04-24T16:31:21.931224+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"requests_total could not be registered in Prometheus: duplicate metrics collector registration attempted"}
+{"time":"2025-04-24T16:31:21.931239+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"request_duration_seconds could not be registered in Prometheus: duplicate metrics collector registration attempted"}
+{"time":"2025-04-24T16:31:21.931248+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"response_size_bytes could not be registered in Prometheus: duplicate metrics collector registration attempted"}
+{"time":"2025-04-24T16:31:21.931254+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"request_size_bytes could not be registered in Prometheus: duplicate metrics collector registration attempted"}
+2025/04/24 16:31:21 INFO TaskSkippedOrDoneListener started
+2025/04/24 16:31:21 INFO Skip embedding frontend, build with 'embed_frontend' tag if you want embedded frontend.
+{"time":"2025-04-24T16:31:21.935747+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"requests_total could not be registered in Prometheus: duplicate metrics collector registration attempted"}
+{"time":"2025-04-24T16:31:21.935759+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"request_duration_seconds could not be registered in Prometheus: duplicate metrics collector registration attempted"}
+{"time":"2025-04-24T16:31:21.935766+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"response_size_bytes could not be registered in Prometheus: duplicate metrics collector registration attempted"}
+{"time":"2025-04-24T16:31:21.935769+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"request_size_bytes could not be registered in Prometheus: duplicate metrics collector registration attempted"}
+2025/04/24 16:31:21 INFO TaskSkippedOrDoneListener started
+2025/04/24 16:31:21 INFO Skip embedding frontend, build with 'embed_frontend' tag if you want embedded frontend.
+{"time":"2025-04-24T16:31:21.938609+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"requests_total could not be registered in Prometheus: duplicate metrics collector registration attempted"}
+{"time":"2025-04-24T16:31:21.938615+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"request_duration_seconds could not be registered in Prometheus: duplicate metrics collector registration attempted"}
+{"time":"2025-04-24T16:31:21.938622+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"response_size_bytes could not be registered in Prometheus: duplicate metrics collector registration attempted"}
+{"time":"2025-04-24T16:31:21.938627+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"request_size_bytes could not be registered in Prometheus: duplicate metrics collector registration attempted"}
+2025/04/24 16:31:21 INFO TaskSkippedOrDoneListener started
+2025/04/24 16:31:21 INFO Skip embedding frontend, build with 'embed_frontend' tag if you want embedded frontend.
+{"time":"2025-04-24T16:31:21.942249+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"requests_total could not be registered in Prometheus: duplicate metrics collector registration attempted"}
+{"time":"2025-04-24T16:31:21.942258+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"request_duration_seconds could not be registered in Prometheus: duplicate metrics collector registration attempted"}
+{"time":"2025-04-24T16:31:21.942267+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"response_size_bytes could not be registered in Prometheus: duplicate metrics collector registration attempted"}
+{"time":"2025-04-24T16:31:21.942274+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"request_size_bytes could not be registered in Prometheus: duplicate metrics collector registration attempted"}
+2025/04/24 16:31:21 INFO TaskSkippedOrDoneListener started
+2025/04/24 16:31:22 🐳 Creating container for image mysql:8.0.33
+2025/04/24 16:31:22 🐳 Creating container for image mysql:8.0.33
+2025/04/24 16:31:22 🐳 Creating container for image mysql:8.0.33
+2025/04/24 16:31:22 🐳 Creating container for image mysql:8.0.33
+2025/04/24 16:31:22 🐳 Creating container for image postgres:16-alpine
+2025/04/24 16:31:22 🐳 Creating container for image postgres:16-alpine
+2025/04/24 16:31:22 🐳 Creating container for image postgres:16-alpine
+2025/04/24 16:31:22 🐳 Creating container for image mysql:8.0.33
+2025/04/24 16:31:22 🐳 Creating container for image postgres:16-alpine
+2025/04/24 16:31:22 🐳 Creating container for image mysql:8.0.33
+2025/04/24 16:31:22 ✅ Container created: dab7d5f616b9
+2025/04/24 16:31:22 🐳 Starting container: dab7d5f616b9
+2025/04/24 16:31:22 ✅ Container created: 69303a8cc5ef
+2025/04/24 16:31:22 🐳 Starting container: 69303a8cc5ef
+2025/04/24 16:31:22 ✅ Container created: 3fd179de6109
+2025/04/24 16:31:22 🐳 Starting container: 3fd179de6109
+2025/04/24 16:31:22 ✅ Container created: b3f5d1425ddf
+2025/04/24 16:31:22 🐳 Starting container: b3f5d1425ddf
+2025/04/24 16:31:22 ✅ Container created: 9462d3493d82
+2025/04/24 16:31:22 🐳 Starting container: 9462d3493d82
+2025/04/24 16:31:22 ✅ Container created: 82401f1b28f7
+2025/04/24 16:31:22 🐳 Starting container: 82401f1b28f7
+2025/04/24 16:31:22 ✅ Container created: ab6659600ed7
+2025/04/24 16:31:22 🐳 Starting container: ab6659600ed7
+2025/04/24 16:31:22 ✅ Container created: ddd923755786
+2025/04/24 16:31:22 🐳 Starting container: ddd923755786
+2025/04/24 16:31:22 ✅ Container created: c7e5b215c57f
+2025/04/24 16:31:22 🐳 Starting container: c7e5b215c57f
+2025/04/24 16:31:22 ✅ Container created: e84c7ea5e404
+2025/04/24 16:31:22 🐳 Starting container: e84c7ea5e404
+2025/04/24 16:31:22 ✅ Container started: 69303a8cc5ef
+2025/04/24 16:31:22 🔔 Container is ready: 69303a8cc5ef
+=== NAME  TestAdminQueryAffectedRows
     sql_editor_test.go:137: 
         	Error Trace:	/Users/h3n4l/OpenSource/bytebase/backend/tests/sql_editor_test.go:137
         	Error:      	Received unexpected error:
         	            	port "3306/tcp" not found
         	Test:       	TestAdminQueryAffectedRows
-2025/04/24 16:23:52 INFO Stopping Bytebase...
-2025/04/24 16:23:52 INFO Stopping web server...
-2025/04/24 16:23:52 ERROR mux server listen error error="accept tcp [::]:12828: use of closed network connection"
-2025/04/24 16:23:52 ERROR http server listen error error="mux: server closed"
---- FAIL: TestAdminQueryAffectedRows (1.56s)
+2025/04/24 16:31:22 INFO Stopping Bytebase...
+2025/04/24 16:31:22 INFO Stopping web server...
+2025/04/24 16:31:22 ERROR mux server listen error error="accept tcp [::]:6822: use of closed network connection"
+2025/04/24 16:31:22 ERROR http server listen error error="mux: server closed"
+--- FAIL: TestAdminQueryAffectedRows (1.58s)
 === CONT  TestCreateDatabaseGroup
 === RUN   TestCreateDatabaseGroup/all-matched-one-instance
 === PAUSE TestCreateDatabaseGroup/all-matched-one-instance
@@ -1898,264 +1868,264 @@ ok  	github.com/bytebase/bytebase/backend/store/model	(cached)
 === PAUSE TestCreateDatabaseGroup/all-matched-many-instances
 === RUN   TestCreateDatabaseGroup/partial-matched-many-instances
 === PAUSE TestCreateDatabaseGroup/partial-matched-many-instances
-=== CONT  TestExternalSecretManager
-2025/04/24 16:23:52 🔔 Container is ready: f6534a120990
-2025/04/24 16:23:52 ✅ Container started: b28c5831fd9b
-=== NAME  TestFilterChangeHistoryByResources
-    change_history_test.go:64: 
-        	Error Trace:	/Users/h3n4l/OpenSource/bytebase/backend/tests/change_history_test.go:64
-        	Error:      	Received unexpected error:
-        	            	port "5432/tcp" not found
-        	Test:       	TestFilterChangeHistoryByResources
-2025/04/24 16:23:52 INFO Stopping Bytebase...
-2025/04/24 16:23:52 INFO Stopping web server...
-2025/04/24 16:23:52 ERROR mux server listen error error="accept tcp [::]:12824: use of closed network connection"
-2025/04/24 16:23:52 ERROR http server listen error error="mux: server closed"
-2025/04/24 16:23:52 🔔 Container is ready: b28c5831fd9b
---- FAIL: TestFilterChangeHistoryByResources (1.56s)
 === CONT  TestMarkTaskAsDone
+2025/04/24 16:31:22 ✅ Container started: 3fd179de6109
+2025/04/24 16:31:22 🔔 Container is ready: 3fd179de6109
 === NAME  TestSensitiveData
     sensitive_data_test.go:134: 
         	Error Trace:	/Users/h3n4l/OpenSource/bytebase/backend/tests/sensitive_data_test.go:134
         	Error:      	Received unexpected error:
         	            	port "3306/tcp" not found
         	Test:       	TestSensitiveData
-2025/04/24 16:23:52 INFO Stopping Bytebase...
-2025/04/24 16:23:52 INFO Stopping web server...
-2025/04/24 16:23:52 ERROR mux server listen error error="accept tcp [::]:12822: use of closed network connection"
-2025/04/24 16:23:52 ERROR http server listen error error="mux: server closed"
---- FAIL: TestSensitiveData (1.57s)
-=== CONT  TestCreateDatabaseGroup/all-matched-one-instance
-2025/04/24 16:23:52 ✅ Container started: cf7a35398798
-2025/04/24 16:23:52 🔔 Container is ready: cf7a35398798
-=== NAME  TestSyncSchema
-    sync_schema_test.go:49: 
-        	Error Trace:	/Users/h3n4l/OpenSource/bytebase/backend/tests/sync_schema_test.go:49
-        	Error:      	Received unexpected error:
-        	            	port "5432/tcp" not found
-        	Test:       	TestSyncSchema
-2025/04/24 16:23:52 INFO Stopping Bytebase...
-2025/04/24 16:23:52 INFO Stopping web server...
-2025/04/24 16:23:52 ERROR mux server listen error error="accept tcp [::]:12842: use of closed network connection"
-2025/04/24 16:23:52 ERROR http server listen error error="mux: server closed"
---- FAIL: TestSyncSchema (1.62s)
-=== CONT  TestCreateDatabaseGroup/all-matched-many-instances
-2025/04/24 16:23:52 ✅ Container started: 048f2ff6b541
-2025/04/24 16:23:53 🔔 Container is ready: 048f2ff6b541
+2025/04/24 16:31:22 INFO Stopping Bytebase...
+2025/04/24 16:31:22 INFO Stopping web server...
+2025/04/24 16:31:22 ERROR mux server listen error error="accept tcp [::]:6832: use of closed network connection"
+2025/04/24 16:31:22 ERROR http server listen error error="mux: server closed"
+--- FAIL: TestSensitiveData (1.62s)
+=== CONT  TestExternalSecretManager
+2025/04/24 16:31:22 ✅ Container started: dab7d5f616b9
+2025/04/24 16:31:22 🔔 Container is ready: dab7d5f616b9
+2025/04/24 16:31:22 ✅ Container started: 9462d3493d82
 === NAME  TestSQLReviewForMySQL
     sql_review_test.go:261: 
         	Error Trace:	/Users/h3n4l/OpenSource/bytebase/backend/tests/sql_review_test.go:261
         	Error:      	Received unexpected error:
         	            	port "3306/tcp" not found
         	Test:       	TestSQLReviewForMySQL
-2025/04/24 16:23:53 INFO Stopping Bytebase...
-2025/04/24 16:23:53 INFO Stopping web server...
-2025/04/24 16:23:53 ERROR mux server listen error error="accept tcp [::]:12836: use of closed network connection"
-2025/04/24 16:23:53 ERROR http server listen error error="mux: server closed"
+2025/04/24 16:31:22 INFO Stopping Bytebase...
+2025/04/24 16:31:22 INFO Stopping web server...
+2025/04/24 16:31:22 ERROR mux server listen error error="accept tcp [::]:6830: use of closed network connection"
+2025/04/24 16:31:22 ERROR http server listen error error="mux: server closed"
 --- FAIL: TestSQLReviewForMySQL (1.63s)
-=== CONT  TestCreateDatabaseGroup/partial-matched-many-instances
-2025/04/24 16:23:53 ✅ Container started: ba6e8a19c9a5
-2025/04/24 16:23:53 🔔 Container is ready: ba6e8a19c9a5
-2025/04/24 16:23:53 ✅ Container started: 64ff50a51748
-=== NAME  TestSQLReviewForPostgreSQL
-    sql_review_test.go:91: 
-        	Error Trace:	/Users/h3n4l/OpenSource/bytebase/backend/tests/sql_review_test.go:91
-        	Error:      	Received unexpected error:
-        	            	port "5432/tcp" not found
-        	Test:       	TestSQLReviewForPostgreSQL
-2025/04/24 16:23:53 INFO Stopping Bytebase...
-2025/04/24 16:23:53 INFO Stopping web server...
-2025/04/24 16:23:53 ERROR mux server listen error error="accept tcp [::]:12832: use of closed network connection"
-2025/04/24 16:23:53 ERROR http server listen error error="mux: server closed"
---- FAIL: TestSQLReviewForPostgreSQL (1.64s)
-=== CONT  TestCreateDatabaseGroup/partial-matched-one-instance
-2025/04/24 16:23:53 🔔 Container is ready: 64ff50a51748
-=== NAME  TestGhostSchemaUpdate
-    ghost_test.go:50: 
-        	Error Trace:	/Users/h3n4l/OpenSource/bytebase/backend/tests/ghost_test.go:50
-        	Error:      	Received unexpected error:
-        	            	port "3306/tcp" not found
-        	Test:       	TestGhostSchemaUpdate
-2025/04/24 16:23:53 INFO Stopping Bytebase...
-2025/04/24 16:23:53 INFO Stopping web server...
-2025/04/24 16:23:53 ERROR mux server listen error error="accept tcp [::]:12830: use of closed network connection"
-2025/04/24 16:23:53 ERROR http server listen error error="mux: server closed"
---- FAIL: TestGhostSchemaUpdate (1.66s)
-2025/04/24 16:23:53 ✅ Container started: ff55696243c3
-2025/04/24 16:23:53 🔔 Container is ready: ff55696243c3
-=== NAME  TestSQLExport
-    sql_export_test.go:124: 
-        	Error Trace:	/Users/h3n4l/OpenSource/bytebase/backend/tests/sql_export_test.go:124
-        	Error:      	Received unexpected error:
-        	            	port "3306/tcp" not found
-        	Test:       	TestSQLExport
-2025/04/24 16:23:53 INFO Stopping Bytebase...
-2025/04/24 16:23:53 INFO Stopping web server...
-2025/04/24 16:23:53 ERROR mux server listen error error="accept tcp [::]:12826: use of closed network connection"
-2025/04/24 16:23:53 ERROR http server listen error error="mux: server closed"
---- FAIL: TestSQLExport (1.67s)
-2025/04/24 16:23:53 ✅ Container started: 990ba77166d6
-2025/04/24 16:23:53 🔔 Container is ready: 990ba77166d6
-=== NAME  TestSyncerForMySQL
-    syncer_test.go:468: 
-        	Error Trace:	/Users/h3n4l/OpenSource/bytebase/backend/tests/syncer_test.go:468
-        	Error:      	Received unexpected error:
-        	            	port "3306/tcp" not found
-        	Test:       	TestSyncerForMySQL
-2025/04/24 16:23:53 INFO Stopping Bytebase...
-2025/04/24 16:23:53 INFO Stopping web server...
-2025/04/24 16:23:53 ERROR mux server listen error error="accept tcp [::]:12838: use of closed network connection"
-2025/04/24 16:23:53 ERROR http server listen error error="mux: server closed"
---- FAIL: TestSyncerForMySQL (1.69s)
-2025/04/24 16:23:53 ✅ Container started: 5db100094f32
-2025/04/24 16:23:53 🔔 Container is ready: 5db100094f32
+=== CONT  TestCreateDatabaseGroup/all-matched-one-instance
+2025/04/24 16:31:22 🔔 Container is ready: 9462d3493d82
+2025/04/24 16:31:22 ✅ Container started: b3f5d1425ddf
 === NAME  TestSyncerForPostgreSQL
     syncer_test.go:189: 
         	Error Trace:	/Users/h3n4l/OpenSource/bytebase/backend/tests/syncer_test.go:189
         	Error:      	Received unexpected error:
         	            	port "5432/tcp" not found
         	Test:       	TestSyncerForPostgreSQL
-2025/04/24 16:23:53 INFO Stopping Bytebase...
-2025/04/24 16:23:53 INFO Stopping web server...
-2025/04/24 16:23:53 ERROR mux server listen error error="accept tcp [::]:12844: use of closed network connection"
-2025/04/24 16:23:53 ERROR http server listen error error="mux: server closed"
---- FAIL: TestSyncerForPostgreSQL (1.70s)
-2025/04/24 16:23:53 INFO -----Config BEGIN-----
-2025/04/24 16:23:53 INFO mode=dev
-2025/04/24 16:23:53 INFO dataDir=
-2025/04/24 16:23:53 INFO demo=false
-2025/04/24 16:23:53 INFO instanceRunUUID=
-2025/04/24 16:23:53 INFO -----Config END-------
-2025/04/24 16:23:53 INFO -----Config BEGIN-----
-2025/04/24 16:23:53 INFO mode=dev
-2025/04/24 16:23:53 INFO dataDir=
-2025/04/24 16:23:53 INFO demo=false
-2025/04/24 16:23:53 INFO instanceRunUUID=
-2025/04/24 16:23:53 INFO -----Config END-------
-2025/04/24 16:23:53 INFO -----Config BEGIN-----
-2025/04/24 16:23:53 INFO mode=dev
-2025/04/24 16:23:53 INFO dataDir=
-2025/04/24 16:23:53 INFO demo=false
-2025/04/24 16:23:53 INFO instanceRunUUID=
-2025/04/24 16:23:53 INFO -----Config END-------
-2025/04/24 16:23:53 INFO -----Config BEGIN-----
-2025/04/24 16:23:53 INFO mode=dev
-2025/04/24 16:23:53 INFO dataDir=
-2025/04/24 16:23:53 INFO demo=false
-2025/04/24 16:23:53 INFO instanceRunUUID=
-2025/04/24 16:23:53 INFO -----Config END-------
-2025/04/24 16:23:53 INFO -----Config BEGIN-----
-2025/04/24 16:23:53 INFO mode=dev
-2025/04/24 16:23:53 INFO dataDir=
-2025/04/24 16:23:53 INFO demo=false
-2025/04/24 16:23:53 INFO instanceRunUUID=
-2025/04/24 16:23:53 INFO -----Config END-------
-2025/04/24 16:23:53 INFO -----Config BEGIN-----
-2025/04/24 16:23:53 INFO mode=dev
-2025/04/24 16:23:53 INFO dataDir=
-2025/04/24 16:23:53 INFO demo=false
-2025/04/24 16:23:53 INFO instanceRunUUID=
-2025/04/24 16:23:53 INFO -----Config END-------
-2025/04/24 16:23:54 INFO Initialized database schema with version 3.6.4.
-2025/04/24 16:23:54 INFO Initialized database schema with version 3.6.4.
-2025/04/24 16:23:55 INFO Initialized database schema with version 3.6.4.
-2025/04/24 16:23:55 INFO Skip embedding frontend, build with 'embed_frontend' tag if you want embedded frontend.
-{"time":"2025-04-24T16:23:55.021075+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"requests_total could not be registered in Prometheus: duplicate metrics collector registration attempted"}
-{"time":"2025-04-24T16:23:55.021106+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"request_duration_seconds could not be registered in Prometheus: duplicate metrics collector registration attempted"}
-{"time":"2025-04-24T16:23:55.021127+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"response_size_bytes could not be registered in Prometheus: duplicate metrics collector registration attempted"}
-{"time":"2025-04-24T16:23:55.021144+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"request_size_bytes could not be registered in Prometheus: duplicate metrics collector registration attempted"}
-2025/04/24 16:23:55 INFO TaskSkippedOrDoneListener started
-2025/04/24 16:23:55 INFO Initialized database schema with version 3.6.4.
-2025/04/24 16:23:55 INFO Initialized database schema with version 3.6.4.
-2025/04/24 16:23:55 INFO Skip embedding frontend, build with 'embed_frontend' tag if you want embedded frontend.
-{"time":"2025-04-24T16:23:55.063389+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"requests_total could not be registered in Prometheus: duplicate metrics collector registration attempted"}
-{"time":"2025-04-24T16:23:55.06342+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"request_duration_seconds could not be registered in Prometheus: duplicate metrics collector registration attempted"}
-{"time":"2025-04-24T16:23:55.06344+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"response_size_bytes could not be registered in Prometheus: duplicate metrics collector registration attempted"}
-{"time":"2025-04-24T16:23:55.063461+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"request_size_bytes could not be registered in Prometheus: duplicate metrics collector registration attempted"}
-2025/04/24 16:23:55 INFO Initialized database schema with version 3.6.4.
-2025/04/24 16:23:55 INFO TaskSkippedOrDoneListener started
-2025/04/24 16:23:55 INFO Skip embedding frontend, build with 'embed_frontend' tag if you want embedded frontend.
-{"time":"2025-04-24T16:23:55.110069+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"requests_total could not be registered in Prometheus: duplicate metrics collector registration attempted"}
-{"time":"2025-04-24T16:23:55.110104+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"request_duration_seconds could not be registered in Prometheus: duplicate metrics collector registration attempted"}
-{"time":"2025-04-24T16:23:55.11013+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"response_size_bytes could not be registered in Prometheus: duplicate metrics collector registration attempted"}
-{"time":"2025-04-24T16:23:55.110158+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"request_size_bytes could not be registered in Prometheus: duplicate metrics collector registration attempted"}
-2025/04/24 16:23:55 INFO TaskSkippedOrDoneListener started
-2025/04/24 16:23:55 INFO Skip embedding frontend, build with 'embed_frontend' tag if you want embedded frontend.
-{"time":"2025-04-24T16:23:55.133832+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"requests_total could not be registered in Prometheus: duplicate metrics collector registration attempted"}
-{"time":"2025-04-24T16:23:55.133848+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"request_duration_seconds could not be registered in Prometheus: duplicate metrics collector registration attempted"}
-{"time":"2025-04-24T16:23:55.133867+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"response_size_bytes could not be registered in Prometheus: duplicate metrics collector registration attempted"}
-{"time":"2025-04-24T16:23:55.133878+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"request_size_bytes could not be registered in Prometheus: duplicate metrics collector registration attempted"}
-2025/04/24 16:23:55 INFO Skip embedding frontend, build with 'embed_frontend' tag if you want embedded frontend.
-{"time":"2025-04-24T16:23:55.134392+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"requests_total could not be registered in Prometheus: duplicate metrics collector registration attempted"}
-{"time":"2025-04-24T16:23:55.134406+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"request_duration_seconds could not be registered in Prometheus: duplicate metrics collector registration attempted"}
-{"time":"2025-04-24T16:23:55.134418+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"response_size_bytes could not be registered in Prometheus: duplicate metrics collector registration attempted"}
-{"time":"2025-04-24T16:23:55.13443+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"request_size_bytes could not be registered in Prometheus: duplicate metrics collector registration attempted"}
-2025/04/24 16:23:55 INFO TaskSkippedOrDoneListener started
-2025/04/24 16:23:55 INFO TaskSkippedOrDoneListener started
-2025/04/24 16:23:55 INFO Skip embedding frontend, build with 'embed_frontend' tag if you want embedded frontend.
-{"time":"2025-04-24T16:23:55.147999+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"requests_total could not be registered in Prometheus: duplicate metrics collector registration attempted"}
-{"time":"2025-04-24T16:23:55.148029+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"request_duration_seconds could not be registered in Prometheus: duplicate metrics collector registration attempted"}
-{"time":"2025-04-24T16:23:55.148044+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"response_size_bytes could not be registered in Prometheus: duplicate metrics collector registration attempted"}
-{"time":"2025-04-24T16:23:55.148053+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"request_size_bytes could not be registered in Prometheus: duplicate metrics collector registration attempted"}
-2025/04/24 16:23:55 INFO TaskSkippedOrDoneListener started
-2025/04/24 16:23:55 🐳 Creating container for image postgres:16-alpine
-2025/04/24 16:23:55 ✅ Container created: cfeb9e29138a
-2025/04/24 16:23:55 🐳 Starting container: cfeb9e29138a
-2025/04/24 16:23:55 ✅ Container started: cfeb9e29138a
-2025/04/24 16:23:55 🔔 Container is ready: cfeb9e29138a
-=== NAME  TestExternalSecretManager
-    data_source_test.go:141: 
-        	Error Trace:	/Users/h3n4l/OpenSource/bytebase/backend/tests/data_source_test.go:141
+2025/04/24 16:31:22 INFO Stopping Bytebase...
+2025/04/24 16:31:22 INFO Stopping web server...
+2025/04/24 16:31:22 ERROR mux server listen error error="accept tcp [::]:6844: use of closed network connection"
+2025/04/24 16:31:22 ERROR http server listen error error="mux: server closed"
+2025/04/24 16:31:22 🔔 Container is ready: b3f5d1425ddf
+--- FAIL: TestSyncerForPostgreSQL (1.63s)
+=== CONT  TestCreateDatabaseGroup/all-matched-many-instances
+=== NAME  TestSyncerForMySQL
+    syncer_test.go:468: 
+        	Error Trace:	/Users/h3n4l/OpenSource/bytebase/backend/tests/syncer_test.go:468
+        	Error:      	Received unexpected error:
+        	            	port "3306/tcp" not found
+        	Test:       	TestSyncerForMySQL
+2025/04/24 16:31:22 INFO Stopping Bytebase...
+2025/04/24 16:31:22 INFO Stopping web server...
+2025/04/24 16:31:22 ERROR mux server listen error error="accept tcp [::]:6824: use of closed network connection"
+2025/04/24 16:31:22 ERROR http server listen error error="mux: server closed"
+--- FAIL: TestSyncerForMySQL (1.63s)
+=== CONT  TestCreateDatabaseGroup/partial-matched-many-instances
+2025/04/24 16:31:22 INFO -----Config BEGIN-----
+2025/04/24 16:31:22 INFO mode=dev
+2025/04/24 16:31:22 INFO dataDir=
+2025/04/24 16:31:22 INFO demo=false
+2025/04/24 16:31:22 INFO instanceRunUUID=
+2025/04/24 16:31:22 INFO -----Config END-------
+2025/04/24 16:31:22 ✅ Container started: ab6659600ed7
+2025/04/24 16:31:22 🔔 Container is ready: ab6659600ed7
+=== NAME  TestSQLReviewForPostgreSQL
+    sql_review_test.go:91: 
+        	Error Trace:	/Users/h3n4l/OpenSource/bytebase/backend/tests/sql_review_test.go:91
         	Error:      	Received unexpected error:
         	            	port "5432/tcp" not found
-        	Test:       	TestExternalSecretManager
-2025/04/24 16:23:55 INFO Stopping Bytebase...
-2025/04/24 16:23:55 INFO Stopping web server...
-2025/04/24 16:23:55 ERROR mux server listen error error="accept tcp [::]:12846: use of closed network connection"
-2025/04/24 16:23:55 ERROR http server listen error error="mux: server closed"
---- FAIL: TestExternalSecretManager (2.85s)
-2025/04/24 16:23:56 INFO Stopping Bytebase...
-2025/04/24 16:23:56 INFO Stopping web server...
-2025/04/24 16:23:56 ERROR mux server listen error error="accept tcp [::]:12834: use of closed network connection"
-2025/04/24 16:23:56 ERROR http server listen error error="mux: server closed"
---- PASS: TestSchemaAndDataUpdate (5.33s)
-2025/04/24 16:23:57 INFO Stopping Bytebase...
-2025/04/24 16:23:57 INFO Stopping web server...
-2025/04/24 16:23:57 ERROR mux server listen error error="accept tcp [::]:12852: use of closed network connection"
-2025/04/24 16:23:57 ERROR http server listen error error="mux: server closed"
-2025/04/24 16:23:57 INFO Stopping Bytebase...
-2025/04/24 16:23:57 INFO Stopping web server...
-2025/04/24 16:23:57 ERROR mux server listen error error="accept tcp [::]:12848: use of closed network connection"
-2025/04/24 16:23:57 ERROR http server listen error error="mux: server closed"
---- PASS: TestMarkTaskAsDone (4.77s)
-2025/04/24 16:23:58 INFO Stopping Bytebase...
-2025/04/24 16:23:58 INFO Stopping web server...
-2025/04/24 16:23:58 ERROR mux server listen error error="accept tcp [::]:12840: use of closed network connection"
-2025/04/24 16:23:58 ERROR http server listen error error="mux: server closed"
---- PASS: TestDatabaseGroup (6.89s)
-2025/04/24 16:23:59 INFO Stopping Bytebase...
-2025/04/24 16:23:59 INFO Stopping web server...
-2025/04/24 16:23:59 ERROR mux server listen error error="accept tcp [::]:12856: use of closed network connection"
-2025/04/24 16:23:59 ERROR http server listen error error="mux: server closed"
-2025/04/24 16:24:00 INFO Stopping Bytebase...
-2025/04/24 16:24:00 INFO Stopping web server...
-2025/04/24 16:24:00 ERROR mux server listen error error="accept tcp [::]:12850: use of closed network connection"
-2025/04/24 16:24:00 ERROR http server listen error error="mux: server closed"
-2025/04/24 16:24:04 INFO Stopping Bytebase...
-2025/04/24 16:24:04 INFO Stopping web server...
-2025/04/24 16:24:04 ERROR mux server listen error error="accept tcp [::]:12854: use of closed network connection"
-2025/04/24 16:24:04 ERROR http server listen error error="mux: server closed"
+        	Test:       	TestSQLReviewForPostgreSQL
+2025/04/24 16:31:22 INFO Stopping Bytebase...
+2025/04/24 16:31:22 INFO Stopping web server...
+2025/04/24 16:31:22 ERROR mux server listen error error="accept tcp [::]:6836: use of closed network connection"
+2025/04/24 16:31:22 ERROR http server listen error error="mux: server closed"
+--- FAIL: TestSQLReviewForPostgreSQL (1.68s)
+=== CONT  TestCreateDatabaseGroup/partial-matched-one-instance
+2025/04/24 16:31:22 ✅ Container started: 82401f1b28f7
+2025/04/24 16:31:22 🔔 Container is ready: 82401f1b28f7
+=== NAME  TestFilterChangeHistoryByResources
+    change_history_test.go:64: 
+        	Error Trace:	/Users/h3n4l/OpenSource/bytebase/backend/tests/change_history_test.go:64
+        	Error:      	Received unexpected error:
+        	            	port "5432/tcp" not found
+        	Test:       	TestFilterChangeHistoryByResources
+2025/04/24 16:31:22 INFO Stopping Bytebase...
+2025/04/24 16:31:22 INFO Stopping web server...
+2025/04/24 16:31:22 ERROR mux server listen error error="accept tcp [::]:6828: use of closed network connection"
+2025/04/24 16:31:22 ERROR http server listen error error="mux: server closed"
+--- FAIL: TestFilterChangeHistoryByResources (1.69s)
+2025/04/24 16:31:22 ✅ Container started: ddd923755786
+2025/04/24 16:31:22 🔔 Container is ready: ddd923755786
+=== NAME  TestSQLExport
+    sql_export_test.go:124: 
+        	Error Trace:	/Users/h3n4l/OpenSource/bytebase/backend/tests/sql_export_test.go:124
+        	Error:      	Received unexpected error:
+        	            	port "3306/tcp" not found
+        	Test:       	TestSQLExport
+2025/04/24 16:31:22 INFO Stopping Bytebase...
+2025/04/24 16:31:22 INFO Stopping web server...
+2025/04/24 16:31:22 ERROR mux server listen error error="accept tcp [::]:6826: use of closed network connection"
+2025/04/24 16:31:22 ERROR http server listen error error="mux: server closed"
+--- FAIL: TestSQLExport (1.70s)
+2025/04/24 16:31:22 ✅ Container started: e84c7ea5e404
+2025/04/24 16:31:22 🔔 Container is ready: e84c7ea5e404
+=== NAME  TestGhostSchemaUpdate
+    ghost_test.go:50: 
+        	Error Trace:	/Users/h3n4l/OpenSource/bytebase/backend/tests/ghost_test.go:50
+        	Error:      	Received unexpected error:
+        	            	port "3306/tcp" not found
+        	Test:       	TestGhostSchemaUpdate
+2025/04/24 16:31:22 INFO Stopping Bytebase...
+2025/04/24 16:31:22 INFO Stopping web server...
+2025/04/24 16:31:22 ERROR mux server listen error error="accept tcp [::]:6834: use of closed network connection"
+2025/04/24 16:31:22 ERROR http server listen error error="mux: server closed"
+--- FAIL: TestGhostSchemaUpdate (1.72s)
+2025/04/24 16:31:22 ✅ Container started: c7e5b215c57f
+2025/04/24 16:31:22 🔔 Container is ready: c7e5b215c57f
+=== NAME  TestSyncSchema
+    sync_schema_test.go:49: 
+        	Error Trace:	/Users/h3n4l/OpenSource/bytebase/backend/tests/sync_schema_test.go:49
+        	Error:      	Received unexpected error:
+        	            	port "5432/tcp" not found
+        	Test:       	TestSyncSchema
+2025/04/24 16:31:22 INFO Stopping Bytebase...
+2025/04/24 16:31:22 INFO Stopping web server...
+2025/04/24 16:31:22 ERROR mux server listen error error="accept tcp [::]:6842: use of closed network connection"
+2025/04/24 16:31:22 ERROR http server listen error error="mux: server closed"
+--- FAIL: TestSyncSchema (1.73s)
+2025/04/24 16:31:23 INFO -----Config BEGIN-----
+2025/04/24 16:31:23 INFO mode=dev
+2025/04/24 16:31:23 INFO dataDir=
+2025/04/24 16:31:23 INFO demo=false
+2025/04/24 16:31:23 INFO instanceRunUUID=
+2025/04/24 16:31:23 INFO -----Config END-------
+2025/04/24 16:31:23 INFO -----Config BEGIN-----
+2025/04/24 16:31:23 INFO mode=dev
+2025/04/24 16:31:23 INFO dataDir=
+2025/04/24 16:31:23 INFO demo=false
+2025/04/24 16:31:23 INFO instanceRunUUID=
+2025/04/24 16:31:23 INFO -----Config END-------
+2025/04/24 16:31:23 INFO -----Config BEGIN-----
+2025/04/24 16:31:23 INFO mode=dev
+2025/04/24 16:31:23 INFO dataDir=
+2025/04/24 16:31:23 INFO demo=false
+2025/04/24 16:31:23 INFO instanceRunUUID=
+2025/04/24 16:31:23 INFO -----Config END-------
+2025/04/24 16:31:23 INFO -----Config BEGIN-----
+2025/04/24 16:31:23 INFO mode=dev
+2025/04/24 16:31:23 INFO dataDir=
+2025/04/24 16:31:23 INFO demo=false
+2025/04/24 16:31:23 INFO instanceRunUUID=
+2025/04/24 16:31:23 INFO -----Config END-------
+2025/04/24 16:31:23 INFO -----Config BEGIN-----
+2025/04/24 16:31:23 INFO mode=dev
+2025/04/24 16:31:23 INFO dataDir=
+2025/04/24 16:31:23 INFO demo=false
+2025/04/24 16:31:23 INFO instanceRunUUID=
+2025/04/24 16:31:23 INFO -----Config END-------
+2025/04/24 16:31:24 INFO Initialized database schema with version 3.6.4.
+2025/04/24 16:31:24 INFO Initialized database schema with version 3.6.4.
+2025/04/24 16:31:24 INFO Skip embedding frontend, build with 'embed_frontend' tag if you want embedded frontend.
+{"time":"2025-04-24T16:31:24.675039+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"requests_total could not be registered in Prometheus: duplicate metrics collector registration attempted"}
+{"time":"2025-04-24T16:31:24.675057+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"request_duration_seconds could not be registered in Prometheus: duplicate metrics collector registration attempted"}
+{"time":"2025-04-24T16:31:24.675072+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"response_size_bytes could not be registered in Prometheus: duplicate metrics collector registration attempted"}
+{"time":"2025-04-24T16:31:24.675087+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"request_size_bytes could not be registered in Prometheus: duplicate metrics collector registration attempted"}
+2025/04/24 16:31:24 INFO TaskSkippedOrDoneListener started
+2025/04/24 16:31:24 INFO Skip embedding frontend, build with 'embed_frontend' tag if you want embedded frontend.
+{"time":"2025-04-24T16:31:24.690771+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"requests_total could not be registered in Prometheus: duplicate metrics collector registration attempted"}
+{"time":"2025-04-24T16:31:24.690792+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"request_duration_seconds could not be registered in Prometheus: duplicate metrics collector registration attempted"}
+{"time":"2025-04-24T16:31:24.690808+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"response_size_bytes could not be registered in Prometheus: duplicate metrics collector registration attempted"}
+{"time":"2025-04-24T16:31:24.690822+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"request_size_bytes could not be registered in Prometheus: duplicate metrics collector registration attempted"}
+2025/04/24 16:31:24 INFO TaskSkippedOrDoneListener started
+2025/04/24 16:31:24 INFO Initialized database schema with version 3.6.4.
+2025/04/24 16:31:24 INFO Initialized database schema with version 3.6.4.
+2025/04/24 16:31:24 INFO Initialized database schema with version 3.6.4.
+2025/04/24 16:31:24 INFO Initialized database schema with version 3.6.4.
+2025/04/24 16:31:24 INFO Skip embedding frontend, build with 'embed_frontend' tag if you want embedded frontend.
+{"time":"2025-04-24T16:31:24.831793+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"requests_total could not be registered in Prometheus: duplicate metrics collector registration attempted"}
+{"time":"2025-04-24T16:31:24.831809+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"request_duration_seconds could not be registered in Prometheus: duplicate metrics collector registration attempted"}
+{"time":"2025-04-24T16:31:24.831821+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"response_size_bytes could not be registered in Prometheus: duplicate metrics collector registration attempted"}
+{"time":"2025-04-24T16:31:24.831829+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"request_size_bytes could not be registered in Prometheus: duplicate metrics collector registration attempted"}
+2025/04/24 16:31:24 INFO Skip embedding frontend, build with 'embed_frontend' tag if you want embedded frontend.
+{"time":"2025-04-24T16:31:24.832511+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"requests_total could not be registered in Prometheus: duplicate metrics collector registration attempted"}
+{"time":"2025-04-24T16:31:24.832522+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"request_duration_seconds could not be registered in Prometheus: duplicate metrics collector registration attempted"}
+{"time":"2025-04-24T16:31:24.832531+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"response_size_bytes could not be registered in Prometheus: duplicate metrics collector registration attempted"}
+{"time":"2025-04-24T16:31:24.832539+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"request_size_bytes could not be registered in Prometheus: duplicate metrics collector registration attempted"}
+2025/04/24 16:31:24 INFO TaskSkippedOrDoneListener started
+2025/04/24 16:31:24 INFO TaskSkippedOrDoneListener started
+2025/04/24 16:31:24 INFO Skip embedding frontend, build with 'embed_frontend' tag if you want embedded frontend.
+{"time":"2025-04-24T16:31:24.866497+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"requests_total could not be registered in Prometheus: duplicate metrics collector registration attempted"}
+{"time":"2025-04-24T16:31:24.866507+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"request_duration_seconds could not be registered in Prometheus: duplicate metrics collector registration attempted"}
+{"time":"2025-04-24T16:31:24.866512+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"response_size_bytes could not be registered in Prometheus: duplicate metrics collector registration attempted"}
+{"time":"2025-04-24T16:31:24.866516+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"request_size_bytes could not be registered in Prometheus: duplicate metrics collector registration attempted"}
+2025/04/24 16:31:24 INFO TaskSkippedOrDoneListener started
+2025/04/24 16:31:24 INFO Skip embedding frontend, build with 'embed_frontend' tag if you want embedded frontend.
+{"time":"2025-04-24T16:31:24.879597+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"requests_total could not be registered in Prometheus: duplicate metrics collector registration attempted"}
+{"time":"2025-04-24T16:31:24.879607+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"request_duration_seconds could not be registered in Prometheus: duplicate metrics collector registration attempted"}
+{"time":"2025-04-24T16:31:24.879618+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"response_size_bytes could not be registered in Prometheus: duplicate metrics collector registration attempted"}
+{"time":"2025-04-24T16:31:24.879627+08:00","level":"ERROR","prefix":"-","file":"prometheus.go","line":"388","message":"request_size_bytes could not be registered in Prometheus: duplicate metrics collector registration attempted"}
+2025/04/24 16:31:24 INFO TaskSkippedOrDoneListener started
+2025/04/24 16:31:25 🐳 Creating container for image postgres:16-alpine
+2025/04/24 16:31:25 ✅ Container created: a4d992c8cff4
+2025/04/24 16:31:25 🐳 Starting container: a4d992c8cff4
+2025/04/24 16:31:25 ✅ Container started: a4d992c8cff4
+2025/04/24 16:31:25 🔔 Container is ready: a4d992c8cff4
+2025/04/24 16:31:26 INFO Stopping Bytebase...
+2025/04/24 16:31:26 INFO Stopping web server...
+2025/04/24 16:31:26 ERROR mux server listen error error="accept tcp [::]:6840: use of closed network connection"
+2025/04/24 16:31:26 ERROR http server listen error error="mux: server closed"
+--- PASS: TestSchemaAndDataUpdate (5.41s)
+2025/04/24 16:31:27 INFO Stopping Bytebase...
+2025/04/24 16:31:27 INFO Stopping web server...
+2025/04/24 16:31:27 ERROR mux server listen error error="accept tcp [::]:6846: use of closed network connection"
+2025/04/24 16:31:27 ERROR http server listen error error="mux: server closed"
+--- PASS: TestMarkTaskAsDone (4.60s)
+2025/04/24 16:31:27 INFO Stopping Bytebase...
+2025/04/24 16:31:27 INFO Stopping web server...
+2025/04/24 16:31:27 ERROR mux server listen error error="accept tcp [::]:6852: use of closed network connection"
+2025/04/24 16:31:27 ERROR http server listen error error="mux: server closed"
+2025/04/24 16:31:28 INFO Stopping Bytebase...
+2025/04/24 16:31:28 INFO Stopping web server...
+2025/04/24 16:31:28 ERROR mux server listen error error="accept tcp [::]:6838: use of closed network connection"
+2025/04/24 16:31:28 ERROR http server listen error error="mux: server closed"
+--- PASS: TestDatabaseGroup (7.06s)
+{"time":"2025-04-24T16:31:28.392501+08:00","id":"","remote_ip":"::1","host":"localhost:6858","method":"GET","uri":"/secrets/hello-secret-id:access","user_agent":"Go-http-client/1.1","status":200,"error":"","latency":2625,"latency_human":"2.625µs","bytes_in":0,"bytes_out":53}
+2025/04/24 16:31:29 🐳 Stopping container: a4d992c8cff4
+2025/04/24 16:31:29 ✅ Container stopped: a4d992c8cff4
+2025/04/24 16:31:29 🐳 Terminating container: a4d992c8cff4
+2025/04/24 16:31:29 🚫 Container terminated: a4d992c8cff4
+2025/04/24 16:31:29 INFO Stopping Bytebase...
+2025/04/24 16:31:29 INFO Stopping web server...
+2025/04/24 16:31:29 ERROR mux server listen error error="accept tcp [::]:6848: use of closed network connection"
+2025/04/24 16:31:29 ERROR http server listen error error="mux: server closed"
+--- PASS: TestExternalSecretManager (6.64s)
+2025/04/24 16:31:29 INFO Stopping Bytebase...
+2025/04/24 16:31:29 INFO Stopping web server...
+2025/04/24 16:31:29 ERROR mux server listen error error="accept tcp [::]:6856: use of closed network connection"
+2025/04/24 16:31:29 ERROR http server listen error error="mux: server closed"
+2025/04/24 16:31:30 INFO Stopping Bytebase...
+2025/04/24 16:31:30 INFO Stopping web server...
+2025/04/24 16:31:30 ERROR mux server listen error error="accept tcp [::]:6854: use of closed network connection"
+2025/04/24 16:31:30 ERROR http server listen error error="mux: server closed"
+2025/04/24 16:31:34 INFO Stopping Bytebase...
+2025/04/24 16:31:34 INFO Stopping web server...
+2025/04/24 16:31:34 ERROR mux server listen error error="accept tcp [::]:6850: use of closed network connection"
+2025/04/24 16:31:34 ERROR http server listen error error="mux: server closed"
 --- PASS: TestCreateDatabaseGroup (0.00s)
-    --- PASS: TestCreateDatabaseGroup/all-matched-one-instance (4.77s)
-    --- PASS: TestCreateDatabaseGroup/partial-matched-one-instance (6.60s)
-    --- PASS: TestCreateDatabaseGroup/all-matched-many-instances (7.45s)
-    --- PASS: TestCreateDatabaseGroup/partial-matched-many-instances (11.67s)
+    --- PASS: TestCreateDatabaseGroup/all-matched-one-instance (4.75s)
+    --- PASS: TestCreateDatabaseGroup/partial-matched-one-instance (6.67s)
+    --- PASS: TestCreateDatabaseGroup/all-matched-many-instances (7.70s)
+    --- PASS: TestCreateDatabaseGroup/partial-matched-many-instances (11.76s)
 FAIL
-2025/04/24 16:24:04 🐳 Stopping container: 807b446b5c0d
-2025/04/24 16:24:04 ✅ Container stopped: 807b446b5c0d
-2025/04/24 16:24:04 🐳 Terminating container: 807b446b5c0d
-2025/04/24 16:24:04 🚫 Container terminated: 807b446b5c0d
-FAIL	github.com/bytebase/bytebase/backend/tests	29.502s
+2025/04/24 16:31:34 🐳 Stopping container: 767cd2421f77
+2025/04/24 16:31:34 ✅ Container stopped: 767cd2421f77
+2025/04/24 16:31:34 🐳 Terminating container: 767cd2421f77
+2025/04/24 16:31:34 🚫 Container terminated: 767cd2421f77
+FAIL	github.com/bytebase/bytebase/backend/tests	29.827s
 ?   	github.com/bytebase/bytebase/backend/tests/fake	[no test files]
 === RUN   TestGetRenderedStatement
 --- PASS: TestGetRenderedStatement (0.00s)
