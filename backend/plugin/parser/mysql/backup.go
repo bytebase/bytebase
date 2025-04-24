@@ -153,7 +153,7 @@ func generateSQL(ctx context.Context, tCtx base.TransformContext, statementInfoL
 func generateSQLForTable(ctx context.Context, tCtx base.TransformContext, statementInfoList []StatementInfo, databaseName string, tablePrefix string) (*base.BackupStatement, error) {
 	table := statementInfoList[0].Table
 
-	generatedColumns, normalColumns, _, err := classifyColumns(ctx, tCtx.GetDatabaseMetadataFunc, tCtx.ListDatabaseNamesFunc, tCtx.IsCaseSensitive, tCtx.InstanceID, table)
+	generatedColumns, normalColumns, err := classifyColumns(ctx, tCtx.GetDatabaseMetadataFunc, tCtx.ListDatabaseNamesFunc, tCtx.IsCaseSensitive, tCtx.InstanceID, table)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to classify columns")
 	}
@@ -262,22 +262,22 @@ func extractCTE(ctx antlr.ParserRuleContext) string {
 	return ""
 }
 
-func classifyColumns(ctx context.Context, getDatabaseMetadataFunc base.GetDatabaseMetadataFunc, listDatabaseNamesFunc base.ListDatabaseNamesFunc, isCaseSensitive bool, instanceID string, table *TableReference) ([]string, []string, []string, error) {
+func classifyColumns(ctx context.Context, getDatabaseMetadataFunc base.GetDatabaseMetadataFunc, listDatabaseNamesFunc base.ListDatabaseNamesFunc, isCaseSensitive bool, instanceID string, table *TableReference) ([]string, []string, error) {
 	if getDatabaseMetadataFunc == nil {
-		return nil, nil, nil, errors.New("GetDatabaseMetadataFunc is not set")
+		return nil, nil, errors.New("GetDatabaseMetadataFunc is not set")
 	}
 
 	var dbSchema *model.DatabaseMetadata
 	allDatabaseNames, err := listDatabaseNamesFunc(ctx, instanceID)
 	if err != nil {
-		return nil, nil, nil, errors.Wrap(err, "failed to list databases names")
+		return nil, nil, errors.Wrap(err, "failed to list databases names")
 	}
 	if !isCaseSensitive {
 		for _, db := range allDatabaseNames {
 			if strings.EqualFold(db, table.Database) {
 				_, dbSchema, err = getDatabaseMetadataFunc(ctx, instanceID, db)
 				if err != nil {
-					return nil, nil, nil, errors.Wrapf(err, "failed to get database metadata for database %q", db)
+					return nil, nil, errors.Wrapf(err, "failed to get database metadata for database %q", db)
 				}
 				break
 			}
@@ -287,7 +287,7 @@ func classifyColumns(ctx context.Context, getDatabaseMetadataFunc base.GetDataba
 			if db == table.Database {
 				_, dbSchema, err = getDatabaseMetadataFunc(ctx, instanceID, db)
 				if err != nil {
-					return nil, nil, nil, errors.Wrapf(err, "failed to get database metadata for database %q", db)
+					return nil, nil, errors.Wrapf(err, "failed to get database metadata for database %q", db)
 				}
 				break
 			}
@@ -295,13 +295,13 @@ func classifyColumns(ctx context.Context, getDatabaseMetadataFunc base.GetDataba
 	}
 	if dbSchema == nil {
 		slog.Debug("failed to get database metadata", slog.String("instanceID", instanceID), slog.String("database", table.Database))
-		return nil, nil, nil, errors.Errorf("failed to get database metadata for InstanceID %q, Database %q", instanceID, table.Database)
+		return nil, nil, errors.Errorf("failed to get database metadata for InstanceID %q, Database %q", instanceID, table.Database)
 	}
 
 	emptySchema := ""
 	schema := dbSchema.GetSchema(emptySchema)
 	if schema == nil {
-		return nil, nil, nil, errors.New("failed to get schema metadata")
+		return nil, nil, errors.New("failed to get schema metadata")
 	}
 
 	var tableSchema *model.TableMetadata
@@ -316,7 +316,7 @@ func classifyColumns(ctx context.Context, getDatabaseMetadataFunc base.GetDataba
 		tableSchema = schema.GetTable(table.Table)
 	}
 
-	var generatedColumns, normalColumns, normalColumnsExceptPrimary []string
+	var generatedColumns, normalColumns []string
 	for _, column := range tableSchema.GetColumns() {
 		if column.GetGeneration() != nil {
 			generatedColumns = append(generatedColumns, column.GetName())
@@ -325,22 +325,7 @@ func classifyColumns(ctx context.Context, getDatabaseMetadataFunc base.GetDataba
 		}
 	}
 
-	pk := tableSchema.GetPrimaryKey()
-	if pk == nil {
-		// If the primary key is not found, we return all normal columns as normalColumnsExceptPrimary.
-		return generatedColumns, normalColumns, normalColumns, nil
-	}
-	pkMap := make(map[string]bool)
-	for _, column := range pk.GetProto().Expressions {
-		pkMap[column] = true
-	}
-	for _, column := range normalColumns {
-		if !pkMap[column] {
-			normalColumnsExceptPrimary = append(normalColumnsExceptPrimary, column)
-		}
-	}
-
-	return generatedColumns, normalColumns, normalColumnsExceptPrimary, nil
+	return generatedColumns, normalColumns, nil
 }
 
 func extractSuffixSelectStatement(tree antlr.Tree, buf *strings.Builder) error {
