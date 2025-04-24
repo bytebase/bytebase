@@ -117,15 +117,11 @@
       `b` blob NOT NULL,
     );
 
-
-
     /*
 
 
 
     */
-
-
 
     --
     -- Table structure for `t`
@@ -146,12 +142,11 @@
       empty: false
       byteoffsetstart: 0
       byteoffsetend: 42
-    - text: |4+
-
+    - text: ""
       baseline: 3
       start: null
       end:
-        line: 6
+        line: 4
         column: 0
       empty: true
       byteoffsetstart: 0
@@ -163,8 +158,6 @@
 
         */
 
-
-
         --
         -- Table structure for `t`
         --
@@ -174,8 +167,8 @@
       baseline: 0
       start: null
       end:
-        line: 20
+        line: 16
         column: 0
       empty: false
-      byteoffsetstart: 46
-      byteoffsetend: 133
+      byteoffsetstart: 44
+      byteoffsetend: 129
