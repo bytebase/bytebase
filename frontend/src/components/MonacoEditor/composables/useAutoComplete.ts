@@ -1,4 +1,4 @@
-import type monaco from "monaco-editor";
+import * as monaco from "monaco-editor";
 import type { Ref } from "vue";
 import { computed, watch } from "vue";
 import { UNKNOWN_ID } from "@/types";

@@ -1,4 +1,4 @@
-import type monaco from "monaco-editor";
+import * as monaco from "monaco-editor";
 import { unref, watchEffect } from "vue";
 import type { MaybeRef } from "@/types";
 import type { LineHighlightOption, MonacoModule } from "../types";

@@ -1,4 +1,4 @@
-import type monaco from "monaco-editor";
+import * as monaco from "monaco-editor";
 import { ref } from "vue";
 import type { Language } from "@/types";
 import { SupportedLanguages } from "../types";
