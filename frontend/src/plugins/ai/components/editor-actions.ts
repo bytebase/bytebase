@@ -1,3 +1,6 @@
+import * as monaco from "monaco-editor";
+import type { MaybeRef } from "vue";
+import { computed, shallowRef, unref, watchEffect } from "vue";
 import type { MonacoModule } from "@/components/MonacoEditor";
 import {
   useSelectedContent,
@@ -5,9 +8,6 @@ import {
 } from "@/components/MonacoEditor/composables";
 import { useTextModelLanguage } from "@/components/MonacoEditor/composables/common";
 import { useEditorContextKey } from "@/components/MonacoEditor/utils";
-import type monaco from "monaco-editor";
-import type { MaybeRef } from "vue";
-import { computed, shallowRef, unref, watchEffect } from "vue";
 import type { AIContext, ChatAction } from "../types";
 
 type AIActionsOptions = {

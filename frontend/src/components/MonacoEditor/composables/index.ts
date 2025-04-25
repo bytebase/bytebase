@@ -4,7 +4,6 @@ export * from "./useContent";
 export * from "./useSelectedContent";
 export * from "./useSelection";
 export * from "./useFormatContent";
-export * from "./useSuggestOptionByLanguage";
 export * from "./useAdvices";
 export * from "./useLineHighlights";
 export * from "./useAutoHeight";
