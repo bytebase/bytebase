@@ -17,7 +17,7 @@
         <div v-for="query in queryList" :key="query.id" class="relative">
           <Suspense>
             <CompactSQLEditor
-              v-model:sql="query.sql"
+              v-model:content="query.statement"
               class="min-h-[2rem]"
               :class="[
                 isEditableQueryItem(query)
@@ -94,7 +94,6 @@ import {
   ConnectionHolder,
   ResultViewV1,
 } from "../../EditorCommon";
-import { useAttractFocus } from "./useAttractFocus";
 import { useHistory } from "./useHistory";
 
 const CompactSQLEditor = defineAsyncComponent(
@@ -146,6 +145,7 @@ const handleExecute = async (params: SQLEditorQueryParams) => {
 
   // Prevent executing empty query;
   if (!params.statement) {
+    console.warn("Empty query");
     return;
   }
 
@@ -194,10 +194,5 @@ watch(queryListHeight, () => {
       container.scrollTo(0, container.scrollHeight);
     }
   });
-});
-
-useAttractFocus({
-  excluded: [{ tag: "textarea", selector: ".active-editor" }],
-  targetSelector: ".active-editor textarea",
 });
 </script>

@@ -514,6 +514,13 @@ export interface TableMetadata {
   sortingKeys: string[];
   triggers: TriggerMetadata[];
   skipDump: boolean;
+  /** https://docs.pingcap.com/tidb/stable/information-schema-tables/ */
+  shardingInfo: string;
+  /**
+   * https://docs.pingcap.com/tidb/stable/clustered-indexes/#clustered-indexes
+   * CLUSTERED or NONCLUSTERED.
+   */
+  primaryKeyType: string;
 }
 
 /** CheckConstraintMetadata is the metadata for check constraints. */
@@ -4620,6 +4627,8 @@ function createBaseTableMetadata(): TableMetadata {
     sortingKeys: [],
     triggers: [],
     skipDump: false,
+    shardingInfo: "",
+    primaryKeyType: "",
   };
 }
 
@@ -4684,6 +4693,12 @@ export const TableMetadata: MessageFns<TableMetadata> = {
     }
     if (message.skipDump !== false) {
       writer.uint32(168).bool(message.skipDump);
+    }
+    if (message.shardingInfo !== "") {
+      writer.uint32(178).string(message.shardingInfo);
+    }
+    if (message.primaryKeyType !== "") {
+      writer.uint32(186).string(message.primaryKeyType);
     }
     return writer;
   },
@@ -4855,6 +4870,22 @@ export const TableMetadata: MessageFns<TableMetadata> = {
           message.skipDump = reader.bool();
           continue;
         }
+        case 22: {
+          if (tag !== 178) {
+            break;
+          }
+
+          message.shardingInfo = reader.string();
+          continue;
+        }
+        case 23: {
+          if (tag !== 186) {
+            break;
+          }
+
+          message.primaryKeyType = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -4900,6 +4931,8 @@ export const TableMetadata: MessageFns<TableMetadata> = {
         ? object.triggers.map((e: any) => TriggerMetadata.fromJSON(e))
         : [],
       skipDump: isSet(object.skipDump) ? globalThis.Boolean(object.skipDump) : false,
+      shardingInfo: isSet(object.shardingInfo) ? globalThis.String(object.shardingInfo) : "",
+      primaryKeyType: isSet(object.primaryKeyType) ? globalThis.String(object.primaryKeyType) : "",
     };
   },
 
@@ -4965,6 +4998,12 @@ export const TableMetadata: MessageFns<TableMetadata> = {
     if (message.skipDump !== false) {
       obj.skipDump = message.skipDump;
     }
+    if (message.shardingInfo !== "") {
+      obj.shardingInfo = message.shardingInfo;
+    }
+    if (message.primaryKeyType !== "") {
+      obj.primaryKeyType = message.primaryKeyType;
+    }
     return obj;
   },
 
@@ -5001,6 +5040,8 @@ export const TableMetadata: MessageFns<TableMetadata> = {
     message.sortingKeys = object.sortingKeys?.map((e) => e) || [];
     message.triggers = object.triggers?.map((e) => TriggerMetadata.fromPartial(e)) || [];
     message.skipDump = object.skipDump ?? false;
+    message.shardingInfo = object.shardingInfo ?? "";
+    message.primaryKeyType = object.primaryKeyType ?? "";
     return message;
   },
 };

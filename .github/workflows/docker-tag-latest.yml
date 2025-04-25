@@ -37,6 +37,13 @@ jobs:
       id-token: write
     steps:
       - uses: actions/checkout@v4
+      - name: Extract build args
+        # Extract version from branch name
+        # Example: branch name `release/1.0.0` sets up env.IMAGE_VERSION=1.0.0
+        run: |
+          echo "IMAGE_VERSION=${GITHUB_REF_NAME#release/}" >> $GITHUB_ENV
+          echo "VERSION=$(cat ./scripts/VERSION)" >> $GITHUB_ENV
+          echo "GIT_COMMIT=$(git rev-parse HEAD)" >> $GITHUB_ENV
       - name: Login to DockerHub
         uses: docker/login-action@v3
         with:

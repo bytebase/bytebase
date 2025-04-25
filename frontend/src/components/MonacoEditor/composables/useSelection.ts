@@ -1,4 +1,4 @@
-import type monaco from "monaco-editor";
+import * as monaco from "monaco-editor";
 import { shallowRef } from "vue";
 
 export const useSelection = (editor: monaco.editor.IStandaloneCodeEditor) => {

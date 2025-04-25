@@ -20,7 +20,7 @@ import type { SQLResultSetV1 } from "./sql";
 
 export type WebTerminalQueryItemV1 = {
   id: string;
-  sql: string;
+  statement: string;
   params?: SQLEditorQueryParams;
   resultSet?: SQLResultSetV1;
   status: "IDLE" | "RUNNING" | "FINISHED";
