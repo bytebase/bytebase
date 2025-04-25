@@ -94,7 +94,7 @@ func doGenerate(ctx context.Context, rCtx base.RestoreContext, sqlForComment str
 		backupTable:    backupItem.TargetTable.Table,
 		originalSchema: schema,
 		originalTable:  backupItem.SourceTable.Table,
-		pk:             tableMetadata.GetPrimaryKey(),
+		table:          tableMetadata,
 		isFirst:        true,
 	}
 	antlr.ParseTreeWalkerDefault.Walk(g, tree.Tree)
@@ -115,7 +115,7 @@ type generator struct {
 	backupTable    string
 	originalSchema string
 	originalTable  string
-	pk             *model.IndexMetadata
+	table          *model.TableMetadata
 
 	isFirst bool
 	ctx     context.Context
@@ -131,31 +131,56 @@ func (g *generator) EnterDeletestmt(ctx *parser.DeletestmtContext) {
 	}
 }
 
+func disjoint(a []string, b map[string]bool) bool {
+	for _, item := range a {
+		if _, ok := b[item]; ok {
+			return false
+		}
+	}
+	return true
+}
+
+func (g *generator) findDisjointUniqueKey(fields []string) (string, error) {
+	columnMap := make(map[string]bool)
+	for _, field := range fields {
+		columnMap[field] = true
+	}
+	pk := g.table.GetPrimaryKey()
+	if pk != nil {
+		if disjoint(pk.GetProto().Expressions, columnMap) {
+			return pk.GetProto().Name, nil
+		}
+	}
+	for _, index := range g.table.GetProto().Indexes {
+		if index.Primary {
+			continue
+		}
+		if !index.Unique {
+			continue
+		}
+		if disjoint(index.Expressions, columnMap) {
+			return index.Name, nil
+		}
+	}
+
+	return "", errors.Errorf("no disjoint unique key found for %s.%s", g.originalSchema, g.originalTable)
+}
+
 func (g *generator) EnterUpdatestmt(ctx *parser.UpdatestmtContext) {
 	if isTopLevel(ctx.GetParent()) && g.isFirst {
 		g.isFirst = false
 
-		if g.pk == nil {
-			g.err = errors.Errorf("primary key not found for %s.%s", g.originalSchema, g.originalTable)
-			return
-		}
-
 		l := &setFieldListener{}
 		antlr.ParseTreeWalkerDefault.Walk(l, ctx)
 
-		pkMap := make(map[string]bool)
-		for _, column := range g.pk.GetProto().Expressions {
-			pkMap[column] = true
-		}
-		for _, column := range l.result {
-			if pkMap[column] {
-				g.err = errors.Errorf("primary key column %s is updated", column)
-				return
-			}
+		uk, err := g.findDisjointUniqueKey(l.result)
+		if err != nil {
+			g.err = err
+			return
 		}
 
 		var buf strings.Builder
-		if _, err := fmt.Fprintf(&buf, `INSERT INTO "%s"."%s" SELECT * FROM "%s"."%s" ON CONFLICT ON CONSTRAINT "%s" DO UPDATE SET `, g.originalSchema, g.originalTable, g.backupSchema, g.backupTable, g.pk.GetProto().Name); err != nil {
+		if _, err := fmt.Fprintf(&buf, `INSERT INTO "%s"."%s" SELECT * FROM "%s"."%s" ON CONFLICT ON CONSTRAINT "%s" DO UPDATE SET `, g.originalSchema, g.originalTable, g.backupSchema, g.backupTable, uk); err != nil {
 			g.err = errors.Wrapf(err, "failed to generate update statement")
 			return
 		}
