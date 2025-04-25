@@ -5,9 +5,7 @@ import "@codingame/monaco-vscode-sql-default-extension";
 import getTextMateServiceOverride from "@codingame/monaco-vscode-textmate-service-override";
 import "@codingame/monaco-vscode-theme-defaults-default-extension";
 import getThemeServiceOverride from "@codingame/monaco-vscode-theme-service-override";
-import { languages } from "monaco-editor";
 import "vscode/localExtensionHost";
-import { SupportedLanguages } from "./types";
 
 export type WorkerLoader = () => Worker;
 
@@ -47,8 +45,6 @@ const initializeRunner = async () => {
     ...getThemeServiceOverride(),
     ...getLanguagesServiceOverride(),
   });
-
-  SupportedLanguages.forEach((lang) => languages.register(lang));
 };
 
 export const initializeMonacoServices = async () => {
