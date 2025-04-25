@@ -67,11 +67,11 @@ const createInitialQueryItemByTab = (
 };
 
 export const createQueryItemV1 = (
-  sql = "",
+  statement = "",
   status: WebTerminalQueryItemV1["status"] = "IDLE"
 ): WebTerminalQueryItemV1 => ({
   id: uniqueId(),
-  sql,
+  statement,
   status,
 });
 

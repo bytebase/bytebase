@@ -100,7 +100,6 @@ export const defaultEditorOptions =
       },
       wordBasedSuggestions: "currentDocument",
       lineNumbers: "on",
-      lineNumbersMinChars: 3,
       cursorStyle: "line",
       glyphMargin: false,
     };
