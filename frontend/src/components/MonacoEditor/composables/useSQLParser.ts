@@ -1,6 +1,6 @@
 import { useLocalStorage } from "@vueuse/core";
 import { orderBy } from "lodash-es";
-import type monaco from "monaco-editor";
+import * as monaco from "monaco-editor";
 import { watchEffect } from "vue";
 import { MonacoEditorReady } from "../editor";
 

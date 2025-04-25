@@ -80,7 +80,6 @@ import {
   useOptions,
   useSelectedContent,
   useSelection,
-  useSuggestOptionByLanguage,
   useLineHighlights,
   useLSPConnectionState,
   useOverrideSuggestIcons,
@@ -193,7 +192,6 @@ onMounted(async () => {
     useOptionByKey(monaco, editor, "readOnly", toRef(props, "readonly"));
     useOptions(monaco, editor, toRef(props, "options"));
     useModel(monaco, editor, toRef(props, "model"));
-    useSuggestOptionByLanguage(monaco, editor);
     useFormatContent(
       monaco,
       editor,
@@ -221,6 +219,7 @@ onMounted(async () => {
 
     contentRef.value = content.value;
     watch(content, () => {
+      console.debug("[MonacoEditor] content changed", content.value);
       emit("update:content", content.value);
       contentRef.value = content.value;
     });
