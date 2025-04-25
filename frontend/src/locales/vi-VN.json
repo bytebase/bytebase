@@ -401,11 +401,13 @@
         "reset-token": "Đặt lại mã thông báo",
         "reset-token-warning": "Bạn cần cập nhật cấu hình cung cấp ứng dụng Entra."
       },
+      "all-users": "Tất cả người dùng",
       "search-member": "Tìm kiếm thành viên",
       "revoked": "Đã thu hồi",
       "view-by-members": "Xem theo thành viên",
       "revoke-access": "Thu hồi Quyền truy cập",
       "revoke-access-alert": "Bạn có chắc muốn thu hồi quyền truy cập?",
+      "revoke-allusers-alert": "Thu hồi \"@:{'settings.members.all-users'}\" sẽ thu hồi các vai trò liên quan từ tất cả người dùng khác trong không gian làm việc của bạn. Bạn có chắc chắn muốn tiếp tục không?",
       "grant-access": "Cấp Quyền truy cập",
       "select-user": "Chọn người dùng | Chọn người dùng",
       "select-group": "Chọn nhóm | Chọn nhóm",
@@ -2403,7 +2405,6 @@
       "title-placeholder": "Nhập tiêu đề vai trò",
       "description-placeholder": "Nhập mô tả vai trò"
     },
-    "default-workspace-role": "Người dùng sẽ nhận được vai trò \"Thành viên không gian làm việc\" theo mặc định",
     "title": "Tiêu đề",
     "select-role": "Chọn vai trò",
     "expired-tip": "Vai trò có thể đã hết hạn.",

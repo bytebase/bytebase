@@ -401,11 +401,13 @@
         "reset-token": "トークンをリセット",
         "reset-token-warning": "Entra アプリケーションのプロビジョニング設定を更新する必要があります。"
       },
+      "all-users": "すべてのユーザー",
       "search-member": "メンバーを検索",
       "revoked": "取り消されました",
       "view-by-members": "メンバー別に表示",
       "revoke-access": "アクセスを取り消す",
       "revoke-access-alert": "アクセスを取り消してもよろしいですか?",
+      "revoke-allusers-alert": "「@:{'settings.members.all-users'}」を取り消すと、ワークスペース内の他のすべてのユーザーの関連ロールが取り消されます。続行しますか?",
       "grant-access": "アクセスを許可する",
       "select-user": "ユーザーを選択 | ユーザーを選択",
       "select-group": "グループを選択 | グループを選択",
@@ -2403,7 +2405,6 @@
       "title-placeholder": "役割のタイトルを入力してください",
       "description-placeholder": "役割の説明を入力してください"
     },
-    "default-workspace-role": "ユーザーにはデフォルトで「ワークスペースメンバー」の役割が与えられます",
     "title": "タイトル",
     "select-role": "役割の選択",
     "expired-tip": "役割の有効期限が切れている可能性があります。",

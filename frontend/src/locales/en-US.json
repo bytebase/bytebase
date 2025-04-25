@@ -401,11 +401,13 @@
         "reset-token": "Reset token",
         "reset-token-warning": "You need to update the Entra application provisioning config."
       },
+      "all-users": "All users",
       "search-member": "Search member",
       "revoked": "Revoked",
       "view-by-members": "View by members",
       "revoke-access": "Revoke Access",
       "revoke-access-alert": "Are you sure to revoke access?",
+      "revoke-allusers-alert": "Revoke \"@:{'settings.members.all-users'}\" will revoke related roles from all other users in your workspace. Are you sure to continue?",
       "grant-access": "Grant Access",
       "select-user": "Select user | Select users",
       "select-group": "Select group | Select groups",
@@ -2403,7 +2405,6 @@
       "title-placeholder": "Input role title",
       "description-placeholder": "Input role description"
     },
-    "default-workspace-role": "Users will get the \"Workspace Member\" role by default",
     "title": "Title",
     "select-role": "Select role",
     "expired-tip": "The role might has been expired.",
