@@ -33,6 +33,8 @@ message ChangelogPayload {
     DATA = 6;
   }
   Type type = 7;
+
+  string git_commit = 8;
 }
 
 message ChangedResources {

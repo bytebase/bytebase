@@ -2969,6 +2969,13 @@ Format: projects/{project}/sheets/{sheet} </p></td>
                   <td><p> </p></td>
                 </tr>
               
+                <tr>
+                  <td>git_commit</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -5049,6 +5056,21 @@ Reference: https://clickhouse.com/docs/en/engines/table-engines/mergetree-family
                   <td><a href="#bool">bool</a></td>
                   <td></td>
                   <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>sharding_info</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>https://docs.pingcap.com/tidb/stable/information-schema-tables/ </p></td>
+                </tr>
+              
+                <tr>
+                  <td>primary_key_type</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>https://docs.pingcap.com/tidb/stable/clustered-indexes/#clustered-indexes
+CLUSTERED or NONCLUSTERED. </p></td>
                 </tr>
               
             </tbody>
@@ -9554,7 +9576,7 @@ for example, the environment resource can have the sql review config tag, like &
                   <td><a href="#bool">bool</a></td>
                   <td></td>
                   <td><p>Whether to enable the database tenant mode for PostgreSQL.
-If enabled, the issue will be created with the pre-appended &#34;set role &lt;db_owner&gt;&#34; statement. </p></td>
+If enabled, the issue will be created with the prepend &#34;set role &lt;db_owner&gt;&#34; statement. </p></td>
                 </tr>
               
                 <tr>

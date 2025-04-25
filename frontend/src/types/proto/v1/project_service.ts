@@ -201,7 +201,7 @@ export interface Project {
   skipBackupErrors: boolean;
   /**
    * Whether to enable the database tenant mode for PostgreSQL.
-   * If enabled, the issue will be created with the pre-appended "set role <db_owner>" statement.
+   * If enabled, the issue will be created with the prepend "set role <db_owner>" statement.
    */
   postgresDatabaseTenantMode: boolean;
   /** Whether to allow the issue creator to self-approve the issue. */

@@ -242,3 +242,41 @@ func TestSetColumnMetadataDefault(t *testing.T) {
 		a.Equal(tc.want, column, tc.name)
 	}
 }
+
+func TestConvertCollationToCharset(t *testing.T) {
+	tests := []struct {
+		collation string
+		want      string
+	}{
+		{
+			collation: "ascii_bin",
+			want:      "ascii",
+		},
+		{
+			collation: "binary",
+			want:      "binary",
+		},
+		{
+			collation: "gbk_chinese_ci",
+			want:      "gbk",
+		},
+		{
+			collation: "latin1_bin",
+			want:      "latin1",
+		},
+		{
+			collation: "utf8_bin",
+			want:      "utf8",
+		},
+		{
+			collation: "utf8mb4_bin",
+			want:      "utf8mb4",
+		},
+	}
+
+	a := require.New(t)
+	for _, tc := range tests {
+		got := convertCollationToCharset(tc.collation)
+		a.Equal(tc.want, got, tc.collation)
+	}
+}

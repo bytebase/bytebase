@@ -4,7 +4,7 @@
 
     <Canvas class="flex-1">
       <template #desktop>
-        <template v-for="(schema, i) in schemaList" :key="`schema-${i}`">
+        <template v-for="(schema, i) in selectedSchemas" :key="`schema-${i}`">
           <TableNode
             v-for="table in schema.tables"
             :key="idOfTable(table)"
@@ -84,9 +84,6 @@ const emit = defineEmits<{
   ): void;
 }>();
 
-const schemaList = computed(() => {
-  return props.databaseMetadata.schemas;
-});
 const initialized = ref(false);
 const dummy = ref(false);
 const busy = ref(false);
@@ -95,27 +92,33 @@ const position = ref<Point>({ x: 0, y: 0 });
 const panning = ref(false);
 const geometries = ref(new Set<Geometry>());
 const focusedTables = ref(new Set<TableMetadata>());
+const selectedSchemaNames = ref<string[]>([]);
+
+const selectedSchemas = computed(() => {
+  return props.databaseMetadata.schemas.filter((schema) =>
+    selectedSchemaNames.value.includes(schema.name)
+  );
+});
 
 const render = () => {
   nextTick(() => {
     events.emit("render");
   });
 };
+
 const events: SchemaDiagramContext["events"] = new Emittery();
 
 const tableIds = ref(new WeakMap<TableMetadata, string>());
 const rectsByTableId = ref(new Map<string, Rect>());
 const foreignKeys = computed((): ForeignKey[] => {
   const find = (s: string, t: string, c: string) => {
-    const schema = props.databaseMetadata.schemas.find(
-      (schema) => schema.name === s
-    )!;
-    const table = schema.tables.find((table) => table.name === t)!;
+    const schema = selectedSchemas.value.find((schema) => schema.name === s);
+    const table = schema?.tables.find((table) => table.name === t);
     const column = c;
     return { schema, table, column };
   };
   const fks: ForeignKey[] = [];
-  schemaList.value.forEach((schema) => {
+  selectedSchemas.value.forEach((schema) => {
     schema.tables.forEach((table) => {
       table.foreignKeys.forEach((fkMetadata) => {
         const {
@@ -125,11 +128,18 @@ const foreignKeys = computed((): ForeignKey[] => {
           referencedColumns,
         } = fkMetadata;
         for (let i = 0; i < columns.length; i++) {
-          fks.push({
-            from: { schema, table, column: columns[i] },
-            to: find(referencedSchema, referencedTable, referencedColumns[i]),
-            metadata: fkMetadata,
-          });
+          const to = find(
+            referencedSchema,
+            referencedTable,
+            referencedColumns[i]
+          );
+          if (to.schema && to.table) {
+            fks.push({
+              from: { schema, table, column: columns[i] },
+              to,
+              metadata: fkMetadata,
+            } as ForeignKey);
+          }
         }
       });
     });
@@ -153,7 +163,7 @@ const rectOfTable = (table: TableMetadata): Rect => {
 
 const layout = () => {
   return nextTick(async () => {
-    const nodeList = schemaList.value
+    const nodeList = selectedSchemas.value
       .flatMap((schema) => {
         return schema.tables.map((table) => {
           const id = idOfTable(table);
@@ -227,11 +237,21 @@ provideSchemaDiagramContext({
   tableStatus: props.tableStatus,
   columnStatus: props.columnStatus,
   events,
+  selectedSchemaNames,
+  selectedSchemas,
 });
 
 // autoLayout and fit view at the first time the diagram is mounted.
 watch(
   () => props.databaseMetadata,
+  () => {
+    selectedSchemaNames.value = [props.databaseMetadata.schemas[0]?.name ?? ""];
+  },
+  { immediate: true }
+);
+
+watch(
+  () => selectedSchemaNames.value,
   async () => {
     focusedTables.value = new Set();
     await layout();

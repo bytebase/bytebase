@@ -19,6 +19,7 @@ func LoadDemoData(ctx context.Context, pgURL string) error {
 	if err != nil {
 		return err
 	}
+	defer db.Close()
 	// This query in the dump.sql will poison the connection.
 	// SELECT pg_catalog.set_config('search_path', '', false);
 	var ok bool

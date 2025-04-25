@@ -231,9 +231,9 @@ func (exec *DataUpdateExecutor) backupData(
 		return nil, errors.Wrap(err, "failed to transform DML to select")
 	}
 
-	preAppendStatements, err := getPreAppendStatements(instance.Metadata.GetEngine(), originStatement)
+	prependStatements, err := getPrependStatements(instance.Metadata.GetEngine(), originStatement)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get pre append statements")
+		return nil, errors.Wrap(err, "failed to get prepend statements")
 	}
 
 	priorBackupDetail := &storepb.PriorBackupDetail{}
@@ -243,8 +243,8 @@ func (exec *DataUpdateExecutor) backupData(
 	}
 	for _, statement := range statements {
 		backupStatement := statement.Statement
-		if preAppendStatements != "" {
-			backupStatement = preAppendStatements + backupStatement
+		if prependStatements != "" {
+			backupStatement = prependStatements + backupStatement
 		}
 		if _, err := driver.Execute(driverCtx, backupStatement, db.ExecuteOptions{}); err != nil {
 			return nil, errors.Wrapf(err, "failed to execute backup statement %q", backupStatement)
@@ -385,7 +385,7 @@ func BuildListDatabaseNamesFunc(storeInstance *store.Store) parserbase.ListDatab
 	}
 }
 
-func getPreAppendStatements(engine storepb.Engine, statement string) (string, error) {
+func getPrependStatements(engine storepb.Engine, statement string) (string, error) {
 	if engine != storepb.Engine_POSTGRES {
 		return "", nil
 	}
