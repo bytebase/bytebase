@@ -401,11 +401,13 @@
         "reset-token": "重置密钥",
         "reset-token-warning": "您需要更新 Entra 应用程序配置。"
       },
+      "all-users": "全部用户",
       "search-member": "搜索成员",
       "revoked": "已撤销",
       "view-by-members": "按成员查看",
       "revoke-access": "撤销访问权限",
       "revoke-access-alert": "您确定要撤销访问权限吗？",
+      "revoke-allusers-alert": "撤销“@:{'settings.members.all-users'}”将撤销您工作区中所有其他用户的相关角色。您确定要继续吗？",
       "grant-access": "授予访问权限",
       "select-user": "选择用户 | 选择用户",
       "select-group": "选择组 | 选择组",
@@ -2403,7 +2405,6 @@
       "title-placeholder": "输入角色称谓",
       "description-placeholder": "输入角色描述"
     },
-    "default-workspace-role": "用户将默认获得“工作区成员”角色",
     "title": "称谓",
     "select-role": "选择角色",
     "expired-tip": "该角色可能已经过期。",

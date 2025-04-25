@@ -60,7 +60,6 @@
         padding: 2,
       }"
       :options="{
-        automaticLayout: true,
         fontSize: 12,
         lineHeight: 14,
         lineNumbers: 'off',

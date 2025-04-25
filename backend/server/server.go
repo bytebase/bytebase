@@ -177,7 +177,7 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	// Cache the license.
 	s.licenseService.LoadSubscription(ctx)
 
-	if err := s.getInitSetting(ctx); err != nil {
+	if err := s.initializeSetting(ctx); err != nil {
 		return nil, errors.Wrap(err, "failed to init config")
 	}
 	secret, err := s.store.GetSecret(ctx)
