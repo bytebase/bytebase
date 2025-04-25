@@ -84,7 +84,7 @@ func (checker *columnNoNullChecker) generateAdviceList() []*storepb.Advice {
 			Code:          advisor.ColumnCannotNull.Int32(),
 			Title:         checker.title,
 			Content:       fmt.Sprintf(`Column "%s" in %s cannot have NULL value`, column.column, column.normalizeTableName()),
-			StartPosition: common.ConvertANTLRLineToPosition(checker.nullableColumns[column]),
+			StartPosition: common.ConvertPGParserLineToPosition(checker.nullableColumns[column]),
 		})
 	}
 

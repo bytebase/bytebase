@@ -6,6 +6,7 @@ import (
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/google-sql-parser"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -38,15 +39,16 @@ func SplitSQL(statement string) ([]base.SingleSQL, error) {
 					empty = false
 				}
 			}
-			line, col := base.FirstDefaultChannelTokenPosition(buf)
+			antlrPosition := base.FirstDefaultChannelTokenPosition(buf)
 			sqls = append(sqls, base.SingleSQL{
-				Text:                 bufStr.String(),
-				BaseLine:             buf[0].GetLine() - 1,
-				LastLine:             buf[len(buf)-1].GetLine() - 1,
-				LastColumn:           buf[len(buf)-1].GetColumn(),
-				FirstStatementLine:   line,
-				FirstStatementColumn: col,
-				Empty:                empty,
+				Text:     bufStr.String(),
+				BaseLine: common.ConvertANTLRLineToPositionLine(buf[0].GetLine()),
+				End: common.ConvertANTLRPositionToPosition(&common.ANTLRPosition{
+					Line:   int32(buf[len(buf)-1].GetLine()),
+					Column: int32(buf[len(buf)-1].GetColumn()),
+				}, statement),
+				Start: common.ConvertANTLRPositionToPosition(antlrPosition, statement),
+				Empty: empty,
 			})
 			buf = nil
 			continue

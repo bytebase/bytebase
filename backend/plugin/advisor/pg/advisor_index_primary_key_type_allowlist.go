@@ -100,7 +100,7 @@ func (checker *indexPrimaryKeyTypeAllowlistChecker) Visit(in ast.Node) ast.Visit
 				Code:          advisor.IndexPKType.Int32(),
 				Title:         checker.title,
 				Content:       fmt.Sprintf(`The column "%s" is one of the primary key, but its type "%s" is not in allowlist`, column.ColumnName, typeText),
-				StartPosition: common.ConvertANTLRLineToPosition(column.LastLine()),
+				StartPosition: common.ConvertPGParserLineToPosition(column.LastLine()),
 			})
 		}
 	}

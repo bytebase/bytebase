@@ -92,7 +92,7 @@ func (checker *columnRequireDefaultChecker) generateAdvice() []*storepb.Advice {
 				Code:          advisor.NoDefault.Int32(),
 				Title:         checker.title,
 				Content:       fmt.Sprintf("Column %q.%q in schema %q doesn't have DEFAULT", column.table, column.name, column.schema),
-				StartPosition: common.ConvertANTLRLineToPosition(column.line),
+				StartPosition: common.ConvertPGParserLineToPosition(column.line),
 			})
 		}
 	}

@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 type splitTestData struct {
@@ -37,49 +38,39 @@ go
 			want: resData{
 				res: []base.SingleSQL{
 					{
-						Text:                 "-- first statement\ndeclare @temp table(a int)",
-						BaseLine:             0,
-						FirstStatementLine:   1,
-						FirstStatementColumn: 0,
-						LastLine:             1,
-						LastColumn:           25,
-						Empty:                false,
+						Text:     "-- first statement\ndeclare @temp table(a int)",
+						BaseLine: 0,
+						Start:    &storepb.Position{Line: 1, Column: 0},
+						End:      &storepb.Position{Line: 1, Column: 25},
+						Empty:    false,
 					},
 					{
-						Text:                 "\n-- second statement\ninsert into @temp values(1)",
-						BaseLine:             1,
-						FirstStatementLine:   3,
-						FirstStatementColumn: 0,
-						LastLine:             3,
-						LastColumn:           26,
-						Empty:                false,
+						Text:     "\n-- second statement\ninsert into @temp values(1)",
+						BaseLine: 1,
+						Start:    &storepb.Position{Line: 3, Column: 0},
+						End:      &storepb.Position{Line: 3, Column: 26},
+						Empty:    false,
 					},
 					{
-						Text:                 "\n-- third statement\nselect * from @temp\n-- go statement\ngo",
-						BaseLine:             3,
-						FirstStatementLine:   5,
-						FirstStatementColumn: 0,
-						LastLine:             7,
-						LastColumn:           0,
-						Empty:                false,
+						Text:     "\n-- third statement\nselect * from @temp\n-- go statement\ngo",
+						BaseLine: 3,
+						Start:    &storepb.Position{Line: 5, Column: 0},
+						End:      &storepb.Position{Line: 7, Column: 0},
+						Empty:    false,
 					},
 					{
-						Text:                 "\ngo",
-						BaseLine:             7,
-						FirstStatementLine:   8,
-						FirstStatementColumn: 0,
-						LastLine:             8,
-						LastColumn:           0,
-						Empty:                false,
+						Text:     "\ngo",
+						BaseLine: 7,
+						Start:    &storepb.Position{Line: 8, Column: 0},
+						End:      &storepb.Position{Line: 8, Column: 0},
+						Empty:    false,
 					},
 					{
-						Text:                 "\ngo\ngo",
-						BaseLine:             8,
-						FirstStatementLine:   9,
-						FirstStatementColumn: 0,
-						LastLine:             10,
-						LastColumn:           0,
-						Empty:                false,
+						Text:     "\ngo\ngo",
+						BaseLine: 8,
+						Start:    &storepb.Position{Line: 9, Column: 0},
+						End:      &storepb.Position{Line: 10, Column: 0},
+						Empty:    false,
 					},
 				},
 			},

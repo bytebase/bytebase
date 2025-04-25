@@ -130,7 +130,8 @@ const (
 type WalkThroughError struct {
 	Type    WalkThroughErrorType
 	Content string
-	Line    int
+	// TODO(zp): position
+	Line int
 
 	Payload any
 }
