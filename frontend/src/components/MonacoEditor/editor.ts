@@ -35,7 +35,7 @@ export const createMonacoEditor = async (config: {
     console.error("[MonacoEditor] Failed to initialize LSP client", err);
   }
 
-  // create monaco editor
+  // Create monaco editor.
   const editor = monaco.editor.create(config.container, {
     ...defaultEditorOptions(),
     ...config.options,
@@ -52,7 +52,7 @@ export const createMonacoDiffEditor = async (config: {
 }): Promise<monaco.editor.IStandaloneDiffEditor> => {
   await initialize();
 
-  // create monaco editor
+  // Create monaco diff editor.
   const editor = monaco.editor.createDiffEditor(config.container, {
     ...defaultDiffEditorOptions(),
     ...config.options,
