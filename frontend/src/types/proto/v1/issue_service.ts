@@ -509,6 +509,7 @@ export interface GrantRequest {
    * Format: users/{email}.
    */
   user: string;
+  /** The condition for the role. Same as the condtion in IAM Binding message. */
   condition: Expr | undefined;
   expiration: Duration | undefined;
 }

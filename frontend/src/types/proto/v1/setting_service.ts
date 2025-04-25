@@ -485,7 +485,20 @@ export interface WorkspaceApprovalSetting {
 }
 
 export interface WorkspaceApprovalSetting_Rule {
-  template: ApprovalTemplate | undefined;
+  template:
+    | ApprovalTemplate
+    | undefined;
+  /**
+   * The condition that is associated with the rule.
+   * The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+   *
+   * Support variables:
+   * source: the risk source, check the Source enum in the Risk message for the values.
+   * level: the risk level, support 100 (low), 200 (moderate) and 300 (high).
+   *
+   * For examples:
+   * (source == "DML" && level == 200) || (source == "DDL" && level == 300)
+   */
   condition: Expr | undefined;
 }
 
