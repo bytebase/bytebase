@@ -188,6 +188,9 @@ func (c *Client) createPlan(project string, r *v1pb.Plan) (*v1pb.Plan, error) {
 	return resp, nil
 }
 
+// TODO(p0ny):
+//
+//nolint:unused
 func (c *Client) getRollout(project, rolloutID string) (*v1pb.Rollout, error) {
 	req, err := http.NewRequest("GET", fmt.Sprintf("%s/v1/%s/rollouts/%s", c.url, project, rolloutID), nil)
 	if err != nil {

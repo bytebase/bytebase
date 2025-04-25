@@ -121,6 +121,9 @@ func runRollout(*cobra.Command, []string) error {
 		Files:     releaseFiles,
 		VcsSource: nil, // TODO(p0ny): impl
 	})
+	if err != nil {
+		return errors.Wrapf(err, "failed to create release")
+	}
 
 	planPreview, err := client.previewPlan(Config.Project, &v1pb.PreviewPlanRequest{
 		Release:         createReleaseResponse.Name,
