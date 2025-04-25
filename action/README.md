@@ -4,17 +4,27 @@
 
 ## Commands
 
-### check
+This action provides several subcommands to interact with Bytebase.
 
-`bytebase-action check` checks the migration files. This is typically done in the CI phase.
+### `check`
+
+Usage: `bytebase-action check [global flags]`
+
+Checks the SQL migration files matching the `--file-pattern`. This is typically used for linting or pre-deployment validation within a CI pipeline. It utilizes global flags like `--url`, `--service-account`, `--service-account-secret`, and `--file-pattern`.
+
+### `rollout`
+
+Usage: `bytebase-action rollout [global flags] [rollout flags]`
+
+Creates a new release and initiates a rollout issue in the specified Bytebase `--project` to apply the SQL migration files matching the `--file-pattern` to the defined `--targets`. It uses global flags for connection and file discovery, and specific flags like `--release-title` and `--rollout-title` to name the created resources in Bytebase.
 
 ## Configuration
 
-This action is configured via command-line flags.
+This action is configured via command-line flags. Global flags apply to all commands, while some commands have specific flags.
 
 ### Global Flags
 
-These flags apply to the main `bytebase-action` command and its subcommands.
+These flags apply to the main `bytebase-action` command and its subcommands (`check`, `rollout`).
 
 -   **`--url`**: The Bytebase instance URL.
     -   Default: `https://demo.bytebase.com`
@@ -37,10 +47,16 @@ These flags apply to the main `bytebase-action` command and its subcommands.
         -   Database Group: `projects/{project}/databaseGroups/{databaseGroup}`
     -   Default: `instances/test-sample-instance/databases/hr_test,instances/prod-sample-instance/databases/hr_prod`
 
-### `check` Command Flags
-
-These flags are specific to the `check` subcommand (`bytebase-action check`).
-
--   **`--file-pattern`**: A glob pattern used to find SQL migration files to check.
+-   **`--file-pattern`**: A glob pattern used to find SQL migration files.
+    -   Used by subcommands like `check` and `rollout` to locate relevant files.
     -   Default: `""` (empty string)
-    -   *Required for the `check` command to find files.*
+
+### `rollout` Command Specific Flags
+
+These flags are specific to the `rollout` subcommand (`bytebase-action rollout`).
+
+-   **`--release-title`**: The title of the release created in Bytebase.
+    -   Default: The current timestamp in RFC3339 format (e.g., `2025-04-25T17:32:07+08:00`).
+
+-   **`--rollout-title`**: The title of the rollout issue created in Bytebase.
+    -   Default: The current timestamp in RFC3339 format (e.g., `2025-04-25T17:32:07+08:00`).
