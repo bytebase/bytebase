@@ -2,9 +2,25 @@
 
 `bytebase-action` helps to do common chores in database CI/CD with Bytebase.
 
+## Commands
+
+This action provides several subcommands to interact with Bytebase.
+
+### `check`
+
+Usage: `bytebase-action check [global flags]`
+
+Checks the SQL migration files matching the `--file-pattern`. This is typically used for linting or pre-deployment validation within a CI pipeline. It utilizes global flags like `--url`, `--service-account`, `--service-account-secret`, and `--file-pattern`.
+
+### `rollout`
+
+Usage: `bytebase-action rollout [global flags] [rollout flags]`
+
+Creates a new release and initiates a rollout issue in the specified Bytebase `--project` to apply the SQL migration files matching the `--file-pattern` to the defined `--targets`. It uses global flags for connection and file discovery, and specific flags like `--release-title` and `--rollout-title` to name the created resources in Bytebase.
+
 ## Configuration
 
-This action is configured via command-line flags.
+This action is configured via command-line flags. Global flags apply to all commands, while some commands have specific flags.
 
 ### Global Flags
 
@@ -35,20 +51,12 @@ These flags apply to the main `bytebase-action` command and its subcommands (`ch
     -   Used by subcommands like `check` and `rollout` to locate relevant files.
     -   Default: `""` (empty string)
 
-### `check` Command
+### `rollout` Command Specific Flags
 
-Checks the SQL migration files found using `--file-pattern`. (No specific flags for this subcommand itself).
-
-Usage: `bytebase-action check [global flags]`
-
-### `rollout` Command Flags
-
-These flags are specific to the `rollout` subcommand (`bytebase-action rollout`). This command rolls out the migration files found using `--file-pattern`.
+These flags are specific to the `rollout` subcommand (`bytebase-action rollout`).
 
 -   **`--release-title`**: The title of the release created in Bytebase.
-    -   Default: The current timestamp in RFC3339 format (e.g., `2025-04-25T17:29:56+08:00`).
+    -   Default: The current timestamp in RFC3339 format (e.g., `2025-04-25T17:32:07+08:00`).
 
 -   **`--rollout-title`**: The title of the rollout issue created in Bytebase.
-    -   Default: The current timestamp in RFC3339 format (e.g., `2025-04-25T17:29:56+08:00`).
-
-Usage: `bytebase-action rollout [global flags] [rollout flags]`
+    -   Default: The current timestamp in RFC3339 format (e.g., `2025-04-25T17:32:07+08:00`).
