@@ -8348,9 +8348,22 @@ components:
                     allOf:
                         - $ref: '#/components/schemas/Expr'
                     description: |-
-                        The condition that is associated with this binding.
+                        The condition that is associated with this binding, only used in the project IAM policy.
                          If the condition evaluates to true, then this binding applies to the current request.
                          If the condition evaluates to false, then this binding does not apply to the current request. However, a different role binding might grant the same role to one or more of the principals in this binding.
+                         The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+                         Support variables:
+                         resource.database: the database full name in "instances/{instance}/databases/{database}" format, used by the "roles/sqlEditorUser" and "roles/projectExporter" role.
+                         resource.schema: the schema name, used by the "roles/sqlEditorUser" and "roles/projectExporter" role.
+                         resource.table: the table name, used by the "roles/sqlEditorUser" and "roles/projectExporter" role.
+                         request.time: the expiration. Only support "<" operation in `request.time < timestamp("{ISO datetime string format}")`.
+                         request.row_limit: the maximum export rows, used by the "roles/projectExporter" role. Only support "<=" operation.
+
+                         For example:
+                         resource.database == "instances/local-pg/databases/postgres" && resource.schema in ["public","another_schema"]
+                         resource.database == "instances/local-pg/databases/bytebase" && resource.schema == "public" && resource.table in ["audit_log"]
+                         request.time < timestamp("2025-04-26T11:24:48.655Z") && request.row_limit <= 1000
                 parsedExpr:
                     readOnly: true
                     allOf:
@@ -9602,7 +9615,9 @@ components:
                         The user to be granted.
                          Format: users/{email}.
                 condition:
-                    $ref: '#/components/schemas/Expr'
+                    allOf:
+                        - $ref: '#/components/schemas/Expr'
+                    description: The condition for the role. Same as the condtion in IAM Binding message.
                 expiration:
                     pattern: ^-?(?:0|[1-9][0-9]{0,11})(?:\.[0-9]{1,9})?s$
                     type: string
@@ -11946,7 +11961,73 @@ components:
                 active:
                     type: boolean
                 condition:
-                    $ref: '#/components/schemas/Expr'
+                    allOf:
+                        - $ref: '#/components/schemas/Expr'
+                    description: |-
+                        The condition that is associated with the risk.
+                         The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+                         All supported variables:
+                         affected_rows: affected row count in the DDL/DML, support "==", "!=", "<", "<=", ">", ">=" operations.
+                         table_rows: table row count number, support "==", "!=", "<", "<=", ">", ">=" operations.
+                         environment_id: the environment resource id, support "==", "!=", "in [xx]", "!(in [xx])" operations.
+                         project_id: the project resource id, support "==", "!=", "in [xx]", "!(in [xx])", "contains()", "matches()", "startsWith()", "endsWith()" operations.
+                         db_engine: the database engine type, support "==", "!=", "in [xx]", "!(in [xx])" operations. Check the Engine enum for the values.
+                         sql_type: the SQL type, support "==", "!=", "in [xx]", "!(in [xx])" operations.
+                          when the risk source is DDL, check https://github.com/bytebase/bytebase/blob/main/frontend/src/plugins/cel/types/values.ts#L70 for supported values.
+                          when the risk source is DML, check https://github.com/bytebase/bytebase/blob/main/frontend/src/plugins/cel/types/values.ts#L71 for supported values.
+                         database_name: the database name, support "==", "!=", "in [xx]", "!(in [xx])", "contains()", "matches()", "startsWith()", "endsWith()" operations.
+                         schema_name: the schema name, support "==", "!=", "in [xx]", "!(in [xx])", "contains()", "matches()", "startsWith()", "endsWith()" operations.
+                         table_name: the table name, support "==", "!=", "in [xx]", "!(in [xx])", "contains()", "matches()", "startsWith()", "endsWith()" operations.
+                         sql_statement: the SQL statement, support "contains()", "matches()", "startsWith()", "endsWith()" operations.
+                         export_rows: export data count, support "==", "!=", "<", "<=", ">", ">=" operations.
+                         expiration_days: the role expiration days for the request, support "==", "!=", "<", "<=", ">", ">=" operations.
+
+                         When the risk source is DDL/DML, support following variables:
+                         affected_rows
+                         table_rows
+                         environment_id
+                         project_id
+                         db_engine
+                         sql_type
+                         database_name
+                         schema_name
+                         table_name
+                         sql_statement
+
+                         When the risk source is CREATE_DATABASE, support following variables:
+                         environment_id
+                         project_id
+                         db_engine
+                         database_name
+
+                         When the risk source is DATA_EXPORT, support following variables:
+                         environment_id
+                         project_id
+                         db_engine
+                         database_name
+                         schema_name
+                         table_name
+                         export_rows
+
+                         When the risk source is REQUEST_QUERY, support following variables:
+                         environment_id
+                         project_id
+                         db_engine
+                         database_name
+                         schema_name
+                         table_name
+                         expiration_days
+
+                         When the risk source is REQUEST_EXPORT, support following variables:
+                         environment_id
+                         project_id
+                         db_engine
+                         database_name
+                         schema_name
+                         table_name
+                         expiration_days
+                         export_rows
         Role:
             type: object
             properties:

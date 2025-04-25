@@ -3451,7 +3451,7 @@ LIST, HASH (https://www.postgresql.org/docs/current/ddl-partitioning.html)
 | ----- | ---- | ----- | ----------- |
 | role | [string](#string) |  | The requested role. Format: roles/EXPORTER. |
 | user | [string](#string) |  | The user to be granted. Format: users/{email}. |
-| condition | [google.type.Expr](#google-type-Expr) |  |  |
+| condition | [google.type.Expr](#google-type-Expr) |  | The condition for the role. Same as the condtion in IAM Binding message. |
 | expiration | [google.protobuf.Duration](#google-protobuf-Duration) |  |  |
 
 
@@ -4873,7 +4873,11 @@ The data in setting value.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | template | [ApprovalTemplate](#bytebase-v1-ApprovalTemplate) |  |  |
-| condition | [google.type.Expr](#google-type-Expr) |  |  |
+| condition | [google.type.Expr](#google-type-Expr) |  | The condition that is associated with the rule. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+Support variables: source: the risk source, check the Source enum in the Risk message for the values. level: the risk level, support 100 (low), 200 (moderate) and 300 (high).
+
+For examples: (source == &#34;DML&#34; &amp;&amp; level == 200) || (source == &#34;DDL&#34; &amp;&amp; level == 300) |
 
 
 
@@ -5398,7 +5402,11 @@ The theme resources.
 | ----- | ---- | ----- | ----------- |
 | role | [string](#string) |  | The role that is assigned to the members. Format: roles/{role} |
 | members | [string](#string) | repeated | Specifies the principals requesting access for a Bytebase resource. For users, the member should be: user:{email} For groups, the member should be: group:{email} |
-| condition | [google.type.Expr](#google-type-Expr) |  | The condition that is associated with this binding. If the condition evaluates to true, then this binding applies to the current request. If the condition evaluates to false, then this binding does not apply to the current request. However, a different role binding might grant the same role to one or more of the principals in this binding. |
+| condition | [google.type.Expr](#google-type-Expr) |  | The condition that is associated with this binding, only used in the project IAM policy. If the condition evaluates to true, then this binding applies to the current request. If the condition evaluates to false, then this binding does not apply to the current request. However, a different role binding might grant the same role to one or more of the principals in this binding. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+Support variables: resource.database: the database full name in &#34;instances/{instance}/databases/{database}&#34; format, used by the &#34;roles/sqlEditorUser&#34; and &#34;roles/projectExporter&#34; role. resource.schema: the schema name, used by the &#34;roles/sqlEditorUser&#34; and &#34;roles/projectExporter&#34; role. resource.table: the table name, used by the &#34;roles/sqlEditorUser&#34; and &#34;roles/projectExporter&#34; role. request.time: the expiration. Only support &#34;&lt;&#34; operation in `request.time &lt; timestamp(&#34;{ISO datetime string format}&#34;)`. request.row_limit: the maximum export rows, used by the &#34;roles/projectExporter&#34; role. Only support &#34;&lt;=&#34; operation.
+
+For example: resource.database == &#34;instances/local-pg/databases/postgres&#34; &amp;&amp; resource.schema in [&#34;public&#34;,&#34;another_schema&#34;] resource.database == &#34;instances/local-pg/databases/bytebase&#34; &amp;&amp; resource.schema == &#34;public&#34; &amp;&amp; resource.table in [&#34;audit_log&#34;] request.time &lt; timestamp(&#34;2025-04-26T11:24:48.655Z&#34;) &amp;&amp; request.row_limit &lt;= 1000 |
 | parsed_expr | [google.api.expr.v1alpha1.Expr](#google-api-expr-v1alpha1-Expr) |  | The parsed expression of the condition. |
 
 
@@ -6907,7 +6915,11 @@ MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
 | member | [string](#string) |  | Member is the principal who bind to this exception policy instance.
 
 - `user:{email}`: An email address that represents a specific Bytebase account. For example, `alice@example.com`. - `group:{email}`: An email address for group. |
-| condition | [google.type.Expr](#google-type-Expr) |  | The condition that is associated with this exception policy instance. |
+| condition | [google.type.Expr](#google-type-Expr) |  | The condition that is associated with this exception policy instance. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec If the condition is empty, means the user can access all databases without expiration.
+
+Support variables: resource.instance_id: the instance resource id. Only support &#34;==&#34; operation. resource.database_name: the database name. Only support &#34;==&#34; operation. resource.schema_name: the schema name. Only support &#34;==&#34; operation. resource.table_name: the table name. Only support &#34;==&#34; operation. resource.column_name: the column name. Only support &#34;==&#34; operation. request.time: the expiration. Only support &#34;&lt;&#34; operation in `request.time &lt; timestamp(&#34;{ISO datetime string format}&#34;)` All variables should join with &#34;&amp;&amp;&#34; condition.
+
+For example: resource.instance_id == &#34;local&#34; &amp;&amp; resource.database_name == &#34;employee&#34; &amp;&amp; request.time &lt; timestamp(&#34;2025-04-30T11:10:39.000Z&#34;) resource.instance_id == &#34;local&#34; &amp;&amp; resource.database_name == &#34;employee&#34; |
 
 
 
@@ -6938,7 +6950,13 @@ MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | id | [string](#string) |  | A unique identifier for a node in UUID format. |
-| condition | [google.type.Expr](#google-type-Expr) |  |  |
+| condition | [google.type.Expr](#google-type-Expr) |  | The condition for the masking rule. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+Support variables: environment_id: the environment resource id. project_id: the project resource id. instance_id: the instance resource id. database_name: the database name. table_name: the table name. column_name: the column name. classification_level: the classification level.
+
+Each variable support following operations: ==: the value equals the target. !=: the value not equals the target. in: the value matches one of the targets. !(in): the value not matches any of the targets.
+
+For example: environment_id == &#34;test&#34; &amp;&amp; project_id == &#34;sample-project&#34; instance_id == &#34;sample-instance&#34; &amp;&amp; database_name == &#34;employee&#34; &amp;&amp; table_name in [&#34;table1&#34;, &#34;table2&#34;] environment_id != &#34;test&#34; || !(project_id in [&#34;poject1&#34;, &#34;prject2&#34;]) instance_id == &#34;sample-instance&#34; &amp;&amp; (database_name == &#34;db1&#34; || database_name == &#34;db2&#34;) |
 | semantic_type | [string](#string) |  |  |
 
 
@@ -9491,7 +9509,19 @@ When paginating, all other parameters provided to `LiskRisks` must match the cal
 | title | [string](#string) |  |  |
 | level | [int32](#int32) |  |  |
 | active | [bool](#bool) |  |  |
-| condition | [google.type.Expr](#google-type-Expr) |  |  |
+| condition | [google.type.Expr](#google-type-Expr) |  | The condition that is associated with the risk. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+All supported variables: affected_rows: affected row count in the DDL/DML, support &#34;==&#34;, &#34;!=&#34;, &#34;&lt;&#34;, &#34;&lt;=&#34;, &#34;&gt;&#34;, &#34;&gt;=&#34; operations. table_rows: table row count number, support &#34;==&#34;, &#34;!=&#34;, &#34;&lt;&#34;, &#34;&lt;=&#34;, &#34;&gt;&#34;, &#34;&gt;=&#34; operations. environment_id: the environment resource id, support &#34;==&#34;, &#34;!=&#34;, &#34;in [xx]&#34;, &#34;!(in [xx])&#34; operations. project_id: the project resource id, support &#34;==&#34;, &#34;!=&#34;, &#34;in [xx]&#34;, &#34;!(in [xx])&#34;, &#34;contains()&#34;, &#34;matches()&#34;, &#34;startsWith()&#34;, &#34;endsWith()&#34; operations. db_engine: the database engine type, support &#34;==&#34;, &#34;!=&#34;, &#34;in [xx]&#34;, &#34;!(in [xx])&#34; operations. Check the Engine enum for the values. sql_type: the SQL type, support &#34;==&#34;, &#34;!=&#34;, &#34;in [xx]&#34;, &#34;!(in [xx])&#34; operations. when the risk source is DDL, check https://github.com/bytebase/bytebase/blob/main/frontend/src/plugins/cel/types/values.ts#L70 for supported values. when the risk source is DML, check https://github.com/bytebase/bytebase/blob/main/frontend/src/plugins/cel/types/values.ts#L71 for supported values. database_name: the database name, support &#34;==&#34;, &#34;!=&#34;, &#34;in [xx]&#34;, &#34;!(in [xx])&#34;, &#34;contains()&#34;, &#34;matches()&#34;, &#34;startsWith()&#34;, &#34;endsWith()&#34; operations. schema_name: the schema name, support &#34;==&#34;, &#34;!=&#34;, &#34;in [xx]&#34;, &#34;!(in [xx])&#34;, &#34;contains()&#34;, &#34;matches()&#34;, &#34;startsWith()&#34;, &#34;endsWith()&#34; operations. table_name: the table name, support &#34;==&#34;, &#34;!=&#34;, &#34;in [xx]&#34;, &#34;!(in [xx])&#34;, &#34;contains()&#34;, &#34;matches()&#34;, &#34;startsWith()&#34;, &#34;endsWith()&#34; operations. sql_statement: the SQL statement, support &#34;contains()&#34;, &#34;matches()&#34;, &#34;startsWith()&#34;, &#34;endsWith()&#34; operations. export_rows: export data count, support &#34;==&#34;, &#34;!=&#34;, &#34;&lt;&#34;, &#34;&lt;=&#34;, &#34;&gt;&#34;, &#34;&gt;=&#34; operations. expiration_days: the role expiration days for the request, support &#34;==&#34;, &#34;!=&#34;, &#34;&lt;&#34;, &#34;&lt;=&#34;, &#34;&gt;&#34;, &#34;&gt;=&#34; operations.
+
+When the risk source is DDL/DML, support following variables: affected_rows table_rows environment_id project_id db_engine sql_type database_name schema_name table_name sql_statement
+
+When the risk source is CREATE_DATABASE, support following variables: environment_id project_id db_engine database_name
+
+When the risk source is DATA_EXPORT, support following variables: environment_id project_id db_engine database_name schema_name table_name export_rows
+
+When the risk source is REQUEST_QUERY, support following variables: environment_id project_id db_engine database_name schema_name table_name expiration_days
+
+When the risk source is REQUEST_EXPORT, support following variables: environment_id project_id db_engine database_name schema_name table_name expiration_days export_rows |
 
 
 
