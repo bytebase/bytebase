@@ -219,7 +219,6 @@ onMounted(async () => {
 
     contentRef.value = content.value;
     watch(content, () => {
-      console.debug("[MonacoEditor] content changed", content.value);
       emit("update:content", content.value);
       contentRef.value = content.value;
     });
