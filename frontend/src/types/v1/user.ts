@@ -1,3 +1,4 @@
+import { t } from "@/plugins/i18n";
 import { SYSTEM_BOT_ID } from "../common";
 import { EMPTY_ID, UNKNOWN_ID } from "../const";
 import { State } from "../proto/v1/common";
@@ -31,7 +32,7 @@ export const allUsersUser = (): User => {
   return {
     ...emptyUser(),
     name: `users/${ALL_USERS_USER_ID}`,
-    title: "All users",
+    title: t("settings.members.all-users"),
     email: ALL_USERS_USER_EMAIL,
     userType: UserType.SYSTEM_BOT,
   };

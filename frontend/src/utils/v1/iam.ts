@@ -1,11 +1,7 @@
 import { uniq } from "lodash-es";
 import { extractUserId, useGroupStore, useWorkspaceV1Store } from "@/store";
-import { roleNamePrefix, userNamePrefix } from "@/store/modules/v1/common";
-import {
-  PresetRoleType,
-  groupBindingPrefix,
-  ALL_USERS_USER_EMAIL,
-} from "@/types";
+import { userNamePrefix } from "@/store/modules/v1/common";
+import { groupBindingPrefix, ALL_USERS_USER_EMAIL } from "@/types";
 import type { IamPolicy, Binding } from "@/types/proto/v1/iam_policy";
 import { convertFromExpr } from "@/utils/issue/cel";
 
@@ -117,9 +113,6 @@ export const roleListInIAM = ({
 }) => {
   const roles = policy.bindings
     .filter((binding) => {
-      if (binding.role === PresetRoleType.WORKSPACE_MEMBER) {
-        return false;
-      }
       if (isBindingPolicyExpired(binding)) {
         return false;
       }
@@ -129,11 +122,6 @@ export const roleListInIAM = ({
       );
     })
     .map((binding) => binding.role);
-
-  if (!roles.some((role) => role.startsWith(`${roleNamePrefix}workspace`))) {
-    // TODO(ed): no default workspace member role.
-    roles.push(PresetRoleType.WORKSPACE_MEMBER);
-  }
 
   return roles;
 };
