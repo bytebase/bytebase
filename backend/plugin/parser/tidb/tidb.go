@@ -45,8 +45,8 @@ type ParseResult struct {
 	BaseLine int
 }
 
-func ANTLRParseTiDB(statement string, options ...tokenizer.Option) ([]*ParseResult, error) {
-	statement, err := DealWithDelimiter(statement, options...)
+func ANTLRParseTiDB(statement string) ([]*ParseResult, error) {
+	statement, err := DealWithDelimiter(statement)
 	if err != nil {
 		return nil, err
 	}
@@ -140,8 +140,8 @@ func isEmptyStatement(tokens *antlr.CommonTokenStream) bool {
 }
 
 // DealWithDelimiter converts the delimiter statement to comment, also converts the following statement's delimiter to semicolon(`;`).
-func DealWithDelimiter(statement string, options ...tokenizer.Option) (string, error) {
-	has, list, err := hasDelimiter(statement, options...)
+func DealWithDelimiter(statement string) (string, error) {
+	has, list, err := hasDelimiter(statement)
 	if err != nil {
 		return "", err
 	}
@@ -189,9 +189,9 @@ func ExtractDelimiter(stmt string) (string, error) {
 	return "", errors.Errorf("cannot extract delimiter from %q", stmt)
 }
 
-func hasDelimiter(statement string, options ...tokenizer.Option) (bool, []base.SingleSQL, error) {
+func hasDelimiter(statement string) (bool, []base.SingleSQL, error) {
 	// use splitTiDBMultiSQL to check if the statement has delimiter
-	t := tokenizer.NewTokenizer(statement, options...)
+	t := tokenizer.NewTokenizer(statement)
 	list, err := t.SplitTiDBMultiSQL()
 	if err != nil {
 		return false, nil, errors.Errorf("failed to split multi sql: %v", err)
