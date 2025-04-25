@@ -106,4 +106,7 @@ export default defineConfig({
   define: {
     _global: {},
   },
+  worker: {
+    format: "es",
+  },
 });
