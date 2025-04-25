@@ -68,7 +68,7 @@
 
 <script setup lang="ts">
 import { isEqual } from "lodash-es";
-import { NButton } from "naive-ui";
+import { NButton, useDialog } from "naive-ui";
 import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBButtonConfirm } from "@/bbkit";
@@ -81,7 +81,7 @@ import {
   pushNotification,
   useWorkspaceV1Store,
 } from "@/store";
-import { PresetRoleType } from "@/types";
+import { ALL_USERS_USER_EMAIL } from "@/types";
 import MembersBindingSelect from "./MembersBindingSelect.vue";
 import { type MemberBinding } from "./types";
 
@@ -115,6 +115,7 @@ const state = reactive<LocalState>({
 const { t } = useI18n();
 const workspaceStore = useWorkspaceV1Store();
 const confirmRevokeAccessRef = ref<InstanceType<typeof BBButtonConfirm>>();
+const dialog = useDialog();
 
 const isCreating = computed(() => !props.member);
 
@@ -184,11 +185,28 @@ const handleRevoke = async () => {
   if (!props.member || memberListInBinding.value.length !== 1) {
     return;
   }
+  const member = memberListInBinding.value[0];
+  if (member === ALL_USERS_USER_EMAIL) {
+    dialog.warning({
+      title: t("common.warning"),
+      content: t("settings.members.revoke-allusers-alert"),
+      positiveText: t("common.confirm"),
+      negativeText: t("common.cancel"),
+      onPositiveClick: async () => {
+        await onRevoke(member);
+      },
+    });
+    return;
+  }
+
+  await onRevoke(member);
+};
+
+const onRevoke = async (member: string) => {
   await workspaceStore.patchIamPolicy([
     {
-      member: memberListInBinding.value[0],
-      // TODO(ed): no default member role.
-      roles: [PresetRoleType.WORKSPACE_MEMBER],
+      member,
+      roles: [],
     },
   ]);
   pushNotification({
