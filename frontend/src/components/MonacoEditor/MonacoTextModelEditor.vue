@@ -228,6 +228,17 @@ onMounted(async () => {
     watchEffect(() => {
       emit("update:selection", selection.value);
     });
+
+    // As the new experimental edit context uses a div instead of a textarea,
+    // we need to set the contenteditable attribute to true to ensure it is not
+    // captured by browser extensions like Vimium.
+    // This is a workaround for the issue that the new edit context is not
+    // editable by default.
+    // https://github.com/microsoft/vscode/blob/main/src/vs/monaco.d.ts#L3824
+    editor
+      .getDomNode()
+      ?.querySelector<HTMLElement>("div.native-edit-context")
+      ?.setAttribute("contenteditable", "true");
   } catch (ex) {
     console.error("[MonacoEditor] initialize failed", ex);
   }
