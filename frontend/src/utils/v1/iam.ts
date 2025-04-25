@@ -1,11 +1,7 @@
 import { uniq } from "lodash-es";
 import { extractUserId, useGroupStore, useWorkspaceV1Store } from "@/store";
-import { roleNamePrefix, userNamePrefix } from "@/store/modules/v1/common";
-import {
-  PresetRoleType,
-  groupBindingPrefix,
-  ALL_USERS_USER_EMAIL,
-} from "@/types";
+import { userNamePrefix } from "@/store/modules/v1/common";
+import { groupBindingPrefix, ALL_USERS_USER_EMAIL } from "@/types";
 import type { IamPolicy, Binding } from "@/types/proto/v1/iam_policy";
 import { convertFromExpr } from "@/utils/issue/cel";
 

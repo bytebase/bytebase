@@ -3,11 +3,7 @@ import { defineStore } from "pinia";
 import { ref, computed } from "vue";
 import { workspaceServiceClient } from "@/grpcweb";
 import { userNamePrefix } from "@/store/modules/v1/common";
-import {
-  groupBindingPrefix,
-  PresetRoleType,
-  ALL_USERS_USER_EMAIL,
-} from "@/types";
+import { groupBindingPrefix, ALL_USERS_USER_EMAIL } from "@/types";
 import { IamPolicy, Binding } from "@/types/proto/v1/iam_policy";
 import { roleListInIAM, getUserEmailListInBinding } from "@/utils";
 import { extractUserId } from "./common";

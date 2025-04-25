@@ -31,7 +31,6 @@ import {
   PRESET_PROJECT_ROLES,
   PRESET_ROLES,
   PRESET_WORKSPACE_ROLES,
-  PresetRoleType,
 } from "@/types";
 import { displayRoleTitle } from "@/utils";
 
