@@ -64,9 +64,6 @@
               <label class="block text-sm font-medium leading-5 text-control">
                 {{ $t("settings.members.table.roles") }}
               </label>
-              <span class="textinfolabel text-sm">
-                {{ $t("role.default-workspace-role") }}
-              </span>
             </div>
             <RoleSelect v-model:value="state.roles" :multiple="true" />
           </div>

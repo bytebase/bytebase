@@ -2405,7 +2405,6 @@
       "title-placeholder": "Input role title",
       "description-placeholder": "Input role description"
     },
-    "default-workspace-role": "Users will get the \"Workspace Member\" role by default",
     "title": "Title",
     "select-role": "Select role",
     "expired-tip": "The role might has been expired.",

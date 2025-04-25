@@ -2405,7 +2405,6 @@
       "title-placeholder": "役割のタイトルを入力してください",
       "description-placeholder": "役割の説明を入力してください"
     },
-    "default-workspace-role": "ユーザーにはデフォルトで「ワークスペースメンバー」の役割が与えられます",
     "title": "タイトル",
     "select-role": "役割の選択",
     "expired-tip": "役割の有効期限が切れている可能性があります。",

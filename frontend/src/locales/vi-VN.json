@@ -2405,7 +2405,6 @@
       "title-placeholder": "Nhập tiêu đề vai trò",
       "description-placeholder": "Nhập mô tả vai trò"
     },
-    "default-workspace-role": "Người dùng sẽ nhận được vai trò \"Thành viên không gian làm việc\" theo mặc định",
     "title": "Tiêu đề",
     "select-role": "Chọn vai trò",
     "expired-tip": "Vai trò có thể đã hết hạn.",
