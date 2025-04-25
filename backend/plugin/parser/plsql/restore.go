@@ -124,17 +124,48 @@ func (g *generator) EnterDelete_statement(ctx *parser.Delete_statementContext) {
 	g.result = fmt.Sprintf(`INSERT INTO "%s"."%s" SELECT * FROM "%s"."%s";`, g.originalDatabase, g.originalTable, g.backupDatabase, g.backupTable)
 }
 
+func disjoint(a []string, b map[string]bool) bool {
+	for _, item := range a {
+		if _, ok := b[item]; ok {
+			return false
+		}
+	}
+	return true
+}
+
+func (g *generator) findDisjointUniqueKey(columns []string) ([]string, error) {
+	columnMap := make(map[string]bool)
+	for _, column := range columns {
+		columnMap[column] = true
+	}
+	if g.pk != nil {
+		if disjoint(g.pk.GetProto().Expressions, columnMap) {
+			return g.pk.GetProto().Expressions, nil
+		}
+	}
+	for _, index := range g.table.GetProto().Indexes {
+		if index.Primary {
+			continue
+		}
+		if !index.Unique {
+			continue
+		}
+		if strings.Contains(index.Type, "FUNCTION-BASED") {
+			continue
+		}
+		if disjoint(index.Expressions, columnMap) {
+			return index.Expressions, nil
+		}
+	}
+	return nil, errors.Errorf("no disjoint unique key found for %s.%s", g.originalDatabase, g.originalTable)
+}
+
 func (g *generator) EnterUpdate_statement(ctx *parser.Update_statementContext) {
 	if !IsTopLevelStatement(ctx.GetParent()) || !g.isFirst {
 		return
 	}
 
 	g.isFirst = false
-
-	if g.pk == nil {
-		g.err = errors.Errorf("primary key not found for %s.%s", g.originalDatabase, g.originalTable)
-		return
-	}
 
 	l := &updateElemListener{}
 	antlr.ParseTreeWalkerDefault.Walk(l, ctx)
@@ -143,15 +174,10 @@ func (g *generator) EnterUpdate_statement(ctx *parser.Update_statementContext) {
 		return
 	}
 
-	pkMap := make(map[string]bool)
-	for _, column := range g.pk.GetProto().Expressions {
-		pkMap[column] = true
-	}
-	for _, column := range l.result {
-		if pkMap[column] {
-			g.err = errors.Errorf("primary key column %s is updated", column)
-			return
-		}
+	uk, err := g.findDisjointUniqueKey(l.result)
+	if err != nil {
+		g.err = err
+		return
 	}
 
 	var buf strings.Builder
@@ -159,7 +185,7 @@ func (g *generator) EnterUpdate_statement(ctx *parser.Update_statementContext) {
 		g.err = err
 		return
 	}
-	for i, column := range g.pk.GetProto().Expressions {
+	for i, column := range uk {
 		if i > 0 {
 			if _, err := fmt.Fprintf(&buf, " AND"); err != nil {
 				g.err = err

@@ -21,6 +21,8 @@ import (
 	tidbdriver "github.com/bytebase/bytebase/backend/plugin/db/tidb"
 	parserbase "github.com/bytebase/bytebase/backend/plugin/parser/base"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
+	tidbparser "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
+
 	"github.com/bytebase/bytebase/backend/plugin/parser/pg"
 	"github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 	"github.com/bytebase/bytebase/backend/plugin/parser/tsql"
@@ -223,8 +225,7 @@ func GetSQLSummaryReport(ctx context.Context, stores *store.Store, sheetManager 
 		}
 		explainCalculator = md.CountAffectedRows
 
-		// TODO(d): implement TiDB sqlTypes.
-		sqlTypes, err = mysqlparser.GetStatementTypes(asts)
+		sqlTypes, err = tidbparser.GetStatementTypes(asts)
 		if err != nil {
 			slog.Error("failed to get statement types", log.BBError(err))
 		}
