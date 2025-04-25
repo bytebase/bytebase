@@ -3,6 +3,7 @@ package plsql
 import (
 	"context"
 	"io"
+	"math"
 	"os"
 	"testing"
 
@@ -59,7 +60,7 @@ func TestRestore(t *testing.T) {
 				Column: 0,
 			},
 			EndPosition: &store.Position{
-				Line:   1000000000,
+				Line:   math.MaxInt32,
 				Column: 0,
 			},
 		})
