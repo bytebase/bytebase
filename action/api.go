@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"time"
 
 	"google.golang.org/protobuf/encoding/protojson"
@@ -108,6 +109,127 @@ func (c *Client) checkRelease(project string, r *v1pb.CheckReleaseRequest) (*v1p
 	}
 
 	resp := &v1pb.CheckReleaseResponse{}
+	if err := protojsonUnmarshaler.Unmarshal(body, resp); err != nil {
+		return nil, err
+	}
+
+	return resp, nil
+}
+
+func (c *Client) createRelease(project string, r *v1pb.Release) (*v1pb.Release, error) {
+	rb, err := protojson.Marshal(r)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", fmt.Sprintf("%s/v1/%s/releases", c.url, project), bytes.NewReader(rb))
+	if err != nil {
+		return nil, err
+	}
+
+	body, err := c.doRequest(req)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to create release")
+	}
+
+	resp := &v1pb.Release{}
+	if err := protojsonUnmarshaler.Unmarshal(body, resp); err != nil {
+		return nil, err
+	}
+
+	return resp, nil
+}
+
+func (c *Client) previewPlan(project string, r *v1pb.PreviewPlanRequest) (*v1pb.PreviewPlanResponse, error) {
+	rb, err := protojson.Marshal(r)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", fmt.Sprintf("%s/v1/%s:previewPlan", c.url, project), bytes.NewReader(rb))
+	if err != nil {
+		return nil, err
+	}
+
+	body, err := c.doRequest(req)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to preview plan")
+	}
+
+	resp := &v1pb.PreviewPlanResponse{}
+	if err := protojsonUnmarshaler.Unmarshal(body, resp); err != nil {
+		return nil, err
+	}
+
+	return resp, nil
+}
+
+func (c *Client) createPlan(project string, r *v1pb.Plan) (*v1pb.Plan, error) {
+	rb, err := protojson.Marshal(r)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", fmt.Sprintf("%s/v1/%s/plans", c.url, project), bytes.NewReader(rb))
+	if err != nil {
+		return nil, err
+	}
+
+	body, err := c.doRequest(req)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to create plan")
+	}
+
+	resp := &v1pb.Plan{}
+	if err := protojsonUnmarshaler.Unmarshal(body, resp); err != nil {
+		return nil, err
+	}
+
+	return resp, nil
+}
+
+func (c *Client) getRollout(project, rolloutID string) (*v1pb.Rollout, error) {
+	req, err := http.NewRequest("GET", fmt.Sprintf("%s/v1/%s/rollouts/%s", c.url, project, rolloutID), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	body, err := c.doRequest(req)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get rollout")
+	}
+
+	resp := &v1pb.Rollout{}
+	if err := protojsonUnmarshaler.Unmarshal(body, resp); err != nil {
+		return nil, err
+	}
+
+	return resp, nil
+}
+
+func (c *Client) createRollout(project string, r *v1pb.CreateRolloutRequest) (*v1pb.Rollout, error) {
+	rb, err := protojson.Marshal(r.Rollout)
+	if err != nil {
+		return nil, err
+	}
+	a := fmt.Sprintf("%s/v1/%s/rollouts", c.url, project)
+	if r.Target != nil {
+		query := url.Values{}
+		query.Set("target", *r.Target)
+		a = a + "?" + query.Encode()
+	}
+
+	req, err := http.NewRequest("POST", a, bytes.NewReader(rb))
+	if err != nil {
+		return nil, err
+	}
+
+	body, err := c.doRequest(req)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to create rollout")
+	}
+
+	resp := &v1pb.Rollout{}
 	if err := protojsonUnmarshaler.Unmarshal(body, resp); err != nil {
 		return nil, err
 	}
