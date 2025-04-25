@@ -10,6 +10,7 @@
 </template>
 
 <script lang="ts" setup>
+import * as monaco from "monaco-editor";
 import { v4 as uuidv4 } from "uuid";
 import {
   onMounted,
@@ -25,7 +26,7 @@ import { BBSpin } from "@/bbkit";
 import type { Language } from "@/types";
 import type { AutoHeightOptions } from "./composables";
 import { useAutoHeight, useOptionByKey, useOptions } from "./composables";
-import monaco, { createMonacoDiffEditor } from "./editor";
+import { createMonacoDiffEditor } from "./editor";
 import { useMonacoTextModel } from "./text-model";
 import type {
   IStandaloneDiffEditor,

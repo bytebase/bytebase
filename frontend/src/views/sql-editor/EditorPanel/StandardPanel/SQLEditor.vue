@@ -4,6 +4,7 @@
   >
     <MonacoEditor
       class="w-full h-full"
+      :key="filename"
       ref="monacoEditorRef"
       :enable-decorations="true"
       :filename="filename"

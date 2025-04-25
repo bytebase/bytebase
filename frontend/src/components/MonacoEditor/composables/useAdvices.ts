@@ -1,5 +1,5 @@
 import { maxBy } from "lodash-es";
-import type monaco from "monaco-editor";
+import * as monaco from "monaco-editor";
 import { unref, watchEffect } from "vue";
 import type { MaybeRef } from "@/types";
 import { callCssVariable, escapeMarkdown } from "@/utils";

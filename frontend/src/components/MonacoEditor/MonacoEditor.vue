@@ -18,8 +18,7 @@
 <script setup lang="ts">
 import { editor, type IRange } from "monaco-editor";
 import { v4 as uuidv4 } from "uuid";
-import { computed, toRef, watch, watchEffect } from "vue";
-import { ref } from "vue";
+import { computed, toRef, watch, watchEffect, ref } from "vue";
 import type { Language } from "@/types";
 import MonacoTextModelEditor from "./MonacoTextModelEditor.vue";
 import { useSQLParser } from "./composables";

@@ -1,4 +1,4 @@
-import type monaco from "monaco-editor";
+import * as monaco from "monaco-editor";
 import { ref, type ShallowRef, watchEffect } from "vue";
 
 export const useSelectedContent = (

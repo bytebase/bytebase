@@ -1,16 +1,50 @@
-import { languages } from "monaco-editor";
+import { initialize as initializeServices } from "@codingame/monaco-vscode-api";
+import "@codingame/monaco-vscode-javascript-default-extension";
+import getLanguagesServiceOverride from "@codingame/monaco-vscode-languages-service-override";
+import "@codingame/monaco-vscode-sql-default-extension";
+import getTextMateServiceOverride from "@codingame/monaco-vscode-textmate-service-override";
+import "@codingame/monaco-vscode-theme-defaults-default-extension";
+import getThemeServiceOverride from "@codingame/monaco-vscode-theme-service-override";
 import "vscode/localExtensionHost";
-import { initialize as initializeServices } from "vscode/services";
-import { SupportedLanguages } from "./types";
+
+export type WorkerLoader = () => Worker;
+
+const workerLoaders: Partial<Record<string, WorkerLoader>> = {
+  TextEditorWorker: () =>
+    new Worker(
+      new URL("monaco-editor/esm/vs/editor/editor.worker.js", import.meta.url),
+      { type: "module" }
+    ),
+  TextMateWorker: () =>
+    new Worker(
+      new URL(
+        "@codingame/monaco-vscode-textmate-service-override/worker",
+        import.meta.url
+      ),
+      { type: "module" }
+    ),
+};
+
+window.MonacoEnvironment = {
+  getWorker: function (_moduleId, label) {
+    const workerFactory = workerLoaders[label];
+    if (workerFactory != null) {
+      return workerFactory();
+    }
+    throw new Error(`Worker ${label} not found`);
+  },
+};
 
 const state = {
   servicesInitialized: undefined as Promise<void> | undefined,
 };
 
 const initializeRunner = async () => {
-  await initializeServices({});
-
-  SupportedLanguages.forEach((lang) => languages.register(lang));
+  await initializeServices({
+    ...getTextMateServiceOverride(),
+    ...getThemeServiceOverride(),
+    ...getLanguagesServiceOverride(),
+  });
 };
 
 export const initializeMonacoServices = async () => {
