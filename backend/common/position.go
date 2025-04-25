@@ -209,3 +209,10 @@ func ConvertLineToActionLine(line int) int {
 	}
 	return line + 1
 }
+
+func ConvertPGParserLineToPosition(line int) *storepb.Position {
+	return &storepb.Position{
+		Line:   int32(line),
+		Column: 0,
+	}
+}

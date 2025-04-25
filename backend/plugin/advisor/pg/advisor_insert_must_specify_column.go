@@ -66,7 +66,7 @@ func (checker *insertMustSpecifyColumnChecker) Visit(in ast.Node) ast.Visitor {
 			Code:          advisor.InsertNotSpecifyColumn.Int32(),
 			Title:         checker.title,
 			Content:       fmt.Sprintf("The INSERT statement must specify columns but \"%s\" does not", checker.text),
-			StartPosition: common.ConvertANTLRLineToPosition(node.LastLine()),
+			StartPosition: common.ConvertPGParserLineToPosition(node.LastLine()),
 		})
 	}
 

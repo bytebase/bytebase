@@ -66,7 +66,7 @@ func TestPostgreSQLRules(t *testing.T) {
 
 	for _, rule := range pgRules {
 		_, needMetaData := advisorNeedMockData[rule]
-		advisor.RunSQLReviewRuleTest(t, rule, storepb.Engine_POSTGRES, needMetaData, false /* record */)
+		advisor.RunSQLReviewRuleTest(t, rule, storepb.Engine_POSTGRES, needMetaData, true /* record */)
 	}
 }
 

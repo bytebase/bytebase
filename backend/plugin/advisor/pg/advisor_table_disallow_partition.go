@@ -79,7 +79,7 @@ func (checker *tableDisallowPartitionChecker) Visit(in ast.Node) ast.Visitor {
 			Code:          code.Int32(),
 			Title:         checker.title,
 			Content:       fmt.Sprintf("Table partition is forbidden, but \"%s\" creates", checker.text),
-			StartPosition: common.ConvertANTLRLineToPosition(checker.line),
+			StartPosition: common.ConvertPGParserLineToPosition(checker.line),
 		})
 	}
 

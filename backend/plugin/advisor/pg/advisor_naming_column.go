@@ -108,7 +108,7 @@ func (checker *namingColumnConventionChecker) Visit(node ast.Node) ast.Visitor {
 				Code:          advisor.NamingColumnConventionMismatch.Int32(),
 				Title:         checker.title,
 				Content:       fmt.Sprintf("\"%s\".\"%s\" mismatches column naming convention, naming format should be %q", tableName, column.name, checker.format),
-				StartPosition: common.ConvertANTLRLineToPosition(column.line),
+				StartPosition: common.ConvertPGParserLineToPosition(column.line),
 			})
 		}
 
@@ -118,7 +118,7 @@ func (checker *namingColumnConventionChecker) Visit(node ast.Node) ast.Visitor {
 				Code:          advisor.NamingColumnConventionMismatch.Int32(),
 				Title:         checker.title,
 				Content:       fmt.Sprintf("\"%s\".\"%s\" mismatches column naming convention, its length should be within %d characters", tableName, column.name, checker.maxLength),
-				StartPosition: common.ConvertANTLRLineToPosition(column.line),
+				StartPosition: common.ConvertPGParserLineToPosition(column.line),
 			})
 		}
 	}

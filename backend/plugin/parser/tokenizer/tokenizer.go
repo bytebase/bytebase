@@ -758,7 +758,7 @@ func (t *Tokenizer) SplitPostgreSQLMultiSQL() ([]base.SingleSQL, error) {
 						// which means the line of ')'.
 						// So we need minus the aboveNonBlankLineDistance.
 						End: &store.Position{
-							Line: int32(t.line - t.aboveNonBlankLineDistance()),
+							Line: int32(t.line - t.aboveNonBlankLineDistance()-1),
 						},
 						Empty: t.emptyStatement,
 					})

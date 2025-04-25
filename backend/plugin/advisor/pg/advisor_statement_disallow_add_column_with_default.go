@@ -67,7 +67,7 @@ func (checker *statementDisallowAddColumnWithDefaultChecker) Visit(in ast.Node) 
 					Code:          advisor.StatementAddColumnWithDefault.Int32(),
 					Title:         checker.title,
 					Content:       "Adding column with DEFAULT will locked the whole table and rewriting each rows",
-					StartPosition: common.ConvertANTLRLineToPosition(checker.line),
+					StartPosition: common.ConvertPGParserLineToPosition(checker.line),
 				})
 			}
 		}
