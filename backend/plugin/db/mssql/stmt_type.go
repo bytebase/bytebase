@@ -60,8 +60,8 @@ func getStmtTypeFromSQLClauses(ctx rawparser.ISql_clausesContext) (stmtType, err
 			return stmtTypeResultSetGenerating | stmtTypeRowCountGenerating, nil
 		}
 		return stmtTypeRowCountGenerating, nil
-	case ctx.Cfl_statement() != nil:
-		return stmtTypeUnknown, errors.Errorf("unsupported control flow statement")
+	// case ctx.Cfl_statement() != nil:
+	// 	return stmtTypeUnknown, errors.Errorf("unsupported control flow statement")
 	case ctx.Another_statement() != nil:
 		return stmtTypeUnknown, nil
 	case ctx.Ddl_clause() != nil:
