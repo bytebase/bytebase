@@ -41,18 +41,6 @@ export const createMonacoEditor = async (config: {
     ...config.options,
   });
 
-  console.log(
-    "[MonacoEditor] Editor created",
-    {
-      ...defaultEditorOptions(),
-      ...config.options,
-    },
-    {
-      ...defaultEditorOptions(),
-      ...config.options,
-    }.lineNumbers
-  );
-
   MonacoEditorReadyDefer.resolve(undefined);
 
   return editor;
@@ -110,6 +98,11 @@ export const defaultEditorOptions =
       inlineSuggest: {
         showToolbar: "never",
       },
+      wordBasedSuggestions: "currentDocument",
+      lineNumbers: "on",
+      lineNumbersMinChars: 3,
+      cursorStyle: "line",
+      glyphMargin: false,
     };
   };
 

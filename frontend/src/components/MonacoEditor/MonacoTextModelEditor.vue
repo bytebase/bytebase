@@ -187,12 +187,6 @@ onMounted(async () => {
       },
     });
 
-    console.log("asdasda", {
-      options: {
-        readOnly: props.readonly,
-        ...props.options,
-      },
-    });
     editorRef.value = editor;
 
     // Use "plugin" composable features

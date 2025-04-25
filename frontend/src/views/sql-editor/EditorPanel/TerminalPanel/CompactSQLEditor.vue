@@ -278,9 +278,6 @@ useEmitteryEventListener(editorEvents, "format-content", () => {
 const EDITOR_OPTIONS = computed<Editor.IStandaloneEditorConstructionOptions>(
   () => ({
     theme: "vs-dark",
-    minimap: {
-      enabled: false,
-    },
     scrollbar: {
       vertical: "hidden",
       horizontal: "hidden",
@@ -289,7 +286,6 @@ const EDITOR_OPTIONS = computed<Editor.IStandaloneEditorConstructionOptions>(
     overviewRulerLanes: 0,
     lineNumbers: getLineNumber,
     lineNumbersMinChars: firstLinePrompt.value.length + 1,
-    glyphMargin: false,
     cursorStyle: "block",
   })
 );
