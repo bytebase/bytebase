@@ -5,19 +5,19 @@
   expected:
     - text: -- comment
       baseline: 0
-      firststatementline: 0
-      firststatementcolumn: 0
-      lastline: 1
-      lastcolumn: 0
+      start: null
+      end:
+        line: 1
+        column: 0
       empty: true
       byteoffsetstart: 0
       byteoffsetend: 0
     - text: DELIMITER ;
       baseline: 0
-      firststatementline: 0
-      firststatementcolumn: 0
-      lastline: 2
-      lastcolumn: 0
+      start: null
+      end:
+        line: 2
+        column: 0
       empty: false
       byteoffsetstart: 11
       byteoffsetend: 22
@@ -38,10 +38,10 @@
   expected:
     - text: drop table t3;
       baseline: 0
-      firststatementline: 0
-      firststatementcolumn: 0
-      lastline: 1
-      lastcolumn: 0
+      start: null
+      end:
+        line: 1
+        column: 0
       empty: false
       byteoffsetstart: 0
       byteoffsetend: 14
@@ -50,64 +50,64 @@
          id int
         );
       baseline: 0
-      firststatementline: 0
-      firststatementcolumn: 0
-      lastline: 3
-      lastcolumn: 0
+      start: null
+      end:
+        line: 3
+        column: 0
       empty: false
       byteoffsetstart: 14
       byteoffsetend: 42
     - text: ""
       baseline: 3
-      firststatementline: 0
-      firststatementcolumn: 0
-      lastline: 4
-      lastcolumn: 0
+      start: null
+      end:
+        line: 4
+        column: 0
       empty: true
       byteoffsetstart: 0
       byteoffsetend: 0
     - text: insert into t3 values (1), (2), (3);
       baseline: 0
-      firststatementline: 0
-      firststatementcolumn: 0
-      lastline: 5
-      lastcolumn: 0
+      start: null
+      end:
+        line: 5
+        column: 0
       empty: false
       byteoffsetstart: 44
       byteoffsetend: 80
     - text: insert into t3 values (1);
       baseline: 0
-      firststatementline: 0
-      firststatementcolumn: 0
-      lastline: 6
-      lastcolumn: 0
+      start: null
+      end:
+        line: 6
+        column: 0
       empty: false
       byteoffsetstart: 81
       byteoffsetend: 107
     - text: delete from t3 where id = 1;
       baseline: 0
-      firststatementline: 0
-      firststatementcolumn: 0
-      lastline: 7
-      lastcolumn: 0
+      start: null
+      end:
+        line: 7
+        column: 0
       empty: false
       byteoffsetstart: 108
       byteoffsetend: 136
     - text: ""
       baseline: 7
-      firststatementline: 0
-      firststatementcolumn: 0
-      lastline: 8
-      lastcolumn: 0
+      start: null
+      end:
+        line: 8
+        column: 0
       empty: true
       byteoffsetstart: 0
       byteoffsetend: 0
     - text: update t3 set id = 4 where id = 3;
       baseline: 0
-      firststatementline: 0
-      firststatementcolumn: 0
-      lastline: 9
-      lastcolumn: 0
+      start: null
+      end:
+        line: 9
+        column: 0
       empty: false
       byteoffsetstart: 138
       byteoffsetend: 172
@@ -117,15 +117,11 @@
       `b` blob NOT NULL,
     );
 
-
-
     /*
 
 
 
     */
-
-
 
     --
     -- Table structure for `t`
@@ -139,21 +135,19 @@
           `b` blob NOT NULL,
         );
       baseline: 0
-      firststatementline: 0
-      firststatementcolumn: 0
-      lastline: 3
-      lastcolumn: 0
+      start: null
+      end:
+        line: 3
+        column: 0
       empty: false
       byteoffsetstart: 0
       byteoffsetend: 42
-    - text: |4+
-
-
+    - text: ""
       baseline: 3
-      firststatementline: 0
-      firststatementcolumn: 0
-      lastline: 6
-      lastcolumn: 0
+      start: null
+      end:
+        line: 4
+        column: 0
       empty: true
       byteoffsetstart: 0
       byteoffsetend: 0
@@ -164,8 +158,6 @@
 
         */
 
-
-
         --
         -- Table structure for `t`
         --
@@ -173,10 +165,10 @@
           `b` blob NOT NULL,
         );
       baseline: 0
-      firststatementline: 0
-      firststatementcolumn: 0
-      lastline: 20
-      lastcolumn: 0
+      start: null
+      end:
+        line: 16
+        column: 0
       empty: false
-      byteoffsetstart: 46
-      byteoffsetend: 133
+      byteoffsetstart: 44
+      byteoffsetend: 129

@@ -68,7 +68,7 @@ func (checker *noSelectAllChecker) Visit(node ast.Node) ast.Visitor {
 					Code:          advisor.StatementSelectAll.Int32(),
 					Title:         checker.title,
 					Content:       fmt.Sprintf("\"%s\" uses SELECT all", checker.text),
-					StartPosition: common.ConvertANTLRLineToPosition(checker.line),
+					StartPosition: common.ConvertPGParserLineToPosition(checker.line),
 				})
 				break
 			}

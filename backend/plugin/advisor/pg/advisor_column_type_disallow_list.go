@@ -142,7 +142,7 @@ func (checker *columnTypeDisallowListChecker) Visit(in ast.Node) ast.Visitor {
 			Code:          advisor.DisabledColumnType.Int32(),
 			Title:         checker.title,
 			Content:       fmt.Sprintf("Disallow column type %s but column \"%s\".\"%s\" is", column.tp, column.table, column.column),
-			StartPosition: common.ConvertANTLRLineToPosition(column.line),
+			StartPosition: common.ConvertPGParserLineToPosition(column.line),
 		})
 	}
 	return checker

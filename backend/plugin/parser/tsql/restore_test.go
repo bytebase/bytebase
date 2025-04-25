@@ -3,6 +3,7 @@ package tsql
 import (
 	"context"
 	"io"
+	"math"
 	"os"
 	"testing"
 
@@ -58,12 +59,12 @@ func TestRestore(t *testing.T) {
 				Table:    t.BackupTable,
 			},
 			StartPosition: &store.Position{
-				Line:   1,
+				Line:   0,
 				Column: 0,
 			},
 			EndPosition: &store.Position{
-				Line:   1000000000,
-				Column: 1,
+				Line:   math.MaxInt32,
+				Column: 0,
 			},
 		})
 		a.NoError(err)

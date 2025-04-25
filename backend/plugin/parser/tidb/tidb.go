@@ -50,7 +50,7 @@ func ANTLRParseTiDB(statement string, options ...tokenizer.Option) ([]*ParseResu
 	if err != nil {
 		return nil, err
 	}
-	list, err := parseInputStream(antlr.NewInputStream(statement))
+	list, err := parseInputStream(antlr.NewInputStream(statement), statement)
 	// HACK(p0ny): the callee may end up in an infinite loop, we print the statement here to help debug.
 	if err != nil && strings.Contains(err.Error(), "split SQL statement timed out") {
 		slog.Info("split SQL statement timed out", "statement", statement)
@@ -94,12 +94,12 @@ func parseSingleStatement(baseLine int, statement string) (antlr.Tree, *antlr.Co
 	return tree, stream, nil
 }
 
-func parseInputStream(input *antlr.InputStream) ([]*ParseResult, error) {
+func parseInputStream(input *antlr.InputStream, statement string) ([]*ParseResult, error) {
 	var result []*ParseResult
 	lexer := parser.NewTiDBLexer(input)
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
 
-	list, err := splitTiDBStatement(stream)
+	list, err := splitTiDBStatement(stream, statement)
 	if err != nil {
 		return nil, err
 	}
@@ -124,7 +124,7 @@ func parseInputStream(input *antlr.InputStream) ([]*ParseResult, error) {
 			Tokens:   tokens,
 			BaseLine: s.BaseLine,
 		})
-		baseLine = s.LastLine
+		baseLine = int(s.End.GetLine())
 	}
 
 	return result, nil

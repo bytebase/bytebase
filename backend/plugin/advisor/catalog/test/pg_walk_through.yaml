@@ -574,27 +574,27 @@
   err:
     type: 408
     content: 'Cannot drop column "id" in table "public"."test", it''s referenced by view: "public"."v1"'
-    line: 1
+    line: 0
     payload:
-        - '"public"."v1"'
+      - '"public"."v1"'
 - statement: ALTER TABLE test ALTER COLUMN id TYPE varchar(20);
   ignore_case_sensitive: false
   want: ""
   err:
     type: 408
     content: 'Cannot alter type of column "id" in table "public"."test", it''s referenced by view: "public"."v1"'
-    line: 1
+    line: 0
     payload:
-        - '"public"."v1"'
+      - '"public"."v1"'
 - statement: DROP TABLE test;
   ignore_case_sensitive: false
   want: ""
   err:
     type: 304
     content: 'Cannot drop table "public"."test", it''s referenced by view: "public"."v1"'
-    line: 1
+    line: 0
     payload:
-        - '"public"."v1"'
+      - '"public"."v1"'
 - statement: |-
     DROP VIEW v1;
     ALTER TABLE test DROP COLUMN id;

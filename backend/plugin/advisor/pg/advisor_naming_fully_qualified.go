@@ -170,7 +170,7 @@ func (checker *FullyQualifiedObjectNameChecker) appendAdviceByObjName(objName st
 			Code:          advisor.NamingNotFullyQualifiedName,
 			Title:         checker.title,
 			Content:       fmt.Sprintf("unqualified object name: '%s'", objName),
-			StartPosition: common.ConvertANTLRLineToPosition(checker.line),
+			StartPosition: common.ConvertPGParserLineToPosition(checker.line),
 		})
 	}
 }

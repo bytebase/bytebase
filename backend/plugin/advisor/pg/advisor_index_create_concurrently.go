@@ -65,7 +65,7 @@ func (checker *indexCreateConcurrentlyChecker) Visit(in ast.Node) ast.Visitor {
 				Code:          advisor.CreateIndexUnconcurrently.Int32(),
 				Title:         checker.title,
 				Content:       "Creating indexes will block writes on the table, unless use CONCURRENTLY",
-				StartPosition: common.ConvertANTLRLineToPosition(in.LastLine()),
+				StartPosition: common.ConvertPGParserLineToPosition(in.LastLine()),
 			})
 		}
 	case *ast.DropIndexStmt:
@@ -75,7 +75,7 @@ func (checker *indexCreateConcurrentlyChecker) Visit(in ast.Node) ast.Visitor {
 				Code:          advisor.DropIndexUnconcurrently.Int32(),
 				Title:         checker.title,
 				Content:       "Droping indexes will block writes on the table, unless use CONCURRENTLY",
-				StartPosition: common.ConvertANTLRLineToPosition(in.LastLine()),
+				StartPosition: common.ConvertPGParserLineToPosition(in.LastLine()),
 			})
 		}
 	}

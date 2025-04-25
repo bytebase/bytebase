@@ -19,7 +19,7 @@ func convert(node *pgquery.Node, statement base.SingleSQL) (res ast.Node, err er
 	defer func() {
 		if err == nil && res != nil {
 			res.SetText(strings.TrimSpace(statement.Text))
-			res.SetLastLine(statement.LastLine)
+			res.SetLastLine(int(statement.End.Line))
 			switch n := res.(type) {
 			case *ast.CreateTableStmt:
 				err = setLineForCreateTableStmt(n)

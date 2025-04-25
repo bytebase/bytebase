@@ -121,7 +121,7 @@ func (checker *collationAllowlistChecker) Visit(in ast.Node) ast.Visitor {
 			Code:          code.Int32(),
 			Title:         checker.title,
 			Content:       fmt.Sprintf("Use disabled collation \"%s\", related statement \"%s\"", disabledCollation, checker.text),
-			StartPosition: common.ConvertANTLRLineToPosition(line),
+			StartPosition: common.ConvertPGParserLineToPosition(line),
 		})
 	}
 
