@@ -1411,7 +1411,8 @@ type GrantRequest struct {
 	Role string `protobuf:"bytes,1,opt,name=role,proto3" json:"role,omitempty"`
 	// The user to be granted.
 	// Format: users/{email}.
-	User          string               `protobuf:"bytes,2,opt,name=user,proto3" json:"user,omitempty"`
+	User string `protobuf:"bytes,2,opt,name=user,proto3" json:"user,omitempty"`
+	// The condition for the role. Same as the condtion in IAM Binding message.
 	Condition     *expr.Expr           `protobuf:"bytes,3,opt,name=condition,proto3" json:"condition,omitempty"`
 	Expiration    *durationpb.Duration `protobuf:"bytes,4,opt,name=expiration,proto3" json:"expiration,omitempty"`
 	unknownFields protoimpl.UnknownFields

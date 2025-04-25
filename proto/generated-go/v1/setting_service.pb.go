@@ -2453,9 +2453,18 @@ func (x *AppIMSetting_DingTalk) GetRobotCode() string {
 }
 
 type WorkspaceApprovalSetting_Rule struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Template      *ApprovalTemplate      `protobuf:"bytes,2,opt,name=template,proto3" json:"template,omitempty"`
-	Condition     *expr.Expr             `protobuf:"bytes,3,opt,name=condition,proto3" json:"condition,omitempty"`
+	state    protoimpl.MessageState `protogen:"open.v1"`
+	Template *ApprovalTemplate      `protobuf:"bytes,2,opt,name=template,proto3" json:"template,omitempty"`
+	// The condition that is associated with the rule.
+	// The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+	//
+	// Support variables:
+	// source: the risk source, check the Source enum in the Risk message for the values.
+	// level: the risk level, support 100 (low), 200 (moderate) and 300 (high).
+	//
+	// For examples:
+	// (source == "DML" && level == 200) || (source == "DDL" && level == 300)
+	Condition     *expr.Expr `protobuf:"bytes,3,opt,name=condition,proto3" json:"condition,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
