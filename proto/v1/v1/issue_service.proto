@@ -407,6 +407,7 @@ message GrantRequest {
   // The user to be granted.
   // Format: users/{email}.
   string user = 2;
+  // The condition for the role. Same as the condtion in IAM Binding message.
   google.type.Expr condition = 3;
   google.protobuf.Duration expiration = 4;
 }

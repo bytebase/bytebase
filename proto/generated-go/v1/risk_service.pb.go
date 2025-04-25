@@ -354,12 +354,78 @@ func (x *DeleteRiskRequest) GetName() string {
 type Risk struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Format: risks/{risk}
-	Name          string      `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	Source        Risk_Source `protobuf:"varint,3,opt,name=source,proto3,enum=bytebase.v1.Risk_Source" json:"source,omitempty"`
-	Title         string      `protobuf:"bytes,4,opt,name=title,proto3" json:"title,omitempty"`
-	Level         int32       `protobuf:"varint,5,opt,name=level,proto3" json:"level,omitempty"`
-	Active        bool        `protobuf:"varint,7,opt,name=active,proto3" json:"active,omitempty"`
-	Condition     *expr.Expr  `protobuf:"bytes,8,opt,name=condition,proto3" json:"condition,omitempty"`
+	Name   string      `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Source Risk_Source `protobuf:"varint,3,opt,name=source,proto3,enum=bytebase.v1.Risk_Source" json:"source,omitempty"`
+	Title  string      `protobuf:"bytes,4,opt,name=title,proto3" json:"title,omitempty"`
+	Level  int32       `protobuf:"varint,5,opt,name=level,proto3" json:"level,omitempty"`
+	Active bool        `protobuf:"varint,7,opt,name=active,proto3" json:"active,omitempty"`
+	// The condition that is associated with the risk.
+	// The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+	//
+	// All supported variables:
+	// affected_rows: affected row count in the DDL/DML, support "==", "!=", "<", "<=", ">", ">=" operations.
+	// table_rows: table row count number, support "==", "!=", "<", "<=", ">", ">=" operations.
+	// environment_id: the environment resource id, support "==", "!=", "in [xx]", "!(in [xx])" operations.
+	// project_id: the project resource id, support "==", "!=", "in [xx]", "!(in [xx])", "contains()", "matches()", "startsWith()", "endsWith()" operations.
+	// db_engine: the database engine type, support "==", "!=", "in [xx]", "!(in [xx])" operations. Check the Engine enum for the values.
+	// sql_type: the SQL type, support "==", "!=", "in [xx]", "!(in [xx])" operations.
+	//
+	//	when the risk source is DDL, check https://github.com/bytebase/bytebase/blob/main/frontend/src/plugins/cel/types/values.ts#L70 for supported values.
+	//	when the risk source is DML, check https://github.com/bytebase/bytebase/blob/main/frontend/src/plugins/cel/types/values.ts#L71 for supported values.
+	//
+	// database_name: the database name, support "==", "!=", "in [xx]", "!(in [xx])", "contains()", "matches()", "startsWith()", "endsWith()" operations.
+	// schema_name: the schema name, support "==", "!=", "in [xx]", "!(in [xx])", "contains()", "matches()", "startsWith()", "endsWith()" operations.
+	// table_name: the table name, support "==", "!=", "in [xx]", "!(in [xx])", "contains()", "matches()", "startsWith()", "endsWith()" operations.
+	// sql_statement: the SQL statement, support "contains()", "matches()", "startsWith()", "endsWith()" operations.
+	// export_rows: export data count, support "==", "!=", "<", "<=", ">", ">=" operations.
+	// expiration_days: the role expiration days for the request, support "==", "!=", "<", "<=", ">", ">=" operations.
+	//
+	// When the risk source is DDL/DML, support following variables:
+	// affected_rows
+	// table_rows
+	// environment_id
+	// project_id
+	// db_engine
+	// sql_type
+	// database_name
+	// schema_name
+	// table_name
+	// sql_statement
+	//
+	// When the risk source is CREATE_DATABASE, support following variables:
+	// environment_id
+	// project_id
+	// db_engine
+	// database_name
+	//
+	// When the risk source is DATA_EXPORT, support following variables:
+	// environment_id
+	// project_id
+	// db_engine
+	// database_name
+	// schema_name
+	// table_name
+	// export_rows
+	//
+	// When the risk source is REQUEST_QUERY, support following variables:
+	// environment_id
+	// project_id
+	// db_engine
+	// database_name
+	// schema_name
+	// table_name
+	// expiration_days
+	//
+	// When the risk source is REQUEST_EXPORT, support following variables:
+	// environment_id
+	// project_id
+	// db_engine
+	// database_name
+	// schema_name
+	// table_name
+	// expiration_days
+	// export_rows
+	Condition     *expr.Expr `protobuf:"bytes,8,opt,name=condition,proto3" json:"condition,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }

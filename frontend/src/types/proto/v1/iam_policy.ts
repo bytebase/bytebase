@@ -62,9 +62,22 @@ export interface Binding {
    */
   members: string[];
   /**
-   * The condition that is associated with this binding.
+   * The condition that is associated with this binding, only used in the project IAM policy.
    * If the condition evaluates to true, then this binding applies to the current request.
    * If the condition evaluates to false, then this binding does not apply to the current request. However, a different role binding might grant the same role to one or more of the principals in this binding.
+   * The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+   *
+   * Support variables:
+   * resource.database: the database full name in "instances/{instance}/databases/{database}" format, used by the "roles/sqlEditorUser" and "roles/projectExporter" role.
+   * resource.schema: the schema name, used by the "roles/sqlEditorUser" and "roles/projectExporter" role.
+   * resource.table: the table name, used by the "roles/sqlEditorUser" and "roles/projectExporter" role.
+   * request.time: the expiration. Only support "<" operation in `request.time < timestamp("{ISO datetime string format}")`.
+   * request.row_limit: the maximum export rows, used by the "roles/projectExporter" role. Only support "<=" operation.
+   *
+   * For example:
+   * resource.database == "instances/local-pg/databases/postgres" && resource.schema in ["public","another_schema"]
+   * resource.database == "instances/local-pg/databases/bytebase" && resource.schema == "public" && resource.table in ["audit_log"]
+   * request.time < timestamp("2025-04-26T11:24:48.655Z") && request.row_limit <= 1000
    */
   condition:
     | Expr
