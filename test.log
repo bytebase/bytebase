@@ -232,9 +232,9 @@ ok  	github.com/bytebase/bytebase/backend/plugin/advisor/mysql	(cached)
 PASS
 ok  	github.com/bytebase/bytebase/backend/plugin/advisor/oracle	(cached)
 === RUN   TestPostgreSQLRules
---- PASS: TestPostgreSQLRules (0.06s)
+--- PASS: TestPostgreSQLRules (0.08s)
 PASS
-ok  	github.com/bytebase/bytebase/backend/plugin/advisor/pg	2.532s
+ok  	github.com/bytebase/bytebase/backend/plugin/advisor/pg	(cached)
 === RUN   TestSnowflakeRules
 --- PASS: TestSnowflakeRules (0.50s)
 PASS
@@ -467,7 +467,7 @@ ok  	github.com/bytebase/bytebase/backend/plugin/parser/cockroachdb	(cached)
 === RUN   TestGetQuerySpan
 --- PASS: TestGetQuerySpan (0.00s)
 PASS
-ok  	github.com/bytebase/bytebase/backend/plugin/parser/cosmosdb	0.407s
+ok  	github.com/bytebase/bytebase/backend/plugin/parser/cosmosdb	0.281s
 === RUN   TestParseElasticsearchREST
 --- PASS: TestParseElasticsearchREST (0.00s)
 === RUN   TestParse
@@ -493,45 +493,7 @@ PASS
 ok  	github.com/bytebase/bytebase/backend/plugin/parser/mybatis/mapper	(cached)
 ?   	github.com/bytebase/bytebase/backend/plugin/parser/mybatis/mapper/ast	[no test files]
 === RUN   TestBackup
-    backup_test.go:60: 
-        	Error Trace:	/Users/h3n4l/OpenSource/bytebase/backend/plugin/parser/mysql/backup_test.go:60
-        	Error:      	Not equal: 
-        	            	expected: []base.BackupStatement{base.BackupStatement{Statement:"CREATE TABLE `backupDB`.`_rollback_test_db` LIKE `db`.`test`;\nINSERT INTO `backupDB`.`_rollback_test_db`  WITH t_cte AS (\n  SELECT * FROM test WHERE test.b1 > 10\n) SELECT `test`.* FROM test, t_cte WHERE test.b1 = t_cte.b1 and test.b1 = 1\n  UNION DISTINCT\n  WITH t_cte AS (\n  SELECT * FROM test WHERE test.b1 > 10\n) SELECT `test`.* FROM test, t_cte WHERE test.b1 = t_cte.b1 and test.b1 = 2\n  UNION DISTINCT\n  WITH t_cte AS (\n  SELECT * FROM test WHERE test.b1 > 10\n) SELECT `test`.* FROM test, t_cte WHERE test.b1 = t_cte.b1 and test.b1 = 3\n  UNION DISTINCT\n  WITH t_cte AS (\n  SELECT * FROM test WHERE test.b1 > 10\n) SELECT `test`.* FROM test, t_cte WHERE test.b1 = t_cte.b1 and test.b1 = 4\n  UNION DISTINCT\n  WITH t_cte AS (\n  SELECT * FROM test WHERE test.b1 > 10\n) SELECT `test`.* FROM test, t_cte WHERE test.b1 = t_cte.b1 and test.b1 = 5\n  UNION DISTINCT\n  WITH t_cte AS (\n  SELECT * FROM test WHERE test.b1 > 10\n) SELECT `test`.* FROM test, t_cte WHERE test.b1 = t_cte.b1 and test.b1 = 6;", SourceSchema:"", SourceTableName:"test", TargetTableName:"_rollback_test_db", StartPosition:(*store.Position)(0x14000374150), EndPosition:(*store.Position)(0x140003741b0)}}
-        	            	actual  : []base.BackupStatement{base.BackupStatement{Statement:"CREATE TABLE `backupDB`.`_rollback_test_db` LIKE `db`.`test`;\nINSERT INTO `backupDB`.`_rollback_test_db`  WITH t_cte AS (\n  SELECT * FROM test WHERE test.b1 > 10\n) SELECT `test`.* FROM test, t_cte WHERE test.b1 = t_cte.b1 and test.b1 = 1\n  UNION DISTINCT\n  WITH t_cte AS (\n  SELECT * FROM test WHERE test.b1 > 10\n) SELECT `test`.* FROM test, t_cte WHERE test.b1 = t_cte.b1 and test.b1 = 2\n  UNION DISTINCT\n  WITH t_cte AS (\n  SELECT * FROM test WHERE test.b1 > 10\n) SELECT `test`.* FROM test, t_cte WHERE test.b1 = t_cte.b1 and test.b1 = 3\n  UNION DISTINCT\n  WITH t_cte AS (\n  SELECT * FROM test WHERE test.b1 > 10\n) SELECT `test`.* FROM test, t_cte WHERE test.b1 = t_cte.b1 and test.b1 = 4\n  UNION DISTINCT\n  WITH t_cte AS (\n  SELECT * FROM test WHERE test.b1 > 10\n) SELECT `test`.* FROM test, t_cte WHERE test.b1 = t_cte.b1 and test.b1 = 5\n  UNION DISTINCT\n  WITH t_cte AS (\n  SELECT * FROM test WHERE test.b1 > 10\n) SELECT `test`.* FROM test, t_cte WHERE test.b1 = t_cte.b1 and test.b1 = 6;", SourceSchema:"", SourceTableName:"test", TargetTableName:"_rollback_test_db", StartPosition:(*store.Position)(0x140008c2d50), EndPosition:(*store.Position)(0x140008c2f00)}}
-        	            	
-        	            	Diff:
-        	            	--- Expected
-        	            	+++ Actual
-        	            	@@ -16,3 +16,3 @@
-        	            	    },
-        	            	-   Line: (int32) 1,
-        	            	+   Line: (int32) 0,
-        	            	    Column: (int32) 0,
-        	            	@@ -31,3 +31,3 @@
-        	            	    },
-        	            	-   Line: (int32) 18,
-        	            	+   Line: (int32) 17,
-        	            	    Column: (int32) 77,
-        	Test:       	TestBackup
-        	Messages:   	WITH t_cte AS (
-        	            	  SELECT * FROM test WHERE test.b1 > 10
-        	            	) UPDATE test, t_cte SET test.c1 = 1 WHERE test.b1 = t_cte.b1 and test.b1 = 1;
-        	            	WITH t_cte AS (
-        	            	  SELECT * FROM test WHERE test.b1 > 10
-        	            	) UPDATE test, t_cte SET test.c1 = 1 WHERE test.b1 = t_cte.b1 and test.b1 = 2;
-        	            	WITH t_cte AS (
-        	            	  SELECT * FROM test WHERE test.b1 > 10
-        	            	) UPDATE test, t_cte SET test.c1 = 1 WHERE test.b1 = t_cte.b1 and test.b1 = 3;
-        	            	WITH t_cte AS (
-        	            	  SELECT * FROM test WHERE test.b1 > 10
-        	            	) UPDATE test, t_cte SET test.c1 = 1 WHERE test.b1 = t_cte.b1 and test.b1 = 4;
-        	            	WITH t_cte AS (
-        	            	  SELECT * FROM test WHERE test.b1 > 10
-        	            	) UPDATE test, t_cte SET test.c1 = 1 WHERE test.b1 = t_cte.b1 and test.b1 = 5;
-        	            	WITH t_cte AS (
-        	            	  SELECT * FROM test WHERE test.b1 > 10
-        	            	) UPDATE test, t_cte SET test.c1 = 1 WHERE test.b1 = t_cte.b1 and test.b1 = 6;
---- FAIL: TestBackup (0.02s)
+--- PASS: TestBackup (0.03s)
 === RUN   TestCompletion
 --- PASS: TestCompletion (0.03s)
 === RUN   TestSchemaDiffTable
@@ -561,7 +523,7 @@ ok  	github.com/bytebase/bytebase/backend/plugin/parser/mybatis/mapper	(cached)
 === RUN   TestRestoreDelimiter
 --- PASS: TestRestoreDelimiter (0.00s)
 === RUN   TestGetQuerySpan
---- PASS: TestGetQuerySpan (0.05s)
+--- PASS: TestGetQuerySpan (0.06s)
 === RUN   TestValidateSQLForEditor
 --- PASS: TestValidateSQLForEditor (0.01s)
 === RUN   TestExtractMySQLResourceList
@@ -569,29 +531,7 @@ ok  	github.com/bytebase/bytebase/backend/plugin/parser/mybatis/mapper	(cached)
 === RUN   TestExtractChangedResources
 --- PASS: TestExtractChangedResources (0.00s)
 === RUN   TestRestore
-    restore_test.go:73: 
-        	Error Trace:	/Users/h3n4l/OpenSource/bytebase/backend/plugin/parser/mysql/restore_test.go:73
-        	Error:      	Not equal: 
-        	            	expected: "/*\nOriginal SQL:\nUPDATE t_generated SET a = 1 WHERE b = 1;\nUPDATE t_generated SET a = 2 WHERE b = 2;\nUPDATE t_generated SET a = 3 WHERE b = 3;\nUPDATE t_generated SET a = 4 WHERE b = 4;\nUPDATE t_generated SET a = 5 WHERE b = 5;\nUPDATE t_generated SET a = 6 WHERE b = 6;\nUPDATE t_generated SET a = 7 WHERE b = 7;\n*/\nINSERT INTO `db`.`t_generated` (`a`, `b`) SELECT `a`, `b` FROM `bbarchive`.`prefix_t_generated` ON DUPLICATE KEY UPDATE `a` = VALUES(`a`);"
-        	            	actual  : "/*\nOriginal SQL:\n\nUPDATE t_generated SET a = 2 WHERE b = 2;\nUPDATE t_generated SET a = 3 WHERE b = 3;\nUPDATE t_generated SET a = 4 WHERE b = 4;\nUPDATE t_generated SET a = 5 WHERE b = 5;\nUPDATE t_generated SET a = 6 WHERE b = 6;\nUPDATE t_generated SET a = 7 WHERE b = 7;\n*/\nINSERT INTO `db`.`t_generated` (`a`, `b`) SELECT `a`, `b` FROM `bbarchive`.`prefix_t_generated` ON DUPLICATE KEY UPDATE `a` = VALUES(`a`);"
-        	            	
-        	            	Diff:
-        	            	--- Expected
-        	            	+++ Actual
-        	            	@@ -2,3 +2,3 @@
-        	            	 Original SQL:
-        	            	-UPDATE t_generated SET a = 1 WHERE b = 1;
-        	            	+
-        	            	 UPDATE t_generated SET a = 2 WHERE b = 2;
-        	Test:       	TestRestore
-        	Messages:   	UPDATE t_generated SET a = 1 WHERE b = 1;
-        	            	UPDATE t_generated SET a = 2 WHERE b = 2;
-        	            	UPDATE t_generated SET a = 3 WHERE b = 3;
-        	            	UPDATE t_generated SET a = 4 WHERE b = 4;
-        	            	UPDATE t_generated SET a = 5 WHERE b = 5;
-        	            	UPDATE t_generated SET a = 6 WHERE b = 6;
-        	            	UPDATE t_generated SET a = 7 WHERE b = 7;
---- FAIL: TestRestore (0.00s)
+--- PASS: TestRestore (0.00s)
 === RUN   TestMySQLSplitMultiSQL
 --- PASS: TestMySQLSplitMultiSQL (0.02s)
 === RUN   TestSplitMySQLStatements
@@ -634,8 +574,8 @@ ok  	github.com/bytebase/bytebase/backend/plugin/parser/mybatis/mapper	(cached)
            END;
     statement_type_test.go:38: DROP PROCEDURE citycount;
 --- PASS: TestGetStatementType (0.01s)
-FAIL
-FAIL	github.com/bytebase/bytebase/backend/plugin/parser/mysql	0.691s
+PASS
+ok  	github.com/bytebase/bytebase/backend/plugin/parser/mysql	1.038s
 === RUN   TestCompletion
 --- PASS: TestCompletion (0.01s)
 === RUN   TestSplitSQL
@@ -643,15 +583,15 @@ FAIL	github.com/bytebase/bytebase/backend/plugin/parser/mysql	0.691s
 PASS
 ok  	github.com/bytebase/bytebase/backend/plugin/parser/partiql	(cached)
 === RUN   TestBackup
---- PASS: TestBackup (0.06s)
+--- PASS: TestBackup (0.04s)
 === RUN   TestCompletion
---- PASS: TestCompletion (0.05s)
+--- PASS: TestCompletion (0.04s)
 === RUN   TestComputeDiff
 --- PASS: TestComputeDiff (0.01s)
 === RUN   TestPostgreSQLParser
---- PASS: TestPostgreSQLParser (0.02s)
+--- PASS: TestPostgreSQLParser (0.01s)
 === RUN   TestGetQuerySpan
---- PASS: TestGetQuerySpan (0.04s)
+--- PASS: TestGetQuerySpan (0.03s)
 === RUN   TestValidateSQLForEditor
 --- PASS: TestValidateSQLForEditor (0.00s)
 === RUN   TestExtractPostgresResourceList
@@ -661,56 +601,35 @@ ok  	github.com/bytebase/bytebase/backend/plugin/parser/partiql	(cached)
 === RUN   TestRestore
 --- PASS: TestRestore (0.01s)
 === RUN   TestPGSplitMultiSQL
---- PASS: TestPGSplitMultiSQL (0.03s)
+--- PASS: TestPGSplitMultiSQL (0.02s)
 PASS
-ok  	github.com/bytebase/bytebase/backend/plugin/parser/pg	(cached)
+ok  	github.com/bytebase/bytebase/backend/plugin/parser/pg	0.564s
 === RUN   TestBackup
---- PASS: TestBackup (0.27s)
+--- PASS: TestBackup (0.29s)
 === RUN   TestCompletion
---- PASS: TestCompletion (0.42s)
+--- PASS: TestCompletion (0.45s)
 === RUN   TestPLSQLDiffer
 --- PASS: TestPLSQLDiffer (0.05s)
 === RUN   TestPlSQLDifferNonStrict
---- PASS: TestPlSQLDifferNonStrict (0.01s)
+--- PASS: TestPlSQLDifferNonStrict (0.02s)
 === RUN   TestPLSQLParser
 --- PASS: TestPLSQLParser (0.00s)
 === RUN   TestGetQuerySpan
---- PASS: TestGetQuerySpan (0.67s)
+--- PASS: TestGetQuerySpan (0.70s)
 === RUN   TestExtractOracleResourceList
 --- PASS: TestExtractOracleResourceList (0.04s)
 === RUN   TestExtractChangedResources
 --- PASS: TestExtractChangedResources (0.00s)
 === RUN   TestRestore
-    restore_test.go:71: 
-        	Error Trace:	/Users/h3n4l/OpenSource/bytebase/backend/plugin/parser/plsql/restore_test.go:71
-        	Error:      	Not equal: 
-        	            	expected: "/*\nOriginal SQL:\nUPDATE T_GENERATED SET a = 1 WHERE b = 1;\nUPDATE T_GENERATED SET a = 2 WHERE b = 2;\nUPDATE T_GENERATED SET a = 3 WHERE b = 3;\nUPDATE T_GENERATED SET a = 4 WHERE b = 4;\nUPDATE T_GENERATED SET a = 5 WHERE b = 5;\nUPDATE T_GENERATED SET a = 6 WHERE b = 6;\nUPDATE T_GENERATED SET a = 7 WHERE b = 7\n*/\nMERGE INTO \"DB\".\"T_GENERATED\" t\nUSING \"bbarchive\".\"prefix_T_GENERATED\" b\n  ON( t.\"B\" = b.\"B\")\nWHEN MATCHED THEN\n  UPDATE SET t.\"A\" = b.\"A\"\nWHEN NOT MATCHED THEN\n INSERT (\"A\", \"B\") VALUES (b.\"A\", b.\"B\");"
-        	            	actual  : "/*\nOriginal SQL:\nUPDATE T_GENERATED SET a = 2 WHERE b = 2;\nUPDATE T_GENERATED SET a = 3 WHERE b = 3;\nUPDATE T_GENERATED SET a = 4 WHERE b = 4;\nUPDATE T_GENERATED SET a = 5 WHERE b = 5;\nUPDATE T_GENERATED SET a = 6 WHERE b = 6;\nUPDATE T_GENERATED SET a = 7 WHERE b = 7\n*/\nMERGE INTO \"DB\".\"T_GENERATED\" t\nUSING \"bbarchive\".\"prefix_T_GENERATED\" b\n  ON( t.\"B\" = b.\"B\")\nWHEN MATCHED THEN\n  UPDATE SET t.\"A\" = b.\"A\"\nWHEN NOT MATCHED THEN\n INSERT (\"A\", \"B\") VALUES (b.\"A\", b.\"B\");"
-        	            	
-        	            	Diff:
-        	            	--- Expected
-        	            	+++ Actual
-        	            	@@ -2,3 +2,2 @@
-        	            	 Original SQL:
-        	            	-UPDATE T_GENERATED SET a = 1 WHERE b = 1;
-        	            	 UPDATE T_GENERATED SET a = 2 WHERE b = 2;
-        	Test:       	TestRestore
-        	Messages:   	UPDATE T_GENERATED SET a = 1 WHERE b = 1;
-        	            	UPDATE T_GENERATED SET a = 2 WHERE b = 2;
-        	            	UPDATE T_GENERATED SET a = 3 WHERE b = 3;
-        	            	UPDATE T_GENERATED SET a = 4 WHERE b = 4;
-        	            	UPDATE T_GENERATED SET a = 5 WHERE b = 5;
-        	            	UPDATE T_GENERATED SET a = 6 WHERE b = 6;
-        	            	UPDATE T_GENERATED SET a = 7 WHERE b = 7;
---- FAIL: TestRestore (0.01s)
+--- PASS: TestRestore (0.02s)
 === RUN   TestOracleSplitMultiSQL
---- PASS: TestOracleSplitMultiSQL (0.05s)
+--- PASS: TestOracleSplitMultiSQL (0.06s)
 === RUN   TestGetStatementType
---- PASS: TestGetStatementType (0.09s)
+--- PASS: TestGetStatementType (0.07s)
 === RUN   TestStringsManipulate
 --- PASS: TestStringsManipulate (0.01s)
-FAIL
-FAIL	github.com/bytebase/bytebase/backend/plugin/parser/plsql	3.239s
+PASS
+ok  	github.com/bytebase/bytebase/backend/plugin/parser/plsql	2.950s
 === RUN   TestValidateQuery
 --- PASS: TestValidateQuery (0.00s)
 PASS
@@ -843,7 +762,7 @@ ok  	github.com/bytebase/bytebase/backend/plugin/parser/spanner	(cached)
 === RUN   TestDeparse
 --- PASS: TestDeparse (0.00s)
 PASS
-ok  	github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg	1.155s
+ok  	github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg	(cached)
 ?   	github.com/bytebase/bytebase/backend/plugin/parser/sql/transform	[no test files]
 === RUN   TestCreateTableSeparateIndex
 --- PASS: TestCreateTableSeparateIndex (0.00s)
@@ -862,34 +781,7 @@ ok  	github.com/bytebase/bytebase/backend/plugin/parser/sql/transform/mysql	(cac
 PASS
 ok  	github.com/bytebase/bytebase/backend/plugin/parser/standard	(cached)
 === RUN   TestBackup
-    backup_test.go:60: 
-        	Error Trace:	/Users/h3n4l/OpenSource/bytebase/backend/plugin/parser/tidb/backup_test.go:60
-        	Error:      	Not equal: 
-        	            	expected: []base.BackupStatement{base.BackupStatement{Statement:"CREATE TABLE `backupDB`.`_rollback_test_db` LIKE `db`.`test`;\nINSERT INTO `backupDB`.`_rollback_test_db`  SELECT `test`.* FROM test WHERE test.b1 = 1\n  UNION ALL\n  SELECT `test`.* FROM test WHERE test.b1 = 2\n  UNION ALL\n  SELECT `test`.* FROM test WHERE test.b1 = 3\n  UNION ALL\n  SELECT `test`.* FROM test WHERE test.b1 = 4\n  UNION ALL\n  SELECT `test`.* FROM test WHERE test.b1 = 5\n  UNION ALL\n  SELECT `test`.* FROM test WHERE test.b1 = 6\n  UNION ALL\n  SELECT `test`.* FROM test WHERE test.b1 = 7;", SourceSchema:"", SourceTableName:"test", TargetTableName:"_rollback_test_db", StartPosition:(*store.Position)(0x1400e3b0c60), EndPosition:(*store.Position)(0x1400e3b0cc0)}}
-        	            	actual  : []base.BackupStatement{base.BackupStatement{Statement:"CREATE TABLE `backupDB`.`_rollback_test_db` LIKE `db`.`test`;\nINSERT INTO `backupDB`.`_rollback_test_db`  SELECT `test`.* FROM test WHERE test.b1 = 1\n  UNION ALL\n  SELECT `test`.* FROM test WHERE test.b1 = 2\n  UNION ALL\n  SELECT `test`.* FROM test WHERE test.b1 = 3\n  UNION ALL\n  SELECT `test`.* FROM test WHERE test.b1 = 4\n  UNION ALL\n  SELECT `test`.* FROM test WHERE test.b1 = 5\n  UNION ALL\n  SELECT `test`.* FROM test WHERE test.b1 = 6\n  UNION ALL\n  SELECT `test`.* FROM test WHERE test.b1 = 7;", SourceSchema:"", SourceTableName:"test", TargetTableName:"_rollback_test_db", StartPosition:(*store.Position)(0x1400e69bda0), EndPosition:(*store.Position)(0x1400e7fc030)}}
-        	            	
-        	            	Diff:
-        	            	--- Expected
-        	            	+++ Actual
-        	            	@@ -16,3 +16,3 @@
-        	            	    },
-        	            	-   Line: (int32) 1,
-        	            	+   Line: (int32) 0,
-        	            	    Column: (int32) 0,
-        	            	@@ -31,3 +31,3 @@
-        	            	    },
-        	            	-   Line: (int32) 7,
-        	            	+   Line: (int32) 6,
-        	            	    Column: (int32) 45,
-        	Test:       	TestBackup
-        	Messages:   	UPDATE test SET test.c1 = 1 WHERE test.b1 = 1;
-        	            	UPDATE test SET test.c1 = 2 WHERE test.b1 = 2;
-        	            	UPDATE test SET test.c1 = 3 WHERE test.b1 = 3;
-        	            	UPDATE test SET test.c1 = 4 WHERE test.b1 = 4;
-        	            	UPDATE test SET test.c1 = 5 WHERE test.b1 = 5;
-        	            	UPDATE test SET test.c1 = 6 WHERE test.b1 = 6;
-        	            	UPDATE test SET test.c1 = 7 WHERE test.b1 = 7;
---- FAIL: TestBackup (0.01s)
+--- PASS: TestBackup (0.03s)
 === RUN   TestColumnExist
 --- PASS: TestColumnExist (0.01s)
 === RUN   TestColumnType
@@ -938,8 +830,8 @@ ok  	github.com/bytebase/bytebase/backend/plugin/parser/standard	(cached)
 --- PASS: TestMySQLCreateTableSetLine (0.00s)
 === RUN   TestTiDBParserError
 --- PASS: TestTiDBParserError (0.00s)
-FAIL
-FAIL	github.com/bytebase/bytebase/backend/plugin/parser/tidb	2.070s
+PASS
+ok  	github.com/bytebase/bytebase/backend/plugin/parser/tidb	2.206s
 === RUN   TestSplitTiDBMultiSQL
 --- PASS: TestSplitTiDBMultiSQL (0.00s)
 PASS
@@ -1145,45 +1037,23 @@ ok  	github.com/bytebase/bytebase/backend/plugin/parser/trino	(cached)
 === RUN   TestBackup
 --- PASS: TestBackup (0.08s)
 === RUN   TestCompletion
---- PASS: TestCompletion (0.11s)
+--- PASS: TestCompletion (0.12s)
 === RUN   TestTSQLDiffer
---- PASS: TestTSQLDiffer (0.08s)
+--- PASS: TestTSQLDiffer (0.07s)
 === RUN   TestGetQuerySpan
---- PASS: TestGetQuerySpan (0.21s)
+--- PASS: TestGetQuerySpan (0.22s)
 === RUN   TestExtractMSSQLNormalizedResourceListFromSelectStatement
---- PASS: TestExtractMSSQLNormalizedResourceListFromSelectStatement (0.04s)
+--- PASS: TestExtractMSSQLNormalizedResourceListFromSelectStatement (0.03s)
 === RUN   TestExtractChangedResources
 --- PASS: TestExtractChangedResources (0.01s)
 === RUN   TestRestore
-    restore_test.go:74: 
-        	Error Trace:	/Users/h3n4l/OpenSource/bytebase/backend/plugin/parser/tsql/restore_test.go:74
-        	Error:      	Not equal: 
-        	            	expected: "/*\nOriginal SQL:\nUPDATE t_generated SET b = 1 WHERE a = 1;\nUPDATE t_generated SET b = 2 WHERE a = 2;\nUPDATE t_generated SET b = 3 WHERE a = 3;\nUPDATE t_generated SET b = 4 WHERE a = 4;\nUPDATE t_generated SET b = 5 WHERE a = 5;\nUPDATE t_generated SET b = 6 WHERE a = 6;\nUPDATE t_generated SET b = 7 WHERE a = 7;\n*/\nMERGE INTO [db].[dbo].[t_generated] AS t\nUSING [bbarchive].[dbo].[prefix_t_generated] AS b\n  ON t.[a] = b.[a]\nWHEN MATCHED THEN\n  UPDATE SET t.[b] = b.[b]\nWHEN NOT MATCHED THEN\n INSERT ([a], [b]) VALUES (b.[a], b.[b]);"
-        	            	actual  : "/*\nOriginal SQL:\n\nUPDATE t_generated SET b = 2 WHERE a = 2;\nUPDATE t_generated SET b = 3 WHERE a = 3;\nUPDATE t_generated SET b = 4 WHERE a = 4;\nUPDATE t_generated SET b = 5 WHERE a = 5;\nUPDATE t_generated SET b = 6 WHERE a = 6;\nUPDATE t_generated SET b = 7 WHERE a = 7;\n*/\nMERGE INTO [db].[dbo].[t_generated] AS t\nUSING [bbarchive].[dbo].[prefix_t_generated] AS b\n  ON t.[a] = b.[a]\nWHEN MATCHED THEN\n  UPDATE SET t.[b] = b.[b]\nWHEN NOT MATCHED THEN\n INSERT ([a], [b]) VALUES (b.[a], b.[b]);"
-        	            	
-        	            	Diff:
-        	            	--- Expected
-        	            	+++ Actual
-        	            	@@ -2,3 +2,3 @@
-        	            	 Original SQL:
-        	            	-UPDATE t_generated SET b = 1 WHERE a = 1;
-        	            	+
-        	            	 UPDATE t_generated SET b = 2 WHERE a = 2;
-        	Test:       	TestRestore
-        	Messages:   	UPDATE t_generated SET b = 1 WHERE a = 1;
-        	            	UPDATE t_generated SET b = 2 WHERE a = 2;
-        	            	UPDATE t_generated SET b = 3 WHERE a = 3;
-        	            	UPDATE t_generated SET b = 4 WHERE a = 4;
-        	            	UPDATE t_generated SET b = 5 WHERE a = 5;
-        	            	UPDATE t_generated SET b = 6 WHERE a = 6;
-        	            	UPDATE t_generated SET b = 7 WHERE a = 7;
---- FAIL: TestRestore (0.01s)
+--- PASS: TestRestore (0.01s)
 === RUN   TestSplitSQL
 --- PASS: TestSplitSQL (0.01s)
 === RUN   TestGetStatementType
 --- PASS: TestGetStatementType (0.03s)
-FAIL
-FAIL	github.com/bytebase/bytebase/backend/plugin/parser/tsql	1.762s
+PASS
+ok  	github.com/bytebase/bytebase/backend/plugin/parser/tsql	1.773s
 === RUN   TestBuildGoCommands
 --- PASS: TestBuildGoCommands (0.00s)
 === RUN   TestBatch
@@ -1258,27 +1128,27 @@ sync.(*Once).doSlow(0x0?, 0x0?)
 	/opt/homebrew/Cellar/go/1.24.2/libexec/src/sync/once.go:78 +0xf0
 sync.(*Once).Do(...)
 	/opt/homebrew/Cellar/go/1.24.2/libexec/src/sync/once.go:69
-github.com/testcontainers/testcontainers-go/internal/core.MustExtractDockerHost({0x11079ed68?, 0x1216dc428?})
+github.com/testcontainers/testcontainers-go/internal/core.MustExtractDockerHost({0x111e52d68?, 0x122d90428?})
 	/Users/h3n4l/go/pkg/mod/github.com/testcontainers/testcontainers-go@v0.36.0/internal/core/docker_host.go:88 +0x54
-github.com/testcontainers/testcontainers-go/internal/core.NewClient({0x11079ed68, 0x1216dc428}, {0x0, 0x0, 0x1?})
+github.com/testcontainers/testcontainers-go/internal/core.NewClient({0x111e52d68, 0x122d90428}, {0x0, 0x0, 0x1?})
 	/Users/h3n4l/go/pkg/mod/github.com/testcontainers/testcontainers-go@v0.36.0/internal/core/client.go:17 +0x9c
-github.com/testcontainers/testcontainers-go.NewDockerClientWithOpts({0x11079ed68, 0x1216dc428}, {0x0, 0x0, 0x0})
+github.com/testcontainers/testcontainers-go.NewDockerClientWithOpts({0x111e52d68, 0x122d90428}, {0x0, 0x0, 0x0})
 	/Users/h3n4l/go/pkg/mod/github.com/testcontainers/testcontainers-go@v0.36.0/docker_client.go:118 +0x4c
-github.com/testcontainers/testcontainers-go.NewDockerProvider({0x1400daebbc0, 0x2, 0x1093fbaf0?})
+github.com/testcontainers/testcontainers-go.NewDockerProvider({0x1400e747f40, 0x2, 0x10aaafaf0?})
 	/Users/h3n4l/go/pkg/mod/github.com/testcontainers/testcontainers-go@v0.36.0/provider.go:144 +0x104
-github.com/testcontainers/testcontainers-go.ProviderType.GetProvider(0x0, {0x1400ed3ef28, 0x1, 0x1400ed2e070?})
+github.com/testcontainers/testcontainers-go.ProviderType.GetProvider(0x0, {0x1400f592f28, 0x1, 0x1400f5818f0?})
 	/Users/h3n4l/go/pkg/mod/github.com/testcontainers/testcontainers-go@v0.36.0/provider.go:115 +0x39c
 github.com/testcontainers/testcontainers-go.GenericContainer({_, _}, {{{{0x0, 0x0}, {0x0, 0x0}, {0x0, 0x0}, {0x0, 0x0}, ...}, ...}, ...})
 	/Users/h3n4l/go/pkg/mod/github.com/testcontainers/testcontainers-go@v0.36.0/generic.go:61 +0xf0
-github.com/bytebase/bytebase/backend/tests.getPgContainer({0x11079ed68, 0x1216dc428})
+github.com/bytebase/bytebase/backend/tests.getPgContainer({0x111e52d68, 0x122d90428})
 	/Users/h3n4l/OpenSource/bytebase/backend/tests/testcontainer.go:95 +0x19c
-github.com/bytebase/bytebase/backend/tests.startMain({0x11079ed68, 0x1216dc428}, 0x1400ece1720)
+github.com/bytebase/bytebase/backend/tests.startMain({0x111e52d68, 0x122d90428}, 0x1400f533ae0)
 	/Users/h3n4l/OpenSource/bytebase/backend/tests/main_test.go:21 +0x38
-github.com/bytebase/bytebase/backend/tests.TestMain(0x1108e2610?)
+github.com/bytebase/bytebase/backend/tests.TestMain(0x111f96610?)
 	/Users/h3n4l/OpenSource/bytebase/backend/tests/main_test.go:12 +0x30
 main.main()
 	_testmain.go:87 +0x98
-FAIL	github.com/bytebase/bytebase/backend/tests	3.913s
+FAIL	github.com/bytebase/bytebase/backend/tests	4.067s
 ?   	github.com/bytebase/bytebase/backend/tests/fake	[no test files]
 === RUN   TestGetRenderedStatement
 --- PASS: TestGetRenderedStatement (0.00s)

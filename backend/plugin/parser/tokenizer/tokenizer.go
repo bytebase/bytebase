@@ -616,7 +616,7 @@ func (t *Tokenizer) SplitStandardMultiSQL() ([]base.SingleSQL, error) {
 					End: &store.Position{
 						Line: int32(t.line - 1), // Convert to 0-based.
 					},
-					//TODO(zp/position): fix column, use bytes instead of rune.
+					// TODO(zp/position): fix column, use bytes instead of rune.
 					Start: &store.Position{
 						Line:   int32(firstStatementLine - 1), // Convert to 0-based.
 						Column: int32(firstStatementColumn),
@@ -758,7 +758,7 @@ func (t *Tokenizer) SplitPostgreSQLMultiSQL() ([]base.SingleSQL, error) {
 						// which means the line of ')'.
 						// So we need minus the aboveNonBlankLineDistance.
 						End: &store.Position{
-							Line: int32(t.line - t.aboveNonBlankLineDistance()-1),
+							Line: int32(t.line - t.aboveNonBlankLineDistance() - 1),
 						},
 						Empty: t.emptyStatement,
 					})
