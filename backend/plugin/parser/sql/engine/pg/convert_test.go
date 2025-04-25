@@ -425,7 +425,7 @@ func TestPGConvertCreateTableStmt(t *testing.T) {
 				s serial4,
 				t decimal,
 				u "user defined data type")`,
-					End:  &store.Position{Line: 22, Column: 0},
+					End: &store.Position{Line: 22, Column: 0},
 				},
 			},
 			columnLine: [][]int{
@@ -1987,7 +1987,7 @@ func TestPGSelectStmt(t *testing.T) {
 						(SELECT * FROM t1 WHERE x LIKE b)
 				UNION
 				SELECT * FROM t`,
-					End:  &store.Position{Line: 13, Column: 0},
+					End: &store.Position{Line: 13, Column: 0},
 				},
 			},
 		},
@@ -2769,7 +2769,7 @@ func TestCreateSequence(t *testing.T) {
 				CACHE 1
 				CYCLE
 				OWNED BY public.tbl.id;`,
-					End:  &store.Position{Line: 9, Column: 0},
+					End: &store.Position{Line: 9, Column: 0},
 				},
 			},
 		},
@@ -2936,7 +2936,7 @@ func TestAlterSequence(t *testing.T) {
           CACHE 1
           NO CYCLE
           OWNED BY NONE;`,
-					End:  &store.Position{Line: 11, Column: 0},
+					End: &store.Position{Line: 11, Column: 0},
 				},
 			},
 		},
@@ -2974,7 +2974,7 @@ func TestAlterSequence(t *testing.T) {
           MAXVALUE 1
           CYCLE
           OWNED BY public.tbl.id;`,
-					End:  &store.Position{Line: 6, Column: 0},
+					End: &store.Position{Line: 6, Column: 0},
 				},
 			},
 		},
@@ -3483,8 +3483,8 @@ func TestPGCreateTableSetLine(t *testing.T) {
 				
 			)
 			`,
-			columnLineList:     []int{3, 3, 4, 5},
-			constraintLineList: []int{6, 7, 8, 8, 11},
+			columnLineList:     []int{2, 2, 3, 4},
+			constraintLineList: []int{5, 6, 7, 7, 10},
 		},
 		{
 			// test for Windows.
@@ -3499,8 +3499,8 @@ func TestPGCreateTableSetLine(t *testing.T) {
 				"\r\n" +
 				"FOREIGN KEY (a, b, c) REFERENCES t1(a, b, c)" + "\r\n" +
 				")",
-			columnLineList:     []int{3, 3, 4, 5},
-			constraintLineList: []int{6, 7, 8, 8, 10},
+			columnLineList:     []int{2, 2, 3, 4},
+			constraintLineList: []int{5, 6, 7, 7, 9},
 		},
 		{
 			statement: `
@@ -3509,7 +3509,7 @@ func TestPGCreateTableSetLine(t *testing.T) {
 				b int CHECK(b>1), c int UNIQUE
 			)
 			`,
-			columnLineList:     []int{3, 4, 4},
+			columnLineList:     []int{2, 3, 3},
 			constraintLineList: []int{},
 		},
 		{
@@ -3521,8 +3521,8 @@ func TestPGCreateTableSetLine(t *testing.T) {
 				UNIQUE(name)
 			)
 			`,
-			columnLineList:     []int{3, 4},
-			constraintLineList: []int{5, 6},
+			columnLineList:     []int{2, 3},
+			constraintLineList: []int{4, 5},
 		},
 	}
 
@@ -3532,16 +3532,16 @@ func TestPGCreateTableSetLine(t *testing.T) {
 		require.Len(t, nodeList, 1)
 		node, ok := nodeList[0].(*ast.CreateTableStmt)
 		require.True(t, ok)
-		require.Equal(t, len(test.columnLineList), len(node.ColumnList))
-		require.Equal(t, len(test.constraintLineList), len(node.ConstraintList))
+		require.Equal(t, len(test.columnLineList), len(node.ColumnList), test.statement)
+		require.Equal(t, len(test.constraintLineList), len(node.ConstraintList), test.statement)
 		for i, col := range node.ColumnList {
-			require.Equal(t, col.LastLine(), test.columnLineList[i], i)
+			require.Equal(t, test.columnLineList[i], col.LastLine(), test.statement)
 			for _, inlineCons := range col.ConstraintList {
-				require.Equal(t, test.columnLineList[i], inlineCons.LastLine())
+				require.Equal(t, test.columnLineList[i], inlineCons.LastLine(), test.statement)
 			}
 		}
 		for i, cons := range node.ConstraintList {
-			require.Equal(t, cons.LastLine(), test.constraintLineList[i], i)
+			require.Equal(t, test.constraintLineList[i], cons.LastLine(), test.statement)
 		}
 	}
 }
