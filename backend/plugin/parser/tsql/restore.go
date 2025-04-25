@@ -285,19 +285,13 @@ func extractSingleSQL(statement string, backupItem *storepb.PriorBackupDetail_It
 	start := 0
 	end := len(list) - 1
 	for i, item := range list {
-		if equalOrLess(&storepb.Position{
-			Line:   int32(item.FirstStatementLine + 1),
-			Column: int32(item.FirstStatementColumn),
-		}, backupItem.StartPosition) {
+		if equalOrLess(item.Start, backupItem.StartPosition) {
 			start = i
 		}
 	}
 
 	for i := len(list) - 1; i >= 0; i-- {
-		if equalOrGreater(&storepb.Position{
-			Line:   int32(list[i].FirstStatementLine + 1),
-			Column: int32(list[i].FirstStatementColumn),
-		}, backupItem.EndPosition) {
+		if equalOrGreater(list[i].Start, backupItem.EndPosition) {
 			end = i
 		}
 	}

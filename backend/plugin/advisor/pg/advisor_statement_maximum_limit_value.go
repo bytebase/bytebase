@@ -73,7 +73,7 @@ func (checker *statementMaximumLimitValueChecker) Visit(in ast.Node) ast.Visitor
 				Code:          advisor.StatementExceedMaximumLimitValue.Int32(),
 				Title:         checker.title,
 				Content:       fmt.Sprintf("The limit value %d exceeds the maximum allowed value %d", *node.Limit, checker.limitMaxValue),
-				StartPosition: common.ConvertANTLRLineToPosition(checker.line),
+				StartPosition: common.ConvertPGParserLineToPosition(checker.line),
 			})
 		}
 	}

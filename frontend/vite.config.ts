@@ -1,3 +1,4 @@
+import importMetaUrlPlugin from "@codingame/esbuild-import-meta-url-plugin";
 import VueI18nPlugin from "@intlify/unplugin-vue-i18n/vite";
 import yaml from "@rollup/plugin-yaml";
 import legacy from "@vitejs/plugin-legacy";
@@ -93,11 +94,19 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": fileURLToPath(new URL("./src", import.meta.url)),
-      "@public": fileURLToPath(new URL("./public", import.meta.url)),
+    },
+  },
+  optimizeDeps: {
+    include: ["vscode-textmate", "vscode-oniguruma"],
+    esbuildOptions: {
+      plugins: [importMetaUrlPlugin],
     },
   },
   envPrefix: ["BB_", "GIT_COMMIT"],
   define: {
     _global: {},
+  },
+  worker: {
+    format: "es",
   },
 });

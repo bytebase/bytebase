@@ -125,7 +125,7 @@ func (checker *indexNoDuplicateColumnChecker) Visit(node ast.Node) ast.Visitor {
 			Code:          advisor.DuplicateColumnInIndex.Int32(),
 			Title:         checker.title,
 			Content:       fmt.Sprintf("%s \"%s\" has duplicate column \"%s\".\"%s\"", column.constraintType, column.index, column.table, column.column),
-			StartPosition: common.ConvertANTLRLineToPosition(column.line),
+			StartPosition: common.ConvertPGParserLineToPosition(column.line),
 		})
 	}
 

@@ -47,7 +47,7 @@ func (*NonTransactionalAdvisor) Check(_ context.Context, checkCtx advisor.Contex
 				Code:          advisor.StatementNonTransactional.Int32(),
 				Title:         checker.title,
 				Content:       "This statement is non-transactional",
-				StartPosition: common.ConvertANTLRLineToPosition(checker.line),
+				StartPosition: common.ConvertPGParserLineToPosition(checker.line),
 			})
 		}
 	}

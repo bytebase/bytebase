@@ -107,7 +107,7 @@ func (checker *columnRequirementChecker) Visit(node ast.Node) ast.Visitor {
 			Code:          advisor.NoRequiredColumn.Int32(),
 			Title:         checker.title,
 			Content:       fmt.Sprintf("Table %q requires columns: %s", table.Name, strings.Join(missingColumns, ", ")),
-			StartPosition: common.ConvertANTLRLineToPosition(node.LastLine()),
+			StartPosition: common.ConvertPGParserLineToPosition(node.LastLine()),
 		})
 	}
 

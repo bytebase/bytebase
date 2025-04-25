@@ -1,12 +1,12 @@
 <template>
-  <div class="whitespace-pre-wrap w-full overflow-hidden bb-compact-sql-editor">
+  <div class="whitespace-pre-wrap w-full overflow-hidden">
     <MonacoEditor
       class="w-full h-auto"
       :style="{
         'min-height': `${MIN_EDITOR_HEIGHT}px`,
         'max-height': `${MAX_EDITOR_HEIGHT}px`,
       }"
-      :content="sql"
+      :content="content"
       :language="language"
       :dialect="dialect"
       :readonly="readonly"
@@ -29,6 +29,7 @@
 
 <script lang="ts" setup>
 import type { editor as Editor, IDisposable } from "monaco-editor";
+import * as monaco from "monaco-editor";
 import { storeToRefs } from "pinia";
 import { computed, nextTick, ref, toRef, watch } from "vue";
 import type {
@@ -57,7 +58,7 @@ import {
 } from "./utils";
 
 const props = defineProps({
-  sql: {
+  content: {
     type: String,
     default: "",
   },
@@ -68,7 +69,7 @@ const props = defineProps({
 });
 
 const emit = defineEmits<{
-  (e: "update:sql", sql: string): void;
+  (e: "update:content", content: string): void;
   (e: "execute", params: SQLEditorQueryParams): void;
   (e: "history", direction: "up" | "down", editor: IStandaloneCodeEditor): void;
   (e: "clear-screen"): void;
@@ -116,23 +117,20 @@ const handleChange = (value: string) => {
     return;
   }
 
-  emit("update:sql", value);
+  emit("update:content", value);
 };
 
 const execute = (explain = false) => {
   emit("execute", {
     connection: { ...connection.value },
-    statement: props.sql,
+    statement: props.content,
     engine: instance.value.engine,
     explain,
     selection: null,
   });
 };
 
-const handleEditorReady = (
-  monaco: MonacoModule,
-  editor: IStandaloneCodeEditor
-) => {
+const handleEditorReady = (_: MonacoModule, editor: IStandaloneCodeEditor) => {
   useEditorContextKey(editor, "readonly", toRef(props, "readonly"));
 
   editor.addAction({
@@ -277,20 +275,16 @@ useEmitteryEventListener(editorEvents, "format-content", () => {
 
 const EDITOR_OPTIONS = computed<Editor.IStandaloneEditorConstructionOptions>(
   () => ({
-    theme: "bb-dark",
-    minimap: {
-      enabled: false,
-    },
+    theme: "vs-dark",
+    lineNumbers: getLineNumber,
+    lineNumbersMinChars: firstLinePrompt.value.length + 3,
+    cursorStyle: props.readonly ? "underline" : "block",
     scrollbar: {
       vertical: "hidden",
       horizontal: "hidden",
       alwaysConsumeMouseWheel: false,
     },
     overviewRulerLanes: 0,
-    lineNumbers: getLineNumber,
-    lineNumbersMinChars: firstLinePrompt.value.length + 1,
-    glyphMargin: false,
-    cursorStyle: "block",
   })
 );
 </script>

@@ -3,6 +3,7 @@ package pg
 import (
 	"context"
 	"io"
+	"math"
 	"os"
 	"testing"
 
@@ -61,7 +62,7 @@ func TestRestore(t *testing.T) {
 				Column: 0,
 			},
 			EndPosition: &store.Position{
-				Line:   1000000000,
+				Line:   math.MaxInt32,
 				Column: 1,
 			},
 		})
@@ -103,6 +104,11 @@ func fixedMockDatabaseMetadataGetter(_ context.Context, _ string, database strin
 								Name:        "t_generated_pk",
 								Expressions: []string{"b"},
 								Primary:     true,
+								Unique:      true,
+							},
+							{
+								Name:        "t_generated_uk",
+								Expressions: []string{"a"},
 								Unique:      true,
 							},
 						},

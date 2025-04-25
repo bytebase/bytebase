@@ -60,11 +60,11 @@ export const useHistory = () => {
       return;
     }
     if (nextIndex === list.length - 1) {
-      currentQuery.value.sql = "";
+      currentQuery.value.statement = "";
     } else {
       const historyQuery = list[nextIndex];
       if (historyQuery) {
-        currentQuery.value.sql = historyQuery.sql;
+        currentQuery.value.statement = historyQuery.statement;
       }
     }
 

@@ -23,12 +23,12 @@ type ParseResult struct {
 }
 
 // ParseMySQL parses the given SQL statement and returns the AST.
-func ParseMySQL(statement string, options ...tokenizer.Option) ([]*ParseResult, error) {
-	statement, err := DealWithDelimiter(statement, options...)
+func ParseMySQL(statement string) ([]*ParseResult, error) {
+	statement, err := DealWithDelimiter(statement)
 	if err != nil {
 		return nil, err
 	}
-	list, err := parseInputStream(antlr.NewInputStream(statement))
+	list, err := parseInputStream(antlr.NewInputStream(statement), statement)
 	// HACK(p0ny): the callee may end up in an infinite loop, we print the statement here to help debug.
 	if err != nil && strings.Contains(err.Error(), "split SQL statement timed out") {
 		slog.Info("split SQL statement timed out", "statement", statement)
@@ -37,8 +37,8 @@ func ParseMySQL(statement string, options ...tokenizer.Option) ([]*ParseResult, 
 }
 
 // DealWithDelimiter converts the delimiter statement to comment, also converts the following statement's delimiter to semicolon(`;`).
-func DealWithDelimiter(statement string, options ...tokenizer.Option) (string, error) {
-	has, list, err := hasDelimiter(statement, options...)
+func DealWithDelimiter(statement string) (string, error) {
+	has, list, err := hasDelimiter(statement)
 	if err != nil {
 		return "", err
 	}
@@ -211,12 +211,12 @@ func mysqlAddSemicolonIfNeeded(sql string) string {
 	return sql
 }
 
-func parseInputStream(input *antlr.InputStream) ([]*ParseResult, error) {
+func parseInputStream(input *antlr.InputStream, statement string) ([]*ParseResult, error) {
 	var result []*ParseResult
 	lexer := parser.NewMySQLLexer(input)
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
 
-	list, err := splitMySQLStatement(stream)
+	list, err := splitMySQLStatement(stream, statement)
 	if err != nil {
 		return nil, err
 	}
@@ -241,7 +241,7 @@ func parseInputStream(input *antlr.InputStream) ([]*ParseResult, error) {
 			Tokens:   tokens,
 			BaseLine: s.BaseLine,
 		})
-		baseLine = s.LastLine
+		baseLine = int(s.End.Line)
 	}
 
 	return result, nil
@@ -275,9 +275,9 @@ func ExtractDelimiter(stmt string) (string, error) {
 	return "", errors.Errorf("cannot extract delimiter from %q", stmt)
 }
 
-func hasDelimiter(statement string, options ...tokenizer.Option) (bool, []base.SingleSQL, error) {
+func hasDelimiter(statement string) (bool, []base.SingleSQL, error) {
 	// use splitTiDBMultiSQL to check if the statement has delimiter
-	t := tokenizer.NewTokenizer(statement, options...)
+	t := tokenizer.NewTokenizer(statement)
 	list, err := t.SplitTiDBMultiSQL()
 	if err != nil {
 		return false, nil, errors.Errorf("failed to split multi sql: %v", err)

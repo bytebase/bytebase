@@ -67,7 +67,7 @@ func (checker *statementMergeAlterTableChecker) generateAdvice() []*storepb.Advi
 				Code:          advisor.StatementRedundantAlterTable.Int32(),
 				Title:         checker.title,
 				Content:       fmt.Sprintf("There are %d statements to modify table `%s`", table.count, table.name),
-				StartPosition: common.ConvertANTLRLineToPosition(table.line),
+				StartPosition: common.ConvertPGParserLineToPosition(table.line),
 			})
 		}
 	}

@@ -65,7 +65,9 @@ func SplitSQL(statement string) ([]base.SingleSQL, error) {
 			result = append(result, base.SingleSQL{
 				Text:     sql,
 				BaseLine: countLines(statement[:i+1-len(sql)]),
-				LastLine: countLines(statement[:i+1]),
+				End: &storepb.Position{
+					Line: int32(countLines(statement[:i+1])),
+				},
 			})
 			currentStmt.Reset()
 		}
@@ -80,7 +82,9 @@ func SplitSQL(statement string) ([]base.SingleSQL, error) {
 			result = append(result, base.SingleSQL{
 				Text:     sql,
 				BaseLine: countLines(statement[:len(statement)-len(sql)]),
-				LastLine: countLines(statement),
+				End: &storepb.Position{
+					Line: int32(countLines(statement)),
+				},
 			})
 		}
 	}

@@ -2,7 +2,7 @@ import { useStyleTag } from "@vueuse/core";
 import SchemaIconSVG from "lucide-static/icons/box.svg?raw";
 import FunctionIconSVG from "lucide-static/icons/square-function.svg?raw";
 import TableIconSVG from "lucide-static/icons/table.svg?raw";
-import type monaco from "monaco-editor";
+import * as monaco from "monaco-editor";
 import type { MonacoModule } from "../types";
 
 // Base on heroicons-outline:circle-stack
