@@ -85,9 +85,7 @@ const availableRoleOptions = computed(
         type: "group",
         key: "workspace-roles",
         label: t("role.workspace-roles.self"),
-        children: PRESET_WORKSPACE_ROLES.filter(
-          (role) => role !== PresetRoleType.WORKSPACE_MEMBER
-        ).map((role) => ({
+        children: PRESET_WORKSPACE_ROLES.map((role) => ({
           label: displayRoleTitle(role),
           value: role,
         })),

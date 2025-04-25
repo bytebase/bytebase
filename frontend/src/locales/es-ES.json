@@ -401,11 +401,13 @@
         "reset-token": "Restablecer token",
         "reset-token-warning": "Debe actualizar la configuración de aprovisionamiento de aplicaciones de Entra."
       },
+      "all-users": "Todos los usuarios",
       "search-member": "Buscar miembro",
       "revoked": "Revocado",
       "view-by-members": "Ver por miembros",
       "revoke-access": "Revocar acceso",
       "revoke-access-alert": "¿Está seguro de revocar el acceso?",
+      "revoke-allusers-alert": "Revocar \"@:{'settings.members.all-users'}\" revocará los roles relacionados de todos los demás usuarios de su espacio de trabajo. ¿Desea continuar?",
       "grant-access": "Conceder acceso",
       "select-user": "Seleccionar usuario | Seleccionar usuarios",
       "select-group": "Seleccionar grupo | Seleccionar grupos",

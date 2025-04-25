@@ -147,8 +147,7 @@ export const useWorkspaceV1Store = defineStore("workspace_v1", () => {
   const getWorkspaceRolesByEmail = (email: string) => {
     const specificRoles =
       userMapToRoles.value.get(`${userNamePrefix}${email}`) ??
-      // TODO(ed): not default member role
-      new Set<string>([PresetRoleType.WORKSPACE_MEMBER]);
+      new Set<string>([]);
     if (userMapToRoles.value.has(`${userNamePrefix}${ALL_USERS_USER_EMAIL}`)) {
       for (const role of userMapToRoles.value.get(
         `${userNamePrefix}${ALL_USERS_USER_EMAIL}`

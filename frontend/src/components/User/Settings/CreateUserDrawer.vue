@@ -134,7 +134,7 @@ import {
   useUserStore,
   useWorkspaceV1Store,
 } from "@/store";
-import { emptyUser } from "@/types";
+import { emptyUser, PresetRoleType } from "@/types";
 import { UserType, User } from "@/types/proto/v1/user_service";
 import UserPassword from "./UserPassword.vue";
 
@@ -164,7 +164,7 @@ const hideServiceAccount = useAppFeature(
 const state = reactive<LocalState>({
   isRequesting: false,
   user: emptyUser(),
-  roles: [],
+  roles: [PresetRoleType.WORKSPACE_MEMBER],
   passwordConfirm: "",
 });
 

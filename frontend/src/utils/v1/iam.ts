@@ -117,9 +117,6 @@ export const roleListInIAM = ({
 }) => {
   const roles = policy.bindings
     .filter((binding) => {
-      if (binding.role === PresetRoleType.WORKSPACE_MEMBER) {
-        return false;
-      }
       if (isBindingPolicyExpired(binding)) {
         return false;
       }
@@ -129,11 +126,6 @@ export const roleListInIAM = ({
       );
     })
     .map((binding) => binding.role);
-
-  if (!roles.some((role) => role.startsWith(`${roleNamePrefix}workspace`))) {
-    // TODO(ed): no default workspace member role.
-    roles.push(PresetRoleType.WORKSPACE_MEMBER);
-  }
 
   return roles;
 };
