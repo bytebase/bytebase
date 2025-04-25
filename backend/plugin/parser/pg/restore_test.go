@@ -105,6 +105,11 @@ func fixedMockDatabaseMetadataGetter(_ context.Context, _ string, database strin
 								Primary:     true,
 								Unique:      true,
 							},
+							{
+								Name:        "t_generated_uk",
+								Expressions: []string{"a"},
+								Unique:      true,
+							},
 						},
 					},
 					{

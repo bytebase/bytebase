@@ -1,4 +1,28 @@
 - input: |-
+    UPDATE t_generated as t SET t."b" = 1 WHERE a = 1;
+    UPDATE t_generated as t SET t."b" = 2 WHERE a = 2;
+    UPDATE t_generated as t SET t."b" = 3 WHERE a = 3;
+    UPDATE t_generated as t SET t."b" = 4 WHERE a = 4;
+    UPDATE t_generated as t SET t."b" = 5 WHERE a = 5;
+    UPDATE t_generated as t SET t."b" = 6 WHERE a = 6;
+    UPDATE t_generated as t SET t."b" = 7 WHERE a = 7;
+  backupdatabase: bbarchive
+  backuptable: prefix_t_generated
+  originaldatabase: db
+  originaltable: t_generated
+  result: |-
+    /*
+    Original SQL:
+    UPDATE t_generated as t SET t."b" = 1 WHERE a = 1;
+    UPDATE t_generated as t SET t."b" = 2 WHERE a = 2;
+    UPDATE t_generated as t SET t."b" = 3 WHERE a = 3;
+    UPDATE t_generated as t SET t."b" = 4 WHERE a = 4;
+    UPDATE t_generated as t SET t."b" = 5 WHERE a = 5;
+    UPDATE t_generated as t SET t."b" = 6 WHERE a = 6;
+    UPDATE t_generated as t SET t."b" = 7 WHERE a = 7
+    */
+    INSERT INTO "public"."t_generated" SELECT * FROM "bbarchive"."prefix_t_generated" ON CONFLICT ON CONSTRAINT "t_generated_uk" DO UPDATE SET "b" = EXCLUDED."b";
+- input: |-
     UPDATE t_generated as t SET t."a" = 1 WHERE b = 1;
     UPDATE t_generated as t SET t."a" = 2 WHERE b = 2;
     UPDATE t_generated as t SET t."a" = 3 WHERE b = 3;
