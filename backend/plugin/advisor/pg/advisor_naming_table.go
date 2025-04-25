@@ -84,7 +84,7 @@ func (checker *namingTableConventionChecker) Visit(node ast.Node) ast.Visitor {
 				Code:          advisor.NamingTableConventionMismatch.Int32(),
 				Title:         checker.title,
 				Content:       fmt.Sprintf(`"%s" mismatches table naming convention, naming format should be %q`, tableName, checker.format),
-				StartPosition: common.ConvertANTLRLineToPosition(node.LastLine()),
+				StartPosition: common.ConvertPGParserLineToPosition(node.LastLine()),
 			})
 		}
 		if checker.maxLength > 0 && len(tableName) > checker.maxLength {
@@ -93,7 +93,7 @@ func (checker *namingTableConventionChecker) Visit(node ast.Node) ast.Visitor {
 				Code:          advisor.NamingTableConventionMismatch.Int32(),
 				Title:         checker.title,
 				Content:       fmt.Sprintf("\"%s\" mismatches table naming convention, its length should be within %d characters", tableName, checker.maxLength),
-				StartPosition: common.ConvertANTLRLineToPosition(node.LastLine()),
+				StartPosition: common.ConvertPGParserLineToPosition(node.LastLine()),
 			})
 		}
 	}

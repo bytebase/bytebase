@@ -61,7 +61,7 @@ func (*BuiltinPriorBackupCheckAdvisor) Check(_ context.Context, checkCtx advisor
 				Title:         title,
 				Content:       fmt.Sprintf("Data change can only run DML, \"%s\" is not DML", stmt.Text()),
 				Code:          advisor.BuiltinPriorBackupCheck.Int32(),
-				StartPosition: common.ConvertANTLRLineToPosition(stmt.LastLine()),
+				StartPosition: common.ConvertPGParserLineToPosition(stmt.LastLine()),
 			})
 		}
 	}

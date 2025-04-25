@@ -79,7 +79,7 @@ func (checker *columnDefaultDisallowVolatileChecker) generateAdvice() []*storepb
 			Code:          advisor.NoDefault.Int32(),
 			Title:         checker.title,
 			Content:       fmt.Sprintf("Column %q.%q in schema %q has volatile DEFAULT", column.table, column.name, column.schema),
-			StartPosition: common.ConvertANTLRLineToPosition(column.line),
+			StartPosition: common.ConvertPGParserLineToPosition(column.line),
 		})
 	}
 

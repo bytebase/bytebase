@@ -87,18 +87,12 @@ func prepareTransformation(databaseName, statement string) ([]StatementInfo, err
 			}
 			for _, table := range tables {
 				result = append(result, StatementInfo{
-					Offset:    i,
-					Statement: table.Statement,
-					Table:     table.Table,
-					Tree:      table.Tree,
-					StartPosition: &store.Position{
-						Line:   int32(item.FirstStatementLine) + 1,
-						Column: int32(item.FirstStatementColumn),
-					},
-					EndPosition: &store.Position{
-						Line:   int32(item.LastLine) + 1,
-						Column: int32(item.LastColumn),
-					},
+					Offset:        i,
+					Statement:     table.Statement,
+					Table:         table.Table,
+					Tree:          table.Tree,
+					StartPosition: item.Start,
+					EndPosition:   item.End,
 				})
 			}
 		}

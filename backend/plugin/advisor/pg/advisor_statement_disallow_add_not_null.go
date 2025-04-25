@@ -66,7 +66,7 @@ func (checker *statementDisallowAddNotNullChecker) Visit(in ast.Node) ast.Visito
 			Code:          advisor.StatementAddNotNull.Int32(),
 			Title:         checker.title,
 			Content:       fmt.Sprintf("Setting NOT NULL will block reads and writes. You can use CHECK (%q IS NOT NULL) instead", node.ColumnName),
-			StartPosition: common.ConvertANTLRLineToPosition(checker.line),
+			StartPosition: common.ConvertPGParserLineToPosition(checker.line),
 		})
 	}
 

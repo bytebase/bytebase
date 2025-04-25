@@ -90,7 +90,7 @@ func (checker *encodingAllowlistChecker) Visit(in ast.Node) ast.Visitor {
 			Code:          code.Int32(),
 			Title:         checker.title,
 			Content:       fmt.Sprintf("\"%s\" used disabled encoding '%s'", checker.text, disabledEncoding),
-			StartPosition: common.ConvertANTLRLineToPosition(line),
+			StartPosition: common.ConvertPGParserLineToPosition(line),
 		})
 	}
 

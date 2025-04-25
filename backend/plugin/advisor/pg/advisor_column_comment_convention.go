@@ -69,7 +69,7 @@ func (*ColumnCommentConventionAdvisor) Check(_ context.Context, checkCtx advisor
 					Code:          advisor.CommentEmpty.Int32(),
 					Title:         checker.title,
 					Content:       fmt.Sprintf("Comment is required for column `%s`", stringifyColumnNameDef(columnName)),
-					StartPosition: common.ConvertANTLRLineToPosition(columnName.LastLine()),
+					StartPosition: common.ConvertPGParserLineToPosition(columnName.LastLine()),
 				})
 			}
 		} else {
@@ -80,7 +80,7 @@ func (*ColumnCommentConventionAdvisor) Check(_ context.Context, checkCtx advisor
 					Code:          advisor.CommentTooLong.Int32(),
 					Title:         checker.title,
 					Content:       fmt.Sprintf("Column `%s` comment is too long. The length of comment should be within %d characters", stringifyColumnNameDef(columnName), checker.payload.MaxLength),
-					StartPosition: common.ConvertANTLRLineToPosition(commentStmt.LastLine()),
+					StartPosition: common.ConvertPGParserLineToPosition(commentStmt.LastLine()),
 				})
 			}
 			if checker.payload.RequiredClassification {
@@ -90,7 +90,7 @@ func (*ColumnCommentConventionAdvisor) Check(_ context.Context, checkCtx advisor
 						Code:          advisor.CommentMissingClassification.Int32(),
 						Title:         checker.title,
 						Content:       fmt.Sprintf("Column `%s` comment requires classification", stringifyColumnNameDef(columnName)),
-						StartPosition: common.ConvertANTLRLineToPosition(commentStmt.LastLine()),
+						StartPosition: common.ConvertPGParserLineToPosition(commentStmt.LastLine()),
 					})
 				}
 			}

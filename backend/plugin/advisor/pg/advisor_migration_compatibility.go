@@ -122,7 +122,7 @@ func (checker *compatibilityChecker) Visit(node ast.Node) ast.Visitor {
 			Code:          code.Int32(),
 			Title:         checker.title,
 			Content:       fmt.Sprintf("\"%s\" may cause incompatibility with the existing data and code", checker.text),
-			StartPosition: common.ConvertANTLRLineToPosition(node.LastLine()),
+			StartPosition: common.ConvertPGParserLineToPosition(node.LastLine()),
 		})
 	}
 	return checker

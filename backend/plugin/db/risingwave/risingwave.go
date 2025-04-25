@@ -233,15 +233,9 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 			sqlResult, err := tx.ExecContext(ctx, command.Text)
 			if err != nil {
 				return 0, &db.ErrorWithPosition{
-					Err: errors.Wrapf(err, "failed to execute context in a transaction"),
-					Start: &storepb.Position{
-						Line:   int32(command.FirstStatementLine),
-						Column: int32(command.FirstStatementColumn),
-					},
-					End: &storepb.Position{
-						Line:   int32(command.LastLine),
-						Column: int32(command.LastColumn),
-					},
+					Err:   errors.Wrapf(err, "failed to execute context in a transaction"),
+					Start: command.Start,
+					End:   command.End,
 				}
 			}
 			rowsAffected, err := sqlResult.RowsAffected()

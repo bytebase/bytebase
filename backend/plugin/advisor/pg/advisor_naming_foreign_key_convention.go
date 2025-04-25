@@ -96,7 +96,7 @@ func (checker *namingFKConventionChecker) Visit(in ast.Node) ast.Visitor {
 				Code:          advisor.NamingFKConventionMismatch.Int32(),
 				Title:         checker.title,
 				Content:       fmt.Sprintf(`Foreign key in table "%s" mismatches the naming convention, expect %q but found "%s"`, indexData.tableName, regex, indexData.indexName),
-				StartPosition: common.ConvertANTLRLineToPosition(indexData.line),
+				StartPosition: common.ConvertPGParserLineToPosition(indexData.line),
 			})
 		}
 		if checker.maxLength > 0 && len(indexData.indexName) > checker.maxLength {
@@ -105,7 +105,7 @@ func (checker *namingFKConventionChecker) Visit(in ast.Node) ast.Visitor {
 				Code:          advisor.NamingFKConventionMismatch.Int32(),
 				Title:         checker.title,
 				Content:       fmt.Sprintf(`Foreign key "%s" in table "%s" mismatches the naming convention, its length should be within %d characters`, indexData.indexName, indexData.tableName, checker.maxLength),
-				StartPosition: common.ConvertANTLRLineToPosition(indexData.line),
+				StartPosition: common.ConvertPGParserLineToPosition(indexData.line),
 			})
 		}
 	}

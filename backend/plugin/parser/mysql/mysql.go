@@ -28,7 +28,7 @@ func ParseMySQL(statement string, options ...tokenizer.Option) ([]*ParseResult, 
 	if err != nil {
 		return nil, err
 	}
-	list, err := parseInputStream(antlr.NewInputStream(statement))
+	list, err := parseInputStream(antlr.NewInputStream(statement), statement)
 	// HACK(p0ny): the callee may end up in an infinite loop, we print the statement here to help debug.
 	if err != nil && strings.Contains(err.Error(), "split SQL statement timed out") {
 		slog.Info("split SQL statement timed out", "statement", statement)
@@ -211,12 +211,12 @@ func mysqlAddSemicolonIfNeeded(sql string) string {
 	return sql
 }
 
-func parseInputStream(input *antlr.InputStream) ([]*ParseResult, error) {
+func parseInputStream(input *antlr.InputStream, statement string) ([]*ParseResult, error) {
 	var result []*ParseResult
 	lexer := parser.NewMySQLLexer(input)
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
 
-	list, err := splitMySQLStatement(stream)
+	list, err := splitMySQLStatement(stream, statement)
 	if err != nil {
 		return nil, err
 	}
@@ -241,7 +241,7 @@ func parseInputStream(input *antlr.InputStream) ([]*ParseResult, error) {
 			Tokens:   tokens,
 			BaseLine: s.BaseLine,
 		})
-		baseLine = s.LastLine
+		baseLine = int(s.End.Line)
 	}
 
 	return result, nil

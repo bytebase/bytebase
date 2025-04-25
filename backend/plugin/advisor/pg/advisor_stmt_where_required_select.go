@@ -74,7 +74,7 @@ func (checker *whereRequirementForSelectChecker) Visit(node ast.Node) ast.Visito
 			Code:          code.Int32(),
 			Title:         checker.title,
 			Content:       fmt.Sprintf("\"%s\" requires WHERE clause", checker.text),
-			StartPosition: common.ConvertANTLRLineToPosition(checker.line),
+			StartPosition: common.ConvertPGParserLineToPosition(checker.line),
 		})
 	}
 	return checker

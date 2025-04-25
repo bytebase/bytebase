@@ -2,6 +2,8 @@ package base
 
 import (
 	"github.com/antlr4-go/antlr/v4"
+
+	"github.com/bytebase/bytebase/backend/common"
 )
 
 func GetDefaultChannelTokenType(tokens []antlr.Token, base int, offset int) int {
@@ -28,17 +30,19 @@ func GetDefaultChannelTokenType(tokens []antlr.Token, base int, offset int) int 
 
 // FirstDefaultChannelTokenPosition returns the first token position of the default channel.
 // Both line and column are ZERO based.
-func FirstDefaultChannelTokenPosition(tokens []antlr.Token) (int, int) {
+func FirstDefaultChannelTokenPosition(tokens []antlr.Token) *common.ANTLRPosition {
 	for _, token := range tokens {
 		if token.GetChannel() == antlr.TokenDefaultChannel {
-			// From antlr4, the line is ONE based, and the column is ZERO based.
-			// So we should minus 1 for the line.
-			return token.GetLine() - 1, token.GetColumn()
+			return &common.ANTLRPosition{
+				Line:   int32(token.GetLine()),
+				Column: int32(token.GetColumn()),
+			}
 		}
 	}
-	// From antlr4, the line is ONE based, and the column is ZERO based.
-	// So we should minus 1 for the line.
-	return tokens[len(tokens)-1].GetLine() - 1, tokens[len(tokens)-1].GetColumn()
+	return &common.ANTLRPosition{
+		Line:   int32(tokens[len(tokens)-1].GetLine()),
+		Column: int32(tokens[len(tokens)-1].GetColumn()),
+	}
 }
 
 func IsEmpty(tokens []antlr.Token, semi int) bool {

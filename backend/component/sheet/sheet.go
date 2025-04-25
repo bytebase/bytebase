@@ -437,7 +437,7 @@ func calculatePostgresErrorLine(statement string) int {
 
 	for _, singleSQL := range singleSQLs {
 		if _, err := pgrawparser.Parse(pgrawparser.ParseContext{}, singleSQL.Text); err != nil {
-			return singleSQL.LastLine + 1
+			return int(singleSQL.End.GetLine()) + 1
 		}
 	}
 
@@ -540,7 +540,7 @@ func tidbSyntaxCheck(statement string) (any, []*storepb.Advice) {
 
 		node := nodes[0]
 		node.SetText(nil, singleSQL.Text)
-		node.SetOriginTextPosition(singleSQL.LastLine)
+		node.SetOriginTextPosition(int(singleSQL.End.GetLine()))
 		if n, ok := node.(*tidbast.CreateTableStmt); ok {
 			if err := tidbbbparser.SetLineForMySQLCreateTableStmt(n); err != nil {
 				return nil, append(adviceList, &storepb.Advice{
@@ -549,13 +549,13 @@ func tidbSyntaxCheck(statement string) (any, []*storepb.Advice) {
 					Title:   "Set line error",
 					Content: err.Error(),
 					StartPosition: &storepb.Position{
-						Line: int32(singleSQL.LastLine),
+						Line: singleSQL.End.GetLine(),
 					},
 				})
 			}
 		}
 		returnNodes = append(returnNodes, node)
-		baseLine = singleSQL.LastLine
+		baseLine = int(singleSQL.End.GetLine())
 	}
 
 	return returnNodes, adviceList

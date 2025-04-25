@@ -111,13 +111,18 @@ func ConvertANTLRPositionToPosition(a *ANTLRPosition, text string) *storepb.Posi
 }
 
 func ConvertANTLRLineToPosition(line int) *storepb.Position {
+	pLine := ConvertANTLRLineToPositionLine(line)
+	return &storepb.Position{
+		Line: int32(pLine),
+	}
+}
+
+func ConvertANTLRLineToPositionLine(line int) int {
 	positionLine := line - 1
 	if line == 0 {
 		positionLine = 0
 	}
-	return &storepb.Position{
-		Line: int32(positionLine),
-	}
+	return positionLine
 }
 
 // UTF16Position is a position in a text expressed as zero-based line and zero-based column counted in UTF-16 code units.
@@ -203,4 +208,11 @@ func ConvertLineToActionLine(line int) int {
 		return 1
 	}
 	return line + 1
+}
+
+func ConvertPGParserLineToPosition(line int) *storepb.Position {
+	return &storepb.Position{
+		Line:   int32(line),
+		Column: 0,
+	}
 }

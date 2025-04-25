@@ -84,7 +84,7 @@ func (*StatementObjectOwnerCheckAdvisor) Check(ctx context.Context, checkCtx adv
 					Title:         title,
 					Content:       fmt.Sprintf("Sequence \"%s\" is owned by \"%s\", but the current role is \"%s\".", n.Name.Name, owner, currentRole),
 					Code:          advisor.StatementObjectOwnerCheck.Int32(),
-					StartPosition: common.ConvertANTLRLineToPosition(stmt.LastLine()),
+					StartPosition: common.ConvertPGParserLineToPosition(stmt.LastLine()),
 				})
 			}
 		case *ast.AlterTableStmt:
@@ -113,7 +113,7 @@ func (*StatementObjectOwnerCheckAdvisor) Check(ctx context.Context, checkCtx adv
 					Title:         title,
 					Content:       fmt.Sprintf("Table \"%s\" is owned by \"%s\", but the current role is \"%s\".", n.Table.Name, owner, currentRole),
 					Code:          advisor.StatementObjectOwnerCheck.Int32(),
-					StartPosition: common.ConvertANTLRLineToPosition(stmt.LastLine()),
+					StartPosition: common.ConvertPGParserLineToPosition(stmt.LastLine()),
 				})
 			}
 		case *ast.AlterTypeStmt:
@@ -139,7 +139,7 @@ func (*StatementObjectOwnerCheckAdvisor) Check(ctx context.Context, checkCtx adv
 					Title:         title,
 					Content:       fmt.Sprintf("Type \"%s\" is owned by \"%s\", but the current role is \"%s\".", n.Type.Name, owner, currentRole),
 					Code:          advisor.StatementObjectOwnerCheck.Int32(),
-					StartPosition: common.ConvertANTLRLineToPosition(stmt.LastLine()),
+					StartPosition: common.ConvertPGParserLineToPosition(stmt.LastLine()),
 				})
 			}
 		case *ast.CreateExtensionStmt:
@@ -161,7 +161,7 @@ func (*StatementObjectOwnerCheckAdvisor) Check(ctx context.Context, checkCtx adv
 					Title:         title,
 					Content:       fmt.Sprintf("Schema \"%s\" is owned by \"%s\", but the current role is \"%s\".", schemaName, owner, currentRole),
 					Code:          advisor.StatementObjectOwnerCheck.Int32(),
-					StartPosition: common.ConvertANTLRLineToPosition(stmt.LastLine()),
+					StartPosition: common.ConvertPGParserLineToPosition(stmt.LastLine()),
 				})
 			}
 		case *ast.CreateFunctionStmt:
@@ -186,7 +186,7 @@ func (*StatementObjectOwnerCheckAdvisor) Check(ctx context.Context, checkCtx adv
 					Title:         title,
 					Content:       fmt.Sprintf("Schema \"%s\" is owned by \"%s\", but the current role is \"%s\".", schemaName, owner, currentRole),
 					Code:          advisor.StatementObjectOwnerCheck.Int32(),
-					StartPosition: common.ConvertANTLRLineToPosition(stmt.LastLine()),
+					StartPosition: common.ConvertPGParserLineToPosition(stmt.LastLine()),
 				})
 			}
 		case *ast.CreateIndexStmt:
@@ -211,7 +211,7 @@ func (*StatementObjectOwnerCheckAdvisor) Check(ctx context.Context, checkCtx adv
 					Title:         title,
 					Content:       fmt.Sprintf("Schema \"%s\" is owned by \"%s\", but the current role is \"%s\".", schemaName, owner, currentRole),
 					Code:          advisor.StatementObjectOwnerCheck.Int32(),
-					StartPosition: common.ConvertANTLRLineToPosition(stmt.LastLine()),
+					StartPosition: common.ConvertPGParserLineToPosition(stmt.LastLine()),
 				})
 			}
 		case *ast.CreateSchemaStmt:
@@ -222,7 +222,7 @@ func (*StatementObjectOwnerCheckAdvisor) Check(ctx context.Context, checkCtx adv
 					Title:         title,
 					Content:       fmt.Sprintf("Database \"%s\" is owned by \"%s\", but the current role is \"%s\".", dbMetadata.GetName(), owner, currentRole),
 					Code:          advisor.StatementObjectOwnerCheck.Int32(),
-					StartPosition: common.ConvertANTLRLineToPosition(stmt.LastLine()),
+					StartPosition: common.ConvertPGParserLineToPosition(stmt.LastLine()),
 				})
 			}
 		case *ast.CreateSequenceStmt:
@@ -247,7 +247,7 @@ func (*StatementObjectOwnerCheckAdvisor) Check(ctx context.Context, checkCtx adv
 					Title:         title,
 					Content:       fmt.Sprintf("Schema \"%s\" is owned by \"%s\", but the current role is \"%s\".", schemaName, owner, currentRole),
 					Code:          advisor.StatementObjectOwnerCheck.Int32(),
-					StartPosition: common.ConvertANTLRLineToPosition(stmt.LastLine()),
+					StartPosition: common.ConvertPGParserLineToPosition(stmt.LastLine()),
 				})
 			}
 		case *ast.CreateTableStmt:
@@ -272,7 +272,7 @@ func (*StatementObjectOwnerCheckAdvisor) Check(ctx context.Context, checkCtx adv
 					Title:         title,
 					Content:       fmt.Sprintf("Schema \"%s\" is owned by \"%s\", but the current role is \"%s\".", schemaName, owner, currentRole),
 					Code:          advisor.StatementObjectOwnerCheck.Int32(),
-					StartPosition: common.ConvertANTLRLineToPosition(stmt.LastLine()),
+					StartPosition: common.ConvertPGParserLineToPosition(stmt.LastLine()),
 				})
 			}
 		case *ast.CreateTriggerStmt:
@@ -297,7 +297,7 @@ func (*StatementObjectOwnerCheckAdvisor) Check(ctx context.Context, checkCtx adv
 					Title:         title,
 					Content:       fmt.Sprintf("Schema \"%s\" is owned by \"%s\", but the current role is \"%s\".", schemaName, owner, currentRole),
 					Code:          advisor.StatementObjectOwnerCheck.Int32(),
-					StartPosition: common.ConvertANTLRLineToPosition(stmt.LastLine()),
+					StartPosition: common.ConvertPGParserLineToPosition(stmt.LastLine()),
 				})
 			}
 		case *ast.CreateTypeStmt:
@@ -322,7 +322,7 @@ func (*StatementObjectOwnerCheckAdvisor) Check(ctx context.Context, checkCtx adv
 					Title:         title,
 					Content:       fmt.Sprintf("Schema \"%s\" is owned by \"%s\", but the current role is \"%s\".", schemaName, owner, currentRole),
 					Code:          advisor.StatementObjectOwnerCheck.Int32(),
-					StartPosition: common.ConvertANTLRLineToPosition(stmt.LastLine()),
+					StartPosition: common.ConvertPGParserLineToPosition(stmt.LastLine()),
 				})
 			}
 		case *ast.CreateViewStmt:
@@ -347,7 +347,7 @@ func (*StatementObjectOwnerCheckAdvisor) Check(ctx context.Context, checkCtx adv
 					Title:         title,
 					Content:       fmt.Sprintf("Schema \"%s\" is owned by \"%s\", but the current role is \"%s\".", schemaName, owner, currentRole),
 					Code:          advisor.StatementObjectOwnerCheck.Int32(),
-					StartPosition: common.ConvertANTLRLineToPosition(stmt.LastLine()),
+					StartPosition: common.ConvertPGParserLineToPosition(stmt.LastLine()),
 				})
 			}
 		case *ast.DropFunctionStmt:
@@ -373,7 +373,7 @@ func (*StatementObjectOwnerCheckAdvisor) Check(ctx context.Context, checkCtx adv
 						Title:         title,
 						Content:       fmt.Sprintf("Schema \"%s\" is owned by \"%s\", but the current role is \"%s\".", schemaName, owner, currentRole),
 						Code:          advisor.StatementObjectOwnerCheck.Int32(),
-						StartPosition: common.ConvertANTLRLineToPosition(stmt.LastLine()),
+						StartPosition: common.ConvertPGParserLineToPosition(stmt.LastLine()),
 					})
 				}
 			}
@@ -400,7 +400,7 @@ func (*StatementObjectOwnerCheckAdvisor) Check(ctx context.Context, checkCtx adv
 						Title:         title,
 						Content:       fmt.Sprintf("Schema \"%s\" is owned by \"%s\", but the current role is \"%s\".", schemaName, owner, currentRole),
 						Code:          advisor.StatementObjectOwnerCheck.Int32(),
-						StartPosition: common.ConvertANTLRLineToPosition(stmt.LastLine()),
+						StartPosition: common.ConvertPGParserLineToPosition(stmt.LastLine()),
 					})
 				}
 			}
@@ -420,7 +420,7 @@ func (*StatementObjectOwnerCheckAdvisor) Check(ctx context.Context, checkCtx adv
 						Title:         title,
 						Content:       fmt.Sprintf("Schema \"%s\" is owned by \"%s\", but the current role is \"%s\".", schemaName, owner, currentRole),
 						Code:          advisor.StatementObjectOwnerCheck.Int32(),
-						StartPosition: common.ConvertANTLRLineToPosition(stmt.LastLine()),
+						StartPosition: common.ConvertPGParserLineToPosition(stmt.LastLine()),
 					})
 				}
 			}
@@ -447,7 +447,7 @@ func (*StatementObjectOwnerCheckAdvisor) Check(ctx context.Context, checkCtx adv
 						Title:         title,
 						Content:       fmt.Sprintf("Schema \"%s\" is owned by \"%s\", but the current role is \"%s\".", schemaName, owner, currentRole),
 						Code:          advisor.StatementObjectOwnerCheck.Int32(),
-						StartPosition: common.ConvertANTLRLineToPosition(stmt.LastLine()),
+						StartPosition: common.ConvertPGParserLineToPosition(stmt.LastLine()),
 					})
 				}
 			}
@@ -480,7 +480,7 @@ func (*StatementObjectOwnerCheckAdvisor) Check(ctx context.Context, checkCtx adv
 							Title:         title,
 							Content:       fmt.Sprintf("Table \"%s\" is owned by \"%s\", but the current role is \"%s\".", table.Name, owner, currentRole),
 							Code:          advisor.StatementObjectOwnerCheck.Int32(),
-							StartPosition: common.ConvertANTLRLineToPosition(stmt.LastLine()),
+							StartPosition: common.ConvertPGParserLineToPosition(stmt.LastLine()),
 						})
 					}
 				default:
@@ -495,7 +495,7 @@ func (*StatementObjectOwnerCheckAdvisor) Check(ctx context.Context, checkCtx adv
 							Title:         title,
 							Content:       fmt.Sprintf("Schema \"%s\" is owned by \"%s\", but the current role is \"%s\".", schemaName, owner, currentRole),
 							Code:          advisor.StatementObjectOwnerCheck.Int32(),
-							StartPosition: common.ConvertANTLRLineToPosition(stmt.LastLine()),
+							StartPosition: common.ConvertPGParserLineToPosition(stmt.LastLine()),
 						})
 					}
 				}
@@ -522,7 +522,7 @@ func (*StatementObjectOwnerCheckAdvisor) Check(ctx context.Context, checkCtx adv
 					Title:         title,
 					Content:       fmt.Sprintf("Schema \"%s\" is owned by \"%s\", but the current role is \"%s\".", schemaName, owner, currentRole),
 					Code:          advisor.StatementObjectOwnerCheck.Int32(),
-					StartPosition: common.ConvertANTLRLineToPosition(stmt.LastLine()),
+					StartPosition: common.ConvertPGParserLineToPosition(stmt.LastLine()),
 				})
 			}
 		case *ast.DropTypeStmt:
@@ -548,7 +548,7 @@ func (*StatementObjectOwnerCheckAdvisor) Check(ctx context.Context, checkCtx adv
 						Title:         title,
 						Content:       fmt.Sprintf("Schema \"%s\" is owned by \"%s\", but the current role is \"%s\".", schemaName, owner, currentRole),
 						Code:          advisor.StatementObjectOwnerCheck.Int32(),
-						StartPosition: common.ConvertANTLRLineToPosition(stmt.LastLine()),
+						StartPosition: common.ConvertPGParserLineToPosition(stmt.LastLine()),
 					})
 				}
 			}
@@ -571,7 +571,7 @@ func (*StatementObjectOwnerCheckAdvisor) Check(ctx context.Context, checkCtx adv
 					Title:         title,
 					Content:       fmt.Sprintf("Schema \"%s\" is owned by \"%s\", but the current role is \"%s\".", schemaName, owner, currentRole),
 					Code:          advisor.StatementObjectOwnerCheck.Int32(),
-					StartPosition: common.ConvertANTLRLineToPosition(stmt.LastLine()),
+					StartPosition: common.ConvertPGParserLineToPosition(stmt.LastLine()),
 				})
 			}
 		case *ast.RenameSchemaStmt:
@@ -589,7 +589,7 @@ func (*StatementObjectOwnerCheckAdvisor) Check(ctx context.Context, checkCtx adv
 					Title:         title,
 					Content:       fmt.Sprintf("Schema \"%s\" is owned by \"%s\", but the current role is \"%s\".", n.Schema, owner, currentRole),
 					Code:          advisor.StatementObjectOwnerCheck.Int32(),
-					StartPosition: common.ConvertANTLRLineToPosition(stmt.LastLine()),
+					StartPosition: common.ConvertPGParserLineToPosition(stmt.LastLine()),
 				})
 			}
 		}
