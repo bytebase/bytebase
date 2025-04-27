@@ -188,11 +188,61 @@ func (c *Client) createPlan(project string, r *v1pb.Plan) (*v1pb.Plan, error) {
 	return resp, nil
 }
 
-// TODO(p0ny):
-//
-//nolint:unused
-func (c *Client) getRollout(project, rolloutID string) (*v1pb.Rollout, error) {
-	req, err := http.NewRequest("GET", fmt.Sprintf("%s/v1/%s/rollouts/%s", c.url, project, rolloutID), nil)
+func (c *Client) runPlanChecks(r *v1pb.RunPlanChecksRequest) (*v1pb.RunPlanChecksResponse, error) {
+	req, err := http.NewRequest("POST", fmt.Sprintf("%s/v1/%s:runPlanChecks", c.url, r.Name), nil)
+	if err != nil {
+		return nil, err
+	}
+	body, err := c.doRequest(req)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to run plan checks")
+	}
+	resp := &v1pb.RunPlanChecksResponse{}
+	if err := protojsonUnmarshaler.Unmarshal(body, resp); err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+func (c *Client) listPlanCheckRuns(r *v1pb.ListPlanCheckRunsRequest) (*v1pb.ListPlanCheckRunsResponse, error) {
+	req, err := http.NewRequest("GET", fmt.Sprintf("%s/v1/%s/planCheckRuns", c.url, r.Parent), nil)
+	if err != nil {
+		return nil, err
+	}
+	body, err := c.doRequest(req)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to list plan check runs")
+	}
+	resp := &v1pb.ListPlanCheckRunsResponse{}
+	if err := protojsonUnmarshaler.Unmarshal(body, resp); err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+func (c *Client) listAllPlanCheckRuns(planName string) (*v1pb.ListPlanCheckRunsResponse, error) {
+	resp := &v1pb.ListPlanCheckRunsResponse{}
+	request := &v1pb.ListPlanCheckRunsRequest{
+		Parent:    planName,
+		PageSize:  1000,
+		PageToken: "",
+	}
+	for {
+		listResp, err := c.listPlanCheckRuns(request)
+		if err != nil {
+			return nil, err
+		}
+		resp.PlanCheckRuns = append(resp.PlanCheckRuns, listResp.PlanCheckRuns...)
+		if listResp.NextPageToken == "" {
+			break
+		}
+		request.PageToken = listResp.NextPageToken
+	}
+	return resp, nil
+}
+
+func (c *Client) getRollout(rolloutName string) (*v1pb.Rollout, error) {
+	req, err := http.NewRequest("GET", fmt.Sprintf("%s/v1/%s", c.url, rolloutName), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -210,16 +260,21 @@ func (c *Client) getRollout(project, rolloutID string) (*v1pb.Rollout, error) {
 	return resp, nil
 }
 
-func (c *Client) createRollout(project string, r *v1pb.CreateRolloutRequest) (*v1pb.Rollout, error) {
+func (c *Client) createRollout(r *v1pb.CreateRolloutRequest) (*v1pb.Rollout, error) {
 	rb, err := protojson.Marshal(r.Rollout)
 	if err != nil {
 		return nil, err
 	}
-	a := fmt.Sprintf("%s/v1/%s/rollouts", c.url, project)
+	a := fmt.Sprintf("%s/v1/%s/rollouts", c.url, r.Parent)
+	query := url.Values{}
+	if r.ValidateOnly {
+		query.Set("validateOnly", "true")
+	}
 	if r.Target != nil {
-		query := url.Values{}
 		query.Set("target", *r.Target)
-		a = a + "?" + query.Encode()
+	}
+	if len(query) > 0 {
+		a += "?" + query.Encode()
 	}
 
 	req, err := http.NewRequest("POST", a, bytes.NewReader(rb))
@@ -237,5 +292,26 @@ func (c *Client) createRollout(project string, r *v1pb.CreateRolloutRequest) (*v
 		return nil, err
 	}
 
+	return resp, nil
+}
+
+func (c *Client) batchRunTasks(r *v1pb.BatchRunTasksRequest) (*v1pb.BatchRunTasksResponse, error) {
+	rb, err := protojson.Marshal(r)
+	if err != nil {
+		return nil, err
+	}
+	req, err := http.NewRequest("POST", fmt.Sprintf("%s/v1/%s/tasks:batchRun", c.url, r.Parent), bytes.NewReader(rb))
+	if err != nil {
+		return nil, err
+	}
+	body, err := c.doRequest(req)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to batch run tasks")
+
+	}
+	resp := &v1pb.BatchRunTasksResponse{}
+	if err := protojsonUnmarshaler.Unmarshal(body, resp); err != nil {
+		return nil, err
+	}
 	return resp, nil
 }
