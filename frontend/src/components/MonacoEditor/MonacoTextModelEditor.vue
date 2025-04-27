@@ -204,7 +204,12 @@ onMounted(async () => {
     useAdvices(monaco, editor, toRef(props, "advices"));
     useLineHighlights(monaco, editor, toRef(props, "lineHighlights"));
     useAutoHeight(monaco, editor, containerRef, toRef(props, "autoHeight"));
-    useAutoComplete(monaco, editor, toRef(props, "autoCompleteContext"));
+    useAutoComplete(
+      monaco,
+      editor,
+      toRef(props, "autoCompleteContext"),
+      toRef(props, "readonly")
+    );
     useOverrideSuggestIcons(monaco, editor);
 
     ready.value = true;
