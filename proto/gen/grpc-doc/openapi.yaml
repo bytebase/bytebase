@@ -11585,6 +11585,29 @@ components:
                 allowExport:
                     type: boolean
                     description: The query result is allowed to be exported or not.
+                messages:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/QueryResult_Message'
+                    description: |-
+                        Informational or debug messages returned by the database engine during query execution.
+                         Examples include PostgreSQL's RAISE NOTICE, MSSQL's PRINT, or Oracle's DBMS_OUTPUT.PUT_LINE.
+        QueryResult_Message:
+            type: object
+            properties:
+                level:
+                    enum:
+                        - LEVEL_UNSPECIFIED
+                        - INFO
+                        - WARNING
+                        - DEBUG
+                        - LOG
+                        - NOTICE
+                        - EXCEPTION
+                    type: string
+                    format: enum
+                content:
+                    type: string
         QueryResult_PostgresError:
             type: object
             properties:
