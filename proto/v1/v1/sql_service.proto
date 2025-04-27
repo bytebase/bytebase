@@ -249,6 +249,26 @@ message QueryResult {
 
   // The query result is allowed to be exported or not.
   bool allow_export = 11;
+
+  message Message {
+    enum Level {
+      // Unspecified.
+      LEVEL_UNSPECIFIED = 0;
+      INFO = 1;
+      WARNING = 2;
+      DEBUG = 3;
+      LOG = 4;
+      NOTICE = 5;
+      EXCEPTION = 6;
+    }
+
+    Level level = 1;
+    string content = 2;
+  }
+
+  // Informational or debug messages returned by the database engine during query execution.
+  // Examples include PostgreSQL's RAISE NOTICE, MSSQL's PRINT, or Oracle's DBMS_OUTPUT.PUT_LINE.
+  repeated Message messages = 12;
 }
 
 message QueryRow {
