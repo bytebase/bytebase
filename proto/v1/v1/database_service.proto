@@ -238,15 +238,17 @@ message ListDatabasesRequest {
   string page_token = 3;
 
   // Filter is used to filter databases returned in the list.
+  // The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+  //
   // Supported filter:
-  // - environment
-  // - name
-  // - project
-  // - instance
-  // - engine
-  // - label
-  // - exclude_unassigned: Not show unassigned databases if specified
-  // - drifted
+  // - environment: the environment full name in "environments/{id}" format, support "==" operator.
+  // - name: the database name, support ".matches()" operator.
+  // - project: the project full name in "projects/{id}" format, support "==" operator.
+  // - instance: the instance full name in "instances/{id}" format, support "==" operator.
+  // - engine: the database engine, check Engine enum for values. Support "==", "in [xx]", "!(in [xx])" operator.
+  // - label: the database label in "{key}:{value1},{value2}" format. Support "==" operator.
+  // - exclude_unassigned: should be "true" or "false", will not show unassigned databases if it's true, support "==" operator.
+  // - drifted: should be "true" or "false", show drifted databases if it's true, support "==" operator.
   //
   // For example:
   // environment == "environments/{environment resource id}"
@@ -341,9 +343,11 @@ message GetDatabaseMetadataRequest {
   ];
 
   // Filter is used to filter databases returned in the list.
+  // The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+  //
   // Supported filter:
-  // - schema
-  // - table
+  // - schema: the schema name, support "==" operator.
+  // - table: the table name, support "==" operator.
   //
   // For example:
   // schema == "schema-a"
