@@ -84,6 +84,8 @@ import {
   useLSPConnectionState,
   useOverrideSuggestIcons,
   type FormatContentOptions,
+  useActiveRangeByCursor,
+  useDecoration,
 } from "./composables";
 import { createMonacoEditor } from "./editor";
 import type {
@@ -98,6 +100,7 @@ import type {
 
 const props = withDefaults(
   defineProps<{
+    enableDecorations?: boolean;
     model?: ITextModel;
     dialect?: SQLDialect;
     readonly?: boolean;
@@ -111,7 +114,6 @@ const props = withDefaults(
     placeholder?: string;
   }>(),
   {
-    model: undefined,
     dialect: undefined,
     readonly: false,
     autoFocus: true,
@@ -127,6 +129,7 @@ const props = withDefaults(
 
 const emit = defineEmits<{
   (e: "update:content", content: string): void;
+  (e: "update:active-content", activeContent: string): void;
   (e: "select-content", content: string): void;
   (e: "update:selection", selection: MonacoSelection | null): void;
   (e: "ready", monaco: MonacoModule, editor: IStandaloneCodeEditor): void;
@@ -137,6 +140,7 @@ const containerRef = ref<HTMLDivElement>();
 const editorRef = shallowRef<IStandaloneCodeEditor>();
 const ready = ref(false);
 const contentRef = ref("");
+const activeContent = ref("");
 const { connectionState, connectionHeartbeat } = useLSPConnectionState();
 const connectionStateIndicatorClass = computed(() => {
   const state = connectionState.value;
@@ -201,6 +205,7 @@ onMounted(async () => {
     const content = useContent(monaco, editor);
     const selection = useSelection(editor);
     const selectedContent = useSelectedContent(editor, selection);
+    const activeRangeByCursor = useActiveRangeByCursor(monaco, editor);
     useAdvices(monaco, editor, toRef(props, "advices"));
     useLineHighlights(monaco, editor, toRef(props, "lineHighlights"));
     useAutoHeight(monaco, editor, containerRef, toRef(props, "autoHeight"));
@@ -217,6 +222,10 @@ onMounted(async () => {
     await nextTick();
     emit("ready", monaco, editor);
 
+    if (!props.readonly && props.enableDecorations) {
+      useDecoration(monaco, editor, selection, activeRangeByCursor);
+    }
+
     // set the editor focus when the tab is selected
     if (!props.readonly && props.autoFocus) {
       editor.focus();
@@ -226,6 +235,19 @@ onMounted(async () => {
     watch(content, () => {
       emit("update:content", content.value);
       contentRef.value = content.value;
+    });
+    watch([() => selection.value, () => activeRangeByCursor.value], () => {
+      const hasSelection =
+        selection.value &&
+        (selection.value.startLineNumber !== selection.value.endLineNumber ||
+          selection.value.startColumn !== selection.value.endColumn);
+      const activeRange = hasSelection
+        ? selection.value
+        : activeRangeByCursor.value;
+      activeContent.value = activeRange
+        ? props.model?.getValueInRange(activeRange) || ""
+        : "";
+      emit("update:active-content", activeContent.value);
     });
     watchEffect(() => {
       emit("select-content", selectedContent.value);
