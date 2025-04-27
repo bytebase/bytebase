@@ -34,9 +34,6 @@ importers:
       '@codingame/monaco-vscode-theme-service-override':
         specifier: 15.0.2
         version: 15.0.2
-      '@joe-re/sql-parser':
-        specifier: ^1.7.1
-        version: 1.7.1
       '@markdoc/markdoc':
         specifier: 0.4.0
         version: 0.4.0
@@ -254,9 +251,6 @@ importers:
       '@types/d3-shape':
         specifier: ^3.1.7
         version: 3.1.7
-      '@types/dompurify':
-        specifier: 3.2.0
-        version: 3.2.0
       '@types/downloadjs':
         specifier: 1.4.6
         version: 1.4.6
@@ -1787,10 +1781,6 @@ packages:
     resolution: {integrity: sha512-O8jcjabXaleOG9DQ0+ARXWZBTfnP4WNAqzuiJK7ll44AmxGKv/J2M4TPjxjY3znBCfvBXFzucm1twdyFybFqEA==}
     engines: {node: '>=12'}
 
-  '@joe-re/sql-parser@1.7.1':
-    resolution: {integrity: sha512-N2L7Z3HNa4plB28Vw92tWc3AAtnPGGz8iUKMzEgdcCeRW9RWtn7f/8EnknXmQZE15H5nhmnyqT//icVufA4Fhg==}
-    engines: {node: '>=0.8.0'}
-
   '@jridgewell/gen-mapping@0.3.8':
     resolution: {integrity: sha512-imAbBGkb+ebQyxKgzv5Hu2nmROxoDOXHh80evxdoXNOrvAnVx7zimzc1Oo5h9RlfV4vPXaE2iM5pOFbvOCClWA==}
     engines: {node: '>=6.0.0'}
@@ -2092,10 +2082,6 @@ packages:
 
   '@types/debug@4.1.12':
     resolution: {integrity: sha512-vIChWdVG3LG1SMxEvI/AK+FWJthlrqlTu7fbrlywTkkaONwk/UAGaULXRlf8vkzFBLVm0zkMdCquhL5aOjhXPQ==}
-
-  '@types/dompurify@3.2.0':
-    resolution: {integrity: sha512-Fgg31wv9QbLDA0SpTOXO3MaxySc4DKGLi8sna4/Utjo4r3ZRPdCt4UQee8BWr+Q5z21yifghREPJGYaEOEIACg==}
-    deprecated: This is a stub types definition. dompurify provides its own type definitions, so you do not need this installed.
 
   '@types/downloadjs@1.4.6':
     resolution: {integrity: sha512-mp3w70vsaiLRT9ix92fmI9Ob2yJAPZm6tShJtofo2uHbN11G2i6a0ApIEjBl/kv3e9V7Pv7jMjk1bUwYWvMHvA==}
@@ -4102,11 +4088,6 @@ packages:
     resolution: {integrity: sha512-vE7JKRyES09KiunauX7nd2Q9/L7lhok4smP9RZTDeD4MVs72Dp2qNFVz39Nz5a0FVEW0BJR6C0DYrq6unoziZA==}
     engines: {node: '>= 14.16'}
 
-  peggy@3.0.2:
-    resolution: {integrity: sha512-n7chtCbEoGYRwZZ0i/O3t1cPr6o+d9Xx4Zwy2LYfzv0vjchMBU0tO+qYYyvZloBPcgRgzYvALzGWHe609JjEpg==}
-    engines: {node: '>=14'}
-    hasBin: true
-
   pev2@1.14.0:
     resolution: {integrity: sha512-ji9KCqDamJfKeqqIPfqcAIg3yVOC7+9Yhb7l8c7ctgBt/3FAjXOj9x66lewzQEmgZa4mZArKZyIHdDdnoVPMdQ==}
 
@@ -4504,10 +4485,6 @@ packages:
 
   sortablejs@1.14.0:
     resolution: {integrity: sha512-pBXvQCs5/33fdN1/39pPL0NZF20LeRbLQ5jtnheIPN9JQAaufGjKdWduZn4U7wCtVuzKhmRkI0DFYHYRbB2H1w==}
-
-  source-map-generator@0.8.0:
-    resolution: {integrity: sha512-psgxdGMwl5MZM9S3FWee4EgsEaIjahYV5AzGnwUvPhWeITz/j6rKpysQHlQ4USdxvINlb8lKfWGIXwfkrgtqkA==}
-    engines: {node: '>= 10'}
 
   source-map-js@1.2.1:
     resolution: {integrity: sha512-UXWMKhLOwVKb728IUtQPXxfYU+usdybtUrK/8uGE8CQMvrhOpwvzDBwj0QhSL7MQc7vIsISBG8VQ8+IDQxpfQA==}
@@ -7220,10 +7197,6 @@ snapshots:
       wrap-ansi: 8.1.0
       wrap-ansi-cjs: wrap-ansi@7.0.0
 
-  '@joe-re/sql-parser@1.7.1':
-    dependencies:
-      peggy: 3.0.2
-
   '@jridgewell/gen-mapping@0.3.8':
     dependencies:
       '@jridgewell/set-array': 1.2.1
@@ -7454,10 +7427,6 @@ snapshots:
   '@types/debug@4.1.12':
     dependencies:
       '@types/ms': 2.1.0
-
-  '@types/dompurify@3.2.0':
-    dependencies:
-      dompurify: 3.2.4
 
   '@types/downloadjs@1.4.6': {}
 
@@ -9796,11 +9765,6 @@ snapshots:
 
   pathval@2.0.0: {}
 
-  peggy@3.0.2:
-    dependencies:
-      commander: 10.0.1
-      source-map-generator: 0.8.0
-
   pev2@1.14.0(@popperjs/core@2.11.8)(typescript@5.7.3):
     dependencies:
       '@fortawesome/fontawesome-svg-core': 6.7.2
@@ -10278,8 +10242,6 @@ snapshots:
   slug@9.1.0: {}
 
   sortablejs@1.14.0: {}
-
-  source-map-generator@0.8.0: {}
 
   source-map-js@1.2.1: {}
 
