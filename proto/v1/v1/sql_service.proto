@@ -263,7 +263,7 @@ message QueryResult {
     }
 
     Level level = 1;
-    string message = 2;
+    string content = 2;
   }
 
   // Informational or debug messages returned by the database engine during query execution.

@@ -2306,7 +2306,7 @@ func (x *QueryResult_PostgresError) GetRoutine() string {
 type QueryResult_Message struct {
 	state         protoimpl.MessageState    `protogen:"open.v1"`
 	Level         QueryResult_Message_Level `protobuf:"varint,1,opt,name=level,proto3,enum=bytebase.v1.QueryResult_Message_Level" json:"level,omitempty"`
-	Message       string                    `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
+	Content       string                    `protobuf:"bytes,2,opt,name=content,proto3" json:"content,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2348,9 +2348,9 @@ func (x *QueryResult_Message) GetLevel() QueryResult_Message_Level {
 	return QueryResult_Message_LEVEL_UNSPECIFIED
 }
 
-func (x *QueryResult_Message) GetMessage() string {
+func (x *QueryResult_Message) GetContent() string {
 	if x != nil {
-		return x.Message
+		return x.Content
 	}
 	return ""
 }
@@ -2746,7 +2746,7 @@ const file_v1_sql_service_proto_rawDesc = "" +
 	"\aroutine\x18\x11 \x01(\tR\aroutine\x1a\xc7\x01\n" +
 	"\aMessage\x12<\n" +
 	"\x05level\x18\x01 \x01(\x0e2&.bytebase.v1.QueryResult.Message.LevelR\x05level\x12\x18\n" +
-	"\amessage\x18\x02 \x01(\tR\amessage\"d\n" +
+	"\acontent\x18\x02 \x01(\tR\acontent\"d\n" +
 	"\x05Level\x12\x15\n" +
 	"\x11LEVEL_UNSPECIFIED\x10\x00\x12\b\n" +
 	"\x04INFO\x10\x01\x12\v\n" +

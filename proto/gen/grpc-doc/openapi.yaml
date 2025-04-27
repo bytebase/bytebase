@@ -11591,7 +11591,7 @@ components:
                         - EXCEPTION
                     type: string
                     format: enum
-                message:
+                content:
                     type: string
         QueryResult_PostgresError:
             type: object

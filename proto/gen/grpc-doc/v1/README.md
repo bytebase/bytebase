@@ -8749,7 +8749,7 @@ TYPE_PROJECT_REPOSITORY_PUSH represents Bytebase receiving a push event from the
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | level | [QueryResult.Message.Level](#bytebase-v1-QueryResult-Message-Level) |  |  |
-| message | [string](#string) |  |  |
+| content | [string](#string) |  |  |
 
 
 

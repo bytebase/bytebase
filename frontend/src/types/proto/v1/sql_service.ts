@@ -213,7 +213,7 @@ export interface QueryResult_PostgresError {
 
 export interface QueryResult_Message {
   level: QueryResult_Message_Level;
-  message: string;
+  content: string;
 }
 
 export enum QueryResult_Message_Level {
@@ -1878,7 +1878,7 @@ export const QueryResult_PostgresError: MessageFns<QueryResult_PostgresError> = 
 };
 
 function createBaseQueryResult_Message(): QueryResult_Message {
-  return { level: QueryResult_Message_Level.LEVEL_UNSPECIFIED, message: "" };
+  return { level: QueryResult_Message_Level.LEVEL_UNSPECIFIED, content: "" };
 }
 
 export const QueryResult_Message: MessageFns<QueryResult_Message> = {
@@ -1886,8 +1886,8 @@ export const QueryResult_Message: MessageFns<QueryResult_Message> = {
     if (message.level !== QueryResult_Message_Level.LEVEL_UNSPECIFIED) {
       writer.uint32(8).int32(queryResult_Message_LevelToNumber(message.level));
     }
-    if (message.message !== "") {
-      writer.uint32(18).string(message.message);
+    if (message.content !== "") {
+      writer.uint32(18).string(message.content);
     }
     return writer;
   },
@@ -1912,7 +1912,7 @@ export const QueryResult_Message: MessageFns<QueryResult_Message> = {
             break;
           }
 
-          message.message = reader.string();
+          message.content = reader.string();
           continue;
         }
       }
@@ -1929,7 +1929,7 @@ export const QueryResult_Message: MessageFns<QueryResult_Message> = {
       level: isSet(object.level)
         ? queryResult_Message_LevelFromJSON(object.level)
         : QueryResult_Message_Level.LEVEL_UNSPECIFIED,
-      message: isSet(object.message) ? globalThis.String(object.message) : "",
+      content: isSet(object.content) ? globalThis.String(object.content) : "",
     };
   },
 
@@ -1938,8 +1938,8 @@ export const QueryResult_Message: MessageFns<QueryResult_Message> = {
     if (message.level !== QueryResult_Message_Level.LEVEL_UNSPECIFIED) {
       obj.level = queryResult_Message_LevelToJSON(message.level);
     }
-    if (message.message !== "") {
-      obj.message = message.message;
+    if (message.content !== "") {
+      obj.content = message.content;
     }
     return obj;
   },
@@ -1950,7 +1950,7 @@ export const QueryResult_Message: MessageFns<QueryResult_Message> = {
   fromPartial(object: DeepPartial<QueryResult_Message>): QueryResult_Message {
     const message = createBaseQueryResult_Message();
     message.level = object.level ?? QueryResult_Message_Level.LEVEL_UNSPECIFIED;
-    message.message = object.message ?? "";
+    message.content = object.content ?? "";
     return message;
   },
 };
