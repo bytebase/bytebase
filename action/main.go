@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log/slog"
 	"os"
 	"time"
@@ -26,6 +27,15 @@ var (
 		// bytebase-action rollout flags
 		ReleaseTitle string // The title of the release
 		RolloutTitle string // The title of the rollout
+		// An enum to determine should we run plan checks and fail on warning or error.
+		// Valid values:
+		// - SKIP
+		// - FAIL_ON_WARNING
+		// - FAIL_ON_ERROR
+		CheckPlan string
+		// Rollout up to the target-stage.
+		// Format: environments/{environment}
+		TargetStage string
 	}
 	cmd = &cobra.Command{
 		Use:   "bytebase-action",
@@ -61,11 +71,14 @@ func init() {
 	defaultTitle := time.Now().Format(time.RFC3339)
 	cmdRollout.Flags().StringVar(&Config.ReleaseTitle, "release-title", defaultTitle, "The title of the release")
 	cmdRollout.Flags().StringVar(&Config.RolloutTitle, "rollout-title", defaultTitle, "The title of the rollout")
+	cmdRollout.Flags().StringVar(&Config.CheckPlan, "check-plan", "SKIP", "Whether to check the plan and fail on warning/error. Valid values: SKIP, FAIL_ON_WARNING, FAIL_ON_ERROR")
+	cmdRollout.Flags().StringVar(&Config.TargetStage, "target-stage", "", "Rollout up to the target stage. Format: environments/{environment}.")
 	cmd.AddCommand(cmdRollout)
 }
 
 func Execute() error {
-	return cmd.Execute()
+	ctx := context.Background()
+	return cmd.ExecuteContext(ctx)
 }
 
 func runCI(*cobra.Command, []string) error {
@@ -107,7 +120,8 @@ func runCI(*cobra.Command, []string) error {
 	return nil
 }
 
-func runRollout(*cobra.Command, []string) error {
+func runRollout(command *cobra.Command, _ []string) error {
+	ctx := command.Context()
 	client, err := NewClient(Config.URL, Config.ServiceAccount, Config.ServiceAccountSecret)
 	if err != nil {
 		return errors.Wrapf(err, "failed to create client")
@@ -139,7 +153,9 @@ func runRollout(*cobra.Command, []string) error {
 		return errors.Wrapf(err, "failed to create plan")
 	}
 
-	// TODO(p0ny): wait for plan checks optionally
+	if err := runAndWaitForPlanChecks(ctx, client, planCreated.Name); err != nil {
+		return errors.Wrapf(err, "failed to run and wait for plan checks")
+	}
 
 	rolloutCreated, err := client.createRollout(Config.Project, &v1pb.CreateRolloutRequest{
 		Rollout: &v1pb.Rollout{
@@ -153,6 +169,68 @@ func runRollout(*cobra.Command, []string) error {
 
 	_ = rolloutCreated
 	// TODO(p0ny): wait for rollout to complete the target stage
+
+	return nil
+}
+
+func runAndWaitForPlanChecks(ctx context.Context, client *Client, planName string) error {
+	if Config.CheckPlan == "SKIP" {
+		return nil
+	}
+
+	_, err := client.runPlanChecks(&v1pb.RunPlanChecksRequest{
+		Name: planName,
+	})
+	if err != nil {
+		return errors.Wrapf(err, "failed to run plan checks")
+	}
+	for {
+		if ctx.Err() != nil {
+			return errors.Wrapf(ctx.Err(), "context cancelled")
+		}
+
+		runs, err := client.listAllPlanCheckRuns(planName)
+		if err != nil {
+			return errors.Wrapf(err, "failed to list plan checks")
+		}
+		var failedCount, canceledCount, runningCount int
+		var errorCount, warningCount int
+		for _, run := range runs.PlanCheckRuns {
+			switch run.Status {
+			case v1pb.PlanCheckRun_FAILED:
+				failedCount++
+			case v1pb.PlanCheckRun_CANCELED:
+				canceledCount++
+			case v1pb.PlanCheckRun_RUNNING:
+				runningCount++
+			case v1pb.PlanCheckRun_DONE:
+				for _, result := range run.Results {
+					switch result.Status {
+					case v1pb.PlanCheckRun_Result_ERROR:
+						errorCount++
+					case v1pb.PlanCheckRun_Result_WARNING:
+						warningCount++
+					}
+				}
+			}
+		}
+		if failedCount > 0 {
+			return errors.Errorf("found failed plan checks. View on Bytebase.")
+		}
+		if canceledCount > 0 {
+			return errors.Errorf("found canceled plan checks. View on Bytebase.")
+		}
+		if errorCount > 0 {
+			return errors.Errorf("found error plan checks. View on Bytebase.")
+		}
+		if warningCount > 0 && Config.CheckPlan == "FAIL_ON_WARNING" {
+			return errors.Errorf("found warning plan checks. View on Bytebase.")
+		}
+		if runningCount == 0 {
+			break
+		}
+		time.Sleep(5 * time.Second)
+	}
 
 	return nil
 }
