@@ -399,10 +399,12 @@ func (x *DeleteWorksheetRequest) GetName() string {
 type SearchWorksheetsRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// To filter the search result.
+	// The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+	//
 	// Supported filter:
-	// - creator
-	// - starred
-	// - visibility
+	// - creator: the worksheet creator in "users/{email}" format, support "==" and "!=" operator.
+	// - starred: should be "true" or "false", filter starred/unstarred sheets, support "==" operator.
+	// - visibility: check Visibility enum in the Worksheet message for values, support "==" and "in [xx]" operator.
 	//
 	// For example:
 	// creator == "users/{email}"

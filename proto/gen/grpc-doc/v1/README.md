@@ -1560,7 +1560,9 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 
 When paginating, all other parameters provided to `ListInstances` must match the call that provided the page token. |
 | show_deleted | [bool](#bool) |  | Show deleted instances if specified. |
-| filter | [string](#string) |  | Filter the instance. Supported filters: - name - resource_id - environment - state - engine - host - port - project
+| filter | [string](#string) |  | Filter the instance. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+Supported filters: - name: the instance name, support &#34;==&#34; and &#34;.matches()&#34; operator. - resource_id: the instance id, support &#34;==&#34; and &#34;.matches()&#34; operator. - environment: the environment full name in &#34;environments/{id}&#34; format, support &#34;==&#34; operator. - state: the instance state, check State enum for values, support &#34;==&#34; operator. - engine: the instance engine, check Engine enum for values. Support &#34;==&#34;, &#34;in [xx]&#34;, &#34;!(in [xx])&#34; operator. - host: the instance host, support &#34;==&#34; operator. - port: the instance port, support &#34;==&#34; operator. - project: the project full name in &#34;projects/{id}&#34; format, support &#34;==&#34; operator.
 
 For example: name == &#34;sample instance&#34; name.matches(&#34;sample&#34;) resource_id = &#34;sample-instance&#34; resource_id.matches(&#34;sample&#34;) state == &#34;DELETED&#34; environment == &#34;environments/test&#34; engine == &#34;MYSQL&#34; engine in [&#34;MYSQL&#34;, &#34;POSTGRES&#34;] !(engine in [&#34;MYSQL&#34;, &#34;POSTGRES&#34;]) host == &#34;127.0.0.1&#34; port == &#34;54321&#34; project == &#34;projects/sample-project&#34; You can combine filter conditions like: name.matches(&#34;sample&#34;) &amp;&amp; environment == &#34;environments/test&#34; host == &#34;127.0.0.1&#34; &amp;&amp; port == &#34;54321&#34; |
 
@@ -2450,7 +2452,9 @@ FunctionMetadata is the metadata for functions.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name of the database to retrieve metadata. Format: instances/{instance}/databases/{database}/metadata |
-| filter | [string](#string) |  | Filter is used to filter databases returned in the list. Supported filter: - schema - table
+| filter | [string](#string) |  | Filter is used to filter databases returned in the list. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+Supported filter: - schema: the schema name, support &#34;==&#34; operator. - table: the table name, support &#34;==&#34; operator.
 
 For example: schema == &#34;schema-a&#34; table == &#34;table-a&#34; schema == &#34;schema-a&#34; &amp;&amp; table == &#34;table-a&#34; The filter used for a specific schema object such as &#34;schemas/schema-a/tables/table-a&#34;. The column masking level will only be returned when a table filter is used. |
 
@@ -2623,7 +2627,9 @@ Combine multiple functions with &#34;&amp;&amp;&#34; and &#34;||&#34;, we MUST u
 | page_token | [string](#string) |  | A page token, received from a previous `ListDatabases` call. Provide this to retrieve the subsequent page.
 
 When paginating, all other parameters provided to `ListDatabases` must match the call that provided the page token. |
-| filter | [string](#string) |  | Filter is used to filter databases returned in the list. Supported filter: - environment - name - project - instance - engine - label - exclude_unassigned: Not show unassigned databases if specified - drifted
+| filter | [string](#string) |  | Filter is used to filter databases returned in the list. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+Supported filter: - environment: the environment full name in &#34;environments/{id}&#34; format, support &#34;==&#34; operator. - name: the database name, support &#34;.matches()&#34; operator. - project: the project full name in &#34;projects/{id}&#34; format, support &#34;==&#34; operator. - instance: the instance full name in &#34;instances/{id}&#34; format, support &#34;==&#34; operator. - engine: the database engine, check Engine enum for values. Support &#34;==&#34;, &#34;in [xx]&#34;, &#34;!(in [xx])&#34; operator. - label: the database label in &#34;{key}:{value1},{value2}&#34; format. Support &#34;==&#34; operator. - exclude_unassigned: should be &#34;true&#34; or &#34;false&#34;, will not show unassigned databases if it&#39;s true, support &#34;==&#34; operator. - drifted: should be &#34;true&#34; or &#34;false&#34;, show drifted databases if it&#39;s true, support &#34;==&#34; operator.
 
 For example: environment == &#34;environments/{environment resource id}&#34; project == &#34;projects/{project resource id}&#34; instance == &#34;instances/{instance resource id}&#34; name.matches(&#34;database name&#34;) engine == &#34;MYSQL&#34; engine in [&#34;MYSQL&#34;, &#34;POSTGRES&#34;] !(engine in [&#34;MYSQL&#34;, &#34;POSTGRES&#34;]) label == &#34;region:asia&#34; label == &#34;tenant:asia,europe&#34; label == &#34;region:asia&#34; &amp;&amp; label == &#34;tenant:bytebase&#34; exclude_unassigned == true drifted == true You can combine filter conditions like: environment == &#34;environments/prod&#34; &amp;&amp; name.matches(&#34;employee&#34;) |
 | show_deleted | [bool](#bool) |  | Show deleted database if specified. |
@@ -3707,7 +3713,11 @@ When paginating, all other parameters provided to `ListIssueComments` must match
 | page_token | [string](#string) |  | A page token, received from a previous `ListIssues` call. Provide this to retrieve the subsequent page.
 
 When paginating, all other parameters provided to `ListIssues` must match the call that provided the page token. |
-| filter | [string](#string) |  | Filter is used to filter issues returned in the list. |
+| filter | [string](#string) |  | Filter is used to filter issues returned in the list. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+Supported filters: - creator: issue creator full name in &#34;users/{email or id}&#34; format, support &#34;==&#34; operator. - subscriber: issue subscriber full name in &#34;users/{email or id}&#34; format, support &#34;==&#34; operator. - status: the issue status, support &#34;==&#34; and &#34;in&#34; operator, check the IssueStatus enum for the values. - create_time: issue create time in &#34;2006-01-02T15:04:05Z07:00&#34; format, support &#34;&gt;=&#34; or &#34;&lt;=&#34; operator. - type: the issue type, support &#34;==&#34; and &#34;in&#34; operator, check the Type enum in the Issue message for the values. - task_type: support &#34;==&#34; operator, the value can be &#34;DDL&#34;, &#34;DML&#34; or &#34;DATA_EXPORT&#34; - instance: the instance full name in the &#34;instances/{id}&#34; format, support &#34;==&#34; operator. - database: the database full name in the &#34;instances/{id}/databases/{name}&#34; format, support &#34;==&#34; operator. - labels: the issue labels, support &#34;==&#34; and &#34;in&#34; operator. - has_pipeline: the issue has pipeline or not, support &#34;==&#34; operator, the value should be &#34;true&#34; or &#34;false&#34;.
+
+For example: creator == &#34;users/ed@bytebase.com&#34; &amp;&amp; status in [&#34;OPEN&#34;, &#34;DONE&#34;] status == &#34;CANCELED&#34; &amp;&amp; type == &#34;DATABASE_CHANGE&#34; instance == &#34;instances/sample&#34; &amp;&amp; labels in [&#34;label1&#34;, &#34;label2&#34;] has_pipeline == true &amp;&amp; create_time &gt;= &#34;2025-01-02T15:04:05Z07:00&#34; |
 | query | [string](#string) |  | Query is the query statement. |
 
 
@@ -3776,7 +3786,7 @@ When paginating, all other parameters provided to `ListIssues` must match the ca
 | page_token | [string](#string) |  | A page token, received from a previous `SearchIssues` call. Provide this to retrieve the subsequent page.
 
 When paginating, all other parameters provided to `SearchIssues` must match the call that provided the page token. |
-| filter | [string](#string) |  | Filter is used to filter issues returned in the list. |
+| filter | [string](#string) |  | Filter is used to filter issues returned in the list. Check the filter field in the ListIssuesRequest message. |
 | query | [string](#string) |  | Query is the query statement. |
 
 
@@ -4877,7 +4887,7 @@ The data in setting value.
 | template | [ApprovalTemplate](#bytebase-v1-ApprovalTemplate) |  |  |
 | condition | [google.type.Expr](#google-type-Expr) |  | The condition that is associated with the rule. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 
-Support variables: source: the risk source, check the Source enum in the Risk message for the values. level: the risk level, support 100 (low), 200 (moderate) and 300 (high).
+Support variables: source: the risk source, check the Source enum in the Risk message for the values, support &#34;==&#34; operator. level: the risk level, support 100 (low), 200 (moderate) and 300 (high), support &#34;==&#34; operator.
 
 For examples: (source == &#34;DML&#34; &amp;&amp; level == 200) || (source == &#34;DDL&#34; &amp;&amp; level == 300) |
 
@@ -5101,7 +5111,9 @@ We support three types of SMTP encryption: NONE, STARTTLS, and SSL/TLS.
 
 When paginating, all other parameters provided to `ListUsers` must match the call that provided the page token. |
 | show_deleted | [bool](#bool) |  | Show deleted users if specified. |
-| filter | [string](#string) |  | Filter is used to filter users returned in the list. Supported filter: - name - email - user_type - state - project
+| filter | [string](#string) |  | Filter is used to filter users returned in the list. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+Supported filter: - name: the user name, support &#34;==&#34; and &#34;.matches()&#34; operator. - email: the user email, support &#34;==&#34; and &#34;.matches()&#34; operator. - user_type: the type, check UserType enum for values, support &#34;==&#34;, &#34;in [xx]&#34;, &#34;!(in [xx])&#34; operator. - state: check State enum for values, support &#34;==&#34; operator. - project: the project full name in &#34;projects/{id}&#34; format, support &#34;==&#34; operator.
 
 For example: name == &#34;ed&#34; name.matches(&#34;ed&#34;) email == &#34;ed@bytebase.com&#34; email.matches(&#34;ed&#34;) user_type == &#34;SERVICE_ACCOUNT&#34; user_type in [&#34;SERVICE_ACCOUNT&#34;, &#34;USER&#34;] !(user_type in [&#34;SERVICE_ACCOUNT&#34;, &#34;USER&#34;]) state == &#34;DELETED&#34; project == &#34;projects/sample-project&#34; You can combine filter conditions like: name.matches(&#34;ed&#34;) &amp;&amp; project == &#34;projects/sample-project&#34; (name == &#34;ed&#34; || email == &#34;ed@bytebase.com&#34;) &amp;&amp; project == &#34;projects/sample-project&#34; |
 
@@ -5406,7 +5418,7 @@ The theme resources.
 | members | [string](#string) | repeated | Specifies the principals requesting access for a Bytebase resource. For users, the member should be: user:{email} For groups, the member should be: group:{email} |
 | condition | [google.type.Expr](#google-type-Expr) |  | The condition that is associated with this binding, only used in the project IAM policy. If the condition evaluates to true, then this binding applies to the current request. If the condition evaluates to false, then this binding does not apply to the current request. However, a different role binding might grant the same role to one or more of the principals in this binding. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 
-Support variables: resource.database: the database full name in &#34;instances/{instance}/databases/{database}&#34; format, used by the &#34;roles/sqlEditorUser&#34; and &#34;roles/projectExporter&#34; role. resource.schema: the schema name, used by the &#34;roles/sqlEditorUser&#34; and &#34;roles/projectExporter&#34; role. resource.table: the table name, used by the &#34;roles/sqlEditorUser&#34; and &#34;roles/projectExporter&#34; role. request.time: the expiration. Only support &#34;&lt;&#34; operation in `request.time &lt; timestamp(&#34;{ISO datetime string format}&#34;)`. request.row_limit: the maximum export rows, used by the &#34;roles/projectExporter&#34; role. Only support &#34;&lt;=&#34; operation.
+Support variables: resource.database: the database full name in &#34;instances/{instance}/databases/{database}&#34; format, used by the &#34;roles/sqlEditorUser&#34; and &#34;roles/projectExporter&#34; role, support &#34;==&#34; operator. resource.schema: the schema name, used by the &#34;roles/sqlEditorUser&#34; and &#34;roles/projectExporter&#34; role, support &#34;==&#34; operator. resource.table: the table name, used by the &#34;roles/sqlEditorUser&#34; and &#34;roles/projectExporter&#34; role, support &#34;==&#34; operator. request.time: the expiration. Only support &#34;&lt;&#34; operation in `request.time &lt; timestamp(&#34;{ISO datetime string format}&#34;)`. request.row_limit: the maximum export rows, used by the &#34;roles/projectExporter&#34; role. Only support &#34;&lt;=&#34; operation.
 
 For example: resource.database == &#34;instances/local-pg/databases/postgres&#34; &amp;&amp; resource.schema in [&#34;public&#34;,&#34;another_schema&#34;] resource.database == &#34;instances/local-pg/databases/bytebase&#34; &amp;&amp; resource.schema == &#34;public&#34; &amp;&amp; resource.table in [&#34;audit_log&#34;] request.time &lt; timestamp(&#34;2025-04-26T11:24:48.655Z&#34;) &amp;&amp; request.row_limit &lt;= 1000 |
 | parsed_expr | [google.api.expr.v1alpha1.Expr](#google-api-expr-v1alpha1-Expr) |  | The parsed expression of the condition. |
@@ -5576,7 +5588,7 @@ The type of action performed on a Binding in a policy.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | parent | [string](#string) |  |  |
-| filter | [string](#string) |  | The filter of the log. It should be a valid CEL expression. For example: - filter = &#34;method == &#39;/bytebase.v1.SQLService/Query&#39;&#34; - filter = &#34;method == &#39;/bytebase.v1.SQLService/Query&#39; &amp;&amp; severity == &#39;ERROR&#39;&#34; - filter = &#34;method == &#39;/bytebase.v1.SQLService/Query&#39; &amp;&amp; severity == &#39;ERROR&#39; &amp;&amp; user == &#39;users/bb@bytebase.com&#39;&#34; - filter = &#34;method == &#39;/bytebase.v1.SQLService/Query&#39; &amp;&amp; severity == &#39;ERROR&#39; &amp;&amp; create_time &lt;= &#39;2021-01-01T00:00:00Z&#39; &amp;&amp; create_time &gt;= &#39;2020-01-01T00:00:00Z&#39;&#34; |
+| filter | [string](#string) |  | The filter of the log. It should be a valid CEL expression. Check the filter field in the SearchAuditLogsRequest message. |
 | order_by | [string](#string) |  | The order by of the log. Only support order by create_time. For example: - order_by = &#34;create_time asc&#34; - order_by = &#34;create_time desc&#34; |
 | format | [ExportFormat](#bytebase-v1-ExportFormat) |  | The export format. |
 | page_size | [int32](#int32) |  | The maximum number of logs to return. The service may return fewer than this value. If unspecified, at most 10 log entries will be returned. The maximum value is 5000; values above 5000 will be coerced to 5000. |
@@ -5628,7 +5640,9 @@ Metadata about the request.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | parent | [string](#string) |  |  |
-| filter | [string](#string) |  | The filter of the log. It should be a valid CEL expression. Supported filter: - method - severity - user - create_time
+| filter | [string](#string) |  | The filter of the log. It should be a valid CEL expression. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+Supported filter: - method: the API name, can be found in the docs, should start with &#34;/bytebase.v1.&#34; prefix. For example &#34;/bytebase.v1.UserService/CreateUser&#34;. Support &#34;==&#34; operator. - severity: support &#34;==&#34; operator, check Severity enum in AuditLog message for values. - user: the actor, should in &#34;users/{email}&#34; format, support &#34;==&#34; operator. - create_time: support &#34;&gt;=&#34; and &#34;&lt;=&#34; operator.
 
 For example: - filter = &#34;method == &#39;/bytebase.v1.SQLService/Query&#39;&#34; - filter = &#34;method == &#39;/bytebase.v1.SQLService/Query&#39; &amp;&amp; severity == &#39;ERROR&#39;&#34; - filter = &#34;method == &#39;/bytebase.v1.SQLService/Query&#39; &amp;&amp; severity == &#39;ERROR&#39; &amp;&amp; user == &#39;users/bb@bytebase.com&#39;&#34; - filter = &#34;method == &#39;/bytebase.v1.SQLService/Query&#39; &amp;&amp; severity == &#39;ERROR&#39; &amp;&amp; create_time &lt;= &#39;2021-01-01T00:00:00Z&#39; &amp;&amp; create_time &gt;= &#39;2020-01-01T00:00:00Z&#39;&#34; |
 | order_by | [string](#string) |  | The order by of the log. Only support order by create_time. For example: - order_by = &#34;create_time asc&#34; - order_by = &#34;create_time desc&#34; |
@@ -7740,7 +7754,11 @@ When paginating, all other parameters provided to `ListPlans` must match the cal
 | page_token | [string](#string) |  | A page token, received from a previous `SearchPlans` call. Provide this to retrieve the subsequent page.
 
 When paginating, all other parameters provided to `SearchPlans` must match the call that provided the page token. |
-| filter | [string](#string) |  | Filter is used to filter plans returned in the list. |
+| filter | [string](#string) |  | Filter is used to filter plans returned in the list. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+Supported filters: - creator: the plan creator full name in &#34;users/{email or id}&#34; format, support &#34;==&#34; operator. - create_time: issue create time in &#34;2006-01-02T15:04:05Z07:00&#34; format, support &#34;&gt;=&#34; or &#34;&lt;=&#34; operator. - has_pipeline: the plan has pipeline or not, support &#34;==&#34; operator, the value should be &#34;true&#34; or &#34;false&#34;. - has_issue: the plan has issue or not, support &#34;==&#34; operator, the value should be &#34;true&#34; or &#34;false&#34;.
+
+For example: creator == &#34;users/ed@bytebase.com&#34; &amp;&amp; create_time &gt;= &#34;2025-01-02T15:04:05Z07:00&#34; has_pipeline == false &amp;&amp; has_issue == true |
 
 
 
@@ -8120,7 +8138,9 @@ When paginating, all other parameters provided to `ListProjects` must match the 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | show_deleted | [bool](#bool) |  | Show deleted projects if specified. |
-| filter | [string](#string) |  | Filter the project. Supported filters: - name - resource_id - exclude_default: if not include the default project. - state
+| filter | [string](#string) |  | Filter the project. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+Supported filters: - name: the project name, support &#34;==&#34; and &#34;.matches()&#34; operator. - resource_id: the project id, support &#34;==&#34; and &#34;.matches()&#34; operator. - exclude_default: if not include the default project, should be &#34;true&#34; or &#34;false&#34;, support &#34;==&#34; operator. - state: check the State enum for the values, support &#34;==&#34; operator.
 
 For example: name = &#34;project name&#34; name.matches(&#34;project name&#34;) resource_id = &#34;project id&#34; resource_id.matches(&#34;project id&#34;) exclude_default == true state == &#34;DELETED&#34; You can combine filter conditions like: name = &#34;project name&#34; &amp;&amp; resource_id.matches(&#34;project id&#34;) name.matches(&#34;project name&#34;) || resource_id = &#34;project id&#34; |
 | page_size | [int32](#int32) |  | The maximum number of projects to return. The service may return fewer than this value. If unspecified, at most 10 projects will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
@@ -8892,7 +8912,9 @@ for field description.
 | ----- | ---- | ----- | ----------- |
 | page_size | [int32](#int32) |  | The maximum number of histories to return. The service may return fewer than this value. If unspecified, at most 10 history entries will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
 | page_token | [string](#string) |  | A page token, received from a previous `ListQueryHistory` call. Provide this to retrieve the subsequent page. |
-| filter | [string](#string) |  | Filter is the filter to apply on the search query history Supported filter: - project - database - instance - type - statement
+| filter | [string](#string) |  | Filter is the filter to apply on the search query history The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+Supported filter: - project: the project full name in &#34;projects/{id}&#34; format, support &#34;==&#34; operator. - database: the database full name in &#34;instances/{id}/databases/{name}&#34; format, support &#34;==&#34; operator. - instance: the instance full name in &#34;instances/{id}&#34; format, support &#34;==&#34; operator. - type: the type, should be &#34;QUERY&#34; or &#34;EXPORT&#34;, support &#34;==&#34; operator. - statement: the SQL statemnt, support &#34;.matches()&#34; operator.
 
 For example: project == &#34;projects/{project}&#34; database == &#34;instances/{instance}/databases/{database}&#34; instance == &#34;instances/{instance}&#34; type == &#34;QUERY&#34; type == &#34;EXPORT&#34; statement.matches(&#34;select&#34;) type == &#34;QUERY&#34; &amp;&amp; statement.matches(&#34;select&#34;) |
 
@@ -10952,7 +10974,9 @@ Type of the SheetPayload.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| filter | [string](#string) |  | To filter the search result. Supported filter: - creator - starred - visibility
+| filter | [string](#string) |  | To filter the search result. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+Supported filter: - creator: the worksheet creator in &#34;users/{email}&#34; format, support &#34;==&#34; and &#34;!=&#34; operator. - starred: should be &#34;true&#34; or &#34;false&#34;, filter starred/unstarred sheets, support &#34;==&#34; operator. - visibility: check Visibility enum in the Worksheet message for values, support &#34;==&#34; and &#34;in [xx]&#34; operator.
 
 For example: creator == &#34;users/{email}&#34; creator != &#34;users/{email}&#34; starred == true starred == false visibility in [&#34;VISIBILITY_PRIVATE&#34;, &#34;VISIBILITY_PROJECT_READ&#34;, &#34;VISIBILITY_PROJECT_WRITE&#34;] visibility == &#34;VISIBILITY_PRIVATE&#34; |
 | page_size | [int32](#int32) |  | Not used. The maximum number of worksheets to return. The service may return fewer than this value. If unspecified, at most 10 worksheets will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
