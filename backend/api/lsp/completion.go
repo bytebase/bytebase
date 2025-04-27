@@ -68,7 +68,7 @@ func (h *Handler) handleTextDocumentCompletion(ctx context.Context, _ *jsonrpc2.
 		return newEmptyCompletionList(), nil
 	}
 
-	var items []lsp.CompletionItem
+	items := []lsp.CompletionItem{}
 	for _, candidate := range candidates {
 		label := candidate.Text
 		// Remove quotes or brackets from label.
