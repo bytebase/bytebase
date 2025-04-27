@@ -74,6 +74,7 @@ export type SQLEditorQueryParams = {
   statement: string; // the statement snapshot of the query
   engine: Engine;
   explain: boolean;
+  // Use to calculate the advice position.
   selection: monaco.Selection | null;
   skipCheck?: boolean;
 };
