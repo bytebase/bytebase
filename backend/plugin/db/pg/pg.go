@@ -132,7 +132,7 @@ func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.Connectio
 	return d, nil
 }
 
-func (d *Driver) onNotice(conn *pgconn.PgConn, n *pgconn.Notice) {
+func (d *Driver) onNotice(_ *pgconn.PgConn, n *pgconn.Notice) {
 	if n == nil {
 		return
 	}
