@@ -27,14 +27,6 @@ export const createMonacoEditor = async (config: {
 }): Promise<monaco.editor.IStandaloneCodeEditor> => {
   await initialize();
 
-  // Initialize LSP client.
-  try {
-    const { initializeLSPClient } = await import("./lsp-client");
-    await initializeLSPClient();
-  } catch (err) {
-    console.error("[MonacoEditor] Failed to initialize LSP client", err);
-  }
-
   // Create monaco editor.
   const editor = monaco.editor.create(config.container, {
     ...({
