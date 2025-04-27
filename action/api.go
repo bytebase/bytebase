@@ -34,7 +34,7 @@ func NewClient(url, serviceAccount, serviceAccountSecret string) (*Client, error
 	}
 
 	if err := c.login(serviceAccount, serviceAccountSecret); err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "failed to login")
 	}
 
 	return &c, nil
@@ -70,12 +70,12 @@ func (c *Client) login(email, password string) error {
 	}
 	rb, err := protojson.Marshal(r)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "failed to marshal")
 	}
 
 	req, err := http.NewRequest("POST", fmt.Sprintf("%s/v1/auth/login", c.url), bytes.NewReader(rb))
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "failed to create request")
 	}
 
 	body, err := c.doRequest(req)
@@ -85,7 +85,7 @@ func (c *Client) login(email, password string) error {
 
 	resp := &v1pb.LoginResponse{}
 	if err := protojsonUnmarshaler.Unmarshal(body, resp); err != nil {
-		return err
+		return errors.Wrapf(err, "failed to unmarshal")
 	}
 	c.token = resp.Token
 
