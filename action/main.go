@@ -2,8 +2,11 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"os"
+	"slices"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -121,6 +124,10 @@ func runCI(*cobra.Command, []string) error {
 }
 
 func runRollout(command *cobra.Command, _ []string) error {
+	if Config.TargetStage == "" {
+		return errors.Errorf("target-stage is required and cannot be empty")
+	}
+
 	ctx := command.Context()
 	client, err := NewClient(Config.URL, Config.ServiceAccount, Config.ServiceAccountSecret)
 	if err != nil {
@@ -157,18 +164,9 @@ func runRollout(command *cobra.Command, _ []string) error {
 		return errors.Wrapf(err, "failed to run and wait for plan checks")
 	}
 
-	rolloutCreated, err := client.createRollout(Config.Project, &v1pb.CreateRolloutRequest{
-		Rollout: &v1pb.Rollout{
-			Plan: planCreated.Name,
-		},
-		Target: nil, // TODO(p0ny): impl
-	})
-	if err != nil {
-		return errors.Wrapf(err, "failed to create rollout")
+	if err := runAndWaitForRollout(ctx, client, planCreated.Name); err != nil {
+		return errors.Wrapf(err, "failed to run and wait for rollout")
 	}
-
-	_ = rolloutCreated
-	// TODO(p0ny): wait for rollout to complete the target stage
 
 	return nil
 }
@@ -232,6 +230,147 @@ func runAndWaitForPlanChecks(ctx context.Context, client *Client, planName strin
 		time.Sleep(5 * time.Second)
 	}
 
+	return nil
+}
+
+func runAndWaitForRollout(ctx context.Context, client *Client, planName string) error {
+	// preview rollout with all stages
+	rolloutPreview, err := client.createRollout(&v1pb.CreateRolloutRequest{
+		Parent: Config.Project,
+		Rollout: &v1pb.Rollout{
+			Plan: planName,
+		},
+		Target:       nil, // all stages
+		ValidateOnly: true,
+	})
+	if err != nil {
+		return errors.Wrapf(err, "failed to create rollout")
+	}
+
+	var stages []string
+	var targetStageFound bool
+	for _, stage := range rolloutPreview.GetStages() {
+		stages = append(stages, stage.Environment)
+		if stage.Environment == Config.TargetStage {
+			targetStageFound = true
+		}
+	}
+	if !targetStageFound {
+		return errors.Wrapf(err, "target-stage %v not found in stages. the stages are %v", Config.TargetStage, stages)
+	}
+
+	// create rollout with no stages to obtain the rollout name
+	emptyTarget := ""
+	rolloutEmpty, err := client.createRollout(&v1pb.CreateRolloutRequest{
+		Parent: Config.Project,
+		Rollout: &v1pb.Rollout{
+			Plan:  planName,
+			Title: Config.RolloutTitle,
+		},
+		Target:       &emptyTarget, // zero stage
+		ValidateOnly: false,
+	})
+
+	slog.Info("rollout created", "url", fmt.Sprintf("%s/%s", client.url, rolloutEmpty.Name))
+
+	return waitForRollout(ctx, client, rolloutPreview, rolloutEmpty.Name)
+}
+
+func waitForRollout(ctx context.Context, client *Client, rolloutPreview *v1pb.Rollout, rolloutName string) error {
+	if len(rolloutPreview.Stages) == 0 {
+		return nil
+	}
+	slog.Info("exit after the target stage is completed", "targetStage", Config.TargetStage)
+	slog.Info("the rollout has the following stages", "stageCount", len(rolloutPreview.Stages), "stages",
+		slices.Collect(func(yield func(string) bool) {
+			for _, stage := range rolloutPreview.Stages {
+				if !yield(stage.Environment) {
+					return
+				}
+			}
+		}))
+
+	i := 0
+	for {
+		if ctx.Err() != nil {
+			return errors.Wrapf(ctx.Err(), "context cancelled")
+		}
+		// get rollout
+		rollout, err := client.getRollout(rolloutName)
+		if err != nil {
+			return errors.Wrapf(err, "failed to get rollout")
+		}
+		if i >= len(rollout.GetStages()) {
+			// create a new target
+			target := rolloutPreview.Stages[i].Environment
+			rolloutAdvanced, err := client.createRollout(&v1pb.CreateRolloutRequest{
+				Parent: Config.Project,
+				Rollout: &v1pb.Rollout{
+					Plan: rollout.GetPlan(),
+				},
+				Target: &target,
+			})
+			if err != nil {
+				return errors.Wrapf(err, "failed to create rollout")
+			}
+			rollout = rolloutAdvanced
+		}
+		if i >= len(rollout.GetStages()) {
+			return errors.Errorf("rollout has no more stages")
+		}
+		// check stage tasks
+		stage := rollout.Stages[i]
+		done := true
+		var foundFailed, foundCanceled bool
+		var notStartedTasks []string
+		for _, task := range stage.GetTasks() {
+			switch task.Status {
+			case v1pb.Task_STATUS_UNSPECIFIED:
+				done = false
+			case v1pb.Task_NOT_STARTED:
+				notStartedTasks = append(notStartedTasks, task.Name)
+				done = false
+			case v1pb.Task_PENDING:
+				done = false
+			case v1pb.Task_RUNNING:
+				done = false
+			case v1pb.Task_FAILED:
+				foundFailed = true
+				done = false
+			case v1pb.Task_CANCELED:
+				foundCanceled = true
+				done = false
+			case v1pb.Task_DONE:
+			case v1pb.Task_SKIPPED:
+			}
+		}
+		if foundFailed {
+			return errors.Errorf("found failed tasks. View on Bytebase.")
+		}
+		if foundCanceled {
+			return errors.Errorf("found canceled tasks. View on Bytebase.")
+		}
+		if done {
+			slog.Info("stage completed", "stage", stage.Environment)
+			if Config.TargetStage == stage.Environment {
+				break
+			}
+			i++
+			continue
+		}
+
+		// run stage tasks
+		if _, err := client.batchRunTasks(&v1pb.BatchRunTasksRequest{
+			Parent: stage.Name,
+			Tasks:  notStartedTasks,
+		}); err != nil {
+			// ignore retryable error.
+			if !strings.Contains(err.Error(), "cannot create pending task runs because there are pending/running/done task runs") {
+				return errors.Wrapf(err, "failed to batch create tasks")
+			}
+		}
+		time.Sleep(5 * time.Second)
+	}
 	return nil
 }
 

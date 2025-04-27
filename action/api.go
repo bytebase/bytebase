@@ -241,8 +241,8 @@ func (c *Client) listAllPlanCheckRuns(planName string) (*v1pb.ListPlanCheckRunsR
 	return resp, nil
 }
 
-func (c *Client) getRollout(project, rolloutID string) (*v1pb.Rollout, error) {
-	req, err := http.NewRequest("GET", fmt.Sprintf("%s/v1/%s/rollouts/%s", c.url, project, rolloutID), nil)
+func (c *Client) getRollout(rolloutName string) (*v1pb.Rollout, error) {
+	req, err := http.NewRequest("GET", fmt.Sprintf("%s/v1/%s", c.url, rolloutName), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -260,16 +260,21 @@ func (c *Client) getRollout(project, rolloutID string) (*v1pb.Rollout, error) {
 	return resp, nil
 }
 
-func (c *Client) createRollout(project string, r *v1pb.CreateRolloutRequest) (*v1pb.Rollout, error) {
+func (c *Client) createRollout(r *v1pb.CreateRolloutRequest) (*v1pb.Rollout, error) {
 	rb, err := protojson.Marshal(r.Rollout)
 	if err != nil {
 		return nil, err
 	}
-	a := fmt.Sprintf("%s/v1/%s/rollouts", c.url, project)
+	a := fmt.Sprintf("%s/v1/%s/rollouts", c.url, r.Parent)
+	query := url.Values{}
+	if r.ValidateOnly {
+		query.Set("validateOnly", "true")
+	}
 	if r.Target != nil {
-		query := url.Values{}
 		query.Set("target", *r.Target)
-		a = a + "?" + query.Encode()
+	}
+	if len(query) > 0 {
+		a += "?" + query.Encode()
 	}
 
 	req, err := http.NewRequest("POST", a, bytes.NewReader(rb))
@@ -287,5 +292,26 @@ func (c *Client) createRollout(project string, r *v1pb.CreateRolloutRequest) (*v
 		return nil, err
 	}
 
+	return resp, nil
+}
+
+func (c *Client) batchRunTasks(r *v1pb.BatchRunTasksRequest) (*v1pb.BatchRunTasksResponse, error) {
+	rb, err := protojson.Marshal(r)
+	if err != nil {
+		return nil, err
+	}
+	req, err := http.NewRequest("POST", fmt.Sprintf("%s/v1/%s/tasks:batchRun", c.url, r.Parent), bytes.NewReader(rb))
+	if err != nil {
+		return nil, err
+	}
+	body, err := c.doRequest(req)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to batch run tasks")
+
+	}
+	resp := &v1pb.BatchRunTasksResponse{}
+	if err := protojsonUnmarshaler.Unmarshal(body, resp); err != nil {
+		return nil, err
+	}
 	return resp, nil
 }
