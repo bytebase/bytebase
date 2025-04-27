@@ -27,11 +27,9 @@ type SetMetadataParams = {
 export const useAutoComplete = async (
   monaco: MonacoModule,
   editor: monaco.editor.IStandaloneCodeEditor,
-  context: Ref<AutoCompleteContext | undefined>
+  context: Ref<AutoCompleteContext | undefined>,
+  readonly: Ref<boolean | undefined>
 ) => {
-  const { executeCommand, useLSPClient } = await import("../lsp-client");
-
-  const client = useLSPClient();
   const params = computed(() => {
     const p: SetMetadataParams = {
       instanceId: "",
@@ -54,17 +52,31 @@ export const useAutoComplete = async (
     }
     return p;
   });
+
   watch(
-    () => JSON.stringify(params.value),
+    [() => JSON.stringify(params.value), () => readonly.value],
     async () => {
-      const result = await executeCommand(client, "setMetadata", [
-        params.value,
-      ]);
-      console.debug(
-        `setMetadata(${JSON.stringify(params.value)}): ${JSON.stringify(
-          result
-        )}`
-      );
+      if (readonly.value) {
+        return;
+      }
+
+      // Initialize LSP client if not already initialized.
+      try {
+        const { executeCommand, initializeLSPClient } = await import(
+          "../lsp-client"
+        );
+        const client = await initializeLSPClient();
+        const result = await executeCommand(client, "setMetadata", [
+          params.value,
+        ]);
+        console.debug(
+          `[MonacoEditor] setMetadata(${JSON.stringify(params.value)}): ${JSON.stringify(
+            result
+          )}`
+        );
+      } catch (err) {
+        console.error("[MonacoEditor] Failed to initialize LSP client", err);
+      }
     },
     { immediate: true }
   );
