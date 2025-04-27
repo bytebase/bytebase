@@ -533,6 +533,7 @@
     - [QueryRequest](#bytebase-v1-QueryRequest)
     - [QueryResponse](#bytebase-v1-QueryResponse)
     - [QueryResult](#bytebase-v1-QueryResult)
+    - [QueryResult.Message](#bytebase-v1-QueryResult-Message)
     - [QueryResult.PostgresError](#bytebase-v1-QueryResult-PostgresError)
     - [QueryRow](#bytebase-v1-QueryRow)
     - [RowValue](#bytebase-v1-RowValue)
@@ -545,6 +546,7 @@
     - [CheckRequest.ChangeType](#bytebase-v1-CheckRequest-ChangeType)
     - [QueryHistory.Type](#bytebase-v1-QueryHistory-Type)
     - [QueryOption.RedisRunCommandsOn](#bytebase-v1-QueryOption-RedisRunCommandsOn)
+    - [QueryResult.Message.Level](#bytebase-v1-QueryResult-Message-Level)
   
     - [SQLService](#bytebase-v1-SQLService)
   
@@ -8749,6 +8751,23 @@ TYPE_PROJECT_REPOSITORY_PUSH represents Bytebase receiving a push event from the
 | statement | [string](#string) |  | The query statement for the result. |
 | postgres_error | [QueryResult.PostgresError](#bytebase-v1-QueryResult-PostgresError) |  |  |
 | allow_export | [bool](#bool) |  | The query result is allowed to be exported or not. |
+| messages | [QueryResult.Message](#bytebase-v1-QueryResult-Message) | repeated | Informational or debug messages returned by the database engine during query execution. Examples include PostgreSQL&#39;s RAISE NOTICE, MSSQL&#39;s PRINT, or Oracle&#39;s DBMS_OUTPUT.PUT_LINE. |
+
+
+
+
+
+
+<a name="bytebase-v1-QueryResult-Message"></a>
+
+### QueryResult.Message
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| level | [QueryResult.Message.Level](#bytebase-v1-QueryResult-Message-Level) |  |  |
+| content | [string](#string) |  |  |
 
 
 
@@ -8952,6 +8971,23 @@ For example: project == &#34;projects/{project}&#34; database == &#34;instances/
 | REDIS_RUN_COMMANDS_ON_UNSPECIFIED | 0 | UNSPECIFIED defaults to SINGLE_NODE. |
 | SINGLE_NODE | 1 |  |
 | ALL_NODES | 2 |  |
+
+
+
+<a name="bytebase-v1-QueryResult-Message-Level"></a>
+
+### QueryResult.Message.Level
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| LEVEL_UNSPECIFIED | 0 | Unspecified. |
+| INFO | 1 |  |
+| WARNING | 2 |  |
+| DEBUG | 3 |  |
+| LOG | 4 |  |
+| NOTICE | 5 |  |
+| EXCEPTION | 6 |  |
 
 
  
