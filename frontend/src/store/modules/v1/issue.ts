@@ -24,20 +24,15 @@ export type ListIssueParams = {
 
 export const buildIssueFilter = (find: IssueFilter): string => {
   const filter: string[] = [];
-  if (find.principal) {
-    filter.push(`principal = "${find.principal}"`);
-  }
   if (find.creator) {
-    filter.push(`creator = "${find.creator}"`);
+    filter.push(`creator == "${find.creator}"`);
   }
   if (find.subscriber) {
-    filter.push(`subscriber = "${find.subscriber}"`);
+    filter.push(`subscriber == "${find.subscriber}"`);
   }
-  if (find.statusList) {
+  if (find.statusList && find.statusList.length > 0) {
     filter.push(
-      `status = "${find.statusList
-        .map((s) => issueStatusToJSON(s))
-        .join(" | ")}"`
+      `status in [${find.statusList.map((s) => `"${issueStatusToJSON(s)}"`).join(",")}]`
     );
   }
   if (find.createdTsAfter) {
@@ -51,22 +46,22 @@ export const buildIssueFilter = (find: IssueFilter): string => {
     );
   }
   if (find.type) {
-    filter.push(`type = "${find.type}"`);
+    filter.push(`type == "${find.type}"`);
   }
   if (find.taskType) {
-    filter.push(`task_type = "${find.taskType}"`);
+    filter.push(`task_type == "${find.taskType}"`);
   }
   if (find.instance) {
-    filter.push(`instance = "${find.instance}"`);
+    filter.push(`instance == "${find.instance}"`);
   }
   if (find.database) {
-    filter.push(`database = "${find.database}"`);
+    filter.push(`database == "${find.database}"`);
   }
   if (find.labels && find.labels.length > 0) {
-    filter.push(`labels = "${find.labels.join(" & ")}"`);
+    filter.push(`labels in [${find.labels.map((l) => `"${l}"`).join(",")}]`);
   }
   if (find.hasPipeline !== undefined) {
-    filter.push(`has_pipeline = "${find.hasPipeline}"`);
+    filter.push(`has_pipeline == "${find.hasPipeline}"`);
   }
   return filter.join(" && ");
 };

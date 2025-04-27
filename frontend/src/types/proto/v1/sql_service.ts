@@ -634,12 +634,14 @@ export interface SearchQueryHistoriesRequest {
   pageToken: string;
   /**
    * Filter is the filter to apply on the search query history
+   * The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+   *
    * Supported filter:
-   * - project
-   * - database
-   * - instance
-   * - type
-   * - statement
+   * - project: the project full name in "projects/{id}" format, support "==" operator.
+   * - database: the database full name in "instances/{id}/databases/{name}" format, support "==" operator.
+   * - instance: the instance full name in "instances/{id}" format, support "==" operator.
+   * - type: the type, should be "QUERY" or "EXPORT", support "==" operator.
+   * - statement: the SQL statemnt, support ".matches()" operator.
    *
    * For example:
    * project == "projects/{project}"

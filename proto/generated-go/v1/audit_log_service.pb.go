@@ -96,11 +96,13 @@ type SearchAuditLogsRequest struct {
 	state  protoimpl.MessageState `protogen:"open.v1"`
 	Parent string                 `protobuf:"bytes,5,opt,name=parent,proto3" json:"parent,omitempty"`
 	// The filter of the log. It should be a valid CEL expression.
+	// The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+	//
 	// Supported filter:
-	// - method
-	// - severity
-	// - user
-	// - create_time
+	// - method: the API name, can be found in the docs, should start with "/bytebase.v1." prefix. For example "/bytebase.v1.UserService/CreateUser". Support "==" operator.
+	// - severity: support "==" operator, check Severity enum in AuditLog message for values.
+	// - user: the actor, should in "users/{email}" format, support "==" operator.
+	// - create_time: support ">=" and "<=" operator.
 	//
 	// For example:
 	//   - filter = "method == '/bytebase.v1.SQLService/Query'"
@@ -250,11 +252,7 @@ type ExportAuditLogsRequest struct {
 	state  protoimpl.MessageState `protogen:"open.v1"`
 	Parent string                 `protobuf:"bytes,4,opt,name=parent,proto3" json:"parent,omitempty"`
 	// The filter of the log. It should be a valid CEL expression.
-	// For example:
-	//   - filter = "method == '/bytebase.v1.SQLService/Query'"
-	//   - filter = "method == '/bytebase.v1.SQLService/Query' && severity == 'ERROR'"
-	//   - filter = "method == '/bytebase.v1.SQLService/Query' && severity == 'ERROR' && user == 'users/bb@bytebase.com'"
-	//   - filter = "method == '/bytebase.v1.SQLService/Query' && severity == 'ERROR' && create_time <= '2021-01-01T00:00:00Z' && create_time >= '2020-01-01T00:00:00Z'"
+	// Check the filter field in the SearchAuditLogsRequest message.
 	Filter string `protobuf:"bytes,1,opt,name=filter,proto3" json:"filter,omitempty"`
 	// The order by of the log.
 	// Only support order by create_time.

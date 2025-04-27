@@ -575,6 +575,25 @@ type ListIssuesRequest struct {
 	// the call that provided the page token.
 	PageToken string `protobuf:"bytes,3,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
 	// Filter is used to filter issues returned in the list.
+	// The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+	//
+	// Supported filters:
+	// - creator: issue creator full name in "users/{email or id}" format, support "==" operator.
+	// - subscriber: issue subscriber full name in "users/{email or id}" format, support "==" operator.
+	// - status: the issue status, support "==" and "in" operator, check the IssueStatus enum for the values.
+	// - create_time: issue create time in "2006-01-02T15:04:05Z07:00" format, support ">=" or "<=" operator.
+	// - type: the issue type, support "==" and "in" operator, check the Type enum in the Issue message for the values.
+	// - task_type: support "==" operator, the value can be "DDL", "DML" or "DATA_EXPORT"
+	// - instance: the instance full name in the "instances/{id}" format, support "==" operator.
+	// - database: the database full name in the "instances/{id}/databases/{name}" format, support "==" operator.
+	// - labels: the issue labels, support "==" and "in" operator.
+	// - has_pipeline: the issue has pipeline or not, support "==" operator, the value should be "true" or "false".
+	//
+	// For example:
+	// creator == "users/ed@bytebase.com" && status in ["OPEN", "DONE"]
+	// status == "CANCELED" && type == "DATABASE_CHANGE"
+	// instance == "instances/sample" && labels in ["label1", "label2"]
+	// has_pipeline == true && create_time >= "2025-01-02T15:04:05Z07:00"
 	Filter string `protobuf:"bytes,4,opt,name=filter,proto3" json:"filter,omitempty"`
 	// Query is the query statement.
 	Query         string `protobuf:"bytes,5,opt,name=query,proto3" json:"query,omitempty"`
@@ -720,6 +739,7 @@ type SearchIssuesRequest struct {
 	// the call that provided the page token.
 	PageToken string `protobuf:"bytes,3,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
 	// Filter is used to filter issues returned in the list.
+	// Check the filter field in the ListIssuesRequest message.
 	Filter string `protobuf:"bytes,4,opt,name=filter,proto3" json:"filter,omitempty"`
 	// Query is the query statement.
 	Query         string `protobuf:"bytes,5,opt,name=query,proto3" json:"query,omitempty"`

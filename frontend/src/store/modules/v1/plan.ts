@@ -33,7 +33,7 @@ export interface PlanFind {
 export const buildPlanFilter = (find: PlanFind): string => {
   const filter: string[] = [];
   if (find.creator) {
-    filter.push(`creator = "${find.creator}"`);
+    filter.push(`creator == "${find.creator}"`);
   }
   if (find.createdTsAfter) {
     filter.push(
@@ -46,10 +46,10 @@ export const buildPlanFilter = (find: PlanFind): string => {
     );
   }
   if (find.hasIssue !== undefined) {
-    filter.push(`has_issue = "${find.hasIssue}"`);
+    filter.push(`has_issue == "${find.hasIssue}"`);
   }
   if (find.hasPipeline !== undefined) {
-    filter.push(`has_pipeline = "${find.hasPipeline}"`);
+    filter.push(`has_pipeline == "${find.hasPipeline}"`);
   }
   return filter.join(" && ");
 };

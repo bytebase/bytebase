@@ -103,12 +103,14 @@ export interface ListUsersRequest {
   showDeleted: boolean;
   /**
    * Filter is used to filter users returned in the list.
+   * The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+   *
    * Supported filter:
-   * - name
-   * - email
-   * - user_type
-   * - state
-   * - project
+   * - name: the user name, support "==" and ".matches()" operator.
+   * - email: the user email, support "==" and ".matches()" operator.
+   * - user_type: the type, check UserType enum for values, support "==", "in [xx]", "!(in [xx])" operator.
+   * - state: check State enum for values, support "==" operator.
+   * - project: the project full name in "projects/{id}" format, support "==" operator.
    *
    * For example:
    * name == "ed"
