@@ -2217,6 +2217,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.QueryResult.Message"><span class="badge">M</span>QueryResult.Message</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.QueryResult.PostgresError"><span class="badge">M</span>QueryResult.PostgresError</a>
                 </li>
               
@@ -2259,6 +2263,10 @@
               
                 <li>
                   <a href="#bytebase.v1.QueryOption.RedisRunCommandsOn"><span class="badge">E</span>QueryOption.RedisRunCommandsOn</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.QueryResult.Message.Level"><span class="badge">E</span>QueryResult.Message.Level</a>
                 </li>
               
               
@@ -24252,6 +24260,45 @@ The types come from the Golang SQL driver. </p></td>
                   <td><p>The query result is allowed to be exported or not. </p></td>
                 </tr>
               
+                <tr>
+                  <td>messages</td>
+                  <td><a href="#bytebase.v1.QueryResult.Message">QueryResult.Message</a></td>
+                  <td>repeated</td>
+                  <td><p>Informational or debug messages returned by the database engine during query execution.
+Examples include PostgreSQL&#39;s RAISE NOTICE, MSSQL&#39;s PRINT, or Oracle&#39;s DBMS_OUTPUT.PUT_LINE. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.QueryResult.Message">QueryResult.Message</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>level</td>
+                  <td><a href="#bytebase.v1.QueryResult.Message.Level">QueryResult.Message.Level</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>content</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -24832,6 +24879,59 @@ Pass this value in the page_token field in the subsequent call to
               <tr>
                 <td>ALL_NODES</td>
                 <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="bytebase.v1.QueryResult.Message.Level">QueryResult.Message.Level</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>LEVEL_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p>Unspecified.</p></td>
+              </tr>
+            
+              <tr>
+                <td>INFO</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>WARNING</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>DEBUG</td>
+                <td>3</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>LOG</td>
+                <td>4</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>NOTICE</td>
+                <td>5</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>EXCEPTION</td>
+                <td>6</td>
                 <td><p></p></td>
               </tr>
             

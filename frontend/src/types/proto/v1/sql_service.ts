@@ -180,6 +180,11 @@ export interface QueryResult {
     | undefined;
   /** The query result is allowed to be exported or not. */
   allowExport: boolean;
+  /**
+   * Informational or debug messages returned by the database engine during query execution.
+   * Examples include PostgreSQL's RAISE NOTICE, MSSQL's PRINT, or Oracle's DBMS_OUTPUT.PUT_LINE.
+   */
+  messages: QueryResult_Message[];
 }
 
 /**
@@ -204,6 +209,97 @@ export interface QueryResult_PostgresError {
   file: string;
   line: number;
   routine: string;
+}
+
+export interface QueryResult_Message {
+  level: QueryResult_Message_Level;
+  content: string;
+}
+
+export enum QueryResult_Message_Level {
+  /** LEVEL_UNSPECIFIED - Unspecified. */
+  LEVEL_UNSPECIFIED = "LEVEL_UNSPECIFIED",
+  INFO = "INFO",
+  WARNING = "WARNING",
+  DEBUG = "DEBUG",
+  LOG = "LOG",
+  NOTICE = "NOTICE",
+  EXCEPTION = "EXCEPTION",
+  UNRECOGNIZED = "UNRECOGNIZED",
+}
+
+export function queryResult_Message_LevelFromJSON(object: any): QueryResult_Message_Level {
+  switch (object) {
+    case 0:
+    case "LEVEL_UNSPECIFIED":
+      return QueryResult_Message_Level.LEVEL_UNSPECIFIED;
+    case 1:
+    case "INFO":
+      return QueryResult_Message_Level.INFO;
+    case 2:
+    case "WARNING":
+      return QueryResult_Message_Level.WARNING;
+    case 3:
+    case "DEBUG":
+      return QueryResult_Message_Level.DEBUG;
+    case 4:
+    case "LOG":
+      return QueryResult_Message_Level.LOG;
+    case 5:
+    case "NOTICE":
+      return QueryResult_Message_Level.NOTICE;
+    case 6:
+    case "EXCEPTION":
+      return QueryResult_Message_Level.EXCEPTION;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return QueryResult_Message_Level.UNRECOGNIZED;
+  }
+}
+
+export function queryResult_Message_LevelToJSON(object: QueryResult_Message_Level): string {
+  switch (object) {
+    case QueryResult_Message_Level.LEVEL_UNSPECIFIED:
+      return "LEVEL_UNSPECIFIED";
+    case QueryResult_Message_Level.INFO:
+      return "INFO";
+    case QueryResult_Message_Level.WARNING:
+      return "WARNING";
+    case QueryResult_Message_Level.DEBUG:
+      return "DEBUG";
+    case QueryResult_Message_Level.LOG:
+      return "LOG";
+    case QueryResult_Message_Level.NOTICE:
+      return "NOTICE";
+    case QueryResult_Message_Level.EXCEPTION:
+      return "EXCEPTION";
+    case QueryResult_Message_Level.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+export function queryResult_Message_LevelToNumber(object: QueryResult_Message_Level): number {
+  switch (object) {
+    case QueryResult_Message_Level.LEVEL_UNSPECIFIED:
+      return 0;
+    case QueryResult_Message_Level.INFO:
+      return 1;
+    case QueryResult_Message_Level.WARNING:
+      return 2;
+    case QueryResult_Message_Level.DEBUG:
+      return 3;
+    case QueryResult_Message_Level.LOG:
+      return 4;
+    case QueryResult_Message_Level.NOTICE:
+      return 5;
+    case QueryResult_Message_Level.EXCEPTION:
+      return 6;
+    case QueryResult_Message_Level.UNRECOGNIZED:
+    default:
+      return -1;
+  }
 }
 
 export interface QueryRow {
@@ -1173,6 +1269,7 @@ function createBaseQueryResult(): QueryResult {
     statement: "",
     postgresError: undefined,
     allowExport: false,
+    messages: [],
   };
 }
 
@@ -1214,6 +1311,9 @@ export const QueryResult: MessageFns<QueryResult> = {
     }
     if (message.allowExport !== false) {
       writer.uint32(88).bool(message.allowExport);
+    }
+    for (const v of message.messages) {
+      QueryResult_Message.encode(v!, writer.uint32(98).fork()).join();
     }
     return writer;
   },
@@ -1333,6 +1433,14 @@ export const QueryResult: MessageFns<QueryResult> = {
           message.allowExport = reader.bool();
           continue;
         }
+        case 12: {
+          if (tag !== 98) {
+            break;
+          }
+
+          message.messages.push(QueryResult_Message.decode(reader, reader.uint32()));
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1361,6 +1469,9 @@ export const QueryResult: MessageFns<QueryResult> = {
       statement: isSet(object.statement) ? globalThis.String(object.statement) : "",
       postgresError: isSet(object.postgresError) ? QueryResult_PostgresError.fromJSON(object.postgresError) : undefined,
       allowExport: isSet(object.allowExport) ? globalThis.Boolean(object.allowExport) : false,
+      messages: globalThis.Array.isArray(object?.messages)
+        ? object.messages.map((e: any) => QueryResult_Message.fromJSON(e))
+        : [],
     };
   },
 
@@ -1399,6 +1510,9 @@ export const QueryResult: MessageFns<QueryResult> = {
     if (message.allowExport !== false) {
       obj.allowExport = message.allowExport;
     }
+    if (message.messages?.length) {
+      obj.messages = message.messages.map((e) => QueryResult_Message.toJSON(e));
+    }
     return obj;
   },
 
@@ -1424,6 +1538,7 @@ export const QueryResult: MessageFns<QueryResult> = {
       ? QueryResult_PostgresError.fromPartial(object.postgresError)
       : undefined;
     message.allowExport = object.allowExport ?? false;
+    message.messages = object.messages?.map((e) => QueryResult_Message.fromPartial(e)) || [];
     return message;
   },
 };
@@ -1758,6 +1873,84 @@ export const QueryResult_PostgresError: MessageFns<QueryResult_PostgresError> = 
     message.file = object.file ?? "";
     message.line = object.line ?? 0;
     message.routine = object.routine ?? "";
+    return message;
+  },
+};
+
+function createBaseQueryResult_Message(): QueryResult_Message {
+  return { level: QueryResult_Message_Level.LEVEL_UNSPECIFIED, content: "" };
+}
+
+export const QueryResult_Message: MessageFns<QueryResult_Message> = {
+  encode(message: QueryResult_Message, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.level !== QueryResult_Message_Level.LEVEL_UNSPECIFIED) {
+      writer.uint32(8).int32(queryResult_Message_LevelToNumber(message.level));
+    }
+    if (message.content !== "") {
+      writer.uint32(18).string(message.content);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): QueryResult_Message {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseQueryResult_Message();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.level = queryResult_Message_LevelFromJSON(reader.int32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.content = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): QueryResult_Message {
+    return {
+      level: isSet(object.level)
+        ? queryResult_Message_LevelFromJSON(object.level)
+        : QueryResult_Message_Level.LEVEL_UNSPECIFIED,
+      content: isSet(object.content) ? globalThis.String(object.content) : "",
+    };
+  },
+
+  toJSON(message: QueryResult_Message): unknown {
+    const obj: any = {};
+    if (message.level !== QueryResult_Message_Level.LEVEL_UNSPECIFIED) {
+      obj.level = queryResult_Message_LevelToJSON(message.level);
+    }
+    if (message.content !== "") {
+      obj.content = message.content;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<QueryResult_Message>): QueryResult_Message {
+    return QueryResult_Message.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<QueryResult_Message>): QueryResult_Message {
+    const message = createBaseQueryResult_Message();
+    message.level = object.level ?? QueryResult_Message_Level.LEVEL_UNSPECIFIED;
+    message.content = object.content ?? "";
     return message;
   },
 };
