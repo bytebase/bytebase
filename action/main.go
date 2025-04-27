@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"net/url"
 	"os"
 	"slices"
 	"strings"
@@ -41,8 +42,9 @@ var (
 		TargetStage string
 	}
 	cmd = &cobra.Command{
-		Use:   "bytebase-action",
-		Short: "Bytebase action",
+		Use:               "bytebase-action",
+		Short:             "Bytebase action",
+		PersistentPreRunE: validateSharedFlags,
 	}
 )
 
@@ -51,25 +53,26 @@ func init() {
 	cmd.PersistentFlags().StringVar(&Config.URL, "url", "https://demo.bytebase.com", "Bytebase URL")
 	cmd.PersistentFlags().StringVar(&Config.ServiceAccount, "service-account", "ci@service.bytebase.com", "Bytebase Service account")
 	cmd.PersistentFlags().StringVar(&Config.ServiceAccountSecret, "service-account-secret", os.Getenv("BYTEBASE_SERVICE_ACCOUNT_SECRET"), "Bytebase Service account secret")
-	// cmd.MarkPersistentFlagRequired("service-account-secret")
 	cmd.PersistentFlags().StringVar(&Config.Project, "project", "projects/project-sample", "Bytebase project")
 	cmd.PersistentFlags().StringSliceVar(&Config.Targets, "targets", []string{"instances/test-sample-instance/databases/hr_test", "instances/prod-sample-instance/databases/hr_prod"}, "Bytebase targets")
 	cmd.PersistentFlags().StringVar(&Config.FilePattern, "file-pattern", "", "File pattern to glob migration files")
 
 	// bytebase-action check flags
 	cmdCheck := &cobra.Command{
-		Use:   "check",
-		Short: "Check the release files",
-		Args:  cobra.NoArgs,
-		RunE:  runCI,
+		Use:               "check",
+		Short:             "Check the release files",
+		Args:              cobra.NoArgs,
+		PersistentPreRunE: nil,
+		RunE:              runCheck,
 	}
 	cmd.AddCommand(cmdCheck)
 
 	cmdRollout := &cobra.Command{
-		Use:   "rollout",
-		Short: "Rollout the migrate files",
-		Args:  cobra.NoArgs,
-		RunE:  runRollout,
+		Use:               "rollout",
+		Short:             "Rollout the migrate files",
+		Args:              cobra.NoArgs,
+		PersistentPreRunE: validateRolloutFlags,
+		RunE:              runRollout,
 	}
 	defaultTitle := time.Now().Format(time.RFC3339)
 	cmdRollout.Flags().StringVar(&Config.ReleaseTitle, "release-title", defaultTitle, "The title of the release")
@@ -80,11 +83,56 @@ func init() {
 }
 
 func Execute() error {
+	// TODO(p0ny): on sigint handling cancel rollout if any
 	ctx := context.Background()
 	return cmd.ExecuteContext(ctx)
 }
 
-func runCI(*cobra.Command, []string) error {
+func validateSharedFlags(*cobra.Command, []string) error {
+	if Config.ServiceAccount == "" {
+		return errors.Errorf("service-account is required and cannot be empty")
+	}
+	if Config.ServiceAccountSecret == "" {
+		return errors.Errorf("service-account-secret is required and cannot be empty")
+	}
+
+	// Validate URL format
+	u, err := url.Parse(Config.URL)
+	if err != nil {
+		return errors.Wrapf(err, "invalid URL format: %s", Config.URL)
+	}
+	Config.URL = strings.TrimSuffix(u.String(), "/") // update the URL to the canonical form
+
+	// Validate project format
+	if !strings.HasPrefix(Config.Project, "projects/") {
+		return errors.Errorf("invalid project format, must be projects/{project}")
+	}
+
+	// Validate targets format
+	for _, target := range Config.Targets {
+		if !strings.HasPrefix(target, "instances/") || !strings.Contains(target, "/databases/") {
+			return errors.Errorf("invalid target format, must be instances/{instance}/databases/{database}: %s", target)
+		}
+	}
+
+	return nil
+}
+
+func validateRolloutFlags(*cobra.Command, []string) error {
+	if Config.TargetStage == "" {
+		return errors.Errorf("target-stage is required and cannot be empty")
+	}
+
+	switch Config.CheckPlan {
+	case "SKIP", "FAIL_ON_WARNING", "FAIL_ON_ERROR":
+	default:
+		return errors.Errorf("invalid check-plan value: %s. Valid values: SKIP, FAIL_ON_WARNING, FAIL_ON_ERROR", Config.CheckPlan)
+	}
+
+	return nil
+}
+
+func runCheck(*cobra.Command, []string) error {
 	platform := getJobPlatform()
 	client, err := NewClient(Config.URL, Config.ServiceAccount, Config.ServiceAccountSecret)
 	if err != nil {
@@ -124,10 +172,6 @@ func runCI(*cobra.Command, []string) error {
 }
 
 func runRollout(command *cobra.Command, _ []string) error {
-	if Config.TargetStage == "" {
-		return errors.Errorf("target-stage is required and cannot be empty")
-	}
-
 	ctx := command.Context()
 	client, err := NewClient(Config.URL, Config.ServiceAccount, Config.ServiceAccountSecret)
 	if err != nil {
