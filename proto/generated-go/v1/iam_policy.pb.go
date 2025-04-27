@@ -257,9 +257,9 @@ type Binding struct {
 	// The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 	//
 	// Support variables:
-	// resource.database: the database full name in "instances/{instance}/databases/{database}" format, used by the "roles/sqlEditorUser" and "roles/projectExporter" role.
-	// resource.schema: the schema name, used by the "roles/sqlEditorUser" and "roles/projectExporter" role.
-	// resource.table: the table name, used by the "roles/sqlEditorUser" and "roles/projectExporter" role.
+	// resource.database: the database full name in "instances/{instance}/databases/{database}" format, used by the "roles/sqlEditorUser" and "roles/projectExporter" role, support "==" operator.
+	// resource.schema: the schema name, used by the "roles/sqlEditorUser" and "roles/projectExporter" role, support "==" operator.
+	// resource.table: the table name, used by the "roles/sqlEditorUser" and "roles/projectExporter" role, support "==" operator.
 	// request.time: the expiration. Only support "<" operation in `request.time < timestamp("{ISO datetime string format}")`.
 	// request.row_limit: the maximum export rows, used by the "roles/projectExporter" role. Only support "<=" operation.
 	//

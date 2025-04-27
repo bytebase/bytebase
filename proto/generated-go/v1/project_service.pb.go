@@ -410,11 +410,13 @@ type SearchProjectsRequest struct {
 	// Show deleted projects if specified.
 	ShowDeleted bool `protobuf:"varint,1,opt,name=show_deleted,json=showDeleted,proto3" json:"show_deleted,omitempty"`
 	// Filter the project.
+	// The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+	//
 	// Supported filters:
-	// - name
-	// - resource_id
-	// - exclude_default: if not include the default project.
-	// - state
+	// - name: the project name, support "==" and ".matches()" operator.
+	// - resource_id: the project id, support "==" and ".matches()" operator.
+	// - exclude_default: if not include the default project, should be "true" or "false", support "==" operator.
+	// - state: check the State enum for the values, support "==" operator.
 	//
 	// For example:
 	// name = "project name"
