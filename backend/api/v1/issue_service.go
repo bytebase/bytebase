@@ -143,7 +143,10 @@ func (s *IssueService) getIssueFind(ctx context.Context, filter string, query st
 					issueFind.InstanceID = &database.InstanceID
 					issueFind.DatabaseName = &database.DatabaseName
 				case "has_pipeline":
-					hasPipeline := value.(bool)
+					hasPipeline, ok := value.(bool)
+					if !ok {
+						return "", status.Errorf(codes.InvalidArgument, `"has_pipeline" should be bool`)
+					}
 					if !hasPipeline {
 						issueFind.NoPipeline = true
 					}
@@ -160,7 +163,11 @@ func (s *IssueService) getIssueFind(ctx context.Context, filter string, query st
 					}
 					issueFind.Types = &[]base.IssueType{issueType}
 				case "task_type":
-					switch value.(string) {
+					taskType, ok := value.(string)
+					if !ok {
+						return "", status.Errorf(codes.InvalidArgument, `"task_type" should be string`)
+					}
+					switch taskType {
 					case "DDL":
 						issueFind.TaskTypes = &[]base.TaskType{
 							base.TaskDatabaseSchemaUpdate,
@@ -231,7 +238,10 @@ func (s *IssueService) getIssueFind(ctx context.Context, filter string, query st
 					issueFind.Types = &types
 				case "labels":
 					for _, label := range rawList {
-						issueLabel := label.(string)
+						issueLabel, ok := label.(string)
+						if !ok {
+							return "", status.Errorf(codes.InvalidArgument, `label should be string`)
+						}
 						issueFind.LabelList = append(issueFind.LabelList, issueLabel)
 					}
 				default:

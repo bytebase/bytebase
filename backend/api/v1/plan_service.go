@@ -948,13 +948,19 @@ func (s *PlanService) buildPlanFindWithFilter(ctx context.Context, planFind *sto
 					}
 					planFind.CreatorID = &user.ID
 				case "has_pipeline":
-					hasPipeline := value.(bool)
+					hasPipeline, ok := value.(bool)
+					if !ok {
+						return "", status.Errorf(codes.InvalidArgument, `"has_pipeline" should be bool`)
+					}
 					if !hasPipeline {
 						planFind.NoPipeline = true
 					}
 				case "has_issue":
-					hasPipeline := value.(bool)
-					if !hasPipeline {
+					hasIssue, ok := value.(bool)
+					if !ok {
+						return "", status.Errorf(codes.InvalidArgument, `"has_issue" should be bool`)
+					}
+					if !hasIssue {
 						planFind.NoIssue = true
 					}
 				default:
