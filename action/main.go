@@ -323,6 +323,9 @@ func runAndWaitForRollout(ctx context.Context, client *Client, planName string) 
 		Target:       &emptyTarget, // zero stage
 		ValidateOnly: false,
 	})
+	if err != nil {
+		return errors.Wrapf(err, "failed to preview rollout")
+	}
 
 	slog.Info("rollout created", "url", fmt.Sprintf("%s/%s", client.url, rolloutEmpty.Name))
 
