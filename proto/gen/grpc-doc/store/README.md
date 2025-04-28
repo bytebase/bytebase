@@ -4770,6 +4770,7 @@ We support three types of SMTP encryption: NONE, STARTTLS, and SSL/TLS.
 | ----- | ---- | ----- | ----------- |
 | connection_limit | [bool](#bool) |  |  |
 | task_uid | [int32](#int32) |  |  |
+| parallel_tasks_limit | [bool](#bool) |  |  |
 
 
 

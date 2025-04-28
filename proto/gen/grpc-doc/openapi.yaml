@@ -12366,6 +12366,8 @@ components:
                 taskUid:
                     type: integer
                     format: int32
+                parallelTasksLimit:
+                    type: boolean
         SchemaCatalog:
             type: object
             properties:
