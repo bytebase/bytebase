@@ -251,5 +251,14 @@
         "desc": "仅允许具有指定域名的电子邮箱的用户进行登录或注册。"
       }
     }
+  },
+  "resource": {
+    "environment": "环境",
+    "instance": "实例",
+    "project": "项目",
+    "idp": "身份提供商",
+    "database-group": "数据库分组",
+    "changelist": "变更列表",
+    "review-config": "审查配置"
   }
 }

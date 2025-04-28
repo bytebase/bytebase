@@ -26,7 +26,10 @@
         name="environment"
         :environment-name="attachedResources[0]"
         :disabled="!allowChangeAttachedResource"
-        :filter="(env: Environment, _: number) => filterResource(formatEnvironmentName(env.id))"
+        :filter="
+          (env: Environment, _: number) =>
+            filterResource(formatEnvironmentName(env.id))
+        "
         @update:environment-name="
           (val: string | undefined) => {
             if (!val) {
@@ -91,7 +94,13 @@
         :readonly="!isCreate"
         :resource-title="name"
         :suffix="true"
-        :validate="validateResourceId"
+        :fetch-resource="
+          (id) =>
+            sqlReviewStore.fetchReviewPolicyByName({
+              name: `${reviewConfigNamePrefix}${id}`,
+              silent: true,
+            })
+        "
         @update:value="emit('resource-id-change', $event)"
       />
     </div>
@@ -107,22 +116,18 @@
 
 <script lang="ts" setup>
 import { NRadio, NRadioGroup } from "naive-ui";
-import { Status } from "nice-grpc-common";
 import { ref, watch, computed } from "vue";
-import { useI18n } from "vue-i18n";
 import { BBAttention, BBTextField } from "@/bbkit";
 import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
 import { useResourceByName } from "@/components/v2/ResourceOccupiedModal/useResourceByName";
 import { useSQLReviewStore } from "@/store";
 import { reviewConfigNamePrefix } from "@/store/modules/v1/common";
-import type {
-  SQLReviewPolicyTemplateV2,
-  ResourceId,
-  ValidatedMessage,
-} from "@/types";
+import type { SQLReviewPolicyTemplateV2 } from "@/types";
 import type { Database } from "@/types/proto/v1/database_service";
-import { formatEnvironmentName, type Environment } from "@/types/v1/environment";
-import { getErrorCode } from "@/utils/grpcweb";
+import {
+  formatEnvironmentName,
+  type Environment,
+} from "@/types/v1/environment";
 import { DatabaseSelect, EnvironmentSelect, ProjectSelect } from "../v2";
 import { SQLReviewTemplateSelector } from "./components";
 
@@ -147,7 +152,6 @@ const sqlReviewStore = useSQLReviewStore();
 const { resourceType } = useResourceByName({
   resource: computed(() => props.attachedResources[0] ?? ""),
 });
-const { t } = useI18n();
 
 watch(
   () => resourceType.value,
@@ -162,35 +166,4 @@ const filterResource = (name: string): boolean => {
 };
 
 const resourceIdField = ref<InstanceType<typeof ResourceIdField>>();
-
-const validateResourceId = async (
-  resourceId: ResourceId
-): Promise<ValidatedMessage[]> => {
-  if (!resourceId) {
-    return [];
-  }
-
-  try {
-    const existed = await sqlReviewStore.fetchReviewPolicyByName({
-      name: `${reviewConfigNamePrefix}${resourceId}`,
-      silent: true,
-    });
-    if (existed) {
-      return [
-        {
-          type: "error",
-          message: t("resource-id.validation.duplicated", {
-            resource: t("resource.review-config"),
-          }),
-        },
-      ];
-    }
-  } catch (error) {
-    if (getErrorCode(error) !== Status.NOT_FOUND) {
-      throw error;
-    }
-  }
-
-  return [];
-};
 </script>

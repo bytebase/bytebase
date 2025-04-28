@@ -167,7 +167,13 @@
           :value="resourceId"
           :suffix="true"
           :resource-title="identityProvider.title"
-          :validate="validateResourceId"
+          :fetch-resource="
+            (id) =>
+              identityProviderStore.getOrFetchIdentityProviderByName(
+                `${idpNamePrefix}${id}`,
+                true /* silent */
+              )
+          "
         />
       </div>
       <div class="w-full flex flex-col justify-start items-start">
@@ -637,10 +643,7 @@
         </div>
       </div>
       <div class="mt-4">
-        <NButton
-          :disabled="!allowTestConnection"
-          @click="testConnection"
-        >
+        <NButton :disabled="!allowTestConnection" @click="testConnection">
           {{ $t("identity-provider.test-connection") }}
         </NButton>
       </div>
@@ -662,9 +665,7 @@
           />
         </template>
       </div>
-      <div
-        class="space-x-3 flex flex-row justify-end items-center"
-      >
+      <div class="space-x-3 flex flex-row justify-end items-center">
         <template v-if="isCreating">
           <NButton @click="handleCancelButtonClick">
             {{ $t("common.cancel") }}
@@ -706,9 +707,7 @@ import {
   NButton,
 } from "naive-ui";
 import type { ClientError } from "nice-grpc-common";
-import { Status } from "nice-grpc-common";
 import { computed, reactive, ref, onMounted, watch } from "vue";
-import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBAttention, BBButtonConfirm, BBTextField } from "@/bbkit";
 import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
@@ -726,11 +725,7 @@ import {
   getIdentityProviderResourceId,
   idpNamePrefix,
 } from "@/store/modules/v1/common";
-import type {
-  OAuthWindowEventPayload,
-  ResourceId,
-  ValidatedMessage,
-} from "@/types";
+import type { OAuthWindowEventPayload } from "@/types";
 import { planTypeToString } from "@/types";
 import {
   FieldMapping,
@@ -749,7 +744,6 @@ import {
   identityProviderTypeToString,
   openWindowForSSO,
 } from "@/utils";
-import { getErrorCode } from "@/utils/grpcweb";
 import IdentityProviderExternalURL from "./IdentityProviderExternalURL.vue";
 
 interface IdentityProviderTemplate extends OAuth2IdentityProviderTemplate {
@@ -769,7 +763,6 @@ const props = defineProps<{
   onCanceled?: () => void;
 }>();
 
-const { t } = useI18n();
 const router = useRouter();
 const identityProviderStore = useIdentityProviderStore();
 const subscriptionStore = useSubscriptionV1Store();
@@ -1148,36 +1141,6 @@ const loginWithIdentityProviderEventListener = async (event: Event) => {
     style: "SUCCESS",
     title: "Test connection succeed",
   });
-};
-
-const validateResourceId = async (
-  resourceId: ResourceId
-): Promise<ValidatedMessage[]> => {
-  if (!resourceId) {
-    return [];
-  }
-
-  try {
-    const idp = await identityProviderStore.getOrFetchIdentityProviderByName(
-      idpNamePrefix + resourceId,
-      true /* silent */
-    );
-    if (idp) {
-      return [
-        {
-          type: "error",
-          message: t("resource-id.validation.duplicated", {
-            resource: t("resource.idp"),
-          }),
-        },
-      ];
-    }
-  } catch (error) {
-    if (getErrorCode(error) !== Status.NOT_FOUND) {
-      throw error;
-    }
-  }
-  return [];
 };
 
 const testConnection = async () => {

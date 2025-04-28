@@ -2142,13 +2142,6 @@
     "self": "敏感数据"
   },
   "resource": {
-    "environment": "环境",
-    "instance": "实例",
-    "project": "项目",
-    "idp": "身份提供商",
-    "database-group": "数据库分组",
-    "changelist": "变更列表",
-    "review-config": "审查配置",
     "delete-warning": "“{name}”将被删除。此操作无法撤消。",
     "delete-warning-with-resources": "以下资源使用了“{name}”：",
     "delete-warning-retry": "请将其从这些资源中删除，然后重试。"
@@ -2161,7 +2154,8 @@
       "duplicated": "{resource} ID 已存在。请使用其他 ID。",
       "pattern": "{resource} ID 可以具有小写字母，数字或连字符。\n它必须从小写字母开始，并以字母或数字结尾。",
       "minlength": "{resource} ID 至少包含 1 个字符。",
-      "overflow": "{resource} ID 应该少于 64 个字符。"
+      "overflow": "{resource} ID 应该少于 64 个字符。",
+      "empty": "{resource} ID 不能为空"
     }
   },
   "multi-factor": {
