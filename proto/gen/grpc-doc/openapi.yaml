@@ -11455,6 +11455,10 @@ components:
                         The maximum number of databases to sample during CI data validation.
                          Without specification, sampling is disabled, resulting in a full validation.
                     format: int32
+                parallelTasksPerRollout:
+                    type: integer
+                    description: The maximum number of parallel tasks to run during the rollout.
+                    format: int32
         Project_ExecutionRetryPolicy:
             type: object
             properties:

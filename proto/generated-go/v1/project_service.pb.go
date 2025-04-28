@@ -963,8 +963,10 @@ type Project struct {
 	// The maximum databases of rows to sample during CI data validation.
 	// Without specification, sampling is disabled, resulting in a full validation.
 	CiSamplingSize int32 `protobuf:"varint,23,opt,name=ci_sampling_size,json=ciSamplingSize,proto3" json:"ci_sampling_size,omitempty"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
+	// The maximum number of parallel tasks to run during the rollout.
+	ParallelTasksPerRollout int32 `protobuf:"varint,24,opt,name=parallel_tasks_per_rollout,json=parallelTasksPerRollout,proto3" json:"parallel_tasks_per_rollout,omitempty"`
+	unknownFields           protoimpl.UnknownFields
+	sizeCache               protoimpl.SizeCache
 }
 
 func (x *Project) Reset() {
@@ -1105,6 +1107,13 @@ func (x *Project) GetExecutionRetryPolicy() *Project_ExecutionRetryPolicy {
 func (x *Project) GetCiSamplingSize() int32 {
 	if x != nil {
 		return x.CiSamplingSize
+	}
+	return 0
+}
+
+func (x *Project) GetParallelTasksPerRollout() int32 {
+	if x != nil {
+		return x.ParallelTasksPerRollout
 	}
 	return 0
 }
@@ -1650,7 +1659,7 @@ const file_v1_project_service_proto_rawDesc = "" +
 	"\x05Label\x12\x14\n" +
 	"\x05value\x18\x01 \x01(\tR\x05value\x12\x14\n" +
 	"\x05color\x18\x02 \x01(\tR\x05color\x12\x14\n" +
-	"\x05group\x18\x03 \x01(\tR\x05group\"\x9b\a\n" +
+	"\x05group\x18\x03 \x01(\tR\x05group\"\xd8\a\n" +
 	"\aProject\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12(\n" +
 	"\x05state\x18\x03 \x01(\x0e2\x12.bytebase.v1.StateR\x05state\x12\x14\n" +
@@ -1667,7 +1676,8 @@ const file_v1_project_service_proto_rawDesc = "" +
 	"\x1dpostgres_database_tenant_mode\x18\x14 \x01(\bR\x1apostgresDatabaseTenantMode\x12.\n" +
 	"\x13allow_self_approval\x18\x15 \x01(\bR\x11allowSelfApproval\x12_\n" +
 	"\x16execution_retry_policy\x18\x16 \x01(\v2).bytebase.v1.Project.ExecutionRetryPolicyR\x14executionRetryPolicy\x12(\n" +
-	"\x10ci_sampling_size\x18\x17 \x01(\x05R\x0eciSamplingSize\x1a?\n" +
+	"\x10ci_sampling_size\x18\x17 \x01(\x05R\x0eciSamplingSize\x12;\n" +
+	"\x1aparallel_tasks_per_rollout\x18\x18 \x01(\x05R\x17parallelTasksPerRollout\x1a?\n" +
 	"\x14ExecutionRetryPolicy\x12'\n" +
 	"\x0fmaximum_retries\x18\x01 \x01(\x05R\x0emaximumRetries:-\xeaA*\n" +
 	"\x14bytebase.com/Project\x12\x12projects/{project}J\x04\b\x02\x10\x03\"\x82\x01\n" +
