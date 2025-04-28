@@ -315,3 +315,60 @@ func (c *Client) batchRunTasks(r *v1pb.BatchRunTasksRequest) (*v1pb.BatchRunTask
 	}
 	return resp, nil
 }
+
+func (c *Client) listTaskRuns(r *v1pb.ListTaskRunsRequest) (*v1pb.ListTaskRunsResponse, error) {
+	req, err := http.NewRequest("GET", fmt.Sprintf("%s/v1/%s/taskRuns", c.url, r.Parent), nil)
+	if err != nil {
+		return nil, err
+	}
+	body, err := c.doRequest(req)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to list task runs")
+	}
+	resp := &v1pb.ListTaskRunsResponse{}
+	if err := protojsonUnmarshaler.Unmarshal(body, resp); err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+func (c *Client) listAllTaskRuns(rolloutName string) (*v1pb.ListTaskRunsResponse, error) {
+	resp := &v1pb.ListTaskRunsResponse{}
+	request := &v1pb.ListTaskRunsRequest{
+		Parent:    rolloutName + "/stages/-/tasks/-",
+		PageSize:  1000,
+		PageToken: "",
+	}
+	for {
+		listResp, err := c.listTaskRuns(request)
+		if err != nil {
+			return nil, err
+		}
+		resp.TaskRuns = append(resp.TaskRuns, listResp.TaskRuns...)
+		if listResp.NextPageToken == "" {
+			break
+		}
+		request.PageToken = listResp.NextPageToken
+	}
+	return resp, nil
+}
+
+func (c *Client) batchCancelTaskRuns(r *v1pb.BatchCancelTaskRunsRequest) (*v1pb.BatchCancelTaskRunsResponse, error) {
+	rb, err := protojson.Marshal(r)
+	if err != nil {
+		return nil, err
+	}
+	req, err := http.NewRequest("POST", fmt.Sprintf("%s/v1/%s/taskRuns:batchCancel", c.url, r.Parent), bytes.NewReader(rb))
+	if err != nil {
+		return nil, err
+	}
+	body, err := c.doRequest(req)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to batch cancel task runs")
+	}
+	resp := &v1pb.BatchCancelTaskRunsResponse{}
+	if err := protojsonUnmarshaler.Unmarshal(body, resp); err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
