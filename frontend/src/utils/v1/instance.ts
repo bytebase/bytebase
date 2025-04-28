@@ -6,7 +6,6 @@ import {
   isValidInstanceName,
   languageOfEngineV1,
   unknownInstance,
-  emptyInstance,
 } from "@/types";
 import { Engine, State } from "@/types/proto/v1/common";
 import type {
@@ -22,11 +21,8 @@ import { PlanType } from "@/types/proto/v1/subscription_service";
 export function instanceV1Name(instance: Instance | InstanceResource) {
   const store = useSubscriptionV1Store();
   let name = instance.title;
-  // For unknown or empty instance, we will use the name as the title.
-  if (
-    instance.title === unknownInstance().title ||
-    instance.title === emptyInstance().title
-  ) {
+  // For unknown instance, we will use the name as the title.
+  if (instance.title === unknownInstance().title) {
     name = extractInstanceResourceName(instance.name);
   }
   if ((instance as Instance).state === State.DELETED) {

@@ -10,22 +10,14 @@ export interface Environment extends EnvironmentSetting_Environment {
   order: number;
 }
 
-export const emptyEnvironment = (): Environment => {
-  return {
-    name: EMPTY_ENVIRONMENT_NAME,
-    id: String(EMPTY_ID),
-    order: 0,
-    title: "",
-    tags: {},
-    color: "",
-  };
-};
-
 export const unknownEnvironment = (): Environment => {
   return {
-    ...emptyEnvironment(),
+    name: UNKNOWN_ENVIRONMENT_NAME,
     id: String(UNKNOWN_ID),
     title: "<<Unknown environment>>",
+    order: 0,
+    tags: {},
+    color: "",
   };
 };
 
