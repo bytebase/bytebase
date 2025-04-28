@@ -420,6 +420,10 @@ func (s *ProjectService) UpdateProject(ctx context.Context, request *v1pb.Update
 			projectSettings := project.Setting
 			projectSettings.CiSamplingSize = request.Project.CiSamplingSize
 			patch.Setting = projectSettings
+		case "parallel_tasks_per_rollout":
+			projectSettings := project.Setting
+			projectSettings.ParallelTasksPerRollout = request.Project.ParallelTasksPerRollout
+			patch.Setting = projectSettings
 		default:
 			return nil, status.Errorf(codes.InvalidArgument, `unsupport update_mask "%s"`, path)
 		}
@@ -1335,6 +1339,7 @@ func convertToProject(projectMessage *store.ProjectMessage) *v1pb.Project {
 		AllowSelfApproval:          projectMessage.Setting.AllowSelfApproval,
 		ExecutionRetryPolicy:       convertToV1ExecutionRetryPolicy(projectMessage.Setting.ExecutionRetryPolicy),
 		CiSamplingSize:             projectMessage.Setting.CiSamplingSize,
+		ParallelTasksPerRollout:    projectMessage.Setting.ParallelTasksPerRollout,
 	}
 }
 
@@ -1370,6 +1375,7 @@ func convertToProjectMessage(resourceID string, project *v1pb.Project) (*store.P
 		PostgresDatabaseTenantMode: project.PostgresDatabaseTenantMode,
 		AllowSelfApproval:          project.AllowSelfApproval,
 		CiSamplingSize:             project.CiSamplingSize,
+		ParallelTasksPerRollout:    project.ParallelTasksPerRollout,
 	}
 	return &store.ProjectMessage{
 		ResourceID: resourceID,

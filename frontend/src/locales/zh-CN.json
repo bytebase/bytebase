@@ -1646,6 +1646,10 @@
         "ci-sampling-size": {
           "self": "CI 数据采样大小",
           "description": "在CI数据验证期间，要采样的数据库数量的最大数量。\n禁用（零）时，将执行完整验证。"
+        },
+        "parallel_tasks_per_rollout": {
+          "self": "每个发布的并行任务数",
+          "description": "控制每个发布的并行任务数量。\n将其设置为零，可以禁用任何节流。"
         }
       }
     },
