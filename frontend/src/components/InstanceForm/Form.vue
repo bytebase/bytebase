@@ -73,7 +73,13 @@
             resource-type="instance"
             :readonly="!isCreating"
             :resource-title="basicInfo.title"
-            :validate="validateResourceId"
+            :fetch-resource="
+              (id) =>
+                instanceV1Store.getOrFetchInstanceByName(
+                  `${instanceNamePrefix}${id}`,
+                  true /* silent */
+                )
+            "
           />
         </div>
 
@@ -86,7 +92,9 @@
             class="mt-1 w-full"
             required="true"
             :environment-name="
-              isValidEnvironmentName(`${environmentNamePrefix}${environment.id}`)
+              isValidEnvironmentName(
+                `${environmentNamePrefix}${environment.id}`
+              )
                 ? `${environmentNamePrefix}${environment.id}`
                 : undefined
             "
@@ -478,7 +486,6 @@ import {
   NRadio,
   NCheckbox,
 } from "naive-ui";
-import { Status } from "nice-grpc-common";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBAttention, BBBetaBadge } from "@/bbkit";
@@ -497,8 +504,11 @@ import {
   useSubscriptionV1Store,
   pushNotification,
 } from "@/store";
-import { environmentNamePrefix, instanceNamePrefix } from "@/store/modules/v1/common";
-import type { ResourceId, ValidatedMessage, ComposedInstance } from "@/types";
+import {
+  environmentNamePrefix,
+  instanceNamePrefix,
+} from "@/store/modules/v1/common";
+import type { ComposedInstance } from "@/types";
 import { UNKNOWN_ID, isValidEnvironmentName } from "@/types";
 import type { Duration } from "@/types/proto/google/protobuf/duration";
 import { Engine } from "@/types/proto/v1/common";
@@ -512,7 +522,6 @@ import {
   autoSubscriptionRoute,
   urlfy,
 } from "@/utils";
-import { getErrorCode } from "@/utils/grpcweb";
 import LearnMoreLink from "../LearnMoreLink.vue";
 import BigQueryHostInput from "./BigQueryHostInput.vue";
 import DataSourceSection from "./DataSourceSection/DataSourceSection.vue";
@@ -721,36 +730,6 @@ const addDSAdditionalAddress = () => {
   if (adminDataSource.value.additionalAddresses.length !== 0) {
     adminDataSource.value.directConnection = false;
   }
-};
-
-const validateResourceId = async (
-  resourceId: ResourceId
-): Promise<ValidatedMessage[]> => {
-  if (!resourceId) {
-    return [];
-  }
-
-  try {
-    const instance = await instanceV1Store.getOrFetchInstanceByName(
-      instanceNamePrefix + resourceId,
-      true /* silent */
-    );
-    if (instance) {
-      return [
-        {
-          type: "error",
-          message: t("resource-id.validation.duplicated", {
-            resource: t("resource.instance"),
-          }),
-        },
-      ];
-    }
-  } catch (error) {
-    if (getErrorCode(error) !== Status.NOT_FOUND) {
-      throw error;
-    }
-  }
-  return [];
 };
 
 const changeInstanceActivation = async (on: boolean) => {

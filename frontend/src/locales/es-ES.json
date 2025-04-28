@@ -2142,13 +2142,6 @@
     "self": "Datos Sensibles"
   },
   "resource": {
-    "environment": "Entorno",
-    "instance": "Instancia",
-    "project": "Proyecto",
-    "idp": "Proveedor de Identidad",
-    "database-group": "grupo de bases de datos",
-    "changelist": "Lista de cambios",
-    "review-config": "Revisar configuración",
     "delete-warning": "Se eliminará el elemento \"{name}\". Esta acción no se puede deshacer.",
     "delete-warning-with-resources": "El \"{name}\" lo utilizan los siguientes recursos:",
     "delete-warning-retry": "Elimínelo de estos recursos y vuelva a intentarlo."
@@ -2161,7 +2154,8 @@
       "duplicated": "El ID de {resource} ya existe. Por favor, elige otro.",
       "pattern": "La identificación {recurso} puede tener letras, dígitos o guiones minúsculas. Debe comenzar con una letra minúscula y terminar con una letra o número.",
       "minlength": "El ID de {resource} es demasiado corto. Debe tener al menos 1 carácter.",
-      "overflow": "El ID de {resource} es demasiado largo. Debe tener menos de 64 caracteres."
+      "overflow": "El ID de {resource} es demasiado largo. Debe tener menos de 64 caracteres.",
+      "empty": "El ID {resource} no puede estar vacío"
     }
   },
   "multi-factor": {

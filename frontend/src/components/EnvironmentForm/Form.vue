@@ -23,7 +23,13 @@
           :readonly="!create"
           :value="state.environment.id"
           :resource-title="state.environment.title"
-          :validate="validateResourceId"
+          :fetch-resource="
+            (id) =>
+              environmentStore.getOrFetchEnvironmentByName(
+                `${environmentNamePrefix}${id}`,
+                true /* silent */
+              )
+          "
         />
       </div>
 
@@ -129,7 +135,6 @@
 
 <script lang="tsx" setup>
 import { NCheckbox, NInput, NColorPicker } from "naive-ui";
-import { Status } from "nice-grpc-common";
 import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBButtonConfirm } from "@/bbkit";
@@ -141,8 +146,6 @@ import {
   pushNotification,
 } from "@/store";
 import { environmentNamePrefix } from "@/store/modules/v1/common";
-import type { ResourceId, ValidatedMessage } from "@/types";
-import { getErrorCode } from "@/utils/grpcweb";
 import { FeatureBadge } from "../FeatureGuard";
 import SQLReviewForResource from "../SQLReview/components/SQLReviewForResource.vue";
 import { ResourceIdField } from "../v2";
@@ -180,6 +183,7 @@ const {
   resourceIdField,
 } = useEnvironmentFormContext();
 const environmentList = useEnvironmentV1List();
+const environmentStore = useEnvironmentV1Store();
 
 const accessControlConfigureRef =
   ref<InstanceType<typeof AccessControlConfigure>>();
@@ -244,36 +248,6 @@ const renderColorPicker = () => {
       }}
     />
   );
-};
-
-const validateResourceId = async (
-  resourceId: ResourceId
-): Promise<ValidatedMessage[]> => {
-  if (!resourceId) {
-    return [];
-  }
-
-  try {
-    const env = await useEnvironmentV1Store().getOrFetchEnvironmentByName(
-      environmentNamePrefix + resourceId,
-      true /* silent */
-    );
-    if (env) {
-      return [
-        {
-          type: "error",
-          message: t("resource-id.validation.duplicated", {
-            resource: t("resource.environment"),
-          }),
-        },
-      ];
-    }
-  } catch (error) {
-    if (getErrorCode(error) !== Status.NOT_FOUND) {
-      throw error;
-    }
-  }
-  return [];
 };
 
 const deleteEnvironment = () => {

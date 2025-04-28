@@ -50,7 +50,7 @@
     >
       <NTooltip>
         <template #trigger><DatabaseGroupIcon class="w-4 h-auto" /></template>
-        {{ $t("resource.database-group") }}
+        {{ $t("dynamic.resource.database-group") }}
       </NTooltip>
       <span class="truncate text-sm">{{
         relatedDatabaseGroup.databaseGroupName

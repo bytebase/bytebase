@@ -2142,13 +2142,6 @@
     "self": "Sensitive Data"
   },
   "resource": {
-    "environment": "Environment",
-    "instance": "Instance",
-    "project": "Project",
-    "idp": "Identity Provider",
-    "database-group": "Database Group",
-    "changelist": "Changelist",
-    "review-config": "Review Config",
     "delete-warning": "The \"{name}\" will be deleted. This action cannot be undone.",
     "delete-warning-with-resources": "The \"{name}\" is used by following resources:",
     "delete-warning-retry": "Please remove it from these resources then retry again."
@@ -2161,7 +2154,8 @@
       "duplicated": "The {resource} ID already exists. Please choose another one.",
       "pattern": "The {resource} ID can have lowercase letters, digits, or hyphens. It must start with a lowercase letter and end with a letter or number.",
       "minlength": "The {resource} ID is too short. It should have at least 1 character.",
-      "overflow": "The {resource} ID is too long. It should have less than 64 characters."
+      "overflow": "The {resource} ID is too long. It should have less than 64 characters.",
+      "empty": "The {resource} ID cannot be empty"
     }
   },
   "multi-factor": {
