@@ -1646,6 +1646,10 @@
         "ci-sampling-size": {
           "self": "Kích thước lấy mẫu dữ liệu CI",
           "description": "Số lượng cơ sở dữ liệu tối đa để lấy mẫu trong quá trình xác thực dữ liệu CI. \nKhi bị vô hiệu hóa (không), xác thực đầy đủ sẽ được thực hiện."
+        },
+        "parallel_tasks_per_rollout": {
+          "self": "Nhiệm vụ song song cho mỗi lần triển khai",
+          "description": "Kiểm soát số lượng các tác vụ song song cho mỗi lần triển khai. \nĐặt điều này thành 0 vô hiệu hóa bất kỳ điều chỉnh."
         }
       }
     },

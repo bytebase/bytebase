@@ -1646,6 +1646,10 @@
         "ci-sampling-size": {
           "self": "Tamaño de muestreo de datos de CI",
           "description": "El número máximo de bases de datos para probar durante la validación de datos de CI. \nCuando está deshabilitado (cero), se realizará la validación completa."
+        },
+        "parallel_tasks_per_rollout": {
+          "self": "Tareas paralelas por despliegue",
+          "description": "Controle el número de tareas paralelas por despliegue. \nEstablecer esto en cero deshabilita cualquier estrangulamiento."
         }
       }
     },
