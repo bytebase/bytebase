@@ -206,6 +206,27 @@
           </NInputNumber>
         </div>
       </div>
+      <div>
+        <p class="">
+          <span class="textlabel">
+            {{ $t("project.settings.issue-related.parallel_tasks_per_rollout.self") }}
+          </span>
+        </p>
+        <p class="mt-1 mb-3 text-sm text-gray-400">
+            {{ $t("project.settings.issue-related.parallel_tasks_per_rollout.description") }}
+        </p>
+        <div class="mt-3 w-full flex flex-row justify-start items-center gap-4">
+          <NInputNumber
+            :value="state.parallelTasksPerRollout"
+            :disabled="!allowUpdateIssueProjectSetting || loading"
+            class="w-60"
+            :min="0"
+            :precision="0"
+            @update:value="handleParallelTasksPerRolloutInput"
+          >
+          </NInputNumber>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -239,6 +260,7 @@ interface LocalState {
   postgresDatabaseTenantMode: boolean;
   executionRetryPolicy: Project_ExecutionRetryPolicy | undefined;
   ciSamplingSize: number;
+  parallelTasksPerRollout: number;
 }
 
 const getInitialLocalState = (): LocalState => {
@@ -254,7 +276,8 @@ const getInitialLocalState = (): LocalState => {
     skipBackupErrors: project.skipBackupErrors,
     postgresDatabaseTenantMode: project.postgresDatabaseTenantMode,
     executionRetryPolicy: project.executionRetryPolicy,
-    ciSamplingSize: project.ciSamplingSize || 0,
+    ciSamplingSize: project.ciSamplingSize,
+    parallelTasksPerRollout: project.parallelTasksPerRollout,
   };
 };
 
@@ -391,6 +414,9 @@ const updateMask = computed(() => {
   if (!isEqual(state.ciSamplingSize, props.project.ciSamplingSize || 0)) {
     mask.push("ci_sampling_size");
   }
+  if (!isEqual(state.parallelTasksPerRollout, props.project.parallelTasksPerRollout || 0)) {
+    mask.push("parallel_tasks_per_rollout");
+  }
   return mask;
 });
 
@@ -405,6 +431,11 @@ const handleInput = (value: number | null) => {
 const handleCiSamplingSizeInput = (value: number | null) => {
   if (value === null || value === undefined) return;
   state.ciSamplingSize = value;
+};
+
+const handleParallelTasksPerRolloutInput = (value: number | null) => {
+  if (value === null || value === undefined) return;
+  state.parallelTasksPerRollout = value;
 };
 
 defineExpose({
