@@ -345,6 +345,9 @@ message Project {
   // The maximum databases of rows to sample during CI data validation.
   // Without specification, sampling is disabled, resulting in a full validation.
   int32 ci_sampling_size = 23;
+
+  // The maximum number of parallel tasks to run during the rollout.
+  int32 parallel_tasks_per_rollout = 24;
 }
 
 message AddWebhookRequest {
