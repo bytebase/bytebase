@@ -113,9 +113,10 @@ import {
   usePolicyV1Store,
   getEmptyRolloutPolicy,
 } from "@/store/modules/v1/policy";
-import { emptyEnvironment, formatEnvironmentName } from "@/types";
+import { formatEnvironmentName } from "@/types";
 import type { Policy } from "@/types/proto/v1/org_policy_service";
 import { PolicyResourceType } from "@/types/proto/v1/org_policy_service";
+import { EnvironmentSetting_Environment } from "@/types/proto/v1/setting_service";
 import type { Environment } from "@/types/v1/environment";
 import { arraySwap, hasWorkspacePermissionV2 } from "@/utils";
 import EnvironmentDetail from "@/views/EnvironmentDetail.vue";
@@ -195,7 +196,10 @@ const tabItemList = computed((): BBTabItem[] => {
 });
 
 const getEnvironmentCreate = () => {
-  return emptyEnvironment();
+  return {
+    ...EnvironmentSetting_Environment.fromPartial({}),
+    order: 0,
+  };
 };
 
 const createEnvironment = () => {
