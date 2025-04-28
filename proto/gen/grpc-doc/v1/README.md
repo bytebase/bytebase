@@ -8093,6 +8093,7 @@ When paginating, all other parameters provided to `ListProjects` must match the 
 | allow_self_approval | [bool](#bool) |  | Whether to allow the issue creator to self-approve the issue. |
 | execution_retry_policy | [Project.ExecutionRetryPolicy](#bytebase-v1-Project-ExecutionRetryPolicy) |  | Execution retry policy for the task run. |
 | ci_sampling_size | [int32](#int32) |  | The maximum databases of rows to sample during CI data validation. Without specification, sampling is disabled, resulting in a full validation. |
+| parallel_tasks_per_rollout | [int32](#int32) |  | The maximum number of parallel tasks to run during the rollout. |
 
 
 
