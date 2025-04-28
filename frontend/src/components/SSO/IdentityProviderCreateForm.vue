@@ -708,7 +708,6 @@ import {
 } from "naive-ui";
 import type { ClientError } from "nice-grpc-common";
 import { computed, reactive, ref, onMounted, watch } from "vue";
-import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBAttention, BBButtonConfirm, BBTextField } from "@/bbkit";
 import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
@@ -764,7 +763,6 @@ const props = defineProps<{
   onCanceled?: () => void;
 }>();
 
-const { t } = useI18n();
 const router = useRouter();
 const identityProviderStore = useIdentityProviderStore();
 const subscriptionStore = useSubscriptionV1Store();

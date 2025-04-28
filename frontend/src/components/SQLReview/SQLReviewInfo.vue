@@ -117,7 +117,6 @@
 <script lang="ts" setup>
 import { NRadio, NRadioGroup } from "naive-ui";
 import { ref, watch, computed } from "vue";
-import { useI18n } from "vue-i18n";
 import { BBAttention, BBTextField } from "@/bbkit";
 import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
 import { useResourceByName } from "@/components/v2/ResourceOccupiedModal/useResourceByName";
@@ -153,7 +152,6 @@ const sqlReviewStore = useSQLReviewStore();
 const { resourceType } = useResourceByName({
   resource: computed(() => props.attachedResources[0] ?? ""),
 });
-const { t } = useI18n();
 
 watch(
   () => resourceType.value,
