@@ -2161,7 +2161,8 @@
       "duplicated": "{resource} ID 已存在。请使用其他 ID。",
       "pattern": "{resource} ID 可以具有小写字母，数字或连字符。\n它必须从小写字母开始，并以字母或数字结尾。",
       "minlength": "{resource} ID 至少包含 1 个字符。",
-      "overflow": "{resource} ID 应该少于 64 个字符。"
+      "overflow": "{resource} ID 应该少于 64 个字符。",
+      "empty": "{resource} ID 不能为空"
     }
   },
   "multi-factor": {

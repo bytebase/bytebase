@@ -2161,7 +2161,8 @@
       "duplicated": "El ID de {resource} ya existe. Por favor, elige otro.",
       "pattern": "La identificación {recurso} puede tener letras, dígitos o guiones minúsculas. Debe comenzar con una letra minúscula y terminar con una letra o número.",
       "minlength": "El ID de {resource} es demasiado corto. Debe tener al menos 1 carácter.",
-      "overflow": "El ID de {resource} es demasiado largo. Debe tener menos de 64 caracteres."
+      "overflow": "El ID de {resource} es demasiado largo. Debe tener menos de 64 caracteres.",
+      "empty": "El ID {resource} no puede estar vacío"
     }
   },
   "multi-factor": {
