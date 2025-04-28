@@ -251,5 +251,14 @@
         "desc": "Hạn chế đăng nhập đối với người dùng có địa chỉ email từ các miền được chỉ định."
       }
     }
+  },
+  "resource": {
+    "environment": "Môi trường",
+    "instance": "Phiên bản",
+    "project": "Dự án",
+    "idp": "Nhà cung cấp danh tính",
+    "database-group": "Nhóm cơ sở dữ liệu",
+    "changelist": "Danh sách thay đổi",
+    "review-config": "Cấu hình đánh giá"
   }
 }

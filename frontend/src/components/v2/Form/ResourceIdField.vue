@@ -136,7 +136,7 @@ let initialized = false;
 const randomSuffix = randomString(4).toLowerCase();
 
 const resourceName = computed(() => {
-  return t(`resource.${props.resourceType}`);
+  return t(`dynamic.resource.${props.resourceType}`);
 });
 
 const visible = computed(() => {

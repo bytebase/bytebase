@@ -2142,13 +2142,6 @@
     "self": "機密データ"
   },
   "resource": {
-    "environment": "環境",
-    "instance": "例",
-    "project": "プロジェクト",
-    "idp": "アイデンティティプロバイダー",
-    "database-group": "データベースのグループ化",
-    "changelist": "変更リスト",
-    "review-config": "設定を確認する",
     "delete-warning": "「{name}」は削除されます。この操作は元に戻せません。",
     "delete-warning-with-resources": "「{name}」は次のリソースによって使用されます:",
     "delete-warning-retry": "これらのリソースから削除して、もう一度お試しください。"

@@ -2142,13 +2142,6 @@
     "self": "Dữ liệu nhạy cảm"
   },
   "resource": {
-    "environment": "Môi trường",
-    "instance": "Phiên bản",
-    "project": "Dự án",
-    "idp": "Nhà cung cấp danh tính",
-    "database-group": "Nhóm cơ sở dữ liệu",
-    "changelist": "Danh sách thay đổi",
-    "review-config": "Cấu hình đánh giá",
     "delete-warning": "\"{name}\" sẽ bị xóa. Hành động này không thể hoàn tác.",
     "delete-warning-with-resources": "\"{name}\" được sử dụng bởi các tài nguyên sau:",
     "delete-warning-retry": "Vui lòng xóa nó khỏi các tài nguyên này rồi thử lại."

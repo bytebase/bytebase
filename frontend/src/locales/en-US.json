@@ -2142,13 +2142,6 @@
     "self": "Sensitive Data"
   },
   "resource": {
-    "environment": "Environment",
-    "instance": "Instance",
-    "project": "Project",
-    "idp": "Identity Provider",
-    "database-group": "Database Group",
-    "changelist": "Changelist",
-    "review-config": "Review Config",
     "delete-warning": "The \"{name}\" will be deleted. This action cannot be undone.",
     "delete-warning-with-resources": "The \"{name}\" is used by following resources:",
     "delete-warning-retry": "Please remove it from these resources then retry again."
