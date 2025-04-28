@@ -251,5 +251,14 @@
         "desc": "Restrict sign-in to users with email addresses from the specified domains."
       }
     }
+  },
+  "resource": {
+    "environment": "Environment",
+    "instance": "Instance",
+    "project": "Project",
+    "idp": "Identity Provider",
+    "database-group": "Database Group",
+    "changelist": "Changelist",
+    "review-config": "Review Config"
   }
 }

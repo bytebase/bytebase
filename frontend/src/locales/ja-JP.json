@@ -2142,13 +2142,6 @@
     "self": "機密データ"
   },
   "resource": {
-    "environment": "環境",
-    "instance": "例",
-    "project": "プロジェクト",
-    "idp": "アイデンティティプロバイダー",
-    "database-group": "データベースのグループ化",
-    "changelist": "変更リスト",
-    "review-config": "設定を確認する",
     "delete-warning": "「{name}」は削除されます。この操作は元に戻せません。",
     "delete-warning-with-resources": "「{name}」は次のリソースによって使用されます:",
     "delete-warning-retry": "これらのリソースから削除して、もう一度お試しください。"
@@ -2161,7 +2154,8 @@
       "duplicated": "{resource} ID はすでに存在します。別のIDを使用してください。",
       "pattern": "{resource} ID には、小文字、数字、またはハイフンを持つことができます。\n小文字から始めて、文字または番号で終わる必要があります。",
       "minlength": "{resource} ID には少なくとも 1 文字が含まれている必要があります。",
-      "overflow": "{resource} ID は 64 文字未満である必要があります。"
+      "overflow": "{resource} ID は 64 文字未満である必要があります。",
+      "empty": "{resource} ID は空にできません"
     }
   },
   "multi-factor": {

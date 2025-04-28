@@ -2142,13 +2142,6 @@
     "self": "Dữ liệu nhạy cảm"
   },
   "resource": {
-    "environment": "Môi trường",
-    "instance": "Phiên bản",
-    "project": "Dự án",
-    "idp": "Nhà cung cấp danh tính",
-    "database-group": "Nhóm cơ sở dữ liệu",
-    "changelist": "Danh sách thay đổi",
-    "review-config": "Cấu hình đánh giá",
     "delete-warning": "\"{name}\" sẽ bị xóa. Hành động này không thể hoàn tác.",
     "delete-warning-with-resources": "\"{name}\" được sử dụng bởi các tài nguyên sau:",
     "delete-warning-retry": "Vui lòng xóa nó khỏi các tài nguyên này rồi thử lại."
@@ -2161,7 +2154,8 @@
       "duplicated": "ID {resource} đã tồn tại. Vui lòng chọn một ID khác.",
       "pattern": "ID {resource} có thể có chữ thường, chữ số hoặc dấu gạch nối. \nNó phải bắt đầu với một chữ cái viết thường và kết thúc bằng một chữ cái hoặc số.",
       "minlength": "ID {resource} quá ngắn. Nó phải có ít nhất 1 ký tự.",
-      "overflow": "ID {resource} quá dài. Nó phải có ít hơn 64 ký tự."
+      "overflow": "ID {resource} quá dài. Nó phải có ít hơn 64 ký tự.",
+      "empty": "ID {resource} không được để trống"
     }
   },
   "multi-factor": {

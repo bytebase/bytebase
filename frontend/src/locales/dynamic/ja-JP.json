@@ -251,5 +251,14 @@
         "desc": "指定されたドメインの電子メール アドレスを持つユーザーのみにサインインを制限します。"
       }
     }
+  },
+  "resource": {
+    "environment": "環境",
+    "instance": "例",
+    "project": "プロジェクト",
+    "idp": "アイデンティティプロバイダー",
+    "database-group": "データベースのグループ化",
+    "changelist": "変更リスト",
+    "review-config": "設定を確認する"
   }
 }
