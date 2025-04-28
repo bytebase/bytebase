@@ -77,6 +77,7 @@ const MAX_LIST_HEIGHT = 256;
 const TASK_PER_PAGE = isDev() ? 4 : 20;
 
 const state = reactive<LocalState>({
+  // Index is the current number of tasks to show.
   index: TASK_PER_PAGE,
   taskStatusFilters: [],
   adviceStatusFilters: [],
@@ -127,9 +128,6 @@ const shouldShowCurrentTaskView = computed(() => {
 });
 
 const loadMore = useDebounceFn(async () => {
-  if (state.index >= filteredTaskList.value.length) {
-    return;
-  }
   const databaseNames = filteredTaskList.value
     .slice(0, state.index)
     .map((task) => databaseForTask(issue.value, task).name);
