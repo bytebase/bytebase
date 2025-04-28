@@ -771,6 +771,17 @@ func getStatementWithResultLimit(stmt string, limit int) string {
 }
 
 func isPlSQLBlock(stmt string) bool {
+	defer func() {
+		if r := recover(); r != nil {
+			perr, ok := r.(error)
+			if !ok {
+				perr = errors.Errorf("%v", r)
+			}
+			err := errors.Errorf("PANIC RECOVER, err: %v", perr)
+			stmtT, _ := common.TruncateString(stmt, 1000)
+			slog.Info("isPlSQLBlock panic", log.BBError(err), "stmt_truncated", stmtT)
+		}
+	}()
 	tree, err := pgquery.Parse(stmt)
 	if err != nil {
 		return false
