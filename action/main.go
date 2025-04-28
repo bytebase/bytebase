@@ -265,16 +265,16 @@ func runAndWaitForPlanChecks(ctx context.Context, client *Client, planName strin
 			}
 		}
 		if failedCount > 0 {
-			return errors.Errorf("found failed plan checks. View on Bytebase.")
+			return errors.Errorf("found failed plan checks. view on Bytebase")
 		}
 		if canceledCount > 0 {
-			return errors.Errorf("found canceled plan checks. View on Bytebase.")
+			return errors.Errorf("found canceled plan checks. view on Bytebase")
 		}
 		if errorCount > 0 {
-			return errors.Errorf("found error plan checks. View on Bytebase.")
+			return errors.Errorf("found error plan checks. view on Bytebase")
 		}
 		if warningCount > 0 && Config.CheckPlan == "FAIL_ON_WARNING" {
-			return errors.Errorf("found warning plan checks. View on Bytebase.")
+			return errors.Errorf("found warning plan checks. view on Bytebase")
 		}
 		if runningCount == 0 {
 			break
@@ -435,10 +435,10 @@ func waitForRollout(ctx context.Context, client *Client, rolloutPreview *v1pb.Ro
 			}
 		}
 		if foundFailed {
-			return errors.Errorf("found failed tasks. View on Bytebase.")
+			return errors.Errorf("found failed tasks. view on Bytebase")
 		}
 		if foundCanceled {
-			return errors.Errorf("found canceled tasks. View on Bytebase.")
+			return errors.Errorf("found canceled tasks. view on Bytebase")
 		}
 		if done {
 			slog.Info("stage completed", "stage", stage.Environment)

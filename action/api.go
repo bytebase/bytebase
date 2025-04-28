@@ -307,7 +307,6 @@ func (c *Client) batchRunTasks(r *v1pb.BatchRunTasksRequest) (*v1pb.BatchRunTask
 	body, err := c.doRequest(req)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to batch run tasks")
-
 	}
 	resp := &v1pb.BatchRunTasksResponse{}
 	if err := protojsonUnmarshaler.Unmarshal(body, resp); err != nil {
