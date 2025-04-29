@@ -307,7 +307,6 @@
   },
   "bbkit": {
     "common": {
-      "cancel": "取消",
       "back": "退回",
       "next": "下一步"
     },
@@ -1984,13 +1983,6 @@
     "button": {
       "upgrade": "升级"
     },
-    "trial-start-modal": {
-      "title": "已开启{plan}试用",
-      "content": "您的{plan}试用已开启！在 {date} 之前所有{plan}功能将不受限制。",
-      "button": "了解",
-      "subscription-page": "订阅页面",
-      "subscription": "可以在{page}查看我们的订阅方案及付费功能。"
-    },
     "description": "您可以在这里上传您购买的 Bytebase 证书来解锁专业版/企业版功能。",
     "upload-license": "上传证书",
     "upgrade-trial-button": "升级试用",
@@ -2589,7 +2581,24 @@
     "self": "工作表"
   },
   "setup": {
-    "self": "设置"
+    "self": "设置",
+    "basic-info": "基本信息",
+    "skip-setup": "跳过设置",
+    "purposes": {
+      "self": "您使用 Bytebase 的主要目的是什么？",
+      "alter-schema": "变更 Schema",
+      "query-data": "查询数据"
+    },
+    "workflow": {
+      "self": "您使用数据库的工作流程是怎样的？",
+      "team": "与队友合作，需要 CI/CD 工作流",
+      "simple": "无需复杂的工作流程，需要 UI 工具"
+    },
+    "data": {
+      "self-setup": "设置项目",
+      "built-in": "使用内置示例",
+      "built-in-desc": "生成示例项目和实例"
+    }
   },
   "landing": {
     "quick-link": {

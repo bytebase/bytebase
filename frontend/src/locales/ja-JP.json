@@ -307,7 +307,6 @@
   },
   "bbkit": {
     "common": {
-      "cancel": "キャンセル",
       "back": "戻る",
       "next": "次のステップ"
     },
@@ -1984,13 +1983,6 @@
     "button": {
       "upgrade": "アップグレード"
     },
-    "trial-start-modal": {
-      "title": "{plan} トライアルが開始されました",
-      "content": "{plan} のトライアルが開始されました。 {date} より前のすべての {plan} 機能は制限されません。",
-      "button": "学ぶ",
-      "subscription-page": "購読ページ",
-      "subscription": "サブスクリプション プランと有料機能は {page} でご覧いただけます。"
-    },
     "description": "ここで購入した Bytebase ライセンスをアップロードして、プロフェッショナル/エンタープライズ機能のロックを解除できます。",
     "upload-license": "ライセンスのアップロード",
     "upgrade-trial-button": "アップグレードトライアル",
@@ -2589,7 +2581,24 @@
     "self": "ワークシート"
   },
   "setup": {
-    "self": "設定"
+    "self": "設定",
+    "basic-info": "基本情報",
+    "skip-setup": "セットアップをスキップ",
+    "purposes": {
+      "self": "Bytebase の主な目的は何ですか?",
+      "alter-schema": "スキーマの変更",
+      "query-data": "クエリデータ"
+    },
+    "workflow": {
+      "self": "データベースのワークフローは何ですか?",
+      "team": "チームメイトと協力し、CI/CD パイプラインが必要",
+      "simple": "複雑なワークフローは不要、UIツールだけが必要です"
+    },
+    "data": {
+      "self-setup": "プロジェクトのセットアップ",
+      "built-in": "組み込みサンプルを使用する",
+      "built-in-desc": "サンプルプロジェクトとインスタンスを生成する"
+    }
   },
   "landing": {
     "quick-link": {
