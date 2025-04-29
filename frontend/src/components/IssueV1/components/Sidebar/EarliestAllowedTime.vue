@@ -4,7 +4,7 @@
       <div class="flex gap-x-1 items-center textlabel">
         <NTooltip>
           <template #trigger>
-            <span>{{ $t("task.rollout-time") }}</span>
+            <span>{{ $t("task.earliest-allowed-time") }}</span>
           </template>
           <template #default>
             <div class="w-60">
