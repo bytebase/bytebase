@@ -301,7 +301,7 @@ const guessTabValueFromSearchParams = (params: SearchParams): TabValue => {
   }
   if (
     verifyScopes(["approval", "approver"]) &&
-    getValueFromSearchParams(params, "status") === "OPEN" &&
+    getSemanticIssueStatusFromSearchParams(params) === "OPEN" &&
     getValueFromSearchParams(params, "approval") === "pending" &&
     getValueFromSearchParams(params, "approver") === myEmail
   ) {
@@ -309,7 +309,7 @@ const guessTabValueFromSearchParams = (params: SearchParams): TabValue => {
   }
   if (
     verifyScopes(["approval", "releaser"]) &&
-    getValueFromSearchParams(params, "status") === "OPEN" &&
+    getSemanticIssueStatusFromSearchParams(params) === "OPEN" &&
     getValueFromSearchParams(params, "approval") === "approved" &&
     getValueFromSearchParams(params, "releaser") === myEmail
   ) {
@@ -402,7 +402,7 @@ watch(
   [tab],
   () => {
     if (tab.value === "WAITING_APPROVAL" || tab.value === "WAITING_ROLLOUT") {
-      if (getValueFromSearchParams(state.params, "status") === "CLOSED") {
+      if (getSemanticIssueStatusFromSearchParams(state.params) === "CLOSED") {
         upsertScope({
           params: state.params,
           scopes: {

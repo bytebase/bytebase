@@ -162,7 +162,7 @@ const overrideSearchScopeIdList = computed(() => {
     "status",
     "instance",
     "database",
-    "label",
+    "issue-label",
   ];
   return defaultScopeIdList;
 });
