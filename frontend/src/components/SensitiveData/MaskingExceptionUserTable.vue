@@ -187,6 +187,7 @@ const getAccessUsers = async (
 ): Promise<AccessUser | undefined> => {
   let expirationTimestamp: number | undefined;
   const expression = exception.condition?.expression ?? "";
+  const description = exception.condition?.description ?? "";
   const matches = expirationTimeRegex.exec(expression);
   if (matches) {
     expirationTimestamp = new Date(matches[1]).getTime();
@@ -194,10 +195,11 @@ const getAccessUsers = async (
 
   const access: AccessUser = {
     type: "user",
-    key: `${exception.member}:${expression}`,
+    key: `${exception.member}:${expression}.${description}`,
     expirationTimestamp,
     supportActions: new Set([exception.action]),
     rawExpression: expression,
+    description,
     databaseResource: condition.databaseResources
       ? condition.databaseResources[0]
       : undefined,
@@ -426,6 +428,13 @@ const accessTableColumns = computed(
         },
       },
       {
+        key: "reason",
+        title: t("common.reason"),
+        render: (item: AccessUser) => {
+          return item.description;
+        },
+      },
+      {
         key: "operation",
         title: "",
         hide: !hasPermission.value,
@@ -568,6 +577,7 @@ const updateExceptionPolicy = async () => {
         action,
         member,
         condition: Expr.fromPartial({
+          description: accessUser.description,
           expression: expressions.join(" && "),
         }),
       });
