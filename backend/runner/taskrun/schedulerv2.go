@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"strconv"
 	"sync"
 	"time"
 
@@ -27,6 +28,13 @@ import (
 const (
 	taskSchedulerInterval = 5 * time.Second
 )
+
+// defaultInstanceMaximumConnections is the maximum number of connections outstanding per instance by default.
+const defaultInstanceMaximumConnections = 10
+
+// defaultRolloutMaxRunningTaskRuns is the maximum number of running tasks per rollout.
+// No limit by default.
+const defaultRolloutMaxRunningTaskRuns = 0
 
 // SchedulerV2 is the V2 scheduler for task run.
 type SchedulerV2 struct {
@@ -425,13 +433,52 @@ func (s *SchedulerV2) scheduleRunningTaskRuns(ctx context.Context) error {
 			)
 			continue
 		}
+
+		// Check max connections per instance.
 		maximumConnections := int(instance.Metadata.GetMaximumConnections())
+		if maximumConnections <= 0 {
+			maximumConnections = defaultInstanceMaximumConnections
+		}
 		if s.stateCfg.InstanceOutstandingConnections.Increment(task.InstanceID, maximumConnections) {
 			s.stateCfg.TaskRunSchedulerInfo.Store(taskRun.ID, &storepb.SchedulerInfo{
 				ReportTime: timestamppb.Now(),
 				WaitingCause: &storepb.SchedulerInfo_WaitingCause{
 					Cause: &storepb.SchedulerInfo_WaitingCause_ConnectionLimit{
 						ConnectionLimit: true,
+					},
+				},
+			})
+			continue
+		}
+
+		// Check max running task runs per rollout.
+		pipeline, err := s.store.GetPipelineV2ByID(ctx, task.PipelineID)
+		if err != nil {
+			return errors.Wrapf(err, "failed to get pipeline")
+		}
+		if pipeline == nil {
+			return errors.Errorf("pipeline %v not found", task.PipelineID)
+		}
+
+		project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{ResourceID: &pipeline.ProjectID})
+		if err != nil {
+			return errors.Wrapf(err, "failed to get project")
+		}
+		if project == nil {
+			return errors.Errorf("project %v not found", pipeline.ProjectID)
+		}
+
+		rolloutID := strconv.Itoa(pipeline.ID)
+		maxRunningTaskRunsPerRollout := int(project.Setting.GetParallelTasksPerRollout())
+		if maxRunningTaskRunsPerRollout <= 0 {
+			maxRunningTaskRunsPerRollout = defaultRolloutMaxRunningTaskRuns
+		}
+		if s.stateCfg.RolloutOutstandingTasks.Increment(rolloutID, maxRunningTaskRunsPerRollout) {
+			s.stateCfg.TaskRunSchedulerInfo.Store(taskRun.ID, &storepb.SchedulerInfo{
+				ReportTime: timestamppb.Now(),
+				WaitingCause: &storepb.SchedulerInfo_WaitingCause{
+					Cause: &storepb.SchedulerInfo_WaitingCause_ParallelTasksLimit{
+						ParallelTasksLimit: true,
 					},
 				},
 			})
@@ -474,6 +521,7 @@ func (s *SchedulerV2) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRun
 			s.stateCfg.RunningDatabaseMigration.Delete(getDatabaseKey(task.InstanceID, *task.DatabaseName))
 		}
 		s.stateCfg.InstanceOutstandingConnections.Decrement(task.InstanceID)
+		s.stateCfg.RolloutOutstandingTasks.Decrement(strconv.Itoa(task.PipelineID))
 	}()
 
 	driverCtx, cancel := context.WithCancel(ctx)
