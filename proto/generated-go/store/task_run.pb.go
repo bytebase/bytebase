@@ -352,6 +352,7 @@ type SchedulerInfo_WaitingCause struct {
 	//
 	//	*SchedulerInfo_WaitingCause_ConnectionLimit
 	//	*SchedulerInfo_WaitingCause_TaskUid
+	//	*SchedulerInfo_WaitingCause_ParallelTasksLimit
 	Cause         isSchedulerInfo_WaitingCause_Cause `protobuf_oneof:"cause"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -412,6 +413,15 @@ func (x *SchedulerInfo_WaitingCause) GetTaskUid() int32 {
 	return 0
 }
 
+func (x *SchedulerInfo_WaitingCause) GetParallelTasksLimit() bool {
+	if x != nil {
+		if x, ok := x.Cause.(*SchedulerInfo_WaitingCause_ParallelTasksLimit); ok {
+			return x.ParallelTasksLimit
+		}
+	}
+	return false
+}
+
 type isSchedulerInfo_WaitingCause_Cause interface {
 	isSchedulerInfo_WaitingCause_Cause()
 }
@@ -424,9 +434,15 @@ type SchedulerInfo_WaitingCause_TaskUid struct {
 	TaskUid int32 `protobuf:"varint,2,opt,name=task_uid,json=taskUid,proto3,oneof"`
 }
 
+type SchedulerInfo_WaitingCause_ParallelTasksLimit struct {
+	ParallelTasksLimit bool `protobuf:"varint,3,opt,name=parallel_tasks_limit,json=parallelTasksLimit,proto3,oneof"`
+}
+
 func (*SchedulerInfo_WaitingCause_ConnectionLimit) isSchedulerInfo_WaitingCause_Cause() {}
 
 func (*SchedulerInfo_WaitingCause_TaskUid) isSchedulerInfo_WaitingCause_Cause() {}
+
+func (*SchedulerInfo_WaitingCause_ParallelTasksLimit) isSchedulerInfo_WaitingCause_Cause() {}
 
 var File_store_task_run_proto protoreflect.FileDescriptor
 
@@ -451,14 +467,15 @@ const file_store_task_run_proto_rawDesc = "" +
 	"\x05Table\x12\x1a\n" +
 	"\bdatabase\x18\x01 \x01(\tR\bdatabase\x12\x16\n" +
 	"\x06schema\x18\x02 \x01(\tR\x06schema\x12\x14\n" +
-	"\x05table\x18\x03 \x01(\tR\x05table\"\x80\x02\n" +
+	"\x05table\x18\x03 \x01(\tR\x05table\"\xb5\x02\n" +
 	"\rSchedulerInfo\x12;\n" +
 	"\vreport_time\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
 	"reportTime\x12O\n" +
-	"\rwaiting_cause\x18\x02 \x01(\v2*.bytebase.store.SchedulerInfo.WaitingCauseR\fwaitingCause\x1aa\n" +
+	"\rwaiting_cause\x18\x02 \x01(\v2*.bytebase.store.SchedulerInfo.WaitingCauseR\fwaitingCause\x1a\x95\x01\n" +
 	"\fWaitingCause\x12+\n" +
 	"\x10connection_limit\x18\x01 \x01(\bH\x00R\x0fconnectionLimit\x12\x1b\n" +
-	"\btask_uid\x18\x02 \x01(\x05H\x00R\ataskUidB\a\n" +
+	"\btask_uid\x18\x02 \x01(\x05H\x00R\ataskUid\x122\n" +
+	"\x14parallel_tasks_limit\x18\x03 \x01(\bH\x00R\x12parallelTasksLimitB\a\n" +
 	"\x05causeB\x14Z\x12generated-go/storeb\x06proto3"
 
 var (
@@ -511,6 +528,7 @@ func file_store_task_run_proto_init() {
 	file_store_task_run_proto_msgTypes[5].OneofWrappers = []any{
 		(*SchedulerInfo_WaitingCause_ConnectionLimit)(nil),
 		(*SchedulerInfo_WaitingCause_TaskUid)(nil),
+		(*SchedulerInfo_WaitingCause_ParallelTasksLimit)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
