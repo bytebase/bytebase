@@ -99,6 +99,7 @@ import {
   upsertScope,
   buildSearchTextBySearchParams,
   buildSearchParamsBySearchText,
+  mergeSearchParams,
 } from "@/utils";
 import ScopeMenu from "./ScopeMenu.vue";
 import ScopeTags from "./ScopeTags.vue";
@@ -620,7 +621,7 @@ onMounted(() => {
       ...scope,
       readonly: existedScopes.get(scope.id),
     }));
-    emit("update:params", params);
+    emit("update:params", mergeSearchParams(cloneDeep(props.params), params));
   }
 });
 
