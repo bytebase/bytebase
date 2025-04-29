@@ -2585,7 +2585,24 @@
     "self": "ワークシート"
   },
   "setup": {
-    "self": "設定"
+    "self": "設定",
+    "basic-info": "基本情報",
+    "skip-setup": "セットアップをスキップ",
+    "purposes": {
+      "self": "Bytebase の主な目的は何ですか?",
+      "alter-schema": "スキーマの変更",
+      "query-data": "クエリデータ"
+    },
+    "workflow": {
+      "self": "データベースのワークフローは何ですか?",
+      "team": "チームメイトと協力し、CI/CD パイプラインが必要",
+      "simple": "複雑なワークフローは不要、UIツールだけが必要です"
+    },
+    "data": {
+      "self-setup": "プロジェクトのセットアップ",
+      "built-in": "組み込みサンプルを使用する",
+      "built-in-desc": "サンプルプロジェクトとインスタンスを生成する"
+    }
   },
   "landing": {
     "quick-link": {

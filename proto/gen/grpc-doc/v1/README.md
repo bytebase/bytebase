@@ -300,6 +300,7 @@
     - [GetActuatorInfoRequest](#bytebase-v1-GetActuatorInfoRequest)
     - [GetResourcePackageRequest](#bytebase-v1-GetResourcePackageRequest)
     - [ResourcePackage](#bytebase-v1-ResourcePackage)
+    - [SetupSampleRequest](#bytebase-v1-SetupSampleRequest)
     - [UpdateActuatorInfoRequest](#bytebase-v1-UpdateActuatorInfoRequest)
   
     - [ActuatorService](#bytebase-v1-ActuatorService)
@@ -5293,6 +5294,7 @@ Actuator concept is similar to the Spring Boot Actuator.
 | user_stats | [ActuatorInfo.StatUser](#bytebase-v1-ActuatorInfo-StatUser) | repeated |  |
 | activated_instance_count | [int32](#int32) |  |  |
 | total_instance_count | [int32](#int32) |  |  |
+| enable_sample | [bool](#bool) |  |  |
 
 
 
@@ -5361,6 +5363,16 @@ The theme resources.
 
 
 
+<a name="bytebase-v1-SetupSampleRequest"></a>
+
+### SetupSampleRequest
+
+
+
+
+
+
+
 <a name="bytebase-v1-UpdateActuatorInfoRequest"></a>
 
 ### UpdateActuatorInfoRequest
@@ -5392,6 +5404,7 @@ The theme resources.
 | ----------- | ------------ | ------------- | ------------|
 | GetActuatorInfo | [GetActuatorInfoRequest](#bytebase-v1-GetActuatorInfoRequest) | [ActuatorInfo](#bytebase-v1-ActuatorInfo) |  |
 | UpdateActuatorInfo | [UpdateActuatorInfoRequest](#bytebase-v1-UpdateActuatorInfoRequest) | [ActuatorInfo](#bytebase-v1-ActuatorInfo) |  |
+| SetupSample | [SetupSampleRequest](#bytebase-v1-SetupSampleRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
 | DeleteCache | [DeleteCacheRequest](#bytebase-v1-DeleteCacheRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
 | GetResourcePackage | [GetResourcePackageRequest](#bytebase-v1-GetResourcePackageRequest) | [ResourcePackage](#bytebase-v1-ResourcePackage) |  |
 

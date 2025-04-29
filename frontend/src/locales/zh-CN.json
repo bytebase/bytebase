@@ -2585,7 +2585,24 @@
     "self": "工作表"
   },
   "setup": {
-    "self": "设置"
+    "self": "设置",
+    "basic-info": "基本信息",
+    "skip-setup": "跳过设置",
+    "purposes": {
+      "self": "您使用 Bytebase 的主要目的是什么？",
+      "alter-schema": "变更 Schema",
+      "query-data": "查询数据"
+    },
+    "workflow": {
+      "self": "您使用数据库的工作流程是怎样的？",
+      "team": "与队友合作，需要 CI/CD 工作流",
+      "simple": "无需复杂的工作流程，需要 UI 工具"
+    },
+    "data": {
+      "self-setup": "设置项目",
+      "built-in": "使用内置示例",
+      "built-in-desc": "生成示例项目和实例"
+    }
   },
   "landing": {
     "quick-link": {
