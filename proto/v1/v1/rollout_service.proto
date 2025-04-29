@@ -521,6 +521,7 @@ message TaskRun {
       oneof cause {
         bool connection_limit = 1;
         Task task = 2;
+        bool parallel_tasks_limit = 3;
       }
       message Task {
         // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}

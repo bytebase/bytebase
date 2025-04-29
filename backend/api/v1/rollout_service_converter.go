@@ -587,6 +587,12 @@ func convertToSchedulerInfoWaitingCause(ctx context.Context, s *store.Store, c *
 				},
 			},
 		}, nil
+	case *storepb.SchedulerInfo_WaitingCause_ParallelTasksLimit:
+		return &v1pb.TaskRun_SchedulerInfo_WaitingCause{
+			Cause: &v1pb.TaskRun_SchedulerInfo_WaitingCause_ParallelTasksLimit{
+				ParallelTasksLimit: cause.ParallelTasksLimit,
+			},
+		}, nil
 	default:
 		return nil, nil
 	}

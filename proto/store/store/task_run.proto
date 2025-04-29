@@ -52,6 +52,7 @@ message SchedulerInfo {
     oneof cause {
       bool connection_limit = 1;
       int32 task_uid = 2;
+      bool parallel_tasks_limit = 3;
     }
   }
   WaitingCause waiting_cause = 2;

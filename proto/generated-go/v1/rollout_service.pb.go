@@ -2698,6 +2698,7 @@ type TaskRun_SchedulerInfo_WaitingCause struct {
 	//
 	//	*TaskRun_SchedulerInfo_WaitingCause_ConnectionLimit
 	//	*TaskRun_SchedulerInfo_WaitingCause_Task_
+	//	*TaskRun_SchedulerInfo_WaitingCause_ParallelTasksLimit
 	Cause         isTaskRun_SchedulerInfo_WaitingCause_Cause `protobuf_oneof:"cause"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -2758,6 +2759,15 @@ func (x *TaskRun_SchedulerInfo_WaitingCause) GetTask() *TaskRun_SchedulerInfo_Wa
 	return nil
 }
 
+func (x *TaskRun_SchedulerInfo_WaitingCause) GetParallelTasksLimit() bool {
+	if x != nil {
+		if x, ok := x.Cause.(*TaskRun_SchedulerInfo_WaitingCause_ParallelTasksLimit); ok {
+			return x.ParallelTasksLimit
+		}
+	}
+	return false
+}
+
 type isTaskRun_SchedulerInfo_WaitingCause_Cause interface {
 	isTaskRun_SchedulerInfo_WaitingCause_Cause()
 }
@@ -2770,10 +2780,17 @@ type TaskRun_SchedulerInfo_WaitingCause_Task_ struct {
 	Task *TaskRun_SchedulerInfo_WaitingCause_Task `protobuf:"bytes,2,opt,name=task,proto3,oneof"`
 }
 
+type TaskRun_SchedulerInfo_WaitingCause_ParallelTasksLimit struct {
+	ParallelTasksLimit bool `protobuf:"varint,3,opt,name=parallel_tasks_limit,json=parallelTasksLimit,proto3,oneof"`
+}
+
 func (*TaskRun_SchedulerInfo_WaitingCause_ConnectionLimit) isTaskRun_SchedulerInfo_WaitingCause_Cause() {
 }
 
 func (*TaskRun_SchedulerInfo_WaitingCause_Task_) isTaskRun_SchedulerInfo_WaitingCause_Cause() {}
+
+func (*TaskRun_SchedulerInfo_WaitingCause_ParallelTasksLimit) isTaskRun_SchedulerInfo_WaitingCause_Cause() {
+}
 
 type TaskRun_SchedulerInfo_WaitingCause_Task struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -3646,7 +3663,7 @@ const file_v1_rollout_service_proto_rawDesc = "" +
 	"\x14DATABASE_DATA_UPDATE\x10\b\x12\x18\n" +
 	"\x14DATABASE_DATA_EXPORT\x10\f:Y\xeaAV\n" +
 	"\x11bytebase.com/Task\x12Aprojects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}B\t\n" +
-	"\apayloadJ\x04\b\x02\x10\x03\"\xb6\x0e\n" +
+	"\apayloadJ\x04\b\x02\x10\x03\"\xea\x0e\n" +
 	"\aTaskRun\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x18\n" +
 	"\acreator\x18\x03 \x01(\tR\acreator\x12A\n" +
@@ -3674,14 +3691,15 @@ const file_v1_rollout_service_proto_rawDesc = "" +
 	"\x05Table\x12\x1a\n" +
 	"\bdatabase\x18\x01 \x01(\tR\bdatabase\x12\x16\n" +
 	"\x06schema\x18\x02 \x01(\tR\x06schema\x12\x14\n" +
-	"\x05table\x18\x03 \x01(\tR\x05table\x1a\xe7\x02\n" +
+	"\x05table\x18\x03 \x01(\tR\x05table\x1a\x9b\x03\n" +
 	"\rSchedulerInfo\x12;\n" +
 	"\vreport_time\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
 	"reportTime\x12T\n" +
-	"\rwaiting_cause\x18\x02 \x01(\v2/.bytebase.v1.TaskRun.SchedulerInfo.WaitingCauseR\fwaitingCause\x1a\xc2\x01\n" +
+	"\rwaiting_cause\x18\x02 \x01(\v2/.bytebase.v1.TaskRun.SchedulerInfo.WaitingCauseR\fwaitingCause\x1a\xf6\x01\n" +
 	"\fWaitingCause\x12+\n" +
 	"\x10connection_limit\x18\x01 \x01(\bH\x00R\x0fconnectionLimit\x12J\n" +
-	"\x04task\x18\x02 \x01(\v24.bytebase.v1.TaskRun.SchedulerInfo.WaitingCause.TaskH\x00R\x04task\x1a0\n" +
+	"\x04task\x18\x02 \x01(\v24.bytebase.v1.TaskRun.SchedulerInfo.WaitingCause.TaskH\x00R\x04task\x122\n" +
+	"\x14parallel_tasks_limit\x18\x03 \x01(\bH\x00R\x12parallelTasksLimit\x1a0\n" +
 	"\x04Task\x12\x12\n" +
 	"\x04task\x18\x01 \x01(\tR\x04task\x12\x14\n" +
 	"\x05issue\x18\x02 \x01(\tR\x05issueB\a\n" +
@@ -4025,6 +4043,7 @@ func file_v1_rollout_service_proto_init() {
 	file_v1_rollout_service_proto_msgTypes[34].OneofWrappers = []any{
 		(*TaskRun_SchedulerInfo_WaitingCause_ConnectionLimit)(nil),
 		(*TaskRun_SchedulerInfo_WaitingCause_Task_)(nil),
+		(*TaskRun_SchedulerInfo_WaitingCause_ParallelTasksLimit)(nil),
 	}
 	file_v1_rollout_service_proto_msgTypes[45].OneofWrappers = []any{}
 	type x struct{}
