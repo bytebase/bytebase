@@ -307,7 +307,6 @@
   },
   "bbkit": {
     "common": {
-      "cancel": "Cancelar",
       "back": "Volver",
       "next": "Siguiente"
     },
@@ -1984,13 +1983,6 @@
     "button": {
       "upgrade": "Actualizar"
     },
-    "trial-start-modal": {
-      "title": "Comience su prueba de {plan}",
-      "content": "¡Su prueba de {plan} ha comenzado! Puede acceder a las funciones de {plan} antes del {date}.",
-      "button": "Entendido",
-      "subscription-page": "página de suscripción",
-      "subscription": "Visite la {page} para conocer estas funciones y nuestros planes."
-    },
     "description": "Puedes subir tu licencia Bytebase para desbloquear funciones de edición/empresa.",
     "upload-license": "Subir licencia",
     "upgrade-trial-button": "Actualizar prueba",
@@ -2589,7 +2581,24 @@
     "self": "Hoja de trabajo"
   },
   "setup": {
-    "self": "Configuración"
+    "self": "Configuración",
+    "basic-info": "Información básica",
+    "skip-setup": "Saltar configuración",
+    "purposes": {
+      "self": "¿Cuál es su propósito principal con Bytebase?",
+      "alter-schema": "Alterar esquema",
+      "query-data": "Consultar datos"
+    },
+    "workflow": {
+      "self": "¿Cuál es su flujo de trabajo con la base de datos?",
+      "team": "Trabajar con compañeros de equipo, necesita una canalización de CI/CD",
+      "simple": "No hay un flujo de trabajo complejo, solo se necesitan herramientas de interfaz de usuario"
+    },
+    "data": {
+      "self-setup": "Configurar el proyecto",
+      "built-in": "Utilice la muestra incorporada",
+      "built-in-desc": "Generar proyecto de muestra e instancias"
+    }
   },
   "landing": {
     "quick-link": {

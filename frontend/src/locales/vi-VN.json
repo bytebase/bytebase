@@ -307,7 +307,6 @@
   },
   "bbkit": {
     "common": {
-      "cancel": "Hủy",
       "back": "Quay lại",
       "next": "Tiếp"
     },
@@ -1984,13 +1983,6 @@
     "button": {
       "upgrade": "Nâng cấp"
     },
-    "trial-start-modal": {
-      "title": "Bắt đầu dùng thử {plan} của bạn",
-      "content": "Bản dùng thử {plan} của bạn đã bắt đầu! Bạn có thể truy cập các tính năng {plan} trước {date}.",
-      "button": "Đã hiểu",
-      "subscription-page": "trang đăng ký",
-      "subscription": "Đi tới {page} để tìm hiểu các tính năng này và các gói của chúng tôi."
-    },
     "description": "Bạn có thể tải lên giấy phép Bytebase của mình để mở khóa các tính năng chuyên nghiệp/doanh nghiệp.",
     "upload-license": "Tải lên giấy phép",
     "upgrade-trial-button": "Nâng cấp bản dùng thử",
@@ -2589,7 +2581,24 @@
     "self": "Bảng tính"
   },
   "setup": {
-    "self": "Thiết lập"
+    "self": "Thiết lập",
+    "basic-info": "Thông tin cơ bản",
+    "skip-setup": "Bỏ qua thiết lập",
+    "purposes": {
+      "self": "Mục đích chính của bạn khi sử dụng Bytebase là gì?",
+      "alter-schema": "Thay đổi lược đồ",
+      "query-data": "Truy vấn dữ liệu"
+    },
+    "workflow": {
+      "self": "Quy trình làm việc của bạn với cơ sở dữ liệu là gì?",
+      "team": "Làm việc với đồng đội, cần có đường ống CI/CD",
+      "simple": "Không có quy trình làm việc phức tạp, chỉ cần các công cụ UI"
+    },
+    "data": {
+      "self-setup": "Thiết lập dự án",
+      "built-in": "Sử dụng mẫu tích hợp",
+      "built-in-desc": "Tạo dự án mẫu và các trường hợp"
+    }
   },
   "landing": {
     "quick-link": {

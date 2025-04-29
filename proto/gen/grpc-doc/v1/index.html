@@ -1325,6 +1325,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.SetupSampleRequest"><span class="badge">M</span>SetupSampleRequest</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.UpdateActuatorInfoRequest"><span class="badge">M</span>UpdateActuatorInfoRequest</a>
                 </li>
               
@@ -15380,6 +15384,13 @@ The last remaining workspace admin cannot be deleted.</p></td>
                   <td><p> </p></td>
                 </tr>
               
+                <tr>
+                  <td>enable_sample</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -15470,6 +15481,13 @@ The last remaining workspace admin cannot be deleted.</p></td>
 
         
       
+        <h3 id="bytebase.v1.SetupSampleRequest">SetupSampleRequest</h3>
+        <p></p>
+
+        
+
+        
+      
         <h3 id="bytebase.v1.UpdateActuatorInfoRequest">UpdateActuatorInfoRequest</h3>
         <p></p>
 
@@ -15530,6 +15548,13 @@ The last remaining workspace admin cannot be deleted.</p></td>
               </tr>
             
               <tr>
+                <td>SetupSample</td>
+                <td><a href="#bytebase.v1.SetupSampleRequest">SetupSampleRequest</a></td>
+                <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
                 <td>DeleteCache</td>
                 <td><a href="#bytebase.v1.DeleteCacheRequest">DeleteCacheRequest</a></td>
                 <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
@@ -15578,6 +15603,16 @@ The last remaining workspace admin cannot be deleted.</p></td>
                 <td>PATCH</td>
                 <td>/v1/actuator/info</td>
                 <td>actuator</td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>SetupSample</td>
+                <td>POST</td>
+                <td>/v1/actuator:setupSample</td>
+                <td></td>
               </tr>
               
             

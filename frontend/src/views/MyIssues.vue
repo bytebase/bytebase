@@ -70,64 +70,6 @@
       </PagedTable>
     </div>
   </div>
-
-  <BBModal
-    v-if="state.showTrialStartModal && subscriptionStore.subscription"
-    :title="
-      $t('subscription.trial-start-modal.title', {
-        plan: $t(
-          `subscription.plan.${planTypeToString(
-            subscriptionStore.currentPlan
-          ).toLowerCase()}.title`
-        ),
-      })
-    "
-    @close="onTrialingModalClose"
-  >
-    <div class="min-w-0 md:min-w-400 max-w-2xl">
-      <div class="flex justify-center items-center">
-        <img :src="planImage" class="w-56 px-4" />
-        <div class="text-lg space-y-2">
-          <p>
-            <i18n-t keypath="subscription.trial-start-modal.content">
-              <template #plan>
-                <strong>
-                  {{
-                    $t(
-                      `subscription.plan.${planTypeToString(
-                        subscriptionStore.currentPlan
-                      ).toLowerCase()}.title`
-                    )
-                  }}
-                </strong>
-              </template>
-              <template #date>
-                <strong>{{ subscriptionStore.expireAt }}</strong>
-              </template>
-            </i18n-t>
-          </p>
-          <p>
-            <i18n-t keypath="subscription.trial-start-modal.subscription">
-              <template #page>
-                <router-link
-                  :to="{ name: SETTING_ROUTE_WORKSPACE_SUBSCRIPTION }"
-                  class="normal-link"
-                  exact-active-class=""
-                >
-                  {{ $t("subscription.trial-start-modal.subscription-page") }}
-                </router-link>
-              </template>
-            </i18n-t>
-          </p>
-        </div>
-      </div>
-      <div class="flex justify-end space-x-2 pb-4">
-        <NButton type="primary" @click.prevent="onTrialingModalClose">
-          {{ $t("subscription.trial-start-modal.button") }}
-        </NButton>
-      </div>
-    </div>
-  </BBModal>
 </template>
 
 <script lang="ts" setup>
@@ -139,23 +81,19 @@ import { reactive, computed, watch, ref } from "vue";
 import type { ComponentExposed } from "vue-component-type-helpers";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
-import { BBModal } from "@/bbkit";
 import { IssueSearch } from "@/components/IssueV1/components";
 import IssueTableV1 from "@/components/IssueV1/components/IssueTableV1.vue";
 import type { TabFilterItem } from "@/components/v2";
 import { TabFilter } from "@/components/v2";
 import PagedTable from "@/components/v2/Model/PagedTable.vue";
 import { WORKSPACE_ROUTE_MY_ISSUES } from "@/router/dashboard/workspaceRoutes";
-import { SETTING_ROUTE_WORKSPACE_SUBSCRIPTION } from "@/router/dashboard/workspaceSetting";
 import {
-  useSubscriptionV1Store,
-  useOnboardingStateStore,
   useCurrentUserV1,
   useAppFeature,
   useIssueV1Store,
   useRefreshIssueList,
 } from "@/store";
-import { planTypeToString, type ComposedIssue } from "@/types";
+import { type ComposedIssue } from "@/types";
 import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
 import type { SearchParams, SearchScopeId, SemanticIssueStatus } from "@/utils";
 import {
@@ -183,12 +121,9 @@ type TabValue = (typeof TABS)[number];
 interface LocalState {
   params: SearchParams;
   advanced: boolean;
-  showTrialStartModal: boolean;
 }
 
 const { t } = useI18n();
-const subscriptionStore = useSubscriptionV1Store();
-const onboardingStateStore = useOnboardingStateStore();
 const me = useCurrentUserV1();
 const route = useRoute();
 const router = useRouter();
@@ -395,7 +330,6 @@ const initializeSearchParamsFromQueryOrLocalStorage = () => {
 
 const state = reactive<LocalState>({
   ...initializeSearchParamsFromQueryOrLocalStorage(),
-  showTrialStartModal: false,
 });
 
 const tab = computed<TabValue>({
@@ -408,20 +342,6 @@ const tab = computed<TabValue>({
   get() {
     return guessTabValueFromSearchParams(state.params);
   },
-});
-
-const onTrialingModalClose = () => {
-  state.showTrialStartModal = false;
-  onboardingStateStore.consume("show-trialing-modal");
-};
-
-const planImage = computed(() => {
-  return new URL(
-    `@/assets/plan-${planTypeToString(
-      subscriptionStore.currentPlan
-    ).toLowerCase()}.png`,
-    import.meta.url
-  ).href;
 });
 
 const statusTabHidden = computed(() => {
