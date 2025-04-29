@@ -307,7 +307,6 @@
   },
   "bbkit": {
     "common": {
-      "cancel": "Hủy",
       "back": "Quay lại",
       "next": "Tiếp"
     },
@@ -1983,13 +1982,6 @@
     "enterprise-free-trial": "Dùng thử Doanh nghiệp miễn phí {days} ngày",
     "button": {
       "upgrade": "Nâng cấp"
-    },
-    "trial-start-modal": {
-      "title": "Bắt đầu dùng thử {plan} của bạn",
-      "content": "Bản dùng thử {plan} của bạn đã bắt đầu! Bạn có thể truy cập các tính năng {plan} trước {date}.",
-      "button": "Đã hiểu",
-      "subscription-page": "trang đăng ký",
-      "subscription": "Đi tới {page} để tìm hiểu các tính năng này và các gói của chúng tôi."
     },
     "description": "Bạn có thể tải lên giấy phép Bytebase của mình để mở khóa các tính năng chuyên nghiệp/doanh nghiệp.",
     "upload-license": "Tải lên giấy phép",

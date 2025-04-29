@@ -307,7 +307,6 @@
   },
   "bbkit": {
     "common": {
-      "cancel": "Cancelar",
       "back": "Volver",
       "next": "Siguiente"
     },
@@ -1983,13 +1982,6 @@
     "enterprise-free-trial": "{days}-días de prueba gratuita para la empresa",
     "button": {
       "upgrade": "Actualizar"
-    },
-    "trial-start-modal": {
-      "title": "Comience su prueba de {plan}",
-      "content": "¡Su prueba de {plan} ha comenzado! Puede acceder a las funciones de {plan} antes del {date}.",
-      "button": "Entendido",
-      "subscription-page": "página de suscripción",
-      "subscription": "Visite la {page} para conocer estas funciones y nuestros planes."
     },
     "description": "Puedes subir tu licencia Bytebase para desbloquear funciones de edición/empresa.",
     "upload-license": "Subir licencia",

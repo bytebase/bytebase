@@ -307,7 +307,6 @@
   },
   "bbkit": {
     "common": {
-      "cancel": "取消",
       "back": "退回",
       "next": "下一步"
     },
@@ -1983,13 +1982,6 @@
     "enterprise-free-trial": "企业版 {days} 天免费试用",
     "button": {
       "upgrade": "升级"
-    },
-    "trial-start-modal": {
-      "title": "已开启{plan}试用",
-      "content": "您的{plan}试用已开启！在 {date} 之前所有{plan}功能将不受限制。",
-      "button": "了解",
-      "subscription-page": "订阅页面",
-      "subscription": "可以在{page}查看我们的订阅方案及付费功能。"
     },
     "description": "您可以在这里上传您购买的 Bytebase 证书来解锁专业版/企业版功能。",
     "upload-license": "上传证书",

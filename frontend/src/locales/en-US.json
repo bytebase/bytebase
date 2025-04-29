@@ -307,7 +307,6 @@
   },
   "bbkit": {
     "common": {
-      "cancel": "Cancel",
       "back": "Back",
       "next": "Next"
     },
@@ -1983,13 +1982,6 @@
     "enterprise-free-trial": "{days}-day free Enterprise trial",
     "button": {
       "upgrade": "Upgrade"
-    },
-    "trial-start-modal": {
-      "title": "Start your {plan} trial",
-      "content": "Your {plan} trial has started! You can access {plan} features before {date}.",
-      "button": "Got it",
-      "subscription-page": "subscription page",
-      "subscription": "Go to the {page} to learn these features and our plans."
     },
     "description": "You can upload your Bytebase license to unlock pro/enterprise features.",
     "upload-license": "Upload license",

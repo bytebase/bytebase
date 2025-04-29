@@ -307,7 +307,6 @@
   },
   "bbkit": {
     "common": {
-      "cancel": "キャンセル",
       "back": "戻る",
       "next": "次のステップ"
     },
@@ -1983,13 +1982,6 @@
     "enterprise-free-trial": "Enterprise の {days} 日間の無料トライアル",
     "button": {
       "upgrade": "アップグレード"
-    },
-    "trial-start-modal": {
-      "title": "{plan} トライアルが開始されました",
-      "content": "{plan} のトライアルが開始されました。 {date} より前のすべての {plan} 機能は制限されません。",
-      "button": "学ぶ",
-      "subscription-page": "購読ページ",
-      "subscription": "サブスクリプション プランと有料機能は {page} でご覧いただけます。"
     },
     "description": "ここで購入した Bytebase ライセンスをアップロードして、プロフェッショナル/エンタープライズ機能のロックを解除できます。",
     "upload-license": "ライセンスのアップロード",
