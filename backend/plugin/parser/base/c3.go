@@ -1,10 +1,14 @@
 package base
 
 import (
+	"fmt"
+	"log/slog"
 	"sync"
 
 	"github.com/antlr4-go/antlr/v4"
 )
+
+const maxRecursionDepth = 10
 
 // CodeCompletionCore is the core of code completion.
 // It only relies on the ANTLR runtime and does not depend on any specific language.
@@ -34,6 +38,11 @@ type CodeCompletionCore struct {
 	callStack                  *RuleList
 	lastQueryRuleContext       *RuleContext
 	lastShadowQueryRuleContext *RuleContext
+
+	// Cache to avoid recomputing the same states.
+	endStatusCache map[string]RuleEndStatus
+	// Limit recursion depth to avoid stack overflow or OOM.
+	currentDepth int
 }
 
 type Token struct {
@@ -62,6 +71,7 @@ func NewCodeCompletionCore(
 		parser:              parser,
 		atn:                 parser.GetATN(),
 		followSetsByState:   followSets,
+		endStatusCache:      make(map[string]RuleEndStatus),
 	}
 }
 
@@ -344,7 +354,8 @@ type RuleEndStatus map[int]bool
 // CollectCandidates collects the candidates.
 func (c *CodeCompletionCore) CollectCandidates(caretTokenIndex int, context antlr.ParserRuleContext) *CandidatesCollection {
 	// Reset the fields.
-
+	c.currentDepth = 0
+	c.endStatusCache = make(map[string]RuleEndStatus)
 	c.candidates = &CandidatesCollection{
 		Tokens: make(map[int][]int),
 		Rules:  make(map[int][]*RuleContext),
@@ -391,7 +402,27 @@ func (c *CodeCompletionCore) CollectCandidates(caretTokenIndex int, context antl
 	return c.candidates
 }
 
+// getCacheKey generates a cache key for the given state and token index
+func getCacheKey(stateNum int, tokenIndex int) string {
+	return fmt.Sprintf("%d-%d", stateNum, tokenIndex)
+}
+
 func (c *CodeCompletionCore) fetchEndStatus(startState antlr.ATNState, tokenIndex int, indentation string) RuleEndStatus {
+	// Check recursion depth to prevent stack overflows
+	c.currentDepth++
+	if c.currentDepth > maxRecursionDepth {
+		slog.Error("reached maximum recursion depth for code completion")
+		c.currentDepth--
+		return RuleEndStatus{}
+	}
+
+	// Check cache first
+	cacheKey := getCacheKey(startState.GetStateNumber(), tokenIndex)
+	if cachedStatus, ok := c.endStatusCache[cacheKey]; ok {
+		c.currentDepth--
+		return cachedStatus
+	}
+
 	result := make(RuleEndStatus)
 	c.followSetsByState.CollectFollowSets(c.parser, startState, c.IgnoredTokens, c.PreferredRules)
 
@@ -452,6 +483,7 @@ func (c *CodeCompletionCore) fetchEndStatus(startState antlr.ATNState, tokenInde
 		}
 
 		c.callStack.Pop()
+		c.currentDepth--
 		return RuleEndStatus{}
 	}
 
@@ -459,6 +491,7 @@ func (c *CodeCompletionCore) fetchEndStatus(startState antlr.ATNState, tokenInde
 	currentSymbol := c.tokens[tokenIndex]
 	if !followSets.combined.Contains(antlr.TokenEpsilon) && !followSets.combined.Contains(currentSymbol.Type) {
 		c.callStack.Pop()
+		c.currentDepth--
 		return RuleEndStatus{}
 	}
 
@@ -488,7 +521,21 @@ func (c *CodeCompletionCore) fetchEndStatus(startState antlr.ATNState, tokenInde
 		for _, t := range currentEntry.State.GetTransitions() {
 			switch transition := t.(type) {
 			case *antlr.RuleTransition:
-				endStatus := c.fetchEndStatus(transition.GetTarget(), currentEntry.TokenIndex, indentation)
+				// Check if this is a recursive rule transition (to avoid infinite recursion)
+				if c.callStack.Contains(transition.GetTarget().GetRuleIndex()) {
+					continue
+				}
+
+				// Get end status with memoization
+				transitionCacheKey := getCacheKey(transition.GetTarget().GetStateNumber(), currentEntry.TokenIndex)
+				var endStatus RuleEndStatus
+				if cachedStatus, exists := c.endStatusCache[transitionCacheKey]; exists {
+					endStatus = cachedStatus
+				} else {
+					endStatus = c.fetchEndStatus(transition.GetTarget(), currentEntry.TokenIndex, indentation)
+					c.endStatusCache[transitionCacheKey] = endStatus
+				}
+
 				for status := range endStatus {
 					statePipeline = append(statePipeline, PipelineEntry{
 						State:      transition.GetFollowState(),
@@ -585,7 +632,10 @@ func (c *CodeCompletionCore) fetchEndStatus(startState antlr.ATNState, tokenInde
 		}
 	}
 
+	// Save in cache before returning.
+	c.endStatusCache[cacheKey] = result
 	c.callStack.Pop()
+	c.currentDepth--
 	return result
 }
 
