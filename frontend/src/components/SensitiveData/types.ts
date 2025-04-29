@@ -32,5 +32,6 @@ export interface AccessUser {
   supportActions: Set<MaskingExceptionPolicy_MaskingException_Action>;
   expirationTimestamp?: number;
   rawExpression: string;
+  description: string;
   databaseResource?: DatabaseResource;
 }
