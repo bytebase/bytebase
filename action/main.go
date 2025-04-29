@@ -6,12 +6,15 @@ import (
 	"log/slog"
 	"net/url"
 	"os"
+	"os/signal"
 	"slices"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"go.uber.org/multierr"
 
 	"github.com/bytebase/bytebase/action/github"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -80,12 +83,6 @@ func init() {
 	cmdRollout.Flags().StringVar(&Config.CheckPlan, "check-plan", "SKIP", "Whether to check the plan and fail on warning/error. Valid values: SKIP, FAIL_ON_WARNING, FAIL_ON_ERROR")
 	cmdRollout.Flags().StringVar(&Config.TargetStage, "target-stage", "", "Rollout up to the target stage. Format: environments/{environment}.")
 	cmd.AddCommand(cmdRollout)
-}
-
-func Execute() error {
-	// TODO(p0ny): on sigint handling cancel rollout if any
-	ctx := context.Background()
-	return cmd.ExecuteContext(ctx)
 }
 
 func validateSharedFlags(*cobra.Command, []string) error {
@@ -199,10 +196,21 @@ func runRollout(command *cobra.Command, _ []string) error {
 		return errors.Wrapf(err, "failed to preview plan")
 	}
 
+	specCount := 0
+	for _, step := range planPreview.GetPlan().GetSteps() {
+		specCount += len(step.GetSpecs())
+	}
+	if specCount == 0 {
+		slog.Info("no change required. exiting...")
+		return nil
+	}
+
 	planCreated, err := client.createPlan(Config.Project, planPreview.Plan)
 	if err != nil {
 		return errors.Wrapf(err, "failed to create plan")
 	}
+
+	slog.Info("plan created", "url", fmt.Sprintf("%s/%s", client.url, planCreated.Name))
 
 	if err := runAndWaitForPlanChecks(ctx, client, planCreated.Name); err != nil {
 		return errors.Wrapf(err, "failed to run and wait for plan checks")
@@ -219,7 +227,7 @@ func runAndWaitForPlanChecks(ctx context.Context, client *Client, planName strin
 	if Config.CheckPlan == "SKIP" {
 		return nil
 	}
-
+	slog.Info("running plan checks")
 	_, err := client.runPlanChecks(&v1pb.RunPlanChecksRequest{
 		Name: planName,
 	})
@@ -257,20 +265,21 @@ func runAndWaitForPlanChecks(ctx context.Context, client *Client, planName strin
 			}
 		}
 		if failedCount > 0 {
-			return errors.Errorf("found failed plan checks. View on Bytebase.")
+			return errors.Errorf("found failed plan checks. view on Bytebase")
 		}
 		if canceledCount > 0 {
-			return errors.Errorf("found canceled plan checks. View on Bytebase.")
+			return errors.Errorf("found canceled plan checks. view on Bytebase")
 		}
 		if errorCount > 0 {
-			return errors.Errorf("found error plan checks. View on Bytebase.")
+			return errors.Errorf("found error plan checks. view on Bytebase")
 		}
 		if warningCount > 0 && Config.CheckPlan == "FAIL_ON_WARNING" {
-			return errors.Errorf("found warning plan checks. View on Bytebase.")
+			return errors.Errorf("found warning plan checks. view on Bytebase")
 		}
 		if runningCount == 0 {
 			break
 		}
+		slog.Info("waiting for plan checks to complete", "runningCount", runningCount)
 		time.Sleep(5 * time.Second)
 	}
 
@@ -314,6 +323,9 @@ func runAndWaitForRollout(ctx context.Context, client *Client, planName string) 
 		Target:       &emptyTarget, // zero stage
 		ValidateOnly: false,
 	})
+	if err != nil {
+		return errors.Wrapf(err, "failed to preview rollout")
+	}
 
 	slog.Info("rollout created", "url", fmt.Sprintf("%s/%s", client.url, rolloutEmpty.Name))
 
@@ -334,6 +346,40 @@ func waitForRollout(ctx context.Context, client *Client, rolloutPreview *v1pb.Ro
 			}
 		}))
 
+	defer func() {
+		if ctx.Err() == nil {
+			return
+		}
+		slog.Info("context cancelled, canceling the rollout")
+		// cancel rollout
+		if err := func() error {
+			taskRuns, err := client.listAllTaskRuns(rolloutName)
+			if err != nil {
+				return errors.Wrapf(err, "failed to list task runs")
+			}
+			taskRunsToCancelByStage := map[string][]string{}
+			for _, taskRun := range taskRuns.TaskRuns {
+				if taskRun.Status == v1pb.TaskRun_RUNNING || taskRun.Status == v1pb.TaskRun_PENDING {
+					stage := strings.Split(taskRun.Name, "/tasks")[0]
+					taskRunsToCancelByStage[stage] = append(taskRunsToCancelByStage[stage], taskRun.Name)
+				}
+			}
+			var errs error
+			for stage, taskRuns := range taskRunsToCancelByStage {
+				_, err := client.batchCancelTaskRuns(&v1pb.BatchCancelTaskRunsRequest{
+					Parent:   stage + "/tasks/-",
+					TaskRuns: taskRuns,
+				})
+				if err != nil {
+					err = errors.Wrapf(err, "failed to cancel task runs for stage %v", stage)
+					errs = multierr.Append(errs, err)
+				}
+			}
+			return errs
+		}(); err != nil {
+			slog.Error("failed to cancel rollout", "error", err)
+		}
+	}()
 	i := 0
 	for {
 		if ctx.Err() != nil {
@@ -389,10 +435,10 @@ func waitForRollout(ctx context.Context, client *Client, rolloutPreview *v1pb.Ro
 			}
 		}
 		if foundFailed {
-			return errors.Errorf("found failed tasks. View on Bytebase.")
+			return errors.Errorf("found failed tasks. view on Bytebase")
 		}
 		if foundCanceled {
-			return errors.Errorf("found canceled tasks. View on Bytebase.")
+			return errors.Errorf("found canceled tasks. view on Bytebase")
 		}
 		if done {
 			slog.Info("stage completed", "stage", stage.Environment)
@@ -404,13 +450,15 @@ func waitForRollout(ctx context.Context, client *Client, rolloutPreview *v1pb.Ro
 		}
 
 		// run stage tasks
-		if _, err := client.batchRunTasks(&v1pb.BatchRunTasksRequest{
-			Parent: stage.Name,
-			Tasks:  notStartedTasks,
-		}); err != nil {
-			// ignore retryable error.
-			if !strings.Contains(err.Error(), "cannot create pending task runs because there are pending/running/done task runs") {
-				return errors.Wrapf(err, "failed to batch create tasks")
+		if len(notStartedTasks) > 0 {
+			if _, err := client.batchRunTasks(&v1pb.BatchRunTasksRequest{
+				Parent: stage.Name,
+				Tasks:  notStartedTasks,
+			}); err != nil {
+				// ignore retryable error.
+				if !strings.Contains(err.Error(), "cannot create pending task runs because there are pending/running/done task runs") {
+					return errors.Wrapf(err, "failed to batch create tasks")
+				}
 			}
 		}
 		time.Sleep(5 * time.Second)
@@ -419,7 +467,19 @@ func waitForRollout(ctx context.Context, client *Client, rolloutPreview *v1pb.Ro
 }
 
 func main() {
-	if err := cmd.Execute(); err != nil {
+	ctx, cancel := context.WithCancel(context.Background())
+	c := make(chan os.Signal, 1)
+	// Trigger graceful shutdown on SIGINT or SIGTERM.
+	// The default signal sent by the `kill` command is SIGTERM,
+	// which is taken as the graceful shutdown signal for many systems, eg., Kubernetes, Gunicorn.
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		sig := <-c
+		slog.Info(fmt.Sprintf("%s received.", sig.String()))
+		cancel()
+	}()
+
+	if err := cmd.ExecuteContext(ctx); err != nil {
 		slog.Error("failed to execute command", log.BBError(err))
 		os.Exit(1)
 	}

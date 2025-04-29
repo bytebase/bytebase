@@ -1265,9 +1265,9 @@
       "title": "访问控制",
       "disable-copy-data-from-sql-editor": "限制 SQL 编辑器中的数据复制 (管理员/DBA 可以复制)",
       "restrict-admin-connection": {
-        "self": "管理员连接查询限制",
-        "disallow": "禁止用管理员连接查询数据",
-        "fallback": "如果没有只读连接可用，则回退到管理员连接"
+        "self": "管理员数据源查询限制",
+        "disallow": "禁止查询管理员数据源",
+        "fallback": "无只读数据源时，允许查询管理员数据源"
       }
     },
     "statement-execution": {
@@ -1646,6 +1646,10 @@
         "ci-sampling-size": {
           "self": "CI 数据采样大小",
           "description": "在CI数据验证期间，要采样的数据库数量的最大数量。\n禁用（零）时，将执行完整验证。"
+        },
+        "parallel_tasks_per_rollout": {
+          "self": "每个发布的并行任务数",
+          "description": "控制每个发布的并行任务数量。\n将其设置为零，可以禁用任何节流。"
         }
       }
     },

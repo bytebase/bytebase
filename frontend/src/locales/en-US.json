@@ -1646,6 +1646,10 @@
         "ci-sampling-size": {
           "self": "CI Data Sampling Size",
           "description": "The maximum number of databases to sample during CI data validation. When disabled (zero), full validation will be performed."
+        },
+        "parallel_tasks_per_rollout": {
+          "self": "Parallel tasks per rollout",
+          "description": "Control the number of parallel tasks per rollout. Setting this to zero disables any throttling."
         }
       }
     },

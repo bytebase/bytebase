@@ -47,4 +47,7 @@ message Project {
   // The maximum number of databases to sample during CI data validation.
   // Without specification, sampling is disabled, resulting in a full validation.
   int32 ci_sampling_size = 12;
+
+  // The maximum number of parallel tasks to run during the rollout.
+  int32 parallel_tasks_per_rollout = 13;
 }
