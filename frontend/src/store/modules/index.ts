@@ -6,7 +6,6 @@ export * from "./router";
 export * from "./sqlEditor";
 export * from "./uistate";
 export * from "./sqlReview";
-export * from "./onboardingState";
 export * from "./idp";
 export * from "./user";
 export * from "./risk";

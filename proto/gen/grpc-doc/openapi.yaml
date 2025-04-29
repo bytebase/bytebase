@@ -119,6 +119,21 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
+    /v1/actuator:setupSample:
+        post:
+            tags:
+                - ActuatorService
+            operationId: ActuatorService_SetupSample
+            responses:
+                "200":
+                    description: OK
+                    content: {}
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
     /v1/auditLogs:export:
         post:
             tags:
@@ -7741,27 +7756,38 @@ components:
                     type: boolean
                     description: debug flag means if the debug mode is enabled.
                 unlicensedFeatures:
+                    readOnly: true
                     type: array
                     items:
                         type: string
                 disallowPasswordSignin:
+                    readOnly: true
                     type: boolean
                     description: disallow_password_signin is the flag to disallow user signin with email&password. (except workspace admins)
                 passwordRestriction:
-                    $ref: '#/components/schemas/PasswordRestrictionSetting'
+                    readOnly: true
+                    allOf:
+                        - $ref: '#/components/schemas/PasswordRestrictionSetting'
                 docker:
+                    readOnly: true
                     type: boolean
                     description: docker flag means if the Bytebase instance is running in docker.
                 userStats:
+                    readOnly: true
                     type: array
                     items:
                         $ref: '#/components/schemas/ActuatorInfo_StatUser'
                 activatedInstanceCount:
+                    readOnly: true
                     type: integer
                     format: int32
                 totalInstanceCount:
+                    readOnly: true
                     type: integer
                     format: int32
+                enableSample:
+                    readOnly: true
+                    type: boolean
             description: |-
                 ServerInfo is the API message for server info.
                  Actuator concept is similar to the Spring Boot Actuator.

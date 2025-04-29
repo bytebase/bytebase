@@ -307,7 +307,6 @@
   },
   "bbkit": {
     "common": {
-      "cancel": "Cancel",
       "back": "Back",
       "next": "Next"
     },
@@ -1984,13 +1983,6 @@
     "button": {
       "upgrade": "Upgrade"
     },
-    "trial-start-modal": {
-      "title": "Start your {plan} trial",
-      "content": "Your {plan} trial has started! You can access {plan} features before {date}.",
-      "button": "Got it",
-      "subscription-page": "subscription page",
-      "subscription": "Go to the {page} to learn these features and our plans."
-    },
     "description": "You can upload your Bytebase license to unlock pro/enterprise features.",
     "upload-license": "Upload license",
     "upgrade-trial-button": "Upgrade trial",
@@ -2589,7 +2581,24 @@
     "self": "Worksheet"
   },
   "setup": {
-    "self": "Setup"
+    "self": "Setup",
+    "basic-info": "Basic info",
+    "skip-setup": "Skip setup",
+    "purposes": {
+      "self": "What's your main purpose with Bytebase?",
+      "alter-schema": "Alter schema",
+      "query-data": "Query data"
+    },
+    "workflow": {
+      "self": "What's your workflow with database?",
+      "team": "Work with teammates, need CI/CD pipeline",
+      "simple": "No complex workflow, just need UI tools"
+    },
+    "data": {
+      "self-setup": "Setup the project",
+      "built-in": "Use built-in sample",
+      "built-in-desc": "Generate sample project and instances"
+    }
   },
   "landing": {
     "quick-link": {

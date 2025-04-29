@@ -1,5 +1,5 @@
 <template>
-  <slot v-if="ready" />
+  <AdminSetup v-if="ready" />
   <MaskSpinner v-else class="!bg-white" />
 </template>
 
@@ -10,9 +10,9 @@ import {
   type RouteLocationNormalizedLoadedGeneric,
 } from "vue-router";
 import MaskSpinner from "@/components/misc/MaskSpinner.vue";
-import { usePolicyV1Store, useRoleStore, useSettingV1Store } from "@/store";
-import { PolicyResourceType } from "@/types/proto/v1/org_policy_service";
+import { useRoleStore, useWorkspaceV1Store } from "@/store";
 import { hasWorkspacePermissionV2 } from "@/utils";
+import AdminSetup from "./AdminSetup.vue";
 
 const router = useRouter();
 const ready = ref<boolean>(false);
@@ -31,13 +31,10 @@ const checkPermissions = (route: RouteLocationNormalizedLoadedGeneric) => {
 onMounted(async () => {
   await router.isReady();
 
-  // Prepare roles, workspace policies and settings first.
+  // Prepare roles and workspace IAM policy.
   await Promise.all([
     useRoleStore().fetchRoleList(),
-    usePolicyV1Store().fetchPolicies({
-      resourceType: PolicyResourceType.WORKSPACE,
-    }),
-    useSettingV1Store().fetchSettingList(),
+    useWorkspaceV1Store().fetchIamPolicy(),
   ]);
 
   watch(
