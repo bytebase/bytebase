@@ -66,6 +66,7 @@ COPY --from=backend /backend-build/bytebase /usr/local/bin/
 COPY --from=backend /etc/ssl/certs /etc/ssl/certs
 
 ENV OPENSSL_CONF=/etc/ssl/
+ENV GOGC=50
 
 CMD ["--port", "8080", "--data", "/var/opt/bytebase"]
 
