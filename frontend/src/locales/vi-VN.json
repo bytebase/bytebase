@@ -246,8 +246,8 @@
       },
       "summary-report": "Báo cáo tổng hợp"
     },
-    "rollout-time": "Thời gian triển khai",
-    "earliest-allowed-time-hint": "Thời gian sớm nhất cho phép là @:{'task.rollout-time'} là khi bạn muốn một tác vụ chạy; nếu không được chỉ định, nó sẽ chạy khi tất cả các tiêu chí được đáp ứng.",
+    "earliest-allowed-time": "Thời gian triển khai sớm nhất",
+    "earliest-allowed-time-hint": "@:{'task.earliest-allowed-time'} là thời gian sớm nhất để triển khai sự cố, bạn không thể triển khai trước thời gian này; nếu không được chỉ định, sự cố sẽ chạy khi đáp ứng tất cả các tiêu chí.",
     "earliest-allowed-time-unset": "Không đặt",
     "comment": "Bình luận",
     "started": "Bắt đầu",

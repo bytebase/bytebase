@@ -173,7 +173,7 @@ const renderActionSentence = () => {
       const newVal = toEarliestAllowedTime;
       const timeFormat = "YYYY-MM-DD HH:mm:ss UTCZZ";
       return t("activity.sentence.changed-from-to", {
-        name: t("task.rollout-time"),
+        name: t("task.earliest-allowed-time"),
         oldValue: oldVal
           ? dayjs(getDateForPbTimestamp(oldVal)).format(timeFormat)
           : "Unset",
