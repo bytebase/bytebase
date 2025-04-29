@@ -258,7 +258,7 @@ export const useIssueSearchScopeOptions = (
         ],
       },
       {
-        id: "label",
+        id: "issue-label",
         title: t("issue.advanced-search.scope.label.title"),
         description: t("issue.advanced-search.scope.label.description"),
         options: projectLabels.value.map((label) => {
@@ -275,6 +275,7 @@ export const useIssueSearchScopeOptions = (
               ]),
           };
         }),
+        allowMultiple: true,
       },
     ];
     const supportOptionIdSet = new Set(supportOptionIdList.value);
