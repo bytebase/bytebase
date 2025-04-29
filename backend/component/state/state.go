@@ -9,9 +9,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-// defaultInstanceMaximumConnections is the maximum number of connections outstanding per instance by default.
-const defaultInstanceMaximumConnections = 10
-
 // State is the state for all in-memory states within the server.
 type State struct {
 	// ApprovalFinding is the set of issues for finding the approval template.
@@ -78,22 +75,25 @@ type resourceLimiter struct {
 	connections map[string]int
 }
 
-func (c *resourceLimiter) Increment(instanceID string, maxConnections int) bool {
+// limit <= 0 means no limit.
+func (c *resourceLimiter) Increment(key string, limit int) bool {
 	c.Lock()
 	defer c.Unlock()
-	if maxConnections == 0 {
-		maxConnections = defaultInstanceMaximumConnections
+	if limit <= 0 {
+		// No limit.
+		// Increment anyway to balance the decrement.
+		c.connections[key]++
+		return false
 	}
-
-	if c.connections[instanceID] >= maxConnections {
+	if c.connections[key] >= limit {
 		return true
 	}
-	c.connections[instanceID]++
+	c.connections[key]++
 	return false
 }
 
-func (c *resourceLimiter) Decrement(instanceID string) {
+func (c *resourceLimiter) Decrement(key string) {
 	c.Lock()
 	defer c.Unlock()
-	c.connections[instanceID]--
+	c.connections[key]--
 }
