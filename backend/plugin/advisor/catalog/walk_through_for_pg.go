@@ -280,22 +280,17 @@ func (d *DatabaseState) pgRenameIndex(node *ast.RenameIndexStmt) *WalkThroughErr
 }
 
 func (d *DatabaseState) pgAlterTable(node *ast.AlterTableStmt) *WalkThroughError {
-	// Do nothing for view.
-	if node.Table.Type == ast.TableTypeView {
+	if node.Table.Type != ast.TableTypeBaseTable {
 		return nil
 	}
+
 	schema, err := d.getSchema(node.Table.Schema)
 	if err != nil {
 		return err
 	}
 	table, err := schema.pgGetTable(node.Table.Name)
 	if err != nil {
-		_, err := schema.pgGetView(node.Table.Name)
-		if err != nil {
-			return err
-		}
-		// Do nothing for view.
-		return nil
+		return err
 	}
 
 	for _, item := range node.AlterItemList {
@@ -1069,7 +1064,7 @@ func (s *SchemaState) pgGetView(viewName string) (*ViewState, *WalkThroughError)
 	if !exists {
 		return nil, &WalkThroughError{
 			Type:    ErrorTypeViewNotExists,
-			Content: fmt.Sprintf("The view %q doesn't exists in schema %q", viewName, s.name),
+			Content: fmt.Sprintf("The view %q doesn't exist in schema %q", viewName, s.name),
 		}
 	}
 	return view, nil
@@ -1080,7 +1075,7 @@ func (s *SchemaState) pgGetTable(tableName string) (*TableState, *WalkThroughErr
 	if !exists {
 		return nil, &WalkThroughError{
 			Type:    ErrorTypeTableNotExists,
-			Content: fmt.Sprintf("The table %q doesn't exists in schema %q", tableName, s.name),
+			Content: fmt.Sprintf("The table %q doesn't exist in schema %q", tableName, s.name),
 		}
 	}
 	return table, nil
@@ -1104,7 +1099,7 @@ func (t *TableState) getColumn(columnName string) (*ColumnState, *WalkThroughErr
 	if !exists {
 		return nil, &WalkThroughError{
 			Type:    ErrorTypeColumnNotExists,
-			Content: fmt.Sprintf("The column %q doesn't exists in table %q", columnName, t.name),
+			Content: fmt.Sprintf("The column %q doesn't exist in table %q", columnName, t.name),
 		}
 	}
 	return column, nil
