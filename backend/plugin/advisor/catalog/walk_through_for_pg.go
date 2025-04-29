@@ -1059,23 +1059,12 @@ func (d *DatabaseState) getSchema(schemaName string) (*SchemaState, *WalkThrough
 	return schema, nil
 }
 
-func (s *SchemaState) pgGetView(viewName string) (*ViewState, *WalkThroughError) {
-	view, exists := s.viewSet[viewName]
-	if !exists {
-		return nil, &WalkThroughError{
-			Type:    ErrorTypeViewNotExists,
-			Content: fmt.Sprintf("The view %q doesn't exist in schema %q", viewName, s.name),
-		}
-	}
-	return view, nil
-}
-
 func (s *SchemaState) pgGetTable(tableName string) (*TableState, *WalkThroughError) {
 	table, exists := s.tableSet[tableName]
 	if !exists {
 		return nil, &WalkThroughError{
 			Type:    ErrorTypeTableNotExists,
-			Content: fmt.Sprintf("The table %q doesn't exist in schema %q", tableName, s.name),
+			Content: fmt.Sprintf("The table %q does not exist in schema %q", tableName, s.name),
 		}
 	}
 	return table, nil
@@ -1099,7 +1088,7 @@ func (t *TableState) getColumn(columnName string) (*ColumnState, *WalkThroughErr
 	if !exists {
 		return nil, &WalkThroughError{
 			Type:    ErrorTypeColumnNotExists,
-			Content: fmt.Sprintf("The column %q doesn't exist in table %q", columnName, t.name),
+			Content: fmt.Sprintf("The column %q does not exist in the table %q", columnName, t.name),
 		}
 	}
 	return column, nil
