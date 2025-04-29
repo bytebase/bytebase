@@ -246,8 +246,8 @@
       },
       "summary-report": "概略報告"
     },
-    "rollout-time": "公開時間を指定する",
-    "earliest-allowed-time-hint": "「@:{'task.rollout-time'}」はタスクを実行する時刻です。指定しない場合、タスクは条件が満たされるとすぐに実行されます。",
+    "earliest-allowed-time": "最も早い展開時期",
+    "earliest-allowed-time-hint": "@:{'task.earliest-allowed-time'} は問題をロールアウトする最も早い時間です。この時間より前にロールアウトすることはできません。指定されていない場合は、すべての条件が満たされたときに実行されます。",
     "earliest-allowed-time-unset": "設定されていません",
     "comment": "コメント",
     "started": "から始まりました",
