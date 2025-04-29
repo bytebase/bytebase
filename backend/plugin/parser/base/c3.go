@@ -409,17 +409,16 @@ func getCacheKey(stateNum int, tokenIndex int) string {
 
 func (c *CodeCompletionCore) fetchEndStatus(startState antlr.ATNState, tokenIndex int, indentation string) RuleEndStatus {
 	// Check recursion depth to prevent stack overflows
+	defer func() { c.currentDepth-- }()
 	c.currentDepth++
 	if c.currentDepth > maxRecursionDepth {
 		slog.Error("reached maximum recursion depth for code completion")
-		c.currentDepth--
 		return RuleEndStatus{}
 	}
 
 	// Check cache first
 	cacheKey := getCacheKey(startState.GetStateNumber(), tokenIndex)
 	if cachedStatus, ok := c.endStatusCache[cacheKey]; ok {
-		c.currentDepth--
 		return cachedStatus
 	}
 
@@ -483,7 +482,6 @@ func (c *CodeCompletionCore) fetchEndStatus(startState antlr.ATNState, tokenInde
 		}
 
 		c.callStack.Pop()
-		c.currentDepth--
 		return RuleEndStatus{}
 	}
 
@@ -491,7 +489,6 @@ func (c *CodeCompletionCore) fetchEndStatus(startState antlr.ATNState, tokenInde
 	currentSymbol := c.tokens[tokenIndex]
 	if !followSets.combined.Contains(antlr.TokenEpsilon) && !followSets.combined.Contains(currentSymbol.Type) {
 		c.callStack.Pop()
-		c.currentDepth--
 		return RuleEndStatus{}
 	}
 
@@ -635,7 +632,6 @@ func (c *CodeCompletionCore) fetchEndStatus(startState antlr.ATNState, tokenInde
 	// Save in cache before returning.
 	c.endStatusCache[cacheKey] = result
 	c.callStack.Pop()
-	c.currentDepth--
 	return result
 }
 
