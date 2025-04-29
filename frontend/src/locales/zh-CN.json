@@ -246,8 +246,8 @@
       },
       "summary-report": "概要报告"
     },
-    "rollout-time": "指定发布时间",
-    "earliest-allowed-time-hint": "'@:{'task.rollout-time'}' 是您希望任务运行的时间；如果未指定，任务会在满足条件后立即执行。",
+    "earliest-allowed-time": "最早可发布时间",
+    "earliest-allowed-time-hint": "@:{'task.earliest-allowed-time'} 是可发布工单的最早时间，您不能在此时间之前进行发布；如果未指定，则当满足所有条件时发布。",
     "earliest-allowed-time-unset": "未设置",
     "comment": "评论",
     "started": "开始于",

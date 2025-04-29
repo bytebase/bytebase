@@ -246,8 +246,8 @@
       },
       "summary-report": "Informe resumido"
     },
-    "rollout-time": "Tiempo de implementación",
-    "earliest-allowed-time-hint": "El tiempo de implementación es cuando deseas que una tarea se ejecute; si no se especifica, se ejecuta cuando se cumplen todos los criterios.",
+    "earliest-allowed-time": "Tiempo de lanzamiento más temprano",
+    "earliest-allowed-time-hint": "@:{'task.earliest-allowed-time'} es el momento más temprano para implementar el problema, no se puede implementar antes de este momento; si no se especifica, se ejecuta cuando se cumplen todos los criterios.",
     "earliest-allowed-time-unset": "No establecido",
     "comment": "Comentario",
     "started": "Iniciado",

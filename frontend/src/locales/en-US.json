@@ -246,8 +246,8 @@
       },
       "summary-report": "Summary report"
     },
-    "rollout-time": "Rollout time",
-    "earliest-allowed-time-hint": "@:{'task.rollout-time'} is when you want a task to run; if unspecified, it runs when all criteria are met.",
+    "earliest-allowed-time": "Earliest rollout time",
+    "earliest-allowed-time-hint": "@:{'task.earliest-allowed-time'} is the earliest time to rollout the issue, you cannot rollout before this time; if unspecified, it runs when all criteria are met.",
     "earliest-allowed-time-unset": "Unset",
     "comment": "Comment",
     "started": "Started",
