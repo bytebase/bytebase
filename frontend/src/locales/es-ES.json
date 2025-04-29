@@ -292,7 +292,8 @@
       "enqueued": "Esperando a ser ejecutada.",
       "enqueued-with-rollout-time": "Esperando para ejecutar, {time} para ejecutar.",
       "waiting-connection": "Esperando conexiones de instancias disponibles. El recuento de conexión de instancia ha alcanzado el límite establecido en Bytebase.",
-      "waiting-task": "Esperando a que termine otra tarea."
+      "waiting-task": "Esperando a que termine otra tarea.",
+      "waiting-max-tasks-per-rollout": "Esperando a que terminen otras tareas. Se ha alcanzado el límite máximo de tareas en ejecución por despliegue."
     }
   },
   "banner": {
