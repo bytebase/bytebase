@@ -66,6 +66,7 @@ COPY --from=backend /backend-build/bytebase /usr/local/bin/
 COPY --from=backend /etc/ssl/certs /etc/ssl/certs
 
 ENV OPENSSL_CONF=/etc/ssl/
+ENV GOGC=50
 ENV AWS_PRODUCT_ID="prod-n4dmmye4e6hjo"
 
 CMD ["--port", "8080", "--data", "/var/opt/bytebase"]
