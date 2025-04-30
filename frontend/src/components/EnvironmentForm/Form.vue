@@ -81,7 +81,7 @@
           </span>
         </div>
         <div class="textinfolabel">
-          {{ $t("policy.rollout.info") }}
+          {{ $t("policy.rollout.info", { permission: "bb.taskRuns.create" }) }}
           <a
             class="inline-flex items-center text-blue-600 ml-1 hover:underline"
             href="https://www.bytebase.com/docs/administration/environment-policy/rollout-policy"

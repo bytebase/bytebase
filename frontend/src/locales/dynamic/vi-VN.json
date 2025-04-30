@@ -259,6 +259,7 @@
     "idp": "Nhà cung cấp danh tính",
     "database-group": "Nhóm cơ sở dữ liệu",
     "changelist": "Danh sách thay đổi",
-    "review-config": "Cấu hình đánh giá"
+    "review-config": "Cấu hình đánh giá",
+    "role": "Vai trò"
   }
 }
