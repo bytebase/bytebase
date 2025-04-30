@@ -26,14 +26,12 @@ const (
 )
 
 type MemoryMonitor struct {
-	profile         *config.Profile
-	memoryThreshold uint64
+	profile *config.Profile
 }
 
-func NewMemoryMonitor(profile *config.Profile, memoryThreshold uint64) *MemoryMonitor {
+func NewMemoryMonitor(profile *config.Profile) *MemoryMonitor {
 	return &MemoryMonitor{
-		profile:         profile,
-		memoryThreshold: memoryThreshold,
+		profile: profile,
 	}
 }
 
@@ -47,7 +45,8 @@ func (m *MemoryMonitor) Run(ctx context.Context, wg *sync.WaitGroup) {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			m.checkMemory(m.memoryThreshold)
+			threshold := m.profile.RuntimeMemoryProfileThreshold.Load()
+			m.checkMemory(threshold)
 		}
 	}
 }
