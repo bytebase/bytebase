@@ -61,7 +61,7 @@ func (r *MemoryMonitor) checkMemory(memoryThreshold uint64) {
 	runtime.ReadMemStats(&m)
 
 	if m.Sys >= memoryThreshold {
-		now := time.Now().UnixMicro()
+		now := time.Now().Unix()
 
 		// Dump heap profile
 		heapFileName := filepath.Join(r.profile.DataDir, fmt.Sprintf("memory_dump_%d.prof", now))
