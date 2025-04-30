@@ -55,7 +55,7 @@ type Profile struct {
 	// RuntimeMemoryProfileThreshold is the memory threshold in bytes for the server to trigger a pprof memory profile.
 	// can be set in runtime
 	// 0 means no threshold.
-	RuntimeMemoryProfileThreshold atomic.Int64
+	RuntimeMemoryProfileThreshold atomic.Uint64
 }
 
 // UseEmbedDB returns whether to use embedDB.
