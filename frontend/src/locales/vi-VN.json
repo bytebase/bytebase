@@ -1265,8 +1265,8 @@
       "title": "Kiểm soát truy cập",
       "disable-copy-data-from-sql-editor": "Hạn chế sao chép dữ liệu trong Trình soạn thảo SQL (Quản trị viên/DBA được phép)",
       "restrict-admin-connection": {
-        "self": "Hạn chế truy vấn kết nối quản trị",
-        "disallow": "Không cho phép truy vấn dữ liệu từ kết nối quản trị",
+        "self": "Không cho phép truy vấn nguồn dữ liệu quản trị",
+        "disallow": "Không cho phép truy vấn dữ liệu từ nguồn dữ liệu quản trị",
         "fallback": "Quay lại kết nối quản trị nếu không có kết nối chỉ đọc"
       }
     },
