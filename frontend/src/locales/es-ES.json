@@ -1330,7 +1330,7 @@
     "rollout": {
       "name": "Política de Implementación",
       "tip": "La política se aplica retrospectivamente a las incidencias.",
-      "info": "Las tareas pueden ser ejecutadas por usuarios con el permiso 'taskRuns.create' o los siguientes roles",
+      "info": "Las tareas pueden ser ejecutadas por usuarios con el permiso '{permission}' o los siguientes roles",
       "auto": "Automático",
       "auto-info": "Si se aprueban todas las comprobaciones, el cambio se implementará y ejecutará automáticamente.",
       "last-issue-approver": "Aprobador de último tema"
