@@ -259,6 +259,7 @@
     "idp": "アイデンティティプロバイダー",
     "database-group": "データベースのグループ化",
     "changelist": "変更リスト",
-    "review-config": "設定を確認する"
+    "review-config": "設定を確認する",
+    "role": "役割"
   }
 }
