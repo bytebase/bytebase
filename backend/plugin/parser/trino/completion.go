@@ -7,489 +7,131 @@ import (
 	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
-	trino "github.com/bytebase/trino-parser"
+	trinoparser "github.com/bytebase/trino-parser"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	"github.com/bytebase/bytebase/backend/store/model"
-	"github.com/bytebase/bytebase/proto/generated-go/store"
-)
-
-var (
-	// globalFollowSetsByState is the global follow sets by state.
-	// It is shared by all Trino completers.
-	// The FollowSetsByState is the thread-safe struct.
-	globalFollowSetsByState = base.NewFollowSetsByState()
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 func init() {
-	base.RegisterCompleteFunc(store.Engine_TRINO, Completion)
+	base.RegisterCompleteFunc(storepb.Engine_TRINO, Completion)
 }
 
-// Completion is the entry point of Trino code completion.
-func Completion(ctx context.Context, cCtx base.CompletionContext, statement string, caretLine int, caretOffset int) ([]base.Candidate, error) {
-	completer := NewStandardCompleter(ctx, cCtx, statement, caretLine, caretOffset)
-	result, err := completer.completion()
-	if err != nil {
-		return nil, err
-	}
-	if len(result) > 0 {
-		return result, nil
-	}
+var (
+	// Check tableRefListener is implementing the TrinoParserListener interface.
+	_ trinoparser.TrinoParserListener = &tableRefListener{}
+	_ trinoparser.TrinoParserListener = &cteExtractor{}
 
-	trickyCompleter := NewTrickyCompleter(ctx, cCtx, statement, caretLine, caretOffset)
-	return trickyCompleter.completion()
-}
+	globalFellowSetsByState = base.NewFollowSetsByState()
+	ignoredTokens           = map[int]bool{
+		// // Common EOF
+		// trinoparser.TrinoParserEOF: true,
 
-func newIgnoredTokens() map[int]bool {
-	return map[int]bool{
-		antlr.TokenEOF:                         true,
-		trino.TrinoLexerDOLLAR_:                true,
-		trino.TrinoLexerLPAREN_:                true,
-		trino.TrinoLexerRPAREN_:                true,
-		trino.TrinoLexerLSQUARE_:               true,
-		trino.TrinoLexerRSQUARE_:               true,
-		trino.TrinoLexerCOMMA_:                 true,
-		trino.TrinoLexerSEMICOLON_:             true,
-		trino.TrinoLexerCOLON_:                 true,
-		trino.TrinoLexerEQ_:                    true,
-		trino.TrinoLexerDOT_:                   true,
-		trino.TrinoLexerPLUS_:                  true,
-		trino.TrinoLexerMINUS_:                 true,
-		trino.TrinoLexerSLASH_:                 true,
-		trino.TrinoLexerCARET_:                 true,
-		trino.TrinoLexerLT_:                    true,
-		trino.TrinoLexerGT_:                    true,
-		trino.TrinoLexerLTE_:                   true,
-		trino.TrinoLexerGTE_:                   true,
-		trino.TrinoLexerNEQ_:                   true,
-		trino.TrinoLexerPERCENT_:               true,
-		trino.TrinoLexerCONCAT_:                true,
-		trino.TrinoLexerQUESTION_MARK_:         true,
-		trino.TrinoLexerVBAR_:                  true,
-		trino.TrinoLexerASTERISK_:              true,
-		trino.TrinoLexerSTRING_:                true,
-		trino.TrinoLexerUNICODE_STRING_:        true,
-		trino.TrinoLexerBINARY_LITERAL_:        true,
-		trino.TrinoLexerINTEGER_VALUE_:         true,
-		trino.TrinoLexerDECIMAL_VALUE_:         true,
-		trino.TrinoLexerDOUBLE_VALUE_:          true,
-		trino.TrinoLexerIDENTIFIER_:            true,
-		trino.TrinoLexerDIGIT_IDENTIFIER_:      true,
-		trino.TrinoLexerQUOTED_IDENTIFIER_:     true,
-		trino.TrinoLexerBACKQUOTED_IDENTIFIER_: true,
-	}
-}
+		// // Whitespace and comments
+		// trinoparser.TrinoLexerWS_:                true,
+		// trinoparser.TrinoLexerSIMPLE_COMMENT_:    true,
+		// trinoparser.TrinoLexerBRACKETED_COMMENT_: true,
 
-func newPreferredRules() map[int]bool {
-	return map[int]bool{
-		trino.TrinoParserRULE_relationPrimary:   true,
-		trino.TrinoParserRULE_qualifiedName:     true,
-		trino.TrinoParserRULE_primaryExpression: true,
-		trino.TrinoParserRULE_expression:        true,
-	}
-}
+		// // Identifiers and literals
+		// trinoparser.TrinoLexerIDENTIFIER_:            true,
+		// trinoparser.TrinoLexerQUOTED_IDENTIFIER_:     true,
+		// trinoparser.TrinoLexerDIGIT_IDENTIFIER_:      true,
+		// trinoparser.TrinoLexerBACKQUOTED_IDENTIFIER_: true,
+		// trinoparser.TrinoLexerSTRING_:                true,
+		// trinoparser.TrinoLexerUNICODE_STRING_:        true,
+		// trinoparser.TrinoLexerDECIMAL_VALUE_:         true,
+		// trinoparser.TrinoLexerDOUBLE_VALUE_:          true,
+		// trinoparser.TrinoLexerINTEGER_VALUE_:         true,
+		// trinoparser.TrinoLexerBINARY_LITERAL_:        true,
 
-func newNoSeparatorRequired() map[int]bool {
-	return map[int]bool{
-		trino.TrinoLexerDOLLAR_:        true,
-		trino.TrinoLexerLPAREN_:        true,
-		trino.TrinoLexerRPAREN_:        true,
-		trino.TrinoLexerLSQUARE_:       true,
-		trino.TrinoLexerRSQUARE_:       true,
-		trino.TrinoLexerCOMMA_:         true,
-		trino.TrinoLexerSEMICOLON_:     true,
-		trino.TrinoLexerCOLON_:         true,
-		trino.TrinoLexerEQ_:            true,
-		trino.TrinoLexerDOT_:           true,
-		trino.TrinoLexerPLUS_:          true,
-		trino.TrinoLexerMINUS_:         true,
-		trino.TrinoLexerSLASH_:         true,
-		trino.TrinoLexerCARET_:         true,
-		trino.TrinoLexerLT_:            true,
-		trino.TrinoLexerGT_:            true,
-		trino.TrinoLexerLTE_:           true,
-		trino.TrinoLexerGTE_:           true,
-		trino.TrinoLexerNEQ_:           true,
-		trino.TrinoLexerPERCENT_:       true,
-		trino.TrinoLexerCONCAT_:        true,
-		trino.TrinoLexerQUESTION_MARK_: true,
-		trino.TrinoLexerVBAR_:          true,
-		trino.TrinoLexerASTERISK_:      true,
-	}
-}
+		// // Type related tokens
+		// trinoparser.TrinoLexerDOUBLE_:    true,
+		// trinoparser.TrinoLexerPRECISION_: true,
 
-type Completer struct {
-	ctx                 context.Context
-	core                *base.CodeCompletionCore
-	scene               base.SceneType
-	parser              *trino.TrinoParser
-	lexer               *trino.TrinoLexer
-	scanner             *base.Scanner
-	instanceID          string
-	defaultDatabase     string
-	defaultSchema       string
-	getMetadata         base.GetDatabaseMetadataFunc
-	listDatabaseNames   base.ListDatabaseNamesFunc
-	metadataCache       map[string]*model.DatabaseMetadata
-	noSeparatorRequired map[int]bool
-	// referencesStack is a hierarchical stack of table references.
-	// We'll update the stack when we encounter a new FROM clauses.
-	referencesStack [][]base.TableReference
-	// references is the flattened table references.
-	// It's helpful to look up the table reference.
-	references         []base.TableReference
-	cteCache           map[int][]*base.VirtualTableReference
-	cteTables          []*base.VirtualTableReference
-	caretTokenIsQuoted bool
-}
+		// // Parameter token
+		// trinoparser.TrinoLexerQUESTION_MARK_: true,
 
-func NewTrickyCompleter(ctx context.Context, cCtx base.CompletionContext, statement string, caretLine int, caretOffset int) *Completer {
-	parser, lexer, scanner := prepareTrickyParserAndScanner(statement, caretLine, caretOffset)
-	// For all Trino completers, we use one global follow sets by state.
-	// The FollowSetsByState is the thread-safe struct.
-	core := base.NewCodeCompletionCore(
-		parser,
-		newIgnoredTokens(),
-		newPreferredRules(),
-		&globalFollowSetsByState,
-		trino.TrinoParserRULE_query,
-		trino.TrinoParserRULE_queryNoWith,
-		trino.TrinoParserRULE_aliasedRelation,
-		trino.TrinoParserRULE_with,
-	)
-	defaultSchema := cCtx.DefaultSchema
-	if defaultSchema == "" {
-		defaultSchema = "public"
+		// // Operators and punctuation
+		// trinoparser.TrinoLexerEQ_:           true,
+		// trinoparser.TrinoLexerNEQ_:          true,
+		// trinoparser.TrinoLexerLT_:           true,
+		// trinoparser.TrinoLexerLTE_:          true,
+		// trinoparser.TrinoLexerGT_:           true,
+		// trinoparser.TrinoLexerGTE_:          true,
+		// trinoparser.TrinoLexerPLUS_:         true,
+		// trinoparser.TrinoLexerMINUS_:        true,
+		// trinoparser.TrinoLexerASTERISK_:     true,
+		// trinoparser.TrinoLexerSLASH_:        true,
+		// trinoparser.TrinoLexerPERCENT_:      true,
+		// trinoparser.TrinoLexerCONCAT_:       true,
+		// trinoparser.TrinoLexerDOT_:          true,
+		// trinoparser.TrinoLexerCOLON_:        true,
+		// trinoparser.TrinoLexerSEMICOLON_:    true,
+		// trinoparser.TrinoLexerCOMMA_:        true,
+		// trinoparser.TrinoLexerLPAREN_:       true,
+		// trinoparser.TrinoLexerRPAREN_:       true,
+		// trinoparser.TrinoLexerLSQUARE_:      true,
+		// trinoparser.TrinoLexerRSQUARE_:      true,
+		// trinoparser.TrinoLexerLCURLY_:       true,
+		// trinoparser.TrinoLexerRCURLY_:       true,
+		// trinoparser.TrinoLexerLCURLYHYPHEN_: true,
+		// trinoparser.TrinoLexerRCURLYHYPHEN_: true,
+		// trinoparser.TrinoLexerLARROW_:       true,
+		// trinoparser.TrinoLexerRARROW_:       true,
+		// trinoparser.TrinoLexerRDOUBLEARROW_: true,
+		// trinoparser.TrinoLexerVBAR_:         true,
+		// trinoparser.TrinoLexerDOLLAR_:       true,
+		// trinoparser.TrinoLexerCARET_:        true,
+		// trinoparser.TrinoLexerAT_:           true,
 	}
-	return &Completer{
-		ctx:                 ctx,
-		core:                core,
-		scene:               cCtx.Scene,
-		parser:              parser,
-		lexer:               lexer,
-		scanner:             scanner,
-		instanceID:          cCtx.InstanceID,
-		defaultDatabase:     cCtx.DefaultDatabase,
-		defaultSchema:       defaultSchema,
-		getMetadata:         cCtx.Metadata,
-		listDatabaseNames:   cCtx.ListDatabaseNames,
-		metadataCache:       make(map[string]*model.DatabaseMetadata),
-		noSeparatorRequired: newNoSeparatorRequired(),
-		cteCache:            make(map[int][]*base.VirtualTableReference),
-	}
-}
+	preferredRules = map[int]bool{
+		// // Function call related rules - for function completion
+		// trinoparser.TrinoParserRULE_functionSpecification: true,
+		// trinoparser.TrinoParserRULE_functionDeclaration:   true,
 
-func NewStandardCompleter(ctx context.Context, cCtx base.CompletionContext, statement string, caretLine int, caretOffset int) *Completer {
-	parser, lexer, scanner := prepareParserAndScanner(statement, caretLine, caretOffset)
-	// For all Trino completers, we use one global follow sets by state.
-	// The FollowSetsByState is the thread-safe struct.
-	core := base.NewCodeCompletionCore(
-		parser,
-		newIgnoredTokens(),
-		newPreferredRules(),
-		&globalFollowSetsByState,
-		trino.TrinoParserRULE_query,
-		trino.TrinoParserRULE_queryNoWith,
-		trino.TrinoParserRULE_aliasedRelation,
-		trino.TrinoParserRULE_with,
-	)
-	defaultSchema := cCtx.DefaultSchema
-	if defaultSchema == "" {
-		defaultSchema = "public"
-	}
-	return &Completer{
-		ctx:                 ctx,
-		core:                core,
-		scene:               cCtx.Scene,
-		parser:              parser,
-		lexer:               lexer,
-		scanner:             scanner,
-		instanceID:          cCtx.InstanceID,
-		defaultDatabase:     cCtx.DefaultDatabase,
-		defaultSchema:       defaultSchema,
-		getMetadata:         cCtx.Metadata,
-		listDatabaseNames:   cCtx.ListDatabaseNames,
-		metadataCache:       make(map[string]*model.DatabaseMetadata),
-		noSeparatorRequired: newNoSeparatorRequired(),
-		cteCache:            make(map[int][]*base.VirtualTableReference),
-	}
-}
+		// // Table/Object name related rules - for table/view completion
+		trinoparser.TrinoParserRULE_qualifiedName: true,
+		// trinoparser.TrinoParserRULE_aliasedRelation: true,
+		// trinoparser.TrinoParserRULE_relationPrimary: true,
+		// trinoparser.TrinoParserRULE_sampledRelation: true,
+		// trinoparser.TrinoParserRULE_relation: true,
 
-func (c *Completer) completion() ([]base.Candidate, error) {
-	// Check the caret token is quoted or not.
-	// This check should be done before checking the caret token is a separator or not.
-	if c.scanner.IsTokenType(trino.TrinoLexerQUOTED_IDENTIFIER_) ||
-		c.scanner.IsTokenType(trino.TrinoLexerBACKQUOTED_IDENTIFIER_) {
-		c.caretTokenIsQuoted = true
-	}
+		// // Column related rules - for column completion
+		// trinoparser.TrinoParserRULE_expression:        true,
+		// trinoparser.TrinoParserRULE_primaryExpression: true,
+		// trinoparser.TrinoParserRULE_valueExpression:   true,
+		// trinoparser.TrinoParserRULE_booleanExpression: true,
 
-	caretIndex := c.scanner.GetIndex()
-	if caretIndex > 0 && !c.noSeparatorRequired[c.scanner.GetPreviousTokenType(false /* skipHidden */)] {
-		caretIndex--
-	}
-	c.referencesStack = append([][]base.TableReference{{}}, c.referencesStack...)
-	c.parser.Reset()
-	var context antlr.ParserRuleContext
-	if c.scene == base.SceneTypeQuery {
-		context = c.parser.QueryNoWith()
-	} else {
-		context = c.parser.SingleStatement()
-	}
+		// // Specific query component rules
+		// trinoparser.TrinoParserRULE_selectItem: true,
+		// trinoparser.TrinoParserRULE_sortItem:   true,
+		// trinoparser.TrinoParserRULE_groupBy:    true,
 
-	candidates := c.core.CollectCandidates(caretIndex, context)
+		// // Table function and related elements
+		// trinoparser.TrinoParserRULE_tableFunctionCall:     true,
+		// trinoparser.TrinoParserRULE_tableFunctionArgument: true,
 
-	for ruleName := range candidates.Rules {
-		if ruleName == trino.TrinoParserRULE_primaryExpression {
-			c.collectLeadingTableReferences(caretIndex)
-			c.takeReferencesSnapshot()
-			c.collectRemainingTableReferences()
-			c.takeReferencesSnapshot()
-		}
+		// // Alias related rules
+		// trinoparser.TrinoParserRULE_columnAliases: true,
+		// trinoparser.TrinoParserRULE_identifier:    true,
+
+		// // Query related rules
+		// trinoparser.TrinoParserRULE_query:              true,
+		// trinoparser.TrinoParserRULE_querySpecification: true,
+		// trinoparser.TrinoParserRULE_queryNoWith:        true,
+		// trinoparser.TrinoParserRULE_queryTerm:          true,
+		// trinoparser.TrinoParserRULE_queryPrimary:       true,
+
+		// // CTE and WITH related rules
+		// trinoparser.TrinoParserRULE_with:       true,
+		// trinoparser.TrinoParserRULE_namedQuery: true,
 	}
-
-	return c.convertCandidates(candidates)
-}
+)
 
 type CompletionMap map[string]base.Candidate
 
 func (m CompletionMap) Insert(entry base.Candidate) {
 	m[entry.String()] = entry
-}
-
-func (m CompletionMap) insertFunctions() {
-	// Trino has many built-in functions
-	// This is a representative set of common Trino functions organized by category
-	
-	// Aggregate functions
-	aggregateFunctions := []string{
-		"avg", "count", "max", "min", "sum", 
-		"array_agg", "map_agg", "multimap_agg", "string_agg",
-		"approx_distinct", "approx_percentile", "bitwise_and_agg", "bitwise_or_agg",
-		"corr", "covar_pop", "covar_samp", "geometric_mean", "numeric_histogram", 
-		"regr_intercept", "regr_slope", "skewness", "kurtosis",
-	}
-	
-	// Array functions
-	arrayFunctions := []string{
-		"array_distinct", "array_intersect", "array_union", "array_except", 
-		"array_join", "array_max", "array_min", "array_position", "array_remove",
-		"array_sort", "arrays_overlap", "concat", "contains", "element_at", 
-		"filter", "flatten", "reduce", "reverse", "sequence", "shuffle", 
-		"slice", "zip", "zip_with",
-	}
-	
-	// Date/Time functions
-	dateTimeFunctions := []string{
-		"current_date", "current_time", "current_timestamp", "current_timezone",
-		"date", "date_add", "date_diff", "date_format", "date_parse", "date_trunc",
-		"day", "day_of_month", "day_of_week", "day_of_year", "extract", "from_unixtime",
-		"from_iso8601_timestamp", "last_day_of_month", "localtime", "localtimestamp",
-		"month", "now", "quarter", "time", "timestamp", "timestamp_diff", "to_unixtime",
-		"with_timezone", "year", "year_of_week",
-	}
-	
-	// Mathematical functions
-	mathFunctions := []string{
-		"abs", "acos", "asin", "atan", "atan2", "cbrt", "ceil", "ceiling", 
-		"cos", "cosh", "degrees", "e", "exp", "floor", "ln", "log", "log2", "log10",
-		"mod", "pi", "pow", "power", "radians", "rand", "random", "round",
-		"sign", "sin", "sinh", "sqrt", "tan", "tanh", "truncate",
-	}
-	
-	// String functions
-	stringFunctions := []string{
-		"chr", "concat", "format", "hamming_distance", "length", "levenshtein_distance", 
-		"lower", "lpad", "ltrim", "normalize", "position", "regexp_extract", 
-		"regexp_extract_all", "regexp_like", "regexp_replace", "replace", "reverse",
-		"rpad", "rtrim", "split", "split_part", "strpos", "substr", "substring",
-		"trim", "upper", "word_stem",
-	}
-	
-	// JSON functions
-	jsonFunctions := []string{
-		"is_json_scalar", "json_array_contains", "json_array_get", "json_array_length",
-		"json_extract", "json_extract_scalar", "json_format", "json_parse",
-		"json_query", "json_value", "json_size",
-	}
-	
-	// Window functions
-	windowFunctions := []string{
-		"cume_dist", "dense_rank", "first_value", "lag", "last_value", "lead",
-		"nth_value", "ntile", "percent_rank", "rank", "row_number",
-	}
-	
-	// URL functions
-	urlFunctions := []string{
-		"url_decode", "url_encode", "url_extract_fragment", "url_extract_host",
-		"url_extract_parameter", "url_extract_path", "url_extract_port",
-		"url_extract_protocol", "url_extract_query",
-	}
-
-	// Combine all function categories
-	trinoFunctions := make([]string, 0)
-	trinoFunctions = append(trinoFunctions, aggregateFunctions...)
-	trinoFunctions = append(trinoFunctions, arrayFunctions...)
-	trinoFunctions = append(trinoFunctions, dateTimeFunctions...)
-	trinoFunctions = append(trinoFunctions, mathFunctions...)
-	trinoFunctions = append(trinoFunctions, stringFunctions...)
-	trinoFunctions = append(trinoFunctions, jsonFunctions...)
-	trinoFunctions = append(trinoFunctions, windowFunctions...)
-	trinoFunctions = append(trinoFunctions, urlFunctions...)
-
-	for _, name := range trinoFunctions {
-		m.Insert(base.Candidate{
-			Type: base.CandidateTypeFunction,
-			Text: name + "()",
-		})
-	}
-}
-
-func (m CompletionMap) insertSchemas(c *Completer) {
-	// Skip if user has specified the schema.
-	if c.defaultSchema != "" && c.defaultSchema != "public" {
-		return
-	}
-	for _, schema := range c.listAllSchemas() {
-		m.Insert(base.Candidate{
-			Type: base.CandidateTypeSchema,
-			Text: c.quotedIdentifierIfNeeded(schema),
-		})
-	}
-}
-
-func (m CompletionMap) insertCatalogs(c *Completer) {
-	// In Trino, catalogs are first-level objects above schemas
-	if c.listDatabaseNames != nil {
-		catalogs, err := c.listDatabaseNames(c.ctx, c.instanceID)
-		if err != nil {
-			return
-		}
-		for _, catalog := range catalogs {
-			m.Insert(base.Candidate{
-				Type: base.CandidateTypeDatabase,
-				Text: c.quotedIdentifierIfNeeded(catalog),
-			})
-		}
-	}
-}
-
-func (m CompletionMap) insertTables(c *Completer, schemas map[string]bool) {
-	for schema := range schemas {
-		if len(schema) == 0 {
-			// User didn't specify the schema, we need to append cte tables.
-			for _, table := range c.cteTables {
-				m.Insert(base.Candidate{
-					Type: base.CandidateTypeTable,
-					Text: c.quotedIdentifierIfNeeded(table.Table),
-				})
-			}
-			continue
-		}
-		for _, table := range c.listTables(schema) {
-			m.Insert(base.Candidate{
-				Type: base.CandidateTypeTable,
-				Text: c.quotedIdentifierIfNeeded(table),
-			})
-		}
-	}
-}
-
-func (m CompletionMap) insertViews(c *Completer, schemas map[string]bool) {
-	for schema := range schemas {
-		for _, view := range c.listViews(schema) {
-			m.Insert(base.Candidate{
-				Type: base.CandidateTypeView,
-				Text: c.quotedIdentifierIfNeeded(view),
-			})
-		}
-	}
-}
-
-func (m CompletionMap) insertColumns(c *Completer, schemas, tables map[string]bool) {
-	if _, exists := c.metadataCache[c.defaultDatabase]; !exists {
-		_, metadata, err := c.getMetadata(c.ctx, c.instanceID, c.defaultDatabase)
-		if err != nil || metadata == nil {
-			return
-		}
-		c.metadataCache[c.defaultDatabase] = metadata
-	}
-
-	for schema := range schemas {
-		if len(schema) == 0 {
-			// User didn't specify the schema, we need to append cte tables.
-			for _, table := range c.cteTables {
-				if tables[table.Table] {
-					for _, column := range table.Columns {
-						m.Insert(base.Candidate{
-							Type: base.CandidateTypeColumn,
-							Text: c.quotedIdentifierIfNeeded(column),
-						})
-					}
-				}
-			}
-			continue
-		}
-		schemaMeta := c.metadataCache[c.defaultDatabase].GetSchema(schema)
-		if schemaMeta == nil {
-			continue
-		}
-		for table := range tables {
-			tableMeta := schemaMeta.GetTable(table)
-			if tableMeta == nil {
-				continue
-			}
-			for _, column := range tableMeta.GetColumns() {
-				definition := fmt.Sprintf("%s.%s | %s", schema, table, column.Type)
-				if !column.Nullable {
-					definition += ", NOT NULL"
-				}
-				comment := column.UserComment
-				m.Insert(base.Candidate{
-					Type:       base.CandidateTypeColumn,
-					Text:       c.quotedIdentifierIfNeeded(column.Name),
-					Definition: definition,
-					Comment:    comment,
-				})
-			}
-		}
-	}
-}
-
-func (m CompletionMap) insertAllColumns(c *Completer) {
-	if _, exists := c.metadataCache[c.defaultDatabase]; !exists {
-		_, metadata, err := c.getMetadata(c.ctx, c.instanceID, c.defaultDatabase)
-		if err != nil || metadata == nil {
-			return
-		}
-		c.metadataCache[c.defaultDatabase] = metadata
-	}
-
-	metadata := c.metadataCache[c.defaultDatabase]
-	for _, schema := range metadata.ListSchemaNames() {
-		schemaMeta := metadata.GetSchema(schema)
-		if schemaMeta == nil {
-			continue
-		}
-		for _, table := range schemaMeta.ListTableNames() {
-			tableMeta := schemaMeta.GetTable(table)
-			if tableMeta == nil {
-				continue
-			}
-			for _, column := range tableMeta.GetColumns() {
-				definition := fmt.Sprintf("%s.%s | %s", schema, table, column.Type)
-				if !column.Nullable {
-					definition += ", NOT NULL"
-				}
-				comment := column.UserComment
-				m.Insert(base.Candidate{
-					Type:       base.CandidateTypeColumn,
-					Text:       c.quotedIdentifierIfNeeded(column.Name),
-					Definition: definition,
-					Comment:    comment,
-				})
-			}
-		}
-	}
 }
 
 func (m CompletionMap) toSlice() []base.Candidate {
@@ -506,229 +148,729 @@ func (m CompletionMap) toSlice() []base.Candidate {
 	return result
 }
 
+// // insertFunctions inserts the built-in functions into the completion map.
+// func (m CompletionMap) insertBuiltinFunctions() {
+// 	for key := range trinoBuiltinFunctionsMap {
+// 		m[key] = base.Candidate{
+// 			Type: base.CandidateTypeFunction,
+// 			Text: key + "()",
+// 		}
+// 	}
+// }
+
+func (m CompletionMap) insertMetadataCatalogs(c *Completer) {
+	if c.defaultCatalog != "" {
+		m[c.defaultCatalog] = base.Candidate{
+			Type: base.CandidateTypeDatabase,
+			Text: c.quotedIdentifierIfNeeded(c.defaultCatalog),
+		}
+	}
+
+	allCatalogs, err := c.catalogNamesLister(c.ctx, c.instanceID)
+	if err != nil {
+		return
+	}
+
+	for _, catalog := range allCatalogs {
+		if _, ok := m[catalog]; !ok {
+			m[catalog] = base.Candidate{
+				Type: base.CandidateTypeDatabase,
+				Text: c.quotedIdentifierIfNeeded(catalog),
+			}
+		}
+	}
+}
+
+func (m CompletionMap) insertMetadataSchemas(c *Completer, catalog string) {
+	anchor := c.defaultCatalog
+	if catalog != "" {
+		anchor = catalog
+	}
+	if anchor == "" {
+		return
+	}
+
+	allCatalogNames, err := c.catalogNamesLister(c.ctx, c.instanceID)
+	if err != nil {
+		return
+	}
+	for _, catalogName := range allCatalogNames {
+		if strings.EqualFold(catalogName, anchor) {
+			anchor = catalogName
+			break
+		}
+	}
+
+	_, catalogMetadata, err := c.metadataGetter(c.ctx, c.instanceID, anchor)
+	if err != nil {
+		return
+	}
+
+	for _, schema := range catalogMetadata.ListSchemaNames() {
+		if _, ok := m[schema]; !ok {
+			m[schema] = base.Candidate{
+				Type: base.CandidateTypeSchema,
+				Text: c.quotedIdentifierIfNeeded(schema),
+			}
+		}
+	}
+}
+
+func (m CompletionMap) insertMetadataTables(c *Completer, catalog string, schema string) {
+	catalogName, schemaName := c.defaultCatalog, c.defaultSchema
+	if catalog != "" {
+		catalogName = catalog
+	}
+	if schema != "" {
+		schemaName = schema
+	}
+	if catalogName == "" || schemaName == "" {
+		return
+	}
+
+	_, catalogMetadata, err := c.metadataGetter(c.ctx, c.instanceID, catalogName)
+	if err != nil {
+		return
+	}
+	if catalogMetadata == nil {
+		return
+	}
+	for _, schema := range catalogMetadata.ListSchemaNames() {
+		if strings.EqualFold(schema, schemaName) {
+			schemaName = schema
+			break
+		}
+	}
+
+	schemaMetadata := catalogMetadata.GetSchema(schemaName)
+	if schemaMetadata == nil {
+		return
+	}
+	for _, table := range schemaMetadata.ListTableNames() {
+		if _, ok := m[table]; !ok {
+			m[table] = base.Candidate{
+				Type: base.CandidateTypeTable,
+				Text: c.quotedIdentifierIfNeeded(table),
+			}
+		}
+	}
+}
+
+func (m CompletionMap) insertAllColumns(c *Completer) {
+	_, catalogMeta, err := c.metadataGetter(c.ctx, c.instanceID, c.defaultCatalog)
+	if err != nil {
+		return
+	}
+	for _, schema := range catalogMeta.ListSchemaNames() {
+		schemaMeta := catalogMeta.GetSchema(schema)
+		if schemaMeta == nil {
+			continue
+		}
+		for _, table := range schemaMeta.ListTableNames() {
+			tableMeta := schemaMeta.GetTable(table)
+			if tableMeta == nil {
+				continue
+			}
+			for _, column := range tableMeta.GetColumns() {
+				columnID := getColumnID(c.defaultCatalog, schema, table, column.Name)
+				if _, ok := m[columnID]; !ok {
+					definition := fmt.Sprintf("%s.%s.%s | %s", c.defaultCatalog, schema, table, column.Type)
+					if !column.Nullable {
+						definition += ", NOT NULL"
+					}
+					comment := column.UserComment
+					m[columnID] = base.Candidate{
+						Type:       base.CandidateTypeColumn,
+						Text:       c.quotedIdentifierIfNeeded(column.Name),
+						Definition: definition,
+						Comment:    comment,
+						Priority:   c.getPriority(c.defaultCatalog, schema, table),
+					}
+				}
+			}
+		}
+	}
+}
+
+func (c *Completer) getPriority(catalog string, schema string, table string) int {
+	if catalog == "" {
+		catalog = c.defaultCatalog
+	}
+	if schema == "" {
+		schema = c.defaultSchema
+	}
+	if c.referenceMap == nil {
+		return 1
+	}
+	if c.referenceMap[fmt.Sprintf("%s.%s.%s", catalog, schema, table)] {
+		// The higher priority.
+		return 0
+	}
+	return 1
+}
+
+func (m CompletionMap) insertMetadataColumns(c *Completer, catalog string, schema string, table string) {
+	catalogName, schemaName, tableName := c.defaultCatalog, c.defaultSchema, ""
+	if catalog != "" {
+		catalogName = catalog
+	}
+	if schema != "" {
+		schemaName = schema
+	}
+	if table != "" {
+		tableName = table
+	}
+	if catalogName == "" || schemaName == "" {
+		return
+	}
+	catalogNames, err := c.catalogNamesLister(c.ctx, c.instanceID)
+	if err != nil {
+		return
+	}
+	for _, catName := range catalogNames {
+		if strings.EqualFold(catName, catalogName) {
+			catalogName = catName
+			break
+		}
+	}
+	_, catalogMetadata, err := c.metadataGetter(c.ctx, c.instanceID, catalogName)
+	if err != nil {
+		return
+	}
+	if catalogMetadata == nil {
+		return
+	}
+	for _, schema := range catalogMetadata.ListSchemaNames() {
+		if strings.EqualFold(schema, schemaName) {
+			schemaName = schema
+			break
+		}
+	}
+	schemaMetadata := catalogMetadata.GetSchema(schemaName)
+	if schemaMetadata == nil {
+		return
+	}
+	var tableNames []string
+	for _, table := range schemaMetadata.ListTableNames() {
+		if tableName == "" {
+			tableNames = append(tableNames, table)
+		} else if strings.EqualFold(table, tableName) {
+			tableNames = append(tableNames, table)
+			break
+		}
+	}
+	for _, table := range tableNames {
+		tableMetadata := schemaMetadata.GetTable(table)
+		for _, column := range tableMetadata.GetColumns() {
+			columnID := getColumnID(catalogName, schemaName, table, column.Name)
+			if _, ok := m[columnID]; !ok {
+				definition := fmt.Sprintf("%s.%s.%s | %s", catalogName, schemaName, table, column.Type)
+				if !column.Nullable {
+					definition += ", NOT NULL"
+				}
+				comment := column.UserComment
+				m[columnID] = base.Candidate{
+					Type:       base.CandidateTypeColumn,
+					Text:       c.quotedIdentifierIfNeeded(column.Name),
+					Definition: definition,
+					Comment:    comment,
+					Priority:   c.getPriority(c.defaultCatalog, schema, table),
+				}
+			}
+		}
+	}
+}
+
+func getColumnID(catalogName, schemaName, tableName, columnName string) string {
+	return fmt.Sprintf("%s.%s.%s.%s", catalogName, schemaName, tableName, columnName)
+}
+
+func (m CompletionMap) insertCTEs(c *Completer) {
+	for _, cte := range c.cteTables {
+		if _, ok := m[cte.Table]; !ok {
+			m[cte.Table] = base.Candidate{
+				Type: base.CandidateTypeTable,
+				Text: c.quotedIdentifierIfNeeded(cte.Table),
+			}
+		}
+	}
+}
+
+func (m CompletionMap) insertMetadataViews(c *Completer, catalog string, schema string) {
+	catalogName, schemaName := c.defaultCatalog, c.defaultSchema
+	if catalog != "" {
+		catalogName = catalog
+	}
+	if schema != "" {
+		schemaName = schema
+	}
+
+	if catalogName == "" || schemaName == "" {
+		return
+	}
+
+	_, catalogMetadata, err := c.metadataGetter(c.ctx, c.instanceID, catalogName)
+	if err != nil {
+		return
+	}
+	if catalogMetadata == nil {
+		return
+	}
+
+	schemaNames := catalogMetadata.ListSchemaNames()
+
+	var foundMatch bool
+	for _, schema := range schemaNames {
+		if strings.EqualFold(schema, schemaName) {
+			schemaName = schema
+			foundMatch = true
+			break
+		}
+	}
+
+	if !foundMatch {
+		return
+	}
+
+	schemaMetadata := catalogMetadata.GetSchema(schemaName)
+	if schemaMetadata == nil {
+		return
+	}
+
+	viewNames := schemaMetadata.ListViewNames()
+
+	for _, view := range viewNames {
+		if _, ok := m[view]; !ok {
+			m[view] = base.Candidate{
+				Type: base.CandidateTypeView,
+				Text: c.quotedIdentifierIfNeeded(view),
+			}
+		}
+	}
+
+	matViewNames := schemaMetadata.ListMaterializedViewNames()
+
+	for _, materializeView := range matViewNames {
+		if _, ok := m[materializeView]; !ok {
+			m[materializeView] = base.Candidate{
+				Type: base.CandidateTypeView,
+				Text: c.quotedIdentifierIfNeeded(materializeView),
+			}
+		}
+	}
+
+	foreignTableNames := schemaMetadata.ListForeignTableNames()
+
+	for _, foreignTable := range foreignTableNames {
+		if _, ok := m[foreignTable]; !ok {
+			m[foreignTable] = base.Candidate{
+				Type: base.CandidateTypeView,
+				Text: c.quotedIdentifierIfNeeded(foreignTable),
+			}
+		}
+	}
+}
+
+// quotedType is the type of quoted token
+type quotedType int
+
+const (
+	quotedTypeNone      quotedType = iota
+	quotedTypeQuote                // ""
+	quotedTypeBackQuote            // ``
+)
+
+type Completer struct {
+	ctx     context.Context
+	core    *base.CodeCompletionCore
+	scene   base.SceneType
+	parser  *trinoparser.TrinoParser
+	lexer   *trinoparser.TrinoLexer
+	scanner *base.Scanner
+
+	instanceID         string
+	defaultCatalog     string
+	defaultSchema      string
+	metadataGetter     base.GetDatabaseMetadataFunc
+	catalogNamesLister base.ListDatabaseNamesFunc
+
+	noSeparatorRequired map[int]bool
+	// referencesStack is a hierarchical stack of table references.
+	// We'll update the stack when we encounter a new FROM clauses.
+	referencesStack [][]base.TableReference
+	// references is the flattened table references.
+	// It's helpful to look up the table reference.
+	references         []base.TableReference
+	referenceMap       map[string]bool
+	cteCache           map[int][]*base.VirtualTableReference
+	cteTables          []*base.VirtualTableReference
+	caretTokenIsQuoted quotedType
+}
+
+func Completion(ctx context.Context, cCtx base.CompletionContext, statement string, caretLine int, caretOffset int) ([]base.Candidate, error) {
+	completer := NewStandardCompleter(ctx, cCtx, statement, caretLine, caretOffset)
+	completer.fetchCommonTableExpression(statement)
+	result, err := completer.complete()
+
+	if err != nil {
+		return nil, err
+	}
+	if len(result) > 0 {
+		return result, nil
+	}
+
+	trickyCompleter := NewTrickyCompleter(ctx, cCtx, statement, caretLine, caretOffset)
+	trickyCompleter.fetchCommonTableExpression(statement)
+	return trickyCompleter.complete()
+}
+
+func NewStandardCompleter(ctx context.Context, cCtx base.CompletionContext, statement string, caretLine int, caretOffset int) *Completer {
+	parser, lexer, scanner := prepareParserAndScanner(statement, caretLine, caretOffset)
+	core := base.NewCodeCompletionCore(
+		parser,
+		ignoredTokens,  /* IgnoredTokens */
+		preferredRules, /* PreferredRules */
+		&globalFellowSetsByState,
+		trinoparser.TrinoParserRULE_queryNoWith,
+		trinoparser.TrinoParserRULE_query,
+		trinoparser.TrinoParserRULE_aliasedRelation,
+		trinoparser.TrinoParserRULE_with,
+	)
+
+	return &Completer{
+		ctx:                 ctx,
+		core:                core,
+		scene:               cCtx.Scene,
+		parser:              parser,
+		lexer:               lexer,
+		scanner:             scanner,
+		instanceID:          cCtx.InstanceID,
+		defaultCatalog:      cCtx.DefaultDatabase,
+		defaultSchema:       "dbo",
+		metadataGetter:      cCtx.Metadata,
+		catalogNamesLister:  cCtx.ListDatabaseNames,
+		noSeparatorRequired: nil,
+		cteCache:            nil,
+	}
+}
+
+func NewTrickyCompleter(ctx context.Context, cCtx base.CompletionContext, statement string, caretLine int, caretOffset int) *Completer {
+	parser, lexer, scanner := prepareTrickyParserAndScanner(statement, caretLine, caretOffset)
+	core := base.NewCodeCompletionCore(
+		parser,
+		ignoredTokens,  /* IgnoredTokens */
+		preferredRules, /* PreferredRules */
+		&globalFellowSetsByState,
+		trinoparser.TrinoParserRULE_queryNoWith,
+		trinoparser.TrinoParserRULE_query,
+		trinoparser.TrinoParserRULE_aliasedRelation,
+		trinoparser.TrinoParserRULE_with,
+	)
+
+	return &Completer{
+		ctx:                 ctx,
+		core:                core,
+		scene:               cCtx.Scene,
+		parser:              parser,
+		lexer:               lexer,
+		scanner:             scanner,
+		instanceID:          cCtx.InstanceID,
+		defaultCatalog:      cCtx.DefaultDatabase,
+		defaultSchema:       "dbo",
+		metadataGetter:      cCtx.Metadata,
+		catalogNamesLister:  cCtx.ListDatabaseNames,
+		noSeparatorRequired: nil,
+		cteCache:            nil,
+	}
+}
+
+func prepareParserAndScanner(statement string, caretLine int, caretOffset int) (*trinoparser.TrinoParser, *trinoparser.TrinoLexer, *base.Scanner) {
+	statement, caretLine, caretOffset = skipHeadingSQLs(statement, caretLine, caretOffset)
+	input := antlr.NewInputStream(statement)
+	lexer := trinoparser.NewTrinoLexer(input)
+	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
+	parser := trinoparser.NewTrinoParser(stream)
+	parser.RemoveErrorListeners()
+	lexer.RemoveErrorListeners()
+	scanner := base.NewScanner(stream, true /* fillInput */)
+	scanner.SeekPosition(caretLine, caretOffset)
+	scanner.Push()
+	return parser, lexer, scanner
+}
+
+func prepareTrickyParserAndScanner(statement string, caretLine int, caretOffset int) (*trinoparser.TrinoParser, *trinoparser.TrinoLexer, *base.Scanner) {
+	statement, caretLine, caretOffset = skipHeadingSQLs(statement, caretLine, caretOffset)
+	// statement, caretLine, caretOffset = skipHeadingSQLWithoutSemicolon(statement, caretLine, caretOffset)
+	input := antlr.NewInputStream(statement)
+	lexer := trinoparser.NewTrinoLexer(input)
+	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
+	parser := trinoparser.NewTrinoParser(stream)
+	parser.RemoveErrorListeners()
+	lexer.RemoveErrorListeners()
+	scanner := base.NewScanner(stream, true /* fillInput */)
+	scanner.SeekPosition(caretLine, caretOffset)
+	scanner.Push()
+	return parser, lexer, scanner
+}
+
+// // caretLine is 1-based and caretOffset is 0-based.
+// func skipHeadingSQLWithoutSemicolon(statement string, caretLine int, caretOffset int) (string, int, int) {
+// 	input := antlr.NewInputStream(statement)
+// 	lexer := trinoparser.NewTrinoLexer(input)
+// 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
+// 	lexer.RemoveErrorListeners()
+// 	lexerErrorListener := &base.ParseErrorListener{
+// 		Statement: statement,
+// 	}
+// 	lexer.AddErrorListener(lexerErrorListener)
+
+// 	stream.Fill()
+// 	tokens := stream.GetAllTokens()
+// 	latestSelect := 0
+// 	newCaretLine, newCaretOffset := caretLine, caretOffset
+// 	for _, token := range tokens {
+// 		if token.GetLine() > caretLine || (token.GetLine() == caretLine && token.GetColumn() >= caretOffset) {
+// 			break
+// 		}
+// 		if token.GetTokenType() == trinoparser.TrinoParserSELECT_ && token.GetColumn() == 0 {
+// 			latestSelect = token.GetTokenIndex()
+// 			newCaretLine = caretLine - token.GetLine() + 1 // convert to 1-based.
+// 			newCaretOffset = caretOffset
+// 		}
+// 	}
+
+// 	if latestSelect == 0 {
+// 		return statement, caretLine, caretOffset
+// 	}
+// 	return stream.GetTextFromInterval(antlr.NewInterval(latestSelect, stream.Size())), newCaretLine, newCaretOffset
+// }
+
+func (c *Completer) complete() ([]base.Candidate, error) {
+	if c.scanner.IsTokenType(trinoparser.TrinoParserQUOTED_IDENTIFIER_) {
+		c.caretTokenIsQuoted = quotedTypeQuote
+	}
+
+	caretIndex := c.scanner.GetIndex()
+
+	// Initialize noSeparatorRequired to avoid nil map issues
+	if c.noSeparatorRequired == nil {
+		c.noSeparatorRequired = make(map[int]bool)
+	}
+
+	if caretIndex > 0 && !c.noSeparatorRequired[c.scanner.GetPreviousTokenType(true)] {
+		caretIndex--
+	}
+
+	c.referencesStack = append([][]base.TableReference{{}}, c.referencesStack...)
+	c.parser.Reset()
+
+	var context antlr.ParserRuleContext
+	if c.scene == base.SceneTypeQuery {
+		context = c.parser.SingleStatement()
+	} else {
+		context = c.parser.Parse()
+	}
+
+	candidates := c.core.CollectCandidates(caretIndex, context)
+
+	for ruleName := range candidates.Rules {
+		if ruleName == trinoparser.TrinoParserRULE_primaryExpression {
+			c.collectLeadingTableReferences(caretIndex)
+			c.takeReferencesSnapshot()
+			c.collectRemainingTableReferences()
+			c.takeReferencesSnapshot()
+			break
+		}
+	}
+
+	result, err := c.convertCandidates(candidates)
+	return result, err
+}
+
 func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]base.Candidate, error) {
 	keywordEntries := make(CompletionMap)
-	runtimeFunctionEntries := make(CompletionMap)
+	functionEntries := make(CompletionMap)
 	catalogEntries := make(CompletionMap)
 	schemaEntries := make(CompletionMap)
 	tableEntries := make(CompletionMap)
 	columnEntries := make(CompletionMap)
 	viewEntries := make(CompletionMap)
 
-	for token, value := range candidates.Tokens {
-		if token < 0 {
-			continue
-		}
-		entry := c.parser.SymbolicNames[token]
-		if strings.HasSuffix(entry, "_") {
-			entry = entry[:len(entry)-1]
-		} else {
-			entry = unquote(entry)
-		}
-
-		list := 0
-		if len(value) > 0 {
-			// For function call:
-			if value[0] == trino.TrinoLexerLPAREN_ {
-				list = 1
-			} else {
-				for _, item := range value {
-					subEntry := c.parser.SymbolicNames[item]
-					if strings.HasSuffix(subEntry, "_") {
-						subEntry = subEntry[:len(subEntry)-1]
-					} else {
-						subEntry = unquote(subEntry)
-					}
-					entry += " " + subEntry
-				}
-			}
-		}
-
-		switch list {
-		case 1:
-			runtimeFunctionEntries.Insert(base.Candidate{
-				Type: base.CandidateTypeFunction,
-				Text: strings.ToLower(entry) + "()",
-			})
-		default:
-			keywordEntries.Insert(base.Candidate{
-				Type: base.CandidateTypeKeyword,
-				Text: entry,
-			})
-		}
+	// Check if noSeparatorRequired is initialized to avoid nil map access
+	if c.noSeparatorRequired == nil {
+		c.noSeparatorRequired = make(map[int]bool)
 	}
 
-	for candidate := range candidates.Rules {
+	// Initialize reference map if nil to avoid issues
+	if c.referenceMap == nil {
+		c.referenceMap = make(map[string]bool)
+	}
+
+	for tokenCandidate, continuous := range candidates.Tokens {
+		if tokenCandidate < 0 || tokenCandidate >= len(c.parser.SymbolicNames) {
+			continue
+		}
+
+		candidateText := c.parser.SymbolicNames[tokenCandidate]
+		for _, continuous := range continuous {
+			if continuous < 0 || continuous >= len(c.parser.SymbolicNames) {
+				continue
+			}
+			continuousText := c.parser.SymbolicNames[continuous]
+			candidateText += " " + continuousText
+		}
+		keywordEntries.Insert(base.Candidate{
+			Type: base.CandidateTypeKeyword,
+			Text: candidateText,
+		})
+	}
+
+	// Store these in the completer so we can reference them elsewhere
+	c.noSeparatorRequired = make(map[int]bool)
+
+	for ruleCandidate, ruleStack := range candidates.Rules {
 		c.scanner.PopAndRestore()
 		c.scanner.Push()
 
-		c.fetchCommonTableExpression(candidates.Rules[candidate])
-
-		switch candidate {
-		case trino.TrinoParserRULE_expression:
-			runtimeFunctionEntries.insertFunctions()
-		case trino.TrinoParserRULE_relationPrimary, trino.TrinoParserRULE_qualifiedName:
-			qualifier, flags := c.determineQualifiedName()
-
-			if flags&ObjectFlagsShowFirst != 0 {
-				catalogEntries.insertCatalogs(c)
+		switch ruleCandidate {
+		case trinoparser.TrinoParserRULE_qualifiedName:
+			// qualifiedName also appears in the columnReference rule, we would handle it in the columnReference rule in this case.
+			if len(ruleStack) > 0 && ruleStack[len(ruleStack)-1].ID == trinoparser.TrinoParserRULE_aliasedRelation {
+				continue
 			}
+			completionContexts := c.determineQualifiedNameContext()
 
-			if flags&ObjectFlagsShowSecond != 0 {
-				if len(qualifier) == 0 {
-					// No qualifier - show schemas
-					schemaEntries.insertSchemas(c)
-				} else {
-					// Could be a catalog (showing its schemas) or a schema (showing its tables)
-					// Try both possibilities since we can't always determine from context
-					schemas := make(map[string]bool)
-					// Assume qualifier is a schema and show its tables
-					schemas[qualifier] = true
-					tableEntries.insertTables(c, schemas)
-					viewEntries.insertViews(c, schemas)
-					
-					// For Trino's hierarchical naming, also try getting schemas for this catalog
-					if c.listDatabaseNames != nil {
-						catalogs, err := c.listDatabaseNames(c.ctx, c.instanceID)
-						if err == nil {
-							for _, catalog := range catalogs {
-								if catalog == qualifier {
-									// If qualifier matches a catalog name, show its schemas
-									schemaEntries.insertSchemas(c)
-									break
-								}
-							}
-						}
-					}
+			for _, context := range completionContexts {
+				if context.flags&objectFlagShowCatalog != 0 {
+					catalogEntries.insertMetadataCatalogs(c)
+				}
+				if context.flags&objectFlagShowSchema != 0 {
+					schemaEntries.insertMetadataSchemas(c, context.catalog)
+				}
+				if context.flags&objectFlagShowObject != 0 {
+					tableEntries.insertMetadataTables(c, context.catalog, context.schema)
+					viewEntries.insertMetadataViews(c, context.catalog, context.schema)
+				}
+				if context.catalog == "" && context.schema == "" && context.flags&objectFlagShowObject != 0 {
+					// User do not specify the catalog and schema, and want us complete the objects, we should also insert the ctes.
+					tableEntries.insertCTEs(c)
 				}
 			}
-
-			if flags&ObjectFlagsShowThird != 0 {
-				// If we get here, we're showing tables within a schema context
-				schemas := make(map[string]bool)
-				schemas[c.defaultSchema] = true
-				// User didn't specify the schema, we need to append cte tables.
-				schemas[""] = true
-				tableEntries.insertTables(c, schemas)
-				viewEntries.insertViews(c, schemas)
-			}
-		case trino.TrinoParserRULE_primaryExpression:
-			catalog, schema, table, flags := c.determineColumnRef()
-
-			if flags&ObjectFlagsShowCatalogs != 0 {
-				catalogEntries.insertCatalogs(c)
-			}
-
-			if flags&ObjectFlagsShowSchemas != 0 {
-				schemaEntries.insertSchemas(c)
-			}
-
-			if flags&ObjectFlagsShowTables != 0 {
-				schemas := make(map[string]bool)
-				if len(schema) != 0 {
-					schemas[schema] = true
-				} else {
-					schemas[c.defaultSchema] = true
-					// User didn't specify the schema, we need to append cte tables.
-					schemas[""] = true
+		case trinoparser.TrinoParserRULE_aliasedRelation:
+			completionContexts := c.determineColumnReference()
+			for _, context := range completionContexts {
+				if context.flags&objectFlagShowCatalog != 0 {
+					catalogEntries.insertMetadataCatalogs(c)
 				}
-
-				tableEntries.insertTables(c, schemas)
-				viewEntries.insertViews(c, schemas)
-
-				for _, reference := range c.references {
-					switch reference := reference.(type) {
-					case *base.PhysicalTableReference:
-						if len(schema) == 0 && len(reference.Schema) == 0 || schemas[reference.Schema] {
-							if len(reference.Alias) == 0 {
-								tableEntries.Insert(base.Candidate{
-									Type: base.CandidateTypeTable,
-									Text: c.quotedIdentifierIfNeeded(reference.Table),
-								})
-							} else {
-								tableEntries.Insert(base.Candidate{
-									Type: base.CandidateTypeTable,
-									Text: c.quotedIdentifierIfNeeded(reference.Alias),
-								})
-							}
-						}
-					case *base.VirtualTableReference:
-						if len(schema) > 0 {
-							// If the schema is specified, we should not show the virtual table.
-							continue
-						}
-						tableEntries.Insert(base.Candidate{
-							Type: base.CandidateTypeTable,
-							Text: c.quotedIdentifierIfNeeded(reference.Table),
-						})
-					}
+				if context.flags&objectFlagShowSchema != 0 {
+					schemaEntries.insertMetadataSchemas(c, context.catalog)
 				}
-			}
-
-			if flags&ObjectFlagsShowColumns != 0 {
-				schemas := make(map[string]bool)
-
-				if len(catalog) != 0 && len(schema) != 0 {
-					schemas[schema] = true
-				} else if len(schema) != 0 {
-					schemas[schema] = true
-				} else {
-					schemas[c.defaultSchema] = true
-					// User didn't specify the schema, we need to append cte tables.
-					schemas[""] = true
-				}
-
-				tables := make(map[string]bool)
-				if len(table) != 0 {
-					tables[table] = true
-
+				if context.flags&objectFlagShowObject != 0 {
+					tableEntries.insertMetadataTables(c, context.catalog, context.schema)
+					viewEntries.insertMetadataViews(c, context.catalog, context.schema)
 					for _, reference := range c.references {
 						switch reference := reference.(type) {
 						case *base.PhysicalTableReference:
-							if reference.Alias == table {
-								tables[reference.Table] = true
-								schemas[reference.Schema] = true
+							tableName := reference.Table
+							if reference.Alias != "" {
+								tableName = reference.Alias
+							}
+							if strings.EqualFold(reference.Database, context.catalog) &&
+								strings.EqualFold(reference.Schema, context.schema) {
+								if _, ok := tableEntries[tableName]; !ok {
+									tableEntries[tableName] = base.Candidate{
+										Type: base.CandidateTypeTable,
+										Text: c.quotedIdentifierIfNeeded(tableName),
+									}
+								}
 							}
 						case *base.VirtualTableReference:
-							if reference.Table == table {
-								for _, column := range reference.Columns {
-									columnEntries.Insert(base.Candidate{
-										Type: base.CandidateTypeColumn,
-										Text: c.quotedIdentifierIfNeeded(column),
-									})
+							// We only append the virtual table reference to the completion list when the catalog and schema are all empty.
+							if context.catalog == "" && context.schema == "" {
+								tableEntries[reference.Table] = base.Candidate{
+									Type: base.CandidateTypeTable,
+									Text: c.quotedIdentifierIfNeeded(reference.Table),
 								}
 							}
 						}
 					}
-				} else if len(c.references) > 0 {
-					list := c.fetchSelectItemAliases(candidates.Rules[candidate])
+					if context.catalog == "" && context.schema == "" {
+						// User do not specify the catalog and schema, and want us complete the objects, we should also insert the ctes.
+						tableEntries.insertCTEs(c)
+					}
+				}
+				if context.flags&objectFlagShowColumn != 0 {
+					list := c.fetchSelectItemAliases(ruleStack)
 					for _, alias := range list {
 						columnEntries.Insert(base.Candidate{
 							Type: base.CandidateTypeColumn,
 							Text: c.quotedIdentifierIfNeeded(alias),
 						})
 					}
+					columnEntries.insertMetadataColumns(c, context.catalog, context.schema, context.object)
 					for _, reference := range c.references {
 						switch reference := reference.(type) {
 						case *base.PhysicalTableReference:
-							schemas[reference.Schema] = true
-							tables[reference.Table] = true
+							inputCatalogName := context.catalog
+							if inputCatalogName == "" {
+								inputCatalogName = c.defaultCatalog
+							}
+							inputSchemaName := context.schema
+							if inputSchemaName == "" {
+								inputSchemaName = c.defaultSchema
+							}
+							inputTableName := context.object
+
+							referenceCatalogName := reference.Database
+							if referenceCatalogName == "" {
+								referenceCatalogName = c.defaultCatalog
+							}
+							referenceSchemaName := reference.Schema
+							if referenceSchemaName == "" {
+								referenceSchemaName = c.defaultSchema
+							}
+							referenceTableName := reference.Table
+							if reference.Alias != "" {
+								referenceTableName = reference.Alias
+							}
+
+							if strings.EqualFold(referenceCatalogName, inputCatalogName) &&
+								strings.EqualFold(referenceSchemaName, inputSchemaName) &&
+								strings.EqualFold(referenceTableName, inputTableName) {
+								columnEntries.insertMetadataColumns(c, reference.Database, reference.Schema, reference.Table)
+							}
 						case *base.VirtualTableReference:
-							for _, column := range reference.Columns {
-								columnEntries.Insert(base.Candidate{
-									Type: base.CandidateTypeColumn,
-									Text: c.quotedIdentifierIfNeeded(column),
-								})
+							// Reference could be a physical table reference or a virtual table reference, if the reference is a virtual table reference,
+							// and users do not specify the catalog and schema, we should also insert the columns.
+							if context.catalog == "" && context.schema == "" {
+								for _, column := range reference.Columns {
+									if _, ok := columnEntries[column]; !ok {
+										columnEntries[column] = base.Candidate{
+											Type: base.CandidateTypeColumn,
+											Text: c.quotedIdentifierIfNeeded(column),
+										}
+									}
+								}
 							}
 						}
 					}
-				} else {
-					// No specified table, return all columns
-					columnEntries.insertAllColumns(c)
-				}
-
-				if len(tables) > 0 {
-					columnEntries.insertColumns(c, schemas, tables)
+					if context.catalog == "" && context.schema == "" {
+						for _, cte := range c.cteTables {
+							if strings.EqualFold(cte.Table, context.object) {
+								for _, column := range cte.Columns {
+									if _, ok := columnEntries[column]; !ok {
+										columnEntries[column] = base.Candidate{
+											Type: base.CandidateTypeColumn,
+											Text: c.quotedIdentifierIfNeeded(column),
+										}
+									}
+								}
+							}
+						}
+					}
+					if context.empty() {
+						columnEntries.insertAllColumns(c)
+					}
 				}
 			}
 		}
@@ -737,96 +879,651 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 	c.scanner.PopAndRestore()
 	var result []base.Candidate
 	result = append(result, keywordEntries.toSlice()...)
-	result = append(result, runtimeFunctionEntries.toSlice()...)
+	result = append(result, functionEntries.toSlice()...)
 	result = append(result, catalogEntries.toSlice()...)
 	result = append(result, schemaEntries.toSlice()...)
 	result = append(result, tableEntries.toSlice()...)
-	result = append(result, viewEntries.toSlice()...)
 	result = append(result, columnEntries.toSlice()...)
+	result = append(result, viewEntries.toSlice()...)
 
 	return result, nil
 }
 
-func (c *Completer) fetchCommonTableExpression(ruleStack []*base.RuleContext) {
-	c.cteTables = nil
-	for _, rule := range ruleStack {
-		if rule.ID == trino.TrinoParserRULE_queryNoWith {
-			for _, pos := range rule.CTEList {
-				c.cteTables = append(c.cteTables, c.extractCTETables(pos)...)
+type objectFlag int
+
+const (
+	objectFlagShowCatalog objectFlag = 1 << iota
+	objectFlagShowSchema
+	objectFlagShowObject
+	objectFlagShowColumn
+)
+
+type objectRefContextOption func(*objectRefContext)
+
+func withColumn() objectRefContextOption {
+	return func(c *objectRefContext) {
+		c.column = ""
+		c.flags |= objectFlagShowColumn
+	}
+}
+
+func newObjectRefContext(options ...objectRefContextOption) *objectRefContext {
+	o := &objectRefContext{
+		flags: objectFlagShowCatalog | objectFlagShowSchema | objectFlagShowObject,
+	}
+	for _, option := range options {
+		option(o)
+	}
+	return o
+}
+
+// objectRefContext provides precise completion context about the object reference,
+// check the flags and the fields to determine what kind of object should be included in the completion list.
+// Caller should call the newObjectRefContext to create a new objectRefContext, and modify it based on function it provides.
+type objectRefContext struct {
+	catalog string
+	schema  string
+	object  string
+
+	// column is optional considering field, for example, it should be not applicable for qualified name rule.
+	column string
+
+	flags objectFlag
+}
+
+func (o *objectRefContext) empty() bool {
+	return o.catalog == "" && o.schema == "" && o.object == "" && o.column == ""
+}
+
+func (o *objectRefContext) clone() *objectRefContext {
+	return &objectRefContext{
+		catalog: o.catalog,
+		schema:  o.schema,
+		object:  o.object,
+		column:  o.column,
+		flags:   o.flags,
+	}
+}
+
+func (o *objectRefContext) setCatalog(catalog string) *objectRefContext {
+	o.catalog = catalog
+	o.flags &= ^objectFlagShowCatalog
+	return o
+}
+
+func (o *objectRefContext) setSchema(schema string) *objectRefContext {
+	o.schema = schema
+	o.flags &= ^objectFlagShowSchema
+	return o
+}
+
+func (o *objectRefContext) setObject(object string) *objectRefContext {
+	o.object = object
+	o.flags &= ^objectFlagShowObject
+	return o
+}
+
+func (o *objectRefContext) setColumn(column string) *objectRefContext {
+	o.column = column
+	o.flags &= ^objectFlagShowColumn
+	return o
+}
+
+func (c *Completer) determineColumnReference() []*objectRefContext {
+	tokenIndex := c.scanner.GetIndex()
+	if c.scanner.GetTokenChannel() != antlr.TokenDefaultChannel {
+		// Skip to the next non-hidden token.
+		c.scanner.Forward(true /* skipHidden */)
+	}
+
+	// tokenType := c.scanner.GetTokenType()
+	if c.scanner.GetTokenText() != "." && !isIdentifier(c.scanner.GetTokenType()) {
+		c.scanner.Backward(true /* skipHidden */)
+	}
+
+	if tokenIndex > 0 {
+		// Go backward until we hit a non-identifier token.
+		for {
+			curID := isIdentifier(c.scanner.GetTokenType()) && c.scanner.GetPreviousTokenText(false /* skipHidden */) == "."
+			curDOT := c.scanner.GetTokenText() == "." && isIdentifier(c.scanner.GetPreviousTokenType(false /* skipHidden */))
+			if curID || curDOT {
+				c.scanner.Backward(true /* skipHidden */)
+				continue
+			}
+			break
+		}
+	}
+
+	// The c.scanner is now on the leading identifier (or dot?) if there's no leading id.
+	var candidates []string
+	var temp string
+	var count int
+	for {
+		count++
+		if isIdentifier(c.scanner.GetTokenType()) {
+			temp = normalizeIdentifierText(c.scanner.GetTokenText())
+			c.scanner.Forward(true /* skipHidden */)
+			if !c.scanner.IsTokenType(trinoparser.TrinoParserDOT_) || tokenIndex <= c.scanner.GetIndex() {
+				return deriveObjectRefContextsFromCandidates(candidates, true /* includeColumn */)
+			}
+			candidates = append(candidates, temp)
+		}
+		c.scanner.Forward(true /* skipHidden */)
+		if count > 3 {
+			break
+		}
+	}
+
+	return deriveObjectRefContextsFromCandidates(candidates, true /* includeColumn */)
+}
+
+func (c *Completer) determineQualifiedNameContext() []*objectRefContext {
+	tokenIndex := c.scanner.GetIndex()
+	if c.scanner.GetTokenChannel() != antlr.TokenDefaultChannel {
+		// Skip to the next non-hidden token.
+		c.scanner.Forward(true /* skipHidden */)
+	}
+
+	if c.scanner.GetTokenText() != "." && !isIdentifier(c.scanner.GetTokenType()) {
+		// We are at the end of an incomplete identifier spec. Jump back.
+		c.scanner.Backward(true /* skipHidden */)
+	}
+
+	if tokenIndex > 0 {
+		// Go backward until we hit a non-identifier token.
+		for {
+			curID := isIdentifier(c.scanner.GetTokenType()) && c.scanner.GetPreviousTokenText(false /* skipHidden */) == "."
+			curDOT := c.scanner.GetTokenText() == "." && isIdentifier(c.scanner.GetPreviousTokenType(false /* skipHidden */))
+			if curID || curDOT {
+				c.scanner.Backward(true /* skipHidden */)
+				continue
+			}
+			break
+		}
+	}
+
+	// The c.scanner is now on the leading identifier (or dot?) if there's no leading id.
+	var candidates []string
+	var temp string
+	var count int
+	for {
+		count++
+		if isIdentifier(c.scanner.GetTokenType()) {
+			temp = normalizeIdentifierText(c.scanner.GetTokenText())
+			c.scanner.Forward(true /* skipHidden */)
+		}
+		if !c.scanner.IsTokenType(trinoparser.TrinoParserDOT_) || tokenIndex <= c.scanner.GetIndex() {
+			return deriveObjectRefContextsFromCandidates(candidates, false /* includeColumn */)
+		}
+		candidates = append(candidates, temp)
+		c.scanner.Forward(true /* skipHidden */)
+		if count > 2 {
+			break
+		}
+	}
+
+	return deriveObjectRefContextsFromCandidates(candidates, false /* includeColumn */)
+}
+
+// deriveObjectRefContextsFromCandidates derives the object reference contexts from the candidates.
+// The Trino grammar's object reference likes [catalog_name.][schema_name.][object_name]
+// The size of candidates is the window size in the object reference,
+// for example, if the candidates are ["a", "b"], the size is 2,
+// and objectRefContext would be [catalog_name: "a", schema_name: "b", object_name: ""] or
+// [catalog_name: "", schema_name: "a", object_name: "b"].
+func deriveObjectRefContextsFromCandidates(candidates []string, includeColumn bool) []*objectRefContext {
+	var options []objectRefContextOption
+	if includeColumn {
+		options = append(options, withColumn())
+	}
+	refCtx := newObjectRefContext(options...)
+	if len(candidates) == 0 {
+		return []*objectRefContext{
+			refCtx.clone(),
+		}
+	}
+
+	var results []*objectRefContext
+	switch len(candidates) {
+	case 1:
+		results = append(
+			results,
+			refCtx.clone().setCatalog(candidates[0]),
+			refCtx.clone().setCatalog("").setSchema(candidates[0]),
+			refCtx.clone().setCatalog("").setSchema("").setObject(candidates[0]),
+		)
+		if includeColumn {
+			results = append(results, refCtx.clone().setCatalog("").setSchema("").setObject("").setColumn(candidates[0]))
+		}
+	case 2:
+		results = append(
+			results,
+			refCtx.clone().setCatalog(candidates[0]).setSchema(candidates[1]),
+			refCtx.clone().setCatalog("").setSchema(candidates[0]).setObject(candidates[1]),
+		)
+		if includeColumn {
+			results = append(results, refCtx.clone().setCatalog("").setSchema(candidates[0]).setObject("").setColumn(candidates[1]))
+		}
+	case 3:
+		results = append(
+			results,
+			refCtx.clone().setCatalog(candidates[0]).setSchema(candidates[1]).setObject(candidates[2]),
+		)
+		if includeColumn {
+			results = append(results, refCtx.clone().setCatalog(candidates[0]).setSchema(candidates[1]).setObject("").setColumn(candidates[2]))
+		}
+	case 4:
+		if includeColumn {
+			results = append(results, refCtx.clone().setCatalog(candidates[0]).setSchema(candidates[1]).setObject(candidates[2]).setColumn(candidates[3]))
+		}
+	}
+
+	if len(results) == 0 {
+		results = append(results, refCtx.clone())
+	}
+
+	return results
+}
+
+// skipHeadingSQLs skips the SQL statements which before the caret position.
+// caretLine is 1-based and caretOffset is 0-based.
+func skipHeadingSQLs(statement string, caretLine int, caretOffset int) (string, int, int) {
+	newCaretLine, newCaretOffset := caretLine, caretOffset
+	list, err := SplitSQL(statement)
+	if err != nil || notEmptySQLCount(list) <= 1 {
+		return statement, caretLine, caretOffset
+	}
+
+	caretLine-- // Convert to 0-based.
+
+	start := 0
+	for i, sql := range list {
+		sqlEndLine := int(sql.End.GetLine())
+		sqlEndColumn := int(sql.End.GetColumn())
+		if sqlEndLine > caretLine || (sqlEndLine == caretLine && sqlEndColumn >= caretOffset) {
+			start = i
+			if i == 0 {
+				// The caret is in the first SQL statement, so we don't need to skip any SQL statements.
+				break
+			}
+			previousSQLEndLine := int(list[i-1].End.GetLine())
+			previousSQLEndColumn := int(list[i-1].End.GetColumn())
+			newCaretLine = caretLine - previousSQLEndLine + 1 // Convert to 1-based.
+			if caretLine == previousSQLEndLine {
+				// The caret is in the same line as the last line of the previous SQL statement.
+				// We need to adjust the caret offset.
+				newCaretOffset = caretOffset - previousSQLEndColumn - 1 // Convert to 0-based.
+			}
+			break
+		}
+	}
+
+	var buf strings.Builder
+	for i := start; i < len(list); i++ {
+		if _, err := buf.WriteString(list[i].Text); err != nil {
+			return statement, caretLine, caretOffset
+		}
+	}
+
+	return buf.String(), newCaretLine, newCaretOffset
+}
+
+func notEmptySQLCount(list []base.SingleSQL) int {
+	count := 0
+	for _, sql := range list {
+		if !sql.Empty {
+			count++
+		}
+	}
+	return count
+}
+
+func (c *Completer) takeReferencesSnapshot() {
+	if c.referenceMap == nil {
+		c.referenceMap = make(map[string]bool)
+	}
+	for _, references := range c.referencesStack {
+		c.references = append(c.references, references...)
+		for _, reference := range references {
+			if r, ok := reference.(*base.PhysicalTableReference); ok {
+				catalog := r.Database
+				if catalog == "" {
+					catalog = c.defaultCatalog
+				}
+				schema := r.Schema
+				if schema == "" {
+					schema = c.defaultSchema
+				}
+				tableID := fmt.Sprintf("%s.%s.%s", catalog, schema, r.Table)
+				c.referenceMap[tableID] = true
 			}
 		}
 	}
 }
 
-func (c *Completer) extractCTETables(pos int) []*base.VirtualTableReference {
-	if metadata, exists := c.cteCache[pos]; exists {
-		return metadata
-	}
-	followingText := c.scanner.GetFollowingTextAfter(pos)
-	if len(followingText) == 0 {
-		return nil
-	}
+func (c *Completer) collectLeadingTableReferences(caretIndex int) {
+	c.scanner.Push()
 
-	input := antlr.NewInputStream(followingText)
-	lexer := trino.NewTrinoLexer(input)
+	c.scanner.SeekIndex(0)
+
+	level := 0
+	for {
+		found := c.scanner.GetTokenType() == trinoparser.TrinoParserFROM_
+		for !found {
+			if !c.scanner.Forward(false) || c.scanner.GetIndex() >= caretIndex {
+				break
+			}
+
+			switch c.scanner.GetTokenType() {
+			case trinoparser.TrinoParserLPAREN_:
+				level++
+				c.referencesStack = append([][]base.TableReference{{}}, c.referencesStack...)
+			case trinoparser.TrinoParserRPAREN_:
+				if level == 0 {
+					c.scanner.PopAndRestore()
+					return // We cannot go above the initial nesting level.
+				}
+			case trinoparser.TrinoParserFROM_:
+				found = true
+			}
+		}
+		if !found {
+			c.scanner.PopAndRestore()
+			return // No FROM clause found.
+		}
+		c.parseTableReferences(c.scanner.GetFollowingText())
+		if c.scanner.GetTokenType() == trinoparser.TrinoParserFROM_ {
+			c.scanner.Forward(false /* skipHidden */)
+		}
+	}
+}
+
+func (c *Completer) collectRemainingTableReferences() {
+	c.scanner.Push()
+
+	level := 0
+	for {
+		found := c.scanner.GetTokenType() == trinoparser.TrinoParserFROM_
+		for !found {
+			if !c.scanner.Forward(false /* skipHidden */) {
+				break
+			}
+
+			switch c.scanner.GetTokenType() {
+			case trinoparser.TrinoParserLPAREN_:
+				level++
+				c.referencesStack = append([][]base.TableReference{{}}, c.referencesStack...)
+			case trinoparser.TrinoParserRPAREN_:
+				if level > 0 {
+					level--
+				}
+
+			case trinoparser.TrinoParserFROM_:
+				if level == 0 {
+					found = true
+				}
+			}
+		}
+
+		if !found {
+			c.scanner.PopAndRestore()
+			return // No more FROM clause found.
+		}
+
+		c.parseTableReferences(c.scanner.GetFollowingText())
+		if c.scanner.GetTokenType() == trinoparser.TrinoParserFROM_ {
+			c.scanner.Forward(false /* skipHidden */)
+		}
+	}
+}
+
+func (c *Completer) parseTableReferences(fromClause string) {
+	input := antlr.NewInputStream(fromClause)
+	lexer := trinoparser.NewTrinoLexer(input)
 	tokens := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
-	parser := trino.NewTrinoParser(tokens)
+	parser := trinoparser.NewTrinoParser(tokens)
 
 	parser.BuildParseTrees = true
 	parser.RemoveErrorListeners()
-	lexer.RemoveErrorListeners()
-	tree := parser.With()
-
-	listener := &CTETableListener{context: c}
-	antlr.ParseTreeWalkerDefault.Walk(listener, tree)
-
-	c.cteCache[pos] = listener.tables
-	return listener.tables
-}
-
-type CTETableListener struct {
-	*trino.BaseTrinoParserListener
-
-	context *Completer
-	tables  []*base.VirtualTableReference
-}
-
-func (l *CTETableListener) EnterNamedQuery(ctx *trino.NamedQueryContext) {
-	table := &base.VirtualTableReference{}
-	if ctx.Identifier() != nil {
-		table.Table = NormalizeTrinoIdentifier(ctx.Identifier().GetText())
+	tree := parser.Relation()
+	listener := &tableRefListener{
+		context:        c,
+		fromClauseMode: true,
 	}
-	if ctx.ColumnAliases() != nil {
-		for _, column := range ctx.ColumnAliases().AllIdentifier() {
-			table.Columns = append(table.Columns, NormalizeTrinoIdentifier(column.GetText()))
+	antlr.ParseTreeWalkerDefault.Walk(listener, tree)
+}
+
+type tableRefListener struct {
+	*trinoparser.BaseTrinoParserListener
+
+	context        *Completer
+	fromClauseMode bool
+	done           bool
+	level          int
+}
+
+func (l *tableRefListener) ExitAliasedRelation(ctx *trinoparser.AliasedRelationContext) {
+	if l.done {
+		return
+	}
+	if l.level == 0 && len(l.context.referencesStack) != 0 && len(l.context.referencesStack[0]) != 0 {
+		if ctx.Identifier() != nil {
+			alias := unquote(ctx.Identifier().GetText())
+			if physicalTable, ok := l.context.referencesStack[0][len(l.context.referencesStack[0])-1].(*base.PhysicalTableReference); ok {
+				physicalTable.Alias = alias
+				return
+			}
+			if virtualTable, ok := l.context.referencesStack[0][len(l.context.referencesStack[0])-1].(*base.VirtualTableReference); ok {
+				virtualTable.Table = alias
+			}
 		}
+	}
+}
+
+func (l *tableRefListener) ExitColumnAliases(ctx *trinoparser.ColumnAliasesContext) {
+	if l.done {
+		return
+	}
+
+	if l.level == 0 && len(l.context.referencesStack) != 0 && len(l.context.referencesStack[0]) != 0 {
+		if virtualTable, ok := l.context.referencesStack[0][len(l.context.referencesStack[0])-1].(*base.VirtualTableReference); ok {
+			var newColumns []string
+			for _, column := range ctx.AllIdentifier() {
+				newColumns = append(newColumns, unquote(column.GetText()))
+			}
+			virtualTable.Columns = newColumns
+		}
+	}
+}
+
+func (l *tableRefListener) ExitQualifiedName(ctx *trinoparser.QualifiedNameContext) {
+	if l.done {
+		return
+	}
+
+	if !l.fromClauseMode || l.level == 0 {
+		reference := &base.PhysicalTableReference{}
+		catalog, schema, table := normalizeQualifiedNameFallback(ctx, "", "")
+		reference.Database = catalog // Using Database field for Catalog in Trino
+		reference.Schema = schema
+		reference.Table = table
+		l.context.referencesStack[0] = append(l.context.referencesStack[0], reference)
+	}
+}
+
+func (l *tableRefListener) ExitTableFunctionInvocation(_ *trinoparser.TableFunctionInvocationContext) {
+	if l.done {
+		return
+	}
+
+	if !l.fromClauseMode || l.level == 0 {
+		reference := &base.VirtualTableReference{}
+		l.context.referencesStack[0] = append(l.context.referencesStack[0], reference)
+	}
+}
+
+func (l *tableRefListener) ExitSubquery(ctx *trinoparser.SubqueryContext) {
+	if l.done {
+		return
+	}
+
+	// In Trino, subqueries must be aliased in an aliasedRelation
+	pCtx, ok := ctx.GetParent().(*trinoparser.SubqueryRelationContext)
+	if !ok {
+		return
+	}
+
+	// Check for grandparent context which should be an aliasedRelation
+	gCtx, ok := pCtx.GetParent().(*trinoparser.AliasedRelationContext)
+	if !ok {
+		return
+	}
+
+	var derivedTableName string
+	if gCtx.Identifier() != nil {
+		derivedTableName = unquote(gCtx.Identifier().GetText())
 	} else {
+		// If no explicit alias, we can't reference this subquery's columns
+		return
+	}
+
+	reference := &base.VirtualTableReference{
+		Table: derivedTableName,
+	}
+
+	if gCtx.ColumnAliases() == nil {
+		// User did not specify the column alias, we should use query span to get the column alias.
 		if span, err := GetQuerySpan(
 			l.context.ctx,
 			base.GetQuerySpanContext{
 				InstanceID:              l.context.instanceID,
-				GetDatabaseMetadataFunc: l.context.getMetadata,
-				ListDatabaseNamesFunc:   l.context.listDatabaseNames,
+				GetDatabaseMetadataFunc: l.context.metadataGetter,
+				ListDatabaseNamesFunc:   l.context.catalogNamesLister,
 			},
-			ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.Query()),
-			l.context.defaultDatabase,
-			"",
-			false,
+			fmt.Sprintf("SELECT * FROM (%s);", ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)),
+			l.context.defaultCatalog,
+			l.context.defaultSchema,
+			true,
 		); err == nil && span.NotFoundError == nil {
 			for _, column := range span.Results {
-				table.Columns = append(table.Columns, column.Name)
+				reference.Columns = append(reference.Columns, column.Name)
 			}
 		}
+	} else {
+		// If column aliases are specified, use them
+		for _, identifier := range gCtx.ColumnAliases().AllIdentifier() {
+			reference.Columns = append(reference.Columns, unquote(identifier.GetText()))
+		}
+	}
+	l.context.referencesStack[0] = append(l.context.referencesStack[0], reference)
+}
+
+func (l *tableRefListener) EnterSubqueryRelation(*trinoparser.SubqueryRelationContext) {
+	if l.done {
+		return
 	}
 
-	l.tables = append(l.tables, table)
+	if l.fromClauseMode {
+		l.level++
+	} else {
+		l.context.referencesStack = append([][]base.TableReference{{}}, l.context.referencesStack...)
+	}
+}
+
+func (l *tableRefListener) ExitSubqueryRelation(*trinoparser.SubqueryRelationContext) {
+	if l.done {
+		return
+	}
+
+	if l.fromClauseMode {
+		l.level--
+	} else {
+		l.context.referencesStack = l.context.referencesStack[1:]
+	}
+}
+
+func (c *Completer) fetchCommonTableExpression(statement string) {
+	c.cteTables = nil
+
+	// Extract CTEs using the cteExtractor
+	extractor := &cteExtractor{
+		completer: c,
+	}
+	input := antlr.NewInputStream(statement)
+	lexer := trinoparser.NewTrinoLexer(input)
+	tokens := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
+	parser := trinoparser.NewTrinoParser(tokens)
+	parser.BuildParseTrees = true
+	parser.RemoveErrorListeners()
+	tree := parser.Parse()
+	antlr.ParseTreeWalkerDefault.Walk(extractor, tree)
+	c.cteTables = extractor.virtualReferences
+}
+
+type cteExtractor struct {
+	*trinoparser.BaseTrinoParserListener
+
+	completer         *Completer
+	handled           bool
+	virtualReferences []*base.VirtualTableReference
+}
+
+func (c *cteExtractor) EnterWith(ctx *trinoparser.WithContext) {
+	if c.handled {
+		return
+	}
+	c.handled = true
+
+	for _, namedQuery := range ctx.AllNamedQuery() {
+		cteName := namedQuery.Identifier().GetText()
+		if cteName == "" {
+			continue
+		}
+
+		var columns []string
+		if namedQuery.ColumnAliases() != nil {
+			for _, columnID := range namedQuery.ColumnAliases().AllIdentifier() {
+				columns = append(columns, unquote(columnID.GetText()))
+			}
+			c.virtualReferences = append(c.virtualReferences, &base.VirtualTableReference{
+				Table:   unquote(cteName),
+				Columns: columns,
+			})
+			continue
+		}
+
+		// If column aliases are not specified, use query span to get the column names
+		cteBody := ctx.GetParser().GetTokenStream().GetTextFromRuleContext(namedQuery.Query())
+		statement := fmt.Sprintf("WITH %s AS (%s) SELECT * FROM %s", cteName, cteBody, cteName)
+		if span, err := GetQuerySpan(
+			c.completer.ctx,
+			base.GetQuerySpanContext{
+				InstanceID:              c.completer.instanceID,
+				GetDatabaseMetadataFunc: c.completer.metadataGetter,
+				ListDatabaseNamesFunc:   c.completer.catalogNamesLister,
+			},
+			statement,
+			c.completer.defaultCatalog,
+			c.completer.defaultSchema,
+			true,
+		); err == nil && span.NotFoundError == nil {
+			var columns []string
+			for _, column := range span.Results {
+				columns = append(columns, column.Name)
+			}
+			c.virtualReferences = append(c.virtualReferences, &base.VirtualTableReference{
+				Table:   unquote(cteName),
+				Columns: columns,
+			})
+		}
+	}
 }
 
 func (c *Completer) fetchSelectItemAliases(ruleStack []*base.RuleContext) []string {
 	canUseAliases := false
 	for i := len(ruleStack) - 1; i >= 0; i-- {
 		switch ruleStack[i].ID {
-		case trino.TrinoParserRULE_query, trino.TrinoParserRULE_queryNoWith:
+		case trinoparser.TrinoParserRULE_query, trinoparser.TrinoParserRULE_querySpecification:
 			if !canUseAliases {
 				return nil
 			}
@@ -845,7 +1542,8 @@ func (c *Completer) fetchSelectItemAliases(ruleStack []*base.RuleContext) []stri
 				return result[i] < result[j]
 			})
 			return result
-		case trino.TrinoParserRULE_sortItem, trino.TrinoParserRULE_groupBy:
+		case trinoparser.TrinoParserRULE_groupBy, trinoparser.TrinoParserRULE_sortItem, trinoparser.TrinoParserRULE_booleanExpression:
+			// These represent ORDER BY, GROUP BY, and HAVING contexts
 			canUseAliases = true
 		}
 	}
@@ -860,638 +1558,121 @@ func (c *Completer) extractAliasText(pos int) string {
 	}
 
 	input := antlr.NewInputStream(followingText)
-	lexer := trino.NewTrinoLexer(input)
-	tokens := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
-	parser := trino.NewTrinoParser(tokens)
+	lexer := trinoparser.NewTrinoLexer(input)
+	tokens := antlr.NewCommonTokenStream(lexer, 0)
+	parser := trinoparser.NewTrinoParser(tokens)
 
 	parser.BuildParseTrees = true
 	parser.RemoveErrorListeners()
-	lexer.RemoveErrorListeners()
-	tree := parser.AliasedRelation() // Use AliasedRelation instead of TableAlias
+	// For Trino we'll use expression as the entry point for column aliases
+	tree := parser.Identifier()
 
-	listener := &TableAliasListener{}
+	listener := &SelectAliasListener{}
 	antlr.ParseTreeWalkerDefault.Walk(listener, tree)
+
 	return listener.result
 }
 
-type TableAliasListener struct {
-	*trino.BaseTrinoParserListener
+type SelectAliasListener struct {
+	*trinoparser.BaseTrinoParserListener
 
 	result string
 }
 
-func (l *TableAliasListener) EnterAliasedRelation(ctx *trino.AliasedRelationContext) {
-	if ctx.Identifier() != nil {
-		l.result = NormalizeTrinoIdentifier(ctx.Identifier().GetText())
+func (l *SelectAliasListener) EnterIdentifier(ctx *trinoparser.IdentifierContext) {
+	// For Trino, we'll just take the first identifier we find in the column alias
+	if l.result == "" {
+		l.result = unquote(ctx.GetText())
 	}
 }
 
-type ObjectFlags int
-
-const (
-	ObjectFlagsShowCatalogs ObjectFlags = 1 << iota
-	ObjectFlagsShowSchemas
-	ObjectFlagsShowTables
-	ObjectFlagsShowColumns
-	ObjectFlagsShowFirst
-	ObjectFlagsShowSecond
-	ObjectFlagsShowThird
-)
-
-// determineQualifiedName analyzes the current scanner position to determine
-// what is being typed regarding qualified names (catalog.schema.table). 
-// It returns the current qualifier and appropriate object flags to indicate 
-// what types of objects should be suggested for autocompletion.
-func (c *Completer) determineQualifiedName() (string, ObjectFlags) {
-	position := c.scanner.GetIndex()
-	if c.scanner.GetTokenChannel() != 0 {
-		c.scanner.Forward(true /* skipHidden */)
+func (c *Completer) quotedIdentifierIfNeeded(identifier string) string {
+	if c.caretTokenIsQuoted != quotedTypeNone {
+		return identifier
 	}
-
-	if !c.scanner.IsTokenType(trino.TrinoLexerONLY_) && !isIdentifier(c.scanner.GetTokenType()) {
-		// We are at the end of an incomplete identifier spec.
-		// Jump back.
-		c.scanner.Backward(true /* skipHidden */)
-	}
-
-	// Go left until we hit a non-identifier token.
-	if position > 0 {
-		if isIdentifier(c.scanner.GetTokenType()) && c.scanner.GetPreviousTokenType(false /* skipHidden */) == trino.TrinoLexerDOT_ {
-			c.scanner.Backward(true /* skipHidden */)
-		}
-		if c.scanner.IsTokenType(trino.TrinoLexerDOT_) && isIdentifier(c.scanner.GetPreviousTokenType(false /* skipHidden */)) {
-			c.scanner.Backward(true /* skipHidden */)
-
-			// Check for one more level in Trino's three-part naming (catalog.schema.table)
-			if c.scanner.GetPreviousTokenType(false /* skipHidden */) == trino.TrinoLexerDOT_ {
-				c.scanner.Backward(true /* skipHidden */)
-				if isIdentifier(c.scanner.GetPreviousTokenType(false /* skipHidden */)) {
-					c.scanner.Backward(true /* skipHidden */)
-				}
-			}
-		}
-	}
-
-	// The current token is on the leading identifier.
-	qualifier := ""
-	temp := ""
-	if isIdentifier(c.scanner.GetTokenType()) {
-		temp = unquote(c.scanner.GetTokenText())
-		c.scanner.Forward(true /* skipHidden */)
-	}
-
-	if !c.scanner.IsTokenType(trino.TrinoLexerDOT_) || position <= c.scanner.GetIndex() {
-		return qualifier, ObjectFlagsShowFirst | ObjectFlagsShowSecond | ObjectFlagsShowThird
-	}
-
-	qualifier = temp
-	return qualifier, ObjectFlagsShowSecond | ObjectFlagsShowThird
+	// if !isRegularIdentifier(identifier) {
+	// 	return fmt.Sprintf("\"%s\"", identifier)
+	// }
+	return identifier
 }
 
-// determineColumnRef analyzes the current scanner position to determine
-// what column reference is being typed. For Trino, this could be a qualified name with 
-// up to three parts: catalog.schema.table.column. 
-// It returns the appropriate parts and flags to indicate what to suggest for completion.
-func (c *Completer) determineColumnRef() (catalog, schema, table string, flags ObjectFlags) {
-	position := c.scanner.GetIndex()
-	if c.scanner.GetTokenChannel() != 0 {
-		c.scanner.Forward(true /* skipHidden */)
-	}
-
-	tokenType := c.scanner.GetTokenType()
-	if tokenType != trino.TrinoLexerDOT_ && !isIdentifier(c.scanner.GetTokenType()) {
-		// We are at the end of an incomplete identifier spec.
-		// Jump back.
-		c.scanner.Backward(true /* skipHidden */)
-	}
-
-	if position > 0 {
-		if isIdentifier(c.scanner.GetTokenType()) && c.scanner.GetPreviousTokenType(false /* skipHidden */) == trino.TrinoLexerDOT_ {
-			c.scanner.Backward(true /* skipHidden */)
-		}
-		if c.scanner.IsTokenType(trino.TrinoLexerDOT_) && isIdentifier(c.scanner.GetPreviousTokenType(false /* skipHidden */)) {
-			c.scanner.Backward(true /* skipHidden */)
-
-			if c.scanner.GetPreviousTokenType(false /* skipHidden */) == trino.TrinoLexerDOT_ {
-				c.scanner.Backward(true /* skipHidden */)
-				if isIdentifier(c.scanner.GetPreviousTokenType(false /* skipHidden */)) {
-					c.scanner.Backward(true /* skipHidden */)
-
-					// One more level for Trino's catalog.schema.table.column
-					if c.scanner.GetPreviousTokenType(false /* skipHidden */) == trino.TrinoLexerDOT_ {
-						c.scanner.Backward(true /* skipHidden */)
-						if isIdentifier(c.scanner.GetPreviousTokenType(false /* skipHidden */)) {
-							c.scanner.Backward(true /* skipHidden */)
-						}
-					}
-				}
-			}
-		}
-	}
-
-	catalog = ""
-	schema = ""
-	table = ""
-	temp := ""
-	if isIdentifier(c.scanner.GetTokenType()) {
-		temp = unquote(c.scanner.GetTokenText())
-		c.scanner.Forward(true /* skipHidden */)
-	}
-
-	if !c.scanner.IsTokenType(trino.TrinoLexerDOT_) || position <= c.scanner.GetIndex() {
-		return catalog, schema, table, ObjectFlagsShowCatalogs | ObjectFlagsShowSchemas | ObjectFlagsShowTables | ObjectFlagsShowColumns
-	}
-
-	c.scanner.Forward(true /* skipHidden */) // skip dot
-
-	// First part could be catalog or schema (depending on context)
-	catalog = temp
-
-	if isIdentifier(c.scanner.GetTokenType()) {
-		temp = unquote(c.scanner.GetTokenText())
-		c.scanner.Forward(true /* skipHidden */)
-
-		if !c.scanner.IsTokenType(trino.TrinoLexerDOT_) || position <= c.scanner.GetIndex() {
-			// This is catalog.schema or schema.table
-			schema = temp
-			return catalog, schema, table, ObjectFlagsShowTables | ObjectFlagsShowColumns
-		}
-
-		c.scanner.Forward(true /* skipHidden */) // skip dot
-		schema = temp
-
-		if isIdentifier(c.scanner.GetTokenType()) {
-			temp = unquote(c.scanner.GetTokenText())
-			c.scanner.Forward(true /* skipHidden */)
-
-			if !c.scanner.IsTokenType(trino.TrinoLexerDOT_) || position <= c.scanner.GetIndex() {
-				// This is catalog.schema.table
-				table = temp
-				return catalog, schema, table, ObjectFlagsShowColumns
-			}
-
-			// This is catalog.schema.table.
-			table = temp
-			return catalog, schema, table, ObjectFlagsShowColumns
-		}
-
-		// This is catalog.schema.
-		return catalog, schema, table, ObjectFlagsShowTables | ObjectFlagsShowColumns
-	}
-
-	// This is catalog.
-	schema = catalog
-	catalog = ""
-	return catalog, schema, table, ObjectFlagsShowTables | ObjectFlagsShowColumns
-}
-
-func unquote(s string) string {
-	if len(s) < 2 {
-		return s
-	}
-
-	if (s[0] == '\'' || s[0] == '"' || s[0] == '`') && s[0] == s[len(s)-1] {
-		return s[1 : len(s)-1]
-	}
-	return s
-}
-
-func (c *Completer) takeReferencesSnapshot() {
-	for _, references := range c.referencesStack {
-		c.references = append(c.references, references...)
-	}
-}
-
-func (c *Completer) collectRemainingTableReferences() {
-	c.scanner.Push()
-
-	level := 0
-	for {
-		found := c.scanner.GetTokenType() == trino.TrinoLexerFROM_
-		for !found {
-			if !c.scanner.Forward(false /* skipHidden */) {
-				break
-			}
-
-			switch c.scanner.GetTokenType() {
-			case trino.TrinoLexerLPAREN_:
-				level++
-			case trino.TrinoLexerRPAREN_:
-				if level > 0 {
-					level--
-				}
-			case trino.TrinoLexerFROM_:
-				// Open and close parenthesis don't need to match, if we come from within a subquery.
-				if level == 0 {
-					found = true
-				}
-			}
-		}
-
-		if !found {
-			c.scanner.PopAndRestore()
-			return // No more FROM clauses found.
-		}
-
-		c.parseTableReferences(c.scanner.GetFollowingText())
-		if c.scanner.GetTokenType() == trino.TrinoLexerFROM_ {
-			c.scanner.Forward(false /* skipHidden */)
-		}
-	}
-}
-
-func (c *Completer) collectLeadingTableReferences(caretIndex int) {
-	c.scanner.Push()
-
-	c.scanner.SeekIndex(0)
-
-	level := 0
-	for {
-		found := c.scanner.GetTokenType() == trino.TrinoLexerFROM_
-		for !found {
-			if !c.scanner.Forward(false /* skipHidden */) || c.scanner.GetIndex() >= caretIndex {
-				break
-			}
-
-			switch c.scanner.GetTokenType() {
-			case trino.TrinoLexerLPAREN_:
-				level++
-				c.referencesStack = append([][]base.TableReference{{}}, c.referencesStack...)
-			case trino.TrinoLexerRPAREN_:
-				if level == 0 {
-					c.scanner.PopAndRestore()
-					return // We cannot go above the initial nesting level.
-				}
-
-				level--
-				c.referencesStack = c.referencesStack[1:]
-			case trino.TrinoLexerFROM_:
-				found = true
-			}
-		}
-
-		if !found {
-			c.scanner.PopAndRestore()
-			return // No more FROM clauses found.
-		}
-
-		c.parseTableReferences(c.scanner.GetFollowingText())
-		if c.scanner.GetTokenType() == trino.TrinoLexerFROM_ {
-			c.scanner.Forward(false /* skipHidden */)
-		}
-	}
-}
-
-func (c *Completer) parseTableReferences(fromClause string) {
-	input := antlr.NewInputStream(fromClause)
-	lexer := trino.NewTrinoLexer(input)
-	tokens := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
-	parser := trino.NewTrinoParser(tokens)
-
-	parser.BuildParseTrees = true
-	parser.RemoveErrorListeners()
-	lexer.RemoveErrorListeners()
-	tree := parser.Relation() // Use Relation instead of FromClause
-
-	listener := &TableRefListener{
-		context: c,
-	}
-	antlr.ParseTreeWalkerDefault.Walk(listener, tree)
-}
-
-type TableRefListener struct {
-	*trino.BaseTrinoParserListener
-
-	context *Completer
-	level   int
-}
-
-func (l *TableRefListener) EnterTableName(ctx *trino.TableNameContext) {
-	// TableName is equivalent to TableRelation in our implementation
-	if l.level == 0 {
-		var reference base.TableReference
-		physicalReference := &base.PhysicalTableReference{}
-		// We should use the physical reference as the default reference.
-		reference = physicalReference
-
-		if ctx.QualifiedName() != nil {
-			parts := ExtractQualifiedNameParts(ctx.QualifiedName())
-
-			switch len(parts) {
-			case 1:
-				physicalReference.Table = parts[0]
-			case 2:
-				physicalReference.Schema = parts[0]
-				physicalReference.Table = parts[1]
-			case 3:
-				physicalReference.Database = parts[0]
-				physicalReference.Schema = parts[1]
-				physicalReference.Table = parts[2]
-			default:
-				return
-			}
-		}
-
-		// Table aliases are handled in AliasedRelation, not here
-		// We'll check for them in EnterAliasedRelation instead
-
-		l.context.referencesStack[0] = append(l.context.referencesStack[0], reference)
-	}
-}
-
-func (l *TableRefListener) EnterSubqueryRelation(ctx *trino.SubqueryRelationContext) {
-	// Increment nesting level to track depth of relations
-	l.level++
-	
-	// Note: SubqueryRelationContext doesn't have TableAlias() method
-	// TableAlias info should be accessed through AliasedRelation in Trino
-	// We still want to capture the subquery query context
-	if l.level == 1 { // Adjusted level check to match our nesting logic
-		// We need to store this subquery context for later use
-		// Let EnterAliasedRelation handle the aliases when a subquery is aliased
-		
-		// Get query context from the subquery
-		if ctx.Query() != nil {
-			// Just increment the level here
-			// The actual aliasing will be handled in EnterAliasedRelation
-		}
-	}
-}
-
-func (l *TableRefListener) ExitSubqueryRelation(ctx *trino.SubqueryRelationContext) {
-	// Decrement nesting level when exiting the relation
-	l.level--
-}
-
-func (l *TableRefListener) EnterParenthesizedRelation(ctx *trino.ParenthesizedRelationContext) {
-	l.level++
-}
-
-func (l *TableRefListener) ExitParenthesizedRelation(ctx *trino.ParenthesizedRelationContext) {
-	l.level--
-}
-
-func (l *TableRefListener) EnterQuery(ctx *trino.QueryContext) {
-	l.level++
-}
-
-func (l *TableRefListener) ExitQuery(ctx *trino.QueryContext) {
-	l.level--
-}
-
-// Add an EnterAliasedRelation method to TableRefListener to handle aliases
-func (l *TableRefListener) EnterAliasedRelation(ctx *trino.AliasedRelationContext) {
-	// Handle aliasing for either tables or subqueries
-	if l.level == 0 && ctx.Identifier() != nil {
-		// Get the alias
-		alias := NormalizeTrinoIdentifier(ctx.Identifier().GetText())
-		
-		// Check if we have column aliases
-		var columnAliases []string
-		if ctx.ColumnAliases() != nil {
-			for _, column := range ctx.ColumnAliases().AllIdentifier() {
-				columnAliases = append(columnAliases, NormalizeTrinoIdentifier(column.GetText()))
-			}
-		}
-		
-		// Check if we're already processed a physical/virtual table
-		if len(l.context.referencesStack[0]) > 0 {
-			lastRef := l.context.referencesStack[0][len(l.context.referencesStack[0])-1]
-			
-			// Update the last reference with alias information
-			if physRef, ok := lastRef.(*base.PhysicalTableReference); ok {
-				if len(columnAliases) > 0 {
-					// Convert to virtual reference if we have column aliases
-					virtualRef := &base.VirtualTableReference{
-						Table:   alias,
-						Columns: columnAliases,
-					}
-					// Replace the last item
-					l.context.referencesStack[0][len(l.context.referencesStack[0])-1] = virtualRef
-				} else {
-					// Just set the alias
-					physRef.Alias = alias
-				}
-			}
-		}
-	}
-}
-
-func prepareTrickyParserAndScanner(statement string, caretLine int, caretOffset int) (*trino.TrinoParser, *trino.TrinoLexer, *base.Scanner) {
-	statement, caretLine, caretOffset = skipHeadingSQLs(statement, caretLine, caretOffset)
-	statement, caretLine, caretOffset = skipHeadingSQLWithoutSemicolon(statement, caretLine, caretOffset)
-	input := antlr.NewInputStream(statement)
-	lexer := trino.NewTrinoLexer(input)
-	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
-	parser := trino.NewTrinoParser(stream)
-	parser.RemoveErrorListeners()
-	lexer.RemoveErrorListeners()
-	scanner := base.NewScanner(stream, true /* fillInput */)
-	scanner.SeekPosition(caretLine, caretOffset)
-	scanner.Push()
-	return parser, lexer, scanner
-}
-
-func prepareParserAndScanner(statement string, caretLine int, caretOffset int) (*trino.TrinoParser, *trino.TrinoLexer, *base.Scanner) {
-	statement, caretLine, caretOffset = skipHeadingSQLs(statement, caretLine, caretOffset)
-	input := antlr.NewInputStream(statement)
-	lexer := trino.NewTrinoLexer(input)
-	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
-	parser := trino.NewTrinoParser(stream)
-	parser.RemoveErrorListeners()
-	lexer.RemoveErrorListeners()
-	scanner := base.NewScanner(stream, true /* fillInput */)
-	scanner.SeekPosition(caretLine, caretOffset)
-	scanner.Push()
-	return parser, lexer, scanner
-}
-
-// caretLine is 1-based and caretOffset is 0-based.
-func skipHeadingSQLs(statement string, caretLine int, caretOffset int) (string, int, int) {
-	newCaretLine, newCaretOffset := caretLine, caretOffset
-	list, err := SplitSQL(statement)
-	if err != nil || len(base.FilterEmptySQL(list)) <= 1 {
-		return statement, caretLine, caretOffset
-	}
-
-	caretLine-- // Convert caretLine to 0-based.
-
-	start := 0
-	for i, sql := range list {
-		if sql.LastLine > caretLine || (sql.LastLine == caretLine && sql.LastColumn >= caretOffset) {
-			start = i
-			if i == 0 {
-				// If the caret is in the first SQL statement, we should not skip any SQL statements.
-				break
-			}
-			newCaretLine = caretLine - list[i-1].LastLine + 1 // Convert to 1-based.
-			if caretLine == list[i-1].LastLine {
-				// The caret is in the same line as the last line of the previous SQL statement.
-				// We need to adjust the caret offset.
-				newCaretOffset = caretOffset - list[i-1].LastColumn - 1 // Convert to 0-based.
-			}
-			break
-		}
-	}
-
-	var buf strings.Builder
-	for i := start; i < len(list); i++ {
-		if _, err := buf.WriteString(list[i].Text); err != nil {
-			return statement, caretLine, caretOffset
-		}
-	}
-
-	return buf.String(), newCaretLine, newCaretOffset
-}
-
-// caretLine is 1-based and caretOffset is 0-based.
-func skipHeadingSQLWithoutSemicolon(statement string, caretLine int, caretOffset int) (string, int, int) {
-	input := antlr.NewInputStream(statement)
-	lexer := trino.NewTrinoLexer(input)
-	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
-	lexer.RemoveErrorListeners()
-	lexerErrorListener := &base.ParseErrorListener{
-		Statement: statement,
-	}
-	lexer.AddErrorListener(lexerErrorListener)
-
-	stream.Fill()
-	tokens := stream.GetAllTokens()
-	latestSelect := 0
-	newCaretLine, newCaretOffset := caretLine, caretOffset
-	for _, token := range tokens {
-		if token.GetLine() > caretLine || (token.GetLine() == caretLine && token.GetColumn() >= caretOffset) {
-			break
-		}
-		if token.GetTokenType() == trino.TrinoLexerSELECT_ && token.GetColumn() == 0 {
-			latestSelect = token.GetTokenIndex()
-			newCaretLine = caretLine - token.GetLine() + 1 // convert to 1-based.
-			newCaretOffset = caretOffset
-		}
-	}
-
-	if latestSelect == 0 {
-		return statement, caretLine, caretOffset
-	}
-	return stream.GetTextFromInterval(antlr.NewInterval(latestSelect, stream.Size())), newCaretLine, newCaretOffset
-}
-
-func (c *Completer) listAllSchemas() []string {
-	if _, exists := c.metadataCache[c.defaultDatabase]; !exists {
-		_, metadata, err := c.getMetadata(c.ctx, c.instanceID, c.defaultDatabase)
-		if err != nil || metadata == nil {
-			return nil
-		}
-		c.metadataCache[c.defaultDatabase] = metadata
-	}
-
-	return c.metadataCache[c.defaultDatabase].ListSchemaNames()
-}
-
-func (c *Completer) listTables(schema string) []string {
-	if _, exists := c.metadataCache[c.defaultDatabase]; !exists {
-		_, metadata, err := c.getMetadata(c.ctx, c.instanceID, c.defaultDatabase)
-		if err != nil || metadata == nil {
-			return nil
-		}
-		c.metadataCache[c.defaultDatabase] = metadata
-	}
-
-	schemaMeta := c.metadataCache[c.defaultDatabase].GetSchema(schema)
-	if schemaMeta == nil {
-		return nil
-	}
-	return schemaMeta.ListTableNames()
-}
-
-func (c *Completer) listViews(schema string) []string {
-	if _, exists := c.metadataCache[c.defaultDatabase]; !exists {
-		_, metadata, err := c.getMetadata(c.ctx, c.instanceID, c.defaultDatabase)
-		if err != nil || metadata == nil {
-			return nil
-		}
-		c.metadataCache[c.defaultDatabase] = metadata
-	}
-
-	schemaMeta := c.metadataCache[c.defaultDatabase].GetSchema(schema)
-	if schemaMeta == nil {
-		return nil
-	}
-	return schemaMeta.ListViewNames()
-}
-
-func (c *Completer) quotedIdentifierIfNeeded(s string) string {
-	if c.caretTokenIsQuoted {
-		return s
-	}
-	if strings.ToLower(s) != s {
-		return fmt.Sprintf(`"%s"`, s)
-	}
-
-	// Check if the word is a Trino keyword
-	// This is a comprehensive list of Trino reserved words
-	keywords := map[string]bool{
-		// SQL keywords
-		"add": true, "admin": true, "all": true, "alter": true, "analyze": true,
-		"and": true, "any": true, "array": true, "as": true, "asc": true,
-		"at": true, "bernoulli": true, "between": true, "by": true, "call": true,
-		"called": true, "cascade": true, "case": true, "cast": true, "catalogs": true,
-		"column": true, "columns": true, "comment": true, "commit": true, "committed": true,
-		"constraint": true, "create": true, "cross": true, "cube": true, "current": true,
-		"current_date": true, "current_path": true, "current_role": true, "current_time": true, 
-		"current_timestamp": true, "current_user": true, "data": true, "date": true, "day": true,
-		"deallocate": true, "default": true, "define": true, "definer": true, "delete": true,
-		"desc": true, "describe": true, "distinct": true, "distributed": true, "drop": true,
-		"else": true, "end": true, "escape": true, "except": true, "excluding": true, "execute": true,
-		"exists": true, "explain": true, "extract": true, "false": true, "fetch": true, 
-		"filter": true, "first": true, "following": true, "for": true, "format": true, "from": true,
-		"full": true, "function": true, "functions": true, "grant": true, "granted": true,
-		"grants": true, "graphviz": true, "group": true, "grouping": true, "having": true,
-		"hour": true, "if": true, "in": true, "including": true, "inner": true, "input": true,
-		"insert": true, "intersect": true, "interval": true, "into": true, "invoker": true,
-		"io": true, "is": true, "isolation": true, "join": true, "language": true, "last": true,
-		"lateral": true, "left": true, "level": true, "like": true, "limit": true, "localtime": true,
-		"localtimestamp": true, "logical": true, "map": true, "materialized": true, "merge": true,
-		"minute": true, "month": true, "natural": true, "nested": true, "nfc": true, "nfd": true,
-		"nfkc": true, "nfkd": true, "no": true, "none": true, "normalize": true, "not": true,
-		"null": true, "nullif": true, "nulls": true, "offset": true, "on": true, "only": true,
-		"option": true, "or": true, "order": true, "ordinality": true, "outer": true, "output": true,
-		"over": true, "partition": true, "partitions": true, "position": true, "preceding": true,
-		"prepare": true, "privileges": true, "properties": true, "range": true, "read": true,
-		"recursive": true, "refresh": true, "rename": true, "repeatable": true, "replace": true,
-		"reset": true, "respect": true, "restrict": true, "return": true, "returns": true,
-		"revoke": true, "right": true, "rollback": true, "rollup": true, "row": true, "rows": true,
-		"schema": true, "schemas": true, "second": true, "security": true, "select": true,
-		"serializable": true, "session": true, "set": true, "sets": true, "show": true, "some": true,
-		"start": true, "stats": true, "substring": true, "system": true, "table": true, "tables": true,
-		"tablesample": true, "text": true, "then": true, "ties": true, "time": true, "timestamp": true,
-		"to": true, "transaction": true, "true": true, "try_cast": true, "type": true, "uescape": true,
-		"unbounded": true, "uncommitted": true, "union": true, "unnest": true, "update": true,
-		"use": true, "user": true, "using": true, "validate": true, "values": true, "verbose": true,
-		"view": true, "when": true, "where": true, "window": true, "with": true, "without": true,
-		"work": true, "write": true, "year": true, "zone": true,
-		
-		// Trino-specific keywords
-		"catalog": true, "vacuum": true, "optimize": true, 
-		"storage": true,
-	}
-
-	if keywords[strings.ToLower(s)] {
-		return fmt.Sprintf(`"%s"`, s)
-	}
-
-	return s
-}
-
-// isIdentifier is a helper function to check if a token is an identifier in Trino.
-// Trino supports multiple types of identifiers:
-// - Standard identifiers (letter followed by alphanumeric characters)
-// - Quoted identifiers (in double quotes)
-// - Backquoted identifiers (in backticks)
-// - Digit identifiers (starting with a digit, which is valid in some contexts)
+// Helper functions
 func isIdentifier(tokenType int) bool {
-	return tokenType == trino.TrinoLexerIDENTIFIER_ ||
-		tokenType == trino.TrinoLexerQUOTED_IDENTIFIER_ ||
-		tokenType == trino.TrinoLexerBACKQUOTED_IDENTIFIER_ ||
-		tokenType == trino.TrinoLexerDIGIT_IDENTIFIER_
+	return tokenType == trinoparser.TrinoParserIDENTIFIER_ ||
+		tokenType == trinoparser.TrinoParserQUOTED_IDENTIFIER_ ||
+		tokenType == trinoparser.TrinoParserDIGIT_IDENTIFIER_
 }
+
+func normalizeIdentifierText(text string) string {
+	return unquote(text)
+}
+
+func unquote(text string) string {
+	// Remove quotes from identifiers if present
+	if len(text) >= 2 && text[0] == '"' && text[len(text)-1] == '"' {
+		return text[1 : len(text)-1]
+	}
+	return text
+}
+
+func normalizeQualifiedNameFallback(ctx *trinoparser.QualifiedNameContext, _ string, _ string) (string, string, string) {
+	parts := []string{}
+
+	for _, identifier := range ctx.AllIdentifier() {
+		parts = append(parts, unquote(identifier.GetText()))
+	}
+
+	catalog, schema, table := "", "", ""
+
+	switch len(parts) {
+	case 1:
+		table = parts[0]
+	case 2:
+		schema = parts[0]
+		table = parts[1]
+	case 3:
+		catalog = parts[0]
+		schema = parts[1]
+		table = parts[2]
+	}
+
+	return catalog, schema, table
+}
+
+// func isRegularIdentifier(identifier string) bool {
+// 	// https://trino.io/docs/current/language/reserved.html
+// 	// Regular identifiers in Trino have these rules:
+// 	// - Start with a letter (a-z)
+// 	// - Can contain letters, digits, underscore
+// 	// - Not a reserved word
+// 	if len(identifier) == 0 {
+// 		return true
+// 	}
+
+// 	firstChar := rune(identifier[0])
+// 	isFirstCharValid := unicode.IsLetter(firstChar)
+// 	if !isFirstCharValid {
+// 		return false
+// 	}
+
+// 	for _, r := range identifier[1:] {
+// 		isValidChar := unicode.IsLetter(r) || unicode.IsDigit(r) || r == '_'
+// 		if !isValidChar {
+// 			return false
+// 		}
+// 	}
+
+// 	// Check if the identifier is a reserved word
+// 	if IsTrinoReservedKeyword(identifier) {
+// 		return false
+// 	}
+
+// 	// Check for embedded spaces or special characters
+// 	for _, r := range identifier {
+// 		if r == ' ' || !unicode.IsPrint(r) {
+// 			return false
+// 		}
+// 	}
+
+// 	return utf8.ValidString(identifier)
+// }

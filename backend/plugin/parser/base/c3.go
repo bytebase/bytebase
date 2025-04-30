@@ -343,8 +343,7 @@ type RuleEndStatus map[int]bool
 
 // CollectCandidates collects the candidates.
 func (c *CodeCompletionCore) CollectCandidates(caretTokenIndex int, context antlr.ParserRuleContext) *CandidatesCollection {
-	println("DEBUG: ========= STARTING CODE COMPLETION =========")
-	println("DEBUG: Caret position:", caretTokenIndex)
+	// Reset the fields.
 
 	c.candidates = &CandidatesCollection{
 		Tokens: make(map[int][]int),
@@ -354,10 +353,8 @@ func (c *CodeCompletionCore) CollectCandidates(caretTokenIndex int, context antl
 
 	if context == nil {
 		c.tokenStartIndex = 0
-		println("DEBUG: Starting with root rule (no context)")
 	} else {
 		c.tokenStartIndex = context.GetStart().GetTokenIndex()
-		println("DEBUG: Starting with rule:", context.GetRuleIndex())
 	}
 
 	// Initialize the c.tokens:
@@ -367,28 +364,18 @@ func (c *CodeCompletionCore) CollectCandidates(caretTokenIndex int, context antl
 	currentOffset := tokenStream.Index()
 	tokenStream.Seek(c.tokenStartIndex)
 	offset := 1
-	
-	// Collect tokens up to caret position
 	for {
 		token := tokenStream.LT(offset)
 		offset++
-		tokenType := token.GetTokenType()
-		startPos := token.GetStart()
-		tokenIndex := token.GetTokenIndex()
 		c.tokens = append(c.tokens, &Token{
-			Type:          tokenType,
-			StartPosition: startPos,
+			Type:          token.GetTokenType(),
+			StartPosition: token.GetStart(),
 		})
-		
-		if offset <= 5 { // Only print the first few tokens to avoid verbose output
-			println("DEBUG: Token at position", tokenIndex, "- Type:", tokenType)
-		}
 
 		if token.GetTokenIndex() >= caretTokenIndex || token.GetTokenType() == antlr.TokenEOF {
 			break
 		}
 	}
-	
 	// Seek back to the original index.
 	tokenStream.Seek(currentOffset)
 
@@ -398,75 +385,41 @@ func (c *CodeCompletionCore) CollectCandidates(caretTokenIndex int, context antl
 	} else {
 		startRule = context.GetRuleIndex()
 	}
-	
-	println("DEBUG: Preferred rules:", len(c.PreferredRules))
-	println("DEBUG: Ignored tokens:", len(c.IgnoredTokens))
-	
+
 	c.callStack = NewRuleList()
 	c.fetchEndStatus(c.atn.GetRuleToStartState(startRule), 0 /* tokenIndex */, "" /* indentation */)
-	
-	println("DEBUG: ========= COMPLETION RESULTS =========")
-	println("DEBUG: Found", len(c.candidates.Tokens), "token candidates and", len(c.candidates.Rules), "rule candidates")
-	
-	// Print token candidates
-	count := 0
-	for tokenType, following := range c.candidates.Tokens {
-		if count < 10 { // Only show first 10 token candidates
-			if len(following) > 0 {
-				println("DEBUG: Token candidate:", tokenType, "with", len(following), "following tokens")
-			} else {
-				println("DEBUG: Token candidate:", tokenType)
-			}
-		}
-		count++
-	}
-	
-	// Print all rule candidates
-	for ruleIndex, path := range c.candidates.Rules {
-		println("DEBUG: Rule candidate:", ruleIndex, "with path length:", len(path))
-	}
-	
 	return c.candidates
 }
 
 func (c *CodeCompletionCore) fetchEndStatus(startState antlr.ATNState, tokenIndex int, indentation string) RuleEndStatus {
-	ruleIndex := startState.GetRuleIndex()
-	println("DEBUG: Checking rule:", ruleIndex, "at token index:", tokenIndex)
-	
 	result := make(RuleEndStatus)
 	c.followSetsByState.CollectFollowSets(c.parser, startState, c.IgnoredTokens, c.PreferredRules)
 
 	followSets := c.followSetsByState.Get(startState.GetStateNumber())
-	ruleContext := &RuleContext{ID: ruleIndex}
+	ruleContext := &RuleContext{ID: startState.GetRuleIndex()}
 	c.callStack.Push(ruleContext)
-	
-	if ruleIndex == c.QueryRule {
+	if startState.GetRuleIndex() == c.QueryRule {
 		oldContext := c.lastQueryRuleContext
 		c.lastQueryRuleContext = ruleContext
-		println("DEBUG: Using QueryRule:", ruleIndex)
 		defer func() {
 			c.lastQueryRuleContext = oldContext
 		}()
 	}
 
-	if ruleIndex == c.ShadowQueryRule {
+	if startState.GetRuleIndex() == c.ShadowQueryRule {
 		oldContext := c.lastShadowQueryRuleContext
 		c.lastShadowQueryRuleContext = ruleContext
-		println("DEBUG: Using ShadowQueryRule:", ruleIndex)
 		defer func() {
 			c.lastShadowQueryRuleContext = oldContext
 		}()
 	}
 
 	if tokenIndex >= len(c.tokens)-1 {
-		println("DEBUG: At caret position in rule:", ruleIndex)
-		if _, exists := c.PreferredRules[ruleIndex]; exists {
+		if _, exists := c.PreferredRules[startState.GetRuleIndex()]; exists {
 			// If the rule is preferred, we should add it to the candidates.
-			println("DEBUG: Rule", ruleIndex, "is preferred, adding to candidates")
-			translated := c.translateToRuleIndex(c.callStack)
-			println("DEBUG: Added preferred rule:", translated)
+			c.translateToRuleIndex(c.callStack)
 		} else {
-			for i, set := range followSets.sets {
+			for _, set := range followSets.sets {
 				fullPath := c.callStack.Copy()
 				fullPath.Append(set.path)
 				// translateToRuleIndex will add the rule to the candidates if it is preferred.
@@ -474,7 +427,6 @@ func (c *CodeCompletionCore) fetchEndStatus(startState antlr.ATNState, tokenInde
 					// If the rule is not preferred, we should add the following tokens to the candidates.
 					for _, symbol := range set.intervals.ToList() {
 						if _, exists := c.IgnoredTokens[symbol]; !exists {
-							println("DEBUG: Adding token candidate", symbol, "from rule", ruleIndex, "follow set", i)
 							if _, exists := c.candidates.Tokens[symbol]; !exists {
 								c.candidates.Tokens[symbol] = set.following
 							} else {
@@ -505,9 +457,7 @@ func (c *CodeCompletionCore) fetchEndStatus(startState antlr.ATNState, tokenInde
 
 	// If the current token and Epsilon are not in the follow sets, we should stop.
 	currentSymbol := c.tokens[tokenIndex]
-	
 	if !followSets.combined.Contains(antlr.TokenEpsilon) && !followSets.combined.Contains(currentSymbol.Type) {
-		println("DEBUG: Rule", ruleIndex, "rejected - token", currentSymbol.Type, "not in follow sets")
 		c.callStack.Pop()
 		return RuleEndStatus{}
 	}
@@ -535,25 +485,16 @@ func (c *CodeCompletionCore) fetchEndStatus(startState antlr.ATNState, tokenInde
 			continue
 		}
 
-		transitions := currentEntry.State.GetTransitions()
-		
-		for _, t := range transitions {
+		for _, t := range currentEntry.State.GetTransitions() {
 			switch transition := t.(type) {
 			case *antlr.RuleTransition:
-				targetRule := transition.GetTarget().GetRuleIndex()
-				if atCaret {
-					println("DEBUG: At caret checking rule transition to:", targetRule)
-				}
-				
 				endStatus := c.fetchEndStatus(transition.GetTarget(), currentEntry.TokenIndex, indentation)
-				
 				for status := range endStatus {
 					statePipeline = append(statePipeline, PipelineEntry{
 						State:      transition.GetFollowState(),
 						TokenIndex: status,
 					})
 				}
-				
 				switch startState.GetRuleIndex() {
 				case c.SelectItemAliasRule:
 					if c.lastQueryRuleContext != nil {
@@ -561,7 +502,6 @@ func (c *CodeCompletionCore) fetchEndStatus(startState antlr.ATNState, tokenInde
 							c.lastQueryRuleContext.SelectItemAliases = make(map[int]bool)
 						}
 						c.lastQueryRuleContext.SelectItemAliases[c.tokens[currentEntry.TokenIndex].StartPosition] = true
-						println("DEBUG: Added SelectItemAlias at position:", c.tokens[currentEntry.TokenIndex].StartPosition)
 					}
 					if c.lastShadowQueryRuleContext != nil {
 						if c.lastShadowQueryRuleContext.SelectItemAliases == nil {
@@ -572,7 +512,6 @@ func (c *CodeCompletionCore) fetchEndStatus(startState antlr.ATNState, tokenInde
 				case c.CTERule:
 					if c.lastShadowQueryRuleContext != nil {
 						c.lastShadowQueryRuleContext.CTEList = append(c.lastShadowQueryRuleContext.CTEList, c.tokens[currentEntry.TokenIndex].StartPosition)
-						println("DEBUG: Added CTE at position:", c.tokens[currentEntry.TokenIndex].StartPosition)
 					}
 				}
 			case *antlr.PredicateTransition:
@@ -587,16 +526,13 @@ func (c *CodeCompletionCore) fetchEndStatus(startState antlr.ATNState, tokenInde
 					if !c.translateToRuleIndex(c.callStack) {
 						interval := antlr.NewIntervalSet()
 						interval.AddRange(antlr.TokenMinUserTokenType, c.parser.GetATN().GetMaxTokenType())
-						tokenCount := 0
 						for _, symbol := range interval.ToList() {
 							if _, exists := c.IgnoredTokens[symbol]; !exists {
-								tokenCount++
 								if _, exists := c.candidates.Tokens[symbol]; !exists {
 									c.candidates.Tokens[symbol] = []int{}
 								}
 							}
 						}
-						println("DEBUG: Added", tokenCount, "wildcard token candidates from rule", ruleIndex)
 					}
 				} else {
 					statePipeline = append(statePipeline, PipelineEntry{
@@ -628,11 +564,8 @@ func (c *CodeCompletionCore) fetchEndStatus(startState antlr.ATNState, tokenInde
 							for _, symbol := range list {
 								if _, exists := c.IgnoredTokens[symbol]; !exists {
 									if addFollowing {
-										following := getFollowingTokens(transition, c.IgnoredTokens)
-										println("DEBUG: Adding token candidate", symbol, "from rule", ruleIndex, "with", len(following), "following tokens")
-										c.candidates.Tokens[symbol] = following
+										c.candidates.Tokens[symbol] = getFollowingTokens(transition, c.IgnoredTokens)
 									} else {
-										println("DEBUG: Adding token candidate", symbol, "from rule", ruleIndex)
 										c.candidates.Tokens[symbol] = []int{}
 									}
 								}
@@ -653,9 +586,6 @@ func (c *CodeCompletionCore) fetchEndStatus(startState antlr.ATNState, tokenInde
 	}
 
 	c.callStack.Pop()
-	if len(result) > 0 {
-		println("DEBUG: Rule", ruleIndex, "returning", len(result), "valid end positions")
-	}
 	return result
 }
 
@@ -666,7 +596,6 @@ func (c *CodeCompletionCore) translateToRuleIndex(ruleStack *RuleList) bool {
 
 	for i, rule := range ruleStack.rules {
 		if _, exists := c.PreferredRules[rule.ID]; exists {
-			println("DEBUG: Found preferred rule candidate:", rule.ID)
 			var path []*RuleContext
 			path = append(path, ruleStack.rules[:i]...)
 			addNew := true
@@ -680,14 +609,12 @@ func (c *CodeCompletionCore) translateToRuleIndex(ruleStack *RuleList) bool {
 					}
 				}
 
-				if equal {
-					// Don't add duplicates
+				if !equal {
 					addNew = false
 				}
 			}
 
 			if addNew {
-				println("DEBUG: Adding rule", rule.ID, "to completion candidates")
 				c.candidates.Rules[ruleStack.rules[i].ID] = path
 			}
 			return true
