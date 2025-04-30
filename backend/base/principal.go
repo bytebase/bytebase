@@ -3,9 +3,6 @@ package base
 // SystemBotID is the ID of the system robot.
 const SystemBotID = 1
 
-// SystemBotEmail is the email of the system robot.
-const SystemBotEmail = "support@bytebase.com"
-
 // AllUsers is the email of the pseudo allUsers account.
 const AllUsers = "allUsers"
 
