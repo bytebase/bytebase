@@ -46,6 +46,7 @@ import (
 	"github.com/bytebase/bytebase/backend/resources/postgres"
 	"github.com/bytebase/bytebase/backend/runner/approval"
 	"github.com/bytebase/bytebase/backend/runner/metricreport"
+	"github.com/bytebase/bytebase/backend/runner/monitor"
 	"github.com/bytebase/bytebase/backend/runner/plancheck"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/runner/taskrun"
@@ -326,6 +327,10 @@ func (s *Server) Run(ctx context.Context, port int) error {
 
 	s.runnerWG.Add(1)
 	go s.planCheckScheduler.Run(ctx, &s.runnerWG)
+
+	s.runnerWG.Add(1)
+	mmm := monitor.NewMemoryMonitor(s.profile, 1024*1024)
+	go mmm.Run(ctx, &s.runnerWG)
 
 	address := fmt.Sprintf(":%d", port)
 	listener, err := net.Listen("tcp", address)
