@@ -31,9 +31,9 @@ func getBaseProfile(dataDir string) *config.Profile {
 		GitCommit:          gitcommit,
 		PgURL:              flags.pgURL,
 		DeployID:           uuid.NewString()[:8],
-		LastActiveTS:       time.Now().Unix(),
 	}
 
+	config.LastActiveTS.Store(time.Now().Unix())
 	config.RuntimeDebug.Store(flags.debug)
 	config.RuntimeMemoryProfileThreshold.Store(flags.memoryProfileThreshold)
 	return config
