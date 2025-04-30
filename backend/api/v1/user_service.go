@@ -690,14 +690,13 @@ func (s *UserService) getActiveUserCount(ctx context.Context) (int, error) {
 func (s *UserService) hasExtraWorkspaceAdmin(ctx context.Context, policy *storepb.IamPolicy, userID int) (bool, error) {
 	workspaceAdminRole := common.FormatRole(base.WorkspaceAdmin.String())
 	userMember := common.FormatUserUID(userID)
-	systemBotMember := common.FormatUserUID(base.SystemBotID)
 
 	for _, binding := range policy.GetBindings() {
 		if binding.GetRole() != workspaceAdminRole {
 			continue
 		}
 		for _, member := range binding.GetMembers() {
-			if member == userMember || member == systemBotMember {
+			if member == userMember {
 				continue
 			}
 			if member == base.AllUsers {
