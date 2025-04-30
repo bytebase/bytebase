@@ -22,7 +22,8 @@ import (
 )
 
 const (
-	monitorInterval = 30 * time.Second
+	monitorInterval  = 30 * time.Second
+	profileRetention = 10
 )
 
 type MemoryMonitor struct {
@@ -71,7 +72,7 @@ func (r *MemoryMonitor) checkMemory(memoryThreshold uint64) {
 			slog.Info("memory monitor: could not dump memory profile", "fileName", heapFileName, log.BBError(err))
 			// Continue to attempt goroutine dump even if heap dump fails
 		} else {
-			if err := retainMostRecentFiles(r.profile.DataDir, 5); err != nil {
+			if err := retainMostRecentFiles(r.profile.DataDir, profileRetention); err != nil {
 				slog.Info("memory monitor: failed to cleanup old dump files after heap dump", log.BBError(err))
 			}
 		}
@@ -83,7 +84,7 @@ func (r *MemoryMonitor) checkMemory(memoryThreshold uint64) {
 		if err := dumpGoroutineProfile(goroutineFileName); err != nil {
 			slog.Info("memory monitor: could not dump goroutine profile", "fileName", goroutineFileName, log.BBError(err))
 		} else {
-			if err := retainMostRecentFiles(r.profile.DataDir, 5); err != nil {
+			if err := retainMostRecentFiles(r.profile.DataDir, profileRetention); err != nil {
 				slog.Info("memory monitor: failed to cleanup old dump files after goroutine dump", log.BBError(err))
 			}
 		}
