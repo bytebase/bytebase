@@ -1330,7 +1330,7 @@
     "rollout": {
       "name": "发布策略",
       "tip": "新策略对旧工单也生效",
-      "info": "拥有 “taskRuns.create” 权限或以下角色的用户可以发布",
+      "info": "拥有 “{permission}” 权限或以下角色的用户可以发布",
       "auto": "自动发布",
       "auto-info": "如果预检查都通过的话，会自动发布，执行变更。",
       "last-issue-approver": "自定义审批的最后一个审批人"

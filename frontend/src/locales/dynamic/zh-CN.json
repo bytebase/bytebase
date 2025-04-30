@@ -259,6 +259,7 @@
     "idp": "身份提供商",
     "database-group": "数据库分组",
     "changelist": "变更列表",
-    "review-config": "审查配置"
+    "review-config": "审查配置",
+    "role": "角色"
   }
 }

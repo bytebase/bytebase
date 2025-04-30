@@ -93,7 +93,6 @@ type ResourceType =
   | "idp"
   | "role"
   | "database-group"
-  | "schema-group"
   | "changelist"
   | "review-config";
 

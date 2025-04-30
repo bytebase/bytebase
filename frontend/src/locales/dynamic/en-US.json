@@ -259,6 +259,7 @@
     "idp": "Identity Provider",
     "database-group": "Database Group",
     "changelist": "Changelist",
-    "review-config": "Review Config"
+    "review-config": "Review Config",
+    "role": "Role"
   }
 }
