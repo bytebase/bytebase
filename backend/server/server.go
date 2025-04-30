@@ -329,7 +329,7 @@ func (s *Server) Run(ctx context.Context, port int) error {
 	go s.planCheckScheduler.Run(ctx, &s.runnerWG)
 
 	s.runnerWG.Add(1)
-	mmm := monitor.NewMemoryMonitor(s.profile, 1024*1024)
+	mmm := monitor.NewMemoryMonitor(s.profile)
 	go mmm.Run(ctx, &s.runnerWG)
 
 	address := fmt.Sprintf(":%d", port)
