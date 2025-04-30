@@ -27,8 +27,6 @@ type Profile struct {
 	SaaS bool
 	// When enabled output logs in json format
 	EnableJSONLogging bool
-	// Debug is the startup time debug
-	Debug bool
 	// DataDir is the directory stores the data including Bytebase's own database, backups, etc.
 	DataDir string
 	// Demo mode.
@@ -54,6 +52,10 @@ type Profile struct {
 
 	// can be set in runtime
 	RuntimeDebug atomic.Bool
+	// RuntimeMemoryProfileThreshold is the memory threshold in bytes for the server to trigger a pprof memory profile.
+	// can be set in runtime
+	// 0 means no threshold.
+	RuntimeMemoryProfileThreshold atomic.Int64
 }
 
 // UseEmbedDB returns whether to use embedDB.
