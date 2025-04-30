@@ -1265,8 +1265,8 @@
       "title": "アクセス制御",
       "disable-copy-data-from-sql-editor": "SQL エディタにおけるデータコピーの制限 (管理者/DBA はコピー可能)",
       "restrict-admin-connection": {
-        "self": "管理者接続のクエリ制限",
-        "disallow": "管理者接続からのデータクエリを禁止する",
+        "self": "管理データソースへのクエリを禁止します",
+        "disallow": "管理データソースからのデータクエリを禁止します",
         "fallback": "読み取り専用接続が利用できない場合、管理者接続にフォールバックする"
       }
     },
