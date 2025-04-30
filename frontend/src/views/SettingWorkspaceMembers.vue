@@ -102,7 +102,7 @@ import {
   useWorkspaceV1Store,
   usePermissionStore,
 } from "@/store";
-import { userBindingPrefix, PresetRoleType } from "@/types";
+import { userBindingPrefix } from "@/types";
 import { User, UserType } from "@/types/proto/v1/user_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
@@ -203,7 +203,7 @@ const memberBindingsByRole = computedAsync(() => {
       },
     ],
     searchText: state.searchText,
-    ignoreRoles: new Set([PresetRoleType.WORKSPACE_MEMBER]),
+    ignoreRoles: new Set([]),
   });
 }, new Map());
 

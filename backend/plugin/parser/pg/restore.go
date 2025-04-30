@@ -46,15 +46,15 @@ func GenerateRestoreSQL(ctx context.Context, rCtx base.RestoreContext, statement
 		sqlForComment += "..."
 	}
 
-	preAppendStatements, err := getPreAppendStatements(statement)
+	prependStatements, err := getPrependStatements(statement)
 	if err != nil {
-		return "", errors.Wrap(err, "failed to get pre-append statements")
+		return "", errors.Wrap(err, "failed to get prepend statements")
 	}
 
-	return doGenerate(ctx, rCtx, sqlForComment, tree, backupItem, preAppendStatements)
+	return doGenerate(ctx, rCtx, sqlForComment, tree, backupItem, prependStatements)
 }
 
-func doGenerate(ctx context.Context, rCtx base.RestoreContext, sqlForComment string, tree *ParseResult, backupItem *storepb.PriorBackupDetail_Item, preAppendStatements string) (string, error) {
+func doGenerate(ctx context.Context, rCtx base.RestoreContext, sqlForComment string, tree *ParseResult, backupItem *storepb.PriorBackupDetail_Item, prependStatements string) (string, error) {
 	_, sourceDatabase, err := common.GetInstanceDatabaseID(backupItem.SourceTable.Database)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get source database ID for %s", backupItem.SourceTable.Database)
@@ -94,7 +94,7 @@ func doGenerate(ctx context.Context, rCtx base.RestoreContext, sqlForComment str
 		backupTable:    backupItem.TargetTable.Table,
 		originalSchema: schema,
 		originalTable:  backupItem.SourceTable.Table,
-		pk:             tableMetadata.GetPrimaryKey(),
+		table:          tableMetadata,
 		isFirst:        true,
 	}
 	antlr.ParseTreeWalkerDefault.Walk(g, tree.Tree)
@@ -102,8 +102,8 @@ func doGenerate(ctx context.Context, rCtx base.RestoreContext, sqlForComment str
 		return "", g.err
 	}
 
-	if len(preAppendStatements) > 0 {
-		return fmt.Sprintf("%s\n/*\nOriginal SQL:\n%s\n*/\n%s", preAppendStatements, sqlForComment, g.result), nil
+	if len(prependStatements) > 0 {
+		return fmt.Sprintf("%s\n/*\nOriginal SQL:\n%s\n*/\n%s", prependStatements, sqlForComment, g.result), nil
 	}
 	return fmt.Sprintf("/*\nOriginal SQL:\n%s\n*/\n%s", sqlForComment, g.result), nil
 }
@@ -115,7 +115,7 @@ type generator struct {
 	backupTable    string
 	originalSchema string
 	originalTable  string
-	pk             *model.IndexMetadata
+	table          *model.TableMetadata
 
 	isFirst bool
 	ctx     context.Context
@@ -131,31 +131,56 @@ func (g *generator) EnterDeletestmt(ctx *parser.DeletestmtContext) {
 	}
 }
 
+func disjoint(a []string, b map[string]bool) bool {
+	for _, item := range a {
+		if _, ok := b[item]; ok {
+			return false
+		}
+	}
+	return true
+}
+
+func (g *generator) findDisjointUniqueKey(fields []string) (string, error) {
+	columnMap := make(map[string]bool)
+	for _, field := range fields {
+		columnMap[field] = true
+	}
+	pk := g.table.GetPrimaryKey()
+	if pk != nil {
+		if disjoint(pk.GetProto().Expressions, columnMap) {
+			return pk.GetProto().Name, nil
+		}
+	}
+	for _, index := range g.table.GetProto().Indexes {
+		if index.Primary {
+			continue
+		}
+		if !index.Unique {
+			continue
+		}
+		if disjoint(index.Expressions, columnMap) {
+			return index.Name, nil
+		}
+	}
+
+	return "", errors.Errorf("no disjoint unique key found for %s.%s", g.originalSchema, g.originalTable)
+}
+
 func (g *generator) EnterUpdatestmt(ctx *parser.UpdatestmtContext) {
 	if isTopLevel(ctx.GetParent()) && g.isFirst {
 		g.isFirst = false
 
-		if g.pk == nil {
-			g.err = errors.Errorf("primary key not found for %s.%s", g.originalSchema, g.originalTable)
-			return
-		}
-
 		l := &setFieldListener{}
 		antlr.ParseTreeWalkerDefault.Walk(l, ctx)
 
-		pkMap := make(map[string]bool)
-		for _, column := range g.pk.GetProto().Expressions {
-			pkMap[column] = true
-		}
-		for _, column := range l.result {
-			if pkMap[column] {
-				g.err = errors.Errorf("primary key column %s is updated", column)
-				return
-			}
+		uk, err := g.findDisjointUniqueKey(l.result)
+		if err != nil {
+			g.err = err
+			return
 		}
 
 		var buf strings.Builder
-		if _, err := fmt.Fprintf(&buf, `INSERT INTO "%s"."%s" SELECT * FROM "%s"."%s" ON CONFLICT ON CONSTRAINT "%s" DO UPDATE SET `, g.originalSchema, g.originalTable, g.backupSchema, g.backupTable, g.pk.GetProto().Name); err != nil {
+		if _, err := fmt.Fprintf(&buf, `INSERT INTO "%s"."%s" SELECT * FROM "%s"."%s" ON CONFLICT ON CONSTRAINT "%s" DO UPDATE SET `, g.originalSchema, g.originalTable, g.backupSchema, g.backupTable, uk); err != nil {
 			g.err = errors.Wrapf(err, "failed to generate update statement")
 			return
 		}
@@ -259,7 +284,7 @@ func inRange(start, end, targetStart, targetEnd *storepb.Position) bool {
 	return true
 }
 
-func getPreAppendStatements(statement string) (string, error) {
+func getPrependStatements(statement string) (string, error) {
 	nodes, err := pgrawparser.Parse(pgrawparser.ParseContext{}, statement)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to parse statement")

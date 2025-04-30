@@ -398,15 +398,17 @@ type ListInstancesRequest struct {
 	// Show deleted instances if specified.
 	ShowDeleted bool `protobuf:"varint,3,opt,name=show_deleted,json=showDeleted,proto3" json:"show_deleted,omitempty"`
 	// Filter the instance.
+	// The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+	//
 	// Supported filters:
-	// - name
-	// - resource_id
-	// - environment
-	// - state
-	// - engine
-	// - host
-	// - port
-	// - project
+	// - name: the instance name, support "==" and ".matches()" operator.
+	// - resource_id: the instance id, support "==" and ".matches()" operator.
+	// - environment: the environment full name in "environments/{id}" format, support "==" operator.
+	// - state: the instance state, check State enum for values, support "==" operator.
+	// - engine: the instance engine, check Engine enum for values. Support "==", "in [xx]", "!(in [xx])" operator.
+	// - host: the instance host, support "==" operator.
+	// - port: the instance port, support "==" operator.
+	// - project: the project full name in "projects/{id}" format, support "==" operator.
 	//
 	// For example:
 	// name == "sample instance"

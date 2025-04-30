@@ -78,7 +78,7 @@ func (checker *insertDisallowOrderByRandChecker) Visit(in ast.Node) ast.Visitor 
 			Code:          code.Int32(),
 			Title:         checker.title,
 			Content:       fmt.Sprintf("The INSERT statement uses ORDER BY random() or random_between(), related statement \"%s\"", checker.text),
-			StartPosition: common.ConvertANTLRLineToPosition(in.LastLine()),
+			StartPosition: common.ConvertPGParserLineToPosition(in.LastLine()),
 		})
 	}
 

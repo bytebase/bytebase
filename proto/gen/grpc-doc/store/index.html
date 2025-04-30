@@ -1405,10 +1405,6 @@
                   <a href="#bytebase.store.TaskRunResult"><span class="badge">M</span>TaskRunResult</a>
                 </li>
               
-                <li>
-                  <a href="#bytebase.store.TaskRunResult.Position"><span class="badge">M</span>TaskRunResult.Position</a>
-                </li>
-              
               
               
               
@@ -2969,6 +2965,13 @@ Format: projects/{project}/sheets/{sheet} </p></td>
                 <tr>
                   <td>type</td>
                   <td><a href="#bytebase.store.ChangelogPayload.Type">ChangelogPayload.Type</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>git_commit</td>
+                  <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
@@ -5053,6 +5056,21 @@ Reference: https://clickhouse.com/docs/en/engines/table-engines/mergetree-family
                   <td><a href="#bool">bool</a></td>
                   <td></td>
                   <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>sharding_info</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>https://docs.pingcap.com/tidb/stable/information-schema-tables/ </p></td>
+                </tr>
+              
+                <tr>
+                  <td>primary_key_type</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>https://docs.pingcap.com/tidb/stable/clustered-indexes/#clustered-indexes
+CLUSTERED or NONCLUSTERED. </p></td>
                 </tr>
               
             </tbody>
@@ -9558,7 +9576,7 @@ for example, the environment resource can have the sql review config tag, like &
                   <td><a href="#bool">bool</a></td>
                   <td></td>
                   <td><p>Whether to enable the database tenant mode for PostgreSQL.
-If enabled, the issue will be created with the pre-appended &#34;set role &lt;db_owner&gt;&#34; statement. </p></td>
+If enabled, the issue will be created with the prepend &#34;set role &lt;db_owner&gt;&#34; statement. </p></td>
                 </tr>
               
                 <tr>
@@ -9581,6 +9599,13 @@ If enabled, the issue will be created with the pre-appended &#34;set role &lt;db
                   <td></td>
                   <td><p>The maximum number of databases to sample during CI data validation.
 Without specification, sampling is disabled, resulting in a full validation. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>parallel_tasks_per_rollout</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>The maximum number of parallel tasks to run during the rollout. </p></td>
                 </tr>
               
             </tbody>
@@ -12206,6 +12231,13 @@ Format: instances/{instance}/databases/{database} </p></td>
                   <td><p> </p></td>
                 </tr>
               
+                <tr>
+                  <td>parallel_tasks_limit</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -12246,14 +12278,14 @@ Format: instances/{instance}/databases/{database} </p></td>
               
                 <tr>
                   <td>start_position</td>
-                  <td><a href="#bytebase.store.TaskRunResult.Position">TaskRunResult.Position</a></td>
+                  <td><a href="#bytebase.store.Position">Position</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>The following fields are used for error reporting. </p></td>
                 </tr>
               
                 <tr>
                   <td>end_position</td>
-                  <td><a href="#bytebase.store.TaskRunResult.Position">TaskRunResult.Position</a></td>
+                  <td><a href="#bytebase.store.Position">Position</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
@@ -12270,37 +12302,6 @@ Format: instances/{instance}/databases/{database} </p></td>
                   <td><a href="#bytebase.store.PriorBackupDetail">PriorBackupDetail</a></td>
                   <td></td>
                   <td><p>The prior backup detail that will be used to rollback the task run. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.store.TaskRunResult.Position">TaskRunResult.Position</h3>
-        <p>The following fields are used for error reporting.</p><p>TODO(zp): Use common Position instead.</p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>line</td>
-                  <td><a href="#int32">int32</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>column</td>
-                  <td><a href="#int32">int32</a></td>
-                  <td></td>
-                  <td><p> </p></td>
                 </tr>
               
             </tbody>

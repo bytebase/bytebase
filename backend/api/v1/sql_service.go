@@ -14,6 +14,10 @@ import (
 	"log/slog"
 
 	"github.com/alexmullins/zip"
+	"github.com/google/cel-go/cel"
+	celast "github.com/google/cel-go/common/ast"
+	celoperators "github.com/google/cel-go/common/operators"
+	celoverloads "github.com/google/cel-go/common/overloads"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -995,6 +999,93 @@ func (s *SQLService) createQueryHistory(ctx context.Context, database *store.Dat
 	return nil
 }
 
+func getListQueryHistoryFilter(filter string) (*store.ListResourceFilter, error) {
+	if filter == "" {
+		return nil, nil
+	}
+
+	e, err := cel.NewEnv()
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to create cel env")
+	}
+	ast, iss := e.Parse(filter)
+	if iss != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "failed to parse filter %v, error: %v", filter, iss.String())
+	}
+
+	var getFilter func(expr celast.Expr) (string, error)
+	var positionalArgs []any
+
+	parseToSQL := func(variable, value any) (string, error) {
+		switch variable {
+		case "project":
+			projectID, err := common.GetProjectID(value.(string))
+			if err != nil {
+				return "", status.Errorf(codes.InvalidArgument, "invalid project filter %q", value)
+			}
+			positionalArgs = append(positionalArgs, projectID)
+			return fmt.Sprintf("query_history.project_id = $%d", len(positionalArgs)), nil
+		case "database":
+			positionalArgs = append(positionalArgs, value.(string))
+			return fmt.Sprintf("query_history.database = $%d", len(positionalArgs)), nil
+		case "instance":
+			positionalArgs = append(positionalArgs, value.(string))
+			return fmt.Sprintf("query_history.database LIKE $%d", len(positionalArgs)), nil
+		case "type":
+			historyType := store.QueryHistoryType(value.(string))
+			positionalArgs = append(positionalArgs, historyType)
+			return fmt.Sprintf("query_history.type = $%d", len(positionalArgs)), nil
+		default:
+			return "", status.Errorf(codes.InvalidArgument, "unsupport variable %q", variable)
+		}
+	}
+
+	getFilter = func(expr celast.Expr) (string, error) {
+		switch expr.Kind() {
+		case celast.CallKind:
+			functionName := expr.AsCall().FunctionName()
+			switch functionName {
+			case celoperators.LogicalOr:
+				return getSubConditionFromExpr(expr, getFilter, "OR")
+			case celoperators.LogicalAnd:
+				return getSubConditionFromExpr(expr, getFilter, "AND")
+			case celoperators.Equals:
+				variable, value := getVariableAndValueFromExpr(expr)
+				return parseToSQL(variable, value)
+			case celoverloads.Matches:
+				variable := expr.AsCall().Target().AsIdent()
+				args := expr.AsCall().Args()
+				if len(args) != 1 {
+					return "", status.Errorf(codes.InvalidArgument, `invalid args for %q`, variable)
+				}
+				value := args[0].AsLiteral().Value()
+				if variable != "statement" {
+					return "", status.Errorf(codes.InvalidArgument, `only "statement" support %q operator, but found %q`, celoverloads.Matches, variable)
+				}
+				strValue, ok := value.(string)
+				if !ok {
+					return "", status.Errorf(codes.InvalidArgument, "expect string, got %T, hint: filter literals should be string", value)
+				}
+				return "query_history.statement LIKE '%" + strValue + "%'", nil
+			default:
+				return "", status.Errorf(codes.InvalidArgument, "unexpected function %v", functionName)
+			}
+		default:
+			return "", status.Errorf(codes.InvalidArgument, "unexpected expr kind %v", expr.Kind())
+		}
+	}
+
+	where, err := getFilter(ast.NativeRep().Expr())
+	if err != nil {
+		return nil, err
+	}
+
+	return &store.ListResourceFilter{
+		Args:  positionalArgs,
+		Where: "(" + where + ")",
+	}, nil
+}
+
 // SearchQueryHistories lists query histories.
 func (s *SQLService) SearchQueryHistories(ctx context.Context, request *v1pb.SearchQueryHistoriesRequest) (*v1pb.SearchQueryHistoriesResponse, error) {
 	offset, err := parseLimitAndOffset(&pageSize{
@@ -1017,30 +1108,11 @@ func (s *SQLService) SearchQueryHistories(ctx context.Context, request *v1pb.Sea
 		Limit:      &limitPlusOne,
 		Offset:     &offset.offset,
 	}
-
-	filters, err := ParseFilter(request.Filter)
+	filter, err := getListQueryHistoryFilter(request.Filter)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
-
-	for _, spec := range filters {
-		if spec.Operator != ComparatorTypeEqual {
-			return nil, status.Errorf(codes.InvalidArgument, `only support "=" operation for "%v" filter`, spec.Key)
-		}
-		switch spec.Key {
-		case "database":
-			database := spec.Value
-			find.Database = &database
-		case "instance":
-			instance := spec.Value
-			find.Instance = &instance
-		case "type":
-			historyType := store.QueryHistoryType(spec.Value)
-			find.Type = &historyType
-		default:
-			return nil, status.Errorf(codes.InvalidArgument, "invalid filter %s", spec.Key)
-		}
-	}
+	find.Filter = filter
 
 	historyList, err := s.store.ListQueryHistories(ctx, find)
 	if err != nil {

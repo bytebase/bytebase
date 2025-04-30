@@ -3,15 +3,16 @@
   <div class="relative w-full h-full flex flex-col justify-start items-start">
     <div class="w-full px-1">
       <SearchBox
-        v-model:value="state.search"
+        :value="state.search"
         size="small"
-        :placeholder="$t('sql-editor.search-history')"
+        :placeholder="$t('sql-editor.search-history-by-statement')"
         style="max-width: 100%"
+        @update:value="onSearchUpdate"
       />
     </div>
     <div class="w-full flex flex-col justify-start items-start overflow-y-auto">
       <div
-        v-for="history in data"
+        v-for="history in queryHistoryData.queryHistories"
         :key="history.name"
         class="w-full p-2 space-y-1 border-b flex flex-col justify-start items-start cursor-pointer hover:bg-gray-50"
         @click="handleQueryHistoryClick(history)"
@@ -33,32 +34,45 @@
         </div>
         <p
           class="max-w-full text-xs break-words font-mono line-clamp-3"
-          v-html="history.formattedStatement"
+          v-html="getFormattedStatement(history.statement)"
         ></p>
+      </div>
+      <div
+        v-if="queryHistoryData.nextPageToken"
+        class="w-full flex flex-col items-center my-2"
+      >
+        <NButton
+          quaternary
+          :size="'small'"
+          :loading="state.loading"
+          @click="fetchQueryHistoryListList"
+        >
+          <span class="textinfolabel">
+            {{ $t("common.load-more") }}
+          </span>
+        </NButton>
       </div>
     </div>
 
-    <div
-      v-show="notifyMessage"
-      class="absolute w-full h-full flex justify-center items-center transition-all bg-transparent"
-    >
-      {{ notifyMessage }}
-    </div>
-
-    <MaskSpinner
-      v-show="isFetching && queryHistoryList.length === 0"
-      class="!bg-white/75"
-    />
+    <template v-if="queryHistoryData.queryHistories.length === 0">
+      <MaskSpinner v-if="state.loading" class="!bg-white/75" />
+      <div
+        v-else
+        class="w-full flex items-center justify-center py-8 textinfolabel"
+      >
+        {{ $t("sql-editor.no-history-found") }}
+      </div>
+    </template>
   </div>
 </template>
 
 <script lang="ts" setup>
+import { useDebounceFn } from "@vueuse/core";
 import { useClipboard } from "@vueuse/core";
 import dayjs from "dayjs";
-import { escape, uniqBy } from "lodash-es";
+import { escape } from "lodash-es";
 import { NButton, useDialog } from "naive-ui";
-import { storeToRefs } from "pinia";
-import { computed, h, onMounted, reactive } from "vue";
+import { computed, h, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import MaskSpinner from "@/components/misc/MaskSpinner.vue";
 import { SearchBox } from "@/components/v2";
@@ -66,6 +80,8 @@ import {
   pushNotification,
   useSQLEditorQueryHistoryStore,
   useSQLEditorTabStore,
+  useSQLEditorStore,
+  type QueryHistoryFilter,
 } from "@/store";
 import { getDateForPbTimestamp, type SQLEditorTab } from "@/types";
 import type { QueryHistory } from "@/types/proto/v1/sql_service";
@@ -73,65 +89,76 @@ import { getHighlightHTMLByKeyWords, defer } from "@/utils";
 
 interface State {
   search: string;
-  currentActionHistory: QueryHistory | null;
+  loading: boolean;
 }
 
 const { t } = useI18n();
 const tabStore = useSQLEditorTabStore();
+const editorStore = useSQLEditorStore();
 const queryHistoryStore = useSQLEditorQueryHistoryStore();
-const { isFetching, queryHistoryList } = storeToRefs(queryHistoryStore);
 const $d = useDialog();
 
 const state = reactive<State>({
   search: "",
-  currentActionHistory: null,
+  loading: false,
 });
+
+const historyQuery = computed((): QueryHistoryFilter => {
+  const tab = tabStore.currentTab;
+  return {
+    database: tab?.connection.database,
+    project: editorStore.project,
+    statement: state.search,
+  };
+});
+
+const onSearchUpdate = async (search: string) => {
+  queryHistoryStore.resetPageToken(historyQuery.value);
+  state.search = search;
+  await fetchQueryHistoryListList();
+};
+
+const queryHistoryData = computed(() =>
+  queryHistoryStore.getQueryHistoryList(historyQuery.value)
+);
+
+const fetchQueryHistoryListList = useDebounceFn(async () => {
+  state.loading = true;
+  try {
+    await queryHistoryStore.fetchQueryHistoryList(historyQuery.value);
+  } finally {
+    state.loading = false;
+  }
+}, 500);
+
+watch(
+  () => historyQuery.value,
+  async () => {
+    if (queryHistoryData.value.queryHistories.length === 0) {
+      await fetchQueryHistoryListList();
+    }
+  },
+  {
+    immediate: true,
+    deep: true,
+  }
+);
 
 const { copy: copyTextToClipboard, isSupported } = useClipboard({
   legacy: true,
 });
 
-const data = computed(() => {
-  const tempData = queryHistoryList.value.filter((history) => {
-    let t = false;
-
-    if (history.statement.includes(state.search)) {
-      t = true;
-    }
-
-    return t;
-  });
-  const distinctData = uniqBy(tempData, (history) => history.statement);
-
-  return distinctData.map((history) => {
-    return {
-      ...history,
-      formattedStatement: state.search
-        ? getHighlightHTMLByKeyWords(
-            escape(history.statement),
-            escape(state.search)
-          )
-        : escape(history.statement),
-    };
-  });
-});
+const getFormattedStatement = (statement: string) => {
+  return state.search
+    ? getHighlightHTMLByKeyWords(escape(statement), escape(state.search))
+    : escape(statement);
+};
 
 const titleOfQueryHistory = (history: QueryHistory) => {
   return dayjs(getDateForPbTimestamp(history.createTime)).format(
     "YYYY-MM-DD HH:mm:ss"
   );
 };
-
-const notifyMessage = computed(() => {
-  if (isFetching.value) {
-    return "";
-  }
-  if (queryHistoryList.value.length === 0) {
-    return t("sql-editor.no-history-found");
-  }
-
-  return "";
-});
 
 const handleCopy = (history: QueryHistory) => {
   if (!isSupported.value) {
@@ -143,7 +170,6 @@ const handleCopy = (history: QueryHistory) => {
     return;
   }
 
-  state.currentActionHistory = history;
   copyTextToClipboard(history.statement);
   pushNotification({
     module: "bytebase",
@@ -240,8 +266,4 @@ const handleQueryHistoryClick = async (queryHistory: QueryHistory) => {
     openInNewTab();
   }
 };
-
-onMounted(async () => {
-  await queryHistoryStore.fetchQueryHistoryList();
-});
 </script>

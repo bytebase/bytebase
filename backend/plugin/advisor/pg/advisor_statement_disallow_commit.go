@@ -64,7 +64,7 @@ func (checker *statementDisallowCommitChecker) Visit(in ast.Node) ast.Visitor {
 			Code:          advisor.StatementDisallowCommit.Int32(),
 			Title:         checker.title,
 			Content:       fmt.Sprintf("Commit is not allowed, related statement: \"%s\"", in.Text()),
-			StartPosition: common.ConvertANTLRLineToPosition(in.LastLine()),
+			StartPosition: common.ConvertPGParserLineToPosition(in.LastLine()),
 		})
 	}
 

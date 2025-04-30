@@ -74,7 +74,7 @@ func (checker *tableDropNamingConventionChecker) Visit(in ast.Node) ast.Visitor 
 					Code:          advisor.TableDropNamingConventionMismatch.Int32(),
 					Title:         checker.title,
 					Content:       fmt.Sprintf("`%s` mismatches drop table naming convention, naming format should be %q", table.Name, checker.format),
-					StartPosition: common.ConvertANTLRLineToPosition(node.LastLine()),
+					StartPosition: common.ConvertPGParserLineToPosition(node.LastLine()),
 				})
 			}
 		}

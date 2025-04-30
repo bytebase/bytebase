@@ -66,7 +66,7 @@ func (checker *statementAddCheckNotValidChecker) Visit(in ast.Node) ast.Visitor 
 				Code:          advisor.StatementAddCheckWithValidation.Int32(),
 				Title:         checker.title,
 				Content:       "Adding check constraints with validation will block reads and writes. You can add check constraints not valid and then validate separately",
-				StartPosition: common.ConvertANTLRLineToPosition(checker.line),
+				StartPosition: common.ConvertPGParserLineToPosition(checker.line),
 			})
 		}
 	}

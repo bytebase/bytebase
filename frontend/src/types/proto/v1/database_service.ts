@@ -121,15 +121,17 @@ export interface ListDatabasesRequest {
   pageToken: string;
   /**
    * Filter is used to filter databases returned in the list.
+   * The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+   *
    * Supported filter:
-   * - environment
-   * - name
-   * - project
-   * - instance
-   * - engine
-   * - label
-   * - exclude_unassigned: Not show unassigned databases if specified
-   * - drifted
+   * - environment: the environment full name in "environments/{id}" format, support "==" operator.
+   * - name: the database name, support ".matches()" operator.
+   * - project: the project full name in "projects/{id}" format, support "==" operator.
+   * - instance: the instance full name in "instances/{id}" format, support "==" operator.
+   * - engine: the database engine, check Engine enum for values. Support "==", "in [xx]", "!(in [xx])" operator.
+   * - label: the database label in "{key}:{value1},{value2}" format. Support "==" operator.
+   * - exclude_unassigned: should be "true" or "false", will not show unassigned databases if it's true, support "==" operator.
+   * - drifted: should be "true" or "false", show drifted databases if it's true, support "==" operator.
    *
    * For example:
    * environment == "environments/{environment resource id}"
@@ -229,9 +231,11 @@ export interface GetDatabaseMetadataRequest {
   name: string;
   /**
    * Filter is used to filter databases returned in the list.
+   * The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+   *
    * Supported filter:
-   * - schema
-   * - table
+   * - schema: the schema name, support "==" operator.
+   * - table: the table name, support "==" operator.
    *
    * For example:
    * schema == "schema-a"
@@ -514,6 +518,13 @@ export interface TableMetadata {
   sortingKeys: string[];
   triggers: TriggerMetadata[];
   skipDump: boolean;
+  /** https://docs.pingcap.com/tidb/stable/information-schema-tables/ */
+  shardingInfo: string;
+  /**
+   * https://docs.pingcap.com/tidb/stable/clustered-indexes/#clustered-indexes
+   * CLUSTERED or NONCLUSTERED.
+   */
+  primaryKeyType: string;
 }
 
 /** CheckConstraintMetadata is the metadata for check constraints. */
@@ -4620,6 +4631,8 @@ function createBaseTableMetadata(): TableMetadata {
     sortingKeys: [],
     triggers: [],
     skipDump: false,
+    shardingInfo: "",
+    primaryKeyType: "",
   };
 }
 
@@ -4684,6 +4697,12 @@ export const TableMetadata: MessageFns<TableMetadata> = {
     }
     if (message.skipDump !== false) {
       writer.uint32(168).bool(message.skipDump);
+    }
+    if (message.shardingInfo !== "") {
+      writer.uint32(178).string(message.shardingInfo);
+    }
+    if (message.primaryKeyType !== "") {
+      writer.uint32(186).string(message.primaryKeyType);
     }
     return writer;
   },
@@ -4855,6 +4874,22 @@ export const TableMetadata: MessageFns<TableMetadata> = {
           message.skipDump = reader.bool();
           continue;
         }
+        case 22: {
+          if (tag !== 178) {
+            break;
+          }
+
+          message.shardingInfo = reader.string();
+          continue;
+        }
+        case 23: {
+          if (tag !== 186) {
+            break;
+          }
+
+          message.primaryKeyType = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -4900,6 +4935,8 @@ export const TableMetadata: MessageFns<TableMetadata> = {
         ? object.triggers.map((e: any) => TriggerMetadata.fromJSON(e))
         : [],
       skipDump: isSet(object.skipDump) ? globalThis.Boolean(object.skipDump) : false,
+      shardingInfo: isSet(object.shardingInfo) ? globalThis.String(object.shardingInfo) : "",
+      primaryKeyType: isSet(object.primaryKeyType) ? globalThis.String(object.primaryKeyType) : "",
     };
   },
 
@@ -4965,6 +5002,12 @@ export const TableMetadata: MessageFns<TableMetadata> = {
     if (message.skipDump !== false) {
       obj.skipDump = message.skipDump;
     }
+    if (message.shardingInfo !== "") {
+      obj.shardingInfo = message.shardingInfo;
+    }
+    if (message.primaryKeyType !== "") {
+      obj.primaryKeyType = message.primaryKeyType;
+    }
     return obj;
   },
 
@@ -5001,6 +5044,8 @@ export const TableMetadata: MessageFns<TableMetadata> = {
     message.sortingKeys = object.sortingKeys?.map((e) => e) || [];
     message.triggers = object.triggers?.map((e) => TriggerMetadata.fromPartial(e)) || [];
     message.skipDump = object.skipDump ?? false;
+    message.shardingInfo = object.shardingInfo ?? "";
+    message.primaryKeyType = object.primaryKeyType ?? "";
     return message;
   },
 };

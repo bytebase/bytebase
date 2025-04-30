@@ -1,6 +1,7 @@
 FROM node:23.11.0-slim AS frontend
+ARG GIT_COMMIT
 
-RUN npm i -g pnpm@10.8.1
+RUN npm i -g pnpm@10.9.0
 
 WORKDIR /frontend-build
 
@@ -10,15 +11,14 @@ RUN pnpm --dir ./frontend i
 RUN pnpm --dir ./frontend release-docker
 
 FROM golang:1.24.2-alpine3.21 AS backend
-ADD go.mod go.sum /
-RUN go mod download
-
-ARG TARGETARCH
 ARG VERSION
 ARG GIT_COMMIT
 ARG RELEASE="release"
 
-RUN apk add --no-cache build-base krb5-dev binutils-gold
+ADD go.mod go.sum /
+
+RUN go mod download
+RUN apk add --no-cache clang krb5-dev binutils-gold
 
 WORKDIR /backend-build
 
@@ -27,18 +27,14 @@ COPY . .
 # Copy frontend asset
 COPY --from=frontend /frontend-build/frontend/dist ./backend/server/dist
 
-COPY ./scripts/VERSION .
-
 # -ldflags="-w -s" means omit DWARF symbol table and the symbol table and debug information
-RUN go build \
+RUN CC=clang go build \
   --tags "${RELEASE},embed_frontend,docker" \
-  -ldflags="-w -s -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.version=${VERSION}' -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.gitcommit=${GIT_COMMIT}'" \
+  -ldflags="-extldflags '-Wl,-z,stack-size=0x1000000' -w -s -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.version=${VERSION}' -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.gitcommit=${GIT_COMMIT}'" \
   -o bytebase ./backend/bin/server/main.go
 
 # Use debian because mysql requires glibc.
 FROM alpine:3.21 AS monolithic
-
-ARG TARGETARCH
 ARG VERSION
 ARG GIT_COMMIT
 
@@ -70,6 +66,7 @@ COPY --from=backend /backend-build/bytebase /usr/local/bin/
 COPY --from=backend /etc/ssl/certs /etc/ssl/certs
 
 ENV OPENSSL_CONF=/etc/ssl/
+ENV GOGC=50
 
 CMD ["--port", "8080", "--data", "/var/opt/bytebase"]
 

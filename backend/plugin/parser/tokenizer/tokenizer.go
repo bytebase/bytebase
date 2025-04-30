@@ -12,6 +12,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
+	"github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 const (
@@ -23,47 +24,6 @@ var (
 	atomicRuneList    = []rune{'A', 'T', 'O', 'M', 'I', 'C'}
 	delimiterRuneList = []rune{'D', 'E', 'L', 'I', 'M', 'I', 'T', 'E', 'R'}
 )
-
-type Option func(*Tokenizer)
-
-// KeepEmptyBlocks is used to keep empty lines between the blocks.
-// Currently, it is only available for SplitTiDBMultiSQL.
-// The following example shows how it affects the result:
-//
-//	CREATE TABLE t1 (
-//	  a int
-//	);
-//
-//
-//	CREATE TABLE t2 (
-//	  a int
-//	);
-//
-// If we set KeepEmptyBlocks, the result will be:
-// [
-//
-//	"CREATE TABLE t1 (
-//	  a int
-//	);",
-//	"\n",
-//	"CREATE TABLE t2 (
-//	  a int
-//	);"
-//
-// ]
-// Note, the sum of the empty lines in that block will be 1(2-1) instead of 2, the reason is
-// that do not break the current caller.
-func KeepEmptyBlocks() Option {
-	return func(t *Tokenizer) {
-		t.keepEmptyBlocks = true
-	}
-}
-
-func SplitCommentBeforeDelimiter() Option {
-	return func(t *Tokenizer) {
-		t.splitCommentBeforeDelimiter = true
-	}
-}
 
 type Tokenizer struct {
 	buffer           []rune
@@ -77,17 +37,11 @@ type Tokenizer struct {
 	reader  *bufio.Reader
 	f       func(string) error
 	readErr error
-
-	// Options.
-	// keepEmptyBlocks is used to keep empty lines between the blocks.
-	keepEmptyBlocks bool
-	// splitCommentBeforeDelimiter is used to split comment before delimiter.
-	splitCommentBeforeDelimiter bool
 }
 
 // NewTokenizer creates a new tokenizer.
 // Notice: we append an additional eofRune in the statement. This is a sentinel rune.
-func NewTokenizer(statement string, options ...Option) *Tokenizer {
+func NewTokenizer(statement string) *Tokenizer {
 	t := &Tokenizer{
 		buffer: []rune(statement),
 		cursor: 0,
@@ -100,10 +54,6 @@ func NewTokenizer(statement string, options ...Option) *Tokenizer {
 	// append an additional eofRune.
 	t.buffer = append(t.buffer, eofRune)
 	t.bufferByteOffset = append(t.bufferByteOffset, len(statement))
-
-	for _, option := range options {
-		option(t)
-	}
 
 	return t
 }
@@ -416,6 +366,7 @@ func (t *Tokenizer) SplitTiDBMultiSQL() ([]base.SingleSQL, error) {
 	var res []base.SingleSQL
 	delimiter := []rune{';'}
 
+	// TODO(zp):Start position.
 	t.skipBlank()
 	t.emptyStatement = true
 	startPos := t.cursor
@@ -439,7 +390,7 @@ func (t *Tokenizer) SplitTiDBMultiSQL() ([]base.SingleSQL, error) {
 						// but we want to get the line of last line of the SQL
 						// which means the line of ')'.
 						// So we need minus the aboveNonBlankLineDistance.
-						LastLine:        t.line - t.aboveNonBlankLineDistance(),
+						End:             &store.Position{Line: int32(t.line - t.aboveNonBlankLineDistance())},
 						Empty:           t.emptyStatement,
 						ByteOffsetStart: t.getByteOffset(int(startPos)),
 						ByteOffsetEnd:   t.getByteOffset(int(t.pos())),
@@ -450,24 +401,6 @@ func (t *Tokenizer) SplitTiDBMultiSQL() ([]base.SingleSQL, error) {
 				}
 			}
 
-			if t.keepEmptyBlocks {
-				newRes := make([]base.SingleSQL, 0, len(res))
-				baseline := 0
-				for _, sql := range res {
-					lines := strings.Split(sql.Text, "\n")
-					if lap := sql.LastLine - len(lines) - baseline; lap > 0 {
-						newRes = append(newRes, base.SingleSQL{
-							Text:     strings.Repeat("\n", lap-1),
-							BaseLine: baseline,
-							LastLine: baseline + lap,
-							Empty:    true,
-						})
-					}
-					newRes = append(newRes, sql)
-					baseline = sql.LastLine
-				}
-				return newRes, t.readErr
-			}
 			return res, t.readErr
 		case t.equalWordCaseInsensitive(delimiter):
 			t.skip(uint(len(delimiter)))
@@ -475,7 +408,7 @@ func (t *Tokenizer) SplitTiDBMultiSQL() ([]base.SingleSQL, error) {
 			if t.f == nil {
 				res = append(res, base.SingleSQL{
 					Text:            text,
-					LastLine:        t.line,
+					End:             &store.Position{Line: int32(t.line)},
 					Empty:           t.emptyStatement,
 					ByteOffsetStart: t.getByteOffset(int(startPos)),
 					ByteOffsetEnd:   t.getByteOffset(int(t.pos())),
@@ -489,23 +422,6 @@ func (t *Tokenizer) SplitTiDBMultiSQL() ([]base.SingleSQL, error) {
 			t.emptyStatement = true
 		// deal with the DELIMITER statement, see https://dev.mysql.com/doc/refman/8.0/en/stored-programs-defining.html
 		case t.equalWordCaseInsensitive(delimiterRuneList):
-			if t.splitCommentBeforeDelimiter {
-				if v := t.getString(startPos, t.pos()-startPos); v != "" {
-					line := t.line
-					// Any better way to handle comment before delimiter, and we want to get two
-					// blocks of SQL, one is the comment, the other is the delimiter.
-					if strings.HasSuffix(v, "\n") {
-						v = v[:len(v)-1]
-						line--
-					}
-					res = append(res, base.SingleSQL{
-						Text:     v,
-						LastLine: line,
-						Empty:    true,
-					})
-				}
-				startPos = t.pos()
-			}
 			t.skip(uint(len(delimiterRuneList)))
 			t.skipBlank()
 			delimiterStart := t.pos()
@@ -515,7 +431,7 @@ func (t *Tokenizer) SplitTiDBMultiSQL() ([]base.SingleSQL, error) {
 			if t.f == nil {
 				res = append(res, base.SingleSQL{
 					Text:            text,
-					LastLine:        t.line,
+					End:             &store.Position{Line: int32(t.line)},
 					Empty:           false,
 					ByteOffsetStart: t.getByteOffset(int(startPos)),
 					ByteOffsetEnd:   t.getByteOffset(int(t.pos())),
@@ -610,11 +526,16 @@ func (t *Tokenizer) SplitStandardMultiSQL() ([]base.SingleSQL, error) {
 			text := t.getString(startPos, t.pos()-startPos)
 			if t.f == nil {
 				res = append(res, base.SingleSQL{
-					Text:                 text,
-					LastLine:             t.line - 1,             // Convert to 0-based.
-					FirstStatementLine:   firstStatementLine - 1, // Convert to 0-based.
-					FirstStatementColumn: firstStatementColumn,
-					Empty:                t.emptyStatement,
+					Text: text,
+					End: &store.Position{
+						Line: int32(t.line - 1), // Convert to 0-based.
+					},
+					// TODO(zp/position): fix column, use bytes instead of rune.
+					Start: &store.Position{
+						Line:   int32(firstStatementLine - 1), // Convert to 0-based.
+						Column: int32(firstStatementColumn),
+					},
+					Empty: t.emptyStatement,
 				})
 			}
 			t.skipBlank()
@@ -643,10 +564,13 @@ func (t *Tokenizer) SplitStandardMultiSQL() ([]base.SingleSQL, error) {
 						// but we want to get the line of last line of the SQL
 						// which means the line of ')'.
 						// So we need minus the aboveNonBlankLineDistance.
-						LastLine:             t.line - t.aboveNonBlankLineDistance() - 1, // Convert to 0-based.
-						FirstStatementLine:   firstStatementLine - 1,                     // Convert to 0-based.
-						FirstStatementColumn: firstStatementColumn,
-						Empty:                t.emptyStatement,
+						End: &store.Position{Line: int32(t.line - t.aboveNonBlankLineDistance() - 1)},
+						// TODO(zp/position): fix column, use bytes instead of rune.
+						Start: &store.Position{
+							Line:   int32(firstStatementLine - 1), // Convert to 0-based.
+							Column: int32(firstStatementColumn),
+						},
+						Empty: t.emptyStatement,
 					})
 				}
 				if err := t.processStreaming(s); err != nil {
@@ -718,9 +642,9 @@ func (t *Tokenizer) SplitPostgreSQLMultiSQL() ([]base.SingleSQL, error) {
 			text := t.getString(startPos, t.pos()-startPos)
 			if t.f == nil {
 				res = append(res, base.SingleSQL{
-					Text:     text,
-					LastLine: t.line,
-					Empty:    t.emptyStatement,
+					Text:  text,
+					End:   &store.Position{Line: int32(t.line - 1)},
+					Empty: t.emptyStatement,
 				})
 			}
 			t.skipBlank()
@@ -747,8 +671,10 @@ func (t *Tokenizer) SplitPostgreSQLMultiSQL() ([]base.SingleSQL, error) {
 						// but we want to get the line of last line of the SQL
 						// which means the line of ')'.
 						// So we need minus the aboveNonBlankLineDistance.
-						LastLine: t.line - t.aboveNonBlankLineDistance(),
-						Empty:    t.emptyStatement,
+						End: &store.Position{
+							Line: int32(t.line - t.aboveNonBlankLineDistance() - 1),
+						},
+						Empty: t.emptyStatement,
 					})
 				}
 				if err := t.processStreaming(s); err != nil {

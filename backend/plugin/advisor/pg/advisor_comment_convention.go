@@ -83,7 +83,7 @@ func (checker *commentConventionChecker) Visit(node ast.Node) ast.Visitor {
 			Code:          advisor.CommentTooLong.Int32(),
 			Title:         checker.title,
 			Content:       fmt.Sprintf("The length of comment should be within %d characters", checker.maxLength),
-			StartPosition: common.ConvertANTLRLineToPosition(comment.line),
+			StartPosition: common.ConvertPGParserLineToPosition(comment.line),
 		})
 	}
 

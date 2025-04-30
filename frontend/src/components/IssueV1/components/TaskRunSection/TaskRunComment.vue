@@ -94,6 +94,9 @@ const comment = computed(() => {
       if (cause?.task) {
         return t("task-run.status.waiting-task");
       }
+      if (cause?.parallelTasksLimit) {
+        return t("task-run.status.waiting-max-tasks-per-rollout");
+      }
     }
 
     const lastLogEntry = last(taskRun.taskRunLog.entries);

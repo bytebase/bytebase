@@ -66,7 +66,7 @@ func (checker *statementAddFKNotValidChecker) Visit(in ast.Node) ast.Visitor {
 				Code:          advisor.StatementAddFKWithValidation.Int32(),
 				Title:         checker.title,
 				Content:       "Adding foreign keys with validation will block reads and writes. You can add check foreign keys not valid and then validate separately",
-				StartPosition: common.ConvertANTLRLineToPosition(checker.line),
+				StartPosition: common.ConvertPGParserLineToPosition(checker.line),
 			})
 		}
 	}

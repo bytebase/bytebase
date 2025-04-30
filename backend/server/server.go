@@ -46,6 +46,7 @@ import (
 	"github.com/bytebase/bytebase/backend/resources/postgres"
 	"github.com/bytebase/bytebase/backend/runner/approval"
 	"github.com/bytebase/bytebase/backend/runner/metricreport"
+	"github.com/bytebase/bytebase/backend/runner/monitor"
 	"github.com/bytebase/bytebase/backend/runner/plancheck"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/runner/taskrun"
@@ -177,7 +178,7 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	// Cache the license.
 	s.licenseService.LoadSubscription(ctx)
 
-	if err := s.getInitSetting(ctx); err != nil {
+	if err := s.initializeSetting(ctx); err != nil {
 		return nil, errors.Wrap(err, "failed to init config")
 	}
 	secret, err := s.store.GetSecret(ctx)
@@ -223,7 +224,7 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	)
 
 	s.metricReporter = metricreport.NewReporter(s.store, s.licenseService, s.profile)
-	s.schemaSyncer = schemasync.NewSyncer(stores, s.dbFactory, s.stateCfg)
+	s.schemaSyncer = schemasync.NewSyncer(stores, s.dbFactory, s.profile, s.stateCfg)
 	s.approvalRunner = approval.NewRunner(stores, sheetManager, s.dbFactory, s.stateCfg, s.webhookManager, s.licenseService)
 
 	s.taskSchedulerV2 = taskrun.NewSchedulerV2(stores, s.stateCfg, s.webhookManager, profile, s.licenseService)
@@ -289,21 +290,7 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	// LSP server.
 	s.lspServer = lsp.NewServer(s.store, profile)
 
-	postCreateUser := func(ctx context.Context, user *store.UserMessage, firstEndUser bool) error {
-		// Only generate onboarding data after the first enduser signup.
-		if firstEndUser {
-			if profile.SampleDatabasePort != 0 {
-				if err := s.generateOnboardingData(ctx, user); err != nil {
-					// When running inside docker on mac, we sometimes get database does not exist error.
-					// This is due to the docker overlay storage incompatibility with mac OS file system.
-					// Onboarding error is not critical, so we just emit an error log.
-					slog.Error("failed to prepare onboarding data", log.BBError(err))
-				}
-			}
-		}
-		return nil
-	}
-	if err := configureGrpcRouters(ctx, mux, s.grpcServer, s.store, sheetManager, s.dbFactory, s.licenseService, s.profile, s.metricReporter, s.stateCfg, s.schemaSyncer, s.webhookManager, s.iamManager, postCreateUser, secret); err != nil {
+	if err := configureGrpcRouters(ctx, mux, s.grpcServer, s.store, sheetManager, s.dbFactory, s.licenseService, s.profile, s.metricReporter, s.stateCfg, s.schemaSyncer, s.webhookManager, s.iamManager, secret); err != nil {
 		return nil, err
 	}
 	directorySyncServer := directorysync.NewService(s.store, s.licenseService, s.iamManager)
@@ -340,6 +327,10 @@ func (s *Server) Run(ctx context.Context, port int) error {
 
 	s.runnerWG.Add(1)
 	go s.planCheckScheduler.Run(ctx, &s.runnerWG)
+
+	s.runnerWG.Add(1)
+	mmm := monitor.NewMemoryMonitor(s.profile)
+	go mmm.Run(ctx, &s.runnerWG)
 
 	address := fmt.Sprintf(":%d", port)
 	listener, err := net.Listen("tcp", address)

@@ -246,8 +246,8 @@
       },
       "summary-report": "Summary report"
     },
-    "rollout-time": "Rollout time",
-    "earliest-allowed-time-hint": "@:{'task.rollout-time'} is when you want a task to run; if unspecified, it runs when all criteria are met.",
+    "earliest-allowed-time": "Earliest rollout time",
+    "earliest-allowed-time-hint": "@:{'task.earliest-allowed-time'} is the earliest time to rollout the issue, you cannot rollout before this time; if unspecified, it runs when all criteria are met.",
     "earliest-allowed-time-unset": "Unset",
     "comment": "Comment",
     "started": "Started",
@@ -292,7 +292,8 @@
       "enqueued": "Waiting for execution.",
       "enqueued-with-rollout-time": "Waiting to execute after {time}.",
       "waiting-connection": "Waiting for available instance connections. The instance connection count has reached the limit set on Bytebase.",
-      "waiting-task": "Waiting for another task to finish."
+      "waiting-task": "Waiting for another task to finish.",
+      "waiting-max-tasks-per-rollout": "Waiting for other tasks to finish. Maximum running tasks limit per rollout has been reached."
     }
   },
   "banner": {
@@ -307,7 +308,6 @@
   },
   "bbkit": {
     "common": {
-      "cancel": "Cancel",
       "back": "Back",
       "next": "Next"
     },
@@ -401,11 +401,13 @@
         "reset-token": "Reset token",
         "reset-token-warning": "You need to update the Entra application provisioning config."
       },
+      "all-users": "All users",
       "search-member": "Search member",
       "revoked": "Revoked",
       "view-by-members": "View by members",
       "revoke-access": "Revoke Access",
       "revoke-access-alert": "Are you sure to revoke access?",
+      "revoke-allusers-alert": "Revoke \"@:{'settings.members.all-users'}\" will revoke related roles from all other users in your workspace. Are you sure to continue?",
       "grant-access": "Grant Access",
       "select-user": "Select user | Select users",
       "select-group": "Select group | Select groups",
@@ -1263,9 +1265,9 @@
       "title": "Access Control",
       "disable-copy-data-from-sql-editor": "Restrict data copying in SQL Editor (Admins/DBAs allowed)",
       "restrict-admin-connection": {
-        "self": "Admin connection query restrictions",
-        "disallow": "Disallow querying data from the admin connection",
-        "fallback": "Fallback to the admin connection if no read-only connection is available"
+        "self": "Disallow querying admin data source",
+        "disallow": "Disallow querying data from the admin data source",
+        "fallback": "Fallback to the admin data source if no read-only connection is available"
       }
     },
     "statement-execution": {
@@ -1328,7 +1330,7 @@
     "rollout": {
       "name": "Rollout Policy",
       "tip": "The policy is applied to issues retroactively.",
-      "info": "Tasks can be executed by users with 'taskRuns.create' permission or the following roles",
+      "info": "Tasks can be executed by users with '{permission}' permission or the following roles",
       "auto": "Automatic",
       "auto-info": "If all check pass, the change will be rolled out and executed automatically.",
       "last-issue-approver": "Last Issue Approver"
@@ -1644,6 +1646,10 @@
         "ci-sampling-size": {
           "self": "CI Data Sampling Size",
           "description": "The maximum number of databases to sample during CI data validation. When disabled (zero), full validation will be performed."
+        },
+        "parallel_tasks_per_rollout": {
+          "self": "Parallel tasks per rollout",
+          "description": "Control the number of parallel tasks per rollout. Setting this to zero disables any throttling."
         }
       }
     },
@@ -1736,7 +1742,7 @@
     "rows": "row | rows",
     "vertical-display": "Vertical display",
     "no-history-found": "No history found",
-    "search-history": "Search History",
+    "search-history-by-statement": "Search by statement",
     "binary-format": "Binary format",
     "hex-format": "Hexadecimal format",
     "boolean-format": "Boolean format",
@@ -1978,13 +1984,6 @@
     "button": {
       "upgrade": "Upgrade"
     },
-    "trial-start-modal": {
-      "title": "Start your {plan} trial",
-      "content": "Your {plan} trial has started! You can access {plan} features before {date}.",
-      "button": "Got it",
-      "subscription-page": "subscription page",
-      "subscription": "Go to the {page} to learn these features and our plans."
-    },
     "description": "You can upload your Bytebase license to unlock pro/enterprise features.",
     "upload-license": "Upload license",
     "upgrade-trial-button": "Upgrade trial",
@@ -2140,13 +2139,6 @@
     "self": "Sensitive Data"
   },
   "resource": {
-    "environment": "Environment",
-    "instance": "Instance",
-    "project": "Project",
-    "idp": "Identity Provider",
-    "database-group": "Database Group",
-    "changelist": "Changelist",
-    "review-config": "Review Config",
     "delete-warning": "The \"{name}\" will be deleted. This action cannot be undone.",
     "delete-warning-with-resources": "The \"{name}\" is used by following resources:",
     "delete-warning-retry": "Please remove it from these resources then retry again."
@@ -2157,9 +2149,10 @@
     "cannot-be-changed-later": "It cannot be changed later.",
     "validation": {
       "duplicated": "The {resource} ID already exists. Please choose another one.",
-      "pattern": "The {resource} ID can only contain lowercase letters, numbers, and hyphens. It must start with a lowercase letter.",
+      "pattern": "The {resource} ID can have lowercase letters, digits, or hyphens. It must start with a lowercase letter and end with a letter or number.",
       "minlength": "The {resource} ID is too short. It should have at least 1 character.",
-      "overflow": "The {resource} ID is too long. It should have less than 64 characters."
+      "overflow": "The {resource} ID is too long. It should have less than 64 characters.",
+      "empty": "The {resource} ID cannot be empty"
     }
   },
   "multi-factor": {
@@ -2403,7 +2396,6 @@
       "title-placeholder": "Input role title",
       "description-placeholder": "Input role description"
     },
-    "default-workspace-role": "Users will get the \"Workspace Member\" role by default",
     "title": "Title",
     "select-role": "Select role",
     "expired-tip": "The role might has been expired.",
@@ -2590,7 +2582,24 @@
     "self": "Worksheet"
   },
   "setup": {
-    "self": "Setup"
+    "self": "Setup",
+    "basic-info": "Basic info",
+    "skip-setup": "Skip setup",
+    "purposes": {
+      "self": "What's your main purpose with Bytebase?",
+      "alter-schema": "Alter schema",
+      "query-data": "Query data"
+    },
+    "workflow": {
+      "self": "What's your workflow with database?",
+      "team": "Work with teammates, need CI/CD pipeline",
+      "simple": "No complex workflow, just need UI tools"
+    },
+    "data": {
+      "self-setup": "Setup the project",
+      "built-in": "Use built-in sample",
+      "built-in-desc": "Generate sample project and instances"
+    }
   },
   "landing": {
     "quick-link": {

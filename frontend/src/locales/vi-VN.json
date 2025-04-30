@@ -246,8 +246,8 @@
       },
       "summary-report": "Báo cáo tổng hợp"
     },
-    "rollout-time": "Thời gian triển khai",
-    "earliest-allowed-time-hint": "Thời gian sớm nhất cho phép là @:{'task.rollout-time'} là khi bạn muốn một tác vụ chạy; nếu không được chỉ định, nó sẽ chạy khi tất cả các tiêu chí được đáp ứng.",
+    "earliest-allowed-time": "Thời gian triển khai sớm nhất",
+    "earliest-allowed-time-hint": "@:{'task.earliest-allowed-time'} là thời gian sớm nhất để triển khai sự cố, bạn không thể triển khai trước thời gian này; nếu không được chỉ định, sự cố sẽ chạy khi đáp ứng tất cả các tiêu chí.",
     "earliest-allowed-time-unset": "Không đặt",
     "comment": "Bình luận",
     "started": "Bắt đầu",
@@ -292,7 +292,8 @@
       "enqueued": "Đang chờ thực thi.",
       "enqueued-with-rollout-time": "Đang chờ thực thi sau {time}.",
       "waiting-connection": "Đang chờ kết nối thể hiện có sẵn. Số lượng kết nối thể hiện đã đạt đến giới hạn được đặt trên Bytebase.",
-      "waiting-task": "Đang chờ một tác vụ khác kết thúc."
+      "waiting-task": "Đang chờ một tác vụ khác kết thúc.",
+      "waiting-max-tasks-per-rollout": "Đang chờ các tác vụ khác hoàn thành. Đã đạt đến giới hạn số lượng tác vụ đang chạy tối đa cho mỗi lần triển khai."
     }
   },
   "banner": {
@@ -307,7 +308,6 @@
   },
   "bbkit": {
     "common": {
-      "cancel": "Hủy",
       "back": "Quay lại",
       "next": "Tiếp"
     },
@@ -401,11 +401,13 @@
         "reset-token": "Đặt lại mã thông báo",
         "reset-token-warning": "Bạn cần cập nhật cấu hình cung cấp ứng dụng Entra."
       },
+      "all-users": "Tất cả người dùng",
       "search-member": "Tìm kiếm thành viên",
       "revoked": "Đã thu hồi",
       "view-by-members": "Xem theo thành viên",
       "revoke-access": "Thu hồi Quyền truy cập",
       "revoke-access-alert": "Bạn có chắc muốn thu hồi quyền truy cập?",
+      "revoke-allusers-alert": "Thu hồi \"@:{'settings.members.all-users'}\" sẽ thu hồi các vai trò liên quan từ tất cả người dùng khác trong không gian làm việc của bạn. Bạn có chắc chắn muốn tiếp tục không?",
       "grant-access": "Cấp Quyền truy cập",
       "select-user": "Chọn người dùng | Chọn người dùng",
       "select-group": "Chọn nhóm | Chọn nhóm",
@@ -1263,8 +1265,8 @@
       "title": "Kiểm soát truy cập",
       "disable-copy-data-from-sql-editor": "Hạn chế sao chép dữ liệu trong Trình soạn thảo SQL (Quản trị viên/DBA được phép)",
       "restrict-admin-connection": {
-        "self": "Hạn chế truy vấn kết nối quản trị",
-        "disallow": "Không cho phép truy vấn dữ liệu từ kết nối quản trị",
+        "self": "Không cho phép truy vấn nguồn dữ liệu quản trị",
+        "disallow": "Không cho phép truy vấn dữ liệu từ nguồn dữ liệu quản trị",
         "fallback": "Quay lại kết nối quản trị nếu không có kết nối chỉ đọc"
       }
     },
@@ -1644,6 +1646,10 @@
         "ci-sampling-size": {
           "self": "Kích thước lấy mẫu dữ liệu CI",
           "description": "Số lượng cơ sở dữ liệu tối đa để lấy mẫu trong quá trình xác thực dữ liệu CI. \nKhi bị vô hiệu hóa (không), xác thực đầy đủ sẽ được thực hiện."
+        },
+        "parallel_tasks_per_rollout": {
+          "self": "Nhiệm vụ song song cho mỗi lần triển khai",
+          "description": "Kiểm soát số lượng các tác vụ song song cho mỗi lần triển khai. \nĐặt điều này thành 0 vô hiệu hóa bất kỳ điều chỉnh."
         }
       }
     },
@@ -1736,7 +1742,7 @@
     "rows": "dòng | dòng",
     "vertical-display": "Hiển thị dọc",
     "no-history-found": "Không tìm thấy lịch sử",
-    "search-history": "Tìm kiếm Lịch sử",
+    "search-history-by-statement": "Tìm kiếm theo câu lệnh",
     "binary-format": "Định dạng nhị phân",
     "hex-format": "Định dạng thập lục phân",
     "boolean-format": "Định dạng Boolean",
@@ -1978,13 +1984,6 @@
     "button": {
       "upgrade": "Nâng cấp"
     },
-    "trial-start-modal": {
-      "title": "Bắt đầu dùng thử {plan} của bạn",
-      "content": "Bản dùng thử {plan} của bạn đã bắt đầu! Bạn có thể truy cập các tính năng {plan} trước {date}.",
-      "button": "Đã hiểu",
-      "subscription-page": "trang đăng ký",
-      "subscription": "Đi tới {page} để tìm hiểu các tính năng này và các gói của chúng tôi."
-    },
     "description": "Bạn có thể tải lên giấy phép Bytebase của mình để mở khóa các tính năng chuyên nghiệp/doanh nghiệp.",
     "upload-license": "Tải lên giấy phép",
     "upgrade-trial-button": "Nâng cấp bản dùng thử",
@@ -2140,13 +2139,6 @@
     "self": "Dữ liệu nhạy cảm"
   },
   "resource": {
-    "environment": "Môi trường",
-    "instance": "Phiên bản",
-    "project": "Dự án",
-    "idp": "Nhà cung cấp danh tính",
-    "database-group": "Nhóm cơ sở dữ liệu",
-    "changelist": "Danh sách thay đổi",
-    "review-config": "Cấu hình đánh giá",
     "delete-warning": "\"{name}\" sẽ bị xóa. Hành động này không thể hoàn tác.",
     "delete-warning-with-resources": "\"{name}\" được sử dụng bởi các tài nguyên sau:",
     "delete-warning-retry": "Vui lòng xóa nó khỏi các tài nguyên này rồi thử lại."
@@ -2157,9 +2149,10 @@
     "cannot-be-changed-later": "Nó không thể được thay đổi sau này.",
     "validation": {
       "duplicated": "ID {resource} đã tồn tại. Vui lòng chọn một ID khác.",
-      "pattern": "ID {resource} chỉ có thể chứa chữ cái viết thường, số và dấu gạch ngang. Nó phải bắt đầu bằng một chữ cái viết thường.",
+      "pattern": "ID {resource} có thể có chữ thường, chữ số hoặc dấu gạch nối. \nNó phải bắt đầu với một chữ cái viết thường và kết thúc bằng một chữ cái hoặc số.",
       "minlength": "ID {resource} quá ngắn. Nó phải có ít nhất 1 ký tự.",
-      "overflow": "ID {resource} quá dài. Nó phải có ít hơn 64 ký tự."
+      "overflow": "ID {resource} quá dài. Nó phải có ít hơn 64 ký tự.",
+      "empty": "ID {resource} không được để trống"
     }
   },
   "multi-factor": {
@@ -2403,7 +2396,6 @@
       "title-placeholder": "Nhập tiêu đề vai trò",
       "description-placeholder": "Nhập mô tả vai trò"
     },
-    "default-workspace-role": "Người dùng sẽ nhận được vai trò \"Thành viên không gian làm việc\" theo mặc định",
     "title": "Tiêu đề",
     "select-role": "Chọn vai trò",
     "expired-tip": "Vai trò có thể đã hết hạn.",
@@ -2590,7 +2582,24 @@
     "self": "Bảng tính"
   },
   "setup": {
-    "self": "Thiết lập"
+    "self": "Thiết lập",
+    "basic-info": "Thông tin cơ bản",
+    "skip-setup": "Bỏ qua thiết lập",
+    "purposes": {
+      "self": "Mục đích chính của bạn khi sử dụng Bytebase là gì?",
+      "alter-schema": "Thay đổi lược đồ",
+      "query-data": "Truy vấn dữ liệu"
+    },
+    "workflow": {
+      "self": "Quy trình làm việc của bạn với cơ sở dữ liệu là gì?",
+      "team": "Làm việc với đồng đội, cần có đường ống CI/CD",
+      "simple": "Không có quy trình làm việc phức tạp, chỉ cần các công cụ UI"
+    },
+    "data": {
+      "self-setup": "Thiết lập dự án",
+      "built-in": "Sử dụng mẫu tích hợp",
+      "built-in-desc": "Tạo dự án mẫu và các trường hợp"
+    }
   },
   "landing": {
     "quick-link": {

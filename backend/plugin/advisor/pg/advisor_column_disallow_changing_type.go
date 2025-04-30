@@ -73,7 +73,7 @@ func (checker *columnDisallowChangingTypeChecker) Visit(in ast.Node) ast.Visitor
 			Code:          code.Int32(),
 			Title:         checker.title,
 			Content:       fmt.Sprintf("The statement \"%s\" changes column type", checker.text),
-			StartPosition: common.ConvertANTLRLineToPosition(checker.line),
+			StartPosition: common.ConvertPGParserLineToPosition(checker.line),
 		})
 	}
 

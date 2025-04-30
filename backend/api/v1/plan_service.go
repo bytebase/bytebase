@@ -8,6 +8,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/cel-go/cel"
+	celast "github.com/google/cel-go/common/ast"
+	celoperators "github.com/google/cel-go/common/operators"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
@@ -914,58 +917,84 @@ func (s *PlanService) BatchCancelPlanCheckRuns(ctx context.Context, request *v1p
 }
 
 func (s *PlanService) buildPlanFindWithFilter(ctx context.Context, planFind *store.FindPlanMessage, filter string) error {
-	filters, err := ParseFilter(filter)
+	if filter == "" {
+		return nil
+	}
+
+	e, err := cel.NewEnv()
 	if err != nil {
-		return errors.Wrap(err, "failed to parse filter")
+		return status.Errorf(codes.Internal, "failed to create cel env")
 	}
-	for _, spec := range filters {
-		switch spec.Key {
-		case "creator":
-			if spec.Operator != ComparatorTypeEqual {
-				return errors.New(`only support "=" operation for "creator" filter`)
+	ast, iss := e.Parse(filter)
+	if iss != nil {
+		return status.Errorf(codes.InvalidArgument, "failed to parse filter %v, error: %v", filter, iss.String())
+	}
+
+	var parseFilter func(expr celast.Expr) (string, error)
+	parseFilter = func(expr celast.Expr) (string, error) {
+		switch expr.Kind() {
+		case celast.CallKind:
+			functionName := expr.AsCall().FunctionName()
+			switch functionName {
+			case celoperators.LogicalAnd:
+				return getSubConditionFromExpr(expr, parseFilter, "AND")
+			case celoperators.Equals:
+				variable, value := getVariableAndValueFromExpr(expr)
+				switch variable {
+				case "creator":
+					user, err := s.getUserByIdentifier(ctx, value.(string))
+					if err != nil {
+						return "", status.Errorf(codes.Internal, "failed to get user %v with error %v", value, err.Error())
+					}
+					planFind.CreatorID = &user.ID
+				case "has_pipeline":
+					hasPipeline, ok := value.(bool)
+					if !ok {
+						return "", status.Errorf(codes.InvalidArgument, `"has_pipeline" should be bool`)
+					}
+					if !hasPipeline {
+						planFind.NoPipeline = true
+					}
+				case "has_issue":
+					hasIssue, ok := value.(bool)
+					if !ok {
+						return "", status.Errorf(codes.InvalidArgument, `"has_issue" should be bool`)
+					}
+					if !hasIssue {
+						planFind.NoIssue = true
+					}
+				default:
+					return "", status.Errorf(codes.InvalidArgument, "unsupport variable %q with %v operator", variable, celoperators.Equals)
+				}
+			case celoperators.GreaterEquals, celoperators.LessEquals:
+				variable, rawValue := getVariableAndValueFromExpr(expr)
+				value, ok := rawValue.(string)
+				if !ok {
+					return "", errors.Errorf("expect string, got %T, hint: filter literals should be string", rawValue)
+				}
+				if variable != "create_time" {
+					return "", errors.Errorf(`">=" and "<=" are only supported for "create_time"`)
+				}
+				t, err := time.Parse(time.RFC3339, value)
+				if err != nil {
+					return "", errors.Errorf("failed to parse time %v, error: %v", value, err)
+				}
+				if functionName == celoperators.GreaterEquals {
+					planFind.CreatedAtAfter = &t
+				} else {
+					planFind.CreatedAtBefore = &t
+				}
 			}
-			user, err := s.getUserByIdentifier(ctx, spec.Value)
-			if err != nil {
-				return errors.Wrap(err, "failed to get user by identifier")
-			}
-			planFind.CreatorID = &user.ID
-		case "create_time":
-			if spec.Operator != ComparatorTypeGreaterEqual && spec.Operator != ComparatorTypeLessEqual {
-				return errors.New(`only support ">=" and "<=" operation for "create_time" filter`)
-			}
-			t, err := time.Parse(time.RFC3339, spec.Value)
-			if err != nil {
-				return errors.Wrap(err, "failed to parse create_time value")
-			}
-			if spec.Operator == ComparatorTypeGreaterEqual {
-				planFind.CreatedAtAfter = &t
-			} else {
-				planFind.CreatedAtBefore = &t
-			}
-		case "has_pipeline":
-			if spec.Operator != ComparatorTypeEqual {
-				return errors.New(`only support "=" operation for "has_pipeline" filter`)
-			}
-			switch spec.Value {
-			case "false":
-				planFind.NoPipeline = true
-			case "true":
-			default:
-				return errors.Errorf("invalid value %q for has_pipeline", spec.Value)
-			}
-		case "has_issue":
-			if spec.Operator != ComparatorTypeEqual {
-				return errors.New(`only support "=" operation for "has_issue" filter`)
-			}
-			switch spec.Value {
-			case "false":
-				planFind.NoIssue = true
-			case "true":
-			default:
-				return errors.Errorf("invalid value %q for has_issue", spec.Value)
-			}
+		default:
+			return "", errors.Errorf("unexpected expr kind %v", expr.Kind())
 		}
+		return "", nil
 	}
+
+	if _, err := parseFilter(ast.NativeRep().Expr()); err != nil {
+		return status.Errorf(codes.InvalidArgument, "failed to parse filter, error: %v", err)
+	}
+
 	return nil
 }
 

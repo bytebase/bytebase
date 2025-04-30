@@ -32,6 +32,7 @@ func MigrateSchema(ctx context.Context, pgURL string) error {
 	if err != nil {
 		return err
 	}
+	defer db.Close()
 	conn, err := db.Conn(ctx)
 	if err != nil {
 		return err

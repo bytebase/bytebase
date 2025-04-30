@@ -2,22 +2,21 @@ import type { RouteRecordRaw } from "vue-router";
 import SplashLayout from "@/layouts/SplashLayout.vue";
 import { t } from "@/plugins/i18n";
 
-export const SETUP_WORKSPACE_MODE_MODULE = "setup.workspace-mode";
+export const SETUP_MODULE = "setup";
 
 const setupRoutes: RouteRecordRaw[] = [
   {
     path: "/setup",
-    name: "setup",
     component: SplashLayout,
     children: [
       {
-        path: "mode",
-        name: SETUP_WORKSPACE_MODE_MODULE,
+        path: "",
+        name: SETUP_MODULE,
         meta: {
-          title: () => `${t("setup.self")} | ${"setup.workspace-mode"}`,
+          title: () => t("setup.self"),
           requiredPermissionList: () => ["bb.settings.get", "bb.settings.set"],
         },
-        component: () => import("@/views/Setup/WorkspaceMode.vue"),
+        component: () => import("@/views/Setup/Setup.vue"),
       },
     ],
   },

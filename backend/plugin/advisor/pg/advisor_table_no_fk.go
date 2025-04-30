@@ -89,7 +89,7 @@ func (checker *tableNoFKChecker) Visit(node ast.Node) ast.Visitor {
 				tableHasFK.Name,
 				checker.text,
 			),
-			StartPosition: common.ConvertANTLRLineToPosition(node.LastLine()),
+			StartPosition: common.ConvertPGParserLineToPosition(node.LastLine()),
 		})
 	}
 

@@ -78,32 +78,6 @@
       </div>
     </div>
   </div>
-  <div
-    v-if="showBookDemo"
-    class="bg-accent px-4 py-2 flex flex-wrap md:flex-nowrap items-center justify-center space-x-2"
-  >
-    <p class="ml-3 flex font-medium text-white items-center truncate">
-      📆
-      <a
-        href="https://cal.com/bytebase/product-walkthrough"
-        target="_blank"
-        class="flex underline ml-1"
-      >
-        {{ $t("banner.request-demo") }}
-      </a>
-    </p>
-
-    <div class="shrink-0 flex items-center gap-x-2">
-      <button
-        type="button"
-        class="flex rounded-md hover:bg-accent-hover focus:outline-none focus:ring-2 focus:ring-white"
-        @click.prevent="() => hideQuickstart(true)"
-      >
-        <span class="sr-only">{{ $t("common.dismiss") }}</span>
-        <XIcon class="h-4 w-4 text-white" />
-      </button>
-    </div>
-  </div>
 </template>
 
 <script setup lang="ts">
@@ -305,11 +279,6 @@ const showQuickstart = computed(() => {
     return false;
   }
   return true;
-});
-
-const showBookDemo = computed(() => {
-  if (showQuickstart.value) return false;
-  return isFirstUser.value;
 });
 
 const currentStep = computed(() => {

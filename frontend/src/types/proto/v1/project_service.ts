@@ -62,11 +62,13 @@ export interface SearchProjectsRequest {
   showDeleted: boolean;
   /**
    * Filter the project.
+   * The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+   *
    * Supported filters:
-   * - name
-   * - resource_id
-   * - exclude_default: if not include the default project.
-   * - state
+   * - name: the project name, support "==" and ".matches()" operator.
+   * - resource_id: the project id, support "==" and ".matches()" operator.
+   * - exclude_default: if not include the default project, should be "true" or "false", support "==" operator.
+   * - state: check the State enum for the values, support "==" operator.
    *
    * For example:
    * name = "project name"
@@ -201,7 +203,7 @@ export interface Project {
   skipBackupErrors: boolean;
   /**
    * Whether to enable the database tenant mode for PostgreSQL.
-   * If enabled, the issue will be created with the pre-appended "set role <db_owner>" statement.
+   * If enabled, the issue will be created with the prepend "set role <db_owner>" statement.
    */
   postgresDatabaseTenantMode: boolean;
   /** Whether to allow the issue creator to self-approve the issue. */
@@ -215,6 +217,8 @@ export interface Project {
    * Without specification, sampling is disabled, resulting in a full validation.
    */
   ciSamplingSize: number;
+  /** The maximum number of parallel tasks to run during the rollout. */
+  parallelTasksPerRollout: number;
 }
 
 export interface Project_ExecutionRetryPolicy {
@@ -1678,6 +1682,7 @@ function createBaseProject(): Project {
     allowSelfApproval: false,
     executionRetryPolicy: undefined,
     ciSamplingSize: 0,
+    parallelTasksPerRollout: 0,
   };
 }
 
@@ -1730,6 +1735,9 @@ export const Project: MessageFns<Project> = {
     }
     if (message.ciSamplingSize !== 0) {
       writer.uint32(184).int32(message.ciSamplingSize);
+    }
+    if (message.parallelTasksPerRollout !== 0) {
+      writer.uint32(192).int32(message.parallelTasksPerRollout);
     }
     return writer;
   },
@@ -1869,6 +1877,14 @@ export const Project: MessageFns<Project> = {
           message.ciSamplingSize = reader.int32();
           continue;
         }
+        case 24: {
+          if (tag !== 192) {
+            break;
+          }
+
+          message.parallelTasksPerRollout = reader.int32();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1906,6 +1922,9 @@ export const Project: MessageFns<Project> = {
         ? Project_ExecutionRetryPolicy.fromJSON(object.executionRetryPolicy)
         : undefined,
       ciSamplingSize: isSet(object.ciSamplingSize) ? globalThis.Number(object.ciSamplingSize) : 0,
+      parallelTasksPerRollout: isSet(object.parallelTasksPerRollout)
+        ? globalThis.Number(object.parallelTasksPerRollout)
+        : 0,
     };
   },
 
@@ -1959,6 +1978,9 @@ export const Project: MessageFns<Project> = {
     if (message.ciSamplingSize !== 0) {
       obj.ciSamplingSize = Math.round(message.ciSamplingSize);
     }
+    if (message.parallelTasksPerRollout !== 0) {
+      obj.parallelTasksPerRollout = Math.round(message.parallelTasksPerRollout);
+    }
     return obj;
   },
 
@@ -1985,6 +2007,7 @@ export const Project: MessageFns<Project> = {
       ? Project_ExecutionRetryPolicy.fromPartial(object.executionRetryPolicy)
       : undefined;
     message.ciSamplingSize = object.ciSamplingSize ?? 0;
+    message.parallelTasksPerRollout = object.parallelTasksPerRollout ?? 0;
     return message;
   },
 };

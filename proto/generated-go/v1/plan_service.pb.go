@@ -446,6 +446,17 @@ type SearchPlansRequest struct {
 	// the call that provided the page token.
 	PageToken string `protobuf:"bytes,3,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
 	// Filter is used to filter plans returned in the list.
+	// The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+	//
+	// Supported filters:
+	// - creator: the plan creator full name in "users/{email or id}" format, support "==" operator.
+	// - create_time: issue create time in "2006-01-02T15:04:05Z07:00" format, support ">=" or "<=" operator.
+	// - has_pipeline: the plan has pipeline or not, support "==" operator, the value should be "true" or "false".
+	// - has_issue: the plan has issue or not, support "==" operator, the value should be "true" or "false".
+	//
+	// For example:
+	// creator == "users/ed@bytebase.com" && create_time >= "2025-01-02T15:04:05Z07:00"
+	// has_pipeline == false && has_issue == true
 	Filter        string `protobuf:"bytes,4,opt,name=filter,proto3" json:"filter,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache

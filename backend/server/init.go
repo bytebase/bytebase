@@ -16,15 +16,16 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-func (s *Server) getInitSetting(ctx context.Context) error {
+func (s *Server) initializeSetting(ctx context.Context) error {
 	// secretLength is the length for the secret used to sign the JWT auto token.
 	const secretLength = 32
 
 	// initial branding
-	if _, _, err := s.store.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
+	_, firstTimeOnboarding, err := s.store.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
 		Name:  base.SettingBrandingLogo,
 		Value: "",
-	}); err != nil {
+	})
+	if err != nil {
 		return err
 	}
 
@@ -178,6 +179,7 @@ func (s *Server) getInitSetting(ctx context.Context) error {
 	}
 
 	// Init workspace IAM policy
+	// Ensure the admin role for system bot.
 	if _, err := s.store.PatchWorkspaceIamPolicy(ctx, &store.PatchIamPolicyMessage{
 		Member: common.FormatUserUID(base.SystemBotID),
 		Roles: []string{
@@ -186,13 +188,16 @@ func (s *Server) getInitSetting(ctx context.Context) error {
 	}); err != nil {
 		return err
 	}
-	if _, err := s.store.PatchWorkspaceIamPolicy(ctx, &store.PatchIamPolicyMessage{
-		Member: base.AllUsers,
-		Roles: []string{
-			common.FormatRole(base.WorkspaceMember.String()),
-		},
-	}); err != nil {
-		return err
+	if firstTimeOnboarding {
+		// Only grant workspace member role to allUsers at the first time.
+		if _, err := s.store.PatchWorkspaceIamPolicy(ctx, &store.PatchIamPolicyMessage{
+			Member: base.AllUsers,
+			Roles: []string{
+				common.FormatRole(base.WorkspaceMember.String()),
+			},
+		}); err != nil {
+			return err
+		}
 	}
 
 	// Init workspace environment setting

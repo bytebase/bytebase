@@ -47,10 +47,10 @@
       sourcetablename: test
       targettablename: _rollback_test_db
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition:
-        line: 18
+        line: 17
         column: 77
 - input: |-
     WITH t_cte AS (
@@ -66,10 +66,10 @@
       sourcetablename: test
       targettablename: _rollback_test_db
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition:
-        line: 3
+        line: 2
         column: 65
 - input: |-
     WITH t_cte AS (
@@ -85,10 +85,10 @@
       sourcetablename: test
       targettablename: _rollback_test_db
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition:
-        line: 3
+        line: 2
         column: 61
 - input: |-
     UPDATE test SET test.c1 = 1 WHERE test.b1 = 1;
@@ -118,10 +118,10 @@
       sourcetablename: test
       targettablename: _rollback_test_db
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition:
-        line: 7
+        line: 6
         column: 45
 - input: UPDATE t_generated SET a = 1 WHERE a = 2;
   result:
@@ -132,10 +132,10 @@
       sourcetablename: t_generated
       targettablename: _rollback_t_generated_db
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition:
-        line: 1
+        line: 0
         column: 40
 - input: |-
     UPDATE db1.t1 SET c1 = 1 WHERE c1 = 2;
@@ -148,10 +148,10 @@
       sourcetablename: t1
       targettablename: _rollback_t1_db1
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition:
-        line: 1
+        line: 0
         column: 37
     - statement: |-
         CREATE TABLE `backupDB`.`_rollback_t2_db2` LIKE `db2`.`t2`;
@@ -160,10 +160,10 @@
       sourcetablename: t2
       targettablename: _rollback_t2_db2
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition:
-        line: 2
+        line: 1
         column: 37
 - input: DELETE test FROM test, test2 as t2 where test.id = t2.id;
   result:
@@ -174,10 +174,10 @@
       sourcetablename: test
       targettablename: _rollback_test_db
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition:
-        line: 1
+        line: 0
         column: 56
 - input: DELETE t1, t2 FROM test as t1, test2 as t2 WHERE t1.id = t2.id;
   result:
@@ -188,10 +188,10 @@
       sourcetablename: test2
       targettablename: _rollback_test2_db
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition:
-        line: 1
+        line: 0
         column: 62
     - statement: |-
         CREATE TABLE `backupDB`.`_rollback_test_db` LIKE `db`.`test`;
@@ -200,10 +200,10 @@
       sourcetablename: test
       targettablename: _rollback_test_db
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition:
-        line: 1
+        line: 0
         column: 62
 - input: DELETE FROM t1, t2 USING test as t1, test2 as t2 WHERE t1.id = t2.id;
   result:
@@ -214,10 +214,10 @@
       sourcetablename: test2
       targettablename: _rollback_test2_db
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition:
-        line: 1
+        line: 0
         column: 68
     - statement: |-
         CREATE TABLE `backupDB`.`_rollback_test_db` LIKE `db`.`test`;
@@ -226,10 +226,10 @@
       sourcetablename: test
       targettablename: _rollback_test_db
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition:
-        line: 1
+        line: 0
         column: 68
 - input: DELETE FROM test as t1 WHERE t1.c1 = 1;
   result:
@@ -240,10 +240,10 @@
       sourcetablename: test
       targettablename: _rollback_test_db
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition:
-        line: 1
+        line: 0
         column: 38
 - input: DELETE FROM test WHERE c1 = 1;
   result:
@@ -254,10 +254,10 @@
       sourcetablename: test
       targettablename: _rollback_test_db
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition:
-        line: 1
+        line: 0
         column: 29
 - input: UPDATE test x SET x.c1 = 1 WHERE x.c1 = 1
   result:
@@ -268,10 +268,10 @@
       sourcetablename: test
       targettablename: _rollback_test_db
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition:
-        line: 1
+        line: 0
         column: 40
 - input: UPDATE test SET c1 = 1 WHERE c1=2;
   result:
@@ -282,10 +282,10 @@
       sourcetablename: test
       targettablename: _rollback_test_db
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition:
-        line: 1
+        line: 0
         column: 33
 - input: UPDATE test t1, test2 t2 SET t1.c1 = 1 WHERE t1.c1 = t2.c1;
   result:
@@ -296,10 +296,10 @@
       sourcetablename: test
       targettablename: _rollback_test_db
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition:
-        line: 1
+        line: 0
         column: 58
 - input: UPDATE test t1, test2 t2 SET t1.c1 = 1, t2.c2 = 2 WHERE t1.c1 = t2.c1;
   result:
@@ -310,10 +310,10 @@
       sourcetablename: test2
       targettablename: _rollback_test2_db
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition:
-        line: 1
+        line: 0
         column: 69
     - statement: |-
         CREATE TABLE `backupDB`.`_rollback_test_db` LIKE `db`.`test`;
@@ -322,10 +322,10 @@
       sourcetablename: test
       targettablename: _rollback_test_db
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition:
-        line: 1
+        line: 0
         column: 69
 - input: |-
     UPDATE test t1 SET t1.c1 = 2 WHERE t1.c1 = 1 ;
@@ -340,8 +340,8 @@
       sourcetablename: test
       targettablename: _rollback_test_db
       startposition:
-        line: 1
+        line: 0
         column: 0
       endposition:
-        line: 2
+        line: 1
         column: 45

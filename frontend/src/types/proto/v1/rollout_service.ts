@@ -699,6 +699,7 @@ export interface TaskRun_SchedulerInfo {
 export interface TaskRun_SchedulerInfo_WaitingCause {
   connectionLimit?: boolean | undefined;
   task?: TaskRun_SchedulerInfo_WaitingCause_Task | undefined;
+  parallelTasksLimit?: boolean | undefined;
 }
 
 export interface TaskRun_SchedulerInfo_WaitingCause_Task {
@@ -3777,7 +3778,7 @@ export const TaskRun_SchedulerInfo: MessageFns<TaskRun_SchedulerInfo> = {
 };
 
 function createBaseTaskRun_SchedulerInfo_WaitingCause(): TaskRun_SchedulerInfo_WaitingCause {
-  return { connectionLimit: undefined, task: undefined };
+  return { connectionLimit: undefined, task: undefined, parallelTasksLimit: undefined };
 }
 
 export const TaskRun_SchedulerInfo_WaitingCause: MessageFns<TaskRun_SchedulerInfo_WaitingCause> = {
@@ -3787,6 +3788,9 @@ export const TaskRun_SchedulerInfo_WaitingCause: MessageFns<TaskRun_SchedulerInf
     }
     if (message.task !== undefined) {
       TaskRun_SchedulerInfo_WaitingCause_Task.encode(message.task, writer.uint32(18).fork()).join();
+    }
+    if (message.parallelTasksLimit !== undefined) {
+      writer.uint32(24).bool(message.parallelTasksLimit);
     }
     return writer;
   },
@@ -3814,6 +3818,14 @@ export const TaskRun_SchedulerInfo_WaitingCause: MessageFns<TaskRun_SchedulerInf
           message.task = TaskRun_SchedulerInfo_WaitingCause_Task.decode(reader, reader.uint32());
           continue;
         }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.parallelTasksLimit = reader.bool();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3827,6 +3839,7 @@ export const TaskRun_SchedulerInfo_WaitingCause: MessageFns<TaskRun_SchedulerInf
     return {
       connectionLimit: isSet(object.connectionLimit) ? globalThis.Boolean(object.connectionLimit) : undefined,
       task: isSet(object.task) ? TaskRun_SchedulerInfo_WaitingCause_Task.fromJSON(object.task) : undefined,
+      parallelTasksLimit: isSet(object.parallelTasksLimit) ? globalThis.Boolean(object.parallelTasksLimit) : undefined,
     };
   },
 
@@ -3837,6 +3850,9 @@ export const TaskRun_SchedulerInfo_WaitingCause: MessageFns<TaskRun_SchedulerInf
     }
     if (message.task !== undefined) {
       obj.task = TaskRun_SchedulerInfo_WaitingCause_Task.toJSON(message.task);
+    }
+    if (message.parallelTasksLimit !== undefined) {
+      obj.parallelTasksLimit = message.parallelTasksLimit;
     }
     return obj;
   },
@@ -3850,6 +3866,7 @@ export const TaskRun_SchedulerInfo_WaitingCause: MessageFns<TaskRun_SchedulerInf
     message.task = (object.task !== undefined && object.task !== null)
       ? TaskRun_SchedulerInfo_WaitingCause_Task.fromPartial(object.task)
       : undefined;
+    message.parallelTasksLimit = object.parallelTasksLimit ?? undefined;
     return message;
   },
 };

@@ -246,8 +246,8 @@
       },
       "summary-report": "Informe resumido"
     },
-    "rollout-time": "Tiempo de implementación",
-    "earliest-allowed-time-hint": "El tiempo de implementación es cuando deseas que una tarea se ejecute; si no se especifica, se ejecuta cuando se cumplen todos los criterios.",
+    "earliest-allowed-time": "Tiempo de lanzamiento más temprano",
+    "earliest-allowed-time-hint": "@:{'task.earliest-allowed-time'} es el momento más temprano para implementar el problema, no se puede implementar antes de este momento; si no se especifica, se ejecuta cuando se cumplen todos los criterios.",
     "earliest-allowed-time-unset": "No establecido",
     "comment": "Comentario",
     "started": "Iniciado",
@@ -292,7 +292,8 @@
       "enqueued": "Esperando a ser ejecutada.",
       "enqueued-with-rollout-time": "Esperando para ejecutar, {time} para ejecutar.",
       "waiting-connection": "Esperando conexiones de instancias disponibles. El recuento de conexión de instancia ha alcanzado el límite establecido en Bytebase.",
-      "waiting-task": "Esperando a que termine otra tarea."
+      "waiting-task": "Esperando a que termine otra tarea.",
+      "waiting-max-tasks-per-rollout": "Esperando a que terminen otras tareas. Se ha alcanzado el límite máximo de tareas en ejecución por despliegue."
     }
   },
   "banner": {
@@ -307,7 +308,6 @@
   },
   "bbkit": {
     "common": {
-      "cancel": "Cancelar",
       "back": "Volver",
       "next": "Siguiente"
     },
@@ -401,11 +401,13 @@
         "reset-token": "Restablecer token",
         "reset-token-warning": "Debe actualizar la configuración de aprovisionamiento de aplicaciones de Entra."
       },
+      "all-users": "Todos los usuarios",
       "search-member": "Buscar miembro",
       "revoked": "Revocado",
       "view-by-members": "Ver por miembros",
       "revoke-access": "Revocar acceso",
       "revoke-access-alert": "¿Está seguro de revocar el acceso?",
+      "revoke-allusers-alert": "Revocar \"@:{'settings.members.all-users'}\" revocará los roles relacionados de todos los demás usuarios de su espacio de trabajo. ¿Desea continuar?",
       "grant-access": "Conceder acceso",
       "select-user": "Seleccionar usuario | Seleccionar usuarios",
       "select-group": "Seleccionar grupo | Seleccionar grupos",
@@ -1263,8 +1265,8 @@
       "title": "Control de Acceso",
       "disable-copy-data-from-sql-editor": "Restringir la copia de datos en el editor SQL (permitido para administradores/DBA)",
       "restrict-admin-connection": {
-        "self": "Restricciones de consulta de conexión de administrador",
-        "disallow": "Prohibir consultar datos desde la conexión de administrador",
+        "self": "No permitir consultar la fuente de datos de administración",
+        "disallow": "No permitir consultar datos de la fuente de datos de administración",
         "fallback": "Volver a la conexión de administrador si no hay una conexión de solo lectura disponible"
       }
     },
@@ -1328,7 +1330,7 @@
     "rollout": {
       "name": "Política de Implementación",
       "tip": "La política se aplica retrospectivamente a las incidencias.",
-      "info": "Las tareas pueden ser ejecutadas por usuarios con el permiso 'taskRuns.create' o los siguientes roles",
+      "info": "Las tareas pueden ser ejecutadas por usuarios con el permiso '{permission}' o los siguientes roles",
       "auto": "Automático",
       "auto-info": "Si se aprueban todas las comprobaciones, el cambio se implementará y ejecutará automáticamente.",
       "last-issue-approver": "Aprobador de último tema"
@@ -1644,6 +1646,10 @@
         "ci-sampling-size": {
           "self": "Tamaño de muestreo de datos de CI",
           "description": "El número máximo de bases de datos para probar durante la validación de datos de CI. \nCuando está deshabilitado (cero), se realizará la validación completa."
+        },
+        "parallel_tasks_per_rollout": {
+          "self": "Tareas paralelas por despliegue",
+          "description": "Controle el número de tareas paralelas por despliegue. \nEstablecer esto en cero deshabilita cualquier estrangulamiento."
         }
       }
     },
@@ -1736,7 +1742,7 @@
     "rows": "fila | filas",
     "vertical-display": "Pantalla vertical",
     "no-history-found": "No se encontró historial",
-    "search-history": "Historial de búsqueda",
+    "search-history-by-statement": "Búsqueda por enunciado",
     "binary-format": "Formato binario",
     "hex-format": "Formato hexadecimal",
     "boolean-format": "Formato booleano",
@@ -1978,13 +1984,6 @@
     "button": {
       "upgrade": "Actualizar"
     },
-    "trial-start-modal": {
-      "title": "Comience su prueba de {plan}",
-      "content": "¡Su prueba de {plan} ha comenzado! Puede acceder a las funciones de {plan} antes del {date}.",
-      "button": "Entendido",
-      "subscription-page": "página de suscripción",
-      "subscription": "Visite la {page} para conocer estas funciones y nuestros planes."
-    },
     "description": "Puedes subir tu licencia Bytebase para desbloquear funciones de edición/empresa.",
     "upload-license": "Subir licencia",
     "upgrade-trial-button": "Actualizar prueba",
@@ -2140,13 +2139,6 @@
     "self": "Datos Sensibles"
   },
   "resource": {
-    "environment": "Entorno",
-    "instance": "Instancia",
-    "project": "Proyecto",
-    "idp": "Proveedor de Identidad",
-    "database-group": "grupo de bases de datos",
-    "changelist": "Lista de cambios",
-    "review-config": "Revisar configuración",
     "delete-warning": "Se eliminará el elemento \"{name}\". Esta acción no se puede deshacer.",
     "delete-warning-with-resources": "El \"{name}\" lo utilizan los siguientes recursos:",
     "delete-warning-retry": "Elimínelo de estos recursos y vuelva a intentarlo."
@@ -2157,9 +2149,10 @@
     "cannot-be-changed-later": "No se puede cambiar posteriormente.",
     "validation": {
       "duplicated": "El ID de {resource} ya existe. Por favor, elige otro.",
-      "pattern": "El ID de {resource} solo puede contener letras minúsculas, números y guiones. Debe comenzar con una letra minúscula.",
+      "pattern": "La identificación {recurso} puede tener letras, dígitos o guiones minúsculas. Debe comenzar con una letra minúscula y terminar con una letra o número.",
       "minlength": "El ID de {resource} es demasiado corto. Debe tener al menos 1 carácter.",
-      "overflow": "El ID de {resource} es demasiado largo. Debe tener menos de 64 caracteres."
+      "overflow": "El ID de {resource} es demasiado largo. Debe tener menos de 64 caracteres.",
+      "empty": "El ID {resource} no puede estar vacío"
     }
   },
   "multi-factor": {
@@ -2403,7 +2396,6 @@
       "title-placeholder": "Ingrese el título del rol",
       "description-placeholder": "Ingrese la descripción del rol"
     },
-    "default-workspace-role": "Los usuarios obtendrán el rol de \"Miembro del espacio de trabajo\" de forma predeterminada.",
     "title": "Título",
     "select-role": "Seleccionar rol",
     "expired-tip": "El papel puede haber expirado.",
@@ -2590,7 +2582,24 @@
     "self": "Hoja de trabajo"
   },
   "setup": {
-    "self": "Configuración"
+    "self": "Configuración",
+    "basic-info": "Información básica",
+    "skip-setup": "Saltar configuración",
+    "purposes": {
+      "self": "¿Cuál es su propósito principal con Bytebase?",
+      "alter-schema": "Alterar esquema",
+      "query-data": "Consultar datos"
+    },
+    "workflow": {
+      "self": "¿Cuál es su flujo de trabajo con la base de datos?",
+      "team": "Trabajar con compañeros de equipo, necesita una canalización de CI/CD",
+      "simple": "No hay un flujo de trabajo complejo, solo se necesitan herramientas de interfaz de usuario"
+    },
+    "data": {
+      "self-setup": "Configurar el proyecto",
+      "built-in": "Utilice la muestra incorporada",
+      "built-in-desc": "Generar proyecto de muestra e instancias"
+    }
   },
   "landing": {
     "quick-link": {
