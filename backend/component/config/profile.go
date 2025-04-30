@@ -44,7 +44,7 @@ type Profile struct {
 	MetricConnectionKey string
 
 	// LastActiveTS is the service last active timestamp, any API calls will refresh this value.
-	LastActiveTS int64
+	LastActiveTS atomic.Int64
 	// Unique ID per Bytebase instance run.
 	DeployID string
 	// Whether the server is running in a docker container.
