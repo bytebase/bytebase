@@ -36,7 +36,7 @@ func NewMemoryMonitor(profile *config.Profile) *MemoryMonitor {
 	}
 }
 
-func (m *MemoryMonitor) Run(ctx context.Context, wg *sync.WaitGroup) {
+func (mm *MemoryMonitor) Run(ctx context.Context, wg *sync.WaitGroup) {
 	ticker := time.NewTicker(monitorInterval)
 	defer ticker.Stop()
 	defer wg.Done()
@@ -46,13 +46,13 @@ func (m *MemoryMonitor) Run(ctx context.Context, wg *sync.WaitGroup) {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			threshold := m.profile.RuntimeMemoryProfileThreshold.Load()
-			m.checkMemory(threshold)
+			threshold := mm.profile.RuntimeMemoryProfileThreshold.Load()
+			mm.checkMemory(threshold)
 		}
 	}
 }
 
-func (r *MemoryMonitor) checkMemory(memoryThreshold uint64) {
+func (mm *MemoryMonitor) checkMemory(memoryThreshold uint64) {
 	// memoryThreshold == 0 means no need to monitor
 	if memoryThreshold == 0 {
 		return
@@ -64,7 +64,7 @@ func (r *MemoryMonitor) checkMemory(memoryThreshold uint64) {
 		now := time.Now().Unix()
 
 		// Dump heap profile
-		heapFileName := filepath.Join(r.profile.DataDir, fmt.Sprintf("memory_dump_%d.prof", now))
+		heapFileName := filepath.Join(mm.profile.DataDir, fmt.Sprintf("memory_dump_%d.prof", now))
 		slog.Info("memory monitor: memory allocated exceeds memory threshold. will dump pprof memory and goroutine profile", "memoryUsage", m.Sys, "memoryThreshold", memoryThreshold)
 		slog.Info("memory monitor: dumping pprof memory profile", "fileName", heapFileName)
 
@@ -72,19 +72,19 @@ func (r *MemoryMonitor) checkMemory(memoryThreshold uint64) {
 			slog.Info("memory monitor: could not dump memory profile", "fileName", heapFileName, log.BBError(err))
 			// Continue to attempt goroutine dump even if heap dump fails
 		} else {
-			if err := retainMostRecentFiles(r.profile.DataDir, profileRetention); err != nil {
+			if err := retainMostRecentFiles(mm.profile.DataDir, profileRetention); err != nil {
 				slog.Info("memory monitor: failed to cleanup old dump files after heap dump", log.BBError(err))
 			}
 		}
 
 		// Dump goroutine profile
-		goroutineFileName := filepath.Join(r.profile.DataDir, fmt.Sprintf("goroutine_dump_%d.prof", now))
+		goroutineFileName := filepath.Join(mm.profile.DataDir, fmt.Sprintf("goroutine_dump_%d.prof", now))
 		slog.Info("memory monitor: dumping pprof goroutine profile", "fileName", goroutineFileName)
 
 		if err := dumpGoroutineProfile(goroutineFileName); err != nil {
 			slog.Info("memory monitor: could not dump goroutine profile", "fileName", goroutineFileName, log.BBError(err))
 		} else {
-			if err := retainMostRecentFiles(r.profile.DataDir, profileRetention); err != nil {
+			if err := retainMostRecentFiles(mm.profile.DataDir, profileRetention); err != nil {
 				slog.Info("memory monitor: failed to cleanup old dump files after goroutine dump", log.BBError(err))
 			}
 		}
