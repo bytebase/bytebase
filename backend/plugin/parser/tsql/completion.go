@@ -586,36 +586,75 @@ func NewTrickyCompleter(ctx context.Context, cCtx base.CompletionContext, statem
 }
 
 func prepareParserAndScanner(statement string, caretLine int, caretOffset int) (*tsqlparser.TSqlParser, *tsqlparser.TSqlLexer, *base.Scanner) {
+	fmt.Printf("[DEBUG] prepareParserAndScanner - Original input: caretLine: %d, caretOffset: %d\n", caretLine, caretOffset)
 	statement, caretLine, caretOffset = skipHeadingSQLs(statement, caretLine, caretOffset)
+	fmt.Printf("[DEBUG] After skipHeadingSQLs: caretLine: %d, caretOffset: %d\n", caretLine, caretOffset)
+
 	input := antlr.NewInputStream(statement)
 	lexer := tsqlparser.NewTSqlLexer(input)
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
 	parser := tsqlparser.NewTSqlParser(stream)
 	parser.RemoveErrorListeners()
 	lexer.RemoveErrorListeners()
+
+	// Fill the stream to get tokens for debugging
+	stream.Fill()
+	tokens := stream.GetAllTokens()
+	fmt.Printf("[DEBUG] Token stream contains %d tokens\n", len(tokens))
+
 	scanner := base.NewScanner(stream, true /* fillInput */)
+	fmt.Printf("[DEBUG] Seeking to position: line %d, offset %d\n", caretLine, caretOffset)
 	scanner.SeekPosition(caretLine, caretOffset)
+
+	// Debug the token at the caret position
+	tokenIndex := scanner.GetIndex()
+	tokenType := scanner.GetTokenType()
+	tokenText := scanner.GetTokenText()
+	fmt.Printf("[DEBUG] After SeekPosition - Token index: %d, type: %d, text: %q\n",
+		tokenIndex, tokenType, tokenText)
+
 	scanner.Push()
 	return parser, lexer, scanner
 }
 
 func prepareTrickyParserAndScanner(statement string, caretLine int, caretOffset int) (*tsqlparser.TSqlParser, *tsqlparser.TSqlLexer, *base.Scanner) {
+	fmt.Printf("[DEBUG] prepareTrickyParserAndScanner - Original input: caretLine: %d, caretOffset: %d\n", caretLine, caretOffset)
 	statement, caretLine, caretOffset = skipHeadingSQLs(statement, caretLine, caretOffset)
+	fmt.Printf("[DEBUG] After skipHeadingSQLs: caretLine: %d, caretOffset: %d\n", caretLine, caretOffset)
+
 	statement, caretLine, caretOffset = skipHeadingSQLWithoutSemicolon(statement, caretLine, caretOffset)
+	fmt.Printf("[DEBUG] After skipHeadingSQLWithoutSemicolon: caretLine: %d, caretOffset: %d\n", caretLine, caretOffset)
+
 	input := antlr.NewInputStream(statement)
 	lexer := tsqlparser.NewTSqlLexer(input)
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
 	parser := tsqlparser.NewTSqlParser(stream)
 	parser.RemoveErrorListeners()
 	lexer.RemoveErrorListeners()
+
+	// Fill the stream to get tokens for debugging
+	stream.Fill()
+	tokens := stream.GetAllTokens()
+	fmt.Printf("[DEBUG] Tricky token stream contains %d tokens\n", len(tokens))
+
 	scanner := base.NewScanner(stream, true /* fillInput */)
+	fmt.Printf("[DEBUG] Seeking to position (tricky): line %d, offset %d\n", caretLine, caretOffset)
 	scanner.SeekPosition(caretLine, caretOffset)
+
+	// Debug the token at the caret position
+	tokenIndex := scanner.GetIndex()
+	tokenType := scanner.GetTokenType()
+	tokenText := scanner.GetTokenText()
+	fmt.Printf("[DEBUG] Tricky After SeekPosition - Token index: %d, type: %d, text: %q\n",
+		tokenIndex, tokenType, tokenText)
+
 	scanner.Push()
 	return parser, lexer, scanner
 }
 
 // caretLine is 1-based and caretOffset is 0-based.
 func skipHeadingSQLWithoutSemicolon(statement string, caretLine int, caretOffset int) (string, int, int) {
+	fmt.Printf("[DEBUG] skipHeadingSQLWithoutSemicolon - Input: caretLine: %d, caretOffset: %d\n", caretLine, caretOffset)
 	input := antlr.NewInputStream(statement)
 	lexer := tsqlparser.NewTSqlLexer(input)
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
@@ -627,23 +666,48 @@ func skipHeadingSQLWithoutSemicolon(statement string, caretLine int, caretOffset
 
 	stream.Fill()
 	tokens := stream.GetAllTokens()
+	fmt.Printf("[DEBUG] Total tokens in stream: %d\n", len(tokens))
+
 	latestSelect := 0
 	newCaretLine, newCaretOffset := caretLine, caretOffset
-	for _, token := range tokens {
+
+	// Debug the first few tokens
+	for i := 0; i < min(5, len(tokens)); i++ {
+		token := tokens[i]
+		fmt.Printf("[DEBUG] Token #%d: Type: %d, Text: %q, Line: %d, Column: %d\n",
+			i, token.GetTokenType(), token.GetText(), token.GetLine(), token.GetColumn())
+	}
+
+	for i, token := range tokens {
 		if token.GetLine() > caretLine || (token.GetLine() == caretLine && token.GetColumn() >= caretOffset) {
+			fmt.Printf("[DEBUG] Reached caret position at token #%d\n", i)
 			break
 		}
 		if token.GetTokenType() == tsqlparser.TSqlLexerSELECT && token.GetColumn() == 0 {
 			latestSelect = token.GetTokenIndex()
+			fmt.Printf("[DEBUG] Found SELECT at token #%d, index: %d\n", i, latestSelect)
 			newCaretLine = caretLine - token.GetLine() + 1 // convert to 1-based.
 			newCaretOffset = caretOffset
+			fmt.Printf("[DEBUG] Adjusted - newCaretLine: %d, newCaretOffset: %d\n", newCaretLine, newCaretOffset)
 		}
 	}
 
 	if latestSelect == 0 {
+		fmt.Printf("[DEBUG] No SELECT found at column 0, returning original statement\n")
 		return statement, caretLine, caretOffset
 	}
-	return stream.GetTextFromInterval(antlr.NewInterval(latestSelect, stream.Size())), newCaretLine, newCaretOffset
+
+	result := stream.GetTextFromInterval(antlr.NewInterval(latestSelect, stream.Size()))
+	fmt.Printf("[DEBUG] Extracted substring from token %d to end, length: %d\n", latestSelect, len(result))
+	return result, newCaretLine, newCaretOffset
+}
+
+// Helper function for min since Go <1.21 doesn't have it in math package
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
 }
 
 func (c *Completer) complete() ([]base.Candidate, error) {
@@ -652,22 +716,47 @@ func (c *Completer) complete() ([]base.Candidate, error) {
 	} else if c.scanner.IsTokenType(tsqlparser.TSqlLexerSQUARE_BRACKET_ID) {
 		c.caretTokenIsQuoted = quotedTypeSquareBracket
 	}
+
+	// Debug: Display the initial caret position from scanner
+	initialIndex := c.scanner.GetIndex()
+	fmt.Printf("[DEBUG] Initial caretIndex from scanner: %d\n", initialIndex)
+
+	// Debug: Information about the token at the caret position
+	tokenType := c.scanner.GetTokenType()
+	tokenText := c.scanner.GetTokenText()
+	prevToken := c.scanner.GetPreviousTokenType(true)
+	fmt.Printf("[DEBUG] Previous token type: %d\n", prevToken)
+	fmt.Printf("[DEBUG] Token at caret position - Type: %d, Text: %q\n", tokenType, tokenText)
+
 	caretIndex := c.scanner.GetIndex()
 	if caretIndex > 0 && !c.noSeparatorRequired[c.scanner.GetPreviousTokenType(true)] {
+		prevType := c.scanner.GetPreviousTokenType(true)
+		fmt.Printf("[DEBUG] Previous token type: %d, Adjusting caretIndex: %d -> %d\n", prevType, caretIndex, caretIndex-1)
 		caretIndex--
+	} else {
+		fmt.Printf("[DEBUG] Not adjusting caretIndex: %d\n", caretIndex)
 	}
+
 	c.referencesStack = append([][]base.TableReference{{}}, c.referencesStack...)
 	c.parser.Reset()
 	var context antlr.ParserRuleContext
 	if c.scene == base.SceneTypeQuery {
 		context = c.parser.Select_statement_standalone()
+		fmt.Printf("[DEBUG] Using Select_statement_standalone context\n")
 	} else {
 		context = c.parser.Tsql_file()
+		fmt.Printf("[DEBUG] Using Tsql_file context\n")
 	}
+
+	fmt.Printf("[DEBUG] Collecting candidates with caretIndex: %d\n", caretIndex)
 	candidates := c.core.CollectCandidates(caretIndex, context)
+	fmt.Printf("[DEBUG] Collected %d token candidates and %d rule candidates\n",
+		len(candidates.Tokens), len(candidates.Rules))
 
 	for ruleName := range candidates.Rules {
+		fmt.Printf("[DEBUG] Found rule candidate: %d\n", ruleName)
 		if ruleName == tsqlparser.TSqlParserRULE_asterisk || ruleName == tsqlparser.TSqlParserRULE_full_column_name {
+			fmt.Printf("[DEBUG] Processing asterisk or full_column_name rule\n")
 			c.collectLeadingTableReferences(caretIndex)
 			c.takeReferencesSnapshot()
 			c.collectRemainingTableReferences()
@@ -1233,27 +1322,36 @@ func deriveObjectRefContextsFromCandidates(candidates []string, ignoredLinkedSer
 // skipHeadingSQLs skips the SQL statements which before the caret position.
 // caretLine is 1-based and caretOffset is 0-based.
 func skipHeadingSQLs(statement string, caretLine int, caretOffset int) (string, int, int) {
+	fmt.Printf("[DEBUG] skipHeadingSQLs - Original input: caretLine: %d, caretOffset: %d\n", caretLine, caretOffset)
 	newCaretLine, newCaretOffset := caretLine, caretOffset
 	list, err := SplitSQL(statement)
 	if err != nil || notEmptySQLCount(list) <= 1 {
+		fmt.Printf("[DEBUG] Not skipping heading SQLs: error or just one statement\n")
 		return statement, caretLine, caretOffset
 	}
 
+	fmt.Printf("[DEBUG] Found %d SQL statements, %d non-empty\n", len(list), notEmptySQLCount(list))
 	caretLine-- // Convert to 0-based.
+	fmt.Printf("[DEBUG] Converted caretLine to 0-based: %d\n", caretLine)
 
 	start := 0
 	for i, sql := range list {
+		fmt.Printf("[DEBUG] SQL #%d: LastLine: %d, LastColumn: %d\n", i, sql.LastLine, sql.LastColumn)
 		if sql.LastLine > caretLine || (sql.LastLine == caretLine && sql.LastColumn >= caretOffset) {
 			start = i
+			fmt.Printf("[DEBUG] Found statement containing caret: #%d\n", start)
 			if i == 0 {
 				// The caret is in the first SQL statement, so we don't need to skip any SQL statements.
+				fmt.Printf("[DEBUG] Caret in first statement, no skipping needed\n")
 				break
 			}
 			newCaretLine = caretLine - list[i-1].LastLine + 1 // Convert to 1-based.
+			fmt.Printf("[DEBUG] Adjusted caretLine: %d -> %d\n", caretLine, newCaretLine)
 			if caretLine == list[i-1].LastLine {
 				// The caret is in the same line as the last line of the previous SQL statement.
 				// We need to adjust the caret offset.
 				newCaretOffset = caretOffset - list[i-1].LastColumn - 1 // Convert to 0-based.
+				fmt.Printf("[DEBUG] Adjusted caretOffset: %d -> %d\n", caretOffset, newCaretOffset)
 			}
 			break
 		}
@@ -1262,11 +1360,14 @@ func skipHeadingSQLs(statement string, caretLine int, caretOffset int) (string, 
 	var buf strings.Builder
 	for i := start; i < len(list); i++ {
 		if _, err := buf.WriteString(list[i].Text); err != nil {
+			fmt.Printf("[DEBUG] Error writing string to buffer\n")
 			return statement, caretLine, caretOffset
 		}
 	}
 
-	return buf.String(), newCaretLine, newCaretOffset
+	result := buf.String()
+	fmt.Printf("[DEBUG] Resulting statement length: %d characters\n", len(result))
+	return result, newCaretLine, newCaretOffset
 }
 
 func notEmptySQLCount(list []base.SingleSQL) int {

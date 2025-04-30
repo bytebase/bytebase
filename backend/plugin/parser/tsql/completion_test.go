@@ -40,7 +40,7 @@ func TestCompletion(t *testing.T) {
 		record = false
 	)
 	var (
-		filepath = "test-data/test_completion.yaml"
+		filepath = "test-data/t_c.yaml"
 	)
 
 	a := require.New(t)

@@ -32,17 +32,31 @@ func init() {
 
 // Completion is the entry point of PostgreSQL code completion.
 func Completion(ctx context.Context, cCtx base.CompletionContext, statement string, caretLine int, caretOffset int) ([]base.Candidate, error) {
+	fmt.Printf("DEBUG: Completion entry point - statement: %s, caretLine: %d, caretOffset: %d\n", statement, caretLine, caretOffset)
+	
 	completer := NewStandardCompleter(ctx, cCtx, statement, caretLine, caretOffset)
+	fmt.Printf("DEBUG: Created StandardCompleter with defaultDatabase: %s, defaultSchema: %s\n", 
+		completer.defaultDatabase, completer.defaultSchema)
+	
 	result, err := completer.completion()
 	if err != nil {
+		fmt.Printf("DEBUG: StandardCompleter failed with error: %v\n", err)
 		return nil, err
 	}
 	if len(result) > 0 {
+		fmt.Printf("DEBUG: StandardCompleter returned %d candidates\n", len(result))
 		return result, nil
 	}
+	fmt.Printf("DEBUG: StandardCompleter found no candidates, trying TrickyCompleter\n")
 
 	trickyCompleter := NewTrickyCompleter(ctx, cCtx, statement, caretLine, caretOffset)
-	return trickyCompleter.completion()
+	result, err = trickyCompleter.completion()
+	if err != nil {
+		fmt.Printf("DEBUG: TrickyCompleter failed with error: %v\n", err)
+	} else {
+		fmt.Printf("DEBUG: TrickyCompleter returned %d candidates\n", len(result))
+	}
+	return result, err
 }
 
 func newIgnoredTokens() map[int]bool {
@@ -241,39 +255,94 @@ func NewStandardCompleter(ctx context.Context, cCtx base.CompletionContext, stat
 }
 
 func (c *Completer) completion() ([]base.Candidate, error) {
+	fmt.Printf("DEBUG: Starting completion() method\n")
+	
 	// Check the caret token is quoted or not.
 	// This check should be done before checking the caret token is a separator or not.
 	if c.scanner.IsTokenType(pg.PostgreSQLLexerQuotedIdentifier) ||
 		c.scanner.IsTokenType(pg.PostgreSQLLexerInvalidQuotedIdentifier) ||
 		c.scanner.IsTokenType(pg.PostgreSQLLexerUnicodeQuotedIdentifier) {
 		c.caretTokenIsQuoted = true
+		fmt.Printf("DEBUG: Caret token is quoted\n")
 	}
 
 	caretIndex := c.scanner.GetIndex()
+	fmt.Printf("DEBUG: Initial caretIndex: %d, tokenType: %d\n", caretIndex, c.scanner.GetTokenType())
+	
 	if caretIndex > 0 && !c.noSeparatorRequired[c.scanner.GetPreviousTokenType(false /* skipHidden */)] {
+		prevTokenType := c.scanner.GetPreviousTokenType(false)
 		caretIndex--
+		fmt.Printf("DEBUG: Adjusted caretIndex: %d, prevTokenType: %d, token doesn't need separator\n", 
+			caretIndex, prevTokenType)
 	}
+	
 	c.referencesStack = append([][]base.TableReference{{}}, c.referencesStack...)
 	c.parser.Reset()
+	
 	var context antlr.ParserRuleContext
 	if c.scene == base.SceneTypeQuery {
+		fmt.Printf("DEBUG: Scene is SceneTypeQuery, using Selectstmt\n")
 		context = c.parser.Selectstmt()
 	} else {
+		fmt.Printf("DEBUG: Scene is %v, using Root\n", c.scene)
 		context = c.parser.Root()
 	}
 
+	fmt.Printf("DEBUG: Collecting candidates at caretIndex: %d\n", caretIndex)
 	candidates := c.core.CollectCandidates(caretIndex, context)
-
+	fmt.Printf("DEBUG: Collected %d token types and %d rule types\n", 
+		len(candidates.Tokens), len(candidates.Rules))
+	
+	// Print token candidates
+	for token, followTokens := range candidates.Tokens {
+		if token >= 0 {
+			tokenName := c.parser.SymbolicNames[token]
+			fmt.Printf("DEBUG: Token candidate: %s (%d) with %d follow tokens\n", 
+				tokenName, token, len(followTokens))
+		}
+	}
+	
+	// Print rule candidates
 	for ruleName := range candidates.Rules {
+		ruleTxt := "unknown"
 		if ruleName == pg.PostgreSQLParserRULE_columnref {
+			ruleTxt = "columnref"
+		} else if ruleName == pg.PostgreSQLParserRULE_relation_expr {
+			ruleTxt = "relation_expr"
+		} else if ruleName == pg.PostgreSQLParserRULE_qualified_name {
+			ruleTxt = "qualified_name"
+		} else if ruleName == pg.PostgreSQLParserRULE_func_name {
+			ruleTxt = "func_name"
+		}
+		fmt.Printf("DEBUG: Rule candidate: %s (%d)\n", ruleTxt, ruleName)
+		
+		if ruleName == pg.PostgreSQLParserRULE_columnref {
+			fmt.Printf("DEBUG: Processing columnref rule\n")
 			c.collectLeadingTableReferences(caretIndex)
 			c.takeReferencesSnapshot()
 			c.collectRemainingTableReferences()
 			c.takeReferencesSnapshot()
+			fmt.Printf("DEBUG: References collected: %d\n", len(c.references))
+			for i, ref := range c.references {
+				if physRef, ok := ref.(*base.PhysicalTableReference); ok {
+					fmt.Printf("DEBUG:   Ref[%d]: PhysicalTable(Schema=%s, Table=%s, Alias=%s)\n", 
+						i, physRef.Schema, physRef.Table, physRef.Alias)
+				} else if virtRef, ok := ref.(*base.VirtualTableReference); ok {
+					fmt.Printf("DEBUG:   Ref[%d]: VirtualTable(Table=%s, Columns=%v)\n", 
+						i, virtRef.Table, virtRef.Columns)
+				}
+			}
 		}
 	}
 
-	return c.convertCandidates(candidates)
+	fmt.Printf("DEBUG: Converting candidates\n")
+	result, err := c.convertCandidates(candidates)
+	if err != nil {
+		fmt.Printf("DEBUG: Error converting candidates: %v\n", err)
+	} else {
+		fmt.Printf("DEBUG: Converted to %d final candidates\n", len(result))
+	}
+	return result, err
 }
 
 type CompletionMap map[string]base.Candidate
@@ -450,6 +519,7 @@ func (m CompletionMap) toSlice() []base.Candidate {
 }
 
 func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]base.Candidate, error) {
+	fmt.Printf("DEBUG: Converting candidates to completion entries\n")
 	keywordEntries := make(CompletionMap)
 	runtimeFunctionEntries := make(CompletionMap)
 	schemaEntries := make(CompletionMap)
@@ -457,6 +527,8 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 	columnEntries := make(CompletionMap)
 	viewEntries := make(CompletionMap)
 
+	// Process token candidates
+	fmt.Printf("DEBUG: Processing token candidates\n")
 	for token, value := range candidates.Tokens {
 		if token < 0 {
 			continue
@@ -488,11 +560,13 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 
 		switch list {
 		case 1:
+			fmt.Printf("DEBUG: Adding function token: %s\n", strings.ToLower(entry))
 			runtimeFunctionEntries.Insert(base.Candidate{
 				Type: base.CandidateTypeFunction,
 				Text: strings.ToLower(entry) + "()",
 			})
 		default:
+			fmt.Printf("DEBUG: Adding keyword token: %s\n", entry)
 			keywordEntries.Insert(base.Candidate{
 				Type: base.CandidateTypeKeyword,
 				Text: entry,
@@ -500,19 +574,33 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 		}
 	}
 
+	// Process rule candidates
+	fmt.Printf("DEBUG: Processing rule candidates\n")
 	for candidate := range candidates.Rules {
 		c.scanner.PopAndRestore()
 		c.scanner.Push()
 
 		c.fetchCommonTableExpression(candidates.Rules[candidate])
-
+		ruleName := "unknown"
 		switch candidate {
 		case pg.PostgreSQLParserRULE_func_name:
+			ruleName = "func_name"
+			fmt.Printf("DEBUG: Processing func_name rule\n")
 			runtimeFunctionEntries.insertFunctions()
+			
 		case pg.PostgreSQLParserRULE_relation_expr, pg.PostgreSQLParserRULE_qualified_name:
+			if candidate == pg.PostgreSQLParserRULE_relation_expr {
+				ruleName = "relation_expr"
+			} else {
+				ruleName = "qualified_name"
+			}
+			fmt.Printf("DEBUG: Processing %s rule\n", ruleName)
+			
 			qualifier, flags := c.determineQualifiedName()
+			fmt.Printf("DEBUG: determineQualifiedName returned qualifier: '%s', flags: %d\n", qualifier, flags)
 
 			if flags&ObjectFlagsShowFirst != 0 {
+				fmt.Printf("DEBUG: Adding schemas (ObjectFlagsShowFirst)\n")
 				schemaEntries.insertSchemas(c)
 			}
 
@@ -522,27 +610,41 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 					schemas[c.defaultSchema] = true
 					// User didn't specify the schema, we need to append cte tables.
 					schemas[""] = true
+					fmt.Printf("DEBUG: Using default schema: %s and empty schema\n", c.defaultSchema)
 				} else {
 					schemas[qualifier] = true
+					fmt.Printf("DEBUG: Using specified schema: %s\n", qualifier)
 				}
 
+				fmt.Printf("DEBUG: Adding tables and views (ObjectFlagsShowSecond)\n")
 				tableEntries.insertTables(c, schemas)
 				viewEntries.insertViews(c, schemas)
 			}
+			
 		case pg.PostgreSQLParserRULE_columnref:
+			ruleName = "columnref"
+			fmt.Printf("DEBUG: Processing columnref rule\n")
+			
 			schema, table, flags := c.determineColumnRef()
+			fmt.Printf("DEBUG: determineColumnRef returned schema: '%s', table: '%s', flags: %d\n", 
+				schema, table, flags)
+				
 			if flags&ObjectFlagsShowSchemas != 0 {
+				fmt.Printf("DEBUG: Adding schemas (ObjectFlagsShowSchemas)\n")
 				schemaEntries.insertSchemas(c)
 			}
 
 			schemas := make(map[string]bool)
 			if len(schema) != 0 {
 				schemas[schema] = true
+				fmt.Printf("DEBUG: Using specified schema: %s\n", schema)
 			} else if len(c.references) > 0 {
+				fmt.Printf("DEBUG: Extracting schemas from references\n")
 				for _, reference := range c.references {
 					if physicalTable, ok := reference.(*base.PhysicalTableReference); ok {
 						if len(physicalTable.Schema) > 0 {
 							schemas[physicalTable.Schema] = true
+							fmt.Printf("DEBUG: Added schema from reference: %s\n", physicalTable.Schema)
 						}
 					}
 				}
@@ -552,25 +654,32 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 				schemas[c.defaultSchema] = true
 				// User didn't specify the schema, we need to append cte tables.
 				schemas[""] = true
+				fmt.Printf("DEBUG: Adding default schema: %s and empty schema\n", c.defaultSchema)
 			}
 
 			if flags&ObjectFlagsShowTables != 0 {
+				fmt.Printf("DEBUG: Adding tables and views (ObjectFlagsShowTables)\n")
 				tableEntries.insertTables(c, schemas)
 				viewEntries.insertViews(c, schemas)
 
+				fmt.Printf("DEBUG: Adding tables from references\n")
 				for _, reference := range c.references {
 					switch reference := reference.(type) {
 					case *base.PhysicalTableReference:
 						if len(schema) == 0 && len(reference.Schema) == 0 || schemas[reference.Schema] {
 							if len(reference.Alias) == 0 {
+								tableName := c.quotedIdentifierIfNeeded(reference.Table)
+								fmt.Printf("DEBUG: Adding table: %s\n", tableName)
 								tableEntries.Insert(base.Candidate{
 									Type: base.CandidateTypeTable,
-									Text: c.quotedIdentifierIfNeeded(reference.Table),
+									Text: tableName,
 								})
 							} else {
+								aliasName := c.quotedIdentifierIfNeeded(reference.Alias)
+								fmt.Printf("DEBUG: Adding table alias: %s\n", aliasName)
 								tableEntries.Insert(base.Candidate{
 									Type: base.CandidateTypeTable,
-									Text: c.quotedIdentifierIfNeeded(reference.Alias),
+									Text: aliasName,
 								})
 							}
 						}
@@ -579,86 +688,127 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 							// If the schema is specified, we should not show the virtual table.
 							continue
 						}
+						tableName := c.quotedIdentifierIfNeeded(reference.Table)
+						fmt.Printf("DEBUG: Adding virtual table: %s\n", tableName)
 						tableEntries.Insert(base.Candidate{
 							Type: base.CandidateTypeTable,
-							Text: c.quotedIdentifierIfNeeded(reference.Table),
+							Text: tableName,
 						})
 					}
 				}
 			}
 
 			if flags&ObjectFlagsShowColumns != 0 {
+				fmt.Printf("DEBUG: Adding columns (ObjectFlagsShowColumns)\n")
 				if schema == table {
 					schemas[c.defaultSchema] = true
 					// User didn't specify the schema, we need to append cte tables.
 					schemas[""] = true
+					fmt.Printf("DEBUG: Schema equals table, adding default schema: %s and empty schema\n", c.defaultSchema)
 				}
 
 				tables := make(map[string]bool)
 				if len(table) != 0 {
 					tables[table] = true
+					fmt.Printf("DEBUG: Adding table: %s\n", table)
 
+					fmt.Printf("DEBUG: Looking for table references matching: %s\n", table)
 					for _, reference := range c.references {
 						switch reference := reference.(type) {
 						case *base.PhysicalTableReference:
 							if reference.Alias == table {
 								tables[reference.Table] = true
 								schemas[reference.Schema] = true
+								fmt.Printf("DEBUG: Found physical table reference with alias %s -> table: %s, schema: %s\n", 
+									table, reference.Table, reference.Schema)
 							}
 						case *base.VirtualTableReference:
 							if reference.Table == table {
+								fmt.Printf("DEBUG: Found virtual table reference matching table: %s\n", table)
 								for _, column := range reference.Columns {
+									colName := c.quotedIdentifierIfNeeded(column)
+									fmt.Printf("DEBUG: Adding column from virtual table: %s\n", colName)
 									columnEntries.Insert(base.Candidate{
 										Type: base.CandidateTypeColumn,
-										Text: c.quotedIdentifierIfNeeded(column),
+										Text: colName,
 									})
 								}
 							}
 						}
 					}
 				} else if len(c.references) > 0 {
+					fmt.Printf("DEBUG: No table specified, but have references\n")
+					
 					list := c.fetchSelectItemAliases(candidates.Rules[candidate])
+					fmt.Printf("DEBUG: Found %d select item aliases\n", len(list))
 					for _, alias := range list {
+						colName := c.quotedIdentifierIfNeeded(alias)
+						fmt.Printf("DEBUG: Adding column alias: %s\n", colName)
 						columnEntries.Insert(base.Candidate{
 							Type: base.CandidateTypeColumn,
-							Text: c.quotedIdentifierIfNeeded(alias),
+							Text: colName,
 						})
 					}
+					
 					for _, reference := range c.references {
 						switch reference := reference.(type) {
 						case *base.PhysicalTableReference:
 							schemas[reference.Schema] = true
 							tables[reference.Table] = true
+							fmt.Printf("DEBUG: Using schema: %s, table: %s from reference\n", 
+								reference.Schema, reference.Table)
 						case *base.VirtualTableReference:
+							fmt.Printf("DEBUG: Adding columns from virtual table: %s\n", reference.Table)
 							for _, column := range reference.Columns {
+								colName := c.quotedIdentifierIfNeeded(column)
+								fmt.Printf("DEBUG: Adding column: %s\n", colName)
 								columnEntries.Insert(base.Candidate{
 									Type: base.CandidateTypeColumn,
-									Text: c.quotedIdentifierIfNeeded(column),
+									Text: colName,
 								})
 							}
 						}
 					}
 				} else {
 					// No specified table, return all columns
+					fmt.Printf("DEBUG: No table specified, adding all columns\n")
 					columnEntries.insertAllColumns(c)
 				}
 
 				if len(tables) > 0 {
+					fmt.Printf("DEBUG: Inserting columns for schemas: %v, tables: %v\n", schemas, tables)
 					columnEntries.insertColumns(c, schemas, tables)
 				}
 			}
+		default:
+			fmt.Printf("DEBUG: Unknown rule type: %d\n", candidate)
 		}
 	}
 
 	c.scanner.PopAndRestore()
 	var result []base.Candidate
+	
+	// Collect all candidates
+	fmt.Printf("DEBUG: Building final candidate list\n")
+	fmt.Printf("DEBUG: Adding %d keyword entries\n", len(keywordEntries))
 	result = append(result, keywordEntries.toSlice()...)
+	
+	fmt.Printf("DEBUG: Adding %d function entries\n", len(runtimeFunctionEntries))
 	result = append(result, runtimeFunctionEntries.toSlice()...)
+	
+	fmt.Printf("DEBUG: Adding %d schema entries\n", len(schemaEntries))
 	result = append(result, schemaEntries.toSlice()...)
+	
+	fmt.Printf("DEBUG: Adding %d table entries\n", len(tableEntries))
 	result = append(result, tableEntries.toSlice()...)
+	
+	fmt.Printf("DEBUG: Adding %d view entries\n", len(viewEntries))
 	result = append(result, viewEntries.toSlice()...)
+	
+	fmt.Printf("DEBUG: Adding %d column entries\n", len(columnEntries))
 	result = append(result, columnEntries.toSlice()...)
 
+	fmt.Printf("DEBUG: Final candidate count: %d\n", len(result))
 	return result, nil
 }
 
@@ -814,24 +964,36 @@ const (
 )
 
 func (c *Completer) determineQualifiedName() (string, ObjectFlags) {
+	fmt.Printf("DEBUG: determineQualifiedName starting\n")
 	position := c.scanner.GetIndex()
+	fmt.Printf("DEBUG: Initial position: %d, token: %s, type: %d\n", position, 
+		c.scanner.GetTokenText(), c.scanner.GetTokenType())
+	
 	if c.scanner.GetTokenChannel() != 0 {
 		c.scanner.Forward(true /* skipHidden */)
+		fmt.Printf("DEBUG: Skipped hidden token, new position: %d, token: %s, type: %d\n", 
+			c.scanner.GetIndex(), c.scanner.GetTokenText(), c.scanner.GetTokenType())
 	}
 
 	if !c.scanner.IsTokenType(pg.PostgreSQLLexerONLY) && !c.lexer.IsIdentifier(c.scanner.GetTokenType()) {
 		// We are at the end of an incomplete identifier spec.
 		// Jump back.
 		c.scanner.Backward(true /* skipHidden */)
+		fmt.Printf("DEBUG: Not identifier, moving backward to: %d, token: %s, type: %d\n", 
+			c.scanner.GetIndex(), c.scanner.GetTokenText(), c.scanner.GetTokenType())
 	}
 
 	// Go left until we hit a non-identifier token.
 	if position > 0 {
 		if c.lexer.IsIdentifier(c.scanner.GetTokenType()) && c.scanner.GetPreviousTokenType(false /* skipHidden */) == pg.PostgreSQLLexerDOT {
 			c.scanner.Backward(true /* skipHidden */)
+			fmt.Printf("DEBUG: Found DOT before identifier, moving backward to: %d, token: %s, type: %d\n", 
+				c.scanner.GetIndex(), c.scanner.GetTokenText(), c.scanner.GetTokenType())
 		}
 		if c.scanner.IsTokenType(pg.PostgreSQLLexerDOT) && c.lexer.IsIdentifier(c.scanner.GetPreviousTokenType(false /* skipHidden */)) {
 			c.scanner.Backward(true /* skipHidden */)
+			fmt.Printf("DEBUG: Found identifier before DOT, moving backward to: %d, token: %s, type: %d\n", 
+				c.scanner.GetIndex(), c.scanner.GetTokenText(), c.scanner.GetTokenType())
 		}
 	}
 
@@ -840,21 +1002,33 @@ func (c *Completer) determineQualifiedName() (string, ObjectFlags) {
 	temp := ""
 	if c.lexer.IsIdentifier(c.scanner.GetTokenType()) {
 		temp = unquote(c.scanner.GetTokenText())
+		fmt.Printf("DEBUG: Found identifier: '%s'\n", temp)
 		c.scanner.Forward(true /* skipHidden */)
+		fmt.Printf("DEBUG: Moving forward to: %d, token: %s, type: %d\n", 
+			c.scanner.GetIndex(), c.scanner.GetTokenText(), c.scanner.GetTokenType())
 	}
 
 	if !c.scanner.IsTokenType(pg.PostgreSQLLexerDOT) || position <= c.scanner.GetIndex() {
+		fmt.Printf("DEBUG: No DOT found or position reached, returning flags: %d\n", 
+			ObjectFlagsShowFirst|ObjectFlagsShowSecond)
 		return qualifier, ObjectFlagsShowFirst | ObjectFlagsShowSecond
 	}
 
 	qualifier = temp
+	fmt.Printf("DEBUG: Found qualifier: '%s', returning flags: %d\n", qualifier, ObjectFlagsShowSecond)
 	return qualifier, ObjectFlagsShowSecond
 }
 
 func (c *Completer) determineColumnRef() (schema, table string, flags ObjectFlags) {
+	fmt.Printf("DEBUG: determineColumnRef starting\n")
 	position := c.scanner.GetIndex()
+	fmt.Printf("DEBUG: Initial position: %d, token: %s, type: %d\n", 
+		position, c.scanner.GetTokenText(), c.scanner.GetTokenType())
+		
 	if c.scanner.GetTokenChannel() != 0 {
 		c.scanner.Forward(true /* skipHidden */)
+		fmt.Printf("DEBUG: Skipped hidden token, new position: %d, token: %s, type: %d\n", 
+			c.scanner.GetIndex(), c.scanner.GetTokenText(), c.scanner.GetTokenType())
 	}
 
 	tokenType := c.scanner.GetTokenType()
@@ -862,19 +1036,30 @@ func (c *Completer) determineColumnRef() (schema, table string, flags ObjectFlag
 		// We are at the end of an incomplete identifier spec.
 		// Jump back.
 		c.scanner.Backward(true /* skipHidden */)
+		fmt.Printf("DEBUG: Not DOT or identifier, moving backward to: %d, token: %s, type: %d\n", 
+			c.scanner.GetIndex(), c.scanner.GetTokenText(), c.scanner.GetTokenType())
 	}
 
 	if position > 0 {
 		if c.lexer.IsIdentifier(c.scanner.GetTokenType()) && c.scanner.GetPreviousTokenType(false /* skipHidden */) == pg.PostgreSQLLexerDOT {
 			c.scanner.Backward(true /* skipHidden */)
+			fmt.Printf("DEBUG: Found DOT before identifier, moving backward to: %d, token: %s, type: %d\n", 
+				c.scanner.GetIndex(), c.scanner.GetTokenText(), c.scanner.GetTokenType())
 		}
 		if c.scanner.IsTokenType(pg.PostgreSQLLexerDOT) && c.lexer.IsIdentifier(c.scanner.GetPreviousTokenType(false /* skipHidden */)) {
 			c.scanner.Backward(true /* skipHidden */)
+			fmt.Printf("DEBUG: Found identifier before DOT, moving backward to: %d, token: %s, type: %d\n", 
+				c.scanner.GetIndex(), c.scanner.GetTokenText(), c.scanner.GetTokenType())
 
 			if c.scanner.GetPreviousTokenType(false /* skipHidden */) == pg.PostgreSQLLexerDOT {
 				c.scanner.Backward(true /* skipHidden */)
+				fmt.Printf("DEBUG: Found another DOT, moving backward to: %d, token: %s, type: %d\n", 
+					c.scanner.GetIndex(), c.scanner.GetTokenText(), c.scanner.GetTokenType())
+					
 				if c.lexer.IsIdentifier(c.scanner.GetPreviousTokenType(false /* skipHidden */)) {
 					c.scanner.Backward(true /* skipHidden */)
+					fmt.Printf("DEBUG: Found another identifier, moving backward to: %d, token: %s, type: %d\n", 
+						c.scanner.GetIndex(), c.scanner.GetTokenText(), c.scanner.GetTokenType())
 				}
 			}
 		}
@@ -885,28 +1070,43 @@ func (c *Completer) determineColumnRef() (schema, table string, flags ObjectFlag
 	temp := ""
 	if c.lexer.IsIdentifier(c.scanner.GetTokenType()) {
 		temp = unquote(c.scanner.GetTokenText())
+		fmt.Printf("DEBUG: Found identifier: '%s'\n", temp)
 		c.scanner.Forward(true /* skipHidden */)
+		fmt.Printf("DEBUG: Moving forward to: %d, token: %s, type: %d\n", 
+			c.scanner.GetIndex(), c.scanner.GetTokenText(), c.scanner.GetTokenType())
 	}
 
 	if !c.scanner.IsTokenType(pg.PostgreSQLLexerDOT) || position <= c.scanner.GetIndex() {
+		fmt.Printf("DEBUG: No DOT found or position reached, returning all object types\n")
 		return schema, table, ObjectFlagsShowSchemas | ObjectFlagsShowTables | ObjectFlagsShowColumns
 	}
 
 	c.scanner.Forward(true /* skipHidden */) // skip dot
+	fmt.Printf("DEBUG: Skipped DOT, new position: %d, token: %s, type: %d\n", 
+		c.scanner.GetIndex(), c.scanner.GetTokenText(), c.scanner.GetTokenType())
+		
 	table = temp
 	schema = temp
+	fmt.Printf("DEBUG: Set schema and table to: '%s'\n", temp)
+	
 	if c.lexer.IsIdentifier(c.scanner.GetTokenType()) {
 		temp = unquote(c.scanner.GetTokenText())
+		fmt.Printf("DEBUG: Found next identifier after DOT: '%s'\n", temp)
 		c.scanner.Forward(true /* skipHidden */)
+		fmt.Printf("DEBUG: Moving forward to: %d, token: %s, type: %d\n", 
+			c.scanner.GetIndex(), c.scanner.GetTokenText(), c.scanner.GetTokenType())
 
 		if !c.scanner.IsTokenType(pg.PostgreSQLLexerDOT) || position <= c.scanner.GetIndex() {
+			fmt.Printf("DEBUG: No second DOT or position reached, returning tables and columns\n")
 			return schema, table, ObjectFlagsShowTables | ObjectFlagsShowColumns
 		}
 
 		table = temp
+		fmt.Printf("DEBUG: Updated table to: '%s', returning columns only\n", table)
 		return schema, table, ObjectFlagsShowColumns
 	}
 
+	fmt.Printf("DEBUG: Found no identifier after DOT, returning tables and columns\n")
 	return schema, table, ObjectFlagsShowTables | ObjectFlagsShowColumns
 }
 
@@ -928,53 +1128,85 @@ func (c *Completer) takeReferencesSnapshot() {
 }
 
 func (c *Completer) collectRemainingTableReferences() {
+	fmt.Printf("DEBUG: collectRemainingTableReferences starting\n")
 	c.scanner.Push()
+	fmt.Printf("DEBUG: Starting at position: %d, token: %s, type: %d\n", 
+		c.scanner.GetIndex(), c.scanner.GetTokenText(), c.scanner.GetTokenType())
 
 	level := 0
 	for {
 		found := c.scanner.GetTokenType() == pg.PostgreSQLLexerFROM
+		if found {
+			fmt.Printf("DEBUG: Found FROM token at beginning\n")
+		}
+		
 		for !found {
 			if !c.scanner.Forward(false /* skipHidden */) {
+				fmt.Printf("DEBUG: Reached end of tokens\n")
 				break
 			}
 
 			switch c.scanner.GetTokenType() {
 			case pg.PostgreSQLLexerOPEN_PAREN:
 				level++
+				fmt.Printf("DEBUG: Found OPEN_PAREN, increasing level to %d\n", level)
 			case pg.PostgreSQLLexerCLOSE_PAREN:
 				if level > 0 {
 					level--
+					fmt.Printf("DEBUG: Found CLOSE_PAREN, decreasing level to %d\n", level)
 				}
 			case pg.PostgreSQLLexerFROM:
 				// Open and close parenthesis don't need to match, if we come from within a subquery.
 				if level == 0 {
 					found = true
+					fmt.Printf("DEBUG: Found FROM token at level 0, position: %d\n", c.scanner.GetIndex())
+				} else {
+					fmt.Printf("DEBUG: Found FROM token at level %d (ignoring)\n", level)
 				}
 			}
 		}
 
 		if !found {
+			fmt.Printf("DEBUG: No FROM clause found, exiting\n")
 			c.scanner.PopAndRestore()
 			return // No more FROM clauses found.
 		}
 
-		c.parseTableReferences(c.scanner.GetFollowingText())
+		fmt.Printf("DEBUG: Parsing table references from following text\n")
+		followingText := c.scanner.GetFollowingText()
+		fmt.Printf("DEBUG: Following text: '%s'\n", truncateString(followingText, 50))
+		c.parseTableReferences(followingText)
+		
 		if c.scanner.GetTokenType() == pg.PostgreSQLLexerFROM {
 			c.scanner.Forward(false /* skipHidden */)
+			fmt.Printf("DEBUG: Moving past FROM token to: %d, token: %s\n", 
+				c.scanner.GetIndex(), c.scanner.GetTokenText())
 		}
 	}
 }
 
 func (c *Completer) collectLeadingTableReferences(caretIndex int) {
+	fmt.Printf("DEBUG: collectLeadingTableReferences starting, caretIndex: %d\n", caretIndex)
 	c.scanner.Push()
 
 	c.scanner.SeekIndex(0)
+	fmt.Printf("DEBUG: Seeking to index 0, token: %s, type: %d\n", 
+		c.scanner.GetTokenText(), c.scanner.GetTokenType())
 
 	level := 0
 	for {
 		found := c.scanner.GetTokenType() == pg.PostgreSQLLexerFROM
+		if found {
+			fmt.Printf("DEBUG: Found FROM token at beginning\n")
+		}
+		
 		for !found {
 			if !c.scanner.Forward(false /* skipHidden */) || c.scanner.GetIndex() >= caretIndex {
+				if !c.scanner.Forward(false) {
+					fmt.Printf("DEBUG: Reached end of tokens\n")
+				} else if c.scanner.GetIndex() >= caretIndex {
+					fmt.Printf("DEBUG: Reached caret position: %d\n", c.scanner.GetIndex())
+				}
 				break
 			}
 
@@ -982,32 +1214,54 @@ func (c *Completer) collectLeadingTableReferences(caretIndex int) {
 			case pg.PostgreSQLLexerOPEN_PAREN:
 				level++
 				c.referencesStack = append([][]base.TableReference{{}}, c.referencesStack...)
+				fmt.Printf("DEBUG: Found OPEN_PAREN, increasing level to %d, stack size: %d\n", 
+					level, len(c.referencesStack))
 			case pg.PostgreSQLLexerCLOSE_PAREN:
 				if level == 0 {
+					fmt.Printf("DEBUG: Found CLOSE_PAREN at level 0, exiting\n")
 					c.scanner.PopAndRestore()
 					return // We cannot go above the initial nesting level.
 				}
 
 				level--
 				c.referencesStack = c.referencesStack[1:]
+				fmt.Printf("DEBUG: Found CLOSE_PAREN, decreasing level to %d, stack size: %d\n", 
+					level, len(c.referencesStack))
 			case pg.PostgreSQLLexerFROM:
 				found = true
+				fmt.Printf("DEBUG: Found FROM token at position: %d\n", c.scanner.GetIndex())
 			}
 		}
 
 		if !found {
+			fmt.Printf("DEBUG: No FROM clause found, exiting\n")
 			c.scanner.PopAndRestore()
 			return // No more FROM clauses found.
 		}
 
-		c.parseTableReferences(c.scanner.GetFollowingText())
+		fmt.Printf("DEBUG: Parsing table references from following text\n")
+		followingText := c.scanner.GetFollowingText()
+		fmt.Printf("DEBUG: Following text: '%s'\n", truncateString(followingText, 50))
+		c.parseTableReferences(followingText)
+		
 		if c.scanner.GetTokenType() == pg.PostgreSQLLexerFROM {
 			c.scanner.Forward(false /* skipHidden */)
+			fmt.Printf("DEBUG: Moving past FROM token to: %d, token: %s\n", 
+				c.scanner.GetIndex(), c.scanner.GetTokenText())
 		}
 	}
 }
 
+// Helper to truncate long strings for debugging
+func truncateString(s string, maxLen int) string {
+	if len(s) <= maxLen {
+		return s
+	}
+	return s[:maxLen] + "..."
+}
+
 func (c *Completer) parseTableReferences(fromClause string) {
+	fmt.Printf("DEBUG: parseTableReferences starting\n")
 	input := antlr.NewInputStream(fromClause)
 	lexer := pg.NewPostgreSQLLexer(input)
 	tokens := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
@@ -1021,7 +1275,9 @@ func (c *Completer) parseTableReferences(fromClause string) {
 	listener := &TableRefListener{
 		context: c,
 	}
+	fmt.Printf("DEBUG: Walking parse tree for FROM clause\n")
 	antlr.ParseTreeWalkerDefault.Walk(listener, tree)
+	fmt.Printf("DEBUG: Finished walking parse tree\n")
 }
 
 type TableRefListener struct {
@@ -1032,56 +1288,85 @@ type TableRefListener struct {
 }
 
 func (l *TableRefListener) EnterTable_ref(ctx *pg.Table_refContext) {
+	fmt.Printf("DEBUG: TableRefListener.EnterTable_ref, level: %d\n", l.level)
+	
 	if _, ok := ctx.GetParent().(*pg.Table_refContext); ok {
 		// if the table reference is nested, we should not process it.
 		l.level++
+		fmt.Printf("DEBUG: Nested table reference, increasing level to: %d\n", l.level)
 	}
 
 	if l.level == 0 {
 		switch {
 		case ctx.Relation_expr() != nil:
+			fmt.Printf("DEBUG: Processing Relation_expr\n")
 			var reference base.TableReference
 			physicalReference := &base.PhysicalTableReference{}
 			// We should use the physical reference as the default reference.
 			reference = physicalReference
+			
 			list := NormalizePostgreSQLQualifiedName(ctx.Relation_expr().Qualified_name())
+			fmt.Printf("DEBUG: Qualified name parts: %v\n", list)
+			
 			switch len(list) {
 			case 1:
 				physicalReference.Table = list[0]
+				fmt.Printf("DEBUG: Found single-part name: table=%s\n", list[0])
 			case 2:
 				physicalReference.Schema = list[0]
 				physicalReference.Table = list[1]
+				fmt.Printf("DEBUG: Found two-part name: schema=%s, table=%s\n", list[0], list[1])
 			case 3:
 				physicalReference.Database = list[0]
 				physicalReference.Schema = list[1]
 				physicalReference.Table = list[2]
+				fmt.Printf("DEBUG: Found three-part name: db=%s, schema=%s, table=%s\n", 
+					list[0], list[1], list[2])
 			default:
+				fmt.Printf("DEBUG: Unexpected qualified name parts: %v\n", list)
 				return
 			}
 
 			if ctx.Opt_alias_clause() != nil {
 				tableAlias, columnAlias := normalizeTableAlias(ctx.Opt_alias_clause())
+				fmt.Printf("DEBUG: Found alias: table=%s, columns=%v\n", tableAlias, columnAlias)
+				
 				if len(columnAlias) > 0 {
 					virtualReference := &base.VirtualTableReference{
 						Table:   tableAlias,
 						Columns: columnAlias,
 					}
+					fmt.Printf("DEBUG: Using virtual reference for columns\n")
 					// If the table alias has the column alias, we should use the virtual reference.
 					reference = virtualReference
 				} else {
 					physicalReference.Alias = tableAlias
+					fmt.Printf("DEBUG: Using physical reference with alias\n")
 				}
 			}
 
 			l.context.referencesStack[0] = append(l.context.referencesStack[0], reference)
+			fmt.Printf("DEBUG: Added reference to stack, stack length: %d\n", 
+				len(l.context.referencesStack[0]))
+				
 		case ctx.Select_with_parens() != nil:
+			fmt.Printf("DEBUG: Processing Select_with_parens\n")
 			if ctx.Opt_alias_clause() != nil {
 				virtualReference := &base.VirtualTableReference{}
 				tableAlias, columnAlias := normalizeTableAlias(ctx.Opt_alias_clause())
 				virtualReference.Table = tableAlias
+				fmt.Printf("DEBUG: Found alias for subquery: table=%s, explicit columns=%v\n", 
+					tableAlias, columnAlias)
+					
 				if len(columnAlias) > 0 {
 					virtualReference.Columns = columnAlias
+					fmt.Printf("DEBUG: Using explicit column aliases\n")
 				} else {
+					fmt.Printf("DEBUG: Trying to get columns from GetQuerySpan\n")
+					subquery := ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.Select_with_parens())
+					fullQuery := fmt.Sprintf("SELECT * FROM %s AS %s;", subquery, tableAlias)
+					fmt.Printf("DEBUG: Query for GetQuerySpan: %s\n", truncateString(fullQuery, 50))
+					
 					if span, err := GetQuerySpan(
 						l.context.ctx,
 						base.GetQuerySpanContext{
@@ -1089,29 +1374,44 @@ func (l *TableRefListener) EnterTable_ref(ctx *pg.Table_refContext) {
 							GetDatabaseMetadataFunc: l.context.getMetadata,
 							ListDatabaseNamesFunc:   l.context.listDatabaseNames,
 						},
-						fmt.Sprintf("SELECT * FROM %s AS %s;", ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.Select_with_parens()), tableAlias),
+						fullQuery,
 						l.context.defaultDatabase,
 						"",
 						false,
 					); err == nil && span.NotFoundError == nil {
+						fmt.Printf("DEBUG: GetQuerySpan succeeded, found %d columns\n", len(span.Results))
 						for _, column := range span.Results {
 							virtualReference.Columns = append(virtualReference.Columns, column.Name)
+							fmt.Printf("DEBUG: Found column: %s\n", column.Name)
 						}
+					} else {
+						fmt.Printf("DEBUG: GetQuerySpan failed: err=%v, notFound=%v\n", 
+							err, span != nil && span.NotFoundError != nil)
 					}
 				}
 
 				l.context.referencesStack[0] = append(l.context.referencesStack[0], virtualReference)
+				fmt.Printf("DEBUG: Added virtual reference to stack, stack length: %d\n", 
+					len(l.context.referencesStack[0]))
 			}
+			
 		case ctx.OPEN_PAREN() != nil:
+			fmt.Printf("DEBUG: Processing OPEN_PAREN\n")
 			if ctx.Opt_alias_clause() != nil {
 				virtualReference := &base.VirtualTableReference{}
 				tableAlias, columnAlias := normalizeTableAlias(ctx.Opt_alias_clause())
 				virtualReference.Table = tableAlias
+				fmt.Printf("DEBUG: Found alias for parenthesized expression: table=%s, columns=%v\n", 
+					tableAlias, columnAlias)
+					
 				if len(columnAlias) > 0 {
 					virtualReference.Columns = columnAlias
+					fmt.Printf("DEBUG: Using explicit column aliases\n")
 				}
 
 				l.context.referencesStack[0] = append(l.context.referencesStack[0], virtualReference)
+				fmt.Printf("DEBUG: Added virtual reference to stack, stack length: %d\n", 
+					len(l.context.referencesStack[0]))
 			}
 		}
 	}
@@ -1120,15 +1420,18 @@ func (l *TableRefListener) EnterTable_ref(ctx *pg.Table_refContext) {
 func (l *TableRefListener) ExitTable_ref(ctx *pg.Table_refContext) {
 	if _, ok := ctx.GetParent().(*pg.Table_refContext); ok {
 		l.level--
+		fmt.Printf("DEBUG: Exiting nested table reference, decreasing level to: %d\n", l.level)
 	}
 }
 
 func (l *TableRefListener) EnterSelect_with_parens(_ *pg.Select_with_parensContext) {
 	l.level++
+	fmt.Printf("DEBUG: Entering select_with_parens, increasing level to: %d\n", l.level)
 }
 
 func (l *TableRefListener) ExitSelect_with_parens(_ *pg.Select_with_parensContext) {
 	l.level--
+	fmt.Printf("DEBUG: Exiting select_with_parens, decreasing level to: %d\n", l.level)
 }
 
 func normalizeTableAlias(ctx pg.IOpt_alias_clauseContext) (string, []string) {

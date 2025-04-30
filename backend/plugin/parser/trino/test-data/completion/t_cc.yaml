@@ -1,0 +1,40 @@
+- description: Multiple statements
+  input: |-
+    select count(1) from t1 where id; SELECT * FROM |
+    select * from QRTZ_J0B_DETAILS qjd where J0B_NAME like '%gray';
+  want:
+    - text: catalog1
+      type: DATABASE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: catalog2
+      type: DATABASE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: public
+      type: SCHEMA
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: analytics
+      type: SCHEMA
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: users
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: orders
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: active_users
+      type: VIEW
+      definition: ""
+      comment: ""
+      priority: 0
