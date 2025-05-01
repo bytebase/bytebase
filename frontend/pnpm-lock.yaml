@@ -35,8 +35,8 @@ importers:
         specifier: 15.0.2
         version: 15.0.2
       '@markdoc/markdoc':
-        specifier: 0.4.0
-        version: 0.4.0
+        specifier: 0.5.1
+        version: 0.5.1
       '@soerenmartius/vue3-clipboard':
         specifier: 0.1.2
         version: 0.1.2
@@ -1895,8 +1895,8 @@ packages:
   '@juggle/resize-observer@3.4.0':
     resolution: {integrity: sha512-dfLbk+PwWvFzSxwk3n5ySL0hfBog779o8h68wK/7/APo/7cgyWp5jcXockbxdk5kFRkbeXWm4Fbi9FrdN381sA==}
 
-  '@markdoc/markdoc@0.4.0':
-    resolution: {integrity: sha512-fSh4P3Y4E7oaKYc2oNzSIJVPDto7SMzAuQN1Iyx53UxzleA6QzRdNWRxmiPqtVDaDi5dELd2yICoG91csrGrAw==}
+  '@markdoc/markdoc@0.5.1':
+    resolution: {integrity: sha512-W2apYOglq0hOnvWbhE70yl6V9++FG+YPFKNHmgiSjv0HTmdJaMLt+NA1LMqoH5LasSiTI7R0yVc5ofjaFh39Pg==}
     engines: {node: '>=14.7.0'}
     peerDependencies:
       '@types/react': '*'
@@ -2190,6 +2190,9 @@ packages:
 
   '@types/katex@0.16.7':
     resolution: {integrity: sha512-HMwFiRujE5PjrgwHQ25+bsLJgowjGjm5Z8FVSf0N6PwgJrwxH0QxzHYDcKsTfV3wva0vzrpqMTJS2jXPr5BMEQ==}
+
+  '@types/linkify-it@3.0.5':
+    resolution: {integrity: sha512-yg6E+u0/+Zjva+buc3EIb+29XEg4wltq7cSmd4Uc2EE/1nUVmxyzpX6gUXD0V8jIrG0r7YeOGVIbYRkxeooCtw==}
 
   '@types/linkify-it@5.0.0':
     resolution: {integrity: sha512-sVDA58zAw4eWAffKOaQH5/5j3XeayukzDk+ewSsnv3p4yJEZHCCzMDiZM8e0OUrRvmpGZ85jf4yDHkHsgBNr9Q==}
@@ -7441,8 +7444,9 @@ snapshots:
 
   '@juggle/resize-observer@3.4.0': {}
 
-  '@markdoc/markdoc@0.4.0':
+  '@markdoc/markdoc@0.5.1':
     optionalDependencies:
+      '@types/linkify-it': 3.0.5
       '@types/markdown-it': 12.2.3
 
   '@nodelib/fs.scandir@2.1.5':
@@ -7660,6 +7664,9 @@ snapshots:
   '@types/json-schema@7.0.15': {}
 
   '@types/katex@0.16.7': {}
+
+  '@types/linkify-it@3.0.5':
+    optional: true
 
   '@types/linkify-it@5.0.0': {}
 
