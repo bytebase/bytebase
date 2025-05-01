@@ -840,13 +840,7 @@ func (c *Completer) determineQualifiedName() (string, ObjectFlags) {
 	qualifier := ""
 	temp := ""
 	if c.lexer.IsIdentifier(c.scanner.GetTokenType()) {
-		// For quoted identifiers containing double quotes, we need to properly handle the escaped quotes
-		tokenText := c.scanner.GetTokenText()
-		if len(tokenText) >= 2 && tokenText[0] == '"' && tokenText[len(tokenText)-1] == '"' {
-			temp = normalizePostgreSQLQuotedIdentifier(tokenText)
-		} else {
-			temp = unquote(tokenText)
-		}
+		temp = normalizeIdentifier(c.scanner.GetTokenText())
 		c.scanner.Forward(true /* skipHidden */)
 	}
 
@@ -891,13 +885,7 @@ func (c *Completer) determineColumnRef() (schema, table string, flags ObjectFlag
 	table = ""
 	temp := ""
 	if c.lexer.IsIdentifier(c.scanner.GetTokenType()) {
-		// For quoted identifiers containing double quotes, we need to properly handle the escaped quotes
-		tokenText := c.scanner.GetTokenText()
-		if len(tokenText) >= 2 && tokenText[0] == '"' && tokenText[len(tokenText)-1] == '"' {
-			temp = normalizePostgreSQLQuotedIdentifier(tokenText)
-		} else {
-			temp = unquote(tokenText)
-		}
+		temp = normalizeIdentifier(c.scanner.GetTokenText())
 		c.scanner.Forward(true /* skipHidden */)
 	}
 
@@ -909,13 +897,7 @@ func (c *Completer) determineColumnRef() (schema, table string, flags ObjectFlag
 	table = temp
 	schema = temp
 	if c.lexer.IsIdentifier(c.scanner.GetTokenType()) {
-		// For quoted identifiers containing double quotes, we need to properly handle the escaped quotes
-		tokenText := c.scanner.GetTokenText()
-		if len(tokenText) >= 2 && tokenText[0] == '"' && tokenText[len(tokenText)-1] == '"' {
-			temp = normalizePostgreSQLQuotedIdentifier(tokenText)
-		} else {
-			temp = unquote(tokenText)
-		}
+		temp = normalizeIdentifier(c.scanner.GetTokenText())
 		c.scanner.Forward(true /* skipHidden */)
 
 		if !c.scanner.IsTokenType(pg.PostgreSQLLexerDOT) || position <= c.scanner.GetIndex() {
@@ -927,6 +909,13 @@ func (c *Completer) determineColumnRef() (schema, table string, flags ObjectFlag
 	}
 
 	return schema, table, ObjectFlagsShowTables | ObjectFlagsShowColumns
+}
+
+func normalizeIdentifier(tokenText string) string {
+	if len(tokenText) >= 2 && tokenText[0] == '"' && tokenText[len(tokenText)-1] == '"' {
+		return normalizePostgreSQLQuotedIdentifier(tokenText)
+	}
+	return unquote(tokenText)
 }
 
 func unquote(s string) string {
