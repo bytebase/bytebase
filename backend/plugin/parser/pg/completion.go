@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"unicode"
 
 	"github.com/antlr4-go/antlr/v4"
 	pg "github.com/bytebase/postgresql-parser"
@@ -839,7 +840,13 @@ func (c *Completer) determineQualifiedName() (string, ObjectFlags) {
 	qualifier := ""
 	temp := ""
 	if c.lexer.IsIdentifier(c.scanner.GetTokenType()) {
-		temp = unquote(c.scanner.GetTokenText())
+		// For quoted identifiers containing double quotes, we need to properly handle the escaped quotes
+		tokenText := c.scanner.GetTokenText()
+		if len(tokenText) >= 2 && tokenText[0] == '"' && tokenText[len(tokenText)-1] == '"' {
+			temp = normalizePostgreSQLQuotedIdentifier(tokenText)
+		} else {
+			temp = unquote(tokenText)
+		}
 		c.scanner.Forward(true /* skipHidden */)
 	}
 
@@ -884,7 +891,13 @@ func (c *Completer) determineColumnRef() (schema, table string, flags ObjectFlag
 	table = ""
 	temp := ""
 	if c.lexer.IsIdentifier(c.scanner.GetTokenType()) {
-		temp = unquote(c.scanner.GetTokenText())
+		// For quoted identifiers containing double quotes, we need to properly handle the escaped quotes
+		tokenText := c.scanner.GetTokenText()
+		if len(tokenText) >= 2 && tokenText[0] == '"' && tokenText[len(tokenText)-1] == '"' {
+			temp = normalizePostgreSQLQuotedIdentifier(tokenText)
+		} else {
+			temp = unquote(tokenText)
+		}
 		c.scanner.Forward(true /* skipHidden */)
 	}
 
@@ -896,7 +909,13 @@ func (c *Completer) determineColumnRef() (schema, table string, flags ObjectFlag
 	table = temp
 	schema = temp
 	if c.lexer.IsIdentifier(c.scanner.GetTokenType()) {
-		temp = unquote(c.scanner.GetTokenText())
+		// For quoted identifiers containing double quotes, we need to properly handle the escaped quotes
+		tokenText := c.scanner.GetTokenText()
+		if len(tokenText) >= 2 && tokenText[0] == '"' && tokenText[len(tokenText)-1] == '"' {
+			temp = normalizePostgreSQLQuotedIdentifier(tokenText)
+		} else {
+			temp = unquote(tokenText)
+		}
 		c.scanner.Forward(true /* skipHidden */)
 
 		if !c.scanner.IsTokenType(pg.PostgreSQLLexerDOT) || position <= c.scanner.GetIndex() {
@@ -1338,5 +1357,38 @@ func (c *Completer) quotedIdentifierIfNeeded(s string) string {
 	if c.lexer.IsReservedKeyword(strings.ToUpper(s)) {
 		return fmt.Sprintf(`"%s"`, s)
 	}
+	// PostgreSQL requires double quotes for identifiers with special characters or start with digits
+	if !isValidUnquotedIdentifier(s) {
+		// If the identifier contains double quotes, we need to escape them by doubling them
+		if strings.Contains(s, `"`) {
+			s = strings.ReplaceAll(s, `"`, `""`)
+		}
+		return fmt.Sprintf(`"%s"`, s)
+	}
 	return s
+}
+
+// isValidUnquotedIdentifier checks if the identifier can be used without quotes in PostgreSQL.
+// PostgreSQL unquoted identifiers must:
+// - Begin with a letter (a-z, A-Z) or underscore
+// - Contain only letters, digits, and underscores
+func isValidUnquotedIdentifier(s string) bool {
+	if len(s) == 0 {
+		return false
+	}
+
+	// First character must be a letter or underscore
+	first := rune(s[0])
+	if !unicode.IsLetter(first) && first != '_' {
+		return false
+	}
+
+	// Remaining characters must be letters, digits, or underscores
+	for _, ch := range s[1:] {
+		if !unicode.IsLetter(ch) && !unicode.IsDigit(ch) && ch != '_' {
+			return false
+		}
+	}
+
+	return true
 }
