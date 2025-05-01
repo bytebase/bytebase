@@ -7,7 +7,6 @@ import (
 	"net/url"
 	"strings"
 	"time"
-	"unicode"
 
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/durationpb"
@@ -179,24 +178,8 @@ func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, 
 	}
 
 	if queryContext.Schema != "" {
-		// Check if schema name contains any non-alphanumeric characters that require quoting
-		needsQuoting := false
-		for _, char := range queryContext.Schema {
-			if !unicode.IsLetter(char) && !unicode.IsDigit(char) {
-				needsQuoting = true
-				break
-			}
-		}
-		var schemaSQL string
-		if needsQuoting {
-			// Escape any double quotes in the schema name
-			safeSchema := strings.ReplaceAll(queryContext.Schema, "\"", "\"\"")
-			schemaSQL = fmt.Sprintf("USE \"%s\"", safeSchema)
-		} else {
-			schemaSQL = fmt.Sprintf("USE %s", queryContext.Schema)
-		}
-
-		if _, err := conn.ExecContext(ctx, schemaSQL); err != nil {
+		escapedSchema := strings.ReplaceAll(queryContext.Schema, `"`, `""`)
+		if _, err := conn.ExecContext(ctx, fmt.Sprintf("USE \"%s\"", escapedSchema)); err != nil {
 			return nil, errors.Wrapf(err, "failed to set schema")
 		}
 	}
