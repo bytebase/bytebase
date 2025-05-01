@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"strings"
 
 	lsp "github.com/bytebase/lsp-protocol"
 	"github.com/pkg/errors"
@@ -74,6 +75,7 @@ func (h *Handler) handleTextDocumentCompletion(ctx context.Context, _ *jsonrpc2.
 		// Remove quotes or brackets from label.
 		if len(label) > 1 && (label[0] == '"' && label[len(label)-1] == '"' || label[0] == '`' && label[len(label)-1] == '`' || label[0] == '[' && label[len(label)-1] == ']') {
 			label = label[1 : len(label)-1]
+			label = strings.ReplaceAll(label, `""`, `"`)
 		}
 		completionItem := lsp.CompletionItem{
 			Label: label,
