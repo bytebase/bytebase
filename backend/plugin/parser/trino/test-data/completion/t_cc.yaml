@@ -1,0 +1,33 @@
+- description: Multiple statements
+  input: SELECT * FROM |
+  want:
+    - text: Company
+      type: DATABASE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: School
+      type: DATABASE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: MySchema
+      type: SCHEMA
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: dbo
+      type: SCHEMA
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: Address
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: Employees
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
