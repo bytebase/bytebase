@@ -140,8 +140,8 @@ importers:
         specifier: ^1.0.1
         version: 1.0.1
       pev2:
-        specifier: 1.14.0
-        version: 1.14.0(@popperjs/core@2.11.8)(typescript@5.7.3)
+        specifier: 1.15.0
+        version: 1.15.0(@popperjs/core@2.11.8)(typescript@5.7.3)
       pinia:
         specifier: 2.2.8
         version: 2.2.8(typescript@5.7.3)(vue@3.5.13(typescript@5.7.3))
@@ -2747,10 +2747,6 @@ packages:
     resolution: {integrity: sha512-7VT13fmjotKpGipCW9JEQAusEPE+Ei8nl6/g4FBAmIm0GOOLMua9NDDo/DWp0ZAxCr3cPq5ZpBqmPAQgDda2Pw==}
     engines: {node: '>= 8.10.0'}
 
-  clarinet@0.12.6:
-    resolution: {integrity: sha512-0FR+TrvLbYHLjhzs9oeIbd3yfZmd4u2DzYQEjUTm2dNfh4Y/9RIRWPjsm3aBtrVEpjKI7+lWa4ouqEXoml84mQ==}
-    engines: {chrome: '>=16.0.912', firefox: '>=0.8.0', node: '>=0.3.6'}
-
   clipboard@2.0.11:
     resolution: {integrity: sha512-C+0bbOqkezLIsmWSvlsXS0Q0bmkugu7jcfMIACB+RDEntIzQIkdr148we28AfSloQLRdZlYL/QYyrq05j/3Faw==}
 
@@ -2792,10 +2788,6 @@ packages:
   commander@7.2.0:
     resolution: {integrity: sha512-QrWXB+ZQSVPmIWIhtEO9H+gwHaMGYiF5ChvoJ+K9ZGHG/sVsa6yiesAD1GC/x46sET00Xlwo1u49RVVVzvcSkw==}
     engines: {node: '>= 10'}
-
-  component-emitter@2.0.0:
-    resolution: {integrity: sha512-4m5s3Me2xxlVKG9PkZpQqHQR7bgpnN7joDMJ4yvVkVXngjoITG76IaZmzmywSeRTeTpc6N6r3H3+KyUurV8OYw==}
-    engines: {node: '>=18'}
 
   compute-scroll-into-view@3.1.1:
     resolution: {integrity: sha512-VRhuHOLoKYOy4UbilLbUzbYg93XLjv2PncJC50EuTWPA3gaja1UjBsUP/D/9/juV3vQFr6XBEzn9KCAHdUvOHw==}
@@ -4178,8 +4170,8 @@ packages:
     resolution: {integrity: sha512-vE7JKRyES09KiunauX7nd2Q9/L7lhok4smP9RZTDeD4MVs72Dp2qNFVz39Nz5a0FVEW0BJR6C0DYrq6unoziZA==}
     engines: {node: '>= 14.16'}
 
-  pev2@1.14.0:
-    resolution: {integrity: sha512-ji9KCqDamJfKeqqIPfqcAIg3yVOC7+9Yhb7l8c7ctgBt/3FAjXOj9x66lewzQEmgZa4mZArKZyIHdDdnoVPMdQ==}
+  pev2@1.15.0:
+    resolution: {integrity: sha512-g6VcSY+EEjUpBUgouUPkO4Vnqq5wqdQO4v6lWS4/g9CeV0cmQxxne+gtIaqGRzoPGDq9S983Bpwaa80NeH3zQQ==}
 
   picocolors@1.1.1:
     resolution: {integrity: sha512-xceH2snhtb5M9liqDsmEw56le376mTZkEX/jEb/RxNFyegNul7eNslCXP9FDj/Lcu0X8KEyMceP2ntpaHrDEVA==}
@@ -4608,9 +4600,6 @@ packages:
 
   std-env@3.9.0:
     resolution: {integrity: sha512-UGvjygr6F6tpH7o2qyqR6QYpwraIjKSdtzyBdyytFOHmPZY917kwdwLG0RbOjWOnKmnm3PeHjaoLLMie7kPLQw==}
-
-  stream@0.0.3:
-    resolution: {integrity: sha512-aMsbn7VKrl4A2T7QAQQbzgN7NVc70vgF5INQrBXqn4dCXN1zy3L9HGgLO5s7PExmdrzTJ8uR/27aviW8or8/+A==}
 
   string-width@4.2.3:
     resolution: {integrity: sha512-wKyQRQpjJ0sIp62ErSZdGsjMJWsap5oRNihHhu6G7JVO/9jIB6UyevL+tXuOqrng8j/cxKTWyWUwvSTriiZz/g==}
@@ -8378,8 +8367,6 @@ snapshots:
     optionalDependencies:
       fsevents: 2.3.3
 
-  clarinet@0.12.6: {}
-
   clipboard@2.0.11:
     dependencies:
       good-listener: 1.2.2
@@ -8436,8 +8423,6 @@ snapshots:
   commander@4.1.1: {}
 
   commander@7.2.0: {}
-
-  component-emitter@2.0.0: {}
 
   compute-scroll-into-view@3.1.1: {}
 
@@ -9994,20 +9979,18 @@ snapshots:
 
   pathval@2.0.0: {}
 
-  pev2@1.14.0(@popperjs/core@2.11.8)(typescript@5.7.3):
+  pev2@1.15.0(@popperjs/core@2.11.8)(typescript@5.7.3):
     dependencies:
       '@fortawesome/fontawesome-svg-core': 6.7.2
       '@fortawesome/free-solid-svg-icons': 6.7.2
       '@fortawesome/vue-fontawesome': 3.0.8(@fortawesome/fontawesome-svg-core@6.7.2)(vue@3.5.13(typescript@5.7.3))
       bootstrap: 5.3.3(@popperjs/core@2.11.8)
-      clarinet: 0.12.6
       d3: 7.9.0
       d3-flextree: 2.1.2
       highlight.js: 11.11.1
       humanize-duration: 3.32.1
       lodash: 4.17.21
       splitpanes: 3.2.0(vue@3.5.13(typescript@5.7.3))
-      stream: 0.0.3
       vue: 3.5.13(typescript@5.7.3)
       vue-clipboard3: 2.0.0
       vue-tippy: 6.7.0(vue@3.5.13(typescript@5.7.3))
@@ -10496,10 +10479,6 @@ snapshots:
   stackback@0.0.2: {}
 
   std-env@3.9.0: {}
-
-  stream@0.0.3:
-    dependencies:
-      component-emitter: 2.0.0
 
   string-width@4.2.3:
     dependencies:
