@@ -310,7 +310,7 @@ export const seedWorkspaceApprovalSetting = () => {
         flow: {
           steps: roles.map(
             (role): ApprovalStep => ({
-              type: ApprovalStep_Type.ALL,
+              type: ApprovalStep_Type.ANY,
               nodes: [
                 {
                   type: ApprovalNode_Type.ANY_IN_GROUP,
@@ -358,7 +358,7 @@ export const seedWorkspaceApprovalSetting = () => {
     const title =
       preset.title ??
       preset.roles.map((role) => approvalNodeRoleText(role)).join(" -> ");
-    const keypath = `custom-approval.approval-flow.presets.${preset.description}`;
+    const keypath = `dynamic.custom-approval.approval-flow.presets.${preset.description}`;
     const description = t(keypath);
     return generateRule(title, description, preset.roles);
   });
