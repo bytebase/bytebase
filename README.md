@@ -302,12 +302,9 @@ Below diagram describes a typical mapping between an engineering org and the cor
 - [Bytebase vs Flyway](https://www.bytebase.com/blog/bytebase-vs-flyway/)
 
 Either Flyway or Liquibase is a library and CLI focusing on schema change. While Bytebase is an one-stop
-solution covering the entire database development lifecycle for Developers and DBAs to collaborate.
+solution covering the entire database development lifecycle for Developers and DBAs to collaborate through a GUI-based workspace.
 
-Another key difference is Bytebase **doesn't** support Oracle and SQL Server. This is a conscious
-decision we make so that we can focus on supporting other databases without good tooling support.
-In particular, many of our users tell us Bytebase is by far the best (and sometimes the only) database
-tool that can support their PostgreSQL and ClickHouse use cases.
+Bytebase offers broad database support and provides a more comprehensive platform beyond schema migration, including features for security, governance, and observability. Many of our users tell us Bytebase is by far the best (and sometimes the only) database tool that can support their PostgreSQL and ClickHouse use cases, highlighting our robust tooling across various database systems.
 
 [![Star History Chart](https://api.star-history.com/svg?repos=bytebase/bytebase,liquibase/liquibase,flyway/flyway&type=Date)](https://star-history.com/#bytebase/bytebase&liquibase/liquibase&flyway/flyway&Date)
 
