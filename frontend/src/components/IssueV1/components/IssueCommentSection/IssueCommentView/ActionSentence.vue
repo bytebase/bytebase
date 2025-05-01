@@ -14,6 +14,7 @@ import {
 } from "@/store";
 import { extractUserId } from "@/store";
 import { getDateForPbTimestamp, type ComposedIssue } from "@/types";
+import { type Timestamp } from "@/types/proto/google/protobuf/timestamp";
 import {
   IssueComment_Approval,
   IssueComment_Approval_Status,
@@ -38,6 +39,13 @@ const props = defineProps<{
 
 const { t } = useI18n();
 const userStore = useUserStore();
+
+const isValidTimestamp = (timestamp: Timestamp | undefined) => {
+  if (!timestamp) {
+    return false;
+  }
+  return timestamp.seconds.toNumber() > 0;
+};
 
 const renderActionSentence = () => {
   const { issueComment, issue } = props;
@@ -166,19 +174,21 @@ const renderActionSentence = () => {
         </Translation>
       );
     } else if (
-      fromEarliestAllowedTime !== undefined ||
-      toEarliestAllowedTime !== undefined
+      isValidTimestamp(fromEarliestAllowedTime) ||
+      isValidTimestamp(toEarliestAllowedTime)
     ) {
-      const oldVal = fromEarliestAllowedTime;
-      const newVal = toEarliestAllowedTime;
       const timeFormat = "YYYY-MM-DD HH:mm:ss UTCZZ";
       return t("activity.sentence.changed-from-to", {
         name: t("task.earliest-allowed-time"),
-        oldValue: oldVal
-          ? dayjs(getDateForPbTimestamp(oldVal)).format(timeFormat)
+        oldValue: isValidTimestamp(fromEarliestAllowedTime)
+          ? dayjs(getDateForPbTimestamp(fromEarliestAllowedTime)).format(
+              timeFormat
+            )
           : "Unset",
-        newValue: newVal
-          ? dayjs(getDateForPbTimestamp(newVal)).format(timeFormat)
+        newValue: isValidTimestamp(toEarliestAllowedTime)
+          ? dayjs(getDateForPbTimestamp(toEarliestAllowedTime)).format(
+              timeFormat
+            )
           : "Unset",
       });
     }
