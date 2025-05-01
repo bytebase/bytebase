@@ -147,7 +147,8 @@ func EngineSupportAutoComplete(e storepb.Engine) bool {
 		storepb.Engine_DM,
 		storepb.Engine_OCEANBASE_ORACLE,
 		storepb.Engine_SNOWFLAKE,
-		storepb.Engine_DYNAMODB:
+		storepb.Engine_DYNAMODB,
+		storepb.Engine_TRINO:
 		return true
 	case
 		storepb.Engine_ENGINE_UNSPECIFIED,
@@ -160,8 +161,7 @@ func EngineSupportAutoComplete(e storepb.Engine) bool {
 		storepb.Engine_HIVE,
 		storepb.Engine_ELASTICSEARCH,
 		storepb.Engine_DATABRICKS,
-		storepb.Engine_COSMOSDB,
-		storepb.Engine_TRINO:
+		storepb.Engine_COSMOSDB:
 		return false
 	default:
 		return false

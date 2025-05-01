@@ -1,0 +1,267 @@
+- input: |-
+    select count(1) from users where id 'invalid'; SELECT * FROM |
+    select * from orders where order_id like '%123';
+  want:
+    - text: orders
+      type: TABLE
+      definition: catalog1.public.orders
+      comment: ""
+      priority: 0
+    - text: users
+      type: TABLE
+      definition: catalog1.public.users
+      comment: ""
+      priority: 0
+    - text: active_users
+      type: VIEW
+      definition: catalog1.public.active_users
+      comment: ""
+      priority: 0
+- input: SELECT * FROM |
+  want:
+    - text: orders
+      type: TABLE
+      definition: catalog1.public.orders
+      comment: ""
+      priority: 0
+    - text: users
+      type: TABLE
+      definition: catalog1.public.users
+      comment: ""
+      priority: 0
+    - text: active_users
+      type: VIEW
+      definition: catalog1.public.active_users
+      comment: ""
+      priority: 0
+- input: SELECT | FROM users
+  want:
+    - text: '"timestamp"'
+      type: COLUMN
+      definition: catalog1.analytics.metrics | TIMESTAMP, NOT NULL
+      comment: ""
+      priority: 0
+    - text: '"value"'
+      type: COLUMN
+      definition: catalog1.analytics.metrics | DOUBLE, NOT NULL
+      comment: ""
+      priority: 0
+    - text: email
+      type: COLUMN
+      definition: catalog1.public.users | VARCHAR, NOT NULL
+      comment: ""
+      priority: 0
+    - text: id
+      type: COLUMN
+      definition: catalog1.public.orders | INT, NOT NULL
+      comment: ""
+      priority: 0
+    - text: id
+      type: COLUMN
+      definition: catalog1.public.users | INT, NOT NULL
+      comment: ""
+      priority: 0
+    - text: name
+      type: COLUMN
+      definition: catalog1.public.users | VARCHAR, NOT NULL
+      comment: ""
+      priority: 0
+    - text: total
+      type: COLUMN
+      definition: catalog1.public.orders | DECIMAL, NOT NULL
+      comment: ""
+      priority: 0
+    - text: user_id
+      type: COLUMN
+      definition: catalog1.analytics.metrics | INT, NOT NULL
+      comment: ""
+      priority: 0
+    - text: user_id
+      type: COLUMN
+      definition: catalog1.public.orders | INT, NOT NULL
+      comment: ""
+      priority: 0
+- input: SELECT * FROM catalog1.|
+  want:
+    - text: analytics
+      type: SCHEMA
+      definition: ""
+      comment: ""
+    - text: public
+      type: SCHEMA
+      definition: ""
+      comment: ""
+- input: SELECT * FROM catalog1.public.|
+  want:
+    - text: orders
+      type: TABLE
+      definition: catalog1.public.orders
+      comment: ""
+    - text: users
+      type: TABLE
+      definition: catalog1.public.users
+      comment: ""
+    - text: active_users
+      type: VIEW
+      definition: catalog1.public.active_users
+      comment: ""
+- input: SELECT * FROM analytics.|
+  want:
+    - text: metrics
+      type: TABLE
+      definition: catalog1.analytics.metrics
+      comment: ""
+- input: SELECT * FROM catalog2.test.|
+  want:
+    - text: external_data
+      type: TABLE
+      definition: catalog2.test.external_data
+      comment: ""
+- input: SELECT u.| FROM users u
+  want:
+    - text: id
+      type: COLUMN
+      definition: catalog1.public.users | INT, NOT NULL
+      comment: ""
+    - text: name
+      type: COLUMN
+      definition: catalog1.public.users | VARCHAR, NOT NULL
+      comment: ""
+    - text: email
+      type: COLUMN
+      definition: catalog1.public.users | VARCHAR, NOT NULL
+      comment: ""
+- input: WITH x(x1, x2) AS (SELECT id, name FROM users) SELECT x.| FROM x;
+  want:
+    - text: x1
+      type: COLUMN
+      definition: ""
+      comment: ""
+    - text: x2
+      type: COLUMN
+      definition: ""
+      comment: ""
+- input: WITH x(x1, x2) AS (SELECT id, name FROM users) SELECT | FROM x;
+  want:
+    - text: '"timestamp"'
+      type: COLUMN
+      definition: catalog1.analytics.metrics | TIMESTAMP, NOT NULL
+      comment: ""
+      priority: 0
+    - text: '"value"'
+      type: COLUMN
+      definition: catalog1.analytics.metrics | DOUBLE, NOT NULL
+      comment: ""
+      priority: 0
+    - text: email
+      type: COLUMN
+      definition: catalog1.public.users | VARCHAR, NOT NULL
+      comment: ""
+      priority: 0
+    - text: id
+      type: COLUMN
+      definition: catalog1.public.orders | INT, NOT NULL
+      comment: ""
+      priority: 0
+    - text: id
+      type: COLUMN
+      definition: catalog1.public.users | INT, NOT NULL
+      comment: ""
+      priority: 0
+    - text: name
+      type: COLUMN
+      definition: catalog1.public.users | VARCHAR, NOT NULL
+      comment: ""
+      priority: 0
+    - text: total
+      type: COLUMN
+      definition: catalog1.public.orders | DECIMAL, NOT NULL
+      comment: ""
+      priority: 0
+    - text: user_id
+      type: COLUMN
+      definition: catalog1.analytics.metrics | INT, NOT NULL
+      comment: ""
+      priority: 0
+    - text: user_id
+      type: COLUMN
+      definition: catalog1.public.orders | INT, NOT NULL
+      comment: ""
+      priority: 0
+- input: SELECT catalog1.public.users.|
+  want:
+    - text: id
+      type: COLUMN
+      definition: catalog1.public.users | INT, NOT NULL
+      comment: ""
+    - text: name
+      type: COLUMN
+      definition: catalog1.public.users | VARCHAR, NOT NULL
+      comment: ""
+    - text: email
+      type: COLUMN
+      definition: catalog1.public.users | VARCHAR, NOT NULL
+      comment: ""
+- input: SELECT id as user_id FROM users ORDER BY |
+  want:
+    - text: id
+      type: COLUMN
+      definition: catalog1.public.users | INT, NOT NULL
+      comment: ""
+    - text: name
+      type: COLUMN
+      definition: catalog1.public.users | VARCHAR, NOT NULL
+      comment: ""
+    - text: email
+      type: COLUMN
+      definition: catalog1.public.users | VARCHAR, NOT NULL
+      comment: ""
+    - text: user_id
+      type: COLUMN
+      definition: ""
+      comment: ""
+- input: SELECT * FROM users JOIN |
+  want:
+    - text: orders
+      type: TABLE
+      definition: catalog1.public.orders
+      comment: ""
+      priority: 0
+    - text: users
+      type: TABLE
+      definition: catalog1.public.users
+      comment: ""
+      priority: 0
+    - text: active_users
+      type: VIEW
+      definition: catalog1.public.active_users
+      comment: ""
+      priority: 0
+- input: '|'
+  want:
+    - text: ALTER
+      type: KEYWORD
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: CREATE
+      type: KEYWORD
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: DROP
+      type: KEYWORD
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: INSERT
+      type: KEYWORD
+      definition: ""
+      comment: ""
+      priority: 0
+- input: SEL|
+  want:
+    - text: SELECT
+      type: KEYWORD
+      definition: ""
+      comment: ""
