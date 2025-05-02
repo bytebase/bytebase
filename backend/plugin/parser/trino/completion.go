@@ -90,6 +90,9 @@ var (
 		// trinoparser.TrinoParserRULE_functionDeclaration:   true,
 
 		// // Table/Object name related rules - for table/view completion
+		// full_column_name
+		trinoparser.TrinoParserRULE_identifier: true,
+		// full_table_name
 		trinoparser.TrinoParserRULE_qualifiedName: true,
 		// trinoparser.TrinoParserRULE_aliasedRelation: true,
 		// trinoparser.TrinoParserRULE_relationPrimary: true,
@@ -533,7 +536,7 @@ func NewStandardCompleter(ctx context.Context, cCtx base.CompletionContext, stat
 		&globalFellowSetsByState,
 		trinoparser.TrinoParserRULE_queryNoWith,
 		trinoparser.TrinoParserRULE_query,
-		trinoparser.TrinoParserRULE_aliasedRelation,
+		trinoparser.TrinoParserRULE_as_column_alias,
 		trinoparser.TrinoParserRULE_with,
 	)
 
@@ -563,7 +566,7 @@ func NewTrickyCompleter(ctx context.Context, cCtx base.CompletionContext, statem
 		&globalFellowSetsByState,
 		trinoparser.TrinoParserRULE_queryNoWith,
 		trinoparser.TrinoParserRULE_query,
-		trinoparser.TrinoParserRULE_aliasedRelation,
+		trinoparser.TrinoParserRULE_as_column_alias,
 		trinoparser.TrinoParserRULE_with,
 	)
 
@@ -674,7 +677,7 @@ func (c *Completer) complete() ([]base.Candidate, error) {
 	candidates := c.core.CollectCandidates(caretIndex, context)
 
 	for ruleName := range candidates.Rules {
-		if ruleName == trinoparser.TrinoParserRULE_primaryExpression {
+		if ruleName == trinoparser.TrinoParserRULE_identifier {
 			c.collectLeadingTableReferences(caretIndex)
 			c.takeReferencesSnapshot()
 			c.collectRemainingTableReferences()
@@ -1565,7 +1568,7 @@ func (c *Completer) extractAliasText(pos int) string {
 	parser.BuildParseTrees = true
 	parser.RemoveErrorListeners()
 	// For Trino we'll use expression as the entry point for column aliases
-	tree := parser.Identifier()
+	tree := parser.As_column_alias()
 
 	listener := &SelectAliasListener{}
 	antlr.ParseTreeWalkerDefault.Walk(listener, tree)
