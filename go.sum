@@ -870,8 +870,8 @@ github.com/bytebase/tidb2 v0.0.0-20231129002249-5bbb6bb83940 h1:EgmWx2TWEnHySUhi
 github.com/bytebase/tidb2 v0.0.0-20231129002249-5bbb6bb83940/go.mod h1:JNOIGqHyjLs7vMlnzvnpfTqh4qAE1xsMILj7onmuqOM=
 github.com/bytebase/tidb2/pkg/parser v0.0.0-20231129002249-5bbb6bb83940 h1:PZ22FTyHYk/qJKUTDk3kwOBktS7QFc20ocgmZP/ZmwM=
 github.com/bytebase/tidb2/pkg/parser v0.0.0-20231129002249-5bbb6bb83940/go.mod h1:yRkiqLFwIqibYg2P7h4bclHjHcJiIFRLKhGRyBcKYus=
-github.com/bytebase/trino-parser v0.0.0-20250417182305-ce3ac48add9d h1:rASjLgK0wJcUfT331LwleOC5fWirvSo++9pr+/6S1HY=
-github.com/bytebase/trino-parser v0.0.0-20250417182305-ce3ac48add9d/go.mod h1:n0hMVu7KFEBzmYW0q6Kyd/dJ7cng8+YY0sZeDSWIX8g=
+github.com/bytebase/trino-parser v0.0.0-20250502000119-9977709a63e8 h1:gSJFO4jHhIIDQjTnyrdDncsxMYhtILZip1B8mCSlJIg=
+github.com/bytebase/trino-parser v0.0.0-20250502000119-9977709a63e8/go.mod h1:n0hMVu7KFEBzmYW0q6Kyd/dJ7cng8+YY0sZeDSWIX8g=
 github.com/bytebase/tsql-parser v0.0.0-20250311085620-1db45111863e h1:R7yllkuKkKLbsbZx/OPN985g3QWHrwz4ixq7OGnn2Tw=
 github.com/bytebase/tsql-parser v0.0.0-20250311085620-1db45111863e/go.mod h1:L9qgmrnVenkm/SL/fmyUSXK5+iMT1ctn/EsMqItSGVk=
 github.com/caarlos0/env/v11 v11.3.1 h1:cArPWC15hWmEt+gWk7YBi7lEXTXCvpaSdCiZE2X5mCA=
