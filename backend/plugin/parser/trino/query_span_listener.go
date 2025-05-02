@@ -167,8 +167,8 @@ func (l *trinoQuerySpanListener) EnterSelectSingle(ctx *parser.SelectSingleConte
 	}
 
 	// Override with alias if provided
-	if ctx.Identifier() != nil {
-		resultName = NormalizeTrinoIdentifier(ctx.Identifier().GetText())
+	if ctx.As_column_alias() != nil && ctx.As_column_alias().Column_alias() != nil && ctx.As_column_alias().Column_alias().Identifier() != nil {
+		resultName = NormalizeTrinoIdentifier(ctx.As_column_alias().Column_alias().Identifier().GetText())
 	}
 
 	// If still no name, use a placeholder
