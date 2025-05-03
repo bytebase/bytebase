@@ -1,6 +1,7 @@
 <template>
   <AdminSetup v-if="ready" />
   <MaskSpinner v-else class="!bg-white" />
+  <AuthFooter />
 </template>
 
 <script lang="ts" setup>
@@ -12,6 +13,7 @@ import {
 import MaskSpinner from "@/components/misc/MaskSpinner.vue";
 import { useRoleStore, useWorkspaceV1Store } from "@/store";
 import { hasWorkspacePermissionV2 } from "@/utils";
+import AuthFooter from "@/views/auth/AuthFooter.vue";
 import AdminSetup from "./AdminSetup.vue";
 
 const router = useRouter();
