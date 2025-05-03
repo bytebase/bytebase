@@ -54,9 +54,11 @@
 import type { Node, Tag } from "@markdoc/markdoc";
 import { storeToRefs } from "pinia";
 import { ref, reactive, watch, computed } from "vue";
+import { useRoute } from "vue-router";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { useLanguage } from "@/composables/useLanguage";
 import { useUIStateStore, useHelpStore } from "@/store";
+import type { RouteMapList } from "@/types";
 
 const [
   { default: Markdoc },
@@ -73,6 +75,8 @@ const [
 interface State {
   frontmatter: Record<string, string>;
   html: string;
+  helpTimer: number | undefined;
+  RouteMapList: RouteMapList | null;
 }
 
 const active = ref(false);
@@ -80,6 +84,7 @@ const { locale } = useLanguage();
 const uiStateStore = useUIStateStore();
 const helpStore = useHelpStore();
 const helpStoreState = storeToRefs(helpStore);
+const route = useRoute();
 
 const helpId = computed(() => helpStoreState.currHelpId.value);
 const isGuide = computed(() => helpStoreState.openByDefault.value);
@@ -87,7 +92,46 @@ const isGuide = computed(() => helpStoreState.openByDefault.value);
 const state = reactive<State>({
   frontmatter: {},
   html: "",
+  helpTimer: undefined,
+  RouteMapList: null,
 });
+
+// watch route change for help
+watch(
+  () => route.name,
+  async (routeName) => {
+    const uiStateStore = useUIStateStore();
+    const helpStore = useHelpStore();
+
+    // Clear timer after every route change.
+    if (state.helpTimer) {
+      clearTimeout(state.helpTimer);
+      state.helpTimer = undefined;
+    }
+
+    // Hide opened help drawer if route changed.
+    helpStore.exitHelp();
+
+    if (!state.RouteMapList) {
+      const res = await fetch("/help/routeMapList.json");
+      state.RouteMapList = await res.json();
+    }
+
+    const helpId = state.RouteMapList?.find(
+      (pair) => pair.routeName === routeName
+    )?.helpName;
+
+    if (helpId && !uiStateStore.getIntroStateByKey(`${helpId}`)) {
+      state.helpTimer = window.setTimeout(() => {
+        helpStore.showHelp(helpId, true);
+        uiStateStore.saveIntroStateByKey({
+          key: `${helpId}`,
+          newState: true,
+        });
+      }, 500);
+    }
+  }
+);
 
 watch(helpId, async (id) => {
   if (id) {
