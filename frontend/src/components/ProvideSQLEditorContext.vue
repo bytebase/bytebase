@@ -107,63 +107,53 @@ const fallbackToFirstProject = async () => {
   return head(projects)?.name ?? DEFAULT_PROJECT_NAME;
 };
 
-const initializeProjects = async () => {
-  const initProject = async (project: string) => {
-    try {
-      await projectStore.getOrFetchProjectByName(project);
-      editorStore.project = project;
-      return true;
-    } catch {
-      // nothing
-    }
-    return false;
-  };
+const initProject = async (project: string) => {
+  try {
+    await projectStore.getOrFetchProjectByName(project);
+    return true;
+  } catch {
+    // nothing
+  }
+  return false;
+};
 
+const initializeProjects = async () => {
   const projectInQuery = route.query.project as string;
   const projectInParams = route.params.project as string;
+  let project: string = "";
   let initializeSuccess = false;
+
   if (typeof projectInQuery === "string" && projectInQuery) {
     // Legacy "?project={project}"
-    const project = `projects/${projectInQuery}`;
+    project = `projects/${projectInQuery}`;
     editorStore.strictProject = true;
-    initializeSuccess = await initProject(project);
   } else if (typeof projectInParams === "string" && projectInParams) {
     // "/sql-editor/projects/{project}"
-    const project = `projects/${projectInParams}`;
+    project = `projects/${projectInParams}`;
     editorStore.strictProject = "strict" in route.query;
-    initializeSuccess = await initProject(project);
   } else {
     // plain "/sql-editor"
-
     if (hideProjects.value) {
       // Direct to Default Project
-      editorStore.project = DEFAULT_PROJECT_NAME;
-      editorStore.strictProject = false;
-      initializeSuccess = await initProject(DEFAULT_PROJECT_NAME);
+      project = DEFAULT_PROJECT_NAME;
     } else {
-      const lastView = editorStore.storedLastViewedProject;
-      if (lastView) {
-        const project = await projectStore.getOrFetchProjectByName(lastView);
-        if (isValidProjectName(project.name)) {
-          editorStore.project = lastView;
-        } else {
-          const project = await fallbackToFirstProject();
-          editorStore.project = project;
-        }
-      } else {
-        const project = await fallbackToFirstProject();
-        editorStore.project = project;
-      }
-      editorStore.strictProject = false;
-      if (editorStore.project) {
-        initializeSuccess = true;
-      } else {
-        initializeSuccess = false;
-      }
+      project = editorStore.storedLastViewedProject;
     }
+    editorStore.strictProject = false;
+  }
+
+  if (isValidProjectName(project)) {
+    initializeSuccess = await initProject(project);
+  }
+  if (!initializeSuccess) {
+    // Maybe the cached project name is valid, but users cannot get it any more (removed, not permission, etc).
+    // So we need to fallback to the first accessible project.
+    project = await fallbackToFirstProject();
+    initializeSuccess = await initProject(project);
   }
 
   if (initializeSuccess) {
+    editorStore.project = project;
     tabStore.maybeInitProject(editorStore.project);
   } else {
     editorStore.project = "";
