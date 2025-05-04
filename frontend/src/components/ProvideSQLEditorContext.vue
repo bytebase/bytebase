@@ -151,9 +151,9 @@ const initializeProjects = async () => {
     project = await fallbackToFirstProject();
     initializeSuccess = await initProject(project);
   }
-  editorStore.project = project;
 
   if (initializeSuccess) {
+    editorStore.project = project;
     tabStore.maybeInitProject(editorStore.project);
   } else {
     editorStore.project = "";
