@@ -135,8 +135,14 @@ const loadMore = useDebounceFn(async () => {
 }, 500);
 
 watch(
-  () => filteredTaskList.value,
-  () => (state.index = TASK_PER_PAGE)
+  [() => state.taskStatusFilters, () => state.adviceStatusFilters],
+  () => {
+    // Reset the index when the filters change.
+    state.index = TASK_PER_PAGE;
+  },
+  {
+    deep: true,
+  }
 );
 
 watch(
