@@ -307,10 +307,6 @@
     "external-url": "Bytebase 还没有配置 --external-url"
   },
   "bbkit": {
-    "common": {
-      "back": "退回",
-      "next": "下一步"
-    },
     "confirm-button": {
       "sure-to-delete": "确定要删除吗？",
       "sure-to-archive": "确定要归档吗？",

@@ -307,10 +307,6 @@
     "external-url": "Bytebase は --extern-url を設定していません"
   },
   "bbkit": {
-    "common": {
-      "back": "戻る",
-      "next": "次のステップ"
-    },
     "confirm-button": {
       "sure-to-delete": "本当に削除してもよろしいですか?",
       "sure-to-archive": "本当にアーカイブしますか?",
