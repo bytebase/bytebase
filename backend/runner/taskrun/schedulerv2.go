@@ -29,9 +29,6 @@ const (
 	taskSchedulerInterval = 5 * time.Second
 )
 
-// defaultInstanceMaximumConnections is the maximum number of connections outstanding per instance by default.
-const defaultInstanceMaximumConnections = 10
-
 // defaultRolloutMaxRunningTaskRuns is the maximum number of running tasks per rollout.
 // No limit by default.
 const defaultRolloutMaxRunningTaskRuns = 0
@@ -437,7 +434,7 @@ func (s *SchedulerV2) scheduleRunningTaskRuns(ctx context.Context) error {
 		// Check max connections per instance.
 		maximumConnections := int(instance.Metadata.GetMaximumConnections())
 		if maximumConnections <= 0 {
-			maximumConnections = defaultInstanceMaximumConnections
+			maximumConnections = base.DefaultInstanceMaximumConnections
 		}
 		if s.stateCfg.InstanceOutstandingConnections.Increment(task.InstanceID, maximumConnections) {
 			s.stateCfg.TaskRunSchedulerInfo.Store(taskRun.ID, &storepb.SchedulerInfo{
