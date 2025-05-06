@@ -1725,7 +1725,6 @@
   "sql-editor": {
     "self": "Editor de SQL",
     "select-connection": "Por favor seleccione conexiones",
-    "search-databases": "Buscar bases de datos",
     "search-results": "Resultados de búsqueda",
     "loading-databases": "Cargando bases de datos...",
     "show-databases-without-query-permission": "Muestra las bases de datos que no tienen permisos de consulta",
@@ -1803,7 +1802,6 @@
     },
     "batch-query": {
       "batch": "Lote",
-      "select-database": "Seleccione la base de datos a continuación",
       "description": "Consulta por lotes {count} bases de datos adicionales en {project}.",
       "show-or-hide-empty-query-results": "Mostrar/ocultar resultados de consulta vacíos"
     },

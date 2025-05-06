@@ -7,6 +7,7 @@
   </template>
   <template v-if="type === 'database'">
     <DatabaseNode
+      v-bind="$attrs"
       :node="node"
       :factors="factors"
       :keyword="keyword"
