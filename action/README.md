@@ -26,6 +26,9 @@ This action is configured via command-line flags. Global flags apply to all comm
 
 These flags apply to the main `bytebase-action` command and its subcommands (`check`, `rollout`).
 
+-   **`--output`**: The output file location. The output file is a JSON file with the created resource names.
+    -   Default: `""` (empty string)
+
 -   **`--url`**: The Bytebase instance URL.
     -   Default: `https://demo.bytebase.com`
 
