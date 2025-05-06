@@ -307,10 +307,6 @@
     "external-url": "Bytebase no ha configurado --external-url"
   },
   "bbkit": {
-    "common": {
-      "back": "Volver",
-      "next": "Siguiente"
-    },
     "confirm-button": {
       "sure-to-delete": "¿Estás seguro de que deseas eliminar?",
       "sure-to-archive": "¿Estás seguro de archivar?",

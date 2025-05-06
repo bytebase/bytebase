@@ -5,8 +5,8 @@
     :type="type"
     :title="title"
     :content="description"
-    :negative-text="negativeText"
-    :positive-text="positiveText"
+    :negative-text="cancelText"
+    :positive-text="okText"
     @update:show="$emit('update:show', $event)"
     @positive-click="() => $emit('ok')"
     @negative-click="() => $emit('cancel')"
@@ -17,10 +17,9 @@
 
 <script lang="ts" setup>
 import { NModal } from "naive-ui";
-import { computed } from "vue";
-import { useI18n } from "vue-i18n";
+import { t } from "@/plugins/i18n";
 
-const props = withDefaults(
+withDefaults(
   defineProps<{
     show: boolean;
     type: "info" | "warning";
@@ -32,8 +31,8 @@ const props = withDefaults(
   {
     type: "info",
     description: "",
-    okText: "bbkit.common.ok",
-    cancelText: "bbkit.common.cancel",
+    okText: () => t("common.ok"),
+    cancelText: () => t("common.cancel"),
     payload: undefined,
   }
 );
@@ -43,18 +42,4 @@ defineEmits<{
   (event: "cancel"): void;
   (event: "update:show", val: boolean): void;
 }>();
-
-const { t, te } = useI18n();
-
-const negativeText = computed(() => {
-  const { cancelText } = props;
-  if (te(cancelText)) return t(cancelText);
-  return cancelText;
-});
-
-const positiveText = computed(() => {
-  const { okText } = props;
-  if (te(okText)) return t(okText);
-  return okText;
-});
 </script>

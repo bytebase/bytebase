@@ -307,10 +307,6 @@
     "external-url": "Bytebase chưa được cấu hình --external-url"
   },
   "bbkit": {
-    "common": {
-      "back": "Quay lại",
-      "next": "Tiếp"
-    },
     "confirm-button": {
       "sure-to-delete": "Bạn có chắc chắn muốn xóa?",
       "sure-to-archive": "Bạn có chắc chắn muốn lưu trữ?",

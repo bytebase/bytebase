@@ -51,7 +51,7 @@
           <heroicons-outline:chevron-left
             class="-ml-1 mr-1 h-5 w-5 text-control-light"
           />
-          <span> {{ $t("bbkit.common.back") }}</span>
+          <span> {{ $t("common.back") }}</span>
         </NButton>
         <NButton
           v-if="currentIndex == stepList.length - 1"
@@ -69,7 +69,7 @@
           v-bind="nextButtonProps"
           @click.prevent="$emit('update:currentIndex', currentIndex + 1)"
         >
-          {{ $t("bbkit.common.next") }}
+          {{ $t("common.next") }}
         </NButton>
       </div>
     </div>
