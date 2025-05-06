@@ -71,7 +71,7 @@ func (s *Server) initializeSetting(ctx context.Context) error {
 	passwordSettingValue, err := protojson.Marshal(&storepb.PasswordRestrictionSetting{
 		MinLength:                         8,
 		RequireNumber:                     false,
-		RequireLetter:                     true,
+		RequireLetter:                     false,
 		RequireUppercaseLetter:            false,
 		RequireSpecialCharacter:           false,
 		RequireResetPasswordForFirstLogin: false,
