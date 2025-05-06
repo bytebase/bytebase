@@ -1590,13 +1590,13 @@ func (c *Completer) quotedIdentifierIfNeeded(identifier string) string {
 	needsQuoting := false
 	for i, r := range identifier {
 		// First character must be a letter or underscore
-		if i == 0 && !(unicode.IsLetter(r) || r == '_') {
+		if i == 0 && !unicode.IsLetter(r) && r != '_' {
 			needsQuoting = true
 			break
 		}
 
 		// Other characters must be letters, numbers, or underscores
-		if !(unicode.IsLetter(r) || unicode.IsDigit(r) || r == '_') {
+		if !unicode.IsLetter(r) && !unicode.IsDigit(r) && r != '_' {
 			needsQuoting = true
 			break
 		}
