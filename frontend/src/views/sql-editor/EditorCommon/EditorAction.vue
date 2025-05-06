@@ -125,7 +125,6 @@
     <div
       class="action-right gap-x-2 flex overflow-x-auto sm:overflow-x-hidden sm:justify-end items-center"
     >
-      <BatchQueryDatabasesSelector />
       <NButtonGroup>
         <DatabaseChooser />
         <SchemaChooser />
@@ -176,7 +175,6 @@ import { Engine } from "@/types/proto/v1/common";
 import { keyboardShortcutStr, isWorksheetWritableV1 } from "@/utils";
 import { useSQLEditorContext } from "../context";
 import AdminModeButton from "./AdminModeButton.vue";
-import BatchQueryDatabasesSelector from "./BatchQueryDatabasesSelector.vue";
 import ContainerChooser from "./ContainerChooser.vue";
 import DatabaseChooser from "./DatabaseChooser.vue";
 import OpenAIButton from "./OpenAIButton";

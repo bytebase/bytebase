@@ -1725,7 +1725,6 @@
   "sql-editor": {
     "self": "SQL Editor",
     "select-connection": "Please select connections",
-    "search-databases": "Search Databases",
     "search-results": "Search Results",
     "loading-databases": "Loading Databases...",
     "show-databases-without-query-permission": "Show databases without query permissions",
@@ -1803,7 +1802,6 @@
     },
     "batch-query": {
       "batch": "Batch",
-      "select-database": "Select database below",
       "description": "Batch query {count} additional databases under {project}.",
       "show-or-hide-empty-query-results": "Show / hide empty query results"
     },

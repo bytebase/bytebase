@@ -1725,7 +1725,6 @@
   "sql-editor": {
     "self": "Trình soạn thảo SQL",
     "select-connection": "Vui lòng chọn kết nối",
-    "search-databases": "Tìm kiếm Cơ sở dữ liệu",
     "search-results": "Kết quả tìm kiếm",
     "loading-databases": "Đang tải Cơ sở dữ liệu...",
     "show-databases-without-query-permission": "Hiển thị cơ sở dữ liệu không có quyền truy vấn",
@@ -1803,7 +1802,6 @@
     },
     "batch-query": {
       "batch": "Hàng loạt",
-      "select-database": "Chọn cơ sở dữ liệu bên dưới",
       "description": "Truy vấn hàng loạt {count} cơ sở dữ liệu bổ sung trong {project}.",
       "show-or-hide-empty-query-results": "Hiển thị / ẩn kết quả truy vấn trống"
     },

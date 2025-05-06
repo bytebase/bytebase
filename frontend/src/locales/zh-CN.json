@@ -1725,7 +1725,6 @@
   "sql-editor": {
     "self": "SQL 编辑器",
     "select-connection": "请选择数据连接",
-    "search-databases": "搜索数据库",
     "search-results": "搜索结果",
     "loading-databases": "加载数据库信息...",
     "show-databases-without-query-permission": "显示没有查询权限的数据库",
@@ -1803,7 +1802,6 @@
     },
     "batch-query": {
       "batch": "批量",
-      "select-database": "选择下面的数据库",
       "description": "批量查询 {project} 下的 {count} 个数据库。",
       "show-or-hide-empty-query-results": "显示/隐藏空查询结果"
     },
