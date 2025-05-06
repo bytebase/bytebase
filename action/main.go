@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"net/url"
@@ -24,6 +25,7 @@ import (
 var (
 	Config struct {
 		// bytebase-action flags
+		Output               string
 		URL                  string
 		ServiceAccount       string
 		ServiceAccountSecret string
@@ -49,10 +51,12 @@ var (
 		Short:             "Bytebase action",
 		PersistentPreRunE: validateSharedFlags,
 	}
+	outputMap = map[string]string{}
 )
 
 func init() {
 	// bytebase-action flags
+	cmd.PersistentFlags().StringVar(&Config.Output, "output", "", "Output file location. The output file is a JSON file with the created resource names")
 	cmd.PersistentFlags().StringVar(&Config.URL, "url", "https://demo.bytebase.com", "Bytebase URL")
 	cmd.PersistentFlags().StringVar(&Config.ServiceAccount, "service-account", "ci@service.bytebase.com", "Bytebase Service account")
 	cmd.PersistentFlags().StringVar(&Config.ServiceAccountSecret, "service-account-secret", os.Getenv("BYTEBASE_SERVICE_ACCOUNT_SECRET"), "Bytebase Service account secret")
@@ -62,11 +66,12 @@ func init() {
 
 	// bytebase-action check flags
 	cmdCheck := &cobra.Command{
-		Use:               "check",
-		Short:             "Check the release files",
-		Args:              cobra.NoArgs,
-		PersistentPreRunE: nil,
-		RunE:              runCheck,
+		Use:                "check",
+		Short:              "Check the release files",
+		Args:               cobra.NoArgs,
+		PersistentPreRunE:  nil,
+		PersistentPostRunE: writeOutputJSON,
+		RunE:               runCheck,
 	}
 	cmd.AddCommand(cmdCheck)
 
@@ -129,6 +134,27 @@ func validateRolloutFlags(*cobra.Command, []string) error {
 	return nil
 }
 
+func writeOutputJSON(*cobra.Command, []string) error {
+	if Config.Output == "" {
+		return nil
+	}
+	f, err := os.Create(Config.Output)
+	if err != nil {
+		return errors.Wrapf(err, "failed to create output file: %s", Config.Output)
+	}
+	defer f.Close()
+
+	j, err := json.Marshal(outputMap)
+	if err != nil {
+		return errors.Wrapf(err, "failed to marshal output map")
+	}
+
+	if _, err := f.Write(j); err != nil {
+		return errors.Wrapf(err, "failed to write output file: %s", Config.Output)
+	}
+	return nil
+}
+
 func runCheck(*cobra.Command, []string) error {
 	platform := getJobPlatform()
 	client, err := NewClient(Config.URL, Config.ServiceAccount, Config.ServiceAccountSecret)
@@ -186,6 +212,7 @@ func runRollout(command *cobra.Command, _ []string) error {
 	if err != nil {
 		return errors.Wrapf(err, "failed to create release")
 	}
+	outputMap["release"] = createReleaseResponse.Name
 
 	planPreview, err := client.previewPlan(Config.Project, &v1pb.PreviewPlanRequest{
 		Release:         createReleaseResponse.Name,
@@ -209,6 +236,7 @@ func runRollout(command *cobra.Command, _ []string) error {
 	if err != nil {
 		return errors.Wrapf(err, "failed to create plan")
 	}
+	outputMap["plan"] = planCreated.Name
 
 	slog.Info("plan created", "url", fmt.Sprintf("%s/%s", client.url, planCreated.Name))
 
@@ -326,6 +354,7 @@ func runAndWaitForRollout(ctx context.Context, client *Client, planName string) 
 	if err != nil {
 		return errors.Wrapf(err, "failed to preview rollout")
 	}
+	outputMap["rollout"] = rolloutEmpty.Name
 
 	slog.Info("rollout created", "url", fmt.Sprintf("%s/%s", client.url, rolloutEmpty.Name))
 
