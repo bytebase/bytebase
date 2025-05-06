@@ -1725,7 +1725,6 @@
   "sql-editor": {
     "self": "SQLエディタ",
     "select-connection": "データ接続を選択してください",
-    "search-databases": "データベースを検索する",
     "search-results": "の検索結果",
     "loading-databases": "データベース情報をロードしています...",
     "show-databases-without-query-permission": "クエリ権限のないデータベースを表示します",
@@ -1803,7 +1802,6 @@
     },
     "batch-query": {
       "batch": "バッチ",
-      "select-database": "以下のデータベースを選択してください",
       "description": "{project} の下にある {count} データベースをバッチクエリします。",
       "show-or-hide-empty-query-results": "空のクエリ結果の表示/非表示"
     },
