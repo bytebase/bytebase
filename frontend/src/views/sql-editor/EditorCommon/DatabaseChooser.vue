@@ -21,6 +21,17 @@
       "
       class="flex flex-row items-center text-main"
     >
+      <NPopover
+        v-if="(currentTab.batchQueryContext?.databases.length ?? 0) > 1"
+        placement="bottom"
+      >
+        <template #trigger>
+          <SquareStackIcon class="w-4 h-4 mr-1 text-accent" />
+        </template>
+        <template #default>
+          {{ $t("sql-editor.batch-query.batch") }}
+        </template>
+      </NPopover>
       <EnvironmentV1Name
         :environment="database.effectiveEnvironmentEntity"
         :link="false"
@@ -47,8 +58,8 @@
 </template>
 
 <script lang="ts" setup>
-import { ChevronRightIcon } from "lucide-vue-next";
-import { NButton } from "naive-ui";
+import { ChevronRightIcon, SquareStackIcon } from "lucide-vue-next";
+import { NButton, NPopover } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { DatabaseIcon } from "@/components/Icon";
 import { InstanceV1EngineIcon, EnvironmentV1Name } from "@/components/v2";

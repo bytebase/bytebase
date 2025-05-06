@@ -1,7 +1,7 @@
 import { useLocalStorage, useDebounceFn } from "@vueuse/core";
 import { defineStore } from "pinia";
 import { computed, ref, watch, watchEffect } from "vue";
-import { useDatabaseV1Store } from "@/store";
+import { useDatabaseV1Store, type DatabaseFilter } from "@/store";
 import { type ComposedDatabase, isValidProjectName } from "@/types";
 import { QueryOption_RedisRunCommandsOn } from "@/types/proto/v1/sql_service";
 import { hasWorkspacePermissionV2, getDefaultPagination } from "@/utils";
@@ -43,7 +43,7 @@ export const useSQLEditorStore = defineStore("sqlEditor", () => {
     loading: false,
   });
 
-  const fetchDatabases = useDebounceFn(async (name?: string) => {
+  const fetchDatabases = useDebounceFn(async (filter?: DatabaseFilter) => {
     fetchDataState.value.loading = true;
     const pageToken = fetchDataState.value.nextPageToken;
 
@@ -52,9 +52,7 @@ export const useSQLEditorStore = defineStore("sqlEditor", () => {
         parent: project.value,
         pageToken,
         pageSize: getDefaultPagination(),
-        filter: {
-          query: name,
-        },
+        filter,
       });
 
       if (pageToken) {
@@ -70,9 +68,9 @@ export const useSQLEditorStore = defineStore("sqlEditor", () => {
     }
   }, 500);
 
-  const prepareDatabases = async (name?: string) => {
+  const prepareDatabases = async (filter?: DatabaseFilter) => {
     fetchDataState.value.nextPageToken = "";
-    await fetchDatabases(name);
+    await fetchDatabases(filter);
   };
 
   watchEffect(async () => {

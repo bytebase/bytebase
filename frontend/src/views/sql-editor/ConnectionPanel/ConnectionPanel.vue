@@ -9,6 +9,7 @@
     <DrawerContent
       :style="{
         width: contentWidth,
+        maxWidth: '800px',
       }"
       class="connection-panel-content"
     >
@@ -60,10 +61,10 @@ defineEmits<{
 const { width: winWidth } = useWindowSize();
 const { itemList: settingItemList } = useSettingItems();
 const contentWidth = computed(() => {
-  if (winWidth.value >= 640) {
-    return "480px";
+  if (winWidth.value >= 800) {
+    return "50vw";
   }
-  return "calc(100vw - 2rem)";
+  return "calc(100vw - 4rem)";
 });
 
 const allowManageInstance = computed(() => {
