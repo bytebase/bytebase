@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"unicode"
 
 	"github.com/antlr4-go/antlr/v4"
 	trinoparser "github.com/bytebase/trino-parser"
@@ -85,49 +86,8 @@ var (
 		// trinoparser.TrinoLexerAT_:           true,
 	}
 	preferredRules = map[int]bool{
-		// // Function call related rules - for function completion
-		// trinoparser.TrinoParserRULE_functionSpecification: true,
-		// trinoparser.TrinoParserRULE_functionDeclaration:   true,
-
-		// // Table/Object name related rules - for table/view completion
-		// full_column_name
-		trinoparser.TrinoParserRULE_identifier: true,
-		// full_table_name
-		trinoparser.TrinoParserRULE_qualifiedName: true,
-		// trinoparser.TrinoParserRULE_aliasedRelation: true,
-		// trinoparser.TrinoParserRULE_relationPrimary: true,
-		// trinoparser.TrinoParserRULE_sampledRelation: true,
-		// trinoparser.TrinoParserRULE_relation: true,
-
-		// // Column related rules - for column completion
-		// trinoparser.TrinoParserRULE_expression:        true,
-		// trinoparser.TrinoParserRULE_primaryExpression: true,
-		// trinoparser.TrinoParserRULE_valueExpression:   true,
-		// trinoparser.TrinoParserRULE_booleanExpression: true,
-
-		// // Specific query component rules
-		// trinoparser.TrinoParserRULE_selectItem: true,
-		// trinoparser.TrinoParserRULE_sortItem:   true,
-		// trinoparser.TrinoParserRULE_groupBy:    true,
-
-		// // Table function and related elements
-		// trinoparser.TrinoParserRULE_tableFunctionCall:     true,
-		// trinoparser.TrinoParserRULE_tableFunctionArgument: true,
-
-		// // Alias related rules
-		// trinoparser.TrinoParserRULE_columnAliases: true,
-		// trinoparser.TrinoParserRULE_identifier:    true,
-
-		// // Query related rules
-		// trinoparser.TrinoParserRULE_query:              true,
-		// trinoparser.TrinoParserRULE_querySpecification: true,
-		// trinoparser.TrinoParserRULE_queryNoWith:        true,
-		// trinoparser.TrinoParserRULE_queryTerm:          true,
-		// trinoparser.TrinoParserRULE_queryPrimary:       true,
-
-		// // CTE and WITH related rules
-		// trinoparser.TrinoParserRULE_with:       true,
-		// trinoparser.TrinoParserRULE_namedQuery: true,
+		trinoparser.TrinoParserRULE_identifier:    true, // full_column_name
+		trinoparser.TrinoParserRULE_qualifiedName: true, // full_table_name
 	}
 )
 
@@ -699,16 +659,6 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 	columnEntries := make(CompletionMap)
 	viewEntries := make(CompletionMap)
 
-	// Check if noSeparatorRequired is initialized to avoid nil map access
-	if c.noSeparatorRequired == nil {
-		c.noSeparatorRequired = make(map[int]bool)
-	}
-
-	// Initialize reference map if nil to avoid issues
-	if c.referenceMap == nil {
-		c.referenceMap = make(map[string]bool)
-	}
-
 	for tokenCandidate, continuous := range candidates.Tokens {
 		if tokenCandidate < 0 || tokenCandidate >= len(c.parser.SymbolicNames) {
 			continue
@@ -728,21 +678,21 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 		})
 	}
 
-	// Store these in the completer so we can reference them elsewhere
-	c.noSeparatorRequired = make(map[int]bool)
-
 	for ruleCandidate, ruleStack := range candidates.Rules {
 		c.scanner.PopAndRestore()
 		c.scanner.Push()
 
 		switch ruleCandidate {
+		// Handle built-in functions when appropriate
+		// case trinoparser.TrinoParserRULE_qualifiedName:
+		// 	functionEntries.insertBuiltinFunctions()
+
 		case trinoparser.TrinoParserRULE_qualifiedName:
-			// qualifiedName also appears in the columnReference rule, we would handle it in the columnReference rule in this case.
-			if len(ruleStack) > 0 && ruleStack[len(ruleStack)-1].ID == trinoparser.TrinoParserRULE_aliasedRelation {
+			// identifier also appears in the qualifiedName rule, we would handle it in the identifier rule in this case.
+			if len(ruleStack) > 0 && ruleStack[len(ruleStack)-1].ID == trinoparser.TrinoParserRULE_identifier {
 				continue
 			}
 			completionContexts := c.determineQualifiedNameContext()
-
 			for _, context := range completionContexts {
 				if context.flags&objectFlagShowCatalog != 0 {
 					catalogEntries.insertMetadataCatalogs(c)
@@ -755,11 +705,11 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 					viewEntries.insertMetadataViews(c, context.catalog, context.schema)
 				}
 				if context.catalog == "" && context.schema == "" && context.flags&objectFlagShowObject != 0 {
-					// User do not specify the catalog and schema, and want us complete the objects, we should also insert the ctes.
+					// User did not specify catalog and schema, and wants to complete objects, we should also insert the CTEs
 					tableEntries.insertCTEs(c)
 				}
 			}
-		case trinoparser.TrinoParserRULE_aliasedRelation:
+		case trinoparser.TrinoParserRULE_identifier:
 			completionContexts := c.determineColumnReference()
 			for _, context := range completionContexts {
 				if context.flags&objectFlagShowCatalog != 0 {
@@ -771,6 +721,8 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 				if context.flags&objectFlagShowObject != 0 {
 					tableEntries.insertMetadataTables(c, context.catalog, context.schema)
 					viewEntries.insertMetadataViews(c, context.catalog, context.schema)
+
+					// Add table references from the FROM clause
 					for _, reference := range c.references {
 						switch reference := reference.(type) {
 						case *base.PhysicalTableReference:
@@ -788,7 +740,8 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 								}
 							}
 						case *base.VirtualTableReference:
-							// We only append the virtual table reference to the completion list when the catalog and schema are all empty.
+							// We only append the virtual table reference to the completion list
+							// when the catalog and schema are all empty.
 							if context.catalog == "" && context.schema == "" {
 								tableEntries[reference.Table] = base.Candidate{
 									Type: base.CandidateTypeTable,
@@ -798,11 +751,13 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 						}
 					}
 					if context.catalog == "" && context.schema == "" {
-						// User do not specify the catalog and schema, and want us complete the objects, we should also insert the ctes.
+						// User did not specify catalog and schema, and wants to complete objects,
+						// we should also insert the CTEs
 						tableEntries.insertCTEs(c)
 					}
 				}
 				if context.flags&objectFlagShowColumn != 0 {
+					// Add column aliases from select items
 					list := c.fetchSelectItemAliases(ruleStack)
 					for _, alias := range list {
 						columnEntries.Insert(base.Candidate{
@@ -810,7 +765,11 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 							Text: c.quotedIdentifierIfNeeded(alias),
 						})
 					}
+
+					// Add columns from metadata for the specified table
 					columnEntries.insertMetadataColumns(c, context.catalog, context.schema, context.object)
+
+					// Add columns from table references in the current query
 					for _, reference := range c.references {
 						switch reference := reference.(type) {
 						case *base.PhysicalTableReference:
@@ -843,8 +802,9 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 								columnEntries.insertMetadataColumns(c, reference.Database, reference.Schema, reference.Table)
 							}
 						case *base.VirtualTableReference:
-							// Reference could be a physical table reference or a virtual table reference, if the reference is a virtual table reference,
-							// and users do not specify the catalog and schema, we should also insert the columns.
+							// Reference could be a physical table reference or a virtual table reference
+							// If the reference is a virtual table reference and users do not specify
+							// the catalog and schema, we should also insert the columns.
 							if context.catalog == "" && context.schema == "" {
 								for _, column := range reference.Columns {
 									if _, ok := columnEntries[column]; !ok {
@@ -857,6 +817,8 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 							}
 						}
 					}
+
+					// Add columns from CTEs if applicable
 					if context.catalog == "" && context.schema == "" {
 						for _, cte := range c.cteTables {
 							if strings.EqualFold(cte.Table, context.object) {
@@ -871,6 +833,8 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 							}
 						}
 					}
+
+					// If no specific table was referenced, show all columns from the default catalog and schema
 					if context.empty() {
 						columnEntries.insertAllColumns(c)
 					}
@@ -888,7 +852,6 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 	result = append(result, tableEntries.toSlice()...)
 	result = append(result, columnEntries.toSlice()...)
 	result = append(result, viewEntries.toSlice()...)
-
 	return result, nil
 }
 
@@ -979,7 +942,7 @@ func (c *Completer) determineColumnReference() []*objectRefContext {
 		c.scanner.Forward(true /* skipHidden */)
 	}
 
-	// tokenType := c.scanner.GetTokenType()
+	// Check current token
 	if c.scanner.GetTokenText() != "." && !isIdentifier(c.scanner.GetTokenType()) {
 		c.scanner.Backward(true /* skipHidden */)
 	}
@@ -997,7 +960,7 @@ func (c *Completer) determineColumnReference() []*objectRefContext {
 		}
 	}
 
-	// The c.scanner is now on the leading identifier (or dot?) if there's no leading id.
+	// The scanner is now on the leading identifier (or dot?) if there's no leading id.
 	var candidates []string
 	var temp string
 	var count int
@@ -1007,11 +970,15 @@ func (c *Completer) determineColumnReference() []*objectRefContext {
 			temp = normalizeIdentifierText(c.scanner.GetTokenText())
 			c.scanner.Forward(true /* skipHidden */)
 			if !c.scanner.IsTokenType(trinoparser.TrinoParserDOT_) || tokenIndex <= c.scanner.GetIndex() {
+				// We've reached the end of the identifier chain or we're past where the caret was
+				candidates = append(candidates, temp)
 				return deriveObjectRefContextsFromCandidates(candidates, true /* includeColumn */)
 			}
 			candidates = append(candidates, temp)
 		}
 		c.scanner.Forward(true /* skipHidden */)
+		// In Trino, a fully qualified identifier can have at most 3 parts:
+		// catalog.schema.object
 		if count > 3 {
 			break
 		}
@@ -1027,13 +994,14 @@ func (c *Completer) determineQualifiedNameContext() []*objectRefContext {
 		c.scanner.Forward(true /* skipHidden */)
 	}
 
+	// Check if we're at a dot or identifier
 	if c.scanner.GetTokenText() != "." && !isIdentifier(c.scanner.GetTokenType()) {
 		// We are at the end of an incomplete identifier spec. Jump back.
 		c.scanner.Backward(true /* skipHidden */)
 	}
 
 	if tokenIndex > 0 {
-		// Go backward until we hit a non-identifier token.
+		// Go backward until we hit a non-identifier token to find the start of the qualified name.
 		for {
 			curID := isIdentifier(c.scanner.GetTokenType()) && c.scanner.GetPreviousTokenText(false /* skipHidden */) == "."
 			curDOT := c.scanner.GetTokenText() == "." && isIdentifier(c.scanner.GetPreviousTokenType(false /* skipHidden */))
@@ -1045,7 +1013,7 @@ func (c *Completer) determineQualifiedNameContext() []*objectRefContext {
 		}
 	}
 
-	// The c.scanner is now on the leading identifier (or dot?) if there's no leading id.
+	// The scanner is now on the leading identifier (or at a dot if there's no leading id).
 	var candidates []string
 	var temp string
 	var count int
@@ -1053,14 +1021,20 @@ func (c *Completer) determineQualifiedNameContext() []*objectRefContext {
 		count++
 		if isIdentifier(c.scanner.GetTokenType()) {
 			temp = normalizeIdentifierText(c.scanner.GetTokenText())
+			candidates = append(candidates, temp)
 			c.scanner.Forward(true /* skipHidden */)
 		}
+
+		// Check if we've hit the end of the identifier chain or we're past the caret
 		if !c.scanner.IsTokenType(trinoparser.TrinoParserDOT_) || tokenIndex <= c.scanner.GetIndex() {
 			return deriveObjectRefContextsFromCandidates(candidates, false /* includeColumn */)
 		}
-		candidates = append(candidates, temp)
+
+		// Skip the dot and move to the next token
 		c.scanner.Forward(true /* skipHidden */)
-		if count > 2 {
+
+		// In Trino, qualified names have at most 3 parts: catalog.schema.object
+		if count > 3 {
 			break
 		}
 	}
@@ -1069,17 +1043,19 @@ func (c *Completer) determineQualifiedNameContext() []*objectRefContext {
 }
 
 // deriveObjectRefContextsFromCandidates derives the object reference contexts from the candidates.
-// The Trino grammar's object reference likes [catalog_name.][schema_name.][object_name]
-// The size of candidates is the window size in the object reference,
-// for example, if the candidates are ["a", "b"], the size is 2,
-// and objectRefContext would be [catalog_name: "a", schema_name: "b", object_name: ""] or
-// [catalog_name: "", schema_name: "a", object_name: "b"].
+// In Trino, a qualified name has the format [catalog_name.][schema_name.][object_name]
+// For example, if the candidates are ["a", "b"], the size is 2,
+// and objectRefContext would be either:
+// - [catalog: "a", schema: "b", object: ""] (interpreting as catalog.schema)
+// - [catalog: "", schema: "a", object: "b"] (interpreting as schema.object)
 func deriveObjectRefContextsFromCandidates(candidates []string, includeColumn bool) []*objectRefContext {
 	var options []objectRefContextOption
 	if includeColumn {
 		options = append(options, withColumn())
 	}
 	refCtx := newObjectRefContext(options...)
+
+	// If we have no candidates, return an empty context
 	if len(candidates) == 0 {
 		return []*objectRefContext{
 			refCtx.clone(),
@@ -1089,6 +1065,11 @@ func deriveObjectRefContextsFromCandidates(candidates []string, includeColumn bo
 	var results []*objectRefContext
 	switch len(candidates) {
 	case 1:
+		// Single identifier could be:
+		// 1. A catalog name
+		// 2. A schema name
+		// 3. An object name
+		// 4. A column name (if includeColumn is true)
 		results = append(
 			results,
 			refCtx.clone().setCatalog(candidates[0]),
@@ -1099,15 +1080,21 @@ func deriveObjectRefContextsFromCandidates(candidates []string, includeColumn bo
 			results = append(results, refCtx.clone().setCatalog("").setSchema("").setObject("").setColumn(candidates[0]))
 		}
 	case 2:
+		// Two identifiers could be:
+		// 1. catalog.schema
+		// 2. schema.object
+		// 3. object.column (if includeColumn is true)
 		results = append(
 			results,
 			refCtx.clone().setCatalog(candidates[0]).setSchema(candidates[1]),
 			refCtx.clone().setCatalog("").setSchema(candidates[0]).setObject(candidates[1]),
 		)
 		if includeColumn {
-			results = append(results, refCtx.clone().setCatalog("").setSchema(candidates[0]).setObject("").setColumn(candidates[1]))
+			results = append(results, refCtx.clone().setCatalog("").setSchema("").setObject(candidates[0]).setColumn(candidates[1]))
 		}
 	case 3:
+		// Three identifiers would be catalog.schema.object
+		// Or catalog.schema.column if includeColumn is true
 		results = append(
 			results,
 			refCtx.clone().setCatalog(candidates[0]).setSchema(candidates[1]).setObject(candidates[2]),
@@ -1116,11 +1103,13 @@ func deriveObjectRefContextsFromCandidates(candidates []string, includeColumn bo
 			results = append(results, refCtx.clone().setCatalog(candidates[0]).setSchema(candidates[1]).setObject("").setColumn(candidates[2]))
 		}
 	case 4:
+		// Four identifiers would be catalog.schema.object.column (if includeColumn is true)
 		if includeColumn {
 			results = append(results, refCtx.clone().setCatalog(candidates[0]).setSchema(candidates[1]).setObject(candidates[2]).setColumn(candidates[3]))
 		}
 	}
 
+	// If no results were generated, return the default empty context
 	if len(results) == 0 {
 		results = append(results, refCtx.clone())
 	}
@@ -1567,7 +1556,7 @@ func (c *Completer) extractAliasText(pos int) string {
 
 	parser.BuildParseTrees = true
 	parser.RemoveErrorListeners()
-	// For Trino we'll use expression as the entry point for column aliases
+	// Use the as_column_alias rule for column aliases, matching TSQL's approach
 	tree := parser.As_column_alias()
 
 	listener := &SelectAliasListener{}
@@ -1582,58 +1571,98 @@ type SelectAliasListener struct {
 	result string
 }
 
-func (l *SelectAliasListener) EnterIdentifier(ctx *trinoparser.IdentifierContext) {
-	// For Trino, we'll just take the first identifier we find in the column alias
-	if l.result == "" {
-		l.result = unquote(ctx.GetText())
-	}
+func (l *SelectAliasListener) EnterAs_column_alias(ctx *trinoparser.As_column_aliasContext) {
+	l.result = unquote(ctx.Column_alias().GetText())
 }
 
 func (c *Completer) quotedIdentifierIfNeeded(identifier string) string {
+	// If we're already in a quoted context, return the identifier as-is
 	if c.caretTokenIsQuoted != quotedTypeNone {
 		return identifier
 	}
-	// if !isRegularIdentifier(identifier) {
-	// 	return fmt.Sprintf("\"%s\"", identifier)
-	// }
+
+	// In Trino, certain identifiers need to be quoted:
+	// 1. If they contain special characters or spaces
+	// 2. If they're case-sensitive
+	// 3. If they're reserved keywords
+
+	// Check for characters that would require quoting
+	needsQuoting := false
+	for i, r := range identifier {
+		// First character must be a letter or underscore
+		if i == 0 && !unicode.IsLetter(r) && r != '_' {
+			needsQuoting = true
+			break
+		}
+
+		// Other characters must be letters, numbers, or underscores
+		if !unicode.IsLetter(r) && !unicode.IsDigit(r) && r != '_' {
+			needsQuoting = true
+			break
+		}
+	}
+
+	// Quote the identifier if needed
+	if needsQuoting {
+		return fmt.Sprintf("\"%s\"", identifier)
+	}
+
 	return identifier
 }
 
-// Helper functions
+// Helper functions for handling Trino identifiers
+
+// isIdentifier checks if token is one of the identifier types in Trino
 func isIdentifier(tokenType int) bool {
 	return tokenType == trinoparser.TrinoParserIDENTIFIER_ ||
 		tokenType == trinoparser.TrinoParserQUOTED_IDENTIFIER_ ||
-		tokenType == trinoparser.TrinoParserDIGIT_IDENTIFIER_
+		tokenType == trinoparser.TrinoParserDIGIT_IDENTIFIER_ ||
+		tokenType == trinoparser.TrinoParserBACKQUOTED_IDENTIFIER_
 }
 
+// normalizeIdentifierText normalizes an identifier text by unquoting it if needed
 func normalizeIdentifierText(text string) string {
 	return unquote(text)
 }
 
+// unquote removes quotes from identifiers if present
 func unquote(text string) string {
-	// Remove quotes from identifiers if present
+	// Remove double quotes from quoted identifiers
 	if len(text) >= 2 && text[0] == '"' && text[len(text)-1] == '"' {
 		return text[1 : len(text)-1]
 	}
+
+	// Remove backticks from backticked identifiers
+	if len(text) >= 2 && text[0] == '`' && text[len(text)-1] == '`' {
+		return text[1 : len(text)-1]
+	}
+
 	return text
 }
 
+// normalizeQualifiedNameFallback extracts the catalog, schema, and table names from a QualifiedNameContext
+// In Trino, a qualifiedName can have 1-3 parts: [catalog.]schema.table or just table
 func normalizeQualifiedNameFallback(ctx *trinoparser.QualifiedNameContext, _ string, _ string) (string, string, string) {
 	parts := []string{}
 
+	// Extract all identifiers from the qualified name
 	for _, identifier := range ctx.AllIdentifier() {
 		parts = append(parts, unquote(identifier.GetText()))
 	}
 
 	catalog, schema, table := "", "", ""
 
+	// Assign parts based on how many we found
 	switch len(parts) {
 	case 1:
+		// Just a table name
 		table = parts[0]
 	case 2:
+		// schema.table
 		schema = parts[0]
 		table = parts[1]
 	case 3:
+		// catalog.schema.table
 		catalog = parts[0]
 		schema = parts[1]
 		table = parts[2]
@@ -1641,41 +1670,3 @@ func normalizeQualifiedNameFallback(ctx *trinoparser.QualifiedNameContext, _ str
 
 	return catalog, schema, table
 }
-
-// func isRegularIdentifier(identifier string) bool {
-// 	// https://trino.io/docs/current/language/reserved.html
-// 	// Regular identifiers in Trino have these rules:
-// 	// - Start with a letter (a-z)
-// 	// - Can contain letters, digits, underscore
-// 	// - Not a reserved word
-// 	if len(identifier) == 0 {
-// 		return true
-// 	}
-
-// 	firstChar := rune(identifier[0])
-// 	isFirstCharValid := unicode.IsLetter(firstChar)
-// 	if !isFirstCharValid {
-// 		return false
-// 	}
-
-// 	for _, r := range identifier[1:] {
-// 		isValidChar := unicode.IsLetter(r) || unicode.IsDigit(r) || r == '_'
-// 		if !isValidChar {
-// 			return false
-// 		}
-// 	}
-
-// 	// Check if the identifier is a reserved word
-// 	if IsTrinoReservedKeyword(identifier) {
-// 		return false
-// 	}
-
-// 	// Check for embedded spaces or special characters
-// 	for _, r := range identifier {
-// 		if r == ' ' || !unicode.IsPrint(r) {
-// 			return false
-// 		}
-// 	}
-
-// 	return utf8.ValidString(identifier)
-// }
