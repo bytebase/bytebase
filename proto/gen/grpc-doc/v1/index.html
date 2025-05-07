@@ -5099,8 +5099,8 @@ Supported filters:
 - environment: the environment full name in &#34;environments/{id}&#34; format, support &#34;==&#34; operator.
 - state: the instance state, check State enum for values, support &#34;==&#34; operator.
 - engine: the instance engine, check Engine enum for values. Support &#34;==&#34;, &#34;in [xx]&#34;, &#34;!(in [xx])&#34; operator.
-- host: the instance host, support &#34;==&#34; operator.
-- port: the instance port, support &#34;==&#34; operator.
+- host: the instance host, support &#34;==&#34; and &#34;.matches()&#34; operator.
+- port: the instance port, support &#34;==&#34; and &#34;.matches()&#34; operator.
 - project: the project full name in &#34;projects/{id}&#34; format, support &#34;==&#34; operator.
 
 For example:
@@ -5114,7 +5114,9 @@ engine == &#34;MYSQL&#34;
 engine in [&#34;MYSQL&#34;, &#34;POSTGRES&#34;]
 !(engine in [&#34;MYSQL&#34;, &#34;POSTGRES&#34;])
 host == &#34;127.0.0.1&#34;
+host.matches(&#34;127.0&#34;)
 port == &#34;54321&#34;
+port.matches(&#34;543&#34;)
 project == &#34;projects/sample-project&#34;
 You can combine filter conditions like:
 name.matches(&#34;sample&#34;) &amp;&amp; environment == &#34;environments/test&#34;

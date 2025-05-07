@@ -8,28 +8,17 @@
       @update:checked="$emit('update:checked', $event)"
     />
 
-    <InstanceV1EngineIcon
-      v-if="!hasInstanceContext"
-      :instance="database.instanceResource"
+    <RichDatabaseName
+      :database="database"
+      :show-instance="!hasInstanceContext"
+      :show-engine-icon="!hasInstanceContext"
+      :show-environment="showEnvironment"
+      :show-arrow="true"
+      :keyword="keyword"
     />
 
-    <EnvironmentV1Name
-      v-if="showEnvironment"
-      :environment="database.effectiveEnvironmentEntity"
-      :link="false"
-      class="text-control-light"
-    />
-
-    <DatabaseIcon />
-
-    <span class="flex-1 truncate">
-      <HighlightLabelText :text="database.databaseName" :keyword="keyword" />
-      <span v-if="!hasInstanceContext" class="text-control-light">
-        ({{ database.instanceResource.title }})
-      </span>
-      <span v-if="connected" class="textinfolabel">
-        ({{ $t("sql-editor.connected") }})
-      </span>
+    <span v-if="connected" class="truncate textinfolabel">
+      ({{ $t("sql-editor.connected") }})
     </span>
     <RequestQueryButton
       v-if="showRequestQueryButton"
@@ -44,8 +33,7 @@
 <script setup lang="ts">
 import { NCheckbox } from "naive-ui";
 import { computed } from "vue";
-import DatabaseIcon from "~icons/heroicons-outline/circle-stack";
-import { EnvironmentV1Name, InstanceV1EngineIcon } from "@/components/v2";
+import { RichDatabaseName } from "@/components/v2";
 import { hasFeature, useAppFeature, useSQLEditorTabStore } from "@/store";
 import type {
   SQLEditorTreeNode as TreeNode,
@@ -53,13 +41,12 @@ import type {
 } from "@/types";
 import { isDatabaseV1Queryable } from "@/utils";
 import RequestQueryButton from "../../../EditorCommon/ResultView/RequestQueryButton.vue";
-import HighlightLabelText from "./HighlightLabelText.vue";
 
 const props = defineProps<{
   node: TreeNode;
   factors: Factor[];
   keyword: string;
-  connected: boolean;
+  connected?: boolean;
   checked?: boolean;
 }>();
 

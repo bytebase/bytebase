@@ -1,29 +1,23 @@
 <template>
   <div class="flex items-center max-w-full overflow-hidden gap-x-1">
-    <InstanceV1EngineIcon :instance="instance" />
     <EnvironmentV1Name
       v-if="!hasEnvironmentContext"
       :environment="environment"
       :link="false"
       class="text-control-light"
     />
-    <HighlightLabelText
-      :text="instance.title"
-      :keyword="keyword"
-      class="flex-1 truncate"
-    />
+    <InstanceV1Name :link="false" :instance="instance" :keyword="keyword" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed } from "vue";
-import { EnvironmentV1Name, InstanceV1EngineIcon } from "@/components/v2";
+import { EnvironmentV1Name, InstanceV1Name } from "@/components/v2";
 import { useEnvironmentV1Store } from "@/store";
 import type {
   SQLEditorTreeNode as TreeNode,
   SQLEditorTreeFactor as Factor,
 } from "@/types";
-import HighlightLabelText from "./HighlightLabelText.vue";
 
 const props = defineProps<{
   node: TreeNode;

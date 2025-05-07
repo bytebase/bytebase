@@ -1,7 +1,7 @@
 <template>
   <NPopover :disabled="!tooltip">
     <template #trigger>
-      <div class="flex flex-row justify-start items-center gap-x-1">
+      <div class="flex flex-row justify-start items-center">
         <div v-if="showProject">
           <ProjectV1Name :project="database.projectEntity" :link="false" />
         </div>
@@ -44,6 +44,7 @@
             :database="database"
             :link="false"
             :show-icon="false"
+            :keyword="keyword"
           />
         </div>
       </div>
@@ -76,6 +77,7 @@ withDefaults(
     showEnvironment?: boolean;
     showProductionEnvironmentIcon?: boolean;
     tooltip?: "instance" | undefined;
+    keyword?: string;
   }>(),
   {
     showProject: false,
@@ -85,6 +87,7 @@ withDefaults(
     showEnvironment: true,
     showProductionEnvironmentIcon: true,
     tooltip: undefined,
+    keyword: "",
   }
 );
 </script>
