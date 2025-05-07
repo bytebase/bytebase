@@ -121,7 +121,7 @@
 </template>
 
 <script lang="ts" setup>
-import { useElementSize, useMounted } from "@vueuse/core";
+import { useElementSize } from "@vueuse/core";
 import { head } from "lodash-es";
 import {
   NTag,
@@ -277,7 +277,6 @@ const {
   handleClickoutside: handleDropdownClickoutside,
 } = useDropdown();
 
-const mounted = useMounted();
 const treeContainerElRef = ref<HTMLElement>();
 const { height: treeContainerHeight } = useElementSize(
   treeContainerElRef,
