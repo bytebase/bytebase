@@ -124,7 +124,6 @@ const props = withDefaults(
     options: undefined,
     formatContentOptions: undefined,
     placeholder: undefined,
-    enableDecorations: true,
   }
 );
 
