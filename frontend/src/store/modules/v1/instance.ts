@@ -40,10 +40,10 @@ const getListInstanceFilter = (params: InstanceFilter) => {
     list.push(`environment == "${params.environment}"`);
   }
   if (params.host) {
-    list.push(`host == "${params.host}"`);
+    list.push(`host.matches("${params.host}")`);
   }
   if (params.port) {
-    list.push(`port == "${params.port}"`);
+    list.push(`port.matches("${params.port}")`);
   }
   if (params.engines && params.engines.length > 0) {
     // engine filter should be:

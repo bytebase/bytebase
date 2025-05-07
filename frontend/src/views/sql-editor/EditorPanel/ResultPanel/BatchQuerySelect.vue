@@ -21,45 +21,35 @@
       </template>
     </NTooltip>
 
-    <NTooltip
+    <NButton
       v-for="item in filteredItems"
       :key="item.database.name"
-      trigger="hover"
+      secondary
+      strong
+      size="small"
+      :type="'default'"
+      :style="{
+        ...getBackgroundColorRgb(item.database),
+        borderTop: selectedDatabase === item.database ? '3px solid' : '',
+      }"
+      @click="$emit('update:selected-database', item.database)"
     >
-      <template #trigger>
-        <NButton
-          secondary
-          strong
-          size="small"
-          :type="selectedDatabase === item.database ? 'primary' : 'default'"
-          @click="$emit('update:selected-database', item.database)"
-        >
-          <InstanceV1EngineIcon
-            :instance="item.database.instanceResource"
-            :tooltip="false"
-          />
-          <span class="mx-2 opacity-60">{{
-            item.database.effectiveEnvironmentEntity.title
-          }}</span>
-          <span>{{ item.database.databaseName }}</span>
-          <InfoIcon
-            v-if="isDatabaseQueryFailed(item.database)"
-            class="ml-1 text-yellow-600 w-4 h-auto"
-          />
-          <span
-            v-if="isEmptyQueryItem(item)"
-            class="text-control-placeholder italic ml-1"
-          >
-            ({{ $t("common.empty") }})
-          </span>
-          <XIcon
-            class="ml-1 text-gray-400 w-4 h-auto hover:text-gray-600"
-            @click.stop="handleCloseSingleResultView(item.database)"
-          />
-        </NButton>
-      </template>
-      {{ item.database.instanceResource.title }}
-    </NTooltip>
+      <RichDatabaseName :database="item.database" />
+      <InfoIcon
+        v-if="isDatabaseQueryFailed(item.database)"
+        class="ml-1 text-yellow-600 w-4 h-auto"
+      />
+      <span
+        v-if="isEmptyQueryItem(item)"
+        class="text-control-placeholder italic ml-1"
+      >
+        ({{ $t("common.empty") }})
+      </span>
+      <XIcon
+        class="ml-1 text-gray-400 w-4 h-auto hover:text-gray-600"
+        @click.stop="handleCloseSingleResultView(item.database)"
+      />
+    </NButton>
   </div>
 </template>
 
@@ -70,9 +60,10 @@ import { EyeIcon, EyeOffIcon, InfoIcon, XIcon } from "lucide-vue-next";
 import { NButton, NTooltip } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { computed, watch } from "vue";
-import { InstanceV1EngineIcon } from "@/components/v2";
+import { RichDatabaseName } from "@/components/v2";
 import { useDatabaseV1Store, useSQLEditorTabStore } from "@/store";
 import type { ComposedDatabase, SQLResultSetV1 } from "@/types";
+import { hexToRgb } from "@/utils";
 
 type BatchQueryItem = {
   database: ComposedDatabase;
@@ -157,4 +148,16 @@ watch(
     immediate: true,
   }
 );
+
+const getBackgroundColorRgb = (database: ComposedDatabase) => {
+  const color = hexToRgb(
+    database.effectiveEnvironmentEntity.color || "#4f46e5"
+  ).join(", ");
+  return {
+    backgroundColor: `rgba(${color}, 0.1)`,
+    borderTopColor: `rgb(${color})`,
+    color: `rgb(${color})`,
+    borderTop: "3px solid",
+  };
+};
 </script>

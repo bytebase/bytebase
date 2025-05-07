@@ -8,8 +8,7 @@
       shouldShowLink && 'hover:underline',
     ]"
   >
-    <!-- eslint-disable-next-line vue/no-v-html -->
-    <span v-html="renderedDatabaseName" />
+    <HighlightLabelText :text="database.databaseName" :keyword="keyword" />
     <span
       v-if="showNotFound && database.state === State.DELETED"
       class="text-control-placeholder"
@@ -25,7 +24,8 @@ import { computed } from "vue";
 import { useRouter } from "vue-router";
 import type { ComposedDatabase } from "@/types";
 import { State } from "@/types/proto/v1/common";
-import { autoDatabaseRoute, getHighlightHTMLByRegExp } from "@/utils";
+import { autoDatabaseRoute } from "@/utils";
+import HighlightLabelText from "./HighlightLabelText.vue";
 
 const props = withDefaults(
   defineProps<{
@@ -60,9 +60,5 @@ const bindings = computed(() => {
     };
   }
   return {};
-});
-
-const renderedDatabaseName = computed(() => {
-  return getHighlightHTMLByRegExp(props.database.databaseName, props.keyword);
 });
 </script>
