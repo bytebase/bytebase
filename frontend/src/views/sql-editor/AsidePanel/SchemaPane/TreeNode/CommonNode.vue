@@ -29,7 +29,7 @@
 </template>
 
 <script setup lang="ts">
-import HighlightLabelText from "./HighlightLabelText.vue";
+import { HighlightLabelText } from "@/components/v2";
 
 defineProps<{
   text: string;

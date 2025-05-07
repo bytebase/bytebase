@@ -406,8 +406,8 @@ type ListInstancesRequest struct {
 	// - environment: the environment full name in "environments/{id}" format, support "==" operator.
 	// - state: the instance state, check State enum for values, support "==" operator.
 	// - engine: the instance engine, check Engine enum for values. Support "==", "in [xx]", "!(in [xx])" operator.
-	// - host: the instance host, support "==" operator.
-	// - port: the instance port, support "==" operator.
+	// - host: the instance host, support "==" and ".matches()" operator.
+	// - port: the instance port, support "==" and ".matches()" operator.
 	// - project: the project full name in "projects/{id}" format, support "==" operator.
 	//
 	// For example:
@@ -421,7 +421,9 @@ type ListInstancesRequest struct {
 	// engine in ["MYSQL", "POSTGRES"]
 	// !(engine in ["MYSQL", "POSTGRES"])
 	// host == "127.0.0.1"
+	// host.matches("127.0")
 	// port == "54321"
+	// port.matches("543")
 	// project == "projects/sample-project"
 	// You can combine filter conditions like:
 	// name.matches("sample") && environment == "environments/test"

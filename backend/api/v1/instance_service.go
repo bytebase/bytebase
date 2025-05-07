@@ -155,12 +155,17 @@ func parseListInstanceFilter(filter string) (*store.ListResourceFilter, error) {
 				if !ok {
 					return "", status.Errorf(codes.InvalidArgument, "expect string, got %T, hint: filter literals should be string", value)
 				}
+				if strValue == "" {
+					return "", status.Errorf(codes.InvalidArgument, `empty value for %q`, variable)
+				}
 
 				switch variable {
 				case "name":
 					return "LOWER(instance.metadata->>'title') LIKE '%" + strings.ToLower(strValue) + "%'", nil
 				case "resource_id":
 					return "LOWER(instance.resource_id) LIKE '%" + strings.ToLower(strValue) + "%'", nil
+				case "host", "port":
+					return "ds ->> '" + variable + "' LIKE '%" + strValue + "%'", nil
 				default:
 					return "", status.Errorf(codes.InvalidArgument, "unsupport variable %q", variable)
 				}
