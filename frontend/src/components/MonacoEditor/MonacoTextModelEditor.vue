@@ -205,7 +205,7 @@ onMounted(async () => {
     const content = useContent(monaco, editor);
     const selection = useSelection(editor);
     const selectedContent = useSelectedContent(editor, selection);
-    const activeRangeByCursor = useActiveRangeByCursor(monaco, editor);
+    const activeRangeByCursor = useActiveRangeByCursor(editor);
     useAdvices(monaco, editor, toRef(props, "advices"));
     useLineHighlights(monaco, editor, toRef(props, "lineHighlights"));
     useAutoHeight(monaco, editor, containerRef, toRef(props, "autoHeight"));

@@ -2,7 +2,6 @@ import { useLocalStorage } from "@vueuse/core";
 import { orderBy } from "lodash-es";
 import * as monaco from "monaco-editor";
 import { computed, ref } from "vue";
-import type { MonacoModule } from "../types";
 
 interface WebSocketMessage {
   method: string;
@@ -24,23 +23,27 @@ interface StatementRangeMessage {
 }
 
 export const useActiveRangeByCursor = (
-  monaco: MonacoModule,
   editor: monaco.editor.IStandaloneCodeEditor
 ) => {
   const statementRangeByUri = useLocalStorage<Map<string, monaco.IRange[]>>(
     "bb.sql-editor.statement-range",
     new Map()
   );
-  const activeLineNumber = ref<number | undefined>();
+  const activeCursorPosition = ref<
+    { line: number; column: number } | undefined
+  >();
 
   editor.onDidChangeCursorPosition(
     (e: monaco.editor.ICursorPositionChangedEvent) => {
-      activeLineNumber.value = e.position.lineNumber;
+      activeCursorPosition.value = {
+        line: e.position.lineNumber,
+        column: e.position.column,
+      };
     }
   );
 
   const activeRange = computed((): monaco.IRange | undefined => {
-    if (!activeLineNumber.value) {
+    if (!activeCursorPosition.value) {
       return;
     }
     let activeRange: monaco.IRange | undefined = undefined;
@@ -48,14 +51,25 @@ export const useActiveRangeByCursor = (
     if (!model) {
       return;
     }
-    for (const range of statementRangeByUri.value.get(model.uri.toString()) ??
-      []) {
+    const ranges = statementRangeByUri.value.get(model.uri.toString()) ?? [];
+    for (let i = 0; i < ranges.length; i++) {
+      const range = ranges[i];
       if (
-        range.startLineNumber <= activeLineNumber.value &&
-        range.endLineNumber >= activeLineNumber.value
+        range.startLineNumber <= activeCursorPosition.value.line &&
+        range.endLineNumber >= activeCursorPosition.value.line
       ) {
-        activeRange = range;
-        break;
+        if (range.endColumn >= activeCursorPosition.value.column) {
+          activeRange = range;
+          break;
+        }
+
+        if (
+          i === ranges.length - 1 ||
+          ranges[i + 1].startLineNumber > activeCursorPosition.value.line
+        ) {
+          activeRange = range;
+          break;
+        }
       }
     }
     if (!activeRange) {
@@ -79,7 +93,7 @@ export const useActiveRangeByCursor = (
         endLineNumber: activeRange.endLineNumber - 1,
         endColumn: Infinity,
       };
-      if (activeLineNumber.value > range.endLineNumber) {
+      if (activeCursorPosition.value.line > range.endLineNumber) {
         return;
       }
       return range;
