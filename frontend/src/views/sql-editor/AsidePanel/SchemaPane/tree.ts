@@ -432,10 +432,8 @@ const mapTableNodes = (
       ...target,
       table: table.name,
     });
-    const columnsFolderNode = createExpandableTextNode(
-      "column",
-      parentKey,
-      () => t("database.columns")
+    const columnsFolderNode = createExpandableTextNode("column", node.key, () =>
+      t("database.columns")
     );
     node.children = [columnsFolderNode];
     // Map column columns
@@ -449,7 +447,7 @@ const mapTableNodes = (
     if (table.indexes.length > 0) {
       const indexesFolderNode = createExpandableTextNode(
         "index",
-        parentKey,
+        node.key,
         () => t("database.indexes")
       );
       indexesFolderNode.children = mapIndexNodes(
@@ -464,7 +462,7 @@ const mapTableNodes = (
     if (table.foreignKeys.length > 0) {
       const foreignKeysFolderNode = createExpandableTextNode(
         "foreign-key",
-        parentKey,
+        node.key,
         () => t("database.foreign-keys")
       );
       foreignKeysFolderNode.children = mapForeignKeyNodes(
@@ -477,7 +475,7 @@ const mapTableNodes = (
 
     // Show "Triggers" if there's at least 1 function
     if (table.triggers.length > 0) {
-      const triggerNode = createExpandableTextNode("trigger", parentKey, () =>
+      const triggerNode = createExpandableTextNode("trigger", node.key, () =>
         t("db.triggers")
       );
       triggerNode.children = mapTriggerNodes(
@@ -492,7 +490,7 @@ const mapTableNodes = (
     if (table.partitions.length > 0) {
       const partitionsFolderNode = createExpandableTextNode(
         "partition-table",
-        parentKey,
+        node.key,
         () => t("db.partitions")
       );
       partitionsFolderNode.children = [];
