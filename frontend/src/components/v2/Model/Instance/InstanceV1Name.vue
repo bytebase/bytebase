@@ -16,7 +16,7 @@
     <slot name="prefix" />
 
     <NEllipsis :disabled="!tooltip" :line-clamp="1" :class="textClass">
-      {{ instanceV1Name(instance) }}
+      <HighlightLabelText :text="instanceV1Name(instance)" :keyword="keyword" />
     </NEllipsis>
 
     <InstanceV1EngineIcon
@@ -39,6 +39,7 @@ import {
   hasWorkspacePermissionV2,
   instanceV1Name,
 } from "@/utils";
+import HighlightLabelText from "../HighlightLabelText.vue";
 import InstanceV1EngineIcon from "./InstanceV1EngineIcon.vue";
 
 const props = withDefaults(
@@ -51,6 +52,7 @@ const props = withDefaults(
     tooltip?: boolean;
     iconPosition?: "prefix" | "suffix";
     textClass?: string;
+    keyword?: string;
   }>(),
   {
     tag: "span",
@@ -60,6 +62,7 @@ const props = withDefaults(
     tooltip: true,
     iconPosition: "prefix",
     textClass: "",
+    keyword: "",
   }
 );
 const router = useRouter();

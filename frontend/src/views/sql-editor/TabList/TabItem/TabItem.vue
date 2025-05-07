@@ -18,11 +18,11 @@
     <div
       class="body"
       :style="
-        backgroundColorRgb.length > 0
+        backgroundColorRgb
           ? {
-              backgroundColor: `rgba(${backgroundColorRgb[0]}, ${backgroundColorRgb[1]}, ${backgroundColorRgb[2]}, 0.1)`,
-              borderTopColor: `rgb(${backgroundColorRgb[0]}, ${backgroundColorRgb[1]}, ${backgroundColorRgb[2]})`,
-              color: `rgb(${backgroundColorRgb[0]}, ${backgroundColorRgb[1]}, ${backgroundColorRgb[2]})`,
+              backgroundColor: `rgba(${backgroundColorRgb}, 0.1)`,
+              borderTopColor: `rgb(${backgroundColorRgb})`,
+              color: `rgb(${backgroundColorRgb})`,
             }
           : {}
       "
@@ -38,10 +38,7 @@
 <script lang="ts" setup>
 import { computed, reactive } from "vue";
 import { useSQLEditorTabStore } from "@/store";
-import {
-  type SQLEditorTab,
-  UNKNOWN_ID,
-} from "@/types";
+import { type SQLEditorTab, UNKNOWN_ID } from "@/types";
 import { connectionForSQLEditorTab, hexToRgb } from "@/utils";
 import AdminLabel from "./AdminLabel.vue";
 import Label from "./Label.vue";
@@ -81,12 +78,12 @@ const environment = computed(() => {
 
 const backgroundColorRgb = computed(() => {
   if (!isCurrentTab.value) {
-    return [];
+    return "";
   }
   if (!environment.value || !environment.value.color) {
-    return hexToRgb("#4f46e5");
+    return hexToRgb("#4f46e5").join(", ");
   }
-  return hexToRgb(environment.value.color);
+  return hexToRgb(environment.value.color).join(", ");
 });
 </script>
 

@@ -8,7 +8,7 @@
         {{
           $t("sql-editor.batch-query.description", {
             count: state.selectedDatabases.size,
-            project: editorStore.project,
+            project: project.title,
           })
         }}
       </div>
@@ -57,7 +57,7 @@
     >
       <div
         v-if="treeStore.state === 'READY'"
-        class="flex flex-col space-y-2 pb-4"
+        class="flex flex-col space-y-2 pt-2 pb-4"
       >
         <NTree
           ref="treeRef"
@@ -65,7 +65,6 @@
           :data="treeStore.tree"
           :show-irrelevant-nodes="false"
           :selected-keys="selectedKeys"
-          :pattern="mounted ? state.params.query : ''"
           :default-expand-all="true"
           :expand-on-click="true"
           :node-props="nodeProps"
@@ -122,7 +121,7 @@
 </template>
 
 <script lang="ts" setup>
-import { useElementSize, useMounted } from "@vueuse/core";
+import { useElementSize } from "@vueuse/core";
 import { head } from "lodash-es";
 import {
   NTag,
@@ -143,6 +142,8 @@ import { RichDatabaseName } from "@/components/v2";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import {
   hasFeature,
+  batchGetOrFetchDatabases,
+  useProjectV1Store,
   useDatabaseV1Store,
   useSQLEditorTabStore,
   resolveOpeningDatabaseListFromSQLEditorTabList,
@@ -191,6 +192,7 @@ const treeStore = useSQLEditorTreeStore();
 const tabStore = useSQLEditorTabStore();
 const editorStore = useSQLEditorStore();
 const databaseStore = useDatabaseV1Store();
+const projectStore = useProjectV1Store();
 
 const hasBatchQueryFeature = computed(() =>
   hasFeature("bb.feature.batch-query")
@@ -207,12 +209,13 @@ const state = reactive<LocalState>({
 
 watch(
   () => tabStore.currentTab?.id,
-  () => {
+  async () => {
     if (!tabStore.currentTab) {
       return;
     }
     const databases = tabStore.currentTab.batchQueryContext?.databases ?? [];
     databases.push(tabStore.currentTab.connection.database);
+    await batchGetOrFetchDatabases(databases);
     state.selectedDatabases = new Set(databases);
   },
   {
@@ -254,6 +257,10 @@ const scopeOptions = useCommonSearchScopeOptions([
   "engine",
 ]);
 
+const project = computed(() =>
+  projectStore.getProjectByName(editorStore.project)
+);
+
 const editorContext = useSQLEditorContext();
 const { events: editorEvents, showConnectionPanel } = editorContext;
 const {
@@ -270,7 +277,6 @@ const {
   handleClickoutside: handleDropdownClickoutside,
 } = useDropdown();
 
-const mounted = useMounted();
 const treeContainerElRef = ref<HTMLElement>();
 const { height: treeContainerHeight } = useElementSize(
   treeContainerElRef,
@@ -314,31 +320,30 @@ const { hasMissingQueryDatabases, showMissingQueryDatabases } =
 // dynamic render the highlight keywords
 const renderLabel = ({ option }: { option: TreeOption }) => {
   const node = option as SQLEditorTreeNode;
-  let checked = false;
+  let databaseName = "";
   if (node.meta.type === "database") {
-    checked = state.selectedDatabases.has(
-      (node as SQLEditorTreeNode<"database">).meta.target.name
-    );
+    databaseName = (node as SQLEditorTreeNode<"database">).meta.target.name;
   }
+
   return h(Label, {
     node,
-    checked,
+    checked: state.selectedDatabases.has(databaseName),
     factors: treeStore.filteredFactorList,
     keyword: state.params.query,
+    connected: connectedDatabases.value.has(databaseName),
     connectedDatabases: connectedDatabases.value,
     "onUpdate:checked": (checked: boolean) => {
       if (node.meta.type !== "database") {
         return;
       }
-      const dbName = (node as SQLEditorTreeNode<"database">).meta.target.name;
       if (checked) {
         if (!hasBatchQueryFeature.value) {
           state.showFeatureModal = true;
           return;
         }
-        state.selectedDatabases.add(dbName);
+        state.selectedDatabases.add(databaseName);
       } else {
-        state.selectedDatabases.delete(dbName);
+        state.selectedDatabases.delete(databaseName);
       }
     },
   });
