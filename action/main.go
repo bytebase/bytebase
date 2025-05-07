@@ -141,6 +141,8 @@ func writeOutputJSON(*cobra.Command, []string) error {
 		return nil
 	}
 
+	slog.Info("writing output to file", "file", Config.Output)
+
 	// Create parent directory if not exists
 	if dir := filepath.Dir(Config.Output); dir != "" {
 		if err := os.MkdirAll(dir, 0755); err != nil {
