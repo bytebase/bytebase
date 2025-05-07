@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"slices"
 	"strings"
 	"syscall"
@@ -75,6 +76,7 @@ func init() {
 	}
 	cmd.AddCommand(cmdCheck)
 
+	// bytebase-action rollout flags
 	cmdRollout := &cobra.Command{
 		Use:               "rollout",
 		Short:             "Rollout the migrate files",
@@ -138,6 +140,14 @@ func writeOutputJSON(*cobra.Command, []string) error {
 	if Config.Output == "" {
 		return nil
 	}
+
+	// Create parent directory if not exists
+	if dir := filepath.Dir(Config.Output); dir != "" {
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			return errors.Wrapf(err, "failed to create output directory: %s", dir)
+		}
+	}
+
 	f, err := os.Create(Config.Output)
 	if err != nil {
 		return errors.Wrapf(err, "failed to create output file: %s", Config.Output)
