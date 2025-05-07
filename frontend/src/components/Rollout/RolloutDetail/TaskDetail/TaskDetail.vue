@@ -35,12 +35,12 @@
 import { NBreadcrumb, NBreadcrumbItem, NTabs, NTabPane } from "naive-ui";
 import { reactive } from "vue";
 import { useRouter } from "vue-router";
+import { extractEnvironmentResourceName } from "@/utils";
 import { useRolloutDetailContext } from "../context";
 import BasicInfo from "./BasicInfo.vue";
 import Overview from "./Panels/Overview.vue";
 import TaskRunLogs from "./Panels/TaskRunLogs.vue";
 import { provideTaskDetailContext } from "./context";
-import { extractEnvironmentResourceName } from "@/utils";
 
 const props = defineProps<{
   stageId: string;
