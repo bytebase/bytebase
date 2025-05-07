@@ -47,9 +47,10 @@ var (
 		TargetStage string
 	}
 	cmd = &cobra.Command{
-		Use:               "bytebase-action",
-		Short:             "Bytebase action",
-		PersistentPreRunE: validateSharedFlags,
+		Use:                "bytebase-action",
+		Short:              "Bytebase action",
+		PersistentPreRunE:  validateSharedFlags,
+		PersistentPostRunE: writeOutputJSON,
 	}
 	outputMap = map[string]string{}
 )
@@ -66,12 +67,11 @@ func init() {
 
 	// bytebase-action check flags
 	cmdCheck := &cobra.Command{
-		Use:                "check",
-		Short:              "Check the release files",
-		Args:               cobra.NoArgs,
-		PersistentPreRunE:  nil,
-		PersistentPostRunE: writeOutputJSON,
-		RunE:               runCheck,
+		Use:               "check",
+		Short:             "Check the release files",
+		Args:              cobra.NoArgs,
+		PersistentPreRunE: nil,
+		RunE:              runCheck,
 	}
 	cmd.AddCommand(cmdCheck)
 
