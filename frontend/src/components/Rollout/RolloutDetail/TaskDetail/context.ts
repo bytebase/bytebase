@@ -2,7 +2,13 @@ import { isEqual, sortBy } from "lodash-es";
 import type { ComputedRef, InjectionKey } from "vue";
 import { computed, inject, provide, ref, watchEffect } from "vue";
 import { rolloutServiceClient } from "@/grpcweb";
-import { getDateForPbTimestamp, unknownStage, unknownTask } from "@/types";
+import { useDatabaseV1Store } from "@/store";
+import {
+  getDateForPbTimestamp,
+  isValidDatabaseName,
+  unknownStage,
+  unknownTask,
+} from "@/types";
 import type { Stage, Task, TaskRun } from "@/types/proto/v1/rollout_service";
 import { isValidTaskName } from "@/utils";
 import { useRolloutDetailContext } from "../context";
@@ -24,6 +30,7 @@ export const useTaskDetailContext = () => {
 
 export const provideTaskDetailContext = (stageId: string, taskId: string) => {
   const { rollout, tasks } = useRolloutDetailContext();
+  const databaseV1Store = useDatabaseV1Store();
   const taskRunsRef = ref<TaskRun[]>([]);
 
   const task = computed(() => {
@@ -51,6 +58,11 @@ export const provideTaskDetailContext = (stageId: string, taskId: string) => {
     ).reverse();
     if (!isEqual(sorted, taskRunsRef.value)) {
       taskRunsRef.value = sorted;
+    }
+    // Prepare database.
+    const databaseName = task.value.target;
+    if (isValidDatabaseName(databaseName)) {
+      await databaseV1Store.getOrFetchDatabaseByName(databaseName);
     }
   });
 
