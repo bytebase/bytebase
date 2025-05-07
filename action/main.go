@@ -349,7 +349,8 @@ func runAndWaitForRollout(ctx context.Context, client *Client, planName string) 
 		}
 	}
 	if !targetStageFound {
-		return errors.Errorf("target-stage %v not found in stages. the stages are %v", Config.TargetStage, stages)
+		slog.Info("the target stage is not found in the rollout preview. exiting...", "targetStage", Config.TargetStage, "rolloutStages", stages)
+		return nil
 	}
 
 	// create rollout with no stages to obtain the rollout name
