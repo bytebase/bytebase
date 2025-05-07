@@ -7,7 +7,6 @@
     :loading="loading"
     :row-key="(plan: ComposedPlan) => plan.name"
     :row-props="rowProps"
-    class="plan-data-table"
   />
 </template>
 
