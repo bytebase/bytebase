@@ -439,6 +439,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 							return nil, status.Errorf(codes.InvalidArgument, "task types in %v are allowed to updated, and they are allowed to be changed to %v", taskTypes, taskTypes)
 						}
 						taskPatch.Type = &newTaskType
+						doUpdate = true
 					}
 
 					// Flags for gh-ost.
