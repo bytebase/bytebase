@@ -499,6 +499,10 @@ func convertCollationToCharset(collation string) string {
 }
 
 func isTimeConstant(s string) bool {
+	// 0000-00-00 00:00:00 is a special case in TiDB.
+	if s == "0000-00-00 00:00:00" {
+		return true
+	}
 	_, err := time.Parse(time.DateTime, s)
 	return err == nil
 }
