@@ -16,7 +16,11 @@ Checks the SQL migration files matching the `--file-pattern`. This is typically 
 
 Usage: `bytebase-action rollout [global flags] [rollout flags]`
 
-Creates a new release and initiates a rollout issue in the specified Bytebase `--project` to apply the SQL migration files matching the `--file-pattern` to the defined `--targets`. It uses global flags for connection and file discovery, and specific flags like `--release-title` and `--rollout-title` to name the created resources in Bytebase.
+Creates a new release and initiates a rollout issue in the specified Bytebase `--project`.
+If a `--plan` is specified, it rolls out that specific plan.
+Otherwise, it applies the SQL migration files matching the `--file-pattern` to the defined `--targets`.
+The rollout will proceed up to the specified `--target-stage`.
+It uses global flags for connection and file discovery (unless a plan is specified), and specific flags like `--release-title` and `--rollout-title` to name the created resources in Bytebase.
 
 ## Configuration
 
@@ -44,6 +48,7 @@ These flags apply to the main `bytebase-action` command and its subcommands (`ch
     -   Default: `projects/project-sample`
 
 -   **`--targets`**: A comma-separated list or multiple uses of the flag specifying the target databases or database groups.
+    -   Used when `--plan` is not specified for the `rollout` command.
     -   Can specify a database group or individual databases.
     -   Formats:
         -   Database: `instances/{instance}/databases/{database}`
@@ -51,7 +56,7 @@ These flags apply to the main `bytebase-action` command and its subcommands (`ch
     -   Default: `instances/test-sample-instance/databases/hr_test,instances/prod-sample-instance/databases/hr_prod`
 
 -   **`--file-pattern`**: A glob pattern used to find SQL migration files.
-    -   Used by subcommands like `check` and `rollout` to locate relevant files.
+    -   Used by subcommands like `check` and `rollout` (when `--plan` is not specified) to locate relevant files.
     -   Default: `""` (empty string)
 
 ### `rollout` Command Specific Flags
@@ -63,3 +68,18 @@ These flags are specific to the `rollout` subcommand (`bytebase-action rollout`)
 
 -   **`--rollout-title`**: The title of the rollout issue created in Bytebase.
     -   Default: The current timestamp in RFC3339 format (e.g., `2025-04-25T17:32:07+08:00`).
+
+-   **`--check-plan`**: Determines whether to run plan checks and how to handle failures.
+    -   Valid values:
+        -   `SKIP`: Do not run plan checks.
+        -   `FAIL_ON_WARNING`: Run plan checks and fail if there are warnings or errors.
+        -   `FAIL_ON_ERROR`: Run plan checks and fail only if there are errors.
+    -   Default: `SKIP`
+
+-   **`--target-stage`**: The target stage up to which the rollout should proceed. This flag is **required** for the `rollout` command.
+    -   Format: `environments/{environment}`
+    -   Example: `environments/prod`
+
+-   **`--plan`**: The specific plan to rollout.
+    -   Format: `projects/{project}/plans/{plan}`
+    -   If specified, this shadows the `--file-pattern` and `--targets` flags, meaning they will be ignored.
