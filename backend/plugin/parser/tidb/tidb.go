@@ -32,7 +32,7 @@ func ParseTiDB(sql string, charset string, collation string) ([]ast.StmtNode, er
 	p.EnableWindowFunc(true)
 	mode, err := mysql.GetSQLMode(mysql.DefaultSQLMode)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get SQL mode: %w", err)
+		return nil, errors.Errorf("failed to get sql mode: %v", err)
 	}
 	mode = mysql.DelSQLMode(mode, mysql.ModeNoZeroDate)
 	mode = mysql.DelSQLMode(mode, mysql.ModeNoZeroInDate)
