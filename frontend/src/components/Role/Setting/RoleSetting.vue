@@ -20,11 +20,11 @@
       >
         <template #icon>
           <PlusIcon class="h-4 w-4" />
+          <FeatureBadge
+            feature="bb.feature.custom-role"
+            class="mr-1 text-white"
+          />
         </template>
-        <FeatureBadge
-          feature="bb.feature.custom-role"
-          custom-class="mr-1 text-white"
-        />
         {{ $t("role.setting.add") }}
       </NButton>
     </div>

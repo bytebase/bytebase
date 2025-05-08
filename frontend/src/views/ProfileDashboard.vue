@@ -154,7 +154,7 @@
             class="text-lg font-medium flex flex-row justify-start items-center"
           >
             {{ $t("two-factor.self") }}
-            <FeatureBadge :feature="'bb.feature.2fa'" custom-class="ml-2" />
+            <FeatureBadge :feature="'bb.feature.2fa'" class="ml-2" />
           </span>
           <div class="space-x-2">
             <NButton v-if="user.email === currentUser.email" @click="enable2FA">

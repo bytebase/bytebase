@@ -6,7 +6,10 @@
           <div>
             <div class="textlabel flex items-center gap-x-1">
               {{ $t("issue.approval-flow.self") }}
-              <FeatureBadge feature="bb.feature.custom-approval" />
+              <FeatureBadge
+                feature="bb.feature.custom-approval"
+                :instance="selectedDatabase.instanceResource"
+              />
             </div>
           </div>
         </template>
@@ -56,7 +59,7 @@
         class="flex items-center text-sm text-control-placeholder gap-x-1"
       >
         {{ $t("custom-approval.approval-flow.skip") }}
-        <FeatureBadgeForInstanceLicense
+        <FeatureBadge
           v-if="!isGrantRequestIssue(issue)"
           feature="bb.feature.custom-approval"
           :instance="selectedDatabase.instanceResource"
@@ -67,7 +70,11 @@
   <div v-if="isCreating" class="flex flex-col gap-y-1">
     <div class="textlabel flex items-center gap-x-1">
       {{ $t("issue.approval-flow.self") }}
-      <FeatureBadge feature="bb.feature.custom-approval" />
+      <FeatureBadge
+        v-if="!isGrantRequestIssue(issue)"
+        feature="bb.feature.custom-approval"
+        :instance="selectedDatabase.instanceResource"
+      />
     </div>
     <div class="text-control-placeholder text-xs">
       {{ $t("issue.approval-flow.pre-issue-created-tips") }}
@@ -79,7 +86,6 @@
 import { NButton, NTooltip } from "naive-ui";
 import { computed, ref } from "vue";
 import { BBSpin } from "@/bbkit";
-import { FeatureBadgeForInstanceLicense } from "@/components/FeatureGuard";
 import FeatureBadge from "@/components/FeatureGuard/FeatureBadge.vue";
 import {
   databaseForTask,

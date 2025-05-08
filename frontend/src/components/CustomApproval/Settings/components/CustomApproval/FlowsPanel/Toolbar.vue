@@ -3,7 +3,7 @@
     <NButton type="primary" :disabled="!allowAdmin" @click="createRule">
       <FeatureBadge
         feature="bb.feature.custom-approval"
-        custom-class="mr-1 text-white"
+        class="mr-1 text-white"
       />
       {{ $t("common.create") }}
     </NButton>
