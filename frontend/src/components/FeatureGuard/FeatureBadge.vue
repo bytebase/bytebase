@@ -3,7 +3,8 @@
 <template>
   <div
     v-if="instanceMissingLicense"
-    :class="['text-accent cursor-pointer', customClass]"
+    class="text-accent cursor-pointer"
+    v-bind="$attrs"
     @click="
       (e: MouseEvent) => {
         e.stopPropagation();
@@ -21,7 +22,7 @@
       </span>
     </NTooltip>
   </div>
-  <div v-else-if="!hasFeature" :class="['text-accent', customClass]">
+  <div v-else-if="!hasFeature" class="text-accent" v-bind="$attrs">
     <NTooltip :show-arrow="true">
       <template #trigger>
         <router-link
@@ -57,7 +58,6 @@
 
 <script lang="ts" setup>
 import { NTooltip } from "naive-ui";
-import type { PropType } from "vue";
 import { reactive, computed } from "vue";
 import { useSubscriptionV1Store } from "@/store";
 import type { FeatureType } from "@/types";
@@ -73,25 +73,17 @@ interface LocalState {
   showInstanceAssignmentDrawer: boolean;
 }
 
-const props = defineProps({
-  feature: {
-    required: true,
-    type: String as PropType<FeatureType>,
-  },
-  instance: {
-    type: Object as PropType<Instance | InstanceResource>,
-    default: undefined,
-  },
-  customClass: {
-    require: false,
-    default: "",
-    type: String,
-  },
-  clickable: {
-    type: Boolean,
-    default: false,
-  },
-});
+const props = withDefaults(
+  defineProps<{
+    feature: FeatureType;
+    instance?: Instance | InstanceResource;
+    clickable?: boolean;
+  }>(),
+  {
+    instance: undefined,
+    clickable: false,
+  }
+);
 
 const state = reactive<LocalState>({
   showInstanceAssignmentDrawer: false,
@@ -100,7 +92,7 @@ const state = reactive<LocalState>({
 const subscriptionStore = useSubscriptionV1Store();
 
 const hasFeature = computed(() => {
-  return subscriptionStore.hasInstanceFeature(props.feature, props.instance);
+  return subscriptionStore.hasInstanceFeature(props.feature);
 });
 
 const instanceMissingLicense = computed(() => {

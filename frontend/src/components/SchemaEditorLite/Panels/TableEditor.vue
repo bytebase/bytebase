@@ -47,8 +47,10 @@
               :disabled="disableChangeTable"
               @click="state.showSchemaTemplateDrawer = true"
             >
-              <FeatureBadge feature="bb.feature.schema-template" />
-              <PlusIcon class="w-4 h-auto mr-1 text-gray-400" />
+              <template #icon>
+                <PlusIcon class="w-4 h-auto mr-1 text-gray-400" />
+                <FeatureBadge feature="bb.feature.schema-template" />
+              </template>
               {{ $t("schema-editor.actions.add-from-template") }}
             </NButton>
           </template>

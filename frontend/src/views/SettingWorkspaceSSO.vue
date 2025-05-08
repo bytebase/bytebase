@@ -20,10 +20,7 @@
         <template #icon>
           <PlusIcon class="h-4 w-4" />
         </template>
-        <FeatureBadge
-          :feature="'bb.feature.sso'"
-          custom-class="mr-1 text-white"
-        />
+        <FeatureBadge :feature="'bb.feature.sso'" class="mr-1 text-white" />
         {{ $t("settings.sso.create") }}
       </NButton>
     </div>
