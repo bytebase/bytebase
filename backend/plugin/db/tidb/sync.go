@@ -9,6 +9,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
@@ -497,6 +498,15 @@ func convertCollationToCharset(collation string) string {
 	return tokens[0]
 }
 
+func isTimeConstant(s string) bool {
+	// 0000-00-00 00:00:00 is a special case in TiDB.
+	if s == "0000-00-00 00:00:00" {
+		return true
+	}
+	_, err := time.Parse(time.DateTime, s)
+	return err == nil
+}
+
 func setColumnMetadataDefault(column *storepb.ColumnMetadata, defaultStr sql.NullString, nullableBool bool, extra string) {
 	if defaultStr.Valid {
 		// In TiDB 7, the extra value is empty for a column with CURRENT_TIMESTAMP default.
@@ -504,7 +514,17 @@ func setColumnMetadataDefault(column *storepb.ColumnMetadata, defaultStr sql.Nul
 		case isCurrentTimestampLike(defaultStr.String):
 			column.DefaultValue = &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: defaultStr.String}
 		case strings.Contains(extra, "DEFAULT_GENERATED"):
-			column.DefaultValue = &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: fmt.Sprintf("(%s)", defaultStr.String)}
+			// for case:
+			//  CREATE TABLE t1(
+			//    update_time TIMESTAMP DEFAULT '0000-00-00 00:00:00' ON UPDATE CURRENT_TIMESTAMP,
+			//  );
+			// In this case, the extra value is "DEFAULT_GENERATED on update CURRENT_TIMESTAMP".
+			// But the default value is a constant.
+			if isTimeConstant(defaultStr.String) {
+				column.DefaultValue = &storepb.ColumnMetadata_Default{Default: &wrapperspb.StringValue{Value: defaultStr.String}}
+			} else {
+				column.DefaultValue = &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: fmt.Sprintf("(%s)", defaultStr.String)}
+			}
 		default:
 			// For non-generated and non CURRENT_XXX default value, use string.
 			column.DefaultValue = &storepb.ColumnMetadata_Default{Default: &wrapperspb.StringValue{Value: defaultStr.String}}
