@@ -122,7 +122,7 @@
 
 <script lang="ts" setup>
 import { useElementSize } from "@vueuse/core";
-import { head } from "lodash-es";
+import { head, isEqual } from "lodash-es";
 import {
   NTag,
   NButton,
@@ -161,7 +161,7 @@ import type {
   SQLEditorTreeNode,
   CoreSQLEditorTab,
 } from "@/types";
-import { DEFAULT_SQL_EDITOR_TAB_MODE } from "@/types";
+import { DEFAULT_SQL_EDITOR_TAB_MODE, isValidDatabaseName } from "@/types";
 import { engineFromJSON } from "@/types/proto/v1/common";
 import {
   findAncestor,
@@ -216,7 +216,7 @@ watch(
     const databases = tabStore.currentTab.batchQueryContext?.databases ?? [];
     databases.push(tabStore.currentTab.connection.database);
     await batchGetOrFetchDatabases(databases);
-    state.selectedDatabases = new Set(databases);
+    state.selectedDatabases = new Set(databases.filter(isValidDatabaseName));
   },
   {
     immediate: true,
@@ -226,7 +226,12 @@ watch(
 watch(
   () => [...state.selectedDatabases],
   (selectedDatabases) => {
-    if (!tabStore.currentTab && selectedDatabases.length > 0) {
+    // If the current tab is not connected to any database, we need to connect it to the first selected database.
+    if (
+      (!tabStore.currentTab ||
+        isEqual(emptySQLEditorConnection(), tabStore.currentTab.connection)) &&
+      selectedDatabases.length > 0
+    ) {
       const database = databaseStore.getDatabaseByName(selectedDatabases[0]);
       const coreTab: CoreSQLEditorTab = {
         connection: {
