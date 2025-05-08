@@ -16,18 +16,21 @@
         <template v-for="status in ADVICE_STATUS_FILTERS" :key="status">
           <NTag
             v-if="getTaskCount(undefined, status) > 0"
-            @click="
-              emit(
-                'update:adviceStatusList',
-                adviceStatusList.includes(status)
-                  ? adviceStatusList.filter((s) => s !== status)
-                  : [...adviceStatusList, status]
-              )
-            "
+            :disabled="disabled"
             :size="'small'"
             round
-            :bordered="adviceStatusList.includes(status)"
-            :type="adviceStatusList.includes(status) ? 'info' : 'default'"
+            checkable
+            :checked="adviceStatusList.includes(status)"
+            @update:checked="
+              (checked) => {
+                emit(
+                  'update:adviceStatusList',
+                  checked
+                    ? [...adviceStatusList, status]
+                    : adviceStatusList.filter((s) => s !== status)
+                );
+              }
+            "
           >
             <template #avatar>
               <AdviceStatusIcon :status="status" />
@@ -48,18 +51,21 @@
         <template v-for="status in TASK_STATUS_FILTERS" :key="status">
           <NTag
             v-if="getTaskCount(status) > 0"
-            @click="
-              emit(
-                'update:taskStatusList',
-                taskStatusList.includes(status)
-                  ? taskStatusList.filter((s) => s !== status)
-                  : [...taskStatusList, status]
-              )
-            "
+            :disabled="disabled"
             :size="'small'"
             round
-            :bordered="taskStatusList.includes(status)"
-            :type="taskStatusList.includes(status) ? 'info' : 'default'"
+            checkable
+            :checked="taskStatusList.includes(status)"
+            @update:checked="
+              (checked) => {
+                emit(
+                  'update:taskStatusList',
+                  checked
+                    ? [...taskStatusList, status]
+                    : taskStatusList.filter((s) => s !== status)
+                );
+              }
+            "
           >
             <template #avatar>
               <TaskStatusIconV1 :status="status" :size="'small'" />
@@ -84,6 +90,7 @@ import TaskStatusIconV1 from "../TaskStatusIconV1.vue";
 import { filterTask } from "./filter";
 
 defineProps<{
+  disabled: boolean;
   taskStatusList: Task_Status[];
   adviceStatusList: Advice_Status[];
 }>();
