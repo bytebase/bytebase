@@ -509,6 +509,7 @@ func waitForRollout(ctx context.Context, client *Client, rolloutPreview *v1pb.Ro
 
 		// run stage tasks
 		if len(notStartedTasks) > 0 {
+			slog.Info("running stage tasks", "stage", stage.Environment, "taskCount", len(notStartedTasks))
 			if _, err := client.batchRunTasks(&v1pb.BatchRunTasksRequest{
 				Parent: stage.Name,
 				Tasks:  notStartedTasks,
