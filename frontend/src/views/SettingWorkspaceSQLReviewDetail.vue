@@ -1,5 +1,5 @@
 <template>
-  <FeatureAttention custom-class="mb-4" feature="bb.feature.sql-review" />
+  <FeatureAttention class="mb-4" feature="bb.feature.sql-review" />
   <SQLReviewCreation
     v-if="state.editMode"
     key="sql-review-creation"

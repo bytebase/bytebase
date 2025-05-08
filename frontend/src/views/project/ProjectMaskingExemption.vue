@@ -41,11 +41,10 @@
           "
         >
           <template #icon>
-            <ShieldCheckIcon v-if="hasSensitiveDataFeature" class="w-4" />
+            <ShieldCheckIcon class="w-4" />
             <FeatureBadge
-              v-else
               feature="bb.feature.sensitive-data"
-              custom-class="text-white"
+              class="text-white"
             />
           </template>
           {{ $t("project.masking-exemption.grant-exemption") }}

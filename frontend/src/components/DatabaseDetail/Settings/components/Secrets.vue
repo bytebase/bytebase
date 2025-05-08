@@ -8,7 +8,7 @@
           </p>
           <FeatureBadge
             feature="bb.feature.encrypted-secrets"
-            custom-class="ml-2"
+            class="ml-2"
             :instance="database.instanceResource"
           />
         </div>
