@@ -1,8 +1,8 @@
 <template>
   <div class="w-full space-y-4">
-    <FeatureAttentionForInstanceLicense
-      v-if="hasSensitiveDataFeature && isMissingLicenseForInstance"
+    <FeatureAttention
       feature="bb.feature.sensitive-data"
+      :instance="database.instanceResource"
     />
     <div
       class="flex flex-col space-x-2 lg:flex-row gap-y-4 justify-between items-end lg:items-center"
@@ -21,9 +21,9 @@
         <template #icon>
           <ShieldCheckIcon v-if="hasSensitiveDataFeature" class="w-4" />
           <FeatureBadge
-            v-else
             feature="bb.feature.sensitive-data"
-            custom-class="text-white"
+            class="text-white"
+            :instance="database.instanceResource"
           />
         </template>
         {{ $t("settings.sensitive-data.grant-access") }}
@@ -76,19 +76,14 @@ import { computed, reactive, watch } from "vue";
 import {
   FeatureModal,
   FeatureBadge,
-  FeatureAttentionForInstanceLicense,
+  FeatureAttention,
 } from "@/components/FeatureGuard";
 import GrantAccessDrawer from "@/components/SensitiveData/GrantAccessDrawer.vue";
 import SensitiveColumnTable from "@/components/SensitiveData/components/SensitiveColumnTable.vue";
 import type { MaskData } from "@/components/SensitiveData/types";
 import { isCurrentColumnException } from "@/components/SensitiveData/utils";
 import { SearchBox } from "@/components/v2";
-import {
-  featureToRef,
-  usePolicyV1Store,
-  useSubscriptionV1Store,
-  useDatabaseCatalog,
-} from "@/store";
+import { featureToRef, usePolicyV1Store, useDatabaseCatalog } from "@/store";
 import { type ComposedDatabase } from "@/types";
 import {
   ObjectSchema_Type,
@@ -145,16 +140,8 @@ const hasPolicyPermission = computed(() => {
 });
 
 const policyStore = usePolicyV1Store();
-const subscriptionStore = useSubscriptionV1Store();
 
 const hasSensitiveDataFeature = featureToRef("bb.feature.sensitive-data");
-
-const isMissingLicenseForInstance = computed(() =>
-  subscriptionStore.instanceMissingLicense(
-    "bb.feature.sensitive-data",
-    props.database.instanceResource
-  )
-);
 
 const databaseCatalog = useDatabaseCatalog(props.database.name, false);
 

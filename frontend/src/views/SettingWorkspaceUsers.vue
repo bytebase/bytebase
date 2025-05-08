@@ -74,8 +74,8 @@
             "
           >
             <template #icon>
-              <SettingsIcon v-if="hasDirectorySyncFeature" class="h-5 w-5" />
-              <FeatureBadge v-else feature="bb.feature.directory-sync" />
+              <SettingsIcon class="h-5 w-5" />
+              <FeatureBadge feature="bb.feature.directory-sync" />
             </template>
             {{ $t(`settings.members.entra-sync.self`) }}
           </NButton>

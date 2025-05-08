@@ -24,11 +24,10 @@
         "
       >
         <template #icon>
-          <PlusIcon v-if="hasDBGroupFeature" class="w-4" />
+          <PlusIcon class="w-4" />
           <FeatureBadge
-            v-else
             feature="bb.feature.database-grouping"
-            custom-class="text-white"
+            class="text-white"
           />
         </template>
         {{ $t("database-group.create") }}

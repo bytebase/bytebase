@@ -25,14 +25,10 @@
             </i18n-t>
           </template>
         </NTooltip>
-        <FeatureBadge feature="bb.feature.online-migration" />
-        <FeatureBadgeForInstanceLicense
+        <FeatureBadge
           feature="bb.feature.online-migration"
-          :show="hasOnlineMigrationFeature && showMissingInstanceLicense"
           :instance="instance"
-        >
-          <LockIcon class="w-4 h-4 text-accent" />
-        </FeatureBadgeForInstanceLicense>
+        />
       </div>
       <GhostSwitch />
     </div>
@@ -50,14 +46,11 @@
 </template>
 
 <script lang="ts" setup>
-import { LockIcon } from "lucide-vue-next";
 import { NTooltip } from "naive-ui";
 import { computed } from "vue";
 import { FeatureBadge, FeatureModal } from "@/components/FeatureGuard";
-import FeatureBadgeForInstanceLicense from "@/components/FeatureGuard/FeatureBadgeForInstanceLicense.vue";
 import { databaseForTask, useIssueContext } from "@/components/IssueV1/logic";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
-import { featureToRef } from "@/store";
 import { isDatabaseChangeRelatedIssue } from "@/utils";
 import GhostConfigButton from "./GhostConfigButton.vue";
 import GhostFlagsPanel from "./GhostFlagsPanel.vue";
@@ -66,8 +59,7 @@ import { allowGhostForTask, provideIssueGhostContext } from "./common";
 
 const { issue, selectedTask } = useIssueContext();
 
-const { viewType, showFeatureModal, showMissingInstanceLicense } =
-  provideIssueGhostContext();
+const { viewType, showFeatureModal } = provideIssueGhostContext();
 
 const shouldShowGhostSection = computed(() => {
   if (!isDatabaseChangeRelatedIssue(issue.value)) {
@@ -86,8 +78,6 @@ const shouldShowGhostSection = computed(() => {
 
   return viewType.value !== "NONE";
 });
-
-const hasOnlineMigrationFeature = featureToRef("bb.feature.online-migration");
 
 const instance = computed(() => {
   return databaseForTask(issue.value, selectedTask.value).instanceResource;

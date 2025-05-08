@@ -1,13 +1,14 @@
 <template>
   <BBAttention
-    v-if="!hasFeature"
-    :class="customClass"
-    type="warning"
+    v-if="show"
+    v-bind="$attrs"
+    :type="hasFeature ? 'info' : 'warning'"
     :title="$t(`dynamic.subscription.features.${featureKey}.title`)"
     :description="descriptionText"
     :action-text="actionText"
     @click="onClick"
   />
+
   <WeChatQRModal
     v-if="state.showQRCodeModal"
     :title="$t('subscription.request-with-qr')"
@@ -20,15 +21,15 @@
 </template>
 
 <script lang="ts" setup>
-import type { PropType } from "vue";
 import { reactive, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBAttention } from "@/bbkit";
 import { useLanguage } from "@/composables/useLanguage";
-import { useSubscriptionV1Store } from "@/store";
+import { useSubscriptionV1Store, useActuatorV1Store } from "@/store";
 import type { FeatureType } from "@/types";
 import { planTypeToString, ENTERPRISE_INQUIRE_LINK } from "@/types";
+import { instanceLimitFeature } from "@/types";
 import type {
   Instance,
   InstanceResource,
@@ -42,32 +43,24 @@ interface LocalState {
   showQRCodeModal: boolean;
 }
 
-const props = defineProps({
-  feature: {
-    required: true,
-    type: String as PropType<FeatureType>,
-  },
-  description: {
-    require: false,
-    default: "",
-    type: String,
-  },
-  customClass: {
-    require: false,
-    default: "",
-    type: String,
-  },
-  instance: {
-    type: Object as PropType<Instance | InstanceResource>,
-    default: undefined,
-  },
-});
+const props = withDefaults(
+  defineProps<{
+    feature: FeatureType;
+    description?: string;
+    instance?: Instance | InstanceResource;
+  }>(),
+  {
+    description: "",
+    instance: undefined,
+  }
+);
 
 const router = useRouter();
 const { t } = useI18n();
 const { locale } = useLanguage();
-
+const actuatorStore = useActuatorV1Store();
 const subscriptionStore = useSubscriptionV1Store();
+
 const state = reactive<LocalState>({
   showInstanceAssignmentDrawer: false,
   showQRCodeModal: false,
@@ -82,7 +75,7 @@ const canManageInstanceLicense = computed((): boolean => {
 });
 
 const hasFeature = computed(() => {
-  return subscriptionStore.hasInstanceFeature(props.feature, props.instance);
+  return subscriptionStore.hasInstanceFeature(props.feature);
 });
 
 const instanceMissingLicense = computed(() => {
@@ -92,25 +85,40 @@ const instanceMissingLicense = computed(() => {
   );
 });
 
-const actionText = computed(() => {
-  if (instanceMissingLicense.value) {
-    if (!canManageInstanceLicense.value) {
-      return "";
-    }
-    return t("subscription.instance-assignment.assign-license");
+const existInstanceWithoutLicense = computed(() => {
+  return (
+    actuatorStore.totalInstanceCount > actuatorStore.activatedInstanceCount &&
+    instanceLimitFeature.has(props.feature)
+  );
+});
+
+const show = computed(() => {
+  if (!hasFeature.value) {
+    // show missing feature attention.
+    return true;
   }
+  if (instanceMissingLicense.value || existInstanceWithoutLicense.value) {
+    // show missing instance license attention.
+    return true;
+  }
+  return false;
+});
+
+const actionText = computed(() => {
   if (!hasPermission.value) {
     return "";
   }
-  if (!subscriptionStore.canTrial) {
-    return t("subscription.upgrade");
+
+  if (!hasFeature.value) {
+    return t("subscription.request-n-days-trial", {
+      days: subscriptionStore.trialingDays,
+    });
   }
-  if (subscriptionStore.canUpgradeTrial) {
-    return t("subscription.upgrade-trial-button");
+
+  if (!canManageInstanceLicense.value) {
+    return "";
   }
-  return t("subscription.request-n-days-trial", {
-    days: subscriptionStore.trialingDays,
-  });
+  return t("subscription.instance-assignment.assign-license");
 });
 
 const featureKey = props.feature.split(".").join("-");
@@ -121,46 +129,50 @@ const descriptionText = computed(() => {
     description = t(`dynamic.subscription.features.${featureKey}.desc`);
   }
 
-  if (instanceMissingLicense.value) {
-    const attention = t(
-      "subscription.instance-assignment.missing-license-attention"
+  if (!hasFeature.value) {
+    const startTrial = subscriptionStore.canUpgradeTrial
+      ? t("subscription.upgrade-trial")
+      : subscriptionStore.isTrialing
+        ? ""
+        : t("subscription.trial-for-days", {
+            days: subscriptionStore.trialingDays,
+          });
+    if (!Array.isArray(subscriptionStore.featureMatrix.get(props.feature))) {
+      return `${description}\n${startTrial}`;
+    }
+
+    const requiredPlan = subscriptionStore.getMinimumRequiredPlan(
+      props.feature
     );
-    return `${description}\n${attention}`;
+    const trialText = t("subscription.required-plan-with-trial", {
+      requiredPlan: t(
+        `subscription.plan.${planTypeToString(requiredPlan)}.title`
+      ),
+      startTrial: startTrial,
+    });
+
+    return `${description}\n${trialText}`;
   }
 
-  const startTrial = subscriptionStore.canUpgradeTrial
-    ? t("subscription.upgrade-trial")
-    : subscriptionStore.isTrialing
-      ? ""
-      : t("subscription.trial-for-days", {
-          days: subscriptionStore.trialingDays,
-        });
-  if (!Array.isArray(subscriptionStore.featureMatrix.get(props.feature))) {
-    return `${description}\n${startTrial}`;
-  }
-
-  const requiredPlan = subscriptionStore.getMinimumRequiredPlan(props.feature);
-  const trialText = t("subscription.required-plan-with-trial", {
-    requiredPlan: t(
-      `subscription.plan.${planTypeToString(requiredPlan)}.title`
-    ),
-    startTrial: startTrial,
-  });
-
-  return `${description}\n${trialText}`;
+  const attention = t(
+    "subscription.instance-assignment.missing-license-attention"
+  );
+  return `${description}\n${attention}`;
 });
 
 const onClick = () => {
-  if (instanceMissingLicense.value) {
-    state.showInstanceAssignmentDrawer = true;
-  } else if (subscriptionStore.canTrial) {
+  if (!hasFeature.value) {
     if (locale.value === "zh-CN") {
       state.showQRCodeModal = true;
     } else {
       window.open(ENTERPRISE_INQUIRE_LINK, "_blank");
     }
-  } else {
-    router.push(autoSubscriptionRoute(router));
+    return;
   }
+  if (instanceMissingLicense.value || existInstanceWithoutLicense.value) {
+    state.showInstanceAssignmentDrawer = true;
+    return;
+  }
+  router.push(autoSubscriptionRoute(router));
 };
 </script>

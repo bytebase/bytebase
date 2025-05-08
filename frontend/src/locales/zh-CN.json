@@ -1999,8 +1999,7 @@
       "manage-license": "管理证书",
       "used-and-total-license": "已分配 / 总实例证书",
       "used-and-total-user": "活跃/总用户限制",
-      "success-notification": "证书分配更新成功",
-      "missing-license-for-feature": "缺少实例证书以启用{feature}。点击去分配证书。"
+      "success-notification": "证书分配更新成功"
     },
     "update": {
       "success": {

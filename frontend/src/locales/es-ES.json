@@ -1999,8 +1999,7 @@
       "manage-license": "Administrar licencia",
       "used-and-total-license": "Licencia asignada / total",
       "used-and-total-user": "Límite de usuarios activos/totales",
-      "success-notification": "Actualizar correctamente la asignación de licencia",
-      "missing-license-for-feature": "Falta la licencia de instancia para habilitar {feature}. Haga clic para asignar ahora."
+      "success-notification": "Actualizar correctamente la asignación de licencia"
     },
     "update": {
       "success": {
