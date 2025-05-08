@@ -140,6 +140,22 @@ func (c *Client) createRelease(project string, r *v1pb.Release) (*v1pb.Release, 
 	return resp, nil
 }
 
+func (c *Client) getPlan(planName string) (*v1pb.Plan, error) {
+	req, err := http.NewRequest("GET", fmt.Sprintf("%s/v1/%s", c.url, planName), nil)
+	if err != nil {
+		return nil, err
+	}
+	body, err := c.doRequest(req)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get plan")
+	}
+	resp := &v1pb.Plan{}
+	if err := protojsonUnmarshaler.Unmarshal(body, resp); err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
 func (c *Client) previewPlan(project string, r *v1pb.PreviewPlanRequest) (*v1pb.PreviewPlanResponse, error) {
 	rb, err := protojson.Marshal(r)
 	if err != nil {
