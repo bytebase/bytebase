@@ -1999,8 +1999,7 @@
       "manage-license": "Manage Instance License",
       "used-and-total-license": "Assigned / Total Instance License",
       "used-and-total-user": "Active / Total User Limit",
-      "success-notification": "Successfully update license assignment",
-      "missing-license-for-feature": "Missing instance license to enable {feature}. Click to assign now."
+      "success-notification": "Successfully update license assignment"
     },
     "update": {
       "success": {
