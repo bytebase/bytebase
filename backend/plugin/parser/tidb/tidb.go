@@ -30,6 +30,13 @@ func ParseTiDB(sql string, charset string, collation string) ([]ast.StmtNode, er
 	// To support MySQL8 window function syntax.
 	// See https://github.com/bytebase/bytebase/issues/175.
 	p.EnableWindowFunc(true)
+	mode, err := mysql.GetSQLMode(mysql.DefaultSQLMode)
+	if err != nil {
+		return nil, errors.Errorf("failed to get sql mode: %v", err)
+	}
+	mode = mysql.DelSQLMode(mode, mysql.ModeNoZeroDate)
+	mode = mysql.DelSQLMode(mode, mysql.ModeNoZeroInDate)
+	p.SetSQLMode(mode)
 
 	nodes, _, err := p.Parse(sql, charset, collation)
 	if err != nil {
