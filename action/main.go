@@ -280,13 +280,6 @@ func runAndWaitForPlanChecks(ctx context.Context, client *Client, planName strin
 	if Config.CheckPlan == "SKIP" {
 		return nil
 	}
-	slog.Info("running plan checks")
-	_, err := client.runPlanChecks(&v1pb.RunPlanChecksRequest{
-		Name: planName,
-	})
-	if err != nil {
-		return errors.Wrapf(err, "failed to run plan checks")
-	}
 	for {
 		if ctx.Err() != nil {
 			return errors.Wrapf(ctx.Err(), "context cancelled")
@@ -295,6 +288,16 @@ func runAndWaitForPlanChecks(ctx context.Context, client *Client, planName strin
 		runs, err := client.listAllPlanCheckRuns(planName)
 		if err != nil {
 			return errors.Wrapf(err, "failed to list plan checks")
+		}
+		if len(runs.PlanCheckRuns) == 0 {
+			slog.Info("running plan checks")
+			_, err := client.runPlanChecks(&v1pb.RunPlanChecksRequest{
+				Name: planName,
+			})
+			if err != nil {
+				return errors.Wrapf(err, "failed to run plan checks")
+			}
+			continue
 		}
 		var failedCount, canceledCount, runningCount int
 		var errorCount, warningCount int
