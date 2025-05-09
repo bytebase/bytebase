@@ -501,6 +501,7 @@ import {
   useSettingV1Store,
   useActuatorV1Store,
   useInstanceV1Store,
+  useDatabaseV1Store,
   useSubscriptionV1Store,
   pushNotification,
 } from "@/store";
@@ -739,7 +740,10 @@ const changeInstanceActivation = async (on: boolean) => {
       ...instance.value,
       activation: on,
     };
-    await instanceV1Store.updateInstance(instancePatch, ["activation"]);
+    const updated = await instanceV1Store.updateInstance(instancePatch, [
+      "activation",
+    ]);
+    useDatabaseV1Store().updateDatabaseInstance(updated);
     // refresh activatedInstanceCount
     await actuatorStore.fetchServerInfo();
 
