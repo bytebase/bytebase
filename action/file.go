@@ -1,12 +1,16 @@
 package main
 
 import (
+	"log/slog"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
+
+var versionReg = regexp.MustCompile(`^\d+`)
 
 func getReleaseFiles(pattern string) ([]*v1pb.Release_File, error) {
 	matches, err := filepath.Glob(pattern)
@@ -28,11 +32,13 @@ func getReleaseFiles(pattern string) ([]*v1pb.Release_File, error) {
 		case strings.Contains(base, "ghost"):
 			t = v1pb.Release_File_DDL_GHOST
 		}
-		version := ""
-		fields := strings.Split(base, "_")
-		if len(fields) > 0 {
-			version = fields[0]
+
+		version := versionReg.FindString(base)
+		if version == "" {
+			slog.Warn("version not found. ignore the file", "file", m)
+			continue
 		}
+
 		files = append(files, &v1pb.Release_File{
 			Path:       m,
 			Type:       v1pb.ReleaseFileType_VERSIONED,
