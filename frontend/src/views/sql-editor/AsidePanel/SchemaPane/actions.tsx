@@ -166,7 +166,7 @@ export const useActions = () => {
     runQuery(db, schema, tableOrViewName, query);
   };
 
-  const openNewTab = ({ title, view, schema }: { title?: string; schema?: string; view?: EditorPanelView }) => {
+  const openNewTab = ({ title, view, schema, table }: { title?: string; schema?: string; table?: string, view?: EditorPanelView }) => {
     const tabStore = useSQLEditorTabStore();
     const tabViewStateStore = useTabViewStateStore();
 
@@ -198,7 +198,7 @@ export const useActions = () => {
     }
 
     tabStore.addTab(clonedTab);
-    updateViewState({ view, schema });
+    updateViewState({ view, schema, table});
   }
 
   const viewDetail = async (node: TreeNode) => {
@@ -208,16 +208,19 @@ export const useActions = () => {
       "view",
       "procedure",
       "function",
+      "trigger",
     ] as const;
     if (!SUPPORTED_TYPES.includes(type)) {
       return;
     }
 
     const { schema } = target as NodeTarget<"schema">;
+    const { table } = target as NodeTarget<"table">;
     openNewTab({
       title: "View detail",
       view: typeToView(type),
       schema: schema,
+      table: table,
     });
     await nextTick();
 
@@ -242,6 +245,11 @@ export const useActions = () => {
         name = func;
         detail.func = keyWithPosition(func, funcPosition);
         break
+      case "trigger":
+        const { trigger, position: triggerPosition } = target as NodeTarget<"trigger">;
+        name = trigger;
+        detail.trigger = keyWithPosition(trigger, triggerPosition);
+        break;
     }
 
     updateViewState({
@@ -504,7 +512,8 @@ export const useDropdown = () => {
       type === "table" ||
       type === "view" ||
       type === "procedure" ||
-      type === "function"
+      type === "function" ||
+      type === "trigger"
     ) {
       items.push({
         key: "view-detail",
