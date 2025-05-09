@@ -1,11 +1,9 @@
-import { computedAsync } from "@vueuse/core";
 import { uniq } from "lodash-es";
 import { computed, inject, provide } from "vue";
 import type { InjectionKey, Ref } from "vue";
 import { databaseForTask, useIssueContext } from "@/components/IssueV1/logic";
 import { useSubscriptionV1Store, useInstanceResourceByName } from "@/store";
 import { isValidDatabaseName } from "@/types";
-import { wrapRefAsPromise } from "@/utils";
 
 export type IssueIntanceContext = {
   existedDeactivatedInstance: Ref<boolean>;
@@ -21,7 +19,7 @@ export const provideIssueIntanceContext = () => {
   const { issue } = useIssueContext();
   const subscriptionStore = useSubscriptionV1Store();
 
-  const distinctInstanceList = computedAsync(async () => {
+  const distinctInstanceList = computed(() => {
     const instances =
       issue.value.rolloutEntity?.stages.flatMap((stage) => {
         return stage.tasks
@@ -32,12 +30,11 @@ export const provideIssueIntanceContext = () => {
 
     const resp = [];
     for (const instanceName of uniq(instances)) {
-      const { instance, ready } = useInstanceResourceByName(instanceName);
-      await wrapRefAsPromise(ready, /* expected */ true);
+      const { instance } = useInstanceResourceByName(instanceName);
       resp.push(instance);
     }
     return resp;
-  }, []);
+  });
 
   const existedDeactivatedInstance = computed(() => {
     return distinctInstanceList.value.some((ins) =>
