@@ -47,7 +47,7 @@ const props = withDefaults(
   defineProps<{
     feature: FeatureType;
     description?: string;
-    type: "info" | "warning" | "error";
+    type?: "info" | "warning" | "error";
     instance?: Instance | InstanceResource;
   }>(),
   {
