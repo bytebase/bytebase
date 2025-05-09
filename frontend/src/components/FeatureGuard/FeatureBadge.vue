@@ -77,11 +77,13 @@ const props = withDefaults(
   defineProps<{
     feature: FeatureType;
     instance?: Instance | InstanceResource;
+    showInstanceMissingLicense?: boolean;
     clickable?: boolean;
   }>(),
   {
     instance: undefined,
     clickable: false,
+    showInstanceMissingLicense: false,
   }
 );
 
@@ -96,9 +98,9 @@ const hasFeature = computed(() => {
 });
 
 const instanceMissingLicense = computed(() => {
-  return subscriptionStore.instanceMissingLicense(
-    props.feature,
-    props.instance
+  return (
+    props.showInstanceMissingLicense ||
+    subscriptionStore.instanceMissingLicense(props.feature, props.instance)
   );
 });
 

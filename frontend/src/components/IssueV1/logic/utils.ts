@@ -11,13 +11,15 @@ import type { ComposedDatabase, ComposedIssue, ComposedProject } from "@/types";
 import {
   unknownDatabase,
   unknownEnvironment,
+  unknownInstance,
   isValidDatabaseName,
+  isValidInstanceName,
 } from "@/types";
-import { InstanceResource } from "@/types/proto/v1/instance_service";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
 import type { Plan } from "@/types/proto/v1/plan_service";
 import { Task, Task_Status, Task_Type } from "@/types/proto/v1/rollout_service";
 import {
+  wrapRefAsPromise,
   defer,
   extractDatabaseResourceName,
   flattenSpecList,
@@ -26,47 +28,89 @@ import {
 } from "@/utils";
 import type { IssueContext } from "./context";
 
+export const instanceForTask = async (task: Task) => {
+  let instanceName: string = "";
+  switch (task.type) {
+    case Task_Type.DATABASE_CREATE:
+      instanceName = task.target;
+      break;
+    case Task_Type.DATABASE_SCHEMA_BASELINE:
+    case Task_Type.DATABASE_SCHEMA_UPDATE:
+    case Task_Type.DATABASE_SCHEMA_UPDATE_SDL:
+    case Task_Type.DATABASE_SCHEMA_UPDATE_GHOST:
+    case Task_Type.DATABASE_DATA_UPDATE:
+    case Task_Type.DATABASE_DATA_EXPORT:
+      instanceName = extractDatabaseResourceName(task.target).instance;
+      break;
+    default:
+  }
+
+  if (!isValidInstanceName(instanceName)) {
+    return {
+      ...unknownInstance(),
+      name: instanceName,
+    };
+  }
+
+  const { instance, ready } = useInstanceResourceByName(instanceName);
+  await wrapRefAsPromise(ready, /* expected */ true);
+  return {
+    ...instance.value,
+    name: instanceName,
+  };
+};
+
+export const mockDatabase = (
+  projectEntity: ComposedProject,
+  database: string
+) => {
+  // Database not found, it's probably NOT_FOUND (maybe dropped actually)
+  // Mock a database using all known resources
+  const db = unknownDatabase();
+  db.project = projectEntity.name;
+  db.projectEntity = projectEntity;
+
+  db.name = database;
+  const { instance, databaseName } = extractDatabaseResourceName(db.name);
+  db.databaseName = databaseName;
+  db.instance = instance;
+  db.instanceResource = {
+    ...db.instanceResource,
+    ...useInstanceResourceByName(instance).instance.value,
+    name: instance,
+  };
+  db.environment = db.instanceResource.environment;
+  db.effectiveEnvironment = db.instanceResource.environment;
+  db.effectiveEnvironmentEntity =
+    useEnvironmentV1Store().getEnvironmentByName(
+      db.instanceResource.environment
+    ) ?? unknownEnvironment();
+  return db;
+};
+
 export const databaseForTask = (issue: ComposedIssue, task: Task) => {
-  if (task.type === Task_Type.DATABASE_CREATE) {
-    // The database is not created yet.
-    // extract database info from the task's and payload's properties.
-    return extractCoreDatabaseInfoFromDatabaseCreateTask(
-      issue.projectEntity,
-      task
-    );
-  } else {
-    if (
-      task.databaseDataUpdate ||
-      task.databaseSchemaUpdate ||
-      task.databaseDataExport ||
-      task.type === Task_Type.DATABASE_SCHEMA_BASELINE
-    ) {
+  switch (task.type) {
+    case Task_Type.DATABASE_CREATE:
+      // The database is not created yet.
+      // extract database info from the task's and payload's properties.
+      return extractCoreDatabaseInfoFromDatabaseCreateTask(
+        issue.projectEntity,
+        task
+      );
+    case Task_Type.DATABASE_SCHEMA_BASELINE:
+    case Task_Type.DATABASE_SCHEMA_UPDATE:
+    case Task_Type.DATABASE_SCHEMA_UPDATE_SDL:
+    case Task_Type.DATABASE_SCHEMA_UPDATE_GHOST:
+    case Task_Type.DATABASE_DATA_UPDATE:
+    case Task_Type.DATABASE_DATA_EXPORT:
       const db = useDatabaseV1Store().getDatabaseByName(task.target);
       if (!isValidDatabaseName(db.name)) {
-        // Database not found, it's probably NOT_FOUND (maybe dropped actually)
-        // Mock a database using all known resources
-        db.project = issue.project;
-        db.projectEntity = issue.projectEntity;
-
-        db.name = task.target;
-        const { instance, databaseName } = extractDatabaseResourceName(db.name);
-        db.databaseName = databaseName;
-        db.instance = instance;
-        db.instanceResource = InstanceResource.fromPartial({
-          ...db.instanceResource,
-          name: instance,
-        });
-        db.environment = db.instanceResource.environment;
-        db.effectiveEnvironment = db.instanceResource.environment;
-        db.effectiveEnvironmentEntity =
-          useEnvironmentV1Store().getEnvironmentByName(
-            db.instanceResource.environment
-          ) ?? unknownEnvironment();
+        return mockDatabase(issue.projectEntity, task.target);
       }
       return db;
-    }
+    default:
+      return unknownDatabase();
   }
-  return unknownDatabase();
 };
 
 export const extractCoreDatabaseInfoFromDatabaseCreateTask = (

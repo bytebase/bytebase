@@ -1,17 +1,10 @@
-import {
-  composeInstanceResourceForDatabase,
-  useDatabaseV1Store,
-  useEnvironmentV1Store,
-} from "@/store";
-import {
-  isValidDatabaseName,
-  unknownDatabase,
-  unknownEnvironment,
-} from "@/types";
-import { Engine, State } from "@/types/proto/v1/common";
+import { mockDatabase } from "@/components/IssueV1/logic/utils";
+import { useDatabaseV1Store } from "@/store";
+import { isValidDatabaseName, unknownDatabase } from "@/types";
+import { Engine } from "@/types/proto/v1/common";
 import type { Plan_Spec } from "@/types/proto/v1/plan_service";
 import type { ComposedPlan } from "@/types/v1/issue/plan";
-import { extractDatabaseResourceName, extractDatabaseGroupName } from "@/utils";
+import { extractDatabaseGroupName } from "@/utils";
 
 export const databaseForSpec = (plan: ComposedPlan, spec: Plan_Spec) => {
   // Now we only handle changeDatabaseConfig specs.
@@ -20,22 +13,7 @@ export const databaseForSpec = (plan: ComposedPlan, spec: Plan_Spec) => {
     const target = changeDatabaseConfig.target;
     const db = useDatabaseV1Store().getDatabaseByName(target);
     if (!isValidDatabaseName(db.name)) {
-      // Database not found, it's probably NOT_FOUND (maybe dropped actually)
-      // Mock a database using all known resources
-      db.project = plan.project;
-      db.projectEntity = plan.projectEntity;
-      db.name = target;
-      const { instance, databaseName } = extractDatabaseResourceName(db.name);
-      db.databaseName = databaseName;
-      db.instance = instance;
-      const ir = composeInstanceResourceForDatabase(instance, db);
-      db.instanceResource = ir;
-      db.environment = ir.environment;
-      db.effectiveEnvironment = ir.environment;
-      db.effectiveEnvironmentEntity =
-        useEnvironmentV1Store().getEnvironmentByName(ir.environment) ??
-        unknownEnvironment();
-      db.state = State.DELETED;
+      return mockDatabase(plan.projectEntity, target);
     }
     return db;
   }

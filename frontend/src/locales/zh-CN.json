@@ -246,7 +246,7 @@
       },
       "summary-report": "概要报告"
     },
-    "earliest-allowed-time": "最早可发布时间",
+    "earliest-allowed-time": "最早允许发布时间",
     "earliest-allowed-time-hint": "@:{'task.earliest-allowed-time'} 是可发布工单的最早时间，您不能在此时间之前进行发布；如果未指定，则当满足所有条件时发布。",
     "earliest-allowed-time-unset": "未设置",
     "comment": "评论",

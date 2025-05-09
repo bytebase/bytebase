@@ -33,18 +33,19 @@ export const flattenSpecList = (plan: Plan | undefined) => {
   return plan?.steps.flatMap((step) => step.specs) || [];
 };
 
+const DATABASE_RELATED_TASK_TYPE_LIST = [
+  Task_Type.DATABASE_CREATE,
+  Task_Type.DATABASE_SCHEMA_BASELINE,
+  Task_Type.DATABASE_SCHEMA_UPDATE,
+  Task_Type.DATABASE_SCHEMA_UPDATE_GHOST,
+  Task_Type.DATABASE_SCHEMA_UPDATE_SDL,
+  Task_Type.DATABASE_DATA_UPDATE,
+];
+
 export const isDatabaseChangeRelatedIssue = (issue: ComposedIssue): boolean => {
   return (
     Boolean(issue.rollout) &&
     flattenTaskV1List(issue.rolloutEntity).some((task) => {
-      const DATABASE_RELATED_TASK_TYPE_LIST = [
-        Task_Type.DATABASE_CREATE,
-        Task_Type.DATABASE_SCHEMA_BASELINE,
-        Task_Type.DATABASE_SCHEMA_UPDATE,
-        Task_Type.DATABASE_SCHEMA_UPDATE_GHOST,
-        Task_Type.DATABASE_SCHEMA_UPDATE_SDL,
-        Task_Type.DATABASE_DATA_UPDATE,
-      ];
       return DATABASE_RELATED_TASK_TYPE_LIST.includes(task.type);
     })
   );
