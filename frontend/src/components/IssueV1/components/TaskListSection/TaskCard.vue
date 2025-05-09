@@ -52,7 +52,6 @@
 </template>
 
 <script setup lang="ts">
-import { computedAsync } from "@vueuse/core";
 import { ExternalLinkIcon } from "lucide-vue-next";
 import { NTag, NTooltip } from "naive-ui";
 import { twMerge } from "tailwind-merge";
@@ -65,7 +64,7 @@ import { Task_Type, task_StatusToJSON } from "@/types/proto/v1/rollout_service";
 import { databaseV1Url, extractSchemaVersionFromTask, isDev } from "@/utils";
 import {
   databaseForTask,
-  instanceForTask,
+  useInstanceForTask,
   specForTask,
   useIssueContext,
 } from "../../logic";
@@ -114,11 +113,7 @@ const taskClass = computed(() => {
 });
 
 const database = computed(() => databaseForTask(issue.value, props.task));
-
-const instance = computedAsync(async () => {
-  const ins = await instanceForTask(props.task);
-  return ins;
-}, database.value.instanceResource);
+const { instance } = useInstanceForTask(props.task);
 
 const onClickTask = (task: Task) => {
   events.emit("select-task", { task });

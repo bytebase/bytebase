@@ -183,12 +183,7 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
       if (database.instance !== instance.name) {
         continue;
       }
-      if (databaseMapByName.has(database.name)) {
-        const db = databaseMapByName.get(database.name);
-        if (db) {
-          db.instanceResource.activation = instance.activation;
-        }
-      }
+      database.instanceResource = instance;
     }
   };
   const batchSyncDatabases = async (databases: string[]) => {

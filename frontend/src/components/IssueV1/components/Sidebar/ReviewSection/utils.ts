@@ -1,11 +1,9 @@
-import { computedAsync } from "@vueuse/core";
 import { uniq } from "lodash-es";
 import { computed, inject, provide } from "vue";
 import type { InjectionKey, Ref } from "vue";
 import { databaseForTask, useIssueContext } from "@/components/IssueV1/logic";
 import { useSubscriptionV1Store, useInstanceResourceByName } from "@/store";
 import { isValidDatabaseName } from "@/types";
-import { extractDatabaseResourceName, wrapRefAsPromise } from "@/utils";
 
 export type IssueIntanceContext = {
   existedDeactivatedInstance: Ref<boolean>;
@@ -21,32 +19,31 @@ export const provideIssueIntanceContext = () => {
   const { issue } = useIssueContext();
   const subscriptionStore = useSubscriptionV1Store();
 
-  const distinctInstanceNameList = computed(() => {
-    const names =
+  const distinctInstanceList = computed(() => {
+    const instances =
       issue.value.rolloutEntity?.stages.flatMap((stage) => {
         return stage.tasks
-          .map((task) => databaseForTask(issue.value, task).name)
-          .filter(isValidDatabaseName)
-          .map((dbName) => extractDatabaseResourceName(dbName).instance);
+          .map((task) => databaseForTask(issue.value, task))
+          .filter((db) => isValidDatabaseName(db.name))
+          .map((db) => db.instance);
       }) ?? [];
-    return uniq(names);
+
+    const resp = [];
+    for (const instanceName of uniq(instances)) {
+      const { instance } = useInstanceResourceByName(instanceName);
+      resp.push(instance);
+    }
+    return resp;
   });
 
-  const existedDeactivatedInstance = computedAsync(async () => {
-    for (const instanceName of distinctInstanceNameList.value) {
-      const { instance, ready } = useInstanceResourceByName(instanceName);
-      await wrapRefAsPromise(ready, /* expected */ true);
-      if (
-        subscriptionStore.instanceMissingLicense(
-          "bb.feature.custom-approval",
-          instance.value
-        )
-      ) {
-        return true;
-      }
-    }
-    return false;
-  }, false);
+  const existedDeactivatedInstance = computed(() => {
+    return distinctInstanceList.value.some((ins) =>
+      subscriptionStore.instanceMissingLicense(
+        "bb.feature.custom-approval",
+        ins.value
+      )
+    );
+  });
 
   const context: IssueIntanceContext = {
     existedDeactivatedInstance,
