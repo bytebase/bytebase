@@ -2,7 +2,7 @@
   <BBAttention
     v-if="show"
     v-bind="$attrs"
-    :type="hasFeature ? 'info' : 'warning'"
+    :type="hasFeature ? type : 'warning'"
     :title="$t(`dynamic.subscription.features.${featureKey}.title`)"
     :description="descriptionText"
     :action-text="actionText"
@@ -47,9 +47,11 @@ const props = withDefaults(
   defineProps<{
     feature: FeatureType;
     description?: string;
+    type?: "info" | "warning" | "error";
     instance?: Instance | InstanceResource;
   }>(),
   {
+    type: "info",
     description: "",
     instance: undefined,
   }

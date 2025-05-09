@@ -1,6 +1,6 @@
 import { head } from "lodash-es";
+import { mockDatabase } from "@/components/IssueV1/logic/utils";
 import {
-  composeInstanceResourceForDatabase,
   useDatabaseV1Store,
   useDBGroupStore,
   useEnvironmentV1Store,
@@ -10,11 +10,10 @@ import {
   UNKNOWN_ID,
   type ComposedIssue,
   unknownDatabase,
-  unknownEnvironment,
   type ComposedDatabase,
   isValidDatabaseName,
 } from "@/types";
-import { Engine, State } from "@/types/proto/v1/common";
+import { Engine } from "@/types/proto/v1/common";
 import type { Plan_Spec } from "@/types/proto/v1/plan_service";
 import { extractDatabaseResourceName, extractDatabaseGroupName } from "@/utils";
 
@@ -50,22 +49,7 @@ export const databaseForSpec = (
       exportDataConfig?.target) as string;
     const db = useDatabaseV1Store().getDatabaseByName(target);
     if (!isValidDatabaseName(db.name)) {
-      // Database not found, it's probably NOT_FOUND (maybe dropped actually)
-      // Mock a database using all known resources
-      db.project = issue.project;
-      db.projectEntity = issue.projectEntity;
-      db.name = target;
-      const { instance, databaseName } = extractDatabaseResourceName(db.name);
-      db.databaseName = databaseName;
-      db.instance = instance;
-      const ir = composeInstanceResourceForDatabase(instance, db);
-      db.instanceResource = ir;
-      db.environment = ir.environment;
-      db.effectiveEnvironment = ir.environment;
-      db.effectiveEnvironmentEntity =
-        useEnvironmentV1Store().getEnvironmentByName(ir.environment) ??
-        unknownEnvironment();
-      db.state = State.DELETED;
+      return mockDatabase(issue.projectEntity, target);
     }
     return db;
   }
