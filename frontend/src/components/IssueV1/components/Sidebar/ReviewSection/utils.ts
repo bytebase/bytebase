@@ -1,6 +1,6 @@
 import { computedAsync } from "@vueuse/core";
 import { uniq } from "lodash-es";
-import { computed, inject, provide, ref } from "vue";
+import { computed, inject, provide } from "vue";
 import type { InjectionKey, Ref } from "vue";
 import { databaseForTask, useIssueContext } from "@/components/IssueV1/logic";
 import { useSubscriptionV1Store, useInstanceResourceByName } from "@/store";
