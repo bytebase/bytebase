@@ -1,5 +1,5 @@
 <template>
-  <div class="-mx-4 h-full relative overflow-x-hidden">
+  <div class="-mx-4 relative overflow-x-hidden">
     <template v-if="ready">
       <PlanDetailPage />
     </template>

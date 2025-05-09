@@ -3,7 +3,6 @@ import { v4 as uuidv4 } from "uuid";
 import { reactive } from "vue";
 import { useRoute } from "vue-router";
 import { rolloutServiceClient } from "@/grpcweb";
-import type { TemplateType } from "@/plugins";
 import {
   useChangelistStore,
   useCurrentUserV1,
@@ -18,7 +17,7 @@ import {
   databaseNamePrefix,
   projectNamePrefix,
 } from "@/store/modules/v1/common";
-import type { ComposedProject } from "@/types";
+import type { ComposedProject, IssueType } from "@/types";
 import {
   emptyIssue,
   isValidDatabaseName,
@@ -107,7 +106,7 @@ const buildIssue = async (params: CreateIssueParams) => {
     issue.title = query.name;
   }
 
-  const template = query.template as TemplateType | undefined;
+  const template = query.template as IssueType | undefined;
   if (template === "bb.issue.database.data.export") {
     issue.type = Issue_Type.DATABASE_DATA_EXPORT;
   } else {
@@ -280,7 +279,7 @@ export const buildSpecForTarget = async (
   version?: string
 ) => {
   const sheet = `${project.name}/sheets/${sheetUID ?? nextUID()}`;
-  const template = query.template as TemplateType | undefined;
+  const template = query.template as IssueType | undefined;
   const spec = Plan_Spec.fromJSON({
     id: uuidv4(),
   });
