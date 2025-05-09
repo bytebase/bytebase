@@ -33,6 +33,10 @@
               v-if="viewState.view === 'PACKAGES'"
               :key="tab?.id"
             />
+            <TriggersPanel
+              v-if="viewState.view === 'TRIGGERS'"
+              :key="tab?.id"
+            />
             <ExternalTablesPanel
               v-if="viewState.view === 'EXTERNAL_TABLES'"
               :key="tab?.id"
@@ -77,6 +81,7 @@ import SequencesPanel from "./SequencesPanel";
 import TablesPanel from "./TablesPanel";
 import ViewsPanel from "./ViewsPanel";
 import { SchemaSelectToolbar } from "./common";
+import TriggersPanel from "./TriggersPanel/TriggersPanel.vue";
 
 defineProps<{
   contentClass?: VueClass;
