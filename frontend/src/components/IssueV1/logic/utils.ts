@@ -15,11 +15,11 @@ import {
   isValidDatabaseName,
   isValidInstanceName,
 } from "@/types";
+import { State } from "@/types/proto/v1/common";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
 import type { Plan } from "@/types/proto/v1/plan_service";
 import { Task, Task_Status, Task_Type } from "@/types/proto/v1/rollout_service";
 import {
-  wrapRefAsPromise,
   defer,
   extractDatabaseResourceName,
   flattenSpecList,
@@ -28,7 +28,7 @@ import {
 } from "@/utils";
 import type { IssueContext } from "./context";
 
-export const instanceForTask = async (task: Task) => {
+export const useInstanceForTask = (task: Task) => {
   let instanceName: string = "";
   switch (task.type) {
     case Task_Type.DATABASE_CREATE:
@@ -47,17 +47,15 @@ export const instanceForTask = async (task: Task) => {
 
   if (!isValidInstanceName(instanceName)) {
     return {
-      ...unknownInstance(),
-      name: instanceName,
+      instance: {
+        ...unknownInstance(),
+        name: instanceName,
+      },
+      ready: true,
     };
   }
 
-  const { instance, ready } = useInstanceResourceByName(instanceName);
-  await wrapRefAsPromise(ready, /* expected */ true);
-  return {
-    ...instance.value,
-    name: instanceName,
-  };
+  return useInstanceResourceByName(instanceName);
 };
 
 export const mockDatabase = (
@@ -85,6 +83,7 @@ export const mockDatabase = (
     useEnvironmentV1Store().getEnvironmentByName(
       db.instanceResource.environment
     ) ?? unknownEnvironment();
+  db.state = State.DELETED;
   return db;
 };
 
