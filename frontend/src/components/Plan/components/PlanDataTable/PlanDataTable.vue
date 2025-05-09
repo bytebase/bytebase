@@ -16,6 +16,7 @@ import { NPerformantEllipsis, NDataTable } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
+import { BBAvatar } from "@/bbkit";
 import { ProjectNameCell } from "@/components/v2/Model/DatabaseV1Table/cells";
 import { PROJECT_V1_ROUTE_REVIEW_CENTER_DETAIL } from "@/router/dashboard/projectV1";
 import { getTimeForPbTimestamp } from "@/types";
@@ -93,6 +94,17 @@ const columnList = computed((): DataTableColumn<ComposedPlan>[] => {
       width: 150,
       render: (plan) =>
         humanizeTs(getTimeForPbTimestamp(plan.updateTime, 0) / 1000),
+    },
+    {
+      key: "creator",
+      width: 150,
+      title: t("issue.table.creator"),
+      render: (plan) => (
+        <div class="flex flex-row items-center overflow-hidden gap-x-2">
+          <BBAvatar size="SMALL" username={plan.creatorEntity.title} />
+          <span class="truncate">{plan.creatorEntity.title}</span>
+        </div>
+      ),
     },
   ];
   return columns.filter((column) => !column.hide);
