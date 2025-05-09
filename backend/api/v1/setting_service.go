@@ -1343,8 +1343,8 @@ func validateDomains(domains []string) error {
 func validateEnvironments(envs []*v1pb.EnvironmentSetting_Environment) *status.Status {
 	used := map[string]bool{}
 	for _, env := range envs {
-		if err := base.IsValidEnvironmentName(env.Title); err != nil {
-			return status.Newf(codes.InvalidArgument, "invalid environment title, error %v", err.Error())
+		if env.Title == "" {
+			return status.Newf(codes.InvalidArgument, "environment title cannot be empty")
 		}
 		if !isValidResourceID(env.Id) {
 			return status.Newf(codes.InvalidArgument, "invalid environment ID %v", env.Id)
