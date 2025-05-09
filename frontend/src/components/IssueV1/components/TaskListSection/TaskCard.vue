@@ -43,17 +43,8 @@
         <TaskExtraActionsButton :task="task" />
       </div>
       <div class="flex items-center justify-between px-1 text-sm">
-        <div
-          v-if="secondaryViewMode === 'INSTANCE'"
-          class="flex flex-1 items-center whitespace-pre-wrap"
-        >
-          <InstanceV1Name :instance="database.instanceResource" :link="false" />
-        </div>
-        <div
-          v-if="secondaryViewMode === 'TASK_TITLE'"
-          class="flex flex-1 items-center whitespace-pre-wrap break-all"
-        >
-          {{ taskTitle }}
+        <div class="flex flex-1 items-center whitespace-pre-wrap">
+          <InstanceV1Name :instance="instance" :link="false" />
         </div>
       </div>
     </div>
@@ -61,6 +52,7 @@
 </template>
 
 <script setup lang="ts">
+import { computedAsync } from "@vueuse/core";
 import { ExternalLinkIcon } from "lucide-vue-next";
 import { NTag, NTooltip } from "naive-ui";
 import { twMerge } from "tailwind-merge";
@@ -71,11 +63,14 @@ import { Plan_ChangeDatabaseConfig_Type } from "@/types/proto/v1/plan_service";
 import { Task } from "@/types/proto/v1/rollout_service";
 import { Task_Type, task_StatusToJSON } from "@/types/proto/v1/rollout_service";
 import { databaseV1Url, extractSchemaVersionFromTask, isDev } from "@/utils";
-import { databaseForTask, specForTask, useIssueContext } from "../../logic";
+import {
+  databaseForTask,
+  instanceForTask,
+  specForTask,
+  useIssueContext,
+} from "../../logic";
 import TaskStatusIcon from "../TaskStatusIcon.vue";
 import TaskExtraActionsButton from "./TaskExtraActionsButton.vue";
-
-type SecondaryViewMode = "INSTANCE" | "TASK_TITLE";
 
 const props = defineProps<{
   task: Task;
@@ -83,13 +78,6 @@ const props = defineProps<{
 
 const { isCreating, issue, selectedTask, events } = useIssueContext();
 const selected = computed(() => props.task === selectedTask.value);
-
-const secondaryViewMode = computed((): SecondaryViewMode => {
-  if ([Task_Type.DATABASE_CREATE].includes(props.task.type)) {
-    return "TASK_TITLE";
-  }
-  return "INSTANCE";
-});
 
 const schemaVersion = computed(() => {
   const v = extractSchemaVersionFromTask(props.task);
@@ -125,11 +113,12 @@ const taskClass = computed(() => {
   return classes;
 });
 
-const taskTitle = computed(() => {
-  return props.task.target;
-});
-
 const database = computed(() => databaseForTask(issue.value, props.task));
+
+const instance = computedAsync(async () => {
+  const ins = await instanceForTask(props.task);
+  return ins;
+}, database.value.instanceResource);
 
 const onClickTask = (task: Task) => {
   events.emit("select-task", { task });
