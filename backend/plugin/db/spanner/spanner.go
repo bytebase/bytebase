@@ -301,7 +301,7 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 			}); err != nil {
 				return nil, err
 			}
-			return util.BuildAffectedRowsResult(rowCount), nil
+			return util.BuildAffectedRowsResult(rowCount, nil), nil
 		}()
 		stop := false
 		if err != nil {

@@ -21,7 +21,7 @@ func FormatErrorWithQuery(err error, query string) error {
 	return errors.Wrapf(err, "failed to execute query %q", query)
 }
 
-func BuildAffectedRowsResult(affectedRows int64) *v1pb.QueryResult {
+func BuildAffectedRowsResult(affectedRows int64, messages []*v1pb.QueryResult_Message) *v1pb.QueryResult {
 	return &v1pb.QueryResult{
 		ColumnNames:     []string{"Affected Rows"},
 		ColumnTypeNames: []string{"INT"},
@@ -36,6 +36,7 @@ func BuildAffectedRowsResult(affectedRows int64) *v1pb.QueryResult {
 				},
 			},
 		},
+		Messages: messages,
 	}
 }
 

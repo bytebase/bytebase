@@ -232,7 +232,7 @@ func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, 
 				affectedRows = 0
 			}
 
-			return util.BuildAffectedRowsResult(affectedRows), nil
+			return util.BuildAffectedRowsResult(affectedRows, nil), nil
 		}()
 
 		stop := false

@@ -189,7 +189,7 @@ func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, 
 			if err != nil {
 				slog.Info("rowsAffected returns error", log.BBError(err))
 			}
-			return util.BuildAffectedRowsResult(affectedRows), nil
+			return util.BuildAffectedRowsResult(affectedRows, nil), nil
 		}()
 		stop := false
 		if err != nil {

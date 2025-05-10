@@ -144,6 +144,13 @@ type ConnectionContext struct {
 	DataShare bool
 	// ReadOnly is only supported for Postgres at the moment.
 	ReadOnly bool
+	// MessageBuffer is used for logging messages from the database server.
+	MessageBuffer []*v1pb.QueryResult_Message
+}
+
+// AppendMessage appends a message to the message buffer.
+func (c *ConnectionContext) AppendMessage(message *v1pb.QueryResult_Message) {
+	c.MessageBuffer = append(c.MessageBuffer, message)
 }
 
 // QueryContext is the context to query.
