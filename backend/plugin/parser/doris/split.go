@@ -2,6 +2,7 @@ package doris
 
 import (
 	parser "github.com/bytebase/doris-parser"
+	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
@@ -20,7 +21,10 @@ func SplitSQL(statement string) ([]base.SingleSQL, error) {
 	}
 
 	var result []base.SingleSQL
-	tree := parseResult.Tree.(*parser.SqlStatementsContext)
+	tree, ok := parseResult.Tree.(*parser.SqlStatementsContext)
+	if !ok {
+		return nil, errors.Errorf("failed to cast tree to SqlStatementsContext")
+	}
 	tokens := parseResult.Tokens.GetAllTokens()
 	stream := parseResult.Tokens
 

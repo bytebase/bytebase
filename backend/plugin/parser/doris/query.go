@@ -47,6 +47,4 @@ func (l *queryValidateListener) EnterSingleStatement(ctx *parser.SingleStatement
 	if ctx.Statement().QueryStatement() == nil {
 		l.valid = false
 	}
-
-	return
 }
