@@ -185,11 +185,6 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 			expression = columnName.String
 		}
 
-		// Convert nonUnique to unique (inverting the value)
-		unique := !nonUnique
-		// Visible is always true for TiDB indexes
-		visible := true
-
 		key := db.TableKey{Schema: "", Table: tableName}
 		if _, ok := indexMap[key]; !ok {
 			indexMap[key] = make(map[string]*storepb.IndexMetadata)
@@ -198,9 +193,9 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 			indexMap[key][keyName] = &storepb.IndexMetadata{
 				Name:    keyName,
 				Type:    "BTREE", // Default to BTREE as TiDB generally uses BTREE indexes
-				Unique:  unique,
+				Unique:  !nonUnique,
 				Primary: keyName == "PRIMARY",
-				Visible: visible,
+				Visible: true, // Visible is always true for TiDB indexes
 				Comment: comment,
 			}
 		}
