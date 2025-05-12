@@ -1,8 +1,11 @@
 FROM golang:1.24.2-alpine3.21 AS builder
+ARG GIT_COMMIT
 WORKDIR /action-build
 COPY action/ action/
 COPY . .
-RUN go build -o bytebase-action action/*.go
+RUN go build \ 
+--ldflags="-X 'github.com/bytebase/bytebase/action/args.Gitcommit=${GIT_COMMIT}'" \
+-o bytebase-action action/*.go
 
 FROM alpine:3.21
 RUN apk update
