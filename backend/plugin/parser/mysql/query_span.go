@@ -12,7 +12,6 @@ func init() {
 	base.RegisterGetQuerySpan(storepb.Engine_MARIADB, GetQuerySpan)
 	base.RegisterGetQuerySpan(storepb.Engine_OCEANBASE, GetQuerySpan)
 	base.RegisterGetQuerySpan(storepb.Engine_STARROCKS, GetQuerySpan)
-	base.RegisterGetQuerySpan(storepb.Engine_DORIS, GetQuerySpan)
 }
 
 // GetQuerySpan returns the query span for the given statement.

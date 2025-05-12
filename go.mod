@@ -26,6 +26,7 @@ require (
 	github.com/beltran/gohive v1.8.0
 	github.com/blang/semver/v4 v4.0.0
 	github.com/bytebase/cosmosdb-parser v0.0.0-20250317064006-c1dcb3ed4fa4
+	github.com/bytebase/doris-parser v0.0.0-20250512080703-bacdebf2f435
 	github.com/bytebase/google-sql-parser v0.0.0-20250116032737-689a327f9465
 	github.com/bytebase/lsp-protocol v0.0.0-20250324071136-1586d0c10ff0
 	github.com/bytebase/mysql-parser v0.0.0-20241224071214-cb9fd84811dd
