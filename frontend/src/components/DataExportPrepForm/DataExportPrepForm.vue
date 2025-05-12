@@ -80,7 +80,7 @@ const props = defineProps<{
   projectName: string;
 }>();
 
-useProjectByName(props.projectName);
+useProjectByName(computed(() => props.projectName));
 
 const emit = defineEmits(["dismiss"]);
 
