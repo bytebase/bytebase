@@ -46,7 +46,7 @@ var (
 	}()
 
 	pkAutoRandomBitsRegex = regexp.MustCompile(`PK_AUTO_RANDOM_BITS=(\d+)`)
-	RangeBitsRegex        = regexp.MustCompile(`RANGE BITS=(\d+)`)
+	rangeBitsRegex        = regexp.MustCompile(`RANGE BITS=(\d+)`)
 )
 
 // SyncInstance syncs the instance.
@@ -158,8 +158,8 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 	defer indexRows.Close()
 
 	for indexRows.Next() {
-		var tableName, keyName, comment, columnName string
-		var expressionName sql.NullString
+		var tableName, keyName, comment string
+		var columnName, expressionName sql.NullString
 		var position int
 		var nonUnique bool
 		var subPart sql.NullInt64
@@ -181,8 +181,8 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 		var expression string
 		if expressionName.Valid {
 			expression = fmt.Sprintf("(%s)", expressionName.String)
-		} else {
-			expression = columnName
+		} else if columnName.Valid {
+			expression = columnName.String
 		}
 
 		// Convert nonUnique to unique (inverting the value)
@@ -377,7 +377,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 			if strings.Contains(shardingInfo, pkAutoRandomBitsSymbol) {
 				autoRandText := autoRandSymbol
 				if randomBitsMatch := pkAutoRandomBitsRegex.FindStringSubmatch(shardingInfo); len(randomBitsMatch) > 1 {
-					if rangeBitsMatch := RangeBitsRegex.FindStringSubmatch(shardingInfo); len(rangeBitsMatch) > 1 {
+					if rangeBitsMatch := rangeBitsRegex.FindStringSubmatch(shardingInfo); len(rangeBitsMatch) > 1 {
 						autoRandText += fmt.Sprintf("(%s, %s)", randomBitsMatch[1], rangeBitsMatch[1])
 					} else {
 						autoRandText += fmt.Sprintf("(%s)", randomBitsMatch[1])
