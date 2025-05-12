@@ -93,7 +93,7 @@ interface LocalState {
 }
 
 const { project: specificProject } = useProjectByName(
-  `${projectNamePrefix}${props.projectId}`
+  computed(() => `${projectNamePrefix}${props.projectId}`)
 );
 
 const readonlyScopes = computed((): SearchScope[] => {
@@ -121,7 +121,7 @@ const state = reactive<LocalState>({
 });
 
 watch(
-  () => props.projectId,
+  () => specificProject.value,
   () => (state.params = defaultSearchParams())
 );
 
