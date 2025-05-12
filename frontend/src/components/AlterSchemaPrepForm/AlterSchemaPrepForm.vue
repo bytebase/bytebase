@@ -15,27 +15,20 @@
     <div
       class="space-y-4 h-full w-[calc(100vw-8rem)] lg:w-[60rem] max-w-[calc(100vw-8rem)] overflow-x-auto"
     >
-      <div>
-        <div class="space-y-3">
-          <div class="w-full flex items-center space-x-2">
-            <AdvancedSearch
-              v-model:params="state.params"
-              :autofocus="false"
-              :placeholder="$t('database.filter-database')"
-              :scope-options="scopeOptions"
-            />
-          </div>
-
-          <PagedDatabaseTable
-            mode="ALL_SHORT"
-            :filter="filter"
-            :parent="projectName"
-            :custom-click="true"
-            :show-sql-editor-button="false"
-            v-model:selected-database-names="state.selectedDatabaseNames"
-          />
-        </div>
-      </div>
+      <AdvancedSearch
+        v-model:params="state.params"
+        :autofocus="false"
+        :placeholder="$t('database.filter-database')"
+        :scope-options="scopeOptions"
+      />
+      <PagedDatabaseTable
+        mode="ALL_SHORT"
+        :filter="filter"
+        :parent="projectName"
+        :custom-click="true"
+        :show-sql-editor-button="false"
+        v-model:selected-database-names="state.selectedDatabaseNames"
+      />
     </div>
 
     <template #footer>

@@ -30,7 +30,7 @@
 
   <SQLCheckPanel
     v-if="checkResult && advices && showDetailPanel"
-    :project="issue.project"
+    :project="plan.project"
     :database="database"
     :advices="advices"
     :affected-rows="checkResult.affectedRows"
@@ -65,10 +65,10 @@ import {
 import { Advice, Advice_Status } from "@/types/proto/v1/sql_service";
 import type { Defer, VueStyle } from "@/utils";
 import { defer } from "@/utils";
-import { databaseForTask, useIssueContext } from "../../logic";
-import { useTaskSheet } from "../StatementSection/useTaskSheet";
-import { getTaskChangeType } from "./common";
-import { useIssueSQLCheckContext } from "./context";
+import { databaseForSpec, usePlanContext } from "../../logic";
+import { useSpecSheet } from "../StatementSection/useSpecSheet";
+import { getSpecChangeType } from "./common";
+import { usePlanSQLCheckContext } from "./context";
 
 withDefaults(
   defineProps<{
@@ -82,9 +82,9 @@ withDefaults(
 );
 
 const { t } = useI18n();
-const { issue, selectedTask } = useIssueContext();
-const { upsertResult } = useIssueSQLCheckContext();
-const { sheetStatement } = useTaskSheet();
+const { plan, selectedSpec } = usePlanContext();
+const { upsertResult } = usePlanSQLCheckContext();
+const { sheetStatement } = useSpecSheet();
 
 const isRunning = ref(false);
 const showDetailPanel = ref(false);
@@ -97,14 +97,12 @@ const advices = computed(() => {
 });
 
 const database = computed(() =>
-  databaseForTask(issue.value, selectedTask.value)
+  databaseForSpec(plan.value, selectedSpec.value)
 );
 
 const statement = computed(() => sheetStatement.value);
 
-const changeType = computed(() =>
-  getTaskChangeType(issue.value, selectedTask.value)
-);
+const changeType = computed(() => getSpecChangeType(selectedSpec.value));
 
 const statementErrors = asyncComputed(async () => {
   if (statement.value.length === 0) {
