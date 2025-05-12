@@ -309,7 +309,7 @@ export const useDropdown = () => {
           icon: action.icon,
           onSelect: () => {
             openNewTab({
-              title: `[schema ${schema}] ${action.title}`,
+              title: `[${db.databaseName}] ${action.title}`,
               view: action.view,
               schema,
             })
