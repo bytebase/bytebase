@@ -41,13 +41,6 @@
         <TabList />
 
         <EditorPanel />
-
-        <div
-          v-if="isFetchingSheet"
-          class="flex items-center justify-center absolute inset-0 bg-white/50 z-20"
-        >
-          <BBSpin />
-        </div>
       </Pane>
     </Splitpanes>
 
@@ -60,7 +53,6 @@
     </Drawer>
 
     <teleport to="#sql-editor-debug">
-      <li>[Page]isDisconnected: {{ isDisconnected }}</li>
       <li>[Page]currentTab.id: {{ currentTab?.id }}</li>
       <li>[Page]currentTab.connection: {{ currentTab?.connection }}</li>
     </teleport>
@@ -73,9 +65,8 @@
 import { useWindowSize } from "@vueuse/core";
 import { storeToRefs } from "pinia";
 import { Splitpanes, Pane } from "splitpanes";
-import { computed, reactive } from "vue";
+import { reactive } from "vue";
 import { useRouter } from "vue-router";
-import { BBSpin } from "@/bbkit";
 import Quickstart from "@/components/Quickstart.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
@@ -109,8 +100,7 @@ const {
 } = useSQLEditorContext();
 const { showPanel: showSheetPanel } = useSheetContext();
 
-const { currentTab, isDisconnected } = storeToRefs(tabStore);
-const isFetchingSheet = computed(() => false /* editorStore.isFetchingSheet */);
+const { currentTab } = storeToRefs(tabStore);
 
 const { width: windowWidth } = useWindowSize();
 
