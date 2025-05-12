@@ -53,6 +53,7 @@
     </Drawer>
 
     <teleport to="#sql-editor-debug">
+      <li>[Page]isDisconnected: {{ isDisconnected }}</li>
       <li>[Page]currentTab.id: {{ currentTab?.id }}</li>
       <li>[Page]currentTab.connection: {{ currentTab?.connection }}</li>
     </teleport>
@@ -100,7 +101,7 @@ const {
 } = useSQLEditorContext();
 const { showPanel: showSheetPanel } = useSheetContext();
 
-const { currentTab } = storeToRefs(tabStore);
+const { currentTab, isDisconnected } = storeToRefs(tabStore);
 
 const { width: windowWidth } = useWindowSize();
 
