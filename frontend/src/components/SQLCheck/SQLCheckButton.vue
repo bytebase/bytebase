@@ -46,6 +46,7 @@
 
     <SQLCheckPanel
       v-if="checkResult && filteredAdvices && showDetailPanel"
+      :project="database.project"
       :database="database"
       :advices="filteredAdvices"
       :affected-rows="checkResult.affectedRows"

@@ -32,7 +32,7 @@
     </NTooltip>
     <div
       v-if="isDatabaseChangeSpec(spec)"
-      class="flex items-center gap-2 truncate"
+      class="flex items-center gap-1 truncate"
     >
       <InstanceV1Name
         :instance="databaseForSpec(plan, spec).instanceResource"
@@ -43,13 +43,14 @@
         databaseForSpec(plan, spec).databaseName
       }}</span>
     </div>
-    <!-- Fallback to show the database group name if the spec is a grouping change spec in old plans. -->
     <div
       v-else-if="isGroupingChangeSpec(spec) && relatedDatabaseGroup"
       class="flex items-center gap-2 truncate"
     >
       <NTooltip>
-        <template #trigger><DatabaseGroupIcon class="w-4 h-auto" /></template>
+        <template #trigger>
+          <DatabaseGroupIcon class="w-4 h-auto" />
+        </template>
         {{ $t("dynamic.resource.database-group") }}
       </NTooltip>
       <span class="truncate text-sm">{{
@@ -57,7 +58,7 @@
       }}</span>
     </div>
     <!-- Fallback -->
-    <div v-else class="flex items-center gap-2 text-sm">Unknown type</div>
+    <div v-else class="flex items-center gap-2 text-sm">Unknown target</div>
   </div>
 </template>
 
@@ -68,7 +69,7 @@ import { computed, onMounted } from "vue";
 import DatabaseGroupIcon from "@/components/DatabaseGroupIcon.vue";
 import { planCheckRunSummaryForCheckRunList } from "@/components/PlanCheckRun/common";
 import { InstanceV1Name } from "@/components/v2";
-import { useDBGroupStore } from "@/store";
+import { useDatabaseV1Store, useDBGroupStore } from "@/store";
 import { DatabaseGroupView } from "@/types/proto/v1/database_group_service";
 import {
   PlanCheckRun_Result_Status,
@@ -87,6 +88,7 @@ const props = defineProps<{
 }>();
 
 const { isCreating, plan, selectedSpec, events } = usePlanContext();
+const databaseStore = useDatabaseV1Store();
 const dbGroupStore = useDBGroupStore();
 
 const specClass = computed(() => {
@@ -118,7 +120,6 @@ const relatedDatabaseGroup = computed(() => {
 
 const planCheckStatus = computed((): PlanCheckRun_Result_Status => {
   if (isCreating.value) return PlanCheckRun_Result_Status.STATUS_UNSPECIFIED;
-
   const summary = planCheckRunSummaryForCheckRunList(
     planCheckRunListForSpec(plan.value, props.spec)
   );
@@ -131,8 +132,13 @@ const planCheckStatus = computed((): PlanCheckRun_Result_Status => {
   return PlanCheckRun_Result_Status.SUCCESS;
 });
 
+// Prepare target.
 onMounted(async () => {
-  if (isGroupingChangeSpec(props.spec)) {
+  if (isDatabaseChangeSpec(props.spec)) {
+    await databaseStore.getOrFetchDatabaseByName(
+      props.spec.changeDatabaseConfig!.target
+    );
+  } else if (isGroupingChangeSpec(props.spec)) {
     await dbGroupStore.getOrFetchDBGroupByName(
       props.spec.changeDatabaseConfig!.target,
       {

@@ -196,7 +196,7 @@ import { cloneDeep, head, isEmpty } from "lodash-es";
 import { ExpandIcon } from "lucide-vue-next";
 import { NButton, NTooltip, useDialog } from "naive-ui";
 import { v1 as uuidv1 } from "uuid";
-import { computed, h, reactive, ref, toRef, watch } from "vue";
+import { computed, h, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBAttention, BBModal } from "@/bbkit";
 import { FeatureModal } from "@/components/FeatureGuard";
@@ -218,7 +218,6 @@ import type { SQLDialect } from "@/types";
 import { EMPTY_ID, dialectOfEngineV1 } from "@/types";
 import type { Plan_Spec } from "@/types/proto/v1/plan_service";
 import { Sheet } from "@/types/proto/v1/sheet_service";
-import type { Advice } from "@/types/proto/v1/sql_service";
 import {
   defer,
   getSheetStatement,
@@ -227,6 +226,7 @@ import {
   getStatementSize,
   flattenSpecList,
 } from "@/utils";
+import { usePlanSQLCheckContext } from "../../SQLCheckSectionV1/context";
 import { useSQLAdviceMarkers } from "../useSQLAdviceMarkers";
 import FormatOnSaveCheckbox from "./FormatOnSaveCheckbox.vue";
 import type { EditState } from "./useTempEditState";
@@ -238,15 +238,11 @@ type LocalState = EditState & {
   isUploadingFile: boolean;
 };
 
-const props = defineProps<{
-  advices?: Advice[];
-}>();
-
 const { t } = useI18n();
-const context = usePlanContext();
-const { isCreating, plan, selectedSpec, formatOnSave, events } =
-  usePlanContext();
 const dialog = useDialog();
+const context = usePlanContext();
+const { isCreating, plan, selectedSpec, formatOnSave, events } = context;
+const { resultMap } = usePlanSQLCheckContext();
 const editorContainerElRef = ref<HTMLElement>();
 const monacoEditorRef = ref<InstanceType<typeof MonacoEditor>>();
 const { height: editorContainerHeight } = useElementSize(editorContainerElRef);
@@ -278,7 +274,11 @@ const dialect = computed((): SQLDialect => {
 const statementTitle = computed(() => {
   return language.value === "sql" ? t("common.sql") : t("common.statement");
 });
-const { markers } = useSQLAdviceMarkers(context, toRef(props, "advices"));
+const advices = computed(() => {
+  const database = databaseForSpec(plan.value, selectedSpec.value);
+  return resultMap.value[database.name]?.advices || [];
+});
+const { markers } = useSQLAdviceMarkers(context, advices);
 
 /**
  * to set the MonacoEditor as readonly
