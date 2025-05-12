@@ -46,7 +46,7 @@
 import { NTooltip, NButton } from "naive-ui";
 import { v4 as uuidv4 } from "uuid";
 import { zindexable as vZindexable } from "vdirs";
-import { computed, nextTick, ref, toRaw } from "vue";
+import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { getValidIssueLabels } from "@/components/IssueV1/components/IssueLabelSelector.vue";
@@ -57,7 +57,6 @@ import {
   getLocalSheetByName,
   isValidSpec,
   isValidStage,
-  specForTask,
   useIssueContext,
 } from "@/components/IssueV1/logic";
 import formatSQL from "@/components/MonacoEditor/sqlFormatter";
@@ -72,7 +71,6 @@ import {
 import { emitWindowEvent } from "@/plugins";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { useDatabaseV1Store, useSheetV1Store } from "@/store";
-import type { ComposedIssue } from "@/types";
 import { dialectOfEngineV1, languageOfEngineV1 } from "@/types";
 import { Issue } from "@/types/proto/v1/issue_service";
 import type { Plan_ExportDataConfig } from "@/types/proto/v1/plan_service";
@@ -178,34 +176,22 @@ const doCreateIssue = async () => {
       parent: issue.value.project,
       issue: issueCreate,
     });
-    const composedIssue: ComposedIssue = {
-      ...issue.value,
-      ...createdIssue,
-      planEntity: createdPlan,
-    };
 
-    const createdRollout = await rolloutServiceClient.createRollout({
+    await rolloutServiceClient.createRollout({
       parent: issue.value.project,
       rollout: {
         plan: createdPlan.name,
       },
     });
 
-    composedIssue.rollout = createdRollout.name;
-    composedIssue.rolloutEntity = createdRollout;
-
-    await emitIssueCreateWindowEvent(composedIssue);
-    nextTick(() => {
-      router.replace({
-        name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
-        params: {
-          projectId: extractProjectResourceName(composedIssue.project),
-          issueSlug: issueV1Slug(composedIssue),
-        },
-      });
+    emitIssueCreateWindowEvent(createdIssue);
+    router.replace({
+      name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
+      params: {
+        projectId: extractProjectResourceName(issue.value.project),
+        issueSlug: issueV1Slug(createdIssue),
+      },
     });
-
-    return composedIssue;
   } catch {
     loading.value = false;
   }
@@ -296,26 +282,12 @@ const maybeFormatSQL = async (sheet: Sheet, target: string) => {
   setSheetStatement(sheet, formatted);
 };
 
-const emitIssueCreateWindowEvent = async (issue: ComposedIssue) => {
+const emitIssueCreateWindowEvent = (issue: Issue) => {
   const eventParams = {
     uid: extractIssueUID(issue.name),
+    name: issue.name,
     description: issue.description,
-    project: toRaw(issue.projectEntity),
-    tasks: [],
   };
-  const tasks = flattenTaskV1List(issue.rolloutEntity);
-  for (const task of tasks) {
-    const spec = specForTask(issue.planEntity, task);
-    const database = databaseForTask(issue, task);
-    const sheetName = sheetNameOfTaskV1(task);
-    const sheet = await sheetStore.getOrFetchSheetByName(sheetName, "FULL");
-    const statement = sheet ? getSheetStatement(sheet) : "";
-    eventParams.tasks.push({
-      database: toRaw(database),
-      earliestAllowedTime: spec?.earliestAllowedTime,
-      statement,
-    } as never);
-  }
   emitWindowEvent("bb.issue-create", eventParams);
 };
 
