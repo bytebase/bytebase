@@ -57,6 +57,8 @@ var (
 	outputMap = map[string]string{}
 )
 
+var gitcommit = "unknown"
+
 func init() {
 	// bytebase-action flags
 	cmd.PersistentFlags().StringVar(&Config.Output, "output", "", "Output file location. The output file is a JSON file with the created resource names")
@@ -526,6 +528,7 @@ func waitForRollout(ctx context.Context, client *Client, rolloutPreview *v1pb.Ro
 }
 
 func main() {
+	slog.Info("bytebase-action built at commit " + gitcommit)
 	ctx, cancel := context.WithCancel(context.Background())
 	c := make(chan os.Signal, 1)
 	// Trigger graceful shutdown on SIGINT or SIGTERM.
