@@ -200,7 +200,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, _ db.ExecuteOpti
 
 // QueryConn queries a SQL statement in a given connection.
 func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
-	singleSQLs, err := base.SplitMultiSQL(storepb.Engine_MYSQL, statement)
+	singleSQLs, err := base.SplitMultiSQL(storepb.Engine_DORIS, statement)
 	if err != nil {
 		return nil, err
 	}
@@ -225,7 +225,7 @@ func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string
 		}
 		sqlWithBytebaseAppComment := util.MySQLPrependBytebaseAppComment(statement)
 
-		_, allQuery, err := base.ValidateSQLForEditor(storepb.Engine_MYSQL, statement)
+		_, allQuery, err := base.ValidateSQLForEditor(storepb.Engine_DORIS, statement)
 		if err != nil {
 			// TODO(d): need to make parser compatible.
 			slog.Error("failed to validate sql", slog.String("statement", statement), log.BBError(err))
