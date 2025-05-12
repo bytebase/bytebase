@@ -28,6 +28,7 @@
 
   <SQLCheckPanel
     v-if="showSQLCheckResultPanel && databaseForTask(issue, selectedTask)"
+    :project="issue.project"
     :database="databaseForTask(issue, selectedTask)"
     :advices="checkResultMap[databaseForTask(issue, selectedTask).name].advices"
     :affected-rows="
@@ -146,7 +147,9 @@ const issueCreateErrorList = computed(() => {
       issue.value.projectEntity.issueLabels
     ).length === 0
   ) {
-    errorList.push(t("project.settings.issue-related.labels.force-issue-labels.warning"));
+    errorList.push(
+      t("project.settings.issue-related.labels.force-issue-labels.warning")
+    );
   }
   return errorList;
 });

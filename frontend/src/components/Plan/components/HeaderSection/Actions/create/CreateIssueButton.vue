@@ -40,7 +40,6 @@ import {
   usePlanContext,
 } from "@/components/Plan/logic";
 import { planCheckRunSummaryForCheckRunList } from "@/components/PlanCheckRun/common";
-import { useSQLCheckContext } from "@/components/SQLCheck";
 import { issueServiceClient, rolloutServiceClient } from "@/grpcweb";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { useCurrentUserV1, usePolicyV1Store } from "@/store";
@@ -59,7 +58,6 @@ const router = useRouter();
 const dialog = useDialog();
 const policyV1Store = usePolicyV1Store();
 const { plan } = usePlanContext();
-const { runSQLCheck } = useSQLCheckContext();
 const loading = ref(false);
 const restrictIssueCreationForSqlReviewPolicy = ref(false);
 
@@ -140,11 +138,7 @@ const handleCreateIssue = async () => {
 
 const doCreateIssue = async () => {
   loading.value = true;
-  const check = runSQLCheck.value;
-  if (check && !(await check())) {
-    loading.value = false;
-    return;
-  }
+  // TODO(steven): Check plan check results before creating issue.
 
   try {
     const createdIssue = await issueServiceClient.createIssue({
