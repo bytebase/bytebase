@@ -41,13 +41,6 @@
         <TabList />
 
         <EditorPanel />
-
-        <div
-          v-if="isFetchingSheet"
-          class="flex items-center justify-center absolute inset-0 bg-white/50 z-20"
-        >
-          <BBSpin />
-        </div>
       </Pane>
     </Splitpanes>
 
@@ -73,9 +66,8 @@
 import { useWindowSize } from "@vueuse/core";
 import { storeToRefs } from "pinia";
 import { Splitpanes, Pane } from "splitpanes";
-import { computed, reactive } from "vue";
+import { reactive } from "vue";
 import { useRouter } from "vue-router";
-import { BBSpin } from "@/bbkit";
 import Quickstart from "@/components/Quickstart.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
@@ -110,7 +102,6 @@ const {
 const { showPanel: showSheetPanel } = useSheetContext();
 
 const { currentTab, isDisconnected } = storeToRefs(tabStore);
-const isFetchingSheet = computed(() => false /* editorStore.isFetchingSheet */);
 
 const { width: windowWidth } = useWindowSize();
 
