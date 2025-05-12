@@ -1,28 +1,23 @@
-package mysql
+package doris
 
 import (
 	"context"
-	"strings"
-	"unicode"
 
 	"github.com/antlr4-go/antlr/v4"
-	parser "github.com/bytebase/mysql-parser"
+	parser "github.com/bytebase/doris-parser"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 func init() {
-	base.RegisterDiagnoseFunc(store.Engine_MYSQL, Diagnose)
-	base.RegisterDiagnoseFunc(store.Engine_MARIADB, Diagnose)
-	base.RegisterDiagnoseFunc(store.Engine_TIDB, Diagnose)
-	base.RegisterDiagnoseFunc(store.Engine_OCEANBASE, Diagnose)
-	base.RegisterDiagnoseFunc(store.Engine_CLICKHOUSE, Diagnose)
+	base.RegisterDiagnoseFunc(store.Engine_DORIS, Diagnose)
+	base.RegisterDiagnoseFunc(store.Engine_STARROCKS, Diagnose)
 }
 
 func Diagnose(_ context.Context, _ base.DiagnoseContext, statement string) ([]base.Diagnostic, error) {
 	diagnostics := make([]base.Diagnostic, 0)
-	syntaxError := parseMySQLStatement(statement)
+	syntaxError := parseDorisStatement(statement)
 	if syntaxError != nil {
 		diagnostics = append(diagnostics, base.ConvertSyntaxErrorToDiagnostic(syntaxError, statement))
 	}
@@ -30,36 +25,25 @@ func Diagnose(_ context.Context, _ base.DiagnoseContext, statement string) ([]ba
 	return diagnostics, nil
 }
 
-func parseMySQLStatement(statement string) *base.SyntaxError {
-	trimmedStatement := strings.TrimRightFunc(statement, unicode.IsSpace)
-	if len(trimmedStatement) > 0 && !strings.HasSuffix(trimmedStatement, ";") {
-		// Add a semicolon to the end of the statement to allow users to omit the semicolon
-		// for the last statement in the script.
-		statement += ";"
-	}
-	inputStream := antlr.NewInputStream(statement)
-	lexer := parser.NewMySQLLexer(inputStream)
+func parseDorisStatement(statement string) *base.SyntaxError {
+	lexer := parser.NewDorisSQLLexer(antlr.NewInputStream(statement))
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
-
-	p := parser.NewMySQLParser(stream)
+	p := parser.NewDorisSQLParser(stream)
 	lexerErrorListener := &base.ParseErrorListener{
 		Statement: statement,
-		BaseLine:  0,
 	}
 	lexer.RemoveErrorListeners()
 	lexer.AddErrorListener(lexerErrorListener)
 
 	parserErrorListener := &base.ParseErrorListener{
 		Statement: statement,
-		BaseLine:  0,
 	}
 	p.RemoveErrorListeners()
 	p.AddErrorListener(parserErrorListener)
 
 	p.BuildParseTrees = false
 
-	_ = p.Script()
-
+	_ = p.SqlStatements()
 	if lexerErrorListener.Err != nil {
 		return lexerErrorListener.Err
 	}
@@ -67,5 +51,6 @@ func parseMySQLStatement(statement string) *base.SyntaxError {
 	if parserErrorListener.Err != nil {
 		return parserErrorListener.Err
 	}
+
 	return nil
 }
