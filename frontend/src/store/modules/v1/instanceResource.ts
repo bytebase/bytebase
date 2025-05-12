@@ -32,17 +32,14 @@ export const useInstanceResourceByName = (
 
   const instance = computed(() => {
     const name = unref(instanceName);
-    if (ready.value) {
-      const existed = store.getInstanceByName(name);
-      if (isValidInstanceName(existed.name)) {
-        return existed;
-      }
+    const existed = store.getInstanceByName(name);
+    if (isValidInstanceName(existed.name)) {
+      return existed;
     }
-    const instanceFromDb = instanceList.value.find((i) => i.name === name);
-    if (instanceFromDb) {
-      return instanceFromDb;
-    }
-    return store.getInstanceByName(name);
+    return (
+      instanceList.value.find((i) => i.name === name) ??
+      store.getInstanceByName(name)
+    );
   });
 
   return { instance, ready };
