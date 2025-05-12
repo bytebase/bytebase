@@ -2,7 +2,7 @@
   <div class="w-full relative">
     <div
       ref="specBar"
-      class="spec-list w-full gap-2 px-4 py-2 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 4xl:grid-cols-6 overflow-y-auto"
+      class="spec-list gap-2 px-4 py-2 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 3xl:grid-cols-5 4xl:grid-cols-6 overflow-y-auto"
       :class="{
         'more-bottom': specBarScrollState.bottom,
         'more-top': specBarScrollState.top,
@@ -22,7 +22,7 @@ import { useVerticalScrollState } from "@/composables/useScrollState";
 import { usePlanContext } from "../../logic";
 import SpecCard from "./SpecCard.vue";
 
-const MAX_LIST_HEIGHT = 207;
+const MAX_LIST_HEIGHT = 256;
 
 const { plan } = usePlanContext();
 const specBar = ref<HTMLDivElement>();
@@ -33,12 +33,12 @@ const specList = computed(() => plan.value.steps.flatMap((step) => step.specs));
 
 <style scoped lang="postcss">
 .spec-list::before {
-  @apply absolute top-0 h-4 w-full -ml-2 z-10 pointer-events-none transition-shadow;
+  @apply absolute top-0 h-4 w-full -ml-4 z-10 pointer-events-none transition-shadow;
   content: "";
   box-shadow: none;
 }
 .spec-list::after {
-  @apply absolute bottom-0 h-4 w-full -ml-2 z-10 pointer-events-none transition-shadow;
+  @apply absolute bottom-0 h-4 w-full -ml-4 z-10 pointer-events-none transition-shadow;
   content: "";
   box-shadow: none;
 }
