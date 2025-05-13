@@ -62,14 +62,31 @@ type columRequireDefaultChecker struct {
 	line       int
 }
 
+func getPkColumnsFromConstraints(node *ast.CreateTableStmt) map[string]bool {
+	pkColumns := make(map[string]bool)
+	for _, constraint := range node.Constraints {
+		if constraint.Tp != ast.ConstraintPrimaryKey {
+			continue
+		}
+		for _, key := range constraint.Keys {
+			if key.Column == nil {
+				continue
+			}
+			pkColumns[key.Column.Name.L] = true
+		}
+	}
+	return pkColumns
+}
+
 // Enter implements the ast.Visitor interface.
 func (checker *columRequireDefaultChecker) Enter(in ast.Node) (ast.Node, bool) {
 	var columnList []columnData
 	switch node := in.(type) {
 	case *ast.CreateTableStmt:
 		tableName := node.Table.Name.O
+		pkColumns := getPkColumnsFromConstraints(node)
 		for _, column := range node.Cols {
-			if !hasDefault(column) && needDefault(column) {
+			if !hasDefault(column) && needDefault(column) && !pkColumns[column.Name.Name.L] {
 				columnList = append(columnList, columnData{
 					table:  tableName,
 					column: column.Name.Name.O,
