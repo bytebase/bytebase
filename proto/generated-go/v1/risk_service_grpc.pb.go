@@ -22,6 +22,7 @@ const _ = grpc.SupportPackageIsVersion9
 const (
 	RiskService_ListRisks_FullMethodName  = "/bytebase.v1.RiskService/ListRisks"
 	RiskService_CreateRisk_FullMethodName = "/bytebase.v1.RiskService/CreateRisk"
+	RiskService_GetRisk_FullMethodName    = "/bytebase.v1.RiskService/GetRisk"
 	RiskService_UpdateRisk_FullMethodName = "/bytebase.v1.RiskService/UpdateRisk"
 	RiskService_DeleteRisk_FullMethodName = "/bytebase.v1.RiskService/DeleteRisk"
 )
@@ -32,6 +33,7 @@ const (
 type RiskServiceClient interface {
 	ListRisks(ctx context.Context, in *ListRisksRequest, opts ...grpc.CallOption) (*ListRisksResponse, error)
 	CreateRisk(ctx context.Context, in *CreateRiskRequest, opts ...grpc.CallOption) (*Risk, error)
+	GetRisk(ctx context.Context, in *GetRiskRequest, opts ...grpc.CallOption) (*Risk, error)
 	UpdateRisk(ctx context.Context, in *UpdateRiskRequest, opts ...grpc.CallOption) (*Risk, error)
 	DeleteRisk(ctx context.Context, in *DeleteRiskRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
@@ -64,6 +66,16 @@ func (c *riskServiceClient) CreateRisk(ctx context.Context, in *CreateRiskReques
 	return out, nil
 }
 
+func (c *riskServiceClient) GetRisk(ctx context.Context, in *GetRiskRequest, opts ...grpc.CallOption) (*Risk, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Risk)
+	err := c.cc.Invoke(ctx, RiskService_GetRisk_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *riskServiceClient) UpdateRisk(ctx context.Context, in *UpdateRiskRequest, opts ...grpc.CallOption) (*Risk, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Risk)
@@ -90,6 +102,7 @@ func (c *riskServiceClient) DeleteRisk(ctx context.Context, in *DeleteRiskReques
 type RiskServiceServer interface {
 	ListRisks(context.Context, *ListRisksRequest) (*ListRisksResponse, error)
 	CreateRisk(context.Context, *CreateRiskRequest) (*Risk, error)
+	GetRisk(context.Context, *GetRiskRequest) (*Risk, error)
 	UpdateRisk(context.Context, *UpdateRiskRequest) (*Risk, error)
 	DeleteRisk(context.Context, *DeleteRiskRequest) (*emptypb.Empty, error)
 	mustEmbedUnimplementedRiskServiceServer()
@@ -107,6 +120,9 @@ func (UnimplementedRiskServiceServer) ListRisks(context.Context, *ListRisksReque
 }
 func (UnimplementedRiskServiceServer) CreateRisk(context.Context, *CreateRiskRequest) (*Risk, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateRisk not implemented")
+}
+func (UnimplementedRiskServiceServer) GetRisk(context.Context, *GetRiskRequest) (*Risk, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetRisk not implemented")
 }
 func (UnimplementedRiskServiceServer) UpdateRisk(context.Context, *UpdateRiskRequest) (*Risk, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateRisk not implemented")
@@ -171,6 +187,24 @@ func _RiskService_CreateRisk_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
+func _RiskService_GetRisk_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetRiskRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RiskServiceServer).GetRisk(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RiskService_GetRisk_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RiskServiceServer).GetRisk(ctx, req.(*GetRiskRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _RiskService_UpdateRisk_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(UpdateRiskRequest)
 	if err := dec(in); err != nil {
@@ -221,6 +255,10 @@ var RiskService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CreateRisk",
 			Handler:    _RiskService_CreateRisk_Handler,
+		},
+		{
+			MethodName: "GetRisk",
+			Handler:    _RiskService_GetRisk_Handler,
 		},
 		{
 			MethodName: "UpdateRisk",
