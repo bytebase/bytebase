@@ -10,9 +10,9 @@
     :data-task-name="isCreating ? '-creating-' : task.name"
     @click="onClickTask(task)"
   >
-    <div class="flex-1 flex flex-col gap-y-1">
-      <div class="flex items-start">
-        <div class="flex items-center flex-1 gap-x-1">
+    <div class="w-full flex-1 flex flex-col gap-y-1">
+      <div class="w-full flex items-start gap-1">
+        <div class="w-full flex items-center flex-1 gap-x-1 overflow-x-auto">
           <TaskStatusIcon
             :status="task.status"
             :task="task"
@@ -125,7 +125,7 @@ const onClickTask = (task: Task) => {
   @apply border-info bg-info bg-opacity-5;
 }
 .task .name {
-  @apply whitespace-pre-wrap break-all;
+  @apply whitespace-nowrap break-all;
 }
 .task.status_done .name {
   @apply text-control;
