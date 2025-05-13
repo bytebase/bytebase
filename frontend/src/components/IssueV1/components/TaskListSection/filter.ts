@@ -1,13 +1,8 @@
+import { planCheckRunSummaryForCheckRunList } from "@/components/PlanCheckRun/common";
 import type { Task, Task_Status } from "@/types/proto/v1/rollout_service";
 import { Advice_Status } from "@/types/proto/v1/sql_service";
 import { type IssueContext } from "../../logic";
 import { type SQLCheckContext } from "../SQLCheckSection/context";
-
-export interface TaskFilter {
-  // Only for created tasks.
-  status: Task_Status[];
-  adviceStatus: Advice_Status[];
-}
 
 export const filterTask = (
   issueContext: IssueContext,
@@ -42,12 +37,16 @@ export const filterTask = (
         );
       }
     } else {
-      const planCheckRuns = getPlanCheckRunsForTask(task);
-      return planCheckRuns.some((run) =>
-        run.results.some(
-          (result) => result.status.toString() === adviceStatus.toString()
-        )
+      const summary = planCheckRunSummaryForCheckRunList(
+        getPlanCheckRunsForTask(task)
       );
+      if (summary.errorCount > 0) {
+        return adviceStatus === Advice_Status.ERROR;
+      } else if (summary.warnCount > 0) {
+        return adviceStatus === Advice_Status.WARNING;
+      } else {
+        return adviceStatus === Advice_Status.SUCCESS;
+      }
     }
   }
 
