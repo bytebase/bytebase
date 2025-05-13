@@ -72,7 +72,7 @@ func (checker *columnRequireDefaultChecker) EnterCreateTable(ctx *mysql.CreateTa
 		return
 	}
 
-	pkColumn := getPKColumn(ctx)
+	pkColumns := getPKColumns(ctx)
 	_, tableName := mysqlparser.NormalizeMySQLTableName(ctx.TableName())
 	for _, tableElement := range ctx.TableElementList().AllTableElement() {
 		if tableElement == nil {
@@ -83,7 +83,7 @@ func (checker *columnRequireDefaultChecker) EnterCreateTable(ctx *mysql.CreateTa
 		}
 
 		_, _, columnName := mysqlparser.NormalizeMySQLColumnName(tableElement.ColumnDefinition().ColumnName())
-		if pkColumn[columnName] {
+		if pkColumns[columnName] {
 			continue
 		}
 		if tableElement.ColumnDefinition().FieldDefinition() == nil {
