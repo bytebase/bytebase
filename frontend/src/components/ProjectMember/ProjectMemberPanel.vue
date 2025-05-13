@@ -47,6 +47,7 @@
           </p>
         </template>
         <MemberDataTable
+          scope="project"
           :allow-edit="allowEdit"
           :bindings="memberBindings"
           :selected-bindings="state.selectedMembers"
@@ -65,6 +66,7 @@
           </p>
         </template>
         <MemberDataTableByRole
+          scope="project"
           :allow-edit="allowEdit"
           :bindings-by-role="memberBindingsByRole"
           @update-binding="selectMember"

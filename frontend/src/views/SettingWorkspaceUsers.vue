@@ -132,7 +132,7 @@
       <template v-if="state.showInactiveUserList">
         <div class="flex justify-between items-center mt-2 mb-4">
           <p class="text-lg font-medium leading-7">
-            <span>{{ $t("settings.members.inactive") }}</span>
+            <span>{{ $t("settings.members.inactive-users") }}</span>
             <span class="ml-1 font-normal text-control-light">
               ({{ inactiveUserCount }})
             </span>
