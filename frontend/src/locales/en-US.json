@@ -916,7 +916,7 @@
     },
     "you-are-not-allowed-to-change-this-value": "You are not allowed to change this value",
     "sql-check": {
-      "sql-checks": "SQL Checks",
+      "sql-checks": "SQL checks",
       "not-executed-yet": "Not executed yet",
       "statement-is-required": "SQL statement is required",
       "statement-is-too-large": "As the current statement size exceeds 2MB, the SQL check will be skipped.",

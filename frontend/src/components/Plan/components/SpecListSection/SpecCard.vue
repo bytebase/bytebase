@@ -15,8 +15,8 @@
       placement="top"
     >
       <template #trigger>
-        <heroicons:exclamation-circle-solid
-          class="w-5 h-5 shrink-0"
+        <AlertCircleIcon
+          class="w-4 h-4 shrink-0"
           :class="[
             planCheckStatus === PlanCheckRun_Result_Status.ERROR
               ? 'text-error hover:text-error-hover'
@@ -64,13 +64,13 @@
 
 <script setup lang="ts">
 import { isEqual } from "lodash-es";
+import { AlertCircleIcon } from "lucide-vue-next";
 import { NTooltip } from "naive-ui";
-import { computed, onMounted } from "vue";
+import { computed } from "vue";
 import DatabaseGroupIcon from "@/components/DatabaseGroupIcon.vue";
 import { planCheckRunSummaryForCheckRunList } from "@/components/PlanCheckRun/common";
 import { InstanceV1Name } from "@/components/v2";
-import { useDatabaseV1Store, useDBGroupStore } from "@/store";
-import { DatabaseGroupView } from "@/types/proto/v1/database_group_service";
+import { useDBGroupStore } from "@/store";
 import {
   PlanCheckRun_Result_Status,
   type Plan_Spec,
@@ -88,7 +88,6 @@ const props = defineProps<{
 }>();
 
 const { isCreating, plan, selectedSpec, events } = usePlanContext();
-const databaseStore = useDatabaseV1Store();
 const dbGroupStore = useDBGroupStore();
 
 const specClass = computed(() => {
@@ -130,23 +129,6 @@ const planCheckStatus = computed((): PlanCheckRun_Result_Status => {
     return PlanCheckRun_Result_Status.WARNING;
   }
   return PlanCheckRun_Result_Status.SUCCESS;
-});
-
-// Prepare target.
-onMounted(async () => {
-  if (isDatabaseChangeSpec(props.spec)) {
-    await databaseStore.getOrFetchDatabaseByName(
-      props.spec.changeDatabaseConfig!.target
-    );
-  } else if (isGroupingChangeSpec(props.spec)) {
-    await dbGroupStore.getOrFetchDBGroupByName(
-      props.spec.changeDatabaseConfig!.target,
-      {
-        skipCache: true,
-        view: DatabaseGroupView.DATABASE_GROUP_VIEW_FULL,
-      }
-    );
-  }
 });
 
 const onClickSpec = (spec: Plan_Spec) => {

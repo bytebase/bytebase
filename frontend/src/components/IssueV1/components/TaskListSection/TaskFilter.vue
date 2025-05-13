@@ -11,7 +11,7 @@
         class="bg-gray-50 pl-2 p-1 flex flex-row items-center rounded-full gap-1"
       >
         <span class="text-sm mr-1 text-gray-600">{{
-          $t("issue.sql-check.sql-checks")
+          isCreating ? $t("issue.sql-check.sql-checks") : $t("task.task-checks")
         }}</span>
         <template v-for="status in ADVICE_STATUS_FILTERS" :key="status">
           <NTag
