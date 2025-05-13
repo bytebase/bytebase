@@ -348,7 +348,8 @@
       "subscription": "(Actualice para habilitar la gestión de roles)"
     },
     "members": {
-      "inactive": "Miembros inactivos",
+      "inactive": "Inactivo",
+      "inactive-users": "Usuarios inactivos",
       "table": {
         "account": "Cuenta",
         "role": "Rol",
@@ -383,7 +384,7 @@
       "reset-service-key": "Restablecer Clave de Servicio",
       "reset-service-key-alert": "Esta acción no se puede deshacer. La clave antigua dejará de funcionar de inmediato. ¿Está seguro de que desea restablecer esta clave de servicio?",
       "service-key-copied": "Clave de Servicio copiada al portapapeles, por favor manténgala en secreto.",
-      "show-inactive": "Mostrar miembros inactivos",
+      "show-inactive": "Mostrar usuarios inactivos",
       "view-by-roles": "Ver por roles",
       "add-member": "Agregar miembro",
       "add-user": "Agregar usuario",

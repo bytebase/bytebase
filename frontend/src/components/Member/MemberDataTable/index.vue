@@ -1,6 +1,6 @@
 <template>
   <NDataTable
-    key="project-members"
+    key="iam-members"
     :columns="columns"
     :data="bindings"
     :row-key="(row: MemberBinding) => row.binding"
@@ -29,6 +29,7 @@ import UserOperationsCell from "./cells/UserOperationsCell.vue";
 import UserRolesCell from "./cells/UserRolesCell.vue";
 
 const props = defineProps<{
+  scope: "workspace" | "project";
   allowEdit: boolean;
   bindings: MemberBinding[];
   selectedBindings: string[];
@@ -58,7 +59,8 @@ const columns = computed(
         type: "expand",
         hide: !props.bindings.some((binding) => binding.type === "groups"),
         expandable: (memberBinding: MemberBinding) =>
-          memberBinding.type === "groups",
+          memberBinding.type === "groups" &&
+          !!memberBinding.group?.members.length,
         renderExpand: (memberBinding: MemberBinding) => {
           return (
             <div class="pl-20 space-y-2">
@@ -84,7 +86,14 @@ const columns = computed(
         resizable: true,
         render: (memberBinding: MemberBinding) => {
           if (memberBinding.type === "groups") {
-            return <GroupNameCell group={memberBinding.group!} />;
+            const deleted = memberBinding.group?.deleted ?? false;
+            return (
+              <GroupNameCell
+                group={memberBinding.group!}
+                link={!deleted}
+                deleted={deleted}
+              />
+            );
           }
           return (
             <UserNameCell
@@ -111,6 +120,7 @@ const columns = computed(
         width: "4rem",
         render: (memberBinding: MemberBinding) => {
           return h(UserOperationsCell, {
+            scope: props.scope,
             key: memberBinding.binding,
             allowEdit: props.allowEdit,
             binding: memberBinding,

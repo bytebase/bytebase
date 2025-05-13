@@ -5,26 +5,36 @@
     <div class="flex flex-row items-center">
       <div class="flex flex-col">
         <div class="flex flex-row items-center space-x-2">
-          <span
-            v-if="onClickUser"
-            class="normal-link truncate max-w-[10rem]"
-            @click="onClickUser(user, $event)"
+          <div :class="user.state === State.DELETED ? 'line-through' : ''">
+            <span
+              v-if="onClickUser"
+              class="normal-link truncate max-w-[10rem]"
+              @click="onClickUser(user, $event)"
+            >
+              {{ user.title }}
+            </span>
+            <span
+              v-else-if="permissionStore.onlyWorkspaceMember"
+              class="truncate max-w-[10em]"
+            >
+              {{ user.title }}
+            </span>
+            <router-link
+              v-else
+              :to="`/users/${user.email}`"
+              class="normal-link truncate max-w-[10em]"
+            >
+              {{ user.title }}
+            </router-link>
+          </div>
+          <NTag
+            v-if="user.state === State.DELETED"
+            size="small"
+            round
+            type="error"
           >
-            {{ user.title }}
-          </span>
-          <span
-            v-else-if="permissionStore.onlyWorkspaceMember"
-            class="truncate max-w-[10em]"
-          >
-            {{ user.title }}
-          </span>
-          <router-link
-            v-else
-            :to="`/users/${user.email}`"
-            class="normal-link truncate max-w-[10em]"
-          >
-            {{ user.title }}
-          </router-link>
+            {{ $t("settings.members.inactive") }}
+          </NTag>
           <NTag v-if="user.profile?.source" size="small" round type="primary">
             {{ user.profile.source }}
           </NTag>
@@ -52,6 +62,7 @@ import YouTag from "@/components/misc/YouTag.vue";
 import { useCurrentUserV1, usePermissionStore } from "@/store";
 import { SYSTEM_BOT_USER_NAME } from "@/types";
 import { unknownUser } from "@/types";
+import { State } from "@/types/proto/v1/common";
 import { User, UserType } from "@/types/proto/v1/user_service";
 import type { MemberBinding } from "../../types";
 

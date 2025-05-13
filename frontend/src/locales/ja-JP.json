@@ -348,7 +348,8 @@
       "subscription": "(有料プランにアップグレードするとキャラクター管理が可能になります)"
     },
     "members": {
-      "inactive": "不活性化された",
+      "inactive": "非アクティブ",
+      "inactive-users": "非アクティブユーザー",
       "table": {
         "account": "アカウント",
         "role": "役割",
@@ -383,7 +384,7 @@
       "reset-service-key": "サービスキーのリセット",
       "reset-service-key-alert": "古いサービス キーはすぐにリセットされ、この操作は元に戻すことはできません。サービス キーをリセットしてもよろしいですか?",
       "service-key-copied": "サービスキーはコピーされています。公開しないでください",
-      "show-inactive": "非アクティブなメンバーを表示する",
+      "show-inactive": "非アクティブなユーザーを表示",
       "view-by-roles": "役割ごとに表示",
       "add-member": "メンバーを追加",
       "add-user": "ユーザーを追加",
