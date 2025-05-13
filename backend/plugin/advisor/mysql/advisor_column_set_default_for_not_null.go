@@ -64,7 +64,7 @@ type columnSetDefaultForNotNullChecker struct {
 	title      string
 }
 
-func getPKColumn(ctx *mysql.CreateTableContext) map[string]bool {
+func getPKColumns(ctx *mysql.CreateTableContext) map[string]bool {
 	pkColumn := make(map[string]bool)
 	for _, tableElement := range ctx.TableElementList().AllTableElement() {
 		if tableElement == nil {
@@ -100,7 +100,7 @@ func (checker *columnSetDefaultForNotNullChecker) EnterCreateTable(ctx *mysql.Cr
 	}
 
 	_, tableName := mysqlparser.NormalizeMySQLTableName(ctx.TableName())
-	pkColumn := getPKColumn(ctx)
+	pkColumns := getPKColumns(ctx)
 
 	for _, tableElement := range ctx.TableElementList().AllTableElement() {
 		if tableElement == nil {
@@ -115,7 +115,7 @@ func (checker *columnSetDefaultForNotNullChecker) EnterCreateTable(ctx *mysql.Cr
 			continue
 		}
 
-		if pkColumn[columnName] {
+		if pkColumns[columnName] {
 			continue
 		}
 		if !checker.canNull(field) && !checker.hasDefault(field) && checker.needDefault(field) {
