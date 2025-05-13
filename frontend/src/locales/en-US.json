@@ -348,7 +348,8 @@
       "subscription": "(Upgrade to enable role management)"
     },
     "members": {
-      "inactive": "Inactive members",
+      "inactive": "Inactive",
+      "inactive-users": "Inactive users",
       "table": {
         "account": "Account",
         "role": "Role",
@@ -383,7 +384,7 @@
       "reset-service-key": "Reset Service Key",
       "reset-service-key-alert": "This action cannot be undone. The old key will stop working immediately. Are you sure you want to reset this service key?",
       "service-key-copied": "Service Key copied to clipboard, please keep it in secret.",
-      "show-inactive": "Show inactive members",
+      "show-inactive": "Show inactive users",
       "view-by-roles": "View by roles",
       "add-member": "Add member",
       "add-user": "Add user",

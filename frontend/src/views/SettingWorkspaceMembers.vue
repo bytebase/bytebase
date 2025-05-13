@@ -14,6 +14,7 @@
           </p>
         </template>
         <MemberDataTable
+          scope="workspace"
           :allow-edit="allowEdit"
           :bindings="memberBindings"
           :selected-bindings="state.selectedMembers"
@@ -34,6 +35,7 @@
           </p>
         </template>
         <MemberDataTableByRole
+          scope="workspace"
           :allow-edit="allowEdit"
           :bindings-by-role="memberBindingsByRole"
           :on-click-user="onClickUser"

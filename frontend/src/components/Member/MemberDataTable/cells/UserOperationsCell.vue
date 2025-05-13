@@ -1,7 +1,10 @@
 <template>
   <div v-if="allowEdit" class="flex justify-end">
     <NPopconfirm
-      v-if="allowUpdate && binding.projectRoleBindings.length > 0"
+      v-if="
+        allowRevoke &&
+        (scope === 'workspace' || binding.projectRoleBindings.length > 0)
+      "
       @positive-click="$emit('revoke-binding')"
     >
       <template #trigger>
@@ -41,6 +44,7 @@ import { State } from "@/types/proto/v1/common";
 import type { MemberBinding } from "../../types";
 
 const props = defineProps<{
+  scope: "workspace" | "project";
   allowEdit: boolean;
   binding: MemberBinding;
 }>();
@@ -50,9 +54,17 @@ defineEmits<{
   (event: "revoke-binding"): void;
 }>();
 
+const allowRevoke = computed(() => {
+  if (props.binding.type === "groups") {
+    return true;
+  }
+  const user = props.binding.user ?? unknownUser();
+  return user.name !== SYSTEM_BOT_USER_NAME;
+});
+
 const allowUpdate = computed(() => {
   if (props.binding.type === "groups") {
-    return props.allowEdit;
+    return props.allowEdit && !props.binding.group?.deleted;
   }
 
   const user = props.binding.user ?? unknownUser();

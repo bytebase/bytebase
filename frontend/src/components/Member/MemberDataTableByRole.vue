@@ -37,6 +37,7 @@ interface BindingRowData {
 }
 
 const props = defineProps<{
+  scope: "workspace" | "project";
   allowEdit: boolean;
   bindingsByRole: Map<string, Map<string, MemberBinding>>;
   onClickUser?: (user: User, event: MouseEvent) => void;
@@ -82,7 +83,14 @@ const columns = computed(() => {
         }
 
         if (row.member.type === "groups") {
-          return <GroupNameCell group={row.member.group!} />;
+          const deleted = row.member.group?.deleted ?? false;
+          return (
+            <GroupNameCell
+              group={row.member.group!}
+              link={!deleted}
+              deleted={deleted}
+            />
+          );
         }
 
         return (
@@ -99,6 +107,7 @@ const columns = computed(() => {
           return "";
         } else {
           return h(UserOperationsCell, {
+            scope: props.scope,
             allowEdit: props.allowEdit,
             binding: row.member,
             "onUpdate-binding": () => {
