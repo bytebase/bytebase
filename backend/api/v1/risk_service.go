@@ -58,6 +58,15 @@ func (s *RiskService) ListRisks(ctx context.Context, _ *v1pb.ListRisksRequest) (
 	return response, nil
 }
 
+// GetRisk gets the risk.
+func (s *RiskService) GetRisk(ctx context.Context, request *v1pb.GetRiskRequest) (*v1pb.Risk, error) {
+	risk, err := s.getRiskByName(ctx, request.Name)
+	if err != nil {
+		return nil, err
+	}
+	return convertToRisk(risk)
+}
+
 // CreateRisk creates a risk.
 func (s *RiskService) CreateRisk(ctx context.Context, request *v1pb.CreateRiskRequest) (*v1pb.Risk, error) {
 	if err := s.licenseService.IsFeatureEnabled(base.FeatureCustomApproval); err != nil {
@@ -89,16 +98,9 @@ func (s *RiskService) UpdateRisk(ctx context.Context, request *v1pb.UpdateRiskRe
 	if request.UpdateMask == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "update_mask must be set")
 	}
-	riskID, err := common.GetRiskID(request.Risk.Name)
+	risk, err := s.getRiskByName(ctx, request.Risk.Name)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-	risk, err := s.store.GetRisk(ctx, riskID)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get risk, error: %v", err)
-	}
-	if risk == nil {
-		return nil, status.Errorf(codes.NotFound, "risk %v not found", request.Risk.Name)
+		return nil, err
 	}
 
 	patch := &store.UpdateRiskMessage{}
@@ -123,7 +125,7 @@ func (s *RiskService) UpdateRisk(ctx context.Context, request *v1pb.UpdateRiskRe
 		}
 	}
 
-	risk, err = s.store.UpdateRisk(ctx, patch, riskID)
+	risk, err = s.store.UpdateRisk(ctx, patch, risk.ID)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -137,19 +139,27 @@ func (s *RiskService) DeleteRisk(ctx context.Context, request *v1pb.DeleteRiskRe
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
-	risk, err := s.store.GetRisk(ctx, riskID)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get risk, error: %v", err)
-	}
-	if risk == nil {
-		return nil, status.Errorf(codes.NotFound, "risk %v not found", request.Name)
-	}
 
 	if err := s.store.DeleteRisk(ctx, riskID); err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	return &emptypb.Empty{}, nil
+}
+
+func (s *RiskService) getRiskByName(ctx context.Context, name string) (*store.RiskMessage, error) {
+	riskID, err := common.GetRiskID(name)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+	risk, err := s.store.GetRisk(ctx, riskID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get risk, error: %v", err)
+	}
+	if risk == nil {
+		return nil, status.Errorf(codes.NotFound, "risk %v not found", name)
+	}
+	return risk, nil
 }
 
 func convertToV1Source(source store.RiskSource) v1pb.Risk_Source {
