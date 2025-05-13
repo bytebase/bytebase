@@ -1,7 +1,7 @@
 <template>
   <template v-if="initialized">
     <ArchiveBanner v-if="project.state === State.DELETED" class="py-2" />
-    <div class="px-4 h-full overflow-auto py-4">
+    <div class="px-4 h-full overflow-auto">
       <template v-if="!hideDefaultProject && isDefaultProject">
         <h1 class="mb-4 text-xl font-bold leading-6 text-main truncate">
           {{ $t("database.unassigned-databases") }}
@@ -87,7 +87,6 @@ import {
 } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import { hasProjectPermissionV2 } from "@/utils";
-import { useBodyLayoutContext } from "./common";
 
 interface LocalState {
   requestRole?:
@@ -220,8 +219,4 @@ const quickActionList = computed(() => {
 const hideQuickActionPanel = computed(() => {
   return hideQuickAction.value || quickActionList.value.length === 0;
 });
-
-const { overrideMainContainerClass } = useBodyLayoutContext();
-
-overrideMainContainerClass("!py-0");
 </script>
