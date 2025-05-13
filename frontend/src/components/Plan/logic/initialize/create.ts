@@ -58,15 +58,12 @@ export const createPlanSkeleton = async (
     `${projectNamePrefix}${projectName}`
   );
   const databaseNameList = (query.databaseList ?? "").split(",");
-  await batchGetOrFetchDatabases(databaseNameList);
-
   const params: CreatePlanParams = {
     databaseNameList,
     project,
     query,
     initialSQL: await extractInitialSQLFromQuery(query),
   };
-
   const plan = await buildPlan(params);
   return plan;
 };
