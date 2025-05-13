@@ -42,3 +42,4 @@
     CREATE DEFINER=`root`@`%` TRIGGER `ins_sum` BEFORE INSERT ON account FOR EACH ROW SET @sum = @sum + NEW.amount;
   diff: |+
     ALTER TABLE `account` ADD COLUMN `price` INT AFTER `amount`;
+
