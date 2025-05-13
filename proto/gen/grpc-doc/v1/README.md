@@ -586,6 +586,7 @@
 - [v1/risk_service.proto](#v1_risk_service-proto)
     - [CreateRiskRequest](#bytebase-v1-CreateRiskRequest)
     - [DeleteRiskRequest](#bytebase-v1-DeleteRiskRequest)
+    - [GetRiskRequest](#bytebase-v1-GetRiskRequest)
     - [ListRisksRequest](#bytebase-v1-ListRisksRequest)
     - [ListRisksResponse](#bytebase-v1-ListRisksResponse)
     - [Risk](#bytebase-v1-Risk)
@@ -9534,6 +9535,21 @@ The name field is used to identify the sql review to update. |
 
 
 
+<a name="bytebase-v1-GetRiskRequest"></a>
+
+### GetRiskRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the risk to retrieve. Format: risks/{risk} |
+
+
+
+
+
+
 <a name="bytebase-v1-ListRisksRequest"></a>
 
 ### ListRisksRequest
@@ -9650,6 +9666,7 @@ The risk&#39;s `name` field is used to identify the risk to update. Format: risk
 | ----------- | ------------ | ------------- | ------------|
 | ListRisks | [ListRisksRequest](#bytebase-v1-ListRisksRequest) | [ListRisksResponse](#bytebase-v1-ListRisksResponse) |  |
 | CreateRisk | [CreateRiskRequest](#bytebase-v1-CreateRiskRequest) | [Risk](#bytebase-v1-Risk) |  |
+| GetRisk | [GetRiskRequest](#bytebase-v1-GetRiskRequest) | [Risk](#bytebase-v1-Risk) |  |
 | UpdateRisk | [UpdateRiskRequest](#bytebase-v1-UpdateRiskRequest) | [Risk](#bytebase-v1-Risk) |  |
 | DeleteRisk | [DeleteRiskRequest](#bytebase-v1-DeleteRiskRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
 

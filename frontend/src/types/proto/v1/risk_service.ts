@@ -47,6 +47,14 @@ export interface CreateRiskRequest {
   risk: Risk | undefined;
 }
 
+export interface GetRiskRequest {
+  /**
+   * The name of the risk to retrieve.
+   * Format: risks/{risk}
+   */
+  name: string;
+}
+
 export interface UpdateRiskRequest {
   /**
    * The risk to update.
@@ -440,6 +448,64 @@ export const CreateRiskRequest: MessageFns<CreateRiskRequest> = {
   },
 };
 
+function createBaseGetRiskRequest(): GetRiskRequest {
+  return { name: "" };
+}
+
+export const GetRiskRequest: MessageFns<GetRiskRequest> = {
+  encode(message: GetRiskRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GetRiskRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetRiskRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetRiskRequest {
+    return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
+  },
+
+  toJSON(message: GetRiskRequest): unknown {
+    const obj: any = {};
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<GetRiskRequest>): GetRiskRequest {
+    return GetRiskRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<GetRiskRequest>): GetRiskRequest {
+    const message = createBaseGetRiskRequest();
+    message.name = object.name ?? "";
+    return message;
+  },
+};
+
 function createBaseUpdateRiskRequest(): UpdateRiskRequest {
   return { risk: undefined, updateMask: undefined };
 }
@@ -749,6 +815,45 @@ export const RiskServiceDefinition = {
           800016: [new Uint8Array([1])],
           800024: [new Uint8Array([1])],
           578365826: [new Uint8Array([17, 58, 4, 114, 105, 115, 107, 34, 9, 47, 118, 49, 47, 114, 105, 115, 107, 115])],
+        },
+      },
+    },
+    getRisk: {
+      name: "GetRisk",
+      requestType: GetRiskRequest,
+      requestStream: false,
+      responseType: Risk,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          8410: [new Uint8Array([4, 110, 97, 109, 101])],
+          800010: [new Uint8Array([13, 98, 98, 46, 114, 105, 115, 107, 115, 46, 108, 105, 115, 116])],
+          800016: [new Uint8Array([1])],
+          578365826: [
+            new Uint8Array([
+              20,
+              18,
+              18,
+              47,
+              118,
+              49,
+              47,
+              123,
+              110,
+              97,
+              109,
+              101,
+              61,
+              114,
+              105,
+              115,
+              107,
+              115,
+              47,
+              42,
+              125,
+            ]),
+          ],
         },
       },
     },
