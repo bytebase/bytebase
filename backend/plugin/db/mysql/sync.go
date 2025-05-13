@@ -200,7 +200,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 			'',
 			SEQ_IN_INDEX,
 			INDEX_TYPE,
-			CASE NON_UNIQUE WHEN 0 THEN 1 ELSE 0 END AS IS_UNIQUE,
+			NON_UNIQUE,
 			1,
 			INDEX_COMMENT
 		FROM information_schema.STATISTICS
@@ -221,7 +221,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 				EXPRESSION,
 				SEQ_IN_INDEX,
 				INDEX_TYPE,
-				CASE NON_UNIQUE WHEN 0 THEN 1 ELSE 0 END AS IS_UNIQUE,
+				NON_UNIQUE,
 				CASE IS_VISIBLE WHEN 'YES' THEN 1 ELSE 0 END,
 				INDEX_COMMENT
 			FROM information_schema.STATISTICS
@@ -240,7 +240,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 		var collation sql.NullString
 		var position int
 		var subPart int64
-		var unique, visible bool
+		var nonUnique, visible bool
 		if err := indexRows.Scan(
 			&tableName,
 			&indexName,
@@ -250,7 +250,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 			&expressionName,
 			&position,
 			&indexType,
-			&unique,
+			&nonUnique,
 			&visible,
 			&comment,
 		); err != nil {
@@ -277,7 +277,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 			indexMap[key][indexName] = &storepb.IndexMetadata{
 				Name:    indexName,
 				Type:    indexType,
-				Unique:  unique,
+				Unique:  !nonUnique,
 				Primary: indexName == "PRIMARY",
 				Visible: visible,
 				Comment: comment,
