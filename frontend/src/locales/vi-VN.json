@@ -348,7 +348,8 @@
       "subscription": "(Nâng cấp để kích hoạt quản lý vai trò)"
     },
     "members": {
-      "inactive": "Thành viên không hoạt động",
+      "inactive": "Không hoạt động",
+      "inactive-users": "Người dùng không hoạt động",
       "table": {
         "account": "Tài khoản",
         "role": "Vai trò",
@@ -383,7 +384,7 @@
       "reset-service-key": "Đặt lại Khóa Dịch vụ",
       "reset-service-key-alert": "Hành động này không thể hoàn tác. Khóa cũ sẽ ngừng hoạt động ngay lập tức. Bạn có chắc chắn muốn đặt lại khóa dịch vụ này?",
       "service-key-copied": "Khóa Dịch vụ đã được sao chép vào khay nhớ tạm, vui lòng giữ bí mật.",
-      "show-inactive": "Hiển thị thành viên không hoạt động",
+      "show-inactive": "Hiển thị người dùng không hoạt động",
       "view-by-roles": "Xem theo vai trò",
       "add-member": "Thêm thành viên",
       "add-user": "Thêm người dùng",

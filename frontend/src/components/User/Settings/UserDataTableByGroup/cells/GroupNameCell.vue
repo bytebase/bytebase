@@ -2,35 +2,34 @@
   <div class="flex items-center space-x-2">
     <UsersIcon v-if="showIcon" class="w-8" />
     <div>
-      <div class="flex items-center">
-        <router-link
-          v-if="allowGetGroup && link"
-          :to="{
-            name: WORKSPACE_ROUTE_USERS,
-            query: {
-              name: group.name,
-            },
-          }"
-          class="normal-link font-medium"
-        >
-          {{ group.title }}
-        </router-link>
-        <span v-else class="font-medium">{{ group.title }}</span>
-        <NTag
-          v-if="group.source"
-          size="small"
-          round
-          type="primary"
-          class="ml-2"
-        >
+      <div class="flex items-center space-x-2">
+        <div :class="deleted ? 'line-through' : ''">
+          <router-link
+            v-if="allowGetGroup && link"
+            :to="{
+              name: WORKSPACE_ROUTE_USERS,
+              query: {
+                name: group.name,
+              },
+            }"
+            class="normal-link font-medium"
+          >
+            {{ group.title }}
+          </router-link>
+          <span v-else class="font-medium">{{ group.title }}</span>
+        </div>
+        <NTag v-if="deleted" size="small" round type="error">
+          {{ $t("common.deleted") }}
+        </NTag>
+        <NTag v-if="group.source" size="small" round type="primary">
           {{ group.source }}
         </NTag>
-        <span class="ml-2 font-normal text-control-light">
+        <span class="font-normal text-control-light">
           {{
             `(${$t("settings.members.groups.n-members", { n: group.members.length })})`
           }}
         </span>
-        <UserRolesCell v-if="role" class="ml-3" :role="role" />
+        <UserRolesCell v-if="role" :role="role" />
       </div>
       <span v-if="showEmail" class="textinfolabel text-sm">
         {{ extractGroupEmail(group.name) }}
@@ -57,12 +56,14 @@ const props = withDefaults(
     showIcon?: boolean;
     showEmail?: boolean;
     link?: boolean;
+    deleted?: boolean;
   }>(),
   {
     showIcon: true,
     showEmail: true,
     role: undefined,
     link: true,
+    deleted: false,
   }
 );
 
