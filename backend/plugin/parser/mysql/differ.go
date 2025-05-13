@@ -546,10 +546,12 @@ func (diff *diffNode) diffTrigger(oldSchema, newSchema *schemaDef) error {
 		if ok {
 			if !isTriggerEqual(oldTrigger, trigger) {
 				diff.dropTriggerList = append(diff.dropTriggerList, oldTrigger)
+				diff.createTriggerList = append(diff.createTriggerList, trigger)
 			}
 			delete(oldSchema.triggers, triggerName)
+		} else {
+			diff.createTriggerList = append(diff.createTriggerList, trigger)
 		}
-		diff.createTriggerList = append(diff.createTriggerList, trigger)
 	}
 	for _, trigger := range oldSchema.triggers {
 		diff.dropTriggerList = append(diff.dropTriggerList, trigger)
