@@ -6503,6 +6503,30 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/Status'
     /v1/risks/{risk}:
+        get:
+            tags:
+                - RiskService
+            operationId: RiskService_GetRisk
+            parameters:
+                - name: risk
+                  in: path
+                  description: The risk id.
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Risk'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
         delete:
             tags:
                 - RiskService

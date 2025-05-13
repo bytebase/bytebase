@@ -2418,6 +2418,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.GetRiskRequest"><span class="badge">M</span>GetRiskRequest</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.ListRisksRequest"><span class="badge">M</span>ListRisksRequest</a>
                 </li>
               
@@ -26444,6 +26448,31 @@ Format: risks/{risk} </p></td>
 
         
       
+        <h3 id="bytebase.v1.GetRiskRequest">GetRiskRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of the risk to retrieve.
+Format: risks/{risk} </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.ListRisksRequest">ListRisksRequest</h3>
         <p></p>
 
@@ -26754,6 +26783,13 @@ Format: risks/{risk} </p></td>
               </tr>
             
               <tr>
+                <td>GetRisk</td>
+                <td><a href="#bytebase.v1.GetRiskRequest">GetRiskRequest</a></td>
+                <td><a href="#bytebase.v1.Risk">Risk</a></td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
                 <td>UpdateRisk</td>
                 <td><a href="#bytebase.v1.UpdateRiskRequest">UpdateRiskRequest</a></td>
                 <td><a href="#bytebase.v1.Risk">Risk</a></td>
@@ -26802,6 +26838,16 @@ Format: risks/{risk} </p></td>
                 <td>POST</td>
                 <td>/v1/risks</td>
                 <td>risk</td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>GetRisk</td>
+                <td>GET</td>
+                <td>/v1/{name=risks/*}</td>
+                <td></td>
               </tr>
               
             
