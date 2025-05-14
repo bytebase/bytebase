@@ -21,29 +21,57 @@
       </div>
     </template>
     <template v-else>
-      <BatchQuerySelect v-model:selected-database="selectedDatabase" />
-      <template v-if="!selectedResultSet">
+      <BatchQuerySelect
+        v-model:selected-database="selectedDatabase"
+        class="mb-2"
+      />
+      <template v-if="selectedResults.length === 0">
         <div
           class="w-full h-full flex flex-col justify-center items-center text-sm"
         >
           <span>{{ $t("sql-editor.table-empty-placeholder") }}</span>
         </div>
       </template>
-      <ResultViewV1
+      <NTabs
         v-else
-        class="w-full h-auto grow"
-        :execute-params="executeParams"
-        :database="selectedDatabase"
-        :result-set="selectedResultSet"
-      />
+        type="card"
+        size="small"
+        class="flex-1 flex flex-col overflow-hidden px-2"
+        style="--n-tab-padding: 4px 12px"
+        v-model:value="selectedTab"
+      >
+        <NTabPane
+          v-for="(result, i) in selectedResults"
+          :key="i"
+          :name="result.beginTimestampMS"
+          class="flex-1 flex flex-col overflow-hidden"
+        >
+          <template #tab>
+            <span>{{ tabName(result.beginTimestampMS) }}</span>
+            <Info
+              v-if="result.resultSet.error"
+              class="ml-2 text-yellow-600 w-4 h-auto"
+            />
+          </template>
+          <ResultViewV1
+            class="w-full h-auto grow"
+            :execute-params="result.params"
+            :database="selectedDatabase"
+            :result-set="result.resultSet"
+          />
+        </NTabPane>
+      </NTabs>
     </template>
   </div>
 </template>
 
 <script lang="ts" setup>
 import { useTimestamp } from "@vueuse/core";
-import { NButton } from "naive-ui";
-import { computed, ref } from "vue";
+import dayjs from "dayjs";
+import { last } from "lodash-es";
+import { Info } from "lucide-vue-next";
+import { NButton, NTabs, NTabPane } from "naive-ui";
+import { computed, ref, watch } from "vue";
 import { BBSpin } from "@/bbkit";
 import { useSQLEditorTabStore } from "@/store";
 import type { ComposedDatabase } from "@/types";
@@ -52,24 +80,44 @@ import BatchQuerySelect from "./BatchQuerySelect.vue";
 
 const tabStore = useSQLEditorTabStore();
 const selectedDatabase = ref<ComposedDatabase>();
+const selectedTab = ref<number>();
 
-const selectedResultSet = computed(() => {
-  return tabStore.currentTab?.queryContext?.results.get(
-    selectedDatabase.value?.name || ""
+const selectedResults = computed(() => {
+  return (
+    tabStore.currentTab?.queryContext?.results.get(
+      selectedDatabase.value?.name || ""
+    ) ?? []
   );
 });
-const executeParams = computed(() => tabStore.currentTab?.queryContext?.params);
+
+const tabName = (beginTimestampMS: number) => {
+  return dayjs(beginTimestampMS).format("YYYY-MM-DD HH:mm:ss");
+};
+
+watch(
+  () => selectedResults.value,
+  (results) => {
+    selectedTab.value = last(results)?.beginTimestampMS;
+  },
+  { deep: true }
+);
+
 const loading = computed(
   () => tabStore.currentTab?.queryContext?.status === "EXECUTING"
 );
 const currentTimestampMS = useTimestamp();
 const queryElapsedTime = computed(() => {
-  if (!loading.value) return "";
+  if (!loading.value) {
+    return "";
+  }
   const tab = tabStore.currentTab;
-  if (!tab) return "";
-  const { queryContext } = tab;
-  if (!queryContext) return "";
-  const beginMS = queryContext.beginTimestampMS;
+  if (!tab) {
+    return "";
+  }
+  const beginMS = tabStore.currentTab?.queryContext?.beginTimestampMS;
+  if (!beginMS) {
+    return "";
+  }
   const elapsedMS = currentTimestampMS.value - beginMS;
   return `${(elapsedMS / 1000).toFixed(1)}s`;
 });
