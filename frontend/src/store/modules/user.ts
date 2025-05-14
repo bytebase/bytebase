@@ -138,9 +138,13 @@ export const useUserStore = defineStore("user", () => {
   };
 
   const batchGetUsers = async (userNameList: string[]) => {
-    const distinctList = uniq(userNameList).filter(
-      (name) => isValidUserName(name) && getUserByIdentifier(name) === undefined
-    );
+    const distinctList = uniq(userNameList)
+      .filter(Boolean)
+      .map((name) => ensureUserFullName(name))
+      .filter(
+        (name) =>
+          isValidUserName(name) && getUserByIdentifier(name) === undefined
+      );
     if (distinctList.length === 0) {
       return [];
     }
