@@ -24,7 +24,6 @@ export type SQLEditorTabQueryContext = {
   abortController: AbortController;
   status: "IDLE" | "EXECUTING";
 
-  // params: SQLEditorQueryParams;
   results: Map<
     string /* database or instance */,
     {
