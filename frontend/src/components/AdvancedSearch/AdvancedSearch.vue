@@ -91,6 +91,7 @@ import scrollIntoView from "scroll-into-view-if-needed";
 import { zindexable as vZindexable } from "vdirs";
 import { reactive, watch, onMounted, ref, computed, nextTick } from "vue";
 import { useRoute, useRouter } from "vue-router";
+import { DEBOUNCE_SEARCH_DELAY } from "@/types";
 import type { SearchParams, SearchScopeId } from "@/utils";
 import {
   emptySearchParams,
@@ -253,7 +254,7 @@ const handleSearch = useDebounceFn(async (search: string) => {
     fetchState.loading = false;
     state.fetchDataStateMap.set(currentScopeOption.value.id, fetchState);
   }
-});
+}, DEBOUNCE_SEARCH_DELAY);
 
 watch(
   [() => currentScopeOption.value, () => currentValueForScope.value],

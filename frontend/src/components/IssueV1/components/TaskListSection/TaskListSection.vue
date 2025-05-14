@@ -66,6 +66,7 @@ import { computed, ref, reactive, watch } from "vue";
 import { BBSpin } from "@/bbkit";
 import { useVerticalScrollState } from "@/composables/useScrollState";
 import { batchGetOrFetchDatabases } from "@/store";
+import { DEBOUNCE_SEARCH_DELAY } from "@/types";
 import type { Task_Status } from "@/types/proto/v1/rollout_service";
 import type { Advice_Status } from "@/types/proto/v1/sql_service";
 import { isDev } from "@/utils";
@@ -180,7 +181,7 @@ const loadMore = useDebounceFn(async () => {
       initialized: true,
     });
   }
-}, 500);
+}, DEBOUNCE_SEARCH_DELAY);
 
 const loadNextPage = async () => {
   if (stageState.value.isRequesting) {

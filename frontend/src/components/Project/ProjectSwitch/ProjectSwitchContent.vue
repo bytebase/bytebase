@@ -75,7 +75,11 @@ import { useRecentVisit } from "@/router/useRecentVisit";
 import { useProjectV1Store } from "@/store";
 import { getProjectName } from "@/store/modules/v1/common";
 import type { ComposedProject } from "@/types";
-import { isValidProjectName, DEFAULT_PROJECT_NAME } from "@/types";
+import {
+  isValidProjectName,
+  DEFAULT_PROJECT_NAME,
+  DEBOUNCE_SEARCH_DELAY,
+} from "@/types";
 import {
   filterProjectV1ListByKeyword,
   hasWorkspacePermissionV2,
@@ -158,7 +162,7 @@ watch(
     } finally {
       state.loading = false;
     }
-  }, 500),
+  }, DEBOUNCE_SEARCH_DELAY),
   { immediate: true }
 );
 

@@ -22,6 +22,7 @@ import { computed, h, watch, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useInstanceV1Store } from "@/store";
 import {
+  DEBOUNCE_SEARCH_DELAY,
   UNKNOWN_INSTANCE_NAME,
   isValidInstanceName,
   unknownInstance,
@@ -106,7 +107,7 @@ const handleSearch = useDebounceFn(async (search: string) => {
   } finally {
     state.loading = false;
   }
-}, 200);
+}, DEBOUNCE_SEARCH_DELAY);
 
 watch(
   [
