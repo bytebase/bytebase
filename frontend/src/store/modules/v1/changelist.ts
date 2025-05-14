@@ -9,7 +9,7 @@ import type {
   ListChangelistsRequest,
 } from "@/types/proto/v1/changelist_service";
 import { ResourceComposer, isChangelogChangeSource } from "@/utils";
-import { batchGetOrFetchUsers } from "../user";
+import { useUserStore } from "../user";
 import { useChangelogStore } from "./changelog";
 import { useSheetV1Store } from "./sheet";
 
@@ -20,7 +20,7 @@ export const useChangelistStore = defineStore("changelist", () => {
     changelists: Changelist[],
     compose: boolean
   ) => {
-    await batchGetOrFetchUsers(
+    await useUserStore().batchGetUsers(
       changelists.map((changelist) => changelist.creator)
     );
     for (let i = 0; i < changelists.length; i++) {

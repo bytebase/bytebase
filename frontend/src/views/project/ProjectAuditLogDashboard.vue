@@ -55,8 +55,8 @@ import PagedTable from "@/components/v2/Model/PagedTable.vue";
 import {
   featureToRef,
   useAuditLogStore,
-  batchGetOrFetchUsers,
   pushNotification,
+  useUserStore,
 } from "@/store";
 import { type SearchAuditLogsParams } from "@/types";
 import type { AuditLog } from "@/types/proto/v1/audit_log_service";
@@ -116,7 +116,7 @@ const fetchAuditLog = async ({
     pageToken,
     pageSize,
   });
-  await batchGetOrFetchUsers(auditLogs.map((log) => log.user));
+  await useUserStore().batchGetUsers(auditLogs.map((log) => log.user));
   return { nextPageToken, list: auditLogs };
 };
 
