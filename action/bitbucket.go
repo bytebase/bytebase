@@ -131,6 +131,9 @@ func createBitbucketReport(checkResponse *v1pb.CheckReleaseResponse) error {
 			count++
 		}
 	}
+	if len(data) == 0 {
+		return nil
+	}
 	annotationsData, err := json.MarshalIndent(data, "", "  ")
 	if err != nil {
 		return errors.Wrapf(err, "error marshaling json")
