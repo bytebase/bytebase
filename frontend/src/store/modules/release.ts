@@ -7,7 +7,7 @@ import { isValidReleaseName, unknownRelease, unknownUser } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import type { DeepPartial, Release } from "@/types/proto/v1/release_service";
 import { DEFAULT_PAGE_SIZE } from "./common";
-import { useUserStore, batchGetOrFetchUsers } from "./user";
+import { useUserStore } from "./user";
 import { useProjectV1Store, batchGetOrFetchProjects } from "./v1";
 import { getProjectNameReleaseId, projectNamePrefix } from "./v1/common";
 
@@ -121,8 +121,7 @@ export const useReleaseByName = (name: MaybeRef<string>) => {
 
 export const batchComposeRelease = async (releaseList: Release[]) => {
   const userStore = useUserStore();
-
-  await batchGetOrFetchUsers(releaseList.map((release) => release.creator));
+  await userStore.batchGetUsers(releaseList.map((release) => release.creator));
 
   const composedReleaseList = releaseList.map((release) => {
     const composed = release as ComposedRelease;

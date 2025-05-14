@@ -17,7 +17,7 @@ import {
 } from "@/utils";
 import { useCurrentUserV1 } from "../auth";
 import { useSQLEditorTabStore } from "../sqlEditor";
-import { useUserStore, batchGetOrFetchUsers } from "../user";
+import { useUserStore } from "../user";
 import { extractUserId } from "./common";
 import { useDatabaseV1Store, batchGetOrFetchDatabases } from "./database";
 import { useProjectV1Store, batchGetOrFetchProjects } from "./project";
@@ -84,7 +84,7 @@ export const useWorkSheetStore = defineStore("worksheet_v1", () => {
       batchGetOrFetchDatabases(
         worksheets.map((worksheet) => worksheet.database)
       ),
-      batchGetOrFetchUsers(worksheets.map((worksheet) => worksheet.creator)),
+      userStore.batchGetUsers(worksheets.map((worksheet) => worksheet.creator)),
     ]);
     for (const worksheet of worksheets) {
       await setCache(worksheet, "BASIC");

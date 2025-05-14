@@ -4,7 +4,7 @@ import { computed, reactive } from "vue";
 import { groupServiceClient } from "@/grpcweb";
 import type { Group } from "@/types/proto/v1/group_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
-import { batchGetOrFetchUsers } from "../user";
+import { useUserStore } from "../user";
 import { groupNamePrefix } from "./common";
 
 export const extractGroupEmail = (emailResource: string) => {
@@ -33,7 +33,7 @@ export const useGroupStore = defineStore("group", () => {
   });
 
   const composeGroup = async (group: Group) => {
-    await batchGetOrFetchUsers(group.members.map((m) => m.member));
+    await useUserStore().batchGetUsers(group.members.map((m) => m.member));
     groupMapByName.set(group.name, group);
   };
 
