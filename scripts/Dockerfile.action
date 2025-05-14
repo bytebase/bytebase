@@ -10,7 +10,7 @@ RUN go build \
 FROM alpine:3.21
 RUN apk update
 # Azure DevOps pipeline requires bash.
-RUN apk add --no-cache jq bash
+RUN apk add --no-cache jq bash gcompat
 WORKDIR /
 COPY --from=builder /action-build/bytebase-action /usr/local/bin/bytebase-action
 COPY --from=builder /etc/ssl/certs /etc/ssl/certs
