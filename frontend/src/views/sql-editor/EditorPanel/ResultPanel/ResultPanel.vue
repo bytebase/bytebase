@@ -21,10 +21,7 @@
       </div>
     </template>
     <template v-else>
-      <BatchQuerySelect
-        v-model:selected-database="selectedDatabase"
-        class="mb-2"
-      />
+      <BatchQuerySelect v-model:selected-database="selectedDatabase" />
       <template v-if="selectedResults.length === 0">
         <div
           class="w-full h-full flex flex-col justify-center items-center text-sm"
