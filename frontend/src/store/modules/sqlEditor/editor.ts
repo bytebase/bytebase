@@ -2,7 +2,11 @@ import { useLocalStorage, useDebounceFn } from "@vueuse/core";
 import { defineStore } from "pinia";
 import { computed, ref, watch, watchEffect } from "vue";
 import { useDatabaseV1Store, type DatabaseFilter } from "@/store";
-import { type ComposedDatabase, isValidProjectName } from "@/types";
+import {
+  type ComposedDatabase,
+  DEBOUNCE_SEARCH_DELAY,
+  isValidProjectName,
+} from "@/types";
 import { QueryOption_RedisRunCommandsOn } from "@/types/proto/v1/sql_service";
 import { hasWorkspacePermissionV2, getDefaultPagination } from "@/utils";
 
@@ -66,7 +70,7 @@ export const useSQLEditorStore = defineStore("sqlEditor", () => {
     } finally {
       fetchDataState.value.loading = false;
     }
-  }, 500);
+  }, DEBOUNCE_SEARCH_DELAY);
 
   const prepareDatabases = async (filter?: DatabaseFilter) => {
     fetchDataState.value.nextPageToken = "";

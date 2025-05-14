@@ -60,6 +60,7 @@ import { computed, reactive, ref, watch } from "vue";
 import { BBSpin } from "@/bbkit";
 import { useVerticalScrollState } from "@/composables/useScrollState";
 import { batchGetOrFetchDatabases, useDBGroupStore } from "@/store";
+import { DEBOUNCE_SEARCH_DELAY } from "@/types";
 import type { Advice_Status } from "@/types/proto/v1/sql_service";
 import { isDev } from "@/utils";
 import {
@@ -167,7 +168,7 @@ const loadMore = useDebounceFn(async () => {
       state.isRequesting = false;
     }
   }
-}, 500);
+}, DEBOUNCE_SEARCH_DELAY);
 
 watch(
   () => plan.value.name,

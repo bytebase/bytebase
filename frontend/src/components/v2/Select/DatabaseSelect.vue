@@ -23,7 +23,11 @@ import { useI18n } from "vue-i18n";
 import { useDatabaseV1Store } from "@/store";
 import { workspaceNamePrefix } from "@/store/modules/v1/common";
 import type { ComposedDatabase } from "@/types";
-import { isValidDatabaseName, unknownDatabase } from "@/types";
+import {
+  DEBOUNCE_SEARCH_DELAY,
+  isValidDatabaseName,
+  unknownDatabase,
+} from "@/types";
 import { type Engine } from "@/types/proto/v1/common";
 import {
   instanceV1Name,
@@ -127,7 +131,7 @@ const handleSearch = useDebounceFn(async (search: string) => {
   } finally {
     state.loading = false;
   }
-}, 200);
+}, DEBOUNCE_SEARCH_DELAY);
 
 watch(
   () => [props.environmentName, props.allowedEngineTypeList],
