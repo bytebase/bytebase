@@ -13,13 +13,13 @@ type querySpanExtractor struct {
 	defaultDatabase string
 }
 
-func newQuerySpanExtractor(database string, gCtx base.GetQuerySpanContext, ignoreCaseSensitive bool) *querySpanExtractor {
+func newQuerySpanExtractor(database string, _ base.GetQuerySpanContext, _ bool) *querySpanExtractor {
 	return &querySpanExtractor{
 		defaultDatabase: database,
 	}
 }
 
-func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string) (*base.QuerySpan, error) {
+func (q *querySpanExtractor) getQuerySpan(_ context.Context, statement string) (*base.QuerySpan, error) {
 	parseResult, err := ParseDorisSQL(statement)
 	if err != nil {
 		return nil, err
