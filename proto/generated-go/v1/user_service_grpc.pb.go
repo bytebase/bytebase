@@ -21,6 +21,7 @@ const _ = grpc.SupportPackageIsVersion9
 
 const (
 	UserService_GetUser_FullMethodName        = "/bytebase.v1.UserService/GetUser"
+	UserService_BatchGetUsers_FullMethodName  = "/bytebase.v1.UserService/BatchGetUsers"
 	UserService_GetCurrentUser_FullMethodName = "/bytebase.v1.UserService/GetCurrentUser"
 	UserService_ListUsers_FullMethodName      = "/bytebase.v1.UserService/ListUsers"
 	UserService_CreateUser_FullMethodName     = "/bytebase.v1.UserService/CreateUser"
@@ -36,6 +37,9 @@ type UserServiceClient interface {
 	// Get the user.
 	// Any authenticated user can get the user.
 	GetUser(ctx context.Context, in *GetUserRequest, opts ...grpc.CallOption) (*User, error)
+	// Get the users in batch.
+	// Any authenticated user can batch get users.
+	BatchGetUsers(ctx context.Context, in *BatchGetUsersRequest, opts ...grpc.CallOption) (*BatchGetUsersResponse, error)
 	// Get the current authenticated user.
 	GetCurrentUser(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*User, error)
 	// List all users.
@@ -66,6 +70,16 @@ func (c *userServiceClient) GetUser(ctx context.Context, in *GetUserRequest, opt
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(User)
 	err := c.cc.Invoke(ctx, UserService_GetUser_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) BatchGetUsers(ctx context.Context, in *BatchGetUsersRequest, opts ...grpc.CallOption) (*BatchGetUsersResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(BatchGetUsersResponse)
+	err := c.cc.Invoke(ctx, UserService_BatchGetUsers_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -139,6 +153,9 @@ type UserServiceServer interface {
 	// Get the user.
 	// Any authenticated user can get the user.
 	GetUser(context.Context, *GetUserRequest) (*User, error)
+	// Get the users in batch.
+	// Any authenticated user can batch get users.
+	BatchGetUsers(context.Context, *BatchGetUsersRequest) (*BatchGetUsersResponse, error)
 	// Get the current authenticated user.
 	GetCurrentUser(context.Context, *emptypb.Empty) (*User, error)
 	// List all users.
@@ -167,6 +184,9 @@ type UnimplementedUserServiceServer struct{}
 
 func (UnimplementedUserServiceServer) GetUser(context.Context, *GetUserRequest) (*User, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetUser not implemented")
+}
+func (UnimplementedUserServiceServer) BatchGetUsers(context.Context, *BatchGetUsersRequest) (*BatchGetUsersResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method BatchGetUsers not implemented")
 }
 func (UnimplementedUserServiceServer) GetCurrentUser(context.Context, *emptypb.Empty) (*User, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetCurrentUser not implemented")
@@ -221,6 +241,24 @@ func _UserService_GetUser_Handler(srv interface{}, ctx context.Context, dec func
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(UserServiceServer).GetUser(ctx, req.(*GetUserRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_BatchGetUsers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BatchGetUsersRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).BatchGetUsers(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_BatchGetUsers_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).BatchGetUsers(ctx, req.(*BatchGetUsersRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -343,6 +381,10 @@ var UserService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetUser",
 			Handler:    _UserService_GetUser_Handler,
+		},
+		{
+			MethodName: "BatchGetUsers",
+			Handler:    _UserService_BatchGetUsers_Handler,
 		},
 		{
 			MethodName: "GetCurrentUser",

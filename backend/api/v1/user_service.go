@@ -86,6 +86,19 @@ func (s *UserService) GetUser(ctx context.Context, request *v1pb.GetUserRequest)
 	return convertToUser(user), nil
 }
 
+// BatchGetUsers get users in batch.
+func (s *UserService) BatchGetUsers(ctx context.Context, request *v1pb.BatchGetUsersRequest) (*v1pb.BatchGetUsersResponse, error) {
+	response := &v1pb.BatchGetUsersResponse{}
+	for _, name := range request.Names {
+		user, err := s.GetUser(ctx, &v1pb.GetUserRequest{Name: name})
+		if err != nil {
+			return nil, err
+		}
+		response.Users = append(response.Users, user)
+	}
+	return response, nil
+}
+
 // GetCurrentUser gets the current authenticated user.
 func (*UserService) GetCurrentUser(ctx context.Context, _ *emptypb.Empty) (*v1pb.User, error) {
 	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
