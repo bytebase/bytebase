@@ -1246,6 +1246,14 @@
             <ul>
               
                 <li>
+                  <a href="#bytebase.v1.BatchGetUsersRequest"><span class="badge">M</span>BatchGetUsersRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.BatchGetUsersResponse"><span class="badge">M</span>BatchGetUsersResponse</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.CreateUserRequest"><span class="badge">M</span>CreateUserRequest</a>
                 </li>
               
@@ -14628,6 +14636,55 @@ Default to this mode.</p></td>
       <p></p>
 
       
+        <h3 id="bytebase.v1.BatchGetUsersRequest">BatchGetUsersRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>names</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
+                  <td><p>The user names to retrieve.
+Format: users/{user uid or user email} </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.BatchGetUsersResponse">BatchGetUsersResponse</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>users</td>
+                  <td><a href="#bytebase.v1.User">User</a></td>
+                  <td>repeated</td>
+                  <td><p>The users from the specified request. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.CreateUserRequest">CreateUserRequest</h3>
         <p></p>
 
@@ -15088,6 +15145,14 @@ Any authenticated user can get the user.</p></td>
               </tr>
             
               <tr>
+                <td>BatchGetUsers</td>
+                <td><a href="#bytebase.v1.BatchGetUsersRequest">BatchGetUsersRequest</a></td>
+                <td><a href="#bytebase.v1.BatchGetUsersResponse">BatchGetUsersResponse</a></td>
+                <td><p>Get the users in batch.
+Any authenticated user can batch get users.</p></td>
+              </tr>
+            
+              <tr>
                 <td>GetCurrentUser</td>
                 <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
                 <td><a href="#bytebase.v1.User">User</a></td>
@@ -15157,6 +15222,16 @@ The last remaining workspace admin cannot be deleted.</p></td>
                 <td>GetUser</td>
                 <td>GET</td>
                 <td>/v1/{name=users/*}</td>
+                <td></td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>BatchGetUsers</td>
+                <td>GET</td>
+                <td>/v1/users:batchGet</td>
                 <td></td>
               </tr>
               

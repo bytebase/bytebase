@@ -23,6 +23,13 @@ service UserService {
     option (bytebase.v1.auth_method) = CUSTOM;
   }
 
+  // Get the users in batch.
+  // Any authenticated user can batch get users.
+  rpc BatchGetUsers(BatchGetUsersRequest) returns (BatchGetUsersResponse) {
+    option (google.api.http) = {get: "/v1/users:batchGet"};
+    option (bytebase.v1.auth_method) = CUSTOM;
+  }
+
   // Get the current authenticated user.
   rpc GetCurrentUser(google.protobuf.Empty) returns (User) {
     option (google.api.http) = {get: "/v1/users/me"};
@@ -90,6 +97,20 @@ message GetUserRequest {
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference) = {type: "bytebase.com/User"}
   ];
+}
+
+message BatchGetUsersRequest {
+  // The user names to retrieve.
+  // Format: users/{user uid or user email}
+  repeated string names = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/User"}
+  ];
+}
+
+message BatchGetUsersResponse {
+  // The users from the specified request.
+  repeated User users = 1;
 }
 
 message ListUsersRequest {

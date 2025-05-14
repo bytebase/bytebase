@@ -7277,6 +7277,37 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
+    /v1/users:batchGet:
+        get:
+            tags:
+                - UserService
+            description: |-
+                Get the users in batch.
+                 Any authenticated user can batch get users.
+            operationId: UserService_BatchGetUsers
+            parameters:
+                - name: names
+                  in: query
+                  description: |-
+                    The user names to retrieve.
+                     Format: users/{user uid or user email}
+                  schema:
+                    type: array
+                    items:
+                        type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/BatchGetUsersResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
     /v1/worksheets:
         post:
             tags:
@@ -8264,6 +8295,14 @@ components:
                     type: string
                 policy:
                     $ref: '#/components/schemas/IamPolicy'
+        BatchGetUsersResponse:
+            type: object
+            properties:
+                users:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/User'
+                    description: The users from the specified request.
         BatchParseRequest:
             type: object
             properties:

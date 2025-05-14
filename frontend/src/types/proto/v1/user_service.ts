@@ -83,6 +83,19 @@ export interface GetUserRequest {
   name: string;
 }
 
+export interface BatchGetUsersRequest {
+  /**
+   * The user names to retrieve.
+   * Format: users/{user uid or user email}
+   */
+  names: string[];
+}
+
+export interface BatchGetUsersResponse {
+  /** The users from the specified request. */
+  users: User[];
+}
+
 export interface ListUsersRequest {
   /**
    * The maximum number of users to return. The service may return fewer than
@@ -276,6 +289,122 @@ export const GetUserRequest: MessageFns<GetUserRequest> = {
   fromPartial(object: DeepPartial<GetUserRequest>): GetUserRequest {
     const message = createBaseGetUserRequest();
     message.name = object.name ?? "";
+    return message;
+  },
+};
+
+function createBaseBatchGetUsersRequest(): BatchGetUsersRequest {
+  return { names: [] };
+}
+
+export const BatchGetUsersRequest: MessageFns<BatchGetUsersRequest> = {
+  encode(message: BatchGetUsersRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    for (const v of message.names) {
+      writer.uint32(10).string(v!);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): BatchGetUsersRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseBatchGetUsersRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.names.push(reader.string());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): BatchGetUsersRequest {
+    return { names: globalThis.Array.isArray(object?.names) ? object.names.map((e: any) => globalThis.String(e)) : [] };
+  },
+
+  toJSON(message: BatchGetUsersRequest): unknown {
+    const obj: any = {};
+    if (message.names?.length) {
+      obj.names = message.names;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<BatchGetUsersRequest>): BatchGetUsersRequest {
+    return BatchGetUsersRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<BatchGetUsersRequest>): BatchGetUsersRequest {
+    const message = createBaseBatchGetUsersRequest();
+    message.names = object.names?.map((e) => e) || [];
+    return message;
+  },
+};
+
+function createBaseBatchGetUsersResponse(): BatchGetUsersResponse {
+  return { users: [] };
+}
+
+export const BatchGetUsersResponse: MessageFns<BatchGetUsersResponse> = {
+  encode(message: BatchGetUsersResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    for (const v of message.users) {
+      User.encode(v!, writer.uint32(10).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): BatchGetUsersResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseBatchGetUsersResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.users.push(User.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): BatchGetUsersResponse {
+    return { users: globalThis.Array.isArray(object?.users) ? object.users.map((e: any) => User.fromJSON(e)) : [] };
+  },
+
+  toJSON(message: BatchGetUsersResponse): unknown {
+    const obj: any = {};
+    if (message.users?.length) {
+      obj.users = message.users.map((e) => User.toJSON(e));
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<BatchGetUsersResponse>): BatchGetUsersResponse {
+    return BatchGetUsersResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<BatchGetUsersResponse>): BatchGetUsersResponse {
+    const message = createBaseBatchGetUsersResponse();
+    message.users = object.users?.map((e) => User.fromPartial(e)) || [];
     return message;
   },
 };
@@ -1166,6 +1295,47 @@ export const UserServiceDefinition = {
               47,
               42,
               125,
+            ]),
+          ],
+        },
+      },
+    },
+    /**
+     * Get the users in batch.
+     * Any authenticated user can batch get users.
+     */
+    batchGetUsers: {
+      name: "BatchGetUsers",
+      requestType: BatchGetUsersRequest,
+      requestStream: false,
+      responseType: BatchGetUsersResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          800016: [new Uint8Array([2])],
+          578365826: [
+            new Uint8Array([
+              20,
+              18,
+              18,
+              47,
+              118,
+              49,
+              47,
+              117,
+              115,
+              101,
+              114,
+              115,
+              58,
+              98,
+              97,
+              116,
+              99,
+              104,
+              71,
+              101,
+              116,
             ]),
           ],
         },
