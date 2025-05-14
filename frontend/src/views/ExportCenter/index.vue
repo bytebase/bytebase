@@ -98,7 +98,7 @@ interface LocalState {
 }
 
 const { project: specificProject } = useProjectByName(
-  `${projectNamePrefix}${props.projectId}`
+  computed(() => `${projectNamePrefix}${props.projectId}`)
 );
 
 const readonlyScopes = computed((): SearchScope[] => {
@@ -162,7 +162,7 @@ const overrideSearchScopeIdList = computed(() => {
     "status",
     "instance",
     "database",
-    "label",
+    "issue-label",
   ];
   return defaultScopeIdList;
 });

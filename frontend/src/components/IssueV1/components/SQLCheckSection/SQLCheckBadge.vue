@@ -24,6 +24,7 @@
 
   <SQLCheckPanel
     v-if="showDetailPanel"
+    :project="issue.project"
     :database="database"
     :advices="advices"
     @close="showDetailPanel = false"

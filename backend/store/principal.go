@@ -21,7 +21,7 @@ import (
 var systemBotUser = &UserMessage{
 	ID:    base.SystemBotID,
 	Name:  "Bytebase",
-	Email: base.SystemBotEmail,
+	Email: "support@bytebase.com",
 	Type:  base.SystemBot,
 }
 

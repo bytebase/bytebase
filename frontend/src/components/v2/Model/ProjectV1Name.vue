@@ -6,8 +6,7 @@
     :class="link && !plain && 'normal-link'"
   >
     <NPerformantEllipsis>
-      <!-- eslint-disable-next-line vue/no-v-html -->
-      <span v-html="renderedProjectName" />
+      <HighlightLabelText :text="projectV1Name(project)" :keyword="keyword" />
     </NPerformantEllipsis>
   </component>
 </template>
@@ -17,11 +16,8 @@ import { NPerformantEllipsis } from "naive-ui";
 import { computed } from "vue";
 import { useRouter } from "vue-router";
 import type { Project } from "@/types/proto/v1/project_service";
-import {
-  autoProjectRoute,
-  getHighlightHTMLByRegExp,
-  projectV1Name,
-} from "@/utils";
+import { autoProjectRoute, projectV1Name } from "@/utils";
+import HighlightLabelText from "./HighlightLabelText.vue";
 
 const props = withDefaults(
   defineProps<{
@@ -54,9 +50,5 @@ const bindings = computed(() => {
     };
   }
   return {};
-});
-
-const renderedProjectName = computed(() => {
-  return getHighlightHTMLByRegExp(projectV1Name(props.project), props.keyword);
 });
 </script>

@@ -9,6 +9,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
@@ -45,7 +46,7 @@ var (
 	}()
 
 	pkAutoRandomBitsRegex = regexp.MustCompile(`PK_AUTO_RANDOM_BITS=(\d+)`)
-	RangeBitsRegex        = regexp.MustCompile(`RANGE BITS=(\d+)`)
+	rangeBitsRegex        = regexp.MustCompile(`RANGE BITS=(\d+)`)
 )
 
 // SyncInstance syncs the instance.
@@ -136,46 +137,47 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 
 	// Query index info.
 	indexMap := make(map[db.TableKey]map[string]*storepb.IndexMetadata)
+
 	indexQuery := `
 		SELECT
 			TABLE_NAME,
-			INDEX_NAME,
+			KEY_NAME,
 			COLUMN_NAME,
-			EXPRESSION,
 			SEQ_IN_INDEX,
-			INDEX_TYPE,
-			CASE NON_UNIQUE WHEN 0 THEN 1 ELSE 0 END AS IS_UNIQUE,
-			1,
-			INDEX_COMMENT
-		FROM information_schema.STATISTICS
-		WHERE TABLE_SCHEMA = ?
-		ORDER BY TABLE_NAME, INDEX_NAME, SEQ_IN_INDEX`
+			NON_UNIQUE,
+			INDEX_COMMENT,
+			SUB_PART,
+			EXPRESSION
+		FROM information_schema.TIDB_INDEXES
+		WHERE TABLE_SCHEMA = ?`
 	indexRows, err := d.db.QueryContext(ctx, indexQuery, d.databaseName)
 	if err != nil {
 		return nil, util.FormatErrorWithQuery(err, indexQuery)
 	}
 	defer indexRows.Close()
+
 	for indexRows.Next() {
-		var tableName, indexName, indexType, comment, expression string
-		var columnName sql.NullString
-		var expressionName sql.NullString
+		var tableName, keyName, comment string
+		var columnName, expressionName sql.NullString
 		var position int
-		var unique, visible bool
+		var nonUnique bool
+		var subPart sql.NullInt64
+
 		if err := indexRows.Scan(
 			&tableName,
-			&indexName,
+			&keyName,
 			&columnName,
-			&expressionName,
 			&position,
-			&indexType,
-			&unique,
-			&visible,
+			&nonUnique,
 			&comment,
+			&subPart,
+			&expressionName,
 		); err != nil {
 			return nil, err
 		}
-		// TiDB use string "NULL" instead of NULL, so we check expression first which is
-		// different between TiDB and MySQL.
+
+		// Determine expression from column name or expression field
+		var expression string
 		if expressionName.Valid {
 			expression = fmt.Sprintf("(%s)", expressionName.String)
 		} else if columnName.Valid {
@@ -186,54 +188,21 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 		if _, ok := indexMap[key]; !ok {
 			indexMap[key] = make(map[string]*storepb.IndexMetadata)
 		}
-		if _, ok := indexMap[key][indexName]; !ok {
-			indexMap[key][indexName] = &storepb.IndexMetadata{
-				Name:    indexName,
-				Type:    indexType,
-				Unique:  unique,
-				Primary: indexName == "PRIMARY",
-				Visible: visible,
+		if _, ok := indexMap[key][keyName]; !ok {
+			indexMap[key][keyName] = &storepb.IndexMetadata{
+				Name:    keyName,
+				Type:    "BTREE", // Default to BTREE as TiDB generally uses BTREE indexes
+				Unique:  !nonUnique,
+				Primary: keyName == "PRIMARY",
+				Visible: true, // Visible is always true for TiDB indexes
 				Comment: comment,
 			}
 		}
-		indexMap[key][indexName].Expressions = append(indexMap[key][indexName].Expressions, expression)
-	}
-	if err := indexRows.Err(); err != nil {
-		return nil, util.FormatErrorWithQuery(err, indexQuery)
-	}
 
-	// Query index key length info.
-	indexKeyLengthQuery := `
-		SELECT
-			TABLE_NAME,
-			KEY_NAME,
-			COLUMN_NAME,
-			SUB_PART
-		FROM information_schema.TIDB_INDEXES
-		WHERE TABLE_SCHEMA = ?
-		ORDER BY TABLE_NAME, KEY_NAME, SEQ_IN_INDEX`
-	indexKeyLengthRows, err := d.db.QueryContext(ctx, indexKeyLengthQuery, d.databaseName)
-	if err != nil {
-		return nil, util.FormatErrorWithQuery(err, indexKeyLengthQuery)
-	}
-	defer indexKeyLengthRows.Close()
-	for indexKeyLengthRows.Next() {
-		var tableName, keyName, columnName string
-		var subPart sql.NullInt64
-		if err := indexKeyLengthRows.Scan(
-			&tableName,
-			&keyName,
-			&columnName,
-			&subPart,
-		); err != nil {
-			return nil, err
-		}
+		// Add expression to index metadata
+		indexMap[key][keyName].Expressions = append(indexMap[key][keyName].Expressions, expression)
 
-		key := db.TableKey{Schema: "", Table: tableName}
-		if _, ok := indexMap[key]; !ok {
-			slog.Debug("trying to sync key length but index not found", slog.String("tableName", tableName), slog.String("keyName", keyName))
-			continue
-		}
+		// Add key length to index metadata
 		if subPart.Valid {
 			indexMap[key][keyName].KeyLength = append(indexMap[key][keyName].KeyLength, subPart.Int64)
 		} else {
@@ -241,8 +210,9 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 			indexMap[key][keyName].KeyLength = append(indexMap[key][keyName].KeyLength, -1)
 		}
 	}
-	if err := indexKeyLengthRows.Err(); err != nil {
-		return nil, util.FormatErrorWithQuery(err, indexKeyLengthQuery)
+
+	if err := indexRows.Err(); err != nil {
+		return nil, util.FormatErrorWithQuery(err, indexQuery)
 	}
 
 	// Query column info.
@@ -401,7 +371,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 			if strings.Contains(shardingInfo, pkAutoRandomBitsSymbol) {
 				autoRandText := autoRandSymbol
 				if randomBitsMatch := pkAutoRandomBitsRegex.FindStringSubmatch(shardingInfo); len(randomBitsMatch) > 1 {
-					if rangeBitsMatch := RangeBitsRegex.FindStringSubmatch(shardingInfo); len(rangeBitsMatch) > 1 {
+					if rangeBitsMatch := rangeBitsRegex.FindStringSubmatch(shardingInfo); len(rangeBitsMatch) > 1 {
 						autoRandText += fmt.Sprintf("(%s, %s)", randomBitsMatch[1], rangeBitsMatch[1])
 					} else {
 						autoRandText += fmt.Sprintf("(%s)", randomBitsMatch[1])
@@ -497,6 +467,15 @@ func convertCollationToCharset(collation string) string {
 	return tokens[0]
 }
 
+func isTimeConstant(s string) bool {
+	// 0000-00-00 00:00:00 is a special case in TiDB.
+	if s == "0000-00-00 00:00:00" {
+		return true
+	}
+	_, err := time.Parse(time.DateTime, s)
+	return err == nil
+}
+
 func setColumnMetadataDefault(column *storepb.ColumnMetadata, defaultStr sql.NullString, nullableBool bool, extra string) {
 	if defaultStr.Valid {
 		// In TiDB 7, the extra value is empty for a column with CURRENT_TIMESTAMP default.
@@ -504,7 +483,17 @@ func setColumnMetadataDefault(column *storepb.ColumnMetadata, defaultStr sql.Nul
 		case isCurrentTimestampLike(defaultStr.String):
 			column.DefaultValue = &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: defaultStr.String}
 		case strings.Contains(extra, "DEFAULT_GENERATED"):
-			column.DefaultValue = &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: fmt.Sprintf("(%s)", defaultStr.String)}
+			// for case:
+			//  CREATE TABLE t1(
+			//    update_time TIMESTAMP DEFAULT '0000-00-00 00:00:00' ON UPDATE CURRENT_TIMESTAMP,
+			//  );
+			// In this case, the extra value is "DEFAULT_GENERATED on update CURRENT_TIMESTAMP".
+			// But the default value is a constant.
+			if isTimeConstant(defaultStr.String) {
+				column.DefaultValue = &storepb.ColumnMetadata_Default{Default: &wrapperspb.StringValue{Value: defaultStr.String}}
+			} else {
+				column.DefaultValue = &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: fmt.Sprintf("(%s)", defaultStr.String)}
+			}
 		default:
 			// For non-generated and non CURRENT_XXX default value, use string.
 			column.DefaultValue = &storepb.ColumnMetadata_Default{Default: &wrapperspb.StringValue{Value: defaultStr.String}}

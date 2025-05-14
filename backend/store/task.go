@@ -178,7 +178,7 @@ func (*Store) createTasks(ctx context.Context, txn *sql.Tx, creates ...*TaskMess
 		databases          []*string
 		types              []string
 		payloads           [][]byte
-		earliestAllowedAts []time.Time
+		earliestAllowedAts []*time.Time
 	)
 	for _, create := range creates {
 		if create.Payload == nil {
@@ -195,9 +195,9 @@ func (*Store) createTasks(ctx context.Context, txn *sql.Tx, creates ...*TaskMess
 		types = append(types, string(create.Type))
 		payloads = append(payloads, payload)
 		if create.EarliestAllowedAt == nil {
-			earliestAllowedAts = append(earliestAllowedAts, time.Time{})
+			earliestAllowedAts = append(earliestAllowedAts, nil)
 		} else {
-			earliestAllowedAts = append(earliestAllowedAts, *create.EarliestAllowedAt)
+			earliestAllowedAts = append(earliestAllowedAts, create.EarliestAllowedAt)
 		}
 	}
 

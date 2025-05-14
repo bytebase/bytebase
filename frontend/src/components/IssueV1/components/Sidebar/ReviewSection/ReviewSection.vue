@@ -6,7 +6,10 @@
           <div>
             <div class="textlabel flex items-center gap-x-1">
               {{ $t("issue.approval-flow.self") }}
-              <FeatureBadge feature="bb.feature.custom-approval" />
+              <FeatureBadge
+                feature="bb.feature.custom-approval"
+                :show-instance-missing-license="existedDeactivatedInstance"
+              />
             </div>
           </div>
         </template>
@@ -47,7 +50,7 @@
         </NButton>
       </div>
       <Timeline
-        v-else-if="wrappedSteps && wrappedSteps.length > 0"
+        v-else-if="wrappedSteps.length > 0"
         :steps="wrappedSteps"
         class="mt-1"
       />
@@ -56,18 +59,16 @@
         class="flex items-center text-sm text-control-placeholder gap-x-1"
       >
         {{ $t("custom-approval.approval-flow.skip") }}
-        <FeatureBadgeForInstanceLicense
-          v-if="!isGrantRequestIssue(issue)"
-          feature="bb.feature.custom-approval"
-          :instance="selectedDatabase.instanceResource"
-        />
       </div>
     </div>
   </div>
   <div v-if="isCreating" class="flex flex-col gap-y-1">
     <div class="textlabel flex items-center gap-x-1">
       {{ $t("issue.approval-flow.self") }}
-      <FeatureBadge feature="bb.feature.custom-approval" />
+      <FeatureBadge
+        feature="bb.feature.custom-approval"
+        :show-instance-missing-license="existedDeactivatedInstance"
+      />
     </div>
     <div class="text-control-placeholder text-xs">
       {{ $t("issue.approval-flow.pre-issue-created-tips") }}
@@ -77,26 +78,18 @@
 
 <script lang="ts" setup>
 import { NButton, NTooltip } from "naive-ui";
-import { computed, ref } from "vue";
+import { ref } from "vue";
 import { BBSpin } from "@/bbkit";
-import { FeatureBadgeForInstanceLicense } from "@/components/FeatureGuard";
 import FeatureBadge from "@/components/FeatureGuard/FeatureBadge.vue";
-import {
-  databaseForTask,
-  useIssueContext,
-  useWrappedReviewStepsV1,
-} from "@/components/IssueV1";
+import { useIssueContext, useWrappedReviewStepsV1 } from "@/components/IssueV1";
 import { useIssueV1Store } from "@/store";
-import { isGrantRequestIssue } from "@/utils";
 import RiskLevelTag from "./RiskLevelTag.vue";
 import Timeline from "./Timeline.vue";
+import { useIssueIntanceContext } from "./utils";
 
-const { issue, events, isCreating, reviewContext, selectedTask } =
-  useIssueContext();
+const { issue, events, isCreating, reviewContext } = useIssueContext();
 const { ready, error } = reviewContext;
-const selectedDatabase = computed(() =>
-  databaseForTask(issue.value, selectedTask.value)
-);
+const { existedDeactivatedInstance } = useIssueIntanceContext();
 
 const wrappedSteps = useWrappedReviewStepsV1(issue, reviewContext);
 

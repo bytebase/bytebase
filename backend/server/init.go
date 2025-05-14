@@ -71,7 +71,7 @@ func (s *Server) initializeSetting(ctx context.Context) error {
 	passwordSettingValue, err := protojson.Marshal(&storepb.PasswordRestrictionSetting{
 		MinLength:                         8,
 		RequireNumber:                     false,
-		RequireLetter:                     true,
+		RequireLetter:                     false,
 		RequireUppercaseLetter:            false,
 		RequireSpecialCharacter:           false,
 		RequireResetPasswordForFirstLogin: false,
@@ -178,16 +178,6 @@ func (s *Server) initializeSetting(ctx context.Context) error {
 		return err
 	}
 
-	// Init workspace IAM policy
-	// Ensure the admin role for system bot.
-	if _, err := s.store.PatchWorkspaceIamPolicy(ctx, &store.PatchIamPolicyMessage{
-		Member: common.FormatUserUID(base.SystemBotID),
-		Roles: []string{
-			common.FormatRole(base.WorkspaceAdmin.String()),
-		},
-	}); err != nil {
-		return err
-	}
 	if firstTimeOnboarding {
 		// Only grant workspace member role to allUsers at the first time.
 		if _, err := s.store.PatchWorkspaceIamPolicy(ctx, &store.PatchIamPolicyMessage{

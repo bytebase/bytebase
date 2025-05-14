@@ -1,10 +1,39 @@
 <template>
   <div class="sql-editor-tree gap-y-1 h-full flex flex-col relative">
+    <div class="w-full px-4 mt-4">
+      <div
+        class="textinfolabel mb-2 w-full leading-4 flex items-center gap-x-1"
+      >
+        <FeatureBadge feature="bb.feature.batch-query" />
+        {{
+          $t("sql-editor.batch-query.description", {
+            count: state.selectedDatabases.size,
+            project: project.title,
+          })
+        }}
+      </div>
+      <div
+        class="w-full mt-1 flex flex-row justify-start items-start flex-wrap gap-2"
+      >
+        <NTag
+          v-for="database in state.selectedDatabases"
+          :key="database"
+          closable
+          @close="() => handleUncheckDatabase(database)"
+        >
+          <RichDatabaseName
+            :database="databaseStore.getDatabaseByName(database)"
+          />
+        </NTag>
+      </div>
+    </div>
+    <NDivider class="!my-3" />
     <div class="flex flex-row gap-x-0.5 px-1 items-center">
-      <SearchBox
-        :loading="editorStore.loading"
-        v-model:search-pattern="searchPattern"
-        class="flex-1"
+      <AdvancedSearch
+        v-model:params="state.params"
+        :autofocus="false"
+        :placeholder="$t('database.filter-database')"
+        :scope-options="scopeOptions"
       />
       <GroupingBar :disabled="editorStore.loading" class="shrink-0" />
     </div>
@@ -28,7 +57,7 @@
     >
       <div
         v-if="treeStore.state === 'READY'"
-        class="flex flex-col space-y-2 pb-4"
+        class="flex flex-col space-y-2 pt-2 pb-4"
       >
         <NTree
           ref="treeRef"
@@ -36,7 +65,6 @@
           :data="treeStore.tree"
           :show-irrelevant-nodes="false"
           :selected-keys="selectedKeys"
-          :pattern="mounted ? searchPattern : ''"
           :default-expand-all="true"
           :expand-on-click="true"
           :node-props="nodeProps"
@@ -54,7 +82,7 @@
             @click="
               () =>
                 editorStore
-                  .fetchDatabases(searchPattern)
+                  .fetchDatabases(filter)
                   .then(() => treeStore.buildTree())
             "
           >
@@ -84,23 +112,38 @@
       }}</span>
     </MaskSpinner>
   </div>
+
+  <FeatureModal
+    feature="bb.feature.batch-query"
+    :open="state.showFeatureModal"
+    @cancel="state.showFeatureModal = false"
+  />
 </template>
 
 <script lang="ts" setup>
-import { useElementSize, useMounted } from "@vueuse/core";
-import { head } from "lodash-es";
+import { useElementSize } from "@vueuse/core";
+import { head, isEqual } from "lodash-es";
 import {
+  NTag,
   NButton,
   NTree,
   NDropdown,
   NCheckbox,
+  NDivider,
   type TreeOption,
 } from "naive-ui";
 import { storeToRefs } from "pinia";
-import { ref, nextTick, watch, h, computed } from "vue";
+import { ref, nextTick, watch, h, computed, reactive } from "vue";
+import AdvancedSearch from "@/components/AdvancedSearch";
+import { useCommonSearchScopeOptions } from "@/components/AdvancedSearch/useCommonSearchScopeOptions";
+import { FeatureBadge, FeatureModal } from "@/components/FeatureGuard";
 import MaskSpinner from "@/components/misc/MaskSpinner.vue";
+import { RichDatabaseName } from "@/components/v2";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import {
+  hasFeature,
+  batchGetOrFetchDatabases,
+  useProjectV1Store,
   useDatabaseV1Store,
   useSQLEditorTabStore,
   resolveOpeningDatabaseListFromSQLEditorTabList,
@@ -109,28 +152,122 @@ import {
   idForSQLEditorTreeNodeTarget,
   useInstanceResourceByName,
 } from "@/store";
-import type { ComposedDatabase, SQLEditorTreeNode } from "@/types";
-import { DEFAULT_SQL_EDITOR_TAB_MODE } from "@/types";
-import { findAncestor, isDescendantOf, isDatabaseV1Queryable } from "@/utils";
+import {
+  instanceNamePrefix,
+  environmentNamePrefix,
+} from "@/store/modules/v1/common";
+import type {
+  ComposedDatabase,
+  SQLEditorTreeNode,
+  CoreSQLEditorTab,
+} from "@/types";
+import { DEFAULT_SQL_EDITOR_TAB_MODE, isValidDatabaseName } from "@/types";
+import { engineFromJSON } from "@/types/proto/v1/common";
+import {
+  findAncestor,
+  isDescendantOf,
+  isDatabaseV1Queryable,
+  CommonFilterScopeIdList,
+  extractProjectResourceName,
+  emptySQLEditorConnection,
+  tryConnectToCoreSQLEditorTab,
+} from "@/utils";
+import type { SearchParams } from "@/utils";
 import { useSQLEditorContext } from "../../context";
 import {
   DatabaseHoverPanel,
   provideHoverStateContext,
 } from "./DatabaseHoverPanel";
 import GroupingBar from "./GroupingBar";
-import SearchBox from "./SearchBox/index.vue";
-import useSearchHistory from "./SearchBox/useSearchHistory";
 import { Label } from "./TreeNode";
 import { setConnection, useDropdown } from "./actions";
+
+interface LocalState {
+  selectedDatabases: Set<string>;
+  params: SearchParams;
+  showFeatureModal: boolean;
+}
 
 const treeStore = useSQLEditorTreeStore();
 const tabStore = useSQLEditorTabStore();
 const editorStore = useSQLEditorStore();
 const databaseStore = useDatabaseV1Store();
+const projectStore = useProjectV1Store();
+
+const hasBatchQueryFeature = computed(() =>
+  hasFeature("bb.feature.batch-query")
+);
+
+const state = reactive<LocalState>({
+  selectedDatabases: new Set(),
+  params: {
+    query: "",
+    scopes: [],
+  },
+  showFeatureModal: false,
+});
+
+watch(
+  () => tabStore.currentTab?.id,
+  async () => {
+    if (!tabStore.currentTab) {
+      return;
+    }
+    const databases = tabStore.currentTab.batchQueryContext?.databases ?? [];
+    databases.push(tabStore.currentTab.connection.database);
+    await batchGetOrFetchDatabases(databases);
+    state.selectedDatabases = new Set(databases.filter(isValidDatabaseName));
+  },
+  {
+    immediate: true,
+  }
+);
+
+watch(
+  () => [...state.selectedDatabases],
+  (selectedDatabases) => {
+    // If the current tab is not connected to any database, we need to connect it to the first selected database.
+    if (
+      (!tabStore.currentTab ||
+        isEqual(emptySQLEditorConnection(), tabStore.currentTab.connection)) &&
+      selectedDatabases.length > 0
+    ) {
+      const database = databaseStore.getDatabaseByName(selectedDatabases[0]);
+      const coreTab: CoreSQLEditorTab = {
+        connection: {
+          ...emptySQLEditorConnection(),
+          instance: database.instance,
+          database: database.name,
+        },
+        worksheet: "",
+        mode: DEFAULT_SQL_EDITOR_TAB_MODE,
+      };
+      tryConnectToCoreSQLEditorTab(coreTab);
+    }
+    tabStore.updateCurrentTab({
+      batchQueryContext: {
+        databases: selectedDatabases,
+      },
+    });
+  }
+);
+
+const handleUncheckDatabase = (database: string) => {
+  state.selectedDatabases.delete(database);
+};
+
+const scopeOptions = useCommonSearchScopeOptions([
+  ...CommonFilterScopeIdList,
+  "database-label",
+  "engine",
+]);
+
+const project = computed(() =>
+  projectStore.getProjectByName(editorStore.project)
+);
 
 const editorContext = useSQLEditorContext();
 const { events: editorEvents, showConnectionPanel } = editorContext;
-const searchHistory = useSearchHistory();
 const {
   state: hoverState,
   position: hoverPosition,
@@ -145,7 +282,6 @@ const {
   handleClickoutside: handleDropdownClickoutside,
 } = useDropdown();
 
-const mounted = useMounted();
 const treeContainerElRef = ref<HTMLElement>();
 const { height: treeContainerHeight } = useElementSize(
   treeContainerElRef,
@@ -155,7 +291,6 @@ const { height: treeContainerHeight } = useElementSize(
   }
 );
 const treeRef = ref<InstanceType<typeof NTree>>();
-const searchPattern = ref("");
 const selectedKeys = ref<string[]>([]);
 
 // Highlight the current tab's connection node.
@@ -189,12 +324,33 @@ const { hasMissingQueryDatabases, showMissingQueryDatabases } =
 
 // dynamic render the highlight keywords
 const renderLabel = ({ option }: { option: TreeOption }) => {
-  const node = option as any as SQLEditorTreeNode;
+  const node = option as SQLEditorTreeNode;
+  let databaseName = "";
+  if (node.meta.type === "database") {
+    databaseName = (node as SQLEditorTreeNode<"database">).meta.target.name;
+  }
+
   return h(Label, {
     node,
+    checked: state.selectedDatabases.has(databaseName),
     factors: treeStore.filteredFactorList,
-    keyword: searchPattern.value ?? "",
+    keyword: state.params.query,
+    connected: connectedDatabases.value.has(databaseName),
     connectedDatabases: connectedDatabases.value,
+    "onUpdate:checked": (checked: boolean) => {
+      if (node.meta.type !== "database") {
+        return;
+      }
+      if (checked) {
+        if (!hasBatchQueryFeature.value) {
+          state.showFeatureModal = true;
+          return;
+        }
+        state.selectedDatabases.add(databaseName);
+      } else {
+        state.selectedDatabases.delete(databaseName);
+      }
+    },
   });
 };
 
@@ -217,16 +373,12 @@ const nodeProps = ({ option }: { option: TreeOption }) => {
               },
               context: editorContext,
             });
+            tabStore.updateCurrentTab({
+              batchQueryContext: {
+                databases: [],
+              },
+            });
             showConnectionPanel.value = false;
-          }
-        }
-
-        // If the search pattern is not empty, append the selected database name to
-        // the search history.
-        if (searchPattern.value) {
-          if (type === "database") {
-            const database = node.meta.target as ComposedDatabase;
-            searchHistory.appendSearchResult(database.name);
           }
         }
       }
@@ -294,23 +446,77 @@ useEmitteryEventListener(editorEvents, "tree-ready", async () => {
   selectedKeys.value = await getSelectedKeys();
 });
 
+const selectedLabels = computed(() => {
+  return state.params.scopes
+    .filter((scope) => scope.id === "database-label")
+    .map((scope) => scope.value);
+});
+
+const selectedInstance = computed(() => {
+  const instanceId = state.params.scopes.find(
+    (scope) => scope.id === "instance"
+  )?.value;
+  if (!instanceId) {
+    return;
+  }
+  return `${instanceNamePrefix}${instanceId}`;
+});
+
+const selectedEnvironment = computed(() => {
+  const environmentId = state.params.scopes.find(
+    (scope) => scope.id === "environment"
+  )?.value;
+  if (!environmentId) {
+    return;
+  }
+  return `${environmentNamePrefix}${environmentId}`;
+});
+
+const selectedEngines = computed(() => {
+  return state.params.scopes
+    .filter((scope) => scope.id === "engine")
+    .map((scope) => engineFromJSON(scope.value));
+});
+
+const filter = computed(() => ({
+  instance: selectedInstance.value,
+  environment: selectedEnvironment.value,
+  query: state.params.query,
+  labels: selectedLabels.value,
+  engines: selectedEngines.value,
+}));
+
+watch(
+  () => editorStore.project,
+  (project) => {
+    state.params.scopes = [
+      {
+        id: "project",
+        readonly: true,
+        value: extractProjectResourceName(project),
+      },
+    ];
+  },
+  { immediate: true }
+);
+
 watch(
   [
     () => editorStore.project,
     () => editorStore.projectContextReady,
-    () => searchPattern.value,
+    () => filter.value,
   ],
-  async ([, ready, search]) => {
+  async ([_, ready, filter]) => {
     if (!ready) {
       treeStore.state = "LOADING";
     } else {
-      await editorStore.prepareDatabases(search);
+      await editorStore.prepareDatabases(filter);
       treeStore.buildTree();
       treeStore.state = "READY";
       editorEvents.emit("tree-ready");
     }
   },
-  { immediate: true }
+  { immediate: true, deep: true }
 );
 </script>
 

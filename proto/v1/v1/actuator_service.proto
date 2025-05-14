@@ -32,6 +32,15 @@ service ActuatorService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  rpc SetupSample(SetupSampleRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/v1/actuator:setupSample"
+      body: ""
+    };
+    option (bytebase.v1.permission) = "bb.projects.create";
+    option (bytebase.v1.auth_method) = IAM;
+  }
+
   rpc DeleteCache(DeleteCacheRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {delete: "/v1/actuator/cache"};
     option (bytebase.v1.allow_without_credential) = true;
@@ -52,6 +61,8 @@ message ResourcePackage {
   // The branding logo.
   bytes logo = 1;
 }
+
+message SetupSampleRequest {}
 
 message GetActuatorInfoRequest {}
 
@@ -110,15 +121,15 @@ message ActuatorInfo {
   // debug flag means if the debug mode is enabled.
   bool debug = 15;
 
-  repeated string unlicensed_features = 19;
+  repeated string unlicensed_features = 19 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // disallow_password_signin is the flag to disallow user signin with email&password. (except workspace admins)
-  bool disallow_password_signin = 20;
+  bool disallow_password_signin = 20 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  PasswordRestrictionSetting password_restriction = 21;
+  PasswordRestrictionSetting password_restriction = 21 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // docker flag means if the Bytebase instance is running in docker.
-  bool docker = 22;
+  bool docker = 22 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   message StatUser {
     UserType user_type = 1;
@@ -126,8 +137,10 @@ message ActuatorInfo {
     int32 count = 3;
   }
 
-  repeated StatUser user_stats = 23;
+  repeated StatUser user_stats = 23 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  int32 activated_instance_count = 24;
-  int32 total_instance_count = 25;
+  int32 activated_instance_count = 24 [(google.api.field_behavior) = OUTPUT_ONLY];
+  int32 total_instance_count = 25 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  bool enable_sample = 26 [(google.api.field_behavior) = OUTPUT_ONLY];
 }

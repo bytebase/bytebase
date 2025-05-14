@@ -119,6 +119,21 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
+    /v1/actuator:setupSample:
+        post:
+            tags:
+                - ActuatorService
+            operationId: ActuatorService_SetupSample
+            responses:
+                "200":
+                    description: OK
+                    content: {}
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
     /v1/auditLogs:export:
         post:
             tags:
@@ -884,15 +899,17 @@ paths:
                   in: query
                   description: |-
                     Filter the instance.
+                     The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
                      Supported filters:
-                     - name
-                     - resource_id
-                     - environment
-                     - state
-                     - engine
-                     - host
-                     - port
-                     - project
+                     - name: the instance name, support "==" and ".matches()" operator.
+                     - resource_id: the instance id, support "==" and ".matches()" operator.
+                     - environment: the environment full name in "environments/{id}" format, support "==" operator.
+                     - state: the instance state, check State enum for values, support "==" operator.
+                     - engine: the instance engine, check Engine enum for values. Support "==", "in [xx]", "!(in [xx])" operator.
+                     - host: the instance host, support "==" and ".matches()" operator.
+                     - port: the instance port, support "==" and ".matches()" operator.
+                     - project: the project full name in "projects/{id}" format, support "==" operator.
 
                      For example:
                      name == "sample instance"
@@ -905,7 +922,9 @@ paths:
                      engine in ["MYSQL", "POSTGRES"]
                      !(engine in ["MYSQL", "POSTGRES"])
                      host == "127.0.0.1"
+                     host.matches("127.0")
                      port == "54321"
+                     port.matches("543")
                      project == "projects/sample-project"
                      You can combine filter conditions like:
                      name.matches("sample") && environment == "environments/test"
@@ -1087,15 +1106,17 @@ paths:
                   in: query
                   description: |-
                     Filter is used to filter databases returned in the list.
+                     The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
                      Supported filter:
-                     - environment
-                     - name
-                     - project
-                     - instance
-                     - engine
-                     - label
-                     - exclude_unassigned: Not show unassigned databases if specified
-                     - drifted
+                     - environment: the environment full name in "environments/{id}" format, support "==" operator.
+                     - name: the database name, support ".matches()" operator.
+                     - project: the project full name in "projects/{id}" format, support "==" operator.
+                     - instance: the instance full name in "instances/{id}" format, support "==" operator.
+                     - engine: the database engine, check Engine enum for values. Support "==", "in [xx]", "!(in [xx])" operator.
+                     - label: the database label in "{key}:{value1},{value2}" format. Support "==" operator.
+                     - exclude_unassigned: should be "true" or "false", will not show unassigned databases if it's true, support "==" operator.
+                     - drifted: should be "true" or "false", show drifted databases if it's true, support "==" operator.
 
                      For example:
                      environment == "environments/{environment resource id}"
@@ -1482,9 +1503,11 @@ paths:
                   in: query
                   description: |-
                     Filter is used to filter databases returned in the list.
+                     The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
                      Supported filter:
-                     - schema
-                     - table
+                     - schema: the schema name, support "==" operator.
+                     - table: the table name, support "==" operator.
 
                      For example:
                      schema == "schema-a"
@@ -3858,15 +3881,17 @@ paths:
                   in: query
                   description: |-
                     Filter is used to filter databases returned in the list.
+                     The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
                      Supported filter:
-                     - environment
-                     - name
-                     - project
-                     - instance
-                     - engine
-                     - label
-                     - exclude_unassigned: Not show unassigned databases if specified
-                     - drifted
+                     - environment: the environment full name in "environments/{id}" format, support "==" operator.
+                     - name: the database name, support ".matches()" operator.
+                     - project: the project full name in "projects/{id}" format, support "==" operator.
+                     - instance: the instance full name in "instances/{id}" format, support "==" operator.
+                     - engine: the database engine, check Engine enum for values. Support "==", "in [xx]", "!(in [xx])" operator.
+                     - label: the database label in "{key}:{value1},{value2}" format. Support "==" operator.
+                     - exclude_unassigned: should be "true" or "false", will not show unassigned databases if it's true, support "==" operator.
+                     - drifted: should be "true" or "false", show drifted databases if it's true, support "==" operator.
 
                      For example:
                      environment == "environments/{environment resource id}"
@@ -3969,7 +3994,27 @@ paths:
                     type: string
                 - name: filter
                   in: query
-                  description: Filter is used to filter issues returned in the list.
+                  description: |-
+                    Filter is used to filter issues returned in the list.
+                     The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+                     Supported filters:
+                     - creator: issue creator full name in "users/{email or id}" format, support "==" operator.
+                     - subscriber: issue subscriber full name in "users/{email or id}" format, support "==" operator.
+                     - status: the issue status, support "==" and "in" operator, check the IssueStatus enum for the values.
+                     - create_time: issue create time in "2006-01-02T15:04:05Z07:00" format, support ">=" or "<=" operator.
+                     - type: the issue type, support "==" and "in" operator, check the Type enum in the Issue message for the values.
+                     - task_type: support "==" operator, the value can be "DDL", "DML" or "DATA_EXPORT"
+                     - instance: the instance full name in the "instances/{id}" format, support "==" operator.
+                     - database: the database full name in the "instances/{id}/databases/{name}" format, support "==" operator.
+                     - labels: the issue labels, support "==" and "in" operator.
+                     - has_pipeline: the issue has pipeline or not, support "==" operator, the value should be "true" or "false".
+
+                     For example:
+                     creator == "users/ed@bytebase.com" && status in ["OPEN", "DONE"]
+                     status == "CANCELED" && type == "DATABASE_CHANGE"
+                     instance == "instances/sample" && labels in ["label1", "label2"]
+                     has_pipeline == true && create_time >= "2025-01-02T15:04:05Z07:00"
                   schema:
                     type: string
                 - name: query
@@ -6458,6 +6503,30 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/Status'
     /v1/risks/{risk}:
+        get:
+            tags:
+                - RiskService
+            operationId: RiskService_GetRisk
+            parameters:
+                - name: risk
+                  in: path
+                  description: The risk id.
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Risk'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
         delete:
             tags:
                 - RiskService
@@ -6987,12 +7056,14 @@ paths:
                   in: query
                   description: |-
                     Filter is used to filter users returned in the list.
+                     The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
                      Supported filter:
-                     - name
-                     - email
-                     - user_type
-                     - state
-                     - project
+                     - name: the user name, support "==" and ".matches()" operator.
+                     - email: the user email, support "==" and ".matches()" operator.
+                     - user_type: the type, check UserType enum for values, support "==", "in [xx]", "!(in [xx])" operator.
+                     - state: check State enum for values, support "==" operator.
+                     - project: the project full name in "projects/{id}" format, support "==" operator.
 
                      For example:
                      name == "ed"
@@ -7200,6 +7271,37 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/User'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v1/users:batchGet:
+        get:
+            tags:
+                - UserService
+            description: |-
+                Get the users in batch.
+                 Any authenticated user can batch get users.
+            operationId: UserService_BatchGetUsers
+            parameters:
+                - name: names
+                  in: query
+                  description: |-
+                    The user names to retrieve.
+                     Format: users/{user uid or user email}
+                  schema:
+                    type: array
+                    items:
+                        type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/BatchGetUsersResponse'
                 default:
                     description: Default error response
                     content:
@@ -7444,15 +7546,17 @@ paths:
                   in: query
                   description: |-
                     Filter is used to filter databases returned in the list.
+                     The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
                      Supported filter:
-                     - environment
-                     - name
-                     - project
-                     - instance
-                     - engine
-                     - label
-                     - exclude_unassigned: Not show unassigned databases if specified
-                     - drifted
+                     - environment: the environment full name in "environments/{id}" format, support "==" operator.
+                     - name: the database name, support ".matches()" operator.
+                     - project: the project full name in "projects/{id}" format, support "==" operator.
+                     - instance: the instance full name in "instances/{id}" format, support "==" operator.
+                     - engine: the database engine, check Engine enum for values. Support "==", "in [xx]", "!(in [xx])" operator.
+                     - label: the database label in "{key}:{value1},{value2}" format. Support "==" operator.
+                     - exclude_unassigned: should be "true" or "false", will not show unassigned databases if it's true, support "==" operator.
+                     - drifted: should be "true" or "false", show drifted databases if it's true, support "==" operator.
 
                      For example:
                      environment == "environments/{environment resource id}"
@@ -7709,27 +7813,38 @@ components:
                     type: boolean
                     description: debug flag means if the debug mode is enabled.
                 unlicensedFeatures:
+                    readOnly: true
                     type: array
                     items:
                         type: string
                 disallowPasswordSignin:
+                    readOnly: true
                     type: boolean
                     description: disallow_password_signin is the flag to disallow user signin with email&password. (except workspace admins)
                 passwordRestriction:
-                    $ref: '#/components/schemas/PasswordRestrictionSetting'
+                    readOnly: true
+                    allOf:
+                        - $ref: '#/components/schemas/PasswordRestrictionSetting'
                 docker:
+                    readOnly: true
                     type: boolean
                     description: docker flag means if the Bytebase instance is running in docker.
                 userStats:
+                    readOnly: true
                     type: array
                     items:
                         $ref: '#/components/schemas/ActuatorInfo_StatUser'
                 activatedInstanceCount:
+                    readOnly: true
                     type: integer
                     format: int32
                 totalInstanceCount:
+                    readOnly: true
                     type: integer
                     format: int32
+                enableSample:
+                    readOnly: true
+                    type: boolean
             description: |-
                 ServerInfo is the API message for server info.
                  Actuator concept is similar to the Spring Boot Actuator.
@@ -8180,6 +8295,14 @@ components:
                     type: string
                 policy:
                     $ref: '#/components/schemas/IamPolicy'
+        BatchGetUsersResponse:
+            type: object
+            properties:
+                users:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/User'
+                    description: The users from the specified request.
         BatchParseRequest:
             type: object
             properties:
@@ -8354,9 +8477,9 @@ components:
                          The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 
                          Support variables:
-                         resource.database: the database full name in "instances/{instance}/databases/{database}" format, used by the "roles/sqlEditorUser" and "roles/projectExporter" role.
-                         resource.schema: the schema name, used by the "roles/sqlEditorUser" and "roles/projectExporter" role.
-                         resource.table: the table name, used by the "roles/sqlEditorUser" and "roles/projectExporter" role.
+                         resource.database: the database full name in "instances/{instance}/databases/{database}" format, used by the "roles/sqlEditorUser" and "roles/projectExporter" role, support "==" operator.
+                         resource.schema: the schema name, used by the "roles/sqlEditorUser" and "roles/projectExporter" role, support "==" operator.
+                         resource.table: the table name, used by the "roles/sqlEditorUser" and "roles/projectExporter" role, support "==" operator.
                          request.time: the expiration. Only support "<" operation in `request.time < timestamp("{ISO datetime string format}")`.
                          request.row_limit: the maximum export rows, used by the "roles/projectExporter" role. Only support "<=" operation.
 
@@ -9339,11 +9462,7 @@ components:
                     type: string
                     description: |-
                         The filter of the log. It should be a valid CEL expression.
-                         For example:
-                          - filter = "method == '/bytebase.v1.SQLService/Query'"
-                          - filter = "method == '/bytebase.v1.SQLService/Query' && severity == 'ERROR'"
-                          - filter = "method == '/bytebase.v1.SQLService/Query' && severity == 'ERROR' && user == 'users/bb@bytebase.com'"
-                          - filter = "method == '/bytebase.v1.SQLService/Query' && severity == 'ERROR' && create_time <= '2021-01-01T00:00:00Z' && create_time >= '2020-01-01T00:00:00Z'"
+                         Check the filter field in the SearchAuditLogsRequest message.
                 orderBy:
                     type: string
                     description: |-
@@ -11427,6 +11546,10 @@ components:
                         The maximum number of databases to sample during CI data validation.
                          Without specification, sampling is disabled, resulting in a full validation.
                     format: int32
+                parallelTasksPerRollout:
+                    type: integer
+                    description: The maximum number of parallel tasks to run during the rollout.
+                    format: int32
         Project_ExecutionRetryPolicy:
             type: object
             properties:
@@ -12334,6 +12457,8 @@ components:
                 taskUid:
                     type: integer
                     format: int32
+                parallelTasksLimit:
+                    type: boolean
         SchemaCatalog:
             type: object
             properties:
@@ -12499,11 +12624,13 @@ components:
                     type: string
                     description: |-
                         The filter of the log. It should be a valid CEL expression.
+                         The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
                          Supported filter:
-                         - method
-                         - severity
-                         - user
-                         - create_time
+                         - method: the API name, can be found in the docs, should start with "/bytebase.v1." prefix. For example "/bytebase.v1.UserService/CreateUser". Support "==" operator.
+                         - severity: support "==" operator, check Severity enum in AuditLog message for values.
+                         - user: the actor, should in "users/{email}" format, support "==" operator.
+                         - create_time: support ">=" and "<=" operator.
 
                          For example:
                           - filter = "method == '/bytebase.v1.SQLService/Query'"
@@ -12573,7 +12700,9 @@ components:
                          the call that provided the page token.
                 filter:
                     type: string
-                    description: Filter is used to filter issues returned in the list.
+                    description: |-
+                        Filter is used to filter issues returned in the list.
+                         Check the filter field in the ListIssuesRequest message.
                 query:
                     type: string
                     description: Query is the query statement.
@@ -12619,7 +12748,19 @@ components:
                          the call that provided the page token.
                 filter:
                     type: string
-                    description: Filter is used to filter plans returned in the list.
+                    description: |-
+                        Filter is used to filter plans returned in the list.
+                         The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+                         Supported filters:
+                         - creator: the plan creator full name in "users/{email or id}" format, support "==" operator.
+                         - create_time: issue create time in "2006-01-02T15:04:05Z07:00" format, support ">=" or "<=" operator.
+                         - has_pipeline: the plan has pipeline or not, support "==" operator, the value should be "true" or "false".
+                         - has_issue: the plan has issue or not, support "==" operator, the value should be "true" or "false".
+
+                         For example:
+                         creator == "users/ed@bytebase.com" && create_time >= "2025-01-02T15:04:05Z07:00"
+                         has_pipeline == false && has_issue == true
         SearchPlansResponse:
             type: object
             properties:
@@ -12643,11 +12784,13 @@ components:
                     type: string
                     description: |-
                         Filter the project.
+                         The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
                          Supported filters:
-                         - name
-                         - resource_id
-                         - exclude_default: if not include the default project.
-                         - state
+                         - name: the project name, support "==" and ".matches()" operator.
+                         - resource_id: the project id, support "==" and ".matches()" operator.
+                         - exclude_default: if not include the default project, should be "true" or "false", support "==" operator.
+                         - state: check the State enum for the values, support "==" operator.
 
                          For example:
                          name = "project name"
@@ -12708,12 +12851,14 @@ components:
                     type: string
                     description: |-
                         Filter is the filter to apply on the search query history
+                         The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
                          Supported filter:
-                         - project
-                         - database
-                         - instance
-                         - type
-                         - statement
+                         - project: the project full name in "projects/{id}" format, support "==" operator.
+                         - database: the database full name in "instances/{id}/databases/{name}" format, support "==" operator.
+                         - instance: the instance full name in "instances/{id}" format, support "==" operator.
+                         - type: the type, should be "QUERY" or "EXPORT", support "==" operator.
+                         - statement: the SQL statemnt, support ".matches()" operator.
 
                          For example:
                          project == "projects/{project}"
@@ -12745,10 +12890,12 @@ components:
                     type: string
                     description: |-
                         To filter the search result.
+                         The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
                          Supported filter:
-                         - creator
-                         - starred
-                         - visibility
+                         - creator: the worksheet creator in "users/{email}" format, support "==" and "!=" operator.
+                         - starred: should be "true" or "false", filter starred/unstarred sheets, support "==" operator.
+                         - visibility: check Visibility enum in the Worksheet message for values, support "==" and "in [xx]" operator.
 
                          For example:
                          creator == "users/{email}"

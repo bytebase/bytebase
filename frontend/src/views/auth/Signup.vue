@@ -142,17 +142,11 @@
 import { NButton, NCheckbox } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, reactive, ref } from "vue";
-import { useRouter } from "vue-router";
 import { BBTextField } from "@/bbkit";
 import BytebaseLogo from "@/components/BytebaseLogo.vue";
 import UserPassword from "@/components/User/Settings/UserPassword.vue";
 import { AUTH_SIGNIN_MODULE } from "@/router/auth";
-import { SETUP_WORKSPACE_MODE_MODULE } from "@/router/setup";
-import {
-  useActuatorV1Store,
-  useAuthStore,
-  useOnboardingStateStore,
-} from "@/store";
+import { useActuatorV1Store, useAuthStore } from "@/store";
 import type { User } from "@/types/proto/v1/user_service";
 import { isValidEmail } from "@/utils";
 import AuthFooter from "./AuthFooter.vue";
@@ -168,7 +162,6 @@ interface LocalState {
 }
 
 const actuatorStore = useActuatorV1Store();
-const router = useRouter();
 const userPasswordRef = ref<InstanceType<typeof UserPassword>>();
 
 const state = reactive<LocalState>({
@@ -239,19 +232,6 @@ const trySignup = async () => {
       name: state.name,
     };
     await useAuthStore().signup(signupInfo);
-    if (needAdminSetup.value) {
-      await actuatorStore.fetchServerInfo();
-      // When the first time we created an end user, the server-side will
-      // generate onboarding data.
-      // We write a flag here to indicate that the workspace is just created
-      // and we can consume this flag somewhere else if needed.
-      useOnboardingStateStore().initialize();
-      router.replace({
-        name: SETUP_WORKSPACE_MODE_MODULE,
-      });
-    } else {
-      router.replace("/");
-    }
   } finally {
     state.isLoading = false;
   }

@@ -15,15 +15,11 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
-import type {
-  SQLEditorTreeNode as TreeNode,
-  SQLEditorTreeFactor as Factor,
-} from "@/types";
-import HighlightLabelText from "./HighlightLabelText.vue";
+import { HighlightLabelText } from "@/components/v2";
+import type { SQLEditorTreeNode as TreeNode } from "@/types";
 
 const props = defineProps<{
   node: TreeNode;
-  factors: Factor[];
   keyword: string;
 }>();
 

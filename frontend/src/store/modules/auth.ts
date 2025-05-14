@@ -10,8 +10,14 @@ import {
   AUTH_PASSWORD_RESET_MODULE,
   AUTH_MFA_MODULE,
 } from "@/router/auth";
+import { SETUP_MODULE } from "@/router/setup";
 import { SQL_EDITOR_HOME_MODULE } from "@/router/sqlEditor";
-import { useAppFeature, useSettingV1Store, useUserStore } from "@/store";
+import {
+  useAppFeature,
+  useActuatorV1Store,
+  useSettingV1Store,
+  useUserStore,
+} from "@/store";
 import { UNKNOWN_USER_NAME, unknownUser } from "@/types";
 import type { LoginRequest } from "@/types/proto/v1/auth_service";
 import { LoginResponse } from "@/types/proto/v1/auth_service";
@@ -21,6 +27,7 @@ import { User, UserType } from "@/types/proto/v1/user_service";
 export const useAuthStore = defineStore("auth_v1", () => {
   const userStore = useUserStore();
   const authSessionKey = ref<string>(uniqueId());
+  const actuatorStore = useActuatorV1Store();
   const unauthenticatedOccurred = ref<boolean>(false);
   // Format: users/{user}. {user} is a system-generated unique ID.
   const currentUserName = ref<string | undefined>(undefined);
@@ -63,7 +70,7 @@ export const useAuthStore = defineStore("auth_v1", () => {
     redirect: string = ""
   ) => {
     const { data } = await axios.post<LoginResponse>("/v1/auth/login", request);
-    const redirectUrl = redirect || getRedirectQuery();
+    const redirectUrl = redirect || getRedirectQuery() || "/";
     if (data.mfaTempToken) {
       unauthenticatedOccurred.value = false;
       return router.push({
@@ -86,8 +93,15 @@ export const useAuthStore = defineStore("auth_v1", () => {
     // After user login, we need to reset the auth session key.
     authSessionKey.value = uniqueId();
     if (!unauthenticatedOccurred.value) {
+      if (actuatorStore.needAdminSetup) {
+        await actuatorStore.fetchServerInfo();
+        actuatorStore.onboardingState.isOnboarding = true;
+        return router.replace({
+          name: SETUP_MODULE,
+        });
+      }
       const mode = useAppFeature("bb.feature.database-change-mode");
-      let nextPage = redirectUrl || "/";
+      let nextPage = redirectUrl;
       if (mode.value === DatabaseChangeMode.EDITOR) {
         const route = router.resolve({
           name: SQL_EDITOR_HOME_MODULE,

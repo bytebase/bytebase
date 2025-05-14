@@ -1,5 +1,21 @@
 - statement: |-
     CREATE TABLE t(
+      a bigint(20) unsigned not null,
+      b varchar(50) not null unique,
+      primary key (a)
+    );
+  changeType: 0
+  want:
+    - status: 2
+      code: 420
+      title: column.require-default
+      content: Column `t`.`b` doesn't have DEFAULT.
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE t(
       a int auto_increment primary key,
       b int default 1,
       c varchar(255) default 'default value',

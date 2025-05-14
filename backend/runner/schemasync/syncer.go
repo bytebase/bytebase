@@ -113,7 +113,11 @@ func (s *Syncer) Run(ctx context.Context, wg *sync.WaitGroup) {
 							log.BBError(err))
 						return true
 					}
-					if s.stateCfg.InstanceOutstandingConnections.Increment(instance.ResourceID, int(instance.Metadata.GetMaximumConnections())) {
+					maximumConnections := int(instance.Metadata.GetMaximumConnections())
+					if maximumConnections <= 0 {
+						maximumConnections = base.DefaultInstanceMaximumConnections
+					}
+					if s.stateCfg.InstanceOutstandingConnections.Increment(instance.ResourceID, maximumConnections) {
 						return true
 					}
 

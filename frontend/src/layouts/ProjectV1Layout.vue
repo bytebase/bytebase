@@ -31,7 +31,6 @@
 
       <router-view
         v-if="hasPermission"
-        class="h-full"
         :project-id="projectId"
         :allow-edit="allowEdit"
         v-bind="$attrs"

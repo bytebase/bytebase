@@ -246,8 +246,8 @@
       },
       "summary-report": "概要报告"
     },
-    "rollout-time": "指定发布时间",
-    "earliest-allowed-time-hint": "'@:{'task.rollout-time'}' 是您希望任务运行的时间；如果未指定，任务会在满足条件后立即执行。",
+    "earliest-allowed-time": "最早允许发布时间",
+    "earliest-allowed-time-hint": "@:{'task.earliest-allowed-time'} 是可发布工单的最早时间，您不能在此时间之前进行发布；如果未指定，则当满足所有条件时发布。",
     "earliest-allowed-time-unset": "未设置",
     "comment": "评论",
     "started": "开始于",
@@ -291,8 +291,9 @@
     "status": {
       "enqueued": "等待执行。",
       "enqueued-with-rollout-time": "等待执行，{time}后执行。",
-      "waiting-connection": "等待可用的实例连接。实例连接数已达到 Bytebase 上设置的限制。",
-      "waiting-task": "等待另一个任务完成。"
+      "waiting-connection": "等待可用的实例连接。实例连接数已达到 Bytebase 上设置的限制。上次报告时间：{time}。",
+      "waiting-task": "等待另一个任务完成。上次报告时间：{time}。",
+      "waiting-max-tasks-per-rollout": "正在等待其他任务完成。已达到每次发布的最大运行任务数限制。上次报告时间：{time}。"
     }
   },
   "banner": {
@@ -306,11 +307,6 @@
     "external-url": "Bytebase 还没有配置 --external-url"
   },
   "bbkit": {
-    "common": {
-      "cancel": "取消",
-      "back": "退回",
-      "next": "下一步"
-    },
     "confirm-button": {
       "sure-to-delete": "确定要删除吗？",
       "sure-to-archive": "确定要归档吗？",
@@ -353,6 +349,7 @@
     },
     "members": {
       "inactive": "未激活",
+      "inactive-users": "未激活用户",
       "table": {
         "account": "账户",
         "role": "角色",
@@ -387,7 +384,7 @@
       "reset-service-key": "重置 Service Key",
       "reset-service-key-alert": "旧 Service Key 将立即被重置，该操作不可逆。确定要重置 Service Key 吗？",
       "service-key-copied": "Service Key 已复制，请勿泄漏",
-      "show-inactive": "查看未激活的成员",
+      "show-inactive": "查看未激活的用户",
       "view-by-roles": "按角色查看",
       "add-member": "添加成员",
       "add-user": "添加用户",
@@ -1265,9 +1262,9 @@
       "title": "访问控制",
       "disable-copy-data-from-sql-editor": "限制 SQL 编辑器中的数据复制 (管理员/DBA 可以复制)",
       "restrict-admin-connection": {
-        "self": "管理员连接查询限制",
-        "disallow": "禁止用管理员连接查询数据",
-        "fallback": "如果没有只读连接可用，则回退到管理员连接"
+        "self": "禁止查询管理员数据源",
+        "disallow": "禁止查询管理员数据源",
+        "fallback": "无只读数据源时，允许查询管理员数据源"
       }
     },
     "statement-execution": {
@@ -1330,7 +1327,7 @@
     "rollout": {
       "name": "发布策略",
       "tip": "新策略对旧工单也生效",
-      "info": "拥有 “taskRuns.create” 权限或以下角色的用户可以发布",
+      "info": "拥有 “{permission}” 权限或以下角色的用户可以发布",
       "auto": "自动发布",
       "auto-info": "如果预检查都通过的话，会自动发布，执行变更。",
       "last-issue-approver": "自定义审批的最后一个审批人"
@@ -1646,6 +1643,10 @@
         "ci-sampling-size": {
           "self": "CI 数据采样大小",
           "description": "在CI数据验证期间，要采样的数据库数量的最大数量。\n禁用（零）时，将执行完整验证。"
+        },
+        "parallel_tasks_per_rollout": {
+          "self": "每个发布的并行任务数",
+          "description": "控制每个发布的并行任务数量。\n将其设置为零，可以禁用任何节流。"
         }
       }
     },
@@ -1721,7 +1722,6 @@
   "sql-editor": {
     "self": "SQL 编辑器",
     "select-connection": "请选择数据连接",
-    "search-databases": "搜索数据库",
     "search-results": "搜索结果",
     "loading-databases": "加载数据库信息...",
     "show-databases-without-query-permission": "显示没有查询权限的数据库",
@@ -1799,7 +1799,6 @@
     },
     "batch-query": {
       "batch": "批量",
-      "select-database": "选择下面的数据库",
       "description": "批量查询 {project} 下的 {count} 个数据库。",
       "show-or-hide-empty-query-results": "显示/隐藏空查询结果"
     },
@@ -1980,13 +1979,6 @@
     "button": {
       "upgrade": "升级"
     },
-    "trial-start-modal": {
-      "title": "已开启{plan}试用",
-      "content": "您的{plan}试用已开启！在 {date} 之前所有{plan}功能将不受限制。",
-      "button": "了解",
-      "subscription-page": "订阅页面",
-      "subscription": "可以在{page}查看我们的订阅方案及付费功能。"
-    },
     "description": "您可以在这里上传您购买的 Bytebase 证书来解锁专业版/企业版功能。",
     "upload-license": "上传证书",
     "upgrade-trial-button": "升级试用",
@@ -2008,8 +2000,7 @@
       "manage-license": "管理证书",
       "used-and-total-license": "已分配 / 总实例证书",
       "used-and-total-user": "活跃/总用户限制",
-      "success-notification": "证书分配更新成功",
-      "missing-license-for-feature": "缺少实例证书以启用{feature}。点击去分配证书。"
+      "success-notification": "证书分配更新成功"
     },
     "update": {
       "success": {
@@ -2142,13 +2133,6 @@
     "self": "敏感数据"
   },
   "resource": {
-    "environment": "环境",
-    "instance": "实例",
-    "project": "项目",
-    "idp": "身份提供商",
-    "database-group": "数据库分组",
-    "changelist": "变更列表",
-    "review-config": "审查配置",
     "delete-warning": "“{name}”将被删除。此操作无法撤消。",
     "delete-warning-with-resources": "以下资源使用了“{name}”：",
     "delete-warning-retry": "请将其从这些资源中删除，然后重试。"
@@ -2161,7 +2145,8 @@
       "duplicated": "{resource} ID 已存在。请使用其他 ID。",
       "pattern": "{resource} ID 可以具有小写字母，数字或连字符。\n它必须从小写字母开始，并以字母或数字结尾。",
       "minlength": "{resource} ID 至少包含 1 个字符。",
-      "overflow": "{resource} ID 应该少于 64 个字符。"
+      "overflow": "{resource} ID 应该少于 64 个字符。",
+      "empty": "{resource} ID 不能为空"
     }
   },
   "multi-factor": {
@@ -2591,7 +2576,24 @@
     "self": "工作表"
   },
   "setup": {
-    "self": "设置"
+    "self": "设置",
+    "basic-info": "基本信息",
+    "skip-setup": "跳过设置",
+    "purposes": {
+      "self": "您使用 Bytebase 的主要目的是什么？",
+      "alter-schema": "变更 Schema",
+      "query-data": "查询数据"
+    },
+    "workflow": {
+      "self": "您使用数据库的工作流程是怎样的？",
+      "team": "与队友合作，需要 CI/CD 工作流",
+      "simple": "无需复杂的工作流程，需要 UI 工具"
+    },
+    "data": {
+      "self-setup": "设置项目",
+      "built-in": "使用内置示例",
+      "built-in-desc": "生成示例项目和实例"
+    }
   },
   "landing": {
     "quick-link": {

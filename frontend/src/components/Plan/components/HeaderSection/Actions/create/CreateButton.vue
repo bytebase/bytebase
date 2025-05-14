@@ -41,7 +41,6 @@ import {
   isValidSpec,
 } from "@/components/Plan/logic";
 import { usePlanContext } from "@/components/Plan/logic";
-import { useSQLCheckContext } from "@/components/SQLCheck";
 import { planServiceClient } from "@/grpcweb";
 import { PROJECT_V1_ROUTE_REVIEW_CENTER_DETAIL } from "@/router/dashboard/projectV1";
 import { useDatabaseV1Store, useSheetV1Store } from "@/store";
@@ -64,7 +63,6 @@ const MAX_FORMATTABLE_STATEMENT_SIZE = 10000; // 10K characters
 const { t } = useI18n();
 const router = useRouter();
 const { plan, formatOnSave } = usePlanContext();
-const { runSQLCheck } = useSQLCheckContext();
 const sheetStore = useSheetV1Store();
 const loading = ref(false);
 
@@ -85,11 +83,6 @@ const planCreateErrorList = computed(() => {
 
 const doCreatePlan = async () => {
   loading.value = true;
-  const check = runSQLCheck.value;
-  if (check && !(await check())) {
-    loading.value = false;
-    return;
-  }
 
   try {
     await createSheets();

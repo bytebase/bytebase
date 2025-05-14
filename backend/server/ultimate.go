@@ -31,6 +31,7 @@ import (
 	// Parsers.
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/bigquery"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/cosmosdb"
+	_ "github.com/bytebase/bytebase/backend/plugin/parser/doris"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/elasticsearch"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/partiql"
@@ -39,6 +40,7 @@ import (
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/snowflake"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/standard"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
+	_ "github.com/bytebase/bytebase/backend/plugin/parser/trino"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
 
 	// Advisors.

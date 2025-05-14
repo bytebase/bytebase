@@ -90,7 +90,7 @@
                 <NInput
                   v-model:value="state.mailDeliverySetting.username"
                   class="text-main w-full h-max mt-2"
-                  :placeholder="'support@bytebase.com'"
+                  :placeholder="SYSTEM_BOT_EMAIL"
                 />
               </div>
               <div class="min-w-max w-80">
@@ -197,6 +197,7 @@ import { BBSpin, BBTextField } from "@/bbkit";
 import FormLayout from "@/components/v2/Form/FormLayout.vue";
 import { pushNotification } from "@/store";
 import { useWorkspaceMailDeliverySettingStore } from "@/store/modules/workspaceMailDeliverySetting";
+import { SYSTEM_BOT_EMAIL } from "@/types";
 import type { SMTPMailDeliverySettingValue } from "@/types/proto/v1/setting_service";
 import {
   SMTPMailDeliverySettingValue_Authentication,

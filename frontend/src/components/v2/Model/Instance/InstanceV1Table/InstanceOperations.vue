@@ -3,11 +3,13 @@
     v-bind="$attrs"
     class="text-sm flex flex-col lg:flex-row items-start lg:items-center bg-blue-100 py-3 px-4 text-main gap-y-2 gap-x-4 overflow-x-auto"
   >
-    {{
-      $t("instance.selected-n-instances", {
-        n: instanceList.length,
-      })
-    }}
+    <span class="whitespace-nowrap">
+      {{
+        $t("instance.selected-n-instances", {
+          n: instanceList.length,
+        })
+      }}
+    </span>
     <div class="flex items-center">
       <template v-for="action in actions" :key="action.text">
         <component :is="action.render()" v-if="action.render" />

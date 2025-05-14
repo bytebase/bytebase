@@ -1,12 +1,19 @@
 import { extractGroupEmail, useGroupStore, useUserStore } from "@/store";
 import {
+  extractUserId,
+  userNamePrefix,
+  groupNamePrefix,
+} from "@/store/modules/v1/common";
+import {
   getUserEmailInBinding,
   getGroupEmailInBinding,
   groupBindingPrefix,
 } from "@/types";
 import { State } from "@/types/proto/v1/common";
+import { Group } from "@/types/proto/v1/group_service";
 import { IamPolicy } from "@/types/proto/v1/iam_policy";
-import type { MemberBinding } from "./types";
+import { User, UserType } from "@/types/proto/v1/user_service";
+import type { MemberBinding, GroupBinding } from "./types";
 
 const getMemberBinding = async (
   member: string,
@@ -17,27 +24,54 @@ const getMemberBinding = async (
 
   let memberBinding: MemberBinding | undefined = undefined;
   if (member.startsWith(groupBindingPrefix)) {
-    const group = await groupStore.getOrFetchGroupByIdentifier(member);
-    if (!group) {
-      return undefined;
+    let group: GroupBinding | undefined;
+    try {
+      const g = await groupStore.getOrFetchGroupByIdentifier(member);
+      if (g) {
+        group = {
+          ...g,
+          deleted: false,
+        };
+      }
+    } catch {
+      // nothing
     }
-    const email = extractGroupEmail(group.name);
+    if (!group) {
+      const email = extractGroupEmail(member);
+      group = {
+        ...Group.create({
+          name: `${groupNamePrefix}${email}`,
+          title: email,
+        }),
+        deleted: true,
+      } as GroupBinding;
+    }
 
     memberBinding = {
       type: "groups",
       title: group.title,
       group,
-      binding: getGroupEmailInBinding(email),
+      binding: getGroupEmailInBinding(extractGroupEmail(group.name)),
       workspaceLevelRoles: new Set<string>(),
       projectRoleBindings: [],
     };
   } else {
-    const user = await userStore.getOrFetchUserByIdentifier(member);
-    if (!user) {
-      return undefined;
+    let user: User | undefined;
+    try {
+      user = await userStore.getOrFetchUserByIdentifier(member);
+    } catch {
+      // nothing
     }
-    if (user.state !== State.ACTIVE) {
-      return undefined;
+
+    if (!user) {
+      const email = extractUserId(member);
+      user = User.create({
+        title: member,
+        name: `${userNamePrefix}${email}`,
+        email: email,
+        userType: UserType.USER,
+        state: State.DELETED,
+      });
     }
     memberBinding = {
       type: "users",

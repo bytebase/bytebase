@@ -7,8 +7,10 @@
   >
     <span class="line-clamp-1 select-none" :class="textClass">
       {{ prefix }}
-      <!-- eslint-disable-next-line vue/no-v-html -->
-      <span v-html="renderedEnvironmentName" />
+      <HighlightLabelText
+        :text="environmentV1Name(environment)"
+        :keyword="keyword"
+      />
       <slot name="suffix">
         {{ suffix }}
       </slot>
@@ -27,11 +29,8 @@ import { computed } from "vue";
 import { useRouter } from "vue-router";
 import type { Environment } from "@/types/v1/environment";
 import type { VueClass } from "@/utils";
-import {
-  autoEnvironmentRoute,
-  environmentV1Name,
-  getHighlightHTMLByRegExp,
-} from "@/utils";
+import { autoEnvironmentRoute, environmentV1Name } from "@/utils";
+import HighlightLabelText from "./HighlightLabelText.vue";
 import ProductionEnvironmentV1Icon from "./ProductionEnvironmentV1Icon.vue";
 
 const props = withDefaults(
@@ -78,12 +77,5 @@ const bindings = computed(() => {
     };
   }
   return {};
-});
-
-const renderedEnvironmentName = computed(() => {
-  return getHighlightHTMLByRegExp(
-    environmentV1Name(props.environment),
-    props.keyword
-  );
 });
 </script>

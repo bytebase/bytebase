@@ -246,8 +246,8 @@
       },
       "summary-report": "概略報告"
     },
-    "rollout-time": "公開時間を指定する",
-    "earliest-allowed-time-hint": "「@:{'task.rollout-time'}」はタスクを実行する時刻です。指定しない場合、タスクは条件が満たされるとすぐに実行されます。",
+    "earliest-allowed-time": "最も早い展開時期",
+    "earliest-allowed-time-hint": "@:{'task.earliest-allowed-time'} は問題をロールアウトする最も早い時間です。この時間より前にロールアウトすることはできません。指定されていない場合は、すべての条件が満たされたときに実行されます。",
     "earliest-allowed-time-unset": "設定されていません",
     "comment": "コメント",
     "started": "から始まりました",
@@ -291,8 +291,9 @@
     "status": {
       "enqueued": "処刑を待っています。",
       "enqueued-with-rollout-time": "実行を待機しています。{time} の後に実行されます。",
-      "waiting-connection": "利用可能なインスタンス接続を待っています。インスタンス接続カウントは、Bytebaseの制限設定に達しました。",
-      "waiting-task": "別のタスクが完了するのを待っています。"
+      "waiting-connection": "利用可能なインスタンス接続を待っています。インスタンス接続カウントは、Bytebaseの制限設定に達しました。最後の報告は {time} です。",
+      "waiting-task": "別のタスクが完了するのを待っています。最後の報告は {time} です。",
+      "waiting-max-tasks-per-rollout": "他のタスクが完了するのを待っています。ロールアウトごとの最大実行タスク数制限に達しました。最後の報告は {time} です。"
     }
   },
   "banner": {
@@ -306,11 +307,6 @@
     "external-url": "Bytebase は --extern-url を設定していません"
   },
   "bbkit": {
-    "common": {
-      "cancel": "キャンセル",
-      "back": "戻る",
-      "next": "次のステップ"
-    },
     "confirm-button": {
       "sure-to-delete": "本当に削除してもよろしいですか?",
       "sure-to-archive": "本当にアーカイブしますか?",
@@ -352,7 +348,8 @@
       "subscription": "(有料プランにアップグレードするとキャラクター管理が可能になります)"
     },
     "members": {
-      "inactive": "不活性化された",
+      "inactive": "非アクティブ",
+      "inactive-users": "非アクティブユーザー",
       "table": {
         "account": "アカウント",
         "role": "役割",
@@ -387,7 +384,7 @@
       "reset-service-key": "サービスキーのリセット",
       "reset-service-key-alert": "古いサービス キーはすぐにリセットされ、この操作は元に戻すことはできません。サービス キーをリセットしてもよろしいですか?",
       "service-key-copied": "サービスキーはコピーされています。公開しないでください",
-      "show-inactive": "非アクティブなメンバーを表示する",
+      "show-inactive": "非アクティブなユーザーを表示",
       "view-by-roles": "役割ごとに表示",
       "add-member": "メンバーを追加",
       "add-user": "ユーザーを追加",
@@ -1265,8 +1262,8 @@
       "title": "アクセス制御",
       "disable-copy-data-from-sql-editor": "SQL エディタにおけるデータコピーの制限 (管理者/DBA はコピー可能)",
       "restrict-admin-connection": {
-        "self": "管理者接続のクエリ制限",
-        "disallow": "管理者接続からのデータクエリを禁止する",
+        "self": "管理データソースへのクエリを禁止します",
+        "disallow": "管理データソースからのデータクエリを禁止します",
         "fallback": "読み取り専用接続が利用できない場合、管理者接続にフォールバックする"
       }
     },
@@ -1330,7 +1327,7 @@
     "rollout": {
       "name": "リリース戦略",
       "tip": "新しいポリシーは古いイシューにも適用されます",
-      "info": "タスクは、「taskRuns.create」許可または次の役割でユーザーが実行できます",
+      "info": "タスクは、「{permission}」許可または次の役割でユーザーが実行できます",
       "auto": "自動",
       "auto-info": "すべての事前チェックに合格すると、自動的にリリースされ、変更が反映されます。",
       "last-issue-approver": "前号承認者"
@@ -1646,6 +1643,10 @@
         "ci-sampling-size": {
           "self": "CIデータサンプリングサイズ",
           "description": "CIデータ検証中にサンプリングするデータベースの最大数。\n無効（ゼロ）の場合、完全な検証が実行されます。"
+        },
+        "parallel_tasks_per_rollout": {
+          "self": "ロールアウトごとの並列タスク",
+          "description": "ロールアウトあたりの並列タスクの数を制御します。\nこれをゼロに設定すると、スロットリングが無効になります。"
         }
       }
     },
@@ -1721,7 +1722,6 @@
   "sql-editor": {
     "self": "SQLエディタ",
     "select-connection": "データ接続を選択してください",
-    "search-databases": "データベースを検索する",
     "search-results": "の検索結果",
     "loading-databases": "データベース情報をロードしています...",
     "show-databases-without-query-permission": "クエリ権限のないデータベースを表示します",
@@ -1799,7 +1799,6 @@
     },
     "batch-query": {
       "batch": "バッチ",
-      "select-database": "以下のデータベースを選択してください",
       "description": "{project} の下にある {count} データベースをバッチクエリします。",
       "show-or-hide-empty-query-results": "空のクエリ結果の表示/非表示"
     },
@@ -1980,13 +1979,6 @@
     "button": {
       "upgrade": "アップグレード"
     },
-    "trial-start-modal": {
-      "title": "{plan} トライアルが開始されました",
-      "content": "{plan} のトライアルが開始されました。 {date} より前のすべての {plan} 機能は制限されません。",
-      "button": "学ぶ",
-      "subscription-page": "購読ページ",
-      "subscription": "サブスクリプション プランと有料機能は {page} でご覧いただけます。"
-    },
     "description": "ここで購入した Bytebase ライセンスをアップロードして、プロフェッショナル/エンタープライズ機能のロックを解除できます。",
     "upload-license": "ライセンスのアップロード",
     "upgrade-trial-button": "アップグレードトライアル",
@@ -2008,8 +2000,7 @@
       "manage-license": "ライセンスの管理",
       "used-and-total-license": "割り当てられた/合計インスタンスライセンス",
       "used-and-total-user": "アクティブ/合計ユーザー制限",
-      "success-notification": "ライセンスの割り当てが正常に更新されました",
-      "missing-license-for-feature": "{feature} を有効にするためのインスタンスライセンスがありません。クリックしてライセンスを割り当てます。"
+      "success-notification": "ライセンスの割り当てが正常に更新されました"
     },
     "update": {
       "success": {
@@ -2142,13 +2133,6 @@
     "self": "機密データ"
   },
   "resource": {
-    "environment": "環境",
-    "instance": "例",
-    "project": "プロジェクト",
-    "idp": "アイデンティティプロバイダー",
-    "database-group": "データベースのグループ化",
-    "changelist": "変更リスト",
-    "review-config": "設定を確認する",
     "delete-warning": "「{name}」は削除されます。この操作は元に戻せません。",
     "delete-warning-with-resources": "「{name}」は次のリソースによって使用されます:",
     "delete-warning-retry": "これらのリソースから削除して、もう一度お試しください。"
@@ -2161,7 +2145,8 @@
       "duplicated": "{resource} ID はすでに存在します。別のIDを使用してください。",
       "pattern": "{resource} ID には、小文字、数字、またはハイフンを持つことができます。\n小文字から始めて、文字または番号で終わる必要があります。",
       "minlength": "{resource} ID には少なくとも 1 文字が含まれている必要があります。",
-      "overflow": "{resource} ID は 64 文字未満である必要があります。"
+      "overflow": "{resource} ID は 64 文字未満である必要があります。",
+      "empty": "{resource} ID は空にできません"
     }
   },
   "multi-factor": {
@@ -2591,7 +2576,24 @@
     "self": "ワークシート"
   },
   "setup": {
-    "self": "設定"
+    "self": "設定",
+    "basic-info": "基本情報",
+    "skip-setup": "セットアップをスキップ",
+    "purposes": {
+      "self": "Bytebase の主な目的は何ですか?",
+      "alter-schema": "スキーマの変更",
+      "query-data": "クエリデータ"
+    },
+    "workflow": {
+      "self": "データベースのワークフローは何ですか?",
+      "team": "チームメイトと協力し、CI/CD パイプラインが必要",
+      "simple": "複雑なワークフローは不要、UIツールだけが必要です"
+    },
+    "data": {
+      "self-setup": "プロジェクトのセットアップ",
+      "built-in": "組み込みサンプルを使用する",
+      "built-in-desc": "サンプルプロジェクトとインスタンスを生成する"
+    }
   },
   "landing": {
     "quick-link": {

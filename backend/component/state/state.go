@@ -9,9 +9,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-// defaultInstanceMaximumConnections is the maximum number of connections outstanding per instance by default.
-const defaultInstanceMaximumConnections = 10
-
 // State is the state for all in-memory states within the server.
 type State struct {
 	// ApprovalFinding is the set of issues for finding the approval template.
@@ -39,7 +36,9 @@ type State struct {
 	// RunningPlanCheckRunsCancelFunc is the cancelFunc of running plan checks.
 	RunningPlanCheckRunsCancelFunc sync.Map // map[planCheckRunUID]context.CancelFunc
 	// InstanceOutstandingConnections is the maximum number of connections per instance.
-	InstanceOutstandingConnections *connectionLimiter
+	InstanceOutstandingConnections *resourceLimiter
+	// RolloutOutstandingTasks is the maximum number of tasks per rollout.
+	RolloutOutstandingTasks *resourceLimiter
 
 	// IssueExternalApprovalRelayCancelChan cancels the external approval from relay for issue issueUID.
 	IssueExternalApprovalRelayCancelChan chan int
@@ -61,7 +60,8 @@ func New() (*State, error) {
 		return nil, errors.Wrapf(err, "failed to create auth expire cache")
 	}
 	return &State{
-		InstanceOutstandingConnections:       &connectionLimiter{connections: map[string]int{}},
+		InstanceOutstandingConnections:       &resourceLimiter{connections: map[string]int{}},
+		RolloutOutstandingTasks:              &resourceLimiter{connections: map[string]int{}},
 		IssueExternalApprovalRelayCancelChan: make(chan int, 1),
 		TaskSkippedOrDoneChan:                make(chan int, 1000),
 		PlanCheckTickleChan:                  make(chan int, 1000),
@@ -70,27 +70,30 @@ func New() (*State, error) {
 	}, nil
 }
 
-type connectionLimiter struct {
+type resourceLimiter struct {
 	sync.Mutex
 	connections map[string]int
 }
 
-func (c *connectionLimiter) Increment(instanceID string, maxConnections int) bool {
+// limit <= 0 means no limit.
+func (c *resourceLimiter) Increment(key string, limit int) bool {
 	c.Lock()
 	defer c.Unlock()
-	if maxConnections == 0 {
-		maxConnections = defaultInstanceMaximumConnections
+	if limit <= 0 {
+		// No limit.
+		// Increment anyway to balance the decrement.
+		c.connections[key]++
+		return false
 	}
-
-	if c.connections[instanceID] >= maxConnections {
+	if c.connections[key] >= limit {
 		return true
 	}
-	c.connections[instanceID]++
+	c.connections[key]++
 	return false
 }
 
-func (c *connectionLimiter) Decrement(instanceID string) {
+func (c *resourceLimiter) Decrement(key string) {
 	c.Lock()
 	defer c.Unlock()
-	c.connections[instanceID]--
+	c.connections[key]--
 }

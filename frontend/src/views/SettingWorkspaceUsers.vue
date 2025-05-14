@@ -74,8 +74,8 @@
             "
           >
             <template #icon>
-              <SettingsIcon v-if="hasDirectorySyncFeature" class="h-5 w-5" />
-              <FeatureBadge v-else feature="bb.feature.directory-sync" />
+              <SettingsIcon class="h-5 w-5" />
+              <FeatureBadge feature="bb.feature.directory-sync" />
             </template>
             {{ $t(`settings.members.entra-sync.self`) }}
           </NButton>
@@ -132,7 +132,7 @@
       <template v-if="state.showInactiveUserList">
         <div class="flex justify-between items-center mt-2 mb-4">
           <p class="text-lg font-medium leading-7">
-            <span>{{ $t("settings.members.inactive") }}</span>
+            <span>{{ $t("settings.members.inactive-users") }}</span>
             <span class="ml-1 font-normal text-control-light">
               ({{ inactiveUserCount }})
             </span>

@@ -18,7 +18,7 @@ ARG RELEASE="release"
 ADD go.mod go.sum /
 
 RUN go mod download
-RUN apk add --no-cache build-base krb5-dev binutils-gold
+RUN apk add --no-cache clang krb5-dev binutils-gold
 
 WORKDIR /backend-build
 
@@ -28,9 +28,9 @@ COPY . .
 COPY --from=frontend /frontend-build/frontend/dist ./backend/server/dist
 
 # -ldflags="-w -s" means omit DWARF symbol table and the symbol table and debug information
-RUN go build \
-  --tags "${RELEASE},embed_frontend,aws" \
-  -ldflags="-w -s -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.version=${VERSION}' -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.gitcommit=${GIT_COMMIT}'" \
+RUN CC=clang go build \
+  --tags "${RELEASE},embed_frontend,docker" \
+  -ldflags="-extldflags '-Wl,-z,stack-size=0x1000000' -w -s -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.version=${VERSION}' -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.gitcommit=${GIT_COMMIT}'" \
   -o bytebase ./backend/bin/server/main.go
 
 # Use debian because mysql requires glibc.
@@ -58,7 +58,7 @@ RUN apk add postgresql16
 
 # Install mongosh.
 RUN apk add --no-cache npm
-RUN npm install -g mongosh
+RUN npm install -g mongosh@2.5.0
 
 # The file indicates running in docker environment.
 RUN touch /etc/bb.env
@@ -66,6 +66,7 @@ COPY --from=backend /backend-build/bytebase /usr/local/bin/
 COPY --from=backend /etc/ssl/certs /etc/ssl/certs
 
 ENV OPENSSL_CONF=/etc/ssl/
+ENV GOGC=50
 ENV AWS_PRODUCT_ID="prod-n4dmmye4e6hjo"
 
 CMD ["--port", "8080", "--data", "/var/opt/bytebase"]

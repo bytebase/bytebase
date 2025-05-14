@@ -2459,8 +2459,8 @@ type WorkspaceApprovalSetting_Rule struct {
 	// The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 	//
 	// Support variables:
-	// source: the risk source, check the Source enum in the Risk message for the values.
-	// level: the risk level, support 100 (low), 200 (moderate) and 300 (high).
+	// source: the risk source, check the Source enum in the Risk message for the values, support "==" operator.
+	// level: the risk level, support 100 (low), 200 (moderate) and 300 (high), support "==" operator.
 	//
 	// For examples:
 	// (source == "DML" && level == 200) || (source == "DDL" && level == 300)

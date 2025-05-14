@@ -1,10 +1,6 @@
 <template>
   <div class="w-full space-y-4 text-sm">
-    <FeatureAttentionForInstanceLicense
-      v-if="hasCustomApprovalFeature"
-      feature="bb.feature.custom-approval"
-    />
-    <FeatureAttention v-else feature="bb.feature.custom-approval" />
+    <FeatureAttention feature="bb.feature.custom-approval" />
 
     <CustomApproval v-if="state.ready" />
     <div v-else class="w-full py-[4rem] flex justify-center items-center">
@@ -30,11 +26,7 @@ import {
   provideCustomApprovalContext,
   TabValueList,
 } from "@/components/CustomApproval/Settings/components/CustomApproval/";
-import {
-  FeatureAttention,
-  FeatureAttentionForInstanceLicense,
-  FeatureModal,
-} from "@/components/FeatureGuard";
+import { FeatureAttention, FeatureModal } from "@/components/FeatureGuard";
 import { useRouteHash } from "@/composables/useRouteHash";
 import {
   featureToRef,

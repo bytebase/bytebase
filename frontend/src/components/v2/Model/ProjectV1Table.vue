@@ -29,7 +29,8 @@ import { PROJECT_V1_ROUTE_DASHBOARD } from "@/router/dashboard/workspaceRoutes";
 import { getProjectName } from "@/store/modules/v1/common";
 import type { ComposedProject } from "@/types";
 import type { Project } from "@/types/proto/v1/project_service";
-import { extractProjectResourceName, getHighlightHTMLByRegExp } from "@/utils";
+import { extractProjectResourceName } from "@/utils";
+import HighlightLabelText from "./HighlightLabelText.vue";
 
 type ProjectDataTableColumn = DataTableColumn<ComposedProject> & {
   hide?: boolean;
@@ -91,12 +92,10 @@ const columnList = computed((): ProjectDataTableColumn[] => {
         ellipsis: true,
         render: (project) => {
           return (
-            <span
-              innerHTML={getHighlightHTMLByRegExp(
-                extractProjectResourceName(project.name),
-                props.keyword ?? ""
-              )}
-            ></span>
+            <HighlightLabelText
+              text={extractProjectResourceName(project.name)}
+              keyword={props.keyword ?? ""}
+            />
           );
         },
       },

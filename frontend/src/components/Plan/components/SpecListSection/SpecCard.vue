@@ -15,8 +15,8 @@
       placement="top"
     >
       <template #trigger>
-        <heroicons:exclamation-circle-solid
-          class="w-5 h-5 shrink-0"
+        <AlertCircleIcon
+          class="w-4 h-4 shrink-0"
           :class="[
             planCheckStatus === PlanCheckRun_Result_Status.ERROR
               ? 'text-error hover:text-error-hover'
@@ -32,7 +32,7 @@
     </NTooltip>
     <div
       v-if="isDatabaseChangeSpec(spec)"
-      class="flex items-center gap-2 truncate"
+      class="flex items-center gap-1 truncate"
     >
       <InstanceV1Name
         :instance="databaseForSpec(plan, spec).instanceResource"
@@ -43,33 +43,34 @@
         databaseForSpec(plan, spec).databaseName
       }}</span>
     </div>
-    <!-- Fallback to show the database group name if the spec is a grouping change spec in old plans. -->
     <div
       v-else-if="isGroupingChangeSpec(spec) && relatedDatabaseGroup"
       class="flex items-center gap-2 truncate"
     >
       <NTooltip>
-        <template #trigger><DatabaseGroupIcon class="w-4 h-auto" /></template>
-        {{ $t("resource.database-group") }}
+        <template #trigger>
+          <DatabaseGroupIcon class="w-4 h-auto" />
+        </template>
+        {{ $t("dynamic.resource.database-group") }}
       </NTooltip>
       <span class="truncate text-sm">{{
         relatedDatabaseGroup.databaseGroupName
       }}</span>
     </div>
     <!-- Fallback -->
-    <div v-else class="flex items-center gap-2 text-sm">Unknown type</div>
+    <div v-else class="flex items-center gap-2 text-sm">Unknown target</div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { isEqual } from "lodash-es";
+import { AlertCircleIcon } from "lucide-vue-next";
 import { NTooltip } from "naive-ui";
-import { computed, onMounted } from "vue";
+import { computed } from "vue";
 import DatabaseGroupIcon from "@/components/DatabaseGroupIcon.vue";
 import { planCheckRunSummaryForCheckRunList } from "@/components/PlanCheckRun/common";
 import { InstanceV1Name } from "@/components/v2";
 import { useDBGroupStore } from "@/store";
-import { DatabaseGroupView } from "@/types/proto/v1/database_group_service";
 import {
   PlanCheckRun_Result_Status,
   type Plan_Spec,
@@ -118,7 +119,6 @@ const relatedDatabaseGroup = computed(() => {
 
 const planCheckStatus = computed((): PlanCheckRun_Result_Status => {
   if (isCreating.value) return PlanCheckRun_Result_Status.STATUS_UNSPECIFIED;
-
   const summary = planCheckRunSummaryForCheckRunList(
     planCheckRunListForSpec(plan.value, props.spec)
   );
@@ -129,18 +129,6 @@ const planCheckStatus = computed((): PlanCheckRun_Result_Status => {
     return PlanCheckRun_Result_Status.WARNING;
   }
   return PlanCheckRun_Result_Status.SUCCESS;
-});
-
-onMounted(async () => {
-  if (isGroupingChangeSpec(props.spec)) {
-    await dbGroupStore.getOrFetchDBGroupByName(
-      props.spec.changeDatabaseConfig!.target,
-      {
-        skipCache: true,
-        view: DatabaseGroupView.DATABASE_GROUP_VIEW_FULL,
-      }
-    );
-  }
 });
 
 const onClickSpec = (spec: Plan_Spec) => {

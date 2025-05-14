@@ -22,6 +22,7 @@ const _ = grpc.SupportPackageIsVersion9
 const (
 	ActuatorService_GetActuatorInfo_FullMethodName    = "/bytebase.v1.ActuatorService/GetActuatorInfo"
 	ActuatorService_UpdateActuatorInfo_FullMethodName = "/bytebase.v1.ActuatorService/UpdateActuatorInfo"
+	ActuatorService_SetupSample_FullMethodName        = "/bytebase.v1.ActuatorService/SetupSample"
 	ActuatorService_DeleteCache_FullMethodName        = "/bytebase.v1.ActuatorService/DeleteCache"
 	ActuatorService_GetResourcePackage_FullMethodName = "/bytebase.v1.ActuatorService/GetResourcePackage"
 )
@@ -32,6 +33,7 @@ const (
 type ActuatorServiceClient interface {
 	GetActuatorInfo(ctx context.Context, in *GetActuatorInfoRequest, opts ...grpc.CallOption) (*ActuatorInfo, error)
 	UpdateActuatorInfo(ctx context.Context, in *UpdateActuatorInfoRequest, opts ...grpc.CallOption) (*ActuatorInfo, error)
+	SetupSample(ctx context.Context, in *SetupSampleRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	DeleteCache(ctx context.Context, in *DeleteCacheRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	GetResourcePackage(ctx context.Context, in *GetResourcePackageRequest, opts ...grpc.CallOption) (*ResourcePackage, error)
 }
@@ -64,6 +66,16 @@ func (c *actuatorServiceClient) UpdateActuatorInfo(ctx context.Context, in *Upda
 	return out, nil
 }
 
+func (c *actuatorServiceClient) SetupSample(ctx context.Context, in *SetupSampleRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, ActuatorService_SetupSample_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *actuatorServiceClient) DeleteCache(ctx context.Context, in *DeleteCacheRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(emptypb.Empty)
@@ -90,6 +102,7 @@ func (c *actuatorServiceClient) GetResourcePackage(ctx context.Context, in *GetR
 type ActuatorServiceServer interface {
 	GetActuatorInfo(context.Context, *GetActuatorInfoRequest) (*ActuatorInfo, error)
 	UpdateActuatorInfo(context.Context, *UpdateActuatorInfoRequest) (*ActuatorInfo, error)
+	SetupSample(context.Context, *SetupSampleRequest) (*emptypb.Empty, error)
 	DeleteCache(context.Context, *DeleteCacheRequest) (*emptypb.Empty, error)
 	GetResourcePackage(context.Context, *GetResourcePackageRequest) (*ResourcePackage, error)
 	mustEmbedUnimplementedActuatorServiceServer()
@@ -107,6 +120,9 @@ func (UnimplementedActuatorServiceServer) GetActuatorInfo(context.Context, *GetA
 }
 func (UnimplementedActuatorServiceServer) UpdateActuatorInfo(context.Context, *UpdateActuatorInfoRequest) (*ActuatorInfo, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateActuatorInfo not implemented")
+}
+func (UnimplementedActuatorServiceServer) SetupSample(context.Context, *SetupSampleRequest) (*emptypb.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SetupSample not implemented")
 }
 func (UnimplementedActuatorServiceServer) DeleteCache(context.Context, *DeleteCacheRequest) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteCache not implemented")
@@ -171,6 +187,24 @@ func _ActuatorService_UpdateActuatorInfo_Handler(srv interface{}, ctx context.Co
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ActuatorService_SetupSample_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetupSampleRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ActuatorServiceServer).SetupSample(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ActuatorService_SetupSample_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ActuatorServiceServer).SetupSample(ctx, req.(*SetupSampleRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _ActuatorService_DeleteCache_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(DeleteCacheRequest)
 	if err := dec(in); err != nil {
@@ -221,6 +255,10 @@ var ActuatorService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UpdateActuatorInfo",
 			Handler:    _ActuatorService_UpdateActuatorInfo_Handler,
+		},
+		{
+			MethodName: "SetupSample",
+			Handler:    _ActuatorService_SetupSample_Handler,
 		},
 		{
 			MethodName: "DeleteCache",

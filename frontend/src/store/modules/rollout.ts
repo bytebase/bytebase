@@ -6,7 +6,7 @@ import type { MaybeRef, Pagination, ComposedRollout } from "@/types";
 import { isValidRolloutName, unknownRollout, unknownUser } from "@/types";
 import type { Rollout } from "@/types/proto/v1/rollout_service";
 import { DEFAULT_PAGE_SIZE } from "./common";
-import { useUserStore, batchGetOrFetchUsers } from "./user";
+import { useUserStore } from "./user";
 import { useProjectV1Store, batchGetOrFetchProjects } from "./v1";
 import { getProjectNameRolloutId, projectNamePrefix } from "./v1/common";
 
@@ -89,7 +89,7 @@ export const useRolloutByName = (name: MaybeRef<string>) => {
 
 export const batchComposeRollout = async (rolloutList: Rollout[]) => {
   const userStore = useUserStore();
-  await batchGetOrFetchUsers(rolloutList.map((rollout) => rollout.creator));
+  await userStore.batchGetUsers(rolloutList.map((rollout) => rollout.creator));
 
   const composedRolloutList = rolloutList.map((rollout) => {
     const composed = rollout as ComposedRollout;

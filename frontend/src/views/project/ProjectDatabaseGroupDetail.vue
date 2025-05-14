@@ -4,16 +4,7 @@
     v-bind="$attrs"
     class="h-full flex-1 relative space-y-4"
   >
-    <FeatureAttention
-      feature="bb.feature.database-grouping"
-      custom-class="mb-4"
-    />
-
-    <FeatureAttentionForInstanceLicense
-      custom-class="mb-4"
-      type="info"
-      feature="bb.feature.database-grouping"
-    />
+    <FeatureAttention feature="bb.feature.database-grouping" class="mb-4" />
 
     <div
       v-if="hasDatabaseGroupFeature && !state.editing"
@@ -69,7 +60,6 @@ import { computed, reactive, watchEffect } from "vue";
 import { useRouter } from "vue-router";
 import DatabaseGroupForm from "@/components/DatabaseGroup/DatabaseGroupForm.vue";
 import FeatureAttention from "@/components/FeatureGuard/FeatureAttention.vue";
-import FeatureAttentionForInstanceLicense from "@/components/FeatureGuard/FeatureAttentionForInstanceLicense.vue";
 import { useDBGroupStore, useProjectByName, featureToRef } from "@/store";
 import {
   databaseGroupNamePrefix,

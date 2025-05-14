@@ -2,7 +2,7 @@
   <div class="flex flex-row justify-start items-center gap-x-1" v-bind="$attrs">
     <FeatureBadge
       feature="bb.feature.database-grouping"
-      custom-class="mr-2"
+      class="mr-2"
       :instance="database.instanceResource"
     />
     <InstanceV1EngineIcon :instance="database.instanceResource" />

@@ -25,7 +25,13 @@
             resource-type="project"
             :value="state.resourceId"
             :resource-title="state.project.title"
-            :validate="validateResourceId"
+            :fetch-resource="
+              (id) =>
+                projectV1Store.getOrFetchProjectByName(
+                  `${projectNamePrefix}${id}`,
+                  true /* silent */
+                )
+            "
             @update:value="state.resourceId = $event"
           />
         </div>
@@ -59,7 +65,6 @@
 <script lang="ts" setup>
 import { isEmpty } from "lodash-es";
 import { NButton } from "naive-ui";
-import { Status } from "nice-grpc-common";
 import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
@@ -69,11 +74,10 @@ import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
 import { pushNotification, useUIStateStore } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { useProjectV1Store } from "@/store/modules/v1/project";
-import type { ResourceId, ValidatedMessage, ComposedProject } from "@/types";
+import type { ComposedProject } from "@/types";
 import { emptyProject } from "@/types";
 import type { Project } from "@/types/proto/v1/project_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
-import { getErrorCode } from "@/utils/grpcweb";
 
 interface LocalState {
   project: Project;
@@ -105,37 +109,6 @@ const state = reactive<LocalState>({
   isCreating: false,
 });
 const resourceIdField = ref<InstanceType<typeof ResourceIdField>>();
-
-const validateResourceId = async (
-  resourceId: ResourceId
-): Promise<ValidatedMessage[]> => {
-  if (!resourceId) {
-    return [];
-  }
-
-  try {
-    const project = await projectV1Store.getOrFetchProjectByName(
-      projectNamePrefix + resourceId,
-      true /* silent */
-    );
-    if (project) {
-      return [
-        {
-          type: "error",
-          message: t("resource-id.validation.duplicated", {
-            resource: t("resource.project"),
-          }),
-        },
-      ];
-    }
-  } catch (error) {
-    if (getErrorCode(error) !== Status.NOT_FOUND) {
-      throw error;
-    }
-  }
-
-  return [];
-};
 
 const allowCreate = computed(() => {
   if (isEmpty(state.project.title)) return false;

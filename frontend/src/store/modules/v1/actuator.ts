@@ -34,6 +34,10 @@ interface ActuatorState {
   resourcePackage?: ResourcePackage;
   releaseInfo: RemovableRef<ReleaseInfo>;
   appProfile: AppProfile;
+  onboardingState: RemovableRef<{
+    isOnboarding: boolean;
+    consumed: string[];
+  }>;
 }
 
 export const useActuatorV1Store = defineStore("actuator_v1", {
@@ -46,6 +50,13 @@ export const useActuatorV1Store = defineStore("actuator_v1", {
       nextCheckTs: 0,
     }),
     appProfile: defaultAppProfile(),
+    onboardingState: useLocalStorage<{
+      isOnboarding: boolean;
+      consumed: string[];
+    }>("bb.onboarding-state", {
+      isOnboarding: false,
+      consumed: [],
+    }),
   }),
   getters: {
     changelogURL: (state) => {
@@ -216,6 +227,9 @@ export const useActuatorV1Store = defineStore("actuator_v1", {
         // It's okay to ignore the failure and just return undefined.
         return;
       }
+    },
+    async setupSample() {
+      await actuatorServiceClient.setupSample({});
     },
     overrideAppFeatures(overrides: Partial<AppFeatures>) {
       Object.assign(this.appProfile.features, overrides);

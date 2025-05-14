@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full flex flex-col gap-4 px-2">
+  <div class="w-full flex flex-col gap-4">
     <NTabs
       type="line"
       :bar-width="200"
@@ -18,6 +18,7 @@
         <EnvironmentDetail
           v-if="!state.reorder"
           :environment-name="item.id"
+          :buttons-class="buttonsClass"
           @delete="doDelete"
         />
       </NTabPane>
@@ -113,17 +114,23 @@ import {
   usePolicyV1Store,
   getEmptyRolloutPolicy,
 } from "@/store/modules/v1/policy";
-import { emptyEnvironment, formatEnvironmentName } from "@/types";
+import { formatEnvironmentName } from "@/types";
 import type { Policy } from "@/types/proto/v1/org_policy_service";
 import { PolicyResourceType } from "@/types/proto/v1/org_policy_service";
+import { EnvironmentSetting_Environment } from "@/types/proto/v1/setting_service";
 import type { Environment } from "@/types/v1/environment";
 import { arraySwap, hasWorkspacePermissionV2 } from "@/utils";
+import { type VueClass } from "@/utils";
 import EnvironmentDetail from "@/views/EnvironmentDetail.vue";
 
 const DEFAULT_NEW_ROLLOUT_POLICY: Policy = getEmptyRolloutPolicy(
   "",
   PolicyResourceType.ENVIRONMENT
 );
+
+defineProps<{
+  buttonsClass?: VueClass;
+}>();
 
 interface LocalState {
   selectedId: string;
@@ -195,7 +202,10 @@ const tabItemList = computed((): BBTabItem[] => {
 });
 
 const getEnvironmentCreate = () => {
-  return emptyEnvironment();
+  return {
+    ...EnvironmentSetting_Environment.fromPartial({}),
+    order: 0,
+  };
 };
 
 const createEnvironment = () => {

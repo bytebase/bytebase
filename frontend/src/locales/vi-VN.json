@@ -246,8 +246,8 @@
       },
       "summary-report": "Báo cáo tổng hợp"
     },
-    "rollout-time": "Thời gian triển khai",
-    "earliest-allowed-time-hint": "Thời gian sớm nhất cho phép là @:{'task.rollout-time'} là khi bạn muốn một tác vụ chạy; nếu không được chỉ định, nó sẽ chạy khi tất cả các tiêu chí được đáp ứng.",
+    "earliest-allowed-time": "Thời gian triển khai sớm nhất",
+    "earliest-allowed-time-hint": "@:{'task.earliest-allowed-time'} là thời gian sớm nhất để triển khai sự cố, bạn không thể triển khai trước thời gian này; nếu không được chỉ định, sự cố sẽ chạy khi đáp ứng tất cả các tiêu chí.",
     "earliest-allowed-time-unset": "Không đặt",
     "comment": "Bình luận",
     "started": "Bắt đầu",
@@ -291,8 +291,9 @@
     "status": {
       "enqueued": "Đang chờ thực thi.",
       "enqueued-with-rollout-time": "Đang chờ thực thi sau {time}.",
-      "waiting-connection": "Đang chờ kết nối thể hiện có sẵn. Số lượng kết nối thể hiện đã đạt đến giới hạn được đặt trên Bytebase.",
-      "waiting-task": "Đang chờ một tác vụ khác kết thúc."
+      "waiting-connection": "Đang chờ kết nối thể hiện có sẵn. Số lượng kết nối thể hiện đã đạt đến giới hạn được đặt trên Bytebase. Báo cáo gần nhất lúc {time}.",
+      "waiting-task": "Đang chờ một tác vụ khác kết thúc. Báo cáo gần nhất lúc {time}.",
+      "waiting-max-tasks-per-rollout": "Đang chờ các tác vụ khác hoàn thành. Đã đạt đến giới hạn số lượng tác vụ đang chạy tối đa cho mỗi lần triển khai. Báo cáo gần nhất lúc {time}."
     }
   },
   "banner": {
@@ -306,11 +307,6 @@
     "external-url": "Bytebase chưa được cấu hình --external-url"
   },
   "bbkit": {
-    "common": {
-      "cancel": "Hủy",
-      "back": "Quay lại",
-      "next": "Tiếp"
-    },
     "confirm-button": {
       "sure-to-delete": "Bạn có chắc chắn muốn xóa?",
       "sure-to-archive": "Bạn có chắc chắn muốn lưu trữ?",
@@ -352,7 +348,8 @@
       "subscription": "(Nâng cấp để kích hoạt quản lý vai trò)"
     },
     "members": {
-      "inactive": "Thành viên không hoạt động",
+      "inactive": "Không hoạt động",
+      "inactive-users": "Người dùng không hoạt động",
       "table": {
         "account": "Tài khoản",
         "role": "Vai trò",
@@ -387,7 +384,7 @@
       "reset-service-key": "Đặt lại Khóa Dịch vụ",
       "reset-service-key-alert": "Hành động này không thể hoàn tác. Khóa cũ sẽ ngừng hoạt động ngay lập tức. Bạn có chắc chắn muốn đặt lại khóa dịch vụ này?",
       "service-key-copied": "Khóa Dịch vụ đã được sao chép vào khay nhớ tạm, vui lòng giữ bí mật.",
-      "show-inactive": "Hiển thị thành viên không hoạt động",
+      "show-inactive": "Hiển thị người dùng không hoạt động",
       "view-by-roles": "Xem theo vai trò",
       "add-member": "Thêm thành viên",
       "add-user": "Thêm người dùng",
@@ -1265,8 +1262,8 @@
       "title": "Kiểm soát truy cập",
       "disable-copy-data-from-sql-editor": "Hạn chế sao chép dữ liệu trong Trình soạn thảo SQL (Quản trị viên/DBA được phép)",
       "restrict-admin-connection": {
-        "self": "Hạn chế truy vấn kết nối quản trị",
-        "disallow": "Không cho phép truy vấn dữ liệu từ kết nối quản trị",
+        "self": "Không cho phép truy vấn nguồn dữ liệu quản trị",
+        "disallow": "Không cho phép truy vấn dữ liệu từ nguồn dữ liệu quản trị",
         "fallback": "Quay lại kết nối quản trị nếu không có kết nối chỉ đọc"
       }
     },
@@ -1646,6 +1643,10 @@
         "ci-sampling-size": {
           "self": "Kích thước lấy mẫu dữ liệu CI",
           "description": "Số lượng cơ sở dữ liệu tối đa để lấy mẫu trong quá trình xác thực dữ liệu CI. \nKhi bị vô hiệu hóa (không), xác thực đầy đủ sẽ được thực hiện."
+        },
+        "parallel_tasks_per_rollout": {
+          "self": "Nhiệm vụ song song cho mỗi lần triển khai",
+          "description": "Kiểm soát số lượng các tác vụ song song cho mỗi lần triển khai. \nĐặt điều này thành 0 vô hiệu hóa bất kỳ điều chỉnh."
         }
       }
     },
@@ -1721,7 +1722,6 @@
   "sql-editor": {
     "self": "Trình soạn thảo SQL",
     "select-connection": "Vui lòng chọn kết nối",
-    "search-databases": "Tìm kiếm Cơ sở dữ liệu",
     "search-results": "Kết quả tìm kiếm",
     "loading-databases": "Đang tải Cơ sở dữ liệu...",
     "show-databases-without-query-permission": "Hiển thị cơ sở dữ liệu không có quyền truy vấn",
@@ -1799,7 +1799,6 @@
     },
     "batch-query": {
       "batch": "Hàng loạt",
-      "select-database": "Chọn cơ sở dữ liệu bên dưới",
       "description": "Truy vấn hàng loạt {count} cơ sở dữ liệu bổ sung trong {project}.",
       "show-or-hide-empty-query-results": "Hiển thị / ẩn kết quả truy vấn trống"
     },
@@ -1980,13 +1979,6 @@
     "button": {
       "upgrade": "Nâng cấp"
     },
-    "trial-start-modal": {
-      "title": "Bắt đầu dùng thử {plan} của bạn",
-      "content": "Bản dùng thử {plan} của bạn đã bắt đầu! Bạn có thể truy cập các tính năng {plan} trước {date}.",
-      "button": "Đã hiểu",
-      "subscription-page": "trang đăng ký",
-      "subscription": "Đi tới {page} để tìm hiểu các tính năng này và các gói của chúng tôi."
-    },
     "description": "Bạn có thể tải lên giấy phép Bytebase của mình để mở khóa các tính năng chuyên nghiệp/doanh nghiệp.",
     "upload-license": "Tải lên giấy phép",
     "upgrade-trial-button": "Nâng cấp bản dùng thử",
@@ -2008,8 +2000,7 @@
       "manage-license": "Quản lý giấy phép phiên bản",
       "used-and-total-license": "Giấy phép phiên bản đã gán / Tổng số",
       "used-and-total-user": "Giới hạn người dùng đang hoạt động / Tổng số",
-      "success-notification": "Đã cập nhật thành công gán giấy phép",
-      "missing-license-for-feature": "Thiếu giấy phép phiên bản để bật {feature}. Nhấp để gán ngay."
+      "success-notification": "Đã cập nhật thành công gán giấy phép"
     },
     "update": {
       "success": {
@@ -2142,13 +2133,6 @@
     "self": "Dữ liệu nhạy cảm"
   },
   "resource": {
-    "environment": "Môi trường",
-    "instance": "Phiên bản",
-    "project": "Dự án",
-    "idp": "Nhà cung cấp danh tính",
-    "database-group": "Nhóm cơ sở dữ liệu",
-    "changelist": "Danh sách thay đổi",
-    "review-config": "Cấu hình đánh giá",
     "delete-warning": "\"{name}\" sẽ bị xóa. Hành động này không thể hoàn tác.",
     "delete-warning-with-resources": "\"{name}\" được sử dụng bởi các tài nguyên sau:",
     "delete-warning-retry": "Vui lòng xóa nó khỏi các tài nguyên này rồi thử lại."
@@ -2161,7 +2145,8 @@
       "duplicated": "ID {resource} đã tồn tại. Vui lòng chọn một ID khác.",
       "pattern": "ID {resource} có thể có chữ thường, chữ số hoặc dấu gạch nối. \nNó phải bắt đầu với một chữ cái viết thường và kết thúc bằng một chữ cái hoặc số.",
       "minlength": "ID {resource} quá ngắn. Nó phải có ít nhất 1 ký tự.",
-      "overflow": "ID {resource} quá dài. Nó phải có ít hơn 64 ký tự."
+      "overflow": "ID {resource} quá dài. Nó phải có ít hơn 64 ký tự.",
+      "empty": "ID {resource} không được để trống"
     }
   },
   "multi-factor": {
@@ -2591,7 +2576,24 @@
     "self": "Bảng tính"
   },
   "setup": {
-    "self": "Thiết lập"
+    "self": "Thiết lập",
+    "basic-info": "Thông tin cơ bản",
+    "skip-setup": "Bỏ qua thiết lập",
+    "purposes": {
+      "self": "Mục đích chính của bạn khi sử dụng Bytebase là gì?",
+      "alter-schema": "Thay đổi lược đồ",
+      "query-data": "Truy vấn dữ liệu"
+    },
+    "workflow": {
+      "self": "Quy trình làm việc của bạn với cơ sở dữ liệu là gì?",
+      "team": "Làm việc với đồng đội, cần có đường ống CI/CD",
+      "simple": "Không có quy trình làm việc phức tạp, chỉ cần các công cụ UI"
+    },
+    "data": {
+      "self-setup": "Thiết lập dự án",
+      "built-in": "Sử dụng mẫu tích hợp",
+      "built-in-desc": "Tạo dự án mẫu và các trường hợp"
+    }
   },
   "landing": {
     "quick-link": {

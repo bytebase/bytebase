@@ -1,6 +1,6 @@
 <template>
-  <div class="flex flex-col space-y-4 px-4">
-    <div class="flex items-center space-x-2">
+  <div class="flex flex-col space-y-4">
+    <div class="flex items-center space-x-2 px-4">
       <SearchBox
         v-model:value="state.searchText"
         style="max-width: 100%"
@@ -23,7 +23,8 @@
         query: state.searchText,
         excludeDefault: true,
       }"
-      bordered
+      :bordered="false"
+      :footer-class="'mx-4'"
       :prevent-default="!!onRowClick"
       @row-click="onRowClick"
     />

@@ -30,6 +30,7 @@
 
   <SQLCheckPanel
     v-if="checkResult && advices && showDetailPanel"
+    :project="issue.project"
     :database="database"
     :advices="advices"
     :affected-rows="checkResult.affectedRows"

@@ -19,7 +19,6 @@ import type {
   DiffSchemaRequest,
   BatchUpdateDatabasesRequest,
 } from "@/types/proto/v1/database_service";
-import type { InstanceResource } from "@/types/proto/v1/instance_service";
 import { extractDatabaseResourceName, isNullOrUndefined } from "@/utils";
 import {
   instanceNamePrefix,
@@ -184,12 +183,7 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
       if (database.instance !== instance.name) {
         continue;
       }
-      if (databaseMapByName.has(database.name)) {
-        const db = databaseMapByName.get(database.name);
-        if (db) {
-          db.instanceResource.activation = instance.activation;
-        }
-      }
+      database.instanceResource = instance;
     }
   };
   const batchSyncDatabases = async (databases: string[]) => {
@@ -343,10 +337,10 @@ export const batchComposeDatabase = async (databaseList: Database[]) => {
 
     composed.databaseName = databaseName;
     composed.instance = instance;
-    composed.instanceResource = composeInstanceResourceForDatabase(
-      instance,
-      db
-    );
+    composed.instanceResource = db.instanceResource ?? {
+      ...unknownInstanceResource(),
+      name: instance,
+    };
     composed.environment = composed.instanceResource.environment;
     composed.projectEntity = projectV1Store.getProjectByName(db.project);
     composed.effectiveEnvironmentEntity =
@@ -354,16 +348,4 @@ export const batchComposeDatabase = async (databaseList: Database[]) => {
       unknownEnvironment();
     return markRaw(composed);
   });
-};
-
-export const composeInstanceResourceForDatabase = (
-  name: string,
-  db: Database
-): InstanceResource => {
-  return (
-    db.instanceResource ?? {
-      ...unknownInstanceResource(),
-      name,
-    }
-  );
 };

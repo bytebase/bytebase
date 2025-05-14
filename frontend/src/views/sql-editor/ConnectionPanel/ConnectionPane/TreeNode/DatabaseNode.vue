@@ -1,29 +1,24 @@
 <template>
   <div class="flex items-center max-w-full overflow-hidden gap-x-1">
-    <InstanceV1EngineIcon
-      v-if="!hasInstanceContext"
-      :instance="database.instanceResource"
+    <NCheckbox
+      v-if="!disallowBatchQuery"
+      :checked="checked"
+      :disabled="tabStore.currentTab?.connection.database === database.name"
+      @click.stop.prevent=""
+      @update:checked="$emit('update:checked', $event)"
     />
 
-    <EnvironmentV1Name
-      v-if="showEnvironment"
-      :environment="database.effectiveEnvironmentEntity"
-      :link="false"
-      class="text-control-light"
+    <RichDatabaseName
+      :database="database"
+      :show-instance="!hasInstanceContext"
+      :show-engine-icon="!hasInstanceContext"
+      :show-environment="showEnvironment"
+      :show-arrow="true"
+      :keyword="keyword"
     />
 
-    <DatabaseIcon />
-
-    <span class="text-control-light">
-      {{ extractProjectResourceName(database.projectEntity.name) }}
-    </span>
-
-    <span class="flex-1 truncate">
-      <HighlightLabelText :text="database.databaseName" :keyword="keyword" />
-      <span v-if="!hasInstanceContext" class="text-control-light">
-        ({{ database.instanceResource.title }})
-      </span>
-      <span v-if="connected"> ({{ $t("sql-editor.connected") }}) </span>
+    <span v-if="connected" class="truncate textinfolabel">
+      ({{ $t("sql-editor.connected") }})
     </span>
     <RequestQueryButton
       v-if="showRequestQueryButton"
@@ -36,24 +31,34 @@
 </template>
 
 <script setup lang="ts">
+import { NCheckbox } from "naive-ui";
 import { computed } from "vue";
-import DatabaseIcon from "~icons/heroicons-outline/circle-stack";
-import { EnvironmentV1Name, InstanceV1EngineIcon } from "@/components/v2";
-import { hasFeature, useAppFeature } from "@/store";
+import { RichDatabaseName } from "@/components/v2";
+import { hasFeature, useAppFeature, useSQLEditorTabStore } from "@/store";
 import type {
   SQLEditorTreeNode as TreeNode,
   SQLEditorTreeFactor as Factor,
 } from "@/types";
-import { extractProjectResourceName, isDatabaseV1Queryable } from "@/utils";
+import { isDatabaseV1Queryable } from "@/utils";
 import RequestQueryButton from "../../../EditorCommon/ResultView/RequestQueryButton.vue";
-import HighlightLabelText from "./HighlightLabelText.vue";
 
 const props = defineProps<{
   node: TreeNode;
   factors: Factor[];
   keyword: string;
-  connected: boolean;
+  connected?: boolean;
+  checked?: boolean;
 }>();
+
+defineEmits<{
+  (event: "update:checked", checked: boolean): void;
+}>();
+
+const tabStore = useSQLEditorTabStore();
+
+const disallowBatchQuery = useAppFeature(
+  "bb.feature.sql-editor.disallow-batch-query"
+);
 
 const disallowRequestQuery = useAppFeature(
   "bb.feature.sql-editor.disallow-request-query"

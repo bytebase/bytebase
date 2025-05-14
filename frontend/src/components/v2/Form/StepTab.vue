@@ -38,7 +38,7 @@
     >
       <div>
         <NButton v-if="showCancel" @click.prevent="$emit('cancel')">
-          {{ $t("bbkit.common.cancel") }}
+          {{ cancelTitle }}
         </NButton>
       </div>
 
@@ -51,7 +51,7 @@
           <heroicons-outline:chevron-left
             class="-ml-1 mr-1 h-5 w-5 text-control-light"
           />
-          <span> {{ $t("bbkit.common.back") }}</span>
+          <span> {{ $t("common.back") }}</span>
         </NButton>
         <NButton
           v-if="currentIndex == stepList.length - 1"
@@ -60,7 +60,7 @@
           v-bind="finishButtonProps"
           @click.prevent="$emit('finish')"
         >
-          {{ $t(finishTitle) }}
+          {{ finishTitle }}
         </NButton>
         <NButton
           v-else-if="!stepList[currentIndex].hideNext"
@@ -69,7 +69,7 @@
           v-bind="nextButtonProps"
           @click.prevent="$emit('update:currentIndex', currentIndex + 1)"
         >
-          {{ $t("bbkit.common.next") }}
+          {{ $t("common.next") }}
         </NButton>
       </div>
     </div>
@@ -79,6 +79,7 @@
 <script lang="ts" setup>
 import type { ButtonProps } from "naive-ui";
 import { NSteps, NStep, NButton } from "naive-ui";
+import { t } from "@/plugins/i18n";
 import type { VueClass } from "@/utils/types";
 
 withDefaults(
@@ -88,6 +89,7 @@ withDefaults(
     allowNext?: boolean;
     showFooter?: boolean;
     sticky?: boolean;
+    cancelTitle?: string;
     finishTitle?: string;
     paneClass?: VueClass;
     headerClass?: VueClass;
@@ -102,7 +104,8 @@ withDefaults(
     allowNext: true,
     showFooter: true,
     sticky: false,
-    finishTitle: "bbkit.common.finish",
+    cancelTitle: () => t("common.cancel"),
+    finishTitle: () => t("common.finish"),
     paneClass: undefined,
     headerClass: undefined,
     footerClass: undefined,

@@ -18,8 +18,6 @@ func init() {
 	base.RegisterDiagnoseFunc(store.Engine_TIDB, Diagnose)
 	base.RegisterDiagnoseFunc(store.Engine_OCEANBASE, Diagnose)
 	base.RegisterDiagnoseFunc(store.Engine_CLICKHOUSE, Diagnose)
-	base.RegisterDiagnoseFunc(store.Engine_STARROCKS, Diagnose)
-	base.RegisterDiagnoseFunc(store.Engine_DORIS, Diagnose)
 }
 
 func Diagnose(_ context.Context, _ base.DiagnoseContext, statement string) ([]base.Diagnostic, error) {

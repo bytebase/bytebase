@@ -178,7 +178,8 @@ func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, 
 	}
 
 	if queryContext.Schema != "" {
-		if _, err := conn.ExecContext(ctx, fmt.Sprintf("USE %s", queryContext.Schema)); err != nil {
+		escapedSchema := strings.ReplaceAll(queryContext.Schema, `"`, `""`)
+		if _, err := conn.ExecContext(ctx, fmt.Sprintf("USE \"%s\"", escapedSchema)); err != nil {
 			return nil, errors.Wrapf(err, "failed to set schema")
 		}
 	}

@@ -1,14 +1,5 @@
 <template>
-  <FeatureAttentionForInstanceLicense
-    v-if="hasCustomApprovalFeature"
-    feature="bb.feature.custom-approval"
-    custom-class="mb-4"
-  />
-  <FeatureAttention
-    v-else
-    feature="bb.feature.custom-approval"
-    custom-class="mb-4"
-  />
+  <FeatureAttention feature="bb.feature.custom-approval" class="mb-4" />
 
   <div class="w-full space-y-4 text-sm">
     <div class="textinfolabel">
@@ -46,11 +37,7 @@ import {
   provideRiskCenterContext,
 } from "@/components/CustomApproval/Settings/components/RiskCenter";
 import { provideRiskFilter } from "@/components/CustomApproval/Settings/components/common";
-import {
-  FeatureAttention,
-  FeatureAttentionForInstanceLicense,
-  FeatureModal,
-} from "@/components/FeatureGuard";
+import { FeatureAttention, FeatureModal } from "@/components/FeatureGuard";
 import { featureToRef, useRiskStore } from "@/store";
 import { hasWorkspacePermissionV2 } from "@/utils";
 

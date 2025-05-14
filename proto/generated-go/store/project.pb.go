@@ -106,8 +106,10 @@ type Project struct {
 	// The maximum number of databases to sample during CI data validation.
 	// Without specification, sampling is disabled, resulting in a full validation.
 	CiSamplingSize int32 `protobuf:"varint,12,opt,name=ci_sampling_size,json=ciSamplingSize,proto3" json:"ci_sampling_size,omitempty"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
+	// The maximum number of parallel tasks to run during the rollout.
+	ParallelTasksPerRollout int32 `protobuf:"varint,13,opt,name=parallel_tasks_per_rollout,json=parallelTasksPerRollout,proto3" json:"parallel_tasks_per_rollout,omitempty"`
+	unknownFields           protoimpl.UnknownFields
+	sizeCache               protoimpl.SizeCache
 }
 
 func (x *Project) Reset() {
@@ -217,6 +219,13 @@ func (x *Project) GetCiSamplingSize() int32 {
 	return 0
 }
 
+func (x *Project) GetParallelTasksPerRollout() int32 {
+	if x != nil {
+		return x.ParallelTasksPerRollout
+	}
+	return 0
+}
+
 type Project_ExecutionRetryPolicy struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The maximum number of retries for the lock timeout issue.
@@ -270,7 +279,7 @@ const file_store_project_proto_rawDesc = "" +
 	"\x05Label\x12\x14\n" +
 	"\x05value\x18\x01 \x01(\tR\x05value\x12\x14\n" +
 	"\x05color\x18\x02 \x01(\tR\x05color\x12\x14\n" +
-	"\x05group\x18\x03 \x01(\tR\x05group\"\xa9\x05\n" +
+	"\x05group\x18\x03 \x01(\tR\x05group\"\xe6\x05\n" +
 	"\aProject\x128\n" +
 	"\fissue_labels\x18\x02 \x03(\v2\x15.bytebase.store.LabelR\vissueLabels\x12,\n" +
 	"\x12force_issue_labels\x18\x03 \x01(\bR\x10forceIssueLabels\x124\n" +
@@ -283,7 +292,8 @@ const file_store_project_proto_rawDesc = "" +
 	"\x13allow_self_approval\x18\n" +
 	" \x01(\bR\x11allowSelfApproval\x12b\n" +
 	"\x16execution_retry_policy\x18\v \x01(\v2,.bytebase.store.Project.ExecutionRetryPolicyR\x14executionRetryPolicy\x12(\n" +
-	"\x10ci_sampling_size\x18\f \x01(\x05R\x0eciSamplingSize\x1a?\n" +
+	"\x10ci_sampling_size\x18\f \x01(\x05R\x0eciSamplingSize\x12;\n" +
+	"\x1aparallel_tasks_per_rollout\x18\r \x01(\x05R\x17parallelTasksPerRollout\x1a?\n" +
 	"\x14ExecutionRetryPolicy\x12'\n" +
 	"\x0fmaximum_retries\x18\x01 \x01(\x05R\x0emaximumRetriesJ\x04\b\x01\x10\x02B\x14Z\x12generated-go/storeb\x06proto3"
 
