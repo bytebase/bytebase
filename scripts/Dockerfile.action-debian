@@ -1,0 +1,15 @@
+FROM golang:1.24.2-bookworm AS builder
+ARG GIT_COMMIT
+WORKDIR /action-build
+COPY action/ action/
+COPY . .
+RUN go build \
+--ldflags="-X 'github.com/bytebase/bytebase/action/args.Gitcommit=${GIT_COMMIT}'" \
+-o bytebase-action action/*.go
+
+FROM debian:bookworm-slim
+RUN apt-get update && apt-get install -y jq
+WORKDIR /
+COPY --from=builder /action-build/bytebase-action /usr/local/bin/bytebase-action
+COPY --from=builder /etc/ssl/certs /etc/ssl/certs
+CMD ["bytebase-action"]
