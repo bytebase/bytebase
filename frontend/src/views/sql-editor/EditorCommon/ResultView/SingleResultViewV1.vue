@@ -203,7 +203,11 @@ import {
 } from "@/store";
 import { useExportData } from "@/store/modules/export";
 import type { ComposedDatabase, SQLEditorQueryParams } from "@/types";
-import { isValidDatabaseName, isValidInstanceName } from "@/types";
+import {
+  DEBOUNCE_SEARCH_DELAY,
+  isValidDatabaseName,
+  isValidInstanceName,
+} from "@/types";
 import { ExportFormat } from "@/types/proto/v1/common";
 import { Engine } from "@/types/proto/v1/common";
 import { PolicyType } from "@/types/proto/v1/org_policy_service";
@@ -331,7 +335,8 @@ const allowToRequestExportData = computed(() => {
 // use a debounced value to improve performance when typing rapidly
 const debouncedUpdateKeyword = useDebounceFn((value: string) => {
   keyword.value = value;
-}, 200);
+}, DEBOUNCE_SEARCH_DELAY);
+
 const updateKeyword = (value: string) => {
   state.search = value;
   debouncedUpdateKeyword(value);

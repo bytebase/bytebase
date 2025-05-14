@@ -44,7 +44,7 @@ import {
   instanceNamePrefix,
   environmentNamePrefix,
 } from "@/store/modules/v1/common";
-import type { ComposedDatabase, DatabaseResource } from "@/types";
+import { DEBOUNCE_SEARCH_DELAY, type ComposedDatabase, type DatabaseResource } from "@/types";
 import { engineFromJSON } from "@/types/proto/v1/common";
 import {
   getDefaultPagination,
@@ -215,7 +215,7 @@ const fetchDatabaseList = useDebounceFn(async () => {
   } finally {
     fetchDataState.value.loading = false;
   }
-}, 500);
+}, DEBOUNCE_SEARCH_DELAY);
 
 watch(
   () => databaseFilter.value,
