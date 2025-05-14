@@ -232,6 +232,12 @@ const useExecuteSQL = () => {
       }
     }
 
+    for (const database of queryContext.results.keys()) {
+      if (!batchQueryDatabases.find((db) => db.name === database)) {
+        queryContext.results.delete(database);
+      }
+    }
+
     const fail = (database: ComposedDatabase, resultSet: SQLResultSetV1) => {
       queryContext.results.get(database.name)!.push({
         params,
