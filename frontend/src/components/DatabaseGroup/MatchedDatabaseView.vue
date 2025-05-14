@@ -70,7 +70,7 @@ import { DatabaseV1Name, InstanceV1Name } from "@/components/v2";
 import type { ConditionGroupExpr } from "@/plugins/cel";
 import { validateSimpleExpr } from "@/plugins/cel";
 import { useDatabaseV1Store, useDBGroupStore } from "@/store";
-import { isValidDatabaseName } from "@/types";
+import { DEBOUNCE_SEARCH_DELAY, isValidDatabaseName } from "@/types";
 
 interface DatabaseMatchList {
   index: number;
@@ -188,7 +188,7 @@ const updateDatabaseMatchingState = useDebounceFn(async () => {
   } finally {
     state.loading = false;
   }
-}, 500);
+}, DEBOUNCE_SEARCH_DELAY);
 
 watch(
   [() => props.project, () => props.expr],
