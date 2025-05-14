@@ -33,7 +33,7 @@ export const filterIssueByApprover = (
   const reviewContext = extractReviewContext(issue);
   const steps = useWrappedReviewStepsV1(issue, reviewContext);
 
-  const currentStep = steps.value?.find((step) => step.status === "CURRENT");
+  const currentStep = steps.value.find((step) => step.status === "CURRENT");
   if (!currentStep) return false;
   // We support "approver:{email}" by now
   // Planning to support "approver:[{email_1}, {email_2}, ...]" and

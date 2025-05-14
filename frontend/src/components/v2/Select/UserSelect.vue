@@ -28,6 +28,7 @@ import UserAvatar from "@/components/User/UserAvatar.vue";
 import ServiceAccountTag from "@/components/misc/ServiceAccountTag.vue";
 import { extractUserId, useUserStore, type UserFilter } from "@/store";
 import {
+  DEBOUNCE_SEARCH_DELAY,
   SYSTEM_BOT_USER_NAME,
   UNKNOWN_USER_NAME,
   allUsersUser,
@@ -141,7 +142,7 @@ const handleSearch = useDebounceFn(async (search: string) => {
   } finally {
     state.loading = false;
   }
-}, 200);
+}, DEBOUNCE_SEARCH_DELAY);
 
 onMounted(async () => {
   await handleSearch("");

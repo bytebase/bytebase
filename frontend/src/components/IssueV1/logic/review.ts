@@ -1,9 +1,9 @@
 import { computed, unref, watchEffect } from "vue";
 import {
   candidatesOfApprovalStepV1,
-  batchGetOrFetchUsers,
   useCurrentUserV1,
   userNamePrefix,
+  useUserStore,
 } from "@/store";
 import type {
   ReviewFlow,
@@ -12,7 +12,11 @@ import type {
   WrappedReviewStep,
 } from "@/types";
 import { emptyFlow } from "@/types";
-import type { ApprovalNode, Issue } from "@/types/proto/v1/issue_service";
+import type {
+  ApprovalNode,
+  ApprovalStep,
+  Issue,
+} from "@/types/proto/v1/issue_service";
 import {
   ApprovalNode_Type,
   Issue_Approver_Status,
@@ -95,6 +99,7 @@ export const useWrappedReviewStepsV1 = (
   issue: MaybeRef<ComposedIssue>,
   context: ReviewContext
 ) => {
+  const userStore = useUserStore();
   const currentUser = useCurrentUserV1();
   // Format: users/{email}
   const currentUserName = computed(
@@ -105,14 +110,13 @@ export const useWrappedReviewStepsV1 = (
     const { flow } = context;
     const approvers = flow.value.approvers;
     const steps = flow.value.template.flow?.steps;
-    await batchGetOrFetchUsers(
-      steps?.map((_, i) => approvers[i]?.principal) ?? []
-    );
+    const distinctUsers = steps?.map((_, i) => approvers[i]?.principal) ?? [];
+    await userStore.batchGetUsers(distinctUsers);
   });
 
   return computed(() => {
     const { flow, done } = context;
-    const steps = flow.value.template.flow?.steps;
+    const steps = flow.value.template.flow?.steps || [];
     const approvers = flow.value.approvers;
     const currentStepIndex = flow.value.currentStepIndex ?? -1;
 
@@ -141,9 +145,7 @@ export const useWrappedReviewStepsV1 = (
       return approvers[index]?.principal;
     };
 
-    const candidatesOfStep = (index: number) => {
-      const step = steps?.[index];
-      if (!step) return [];
+    const candidatesOfStep = (step: ApprovalStep) => {
       const users = candidatesOfApprovalStepV1(unref(issue), step);
       if (isUserIncludedInList(currentUserName.value, users)) {
         const idx = users.indexOf(currentUserName.value);
@@ -155,12 +157,12 @@ export const useWrappedReviewStepsV1 = (
       return users;
     };
 
-    return steps?.map<WrappedReviewStep>((step, index) => ({
+    return steps.map<WrappedReviewStep>((step, index) => ({
       index,
       step,
       status: statusOfStep(index),
       approver: approverOfStep(index),
-      candidates: candidatesOfStep(index),
+      candidates: candidatesOfStep(step),
     }));
   });
 };

@@ -146,13 +146,17 @@ func (r *mysqlRewriter) EnterQueryExpression(ctx *mysql.QueryExpressionContext) 
 	r.outerMostQuery = false
 	limitClause := ctx.LimitClause()
 	if limitClause != nil && limitClause.LimitOptions() != nil && len(limitClause.LimitOptions().AllLimitOption()) > 0 {
-		firstOption := limitClause.LimitOptions().LimitOption(0)
-		userLimitText := firstOption.GetText()
+		userLimitOption := limitClause.LimitOptions().LimitOption(0)
+		if limitClause.LimitOptions().COMMA_SYMBOL() != nil {
+			userLimitOption = limitClause.LimitOptions().LimitOption(1)
+		}
+
+		userLimitText := userLimitOption.GetText()
 		limit, _ := strconv.Atoi(userLimitText)
 		if limit == 0 || r.limitCount < limit {
 			limit = r.limitCount
 		}
-		r.rewriter.ReplaceDefault(firstOption.GetStart().GetTokenIndex(), firstOption.GetStop().GetTokenIndex(), fmt.Sprintf("%d", limit))
+		r.rewriter.ReplaceDefault(userLimitOption.GetStart().GetTokenIndex(), userLimitOption.GetStop().GetTokenIndex(), fmt.Sprintf("%d", limit))
 		return
 	}
 

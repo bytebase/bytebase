@@ -85,6 +85,16 @@ func TestGetStatementWithResultLimit(t *testing.T) {
 			count: 10,
 			want:  "SELECT col1, col2 FROM table1 ORDER BY col1 LIMIT 10;",
 		},
+		{
+			stmt:  "SELECT * FROM t LIMIT 0,20;",
+			count: 10,
+			want:  "SELECT * FROM t LIMIT 0,10;",
+		},
+		{
+			stmt:  "SELECT * FROM t LIMIT 123,20;",
+			count: 10,
+			want:  "SELECT * FROM t LIMIT 123,10;",
+		},
 	}
 
 	for _, tc := range testCases {

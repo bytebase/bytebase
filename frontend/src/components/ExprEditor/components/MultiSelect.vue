@@ -32,6 +32,7 @@ import { NCheckbox, NSelect } from "naive-ui";
 import type { SelectOption } from "naive-ui";
 import { toRef, watch, reactive, computed, watchEffect } from "vue";
 import { type ConditionExpr } from "@/plugins/cel";
+import { DEBOUNCE_SEARCH_DELAY } from "@/types";
 import { useExprEditorContext } from "../context";
 import { useSelectOptionConfig } from "./common";
 
@@ -113,7 +114,7 @@ const handleSearch = useDebounceFn(async (search: string) => {
   } finally {
     state.loading = false;
   }
-}, 200);
+}, DEBOUNCE_SEARCH_DELAY);
 
 watch(
   () => factor.value,

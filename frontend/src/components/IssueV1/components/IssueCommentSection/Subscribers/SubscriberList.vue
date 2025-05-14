@@ -43,7 +43,7 @@ import { computed, h, nextTick, ref, reactive, watch } from "vue";
 import { updateIssueSubscribers, useIssueContext } from "@/components/IssueV1";
 import UserAvatar from "@/components/User/UserAvatar.vue";
 import { useUserStore } from "@/store";
-import { unknownUser } from "@/types";
+import { DEBOUNCE_SEARCH_DELAY, unknownUser } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import { type User } from "@/types/proto/v1/user_service";
 import { UserType } from "@/types/proto/v1/user_service";
@@ -184,7 +184,7 @@ const handleSearch = useDebounceFn(async (search: string) => {
   } finally {
     state.loading = false;
   }
-});
+}, DEBOUNCE_SEARCH_DELAY);
 
 watch(() => keyword.value, handleSearch, { immediate: true });
 </script>

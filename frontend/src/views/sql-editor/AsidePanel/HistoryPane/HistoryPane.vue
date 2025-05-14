@@ -83,7 +83,11 @@ import {
   useSQLEditorStore,
   type QueryHistoryFilter,
 } from "@/store";
-import { getDateForPbTimestamp, type SQLEditorTab } from "@/types";
+import {
+  DEBOUNCE_SEARCH_DELAY,
+  getDateForPbTimestamp,
+  type SQLEditorTab,
+} from "@/types";
 import type { QueryHistory } from "@/types/proto/v1/sql_service";
 import { getHighlightHTMLByKeyWords, defer } from "@/utils";
 
@@ -129,7 +133,7 @@ const fetchQueryHistoryListList = useDebounceFn(async () => {
   } finally {
     state.loading = false;
   }
-}, 500);
+}, DEBOUNCE_SEARCH_DELAY);
 
 watch(
   () => historyQuery.value,

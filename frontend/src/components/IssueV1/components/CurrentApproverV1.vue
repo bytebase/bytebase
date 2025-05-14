@@ -65,7 +65,7 @@ const userStore = useUserStore();
 const wrappedSteps = useWrappedReviewStepsV1(toRef(props, "issue"), context);
 
 const currentStep = computed(() => {
-  return wrappedSteps.value?.find(
+  return wrappedSteps.value.find(
     (step) => step.status === "CURRENT" || step.status === "REJECTED"
   );
 });
