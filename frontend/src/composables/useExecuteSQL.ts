@@ -97,21 +97,23 @@ const useExecuteSQL = () => {
       return false;
     }
 
+    const emptyContext = emptySQLEditorTabQueryContext();
     tab.queryContext = {
-      ...emptySQLEditorTabQueryContext(),
-      params,
+      ...emptyContext,
       status: "EXECUTING",
+      results: tab.queryContext?.results ?? emptyContext.results,
     };
     return true;
   };
 
-  const check = async (): Promise<SQLCheckResult> => {
+  const check = async (
+    params: SQLEditorQueryParams
+  ): Promise<SQLCheckResult> => {
     const tab = tabStore.currentTab;
     if (!tab) {
       return { passed: false };
     }
 
-    const params = tab.queryContext?.params;
     const abortController = tab.queryContext?.abortController;
     if (!params) {
       return { passed: false };
@@ -223,22 +225,18 @@ const useExecuteSQL = () => {
       }
     }
 
-    const queryResultMap = new Map<string, SQLResultSetV1>();
+    const beginTimestampMS = Date.now();
     for (const database of batchQueryDatabases) {
-      queryResultMap.set(database.name, {
-        error: "",
-        results: [],
-        advices: [],
-      });
+      if (!queryContext.results.has(database.name)) {
+        queryContext.results.set(database.name, []);
+      }
     }
-    queryContext.results = queryResultMap;
 
-    const fail = (database: ComposedDatabase, result: SQLResultSetV1) => {
-      queryResultMap.set(database.name, {
-        error: result.error,
-        results: [],
-        advices: result.advices,
-        status: result.status,
+    const fail = (database: ComposedDatabase, resultSet: SQLResultSetV1) => {
+      queryContext.results.get(database.name)!.push({
+        params,
+        beginTimestampMS,
+        resultSet,
       });
     };
     const abort = (error: string, advices: Advice[] = []) => {
@@ -254,13 +252,11 @@ const useExecuteSQL = () => {
     const { abortController } = queryContext;
 
     const sqlStore = useSQLStore();
-    queryContext.beginTimestampMS = Date.now();
-
     const checkBehavior = params.skipCheck ? "SKIP" : sqlCheckStyle.value;
     let checkResult: SQLCheckResult = { passed: true };
     if (checkBehavior !== "SKIP") {
       try {
-        checkResult = await check();
+        checkResult = await check(params);
       } catch (error) {
         return abort(extractGrpcErrorMessage(error));
       }
@@ -368,7 +364,13 @@ const useExecuteSQL = () => {
             fail(database, resultSet);
           }
         } else {
-          queryResultMap.set(database.name, markRaw(resultSet));
+          queryContext.results.get(database.name)!.push(
+            markRaw({
+              params,
+              beginTimestampMS,
+              resultSet,
+            })
+          );
           // After all the queries are executed, we update the tab with the latest query result map.
           // Refresh the query history list when the query executed successfully
           // (with or without warnings).

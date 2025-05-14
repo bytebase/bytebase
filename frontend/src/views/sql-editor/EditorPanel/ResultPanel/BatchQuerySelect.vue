@@ -36,7 +36,7 @@
     >
       <RichDatabaseName :database="item.database" />
       <InfoIcon
-        v-if="isDatabaseQueryFailed(item.database)"
+        v-if="isDatabaseQueryFailed(item)"
         class="ml-1 text-yellow-600 w-4 h-auto"
       />
       <span
@@ -55,7 +55,7 @@
 
 <script setup lang="ts">
 import { useLocalStorage } from "@vueuse/core";
-import { head } from "lodash-es";
+import { head, last } from "lodash-es";
 import { EyeIcon, EyeOffIcon, InfoIcon, XIcon } from "lucide-vue-next";
 import { NButton, NTooltip } from "naive-ui";
 import { storeToRefs } from "pinia";
@@ -93,8 +93,9 @@ const queriedDatabaseNames = computed(() =>
 const items = computed(() => {
   return queriedDatabaseNames.value.map<BatchQueryItem>((name) => {
     const database = databaseStore.getDatabaseByName(name);
-    const resultSet = tab.value?.queryContext?.results.get(name);
-    return { database, resultSet };
+    // TODO(ed):
+    const result = last(tab.value?.queryContext?.results.get(name));
+    return { database, resultSet: result?.resultSet };
   });
 });
 
@@ -125,10 +126,12 @@ const showEmptySwitch = computed(() => {
   return items.value.some((item) => isEmptyQueryItem(item));
 });
 
-const isDatabaseQueryFailed = (database: ComposedDatabase) => {
-  const resultSet = tab.value?.queryContext?.results.get(database.name || "");
+const isDatabaseQueryFailed = (item: BatchQueryItem) => {
   // If there is any error in the result set, we consider the query failed.
-  return resultSet?.error || resultSet?.results.find((result) => result.error);
+  return (
+    item.resultSet?.error ||
+    item.resultSet?.results.find((result) => result.error)
+  );
 };
 
 const handleCloseSingleResultView = (database: ComposedDatabase) => {
