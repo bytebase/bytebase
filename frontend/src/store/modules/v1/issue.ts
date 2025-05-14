@@ -4,13 +4,18 @@ import { defineStore } from "pinia";
 import type { WatchCallback } from "vue";
 import { ref, watch } from "vue";
 import { issueServiceClient } from "@/grpcweb";
-import type { ComposedIssue, IssueFilter } from "@/types";
+import {
+  SYSTEM_BOT_EMAIL,
+  type ComposedIssue,
+  type IssueFilter,
+} from "@/types";
 import type { ApprovalStep } from "@/types/proto/v1/issue_service";
 import {
   issueStatusToJSON,
   ApprovalNode_Type,
 } from "@/types/proto/v1/issue_service";
 import { memberMapToRolesInProjectIAM } from "@/utils";
+import { userNamePrefix } from "./common";
 import {
   shallowComposeIssue,
   type ComposeIssueConfig,
@@ -137,8 +142,13 @@ export const candidatesOfApprovalStepV1 = (
 
   return uniq(
     candidates.filter((user) => {
-      if (!issue.projectEntity.allowSelfApproval) {
-        return user !== issue.creator;
+      // Exclude system bot user.
+      if (user === `${userNamePrefix}${SYSTEM_BOT_EMAIL}`) {
+        return false;
+      }
+      // If the project does not allow self-approval, exclude the creator.
+      if (!issue.projectEntity.allowSelfApproval && user === issue.creator) {
+        return false;
       }
       return true;
     })

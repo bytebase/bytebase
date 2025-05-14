@@ -70,7 +70,6 @@ import {
   extractGroupEmail,
   useUserStore,
   useGroupStore,
-  batchGetOrFetchUsers,
   extractUserId,
 } from "@/store";
 import { groupNamePrefix } from "@/store/modules/v1/common";
@@ -119,7 +118,7 @@ onMounted(() => {
 });
 
 watchEffect(async () => {
-  await batchGetOrFetchUsers(
+  await userStore.batchGetUsers(
     props.value.map((binding) =>
       binding.startsWith(groupBindingPrefix) ? "" : binding
     )
