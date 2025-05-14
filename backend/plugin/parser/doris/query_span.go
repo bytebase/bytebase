@@ -1,4 +1,4 @@
-package mysql
+package doris
 
 import (
 	"context"
@@ -8,18 +8,14 @@ import (
 )
 
 func init() {
-	base.RegisterGetQuerySpan(storepb.Engine_MYSQL, GetQuerySpan)
-	base.RegisterGetQuerySpan(storepb.Engine_MARIADB, GetQuerySpan)
-	base.RegisterGetQuerySpan(storepb.Engine_OCEANBASE, GetQuerySpan)
+	base.RegisterGetQuerySpan(storepb.Engine_DORIS, GetQuerySpan)
+	base.RegisterGetQuerySpan(storepb.Engine_STARROCKS, GetQuerySpan)
 }
 
-// GetQuerySpan returns the query span for the given statement.
 func GetQuerySpan(
 	ctx context.Context,
 	gCtx base.GetQuerySpanContext,
 	statement, database, _ string,
-	// getDatabaseMetadata base.GetDatabaseMetadataFunc,
-	// listDatabaseFunc base.ListDatabaseNamesFunc,
 	ignoreCaseSensitive bool,
 ) (*base.QuerySpan, error) {
 	q := newQuerySpanExtractor(database, gCtx, ignoreCaseSensitive)
