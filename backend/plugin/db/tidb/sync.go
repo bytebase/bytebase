@@ -149,8 +149,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 			SUB_PART,
 			EXPRESSION
 		FROM information_schema.TIDB_INDEXES
-		WHERE TABLE_SCHEMA = ?
-		ORDER BY TABLE_NAME, KEY_NAME, SEQ_IN_INDEX`
+		WHERE TABLE_SCHEMA = ?`
 	indexRows, err := d.db.QueryContext(ctx, indexQuery, d.databaseName)
 	if err != nil {
 		return nil, util.FormatErrorWithQuery(err, indexQuery)
