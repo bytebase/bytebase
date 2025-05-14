@@ -36,7 +36,7 @@
         v-else
         type="card"
         size="small"
-        class="flex-1 flex flex-col overflow-hidden px-2"
+        class="pt-2 flex-1 flex flex-col overflow-hidden px-2"
         style="--n-tab-padding: 4px 12px"
         v-model:value="selectedTab"
       >
