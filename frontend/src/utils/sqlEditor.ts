@@ -20,7 +20,6 @@ import {
   isValidInstanceName,
   UNKNOWN_DATABASE_NAME,
 } from "@/types";
-import { Engine } from "@/types/proto/v1/common";
 import {
   DataSourceType,
   type InstanceResource,

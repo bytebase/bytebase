@@ -70,7 +70,7 @@ import { useTimestamp } from "@vueuse/core";
 import dayjs from "dayjs";
 import { last } from "lodash-es";
 import { Info } from "lucide-vue-next";
-import { NButton } from "naive-ui";
+import { NButton, NTabs, NTabPane } from "naive-ui";
 import { computed, ref, watch } from "vue";
 import { BBSpin } from "@/bbkit";
 import { useSQLEditorTabStore } from "@/store";
