@@ -9,6 +9,7 @@ import {
   SYSTEM_BOT_USER_NAME,
   isValidUserName,
   unknownUser,
+  userBindingPrefix,
 } from "@/types";
 import { State, stateToJSON } from "@/types/proto/v1/common";
 import type { UpdateUserRequest, User } from "@/types/proto/v1/user_service";
@@ -139,7 +140,12 @@ export const useUserStore = defineStore("user", () => {
 
   const batchGetUsers = async (userNameList: string[]) => {
     const distinctList = uniq(userNameList)
-      .filter(Boolean)
+      .filter(
+        (name) =>
+          Boolean(name) &&
+          (name.startsWith(userNamePrefix) ||
+            name.startsWith(userBindingPrefix))
+      )
       .map((name) => ensureUserFullName(name))
       .filter(
         (name) =>
