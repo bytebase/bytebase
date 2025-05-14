@@ -41,7 +41,6 @@ func (l *queryTypeListener) EnterSingleStatement(ctx *parser.SingleStatementCont
 		s.ShowPartitionsStatement() != nil,
 		s.ShowProcesslistStatement() != nil,
 		s.ShowRolesStatement() != nil,
-		s.ShowTableStatusStatement() != nil,
 		s.ShowTransactionStatement() != nil,
 		s.ShowTriggersStatement() != nil,
 		s.ShowUserStatement() != nil,
