@@ -50,7 +50,7 @@
         </NButton>
       </div>
       <Timeline
-        v-else-if="wrappedSteps && wrappedSteps.length > 0"
+        v-else-if="wrappedSteps.length > 0"
         :steps="wrappedSteps"
         class="mt-1"
       />
