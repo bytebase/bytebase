@@ -175,13 +175,6 @@ export const emptySQLEditorTabQueryContext = (): SQLEditorTabQueryContext => ({
   abortController: new AbortController(),
   status: "IDLE",
   results: new Map(),
-  params: {
-    connection: emptySQLEditorConnection(),
-    engine: Engine.MYSQL,
-    explain: false,
-    statement: "",
-    selection: null,
-  },
 });
 
 export const getAdminDataSourceRestrictionOfDatabase = (
