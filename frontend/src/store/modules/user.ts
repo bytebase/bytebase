@@ -139,7 +139,11 @@ export const useUserStore = defineStore("user", () => {
 
   const batchGetUsers = async (userNameList: string[]) => {
     const distinctList = uniq(userNameList)
-      .filter(Boolean)
+      .filter(
+        (name) =>
+          Boolean(name) &&
+          (name.startsWith(userNamePrefix) || name.startsWith("user:"))
+      )
       .map((name) => ensureUserFullName(name))
       .filter(
         (name) =>
