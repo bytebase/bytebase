@@ -1,7 +1,7 @@
 <template>
   <NConfigProvider
     v-bind="naiveUIConfig"
-    class="relative flex flex-col justify-start items-start p-2 pb-1 overflow-y-auto"
+    class="relative flex flex-col justify-start items-start pb-1 overflow-y-auto"
     :class="dark && 'dark bg-dark-bg'"
   >
     <template v-if="executeParams && resultSet && !showPlaceholder">
@@ -22,7 +22,7 @@
       </template>
       <template v-else-if="viewMode === 'MULTI-RESULT'">
         <NTabs
-          type="card"
+          type="line"
           size="small"
           class="flex-1 flex flex-col overflow-hidden"
           style="--n-tab-padding: 4px 12px"
@@ -108,7 +108,6 @@
 import { Info } from "lucide-vue-next";
 import { darkTheme, NConfigProvider, NTabs, NTabPane } from "naive-ui";
 import { Status } from "nice-grpc-common";
-import type { PropType } from "vue";
 import { computed, ref, toRef } from "vue";
 import { useI18n } from "vue-i18n";
 import { darkThemeOverrides } from "@/../naive-ui.config";
@@ -141,28 +140,22 @@ import { provideSQLResultViewContext } from "./context";
 
 type ViewMode = "SINGLE-RESULT" | "MULTI-RESULT" | "EMPTY" | "ERROR";
 
-const props = defineProps({
-  executeParams: {
-    type: Object as PropType<SQLEditorQueryParams>,
-    default: undefined,
-  },
-  database: {
-    type: Object as PropType<ComposedDatabase>,
-    default: undefined,
-  },
-  resultSet: {
-    type: Object as PropType<SQLResultSetV1>,
-    default: undefined,
-  },
-  loading: {
-    type: Boolean,
-    default: false,
-  },
-  dark: {
-    type: Boolean,
-    default: false,
-  },
-});
+const props = withDefaults(
+  defineProps<{
+    executeParams?: SQLEditorQueryParams;
+    database?: ComposedDatabase;
+    resultSet?: SQLResultSetV1;
+    loading?: boolean;
+    dark?: boolean;
+  }>(),
+  {
+    executeParams: undefined,
+    database: undefined,
+    resultSet: undefined,
+    loading: false,
+    dark: false,
+  }
+);
 
 const { t } = useI18n();
 const policyStore = usePolicyV1Store();
