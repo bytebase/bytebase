@@ -11,7 +11,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  docker:
+  build-alpine:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -38,5 +38,34 @@ jobs:
           push: true
           tags: |
             bytebase/bytebase-action:${{ env.IMAGE_TAG }}
+          build-args: |
+            GIT_COMMIT=${{ env.GIT_COMMIT }}
+  build-debian:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Extract build args
+        id: extract_build_args
+        run: |
+          if [[ "${{ github.ref_name }}" =~ ^release/[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            VERSION=$(echo "${{ github.ref_name }}" | sed 's/release\///')
+          else
+            VERSION="latest"
+          fi
+          echo "IMAGE_TAG=${VERSION}" >> $GITHUB_ENV
+          echo "GIT_COMMIT=$(git rev-parse HEAD)" >> $GITHUB_ENV
+      - name: Login to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: scripts/Dockerfile.action-debian
+          push: true
+          tags: |
+            bytebase/bytebase-action:${{ env.IMAGE_TAG }}-debian
           build-args: |
             GIT_COMMIT=${{ env.GIT_COMMIT }}
