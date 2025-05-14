@@ -65,7 +65,7 @@
 <script lang="ts" setup>
 import { useTimestamp } from "@vueuse/core";
 import dayjs from "dayjs";
-import { last } from "lodash-es";
+import { head } from "lodash-es";
 import { Info } from "lucide-vue-next";
 import { NButton, NTabs, NTabPane } from "naive-ui";
 import { computed, ref, watch } from "vue";
@@ -81,9 +81,10 @@ const selectedTab = ref<number>();
 
 const selectedResults = computed(() => {
   return (
-    tabStore.currentTab?.queryContext?.results.get(
-      selectedDatabase.value?.name || ""
-    ) ?? []
+    tabStore.currentTab?.queryContext?.results
+      .get(selectedDatabase.value?.name || "")
+      ?.slice()
+      .reverse() ?? []
   );
 });
 
@@ -94,7 +95,7 @@ const tabName = (beginTimestampMS: number) => {
 watch(
   () => selectedResults.value,
   (results) => {
-    selectedTab.value = last(results)?.beginTimestampMS;
+    selectedTab.value = head(results)?.beginTimestampMS;
   },
   { deep: true }
 );
