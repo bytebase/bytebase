@@ -33,7 +33,8 @@
         v-else
         type="card"
         size="small"
-        class="pt-2 flex-1 flex flex-col overflow-hidden px-2"
+        class="flex-1 flex flex-col overflow-hidden px-2"
+        :class="isBatchQuery ? 'pt-0' : 'pt-2'"
         style="--n-tab-padding: 4px 12px"
         v-model:value="selectedTab"
       >
@@ -119,6 +120,12 @@ const queryElapsedTime = computed(() => {
   const elapsedMS = currentTimestampMS.value - beginMS;
   return `${(elapsedMS / 1000).toFixed(1)}s`;
 });
+
+const isBatchQuery = computed(
+  () =>
+    Array.from(tabStore.currentTab?.queryContext?.results.keys() || []).length >
+    1
+);
 
 const cancelQuery = () => {
   tabStore.currentTab?.queryContext?.abortController.abort();
