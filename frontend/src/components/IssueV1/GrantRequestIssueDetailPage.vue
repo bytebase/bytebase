@@ -2,6 +2,11 @@
   <div ref="containerRef" class="h-full flex flex-col">
     <div class="border-b">
       <BannerSection v-if="!isCreating" />
+      <FeatureAttention
+        v-else-if="existedDeactivatedInstance"
+        type="warning"
+        feature="bb.feature.custom-approval"
+      />
       <HeaderSection />
     </div>
 
@@ -63,6 +68,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from "vue";
+import { FeatureAttention } from "@/components/FeatureGuard";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import { PresetRoleType } from "@/types";
 import { Drawer } from "../v2";
@@ -77,6 +83,7 @@ import {
   GrantRequestQuerierForm,
   Sidebar,
 } from "./components";
+import { provideIssueIntanceContext } from "./components/Sidebar/ReviewSection/utils";
 import type { IssueReviewAction, IssueStatusAction } from "./logic";
 import {
   provideIssueSidebarContext,
@@ -125,4 +132,6 @@ const {
   desktopSidebarWidth,
   mobileSidebarOpen,
 } = provideIssueSidebarContext(containerRef);
+
+const { existedDeactivatedInstance } = provideIssueIntanceContext();
 </script>
