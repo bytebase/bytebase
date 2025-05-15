@@ -353,9 +353,10 @@ func (s *SchedulerV2) scheduleRunningTaskRuns(ctx context.Context) error {
 		return errors.Wrapf(err, "failed to list pending tasks")
 	}
 
-	// TODO(p0ny): remove these because we will follow the version order
 	// Find the minimum task ID for each database.
 	// We only run the first (i.e. which has the minimum task ID) task for each database.
+	// 1. For ddl tasks, we run them one by one to get a sane schema dump and thus diff.
+	// 2. For versioned tasks, this is our last resort to determine the order for tasks with the same version. We don't want to run them in parallel.
 	minTaskIDForDatabase := map[string]int{}
 	for _, taskRun := range taskRuns {
 		task, err := s.store.GetTaskV2ByID(ctx, taskRun.TaskUID)
