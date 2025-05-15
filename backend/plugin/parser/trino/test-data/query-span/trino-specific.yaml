@@ -5,8 +5,20 @@
   querySpan:
     type:
         querytype: 1
-    results: []
-    sourceColumns: {}
+    results:
+        - name: id
+          sourceColumns: {}
+          isPlainField: false
+          sourceFieldPaths: []
+          selectAsterisk: false
+        - name: t.name
+          sourceColumns: {}
+          isPlainField: false
+          sourceFieldPaths: []
+          selectAsterisk: false
+    sourceColumns:
+        catalog1.public.users.id: true
+        catalog1.public.users.names: true
     predicateColumns: {}
 - description: LATERAL query
   statement: SELECT u.id, t.x FROM users u, LATERAL (SELECT id + 1 AS x) t;
@@ -15,8 +27,25 @@
   querySpan:
     type:
         querytype: 1
-    results: []
-    sourceColumns: {}
+    results:
+        - name: u.id
+          sourceColumns: {}
+          isPlainField: false
+          sourceFieldPaths: []
+          selectAsterisk: false
+        - name: t.x
+          sourceColumns: {}
+          isPlainField: false
+          sourceFieldPaths: []
+          selectAsterisk: false
+        - name: x
+          sourceColumns: {}
+          isPlainField: false
+          sourceFieldPaths: []
+          selectAsterisk: false
+    sourceColumns:
+        catalog1.public.users.id: true
+        catalog1.public.users.name: true
     predicateColumns: {}
 - description: System table query
   statement: SELECT * FROM system.runtime.nodes;
@@ -25,7 +54,12 @@
   querySpan:
     type:
         querytype: 3
-    results: []
+    results:
+        - name: '*'
+          sourceColumns: {}
+          isPlainField: false
+          sourceFieldPaths: []
+          selectAsterisk: true
     sourceColumns: {}
     predicateColumns: {}
 - description: Multiple catalog query
@@ -35,8 +69,20 @@
   querySpan:
     type:
         querytype: 1
-    results: []
-    sourceColumns: {}
+    results:
+        - name: a.id
+          sourceColumns: {}
+          isPlainField: false
+          sourceFieldPaths: []
+          selectAsterisk: false
+        - name: b.id
+          sourceColumns: {}
+          isPlainField: false
+          sourceFieldPaths: []
+          selectAsterisk: false
+    sourceColumns:
+        catalog1.public.users.id: true
+        catalog1.public.users.name: true
     predicateColumns: {}
 - description: WITH clause
   statement: WITH temp AS (SELECT id, name FROM users WHERE id > 10) SELECT id, name FROM temp;
@@ -45,6 +91,32 @@
   querySpan:
     type:
         querytype: 1
-    results: []
-    sourceColumns: {}
+    results:
+        - name: id
+          sourceColumns:
+            catalog1.public.users.id: true
+          isPlainField: true
+          sourceFieldPaths: []
+          selectAsterisk: false
+        - name: name
+          sourceColumns:
+            catalog1.public.users.name: true
+          isPlainField: true
+          sourceFieldPaths: []
+          selectAsterisk: false
+        - name: id
+          sourceColumns:
+            catalog1.public.users.id: true
+          isPlainField: true
+          sourceFieldPaths: []
+          selectAsterisk: false
+        - name: name
+          sourceColumns:
+            catalog1.public.users.name: true
+          isPlainField: true
+          sourceFieldPaths: []
+          selectAsterisk: false
+    sourceColumns:
+        catalog1.public.users.id: true
+        catalog1.public.users.name: true
     predicateColumns: {}
