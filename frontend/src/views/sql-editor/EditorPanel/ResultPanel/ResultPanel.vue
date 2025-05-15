@@ -82,10 +82,9 @@ const selectedTab = ref<number>();
 
 const selectedResults = computed(() => {
   return (
-    tabStore.currentTab?.queryContext?.results
-      .get(selectedDatabase.value?.name || "")
-      ?.slice()
-      .reverse() ?? []
+    tabStore.currentTab?.queryContext?.results.get(
+      selectedDatabase.value?.name || ""
+    ) ?? []
   );
 });
 

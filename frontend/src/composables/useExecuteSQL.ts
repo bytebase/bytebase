@@ -226,11 +226,6 @@ const useExecuteSQL = () => {
     }
 
     const beginTimestampMS = Date.now();
-    for (const database of batchQueryDatabases) {
-      if (!queryContext.results.has(database.name)) {
-        queryContext.results.set(database.name, []);
-      }
-    }
 
     for (const database of queryContext.results.keys()) {
       if (!batchQueryDatabases.find((db) => db.name === database)) {
@@ -238,12 +233,25 @@ const useExecuteSQL = () => {
       }
     }
 
-    const fail = (database: ComposedDatabase, resultSet: SQLResultSetV1) => {
-      queryContext.results.get(database.name)!.push({
+    const unshiftQueryResult = (
+      database: string,
+      resultSet: SQLResultSetV1
+    ) => {
+      if (!queryContext.results.has(database)) {
+        queryContext.results.set(database, []);
+      }
+      if (queryContext.results.get(database)!.length >= 10) {
+        queryContext.results.get(database)!.pop();
+      }
+      queryContext.results.get(database)!.unshift({
         params,
         beginTimestampMS,
         resultSet,
       });
+    };
+
+    const fail = (database: ComposedDatabase, resultSet: SQLResultSetV1) => {
+      unshiftQueryResult(database.name, resultSet);
     };
     const abort = (error: string, advices: Advice[] = []) => {
       fail(batchQueryDatabases[0], {
@@ -370,13 +378,7 @@ const useExecuteSQL = () => {
             fail(database, resultSet);
           }
         } else {
-          queryContext.results.get(database.name)!.push(
-            markRaw({
-              params,
-              beginTimestampMS,
-              resultSet,
-            })
-          );
+          unshiftQueryResult(database.name, markRaw(resultSet));
           // After all the queries are executed, we update the tab with the latest query result map.
           // Refresh the query history list when the query executed successfully
           // (with or without warnings).
