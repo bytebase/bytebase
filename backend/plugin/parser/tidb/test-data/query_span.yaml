@@ -1,3 +1,58 @@
+- description: select target field
+  statement: select a,b from cif.t;
+  defaultDatabase: cif
+  metadata: |-
+    {
+      "name":  "cif",
+      "schemas":  [
+        {
+          "name": "",
+          "tables":  [
+            {
+              "name":  "t",
+              "columns":  [
+                {
+                  "name":  "a"
+                },
+                {
+                  "name":  "b"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+        - name: a
+          sourcecolumns:
+            - server: ""
+              database: cif
+              schema: ""
+              table: t
+              column: a
+          isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
+        - name: b
+          sourcecolumns:
+            - server: ""
+              database: cif
+              schema: ""
+              table: t
+              column: b
+          isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
+    sourcecolumns:
+        - server: ""
+          database: cif
+          schema: ""
+          table: t
+          column: ""
+    predicatecolumns: []
 - description: Test For alias.* with join
   statement: SELECT t1.*, t2.* FROM t t1 JOIN (select * from t) t2 ON t1.a = t2.a;
   defaultDatabase: db
