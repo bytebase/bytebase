@@ -5,8 +5,20 @@
   querySpan:
     type:
         querytype: 1
-    results: []
-    sourceColumns: {}
+    results:
+        - name: id
+          sourceColumns: {}
+          isPlainField: false
+          sourceFieldPaths: []
+          selectAsterisk: false
+        - name: name
+          sourceColumns: {}
+          isPlainField: false
+          sourceFieldPaths: []
+          selectAsterisk: false
+    sourceColumns:
+        catalog1.public.users.id: true
+        catalog1.public.users.name: true
     predicateColumns: {}
 - description: SELECT with alias
   statement: SELECT u.id AS user_id, u.name FROM users u;
@@ -15,8 +27,20 @@
   querySpan:
     type:
         querytype: 1
-    results: []
-    sourceColumns: {}
+    results:
+        - name: user_id
+          sourceColumns: {}
+          isPlainField: false
+          sourceFieldPaths: []
+          selectAsterisk: false
+        - name: u.name
+          sourceColumns: {}
+          isPlainField: false
+          sourceFieldPaths: []
+          selectAsterisk: false
+    sourceColumns:
+        catalog1.public.users.id: true
+        catalog1.public.users.name: true
     predicateColumns: {}
 - description: SELECT from schema.table
   statement: SELECT id, name FROM public.users;
@@ -25,6 +49,18 @@
   querySpan:
     type:
         querytype: 1
-    results: []
-    sourceColumns: {}
+    results:
+        - name: id
+          sourceColumns: {}
+          isPlainField: false
+          sourceFieldPaths: []
+          selectAsterisk: false
+        - name: name
+          sourceColumns: {}
+          isPlainField: false
+          sourceFieldPaths: []
+          selectAsterisk: false
+    sourceColumns:
+        catalog1.public.users.id: true
+        catalog1.public.users.name: true
     predicateColumns: {}

@@ -5,8 +5,20 @@
   querySpan:
     type:
         querytype: 1
-    results: []
-    sourceColumns: {}
+    results:
+        - name: id
+          sourceColumns: {}
+          isPlainField: false
+          sourceFieldPaths: []
+          selectAsterisk: false
+        - name: name
+          sourceColumns: {}
+          isPlainField: false
+          sourceFieldPaths: []
+          selectAsterisk: false
+    sourceColumns:
+        catalog1.public.users.id: true
+        catalog1.public.users.name: true
     predicateColumns: {}
 - description: INSERT
   statement: INSERT INTO users (id, name) VALUES (1, 'John');
@@ -66,7 +78,8 @@
     type:
         querytype: 4
     results: []
-    sourceColumns: {}
+    sourceColumns:
+        catalog1.public.users: true
     predicateColumns: {}
 - description: ALTER TABLE
   statement: ALTER TABLE users ADD COLUMN email VARCHAR;
@@ -86,7 +99,8 @@
     type:
         querytype: 2
     results: []
-    sourceColumns: {}
+    sourceColumns:
+        catalog1.public.users: true
     predicateColumns: {}
 - description: EXPLAIN ANALYZE
   statement: EXPLAIN ANALYZE SELECT id, name FROM users;
@@ -96,7 +110,8 @@
     type:
         querytype: 1
     results: []
-    sourceColumns: {}
+    sourceColumns:
+        catalog1.public.users: true
     predicateColumns: {}
 - description: SHOW TABLES
   statement: SHOW TABLES;
