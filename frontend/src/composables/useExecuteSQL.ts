@@ -233,7 +233,10 @@ const useExecuteSQL = () => {
       }
     }
 
-    const pushQueryResult = (database: string, resultSet: SQLResultSetV1) => {
+    const unshiftQueryResult = (
+      database: string,
+      resultSet: SQLResultSetV1
+    ) => {
       if (!queryContext.results.has(database)) {
         queryContext.results.set(database, []);
       }
@@ -248,7 +251,7 @@ const useExecuteSQL = () => {
     };
 
     const fail = (database: ComposedDatabase, resultSet: SQLResultSetV1) => {
-      pushQueryResult(database.name, resultSet);
+      unshiftQueryResult(database.name, resultSet);
     };
     const abort = (error: string, advices: Advice[] = []) => {
       fail(batchQueryDatabases[0], {
@@ -375,7 +378,7 @@ const useExecuteSQL = () => {
             fail(database, resultSet);
           }
         } else {
-          pushQueryResult(database.name, markRaw(resultSet));
+          unshiftQueryResult(database.name, markRaw(resultSet));
           // After all the queries are executed, we update the tab with the latest query result map.
           // Refresh the query history list when the query executed successfully
           // (with or without warnings).
