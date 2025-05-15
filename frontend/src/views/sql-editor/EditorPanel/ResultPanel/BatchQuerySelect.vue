@@ -21,7 +21,7 @@
       </template>
     </NTooltip>
 
-    <NScrollbar x-scrollable content-class="pb-2">
+    <NScrollbar x-scrollable>
       <div class="flex flex-row justify-start items-center gap-2">
         <NButton
           v-for="item in filteredItems"
