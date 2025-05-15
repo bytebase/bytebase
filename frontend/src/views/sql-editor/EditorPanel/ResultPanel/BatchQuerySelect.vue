@@ -21,7 +21,7 @@
       </template>
     </NTooltip>
 
-    <NScrollbar x-scrollable>
+    <NScrollbar x-scrollable class="pb-2">
       <div class="flex flex-row justify-start items-center gap-2">
         <NButton
           v-for="item in filteredItems"
@@ -97,7 +97,6 @@ const queriedDatabaseNames = computed(() =>
 const items = computed(() => {
   return queriedDatabaseNames.value.map<BatchQueryItem>((name) => {
     const database = databaseStore.getDatabaseByName(name);
-    // TODO(ed):
     const result = last(tab.value?.queryContext?.results.get(name));
     return { database, resultSet: result?.resultSet };
   });
