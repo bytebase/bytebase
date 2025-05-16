@@ -146,7 +146,7 @@ const handleClickNext = async () => {
         "bb.issue.database.schema.update",
         state.targetSelectState.changeSource === "DATABASE"
           ? databaseList.map((db) => db.databaseName)
-          : [databaseGroup?.databasePlaceholder ?? ""]
+          : [databaseGroup?.title ?? ""]
       ),
       changelist: changelist.value.name,
       description: `Apply changelist [${changelist.value.description}]`,
