@@ -17,6 +17,6 @@ export const getTaskChangeType = (
     case Plan_ChangeDatabaseConfig_Type.DATA:
       return Release_File_ChangeType.DML;
   }
-  // Default to DDL if no type is specified.
-  return Release_File_ChangeType.DDL;
+  // Default to DML if no type is specified.
+  return Release_File_ChangeType.DML;
 };
