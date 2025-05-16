@@ -453,7 +453,7 @@ func (*Driver) queryBatch(ctx context.Context, conn *sql.Conn, batch string, que
 				nextAffectedRowsIdx = getNextAffectedRowsIdx(stmtTypes, nextAffectedRowsIdx+1)
 				continue
 			}
-			queryResult = util.BuildAffectedRowsResult(m.Count)
+			queryResult = util.BuildAffectedRowsResult(m.Count, nil)
 			emptyResultSets := make([]*v1pb.QueryResult, nextAffectedRowsIdx-len(ret))
 			for i := 0; i < len(emptyResultSets); i++ {
 				emptyResultSets[i] = &v1pb.QueryResult{}

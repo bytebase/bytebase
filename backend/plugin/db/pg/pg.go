@@ -111,6 +111,8 @@ func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.Connectio
 	}
 	d.config = config
 
+	pgxConnConfig.OnNotice = d.onNotice
+
 	d.connectionString = stdlib.RegisterConnConfig(pgxConnConfig)
 	db, err := sql.Open(driverName, d.connectionString)
 	if err != nil {
@@ -128,6 +130,43 @@ func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.Connectio
 	}
 	d.connectionCtx = config.ConnectionContext
 	return d, nil
+}
+
+func (d *Driver) onNotice(_ *pgconn.PgConn, n *pgconn.Notice) {
+	if n == nil {
+		return
+	}
+
+	d.connectionCtx.AppendMessage(&v1pb.QueryResult_Message{
+		Level:   convertLevel(n.Severity),
+		Content: n.Message,
+	})
+}
+
+func convertLevel(level string) v1pb.QueryResult_Message_Level {
+	switch level {
+	case "DEBUG":
+		return v1pb.QueryResult_Message_DEBUG
+	case "INFO":
+		return v1pb.QueryResult_Message_INFO
+	case "NOTICE":
+		return v1pb.QueryResult_Message_NOTICE
+	case "WARNING":
+		return v1pb.QueryResult_Message_WARNING
+	case "EXCEPTION":
+		return v1pb.QueryResult_Message_EXCEPTION
+	case "LOG":
+		return v1pb.QueryResult_Message_LOG
+	default:
+		return v1pb.QueryResult_Message_LEVEL_UNSPECIFIED
+	}
+}
+
+// PushAndClearMessages pushes and clears the messages.
+func (d *Driver) PushAndClearMessages() []*v1pb.QueryResult_Message {
+	messages := d.connectionCtx.MessageBuffer
+	d.connectionCtx.MessageBuffer = nil
+	return messages
 }
 
 func getPGConnectionConfig(config db.ConnectionConfig) (*pgx.ConnConfig, error) {
@@ -646,7 +685,7 @@ func (d *Driver) GetCurrentDatabaseOwner(ctx context.Context) (string, error) {
 }
 
 // QueryConn queries a SQL statement in a given connection.
-func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
+func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
 	singleSQLs, err := pgparser.SplitSQL(statement)
 	if err != nil {
 		return nil, err
@@ -696,6 +735,7 @@ func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, 
 				if err != nil {
 					return nil, err
 				}
+				r.Messages = d.PushAndClearMessages()
 				if err := rows.Err(); err != nil {
 					return nil, err
 				}
@@ -710,7 +750,7 @@ func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, 
 			if err != nil {
 				slog.Info("rowsAffected returns error", log.BBError(err))
 			}
-			return util.BuildAffectedRowsResult(affectedRows), nil
+			return util.BuildAffectedRowsResult(affectedRows, d.PushAndClearMessages()), nil
 		}()
 		stop := false
 		if err != nil {
