@@ -53,9 +53,7 @@
         </template>
         {{ $t("dynamic.resource.database-group") }}
       </NTooltip>
-      <span class="truncate text-sm">{{
-        relatedDatabaseGroup.databaseGroupName
-      }}</span>
+      <span class="truncate text-sm">{{ relatedDatabaseGroup.title }}</span>
     </div>
     <!-- Fallback -->
     <div v-else class="flex items-center gap-2 text-sm">Unknown target</div>

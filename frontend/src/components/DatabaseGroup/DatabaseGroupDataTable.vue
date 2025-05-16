@@ -83,7 +83,7 @@ const columnList = computed((): DatabaseGroupDataTableColumn[] => {
     render: (data) => {
       return (
         <div class="space-x-2">
-          <span>{data.databasePlaceholder}</span>
+          <span>{data.title}</span>
         </div>
       );
     },
