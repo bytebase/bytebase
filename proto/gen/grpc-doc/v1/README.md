@@ -8535,6 +8535,7 @@ TYPE_PROJECT_REPOSITORY_PUSH represents Bytebase receiving a push event from the
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | results | [QueryResult](#bytebase-v1-QueryResult) | repeated | The query results. |
+| name | [string](#string) |  | The name is the database name to execute the query against. Format: instances/{instance}/databases/{databaseName} |
 
 
 

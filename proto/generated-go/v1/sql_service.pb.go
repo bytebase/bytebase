@@ -381,7 +381,10 @@ func (x *AdminExecuteRequest) GetContainer() string {
 type AdminExecuteResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The query results.
-	Results       []*QueryResult `protobuf:"bytes,1,rep,name=results,proto3" json:"results,omitempty"`
+	Results []*QueryResult `protobuf:"bytes,1,rep,name=results,proto3" json:"results,omitempty"`
+	// The name is the database name to execute the query against.
+	// Format: instances/{instance}/databases/{databaseName}
+	Name          string `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -421,6 +424,13 @@ func (x *AdminExecuteResponse) GetResults() []*QueryResult {
 		return x.Results
 	}
 	return nil
+}
+
+func (x *AdminExecuteResponse) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
 }
 
 type QueryRequest struct {
@@ -2809,9 +2819,10 @@ const file_v1_sql_service_proto_rawDesc = "" +
 	"\tcontainer\x18\a \x01(\tH\x01R\tcontainer\x88\x01\x01B\t\n" +
 	"\a_schemaB\f\n" +
 	"\n" +
-	"_containerJ\x04\b\x02\x10\x03\"J\n" +
+	"_containerJ\x04\b\x02\x10\x03\"^\n" +
 	"\x14AdminExecuteResponse\x122\n" +
-	"\aresults\x18\x01 \x03(\v2\x18.bytebase.v1.QueryResultR\aresults\"\xd2\x02\n" +
+	"\aresults\x18\x01 \x03(\v2\x18.bytebase.v1.QueryResultR\aresults\x12\x12\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name\"\xd2\x02\n" +
 	"\fQueryRequest\x122\n" +
 	"\x04name\x18\x01 \x01(\tB\x1e\xe2A\x01\x02\xfaA\x17\n" +
 	"\x15bytebase.com/DatabaseR\x04name\x12\x1c\n" +

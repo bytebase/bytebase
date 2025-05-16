@@ -147,6 +147,10 @@ message AdminExecuteRequest {
 message AdminExecuteResponse {
   // The query results.
   repeated QueryResult results = 1;
+
+  // The name is the database name to execute the query against.
+  // Format: instances/{instance}/databases/{databaseName}
+  string name = 2;
 }
 
 message QueryRequest {

@@ -7936,6 +7936,11 @@ components:
                     items:
                         $ref: '#/components/schemas/QueryResult'
                     description: The query results.
+                name:
+                    type: string
+                    description: |-
+                        The name is the database name to execute the query against.
+                         Format: instances/{instance}/databases/{databaseName}
         Advice:
             type: object
             properties:

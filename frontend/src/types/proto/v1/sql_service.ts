@@ -53,6 +53,11 @@ export interface AdminExecuteRequest {
 export interface AdminExecuteResponse {
   /** The query results. */
   results: QueryResult[];
+  /**
+   * The name is the database name to execute the query against.
+   * Format: instances/{instance}/databases/{databaseName}
+   */
+  name: string;
 }
 
 export interface QueryRequest {
@@ -912,13 +917,16 @@ export const AdminExecuteRequest: MessageFns<AdminExecuteRequest> = {
 };
 
 function createBaseAdminExecuteResponse(): AdminExecuteResponse {
-  return { results: [] };
+  return { results: [], name: "" };
 }
 
 export const AdminExecuteResponse: MessageFns<AdminExecuteResponse> = {
   encode(message: AdminExecuteResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     for (const v of message.results) {
       QueryResult.encode(v!, writer.uint32(10).fork()).join();
+    }
+    if (message.name !== "") {
+      writer.uint32(18).string(message.name);
     }
     return writer;
   },
@@ -938,6 +946,14 @@ export const AdminExecuteResponse: MessageFns<AdminExecuteResponse> = {
           message.results.push(QueryResult.decode(reader, reader.uint32()));
           continue;
         }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -950,6 +966,7 @@ export const AdminExecuteResponse: MessageFns<AdminExecuteResponse> = {
   fromJSON(object: any): AdminExecuteResponse {
     return {
       results: globalThis.Array.isArray(object?.results) ? object.results.map((e: any) => QueryResult.fromJSON(e)) : [],
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
     };
   },
 
@@ -957,6 +974,9 @@ export const AdminExecuteResponse: MessageFns<AdminExecuteResponse> = {
     const obj: any = {};
     if (message.results?.length) {
       obj.results = message.results.map((e) => QueryResult.toJSON(e));
+    }
+    if (message.name !== "") {
+      obj.name = message.name;
     }
     return obj;
   },
@@ -967,6 +987,7 @@ export const AdminExecuteResponse: MessageFns<AdminExecuteResponse> = {
   fromPartial(object: DeepPartial<AdminExecuteResponse>): AdminExecuteResponse {
     const message = createBaseAdminExecuteResponse();
     message.results = object.results?.map((e) => QueryResult.fromPartial(e)) || [];
+    message.name = object.name ?? "";
     return message;
   },
 };

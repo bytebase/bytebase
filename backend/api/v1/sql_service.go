@@ -142,7 +142,9 @@ func (s *SQLService) AdminExecute(server v1pb.SQLService_AdminExecuteServer) err
 			slog.Error("failed to post admin execute activity", log.BBError(err))
 		}
 
-		response := &v1pb.AdminExecuteResponse{}
+		response := &v1pb.AdminExecuteResponse{
+			Name: common.FormatDatabase(database.InstanceID, database.DatabaseName),
+		}
 		if queryErr != nil {
 			response.Results = []*v1pb.QueryResult{
 				{
