@@ -131,8 +131,8 @@ func TestDatabaseGroup(t *testing.T) {
 		Parent:          project.Name,
 		DatabaseGroupId: "all",
 		DatabaseGroup: &v1pb.DatabaseGroup{
-			DatabasePlaceholder: "all",
-			DatabaseExpr:        &expr.Expr{Expression: "true"},
+			Title:        "all",
+			DatabaseExpr: &expr.Expr{Expression: "true"},
 		},
 	})
 	a.NoError(err)

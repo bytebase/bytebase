@@ -167,11 +167,8 @@ export interface DatabaseGroup {
    * Format: projects/{project}/databaseGroups/{databaseGroup}
    */
   name: string;
-  /**
-   * The short name used in actual databases specified by users.
-   * For example, the placeholder for db1_2010, db1_2021, db1_2023 will be "db1".
-   */
-  databasePlaceholder: string;
+  /** The short name used in actual databases specified by users. */
+  title: string;
   /** The condition that is associated with this database group. */
   databaseExpr:
     | Expr
@@ -685,7 +682,7 @@ export const DeleteDatabaseGroupRequest: MessageFns<DeleteDatabaseGroupRequest> 
 };
 
 function createBaseDatabaseGroup(): DatabaseGroup {
-  return { name: "", databasePlaceholder: "", databaseExpr: undefined, matchedDatabases: [], unmatchedDatabases: [] };
+  return { name: "", title: "", databaseExpr: undefined, matchedDatabases: [], unmatchedDatabases: [] };
 }
 
 export const DatabaseGroup: MessageFns<DatabaseGroup> = {
@@ -693,8 +690,8 @@ export const DatabaseGroup: MessageFns<DatabaseGroup> = {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
     }
-    if (message.databasePlaceholder !== "") {
-      writer.uint32(18).string(message.databasePlaceholder);
+    if (message.title !== "") {
+      writer.uint32(18).string(message.title);
     }
     if (message.databaseExpr !== undefined) {
       Expr.encode(message.databaseExpr, writer.uint32(26).fork()).join();
@@ -728,7 +725,7 @@ export const DatabaseGroup: MessageFns<DatabaseGroup> = {
             break;
           }
 
-          message.databasePlaceholder = reader.string();
+          message.title = reader.string();
           continue;
         }
         case 3: {
@@ -767,7 +764,7 @@ export const DatabaseGroup: MessageFns<DatabaseGroup> = {
   fromJSON(object: any): DatabaseGroup {
     return {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
-      databasePlaceholder: isSet(object.databasePlaceholder) ? globalThis.String(object.databasePlaceholder) : "",
+      title: isSet(object.title) ? globalThis.String(object.title) : "",
       databaseExpr: isSet(object.databaseExpr) ? Expr.fromJSON(object.databaseExpr) : undefined,
       matchedDatabases: globalThis.Array.isArray(object?.matchedDatabases)
         ? object.matchedDatabases.map((e: any) => DatabaseGroup_Database.fromJSON(e))
@@ -783,8 +780,8 @@ export const DatabaseGroup: MessageFns<DatabaseGroup> = {
     if (message.name !== "") {
       obj.name = message.name;
     }
-    if (message.databasePlaceholder !== "") {
-      obj.databasePlaceholder = message.databasePlaceholder;
+    if (message.title !== "") {
+      obj.title = message.title;
     }
     if (message.databaseExpr !== undefined) {
       obj.databaseExpr = Expr.toJSON(message.databaseExpr);
@@ -804,7 +801,7 @@ export const DatabaseGroup: MessageFns<DatabaseGroup> = {
   fromPartial(object: DeepPartial<DatabaseGroup>): DatabaseGroup {
     const message = createBaseDatabaseGroup();
     message.name = object.name ?? "";
-    message.databasePlaceholder = object.databasePlaceholder ?? "";
+    message.title = object.title ?? "";
     message.databaseExpr = (object.databaseExpr !== undefined && object.databaseExpr !== null)
       ? Expr.fromPartial(object.databaseExpr)
       : undefined;
