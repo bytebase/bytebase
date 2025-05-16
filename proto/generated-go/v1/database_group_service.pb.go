@@ -447,8 +447,7 @@ type DatabaseGroup struct {
 	// Format: projects/{project}/databaseGroups/{databaseGroup}
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// The short name used in actual databases specified by users.
-	// For example, the placeholder for db1_2010, db1_2021, db1_2023 will be "db1".
-	DatabasePlaceholder string `protobuf:"bytes,2,opt,name=database_placeholder,json=databasePlaceholder,proto3" json:"database_placeholder,omitempty"`
+	Title string `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
 	// The condition that is associated with this database group.
 	DatabaseExpr *expr.Expr `protobuf:"bytes,3,opt,name=database_expr,json=databaseExpr,proto3" json:"database_expr,omitempty"`
 	// The list of databases that match the database group condition.
@@ -496,9 +495,9 @@ func (x *DatabaseGroup) GetName() string {
 	return ""
 }
 
-func (x *DatabaseGroup) GetDatabasePlaceholder() string {
+func (x *DatabaseGroup) GetTitle() string {
 	if x != nil {
-		return x.DatabasePlaceholder
+		return x.Title
 	}
 	return ""
 }
@@ -600,10 +599,10 @@ const file_v1_database_group_service_proto_rawDesc = "" +
 	"updateMask\"U\n" +
 	"\x1aDeleteDatabaseGroupRequest\x127\n" +
 	"\x04name\x18\x01 \x01(\tB#\xe2A\x01\x02\xfaA\x1c\n" +
-	"\x1abytebase.com/DatabaseGroupR\x04name\"\xb6\x03\n" +
+	"\x1abytebase.com/DatabaseGroupR\x04name\"\x99\x03\n" +
 	"\rDatabaseGroup\x12\x12\n" +
-	"\x04name\x18\x01 \x01(\tR\x04name\x121\n" +
-	"\x14database_placeholder\x18\x02 \x01(\tR\x13databasePlaceholder\x126\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12\x14\n" +
+	"\x05title\x18\x02 \x01(\tR\x05title\x126\n" +
 	"\rdatabase_expr\x18\x03 \x01(\v2\x11.google.type.ExprR\fdatabaseExpr\x12V\n" +
 	"\x11matched_databases\x18\x04 \x03(\v2#.bytebase.v1.DatabaseGroup.DatabaseB\x04\xe2A\x01\x03R\x10matchedDatabases\x12Z\n" +
 	"\x13unmatched_databases\x18\x05 \x03(\v2#.bytebase.v1.DatabaseGroup.DatabaseB\x04\xe2A\x01\x03R\x12unmatchedDatabases\x1a\x1e\n" +

@@ -214,7 +214,7 @@ const handleClickNext = async () => {
         "bb.issue.database.schema.update",
         state.targetSelectState.changeSource === "DATABASE"
           ? databaseList.map((db) => db.databaseName)
-          : [databaseGroup?.databasePlaceholder]
+          : [databaseGroup?.title]
       ),
       description: `Apply release "${release.value.title}"`,
     });

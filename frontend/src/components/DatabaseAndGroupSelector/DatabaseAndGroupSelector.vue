@@ -29,8 +29,8 @@
             ? [databaseSelectState.selectedDatabaseGroup]
             : []
         "
-        @update:selected-database-groups="
-          databaseSelectState.selectedDatabaseGroup = head(Array.from($event))
+        @update:selected-database-group-names="
+          databaseSelectState.selectedDatabaseGroup = head($event)
         "
       />
     </NTabPane>

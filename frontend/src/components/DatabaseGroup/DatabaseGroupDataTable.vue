@@ -55,7 +55,7 @@ const emit = defineEmits<{
     e: MouseEvent,
     databaseGroup: ComposedDatabaseGroup
   ): void;
-  (event: "update:selected-database-groups", val: Set<string>): void;
+  (event: "update:selected-database-group-names", val: string[]): void;
 }>();
 
 const { t } = useI18n();
@@ -64,54 +64,54 @@ const state = reactive<LocalState>({
 });
 
 const columnList = computed((): DatabaseGroupDataTableColumn[] => {
-  const SELECTION: DatabaseGroupDataTableColumn = {
-    type: "selection",
-    multiple: !props.singleSelection,
-    hide: !props.showSelection,
-    cellProps: () => {
-      return {
-        onClick: (e: MouseEvent) => {
-          e.stopPropagation();
-        },
-      };
+  const rawColumnList: DatabaseGroupDataTableColumn[] = [
+    {
+      type: "selection",
+      multiple: !props.singleSelection,
+      hide: !props.showSelection,
+      cellProps: () => {
+        return {
+          onClick: (e: MouseEvent) => {
+            e.stopPropagation();
+          },
+        };
+      },
     },
-  };
-  const NAME: DatabaseGroupDataTableColumn = {
-    key: "title",
-    title: t("common.name"),
-    minWidth: 128,
-    render: (data) => {
-      return (
-        <div class="space-x-2">
-          <span>{data.databasePlaceholder}</span>
-        </div>
-      );
+    {
+      key: "title",
+      title: t("common.name"),
+      minWidth: 128,
+      render: (data) => {
+        return (
+          <div class="space-x-2">
+            <span>{data.title}</span>
+          </div>
+        );
+      },
     },
-  };
-  const PROJECT: DatabaseGroupDataTableColumn = {
-    key: "project",
-    title: t("common.project"),
-    minWidth: 128,
-    hide: !props.showProject,
-    render: (data) => {
-      return <span>{data.projectEntity.title}</span>;
+    {
+      key: "project",
+      title: t("common.project"),
+      minWidth: 128,
+      hide: !props.showProject,
+      render: (data) => {
+        return <span>{data.projectEntity.title}</span>;
+      },
     },
-  };
-  const EXPRESSION: DatabaseGroupDataTableColumn = {
-    key: "expression",
-    title: t("database.expression"),
-    ellipsis: true,
-    render: (data) => {
-      if (!data.databaseExpr || data.databaseExpr.expression === "") {
-        return <span class="textinfolabel italic">{t("common.empty")}</span>;
-      }
-      return <span class="">{data.databaseExpr.expression}</span>;
+    {
+      key: "expression",
+      title: t("database.expression"),
+      ellipsis: true,
+      render: (data) => {
+        if (!data.databaseExpr || data.databaseExpr.expression === "") {
+          return <span class="textinfolabel italic">{t("common.empty")}</span>;
+        }
+        return <span class="">{data.databaseExpr.expression}</span>;
+      },
     },
-  };
+  ];
 
-  return [SELECTION, NAME, PROJECT, EXPRESSION].filter(
-    (column) => !column.hide
-  );
+  return rawColumnList.filter((column) => !column.hide);
 });
 
 const data = computed(() => {
@@ -147,10 +147,9 @@ const rowProps = (databaseGroup: ComposedDatabaseGroup) => {
 watch(
   () => state.selectedDatabaseGroupNameList,
   () => {
-    emit(
-      "update:selected-database-groups",
-      state.selectedDatabaseGroupNameList
-    );
+    emit("update:selected-database-group-names", [
+      ...state.selectedDatabaseGroupNameList,
+    ]);
   }
 );
 </script>

@@ -9260,11 +9260,9 @@ components:
                     description: |-
                         The name of the database group.
                          Format: projects/{project}/databaseGroups/{databaseGroup}
-                databasePlaceholder:
+                title:
                     type: string
-                    description: |-
-                        The short name used in actual databases specified by users.
-                         For example, the placeholder for db1_2010, db1_2021, db1_2023 will be "db1".
+                    description: The short name used in actual databases specified by users.
                 databaseExpr:
                     allOf:
                         - $ref: '#/components/schemas/Expr'
