@@ -5,7 +5,7 @@
     class="inline-flex items-center gap-x-1"
     :class="link && !plain && 'normal-link'"
   >
-    <span>{{ databaseGroup.databasePlaceholder }}</span>
+    <span>{{ databaseGroup.title }}</span>
   </component>
 </template>
 

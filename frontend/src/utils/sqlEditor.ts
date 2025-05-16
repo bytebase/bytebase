@@ -20,7 +20,6 @@ import {
   isValidInstanceName,
   UNKNOWN_DATABASE_NAME,
 } from "@/types";
-import { Engine } from "@/types/proto/v1/common";
 import {
   DataSourceType,
   type InstanceResource,
@@ -175,13 +174,6 @@ export const emptySQLEditorTabQueryContext = (): SQLEditorTabQueryContext => ({
   abortController: new AbortController(),
   status: "IDLE",
   results: new Map(),
-  params: {
-    connection: emptySQLEditorConnection(),
-    engine: Engine.MYSQL,
-    explain: false,
-    statement: "",
-    selection: null,
-  },
 });
 
 export const getAdminDataSourceRestrictionOfDatabase = (

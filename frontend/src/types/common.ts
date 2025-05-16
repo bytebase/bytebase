@@ -7,8 +7,8 @@ export const SYSTEM_BOT_ID = 1;
 // System bot email
 export const SYSTEM_BOT_EMAIL = "support@bytebase.com";
 
-// For text input, we do validation if there is no further keystroke after 1s
-export const TEXT_VALIDATION_DELAY = 1000;
+// The delay for debouncing search input.
+export const DEBOUNCE_SEARCH_DELAY = 300;
 
 // Link to inquire enterprise plan
 export const ENTERPRISE_INQUIRE_LINK =

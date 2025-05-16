@@ -24,8 +24,14 @@ export type SQLEditorTabQueryContext = {
   abortController: AbortController;
   status: "IDLE" | "EXECUTING";
 
-  params: SQLEditorQueryParams;
-  results: Map<string /* database or instance */, SQLResultSetV1>;
+  results: Map<
+    string /* database or instance */,
+    {
+      params: SQLEditorQueryParams;
+      beginTimestampMS: number;
+      resultSet: SQLResultSetV1;
+    }[]
+  >;
 };
 
 export type SQLEditorTab = {

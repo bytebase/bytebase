@@ -169,8 +169,7 @@ message DatabaseGroup {
   string name = 1;
 
   // The short name used in actual databases specified by users.
-  // For example, the placeholder for db1_2010, db1_2021, db1_2023 will be "db1".
-  string database_placeholder = 2;
+  string title = 2;
 
   // The condition that is associated with this database group.
   google.type.Expr database_expr = 3;

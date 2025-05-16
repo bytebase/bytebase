@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="queriedDatabaseNames.length > 1"
-    class="w-full flex flex-row justify-start items-center p-2 pb-0 gap-2 shrink-0 overflow-x-auto hide-scrollbar"
+    class="w-full flex flex-row justify-start items-center p-2 pb-0 gap-2 shrink-0"
   >
     <NTooltip v-if="showEmptySwitch">
       <template #trigger>
@@ -21,43 +21,47 @@
       </template>
     </NTooltip>
 
-    <NButton
-      v-for="item in filteredItems"
-      :key="item.database.name"
-      secondary
-      strong
-      size="small"
-      :type="'default'"
-      :style="{
-        ...getBackgroundColorRgb(item.database),
-        borderTop: selectedDatabase === item.database ? '3px solid' : '',
-      }"
-      @click="$emit('update:selected-database', item.database)"
-    >
-      <RichDatabaseName :database="item.database" />
-      <InfoIcon
-        v-if="isDatabaseQueryFailed(item.database)"
-        class="ml-1 text-yellow-600 w-4 h-auto"
-      />
-      <span
-        v-if="isEmptyQueryItem(item)"
-        class="text-control-placeholder italic ml-1"
-      >
-        ({{ $t("common.empty") }})
-      </span>
-      <XIcon
-        class="ml-1 text-gray-400 w-4 h-auto hover:text-gray-600"
-        @click.stop="handleCloseSingleResultView(item.database)"
-      />
-    </NButton>
+    <NScrollbar x-scrollable class="pb-2">
+      <div class="flex flex-row justify-start items-center gap-2">
+        <NButton
+          v-for="item in filteredItems"
+          :key="item.database.name"
+          secondary
+          strong
+          size="small"
+          :type="'default'"
+          :style="{
+            ...getBackgroundColorRgb(item.database),
+            borderTop: selectedDatabase === item.database ? '3px solid' : '',
+          }"
+          @click="$emit('update:selected-database', item.database)"
+        >
+          <RichDatabaseName :database="item.database" />
+          <InfoIcon
+            v-if="isDatabaseQueryFailed(item)"
+            class="ml-1 text-yellow-600 w-4 h-auto"
+          />
+          <span
+            v-if="isEmptyQueryItem(item)"
+            class="text-control-placeholder italic ml-1"
+          >
+            ({{ $t("common.empty") }})
+          </span>
+          <XIcon
+            class="ml-1 text-gray-400 w-4 h-auto hover:text-gray-600"
+            @click.stop="handleCloseSingleResultView(item.database)"
+          />
+        </NButton>
+      </div>
+    </NScrollbar>
   </div>
 </template>
 
 <script setup lang="ts">
 import { useLocalStorage } from "@vueuse/core";
-import { head } from "lodash-es";
+import { head, last } from "lodash-es";
 import { EyeIcon, EyeOffIcon, InfoIcon, XIcon } from "lucide-vue-next";
-import { NButton, NTooltip } from "naive-ui";
+import { NButton, NTooltip, NScrollbar } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { computed, watch } from "vue";
 import { RichDatabaseName } from "@/components/v2";
@@ -93,8 +97,8 @@ const queriedDatabaseNames = computed(() =>
 const items = computed(() => {
   return queriedDatabaseNames.value.map<BatchQueryItem>((name) => {
     const database = databaseStore.getDatabaseByName(name);
-    const resultSet = tab.value?.queryContext?.results.get(name);
-    return { database, resultSet };
+    const result = last(tab.value?.queryContext?.results.get(name));
+    return { database, resultSet: result?.resultSet };
   });
 });
 
@@ -125,10 +129,12 @@ const showEmptySwitch = computed(() => {
   return items.value.some((item) => isEmptyQueryItem(item));
 });
 
-const isDatabaseQueryFailed = (database: ComposedDatabase) => {
-  const resultSet = tab.value?.queryContext?.results.get(database.name || "");
+const isDatabaseQueryFailed = (item: BatchQueryItem) => {
   // If there is any error in the result set, we consider the query failed.
-  return resultSet?.error || resultSet?.results.find((result) => result.error);
+  return (
+    item.resultSet?.error ||
+    item.resultSet?.results.find((result) => result.error)
+  );
 };
 
 const handleCloseSingleResultView = (database: ComposedDatabase) => {

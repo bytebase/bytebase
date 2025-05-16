@@ -13,6 +13,7 @@ import { useRouter } from "vue-router";
 import DatabaseGroupDataTable from "@/components/DatabaseGroup/DatabaseGroupDataTable.vue";
 import { PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL } from "@/router/dashboard/projectV1";
 import { useDBGroupListByProject } from "@/store";
+import { getProjectNameAndDatabaseGroupName } from "@/store/modules/v1/common";
 import type { ComposedDatabaseGroup, ComposedProject } from "@/types";
 
 const props = defineProps<{
@@ -31,7 +32,10 @@ const filteredDbGroupList = computed(() => {
     return dbGroupList.value;
   }
   return dbGroupList.value.filter((group) => {
-    return group.databaseGroupName.toLowerCase().includes(filter);
+    return (
+      group.name.toLowerCase().includes(filter) ||
+      group.title.toLowerCase().includes(filter)
+    );
   });
 });
 
@@ -39,10 +43,14 @@ const handleDatabaseGroupClick = (
   event: MouseEvent,
   databaseGroup: ComposedDatabaseGroup
 ) => {
+  const [projectId, databaseGroupName] = getProjectNameAndDatabaseGroupName(
+    databaseGroup.name
+  );
   const url = router.resolve({
     name: PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL,
     params: {
-      databaseGroupName: databaseGroup.databaseGroupName,
+      projectId,
+      databaseGroupName,
     },
   }).fullPath;
   if (event.ctrlKey || event.metaKey) {

@@ -82,7 +82,6 @@ import DatabaseAndGroupSelector, {
 import { Drawer, DrawerContent, ErrorTipsButton } from "@/components/v2";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { useDatabaseV1Store, useDBGroupStore } from "@/store";
-import { DatabaseGroup } from "@/types/proto/v1/database_group_service";
 import { extractProjectResourceName, generateIssueTitle } from "@/utils";
 import { useChangelistDetailContext } from "../context";
 
@@ -135,11 +134,9 @@ const handleClickNext = async () => {
     const databaseList = state.targetSelectState.selectedDatabaseNameList.map(
       (name) => databaseStore.getDatabaseByName(name)
     );
-    const databaseGroup = DatabaseGroup.fromPartial({
-      ...dbGroupStore.getDBGroupByName(
-        state.targetSelectState.selectedDatabaseGroup || ""
-      ),
-    });
+    const databaseGroup = dbGroupStore.getDBGroupByName(
+      state.targetSelectState.selectedDatabaseGroup || ""
+    );
     const query: Record<string, any> = {
       template:
         state.changeType === "DDL"
@@ -149,7 +146,7 @@ const handleClickNext = async () => {
         "bb.issue.database.schema.update",
         state.targetSelectState.changeSource === "DATABASE"
           ? databaseList.map((db) => db.databaseName)
-          : [databaseGroup?.databasePlaceholder]
+          : [databaseGroup?.title ?? ""]
       ),
       changelist: changelist.value.name,
       description: `Apply changelist [${changelist.value.description}]`,

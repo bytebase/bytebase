@@ -143,7 +143,7 @@ onMounted(async () => {
     databaseGroup.name
   );
   state.resourceId = databaseGroupName;
-  state.placeholder = databaseGroupEntity.databasePlaceholder;
+  state.placeholder = databaseGroupEntity.title;
   const composedDatabaseGroup = await dbGroupStore.getOrFetchDBGroupByName(
     databaseGroup.name,
     { silent: true }
@@ -222,7 +222,7 @@ const doConfirm = async () => {
       projectName: props.project.name,
       databaseGroup: {
         name: `${props.project.name}/databaseGroups/${resourceId}`,
-        databasePlaceholder: formState.placeholder,
+        title: formState.placeholder,
         databaseExpr: Expr.fromPartial({
           expression: celString,
         }),
@@ -236,9 +236,7 @@ const doConfirm = async () => {
     }
 
     const updateMask: string[] = [];
-    if (
-      !isEqual(props.databaseGroup.databasePlaceholder, formState.placeholder)
-    ) {
+    if (!isEqual(props.databaseGroup.title, formState.placeholder)) {
       updateMask.push("database_placeholder");
     }
     if (
@@ -254,7 +252,7 @@ const doConfirm = async () => {
     await dbGroupStore.updateDatabaseGroup(
       {
         ...props.databaseGroup!,
-        databasePlaceholder: formState.placeholder,
+        title: formState.placeholder,
         databaseExpr: Expr.fromPartial({
           expression: celString,
         }),

@@ -13,7 +13,7 @@ export const generateDatabaseGroupIssueRoute = (
   planOnly = false
 ) => {
   const issueNameParts: string[] = [];
-  issueNameParts.push(`[${databaseGroup.databasePlaceholder}]`);
+  issueNameParts.push(`[${databaseGroup.title}]`);
   issueNameParts.push(
     type === "bb.issue.database.schema.update" ? `Edit schema` : `Change data`
   );

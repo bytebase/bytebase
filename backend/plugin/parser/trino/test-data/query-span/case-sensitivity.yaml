@@ -6,8 +6,20 @@
   querySpan:
     type:
         querytype: 1
-    results: []
-    sourceColumns: {}
+    results:
+        - name: id
+          sourceColumns: {}
+          isPlainField: false
+          sourceFieldPaths: []
+          selectAsterisk: false
+        - name: name
+          sourceColumns: {}
+          isPlainField: false
+          sourceFieldPaths: []
+          selectAsterisk: false
+    sourceColumns:
+        catalog1.public.users.id: true
+        catalog1.public.users.name: true
     predicateColumns: {}
 - description: Case insensitive column names
   statement: SELECT ID, Name FROM users;
@@ -17,8 +29,20 @@
   querySpan:
     type:
         querytype: 1
-    results: []
-    sourceColumns: {}
+    results:
+        - name: ID
+          sourceColumns: {}
+          isPlainField: false
+          sourceFieldPaths: []
+          selectAsterisk: false
+        - name: Name
+          sourceColumns: {}
+          isPlainField: false
+          sourceFieldPaths: []
+          selectAsterisk: false
+    sourceColumns:
+        catalog1.public.users.id: true
+        catalog1.public.users.name: true
     predicateColumns: {}
 - description: Case insensitive schema name
   statement: SELECT id, name FROM PUBLIC.users;
@@ -28,8 +52,20 @@
   querySpan:
     type:
         querytype: 1
-    results: []
-    sourceColumns: {}
+    results:
+        - name: id
+          sourceColumns: {}
+          isPlainField: false
+          sourceFieldPaths: []
+          selectAsterisk: false
+        - name: name
+          sourceColumns: {}
+          isPlainField: false
+          sourceFieldPaths: []
+          selectAsterisk: false
+    sourceColumns:
+        catalog1.public.users.id: true
+        catalog1.public.users.name: true
     predicateColumns: {}
 - description: Case sensitive with quoted identifiers
   statement: SELECT "ID", "Name" FROM "Users";
@@ -38,6 +74,18 @@
   querySpan:
     type:
         querytype: 1
-    results: []
-    sourceColumns: {}
+    results:
+        - name: '"ID"'
+          sourceColumns: {}
+          isPlainField: false
+          sourceFieldPaths: []
+          selectAsterisk: false
+        - name: '"Name"'
+          sourceColumns: {}
+          isPlainField: false
+          sourceFieldPaths: []
+          selectAsterisk: false
+    sourceColumns:
+        catalog1.public.Users.ID: true
+        catalog1.public.Users.Name: true
     predicateColumns: {}
