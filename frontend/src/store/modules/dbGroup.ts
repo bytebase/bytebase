@@ -53,7 +53,7 @@ const batchComposeDatabaseGroup = async (
   );
 
   for (const databaseGroup of databaseGroupList) {
-    const [projectName, databaseGroupName] = getProjectNameAndDatabaseGroupName(
+    const [projectName, _] = getProjectNameAndDatabaseGroupName(
       databaseGroup.name
     );
     const project = projectStore.getProjectByName(
@@ -62,7 +62,6 @@ const batchComposeDatabaseGroup = async (
 
     composedDatabaseGroupMap.set(databaseGroup.name, {
       ...databaseGroup,
-      databaseGroupName,
       projectName,
       projectEntity: project,
       simpleExpr: emptySimpleExpr(),
@@ -186,10 +185,7 @@ export const useDBGroupStore = defineStore("db-group", () => {
     validateOnly = false,
   }: {
     projectName: string;
-    databaseGroup: Pick<
-      DatabaseGroup,
-      "name" | "databasePlaceholder" | "databaseExpr"
-    >;
+    databaseGroup: Pick<DatabaseGroup, "name" | "title" | "databaseExpr">;
     databaseGroupId: string;
     validateOnly?: boolean;
   }) => {
@@ -272,7 +268,7 @@ export const useDBGroupStore = defineStore("db-group", () => {
       projectName: projectName,
       databaseGroup: DatabaseGroup.fromPartial({
         name: `${projectName}/${databaseGroupNamePrefix}${validateOnlyResourceId}`,
-        databasePlaceholder: validateOnlyResourceId,
+        title: validateOnlyResourceId,
         databaseExpr: Expr.fromJSON({
           expression,
         }),
