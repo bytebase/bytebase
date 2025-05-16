@@ -92,6 +92,25 @@ export interface QueryRequest {
 export interface QueryResponse {
   /** The query results. */
   results: QueryResult[];
+  /**
+   * The name is the database name to execute the query against.
+   * Format: instances/{instance}/databases/{databaseName}
+   */
+  name: string;
+}
+
+export interface BatchQueryRequest {
+  requests: QueryRequest[];
+  /** The SQL statement to execute, can be override by QueryRequest.statement. */
+  statement: string;
+  /** The maximum number of rows to return, can be override by QueryRequest.limit. */
+  limit: number;
+  /** Explain the statement, can be override by QueryRequest.explain. */
+  explain: boolean;
+}
+
+export interface BatchQueryResponse {
+  responses: QueryResponse[];
 }
 
 export interface QueryOption {
@@ -1136,13 +1155,16 @@ export const QueryRequest: MessageFns<QueryRequest> = {
 };
 
 function createBaseQueryResponse(): QueryResponse {
-  return { results: [] };
+  return { results: [], name: "" };
 }
 
 export const QueryResponse: MessageFns<QueryResponse> = {
   encode(message: QueryResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     for (const v of message.results) {
       QueryResult.encode(v!, writer.uint32(10).fork()).join();
+    }
+    if (message.name !== "") {
+      writer.uint32(18).string(message.name);
     }
     return writer;
   },
@@ -1162,6 +1184,14 @@ export const QueryResponse: MessageFns<QueryResponse> = {
           message.results.push(QueryResult.decode(reader, reader.uint32()));
           continue;
         }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1174,6 +1204,7 @@ export const QueryResponse: MessageFns<QueryResponse> = {
   fromJSON(object: any): QueryResponse {
     return {
       results: globalThis.Array.isArray(object?.results) ? object.results.map((e: any) => QueryResult.fromJSON(e)) : [],
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
     };
   },
 
@@ -1181,6 +1212,9 @@ export const QueryResponse: MessageFns<QueryResponse> = {
     const obj: any = {};
     if (message.results?.length) {
       obj.results = message.results.map((e) => QueryResult.toJSON(e));
+    }
+    if (message.name !== "") {
+      obj.name = message.name;
     }
     return obj;
   },
@@ -1191,6 +1225,179 @@ export const QueryResponse: MessageFns<QueryResponse> = {
   fromPartial(object: DeepPartial<QueryResponse>): QueryResponse {
     const message = createBaseQueryResponse();
     message.results = object.results?.map((e) => QueryResult.fromPartial(e)) || [];
+    message.name = object.name ?? "";
+    return message;
+  },
+};
+
+function createBaseBatchQueryRequest(): BatchQueryRequest {
+  return { requests: [], statement: "", limit: 0, explain: false };
+}
+
+export const BatchQueryRequest: MessageFns<BatchQueryRequest> = {
+  encode(message: BatchQueryRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    for (const v of message.requests) {
+      QueryRequest.encode(v!, writer.uint32(10).fork()).join();
+    }
+    if (message.statement !== "") {
+      writer.uint32(18).string(message.statement);
+    }
+    if (message.limit !== 0) {
+      writer.uint32(24).int32(message.limit);
+    }
+    if (message.explain !== false) {
+      writer.uint32(32).bool(message.explain);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): BatchQueryRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseBatchQueryRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.requests.push(QueryRequest.decode(reader, reader.uint32()));
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.statement = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.limit = reader.int32();
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.explain = reader.bool();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): BatchQueryRequest {
+    return {
+      requests: globalThis.Array.isArray(object?.requests)
+        ? object.requests.map((e: any) => QueryRequest.fromJSON(e))
+        : [],
+      statement: isSet(object.statement) ? globalThis.String(object.statement) : "",
+      limit: isSet(object.limit) ? globalThis.Number(object.limit) : 0,
+      explain: isSet(object.explain) ? globalThis.Boolean(object.explain) : false,
+    };
+  },
+
+  toJSON(message: BatchQueryRequest): unknown {
+    const obj: any = {};
+    if (message.requests?.length) {
+      obj.requests = message.requests.map((e) => QueryRequest.toJSON(e));
+    }
+    if (message.statement !== "") {
+      obj.statement = message.statement;
+    }
+    if (message.limit !== 0) {
+      obj.limit = Math.round(message.limit);
+    }
+    if (message.explain !== false) {
+      obj.explain = message.explain;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<BatchQueryRequest>): BatchQueryRequest {
+    return BatchQueryRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<BatchQueryRequest>): BatchQueryRequest {
+    const message = createBaseBatchQueryRequest();
+    message.requests = object.requests?.map((e) => QueryRequest.fromPartial(e)) || [];
+    message.statement = object.statement ?? "";
+    message.limit = object.limit ?? 0;
+    message.explain = object.explain ?? false;
+    return message;
+  },
+};
+
+function createBaseBatchQueryResponse(): BatchQueryResponse {
+  return { responses: [] };
+}
+
+export const BatchQueryResponse: MessageFns<BatchQueryResponse> = {
+  encode(message: BatchQueryResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    for (const v of message.responses) {
+      QueryResponse.encode(v!, writer.uint32(10).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): BatchQueryResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseBatchQueryResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.responses.push(QueryResponse.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): BatchQueryResponse {
+    return {
+      responses: globalThis.Array.isArray(object?.responses)
+        ? object.responses.map((e: any) => QueryResponse.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: BatchQueryResponse): unknown {
+    const obj: any = {};
+    if (message.responses?.length) {
+      obj.responses = message.responses.map((e) => QueryResponse.toJSON(e));
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<BatchQueryResponse>): BatchQueryResponse {
+    return BatchQueryResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<BatchQueryResponse>): BatchQueryResponse {
+    const message = createBaseBatchQueryResponse();
+    message.responses = object.responses?.map((e) => QueryResponse.fromPartial(e)) || [];
     return message;
   },
 };
@@ -4369,6 +4576,22 @@ export const SQLServiceDefinition = {
               114,
               121,
             ]),
+          ],
+        },
+      },
+    },
+    batchQuery: {
+      name: "BatchQuery",
+      requestType: BatchQueryRequest,
+      requestStream: false,
+      responseType: BatchQueryResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          800016: [new Uint8Array([2])],
+          800024: [new Uint8Array([1])],
+          578365826: [
+            new Uint8Array([19, 58, 1, 42, 34, 14, 47, 118, 49, 58, 98, 97, 116, 99, 104, 81, 117, 101, 114, 121]),
           ],
         },
       },

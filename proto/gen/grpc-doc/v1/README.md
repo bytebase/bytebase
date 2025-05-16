@@ -521,6 +521,8 @@
     - [AdminExecuteRequest](#bytebase-v1-AdminExecuteRequest)
     - [AdminExecuteResponse](#bytebase-v1-AdminExecuteResponse)
     - [Advice](#bytebase-v1-Advice)
+    - [BatchQueryRequest](#bytebase-v1-BatchQueryRequest)
+    - [BatchQueryResponse](#bytebase-v1-BatchQueryResponse)
     - [CheckRequest](#bytebase-v1-CheckRequest)
     - [CheckResponse](#bytebase-v1-CheckResponse)
     - [DiffMetadataRequest](#bytebase-v1-DiffMetadataRequest)
@@ -8559,6 +8561,39 @@ TYPE_PROJECT_REPOSITORY_PUSH represents Bytebase receiving a push event from the
 
 
 
+<a name="bytebase-v1-BatchQueryRequest"></a>
+
+### BatchQueryRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| requests | [QueryRequest](#bytebase-v1-QueryRequest) | repeated |  |
+| statement | [string](#string) |  | The SQL statement to execute, can be override by QueryRequest.statement. |
+| limit | [int32](#int32) |  | The maximum number of rows to return, can be override by QueryRequest.limit. |
+| explain | [bool](#bool) |  | Explain the statement, can be override by QueryRequest.explain. |
+
+
+
+
+
+
+<a name="bytebase-v1-BatchQueryResponse"></a>
+
+### BatchQueryResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| responses | [QueryResponse](#bytebase-v1-QueryResponse) | repeated |  |
+
+
+
+
+
+
 <a name="bytebase-v1-CheckRequest"></a>
 
 ### CheckRequest
@@ -8794,6 +8829,7 @@ TYPE_PROJECT_REPOSITORY_PUSH represents Bytebase receiving a push event from the
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | results | [QueryResult](#bytebase-v1-QueryResult) | repeated | The query results. |
+| name | [string](#string) |  | The name is the database name to execute the query against. Format: instances/{instance}/databases/{databaseName} |
 
 
 
@@ -9073,6 +9109,7 @@ For example: project == &#34;projects/{project}&#34; database == &#34;instances/
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
 | Query | [QueryRequest](#bytebase-v1-QueryRequest) | [QueryResponse](#bytebase-v1-QueryResponse) |  |
+| BatchQuery | [BatchQueryRequest](#bytebase-v1-BatchQueryRequest) | [BatchQueryResponse](#bytebase-v1-BatchQueryResponse) |  |
 | AdminExecute | [AdminExecuteRequest](#bytebase-v1-AdminExecuteRequest) stream | [AdminExecuteResponse](#bytebase-v1-AdminExecuteResponse) stream |  |
 | SearchQueryHistories | [SearchQueryHistoriesRequest](#bytebase-v1-SearchQueryHistoriesRequest) | [SearchQueryHistoriesResponse](#bytebase-v1-SearchQueryHistoriesResponse) | SearchQueryHistories searches query histories for the caller. |
 | Export | [ExportRequest](#bytebase-v1-ExportRequest) | [ExportResponse](#bytebase-v1-ExportResponse) |  |

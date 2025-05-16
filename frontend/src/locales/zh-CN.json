@@ -183,7 +183,7 @@
     "expiration": "过期时间",
     "configure": "配置",
     "groups": "分组",
-    "database-groups": "数据库分组",
+    "database-group": "数据库分组",
     "members": "成员",
     "warehouse": "仓库",
     "schedule": "计划",
@@ -1799,7 +1799,8 @@
     },
     "batch-query": {
       "batch": "批量",
-      "description": "批量查询 {project} 下的 {count} 个数据库。",
+      "select-database-group": "您可以{select-database-group}进行批量查询",
+      "description": "批量查询 {project} 下的 {database} 个数据库和 {group} 个数据库组。",
       "show-or-hide-empty-query-results": "显示/隐藏空查询结果"
     },
     "executing-query": "执行查询",
@@ -2451,7 +2452,7 @@
     "condition": {
       "self": "条件"
     },
-    "select": "选择数据库组",
+    "select": "选择数据库分组",
     "no-matched-databases": "没有匹配的数据库"
   },
   "export-center": {

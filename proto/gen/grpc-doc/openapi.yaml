@@ -7700,6 +7700,30 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
+    /v1:batchQuery:
+        post:
+            tags:
+                - SQLService
+            operationId: SQLService_BatchQuery
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/BatchQueryRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/BatchQueryResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
 components:
     schemas:
         AICompletionRequest:
@@ -8317,6 +8341,30 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/Expr'
+        BatchQueryRequest:
+            type: object
+            properties:
+                requests:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/QueryRequest'
+                statement:
+                    type: string
+                    description: The SQL statement to execute, can be override by QueryRequest.statement.
+                limit:
+                    type: integer
+                    description: The maximum number of rows to return, can be override by QueryRequest.limit.
+                    format: int32
+                explain:
+                    type: boolean
+                    description: Explain the statement, can be override by QueryRequest.explain.
+        BatchQueryResponse:
+            type: object
+            properties:
+                responses:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/QueryResponse'
         BatchRunTasksRequest:
             type: object
             properties:
@@ -11659,6 +11707,11 @@ components:
                     items:
                         $ref: '#/components/schemas/QueryResult'
                     description: The query results.
+                name:
+                    type: string
+                    description: |-
+                        The name is the database name to execute the query against.
+                         Format: instances/{instance}/databases/{databaseName}
         QueryResult:
             type: object
             properties:

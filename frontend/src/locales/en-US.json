@@ -183,7 +183,7 @@
     "expiration": "Expiration",
     "configure": "Configure",
     "groups": "Groups",
-    "database-groups": "Database Groups",
+    "database-group": "Database Group | Database Groups",
     "members": "Members",
     "warehouse": "Warehouse",
     "schedule": "Schedule",
@@ -1799,7 +1799,8 @@
     },
     "batch-query": {
       "batch": "Batch",
-      "description": "Batch query {count} additional databases under {project}.",
+      "select-database-group": "You can {select-database-group} to batch query",
+      "description": "Batch query {database} additional databases and {group} database groups under {project}.",
       "show-or-hide-empty-query-results": "Show / hide empty query results"
     },
     "executing-query": "Executing query",

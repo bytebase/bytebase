@@ -183,7 +183,7 @@
     "expiration": "Expiración",
     "configure": "Configurar",
     "groups": "Grupos",
-    "database-groups": "Grupo de bases de datos",
+    "database-group": "Grupo de bases de datos | Grupos de bases de datos",
     "members": "Miembros",
     "warehouse": "Almacén",
     "schedule": "Horario",
@@ -1799,7 +1799,8 @@
     },
     "batch-query": {
       "batch": "Lote",
-      "description": "Consulta por lotes {count} bases de datos adicionales en {project}.",
+      "select-database-group": "Puedes {select-database-group} realizar consultas por lotes",
+      "description": "Consulta por lotes {database} bases de datos adicionales y {group} grupos de bases de datos bajo {project}.",
       "show-or-hide-empty-query-results": "Mostrar/ocultar resultados de consulta vacíos"
     },
     "executing-query": "Ejecutando consulta",

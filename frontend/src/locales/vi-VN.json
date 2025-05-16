@@ -183,7 +183,7 @@
     "expiration": "Hết hạn",
     "configure": "Cấu hình",
     "groups": "Nhóm",
-    "database-groups": "Nhóm cơ sở dữ liệu",
+    "database-group": "Nhóm cơ sở dữ liệu | Nhóm cơ sở dữ liệu",
     "members": "Thành viên",
     "warehouse": "Kho",
     "schedule": "Lịch trình",
@@ -1799,7 +1799,8 @@
     },
     "batch-query": {
       "batch": "Hàng loạt",
-      "description": "Truy vấn hàng loạt {count} cơ sở dữ liệu bổ sung trong {project}.",
+      "select-database-group": "Bạn có thể {select-database-group} để truy vấn hàng loạt",
+      "description": "Truy vấn hàng loạt {database} cơ sở dữ liệu bổ sung và {group} nhóm cơ sở dữ liệu trong {project}.",
       "show-or-hide-empty-query-results": "Hiển thị / ẩn kết quả truy vấn trống"
     },
     "executing-query": "Đang thực hiện truy vấn",

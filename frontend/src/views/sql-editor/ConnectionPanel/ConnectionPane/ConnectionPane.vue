@@ -7,10 +7,21 @@
         <FeatureBadge feature="bb.feature.batch-query" />
         {{
           $t("sql-editor.batch-query.description", {
-            count: state.selectedDatabases.size,
+            database: state.selectedDatabases.size,
+            group:
+              tabStore.currentTab?.batchQueryContext?.databaseGroups.length ??
+              0,
             project: project.title,
           })
         }}
+        <i18n-t
+          v-if="hasDatabaseGroupFeature && tabStore.currentTab"
+          keypath="sql-editor.batch-query.select-database-group"
+        >
+          <template #select-database-group>
+            <BatchQueryDatabaseGroupSelector />
+          </template>
+        </i18n-t>
       </div>
       <div
         class="w-full mt-1 flex flex-row justify-start items-start flex-wrap gap-2"
@@ -18,16 +29,25 @@
         <NTag
           v-for="database in state.selectedDatabases"
           :key="database"
-          closable
+          :closable="database !== tabStore.currentTab?.connection.database"
           @close="() => handleUncheckDatabase(database)"
         >
           <RichDatabaseName
             :database="databaseStore.getDatabaseByName(database)"
           />
         </NTag>
+        <template v-if="hasDatabaseGroupFeature">
+          <DatabaseGroupTag
+            v-for="databaseGroupName in tabStore.currentTab?.batchQueryContext
+              ?.databaseGroups ?? []"
+            :key="databaseGroupName"
+            :database-group-name="databaseGroupName"
+            @uncheck="handleUncheckDatabaseGroup"
+          />
+        </template>
       </div>
     </div>
-    <NDivider class="!my-3" />
+    <NDivider v-if="tabStore.currentTab" class="!my-3" />
     <div class="flex flex-row gap-x-0.5 px-1 items-center">
       <AdvancedSearch
         v-model:params="state.params"
@@ -141,7 +161,7 @@ import MaskSpinner from "@/components/misc/MaskSpinner.vue";
 import { RichDatabaseName } from "@/components/v2";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import {
-  hasFeature,
+  featureToRef,
   batchGetOrFetchDatabases,
   useProjectV1Store,
   useDatabaseV1Store,
@@ -174,6 +194,8 @@ import {
 } from "@/utils";
 import type { SearchParams } from "@/utils";
 import { useSQLEditorContext } from "../../context";
+import BatchQueryDatabaseGroupSelector from "./BatchQueryDatabaseGroupSelector.vue";
+import DatabaseGroupTag from "./DatabaseGroupTag.vue";
 import {
   DatabaseHoverPanel,
   provideHoverStateContext,
@@ -194,9 +216,8 @@ const editorStore = useSQLEditorStore();
 const databaseStore = useDatabaseV1Store();
 const projectStore = useProjectV1Store();
 
-const hasBatchQueryFeature = computed(() =>
-  hasFeature("bb.feature.batch-query")
-);
+const hasBatchQueryFeature = featureToRef("bb.feature.batch-query");
+const hasDatabaseGroupFeature = featureToRef("bb.feature.database-grouping");
 
 const state = reactive<LocalState>({
   selectedDatabases: new Set(),
@@ -247,6 +268,8 @@ watch(
     tabStore.updateCurrentTab({
       batchQueryContext: {
         databases: selectedDatabases,
+        databaseGroups:
+          tabStore.currentTab?.batchQueryContext?.databaseGroups ?? [],
       },
     });
   }
@@ -254,6 +277,17 @@ watch(
 
 const handleUncheckDatabase = (database: string) => {
   state.selectedDatabases.delete(database);
+};
+
+const handleUncheckDatabaseGroup = (databaseGroupName: string) => {
+  tabStore.updateCurrentTab({
+    batchQueryContext: {
+      databases: tabStore.currentTab?.batchQueryContext?.databases ?? [],
+      databaseGroups: (
+        tabStore.currentTab?.batchQueryContext?.databaseGroups ?? []
+      ).filter((name) => name !== databaseGroupName),
+    },
+  });
 };
 
 const scopeOptions = useCommonSearchScopeOptions([
@@ -376,6 +410,7 @@ const nodeProps = ({ option }: { option: TreeOption }) => {
             tabStore.updateCurrentTab({
               batchQueryContext: {
                 databases: [],
+                databaseGroups: [],
               },
             });
             showConnectionPanel.value = false;

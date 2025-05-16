@@ -20,6 +20,7 @@ const _ = grpc.SupportPackageIsVersion9
 
 const (
 	SQLService_Query_FullMethodName                = "/bytebase.v1.SQLService/Query"
+	SQLService_BatchQuery_FullMethodName           = "/bytebase.v1.SQLService/BatchQuery"
 	SQLService_AdminExecute_FullMethodName         = "/bytebase.v1.SQLService/AdminExecute"
 	SQLService_SearchQueryHistories_FullMethodName = "/bytebase.v1.SQLService/SearchQueryHistories"
 	SQLService_Export_FullMethodName               = "/bytebase.v1.SQLService/Export"
@@ -35,6 +36,7 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type SQLServiceClient interface {
 	Query(ctx context.Context, in *QueryRequest, opts ...grpc.CallOption) (*QueryResponse, error)
+	BatchQuery(ctx context.Context, in *BatchQueryRequest, opts ...grpc.CallOption) (*BatchQueryResponse, error)
 	AdminExecute(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[AdminExecuteRequest, AdminExecuteResponse], error)
 	// SearchQueryHistories searches query histories for the caller.
 	SearchQueryHistories(ctx context.Context, in *SearchQueryHistoriesRequest, opts ...grpc.CallOption) (*SearchQueryHistoriesResponse, error)
@@ -58,6 +60,16 @@ func (c *sQLServiceClient) Query(ctx context.Context, in *QueryRequest, opts ...
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(QueryResponse)
 	err := c.cc.Invoke(ctx, SQLService_Query_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sQLServiceClient) BatchQuery(ctx context.Context, in *BatchQueryRequest, opts ...grpc.CallOption) (*BatchQueryResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(BatchQueryResponse)
+	err := c.cc.Invoke(ctx, SQLService_BatchQuery_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -152,6 +164,7 @@ func (c *sQLServiceClient) AICompletion(ctx context.Context, in *AICompletionReq
 // for forward compatibility.
 type SQLServiceServer interface {
 	Query(context.Context, *QueryRequest) (*QueryResponse, error)
+	BatchQuery(context.Context, *BatchQueryRequest) (*BatchQueryResponse, error)
 	AdminExecute(grpc.BidiStreamingServer[AdminExecuteRequest, AdminExecuteResponse]) error
 	// SearchQueryHistories searches query histories for the caller.
 	SearchQueryHistories(context.Context, *SearchQueryHistoriesRequest) (*SearchQueryHistoriesResponse, error)
@@ -173,6 +186,9 @@ type UnimplementedSQLServiceServer struct{}
 
 func (UnimplementedSQLServiceServer) Query(context.Context, *QueryRequest) (*QueryResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Query not implemented")
+}
+func (UnimplementedSQLServiceServer) BatchQuery(context.Context, *BatchQueryRequest) (*BatchQueryResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method BatchQuery not implemented")
 }
 func (UnimplementedSQLServiceServer) AdminExecute(grpc.BidiStreamingServer[AdminExecuteRequest, AdminExecuteResponse]) error {
 	return status.Errorf(codes.Unimplemented, "method AdminExecute not implemented")
@@ -233,6 +249,24 @@ func _SQLService_Query_Handler(srv interface{}, ctx context.Context, dec func(in
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(SQLServiceServer).Query(ctx, req.(*QueryRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SQLService_BatchQuery_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BatchQueryRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SQLServiceServer).BatchQuery(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SQLService_BatchQuery_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SQLServiceServer).BatchQuery(ctx, req.(*BatchQueryRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -380,6 +414,10 @@ var SQLService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Query",
 			Handler:    _SQLService_Query_Handler,
+		},
+		{
+			MethodName: "BatchQuery",
+			Handler:    _SQLService_BatchQuery_Handler,
 		},
 		{
 			MethodName: "SearchQueryHistories",

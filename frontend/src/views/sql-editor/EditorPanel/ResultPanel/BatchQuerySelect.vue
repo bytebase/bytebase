@@ -9,7 +9,7 @@
           tertiary
           size="small"
           :type="showEmpty ? 'primary' : 'default'"
-          style="--n-padding: 6px"
+          style="--n-padding: 6px; margin-bottom: 0.5rem"
           @click="showEmpty = !showEmpty"
         >
           <EyeIcon v-if="showEmpty" class="w-4 h-4" />
@@ -59,7 +59,7 @@
 
 <script setup lang="ts">
 import { useLocalStorage } from "@vueuse/core";
-import { head, last } from "lodash-es";
+import { head } from "lodash-es";
 import { EyeIcon, EyeOffIcon, InfoIcon, XIcon } from "lucide-vue-next";
 import { NButton, NTooltip, NScrollbar } from "naive-ui";
 import { storeToRefs } from "pinia";
@@ -97,7 +97,7 @@ const queriedDatabaseNames = computed(() =>
 const items = computed(() => {
   return queriedDatabaseNames.value.map<BatchQueryItem>((name) => {
     const database = databaseStore.getDatabaseByName(name);
-    const result = last(tab.value?.queryContext?.results.get(name));
+    const result = head(tab.value?.queryContext?.results.get(name));
     return { database, resultSet: result?.resultSet };
   });
 });

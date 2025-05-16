@@ -4,11 +4,16 @@ import { defineStore } from "pinia";
 import { sqlServiceClient } from "@/grpcweb";
 import type { SQLResultSetV1 } from "@/types";
 import { PlanCheckRun_Result } from "@/types/proto/v1/plan_service";
-import type { ExportRequest, QueryRequest } from "@/types/proto/v1/sql_service";
+import type {
+  ExportRequest,
+  QueryRequest,
+  BatchQueryRequest,
+  QueryResponse,
+} from "@/types/proto/v1/sql_service";
 import { Advice, Advice_Status } from "@/types/proto/v1/sql_service";
 import { extractGrpcErrorMessage } from "@/utils/grpcweb";
 
-const getSqlReviewReports = (err: unknown): Advice[] => {
+export const getSqlReviewReports = (err: unknown): Advice[] => {
   const advices: Advice[] = [];
   if (err instanceof RichClientError) {
     for (const extra of err.extra) {
@@ -57,6 +62,7 @@ export const useSQLStore = defineStore("sql", () => {
       };
     } catch (err) {
       return {
+        name: params.name,
         error: extractGrpcErrorMessage(err),
         results: [],
         advices: getSqlReviewReports(err),
@@ -65,15 +71,32 @@ export const useSQLStore = defineStore("sql", () => {
     }
   };
 
+  const batchQuery = async (
+    params: BatchQueryRequest,
+    signal: AbortSignal
+  ): Promise<QueryResponse[]> => {
+    const response = await sqlServiceClient.batchQuery(params, {
+      // Skip global error handling since we will handle and display
+      // errors manually.
+      ignoredCodes: [Status.PERMISSION_DENIED],
+      silent: true,
+      signal,
+    });
+
+    return response.responses;
+  };
+
   const exportData = async (params: ExportRequest) => {
-    return await sqlServiceClient.export(params, {
+    const { content } = await sqlServiceClient.export(params, {
       // Won't jump to 403 page when permission denied.
       ignoredCodes: [Status.PERMISSION_DENIED],
     });
+    return content;
   };
 
   return {
     query,
+    batchQuery,
     exportData,
   };
 });
