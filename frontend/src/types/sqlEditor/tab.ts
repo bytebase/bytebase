@@ -17,21 +17,27 @@ export type BatchQueryContext = {
   // databases is used to store the selected database names.
   // Format: instances/{instance}/databases/{database}
   databases: string[];
+
+  // databaseGroups is used to store the selected database group names for batch request.
+  // Format: projects/{project}/databaseGroups/{databaseGroup}
+  databaseGroups: string[];
 };
 
-export type SQLEditorTabQueryContext = {
-  beginTimestampMS: number;
-  abortController: AbortController;
-  status: "IDLE" | "EXECUTING";
-
-  results: Map<
-    string /* database or instance */,
-    {
-      params: SQLEditorQueryParams;
-      beginTimestampMS: number;
-      resultSet: SQLResultSetV1;
-    }[]
-  >;
+export type SQLEditorDatabaseQueryContext = {
+  id: string;
+  // we will generate a new abortController when status changed to EXECUTING.
+  abortController?: AbortController;
+  // request params in the history.
+  params: SQLEditorQueryParams;
+  // PENDING: ready, pending to request.
+  // EXECUTING: requesting.
+  // DONE: request finished.
+  // CANCELLED: request cancelled.
+  status: "PENDING" | "EXECUTING" | "DONE" | "CANCELLED";
+  // beginTimestampMS will store the start request time when status changed to EXECUTING.
+  beginTimestampMS?: number;
+  // query result.
+  resultSet?: SQLResultSetV1;
 };
 
 export type SQLEditorTab = {
@@ -47,7 +53,10 @@ export type SQLEditorTab = {
 
   // SQL query related fields
   // won't be saved to localStorage
-  queryContext?: SQLEditorTabQueryContext;
+  databaseQueryContexts?: Map<
+    string /* database or instance */,
+    SQLEditorDatabaseQueryContext[]
+  >;
   batchQueryContext?: BatchQueryContext;
 
   // extended fields

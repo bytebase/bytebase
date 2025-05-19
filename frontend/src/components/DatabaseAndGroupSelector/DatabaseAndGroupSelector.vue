@@ -19,7 +19,7 @@
         "
       />
     </NTabPane>
-    <NTabPane name="GROUP" :tab="$t('common.database-groups')">
+    <NTabPane name="GROUP" :tab="$t('common.database-group')">
       <DatabaseGroupDataTable
         :database-group-list="dbGroupList"
         :show-selection="true"

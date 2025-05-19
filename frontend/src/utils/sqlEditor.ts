@@ -12,7 +12,6 @@ import type {
   CoreSQLEditorTab,
   SQLEditorConnection,
   SQLEditorTab,
-  SQLEditorTabQueryContext,
 } from "@/types";
 import {
   DEFAULT_SQL_EDITOR_TAB_MODE,
@@ -168,13 +167,6 @@ export const tryConnectToCoreSQLEditorTab = (
   );
   tabStore.updateCurrentTab(tab);
 };
-
-export const emptySQLEditorTabQueryContext = (): SQLEditorTabQueryContext => ({
-  beginTimestampMS: Date.now(),
-  abortController: new AbortController(),
-  status: "IDLE",
-  results: new Map(),
-});
 
 export const getAdminDataSourceRestrictionOfDatabase = (
   database: ComposedDatabase

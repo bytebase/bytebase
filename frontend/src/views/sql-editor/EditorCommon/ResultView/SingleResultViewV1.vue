@@ -200,8 +200,8 @@ import {
   pushNotification,
   usePolicyByParentAndType,
   useStorageStore,
+  useSQLStore,
 } from "@/store";
-import { useExportData } from "@/store/modules/export";
 import type { ComposedDatabase, SQLEditorQueryParams } from "@/types";
 import {
   DEBOUNCE_SEARCH_DELAY,
@@ -450,7 +450,7 @@ const handleExportBtnClick = async (
   const limit = options.limit ?? (admin ? 0 : editorStore.resultRowsLimit);
 
   try {
-    const content = await useExportData().exportData({
+    const content = await useSQLStore().exportData({
       name: database,
       // TODO(lj): support data source id similar to queries.
       dataSourceId: "",
