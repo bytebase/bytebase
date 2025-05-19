@@ -214,9 +214,6 @@ const isEmptyStatement = computed(() => {
   }
   return tab.statement === "";
 });
-const isExecutingSQL = computed(
-  () => currentTab.value?.queryContext?.status === "EXECUTING"
-);
 const { instance } = useConnectionOfCurrentSQLEditorTab();
 const { t } = useI18n();
 
@@ -238,7 +235,6 @@ const queryTip = computed(() => {
 const allowQuery = computed(() => {
   if (isDisconnected.value) return false;
   if (isEmptyStatement.value) return false;
-  if (isExecutingSQL.value) return false;
 
   if (instance.value.engine === Engine.COSMOSDB) {
     return !!currentTab.value?.connection.table;

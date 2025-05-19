@@ -11,6 +11,7 @@
           :error="resultSet.results[0]?.error"
           :execute-params="executeParams"
           :result-set="resultSet"
+          @execute="$emit('execute', $event)"
         />
         <SingleResultViewV1
           v-else
@@ -30,21 +31,29 @@
           <NTabPane
             v-for="(result, i) in filteredResults"
             :key="i"
-            :name="tabName(result, i)"
+            :name="tabName(i)"
             class="flex-1 flex flex-col overflow-hidden"
           >
             <template #tab>
-              <span>{{ tabName(result, i) }}</span>
-              <Info
-                v-if="result.error"
-                class="ml-2 text-yellow-600 w-4 h-auto"
-              />
+              <NTooltip>
+                <template #trigger>
+                  <div class="flex items-center space-x-2">
+                    <span>{{ tabName(i) }}</span>
+                    <Info
+                      v-if="result.error"
+                      class="text-yellow-600 w-4 h-auto"
+                    />
+                  </div>
+                </template>
+                {{ result.statement }}
+              </NTooltip>
             </template>
             <ErrorView
               v-if="result.error"
               :error="result.error"
               :execute-params="executeParams"
               :result-set="resultSet"
+              @execute="$emit('execute', $event)"
             />
             <SingleResultViewV1
               v-else
@@ -64,6 +73,7 @@
           :error="resultSet.error"
           :execute-params="executeParams"
           :result-set="resultSet"
+          @execute="$emit('execute', $event)"
         >
           <template #suffix>
             <RequestQueryButton
@@ -106,7 +116,13 @@
 
 <script lang="ts" setup>
 import { Info } from "lucide-vue-next";
-import { darkTheme, NConfigProvider, NTabs, NTabPane } from "naive-ui";
+import {
+  darkTheme,
+  NConfigProvider,
+  NTabs,
+  NTabPane,
+  NTooltip,
+} from "naive-ui";
 import { Status } from "nice-grpc-common";
 import { computed, ref, toRef } from "vue";
 import { useI18n } from "vue-i18n";
@@ -128,7 +144,6 @@ import type {
   DatabaseResource,
 } from "@/types";
 import { PolicyType } from "@/types/proto/v1/org_policy_service";
-import type { QueryResult } from "@/types/proto/v1/sql_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import DetailPanel from "./DetailPanel";
 import EmptyView from "./EmptyView.vue";
@@ -142,20 +157,23 @@ type ViewMode = "SINGLE-RESULT" | "MULTI-RESULT" | "EMPTY" | "ERROR";
 
 const props = withDefaults(
   defineProps<{
-    executeParams?: SQLEditorQueryParams;
-    database?: ComposedDatabase;
+    executeParams: SQLEditorQueryParams;
+    database: ComposedDatabase;
     resultSet?: SQLResultSetV1;
     loading?: boolean;
     dark?: boolean;
   }>(),
   {
     executeParams: undefined,
-    database: undefined,
     resultSet: undefined,
     loading: false,
     dark: false,
   }
 );
+
+defineEmits<{
+  (event: "execute", params: SQLEditorQueryParams): void;
+}>();
 
 const { t } = useI18n();
 const policyStore = usePolicyV1Store();
@@ -232,7 +250,7 @@ const showPlaceholder = computed(() => {
   return false;
 });
 
-const tabName = (result: QueryResult, index: number) => {
+const tabName = (index: number) => {
   return `${t("common.query")} #${index + 1}`;
 };
 
