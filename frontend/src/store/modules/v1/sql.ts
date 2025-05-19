@@ -57,7 +57,6 @@ export const useSQLStore = defineStore("sql", () => {
       };
     } catch (err) {
       return {
-        name: params.name,
         error: extractGrpcErrorMessage(err),
         results: [],
         advices: getSqlReviewReports(err),
