@@ -136,7 +136,7 @@ func (s *DatabaseGroupService) UpdateDatabaseGroup(ctx context.Context, request 
 	var updateDatabaseGroup store.UpdateDatabaseGroupMessage
 	for _, path := range request.UpdateMask.Paths {
 		switch path {
-		case "database_placeholder":
+		case "title":
 			if request.DatabaseGroup.Title == "" {
 				return nil, status.Errorf(codes.InvalidArgument, "database group database placeholder is required")
 			}
