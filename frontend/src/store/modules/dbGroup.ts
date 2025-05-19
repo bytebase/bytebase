@@ -2,7 +2,7 @@ import { computedAsync } from "@vueuse/core";
 import { head } from "lodash-es";
 import { defineStore } from "pinia";
 import type { MaybeRef } from "vue";
-import { computed, ref, unref, watchEffect } from "vue";
+import { computed, ref, unref, watch, watchEffect } from "vue";
 import { databaseGroupServiceClient } from "@/grpcweb";
 import type { ConditionGroupExpr } from "@/plugins/cel";
 import {
@@ -377,4 +377,25 @@ export const useDatabaseInGroupFilter = (
       .includes(db.name);
   };
   return { isPreparingDatabaseGroups, databaseFilter };
+};
+
+export const useDatabaseGroupByName = (name: MaybeRef<string>) => {
+  const store = useDBGroupStore();
+  const ready = ref(true);
+  watch(
+    () => unref(name),
+    (name) => {
+      ready.value = false;
+      store.getOrFetchDBGroupByName(name).then(() => {
+        ready.value = true;
+      });
+    },
+    { immediate: true }
+  );
+  const databaseGroup = computed(() => store.getDBGroupByName(unref(name)));
+
+  return {
+    databaseGroup,
+    ready,
+  };
 };

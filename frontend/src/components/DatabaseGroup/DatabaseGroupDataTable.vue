@@ -7,25 +7,21 @@
     :bordered="bordered"
     :loading="loading"
     :row-key="(data: ComposedDatabaseGroup) => data.name"
-    :checked-row-keys="Array.from(state.selectedDatabaseGroupNameList)"
+    :checked-row-keys="selectedDatabaseGroupNames"
     :row-props="rowProps"
     :pagination="{ pageSize: 20 }"
     :paginate-single-page="false"
     @update:checked-row-keys="
-        (val) => (state.selectedDatabaseGroupNameList = new Set(val as string[]))
-      "
+      (val) => $emit('update:selected-database-group-names', val as string[])
+    "
   />
 </template>
 
 <script lang="tsx" setup>
-import { NDataTable, type DataTableColumn } from "naive-ui";
-import { computed, reactive, watch } from "vue";
+import { NDataTable, NEllipsis, type DataTableColumn } from "naive-ui";
+import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import type { ComposedDatabaseGroup } from "@/types";
-
-interface LocalState {
-  selectedDatabaseGroupNameList: Set<string>;
-}
 
 type DatabaseGroupDataTableColumn = DataTableColumn<ComposedDatabaseGroup> & {
   hide?: boolean;
@@ -59,9 +55,6 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const state = reactive<LocalState>({
-  selectedDatabaseGroupNameList: new Set(props.selectedDatabaseGroupNames),
-});
 
 const columnList = computed((): DatabaseGroupDataTableColumn[] => {
   const rawColumnList: DatabaseGroupDataTableColumn[] = [
@@ -106,7 +99,7 @@ const columnList = computed((): DatabaseGroupDataTableColumn[] => {
         if (!data.databaseExpr || data.databaseExpr.expression === "") {
           return <span class="textinfolabel italic">{t("common.empty")}</span>;
         }
-        return <span class="">{data.databaseExpr.expression}</span>;
+        return <NEllipsis>{data.databaseExpr.expression}</NEllipsis>;
       },
     },
   ];
@@ -128,28 +121,21 @@ const rowProps = (databaseGroup: ComposedDatabaseGroup) => {
       }
 
       if (props.singleSelection) {
-        state.selectedDatabaseGroupNameList = new Set([databaseGroup.name]);
+        emit("update:selected-database-group-names", [databaseGroup.name]);
       } else {
         const selectedDatabaseGroupNameList = new Set(
-          Array.from(state.selectedDatabaseGroupNameList)
+          props.selectedDatabaseGroupNames
         );
         if (selectedDatabaseGroupNameList.has(databaseGroup.name)) {
           selectedDatabaseGroupNameList.delete(databaseGroup.name);
         } else {
           selectedDatabaseGroupNameList.add(databaseGroup.name);
         }
-        state.selectedDatabaseGroupNameList = selectedDatabaseGroupNameList;
+        emit("update:selected-database-group-names", [
+          ...selectedDatabaseGroupNameList,
+        ]);
       }
     },
   };
 };
-
-watch(
-  () => state.selectedDatabaseGroupNameList,
-  () => {
-    emit("update:selected-database-group-names", [
-      ...state.selectedDatabaseGroupNameList,
-    ]);
-  }
-);
 </script>

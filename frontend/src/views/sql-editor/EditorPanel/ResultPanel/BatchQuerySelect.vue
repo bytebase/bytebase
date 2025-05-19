@@ -9,7 +9,7 @@
           tertiary
           size="small"
           :type="showEmpty ? 'primary' : 'default'"
-          style="--n-padding: 6px"
+          style="--n-padding: 6px; margin-bottom: 0.5rem"
           @click="showEmpty = !showEmpty"
         >
           <EyeIcon v-if="showEmpty" class="w-4 h-4" />
@@ -59,19 +59,23 @@
 
 <script setup lang="ts">
 import { useLocalStorage } from "@vueuse/core";
-import { head, last } from "lodash-es";
+import { head } from "lodash-es";
 import { EyeIcon, EyeOffIcon, InfoIcon, XIcon } from "lucide-vue-next";
 import { NButton, NTooltip, NScrollbar } from "naive-ui";
 import { storeToRefs } from "pinia";
-import { computed, watch } from "vue";
+import { computed, watch, watchEffect } from "vue";
 import { RichDatabaseName } from "@/components/v2";
-import { useDatabaseV1Store, useSQLEditorTabStore } from "@/store";
-import type { ComposedDatabase, SQLResultSetV1 } from "@/types";
+import {
+  useDatabaseV1Store,
+  useSQLEditorTabStore,
+  batchGetOrFetchDatabases,
+} from "@/store";
+import type { ComposedDatabase, SQLEditorDatabaseQueryContext } from "@/types";
 import { hexToRgb } from "@/utils";
 
 type BatchQueryItem = {
   database: ComposedDatabase;
-  resultSet: SQLResultSetV1 | undefined;
+  context: SQLEditorDatabaseQueryContext | undefined;
 };
 
 const props = defineProps<{
@@ -91,27 +95,36 @@ const showEmpty = useLocalStorage(
 );
 
 const queriedDatabaseNames = computed(() =>
-  Array.from(tab.value?.queryContext?.results.keys() || [])
+  Array.from(tab.value?.databaseQueryContexts?.keys() || [])
 );
+
+watchEffect(async () => {
+  await batchGetOrFetchDatabases(queriedDatabaseNames.value);
+});
 
 const items = computed(() => {
   return queriedDatabaseNames.value.map<BatchQueryItem>((name) => {
     const database = databaseStore.getDatabaseByName(name);
-    const result = last(tab.value?.queryContext?.results.get(name));
-    return { database, resultSet: result?.resultSet };
+    const context = head(tab.value?.databaseQueryContexts?.get(name));
+    return { database, context };
   });
 });
 
 const isEmptyQueryItem = (item: BatchQueryItem) => {
-  if (!item.resultSet) {
+  if (!item.context) {
     return true;
   }
-  if (item.resultSet.error) {
+  if (item.context.resultSet?.error) {
     // Failed queries have empty result sets, but should not be recognized
     // as empty result sets.
     return false;
   }
-  return item.resultSet.results.every((result) => result.rows.length === 0);
+  if (item.context.status !== "DONE") {
+    return false;
+  }
+  return item.context.resultSet?.results.every(
+    (result) => result.rows.length === 0
+  );
 };
 
 const filteredItems = computed(() => {
@@ -132,13 +145,20 @@ const showEmptySwitch = computed(() => {
 const isDatabaseQueryFailed = (item: BatchQueryItem) => {
   // If there is any error in the result set, we consider the query failed.
   return (
-    item.resultSet?.error ||
-    item.resultSet?.results.find((result) => result.error)
+    item.context?.resultSet?.error ||
+    item.context?.resultSet?.results.find((result) => result.error)
   );
 };
 
 const handleCloseSingleResultView = (database: ComposedDatabase) => {
-  tab.value?.queryContext?.results.delete(database.name || "");
+  const contexts = tab.value?.databaseQueryContexts?.get(database.name);
+  if (!contexts) {
+    return;
+  }
+  for (const context of contexts) {
+    context.abortController?.abort();
+  }
+  tab.value?.databaseQueryContexts?.delete(database.name);
 };
 
 // Auto select a proper database when the databases are ready.
