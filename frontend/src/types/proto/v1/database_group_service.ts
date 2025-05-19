@@ -169,7 +169,19 @@ export interface DatabaseGroup {
   name: string;
   /** The short name used in actual databases specified by users. */
   title: string;
-  /** The condition that is associated with this database group. */
+  /**
+   * The condition that is associated with this database group.
+   * The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+   *
+   * Support variables:
+   * resource.environment_name: the environment resource id. Support "==", "!=", "in [XX]", "!(in [xx])" operations.
+   * resource.instance_id: the instance resource id. Support "==", "!=", "in [XX]", "!(in [xx])", "contains", "matches", "startsWith", "endsWith" operations.
+   * resource.database_name: the database name. Support "==", "!=", "in [XX]", "!(in [xx])", "contains", "matches", "startsWith", "endsWith" operations.
+   * All variables should join with "&&" condition.
+   *
+   * For example:
+   * resource.environment_name == "test" && resource.database_name.startsWith("sample_")
+   */
   databaseExpr:
     | Expr
     | undefined;

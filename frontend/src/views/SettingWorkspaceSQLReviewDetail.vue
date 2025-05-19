@@ -7,6 +7,7 @@
     :policy="reviewPolicy"
     :name="reviewPolicy.name"
     :selected-rule-list="ruleListOfPolicy"
+    :selected-resources="reviewPolicy.resources"
     @cancel="state.editMode = false"
   />
   <div v-else>
