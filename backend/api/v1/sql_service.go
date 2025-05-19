@@ -142,9 +142,7 @@ func (s *SQLService) AdminExecute(server v1pb.SQLService_AdminExecuteServer) err
 			slog.Error("failed to post admin execute activity", log.BBError(err))
 		}
 
-		response := &v1pb.AdminExecuteResponse{
-			Name: common.FormatDatabase(database.InstanceID, database.DatabaseName),
-		}
+		response := &v1pb.AdminExecuteResponse{}
 		if queryErr != nil {
 			response.Results = []*v1pb.QueryResult{
 				{
@@ -274,49 +272,9 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 
 	response := &v1pb.QueryResponse{
 		Results: results,
-		Name:    common.FormatDatabase(database.InstanceID, database.DatabaseName),
 	}
 
 	return response, nil
-}
-
-func (s *SQLService) BatchQuery(ctx context.Context, request *v1pb.BatchQueryRequest) (*v1pb.BatchQueryResponse, error) {
-	resp := &v1pb.BatchQueryResponse{}
-	for _, queryRequest := range request.Requests {
-		singleRequest := &v1pb.QueryRequest{
-			Name:         queryRequest.Name,
-			DataSourceId: queryRequest.DataSourceId,
-			Schema:       queryRequest.Schema,
-			QueryOption:  queryRequest.QueryOption,
-			Container:    queryRequest.Container,
-			Statement:    request.Statement,
-			Limit:        request.Limit,
-			Explain:      request.Explain,
-		}
-		if queryRequest.Statement != "" {
-			singleRequest.Statement = queryRequest.Statement
-		}
-		if queryRequest.Limit > 0 {
-			singleRequest.Limit = queryRequest.Limit
-		}
-		if queryRequest.Explain {
-			singleRequest.Explain = queryRequest.Explain
-		}
-		queryResponse, err := s.Query(ctx, singleRequest)
-		if err != nil {
-			resp.Responses = append(resp.Responses, &v1pb.QueryResponse{
-				Name: queryRequest.Name,
-				Results: []*v1pb.QueryResult{
-					{
-						Error: err.Error(),
-					},
-				},
-			})
-			continue
-		}
-		resp.Responses = append(resp.Responses, queryResponse)
-	}
-	return resp, nil
 }
 
 type accessCheckFunc func(context.Context, *store.InstanceMessage, *store.DatabaseMessage, *store.UserMessage, []*parserbase.QuerySpan, int, bool /* isExplain */, bool /* isExport */) error
