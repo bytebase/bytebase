@@ -2700,9 +2700,9 @@ const file_v1_sql_service_proto_rawDesc = "" +
 	" \x01(\tH\x01R\tcontainer\x88\x01\x01B\t\n" +
 	"\a_schemaB\f\n" +
 	"\n" +
-	"_containerJ\x04\b\x02\x10\x03\"C\n" +
+	"_containerJ\x04\b\x02\x10\x03\"I\n" +
 	"\rQueryResponse\x122\n" +
-	"\aresults\x18\x01 \x03(\v2\x18.bytebase.v1.QueryResultR\aresults\"\xca\x01\n" +
+	"\aresults\x18\x01 \x03(\v2\x18.bytebase.v1.QueryResultR\aresultsJ\x04\b\x02\x10\x03\"\xca\x01\n" +
 	"\vQueryOption\x12^\n" +
 	"\x15redis_run_commands_on\x18\x01 \x01(\x0e2+.bytebase.v1.QueryOption.RedisRunCommandsOnR\x12redisRunCommandsOn\"[\n" +
 	"\x12RedisRunCommandsOn\x12%\n" +

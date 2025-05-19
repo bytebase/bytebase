@@ -177,6 +177,8 @@ message QueryRequest {
 }
 
 message QueryResponse {
+  reserved 2;
+
   // The query results.
   repeated QueryResult results = 1;
 }
