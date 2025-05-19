@@ -211,7 +211,6 @@ const createStreamingQueryController = (tab: SQLEditorTab) => {
         console.debug("subscribe error", error);
 
         const result: SQLResultSetV1 = {
-          name: "",
           error: extractGrpcErrorMessage(error),
           status: extractGrpcStatusCode(error),
           advices: [],

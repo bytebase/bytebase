@@ -4,12 +4,7 @@ import { defineStore } from "pinia";
 import { sqlServiceClient } from "@/grpcweb";
 import type { SQLResultSetV1 } from "@/types";
 import { PlanCheckRun_Result } from "@/types/proto/v1/plan_service";
-import type {
-  ExportRequest,
-  QueryRequest,
-  BatchQueryRequest,
-  QueryResponse,
-} from "@/types/proto/v1/sql_service";
+import type { ExportRequest, QueryRequest } from "@/types/proto/v1/sql_service";
 import { Advice, Advice_Status } from "@/types/proto/v1/sql_service";
 import { extractGrpcErrorMessage } from "@/utils/grpcweb";
 
@@ -71,21 +66,6 @@ export const useSQLStore = defineStore("sql", () => {
     }
   };
 
-  const batchQuery = async (
-    params: BatchQueryRequest,
-    signal: AbortSignal
-  ): Promise<QueryResponse[]> => {
-    const response = await sqlServiceClient.batchQuery(params, {
-      // Skip global error handling since we will handle and display
-      // errors manually.
-      ignoredCodes: [Status.PERMISSION_DENIED],
-      silent: true,
-      signal,
-    });
-
-    return response.responses;
-  };
-
   const exportData = async (params: ExportRequest) => {
     const { content } = await sqlServiceClient.export(params, {
       // Won't jump to 403 page when permission denied.
@@ -96,7 +76,6 @@ export const useSQLStore = defineStore("sql", () => {
 
   return {
     query,
-    batchQuery,
     exportData,
   };
 });

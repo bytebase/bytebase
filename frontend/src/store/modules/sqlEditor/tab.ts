@@ -7,6 +7,7 @@ import type {
   SQLEditorConnection,
   CoreSQLEditorTab,
   SQLEditorTab,
+  SQLEditorDatabaseQueryContext,
 } from "@/types";
 import { DEFAULT_SQL_EDITOR_TAB_MODE, isValidDatabaseName } from "@/types";
 import {
@@ -246,6 +247,33 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
     if (!id) return;
     updateTab(id, payload);
   };
+
+  const updateQueryContext = ({
+    database,
+    contextId,
+    context,
+  }: {
+    database: string;
+    contextId: string;
+    context: Partial<SQLEditorDatabaseQueryContext>;
+  }) => {
+    const tab = tabById(currentTabId.value);
+    if (!tab || !tab.databaseQueryContexts) {
+      return;
+    }
+    if (!tab.databaseQueryContexts.has(database)) {
+      return;
+    }
+    const target = tab.databaseQueryContexts
+      .get(database)
+      ?.find((c) => c.id === contextId);
+    if (!target) {
+      return;
+    }
+    Object.assign(target, context);
+    return target;
+  };
+
   const setCurrentTabId = (id: string) => {
     currentTabId.value = id;
   };
@@ -381,6 +409,7 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
     removeTab,
     updateTab,
     updateCurrentTab,
+    updateQueryContext,
     setCurrentTabId,
     selectOrAddSimilarNewTab,
     maybeInitProject,

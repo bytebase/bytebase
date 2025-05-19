@@ -24,7 +24,7 @@
     </div>
     <PostgresError v-if="resultSet" :result-set="resultSet" />
     <div v-if="showRunAnywayButton">
-      <NButton size="small" type="primary" @click="runAnyway">
+      <NButton size="small" type="warning" @click="runAnyway">
         {{ $t("sql-editor.run-anyway") }}
       </NButton>
     </div>
@@ -37,7 +37,6 @@ import { NButton } from "naive-ui";
 import { Status } from "nice-grpc-common";
 import { storeToRefs } from "pinia";
 import { computed } from "vue";
-import { useExecuteSQL } from "@/composables/useExecuteSQL";
 import { useAppFeature, useSQLEditorTabStore } from "@/store";
 import type { SQLEditorQueryParams, SQLResultSetV1 } from "@/types";
 import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
@@ -52,10 +51,13 @@ const props = defineProps<{
   resultSet?: SQLResultSetV1;
 }>();
 
+const emit = defineEmits<{
+  (event: "execute", params: SQLEditorQueryParams): void;
+}>();
+
 const sqlCheckStyle = useAppFeature("bb.feature.sql-editor.sql-check-style");
 const { currentTab: tab } = storeToRefs(useSQLEditorTabStore());
 const { dark } = useSQLResultViewContext();
-const { execute } = useExecuteSQL();
 const databaseChangeMode = useAppFeature("bb.feature.database-change-mode");
 
 const showRunAnywayButton = computed(() => {
@@ -76,7 +78,7 @@ const showRunAnywayButton = computed(() => {
 const runAnyway = () => {
   const params = props.executeParams;
   if (!params) return;
-  execute({
+  emit("execute", {
     ...params,
     skipCheck: true,
   });

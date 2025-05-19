@@ -1,12 +1,12 @@
 import Emittery from "emittery";
 import { head, isEmpty } from "lodash-es";
-import { Status, ClientError } from "nice-grpc-common";
+import { Status } from "nice-grpc-common";
+import { v4 as uuidv4 } from "uuid";
 import { markRaw, reactive } from "vue";
 import { sqlServiceClient } from "@/grpcweb";
 import { t } from "@/plugins/i18n";
 import {
   pushNotification,
-  useDatabaseV1Store,
   useDBGroupStore,
   useSQLEditorStore,
   useSQLEditorTabStore,
@@ -14,7 +14,6 @@ import {
   useSQLEditorQueryHistoryStore,
   useAppFeature,
   hasFeature,
-  getSqlReviewReports,
 } from "@/store";
 import type {
   ComposedDatabase,
@@ -22,6 +21,7 @@ import type {
   BBNotificationStyle,
   SQLEditorQueryParams,
   SQLEditorTab,
+  SQLEditorDatabaseQueryContext,
 } from "@/types";
 import { isValidDatabaseName } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
@@ -31,10 +31,8 @@ import {
   Advice_Status,
   advice_StatusToJSON,
   CheckRequest_ChangeType,
-  type BatchQueryRequest,
 } from "@/types/proto/v1/sql_service";
 import {
-  emptySQLEditorTabQueryContext,
   ensureDataSourceSelection,
   hasPermissionToCreateChangeDatabaseIssue,
 } from "@/utils";
@@ -60,7 +58,6 @@ const useExecuteSQL = () => {
   const state = reactive<{
     lastQueryTime?: number;
   }>({});
-  const databaseStore = useDatabaseV1Store();
   const dbGroupStore = useDBGroupStore();
   const tabStore = useSQLEditorTabStore();
   const sqlEditorStore = useSQLEditorStore();
@@ -88,11 +85,6 @@ const useExecuteSQL = () => {
       return false;
     }
 
-    if (tab.queryContext?.status === "EXECUTING") {
-      notify("INFO", t("common.tips"), t("sql-editor.can-not-execute-query"));
-      return false;
-    }
-
     if (tabStore.isDisconnected) {
       notify("CRITICAL", t("sql-editor.select-connection"));
       return false;
@@ -103,16 +95,14 @@ const useExecuteSQL = () => {
       return false;
     }
 
-    const emptyContext = emptySQLEditorTabQueryContext();
-    tab.queryContext = {
-      ...emptyContext,
-      status: "EXECUTING",
-      results: tab.queryContext?.results ?? emptyContext.results,
-    };
+    if (!tab.databaseQueryContexts) {
+      tab.databaseQueryContexts = new Map();
+    }
     return true;
   };
 
   const check = async (
+    abortController: AbortController,
     params: SQLEditorQueryParams
   ): Promise<SQLCheckResult> => {
     const tab = tabStore.currentTab;
@@ -120,7 +110,6 @@ const useExecuteSQL = () => {
       return { passed: false };
     }
 
-    const abortController = tab.queryContext?.abortController;
     if (!params) {
       return { passed: false };
     }
@@ -175,14 +164,7 @@ const useExecuteSQL = () => {
     }
   };
 
-  const cleanup = () => {
-    const tab = tabStore.currentTab;
-    if (!tab) return;
-    if (!tab.queryContext) return;
-    tab.queryContext.status = "IDLE";
-  };
-
-  const execute = async (params: SQLEditorQueryParams) => {
+  const preExecute = async (params: SQLEditorQueryParams) => {
     const now = Date.now();
     if (
       state.lastQueryTime &&
@@ -191,43 +173,39 @@ const useExecuteSQL = () => {
       return;
     }
 
-    if (!preflight(params)) {
-      return cleanup();
-    }
-
     const tab = tabStore.currentTab;
     if (!tab) {
-      return cleanup();
+      return;
     }
     const { mode } = tab;
     if (mode === "ADMIN") {
-      return cleanup();
+      return;
     }
 
-    const queryContext = tab.queryContext!;
-    const selectedDatabase = await databaseStore.getOrFetchDatabaseByName(
-      params.connection.database
-    );
-    if (!isValidDatabaseName(selectedDatabase.name)) {
-      return cleanup();
+    if (!preflight(params)) {
+      return;
     }
-    const batchQueryDatabaseMap: Map<string, ComposedDatabase> = new Map([
-      [selectedDatabase.name, selectedDatabase],
+
+    if (!isValidDatabaseName(params.connection.database)) {
+      return;
+    }
+
+    const databaseQueryContexts = tab.databaseQueryContexts!;
+    const batchQueryDatabaseSet = new Set<string /* database name */>([
+      params.connection.database,
     ]);
 
     // Check if the user selects multiple databases to query.
     if (tab.batchQueryContext && hasFeature("bb.feature.batch-query")) {
       const { databases, databaseGroups } = tab.batchQueryContext;
       for (const databaseResourceName of databases) {
-        if (batchQueryDatabaseMap.has(databaseResourceName)) {
+        if (!isValidDatabaseName(databaseResourceName)) {
           continue;
         }
-        const database =
-          await databaseStore.getOrFetchDatabaseByName(databaseResourceName);
-        if (!isValidDatabaseName(database.name)) {
+        if (batchQueryDatabaseSet.has(databaseResourceName)) {
           continue;
         }
-        batchQueryDatabaseMap.set(database.name, database);
+        batchQueryDatabaseSet.add(databaseResourceName);
       }
 
       if (hasFeature("bb.feature.database-grouping")) {
@@ -242,16 +220,13 @@ const useExecuteSQL = () => {
               }
             );
             for (const matchedDatabase of databaseGroup.matchedDatabases) {
-              if (batchQueryDatabaseMap.has(matchedDatabase.name)) {
+              if (!isValidDatabaseName(matchedDatabase.name)) {
                 continue;
               }
-              const database = await databaseStore.getOrFetchDatabaseByName(
-                matchedDatabase.name
-              );
-              if (!isValidDatabaseName(database.name)) {
+              if (batchQueryDatabaseSet.has(matchedDatabase.name)) {
                 continue;
               }
-              batchQueryDatabaseMap.set(database.name, database);
+              batchQueryDatabaseSet.add(matchedDatabase.name);
             }
           } catch {
             // skip
@@ -260,74 +235,90 @@ const useExecuteSQL = () => {
       }
     }
 
-    const beginTimestampMS = Date.now();
-
-    for (const database of queryContext.results.keys()) {
-      if (!batchQueryDatabaseMap.has(database)) {
-        queryContext.results.delete(database);
+    for (const [database, contexts] of databaseQueryContexts.entries()) {
+      if (!batchQueryDatabaseSet.has(database)) {
+        for (const context of contexts) {
+          if (context.status === "EXECUTING") {
+            context.abortController?.abort();
+          }
+        }
+        databaseQueryContexts.delete(database);
       }
     }
 
-    const unshiftQueryResult = (resultSet: SQLResultSetV1) => {
-      if (!queryContext.results.has(resultSet.name)) {
-        queryContext.results.set(resultSet.name, []);
+    for (const databaseName of batchQueryDatabaseSet.values()) {
+      if (!databaseQueryContexts.has(databaseName)) {
+        databaseQueryContexts.set(databaseName, []);
       }
-      if (queryContext.results.get(resultSet.name)!.length >= 10) {
-        queryContext.results.get(resultSet.name)!.pop();
+
+      if ((databaseQueryContexts.get(databaseName)?.length ?? 0) >= 10) {
+        databaseQueryContexts.get(databaseName)?.pop();
       }
-      queryContext.results.get(resultSet.name)!.unshift({
+
+      databaseQueryContexts.get(databaseName)?.unshift({
+        id: uuidv4(),
         params,
-        beginTimestampMS,
-        resultSet,
+        status: "PENDING",
+      });
+    }
+  };
+
+  const runQuery = async (
+    database: ComposedDatabase,
+    context: SQLEditorDatabaseQueryContext
+  ) => {
+    if (context.status === "EXECUTING") {
+      notify("INFO", t("common.tips"), t("sql-editor.can-not-execute-query"));
+      return;
+    }
+
+    if (!isValidDatabaseName(database.name)) {
+      notify(
+        "CRITICAL",
+        t("common.error"),
+        t("sql-editor.invalid-database", { database: database.name })
+      );
+      return;
+    }
+
+    context.abortController = new AbortController();
+    context.status = "EXECUTING";
+    context.beginTimestampMS = Date.now();
+
+    const finish = (resultSet: SQLResultSetV1) => {
+      context.resultSet = resultSet;
+      context.status = "DONE";
+    };
+
+    const abort = (error: string, advices: Advice[] = []) => {
+      notify("WARN", t("sql-editor.request-cancelled"));
+      return finish({
+        error,
+        results: [],
+        advices,
+        status: Status.ABORTED,
       });
     };
 
-    const fail = ({
-      databases,
-      error,
-      status,
-      advices = [],
-    }: {
-      databases: string[];
-      error: string;
-      status: Status;
-      advices?: Advice[];
-    }) => {
-      for (const database of databases) {
-        unshiftQueryResult({
-          error,
-          results: [],
-          advices,
-          status,
-          name: database,
-        });
-      }
-      return cleanup();
-    };
-
-    const { abortController } = queryContext;
-
+    const { abortController } = context;
     const sqlStore = useSQLStore();
-    const checkBehavior = params.skipCheck ? "SKIP" : sqlCheckStyle.value;
+
+    const checkBehavior = context.params.skipCheck
+      ? "SKIP"
+      : sqlCheckStyle.value;
     let checkResult: SQLCheckResult = { passed: true };
     if (checkBehavior !== "SKIP") {
       try {
-        checkResult = await check(params);
+        checkResult = await check(context.abortController, context.params);
       } catch (error) {
-        return fail({
-          databases: [params.connection.database],
-          error: extractGrpcErrorMessage(error),
-          status: Status.ABORTED,
-        });
+        return abort(extractGrpcErrorMessage(error));
       }
     }
     if (checkBehavior === "PREFLIGHT" && !checkResult.passed) {
-      return fail({
-        databases: [params.connection.database],
-        error: head(checkResult.advices)?.content ?? "",
-        status: Status.ABORTED,
-        advices: checkResult.advices,
-      });
+      return abort(
+        head(checkResult.advices)?.content ?? "",
+        checkResult.advices
+      );
     }
     if (
       checkBehavior === "NOTIFICATION" &&
@@ -340,124 +331,108 @@ const useExecuteSQL = () => {
       );
       if (errorAdvice) {
         notifyAdvices(advices);
-        return fail({
-          databases: [params.connection.database],
-          error: errorAdvice.content,
-          status: Status.ABORTED,
-          advices,
-        });
+        return abort(errorAdvice.content, advices);
       }
     }
 
-    const queryParams: BatchQueryRequest = {
-      statement: params.statement,
-      limit: sqlEditorStore.resultRowsLimit,
-      explain: params.explain,
-      requests: [...batchQueryDatabaseMap.values()].map((database) => {
-        const instance = isValidDatabaseName(database.name)
-          ? database.instance
-          : params.connection.instance;
-        const dataSourceId =
-          ensureDataSourceSelection(
-            instance === params.connection.instance
-              ? params.connection.dataSourceId
-              : undefined,
-            database
-          ) ?? "";
+    const instance = isValidDatabaseName(database.name)
+      ? database.instance
+      : context.params.connection.instance;
+    const dataSourceId =
+      ensureDataSourceSelection(
+        instance === context.params.connection.instance
+          ? context.params.connection.dataSourceId
+          : undefined,
+        database
+      ) ?? "";
 
-        return {
-          name: database.name,
-          dataSourceId,
-          statement: "",
-          limit: 0,
-          explain: false,
-          schema: params.connection.schema,
-          container: params.connection.table,
-          queryOption: {
-            redisRunCommandsOn: sqlEditorStore.redisCommandOption,
-          },
-        };
-      }),
-    };
-
-    try {
-      if (abortController.signal.aborted) {
-        // Once any one of the batch queries is aborted, don't go further
-        // and mock an "Aborted" result for the rest queries.
-        return fail({
-          databases: queryParams.requests.map((r) => r.name),
-          error: "AbortError: The user aborted a request.",
-          status: Status.ABORTED,
-        });
-      }
-
-      const response = await sqlStore.batchQuery(
-        queryParams,
-        abortController.signal
-      );
-
-      for (const queryResult of response) {
-        const database = databaseStore.getDatabaseByName(queryResult.name);
-        const resultSet: SQLResultSetV1 = {
-          error: "",
-          advices: [],
-          ...queryResult,
-        };
-        if (
-          database.instanceResource.engine === Engine.MONGODB ||
-          database.instanceResource.engine === Engine.COSMOSDB
-        ) {
-          flattenNoSQLResult(resultSet);
-        }
-
-        if (checkBehavior === "NOTIFICATION") {
-          notifyAdvices(checkResult.advices ?? []);
-        }
-
-        if (resultSet.error) {
-          // The error message should be consistent with the one from the backend.
-          if (isOnlySelectError(resultSet)) {
-            // Show a tips to navigate to issue creation
-            // if the user is allowed to create issue in the project.
-            if (hasPermissionToCreateChangeDatabaseIssue(database)) {
-              sqlEditorStore.isShowExecutingHint = true;
-              sqlEditorStore.executingHintDatabase = database;
-              cleanup();
-            }
-            unshiftQueryResult(resultSet);
-          } else {
-            unshiftQueryResult(resultSet);
-          }
-        } else {
-          unshiftQueryResult(markRaw(resultSet));
-          // After all the queries are executed, we update the tab with the latest query result map.
-          // Refresh the query history list when the query executed successfully
-          // (with or without warnings).
-          queryHistoryStore.resetPageToken({
-            project: sqlEditorStore.project,
-            database: database.name,
-          });
-          queryHistoryStore.fetchQueryHistoryList({
-            project: sqlEditorStore.project,
-            database: database.name,
-          });
-        }
-      }
-    } catch (err) {
-      return fail({
-        error: extractGrpcErrorMessage(err),
-        status: err instanceof ClientError ? err.code : Status.UNKNOWN,
-        advices: getSqlReviewReports(err),
-        databases: queryParams.requests.map((r) => r.name),
+    if (!dataSourceId) {
+      return finish({
+        advices: [],
+        error: t("sql-editor.no-data-source"),
+        results: [],
+        status: Status.NOT_FOUND,
       });
     }
 
-    cleanup();
+    if (abortController.signal.aborted) {
+      // Once any one of the batch queries is aborted, don't go further
+      // and mock an "Aborted" result for the rest queries.
+      return finish({
+        advices: [],
+        error: t("sql-editor.request-aborted"),
+        results: [],
+        status: Status.ABORTED,
+      });
+    }
+
+    const resultSet = await sqlStore.query(
+      {
+        name: database.name,
+        dataSourceId: dataSourceId,
+        statement: context.params.statement,
+        limit: sqlEditorStore.resultRowsLimit,
+        explain: context.params.explain,
+        schema: context.params.connection.schema,
+        container: context.params.connection.table,
+        queryOption: {
+          redisRunCommandsOn: sqlEditorStore.redisCommandOption,
+        },
+      },
+      abortController.signal
+    );
+
+    // After all the queries are executed, we update the tab with the latest query result map.
+    // Refresh the query history list when the query executed successfully
+    // (with or without warnings).
+    queryHistoryStore.resetPageToken({
+      project: sqlEditorStore.project,
+      database: database.name,
+    });
+    queryHistoryStore
+      .fetchQueryHistoryList({
+        project: sqlEditorStore.project,
+        database: database.name,
+      })
+      .catch(() => {
+        /* nothing */
+      });
+
+    if (
+      database.instanceResource.engine === Engine.MONGODB ||
+      database.instanceResource.engine === Engine.COSMOSDB
+    ) {
+      flattenNoSQLResult(resultSet);
+    }
+
+    if (checkBehavior === "NOTIFICATION") {
+      notifyAdvices(checkResult.advices ?? []);
+    }
+
+    if (resultSet.error) {
+      // The error message should be consistent with the one from the backend.
+      if (isOnlySelectError(resultSet)) {
+        // Show a tips to navigate to issue creation
+        // if the user is allowed to create issue in the project.
+        if (hasPermissionToCreateChangeDatabaseIssue(database)) {
+          sqlEditorStore.isShowExecutingHint = true;
+          sqlEditorStore.executingHintDatabase = database;
+        }
+      }
+      return finish(resultSet);
+    }
+
+    return finish(markRaw(resultSet));
+  };
+
+  const execute = async (params: SQLEditorQueryParams) => {
+    return preExecute(params);
   };
 
   return {
     events,
     execute,
+    runQuery,
   };
 };
 
