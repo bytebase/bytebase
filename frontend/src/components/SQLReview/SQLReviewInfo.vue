@@ -131,15 +131,20 @@ import {
 import { DatabaseSelect, EnvironmentSelect, ProjectSelect } from "../v2";
 import { SQLReviewTemplateSelector } from "./components";
 
-const props = defineProps<{
-  name: string;
-  resourceId: string;
-  attachedResources: string[];
-  isCreate: boolean;
-  selectedTemplateId?: string;
-  isEdit: boolean;
-  allowChangeAttachedResource: boolean;
-}>();
+const props = withDefaults(
+  defineProps<{
+    name: string;
+    resourceId: string;
+    attachedResources?: string[];
+    isCreate: boolean;
+    selectedTemplateId?: string;
+    isEdit: boolean;
+    allowChangeAttachedResource: boolean;
+  }>(),
+  {
+    attachedResources: () => [],
+  }
+);
 
 const emit = defineEmits<{
   (event: "name-change", name: string): void;

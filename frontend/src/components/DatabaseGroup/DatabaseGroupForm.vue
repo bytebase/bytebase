@@ -237,7 +237,7 @@ const doConfirm = async () => {
 
     const updateMask: string[] = [];
     if (!isEqual(props.databaseGroup.title, formState.placeholder)) {
-      updateMask.push("database_placeholder");
+      updateMask.push("title");
     }
     if (
       !isEqual(

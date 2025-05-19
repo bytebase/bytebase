@@ -6166,7 +6166,11 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name of the database group. Format: projects/{project}/databaseGroups/{databaseGroup} |
 | title | [string](#string) |  | The short name used in actual databases specified by users. |
-| database_expr | [google.type.Expr](#google-type-Expr) |  | The condition that is associated with this database group. |
+| database_expr | [google.type.Expr](#google-type-Expr) |  | The condition that is associated with this database group. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+Support variables: resource.environment_name: the environment resource id. Support &#34;==&#34;, &#34;!=&#34;, &#34;in [XX]&#34;, &#34;!(in [xx])&#34; operations. resource.instance_id: the instance resource id. Support &#34;==&#34;, &#34;!=&#34;, &#34;in [XX]&#34;, &#34;!(in [xx])&#34;, &#34;contains&#34;, &#34;matches&#34;, &#34;startsWith&#34;, &#34;endsWith&#34; operations. resource.database_name: the database name. Support &#34;==&#34;, &#34;!=&#34;, &#34;in [XX]&#34;, &#34;!(in [xx])&#34;, &#34;contains&#34;, &#34;matches&#34;, &#34;startsWith&#34;, &#34;endsWith&#34; operations. All variables should join with &#34;&amp;&amp;&#34; condition.
+
+For example: resource.environment_name == &#34;test&#34; &amp;&amp; resource.database_name.startsWith(&#34;sample_&#34;) |
 | matched_databases | [DatabaseGroup.Database](#bytebase-v1-DatabaseGroup-Database) | repeated | The list of databases that match the database group condition. |
 | unmatched_databases | [DatabaseGroup.Database](#bytebase-v1-DatabaseGroup-Database) | repeated | The list of databases that match the database group condition. |
 

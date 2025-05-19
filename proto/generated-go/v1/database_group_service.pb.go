@@ -449,6 +449,16 @@ type DatabaseGroup struct {
 	// The short name used in actual databases specified by users.
 	Title string `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
 	// The condition that is associated with this database group.
+	// The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+	//
+	// Support variables:
+	// resource.environment_name: the environment resource id. Support "==", "!=", "in [XX]", "!(in [xx])" operations.
+	// resource.instance_id: the instance resource id. Support "==", "!=", "in [XX]", "!(in [xx])", "contains", "matches", "startsWith", "endsWith" operations.
+	// resource.database_name: the database name. Support "==", "!=", "in [XX]", "!(in [xx])", "contains", "matches", "startsWith", "endsWith" operations.
+	// All variables should join with "&&" condition.
+	//
+	// For example:
+	// resource.environment_name == "test" && resource.database_name.startsWith("sample_")
 	DatabaseExpr *expr.Expr `protobuf:"bytes,3,opt,name=database_expr,json=databaseExpr,proto3" json:"database_expr,omitempty"`
 	// The list of databases that match the database group condition.
 	MatchedDatabases []*DatabaseGroup_Database `protobuf:"bytes,4,rep,name=matched_databases,json=matchedDatabases,proto3" json:"matched_databases,omitempty"`
