@@ -1262,9 +1262,9 @@
       "title": "Access Control",
       "disable-copy-data-from-sql-editor": "Restrict data copying in SQL Editor (Admins/DBAs allowed)",
       "restrict-admin-connection": {
-        "self": "Disallow querying admin data source",
+        "self": "Restrict querying admin data sources",
         "disallow": "Disallow querying data from the admin data source",
-        "fallback": "Fallback to the admin data source if no read-only connection is available"
+        "fallback": "Allow querying the admin data source if no read-only connection is available"
       }
     },
     "statement-execution": {

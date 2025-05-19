@@ -1262,9 +1262,9 @@
       "title": "Control de Acceso",
       "disable-copy-data-from-sql-editor": "Restringir la copia de datos en el editor SQL (permitido para administradores/DBA)",
       "restrict-admin-connection": {
-        "self": "No permitir consultar la fuente de datos de administración",
-        "disallow": "No permitir consultar datos de la fuente de datos de administración",
-        "fallback": "Volver a la conexión de administrador si no hay una conexión de solo lectura disponible"
+        "self": "Restringir la consulta de la fuente de datos de administración",
+        "disallow": "No permitir la consulta de datos desde la fuente de datos de administración",
+        "fallback": "Permitir la consulta de la fuente de datos de administración si no hay una conexión de solo lectura disponible"
       }
     },
     "statement-execution": {
