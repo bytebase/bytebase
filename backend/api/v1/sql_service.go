@@ -1888,23 +1888,10 @@ func checkAndGetDataSourceQueriable(ctx context.Context, storeInstance *store.St
 	if instance == nil {
 		return nil, errors.Errorf("instance %q not found", database.InstanceID)
 	}
+	if dataSourceID == "" {
+		return nil, status.Errorf(codes.InvalidArgument, "data source id is required")
+	}
 	dataSource, serr := func() (*storepb.DataSource, *status.Status) {
-		// dataSourceID unspecified, we find a readonly dataSource
-		// first and fallback to admin dataSource.
-		if dataSourceID == "" {
-			for _, ds := range instance.Metadata.GetDataSources() {
-				if ds.GetType() == storepb.DataSourceType_READ_ONLY {
-					return ds, nil
-				}
-			}
-			for _, ds := range instance.Metadata.GetDataSources() {
-				if ds.GetType() == storepb.DataSourceType_ADMIN {
-					return ds, nil
-				}
-			}
-			return nil, status.Newf(codes.FailedPrecondition, "no data source found")
-		}
-
 		for _, ds := range instance.Metadata.GetDataSources() {
 			if ds.GetId() == dataSourceID {
 				return ds, nil
@@ -1969,7 +1956,7 @@ func checkAndGetDataSourceQueriable(ctx context.Context, storeInstance *store.St
 	// If any of the policy is DISALLOW, then return false.
 	if envAdminDataSourceRestriction == v1pb.DataSourceQueryPolicy_DISALLOW || projectAdminDataSourceRestriction == v1pb.DataSourceQueryPolicy_DISALLOW {
 		return nil, status.Errorf(codes.PermissionDenied, "data source %q is not queryable", dataSourceID)
-	} else if envAdminDataSourceRestriction == v1pb.DataSourceQueryPolicy_FALLBACK || projectAdminDataSourceRestriction == v1pb.DataSourceQueryPolicy_FALLBACK {
+	}else if envAdminDataSourceRestriction == v1pb.DataSourceQueryPolicy_FALLBACK || projectAdminDataSourceRestriction == v1pb.DataSourceQueryPolicy_FALLBACK {
 		// If there is any read-only data source, then return false.
 		for _, ds := range instance.Metadata.GetDataSources() {
 			if ds.Type == storepb.DataSourceType_READ_ONLY {
