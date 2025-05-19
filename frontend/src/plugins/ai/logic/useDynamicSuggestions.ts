@@ -21,13 +21,13 @@ export type SuggestionContext = {
 };
 
 const cache = ref(new Map<string, SuggestionContext>());
-const storage = new WebStorageHelper("bb.plugin.open-ai.suggestions");
 const MAX_STORED_SUGGESTIONS = 10;
 
 const keyOf = (metadata: string) => String(hashCode(metadata));
 
 export const useDynamicSuggestions = () => {
   const context = useAIContext();
+  const storage = new WebStorageHelper("bb.plugin.open-ai.suggestions");
 
   const metadata = computed(() => {
     const meta = context.databaseMetadata.value;
