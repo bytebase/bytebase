@@ -103,6 +103,8 @@ func (s *Store) GetTaskV2ByID(ctx context.Context, id int) (*TaskMessage, error)
 	return tasks[0], nil
 }
 
+// Get a blocking task in the pipeline.
+// A task is blocked by a task with a smaller schema version within the same pipeline.
 func (s *Store) FindBlockingTaskByVersion(ctx context.Context, pipelineUID int, instanceID, databaseName string, version string) (*int, error) {
 	query := `
 		SELECT
