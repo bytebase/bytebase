@@ -6,14 +6,14 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 import {
-  databaseForTask,
   latestTaskRunForTask,
   specForTask,
   useIssueContext,
 } from "@/components/IssueV1/logic";
 import { PreBackupSection } from "@/components/Plan/components/Sidebar";
 import { providePreBackupSettingContext } from "@/components/Plan/components/Sidebar/PreBackupSection/context";
-import type { Plan, Plan_Spec } from "@/types/proto/v1/plan_service";
+import { databaseForTask } from "@/components/Rollout/RolloutDetail";
+import type { Plan } from "@/types/proto/v1/plan_service";
 import { TaskRun_Status } from "@/types/proto/v1/rollout_service";
 import TaskRollbackSection from "./TaskRollbackSection.vue";
 import { ROLLBACK_AVAILABLE_ENGINES } from "./common";
@@ -24,16 +24,19 @@ const {
   enabled: preBackupEnabled,
   events: preBackupEvents,
 } = providePreBackupSettingContext({
+  isCreating,
   project: computed(() => issue.value.projectEntity),
   plan: computed(() => issue.value.planEntity as Plan),
-  selectedSpec: computed(
-    () => specForTask(issue.value.planEntity, selectedTask.value) as Plan_Spec
+  selectedSpec: computed(() =>
+    specForTask(issue.value.planEntity, selectedTask.value)
   ),
-  isCreating,
+  selectedTask,
+  issue,
+  rollout: computed(() => issue.value.rolloutEntity),
 });
 
 const database = computed(() =>
-  databaseForTask(issue.value, selectedTask.value)
+  databaseForTask(issue.value.projectEntity, selectedTask.value)
 );
 
 const latestTaskRun = computed(() =>

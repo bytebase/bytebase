@@ -5,7 +5,7 @@
         <NSwitch
           :value="enabled"
           :disabled="!allowChange"
-          @update:value="toggle"
+          @update:value="(on) => handleToggle(on)"
         />
       </template>
       <template #default>
@@ -26,6 +26,7 @@ import { NSwitch, NTooltip } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
+import { pushNotification } from "@/store";
 import { usePreBackupSettingContext } from "./context";
 
 const { t } = useI18n();
@@ -50,4 +51,13 @@ const disallowPreBackupLink = computed(() => {
   }
   return undefined;
 });
+
+const handleToggle = async (on: boolean) => {
+  await toggle(on);
+  pushNotification({
+    module: "bytebase",
+    style: "SUCCESS",
+    title: t("common.updated"),
+  });
+};
 </script>

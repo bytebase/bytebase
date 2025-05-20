@@ -38,7 +38,8 @@
 <script lang="ts" setup>
 import { NTag, NTooltip } from "naive-ui";
 import { computed } from "vue";
-import { useIssueContext, databaseForTask } from "@/components/IssueV1/logic";
+import { useIssueContext } from "@/components/IssueV1/logic";
+import { databaseForTask } from "@/components/Rollout/RolloutDetail";
 import { TaskTypeListWithStatement } from "@/types";
 import { Task_Type } from "@/types/proto/v1/rollout_service";
 import SQLCheckBadge from "./SQLCheckBadge.vue";
@@ -50,7 +51,7 @@ const { issue, selectedTask } = useIssueContext();
 const { enabled, resultMap } = useIssueSQLCheckContext();
 
 const database = computed(() => {
-  return databaseForTask(issue.value, selectedTask.value);
+  return databaseForTask(issue.value.projectEntity, selectedTask.value);
 });
 
 const show = computed(() => {
@@ -68,7 +69,10 @@ const show = computed(() => {
 });
 
 const checkResult = computed(() => {
-  const database = databaseForTask(issue.value, selectedTask.value);
+  const database = databaseForTask(
+    issue.value.projectEntity,
+    selectedTask.value
+  );
   return resultMap.value[database.name] || undefined;
 });
 </script>
