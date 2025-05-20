@@ -12,7 +12,7 @@ GREEN='\033[0;32m'
 NC='\033[0m' # No Color
 
 # Invoke from project root
-VERSION=$(cat ./scripts/VERSION)
+VERSION='local'
 GIT_COMMIT=$(git rev-parse HEAD)
 
 # Version function used for version string comparison
