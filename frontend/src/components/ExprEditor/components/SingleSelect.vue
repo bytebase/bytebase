@@ -48,20 +48,6 @@ const state = reactive<LocalState>({
 
 const { optionConfig, factor } = useSelectOptionConfig(toRef(props, "expr"));
 
-watch(
-  [() => state.rawOptionList, () => props.value],
-  () => {
-    if (state.rawOptionList.length === 0) return;
-    if (
-      !props.value ||
-      !state.rawOptionList.find((opt) => opt.value === props.value)
-    ) {
-      emit("update:value", state.rawOptionList[0].value!);
-    }
-  },
-  { immediate: true }
-);
-
 const handleSearch = useDebounceFn(async (search: string) => {
   if (!optionConfig.value.search) {
     state.rawOptionList = [...optionConfig.value.options];
@@ -79,7 +65,18 @@ const handleSearch = useDebounceFn(async (search: string) => {
 
 watch(
   () => factor.value,
-  () => handleSearch(""),
+  async () => {
+    await handleSearch("");
+    if (state.rawOptionList.length === 0) {
+      return;
+    }
+    if (
+      !props.value ||
+      !state.rawOptionList.find((opt) => opt.value === props.value)
+    ) {
+      emit("update:value", state.rawOptionList[0].value!);
+    }
+  },
   { immediate: true }
 );
 </script>
