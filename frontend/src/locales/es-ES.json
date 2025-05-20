@@ -224,7 +224,8 @@
     "catalog": "Catálogo",
     "summary": "Resumen",
     "errors": "Errores",
-    "removed": "Remoto"
+    "removed": "Remoto",
+    "options": "Opciones"
   },
   "error-page": {
     "go-back-home": "Volver al inicio"

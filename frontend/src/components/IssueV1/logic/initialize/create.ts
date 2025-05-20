@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from "uuid";
 import { reactive } from "vue";
 import { useRoute } from "vue-router";
 import { extractInitialSQLFromQuery } from "@/components/Plan";
+import { getArchiveDatabase } from "@/components/Plan/components/Sidebar/PreBackupSection/utils";
 import { rolloutServiceClient } from "@/grpcweb";
 import {
   useChangelistStore,
@@ -43,7 +44,6 @@ import {
   setSheetStatement,
   sheetNameOfTaskV1,
 } from "@/utils";
-import { getArchiveDatabase } from "../../components/Sidebar/PreBackupSection/common";
 import { nextUID } from "../base";
 import { databaseEngineForSpec, sheetNameForSpec } from "../plan";
 import { getLocalSheetByName } from "../sheet";

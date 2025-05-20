@@ -10,13 +10,13 @@ export type SidebarContext = {
   mobileSidebarOpen: Ref<boolean>;
 };
 
-const KEY = Symbol("bb.issue.detail.sidebar") as InjectionKey<SidebarContext>;
+const KEY = Symbol("bb.plan.detail.sidebar") as InjectionKey<SidebarContext>;
 
-export const useIssueSidebarContext = () => {
+export const useSidebarContext = () => {
   return inject(KEY)!;
 };
 
-export const provideIssueSidebarContext = (
+export const provideSidebarContext = (
   containerRef: Ref<HTMLElement | undefined>
 ) => {
   const { width: containerWidth } = useElementSize(containerRef);
