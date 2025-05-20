@@ -462,39 +462,7 @@ message Activity {
     TYPE_ISSUE_APPROVAL_NOTIFY = 21;
     // TYPE_ISSUE_PIPELINE_STAGE_STATUS_UPDATE represents the pipeline stage status change, including BEGIN, END for now.
     TYPE_ISSUE_PIPELINE_STAGE_STATUS_UPDATE = 5;
-    // TYPE_ISSUE_PIPELINE_TASK_STATUS_UPDATE represents the pipeline task status change, including PENDING, PENDING_APPROVAL, RUNNING, SUCCESS, FAILURE, CANCELED for now.
-    TYPE_ISSUE_PIPELINE_TASK_STATUS_UPDATE = 6;
     // TYPE_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE represents the pipeline task run status change, including PENDING, RUNNING, DONE, FAILED, CANCELED.
     TYPE_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE = 22;
-    // TYPE_ISSUE_PIPELINE_TASK_STATEMENT_UPDATE represents the manual update of the task statement.
-    TYPE_ISSUE_PIPELINE_TASK_STATEMENT_UPDATE = 8;
-    // TYPE_ISSUE_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE represents the manual update of the task earliest allowed time.
-    TYPE_ISSUE_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE = 9;
-
-    // Member related activity types.
-    //
-    // TYPE_MEMBER_CREATE represents creating a members.
-    TYPE_MEMBER_CREATE = 10;
-    // TYPE_MEMBER_ROLE_UPDATE represents updating the member role, for example, from ADMIN to MEMBER.
-    TYPE_MEMBER_ROLE_UPDATE = 11;
-    // TYPE_MEMBER_ACTIVATE represents activating a deactivated member.
-    TYPE_MEMBER_ACTIVATE = 12;
-    // TYPE_MEMBER_DEACTIVATE represents deactivating an active member.
-    TYPE_MEMBER_DEACTIVATE = 13;
-
-    // Project related activity types.
-    //
-    // TYPE_PROJECT_REPOSITORY_PUSH represents Bytebase receiving a push event from the project repository.
-    TYPE_PROJECT_REPOSITORY_PUSH = 14;
-    // TYPE_PROJECT_DATABASE_TRANFER represents transfering the database from one project to another.
-    TYPE_PROJECT_DATABASE_TRANSFER = 15;
-    // TYPE_PROJECT_MEMBER_CREATE represents adding a member to the project.
-    TYPE_PROJECT_MEMBER_CREATE = 16;
-    // TYPE_PROJECT_MEMBER_DELETE represents removing a member from the project.
-    TYPE_PROJECT_MEMBER_DELETE = 17;
-
-    // SQL Editor related activity types.
-    // TYPE_SQL_EDITOR_QUERY represents executing query in SQL Editor.
-    TYPE_SQL_EDITOR_QUERY = 19;
   }
 }

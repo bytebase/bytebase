@@ -112,37 +112,8 @@ const (
 	Activity_TYPE_ISSUE_APPROVAL_NOTIFY Activity_Type = 21
 	// TYPE_ISSUE_PIPELINE_STAGE_STATUS_UPDATE represents the pipeline stage status change, including BEGIN, END for now.
 	Activity_TYPE_ISSUE_PIPELINE_STAGE_STATUS_UPDATE Activity_Type = 5
-	// TYPE_ISSUE_PIPELINE_TASK_STATUS_UPDATE represents the pipeline task status change, including PENDING, PENDING_APPROVAL, RUNNING, SUCCESS, FAILURE, CANCELED for now.
-	Activity_TYPE_ISSUE_PIPELINE_TASK_STATUS_UPDATE Activity_Type = 6
 	// TYPE_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE represents the pipeline task run status change, including PENDING, RUNNING, DONE, FAILED, CANCELED.
 	Activity_TYPE_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE Activity_Type = 22
-	// TYPE_ISSUE_PIPELINE_TASK_STATEMENT_UPDATE represents the manual update of the task statement.
-	Activity_TYPE_ISSUE_PIPELINE_TASK_STATEMENT_UPDATE Activity_Type = 8
-	// TYPE_ISSUE_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE represents the manual update of the task earliest allowed time.
-	Activity_TYPE_ISSUE_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE Activity_Type = 9
-	// Member related activity types.
-	//
-	// TYPE_MEMBER_CREATE represents creating a members.
-	Activity_TYPE_MEMBER_CREATE Activity_Type = 10
-	// TYPE_MEMBER_ROLE_UPDATE represents updating the member role, for example, from ADMIN to MEMBER.
-	Activity_TYPE_MEMBER_ROLE_UPDATE Activity_Type = 11
-	// TYPE_MEMBER_ACTIVATE represents activating a deactivated member.
-	Activity_TYPE_MEMBER_ACTIVATE Activity_Type = 12
-	// TYPE_MEMBER_DEACTIVATE represents deactivating an active member.
-	Activity_TYPE_MEMBER_DEACTIVATE Activity_Type = 13
-	// Project related activity types.
-	//
-	// TYPE_PROJECT_REPOSITORY_PUSH represents Bytebase receiving a push event from the project repository.
-	Activity_TYPE_PROJECT_REPOSITORY_PUSH Activity_Type = 14
-	// TYPE_PROJECT_DATABASE_TRANFER represents transfering the database from one project to another.
-	Activity_TYPE_PROJECT_DATABASE_TRANSFER Activity_Type = 15
-	// TYPE_PROJECT_MEMBER_CREATE represents adding a member to the project.
-	Activity_TYPE_PROJECT_MEMBER_CREATE Activity_Type = 16
-	// TYPE_PROJECT_MEMBER_DELETE represents removing a member from the project.
-	Activity_TYPE_PROJECT_MEMBER_DELETE Activity_Type = 17
-	// SQL Editor related activity types.
-	// TYPE_SQL_EDITOR_QUERY represents executing query in SQL Editor.
-	Activity_TYPE_SQL_EDITOR_QUERY Activity_Type = 19
 )
 
 // Enum value maps for Activity_Type.
@@ -157,43 +128,19 @@ var (
 		4:  "TYPE_ISSUE_STATUS_UPDATE",
 		21: "TYPE_ISSUE_APPROVAL_NOTIFY",
 		5:  "TYPE_ISSUE_PIPELINE_STAGE_STATUS_UPDATE",
-		6:  "TYPE_ISSUE_PIPELINE_TASK_STATUS_UPDATE",
 		22: "TYPE_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE",
-		8:  "TYPE_ISSUE_PIPELINE_TASK_STATEMENT_UPDATE",
-		9:  "TYPE_ISSUE_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE",
-		10: "TYPE_MEMBER_CREATE",
-		11: "TYPE_MEMBER_ROLE_UPDATE",
-		12: "TYPE_MEMBER_ACTIVATE",
-		13: "TYPE_MEMBER_DEACTIVATE",
-		14: "TYPE_PROJECT_REPOSITORY_PUSH",
-		15: "TYPE_PROJECT_DATABASE_TRANSFER",
-		16: "TYPE_PROJECT_MEMBER_CREATE",
-		17: "TYPE_PROJECT_MEMBER_DELETE",
-		19: "TYPE_SQL_EDITOR_QUERY",
 	}
 	Activity_Type_value = map[string]int32{
-		"TYPE_UNSPECIFIED":                                      0,
-		"TYPE_NOTIFY_ISSUE_APPROVED":                            23,
-		"TYPE_NOTIFY_PIPELINE_ROLLOUT":                          24,
-		"TYPE_ISSUE_CREATE":                                     1,
-		"TYPE_ISSUE_COMMENT_CREATE":                             2,
-		"TYPE_ISSUE_FIELD_UPDATE":                               3,
-		"TYPE_ISSUE_STATUS_UPDATE":                              4,
-		"TYPE_ISSUE_APPROVAL_NOTIFY":                            21,
-		"TYPE_ISSUE_PIPELINE_STAGE_STATUS_UPDATE":               5,
-		"TYPE_ISSUE_PIPELINE_TASK_STATUS_UPDATE":                6,
-		"TYPE_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE":            22,
-		"TYPE_ISSUE_PIPELINE_TASK_STATEMENT_UPDATE":             8,
-		"TYPE_ISSUE_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE": 9,
-		"TYPE_MEMBER_CREATE":                                    10,
-		"TYPE_MEMBER_ROLE_UPDATE":                               11,
-		"TYPE_MEMBER_ACTIVATE":                                  12,
-		"TYPE_MEMBER_DEACTIVATE":                                13,
-		"TYPE_PROJECT_REPOSITORY_PUSH":                          14,
-		"TYPE_PROJECT_DATABASE_TRANSFER":                        15,
-		"TYPE_PROJECT_MEMBER_CREATE":                            16,
-		"TYPE_PROJECT_MEMBER_DELETE":                            17,
-		"TYPE_SQL_EDITOR_QUERY":                                 19,
+		"TYPE_UNSPECIFIED":                           0,
+		"TYPE_NOTIFY_ISSUE_APPROVED":                 23,
+		"TYPE_NOTIFY_PIPELINE_ROLLOUT":               24,
+		"TYPE_ISSUE_CREATE":                          1,
+		"TYPE_ISSUE_COMMENT_CREATE":                  2,
+		"TYPE_ISSUE_FIELD_UPDATE":                    3,
+		"TYPE_ISSUE_STATUS_UPDATE":                   4,
+		"TYPE_ISSUE_APPROVAL_NOTIFY":                 21,
+		"TYPE_ISSUE_PIPELINE_STAGE_STATUS_UPDATE":    5,
+		"TYPE_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE": 22,
 	}
 )
 
@@ -1714,8 +1661,8 @@ const file_v1_project_service_proto_rawDesc = "" +
 	"\x06FEISHU\x10\x05\x12\t\n" +
 	"\x05WECOM\x10\x06\x12\b\n" +
 	"\x04LARK\x10\b:@\xeaA=\n" +
-	"\x14bytebase.com/Webhook\x12%projects/{project}/webhooks/{webhook}\"\xfb\x05\n" +
-	"\bActivity\"\xee\x05\n" +
+	"\x14bytebase.com/Webhook\x12%projects/{project}/webhooks/{webhook}\"\xd9\x02\n" +
+	"\bActivity\"\xcc\x02\n" +
 	"\x04Type\x12\x14\n" +
 	"\x10TYPE_UNSPECIFIED\x10\x00\x12\x1e\n" +
 	"\x1aTYPE_NOTIFY_ISSUE_APPROVED\x10\x17\x12 \n" +
@@ -1725,21 +1672,8 @@ const file_v1_project_service_proto_rawDesc = "" +
 	"\x17TYPE_ISSUE_FIELD_UPDATE\x10\x03\x12\x1c\n" +
 	"\x18TYPE_ISSUE_STATUS_UPDATE\x10\x04\x12\x1e\n" +
 	"\x1aTYPE_ISSUE_APPROVAL_NOTIFY\x10\x15\x12+\n" +
-	"'TYPE_ISSUE_PIPELINE_STAGE_STATUS_UPDATE\x10\x05\x12*\n" +
-	"&TYPE_ISSUE_PIPELINE_TASK_STATUS_UPDATE\x10\x06\x12.\n" +
-	"*TYPE_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE\x10\x16\x12-\n" +
-	")TYPE_ISSUE_PIPELINE_TASK_STATEMENT_UPDATE\x10\b\x129\n" +
-	"5TYPE_ISSUE_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE\x10\t\x12\x16\n" +
-	"\x12TYPE_MEMBER_CREATE\x10\n" +
-	"\x12\x1b\n" +
-	"\x17TYPE_MEMBER_ROLE_UPDATE\x10\v\x12\x18\n" +
-	"\x14TYPE_MEMBER_ACTIVATE\x10\f\x12\x1a\n" +
-	"\x16TYPE_MEMBER_DEACTIVATE\x10\r\x12 \n" +
-	"\x1cTYPE_PROJECT_REPOSITORY_PUSH\x10\x0e\x12\"\n" +
-	"\x1eTYPE_PROJECT_DATABASE_TRANSFER\x10\x0f\x12\x1e\n" +
-	"\x1aTYPE_PROJECT_MEMBER_CREATE\x10\x10\x12\x1e\n" +
-	"\x1aTYPE_PROJECT_MEMBER_DELETE\x10\x11\x12\x19\n" +
-	"\x15TYPE_SQL_EDITOR_QUERY\x10\x132\xf3\x10\n" +
+	"'TYPE_ISSUE_PIPELINE_STAGE_STATUS_UPDATE\x10\x05\x12.\n" +
+	"*TYPE_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE\x10\x162\xf3\x10\n" +
 	"\x0eProjectService\x12\x7f\n" +
 	"\n" +
 	"GetProject\x12\x1e.bytebase.v1.GetProjectRequest\x1a\x14.bytebase.v1.Project\";\xdaA\x04name\x8a\xea0\x0fbb.projects.get\x90\xea0\x01\x82\xd3\xe4\x93\x02\x17\x12\x15/v1/{name=projects/*}\x12\x84\x01\n" +

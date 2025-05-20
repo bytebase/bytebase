@@ -14051,19 +14051,7 @@ components:
                             - TYPE_ISSUE_STATUS_UPDATE
                             - TYPE_ISSUE_APPROVAL_NOTIFY
                             - TYPE_ISSUE_PIPELINE_STAGE_STATUS_UPDATE
-                            - TYPE_ISSUE_PIPELINE_TASK_STATUS_UPDATE
                             - TYPE_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE
-                            - TYPE_ISSUE_PIPELINE_TASK_STATEMENT_UPDATE
-                            - TYPE_ISSUE_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE
-                            - TYPE_MEMBER_CREATE
-                            - TYPE_MEMBER_ROLE_UPDATE
-                            - TYPE_MEMBER_ACTIVATE
-                            - TYPE_MEMBER_DEACTIVATE
-                            - TYPE_PROJECT_REPOSITORY_PUSH
-                            - TYPE_PROJECT_DATABASE_TRANSFER
-                            - TYPE_PROJECT_MEMBER_CREATE
-                            - TYPE_PROJECT_MEMBER_DELETE
-                            - TYPE_SQL_EDITOR_QUERY
                         type: string
                         format: enum
                     description: |-
