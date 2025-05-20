@@ -304,16 +304,16 @@ func (s *SchedulerV2) schedulePendingTaskRun(ctx context.Context, taskRun *store
 			return true, nil
 		}
 
-		taskIDs, err := s.store.FindBlockingTasksByVersion(ctx, task.InstanceID, *task.DatabaseName, schemaVersion)
+		maybeTaskID, err := s.store.FindBlockingTaskByVersion(ctx, task.PipelineID, task.InstanceID, *task.DatabaseName, schemaVersion)
 		if err != nil {
 			return false, errors.Wrapf(err, "failed to find blocking versioned tasks")
 		}
-		if len(taskIDs) > 0 {
+		if maybeTaskID != nil {
 			s.stateCfg.TaskRunSchedulerInfo.Store(taskRun.ID, &storepb.SchedulerInfo{
 				ReportTime: timestamppb.Now(),
 				WaitingCause: &storepb.SchedulerInfo_WaitingCause{
 					Cause: &storepb.SchedulerInfo_WaitingCause_TaskUid{
-						TaskUid: int32(taskIDs[0]),
+						TaskUid: int32(*maybeTaskID),
 					},
 				},
 			})
@@ -357,6 +357,7 @@ func (s *SchedulerV2) scheduleRunningTaskRuns(ctx context.Context) error {
 	// We only run the first (i.e. which has the minimum task ID) task for each database.
 	// 1. For ddl tasks, we run them one by one to get a sane schema dump and thus diff.
 	// 2. For versioned tasks, this is our last resort to determine the order for tasks with the same version. We don't want to run them in parallel.
+	// 2.1. Rollout 1 tasks will be run before rollout 2 tasks. Where, rollout 1 tasks are created before rollout 2 tasks.
 	minTaskIDForDatabase := map[string]int{}
 	for _, taskRun := range taskRuns {
 		task, err := s.store.GetTaskV2ByID(ctx, taskRun.TaskUID)
