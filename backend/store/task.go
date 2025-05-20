@@ -103,7 +103,7 @@ func (s *Store) GetTaskV2ByID(ctx context.Context, id int) (*TaskMessage, error)
 	return tasks[0], nil
 }
 
-func (s *Store) FindBlockingTasksByVersion(ctx context.Context, instanceID, databaseName string, version string) ([]int, error) {
+func (s *Store) FindBlockingTaskByVersion(ctx context.Context, instanceID, databaseName string, version string) (*int, error) {
 	query := `
 		SELECT
 			task.id
@@ -128,28 +128,17 @@ func (s *Store) FindBlockingTasksByVersion(ctx context.Context, instanceID, data
 		AND latest_task_run.status != 'DONE'
 		AND COALESCE(issue.status, 'OPEN') = 'OPEN'
 		ORDER BY task.id ASC
+		LIMIT 1
 	`
 
-	rows, err := s.db.QueryContext(ctx, query, instanceID, databaseName, version)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to query rows")
-	}
-	defer rows.Close()
-
-	var ids []int
-	for rows.Next() {
-		var id int
-		if err := rows.Scan(&id); err != nil {
-			return nil, errors.Wrapf(err, "failed to scan")
+	var id int
+	if err := s.db.QueryRowContext(ctx, query, instanceID, databaseName, version).Scan(&id); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
 		}
-		ids = append(ids, id)
+		return nil, errors.Wrapf(err, "failed to find blocking task by version %s", version)
 	}
-
-	if err := rows.Err(); err != nil {
-		return nil, errors.Wrapf(err, "rows err")
-	}
-
-	return ids, nil
+	return &id, nil
 }
 
 func (*Store) createTasks(ctx context.Context, txn *sql.Tx, creates ...*TaskMessage) ([]*TaskMessage, error) {
