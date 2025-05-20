@@ -13,7 +13,7 @@ export const planCheckRunListForSpec = (
   plan: ComposedPlan,
   spec: Plan_Spec
 ) => {
-  const target = databaseForSpec(plan, spec).name;
+  const target = databaseForSpec(plan.projectEntity, spec).name;
   const sheet = spec ? sheetNameForSpec(spec) : "";
   return plan.planCheckRunList.filter((check) => {
     if (sheet && check.sheet) {

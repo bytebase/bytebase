@@ -224,7 +224,8 @@
     "catalog": "Danh mục",
     "summary": "Tóm tắt",
     "errors": "Lỗi",
-    "removed": "LOẠI BỎ"
+    "removed": "LOẠI BỎ",
+    "options": "Tùy chọn"
   },
   "error-page": {
     "go-back-home": "Về trang chủ"

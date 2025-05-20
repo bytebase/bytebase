@@ -88,7 +88,7 @@ withDefaults(
 const { plan, selectedSpec } = usePlanContext();
 
 const coreDatabaseInfo = computed(() => {
-  return databaseForSpec(plan.value, selectedSpec.value);
+  return databaseForSpec(plan.value.projectEntity, selectedSpec.value);
 });
 
 const isCreatingDatabaseSpec = computed(

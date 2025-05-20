@@ -23,15 +23,18 @@ import { pushNotification, useSheetV1Store, useStorageStore } from "@/store";
 import {
   extractIssueUID,
   extractProjectResourceName,
+  hasProjectPermissionV2,
   sheetNameOfTaskV1,
 } from "@/utils";
-import { usePreBackupContext } from "./common";
 
 const router = useRouter();
 const { issue, selectedTask } = useIssueContext();
-const { allowRollback } = usePreBackupContext();
 
 const isLoading = ref(false);
+
+const allowRollback = computed((): boolean => {
+  return hasProjectPermissionV2(issue.value.projectEntity, "bb.issues.create");
+});
 
 const latestTaskRun = computed(() =>
   latestTaskRunForTask(issue.value, selectedTask.value)

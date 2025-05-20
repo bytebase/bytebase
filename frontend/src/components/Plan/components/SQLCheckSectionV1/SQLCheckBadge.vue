@@ -54,7 +54,7 @@ const { plan, selectedSpec } = usePlanContext();
 const showDetailPanel = ref(false);
 
 const database = computed(() => {
-  return databaseForSpec(plan.value, selectedSpec.value);
+  return databaseForSpec(plan.value.projectEntity, selectedSpec.value);
 });
 
 const status = computed(() => {

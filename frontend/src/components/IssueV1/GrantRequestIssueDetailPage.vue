@@ -71,6 +71,7 @@ import { computed, ref } from "vue";
 import { FeatureAttention } from "@/components/FeatureGuard";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import { PresetRoleType } from "@/types";
+import { provideSidebarContext } from "../Plan/logic";
 import { Drawer } from "../v2";
 import {
   BannerSection,
@@ -85,11 +86,7 @@ import {
 } from "./components";
 import { provideIssueIntanceContext } from "./components/Sidebar/ReviewSection/utils";
 import type { IssueReviewAction, IssueStatusAction } from "./logic";
-import {
-  provideIssueSidebarContext,
-  useIssueContext,
-  usePollIssue,
-} from "./logic";
+import { useIssueContext, usePollIssue } from "./logic";
 
 const containerRef = ref<HTMLElement>();
 const { isCreating, issue, events } = useIssueContext();
@@ -131,7 +128,7 @@ const {
   mode: sidebarMode,
   desktopSidebarWidth,
   mobileSidebarOpen,
-} = provideIssueSidebarContext(containerRef);
+} = provideSidebarContext(containerRef);
 
 const { existedDeactivatedInstance } = provideIssueIntanceContext();
 </script>

@@ -224,7 +224,8 @@
     "catalog": "Catalog",
     "summary": "总结",
     "errors": "错误",
-    "removed": "已移除"
+    "removed": "已移除",
+    "options": "配置项"
   },
   "error-page": {
     "go-back-home": "回到主页"

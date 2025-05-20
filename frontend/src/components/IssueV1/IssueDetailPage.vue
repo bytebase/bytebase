@@ -77,6 +77,7 @@
 import { ref } from "vue";
 import { FeatureAttention } from "@/components/FeatureGuard";
 import { type Task } from "@/types/proto/v1/rollout_service";
+import { provideSidebarContext } from "../Plan/logic";
 import { Drawer } from "../v2";
 import {
   BannerSection,
@@ -101,11 +102,7 @@ import type {
   IssueStatusAction,
   TaskRolloutAction,
 } from "./logic";
-import {
-  provideIssueSidebarContext,
-  useIssueContext,
-  usePollIssue,
-} from "./logic";
+import { useIssueContext, usePollIssue } from "./logic";
 
 const containerRef = ref<HTMLElement>();
 const { isCreating, events } = useIssueContext();
@@ -148,7 +145,7 @@ const {
   mode: sidebarMode,
   desktopSidebarWidth,
   mobileSidebarOpen,
-} = provideIssueSidebarContext(containerRef);
+} = provideSidebarContext(containerRef);
 
 const { existedDeactivatedInstance } = provideIssueIntanceContext();
 </script>
