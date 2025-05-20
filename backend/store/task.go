@@ -103,7 +103,7 @@ func (s *Store) GetTaskV2ByID(ctx context.Context, id int) (*TaskMessage, error)
 	return tasks[0], nil
 }
 
-func (s *Store) FindBlockingTaskByVersion(ctx context.Context, instanceID, databaseName string, version string) (*int, error) {
+func (s *Store) FindBlockingTaskByVersion(ctx context.Context, pipelineUID int, instanceID, databaseName string, version string) (*int, error) {
 	query := `
 		SELECT
 			task.id
@@ -121,9 +121,9 @@ func (s *Store) FindBlockingTaskByVersion(ctx context.Context, instanceID, datab
 				), 'NOT_STARTED'
 			) AS status
 		) AS latest_task_run ON TRUE
-		WHERE task.instance = $1 AND task.db_name = $2
+		WHERE task.pipeline_id = $1 AND task.instance = $2 AND task.db_name = $3
 		AND task.payload->>'schemaVersion' IS NOT NULL
-		AND task.payload->>'schemaVersion' < $3
+		AND task.payload->>'schemaVersion' < $4
 		AND (task.payload->>'skipped')::BOOLEAN IS NOT TRUE
 		AND latest_task_run.status != 'DONE'
 		AND COALESCE(issue.status, 'OPEN') = 'OPEN'
@@ -132,7 +132,7 @@ func (s *Store) FindBlockingTaskByVersion(ctx context.Context, instanceID, datab
 	`
 
 	var id int
-	if err := s.db.QueryRowContext(ctx, query, instanceID, databaseName, version).Scan(&id); err != nil {
+	if err := s.db.QueryRowContext(ctx, query, pipelineUID, instanceID, databaseName, version).Scan(&id); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
