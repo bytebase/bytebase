@@ -483,7 +483,7 @@ func (s *SchedulerV2) scheduleRunningTaskRun(ctx context.Context, taskRun *store
 	if maxRunningTaskRunsPerRollout <= 0 {
 		maxRunningTaskRunsPerRollout = defaultRolloutMaxRunningTaskRuns
 	}
-	if s.stateCfg.RolloutOutstandingTasks.Increment(rolloutID, maxRunningTaskRunsPerRollout) {
+	if s.stateCfg.RolloutOutstandingTasks.Increment(rolloutID+"/"+task.InstanceID, maxRunningTaskRunsPerRollout) {
 		s.stateCfg.TaskRunSchedulerInfo.Store(taskRun.ID, &storepb.SchedulerInfo{
 			ReportTime: timestamppb.Now(),
 			WaitingCause: &storepb.SchedulerInfo_WaitingCause{
@@ -499,7 +499,7 @@ func (s *SchedulerV2) scheduleRunningTaskRun(ctx context.Context, taskRun *store
 	revertRolloutConnectionsIncrement := true
 	defer func() {
 		if revertRolloutConnectionsIncrement {
-			s.stateCfg.RolloutOutstandingTasks.Decrement(rolloutID)
+			s.stateCfg.RolloutOutstandingTasks.Decrement(rolloutID + "/" + task.InstanceID)
 		}
 	}()
 
