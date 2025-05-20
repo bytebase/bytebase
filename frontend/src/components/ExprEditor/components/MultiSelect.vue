@@ -30,7 +30,7 @@
 import { useDebounceFn } from "@vueuse/core";
 import { NCheckbox, NSelect } from "naive-ui";
 import type { SelectOption } from "naive-ui";
-import { toRef, watch, reactive, computed, watchEffect } from "vue";
+import { toRef, watch, reactive, computed } from "vue";
 import { type ConditionExpr } from "@/plugins/cel";
 import { DEBOUNCE_SEARCH_DELAY } from "@/types";
 import { useExprEditorContext } from "../context";
