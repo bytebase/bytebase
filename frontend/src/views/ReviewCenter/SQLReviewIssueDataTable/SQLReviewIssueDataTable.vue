@@ -180,7 +180,7 @@ const issueRelatedDatabase = (issue: ComposedIssue) => {
   if (!spec) {
     return;
   }
-  return databaseForSpec(issue, spec);
+  return databaseForSpec(issue.projectEntity, spec);
 };
 
 const issueRelatedStatement = (issue: ComposedIssue) => {

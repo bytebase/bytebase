@@ -256,7 +256,7 @@ const state = reactive<LocalState>({
 });
 
 const database = computed(() => {
-  return databaseForSpec(plan.value, selectedSpec.value);
+  return databaseForSpec(plan.value.projectEntity, selectedSpec.value);
 });
 
 const language = useInstanceV1EditorLanguage(
@@ -275,7 +275,10 @@ const statementTitle = computed(() => {
   return language.value === "sql" ? t("common.sql") : t("common.statement");
 });
 const advices = computed(() => {
-  const database = databaseForSpec(plan.value, selectedSpec.value);
+  const database = databaseForSpec(
+    plan.value.projectEntity,
+    selectedSpec.value
+  );
   return resultMap.value[database.name]?.advices || [];
 });
 const { markers } = useSQLAdviceMarkers(context, advices);
