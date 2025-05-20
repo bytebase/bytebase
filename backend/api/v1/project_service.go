@@ -1017,32 +1017,8 @@ func convertToActivityTypeStrings(types []v1pb.Activity_Type) ([]string, error) 
 			result = append(result, string(base.ActivityIssueApprovalNotify))
 		case v1pb.Activity_TYPE_ISSUE_PIPELINE_STAGE_STATUS_UPDATE:
 			result = append(result, string(base.ActivityPipelineStageStatusUpdate))
-		case v1pb.Activity_TYPE_ISSUE_PIPELINE_TASK_STATUS_UPDATE:
-			result = append(result, string(base.ActivityPipelineTaskStatusUpdate))
 		case v1pb.Activity_TYPE_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE:
 			result = append(result, string(base.ActivityPipelineTaskRunStatusUpdate))
-		case v1pb.Activity_TYPE_ISSUE_PIPELINE_TASK_STATEMENT_UPDATE:
-			result = append(result, string(base.ActivityPipelineTaskStatementUpdate))
-		case v1pb.Activity_TYPE_ISSUE_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE:
-			result = append(result, string(base.ActivityPipelineTaskEarliestAllowedTimeUpdate))
-		case v1pb.Activity_TYPE_MEMBER_CREATE:
-			result = append(result, string(base.ActivityMemberCreate))
-		case v1pb.Activity_TYPE_MEMBER_ROLE_UPDATE:
-			result = append(result, string(base.ActivityMemberRoleUpdate))
-		case v1pb.Activity_TYPE_MEMBER_ACTIVATE:
-			result = append(result, string(base.ActivityMemberActivate))
-		case v1pb.Activity_TYPE_MEMBER_DEACTIVATE:
-			result = append(result, string(base.ActivityMemberDeactivate))
-		case v1pb.Activity_TYPE_PROJECT_REPOSITORY_PUSH:
-			result = append(result, string(base.ActivityProjectRepositoryPush))
-		case v1pb.Activity_TYPE_PROJECT_DATABASE_TRANSFER:
-			result = append(result, string(base.ActivityProjectDatabaseTransfer))
-		case v1pb.Activity_TYPE_PROJECT_MEMBER_CREATE:
-			result = append(result, string(base.ActivityProjectMemberCreate))
-		case v1pb.Activity_TYPE_PROJECT_MEMBER_DELETE:
-			result = append(result, string(base.ActivityProjectMemberDelete))
-		case v1pb.Activity_TYPE_SQL_EDITOR_QUERY:
-			result = append(result, string(base.ActivitySQLQuery))
 		case v1pb.Activity_TYPE_NOTIFY_ISSUE_APPROVED:
 			result = append(result, string(base.ActivityNotifyIssueApproved))
 		case v1pb.Activity_TYPE_NOTIFY_PIPELINE_ROLLOUT:
@@ -1070,32 +1046,8 @@ func convertNotificationTypeStrings(types []string) []v1pb.Activity_Type {
 			result = append(result, v1pb.Activity_TYPE_ISSUE_APPROVAL_NOTIFY)
 		case string(base.ActivityPipelineStageStatusUpdate):
 			result = append(result, v1pb.Activity_TYPE_ISSUE_PIPELINE_STAGE_STATUS_UPDATE)
-		case string(base.ActivityPipelineTaskStatusUpdate):
-			result = append(result, v1pb.Activity_TYPE_ISSUE_PIPELINE_TASK_STATUS_UPDATE)
 		case string(base.ActivityPipelineTaskRunStatusUpdate):
 			result = append(result, v1pb.Activity_TYPE_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE)
-		case string(base.ActivityPipelineTaskStatementUpdate):
-			result = append(result, v1pb.Activity_TYPE_ISSUE_PIPELINE_TASK_STATEMENT_UPDATE)
-		case string(base.ActivityPipelineTaskEarliestAllowedTimeUpdate):
-			result = append(result, v1pb.Activity_TYPE_ISSUE_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE)
-		case string(base.ActivityMemberCreate):
-			result = append(result, v1pb.Activity_TYPE_MEMBER_CREATE)
-		case string(base.ActivityMemberRoleUpdate):
-			result = append(result, v1pb.Activity_TYPE_MEMBER_ROLE_UPDATE)
-		case string(base.ActivityMemberActivate):
-			result = append(result, v1pb.Activity_TYPE_MEMBER_ACTIVATE)
-		case string(base.ActivityMemberDeactivate):
-			result = append(result, v1pb.Activity_TYPE_MEMBER_DEACTIVATE)
-		case string(base.ActivityProjectRepositoryPush):
-			result = append(result, v1pb.Activity_TYPE_PROJECT_REPOSITORY_PUSH)
-		case string(base.ActivityProjectDatabaseTransfer):
-			result = append(result, v1pb.Activity_TYPE_PROJECT_DATABASE_TRANSFER)
-		case string(base.ActivityProjectMemberCreate):
-			result = append(result, v1pb.Activity_TYPE_PROJECT_MEMBER_CREATE)
-		case string(base.ActivityProjectMemberDelete):
-			result = append(result, v1pb.Activity_TYPE_PROJECT_MEMBER_DELETE)
-		case string(base.ActivitySQLQuery):
-			result = append(result, v1pb.Activity_TYPE_SQL_EDITOR_QUERY)
 		case string(base.ActivityNotifyIssueApproved):
 			result = append(result, v1pb.Activity_TYPE_NOTIFY_ISSUE_APPROVED)
 		case string(base.ActivityNotifyPipelineRollout):
