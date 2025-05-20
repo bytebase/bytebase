@@ -224,7 +224,8 @@
     "catalog": "Catalog",
     "summary": "Summary",
     "errors": "Errors",
-    "removed": "Removed"
+    "removed": "Removed",
+    "options": "Options"
   },
   "error-page": {
     "go-back-home": "Go back home"

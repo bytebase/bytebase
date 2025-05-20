@@ -1,38 +1,72 @@
 <template>
-  <div
-    v-if="showPreBackupSection"
-    class="w-full flex items-center justify-between gap-x-2 gap-y-1 flex-wrap min-h-[34px] whitespace-nowrap"
-  >
-    <NTooltip>
-      <template #trigger>
-        <div class="textlabel flex items-center">
-          <span>{{ $t("task.prior-backup") }}</span>
-          <span
-            v-if="showRollbackSection"
-            class="ml-1 px-1 py-0.5 rounded-lg text-xs bg-green-100 text-green-800"
-          >
-            {{ $t("common.on") }}
-          </span>
-        </div>
-      </template>
-      <template #default>
-        <div class="max-w-[20rem]">
-          {{ $t("task.prior-backup-tips") }}
-        </div>
-      </template>
-    </NTooltip>
-    <div class="flex items-center">
-      <TaskRollbackButton v-if="showRollbackSection" />
-      <PreBackupSwitch v-else />
-    </div>
-  </div>
+  <TaskRollbackSection v-if="shouldShowTaskRollbackSection" />
+  <PreBackupSection v-else-if="shouldShowPreBackupSection" />
 </template>
 
 <script lang="ts" setup>
-import { NTooltip } from "naive-ui";
-import PreBackupSwitch from "./PreBackupSwitch.vue";
-import TaskRollbackButton from "./TaskRollbackButton.vue";
-import { usePreBackupContext } from "./common";
+import { computed } from "vue";
+import {
+  databaseForTask,
+  latestTaskRunForTask,
+  specForTask,
+  useIssueContext,
+} from "@/components/IssueV1/logic";
+import { PreBackupSection } from "@/components/Plan/components/Sidebar";
+import { providePreBackupSettingContext } from "@/components/Plan/components/Sidebar/PreBackupSection/context";
+import type { Plan, Plan_Spec } from "@/types/proto/v1/plan_service";
+import { TaskRun_Status } from "@/types/proto/v1/rollout_service";
+import TaskRollbackSection from "./TaskRollbackSection.vue";
+import { ROLLBACK_AVAILABLE_ENGINES } from "./common";
 
-const { showPreBackupSection, showRollbackSection } = usePreBackupContext();
+const { isCreating, issue, selectedTask, events } = useIssueContext();
+const {
+  shouldShow: shouldShowPreBackupSection,
+  enabled: preBackupEnabled,
+  events: preBackupEvents,
+} = providePreBackupSettingContext({
+  project: computed(() => issue.value.projectEntity),
+  plan: computed(() => issue.value.planEntity as Plan),
+  selectedSpec: computed(
+    () => specForTask(issue.value.planEntity, selectedTask.value) as Plan_Spec
+  ),
+  isCreating,
+});
+
+const database = computed(() =>
+  databaseForTask(issue.value, selectedTask.value)
+);
+
+const latestTaskRun = computed(() =>
+  latestTaskRunForTask(issue.value, selectedTask.value)
+);
+
+const shouldShowTaskRollbackSection = computed((): boolean => {
+  if (!shouldShowPreBackupSection.value) {
+    return false;
+  }
+  if (!preBackupEnabled.value) {
+    return false;
+  }
+  if (
+    !ROLLBACK_AVAILABLE_ENGINES.includes(database.value.instanceResource.engine)
+  ) {
+    return false;
+  }
+  if (!latestTaskRun.value) {
+    return false;
+  }
+  if (latestTaskRun.value.status !== TaskRun_Status.DONE) {
+    return false;
+  }
+  if (latestTaskRun.value.priorBackupDetail?.items.length === 0) {
+    return false;
+  }
+  return true;
+});
+
+preBackupEvents.on("update", () => {
+  events.emit("status-changed", {
+    eager: true,
+  });
+});
 </script>

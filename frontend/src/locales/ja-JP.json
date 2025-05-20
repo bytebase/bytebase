@@ -224,7 +224,8 @@
     "catalog": "カタログ",
     "summary": "まとめ",
     "errors": "エラー",
-    "removed": "削除されました"
+    "removed": "削除されました",
+    "options": "オプション"
   },
   "error-page": {
     "go-back-home": "ホームページに戻る"

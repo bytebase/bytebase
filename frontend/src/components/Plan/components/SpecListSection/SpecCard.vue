@@ -35,12 +35,12 @@
       class="flex items-center gap-1 truncate"
     >
       <InstanceV1Name
-        :instance="databaseForSpec(plan, spec).instanceResource"
+        :instance="databaseForSpec(plan.projectEntity, spec).instanceResource"
         :link="false"
         class="text-gray-500 text-sm"
       />
       <span class="truncate text-sm">{{
-        databaseForSpec(plan, spec).databaseName
+        databaseForSpec(plan.projectEntity, spec).databaseName
       }}</span>
     </div>
     <div
