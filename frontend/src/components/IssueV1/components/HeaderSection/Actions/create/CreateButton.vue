@@ -55,11 +55,11 @@ import {
   databaseEngineForSpec,
   databaseForTask,
   getLocalSheetByName,
-  isValidSpec,
   isValidStage,
   useIssueContext,
 } from "@/components/IssueV1/logic";
 import formatSQL from "@/components/MonacoEditor/sqlFormatter";
+import { isValidSpec } from "@/components/Plan";
 import { SQLCheckPanel } from "@/components/SQLCheck";
 import { STATEMENT_SKIP_CHECK_THRESHOLD } from "@/components/SQLCheck/common";
 import {

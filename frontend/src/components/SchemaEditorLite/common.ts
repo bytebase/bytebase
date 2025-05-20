@@ -5,13 +5,8 @@ import { useSettingV1Store } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import type { DatabaseCatalog } from "@/types/proto/v1/database_catalog_service";
 import type { DatabaseMetadata } from "@/types/proto/v1/database_service";
-import { TinyTimer } from "@/utils";
 import { extractGrpcErrorMessage } from "@/utils/grpcweb";
 import { validateDatabaseMetadata } from "./utils";
-
-export const _generateDiffDDLTimer = new TinyTimer<"generateDiffDDL">(
-  "GenerateDiffDDL"
-);
 
 export type GenerateDiffDDLResult = {
   statement: string;
@@ -34,7 +29,6 @@ export const generateDiffDDL = async ({
   allowEmptyDiffDDLWithConfigChange?: boolean;
 }): Promise<GenerateDiffDDLResult> => {
   const finish = (statement: string, errors: string[]) => {
-    _generateDiffDDLTimer.end("generateDiffDDL");
     return {
       statement,
       errors,

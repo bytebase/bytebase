@@ -158,7 +158,7 @@ const loadMore = useDebounceFn(async () => {
     const toIndex = fromIndex + SPEC_PER_PAGE;
     const databaseNames = filteredSpecList.value
       .slice(fromIndex, toIndex)
-      .map((spec) => databaseForSpec(plan.value, spec).name);
+      .map((spec) => databaseForSpec(plan.value.projectEntity, spec).name);
 
     state.isRequesting = true;
     try {

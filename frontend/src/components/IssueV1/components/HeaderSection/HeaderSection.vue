@@ -34,9 +34,10 @@
 import { MenuIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { computed } from "vue";
+import { useSidebarContext } from "@/components/Plan";
 import { Task_Status } from "@/types/proto/v1/rollout_service";
 import { activeTaskInRollout, isDatabaseChangeRelatedIssue } from "@/utils";
-import { useIssueContext, useIssueSidebarContext } from "../../logic";
+import { useIssueContext } from "../../logic";
 import IssueStatusIcon from "../IssueStatusIcon.vue";
 import Actions from "./Actions";
 import Title from "./Title.vue";
@@ -52,5 +53,5 @@ const issueTaskStatus = computed(() => {
   return activeTaskInRollout(issue.value.rolloutEntity).status;
 });
 
-const { mode: sidebarMode, mobileSidebarOpen } = useIssueSidebarContext();
+const { mode: sidebarMode, mobileSidebarOpen } = useSidebarContext();
 </script>

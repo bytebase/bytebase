@@ -1,19 +1,22 @@
 import { mockDatabase } from "@/components/IssueV1/logic/utils";
 import { useDatabaseV1Store } from "@/store";
-import { isValidDatabaseName, unknownDatabase } from "@/types";
+import {
+  isValidDatabaseName,
+  unknownDatabase,
+  type ComposedProject,
+} from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import type { Plan_Spec } from "@/types/proto/v1/plan_service";
-import type { ComposedPlan } from "@/types/v1/issue/plan";
 import { extractDatabaseGroupName } from "@/utils";
 
-export const databaseForSpec = (plan: ComposedPlan, spec: Plan_Spec) => {
+export const databaseForSpec = (project: ComposedProject, spec: Plan_Spec) => {
   // Now we only handle changeDatabaseConfig specs.
   const { changeDatabaseConfig } = spec;
   if (changeDatabaseConfig !== undefined) {
     const target = changeDatabaseConfig.target;
     const db = useDatabaseV1Store().getDatabaseByName(target);
     if (!isValidDatabaseName(db.name)) {
-      return mockDatabase(plan.projectEntity, target);
+      return mockDatabase(project, target);
     }
     return db;
   }

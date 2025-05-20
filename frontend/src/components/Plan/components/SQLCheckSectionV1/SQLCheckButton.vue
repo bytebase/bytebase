@@ -97,7 +97,7 @@ const advices = computed(() => {
 });
 
 const database = computed(() =>
-  databaseForSpec(plan.value, selectedSpec.value)
+  databaseForSpec(plan.value.projectEntity, selectedSpec.value)
 );
 
 const statement = computed(() => sheetStatement.value);
