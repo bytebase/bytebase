@@ -36,7 +36,7 @@ const PRE_BACKUP_AVAILABLE_ENGINES = [
 ];
 
 const KEY = Symbol(
-  "bb.changelist.dashboard"
+  "bb.plan.setting.pre-backup"
 ) as InjectionKey<PreBackupSettingContext>;
 
 export const usePreBackupSettingContext = () => {
