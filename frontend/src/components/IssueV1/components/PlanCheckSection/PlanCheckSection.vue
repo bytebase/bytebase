@@ -12,12 +12,12 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 import {
-  databaseForTask,
   planSpecHasPlanChecks,
   specForTask,
   useIssueContext,
 } from "@/components/IssueV1/logic";
 import PlanCheckRunBar from "@/components/PlanCheckRun/PlanCheckRunBar.vue";
+import { databaseForTask } from "@/components/Rollout/RolloutDetail";
 import { useCurrentUserV1, extractUserId } from "@/store";
 import { hasProjectPermissionV2, isValidTaskName } from "@/utils";
 
@@ -33,7 +33,7 @@ const show = computed(() => {
 });
 
 const database = computed(() =>
-  databaseForTask(issue.value, selectedTask.value)
+  databaseForTask(issue.value.projectEntity, selectedTask.value)
 );
 
 const allowRunChecks = computed(() => {

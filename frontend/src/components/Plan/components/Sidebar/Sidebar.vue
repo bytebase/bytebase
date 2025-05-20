@@ -18,6 +18,7 @@ const { shouldShow: shouldShowPreBackupSection, events: preBackupEvents } =
     project: computed(() => plan.value.projectEntity),
     plan: plan,
     selectedSpec: selectedSpec,
+    selectedTask: computed(() => undefined),
     isCreating,
   });
 

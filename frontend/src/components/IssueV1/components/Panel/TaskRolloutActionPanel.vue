@@ -164,7 +164,6 @@ import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import type { TaskRolloutAction } from "@/components/IssueV1/logic";
 import {
-  databaseForTask,
   semanticTaskType,
   stageForTask,
   taskRolloutActionButtonProps,
@@ -175,6 +174,7 @@ import {
 } from "@/components/IssueV1/logic";
 import PlanCheckRunBar from "@/components/PlanCheckRun/PlanCheckRunBar.vue";
 import { planCheckRunSummaryForCheckRunList } from "@/components/PlanCheckRun/common";
+import { databaseForTask } from "@/components/Rollout/RolloutDetail";
 import { rolloutServiceClient } from "@/grpcweb";
 import { pushNotification, useEnvironmentV1Store } from "@/store";
 import type { Task, TaskRun } from "@/types/proto/v1/rollout_service";
@@ -216,7 +216,7 @@ const title = computed(() => {
 });
 
 const database = computed(() =>
-  databaseForTask(issue.value, selectedTask.value)
+  databaseForTask(issue.value.projectEntity, selectedTask.value)
 );
 
 const stage = computed(() => {

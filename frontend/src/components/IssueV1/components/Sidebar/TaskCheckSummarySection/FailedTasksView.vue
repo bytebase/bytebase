@@ -19,7 +19,7 @@
           @click="onClickTask(task)"
         >
           <p class="group-hover:underline truncate">
-            {{ databaseForTask(issue, task).databaseName }}
+            {{ databaseForTask(issue.projectEntity, task).databaseName }}
           </p>
           <p class="text-xs leading-4 text-error line-clamp-2">
             {{ failedMessageOfTask(task.name) }}
@@ -33,7 +33,8 @@
 <script setup lang="ts">
 import { NTag, NPopover } from "naive-ui";
 import { computed } from "vue";
-import { databaseForTask, useIssueContext } from "@/components/IssueV1";
+import { useIssueContext } from "@/components/IssueV1";
+import { databaseForTask } from "@/components/Rollout/RolloutDetail";
 import {
   PlanCheckRun_Result_Status,
   type PlanCheckRun,

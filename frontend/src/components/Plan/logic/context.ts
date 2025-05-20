@@ -16,6 +16,7 @@ export type PlanContext = {
   isCreating: Ref<boolean>;
   ready: Ref<boolean>;
   plan: Ref<ComposedPlan>;
+  // TODO(steven): save related issue/rollout for checking if the plan is changable.
 
   selectedSpec: Ref<Plan_Spec>;
   formatOnSave: Ref<boolean>;

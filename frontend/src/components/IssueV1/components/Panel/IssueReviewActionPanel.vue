@@ -107,10 +107,10 @@ import {
   issueReviewActionButtonProps,
   issueReviewActionDisplayName,
   planCheckRunSummaryForIssue,
-  databaseForTask,
 } from "@/components/IssueV1/logic";
 import PlanCheckRunBar from "@/components/PlanCheckRun/PlanCheckRunBar.vue";
 import RequiredStar from "@/components/RequiredStar.vue";
+import { databaseForTask } from "@/components/Rollout/RolloutDetail";
 import { issueServiceClient } from "@/grpcweb";
 import { Issue_Approver_Status } from "@/types/proto/v1/issue_service";
 import { ErrorList } from "../common";
@@ -148,7 +148,7 @@ const title = computed(() => {
 });
 
 const database = computed(() =>
-  databaseForTask(issue.value, selectedTask.value)
+  databaseForTask(issue.value.projectEntity, selectedTask.value)
 );
 
 const showPerformActionAnyway = computed(() => {

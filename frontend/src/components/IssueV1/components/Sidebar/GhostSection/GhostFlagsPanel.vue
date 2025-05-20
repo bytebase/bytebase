@@ -73,13 +73,13 @@ import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import {
   chooseUpdateTarget,
-  databaseForTask,
   notifyNotEditableLegacyIssue,
   specForTask,
   stageForTask,
   useIssueContext,
 } from "@/components/IssueV1/logic";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
+import { databaseForTask } from "@/components/Rollout/RolloutDetail";
 import ErrorList from "@/components/misc/ErrorList.vue";
 import { Drawer, DrawerContent, RichDatabaseName } from "@/components/v2";
 import { planServiceClient } from "@/grpcweb";
@@ -111,7 +111,7 @@ const stage = computed(() => {
   return stageForTask(issue.value, task.value);
 });
 const database = computed(() => {
-  return databaseForTask(issue.value, task.value);
+  return databaseForTask(issue.value.projectEntity, task.value);
 });
 const title = computed(() => {
   return t("task.online-migration.configure-ghost-parameters");
