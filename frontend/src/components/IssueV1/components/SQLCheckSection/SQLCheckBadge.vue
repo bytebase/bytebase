@@ -35,10 +35,11 @@
 import { CheckIcon, TriangleAlertIcon, CircleAlertIcon } from "lucide-vue-next";
 import { NTag } from "naive-ui";
 import { computed, ref } from "vue";
+import { databaseForTask } from "@/components/Rollout/RolloutDetail";
 import { SQLCheckPanel } from "@/components/SQLCheck";
 import type { Advice } from "@/types/proto/v1/sql_service";
 import { Advice_Status } from "@/types/proto/v1/sql_service";
-import { databaseForTask, useIssueContext } from "../../logic";
+import { useIssueContext } from "../../logic";
 import { TaskSpinner } from "../common";
 
 const props = defineProps<{
@@ -54,7 +55,7 @@ const { issue, selectedTask } = useIssueContext();
 const showDetailPanel = ref(false);
 
 const database = computed(() => {
-  return databaseForTask(issue.value, selectedTask.value);
+  return databaseForTask(issue.value.projectEntity, selectedTask.value);
 });
 
 const status = computed(() => {

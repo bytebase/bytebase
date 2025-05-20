@@ -15,10 +15,11 @@ import { computed, nextTick, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { onBeforeRouteLeave } from "vue-router";
 import { useRouter } from "vue-router";
+import { databaseForTask } from "@/components/Rollout/RolloutDetail";
 import { TaskTypeListWithStatement } from "@/types";
 import { Task_Type } from "@/types/proto/v1/rollout_service";
 import { isValidTaskName } from "@/utils";
-import { databaseForTask, useIssueContext } from "../../logic";
+import { useIssueContext } from "../../logic";
 import { useIssueSQLCheckContext } from "../SQLCheckSection/context";
 import EditorView from "./EditorView";
 import SDLView from "./SDLView";
@@ -31,7 +32,10 @@ const { resultMap } = useIssueSQLCheckContext();
 const editorViewRef = ref<InstanceType<typeof EditorView>>();
 
 const advices = computed(() => {
-  const database = databaseForTask(issue.value, selectedTask.value);
+  const database = databaseForTask(
+    issue.value.projectEntity,
+    selectedTask.value
+  );
   return resultMap.value[database.name]?.advices || [];
 });
 

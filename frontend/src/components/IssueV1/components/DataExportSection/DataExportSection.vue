@@ -23,7 +23,8 @@
 import { NEmpty } from "naive-ui";
 import { computed, watch } from "vue";
 import DatabaseInfo from "@/components/DatabaseInfo.vue";
-import { databaseForTask, useIssueContext } from "@/components/IssueV1/logic";
+import { useIssueContext } from "@/components/IssueV1/logic";
+import { databaseForTask } from "@/components/Rollout/RolloutDetail";
 import NoPermissionPlaceholder from "@/components/misc/NoPermissionPlaceholder.vue";
 import { useDatabaseV1Store } from "@/store";
 import { isValidDatabaseName } from "@/types";
@@ -39,7 +40,7 @@ const stageList = computed(() => {
 });
 
 const database = computed(() => {
-  return databaseForTask(issue.value, selectedTask.value);
+  return databaseForTask(issue.value.projectEntity, selectedTask.value);
 });
 
 const placeholder = computed(() => {

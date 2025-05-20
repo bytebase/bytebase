@@ -9,23 +9,23 @@ import {
 import { Task_Type, type Task } from "@/types/proto/v1/rollout_service";
 
 export const databaseForTask = (project: ComposedProject, task: Task) => {
-  if (task.type === Task_Type.DATABASE_CREATE) {
-    // The database is not created yet.
-    // extract database info from the task's and payload's properties.
-    return extractCoreDatabaseInfoFromDatabaseCreateTask(project, task);
-  } else {
-    if (
-      task.databaseDataUpdate ||
-      task.databaseSchemaUpdate ||
-      task.databaseDataExport ||
-      task.type === Task_Type.DATABASE_SCHEMA_BASELINE
-    ) {
+  switch (task.type) {
+    case Task_Type.DATABASE_CREATE:
+      // The database is not created yet.
+      // extract database info from the task's and payload's properties.
+      return extractCoreDatabaseInfoFromDatabaseCreateTask(project, task);
+    case Task_Type.DATABASE_SCHEMA_BASELINE:
+    case Task_Type.DATABASE_SCHEMA_UPDATE:
+    case Task_Type.DATABASE_SCHEMA_UPDATE_SDL:
+    case Task_Type.DATABASE_SCHEMA_UPDATE_GHOST:
+    case Task_Type.DATABASE_DATA_UPDATE:
+    case Task_Type.DATABASE_DATA_EXPORT:
       const db = useDatabaseV1Store().getDatabaseByName(task.target);
       if (!isValidDatabaseName(db.name)) {
         return mockDatabase(project, task.target);
       }
       return db;
-    }
+    default:
+      return unknownDatabase();
   }
-  return unknownDatabase();
 };

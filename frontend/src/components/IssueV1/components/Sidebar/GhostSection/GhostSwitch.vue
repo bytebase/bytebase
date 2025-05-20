@@ -35,11 +35,11 @@ import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import InstanceAssignment from "@/components/InstanceAssignment.vue";
 import {
-  databaseForTask,
   notifyNotEditableLegacyIssue,
   specForTask,
   useIssueContext,
 } from "@/components/IssueV1/logic";
+import { databaseForTask } from "@/components/Rollout/RolloutDetail";
 import type { ErrorItem } from "@/components/misc/ErrorList.vue";
 import { default as ErrorList } from "@/components/misc/ErrorList.vue";
 import { planServiceClient } from "@/grpcweb";
@@ -80,7 +80,10 @@ const errors = computed(() => {
       t("subscription.instance-assignment.missing-license-attention")
     );
   }
-  const database = databaseForTask(issue.value, selectedTask.value);
+  const database = databaseForTask(
+    issue.value.projectEntity,
+    selectedTask.value
+  );
   // As we use the same database from backup to save temp tables in gh-ost, check if backup is available.
   if (!database.backupAvailable) {
     errors.push(
