@@ -30,7 +30,7 @@
 import { useDebounceFn } from "@vueuse/core";
 import { NCheckbox, NSelect } from "naive-ui";
 import type { SelectOption } from "naive-ui";
-import { toRef, watch, reactive, computed, watchEffect } from "vue";
+import { toRef, watch, reactive, computed } from "vue";
 import { type ConditionExpr } from "@/plugins/cel";
 import { DEBOUNCE_SEARCH_DELAY } from "@/types";
 import { useExprEditorContext } from "../context";
@@ -59,10 +59,6 @@ const state = reactive<LocalState>({
 
 const { optionConfig, factor } = useSelectOptionConfig(toRef(props, "expr"));
 
-watchEffect(() => {
-  state.rawOptionList = [...optionConfig.value.options];
-});
-
 const checkAllState = computed(() => {
   const selected = new Set<any>(props.value);
   const checked =
@@ -88,19 +84,6 @@ const toggleCheckAll = (on: boolean) => {
   }
 };
 
-watch(
-  [() => state.rawOptionList, () => props.value],
-  () => {
-    const values = new Set(state.rawOptionList.map((opt) => opt.value));
-    const filtered = (props.value as any[]).filter((v) => values.has(v));
-    if (filtered.length !== props.value.length) {
-      // Some values are not suitable for the select options.
-      emit("update:value", filtered);
-    }
-  },
-  { immediate: true }
-);
-
 const handleSearch = useDebounceFn(async (search: string) => {
   if (!optionConfig.value.search) {
     state.rawOptionList = [...optionConfig.value.options];
@@ -118,7 +101,16 @@ const handleSearch = useDebounceFn(async (search: string) => {
 
 watch(
   () => factor.value,
-  () => handleSearch(""),
+  async () => {
+    await handleSearch("");
+    // valid initial value.
+    const values = new Set(state.rawOptionList.map((opt) => opt.value));
+    const filtered = (props.value as any[]).filter((v) => values.has(v));
+    if (filtered.length !== props.value.length) {
+      // Some values are not suitable for the select options.
+      emit("update:value", filtered);
+    }
+  },
   { immediate: true }
 );
 </script>
