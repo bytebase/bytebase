@@ -356,6 +356,26 @@ const connectedDatabases = computed(() =>
 const { hasMissingQueryDatabases, showMissingQueryDatabases } =
   storeToRefs(treeStore);
 
+const connect = (node: SQLEditorTreeNode) => {
+  if (!isDatabaseV1Queryable(node.meta.target as ComposedDatabase)) {
+    return;
+  }
+  setConnection(node, {
+    extra: {
+      worksheet: tabStore.currentTab?.worksheet ?? "",
+      mode: DEFAULT_SQL_EDITOR_TAB_MODE,
+    },
+    context: editorContext,
+  });
+  tabStore.updateCurrentTab({
+    batchQueryContext: {
+      databases: [],
+      databaseGroups: [],
+    },
+  });
+  showConnectionPanel.value = false;
+};
+
 // dynamic render the highlight keywords
 const renderLabel = ({ option }: { option: TreeOption }) => {
   const node = option as SQLEditorTreeNode;
@@ -376,6 +396,9 @@ const renderLabel = ({ option }: { option: TreeOption }) => {
         return;
       }
       if (checked) {
+        if (state.selectedDatabases.size === 0) {
+          return connect(node);
+        }
         if (!hasBatchQueryFeature.value) {
           state.showFeatureModal = true;
           return;
@@ -399,22 +422,7 @@ const nodeProps = ({ option }: { option: TreeOption }) => {
         // Check if clicked on the content part.
         // And ignore the fold/unfold arrow.
         if (type === "database") {
-          if (isDatabaseV1Queryable(node.meta.target as ComposedDatabase)) {
-            setConnection(node, {
-              extra: {
-                worksheet: tabStore.currentTab?.worksheet ?? "",
-                mode: DEFAULT_SQL_EDITOR_TAB_MODE,
-              },
-              context: editorContext,
-            });
-            tabStore.updateCurrentTab({
-              batchQueryContext: {
-                databases: [],
-                databaseGroups: [],
-              },
-            });
-            showConnectionPanel.value = false;
-          }
+          connect(node);
         }
       }
     },
