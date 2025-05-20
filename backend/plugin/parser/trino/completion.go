@@ -61,7 +61,7 @@ var (
 		// trinoparser.TrinoLexerGTE_:          true,
 		// trinoparser.TrinoLexerPLUS_:         true,
 		// trinoparser.TrinoLexerMINUS_:        true,
-		// trinoparser.TrinoLexerASTERISK_:     true,
+		trinoparser.TrinoLexerASTERISK_: true,
 		// trinoparser.TrinoLexerSLASH_:        true,
 		// trinoparser.TrinoLexerPERCENT_:      true,
 		// trinoparser.TrinoLexerCONCAT_:       true,
@@ -496,8 +496,11 @@ func NewStandardCompleter(ctx context.Context, cCtx base.CompletionContext, stat
 		&globalFellowSetsByState,
 		trinoparser.TrinoParserRULE_queryNoWith,
 		trinoparser.TrinoParserRULE_query,
+		// trinoparser.TrinoParserRULE_query,
+		// trinoparser.TrinoParserRULE_queryNoWith,
 		trinoparser.TrinoParserRULE_as_column_alias,
-		trinoparser.TrinoParserRULE_with,
+		// trinoparser.TrinoParserRULE_with,
+		-1,
 	)
 
 	return &Completer{
@@ -527,7 +530,8 @@ func NewTrickyCompleter(ctx context.Context, cCtx base.CompletionContext, statem
 		trinoparser.TrinoParserRULE_queryNoWith,
 		trinoparser.TrinoParserRULE_query,
 		trinoparser.TrinoParserRULE_as_column_alias,
-		trinoparser.TrinoParserRULE_with,
+		// trinoparser.TrinoParserRULE_with,
+		-1,
 	)
 
 	return &Completer{
@@ -634,7 +638,7 @@ func (c *Completer) complete() ([]base.Candidate, error) {
 		context = c.parser.Parse()
 	}
 
-	candidates := c.core.CollectCandidates(caretIndex, context)
+	candidates := c.core.CollectCandidates(caretIndex+1, context)
 
 	for ruleName := range candidates.Rules {
 		if ruleName == trinoparser.TrinoParserRULE_identifier {
@@ -970,15 +974,11 @@ func (c *Completer) determineColumnReference() []*objectRefContext {
 			temp = normalizeIdentifierText(c.scanner.GetTokenText())
 			c.scanner.Forward(true /* skipHidden */)
 			if !c.scanner.IsTokenType(trinoparser.TrinoParserDOT_) || tokenIndex <= c.scanner.GetIndex() {
-				// We've reached the end of the identifier chain or we're past where the caret was
-				candidates = append(candidates, temp)
 				return deriveObjectRefContextsFromCandidates(candidates, true /* includeColumn */)
 			}
 			candidates = append(candidates, temp)
 		}
 		c.scanner.Forward(true /* skipHidden */)
-		// In Trino, a fully qualified identifier can have at most 3 parts:
-		// catalog.schema.object
 		if count > 3 {
 			break
 		}
@@ -1032,8 +1032,6 @@ func (c *Completer) determineQualifiedNameContext() []*objectRefContext {
 
 		// Skip the dot and move to the next token
 		c.scanner.Forward(true /* skipHidden */)
-
-		// In Trino, qualified names have at most 3 parts: catalog.schema.object
 		if count > 3 {
 			break
 		}

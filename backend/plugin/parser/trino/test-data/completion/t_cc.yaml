@@ -1,33 +1,13 @@
-- description: Multiple statements
-  input: SELECT * FROM |
+- description: Full column name considering CTE
+  input: WITH MyCTE_01 AS (SELECT * FROM dbo.Employees) SELECT MyCTE_01.| FROM MyCTE_01;
   want:
-    - text: Company
-      type: DATABASE
+    - text: Id
+      type: COLUMN
       definition: ""
       comment: ""
       priority: 0
-    - text: School
-      type: DATABASE
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: MySchema
-      type: SCHEMA
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: dbo
-      type: SCHEMA
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: Address
-      type: TABLE
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: Employees
-      type: TABLE
+    - text: Name
+      type: COLUMN
       definition: ""
       comment: ""
       priority: 0
