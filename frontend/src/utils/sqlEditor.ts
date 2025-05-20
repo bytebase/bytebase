@@ -222,18 +222,24 @@ export const ensureDataSourceSelection = (
   } else {
     behavior = "ALLOW_ADMIN";
   }
+
   if (behavior === "ALLOW_ADMIN") {
-    if (current) {
-      return current;
-    }
-    return adminDataSource.id;
-  }
-  if (behavior === "FALLBACK") {
     if (current) {
       return current;
     }
     return head(readonlyDataSources)?.id ?? adminDataSource.id;
   }
+
+  if (behavior === "FALLBACK") {
+    if (
+      current &&
+      (current !== adminDataSource.id || readonlyDataSources.length === 0)
+    ) {
+      return current;
+    }
+    return head(readonlyDataSources)?.id ?? adminDataSource.id;
+  }
+
   if (behavior === "RO") {
     if (
       current &&
