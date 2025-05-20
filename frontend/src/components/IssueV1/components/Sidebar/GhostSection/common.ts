@@ -4,13 +4,13 @@ import type { InjectionKey, Ref } from "vue";
 import { computed, inject, provide, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import {
-  databaseForTask,
   getLocalSheetByName,
   isGroupingChangeTaskV1,
   sheetNameForSpec,
   specForTask,
   useIssueContext,
 } from "@/components/IssueV1/logic";
+import { databaseForTask } from "@/components/Rollout/RolloutDetail";
 import {
   useCurrentUserV1,
   useStorageStore,
@@ -106,7 +106,8 @@ export const provideIssueGhostContext = () => {
   const showMissingInstanceLicense = computed(() => {
     const instances = uniqBy(
       flattenTaskV1List(issue.value.rolloutEntity).map(
-        (task) => databaseForTask(issue.value, task).instanceResource
+        (task) =>
+          databaseForTask(issue.value.projectEntity, task).instanceResource
       ),
       (instance) => instance.name
     );
@@ -198,7 +199,7 @@ export const allowGhostForSpec = (spec: Plan_Spec | undefined) => {
 export const allowGhostForTask = (issue: ComposedIssue, task: Task) => {
   return (
     allowGhostForSpec(specForTask(issue.planEntity, task)) &&
-    allowGhostForDatabase(databaseForTask(issue, task))
+    allowGhostForDatabase(databaseForTask(issue.projectEntity, task))
   );
 };
 

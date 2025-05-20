@@ -49,8 +49,9 @@
 import { NTooltip } from "naive-ui";
 import { computed } from "vue";
 import { FeatureBadge, FeatureModal } from "@/components/FeatureGuard";
-import { databaseForTask, useIssueContext } from "@/components/IssueV1/logic";
+import { useIssueContext } from "@/components/IssueV1/logic";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
+import { databaseForTask } from "@/components/Rollout/RolloutDetail";
 import { isDatabaseChangeRelatedIssue } from "@/utils";
 import GhostConfigButton from "./GhostConfigButton.vue";
 import GhostFlagsPanel from "./GhostFlagsPanel.vue";
@@ -80,6 +81,7 @@ const shouldShowGhostSection = computed(() => {
 });
 
 const instance = computed(() => {
-  return databaseForTask(issue.value, selectedTask.value).instanceResource;
+  return databaseForTask(issue.value.projectEntity, selectedTask.value)
+    .instanceResource;
 });
 </script>

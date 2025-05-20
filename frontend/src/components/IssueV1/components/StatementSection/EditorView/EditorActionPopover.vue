@@ -22,7 +22,8 @@
 import { EllipsisVerticalIcon } from "lucide-vue-next";
 import { NPopover, NButton, NDivider } from "naive-ui";
 import { computed } from "vue";
-import { databaseForTask, useIssueContext } from "@/components/IssueV1/logic";
+import { useIssueContext } from "@/components/IssueV1/logic";
+import { databaseForTask } from "@/components/Rollout/RolloutDetail";
 import { Engine } from "@/types/proto/v1/common";
 import { Task_Type } from "@/types/proto/v1/rollout_service";
 import { useInstanceV1EditorLanguage } from "@/utils";
@@ -32,7 +33,7 @@ import InstanceRoleSelect from "./InstanceRoleSelect.vue";
 const { formatOnSave, issue, selectedTask } = useIssueContext();
 
 const database = computed(() => {
-  return databaseForTask(issue.value, selectedTask.value);
+  return databaseForTask(issue.value.projectEntity, selectedTask.value);
 });
 
 const language = useInstanceV1EditorLanguage(

@@ -64,13 +64,14 @@ import { useDebounceFn } from "@vueuse/core";
 import { NButton } from "naive-ui";
 import { computed, ref, reactive, watch } from "vue";
 import { BBSpin } from "@/bbkit";
+import { databaseForTask } from "@/components/Rollout/RolloutDetail";
 import { useVerticalScrollState } from "@/composables/useScrollState";
 import { batchGetOrFetchDatabases } from "@/store";
 import { DEBOUNCE_SEARCH_DELAY } from "@/types";
 import type { Task_Status } from "@/types/proto/v1/rollout_service";
 import type { Advice_Status } from "@/types/proto/v1/sql_service";
 import { isDev } from "@/utils";
-import { useIssueContext, databaseForTask } from "../../logic";
+import { useIssueContext } from "../../logic";
 import { useIssueSQLCheckContext } from "../SQLCheckSection/context";
 import CurrentTaskSection from "./CurrentTaskSection.vue";
 import TaskCard from "./TaskCard.vue";
@@ -167,7 +168,7 @@ const loadMore = useDebounceFn(async () => {
 
   const databaseNames = filteredTaskList.value
     .slice(fromIndex, toIndex)
-    .map((task) => databaseForTask(issue.value, task).name);
+    .map((task) => databaseForTask(issue.value.projectEntity, task).name);
 
   try {
     await batchGetOrFetchDatabases(databaseNames);

@@ -1,7 +1,8 @@
 import { uniq } from "lodash-es";
 import { computed, inject, provide } from "vue";
 import type { InjectionKey, Ref } from "vue";
-import { databaseForTask, useIssueContext } from "@/components/IssueV1/logic";
+import { useIssueContext } from "@/components/IssueV1/logic";
+import { databaseForTask } from "@/components/Rollout/RolloutDetail";
 import { useSubscriptionV1Store, useInstanceResourceByName } from "@/store";
 import { isValidDatabaseName } from "@/types";
 
@@ -23,7 +24,7 @@ export const provideIssueIntanceContext = () => {
     const instances =
       issue.value.rolloutEntity?.stages.flatMap((stage) => {
         return stage.tasks
-          .map((task) => databaseForTask(issue.value, task))
+          .map((task) => databaseForTask(issue.value.projectEntity, task))
           .filter((db) => isValidDatabaseName(db.name))
           .map((db) => db.instance);
       }) ?? [];

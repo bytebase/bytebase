@@ -87,31 +87,6 @@ export const mockDatabase = (
   return db;
 };
 
-export const databaseForTask = (issue: ComposedIssue, task: Task) => {
-  switch (task.type) {
-    case Task_Type.DATABASE_CREATE:
-      // The database is not created yet.
-      // extract database info from the task's and payload's properties.
-      return extractCoreDatabaseInfoFromDatabaseCreateTask(
-        issue.projectEntity,
-        task
-      );
-    case Task_Type.DATABASE_SCHEMA_BASELINE:
-    case Task_Type.DATABASE_SCHEMA_UPDATE:
-    case Task_Type.DATABASE_SCHEMA_UPDATE_SDL:
-    case Task_Type.DATABASE_SCHEMA_UPDATE_GHOST:
-    case Task_Type.DATABASE_DATA_UPDATE:
-    case Task_Type.DATABASE_DATA_EXPORT:
-      const db = useDatabaseV1Store().getDatabaseByName(task.target);
-      if (!isValidDatabaseName(db.name)) {
-        return mockDatabase(issue.projectEntity, task.target);
-      }
-      return db;
-    default:
-      return unknownDatabase();
-  }
-};
-
 export const extractCoreDatabaseInfoFromDatabaseCreateTask = (
   project: ComposedProject,
   task: Task

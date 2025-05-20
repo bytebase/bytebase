@@ -8,20 +8,26 @@ import {
   type InjectionKey,
   type Ref,
 } from "vue";
-import { useI18n } from "vue-i18n";
 import { databaseForSpec, isDatabaseChangeSpec } from "@/components/Plan/logic";
+import { databaseForTask } from "@/components/Rollout/RolloutDetail";
 import { planServiceClient } from "@/grpcweb";
-import { pushNotification, useCurrentUserV1, extractUserId } from "@/store";
-import type { ComposedProject } from "@/types";
+import { useCurrentUserV1, extractUserId } from "@/store";
+import { unknownDatabase, type ComposedProject } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
-import type { Issue } from "@/types/proto/v1/issue_service";
+import { IssueStatus, type Issue } from "@/types/proto/v1/issue_service";
 import {
   Plan_ChangeDatabaseConfig_Type,
   type Plan,
   type Plan_Spec,
 } from "@/types/proto/v1/plan_service";
 import {
+  Task,
+  Task_Status,
+  type Rollout,
+} from "@/types/proto/v1/rollout_service";
+import {
   flattenSpecList,
+  flattenTaskV1List,
   hasProjectPermissionV2,
   isNullOrUndefined,
 } from "@/utils";
@@ -44,33 +50,49 @@ export const usePreBackupSettingContext = () => {
 };
 
 export const providePreBackupSettingContext = (refs: {
+  isCreating: Ref<boolean>;
   project: Ref<ComposedProject>;
   plan: Ref<Plan>;
-  selectedSpec: Ref<Plan_Spec>;
-  isCreating: Ref<boolean>;
-  issue?: Ref<Issue>;
+  selectedSpec: Ref<Plan_Spec | undefined>;
+  selectedTask: Ref<Task | undefined>;
+  issue?: Ref<Issue | undefined>;
+  rollout?: Ref<Rollout | undefined>;
 }) => {
-  const { t } = useI18n();
-  const currentUserV1 = useCurrentUserV1();
-  const { project, plan, selectedSpec, isCreating } = refs;
+  const currentUser = useCurrentUserV1();
+  const {
+    isCreating,
+    project,
+    plan,
+    selectedSpec,
+    selectedTask,
+    issue,
+    rollout,
+  } = refs;
 
   const events = new Emittery<{
     update: boolean;
   }>();
 
-  const database = computed(() =>
-    databaseForSpec(project.value, selectedSpec.value)
-  );
+  const database = computed(() => {
+    if (selectedTask.value) {
+      return databaseForTask(project.value, selectedTask.value);
+    } else if (selectedSpec.value) {
+      return databaseForSpec(project.value, selectedSpec.value);
+    }
+    return unknownDatabase();
+  });
 
   const shouldShow = computed((): boolean => {
-    if (!isDatabaseChangeSpec(selectedSpec.value)) {
-      return false;
-    }
     if (
+      !selectedSpec.value ||
       selectedSpec.value.changeDatabaseConfig?.type !==
-      Plan_ChangeDatabaseConfig_Type.DATA
+        Plan_ChangeDatabaseConfig_Type.DATA
     ) {
       return false;
+    }
+    // Always show pre-backup for database change spec.
+    if (isDatabaseChangeSpec(selectedSpec.value)) {
+      return true;
     }
     const { engine } = database.value.instanceResource;
     if (!PRE_BACKUP_AVAILABLE_ENGINES.includes(engine)) {
@@ -90,8 +112,30 @@ export const providePreBackupSettingContext = (refs: {
       return true;
     }
 
+    // If issue is not open, disallow.
+    if (issue?.value && issue.value.status !== IssueStatus.OPEN) {
+      return false;
+    }
+
+    // If task of the spec is running/done/etc..., disallow.
+    if (rollout?.value) {
+      const tasks = flattenTaskV1List(rollout.value);
+      const task = tasks.find((t) => t.specId === selectedSpec.value?.id);
+      if (
+        task &&
+        [
+          Task_Status.PENDING,
+          Task_Status.RUNNING,
+          Task_Status.DONE,
+          Task_Status.SKIPPED,
+        ].includes(task.status)
+      ) {
+        return false;
+      }
+    }
+
     // Allowed to the plan/issue creator.
-    if (currentUserV1.value.email === extractUserId(unref(plan).creator)) {
+    if (currentUser.value.email === extractUserId(unref(plan).creator)) {
       return true;
     }
 
@@ -105,7 +149,7 @@ export const providePreBackupSettingContext = (refs: {
 
   const enabled = computed((): boolean => {
     const preBackupDatabase =
-      selectedSpec.value.changeDatabaseConfig?.preUpdateBackupDetail?.database;
+      selectedSpec.value?.changeDatabaseConfig?.preUpdateBackupDetail?.database;
     return !isNullOrUndefined(preBackupDatabase) && preBackupDatabase !== "";
   });
 
@@ -129,7 +173,7 @@ export const providePreBackupSettingContext = (refs: {
     } else {
       const planPatch = cloneDeep(unref(plan));
       const spec = flattenSpecList(planPatch).find((s) => {
-        return s.id === selectedSpec.value.id;
+        return s.id === selectedSpec.value?.id;
       });
       if (!planPatch || !spec || !spec.changeDatabaseConfig) {
         // Should not reach here.
@@ -149,12 +193,6 @@ export const providePreBackupSettingContext = (refs: {
       await planServiceClient.updatePlan({
         plan: planPatch,
         updateMask: ["steps"],
-      });
-
-      pushNotification({
-        module: "bytebase",
-        style: "SUCCESS",
-        title: t("common.updated"),
       });
     }
 
