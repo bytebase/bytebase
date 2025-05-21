@@ -10,8 +10,6 @@ import (
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
-var versionReg = regexp.MustCompile(`^\d+`)
-
 func getReleaseFiles(pattern string) ([]*v1pb.Release_File, error) {
 	matches, err := filepath.Glob(pattern)
 	if err != nil {
@@ -33,7 +31,7 @@ func getReleaseFiles(pattern string) ([]*v1pb.Release_File, error) {
 			t = v1pb.Release_File_DDL_GHOST
 		}
 
-		version := versionReg.FindString(base)
+		version := extractVersion(base)
 		if version == "" {
 			slog.Warn("version not found. ignore the file", "file", m)
 			continue
@@ -49,4 +47,17 @@ func getReleaseFiles(pattern string) ([]*v1pb.Release_File, error) {
 	}
 
 	return files, nil
+}
+
+var versionReg = regexp.MustCompile(`^[vV]?(\d+(\.\d+)*)`)
+
+// extractVersion extracts version from a string and removes the optional "v" or "V" prefix
+func extractVersion(s string) string {
+	matches := versionReg.FindStringSubmatch(s)
+	if len(matches) < 2 {
+		return ""
+	}
+
+	// Return the first capture group which contains just the version numbers
+	return matches[1]
 }
