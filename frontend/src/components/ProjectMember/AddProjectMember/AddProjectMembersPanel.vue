@@ -54,7 +54,6 @@ import {
   useProjectIamPolicyStore,
 } from "@/store";
 import type { ComposedProject } from "@/types";
-import { PresetRoleType } from "@/types";
 import { Binding } from "@/types/proto/v1/iam_policy";
 import { getBindingIdentifier } from "../utils";
 import AddProjectMemberForm from "./AddProjectMemberForm.vue";
