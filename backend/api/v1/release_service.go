@@ -459,9 +459,12 @@ func validateAndSanitizeReleaseFiles(files []*v1pb.Release_File) ([]*v1pb.Releas
 		}
 		return 1
 	})
-	for _, fv := range filesWithVersions {
-		files = append(files, fv.file)
-	}
 
-	return files, nil
+	return slices.Collect(func(yield func(*v1pb.Release_File) bool) {
+		for _, f := range filesWithVersions {
+			if !yield(f.file) {
+				return
+			}
+		}
+	}), nil
 }
