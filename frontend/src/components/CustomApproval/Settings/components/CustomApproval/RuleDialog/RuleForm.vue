@@ -72,9 +72,9 @@
 import { cloneDeep } from "lodash-es";
 import { NButton, NInput } from "naive-ui";
 import { computed, nextTick, onMounted, ref } from "vue";
+import RequiredStar from "@/components/RequiredStar.vue";
 import type { LocalApprovalRule } from "@/types";
 import { isReadonlyApprovalRule } from "@/utils";
-import { RequiredStar } from "../../common";
 import { StepsTable } from "../common";
 import { useCustomApprovalContext } from "../context";
 import { validateApprovalTemplate } from "../logic";
