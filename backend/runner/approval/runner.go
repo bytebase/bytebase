@@ -437,7 +437,7 @@ func (r *Runner) getDatabaseGeneralIssueRisk(ctx context.Context, issue *store.I
 				taskStatement = statement
 			}
 
-			environmentID := instance.EnvironmentID
+			var environmentID string
 			var databaseName string
 			if task.Type == base.TaskDatabaseCreate {
 				databaseName = task.Payload.GetDatabaseName()
