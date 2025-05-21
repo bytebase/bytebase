@@ -32,9 +32,9 @@ const (
 	Risk_DDL                Risk_Source = 1
 	Risk_DML                Risk_Source = 2
 	Risk_CREATE_DATABASE    Risk_Source = 3
-	// TODO(ed): deprecate
+	// TODO(ed): migrate and deprecate
 	Risk_REQUEST_QUERY Risk_Source = 4
-	// TODO(ed): deprecate
+	// TODO(ed): migrate and deprecate
 	Risk_REQUEST_EXPORT Risk_Source = 5
 	Risk_DATA_EXPORT    Risk_Source = 6
 	Risk_REQUEST_ROLE   Risk_Source = 7
@@ -430,6 +430,7 @@ type Risk struct {
 	// sql_statement: the SQL statement, support "contains()", "matches()", "startsWith()", "endsWith()" operations.
 	// export_rows: export data count, support "==", "!=", "<", "<=", ">", ">=" operations.
 	// expiration_days: the role expiration days for the request, support "==", "!=", "<", "<=", ">", ">=" operations.
+	// role: the request role full name, support "==", "!=", "in [xx]", "!(in [xx])", "contains()", "matches()", "startsWith()", "endsWith()" operations.
 	//
 	// When the risk source is DDL/DML, support following variables:
 	// affected_rows
@@ -476,6 +477,11 @@ type Risk struct {
 	// table_name
 	// expiration_days
 	// export_rows
+	//
+	// When the risk source is REQUEST_ROLE, support following variables:
+	// project_id
+	// expiration_days
+	// role
 	Condition     *expr.Expr `protobuf:"bytes,8,opt,name=condition,proto3" json:"condition,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache

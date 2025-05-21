@@ -103,6 +103,7 @@ export interface Risk {
    * sql_statement: the SQL statement, support "contains()", "matches()", "startsWith()", "endsWith()" operations.
    * export_rows: export data count, support "==", "!=", "<", "<=", ">", ">=" operations.
    * expiration_days: the role expiration days for the request, support "==", "!=", "<", "<=", ">", ">=" operations.
+   * role: the request role full name, support "==", "!=", "in [xx]", "!(in [xx])", "contains()", "matches()", "startsWith()", "endsWith()" operations.
    *
    * When the risk source is DDL/DML, support following variables:
    * affected_rows
@@ -149,6 +150,11 @@ export interface Risk {
    * table_name
    * expiration_days
    * export_rows
+   *
+   * When the risk source is REQUEST_ROLE, support following variables:
+   * project_id
+   * expiration_days
+   * role
    */
   condition: Expr | undefined;
 }
@@ -158,9 +164,9 @@ export enum Risk_Source {
   DDL = "DDL",
   DML = "DML",
   CREATE_DATABASE = "CREATE_DATABASE",
-  /** REQUEST_QUERY - TODO(ed): deprecate */
+  /** REQUEST_QUERY - TODO(ed): migrate and deprecate */
   REQUEST_QUERY = "REQUEST_QUERY",
-  /** REQUEST_EXPORT - TODO(ed): deprecate */
+  /** REQUEST_EXPORT - TODO(ed): migrate and deprecate */
   REQUEST_EXPORT = "REQUEST_EXPORT",
   DATA_EXPORT = "DATA_EXPORT",
   REQUEST_ROLE = "REQUEST_ROLE",
