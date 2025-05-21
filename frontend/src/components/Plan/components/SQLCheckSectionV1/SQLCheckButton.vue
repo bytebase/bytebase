@@ -50,7 +50,6 @@
 <script lang="ts" setup>
 import { asyncComputed } from "@vueuse/core";
 import { NButton, NPopover } from "naive-ui";
-import { v4 as uuidv4 } from "uuid";
 import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBSpin } from "@/bbkit";
@@ -120,8 +119,8 @@ const runCheckInternal = async (statement: string) => {
     release: {
       files: [
         {
-          // Use a random uuid to avoid duplication.
-          version: uuidv4(),
+          // Use "0" for dummy version.
+          version: "0",
           type: ReleaseFileType.VERSIONED,
           statement: new TextEncoder().encode(statement),
           changeType: changeType.value,
