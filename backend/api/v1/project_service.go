@@ -1373,6 +1373,9 @@ func (*ProjectService) validateBindings(bindings []*v1pb.Binding, roles []*v1pb.
 		existingRoles[role.Name] = true
 	}
 	for _, binding := range bindings {
+		if len(binding.Members) == 0 {
+			continue
+		}
 		if binding.Role == "" {
 			return errors.Errorf("IAM Binding role is required")
 		}

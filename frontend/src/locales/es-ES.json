@@ -225,7 +225,8 @@
     "summary": "Resumen",
     "errors": "Errores",
     "removed": "Remoto",
-    "options": "Opciones"
+    "options": "Opciones",
+    "submit": "Entregar"
   },
   "error-page": {
     "go-back-home": "Volver al inicio"
@@ -985,8 +986,8 @@
       "change-data": "Cambiar datos",
       "export-data": "Exportar datos",
       "create-database": "Crear base de datos",
-      "request-querier-role": "Rol de consultador de solicitudes",
-      "request-exporter-role": "Solicitar función de exportación"
+      "request-role": "Rol de solicitud",
+      "request-specific-role": "Solicitar rol \"{role}\""
     },
     "schema-drift-detected": {
       "self": "Se detectó una desviación del esquema",

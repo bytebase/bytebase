@@ -35,7 +35,13 @@
         :allow-edit="allowEdit"
         v-bind="$attrs"
       />
-      <NoPermissionPlaceholder v-else class="py-6" />
+      <NoPermissionPlaceholder v-else class="py-6">
+        <template #extra>
+          <NButton type="primary">
+            {{ $t("issue.title.request-role") }}
+          </NButton>
+        </template>
+      </NoPermissionPlaceholder>
     </div>
   </template>
   <div
@@ -46,15 +52,18 @@
   </div>
 
   <GrantRequestPanel
-    v-if="!!state.requestRole"
+    v-if="state.showRequestRolePanel"
     :project-name="project.name"
-    :role="state.requestRole"
-    @close="state.requestRole = undefined"
+    :support-roles="[
+      PresetRoleType.PROJECT_EXPORTER,
+      PresetRoleType.SQL_EDITOR_USER,
+    ]"
+    @close="state.showRequestRolePanel = false"
   />
 </template>
 
 <script lang="ts" setup>
-import { FileDownIcon, FileSearchIcon } from "lucide-vue-next";
+import { UsersIcon } from "lucide-vue-next";
 import { NButton, NEllipsis, NSpin } from "naive-ui";
 import type { ClientError } from "nice-grpc-web";
 import { computed, watchEffect, h, reactive } from "vue";
@@ -89,16 +98,16 @@ import { State } from "@/types/proto/v1/common";
 import { hasProjectPermissionV2 } from "@/utils";
 
 interface LocalState {
-  requestRole?:
-    | PresetRoleType.SQL_EDITOR_USER
-    | PresetRoleType.PROJECT_EXPORTER;
+  showRequestRolePanel: boolean;
 }
 
 const props = defineProps<{
   projectId: string;
 }>();
 
-const state = reactive<LocalState>({});
+const state = reactive<LocalState>({
+  showRequestRolePanel: false,
+});
 
 const route = useRoute();
 const router = useRouter();
@@ -194,14 +203,9 @@ const quickActionListForDatabase = computed(() => {
     hasDBAWorkflowFeature.value
   ) {
     actions.push({
-      title: t("custom-approval.risk-rule.risk.namespace.request_query"),
-      icon: () => h(FileSearchIcon),
-      action: () => (state.requestRole = PresetRoleType.SQL_EDITOR_USER),
-    });
-    actions.push({
-      title: t("custom-approval.risk-rule.risk.namespace.request_export"),
-      icon: () => h(FileDownIcon),
-      action: () => (state.requestRole = PresetRoleType.PROJECT_EXPORTER),
+      title: t("issue.title.request-role"),
+      icon: () => h(UsersIcon),
+      action: () => (state.showRequestRolePanel = true),
     });
   }
 

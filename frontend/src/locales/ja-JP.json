@@ -225,7 +225,8 @@
     "summary": "まとめ",
     "errors": "エラー",
     "removed": "削除されました",
-    "options": "オプション"
+    "options": "オプション",
+    "submit": "提出する"
   },
   "error-page": {
     "go-back-home": "ホームページに戻る"
@@ -985,8 +986,8 @@
       "change-data": "データの変更",
       "export-data": "データをエクスポート",
       "create-database": "データベースを作成する",
-      "request-querier-role": "リクエストクエリーロール",
-      "request-exporter-role": "エクスポートロールのリクエスト"
+      "request-role": "役割をリクエストする",
+      "request-specific-role": "「{role}」ロールをリクエスト"
     },
     "schema-drift-detected": {
       "self": "スキーマドリフトが検出されました",

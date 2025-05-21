@@ -225,7 +225,8 @@
     "summary": "Summary",
     "errors": "Errors",
     "removed": "Removed",
-    "options": "Options"
+    "options": "Options",
+    "submit": "Submit"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -985,8 +986,8 @@
       "change-data": "Change data",
       "export-data": "Export data",
       "create-database": "Create database",
-      "request-querier-role": "Request querier role",
-      "request-exporter-role": "Request exporter role"
+      "request-role": "Request role",
+      "request-specific-role": "Request \"{role}\" role"
     },
     "schema-drift-detected": {
       "self": "Schema drift detected",
