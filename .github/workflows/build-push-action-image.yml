@@ -38,6 +38,7 @@ jobs:
           push: true
           tags: |
             bytebase/bytebase-action:${{ env.IMAGE_TAG }}
+            bytebase/bytebase-action:latest
           build-args: |
             GIT_COMMIT=${{ env.GIT_COMMIT }}
   build-debian:
@@ -67,5 +68,6 @@ jobs:
           push: true
           tags: |
             bytebase/bytebase-action:${{ env.IMAGE_TAG }}-debian
+            bytebase/bytebase-action:latest-debian
           build-args: |
             GIT_COMMIT=${{ env.GIT_COMMIT }}
