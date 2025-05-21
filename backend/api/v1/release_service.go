@@ -17,6 +17,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/sheet"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
+	"github.com/bytebase/bytebase/backend/store/model"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
@@ -72,10 +73,16 @@ func (s *ReleaseService) CreateRelease(ctx context.Context, request *v1pb.Create
 	sheetsToCreate := []*store.SheetMessage{}
 	fileToSheetMap := map[*v1pb.Release_File]*store.SheetMessage{}
 	// Prepare sheets to create for files with missing sheets.
+	// Check versions.
 	for _, file := range request.Release.Files {
 		if file.Sheet == "" {
 			if file.Statement == nil {
 				return nil, status.Errorf(codes.InvalidArgument, "either sheet or statement must be set")
+			}
+			if file.Version != "" {
+				if _, err := model.NewVersion(file.Version); err != nil {
+					return nil, status.Errorf(codes.InvalidArgument, "invalid version %q, error %v", file.Version, err)
+				}
 			}
 			sheet := &store.SheetMessage{
 				Title:     fmt.Sprintf("File %s", file.Path),
@@ -378,6 +385,14 @@ func convertReleaseFiles(ctx context.Context, s *store.Store, files []*v1pb.Rele
 		return nil, nil
 	}
 	var rFiles []*storepb.ReleasePayload_File
+
+	// Create files with additional parsed version data for sorting.
+	type fileWithVersion struct {
+		file    *storepb.ReleasePayload_File
+		version *model.Version
+	}
+	var filesWithVersions []fileWithVersion
+
 	for _, f := range files {
 		_, sheetUID, err := common.GetProjectResourceIDSheetUID(f.Sheet)
 		if err != nil {
@@ -394,7 +409,7 @@ func convertReleaseFiles(ctx context.Context, s *store.Store, files []*v1pb.Rele
 			return nil, errors.Errorf("sheet %q not found", f.Sheet)
 		}
 
-		rFiles = append(rFiles, &storepb.ReleasePayload_File{
+		file := &storepb.ReleasePayload_File{
 			Id:          f.Id,
 			Path:        f.Path,
 			Sheet:       f.Sheet,
@@ -402,8 +417,28 @@ func convertReleaseFiles(ctx context.Context, s *store.Store, files []*v1pb.Rele
 			Type:        storepb.ReleaseFileType(f.Type),
 			Version:     f.Version,
 			ChangeType:  storepb.ReleasePayload_File_ChangeType(f.ChangeType),
+		}
+
+		version, err := model.NewVersion(f.Version)
+		if err != nil {
+			return nil, err
+		}
+		filesWithVersions = append(filesWithVersions, fileWithVersion{
+			file:    file,
+			version: version,
 		})
 	}
+
+	slices.SortFunc(filesWithVersions, func(a, b fileWithVersion) int {
+		if a.version.LessThan(b.version) {
+			return -1
+		}
+		return 1
+	})
+	for _, fv := range filesWithVersions {
+		rFiles = append(rFiles, fv.file)
+	}
+
 	return rFiles, nil
 }
 
