@@ -987,9 +987,7 @@
       "export-data": "Exportar datos",
       "create-database": "Crear base de datos",
       "request-role": "Rol de solicitud",
-      "request-specific-role": "Solicitar rol \"{role}\"",
-      "request-querier-role": "Rol de consultador de solicitudes",
-      "request-exporter-role": "Solicitar función de exportación"
+      "request-specific-role": "Solicitar rol \"{role}\""
     },
     "schema-drift-detected": {
       "self": "Se detectó una desviación del esquema",

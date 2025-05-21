@@ -987,9 +987,7 @@
       "export-data": "Xuất dữ liệu",
       "create-database": "Tạo cơ sở dữ liệu",
       "request-role": "Yêu cầu vai trò",
-      "request-specific-role": "Yêu cầu vai trò \"{role}\"",
-      "request-querier-role": "Yêu cầu vai trò người truy vấn",
-      "request-exporter-role": "Yêu cầu vai trò người xuất"
+      "request-specific-role": "Yêu cầu vai trò \"{role}\""
     },
     "schema-drift-detected": {
       "self": "Đã phát hiện sự trôi dạt của sơ đồ",

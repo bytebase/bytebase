@@ -987,9 +987,7 @@
       "export-data": "データをエクスポート",
       "create-database": "データベースを作成する",
       "request-role": "役割をリクエストする",
-      "request-specific-role": "「{role}」ロールをリクエスト",
-      "request-querier-role": "リクエストクエリーロール",
-      "request-exporter-role": "エクスポートロールのリクエスト"
+      "request-specific-role": "「{role}」ロールをリクエスト"
     },
     "schema-drift-detected": {
       "self": "スキーマドリフトが検出されました",
