@@ -36,8 +36,8 @@
         v-bind="$attrs"
       />
       <NoPermissionPlaceholder v-else class="py-6">
-        <template #extra>
-          <NButton type="primary">
+        <template v-if="hasCreateIssuePermission" #extra>
+          <NButton type="primary" @click="state.showRequestRolePanel = true">
             {{ $t("issue.title.request-role") }}
           </NButton>
         </template>
@@ -54,10 +54,6 @@
   <GrantRequestPanel
     v-if="state.showRequestRolePanel"
     :project-name="project.name"
-    :support-roles="[
-      PresetRoleType.PROJECT_EXPORTER,
-      PresetRoleType.SQL_EDITOR_USER,
-    ]"
     @close="state.showRequestRolePanel = false"
   />
 </template>
@@ -166,6 +162,10 @@ const requiredPermissions = computed(() => {
   permissions.push("bb.projects.get");
   return permissions;
 });
+
+const hasCreateIssuePermission = computed(() =>
+  hasProjectPermissionV2(project.value, "bb.issues.create")
+);
 
 const hasPermission = computed(() => {
   return requiredPermissions.value.every((permission) =>
