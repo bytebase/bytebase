@@ -12,6 +12,9 @@ type Version struct {
 }
 
 func NewVersion(v string) (*Version, error) {
+	if v == "" {
+		return nil, errors.New("version cannot be empty")
+	}
 	parts := strings.Split(v, ".")
 	r := &Version{}
 	for _, p := range parts {
