@@ -425,9 +425,6 @@ func validateAndSanitizeReleaseFiles(files []*v1pb.Release_File) ([]*v1pb.Releas
 	for _, f := range files {
 		f.Id = uuid.NewString()
 
-		if _, err := model.NewVersion(f.Version); err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "invalid version %q, error %v", f.Version, err)
-		}
 		switch f.Type {
 		case v1pb.ReleaseFileType_VERSIONED:
 		default:
