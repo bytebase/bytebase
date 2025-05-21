@@ -52,7 +52,6 @@
 
 <script setup lang="ts">
 import { NTooltip, NButton } from "naive-ui";
-import { v4 as uuidv4 } from "uuid";
 import { zindexable as vZindexable } from "vdirs";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
@@ -336,8 +335,8 @@ const runSQLCheckForIssue = async () => {
       release: {
         files: [
           {
-            // Use a random uuid to avoid duplication.
-            version: uuidv4(),
+            // Use "0" for dummy version.
+            version: "0",
             type: ReleaseFileType.VERSIONED,
             statement: new TextEncoder().encode(statement),
             changeType: getTaskChangeType(issue.value, flattenTasks[0]),
