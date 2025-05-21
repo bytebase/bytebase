@@ -35,13 +35,7 @@
         :allow-edit="allowEdit"
         v-bind="$attrs"
       />
-      <NoPermissionPlaceholder v-else class="py-6">
-        <template #extra>
-          <NButton type="primary">
-            {{ $t("issue.title.request-role") }}
-          </NButton>
-        </template>
-      </NoPermissionPlaceholder>
+      <NoPermissionPlaceholder v-else class="py-6" />
     </div>
   </template>
   <div
