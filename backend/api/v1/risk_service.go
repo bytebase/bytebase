@@ -33,7 +33,7 @@ func NewRiskService(store *store.Store, licenseService enterprise.LicenseService
 func convertToRisk(risk *store.RiskMessage) (*v1pb.Risk, error) {
 	return &v1pb.Risk{
 		Name:      fmt.Sprintf("%s%v", common.RiskPrefix, risk.ID),
-		Source:    convertToV1Source(risk.Source),
+		Source:    ConvertToV1Source(risk.Source),
 		Title:     risk.Name,
 		Level:     risk.Level,
 		Condition: risk.Expression,
@@ -162,7 +162,7 @@ func (s *RiskService) getRiskByName(ctx context.Context, name string) (*store.Ri
 	return risk, nil
 }
 
-func convertToV1Source(source store.RiskSource) v1pb.Risk_Source {
+func ConvertToV1Source(source store.RiskSource) v1pb.Risk_Source {
 	switch source {
 	case store.RiskSourceDatabaseCreate:
 		return v1pb.Risk_CREATE_DATABASE
@@ -176,6 +176,8 @@ func convertToV1Source(source store.RiskSource) v1pb.Risk_Source {
 		return v1pb.Risk_REQUEST_EXPORT
 	case store.RiskSourceDatabaseDataExport:
 		return v1pb.Risk_DATA_EXPORT
+	case store.RiskRequestRole:
+		return v1pb.Risk_REQUEST_ROLE
 	}
 	return v1pb.Risk_SOURCE_UNSPECIFIED
 }
@@ -194,6 +196,8 @@ func convertToSource(source v1pb.Risk_Source) store.RiskSource {
 		return store.RiskRequestExport
 	case v1pb.Risk_DATA_EXPORT:
 		return store.RiskSourceDatabaseDataExport
+	case v1pb.Risk_REQUEST_ROLE:
+		return store.RiskRequestRole
 	}
 	return store.RiskSourceUnknown
 }

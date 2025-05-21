@@ -133,9 +133,12 @@ message Risk {
     DDL = 1;
     DML = 2;
     CREATE_DATABASE = 3;
+    // TODO(ed): deprecate
     REQUEST_QUERY = 4;
+    // TODO(ed): deprecate
     REQUEST_EXPORT = 5;
     DATA_EXPORT = 6;
+    REQUEST_ROLE = 7;
   }
   Source source = 3;
 

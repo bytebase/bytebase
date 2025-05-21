@@ -9668,9 +9668,10 @@ The risk&#39;s `name` field is used to identify the risk to update. Format: risk
 | DDL | 1 |  |
 | DML | 2 |  |
 | CREATE_DATABASE | 3 |  |
-| REQUEST_QUERY | 4 |  |
-| REQUEST_EXPORT | 5 |  |
+| REQUEST_QUERY | 4 | TODO(ed): deprecate |
+| REQUEST_EXPORT | 5 | TODO(ed): deprecate |
 | DATA_EXPORT | 6 |  |
+| REQUEST_ROLE | 7 |  |
 
 
  

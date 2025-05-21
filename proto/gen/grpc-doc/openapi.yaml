@@ -12107,6 +12107,7 @@ components:
                         - REQUEST_QUERY
                         - REQUEST_EXPORT
                         - DATA_EXPORT
+                        - REQUEST_ROLE
                     type: string
                     format: enum
                 title:
