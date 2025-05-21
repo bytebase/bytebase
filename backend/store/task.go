@@ -15,6 +15,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/store/model"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -106,9 +107,14 @@ func (s *Store) GetTaskV2ByID(ctx context.Context, id int) (*TaskMessage, error)
 // Get a blocking task in the pipeline.
 // A task is blocked by a task with a smaller schema version within the same pipeline.
 func (s *Store) FindBlockingTaskByVersion(ctx context.Context, pipelineUID int, instanceID, databaseName string, version string) (*int, error) {
+	myVersion, err := model.NewVersion(version)
+	if err != nil {
+		return nil, err
+	}
 	query := `
 		SELECT
-			task.id
+			task.id,
+			task.payload->>'schemaVersion'
 		FROM task
 		LEFT JOIN pipeline ON task.pipeline_id = pipeline.id
 		LEFT JOIN issue ON pipeline.id = issue.pipeline_id
@@ -125,22 +131,34 @@ func (s *Store) FindBlockingTaskByVersion(ctx context.Context, pipelineUID int, 
 		) AS latest_task_run ON TRUE
 		WHERE task.pipeline_id = $1 AND task.instance = $2 AND task.db_name = $3
 		AND task.payload->>'schemaVersion' IS NOT NULL
-		AND task.payload->>'schemaVersion' < $4
 		AND (task.payload->>'skipped')::BOOLEAN IS NOT TRUE
 		AND latest_task_run.status != 'DONE'
 		AND COALESCE(issue.status, 'OPEN') = 'OPEN'
 		ORDER BY task.id ASC
-		LIMIT 1
 	`
-
-	var id int
-	if err := s.db.QueryRowContext(ctx, query, pipelineUID, instanceID, databaseName, version).Scan(&id); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, nil
-		}
-		return nil, errors.Wrapf(err, "failed to find blocking task by version %s", version)
+	rows, err := s.db.QueryContext(ctx, query, pipelineUID, instanceID, databaseName)
+	if err != nil {
+		return nil, err
 	}
-	return &id, nil
+	defer rows.Close()
+	for rows.Next() {
+		var id int
+		var v string
+		if err := rows.Scan(&id, &v); err != nil {
+			return nil, errors.Wrapf(err, "failed to scan rows")
+		}
+		otherVersion, err := model.NewVersion(v)
+		if err != nil {
+			return nil, err
+		}
+		if otherVersion.LessThan(myVersion) {
+			return &id, nil
+		}
+	}
+	if rows.Err() != nil {
+		return nil, rows.Err()
+	}
+	return nil, nil
 }
 
 func (*Store) createTasks(ctx context.Context, txn *sql.Tx, creates ...*TaskMessage) ([]*TaskMessage, error) {
