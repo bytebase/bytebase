@@ -59,6 +59,7 @@ import { NRadio, NRadioGroup, NDatePicker, NInputNumber } from "naive-ui";
 import { computed, reactive, watch, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { useSettingV1Store } from "@/store";
+import { PresetRoleType } from "@/types";
 
 interface ExpirationOption {
   value: number;
@@ -72,7 +73,7 @@ interface LocalState {
 
 const props = defineProps<{
   timestampInMs?: number;
-  enableExpirationLimit: boolean;
+  role?: string;
 }>();
 
 const emit = defineEmits<{
@@ -98,6 +99,13 @@ const handleCustomExpirationDaysChange = (val: number | null) => {
     new Date().getTime() + val * 24 * 60 * 60 * 1000;
   customExpirationDays.value = val;
 };
+
+const enableExpirationLimit = computed(() => {
+  return (
+    props.role === PresetRoleType.SQL_EDITOR_USER ||
+    props.role === PresetRoleType.PROJECT_EXPORTER
+  );
+});
 
 const maximumRoleExpiration = computed(() => {
   const seconds =
@@ -137,7 +145,7 @@ const options = computed((): ExpirationOption[] => {
       label: t("common.date.days", { days: 90 }),
     },
   ];
-  if (maximumRoleExpiration.value && props.enableExpirationLimit) {
+  if (maximumRoleExpiration.value && enableExpirationLimit.value) {
     options = options.filter(
       (option) => option.value < maximumRoleExpiration.value!
     );
@@ -171,6 +179,11 @@ onMounted(() => {
   }
   onSelect(value);
 });
+
+watch(
+  () => props.role,
+  () => onSelect(options.value[0].value)
+);
 
 watch(
   () => state.expirationTimestampInMS,

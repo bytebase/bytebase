@@ -225,7 +225,8 @@
     "summary": "总结",
     "errors": "错误",
     "removed": "已移除",
-    "options": "配置项"
+    "options": "配置项",
+    "submit": "提交"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -985,8 +986,8 @@
       "change-data": "变更数据",
       "export-data": "导出数据",
       "create-database": "创建数据库",
-      "request-querier-role": "申请查询者角色",
-      "request-exporter-role": "申请导出者角色"
+      "request-role": "请求角色",
+      "request-specific-role": "请求“{role}”角色"
     },
     "schema-drift-detected": {
       "self": "检测到 Schema 偏差",
