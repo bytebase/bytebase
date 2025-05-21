@@ -37,7 +37,9 @@
       />
       <NoPermissionPlaceholder v-else class="py-6">
         <template #extra>
-          <NButton type="primary"> Request roles </NButton>
+          <NButton type="primary">
+            {{ $t("issue.title.request-role") }}
+          </NButton>
         </template>
       </NoPermissionPlaceholder>
     </div>
