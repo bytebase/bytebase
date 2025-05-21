@@ -225,7 +225,8 @@
     "summary": "Tóm tắt",
     "errors": "Lỗi",
     "removed": "LOẠI BỎ",
-    "options": "Tùy chọn"
+    "options": "Tùy chọn",
+    "submit": "Nộp"
   },
   "error-page": {
     "go-back-home": "Về trang chủ"
@@ -985,6 +986,8 @@
       "change-data": "Thay đổi dữ liệu",
       "export-data": "Xuất dữ liệu",
       "create-database": "Tạo cơ sở dữ liệu",
+      "request-role": "Yêu cầu vai trò",
+      "request-specific-role": "Yêu cầu vai trò \"{role}\"",
       "request-querier-role": "Yêu cầu vai trò người truy vấn",
       "request-exporter-role": "Yêu cầu vai trò người xuất"
     },

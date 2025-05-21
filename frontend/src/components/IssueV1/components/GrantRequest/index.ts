@@ -1,4 +1,3 @@
-import GrantRequestExporterForm from "./GrantRequestExporterForm.vue";
-import GrantRequestQuerierForm from "./GrantRequestQuerierForm.vue";
+import DatabaseResourceTable from "./DatabaseResourceTable.vue";
 
-export { GrantRequestExporterForm, GrantRequestQuerierForm };
+export { DatabaseResourceTable };
