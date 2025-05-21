@@ -408,7 +408,7 @@ func (s *ReleaseService) calculateRiskLevel(
 				return 0, err
 			}
 			args := map[string]any{
-				"environment_id": instance.EnvironmentID,
+				"environment_id": database.EffectiveEnvironmentID,
 				"project_id":     database.ProjectID,
 				"database_name":  database.DatabaseName,
 				// convert to string type otherwise cel-go will complain that storepb.Engine is not string type.
