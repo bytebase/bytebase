@@ -58,6 +58,7 @@ These flags apply to the main `bytebase-action` command and its subcommands (`ch
 -   **`--file-pattern`**: A glob pattern used to find SQL migration files.
     -   Used by subcommands like `check` and `rollout` (when `--plan` is not specified) to locate relevant files.
     -   Default: `""` (empty string)
+    -   Note: Migration filenames should conform to a versioning format. The version part of the filename must start with an optional 'v' or 'V', followed by one or more numbers, with subsequent numbers separated by a dot. For example: v1.2.3_description.sql, 1.0_initial_schema.sql, V2_add_users_table.sql. The version is extracted based on the pattern ^[vV]?(\d+(\.\d+)*).
 
 ### `rollout` Command Specific Flags
 
