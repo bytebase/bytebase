@@ -3,7 +3,7 @@ import { CheckIcon } from "lucide-vue-next";
 import type { SelectOption } from "naive-ui";
 import { h, type VNode } from "vue";
 import { type OptionConfig } from "@/components/ExprEditor/context";
-import { type Factor, type Operator, SQLTypeList } from "@/plugins/cel";
+import { type Factor, SQLTypeList } from "@/plugins/cel";
 import { t } from "@/plugins/i18n";
 import {
   environmentNamePrefix,
