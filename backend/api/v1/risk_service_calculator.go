@@ -15,7 +15,7 @@ import (
 )
 
 func CalculateRiskLevelWithSummaryReport(
-	ctx context.Context,
+	_ context.Context,
 	risks []*store.RiskMessage,
 	commonArgs map[string]any,
 	riskSource store.RiskSource,
