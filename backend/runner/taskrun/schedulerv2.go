@@ -542,7 +542,7 @@ func (s *SchedulerV2) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRun
 			s.stateCfg.RunningDatabaseMigration.Delete(getDatabaseKey(task.InstanceID, *task.DatabaseName))
 		}
 		s.stateCfg.InstanceOutstandingConnections.Decrement(task.InstanceID)
-		s.stateCfg.RolloutOutstandingTasks.Decrement(strconv.Itoa(task.PipelineID))
+		s.stateCfg.RolloutOutstandingTasks.Decrement(strconv.Itoa(task.PipelineID) + "/" + task.InstanceID)
 	}()
 
 	driverCtx, cancel := context.WithCancel(ctx)
