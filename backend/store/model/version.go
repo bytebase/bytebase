@@ -8,14 +8,14 @@ import (
 )
 
 type Version struct {
-	parts []int
+	parts []uint64
 }
 
 func NewVersion(v string) (*Version, error) {
 	parts := strings.Split(v, ".")
 	r := &Version{}
 	for _, p := range parts {
-		n, err := strconv.Atoi(p)
+		n, err := strconv.ParseUint(p, 10, 64)
 		if err != nil {
 			return nil, errors.Errorf("invalid version %q", v)
 		}
