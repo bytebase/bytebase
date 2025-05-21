@@ -71,7 +71,7 @@ func (s *ReleaseService) CreateRelease(ctx context.Context, request *v1pb.Create
 		return nil, status.Errorf(codes.InvalidArgument, "invalid release files, err: %v", err)
 	}
 	sheetsToCreate := []*store.SheetMessage{}
-	fileToSheetMap := map[*v1pb.Release_File]*store.SheetMessage{}
+	var filesWithoutSheet []*v1pb.Release_File
 	// Prepare sheets to create for files with missing sheets.
 	// Check versions.
 	for _, file := range request.Release.Files {
@@ -84,7 +84,7 @@ func (s *ReleaseService) CreateRelease(ctx context.Context, request *v1pb.Create
 				Statement: string(file.Statement),
 			}
 			sheetsToCreate = append(sheetsToCreate, sheet)
-			fileToSheetMap[file] = sheet
+			filesWithoutSheet = append(filesWithoutSheet, file)
 		}
 	}
 
@@ -100,13 +100,7 @@ func (s *ReleaseService) CreateRelease(ctx context.Context, request *v1pb.Create
 
 		// Map created sheets back to files.
 		for i, sheet := range createdSheets {
-			file := sheetsToCreate[i]
-			for f, s := range fileToSheetMap {
-				if s == file {
-					f.Sheet = common.FormatSheet(project.ResourceID, sheet.UID)
-					break
-				}
-			}
+			filesWithoutSheet[i].Sheet = common.FormatSheet(project.ResourceID, sheet.UID)
 		}
 	}
 
