@@ -80,7 +80,7 @@ const props = withDefaults(
   }
 );
 
-defineEmits<{
+const emit = defineEmits<{
   (event: "close"): void;
 }>();
 
@@ -141,5 +141,7 @@ const doCreateIssue = async () => {
   const path = `/${createdIssue.name}`;
 
   window.open(path, "_blank");
+
+  emit("close");
 };
 </script>
