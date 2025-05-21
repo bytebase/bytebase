@@ -410,11 +410,6 @@ func (r *Runner) getDatabaseGeneralIssueRisk(ctx context.Context, issue *store.I
 		return 0, store.RiskSourceUnknown, false, errors.Wrap(err, "failed to get pipeline create")
 	}
 
-	e, err := cel.NewEnv(common.RiskFactors...)
-	if err != nil {
-		return 0, store.RiskSourceUnknown, false, err
-	}
-
 	var maxRiskLevel int32
 	for _, stage := range pipelineCreate.Stages {
 		for _, task := range stage.TaskList {
@@ -442,7 +437,7 @@ func (r *Runner) getDatabaseGeneralIssueRisk(ctx context.Context, issue *store.I
 				taskStatement = statement
 			}
 
-			environmentID := instance.EnvironmentID
+			var environmentID string
 			var databaseName string
 			if task.Type == base.TaskDatabaseCreate {
 				databaseName = task.Payload.GetDatabaseName()
@@ -459,88 +454,32 @@ func (r *Runner) getDatabaseGeneralIssueRisk(ctx context.Context, issue *store.I
 				environmentID = database.EffectiveEnvironmentID
 			}
 
+			commonArgs := map[string]any{
+				"environment_id": environmentID,
+				"project_id":     issue.Project.ResourceID,
+				"database_name":  databaseName,
+				// convert to string type otherwise cel-go will complain that storepb.Engine is not string type.
+				"db_engine":     instance.Metadata.GetEngine().String(),
+				"sql_statement": taskStatement,
+			}
 			risk, err := func() (int32, error) {
-				for _, risk := range risks {
-					if !risk.Active {
-						continue
-					}
-					if risk.Source != riskSource {
-						continue
-					}
-					if risk.Expression == nil || risk.Expression.Expression == "" {
-						continue
-					}
-					ast, issues := e.Parse(risk.Expression.Expression)
-					if issues != nil && issues.Err() != nil {
-						return 0, errors.Errorf("failed to parse expression: %v", issues.Err())
-					}
-					prg, err := e.Program(ast, cel.EvalOptions(cel.OptPartialEval))
-					if err != nil {
-						return 0, err
-					}
-					args := map[string]any{
-						"environment_id": environmentID,
-						"project_id":     issue.Project.ResourceID,
-						"database_name":  databaseName,
-						// convert to string type otherwise cel-go will complain that storepb.Engine is not string type.
-						"db_engine":     instance.Metadata.GetEngine().String(),
-						"sql_statement": taskStatement,
-					}
-
-					vars, err := e.PartialVars(args)
-					if err != nil {
-						return 0, errors.Wrapf(err, "failed to get vars")
-					}
-					out, _, err := prg.Eval(vars)
-					if err != nil {
-						return 0, errors.Wrapf(err, "failed to eval expression")
-					}
-					if res, ok := out.Equal(celtypes.True).Value().(bool); ok && res {
-						return risk.Level, nil
-					}
-
-					if run, ok := latestPlanCheckRun[Key{
-						InstanceID:   instance.ResourceID,
-						DatabaseName: databaseName,
-					}]; ok {
-						for _, result := range run.Result.Results {
-							report := result.GetSqlSummaryReport()
-							if report == nil {
-								continue
-							}
-							var tableRows int64
-							for _, db := range report.GetChangedResources().GetDatabases() {
-								for _, sc := range db.GetSchemas() {
-									for _, tb := range sc.GetTables() {
-										tableRows += tb.GetTableRows()
-									}
-								}
-							}
-							args["affected_rows"] = report.AffectedRows
-							args["table_rows"] = tableRows
-
-							var tableNames []string
-							for _, db := range report.GetChangedResources().GetDatabases() {
-								for _, schema := range db.GetSchemas() {
-									for _, table := range schema.GetTables() {
-										tableNames = append(tableNames, table.Name)
-									}
-								}
-							}
-							for _, statementType := range report.StatementTypes {
-								args["sql_type"] = statementType
-								for _, tableName := range tableNames {
-									args["table_name"] = tableName
-									out, _, err := prg.Eval(args)
-									if err != nil {
-										return 0, err
-									}
-									if res, ok := out.Equal(celtypes.True).Value().(bool); ok && res {
-										return risk.Level, nil
-									}
-								}
-							}
+				if run, ok := latestPlanCheckRun[Key{
+					InstanceID:   instance.ResourceID,
+					DatabaseName: databaseName,
+				}]; ok {
+					for _, result := range run.Result.Results {
+						report := result.GetSqlSummaryReport()
+						if report == nil {
+							continue
 						}
+						riskLevel, err := apiv1.CalculateRiskLevelWithSummaryReport(ctx, risks, commonArgs, riskSource, report)
+						if err != nil {
+							return 0, err
+						}
+						if riskLevel == 0 {
+							continue
+						}
+						return riskLevel, nil
 					}
 				}
 				return 0, nil
