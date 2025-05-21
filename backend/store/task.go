@@ -155,6 +155,9 @@ func (s *Store) FindBlockingTaskByVersion(ctx context.Context, pipelineUID int, 
 			return &id, nil
 		}
 	}
+	if rows.Err() != nil {
+		return nil, rows.Err()
+	}
 	return nil, nil
 }
 
