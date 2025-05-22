@@ -6,6 +6,8 @@ import (
 	"github.com/antlr4-go/antlr/v4"
 )
 
+const maxRecursionDepth = 66
+
 // CodeCompletionCore is the core of code completion.
 // It only relies on the ANTLR runtime and does not depend on any specific language.
 type CodeCompletionCore struct {
@@ -392,6 +394,9 @@ func (c *CodeCompletionCore) CollectCandidates(caretTokenIndex int, context antl
 }
 
 func (c *CodeCompletionCore) fetchEndStatus(startState antlr.ATNState, tokenIndex int, indentation string) RuleEndStatus {
+	if len(c.callStack.rules) > maxRecursionDepth {
+		return RuleEndStatus{}
+	}
 	result := make(RuleEndStatus)
 	c.followSetsByState.CollectFollowSets(c.parser, startState, c.IgnoredTokens, c.PreferredRules)
 
