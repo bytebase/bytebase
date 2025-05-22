@@ -16,22 +16,22 @@ const celLimit = 1024 * 1024
 
 // RiskFactors are the variables when evaluating the risk level.
 var RiskFactors = []cel.EnvOption{
-	// string factors
-	// use environment.resource_id
-	cel.Variable("environment_id", cel.StringType),
-	// use project.resource_id
-	cel.Variable("project_id", cel.StringType),
-	cel.Variable("database_name", cel.StringType),
+	cel.Variable("environment_id", cel.StringType), // use environment.resource_id
+	cel.Variable("project_id", cel.StringType),     // use project.resource_id
 	cel.Variable("db_engine", cel.StringType),
-	cel.Variable("sql_type", cel.StringType),
-	cel.Variable("sql_statement", cel.StringType),
+
+	cel.Variable("database_name", cel.StringType),
+	cel.Variable("schema_name", cel.StringType),
 	cel.Variable("table_name", cel.StringType),
 
-	// number factors
 	cel.Variable("affected_rows", cel.IntType),
+	cel.Variable("table_rows", cel.IntType),
+	cel.Variable("sql_type", cel.StringType),
+	cel.Variable("sql_statement", cel.StringType),
+
 	cel.Variable("expiration_days", cel.IntType),
 	cel.Variable("export_rows", cel.IntType),
-	cel.Variable("table_rows", cel.IntType),
+	cel.Variable("role", cel.StringType),
 }
 
 // ApprovalFactors are the variables when finding the approval template.
