@@ -9,10 +9,12 @@ import {
   environmentNamePrefix,
   useEnvironmentV1Store,
   useProjectV1Store,
+  useRoleStore,
 } from "@/store";
 import {
   PresetRiskLevelList,
   DEFAULT_PROJECT_NAME,
+  PRESET_WORKSPACE_ROLES,
   useSupportedSourceList,
   type ComposedProject,
 } from "@/types";
@@ -23,6 +25,7 @@ import {
   extractProjectResourceName,
   supportedEngineV1List,
   getDefaultPagination,
+  displayRoleTitle,
 } from "@/utils";
 
 export const sourceText = (source: Risk_Source) => {
@@ -41,6 +44,8 @@ export const sourceText = (source: Risk_Source) => {
       return t("custom-approval.risk-rule.risk.namespace.request_query");
     case Risk_Source.REQUEST_EXPORT:
       return t("custom-approval.risk-rule.risk.namespace.request_export");
+    case Risk_Source.REQUEST_ROLE:
+      return t("custom-approval.risk-rule.risk.namespace.request-role");
     default:
       return Risk_Source.UNRECOGNIZED;
   }
@@ -85,6 +90,7 @@ const StringFactorList = [
   "database_name",
   "schema_name",
   "table_name",
+  "role",
 ] as const;
 
 export const RiskSourceFactorMap: Map<Risk_Source, string[]> = new Map([
@@ -167,6 +173,7 @@ export const RiskSourceFactorMap: Map<Risk_Source, string[]> = new Map([
       )
     ),
   ],
+  [Risk_Source.REQUEST_ROLE, ["project_id", "expiration_days", "role"]],
 ]);
 
 export const getFactorList = (source: Risk_Source) => {
@@ -262,6 +269,15 @@ const getSQLTypeOptions = (source: Risk_Source) => {
   return [];
 };
 
+const getRoleOptions = () => {
+  return useRoleStore()
+    .roleList.filter((role) => !PRESET_WORKSPACE_ROLES.includes(role.name))
+    .map((role) => ({
+      label: displayRoleTitle(role.name),
+      value: role.name,
+    }));
+};
+
 export const getOptionConfigMap = (source: Risk_Source) => {
   const factorList = getFactorList(source);
   return factorList.reduce((map, factor) => {
@@ -299,6 +315,9 @@ export const getOptionConfigMap = (source: Risk_Source) => {
       case "sql_type":
         options = getSQLTypeOptions(source);
         break;
+      case "role":
+        options = getRoleOptions();
+        break;
     }
     map.set(factor, {
       remote: false,
@@ -315,4 +334,5 @@ export const factorSupportDropdown: Factor[] = [
   "sql_type",
   "level",
   "source",
+  "role",
 ];
