@@ -26620,6 +26620,7 @@ table_name: the table name, support &#34;==&#34;, &#34;!=&#34;, &#34;in [xx]&#34
 sql_statement: the SQL statement, support &#34;contains()&#34;, &#34;matches()&#34;, &#34;startsWith()&#34;, &#34;endsWith()&#34; operations.
 export_rows: export data count, support &#34;==&#34;, &#34;!=&#34;, &#34;&lt;&#34;, &#34;&lt;=&#34;, &#34;&gt;&#34;, &#34;&gt;=&#34; operations.
 expiration_days: the role expiration days for the request, support &#34;==&#34;, &#34;!=&#34;, &#34;&lt;&#34;, &#34;&lt;=&#34;, &#34;&gt;&#34;, &#34;&gt;=&#34; operations.
+role: the request role full name, support &#34;==&#34;, &#34;!=&#34;, &#34;in [xx]&#34;, &#34;!(in [xx])&#34;, &#34;contains()&#34;, &#34;matches()&#34;, &#34;startsWith()&#34;, &#34;endsWith()&#34; operations.
 
 When the risk source is DDL/DML, support following variables:
 affected_rows
@@ -26665,7 +26666,12 @@ database_name
 schema_name
 table_name
 expiration_days
-export_rows </p></td>
+export_rows
+
+When the risk source is REQUEST_ROLE, support following variables:
+project_id
+expiration_days
+role </p></td>
                 </tr>
               
             </tbody>
@@ -26746,18 +26752,24 @@ Format: risks/{risk} </p></td>
               <tr>
                 <td>REQUEST_QUERY</td>
                 <td>4</td>
-                <td><p></p></td>
+                <td><p>TODO(ed): migrate and deprecate</p></td>
               </tr>
             
               <tr>
                 <td>REQUEST_EXPORT</td>
                 <td>5</td>
-                <td><p></p></td>
+                <td><p>TODO(ed): migrate and deprecate</p></td>
               </tr>
             
               <tr>
                 <td>DATA_EXPORT</td>
                 <td>6</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>REQUEST_ROLE</td>
+                <td>7</td>
                 <td><p></p></td>
               </tr>
             

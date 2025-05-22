@@ -31,6 +31,8 @@ const (
 	RiskRequestQuery RiskSource = "bb.risk.request.query"
 	// RiskRequestExport is for requesting export grant.
 	RiskRequestExport RiskSource = "bb.risk.request.export"
+	// RiskRequestRole is for requesting role.
+	RiskRequestRole RiskSource = "bb.risk.request.role"
 )
 
 // RiskMessage is the message for risks.

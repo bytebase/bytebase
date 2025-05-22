@@ -4,6 +4,7 @@
       <div>
         <label class="block text-sm font-medium leading-5 text-control">
           {{ $t("settings.profile.password") }}
+          <RequiredStar />
         </label>
         <span
           :class="[
@@ -56,6 +57,7 @@
         class="block text-sm font-medium leading-5 text-control"
       >
         {{ $t("settings.profile.password-confirm") }}
+        <RequiredStar />
       </label>
       <div class="w-full mt-1 flex flex-col justify-start items-start">
         <div class="w-full relative flex flex-row items-center">
@@ -99,6 +101,7 @@ import { NInput, NTooltip } from "naive-ui";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
+import RequiredStar from "@/components/RequiredStar.vue";
 import { type PasswordRestrictionSetting } from "@/types/proto/v1/setting_service";
 
 const props = withDefaults(

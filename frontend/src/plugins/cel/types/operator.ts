@@ -124,6 +124,11 @@ const OperatorList: Record<Factor, Operator[]> = {
   // Request query/export factors
   expiration_days: uniq([...EqualityOperatorList, ...CompareOperatorList]),
   export_rows: uniq([...EqualityOperatorList, ...CompareOperatorList]),
+  role: uniq([
+    ...EqualityOperatorList,
+    ...CollectionOperatorList,
+    ...StringOperatorList,
+  ]),
 };
 
 export const getOperatorListByFactor = (factor: Factor) => {

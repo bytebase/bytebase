@@ -1,6 +1,6 @@
 <template>
   <div v-if="!isCreating" class="flex flex-col gap-y-2">
-    <div class="w-full flex flex-row justify-between items-center gap-2">
+    <div class="w-full flex flex-row items-center gap-2">
       <NTooltip placement="bottom">
         <template #trigger>
           <div>
