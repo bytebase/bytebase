@@ -2,26 +2,30 @@
   <div class="sql-editor-tree gap-y-1 h-full flex flex-col relative">
     <div class="w-full px-4 mt-4">
       <div
-        class="textinfolabel mb-2 w-full leading-4 flex items-center gap-x-1"
+        class="textinfolabel mb-2 w-full leading-4 flex flex-col lg:flex-row items-start lg:items-center gap-x-1"
       >
-        <FeatureBadge feature="bb.feature.batch-query" />
-        {{
-          $t("sql-editor.batch-query.description", {
-            database: state.selectedDatabases.size,
-            group:
-              tabStore.currentTab?.batchQueryContext?.databaseGroups.length ??
-              0,
-            project: project.title,
-          })
-        }}
-        <i18n-t
-          v-if="hasDatabaseGroupFeature && tabStore.currentTab"
-          keypath="sql-editor.batch-query.select-database-group"
-        >
-          <template #select-database-group>
-            <BatchQueryDatabaseGroupSelector />
-          </template>
-        </i18n-t>
+        <div class="flex items-center gap-x-1">
+          <FeatureBadge feature="bb.feature.batch-query" />
+          {{
+            $t("sql-editor.batch-query.description", {
+              database: state.selectedDatabases.size,
+              group:
+                tabStore.currentTab?.batchQueryContext?.databaseGroups.length ??
+                0,
+              project: project.title,
+            })
+          }}
+        </div>
+        <div class="flex items-center gap-x-1">
+          <i18n-t
+            v-if="hasDatabaseGroupFeature && tabStore.currentTab"
+            keypath="sql-editor.batch-query.select-database-group"
+          >
+            <template #select-database-group>
+              <BatchQueryDatabaseGroupSelector />
+            </template>
+          </i18n-t>
+        </div>
       </div>
       <div
         class="w-full mt-1 flex flex-row justify-start items-start flex-wrap gap-2"
