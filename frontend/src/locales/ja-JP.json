@@ -2273,8 +2273,6 @@
           "ddl": "DDL",
           "create_database": "データベースの作成",
           "data_export": "データのエクスポート",
-          "request_query": "クエリ権限を申請する",
-          "request_export": "出力権限を申請する",
           "request-role": "ロールのリクエスト"
         }
       },

@@ -2273,8 +2273,6 @@
           "ddl": "DDL",
           "create_database": "Crear base de datos",
           "data_export": "Exportar datos",
-          "request_query": "Solicitar Rol de Consultor",
-          "request_export": "Solicitar Rol de Exportador",
           "request-role": "Rol de solicitud"
         }
       },

@@ -170,10 +170,6 @@ func ConvertToV1Source(source store.RiskSource) v1pb.Risk_Source {
 		return v1pb.Risk_DDL
 	case store.RiskSourceDatabaseDataUpdate:
 		return v1pb.Risk_DML
-	case store.RiskRequestQuery:
-		return v1pb.Risk_REQUEST_QUERY
-	case store.RiskRequestExport:
-		return v1pb.Risk_REQUEST_EXPORT
 	case store.RiskSourceDatabaseDataExport:
 		return v1pb.Risk_DATA_EXPORT
 	case store.RiskRequestRole:
@@ -190,10 +186,6 @@ func convertToSource(source v1pb.Risk_Source) store.RiskSource {
 		return store.RiskSourceDatabaseSchemaUpdate
 	case v1pb.Risk_DML:
 		return store.RiskSourceDatabaseDataUpdate
-	case v1pb.Risk_REQUEST_QUERY:
-		return store.RiskRequestQuery
-	case v1pb.Risk_REQUEST_EXPORT:
-		return store.RiskRequestExport
 	case v1pb.Risk_DATA_EXPORT:
 		return store.RiskSourceDatabaseDataExport
 	case v1pb.Risk_REQUEST_ROLE:

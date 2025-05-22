@@ -2273,8 +2273,6 @@
           "ddl": "DDL",
           "create_database": "Create Database",
           "data_export": "Export Data",
-          "request_query": "Request Querier Role",
-          "request_export": "Request Exporter Role",
           "request-role": "Request Role"
         }
       },
