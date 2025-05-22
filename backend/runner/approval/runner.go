@@ -610,7 +610,7 @@ func (r *Runner) getDatabaseDataExportIssueRisk(ctx context.Context, issue *stor
 	return maxRiskLevel, riskSource, true, nil
 }
 
-func (r *Runner) getDatabaseListByRequestRole(ctx context.Context, projectID string, databaseNames []string) ([]*store.DatabaseMessage, error) {
+func (r *Runner) getDatabaseList(ctx context.Context, projectID string, databaseNames []string) ([]*store.DatabaseMessage, error) {
 	if len(databaseNames) == 0 {
 		databases, err := r.store.ListDatabases(ctx, &store.FindDatabaseMessage{
 			ProjectID: &projectID,
@@ -677,7 +677,7 @@ func (r *Runner) getGrantRequestIssueRisk(ctx context.Context, issue *store.Issu
 	if payload.GrantRequest.Expiration != nil {
 		expirationDays = payload.GrantRequest.Expiration.AsDuration().Hours() / 24
 	}
-	databases, err := r.getDatabaseListByRequestRole(ctx, issue.Project.ResourceID, factors.DatabaseNames)
+	databases, err := r.getDatabaseList(ctx, issue.Project.ResourceID, factors.DatabaseNames)
 	if err != nil {
 		return 0, store.RiskSourceUnknown, false, errors.Wrap(err, "failed to list databases")
 	}
@@ -703,29 +703,6 @@ func (r *Runner) getGrantRequestIssueRisk(ctx context.Context, issue *store.Issu
 			return 0, store.RiskSourceUnknown, false, err
 		}
 
-		if len(databases) == 0 {
-			args := map[string]any{
-				"project_id":      issue.Project.ResourceID,
-				"expiration_days": expirationDays,
-				"role":            payload.GrantRequest.Role,
-			}
-			vars, err := e.PartialVars(args)
-			if err != nil {
-				return 0, store.RiskSourceUnknown, false, err
-			}
-			out, _, err := prg.Eval(vars)
-			if err != nil {
-				return 0, store.RiskSourceUnknown, false, err
-			}
-			if res, ok := out.Equal(celtypes.True).Value().(bool); ok && res {
-				maxRisk = risk.Level
-			}
-			if maxRisk > 0 {
-				break
-			}
-			continue
-		}
-
 		for _, database := range databases {
 			instance, err := r.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
 				ResourceID: &database.InstanceID,
@@ -738,7 +715,7 @@ func (r *Runner) getGrantRequestIssueRisk(ctx context.Context, issue *store.Issu
 			}
 			if r.licenseService.IsFeatureEnabledForInstance(base.FeatureCustomApproval, instance) != nil {
 				// nolint:nilerr
-				return 0, store.RiskSourceUnknown, true, nil
+				continue
 			}
 
 			args := map[string]any{
