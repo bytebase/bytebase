@@ -745,6 +745,7 @@ func (r *Runner) getGrantRequestIssueRisk(ctx context.Context, issue *store.Issu
 				"db_engine":       instance.Metadata.GetEngine().String(),
 				"expiration_days": expirationDays,
 				"export_rows":     factors.ExportRows,
+				"role":            payload.GrantRequest.Role,
 			}
 			out, _, err := prg.Eval(args)
 			if err != nil {
