@@ -32,12 +32,8 @@ const (
 	Risk_DDL                Risk_Source = 1
 	Risk_DML                Risk_Source = 2
 	Risk_CREATE_DATABASE    Risk_Source = 3
-	// TODO(ed): migrate and deprecate
-	Risk_REQUEST_QUERY Risk_Source = 4
-	// TODO(ed): migrate and deprecate
-	Risk_REQUEST_EXPORT Risk_Source = 5
-	Risk_DATA_EXPORT    Risk_Source = 6
-	Risk_REQUEST_ROLE   Risk_Source = 7
+	Risk_DATA_EXPORT        Risk_Source = 6
+	Risk_REQUEST_ROLE       Risk_Source = 7
 )
 
 // Enum value maps for Risk_Source.
@@ -47,8 +43,6 @@ var (
 		1: "DDL",
 		2: "DML",
 		3: "CREATE_DATABASE",
-		4: "REQUEST_QUERY",
-		5: "REQUEST_EXPORT",
 		6: "DATA_EXPORT",
 		7: "REQUEST_ROLE",
 	}
@@ -57,8 +51,6 @@ var (
 		"DDL":                1,
 		"DML":                2,
 		"CREATE_DATABASE":    3,
-		"REQUEST_QUERY":      4,
-		"REQUEST_EXPORT":     5,
 		"DATA_EXPORT":        6,
 		"REQUEST_ROLE":       7,
 	}
@@ -582,21 +574,19 @@ const file_v1_risk_service_proto_rawDesc = "" +
 	"updateMask\"C\n" +
 	"\x11DeleteRiskRequest\x12.\n" +
 	"\x04name\x18\x01 \x01(\tB\x1a\xe2A\x01\x02\xfaA\x13\n" +
-	"\x11bytebase.com/RiskR\x04name\"\x81\x03\n" +
+	"\x11bytebase.com/RiskR\x04name\"\xd9\x02\n" +
 	"\x04Risk\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x120\n" +
 	"\x06source\x18\x03 \x01(\x0e2\x18.bytebase.v1.Risk.SourceR\x06source\x12\x14\n" +
 	"\x05title\x18\x04 \x01(\tR\x05title\x12\x14\n" +
 	"\x05level\x18\x05 \x01(\x05R\x05level\x12\x16\n" +
 	"\x06active\x18\a \x01(\bR\x06active\x12/\n" +
-	"\tcondition\x18\b \x01(\v2\x11.google.type.ExprR\tcondition\"\x91\x01\n" +
+	"\tcondition\x18\b \x01(\v2\x11.google.type.ExprR\tcondition\"j\n" +
 	"\x06Source\x12\x16\n" +
 	"\x12SOURCE_UNSPECIFIED\x10\x00\x12\a\n" +
 	"\x03DDL\x10\x01\x12\a\n" +
 	"\x03DML\x10\x02\x12\x13\n" +
-	"\x0fCREATE_DATABASE\x10\x03\x12\x11\n" +
-	"\rREQUEST_QUERY\x10\x04\x12\x12\n" +
-	"\x0eREQUEST_EXPORT\x10\x05\x12\x0f\n" +
+	"\x0fCREATE_DATABASE\x10\x03\x12\x0f\n" +
 	"\vDATA_EXPORT\x10\x06\x12\x10\n" +
 	"\fREQUEST_ROLE\x10\a:$\xeaA!\n" +
 	"\x11bytebase.com/Risk\x12\frisks/{risk}J\x04\b\x02\x10\x032\x87\x05\n" +
