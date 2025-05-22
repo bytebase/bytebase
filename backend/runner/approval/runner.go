@@ -630,7 +630,7 @@ func (r *Runner) getGrantRequestIssueRisk(ctx context.Context, issue *store.Issu
 
 	databaseInstanceMap, databaseMap, err := r.getDatabaseMap(ctx, factors.Databases)
 	if err != nil {
-		return 0, store.RiskSourceUnknown, false, err
+		return 0, store.RiskSourceUnknown, false, errors.Wrap(err, "failed to retrieve database map")
 	}
 
 	// Get the max risk level of the same risk source.
