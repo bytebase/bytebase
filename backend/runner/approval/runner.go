@@ -698,7 +698,7 @@ func (r *Runner) getGrantRequestIssueRisk(ctx context.Context, issue *store.Issu
 		if issues != nil && issues.Err() != nil {
 			return 0, store.RiskSourceUnknown, false, errors.Errorf("failed to parse expression: %v", issues.Err())
 		}
-		prg, err := e.Program(ast)
+		prg, err := e.Program(ast, cel.EvalOptions(cel.OptPartialEval))
 		if err != nil {
 			return 0, store.RiskSourceUnknown, false, err
 		}
@@ -709,7 +709,11 @@ func (r *Runner) getGrantRequestIssueRisk(ctx context.Context, issue *store.Issu
 				"expiration_days": expirationDays,
 				"role":            payload.GrantRequest.Role,
 			}
-			out, _, err := prg.Eval(args)
+			vars, err := e.PartialVars(args)
+			if err != nil {
+				return 0, store.RiskSourceUnknown, false, err
+			}
+			out, _, err := prg.Eval(vars)
 			if err != nil {
 				return 0, store.RiskSourceUnknown, false, err
 			}
@@ -747,7 +751,11 @@ func (r *Runner) getGrantRequestIssueRisk(ctx context.Context, issue *store.Issu
 				"export_rows":     factors.ExportRows,
 				"role":            payload.GrantRequest.Role,
 			}
-			out, _, err := prg.Eval(args)
+			vars, err := e.PartialVars(args)
+			if err != nil {
+				return 0, store.RiskSourceUnknown, false, err
+			}
+			out, _, err := prg.Eval(vars)
 			if err != nil {
 				return 0, store.RiskSourceUnknown, false, err
 			}
