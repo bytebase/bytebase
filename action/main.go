@@ -188,6 +188,9 @@ func runCheck(*cobra.Command, []string) error {
 	if err != nil {
 		return err
 	}
+
+	slog.Info("check release response", "resultCount", len(checkReleaseResponse.Results))
+
 	switch platform {
 	case GitHub:
 		if err := github.CreateCommentAndAnnotation(checkReleaseResponse); err != nil {

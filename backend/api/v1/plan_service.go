@@ -1151,16 +1151,6 @@ func getSpecs(database *store.DatabaseMessage, revisions []*store.RevisionMessag
 		revisionByVersion[r.Version] = r
 	}
 
-	slices.SortFunc(release.Payload.Files, func(a, b *storepb.ReleasePayload_File) int {
-		if a.Version < b.Version {
-			return -1
-		}
-		if a.Version > b.Version {
-			return 1
-		}
-		return 0
-	})
-
 	for _, file := range release.Payload.Files {
 		r, ok := revisionByVersion[file.Version]
 		if ok {
