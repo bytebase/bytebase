@@ -278,7 +278,6 @@
       "ghost-parameters": "gh-ost parameters",
       "configure": "Configure",
       "error": {
-        "x-status-task-is-not-editable": "{status} task is not editable",
         "nothing-changed": "Nothing changed",
         "not-applicable": {
           "task-doesnt-meet-ghost-requirement": "Task doesn't meet gh-ost's requirement",

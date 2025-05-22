@@ -54,7 +54,7 @@ export const providePreBackupSettingContext = (refs: {
   project: Ref<ComposedProject>;
   plan: Ref<Plan>;
   selectedSpec: Ref<Plan_Spec | undefined>;
-  selectedTask: Ref<Task | undefined>;
+  selectedTask?: Ref<Task | undefined>;
   issue?: Ref<Issue | undefined>;
   rollout?: Ref<Rollout | undefined>;
 }) => {
@@ -74,7 +74,7 @@ export const providePreBackupSettingContext = (refs: {
   }>();
 
   const database = computed(() => {
-    if (selectedTask.value) {
+    if (selectedTask?.value) {
       return databaseForTask(project.value, selectedTask.value);
     } else if (selectedSpec.value) {
       return databaseForSpec(project.value, selectedSpec.value);
