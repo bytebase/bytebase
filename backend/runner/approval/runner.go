@@ -405,7 +405,7 @@ func (r *Runner) getDatabaseGeneralIssueRisk(ctx context.Context, issue *store.I
 		return 0, store.RiskSourceUnknown, false, nil
 	}
 
-	pipelineCreate, err := apiv1.GetPipelineCreate(ctx, r.store, r.sheetManager, r.licenseService, r.dbFactory, plan.Name, plan.Config.GetSteps(), plan.Config.GetDeployment(), issue.Project)
+	pipelineCreate, err := apiv1.GetPipelineCreate(ctx, r.store, r.sheetManager, r.dbFactory, plan.Name, plan.Config.GetSteps(), plan.Config.GetDeployment(), issue.Project)
 	if err != nil {
 		return 0, store.RiskSourceUnknown, false, errors.Wrap(err, "failed to get pipeline create")
 	}
@@ -421,10 +421,6 @@ func (r *Runner) getDatabaseGeneralIssueRisk(ctx context.Context, issue *store.I
 			}
 			if instance.Deleted {
 				continue
-			}
-			if r.licenseService.IsFeatureEnabledForInstance(base.FeatureCustomApproval, instance) != nil {
-				// nolint:nilerr
-				return 0, store.RiskSourceUnknown, true, nil
 			}
 
 			taskStatement := ""
@@ -512,7 +508,7 @@ func (r *Runner) getDatabaseDataExportIssueRisk(ctx context.Context, issue *stor
 		return 0, store.RiskSourceUnknown, false, errors.Errorf("plan %v not found", *issue.PlanUID)
 	}
 
-	pipelineCreate, err := apiv1.GetPipelineCreate(ctx, r.store, r.sheetManager, r.licenseService, r.dbFactory, plan.Name, plan.Config.GetSteps(), plan.Config.GetDeployment(), issue.Project)
+	pipelineCreate, err := apiv1.GetPipelineCreate(ctx, r.store, r.sheetManager, r.dbFactory, plan.Name, plan.Config.GetSteps(), plan.Config.GetDeployment(), issue.Project)
 	if err != nil {
 		return 0, store.RiskSourceUnknown, false, errors.Wrap(err, "failed to get pipeline create")
 	}
@@ -538,10 +534,6 @@ func (r *Runner) getDatabaseDataExportIssueRisk(ctx context.Context, issue *stor
 			}
 			if instance.Deleted {
 				continue
-			}
-			if r.licenseService.IsFeatureEnabledForInstance(base.FeatureCustomApproval, instance) != nil {
-				// nolint:nilerr
-				return 0, store.RiskSourceUnknown, true, nil
 			}
 
 			database, err := r.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
@@ -711,10 +703,6 @@ func (r *Runner) getGrantRequestIssueRisk(ctx context.Context, issue *store.Issu
 				return 0, store.RiskSourceUnknown, false, errors.Wrap(err, "failed to get instance")
 			}
 			if instance == nil || instance.Deleted {
-				continue
-			}
-			if r.licenseService.IsFeatureEnabledForInstance(base.FeatureCustomApproval, instance) != nil {
-				// nolint:nilerr
 				continue
 			}
 
