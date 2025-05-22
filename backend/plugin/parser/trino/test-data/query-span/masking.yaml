@@ -1,0 +1,167 @@
+- description: Basic SELECT masking
+  statement: |
+    SELECT
+      name,
+      email,
+      phone
+    FROM
+      users
+    WHERE
+      created_at > '2020-01-01'
+  defaultDatabase: mydb
+  metadata: '{"name":"mydb","schemas":[{"name":"public","tables":[{"name":"users","columns":[{"name":"name","type":"varchar"},{"name":"email","type":"varchar"},{"name":"phone","type":"varchar"},{"name":"created_at","type":"timestamp"}]}]}]}'
+  querySpan:
+    type:
+        querytype: 1
+    results:
+      - name: name
+        sourceColumns:
+          "mydb.public.users.name": true
+        isPlainField: true
+      - name: email
+        sourceColumns:
+          "mydb.public.users.email": true
+        isPlainField: true
+      - name: phone
+        sourceColumns:
+          "mydb.public.users.phone": true
+        isPlainField: true
+    sourceColumns:
+      "mydb.public.users.name": true
+      "mydb.public.users.email": true
+      "mydb.public.users.phone": true
+      "mydb.public.users.created_at": true
+    predicateColumns:
+      "mydb.public.users.created_at": true
+
+- description: Complex data types masking
+  statement: |
+    SELECT
+      user_id,
+      profile['address'] as address,
+      contact_info.phone as phone,
+      permissions[1] as first_permission
+    FROM
+      user_profiles
+    WHERE
+      profile['status'] = 'active'
+  defaultDatabase: mydb
+  metadata: '{"name":"mydb","schemas":[{"name":"public","tables":[{"name":"user_profiles","columns":[{"name":"user_id","type":"integer"},{"name":"profile","type":"map(varchar,varchar)"},{"name":"contact_info","type":"row(phone varchar)"},{"name":"permissions","type":"array(varchar)"}]}]}]}'
+  querySpan:
+    type:
+        querytype: 1
+    results:
+      - name: user_id
+        sourceColumns:
+          "mydb.public.user_profiles.user_id": true
+        isPlainField: true
+      - name: address
+        sourceColumns:
+          "mydb.public.user_profiles.profile": true
+        isPlainField: false
+      - name: phone
+        sourceColumns:
+          "mydb.public.user_profiles.contact_info": true
+        isPlainField: false
+      - name: first_permission
+        sourceColumns:
+          "mydb.public.user_profiles.permissions": true
+        isPlainField: false
+    sourceColumns:
+      "mydb.public.user_profiles.user_id": true
+      "mydb.public.user_profiles.profile": true
+      "mydb.public.user_profiles.contact_info": true
+      "mydb.public.user_profiles.permissions": true
+    predicateColumns:
+      "mydb.public.user_profiles.profile": true
+
+- description: Join masking
+  statement: |
+    SELECT
+      u.name,
+      u.email,
+      o.order_id,
+      o.total
+    FROM
+      users u
+    JOIN
+      orders o
+    ON
+      u.user_id = o.user_id
+    WHERE
+      o.status = 'completed'
+      AND u.is_verified = true
+  defaultDatabase: mydb
+  metadata: '{"name":"mydb","schemas":[{"name":"public","tables":[{"name":"users","columns":[{"name":"name","type":"varchar"},{"name":"email","type":"varchar"},{"name":"user_id","type":"integer"},{"name":"is_verified","type":"boolean"}]},{"name":"orders","columns":[{"name":"order_id","type":"integer"},{"name":"total","type":"decimal"},{"name":"user_id","type":"integer"},{"name":"status","type":"varchar"}]}]}]}'
+  querySpan:
+    type:
+        querytype: 1
+    results:
+      - name: name
+        sourceColumns:
+          "mydb.public.users.name": true
+        isPlainField: true
+      - name: email
+        sourceColumns:
+          "mydb.public.users.email": true
+        isPlainField: true
+      - name: order_id
+        sourceColumns:
+          "mydb.public.orders.order_id": true
+        isPlainField: true
+      - name: total
+        sourceColumns:
+          "mydb.public.orders.total": true
+        isPlainField: true
+    sourceColumns:
+      "mydb.public.users.name": true
+      "mydb.public.users.email": true
+      "mydb.public.users.user_id": true
+      "mydb.public.users.is_verified": true
+      "mydb.public.orders.order_id": true
+      "mydb.public.orders.total": true
+      "mydb.public.orders.user_id": true
+      "mydb.public.orders.status": true
+    predicateColumns:
+      "mydb.public.users.user_id": true
+      "mydb.public.orders.user_id": true
+      "mydb.public.orders.status": true
+      "mydb.public.users.is_verified": true
+
+- description: Array function masking
+  statement: |
+    SELECT
+      user_id,
+      name,
+      array_contains(roles, 'admin') as is_admin
+    FROM
+      users
+    WHERE
+      cardinality(roles) > 0
+      AND element_at(permissions, 'edit') = true
+  defaultDatabase: mydb
+  metadata: '{"name":"mydb","schemas":[{"name":"public","tables":[{"name":"users","columns":[{"name":"user_id","type":"integer"},{"name":"name","type":"varchar"},{"name":"roles","type":"array(varchar)"},{"name":"permissions","type":"map(varchar,boolean)"}]}]}]}'
+  querySpan:
+    type:
+        querytype: 1
+    results:
+      - name: user_id
+        sourceColumns:
+          "mydb.public.users.user_id": true
+        isPlainField: true
+      - name: name
+        sourceColumns:
+          "mydb.public.users.name": true
+        isPlainField: true
+      - name: is_admin
+        sourceColumns:
+          "mydb.public.users.roles": true
+        isPlainField: false
+    sourceColumns:
+      "mydb.public.users.user_id": true
+      "mydb.public.users.name": true
+      "mydb.public.users.roles": true
+      "mydb.public.users.permissions": true
+    predicateColumns:
+      "mydb.public.users.roles": true
+      "mydb.public.users.permissions": true

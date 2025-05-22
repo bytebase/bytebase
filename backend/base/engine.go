@@ -98,7 +98,8 @@ func EngineSupportMasking(e storepb.Engine) bool {
 		storepb.Engine_OCEANBASE,
 		storepb.Engine_TIDB,
 		storepb.Engine_BIGQUERY,
-		storepb.Engine_SPANNER:
+		storepb.Engine_SPANNER,
+		storepb.Engine_TRINO:
 		return true
 	case
 		storepb.Engine_ENGINE_UNSPECIFIED,
@@ -119,8 +120,7 @@ func EngineSupportMasking(e storepb.Engine) bool {
 		storepb.Engine_DYNAMODB,
 		storepb.Engine_ELASTICSEARCH,
 		storepb.Engine_DATABRICKS,
-		storepb.Engine_COSMOSDB,
-		storepb.Engine_TRINO:
+		storepb.Engine_COSMOSDB:
 		return false
 	default:
 		return false
