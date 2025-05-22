@@ -278,7 +278,6 @@
       "ghost-parameters": "Tham số gh-ost",
       "configure": "Cấu hình",
       "error": {
-        "x-status-task-is-not-editable": "Tác vụ trạng thái {status} không thể chỉnh sửa",
         "nothing-changed": "Không có gì thay đổi",
         "not-applicable": {
           "task-doesnt-meet-ghost-requirement": "Nhiệm vụ không đáp ứng được yêu cầu của gh-ost",
@@ -2274,8 +2273,6 @@
           "ddl": "DDL",
           "create_database": "Tạo cơ sở dữ liệu",
           "data_export": "Xuất dữ liệu",
-          "request_query": "Yêu cầu vai trò Người truy vấn",
-          "request_export": "Yêu cầu vai trò Người xuất",
           "request-role": "Yêu cầu vai trò"
         }
       },

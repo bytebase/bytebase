@@ -131,6 +131,7 @@ func TestGetQuerySpanFromYAML(t *testing.T) {
 			"test-data/query-span/case-sensitivity.yaml",
 			"test-data/query-span/join.yaml",
 			"test-data/query-span/trino-specific.yaml",
+			"test-data/query-span/masking.yaml",
 		}
 	)
 

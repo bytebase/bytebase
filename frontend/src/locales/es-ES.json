@@ -278,7 +278,6 @@
       "ghost-parameters": "parámetros de gh-ost",
       "configure": "Configurar",
       "error": {
-        "x-status-task-is-not-editable": "La tarea {status} no es editable",
         "nothing-changed": "nada ha cambiado",
         "not-applicable": {
           "task-doesnt-meet-ghost-requirement": "La tarea no cumple con el requisito de gh-ost",
@@ -2274,8 +2273,6 @@
           "ddl": "DDL",
           "create_database": "Crear base de datos",
           "data_export": "Exportar datos",
-          "request_query": "Solicitar Rol de Consultor",
-          "request_export": "Solicitar Rol de Exportador",
           "request-role": "Rol de solicitud"
         }
       },
