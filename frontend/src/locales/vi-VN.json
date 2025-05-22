@@ -278,7 +278,6 @@
       "ghost-parameters": "Tham số gh-ost",
       "configure": "Cấu hình",
       "error": {
-        "x-status-task-is-not-editable": "Tác vụ trạng thái {status} không thể chỉnh sửa",
         "nothing-changed": "Không có gì thay đổi",
         "not-applicable": {
           "task-doesnt-meet-ghost-requirement": "Nhiệm vụ không đáp ứng được yêu cầu của gh-ost",
