@@ -6,6 +6,7 @@
     :virtual-scroll="true"
     :multiple="multiple"
     :value="selected"
+    :disabled="disabled"
     :options="options"
     :fallback-option="fallbackOption"
     :filter="filterResource"

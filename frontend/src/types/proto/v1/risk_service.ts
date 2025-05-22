@@ -103,6 +103,7 @@ export interface Risk {
    * sql_statement: the SQL statement, support "contains()", "matches()", "startsWith()", "endsWith()" operations.
    * export_rows: export data count, support "==", "!=", "<", "<=", ">", ">=" operations.
    * expiration_days: the role expiration days for the request, support "==", "!=", "<", "<=", ">", ">=" operations.
+   * role: the request role full name, support "==", "!=", "in [xx]", "!(in [xx])", "contains()", "matches()", "startsWith()", "endsWith()" operations.
    *
    * When the risk source is DDL/DML, support following variables:
    * affected_rows
@@ -149,6 +150,11 @@ export interface Risk {
    * table_name
    * expiration_days
    * export_rows
+   *
+   * When the risk source is REQUEST_ROLE, support following variables:
+   * project_id
+   * expiration_days
+   * role
    */
   condition: Expr | undefined;
 }
@@ -158,9 +164,8 @@ export enum Risk_Source {
   DDL = "DDL",
   DML = "DML",
   CREATE_DATABASE = "CREATE_DATABASE",
-  REQUEST_QUERY = "REQUEST_QUERY",
-  REQUEST_EXPORT = "REQUEST_EXPORT",
   DATA_EXPORT = "DATA_EXPORT",
+  REQUEST_ROLE = "REQUEST_ROLE",
   UNRECOGNIZED = "UNRECOGNIZED",
 }
 
@@ -178,15 +183,12 @@ export function risk_SourceFromJSON(object: any): Risk_Source {
     case 3:
     case "CREATE_DATABASE":
       return Risk_Source.CREATE_DATABASE;
-    case 4:
-    case "REQUEST_QUERY":
-      return Risk_Source.REQUEST_QUERY;
-    case 5:
-    case "REQUEST_EXPORT":
-      return Risk_Source.REQUEST_EXPORT;
     case 6:
     case "DATA_EXPORT":
       return Risk_Source.DATA_EXPORT;
+    case 7:
+    case "REQUEST_ROLE":
+      return Risk_Source.REQUEST_ROLE;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -204,12 +206,10 @@ export function risk_SourceToJSON(object: Risk_Source): string {
       return "DML";
     case Risk_Source.CREATE_DATABASE:
       return "CREATE_DATABASE";
-    case Risk_Source.REQUEST_QUERY:
-      return "REQUEST_QUERY";
-    case Risk_Source.REQUEST_EXPORT:
-      return "REQUEST_EXPORT";
     case Risk_Source.DATA_EXPORT:
       return "DATA_EXPORT";
+    case Risk_Source.REQUEST_ROLE:
+      return "REQUEST_ROLE";
     case Risk_Source.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
@@ -226,12 +226,10 @@ export function risk_SourceToNumber(object: Risk_Source): number {
       return 2;
     case Risk_Source.CREATE_DATABASE:
       return 3;
-    case Risk_Source.REQUEST_QUERY:
-      return 4;
-    case Risk_Source.REQUEST_EXPORT:
-      return 5;
     case Risk_Source.DATA_EXPORT:
       return 6;
+    case Risk_Source.REQUEST_ROLE:
+      return 7;
     case Risk_Source.UNRECOGNIZED:
     default:
       return -1;

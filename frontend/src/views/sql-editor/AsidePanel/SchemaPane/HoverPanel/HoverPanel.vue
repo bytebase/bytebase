@@ -84,11 +84,6 @@ const show = computed(() => {
     state.value !== undefined &&
     position.value.x !== 0 &&
     position.value.y !== 0;
-  // TODO(ed):
-  // if (show && state.value?.view) {
-  //   const comment = state.value.view.comment;
-  //   if (!comment) return false;
-  // }
   return show;
 });
 

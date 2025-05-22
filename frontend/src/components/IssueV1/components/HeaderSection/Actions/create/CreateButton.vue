@@ -27,15 +27,23 @@
   />
 
   <SQLCheckPanel
-    v-if="showSQLCheckResultPanel && databaseForTask(issue, selectedTask)"
+    v-if="
+      showSQLCheckResultPanel &&
+      databaseForTask(issue.projectEntity, selectedTask)
+    "
     :project="issue.project"
-    :database="databaseForTask(issue, selectedTask)"
-    :advices="checkResultMap[databaseForTask(issue, selectedTask).name].advices"
+    :database="databaseForTask(issue.projectEntity, selectedTask)"
+    :advices="
+      checkResultMap[databaseForTask(issue.projectEntity, selectedTask).name]
+        .advices
+    "
     :affected-rows="
-      checkResultMap[databaseForTask(issue, selectedTask).name].affectedRows
+      checkResultMap[databaseForTask(issue.projectEntity, selectedTask).name]
+        .affectedRows
     "
     :risk-level="
-      checkResultMap[databaseForTask(issue, selectedTask).name].riskLevel
+      checkResultMap[databaseForTask(issue.projectEntity, selectedTask).name]
+        .riskLevel
     "
     :confirm="sqlCheckConfirmDialog"
     :override-title="$t('issue.sql-check.sql-review-violations')"
@@ -44,7 +52,6 @@
 
 <script setup lang="ts">
 import { NTooltip, NButton } from "naive-ui";
-import { v4 as uuidv4 } from "uuid";
 import { zindexable as vZindexable } from "vdirs";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
@@ -53,13 +60,13 @@ import { getValidIssueLabels } from "@/components/IssueV1/components/IssueLabelS
 import { ErrorList } from "@/components/IssueV1/components/common";
 import {
   databaseEngineForSpec,
-  databaseForTask,
   getLocalSheetByName,
-  isValidSpec,
   isValidStage,
   useIssueContext,
 } from "@/components/IssueV1/logic";
 import formatSQL from "@/components/MonacoEditor/sqlFormatter";
+import { isValidSpec } from "@/components/Plan";
+import { databaseForTask } from "@/components/Rollout/RolloutDetail";
 import { SQLCheckPanel } from "@/components/SQLCheck";
 import { STATEMENT_SKIP_CHECK_THRESHOLD } from "@/components/SQLCheck/common";
 import {
@@ -308,7 +315,7 @@ const runSQLCheckForIssue = async () => {
     }
     if (!sheet) continue;
     const statement = getSheetStatement(sheet);
-    const database = databaseForTask(issue.value, task);
+    const database = databaseForTask(issue.value.projectEntity, task);
     if (!statement) {
       continue;
     }
@@ -328,8 +335,8 @@ const runSQLCheckForIssue = async () => {
       release: {
         files: [
           {
-            // Use a random uuid to avoid duplication.
-            version: uuidv4(),
+            // Use "0" for dummy version.
+            version: "0",
             type: ReleaseFileType.VERSIONED,
             statement: new TextEncoder().encode(statement),
             changeType: getTaskChangeType(issue.value, flattenTasks[0]),

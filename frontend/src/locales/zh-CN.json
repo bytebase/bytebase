@@ -183,7 +183,7 @@
     "expiration": "过期时间",
     "configure": "配置",
     "groups": "分组",
-    "database-groups": "数据库分组",
+    "database-group": "数据库分组",
     "members": "成员",
     "warehouse": "仓库",
     "schedule": "计划",
@@ -224,7 +224,9 @@
     "catalog": "Catalog",
     "summary": "总结",
     "errors": "错误",
-    "removed": "已移除"
+    "removed": "已移除",
+    "options": "配置项",
+    "submit": "提交"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -276,7 +278,6 @@
       "ghost-parameters": "gh-ost 参数",
       "configure": "配置",
       "error": {
-        "x-status-task-is-not-editable": "{status} 的任务不可编辑",
         "nothing-changed": "无任何改变",
         "not-applicable": {
           "task-doesnt-meet-ghost-requirement": "任务不符合 gh-ost 的要求",
@@ -984,8 +985,8 @@
       "change-data": "变更数据",
       "export-data": "导出数据",
       "create-database": "创建数据库",
-      "request-querier-role": "申请查询者角色",
-      "request-exporter-role": "申请导出者角色"
+      "request-role": "请求角色",
+      "request-specific-role": "请求“{role}”角色"
     },
     "schema-drift-detected": {
       "self": "检测到 Schema 偏差",
@@ -1262,9 +1263,9 @@
       "title": "访问控制",
       "disable-copy-data-from-sql-editor": "限制 SQL 编辑器中的数据复制 (管理员/DBA 可以复制)",
       "restrict-admin-connection": {
-        "self": "禁止查询管理员数据源",
-        "disallow": "禁止查询管理员数据源",
-        "fallback": "无只读数据源时，允许查询管理员数据源"
+        "self": "限制查询管理数据源",
+        "disallow": "不允许从管理数据源查询数据",
+        "fallback": "如果没有可用的只读连接，则允许查询管理数据源"
       }
     },
     "statement-execution": {
@@ -1735,6 +1736,10 @@
     "to-enable-admin-mode": "来开启管理员模式",
     "notify-empty-statement": "请在编辑器中输入 SQL 语句",
     "can-not-execute-query": "加载数据时无法执行查询",
+    "invalid-database": "数据库 {database} 无效",
+    "request-cancelled": "请求已取消",
+    "request-aborted": "用户中止了请求",
+    "no-data-source": "没有可查询的数据源。请检查环境或项目的数据源查询策略。",
     "rows": "条记录",
     "vertical-display": "竖向展示",
     "no-history-found": "暂无历史记录",
@@ -1799,9 +1804,12 @@
     },
     "batch-query": {
       "batch": "批量",
-      "description": "批量查询 {project} 下的 {count} 个数据库。",
+      "select-database-group": "您可以{select-database-group}进行批量查询",
+      "description": "批量查询 {project} 下的 {database} 个数据库和 {group} 个数据库组。",
       "show-or-hide-empty-query-results": "显示/隐藏空查询结果"
     },
+    "execute-query": "执行查询",
+    "pending-query": "待处理查询",
     "executing-query": "执行查询",
     "request-query": "请求查询",
     "copy-success": "复制成功",
@@ -2265,8 +2273,7 @@
           "ddl": "DDL",
           "create_database": "创建数据库",
           "data_export": "导出数据",
-          "request_query": "申请查询权限",
-          "request_export": "申请导出权限"
+          "request-role": "请求角色"
         }
       },
       "template": {
@@ -2451,7 +2458,7 @@
     "condition": {
       "self": "条件"
     },
-    "select": "选择数据库组",
+    "select": "选择数据库分组",
     "no-matched-databases": "没有匹配的数据库"
   },
   "export-center": {

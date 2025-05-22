@@ -2,6 +2,8 @@ import { cloneDeep, groupBy, orderBy } from "lodash-es";
 import { v4 as uuidv4 } from "uuid";
 import { reactive } from "vue";
 import { useRoute } from "vue-router";
+import { extractInitialSQLFromQuery } from "@/components/Plan";
+import { getArchiveDatabase } from "@/components/Plan/components/Sidebar/PreBackupSection/utils";
 import { rolloutServiceClient } from "@/grpcweb";
 import {
   useChangelistStore,
@@ -10,7 +12,6 @@ import {
   useEnvironmentV1Store,
   useProjectV1Store,
   useSheetV1Store,
-  useStorageStore,
   batchGetOrFetchDatabases,
 } from "@/store";
 import {
@@ -43,7 +44,6 @@ import {
   setSheetStatement,
   sheetNameOfTaskV1,
 } from "@/utils";
-import { getArchiveDatabase } from "../../components/Sidebar/PreBackupSection/common";
 import { nextUID } from "../base";
 import { databaseEngineForSpec, sheetNameForSpec } from "../plan";
 import { getLocalSheetByName } from "../sheet";
@@ -401,32 +401,6 @@ const maybeSetInitialSQLForSpec = (
   }
 };
 
-const extractInitialSQLFromQuery = async (
-  query: Record<string, string>
-): Promise<InitialSQL> => {
-  const storageStore = useStorageStore();
-  const sql = query.sql;
-  if (sql && typeof sql === "string") {
-    return {
-      sql,
-    };
-  }
-  const sqlStorageKey = query.sqlStorageKey;
-  if (sqlStorageKey && typeof sqlStorageKey === "string") {
-    const sql = (await storageStore.get(sqlStorageKey)) || "";
-    return {
-      sql,
-    };
-  }
-  const sqlMapStorageKey = query.sqlMapStorageKey;
-  if (sqlMapStorageKey && typeof sqlMapStorageKey === "string") {
-    const sqlMap =
-      (await storageStore.get<Record<string, string>>(sqlMapStorageKey)) || {};
-    return { sqlMap };
-  }
-  return {};
-};
-
 const hasInitialSQL = (initialSQL?: InitialSQL) => {
   if (!initialSQL) {
     return false;
@@ -462,31 +436,6 @@ export const isValidStage = (stage: Stage): boolean => {
         if (getSheetStatement(sheet).length === 0) {
           return false;
         }
-      }
-    }
-  }
-  return true;
-};
-
-export const isValidSpec = (spec: Plan_Spec): boolean => {
-  if (spec.changeDatabaseConfig || spec.exportDataConfig) {
-    const sheetName = sheetNameForSpec(spec);
-    if (!sheetName) {
-      return false;
-    }
-    const uid = extractSheetUID(sheetName);
-    if (uid.startsWith("-")) {
-      const sheet = getLocalSheetByName(sheetName);
-      if (getSheetStatement(sheet).length === 0) {
-        return false;
-      }
-    } else {
-      const sheet = useSheetV1Store().getSheetByName(sheetName);
-      if (!sheet) {
-        return false;
-      }
-      if (getSheetStatement(sheet).length === 0) {
-        return false;
       }
     }
   }

@@ -50,10 +50,10 @@
 <script lang="ts" setup>
 import { asyncComputed } from "@vueuse/core";
 import { NButton, NPopover } from "naive-ui";
-import { v4 as uuidv4 } from "uuid";
 import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBSpin } from "@/bbkit";
+import { databaseForTask } from "@/components/Rollout/RolloutDetail";
 import { SQLCheckPanel } from "@/components/SQLCheck";
 import { STATEMENT_SKIP_CHECK_THRESHOLD } from "@/components/SQLCheck/common";
 import ErrorList from "@/components/misc/ErrorList.vue";
@@ -65,7 +65,7 @@ import {
 import { Advice, Advice_Status } from "@/types/proto/v1/sql_service";
 import type { Defer, VueStyle } from "@/utils";
 import { defer } from "@/utils";
-import { databaseForTask, useIssueContext } from "../../logic";
+import { useIssueContext } from "../../logic";
 import { useTaskSheet } from "../StatementSection/useTaskSheet";
 import { getTaskChangeType } from "./common";
 import { useIssueSQLCheckContext } from "./context";
@@ -97,7 +97,7 @@ const advices = computed(() => {
 });
 
 const database = computed(() =>
-  databaseForTask(issue.value, selectedTask.value)
+  databaseForTask(issue.value.projectEntity, selectedTask.value)
 );
 
 const statement = computed(() => sheetStatement.value);
@@ -122,8 +122,8 @@ const runCheckInternal = async (statement: string) => {
     release: {
       files: [
         {
-          // Use a random uuid to avoid duplication.
-          version: uuidv4(),
+            // Use "0" for dummy version.
+            version: "0",
           type: ReleaseFileType.VERSIONED,
           statement: new TextEncoder().encode(statement),
           changeType: changeType.value,

@@ -693,7 +693,8 @@ type Plan struct {
 	// `plan` is a system generated ID.
 	// Format: projects/{project}/plans/{plan}
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	// The resource name of the issue associated with this plan.
+	// The issue associated with the plan.
+	// Can be empty.
 	// Format: projects/{project}/issues/{issue}
 	Issue       string       `protobuf:"bytes,3,opt,name=issue,proto3" json:"issue,omitempty"`
 	Title       string       `protobuf:"bytes,4,opt,name=title,proto3" json:"title,omitempty"`

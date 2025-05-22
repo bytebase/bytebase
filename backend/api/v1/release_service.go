@@ -17,6 +17,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/sheet"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
+	"github.com/bytebase/bytebase/backend/store/model"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
@@ -70,8 +71,9 @@ func (s *ReleaseService) CreateRelease(ctx context.Context, request *v1pb.Create
 		return nil, status.Errorf(codes.InvalidArgument, "invalid release files, err: %v", err)
 	}
 	sheetsToCreate := []*store.SheetMessage{}
-	fileToSheetMap := map[*v1pb.Release_File]*store.SheetMessage{}
+	var filesWithoutSheet []*v1pb.Release_File
 	// Prepare sheets to create for files with missing sheets.
+	// Check versions.
 	for _, file := range request.Release.Files {
 		if file.Sheet == "" {
 			if file.Statement == nil {
@@ -82,7 +84,7 @@ func (s *ReleaseService) CreateRelease(ctx context.Context, request *v1pb.Create
 				Statement: string(file.Statement),
 			}
 			sheetsToCreate = append(sheetsToCreate, sheet)
-			fileToSheetMap[file] = sheet
+			filesWithoutSheet = append(filesWithoutSheet, file)
 		}
 	}
 
@@ -98,13 +100,7 @@ func (s *ReleaseService) CreateRelease(ctx context.Context, request *v1pb.Create
 
 		// Map created sheets back to files.
 		for i, sheet := range createdSheets {
-			file := sheetsToCreate[i]
-			for f, s := range fileToSheetMap {
-				if s == file {
-					f.Sheet = common.FormatSheet(project.ResourceID, sheet.UID)
-					break
-				}
-			}
+			filesWithoutSheet[i].Sheet = common.FormatSheet(project.ResourceID, sheet.UID)
 		}
 	}
 
@@ -423,13 +419,8 @@ func validateAndSanitizeReleaseFiles(files []*v1pb.Release_File) ([]*v1pb.Releas
 	for _, f := range files {
 		f.Id = uuid.NewString()
 
-		if f.Version == "" {
-			return nil, errors.Errorf("file version cannot be empty")
-		}
 		switch f.Type {
 		case v1pb.ReleaseFileType_VERSIONED:
-		case v1pb.ReleaseFileType_TYPE_UNSPECIFIED:
-			return nil, errors.Errorf("unexpected file type %q", f.Type.String())
 		default:
 			return nil, errors.Errorf("unexpected file type %q", f.Type.String())
 		}
@@ -440,15 +431,34 @@ func validateAndSanitizeReleaseFiles(files []*v1pb.Release_File) ([]*v1pb.Releas
 		versionSet[f.Version] = struct{}{}
 	}
 
-	slices.SortFunc(files, func(a, b *v1pb.Release_File) int {
-		if a.Version < b.Version {
+	// Create files with additional parsed version data for sorting.
+	type fileWithVersion struct {
+		file    *v1pb.Release_File
+		version *model.Version
+	}
+	var filesWithVersions []fileWithVersion
+	for _, f := range files {
+		version, err := model.NewVersion(f.Version)
+		if err != nil {
+			return nil, err
+		}
+		filesWithVersions = append(filesWithVersions, fileWithVersion{
+			file:    f,
+			version: version,
+		})
+	}
+	slices.SortFunc(filesWithVersions, func(a, b fileWithVersion) int {
+		if a.version.LessThan(b.version) {
 			return -1
 		}
-		if a.Version > b.Version {
-			return 1
-		}
-		return 0
+		return 1
 	})
 
-	return files, nil
+	return slices.Collect(func(yield func(*v1pb.Release_File) bool) {
+		for _, f := range filesWithVersions {
+			if !yield(f.file) {
+				return
+			}
+		}
+	}), nil
 }

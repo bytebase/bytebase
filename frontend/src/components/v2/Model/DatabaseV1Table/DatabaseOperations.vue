@@ -1,37 +1,41 @@
 <template>
-  <div
-    v-bind="$attrs"
-    class="text-sm flex flex-col lg:flex-row items-start lg:items-center bg-blue-100 py-3 px-4 text-main gap-y-2 gap-x-4 overflow-x-auto"
-  >
-    <span class="whitespace-nowrap">{{
-      $t("database.selected-n-databases", {
-        n: databases.length,
-      })
-    }}</span>
-    <div class="flex items-center">
-      <template v-for="action in actions" :key="action.text">
-        <NTooltip :disabled="!action.disabled || !action.tooltip(action.text)">
-          <template #trigger>
-            <NButton
-              quaternary
-              size="small"
-              type="primary"
-              :disabled="action.disabled"
-              @click="action.click"
-            >
-              <template #icon>
-                <component :is="action.icon" class="h-4 w-4" />
-              </template>
-              <span class="text-sm">{{ action.text }}</span>
-            </NButton>
-          </template>
-          <span class="w-56 text-sm">
-            {{ action.tooltip(action.text.toLowerCase()) }}
-          </span>
-        </NTooltip>
-      </template>
+  <NScrollbar x-scrollable>
+    <div
+      v-bind="$attrs"
+      class="text-sm flex flex-col lg:flex-row items-start lg:items-center bg-blue-100 py-3 px-4 text-main gap-y-2 gap-x-4"
+    >
+      <span class="whitespace-nowrap">{{
+        $t("database.selected-n-databases", {
+          n: databases.length,
+        })
+      }}</span>
+      <div class="flex items-center">
+        <template v-for="action in actions" :key="action.text">
+          <NTooltip
+            :disabled="!action.disabled || !action.tooltip(action.text)"
+          >
+            <template #trigger>
+              <NButton
+                quaternary
+                size="small"
+                type="primary"
+                :disabled="action.disabled"
+                @click="action.click"
+              >
+                <template #icon>
+                  <component :is="action.icon" class="h-4 w-4" />
+                </template>
+                <span class="text-sm">{{ action.text }}</span>
+              </NButton>
+            </template>
+            <span class="w-56 text-sm">
+              {{ action.tooltip(action.text.toLowerCase()) }}
+            </span>
+          </NTooltip>
+        </template>
+      </div>
     </div>
-  </div>
+  </NScrollbar>
 
   <SchemaEditorModal
     v-if="state.showSchemaEditorModal"
@@ -109,7 +113,7 @@ import {
   ChevronsDownIcon,
   SquareStackIcon,
 } from "lucide-vue-next";
-import { NButton, NTooltip, useDialog } from "naive-ui";
+import { NButton, NTooltip, useDialog, NScrollbar } from "naive-ui";
 import type { VNode } from "vue";
 import { computed, h, reactive } from "vue";
 import { useI18n } from "vue-i18n";

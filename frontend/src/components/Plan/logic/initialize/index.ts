@@ -10,6 +10,8 @@ import { createPlanSkeleton } from "./create";
 
 export * from "./create";
 
+export * from "./util";
+
 export function useInitializePlan(
   planSlug: MaybeRef<string>,
   project: MaybeRef<string> = "-",

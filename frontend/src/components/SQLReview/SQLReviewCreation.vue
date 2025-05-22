@@ -16,7 +16,6 @@
         <SQLReviewInfo
           :name="state.name"
           :resource-id="state.resourceId"
-          :attached-resources="state.attachedResources"
           :selected-template-id="
             state.pendingApplyTemplate?.id ?? state.selectedTemplateId
           "

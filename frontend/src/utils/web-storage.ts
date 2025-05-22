@@ -231,7 +231,7 @@ export const useDynamicLocalStorage = <
   return data;
 };
 
-export function guessSerializerType<
+function guessSerializerType<
   T extends string | number | boolean | object | null,
 >(rawInit: T) {
   return rawInit == null

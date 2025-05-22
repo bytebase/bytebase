@@ -12,7 +12,6 @@ import type {
   CoreSQLEditorTab,
   SQLEditorConnection,
   SQLEditorTab,
-  SQLEditorTabQueryContext,
 } from "@/types";
 import {
   DEFAULT_SQL_EDITOR_TAB_MODE,
@@ -169,13 +168,6 @@ export const tryConnectToCoreSQLEditorTab = (
   tabStore.updateCurrentTab(tab);
 };
 
-export const emptySQLEditorTabQueryContext = (): SQLEditorTabQueryContext => ({
-  beginTimestampMS: Date.now(),
-  abortController: new AbortController(),
-  status: "IDLE",
-  results: new Map(),
-});
-
 export const getAdminDataSourceRestrictionOfDatabase = (
   database: ComposedDatabase
 ) => {
@@ -230,18 +222,24 @@ export const ensureDataSourceSelection = (
   } else {
     behavior = "ALLOW_ADMIN";
   }
+
   if (behavior === "ALLOW_ADMIN") {
-    if (current) {
-      return current;
-    }
-    return adminDataSource.id;
-  }
-  if (behavior === "FALLBACK") {
     if (current) {
       return current;
     }
     return head(readonlyDataSources)?.id ?? adminDataSource.id;
   }
+
+  if (behavior === "FALLBACK") {
+    if (
+      current &&
+      (current !== adminDataSource.id || readonlyDataSources.length === 0)
+    ) {
+      return current;
+    }
+    return head(readonlyDataSources)?.id ?? adminDataSource.id;
+  }
+
   if (behavior === "RO") {
     if (
       current &&

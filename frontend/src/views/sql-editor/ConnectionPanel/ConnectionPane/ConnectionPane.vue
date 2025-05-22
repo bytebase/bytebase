@@ -2,15 +2,30 @@
   <div class="sql-editor-tree gap-y-1 h-full flex flex-col relative">
     <div class="w-full px-4 mt-4">
       <div
-        class="textinfolabel mb-2 w-full leading-4 flex items-center gap-x-1"
+        class="textinfolabel mb-2 w-full leading-4 flex flex-col lg:flex-row items-start lg:items-center gap-x-1"
       >
-        <FeatureBadge feature="bb.feature.batch-query" />
-        {{
-          $t("sql-editor.batch-query.description", {
-            count: state.selectedDatabases.size,
-            project: project.title,
-          })
-        }}
+        <div class="flex items-center gap-x-1">
+          <FeatureBadge feature="bb.feature.batch-query" />
+          {{
+            $t("sql-editor.batch-query.description", {
+              database: state.selectedDatabases.size,
+              group:
+                tabStore.currentTab?.batchQueryContext?.databaseGroups.length ??
+                0,
+              project: project.title,
+            })
+          }}
+        </div>
+        <div class="flex items-center gap-x-1">
+          <i18n-t
+            v-if="hasDatabaseGroupFeature && tabStore.currentTab"
+            keypath="sql-editor.batch-query.select-database-group"
+          >
+            <template #select-database-group>
+              <BatchQueryDatabaseGroupSelector />
+            </template>
+          </i18n-t>
+        </div>
       </div>
       <div
         class="w-full mt-1 flex flex-row justify-start items-start flex-wrap gap-2"
@@ -18,16 +33,25 @@
         <NTag
           v-for="database in state.selectedDatabases"
           :key="database"
-          closable
+          :closable="database !== tabStore.currentTab?.connection.database"
           @close="() => handleUncheckDatabase(database)"
         >
           <RichDatabaseName
             :database="databaseStore.getDatabaseByName(database)"
           />
         </NTag>
+        <template v-if="hasDatabaseGroupFeature">
+          <DatabaseGroupTag
+            v-for="databaseGroupName in tabStore.currentTab?.batchQueryContext
+              ?.databaseGroups ?? []"
+            :key="databaseGroupName"
+            :database-group-name="databaseGroupName"
+            @uncheck="handleUncheckDatabaseGroup"
+          />
+        </template>
       </div>
     </div>
-    <NDivider class="!my-3" />
+    <NDivider v-if="tabStore.currentTab" class="!my-3" />
     <div class="flex flex-row gap-x-0.5 px-1 items-center">
       <AdvancedSearch
         v-model:params="state.params"
@@ -141,7 +165,7 @@ import MaskSpinner from "@/components/misc/MaskSpinner.vue";
 import { RichDatabaseName } from "@/components/v2";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import {
-  hasFeature,
+  featureToRef,
   batchGetOrFetchDatabases,
   useProjectV1Store,
   useDatabaseV1Store,
@@ -174,6 +198,8 @@ import {
 } from "@/utils";
 import type { SearchParams } from "@/utils";
 import { useSQLEditorContext } from "../../context";
+import BatchQueryDatabaseGroupSelector from "./BatchQueryDatabaseGroupSelector.vue";
+import DatabaseGroupTag from "./DatabaseGroupTag.vue";
 import {
   DatabaseHoverPanel,
   provideHoverStateContext,
@@ -194,9 +220,8 @@ const editorStore = useSQLEditorStore();
 const databaseStore = useDatabaseV1Store();
 const projectStore = useProjectV1Store();
 
-const hasBatchQueryFeature = computed(() =>
-  hasFeature("bb.feature.batch-query")
-);
+const hasBatchQueryFeature = featureToRef("bb.feature.batch-query");
+const hasDatabaseGroupFeature = featureToRef("bb.feature.database-grouping");
 
 const state = reactive<LocalState>({
   selectedDatabases: new Set(),
@@ -247,6 +272,8 @@ watch(
     tabStore.updateCurrentTab({
       batchQueryContext: {
         databases: selectedDatabases,
+        databaseGroups:
+          tabStore.currentTab?.batchQueryContext?.databaseGroups ?? [],
       },
     });
   }
@@ -254,6 +281,17 @@ watch(
 
 const handleUncheckDatabase = (database: string) => {
   state.selectedDatabases.delete(database);
+};
+
+const handleUncheckDatabaseGroup = (databaseGroupName: string) => {
+  tabStore.updateCurrentTab({
+    batchQueryContext: {
+      databases: tabStore.currentTab?.batchQueryContext?.databases ?? [],
+      databaseGroups: (
+        tabStore.currentTab?.batchQueryContext?.databaseGroups ?? []
+      ).filter((name) => name !== databaseGroupName),
+    },
+  });
 };
 
 const scopeOptions = useCommonSearchScopeOptions([
@@ -322,6 +360,26 @@ const connectedDatabases = computed(() =>
 const { hasMissingQueryDatabases, showMissingQueryDatabases } =
   storeToRefs(treeStore);
 
+const connect = (node: SQLEditorTreeNode) => {
+  if (!isDatabaseV1Queryable(node.meta.target as ComposedDatabase)) {
+    return;
+  }
+  setConnection(node, {
+    extra: {
+      worksheet: tabStore.currentTab?.worksheet ?? "",
+      mode: DEFAULT_SQL_EDITOR_TAB_MODE,
+    },
+    context: editorContext,
+  });
+  tabStore.updateCurrentTab({
+    batchQueryContext: {
+      databases: [],
+      databaseGroups: [],
+    },
+  });
+  showConnectionPanel.value = false;
+};
+
 // dynamic render the highlight keywords
 const renderLabel = ({ option }: { option: TreeOption }) => {
   const node = option as SQLEditorTreeNode;
@@ -342,6 +400,9 @@ const renderLabel = ({ option }: { option: TreeOption }) => {
         return;
       }
       if (checked) {
+        if (state.selectedDatabases.size === 0) {
+          return connect(node);
+        }
         if (!hasBatchQueryFeature.value) {
           state.showFeatureModal = true;
           return;
@@ -365,21 +426,7 @@ const nodeProps = ({ option }: { option: TreeOption }) => {
         // Check if clicked on the content part.
         // And ignore the fold/unfold arrow.
         if (type === "database") {
-          if (isDatabaseV1Queryable(node.meta.target as ComposedDatabase)) {
-            setConnection(node, {
-              extra: {
-                worksheet: tabStore.currentTab?.worksheet ?? "",
-                mode: DEFAULT_SQL_EDITOR_TAB_MODE,
-              },
-              context: editorContext,
-            });
-            tabStore.updateCurrentTab({
-              batchQueryContext: {
-                databases: [],
-              },
-            });
-            showConnectionPanel.value = false;
-          }
+          connect(node);
         }
       }
     },

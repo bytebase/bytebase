@@ -1,5 +1,5 @@
 <template>
-  <div class="h-full flex flex-col">
+  <div ref="containerRef" class="h-full flex flex-col">
     <div class="border-b">
       <HeaderSection />
     </div>
@@ -13,11 +13,38 @@
         <StatementSection />
         <DescriptionSection />
       </div>
+      <div
+        v-if="sidebarMode == 'DESKTOP'"
+        class="hide-scrollbar border-l"
+        :style="{
+          width: `${desktopSidebarWidth}px`,
+        }"
+      >
+        <Sidebar />
+      </div>
     </div>
   </div>
+
+  <template v-if="sidebarMode === 'MOBILE'">
+    <!-- mobile sidebar -->
+    <Drawer :show="mobileSidebarOpen" @close="mobileSidebarOpen = false">
+      <div
+        style="
+          min-width: 240px;
+          width: 80vw;
+          max-width: 320px;
+          padding: 0.5rem 0;
+        "
+      >
+        <Sidebar v-if="sidebarMode === 'MOBILE'" />
+      </div>
+    </Drawer>
+  </template>
 </template>
 
 <script setup lang="ts">
+import { ref } from "vue";
+import { Drawer } from "@/components/v2";
 import {
   HeaderSection,
   PlanCheckSection,
@@ -27,11 +54,20 @@ import {
   SpecListSection,
 } from "./components";
 import { providePlanSQLCheckContext } from "./components/SQLCheckSectionV1/context";
+import Sidebar from "./components/Sidebar";
 import { usePlanContext, usePollPlan } from "./logic";
+import { provideSidebarContext } from "./logic";
 
+const containerRef = ref<HTMLElement>();
 const { isCreating } = usePlanContext();
 
 usePollPlan();
 
 providePlanSQLCheckContext();
+
+const {
+  mode: sidebarMode,
+  desktopSidebarWidth,
+  mobileSidebarOpen,
+} = provideSidebarContext(containerRef);
 </script>

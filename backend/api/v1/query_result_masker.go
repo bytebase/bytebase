@@ -111,7 +111,7 @@ func (s *QueryResultMasker) getMaskersForQuerySpan(ctx context.Context, m *maski
 			maskers = append(maskers, masker.NewNoneMasker())
 		case 1:
 			// If there is only one source column, and comes from the expression, we fall back to the default full masker.
-			if !spanResult.IsPlainField {
+			if !spanResult.IsPlainField && base.EngineSupportQuerySpanPlainField(instance.Metadata.GetEngine()) {
 				maskers = append(maskers, masker.NewDefaultFullMasker())
 			} else {
 				maskers = append(maskers, effectiveMaskers[0])

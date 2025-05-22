@@ -16,22 +16,22 @@ const celLimit = 1024 * 1024
 
 // RiskFactors are the variables when evaluating the risk level.
 var RiskFactors = []cel.EnvOption{
-	// string factors
-	// use environment.resource_id
-	cel.Variable("environment_id", cel.StringType),
-	// use project.resource_id
-	cel.Variable("project_id", cel.StringType),
-	cel.Variable("database_name", cel.StringType),
+	cel.Variable("environment_id", cel.StringType), // use environment.resource_id
+	cel.Variable("project_id", cel.StringType),     // use project.resource_id
 	cel.Variable("db_engine", cel.StringType),
-	cel.Variable("sql_type", cel.StringType),
-	cel.Variable("sql_statement", cel.StringType),
+
+	cel.Variable("database_name", cel.StringType),
+	cel.Variable("schema_name", cel.StringType),
 	cel.Variable("table_name", cel.StringType),
 
-	// number factors
 	cel.Variable("affected_rows", cel.IntType),
+	cel.Variable("table_rows", cel.IntType),
+	cel.Variable("sql_type", cel.StringType),
+	cel.Variable("sql_statement", cel.StringType),
+
 	cel.Variable("expiration_days", cel.IntType),
 	cel.Variable("export_rows", cel.IntType),
-	cel.Variable("table_rows", cel.IntType),
+	cel.Variable("role", cel.StringType),
 }
 
 // ApprovalFactors are the variables when finding the approval template.
@@ -188,8 +188,8 @@ func validateCELExpr(expression *expr.Expr, conditionCELAttributes []cel.EnvOpti
 
 // QueryExportFactors is the factors for query and export.
 type QueryExportFactors struct {
-	DatabaseNames []string
-	ExportRows    int64
+	Databases  []string
+	ExportRows int64
 }
 
 // GetQueryExportFactors is used to get risk factors from query and export expressions.
@@ -228,12 +228,12 @@ func findField(callExpr *exprproto.Expr_Call, factors *QueryExportFactors) {
 				factors.ExportRows = callExpr.Args[1].GetConstExpr().GetInt64Value()
 			}
 			if idExpr.Name == "resource.database" && callExpr.Function == "_==_" {
-				factors.DatabaseNames = append(factors.DatabaseNames, callExpr.Args[1].GetConstExpr().GetStringValue())
+				factors.Databases = append(factors.Databases, callExpr.Args[1].GetConstExpr().GetStringValue())
 			}
 			if idExpr.Name == "resource.database" && callExpr.Function == "@in" {
 				list := callExpr.Args[1].GetListExpr()
 				for _, element := range list.Elements {
-					factors.DatabaseNames = append(factors.DatabaseNames, element.GetConstExpr().GetStringValue())
+					factors.Databases = append(factors.Databases, element.GetConstExpr().GetStringValue())
 				}
 			}
 			return

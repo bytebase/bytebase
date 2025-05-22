@@ -22,11 +22,11 @@ import { computed, watch, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import DatabaseInfo from "@/components/DatabaseInfo.vue";
-import { databaseForSpec } from "@/components/IssueV1";
 import IssueLabelSelector, {
   getValidIssueLabels,
 } from "@/components/IssueV1/components/IssueLabelSelector.vue";
 import IssueStatusIconWithTaskSummary from "@/components/IssueV1/components/IssueStatusIconWithTaskSummary.vue";
+import { databaseForSpec } from "@/components/Plan";
 import { ProjectNameCell } from "@/components/v2/Model/DatabaseV1Table/cells";
 import { emitWindowEvent } from "@/plugins";
 import { useSheetV1Store } from "@/store";
@@ -180,7 +180,7 @@ const issueRelatedDatabase = (issue: ComposedIssue) => {
   if (!spec) {
     return;
   }
-  return databaseForSpec(issue, spec);
+  return databaseForSpec(issue.projectEntity, spec);
 };
 
 const issueRelatedStatement = (issue: ComposedIssue) => {

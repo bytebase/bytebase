@@ -201,7 +201,6 @@ import { BBAttention, BBModal } from "@/bbkit";
 import { FeatureModal } from "@/components/FeatureGuard";
 import { ErrorList } from "@/components/IssueV1/components/common";
 import {
-  databaseForTask,
   useIssueContext,
   allowUserToEditStatementForTask,
   stageForTask,
@@ -214,6 +213,7 @@ import {
 } from "@/components/IssueV1/logic";
 import { MonacoEditor } from "@/components/MonacoEditor";
 import { extensionNameOfLanguage } from "@/components/MonacoEditor/utils";
+import { databaseForTask } from "@/components/Rollout/RolloutDetail";
 import DownloadSheetButton from "@/components/Sheet/DownloadSheetButton.vue";
 import SQLUploadButton from "@/components/misc/SQLUploadButton.vue";
 import { planServiceClient } from "@/grpcweb";
@@ -274,7 +274,7 @@ const state = reactive<LocalState>({
 });
 
 const database = computed(() => {
-  return databaseForTask(issue.value, selectedTask.value);
+  return databaseForTask(issue.value.projectEntity, selectedTask.value);
 });
 
 const language = useInstanceV1EditorLanguage(

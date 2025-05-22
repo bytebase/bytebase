@@ -21,10 +21,7 @@
       "
       class="flex flex-row items-center text-main"
     >
-      <NPopover
-        v-if="(currentTab.batchQueryContext?.databases.length ?? 0) > 1"
-        placement="bottom"
-      >
+      <NPopover v-if="isBatchRequest" placement="bottom">
         <template #trigger>
           <SquareStackIcon class="w-4 h-4 mr-1 text-accent" />
         </template>
@@ -61,12 +58,14 @@
 import { ChevronRightIcon, SquareStackIcon } from "lucide-vue-next";
 import { NButton, NPopover } from "naive-ui";
 import { storeToRefs } from "pinia";
+import { computed } from "vue";
 import { DatabaseIcon } from "@/components/Icon";
 import { InstanceV1EngineIcon, EnvironmentV1Name } from "@/components/v2";
 import {
   useConnectionOfCurrentSQLEditorTab,
   useSQLEditorStore,
   useSQLEditorTabStore,
+  hasFeature,
 } from "@/store";
 import { isValidDatabaseName, isValidInstanceName } from "@/types";
 import { useSQLEditorContext } from "../context";
@@ -84,6 +83,24 @@ const changeConnection = () => {
 defineProps<{
   disabled?: boolean;
 }>();
+
+const isBatchRequest = computed(() => {
+  if (!currentTab.value) {
+    return false;
+  }
+  if (!hasFeature("bb.feature.batch-query")) {
+    return false;
+  }
+  const { batchQueryContext } = currentTab.value;
+  if (!batchQueryContext) {
+    return false;
+  }
+  const { databaseGroups, databases } = batchQueryContext;
+  if (!hasFeature("bb.feature.database-grouping")) {
+    return databases.length > 1;
+  }
+  return databaseGroups.length > 0 || databases.length > 1;
+});
 </script>
 
 <style lang="postcss" scoped>

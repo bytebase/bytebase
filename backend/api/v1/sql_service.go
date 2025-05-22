@@ -1888,23 +1888,10 @@ func checkAndGetDataSourceQueriable(ctx context.Context, storeInstance *store.St
 	if instance == nil {
 		return nil, errors.Errorf("instance %q not found", database.InstanceID)
 	}
+	if dataSourceID == "" {
+		return nil, status.Errorf(codes.InvalidArgument, "data source id is required")
+	}
 	dataSource, serr := func() (*storepb.DataSource, *status.Status) {
-		// dataSourceID unspecified, we find a readonly dataSource
-		// first and fallback to admin dataSource.
-		if dataSourceID == "" {
-			for _, ds := range instance.Metadata.GetDataSources() {
-				if ds.GetType() == storepb.DataSourceType_READ_ONLY {
-					return ds, nil
-				}
-			}
-			for _, ds := range instance.Metadata.GetDataSources() {
-				if ds.GetType() == storepb.DataSourceType_ADMIN {
-					return ds, nil
-				}
-			}
-			return nil, status.Newf(codes.FailedPrecondition, "no data source found")
-		}
-
 		for _, ds := range instance.Metadata.GetDataSources() {
 			if ds.GetId() == dataSourceID {
 				return ds, nil

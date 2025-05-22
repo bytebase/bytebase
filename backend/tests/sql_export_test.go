@@ -182,6 +182,10 @@ func TestSQLExport(t *testing.T) {
 		})
 		a.NoError(err)
 
+		a.NotNil(database.InstanceResource)
+		a.Equal(1, len(database.InstanceResource.DataSources))
+		dataSource := database.InstanceResource.DataSources[0]
+
 		err = ctl.changeDatabase(ctx, ctl.project, database, sheet, v1pb.Plan_ChangeDatabaseConfig_MIGRATE)
 		a.NoError(err)
 
@@ -191,11 +195,12 @@ func TestSQLExport(t *testing.T) {
 		checkResults(a, tt.databaseName, statement, tt.queryResult, results)
 
 		request := &v1pb.ExportRequest{
-			Name:      database.Name,
-			Format:    v1pb.ExportFormat_SQL,
-			Limit:     1,
-			Statement: tt.export,
-			Password:  tt.password,
+			Name:         database.Name,
+			Format:       v1pb.ExportFormat_SQL,
+			Limit:        1,
+			Statement:    tt.export,
+			Password:     tt.password,
+			DataSourceId: dataSource.Id,
 		}
 		export, err := ctl.sqlServiceClient.Export(ctx, request)
 		a.NoError(err)

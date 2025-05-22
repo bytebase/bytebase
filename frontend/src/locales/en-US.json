@@ -183,7 +183,7 @@
     "expiration": "Expiration",
     "configure": "Configure",
     "groups": "Groups",
-    "database-groups": "Database Groups",
+    "database-group": "Database Group | Database Groups",
     "members": "Members",
     "warehouse": "Warehouse",
     "schedule": "Schedule",
@@ -224,7 +224,9 @@
     "catalog": "Catalog",
     "summary": "Summary",
     "errors": "Errors",
-    "removed": "Removed"
+    "removed": "Removed",
+    "options": "Options",
+    "submit": "Submit"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -276,7 +278,6 @@
       "ghost-parameters": "gh-ost parameters",
       "configure": "Configure",
       "error": {
-        "x-status-task-is-not-editable": "{status} task is not editable",
         "nothing-changed": "Nothing changed",
         "not-applicable": {
           "task-doesnt-meet-ghost-requirement": "Task doesn't meet gh-ost's requirement",
@@ -984,8 +985,8 @@
       "change-data": "Change data",
       "export-data": "Export data",
       "create-database": "Create database",
-      "request-querier-role": "Request querier role",
-      "request-exporter-role": "Request exporter role"
+      "request-role": "Request role",
+      "request-specific-role": "Request \"{role}\" role"
     },
     "schema-drift-detected": {
       "self": "Schema drift detected",
@@ -1262,9 +1263,9 @@
       "title": "Access Control",
       "disable-copy-data-from-sql-editor": "Restrict data copying in SQL Editor (Admins/DBAs allowed)",
       "restrict-admin-connection": {
-        "self": "Disallow querying admin data source",
+        "self": "Restrict querying admin data sources",
         "disallow": "Disallow querying data from the admin data source",
-        "fallback": "Fallback to the admin data source if no read-only connection is available"
+        "fallback": "Allow querying the admin data source if no read-only connection is available"
       }
     },
     "statement-execution": {
@@ -1735,6 +1736,10 @@
     "to-enable-admin-mode": "to enable the admin mode",
     "notify-empty-statement": "Please input your SQL statements in the editor",
     "can-not-execute-query": "Cannot execute query when loading data.",
+    "invalid-database": "Invalid database {database}",
+    "request-cancelled": "Request cancelled",
+    "request-aborted": "User aborted the request",
+    "no-data-source": "No queriable data source. Please check the data source query policy on environment or project.",
     "rows": "row | rows",
     "vertical-display": "Vertical display",
     "no-history-found": "No history found",
@@ -1799,9 +1804,12 @@
     },
     "batch-query": {
       "batch": "Batch",
-      "description": "Batch query {count} additional databases under {project}.",
+      "select-database-group": "You can {select-database-group} to batch query",
+      "description": "Batch query {database} additional databases and {group} database groups under {project}.",
       "show-or-hide-empty-query-results": "Show / hide empty query results"
     },
+    "execute-query": "Execute query",
+    "pending-query": "Pending query",
     "executing-query": "Executing query",
     "request-query": "Request query",
     "copy-success": "Copy success",
@@ -2265,8 +2273,7 @@
           "ddl": "DDL",
           "create_database": "Create Database",
           "data_export": "Export Data",
-          "request_query": "Request Querier Role",
-          "request_export": "Request Exporter Role"
+          "request-role": "Request Role"
         }
       },
       "template": {

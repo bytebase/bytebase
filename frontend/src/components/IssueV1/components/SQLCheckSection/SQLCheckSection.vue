@@ -18,11 +18,17 @@
               <span class="opacity-80"
                 >{{ $t("task.check-type.affected-rows.self") }}:
               </span>
-              <span>{{ checkResult.affectedRows }}</span>
+              <span class="font-medium">{{ checkResult.affectedRows }}</span>
             </NTag>
           </template>
           {{ $t("task.check-type.affected-rows.description") }}
         </NTooltip>
+        <NTag round v-if="shouldShowRiskLevelWarning">
+          <span class="opacity-80">{{ $t("issue.risk-level.self") }}: </span>
+          <span class="font-medium">{{
+            $t(`issue.risk-level.${checkResult.riskLevel.toLowerCase()}`)
+          }}</span>
+        </NTag>
       </div>
 
       <SQLCheckButton
@@ -38,8 +44,10 @@
 <script lang="ts" setup>
 import { NTag, NTooltip } from "naive-ui";
 import { computed } from "vue";
-import { useIssueContext, databaseForTask } from "@/components/IssueV1/logic";
+import { useIssueContext } from "@/components/IssueV1/logic";
+import { databaseForTask } from "@/components/Rollout/RolloutDetail";
 import { TaskTypeListWithStatement } from "@/types";
+import { CheckReleaseResponse_RiskLevel } from "@/types/proto/v1/release_service";
 import { Task_Type } from "@/types/proto/v1/rollout_service";
 import SQLCheckBadge from "./SQLCheckBadge.vue";
 import SQLCheckButton from "./SQLCheckButton.vue";
@@ -50,7 +58,7 @@ const { issue, selectedTask } = useIssueContext();
 const { enabled, resultMap } = useIssueSQLCheckContext();
 
 const database = computed(() => {
-  return databaseForTask(issue.value, selectedTask.value);
+  return databaseForTask(issue.value.projectEntity, selectedTask.value);
 });
 
 const show = computed(() => {
@@ -68,7 +76,18 @@ const show = computed(() => {
 });
 
 const checkResult = computed(() => {
-  const database = databaseForTask(issue.value, selectedTask.value);
+  const database = databaseForTask(
+    issue.value.projectEntity,
+    selectedTask.value
+  );
   return resultMap.value[database.name] || undefined;
+});
+
+const shouldShowRiskLevelWarning = computed(() => {
+  return [
+    CheckReleaseResponse_RiskLevel.LOW,
+    CheckReleaseResponse_RiskLevel.MODERATE,
+    CheckReleaseResponse_RiskLevel.HIGH,
+  ].includes(checkResult.value.riskLevel);
 });
 </script>

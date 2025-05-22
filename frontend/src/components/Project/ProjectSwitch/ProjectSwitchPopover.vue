@@ -6,12 +6,14 @@
     scrollable
     trigger="click"
     :show-arrow="false"
+    :display-directive="'show'"
   >
     <template #trigger>
       <NButton
         class="hidden sm:inline"
         size="small"
         @click="state.showPopover = !state.showPopover"
+        icon-placement="right"
       >
         <div class="min-w-[8rem] text-left">
           <ProjectNameCell
@@ -23,7 +25,9 @@
             {{ $t("project.select") }}
           </span>
         </div>
-        <ChevronDownIcon class="w-5 h-auto text-gray-400" />
+        <template #icon>
+          <ChevronDownIcon class="w-5 h-auto opacity-80" />
+        </template>
       </NButton>
     </template>
 

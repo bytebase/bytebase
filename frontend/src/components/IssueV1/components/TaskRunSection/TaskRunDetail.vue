@@ -27,10 +27,11 @@ import { uniqueId } from "lodash-es";
 import { RefreshCcwIcon } from "lucide-vue-next";
 import { NButton, NTabs, NTabPane } from "naive-ui";
 import { computed, reactive, ref, watch } from "vue";
+import { databaseForTask } from "@/components/Rollout/RolloutDetail";
 import { useSheetV1Store } from "@/store";
 import { Engine } from "@/types/proto/v1/common";
 import { TaskRun_Status, type TaskRun } from "@/types/proto/v1/rollout_service";
-import { databaseForTask, useIssueContext } from "../../logic";
+import { useIssueContext } from "../../logic";
 import TaskRunLogTable from "./TaskRunLogTable";
 import TaskRunSession from "./TaskRunSession";
 
@@ -68,7 +69,7 @@ const showRefreshButton = computed(
 );
 
 const database = computed(() =>
-  databaseForTask(issue.value, selectedTask.value)
+  databaseForTask(issue.value.projectEntity, selectedTask.value)
 );
 
 watch(

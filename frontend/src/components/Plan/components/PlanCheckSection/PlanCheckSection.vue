@@ -34,7 +34,7 @@ const show = computed(() => {
 });
 
 const database = computed(() =>
-  databaseForSpec(plan.value, selectedSpec.value)
+  databaseForSpec(plan.value.projectEntity, selectedSpec.value)
 );
 
 const allowRunChecks = computed(() => {

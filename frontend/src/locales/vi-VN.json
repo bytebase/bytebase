@@ -183,7 +183,7 @@
     "expiration": "Hết hạn",
     "configure": "Cấu hình",
     "groups": "Nhóm",
-    "database-groups": "Nhóm cơ sở dữ liệu",
+    "database-group": "Nhóm cơ sở dữ liệu | Nhóm cơ sở dữ liệu",
     "members": "Thành viên",
     "warehouse": "Kho",
     "schedule": "Lịch trình",
@@ -224,7 +224,9 @@
     "catalog": "Danh mục",
     "summary": "Tóm tắt",
     "errors": "Lỗi",
-    "removed": "LOẠI BỎ"
+    "removed": "LOẠI BỎ",
+    "options": "Tùy chọn",
+    "submit": "Nộp"
   },
   "error-page": {
     "go-back-home": "Về trang chủ"
@@ -276,7 +278,6 @@
       "ghost-parameters": "Tham số gh-ost",
       "configure": "Cấu hình",
       "error": {
-        "x-status-task-is-not-editable": "Tác vụ trạng thái {status} không thể chỉnh sửa",
         "nothing-changed": "Không có gì thay đổi",
         "not-applicable": {
           "task-doesnt-meet-ghost-requirement": "Nhiệm vụ không đáp ứng được yêu cầu của gh-ost",
@@ -984,8 +985,8 @@
       "change-data": "Thay đổi dữ liệu",
       "export-data": "Xuất dữ liệu",
       "create-database": "Tạo cơ sở dữ liệu",
-      "request-querier-role": "Yêu cầu vai trò người truy vấn",
-      "request-exporter-role": "Yêu cầu vai trò người xuất"
+      "request-role": "Yêu cầu vai trò",
+      "request-specific-role": "Yêu cầu vai trò \"{role}\""
     },
     "schema-drift-detected": {
       "self": "Đã phát hiện sự trôi dạt của sơ đồ",
@@ -1262,9 +1263,9 @@
       "title": "Kiểm soát truy cập",
       "disable-copy-data-from-sql-editor": "Hạn chế sao chép dữ liệu trong Trình soạn thảo SQL (Quản trị viên/DBA được phép)",
       "restrict-admin-connection": {
-        "self": "Không cho phép truy vấn nguồn dữ liệu quản trị",
+        "self": "Hạn chế truy vấn nguồn dữ liệu quản trị",
         "disallow": "Không cho phép truy vấn dữ liệu từ nguồn dữ liệu quản trị",
-        "fallback": "Quay lại kết nối quản trị nếu không có kết nối chỉ đọc"
+        "fallback": "Cho phép truy vấn nguồn dữ liệu quản trị nếu không có kết nối chỉ đọc nào khả dụng"
       }
     },
     "statement-execution": {
@@ -1735,6 +1736,10 @@
     "to-enable-admin-mode": "để bật chế độ quản trị",
     "notify-empty-statement": "Vui lòng nhập câu lệnh SQL của bạn vào trình soạn thảo",
     "can-not-execute-query": "Không thể thực hiện truy vấn khi đang tải dữ liệu.",
+    "invalid-database": "Cơ sở dữ liệu không hợp lệ {database}",
+    "request-cancelled": "Yêu cầu đã bị hủy",
+    "request-aborted": "Người dùng đã hủy yêu cầu",
+    "no-data-source": "Không có nguồn dữ liệu có thể truy vấn. Vui lòng kiểm tra chính sách truy vấn nguồn dữ liệu trên môi trường hoặc dự án.",
     "rows": "dòng | dòng",
     "vertical-display": "Hiển thị dọc",
     "no-history-found": "Không tìm thấy lịch sử",
@@ -1799,9 +1804,12 @@
     },
     "batch-query": {
       "batch": "Hàng loạt",
-      "description": "Truy vấn hàng loạt {count} cơ sở dữ liệu bổ sung trong {project}.",
+      "select-database-group": "Bạn có thể {select-database-group} để truy vấn hàng loạt",
+      "description": "Truy vấn hàng loạt {database} cơ sở dữ liệu bổ sung và {group} nhóm cơ sở dữ liệu trong {project}.",
       "show-or-hide-empty-query-results": "Hiển thị / ẩn kết quả truy vấn trống"
     },
+    "execute-query": "Thực hiện truy vấn",
+    "pending-query": "Đang chờ truy vấn",
     "executing-query": "Đang thực hiện truy vấn",
     "request-query": "Yêu cầu truy vấn",
     "copy-success": "Sao chép thành công",
@@ -2265,8 +2273,7 @@
           "ddl": "DDL",
           "create_database": "Tạo cơ sở dữ liệu",
           "data_export": "Xuất dữ liệu",
-          "request_query": "Yêu cầu vai trò Người truy vấn",
-          "request_export": "Yêu cầu vai trò Người xuất"
+          "request-role": "Yêu cầu vai trò"
         }
       },
       "template": {

@@ -137,7 +137,8 @@ export interface Plan {
    */
   name: string;
   /**
-   * The resource name of the issue associated with this plan.
+   * The issue associated with the plan.
+   * Can be empty.
    * Format: projects/{project}/issues/{issue}
    */
   issue: string;

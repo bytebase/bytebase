@@ -9260,15 +9260,24 @@ components:
                     description: |-
                         The name of the database group.
                          Format: projects/{project}/databaseGroups/{databaseGroup}
-                databasePlaceholder:
+                title:
                     type: string
-                    description: |-
-                        The short name used in actual databases specified by users.
-                         For example, the placeholder for db1_2010, db1_2021, db1_2023 will be "db1".
+                    description: The short name used in actual databases specified by users.
                 databaseExpr:
                     allOf:
                         - $ref: '#/components/schemas/Expr'
-                    description: The condition that is associated with this database group.
+                    description: |-
+                        The condition that is associated with this database group.
+                         The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+                         Support variables:
+                         resource.environment_name: the environment resource id. Support "==", "!=", "in [XX]", "!(in [xx])" operations.
+                         resource.instance_id: the instance resource id. Support "==", "!=", "in [XX]", "!(in [xx])", "contains", "matches", "startsWith", "endsWith" operations.
+                         resource.database_name: the database name. Support "==", "!=", "in [XX]", "!(in [xx])", "contains", "matches", "startsWith", "endsWith" operations.
+                         All variables should join with "&&" condition.
+
+                         For example:
+                         resource.environment_name == "test" && resource.database_name.startsWith("sample_")
                 matchedDatabases:
                     readOnly: true
                     type: array
@@ -10976,7 +10985,8 @@ components:
                 issue:
                     type: string
                     description: |-
-                        The resource name of the issue associated with this plan.
+                        The issue associated with the plan.
+                         Can be empty.
                          Format: projects/{project}/issues/{issue}
                 title:
                     type: string
@@ -12094,9 +12104,8 @@ components:
                         - DDL
                         - DML
                         - CREATE_DATABASE
-                        - REQUEST_QUERY
-                        - REQUEST_EXPORT
                         - DATA_EXPORT
+                        - REQUEST_ROLE
                     type: string
                     format: enum
                 title:
@@ -12128,6 +12137,7 @@ components:
                          sql_statement: the SQL statement, support "contains()", "matches()", "startsWith()", "endsWith()" operations.
                          export_rows: export data count, support "==", "!=", "<", "<=", ">", ">=" operations.
                          expiration_days: the role expiration days for the request, support "==", "!=", "<", "<=", ">", ">=" operations.
+                         role: the request role full name, support "==", "!=", "in [xx]", "!(in [xx])", "contains()", "matches()", "startsWith()", "endsWith()" operations.
 
                          When the risk source is DDL/DML, support following variables:
                          affected_rows
@@ -12174,6 +12184,11 @@ components:
                          table_name
                          expiration_days
                          export_rows
+
+                         When the risk source is REQUEST_ROLE, support following variables:
+                         project_id
+                         expiration_days
+                         role
         Role:
             type: object
             properties:
@@ -14041,19 +14056,7 @@ components:
                             - TYPE_ISSUE_STATUS_UPDATE
                             - TYPE_ISSUE_APPROVAL_NOTIFY
                             - TYPE_ISSUE_PIPELINE_STAGE_STATUS_UPDATE
-                            - TYPE_ISSUE_PIPELINE_TASK_STATUS_UPDATE
                             - TYPE_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE
-                            - TYPE_ISSUE_PIPELINE_TASK_STATEMENT_UPDATE
-                            - TYPE_ISSUE_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE
-                            - TYPE_MEMBER_CREATE
-                            - TYPE_MEMBER_ROLE_UPDATE
-                            - TYPE_MEMBER_ACTIVATE
-                            - TYPE_MEMBER_DEACTIVATE
-                            - TYPE_PROJECT_REPOSITORY_PUSH
-                            - TYPE_PROJECT_DATABASE_TRANSFER
-                            - TYPE_PROJECT_MEMBER_CREATE
-                            - TYPE_PROJECT_MEMBER_DELETE
-                            - TYPE_SQL_EDITOR_QUERY
                         type: string
                         format: enum
                     description: |-

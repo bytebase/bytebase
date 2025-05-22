@@ -56,8 +56,11 @@ func (l *trinoQuerySpanListener) EnterQuery(ctx *parser.QueryContext) {
 			// Process the CTE query
 			queryTree := namedQueryCtx.Query()
 			if queryTree != nil {
-				// Use dedicated subquery processor
-				l.processSubquery(queryTree)
+				// Process subquery to extract columns
+				if err := l.extractor.extractPredicateColumnFromSubquery(queryTree); err != nil {
+					l.err = err
+					return
+				}
 			}
 
 			// Add the CTE to our list
@@ -94,19 +97,35 @@ func (l *trinoQuerySpanListener) EnterTableName(ctx *parser.TableNameContext) {
 	}
 
 	// Add table source to track where columns come from
+	// Attempt to find the table in the schema first
+	tableMeta, err := l.extractor.findTableSchema(db, schema, table)
+	if err != nil {
+		// We don't set l.err here because table references might be CTEs or subqueries
+
+		// Create physical table without columns as fallback
+		physicalTable := &base.PhysicalTable{
+			Database: db,
+			Schema:   schema,
+			Name:     table,
+			Columns:  []string{}, // Empty columns
+		}
+		l.extractor.tableSourcesFrom = append(l.extractor.tableSourcesFrom, physicalTable)
+		return
+	}
+
+	// Create physical table with column names from metadata
+	var columnNames []string
+	for _, col := range tableMeta.GetColumns() {
+		columnNames = append(columnNames, col.Name)
+	}
+
 	physicalTable := &base.PhysicalTable{
 		Database: db,
 		Schema:   schema,
 		Name:     table,
+		Columns:  columnNames, // Populate with actual column names
 	}
 	l.extractor.tableSourcesFrom = append(l.extractor.tableSourcesFrom, physicalTable)
-
-	// Attempt to find the table in the schema
-	tableMeta, err := l.extractor.findTableSchema(db, schema, table)
-	if err != nil {
-		// We don't set l.err here because table references might be CTEs or subqueries
-		return
-	}
 
 	// Add each column from the table as a source column
 	for _, col := range tableMeta.GetColumns() {
@@ -126,10 +145,10 @@ func (l *trinoQuerySpanListener) EnterSelectAll(_ *parser.SelectAllContext) {
 		return
 	}
 
-	// For SELECT *, we add a generic result entry
+	// Mark that we encountered a SELECT * - we'll expand it later after all tables are processed
 	result := base.QuerySpanResult{
 		Name:           "*",
-		SourceColumns:  l.extractor.sourceColumns,
+		SourceColumns:  make(base.SourceColumnSet), // Will be populated later
 		IsPlainField:   false,
 		SelectAsterisk: true,
 	}
@@ -143,26 +162,28 @@ func (l *trinoQuerySpanListener) EnterSelectSingle(ctx *parser.SelectSingleConte
 		return
 	}
 
-	// Get column name and alias
 	var resultName string
 	var sourceColumns = make(base.SourceColumnSet)
 	isPlainField := false
 
 	if ctx.Expression() != nil {
 		expr := ctx.Expression()
-		// Check for column references
+
+		// Check for simple column references
 		columnName := l.extractColumnName(expr)
 		if columnName != "" {
 			isPlainField = true
-			// Copy the source columns for this specific column
+			// Find matching source columns
 			for col := range l.extractor.sourceColumns {
 				if col.Column == columnName {
 					sourceColumns[col] = true
 				}
 			}
+		} else {
+			// For complex expressions, extract all column references
+			l.extractAllColumnReferences(expr, sourceColumns)
 		}
 
-		// For now, just use the expression text as the result name
 		resultName = expr.GetText()
 	}
 
@@ -171,12 +192,11 @@ func (l *trinoQuerySpanListener) EnterSelectSingle(ctx *parser.SelectSingleConte
 		resultName = NormalizeTrinoIdentifier(ctx.As_column_alias().Column_alias().Identifier().GetText())
 	}
 
-	// If still no name, use a placeholder
+	// Generate name if none found
 	if resultName == "" {
 		resultName = fmt.Sprintf("_col%d", len(l.results))
 	}
 
-	// Create a result entry for this SELECT item
 	result := base.QuerySpanResult{
 		Name:          resultName,
 		SourceColumns: sourceColumns,
@@ -186,15 +206,35 @@ func (l *trinoQuerySpanListener) EnterSelectSingle(ctx *parser.SelectSingleConte
 	l.results = append(l.results, result)
 }
 
+// extractAllColumnReferences gathers all column references from a complex expression.
+// This uses ANTLR tree traversal instead of regex patterns for better accuracy.
+func (l *trinoQuerySpanListener) extractAllColumnReferences(expr parser.IExpressionContext, sourceColumns base.SourceColumnSet) {
+	if expr == nil {
+		return
+	}
+
+	// Use ANTLR tree traversal to find column references
+	if err := l.extractor.extractPredicateColumnFromExpression(expr); err != nil {
+		return // Best effort - don't fail on complex expressions
+	}
+
+	// Copy predicate columns found to result source columns
+	for col := range l.extractor.predicateColumns {
+		sourceColumns[col] = true
+	}
+}
+
 // EnterQuerySpecification processes query specifications, including WHERE clauses
 func (l *trinoQuerySpanListener) EnterQuerySpecification(ctx *parser.QuerySpecificationContext) {
 	if l.err != nil {
 		return
 	}
 
-	// Process WHERE clause if present
+	// Process WHERE clause using consistent predicate extraction
 	if ctx.GetWhere() != nil {
-		l.processPredicateExpressions(ctx.GetWhere())
+		if err := l.extractor.extractPredicateColumnFromBooleanExpression(ctx.GetWhere()); err != nil {
+			l.err = err
+		}
 	}
 }
 
@@ -204,8 +244,10 @@ func (l *trinoQuerySpanListener) EnterJoinCriteria(ctx *parser.JoinCriteriaConte
 		return
 	}
 
-	// Use the dedicated predicate join processing method
-	l.processPredicateJoin(ctx)
+	// Use consistent predicate extraction following TSQL pattern
+	if err := l.extractor.processJoinPredicate(ctx); err != nil {
+		l.err = err
+	}
 }
 
 // EnterUnnest processes UNNEST expressions, a Trino-specific feature.
@@ -350,7 +392,6 @@ func (l *trinoQuerySpanListener) extractColumnName(expr parser.IExpressionContex
 		return ""
 	}
 
-	// Get the text representation of the expression
 	exprText := expr.GetText()
 	if exprText == "" {
 		return ""
@@ -359,9 +400,7 @@ func (l *trinoQuerySpanListener) extractColumnName(expr parser.IExpressionContex
 	// Handle qualified column names (e.g., table.column)
 	parts := strings.Split(exprText, ".")
 	if len(parts) > 1 {
-		// Return the last part which should be the column name
 		columnName := parts[len(parts)-1]
-
 		// Check if this matches a known column
 		for col := range l.extractor.sourceColumns {
 			if col.Column == columnName {
@@ -377,6 +416,5 @@ func (l *trinoQuerySpanListener) extractColumnName(expr parser.IExpressionContex
 		}
 	}
 
-	// Not a simple column reference
 	return ""
 }

@@ -35,7 +35,7 @@ const dbGroupOptions = computed(() => {
   return dbGroupList.value.map((dbGroup) => ({
     resource: dbGroup,
     value: dbGroup.name,
-    label: dbGroup.databaseGroupName,
+    label: dbGroup.title,
   }));
 });
 </script>

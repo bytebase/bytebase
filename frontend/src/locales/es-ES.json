@@ -183,7 +183,7 @@
     "expiration": "Expiración",
     "configure": "Configurar",
     "groups": "Grupos",
-    "database-groups": "Grupo de bases de datos",
+    "database-group": "Grupo de bases de datos | Grupos de bases de datos",
     "members": "Miembros",
     "warehouse": "Almacén",
     "schedule": "Horario",
@@ -224,7 +224,9 @@
     "catalog": "Catálogo",
     "summary": "Resumen",
     "errors": "Errores",
-    "removed": "Remoto"
+    "removed": "Remoto",
+    "options": "Opciones",
+    "submit": "Entregar"
   },
   "error-page": {
     "go-back-home": "Volver al inicio"
@@ -276,7 +278,6 @@
       "ghost-parameters": "parámetros de gh-ost",
       "configure": "Configurar",
       "error": {
-        "x-status-task-is-not-editable": "La tarea {status} no es editable",
         "nothing-changed": "nada ha cambiado",
         "not-applicable": {
           "task-doesnt-meet-ghost-requirement": "La tarea no cumple con el requisito de gh-ost",
@@ -984,8 +985,8 @@
       "change-data": "Cambiar datos",
       "export-data": "Exportar datos",
       "create-database": "Crear base de datos",
-      "request-querier-role": "Rol de consultador de solicitudes",
-      "request-exporter-role": "Solicitar función de exportación"
+      "request-role": "Rol de solicitud",
+      "request-specific-role": "Solicitar rol \"{role}\""
     },
     "schema-drift-detected": {
       "self": "Se detectó una desviación del esquema",
@@ -1262,9 +1263,9 @@
       "title": "Control de Acceso",
       "disable-copy-data-from-sql-editor": "Restringir la copia de datos en el editor SQL (permitido para administradores/DBA)",
       "restrict-admin-connection": {
-        "self": "No permitir consultar la fuente de datos de administración",
-        "disallow": "No permitir consultar datos de la fuente de datos de administración",
-        "fallback": "Volver a la conexión de administrador si no hay una conexión de solo lectura disponible"
+        "self": "Restringir la consulta de la fuente de datos de administración",
+        "disallow": "No permitir la consulta de datos desde la fuente de datos de administración",
+        "fallback": "Permitir la consulta de la fuente de datos de administración si no hay una conexión de solo lectura disponible"
       }
     },
     "statement-execution": {
@@ -1735,6 +1736,10 @@
     "to-enable-admin-mode": "para habilitar el modo administrador",
     "notify-empty-statement": "Ingrese sus declaraciones SQL en el editor",
     "can-not-execute-query": "No se puede ejecutar la consulta al cargar datos.",
+    "invalid-database": "Base de datos no válida {database}",
+    "request-cancelled": "Solicitud cancelada",
+    "request-aborted": "El usuario abortó la solicitud",
+    "no-data-source": "No se puede consultar ninguna fuente de datos. Consulte la política de consulta de fuentes de datos del entorno o proyecto.",
     "rows": "fila | filas",
     "vertical-display": "Pantalla vertical",
     "no-history-found": "No se encontró historial",
@@ -1799,9 +1804,12 @@
     },
     "batch-query": {
       "batch": "Lote",
-      "description": "Consulta por lotes {count} bases de datos adicionales en {project}.",
+      "select-database-group": "Puedes {select-database-group} realizar consultas por lotes",
+      "description": "Consulta por lotes {database} bases de datos adicionales y {group} grupos de bases de datos bajo {project}.",
       "show-or-hide-empty-query-results": "Mostrar/ocultar resultados de consulta vacíos"
     },
+    "execute-query": "Ejecutar consulta",
+    "pending-query": "Consulta pendiente",
     "executing-query": "Ejecutando consulta",
     "request-query": "Solicitar consulta",
     "copy-success": "Copiado al portapapeles",
@@ -2265,8 +2273,7 @@
           "ddl": "DDL",
           "create_database": "Crear base de datos",
           "data_export": "Exportar datos",
-          "request_query": "Solicitar Rol de Consultor",
-          "request_export": "Solicitar Rol de Exportador"
+          "request-role": "Rol de solicitud"
         }
       },
       "template": {

@@ -464,6 +464,7 @@ func beginMigration(ctx context.Context, stores *store.Store, mc *migrateContext
 			Sheet:            mc.sheetName,
 			Version:          mc.version,
 			Type:             convertTaskType(mc.task.Type),
+			GitCommit:        mc.profile.GitCommit,
 		}})
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to create changelog")

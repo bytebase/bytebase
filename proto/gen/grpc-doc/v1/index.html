@@ -17463,18 +17463,27 @@ Format: projects/{project}/databaseGroups/{databaseGroup} </p></td>
                 </tr>
               
                 <tr>
-                  <td>database_placeholder</td>
+                  <td>title</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The short name used in actual databases specified by users.
-For example, the placeholder for db1_2010, db1_2021, db1_2023 will be &#34;db1&#34;. </p></td>
+                  <td><p>The short name used in actual databases specified by users. </p></td>
                 </tr>
               
                 <tr>
                   <td>database_expr</td>
                   <td><a href="#google.type.Expr">google.type.Expr</a></td>
                   <td></td>
-                  <td><p>The condition that is associated with this database group. </p></td>
+                  <td><p>The condition that is associated with this database group.
+The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+Support variables:
+resource.environment_name: the environment resource id. Support &#34;==&#34;, &#34;!=&#34;, &#34;in [XX]&#34;, &#34;!(in [xx])&#34; operations.
+resource.instance_id: the instance resource id. Support &#34;==&#34;, &#34;!=&#34;, &#34;in [XX]&#34;, &#34;!(in [xx])&#34;, &#34;contains&#34;, &#34;matches&#34;, &#34;startsWith&#34;, &#34;endsWith&#34; operations.
+resource.database_name: the database name. Support &#34;==&#34;, &#34;!=&#34;, &#34;in [XX]&#34;, &#34;!(in [xx])&#34;, &#34;contains&#34;, &#34;matches&#34;, &#34;startsWith&#34;, &#34;endsWith&#34; operations.
+All variables should join with &#34;&amp;&amp;&#34; condition.
+
+For example:
+resource.environment_name == &#34;test&#34; &amp;&amp; resource.database_name.startsWith(&#34;sample_&#34;) </p></td>
                 </tr>
               
                 <tr>
@@ -20711,7 +20720,8 @@ Format: projects/{project}/plans/{plan} </p></td>
                   <td>issue</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The resource name of the issue associated with this plan.
+                  <td><p>The issue associated with the plan.
+Can be empty.
 Format: projects/{project}/issues/{issue} </p></td>
                 </tr>
               
@@ -23047,86 +23057,9 @@ TYPE_ISSUE_CREATE represents creating an issue.</p></td>
               </tr>
             
               <tr>
-                <td>TYPE_ISSUE_PIPELINE_TASK_STATUS_UPDATE</td>
-                <td>6</td>
-                <td><p>TYPE_ISSUE_PIPELINE_TASK_STATUS_UPDATE represents the pipeline task status change, including PENDING, PENDING_APPROVAL, RUNNING, SUCCESS, FAILURE, CANCELED for now.</p></td>
-              </tr>
-            
-              <tr>
                 <td>TYPE_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE</td>
                 <td>22</td>
                 <td><p>TYPE_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE represents the pipeline task run status change, including PENDING, RUNNING, DONE, FAILED, CANCELED.</p></td>
-              </tr>
-            
-              <tr>
-                <td>TYPE_ISSUE_PIPELINE_TASK_STATEMENT_UPDATE</td>
-                <td>8</td>
-                <td><p>TYPE_ISSUE_PIPELINE_TASK_STATEMENT_UPDATE represents the manual update of the task statement.</p></td>
-              </tr>
-            
-              <tr>
-                <td>TYPE_ISSUE_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE</td>
-                <td>9</td>
-                <td><p>TYPE_ISSUE_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE represents the manual update of the task earliest allowed time.</p></td>
-              </tr>
-            
-              <tr>
-                <td>TYPE_MEMBER_CREATE</td>
-                <td>10</td>
-                <td><p>Member related activity types.
-
-TYPE_MEMBER_CREATE represents creating a members.</p></td>
-              </tr>
-            
-              <tr>
-                <td>TYPE_MEMBER_ROLE_UPDATE</td>
-                <td>11</td>
-                <td><p>TYPE_MEMBER_ROLE_UPDATE represents updating the member role, for example, from ADMIN to MEMBER.</p></td>
-              </tr>
-            
-              <tr>
-                <td>TYPE_MEMBER_ACTIVATE</td>
-                <td>12</td>
-                <td><p>TYPE_MEMBER_ACTIVATE represents activating a deactivated member.</p></td>
-              </tr>
-            
-              <tr>
-                <td>TYPE_MEMBER_DEACTIVATE</td>
-                <td>13</td>
-                <td><p>TYPE_MEMBER_DEACTIVATE represents deactivating an active member.</p></td>
-              </tr>
-            
-              <tr>
-                <td>TYPE_PROJECT_REPOSITORY_PUSH</td>
-                <td>14</td>
-                <td><p>Project related activity types.
-
-TYPE_PROJECT_REPOSITORY_PUSH represents Bytebase receiving a push event from the project repository.</p></td>
-              </tr>
-            
-              <tr>
-                <td>TYPE_PROJECT_DATABASE_TRANSFER</td>
-                <td>15</td>
-                <td><p>TYPE_PROJECT_DATABASE_TRANFER represents transfering the database from one project to another.</p></td>
-              </tr>
-            
-              <tr>
-                <td>TYPE_PROJECT_MEMBER_CREATE</td>
-                <td>16</td>
-                <td><p>TYPE_PROJECT_MEMBER_CREATE represents adding a member to the project.</p></td>
-              </tr>
-            
-              <tr>
-                <td>TYPE_PROJECT_MEMBER_DELETE</td>
-                <td>17</td>
-                <td><p>TYPE_PROJECT_MEMBER_DELETE represents removing a member from the project.</p></td>
-              </tr>
-            
-              <tr>
-                <td>TYPE_SQL_EDITOR_QUERY</td>
-                <td>19</td>
-                <td><p>SQL Editor related activity types.
-TYPE_SQL_EDITOR_QUERY represents executing query in SQL Editor.</p></td>
               </tr>
             
           </tbody>
@@ -26687,6 +26620,7 @@ table_name: the table name, support &#34;==&#34;, &#34;!=&#34;, &#34;in [xx]&#34
 sql_statement: the SQL statement, support &#34;contains()&#34;, &#34;matches()&#34;, &#34;startsWith()&#34;, &#34;endsWith()&#34; operations.
 export_rows: export data count, support &#34;==&#34;, &#34;!=&#34;, &#34;&lt;&#34;, &#34;&lt;=&#34;, &#34;&gt;&#34;, &#34;&gt;=&#34; operations.
 expiration_days: the role expiration days for the request, support &#34;==&#34;, &#34;!=&#34;, &#34;&lt;&#34;, &#34;&lt;=&#34;, &#34;&gt;&#34;, &#34;&gt;=&#34; operations.
+role: the request role full name, support &#34;==&#34;, &#34;!=&#34;, &#34;in [xx]&#34;, &#34;!(in [xx])&#34;, &#34;contains()&#34;, &#34;matches()&#34;, &#34;startsWith()&#34;, &#34;endsWith()&#34; operations.
 
 When the risk source is DDL/DML, support following variables:
 affected_rows
@@ -26732,7 +26666,12 @@ database_name
 schema_name
 table_name
 expiration_days
-export_rows </p></td>
+export_rows
+
+When the risk source is REQUEST_ROLE, support following variables:
+project_id
+expiration_days
+role </p></td>
                 </tr>
               
             </tbody>
@@ -26811,20 +26750,14 @@ Format: risks/{risk} </p></td>
               </tr>
             
               <tr>
-                <td>REQUEST_QUERY</td>
-                <td>4</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>REQUEST_EXPORT</td>
-                <td>5</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
                 <td>DATA_EXPORT</td>
                 <td>6</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>REQUEST_ROLE</td>
+                <td>7</td>
                 <td><p></p></td>
               </tr>
             

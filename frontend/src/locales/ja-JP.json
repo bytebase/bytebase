@@ -183,7 +183,7 @@
     "expiration": "有効期限",
     "configure": "設定",
     "groups": "グループ",
-    "database-groups": "データベースのグループ化",
+    "database-group": "データベースグループ | データベースグループ",
     "members": "メンバー",
     "warehouse": "倉庫",
     "schedule": "プラン",
@@ -224,7 +224,9 @@
     "catalog": "カタログ",
     "summary": "まとめ",
     "errors": "エラー",
-    "removed": "削除されました"
+    "removed": "削除されました",
+    "options": "オプション",
+    "submit": "提出する"
   },
   "error-page": {
     "go-back-home": "ホームページに戻る"
@@ -276,7 +278,6 @@
       "ghost-parameters": "gh-ostパラメータ",
       "configure": "設定",
       "error": {
-        "x-status-task-is-not-editable": "{status} のタスクは編集できません",
         "nothing-changed": "変化なし",
         "not-applicable": {
           "task-doesnt-meet-ghost-requirement": "タスクは gh-ost の要件を満たしていません",
@@ -984,8 +985,8 @@
       "change-data": "データの変更",
       "export-data": "データをエクスポート",
       "create-database": "データベースを作成する",
-      "request-querier-role": "リクエストクエリーロール",
-      "request-exporter-role": "エクスポートロールのリクエスト"
+      "request-role": "役割をリクエストする",
+      "request-specific-role": "「{role}」ロールをリクエスト"
     },
     "schema-drift-detected": {
       "self": "スキーマドリフトが検出されました",
@@ -1262,9 +1263,9 @@
       "title": "アクセス制御",
       "disable-copy-data-from-sql-editor": "SQL エディタにおけるデータコピーの制限 (管理者/DBA はコピー可能)",
       "restrict-admin-connection": {
-        "self": "管理データソースへのクエリを禁止します",
-        "disallow": "管理データソースからのデータクエリを禁止します",
-        "fallback": "読み取り専用接続が利用できない場合、管理者接続にフォールバックする"
+        "self": "管理データソースのクエリを制限する",
+        "disallow": "管理データソースからのデータのクエリを禁止する",
+        "fallback": "読み取り専用接続が利用できない場合は、管理データソースへのクエリを許可する"
       }
     },
     "statement-execution": {
@@ -1735,6 +1736,10 @@
     "to-enable-admin-mode": "管理者モードを有効にするには",
     "notify-empty-statement": "エディターに SQL ステートメントを入力してください",
     "can-not-execute-query": "データのロード中にクエリを実行できません",
+    "invalid-database": "無効なデータベース {database}",
+    "request-cancelled": "リクエストはキャンセルされました",
+    "request-aborted": "ユーザーがリクエストを中止しました",
+    "no-data-source": "クエリ可能なデータソースがありません。環境またはプロジェクトのデータソースクエリポリシーを確認してください。",
     "rows": "記録",
     "vertical-display": "縦型表示",
     "no-history-found": "まだ履歴がありません",
@@ -1799,9 +1804,12 @@
     },
     "batch-query": {
       "batch": "バッチ",
-      "description": "{project} の下にある {count} データベースをバッチクエリします。",
+      "select-database-group": "バッチクエリを実行するには{select-database-group}を使用します",
+      "description": "{project} の下の {database} 個の追加データベースと {group} 個のデータベース グループに対してバッチ クエリを実行します。",
       "show-or-hide-empty-query-results": "空のクエリ結果の表示/非表示"
     },
+    "execute-query": "クエリを実行する",
+    "pending-query": "保留中のクエリ",
     "executing-query": "クエリの実行",
     "request-query": "リクエストクエリ",
     "copy-success": "正常にコピーされました",
@@ -2265,8 +2273,7 @@
           "ddl": "DDL",
           "create_database": "データベースの作成",
           "data_export": "データのエクスポート",
-          "request_query": "クエリ権限を申請する",
-          "request_export": "出力権限を申請する"
+          "request-role": "ロールのリクエスト"
         }
       },
       "template": {
