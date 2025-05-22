@@ -468,5 +468,6 @@ export const supportGetStringSchema = (engine: Engine) => {
     Engine.CLICKHOUSE,
     Engine.REDSHIFT,
     Engine.ORACLE,
+    Engine.MSSQL,
   ].includes(engine);
 };
