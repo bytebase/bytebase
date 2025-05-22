@@ -14,30 +14,35 @@ import (
 )
 
 // querySpanExtractor extracts query spans from Trino statements.
+// This follows the TSQL pattern for consistency.
 type querySpanExtractor struct {
-	ctx                 context.Context
-	gCtx                base.GetQuerySpanContext
+	ctx context.Context
+
 	defaultDatabase     string
 	defaultSchema       string
-	statement           string
 	ignoreCaseSensitive bool
 
-	// Metadata cache
-	metaCache map[string]*model.DatabaseMetadata
+	gCtx base.GetQuerySpanContext
 
-	// Parse results
+	// CTEs for handling WITH clauses - following TSQL pattern
+	ctes []*base.PseudoTable
+
+	// Table sources for resolving columns - following TSQL pattern
+	tableSourcesFrom []base.TableSource
+
+	// Parse results - following TSQL pattern
 	sourceColumns    base.SourceColumnSet
 	predicateColumns base.SourceColumnSet
 
-	// Table sources for resolving columns
-	tableSourcesFrom  []base.TableSource
+	// Outer table sources for correlated subqueries
 	outerTableSources []base.TableSource
 
-	// CTEs for handling WITH clauses
-	ctes []*base.PseudoTable
+	// Metadata cache
+	metaCache map[string]*model.DatabaseMetadata
 }
 
 // newQuerySpanExtractor creates a new Trino query span extractor.
+// This follows the TSQL constructor pattern.
 func newQuerySpanExtractor(defaultDatabase, defaultSchema string, gCtx base.GetQuerySpanContext, ignoreCaseSensitive bool) *querySpanExtractor {
 	return &querySpanExtractor{
 		defaultDatabase:     defaultDatabase,
@@ -47,16 +52,13 @@ func newQuerySpanExtractor(defaultDatabase, defaultSchema string, gCtx base.GetQ
 		metaCache:           make(map[string]*model.DatabaseMetadata),
 		sourceColumns:       make(base.SourceColumnSet),
 		predicateColumns:    make(base.SourceColumnSet),
-		tableSourcesFrom:    []base.TableSource{},
-		outerTableSources:   []base.TableSource{},
-		ctes:                []*base.PseudoTable{},
 	}
 }
 
 // getQuerySpan extracts the query span for a Trino statement.
+// This method follows the TSQL pattern for consistency.
 func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string) (*base.QuerySpan, error) {
 	q.ctx = ctx
-	q.statement = statement
 	q.sourceColumns = make(base.SourceColumnSet)
 	q.predicateColumns = make(base.SourceColumnSet)
 	q.tableSourcesFrom = []base.TableSource{}
@@ -72,16 +74,11 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string)
 		return nil, errors.New("failed to parse Trino statement, no parse tree found")
 	}
 
-	// Determine query type
+	// Get accessed tables for basic query type determination
+	accessTables := q.extractAccessedTables(result.Tree)
 	queryType, isExplainAnalyze := getQueryType(result.Tree, false)
 
-	// Collect accessed table resources
-	accessTables := make(base.SourceColumnSet)
-	for resource := range q.extractAccessedTables(result.Tree) {
-		accessTables[resource] = true
-	}
-
-	// For non-SELECT queries, return a basic span
+	// For non-SELECT queries, return basic span following TSQL pattern
 	if queryType != base.Select && queryType != base.Explain && queryType != base.SelectInfoSchema {
 		return &base.QuerySpan{
 			Type:          queryType,
@@ -90,7 +87,7 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string)
 		}, nil
 	}
 
-	// Special handling for EXPLAIN/ANALYZE
+	// Special handling for EXPLAIN following TSQL pattern
 	if isExplainAnalyze || queryType == base.Explain {
 		return &base.QuerySpan{
 			Type:          queryType,
@@ -116,20 +113,34 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string)
 		return nil, listener.err
 	}
 
-	// Process all table references to ensure we have full column information
+	// Expand table references to columns following TSQL pattern
 	fullSourceColumns := q.expandTableReferencesToColumns(accessTables)
 
-	// Create the final query span with properly processed predicate columns
-	// For data access control, we need to ensure that all predicates are fully qualified
+	// Process predicate columns following TSQL pattern
+	fullPredicateColumns := q.expandPredicateColumns(fullSourceColumns)
+
+	// Expand SELECT * results following TSQL pattern
+	expandedResults := q.expandSelectAsteriskResults(listener.results, fullSourceColumns)
+
+	return &base.QuerySpan{
+		Type:             queryType,
+		SourceColumns:    fullSourceColumns,
+		PredicateColumns: fullPredicateColumns,
+		Results:          expandedResults,
+	}, nil
+}
+
+// expandPredicateColumns expands predicate columns to their fully qualified forms.
+// This follows the TSQL pattern for consistent predicate handling.
+func (q *querySpanExtractor) expandPredicateColumns(fullSourceColumns base.SourceColumnSet) base.SourceColumnSet {
 	fullPredicateColumns := make(base.SourceColumnSet)
 
-	// Add every predicate column from our tracked set
 	for col := range q.predicateColumns {
-		// For each predicate column, find the fully qualified version in source columns
 		if col.Column != "" {
+			// Find all fully qualified versions in source columns
 			for sourceCol := range fullSourceColumns {
-				// Match column name and ensure table matches if specified
 				if sourceCol.Column == col.Column {
+					// Match table if specified, otherwise accept any table
 					if col.Table == "" || col.Table == sourceCol.Table {
 						fullPredicateColumns[sourceCol] = true
 					}
@@ -138,13 +149,42 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string)
 		}
 	}
 
-	// Return the complete query span
-	return &base.QuerySpan{
-		Type:             queryType,
-		SourceColumns:    fullSourceColumns,
-		PredicateColumns: fullPredicateColumns,
-		Results:          listener.results,
-	}, nil
+	return fullPredicateColumns
+}
+
+// expandSelectAsteriskResults expands SELECT * results into individual column results
+// This is similar to how TSQL handles SELECT * queries
+func (q *querySpanExtractor) expandSelectAsteriskResults(results []base.QuerySpanResult, fullSourceColumns base.SourceColumnSet) []base.QuerySpanResult {
+	var expandedResults []base.QuerySpanResult
+
+	for _, result := range results {
+		if result.SelectAsterisk && result.Name == "*" {
+			// Use table sources to get columns in the correct order (same as TSQL approach)
+			for _, tableSource := range q.tableSourcesFrom {
+				tableColumns := tableSource.GetQuerySpanResult()
+
+				for _, columnResult := range tableColumns {
+					// Only include columns that are in our source columns set
+					columnIncluded := false
+					for sourceCol := range columnResult.SourceColumns {
+						if _, exists := fullSourceColumns[sourceCol]; exists {
+							columnIncluded = true
+							break
+						}
+					}
+
+					if columnIncluded {
+						expandedResults = append(expandedResults, columnResult)
+					}
+				}
+			}
+		} else {
+			// Keep non-asterisk results as-is
+			expandedResults = append(expandedResults, result)
+		}
+	}
+
+	return expandedResults
 }
 
 // expandTableReferencesToColumns expands table references to individual columns
@@ -237,11 +277,6 @@ func (q *querySpanExtractor) getDatabaseMetadata(database string) (*model.Databa
 // addSourceColumn adds a column to the tracked source columns.
 func (q *querySpanExtractor) addSourceColumn(col base.ColumnResource) {
 	q.sourceColumns[col] = true
-}
-
-// addPredicateColumn adds a column to the tracked predicate columns.
-func (q *querySpanExtractor) addPredicateColumn(col base.ColumnResource) {
-	q.predicateColumns[col] = true
 }
 
 // findTableSchema locates a table or view and returns its metadata.
