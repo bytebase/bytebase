@@ -278,7 +278,6 @@
       "ghost-parameters": "gh-ost 参数",
       "configure": "配置",
       "error": {
-        "x-status-task-is-not-editable": "{status} 的任务不可编辑",
         "nothing-changed": "无任何改变",
         "not-applicable": {
           "task-doesnt-meet-ghost-requirement": "任务不符合 gh-ost 的要求",
