@@ -261,7 +261,7 @@ func (s *PlanService) CreatePlan(ctx context.Context, request *v1pb.CreatePlanRe
 	}
 	planMessage.Config.Deployment = deployment
 
-	if _, err := GetPipelineCreate(ctx, s.store, s.sheetManager, s.licenseService, s.dbFactory, planMessage.Name, planMessage.Config.GetSteps(), deployment, project); err != nil {
+	if _, err := GetPipelineCreate(ctx, s.store, s.sheetManager, s.dbFactory, planMessage.Name, planMessage.Config.GetSteps(), deployment, project); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to get pipeline from the plan, please check you request, error: %v", err)
 	}
 	plan, err := s.store.CreatePlan(ctx, planMessage, principalID)
@@ -362,7 +362,6 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 			if _, err := GetPipelineCreate(ctx,
 				s.store,
 				s.sheetManager,
-				s.licenseService,
 				s.dbFactory,
 				oldPlan.Name,
 				convertedRequestSteps,

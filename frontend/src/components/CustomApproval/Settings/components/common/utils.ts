@@ -122,7 +122,7 @@ export const RiskSourceFactorMap: Map<Risk_Source, string[]> = new Map([
     Risk_Source.REQUEST_ROLE,
     [
       ...commonFactorList,
-      ...schemaObjectNameFactorList,
+      "database_name",
       "expiration_days",
       "export_rows",
       "role",
