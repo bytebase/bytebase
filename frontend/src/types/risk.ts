@@ -25,16 +25,12 @@ export const useSupportedSourceList = () => {
         Risk_Source.DML,
         Risk_Source.CREATE_DATABASE,
         Risk_Source.DATA_EXPORT,
-        Risk_Source.REQUEST_QUERY,
-        Risk_Source.REQUEST_EXPORT,
         Risk_Source.REQUEST_ROLE,
       ];
     }
 
     return [
       Risk_Source.DATA_EXPORT,
-      Risk_Source.REQUEST_QUERY,
-      Risk_Source.REQUEST_EXPORT,
       Risk_Source.REQUEST_ROLE,
     ];
   });

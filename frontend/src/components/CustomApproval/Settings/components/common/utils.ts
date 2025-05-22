@@ -40,10 +40,6 @@ export const sourceText = (source: Risk_Source) => {
       return t("custom-approval.risk-rule.risk.namespace.create_database");
     case Risk_Source.DATA_EXPORT:
       return t("custom-approval.risk-rule.risk.namespace.data_export");
-    case Risk_Source.REQUEST_QUERY:
-      return t("custom-approval.risk-rule.risk.namespace.request_query");
-    case Risk_Source.REQUEST_EXPORT:
-      return t("custom-approval.risk-rule.risk.namespace.request_export");
     case Risk_Source.REQUEST_ROLE:
       return t("custom-approval.risk-rule.risk.namespace.request-role");
     default:
@@ -147,21 +143,7 @@ export const RiskSourceFactorMap: Map<Risk_Source, string[]> = new Map([
     ),
   ],
   [
-    Risk_Source.REQUEST_QUERY,
-    uniq(
-      without(
-        [...StringFactorList, ...NumberFactorList],
-        "level",
-        "source",
-        "affected_rows",
-        "table_rows",
-        "sql_type",
-        "export_rows"
-      )
-    ),
-  ],
-  [
-    Risk_Source.REQUEST_EXPORT,
+    Risk_Source.REQUEST_ROLE,
     uniq(
       without(
         [...StringFactorList, ...NumberFactorList],
@@ -173,7 +155,6 @@ export const RiskSourceFactorMap: Map<Risk_Source, string[]> = new Map([
       )
     ),
   ],
-  [Risk_Source.REQUEST_ROLE, ["project_id", "expiration_days", "role"]],
 ]);
 
 export const getFactorList = (source: Risk_Source) => {
