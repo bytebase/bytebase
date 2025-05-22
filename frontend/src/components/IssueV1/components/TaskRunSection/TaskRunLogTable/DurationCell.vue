@@ -25,6 +25,7 @@
 import { NTooltip } from "naive-ui";
 import { computed } from "vue";
 import { Duration } from "@/types/proto/google/protobuf/duration";
+import { humanizeDurationV1 } from "@/utils";
 import type { FlattenLogEntry } from "./common";
 
 const props = defineProps<{
