@@ -6,6 +6,7 @@
     scrollable
     trigger="click"
     :show-arrow="false"
+    :display-directive="'show'"
   >
     <template #trigger>
       <NButton
