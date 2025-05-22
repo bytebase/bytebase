@@ -21,13 +21,7 @@ import {
   useAuthStore,
   useSubscriptionV1Store,
 } from "./store";
-import {
-  humanizeTs,
-  humanizeDurationV1,
-  humanizeDate,
-  isDev,
-  isRelease,
-} from "./utils";
+import { humanizeTs, humanizeDate, isDev, isRelease } from "./utils";
 
 protobufjs.util.Long = Long;
 protobufjs.configure();
@@ -43,7 +37,6 @@ console.debug("release:", isRelease());
   app.config.globalProperties.console = console;
   app.config.globalProperties.dayjs = dayjs;
   app.config.globalProperties.humanizeTs = humanizeTs;
-  app.config.globalProperties.humanizeDurationV1 = humanizeDurationV1;
   app.config.globalProperties.humanizeDate = humanizeDate;
   app.config.globalProperties.isDev = isDev();
   app.config.globalProperties.isRelease = isRelease();

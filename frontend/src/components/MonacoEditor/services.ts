@@ -1,4 +1,3 @@
-import { initialize as initializeServices } from "@codingame/monaco-vscode-api";
 import "@codingame/monaco-vscode-javascript-default-extension";
 import getLanguagesServiceOverride from "@codingame/monaco-vscode-languages-service-override";
 import "@codingame/monaco-vscode-sql-default-extension";
@@ -7,7 +6,7 @@ import "@codingame/monaco-vscode-theme-defaults-default-extension";
 import getThemeServiceOverride from "@codingame/monaco-vscode-theme-service-override";
 import "vscode/localExtensionHost";
 
-export type WorkerLoader = () => Worker;
+type WorkerLoader = () => Worker;
 
 const workerLoaders: Partial<Record<string, WorkerLoader>> = {
   TextEditorWorker: () =>
@@ -40,6 +39,9 @@ const state = {
 };
 
 const initializeRunner = async () => {
+  const { initialize: initializeServices } = await import(
+    "@codingame/monaco-vscode-api"
+  );
   await initializeServices({
     ...getTextMateServiceOverride(),
     ...getThemeServiceOverride(),
