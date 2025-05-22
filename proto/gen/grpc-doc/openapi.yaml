@@ -12104,8 +12104,6 @@ components:
                         - DDL
                         - DML
                         - CREATE_DATABASE
-                        - REQUEST_QUERY
-                        - REQUEST_EXPORT
                         - DATA_EXPORT
                         - REQUEST_ROLE
                     type: string

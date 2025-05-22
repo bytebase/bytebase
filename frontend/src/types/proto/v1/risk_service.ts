@@ -164,10 +164,6 @@ export enum Risk_Source {
   DDL = "DDL",
   DML = "DML",
   CREATE_DATABASE = "CREATE_DATABASE",
-  /** REQUEST_QUERY - TODO(ed): migrate and deprecate */
-  REQUEST_QUERY = "REQUEST_QUERY",
-  /** REQUEST_EXPORT - TODO(ed): migrate and deprecate */
-  REQUEST_EXPORT = "REQUEST_EXPORT",
   DATA_EXPORT = "DATA_EXPORT",
   REQUEST_ROLE = "REQUEST_ROLE",
   UNRECOGNIZED = "UNRECOGNIZED",
@@ -187,12 +183,6 @@ export function risk_SourceFromJSON(object: any): Risk_Source {
     case 3:
     case "CREATE_DATABASE":
       return Risk_Source.CREATE_DATABASE;
-    case 4:
-    case "REQUEST_QUERY":
-      return Risk_Source.REQUEST_QUERY;
-    case 5:
-    case "REQUEST_EXPORT":
-      return Risk_Source.REQUEST_EXPORT;
     case 6:
     case "DATA_EXPORT":
       return Risk_Source.DATA_EXPORT;
@@ -216,10 +206,6 @@ export function risk_SourceToJSON(object: Risk_Source): string {
       return "DML";
     case Risk_Source.CREATE_DATABASE:
       return "CREATE_DATABASE";
-    case Risk_Source.REQUEST_QUERY:
-      return "REQUEST_QUERY";
-    case Risk_Source.REQUEST_EXPORT:
-      return "REQUEST_EXPORT";
     case Risk_Source.DATA_EXPORT:
       return "DATA_EXPORT";
     case Risk_Source.REQUEST_ROLE:
@@ -240,10 +226,6 @@ export function risk_SourceToNumber(object: Risk_Source): number {
       return 2;
     case Risk_Source.CREATE_DATABASE:
       return 3;
-    case Risk_Source.REQUEST_QUERY:
-      return 4;
-    case Risk_Source.REQUEST_EXPORT:
-      return 5;
     case Risk_Source.DATA_EXPORT:
       return 6;
     case Risk_Source.REQUEST_ROLE:

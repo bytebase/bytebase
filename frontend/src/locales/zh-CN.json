@@ -2273,8 +2273,6 @@
           "ddl": "DDL",
           "create_database": "创建数据库",
           "data_export": "导出数据",
-          "request_query": "申请查询权限",
-          "request_export": "申请导出权限",
           "request-role": "请求角色"
         }
       },
