@@ -2273,8 +2273,6 @@
           "ddl": "DDL",
           "create_database": "Tạo cơ sở dữ liệu",
           "data_export": "Xuất dữ liệu",
-          "request_query": "Yêu cầu vai trò Người truy vấn",
-          "request_export": "Yêu cầu vai trò Người xuất",
           "request-role": "Yêu cầu vai trò"
         }
       },
