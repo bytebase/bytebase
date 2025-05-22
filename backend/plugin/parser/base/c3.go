@@ -6,7 +6,7 @@ import (
 	"github.com/antlr4-go/antlr/v4"
 )
 
-const maxRecursionDepth = 30
+const maxRecursionDepth = 66
 
 // CodeCompletionCore is the core of code completion.
 // It only relies on the ANTLR runtime and does not depend on any specific language.
