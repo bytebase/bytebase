@@ -92,6 +92,7 @@ func (r *Runner) runOnce(ctx context.Context) {
 	approvalSetting, err := r.store.GetWorkspaceApprovalSetting(ctx)
 	if err != nil {
 		slog.Error("failed to get workspace approval setting", log.BBError(err))
+		return
 	}
 
 	r.stateCfg.ApprovalFinding.Range(func(key, value any) bool {

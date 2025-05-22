@@ -29,7 +29,8 @@
               for="email"
               class="block text-sm font-medium leading-5 text-control"
             >
-              {{ $t("common.email") }} <span class="text-red-600">*</span>
+              {{ $t("common.email") }}
+              <RequiredStar />
             </label>
             <div class="mt-1 rounded-md shadow-sm">
               <BBTextField
@@ -56,7 +57,7 @@
               class="block text-sm font-medium leading-5 text-control"
             >
               {{ $t("common.username") }}
-              <span class="text-red-600"> * </span>
+              <RequiredStar />
             </label>
             <div class="mt-1 rounded-md shadow-sm">
               <BBTextField
@@ -144,6 +145,7 @@ import { storeToRefs } from "pinia";
 import { computed, onMounted, reactive, ref } from "vue";
 import { BBTextField } from "@/bbkit";
 import BytebaseLogo from "@/components/BytebaseLogo.vue";
+import RequiredStar from "@/components/RequiredStar.vue";
 import UserPassword from "@/components/User/Settings/UserPassword.vue";
 import { AUTH_SIGNIN_MODULE } from "@/router/auth";
 import { useActuatorV1Store, useAuthStore } from "@/store";
@@ -181,6 +183,7 @@ const allowSignup = computed(() => {
   return (
     isValidEmail(state.email) &&
     state.password &&
+    state.name &&
     !userPasswordRef.value?.passwordHint &&
     !userPasswordRef.value?.passwordMismatch &&
     state.acceptTermsAndPolicy &&
