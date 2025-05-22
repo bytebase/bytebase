@@ -16,7 +16,6 @@ import (
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/ghost"
 	"github.com/bytebase/bytebase/backend/component/sheet"
-	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
@@ -113,13 +112,7 @@ func transformDatabaseGroupTargetToSpecs(ctx context.Context, s *store.Store, sp
 	return specs, nil
 }
 
-func getTaskCreatesFromSpec(ctx context.Context, s *store.Store, sheetManager *sheet.Manager, licenseService enterprise.LicenseService, dbFactory *dbfactory.DBFactory, spec *storepb.PlanConfig_Spec, project *store.ProjectMessage) ([]*store.TaskMessage, error) {
-	if licenseService.IsFeatureEnabled(base.FeatureTaskScheduleTime) != nil {
-		if spec.EarliestAllowedTime != nil && !spec.EarliestAllowedTime.AsTime().IsZero() {
-			return nil, errors.New(base.FeatureTaskScheduleTime.AccessErrorMessage())
-		}
-	}
-
+func getTaskCreatesFromSpec(ctx context.Context, s *store.Store, sheetManager *sheet.Manager, dbFactory *dbfactory.DBFactory, spec *storepb.PlanConfig_Spec, project *store.ProjectMessage) ([]*store.TaskMessage, error) {
 	switch config := spec.Config.(type) {
 	case *storepb.PlanConfig_Spec_CreateDatabaseConfig:
 		return getTaskCreatesFromCreateDatabaseConfig(ctx, s, sheetManager, dbFactory, spec, config.CreateDatabaseConfig, project)
