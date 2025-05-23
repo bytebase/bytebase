@@ -1,4 +1,13 @@
 <template>
+  <template v-if="result.messages.length > 0">
+    <div
+      v-for="(message, i) in result.messages"
+      :key="`message-${i}`"
+      :class="'text-control-light'"
+    >
+      <div>{{ `[${message.level}] ${message.content}` }}</div>
+    </div>
+  </template>
   <template v-if="viewMode === 'RESULT'">
     <BBAttention v-if="result.error" class="w-full mb-2" :type="'error'">
       <ErrorView :error="result.error" />
