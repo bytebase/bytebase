@@ -13,7 +13,7 @@
             SET @ret = 0;
         RETURN @ret;
     END;
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 1701

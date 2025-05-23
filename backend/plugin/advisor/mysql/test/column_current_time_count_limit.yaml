@@ -11,7 +11,7 @@
       UNIQUE KEY uk1(id, name),
       FOREIGN KEY fk1(roomId) REFERENCES room(id),
       INDEX idx_userTable_content(content)) ENGINE = CSV COLLATE latin1_bin;
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 419
@@ -33,16 +33,16 @@
       INDEX idx_user_name(name),
       UNIQUE KEY uk_user_id_name(id, name)
     ) ENGINE = INNODB COMMENT 'comment';
-  changeType: 0
+  changeType: 1
 - statement: CREATE TABLE t(a timestamp, b timestamp)
-  changeType: 0
+  changeType: 1
 - statement: |-
     CREATE TABLE t(
       a timestamp default now(),
       b timestamp default current_timestamp(),
       c timestamp default localtime
     );
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 418
@@ -57,7 +57,7 @@
       a timestamp default now() on update localtime,
       b timestamp default current_timestamp() on update localtimestamp()
     );
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 419
@@ -70,7 +70,7 @@
 - statement: |-
     ALTER TABLE tech_book ADD COLUMN a timestamp default now() on update localtime;
     ALTER TABLE tech_book ADD COLUMN b timestamp default current_timestamp() on update localtimestamp();
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 419

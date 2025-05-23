@@ -3,7 +3,7 @@
       Id INT NOT NULL,
       Name VARCHAR(50) NOT NULL
     );
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 601
@@ -18,13 +18,13 @@
       Id INT NOT NULL PRIMARY KEY,
       Name VARCHAR(50) NOT NULL
     );
-  changeType: 0
+  changeType: 1
 - statement: |-
     CREATE TABLE MySchema.MyTable (
       Id INT NOT NULL,
       Name VARCHAR(50) NOT NULL,
       PRIMARY KEY (Id)
     );
-  changeType: 0
+  changeType: 1
 - statement: ALTER TABLE MySchema.MyTable ADD CONSTRAINT PK_MyTable PRIMARY KEY (Id);
-  changeType: 0
+  changeType: 1

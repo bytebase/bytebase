@@ -5,7 +5,7 @@
         FullName      VARCHAR(10),
         POSITION      VARCHAR(100)
     );
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 602
@@ -23,7 +23,7 @@
         Position      VARCHAR(100),
         FOREIGN KEY (Id) REFERENCES PERSON(Id)
     );
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 602
@@ -41,7 +41,7 @@
         Position      VARCHAR(100)
     );
     ALTER TABLE Customer ADD FOREIGN KEY (Id) REFERENCES Person(Id);
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 602
@@ -64,4 +64,4 @@
         FullName      VARCHAR(10),
         Position      VARCHAR(100)
     );
-  changeType: 0
+  changeType: 1

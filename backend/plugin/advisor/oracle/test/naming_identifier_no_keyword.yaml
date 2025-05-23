@@ -1,5 +1,5 @@
 - statement: CREATE TABLE "table"(id int, name varchar(255))
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 308
@@ -18,7 +18,7 @@
         column: 0
       endposition: null
 - statement: CREATE TABLE "rlcmidzlevbivwvcntihenpoibtsdfasdfasdfiutqeb"(id int, name varchar(255))
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 308
@@ -29,7 +29,7 @@
         column: 0
       endposition: null
 - statement: CREATE TABLE analyze(id int, name varchar(255))
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 308
@@ -40,8 +40,8 @@
         column: 0
       endposition: null
 - statement: ALTER TABLE tech_book RENAME TO analyze
-  changeType: 0
+  changeType: 1
 - statement: |-
     create table techBook(id int);
     ALTER TABLE techBook RENAME TO tech_book_tmp;
-  changeType: 0
+  changeType: 1

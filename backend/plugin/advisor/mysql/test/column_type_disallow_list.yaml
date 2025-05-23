@@ -1,7 +1,7 @@
 - statement: CREATE TABLE t(a int);
-  changeType: 0
+  changeType: 1
 - statement: CREATE TABLE t(a JSON, b BLOB, c TEXT);
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 411
@@ -14,7 +14,7 @@
 - statement: |-
     CREATE TABLE t(d int);
     ALTER TABLE t add COLUMN (a JSON, b BLOB, c TEXT);
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 411
@@ -27,7 +27,7 @@
 - statement: |-
     CREATE TABLE t(d int);
     ALTER TABLE t ADD COLUMN (a JSON, b JSON);
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 411
@@ -48,7 +48,7 @@
 - statement: |-
     CREATE TABLE t(c int, b int);
     ALTER TABLE t CHANGE COLUMN c a JSON, MODIFY b BLOB;
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 411
@@ -61,7 +61,7 @@
 - statement: |-
     CREATE TABLE t(c int, b int);
     ALTER TABLE t MODIFY COLUMN c JSON;
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 411

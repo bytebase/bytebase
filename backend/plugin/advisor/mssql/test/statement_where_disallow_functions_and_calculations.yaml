@@ -3,7 +3,7 @@
     SELECT foo FROM pokes WHERE (foo + 1) * 2 > 0;
     INSERT INTO pokes VALUES(1);
     SELECT foo FROM pokes WHERE ~foo > 0;
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 234
@@ -24,7 +24,7 @@
 - statement: |-
     SELECT foo FROM pokes WHERE foo | -foo > 0;
     SELECT bar FROM pokes WHERE bar > AVG(bar);
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 234
@@ -43,15 +43,15 @@
         column: 0
       endposition: null
 - statement: SELECT bar FROM pokes WHERE bar > 1;
-  changeType: 0
+  changeType: 1
 - statement: |-
     SELECT Department, AVG(Salary) AS AvgSalary
     FROM Employees
     GROUP BY Department
     HAVING AVG(Salary) * 3 + 1 > 50000;
-  changeType: 0
+  changeType: 1
 - statement: select * from (select * from t where t.a > 1) t1 where a > AVG(a);
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 234

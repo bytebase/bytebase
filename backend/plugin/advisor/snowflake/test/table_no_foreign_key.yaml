@@ -5,7 +5,7 @@
         FULL_NAME     VARCHAR(10),
         POSITION      VARCHAR(100)
     );
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 602
@@ -23,7 +23,7 @@
         POSITION      VARCHAR(100),
         (ID) REFERENCES PERSON(ID)
     );
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 602
@@ -41,7 +41,7 @@
         POSITION      VARCHAR(100)
     );
     ALTER TABLE CUSTOMER ADD (ID) REFERENCES PERSON(ID);
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 602
@@ -59,7 +59,7 @@
         POSITION      VARCHAR(100)
     );
     ALTER TABLE CUSTOMER DROP FOREIGN KEY (ID);
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 602
@@ -77,7 +77,7 @@
         POSITION      VARCHAR(100)
     );
     ALTER TABLE CUSTOMER DROP FOREIGN KEY (ID);
-  changeType: 0
+  changeType: 1
 - statement: |-
     CREATE TABLE CUSTOMER
     (
@@ -92,7 +92,7 @@
         POSITION      VARCHAR(100)
     );
     ALTER TABLE CUSTOMER ADD CONSTRAINT FK_CUSTOMER_PERSON FOREIGN KEY (ID) REFERENCES PERSON(ID);
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 602

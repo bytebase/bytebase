@@ -1,11 +1,11 @@
 - statement: |
     CREATE TABLE book(id INT);
     INSERT INTO book(id) values (1);
-  changeType: 0
+  changeType: 1
 - statement: |
     CREATE TABLE book(id INT);
     SELECT id FROM book;
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 202
@@ -18,7 +18,7 @@
 - statement: |
     CREATE TABLE book(id INT);
     SELECT id FROM book WHERE id > 0;
-  changeType: 0
+  changeType: 1
 - statement: |
     CREATE TABLE book(id INT);
     SELECT id
@@ -27,7 +27,7 @@
       SELECT max(id)
       FROM book
       );
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 202
@@ -45,4 +45,4 @@
       endposition: null
 - statement: |
     SELECT CURDATE();
-  changeType: 0
+  changeType: 1

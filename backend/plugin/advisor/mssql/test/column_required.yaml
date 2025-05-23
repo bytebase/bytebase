@@ -6,13 +6,13 @@
       updated_ts INT,
       updater_id INT
     );
-  changeType: 0
+  changeType: 1
 - statement: |-
     CREATE TABLE t (
       name TEXT,
       age INT
     );
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 401
@@ -61,7 +61,7 @@
       created_ts INT,
       updater_id INT
     );
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 401
@@ -72,7 +72,7 @@
         column: 0
       endposition: null
 - statement: ALTER TABLE t DROP COLUMN created_ts;
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 401
@@ -83,7 +83,7 @@
         column: 0
       endposition: null
 - statement: ALTER TABLE t DROP COLUMN creator_id;
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 401
