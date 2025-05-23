@@ -197,7 +197,7 @@ const useExecuteSQL = () => {
 
     // Check if the user selects multiple databases to query.
     if (tab.batchQueryContext && hasFeature("bb.feature.batch-query")) {
-      const { databases, databaseGroups } = tab.batchQueryContext;
+      const { databases = [], databaseGroups = [] } = tab.batchQueryContext;
       for (const databaseResourceName of databases) {
         if (!isValidDatabaseName(databaseResourceName)) {
           continue;
