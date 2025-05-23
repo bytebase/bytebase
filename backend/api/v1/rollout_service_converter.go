@@ -487,6 +487,9 @@ func convertToTaskRun(ctx context.Context, s *store.Store, stateCfg *state.State
 	if taskRun.StartedAt != nil {
 		t.StartTime = timestamppb.New(*taskRun.StartedAt)
 	}
+	if taskRun.RunAt != nil {
+		t.RunTime = timestamppb.New(*taskRun.RunAt)
+	}
 
 	if taskRun.SheetUID != nil && *taskRun.SheetUID != 0 {
 		sheet, err := s.GetSheet(ctx, &store.FindSheetMessage{UID: taskRun.SheetUID})
