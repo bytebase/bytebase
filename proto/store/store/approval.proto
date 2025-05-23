@@ -43,7 +43,6 @@ message ApprovalTemplate {
   ApprovalFlow flow = 1;
   string title = 2;
   string description = 3;
-  int32 creator_id = 4;
 }
 
 message ApprovalFlow {

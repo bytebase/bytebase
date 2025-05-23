@@ -593,7 +593,6 @@ offset.
 | flow | [ApprovalFlow](#bytebase-store-ApprovalFlow) |  |  |
 | title | [string](#string) |  |  |
 | description | [string](#string) |  |  |
-| creator_id | [int32](#int32) |  |  |
 
 
 
