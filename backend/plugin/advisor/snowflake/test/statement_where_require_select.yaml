@@ -1,5 +1,5 @@
 - statement: SELECT * FROM (SELECT * FROM TARGET_TABLE) AS a WHERE a.id = 1;
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 202
@@ -10,7 +10,7 @@
         column: 0
       endposition: null
 - statement: SELECT * FROM t;
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 202
@@ -21,7 +21,7 @@
         column: 0
       endposition: null
 - statement: SELECT * FROM t WHERE b = 2;
-  changeType: 0
+  changeType: 1
 - statement: |-
     with
        album_info_1976 as (select m.album_ID, m.album_name, b.band_name
@@ -32,7 +32,7 @@
        )
     select album_name, band_name
        from Journey_album_info_1976;
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 202
@@ -56,7 +56,7 @@
     ) AS filtered_source_table
     ON target_table.id = filtered_source_table.id
     WHEN MATCHED THEN UPDATE SET target_table.a = filtered_source_table.b;
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 202
@@ -67,4 +67,4 @@
         column: 0
       endposition: null
 - statement: SELECT 1;
-  changeType: 0
+  changeType: 1

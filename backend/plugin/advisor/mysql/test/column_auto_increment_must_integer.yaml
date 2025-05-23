@@ -9,11 +9,11 @@
     CREATE TABLE t8(a MEDIUMINT AUTO_INCREMENT);
     CREATE TABLE t9(a bigint AUTO_INCREMENT);
     CREATE TABLE t10(a BIGINT AUTO_INCREMENT);
-  changeType: 0
+  changeType: 1
 - statement: |-
     CREATE TABLE t1(a INT AUTO_INCREMENT);
     CREATE TABLE t2(a varchar(255) AUTO_INCREMENT);
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 410
@@ -26,7 +26,7 @@
 - statement: |-
     CREATE TABLE t(b int);
     ALTER TABLE t ADD COLUMN a varchar(255) AUTO_INCREMENT;
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 410
@@ -39,7 +39,7 @@
 - statement: |-
     CREATE TABLE t(b int);
     ALTER TABLE t ADD COLUMN a varchar(255) AUTO_INCREMENT, ADD COLUMN c INT;
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 410
@@ -52,7 +52,7 @@
 - statement: |-
     CREATE TABLE t(b int);
     ALTER TABLE t ADD COLUMN (a varchar(255) AUTO_INCREMENT, c INT);
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 410
@@ -66,7 +66,7 @@
     CREATE TABLE t(a int, b int);
     ALTER TABLE t MODIFY COLUMN a varchar(255) AUTO_INCREMENT;
     ALTER TABLE t MODIFY COLUMN b varchar(255);
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 410
@@ -79,7 +79,7 @@
 - statement: |-
     CREATE TABLE t(b int);
     ALTER TABLE t CHANGE COLUMN b a varchar(255) AUTO_INCREMENT;
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 410

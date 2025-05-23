@@ -1,9 +1,9 @@
 - statement: ALTER TABLE tech_book ADD COLUMN a int;
-  changeType: 0
+  changeType: 1
 - statement: |-
     ALTER TABLE tech_book ADD COLUMN a int;
     ALTER TABLE tech_book CHANGE COLUMN a c int;
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 207
@@ -18,7 +18,7 @@
     ALTER TABLE tech_book ADD COLUMN b int;
     ALTER TABLE t ADD COLUMN b int;
     ALTER TABLE tech_book MODIFY COLUMN b varchar(255);
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 207
@@ -41,7 +41,7 @@
     ALTER TABLE tech_book ADD COLUMN a int;
     ALTER TABLE tech_book ADD COLUMN b int;
     ALTER TABLE t ADD COLUMN b int;
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 207

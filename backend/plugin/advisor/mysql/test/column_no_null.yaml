@@ -3,7 +3,7 @@
       id int,
       name varchar(255)
     );
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 402
@@ -22,7 +22,7 @@
         column: 0
       endposition: null
 - statement: CREATE TABLE book(id int PRIMARY KEY, name varchar(255));
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 402
@@ -33,7 +33,7 @@
         column: 0
       endposition: null
 - statement: CREATE TABLE book(id int NOT NULL, name varchar(255));
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 402
@@ -44,11 +44,11 @@
         column: 0
       endposition: null
 - statement: CREATE TABLE book(id int PRIMARY KEY, name varchar(255) NOT NULL);
-  changeType: 0
+  changeType: 1
 - statement: |-
     CREATE TABLE book(a int NOT NULL);
     ALTER TABLE book ADD COLUMN (id int, name varchar(255) NOT NULL);
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 402
@@ -61,7 +61,7 @@
 - statement: |-
     CREATE TABLE book(a int NOT NULL);
     ALTER TABLE book ADD COLUMN id int, ADD COLUMN name varchar(255) NOT NULL;
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 402
@@ -74,15 +74,15 @@
 - statement: |-
     CREATE TABLE book(a int NOT NULL);
     ALTER TABLE book ADD COLUMN (id int PRIMARY KEY, name varchar(255) NOT NULL);
-  changeType: 0
+  changeType: 1
 - statement: |-
     CREATE TABLE book(a int NOT NULL);
     ALTER TABLE book ADD COLUMN id int PRIMARY KEY, ADD COLUMN name varchar(255) NOT NULL;
-  changeType: 0
+  changeType: 1
 - statement: |-
     CREATE TABLE book(id int NOT NULL);
     ALTER TABLE book CHANGE COLUMN id name varchar(255);
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 402
@@ -95,4 +95,4 @@
 - statement: |-
     CREATE TABLE book(id int NOT NULL);
     ALTER TABLE book CHANGE COLUMN id name varchar(255) NOT NULL;
-  changeType: 0
+  changeType: 1

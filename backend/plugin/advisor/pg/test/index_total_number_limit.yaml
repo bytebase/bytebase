@@ -1,14 +1,14 @@
 - statement: CREATE TABLE t(a int, b int, c int, unique (a, b, c))
-  changeType: 0
+  changeType: 1
 - statement: CREATE INDEX idx_id_name on tech_book(id, name)
-  changeType: 0
+  changeType: 1
 - statement: |-
     CREATE INDEX idx_id_name_1 on tech_book(id, name);
     CREATE INDEX idx_id_name_2 on tech_book(id, name);
     CREATE INDEX idx_id_name_3 on tech_book(id, name);
     CREATE INDEX idx_id_name_4 on tech_book(id, name);
     CREATE INDEX idx_id_name_5 on tech_book(id, name);
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 813
@@ -25,7 +25,7 @@
     CREATE INDEX idx_a_b_3 on t(a, b);
     CREATE INDEX idx_a_b_4 on t(a, b);
     CREATE INDEX idx_a_b_5 on t(a, b);
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 813
@@ -45,7 +45,7 @@
       CONSTRAINT idx_a_b_3 UNIQUE (a, b),
       CONSTRAINT idx_a_b_4 UNIQUE (a, b),
       CONSTRAINT idx_a_b_5 UNIQUE (a, b));
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 813

@@ -1,7 +1,7 @@
 - statement: CREATE INDEX idx_tech_book_id_name ON tech_book(id, name)
-  changeType: 0
+  changeType: 1
 - statement: CREATE INDEX tech_book_id_name ON tech_book(id, name)
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 303
@@ -12,7 +12,7 @@
         column: 0
       endposition: null
 - statement: CREATE INDEX wfdtqyetsyoovcvikjlyfukxyjxxxhifl ON tech_book(id, name)
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 303
@@ -23,9 +23,9 @@
         column: 0
       endposition: null
 - statement: ALTER INDEX old_index RENAME TO idx_tech_book_id_name
-  changeType: 0
+  changeType: 1
 - statement: ALTER INDEX old_index RENAME TO idx_tech_book
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 303

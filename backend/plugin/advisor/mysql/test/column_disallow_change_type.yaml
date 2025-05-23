@@ -3,7 +3,7 @@
     ALTER TABLE tech_book MODIFY id INT;
     ALTER TABLE tech_book MODIFY id INTEGER;
     ALTER TABLE tech_book MODIFY id INTEGER UNSIGNED;
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 403
@@ -24,7 +24,7 @@
 - statement: |-
     ALTER TABLE tech_book MODIFY id int;
     ALTER TABLE tech_book MODIFY id int(4);
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 403
@@ -37,7 +37,7 @@
 - statement: |-
     ALTER TABLE tech_book MODIFY id bigint;
     ALTER TABLE tech_book MODIFY id smallint;
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 403
@@ -56,7 +56,7 @@
         column: 0
       endposition: null
 - statement: ALTER TABLE tech_book CHANGE name uname varchar(20);
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 403

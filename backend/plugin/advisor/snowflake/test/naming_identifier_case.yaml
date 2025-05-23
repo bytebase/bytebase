@@ -1,16 +1,16 @@
 - statement: |-
     -- The rule should be friendly with engine behavior(i.e. stored and resolved as uppercase characters if not quoted)
     CREATE TABLE t(id INT);
-  changeType: 0
+  changeType: 1
 - statement: CREATE TABLE t(ID INT);
-  changeType: 0
+  changeType: 1
 - statement: |-
     CREATE TABLE t(
       name  VARCHAR,
       age   INT,
       "address" VARCHAR
     );
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 309
@@ -26,7 +26,7 @@
       age   INT,
       "address" VARCHAR
     ) AS SELECT a + 1, b + 2 FROM mytable;
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 309
@@ -42,9 +42,9 @@
       age   INT,
       address VARCHAR
     ) AS SELECT a + 1, b + 2 FROM mytable;
-  changeType: 0
+  changeType: 1
 - statement: ALTER TABLE mytable RENAME COLUMN name TO "address";
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 309
@@ -55,4 +55,4 @@
         column: 0
       endposition: null
 - statement: ALTER TABLE mytable RENAME COLUMN name TO address;
-  changeType: 0
+  changeType: 1

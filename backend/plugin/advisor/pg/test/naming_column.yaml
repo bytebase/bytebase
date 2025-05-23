@@ -1,5 +1,5 @@
 - statement: CREATE TABLE book(id int, "creatorId" int)
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 302
@@ -10,15 +10,15 @@
         column: 0
       endposition: null
 - statement: CREATE TABLE book(id int, qavszgslczmsacubtvyymzhojfytkcmon int)
-  changeType: 0
+  changeType: 1
 - statement: CREATE TABLE book(id int, creator_Id int)
-  changeType: 0
+  changeType: 1
 - statement: CREATE TABLE book(id int, creator_id int)
-  changeType: 0
+  changeType: 1
 - statement: |-
     CREATE TABLE book(id int, creator_id int);
                 ALTER TABLE book ADD COLUMN "creatorId" int
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 302
@@ -31,11 +31,11 @@
 - statement: |-
     CREATE TABLE book(id int, creator_id int);
                 ALTER TABLE book ADD COLUMN "creator" int
-  changeType: 0
+  changeType: 1
 - statement: |-
     CREATE TABLE book(id int, creator_id int);
                 ALTER TABLE book RENAME COLUMN creator_id TO "creatorId"
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 302
@@ -48,4 +48,4 @@
 - statement: |-
     CREATE TABLE book(id int, creator_id int);
                 ALTER TABLE book RENAME COLUMN creator_id TO "creator"
-  changeType: 0
+  changeType: 1
