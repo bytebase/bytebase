@@ -1,3 +1,4 @@
+import CheckIcon from "./CheckIcon.vue";
 import ColumnIcon from "./ColumnIcon.vue";
 import DatabaseIcon from "./DatabaseIcon.vue";
 import EngineIcon from "./EngineIcon.vue";
@@ -34,4 +35,5 @@ export {
   PackageIcon,
   SequenceIcon,
   TriggerIcon,
+  CheckIcon,
 };
