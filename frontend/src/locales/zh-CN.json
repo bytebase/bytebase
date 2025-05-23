@@ -1505,7 +1505,8 @@
         "self": "建立新基线",
         "successfully-established": "成功建立新的基线"
       }
-    }
+    },
+    "checks": "Check 约束"
   },
   "project": {
     "table": {

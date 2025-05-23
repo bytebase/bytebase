@@ -1505,7 +1505,8 @@
         "self": "新しいベースライン",
         "successfully-established": "新しいベースラインを確立しました"
       }
-    }
+    },
+    "checks": "チェック"
   },
   "project": {
     "table": {
