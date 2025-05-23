@@ -575,6 +575,7 @@ export interface TablePartitionMetadata {
   /** The subpartitions is the list of subpartitions in a table partition. */
   subpartitions: TablePartitionMetadata[];
   indexes: IndexMetadata[];
+  checkConstraints: CheckConstraintMetadata[];
 }
 
 /**
@@ -5135,6 +5136,7 @@ function createBaseTablePartitionMetadata(): TablePartitionMetadata {
     useDefault: "",
     subpartitions: [],
     indexes: [],
+    checkConstraints: [],
   };
 }
 
@@ -5160,6 +5162,9 @@ export const TablePartitionMetadata: MessageFns<TablePartitionMetadata> = {
     }
     for (const v of message.indexes) {
       IndexMetadata.encode(v!, writer.uint32(58).fork()).join();
+    }
+    for (const v of message.checkConstraints) {
+      CheckConstraintMetadata.encode(v!, writer.uint32(66).fork()).join();
     }
     return writer;
   },
@@ -5227,6 +5232,14 @@ export const TablePartitionMetadata: MessageFns<TablePartitionMetadata> = {
           message.indexes.push(IndexMetadata.decode(reader, reader.uint32()));
           continue;
         }
+        case 8: {
+          if (tag !== 66) {
+            break;
+          }
+
+          message.checkConstraints.push(CheckConstraintMetadata.decode(reader, reader.uint32()));
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -5250,6 +5263,9 @@ export const TablePartitionMetadata: MessageFns<TablePartitionMetadata> = {
         : [],
       indexes: globalThis.Array.isArray(object?.indexes)
         ? object.indexes.map((e: any) => IndexMetadata.fromJSON(e))
+        : [],
+      checkConstraints: globalThis.Array.isArray(object?.checkConstraints)
+        ? object.checkConstraints.map((e: any) => CheckConstraintMetadata.fromJSON(e))
         : [],
     };
   },
@@ -5277,6 +5293,9 @@ export const TablePartitionMetadata: MessageFns<TablePartitionMetadata> = {
     if (message.indexes?.length) {
       obj.indexes = message.indexes.map((e) => IndexMetadata.toJSON(e));
     }
+    if (message.checkConstraints?.length) {
+      obj.checkConstraints = message.checkConstraints.map((e) => CheckConstraintMetadata.toJSON(e));
+    }
     return obj;
   },
 
@@ -5292,6 +5311,7 @@ export const TablePartitionMetadata: MessageFns<TablePartitionMetadata> = {
     message.useDefault = object.useDefault ?? "";
     message.subpartitions = object.subpartitions?.map((e) => TablePartitionMetadata.fromPartial(e)) || [];
     message.indexes = object.indexes?.map((e) => IndexMetadata.fromPartial(e)) || [];
+    message.checkConstraints = object.checkConstraints?.map((e) => CheckConstraintMetadata.fromPartial(e)) || [];
     return message;
   },
 };
