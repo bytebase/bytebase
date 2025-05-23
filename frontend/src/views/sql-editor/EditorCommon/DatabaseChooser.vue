@@ -95,7 +95,7 @@ const isBatchRequest = computed(() => {
   if (!batchQueryContext) {
     return false;
   }
-  const { databaseGroups, databases } = batchQueryContext;
+  const { databaseGroups = [], databases = [] } = batchQueryContext;
   if (!hasFeature("bb.feature.database-grouping")) {
     return databases.length > 1;
   }
