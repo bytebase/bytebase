@@ -98,7 +98,7 @@ func (s *SettingService) ListSettings(ctx context.Context, _ *v1pb.ListSettingsR
 		if !settingInWhitelist(setting.Name) {
 			continue
 		}
-		settingMessage, err := s.convertToSettingMessage(ctx, setting)
+		settingMessage, err := convertToSettingMessage(setting)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to convert setting message: %v", err)
 		}
@@ -129,7 +129,7 @@ func (s *SettingService) GetSetting(ctx context.Context, request *v1pb.GetSettin
 		return nil, status.Errorf(codes.NotFound, "setting %s not found", settingName)
 	}
 	// Only return whitelisted setting.
-	settingMessage, err := s.convertToSettingMessage(ctx, setting)
+	settingMessage, err := convertToSettingMessage(setting)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to convert setting message: %v", err)
 	}
@@ -163,7 +163,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 	}
 	// audit log.
 	if setServiceData, ok := common.GetSetServiceDataFromContext(ctx); ok && existedSetting != nil {
-		v1pbSetting, err := s.convertToSettingMessage(ctx, existedSetting)
+		v1pbSetting, err := convertToSettingMessage(existedSetting)
 		if err != nil {
 			slog.Warn("audit: failed to convert to v1.Setting", log.BBError(err))
 		}
@@ -565,7 +565,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 				return nil, status.Errorf(codes.InvalidArgument, "API endpoint and model are required")
 			}
 			if existedSetting != nil {
-				existedAISetting, err := s.convertToSettingMessage(ctx, existedSetting)
+				existedAISetting, err := convertToSettingMessage(existedSetting)
 				if err != nil {
 					return nil, status.Errorf(codes.Internal, "failed to unmarshal existed ai setting with error: %v", err)
 				}
@@ -634,7 +634,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 		return nil, status.Errorf(codes.Internal, "failed to set setting: %v", err)
 	}
 
-	settingMessage, err := s.convertToSettingMessage(ctx, setting)
+	settingMessage, err := convertToSettingMessage(setting)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to convert setting message: %v", err)
 	}
@@ -671,7 +671,7 @@ func convertProtoToProto(inputPB, outputPB protoreflect.ProtoMessage) error {
 	return nil
 }
 
-func (s *SettingService) convertToSettingMessage(ctx context.Context, setting *store.SettingMessage) (*v1pb.Setting, error) {
+func convertToSettingMessage(setting *store.SettingMessage) (*v1pb.Setting, error) {
 	settingName := fmt.Sprintf("%s%s", common.SettingNamePrefix, setting.Name)
 	switch setting.Name {
 	case base.SettingWorkspaceMailDelivery:
