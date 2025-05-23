@@ -48,8 +48,8 @@ import { NTag } from "naive-ui";
 import { computed } from "vue";
 import { Advice_Status } from "@/types/proto/v1/sql_service";
 import { usePlanContext } from "../../logic";
-import AdviceStatusIcon from "../SQLCheckSectionV1/AdviceStatusIcon.vue";
-import { usePlanSQLCheckContext } from "../SQLCheckSectionV1/context";
+import AdviceStatusIcon from "../SQLCheckSection/AdviceStatusIcon.vue";
+import { usePlanSQLCheckContext } from "../SQLCheckSection/context";
 import { filterSpec } from "./filter";
 
 defineProps<{
@@ -69,7 +69,7 @@ const ADVICE_STATUS_FILTERS: Advice_Status[] = [
 ];
 
 const planContext = usePlanContext();
-const sqlCheckContext = usePlanSQLCheckContext();
+const { resultMap } = usePlanSQLCheckContext();
 
 const { plan } = planContext;
 
@@ -77,7 +77,9 @@ const specList = computed(() => plan.value.steps.flatMap((step) => step.specs));
 
 const getSpecCount = (adviceStatus?: Advice_Status) => {
   return specList.value.filter((spec) =>
-    filterSpec(planContext, sqlCheckContext, spec, { adviceStatus })
+    filterSpec(planContext, resultMap.value, spec, {
+      adviceStatus,
+    })
   ).length;
 };
 </script>

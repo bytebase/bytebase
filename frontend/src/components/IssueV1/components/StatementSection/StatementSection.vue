@@ -15,19 +15,19 @@ import { computed, nextTick, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { onBeforeRouteLeave } from "vue-router";
 import { useRouter } from "vue-router";
+import { usePlanSQLCheckContext } from "@/components/Plan/components/SQLCheckSection/context";
 import { databaseForTask } from "@/components/Rollout/RolloutDetail";
 import { TaskTypeListWithStatement } from "@/types";
 import { Task_Type } from "@/types/proto/v1/rollout_service";
 import { isValidTaskName } from "@/utils";
 import { useIssueContext } from "../../logic";
-import { useIssueSQLCheckContext } from "../SQLCheckSection/context";
 import EditorView from "./EditorView";
 import SDLView from "./SDLView";
 
 const { t } = useI18n();
 const router = useRouter();
 const { issue, isCreating, selectedTask } = useIssueContext();
-const { resultMap } = useIssueSQLCheckContext();
+const { resultMap } = usePlanSQLCheckContext();
 
 const editorViewRef = ref<InstanceType<typeof EditorView>>();
 

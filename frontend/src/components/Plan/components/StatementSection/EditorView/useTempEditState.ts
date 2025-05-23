@@ -10,7 +10,9 @@ export type EditState = {
 
 export const useTempEditState = (state: EditState) => {
   const { isCreating, selectedSpec } = usePlanContext();
-  const { sheet, sheetName, sheetReady, sheetStatement } = useSpecSheet();
+  const { sheet, sheetName, sheetReady, sheetStatement } = useSpecSheet(
+    selectedSpec.value
+  );
 
   let stopWatching = () => {
     // noop

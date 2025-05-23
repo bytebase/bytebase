@@ -60,12 +60,14 @@ import { getValidIssueLabels } from "@/components/IssueV1/components/IssueLabelS
 import { ErrorList } from "@/components/IssueV1/components/common";
 import {
   databaseEngineForSpec,
-  getLocalSheetByName,
   isValidStage,
+  specForTask,
   useIssueContext,
 } from "@/components/IssueV1/logic";
 import formatSQL from "@/components/MonacoEditor/sqlFormatter";
-import { isValidSpec } from "@/components/Plan";
+import { getLocalSheetByName, isValidSpec } from "@/components/Plan";
+import { getSpecChangeType } from "@/components/Plan/components/SQLCheckSection/common";
+import { usePlanSQLCheckContext } from "@/components/Plan/components/SQLCheckSection/context";
 import { databaseForTask } from "@/components/Rollout/RolloutDetail";
 import { SQLCheckPanel } from "@/components/SQLCheck";
 import { STATEMENT_SKIP_CHECK_THRESHOLD } from "@/components/SQLCheck/common";
@@ -79,7 +81,7 @@ import { emitWindowEvent } from "@/plugins";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { useDatabaseV1Store, useSheetV1Store } from "@/store";
 import { dialectOfEngineV1, languageOfEngineV1 } from "@/types";
-import { Issue } from "@/types/proto/v1/issue_service";
+import { Issue, Issue_Type } from "@/types/proto/v1/issue_service";
 import type { Plan_ExportDataConfig } from "@/types/proto/v1/plan_service";
 import { type Plan_ChangeDatabaseConfig } from "@/types/proto/v1/plan_service";
 import { ReleaseFileType } from "@/types/proto/v1/release_service";
@@ -98,19 +100,15 @@ import {
   sheetNameOfTaskV1,
   type Defer,
 } from "@/utils";
-import { getTaskChangeType } from "../../../SQLCheckSection/common";
-import { useIssueSQLCheckContext } from "../../../SQLCheckSection/context";
 
 const MAX_FORMATTABLE_STATEMENT_SIZE = 10000; // 10K characters
 
 const { t } = useI18n();
 const router = useRouter();
-const { issue, formatOnSave, events, selectedTask } = useIssueContext();
-const {
-  enabled: shouldRunSQLCheck,
-  resultMap: checkResultMap,
-  upsertResult: upsertCheckResult,
-} = useIssueSQLCheckContext();
+const { isCreating, issue, formatOnSave, events, selectedTask } =
+  useIssueContext();
+const { resultMap: checkResultMap, upsertResult: upsertCheckResult } =
+  usePlanSQLCheckContext();
 const sheetStore = useSheetV1Store();
 const loading = ref(false);
 const showSQLCheckResultPanel = ref(false);
@@ -299,8 +297,13 @@ const emitIssueCreateWindowEvent = (issue: Issue) => {
 };
 
 const runSQLCheckForIssue = async () => {
-  if (!shouldRunSQLCheck.value) {
-    return true;
+  if (
+    !isCreating.value ||
+    ![Issue_Type.DATABASE_CHANGE, Issue_Type.DATABASE_DATA_EXPORT].includes(
+      issue.value.type
+    )
+  ) {
+    return;
   }
 
   const flattenTasks = flattenTaskV1List(issue.value.rolloutEntity);
@@ -339,7 +342,9 @@ const runSQLCheckForIssue = async () => {
             version: "0",
             type: ReleaseFileType.VERSIONED,
             statement: new TextEncoder().encode(statement),
-            changeType: getTaskChangeType(issue.value, flattenTasks[0]),
+            changeType: getSpecChangeType(
+              specForTask(issue.value.planEntity, selectedTask.value)
+            ),
           },
         ],
       },
