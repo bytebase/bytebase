@@ -2,7 +2,7 @@
     MERGE INTO MySchema.Identifier USING MySchema.MyTable ON Identifier.Id = MyTable.Id
     WHEN MATCHED THEN UPDATE SET Identifier.Name = MyTable.Name
     WHEN NOT MATCHED THEN INSERT (Id, Name) VALUES (MyTable.Id, MyTable.Name);
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 614
@@ -15,7 +15,7 @@
 - statement: |-
     INSERT INTO MySchema.MyTable (Id, Name) VALUES (1, 'Alice');
     INSERT INTO MySchema.Identifier (Id, Name) VALUES (1, 'Alice');
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 614
@@ -26,7 +26,7 @@
         column: 0
       endposition: null
 - statement: DELETE FROM MySchema.Identifier WHERE Id = 1;
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 614
@@ -37,7 +37,7 @@
         column: 0
       endposition: null
 - statement: UPDATE MySchema.Identifier SET Name = 'Bob' WHERE Id = 1;
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 614
@@ -48,7 +48,7 @@
         column: 0
       endposition: null
 - statement: SELECT * INTO MySchema.Identifier FROM MySchema.MyTable;
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 614

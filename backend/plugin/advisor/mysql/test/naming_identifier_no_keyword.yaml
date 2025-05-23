@@ -1,7 +1,7 @@
 - statement: CREATE TABLE `t`(a int);
-  changeType: 0
+  changeType: 1
 - statement: CREATE TABLE interval(id int);
-  changeType: 0
+  changeType: 1
   want:
     - status: 3
       code: 201
@@ -12,7 +12,7 @@
         column: 13
       endposition: null
 - statement: CREATE TABLE execute(id int)
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 308
@@ -23,7 +23,7 @@
         column: 0
       endposition: null
 - statement: CREATE TABLE `execute`(id int)
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 308
@@ -34,7 +34,7 @@
         column: 0
       endposition: null
 - statement: CREATE TABLE `interval`(id int);
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 308
@@ -45,7 +45,7 @@
         column: 0
       endposition: null
 - statement: "CREATE TABLE t(\n  id int, \n  `current_timestamp` int\n);\n"
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 308
@@ -56,7 +56,7 @@
         column: 0
       endposition: null
 - statement: CREATE TABLE `test`.`interval`(id int);
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 308

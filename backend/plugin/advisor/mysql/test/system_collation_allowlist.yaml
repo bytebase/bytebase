@@ -1,5 +1,5 @@
 - statement: CREATE TABLE test(id INT PRIMARY KEY COMMENT 'comment',name VARCHAR(255) NOT NULL DEFAULT '' COMMENT 'comment',room_id INT NOT NULL DEFAULT 0 COMMENT 'comment',creator_id INT NOT NULL DEFAULT 0 COMMENT 'comment',created_ts TIMESTAMP NOT NULL DEFAULT NOW() COMMENT 'comment',updater_id INT NOT NULL DEFAULT 0 COMMENT 'comment',updated_ts TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment',INDEX idx_test_name(name),UNIQUE KEY uk_test_id_name(id, name)) ENGINE = INNODB COMMENT 'comment'
-  changeType: 0
+  changeType: 1
 - statement: |
     CREATE TABLE userTable(
       id INT NOT NULL,
@@ -13,7 +13,7 @@
       UNIQUE KEY uk1(id, name),
       FOREIGN KEY fk1(roomId) REFERENCES room(id),
       INDEX idx_userTable_content(content)) ENGINE = CSV COLLATE latin1_bin;
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 1201
@@ -47,9 +47,9 @@
       INDEX idx_user_name(name),
       UNIQUE KEY uk_user_id_name(id, name)
     ) ENGINE = INNODB COMMENT 'comment';
-  changeType: 0
+  changeType: 1
 - statement: CREATE TABLE t(a int) COLLATE utf8mb4_polish_ci;
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 1201
@@ -60,9 +60,9 @@
         column: 0
       endposition: null
 - statement: CREATE TABLE t(a varchar(255));
-  changeType: 0
+  changeType: 1
 - statement: CREATE TABLE t(a int) COLLATE latin1_bin;
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 1201
@@ -75,7 +75,7 @@
 - statement: |-
     CREATE TABLE t(a int);
     ALTER TABLE t COLLATE latin1_bin;
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 1201
@@ -86,7 +86,7 @@
         column: 0
       endposition: null
 - statement: ALTER DATABASE test COLLATE latin1_bin;
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 1201
@@ -97,7 +97,7 @@
         column: 0
       endposition: null
 - statement: CREATE TABLE t(a varchar(255) CHARACTER SET latin1 COLLATE latin1_bin);
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 1201
@@ -110,7 +110,7 @@
 - statement: |-
     CREATE TABLE t(b int);
     ALTER TABLE t ADD COLUMN a varchar(255) CHARACTER SET latin1 COLLATE latin1_bin;
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 1201
@@ -123,7 +123,7 @@
 - statement: |-
     CREATE TABLE t(a int);
     ALTER TABLE t MODIFY COLUMN a varchar(255) CHARACTER SET latin1 COLLATE latin1_bin;
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 1201
@@ -136,7 +136,7 @@
 - statement: |-
     CREATE TABLE t(a int);
     ALTER TABLE t CHANGE COLUMN a a varchar(255) CHARACTER SET latin1 COLLATE latin1_bin;
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 1201

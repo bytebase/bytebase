@@ -3,14 +3,14 @@
       id int
     );
     COMMENT ON COLUMN book.id IS 'comments';
-  changeType: 0
+  changeType: 1
 - statement: |-
     ALTER TABLE t ADD (d int, a int);
     COMMENT ON COLUMN t.d IS 'comments';
     COMMENT ON COLUMN t.a IS 'comments';
-  changeType: 0
+  changeType: 1
 - statement: CREATE TABLE t(a int);
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 1032
@@ -23,7 +23,7 @@
 - statement: |-
     ALTER TABLE t ADD (d int, a int);
     COMMENT ON COLUMN t.a IS 'comments';
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 1032
@@ -37,7 +37,7 @@
     CREATE TABLE t(a int);
     COMMENT ON COLUMN t.a IS 'comments';
     COMMENT ON COLUMN t.a IS '';
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 1032

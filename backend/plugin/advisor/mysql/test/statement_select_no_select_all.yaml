@@ -1,5 +1,5 @@
 - statement: SELECT * FROM t;
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 203
@@ -10,12 +10,12 @@
         column: 0
       endposition: null
 - statement: SELECT a, b FROM t;
-  changeType: 0
+  changeType: 1
 - statement: |
     SELECT a, b FROM t;
     SELECT * FROM t;
     SELECT a, b FROM (SELECT * from t1 JOIN t2) t;
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 203
@@ -38,7 +38,7 @@
     SELECT * FROM t1
     UNION
     SELECT * FROM t2;
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 203
@@ -67,7 +67,7 @@
     WITH cte AS (
       SELECT * FROM a
     ) SELECT * FROM cte;
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 203
@@ -96,7 +96,7 @@
     SELECT *
     FROM a
     INNER JOIN b USING(id);
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 203

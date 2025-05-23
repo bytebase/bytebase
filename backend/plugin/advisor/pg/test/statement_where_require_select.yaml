@@ -1,5 +1,5 @@
 - statement: SELECT a FROM t
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 202
@@ -10,9 +10,9 @@
         column: 0
       endposition: null
 - statement: SELECT a FROM t WHERE a > 0
-  changeType: 0
+  changeType: 1
 - statement: SELECT a FROM t WHERE a > (SELECT max(id) FROM user)
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 202
@@ -23,4 +23,4 @@
         column: 0
       endposition: null
 - statement: SELECT 1
-  changeType: 0
+  changeType: 1

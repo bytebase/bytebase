@@ -1,11 +1,11 @@
 - statement: CREATE TABLE t(a int);
-  changeType: 0
+  changeType: 1
 - statement: CREATE TABLE t(a int auto_increment) auto_increment = 20;
-  changeType: 0
+  changeType: 1
 - statement: |-
     CREATE TABLE t1(a int auto_increment) auto_increment = 20;
     CREATE TABLE t2(a int auto_increment) auto_increment = 2;
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 416
@@ -20,7 +20,7 @@
     ALTER TABLE t COMMENT 'table t';
     ALTER TABLE t AUTO_INCREMENT = 20;
     ALTER TABLE t AUTO_INCREMENT = 100;
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 416

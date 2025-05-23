@@ -1,5 +1,5 @@
 - statement: ALTER TABLE tech_book ADD reader int NOT NULL
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 404
@@ -10,4 +10,4 @@
         column: 0
       endposition: null
 - statement: ALTER TABLE tech_book ADD reader int DEFAULT 0 NOT NULL
-  changeType: 0
+  changeType: 1

@@ -1,5 +1,5 @@
 - statement: SELECT * FROM MyTable;
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 202
@@ -10,12 +10,12 @@
         column: 0
       endposition: null
 - statement: SELECT * FROM MyTable WHERE a = 1;
-  changeType: 0
+  changeType: 1
 - statement: |-
     WITH CteA AS (SELECT * FROM TableA WHERE a = 1),
           CteB AS (SELECT * FROM TableB)
     SELECT * FROM CteA INNER JOIN CteB ON CteA.a = CteB.b;
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 202
@@ -34,4 +34,4 @@
         column: 0
       endposition: null
 - statement: SELECT 1;
-  changeType: 0
+  changeType: 1

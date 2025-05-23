@@ -1,7 +1,7 @@
 - statement: CREATE TABLE book(id int AUTO_INCREMENT);
-  changeType: 0
+  changeType: 1
 - statement: CREATE TABLE book(a int AUTO_INCREMENT);
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 307
@@ -12,7 +12,7 @@
         column: 0
       endposition: null
 - statement: ALTER TABLE tech_book ADD COLUMN a int AUTO_INCREMENT;
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 307
@@ -23,7 +23,7 @@
         column: 0
       endposition: null
 - statement: ALTER TABLE tech_book CHANGE COLUMN id a int AUTO_INCREMENT;
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 307
@@ -34,7 +34,7 @@
         column: 0
       endposition: null
 - statement: ALTER TABLE tech_book MODIFY COLUMN name int AUTO_INCREMENT;
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 307
@@ -47,16 +47,16 @@
 - statement: |
     CREATE TABLE book(id int);
     ALTER TABLE tech_book MODIFY COLUMN id int AUTO_INCREMENT;
-  changeType: 0
+  changeType: 1
 - statement: |
     CREATE TABLE book(name VARCHAR(255));
     ALTER TABLE book ADD COLUMN id int AUTO_INCREMENT;
-  changeType: 0
+  changeType: 1
 - statement: |
     CREATE TABLE book(a INT, name VARCHAR(255));
     ALTER TABLE book CHANGE COLUMN a id int AUTO_INCREMENT;
-  changeType: 0
+  changeType: 1
 - statement: |
     CREATE TABLE book(name VARCHAR(255));
     ALTER TABLE book ADD COLUMN (id int AUTO_INCREMENT, a int, b int, c int, d int);
-  changeType: 0
+  changeType: 1

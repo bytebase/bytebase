@@ -1,5 +1,5 @@
 - statement: CREATE TABLE userTable(id INT NOT NULL,name VARCHAR(255) CHARSET ascii,roomId INT,time_created TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment',time_updated TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment',content BLOB NOT NULL COMMENT 'comment',json_content JSON NOT NULL COMMENT 'comment',INDEX idx1(name),UNIQUE KEY uk1(id, name),FOREIGN KEY fk1(roomId) REFERENCES room(id),INDEX idx_userTable_content(content)) ENGINE = CSV COLLATE latin1_bin;
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 305
@@ -10,9 +10,9 @@
         column: 0
       endposition: null
 - statement: ALTER TABLE tech_book ADD CONSTRAINT fk_tech_book_author_id_author_id FOREIGN KEY (author_id) REFERENCES author (id);
-  changeType: 0
+  changeType: 1
 - statement: ALTER TABLE tech_book ADD CONSTRAINT fk_author_id FOREIGN KEY (author_id) REFERENCES author (id);
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 305
@@ -23,7 +23,7 @@
         column: 0
       endposition: null
 - statement: ALTER TABLE tech_book ADD CONSTRAINT rvemempmcmmhutaskvcidmwaldtfjdgmcpkhmibtadfydtkexpuzczrrneucthfwk FOREIGN KEY (author_id) REFERENCES author (id);
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 305
@@ -47,21 +47,21 @@
       author_id INT,
       FOREIGN KEY  fk_book_author_id_author_id (author_id) REFERENCES author (id)
     );
-  changeType: 0
+  changeType: 1
 - statement: |
     CREATE TABLE book(
       id INT,
       author_id INT,
       FOREIGN KEY (author_id) REFERENCES author (id)
     );
-  changeType: 0
+  changeType: 1
 - statement: |
     CREATE TABLE book(
       id INT,
       author_id INT,
       FOREIGN KEY fk_book_author_id (author_id) REFERENCES author (id)
     );
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 305

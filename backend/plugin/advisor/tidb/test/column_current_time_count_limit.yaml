@@ -1,12 +1,12 @@
 - statement: CREATE TABLE t(a timestamp, b timestamp)
-  changeType: 0
+  changeType: 1
 - statement: |-
     CREATE TABLE t(
       a timestamp default now(),
       b timestamp default current_timestamp(),
       c timestamp default localtime
     )
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 418
@@ -21,7 +21,7 @@
       a timestamp default now() on update localtime,
       b timestamp default current_timestamp() on update localtimestamp()
     )
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 419
@@ -34,7 +34,7 @@
 - statement: |-
     ALTER TABLE tech_book ADD COLUMN a timestamp default now() on update localtime;
     ALTER TABLE tech_book ADD COLUMN b timestamp default current_timestamp() on update localtimestamp();
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 419

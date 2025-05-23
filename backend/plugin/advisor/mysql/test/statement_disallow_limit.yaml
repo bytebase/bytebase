@@ -1,9 +1,9 @@
 - statement: INSERT INTO tech_book SELECT * FROM tech_book;
-  changeType: 0
+  changeType: 1
 - statement: |
     INSERT INTO tech_book SELECT * FROM tech_book;
     INSERT INTO tech_book SELECT * FROM tech_book LIMIT 1;
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 1103
@@ -16,7 +16,7 @@
 - statement: |
     INSERT INTO tech_book SELECT * FROM tech_book;
     INSERT INTO tech_book SELECT * FROM tech_book UNION SELECT * FROM tech_book LIMIT 1;
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 1103
@@ -29,7 +29,7 @@
 - statement: |
     INSERT INTO tech_book SELECT * FROM tech_book;
     INSERT INTO tech_book SELECT * FROM tech_book UNION SELECT * FROM tech_book LIMIT 1;
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 1103
@@ -42,7 +42,7 @@
 - statement: |
     UPDATE tech_book SET name = 'my name';
     UPDATE tech_book SET name = 'my name' LIMIT 10;
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 1102
@@ -55,7 +55,7 @@
 - statement: |
     DELETE FROM tech_book;
     DELETE FROM tech_book LIMIT 10;
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 1106

@@ -1,5 +1,5 @@
 - statement: SELECT * FROM employee WHERE id IN (1, 2, 3, 4, 5);
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 225
@@ -10,7 +10,7 @@
         column: 0
       endposition: null
 - statement: SELECT * FROM employee WHERE id = 1 OR id = 2 OR id = 3 OR id = 4 OR id = 5;
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 225

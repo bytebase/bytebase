@@ -1,7 +1,7 @@
 - statement: DROP TABLE IF EXISTS foo_delete
-  changeType: 0
+  changeType: 1
 - statement: DROP TABLE IF EXISTS foo
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 603
@@ -12,7 +12,7 @@
         column: 0
       endposition: null
 - statement: DROP TABLE IF EXISTS foo_delete, bar
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 603

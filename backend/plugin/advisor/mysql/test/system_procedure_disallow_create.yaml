@@ -1,11 +1,11 @@
 - statement: CREATE TABLE t(a int);
-  changeType: 0
+  changeType: 1
 - statement: |-
     CREATE PROCEDURE simpleProcedure()
     BEGIN
         SELECT 'Hello, World!' AS Message;
     END;
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 1401
