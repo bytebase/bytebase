@@ -1032,7 +1032,7 @@ func getObjectID(schema string, object string) string {
 	return buf.String()
 }
 
-func writeCreateTable(out io.Writer, schema string, tableName string, columns []*storepb.ColumnMetadata) error {
+func writeCreateTable(out io.Writer, schema string, tableName string, columns []*storepb.ColumnMetadata, checks []*storepb.CheckConstraintMetadata) error {
 	if _, err := io.WriteString(out, `CREATE TABLE "`); err != nil {
 		return err
 	}
@@ -1098,6 +1098,14 @@ func writeCreateTable(out io.Writer, schema string, tableName string, columns []
 		}
 	}
 
+	for _, check := range checks {
+		_, _ = io.WriteString(out, ",\n    ")
+		_, _ = io.WriteString(out, `CONSTRAINT "`)
+		_, _ = io.WriteString(out, check.Name)
+		_, _ = io.WriteString(out, `" CHECK `)
+		_, _ = io.WriteString(out, check.Expression)
+	}
+
 	_, err := io.WriteString(out, "\n)")
 	return err
 }
@@ -1131,7 +1139,7 @@ func writeTable(out io.Writer, schema string, table *storepb.TableMetadata, sequ
 		}
 	}
 
-	if err := writeCreateTable(out, schema, table.Name, table.Columns); err != nil {
+	if err := writeCreateTable(out, schema, table.Name, table.Columns, table.CheckConstraints); err != nil {
 		return err
 	}
 
@@ -1790,7 +1798,7 @@ func writeAttachPartition(out io.Writer, schema string, tableName string, partit
 }
 
 func writePartitionTable(out io.Writer, schema string, columns []*storepb.ColumnMetadata, partition *storepb.TablePartitionMetadata) error {
-	if err := writeCreateTable(out, schema, partition.Name, columns); err != nil {
+	if err := writeCreateTable(out, schema, partition.Name, columns, partition.CheckConstraints); err != nil {
 		return err
 	}
 

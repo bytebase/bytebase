@@ -117,13 +117,17 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get triggers from database %q", d.databaseName)
 	}
-	tableMap, externalTableMap, tableOidMap, err := getTables(txn, isAtLeastPG10, columnMap, indexMap, triggerMap, extensionDepend)
+	checksMap, err := getChecks(txn)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get checks from database %q", d.databaseName)
+	}
+	tableMap, externalTableMap, tableOidMap, err := getTables(txn, isAtLeastPG10, columnMap, indexMap, triggerMap, checksMap, extensionDepend)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get tables from database %q", d.databaseName)
 	}
 	var tablePartitionMap map[db.TableKey][]*storepb.TablePartitionMetadata
 	if isAtLeastPG10 {
-		tablePartitionMap, err = getTablePartitions(txn, indexMap)
+		tablePartitionMap, err = getTablePartitions(txn, indexMap, checksMap)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get table partitions from database %q", d.databaseName)
 		}
@@ -228,6 +232,38 @@ func getExtensionDepend(txn *sql.Tx) (map[int]bool, error) {
 		return nil, err
 	}
 	return extensionDepend, nil
+}
+
+var listCheckQuery = `
+SELECT nsp.nspname, rel.relname, con.conname, pg_get_constraintdef(con.oid, true)
+    FROM pg_catalog.pg_constraint con
+        INNER JOIN pg_catalog.pg_class rel ON rel.oid = con.conrelid
+        INNER JOIN pg_catalog.pg_namespace nsp ON nsp.oid = connamespace
+        WHERE contype = 'c' and ` + fmt.Sprintf(`nsp.nspname NOT IN (%s)`, pgparser.SystemSchemaWhereClause)
+
+func getChecks(txn *sql.Tx) (map[db.TableKey][]*storepb.CheckConstraintMetadata, error) {
+	checksMap := make(map[db.TableKey][]*storepb.CheckConstraintMetadata)
+	rows, err := txn.Query(listCheckQuery)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var checkMetadata storepb.CheckConstraintMetadata
+		var schemaName, tableName, checkDefinition string
+		if err := rows.Scan(&schemaName, &tableName, &checkMetadata.Name, &checkDefinition); err != nil {
+			return nil, err
+		}
+		checkMetadata.Expression = strings.TrimPrefix(checkDefinition, "CHECK ")
+
+		key := db.TableKey{Schema: schemaName, Table: tableName}
+		checksMap[key] = append(checksMap[key], &checkMetadata)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return checksMap, nil
 }
 
 var listForeignKeyQuery = `
@@ -436,6 +472,7 @@ func getTables(
 	columnMap map[db.TableKey][]*storepb.ColumnMetadata,
 	indexMap map[db.TableKey][]*storepb.IndexMetadata,
 	triggerMap map[db.TableKey][]*storepb.TriggerMetadata,
+	checksMap map[db.TableKey][]*storepb.CheckConstraintMetadata,
 	extensionDepend map[int]bool,
 ) (map[string][]*storepb.TableMetadata, map[string][]*storepb.ExternalTableMetadata, map[int]*db.TableKeyWithColumns, error) {
 	foreignKeysMap, err := getForeignKeys(txn)
@@ -478,6 +515,7 @@ func getTables(
 		table.Indexes = indexMap[key]
 		table.ForeignKeys = foreignKeysMap[key]
 		table.Triggers = triggerMap[key]
+		table.CheckConstraints = checksMap[key]
 
 		tableMap[schemaName] = append(tableMap[schemaName], table)
 		tableOidMap[oid] = &db.TableKeyWithColumns{Schema: schemaName, Table: table.Name, Columns: table.Columns}
@@ -550,7 +588,7 @@ WHERE
 	AND n.nspname NOT IN (%s)
 ORDER BY c.oid;`, pgparser.SystemSchemaWhereClause)
 
-func getTablePartitions(txn *sql.Tx, indexMap map[db.TableKey][]*storepb.IndexMetadata) (map[db.TableKey][]*storepb.TablePartitionMetadata, error) {
+func getTablePartitions(txn *sql.Tx, indexMap map[db.TableKey][]*storepb.IndexMetadata, checksMap map[db.TableKey][]*storepb.CheckConstraintMetadata) (map[db.TableKey][]*storepb.TablePartitionMetadata, error) {
 	result := make(map[db.TableKey][]*storepb.TablePartitionMetadata)
 	rows, err := txn.Query(listTablePartitionQuery)
 	if err != nil {
@@ -569,10 +607,11 @@ func getTablePartitions(txn *sql.Tx, indexMap map[db.TableKey][]*storepb.IndexMe
 		key := db.TableKey{Schema: schemaName, Table: tableName}
 		inhKey := db.TableKey{Schema: inhSchemaName, Table: inhTableName}
 		metadata := &storepb.TablePartitionMetadata{
-			Name:       tableName,
-			Expression: partKeyDef,
-			Value:      relPartBound,
-			Indexes:    indexMap[key],
+			Name:             tableName,
+			Expression:       partKeyDef,
+			Value:            relPartBound,
+			Indexes:          indexMap[key],
+			CheckConstraints: checksMap[key],
 		}
 		switch strings.ToLower(partitionType) {
 		case "l":

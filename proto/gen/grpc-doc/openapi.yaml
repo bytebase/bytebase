@@ -13385,6 +13385,10 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/IndexMetadata'
+                checkConstraints:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/CheckConstraintMetadata'
             description: TablePartitionMetadata is the metadata for table partitions.
         TagPolicy:
             type: object
