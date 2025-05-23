@@ -240,7 +240,6 @@ export const keyForNodeTarget = <T extends NodeType>(
         `triggers/${keyWithPosition(trigger, tp)}`,
       ].join("/");
     case "index":
-      console.debug("index!!");
       const { index } = target as NodeTarget<"index">;
       return [
         keyForNodeTarget("table", target as NodeTarget<"table">),
@@ -254,7 +253,6 @@ export const keyForNodeTarget = <T extends NodeType>(
       ].join("/");
     case "check":
       const { check } = target as NodeTarget<"check">;
-      console.debug("check", check);
       return [
         keyForNodeTarget("table", target as NodeTarget<"table">),
         `checks/${check}`,
