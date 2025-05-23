@@ -55,12 +55,6 @@ importers:
       bootstrap:
         specifier: 5.3.3
         version: 5.3.3(@popperjs/core@2.11.8)
-      canvas-confetti:
-        specifier: 1.9.3
-        version: 1.9.3
-      core-js:
-        specifier: ^3.41.0
-        version: 3.42.0
       crypto-js:
         specifier: ^4.2.0
         version: 4.2.0
@@ -242,9 +236,6 @@ importers:
       '@tsconfig/node22':
         specifier: 22.0.0
         version: 22.0.0
-      '@types/canvas-confetti':
-        specifier: 1.6.4
-        version: 1.6.4
       '@types/crypto-js':
         specifier: ^4.2.2
         version: 4.2.2
@@ -2155,9 +2146,6 @@ packages:
   '@tsconfig/node22@22.0.0':
     resolution: {integrity: sha512-twLQ77zevtxobBOD4ToAtVmuYrpeYUh3qh+TEp+08IWhpsrIflVHqQ1F1CiPxQGL7doCdBIOOCF+1Tm833faNg==}
 
-  '@types/canvas-confetti@1.6.4':
-    resolution: {integrity: sha512-fNyZ/Fdw/Y92X0vv7B+BD6ysHL4xVU5dJcgzgxLdGbn8O3PezZNIJpml44lKM0nsGur+o/6+NZbZeNTt00U1uA==}
-
   '@types/crypto-js@4.2.2':
     resolution: {integrity: sha512-sDOLlVbHhXpAUAL0YHDUUwDZf3iN4Bwi4W6a0W0b+QcAezUbRtH4FVb+9J4h+XFPW7l/gQ9F8qC7P+Ec4k8QVQ==}
 
@@ -2716,9 +2704,6 @@ packages:
 
   caniuse-lite@1.0.30001716:
     resolution: {integrity: sha512-49/c1+x3Kwz7ZIWt+4DvK3aMJy9oYXXG6/97JKsnjdCk/6n9vVyWL8NAwVt95Lwt9eigI10Hl782kDfZUUlRXw==}
-
-  canvas-confetti@1.9.3:
-    resolution: {integrity: sha512-rFfTURMvmVEX1gyXFgn5QMn81bYk70qa0HLzcIOSVEyl57n6o9ItHeBtUSWdvKAPY0xlvBHno4/v3QPrT83q9g==}
 
   catering@2.1.1:
     resolution: {integrity: sha512-K7Qy8O9p76sL3/3m7/zLKbRkyOlSZAgzEaLhyj2mXS8PsCud2Eo4hAb8aLtZqHh0QGqLcb9dlJSu6lHRVENm1w==}
@@ -7633,8 +7618,6 @@ snapshots:
 
   '@tsconfig/node22@22.0.0': {}
 
-  '@types/canvas-confetti@1.6.4': {}
-
   '@types/crypto-js@4.2.2': {}
 
   '@types/d3-path@3.1.1': {}
@@ -8333,8 +8316,6 @@ snapshots:
   caniuse-lite@1.0.30001715: {}
 
   caniuse-lite@1.0.30001716: {}
-
-  canvas-confetti@1.9.3: {}
 
   catering@2.1.1: {}
 
