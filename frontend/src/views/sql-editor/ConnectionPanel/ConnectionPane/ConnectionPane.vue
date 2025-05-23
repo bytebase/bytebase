@@ -10,8 +10,8 @@
             $t("sql-editor.batch-query.description", {
               database: state.selectedDatabases.size,
               group:
-                tabStore.currentTab?.batchQueryContext?.databaseGroups.length ??
-                0,
+                tabStore.currentTab?.batchQueryContext?.databaseGroups
+                  ?.length ?? 0,
               project: project.title,
             })
           }}
