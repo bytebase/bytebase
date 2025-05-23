@@ -4,7 +4,7 @@
       b varchar(50) not null unique,
       primary key (a)
     );
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 420
@@ -15,13 +15,13 @@
         column: 0
       endposition: null
 - statement: CREATE TABLE t(a int primary key, b int default 1)
-  changeType: 0
+  changeType: 1
 - statement: |-
     CREATE TABLE t(
       a int,
       b int default 1
     )
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 420
@@ -35,7 +35,7 @@
     ALTER TABLE tech_book ADD COLUMN a BLOB;
     ALTER TABLE tech_book ADD COLUMN b timestamp;
     ALTER TABLE tech_book MODIFY COLUMN a varchar(220);
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 420

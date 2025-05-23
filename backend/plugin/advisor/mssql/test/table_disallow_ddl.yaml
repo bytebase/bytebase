@@ -7,7 +7,7 @@
       Id INT NOT NULL,
       Name VARCHAR(50) NOT NULL
     );
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 613

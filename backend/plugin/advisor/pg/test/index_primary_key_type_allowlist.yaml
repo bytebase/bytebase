@@ -1,12 +1,12 @@
 - statement: CREATE TABLE t(a SERIAL PRIMARY KEY);
-  changeType: 0
+  changeType: 1
 - statement: CREATE TABLE t(a BIGSERIAL, PRIMARY KEY(a));
-  changeType: 0
+  changeType: 1
 - statement: |-
     CREATE TABLE t(
       a varchar(20) PRIMARY KEY
     );
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 803
@@ -21,7 +21,7 @@
       a varchar(20),
       PRIMARY KEY(a)
     );
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 803

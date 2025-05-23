@@ -3,7 +3,7 @@
       id int,
       name varchar(255)
     )
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 402
@@ -22,7 +22,7 @@
         column: 0
       endposition: null
 - statement: CREATE TABLE book(id int, name varchar(255), PRIMARY KEY (id))
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 402
@@ -33,7 +33,7 @@
         column: 0
       endposition: null
 - statement: CREATE TABLE book(id int PRIMARY KEY, name varchar(255))
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 402
@@ -44,7 +44,7 @@
         column: 0
       endposition: null
 - statement: CREATE TABLE book(id int NOT NULL, name varchar(255))
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 402
@@ -55,9 +55,9 @@
         column: 0
       endposition: null
 - statement: CREATE TABLE book(id int PRIMARY KEY, name varchar(255) NOT NULL)
-  changeType: 0
+  changeType: 1
 - statement: ALTER TABLE tech_book ADD COLUMN reader int
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 402
@@ -71,11 +71,11 @@
     ALTER TABLE tech_book DROP COLUMN id;
     ALTER TABLE tech_book DROP COLUMN name;
     ALTER TABLE tech_book ADD COLUMN id int PRIMARY KEY, ADD COLUMN name varchar(255) NOT NULL;
-  changeType: 0
+  changeType: 1
 - statement: ALTER TABLE tech_book ALTER COLUMN id SET NOT NULL
-  changeType: 0
+  changeType: 1
 - statement: ALTER TABLE tech_book ALTER COLUMN name DROP NOT NULL
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 402
@@ -86,4 +86,4 @@
         column: 0
       endposition: null
 - statement: /* this is a comment */
-  changeType: 0
+  changeType: 1

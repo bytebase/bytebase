@@ -1,9 +1,9 @@
 - statement: CREATE TABLE abc.t(id INT PRIMARY KEY);
-  changeType: 0
+  changeType: 1
 - statement: CREATE TABLE t(id INT, PRIMARY KEY (id))
-  changeType: 0
+  changeType: 1
 - statement: CREATE TABLE "TEST_DB".t(id INT)
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 601
@@ -16,15 +16,15 @@
 - statement: |-
     CREATE TABLE t(id INT);
                 DROP TABLE t
-  changeType: 0
+  changeType: 1
 - statement: |-
     CREATE TABLE t(id INT);
     ALTER TABLE t ADD CONSTRAINT tpk PRIMARY KEY (id)
-  changeType: 0
+  changeType: 1
 - statement: |-
     CREATE TABLE t(id INT PRIMARY KEY);
     ALTER TABLE t DROP PRIMARY KEY
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 601

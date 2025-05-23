@@ -1,7 +1,7 @@
 - statement: CREATE TABLE t(a char(5));
-  changeType: 0
+  changeType: 1
 - statement: CREATE TABLE t(a int, b JSON);
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 411
@@ -14,7 +14,7 @@
 - statement: |-
     CREATE TABLE t(d char(5));
     ALTER TABLE t add a JSON;
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 411
@@ -27,7 +27,7 @@
 - statement: |-
     CREATE TABLE t(d char(5));
     ALTER TABLE t MODIFY d BINARY_FLOAT;
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 411
@@ -38,7 +38,7 @@
         column: 0
       endposition: null
 - statement: CREATE TABLE t(a int, b BINARY_FLOAT);
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 411
@@ -51,7 +51,7 @@
 - statement: |-
     CREATE TABLE t(d char(5));
     ALTER TABLE t add a BINARY_FLOAT;
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 411

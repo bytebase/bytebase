@@ -2,17 +2,17 @@
     CREATE TABLE book(
             id int PRIMARY KEY DEFAULT 0
           )
-  changeType: 0
+  changeType: 1
 - statement: |-
     CREATE TABLE book(
             id int PRIMARY KEY
           )
-  changeType: 0
+  changeType: 1
 - statement: |-
     CREATE TABLE book(
             id int NOT NULL
           )
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 404
@@ -27,15 +27,15 @@
             id int,
             PRIMARY KEY (id)
           )
-  changeType: 0
+  changeType: 1
 - statement: |-
     CREATE TABLE book(a int);
     ALTER TABLE book ADD COLUMN id int PRIMARY KEY
-  changeType: 0
+  changeType: 1
 - statement: |-
     CREATE TABLE book(a int);
     ALTER TABLE book ADD COLUMN id int NOT NULL
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 404
@@ -48,7 +48,7 @@
 - statement: |-
     CREATE TABLE book(id int);
     ALTER TABLE book MODIFY COLUMN id int NOT NULL
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 404
@@ -61,15 +61,15 @@
 - statement: |-
     CREATE TABLE book(id int);
     ALTER TABLE book MODIFY COLUMN id int PRIMARY KEY
-  changeType: 0
+  changeType: 1
 - statement: |-
     CREATE TABLE book(uid int);
     ALTER TABLE book CHANGE COLUMN uid id int PRIMARY KEY
-  changeType: 0
+  changeType: 1
 - statement: |-
     CREATE TABLE book(uid int);
     ALTER TABLE book CHANGE COLUMN uid id int NOT NULL
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 404
@@ -80,4 +80,4 @@
         column: 0
       endposition: null
 - statement: "\n\t\t\t\tCREATE TABLE book(uid int, id int);\n\t\t\t\tALTER TABLE book \n\t\t\t\t\tCHANGE COLUMN uid uid int NOT NULL DEFAULT 0,\n\t\t\t\t\tMODIFY COLUMN id int PRIMARY KEY DEFAULT 0,\n\t\t\t\t\tADD COLUMN name varchar(20) NOT NULL DEFAULT ''\n\t\t\t\t"
-  changeType: 0
+  changeType: 1

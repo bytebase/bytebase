@@ -3,7 +3,7 @@
       name    VARCHAR,
       "CONNECT" VARCHAR
     );
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 308
@@ -18,7 +18,7 @@
       name      VARCHAR,
       "connect" VARCHAR
     );
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 308
@@ -33,13 +33,13 @@
       name  VARCHAR,
       age   INT
     );
-  changeType: 0
+  changeType: 1
 - statement: |-
     CREATE TABLE mytable_copy (
       name      INT,
       "connect" INT
     ) AS SELECT a + 1, b + 2 FROM mytable;
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 308
@@ -54,9 +54,9 @@
       name INT,
       age  INT
     ) AS SELECT a + 1, b + 2 FROM mytable;
-  changeType: 0
+  changeType: 1
 - statement: ALTER TABLE mytable RENAME COLUMN name TO "connect";
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 308
@@ -67,4 +67,4 @@
         column: 0
       endposition: null
 - statement: ALTER TABLE mytable RENAME COLUMN name TO age;
-  changeType: 0
+  changeType: 1

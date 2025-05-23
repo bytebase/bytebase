@@ -1,9 +1,9 @@
 - statement: INSERT INTO tech_book values(1, 'a');
-  changeType: 0
+  changeType: 1
 - statement: |-
     UPDATE tech_book SET name = 'my name';
     UPDATE tech_book SET name = 'my name' ORDER BY id;
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 1104
@@ -16,7 +16,7 @@
 - statement: |-
     DELETE FROM tech_book;
     DELETE FROM tech_book ORDER BY id;
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 1105

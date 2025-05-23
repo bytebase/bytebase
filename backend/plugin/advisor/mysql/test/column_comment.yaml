@@ -11,7 +11,7 @@
       UNIQUE KEY uk1(id, name),
       FOREIGN KEY fk1(roomId) REFERENCES room(id),
       INDEX idx_userTable_content(content)) ENGINE = CSV COLLATE latin1_bin;
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 1032
@@ -49,16 +49,16 @@
       INDEX idx_user_name(name),
       UNIQUE KEY uk_user_id_name(id, name)
     ) ENGINE = INNODB COMMENT 'comment';
-  changeType: 0
+  changeType: 1
 - statement: CREATE TABLE t(a int COMMENT 'comments');
-  changeType: 0
+  changeType: 1
 - statement: |-
     CREATE TABLE t(
       a int COMMENT 'some comments',
       b int,
       c int
     );
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 1301
@@ -87,7 +87,7 @@
 - statement: |-
     CREATE TABLE t(a int COMMENT 'comment');
     ALTER TABLE t ADD COLUMN b int;
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 1032
@@ -100,7 +100,7 @@
 - statement: |-
     CREATE TABLE t(a int COMMENT 'comment');
     ALTER TABLE t ADD COLUMN (b int, c int);
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 1032
@@ -121,7 +121,7 @@
 - statement: |-
     CREATE TABLE t(a int COMMENT 'this is comment');
     ALTER TABLE t CHANGE COLUMN a b int;
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 1301
@@ -142,7 +142,7 @@
 - statement: |-
     CREATE TABLE t(b int COMMENT 'It is comment');
     ALTER TABLE t MODIFY COLUMN b int;
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 1301
@@ -163,7 +163,7 @@
 - statement: |-
     CREATE TABLE t(b int COMMENT 'It is COMMENT');
     ALTER TABLE t MODIFY COLUMN b int COMMENT 'abcdefghiakljhakljdsfalugelkhnabsdguelkadf';
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 1301

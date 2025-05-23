@@ -1,5 +1,5 @@
 - statement: CREATE TABLE t(a int, b int, primary key (a, b));
-  changeType: 0
+  changeType: 1
 - statement: |-
     CREATE TABLE t(
       a int,
@@ -8,7 +8,7 @@
       unique key uk (a, b, b, b, b, b, b),
       foreign key fk (a, b, b, b, b, b) references t1(a, b, b, b, b, b)
     );
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 802
@@ -38,7 +38,7 @@
     CREATE TABLE t(a int, b int, c int, d int, e int, f int, g int);
     CREATE INDEX idx ON t(a, b, c, d, e, f, g);
     CREATE UNIQUE INDEX uk ON t(a, b, c, d, e, f, g);
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 802
@@ -60,7 +60,7 @@
     CREATE TABLE t(a int, b int, c int, d int, e int, f int, g int);
     ALTER TABLE t ADD PRIMARY KEY pk (a, b, c, d, e, f, g);
     ALTER TABLE t ADD UNIQUE KEY uk (a, b, c, d, e, f, g);
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 802
@@ -81,7 +81,7 @@
 - statement: |-
     CREATE TABLE t(a int, b int, c int, d int, e int, f int, g int);
     ALTER TABLE t ADD FOREIGN KEY uk (a, b, c, d, e, f, g) REFERENCES t1(a, b, c, d, e, f, g)
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 802
@@ -94,4 +94,4 @@
 - statement: |-
     CREATE TABLE t(a int, b varchar(255));
     CREATE FULLTEXT INDEX idx ON t(b, b, b, b, b, b);
-  changeType: 0
+  changeType: 1

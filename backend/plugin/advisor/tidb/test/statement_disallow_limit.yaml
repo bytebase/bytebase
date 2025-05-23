@@ -1,7 +1,7 @@
 - statement: ""
-  changeType: 0
+  changeType: 1
 - statement: INSERT INTO tech_book SELECT * FROM tech_book LIMIT 1
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 1103
@@ -12,7 +12,7 @@
         column: 0
       endposition: null
 - statement: INSERT INTO tech_book SELECT * FROM tech_book UNION SELECT * FROM tech_book LIMIT 1
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 1103
@@ -23,7 +23,7 @@
         column: 0
       endposition: null
 - statement: UPDATE tech_book SET name = 'my name' LIMIT 10
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 1102
@@ -34,7 +34,7 @@
         column: 0
       endposition: null
 - statement: DELETE FROM tech_book LIMIT 10
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 1106

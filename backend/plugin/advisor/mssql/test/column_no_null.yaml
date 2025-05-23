@@ -5,7 +5,7 @@
       Age INT,
       Address VARCHAR(200)
     );
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 402
@@ -31,7 +31,7 @@
       Address VARCHAR(200),
       PRIMARY KEY (Id, Age)
     );
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 402
@@ -42,7 +42,7 @@
         column: 0
       endposition: null
 - statement: ALTER TABLE MyTable ALTER COLUMN Name VARCHAR(100) NULL;
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 402
@@ -53,9 +53,9 @@
         column: 0
       endposition: null
 - statement: ALTER TABLE MyTable ALTER COLUMN Name VARCHAR(100) NOT NULL;
-  changeType: 0
+  changeType: 1
 - statement: ALTER TABLE MyTable ADD Age INT;
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 402
@@ -66,7 +66,7 @@
         column: 0
       endposition: null
 - statement: ALTER TABLE MyTable ADD Age INT NULL;
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 402
@@ -77,4 +77,4 @@
         column: 0
       endposition: null
 - statement: ALTER TABLE MyTable ADD Age INT NOT NULL;
-  changeType: 0
+  changeType: 1

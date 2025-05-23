@@ -1,5 +1,5 @@
 - statement: CREATE INDEX test_index ON dbo.pokes (c1, c2);
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 817
@@ -10,9 +10,9 @@
         column: 0
       endposition: null
 - statement: CREATE INDEX test_index ON dbo.pokes (c100, c200);
-  changeType: 0
+  changeType: 1
 - statement: CREATE INDEX test_index ON [dbo].[pokes] (c1, c2);
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 817

@@ -1,9 +1,9 @@
 - statement: CREATE TABLE t(a int)
-  changeType: 0
+  changeType: 1
 - statement: CREATE TABLE t(a int auto_increment) auto_increment = 20
-  changeType: 0
+  changeType: 1
 - statement: CREATE TABLE t(a int auto_increment) auto_increment = 2
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 416

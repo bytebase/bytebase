@@ -1,5 +1,5 @@
 - statement: EXEC sp_rename N'Phone', N'Telephone', N'USERDATATYPE';
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 102
@@ -10,7 +10,7 @@
         column: 0
       endposition: null
 - statement: DROP TABLE MyTable;
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 112
@@ -23,9 +23,9 @@
 - statement: |-
     CREATE TABLE MyTable(Id INT PRIMARY KEY);
     DROP TABLE MyTable;
-  changeType: 0
+  changeType: 1
 - statement: DROP SCHEMA MySchema;
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 112
@@ -38,9 +38,9 @@
 - statement: |-
     CREATE SCHEMA AUTHORIZATION dbo;
     DROP SCHEMA dbo;
-  changeType: 0
+  changeType: 1
 - statement: DROP DATABASE MyDB;
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 112
@@ -53,7 +53,7 @@
 - statement: |-
     CREATE DATABASE MyDB;
     DROP DATABASE MyDB;
-  changeType: 0
+  changeType: 1
 - statement: |-
     ALTER TABLE MyTable DROP COLUMN MyColumnOne, MyColumnTwo;
     ALTER TABLE MyTable ALTER COLUMN MyColumnOne INT NOT NULL;
@@ -64,7 +64,7 @@
     ALTER TABLE MyTable WITH CHECK ADD CONSTRAINT MyConstraint CHECK (MyColumnOne > 0);
     ALTER TABLE MyTable WITH NOCHECK ADD FOREIGN KEY (MyColumnOne) REFERENCES MyTableTwo(MyColumnTwo);
     ALTER TABLE MyTable WITH CHECK ADD FOREIGN KEY (MyColumnOne) REFERENCES MyTableTwo(MyColumnTwo);
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 112
@@ -123,7 +123,7 @@
         column: 0
       endposition: null
 - statement: EXEC sp_rename 'Sales.SalesTerritory', 'SalesTerr';
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 102
@@ -134,7 +134,7 @@
         column: 0
       endposition: null
 - statement: EXEC sp_rename 'dbo.ErrorLog.ErrorTime', 'ErrorDateTime', 'COLUMN';
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 102

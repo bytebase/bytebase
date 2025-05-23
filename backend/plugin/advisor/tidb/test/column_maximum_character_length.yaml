@@ -1,9 +1,9 @@
 - statement: CREATE TABLE t(name char(20));
-  changeType: 0
+  changeType: 1
 - statement: CREATE TABLE t(name varchar(225));
-  changeType: 0
+  changeType: 1
 - statement: CREATE TABLE t(name char(225));
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 415
@@ -14,7 +14,7 @@
         column: 0
       endposition: null
 - statement: ALTER TABLE tech_book ADD COLUMN name_2 char(225)
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 415
@@ -25,7 +25,7 @@
         column: 0
       endposition: null
 - statement: ALTER TABLE tech_book CHANGE COLUMN name name char(225)
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 415
@@ -36,7 +36,7 @@
         column: 0
       endposition: null
 - statement: ALTER TABLE tech_book MODIFY COLUMN name char(225)
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 415
