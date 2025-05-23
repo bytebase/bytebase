@@ -226,7 +226,7 @@ import {
   getStatementSize,
   flattenSpecList,
 } from "@/utils";
-import { usePlanSQLCheckContext } from "../../SQLCheckSectionV1/context";
+import { usePlanSQLCheckContext } from "../../SQLCheckSection/context";
 import { useSQLAdviceMarkers } from "../useSQLAdviceMarkers";
 import FormatOnSaveCheckbox from "./FormatOnSaveCheckbox.vue";
 import type { EditState } from "./useTempEditState";

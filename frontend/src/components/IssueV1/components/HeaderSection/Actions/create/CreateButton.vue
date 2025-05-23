@@ -60,12 +60,14 @@ import { getValidIssueLabels } from "@/components/IssueV1/components/IssueLabelS
 import { ErrorList } from "@/components/IssueV1/components/common";
 import {
   databaseEngineForSpec,
-  getLocalSheetByName,
   isValidStage,
+  specForTask,
   useIssueContext,
 } from "@/components/IssueV1/logic";
 import formatSQL from "@/components/MonacoEditor/sqlFormatter";
-import { isValidSpec } from "@/components/Plan";
+import { getLocalSheetByName, isValidSpec } from "@/components/Plan";
+import { getSpecChangeType } from "@/components/Plan/components/SQLCheckSection/common";
+import { usePlanSQLCheckContext } from "@/components/Plan/components/SQLCheckSection/context";
 import { databaseForTask } from "@/components/Rollout/RolloutDetail";
 import { SQLCheckPanel } from "@/components/SQLCheck";
 import { STATEMENT_SKIP_CHECK_THRESHOLD } from "@/components/SQLCheck/common";
@@ -98,19 +100,14 @@ import {
   sheetNameOfTaskV1,
   type Defer,
 } from "@/utils";
-import { getTaskChangeType } from "../../../SQLCheckSection/common";
-import { useIssueSQLCheckContext } from "../../../SQLCheckSection/context";
 
 const MAX_FORMATTABLE_STATEMENT_SIZE = 10000; // 10K characters
 
 const { t } = useI18n();
 const router = useRouter();
 const { issue, formatOnSave, events, selectedTask } = useIssueContext();
-const {
-  enabled: shouldRunSQLCheck,
-  resultMap: checkResultMap,
-  upsertResult: upsertCheckResult,
-} = useIssueSQLCheckContext();
+const { resultMap: checkResultMap, upsertResult: upsertCheckResult } =
+  usePlanSQLCheckContext();
 const sheetStore = useSheetV1Store();
 const loading = ref(false);
 const showSQLCheckResultPanel = ref(false);
@@ -299,10 +296,7 @@ const emitIssueCreateWindowEvent = (issue: Issue) => {
 };
 
 const runSQLCheckForIssue = async () => {
-  if (!shouldRunSQLCheck.value) {
-    return true;
-  }
-
+  // TODO
   const flattenTasks = flattenTaskV1List(issue.value.rolloutEntity);
   const statementTargetsMap = new Map<string, string[]>();
   for (const task of flattenTasks) {
@@ -339,7 +333,9 @@ const runSQLCheckForIssue = async () => {
             version: "0",
             type: ReleaseFileType.VERSIONED,
             statement: new TextEncoder().encode(statement),
-            changeType: getTaskChangeType(issue.value, flattenTasks[0]),
+            changeType: getSpecChangeType(
+              specForTask(issue.value.planEntity, selectedTask.value)
+            ),
           },
         ],
       },
