@@ -25,6 +25,8 @@ export interface BatchRunTasksRequest {
    */
   tasks: string[];
   reason: string;
+  /** The task run should run after run_time. */
+  runTime?: Timestamp | undefined;
 }
 
 export interface BatchRunTasksResponse {
@@ -534,6 +536,11 @@ export interface TaskRun {
     | undefined;
   /** Format: projects/{project}/sheets/{sheet} */
   sheet: string;
+  /**
+   * The task run should run after run_time.
+   * This can only be set when creating the task run calling BatchRunTasks.
+   */
+  runTime?: Timestamp | undefined;
 }
 
 export enum TaskRun_Status {
@@ -1049,7 +1056,7 @@ export interface PreviewTaskRunRollbackResponse {
 }
 
 function createBaseBatchRunTasksRequest(): BatchRunTasksRequest {
-  return { parent: "", tasks: [], reason: "" };
+  return { parent: "", tasks: [], reason: "", runTime: undefined };
 }
 
 export const BatchRunTasksRequest: MessageFns<BatchRunTasksRequest> = {
@@ -1062,6 +1069,9 @@ export const BatchRunTasksRequest: MessageFns<BatchRunTasksRequest> = {
     }
     if (message.reason !== "") {
       writer.uint32(26).string(message.reason);
+    }
+    if (message.runTime !== undefined) {
+      Timestamp.encode(message.runTime, writer.uint32(34).fork()).join();
     }
     return writer;
   },
@@ -1097,6 +1107,14 @@ export const BatchRunTasksRequest: MessageFns<BatchRunTasksRequest> = {
           message.reason = reader.string();
           continue;
         }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.runTime = Timestamp.decode(reader, reader.uint32());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1111,6 +1129,7 @@ export const BatchRunTasksRequest: MessageFns<BatchRunTasksRequest> = {
       parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
       tasks: globalThis.Array.isArray(object?.tasks) ? object.tasks.map((e: any) => globalThis.String(e)) : [],
       reason: isSet(object.reason) ? globalThis.String(object.reason) : "",
+      runTime: isSet(object.runTime) ? fromJsonTimestamp(object.runTime) : undefined,
     };
   },
 
@@ -1125,6 +1144,9 @@ export const BatchRunTasksRequest: MessageFns<BatchRunTasksRequest> = {
     if (message.reason !== "") {
       obj.reason = message.reason;
     }
+    if (message.runTime !== undefined) {
+      obj.runTime = fromTimestamp(message.runTime).toISOString();
+    }
     return obj;
   },
 
@@ -1136,6 +1158,9 @@ export const BatchRunTasksRequest: MessageFns<BatchRunTasksRequest> = {
     message.parent = object.parent ?? "";
     message.tasks = object.tasks?.map((e) => e) || [];
     message.reason = object.reason ?? "";
+    message.runTime = (object.runTime !== undefined && object.runTime !== null)
+      ? Timestamp.fromPartial(object.runTime)
+      : undefined;
     return message;
   },
 };
@@ -3155,6 +3180,7 @@ function createBaseTaskRun(): TaskRun {
     priorBackupDetail: undefined,
     schedulerInfo: undefined,
     sheet: "",
+    runTime: undefined,
   };
 }
 
@@ -3198,6 +3224,9 @@ export const TaskRun: MessageFns<TaskRun> = {
     }
     if (message.sheet !== "") {
       writer.uint32(154).string(message.sheet);
+    }
+    if (message.runTime !== undefined) {
+      Timestamp.encode(message.runTime, writer.uint32(170).fork()).join();
     }
     return writer;
   },
@@ -3313,6 +3342,14 @@ export const TaskRun: MessageFns<TaskRun> = {
           message.sheet = reader.string();
           continue;
         }
+        case 21: {
+          if (tag !== 170) {
+            break;
+          }
+
+          message.runTime = Timestamp.decode(reader, reader.uint32());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3341,6 +3378,7 @@ export const TaskRun: MessageFns<TaskRun> = {
         : undefined,
       schedulerInfo: isSet(object.schedulerInfo) ? TaskRun_SchedulerInfo.fromJSON(object.schedulerInfo) : undefined,
       sheet: isSet(object.sheet) ? globalThis.String(object.sheet) : "",
+      runTime: isSet(object.runTime) ? fromJsonTimestamp(object.runTime) : undefined,
     };
   },
 
@@ -3385,6 +3423,9 @@ export const TaskRun: MessageFns<TaskRun> = {
     if (message.sheet !== "") {
       obj.sheet = message.sheet;
     }
+    if (message.runTime !== undefined) {
+      obj.runTime = fromTimestamp(message.runTime).toISOString();
+    }
     return obj;
   },
 
@@ -3417,6 +3458,9 @@ export const TaskRun: MessageFns<TaskRun> = {
       ? TaskRun_SchedulerInfo.fromPartial(object.schedulerInfo)
       : undefined;
     message.sheet = object.sheet ?? "";
+    message.runTime = (object.runTime !== undefined && object.runTime !== null)
+      ? Timestamp.fromPartial(object.runTime)
+      : undefined;
     return message;
   },
 };
