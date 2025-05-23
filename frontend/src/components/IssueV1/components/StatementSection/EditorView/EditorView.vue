@@ -206,13 +206,13 @@ import {
   stageForTask,
   isTaskEditable,
   specForTask,
-  createEmptyLocalSheet,
   notifyNotEditableLegacyIssue,
   isGroupingChangeTaskV1,
   databaseEngineForSpec,
 } from "@/components/IssueV1/logic";
 import { MonacoEditor } from "@/components/MonacoEditor";
 import { extensionNameOfLanguage } from "@/components/MonacoEditor/utils";
+import { createEmptyLocalSheet } from "@/components/Plan";
 import { databaseForTask } from "@/components/Rollout/RolloutDetail";
 import DownloadSheetButton from "@/components/Sheet/DownloadSheetButton.vue";
 import SQLUploadButton from "@/components/misc/SQLUploadButton.vue";

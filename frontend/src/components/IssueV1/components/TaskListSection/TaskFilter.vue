@@ -81,11 +81,11 @@
 <script lang="ts" setup>
 import { NTag } from "naive-ui";
 import { computed } from "vue";
+import AdviceStatusIcon from "@/components/Plan/components/SQLCheckSection/AdviceStatusIcon.vue";
+import { usePlanSQLCheckContext } from "@/components/Plan/components/SQLCheckSection/context";
 import { Task_Status } from "@/types/proto/v1/rollout_service";
 import { Advice_Status } from "@/types/proto/v1/sql_service";
 import { useIssueContext } from "../../logic";
-import AdviceStatusIcon from "../SQLCheckSection/AdviceStatusIcon.vue";
-import { useIssueSQLCheckContext } from "../SQLCheckSection/context";
 import TaskStatusIconV1 from "../TaskStatusIconV1.vue";
 import { filterTask } from "./filter";
 
@@ -117,7 +117,7 @@ const ADVICE_STATUS_FILTERS: Advice_Status[] = [
 ];
 
 const issueContext = useIssueContext();
-const sqlCheckContext = useIssueSQLCheckContext();
+const { resultMap } = usePlanSQLCheckContext();
 
 const { isCreating, selectedStage } = issueContext;
 
@@ -125,7 +125,7 @@ const taskList = computed(() => selectedStage.value.tasks);
 
 const getTaskCount = (status?: Task_Status, adviceStatus?: Advice_Status) => {
   return taskList.value.filter((task) =>
-    filterTask(issueContext, sqlCheckContext, task, { status, adviceStatus })
+    filterTask(issueContext, resultMap.value, task, { status, adviceStatus })
   ).length;
 };
 </script>
