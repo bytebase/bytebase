@@ -20,7 +20,7 @@ export type BatchQueryContext = {
 
   // databaseGroups is used to store the selected database group names for batch request.
   // Format: projects/{project}/databaseGroups/{databaseGroup}
-  databaseGroups: string[];
+  databaseGroups?: string[];
 };
 
 export type SQLEditorDatabaseQueryContext = {
