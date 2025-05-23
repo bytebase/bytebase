@@ -222,6 +222,7 @@ CREATE TABLE task_run (
     attempt integer NOT NULL,
     status text NOT NULL CHECK (status IN ('PENDING', 'RUNNING', 'DONE', 'FAILED', 'CANCELED')),
     started_at timestamptz NULL,
+    run_at timestamptz,
     code integer NOT NULL DEFAULT 0,
     -- result saves the task run result in json format
     result jsonb NOT NULL DEFAULT '{}'
