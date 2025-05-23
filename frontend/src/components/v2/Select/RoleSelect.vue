@@ -132,7 +132,7 @@ const renderLabel = (option: SelectOption) => {
   }
 
   const icon = h(FeatureBadge, {
-    feature: "bb.feature.custom-approval",
+    feature: "bb.feature.custom-role",
     clickable: false,
   });
   return h(
