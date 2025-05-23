@@ -81,7 +81,7 @@ import { emitWindowEvent } from "@/plugins";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { useDatabaseV1Store, useSheetV1Store } from "@/store";
 import { dialectOfEngineV1, languageOfEngineV1 } from "@/types";
-import { Issue } from "@/types/proto/v1/issue_service";
+import { Issue, Issue_Type } from "@/types/proto/v1/issue_service";
 import type { Plan_ExportDataConfig } from "@/types/proto/v1/plan_service";
 import { type Plan_ChangeDatabaseConfig } from "@/types/proto/v1/plan_service";
 import { ReleaseFileType } from "@/types/proto/v1/release_service";
@@ -105,7 +105,8 @@ const MAX_FORMATTABLE_STATEMENT_SIZE = 10000; // 10K characters
 
 const { t } = useI18n();
 const router = useRouter();
-const { issue, formatOnSave, events, selectedTask } = useIssueContext();
+const { isCreating, issue, formatOnSave, events, selectedTask } =
+  useIssueContext();
 const { resultMap: checkResultMap, upsertResult: upsertCheckResult } =
   usePlanSQLCheckContext();
 const sheetStore = useSheetV1Store();
@@ -296,7 +297,15 @@ const emitIssueCreateWindowEvent = (issue: Issue) => {
 };
 
 const runSQLCheckForIssue = async () => {
-  // TODO
+  if (
+    !isCreating.value ||
+    ![Issue_Type.DATABASE_CHANGE, Issue_Type.DATABASE_DATA_EXPORT].includes(
+      issue.value.type
+    )
+  ) {
+    return;
+  }
+
   const flattenTasks = flattenTaskV1List(issue.value.rolloutEntity);
   const statementTargetsMap = new Map<string, string[]>();
   for (const task of flattenTasks) {
