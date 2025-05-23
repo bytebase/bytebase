@@ -10,7 +10,6 @@ import {
   buildWorkspaceApprovalSetting,
   seedWorkspaceApprovalSetting,
 } from "@/utils";
-import { useUserStore } from "./user";
 import { useGracefulRequest } from "./utils";
 
 const SETTING_NAME = "settings/bb.workspace.approval";
@@ -30,9 +29,6 @@ export const useWorkspaceApprovalSettingStore = defineStore(
         if (_config.rules.length === 0) {
           _config.rules.push(...seedWorkspaceApprovalSetting());
         }
-        await useUserStore().batchGetUsers(
-          _config.rules.map((rule) => rule.template?.creator ?? "")
-        );
         config.value = await resolveLocalApprovalConfig(_config);
       }
     };

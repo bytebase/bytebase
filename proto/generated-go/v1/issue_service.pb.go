@@ -1498,13 +1498,10 @@ func (x *GrantRequest) GetExpiration() *durationpb.Duration {
 }
 
 type ApprovalTemplate struct {
-	state       protoimpl.MessageState `protogen:"open.v1"`
-	Flow        *ApprovalFlow          `protobuf:"bytes,1,opt,name=flow,proto3" json:"flow,omitempty"`
-	Title       string                 `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
-	Description string                 `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
-	// The name of the creator in users/{email} format.
-	// TODO: we should mark it as OUTPUT_ONLY, but currently the frontend will post the approval setting with creator.
-	Creator       string `protobuf:"bytes,4,opt,name=creator,proto3" json:"creator,omitempty"`
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Flow          *ApprovalFlow          `protobuf:"bytes,1,opt,name=flow,proto3" json:"flow,omitempty"`
+	Title         string                 `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
+	Description   string                 `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1556,13 +1553,6 @@ func (x *ApprovalTemplate) GetTitle() string {
 func (x *ApprovalTemplate) GetDescription() string {
 	if x != nil {
 		return x.Description
-	}
-	return ""
-}
-
-func (x *ApprovalTemplate) GetCreator() string {
-	if x != nil {
-		return x.Creator
 	}
 	return ""
 }
@@ -2704,12 +2694,11 @@ const file_v1_issue_service_proto_rawDesc = "" +
 	"\tcondition\x18\x03 \x01(\v2\x11.google.type.ExprR\tcondition\x129\n" +
 	"\n" +
 	"expiration\x18\x04 \x01(\v2\x19.google.protobuf.DurationR\n" +
-	"expiration\"\x93\x01\n" +
+	"expiration\"y\n" +
 	"\x10ApprovalTemplate\x12-\n" +
 	"\x04flow\x18\x01 \x01(\v2\x19.bytebase.v1.ApprovalFlowR\x04flow\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12 \n" +
-	"\vdescription\x18\x03 \x01(\tR\vdescription\x12\x18\n" +
-	"\acreator\x18\x04 \x01(\tR\acreator\"?\n" +
+	"\vdescription\x18\x03 \x01(\tR\vdescription\"?\n" +
 	"\fApprovalFlow\x12/\n" +
 	"\x05steps\x18\x01 \x03(\v2\x19.bytebase.v1.ApprovalStepR\x05steps\"\xa3\x01\n" +
 	"\fApprovalStep\x122\n" +

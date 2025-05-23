@@ -8123,11 +8123,6 @@ components:
                     type: string
                 description:
                     type: string
-                creator:
-                    type: string
-                    description: |-
-                        The name of the creator in users/{email} format.
-                         TODO: we should mark it as OUTPUT_ONLY, but currently the frontend will post the approval setting with creator.
         ApproveIssueRequest:
             required:
                 - name

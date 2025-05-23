@@ -312,7 +312,6 @@ type ApprovalTemplate struct {
 	Flow          *ApprovalFlow          `protobuf:"bytes,1,opt,name=flow,proto3" json:"flow,omitempty"`
 	Title         string                 `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
 	Description   string                 `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
-	CreatorId     int32                  `protobuf:"varint,4,opt,name=creator_id,json=creatorId,proto3" json:"creator_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -366,13 +365,6 @@ func (x *ApprovalTemplate) GetDescription() string {
 		return x.Description
 	}
 	return ""
-}
-
-func (x *ApprovalTemplate) GetCreatorId() int32 {
-	if x != nil {
-		return x.CreatorId
-	}
-	return 0
 }
 
 type ApprovalFlow struct {
@@ -601,13 +593,11 @@ const file_store_approval_proto_rawDesc = "" +
 	"\x16RISK_LEVEL_UNSPECIFIED\x10\x00\x12\a\n" +
 	"\x03LOW\x10\x01\x12\f\n" +
 	"\bMODERATE\x10\x02\x12\b\n" +
-	"\x04HIGH\x10\x03\"\x9b\x01\n" +
+	"\x04HIGH\x10\x03\"|\n" +
 	"\x10ApprovalTemplate\x120\n" +
 	"\x04flow\x18\x01 \x01(\v2\x1c.bytebase.store.ApprovalFlowR\x04flow\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12 \n" +
-	"\vdescription\x18\x03 \x01(\tR\vdescription\x12\x1d\n" +
-	"\n" +
-	"creator_id\x18\x04 \x01(\x05R\tcreatorId\"B\n" +
+	"\vdescription\x18\x03 \x01(\tR\vdescription\"B\n" +
 	"\fApprovalFlow\x122\n" +
 	"\x05steps\x18\x01 \x03(\v2\x1c.bytebase.store.ApprovalStepR\x05steps\"\xa9\x01\n" +
 	"\fApprovalStep\x125\n" +
