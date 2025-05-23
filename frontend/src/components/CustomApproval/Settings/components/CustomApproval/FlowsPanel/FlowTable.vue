@@ -11,7 +11,6 @@
     <template #item="{ item: rule }: { item: LocalApprovalRule }">
       <div class="bb-grid-cell whitespace-nowrap">
         {{ rule.template?.title }}
-        <SystemLabel v-if="isReadonlyApprovalRule(rule)" class="ml-1" />
       </div>
       <div class="bb-grid-cell justify-center">
         <NButton
@@ -28,7 +27,7 @@
         {{ rule.template?.description }}
       </div>
       <div class="bb-grid-cell gap-x-2">
-        <template v-if="!isReadonlyApprovalRule(rule)">
+        <template>
           <NButton size="small" @click="editApprovalTemplate(rule)">
             {{ allowAdmin ? $t("common.edit") : $t("common.view") }}
           </NButton>
@@ -61,11 +60,9 @@ import { NButton } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBGrid, BBModal, type BBGridColumn } from "@/bbkit";
-import SystemLabel from "@/components/SystemLabel.vue";
 import { pushNotification, useWorkspaceApprovalSettingStore } from "@/store";
 import type { LocalApprovalRule } from "@/types";
 import type { ApprovalFlow } from "@/types/proto/v1/issue_service";
-import { isReadonlyApprovalRule } from "@/utils";
 import { SpinnerButton } from "../../common";
 import { StepsTable } from "../common";
 import { useCustomApprovalContext } from "../context";
