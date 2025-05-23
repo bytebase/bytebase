@@ -56,7 +56,7 @@ const createQueryState = (tab: SQLEditorTab): WebTerminalQueryState => {
     tab,
     queryItemList: ref([createInitialQueryItemByTab(tab)]),
     timer: markRaw(useCancelableTimeout(QUERY_TIMEOUT_MS)),
-    controller: createStreamingQueryController(tab),
+    controller: createStreamingQueryController(),
   };
 };
 
@@ -75,7 +75,7 @@ export const createQueryItemV1 = (
   status,
 });
 
-const createStreamingQueryController = (tab: SQLEditorTab) => {
+const createStreamingQueryController = () => {
   const status: StreamingQueryController["status"] = ref("DISCONNECTED");
   const events: StreamingQueryController["events"] = markRaw(new Emittery());
   const input$ = fromEventPattern<SQLEditorQueryParams>(
