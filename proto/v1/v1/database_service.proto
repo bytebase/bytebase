@@ -766,6 +766,8 @@ message TablePartitionMetadata {
   repeated TablePartitionMetadata subpartitions = 6;
 
   repeated IndexMetadata indexes = 7;
+
+  repeated CheckConstraintMetadata check_constraints = 8;
 }
 
 // ColumnMetadata is the metadata for columns.
