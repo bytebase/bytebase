@@ -27376,6 +27376,13 @@ Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task} </p></
                   <td><p> </p></td>
                 </tr>
               
+                <tr>
+                  <td>run_time</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td>optional</td>
+                  <td><p>The task run should run after run_time. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -28338,6 +28345,14 @@ Format: instances/{instance}/databases/{database}/changelogs/{changelog} </p></t
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>Format: projects/{project}/sheets/{sheet} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>run_time</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td>optional</td>
+                  <td><p>The task run should run after run_time.
+This can only be set when creating the task run calling BatchRunTasks. </p></td>
                 </tr>
               
             </tbody>
