@@ -24,7 +24,7 @@
 
   <SQLCheckPanel
     v-if="showDetailPanel"
-    :project="issue.project"
+    :project="project.name"
     :database="database"
     :advices="advices"
     @close="showDetailPanel = false"
@@ -35,12 +35,11 @@
 import { CheckIcon, TriangleAlertIcon, CircleAlertIcon } from "lucide-vue-next";
 import { NTag } from "naive-ui";
 import { computed, ref } from "vue";
-import { databaseForTask } from "@/components/Rollout/RolloutDetail";
+import { TaskSpinner } from "@/components/IssueV1/components/common";
 import { SQLCheckPanel } from "@/components/SQLCheck";
 import type { Advice } from "@/types/proto/v1/sql_service";
 import { Advice_Status } from "@/types/proto/v1/sql_service";
-import { useIssueContext } from "../../logic";
-import { TaskSpinner } from "../common";
+import { usePlanSQLCheckContext } from "./context";
 
 const props = defineProps<{
   advices: Advice[];
@@ -51,12 +50,8 @@ defineEmits<{
   (event: "click"): void;
 }>();
 
-const { issue, selectedTask } = useIssueContext();
+const { database, project } = usePlanSQLCheckContext();
 const showDetailPanel = ref(false);
-
-const database = computed(() => {
-  return databaseForTask(issue.value.projectEntity, selectedTask.value);
-});
 
 const status = computed(() => {
   const { isRunning, advices } = props;

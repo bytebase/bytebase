@@ -1,13 +1,13 @@
 import { planCheckRunSummaryForCheckRunList } from "@/components/PlanCheckRun/common";
 import type { Plan_Spec } from "@/types/proto/v1/plan_service";
+import type { CheckReleaseResponse_CheckResult } from "@/types/proto/v1/release_service";
 import { Advice_Status } from "@/types/proto/v1/sql_service";
 import { sheetNameOfSpec } from "@/utils";
 import { targetOfSpec, type PlanContext } from "../../logic";
-import type { SQLCheckContext } from "../SQLCheckSectionV1/context";
 
 export const filterSpec = (
   planContext: PlanContext,
-  sqlCheckContext: SQLCheckContext,
+  sqlCheckResultMap: Record<string, CheckReleaseResponse_CheckResult>,
   spec: Plan_Spec,
   {
     adviceStatus,
@@ -18,8 +18,7 @@ export const filterSpec = (
   const { isCreating } = planContext;
   if (adviceStatus) {
     if (isCreating.value) {
-      const { resultMap } = sqlCheckContext;
-      const result = resultMap.value[targetOfSpec(spec) || ""];
+      const result = sqlCheckResultMap[targetOfSpec(spec) || ""];
       if (adviceStatus === Advice_Status.UNRECOGNIZED) {
         return !Boolean(result);
       }

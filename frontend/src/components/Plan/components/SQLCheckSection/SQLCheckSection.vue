@@ -4,7 +4,7 @@
       {{ $t("issue.sql-check.sql-checks") }}
     </div>
     <div
-      v-if="database"
+      v-if="isValidDatabaseName(database.name)"
       class="grow flex flex-row items-center justify-between gap-2"
     >
       <span v-if="checkResult === undefined" class="textinfolabel">
@@ -26,8 +26,7 @@
       </div>
 
       <SQLCheckButton
-        :key="selectedSpec.id"
-        :database="database"
+        :key="database.name"
         button-style="--n-padding: 0 8px 0 6px; --n-icon-margin: 3px;"
         :show-code-location="true"
       />
@@ -38,18 +37,12 @@
 <script lang="ts" setup>
 import { NTag, NTooltip } from "naive-ui";
 import { computed } from "vue";
-import { databaseForSpec, usePlanContext } from "../../logic";
+import { isValidDatabaseName } from "@/types";
 import SQLCheckBadge from "./SQLCheckBadge.vue";
 import SQLCheckButton from "./SQLCheckButton.vue";
 import { usePlanSQLCheckContext } from "./context";
 
-const { plan, selectedSpec } = usePlanContext();
-
-const { resultMap } = usePlanSQLCheckContext();
-
-const database = computed(() => {
-  return databaseForSpec(plan.value.projectEntity, selectedSpec.value);
-});
+const { database, resultMap } = usePlanSQLCheckContext();
 
 const checkResult = computed(() => {
   return resultMap.value[database.value.name] || undefined;

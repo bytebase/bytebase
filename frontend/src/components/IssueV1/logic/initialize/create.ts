@@ -2,7 +2,10 @@ import { cloneDeep, groupBy, orderBy } from "lodash-es";
 import { v4 as uuidv4 } from "uuid";
 import { reactive } from "vue";
 import { useRoute } from "vue-router";
-import { extractInitialSQLFromQuery } from "@/components/Plan";
+import {
+  extractInitialSQLFromQuery,
+  getLocalSheetByName,
+} from "@/components/Plan";
 import { getArchiveDatabase } from "@/components/Plan/components/Sidebar/PreBackupSection/utils";
 import { rolloutServiceClient } from "@/grpcweb";
 import {
@@ -46,7 +49,6 @@ import {
 } from "@/utils";
 import { nextUID } from "../base";
 import { databaseEngineForSpec, sheetNameForSpec } from "../plan";
-import { getLocalSheetByName } from "../sheet";
 
 export type InitialSQL = {
   sqlMap?: Record<string, string>;
