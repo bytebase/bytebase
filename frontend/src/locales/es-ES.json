@@ -1505,7 +1505,8 @@
         "self": "Nueva línea base",
         "successfully-established": "Se estableció con éxito una nueva línea base"
       }
-    }
+    },
+    "checks": "Cheques"
   },
   "project": {
     "table": {

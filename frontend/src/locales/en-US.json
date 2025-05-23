@@ -1484,6 +1484,7 @@
     "foreign-key": {
       "reference": "Reference"
     },
+    "checks": "Checks",
     "create-target-database-or-schema-for-backup": "Please create the target database or schema for the backup first",
     "revision": {
       "self": "Revision",

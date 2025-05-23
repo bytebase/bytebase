@@ -1505,7 +1505,8 @@
         "self": "Đường cơ sở mới",
         "successfully-established": "Đã thiết lập thành công đường cơ sở mới"
       }
-    }
+    },
+    "checks": "Kiểm tra"
   },
   "project": {
     "table": {

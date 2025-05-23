@@ -3,6 +3,7 @@ import { type RenderFunction } from "vue";
 import { t } from "@/plugins/i18n";
 import type { ComposedDatabase } from "@/types";
 import type {
+  CheckConstraintMetadata,
   ColumnMetadata,
   DatabaseMetadata,
   DependencyColumn,
@@ -30,6 +31,7 @@ export type NodeType =
   | "column"
   | "index"
   | "foreign-key"
+  | "check"
   | "dependency-column"
   | "expandable-text" // Text nodes to display "Tables / Views / Functions / Triggers" etc.
   | "error"; // Error nodes to display "<Empty>" or "Cannot fetch ..." etc.
@@ -61,6 +63,9 @@ export type RichIndexMetadata = RichTableMetadata & {
 };
 export type RichForeignKeyMetadata = RichTableMetadata & {
   foreignKey: string;
+};
+export type RichCheckMetadata = RichTableMetadata & {
+  check: string;
 };
 export type RichPartitionTableMetadata = RichTableMetadata & {
   partition: string;
@@ -116,25 +121,27 @@ export type NodeTarget<T extends NodeType = NodeType> = T extends "database"
               ? RichIndexMetadata
               : T extends "foreign-key"
                 ? RichForeignKeyMetadata
-                : T extends "partition-table"
-                  ? RichPartitionTableMetadata
-                  : T extends "view"
-                    ? RichViewMetadata
-                    : T extends "procedure"
-                      ? RichProcedureMetadata
-                      : T extends "package"
-                        ? RichPackageMetadata
-                        : T extends "function"
-                          ? RichFunctionMetadata
-                          : T extends "sequence"
-                            ? RichSequenceMetadata
-                            : T extends "trigger"
-                              ? RichTriggerMetadata
-                              : T extends "expandable-text"
-                                ? TextTarget<true, any>
-                                : T extends "error"
-                                  ? ErrorTarget
-                                  : never;
+                : T extends "check"
+                  ? RichCheckMetadata
+                  : T extends "partition-table"
+                    ? RichPartitionTableMetadata
+                    : T extends "view"
+                      ? RichViewMetadata
+                      : T extends "procedure"
+                        ? RichProcedureMetadata
+                        : T extends "package"
+                          ? RichPackageMetadata
+                          : T extends "function"
+                            ? RichFunctionMetadata
+                            : T extends "sequence"
+                              ? RichSequenceMetadata
+                              : T extends "trigger"
+                                ? RichTriggerMetadata
+                                : T extends "expandable-text"
+                                  ? TextTarget<true, any>
+                                  : T extends "error"
+                                    ? ErrorTarget
+                                    : never;
 
 export type TreeState = "UNSET" | "LOADING" | "READY";
 
@@ -162,6 +169,7 @@ export const LeafNodeTypes: readonly NodeType[] = [
   "column",
   "index",
   "foreign-key",
+  "check",
   "procedure",
   "package",
   "function",
@@ -242,6 +250,12 @@ export const keyForNodeTarget = <T extends NodeType>(
       return [
         keyForNodeTarget("table", target as NodeTarget<"table">),
         `foreignKeys/${foreignKey}`,
+      ].join("/");
+    case "check":
+      const { check } = target as NodeTarget<"check">;
+      return [
+        keyForNodeTarget("table", target as NodeTarget<"table">),
+        `checks/${check}`,
       ].join("/");
     case "partition-table":
       const { partition } = target as NodeTarget<"partition-table">;
@@ -422,6 +436,26 @@ const mapForeignKeyNodes = (
   return children;
 };
 
+const mapCheckNodes = (
+  target: NodeTarget<"table">,
+  checks: CheckConstraintMetadata[],
+  parentKey: string
+) => {
+  if (checks.length === 0) {
+    // Create a "<Empty>" check node placeholder
+    return [createDummyNode("check", parentKey)];
+  }
+
+  const children = checks.map((check) => {
+    const node = mapTreeNodeByType("check", {
+      ...target,
+      check: check.name,
+    });
+    return node;
+  });
+  return children;
+};
+
 const mapTableNodes = (
   schema: SchemaMetadata,
   target: NodeTarget<"schema">,
@@ -484,6 +518,21 @@ const mapTableNodes = (
         triggerNode.key
       );
       node.children.push(triggerNode);
+    }
+    
+    // Map checks
+    if (table.checkConstraints.length > 0) {
+      const checksFolderNode = createExpandableTextNode(
+        "check",
+        node.key,
+        () => t("database.checks")
+      );
+      checksFolderNode.children = mapCheckNodes(
+        node.meta.target,
+        table.checkConstraints,
+        checksFolderNode.key
+      )
+      node.children.push(checksFolderNode);
     }
 
     // Map table-level partitions.

@@ -20,6 +20,9 @@
   <template v-if="type === 'foreign-key'">
     <ForeignKeyNode :node="node" :keyword="keyword" />
   </template>
+  <template v-if="type === 'check'">
+    <CheckNode :node="node" :keyword="keyword" />
+  </template>
   <template v-if="type === 'partition-table'">
     <PartitionTableNode :node="node" :keyword="keyword" />
   </template>
@@ -55,6 +58,7 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 import type { TreeNode } from "../tree";
+import CheckNode from "./CheckNode.vue";
 import ColumnNode from "./ColumnNode.vue";
 import DatabaseNode from "./DatabaseNode.vue";
 import DependencyColumnNode from "./DependencyColumnNode.vue";
