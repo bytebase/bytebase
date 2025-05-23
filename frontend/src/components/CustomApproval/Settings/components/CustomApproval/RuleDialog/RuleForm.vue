@@ -74,7 +74,6 @@ import { NButton, NInput } from "naive-ui";
 import { computed, nextTick, onMounted, ref } from "vue";
 import RequiredStar from "@/components/RequiredStar.vue";
 import type { LocalApprovalRule } from "@/types";
-import { isReadonlyApprovalRule } from "@/utils";
 import { StepsTable } from "../common";
 import { useCustomApprovalContext } from "../context";
 import { validateApprovalTemplate } from "../logic";
@@ -114,7 +113,7 @@ const state = ref(resolveLocalState());
 
 const allowEditRule = computed(() => {
   if (!allowAdmin.value) return false;
-  return !isReadonlyApprovalRule(rule.value);
+  return true;
 });
 
 const allowCreateOrUpdate = computed(() => {

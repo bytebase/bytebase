@@ -98,7 +98,7 @@ func (s *SettingService) ListSettings(ctx context.Context, _ *v1pb.ListSettingsR
 		if !settingInWhitelist(setting.Name) {
 			continue
 		}
-		settingMessage, err := s.convertToSettingMessage(ctx, setting)
+		settingMessage, err := convertToSettingMessage(setting)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to convert setting message: %v", err)
 		}
@@ -129,7 +129,7 @@ func (s *SettingService) GetSetting(ctx context.Context, request *v1pb.GetSettin
 		return nil, status.Errorf(codes.NotFound, "setting %s not found", settingName)
 	}
 	// Only return whitelisted setting.
-	settingMessage, err := s.convertToSettingMessage(ctx, setting)
+	settingMessage, err := convertToSettingMessage(setting)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to convert setting message: %v", err)
 	}
@@ -163,7 +163,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 	}
 	// audit log.
 	if setServiceData, ok := common.GetSetServiceDataFromContext(ctx); ok && existedSetting != nil {
-		v1pbSetting, err := s.convertToSettingMessage(ctx, existedSetting)
+		v1pbSetting, err := convertToSettingMessage(existedSetting)
 		if err != nil {
 			slog.Warn("audit: failed to convert to v1.Setting", log.BBError(err))
 		}
@@ -293,20 +293,6 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 				return nil, status.Errorf(codes.InvalidArgument, "invalid approval template: %v, err: %v", rule.Template, err)
 			}
 
-			creatorID := 0
-			email, err := common.GetUserEmail(rule.Template.Creator)
-			if err != nil {
-				return nil, status.Errorf(codes.InvalidArgument, "failed to get creator: %v", err)
-			}
-			creator, err := s.store.GetUserByEmail(ctx, email)
-			if err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to get creator: %v", err)
-			}
-			if creator == nil {
-				return nil, status.Errorf(codes.InvalidArgument, "creator %s not found", rule.Template.Creator)
-			}
-			creatorID = creator.ID
-
 			flow := new(storepb.ApprovalFlow)
 			if err := convertProtoToProto(rule.Template.Flow, flow); err != nil {
 				return nil, status.Errorf(codes.Internal, "failed to unmarshal approval flow with error: %v", err)
@@ -317,7 +303,6 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 					Flow:        flow,
 					Title:       rule.Template.Title,
 					Description: rule.Template.Description,
-					CreatorId:   int32(creatorID),
 				},
 			})
 		}
@@ -580,7 +565,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 				return nil, status.Errorf(codes.InvalidArgument, "API endpoint and model are required")
 			}
 			if existedSetting != nil {
-				existedAISetting, err := s.convertToSettingMessage(ctx, existedSetting)
+				existedAISetting, err := convertToSettingMessage(existedSetting)
 				if err != nil {
 					return nil, status.Errorf(codes.Internal, "failed to unmarshal existed ai setting with error: %v", err)
 				}
@@ -649,7 +634,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 		return nil, status.Errorf(codes.Internal, "failed to set setting: %v", err)
 	}
 
-	settingMessage, err := s.convertToSettingMessage(ctx, setting)
+	settingMessage, err := convertToSettingMessage(setting)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to convert setting message: %v", err)
 	}
@@ -686,7 +671,7 @@ func convertProtoToProto(inputPB, outputPB protoreflect.ProtoMessage) error {
 	return nil
 }
 
-func (s *SettingService) convertToSettingMessage(ctx context.Context, setting *store.SettingMessage) (*v1pb.Setting, error) {
+func convertToSettingMessage(setting *store.SettingMessage) (*v1pb.Setting, error) {
 	settingName := fmt.Sprintf("%s%s", common.SettingNamePrefix, setting.Name)
 	switch setting.Name {
 	case base.SettingWorkspaceMailDelivery:
@@ -776,13 +761,6 @@ func (s *SettingService) convertToSettingMessage(ctx context.Context, setting *s
 		v1Value := &v1pb.WorkspaceApprovalSetting{}
 		for _, rule := range storeValue.Rules {
 			template := convertToApprovalTemplate(rule.Template)
-			creator, err := s.store.GetUserByID(ctx, int(rule.Template.CreatorId))
-			if err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to get creator: %v", err)
-			}
-			if creator != nil {
-				template.Creator = common.FormatUserEmail(creator.Email)
-			}
 			v1Value.Rules = append(v1Value.Rules, &v1pb.WorkspaceApprovalSetting_Rule{
 				Condition: rule.Condition,
 				Template:  template,

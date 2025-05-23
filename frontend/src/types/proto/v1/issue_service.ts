@@ -542,11 +542,6 @@ export interface ApprovalTemplate {
   flow: ApprovalFlow | undefined;
   title: string;
   description: string;
-  /**
-   * The name of the creator in users/{email} format.
-   * TODO: we should mark it as OUTPUT_ONLY, but currently the frontend will post the approval setting with creator.
-   */
-  creator: string;
 }
 
 export interface ApprovalFlow {
@@ -2632,7 +2627,7 @@ export const GrantRequest: MessageFns<GrantRequest> = {
 };
 
 function createBaseApprovalTemplate(): ApprovalTemplate {
-  return { flow: undefined, title: "", description: "", creator: "" };
+  return { flow: undefined, title: "", description: "" };
 }
 
 export const ApprovalTemplate: MessageFns<ApprovalTemplate> = {
@@ -2645,9 +2640,6 @@ export const ApprovalTemplate: MessageFns<ApprovalTemplate> = {
     }
     if (message.description !== "") {
       writer.uint32(26).string(message.description);
-    }
-    if (message.creator !== "") {
-      writer.uint32(34).string(message.creator);
     }
     return writer;
   },
@@ -2683,14 +2675,6 @@ export const ApprovalTemplate: MessageFns<ApprovalTemplate> = {
           message.description = reader.string();
           continue;
         }
-        case 4: {
-          if (tag !== 34) {
-            break;
-          }
-
-          message.creator = reader.string();
-          continue;
-        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2705,7 +2689,6 @@ export const ApprovalTemplate: MessageFns<ApprovalTemplate> = {
       flow: isSet(object.flow) ? ApprovalFlow.fromJSON(object.flow) : undefined,
       title: isSet(object.title) ? globalThis.String(object.title) : "",
       description: isSet(object.description) ? globalThis.String(object.description) : "",
-      creator: isSet(object.creator) ? globalThis.String(object.creator) : "",
     };
   },
 
@@ -2720,9 +2703,6 @@ export const ApprovalTemplate: MessageFns<ApprovalTemplate> = {
     if (message.description !== "") {
       obj.description = message.description;
     }
-    if (message.creator !== "") {
-      obj.creator = message.creator;
-    }
     return obj;
   },
 
@@ -2736,7 +2716,6 @@ export const ApprovalTemplate: MessageFns<ApprovalTemplate> = {
       : undefined;
     message.title = object.title ?? "";
     message.description = object.description ?? "";
-    message.creator = object.creator ?? "";
     return message;
   },
 };

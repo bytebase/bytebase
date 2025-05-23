@@ -3354,7 +3354,6 @@ LIST, HASH (https://www.postgresql.org/docs/current/ddl-partitioning.html)
 | flow | [ApprovalFlow](#bytebase-v1-ApprovalFlow) |  |  |
 | title | [string](#string) |  |  |
 | description | [string](#string) |  |  |
-| creator | [string](#string) |  | The name of the creator in users/{email} format. TODO: we should mark it as OUTPUT_ONLY, but currently the frontend will post the approval setting with creator. |
 
 
 
