@@ -32,8 +32,9 @@ type TaskMessage struct {
 	TaskRunRawList []*TaskRunMessage
 
 	// Domain specific fields
-	Type              base.TaskType
-	Payload           *storepb.TaskPayload
+	Type    base.TaskType
+	Payload *storepb.TaskPayload
+	// TODO(p0ny): deprecate
 	EarliestAllowedAt *time.Time
 
 	LatestTaskRunStatus base.TaskRunStatus

@@ -590,6 +590,10 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, request *v1pb.BatchR
 			sheetUID := int(task.Payload.GetSheetId())
 			create.SheetUID = &sheetUID
 		}
+		if request.GetRunTime() != nil {
+			t := request.GetRunTime().AsTime()
+			create.RunAt = &t
+		}
 		taskRunCreates = append(taskRunCreates, create)
 	}
 	sort.Slice(taskRunCreates, func(i, j int) bool {

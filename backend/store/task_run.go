@@ -34,6 +34,7 @@ type TaskRunMessage struct {
 	UpdatedAt time.Time
 	ProjectID string
 	StartedAt *time.Time
+	RunAt     *time.Time
 }
 
 // FindTaskRunMessage is the message for finding task runs.
@@ -106,6 +107,7 @@ func (s *Store) ListTaskRunsV2(ctx context.Context, find *FindTaskRunMessage) ([
 			task_run.task_id,
 			task_run.status,
 			task_run.started_at,
+			task_run.run_at,
 			task_run.code,
 			task_run.result,
 			task_run.sheet_id,
@@ -128,7 +130,7 @@ func (s *Store) ListTaskRunsV2(ctx context.Context, find *FindTaskRunMessage) ([
 	var taskRuns []*TaskRunMessage
 	for rows.Next() {
 		var taskRun TaskRunMessage
-		var startedAt sql.NullTime
+		var startedAt, runAt sql.NullTime
 		if err := rows.Scan(
 			&taskRun.ID,
 			&taskRun.CreatorID,
@@ -137,6 +139,7 @@ func (s *Store) ListTaskRunsV2(ctx context.Context, find *FindTaskRunMessage) ([
 			&taskRun.TaskUID,
 			&taskRun.Status,
 			&startedAt,
+			&runAt,
 			&taskRun.Code,
 			&taskRun.Result,
 			&taskRun.SheetUID,
@@ -149,6 +152,9 @@ func (s *Store) ListTaskRunsV2(ctx context.Context, find *FindTaskRunMessage) ([
 
 		if startedAt.Valid {
 			taskRun.StartedAt = &startedAt.Time
+		}
+		if runAt.Valid {
+			taskRun.RunAt = &runAt.Time
 		}
 		var resultProto storepb.TaskRunResult
 		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(taskRun.Result), &resultProto); err != nil {
@@ -321,14 +327,16 @@ func (*Store) createTaskRunImpl(ctx context.Context, txn *sql.Tx, create *TaskRu
 			creator_id,
 			task_id,
 			sheet_id,
+			run_at,
 			attempt,
 			status
-		) VALUES ($1, $2, $3, $4, $5)
+		) VALUES ($1, $2, $3, $4, $5, $6)
 	`
 	if _, err := txn.ExecContext(ctx, query,
 		creatorID,
 		create.TaskUID,
 		create.SheetUID,
+		create.RunAt,
 		attempt,
 		status,
 	); err != nil {
