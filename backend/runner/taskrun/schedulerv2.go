@@ -283,14 +283,14 @@ func (s *SchedulerV2) schedulePendingTaskRuns(ctx context.Context) error {
 func (s *SchedulerV2) schedulePendingTaskRun(ctx context.Context, taskRun *store.TaskRunMessage) error {
 	// here, we move pending taskruns to running taskruns which means they are ready to be executed.
 	// pending taskruns remain pending if
-	// 1. earliestAllowedTs not met.
+	// 1. taskRun.RunAt not met.
 	// 2. for versioned tasks, there are other versioned tasks on the same database with
 	// a smaller version not finished yet. we need to wait for those first.
 	task, err := s.store.GetTaskV2ByID(ctx, taskRun.TaskUID)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get task")
 	}
-	if task.EarliestAllowedAt != nil && time.Now().Before(*task.EarliestAllowedAt) {
+	if taskRun.RunAt != nil && time.Now().Before(*taskRun.RunAt) {
 		return nil
 	}
 
