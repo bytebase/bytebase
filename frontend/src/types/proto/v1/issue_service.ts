@@ -825,8 +825,6 @@ export interface IssueComment_TaskUpdate {
     | undefined;
   /** Format: projects/{project}/sheets/{sheet} */
   toSheet?: string | undefined;
-  fromEarliestAllowedTime?: Timestamp | undefined;
-  toEarliestAllowedTime?: Timestamp | undefined;
   toStatus?: IssueComment_TaskUpdate_Status | undefined;
 }
 
@@ -3826,14 +3824,7 @@ export const IssueComment_StageEnd: MessageFns<IssueComment_StageEnd> = {
 };
 
 function createBaseIssueComment_TaskUpdate(): IssueComment_TaskUpdate {
-  return {
-    tasks: [],
-    fromSheet: undefined,
-    toSheet: undefined,
-    fromEarliestAllowedTime: undefined,
-    toEarliestAllowedTime: undefined,
-    toStatus: undefined,
-  };
+  return { tasks: [], fromSheet: undefined, toSheet: undefined, toStatus: undefined };
 }
 
 export const IssueComment_TaskUpdate: MessageFns<IssueComment_TaskUpdate> = {
@@ -3846,12 +3837,6 @@ export const IssueComment_TaskUpdate: MessageFns<IssueComment_TaskUpdate> = {
     }
     if (message.toSheet !== undefined) {
       writer.uint32(26).string(message.toSheet);
-    }
-    if (message.fromEarliestAllowedTime !== undefined) {
-      Timestamp.encode(message.fromEarliestAllowedTime, writer.uint32(34).fork()).join();
-    }
-    if (message.toEarliestAllowedTime !== undefined) {
-      Timestamp.encode(message.toEarliestAllowedTime, writer.uint32(42).fork()).join();
     }
     if (message.toStatus !== undefined) {
       writer.uint32(48).int32(issueComment_TaskUpdate_StatusToNumber(message.toStatus));
@@ -3890,22 +3875,6 @@ export const IssueComment_TaskUpdate: MessageFns<IssueComment_TaskUpdate> = {
           message.toSheet = reader.string();
           continue;
         }
-        case 4: {
-          if (tag !== 34) {
-            break;
-          }
-
-          message.fromEarliestAllowedTime = Timestamp.decode(reader, reader.uint32());
-          continue;
-        }
-        case 5: {
-          if (tag !== 42) {
-            break;
-          }
-
-          message.toEarliestAllowedTime = Timestamp.decode(reader, reader.uint32());
-          continue;
-        }
         case 6: {
           if (tag !== 48) {
             break;
@@ -3928,12 +3897,6 @@ export const IssueComment_TaskUpdate: MessageFns<IssueComment_TaskUpdate> = {
       tasks: globalThis.Array.isArray(object?.tasks) ? object.tasks.map((e: any) => globalThis.String(e)) : [],
       fromSheet: isSet(object.fromSheet) ? globalThis.String(object.fromSheet) : undefined,
       toSheet: isSet(object.toSheet) ? globalThis.String(object.toSheet) : undefined,
-      fromEarliestAllowedTime: isSet(object.fromEarliestAllowedTime)
-        ? fromJsonTimestamp(object.fromEarliestAllowedTime)
-        : undefined,
-      toEarliestAllowedTime: isSet(object.toEarliestAllowedTime)
-        ? fromJsonTimestamp(object.toEarliestAllowedTime)
-        : undefined,
       toStatus: isSet(object.toStatus) ? issueComment_TaskUpdate_StatusFromJSON(object.toStatus) : undefined,
     };
   },
@@ -3949,12 +3912,6 @@ export const IssueComment_TaskUpdate: MessageFns<IssueComment_TaskUpdate> = {
     if (message.toSheet !== undefined) {
       obj.toSheet = message.toSheet;
     }
-    if (message.fromEarliestAllowedTime !== undefined) {
-      obj.fromEarliestAllowedTime = fromTimestamp(message.fromEarliestAllowedTime).toISOString();
-    }
-    if (message.toEarliestAllowedTime !== undefined) {
-      obj.toEarliestAllowedTime = fromTimestamp(message.toEarliestAllowedTime).toISOString();
-    }
     if (message.toStatus !== undefined) {
       obj.toStatus = issueComment_TaskUpdate_StatusToJSON(message.toStatus);
     }
@@ -3969,14 +3926,6 @@ export const IssueComment_TaskUpdate: MessageFns<IssueComment_TaskUpdate> = {
     message.tasks = object.tasks?.map((e) => e) || [];
     message.fromSheet = object.fromSheet ?? undefined;
     message.toSheet = object.toSheet ?? undefined;
-    message.fromEarliestAllowedTime =
-      (object.fromEarliestAllowedTime !== undefined && object.fromEarliestAllowedTime !== null)
-        ? Timestamp.fromPartial(object.fromEarliestAllowedTime)
-        : undefined;
-    message.toEarliestAllowedTime =
-      (object.toEarliestAllowedTime !== undefined && object.toEarliestAllowedTime !== null)
-        ? Timestamp.fromPartial(object.toEarliestAllowedTime)
-        : undefined;
     message.toStatus = object.toStatus ?? undefined;
     return message;
   },

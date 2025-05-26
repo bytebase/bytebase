@@ -10353,12 +10353,6 @@ components:
                 toSheet:
                     type: string
                     description: 'Format: projects/{project}/sheets/{sheet}'
-                fromEarliestAllowedTime:
-                    type: string
-                    format: date-time
-                toEarliestAllowedTime:
-                    type: string
-                    format: date-time
                 toStatus:
                     enum:
                         - STATUS_UNSPECIFIED

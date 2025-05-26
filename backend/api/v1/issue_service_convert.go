@@ -414,12 +414,10 @@ func convertToIssueCommentEventApprovalStatus(s storepb.IssueCommentPayload_Appr
 func convertToIssueCommentEventTaskUpdate(u *storepb.IssueCommentPayload_TaskUpdate_) *v1pb.IssueComment_TaskUpdate_ {
 	return &v1pb.IssueComment_TaskUpdate_{
 		TaskUpdate: &v1pb.IssueComment_TaskUpdate{
-			Tasks:                   u.TaskUpdate.Tasks,
-			FromSheet:               u.TaskUpdate.FromSheet,
-			ToSheet:                 u.TaskUpdate.ToSheet,
-			FromEarliestAllowedTime: u.TaskUpdate.FromEarliestAllowedTime,
-			ToEarliestAllowedTime:   u.TaskUpdate.ToEarliestAllowedTime,
-			ToStatus:                convertToIssueCommentEventTaskUpdateStatus(u.TaskUpdate.ToStatus),
+			Tasks:     u.TaskUpdate.Tasks,
+			FromSheet: u.TaskUpdate.FromSheet,
+			ToSheet:   u.TaskUpdate.ToSheet,
+			ToStatus:  convertToIssueCommentEventTaskUpdateStatus(u.TaskUpdate.ToStatus),
 		},
 	}
 }

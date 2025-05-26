@@ -2,8 +2,6 @@ syntax = "proto3";
 
 package bytebase.store;
 
-import "google/protobuf/timestamp.proto";
-
 option go_package = "generated-go/store";
 
 message IssueCommentPayload {
@@ -56,8 +54,6 @@ message IssueCommentPayload {
     optional string from_sheet = 2;
     // Format: projects/{project}/sheets/{sheet}
     optional string to_sheet = 3;
-    optional google.protobuf.Timestamp from_earliest_allowed_time = 4;
-    optional google.protobuf.Timestamp to_earliest_allowed_time = 5;
     optional Status to_status = 6;
 
     enum Status {
