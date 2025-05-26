@@ -2722,8 +2722,6 @@ InstanceRole is the API message for instance role.
 | tasks | [string](#string) | repeated |  |
 | from_sheet | [string](#string) | optional | Format: projects/{project}/sheets/{sheet} |
 | to_sheet | [string](#string) | optional | Format: projects/{project}/sheets/{sheet} |
-| from_earliest_allowed_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional |  |
-| to_earliest_allowed_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional |  |
 | to_status | [IssueCommentPayload.TaskUpdate.Status](#bytebase-store-IssueCommentPayload-TaskUpdate-Status) | optional |  |
 
 
