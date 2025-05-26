@@ -117,7 +117,9 @@
               :checked="runTimeInMS === undefined"
               @update:checked="
                 (checked) =>
-                  (runTimeInMS = checked ? undefined : Date.now() + 60000)
+                  (runTimeInMS = checked
+                    ? undefined
+                    : Date.now() + DEFAULT_RUN_DELAY_MS)
               "
             >
               {{ $t("task.run-immediately") }}
@@ -221,6 +223,9 @@ import { Task_Status, TaskRun_Status } from "@/types/proto/v1/rollout_service";
 import { ErrorList } from "../common";
 import CommonDrawer from "./CommonDrawer.vue";
 import RolloutTaskDatabaseName from "./RolloutTaskDatabaseName.vue";
+
+// Default delay for running tasks if not scheduled immediately.
+const DEFAULT_RUN_DELAY_MS = 60000;
 
 type LocalState = {
   loading: boolean;
