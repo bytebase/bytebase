@@ -269,6 +269,12 @@
     "action-all-tasks-in-current-stage": "{action}現在のステージのすべてのタスク",
     "cancel-task": "タスクをキャンセルする",
     "created": "内蔵",
+    "run-immediately": "すぐに実行",
+    "scheduled-time": "予定時刻",
+    "select-scheduled-time": "予定時刻を選択してください",
+    "error": {
+      "scheduled-time-must-be-in-the-future": "スケジュール時間は将来の時間である必要があります"
+    },
     "online-migration": {
       "self": "オンラインでの大規模なテーブル変更",
       "configure-ghost-parameters": "gh-ost パラメータを設定する",
