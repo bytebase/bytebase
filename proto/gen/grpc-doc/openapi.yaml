@@ -2080,6 +2080,11 @@ paths:
                   in: query
                   schema:
                     type: string
+                - name: metadata.searchPath
+                  in: query
+                  description: The search_path is the search path of a PostgreSQL database.
+                  schema:
+                    type: string
             responses:
                 "200":
                     description: OK

@@ -1173,6 +1173,7 @@ DatabaseSchemaMetadata is the schema metadata for databases.
 | service_name | [string](#string) |  | The service name of the database. It&#39;s the Oracle specific concept. |
 | linked_databases | [LinkedDatabaseMetadata](#bytebase-store-LinkedDatabaseMetadata) | repeated |  |
 | owner | [string](#string) |  |  |
+| search_path | [string](#string) |  | The search_path is the search path of a PostgreSQL database. |
 
 
 

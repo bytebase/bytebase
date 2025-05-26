@@ -351,6 +351,8 @@ export interface DatabaseMetadata {
   /** The extensions is the list of extensions in a database. */
   extensions: ExtensionMetadata[];
   owner: string;
+  /** The search_path is the search path of a PostgreSQL database. */
+  searchPath: string;
 }
 
 /**
@@ -3223,7 +3225,7 @@ export const Database_LabelsEntry: MessageFns<Database_LabelsEntry> = {
 };
 
 function createBaseDatabaseMetadata(): DatabaseMetadata {
-  return { name: "", schemas: [], characterSet: "", collation: "", extensions: [], owner: "" };
+  return { name: "", schemas: [], characterSet: "", collation: "", extensions: [], owner: "", searchPath: "" };
 }
 
 export const DatabaseMetadata: MessageFns<DatabaseMetadata> = {
@@ -3245,6 +3247,9 @@ export const DatabaseMetadata: MessageFns<DatabaseMetadata> = {
     }
     if (message.owner !== "") {
       writer.uint32(58).string(message.owner);
+    }
+    if (message.searchPath !== "") {
+      writer.uint32(66).string(message.searchPath);
     }
     return writer;
   },
@@ -3304,6 +3309,14 @@ export const DatabaseMetadata: MessageFns<DatabaseMetadata> = {
           message.owner = reader.string();
           continue;
         }
+        case 8: {
+          if (tag !== 66) {
+            break;
+          }
+
+          message.searchPath = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3325,6 +3338,7 @@ export const DatabaseMetadata: MessageFns<DatabaseMetadata> = {
         ? object.extensions.map((e: any) => ExtensionMetadata.fromJSON(e))
         : [],
       owner: isSet(object.owner) ? globalThis.String(object.owner) : "",
+      searchPath: isSet(object.searchPath) ? globalThis.String(object.searchPath) : "",
     };
   },
 
@@ -3348,6 +3362,9 @@ export const DatabaseMetadata: MessageFns<DatabaseMetadata> = {
     if (message.owner !== "") {
       obj.owner = message.owner;
     }
+    if (message.searchPath !== "") {
+      obj.searchPath = message.searchPath;
+    }
     return obj;
   },
 
@@ -3362,6 +3379,7 @@ export const DatabaseMetadata: MessageFns<DatabaseMetadata> = {
     message.collation = object.collation ?? "";
     message.extensions = object.extensions?.map((e) => ExtensionMetadata.fromPartial(e)) || [];
     message.owner = object.owner ?? "";
+    message.searchPath = object.searchPath ?? "";
     return message;
   },
 };
