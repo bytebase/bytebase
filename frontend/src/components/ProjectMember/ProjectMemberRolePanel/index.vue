@@ -237,6 +237,7 @@ import {
   displayRoleTitle,
   hasProjectPermissionV2,
   memberMapToRolesInProjectIAM,
+  checkRoleContainsAnyPermission,
 } from "@/utils";
 import { buildConditionExpr, convertFromExpr } from "@/utils/issue/cel";
 import AddProjectMembersPanel from "../AddProjectMember/AddProjectMembersPanel.vue";
@@ -306,8 +307,8 @@ const allowRevokeMember = computed(() => {
 
 const isRoleShouldShowDatabaseRelatedColumns = (role: string) => {
   return (
-    role === PresetRoleType.SQL_EDITOR_USER ||
-    role === PresetRoleType.PROJECT_EXPORTER
+    role !== PresetRoleType.PROJECT_OWNER &&
+    checkRoleContainsAnyPermission(role, "bb.sql.select", "bb.sql.export")
   );
 };
 

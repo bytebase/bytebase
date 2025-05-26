@@ -169,10 +169,6 @@ export interface Plan_Step {
 }
 
 export interface Plan_Spec {
-  /** earliest_allowed_time the earliest execution time of the change. */
-  earliestAllowedTime:
-    | Timestamp
-    | undefined;
   /** A UUID4 string that uniquely identifies the Spec. */
   id: string;
   specReleaseSource: Plan_SpecReleaseSource | undefined;
@@ -1637,7 +1633,6 @@ export const Plan_Step: MessageFns<Plan_Step> = {
 
 function createBasePlan_Spec(): Plan_Spec {
   return {
-    earliestAllowedTime: undefined,
     id: "",
     specReleaseSource: undefined,
     createDatabaseConfig: undefined,
@@ -1648,9 +1643,6 @@ function createBasePlan_Spec(): Plan_Spec {
 
 export const Plan_Spec: MessageFns<Plan_Spec> = {
   encode(message: Plan_Spec, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.earliestAllowedTime !== undefined) {
-      Timestamp.encode(message.earliestAllowedTime, writer.uint32(34).fork()).join();
-    }
     if (message.id !== "") {
       writer.uint32(42).string(message.id);
     }
@@ -1676,14 +1668,6 @@ export const Plan_Spec: MessageFns<Plan_Spec> = {
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
-        case 4: {
-          if (tag !== 34) {
-            break;
-          }
-
-          message.earliestAllowedTime = Timestamp.decode(reader, reader.uint32());
-          continue;
-        }
         case 5: {
           if (tag !== 42) {
             break;
@@ -1735,9 +1719,6 @@ export const Plan_Spec: MessageFns<Plan_Spec> = {
 
   fromJSON(object: any): Plan_Spec {
     return {
-      earliestAllowedTime: isSet(object.earliestAllowedTime)
-        ? fromJsonTimestamp(object.earliestAllowedTime)
-        : undefined,
       id: isSet(object.id) ? globalThis.String(object.id) : "",
       specReleaseSource: isSet(object.specReleaseSource)
         ? Plan_SpecReleaseSource.fromJSON(object.specReleaseSource)
@@ -1756,9 +1737,6 @@ export const Plan_Spec: MessageFns<Plan_Spec> = {
 
   toJSON(message: Plan_Spec): unknown {
     const obj: any = {};
-    if (message.earliestAllowedTime !== undefined) {
-      obj.earliestAllowedTime = fromTimestamp(message.earliestAllowedTime).toISOString();
-    }
     if (message.id !== "") {
       obj.id = message.id;
     }
@@ -1782,9 +1760,6 @@ export const Plan_Spec: MessageFns<Plan_Spec> = {
   },
   fromPartial(object: DeepPartial<Plan_Spec>): Plan_Spec {
     const message = createBasePlan_Spec();
-    message.earliestAllowedTime = (object.earliestAllowedTime !== undefined && object.earliestAllowedTime !== null)
-      ? Timestamp.fromPartial(object.earliestAllowedTime)
-      : undefined;
     message.id = object.id ?? "";
     message.specReleaseSource = (object.specReleaseSource !== undefined && object.specReleaseSource !== null)
       ? Plan_SpecReleaseSource.fromPartial(object.specReleaseSource)

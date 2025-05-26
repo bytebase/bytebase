@@ -676,8 +676,8 @@
     - [RolloutService](#bytebase-v1-RolloutService)
   
 - [v1/sheet_service.proto](#v1_sheet_service-proto)
-    - [BatchCreateSheetRequest](#bytebase-v1-BatchCreateSheetRequest)
-    - [BatchCreateSheetResponse](#bytebase-v1-BatchCreateSheetResponse)
+    - [BatchCreateSheetsRequest](#bytebase-v1-BatchCreateSheetsRequest)
+    - [BatchCreateSheetsResponse](#bytebase-v1-BatchCreateSheetsResponse)
     - [CreateSheetRequest](#bytebase-v1-CreateSheetRequest)
     - [GetSheetRequest](#bytebase-v1-GetSheetRequest)
     - [Sheet](#bytebase-v1-Sheet)
@@ -7489,7 +7489,6 @@ When paginating, all other parameters provided to `ListPlans` must match the cal
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| earliest_allowed_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | earliest_allowed_time the earliest execution time of the change. |
 | id | [string](#string) |  | A UUID4 string that uniquely identifies the Spec. |
 | spec_release_source | [Plan.SpecReleaseSource](#bytebase-v1-Plan-SpecReleaseSource) |  |  |
 | create_database_config | [Plan.CreateDatabaseConfig](#bytebase-v1-Plan-CreateDatabaseConfig) |  |  |
@@ -10864,9 +10863,9 @@ Read from `pg_stat_activity`
 
 
 
-<a name="bytebase-v1-BatchCreateSheetRequest"></a>
+<a name="bytebase-v1-BatchCreateSheetsRequest"></a>
 
-### BatchCreateSheetRequest
+### BatchCreateSheetsRequest
 
 
 
@@ -10880,9 +10879,9 @@ Read from `pg_stat_activity`
 
 
 
-<a name="bytebase-v1-BatchCreateSheetResponse"></a>
+<a name="bytebase-v1-BatchCreateSheetsResponse"></a>
 
-### BatchCreateSheetResponse
+### BatchCreateSheetsResponse
 
 
 
@@ -11025,7 +11024,7 @@ Type of the SheetPayload.
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
 | CreateSheet | [CreateSheetRequest](#bytebase-v1-CreateSheetRequest) | [Sheet](#bytebase-v1-Sheet) |  |
-| BatchCreateSheet | [BatchCreateSheetRequest](#bytebase-v1-BatchCreateSheetRequest) | [BatchCreateSheetResponse](#bytebase-v1-BatchCreateSheetResponse) |  |
+| BatchCreateSheets | [BatchCreateSheetsRequest](#bytebase-v1-BatchCreateSheetsRequest) | [BatchCreateSheetsResponse](#bytebase-v1-BatchCreateSheetsResponse) |  |
 | GetSheet | [GetSheetRequest](#bytebase-v1-GetSheetRequest) | [Sheet](#bytebase-v1-Sheet) |  |
 | UpdateSheet | [UpdateSheetRequest](#bytebase-v1-UpdateSheetRequest) | [Sheet](#bytebase-v1-Sheet) |  |
 

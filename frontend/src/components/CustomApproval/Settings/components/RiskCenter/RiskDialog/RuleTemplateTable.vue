@@ -62,6 +62,7 @@ import {
 
 const props = defineProps<{
   dirty?: boolean;
+  source: Risk_Source;
 }>();
 
 const emit = defineEmits<{
@@ -95,17 +96,12 @@ const COLUMNS = computed(() => {
 });
 
 const filteredTemplateList = computed(() => {
-  let list = [...templateList.value];
-  const { mode, risk } = dialog.value!;
-  if (mode === "EDIT") {
-    const { source } = risk;
-    list = list.filter((tpl) => {
-      return (
-        tpl.source === Risk_Source.SOURCE_UNSPECIFIED || tpl.source === source
-      );
-    });
-  }
-  return list;
+  return templateList.value.filter((tpl) => {
+    return (
+      tpl.source === Risk_Source.SOURCE_UNSPECIFIED ||
+      tpl.source === props.source
+    );
+  });
 });
 
 const confirmApplyTemplate = async () => {

@@ -180,6 +180,7 @@ async function addMissingKeysFromSource(
 async function updateLocalizationFiles() {
   const folders = [
     "src/locales",
+    "src/locales/dynamic",
     "src/locales/sql-review",
     "src/locales/subscription",
   ];

@@ -69,6 +69,7 @@
           </h3>
           <RuleTemplateTable
             :dirty="dirty"
+            :source="state.risk.source"
             @apply-template="handleApplyRuleTemplate"
           />
         </div>
@@ -93,7 +94,7 @@
 <script lang="ts" setup>
 import { cloneDeep, head, uniq, flatten } from "lodash-es";
 import { NButton, NInput } from "naive-ui";
-import { computed, ref, watch } from "vue";
+import { computed, reactive, watch } from "vue";
 import ExprEditor from "@/components/ExprEditor";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import type { ConditionGroupExpr, SimpleExpr } from "@/plugins/cel";
@@ -141,9 +142,9 @@ const emit = defineEmits<{
 
 const context = useRiskCenterContext();
 const { allowAdmin } = context;
-const SupportedSourceList = useSupportedSourceList();
+const supportedSourceList = useSupportedSourceList();
 
-const state = ref<LocalState>({
+const state = reactive<LocalState>({
   risk: Risk.fromPartial({}),
   expr: wrapAsGroup(emptySimpleExpr()),
 });
@@ -160,19 +161,19 @@ const extractFactorList = (expr: SimpleExpr): string[] => {
   }
 };
 
+const selectedFactor = computed(() => extractFactorList(state.expr));
+
 const sourceList = computed(() => {
   if (mode.value !== "EDIT") {
-    return SupportedSourceList.value;
+    return supportedSourceList.value;
   }
 
-  const selectedFactor = extractFactorList(state.value.expr);
   const sourceList: Risk_Source[] = [];
-
   for (const [source, factorList] of RiskSourceFactorMap.entries()) {
-    if (!SupportedSourceList.value.includes(source)) {
+    if (!supportedSourceList.value.includes(source)) {
       continue;
     }
-    if (selectedFactor.every((v) => factorList.includes(v))) {
+    if (selectedFactor.value.every((v) => factorList.includes(v))) {
       sourceList.push(source);
     }
   }
@@ -193,10 +194,8 @@ const resolveLocalState = async () => {
     }
   }
 
-  state.value = {
-    risk,
-    expr: wrapAsGroup(expr),
-  };
+  state.risk = risk;
+  state.expr = wrapAsGroup(expr);
 };
 
 const allowCreateOrUpdate = computed(() => {
@@ -212,7 +211,7 @@ const allowCreateOrUpdate = computed(() => {
     if (!props.dirty) return false;
   }
 
-  const { risk, expr } = state.value;
+  const { risk, expr } = state;
   if (!risk.title.trim()) return false;
   if (!expr) return false;
 
@@ -228,11 +227,11 @@ const handleUpsert = async () => {
     context.showFeatureModal.value = true;
     return;
   }
-  if (!state.value.expr) return;
+  if (!state.expr) return;
 
-  const risk = cloneDeep(state.value.risk);
+  const risk = cloneDeep(state.risk);
 
-  const celexpr = await buildCELExpr(state.value.expr);
+  const celexpr = await buildCELExpr(state.expr);
   if (!celexpr) {
     return;
   }
@@ -247,8 +246,8 @@ const handleApplyRuleTemplate = (
   overrides: Partial<Risk>,
   expr: ConditionGroupExpr
 ) => {
-  Object.assign(state.value.risk, overrides);
-  state.value.expr = cloneDeep(expr);
+  Object.assign(state.risk, overrides);
+  state.expr = cloneDeep(expr);
   emit("update");
 };
 

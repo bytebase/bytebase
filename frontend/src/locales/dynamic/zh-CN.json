@@ -20,6 +20,7 @@
     "risk-rule": {
       "template": {
         "presets": {
+          "request-role-high": "申请成为项目所有者，将会被认为是高风险",
           "environment-prod-high": "生产环境，默认为高风险",
           "environment-dev-low": "开发环境，默认为低风险",
           "dml-in-environment-prod-10k-rows-high": "生产环境中更新或删除的数据行数超过 10000，默认为高风险",

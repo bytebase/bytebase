@@ -5962,7 +5962,7 @@ paths:
         post:
             tags:
                 - SheetService
-            operationId: SheetService_BatchCreateSheet
+            operationId: SheetService_BatchCreateSheets
             parameters:
                 - name: project
                   in: path
@@ -5974,7 +5974,7 @@ paths:
                 content:
                     application/json:
                         schema:
-                            $ref: '#/components/schemas/BatchCreateSheetRequest'
+                            $ref: '#/components/schemas/BatchCreateSheetsRequest'
                 required: true
             responses:
                 "200":
@@ -5982,7 +5982,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/BatchCreateSheetResponse'
+                                $ref: '#/components/schemas/BatchCreateSheetsResponse'
                 default:
                     description: Default error response
                     content:
@@ -8295,7 +8295,7 @@ components:
                     items:
                         $ref: '#/components/schemas/Revision'
                     description: The created revisions.
-        BatchCreateSheetRequest:
+        BatchCreateSheetsRequest:
             required:
                 - parent
                 - requests
@@ -8310,7 +8310,7 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/CreateSheetRequest'
-        BatchCreateSheetResponse:
+        BatchCreateSheetsResponse:
             type: object
             properties:
                 sheets:
@@ -11288,10 +11288,6 @@ components:
         Plan_Spec:
             type: object
             properties:
-                earliestAllowedTime:
-                    type: string
-                    description: earliest_allowed_time the earliest execution time of the change.
-                    format: date-time
                 id:
                     type: string
                     description: A UUID4 string that uniquely identifies the Spec.

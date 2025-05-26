@@ -249,8 +249,6 @@
       "summary-report": "Báo cáo tổng hợp"
     },
     "earliest-allowed-time": "Thời gian triển khai sớm nhất",
-    "earliest-allowed-time-hint": "@:{'task.earliest-allowed-time'} là thời gian sớm nhất để triển khai sự cố, bạn không thể triển khai trước thời gian này; nếu không được chỉ định, sự cố sẽ chạy khi đáp ứng tất cả các tiêu chí.",
-    "earliest-allowed-time-unset": "Không đặt",
     "comment": "Bình luận",
     "started": "Bắt đầu",
     "view-change": "Xem thay đổi",
@@ -508,7 +506,7 @@
         },
         "maximum-role-expiration": {
           "self": "Thời gian hết hạn vai trò tối đa",
-          "description": "Thời gian hết hạn vai trò tối đa là khoảng thời gian tối đa một vai trò có thể được cấp cho người dùng. (Chỉ dành cho vai trò người truy vấn và người xuất)",
+          "description": "Thời hạn vai trò tối đa là thời hạn tối đa mà một vai trò có thể được cấp cho người dùng, sẽ áp dụng cho tất cả các vai trò trong dự án ngoại trừ chủ sở hữu dự án.",
           "days": "Ngày",
           "never-expires": "Không bao giờ hết hạn"
         },
@@ -890,6 +888,7 @@
     "issue-name": "Tên vấn đề",
     "grant-request": {
       "export-rows": "Số dòng xuất tối đa",
+      "select-export-rows": "Chọn số hàng xuất tối đa",
       "expired-at": "Hết hạn vào",
       "all-databases": "Tất cả",
       "all-databases-tip": "Tất cả cơ sở dữ liệu hiện tại và tương lai trong dự án này.",
@@ -910,13 +909,6 @@
     },
     "not-editable-legacy-issue": "Vấn đề này không thể chỉnh sửa vì nó được tạo trong phiên bản cũ của Bytebase",
     "action-anyway": "{action} bằng mọi cách",
-    "disallow-edit-reasons": {
-      "issue-is-done": "Vấn đề đã hoàn tất",
-      "issue-is-canceled": "Vấn đề đã bị hủy",
-      "task-is-x-status": "Tác vụ là {status}",
-      "task-is-running-cancel-first": "Tác vụ đang chạy, hãy hủy tác vụ trước khi thay đổi giá trị này"
-    },
-    "you-are-not-allowed-to-change-this-value": "Bạn không được phép thay đổi giá trị này",
     "sql-check": {
       "sql-checks": "Kiểm tra SQL",
       "not-executed-yet": "Chưa được thực hiện",
@@ -940,9 +932,6 @@
       "format": "Định dạng",
       "encrypt": "Mã hóa",
       "file-downloaded": "Tệp đã tải xuống"
-    },
-    "update-rollout-time": {
-      "self": "Cập nhật thời gian triển khai"
     },
     "task-run": {
       "logs": "Nhật ký",
@@ -1484,6 +1473,7 @@
     "foreign-key": {
       "reference": "Tham chiếu"
     },
+    "checks": "Kiểm tra",
     "create-target-database-or-schema-for-backup": "Vui lòng tạo cơ sở dữ liệu hoặc lược đồ đích cho bản sao lưu trước",
     "revision": {
       "self": "Bản sửa đổi",
@@ -1505,8 +1495,7 @@
         "self": "Đường cơ sở mới",
         "successfully-established": "Đã thiết lập thành công đường cơ sở mới"
       }
-    },
-    "checks": "Kiểm tra"
+    }
   },
   "project": {
     "table": {

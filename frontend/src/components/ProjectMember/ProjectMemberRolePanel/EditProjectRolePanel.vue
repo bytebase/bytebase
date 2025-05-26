@@ -21,11 +21,15 @@
           />
         </div>
 
-        <template v-if="!isLoading">
+        <template v-if="!state.isLoading">
           <div
             v-if="
-              binding.role === PresetRoleType.SQL_EDITOR_USER ||
-              binding.role === PresetRoleType.PROJECT_EXPORTER
+              binding.role !== PresetRoleType.PROJECT_OWNER &&
+              checkRoleContainsAnyPermission(
+                binding.role,
+                'bb.sql.select',
+                'bb.sql.export'
+              )
             "
             class="w-full"
           >
@@ -42,7 +46,12 @@
           </div>
 
           <!-- Exporter blocks -->
-          <template v-if="binding.role === PresetRoleType.PROJECT_EXPORTER">
+          <template
+            v-if="
+              binding.role !== PresetRoleType.PROJECT_OWNER &&
+              checkRoleContainsAnyPermission(binding.role, 'bb.sql.export')
+            "
+          >
             <div class="w-full flex flex-col justify-start items-start">
               <p class="mb-2">
                 {{ $t("issue.grant-request.export-rows") }}
@@ -67,12 +76,12 @@
             v-model:value="state.expirationTimestamp"
             style="width: 100%"
             type="datetime"
-            :is-date-disabled="(date: number) => date < Date.now()"
+            :is-date-disabled="isDateDisabled"
             clearable
           />
-          <span v-if="!state.expirationTimestamp" class="textinfolabel">{{
-            $t("project.members.role-never-expires")
-          }}</span>
+          <span v-if="!state.expirationTimestamp" class="textinfolabel">
+            {{ $t("project.members.role-never-expires") }}
+          </span>
         </div>
 
         <MembersBindingSelect
@@ -112,9 +121,10 @@
 </template>
 
 <script lang="ts" setup>
+import dayjs from "dayjs";
 import { cloneDeep, isEqual, isUndefined } from "lodash-es";
 import { NButton, NDatePicker, NInput } from "naive-ui";
-import { computed, reactive, ref, onMounted } from "vue";
+import { computed, reactive, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBButtonConfirm } from "@/bbkit";
 import QuerierDatabaseResourceForm from "@/components/GrantRequestPanel/DatabaseResourceForm/index.vue";
@@ -125,12 +135,13 @@ import {
   useProjectIamPolicy,
   useProjectIamPolicyStore,
   pushNotification,
+  useSettingV1Store,
 } from "@/store";
 import type { ComposedProject, DatabaseResource } from "@/types";
 import { PresetRoleType } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import type { Binding } from "@/types/proto/v1/iam_policy";
-import { displayRoleTitle } from "@/utils";
+import { displayRoleTitle, checkRoleContainsAnyPermission } from "@/utils";
 import { convertFromExpr, buildConditionExpr } from "@/utils/issue/cel";
 import { getBindingIdentifier } from "../utils";
 
@@ -150,7 +161,8 @@ interface LocalState {
   // Querier and exporter options.
   databaseResources?: DatabaseResource[];
   // Exporter options.
-  maxRowCount: number;
+  maxRowCount?: number;
+  isLoading: boolean;
 }
 
 const { t } = useI18n();
@@ -158,15 +170,38 @@ const { t } = useI18n();
 const state = reactive<LocalState>({
   title: "",
   description: "",
-  maxRowCount: 1000,
+  maxRowCount: undefined,
+  isLoading: true,
 });
-const isLoading = ref(true);
+const settingStore = useSettingV1Store();
 const projectResourceName = computed(() => props.project.name);
 const { policy: iamPolicy } = useProjectIamPolicy(projectResourceName);
 
 const panelTitle = computed(() => {
   return displayRoleTitle(props.binding.role);
 });
+
+const maximumRoleExpiration = computed(() => {
+  const seconds =
+    settingStore.workspaceProfileSetting?.maximumRoleExpiration?.seconds?.toNumber();
+  if (!seconds) {
+    return undefined;
+  }
+  return Math.floor(seconds / (60 * 60 * 24));
+});
+
+const isDateDisabled = (date: number) => {
+  if (date < Date.now()) {
+    return true;
+  }
+  if (
+    !maximumRoleExpiration.value ||
+    props.binding.role === PresetRoleType.PROJECT_OWNER
+  ) {
+    return false;
+  }
+  return date > dayjs().add(maximumRoleExpiration.value, "days").valueOf();
+};
 
 const allowRemoveRole = () => {
   if (props.project.state === State.DELETED) {
@@ -212,7 +247,7 @@ onMounted(() => {
     }
   }
 
-  isLoading.value = false;
+  state.isLoading = false;
 });
 
 const handleDeleteRole = async () => {
@@ -237,15 +272,8 @@ const handleUpdateRole = async () => {
     role: props.binding.role,
     description: state.description,
     expirationTimestampInMS: state.expirationTimestamp,
-    rowLimit:
-      props.binding.role === PresetRoleType.PROJECT_EXPORTER
-        ? state.maxRowCount
-        : undefined,
-    databaseResources:
-      props.binding.role === PresetRoleType.SQL_EDITOR_USER ||
-      props.binding.role === PresetRoleType.PROJECT_EXPORTER
-        ? state.databaseResources
-        : undefined,
+    rowLimit: state.maxRowCount,
+    databaseResources: state.databaseResources,
   });
 
   const policy = cloneDeep(iamPolicy.value);

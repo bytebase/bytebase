@@ -87,8 +87,7 @@ func convertToPlanSpecs(specs []*storepb.PlanConfig_Spec) []*v1pb.Plan_Spec {
 
 func convertToPlanSpec(spec *storepb.PlanConfig_Spec) *v1pb.Plan_Spec {
 	v1Spec := &v1pb.Plan_Spec{
-		EarliestAllowedTime: spec.EarliestAllowedTime,
-		Id:                  spec.Id,
+		Id: spec.Id,
 		SpecReleaseSource: &v1pb.Plan_SpecReleaseSource{
 			File: spec.SpecReleaseSource.GetFile(),
 		},
@@ -270,8 +269,7 @@ func convertPlanSpecs(specs []*v1pb.Plan_Spec) []*storepb.PlanConfig_Spec {
 
 func convertPlanSpec(spec *v1pb.Plan_Spec) *storepb.PlanConfig_Spec {
 	storeSpec := &storepb.PlanConfig_Spec{
-		EarliestAllowedTime: spec.EarliestAllowedTime,
-		Id:                  spec.Id,
+		Id: spec.Id,
 		SpecReleaseSource: &storepb.PlanConfig_SpecReleaseSource{
 			File: spec.SpecReleaseSource.GetFile(),
 		},

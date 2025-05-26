@@ -14,9 +14,8 @@
 import { asyncComputed } from "@vueuse/core";
 import { computed } from "vue";
 import { useCurrentUserV1 } from "@/store";
-import { PresetRoleType } from "@/types";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
-import { isGrantRequestIssue } from "@/utils";
+import { isGrantRequestIssue, checkRoleContainsAnyPermission } from "@/utils";
 import { useIssueContext } from "../../../logic";
 import { CreateButton } from "./create";
 import { TinySQLEditorButton } from "./request";
@@ -45,7 +44,7 @@ const actionType = asyncComputed(async (): Promise<ActionType | undefined> => {
   if (isGrantRequestIssue(issue.value)) {
     if (isFinishedGrantRequestIssueByCurrentUser.value) {
       const role = issue.value.grantRequest?.role;
-      if (role === PresetRoleType.SQL_EDITOR_USER) {
+      if (role && checkRoleContainsAnyPermission(role, "bb.sql.select")) {
         return "SQL-EDITOR";
       }
     }
