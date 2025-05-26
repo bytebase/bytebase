@@ -123,7 +123,7 @@ onMounted(async () => {
   const url = new URL(window.location.href);
   const params = new URLSearchParams(url.search);
   state.email = params.get("email") ?? (isDemo.value ? "demo@example.com" : "");
-  state.password = params.get("password") ?? (isDemo.value ? "1024" : "");
+  state.password = params.get("password") ?? (isDemo.value ? "12345678" : "");
   state.showPassword = !!isDemo.value;
 
   // Try to signin with example account in demo site.
