@@ -11,6 +11,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Frontend lint: `pnpm --dir frontend lint`
 - Frontend type check: `pnpm --dir frontend type-check`
 - Frontend test: `pnpm --dir frontend test`
+- Proto lint: `cd proto && buf lint`
 - Go lint command: `g ./path/to/package/...` - This custom alias runs linting tools for Go code
 
 ## Code Style

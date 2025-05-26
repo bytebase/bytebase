@@ -15,6 +15,7 @@ import { OrgPolicyServiceDefinition } from "@/types/proto/v1/org_policy_service"
 import { PlanServiceDefinition } from "@/types/proto/v1/plan_service";
 import { ProjectServiceDefinition } from "@/types/proto/v1/project_service";
 import { ReleaseServiceDefinition } from "@/types/proto/v1/release_service";
+import { RevisionServiceDefinition } from "@/types/proto/v1/revision_service";
 import { ReviewConfigServiceDefinition } from "@/types/proto/v1/review_config_service";
 import { RiskServiceDefinition } from "@/types/proto/v1/risk_service";
 import { RoleServiceDefinition } from "@/types/proto/v1/role_service";
@@ -207,6 +208,11 @@ export const workspaceServiceClient = clientFactory.create(
 
 export const releaseServiceClient = clientFactory.create(
   ReleaseServiceDefinition,
+  channel
+);
+
+export const revisionServiceClient = clientFactory.create(
+  RevisionServiceDefinition,
   channel
 );
 

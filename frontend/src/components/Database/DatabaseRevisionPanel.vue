@@ -20,7 +20,7 @@
 <script lang="ts" setup>
 import { RevisionDataTable } from "@/components/Revision";
 import PagedTable from "@/components/v2/Model/PagedTable.vue";
-import { databaseServiceClient } from "@/grpcweb";
+import { revisionServiceClient } from "@/grpcweb";
 import type { ComposedDatabase } from "@/types";
 import { useDatabaseDetailContext } from "./context";
 
@@ -38,7 +38,7 @@ const fetchRevisionList = async ({
   pageSize: number;
 }) => {
   const { nextPageToken, revisions } =
-    await databaseServiceClient.listRevisions({
+    await revisionServiceClient.listRevisions({
       parent: props.database.name,
       pageSize,
       pageToken,
