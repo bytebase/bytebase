@@ -521,25 +521,7 @@ func endMigration(ctx context.Context, storeInstance *store.Store, mc *migrateCo
 				metadata = &storepb.DatabaseMetadata{}
 			}
 			
-			// Compare versions and only update if new version is greater
-			shouldUpdate := false
-			if metadata.Version == "" {
-				// If no current version, always update
-				shouldUpdate = true
-			} else {
-				currentVersion, err := model.NewVersion(metadata.Version)
-				if err != nil {
-					// If current version is invalid, update with new version
-					shouldUpdate = true
-				} else {
-					newVersion, err := model.NewVersion(mc.version)
-					if err == nil && currentVersion.LessThan(newVersion) {
-						shouldUpdate = true
-					}
-				}
-			}
-			
-			if shouldUpdate {
+			if shouldUpdateVersion(metadata.Version, mc.version) {
 				metadata.Version = mc.version
 				if _, err := storeInstance.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
 					InstanceID:   mc.database.InstanceID,
@@ -562,6 +544,32 @@ func endMigration(ctx context.Context, storeInstance *store.Store, mc *migrateCo
 	}
 
 	return nil
+}
+
+// shouldUpdateVersion checks if newVersion is greater than currentVersion.
+// Returns true if:
+// - currentVersion is empty
+// - currentVersion is invalid
+// - newVersion is greater than currentVersion
+func shouldUpdateVersion(currentVersion, newVersion string) bool {
+	if currentVersion == "" {
+		// If no current version, always update
+		return true
+	}
+	
+	current, err := model.NewVersion(currentVersion)
+	if err != nil {
+		// If current version is invalid, update with new version
+		return true
+	}
+	
+	new, err := model.NewVersion(newVersion)
+	if err != nil {
+		// If new version is invalid, don't update
+		return false
+	}
+	
+	return current.LessThan(new)
 }
 
 func convertTaskType(t base.TaskType) storepb.ChangelogPayload_Type {
