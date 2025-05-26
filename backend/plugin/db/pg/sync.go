@@ -79,7 +79,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 	isAtLeastPG10 := isAtLeastPG10(d.connectionCtx.EngineVersion)
 	searchPath, err := d.GetSearchPath(ctx)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get search path for database %q", d.databaseName)
+		return nil, common.Errorf(common.Internal, "failed to get search path for database %q: %v", d.databaseName, err)
 	}
 	databaseMetadata.SearchPath = searchPath
 
