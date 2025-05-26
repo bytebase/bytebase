@@ -214,6 +214,18 @@ func (s *Store) UpdateTaskRunStatus(ctx context.Context, patch *TaskRunStatusPat
 	return taskRun, nil
 }
 
+func (s *Store) UpdateTaskRunStartAt(ctx context.Context, taskRunID int) error {
+	_, err := s.db.ExecContext(ctx, `
+		UPDATE task_run
+		SET started_at = now()
+		WHERE id = $1
+	`, taskRunID)
+	if err != nil {
+		return errors.Wrapf(err, "failed to update task run start at")
+	}
+	return nil
+}
+
 // CreatePendingTaskRuns creates pending task runs.
 func (s *Store) CreatePendingTaskRuns(ctx context.Context, creates ...*TaskRunMessage) error {
 	if len(creates) == 0 {
@@ -357,9 +369,6 @@ func (*Store) patchTaskRunStatusImpl(ctx context.Context, txn *sql.Tx, patch *Ta
 			result = *v
 		}
 		set, args = append(set, fmt.Sprintf("result = $%d", len(args)+1)), append(args, result)
-	}
-	if patch.Status == base.TaskRunRunning {
-		set = append(set, "started_at = now()")
 	}
 
 	// Build WHERE clause.
