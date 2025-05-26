@@ -335,7 +335,7 @@ const confirmErrors = computed(() => {
   // Validate scheduled time if not running immediately
   if (runTimeInMS.value !== undefined) {
     if (runTimeInMS.value <= Date.now()) {
-      errors.push("Scheduled time must be in the future");
+      errors.push(t("task.error.scheduled-time-must-be-in-the-future"));
     }
   }
 

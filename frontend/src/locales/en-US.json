@@ -273,6 +273,9 @@
     "run-immediately": "Run task immediately | Run tasks immediately",
     "scheduled-time": "Scheduled time",
     "select-scheduled-time": "Select scheduled time",
+    "error": {
+      "scheduled-time-must-be-in-the-future": "Scheduled time must be in the future"
+    },
     "online-migration": {
       "self": "Online migration",
       "configure-ghost-parameters": "Configure gh-ost parameters",
