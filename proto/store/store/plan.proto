@@ -4,7 +4,6 @@ package bytebase.store;
 
 import "google/api/field_behavior.proto";
 import "google/api/resource.proto";
-import "google/protobuf/timestamp.proto";
 import "store/common.proto";
 import "store/plan_check_run.proto";
 
@@ -24,8 +23,6 @@ message PlanConfig {
     repeated Spec specs = 1;
   }
   message Spec {
-    // earliest_allowed_time the earliest execution time of the change.
-    google.protobuf.Timestamp earliest_allowed_time = 4;
     // A UUID4 string that uniquely identifies the Spec.
     string id = 5;
 
