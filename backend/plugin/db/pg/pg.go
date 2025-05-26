@@ -325,7 +325,7 @@ func (d *Driver) GetSearchPath(ctx context.Context) (string, error) {
 		}
 		return "", util.FormatErrorWithQuery(err, query)
 	}
-	return searchPath, nil
+	return strings.TrimSpace(searchPath), nil
 }
 
 // getVersion gets the version of Postgres server.
