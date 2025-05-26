@@ -25,10 +25,7 @@ import {
   Changelog_Status,
   Changelog_Type,
 } from "@/types/proto/v1/database_service";
-import {
-  extractIssueUID,
-  getAffectedTableDisplayName,
-} from "@/utils";
+import { extractIssueUID, getAffectedTableDisplayName } from "@/utils";
 import {
   changelogLink,
   getAffectedTablesOfChangelog,
@@ -82,7 +79,7 @@ const columnList = computed(() => {
     {
       key: "type",
       title: t("changelog.change-type"),
-      width: "6rem",
+      width: "8rem",
       resizable: true,
       render: (changelog) => {
         return (
