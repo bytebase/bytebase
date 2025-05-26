@@ -269,6 +269,12 @@
     "action-all-tasks-in-current-stage": "{action}当前阶段的所有任务",
     "cancel-task": "取消任务",
     "created": "创建于",
+    "run-immediately": "立即运行任务",
+    "scheduled-time": "计划时间",
+    "select-scheduled-time": "选择计划时间",
+    "error": {
+      "scheduled-time-must-be-in-the-future": "计划时间必须是将来的时间"
+    },
     "online-migration": {
       "self": "在线大表变更",
       "configure-ghost-parameters": "配置 gh-ost 参数",

@@ -269,6 +269,12 @@
     "action-all-tasks-in-current-stage": "{action} tất cả các tác vụ trong giai đoạn hiện tại",
     "cancel-task": "Hủy tác vụ | Hủy các tác vụ",
     "created": "Đã tạo",
+    "run-immediately": "Chạy nhiệm vụ ngay lập tức",
+    "scheduled-time": "Thời gian đã lên lịch",
+    "select-scheduled-time": "Chọn thời gian đã lên lịch",
+    "error": {
+      "scheduled-time-must-be-in-the-future": "Thời gian dự kiến phải ở trong tương lai"
+    },
     "online-migration": {
       "self": "Di chuyển trực tuyến",
       "configure-ghost-parameters": "Cấu hình tham số gh-ost",
