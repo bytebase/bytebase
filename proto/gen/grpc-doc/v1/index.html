@@ -2394,6 +2394,14 @@
             <ul>
               
                 <li>
+                  <a href="#bytebase.v1.BatchCreateRevisionsRequest"><span class="badge">M</span>BatchCreateRevisionsRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.BatchCreateRevisionsResponse"><span class="badge">M</span>BatchCreateRevisionsResponse</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.CreateRevisionRequest"><span class="badge">M</span>CreateRevisionRequest</a>
                 </li>
               
@@ -26064,6 +26072,63 @@ In this situation, `update_mask` is ignored. </p></td>
       <p></p>
 
       
+        <h3 id="bytebase.v1.BatchCreateRevisionsRequest">BatchCreateRevisionsRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>parent</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The parent resource shared by all revisions being created.
+Format: instances/{instance}/databases/{database} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>requests</td>
+                  <td><a href="#bytebase.v1.CreateRevisionRequest">CreateRevisionRequest</a></td>
+                  <td>repeated</td>
+                  <td><p>The request message specifying the revisions to create.
+A maximum of 100 revisions can be created in a batch. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.BatchCreateRevisionsResponse">BatchCreateRevisionsResponse</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>revisions</td>
+                  <td><a href="#bytebase.v1.Revision">Revision</a></td>
+                  <td>repeated</td>
+                  <td><p>The created revisions. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.CreateRevisionRequest">CreateRevisionRequest</h3>
         <p></p>
 
@@ -26382,6 +26447,13 @@ projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{task
               </tr>
             
               <tr>
+                <td>BatchCreateRevisions</td>
+                <td><a href="#bytebase.v1.BatchCreateRevisionsRequest">BatchCreateRevisionsRequest</a></td>
+                <td><a href="#bytebase.v1.BatchCreateRevisionsResponse">BatchCreateRevisionsResponse</a></td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
                 <td>DeleteRevision</td>
                 <td><a href="#bytebase.v1.DeleteRevisionRequest">DeleteRevisionRequest</a></td>
                 <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
@@ -26433,6 +26505,16 @@ projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{task
                 <td>POST</td>
                 <td>/v1/{parent=instances/*/databases/*}/revisions</td>
                 <td>revision</td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>BatchCreateRevisions</td>
+                <td>POST</td>
+                <td>/v1/{parent=instances/*/databases/*}/revisions:batchCreate</td>
+                <td>*</td>
               </tr>
               
             

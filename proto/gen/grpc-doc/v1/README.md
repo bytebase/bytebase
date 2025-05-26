@@ -580,6 +580,8 @@
     - [ReviewConfigService](#bytebase-v1-ReviewConfigService)
   
 - [v1/revision_service.proto](#v1_revision_service-proto)
+    - [BatchCreateRevisionsRequest](#bytebase-v1-BatchCreateRevisionsRequest)
+    - [BatchCreateRevisionsResponse](#bytebase-v1-BatchCreateRevisionsResponse)
     - [CreateRevisionRequest](#bytebase-v1-CreateRevisionRequest)
     - [DeleteRevisionRequest](#bytebase-v1-DeleteRevisionRequest)
     - [GetRevisionRequest](#bytebase-v1-GetRevisionRequest)
@@ -9416,6 +9418,37 @@ The name field is used to identify the sql review to update. |
 
 
 
+<a name="bytebase-v1-BatchCreateRevisionsRequest"></a>
+
+### BatchCreateRevisionsRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The parent resource shared by all revisions being created. Format: instances/{instance}/databases/{database} |
+| requests | [CreateRevisionRequest](#bytebase-v1-CreateRevisionRequest) | repeated | The request message specifying the revisions to create. A maximum of 100 revisions can be created in a batch. |
+
+
+
+
+
+
+<a name="bytebase-v1-BatchCreateRevisionsResponse"></a>
+
+### BatchCreateRevisionsResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| revisions | [Revision](#bytebase-v1-Revision) | repeated | The created revisions. |
+
+
+
+
+
+
 <a name="bytebase-v1-CreateRevisionRequest"></a>
 
 ### CreateRevisionRequest
@@ -9541,6 +9574,7 @@ When paginating, all other parameters provided to `ListRevisions` must match the
 | ListRevisions | [ListRevisionsRequest](#bytebase-v1-ListRevisionsRequest) | [ListRevisionsResponse](#bytebase-v1-ListRevisionsResponse) |  |
 | GetRevision | [GetRevisionRequest](#bytebase-v1-GetRevisionRequest) | [Revision](#bytebase-v1-Revision) |  |
 | CreateRevision | [CreateRevisionRequest](#bytebase-v1-CreateRevisionRequest) | [Revision](#bytebase-v1-Revision) |  |
+| BatchCreateRevisions | [BatchCreateRevisionsRequest](#bytebase-v1-BatchCreateRevisionsRequest) | [BatchCreateRevisionsResponse](#bytebase-v1-BatchCreateRevisionsResponse) |  |
 | DeleteRevision | [DeleteRevisionRequest](#bytebase-v1-DeleteRevisionRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
 
  

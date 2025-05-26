@@ -33,6 +33,14 @@ service RevisionService {
     option (bytebase.v1.permission) = "bb.revisions.create";
     option (bytebase.v1.auth_method) = IAM;
   }
+  rpc BatchCreateRevisions(BatchCreateRevisionsRequest) returns (BatchCreateRevisionsResponse) {
+    option (google.api.http) = {
+      post: "/v1/{parent=instances/*/databases/*}/revisions:batchCreate"
+      body: "*"
+    };
+    option (bytebase.v1.permission) = "bb.revisions.create";
+    option (bytebase.v1.auth_method) = IAM;
+  }
   rpc DeleteRevision(DeleteRevisionRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {delete: "/v1/{name=instances/*/databases/*/revisions/*}"};
     option (google.api.method_signature) = "name";
@@ -81,6 +89,24 @@ message CreateRevisionRequest {
 
   // The revision to create.
   Revision revision = 2 [(google.api.field_behavior) = REQUIRED];
+}
+
+message BatchCreateRevisionsRequest {
+  // The parent resource shared by all revisions being created.
+  // Format: instances/{instance}/databases/{database}
+  string parent = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Database"}
+  ];
+
+  // The request message specifying the revisions to create.
+  // A maximum of 100 revisions can be created in a batch.
+  repeated CreateRevisionRequest requests = 2 [(google.api.field_behavior) = REQUIRED];
+}
+
+message BatchCreateRevisionsResponse {
+  // The created revisions.
+  repeated Revision revisions = 1;
 }
 
 message GetRevisionRequest {
