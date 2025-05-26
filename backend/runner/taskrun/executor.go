@@ -520,7 +520,7 @@ func endMigration(ctx context.Context, storeInstance *store.Store, mc *migrateCo
 			if metadata == nil {
 				metadata = &storepb.DatabaseMetadata{}
 			}
-			
+
 			if shouldUpdateVersion(metadata.Version, mc.version) {
 				metadata.Version = mc.version
 				if _, err := storeInstance.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
@@ -556,20 +556,18 @@ func shouldUpdateVersion(currentVersion, newVersion string) bool {
 		// If no current version, always update
 		return true
 	}
-	
 	current, err := model.NewVersion(currentVersion)
 	if err != nil {
 		// If current version is invalid, update with new version
 		return true
 	}
-	
-	new, err := model.NewVersion(newVersion)
+
+	nv, err := model.NewVersion(newVersion)
 	if err != nil {
 		// If new version is invalid, don't update
 		return false
 	}
-	
-	return current.LessThan(new)
+	return current.LessThan(nv)
 }
 
 func convertTaskType(t base.TaskType) storepb.ChangelogPayload_Type {
