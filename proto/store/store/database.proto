@@ -44,6 +44,9 @@ message DatabaseSchemaMetadata {
   repeated LinkedDatabaseMetadata linked_databases = 8;
 
   string owner = 9;
+
+  // The search_path is the search path of a PostgreSQL database.
+  string search_path = 10;
 }
 
 message LinkedDatabaseMetadata {
