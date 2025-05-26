@@ -9,7 +9,6 @@ package store
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	_ "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
@@ -715,7 +714,7 @@ var File_store_issue_comment_proto protoreflect.FileDescriptor
 
 const file_store_issue_comment_proto_rawDesc = "" +
 	"\n" +
-	"\x19store/issue_comment.proto\x12\x0ebytebase.store\x1a\x1fgoogle/protobuf/timestamp.proto\"\xfe\x0e\n" +
+	"\x19store/issue_comment.proto\x12\x0ebytebase.store\"\xfe\x0e\n" +
 	"\x13IssueCommentPayload\x12\x18\n" +
 	"\acomment\x18\x01 \x01(\tR\acomment\x12J\n" +
 	"\bapproval\x18\x02 \x01(\v2,.bytebase.store.IssueCommentPayload.ApprovalH\x00R\bapproval\x12T\n" +
