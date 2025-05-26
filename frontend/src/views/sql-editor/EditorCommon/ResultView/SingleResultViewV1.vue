@@ -235,6 +235,7 @@ import {
   hasPermissionToCreateRequestGrantIssue,
   instanceV1HasStructuredQueryResult,
   isNullOrUndefined,
+  ensureDataSourceSelection,
 } from "@/utils";
 import DataBlock from "./DataBlock.vue";
 import DataTable from "./DataTable";
@@ -258,7 +259,7 @@ const storedPageSize = useLocalStorage<number>(
 
 const props = defineProps<{
   params: SQLEditorQueryParams;
-  database?: ComposedDatabase;
+  database: ComposedDatabase;
   result: QueryResult;
   setIndex: number;
 }>();
@@ -448,7 +449,7 @@ const handleExportBtnClick = async (
   // the query is executed on database level
   // otherwise the query is executed on instance level, we should use the
   // `instanceId` from the tab's connection attributes
-  const database =
+  const databaseName =
     props.database && isValidDatabaseName(props.database.name)
       ? props.database.name
       : "";
@@ -458,11 +459,18 @@ const handleExportBtnClick = async (
   const admin = tabStore.currentTab?.mode === "ADMIN";
   const limit = options.limit ?? (admin ? 0 : editorStore.resultRowsLimit);
 
+  const dataSourceId =
+    ensureDataSourceSelection(
+      props.database?.instance === props.params.connection.instance
+        ? props.params.connection.dataSourceId
+        : undefined,
+      props.database
+    ) ?? "";
+
   try {
     const content = await useSQLStore().exportData({
-      name: database,
-      // TODO(lj): support data source id similar to queries.
-      dataSourceId: "",
+      name: databaseName,
+      dataSourceId,
       format: options.format,
       statement,
       limit,
