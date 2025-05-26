@@ -312,6 +312,22 @@ func (d *Driver) getDatabases(ctx context.Context) ([]*storepb.DatabaseSchemaMet
 	return databases, nil
 }
 
+// GetSearchPath gets the current search path of the database.
+func (d *Driver) GetSearchPath(ctx context.Context) (string, error) {
+	// SHOW search_path returns the current search path.
+	// PostgreSQL supports it since 8.2.
+	// https://www.postgresql.org/docs/current/sql-show.html
+	query := "SHOW search_path"
+	var searchPath string
+	if err := d.db.QueryRowContext(ctx, query).Scan(&searchPath); err != nil {
+		if err == sql.ErrNoRows {
+			return "", common.FormatDBErrorEmptyRowWithQuery(query)
+		}
+		return "", util.FormatErrorWithQuery(err, query)
+	}
+	return searchPath, nil
+}
+
 // getVersion gets the version of Postgres server.
 func (d *Driver) getVersion(ctx context.Context) (string, error) {
 	// SHOW server_version_num returns an integer such as 100005, which means 10.0.5.
