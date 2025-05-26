@@ -133,10 +133,6 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, request *v1pb.CheckRe
 		if instance == nil {
 			return nil, status.Errorf(codes.NotFound, "instance %q not found", database.InstanceID)
 		}
-		// Continue if the instance is not supported by SQL review.
-		if !base.EngineSupportSQLReview(instance.Metadata.GetEngine()) {
-			continue
-		}
 
 		catalog, err := catalog.NewCatalog(ctx, s.store, database.InstanceID, database.DatabaseName, instance.Metadata.GetEngine(), store.IsObjectCaseSensitive(instance), nil)
 		if err != nil {
@@ -219,13 +215,15 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, request *v1pb.CheckRe
 						}
 						checkResult.RiskLevel = riskLevelEnum
 					}
-					adviceStatus, sqlReviewAdvices, err := s.runSQLReviewCheckForFile(ctx, catalog, instance, database, changeType, statement)
-					if err != nil {
-						return nil, status.Errorf(codes.Internal, "failed to check SQL review: %v", err)
-					}
-					// If the advice status is not SUCCESS, we will add the file and advices to the response.
-					if adviceStatus != storepb.Advice_SUCCESS {
-						checkResult.Advices = sqlReviewAdvices
+					if base.EngineSupportSQLReview(instance.Metadata.GetEngine()) {
+						adviceStatus, sqlReviewAdvices, err := s.runSQLReviewCheckForFile(ctx, catalog, instance, database, changeType, statement)
+						if err != nil {
+							return nil, status.Errorf(codes.Internal, "failed to check SQL review: %v", err)
+						}
+						// If the advice status is not SUCCESS, we will add the file and advices to the response.
+						if adviceStatus != storepb.Advice_SUCCESS {
+							checkResult.Advices = sqlReviewAdvices
+						}
 					}
 				}
 				return checkResult, nil
