@@ -504,8 +504,10 @@ type DatabaseSchemaMetadata struct {
 	ServiceName     string                    `protobuf:"bytes,7,opt,name=service_name,json=serviceName,proto3" json:"service_name,omitempty"`
 	LinkedDatabases []*LinkedDatabaseMetadata `protobuf:"bytes,8,rep,name=linked_databases,json=linkedDatabases,proto3" json:"linked_databases,omitempty"`
 	Owner           string                    `protobuf:"bytes,9,opt,name=owner,proto3" json:"owner,omitempty"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
+	// The search_path is the search path of a PostgreSQL database.
+	SearchPath    string `protobuf:"bytes,10,opt,name=search_path,json=searchPath,proto3" json:"search_path,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *DatabaseSchemaMetadata) Reset() {
@@ -597,6 +599,13 @@ func (x *DatabaseSchemaMetadata) GetLinkedDatabases() []*LinkedDatabaseMetadata 
 func (x *DatabaseSchemaMetadata) GetOwner() string {
 	if x != nil {
 		return x.Owner
+	}
+	return ""
+}
+
+func (x *DatabaseSchemaMetadata) GetSearchPath() string {
+	if x != nil {
+		return x.SearchPath
 	}
 	return ""
 }
@@ -3825,7 +3834,7 @@ const file_store_database_proto_rawDesc = "" +
 	"\adrifted\x18\x06 \x01(\bR\adrifted\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x96\x03\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xb7\x03\n" +
 	"\x16DatabaseSchemaMetadata\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x128\n" +
 	"\aschemas\x18\x02 \x03(\v2\x1e.bytebase.store.SchemaMetadataR\aschemas\x12#\n" +
@@ -3837,7 +3846,10 @@ const file_store_database_proto_rawDesc = "" +
 	"\tdatashare\x18\x06 \x01(\bR\tdatashare\x12!\n" +
 	"\fservice_name\x18\a \x01(\tR\vserviceName\x12Q\n" +
 	"\x10linked_databases\x18\b \x03(\v2&.bytebase.store.LinkedDatabaseMetadataR\x0flinkedDatabases\x12\x14\n" +
-	"\x05owner\x18\t \x01(\tR\x05owner\"\\\n" +
+	"\x05owner\x18\t \x01(\tR\x05owner\x12\x1f\n" +
+	"\vsearch_path\x18\n" +
+	" \x01(\tR\n" +
+	"searchPath\"\\\n" +
 	"\x16LinkedDatabaseMetadata\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1a\n" +
 	"\busername\x18\x02 \x01(\tR\busername\x12\x12\n" +

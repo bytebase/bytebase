@@ -1655,8 +1655,10 @@ type DatabaseMetadata struct {
 	// The collation is the collation of a database.
 	Collation string `protobuf:"bytes,4,opt,name=collation,proto3" json:"collation,omitempty"`
 	// The extensions is the list of extensions in a database.
-	Extensions    []*ExtensionMetadata `protobuf:"bytes,5,rep,name=extensions,proto3" json:"extensions,omitempty"`
-	Owner         string               `protobuf:"bytes,7,opt,name=owner,proto3" json:"owner,omitempty"`
+	Extensions []*ExtensionMetadata `protobuf:"bytes,5,rep,name=extensions,proto3" json:"extensions,omitempty"`
+	Owner      string               `protobuf:"bytes,7,opt,name=owner,proto3" json:"owner,omitempty"`
+	// The search_path is the search path of a PostgreSQL database.
+	SearchPath    string `protobuf:"bytes,8,opt,name=search_path,json=searchPath,proto3" json:"search_path,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1729,6 +1731,13 @@ func (x *DatabaseMetadata) GetExtensions() []*ExtensionMetadata {
 func (x *DatabaseMetadata) GetOwner() string {
 	if x != nil {
 		return x.Owner
+	}
+	return ""
+}
+
+func (x *DatabaseMetadata) GetSearchPath() string {
+	if x != nil {
+		return x.SearchPath
 	}
 	return ""
 }
@@ -5671,7 +5680,7 @@ const file_v1_database_service_proto_rawDesc = "" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01:E\xeaAB\n" +
-	"\x15bytebase.com/Database\x12)instances/{instance}/databases/{database}J\x04\b\x02\x10\x03\"\xcf\x02\n" +
+	"\x15bytebase.com/Database\x12)instances/{instance}/databases/{database}J\x04\b\x02\x10\x03\"\xf0\x02\n" +
 	"\x10DatabaseMetadata\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x125\n" +
 	"\aschemas\x18\x02 \x03(\v2\x1b.bytebase.v1.SchemaMetadataR\aschemas\x12#\n" +
@@ -5680,7 +5689,9 @@ const file_v1_database_service_proto_rawDesc = "" +
 	"\n" +
 	"extensions\x18\x05 \x03(\v2\x1e.bytebase.v1.ExtensionMetadataR\n" +
 	"extensions\x12\x14\n" +
-	"\x05owner\x18\a \x01(\tR\x05owner:W\xeaAT\n" +
+	"\x05owner\x18\a \x01(\tR\x05owner\x12\x1f\n" +
+	"\vsearch_path\x18\b \x01(\tR\n" +
+	"searchPath:W\xeaAT\n" +
 	"\x1dbytebase.com/DatabaseMetadata\x123bytebase.com/Database/databases/{database}/metadata\"\xad\x06\n" +
 	"\x0eSchemaMetadata\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x122\n" +
