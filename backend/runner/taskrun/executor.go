@@ -19,6 +19,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
+	"github.com/bytebase/bytebase/backend/store/model"
 	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -513,6 +514,41 @@ func endMigration(ctx context.Context, storeInstance *store.Store, mc *migrateCo
 				return errors.Wrapf(err, "failed to create revision")
 			}
 			update.RevisionUID = &revision.UID
+
+			// Update database metadata with the version only if the new version is greater
+			metadata := mc.database.Metadata
+			if metadata == nil {
+				metadata = &storepb.DatabaseMetadata{}
+			}
+			
+			// Compare versions and only update if new version is greater
+			shouldUpdate := false
+			if metadata.Version == "" {
+				// If no current version, always update
+				shouldUpdate = true
+			} else {
+				currentVersion, err := model.NewVersion(metadata.Version)
+				if err != nil {
+					// If current version is invalid, update with new version
+					shouldUpdate = true
+				} else {
+					newVersion, err := model.NewVersion(mc.version)
+					if err == nil && currentVersion.LessThan(newVersion) {
+						shouldUpdate = true
+					}
+				}
+			}
+			
+			if shouldUpdate {
+				metadata.Version = mc.version
+				if _, err := storeInstance.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
+					InstanceID:   mc.database.InstanceID,
+					DatabaseName: mc.database.DatabaseName,
+					Metadata:     metadata,
+				}); err != nil {
+					return errors.Wrapf(err, "failed to update database metadata with version")
+				}
+			}
 		}
 		status := store.ChangelogStatusDone
 		update.Status = &status

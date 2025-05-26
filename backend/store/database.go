@@ -24,8 +24,6 @@ type DatabaseMessage struct {
 
 	Deleted  bool
 	Metadata *storepb.DatabaseMetadata
-	// Output only
-	SchemaVersion string
 }
 
 func (d *DatabaseMessage) String() string {
@@ -393,16 +391,6 @@ func (*Store) listDatabaseImplV2(ctx context.Context, txn *sql.Tx, find *FindDat
 			db.instance,
 			db.name,
 			db.deleted,
-			COALESCE(
-				(
-					SELECT revision.version
-					FROM revision
-					WHERE revision.instance = db.instance AND revision.db_name = db.name AND deleted_at IS NOT NULL
-					ORDER BY revision.version DESC
-					LIMIT 1
-				),
-				''
-			),
 			db.metadata
 		FROM db
 		LEFT JOIN instance ON db.instance = instance.resource_id
@@ -434,7 +422,6 @@ func (*Store) listDatabaseImplV2(ctx context.Context, txn *sql.Tx, find *FindDat
 			&databaseMessage.InstanceID,
 			&databaseMessage.DatabaseName,
 			&databaseMessage.Deleted,
-			&databaseMessage.SchemaVersion,
 			&metadataString,
 		); err != nil {
 			return nil, err
