@@ -508,7 +508,7 @@
         },
         "maximum-role-expiration": {
           "self": "Thời gian hết hạn vai trò tối đa",
-          "description": "Thời gian hết hạn vai trò tối đa là khoảng thời gian tối đa một vai trò có thể được cấp cho người dùng. (Chỉ dành cho vai trò người truy vấn và người xuất)",
+          "description": "Thời hạn vai trò tối đa là thời hạn tối đa mà một vai trò có thể được cấp cho người dùng, sẽ áp dụng cho tất cả các vai trò trong dự án ngoại trừ chủ sở hữu dự án.",
           "days": "Ngày",
           "never-expires": "Không bao giờ hết hạn"
         },
@@ -890,6 +890,7 @@
     "issue-name": "Tên vấn đề",
     "grant-request": {
       "export-rows": "Số dòng xuất tối đa",
+      "select-export-rows": "Chọn số hàng xuất tối đa",
       "expired-at": "Hết hạn vào",
       "all-databases": "Tất cả",
       "all-databases-tip": "Tất cả cơ sở dữ liệu hiện tại và tương lai trong dự án này.",
@@ -1484,6 +1485,7 @@
     "foreign-key": {
       "reference": "Tham chiếu"
     },
+    "checks": "Kiểm tra",
     "create-target-database-or-schema-for-backup": "Vui lòng tạo cơ sở dữ liệu hoặc lược đồ đích cho bản sao lưu trước",
     "revision": {
       "self": "Bản sửa đổi",
@@ -1505,8 +1507,7 @@
         "self": "Đường cơ sở mới",
         "successfully-established": "Đã thiết lập thành công đường cơ sở mới"
       }
-    },
-    "checks": "Kiểm tra"
+    }
   },
   "project": {
     "table": {

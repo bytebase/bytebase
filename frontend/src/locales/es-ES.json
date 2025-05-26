@@ -508,7 +508,7 @@
         },
         "maximum-role-expiration": {
           "self": "Caducidad máxima del rol",
-          "description": "La caducidad máxima de la función es el período máximo que se puede otorgar una función a un usuario.",
+          "description": "La expiración máxima del rol es el período máximo durante el cual se puede otorgar un rol a un usuario y se aplicará a todos los roles del proyecto excepto al propietario del proyecto.",
           "days": "Días)",
           "never-expires": "Nunca expira"
         },
@@ -890,6 +890,7 @@
     "issue-name": "Nombre de la incidencia",
     "grant-request": {
       "export-rows": "número máximo de filas",
+      "select-export-rows": "Seleccionar el máximo de filas de exportación",
       "expired-at": "tiempo de caducidad",
       "all-databases": "todas las bases de datos",
       "all-databases-tip": "Todas las bases de datos actuales y futuras de este proyecto.",
@@ -1484,6 +1485,7 @@
     "foreign-key": {
       "reference": "Referencia"
     },
+    "checks": "Cheques",
     "create-target-database-or-schema-for-backup": "Primero cree la base de datos o el esquema de destino para la copia de seguridad",
     "revision": {
       "self": "Revisión",
@@ -1505,8 +1507,7 @@
         "self": "Nueva línea base",
         "successfully-established": "Se estableció con éxito una nueva línea base"
       }
-    },
-    "checks": "Cheques"
+    }
   },
   "project": {
     "table": {

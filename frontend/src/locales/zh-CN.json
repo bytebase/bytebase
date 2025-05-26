@@ -508,7 +508,7 @@
         },
         "maximum-role-expiration": {
           "self": "角色最大过期时间",
-          "description": "角色最大过期时间是可以赋予用户角色时所能设置的最大过期时间。(包括数据查询者和导出者)",
+          "description": "角色最大过期时间是可以赋予用户角色时所能设置的最大过期时间，会应用在项目所有者之外的其他项目角色上。",
           "days": "天数",
           "never-expires": "永不过期"
         },
@@ -890,6 +890,7 @@
     "issue-name": "工单名称",
     "grant-request": {
       "export-rows": "最大导出行数",
+      "select-export-rows": "选择最大导出行数",
       "expired-at": "过期时间",
       "all-databases": "所有数据库",
       "all-databases-tip": "所有当前和未来属于这个项目的数据库。",
@@ -1484,6 +1485,7 @@
     "foreign-key": {
       "reference": "引用"
     },
+    "checks": "Check 约束",
     "create-target-database-or-schema-for-backup": "请先创建备份的目标数据库或 Schema",
     "revision": {
       "self": "版本",
@@ -1505,8 +1507,7 @@
         "self": "建立新基线",
         "successfully-established": "成功建立新的基线"
       }
-    },
-    "checks": "Check 约束"
+    }
   },
   "project": {
     "table": {

@@ -19,6 +19,7 @@
         size="small"
         style="width: 5rem"
         :min="1"
+        :max="maximumRoleExpiration"
         :placeholder="$t('common.date.days')"
         :disabled="state.selected !== -2"
         :value="customExpirationDays"
@@ -41,10 +42,7 @@
         clearable
         @update:value="(val) => (state.expirationTimestampInMS = val)"
       />
-      <span
-        v-if="maximumRoleExpiration && enableExpirationLimit"
-        class="ml-3 textinfolabel"
-      >
+      <span v-if="maximumRoleExpiration" class="ml-3 textinfolabel">
         {{ $t("settings.general.workspace.maximum-role-expiration.self") }}:
         {{ $t("common.date.days", { days: maximumRoleExpiration }) }}
       </span>
@@ -56,7 +54,7 @@
 import { useLocalStorage } from "@vueuse/core";
 import dayjs from "dayjs";
 import { NRadio, NRadioGroup, NDatePicker, NInputNumber } from "naive-ui";
-import { computed, reactive, watch, onMounted } from "vue";
+import { computed, reactive, watch, onMounted, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import { useSettingV1Store } from "@/store";
 import { PresetRoleType } from "@/types";
@@ -73,7 +71,7 @@ interface LocalState {
 
 const props = defineProps<{
   timestampInMs?: number;
-  role?: string;
+  role: string;
 }>();
 
 const emit = defineEmits<{
@@ -100,20 +98,25 @@ const handleCustomExpirationDaysChange = (val: number | null) => {
   customExpirationDays.value = val;
 };
 
-const enableExpirationLimit = computed(() => {
-  return (
-    props.role === PresetRoleType.SQL_EDITOR_USER ||
-    props.role === PresetRoleType.PROJECT_EXPORTER
-  );
-});
-
 const maximumRoleExpiration = computed(() => {
+  if (props.role === PresetRoleType.PROJECT_OWNER) {
+    return undefined;
+  }
   const seconds =
     settingV1Store.workspaceProfileSetting?.maximumRoleExpiration?.seconds?.toNumber();
   if (!seconds) {
     return undefined;
   }
   return Math.floor(seconds / (60 * 60 * 24));
+});
+
+watchEffect(() => {
+  if (!maximumRoleExpiration.value) {
+    return;
+  }
+  if (maximumRoleExpiration.value < customExpirationDays.value) {
+    customExpirationDays.value = maximumRoleExpiration.value;
+  }
 });
 
 const isDateDisabled = (date: number) => {
@@ -145,7 +148,7 @@ const options = computed((): ExpirationOption[] => {
       label: t("common.date.days", { days: 90 }),
     },
   ];
-  if (maximumRoleExpiration.value && enableExpirationLimit.value) {
+  if (maximumRoleExpiration.value) {
     options = options.filter(
       (option) => option.value < maximumRoleExpiration.value!
     );
