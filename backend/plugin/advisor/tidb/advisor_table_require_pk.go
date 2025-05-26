@@ -71,7 +71,11 @@ func (v *tableRequirePKChecker) Enter(in ast.Node) (ast.Node, bool) {
 	switch node := in.(type) {
 	// CREATE TABLE
 	case *ast.CreateTableStmt:
-		v.createTable(node)
+		if node.ReferTable != nil {
+			v.createTableLike(node)
+		} else {
+			v.createTable(node)
+		}
 		v.line[node.Table.Name.O] = node.OriginTextPosition()
 	// DROP TABLE
 	case *ast.DropTableStmt:
@@ -157,6 +161,33 @@ func (v *tableRequirePKChecker) createTable(node *ast.CreateTableStmt) {
 	for _, constraint := range node.Constraints {
 		if constraint.Tp == ast.ConstraintPrimaryKey {
 			v.tables[table] = newColumnSet(convertConstraintToKeySlice(constraint))
+		}
+	}
+}
+
+func (v *tableRequirePKChecker) createTableLike(node *ast.CreateTableStmt) {
+	table := node.Table.Name.String()
+	v.initEmptyTable(table)
+	referTableName := node.ReferTable.Name.String()
+	// Switch to check refer table's primary key.
+	// Find refer table in context first, and then find it in catalog.
+	if referTablePk, ok := v.tables[referTableName]; ok {
+		var columns []string
+		for column := range referTablePk {
+			columns = append(columns, column)
+		}
+		v.tables[table] = newColumnSet(columns)
+	} else {
+		referTableState := v.catalog.Origin.FindTable(&catalog.TableFind{
+			TableName: referTableName,
+		})
+		if referTableState != nil {
+			indexSet := referTableState.Index(&catalog.TableIndexFind{})
+			for _, index := range *indexSet {
+				if index.Primary() {
+					v.tables[table] = newColumnSet(index.ExpressionList())
+				}
+			}
 		}
 	}
 }
