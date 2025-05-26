@@ -191,7 +191,7 @@ const maximumRoleExpiration = computed(() => {
 });
 
 const isDateDisabled = (date: number) => {
-  if (date < Date.now()) {
+  if (date < dayjs().startOf("day").valueOf()) {
     return true;
   }
   if (
