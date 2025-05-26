@@ -23,7 +23,7 @@ export interface CreateSheetRequest {
   sheet: Sheet | undefined;
 }
 
-export interface BatchCreateSheetRequest {
+export interface BatchCreateSheetsRequest {
   /**
    * The parent resource where all sheets will be created.
    * Format: projects/{project}
@@ -32,7 +32,7 @@ export interface BatchCreateSheetRequest {
   requests: CreateSheetRequest[];
 }
 
-export interface BatchCreateSheetResponse {
+export interface BatchCreateSheetsResponse {
   sheets: Sheet[];
 }
 
@@ -233,12 +233,12 @@ export const CreateSheetRequest: MessageFns<CreateSheetRequest> = {
   },
 };
 
-function createBaseBatchCreateSheetRequest(): BatchCreateSheetRequest {
+function createBaseBatchCreateSheetsRequest(): BatchCreateSheetsRequest {
   return { parent: "", requests: [] };
 }
 
-export const BatchCreateSheetRequest: MessageFns<BatchCreateSheetRequest> = {
-  encode(message: BatchCreateSheetRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+export const BatchCreateSheetsRequest: MessageFns<BatchCreateSheetsRequest> = {
+  encode(message: BatchCreateSheetsRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.parent !== "") {
       writer.uint32(10).string(message.parent);
     }
@@ -248,10 +248,10 @@ export const BatchCreateSheetRequest: MessageFns<BatchCreateSheetRequest> = {
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): BatchCreateSheetRequest {
+  decode(input: BinaryReader | Uint8Array, length?: number): BatchCreateSheetsRequest {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseBatchCreateSheetRequest();
+    const message = createBaseBatchCreateSheetsRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -280,7 +280,7 @@ export const BatchCreateSheetRequest: MessageFns<BatchCreateSheetRequest> = {
     return message;
   },
 
-  fromJSON(object: any): BatchCreateSheetRequest {
+  fromJSON(object: any): BatchCreateSheetsRequest {
     return {
       parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
       requests: globalThis.Array.isArray(object?.requests)
@@ -289,7 +289,7 @@ export const BatchCreateSheetRequest: MessageFns<BatchCreateSheetRequest> = {
     };
   },
 
-  toJSON(message: BatchCreateSheetRequest): unknown {
+  toJSON(message: BatchCreateSheetsRequest): unknown {
     const obj: any = {};
     if (message.parent !== "") {
       obj.parent = message.parent;
@@ -300,33 +300,33 @@ export const BatchCreateSheetRequest: MessageFns<BatchCreateSheetRequest> = {
     return obj;
   },
 
-  create(base?: DeepPartial<BatchCreateSheetRequest>): BatchCreateSheetRequest {
-    return BatchCreateSheetRequest.fromPartial(base ?? {});
+  create(base?: DeepPartial<BatchCreateSheetsRequest>): BatchCreateSheetsRequest {
+    return BatchCreateSheetsRequest.fromPartial(base ?? {});
   },
-  fromPartial(object: DeepPartial<BatchCreateSheetRequest>): BatchCreateSheetRequest {
-    const message = createBaseBatchCreateSheetRequest();
+  fromPartial(object: DeepPartial<BatchCreateSheetsRequest>): BatchCreateSheetsRequest {
+    const message = createBaseBatchCreateSheetsRequest();
     message.parent = object.parent ?? "";
     message.requests = object.requests?.map((e) => CreateSheetRequest.fromPartial(e)) || [];
     return message;
   },
 };
 
-function createBaseBatchCreateSheetResponse(): BatchCreateSheetResponse {
+function createBaseBatchCreateSheetsResponse(): BatchCreateSheetsResponse {
   return { sheets: [] };
 }
 
-export const BatchCreateSheetResponse: MessageFns<BatchCreateSheetResponse> = {
-  encode(message: BatchCreateSheetResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+export const BatchCreateSheetsResponse: MessageFns<BatchCreateSheetsResponse> = {
+  encode(message: BatchCreateSheetsResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     for (const v of message.sheets) {
       Sheet.encode(v!, writer.uint32(10).fork()).join();
     }
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): BatchCreateSheetResponse {
+  decode(input: BinaryReader | Uint8Array, length?: number): BatchCreateSheetsResponse {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseBatchCreateSheetResponse();
+    const message = createBaseBatchCreateSheetsResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -347,11 +347,11 @@ export const BatchCreateSheetResponse: MessageFns<BatchCreateSheetResponse> = {
     return message;
   },
 
-  fromJSON(object: any): BatchCreateSheetResponse {
+  fromJSON(object: any): BatchCreateSheetsResponse {
     return { sheets: globalThis.Array.isArray(object?.sheets) ? object.sheets.map((e: any) => Sheet.fromJSON(e)) : [] };
   },
 
-  toJSON(message: BatchCreateSheetResponse): unknown {
+  toJSON(message: BatchCreateSheetsResponse): unknown {
     const obj: any = {};
     if (message.sheets?.length) {
       obj.sheets = message.sheets.map((e) => Sheet.toJSON(e));
@@ -359,11 +359,11 @@ export const BatchCreateSheetResponse: MessageFns<BatchCreateSheetResponse> = {
     return obj;
   },
 
-  create(base?: DeepPartial<BatchCreateSheetResponse>): BatchCreateSheetResponse {
-    return BatchCreateSheetResponse.fromPartial(base ?? {});
+  create(base?: DeepPartial<BatchCreateSheetsResponse>): BatchCreateSheetsResponse {
+    return BatchCreateSheetsResponse.fromPartial(base ?? {});
   },
-  fromPartial(object: DeepPartial<BatchCreateSheetResponse>): BatchCreateSheetResponse {
-    const message = createBaseBatchCreateSheetResponse();
+  fromPartial(object: DeepPartial<BatchCreateSheetsResponse>): BatchCreateSheetsResponse {
+    const message = createBaseBatchCreateSheetsResponse();
     message.sheets = object.sheets?.map((e) => Sheet.fromPartial(e)) || [];
     return message;
   },
@@ -925,11 +925,11 @@ export const SheetServiceDefinition = {
         },
       },
     },
-    batchCreateSheet: {
-      name: "BatchCreateSheet",
-      requestType: BatchCreateSheetRequest,
+    batchCreateSheets: {
+      name: "BatchCreateSheets",
+      requestType: BatchCreateSheetsRequest,
       requestStream: false,
-      responseType: BatchCreateSheetResponse,
+      responseType: BatchCreateSheetsResponse,
       responseStream: false,
       options: {
         _unknownFields: {

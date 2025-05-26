@@ -77,9 +77,9 @@ func local_request_SheetService_CreateSheet_0(ctx context.Context, marshaler run
 	return msg, metadata, err
 }
 
-func request_SheetService_BatchCreateSheet_0(ctx context.Context, marshaler runtime.Marshaler, client SheetServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func request_SheetService_BatchCreateSheets_0(ctx context.Context, marshaler runtime.Marshaler, client SheetServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var (
-		protoReq BatchCreateSheetRequest
+		protoReq BatchCreateSheetsRequest
 		metadata runtime.ServerMetadata
 		err      error
 	)
@@ -94,13 +94,13 @@ func request_SheetService_BatchCreateSheet_0(ctx context.Context, marshaler runt
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "parent", err)
 	}
-	msg, err := client.BatchCreateSheet(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	msg, err := client.BatchCreateSheets(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 }
 
-func local_request_SheetService_BatchCreateSheet_0(ctx context.Context, marshaler runtime.Marshaler, server SheetServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func local_request_SheetService_BatchCreateSheets_0(ctx context.Context, marshaler runtime.Marshaler, server SheetServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var (
-		protoReq BatchCreateSheetRequest
+		protoReq BatchCreateSheetsRequest
 		metadata runtime.ServerMetadata
 		err      error
 	)
@@ -115,7 +115,7 @@ func local_request_SheetService_BatchCreateSheet_0(ctx context.Context, marshale
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "parent", err)
 	}
-	msg, err := server.BatchCreateSheet(ctx, &protoReq)
+	msg, err := server.BatchCreateSheets(ctx, &protoReq)
 	return msg, metadata, err
 }
 
@@ -274,25 +274,25 @@ func RegisterSheetServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 		}
 		forward_SheetService_CreateSheet_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 	})
-	mux.Handle(http.MethodPost, pattern_SheetService_BatchCreateSheet_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPost, pattern_SheetService_BatchCreateSheets_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.SheetService/BatchCreateSheet", runtime.WithHTTPPathPattern("/v1/{parent=projects/*}/sheets:batchCreate"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.SheetService/BatchCreateSheets", runtime.WithHTTPPathPattern("/v1/{parent=projects/*}/sheets:batchCreate"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_SheetService_BatchCreateSheet_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_SheetService_BatchCreateSheets_0(annotatedContext, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		forward_SheetService_BatchCreateSheet_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_SheetService_BatchCreateSheets_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 	})
 	mux.Handle(http.MethodGet, pattern_SheetService_GetSheet_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
@@ -391,22 +391,22 @@ func RegisterSheetServiceHandlerClient(ctx context.Context, mux *runtime.ServeMu
 		}
 		forward_SheetService_CreateSheet_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 	})
-	mux.Handle(http.MethodPost, pattern_SheetService_BatchCreateSheet_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPost, pattern_SheetService_BatchCreateSheets_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.SheetService/BatchCreateSheet", runtime.WithHTTPPathPattern("/v1/{parent=projects/*}/sheets:batchCreate"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.SheetService/BatchCreateSheets", runtime.WithHTTPPathPattern("/v1/{parent=projects/*}/sheets:batchCreate"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_SheetService_BatchCreateSheet_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_SheetService_BatchCreateSheets_0(annotatedContext, inboundMarshaler, client, req, pathParams)
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		forward_SheetService_BatchCreateSheet_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_SheetService_BatchCreateSheets_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 	})
 	mux.Handle(http.MethodGet, pattern_SheetService_GetSheet_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
@@ -446,15 +446,15 @@ func RegisterSheetServiceHandlerClient(ctx context.Context, mux *runtime.ServeMu
 }
 
 var (
-	pattern_SheetService_CreateSheet_0      = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 2, 5, 2, 2, 3}, []string{"v1", "projects", "parent", "sheets"}, ""))
-	pattern_SheetService_BatchCreateSheet_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 2, 5, 2, 2, 3}, []string{"v1", "projects", "parent", "sheets"}, "batchCreate"))
-	pattern_SheetService_GetSheet_0         = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3}, []string{"v1", "projects", "sheets", "name"}, ""))
-	pattern_SheetService_UpdateSheet_0      = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3}, []string{"v1", "projects", "sheets", "sheet.name"}, ""))
+	pattern_SheetService_CreateSheet_0       = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 2, 5, 2, 2, 3}, []string{"v1", "projects", "parent", "sheets"}, ""))
+	pattern_SheetService_BatchCreateSheets_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 2, 5, 2, 2, 3}, []string{"v1", "projects", "parent", "sheets"}, "batchCreate"))
+	pattern_SheetService_GetSheet_0          = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3}, []string{"v1", "projects", "sheets", "name"}, ""))
+	pattern_SheetService_UpdateSheet_0       = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3}, []string{"v1", "projects", "sheets", "sheet.name"}, ""))
 )
 
 var (
-	forward_SheetService_CreateSheet_0      = runtime.ForwardResponseMessage
-	forward_SheetService_BatchCreateSheet_0 = runtime.ForwardResponseMessage
-	forward_SheetService_GetSheet_0         = runtime.ForwardResponseMessage
-	forward_SheetService_UpdateSheet_0      = runtime.ForwardResponseMessage
+	forward_SheetService_CreateSheet_0       = runtime.ForwardResponseMessage
+	forward_SheetService_BatchCreateSheets_0 = runtime.ForwardResponseMessage
+	forward_SheetService_GetSheet_0          = runtime.ForwardResponseMessage
+	forward_SheetService_UpdateSheet_0       = runtime.ForwardResponseMessage
 )
