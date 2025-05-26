@@ -226,9 +226,6 @@ func (s *RevisionService) BatchCreateRevisions(ctx context.Context, request *v1p
 	if len(request.Requests) == 0 {
 		return nil, status.Errorf(codes.InvalidArgument, "requests is empty")
 	}
-	if len(request.Requests) > 100 {
-		return nil, status.Errorf(codes.InvalidArgument, "too many requests, maximum 100 allowed, got %d", len(request.Requests))
-	}
 
 	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
 		InstanceID:   &instanceID,
