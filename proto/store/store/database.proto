@@ -17,6 +17,8 @@ message DatabaseMetadata {
   repeated Secret secrets = 5;
   // The schema is drifted from the source of truth.
   bool drifted = 6;
+  // The version of database schema.
+  string version = 7;
 }
 
 // DatabaseSchemaMetadata is the schema metadata for databases.
