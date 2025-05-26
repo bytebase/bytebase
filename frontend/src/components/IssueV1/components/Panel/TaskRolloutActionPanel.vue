@@ -134,7 +134,7 @@
               type="datetime"
               :placeholder="$t('task.select-scheduled-time')"
               :is-date-disabled="
-                (ts: number) => ts < dayjs().startOf('day').valueOf()
+                (date: number) => date < dayjs().startOf('day').valueOf()
               "
               format="yyyy-MM-dd HH:mm:ss"
               clearable
