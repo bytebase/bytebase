@@ -17,7 +17,6 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/testing/protocmp"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/common"
@@ -464,45 +463,6 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 						return nil, err
 					}
 
-					// EarliestAllowedTs
-					taskEarliest := int64(0)
-					if task.EarliestAllowedAt != nil {
-						taskEarliest = task.EarliestAllowedAt.Unix()
-					}
-					specEarliest := spec.EarliestAllowedTime.GetSeconds()
-					if specEarliest != taskEarliest {
-						taskPatch.UpdateEarliestAllowedTS = true
-						if specEarliest == 0 {
-							taskPatch.EarliestAllowedTS = nil
-						} else {
-							v := spec.EarliestAllowedTime.AsTime()
-							taskPatch.EarliestAllowedTS = &v
-						}
-						doUpdate = true
-
-						var fromEarliestAllowedTime, toEarliestAllowedTime *timestamppb.Timestamp
-						if task.EarliestAllowedAt != nil {
-							fromEarliestAllowedTime = timestamppb.New(*task.EarliestAllowedAt)
-						}
-						if specEarliest != 0 {
-							toEarliestAllowedTime = spec.EarliestAllowedTime
-						}
-						if issue != nil {
-							issueCommentCreates = append(issueCommentCreates, &store.IssueCommentMessage{
-								IssueUID: issue.UID,
-								Payload: &storepb.IssueCommentPayload{
-									Event: &storepb.IssueCommentPayload_TaskUpdate_{
-										TaskUpdate: &storepb.IssueCommentPayload_TaskUpdate{
-											Tasks:                   []string{common.FormatTask(issue.Project.ResourceID, task.PipelineID, task.StageID, task.ID)},
-											FromEarliestAllowedTime: fromEarliestAllowedTime,
-											ToEarliestAllowedTime:   toEarliestAllowedTime,
-										},
-									},
-								},
-							})
-						}
-					}
-
 					// PreUpdateBackupDetail
 					if err := func() error {
 						if newTaskType != base.TaskDatabaseDataUpdate {
@@ -690,7 +650,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 			}
 
 			for _, taskPatch := range taskPatchList {
-				if taskPatch.SheetID != nil || taskPatch.EarliestAllowedTS != nil {
+				if taskPatch.SheetID != nil {
 					task := tasksMap[taskPatch.ID]
 					if task.LatestTaskRunStatus == base.TaskRunPending || task.LatestTaskRunStatus == base.TaskRunRunning || task.LatestTaskRunStatus == base.TaskRunSkipped || task.LatestTaskRunStatus == base.TaskRunDone {
 						return nil, status.Errorf(codes.FailedPrecondition, "cannot update plan because task %v is %s", task.ID, task.LatestTaskRunStatus)

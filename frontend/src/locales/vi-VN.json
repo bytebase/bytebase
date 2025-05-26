@@ -249,8 +249,6 @@
       "summary-report": "Báo cáo tổng hợp"
     },
     "earliest-allowed-time": "Thời gian triển khai sớm nhất",
-    "earliest-allowed-time-hint": "@:{'task.earliest-allowed-time'} là thời gian sớm nhất để triển khai sự cố, bạn không thể triển khai trước thời gian này; nếu không được chỉ định, sự cố sẽ chạy khi đáp ứng tất cả các tiêu chí.",
-    "earliest-allowed-time-unset": "Không đặt",
     "comment": "Bình luận",
     "started": "Bắt đầu",
     "view-change": "Xem thay đổi",
@@ -911,13 +909,6 @@
     },
     "not-editable-legacy-issue": "Vấn đề này không thể chỉnh sửa vì nó được tạo trong phiên bản cũ của Bytebase",
     "action-anyway": "{action} bằng mọi cách",
-    "disallow-edit-reasons": {
-      "issue-is-done": "Vấn đề đã hoàn tất",
-      "issue-is-canceled": "Vấn đề đã bị hủy",
-      "task-is-x-status": "Tác vụ là {status}",
-      "task-is-running-cancel-first": "Tác vụ đang chạy, hãy hủy tác vụ trước khi thay đổi giá trị này"
-    },
-    "you-are-not-allowed-to-change-this-value": "Bạn không được phép thay đổi giá trị này",
     "sql-check": {
       "sql-checks": "Kiểm tra SQL",
       "not-executed-yet": "Chưa được thực hiện",
@@ -941,9 +932,6 @@
       "format": "Định dạng",
       "encrypt": "Mã hóa",
       "file-downloaded": "Tệp đã tải xuống"
-    },
-    "update-rollout-time": {
-      "self": "Cập nhật thời gian triển khai"
     },
     "task-run": {
       "logs": "Nhật ký",
