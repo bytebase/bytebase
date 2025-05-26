@@ -10,7 +10,6 @@ import (
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
@@ -205,8 +204,6 @@ func (x *PlanConfig_Step) GetSpecs() []*PlanConfig_Spec {
 
 type PlanConfig_Spec struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// earliest_allowed_time the earliest execution time of the change.
-	EarliestAllowedTime *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=earliest_allowed_time,json=earliestAllowedTime,proto3" json:"earliest_allowed_time,omitempty"`
 	// A UUID4 string that uniquely identifies the Spec.
 	Id                string                        `protobuf:"bytes,5,opt,name=id,proto3" json:"id,omitempty"`
 	SpecReleaseSource *PlanConfig_SpecReleaseSource `protobuf:"bytes,8,opt,name=spec_release_source,json=specReleaseSource,proto3" json:"spec_release_source,omitempty"`
@@ -248,13 +245,6 @@ func (x *PlanConfig_Spec) ProtoReflect() protoreflect.Message {
 // Deprecated: Use PlanConfig_Spec.ProtoReflect.Descriptor instead.
 func (*PlanConfig_Spec) Descriptor() ([]byte, []int) {
 	return file_store_plan_proto_rawDescGZIP(), []int{0, 1}
-}
-
-func (x *PlanConfig_Spec) GetEarliestAllowedTime() *timestamppb.Timestamp {
-	if x != nil {
-		return x.EarliestAllowedTime
-	}
-	return nil
 }
 
 func (x *PlanConfig_Spec) GetId() string {
@@ -818,7 +808,7 @@ var File_store_plan_proto protoreflect.FileDescriptor
 
 const file_store_plan_proto_rawDesc = "" +
 	"\n" +
-	"\x10store/plan.proto\x12\x0ebytebase.store\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x12store/common.proto\x1a\x1astore/plan_check_run.proto\"\xde\x11\n" +
+	"\x10store/plan.proto\x12\x0ebytebase.store\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x12store/common.proto\x1a\x1astore/plan_check_run.proto\"\x8e\x11\n" +
 	"\n" +
 	"PlanConfig\x125\n" +
 	"\x05steps\x18\x01 \x03(\v2\x1f.bytebase.store.PlanConfig.StepR\x05steps\x12O\n" +
@@ -828,9 +818,8 @@ const file_store_plan_proto_rawDesc = "" +
 	"deployment\x1aS\n" +
 	"\x04Step\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x125\n" +
-	"\x05specs\x18\x01 \x03(\v2\x1f.bytebase.store.PlanConfig.SpecR\x05specs\x1a\xfd\x03\n" +
-	"\x04Spec\x12N\n" +
-	"\x15earliest_allowed_time\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\x13earliestAllowedTime\x12\x0e\n" +
+	"\x05specs\x18\x01 \x03(\v2\x1f.bytebase.store.PlanConfig.SpecR\x05specs\x1a\xad\x03\n" +
+	"\x04Spec\x12\x0e\n" +
 	"\x02id\x18\x05 \x01(\tR\x02id\x12\\\n" +
 	"\x13spec_release_source\x18\b \x01(\v2,.bytebase.store.PlanConfig.SpecReleaseSourceR\x11specReleaseSource\x12g\n" +
 	"\x16create_database_config\x18\x01 \x01(\v2/.bytebase.store.PlanConfig.CreateDatabaseConfigH\x00R\x14createDatabaseConfig\x12g\n" +
@@ -912,30 +901,28 @@ var file_store_plan_proto_goTypes = []any{
 	(*PlanConfig_Deployment)(nil),                      // 9: bytebase.store.PlanConfig.Deployment
 	nil,                                                // 10: bytebase.store.PlanConfig.ChangeDatabaseConfig.GhostFlagsEntry
 	(*PlanConfig_Deployment_DatabaseGroupMapping)(nil), // 11: bytebase.store.PlanConfig.Deployment.DatabaseGroupMapping
-	(*timestamppb.Timestamp)(nil),                      // 12: google.protobuf.Timestamp
-	(*PreUpdateBackupDetail)(nil),                      // 13: bytebase.store.PreUpdateBackupDetail
-	(ExportFormat)(0),                                  // 14: bytebase.store.ExportFormat
+	(*PreUpdateBackupDetail)(nil),                      // 12: bytebase.store.PreUpdateBackupDetail
+	(ExportFormat)(0),                                  // 13: bytebase.store.ExportFormat
 }
 var file_store_plan_proto_depIdxs = []int32{
 	2,  // 0: bytebase.store.PlanConfig.steps:type_name -> bytebase.store.PlanConfig.Step
 	7,  // 1: bytebase.store.PlanConfig.release_source:type_name -> bytebase.store.PlanConfig.ReleaseSource
 	9,  // 2: bytebase.store.PlanConfig.deployment:type_name -> bytebase.store.PlanConfig.Deployment
 	3,  // 3: bytebase.store.PlanConfig.Step.specs:type_name -> bytebase.store.PlanConfig.Spec
-	12, // 4: bytebase.store.PlanConfig.Spec.earliest_allowed_time:type_name -> google.protobuf.Timestamp
-	8,  // 5: bytebase.store.PlanConfig.Spec.spec_release_source:type_name -> bytebase.store.PlanConfig.SpecReleaseSource
-	4,  // 6: bytebase.store.PlanConfig.Spec.create_database_config:type_name -> bytebase.store.PlanConfig.CreateDatabaseConfig
-	5,  // 7: bytebase.store.PlanConfig.Spec.change_database_config:type_name -> bytebase.store.PlanConfig.ChangeDatabaseConfig
-	6,  // 8: bytebase.store.PlanConfig.Spec.export_data_config:type_name -> bytebase.store.PlanConfig.ExportDataConfig
-	0,  // 9: bytebase.store.PlanConfig.ChangeDatabaseConfig.type:type_name -> bytebase.store.PlanConfig.ChangeDatabaseConfig.Type
-	10, // 10: bytebase.store.PlanConfig.ChangeDatabaseConfig.ghost_flags:type_name -> bytebase.store.PlanConfig.ChangeDatabaseConfig.GhostFlagsEntry
-	13, // 11: bytebase.store.PlanConfig.ChangeDatabaseConfig.pre_update_backup_detail:type_name -> bytebase.store.PreUpdateBackupDetail
-	14, // 12: bytebase.store.PlanConfig.ExportDataConfig.format:type_name -> bytebase.store.ExportFormat
-	11, // 13: bytebase.store.PlanConfig.Deployment.database_group_mappings:type_name -> bytebase.store.PlanConfig.Deployment.DatabaseGroupMapping
-	14, // [14:14] is the sub-list for method output_type
-	14, // [14:14] is the sub-list for method input_type
-	14, // [14:14] is the sub-list for extension type_name
-	14, // [14:14] is the sub-list for extension extendee
-	0,  // [0:14] is the sub-list for field type_name
+	8,  // 4: bytebase.store.PlanConfig.Spec.spec_release_source:type_name -> bytebase.store.PlanConfig.SpecReleaseSource
+	4,  // 5: bytebase.store.PlanConfig.Spec.create_database_config:type_name -> bytebase.store.PlanConfig.CreateDatabaseConfig
+	5,  // 6: bytebase.store.PlanConfig.Spec.change_database_config:type_name -> bytebase.store.PlanConfig.ChangeDatabaseConfig
+	6,  // 7: bytebase.store.PlanConfig.Spec.export_data_config:type_name -> bytebase.store.PlanConfig.ExportDataConfig
+	0,  // 8: bytebase.store.PlanConfig.ChangeDatabaseConfig.type:type_name -> bytebase.store.PlanConfig.ChangeDatabaseConfig.Type
+	10, // 9: bytebase.store.PlanConfig.ChangeDatabaseConfig.ghost_flags:type_name -> bytebase.store.PlanConfig.ChangeDatabaseConfig.GhostFlagsEntry
+	12, // 10: bytebase.store.PlanConfig.ChangeDatabaseConfig.pre_update_backup_detail:type_name -> bytebase.store.PreUpdateBackupDetail
+	13, // 11: bytebase.store.PlanConfig.ExportDataConfig.format:type_name -> bytebase.store.ExportFormat
+	11, // 12: bytebase.store.PlanConfig.Deployment.database_group_mappings:type_name -> bytebase.store.PlanConfig.Deployment.DatabaseGroupMapping
+	13, // [13:13] is the sub-list for method output_type
+	13, // [13:13] is the sub-list for method input_type
+	13, // [13:13] is the sub-list for extension type_name
+	13, // [13:13] is the sub-list for extension extendee
+	0,  // [0:13] is the sub-list for field type_name
 }
 
 func init() { file_store_plan_proto_init() }

@@ -249,8 +249,6 @@
       "summary-report": "Summary report"
     },
     "earliest-allowed-time": "Earliest rollout time",
-    "earliest-allowed-time-hint": "@:{'task.earliest-allowed-time'} is the earliest time to rollout the issue, you cannot rollout before this time; if unspecified, it runs when all criteria are met.",
-    "earliest-allowed-time-unset": "Unset",
     "comment": "Comment",
     "started": "Started",
     "view-change": "View change",
@@ -911,13 +909,6 @@
     },
     "not-editable-legacy-issue": "This issue is not editable because it was created in an old version of Bytebase",
     "action-anyway": "{action} anyway",
-    "disallow-edit-reasons": {
-      "issue-is-done": "The issue is done",
-      "issue-is-canceled": "The issue is canceled",
-      "task-is-x-status": "The task is {status}",
-      "task-is-running-cancel-first": "The task is running, cancel task before changing this value"
-    },
-    "you-are-not-allowed-to-change-this-value": "You are not allowed to change this value",
     "sql-check": {
       "sql-checks": "SQL checks",
       "not-executed-yet": "Not executed yet",
@@ -941,9 +932,6 @@
       "format": "Format",
       "encrypt": "Encrypt",
       "file-downloaded": "File Downloaded"
-    },
-    "update-rollout-time": {
-      "self": "Update rollout time"
     },
     "task-run": {
       "logs": "Logs",

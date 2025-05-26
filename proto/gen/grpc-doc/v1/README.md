@@ -7487,7 +7487,6 @@ When paginating, all other parameters provided to `ListPlans` must match the cal
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| earliest_allowed_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | earliest_allowed_time the earliest execution time of the change. |
 | id | [string](#string) |  | A UUID4 string that uniquely identifies the Spec. |
 | spec_release_source | [Plan.SpecReleaseSource](#bytebase-v1-Plan-SpecReleaseSource) |  |  |
 | create_database_config | [Plan.CreateDatabaseConfig](#bytebase-v1-Plan-CreateDatabaseConfig) |  |  |

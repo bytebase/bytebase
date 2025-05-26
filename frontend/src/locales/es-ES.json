@@ -249,8 +249,6 @@
       "summary-report": "Informe resumido"
     },
     "earliest-allowed-time": "Tiempo de lanzamiento más temprano",
-    "earliest-allowed-time-hint": "@:{'task.earliest-allowed-time'} es el momento más temprano para implementar el problema, no se puede implementar antes de este momento; si no se especifica, se ejecuta cuando se cumplen todos los criterios.",
-    "earliest-allowed-time-unset": "No establecido",
     "comment": "Comentario",
     "started": "Iniciado",
     "view-change": "Ver cambio",
@@ -911,13 +909,6 @@
     },
     "not-editable-legacy-issue": "Este problema no es editable porque se creó en una versión anterior de Bytebase",
     "action-anyway": "{action} de todos modos",
-    "disallow-edit-reasons": {
-      "issue-is-done": "La cuestión está hecha",
-      "issue-is-canceled": "La emisión está cancelada.",
-      "task-is-x-status": "La tarea es {status}",
-      "task-is-running-cancel-first": "La tarea se está ejecutando, cancele la tarea antes de cambiar este valor"
-    },
-    "you-are-not-allowed-to-change-this-value": "No tienes permitido cambiar este valor.",
     "sql-check": {
       "sql-checks": "Comprobaciones SQL",
       "not-executed-yet": "Aún no ejecutado",
@@ -941,9 +932,6 @@
       "format": "Formato",
       "encrypt": "Cifrar",
       "file-downloaded": "Archivo Descargado"
-    },
-    "update-rollout-time": {
-      "self": "Hora de implementación de la actualización"
     },
     "task-run": {
       "logs": "Registros",

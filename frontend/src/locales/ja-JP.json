@@ -249,8 +249,6 @@
       "summary-report": "概略報告"
     },
     "earliest-allowed-time": "最も早い展開時期",
-    "earliest-allowed-time-hint": "@:{'task.earliest-allowed-time'} は問題をロールアウトする最も早い時間です。この時間より前にロールアウトすることはできません。指定されていない場合は、すべての条件が満たされたときに実行されます。",
-    "earliest-allowed-time-unset": "設定されていません",
     "comment": "コメント",
     "started": "から始まりました",
     "view-change": "変更を表示する",
@@ -911,13 +909,6 @@
     },
     "not-editable-legacy-issue": "このイシューは古いバージョンの Bytebase で作成されたため編集できません。",
     "action-anyway": "まだ {action} が必要です",
-    "disallow-edit-reasons": {
-      "issue-is-done": "イシューが完了しました",
-      "issue-is-canceled": "イシューがキャンセルされました",
-      "task-is-x-status": "タスクのステータスは {status} です",
-      "task-is-running-cancel-first": "タスクが実行中です。この値を変更するには、タスクをキャンセルする必要があります。"
-    },
-    "you-are-not-allowed-to-change-this-value": "この値を変更する権限がありません",
     "sql-check": {
       "sql-checks": "SQLチェック項目",
       "not-executed-yet": "まだ実行されていません",
@@ -941,9 +932,6 @@
       "format": "エクスポート形式",
       "encrypt": "暗号化",
       "file-downloaded": "ダウンロードされたファイル"
-    },
-    "update-rollout-time": {
-      "self": "更新のロールアウト時間"
     },
     "task-run": {
       "logs": "ログ",

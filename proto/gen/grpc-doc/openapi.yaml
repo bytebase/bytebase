@@ -11212,10 +11212,6 @@ components:
         Plan_Spec:
             type: object
             properties:
-                earliestAllowedTime:
-                    type: string
-                    description: earliest_allowed_time the earliest execution time of the change.
-                    format: date-time
                 id:
                     type: string
                     description: A UUID4 string that uniquely identifies the Spec.
