@@ -8,6 +8,10 @@ on:
     paths:
       - 'proto/**'
 
+permissions:
+  contents: read
+  pull-requests: write
+
 jobs:
   lint-protos:
     runs-on: ubuntu-latest
@@ -16,15 +20,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Setup buf
-        uses: bufbuild/buf-setup-action@v1
-      - name: buf lint
-        uses: bufbuild/buf-lint-action@v1
+      - name: buf
+        uses: bufbuild/buf-action@v1
         with:
           input: "proto"
-      - name: buf format
-        run: |
-          if [[ $(buf format -d) ]]; then
-            echo "Run 'buf format -w'"
-            exit 1
-          fi
