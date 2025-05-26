@@ -13,9 +13,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/component/config"
-	"github.com/bytebase/bytebase/backend/component/iam"
-	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -24,19 +21,13 @@ import (
 // RevisionService implements the revision service.
 type RevisionService struct {
 	v1pb.UnimplementedRevisionServiceServer
-	store          *store.Store
-	licenseService enterprise.LicenseService
-	profile        *config.Profile
-	iamManager     *iam.Manager
+	store *store.Store
 }
 
 // NewRevisionService creates a new RevisionService.
-func NewRevisionService(store *store.Store, licenseService enterprise.LicenseService, profile *config.Profile, iamManager *iam.Manager) *RevisionService {
+func NewRevisionService(store *store.Store) *RevisionService {
 	return &RevisionService{
-		store:          store,
-		licenseService: licenseService,
-		profile:        profile,
-		iamManager:     iamManager,
+		store: store,
 	}
 }
 

@@ -61,7 +61,7 @@ func configureGrpcRouters(
 		iamManager))
 	v1pb.RegisterProjectServiceServer(grpcServer, apiv1.NewProjectService(stores, profile, iamManager, licenseService))
 	v1pb.RegisterDatabaseServiceServer(grpcServer, apiv1.NewDatabaseService(stores, schemaSyncer, licenseService, profile, iamManager))
-	v1pb.RegisterRevisionServiceServer(grpcServer, apiv1.NewRevisionService(stores, licenseService, profile, iamManager))
+	v1pb.RegisterRevisionServiceServer(grpcServer, apiv1.NewRevisionService(stores))
 	v1pb.RegisterDatabaseCatalogServiceServer(grpcServer, apiv1.NewDatabaseCatalogService(stores, licenseService))
 	v1pb.RegisterInstanceRoleServiceServer(grpcServer, apiv1.NewInstanceRoleService(stores, dbFactory))
 	v1pb.RegisterOrgPolicyServiceServer(grpcServer, apiv1.NewOrgPolicyService(stores, licenseService))
