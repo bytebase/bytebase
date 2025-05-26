@@ -313,6 +313,7 @@ func (d *Driver) getDatabases(ctx context.Context) ([]*storepb.DatabaseSchemaMet
 }
 
 // GetSearchPath gets the current search path of the database.
+// It returns the search path as a raw comma-separated string of schema names.
 func (d *Driver) GetSearchPath(ctx context.Context) (string, error) {
 	// SHOW search_path returns the current search path.
 	// PostgreSQL supports it since 8.2.
