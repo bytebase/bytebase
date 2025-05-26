@@ -90,7 +90,7 @@ func (s *ReleaseService) CreateRelease(ctx context.Context, request *v1pb.Create
 
 	// Batch create sheets if needed.
 	if len(sheetsToCreate) > 0 {
-		createdSheets, err := s.sheetManager.BatchCreateSheet(ctx, sheetsToCreate, project.ResourceID, user.ID)
+		createdSheets, err := s.sheetManager.BatchCreateSheets(ctx, sheetsToCreate, project.ResourceID, user.ID)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to create sheets, err: %v", err)
 		}

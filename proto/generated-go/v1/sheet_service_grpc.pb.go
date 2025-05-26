@@ -19,10 +19,10 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	SheetService_CreateSheet_FullMethodName      = "/bytebase.v1.SheetService/CreateSheet"
-	SheetService_BatchCreateSheet_FullMethodName = "/bytebase.v1.SheetService/BatchCreateSheet"
-	SheetService_GetSheet_FullMethodName         = "/bytebase.v1.SheetService/GetSheet"
-	SheetService_UpdateSheet_FullMethodName      = "/bytebase.v1.SheetService/UpdateSheet"
+	SheetService_CreateSheet_FullMethodName       = "/bytebase.v1.SheetService/CreateSheet"
+	SheetService_BatchCreateSheets_FullMethodName = "/bytebase.v1.SheetService/BatchCreateSheets"
+	SheetService_GetSheet_FullMethodName          = "/bytebase.v1.SheetService/GetSheet"
+	SheetService_UpdateSheet_FullMethodName       = "/bytebase.v1.SheetService/UpdateSheet"
 )
 
 // SheetServiceClient is the client API for SheetService service.
@@ -30,7 +30,7 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type SheetServiceClient interface {
 	CreateSheet(ctx context.Context, in *CreateSheetRequest, opts ...grpc.CallOption) (*Sheet, error)
-	BatchCreateSheet(ctx context.Context, in *BatchCreateSheetRequest, opts ...grpc.CallOption) (*BatchCreateSheetResponse, error)
+	BatchCreateSheets(ctx context.Context, in *BatchCreateSheetsRequest, opts ...grpc.CallOption) (*BatchCreateSheetsResponse, error)
 	GetSheet(ctx context.Context, in *GetSheetRequest, opts ...grpc.CallOption) (*Sheet, error)
 	UpdateSheet(ctx context.Context, in *UpdateSheetRequest, opts ...grpc.CallOption) (*Sheet, error)
 }
@@ -53,10 +53,10 @@ func (c *sheetServiceClient) CreateSheet(ctx context.Context, in *CreateSheetReq
 	return out, nil
 }
 
-func (c *sheetServiceClient) BatchCreateSheet(ctx context.Context, in *BatchCreateSheetRequest, opts ...grpc.CallOption) (*BatchCreateSheetResponse, error) {
+func (c *sheetServiceClient) BatchCreateSheets(ctx context.Context, in *BatchCreateSheetsRequest, opts ...grpc.CallOption) (*BatchCreateSheetsResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(BatchCreateSheetResponse)
-	err := c.cc.Invoke(ctx, SheetService_BatchCreateSheet_FullMethodName, in, out, cOpts...)
+	out := new(BatchCreateSheetsResponse)
+	err := c.cc.Invoke(ctx, SheetService_BatchCreateSheets_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -88,7 +88,7 @@ func (c *sheetServiceClient) UpdateSheet(ctx context.Context, in *UpdateSheetReq
 // for forward compatibility.
 type SheetServiceServer interface {
 	CreateSheet(context.Context, *CreateSheetRequest) (*Sheet, error)
-	BatchCreateSheet(context.Context, *BatchCreateSheetRequest) (*BatchCreateSheetResponse, error)
+	BatchCreateSheets(context.Context, *BatchCreateSheetsRequest) (*BatchCreateSheetsResponse, error)
 	GetSheet(context.Context, *GetSheetRequest) (*Sheet, error)
 	UpdateSheet(context.Context, *UpdateSheetRequest) (*Sheet, error)
 	mustEmbedUnimplementedSheetServiceServer()
@@ -104,8 +104,8 @@ type UnimplementedSheetServiceServer struct{}
 func (UnimplementedSheetServiceServer) CreateSheet(context.Context, *CreateSheetRequest) (*Sheet, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateSheet not implemented")
 }
-func (UnimplementedSheetServiceServer) BatchCreateSheet(context.Context, *BatchCreateSheetRequest) (*BatchCreateSheetResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method BatchCreateSheet not implemented")
+func (UnimplementedSheetServiceServer) BatchCreateSheets(context.Context, *BatchCreateSheetsRequest) (*BatchCreateSheetsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method BatchCreateSheets not implemented")
 }
 func (UnimplementedSheetServiceServer) GetSheet(context.Context, *GetSheetRequest) (*Sheet, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetSheet not implemented")
@@ -152,20 +152,20 @@ func _SheetService_CreateSheet_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
-func _SheetService_BatchCreateSheet_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(BatchCreateSheetRequest)
+func _SheetService_BatchCreateSheets_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BatchCreateSheetsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(SheetServiceServer).BatchCreateSheet(ctx, in)
+		return srv.(SheetServiceServer).BatchCreateSheets(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: SheetService_BatchCreateSheet_FullMethodName,
+		FullMethod: SheetService_BatchCreateSheets_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SheetServiceServer).BatchCreateSheet(ctx, req.(*BatchCreateSheetRequest))
+		return srv.(SheetServiceServer).BatchCreateSheets(ctx, req.(*BatchCreateSheetsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -218,8 +218,8 @@ var SheetService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _SheetService_CreateSheet_Handler,
 		},
 		{
-			MethodName: "BatchCreateSheet",
-			Handler:    _SheetService_BatchCreateSheet_Handler,
+			MethodName: "BatchCreateSheets",
+			Handler:    _SheetService_BatchCreateSheets_Handler,
 		},
 		{
 			MethodName: "GetSheet",

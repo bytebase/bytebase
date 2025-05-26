@@ -5925,7 +5925,7 @@ paths:
         post:
             tags:
                 - SheetService
-            operationId: SheetService_BatchCreateSheet
+            operationId: SheetService_BatchCreateSheets
             parameters:
                 - name: project
                   in: path
@@ -5937,7 +5937,7 @@ paths:
                 content:
                     application/json:
                         schema:
-                            $ref: '#/components/schemas/BatchCreateSheetRequest'
+                            $ref: '#/components/schemas/BatchCreateSheetsRequest'
                 required: true
             responses:
                 "200":
@@ -5945,7 +5945,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/BatchCreateSheetResponse'
+                                $ref: '#/components/schemas/BatchCreateSheetsResponse'
                 default:
                     description: Default error response
                     content:
@@ -8232,7 +8232,7 @@ components:
         BatchCancelTaskRunsResponse:
             type: object
             properties: {}
-        BatchCreateSheetRequest:
+        BatchCreateSheetsRequest:
             required:
                 - parent
                 - requests
@@ -8247,7 +8247,7 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/CreateSheetRequest'
-        BatchCreateSheetResponse:
+        BatchCreateSheetsResponse:
             type: object
             properties:
                 sheets:

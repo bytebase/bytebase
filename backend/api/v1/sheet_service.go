@@ -81,7 +81,7 @@ func (s *SheetService) CreateSheet(ctx context.Context, request *v1pb.CreateShee
 	return v1pbSheet, nil
 }
 
-func (s *SheetService) BatchCreateSheet(ctx context.Context, request *v1pb.BatchCreateSheetRequest) (*v1pb.BatchCreateSheetResponse, error) {
+func (s *SheetService) BatchCreateSheets(ctx context.Context, request *v1pb.BatchCreateSheetsRequest) (*v1pb.BatchCreateSheetsResponse, error) {
 	if len(request.Requests) == 0 {
 		return nil, status.Errorf(codes.InvalidArgument, "requests must be set")
 	}
@@ -110,7 +110,7 @@ func (s *SheetService) BatchCreateSheet(ctx context.Context, request *v1pb.Batch
 	var sheetCreates []*store.SheetMessage
 	for _, r := range request.Requests {
 		if r.Parent != "" && r.Parent != request.Parent {
-			return nil, status.Errorf(codes.InvalidArgument, "Sheet Parent %q does not match BatchCreateSheetRequest.Parent %q", r.Parent, request.Parent)
+			return nil, status.Errorf(codes.InvalidArgument, "Sheet Parent %q does not match BatchCreateSheetsRequest.Parent %q", r.Parent, request.Parent)
 		}
 
 		storeSheetCreate, err := convertToStoreSheetMessage(project.ResourceID, user.ID, r.Sheet)
@@ -121,11 +121,11 @@ func (s *SheetService) BatchCreateSheet(ctx context.Context, request *v1pb.Batch
 		sheetCreates = append(sheetCreates, storeSheetCreate)
 	}
 
-	sheets, err := s.sheetManager.BatchCreateSheet(ctx, sheetCreates, project.ResourceID, user.ID)
+	sheets, err := s.sheetManager.BatchCreateSheets(ctx, sheetCreates, project.ResourceID, user.ID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to create sheet: %v", err)
 	}
-	response := &v1pb.BatchCreateSheetResponse{}
+	response := &v1pb.BatchCreateSheetsResponse{}
 	for _, sheet := range sheets {
 		v1pbSheet, err := s.convertToAPISheetMessage(ctx, sheet)
 		if err != nil {
