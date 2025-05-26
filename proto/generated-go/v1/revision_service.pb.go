@@ -210,6 +210,107 @@ func (x *CreateRevisionRequest) GetRevision() *Revision {
 	return nil
 }
 
+type BatchCreateRevisionsRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The parent resource shared by all revisions being created.
+	// Format: instances/{instance}/databases/{database}
+	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
+	// The request message specifying the revisions to create.
+	// A maximum of 100 revisions can be created in a batch.
+	Requests      []*CreateRevisionRequest `protobuf:"bytes,2,rep,name=requests,proto3" json:"requests,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BatchCreateRevisionsRequest) Reset() {
+	*x = BatchCreateRevisionsRequest{}
+	mi := &file_v1_revision_service_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BatchCreateRevisionsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BatchCreateRevisionsRequest) ProtoMessage() {}
+
+func (x *BatchCreateRevisionsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_revision_service_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BatchCreateRevisionsRequest.ProtoReflect.Descriptor instead.
+func (*BatchCreateRevisionsRequest) Descriptor() ([]byte, []int) {
+	return file_v1_revision_service_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *BatchCreateRevisionsRequest) GetParent() string {
+	if x != nil {
+		return x.Parent
+	}
+	return ""
+}
+
+func (x *BatchCreateRevisionsRequest) GetRequests() []*CreateRevisionRequest {
+	if x != nil {
+		return x.Requests
+	}
+	return nil
+}
+
+type BatchCreateRevisionsResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The created revisions.
+	Revisions     []*Revision `protobuf:"bytes,1,rep,name=revisions,proto3" json:"revisions,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BatchCreateRevisionsResponse) Reset() {
+	*x = BatchCreateRevisionsResponse{}
+	mi := &file_v1_revision_service_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BatchCreateRevisionsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BatchCreateRevisionsResponse) ProtoMessage() {}
+
+func (x *BatchCreateRevisionsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_revision_service_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BatchCreateRevisionsResponse.ProtoReflect.Descriptor instead.
+func (*BatchCreateRevisionsResponse) Descriptor() ([]byte, []int) {
+	return file_v1_revision_service_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *BatchCreateRevisionsResponse) GetRevisions() []*Revision {
+	if x != nil {
+		return x.Revisions
+	}
+	return nil
+}
+
 type GetRevisionRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The name of the revision.
@@ -221,7 +322,7 @@ type GetRevisionRequest struct {
 
 func (x *GetRevisionRequest) Reset() {
 	*x = GetRevisionRequest{}
-	mi := &file_v1_revision_service_proto_msgTypes[3]
+	mi := &file_v1_revision_service_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -233,7 +334,7 @@ func (x *GetRevisionRequest) String() string {
 func (*GetRevisionRequest) ProtoMessage() {}
 
 func (x *GetRevisionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_revision_service_proto_msgTypes[3]
+	mi := &file_v1_revision_service_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -246,7 +347,7 @@ func (x *GetRevisionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetRevisionRequest.ProtoReflect.Descriptor instead.
 func (*GetRevisionRequest) Descriptor() ([]byte, []int) {
-	return file_v1_revision_service_proto_rawDescGZIP(), []int{3}
+	return file_v1_revision_service_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *GetRevisionRequest) GetName() string {
@@ -267,7 +368,7 @@ type DeleteRevisionRequest struct {
 
 func (x *DeleteRevisionRequest) Reset() {
 	*x = DeleteRevisionRequest{}
-	mi := &file_v1_revision_service_proto_msgTypes[4]
+	mi := &file_v1_revision_service_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -279,7 +380,7 @@ func (x *DeleteRevisionRequest) String() string {
 func (*DeleteRevisionRequest) ProtoMessage() {}
 
 func (x *DeleteRevisionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_revision_service_proto_msgTypes[4]
+	mi := &file_v1_revision_service_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -292,7 +393,7 @@ func (x *DeleteRevisionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteRevisionRequest.ProtoReflect.Descriptor instead.
 func (*DeleteRevisionRequest) Descriptor() ([]byte, []int) {
-	return file_v1_revision_service_proto_rawDescGZIP(), []int{4}
+	return file_v1_revision_service_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *DeleteRevisionRequest) GetName() string {
@@ -342,7 +443,7 @@ type Revision struct {
 
 func (x *Revision) Reset() {
 	*x = Revision{}
-	mi := &file_v1_revision_service_proto_msgTypes[5]
+	mi := &file_v1_revision_service_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -354,7 +455,7 @@ func (x *Revision) String() string {
 func (*Revision) ProtoMessage() {}
 
 func (x *Revision) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_revision_service_proto_msgTypes[5]
+	mi := &file_v1_revision_service_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -367,7 +468,7 @@ func (x *Revision) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Revision.ProtoReflect.Descriptor instead.
 func (*Revision) Descriptor() ([]byte, []int) {
-	return file_v1_revision_service_proto_rawDescGZIP(), []int{5}
+	return file_v1_revision_service_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *Revision) GetName() string {
@@ -479,7 +580,13 @@ const file_v1_revision_service_proto_rawDesc = "" +
 	"\x15CreateRevisionRequest\x126\n" +
 	"\x06parent\x18\x01 \x01(\tB\x1e\xe2A\x01\x02\xfaA\x17\n" +
 	"\x15bytebase.com/DatabaseR\x06parent\x127\n" +
-	"\brevision\x18\x02 \x01(\v2\x15.bytebase.v1.RevisionB\x04\xe2A\x01\x02R\brevision\"H\n" +
+	"\brevision\x18\x02 \x01(\v2\x15.bytebase.v1.RevisionB\x04\xe2A\x01\x02R\brevision\"\x9b\x01\n" +
+	"\x1bBatchCreateRevisionsRequest\x126\n" +
+	"\x06parent\x18\x01 \x01(\tB\x1e\xe2A\x01\x02\xfaA\x17\n" +
+	"\x15bytebase.com/DatabaseR\x06parent\x12D\n" +
+	"\brequests\x18\x02 \x03(\v2\".bytebase.v1.CreateRevisionRequestB\x04\xe2A\x01\x02R\brequests\"S\n" +
+	"\x1cBatchCreateRevisionsResponse\x123\n" +
+	"\trevisions\x18\x01 \x03(\v2\x15.bytebase.v1.RevisionR\trevisions\"H\n" +
 	"\x12GetRevisionRequest\x122\n" +
 	"\x04name\x18\x01 \x01(\tB\x1e\xe2A\x01\x02\xfaA\x17\n" +
 	"\x15bytebase.com/RevisionR\x04name\"K\n" +
@@ -507,11 +614,12 @@ const file_v1_revision_service_proto_rawDesc = "" +
 	"\x12bytebase.com/IssueR\x05issue\x124\n" +
 	"\btask_run\x18\x0e \x01(\tB\x19\xfaA\x16\n" +
 	"\x14bytebase.com/TaskRunR\ataskRun:Z\xeaAW\n" +
-	"\x15bytebase.com/Revision\x12>instances/{instance}/databases/{database}/revisions/{revision}2\xb7\x05\n" +
+	"\x15bytebase.com/Revision\x12>instances/{instance}/databases/{database}/revisions/{revision}2\x87\a\n" +
 	"\x0fRevisionService\x12\xb0\x01\n" +
 	"\rListRevisions\x12!.bytebase.v1.ListRevisionsRequest\x1a\".bytebase.v1.ListRevisionsResponse\"X\xdaA\x06parent\x8a\xea0\x11bb.revisions.list\x90\xea0\x01\x82\xd3\xe4\x93\x020\x12./v1/{parent=instances/*/databases/*}/revisions\x12\x9c\x01\n" +
 	"\vGetRevision\x12\x1f.bytebase.v1.GetRevisionRequest\x1a\x15.bytebase.v1.Revision\"U\xdaA\x04name\x8a\xea0\x10bb.revisions.get\x90\xea0\x01\x82\xd3\xe4\x93\x020\x12./v1/{name=instances/*/databases/*/revisions/*}\x12\xa8\x01\n" +
-	"\x0eCreateRevision\x12\".bytebase.v1.CreateRevisionRequest\x1a\x15.bytebase.v1.Revision\"[\x8a\xea0\x13bb.revisions.create\x90\xea0\x01\x82\xd3\xe4\x93\x02::\brevision\"./v1/{parent=instances/*/databases/*}/revisions\x12\xa6\x01\n" +
+	"\x0eCreateRevision\x12\".bytebase.v1.CreateRevisionRequest\x1a\x15.bytebase.v1.Revision\"[\x8a\xea0\x13bb.revisions.create\x90\xea0\x01\x82\xd3\xe4\x93\x02::\brevision\"./v1/{parent=instances/*/databases/*}/revisions\x12\xcd\x01\n" +
+	"\x14BatchCreateRevisions\x12(.bytebase.v1.BatchCreateRevisionsRequest\x1a).bytebase.v1.BatchCreateRevisionsResponse\"`\x8a\xea0\x13bb.revisions.create\x90\xea0\x01\x82\xd3\xe4\x93\x02?:\x01*\":/v1/{parent=instances/*/databases/*}/revisions:batchCreate\x12\xa6\x01\n" +
 	"\x0eDeleteRevision\x12\".bytebase.v1.DeleteRevisionRequest\x1a\x16.google.protobuf.Empty\"X\xdaA\x04name\x8a\xea0\x13bb.revisions.delete\x90\xea0\x01\x82\xd3\xe4\x93\x020*./v1/{name=instances/*/databases/*/revisions/*}B\x11Z\x0fgenerated-go/v1b\x06proto3"
 
 var (
@@ -526,35 +634,41 @@ func file_v1_revision_service_proto_rawDescGZIP() []byte {
 	return file_v1_revision_service_proto_rawDescData
 }
 
-var file_v1_revision_service_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
+var file_v1_revision_service_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
 var file_v1_revision_service_proto_goTypes = []any{
-	(*ListRevisionsRequest)(nil),  // 0: bytebase.v1.ListRevisionsRequest
-	(*ListRevisionsResponse)(nil), // 1: bytebase.v1.ListRevisionsResponse
-	(*CreateRevisionRequest)(nil), // 2: bytebase.v1.CreateRevisionRequest
-	(*GetRevisionRequest)(nil),    // 3: bytebase.v1.GetRevisionRequest
-	(*DeleteRevisionRequest)(nil), // 4: bytebase.v1.DeleteRevisionRequest
-	(*Revision)(nil),              // 5: bytebase.v1.Revision
-	(*timestamppb.Timestamp)(nil), // 6: google.protobuf.Timestamp
-	(*emptypb.Empty)(nil),         // 7: google.protobuf.Empty
+	(*ListRevisionsRequest)(nil),         // 0: bytebase.v1.ListRevisionsRequest
+	(*ListRevisionsResponse)(nil),        // 1: bytebase.v1.ListRevisionsResponse
+	(*CreateRevisionRequest)(nil),        // 2: bytebase.v1.CreateRevisionRequest
+	(*BatchCreateRevisionsRequest)(nil),  // 3: bytebase.v1.BatchCreateRevisionsRequest
+	(*BatchCreateRevisionsResponse)(nil), // 4: bytebase.v1.BatchCreateRevisionsResponse
+	(*GetRevisionRequest)(nil),           // 5: bytebase.v1.GetRevisionRequest
+	(*DeleteRevisionRequest)(nil),        // 6: bytebase.v1.DeleteRevisionRequest
+	(*Revision)(nil),                     // 7: bytebase.v1.Revision
+	(*timestamppb.Timestamp)(nil),        // 8: google.protobuf.Timestamp
+	(*emptypb.Empty)(nil),                // 9: google.protobuf.Empty
 }
 var file_v1_revision_service_proto_depIdxs = []int32{
-	5, // 0: bytebase.v1.ListRevisionsResponse.revisions:type_name -> bytebase.v1.Revision
-	5, // 1: bytebase.v1.CreateRevisionRequest.revision:type_name -> bytebase.v1.Revision
-	6, // 2: bytebase.v1.Revision.create_time:type_name -> google.protobuf.Timestamp
-	6, // 3: bytebase.v1.Revision.delete_time:type_name -> google.protobuf.Timestamp
-	0, // 4: bytebase.v1.RevisionService.ListRevisions:input_type -> bytebase.v1.ListRevisionsRequest
-	3, // 5: bytebase.v1.RevisionService.GetRevision:input_type -> bytebase.v1.GetRevisionRequest
-	2, // 6: bytebase.v1.RevisionService.CreateRevision:input_type -> bytebase.v1.CreateRevisionRequest
-	4, // 7: bytebase.v1.RevisionService.DeleteRevision:input_type -> bytebase.v1.DeleteRevisionRequest
-	1, // 8: bytebase.v1.RevisionService.ListRevisions:output_type -> bytebase.v1.ListRevisionsResponse
-	5, // 9: bytebase.v1.RevisionService.GetRevision:output_type -> bytebase.v1.Revision
-	5, // 10: bytebase.v1.RevisionService.CreateRevision:output_type -> bytebase.v1.Revision
-	7, // 11: bytebase.v1.RevisionService.DeleteRevision:output_type -> google.protobuf.Empty
-	8, // [8:12] is the sub-list for method output_type
-	4, // [4:8] is the sub-list for method input_type
-	4, // [4:4] is the sub-list for extension type_name
-	4, // [4:4] is the sub-list for extension extendee
-	0, // [0:4] is the sub-list for field type_name
+	7,  // 0: bytebase.v1.ListRevisionsResponse.revisions:type_name -> bytebase.v1.Revision
+	7,  // 1: bytebase.v1.CreateRevisionRequest.revision:type_name -> bytebase.v1.Revision
+	2,  // 2: bytebase.v1.BatchCreateRevisionsRequest.requests:type_name -> bytebase.v1.CreateRevisionRequest
+	7,  // 3: bytebase.v1.BatchCreateRevisionsResponse.revisions:type_name -> bytebase.v1.Revision
+	8,  // 4: bytebase.v1.Revision.create_time:type_name -> google.protobuf.Timestamp
+	8,  // 5: bytebase.v1.Revision.delete_time:type_name -> google.protobuf.Timestamp
+	0,  // 6: bytebase.v1.RevisionService.ListRevisions:input_type -> bytebase.v1.ListRevisionsRequest
+	5,  // 7: bytebase.v1.RevisionService.GetRevision:input_type -> bytebase.v1.GetRevisionRequest
+	2,  // 8: bytebase.v1.RevisionService.CreateRevision:input_type -> bytebase.v1.CreateRevisionRequest
+	3,  // 9: bytebase.v1.RevisionService.BatchCreateRevisions:input_type -> bytebase.v1.BatchCreateRevisionsRequest
+	6,  // 10: bytebase.v1.RevisionService.DeleteRevision:input_type -> bytebase.v1.DeleteRevisionRequest
+	1,  // 11: bytebase.v1.RevisionService.ListRevisions:output_type -> bytebase.v1.ListRevisionsResponse
+	7,  // 12: bytebase.v1.RevisionService.GetRevision:output_type -> bytebase.v1.Revision
+	7,  // 13: bytebase.v1.RevisionService.CreateRevision:output_type -> bytebase.v1.Revision
+	4,  // 14: bytebase.v1.RevisionService.BatchCreateRevisions:output_type -> bytebase.v1.BatchCreateRevisionsResponse
+	9,  // 15: bytebase.v1.RevisionService.DeleteRevision:output_type -> google.protobuf.Empty
+	11, // [11:16] is the sub-list for method output_type
+	6,  // [6:11] is the sub-list for method input_type
+	6,  // [6:6] is the sub-list for extension type_name
+	6,  // [6:6] is the sub-list for extension extendee
+	0,  // [0:6] is the sub-list for field type_name
 }
 
 func init() { file_v1_revision_service_proto_init() }
@@ -569,7 +683,7 @@ func file_v1_revision_service_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_v1_revision_service_proto_rawDesc), len(file_v1_revision_service_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   6,
+			NumMessages:   8,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

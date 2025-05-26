@@ -20,10 +20,11 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	RevisionService_ListRevisions_FullMethodName  = "/bytebase.v1.RevisionService/ListRevisions"
-	RevisionService_GetRevision_FullMethodName    = "/bytebase.v1.RevisionService/GetRevision"
-	RevisionService_CreateRevision_FullMethodName = "/bytebase.v1.RevisionService/CreateRevision"
-	RevisionService_DeleteRevision_FullMethodName = "/bytebase.v1.RevisionService/DeleteRevision"
+	RevisionService_ListRevisions_FullMethodName        = "/bytebase.v1.RevisionService/ListRevisions"
+	RevisionService_GetRevision_FullMethodName          = "/bytebase.v1.RevisionService/GetRevision"
+	RevisionService_CreateRevision_FullMethodName       = "/bytebase.v1.RevisionService/CreateRevision"
+	RevisionService_BatchCreateRevisions_FullMethodName = "/bytebase.v1.RevisionService/BatchCreateRevisions"
+	RevisionService_DeleteRevision_FullMethodName       = "/bytebase.v1.RevisionService/DeleteRevision"
 )
 
 // RevisionServiceClient is the client API for RevisionService service.
@@ -33,6 +34,7 @@ type RevisionServiceClient interface {
 	ListRevisions(ctx context.Context, in *ListRevisionsRequest, opts ...grpc.CallOption) (*ListRevisionsResponse, error)
 	GetRevision(ctx context.Context, in *GetRevisionRequest, opts ...grpc.CallOption) (*Revision, error)
 	CreateRevision(ctx context.Context, in *CreateRevisionRequest, opts ...grpc.CallOption) (*Revision, error)
+	BatchCreateRevisions(ctx context.Context, in *BatchCreateRevisionsRequest, opts ...grpc.CallOption) (*BatchCreateRevisionsResponse, error)
 	DeleteRevision(ctx context.Context, in *DeleteRevisionRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
 
@@ -74,6 +76,16 @@ func (c *revisionServiceClient) CreateRevision(ctx context.Context, in *CreateRe
 	return out, nil
 }
 
+func (c *revisionServiceClient) BatchCreateRevisions(ctx context.Context, in *BatchCreateRevisionsRequest, opts ...grpc.CallOption) (*BatchCreateRevisionsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(BatchCreateRevisionsResponse)
+	err := c.cc.Invoke(ctx, RevisionService_BatchCreateRevisions_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *revisionServiceClient) DeleteRevision(ctx context.Context, in *DeleteRevisionRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(emptypb.Empty)
@@ -91,6 +103,7 @@ type RevisionServiceServer interface {
 	ListRevisions(context.Context, *ListRevisionsRequest) (*ListRevisionsResponse, error)
 	GetRevision(context.Context, *GetRevisionRequest) (*Revision, error)
 	CreateRevision(context.Context, *CreateRevisionRequest) (*Revision, error)
+	BatchCreateRevisions(context.Context, *BatchCreateRevisionsRequest) (*BatchCreateRevisionsResponse, error)
 	DeleteRevision(context.Context, *DeleteRevisionRequest) (*emptypb.Empty, error)
 	mustEmbedUnimplementedRevisionServiceServer()
 }
@@ -110,6 +123,9 @@ func (UnimplementedRevisionServiceServer) GetRevision(context.Context, *GetRevis
 }
 func (UnimplementedRevisionServiceServer) CreateRevision(context.Context, *CreateRevisionRequest) (*Revision, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateRevision not implemented")
+}
+func (UnimplementedRevisionServiceServer) BatchCreateRevisions(context.Context, *BatchCreateRevisionsRequest) (*BatchCreateRevisionsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method BatchCreateRevisions not implemented")
 }
 func (UnimplementedRevisionServiceServer) DeleteRevision(context.Context, *DeleteRevisionRequest) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteRevision not implemented")
@@ -189,6 +205,24 @@ func _RevisionService_CreateRevision_Handler(srv interface{}, ctx context.Contex
 	return interceptor(ctx, in, info, handler)
 }
 
+func _RevisionService_BatchCreateRevisions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BatchCreateRevisionsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RevisionServiceServer).BatchCreateRevisions(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RevisionService_BatchCreateRevisions_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RevisionServiceServer).BatchCreateRevisions(ctx, req.(*BatchCreateRevisionsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _RevisionService_DeleteRevision_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(DeleteRevisionRequest)
 	if err := dec(in); err != nil {
@@ -225,6 +259,10 @@ var RevisionService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CreateRevision",
 			Handler:    _RevisionService_CreateRevision_Handler,
+		},
+		{
+			MethodName: "BatchCreateRevisions",
+			Handler:    _RevisionService_BatchCreateRevisions_Handler,
 		},
 		{
 			MethodName: "DeleteRevision",

@@ -51,6 +51,24 @@ export interface CreateRevisionRequest {
   revision: Revision | undefined;
 }
 
+export interface BatchCreateRevisionsRequest {
+  /**
+   * The parent resource shared by all revisions being created.
+   * Format: instances/{instance}/databases/{database}
+   */
+  parent: string;
+  /**
+   * The request message specifying the revisions to create.
+   * A maximum of 100 revisions can be created in a batch.
+   */
+  requests: CreateRevisionRequest[];
+}
+
+export interface BatchCreateRevisionsResponse {
+  /** The created revisions. */
+  revisions: Revision[];
+}
+
 export interface GetRevisionRequest {
   /**
    * The name of the revision.
@@ -378,6 +396,146 @@ export const CreateRevisionRequest: MessageFns<CreateRevisionRequest> = {
     message.revision = (object.revision !== undefined && object.revision !== null)
       ? Revision.fromPartial(object.revision)
       : undefined;
+    return message;
+  },
+};
+
+function createBaseBatchCreateRevisionsRequest(): BatchCreateRevisionsRequest {
+  return { parent: "", requests: [] };
+}
+
+export const BatchCreateRevisionsRequest: MessageFns<BatchCreateRevisionsRequest> = {
+  encode(message: BatchCreateRevisionsRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.parent !== "") {
+      writer.uint32(10).string(message.parent);
+    }
+    for (const v of message.requests) {
+      CreateRevisionRequest.encode(v!, writer.uint32(18).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): BatchCreateRevisionsRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseBatchCreateRevisionsRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.parent = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.requests.push(CreateRevisionRequest.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): BatchCreateRevisionsRequest {
+    return {
+      parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
+      requests: globalThis.Array.isArray(object?.requests)
+        ? object.requests.map((e: any) => CreateRevisionRequest.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: BatchCreateRevisionsRequest): unknown {
+    const obj: any = {};
+    if (message.parent !== "") {
+      obj.parent = message.parent;
+    }
+    if (message.requests?.length) {
+      obj.requests = message.requests.map((e) => CreateRevisionRequest.toJSON(e));
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<BatchCreateRevisionsRequest>): BatchCreateRevisionsRequest {
+    return BatchCreateRevisionsRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<BatchCreateRevisionsRequest>): BatchCreateRevisionsRequest {
+    const message = createBaseBatchCreateRevisionsRequest();
+    message.parent = object.parent ?? "";
+    message.requests = object.requests?.map((e) => CreateRevisionRequest.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseBatchCreateRevisionsResponse(): BatchCreateRevisionsResponse {
+  return { revisions: [] };
+}
+
+export const BatchCreateRevisionsResponse: MessageFns<BatchCreateRevisionsResponse> = {
+  encode(message: BatchCreateRevisionsResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    for (const v of message.revisions) {
+      Revision.encode(v!, writer.uint32(10).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): BatchCreateRevisionsResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseBatchCreateRevisionsResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.revisions.push(Revision.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): BatchCreateRevisionsResponse {
+    return {
+      revisions: globalThis.Array.isArray(object?.revisions)
+        ? object.revisions.map((e: any) => Revision.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: BatchCreateRevisionsResponse): unknown {
+    const obj: any = {};
+    if (message.revisions?.length) {
+      obj.revisions = message.revisions.map((e) => Revision.toJSON(e));
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<BatchCreateRevisionsResponse>): BatchCreateRevisionsResponse {
+    return BatchCreateRevisionsResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<BatchCreateRevisionsResponse>): BatchCreateRevisionsResponse {
+    const message = createBaseBatchCreateRevisionsResponse();
+    message.revisions = object.revisions?.map((e) => Revision.fromPartial(e)) || [];
     return message;
   },
 };
@@ -1005,6 +1163,110 @@ export const RevisionServiceDefinition = {
               111,
               110,
               115,
+            ]),
+          ],
+        },
+      },
+    },
+    batchCreateRevisions: {
+      name: "BatchCreateRevisions",
+      requestType: BatchCreateRevisionsRequest,
+      requestStream: false,
+      responseType: BatchCreateRevisionsResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          800010: [
+            new Uint8Array([
+              19,
+              98,
+              98,
+              46,
+              114,
+              101,
+              118,
+              105,
+              115,
+              105,
+              111,
+              110,
+              115,
+              46,
+              99,
+              114,
+              101,
+              97,
+              116,
+              101,
+            ]),
+          ],
+          800016: [new Uint8Array([1])],
+          578365826: [
+            new Uint8Array([
+              63,
+              58,
+              1,
+              42,
+              34,
+              58,
+              47,
+              118,
+              49,
+              47,
+              123,
+              112,
+              97,
+              114,
+              101,
+              110,
+              116,
+              61,
+              105,
+              110,
+              115,
+              116,
+              97,
+              110,
+              99,
+              101,
+              115,
+              47,
+              42,
+              47,
+              100,
+              97,
+              116,
+              97,
+              98,
+              97,
+              115,
+              101,
+              115,
+              47,
+              42,
+              125,
+              47,
+              114,
+              101,
+              118,
+              105,
+              115,
+              105,
+              111,
+              110,
+              115,
+              58,
+              98,
+              97,
+              116,
+              99,
+              104,
+              67,
+              114,
+              101,
+              97,
+              116,
+              101,
             ]),
           ],
         },
