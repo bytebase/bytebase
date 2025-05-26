@@ -255,7 +255,7 @@ func GetSQLSummaryReport(ctx context.Context, stores *store.Store, sheetManager 
 		if err != nil {
 			slog.Error("failed to get statement types", log.BBError(err))
 		}
-		defaultSchema = "DBO"
+		defaultSchema = "dbo"
 	default:
 		// Already checked in the Run().
 		return nil, nil
