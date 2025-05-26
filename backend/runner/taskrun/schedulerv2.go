@@ -510,6 +510,11 @@ func (s *SchedulerV2) scheduleRunningTaskRun(ctx context.Context, taskRun *store
 		s.stateCfg.RunningDatabaseMigration.Store(getDatabaseKey(task.InstanceID, *task.DatabaseName), task.ID)
 	}
 
+	// Set taskrun StartAt when it's about to run.
+	// So that the waiting time is not taken into account of the actual execution time.
+	if err := s.store.UpdateTaskRunStartAt(ctx, taskRun.ID); err != nil {
+		return errors.Wrapf(err, "failed to update task run start at")
+	}
 	s.store.CreateTaskRunLogS(ctx, taskRun.ID, time.Now(), s.profile.DeployID, &storepb.TaskRunLog{
 		Type: storepb.TaskRunLog_TASK_RUN_STATUS_UPDATE,
 		TaskRunStatusUpdate: &storepb.TaskRunLog_TaskRunStatusUpdate{
