@@ -20,12 +20,12 @@ import { RiskFilter, useRiskFilter } from "../../common";
 import RulesSection from "./RulesSection.vue";
 
 const filter = useRiskFilter();
-const SupportedSourceList = useSupportedSourceList();
+const supportedSourceList = useSupportedSourceList();
 
 const selectedSourceList = computed(() => {
   if (filter.source.value === Risk_Source.SOURCE_UNSPECIFIED) {
     // "ALL"
-    return SupportedSourceList.value;
+    return supportedSourceList.value;
   }
   return [filter.source.value];
 });

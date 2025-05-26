@@ -18,7 +18,7 @@ export interface RiskSourceFilterItem {
 
 const { t } = useI18n();
 const { source } = useRiskFilter();
-const SupportedSourceList = useSupportedSourceList();
+const supportedSourceList = useSupportedSourceList();
 
 const filterItemList = computed(() => {
   const items = [
@@ -27,7 +27,7 @@ const filterItemList = computed(() => {
       label: t("common.all"),
     },
   ];
-  SupportedSourceList.value.forEach((source) => {
+  supportedSourceList.value.forEach((source) => {
     items.push({
       value: source,
       label: sourceText(source),

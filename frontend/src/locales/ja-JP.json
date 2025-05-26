@@ -508,7 +508,7 @@
         },
         "maximum-role-expiration": {
           "self": "最大ロール有効期限",
-          "description": "最大ロール有効期限は、ユーザーにロールを付与できる最大期間です。",
+          "description": "最大ロール有効期限は、ロールをユーザーに付与できる最大期間であり、プロジェクト所有者を除くすべてのプロジェクト ロールに適用されます。",
           "days": "日",
           "never-expires": "期限切れなし"
         },
@@ -890,6 +890,7 @@
     "issue-name": "イシュー名",
     "grant-request": {
       "export-rows": "エクスポート行の最大数",
+      "select-export-rows": "最大エクスポート行数を選択",
       "expired-at": "有効期限",
       "all-databases": "すべてのデータベース",
       "all-databases-tip": "このプロジェクトに属する現在および将来のすべてのデータベース。",
@@ -1484,6 +1485,7 @@
     "foreign-key": {
       "reference": "参照"
     },
+    "checks": "チェック",
     "create-target-database-or-schema-for-backup": "まずバックアップのターゲットデータベースまたはスキーマを作成してください",
     "revision": {
       "self": "リビジョン",
@@ -1505,8 +1507,7 @@
         "self": "新しいベースライン",
         "successfully-established": "新しいベースラインを確立しました"
       }
-    },
-    "checks": "チェック"
+    }
   },
   "project": {
     "table": {

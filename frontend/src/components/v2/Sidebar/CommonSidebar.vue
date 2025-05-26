@@ -6,80 +6,83 @@
       :redirect="logoRedirect"
     />
     <slot name="prefix" />
-    <div class="flex-1 overflow-y-auto px-2.5 space-y-1">
-      <div v-for="(item, i) in filteredSidebarList" :key="i">
-        <router-link
-          v-if="item.type === 'route'"
-          :to="{ path: item.path, name: item.name }"
-          :class="[parentRouteClass, getItemClass(item)]"
-        >
-          <component :is="item.icon" class="mr-2 w-5 h-5 text-gray-500" />
-          {{ item.title }}
-        </router-link>
-        <div
-          v-else-if="item.type === 'div'"
-          :class="[parentRouteClass, getItemClass(item)]"
-          @click="onClick(item, `${i}`, $event)"
-        >
-          <component :is="item.icon" class="mr-2 w-5 h-5 text-gray-500" />
-          {{ item.title }}
-          <div v-if="item.children.length > 0" class="ml-auto text-gray-500">
-            <ChevronRight
-              v-if="!state.expandedSidebar.has(`${i}`)"
-              class="w-4 h-4"
-            />
-            <ChevronDown v-else class="w-4 h-4" />
+    <NScrollbar>
+      <div class="flex-1 px-2.5 space-y-1">
+        <div v-for="(item, i) in filteredSidebarList" :key="i">
+          <router-link
+            v-if="item.type === 'route'"
+            :to="{ path: item.path, name: item.name }"
+            :class="[parentRouteClass, getItemClass(item)]"
+          >
+            <component :is="item.icon" class="mr-2 w-5 h-5 text-gray-500" />
+            {{ item.title }}
+          </router-link>
+          <div
+            v-else-if="item.type === 'div'"
+            :class="[parentRouteClass, getItemClass(item)]"
+            @click="onClick(item, `${i}`, $event)"
+          >
+            <component :is="item.icon" class="mr-2 w-5 h-5 text-gray-500" />
+            {{ item.title }}
+            <div v-if="item.children.length > 0" class="ml-auto text-gray-500">
+              <ChevronRight
+                v-if="!state.expandedSidebar.has(`${i}`)"
+                class="w-4 h-4"
+              />
+              <ChevronDown v-else class="w-4 h-4" />
+            </div>
+          </div>
+          <a
+            v-if="item.type === 'link'"
+            :class="[parentRouteClass, getItemClass(item)]"
+            :href="item.path"
+            @click="$emit('select', item, $event)"
+          >
+            <component :is="item.icon" class="mr-2 w-5 h-5 text-gray-500" />
+            {{ item.title }}
+          </a>
+          <div
+            v-else-if="item.type === 'divider'"
+            class="border-t border-gray-300 my-2.5 mr-4 ml-2"
+          />
+          <div
+            v-if="item.children.length > 0 && state.expandedSidebar.has(`${i}`)"
+            class="space-y-1 mt-1"
+          >
+            <template v-for="(child, j) in item.children" :key="`${i}-${j}`">
+              <a
+                v-if="child.type === 'link'"
+                :class="[childRouteClass, getItemClass(child)]"
+                :href="child.path"
+                @click="$emit('select', child, $event)"
+              >
+                {{ child.title }}
+              </a>
+              <router-link
+                v-else-if="child.type === 'route'"
+                :to="{ path: child.path, name: child.name }"
+                :class="[childRouteClass, getItemClass(child)]"
+              >
+                {{ child.title }}
+              </router-link>
+              <div
+                v-else-if="child.type === 'div'"
+                :class="[childRouteClass, getItemClass(child)]"
+                @click="onClick(child, `${i}-${j}`, $event)"
+              >
+                {{ child.title }}
+              </div>
+            </template>
           </div>
         </div>
-        <a
-          v-if="item.type === 'link'"
-          :class="[parentRouteClass, getItemClass(item)]"
-          :href="item.path"
-          @click="$emit('select', item, $event)"
-        >
-          <component :is="item.icon" class="mr-2 w-5 h-5 text-gray-500" />
-          {{ item.title }}
-        </a>
-        <div
-          v-else-if="item.type === 'divider'"
-          class="border-t border-gray-300 my-2.5 mr-4 ml-2"
-        />
-        <div
-          v-if="item.children.length > 0 && state.expandedSidebar.has(`${i}`)"
-          class="space-y-1 mt-1"
-        >
-          <template v-for="(child, j) in item.children" :key="`${i}-${j}`">
-            <a
-              v-if="child.type === 'link'"
-              :class="[childRouteClass, getItemClass(child)]"
-              :href="child.path"
-              @click="$emit('select', child, $event)"
-            >
-              {{ child.title }}
-            </a>
-            <router-link
-              v-else-if="child.type === 'route'"
-              :to="{ path: child.path, name: child.name }"
-              :class="[childRouteClass, getItemClass(child)]"
-            >
-              {{ child.title }}
-            </router-link>
-            <div
-              v-else-if="child.type === 'div'"
-              :class="[childRouteClass, getItemClass(child)]"
-              @click="onClick(child, `${i}-${j}`, $event)"
-            >
-              {{ child.title }}
-            </div>
-          </template>
-        </div>
       </div>
-    </div>
+    </NScrollbar>
   </nav>
 </template>
 
 <script setup lang="ts">
 import { ChevronDown, ChevronRight } from "lucide-vue-next";
+import { NScrollbar } from "naive-ui";
 import type { VNode } from "vue";
 import { computed, reactive, watch } from "vue";
 import BytebaseLogo from "@/components/BytebaseLogo.vue";

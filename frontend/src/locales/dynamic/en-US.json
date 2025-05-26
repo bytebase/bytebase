@@ -20,6 +20,7 @@
     "risk-rule": {
       "template": {
         "presets": {
+          "request-role-high": "The risk for the request project owner role is considered to be high.",
           "environment-prod-high": "The risk for the production environment is considered to be high.",
           "environment-dev-low": "The risk value for the development environment is considered to be low.",
           "dml-in-environment-prod-10k-rows-high": "In the production environment, if the number of rows to be updated or deleted exceeds 10000, the risk is considered to be high.",
