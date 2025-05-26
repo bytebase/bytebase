@@ -99,8 +99,11 @@ const show = computed(() => {
     // show missing feature attention.
     return true;
   }
-  if (instanceMissingLicense.value || existInstanceWithoutLicense.value) {
+  if (instanceMissingLicense.value) {
     // show missing instance license attention.
+    return true;
+  }
+  if (!props.instance && existInstanceWithoutLicense.value) {
     return true;
   }
   return false;
