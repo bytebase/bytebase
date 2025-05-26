@@ -1,3 +1,26 @@
+- statement: |-
+    CREATE TABLE has_pk(id INT PRIMARY KEY);
+    CREATE TABLE no_pk(id INT);
+    CREATE TABLE has_pk_fork LIKE has_pk;
+    CREATE TABLE no_pk_fork LIKE no_pk;
+  changeType: 1
+  want:
+    - status: 2
+      code: 601
+      title: table.require-pk
+      content: Table `no_pk` requires PRIMARY KEY
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 601
+      title: table.require-pk
+      content: Table `no_pk_fork` requires PRIMARY KEY
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
 - statement: CREATE TABLE t(id INT PRIMARY KEY)
   changeType: 1
 - statement: CREATE TABLE t(id INT, PRIMARY KEY (id))
