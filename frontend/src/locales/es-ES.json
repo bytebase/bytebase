@@ -270,6 +270,9 @@
     "action-all-tasks-in-current-stage": "{action} todas las tareas en la etapa actual",
     "cancel-task": "Cancelar tarea | Cancelar tareas",
     "created": "Creado",
+    "run-immediately": "Ejecutar tarea inmediatamente",
+    "scheduled-time": "Hora programada",
+    "select-scheduled-time": "Seleccionar hora programada",
     "online-migration": {
       "self": "Migración en línea",
       "configure-ghost-parameters": "Configurar los parámetros de gh-ost",
