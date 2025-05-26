@@ -202,7 +202,7 @@ defineExpose({
     }
     if (
       state.expirationTimestampInMS != undefined &&
-      state.expirationTimestampInMS <= 0
+      state.expirationTimestampInMS <= new Date().getTime()
     ) {
       return false;
     }
