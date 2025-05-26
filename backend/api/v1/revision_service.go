@@ -13,12 +13,34 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/component/config"
+	"github.com/bytebase/bytebase/backend/component/iam"
+	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
-func (s *DatabaseService) ListRevisions(ctx context.Context, request *v1pb.ListRevisionsRequest) (*v1pb.ListRevisionsResponse, error) {
+// RevisionService implements the revision service.
+type RevisionService struct {
+	v1pb.UnimplementedRevisionServiceServer
+	store          *store.Store
+	licenseService enterprise.LicenseService
+	profile        *config.Profile
+	iamManager     *iam.Manager
+}
+
+// NewRevisionService creates a new RevisionService.
+func NewRevisionService(store *store.Store, licenseService enterprise.LicenseService, profile *config.Profile, iamManager *iam.Manager) *RevisionService {
+	return &RevisionService{
+		store:          store,
+		licenseService: licenseService,
+		profile:        profile,
+		iamManager:     iamManager,
+	}
+}
+
+func (s *RevisionService) ListRevisions(ctx context.Context, request *v1pb.ListRevisionsRequest) (*v1pb.ListRevisionsResponse, error) {
 	instanceID, databaseName, err := common.GetInstanceDatabaseID(request.Parent)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to get instance and database from %v, err: %v", request.Parent, err)
@@ -85,7 +107,7 @@ func (s *DatabaseService) ListRevisions(ctx context.Context, request *v1pb.ListR
 	}, nil
 }
 
-func (s *DatabaseService) GetRevision(ctx context.Context, request *v1pb.GetRevisionRequest) (*v1pb.Revision, error) {
+func (s *RevisionService) GetRevision(ctx context.Context, request *v1pb.GetRevisionRequest) (*v1pb.Revision, error) {
 	instanceName, databaseName, revisionUID, err := common.GetInstanceDatabaseRevisionID(request.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to get revision UID from %v, err: %v", request.Name, err)
@@ -102,7 +124,7 @@ func (s *DatabaseService) GetRevision(ctx context.Context, request *v1pb.GetRevi
 	return converted, nil
 }
 
-func (s *DatabaseService) CreateRevision(ctx context.Context, request *v1pb.CreateRevisionRequest) (*v1pb.Revision, error) {
+func (s *RevisionService) CreateRevision(ctx context.Context, request *v1pb.CreateRevisionRequest) (*v1pb.Revision, error) {
 	instanceID, databaseID, err := common.GetInstanceDatabaseID(request.Parent)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to get instance and database from %v, err: %v", request.Parent, err)
@@ -205,7 +227,7 @@ func (s *DatabaseService) CreateRevision(ctx context.Context, request *v1pb.Crea
 	return converted, nil
 }
 
-func (s *DatabaseService) DeleteRevision(ctx context.Context, request *v1pb.DeleteRevisionRequest) (*emptypb.Empty, error) {
+func (s *RevisionService) DeleteRevision(ctx context.Context, request *v1pb.DeleteRevisionRequest) (*emptypb.Empty, error) {
 	_, _, revisionUID, err := common.GetInstanceDatabaseRevisionID(request.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to get revision UID from %v, err: %v", request.Name, err)

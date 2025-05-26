@@ -550,10 +550,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.CreateRevisionRequest"><span class="badge">M</span>CreateRevisionRequest</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.Database"><span class="badge">M</span>Database</a>
                 </li>
               
@@ -567,10 +563,6 @@
               
                 <li>
                   <a href="#bytebase.v1.DatabaseSchema"><span class="badge">M</span>DatabaseSchema</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.DeleteRevisionRequest"><span class="badge">M</span>DeleteRevisionRequest</a>
                 </li>
               
                 <li>
@@ -638,10 +630,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.GetRevisionRequest"><span class="badge">M</span>GetRevisionRequest</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.GetSchemaStringRequest"><span class="badge">M</span>GetSchemaStringRequest</a>
                 </li>
               
@@ -670,14 +658,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.ListRevisionsRequest"><span class="badge">M</span>ListRevisionsRequest</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.ListRevisionsResponse"><span class="badge">M</span>ListRevisionsResponse</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.ListSecretsRequest"><span class="badge">M</span>ListSecretsRequest</a>
                 </li>
               
@@ -695,10 +675,6 @@
               
                 <li>
                   <a href="#bytebase.v1.ProcedureMetadata"><span class="badge">M</span>ProcedureMetadata</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.Revision"><span class="badge">M</span>Revision</a>
                 </li>
               
                 <li>
@@ -2407,6 +2383,45 @@
               
                 <li>
                   <a href="#bytebase.v1.ReviewConfigService"><span class="badge">S</span>ReviewConfigService</a>
+                </li>
+              
+            </ul>
+          </li>
+        
+          
+          <li>
+            <a href="#v1%2frevision_service.proto">v1/revision_service.proto</a>
+            <ul>
+              
+                <li>
+                  <a href="#bytebase.v1.CreateRevisionRequest"><span class="badge">M</span>CreateRevisionRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.DeleteRevisionRequest"><span class="badge">M</span>DeleteRevisionRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.GetRevisionRequest"><span class="badge">M</span>GetRevisionRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.ListRevisionsRequest"><span class="badge">M</span>ListRevisionsRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.ListRevisionsResponse"><span class="badge">M</span>ListRevisionsResponse</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.Revision"><span class="badge">M</span>Revision</a>
+                </li>
+              
+              
+              
+              
+                <li>
+                  <a href="#bytebase.v1.RevisionService"><span class="badge">S</span>RevisionService</a>
                 </li>
               
             </ul>
@@ -6543,37 +6558,6 @@ classification and user_comment is parsed from the comment. </p></td>
 
         
       
-        <h3 id="bytebase.v1.CreateRevisionRequest">CreateRevisionRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>parent</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Format: instances/{instance}/databases/{database} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>revision</td>
-                  <td><a href="#bytebase.v1.Revision">Revision</a></td>
-                  <td></td>
-                  <td><p>The revision to create. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.v1.Database">Database</h3>
         <p></p>
 
@@ -6781,31 +6765,6 @@ Format: instances/{instance}/databases/{database}/metadata </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The schema dump from database. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.DeleteRevisionRequest">DeleteRevisionRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The name of the revision to delete.
-Format: instances/{instance}/databases/{database}/revisions/{revision} </p></td>
                 </tr>
               
             </tbody>
@@ -7516,31 +7475,6 @@ Format: instances/{instance}/databases/{database}/schema </p></td>
 
         
       
-        <h3 id="bytebase.v1.GetRevisionRequest">GetRevisionRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The name of the revision.
-Format: instances/{instance}/databases/{database}/revisions/{revision} </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.v1.GetSchemaStringRequest">GetSchemaStringRequest</h3>
         <p></p>
 
@@ -7977,90 +7911,6 @@ If this field is omitted, there are no subsequent pages. </p></td>
 
         
       
-        <h3 id="bytebase.v1.ListRevisionsRequest">ListRevisionsRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>parent</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The parent of the revisions.
-Format: instances/{instance}/databases/{database} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>page_size</td>
-                  <td><a href="#int32">int32</a></td>
-                  <td></td>
-                  <td><p>The maximum number of revisions to return. The service may return fewer
-than this value. If unspecified, at most 10 revisions will be returned. The
-maximum value is 1000; values above 1000 will be coerced to 1000. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>page_token</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>A page token, received from a previous `ListRevisions` call.
-Provide this to retrieve the subsequent page.
-
-When paginating, all other parameters provided to `ListRevisions` must
-match the call that provided the page token. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>show_deleted</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.ListRevisionsResponse">ListRevisionsResponse</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>revisions</td>
-                  <td><a href="#bytebase.v1.Revision">Revision</a></td>
-                  <td>repeated</td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>next_page_token</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>A token, which can be sent as `page_token` to retrieve the next page.
-If this field is omitted, there are no subsequent pages. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.v1.ListSecretsRequest">ListSecretsRequest</h3>
         <p></p>
 
@@ -8304,123 +8154,6 @@ function takes. </p></td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
                   <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.Revision">Revision</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Format: instances/{instance}/databases/{database}/revisions/{revision} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>release</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Format: projects/{project}/releases/{release}
-Can be empty. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>create_time</td>
-                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>deleter</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Format: users/hello@world.com
-Can be empty. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>delete_time</td>
-                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
-                  <td></td>
-                  <td><p>Can be empty. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>file</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Format: projects/{project}/releases/{release}/files/{id}
-Can be empty. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>version</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>sheet</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The sheet that holds the content.
-Format: projects/{project}/sheets/{sheet} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>sheet_sha256</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The SHA256 hash value of the sheet. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>statement</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The statement is used for preview purpose. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>statement_size</td>
-                  <td><a href="#int64">int64</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>issue</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The issue associated with the revision.
-Can be empty.
-Format: projects/{project}/issues/{issue} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>task_run</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The task run associated with the revision.
-Can be empty.
-Format:
-projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun} </p></td>
                 </tr>
               
             </tbody>
@@ -9888,34 +9621,6 @@ The API will default to the BASIC view.</p></td>
               </tr>
             
               <tr>
-                <td>ListRevisions</td>
-                <td><a href="#bytebase.v1.ListRevisionsRequest">ListRevisionsRequest</a></td>
-                <td><a href="#bytebase.v1.ListRevisionsResponse">ListRevisionsResponse</a></td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>GetRevision</td>
-                <td><a href="#bytebase.v1.GetRevisionRequest">GetRevisionRequest</a></td>
-                <td><a href="#bytebase.v1.Revision">Revision</a></td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>CreateRevision</td>
-                <td><a href="#bytebase.v1.CreateRevisionRequest">CreateRevisionRequest</a></td>
-                <td><a href="#bytebase.v1.Revision">Revision</a></td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>DeleteRevision</td>
-                <td><a href="#bytebase.v1.DeleteRevisionRequest">DeleteRevisionRequest</a></td>
-                <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
                 <td>ListChangelogs</td>
                 <td><a href="#bytebase.v1.ListChangelogsRequest">ListChangelogsRequest</a></td>
                 <td><a href="#bytebase.v1.ListChangelogsResponse">ListChangelogsResponse</a></td>
@@ -10108,46 +9813,6 @@ The API will default to the BASIC view.</p></td>
                 <td>DeleteSecret</td>
                 <td>DELETE</td>
                 <td>/v1/{name=instances/*/databases/*/secrets/*}</td>
-                <td></td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>ListRevisions</td>
-                <td>GET</td>
-                <td>/v1/{parent=instances/*/databases/*}/revisions</td>
-                <td></td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>GetRevision</td>
-                <td>GET</td>
-                <td>/v1/{name=instances/*/databases/*/revisions/*}</td>
-                <td></td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>CreateRevision</td>
-                <td>POST</td>
-                <td>/v1/{parent=instances/*/databases/*}/revisions</td>
-                <td>revision</td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>DeleteRevision</td>
-                <td>DELETE</td>
-                <td>/v1/{name=instances/*/databases/*/revisions/*}</td>
                 <td></td>
               </tr>
               
@@ -26390,6 +26055,400 @@ In this situation, `update_mask` is ignored. </p></td>
                 <td>DeleteReviewConfig</td>
                 <td>DELETE</td>
                 <td>/v1/{name=reviewConfigs/*}</td>
+                <td></td>
+              </tr>
+              
+            
+            </tbody>
+          </table>
+          
+        
+    
+      
+      <div class="file-heading">
+        <h2 id="v1/revision_service.proto">v1/revision_service.proto</h2><a href="#title">Top</a>
+      </div>
+      <p></p>
+
+      
+        <h3 id="bytebase.v1.CreateRevisionRequest">CreateRevisionRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>parent</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Format: instances/{instance}/databases/{database} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>revision</td>
+                  <td><a href="#bytebase.v1.Revision">Revision</a></td>
+                  <td></td>
+                  <td><p>The revision to create. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.DeleteRevisionRequest">DeleteRevisionRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of the revision to delete.
+Format: instances/{instance}/databases/{database}/revisions/{revision} </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.GetRevisionRequest">GetRevisionRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of the revision.
+Format: instances/{instance}/databases/{database}/revisions/{revision} </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.ListRevisionsRequest">ListRevisionsRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>parent</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The parent of the revisions.
+Format: instances/{instance}/databases/{database} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>page_size</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>The maximum number of revisions to return. The service may return fewer
+than this value. If unspecified, at most 10 revisions will be returned. The
+maximum value is 1000; values above 1000 will be coerced to 1000. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>page_token</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>A page token, received from a previous `ListRevisions` call.
+Provide this to retrieve the subsequent page.
+
+When paginating, all other parameters provided to `ListRevisions` must
+match the call that provided the page token. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>show_deleted</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.ListRevisionsResponse">ListRevisionsResponse</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>revisions</td>
+                  <td><a href="#bytebase.v1.Revision">Revision</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>next_page_token</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>A token, which can be sent as `page_token` to retrieve the next page.
+If this field is omitted, there are no subsequent pages. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.Revision">Revision</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Format: instances/{instance}/databases/{database}/revisions/{revision} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>release</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Format: projects/{project}/releases/{release}
+Can be empty. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>create_time</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>deleter</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Format: users/hello@world.com
+Can be empty. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>delete_time</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p>Can be empty. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>file</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Format: projects/{project}/releases/{release}/files/{id}
+Can be empty. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>version</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>sheet</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The sheet that holds the content.
+Format: projects/{project}/sheets/{sheet} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>sheet_sha256</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The SHA256 hash value of the sheet. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>statement</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The statement is used for preview purpose. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>statement_size</td>
+                  <td><a href="#int64">int64</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>issue</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The issue associated with the revision.
+Can be empty.
+Format: projects/{project}/issues/{issue} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>task_run</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The task run associated with the revision.
+Can be empty.
+Format:
+projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun} </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+
+      
+
+      
+
+      
+        <h3 id="bytebase.v1.RevisionService">RevisionService</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Method Name</td><td>Request Type</td><td>Response Type</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>ListRevisions</td>
+                <td><a href="#bytebase.v1.ListRevisionsRequest">ListRevisionsRequest</a></td>
+                <td><a href="#bytebase.v1.ListRevisionsResponse">ListRevisionsResponse</a></td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>GetRevision</td>
+                <td><a href="#bytebase.v1.GetRevisionRequest">GetRevisionRequest</a></td>
+                <td><a href="#bytebase.v1.Revision">Revision</a></td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>CreateRevision</td>
+                <td><a href="#bytebase.v1.CreateRevisionRequest">CreateRevisionRequest</a></td>
+                <td><a href="#bytebase.v1.Revision">Revision</a></td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>DeleteRevision</td>
+                <td><a href="#bytebase.v1.DeleteRevisionRequest">DeleteRevisionRequest</a></td>
+                <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+
+        
+          
+          
+          <h4>Methods with HTTP bindings</h4>
+          <table>
+            <thead>
+              <tr>
+                <td>Method Name</td>
+                <td>Method</td>
+                <td>Pattern</td>
+                <td>Body</td>
+              </tr>
+            </thead>
+            <tbody>
+            
+              
+              
+              <tr>
+                <td>ListRevisions</td>
+                <td>GET</td>
+                <td>/v1/{parent=instances/*/databases/*}/revisions</td>
+                <td></td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>GetRevision</td>
+                <td>GET</td>
+                <td>/v1/{name=instances/*/databases/*/revisions/*}</td>
+                <td></td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>CreateRevision</td>
+                <td>POST</td>
+                <td>/v1/{parent=instances/*/databases/*}/revisions</td>
+                <td>revision</td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>DeleteRevision</td>
+                <td>DELETE</td>
+                <td>/v1/{name=instances/*/databases/*/revisions/*}</td>
                 <td></td>
               </tr>
               

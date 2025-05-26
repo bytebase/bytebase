@@ -1785,8 +1785,8 @@ paths:
     /v1/instances/{instance}/databases/{database}/revisions:
         get:
             tags:
-                - DatabaseService
-            operationId: DatabaseService_ListRevisions
+                - RevisionService
+            operationId: RevisionService_ListRevisions
             parameters:
                 - name: instance
                   in: path
@@ -1838,8 +1838,8 @@ paths:
                                 $ref: '#/components/schemas/Status'
         post:
             tags:
-                - DatabaseService
-            operationId: DatabaseService_CreateRevision
+                - RevisionService
+            operationId: RevisionService_CreateRevision
             parameters:
                 - name: instance
                   in: path
@@ -1875,8 +1875,8 @@ paths:
     /v1/instances/{instance}/databases/{database}/revisions/{revision}:
         get:
             tags:
-                - DatabaseService
-            operationId: DatabaseService_GetRevision
+                - RevisionService
+            operationId: RevisionService_GetRevision
             parameters:
                 - name: instance
                   in: path
@@ -1911,8 +1911,8 @@ paths:
                                 $ref: '#/components/schemas/Status'
         delete:
             tags:
-                - DatabaseService
-            operationId: DatabaseService_DeleteRevision
+                - RevisionService
+            operationId: RevisionService_DeleteRevision
             parameters:
                 - name: instance
                   in: path
@@ -14267,6 +14267,7 @@ tags:
     - name: ProjectService
     - name: ReleaseService
     - name: ReviewConfigService
+    - name: RevisionService
     - name: RiskService
     - name: RoleService
     - name: RolloutService
