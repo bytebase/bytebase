@@ -9399,6 +9399,9 @@ components:
                 drifted:
                     type: boolean
                     description: The schema is drifted from the source of truth.
+                version:
+                    type: string
+                    description: The version of database schema.
             description: DatabaseMetadata is the metadata for databases.
         DatabaseSchema:
             type: object

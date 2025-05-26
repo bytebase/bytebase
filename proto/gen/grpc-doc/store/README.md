@@ -1134,6 +1134,7 @@ DatabaseMetadata is the metadata for databases.
 | datashare | [bool](#bool) |  |  |
 | secrets | [Secret](#bytebase-store-Secret) | repeated |  |
 | drifted | [bool](#bool) |  | The schema is drifted from the source of truth. |
+| version | [string](#string) |  | The version of database schema. |
 
 
 

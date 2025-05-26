@@ -19,6 +19,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
+	"github.com/bytebase/bytebase/backend/store/model"
 	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -513,6 +514,23 @@ func endMigration(ctx context.Context, storeInstance *store.Store, mc *migrateCo
 				return errors.Wrapf(err, "failed to create revision")
 			}
 			update.RevisionUID = &revision.UID
+
+			// Update database metadata with the version only if the new version is greater
+			metadata := mc.database.Metadata
+			if metadata == nil {
+				metadata = &storepb.DatabaseMetadata{}
+			}
+
+			if shouldUpdateVersion(metadata.Version, mc.version) {
+				metadata.Version = mc.version
+				if _, err := storeInstance.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
+					InstanceID:   mc.database.InstanceID,
+					DatabaseName: mc.database.DatabaseName,
+					Metadata:     metadata,
+				}); err != nil {
+					return errors.Wrapf(err, "failed to update database metadata with version")
+				}
+			}
 		}
 		status := store.ChangelogStatusDone
 		update.Status = &status
@@ -526,6 +544,30 @@ func endMigration(ctx context.Context, storeInstance *store.Store, mc *migrateCo
 	}
 
 	return nil
+}
+
+// shouldUpdateVersion checks if newVersion is greater than currentVersion.
+// Returns true if:
+// - currentVersion is empty
+// - currentVersion is invalid
+// - newVersion is greater than currentVersion
+func shouldUpdateVersion(currentVersion, newVersion string) bool {
+	if currentVersion == "" {
+		// If no current version, always update
+		return true
+	}
+	current, err := model.NewVersion(currentVersion)
+	if err != nil {
+		// If current version is invalid, update with new version
+		return true
+	}
+
+	nv, err := model.NewVersion(newVersion)
+	if err != nil {
+		// If new version is invalid, don't update
+		return false
+	}
+	return current.LessThan(nv)
 }
 
 func convertTaskType(t base.TaskType) storepb.ChangelogPayload_Type {
