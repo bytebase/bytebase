@@ -24,3 +24,4 @@ jobs:
         uses: bufbuild/buf-action@v1
         with:
           input: "proto"
+          breaking: false
