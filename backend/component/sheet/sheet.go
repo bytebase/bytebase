@@ -72,7 +72,7 @@ func (sm *Manager) CreateSheet(ctx context.Context, sheet *store.SheetMessage) (
 	return sm.store.CreateSheet(ctx, sheet)
 }
 
-func (sm *Manager) BatchCreateSheet(ctx context.Context, sheets []*store.SheetMessage, projectID string, creatorUID int) ([]*store.SheetMessage, error) {
+func (sm *Manager) BatchCreateSheets(ctx context.Context, sheets []*store.SheetMessage, projectID string, creatorUID int) ([]*store.SheetMessage, error) {
 	for _, sheet := range sheets {
 		if sheet.Payload == nil {
 			sheet.Payload = &storepb.SheetPayload{}

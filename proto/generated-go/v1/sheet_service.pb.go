@@ -126,7 +126,7 @@ func (x *CreateSheetRequest) GetSheet() *Sheet {
 	return nil
 }
 
-type BatchCreateSheetRequest struct {
+type BatchCreateSheetsRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The parent resource where all sheets will be created.
 	// Format: projects/{project}
@@ -136,20 +136,20 @@ type BatchCreateSheetRequest struct {
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *BatchCreateSheetRequest) Reset() {
-	*x = BatchCreateSheetRequest{}
+func (x *BatchCreateSheetsRequest) Reset() {
+	*x = BatchCreateSheetsRequest{}
 	mi := &file_v1_sheet_service_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *BatchCreateSheetRequest) String() string {
+func (x *BatchCreateSheetsRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*BatchCreateSheetRequest) ProtoMessage() {}
+func (*BatchCreateSheetsRequest) ProtoMessage() {}
 
-func (x *BatchCreateSheetRequest) ProtoReflect() protoreflect.Message {
+func (x *BatchCreateSheetsRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_v1_sheet_service_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -161,46 +161,46 @@ func (x *BatchCreateSheetRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use BatchCreateSheetRequest.ProtoReflect.Descriptor instead.
-func (*BatchCreateSheetRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use BatchCreateSheetsRequest.ProtoReflect.Descriptor instead.
+func (*BatchCreateSheetsRequest) Descriptor() ([]byte, []int) {
 	return file_v1_sheet_service_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *BatchCreateSheetRequest) GetParent() string {
+func (x *BatchCreateSheetsRequest) GetParent() string {
 	if x != nil {
 		return x.Parent
 	}
 	return ""
 }
 
-func (x *BatchCreateSheetRequest) GetRequests() []*CreateSheetRequest {
+func (x *BatchCreateSheetsRequest) GetRequests() []*CreateSheetRequest {
 	if x != nil {
 		return x.Requests
 	}
 	return nil
 }
 
-type BatchCreateSheetResponse struct {
+type BatchCreateSheetsResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Sheets        []*Sheet               `protobuf:"bytes,1,rep,name=sheets,proto3" json:"sheets,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *BatchCreateSheetResponse) Reset() {
-	*x = BatchCreateSheetResponse{}
+func (x *BatchCreateSheetsResponse) Reset() {
+	*x = BatchCreateSheetsResponse{}
 	mi := &file_v1_sheet_service_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *BatchCreateSheetResponse) String() string {
+func (x *BatchCreateSheetsResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*BatchCreateSheetResponse) ProtoMessage() {}
+func (*BatchCreateSheetsResponse) ProtoMessage() {}
 
-func (x *BatchCreateSheetResponse) ProtoReflect() protoreflect.Message {
+func (x *BatchCreateSheetsResponse) ProtoReflect() protoreflect.Message {
 	mi := &file_v1_sheet_service_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -212,12 +212,12 @@ func (x *BatchCreateSheetResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use BatchCreateSheetResponse.ProtoReflect.Descriptor instead.
-func (*BatchCreateSheetResponse) Descriptor() ([]byte, []int) {
+// Deprecated: Use BatchCreateSheetsResponse.ProtoReflect.Descriptor instead.
+func (*BatchCreateSheetsResponse) Descriptor() ([]byte, []int) {
 	return file_v1_sheet_service_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *BatchCreateSheetResponse) GetSheets() []*Sheet {
+func (x *BatchCreateSheetsResponse) GetSheets() []*Sheet {
 	if x != nil {
 		return x.Sheets
 	}
@@ -566,12 +566,12 @@ const file_v1_sheet_service_proto_rawDesc = "" +
 	"\x12CreateSheetRequest\x125\n" +
 	"\x06parent\x18\x01 \x01(\tB\x1d\xe2A\x01\x02\xfaA\x16\n" +
 	"\x14bytebase.com/ProjectR\x06parent\x12.\n" +
-	"\x05sheet\x18\x02 \x01(\v2\x12.bytebase.v1.SheetB\x04\xe2A\x01\x02R\x05sheet\"\x93\x01\n" +
-	"\x17BatchCreateSheetRequest\x125\n" +
+	"\x05sheet\x18\x02 \x01(\v2\x12.bytebase.v1.SheetB\x04\xe2A\x01\x02R\x05sheet\"\x94\x01\n" +
+	"\x18BatchCreateSheetsRequest\x125\n" +
 	"\x06parent\x18\x01 \x01(\tB\x1d\xe2A\x01\x02\xfaA\x16\n" +
 	"\x14bytebase.com/ProjectR\x06parent\x12A\n" +
-	"\brequests\x18\x02 \x03(\v2\x1f.bytebase.v1.CreateSheetRequestB\x04\xe2A\x01\x02R\brequests\"F\n" +
-	"\x18BatchCreateSheetResponse\x12*\n" +
+	"\brequests\x18\x02 \x03(\v2\x1f.bytebase.v1.CreateSheetRequestB\x04\xe2A\x01\x02R\brequests\"G\n" +
+	"\x19BatchCreateSheetsResponse\x12*\n" +
 	"\x06sheets\x18\x01 \x03(\v2\x12.bytebase.v1.SheetR\x06sheets\"T\n" +
 	"\x0fGetSheetRequest\x12/\n" +
 	"\x04name\x18\x01 \x01(\tB\x1b\xe2A\x01\x02\xfaA\x14\n" +
@@ -600,10 +600,10 @@ const file_v1_sheet_service_proto_rawDesc = "" +
 	"\rSCHEMA_DESIGN\x10\x01\"6\n" +
 	"\fSheetCommand\x12\x14\n" +
 	"\x05start\x18\x01 \x01(\x05R\x05start\x12\x10\n" +
-	"\x03end\x18\x02 \x01(\x05R\x03end2\x83\x05\n" +
+	"\x03end\x18\x02 \x01(\x05R\x03end2\x86\x05\n" +
 	"\fSheetService\x12\x98\x01\n" +
-	"\vCreateSheet\x12\x1f.bytebase.v1.CreateSheetRequest\x1a\x12.bytebase.v1.Sheet\"T\xdaA\fparent,sheet\x8a\xea0\x10bb.sheets.create\x90\xea0\x01\x82\xd3\xe4\x93\x02':\x05sheet\"\x1e/v1/{parent=projects/*}/sheets\x12\xae\x01\n" +
-	"\x10BatchCreateSheet\x12$.bytebase.v1.BatchCreateSheetRequest\x1a%.bytebase.v1.BatchCreateSheetResponse\"M\x8a\xea0\x10bb.sheets.create\x90\xea0\x01\x82\xd3\xe4\x93\x02/:\x01*\"*/v1/{parent=projects/*}/sheets:batchCreate\x12\x80\x01\n" +
+	"\vCreateSheet\x12\x1f.bytebase.v1.CreateSheetRequest\x1a\x12.bytebase.v1.Sheet\"T\xdaA\fparent,sheet\x8a\xea0\x10bb.sheets.create\x90\xea0\x01\x82\xd3\xe4\x93\x02':\x05sheet\"\x1e/v1/{parent=projects/*}/sheets\x12\xb1\x01\n" +
+	"\x11BatchCreateSheets\x12%.bytebase.v1.BatchCreateSheetsRequest\x1a&.bytebase.v1.BatchCreateSheetsResponse\"M\x8a\xea0\x10bb.sheets.create\x90\xea0\x01\x82\xd3\xe4\x93\x02/:\x01*\"*/v1/{parent=projects/*}/sheets:batchCreate\x12\x80\x01\n" +
 	"\bGetSheet\x12\x1c.bytebase.v1.GetSheetRequest\x1a\x12.bytebase.v1.Sheet\"B\xdaA\x04name\x8a\xea0\rbb.sheets.get\x90\xea0\x01\x82\xd3\xe4\x93\x02 \x12\x1e/v1/{name=projects/*/sheets/*}\x12\xa3\x01\n" +
 	"\vUpdateSheet\x12\x1f.bytebase.v1.UpdateSheetRequest\x1a\x12.bytebase.v1.Sheet\"_\xdaA\x11sheet,update_mask\x8a\xea0\x10bb.sheets.update\x90\xea0\x01\x82\xd3\xe4\x93\x02-:\x05sheet2$/v1/{sheet.name=projects/*/sheets/*}B\x11Z\x0fgenerated-go/v1b\x06proto3"
 
@@ -622,23 +622,23 @@ func file_v1_sheet_service_proto_rawDescGZIP() []byte {
 var file_v1_sheet_service_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
 var file_v1_sheet_service_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
 var file_v1_sheet_service_proto_goTypes = []any{
-	(SheetPayload_Type)(0),           // 0: bytebase.v1.SheetPayload.Type
-	(*CreateSheetRequest)(nil),       // 1: bytebase.v1.CreateSheetRequest
-	(*BatchCreateSheetRequest)(nil),  // 2: bytebase.v1.BatchCreateSheetRequest
-	(*BatchCreateSheetResponse)(nil), // 3: bytebase.v1.BatchCreateSheetResponse
-	(*GetSheetRequest)(nil),          // 4: bytebase.v1.GetSheetRequest
-	(*UpdateSheetRequest)(nil),       // 5: bytebase.v1.UpdateSheetRequest
-	(*Sheet)(nil),                    // 6: bytebase.v1.Sheet
-	(*SheetPayload)(nil),             // 7: bytebase.v1.SheetPayload
-	(*SheetCommand)(nil),             // 8: bytebase.v1.SheetCommand
-	(*fieldmaskpb.FieldMask)(nil),    // 9: google.protobuf.FieldMask
-	(*timestamppb.Timestamp)(nil),    // 10: google.protobuf.Timestamp
-	(Engine)(0),                      // 11: bytebase.v1.Engine
+	(SheetPayload_Type)(0),            // 0: bytebase.v1.SheetPayload.Type
+	(*CreateSheetRequest)(nil),        // 1: bytebase.v1.CreateSheetRequest
+	(*BatchCreateSheetsRequest)(nil),  // 2: bytebase.v1.BatchCreateSheetsRequest
+	(*BatchCreateSheetsResponse)(nil), // 3: bytebase.v1.BatchCreateSheetsResponse
+	(*GetSheetRequest)(nil),           // 4: bytebase.v1.GetSheetRequest
+	(*UpdateSheetRequest)(nil),        // 5: bytebase.v1.UpdateSheetRequest
+	(*Sheet)(nil),                     // 6: bytebase.v1.Sheet
+	(*SheetPayload)(nil),              // 7: bytebase.v1.SheetPayload
+	(*SheetCommand)(nil),              // 8: bytebase.v1.SheetCommand
+	(*fieldmaskpb.FieldMask)(nil),     // 9: google.protobuf.FieldMask
+	(*timestamppb.Timestamp)(nil),     // 10: google.protobuf.Timestamp
+	(Engine)(0),                       // 11: bytebase.v1.Engine
 }
 var file_v1_sheet_service_proto_depIdxs = []int32{
 	6,  // 0: bytebase.v1.CreateSheetRequest.sheet:type_name -> bytebase.v1.Sheet
-	1,  // 1: bytebase.v1.BatchCreateSheetRequest.requests:type_name -> bytebase.v1.CreateSheetRequest
-	6,  // 2: bytebase.v1.BatchCreateSheetResponse.sheets:type_name -> bytebase.v1.Sheet
+	1,  // 1: bytebase.v1.BatchCreateSheetsRequest.requests:type_name -> bytebase.v1.CreateSheetRequest
+	6,  // 2: bytebase.v1.BatchCreateSheetsResponse.sheets:type_name -> bytebase.v1.Sheet
 	6,  // 3: bytebase.v1.UpdateSheetRequest.sheet:type_name -> bytebase.v1.Sheet
 	9,  // 4: bytebase.v1.UpdateSheetRequest.update_mask:type_name -> google.protobuf.FieldMask
 	10, // 5: bytebase.v1.Sheet.create_time:type_name -> google.protobuf.Timestamp
@@ -647,11 +647,11 @@ var file_v1_sheet_service_proto_depIdxs = []int32{
 	0,  // 8: bytebase.v1.SheetPayload.type:type_name -> bytebase.v1.SheetPayload.Type
 	8,  // 9: bytebase.v1.SheetPayload.commands:type_name -> bytebase.v1.SheetCommand
 	1,  // 10: bytebase.v1.SheetService.CreateSheet:input_type -> bytebase.v1.CreateSheetRequest
-	2,  // 11: bytebase.v1.SheetService.BatchCreateSheet:input_type -> bytebase.v1.BatchCreateSheetRequest
+	2,  // 11: bytebase.v1.SheetService.BatchCreateSheets:input_type -> bytebase.v1.BatchCreateSheetsRequest
 	4,  // 12: bytebase.v1.SheetService.GetSheet:input_type -> bytebase.v1.GetSheetRequest
 	5,  // 13: bytebase.v1.SheetService.UpdateSheet:input_type -> bytebase.v1.UpdateSheetRequest
 	6,  // 14: bytebase.v1.SheetService.CreateSheet:output_type -> bytebase.v1.Sheet
-	3,  // 15: bytebase.v1.SheetService.BatchCreateSheet:output_type -> bytebase.v1.BatchCreateSheetResponse
+	3,  // 15: bytebase.v1.SheetService.BatchCreateSheets:output_type -> bytebase.v1.BatchCreateSheetsResponse
 	6,  // 16: bytebase.v1.SheetService.GetSheet:output_type -> bytebase.v1.Sheet
 	6,  // 17: bytebase.v1.SheetService.UpdateSheet:output_type -> bytebase.v1.Sheet
 	14, // [14:18] is the sub-list for method output_type
