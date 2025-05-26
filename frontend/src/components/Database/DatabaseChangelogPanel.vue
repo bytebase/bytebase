@@ -319,5 +319,6 @@ const updateDatabaseDrift = async () => {
     title: t("database.drifted.new-baseline.successfully-established"),
   });
   state.showBaselineModal = false;
+  changedlogPagedTable.value?.refresh();
 };
 </script>
