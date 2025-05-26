@@ -20,6 +20,7 @@
     "risk-rule": {
       "template": {
         "presets": {
+          "request-role-high": "Rủi ro đối với vai trò chủ sở hữu dự án yêu cầu được coi là cao.",
           "environment-prod-high": "Rủi ro cho môi trường sản xuất được coi là cao.",
           "environment-dev-low": "Giá trị rủi ro cho môi trường phát triển được coi là thấp.",
           "dml-in-environment-prod-10k-rows-high": "Trong môi trường sản xuất, nếu số lượng hàng cần cập nhật hoặc xóa vượt quá 10000, rủi ro được coi là cao.",

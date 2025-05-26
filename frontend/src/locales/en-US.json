@@ -508,7 +508,7 @@
         },
         "maximum-role-expiration": {
           "self": "Maximum role expiration",
-          "description": "Maximum role expiration is the maximum period a role can be granted to a user. (Only for querier and exporter roles)",
+          "description": "Maximum role expiration is the maximum period a role can be granted to a user, will apply on all project roles expect the project owner.",
           "days": "Day(s)",
           "never-expires": "Never expires"
         },
@@ -890,6 +890,7 @@
     "issue-name": "Issue name",
     "grant-request": {
       "export-rows": "Max export rows",
+      "select-export-rows": "Select maximum export rows",
       "expired-at": "Expired at",
       "all-databases": "All",
       "all-databases-tip": "All current and future databases in this project.",

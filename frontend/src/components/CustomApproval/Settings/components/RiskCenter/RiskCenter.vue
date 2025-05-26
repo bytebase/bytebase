@@ -39,7 +39,7 @@ const context = useRiskCenterContext();
 const riskStore = useRiskStore();
 const filter = useRiskFilter();
 const { hasFeature, showFeatureModal } = context;
-const SupportedSourceList = useSupportedSourceList();
+const supportedSourceList = useSupportedSourceList();
 
 const allowCreateRisk = computed(() => {
   return hasWorkspacePermissionV2("bb.risks.create");
@@ -65,7 +65,7 @@ const filteredRiskList = computed(() => {
 
 const riskListGroupBySource = computed(() => {
   const groupBySource = groupBy(filteredRiskList.value, (risk) => risk.source);
-  const groups = SupportedSourceList.value.map((source) => {
+  const groups = supportedSourceList.value.map((source) => {
     const riskList = groupBySource[source] ?? [];
     riskList.sort(orderByLevelDesc);
     return { source, riskList };
@@ -83,7 +83,7 @@ const riskListGroupBySource = computed(() => {
 const addRisk = () => {
   let source = filter.source.value;
   if (source === Risk_Source.SOURCE_UNSPECIFIED) {
-    source = SupportedSourceList.value[0];
+    source = supportedSourceList.value[0];
   }
   const risk = Risk.fromPartial({
     level: PresetRiskLevelList[0].level,
