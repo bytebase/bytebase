@@ -1,7 +1,7 @@
 <template>
   <div class="flex items-center max-w-full overflow-hidden gap-x-1">
     <NCheckbox
-      v-if="!disallowBatchQuery"
+      v-if="!disallowBatchQuery && canQuery"
       :checked="checked"
       :disabled="tabStore.currentTab?.connection.database === database.name"
       @click.stop.prevent=""
@@ -71,12 +71,14 @@ const database = computed(
   () => (props.node as TreeNode<"database">).meta.target
 );
 
+const canQuery = computed(() => isDatabaseV1Queryable(database.value));
+
 const showRequestQueryButton = computed(() => {
   // Developer self-helped request query is guarded by "Access Control" feature
   return (
     hasFeature("bb.feature.access-control") &&
     !disallowRequestQuery.value &&
-    !isDatabaseV1Queryable(database.value)
+    !canQuery.value
   );
 });
 
