@@ -1138,7 +1138,7 @@ func (s *DatabaseService) convertToDatabase(ctx context.Context, database *store
 		Project:              common.FormatProject(database.ProjectID),
 		Environment:          environment,
 		EffectiveEnvironment: effectiveEnvironment,
-		SchemaVersion:        database.SchemaVersion,
+		SchemaVersion:        database.Metadata.GetVersion(),
 		Labels:               database.Metadata.Labels,
 		InstanceResource:     instanceResource,
 		BackupAvailable:      database.Metadata.GetBackupAvailable(),
