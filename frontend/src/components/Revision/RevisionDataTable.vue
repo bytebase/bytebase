@@ -34,7 +34,7 @@ import { useI18n } from "vue-i18n";
 import { RouterLink, useRouter } from "vue-router";
 import { useRevisionStore } from "@/store";
 import { getDateForPbTimestamp } from "@/types";
-import type { Revision } from "@/types/proto/v1/database_service";
+import type { Revision } from "@/types/proto/v1/revision_service";
 import { extractIssueUID } from "@/utils";
 import { useDatabaseDetailContext } from "../Database/context";
 import HumanizeDate from "../misc/HumanizeDate.vue";

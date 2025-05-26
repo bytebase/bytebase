@@ -1,8 +1,8 @@
 import { defineStore } from "pinia";
 import { computed, reactive } from "vue";
-import { databaseServiceClient } from "@/grpcweb";
+import { revisionServiceClient } from "@/grpcweb";
 import type { Pagination } from "@/types";
-import { Revision } from "@/types/proto/v1/database_service";
+import { Revision } from "@/types/proto/v1/revision_service";
 import { DEFAULT_PAGE_SIZE } from "./common";
 import { revisionNamePrefix } from "./v1/common";
 
@@ -17,7 +17,7 @@ export const useRevisionStore = defineStore("revision", () => {
     database: string,
     pagination?: Pagination
   ) => {
-    const resp = await databaseServiceClient.listRevisions({
+    const resp = await revisionServiceClient.listRevisions({
       parent: database,
       pageSize: pagination?.pageSize || DEFAULT_PAGE_SIZE,
       pageToken: pagination?.pageToken,
@@ -39,7 +39,7 @@ export const useRevisionStore = defineStore("revision", () => {
       return revisionMapByName.get(name);
     }
 
-    const revision = await databaseServiceClient.getRevision({ name });
+    const revision = await revisionServiceClient.getRevision({ name });
     revisionMapByName.set(revision.name, revision);
     return revision;
   };
@@ -49,7 +49,7 @@ export const useRevisionStore = defineStore("revision", () => {
   };
 
   const deleteRevision = async (name: string) => {
-    await databaseServiceClient.deleteRevision({ name });
+    await revisionServiceClient.deleteRevision({ name });
     revisionMapByName.delete(name);
   };
 
