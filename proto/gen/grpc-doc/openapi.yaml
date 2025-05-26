@@ -1942,6 +1942,43 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
+    /v1/instances/{instance}/databases/{database}/revisions:batchCreate:
+        post:
+            tags:
+                - RevisionService
+            operationId: RevisionService_BatchCreateRevisions
+            parameters:
+                - name: instance
+                  in: path
+                  description: The instance id.
+                  required: true
+                  schema:
+                    type: string
+                - name: database
+                  in: path
+                  description: The database id.
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/BatchCreateRevisionsRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/BatchCreateRevisionsResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
     /v1/instances/{instance}/databases/{database}/schema:
         get:
             tags:
@@ -8232,6 +8269,32 @@ components:
         BatchCancelTaskRunsResponse:
             type: object
             properties: {}
+        BatchCreateRevisionsRequest:
+            required:
+                - parent
+                - requests
+            type: object
+            properties:
+                parent:
+                    type: string
+                    description: |-
+                        The parent resource shared by all revisions being created.
+                         Format: instances/{instance}/databases/{database}
+                requests:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/CreateRevisionRequest'
+                    description: |-
+                        The request message specifying the revisions to create.
+                         A maximum of 100 revisions can be created in a batch.
+        BatchCreateRevisionsResponse:
+            type: object
+            properties:
+                revisions:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/Revision'
+                    description: The created revisions.
         BatchCreateSheetsRequest:
             required:
                 - parent
@@ -8877,6 +8940,19 @@ components:
             properties:
                 text:
                     type: string
+        CreateRevisionRequest:
+            required:
+                - parent
+                - revision
+            type: object
+            properties:
+                parent:
+                    type: string
+                    description: 'Format: instances/{instance}/databases/{database}'
+                revision:
+                    allOf:
+                        - $ref: '#/components/schemas/Revision'
+                    description: The revision to create.
         CreateSheetRequest:
             required:
                 - parent
