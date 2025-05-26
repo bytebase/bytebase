@@ -1,6 +1,17 @@
 import { t } from "@/plugins/i18n";
 import { useRoleStore } from "@/store";
-import { PresetRoleType } from "@/types";
+import { PresetRoleType, type Permission } from "@/types";
+
+export const checkRoleContainsAnyPermission = (
+  roleName: string,
+  ...permissions: Permission[]
+): boolean => {
+  const role = useRoleStore().getRoleByName(roleName);
+  if (!role) {
+    return false;
+  }
+  return permissions.some((p) => role.permissions.includes(p));
+};
 
 export const extractRoleResourceName = (resourceId: string): string => {
   const pattern = /(?:^|\/)roles\/([^/]+)(?:$|\/)/;

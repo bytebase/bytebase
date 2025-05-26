@@ -1,7 +1,7 @@
 <template>
   <NSelect
     v-bind="$attrs"
-    :value="value"
+    :value="value ? value : undefined"
     :multiple="multiple"
     :disabled="disabled"
     :clearable="clearable"

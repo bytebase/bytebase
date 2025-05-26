@@ -8,7 +8,11 @@
     @update:value="$emit('update:value', $event)"
   >
     <NButton class="bb-overlay-stack-ignore-esc">
-      {{ $t("common.rows.n-rows", { n: value }) }}
+      {{
+        value
+          ? $t("common.rows.n-rows", { n: value })
+          : $t("issue.grant-request.select-export-rows")
+      }}
     </NButton>
     <template #action>
       <div class="flex items-center justify-between gap-1">
@@ -34,7 +38,7 @@ import { useI18n } from "vue-i18n";
 import { minmax } from "@/utils";
 
 defineProps<{
-  value: number;
+  value?: number;
 }>();
 
 const emit = defineEmits<{
