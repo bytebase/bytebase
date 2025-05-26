@@ -62,7 +62,7 @@
             type="datetime"
             :actions="null"
             :update-value-on-close="true"
-            :is-date-disabled="(date: number) => date < Date.now()"
+            :is-date-disabled="(date: number) => date < dayjs().startOf('day').valueOf()"
             clearable
           />
           <span v-if="!state.expirationTimestamp" class="textinfolabel">{{
