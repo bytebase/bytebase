@@ -15,7 +15,6 @@ import (
 func init() {
 	base.RegisterDiagnoseFunc(store.Engine_MYSQL, Diagnose)
 	base.RegisterDiagnoseFunc(store.Engine_MARIADB, Diagnose)
-	base.RegisterDiagnoseFunc(store.Engine_TIDB, Diagnose)
 	base.RegisterDiagnoseFunc(store.Engine_OCEANBASE, Diagnose)
 	base.RegisterDiagnoseFunc(store.Engine_CLICKHOUSE, Diagnose)
 }
