@@ -41,7 +41,7 @@ import {
 import { TaskRun_Status, Task_Type } from "@/types/proto/v1/rollout_service";
 import { databaseV1Url, extractTaskUID, flattenTaskV1List } from "@/utils";
 import { extractChangelogUID } from "@/utils/v1/changelog";
-import { specForTask, useIssueContext } from "../../logic";
+import { useIssueContext } from "../../logic";
 import { displayTaskRunLogEntryType } from "./TaskRunLogTable/common";
 
 export type CommentLink = {
@@ -56,19 +56,9 @@ const props = defineProps<{
 const { issue } = useIssueContext();
 const { t } = useI18n();
 
-const task = computed(() => {
-  const taskUID = extractTaskUID(props.taskRun.name);
-  const task =
-    flattenTaskV1List(issue.value.rolloutEntity).find(
-      (task) => extractTaskUID(task.name) === taskUID
-    ) ?? unknownTask();
-  return task;
-});
-
 const earliestAllowedTime = computed(() => {
-  const spec = specForTask(issue.value.planEntity, task.value);
-  return spec?.earliestAllowedTime
-    ? getTimeForPbTimestamp(spec.earliestAllowedTime)
+  return props.taskRun.runTime
+    ? getTimeForPbTimestamp(props.taskRun.runTime)
     : null;
 });
 

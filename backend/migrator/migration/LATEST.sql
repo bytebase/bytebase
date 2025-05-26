@@ -203,8 +203,7 @@ CREATE TABLE task (
     instance text NOT NULL REFERENCES instance(resource_id),
     db_name text,
     type text NOT NULL CHECK (type LIKE 'bb.task.%'),
-    payload jsonb NOT NULL DEFAULT '{}',
-    earliest_allowed_at timestamptz NULL
+    payload jsonb NOT NULL DEFAULT '{}'
 );
 
 CREATE INDEX idx_task_pipeline_id_stage_id ON task(pipeline_id, stage_id);

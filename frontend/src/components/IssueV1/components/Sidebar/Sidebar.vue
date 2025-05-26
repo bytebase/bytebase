@@ -7,7 +7,6 @@
 
     <div class="border-t -mx-3" />
 
-    <EarliestAllowedTime />
     <PreBackupSection />
     <GhostSection v-if="shouldShowGhostSection" />
   </div>
@@ -19,7 +18,6 @@ import { GhostSection } from "@/components/Plan/components/Sidebar";
 import { provideGhostSettingContext } from "@/components/Plan/components/Sidebar/GhostSection/context";
 import type { Plan } from "@/types/proto/v1/plan_service";
 import { specForTask, useIssueContext } from "../../logic";
-import EarliestAllowedTime from "./EarliestAllowedTime.vue";
 import IssueLabels from "./IssueLabels.vue";
 import PreBackupSection from "./PreBackupSection";
 import ReleaseInfo from "./ReleaseInfo.vue";

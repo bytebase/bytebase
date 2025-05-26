@@ -249,8 +249,6 @@
       "summary-report": "概要报告"
     },
     "earliest-allowed-time": "最早允许发布时间",
-    "earliest-allowed-time-hint": "@:{'task.earliest-allowed-time'} 是可发布工单的最早时间，您不能在此时间之前进行发布；如果未指定，则当满足所有条件时发布。",
-    "earliest-allowed-time-unset": "未设置",
     "comment": "评论",
     "started": "开始于",
     "view-change": "查看变更",
@@ -911,13 +909,6 @@
     },
     "not-editable-legacy-issue": "这个工单不可编辑，因为它是在旧版本的 Bytebase 中创建的。",
     "action-anyway": "仍要{action}",
-    "disallow-edit-reasons": {
-      "issue-is-done": "工单已完成",
-      "issue-is-canceled": "工单已取消",
-      "task-is-x-status": "任务状态是{status}",
-      "task-is-running-cancel-first": "任务运行中，需要取消任务才能修改这项值"
-    },
-    "you-are-not-allowed-to-change-this-value": "您无权更改这项值",
     "sql-check": {
       "sql-checks": "SQL 检查项",
       "not-executed-yet": "尚未执行",
@@ -941,9 +932,6 @@
       "format": "导出格式",
       "encrypt": "加密",
       "file-downloaded": "文件已下载"
-    },
-    "update-rollout-time": {
-      "self": "修改指定发布时间"
     },
     "task-run": {
       "logs": "日志",
