@@ -3,7 +3,6 @@
 </template>
 
 <script lang="tsx" setup>
-import dayjs from "dayjs";
 import type { h } from "vue";
 import { defineComponent } from "vue";
 import { Translation, useI18n } from "vue-i18n";
@@ -13,8 +12,7 @@ import {
   type ComposedIssueComment,
 } from "@/store";
 import { extractUserId } from "@/store";
-import { getDateForPbTimestamp, type ComposedIssue } from "@/types";
-import { type Timestamp } from "@/types/proto/google/protobuf/timestamp";
+import { type ComposedIssue } from "@/types";
 import {
   IssueComment_Approval,
   IssueComment_Approval_Status,
@@ -40,12 +38,6 @@ const props = defineProps<{
 const { t } = useI18n();
 const userStore = useUserStore();
 
-const isValidTimestamp = (timestamp: Timestamp | undefined) => {
-  if (!timestamp) {
-    return false;
-  }
-  return timestamp.seconds.toNumber() > 0;
-};
 
 const renderActionSentence = () => {
   const { issueComment, issue } = props;
@@ -108,14 +100,8 @@ const renderActionSentence = () => {
     };
     return renderVerbTypeTarget(params);
   } else if (issueComment.type === IssueCommentType.TASK_UPDATE) {
-    const {
-      tasks,
-      fromSheet,
-      toSheet,
-      fromEarliestAllowedTime,
-      toEarliestAllowedTime,
-      toStatus,
-    } = IssueComment_TaskUpdate.fromPartial(issueComment.taskUpdate || {});
+    const { tasks, fromSheet, toSheet, toStatus } =
+      IssueComment_TaskUpdate.fromPartial(issueComment.taskUpdate || {});
 
     if (toStatus !== undefined) {
       const params: VerbTypeTarget = {
@@ -173,24 +159,6 @@ const renderActionSentence = () => {
           }}
         </Translation>
       );
-    } else if (
-      isValidTimestamp(fromEarliestAllowedTime) ||
-      isValidTimestamp(toEarliestAllowedTime)
-    ) {
-      const timeFormat = "YYYY-MM-DD HH:mm:ss UTCZZ";
-      return t("activity.sentence.changed-from-to", {
-        name: t("task.earliest-allowed-time"),
-        oldValue: isValidTimestamp(fromEarliestAllowedTime)
-          ? dayjs(getDateForPbTimestamp(fromEarliestAllowedTime)).format(
-              timeFormat
-            )
-          : "Unset",
-        newValue: isValidTimestamp(toEarliestAllowedTime)
-          ? dayjs(getDateForPbTimestamp(toEarliestAllowedTime)).format(
-              timeFormat
-            )
-          : "Unset",
-      });
     }
   } else if (issueComment.type === IssueCommentType.TASK_PRIOR_BACKUP) {
     const { task, tables, originalLine, database, error } =
