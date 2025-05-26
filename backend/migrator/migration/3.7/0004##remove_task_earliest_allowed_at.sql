@@ -1,0 +1,1 @@
+ALTER TABLE task DROP COLUMN IF EXISTS earliest_allowed_at;
