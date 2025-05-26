@@ -108,12 +108,11 @@ const comment = computed(() => {
     }
 
     const lastLogEntry = last(taskRun.taskRunLog.entries);
-    if (!lastLogEntry) {
-      return "-";
+    if (lastLogEntry) {
+      return displayTaskRunLogEntryType(lastLogEntry.type);
     }
-    return displayTaskRunLogEntryType(lastLogEntry.type);
   }
-  return taskRun.detail;
+  return taskRun.detail || "-";
 });
 
 const commentLink = computed((): CommentLink => {
