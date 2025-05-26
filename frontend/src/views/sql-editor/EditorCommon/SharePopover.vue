@@ -101,6 +101,7 @@ import {
   pushNotification,
   useSQLEditorTabStore,
   useWorkSheetStore,
+  useSettingV1Store,
   useWorkSheetAndTabStore,
 } from "@/store";
 import type { AccessOption } from "@/types";
@@ -113,6 +114,11 @@ const router = useRouter();
 const tabStore = useSQLEditorTabStore();
 const worksheetV1Store = useWorkSheetStore();
 const sheetAndTabStore = useWorkSheetAndTabStore();
+const settingStore = useSettingV1Store();
+
+const workspaceExternalURL = computed(
+  () => settingStore.workspaceProfileSetting?.externalUrl
+);
 
 const accessOptions = computed<AccessOption[]>(() => {
   return [
@@ -180,7 +186,10 @@ const sharedTabLink = computed(() => {
       sheet: extractWorksheetUID(sheet.value.name),
     },
   });
-  return new URL(route.href, window.location.origin).href;
+  return new URL(
+    route.href,
+    workspaceExternalURL.value || window.location.origin
+  ).href;
 });
 
 const { copy, copied } = useClipboard({
