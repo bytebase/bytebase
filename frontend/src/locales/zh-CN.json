@@ -1257,9 +1257,9 @@
       "title": "访问控制",
       "disable-copy-data-from-sql-editor": "限制 SQL 编辑器中的数据复制 (管理员/DBA 可以复制)",
       "restrict-admin-connection": {
-        "self": "限制查询管理数据源",
-        "disallow": "不允许从管理数据源查询数据",
-        "fallback": "如果没有可用的只读连接，则允许查询管理数据源"
+        "self": "限制查询主数据源",
+        "disallow": "不允许从主数据源查询数据",
+        "fallback": "如果没有可用的只读连接，则允许查询主数据源"
       }
     },
     "statement-execution": {
@@ -1842,8 +1842,8 @@
       }
     },
     "query-context": {
-      "admin-data-source-is-disallowed-to-query": "禁止查询管理员数据源。",
-      "admin-data-source-is-disallowed-to-query-when-read-only-data-source-is-available": "当只读数据源可用时，不允许查询管理员数据源。"
+      "admin-data-source-is-disallowed-to-query": "禁止查询主数据源。",
+      "admin-data-source-is-disallowed-to-query-when-read-only-data-source-is-available": "当只读数据源可用时，不允许查询主数据源。"
     },
     "manage-connections": "管理连接",
     "view-detail": "查看详情",
