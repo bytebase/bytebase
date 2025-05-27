@@ -65,7 +65,7 @@ const { project, ready: projectReady } = useProjectByName(
   computed(() => `${projectNamePrefix}${props.projectId}`)
 );
 
-const { isCreating, issue, isInitializing, reInitialize, allowEditIssue } =
+const { isCreating, issue, isInitializing, reInitialize, allowChange } =
   useInitializeIssue(toRef(props, "issueSlug"), project);
 const ready = computed(() => {
   return !isInitializing.value && !!issue.value && projectReady.value;
@@ -84,7 +84,7 @@ provideIssueContext(
     issue,
     ready,
     reInitialize,
-    allowEditIssue,
+    allowChange,
     ...issueBaseContext,
   },
   true /* root */

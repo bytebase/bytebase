@@ -58,13 +58,13 @@ import { twMerge } from "tailwind-merge";
 import { computed } from "vue";
 import { databaseForTask } from "@/components/Rollout/RolloutDetail";
 import { InstanceV1Name } from "@/components/v2";
+import { useCurrentProjectV1 } from "@/store";
 import { isValidDatabaseName } from "@/types";
 import { Plan_ChangeDatabaseConfig_Type } from "@/types/proto/v1/plan_service";
 import { Task } from "@/types/proto/v1/rollout_service";
 import { Task_Type, task_StatusToJSON } from "@/types/proto/v1/rollout_service";
 import { databaseV1Url, extractSchemaVersionFromTask, isDev } from "@/utils";
 import { useInstanceForTask, specForTask, useIssueContext } from "../../logic";
-import { useCurrentProjectV1 } from "@/store";
 import TaskStatusIcon from "../TaskStatusIcon.vue";
 import TaskExtraActionsButton from "./TaskExtraActionsButton.vue";
 

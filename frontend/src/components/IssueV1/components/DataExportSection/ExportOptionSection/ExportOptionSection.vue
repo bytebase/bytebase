@@ -64,7 +64,6 @@ import { computed, watch, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import {
   allowUserToEditStatementForTask,
-  notifyNotEditableLegacyIssue,
   useIssueContext,
 } from "@/components/IssueV1/logic";
 import ErrorList from "@/components/misc/ErrorList.vue";
@@ -127,8 +126,8 @@ const handleCancelEdit = () => {
 const handleSaveEdit = async () => {
   const planPatch = cloneDeep(issue.value.planEntity);
   if (!planPatch) {
-    notifyNotEditableLegacyIssue();
-    return;
+    // Should not reach here.
+    throw new Error("Plan is not defined. Cannot update export options.");
   }
 
   const distinctSpecIds = new Set([spec.value.id]);
