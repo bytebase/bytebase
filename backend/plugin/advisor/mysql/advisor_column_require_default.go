@@ -144,7 +144,7 @@ func (checker *columnRequireDefaultChecker) EnterAlterTable(ctx *mysql.AlterTabl
 }
 
 func (checker *columnRequireDefaultChecker) checkFieldDefinition(tableName, columnName string, ctx mysql.IFieldDefinitionContext) {
-	if !checker.hasDefault(ctx) && checker.needDefault(ctx) {
+	if !checker.hasDefault(ctx) && columnNeedDefault(ctx) {
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{
 			Status:        checker.level,
 			Code:          advisor.NoDefault.Int32(),
@@ -162,36 +162,4 @@ func (*columnRequireDefaultChecker) hasDefault(ctx mysql.IFieldDefinitionContext
 		}
 	}
 	return false
-}
-
-func (*columnRequireDefaultChecker) needDefault(ctx mysql.IFieldDefinitionContext) bool {
-	if ctx.GENERATED_SYMBOL() != nil {
-		return false
-	}
-	for _, attr := range ctx.AllColumnAttribute() {
-		if attr.AUTO_INCREMENT_SYMBOL() != nil || attr.PRIMARY_SYMBOL() != nil {
-			return false
-		}
-	}
-
-	if ctx.DataType() == nil {
-		return false
-	}
-
-	switch ctx.DataType().GetType_().GetTokenType() {
-	case mysql.MySQLParserBLOB_SYMBOL:
-		return false
-	case mysql.MySQLParserJSON_SYMBOL:
-		return false
-	case mysql.MySQLParserGEOMETRY_SYMBOL,
-		mysql.MySQLParserGEOMETRYCOLLECTION_SYMBOL,
-		mysql.MySQLParserPOINT_SYMBOL,
-		mysql.MySQLParserMULTIPOINT_SYMBOL,
-		mysql.MySQLParserLINESTRING_SYMBOL,
-		mysql.MySQLParserMULTILINESTRING_SYMBOL,
-		mysql.MySQLParserPOLYGON_SYMBOL,
-		mysql.MySQLParserMULTIPOLYGON_SYMBOL:
-		return false
-	}
-	return true
 }

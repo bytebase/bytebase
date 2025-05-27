@@ -7,6 +7,8 @@ import (
 
 	"github.com/pingcap/tidb/pkg/parser/ast"
 	"github.com/pingcap/tidb/pkg/parser/format"
+	"github.com/pingcap/tidb/pkg/parser/mysql"
+	"github.com/pingcap/tidb/pkg/parser/types"
 )
 
 type columnSet map[string]bool
@@ -50,4 +52,22 @@ func restoreNode(node ast.Node, flag format.RestoreFlags) (string, error) {
 		return "", err
 	}
 	return buffer.String(), nil
+}
+
+func needDefault(column *ast.ColumnDef) bool {
+	for _, option := range column.Options {
+		switch option.Tp {
+		case ast.ColumnOptionAutoIncrement, ast.ColumnOptionPrimaryKey, ast.ColumnOptionGenerated:
+			return false
+		}
+	}
+
+	if types.IsTypeBlob(column.Tp.GetType()) {
+		return false
+	}
+	switch column.Tp.GetType() {
+	case mysql.TypeJSON, mysql.TypeGeometry:
+		return false
+	}
+	return true
 }
