@@ -2686,13 +2686,13 @@ const file_v1_sql_service_proto_rawDesc = "" +
 	"\n" +
 	"_containerJ\x04\b\x02\x10\x03\"J\n" +
 	"\x14AdminExecuteResponse\x122\n" +
-	"\aresults\x18\x01 \x03(\v2\x18.bytebase.v1.QueryResultR\aresults\"\xd2\x02\n" +
+	"\aresults\x18\x01 \x03(\v2\x18.bytebase.v1.QueryResultR\aresults\"\xd8\x02\n" +
 	"\fQueryRequest\x122\n" +
 	"\x04name\x18\x01 \x01(\tB\x1e\xe2A\x01\x02\xfaA\x17\n" +
 	"\x15bytebase.com/DatabaseR\x04name\x12\x1c\n" +
 	"\tstatement\x18\x03 \x01(\tR\tstatement\x12\x14\n" +
-	"\x05limit\x18\x04 \x01(\x05R\x05limit\x12$\n" +
-	"\x0edata_source_id\x18\x06 \x01(\tR\fdataSourceId\x12\x18\n" +
+	"\x05limit\x18\x04 \x01(\x05R\x05limit\x12*\n" +
+	"\x0edata_source_id\x18\x06 \x01(\tB\x04\xe2A\x01\x02R\fdataSourceId\x12\x18\n" +
 	"\aexplain\x18\a \x01(\bR\aexplain\x12\x1b\n" +
 	"\x06schema\x18\b \x01(\tH\x00R\x06schema\x88\x01\x01\x12;\n" +
 	"\fquery_option\x18\t \x01(\v2\x18.bytebase.v1.QueryOptionR\vqueryOption\x12!\n" +

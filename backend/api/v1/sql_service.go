@@ -180,7 +180,7 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 		}
 	}
 
-	dataSource, err := checkAndGetDataSourceQueriable(ctx, s.store, database, request.DataSourceId)
+	dataSource, err := checkAndGetDataSourceQueriable(ctx, s.store, database, request.DataSourceId, false)
 	if err != nil {
 		return nil, err
 	}
@@ -825,7 +825,7 @@ func DoExport(
 	optionalAccessCheck accessCheckFunc,
 	schemaSyncer *schemasync.Syncer,
 ) ([]byte, time.Duration, error) {
-	dataSource, err := checkAndGetDataSourceQueriable(ctx, stores, database, request.DataSourceId)
+	dataSource, err := checkAndGetDataSourceQueriable(ctx, stores, database, request.DataSourceId, true)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -1880,7 +1880,7 @@ func (*SQLService) Pretty(_ context.Context, request *v1pb.PrettyRequest) (*v1pb
 	}, nil
 }
 
-func checkAndGetDataSourceQueriable(ctx context.Context, storeInstance *store.Store, database *store.DatabaseMessage, dataSourceID string) (*storepb.DataSource, error) {
+func checkAndGetDataSourceQueriable(ctx context.Context, storeInstance *store.Store, database *store.DatabaseMessage, dataSourceID string, export bool) (*storepb.DataSource, error) {
 	instance, err := storeInstance.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
 	if err != nil {
 		return nil, errors.Errorf("failed to get instance: %v", err)
@@ -1888,10 +1888,26 @@ func checkAndGetDataSourceQueriable(ctx context.Context, storeInstance *store.St
 	if instance == nil {
 		return nil, errors.Errorf("instance %q not found", database.InstanceID)
 	}
-	if dataSourceID == "" {
+	if dataSourceID == "" && !export {
 		return nil, status.Errorf(codes.InvalidArgument, "data source id is required")
 	}
 	dataSource, serr := func() (*storepb.DataSource, *status.Status) {
+		if dataSourceID == "" && export {
+			var adminDataSource *storepb.DataSource
+			var readOnlyDataSource *storepb.DataSource
+			for _, ds := range instance.Metadata.GetDataSources() {
+				if ds.GetType() == storepb.DataSourceType_ADMIN && adminDataSource == nil {
+					adminDataSource = ds
+				}
+				if ds.GetType() == storepb.DataSourceType_READ_ONLY && readOnlyDataSource == nil {
+					readOnlyDataSource = ds
+				}
+			}
+			if readOnlyDataSource != nil {
+				return readOnlyDataSource, nil
+			}
+			return adminDataSource, nil
+		}
 		for _, ds := range instance.Metadata.GetDataSources() {
 			if ds.GetId() == dataSourceID {
 				return ds, nil
