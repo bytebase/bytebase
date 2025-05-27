@@ -42,12 +42,7 @@
     <!-- mobile sidebar -->
     <Drawer :show="mobileSidebarOpen" @close="mobileSidebarOpen = false">
       <div
-        style="
-          min-width: 240px;
-          width: 80vw;
-          max-width: 320px;
-          padding: 0.5rem 0;
-        "
+        style="min-width: 240px; width: 80vw; max-width: 320px; padding: 0.5rem"
       >
         <Sidebar v-if="sidebarMode === 'MOBILE'" />
       </div>
@@ -75,7 +70,7 @@ import { FeatureAttention } from "@/components/FeatureGuard";
 import type { Plan, Plan_Spec } from "@/types/proto/v1/plan_service";
 import { type Task } from "@/types/proto/v1/rollout_service";
 import { SQLCheckSection } from "../Plan/components";
-import { providePlanSQLCheckContext } from "../Plan/components/SQLCheckSection/context";
+import { providePlanSQLCheckContext } from "../Plan/components/SQLCheckSection";
 import { provideSidebarContext } from "../Plan/logic";
 import { Drawer } from "../v2";
 import {
