@@ -179,6 +179,21 @@ func fixedMockDatabaseMetadataGetter(_ context.Context, _ string, database strin
 						},
 					},
 					{
+						Name: "t",
+						Columns: []*store.ColumnMetadata{
+							{
+								Name: "a",
+							},
+							{
+								Name: "b",
+							},
+							{
+								Name: "c",
+							},
+						},
+					},
+
+					{
 						Name: "test1",
 						Columns: []*store.ColumnMetadata{
 							{
