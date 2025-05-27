@@ -134,10 +134,6 @@
     "
     @cancel="state.showReleaseModal = false"
   />
-  <RefreshRemindModal
-    v-if="state.showRefreshRemindModal"
-    @cancel="state.showRefreshRemindModal = false"
-  />
 </template>
 
 <script lang="ts" setup>
@@ -146,19 +142,20 @@ import { computed, onMounted, onUnmounted, reactive, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import ReleaseRemindModal from "@/components/ReleaseRemindModal.vue";
 import TrialModal from "@/components/TrialModal.vue";
+import { t } from "@/plugins/i18n";
 import { WORKSPACE_ROOT_MODULE } from "@/router/dashboard/workspaceRoutes";
 import {
   useActuatorV1Store,
   useAppFeature,
   useSubscriptionV1Store,
   usePermissionStore,
+  pushNotification,
 } from "@/store";
 import { PresetRoleType } from "@/types";
 import { PlanType } from "@/types/proto/v1/subscription_service";
 import DashboardHeader from "@/views/DashboardHeader.vue";
 import Quickstart from "../components/Quickstart.vue";
 import { provideBodyLayoutContext } from "./common";
-import RefreshRemindModal from "@/components/RefreshRemindModal.vue";
 
 interface LocalState {
   showMobileOverlay: boolean;
@@ -210,18 +207,37 @@ actuatorStore.tryToRemindRelease().then((openRemindModal) => {
 // if they are different, show the refresh remind modal.
 const refreshRemindTimer = ref<NodeJS.Timeout>();
 onMounted(async () => {
-    const remind = await actuatorStore.tryToRemindRefresh();
-    state.showRefreshRemindModal = remind
-  refreshRemindTimer.value = setInterval(async () => {
-    const remind = await actuatorStore.tryToRemindRefresh();
-    state.showRefreshRemindModal = remind
-  }, 1000 * 60 * 30)
-})
+  const remind = await actuatorStore.tryToRemindRefresh();
+  if (remind) {
+    pushNotification({
+      module: "bytebase",
+      style: "WARN",
+      title: t("refresh-remind.title"),
+      description: t("refresh-remind.description"),
+      manualHide: true,
+    });
+  }
+  refreshRemindTimer.value = setInterval(
+    async () => {
+      const remind = await actuatorStore.tryToRemindRefresh();
+      if (remind) {
+        pushNotification({
+          module: "bytebase",
+          style: "WARN",
+          title: t("refresh-remind.title"),
+          description: t("refresh-remind.description"),
+          manualHide: true,
+        });
+      }
+    },
+    1000 * 60 * 30
+  );
+});
 onUnmounted(() => {
   if (refreshRemindTimer.value) {
     clearInterval(refreshRemindTimer.value);
   }
-})
+});
 
 const { mainContainerClasses } = provideBodyLayoutContext({
   mainContainerRef,
