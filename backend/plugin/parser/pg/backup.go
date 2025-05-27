@@ -385,12 +385,12 @@ func (e *dmlExtractor) extractTableReference(ctx parser.IRelation_expr_opt_alias
 		if len(e.searchPath) == 0 {
 			e.searchPath = []string{"public"}
 		}
-		schemaName, tableMetadata := e.metadata.SearchTable(e.searchPath, list[0])
-		if schemaName == "" && tableMetadata == nil {
+		schemaName, _ := e.metadata.SearchObject(e.searchPath, list[0])
+		if schemaName == "" {
 			return nil, errors.Errorf("Table %q not found in metadata with search path %v", list[0], e.searchPath)
 		}
 		table.Schema = schemaName
-		table.Table = tableMetadata.GetProto().Name
+		table.Table = list[0]
 	default:
 		return nil, errors.Errorf("Invalid table name: %v", list)
 	}
