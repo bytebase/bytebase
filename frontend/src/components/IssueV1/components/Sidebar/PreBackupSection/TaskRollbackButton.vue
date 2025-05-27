@@ -16,6 +16,7 @@ import { useRouter } from "vue-router";
 import {
   latestTaskRunForTask,
   useIssueContext,
+  projectOfIssue,
 } from "@/components/IssueV1/logic";
 import { rolloutServiceClient } from "@/grpcweb";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
@@ -33,7 +34,7 @@ const { issue, selectedTask } = useIssueContext();
 const isLoading = ref(false);
 
 const allowRollback = computed((): boolean => {
-  return hasProjectPermissionV2(issue.value.projectEntity, "bb.issues.create");
+  return hasProjectPermissionV2(projectOfIssue(issue.value), "bb.issues.create");
 });
 
 const latestTaskRun = computed(() =>

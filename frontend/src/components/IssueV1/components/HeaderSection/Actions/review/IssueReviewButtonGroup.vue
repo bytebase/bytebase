@@ -49,8 +49,15 @@ const currentUser = useCurrentUserV1();
 const hideIssueReviewActions = useAppFeature(
   "bb.feature.issue.hide-review-actions"
 );
-const { issue, phase, reviewContext, events, selectedTask, selectedStage } =
-  useIssueContext();
+const {
+  project,
+  issue,
+  phase,
+  reviewContext,
+  events,
+  selectedTask,
+  selectedStage,
+} = useIssueContext();
 const { ready, status, done } = reviewContext;
 
 const shouldShowApproveOrReject = computed(() => {
@@ -63,7 +70,7 @@ const shouldShowApproveOrReject = computed(() => {
 
   // Hide review actions if self-approval is disabled.
   if (
-    !issue.value.projectEntity.allowSelfApproval &&
+    !project.value.allowSelfApproval &&
     currentUser.value.email === extractUserId(issue.value.creator)
   ) {
     return false;
@@ -121,7 +128,7 @@ const forceRolloutActionList = computed((): ExtraActionOption[] => {
 
   if (
     !hasWorkspacePermissionV2("bb.taskRuns.create") &&
-    !hasProjectPermissionV2(issue.value.projectEntity, "bb.taskRuns.create")
+    !hasProjectPermissionV2(project.value, "bb.taskRuns.create")
   ) {
     // Only for users with permission to create task runs.
     return [];

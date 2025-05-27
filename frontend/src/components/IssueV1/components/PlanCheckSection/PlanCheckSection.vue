@@ -22,7 +22,8 @@ import { useCurrentUserV1, extractUserId } from "@/store";
 import { hasProjectPermissionV2, isValidTaskName } from "@/utils";
 
 const currentUser = useCurrentUserV1();
-const { issue, selectedTask, getPlanCheckRunsForTask } = useIssueContext();
+const { issue, selectedTask, getPlanCheckRunsForTask, project } =
+  useIssueContext();
 
 const show = computed(() => {
   const spec = specForTask(issue.value.planEntity, selectedTask.value);
@@ -33,7 +34,7 @@ const show = computed(() => {
 });
 
 const database = computed(() =>
-  databaseForTask(issue.value.projectEntity, selectedTask.value)
+  databaseForTask(project.value, selectedTask.value)
 );
 
 const allowRunChecks = computed(() => {
@@ -44,9 +45,7 @@ const allowRunChecks = computed(() => {
   if (extractUserId(issue.value.creator) === me.email) {
     return true;
   }
-  if (
-    hasProjectPermissionV2(issue.value.projectEntity, "bb.planCheckRuns.run")
-  ) {
+  if (hasProjectPermissionV2(project.value, "bb.planCheckRuns.run")) {
     return true;
   }
   return false;

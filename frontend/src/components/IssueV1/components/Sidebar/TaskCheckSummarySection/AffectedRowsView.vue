@@ -24,7 +24,7 @@
           @click="onClickTask(task)"
         >
           <span class="group-hover:underline truncate">
-            {{ databaseForTask(issue.projectEntity, task).databaseName }}
+            {{ databaseForTask(projectOfIssue(issue), task).databaseName }}
           </span>
           <span
             class="shrink-0"
@@ -43,7 +43,7 @@
 <script setup lang="ts">
 import { NTag, NPopover } from "naive-ui";
 import { computed } from "vue";
-import { useIssueContext } from "@/components/IssueV1/logic";
+import { useIssueContext, projectOfIssue } from "@/components/IssueV1/logic";
 import { databaseForTask } from "@/components/Rollout/RolloutDetail";
 import { type PlanCheckRun } from "@/types/proto/v1/plan_service";
 import type { Task } from "@/types/proto/v1/rollout_service";

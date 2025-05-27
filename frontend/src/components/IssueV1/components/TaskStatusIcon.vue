@@ -72,7 +72,7 @@ const props = defineProps<{
   ignoreCheckStatus?: boolean;
 }>();
 
-const { issue, isCreating } = useIssueContext();
+const { isCreating, project } = useIssueContext();
 const { resultMap } = usePlanSQLCheckContext();
 
 const checkStatus = computed(() => {
@@ -80,9 +80,7 @@ const checkStatus = computed(() => {
   if (!props.task) return undefined;
   if (isCreating.value) {
     const checkResult =
-      resultMap.value[
-        databaseForTask(issue.value.projectEntity, props.task).name
-      ];
+      resultMap.value[databaseForTask(project.value, props.task).name];
     if (!checkResult) return undefined;
 
     if (

@@ -72,7 +72,7 @@ import { DEBOUNCE_SEARCH_DELAY } from "@/types";
 import type { Task_Status } from "@/types/proto/v1/rollout_service";
 import type { Advice_Status } from "@/types/proto/v1/sql_service";
 import { isDev } from "@/utils";
-import { useIssueContext } from "../../logic";
+import { useIssueContext, projectOfIssue } from "../../logic";
 import CurrentTaskSection from "./CurrentTaskSection.vue";
 import TaskCard from "./TaskCard.vue";
 import TaskFilter from "./TaskFilter.vue";
@@ -168,7 +168,7 @@ const loadMore = useDebounceFn(async () => {
 
   const databaseNames = filteredTaskList.value
     .slice(fromIndex, toIndex)
-    .map((task) => databaseForTask(issue.value.projectEntity, task).name);
+    .map((task) => databaseForTask(projectOfIssue(issue.value), task).name);
 
   try {
     await batchGetOrFetchDatabases(databaseNames);

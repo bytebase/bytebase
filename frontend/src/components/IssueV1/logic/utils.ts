@@ -6,6 +6,7 @@ import {
   useDatabaseV1Store,
   useEnvironmentV1Store,
   useInstanceResourceByName,
+  useProjectV1Store,
 } from "@/store";
 import type { ComposedDatabase, ComposedIssue, ComposedProject } from "@/types";
 import {
@@ -27,6 +28,9 @@ import {
   isValidIssueName,
 } from "@/utils";
 import type { IssueContext } from "./context";
+
+export const projectOfIssue = (issue: ComposedIssue): ComposedProject =>
+  useProjectV1Store().getProjectByName(issue.project);
 
 export const useInstanceForTask = (task: Task) => {
   let instanceName: string = "";
@@ -66,7 +70,6 @@ export const mockDatabase = (
   // Mock a database using all known resources
   const db = unknownDatabase();
   db.project = projectEntity.name;
-  db.projectEntity = projectEntity;
 
   db.name = database;
   const { instance, databaseName } = extractDatabaseResourceName(db.name);

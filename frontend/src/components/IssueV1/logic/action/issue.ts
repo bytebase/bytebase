@@ -14,7 +14,7 @@ import {
   isDatabaseDataExportIssue,
   isGrantRequestIssue,
 } from "@/utils";
-import { isTaskFinished } from "..";
+import { isTaskFinished, projectOfIssue } from "..";
 
 export type IssueStatusAction = "RESOLVE" | "CLOSE" | "REOPEN";
 
@@ -114,9 +114,10 @@ export const allowUserToApplyIssueStatusAction = (
   action: IssueStatusAction
 ): [boolean /** ok */, string /** reason */] => {
   const user = useCurrentUserV1();
+  const project = projectOfIssue(issue);
   // User does not have permission to update the issue and is not the creator of the issue.
   if (
-    !hasProjectPermissionV2(issue.projectEntity, "bb.issues.update") &&
+    !hasProjectPermissionV2(project, "bb.issues.update") &&
     extractUserId(issue.creator) !== user.value.email
   ) {
     return [false, t("issue.error.you-don-have-privilege-to-edit-this-issue")];
