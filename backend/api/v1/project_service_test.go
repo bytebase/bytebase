@@ -62,7 +62,7 @@ func TestValidateBindings(t *testing.T) {
 		// Empty binding list.
 		{
 			bindings: []*v1pb.Binding{},
-			wantErr:  true,
+			wantErr:  false,
 		},
 		// Invalid project role.
 		{
@@ -76,7 +76,7 @@ func TestValidateBindings(t *testing.T) {
 					ResourceID: "projectOwner",
 				},
 			},
-			wantErr: false,
+			wantErr: true,
 		},
 		// Binding members can be empty.
 		{
@@ -116,6 +116,24 @@ func TestValidateBindings(t *testing.T) {
 				},
 			},
 			wantErr: false,
+		},
+		// Invalid condition
+		{
+			bindings: []*v1pb.Binding{
+				{
+					Role:    "roles/projectOwner",
+					Members: []string{"user:bytebase"},
+					Condition: &expr.Expr{
+						Expression: `database == "employee" && environment_name == "test"`,
+					},
+				},
+			},
+			roles: []*store.RoleMessage{
+				{
+					ResourceID: "projectOwner",
+				},
+			},
+			wantErr: true,
 		},
 		// Must contain one owner binding.
 		{
