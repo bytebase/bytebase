@@ -43,8 +43,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { ref } from "vue";
 import { Drawer } from "@/components/v2";
+import { useCurrentProjectV1 } from "@/store";
 import {
   HeaderSection,
   PlanCheckSection,
@@ -58,13 +59,14 @@ import Sidebar from "./components/Sidebar";
 import { usePlanContext, usePollPlan } from "./logic";
 import { provideSidebarContext } from "./logic";
 
-const containerRef = ref<HTMLElement>();
+const { project } = useCurrentProjectV1();
 const { isCreating, plan, selectedSpec } = usePlanContext();
+const containerRef = ref<HTMLElement>();
 
 usePollPlan();
 
 providePlanSQLCheckContext({
-  project: computed(() => plan.value.projectEntity),
+  project,
   plan: plan,
   selectedSpec: selectedSpec,
 });

@@ -64,6 +64,7 @@ import { Task } from "@/types/proto/v1/rollout_service";
 import { Task_Type, task_StatusToJSON } from "@/types/proto/v1/rollout_service";
 import { databaseV1Url, extractSchemaVersionFromTask, isDev } from "@/utils";
 import { useInstanceForTask, specForTask, useIssueContext } from "../../logic";
+import { useCurrentProjectV1 } from "@/store";
 import TaskStatusIcon from "../TaskStatusIcon.vue";
 import TaskExtraActionsButton from "./TaskExtraActionsButton.vue";
 
@@ -71,7 +72,8 @@ const props = defineProps<{
   task: Task;
 }>();
 
-const { isCreating, issue, selectedTask, events, project } = useIssueContext();
+const { isCreating, issue, selectedTask, events } = useIssueContext();
+const { project } = useCurrentProjectV1();
 const selected = computed(() => props.task === selectedTask.value);
 
 const schemaVersion = computed(() => {

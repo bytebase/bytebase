@@ -41,7 +41,8 @@ import {
 import { TaskRun_Status, Task_Type } from "@/types/proto/v1/rollout_service";
 import { databaseV1Url, extractTaskUID, flattenTaskV1List } from "@/utils";
 import { extractChangelogUID } from "@/utils/v1/changelog";
-import { useIssueContext, projectOfIssue } from "../../logic";
+import { useIssueContext } from "../../logic";
+import { useCurrentProjectV1 } from "@/store";
 import { displayTaskRunLogEntryType } from "./TaskRunLogTable/common";
 
 export type CommentLink = {
@@ -54,6 +55,7 @@ const props = defineProps<{
 }>();
 
 const { issue } = useIssueContext();
+const { project } = useCurrentProjectV1();
 const { t } = useI18n();
 
 const earliestAllowedTime = computed(() => {
@@ -153,7 +155,7 @@ const commentLink = computed((): CommentLink => {
             link: "",
           };
         }
-        const db = databaseForTask(projectOfIssue(issue.value), task);
+        const db = databaseForTask(project.value, task);
         const link = `${databaseV1Url(
           db
         )}/changelogs/${extractChangelogUID(taskRun.changelog)}`;
@@ -164,7 +166,7 @@ const commentLink = computed((): CommentLink => {
       }
     }
   } else if (taskRun.status === TaskRun_Status.FAILED) {
-    const db = databaseForTask(projectOfIssue(issue.value), task);
+    const db = databaseForTask(project.value, task);
     // Cast a wide net to catch migration version error
     if (comment.value.includes("version")) {
       return {

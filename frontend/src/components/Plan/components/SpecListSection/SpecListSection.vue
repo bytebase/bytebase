@@ -59,7 +59,11 @@ import { NButton } from "naive-ui";
 import { computed, reactive, ref, watch } from "vue";
 import { BBSpin } from "@/bbkit";
 import { useVerticalScrollState } from "@/composables/useScrollState";
-import { batchGetOrFetchDatabases, useDBGroupStore } from "@/store";
+import {
+  batchGetOrFetchDatabases,
+  useCurrentProjectV1,
+  useDBGroupStore,
+} from "@/store";
 import { DEBOUNCE_SEARCH_DELAY } from "@/types";
 import type { Advice_Status } from "@/types/proto/v1/sql_service";
 import { isDev } from "@/utils";
@@ -89,6 +93,7 @@ const MAX_LIST_HEIGHT = 256;
 // This is set to 4 in development mode for easier testing.
 const SPEC_PER_PAGE = isDev() ? 4 : 20;
 
+const { project } = useCurrentProjectV1();
 const planContext = usePlanContext();
 const { resultMap } = usePlanSQLCheckContext();
 const { plan, selectedSpec } = planContext;
@@ -158,7 +163,7 @@ const loadMore = useDebounceFn(async () => {
     const toIndex = fromIndex + SPEC_PER_PAGE;
     const databaseNames = filteredSpecList.value
       .slice(fromIndex, toIndex)
-      .map((spec) => databaseForSpec(plan.value.projectEntity, spec).name);
+      .map((spec) => databaseForSpec(project.value, spec).name);
 
     state.isRequesting = true;
     try {

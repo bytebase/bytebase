@@ -42,7 +42,11 @@ import {
 import { planCheckRunSummaryForCheckRunList } from "@/components/PlanCheckRun/common";
 import { issueServiceClient, rolloutServiceClient } from "@/grpcweb";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
-import { useCurrentUserV1, usePolicyV1Store } from "@/store";
+import {
+  useCurrentProjectV1,
+  useCurrentUserV1,
+  usePolicyV1Store,
+} from "@/store";
 import { emptyIssue, type ComposedIssue } from "@/types";
 import { Issue, IssueStatus, Issue_Type } from "@/types/proto/v1/issue_service";
 import { PolicyType } from "@/types/proto/v1/org_policy_service";
@@ -56,6 +60,7 @@ import {
 const { t } = useI18n();
 const router = useRouter();
 const dialog = useDialog();
+const { project } = useCurrentProjectV1();
 const policyV1Store = usePolicyV1Store();
 const { plan } = usePlanContext();
 const loading = ref(false);
@@ -80,7 +85,7 @@ const planCheckStatus = computed((): PlanCheckRun_Result_Status => {
 
 const issueCreateErrorList = computed(() => {
   const errorList: string[] = [];
-  if (!hasProjectPermissionV2(plan.value.projectEntity, "bb.plans.create")) {
+  if (!hasProjectPermissionV2(project.value, "bb.plans.create")) {
     errorList.push(t("common.missing-required-permission"));
   }
   if (!plan.value.title.trim()) {
@@ -184,7 +189,7 @@ const buildIssue = () => {
   const issue = emptyIssue();
   const me = useCurrentUserV1();
   issue.creator = `users/${me.value.email}`;
-  issue.project = plan.value.projectEntity.name;
+  issue.project = project.value.name;
   issue.title = plan.value.title;
   issue.description = plan.value.description;
   issue.status = IssueStatus.OPEN;

@@ -210,13 +210,16 @@ import {
   taskRolloutActionDisplayName,
   taskRunListForTask,
   useIssueContext,
-  projectOfIssue,
 } from "@/components/IssueV1/logic";
 import PlanCheckRunBar from "@/components/PlanCheckRun/PlanCheckRunBar.vue";
 import { planCheckRunSummaryForCheckRunList } from "@/components/PlanCheckRun/common";
 import { databaseForTask } from "@/components/Rollout/RolloutDetail";
 import { rolloutServiceClient } from "@/grpcweb";
-import { pushNotification, useEnvironmentV1Store } from "@/store";
+import {
+  pushNotification,
+  useEnvironmentV1Store,
+  useCurrentProjectV1,
+} from "@/store";
 import type {
   BatchRunTasksRequest,
   Task,
@@ -246,6 +249,7 @@ const { t } = useI18n();
 const state = reactive<LocalState>({
   loading: false,
 });
+const { project } = useCurrentProjectV1();
 const { issue, selectedTask, events, getPlanCheckRunsForTask } =
   useIssueContext();
 const environmentStore = useEnvironmentV1Store();
@@ -264,7 +268,7 @@ const title = computed(() => {
 });
 
 const database = computed(() =>
-  databaseForTask(projectOfIssue(issue.value), selectedTask.value)
+  databaseForTask(project.value, selectedTask.value)
 );
 
 const stage = computed(() => {

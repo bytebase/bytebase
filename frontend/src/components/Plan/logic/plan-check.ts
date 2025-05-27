@@ -1,6 +1,7 @@
 import type { Plan_Spec } from "@/types/proto/v1/plan_service";
 import type { ComposedPlan } from "@/types/v1/issue/plan";
-import { sheetNameForSpec, databaseForSpec } from ".";
+import { sheetNameForSpec } from "./plan";
+import { databaseOfSpec, projectOfPlan } from "./utils";
 
 export const planSpecHasPlanChecks = (spec: Plan_Spec) => {
   if (spec.changeDatabaseConfig !== undefined) {
@@ -13,7 +14,7 @@ export const planCheckRunListForSpec = (
   plan: ComposedPlan,
   spec: Plan_Spec
 ) => {
-  const target = databaseForSpec(plan.projectEntity, spec).name;
+  const target = databaseOfSpec(projectOfPlan(plan), spec).name;
   const sheet = spec ? sheetNameForSpec(spec) : "";
   return plan.planCheckRunList.filter((check) => {
     if (sheet && check.sheet) {

@@ -9,8 +9,8 @@ import {
   latestTaskRunForTask,
   specForTask,
   useIssueContext,
-  projectOfIssue,
 } from "@/components/IssueV1/logic";
+import { useCurrentProjectV1 } from "@/store";
 import { PreBackupSection } from "@/components/Plan/components/Sidebar";
 import { providePreBackupSettingContext } from "@/components/Plan/components/Sidebar/PreBackupSection/context";
 import { databaseForTask } from "@/components/Rollout/RolloutDetail";
@@ -20,13 +20,14 @@ import TaskRollbackSection from "./TaskRollbackSection.vue";
 import { ROLLBACK_AVAILABLE_ENGINES } from "./common";
 
 const { isCreating, issue, selectedTask, events } = useIssueContext();
+const { project } = useCurrentProjectV1();
 const {
   shouldShow: shouldShowPreBackupSection,
   enabled: preBackupEnabled,
   events: preBackupEvents,
 } = providePreBackupSettingContext({
   isCreating,
-  project: computed(() => projectOfIssue(issue.value)),
+  project,
   plan: computed(() => issue.value.planEntity as Plan),
   selectedSpec: computed(() =>
     specForTask(issue.value.planEntity, selectedTask.value)
@@ -37,7 +38,7 @@ const {
 });
 
 const database = computed(() =>
-  databaseForTask(projectOfIssue(issue.value), selectedTask.value)
+  databaseForTask(project.value, selectedTask.value)
 );
 
 const latestTaskRun = computed(() =>
