@@ -1384,9 +1384,7 @@ func validateIAMPolicy(
 	if err != nil {
 		return false, status.Errorf(codes.Internal, "failed to list roles: %v", err)
 	}
-	for _, predefinedRole := range iamManager.PredefinedRoles {
-		roleMessages = append(roleMessages, predefinedRole)
-	}
+	roleMessages = append(roleMessages, iamManager.PredefinedRoles...)
 
 	existingBindings := make(map[string]bool)
 	for _, oldBinding := range oldPolicyMessage.Policy.Bindings {
