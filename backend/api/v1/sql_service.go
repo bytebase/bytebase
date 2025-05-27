@@ -735,7 +735,7 @@ func (s *SQLService) Export(ctx context.Context, request *v1pb.ExportRequest) (*
 		}
 	}
 
-	bytes, duration, exportErr := DoExport(ctx, s.store, s.dbFactory, s.licenseService, request, user, instance, database, s.accessCheck, s.schemaSyncer)
+	bytes, duration, exportErr := DoExport(ctx, s.store, s.dbFactory, s.licenseService, request, user, instance, database, s.accessCheck, s.schemaSyncer, false /* not auto data source */)
 
 	if err := s.createQueryHistory(ctx, database, store.QueryHistoryTypeExport, statement, user.ID, duration, exportErr); err != nil {
 		return nil, err
@@ -824,8 +824,9 @@ func DoExport(
 	database *store.DatabaseMessage,
 	optionalAccessCheck accessCheckFunc,
 	schemaSyncer *schemasync.Syncer,
+	autoDataSource bool,
 ) ([]byte, time.Duration, error) {
-	dataSource, err := checkAndGetDataSourceQueriable(ctx, stores, database, request.DataSourceId, true)
+	dataSource, err := checkAndGetDataSourceQueriable(ctx, stores, database, request.DataSourceId, autoDataSource)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -1894,8 +1895,14 @@ func getQueriableDataSource(instance *store.InstanceMessage) *storepb.DataSource
 	return adminDataSource
 }
 
-func checkAndGetDataSourceQueriable(ctx context.Context, storeInstance *store.Store, database *store.DatabaseMessage, dataSourceID string, export bool) (*storepb.DataSource, error) {
-	if dataSourceID == "" && !export {
+func checkAndGetDataSourceQueriable(
+	ctx context.Context,
+	storeInstance *store.Store,
+	database *store.DatabaseMessage,
+	dataSourceID string,
+	autoDataSource bool,
+) (*storepb.DataSource, error) {
+	if dataSourceID == "" && !autoDataSource {
 		return nil, status.Errorf(codes.InvalidArgument, "data source id is required")
 	}
 
@@ -1907,7 +1914,7 @@ func checkAndGetDataSourceQueriable(ctx context.Context, storeInstance *store.St
 		return nil, status.Errorf(codes.NotFound, "instance %q not found", database.InstanceID)
 	}
 	dataSource := func() *storepb.DataSource {
-		if dataSourceID == "" && export {
+		if dataSourceID == "" && autoDataSource {
 			return getQueriableDataSource(instance)
 		}
 		for _, ds := range instance.Metadata.GetDataSources() {
@@ -1922,7 +1929,7 @@ func checkAndGetDataSourceQueriable(ctx context.Context, storeInstance *store.St
 	}
 
 	// Always allow non-admin data source.
-	if dataSource.GetType() != storepb.DataSourceType_ADMIN || export {
+	if dataSource.GetType() != storepb.DataSourceType_ADMIN || autoDataSource {
 		return dataSource, nil
 	}
 
