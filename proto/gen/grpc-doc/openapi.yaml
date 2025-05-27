@@ -11700,6 +11700,7 @@ components:
         QueryRequest:
             required:
                 - name
+                - dataSourceId
             type: object
             properties:
                 name:
