@@ -485,7 +485,7 @@ func (s *IssueService) createIssueDatabaseChange(ctx context.Context, request *v
 
 	s.webhookManager.CreateEvent(ctx, &webhook.Event{
 		Actor:   user,
-		Type:    webhook.EventTypeIssueCreate,
+		Type:    base.EventTypeIssueCreate,
 		Comment: "",
 		Issue:   webhook.NewIssue(issue),
 		Project: webhook.NewProject(issue.Project),
@@ -568,7 +568,7 @@ func (s *IssueService) createIssueGrantRequest(ctx context.Context, request *v1p
 
 	s.webhookManager.CreateEvent(ctx, &webhook.Event{
 		Actor:   user,
-		Type:    webhook.EventTypeIssueCreate,
+		Type:    base.EventTypeIssueCreate,
 		Comment: "",
 		Issue:   webhook.NewIssue(issue),
 		Project: webhook.NewProject(issue.Project),
@@ -669,7 +669,7 @@ func (s *IssueService) createIssueDatabaseDataExport(ctx context.Context, reques
 
 	s.webhookManager.CreateEvent(ctx, &webhook.Event{
 		Actor:   user,
-		Type:    webhook.EventTypeIssueCreate,
+		Type:    base.EventTypeIssueCreate,
 		Comment: "",
 		Issue:   webhook.NewIssue(issue),
 		Project: webhook.NewProject(issue.Project),
@@ -804,7 +804,7 @@ func (s *IssueService) ApproveIssue(ctx context.Context, request *v1pb.ApproveIs
 
 		s.webhookManager.CreateEvent(ctx, &webhook.Event{
 			Actor:   s.store.GetSystemBotUser(ctx),
-			Type:    webhook.EventTypeIssueApprovalCreate,
+			Type:    base.EventTypeIssueApprovalCreate,
 			Comment: "",
 			Issue:   webhook.NewIssue(issue),
 			Project: webhook.NewProject(issue.Project),
@@ -826,7 +826,7 @@ func (s *IssueService) ApproveIssue(ctx context.Context, request *v1pb.ApproveIs
 		// notify issue approved
 		s.webhookManager.CreateEvent(ctx, &webhook.Event{
 			Actor:   s.store.GetSystemBotUser(ctx),
-			Type:    webhook.EventTypeIssueApprovalPass,
+			Type:    base.EventTypeIssueApprovalPass,
 			Comment: "",
 			Issue:   webhook.NewIssue(issue),
 			Project: webhook.NewProject(issue.Project),
@@ -851,7 +851,7 @@ func (s *IssueService) ApproveIssue(ctx context.Context, request *v1pb.ApproveIs
 			}
 			s.webhookManager.CreateEvent(ctx, &webhook.Event{
 				Actor:   user,
-				Type:    webhook.EventTypeIssueRolloutReady,
+				Type:    base.EventTypeIssueRolloutReady,
 				Comment: "",
 				Issue:   webhook.NewIssue(issue),
 				Project: webhook.NewProject(issue.Project),
@@ -1061,7 +1061,7 @@ func (s *IssueService) RequestIssue(ctx context.Context, request *v1pb.RequestIs
 
 		s.webhookManager.CreateEvent(ctx, &webhook.Event{
 			Actor:   s.store.GetSystemBotUser(ctx),
-			Type:    webhook.EventTypeIssueApprovalCreate,
+			Type:    base.EventTypeIssueApprovalCreate,
 			Comment: "",
 			Issue:   webhook.NewIssue(issue),
 			Project: webhook.NewProject(issue.Project),
@@ -1182,7 +1182,7 @@ func (s *IssueService) UpdateIssue(ctx context.Context, request *v1pb.UpdateIssu
 
 			webhookEvents = append(webhookEvents, &webhook.Event{
 				Actor:   user,
-				Type:    webhook.EventTypeIssueUpdate,
+				Type:    base.EventTypeIssueUpdate,
 				Comment: "",
 				Issue:   webhook.NewIssue(issue),
 				Project: webhook.NewProject(issue.Project),
@@ -1208,7 +1208,7 @@ func (s *IssueService) UpdateIssue(ctx context.Context, request *v1pb.UpdateIssu
 
 			webhookEvents = append(webhookEvents, &webhook.Event{
 				Actor:   user,
-				Type:    webhook.EventTypeIssueUpdate,
+				Type:    base.EventTypeIssueUpdate,
 				Comment: "",
 				Issue:   webhook.NewIssue(issue),
 				Project: webhook.NewProject(issue.Project),
@@ -1342,7 +1342,7 @@ func (s *IssueService) BatchUpdateIssuesStatus(ctx context.Context, request *v1p
 			func() {
 				s.webhookManager.CreateEvent(ctx, &webhook.Event{
 					Actor:   user,
-					Type:    webhook.EventTypeIssueStatusUpdate,
+					Type:    base.EventTypeIssueStatusUpdate,
 					Comment: request.Reason,
 					Issue:   webhook.NewIssue(updatedIssue),
 					Project: webhook.NewProject(updatedIssue.Project),
@@ -1438,7 +1438,7 @@ func (s *IssueService) CreateIssueComment(ctx context.Context, request *v1pb.Cre
 
 	s.webhookManager.CreateEvent(ctx, &webhook.Event{
 		Actor:   user,
-		Type:    webhook.EventTypeIssueCommentCreate,
+		Type:    base.EventTypeIssueCommentCreate,
 		Comment: request.IssueComment.Comment,
 		Issue:   webhook.NewIssue(issue),
 		Project: webhook.NewProject(issue.Project),
