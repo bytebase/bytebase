@@ -1,1 +1,0 @@
-ALTER TABLE principal ADD profile JSONB NOT NULL DEFAULT '{}';
