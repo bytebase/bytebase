@@ -32,7 +32,7 @@ func extractChangedResources(database string, _ string, dbSchema *model.Database
 	insertCount := 0
 	var sampleDMLs []string
 	searchPath := dbSchema.GetDatabaseMetadata().GetSearchPath()
-	if searchPath == nil {
+	if len(searchPath) == 0 {
 		searchPath = []string{"public"} // default search path for PostgreSQL
 	}
 	for _, node := range nodes {
