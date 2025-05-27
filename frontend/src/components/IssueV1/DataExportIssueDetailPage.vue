@@ -127,7 +127,7 @@ events.on("perform-task-rollout-action", async ({ action, tasks }) => {
 });
 
 providePlanSQLCheckContext({
-  project: project,
+  project,
   plan: computed(() => issue.value.planEntity as Plan),
   selectedSpec: computed(
     () => specForTask(issue.value.planEntity, selectedTask.value) as Plan_Spec
