@@ -117,11 +117,11 @@ func (d *Driver) getMySQLConnection(connCfg db.ConnectionConfig) (string, error)
 			return "", err
 		}
 		d.sshClient = sshClient
+		protocol = "mysql-tcp-" + uuid.NewString()[:8]
 		// Now we register the dialer with the ssh connection as a parameter.
-		mysql.RegisterDialContext("mysql+tcp", func(_ context.Context, addr string) (net.Conn, error) {
+		mysql.RegisterDialContext(protocol, func(_ context.Context, addr string) (net.Conn, error) {
 			return sshClient.Dial("tcp", addr)
 		})
-		protocol = "mysql+tcp"
 	}
 
 	tlscfg, err := util.GetTLSConfig(connCfg.DataSource)
