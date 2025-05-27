@@ -1880,57 +1880,59 @@ func (*SQLService) Pretty(_ context.Context, request *v1pb.PrettyRequest) (*v1pb
 	}, nil
 }
 
+// getQueriableDataSource try to returns the RO data source, and will returns the admin data source if not exist the RO data source.
+func getQueriableDataSource(instance *store.InstanceMessage) *storepb.DataSource {
+	var adminDataSource *storepb.DataSource
+	for _, ds := range instance.Metadata.GetDataSources() {
+		if ds.GetType() == storepb.DataSourceType_READ_ONLY {
+			return ds
+		}
+		if ds.GetType() == storepb.DataSourceType_ADMIN && adminDataSource == nil {
+			adminDataSource = ds
+		}
+	}
+	return adminDataSource
+}
+
 func checkAndGetDataSourceQueriable(ctx context.Context, storeInstance *store.Store, database *store.DatabaseMessage, dataSourceID string, export bool) (*storepb.DataSource, error) {
-	instance, err := storeInstance.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
-	if err != nil {
-		return nil, errors.Errorf("failed to get instance: %v", err)
-	}
-	if instance == nil {
-		return nil, errors.Errorf("instance %q not found", database.InstanceID)
-	}
 	if dataSourceID == "" && !export {
 		return nil, status.Errorf(codes.InvalidArgument, "data source id is required")
 	}
-	dataSource, serr := func() (*storepb.DataSource, *status.Status) {
+
+	instance, err := storeInstance.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get instance %v with error: %v", database.InstanceID, err.Error())
+	}
+	if instance == nil {
+		return nil, status.Errorf(codes.NotFound, "instance %q not found", database.InstanceID)
+	}
+	dataSource := func() *storepb.DataSource {
 		if dataSourceID == "" && export {
-			var adminDataSource *storepb.DataSource
-			var readOnlyDataSource *storepb.DataSource
-			for _, ds := range instance.Metadata.GetDataSources() {
-				if ds.GetType() == storepb.DataSourceType_ADMIN && adminDataSource == nil {
-					adminDataSource = ds
-				}
-				if ds.GetType() == storepb.DataSourceType_READ_ONLY && readOnlyDataSource == nil {
-					readOnlyDataSource = ds
-				}
-			}
-			if readOnlyDataSource != nil {
-				return readOnlyDataSource, nil
-			}
-			return adminDataSource, nil
+			return getQueriableDataSource(instance)
 		}
 		for _, ds := range instance.Metadata.GetDataSources() {
 			if ds.GetId() == dataSourceID {
-				return ds, nil
+				return ds
 			}
 		}
-		return nil, status.Newf(codes.NotFound, "data source %q not found", dataSourceID)
+		return nil
 	}()
-	if serr != nil {
-		return nil, serr.Err()
+	if dataSource == nil {
+		return nil, status.Errorf(codes.NotFound, "data source %q not found", dataSourceID)
 	}
 
 	// Always allow non-admin data source.
-	if dataSource.GetType() != storepb.DataSourceType_ADMIN {
+	if dataSource.GetType() != storepb.DataSourceType_ADMIN || export {
 		return dataSource, nil
 	}
 
 	var envAdminDataSourceRestriction, projectAdminDataSourceRestriction v1pb.DataSourceQueryPolicy_Restriction
 	environment, err := storeInstance.GetEnvironmentByID(ctx, database.EffectiveEnvironmentID)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get environment")
+		return nil, status.Errorf(codes.Internal, "failed to get environment %s with error %v", database.EffectiveEnvironmentID, err.Error())
 	}
 	if environment == nil {
-		return nil, errors.Errorf("environment %q not found", database.EffectiveEnvironmentID)
+		return nil, status.Errorf(codes.NotFound, "environment %q not found", database.EffectiveEnvironmentID)
 	}
 	dataSourceQueryPolicyType := base.PolicyTypeDataSourceQuery
 	environmentResourceType := base.PolicyResourceTypeEnvironment
@@ -1941,12 +1943,12 @@ func checkAndGetDataSourceQueriable(ctx context.Context, storeInstance *store.St
 		Type:         &dataSourceQueryPolicyType,
 	})
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get policy")
+		return nil, status.Errorf(codes.Internal, "failed to get environment data source policy with error: %v", err.Error())
 	}
 	if environmentPolicy != nil {
 		envPayload, err := convertToV1PBDataSourceQueryPolicy(environmentPolicy.Payload)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to convert policy payload")
+			return nil, status.Errorf(codes.Internal, "failed to convert environment data source policy payload with error: %v", err.Error())
 		}
 		envAdminDataSourceRestriction = envPayload.DataSourceQueryPolicy.GetAdminDataSourceRestriction()
 	}
@@ -1959,12 +1961,12 @@ func checkAndGetDataSourceQueriable(ctx context.Context, storeInstance *store.St
 		Type:         &dataSourceQueryPolicyType,
 	})
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get policy")
+		return nil, status.Errorf(codes.Internal, "failed to get project data source policy with error: %v", err.Error())
 	}
 	if projectPolicy != nil {
 		projectPayload, err := convertToV1PBDataSourceQueryPolicy(projectPolicy.Payload)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to convert policy payload")
+			return nil, status.Errorf(codes.Internal, "failed to convert project data source policy payload with error: %v", err.Error())
 		}
 		projectAdminDataSourceRestriction = projectPayload.DataSourceQueryPolicy.GetAdminDataSourceRestriction()
 	}
@@ -1974,10 +1976,8 @@ func checkAndGetDataSourceQueriable(ctx context.Context, storeInstance *store.St
 		return nil, status.Errorf(codes.PermissionDenied, "data source %q is not queryable", dataSourceID)
 	} else if envAdminDataSourceRestriction == v1pb.DataSourceQueryPolicy_FALLBACK || projectAdminDataSourceRestriction == v1pb.DataSourceQueryPolicy_FALLBACK {
 		// If there is any read-only data source, then return false.
-		for _, ds := range instance.Metadata.GetDataSources() {
-			if ds.Type == storepb.DataSourceType_READ_ONLY {
-				return nil, status.Errorf(codes.PermissionDenied, "data source %q is not queryable", dataSourceID)
-			}
+		if ds := getQueriableDataSource(instance); ds != nil && ds.Type == storepb.DataSourceType_READ_ONLY {
+			return nil, status.Errorf(codes.PermissionDenied, "data source %q is not queryable", dataSourceID)
 		}
 	}
 
