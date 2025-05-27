@@ -6,4 +6,5 @@ type TransformContext struct {
 	GetDatabaseMetadataFunc GetDatabaseMetadataFunc
 	ListDatabaseNamesFunc   ListDatabaseNamesFunc
 	IsCaseSensitive         bool
+	DatabaseName            string
 }

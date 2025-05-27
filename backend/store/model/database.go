@@ -238,6 +238,7 @@ func (t *TableConfig) IsEmpty() bool {
 type DatabaseMetadata struct {
 	name                  string
 	owner                 string
+	searchPath            []string
 	isObjectCaseSensitive bool
 	isDetailCaseSensitive bool
 	internal              map[string]*SchemaMetadata
@@ -249,6 +250,7 @@ func NewDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata, isObjectCaseS
 	databaseMetadata := &DatabaseMetadata{
 		name:                  metadata.Name,
 		owner:                 metadata.Owner,
+		searchPath:            NormalizeSearchPath(metadata.SearchPath),
 		isObjectCaseSensitive: isObjectCaseSensitive,
 		isDetailCaseSensitive: isDetailCaseSensitive,
 		internal:              make(map[string]*SchemaMetadata),
@@ -408,6 +410,22 @@ func (d *DatabaseMetadata) GetSchema(name string) *SchemaMetadata {
 	return d.internal[schemaID]
 }
 
+func (d *DatabaseMetadata) SearchTable(searchPath []string, name string) (string, *TableMetadata) {
+	// Search in the search path first.
+	for _, schemaName := range searchPath {
+		schema := d.GetSchema(schemaName)
+		if schema == nil {
+			continue
+		}
+		table := schema.GetTable(name)
+		if table != nil {
+			return schema.proto.Name, table
+		}
+	}
+
+	return "", nil
+}
+
 // ListSchemaNames lists the schema names.
 func (d *DatabaseMetadata) ListSchemaNames() []string {
 	var result []string
@@ -429,6 +447,10 @@ func (d *DatabaseMetadata) GetLinkedDatabase(name string) *LinkedDatabaseMetadat
 
 func (d *DatabaseMetadata) GetOwner() string {
 	return d.owner
+}
+
+func (d *DatabaseMetadata) GetSearchPath() []string {
+	return d.searchPath
 }
 
 // LinkedDatabaseMetadata is the metadata for a linked database.
@@ -944,4 +966,42 @@ func getIsDetailCaseSensitive(engine storepb.Engine) bool {
 	default:
 		return true
 	}
+}
+
+// NormalizeSearchPath normalizes the search path string into a slice of strings.
+func NormalizeSearchPath(searchPath string) []string {
+	if searchPath == "" {
+		return []string{}
+	}
+
+	// Split the search path by comma and trim spaces.
+	parts := strings.Split(searchPath, ",")
+	for i, part := range parts {
+		parts[i] = strings.TrimSpace(part)
+	}
+
+	// Remove empty parts.
+	var result []string
+	for _, part := range parts {
+		schema := strings.TrimSpace(part)
+		if part == "\"$user\"" {
+			continue
+		}
+		if strings.HasPrefix(part, "\"") && strings.HasSuffix(part, "\"") {
+			// Remove the quotes from the schema name.
+			schema = strings.Trim(schema, "\"")
+		} else if strings.HasPrefix(part, "'") && strings.HasSuffix(part, "'") {
+			// Remove the single quotes from the schema name.
+			schema = strings.Trim(schema, "'")
+		} else {
+			// For non-quoted schema names, we just return the lower string for PostgreSQL.
+			schema = strings.ToLower(schema)
+		}
+		schema = strings.TrimSpace(schema)
+		if schema != "" {
+			result = append(result, schema)
+		}
+	}
+
+	return result
 }
