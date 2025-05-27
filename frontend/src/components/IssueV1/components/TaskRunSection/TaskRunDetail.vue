@@ -28,10 +28,10 @@ import { RefreshCcwIcon } from "lucide-vue-next";
 import { NButton, NTabs, NTabPane } from "naive-ui";
 import { computed, reactive, ref, watch } from "vue";
 import { databaseForTask } from "@/components/Rollout/RolloutDetail";
-import { useSheetV1Store } from "@/store";
+import { useSheetV1Store, useCurrentProjectV1 } from "@/store";
 import { Engine } from "@/types/proto/v1/common";
 import { TaskRun_Status, type TaskRun } from "@/types/proto/v1/rollout_service";
-import { useIssueContext, projectOfIssue } from "../../logic";
+import { useIssueContext } from "../../logic";
 import TaskRunLogTable from "./TaskRunLogTable";
 import TaskRunSession from "./TaskRunSession";
 
@@ -45,7 +45,8 @@ const props = defineProps<{
   taskRun: TaskRun;
 }>();
 
-const { issue, selectedTask } = useIssueContext();
+const { project } = useCurrentProjectV1();
+const { selectedTask } = useIssueContext();
 const sheetStore = useSheetV1Store();
 
 const state = reactive<LocalState>({
@@ -69,7 +70,7 @@ const showRefreshButton = computed(
 );
 
 const database = computed(() =>
-  databaseForTask(projectOfIssue(issue.value), selectedTask.value)
+  databaseForTask(project.value, selectedTask.value)
 );
 
 watch(

@@ -117,6 +117,7 @@ import {
   useCurrentUserV1,
   useIssueCommentStore,
   useIssueV1Store,
+  useCurrentProjectV1,
   type ComposedIssueComment,
   extractUserId,
 } from "@/store";
@@ -142,7 +143,8 @@ interface LocalState {
 
 const route = useRoute();
 
-const { issue, project } = useIssueContext();
+const { project } = useCurrentProjectV1();
+const { issue } = useIssueContext();
 const issueList = ref<ComposedIssue[]>([]);
 
 const state = reactive<LocalState>({

@@ -1,25 +1,15 @@
-import { emptyUser, unknownUser } from "@/types";
 import { EMPTY_ID, UNKNOWN_ID } from "@/types/const";
-import { type User } from "@/types/proto/v1/user_service";
 import {
   Plan,
   PlanCheckRun,
   Plan_Spec,
   Plan_Step,
 } from "@/types/proto/v1/plan_service";
-import {
-  EMPTY_PROJECT_NAME,
-  UNKNOWN_PROJECT_NAME,
-  emptyProject,
-  unknownProject,
-  type ComposedProject,
-} from "../project";
+import { EMPTY_PROJECT_NAME, UNKNOWN_PROJECT_NAME } from "../project";
 
 export interface ComposedPlan extends Plan {
   planCheckRunList: PlanCheckRun[];
   project: string;
-  projectEntity: ComposedProject;
-  creatorEntity: User;
 }
 
 export const EMPTY_PLAN_NAME = `projects/${EMPTY_ID}/plans/${EMPTY_ID}`;
@@ -32,8 +22,6 @@ export const emptyPlan = (): ComposedPlan => {
     }),
     planCheckRunList: [],
     project: EMPTY_PROJECT_NAME,
-    projectEntity: emptyProject(),
-    creatorEntity: emptyUser(),
   };
 };
 export const unknownPlan = (): ComposedPlan => {
@@ -44,8 +32,6 @@ export const unknownPlan = (): ComposedPlan => {
     }),
     planCheckRunList: [],
     project: UNKNOWN_PROJECT_NAME,
-    projectEntity: unknownProject(),
-    creatorEntity: unknownUser(),
   };
 };
 

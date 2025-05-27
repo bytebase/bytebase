@@ -17,7 +17,8 @@ import { computed } from "vue";
 import { GhostSection } from "@/components/Plan/components/Sidebar";
 import { provideGhostSettingContext } from "@/components/Plan/components/Sidebar/GhostSection/context";
 import type { Plan } from "@/types/proto/v1/plan_service";
-import { specForTask, useIssueContext, projectOfIssue } from "../../logic";
+import { specForTask, useIssueContext } from "../../logic";
+import { useCurrentProjectV1 } from "@/store";
 import IssueLabels from "./IssueLabels.vue";
 import PreBackupSection from "./PreBackupSection";
 import ReleaseInfo from "./ReleaseInfo.vue";
@@ -25,11 +26,12 @@ import ReviewSection from "./ReviewSection";
 import TaskCheckSummarySection from "./TaskCheckSummarySection";
 
 const { isCreating, selectedTask, issue, events } = useIssueContext();
+const { project } = useCurrentProjectV1();
 
 const { shouldShow: shouldShowGhostSection, events: ghostEvents } =
   provideGhostSettingContext({
     isCreating,
-    project: computed(() => projectOfIssue(issue.value)),
+    project,
     plan: computed(() => issue.value.planEntity as Plan),
     selectedSpec: computed(() =>
       specForTask(issue.value.planEntity, selectedTask.value)

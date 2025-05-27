@@ -67,12 +67,12 @@ import { BBSpin } from "@/bbkit";
 import { usePlanSQLCheckContext } from "@/components/Plan/components/SQLCheckSection/context";
 import { databaseForTask } from "@/components/Rollout/RolloutDetail";
 import { useVerticalScrollState } from "@/composables/useScrollState";
-import { batchGetOrFetchDatabases } from "@/store";
+import { batchGetOrFetchDatabases, useCurrentProjectV1 } from "@/store";
 import { DEBOUNCE_SEARCH_DELAY } from "@/types";
 import type { Task_Status } from "@/types/proto/v1/rollout_service";
 import type { Advice_Status } from "@/types/proto/v1/sql_service";
 import { isDev } from "@/utils";
-import { useIssueContext, projectOfIssue } from "../../logic";
+import { useIssueContext } from "../../logic";
 import CurrentTaskSection from "./CurrentTaskSection.vue";
 import TaskCard from "./TaskCard.vue";
 import TaskFilter from "./TaskFilter.vue";
@@ -102,7 +102,8 @@ const state = reactive<LocalState>({
 });
 
 const issueContext = useIssueContext();
-const { selectedStage, issue, selectedTask } = issueContext;
+const { selectedStage, selectedTask } = issueContext;
+const { project } = useCurrentProjectV1();
 const { resultMap } = usePlanSQLCheckContext();
 const taskBar = ref<HTMLDivElement>();
 const taskBarScrollState = useVerticalScrollState(taskBar, MAX_LIST_HEIGHT);
@@ -168,7 +169,7 @@ const loadMore = useDebounceFn(async () => {
 
   const databaseNames = filteredTaskList.value
     .slice(fromIndex, toIndex)
-    .map((task) => databaseForTask(projectOfIssue(issue.value), task).name);
+    .map((task) => databaseForTask(project.value, task).name);
 
   try {
     await batchGetOrFetchDatabases(databaseNames);
