@@ -426,6 +426,50 @@ func (d *DatabaseMetadata) SearchTable(searchPath []string, name string) (string
 	return "", nil
 }
 
+func (d *DatabaseMetadata) SearchIndex(searchPath []string, name string) (string, *IndexMetadata) {
+	// Search in the search path first.
+	for _, schemaName := range searchPath {
+		schema := d.GetSchema(schemaName)
+		if schema == nil {
+			continue
+		}
+		indexes := schema.GetIndexes(name)
+		if len(indexes) > 0 {
+			return schema.proto.Name, indexes[0] // Return the first index found.
+		}
+	}
+	return "", nil
+}
+
+func (d *DatabaseMetadata) SearchView(searchPath []string, name string) (string, *ViewMetadata) {
+	// Search in the search path first.
+	for _, schemaName := range searchPath {
+		schema := d.GetSchema(schemaName)
+		if schema == nil {
+			continue
+		}
+		view := schema.GetView(name)
+		if view != nil {
+			return schema.proto.Name, view
+		}
+	}
+	return "", nil
+}
+
+func (d *DatabaseMetadata) SearchObject(searchPath []string, name string) (string, string) {
+	// Search in the search path first.
+	for _, schemaName := range searchPath {
+		schema := d.GetSchema(schemaName)
+		if schema == nil {
+			continue
+		}
+		if schema.GetTable(name) != nil || schema.GetView(name) != nil || schema.GetMaterializedView(name) != nil || schema.GetFunction(name) != nil || schema.GetProcedure(name) != nil || schema.GetPackage(name) != nil || schema.GetSequence(name) != nil {
+			return schema.proto.Name, name
+		}
+	}
+	return "", ""
+}
+
 // ListSchemaNames lists the schema names.
 func (d *DatabaseMetadata) ListSchemaNames() []string {
 	var result []string
@@ -968,6 +1012,17 @@ func getIsDetailCaseSensitive(engine storepb.Engine) bool {
 	}
 }
 
+func IsSystemPath(path string) bool {
+	// PostgreSQL system schemas.
+	systemSchemas := []string{"pg_catalog", "information_schema", "pg_toast", "pg_temp_1", "pg_temp_2", "pg_global", "$user"}
+	for _, schema := range systemSchemas {
+		if strings.EqualFold(path, schema) {
+			return true
+		}
+	}
+	return false
+}
+
 // NormalizeSearchPath normalizes the search path string into a slice of strings.
 func NormalizeSearchPath(searchPath string) []string {
 	if searchPath == "" {
@@ -998,6 +1053,10 @@ func NormalizeSearchPath(searchPath string) []string {
 			schema = strings.ToLower(schema)
 		}
 		schema = strings.TrimSpace(schema)
+		if IsSystemPath(schema) {
+			// Skip system schemas.
+			continue
+		}
 		if schema != "" {
 			result = append(result, schema)
 		}
