@@ -98,7 +98,7 @@ export const useIssueV1Store = defineStore("issue_v1", () => {
       resp.issues.map((issue) => shallowComposeIssue(issue, composeIssueConfig))
     );
     // Preprare creator for the issues.
-    const users = composedIssues.map((issue) => issue.creator);
+    const users = uniq(composedIssues.map((issue) => issue.creator));
     await useUserStore().batchGetUsers(users);
     return {
       nextPageToken: resp.nextPageToken,
