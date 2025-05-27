@@ -7,7 +7,7 @@ import {
   useCurrentUserV1,
   extractUserId,
 } from "@/store";
-import type { ComposedIssue } from "@/types";
+import type { ComposedIssue, ComposedProject } from "@/types";
 import { emptyIssue, EMPTY_ID, UNKNOWN_ID } from "@/types";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
 import { uidFromSlug, hasProjectPermissionV2 } from "@/utils";
@@ -17,7 +17,7 @@ export * from "./create";
 
 export function useInitializeIssue(
   issueSlug: MaybeRef<string>,
-  project: MaybeRef<string> = "-",
+  project: MaybeRef<ComposedProject>,
   redirectNotFound: boolean = true
 ) {
   const isCreating = computed(() => {
@@ -41,14 +41,14 @@ export function useInitializeIssue(
 
   const issue = ref<ComposedIssue>(emptyIssue());
 
-  const runner = async (uid: string, project: string, url: string) => {
+  const runner = async (uid: string, url: string) => {
     const issue =
       uid === String(EMPTY_ID)
         ? await createIssueSkeleton(
             route,
             convertRouterQuery(router.resolve(url).query)
           )
-        : await experimentalFetchIssueByUID(uid, project);
+        : await experimentalFetchIssueByUID(uid, unref(project).name);
     return {
       issue,
       url,
@@ -56,15 +56,15 @@ export function useInitializeIssue(
   };
 
   watch(
-    [uid, () => unref(project)],
-    ([uid, project]) => {
+    [uid],
+    ([uid]) => {
       if (uid === String(UNKNOWN_ID) && redirectNotFound) {
         router.push({ name: "error.404" });
         return;
       }
       const url = route.fullPath;
       isInitializing.value = true;
-      runner(uid, project, url).then((result) => {
+      runner(uid, url).then((result) => {
         if (result.url !== route.fullPath) {
           // the url changed, drop the outdated result
           return;
@@ -92,10 +92,7 @@ export function useInitializeIssue(
 
   const allowEditIssue = computed(() => {
     if (isCreating.value) {
-      return hasProjectPermissionV2(
-        issue.value.projectEntity,
-        "bb.issues.create"
-      );
+      return hasProjectPermissionV2(unref(project), "bb.issues.create");
     }
 
     if (issue.value.status !== IssueStatus.OPEN) {
@@ -107,10 +104,7 @@ export function useInitializeIssue(
       return true;
     }
 
-    return hasProjectPermissionV2(
-      issue.value.projectEntity,
-      "bb.issues.update"
-    );
+    return hasProjectPermissionV2(unref(project), "bb.issues.update");
   });
 
   return { isCreating, issue, isInitializing, reInitialize, allowEditIssue };

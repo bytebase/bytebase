@@ -210,6 +210,7 @@ import {
   taskRolloutActionDisplayName,
   taskRunListForTask,
   useIssueContext,
+  projectOfIssue,
 } from "@/components/IssueV1/logic";
 import PlanCheckRunBar from "@/components/PlanCheckRun/PlanCheckRunBar.vue";
 import { planCheckRunSummaryForCheckRunList } from "@/components/PlanCheckRun/common";
@@ -263,7 +264,7 @@ const title = computed(() => {
 });
 
 const database = computed(() =>
-  databaseForTask(issue.value.projectEntity, selectedTask.value)
+  databaseForTask(projectOfIssue(issue.value), selectedTask.value)
 );
 
 const stage = computed(() => {

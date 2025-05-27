@@ -64,6 +64,7 @@ import {
   issueV1Slug,
   extractIssueUID,
 } from "@/utils";
+import { projectOfIssue } from "../logic";
 import IssueLabelSelector, {
   getValidIssueLabels,
 } from "./IssueLabelSelector.vue";
@@ -161,9 +162,10 @@ const columnList = computed((): DataTableColumn<ComposedIssue>[] => {
       title: t("issue.table.name"),
       ellipsis: true,
       render: (issue) => {
+        const projectEntity = projectOfIssue(issue);
         const labels = getValidIssueLabels(
           issue.labels,
-          issue.projectEntity.issueLabels
+          projectEntity.issueLabels
         );
         return (
           <div class="flex items-center space-x-2">
@@ -196,7 +198,7 @@ const columnList = computed((): DataTableColumn<ComposedIssue>[] => {
                 size="small"
                 selected={labels}
                 maxTagCount={3}
-                project={issue.projectEntity}
+                project={projectOfIssue(issue)}
                 disabled
               />
             )}
@@ -209,7 +211,7 @@ const columnList = computed((): DataTableColumn<ComposedIssue>[] => {
       title: t("common.project"),
       width: 150,
       hide: !showExtendedColumns.value || !props.showProject,
-      render: (issue) => issue.projectEntity.title,
+      render: (issue) => projectOfIssue(issue).title,
     },
     {
       key: "updateTime",

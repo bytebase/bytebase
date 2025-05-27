@@ -1,9 +1,7 @@
-import type { ComposedProject, ComposedTaskRun } from "@/types";
+import type { ComposedTaskRun } from "@/types";
 import {
   EMPTY_PROJECT_NAME,
   UNKNOWN_PROJECT_NAME,
-  emptyProject,
-  unknownProject,
   EMPTY_ROLLOUT_NAME,
   UNKNOWN_ROLLOUT_NAME,
 } from "@/types";
@@ -20,7 +18,6 @@ export interface ComposedIssue extends Issue {
   rolloutEntity: Rollout | undefined;
   rolloutTaskRunList: ComposedTaskRun[];
   project: string;
-  projectEntity: ComposedProject;
 }
 
 export const ESTABLISH_BASELINE_SQL =
@@ -42,7 +39,6 @@ export const emptyIssue = (): ComposedIssue => {
     rolloutEntity: undefined,
     rolloutTaskRunList: [],
     project: EMPTY_PROJECT_NAME,
-    projectEntity: emptyProject(),
   };
 };
 
@@ -59,7 +55,6 @@ export const unknownIssue = (): ComposedIssue => {
     rolloutEntity: undefined,
     rolloutTaskRunList: [],
     project: UNKNOWN_PROJECT_NAME,
-    projectEntity: unknownProject(),
   };
 };
 

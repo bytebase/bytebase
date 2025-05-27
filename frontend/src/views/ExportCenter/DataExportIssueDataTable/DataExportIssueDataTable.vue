@@ -26,8 +26,8 @@ import IssueLabelSelector, {
   getValidIssueLabels,
 } from "@/components/IssueV1/components/IssueLabelSelector.vue";
 import IssueStatusIconWithTaskSummary from "@/components/IssueV1/components/IssueStatusIconWithTaskSummary.vue";
+import { projectOfIssue } from "@/components/IssueV1/logic";
 import { databaseForTask } from "@/components/Rollout/RolloutDetail";
-import { ProjectNameCell } from "@/components/v2/Model/DatabaseV1Table/cells";
 import { emitWindowEvent } from "@/plugins";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { useSheetV1Store } from "@/store";
@@ -41,6 +41,25 @@ import {
 } from "@/utils";
 
 const { t } = useI18n();
+
+const props = withDefaults(
+  defineProps<{
+    issueList: ComposedIssue[];
+    loading?: boolean;
+  }>(),
+  {
+    loading: true,
+  }
+);
+
+const router = useRouter();
+const sheetStore = useSheetV1Store();
+
+const tableRef = ref<HTMLDivElement>();
+const { width: tableWidth } = useElementSize(tableRef);
+const showExtendedColumns = computed(() => {
+  return tableWidth.value > 800;
+});
 
 const columnList = computed((): DataTableColumn<ComposedIssue>[] => {
   const columns: (DataTableColumn<ComposedIssue> & { hide?: boolean })[] = [
@@ -70,16 +89,6 @@ const columnList = computed((): DataTableColumn<ComposedIssue>[] => {
       },
     },
     {
-      key: "project",
-      title: t("common.project"),
-      width: 144,
-      resizable: true,
-      hide: !props.showProject,
-      render: (issue) => (
-        <ProjectNameCell project={issue.projectEntity} mode={"ALL_SHORT"} />
-      ),
-    },
-    {
       key: "labels",
       title: t("common.labels"),
       width: 144,
@@ -87,7 +96,7 @@ const columnList = computed((): DataTableColumn<ComposedIssue>[] => {
       render: (issue) => {
         const labels = getValidIssueLabels(
           issue.labels,
-          issue.projectEntity.issueLabels
+          projectOfIssue(issue).issueLabels
         );
         if (labels.length === 0) {
           return "-";
@@ -98,7 +107,7 @@ const columnList = computed((): DataTableColumn<ComposedIssue>[] => {
             selected={labels}
             size="small"
             maxTagCount="responsive"
-            project={issue.projectEntity}
+            project={projectOfIssue(issue)}
           />
         );
       },
@@ -141,27 +150,6 @@ const columnList = computed((): DataTableColumn<ComposedIssue>[] => {
   return columns.filter((column) => !column.hide);
 });
 
-const props = withDefaults(
-  defineProps<{
-    issueList: ComposedIssue[];
-    loading?: boolean;
-    showProject: boolean;
-  }>(),
-  {
-    loading: true,
-    showProject: true,
-  }
-);
-
-const router = useRouter();
-const sheetStore = useSheetV1Store();
-
-const tableRef = ref<HTMLDivElement>();
-const { width: tableWidth } = useElementSize(tableRef);
-const showExtendedColumns = computed(() => {
-  return tableWidth.value > 800;
-});
-
 const rowProps = (issue: ComposedIssue) => {
   return {
     style: "cursor: pointer;",
@@ -191,7 +179,7 @@ const issueRelatedDatabase = (issue: ComposedIssue) => {
   if (!task) {
     return;
   }
-  return databaseForTask(issue.projectEntity, task);
+  return databaseForTask(projectOfIssue(issue), task);
 };
 
 const issueRelatedStatement = (issue: ComposedIssue) => {

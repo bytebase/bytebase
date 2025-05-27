@@ -7,7 +7,7 @@ import {
 } from "@/types/proto/v1/plan_service";
 import type { Task } from "@/types/proto/v1/rollout_service";
 import { Task_Status } from "@/types/proto/v1/rollout_service";
-import { sheetNameForSpec, specForTask, useIssueContext } from ".";
+import { sheetNameForSpec, specForTask, useIssueContext, projectOfIssue } from ".";
 
 export const planSpecHasPlanChecks = (spec: Plan_Spec) => {
   if (spec.createDatabaseConfig) {
@@ -23,7 +23,7 @@ export const planSpecHasPlanChecks = (spec: Plan_Spec) => {
 };
 
 export const planCheckRunListForTask = (issue: ComposedIssue, task: Task) => {
-  const target = databaseForTask(issue.projectEntity, task).name;
+  const target = databaseForTask(projectOfIssue(issue), task).name;
   const spec = specForTask(issue.planEntity, task);
   const sheet = spec ? sheetNameForSpec(spec) : "";
   return issue.planCheckRunList.filter((check) => {
