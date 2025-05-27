@@ -228,7 +228,7 @@ export const useActuatorV1Store = defineStore("actuator_v1", {
     },
     async tryToRemindRefresh(): Promise<boolean> {
       // refetch after 30 minutes to keep the info fresh.
-      if (Date.now() - this.serverInfoTs < 1000 * 60 * 30) {
+      if (Date.now() - this.serverInfoTs >= 1000 * 60 * 30) {
         await this.fetchServerInfo();
       }
       if (this.gitCommitBE === 'unknown' || this.gitCommitFE === 'unknown') {
