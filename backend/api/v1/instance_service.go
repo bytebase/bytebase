@@ -383,7 +383,7 @@ func (s *InstanceService) checkInstanceDataSources(instance *store.InstanceMessa
 	return nil
 }
 
-var instanceExceededError = "activation instance count has reached the limit (%v)"
+const instanceExceededError = "activation instance count has reached the limit (%v)"
 
 func (s *InstanceService) checkDataSource(instance *store.InstanceMessage, dataSource *storepb.DataSource) error {
 	if dataSource.GetId() == "" {
