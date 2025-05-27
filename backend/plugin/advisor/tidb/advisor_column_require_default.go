@@ -7,8 +7,6 @@ import (
 	"fmt"
 
 	"github.com/pingcap/tidb/pkg/parser/ast"
-	"github.com/pingcap/tidb/pkg/parser/mysql"
-	"github.com/pingcap/tidb/pkg/parser/types"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -137,24 +135,6 @@ func (checker *columRequireDefaultChecker) Enter(in ast.Node) (ast.Node, bool) {
 // Leave implements the ast.Visitor interface.
 func (*columRequireDefaultChecker) Leave(in ast.Node) (ast.Node, bool) {
 	return in, true
-}
-
-func needDefault(column *ast.ColumnDef) bool {
-	for _, option := range column.Options {
-		switch option.Tp {
-		case ast.ColumnOptionAutoIncrement, ast.ColumnOptionPrimaryKey, ast.ColumnOptionGenerated:
-			return false
-		}
-	}
-
-	if types.IsTypeBlob(column.Tp.GetType()) {
-		return false
-	}
-	switch column.Tp.GetType() {
-	case mysql.TypeJSON, mysql.TypeGeometry:
-		return false
-	}
-	return true
 }
 
 func hasDefault(column *ast.ColumnDef) bool {
