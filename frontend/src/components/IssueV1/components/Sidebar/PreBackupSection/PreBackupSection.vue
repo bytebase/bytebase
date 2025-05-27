@@ -9,6 +9,7 @@ import {
   latestTaskRunForTask,
   specForTask,
   useIssueContext,
+  projectOfIssue,
 } from "@/components/IssueV1/logic";
 import { PreBackupSection } from "@/components/Plan/components/Sidebar";
 import { providePreBackupSettingContext } from "@/components/Plan/components/Sidebar/PreBackupSection/context";
@@ -25,7 +26,7 @@ const {
   events: preBackupEvents,
 } = providePreBackupSettingContext({
   isCreating,
-  project: computed(() => issue.value.projectEntity),
+  project: computed(() => projectOfIssue(issue.value)),
   plan: computed(() => issue.value.planEntity as Plan),
   selectedSpec: computed(() =>
     specForTask(issue.value.planEntity, selectedTask.value)
@@ -36,7 +37,7 @@ const {
 });
 
 const database = computed(() =>
-  databaseForTask(issue.value.projectEntity, selectedTask.value)
+  databaseForTask(projectOfIssue(issue.value), selectedTask.value)
 );
 
 const latestTaskRun = computed(() =>

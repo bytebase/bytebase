@@ -71,7 +71,7 @@ const props = defineProps<{
   task: Task;
 }>();
 
-const { isCreating, issue, selectedTask, events } = useIssueContext();
+const { isCreating, issue, selectedTask, events, project } = useIssueContext();
 const selected = computed(() => props.task === selectedTask.value);
 
 const schemaVersion = computed(() => {
@@ -108,9 +108,7 @@ const taskClass = computed(() => {
   return classes;
 });
 
-const database = computed(() =>
-  databaseForTask(issue.value.projectEntity, props.task)
-);
+const database = computed(() => databaseForTask(project.value, props.task));
 const { instance } = useInstanceForTask(props.task);
 
 const onClickTask = (task: Task) => {

@@ -31,7 +31,7 @@ import { databaseForTask } from "@/components/Rollout/RolloutDetail";
 import { useSheetV1Store } from "@/store";
 import { Engine } from "@/types/proto/v1/common";
 import { TaskRun_Status, type TaskRun } from "@/types/proto/v1/rollout_service";
-import { useIssueContext } from "../../logic";
+import { useIssueContext, projectOfIssue } from "../../logic";
 import TaskRunLogTable from "./TaskRunLogTable";
 import TaskRunSession from "./TaskRunSession";
 
@@ -69,7 +69,7 @@ const showRefreshButton = computed(
 );
 
 const database = computed(() =>
-  databaseForTask(issue.value.projectEntity, selectedTask.value)
+  databaseForTask(projectOfIssue(issue.value), selectedTask.value)
 );
 
 watch(

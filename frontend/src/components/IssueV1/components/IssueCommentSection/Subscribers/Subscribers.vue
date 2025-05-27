@@ -13,7 +13,7 @@ import { hasProjectPermissionV2 } from "@/utils";
 import SubscribeButton from "./SubscribeButton.vue";
 import SubscriberList from "./SubscriberList.vue";
 
-const { issue } = useIssueContext();
+const { issue, project } = useIssueContext();
 const currentUser = useCurrentUserV1();
 
 const allowSubscribe = computed(() => {
@@ -21,7 +21,7 @@ const allowSubscribe = computed(() => {
     // Allowed if current user is the creator.
     return true;
   }
-  if (hasProjectPermissionV2(issue.value.projectEntity, "bb.issues.update")) {
+  if (hasProjectPermissionV2(project.value, "bb.issues.update")) {
     return true;
   }
   return false;

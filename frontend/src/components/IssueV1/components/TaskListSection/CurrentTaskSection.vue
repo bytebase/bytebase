@@ -79,7 +79,7 @@
 import { computedAsync } from "@vueuse/core";
 import { ChevronRightIcon, DatabaseIcon } from "lucide-vue-next";
 import { computed } from "vue";
-import { useIssueContext } from "@/components/IssueV1/logic";
+import { useIssueContext, projectOfIssue } from "@/components/IssueV1/logic";
 import { databaseForTask } from "@/components/Rollout/RolloutDetail";
 import {
   DatabaseV1Name,
@@ -109,7 +109,7 @@ withDefaults(
 const { issue, selectedTask } = useIssueContext();
 
 const coreDatabaseInfo = computed(() => {
-  return databaseForTask(issue.value.projectEntity, selectedTask.value);
+  return databaseForTask(projectOfIssue(issue.value), selectedTask.value);
 });
 
 const databaseCreationStatus = computed((): DatabaseCreationStatus => {

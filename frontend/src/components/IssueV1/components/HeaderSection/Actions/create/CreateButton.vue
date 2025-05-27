@@ -27,23 +27,17 @@
   />
 
   <SQLCheckPanel
-    v-if="
-      showSQLCheckResultPanel &&
-      databaseForTask(issue.projectEntity, selectedTask)
-    "
+    v-if="showSQLCheckResultPanel && databaseForTask(project, selectedTask)"
     :project="issue.project"
-    :database="databaseForTask(issue.projectEntity, selectedTask)"
+    :database="databaseForTask(project, selectedTask)"
     :advices="
-      checkResultMap[databaseForTask(issue.projectEntity, selectedTask).name]
-        .advices
+      checkResultMap[databaseForTask(project, selectedTask).name].advices
     "
     :affected-rows="
-      checkResultMap[databaseForTask(issue.projectEntity, selectedTask).name]
-        .affectedRows
+      checkResultMap[databaseForTask(project, selectedTask).name].affectedRows
     "
     :risk-level="
-      checkResultMap[databaseForTask(issue.projectEntity, selectedTask).name]
-        .riskLevel
+      checkResultMap[databaseForTask(project, selectedTask).name].riskLevel
     "
     :confirm="sqlCheckConfirmDialog"
     :override-title="$t('issue.sql-check.sql-review-violations')"
@@ -105,7 +99,7 @@ const MAX_FORMATTABLE_STATEMENT_SIZE = 10000; // 10K characters
 
 const { t } = useI18n();
 const router = useRouter();
-const { isCreating, issue, formatOnSave, events, selectedTask } =
+const { isCreating, issue, formatOnSave, events, selectedTask, project } =
   useIssueContext();
 const { resultMap: checkResultMap, upsertResult: upsertCheckResult } =
   usePlanSQLCheckContext();
@@ -116,11 +110,7 @@ const sqlCheckConfirmDialog = ref<Defer<boolean>>();
 
 const issueCreateErrorList = computed(() => {
   const errorList: string[] = [];
-  if (
-    !hasPermissionToCreateChangeDatabaseIssueInProject(
-      issue.value.projectEntity
-    )
-  ) {
+  if (!hasPermissionToCreateChangeDatabaseIssueInProject(project.value)) {
     errorList.push(t("common.missing-required-permission"));
   }
   if (!issue.value.title.trim()) {
@@ -144,11 +134,9 @@ const issueCreateErrorList = computed(() => {
     }
   }
   if (
-    issue.value.projectEntity.forceIssueLabels &&
-    getValidIssueLabels(
-      issue.value.labels,
-      issue.value.projectEntity.issueLabels
-    ).length === 0
+    project.value.forceIssueLabels &&
+    getValidIssueLabels(issue.value.labels, project.value.issueLabels)
+      .length === 0
   ) {
     errorList.push(
       t("project.settings.issue-related.labels.force-issue-labels.warning")
@@ -318,7 +306,7 @@ const runSQLCheckForIssue = async () => {
     }
     if (!sheet) continue;
     const statement = getSheetStatement(sheet);
-    const database = databaseForTask(issue.value.projectEntity, task);
+    const database = databaseForTask(project.value, task);
     if (!statement) {
       continue;
     }

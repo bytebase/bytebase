@@ -21,7 +21,7 @@ import { computed } from "vue";
 import { databaseForTask } from "@/components/Rollout/RolloutDetail";
 import { InstanceV1Name } from "@/components/v2";
 import type { Task } from "@/types/proto/v1/rollout_service";
-import { useIssueContext } from "../../logic";
+import { useIssueContext, projectOfIssue } from "../../logic";
 
 const props = defineProps<{
   task: Task;
@@ -30,6 +30,6 @@ const props = defineProps<{
 const { issue } = useIssueContext();
 
 const db = computed(() => {
-  return databaseForTask(issue.value.projectEntity, props.task);
+  return databaseForTask(projectOfIssue(issue.value), props.task);
 });
 </script>
