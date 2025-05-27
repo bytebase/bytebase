@@ -72,7 +72,12 @@ import { computed, nextTick, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRenderMarkdown } from "@/components/MarkdownEditor";
 import { planServiceClient } from "@/grpcweb";
-import { pushNotification, useCurrentUserV1, extractUserId } from "@/store";
+import {
+  pushNotification,
+  useCurrentUserV1,
+  extractUserId,
+  useCurrentProjectV1,
+} from "@/store";
 import { Plan } from "@/types/proto/v1/plan_service";
 import { hasProjectPermissionV2 } from "@/utils";
 import { usePlanContext } from "../../logic";
@@ -84,6 +89,7 @@ type LocalState = {
 };
 
 const { t } = useI18n();
+const { project } = useCurrentProjectV1();
 const { isCreating, plan } = usePlanContext();
 const currentUser = useCurrentUserV1();
 const contentPreviewArea = ref<HTMLIFrameElement>();
@@ -109,7 +115,7 @@ const allowEdit = computed(() => {
     return true;
   }
   // Allowed if current has plan update permission in the project
-  if (hasProjectPermissionV2(plan.value.projectEntity, "bb.plans.update")) {
+  if (hasProjectPermissionV2(project.value, "bb.plans.update")) {
     return true;
   }
   return false;
@@ -160,7 +166,7 @@ const cancelEdit = () => {
 const { renderedContent } = useRenderMarkdown(
   computed(() => plan.value.description),
   contentPreviewArea,
-  computed(() => plan.value.projectEntity)
+  project
 );
 
 // Reset the edit state after creating the plan.

@@ -67,7 +67,11 @@ import {
   EnvironmentV1Name,
   InstanceV1Name,
 } from "@/components/v2";
-import { useDatabaseV1Store, useEnvironmentV1Store } from "@/store";
+import {
+  useCurrentProjectV1,
+  useDatabaseV1Store,
+  useEnvironmentV1Store,
+} from "@/store";
 import {
   formatEnvironmentName,
   isValidDatabaseName,
@@ -85,10 +89,11 @@ withDefaults(
   }
 );
 
-const { plan, selectedSpec } = usePlanContext();
+const { project } = useCurrentProjectV1();
+const { selectedSpec } = usePlanContext();
 
 const coreDatabaseInfo = computed(() => {
-  return databaseForSpec(plan.value.projectEntity, selectedSpec.value);
+  return databaseForSpec(project.value, selectedSpec.value);
 });
 
 const isCreatingDatabaseSpec = computed(

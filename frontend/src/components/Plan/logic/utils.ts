@@ -1,8 +1,12 @@
 import { mockDatabase } from "@/components/IssueV1";
-import { useDatabaseV1Store } from "@/store";
+import { useDatabaseV1Store, useProjectV1Store } from "@/store";
 import { isValidDatabaseName, unknownDatabase } from "@/types";
+import type { ComposedProject } from "@/types";
 import type { Plan_Spec } from "@/types/proto/v1/plan_service";
 import type { ComposedPlan } from "@/types/v1/issue/plan";
+
+export const projectOfPlan = (plan: ComposedPlan): ComposedProject =>
+  useProjectV1Store().getProjectByName(plan.project);
 
 export const targetOfSpec = (spec: Plan_Spec) => {
   if (spec.changeDatabaseConfig) {
@@ -13,10 +17,10 @@ export const targetOfSpec = (spec: Plan_Spec) => {
   return undefined;
 };
 
-export const databaseOfSpec = (plan: ComposedPlan, spec: Plan_Spec) => {
+export const databaseOfSpec = (project: ComposedProject, spec: Plan_Spec) => {
   if (spec.createDatabaseConfig) {
     return mockDatabase(
-      plan.projectEntity,
+      project,
       `${spec.createDatabaseConfig.target}/databases/${spec.createDatabaseConfig.database}`
     );
   }
@@ -26,7 +30,7 @@ export const databaseOfSpec = (plan: ComposedPlan, spec: Plan_Spec) => {
   }
   const db = useDatabaseV1Store().getDatabaseByName(target);
   if (!isValidDatabaseName(db.name)) {
-    return mockDatabase(plan.projectEntity, target);
+    return mockDatabase(project, target);
   }
   return db;
 };

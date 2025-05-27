@@ -105,13 +105,13 @@ const state = reactive<LocalState>({
   showRequestRolePanel: false,
 });
 
+const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
 const recentProjects = useRecentProjects();
 const projectStore = useProjectV1Store();
 const { remove: removeVisit } = useRecentVisit();
 const permissionStore = usePermissionStore();
-const { t } = useI18n();
 
 const hideQuickAction = useAppFeature("bb.feature.console.hide-quick-action");
 const hideDefaultProject = useAppFeature("bb.feature.project.hide-default");

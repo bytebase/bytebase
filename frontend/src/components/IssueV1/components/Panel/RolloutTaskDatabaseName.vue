@@ -20,16 +20,16 @@ import { NPerformantEllipsis } from "naive-ui";
 import { computed } from "vue";
 import { databaseForTask } from "@/components/Rollout/RolloutDetail";
 import { InstanceV1Name } from "@/components/v2";
+import { useCurrentProjectV1 } from "@/store";
 import type { Task } from "@/types/proto/v1/rollout_service";
-import { useIssueContext, projectOfIssue } from "../../logic";
 
 const props = defineProps<{
   task: Task;
 }>();
 
-const { issue } = useIssueContext();
+const { project } = useCurrentProjectV1();
 
 const db = computed(() => {
-  return databaseForTask(projectOfIssue(issue.value), props.task);
+  return databaseForTask(project.value, props.task);
 });
 </script>

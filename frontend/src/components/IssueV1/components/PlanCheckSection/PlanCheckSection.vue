@@ -18,12 +18,13 @@ import {
 } from "@/components/IssueV1/logic";
 import PlanCheckRunBar from "@/components/PlanCheckRun/PlanCheckRunBar.vue";
 import { databaseForTask } from "@/components/Rollout/RolloutDetail";
-import { useCurrentUserV1, extractUserId } from "@/store";
+import { useCurrentUserV1, extractUserId, useCurrentProjectV1 } from "@/store";
 import { hasProjectPermissionV2, isValidTaskName } from "@/utils";
 
 const currentUser = useCurrentUserV1();
-const { issue, selectedTask, getPlanCheckRunsForTask, project } =
+const { issue, selectedTask, getPlanCheckRunsForTask } =
   useIssueContext();
+const { project } = useCurrentProjectV1();
 
 const show = computed(() => {
   const spec = specForTask(issue.value.planEntity, selectedTask.value);

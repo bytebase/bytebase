@@ -43,7 +43,11 @@ import {
 import { usePlanContext } from "@/components/Plan/logic";
 import { planServiceClient } from "@/grpcweb";
 import { PROJECT_V1_ROUTE_REVIEW_CENTER_DETAIL } from "@/router/dashboard/projectV1";
-import { useDatabaseV1Store, useSheetV1Store } from "@/store";
+import {
+  useCurrentProjectV1,
+  useDatabaseV1Store,
+  useSheetV1Store,
+} from "@/store";
 import { dialectOfEngineV1, languageOfEngineV1 } from "@/types";
 import { type Plan_ChangeDatabaseConfig } from "@/types/proto/v1/plan_service";
 import type { Sheet } from "@/types/proto/v1/sheet_service";
@@ -62,13 +66,14 @@ const MAX_FORMATTABLE_STATEMENT_SIZE = 10000; // 10K characters
 
 const { t } = useI18n();
 const router = useRouter();
+const { project } = useCurrentProjectV1();
 const { plan, formatOnSave } = usePlanContext();
 const sheetStore = useSheetV1Store();
 const loading = ref(false);
 
 const planCreateErrorList = computed(() => {
   const errorList: string[] = [];
-  if (!hasProjectPermissionV2(plan.value.projectEntity, "bb.plans.create")) {
+  if (!hasProjectPermissionV2(project.value, "bb.plans.create")) {
     errorList.push(t("common.missing-required-permission"));
   }
   if (!plan.value.title.trim()) {

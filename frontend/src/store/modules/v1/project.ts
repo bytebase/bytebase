@@ -1,6 +1,8 @@
+import { computedAsync } from "@vueuse/core";
 import { orderBy, uniq } from "lodash-es";
 import { defineStore } from "pinia";
 import { computed, reactive, ref, unref, watchEffect } from "vue";
+import { useRoute } from "vue-router";
 import { projectServiceClient } from "@/grpcweb";
 import type { ComposedProject, MaybeRef, ResourceId } from "@/types";
 import {
@@ -18,6 +20,7 @@ import type {
   ListProjectsResponse,
 } from "@/types/proto/v1/project_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
+import { projectNamePrefix } from "./common";
 import { useProjectIamPolicyStore } from "./projectIamPolicy";
 
 export interface ProjectFilter {
@@ -193,6 +196,28 @@ export const useProjectByName = (name: MaybeRef<string>) => {
     return store.getProjectByName(unref(name));
   });
   return { project, ready };
+};
+
+export const useCurrentProjectV1 = () => {
+  const route = useRoute();
+
+  const project = computedAsync(async () => {
+    if (route.params.projectId) {
+      return await useProjectV1Store().getOrFetchProjectByName(
+        `${projectNamePrefix}${route.params.projectId}`
+      );
+    }
+    return unknownProject();
+  }, unknownProject());
+
+  const isValid = computed(() => {
+    return isValidProjectName(project.value.name);
+  });
+
+  return {
+    project,
+    isValid,
+  };
 };
 
 const batchComposeProjectIamPolicy = async (projectList: Project[]) => {

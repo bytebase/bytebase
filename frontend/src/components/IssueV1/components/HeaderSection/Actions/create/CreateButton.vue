@@ -73,7 +73,7 @@ import {
 } from "@/grpcweb";
 import { emitWindowEvent } from "@/plugins";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
-import { useDatabaseV1Store, useSheetV1Store } from "@/store";
+import { useDatabaseV1Store, useSheetV1Store, useCurrentProjectV1 } from "@/store";
 import { dialectOfEngineV1, languageOfEngineV1 } from "@/types";
 import { Issue, Issue_Type } from "@/types/proto/v1/issue_service";
 import type { Plan_ExportDataConfig } from "@/types/proto/v1/plan_service";
@@ -99,8 +99,9 @@ const MAX_FORMATTABLE_STATEMENT_SIZE = 10000; // 10K characters
 
 const { t } = useI18n();
 const router = useRouter();
-const { isCreating, issue, formatOnSave, events, selectedTask, project } =
+const { isCreating, issue, formatOnSave, events, selectedTask } =
   useIssueContext();
+const { project } = useCurrentProjectV1();
 const { resultMap: checkResultMap, upsertResult: upsertCheckResult } =
   usePlanSQLCheckContext();
 const sheetStore = useSheetV1Store();

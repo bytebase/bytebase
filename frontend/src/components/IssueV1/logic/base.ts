@@ -4,7 +4,7 @@ import { useDialog } from "naive-ui";
 import { computed, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
-import { useProjectV1Store, useUIStateStore } from "@/store";
+import { useUIStateStore } from "@/store";
 import { emptyStage, emptyTask } from "@/types";
 import type { PlanCheckRun } from "@/types/proto/v1/plan_service";
 import { Stage, Task } from "@/types/proto/v1/rollout_service";
@@ -40,13 +40,8 @@ export const useBaseIssueContext = (
   const route = useRoute();
   const router = useRouter();
   const dialog = useDialog();
-  const projectV1Store = useProjectV1Store();
 
   const events: IssueEvents = new Emittery();
-
-  const project = computed(() => {
-    return projectV1Store.getProjectByName(issue.value.project);
-  });
 
   const rollout = computed(() => issue.value.rolloutEntity);
   const tasks = computed(() => flattenTaskV1List(rollout.value));
@@ -150,9 +145,6 @@ export const useBaseIssueContext = (
     return reviewContext.done.value ? "ROLLOUT" : "REVIEW";
   });
 
-  const isLegacyIssue = computed(() => {
-    return !issue.value.plan && !issue.value.planEntity;
-  });
   const formatOnSave = computed({
     get: () => uiStateStore.editorFormatStatementOnSave,
     set: (value: boolean) => uiStateStore.setEditorFormatStatementOnSave(value),
@@ -183,7 +175,6 @@ export const useBaseIssueContext = (
 
   return {
     phase,
-    isLegacyIssue,
     events,
     releaserCandidates,
     reviewContext,
@@ -191,7 +182,6 @@ export const useBaseIssueContext = (
     selectedTask,
     formatOnSave,
     dialog,
-    project,
     getPlanCheckRunsForTask,
   };
 };
