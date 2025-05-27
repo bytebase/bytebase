@@ -211,6 +211,7 @@ func (exec *DataUpdateExecutor) backupData(
 		GetDatabaseMetadataFunc: BuildGetDatabaseMetadataFunc(exec.store),
 		ListDatabaseNamesFunc:   BuildListDatabaseNamesFunc(exec.store),
 		IsCaseSensitive:         store.IsObjectCaseSensitive(instance),
+		DatabaseName:            database.DatabaseName,
 	}
 	if instance.Metadata.GetEngine() == storepb.Engine_ORACLE {
 		oracleDriver, ok := driver.(*oracle.Driver)
@@ -397,7 +398,8 @@ func getPrependStatements(engine storepb.Engine, statement string) (string, erro
 
 	for _, node := range nodes {
 		if n, ok := node.(*ast.VariableSetStmt); ok {
-			if n.Name == "role" {
+			switch n.Name {
+			case "role", "search_path":
 				return n.Text(), nil
 			}
 		}
