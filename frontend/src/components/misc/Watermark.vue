@@ -44,7 +44,7 @@ const SIZE = 16;
 const PADDING = 6;
 
 const currentUserV1 = useCurrentUserV1();
-const version = computed(() => useActuatorV1Store().version + "-" + useActuatorV1Store().gitCommit.substring(0, 7));
+const version = computed(() => useActuatorV1Store().version + "-" + useActuatorV1Store().gitCommitBE.substring(0, 7));
 const setting = computed(() =>
   useSettingV1Store().getSettingByName("bb.workspace.watermark")
 );

@@ -231,6 +231,10 @@
   "error-page": {
     "go-back-home": "Về trang chủ"
   },
+  "refresh-remind": {
+    "title": "Đã phát hiện phiên bản lỗi thời",
+    "description": "Đã phát hiện phiên bản lỗi thời. Vui lòng làm mới trang."
+  },
   "task": {
     "current-task": "Nhiệm vụ hiện tại",
     "checking": "Đang kiểm tra...",
