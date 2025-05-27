@@ -231,6 +231,10 @@
   "error-page": {
     "go-back-home": "Volver al inicio"
   },
+  "refresh-remind": {
+    "title": "Versión obsoleta detectada",
+    "description": "Se ha detectado una versión obsoleta. Por favor, actualice la página."
+  },
   "task": {
     "current-task": "Tarea actual",
     "checking": "Comprobando...",

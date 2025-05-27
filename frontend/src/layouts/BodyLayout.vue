@@ -134,11 +134,15 @@
     "
     @cancel="state.showReleaseModal = false"
   />
+  <RefreshRemindModal
+    v-if="state.showRefreshRemindModal"
+    @cancel="state.showRefreshRemindModal = false"
+  />
 </template>
 
 <script lang="ts" setup>
 import { useMounted, useWindowSize } from "@vueuse/core";
-import { computed, reactive, ref } from "vue";
+import { computed, onMounted, onUnmounted, reactive, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import ReleaseRemindModal from "@/components/ReleaseRemindModal.vue";
 import TrialModal from "@/components/TrialModal.vue";
@@ -154,11 +158,13 @@ import { PlanType } from "@/types/proto/v1/subscription_service";
 import DashboardHeader from "@/views/DashboardHeader.vue";
 import Quickstart from "../components/Quickstart.vue";
 import { provideBodyLayoutContext } from "./common";
+import RefreshRemindModal from "@/components/RefreshRemindModal.vue";
 
 interface LocalState {
   showMobileOverlay: boolean;
   showTrialModal: boolean;
   showReleaseModal: boolean;
+  showRefreshRemindModal: boolean;
 }
 
 const actuatorStore = useActuatorV1Store();
@@ -172,6 +178,7 @@ const state = reactive<LocalState>({
   showMobileOverlay: false,
   showTrialModal: false,
   showReleaseModal: false,
+  showRefreshRemindModal: false,
 });
 
 const mainContainerRef = ref<HTMLDivElement>();
@@ -198,6 +205,23 @@ actuatorStore.tryToRemindRelease().then((openRemindModal) => {
   }
   state.showReleaseModal = openRemindModal;
 });
+
+// compare BE and FE commit hash every 30 minutes.
+// if they are different, show the refresh remind modal.
+const refreshRemindTimer = ref<NodeJS.Timeout>();
+onMounted(async () => {
+    const remind = await actuatorStore.tryToRemindRefresh();
+    state.showRefreshRemindModal = remind
+  refreshRemindTimer.value = setInterval(async () => {
+    const remind = await actuatorStore.tryToRemindRefresh();
+    state.showRefreshRemindModal = remind
+  }, 1000 * 60 * 30)
+})
+onUnmounted(() => {
+  if (refreshRemindTimer.value) {
+    clearInterval(refreshRemindTimer.value);
+  }
+})
 
 const { mainContainerClasses } = provideBodyLayoutContext({
   mainContainerRef,
