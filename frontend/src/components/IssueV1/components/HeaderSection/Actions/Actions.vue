@@ -13,7 +13,7 @@
 <script setup lang="ts">
 import { asyncComputed } from "@vueuse/core";
 import { computed } from "vue";
-import { useCurrentUserV1 } from "@/store";
+import { extractUserId, useCurrentUserV1 } from "@/store";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
 import { isGrantRequestIssue, checkRoleContainsAnyPermission } from "@/utils";
 import { useIssueContext } from "../../../logic";
@@ -32,8 +32,7 @@ const isFinishedGrantRequestIssueByCurrentUser = computed(() => {
   if (isCreating.value) return false;
   if (issue.value.status !== IssueStatus.DONE) return false;
   if (!isGrantRequestIssue(issue.value)) return false;
-
-  return issue.value.creatorEntity.name === currentUser.value.name;
+  return extractUserId(issue.value.creator) === currentUser.value.email;
 });
 
 const actionType = asyncComputed(async (): Promise<ActionType | undefined> => {

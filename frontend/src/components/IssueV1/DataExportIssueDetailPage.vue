@@ -67,7 +67,7 @@ import { FeatureAttention } from "@/components/FeatureGuard";
 import type { Plan, Plan_Spec } from "@/types/proto/v1/plan_service";
 import type { Task } from "@/types/proto/v1/rollout_service";
 import { SQLCheckSection } from "../Plan/components";
-import { providePlanSQLCheckContext } from "../Plan/components/SQLCheckSection/context";
+import { providePlanSQLCheckContext } from "../Plan/components/SQLCheckSection";
 import { provideSidebarContext } from "../Plan/logic";
 import { Drawer } from "../v2";
 import {

@@ -21,7 +21,7 @@
           size="SMALL"
           class="ml-[-18px] first:ml-0"
         />
-        <heroicons:ellipsis-horizontal v-if="!readonly" class="w-5 h-5" />
+        <EllipsisIcon v-if="!readonly" class="w-4 h-4" />
       </div>
     </NButton>
 
@@ -37,6 +37,7 @@
 
 <script setup lang="ts">
 import { useDebounceFn } from "@vueuse/core";
+import { EllipsisIcon } from "lucide-vue-next";
 import type { SelectOption, SelectGroupOption } from "naive-ui";
 import { NButton, NPopselect, NInput } from "naive-ui";
 import { computed, h, nextTick, ref, reactive, watch } from "vue";
@@ -187,4 +188,16 @@ const handleSearch = useDebounceFn(async (search: string) => {
 }, DEBOUNCE_SEARCH_DELAY);
 
 watch(() => keyword.value, handleSearch, { immediate: true });
+
+// Preload subscribers' user data.
+watch(
+  () => issue.value.subscribers,
+  (newSubscribers) => {
+    userStore.batchGetUsers(newSubscribers);
+  },
+  {
+    immediate: true,
+    deep: true,
+  }
+);
 </script>
