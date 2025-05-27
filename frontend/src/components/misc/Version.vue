@@ -139,10 +139,9 @@ const version = computed(() => {
 });
 
 const gitCommitBE = computed(() => {
-  return `${actuatorStore.gitCommit.substring(0, 7)}`;
+  return `${actuatorStore.gitCommitBE.substring(0, 7)}`;
 });
 const gitCommitFE = computed(() => {
-  const commitHash = import.meta.env.GIT_COMMIT as string | undefined;
-  return (commitHash ?? "unknown").substring(0, 7);
+  return `${actuatorStore.gitCommitFE.substring(0, 7)}`;
 });
 </script>

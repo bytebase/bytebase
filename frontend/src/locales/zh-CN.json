@@ -231,6 +231,10 @@
   "error-page": {
     "go-back-home": "回到主页"
   },
+  "refresh-remind": {
+    "title": "检测到过时版本",
+    "description": "检测到过时版本。请刷新页面。"
+  },
   "task": {
     "current-task": "当前任务",
     "checking": "检查中…",
