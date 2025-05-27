@@ -611,7 +611,7 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, request *v1pb.BatchR
 	}
 	s.webhookManager.CreateEvent(ctx, &webhook.Event{
 		Actor:   user,
-		Type:    webhook.EventTypeTaskRunStatusUpdate,
+		Type:    base.EventTypeTaskRunStatusUpdate,
 		Comment: request.Reason,
 		Issue:   webhook.NewIssue(issueN),
 		Project: webhook.NewProject(project),
@@ -723,7 +723,7 @@ func (s *RolloutService) BatchSkipTasks(ctx context.Context, request *v1pb.Batch
 	}
 	s.webhookManager.CreateEvent(ctx, &webhook.Event{
 		Actor:   user,
-		Type:    webhook.EventTypeTaskRunStatusUpdate,
+		Type:    base.EventTypeTaskRunStatusUpdate,
 		Comment: request.Reason,
 		Issue:   webhook.NewIssue(issueN),
 		Project: webhook.NewProject(project),
@@ -856,7 +856,7 @@ func (s *RolloutService) BatchCancelTaskRuns(ctx context.Context, request *v1pb.
 	}
 	s.webhookManager.CreateEvent(ctx, &webhook.Event{
 		Actor:   user,
-		Type:    webhook.EventTypeTaskRunStatusUpdate,
+		Type:    base.EventTypeTaskRunStatusUpdate,
 		Comment: request.Reason,
 		Issue:   webhook.NewIssue(issueN),
 		Rollout: webhook.NewRollout(rollout),
