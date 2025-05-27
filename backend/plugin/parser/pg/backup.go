@@ -3,7 +3,6 @@ package pg
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"sort"
 	"strings"
 
@@ -13,13 +12,12 @@ import (
 	parser "github.com/bytebase/postgresql-parser"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	"github.com/bytebase/bytebase/backend/store/model"
 	storebp "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 const (
-	defaultSchema      = "public"
 	maxTableNameLength = 63
 )
 
@@ -63,8 +61,8 @@ func init() {
 	base.RegisterTransformDMLToSelect(storebp.Engine_POSTGRES, TransformDMLToSelect)
 }
 
-func TransformDMLToSelect(_ context.Context, _ base.TransformContext, statement string, _ string, targetSchema string, tablePrefix string) ([]base.BackupStatement, error) {
-	statementInfoList, err := prepareTransformation(statement)
+func TransformDMLToSelect(ctx context.Context, tCtx base.TransformContext, statement string, _ string, targetSchema string, tablePrefix string) ([]base.BackupStatement, error) {
+	statementInfoList, err := prepareTransformation(ctx, tCtx, statement)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to prepare transformation")
 	}
@@ -224,22 +222,37 @@ func (e *suffixSelectClauseExtractor) EnterDeletestmt(ctx *parser.DeletestmtCont
 	}
 }
 
-func prepareTransformation(statement string) ([]statementInfo, error) {
+func prepareTransformation(ctx context.Context, tCtx base.TransformContext, statement string) ([]statementInfo, error) {
 	tree, err := ParsePostgreSQL(statement)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to parse statement")
 	}
 
-	extractor := &dmlExtractor{}
+	if tCtx.GetDatabaseMetadataFunc == nil {
+		return nil, errors.New("GetDatabaseMetadataFunc is not set in TransformContext")
+	}
+
+	_, metadata, err := tCtx.GetDatabaseMetadataFunc(ctx, tCtx.InstanceID, tCtx.DatabaseName)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get database metadata")
+	}
+
+	extractor := &dmlExtractor{
+		metadata:   metadata,
+		searchPath: metadata.GetSearchPath(),
+	}
 	antlr.ParseTreeWalkerDefault.Walk(extractor, tree.Tree)
-	return extractor.dmls, nil
+	return extractor.dmls, extractor.err
 }
 
 type dmlExtractor struct {
 	*parser.BasePostgreSQLParserListener
 
-	dmls   []statementInfo
-	offset int
+	metadata   *model.DatabaseMetadata
+	searchPath []string
+	dmls       []statementInfo
+	offset     int
+	err        error
 }
 
 func isTopLevel(ctx antlr.Tree) bool {
@@ -257,6 +270,48 @@ func isTopLevel(ctx antlr.Tree) bool {
 	}
 }
 
+func (e *dmlExtractor) EnterVariablesetstmt(ctx *parser.VariablesetstmtContext) {
+	setRest := ctx.Set_rest()
+	if setRest == nil {
+		return
+	}
+	setRestMore := setRest.Set_rest_more()
+	if setRestMore == nil {
+		return
+	}
+	genericSet := setRestMore.Generic_set()
+	if genericSet == nil {
+		return
+	}
+	varName := genericSet.Var_name()
+	if varName == nil {
+		return
+	}
+	if len(varName.AllColid()) != 1 {
+		return
+	}
+	name := NormalizePostgreSQLColid(varName.Colid(0))
+	if !strings.EqualFold(name, "search_path") {
+		return
+	}
+	var searchPath []string
+	for _, value := range genericSet.Var_list().AllVar_value() {
+		valueText := value.GetText()
+		if strings.HasPrefix(valueText, "\"") && strings.HasSuffix(valueText, "\"") {
+			// Remove the quotes from the schema name.
+			valueText = strings.Trim(valueText, "\"")
+		} else if strings.HasPrefix(valueText, "'") && strings.HasSuffix(valueText, "'") {
+			// Remove the quotes from the schema name.
+			valueText = strings.Trim(valueText, "'")
+		} else {
+			// For non-quoted schema names, we just return the lower string for PostgreSQL.
+			valueText = strings.ToLower(valueText)
+		}
+		searchPath = append(searchPath, strings.TrimSpace(valueText))
+	}
+	e.searchPath = searchPath
+}
+
 func (e *dmlExtractor) ExitStmt(ctx *parser.StmtContext) {
 	if isTopLevel(ctx) {
 		e.offset++
@@ -265,7 +320,11 @@ func (e *dmlExtractor) ExitStmt(ctx *parser.StmtContext) {
 
 func (e *dmlExtractor) EnterUpdatestmt(ctx *parser.UpdatestmtContext) {
 	if isTopLevel(ctx.GetParent()) {
-		table := extractTableReference(ctx.Relation_expr_opt_alias())
+		table, err := e.extractTableReference(ctx.Relation_expr_opt_alias())
+		if err != nil {
+			e.err = errors.Wrapf(err, "failed to extract table reference from update statement at offset %d", e.offset)
+			return
+		}
 		if table == nil {
 			return
 		}
@@ -281,7 +340,11 @@ func (e *dmlExtractor) EnterUpdatestmt(ctx *parser.UpdatestmtContext) {
 
 func (e *dmlExtractor) EnterDeletestmt(ctx *parser.DeletestmtContext) {
 	if isTopLevel(ctx.GetParent()) {
-		table := extractTableReference(ctx.Relation_expr_opt_alias())
+		table, err := e.extractTableReference(ctx.Relation_expr_opt_alias())
+		if err != nil {
+			e.err = errors.Wrapf(err, "failed to extract table reference from delete statement at offset %d", e.offset)
+			return
+		}
 		if table == nil {
 			return
 		}
@@ -295,16 +358,16 @@ func (e *dmlExtractor) EnterDeletestmt(ctx *parser.DeletestmtContext) {
 	}
 }
 
-func extractTableReference(ctx parser.IRelation_expr_opt_aliasContext) *TableReference {
+func (e *dmlExtractor) extractTableReference(ctx parser.IRelation_expr_opt_aliasContext) (*TableReference, error) {
 	if ctx == nil {
-		return nil
+		return nil, nil
 	}
 
 	table := TableReference{}
 
 	relationExpr := ctx.Relation_expr()
 	if relationExpr == nil {
-		return nil
+		return nil, nil
 	}
 
 	list := NormalizePostgreSQLQualifiedName(relationExpr.Qualified_name())
@@ -317,15 +380,23 @@ func extractTableReference(ctx parser.IRelation_expr_opt_aliasContext) *TableRef
 		table.Schema = list[0]
 		table.Table = list[1]
 	case 1:
-		table.Schema = defaultSchema
-		table.Table = list[0]
+		// TODO: remove it in the future.
+		// Handle the case where the search path is not synchronized with the metadata.
+		if len(e.searchPath) == 0 {
+			e.searchPath = []string{"public"}
+		}
+		schemaName, tableMetadata := e.metadata.SearchTable(e.searchPath, list[0])
+		if schemaName == "" && tableMetadata == nil {
+			return nil, errors.Errorf("Table %q not found in metadata with search path %v", list[0], e.searchPath)
+		}
+		table.Schema = schemaName
+		table.Table = tableMetadata.GetProto().Name
 	default:
-		slog.Debug("Invalid table name", log.BBError(errors.Errorf("Invalid table name: %v", list)))
-		return nil
+		return nil, errors.Errorf("Invalid table name: %v", list)
 	}
 
 	if ctx.Colid() != nil {
 		table.Alias = NormalizePostgreSQLColid(ctx.Colid())
 	}
-	return &table
+	return &table, nil
 }
