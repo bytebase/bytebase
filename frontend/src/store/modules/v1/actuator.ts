@@ -31,6 +31,8 @@ interface ActuatorState {
   // Whether the app is initialized or not.
   initialized: boolean;
   serverInfo?: ActuatorInfo;
+  // Last time when we fetched the server info.
+  serverInfoTs: number;
   resourcePackage?: ResourcePackage;
   releaseInfo: RemovableRef<ReleaseInfo>;
   appProfile: AppProfile;
@@ -44,6 +46,7 @@ export const useActuatorV1Store = defineStore("actuator_v1", {
   state: (): ActuatorState => ({
     initialized: false,
     serverInfo: undefined,
+    serverInfoTs: 0,
     resourcePackage: undefined,
     releaseInfo: useLocalStorage("bytebase_release", {
       ignoreRemindModalTillNextRelease: false,
@@ -79,8 +82,13 @@ export const useActuatorV1Store = defineStore("actuator_v1", {
     version: (state) => {
       return state.serverInfo?.version || "";
     },
-    gitCommit: (state) => {
-      return state.serverInfo?.gitCommit || "";
+    gitCommitBE: (state) => {
+      const commit = state.serverInfo?.gitCommit ?? "";
+      return commit === "" ? "unknown": commit;
+    },
+    gitCommitFE: () => {
+      const commit = import.meta.env.GIT_COMMIT ?? "";
+      return commit === "" ? "unknown": commit;
     },
     isDemo: (state) => {
       return state.serverInfo?.demo;
@@ -162,6 +170,7 @@ export const useActuatorV1Store = defineStore("actuator_v1", {
     },
     setServerInfo(serverInfo: ActuatorInfo) {
       this.serverInfo = serverInfo;
+      this.serverInfoTs = Date.now();
     },
     async fetchServerInfo() {
       const [serverInfo, resourcePackage] = await Promise.all([
@@ -216,6 +225,16 @@ export const useActuatorV1Store = defineStore("actuator_v1", {
       }
 
       return this.hasNewRelease;
+    },
+    async tryToRemindRefresh(): Promise<boolean> {
+      // refetch after 30 minutes to keep the info fresh.
+      if (Date.now() - this.serverInfoTs >= 1000 * 60 * 30) {
+        await this.fetchServerInfo();
+      }
+      if (this.gitCommitBE === 'unknown' || this.gitCommitFE === 'unknown') {
+        return false;
+      }
+      return (this.gitCommitBE !== this.gitCommitFE)
     },
     async fetchLatestRelease(): Promise<Release | undefined> {
       try {

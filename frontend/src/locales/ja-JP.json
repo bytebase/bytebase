@@ -231,6 +231,10 @@
   "error-page": {
     "go-back-home": "ホームページに戻る"
   },
+  "refresh-remind": {
+    "title": "古いバージョンが検出されました",
+    "description": "古いバージョンが検出されました。ページを更新してください。"
+  },
   "task": {
     "current-task": "現在のタスク",
     "checking": "検査中…",

@@ -231,6 +231,10 @@
   "error-page": {
     "go-back-home": "Go back home"
   },
+  "refresh-remind": {
+    "title": "Outdated version detected",
+    "description": "Detect outdated version. Please refresh the page."
+  },
   "task": {
     "current-task": "Current task",
     "checking": "Checking...",
