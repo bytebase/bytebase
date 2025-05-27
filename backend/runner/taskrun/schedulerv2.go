@@ -250,7 +250,7 @@ func (s *SchedulerV2) scheduleAutoRolloutTask(ctx context.Context, taskUID int) 
 	}
 	s.webhookManager.CreateEvent(ctx, &webhook.Event{
 		Actor:   s.store.GetSystemBotUser(ctx),
-		Type:    webhook.EventTypeTaskRunStatusUpdate,
+		Type:    base.EventTypeTaskRunStatusUpdate,
 		Comment: "",
 		Issue:   webhook.NewIssue(issue),
 		Rollout: webhook.NewRollout(pipeline),
@@ -811,7 +811,7 @@ func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {
 					}
 					s.webhookManager.CreateEvent(ctx, &webhook.Event{
 						Actor:   s.store.GetSystemBotUser(ctx),
-						Type:    webhook.EventTypeStageStatusUpdate,
+						Type:    base.EventTypeStageStatusUpdate,
 						Comment: "",
 						// Issue:   webhook.NewIssue(issue),
 						Rollout: webhook.NewRollout(pipeline),
@@ -854,7 +854,7 @@ func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {
 					}
 					s.webhookManager.CreateEvent(ctx, &webhook.Event{
 						Actor:   s.store.GetSystemBotUser(ctx),
-						Type:    webhook.EventTypeIssueRolloutReady,
+						Type:    base.EventTypeIssueRolloutReady,
 						Comment: "",
 						Issue:   webhook.NewIssue(issue),
 						Project: webhook.NewProject(issue.Project),
@@ -900,7 +900,7 @@ func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {
 
 						s.webhookManager.CreateEvent(ctx, &webhook.Event{
 							Actor:   s.store.GetSystemBotUser(ctx),
-							Type:    webhook.EventTypeIssueStatusUpdate,
+							Type:    base.EventTypeIssueStatusUpdate,
 							Comment: "",
 							Issue:   webhook.NewIssue(updatedIssue),
 							Project: webhook.NewProject(updatedIssue.Project),
@@ -945,7 +945,7 @@ func (s *SchedulerV2) createActivityForTaskRunStatusUpdate(ctx context.Context, 
 		}
 		s.webhookManager.CreateEvent(ctx, &webhook.Event{
 			Actor:   s.store.GetSystemBotUser(ctx),
-			Type:    webhook.EventTypeTaskRunStatusUpdate,
+			Type:    base.EventTypeTaskRunStatusUpdate,
 			Comment: "",
 			Issue:   webhook.NewIssue(issue),
 			Rollout: webhook.NewRollout(rollout),
