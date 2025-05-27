@@ -160,7 +160,7 @@ message QueryRequest {
   // It is used for querying admin data source even if the instance has
   // read-only data sources. Or it can be used to query a specific read-only
   // data source.
-  string data_source_id = 6;
+  string data_source_id = 6 [(google.api.field_behavior) = REQUIRED];
 
   // Explain the statement.
   bool explain = 7;
