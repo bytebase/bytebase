@@ -92,7 +92,7 @@ import type {
 import { specForTask, useIssueContext, usePollIssue } from "./logic";
 
 const containerRef = ref<HTMLElement>();
-const { isCreating, issue, selectedTask, events } = useIssueContext();
+const { isCreating, issue, selectedTask, events, project } = useIssueContext();
 
 const ongoingIssueReviewAction = ref<{
   action: IssueReviewAction;
@@ -127,7 +127,7 @@ events.on("perform-task-rollout-action", async ({ action, tasks }) => {
 });
 
 providePlanSQLCheckContext({
-  project: computed(() => issue.value.projectEntity),
+  project,
   plan: computed(() => issue.value.planEntity as Plan),
   selectedSpec: computed(
     () => specForTask(issue.value.planEntity, selectedTask.value) as Plan_Spec

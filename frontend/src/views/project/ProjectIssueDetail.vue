@@ -36,7 +36,7 @@ import {
   type PlanCheckRunEvents,
 } from "@/components/PlanCheckRun/context";
 import { useBodyLayoutContext } from "@/layouts/common";
-import { useUIStateStore } from "@/store";
+import { projectNamePrefix, useProjectByName, useUIStateStore } from "@/store";
 import {
   isGrantRequestIssue,
   isDatabaseDataExportIssue,
@@ -61,11 +61,14 @@ const { t } = useI18n();
 const state = reactive<LocalState>({
   showFeatureModal: false,
 });
+const { project, ready: projectReady } = useProjectByName(
+  computed(() => `${projectNamePrefix}${props.projectId}`)
+);
 
 const { isCreating, issue, isInitializing, reInitialize, allowEditIssue } =
-  useInitializeIssue(toRef(props, "issueSlug"), toRef(props, "projectId"));
+  useInitializeIssue(toRef(props, "issueSlug"), project);
 const ready = computed(() => {
-  return !isInitializing.value && !!issue.value;
+  return !isInitializing.value && !!issue.value && projectReady.value;
 });
 const uiStateStore = useUIStateStore();
 

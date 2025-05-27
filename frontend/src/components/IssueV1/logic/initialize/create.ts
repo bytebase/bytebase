@@ -99,7 +99,6 @@ const buildIssue = async (params: CreateIssueParams) => {
   const me = useCurrentUserV1();
   issue.creator = `users/${me.value.email}`;
   issue.project = project.name;
-  issue.projectEntity = project;
   issue.name = `${project.name}/issues/${nextUID()}`;
   issue.status = IssueStatus.OPEN;
   // Only set title from query if enforceIssueTitle is false.

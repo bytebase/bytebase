@@ -32,7 +32,7 @@ import { hasProjectPermissionV2 } from "@/utils";
 import ExportOptionSection from "./ExportOptionSection";
 
 const databaseStore = useDatabaseV1Store();
-const { isCreating, issue, selectedTask } = useIssueContext();
+const { isCreating, issue, selectedTask, project } = useIssueContext();
 
 // For database data export issue, the stageList should always be only 1 stage.
 const stageList = computed(() => {
@@ -40,13 +40,13 @@ const stageList = computed(() => {
 });
 
 const database = computed(() => {
-  return databaseForTask(issue.value.projectEntity, selectedTask.value);
+  return databaseForTask(project.value, selectedTask.value);
 });
 
 const placeholder = computed(() => {
   if (
     isCreating.value &&
-    !hasProjectPermissionV2(issue.value.projectEntity, "bb.rollouts.preview")
+    !hasProjectPermissionV2(project.value, "bb.rollouts.preview")
   ) {
     return "PERMISSION_DENIED";
   }

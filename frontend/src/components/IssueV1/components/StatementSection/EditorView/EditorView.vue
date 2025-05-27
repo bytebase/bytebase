@@ -209,6 +209,7 @@ import {
   notifyNotEditableLegacyIssue,
   isGroupingChangeTaskV1,
   databaseEngineForSpec,
+  projectOfIssue,
 } from "@/components/IssueV1/logic";
 import { MonacoEditor } from "@/components/MonacoEditor";
 import { extensionNameOfLanguage } from "@/components/MonacoEditor/utils";
@@ -274,7 +275,7 @@ const state = reactive<LocalState>({
 });
 
 const database = computed(() => {
-  return databaseForTask(issue.value.projectEntity, selectedTask.value);
+  return databaseForTask(projectOfIssue(issue.value), selectedTask.value);
 });
 
 const language = useInstanceV1EditorLanguage(

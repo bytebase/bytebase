@@ -107,6 +107,7 @@ import {
   issueReviewActionButtonProps,
   issueReviewActionDisplayName,
   planCheckRunSummaryForIssue,
+  projectOfIssue,
 } from "@/components/IssueV1/logic";
 import PlanCheckRunBar from "@/components/PlanCheckRun/PlanCheckRunBar.vue";
 import RequiredStar from "@/components/RequiredStar.vue";
@@ -148,7 +149,7 @@ const title = computed(() => {
 });
 
 const database = computed(() =>
-  databaseForTask(issue.value.projectEntity, selectedTask.value)
+  databaseForTask(projectOfIssue(issue.value), selectedTask.value)
 );
 
 const showPerformActionAnyway = computed(() => {

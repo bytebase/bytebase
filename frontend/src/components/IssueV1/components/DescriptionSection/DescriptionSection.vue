@@ -88,7 +88,7 @@ type LocalState = {
 };
 
 const { t } = useI18n();
-const { isCreating, issue, allowEditIssue } = useIssueContext();
+const { isCreating, issue, allowEditIssue, project } = useIssueContext();
 const contentPreviewArea = ref<HTMLIFrameElement>();
 
 const state = reactive<LocalState>({
@@ -151,7 +151,7 @@ const cancelEdit = () => {
 const { renderedContent } = useRenderMarkdown(
   computed(() => issue.value.description),
   contentPreviewArea,
-  computed(() => issue.value.projectEntity)
+  project
 );
 
 // Reset the edit state after creating the issue.

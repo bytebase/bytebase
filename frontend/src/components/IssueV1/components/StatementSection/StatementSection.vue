@@ -26,16 +26,13 @@ import SDLView from "./SDLView";
 
 const { t } = useI18n();
 const router = useRouter();
-const { issue, isCreating, selectedTask } = useIssueContext();
+const { isCreating, selectedTask, project } = useIssueContext();
 const { resultMap } = usePlanSQLCheckContext();
 
 const editorViewRef = ref<InstanceType<typeof EditorView>>();
 
 const advices = computed(() => {
-  const database = databaseForTask(
-    issue.value.projectEntity,
-    selectedTask.value
-  );
+  const database = databaseForTask(project.value, selectedTask.value);
   return resultMap.value[database.name]?.advices || [];
 });
 

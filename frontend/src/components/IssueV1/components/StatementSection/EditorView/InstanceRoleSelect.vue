@@ -18,7 +18,7 @@
 <script setup lang="tsx">
 import { NSelect, type SelectOption } from "naive-ui";
 import { computed, reactive, ref, watch } from "vue";
-import { useIssueContext } from "@/components/IssueV1/logic";
+import { useIssueContext, projectOfIssue } from "@/components/IssueV1/logic";
 import { databaseForTask } from "@/components/Rollout/RolloutDetail";
 import { instanceRoleServiceClient } from "@/grpcweb";
 import { DEFAULT_PAGE_SIZE } from "@/store/modules/common";
@@ -46,7 +46,7 @@ const { issue, selectedTask } = useIssueContext();
 const state = reactive<LocalState>({});
 
 const database = computed(() => {
-  return databaseForTask(issue.value.projectEntity, selectedTask.value);
+  return databaseForTask(projectOfIssue(issue.value), selectedTask.value);
 });
 
 const instanceRoles = ref<InstanceRole[]>([]);

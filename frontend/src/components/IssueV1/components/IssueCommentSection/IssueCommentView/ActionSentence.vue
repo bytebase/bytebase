@@ -38,7 +38,6 @@ const props = defineProps<{
 const { t } = useI18n();
 const userStore = useUserStore();
 
-
 const renderActionSentence = () => {
   const { issueComment, issue } = props;
   if (issueComment.type === IssueCommentType.APPROVAL) {

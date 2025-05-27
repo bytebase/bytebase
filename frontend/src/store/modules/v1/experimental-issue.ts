@@ -30,9 +30,8 @@ export const composeIssue = async (
   config: ComposeIssueConfig = { withPlan: true, withRollout: true }
 ): Promise<ComposedIssue> => {
   const project = `projects/${extractProjectResourceName(rawIssue.name)}`;
-  const [projectEntity] = await Promise.all([
-    useProjectV1Store().getOrFetchProjectByName(project),
-  ]);
+  const projectEntity =
+    await useProjectV1Store().getOrFetchProjectByName(project);
 
   const issue: ComposedIssue = {
     ...rawIssue,
@@ -41,7 +40,6 @@ export const composeIssue = async (
     rolloutEntity: emptyRollout(),
     rolloutTaskRunList: [],
     project,
-    projectEntity,
   };
 
   if (config.withPlan && issue.plan) {
@@ -100,7 +98,7 @@ export const shallowComposeIssue = async (
 
 export const experimentalFetchIssueByUID = async (
   uid: string,
-  project = "-"
+  project: string
 ) => {
   if (uid === "undefined") {
     console.warn("undefined issue uid");
@@ -111,7 +109,7 @@ export const experimentalFetchIssueByUID = async (
   if (uid === String(UNKNOWN_ID)) return unknownIssue();
 
   const rawIssue = await issueServiceClient.getIssue({
-    name: `projects/${project}/issues/${uid}`,
+    name: `${project}/issues/${uid}`,
   });
 
   return composeIssue(rawIssue);
