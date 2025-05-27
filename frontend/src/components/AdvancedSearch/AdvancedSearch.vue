@@ -484,14 +484,17 @@ const maybeEmitIncompleteValue = () => {
   if (inputText.value !== `${state.currentScope}:`) {
     const updated = cloneDeep(props.params);
     updated.query = inputText.value;
-    emit("update:params", updated);
+    updateParams(updated);
   }
 };
+
+const updateParams = useDebounceFn((params: SearchParams) => {
+  emit("update:params", params);
+}, DEBOUNCE_SEARCH_DELAY * 2);
 
 const handleInputClick = () => {
   maybeSelectMatchedScope();
   maybeDeselectMismatchedScope();
-  maybeEmitIncompleteValue();
 };
 
 const handleKeyDown = (e: KeyboardEvent) => {
