@@ -4,15 +4,12 @@ import {
   UNKNOWN_PROJECT_NAME,
   emptyProject,
   unknownProject,
-  emptyUser,
-  unknownUser,
   EMPTY_ROLLOUT_NAME,
   UNKNOWN_ROLLOUT_NAME,
 } from "@/types";
 import type { Rollout } from "@/types//proto/v1/rollout_service";
 import { Issue, IssueStatus, Issue_Type } from "@/types/proto/v1/issue_service";
 import type { Plan, PlanCheckRun } from "@/types/proto/v1/plan_service";
-import { type User } from "@/types/proto/v1/user_service";
 import { EMPTY_ID, UNKNOWN_ID } from "../../const";
 
 // For grant request issue, it has no plan and rollout.
@@ -24,7 +21,6 @@ export interface ComposedIssue extends Issue {
   rolloutTaskRunList: ComposedTaskRun[];
   project: string;
   projectEntity: ComposedProject;
-  creatorEntity: User;
 }
 
 export const ESTABLISH_BASELINE_SQL =
@@ -47,7 +43,6 @@ export const emptyIssue = (): ComposedIssue => {
     rolloutTaskRunList: [],
     project: EMPTY_PROJECT_NAME,
     projectEntity: emptyProject(),
-    creatorEntity: emptyUser(),
   };
 };
 
@@ -65,7 +60,6 @@ export const unknownIssue = (): ComposedIssue => {
     rolloutTaskRunList: [],
     project: UNKNOWN_PROJECT_NAME,
     projectEntity: unknownProject(),
-    creatorEntity: unknownUser(),
   };
 };
 

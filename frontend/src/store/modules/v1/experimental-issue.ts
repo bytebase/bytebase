@@ -5,12 +5,11 @@ import {
   planServiceClient,
   rolloutServiceClient,
 } from "@/grpcweb";
-import { useProjectV1Store, useUserStore } from "@/store";
+import { useProjectV1Store } from "@/store";
 import type { ComposedIssue, ComposedProject, ComposedTaskRun } from "@/types";
 import {
   emptyIssue,
   emptyRollout,
-  unknownUser,
   EMPTY_ID,
   unknownIssue,
   UNKNOWN_ID,
@@ -30,15 +29,9 @@ export const composeIssue = async (
   rawIssue: Issue,
   config: ComposeIssueConfig = { withPlan: true, withRollout: true }
 ): Promise<ComposedIssue> => {
-  const userStore = useUserStore();
-
   const project = `projects/${extractProjectResourceName(rawIssue.name)}`;
-  const [projectEntity, creatorEntity, _] = await Promise.all([
+  const [projectEntity] = await Promise.all([
     useProjectV1Store().getOrFetchProjectByName(project),
-    userStore
-      .getOrFetchUserByIdentifier(rawIssue.creator)
-      .then((user) => user ?? unknownUser()),
-    userStore.batchGetUsers(rawIssue.subscribers),
   ]);
 
   const issue: ComposedIssue = {
@@ -49,7 +42,6 @@ export const composeIssue = async (
     rolloutTaskRunList: [],
     project,
     projectEntity,
-    creatorEntity,
   };
 
   if (config.withPlan && issue.plan) {

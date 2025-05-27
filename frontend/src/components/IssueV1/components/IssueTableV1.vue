@@ -51,7 +51,12 @@ import CurrentApproverV1 from "@/components/IssueV1/components/CurrentApproverV1
 import { useElementVisibilityInScrollParent } from "@/composables/useElementVisibilityInScrollParent";
 import { emitWindowEvent } from "@/plugins";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
-import { getTimeForPbTimestamp, type ComposedIssue } from "@/types";
+import { useUserStore } from "@/store";
+import {
+  getTimeForPbTimestamp,
+  unknownUser,
+  type ComposedIssue,
+} from "@/types";
 import {
   getHighlightHTMLByRegExp,
   extractProjectResourceName,
@@ -64,7 +69,66 @@ import IssueLabelSelector, {
 } from "./IssueLabelSelector.vue";
 import IssueStatusIconWithTaskSummary from "./IssueStatusIconWithTaskSummary.vue";
 
+interface LocalState {
+  selectedIssueNameList: Set<string>;
+}
+
+const props = withDefaults(
+  defineProps<{
+    issueList: ComposedIssue[];
+    bordered?: boolean;
+    title?: string;
+    highlightText?: string;
+    loading?: boolean;
+    showProject?: boolean;
+    showSelection?: boolean;
+  }>(),
+  {
+    title: "",
+    highlightText: "",
+    loading: true,
+    bordered: false,
+    showSelection: true,
+  }
+);
+
 const { t } = useI18n();
+const router = useRouter();
+const userStore = useUserStore();
+const state = reactive<LocalState>({
+  selectedIssueNameList: new Set(),
+});
+
+const tableRef = ref<HTMLDivElement>();
+const isTableInViewport = useElementVisibilityInScrollParent(tableRef);
+const { width: tableWidth } = useElementSize(tableRef);
+const showExtendedColumns = computed(() => {
+  return tableWidth.value > 800;
+});
+
+const sortedIssueList = computed(() => {
+  if (!props.highlightText) {
+    return props.issueList;
+  }
+
+  return orderBy(
+    props.issueList,
+    [
+      (issue) =>
+        `${issue.title} ${issue.description}`.includes(props.highlightText)
+          ? 1
+          : 0,
+      (issue) => parseInt(extractIssueUID(issue.name)),
+    ],
+    ["desc", "desc"]
+  );
+});
+
+const selectedIssueList = computed(() => {
+  return props.issueList.filter((issue) =>
+    state.selectedIssueNameList.has(issue.name)
+  );
+});
 
 const columnList = computed((): DataTableColumn<ComposedIssue>[] => {
   const columns: (DataTableColumn<ComposedIssue> & { hide?: boolean })[] = [
@@ -167,75 +231,19 @@ const columnList = computed((): DataTableColumn<ComposedIssue>[] => {
       width: 150,
       title: t("issue.table.creator"),
       hide: !showExtendedColumns.value,
-      render: (issue) => (
-        <div class="flex flex-row items-center overflow-hidden gap-x-2">
-          <BBAvatar size="SMALL" username={issue.creatorEntity.title} />
-          <span class="truncate">{issue.creatorEntity.title}</span>
-        </div>
-      ),
+      render: (issue) => {
+        const creator =
+          userStore.getUserByIdentifier(issue.creator) || unknownUser();
+        return (
+          <div class="flex flex-row items-center overflow-hidden gap-x-2">
+            <BBAvatar size="SMALL" username={creator.title} />
+            <span class="truncate">{creator.title}</span>
+          </div>
+        );
+      },
     },
   ];
   return columns.filter((column) => !column.hide);
-});
-
-interface LocalState {
-  selectedIssueNameList: Set<string>;
-}
-
-const props = withDefaults(
-  defineProps<{
-    issueList: ComposedIssue[];
-    bordered?: boolean;
-    title?: string;
-    highlightText?: string;
-    loading?: boolean;
-    showProject?: boolean;
-    showSelection?: boolean;
-  }>(),
-  {
-    title: "",
-    highlightText: "",
-    loading: true,
-    bordered: false,
-    showSelection: true,
-  }
-);
-
-const router = useRouter();
-
-const state = reactive<LocalState>({
-  selectedIssueNameList: new Set(),
-});
-
-const tableRef = ref<HTMLDivElement>();
-const isTableInViewport = useElementVisibilityInScrollParent(tableRef);
-const { width: tableWidth } = useElementSize(tableRef);
-const showExtendedColumns = computed(() => {
-  return tableWidth.value > 800;
-});
-
-const sortedIssueList = computed(() => {
-  if (!props.highlightText) {
-    return props.issueList;
-  }
-
-  return orderBy(
-    props.issueList,
-    [
-      (issue) =>
-        `${issue.title} ${issue.description}`.includes(props.highlightText)
-          ? 1
-          : 0,
-      (issue) => parseInt(extractIssueUID(issue.name)),
-    ],
-    ["desc", "desc"]
-  );
-});
-
-const selectedIssueList = computed(() => {
-  return props.issueList.filter((issue) =>
-    state.selectedIssueNameList.has(issue.name)
-  );
 });
 
 const issueUrl = (issue: ComposedIssue) => {

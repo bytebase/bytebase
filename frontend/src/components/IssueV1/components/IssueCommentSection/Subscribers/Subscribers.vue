@@ -21,11 +21,9 @@ const allowSubscribe = computed(() => {
     // Allowed if current user is the creator.
     return true;
   }
-
   if (hasProjectPermissionV2(issue.value.projectEntity, "bb.issues.update")) {
     return true;
   }
-
   return false;
 });
 </script>
