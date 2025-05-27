@@ -18,7 +18,12 @@
           @click="onSQLReviewPolicyClick"
         >
           {{ pendingSelectReviewPolicy.name }}
-          <NButton quaternary size="tiny" @click.stop="onReviewPolicyRemove">
+          <NButton
+            v-if="allowEditSQLReviewTag"
+            quaternary
+            size="tiny"
+            @click.stop="onReviewPolicyRemove"
+          >
             <template #icon>
               <XIcon class="w-4 h-auto" />
             </template>

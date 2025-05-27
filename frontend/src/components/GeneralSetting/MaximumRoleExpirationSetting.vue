@@ -78,6 +78,7 @@ const handleSettingChange = async () => {
       "value.workspace_profile_setting_value.maximum_role_expiration",
     ],
   });
+  Object.assign(state, getInitialState());
 };
 
 defineExpose({
