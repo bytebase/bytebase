@@ -380,6 +380,11 @@ func (e *dmlExtractor) extractTableReference(ctx parser.IRelation_expr_opt_alias
 		table.Schema = list[0]
 		table.Table = list[1]
 	case 1:
+		// TODO: remove it in the future.
+		// Handle the case where the search path is not synchronized with the metadata.
+		if len(e.searchPath) == 0 {
+			e.searchPath = []string{"public"}
+		}
 		schemaName, tableMetadata := e.metadata.SearchTable(e.searchPath, list[0])
 		if schemaName == "" && tableMetadata == nil {
 			return nil, errors.Errorf("Table %q not found in metadata with search path %v", list[0], e.searchPath)
