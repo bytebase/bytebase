@@ -26,13 +26,14 @@ import DatabaseInfo from "@/components/DatabaseInfo.vue";
 import { useIssueContext } from "@/components/IssueV1/logic";
 import { databaseForTask } from "@/components/Rollout/RolloutDetail";
 import NoPermissionPlaceholder from "@/components/misc/NoPermissionPlaceholder.vue";
-import { useDatabaseV1Store } from "@/store";
+import { useDatabaseV1Store, useCurrentProjectV1 } from "@/store";
 import { isValidDatabaseName } from "@/types";
 import { hasProjectPermissionV2 } from "@/utils";
 import ExportOptionSection from "./ExportOptionSection";
 
 const databaseStore = useDatabaseV1Store();
-const { isCreating, issue, selectedTask, project } = useIssueContext();
+const { isCreating, issue, selectedTask } = useIssueContext();
+const { project } = useCurrentProjectV1();
 
 // For database data export issue, the stageList should always be only 1 stage.
 const stageList = computed(() => {

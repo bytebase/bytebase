@@ -76,7 +76,7 @@ import { useI18n } from "vue-i18n";
 import { useRenderMarkdown } from "@/components/MarkdownEditor";
 import { issueServiceClient } from "@/grpcweb";
 import { emitWindowEvent } from "@/plugins";
-import { pushNotification } from "@/store";
+import { pushNotification, useCurrentProjectV1 } from "@/store";
 import { Issue } from "@/types/proto/v1/issue_service";
 import { isGrantRequestIssue } from "@/utils";
 import { useIssueContext } from "../../logic";
@@ -88,7 +88,8 @@ type LocalState = {
 };
 
 const { t } = useI18n();
-const { isCreating, issue, allowEditIssue, project } = useIssueContext();
+const { isCreating, issue, allowEditIssue } = useIssueContext();
+const { project } = useCurrentProjectV1();
 const contentPreviewArea = ref<HTMLIFrameElement>();
 
 const state = reactive<LocalState>({

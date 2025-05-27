@@ -2,9 +2,7 @@ import dayjs from "dayjs";
 import { orderBy } from "lodash-es";
 import { defineStore } from "pinia";
 import { planServiceClient } from "@/grpcweb";
-import { useUserStore } from "@/store";
 import { EMPTY_ID, UNKNOWN_ID } from "@/types";
-import { unknownUser } from "@/types";
 import type { Plan } from "@/types/proto/v1/plan_service";
 import {
   emptyPlan,
@@ -73,25 +71,16 @@ export const buildPlanFindBySearchParams = (
 };
 
 export const composePlan = async (rawPlan: Plan): Promise<ComposedPlan> => {
-  const userStore = useUserStore();
   const project = `projects/${extractProjectResourceName(rawPlan.name)}`;
   const projectEntity =
     await useProjectV1Store().getOrFetchProjectByName(project);
-
-  const creatorEntity =
-    (await userStore.getOrFetchUserByIdentifier(rawPlan.creator)) ??
-    unknownUser();
 
   const plan: ComposedPlan = {
     ...rawPlan,
     planCheckRunList: [],
     project,
-    projectEntity,
-    creatorEntity,
   };
   if (hasProjectPermissionV2(projectEntity, "bb.planCheckRuns.list")) {
-    // Only show the latest plan check runs.
-    // TODO(steven): maybe we need to show all plan check runs on a separate page later.
     const { planCheckRuns } = await planServiceClient.listPlanCheckRuns({
       parent: rawPlan.name,
       latestOnly: true,

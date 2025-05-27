@@ -209,7 +209,6 @@ import {
   notifyNotEditableLegacyIssue,
   isGroupingChangeTaskV1,
   databaseEngineForSpec,
-  projectOfIssue,
 } from "@/components/IssueV1/logic";
 import { MonacoEditor } from "@/components/MonacoEditor";
 import { extensionNameOfLanguage } from "@/components/MonacoEditor/utils";
@@ -219,7 +218,7 @@ import DownloadSheetButton from "@/components/Sheet/DownloadSheetButton.vue";
 import SQLUploadButton from "@/components/misc/SQLUploadButton.vue";
 import { planServiceClient } from "@/grpcweb";
 import { emitWindowEvent } from "@/plugins";
-import { hasFeature, pushNotification, useSheetV1Store } from "@/store";
+import { hasFeature, pushNotification, useSheetV1Store, useCurrentProjectV1 } from "@/store";
 import type { SQLDialect } from "@/types";
 import {
   EMPTY_ID,
@@ -261,6 +260,7 @@ const route = useRoute();
 const context = useIssueContext();
 const { events, isCreating, issue, selectedTask, getPlanCheckRunsForTask } =
   context;
+const { project } = useCurrentProjectV1();
 const dialog = useDialog();
 const editorContainerElRef = ref<HTMLElement>();
 const monacoEditorRef = ref<InstanceType<typeof MonacoEditor>>();
@@ -275,7 +275,7 @@ const state = reactive<LocalState>({
 });
 
 const database = computed(() => {
-  return databaseForTask(projectOfIssue(issue.value), selectedTask.value);
+  return databaseForTask(project.value, selectedTask.value);
 });
 
 const language = useInstanceV1EditorLanguage(

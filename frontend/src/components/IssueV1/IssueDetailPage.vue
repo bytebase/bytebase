@@ -67,6 +67,7 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import { FeatureAttention } from "@/components/FeatureGuard";
+import { useCurrentProjectV1 } from "@/store";
 import type { Plan, Plan_Spec } from "@/types/proto/v1/plan_service";
 import { type Task } from "@/types/proto/v1/rollout_service";
 import { SQLCheckSection } from "../Plan/components";
@@ -96,7 +97,8 @@ import type {
 import { specForTask, useIssueContext, usePollIssue } from "./logic";
 
 const containerRef = ref<HTMLElement>();
-const { isCreating, issue, selectedTask, events, project } = useIssueContext();
+const { isCreating, issue, selectedTask, events } = useIssueContext();
+const { project } = useCurrentProjectV1();
 
 const ongoingIssueReviewAction = ref<{
   action: IssueReviewAction;

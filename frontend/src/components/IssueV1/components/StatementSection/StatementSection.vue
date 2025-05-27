@@ -21,12 +21,14 @@ import { TaskTypeListWithStatement } from "@/types";
 import { Task_Type } from "@/types/proto/v1/rollout_service";
 import { isValidTaskName } from "@/utils";
 import { useIssueContext } from "../../logic";
+import { useCurrentProjectV1 } from "@/store";
 import EditorView from "./EditorView";
 import SDLView from "./SDLView";
 
 const { t } = useI18n();
 const router = useRouter();
-const { isCreating, selectedTask, project } = useIssueContext();
+const { isCreating, selectedTask } = useIssueContext();
+const { project } = useCurrentProjectV1();
 const { resultMap } = usePlanSQLCheckContext();
 
 const editorViewRef = ref<InstanceType<typeof EditorView>>();

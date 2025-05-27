@@ -30,7 +30,7 @@ import {
   taskRolloutActionDisplayName,
   useIssueContext,
 } from "@/components/IssueV1";
-import { useCurrentUserV1, useAppFeature, extractUserId } from "@/store";
+import { useCurrentUserV1, useAppFeature, extractUserId, useCurrentProjectV1 } from "@/store";
 import {
   IssueStatus,
   Issue_Approver_Status,
@@ -50,7 +50,6 @@ const hideIssueReviewActions = useAppFeature(
   "bb.feature.issue.hide-review-actions"
 );
 const {
-  project,
   issue,
   phase,
   reviewContext,
@@ -58,6 +57,7 @@ const {
   selectedTask,
   selectedStage,
 } = useIssueContext();
+const { project } = useCurrentProjectV1();
 const { ready, status, done } = reviewContext;
 
 const shouldShowApproveOrReject = computed(() => {
