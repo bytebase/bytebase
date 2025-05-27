@@ -6,6 +6,7 @@ import (
 	"sort"
 	"strings"
 
+	mysql "github.com/bytebase/mysql-parser"
 	parser "github.com/bytebase/mysql-parser"
 )
 
@@ -95,4 +96,44 @@ func isKeyword(suspect string) bool {
 		}
 	}
 	return false
+}
+
+func columnNeedDefault(ctx mysql.IFieldDefinitionContext) bool {
+	if ctx.GENERATED_SYMBOL() != nil {
+		return false
+	}
+	for _, attr := range ctx.AllColumnAttribute() {
+		if attr.AUTO_INCREMENT_SYMBOL() != nil || attr.PRIMARY_SYMBOL() != nil {
+			return false
+		}
+	}
+
+	if ctx.DataType() == nil {
+		return false
+	}
+
+	switch ctx.DataType().GetType_().GetTokenType() {
+	case mysql.MySQLParserBLOB_SYMBOL,
+		mysql.MySQLParserTINYBLOB_SYMBOL,
+		mysql.MySQLParserMEDIUMBLOB_SYMBOL,
+		mysql.MySQLParserLONGBLOB_SYMBOL,
+		mysql.MySQLParserJSON_SYMBOL,
+		mysql.MySQLParserTINYTEXT_SYMBOL,
+		mysql.MySQLParserTEXT_SYMBOL,
+		mysql.MySQLParserMEDIUMTEXT_SYMBOL,
+		mysql.MySQLParserLONGTEXT_SYMBOL,
+		// LONG VARBINARY and LONG VARCHAR.
+		mysql.MySQLParserLONG_SYMBOL,
+		mysql.MySQLParserSERIAL_SYMBOL,
+		mysql.MySQLParserGEOMETRY_SYMBOL,
+		mysql.MySQLParserGEOMETRYCOLLECTION_SYMBOL,
+		mysql.MySQLParserPOINT_SYMBOL,
+		mysql.MySQLParserMULTIPOINT_SYMBOL,
+		mysql.MySQLParserLINESTRING_SYMBOL,
+		mysql.MySQLParserMULTILINESTRING_SYMBOL,
+		mysql.MySQLParserPOLYGON_SYMBOL,
+		mysql.MySQLParserMULTIPOLYGON_SYMBOL:
+		return false
+	}
+	return true
 }

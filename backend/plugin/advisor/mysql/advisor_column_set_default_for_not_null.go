@@ -118,7 +118,7 @@ func (checker *columnSetDefaultForNotNullChecker) EnterCreateTable(ctx *mysql.Cr
 		if pkColumns[columnName] {
 			continue
 		}
-		if !checker.canNull(field) && !checker.hasDefault(field) && checker.needDefault(field) {
+		if !checker.canNull(field) && !checker.hasDefault(field) && columnNeedDefault(field) {
 			checker.adviceList = append(checker.adviceList, &storepb.Advice{
 				Status:        checker.level,
 				Code:          advisor.NotNullColumnWithNoDefault.Int32(),
@@ -131,7 +131,7 @@ func (checker *columnSetDefaultForNotNullChecker) EnterCreateTable(ctx *mysql.Cr
 }
 
 func (checker *columnSetDefaultForNotNullChecker) checkFieldDefinition(tableName, columnName string, ctx mysql.IFieldDefinitionContext) {
-	if !checker.canNull(ctx) && checker.needDefault(ctx) && !checker.hasDefault(ctx) {
+	if !checker.canNull(ctx) && !checker.hasDefault(ctx) && columnNeedDefault(ctx) {
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{
 			Status:        checker.level,
 			Code:          advisor.NotNullColumnWithNoDefault.Int32(),
@@ -161,46 +161,6 @@ func (*columnSetDefaultForNotNullChecker) hasDefault(ctx mysql.IFieldDefinitionC
 		}
 	}
 	return false
-}
-
-func (*columnSetDefaultForNotNullChecker) needDefault(ctx mysql.IFieldDefinitionContext) bool {
-	if ctx.GENERATED_SYMBOL() != nil {
-		return false
-	}
-	for _, attr := range ctx.AllColumnAttribute() {
-		if attr.AUTO_INCREMENT_SYMBOL() != nil || attr.PRIMARY_SYMBOL() != nil {
-			return false
-		}
-	}
-
-	if ctx.DataType() == nil {
-		return false
-	}
-
-	switch ctx.DataType().GetType_().GetTokenType() {
-	case mysql.MySQLParserBLOB_SYMBOL,
-		mysql.MySQLParserTINYBLOB_SYMBOL,
-		mysql.MySQLParserMEDIUMBLOB_SYMBOL,
-		mysql.MySQLParserLONGBLOB_SYMBOL,
-		mysql.MySQLParserJSON_SYMBOL,
-		mysql.MySQLParserTINYTEXT_SYMBOL,
-		mysql.MySQLParserTEXT_SYMBOL,
-		mysql.MySQLParserMEDIUMTEXT_SYMBOL,
-		mysql.MySQLParserLONGTEXT_SYMBOL,
-		// LONG VARBINARY and LONG VARCHAR.
-		mysql.MySQLParserLONG_SYMBOL,
-		mysql.MySQLParserSERIAL_SYMBOL,
-		mysql.MySQLParserGEOMETRY_SYMBOL,
-		mysql.MySQLParserGEOMETRYCOLLECTION_SYMBOL,
-		mysql.MySQLParserPOINT_SYMBOL,
-		mysql.MySQLParserMULTIPOINT_SYMBOL,
-		mysql.MySQLParserLINESTRING_SYMBOL,
-		mysql.MySQLParserMULTILINESTRING_SYMBOL,
-		mysql.MySQLParserPOLYGON_SYMBOL,
-		mysql.MySQLParserMULTIPOLYGON_SYMBOL:
-		return false
-	}
-	return true
 }
 
 func (checker *columnSetDefaultForNotNullChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
