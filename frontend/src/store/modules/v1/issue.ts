@@ -15,6 +15,7 @@ import {
   ApprovalNode_Type,
 } from "@/types/proto/v1/issue_service";
 import { memberMapToRolesInProjectIAM } from "@/utils";
+import { useUserStore } from "../user";
 import { userNamePrefix } from "./common";
 import {
   shallowComposeIssue,
@@ -96,6 +97,9 @@ export const useIssueV1Store = defineStore("issue_v1", () => {
     const composedIssues = await Promise.all(
       resp.issues.map((issue) => shallowComposeIssue(issue, composeIssueConfig))
     );
+    // Preprare creator for the issues.
+    const users = uniq(composedIssues.map((issue) => issue.creator));
+    await useUserStore().batchGetUsers(users);
     return {
       nextPageToken: resp.nextPageToken,
       issues: composedIssues,

@@ -98,7 +98,6 @@ const buildIssue = async (params: CreateIssueParams) => {
   const issue = emptyIssue();
   const me = useCurrentUserV1();
   issue.creator = `users/${me.value.email}`;
-  issue.creatorEntity = me.value;
   issue.project = project.name;
   issue.projectEntity = project;
   issue.name = `${project.name}/issues/${nextUID()}`;

@@ -53,7 +53,7 @@ import {
   SQLCheckSection,
   SpecListSection,
 } from "./components";
-import { providePlanSQLCheckContext } from "./components/SQLCheckSection/context";
+import { providePlanSQLCheckContext } from "./components/SQLCheckSection";
 import Sidebar from "./components/Sidebar";
 import { usePlanContext, usePollPlan } from "./logic";
 import { provideSidebarContext } from "./logic";
