@@ -79,12 +79,12 @@ func (x PlanConfig_ChangeDatabaseConfig_Type) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use PlanConfig_ChangeDatabaseConfig_Type.Descriptor instead.
 func (PlanConfig_ChangeDatabaseConfig_Type) EnumDescriptor() ([]byte, []int) {
-	return file_store_plan_proto_rawDescGZIP(), []int{0, 3, 0}
+	return file_store_plan_proto_rawDescGZIP(), []int{0, 2, 0}
 }
 
 type PlanConfig struct {
 	state         protoimpl.MessageState    `protogen:"open.v1"`
-	Steps         []*PlanConfig_Step        `protobuf:"bytes,1,rep,name=steps,proto3" json:"steps,omitempty"`
+	Specs         []*PlanConfig_Spec        `protobuf:"bytes,1,rep,name=specs,proto3" json:"specs,omitempty"`
 	ReleaseSource *PlanConfig_ReleaseSource `protobuf:"bytes,3,opt,name=release_source,json=releaseSource,proto3" json:"release_source,omitempty"`
 	Deployment    *PlanConfig_Deployment    `protobuf:"bytes,4,opt,name=deployment,proto3" json:"deployment,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -121,9 +121,9 @@ func (*PlanConfig) Descriptor() ([]byte, []int) {
 	return file_store_plan_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *PlanConfig) GetSteps() []*PlanConfig_Step {
+func (x *PlanConfig) GetSpecs() []*PlanConfig_Spec {
 	if x != nil {
-		return x.Steps
+		return x.Specs
 	}
 	return nil
 }
@@ -138,60 +138,6 @@ func (x *PlanConfig) GetReleaseSource() *PlanConfig_ReleaseSource {
 func (x *PlanConfig) GetDeployment() *PlanConfig_Deployment {
 	if x != nil {
 		return x.Deployment
-	}
-	return nil
-}
-
-type PlanConfig_Step struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// Use the title if set.
-	// Use a generated title if empty.
-	Title         string             `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
-	Specs         []*PlanConfig_Spec `protobuf:"bytes,1,rep,name=specs,proto3" json:"specs,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *PlanConfig_Step) Reset() {
-	*x = PlanConfig_Step{}
-	mi := &file_store_plan_proto_msgTypes[1]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *PlanConfig_Step) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*PlanConfig_Step) ProtoMessage() {}
-
-func (x *PlanConfig_Step) ProtoReflect() protoreflect.Message {
-	mi := &file_store_plan_proto_msgTypes[1]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use PlanConfig_Step.ProtoReflect.Descriptor instead.
-func (*PlanConfig_Step) Descriptor() ([]byte, []int) {
-	return file_store_plan_proto_rawDescGZIP(), []int{0, 0}
-}
-
-func (x *PlanConfig_Step) GetTitle() string {
-	if x != nil {
-		return x.Title
-	}
-	return ""
-}
-
-func (x *PlanConfig_Step) GetSpecs() []*PlanConfig_Spec {
-	if x != nil {
-		return x.Specs
 	}
 	return nil
 }
@@ -213,7 +159,7 @@ type PlanConfig_Spec struct {
 
 func (x *PlanConfig_Spec) Reset() {
 	*x = PlanConfig_Spec{}
-	mi := &file_store_plan_proto_msgTypes[2]
+	mi := &file_store_plan_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -225,7 +171,7 @@ func (x *PlanConfig_Spec) String() string {
 func (*PlanConfig_Spec) ProtoMessage() {}
 
 func (x *PlanConfig_Spec) ProtoReflect() protoreflect.Message {
-	mi := &file_store_plan_proto_msgTypes[2]
+	mi := &file_store_plan_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -238,7 +184,7 @@ func (x *PlanConfig_Spec) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PlanConfig_Spec.ProtoReflect.Descriptor instead.
 func (*PlanConfig_Spec) Descriptor() ([]byte, []int) {
-	return file_store_plan_proto_rawDescGZIP(), []int{0, 1}
+	return file_store_plan_proto_rawDescGZIP(), []int{0, 0}
 }
 
 func (x *PlanConfig_Spec) GetId() string {
@@ -338,7 +284,7 @@ type PlanConfig_CreateDatabaseConfig struct {
 
 func (x *PlanConfig_CreateDatabaseConfig) Reset() {
 	*x = PlanConfig_CreateDatabaseConfig{}
-	mi := &file_store_plan_proto_msgTypes[3]
+	mi := &file_store_plan_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -350,7 +296,7 @@ func (x *PlanConfig_CreateDatabaseConfig) String() string {
 func (*PlanConfig_CreateDatabaseConfig) ProtoMessage() {}
 
 func (x *PlanConfig_CreateDatabaseConfig) ProtoReflect() protoreflect.Message {
-	mi := &file_store_plan_proto_msgTypes[3]
+	mi := &file_store_plan_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -363,7 +309,7 @@ func (x *PlanConfig_CreateDatabaseConfig) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PlanConfig_CreateDatabaseConfig.ProtoReflect.Descriptor instead.
 func (*PlanConfig_CreateDatabaseConfig) Descriptor() ([]byte, []int) {
-	return file_store_plan_proto_rawDescGZIP(), []int{0, 2}
+	return file_store_plan_proto_rawDescGZIP(), []int{0, 1}
 }
 
 func (x *PlanConfig_CreateDatabaseConfig) GetTarget() string {
@@ -444,7 +390,7 @@ type PlanConfig_ChangeDatabaseConfig struct {
 
 func (x *PlanConfig_ChangeDatabaseConfig) Reset() {
 	*x = PlanConfig_ChangeDatabaseConfig{}
-	mi := &file_store_plan_proto_msgTypes[4]
+	mi := &file_store_plan_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -456,7 +402,7 @@ func (x *PlanConfig_ChangeDatabaseConfig) String() string {
 func (*PlanConfig_ChangeDatabaseConfig) ProtoMessage() {}
 
 func (x *PlanConfig_ChangeDatabaseConfig) ProtoReflect() protoreflect.Message {
-	mi := &file_store_plan_proto_msgTypes[4]
+	mi := &file_store_plan_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -469,7 +415,7 @@ func (x *PlanConfig_ChangeDatabaseConfig) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PlanConfig_ChangeDatabaseConfig.ProtoReflect.Descriptor instead.
 func (*PlanConfig_ChangeDatabaseConfig) Descriptor() ([]byte, []int) {
-	return file_store_plan_proto_rawDescGZIP(), []int{0, 3}
+	return file_store_plan_proto_rawDescGZIP(), []int{0, 2}
 }
 
 func (x *PlanConfig_ChangeDatabaseConfig) GetTarget() string {
@@ -533,7 +479,7 @@ type PlanConfig_ExportDataConfig struct {
 
 func (x *PlanConfig_ExportDataConfig) Reset() {
 	*x = PlanConfig_ExportDataConfig{}
-	mi := &file_store_plan_proto_msgTypes[5]
+	mi := &file_store_plan_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -545,7 +491,7 @@ func (x *PlanConfig_ExportDataConfig) String() string {
 func (*PlanConfig_ExportDataConfig) ProtoMessage() {}
 
 func (x *PlanConfig_ExportDataConfig) ProtoReflect() protoreflect.Message {
-	mi := &file_store_plan_proto_msgTypes[5]
+	mi := &file_store_plan_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -558,7 +504,7 @@ func (x *PlanConfig_ExportDataConfig) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PlanConfig_ExportDataConfig.ProtoReflect.Descriptor instead.
 func (*PlanConfig_ExportDataConfig) Descriptor() ([]byte, []int) {
-	return file_store_plan_proto_rawDescGZIP(), []int{0, 4}
+	return file_store_plan_proto_rawDescGZIP(), []int{0, 3}
 }
 
 func (x *PlanConfig_ExportDataConfig) GetTarget() string {
@@ -600,7 +546,7 @@ type PlanConfig_ReleaseSource struct {
 
 func (x *PlanConfig_ReleaseSource) Reset() {
 	*x = PlanConfig_ReleaseSource{}
-	mi := &file_store_plan_proto_msgTypes[6]
+	mi := &file_store_plan_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -612,7 +558,7 @@ func (x *PlanConfig_ReleaseSource) String() string {
 func (*PlanConfig_ReleaseSource) ProtoMessage() {}
 
 func (x *PlanConfig_ReleaseSource) ProtoReflect() protoreflect.Message {
-	mi := &file_store_plan_proto_msgTypes[6]
+	mi := &file_store_plan_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -625,7 +571,7 @@ func (x *PlanConfig_ReleaseSource) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PlanConfig_ReleaseSource.ProtoReflect.Descriptor instead.
 func (*PlanConfig_ReleaseSource) Descriptor() ([]byte, []int) {
-	return file_store_plan_proto_rawDescGZIP(), []int{0, 5}
+	return file_store_plan_proto_rawDescGZIP(), []int{0, 4}
 }
 
 func (x *PlanConfig_ReleaseSource) GetRelease() string {
@@ -645,7 +591,7 @@ type PlanConfig_SpecReleaseSource struct {
 
 func (x *PlanConfig_SpecReleaseSource) Reset() {
 	*x = PlanConfig_SpecReleaseSource{}
-	mi := &file_store_plan_proto_msgTypes[7]
+	mi := &file_store_plan_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -657,7 +603,7 @@ func (x *PlanConfig_SpecReleaseSource) String() string {
 func (*PlanConfig_SpecReleaseSource) ProtoMessage() {}
 
 func (x *PlanConfig_SpecReleaseSource) ProtoReflect() protoreflect.Message {
-	mi := &file_store_plan_proto_msgTypes[7]
+	mi := &file_store_plan_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -670,7 +616,7 @@ func (x *PlanConfig_SpecReleaseSource) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PlanConfig_SpecReleaseSource.ProtoReflect.Descriptor instead.
 func (*PlanConfig_SpecReleaseSource) Descriptor() ([]byte, []int) {
-	return file_store_plan_proto_rawDescGZIP(), []int{0, 6}
+	return file_store_plan_proto_rawDescGZIP(), []int{0, 5}
 }
 
 func (x *PlanConfig_SpecReleaseSource) GetFile() string {
@@ -692,7 +638,7 @@ type PlanConfig_Deployment struct {
 
 func (x *PlanConfig_Deployment) Reset() {
 	*x = PlanConfig_Deployment{}
-	mi := &file_store_plan_proto_msgTypes[8]
+	mi := &file_store_plan_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -704,7 +650,7 @@ func (x *PlanConfig_Deployment) String() string {
 func (*PlanConfig_Deployment) ProtoMessage() {}
 
 func (x *PlanConfig_Deployment) ProtoReflect() protoreflect.Message {
-	mi := &file_store_plan_proto_msgTypes[8]
+	mi := &file_store_plan_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -717,7 +663,7 @@ func (x *PlanConfig_Deployment) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PlanConfig_Deployment.ProtoReflect.Descriptor instead.
 func (*PlanConfig_Deployment) Descriptor() ([]byte, []int) {
-	return file_store_plan_proto_rawDescGZIP(), []int{0, 7}
+	return file_store_plan_proto_rawDescGZIP(), []int{0, 6}
 }
 
 func (x *PlanConfig_Deployment) GetEnvironments() []string {
@@ -746,7 +692,7 @@ type PlanConfig_Deployment_DatabaseGroupMapping struct {
 
 func (x *PlanConfig_Deployment_DatabaseGroupMapping) Reset() {
 	*x = PlanConfig_Deployment_DatabaseGroupMapping{}
-	mi := &file_store_plan_proto_msgTypes[10]
+	mi := &file_store_plan_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -758,7 +704,7 @@ func (x *PlanConfig_Deployment_DatabaseGroupMapping) String() string {
 func (*PlanConfig_Deployment_DatabaseGroupMapping) ProtoMessage() {}
 
 func (x *PlanConfig_Deployment_DatabaseGroupMapping) ProtoReflect() protoreflect.Message {
-	mi := &file_store_plan_proto_msgTypes[10]
+	mi := &file_store_plan_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -771,7 +717,7 @@ func (x *PlanConfig_Deployment_DatabaseGroupMapping) ProtoReflect() protoreflect
 
 // Deprecated: Use PlanConfig_Deployment_DatabaseGroupMapping.ProtoReflect.Descriptor instead.
 func (*PlanConfig_Deployment_DatabaseGroupMapping) Descriptor() ([]byte, []int) {
-	return file_store_plan_proto_rawDescGZIP(), []int{0, 7, 0}
+	return file_store_plan_proto_rawDescGZIP(), []int{0, 6, 0}
 }
 
 func (x *PlanConfig_Deployment_DatabaseGroupMapping) GetDatabaseGroup() string {
@@ -792,17 +738,14 @@ var File_store_plan_proto protoreflect.FileDescriptor
 
 const file_store_plan_proto_rawDesc = "" +
 	"\n" +
-	"\x10store/plan.proto\x12\x0ebytebase.store\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x12store/common.proto\x1a\x1astore/plan_check_run.proto\"\xe2\x10\n" +
+	"\x10store/plan.proto\x12\x0ebytebase.store\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x12store/common.proto\x1a\x1astore/plan_check_run.proto\"\x8d\x10\n" +
 	"\n" +
 	"PlanConfig\x125\n" +
-	"\x05steps\x18\x01 \x03(\v2\x1f.bytebase.store.PlanConfig.StepR\x05steps\x12O\n" +
+	"\x05specs\x18\x01 \x03(\v2\x1f.bytebase.store.PlanConfig.SpecR\x05specs\x12O\n" +
 	"\x0erelease_source\x18\x03 \x01(\v2(.bytebase.store.PlanConfig.ReleaseSourceR\rreleaseSource\x12E\n" +
 	"\n" +
 	"deployment\x18\x04 \x01(\v2%.bytebase.store.PlanConfig.DeploymentR\n" +
-	"deployment\x1aS\n" +
-	"\x04Step\x12\x14\n" +
-	"\x05title\x18\x02 \x01(\tR\x05title\x125\n" +
-	"\x05specs\x18\x01 \x03(\v2\x1f.bytebase.store.PlanConfig.SpecR\x05specs\x1a\xad\x03\n" +
+	"deployment\x1a\xad\x03\n" +
 	"\x04Spec\x12\x0e\n" +
 	"\x02id\x18\x05 \x01(\tR\x02id\x12\\\n" +
 	"\x13spec_release_source\x18\b \x01(\v2,.bytebase.store.PlanConfig.SpecReleaseSourceR\x11specReleaseSource\x12g\n" +
@@ -869,42 +812,40 @@ func file_store_plan_proto_rawDescGZIP() []byte {
 }
 
 var file_store_plan_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_store_plan_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
+var file_store_plan_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
 var file_store_plan_proto_goTypes = []any{
 	(PlanConfig_ChangeDatabaseConfig_Type)(0),          // 0: bytebase.store.PlanConfig.ChangeDatabaseConfig.Type
 	(*PlanConfig)(nil),                                 // 1: bytebase.store.PlanConfig
-	(*PlanConfig_Step)(nil),                            // 2: bytebase.store.PlanConfig.Step
-	(*PlanConfig_Spec)(nil),                            // 3: bytebase.store.PlanConfig.Spec
-	(*PlanConfig_CreateDatabaseConfig)(nil),            // 4: bytebase.store.PlanConfig.CreateDatabaseConfig
-	(*PlanConfig_ChangeDatabaseConfig)(nil),            // 5: bytebase.store.PlanConfig.ChangeDatabaseConfig
-	(*PlanConfig_ExportDataConfig)(nil),                // 6: bytebase.store.PlanConfig.ExportDataConfig
-	(*PlanConfig_ReleaseSource)(nil),                   // 7: bytebase.store.PlanConfig.ReleaseSource
-	(*PlanConfig_SpecReleaseSource)(nil),               // 8: bytebase.store.PlanConfig.SpecReleaseSource
-	(*PlanConfig_Deployment)(nil),                      // 9: bytebase.store.PlanConfig.Deployment
-	nil,                                                // 10: bytebase.store.PlanConfig.ChangeDatabaseConfig.GhostFlagsEntry
-	(*PlanConfig_Deployment_DatabaseGroupMapping)(nil), // 11: bytebase.store.PlanConfig.Deployment.DatabaseGroupMapping
-	(*PreUpdateBackupDetail)(nil),                      // 12: bytebase.store.PreUpdateBackupDetail
-	(ExportFormat)(0),                                  // 13: bytebase.store.ExportFormat
+	(*PlanConfig_Spec)(nil),                            // 2: bytebase.store.PlanConfig.Spec
+	(*PlanConfig_CreateDatabaseConfig)(nil),            // 3: bytebase.store.PlanConfig.CreateDatabaseConfig
+	(*PlanConfig_ChangeDatabaseConfig)(nil),            // 4: bytebase.store.PlanConfig.ChangeDatabaseConfig
+	(*PlanConfig_ExportDataConfig)(nil),                // 5: bytebase.store.PlanConfig.ExportDataConfig
+	(*PlanConfig_ReleaseSource)(nil),                   // 6: bytebase.store.PlanConfig.ReleaseSource
+	(*PlanConfig_SpecReleaseSource)(nil),               // 7: bytebase.store.PlanConfig.SpecReleaseSource
+	(*PlanConfig_Deployment)(nil),                      // 8: bytebase.store.PlanConfig.Deployment
+	nil,                                                // 9: bytebase.store.PlanConfig.ChangeDatabaseConfig.GhostFlagsEntry
+	(*PlanConfig_Deployment_DatabaseGroupMapping)(nil), // 10: bytebase.store.PlanConfig.Deployment.DatabaseGroupMapping
+	(*PreUpdateBackupDetail)(nil),                      // 11: bytebase.store.PreUpdateBackupDetail
+	(ExportFormat)(0),                                  // 12: bytebase.store.ExportFormat
 }
 var file_store_plan_proto_depIdxs = []int32{
-	2,  // 0: bytebase.store.PlanConfig.steps:type_name -> bytebase.store.PlanConfig.Step
-	7,  // 1: bytebase.store.PlanConfig.release_source:type_name -> bytebase.store.PlanConfig.ReleaseSource
-	9,  // 2: bytebase.store.PlanConfig.deployment:type_name -> bytebase.store.PlanConfig.Deployment
-	3,  // 3: bytebase.store.PlanConfig.Step.specs:type_name -> bytebase.store.PlanConfig.Spec
-	8,  // 4: bytebase.store.PlanConfig.Spec.spec_release_source:type_name -> bytebase.store.PlanConfig.SpecReleaseSource
-	4,  // 5: bytebase.store.PlanConfig.Spec.create_database_config:type_name -> bytebase.store.PlanConfig.CreateDatabaseConfig
-	5,  // 6: bytebase.store.PlanConfig.Spec.change_database_config:type_name -> bytebase.store.PlanConfig.ChangeDatabaseConfig
-	6,  // 7: bytebase.store.PlanConfig.Spec.export_data_config:type_name -> bytebase.store.PlanConfig.ExportDataConfig
-	0,  // 8: bytebase.store.PlanConfig.ChangeDatabaseConfig.type:type_name -> bytebase.store.PlanConfig.ChangeDatabaseConfig.Type
-	10, // 9: bytebase.store.PlanConfig.ChangeDatabaseConfig.ghost_flags:type_name -> bytebase.store.PlanConfig.ChangeDatabaseConfig.GhostFlagsEntry
-	12, // 10: bytebase.store.PlanConfig.ChangeDatabaseConfig.pre_update_backup_detail:type_name -> bytebase.store.PreUpdateBackupDetail
-	13, // 11: bytebase.store.PlanConfig.ExportDataConfig.format:type_name -> bytebase.store.ExportFormat
-	11, // 12: bytebase.store.PlanConfig.Deployment.database_group_mappings:type_name -> bytebase.store.PlanConfig.Deployment.DatabaseGroupMapping
-	13, // [13:13] is the sub-list for method output_type
-	13, // [13:13] is the sub-list for method input_type
-	13, // [13:13] is the sub-list for extension type_name
-	13, // [13:13] is the sub-list for extension extendee
-	0,  // [0:13] is the sub-list for field type_name
+	2,  // 0: bytebase.store.PlanConfig.specs:type_name -> bytebase.store.PlanConfig.Spec
+	6,  // 1: bytebase.store.PlanConfig.release_source:type_name -> bytebase.store.PlanConfig.ReleaseSource
+	8,  // 2: bytebase.store.PlanConfig.deployment:type_name -> bytebase.store.PlanConfig.Deployment
+	7,  // 3: bytebase.store.PlanConfig.Spec.spec_release_source:type_name -> bytebase.store.PlanConfig.SpecReleaseSource
+	3,  // 4: bytebase.store.PlanConfig.Spec.create_database_config:type_name -> bytebase.store.PlanConfig.CreateDatabaseConfig
+	4,  // 5: bytebase.store.PlanConfig.Spec.change_database_config:type_name -> bytebase.store.PlanConfig.ChangeDatabaseConfig
+	5,  // 6: bytebase.store.PlanConfig.Spec.export_data_config:type_name -> bytebase.store.PlanConfig.ExportDataConfig
+	0,  // 7: bytebase.store.PlanConfig.ChangeDatabaseConfig.type:type_name -> bytebase.store.PlanConfig.ChangeDatabaseConfig.Type
+	9,  // 8: bytebase.store.PlanConfig.ChangeDatabaseConfig.ghost_flags:type_name -> bytebase.store.PlanConfig.ChangeDatabaseConfig.GhostFlagsEntry
+	11, // 9: bytebase.store.PlanConfig.ChangeDatabaseConfig.pre_update_backup_detail:type_name -> bytebase.store.PreUpdateBackupDetail
+	12, // 10: bytebase.store.PlanConfig.ExportDataConfig.format:type_name -> bytebase.store.ExportFormat
+	10, // 11: bytebase.store.PlanConfig.Deployment.database_group_mappings:type_name -> bytebase.store.PlanConfig.Deployment.DatabaseGroupMapping
+	12, // [12:12] is the sub-list for method output_type
+	12, // [12:12] is the sub-list for method input_type
+	12, // [12:12] is the sub-list for extension type_name
+	12, // [12:12] is the sub-list for extension extendee
+	0,  // [0:12] is the sub-list for field type_name
 }
 
 func init() { file_store_plan_proto_init() }
@@ -914,20 +855,20 @@ func file_store_plan_proto_init() {
 	}
 	file_store_common_proto_init()
 	file_store_plan_check_run_proto_init()
-	file_store_plan_proto_msgTypes[2].OneofWrappers = []any{
+	file_store_plan_proto_msgTypes[1].OneofWrappers = []any{
 		(*PlanConfig_Spec_CreateDatabaseConfig)(nil),
 		(*PlanConfig_Spec_ChangeDatabaseConfig)(nil),
 		(*PlanConfig_Spec_ExportDataConfig)(nil),
 	}
+	file_store_plan_proto_msgTypes[3].OneofWrappers = []any{}
 	file_store_plan_proto_msgTypes[4].OneofWrappers = []any{}
-	file_store_plan_proto_msgTypes[5].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_store_plan_proto_rawDesc), len(file_store_plan_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   11,
+			NumMessages:   10,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

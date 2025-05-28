@@ -54,7 +54,7 @@ type UpdatePlanMessage struct {
 	PipelineUID *int
 	Name        *string
 	Description *string
-	Steps       *[]*storepb.PlanConfig_Step
+	Specs       *[]*storepb.PlanConfig_Spec
 	Deployment  **storepb.PlanConfig_Deployment
 }
 
@@ -258,14 +258,14 @@ func (s *Store) UpdatePlan(ctx context.Context, patch *UpdatePlanMessage) error 
 	}
 	{
 		var payloadSets []string
-		if v := patch.Steps; v != nil {
+		if v := patch.Specs; v != nil {
 			config, err := protojson.Marshal(&storepb.PlanConfig{
-				Steps: *v,
+				Specs: *v,
 			})
 			if err != nil {
 				return errors.Wrapf(err, "failed to marshal plan config")
 			}
-			payloadSets = append(payloadSets, fmt.Sprintf("jsonb_build_object('steps', ($%d)::JSONB->'steps')", len(args)+1))
+			payloadSets = append(payloadSets, fmt.Sprintf("jsonb_build_object('specs', ($%d)::JSONB->'specs')", len(args)+1))
 			args = append(args, config)
 		}
 		if v := patch.Deployment; v != nil {
