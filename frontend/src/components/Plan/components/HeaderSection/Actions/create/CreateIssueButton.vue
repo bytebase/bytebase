@@ -68,8 +68,8 @@ const restrictIssueCreationForSqlReviewPolicy = ref(false);
 
 const planCheckStatus = computed((): PlanCheckRun_Result_Status => {
   const planCheckList = uniqBy(
-    plan.value.steps.flatMap((step) =>
-      step.specs.flatMap((spec) => planCheckRunListForSpec(plan.value, spec))
+    plan.value.specs.flatMap((spec) =>
+      planCheckRunListForSpec(plan.value, spec)
     ),
     (checkRun) => checkRun.name
   );
