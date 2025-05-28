@@ -183,7 +183,7 @@ func convertPlan(plan *v1pb.Plan) *storepb.PlanConfig {
 	if plan == nil {
 		return nil
 	}
-	
+
 	// At this point, plan.Specs should always be populated
 	// (either originally or converted from steps at API entry point)
 	return &storepb.PlanConfig{

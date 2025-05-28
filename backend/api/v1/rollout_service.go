@@ -82,12 +82,12 @@ func (s *RolloutService) PreviewRollout(ctx context.Context, request *v1pb.Previ
 			request.Plan.Specs = append(request.Plan.Specs, step.Specs...)
 		}
 	}
-	
+
 	// Validate plan specs
 	if err := validateSpecs(request.Plan.Specs); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to validate plan specs, error: %v", err)
 	}
-	
+
 	specs := convertPlanSpecs(request.Plan.Specs)
 
 	rollout, err := GetPipelineCreate(ctx, s.store, s.sheetManager, s.dbFactory, request.GetPlan().GetName(), specs, nil /* snapshot */, project)
