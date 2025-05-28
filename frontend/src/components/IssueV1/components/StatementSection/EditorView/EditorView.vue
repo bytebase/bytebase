@@ -20,7 +20,6 @@
       </div>
 
       <div
-        v-if="selectedTask.type !== Task_Type.DATABASE_SCHEMA_BASELINE"
         class="flex items-center justify-end gap-x-2"
       >
         <template v-if="isCreating">
@@ -231,7 +230,6 @@ import {
 } from "@/types";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
 import type { Task } from "@/types/proto/v1/rollout_service";
-import { Task_Type } from "@/types/proto/v1/rollout_service";
 import { Sheet } from "@/types/proto/v1/sheet_service";
 import type { Advice } from "@/types/proto/v1/sql_service";
 import {
@@ -309,11 +307,6 @@ const allowEditStatementWhenCreating = computed(() => {
   if (issue.value.planEntity?.releaseSource?.release) {
     return false;
   }
-  if (selectedTask.value.type === Task_Type.DATABASE_SCHEMA_BASELINE) {
-    // A baseline issue has actually no SQL statement.
-    // "-- Establish baseline using current schema" is just a comment.
-    return false;
-  }
   return true;
 });
 
@@ -325,9 +318,6 @@ const allowEditStatementWhenCreating = computed(() => {
  * - Disallowed to edit statement
  */
 const isEditorReadonly = computed(() => {
-  if (selectedTask.value.type === Task_Type.DATABASE_SCHEMA_BASELINE) {
-    return true;
-  }
   if (isCreating.value) {
     return !allowEditStatementWhenCreating.value;
   }

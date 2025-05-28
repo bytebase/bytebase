@@ -27,10 +27,6 @@ type PlanConfig_ChangeDatabaseConfig_Type int32
 
 const (
 	PlanConfig_ChangeDatabaseConfig_TYPE_UNSPECIFIED PlanConfig_ChangeDatabaseConfig_Type = 0
-	// Used for establishing schema baseline, this is used when
-	// 1. Onboard the database into Bytebase since Bytebase needs to know the current database schema.
-	// 2. Had schema drift and need to re-establish the baseline.
-	PlanConfig_ChangeDatabaseConfig_BASELINE PlanConfig_ChangeDatabaseConfig_Type = 1
 	// Used for DDL changes including CREATE DATABASE.
 	PlanConfig_ChangeDatabaseConfig_MIGRATE PlanConfig_ChangeDatabaseConfig_Type = 2
 	// Used for schema changes via state-based schema migration including CREATE DATABASE.
@@ -45,7 +41,6 @@ const (
 var (
 	PlanConfig_ChangeDatabaseConfig_Type_name = map[int32]string{
 		0: "TYPE_UNSPECIFIED",
-		1: "BASELINE",
 		2: "MIGRATE",
 		3: "MIGRATE_SDL",
 		4: "MIGRATE_GHOST",
@@ -53,7 +48,6 @@ var (
 	}
 	PlanConfig_ChangeDatabaseConfig_Type_value = map[string]int32{
 		"TYPE_UNSPECIFIED": 0,
-		"BASELINE":         1,
 		"MIGRATE":          2,
 		"MIGRATE_SDL":      3,
 		"MIGRATE_GHOST":    4,
@@ -808,7 +802,7 @@ var File_store_plan_proto protoreflect.FileDescriptor
 
 const file_store_plan_proto_rawDesc = "" +
 	"\n" +
-	"\x10store/plan.proto\x12\x0ebytebase.store\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x12store/common.proto\x1a\x1astore/plan_check_run.proto\"\x8e\x11\n" +
+	"\x10store/plan.proto\x12\x0ebytebase.store\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x12store/common.proto\x1a\x1astore/plan_check_run.proto\"\x80\x11\n" +
 	"\n" +
 	"PlanConfig\x125\n" +
 	"\x05steps\x18\x01 \x03(\v2\x1f.bytebase.store.PlanConfig.StepR\x05steps\x12O\n" +
@@ -835,7 +829,7 @@ const file_store_plan_proto_rawDesc = "" +
 	"\acluster\x18\x06 \x01(\tB\x04\xe2A\x01\x01R\acluster\x12\x1a\n" +
 	"\x05owner\x18\a \x01(\tB\x04\xe2A\x01\x01R\x05owner\x12\x1c\n" +
 	"\x06backup\x18\b \x01(\tB\x04\xe2A\x01\x01R\x06backup\x12&\n" +
-	"\venvironment\x18\t \x01(\tB\x04\xe2A\x01\x01R\venvironment\x1a\xcb\x04\n" +
+	"\venvironment\x18\t \x01(\tB\x04\xe2A\x01\x01R\venvironment\x1a\xbd\x04\n" +
 	"\x14ChangeDatabaseConfig\x12\x16\n" +
 	"\x06target\x18\x01 \x01(\tR\x06target\x12\x14\n" +
 	"\x05sheet\x18\x02 \x01(\tR\x05sheet\x12H\n" +
@@ -846,10 +840,9 @@ const file_store_plan_proto_rawDesc = "" +
 	"\x18pre_update_backup_detail\x18\b \x01(\v2%.bytebase.store.PreUpdateBackupDetailH\x00R\x15preUpdateBackupDetail\x88\x01\x01\x1a=\n" +
 	"\x0fGhostFlagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"e\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"W\n" +
 	"\x04Type\x12\x14\n" +
-	"\x10TYPE_UNSPECIFIED\x10\x00\x12\f\n" +
-	"\bBASELINE\x10\x01\x12\v\n" +
+	"\x10TYPE_UNSPECIFIED\x10\x00\x12\v\n" +
 	"\aMIGRATE\x10\x02\x12\x0f\n" +
 	"\vMIGRATE_SDL\x10\x03\x12\x11\n" +
 	"\rMIGRATE_GHOST\x10\x04\x12\b\n" +

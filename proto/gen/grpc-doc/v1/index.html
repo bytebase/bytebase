@@ -2631,10 +2631,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.Task.DatabaseSchemaBaseline"><span class="badge">M</span>Task.DatabaseSchemaBaseline</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.Task.DatabaseSchemaUpdate"><span class="badge">M</span>Task.DatabaseSchemaUpdate</a>
                 </li>
               
@@ -21448,14 +21444,6 @@ Format: projects/{project}/plans/{plan} </p></td>
               </tr>
             
               <tr>
-                <td>BASELINE</td>
-                <td>1</td>
-                <td><p>Used for establishing schema baseline, this is used when
-1. Onboard the database into Bytebase since Bytebase needs to know the current database schema.
-2. Had schema drift and need to re-establish the baseline.</p></td>
-              </tr>
-            
-              <tr>
                 <td>MIGRATE</td>
                 <td>2</td>
                 <td><p>Used for DDL changes including CREATE DATABASE.</p></td>
@@ -28136,13 +28124,6 @@ Format: instances/{instance}/databases/{database} </p></td>
                 </tr>
               
                 <tr>
-                  <td>database_schema_baseline</td>
-                  <td><a href="#bytebase.v1.Task.DatabaseSchemaBaseline">Task.DatabaseSchemaBaseline</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
                   <td>database_schema_update</td>
                   <td><a href="#bytebase.v1.Task.DatabaseSchemaUpdate">Task.DatabaseSchemaUpdate</a></td>
                   <td></td>
@@ -28301,30 +28282,6 @@ Leave it empty if no needs to encrypt the zip file. </p></td>
                   <td></td>
                   <td><p>Format: projects/{project}/sheets/{sheet} </p></td>
                 </tr>
-              
-                <tr>
-                  <td>schema_version</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.Task.DatabaseSchemaBaseline">Task.DatabaseSchemaBaseline</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
               
                 <tr>
                   <td>schema_version</td>
@@ -29381,12 +29338,6 @@ Format: instances/{instance}/databases/{database} </p></td>
                 <td>DATABASE_CREATE</td>
                 <td>2</td>
                 <td><p>use payload DatabaseCreate</p></td>
-              </tr>
-            
-              <tr>
-                <td>DATABASE_SCHEMA_BASELINE</td>
-                <td>3</td>
-                <td><p>use payload DatabaseSchemaBaseline</p></td>
               </tr>
             
               <tr>

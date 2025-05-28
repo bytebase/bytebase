@@ -642,7 +642,6 @@
     - [Task.DatabaseCreate](#bytebase-v1-Task-DatabaseCreate)
     - [Task.DatabaseDataExport](#bytebase-v1-Task-DatabaseDataExport)
     - [Task.DatabaseDataUpdate](#bytebase-v1-Task-DatabaseDataUpdate)
-    - [Task.DatabaseSchemaBaseline](#bytebase-v1-Task-DatabaseSchemaBaseline)
     - [Task.DatabaseSchemaUpdate](#bytebase-v1-Task-DatabaseSchemaUpdate)
     - [TaskRun](#bytebase-v1-TaskRun)
     - [TaskRun.PriorBackupDetail](#bytebase-v1-TaskRun-PriorBackupDetail)
@@ -7751,7 +7750,6 @@ Type is the database change type.
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | TYPE_UNSPECIFIED | 0 |  |
-| BASELINE | 1 | Used for establishing schema baseline, this is used when 1. Onboard the database into Bytebase since Bytebase needs to know the current database schema. 2. Had schema drift and need to re-establish the baseline. |
 | MIGRATE | 2 | Used for DDL changes including CREATE DATABASE. |
 | MIGRATE_SDL | 3 | Used for schema changes via state-based schema migration including CREATE DATABASE. |
 | MIGRATE_GHOST | 4 | Used for DDL changes using gh-ost. |
@@ -10255,7 +10253,6 @@ When paginating, all other parameters provided to `ListTaskRuns` must match the 
 | type | [Task.Type](#bytebase-v1-Task-Type) |  |  |
 | target | [string](#string) |  | Format: instances/{instance} if the task is DatabaseCreate. Format: instances/{instance}/databases/{database} |
 | database_create | [Task.DatabaseCreate](#bytebase-v1-Task-DatabaseCreate) |  |  |
-| database_schema_baseline | [Task.DatabaseSchemaBaseline](#bytebase-v1-Task-DatabaseSchemaBaseline) |  |  |
 | database_schema_update | [Task.DatabaseSchemaUpdate](#bytebase-v1-Task-DatabaseSchemaUpdate) |  |  |
 | database_data_update | [Task.DatabaseDataUpdate](#bytebase-v1-Task-DatabaseDataUpdate) |  |  |
 | database_data_export | [Task.DatabaseDataExport](#bytebase-v1-Task-DatabaseDataExport) |  |  |
@@ -10313,21 +10310,6 @@ When paginating, all other parameters provided to `ListTaskRuns` must match the 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | sheet | [string](#string) |  | Format: projects/{project}/sheets/{sheet} |
-| schema_version | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-Task-DatabaseSchemaBaseline"></a>
-
-### Task.DatabaseSchemaBaseline
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
 | schema_version | [string](#string) |  |  |
 
 
@@ -10744,7 +10726,6 @@ Read from `pg_stat_activity`
 | TYPE_UNSPECIFIED | 0 |  |
 | GENERAL | 1 |  |
 | DATABASE_CREATE | 2 | use payload DatabaseCreate |
-| DATABASE_SCHEMA_BASELINE | 3 | use payload DatabaseSchemaBaseline |
 | DATABASE_SCHEMA_UPDATE | 4 | use payload DatabaseSchemaUpdate |
 | DATABASE_SCHEMA_UPDATE_SDL | 5 | use payload DatabaseSchemaUpdate |
 | DATABASE_SCHEMA_UPDATE_GHOST | 9 | use payload DatabaseSchemaUpdate |

@@ -141,8 +141,6 @@ func convertToPlanSpecChangeDatabaseConfigType(t storepb.PlanConfig_ChangeDataba
 	switch t {
 	case storepb.PlanConfig_ChangeDatabaseConfig_TYPE_UNSPECIFIED:
 		return v1pb.Plan_ChangeDatabaseConfig_TYPE_UNSPECIFIED
-	case storepb.PlanConfig_ChangeDatabaseConfig_BASELINE:
-		return v1pb.Plan_ChangeDatabaseConfig_BASELINE
 	case storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE:
 		return v1pb.Plan_ChangeDatabaseConfig_MIGRATE
 	case storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE_SDL:
@@ -699,8 +697,6 @@ func convertToTask(ctx context.Context, s *store.Store, project *store.ProjectMe
 	switch task.Type {
 	case base.TaskDatabaseCreate:
 		return convertToTaskFromDatabaseCreate(ctx, s, project, task)
-	case base.TaskDatabaseSchemaBaseline:
-		return convertToTaskFromSchemaBaseline(ctx, s, project, task)
 	case base.TaskDatabaseSchemaUpdate, base.TaskDatabaseSchemaUpdateGhost:
 		return convertToTaskFromSchemaUpdate(ctx, s, project, task)
 	case base.TaskDatabaseDataUpdate:
@@ -739,33 +735,6 @@ func convertToTaskFromDatabaseCreate(ctx context.Context, s *store.Store, projec
 		},
 	}
 
-	return v1pbTask, nil
-}
-
-func convertToTaskFromSchemaBaseline(ctx context.Context, s *store.Store, project *store.ProjectMessage, task *store.TaskMessage) (*v1pb.Task, error) {
-	if task.DatabaseName == nil {
-		return nil, errors.Errorf("baseline task database is nil")
-	}
-	database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &task.InstanceID, DatabaseName: task.DatabaseName, ShowDeleted: true})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get database")
-	}
-	if database == nil {
-		return nil, errors.Errorf("database not found")
-	}
-	v1pbTask := &v1pb.Task{
-		Name:          common.FormatTask(project.ResourceID, task.PipelineID, task.StageID, task.ID),
-		SpecId:        task.Payload.GetSpecId(),
-		Type:          convertToTaskType(task.Type),
-		Status:        convertToTaskStatus(task.LatestTaskRunStatus, task.Payload.GetSkipped()),
-		SkippedReason: task.Payload.GetSkippedReason(),
-		Target:        fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName),
-		Payload: &v1pb.Task_DatabaseSchemaBaseline_{
-			DatabaseSchemaBaseline: &v1pb.Task_DatabaseSchemaBaseline{
-				SchemaVersion: task.Payload.GetSchemaVersion(),
-			},
-		},
-	}
 	return v1pbTask, nil
 }
 
@@ -888,8 +857,6 @@ func convertToTaskType(taskType base.TaskType) v1pb.Task_Type {
 	switch taskType {
 	case base.TaskDatabaseCreate:
 		return v1pb.Task_DATABASE_CREATE
-	case base.TaskDatabaseSchemaBaseline:
-		return v1pb.Task_DATABASE_SCHEMA_BASELINE
 	case base.TaskDatabaseSchemaUpdate:
 		return v1pb.Task_DATABASE_SCHEMA_UPDATE
 	case base.TaskDatabaseSchemaUpdateGhost:
