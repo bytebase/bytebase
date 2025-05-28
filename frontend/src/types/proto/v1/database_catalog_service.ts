@@ -200,10 +200,6 @@ export const GetDatabaseCatalogRequest: MessageFns<GetDatabaseCatalogRequest> = 
     return message;
   },
 
-  fromJSON(object: any): GetDatabaseCatalogRequest {
-    return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
-  },
-
   toJSON(message: GetDatabaseCatalogRequest): unknown {
     const obj: any = {};
     if (message.name !== "") {
@@ -256,10 +252,6 @@ export const UpdateDatabaseCatalogRequest: MessageFns<UpdateDatabaseCatalogReque
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): UpdateDatabaseCatalogRequest {
-    return { catalog: isSet(object.catalog) ? DatabaseCatalog.fromJSON(object.catalog) : undefined };
   },
 
   toJSON(message: UpdateDatabaseCatalogRequest): unknown {
@@ -329,15 +321,6 @@ export const DatabaseCatalog: MessageFns<DatabaseCatalog> = {
     return message;
   },
 
-  fromJSON(object: any): DatabaseCatalog {
-    return {
-      name: isSet(object.name) ? globalThis.String(object.name) : "",
-      schemas: globalThis.Array.isArray(object?.schemas)
-        ? object.schemas.map((e: any) => SchemaCatalog.fromJSON(e))
-        : [],
-    };
-  },
-
   toJSON(message: DatabaseCatalog): unknown {
     const obj: any = {};
     if (message.name !== "") {
@@ -405,13 +388,6 @@ export const SchemaCatalog: MessageFns<SchemaCatalog> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): SchemaCatalog {
-    return {
-      name: isSet(object.name) ? globalThis.String(object.name) : "",
-      tables: globalThis.Array.isArray(object?.tables) ? object.tables.map((e: any) => TableCatalog.fromJSON(e)) : [],
-    };
   },
 
   toJSON(message: SchemaCatalog): unknown {
@@ -505,15 +481,6 @@ export const TableCatalog: MessageFns<TableCatalog> = {
     return message;
   },
 
-  fromJSON(object: any): TableCatalog {
-    return {
-      name: isSet(object.name) ? globalThis.String(object.name) : "",
-      columns: isSet(object.columns) ? TableCatalog_Columns.fromJSON(object.columns) : undefined,
-      objectSchema: isSet(object.objectSchema) ? ObjectSchema.fromJSON(object.objectSchema) : undefined,
-      classification: isSet(object.classification) ? globalThis.String(object.classification) : "",
-    };
-  },
-
   toJSON(message: TableCatalog): unknown {
     const obj: any = {};
     if (message.name !== "") {
@@ -582,14 +549,6 @@ export const TableCatalog_Columns: MessageFns<TableCatalog_Columns> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): TableCatalog_Columns {
-    return {
-      columns: globalThis.Array.isArray(object?.columns)
-        ? object.columns.map((e: any) => ColumnCatalog.fromJSON(e))
-        : [],
-    };
   },
 
   toJSON(message: TableCatalog_Columns): unknown {
@@ -693,21 +652,6 @@ export const ColumnCatalog: MessageFns<ColumnCatalog> = {
     return message;
   },
 
-  fromJSON(object: any): ColumnCatalog {
-    return {
-      name: isSet(object.name) ? globalThis.String(object.name) : "",
-      semanticType: isSet(object.semanticType) ? globalThis.String(object.semanticType) : "",
-      labels: isObject(object.labels)
-        ? Object.entries(object.labels).reduce<{ [key: string]: string }>((acc, [key, value]) => {
-          acc[key] = String(value);
-          return acc;
-        }, {})
-        : {},
-      classification: isSet(object.classification) ? globalThis.String(object.classification) : "",
-      objectSchema: isSet(object.objectSchema) ? ObjectSchema.fromJSON(object.objectSchema) : undefined,
-    };
-  },
-
   toJSON(message: ColumnCatalog): unknown {
     const obj: any = {};
     if (message.name !== "") {
@@ -802,13 +746,6 @@ export const ColumnCatalog_LabelsEntry: MessageFns<ColumnCatalog_LabelsEntry> = 
     return message;
   },
 
-  fromJSON(object: any): ColumnCatalog_LabelsEntry {
-    return {
-      key: isSet(object.key) ? globalThis.String(object.key) : "",
-      value: isSet(object.value) ? globalThis.String(object.value) : "",
-    };
-  },
-
   toJSON(message: ColumnCatalog_LabelsEntry): unknown {
     const obj: any = {};
     if (message.key !== "") {
@@ -900,15 +837,6 @@ export const ObjectSchema: MessageFns<ObjectSchema> = {
     return message;
   },
 
-  fromJSON(object: any): ObjectSchema {
-    return {
-      type: isSet(object.type) ? objectSchema_TypeFromJSON(object.type) : ObjectSchema_Type.TYPE_UNSPECIFIED,
-      structKind: isSet(object.structKind) ? ObjectSchema_StructKind.fromJSON(object.structKind) : undefined,
-      arrayKind: isSet(object.arrayKind) ? ObjectSchema_ArrayKind.fromJSON(object.arrayKind) : undefined,
-      semanticType: isSet(object.semanticType) ? globalThis.String(object.semanticType) : "",
-    };
-  },
-
   toJSON(message: ObjectSchema): unknown {
     const obj: any = {};
     if (message.type !== ObjectSchema_Type.TYPE_UNSPECIFIED) {
@@ -980,17 +908,6 @@ export const ObjectSchema_StructKind: MessageFns<ObjectSchema_StructKind> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): ObjectSchema_StructKind {
-    return {
-      properties: isObject(object.properties)
-        ? Object.entries(object.properties).reduce<{ [key: string]: ObjectSchema }>((acc, [key, value]) => {
-          acc[key] = ObjectSchema.fromJSON(value);
-          return acc;
-        }, {})
-        : {},
-    };
   },
 
   toJSON(message: ObjectSchema_StructKind): unknown {
@@ -1072,13 +989,6 @@ export const ObjectSchema_StructKind_PropertiesEntry: MessageFns<ObjectSchema_St
     return message;
   },
 
-  fromJSON(object: any): ObjectSchema_StructKind_PropertiesEntry {
-    return {
-      key: isSet(object.key) ? globalThis.String(object.key) : "",
-      value: isSet(object.value) ? ObjectSchema.fromJSON(object.value) : undefined,
-    };
-  },
-
   toJSON(message: ObjectSchema_StructKind_PropertiesEntry): unknown {
     const obj: any = {};
     if (message.key !== "") {
@@ -1137,10 +1047,6 @@ export const ObjectSchema_ArrayKind: MessageFns<ObjectSchema_ArrayKind> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): ObjectSchema_ArrayKind {
-    return { kind: isSet(object.kind) ? ObjectSchema.fromJSON(object.kind) : undefined };
   },
 
   toJSON(message: ObjectSchema_ArrayKind): unknown {
@@ -1403,18 +1309,9 @@ export type DeepPartial<T> = T extends Builtin ? T
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
 
-function isObject(value: any): boolean {
-  return typeof value === "object" && value !== null;
-}
-
-function isSet(value: any): boolean {
-  return value !== null && value !== undefined;
-}
-
 export interface MessageFns<T> {
   encode(message: T, writer?: BinaryWriter): BinaryWriter;
   decode(input: BinaryReader | Uint8Array, length?: number): T;
-  fromJSON(object: any): T;
   toJSON(message: T): unknown;
   create(base?: DeepPartial<T>): T;
   fromPartial(object: DeepPartial<T>): T;

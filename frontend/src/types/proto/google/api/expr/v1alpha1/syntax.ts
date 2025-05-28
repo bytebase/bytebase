@@ -440,21 +440,6 @@ export const Expr: MessageFns<Expr> = {
     return message;
   },
 
-  fromJSON(object: any): Expr {
-    return {
-      id: isSet(object.id) ? Long.fromValue(object.id) : Long.ZERO,
-      constExpr: isSet(object.constExpr) ? Constant.fromJSON(object.constExpr) : undefined,
-      identExpr: isSet(object.identExpr) ? Expr_Ident.fromJSON(object.identExpr) : undefined,
-      selectExpr: isSet(object.selectExpr) ? Expr_Select.fromJSON(object.selectExpr) : undefined,
-      callExpr: isSet(object.callExpr) ? Expr_Call.fromJSON(object.callExpr) : undefined,
-      listExpr: isSet(object.listExpr) ? Expr_CreateList.fromJSON(object.listExpr) : undefined,
-      structExpr: isSet(object.structExpr) ? Expr_CreateStruct.fromJSON(object.structExpr) : undefined,
-      comprehensionExpr: isSet(object.comprehensionExpr)
-        ? Expr_Comprehension.fromJSON(object.comprehensionExpr)
-        : undefined,
-    };
-  },
-
   toJSON(message: Expr): unknown {
     const obj: any = {};
     if (!message.id.equals(Long.ZERO)) {
@@ -551,10 +536,6 @@ export const Expr_Ident: MessageFns<Expr_Ident> = {
     return message;
   },
 
-  fromJSON(object: any): Expr_Ident {
-    return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
-  },
-
   toJSON(message: Expr_Ident): unknown {
     const obj: any = {};
     if (message.name !== "") {
@@ -629,14 +610,6 @@ export const Expr_Select: MessageFns<Expr_Select> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): Expr_Select {
-    return {
-      operand: isSet(object.operand) ? Expr.fromJSON(object.operand) : undefined,
-      field: isSet(object.field) ? globalThis.String(object.field) : "",
-      testOnly: isSet(object.testOnly) ? globalThis.Boolean(object.testOnly) : false,
-    };
   },
 
   toJSON(message: Expr_Select): unknown {
@@ -723,14 +696,6 @@ export const Expr_Call: MessageFns<Expr_Call> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): Expr_Call {
-    return {
-      target: isSet(object.target) ? Expr.fromJSON(object.target) : undefined,
-      function: isSet(object.function) ? globalThis.String(object.function) : "",
-      args: globalThis.Array.isArray(object?.args) ? object.args.map((e: any) => Expr.fromJSON(e)) : [],
-    };
   },
 
   toJSON(message: Expr_Call): unknown {
@@ -820,15 +785,6 @@ export const Expr_CreateList: MessageFns<Expr_CreateList> = {
     return message;
   },
 
-  fromJSON(object: any): Expr_CreateList {
-    return {
-      elements: globalThis.Array.isArray(object?.elements) ? object.elements.map((e: any) => Expr.fromJSON(e)) : [],
-      optionalIndices: globalThis.Array.isArray(object?.optionalIndices)
-        ? object.optionalIndices.map((e: any) => globalThis.Number(e))
-        : [],
-    };
-  },
-
   toJSON(message: Expr_CreateList): unknown {
     const obj: any = {};
     if (message.elements?.length) {
@@ -896,15 +852,6 @@ export const Expr_CreateStruct: MessageFns<Expr_CreateStruct> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): Expr_CreateStruct {
-    return {
-      messageName: isSet(object.messageName) ? globalThis.String(object.messageName) : "",
-      entries: globalThis.Array.isArray(object?.entries)
-        ? object.entries.map((e: any) => Expr_CreateStruct_Entry.fromJSON(e))
-        : [],
-    };
   },
 
   toJSON(message: Expr_CreateStruct): unknown {
@@ -1007,16 +954,6 @@ export const Expr_CreateStruct_Entry: MessageFns<Expr_CreateStruct_Entry> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): Expr_CreateStruct_Entry {
-    return {
-      id: isSet(object.id) ? Long.fromValue(object.id) : Long.ZERO,
-      fieldKey: isSet(object.fieldKey) ? globalThis.String(object.fieldKey) : undefined,
-      mapKey: isSet(object.mapKey) ? Expr.fromJSON(object.mapKey) : undefined,
-      value: isSet(object.value) ? Expr.fromJSON(object.value) : undefined,
-      optionalEntry: isSet(object.optionalEntry) ? globalThis.Boolean(object.optionalEntry) : false,
-    };
   },
 
   toJSON(message: Expr_CreateStruct_Entry): unknown {
@@ -1163,18 +1100,6 @@ export const Expr_Comprehension: MessageFns<Expr_Comprehension> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): Expr_Comprehension {
-    return {
-      iterVar: isSet(object.iterVar) ? globalThis.String(object.iterVar) : "",
-      iterRange: isSet(object.iterRange) ? Expr.fromJSON(object.iterRange) : undefined,
-      accuVar: isSet(object.accuVar) ? globalThis.String(object.accuVar) : "",
-      accuInit: isSet(object.accuInit) ? Expr.fromJSON(object.accuInit) : undefined,
-      loopCondition: isSet(object.loopCondition) ? Expr.fromJSON(object.loopCondition) : undefined,
-      loopStep: isSet(object.loopStep) ? Expr.fromJSON(object.loopStep) : undefined,
-      result: isSet(object.result) ? Expr.fromJSON(object.result) : undefined,
-    };
   },
 
   toJSON(message: Expr_Comprehension): unknown {
@@ -1363,20 +1288,6 @@ export const Constant: MessageFns<Constant> = {
     return message;
   },
 
-  fromJSON(object: any): Constant {
-    return {
-      nullValue: isSet(object.nullValue) ? nullValueFromJSON(object.nullValue) : undefined,
-      boolValue: isSet(object.boolValue) ? globalThis.Boolean(object.boolValue) : undefined,
-      int64Value: isSet(object.int64Value) ? Long.fromValue(object.int64Value) : undefined,
-      uint64Value: isSet(object.uint64Value) ? Long.fromValue(object.uint64Value) : undefined,
-      doubleValue: isSet(object.doubleValue) ? globalThis.Number(object.doubleValue) : undefined,
-      stringValue: isSet(object.stringValue) ? globalThis.String(object.stringValue) : undefined,
-      bytesValue: isSet(object.bytesValue) ? bytesFromBase64(object.bytesValue) : undefined,
-      durationValue: isSet(object.durationValue) ? Duration.fromJSON(object.durationValue) : undefined,
-      timestampValue: isSet(object.timestampValue) ? fromJsonTimestamp(object.timestampValue) : undefined,
-    };
-  },
-
   toJSON(message: Constant): unknown {
     const obj: any = {};
     if (message.nullValue !== undefined) {
@@ -1435,15 +1346,6 @@ export const Constant: MessageFns<Constant> = {
   },
 };
 
-function bytesFromBase64(b64: string): Uint8Array {
-  const bin = globalThis.atob(b64);
-  const arr = new Uint8Array(bin.length);
-  for (let i = 0; i < bin.length; ++i) {
-    arr[i] = bin.charCodeAt(i);
-  }
-  return arr;
-}
-
 function base64FromBytes(arr: Uint8Array): string {
   const bin: string[] = [];
   arr.forEach((byte) => {
@@ -1460,40 +1362,15 @@ export type DeepPartial<T> = T extends Builtin ? T
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
 
-function toTimestamp(date: Date): Timestamp {
-  const seconds = numberToLong(Math.trunc(date.getTime() / 1_000));
-  const nanos = (date.getTime() % 1_000) * 1_000_000;
-  return { seconds, nanos };
-}
-
 function fromTimestamp(t: Timestamp): Date {
   let millis = (t.seconds.toNumber() || 0) * 1_000;
   millis += (t.nanos || 0) / 1_000_000;
   return new globalThis.Date(millis);
 }
 
-function fromJsonTimestamp(o: any): Timestamp {
-  if (o instanceof globalThis.Date) {
-    return toTimestamp(o);
-  } else if (typeof o === "string") {
-    return toTimestamp(new globalThis.Date(o));
-  } else {
-    return Timestamp.fromJSON(o);
-  }
-}
-
-function numberToLong(number: number) {
-  return Long.fromNumber(number);
-}
-
-function isSet(value: any): boolean {
-  return value !== null && value !== undefined;
-}
-
 export interface MessageFns<T> {
   encode(message: T, writer?: BinaryWriter): BinaryWriter;
   decode(input: BinaryReader | Uint8Array, length?: number): T;
-  fromJSON(object: any): T;
   toJSON(message: T): unknown;
   create(base?: DeepPartial<T>): T;
   fromPartial(object: DeepPartial<T>): T;

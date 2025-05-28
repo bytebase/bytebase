@@ -183,19 +183,6 @@ export const LoginRequest: MessageFns<LoginRequest> = {
     return message;
   },
 
-  fromJSON(object: any): LoginRequest {
-    return {
-      email: isSet(object.email) ? globalThis.String(object.email) : "",
-      password: isSet(object.password) ? globalThis.String(object.password) : "",
-      web: isSet(object.web) ? globalThis.Boolean(object.web) : false,
-      idpName: isSet(object.idpName) ? globalThis.String(object.idpName) : "",
-      idpContext: isSet(object.idpContext) ? IdentityProviderContext.fromJSON(object.idpContext) : undefined,
-      otpCode: isSet(object.otpCode) ? globalThis.String(object.otpCode) : undefined,
-      recoveryCode: isSet(object.recoveryCode) ? globalThis.String(object.recoveryCode) : undefined,
-      mfaTempToken: isSet(object.mfaTempToken) ? globalThis.String(object.mfaTempToken) : undefined,
-    };
-  },
-
   toJSON(message: LoginRequest): unknown {
     const obj: any = {};
     if (message.email !== "") {
@@ -291,15 +278,6 @@ export const IdentityProviderContext: MessageFns<IdentityProviderContext> = {
     return message;
   },
 
-  fromJSON(object: any): IdentityProviderContext {
-    return {
-      oauth2Context: isSet(object.oauth2Context)
-        ? OAuth2IdentityProviderContext.fromJSON(object.oauth2Context)
-        : undefined,
-      oidcContext: isSet(object.oidcContext) ? OIDCIdentityProviderContext.fromJSON(object.oidcContext) : undefined,
-    };
-  },
-
   toJSON(message: IdentityProviderContext): unknown {
     const obj: any = {};
     if (message.oauth2Context !== undefined) {
@@ -362,10 +340,6 @@ export const OAuth2IdentityProviderContext: MessageFns<OAuth2IdentityProviderCon
     return message;
   },
 
-  fromJSON(object: any): OAuth2IdentityProviderContext {
-    return { code: isSet(object.code) ? globalThis.String(object.code) : "" };
-  },
-
   toJSON(message: OAuth2IdentityProviderContext): unknown {
     const obj: any = {};
     if (message.code !== "") {
@@ -407,10 +381,6 @@ export const OIDCIdentityProviderContext: MessageFns<OIDCIdentityProviderContext
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(_: any): OIDCIdentityProviderContext {
-    return {};
   },
 
   toJSON(_: OIDCIdentityProviderContext): unknown {
@@ -496,17 +466,6 @@ export const LoginResponse: MessageFns<LoginResponse> = {
     return message;
   },
 
-  fromJSON(object: any): LoginResponse {
-    return {
-      token: isSet(object.token) ? globalThis.String(object.token) : "",
-      mfaTempToken: isSet(object.mfaTempToken) ? globalThis.String(object.mfaTempToken) : undefined,
-      requireResetPassword: isSet(object.requireResetPassword)
-        ? globalThis.Boolean(object.requireResetPassword)
-        : false,
-      user: isSet(object.user) ? User.fromJSON(object.user) : undefined,
-    };
-  },
-
   toJSON(message: LoginResponse): unknown {
     const obj: any = {};
     if (message.token !== "") {
@@ -560,10 +519,6 @@ export const LogoutRequest: MessageFns<LogoutRequest> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(_: any): LogoutRequest {
-    return {};
   },
 
   toJSON(_: LogoutRequest): unknown {
@@ -650,14 +605,9 @@ export type DeepPartial<T> = T extends Builtin ? T
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
 
-function isSet(value: any): boolean {
-  return value !== null && value !== undefined;
-}
-
 export interface MessageFns<T> {
   encode(message: T, writer?: BinaryWriter): BinaryWriter;
   decode(input: BinaryReader | Uint8Array, length?: number): T;
-  fromJSON(object: any): T;
   toJSON(message: T): unknown;
   create(base?: DeepPartial<T>): T;
   fromPartial(object: DeepPartial<T>): T;

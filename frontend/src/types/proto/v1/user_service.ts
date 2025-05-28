@@ -271,10 +271,6 @@ export const GetUserRequest: MessageFns<GetUserRequest> = {
     return message;
   },
 
-  fromJSON(object: any): GetUserRequest {
-    return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
-  },
-
   toJSON(message: GetUserRequest): unknown {
     const obj: any = {};
     if (message.name !== "") {
@@ -329,10 +325,6 @@ export const BatchGetUsersRequest: MessageFns<BatchGetUsersRequest> = {
     return message;
   },
 
-  fromJSON(object: any): BatchGetUsersRequest {
-    return { names: globalThis.Array.isArray(object?.names) ? object.names.map((e: any) => globalThis.String(e)) : [] };
-  },
-
   toJSON(message: BatchGetUsersRequest): unknown {
     const obj: any = {};
     if (message.names?.length) {
@@ -385,10 +377,6 @@ export const BatchGetUsersResponse: MessageFns<BatchGetUsersResponse> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): BatchGetUsersResponse {
-    return { users: globalThis.Array.isArray(object?.users) ? object.users.map((e: any) => User.fromJSON(e)) : [] };
   },
 
   toJSON(message: BatchGetUsersResponse): unknown {
@@ -478,15 +466,6 @@ export const ListUsersRequest: MessageFns<ListUsersRequest> = {
     return message;
   },
 
-  fromJSON(object: any): ListUsersRequest {
-    return {
-      pageSize: isSet(object.pageSize) ? globalThis.Number(object.pageSize) : 0,
-      pageToken: isSet(object.pageToken) ? globalThis.String(object.pageToken) : "",
-      showDeleted: isSet(object.showDeleted) ? globalThis.Boolean(object.showDeleted) : false,
-      filter: isSet(object.filter) ? globalThis.String(object.filter) : "",
-    };
-  },
-
   toJSON(message: ListUsersRequest): unknown {
     const obj: any = {};
     if (message.pageSize !== 0) {
@@ -564,13 +543,6 @@ export const ListUsersResponse: MessageFns<ListUsersResponse> = {
     return message;
   },
 
-  fromJSON(object: any): ListUsersResponse {
-    return {
-      users: globalThis.Array.isArray(object?.users) ? object.users.map((e: any) => User.fromJSON(e)) : [],
-      nextPageToken: isSet(object.nextPageToken) ? globalThis.String(object.nextPageToken) : "",
-    };
-  },
-
   toJSON(message: ListUsersResponse): unknown {
     const obj: any = {};
     if (message.users?.length) {
@@ -627,10 +599,6 @@ export const CreateUserRequest: MessageFns<CreateUserRequest> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): CreateUserRequest {
-    return { user: isSet(object.user) ? User.fromJSON(object.user) : undefined };
   },
 
   toJSON(message: CreateUserRequest): unknown {
@@ -737,20 +705,6 @@ export const UpdateUserRequest: MessageFns<UpdateUserRequest> = {
     return message;
   },
 
-  fromJSON(object: any): UpdateUserRequest {
-    return {
-      user: isSet(object.user) ? User.fromJSON(object.user) : undefined,
-      updateMask: isSet(object.updateMask) ? FieldMask.unwrap(FieldMask.fromJSON(object.updateMask)) : undefined,
-      otpCode: isSet(object.otpCode) ? globalThis.String(object.otpCode) : undefined,
-      regenerateTempMfaSecret: isSet(object.regenerateTempMfaSecret)
-        ? globalThis.Boolean(object.regenerateTempMfaSecret)
-        : false,
-      regenerateRecoveryCodes: isSet(object.regenerateRecoveryCodes)
-        ? globalThis.Boolean(object.regenerateRecoveryCodes)
-        : false,
-    };
-  },
-
   toJSON(message: UpdateUserRequest): unknown {
     const obj: any = {};
     if (message.user !== undefined) {
@@ -821,10 +775,6 @@ export const DeleteUserRequest: MessageFns<DeleteUserRequest> = {
     return message;
   },
 
-  fromJSON(object: any): DeleteUserRequest {
-    return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
-  },
-
   toJSON(message: DeleteUserRequest): unknown {
     const obj: any = {};
     if (message.name !== "") {
@@ -877,10 +827,6 @@ export const UndeleteUserRequest: MessageFns<UndeleteUserRequest> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): UndeleteUserRequest {
-    return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
   },
 
   toJSON(message: UndeleteUserRequest): unknown {
@@ -1071,25 +1017,6 @@ export const User: MessageFns<User> = {
     return message;
   },
 
-  fromJSON(object: any): User {
-    return {
-      name: isSet(object.name) ? globalThis.String(object.name) : "",
-      state: isSet(object.state) ? stateFromJSON(object.state) : State.STATE_UNSPECIFIED,
-      email: isSet(object.email) ? globalThis.String(object.email) : "",
-      title: isSet(object.title) ? globalThis.String(object.title) : "",
-      userType: isSet(object.userType) ? userTypeFromJSON(object.userType) : UserType.USER_TYPE_UNSPECIFIED,
-      password: isSet(object.password) ? globalThis.String(object.password) : "",
-      serviceKey: isSet(object.serviceKey) ? globalThis.String(object.serviceKey) : "",
-      mfaEnabled: isSet(object.mfaEnabled) ? globalThis.Boolean(object.mfaEnabled) : false,
-      mfaSecret: isSet(object.mfaSecret) ? globalThis.String(object.mfaSecret) : "",
-      recoveryCodes: globalThis.Array.isArray(object?.recoveryCodes)
-        ? object.recoveryCodes.map((e: any) => globalThis.String(e))
-        : [],
-      phone: isSet(object.phone) ? globalThis.String(object.phone) : "",
-      profile: isSet(object.profile) ? User_Profile.fromJSON(object.profile) : undefined,
-    };
-  },
-
   toJSON(message: User): unknown {
     const obj: any = {};
     if (message.name !== "") {
@@ -1210,16 +1137,6 @@ export const User_Profile: MessageFns<User_Profile> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): User_Profile {
-    return {
-      lastLoginTime: isSet(object.lastLoginTime) ? fromJsonTimestamp(object.lastLoginTime) : undefined,
-      lastChangePasswordTime: isSet(object.lastChangePasswordTime)
-        ? fromJsonTimestamp(object.lastChangePasswordTime)
-        : undefined,
-      source: isSet(object.source) ? globalThis.String(object.source) : "",
-    };
   },
 
   toJSON(message: User_Profile): unknown {
@@ -1551,40 +1468,15 @@ export type DeepPartial<T> = T extends Builtin ? T
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
 
-function toTimestamp(date: Date): Timestamp {
-  const seconds = numberToLong(Math.trunc(date.getTime() / 1_000));
-  const nanos = (date.getTime() % 1_000) * 1_000_000;
-  return { seconds, nanos };
-}
-
 function fromTimestamp(t: Timestamp): Date {
   let millis = (t.seconds.toNumber() || 0) * 1_000;
   millis += (t.nanos || 0) / 1_000_000;
   return new globalThis.Date(millis);
 }
 
-function fromJsonTimestamp(o: any): Timestamp {
-  if (o instanceof globalThis.Date) {
-    return toTimestamp(o);
-  } else if (typeof o === "string") {
-    return toTimestamp(new globalThis.Date(o));
-  } else {
-    return Timestamp.fromJSON(o);
-  }
-}
-
-function numberToLong(number: number) {
-  return Long.fromNumber(number);
-}
-
-function isSet(value: any): boolean {
-  return value !== null && value !== undefined;
-}
-
 export interface MessageFns<T> {
   encode(message: T, writer?: BinaryWriter): BinaryWriter;
   decode(input: BinaryReader | Uint8Array, length?: number): T;
-  fromJSON(object: any): T;
   toJSON(message: T): unknown;
   create(base?: DeepPartial<T>): T;
   fromPartial(object: DeepPartial<T>): T;
