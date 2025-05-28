@@ -31,12 +31,18 @@ func convertToPlans(ctx context.Context, s *store.Store, plans []*store.PlanMess
 }
 
 func convertToPlan(ctx context.Context, s *store.Store, plan *store.PlanMessage) (*v1pb.Plan, error) {
+	// Convert flattened specs back to steps for API compatibility
+	steps := []*v1pb.Plan_Step{{
+		Title: "",
+		Specs: convertToPlanSpecs(plan.Config.Specs),
+	}}
+
 	p := &v1pb.Plan{
 		Name:        common.FormatPlan(plan.ProjectID, plan.UID),
 		Issue:       "",
 		Title:       plan.Name,
 		Description: plan.Description,
-		Steps:       convertToPlanSteps(plan.Config.Steps),
+		Steps:       steps,
 		Deployment:  convertToPlanDeployment(plan.Config.Deployment),
 		ReleaseSource: &v1pb.Plan_ReleaseSource{
 			Release: plan.Config.GetReleaseSource().GetRelease(),
@@ -62,20 +68,6 @@ func convertToPlan(ctx context.Context, s *store.Store, plan *store.PlanMessage)
 	return p, nil
 }
 
-func convertToPlanSteps(steps []*storepb.PlanConfig_Step) []*v1pb.Plan_Step {
-	v1Steps := make([]*v1pb.Plan_Step, len(steps))
-	for i := range steps {
-		v1Steps[i] = convertToPlanStep(steps[i])
-	}
-	return v1Steps
-}
-
-func convertToPlanStep(step *storepb.PlanConfig_Step) *v1pb.Plan_Step {
-	return &v1pb.Plan_Step{
-		Title: step.Title,
-		Specs: convertToPlanSpecs(step.Specs),
-	}
-}
 
 func convertToPlanSpecs(specs []*storepb.PlanConfig_Spec) []*v1pb.Plan_Spec {
 	v1Specs := make([]*v1pb.Plan_Spec, len(specs))
@@ -198,8 +190,13 @@ func convertPlan(plan *v1pb.Plan) *storepb.PlanConfig {
 	if plan == nil {
 		return nil
 	}
+	// Flatten specs from steps
+	var allSpecs []*storepb.PlanConfig_Spec
+	for _, step := range plan.Steps {
+		allSpecs = append(allSpecs, convertPlanSpecs(step.Specs)...)
+	}
 	return &storepb.PlanConfig{
-		Steps:         convertPlanSteps(plan.Steps),
+		Specs:         allSpecs,
 		ReleaseSource: convertPlanReleaseSource(plan.ReleaseSource),
 		Deployment:    nil,
 	}
@@ -242,20 +239,6 @@ func convertDatabaseGroupMapping(s *v1pb.Plan_Deployment_DatabaseGroupMapping) *
 	}
 }
 
-func convertPlanSteps(steps []*v1pb.Plan_Step) []*storepb.PlanConfig_Step {
-	storeSteps := make([]*storepb.PlanConfig_Step, len(steps))
-	for i := range steps {
-		storeSteps[i] = convertPlanStep(steps[i])
-	}
-	return storeSteps
-}
-
-func convertPlanStep(step *v1pb.Plan_Step) *storepb.PlanConfig_Step {
-	return &storepb.PlanConfig_Step{
-		Title: step.Title,
-		Specs: convertPlanSpecs(step.Specs),
-	}
-}
 
 func convertPlanSpecs(specs []*v1pb.Plan_Spec) []*storepb.PlanConfig_Spec {
 	storeSpecs := make([]*storepb.PlanConfig_Spec, len(specs))

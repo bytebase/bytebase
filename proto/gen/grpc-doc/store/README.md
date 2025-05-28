@@ -187,7 +187,6 @@
     - [PlanConfig.ReleaseSource](#bytebase-store-PlanConfig-ReleaseSource)
     - [PlanConfig.Spec](#bytebase-store-PlanConfig-Spec)
     - [PlanConfig.SpecReleaseSource](#bytebase-store-PlanConfig-SpecReleaseSource)
-    - [PlanConfig.Step](#bytebase-store-PlanConfig-Step)
   
     - [PlanConfig.ChangeDatabaseConfig.Type](#bytebase-store-PlanConfig-ChangeDatabaseConfig-Type)
   
@@ -2969,7 +2968,7 @@ InstanceRole is the API message for instance role.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| steps | [PlanConfig.Step](#bytebase-store-PlanConfig-Step) | repeated |  |
+| specs | [PlanConfig.Spec](#bytebase-store-PlanConfig-Spec) | repeated |  |
 | release_source | [PlanConfig.ReleaseSource](#bytebase-store-PlanConfig-ReleaseSource) |  |  |
 | deployment | [PlanConfig.Deployment](#bytebase-store-PlanConfig-Deployment) |  |  |
 
@@ -3129,22 +3128,6 @@ InstanceRole is the API message for instance role.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | file | [string](#string) |  | Format: projects/{project}/releases/{release}/files/{id} |
-
-
-
-
-
-
-<a name="bytebase-store-PlanConfig-Step"></a>
-
-### PlanConfig.Step
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| title | [string](#string) |  | Use the title if set. Use a generated title if empty. |
-| specs | [PlanConfig.Spec](#bytebase-store-PlanConfig-Spec) | repeated |  |
 
 
 
