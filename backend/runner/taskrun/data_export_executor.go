@@ -67,13 +67,14 @@ func (exec *DataExportExecutor) RunOnce(ctx context.Context, _ context.Context, 
 		return true, nil, err
 	}
 
+	dataSource := apiv1.GetQueriableDataSource(instance)
 	exportRequest := &v1pb.ExportRequest{
 		Name:      common.FormatDatabase(instance.ResourceID, database.DatabaseName),
 		Statement: statement,
 		Format:    v1pb.ExportFormat(task.Payload.GetFormat()),
 		Password:  task.Payload.GetPassword(),
 	}
-	bytes, _, exportErr := apiv1.DoExport(ctx, exec.store, exec.dbFactory, exec.license, exportRequest, issue.Creator /* user */, instance, database, nil, exec.schemaSyncer, true /* auto data source */)
+	bytes, _, exportErr := apiv1.DoExport(ctx, exec.store, exec.dbFactory, exec.license, exportRequest, issue.Creator /* user */, instance, database, nil, exec.schemaSyncer, dataSource)
 	if exportErr != nil {
 		return true, nil, errors.Wrap(exportErr, "failed to export data")
 	}
