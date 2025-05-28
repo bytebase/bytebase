@@ -1775,10 +1775,6 @@ export const GetDatabaseRequest: MessageFns<GetDatabaseRequest> = {
     return message;
   },
 
-  fromJSON(object: any): GetDatabaseRequest {
-    return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
-  },
-
   toJSON(message: GetDatabaseRequest): unknown {
     const obj: any = {};
     if (message.name !== "") {
@@ -1844,13 +1840,6 @@ export const BatchGetDatabasesRequest: MessageFns<BatchGetDatabasesRequest> = {
     return message;
   },
 
-  fromJSON(object: any): BatchGetDatabasesRequest {
-    return {
-      parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
-      names: globalThis.Array.isArray(object?.names) ? object.names.map((e: any) => globalThis.String(e)) : [],
-    };
-  },
-
   toJSON(message: BatchGetDatabasesRequest): unknown {
     const obj: any = {};
     if (message.parent !== "") {
@@ -1907,14 +1896,6 @@ export const BatchGetDatabasesResponse: MessageFns<BatchGetDatabasesResponse> = 
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): BatchGetDatabasesResponse {
-    return {
-      databases: globalThis.Array.isArray(object?.databases)
-        ? object.databases.map((e: any) => Database.fromJSON(e))
-        : [],
-    };
   },
 
   toJSON(message: BatchGetDatabasesResponse): unknown {
@@ -2015,16 +1996,6 @@ export const ListDatabasesRequest: MessageFns<ListDatabasesRequest> = {
     return message;
   },
 
-  fromJSON(object: any): ListDatabasesRequest {
-    return {
-      parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
-      pageSize: isSet(object.pageSize) ? globalThis.Number(object.pageSize) : 0,
-      pageToken: isSet(object.pageToken) ? globalThis.String(object.pageToken) : "",
-      filter: isSet(object.filter) ? globalThis.String(object.filter) : "",
-      showDeleted: isSet(object.showDeleted) ? globalThis.Boolean(object.showDeleted) : false,
-    };
-  },
-
   toJSON(message: ListDatabasesRequest): unknown {
     const obj: any = {};
     if (message.parent !== "") {
@@ -2106,15 +2077,6 @@ export const ListDatabasesResponse: MessageFns<ListDatabasesResponse> = {
     return message;
   },
 
-  fromJSON(object: any): ListDatabasesResponse {
-    return {
-      databases: globalThis.Array.isArray(object?.databases)
-        ? object.databases.map((e: any) => Database.fromJSON(e))
-        : [],
-      nextPageToken: isSet(object.nextPageToken) ? globalThis.String(object.nextPageToken) : "",
-    };
-  },
-
   toJSON(message: ListDatabasesResponse): unknown {
     const obj: any = {};
     if (message.databases?.length) {
@@ -2182,13 +2144,6 @@ export const UpdateDatabaseRequest: MessageFns<UpdateDatabaseRequest> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): UpdateDatabaseRequest {
-    return {
-      database: isSet(object.database) ? Database.fromJSON(object.database) : undefined,
-      updateMask: isSet(object.updateMask) ? FieldMask.unwrap(FieldMask.fromJSON(object.updateMask)) : undefined,
-    };
   },
 
   toJSON(message: UpdateDatabaseRequest): unknown {
@@ -2262,15 +2217,6 @@ export const BatchUpdateDatabasesRequest: MessageFns<BatchUpdateDatabasesRequest
     return message;
   },
 
-  fromJSON(object: any): BatchUpdateDatabasesRequest {
-    return {
-      parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
-      requests: globalThis.Array.isArray(object?.requests)
-        ? object.requests.map((e: any) => UpdateDatabaseRequest.fromJSON(e))
-        : [],
-    };
-  },
-
   toJSON(message: BatchUpdateDatabasesRequest): unknown {
     const obj: any = {};
     if (message.parent !== "") {
@@ -2327,14 +2273,6 @@ export const BatchUpdateDatabasesResponse: MessageFns<BatchUpdateDatabasesRespon
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): BatchUpdateDatabasesResponse {
-    return {
-      databases: globalThis.Array.isArray(object?.databases)
-        ? object.databases.map((e: any) => Database.fromJSON(e))
-        : [],
-    };
   },
 
   toJSON(message: BatchUpdateDatabasesResponse): unknown {
@@ -2402,13 +2340,6 @@ export const BatchSyncDatabasesRequest: MessageFns<BatchSyncDatabasesRequest> = 
     return message;
   },
 
-  fromJSON(object: any): BatchSyncDatabasesRequest {
-    return {
-      parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
-      names: globalThis.Array.isArray(object?.names) ? object.names.map((e: any) => globalThis.String(e)) : [],
-    };
-  },
-
   toJSON(message: BatchSyncDatabasesRequest): unknown {
     const obj: any = {};
     if (message.parent !== "") {
@@ -2454,10 +2385,6 @@ export const BatchSyncDatabasesResponse: MessageFns<BatchSyncDatabasesResponse> 
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(_: any): BatchSyncDatabasesResponse {
-    return {};
   },
 
   toJSON(_: BatchSyncDatabasesResponse): unknown {
@@ -2510,10 +2437,6 @@ export const SyncDatabaseRequest: MessageFns<SyncDatabaseRequest> = {
     return message;
   },
 
-  fromJSON(object: any): SyncDatabaseRequest {
-    return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
-  },
-
   toJSON(message: SyncDatabaseRequest): unknown {
     const obj: any = {};
     if (message.name !== "") {
@@ -2555,10 +2478,6 @@ export const SyncDatabaseResponse: MessageFns<SyncDatabaseResponse> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(_: any): SyncDatabaseResponse {
-    return {};
   },
 
   toJSON(_: SyncDatabaseResponse): unknown {
@@ -2620,13 +2539,6 @@ export const GetDatabaseMetadataRequest: MessageFns<GetDatabaseMetadataRequest> 
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): GetDatabaseMetadataRequest {
-    return {
-      name: isSet(object.name) ? globalThis.String(object.name) : "",
-      filter: isSet(object.filter) ? globalThis.String(object.filter) : "",
-    };
   },
 
   toJSON(message: GetDatabaseMetadataRequest): unknown {
@@ -2696,13 +2608,6 @@ export const GetDatabaseSchemaRequest: MessageFns<GetDatabaseSchemaRequest> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): GetDatabaseSchemaRequest {
-    return {
-      name: isSet(object.name) ? globalThis.String(object.name) : "",
-      sdlFormat: isSet(object.sdlFormat) ? globalThis.Boolean(object.sdlFormat) : false,
-    };
   },
 
   toJSON(message: GetDatabaseSchemaRequest): unknown {
@@ -2796,15 +2701,6 @@ export const DiffSchemaRequest: MessageFns<DiffSchemaRequest> = {
     return message;
   },
 
-  fromJSON(object: any): DiffSchemaRequest {
-    return {
-      name: isSet(object.name) ? globalThis.String(object.name) : "",
-      schema: isSet(object.schema) ? globalThis.String(object.schema) : undefined,
-      changelog: isSet(object.changelog) ? globalThis.String(object.changelog) : undefined,
-      sdlFormat: isSet(object.sdlFormat) ? globalThis.Boolean(object.sdlFormat) : false,
-    };
-  },
-
   toJSON(message: DiffSchemaRequest): unknown {
     const obj: any = {};
     if (message.name !== "") {
@@ -2869,10 +2765,6 @@ export const DiffSchemaResponse: MessageFns<DiffSchemaResponse> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): DiffSchemaResponse {
-    return { diff: isSet(object.diff) ? globalThis.String(object.diff) : "" };
   },
 
   toJSON(message: DiffSchemaResponse): unknown {
@@ -3054,27 +2946,6 @@ export const Database: MessageFns<Database> = {
     return message;
   },
 
-  fromJSON(object: any): Database {
-    return {
-      name: isSet(object.name) ? globalThis.String(object.name) : "",
-      state: isSet(object.state) ? stateFromJSON(object.state) : State.STATE_UNSPECIFIED,
-      successfulSyncTime: isSet(object.successfulSyncTime) ? fromJsonTimestamp(object.successfulSyncTime) : undefined,
-      project: isSet(object.project) ? globalThis.String(object.project) : "",
-      schemaVersion: isSet(object.schemaVersion) ? globalThis.String(object.schemaVersion) : "",
-      environment: isSet(object.environment) ? globalThis.String(object.environment) : "",
-      effectiveEnvironment: isSet(object.effectiveEnvironment) ? globalThis.String(object.effectiveEnvironment) : "",
-      labels: isObject(object.labels)
-        ? Object.entries(object.labels).reduce<{ [key: string]: string }>((acc, [key, value]) => {
-          acc[key] = String(value);
-          return acc;
-        }, {})
-        : {},
-      instanceResource: isSet(object.instanceResource) ? InstanceResource.fromJSON(object.instanceResource) : undefined,
-      backupAvailable: isSet(object.backupAvailable) ? globalThis.Boolean(object.backupAvailable) : false,
-      drifted: isSet(object.drifted) ? globalThis.Boolean(object.drifted) : false,
-    };
-  },
-
   toJSON(message: Database): unknown {
     const obj: any = {};
     if (message.name !== "") {
@@ -3193,13 +3064,6 @@ export const Database_LabelsEntry: MessageFns<Database_LabelsEntry> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): Database_LabelsEntry {
-    return {
-      key: isSet(object.key) ? globalThis.String(object.key) : "",
-      value: isSet(object.value) ? globalThis.String(object.value) : "",
-    };
   },
 
   toJSON(message: Database_LabelsEntry): unknown {
@@ -3324,22 +3188,6 @@ export const DatabaseMetadata: MessageFns<DatabaseMetadata> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): DatabaseMetadata {
-    return {
-      name: isSet(object.name) ? globalThis.String(object.name) : "",
-      schemas: globalThis.Array.isArray(object?.schemas)
-        ? object.schemas.map((e: any) => SchemaMetadata.fromJSON(e))
-        : [],
-      characterSet: isSet(object.characterSet) ? globalThis.String(object.characterSet) : "",
-      collation: isSet(object.collation) ? globalThis.String(object.collation) : "",
-      extensions: globalThis.Array.isArray(object?.extensions)
-        ? object.extensions.map((e: any) => ExtensionMetadata.fromJSON(e))
-        : [],
-      owner: isSet(object.owner) ? globalThis.String(object.owner) : "",
-      searchPath: isSet(object.searchPath) ? globalThis.String(object.searchPath) : "",
-    };
   },
 
   toJSON(message: DatabaseMetadata): unknown {
@@ -3590,42 +3438,6 @@ export const SchemaMetadata: MessageFns<SchemaMetadata> = {
     return message;
   },
 
-  fromJSON(object: any): SchemaMetadata {
-    return {
-      name: isSet(object.name) ? globalThis.String(object.name) : "",
-      tables: globalThis.Array.isArray(object?.tables) ? object.tables.map((e: any) => TableMetadata.fromJSON(e)) : [],
-      externalTables: globalThis.Array.isArray(object?.externalTables)
-        ? object.externalTables.map((e: any) => ExternalTableMetadata.fromJSON(e))
-        : [],
-      views: globalThis.Array.isArray(object?.views) ? object.views.map((e: any) => ViewMetadata.fromJSON(e)) : [],
-      functions: globalThis.Array.isArray(object?.functions)
-        ? object.functions.map((e: any) => FunctionMetadata.fromJSON(e))
-        : [],
-      procedures: globalThis.Array.isArray(object?.procedures)
-        ? object.procedures.map((e: any) => ProcedureMetadata.fromJSON(e))
-        : [],
-      streams: globalThis.Array.isArray(object?.streams)
-        ? object.streams.map((e: any) => StreamMetadata.fromJSON(e))
-        : [],
-      tasks: globalThis.Array.isArray(object?.tasks) ? object.tasks.map((e: any) => TaskMetadata.fromJSON(e)) : [],
-      materializedViews: globalThis.Array.isArray(object?.materializedViews)
-        ? object.materializedViews.map((e: any) => MaterializedViewMetadata.fromJSON(e))
-        : [],
-      packages: globalThis.Array.isArray(object?.packages)
-        ? object.packages.map((e: any) => PackageMetadata.fromJSON(e))
-        : [],
-      owner: isSet(object.owner) ? globalThis.String(object.owner) : "",
-      sequences: globalThis.Array.isArray(object?.sequences)
-        ? object.sequences.map((e: any) => SequenceMetadata.fromJSON(e))
-        : [],
-      events: globalThis.Array.isArray(object?.events) ? object.events.map((e: any) => EventMetadata.fromJSON(e)) : [],
-      enumTypes: globalThis.Array.isArray(object?.enumTypes)
-        ? object.enumTypes.map((e: any) => EnumTypeMetadata.fromJSON(e))
-        : [],
-      skipDump: isSet(object.skipDump) ? globalThis.Boolean(object.skipDump) : false,
-    };
-  },
-
   toJSON(message: SchemaMetadata): unknown {
     const obj: any = {};
     if (message.name !== "") {
@@ -3769,15 +3581,6 @@ export const EnumTypeMetadata: MessageFns<EnumTypeMetadata> = {
     return message;
   },
 
-  fromJSON(object: any): EnumTypeMetadata {
-    return {
-      name: isSet(object.name) ? globalThis.String(object.name) : "",
-      values: globalThis.Array.isArray(object?.values) ? object.values.map((e: any) => globalThis.String(e)) : [],
-      comment: isSet(object.comment) ? globalThis.String(object.comment) : "",
-      skipDump: isSet(object.skipDump) ? globalThis.Boolean(object.skipDump) : false,
-    };
-  },
-
   toJSON(message: EnumTypeMetadata): unknown {
     const obj: any = {};
     if (message.name !== "") {
@@ -3897,17 +3700,6 @@ export const EventMetadata: MessageFns<EventMetadata> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): EventMetadata {
-    return {
-      name: isSet(object.name) ? globalThis.String(object.name) : "",
-      definition: isSet(object.definition) ? globalThis.String(object.definition) : "",
-      timeZone: isSet(object.timeZone) ? globalThis.String(object.timeZone) : "",
-      sqlMode: isSet(object.sqlMode) ? globalThis.String(object.sqlMode) : "",
-      characterSetClient: isSet(object.characterSetClient) ? globalThis.String(object.characterSetClient) : "",
-      collationConnection: isSet(object.collationConnection) ? globalThis.String(object.collationConnection) : "",
-    };
   },
 
   toJSON(message: EventMetadata): unknown {
@@ -4130,24 +3922,6 @@ export const SequenceMetadata: MessageFns<SequenceMetadata> = {
     return message;
   },
 
-  fromJSON(object: any): SequenceMetadata {
-    return {
-      name: isSet(object.name) ? globalThis.String(object.name) : "",
-      dataType: isSet(object.dataType) ? globalThis.String(object.dataType) : "",
-      start: isSet(object.start) ? globalThis.String(object.start) : "",
-      minValue: isSet(object.minValue) ? globalThis.String(object.minValue) : "",
-      maxValue: isSet(object.maxValue) ? globalThis.String(object.maxValue) : "",
-      increment: isSet(object.increment) ? globalThis.String(object.increment) : "",
-      cycle: isSet(object.cycle) ? globalThis.Boolean(object.cycle) : false,
-      cacheSize: isSet(object.cacheSize) ? globalThis.String(object.cacheSize) : "",
-      lastValue: isSet(object.lastValue) ? globalThis.String(object.lastValue) : "",
-      ownerTable: isSet(object.ownerTable) ? globalThis.String(object.ownerTable) : "",
-      ownerColumn: isSet(object.ownerColumn) ? globalThis.String(object.ownerColumn) : "",
-      comment: isSet(object.comment) ? globalThis.String(object.comment) : "",
-      skipDump: isSet(object.skipDump) ? globalThis.Boolean(object.skipDump) : false,
-    };
-  },
-
   toJSON(message: SequenceMetadata): unknown {
     const obj: any = {};
     if (message.name !== "") {
@@ -4348,20 +4122,6 @@ export const TriggerMetadata: MessageFns<TriggerMetadata> = {
     return message;
   },
 
-  fromJSON(object: any): TriggerMetadata {
-    return {
-      name: isSet(object.name) ? globalThis.String(object.name) : "",
-      event: isSet(object.event) ? globalThis.String(object.event) : "",
-      timing: isSet(object.timing) ? globalThis.String(object.timing) : "",
-      body: isSet(object.body) ? globalThis.String(object.body) : "",
-      sqlMode: isSet(object.sqlMode) ? globalThis.String(object.sqlMode) : "",
-      characterSetClient: isSet(object.characterSetClient) ? globalThis.String(object.characterSetClient) : "",
-      collationConnection: isSet(object.collationConnection) ? globalThis.String(object.collationConnection) : "",
-      comment: isSet(object.comment) ? globalThis.String(object.comment) : "",
-      skipDump: isSet(object.skipDump) ? globalThis.Boolean(object.skipDump) : false,
-    };
-  },
-
   toJSON(message: TriggerMetadata): unknown {
     const obj: any = {};
     if (message.name !== "") {
@@ -4479,17 +4239,6 @@ export const ExternalTableMetadata: MessageFns<ExternalTableMetadata> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): ExternalTableMetadata {
-    return {
-      name: isSet(object.name) ? globalThis.String(object.name) : "",
-      externalServerName: isSet(object.externalServerName) ? globalThis.String(object.externalServerName) : "",
-      externalDatabaseName: isSet(object.externalDatabaseName) ? globalThis.String(object.externalDatabaseName) : "",
-      columns: globalThis.Array.isArray(object?.columns)
-        ? object.columns.map((e: any) => ColumnMetadata.fromJSON(e))
-        : [],
-    };
   },
 
   toJSON(message: ExternalTableMetadata): unknown {
@@ -4812,47 +4561,6 @@ export const TableMetadata: MessageFns<TableMetadata> = {
     return message;
   },
 
-  fromJSON(object: any): TableMetadata {
-    return {
-      name: isSet(object.name) ? globalThis.String(object.name) : "",
-      columns: globalThis.Array.isArray(object?.columns)
-        ? object.columns.map((e: any) => ColumnMetadata.fromJSON(e))
-        : [],
-      indexes: globalThis.Array.isArray(object?.indexes)
-        ? object.indexes.map((e: any) => IndexMetadata.fromJSON(e))
-        : [],
-      engine: isSet(object.engine) ? globalThis.String(object.engine) : "",
-      collation: isSet(object.collation) ? globalThis.String(object.collation) : "",
-      charset: isSet(object.charset) ? globalThis.String(object.charset) : "",
-      rowCount: isSet(object.rowCount) ? Long.fromValue(object.rowCount) : Long.ZERO,
-      dataSize: isSet(object.dataSize) ? Long.fromValue(object.dataSize) : Long.ZERO,
-      indexSize: isSet(object.indexSize) ? Long.fromValue(object.indexSize) : Long.ZERO,
-      dataFree: isSet(object.dataFree) ? Long.fromValue(object.dataFree) : Long.ZERO,
-      createOptions: isSet(object.createOptions) ? globalThis.String(object.createOptions) : "",
-      comment: isSet(object.comment) ? globalThis.String(object.comment) : "",
-      userComment: isSet(object.userComment) ? globalThis.String(object.userComment) : "",
-      foreignKeys: globalThis.Array.isArray(object?.foreignKeys)
-        ? object.foreignKeys.map((e: any) => ForeignKeyMetadata.fromJSON(e))
-        : [],
-      partitions: globalThis.Array.isArray(object?.partitions)
-        ? object.partitions.map((e: any) => TablePartitionMetadata.fromJSON(e))
-        : [],
-      checkConstraints: globalThis.Array.isArray(object?.checkConstraints)
-        ? object.checkConstraints.map((e: any) => CheckConstraintMetadata.fromJSON(e))
-        : [],
-      owner: isSet(object.owner) ? globalThis.String(object.owner) : "",
-      sortingKeys: globalThis.Array.isArray(object?.sortingKeys)
-        ? object.sortingKeys.map((e: any) => globalThis.String(e))
-        : [],
-      triggers: globalThis.Array.isArray(object?.triggers)
-        ? object.triggers.map((e: any) => TriggerMetadata.fromJSON(e))
-        : [],
-      skipDump: isSet(object.skipDump) ? globalThis.Boolean(object.skipDump) : false,
-      shardingInfo: isSet(object.shardingInfo) ? globalThis.String(object.shardingInfo) : "",
-      primaryKeyType: isSet(object.primaryKeyType) ? globalThis.String(object.primaryKeyType) : "",
-    };
-  },
-
   toJSON(message: TableMetadata): unknown {
     const obj: any = {};
     if (message.name !== "") {
@@ -5010,13 +4718,6 @@ export const CheckConstraintMetadata: MessageFns<CheckConstraintMetadata> = {
     return message;
   },
 
-  fromJSON(object: any): CheckConstraintMetadata {
-    return {
-      name: isSet(object.name) ? globalThis.String(object.name) : "",
-      expression: isSet(object.expression) ? globalThis.String(object.expression) : "",
-    };
-  },
-
   toJSON(message: CheckConstraintMetadata): unknown {
     const obj: any = {};
     if (message.name !== "") {
@@ -5159,27 +4860,6 @@ export const TablePartitionMetadata: MessageFns<TablePartitionMetadata> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): TablePartitionMetadata {
-    return {
-      name: isSet(object.name) ? globalThis.String(object.name) : "",
-      type: isSet(object.type)
-        ? tablePartitionMetadata_TypeFromJSON(object.type)
-        : TablePartitionMetadata_Type.TYPE_UNSPECIFIED,
-      expression: isSet(object.expression) ? globalThis.String(object.expression) : "",
-      value: isSet(object.value) ? globalThis.String(object.value) : "",
-      useDefault: isSet(object.useDefault) ? globalThis.String(object.useDefault) : "",
-      subpartitions: globalThis.Array.isArray(object?.subpartitions)
-        ? object.subpartitions.map((e: any) => TablePartitionMetadata.fromJSON(e))
-        : [],
-      indexes: globalThis.Array.isArray(object?.indexes)
-        ? object.indexes.map((e: any) => IndexMetadata.fromJSON(e))
-        : [],
-      checkConstraints: globalThis.Array.isArray(object?.checkConstraints)
-        ? object.checkConstraints.map((e: any) => CheckConstraintMetadata.fromJSON(e))
-        : [],
-    };
   },
 
   toJSON(message: TablePartitionMetadata): unknown {
@@ -5482,32 +5162,6 @@ export const ColumnMetadata: MessageFns<ColumnMetadata> = {
     return message;
   },
 
-  fromJSON(object: any): ColumnMetadata {
-    return {
-      name: isSet(object.name) ? globalThis.String(object.name) : "",
-      position: isSet(object.position) ? globalThis.Number(object.position) : 0,
-      hasDefault: isSet(object.hasDefault) ? globalThis.Boolean(object.hasDefault) : false,
-      defaultNull: isSet(object.defaultNull) ? globalThis.Boolean(object.defaultNull) : undefined,
-      defaultString: isSet(object.defaultString) ? globalThis.String(object.defaultString) : undefined,
-      defaultExpression: isSet(object.defaultExpression) ? globalThis.String(object.defaultExpression) : undefined,
-      defaultOnNull: isSet(object.defaultOnNull) ? globalThis.Boolean(object.defaultOnNull) : false,
-      onUpdate: isSet(object.onUpdate) ? globalThis.String(object.onUpdate) : "",
-      nullable: isSet(object.nullable) ? globalThis.Boolean(object.nullable) : false,
-      type: isSet(object.type) ? globalThis.String(object.type) : "",
-      characterSet: isSet(object.characterSet) ? globalThis.String(object.characterSet) : "",
-      collation: isSet(object.collation) ? globalThis.String(object.collation) : "",
-      comment: isSet(object.comment) ? globalThis.String(object.comment) : "",
-      userComment: isSet(object.userComment) ? globalThis.String(object.userComment) : "",
-      generation: isSet(object.generation) ? GenerationMetadata.fromJSON(object.generation) : undefined,
-      isIdentity: isSet(object.isIdentity) ? globalThis.Boolean(object.isIdentity) : false,
-      identityGeneration: isSet(object.identityGeneration)
-        ? columnMetadata_IdentityGenerationFromJSON(object.identityGeneration)
-        : ColumnMetadata_IdentityGeneration.IDENTITY_GENERATION_UNSPECIFIED,
-      identitySeed: isSet(object.identitySeed) ? Long.fromValue(object.identitySeed) : Long.ZERO,
-      identityIncrement: isSet(object.identityIncrement) ? Long.fromValue(object.identityIncrement) : Long.ZERO,
-    };
-  },
-
   toJSON(message: ColumnMetadata): unknown {
     const obj: any = {};
     if (message.name !== "") {
@@ -5652,15 +5306,6 @@ export const GenerationMetadata: MessageFns<GenerationMetadata> = {
     return message;
   },
 
-  fromJSON(object: any): GenerationMetadata {
-    return {
-      type: isSet(object.type)
-        ? generationMetadata_TypeFromJSON(object.type)
-        : GenerationMetadata_Type.TYPE_UNSPECIFIED,
-      expression: isSet(object.expression) ? globalThis.String(object.expression) : "",
-    };
-  },
-
   toJSON(message: GenerationMetadata): unknown {
     const obj: any = {};
     if (message.type !== GenerationMetadata_Type.TYPE_UNSPECIFIED) {
@@ -5785,24 +5430,6 @@ export const ViewMetadata: MessageFns<ViewMetadata> = {
     return message;
   },
 
-  fromJSON(object: any): ViewMetadata {
-    return {
-      name: isSet(object.name) ? globalThis.String(object.name) : "",
-      definition: isSet(object.definition) ? globalThis.String(object.definition) : "",
-      comment: isSet(object.comment) ? globalThis.String(object.comment) : "",
-      dependencyColumns: globalThis.Array.isArray(object?.dependencyColumns)
-        ? object.dependencyColumns.map((e: any) => DependencyColumn.fromJSON(e))
-        : [],
-      columns: globalThis.Array.isArray(object?.columns)
-        ? object.columns.map((e: any) => ColumnMetadata.fromJSON(e))
-        : [],
-      triggers: globalThis.Array.isArray(object?.triggers)
-        ? object.triggers.map((e: any) => TriggerMetadata.fromJSON(e))
-        : [],
-      skipDump: isSet(object.skipDump) ? globalThis.Boolean(object.skipDump) : false,
-    };
-  },
-
   toJSON(message: ViewMetadata): unknown {
     const obj: any = {};
     if (message.name !== "") {
@@ -5901,14 +5528,6 @@ export const DependencyColumn: MessageFns<DependencyColumn> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): DependencyColumn {
-    return {
-      schema: isSet(object.schema) ? globalThis.String(object.schema) : "",
-      table: isSet(object.table) ? globalThis.String(object.table) : "",
-      column: isSet(object.column) ? globalThis.String(object.column) : "",
-    };
   },
 
   toJSON(message: DependencyColumn): unknown {
@@ -6039,24 +5658,6 @@ export const MaterializedViewMetadata: MessageFns<MaterializedViewMetadata> = {
     return message;
   },
 
-  fromJSON(object: any): MaterializedViewMetadata {
-    return {
-      name: isSet(object.name) ? globalThis.String(object.name) : "",
-      definition: isSet(object.definition) ? globalThis.String(object.definition) : "",
-      comment: isSet(object.comment) ? globalThis.String(object.comment) : "",
-      dependencyColumns: globalThis.Array.isArray(object?.dependencyColumns)
-        ? object.dependencyColumns.map((e: any) => DependencyColumn.fromJSON(e))
-        : [],
-      triggers: globalThis.Array.isArray(object?.triggers)
-        ? object.triggers.map((e: any) => TriggerMetadata.fromJSON(e))
-        : [],
-      indexes: globalThis.Array.isArray(object?.indexes)
-        ? object.indexes.map((e: any) => IndexMetadata.fromJSON(e))
-        : [],
-      skipDump: isSet(object.skipDump) ? globalThis.Boolean(object.skipDump) : false,
-    };
-  },
-
   toJSON(message: MaterializedViewMetadata): unknown {
     const obj: any = {};
     if (message.name !== "") {
@@ -6144,13 +5745,6 @@ export const DependencyTable: MessageFns<DependencyTable> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): DependencyTable {
-    return {
-      schema: isSet(object.schema) ? globalThis.String(object.schema) : "",
-      table: isSet(object.table) ? globalThis.String(object.table) : "",
-    };
   },
 
   toJSON(message: DependencyTable): unknown {
@@ -6319,23 +5913,6 @@ export const FunctionMetadata: MessageFns<FunctionMetadata> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): FunctionMetadata {
-    return {
-      name: isSet(object.name) ? globalThis.String(object.name) : "",
-      definition: isSet(object.definition) ? globalThis.String(object.definition) : "",
-      signature: isSet(object.signature) ? globalThis.String(object.signature) : "",
-      characterSetClient: isSet(object.characterSetClient) ? globalThis.String(object.characterSetClient) : "",
-      collationConnection: isSet(object.collationConnection) ? globalThis.String(object.collationConnection) : "",
-      databaseCollation: isSet(object.databaseCollation) ? globalThis.String(object.databaseCollation) : "",
-      sqlMode: isSet(object.sqlMode) ? globalThis.String(object.sqlMode) : "",
-      comment: isSet(object.comment) ? globalThis.String(object.comment) : "",
-      dependencyTables: globalThis.Array.isArray(object?.dependencyTables)
-        ? object.dependencyTables.map((e: any) => DependencyTable.fromJSON(e))
-        : [],
-      skipDump: isSet(object.skipDump) ? globalThis.Boolean(object.skipDump) : false,
-    };
   },
 
   toJSON(message: FunctionMetadata): unknown {
@@ -6514,19 +6091,6 @@ export const ProcedureMetadata: MessageFns<ProcedureMetadata> = {
     return message;
   },
 
-  fromJSON(object: any): ProcedureMetadata {
-    return {
-      name: isSet(object.name) ? globalThis.String(object.name) : "",
-      definition: isSet(object.definition) ? globalThis.String(object.definition) : "",
-      signature: isSet(object.signature) ? globalThis.String(object.signature) : "",
-      characterSetClient: isSet(object.characterSetClient) ? globalThis.String(object.characterSetClient) : "",
-      collationConnection: isSet(object.collationConnection) ? globalThis.String(object.collationConnection) : "",
-      databaseCollation: isSet(object.databaseCollation) ? globalThis.String(object.databaseCollation) : "",
-      sqlMode: isSet(object.sqlMode) ? globalThis.String(object.sqlMode) : "",
-      skipDump: isSet(object.skipDump) ? globalThis.Boolean(object.skipDump) : false,
-    };
-  },
-
   toJSON(message: ProcedureMetadata): unknown {
     const obj: any = {};
     if (message.name !== "") {
@@ -6618,13 +6182,6 @@ export const PackageMetadata: MessageFns<PackageMetadata> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): PackageMetadata {
-    return {
-      name: isSet(object.name) ? globalThis.String(object.name) : "",
-      definition: isSet(object.definition) ? globalThis.String(object.definition) : "",
-    };
   },
 
   toJSON(message: PackageMetadata): unknown {
@@ -6793,23 +6350,6 @@ export const TaskMetadata: MessageFns<TaskMetadata> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): TaskMetadata {
-    return {
-      name: isSet(object.name) ? globalThis.String(object.name) : "",
-      id: isSet(object.id) ? globalThis.String(object.id) : "",
-      owner: isSet(object.owner) ? globalThis.String(object.owner) : "",
-      comment: isSet(object.comment) ? globalThis.String(object.comment) : "",
-      warehouse: isSet(object.warehouse) ? globalThis.String(object.warehouse) : "",
-      schedule: isSet(object.schedule) ? globalThis.String(object.schedule) : "",
-      predecessors: globalThis.Array.isArray(object?.predecessors)
-        ? object.predecessors.map((e: any) => globalThis.String(e))
-        : [],
-      state: isSet(object.state) ? taskMetadata_StateFromJSON(object.state) : TaskMetadata_State.STATE_UNSPECIFIED,
-      condition: isSet(object.condition) ? globalThis.String(object.condition) : "",
-      definition: isSet(object.definition) ? globalThis.String(object.definition) : "",
-    };
   },
 
   toJSON(message: TaskMetadata): unknown {
@@ -6986,19 +6526,6 @@ export const StreamMetadata: MessageFns<StreamMetadata> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): StreamMetadata {
-    return {
-      name: isSet(object.name) ? globalThis.String(object.name) : "",
-      tableName: isSet(object.tableName) ? globalThis.String(object.tableName) : "",
-      owner: isSet(object.owner) ? globalThis.String(object.owner) : "",
-      comment: isSet(object.comment) ? globalThis.String(object.comment) : "",
-      type: isSet(object.type) ? streamMetadata_TypeFromJSON(object.type) : StreamMetadata_Type.TYPE_UNSPECIFIED,
-      stale: isSet(object.stale) ? globalThis.Boolean(object.stale) : false,
-      mode: isSet(object.mode) ? streamMetadata_ModeFromJSON(object.mode) : StreamMetadata_Mode.MODE_UNSPECIFIED,
-      definition: isSet(object.definition) ? globalThis.String(object.definition) : "",
-    };
   },
 
   toJSON(message: StreamMetadata): unknown {
@@ -7265,29 +6792,6 @@ export const IndexMetadata: MessageFns<IndexMetadata> = {
     return message;
   },
 
-  fromJSON(object: any): IndexMetadata {
-    return {
-      name: isSet(object.name) ? globalThis.String(object.name) : "",
-      expressions: globalThis.Array.isArray(object?.expressions)
-        ? object.expressions.map((e: any) => globalThis.String(e))
-        : [],
-      keyLength: globalThis.Array.isArray(object?.keyLength) ? object.keyLength.map((e: any) => Long.fromValue(e)) : [],
-      descending: globalThis.Array.isArray(object?.descending)
-        ? object.descending.map((e: any) => globalThis.Boolean(e))
-        : [],
-      type: isSet(object.type) ? globalThis.String(object.type) : "",
-      unique: isSet(object.unique) ? globalThis.Boolean(object.unique) : false,
-      primary: isSet(object.primary) ? globalThis.Boolean(object.primary) : false,
-      visible: isSet(object.visible) ? globalThis.Boolean(object.visible) : false,
-      comment: isSet(object.comment) ? globalThis.String(object.comment) : "",
-      definition: isSet(object.definition) ? globalThis.String(object.definition) : "",
-      parentIndexSchema: isSet(object.parentIndexSchema) ? globalThis.String(object.parentIndexSchema) : "",
-      parentIndexName: isSet(object.parentIndexName) ? globalThis.String(object.parentIndexName) : "",
-      granularity: isSet(object.granularity) ? Long.fromValue(object.granularity) : Long.ZERO,
-      isConstraint: isSet(object.isConstraint) ? globalThis.Boolean(object.isConstraint) : false,
-    };
-  },
-
   toJSON(message: IndexMetadata): unknown {
     const obj: any = {};
     if (message.name !== "") {
@@ -7427,15 +6931,6 @@ export const ExtensionMetadata: MessageFns<ExtensionMetadata> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): ExtensionMetadata {
-    return {
-      name: isSet(object.name) ? globalThis.String(object.name) : "",
-      schema: isSet(object.schema) ? globalThis.String(object.schema) : "",
-      version: isSet(object.version) ? globalThis.String(object.version) : "",
-      description: isSet(object.description) ? globalThis.String(object.description) : "",
-    };
   },
 
   toJSON(message: ExtensionMetadata): unknown {
@@ -7590,21 +7085,6 @@ export const ForeignKeyMetadata: MessageFns<ForeignKeyMetadata> = {
     return message;
   },
 
-  fromJSON(object: any): ForeignKeyMetadata {
-    return {
-      name: isSet(object.name) ? globalThis.String(object.name) : "",
-      columns: globalThis.Array.isArray(object?.columns) ? object.columns.map((e: any) => globalThis.String(e)) : [],
-      referencedSchema: isSet(object.referencedSchema) ? globalThis.String(object.referencedSchema) : "",
-      referencedTable: isSet(object.referencedTable) ? globalThis.String(object.referencedTable) : "",
-      referencedColumns: globalThis.Array.isArray(object?.referencedColumns)
-        ? object.referencedColumns.map((e: any) => globalThis.String(e))
-        : [],
-      onDelete: isSet(object.onDelete) ? globalThis.String(object.onDelete) : "",
-      onUpdate: isSet(object.onUpdate) ? globalThis.String(object.onUpdate) : "",
-      matchType: isSet(object.matchType) ? globalThis.String(object.matchType) : "",
-    };
-  },
-
   toJSON(message: ForeignKeyMetadata): unknown {
     const obj: any = {};
     if (message.name !== "") {
@@ -7687,10 +7167,6 @@ export const DatabaseSchema: MessageFns<DatabaseSchema> = {
     return message;
   },
 
-  fromJSON(object: any): DatabaseSchema {
-    return { schema: isSet(object.schema) ? globalThis.String(object.schema) : "" };
-  },
-
   toJSON(message: DatabaseSchema): unknown {
     const obj: any = {};
     if (message.schema !== "") {
@@ -7767,14 +7243,6 @@ export const ListSecretsRequest: MessageFns<ListSecretsRequest> = {
     return message;
   },
 
-  fromJSON(object: any): ListSecretsRequest {
-    return {
-      parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
-      pageSize: isSet(object.pageSize) ? globalThis.Number(object.pageSize) : 0,
-      pageToken: isSet(object.pageToken) ? globalThis.String(object.pageToken) : "",
-    };
-  },
-
   toJSON(message: ListSecretsRequest): unknown {
     const obj: any = {};
     if (message.parent !== "") {
@@ -7846,13 +7314,6 @@ export const ListSecretsResponse: MessageFns<ListSecretsResponse> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): ListSecretsResponse {
-    return {
-      secrets: globalThis.Array.isArray(object?.secrets) ? object.secrets.map((e: any) => Secret.fromJSON(e)) : [],
-      nextPageToken: isSet(object.nextPageToken) ? globalThis.String(object.nextPageToken) : "",
-    };
   },
 
   toJSON(message: ListSecretsResponse): unknown {
@@ -7935,14 +7396,6 @@ export const UpdateSecretRequest: MessageFns<UpdateSecretRequest> = {
     return message;
   },
 
-  fromJSON(object: any): UpdateSecretRequest {
-    return {
-      secret: isSet(object.secret) ? Secret.fromJSON(object.secret) : undefined,
-      updateMask: isSet(object.updateMask) ? FieldMask.unwrap(FieldMask.fromJSON(object.updateMask)) : undefined,
-      allowMissing: isSet(object.allowMissing) ? globalThis.Boolean(object.allowMissing) : false,
-    };
-  },
-
   toJSON(message: UpdateSecretRequest): unknown {
     const obj: any = {};
     if (message.secret !== undefined) {
@@ -8005,10 +7458,6 @@ export const DeleteSecretRequest: MessageFns<DeleteSecretRequest> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): DeleteSecretRequest {
-    return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
   },
 
   toJSON(message: DeleteSecretRequest): unknown {
@@ -8109,16 +7558,6 @@ export const Secret: MessageFns<Secret> = {
     return message;
   },
 
-  fromJSON(object: any): Secret {
-    return {
-      name: isSet(object.name) ? globalThis.String(object.name) : "",
-      createdTime: isSet(object.createdTime) ? fromJsonTimestamp(object.createdTime) : undefined,
-      updatedTime: isSet(object.updatedTime) ? fromJsonTimestamp(object.updatedTime) : undefined,
-      value: isSet(object.value) ? globalThis.String(object.value) : "",
-      description: isSet(object.description) ? globalThis.String(object.description) : "",
-    };
-  },
-
   toJSON(message: Secret): unknown {
     const obj: any = {};
     if (message.name !== "") {
@@ -8193,14 +7632,6 @@ export const ChangedResources: MessageFns<ChangedResources> = {
     return message;
   },
 
-  fromJSON(object: any): ChangedResources {
-    return {
-      databases: globalThis.Array.isArray(object?.databases)
-        ? object.databases.map((e: any) => ChangedResourceDatabase.fromJSON(e))
-        : [],
-    };
-  },
-
   toJSON(message: ChangedResources): unknown {
     const obj: any = {};
     if (message.databases?.length) {
@@ -8264,15 +7695,6 @@ export const ChangedResourceDatabase: MessageFns<ChangedResourceDatabase> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): ChangedResourceDatabase {
-    return {
-      name: isSet(object.name) ? globalThis.String(object.name) : "",
-      schemas: globalThis.Array.isArray(object?.schemas)
-        ? object.schemas.map((e: any) => ChangedResourceSchema.fromJSON(e))
-        : [],
-    };
   },
 
   toJSON(message: ChangedResourceDatabase): unknown {
@@ -8377,24 +7799,6 @@ export const ChangedResourceSchema: MessageFns<ChangedResourceSchema> = {
     return message;
   },
 
-  fromJSON(object: any): ChangedResourceSchema {
-    return {
-      name: isSet(object.name) ? globalThis.String(object.name) : "",
-      tables: globalThis.Array.isArray(object?.tables)
-        ? object.tables.map((e: any) => ChangedResourceTable.fromJSON(e))
-        : [],
-      views: globalThis.Array.isArray(object?.views)
-        ? object.views.map((e: any) => ChangedResourceView.fromJSON(e))
-        : [],
-      functions: globalThis.Array.isArray(object?.functions)
-        ? object.functions.map((e: any) => ChangedResourceFunction.fromJSON(e))
-        : [],
-      procedures: globalThis.Array.isArray(object?.procedures)
-        ? object.procedures.map((e: any) => ChangedResourceProcedure.fromJSON(e))
-        : [],
-    };
-  },
-
   toJSON(message: ChangedResourceSchema): unknown {
     const obj: any = {};
     if (message.name !== "") {
@@ -8476,13 +7880,6 @@ export const ChangedResourceTable: MessageFns<ChangedResourceTable> = {
     return message;
   },
 
-  fromJSON(object: any): ChangedResourceTable {
-    return {
-      name: isSet(object.name) ? globalThis.String(object.name) : "",
-      ranges: globalThis.Array.isArray(object?.ranges) ? object.ranges.map((e: any) => Range.fromJSON(e)) : [],
-    };
-  },
-
   toJSON(message: ChangedResourceTable): unknown {
     const obj: any = {};
     if (message.name !== "") {
@@ -8550,13 +7947,6 @@ export const ChangedResourceView: MessageFns<ChangedResourceView> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): ChangedResourceView {
-    return {
-      name: isSet(object.name) ? globalThis.String(object.name) : "",
-      ranges: globalThis.Array.isArray(object?.ranges) ? object.ranges.map((e: any) => Range.fromJSON(e)) : [],
-    };
   },
 
   toJSON(message: ChangedResourceView): unknown {
@@ -8628,13 +8018,6 @@ export const ChangedResourceFunction: MessageFns<ChangedResourceFunction> = {
     return message;
   },
 
-  fromJSON(object: any): ChangedResourceFunction {
-    return {
-      name: isSet(object.name) ? globalThis.String(object.name) : "",
-      ranges: globalThis.Array.isArray(object?.ranges) ? object.ranges.map((e: any) => Range.fromJSON(e)) : [],
-    };
-  },
-
   toJSON(message: ChangedResourceFunction): unknown {
     const obj: any = {};
     if (message.name !== "") {
@@ -8702,13 +8085,6 @@ export const ChangedResourceProcedure: MessageFns<ChangedResourceProcedure> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): ChangedResourceProcedure {
-    return {
-      name: isSet(object.name) ? globalThis.String(object.name) : "",
-      ranges: globalThis.Array.isArray(object?.ranges) ? object.ranges.map((e: any) => Range.fromJSON(e)) : [],
-    };
   },
 
   toJSON(message: ChangedResourceProcedure): unknown {
@@ -8813,16 +8189,6 @@ export const ListChangelogsRequest: MessageFns<ListChangelogsRequest> = {
     return message;
   },
 
-  fromJSON(object: any): ListChangelogsRequest {
-    return {
-      parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
-      pageSize: isSet(object.pageSize) ? globalThis.Number(object.pageSize) : 0,
-      pageToken: isSet(object.pageToken) ? globalThis.String(object.pageToken) : "",
-      view: isSet(object.view) ? changelogViewFromJSON(object.view) : ChangelogView.CHANGELOG_VIEW_UNSPECIFIED,
-      filter: isSet(object.filter) ? globalThis.String(object.filter) : "",
-    };
-  },
-
   toJSON(message: ListChangelogsRequest): unknown {
     const obj: any = {};
     if (message.parent !== "") {
@@ -8904,15 +8270,6 @@ export const ListChangelogsResponse: MessageFns<ListChangelogsResponse> = {
     return message;
   },
 
-  fromJSON(object: any): ListChangelogsResponse {
-    return {
-      changelogs: globalThis.Array.isArray(object?.changelogs)
-        ? object.changelogs.map((e: any) => Changelog.fromJSON(e))
-        : [],
-      nextPageToken: isSet(object.nextPageToken) ? globalThis.String(object.nextPageToken) : "",
-    };
-  },
-
   toJSON(message: ListChangelogsResponse): unknown {
     const obj: any = {};
     if (message.changelogs?.length) {
@@ -8991,14 +8348,6 @@ export const GetChangelogRequest: MessageFns<GetChangelogRequest> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): GetChangelogRequest {
-    return {
-      name: isSet(object.name) ? globalThis.String(object.name) : "",
-      view: isSet(object.view) ? changelogViewFromJSON(object.view) : ChangelogView.CHANGELOG_VIEW_UNSPECIFIED,
-      sdlFormat: isSet(object.sdlFormat) ? globalThis.Boolean(object.sdlFormat) : false,
-    };
   },
 
   toJSON(message: GetChangelogRequest): unknown {
@@ -9245,27 +8594,6 @@ export const Changelog: MessageFns<Changelog> = {
     return message;
   },
 
-  fromJSON(object: any): Changelog {
-    return {
-      name: isSet(object.name) ? globalThis.String(object.name) : "",
-      createTime: isSet(object.createTime) ? fromJsonTimestamp(object.createTime) : undefined,
-      status: isSet(object.status) ? changelog_StatusFromJSON(object.status) : Changelog_Status.STATUS_UNSPECIFIED,
-      statement: isSet(object.statement) ? globalThis.String(object.statement) : "",
-      statementSize: isSet(object.statementSize) ? Long.fromValue(object.statementSize) : Long.ZERO,
-      statementSheet: isSet(object.statementSheet) ? globalThis.String(object.statementSheet) : "",
-      schema: isSet(object.schema) ? globalThis.String(object.schema) : "",
-      schemaSize: isSet(object.schemaSize) ? Long.fromValue(object.schemaSize) : Long.ZERO,
-      prevSchema: isSet(object.prevSchema) ? globalThis.String(object.prevSchema) : "",
-      prevSchemaSize: isSet(object.prevSchemaSize) ? Long.fromValue(object.prevSchemaSize) : Long.ZERO,
-      issue: isSet(object.issue) ? globalThis.String(object.issue) : "",
-      taskRun: isSet(object.taskRun) ? globalThis.String(object.taskRun) : "",
-      version: isSet(object.version) ? globalThis.String(object.version) : "",
-      revision: isSet(object.revision) ? globalThis.String(object.revision) : "",
-      changedResources: isSet(object.changedResources) ? ChangedResources.fromJSON(object.changedResources) : undefined,
-      type: isSet(object.type) ? changelog_TypeFromJSON(object.type) : Changelog_Type.TYPE_UNSPECIFIED,
-    };
-  },
-
   toJSON(message: Changelog): unknown {
     const obj: any = {};
     if (message.name !== "") {
@@ -9440,18 +8768,6 @@ export const GetSchemaStringRequest: MessageFns<GetSchemaStringRequest> = {
     return message;
   },
 
-  fromJSON(object: any): GetSchemaStringRequest {
-    return {
-      name: isSet(object.name) ? globalThis.String(object.name) : "",
-      type: isSet(object.type)
-        ? getSchemaStringRequest_ObjectTypeFromJSON(object.type)
-        : GetSchemaStringRequest_ObjectType.OBJECT_TYPE_UNSPECIFIED,
-      schema: isSet(object.schema) ? globalThis.String(object.schema) : "",
-      object: isSet(object.object) ? globalThis.String(object.object) : "",
-      metadata: isSet(object.metadata) ? DatabaseMetadata.fromJSON(object.metadata) : undefined,
-    };
-  },
-
   toJSON(message: GetSchemaStringRequest): unknown {
     const obj: any = {};
     if (message.name !== "") {
@@ -9522,10 +8838,6 @@ export const GetSchemaStringResponse: MessageFns<GetSchemaStringResponse> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): GetSchemaStringResponse {
-    return { schemaString: isSet(object.schemaString) ? globalThis.String(object.schemaString) : "" };
   },
 
   toJSON(message: GetSchemaStringResponse): unknown {
@@ -10995,44 +10307,15 @@ export type DeepPartial<T> = T extends Builtin ? T
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
 
-function toTimestamp(date: Date): Timestamp {
-  const seconds = numberToLong(Math.trunc(date.getTime() / 1_000));
-  const nanos = (date.getTime() % 1_000) * 1_000_000;
-  return { seconds, nanos };
-}
-
 function fromTimestamp(t: Timestamp): Date {
   let millis = (t.seconds.toNumber() || 0) * 1_000;
   millis += (t.nanos || 0) / 1_000_000;
   return new globalThis.Date(millis);
 }
 
-function fromJsonTimestamp(o: any): Timestamp {
-  if (o instanceof globalThis.Date) {
-    return toTimestamp(o);
-  } else if (typeof o === "string") {
-    return toTimestamp(new globalThis.Date(o));
-  } else {
-    return Timestamp.fromJSON(o);
-  }
-}
-
-function numberToLong(number: number) {
-  return Long.fromNumber(number);
-}
-
-function isObject(value: any): boolean {
-  return typeof value === "object" && value !== null;
-}
-
-function isSet(value: any): boolean {
-  return value !== null && value !== undefined;
-}
-
 export interface MessageFns<T> {
   encode(message: T, writer?: BinaryWriter): BinaryWriter;
   decode(input: BinaryReader | Uint8Array, length?: number): T;
-  fromJSON(object: any): T;
   toJSON(message: T): unknown;
   create(base?: DeepPartial<T>): T;
   fromPartial(object: DeepPartial<T>): T;

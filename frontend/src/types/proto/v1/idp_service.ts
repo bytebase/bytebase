@@ -365,10 +365,6 @@ export const GetIdentityProviderRequest: MessageFns<GetIdentityProviderRequest> 
     return message;
   },
 
-  fromJSON(object: any): GetIdentityProviderRequest {
-    return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
-  },
-
   toJSON(message: GetIdentityProviderRequest): unknown {
     const obj: any = {};
     if (message.name !== "") {
@@ -432,13 +428,6 @@ export const ListIdentityProvidersRequest: MessageFns<ListIdentityProvidersReque
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): ListIdentityProvidersRequest {
-    return {
-      pageSize: isSet(object.pageSize) ? globalThis.Number(object.pageSize) : 0,
-      pageToken: isSet(object.pageToken) ? globalThis.String(object.pageToken) : "",
-    };
   },
 
   toJSON(message: ListIdentityProvidersRequest): unknown {
@@ -508,15 +497,6 @@ export const ListIdentityProvidersResponse: MessageFns<ListIdentityProvidersResp
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): ListIdentityProvidersResponse {
-    return {
-      identityProviders: globalThis.Array.isArray(object?.identityProviders)
-        ? object.identityProviders.map((e: any) => IdentityProvider.fromJSON(e))
-        : [],
-      nextPageToken: isSet(object.nextPageToken) ? globalThis.String(object.nextPageToken) : "",
-    };
   },
 
   toJSON(message: ListIdentityProvidersResponse): unknown {
@@ -599,14 +579,6 @@ export const CreateIdentityProviderRequest: MessageFns<CreateIdentityProviderReq
     return message;
   },
 
-  fromJSON(object: any): CreateIdentityProviderRequest {
-    return {
-      identityProvider: isSet(object.identityProvider) ? IdentityProvider.fromJSON(object.identityProvider) : undefined,
-      identityProviderId: isSet(object.identityProviderId) ? globalThis.String(object.identityProviderId) : "",
-      validateOnly: isSet(object.validateOnly) ? globalThis.Boolean(object.validateOnly) : false,
-    };
-  },
-
   toJSON(message: CreateIdentityProviderRequest): unknown {
     const obj: any = {};
     if (message.identityProvider !== undefined) {
@@ -682,13 +654,6 @@ export const UpdateIdentityProviderRequest: MessageFns<UpdateIdentityProviderReq
     return message;
   },
 
-  fromJSON(object: any): UpdateIdentityProviderRequest {
-    return {
-      identityProvider: isSet(object.identityProvider) ? IdentityProvider.fromJSON(object.identityProvider) : undefined,
-      updateMask: isSet(object.updateMask) ? FieldMask.unwrap(FieldMask.fromJSON(object.updateMask)) : undefined,
-    };
-  },
-
   toJSON(message: UpdateIdentityProviderRequest): unknown {
     const obj: any = {};
     if (message.identityProvider !== undefined) {
@@ -747,10 +712,6 @@ export const DeleteIdentityProviderRequest: MessageFns<DeleteIdentityProviderReq
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): DeleteIdentityProviderRequest {
-    return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
   },
 
   toJSON(message: DeleteIdentityProviderRequest): unknown {
@@ -818,15 +779,6 @@ export const TestIdentityProviderRequest: MessageFns<TestIdentityProviderRequest
     return message;
   },
 
-  fromJSON(object: any): TestIdentityProviderRequest {
-    return {
-      identityProvider: isSet(object.identityProvider) ? IdentityProvider.fromJSON(object.identityProvider) : undefined,
-      oauth2Context: isSet(object.oauth2Context)
-        ? OAuth2IdentityProviderTestRequestContext.fromJSON(object.oauth2Context)
-        : undefined,
-    };
-  },
-
   toJSON(message: TestIdentityProviderRequest): unknown {
     const obj: any = {};
     if (message.identityProvider !== undefined) {
@@ -889,10 +841,6 @@ export const OAuth2IdentityProviderTestRequestContext: MessageFns<OAuth2Identity
     return message;
   },
 
-  fromJSON(object: any): OAuth2IdentityProviderTestRequestContext {
-    return { code: isSet(object.code) ? globalThis.String(object.code) : "" };
-  },
-
   toJSON(message: OAuth2IdentityProviderTestRequestContext): unknown {
     const obj: any = {};
     if (message.code !== "") {
@@ -934,10 +882,6 @@ export const TestIdentityProviderResponse: MessageFns<TestIdentityProviderRespon
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(_: any): TestIdentityProviderResponse {
-    return {};
   },
 
   toJSON(_: TestIdentityProviderResponse): unknown {
@@ -1040,18 +984,6 @@ export const IdentityProvider: MessageFns<IdentityProvider> = {
     return message;
   },
 
-  fromJSON(object: any): IdentityProvider {
-    return {
-      name: isSet(object.name) ? globalThis.String(object.name) : "",
-      title: isSet(object.title) ? globalThis.String(object.title) : "",
-      domain: isSet(object.domain) ? globalThis.String(object.domain) : "",
-      type: isSet(object.type)
-        ? identityProviderTypeFromJSON(object.type)
-        : IdentityProviderType.IDENTITY_PROVIDER_TYPE_UNSPECIFIED,
-      config: isSet(object.config) ? IdentityProviderConfig.fromJSON(object.config) : undefined,
-    };
-  },
-
   toJSON(message: IdentityProvider): unknown {
     const obj: any = {};
     if (message.name !== "") {
@@ -1144,14 +1076,6 @@ export const IdentityProviderConfig: MessageFns<IdentityProviderConfig> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): IdentityProviderConfig {
-    return {
-      oauth2Config: isSet(object.oauth2Config) ? OAuth2IdentityProviderConfig.fromJSON(object.oauth2Config) : undefined,
-      oidcConfig: isSet(object.oidcConfig) ? OIDCIdentityProviderConfig.fromJSON(object.oidcConfig) : undefined,
-      ldapConfig: isSet(object.ldapConfig) ? LDAPIdentityProviderConfig.fromJSON(object.ldapConfig) : undefined,
-    };
   },
 
   toJSON(message: IdentityProviderConfig): unknown {
@@ -1318,22 +1242,6 @@ export const OAuth2IdentityProviderConfig: MessageFns<OAuth2IdentityProviderConf
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): OAuth2IdentityProviderConfig {
-    return {
-      authUrl: isSet(object.authUrl) ? globalThis.String(object.authUrl) : "",
-      tokenUrl: isSet(object.tokenUrl) ? globalThis.String(object.tokenUrl) : "",
-      userInfoUrl: isSet(object.userInfoUrl) ? globalThis.String(object.userInfoUrl) : "",
-      clientId: isSet(object.clientId) ? globalThis.String(object.clientId) : "",
-      clientSecret: isSet(object.clientSecret) ? globalThis.String(object.clientSecret) : "",
-      scopes: globalThis.Array.isArray(object?.scopes) ? object.scopes.map((e: any) => globalThis.String(e)) : [],
-      fieldMapping: isSet(object.fieldMapping) ? FieldMapping.fromJSON(object.fieldMapping) : undefined,
-      skipTlsVerify: isSet(object.skipTlsVerify) ? globalThis.Boolean(object.skipTlsVerify) : false,
-      authStyle: isSet(object.authStyle)
-        ? oAuth2AuthStyleFromJSON(object.authStyle)
-        : OAuth2AuthStyle.OAUTH2_AUTH_STYLE_UNSPECIFIED,
-    };
   },
 
   toJSON(message: OAuth2IdentityProviderConfig): unknown {
@@ -1508,21 +1416,6 @@ export const OIDCIdentityProviderConfig: MessageFns<OIDCIdentityProviderConfig> 
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): OIDCIdentityProviderConfig {
-    return {
-      issuer: isSet(object.issuer) ? globalThis.String(object.issuer) : "",
-      clientId: isSet(object.clientId) ? globalThis.String(object.clientId) : "",
-      clientSecret: isSet(object.clientSecret) ? globalThis.String(object.clientSecret) : "",
-      scopes: globalThis.Array.isArray(object?.scopes) ? object.scopes.map((e: any) => globalThis.String(e)) : [],
-      fieldMapping: isSet(object.fieldMapping) ? FieldMapping.fromJSON(object.fieldMapping) : undefined,
-      skipTlsVerify: isSet(object.skipTlsVerify) ? globalThis.Boolean(object.skipTlsVerify) : false,
-      authStyle: isSet(object.authStyle)
-        ? oAuth2AuthStyleFromJSON(object.authStyle)
-        : OAuth2AuthStyle.OAUTH2_AUTH_STYLE_UNSPECIFIED,
-      authEndpoint: isSet(object.authEndpoint) ? globalThis.String(object.authEndpoint) : "",
-    };
   },
 
   toJSON(message: OIDCIdentityProviderConfig): unknown {
@@ -1707,20 +1600,6 @@ export const LDAPIdentityProviderConfig: MessageFns<LDAPIdentityProviderConfig> 
     return message;
   },
 
-  fromJSON(object: any): LDAPIdentityProviderConfig {
-    return {
-      host: isSet(object.host) ? globalThis.String(object.host) : "",
-      port: isSet(object.port) ? globalThis.Number(object.port) : 0,
-      skipTlsVerify: isSet(object.skipTlsVerify) ? globalThis.Boolean(object.skipTlsVerify) : false,
-      bindDn: isSet(object.bindDn) ? globalThis.String(object.bindDn) : "",
-      bindPassword: isSet(object.bindPassword) ? globalThis.String(object.bindPassword) : "",
-      baseDn: isSet(object.baseDn) ? globalThis.String(object.baseDn) : "",
-      userFilter: isSet(object.userFilter) ? globalThis.String(object.userFilter) : "",
-      securityProtocol: isSet(object.securityProtocol) ? globalThis.String(object.securityProtocol) : "",
-      fieldMapping: isSet(object.fieldMapping) ? FieldMapping.fromJSON(object.fieldMapping) : undefined,
-    };
-  },
-
   toJSON(message: LDAPIdentityProviderConfig): unknown {
     const obj: any = {};
     if (message.host !== "") {
@@ -1840,15 +1719,6 @@ export const FieldMapping: MessageFns<FieldMapping> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): FieldMapping {
-    return {
-      identifier: isSet(object.identifier) ? globalThis.String(object.identifier) : "",
-      displayName: isSet(object.displayName) ? globalThis.String(object.displayName) : "",
-      phone: isSet(object.phone) ? globalThis.String(object.phone) : "",
-      groups: isSet(object.groups) ? globalThis.String(object.groups) : "",
-    };
   },
 
   toJSON(message: FieldMapping): unknown {
@@ -2294,14 +2164,9 @@ export type DeepPartial<T> = T extends Builtin ? T
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
 
-function isSet(value: any): boolean {
-  return value !== null && value !== undefined;
-}
-
 export interface MessageFns<T> {
   encode(message: T, writer?: BinaryWriter): BinaryWriter;
   decode(input: BinaryReader | Uint8Array, length?: number): T;
-  fromJSON(object: any): T;
   toJSON(message: T): unknown;
   create(base?: DeepPartial<T>): T;
   fromPartial(object: DeepPartial<T>): T;
