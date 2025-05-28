@@ -89,7 +89,7 @@ const refreshKey = ref(0);
 
 const spec = computed(
   () =>
-    head(issue.value.planEntity?.steps.flatMap((step) => step.specs)) ||
+    head(issue.value.planEntity?.specs) ||
     Plan_Spec.fromPartial({})
 );
 
@@ -131,8 +131,7 @@ const handleSaveEdit = async () => {
   }
 
   const distinctSpecIds = new Set([spec.value.id]);
-  const specsToPatch = planPatch.steps
-    .flatMap((step) => step.specs)
+  const specsToPatch = (planPatch.specs || [])
     .filter((spec) => distinctSpecIds.has(spec.id));
   for (let i = 0; i < specsToPatch.length; i++) {
     const spec = specsToPatch[i];

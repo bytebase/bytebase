@@ -3,7 +3,6 @@ import {
   Plan,
   PlanCheckRun,
   Plan_Spec,
-  Plan_Step,
 } from "@/types/proto/v1/plan_service";
 import { EMPTY_PROJECT_NAME, UNKNOWN_PROJECT_NAME } from "../project";
 
@@ -31,12 +30,6 @@ export const unknownPlan = (): ComposedPlan => {
     planCheckRunList: [],
     project: UNKNOWN_PROJECT_NAME,
   };
-};
-
-export const emptyPlanStep = () => {
-  return Plan_Step.fromPartial({
-    specs: [],
-  });
 };
 
 export const emptyPlanSpec = () => {

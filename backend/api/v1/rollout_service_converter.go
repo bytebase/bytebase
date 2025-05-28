@@ -31,18 +31,12 @@ func convertToPlans(ctx context.Context, s *store.Store, plans []*store.PlanMess
 }
 
 func convertToPlan(ctx context.Context, s *store.Store, plan *store.PlanMessage) (*v1pb.Plan, error) {
-	// Convert flattened specs back to steps for API compatibility
-	steps := []*v1pb.Plan_Step{{
-		Title: "",
-		Specs: convertToPlanSpecs(plan.Config.Specs),
-	}}
-
 	p := &v1pb.Plan{
 		Name:        common.FormatPlan(plan.ProjectID, plan.UID),
 		Issue:       "",
 		Title:       plan.Name,
 		Description: plan.Description,
-		Steps:       steps,
+		Specs:       convertToPlanSpecs(plan.Config.Specs), // Use specs field for output
 		Deployment:  convertToPlanDeployment(plan.Config.Deployment),
 		ReleaseSource: &v1pb.Plan_ReleaseSource{
 			Release: plan.Config.GetReleaseSource().GetRelease(),
@@ -189,13 +183,11 @@ func convertPlan(plan *v1pb.Plan) *storepb.PlanConfig {
 	if plan == nil {
 		return nil
 	}
-	// Flatten specs from steps
-	var allSpecs []*storepb.PlanConfig_Spec
-	for _, step := range plan.Steps {
-		allSpecs = append(allSpecs, convertPlanSpecs(step.Specs)...)
-	}
+
+	// At this point, plan.Specs should always be populated
+	// (either originally or converted from steps at API entry point)
 	return &storepb.PlanConfig{
-		Specs:         allSpecs,
+		Specs:         convertPlanSpecs(plan.Specs),
 		ReleaseSource: convertPlanReleaseSource(plan.ReleaseSource),
 		Deployment:    nil,
 	}

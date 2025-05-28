@@ -11083,6 +11083,11 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/Plan_Step'
+                    description: 'Deprecated: use specs instead.'
+                specs:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/Plan_Spec'
                 creator:
                     readOnly: true
                     type: string
