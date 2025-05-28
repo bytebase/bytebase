@@ -503,23 +503,6 @@ export const HttpRule: MessageFns<HttpRule> = {
     return message;
   },
 
-  fromJSON(object: any): HttpRule {
-    return {
-      selector: isSet(object.selector) ? globalThis.String(object.selector) : "",
-      get: isSet(object.get) ? globalThis.String(object.get) : undefined,
-      put: isSet(object.put) ? globalThis.String(object.put) : undefined,
-      post: isSet(object.post) ? globalThis.String(object.post) : undefined,
-      delete: isSet(object.delete) ? globalThis.String(object.delete) : undefined,
-      patch: isSet(object.patch) ? globalThis.String(object.patch) : undefined,
-      custom: isSet(object.custom) ? CustomHttpPattern.fromJSON(object.custom) : undefined,
-      body: isSet(object.body) ? globalThis.String(object.body) : "",
-      responseBody: isSet(object.responseBody) ? globalThis.String(object.responseBody) : "",
-      additionalBindings: globalThis.Array.isArray(object?.additionalBindings)
-        ? object.additionalBindings.map((e: any) => HttpRule.fromJSON(e))
-        : [],
-    };
-  },
-
   toJSON(message: HttpRule): unknown {
     const obj: any = {};
     if (message.selector !== "") {
@@ -623,13 +606,6 @@ export const CustomHttpPattern: MessageFns<CustomHttpPattern> = {
     return message;
   },
 
-  fromJSON(object: any): CustomHttpPattern {
-    return {
-      kind: isSet(object.kind) ? globalThis.String(object.kind) : "",
-      path: isSet(object.path) ? globalThis.String(object.path) : "",
-    };
-  },
-
   toJSON(message: CustomHttpPattern): unknown {
     const obj: any = {};
     if (message.kind !== "") {
@@ -660,14 +636,9 @@ export type DeepPartial<T> = T extends Builtin ? T
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
 
-function isSet(value: any): boolean {
-  return value !== null && value !== undefined;
-}
-
 export interface MessageFns<T> {
   encode(message: T, writer?: BinaryWriter): BinaryWriter;
   decode(input: BinaryReader | Uint8Array, length?: number): T;
-  fromJSON(object: any): T;
   toJSON(message: T): unknown;
   create(base?: DeepPartial<T>): T;
   fromPartial(object: DeepPartial<T>): T;

@@ -755,10 +755,6 @@ export const GetPlanRequest: MessageFns<GetPlanRequest> = {
     return message;
   },
 
-  fromJSON(object: any): GetPlanRequest {
-    return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
-  },
-
   toJSON(message: GetPlanRequest): unknown {
     const obj: any = {};
     if (message.name !== "") {
@@ -835,14 +831,6 @@ export const ListPlansRequest: MessageFns<ListPlansRequest> = {
     return message;
   },
 
-  fromJSON(object: any): ListPlansRequest {
-    return {
-      parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
-      pageSize: isSet(object.pageSize) ? globalThis.Number(object.pageSize) : 0,
-      pageToken: isSet(object.pageToken) ? globalThis.String(object.pageToken) : "",
-    };
-  },
-
   toJSON(message: ListPlansRequest): unknown {
     const obj: any = {};
     if (message.parent !== "") {
@@ -914,13 +902,6 @@ export const ListPlansResponse: MessageFns<ListPlansResponse> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): ListPlansResponse {
-    return {
-      plans: globalThis.Array.isArray(object?.plans) ? object.plans.map((e: any) => Plan.fromJSON(e)) : [],
-      nextPageToken: isSet(object.nextPageToken) ? globalThis.String(object.nextPageToken) : "",
-    };
   },
 
   toJSON(message: ListPlansResponse): unknown {
@@ -1014,15 +995,6 @@ export const SearchPlansRequest: MessageFns<SearchPlansRequest> = {
     return message;
   },
 
-  fromJSON(object: any): SearchPlansRequest {
-    return {
-      parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
-      pageSize: isSet(object.pageSize) ? globalThis.Number(object.pageSize) : 0,
-      pageToken: isSet(object.pageToken) ? globalThis.String(object.pageToken) : "",
-      filter: isSet(object.filter) ? globalThis.String(object.filter) : "",
-    };
-  },
-
   toJSON(message: SearchPlansRequest): unknown {
     const obj: any = {};
     if (message.parent !== "") {
@@ -1100,13 +1072,6 @@ export const SearchPlansResponse: MessageFns<SearchPlansResponse> = {
     return message;
   },
 
-  fromJSON(object: any): SearchPlansResponse {
-    return {
-      plans: globalThis.Array.isArray(object?.plans) ? object.plans.map((e: any) => Plan.fromJSON(e)) : [],
-      nextPageToken: isSet(object.nextPageToken) ? globalThis.String(object.nextPageToken) : "",
-    };
-  },
-
   toJSON(message: SearchPlansResponse): unknown {
     const obj: any = {};
     if (message.plans?.length) {
@@ -1176,13 +1141,6 @@ export const CreatePlanRequest: MessageFns<CreatePlanRequest> = {
     return message;
   },
 
-  fromJSON(object: any): CreatePlanRequest {
-    return {
-      parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
-      plan: isSet(object.plan) ? Plan.fromJSON(object.plan) : undefined,
-    };
-  },
-
   toJSON(message: CreatePlanRequest): unknown {
     const obj: any = {};
     if (message.parent !== "") {
@@ -1250,13 +1208,6 @@ export const UpdatePlanRequest: MessageFns<UpdatePlanRequest> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): UpdatePlanRequest {
-    return {
-      plan: isSet(object.plan) ? Plan.fromJSON(object.plan) : undefined,
-      updateMask: isSet(object.updateMask) ? FieldMask.unwrap(FieldMask.fromJSON(object.updateMask)) : undefined,
-    };
   },
 
   toJSON(message: UpdatePlanRequest): unknown {
@@ -1442,27 +1393,6 @@ export const Plan: MessageFns<Plan> = {
     return message;
   },
 
-  fromJSON(object: any): Plan {
-    return {
-      name: isSet(object.name) ? globalThis.String(object.name) : "",
-      issue: isSet(object.issue) ? globalThis.String(object.issue) : "",
-      title: isSet(object.title) ? globalThis.String(object.title) : "",
-      description: isSet(object.description) ? globalThis.String(object.description) : "",
-      steps: globalThis.Array.isArray(object?.steps) ? object.steps.map((e: any) => Plan_Step.fromJSON(e)) : [],
-      creator: isSet(object.creator) ? globalThis.String(object.creator) : "",
-      createTime: isSet(object.createTime) ? fromJsonTimestamp(object.createTime) : undefined,
-      updateTime: isSet(object.updateTime) ? fromJsonTimestamp(object.updateTime) : undefined,
-      planCheckRunStatusCount: isObject(object.planCheckRunStatusCount)
-        ? Object.entries(object.planCheckRunStatusCount).reduce<{ [key: string]: number }>((acc, [key, value]) => {
-          acc[key] = Number(value);
-          return acc;
-        }, {})
-        : {},
-      releaseSource: isSet(object.releaseSource) ? Plan_ReleaseSource.fromJSON(object.releaseSource) : undefined,
-      deployment: isSet(object.deployment) ? Plan_Deployment.fromJSON(object.deployment) : undefined,
-    };
-  },
-
   toJSON(message: Plan): unknown {
     const obj: any = {};
     if (message.name !== "") {
@@ -1589,13 +1519,6 @@ export const Plan_Step: MessageFns<Plan_Step> = {
     return message;
   },
 
-  fromJSON(object: any): Plan_Step {
-    return {
-      title: isSet(object.title) ? globalThis.String(object.title) : "",
-      specs: globalThis.Array.isArray(object?.specs) ? object.specs.map((e: any) => Plan_Spec.fromJSON(e)) : [],
-    };
-  },
-
   toJSON(message: Plan_Step): unknown {
     const obj: any = {};
     if (message.title !== "") {
@@ -1704,24 +1627,6 @@ export const Plan_Spec: MessageFns<Plan_Spec> = {
     return message;
   },
 
-  fromJSON(object: any): Plan_Spec {
-    return {
-      id: isSet(object.id) ? globalThis.String(object.id) : "",
-      specReleaseSource: isSet(object.specReleaseSource)
-        ? Plan_SpecReleaseSource.fromJSON(object.specReleaseSource)
-        : undefined,
-      createDatabaseConfig: isSet(object.createDatabaseConfig)
-        ? Plan_CreateDatabaseConfig.fromJSON(object.createDatabaseConfig)
-        : undefined,
-      changeDatabaseConfig: isSet(object.changeDatabaseConfig)
-        ? Plan_ChangeDatabaseConfig.fromJSON(object.changeDatabaseConfig)
-        : undefined,
-      exportDataConfig: isSet(object.exportDataConfig)
-        ? Plan_ExportDataConfig.fromJSON(object.exportDataConfig)
-        : undefined,
-    };
-  },
-
   toJSON(message: Plan_Spec): unknown {
     const obj: any = {};
     if (message.id !== "") {
@@ -1809,13 +1714,6 @@ export const Plan_PlanCheckRunStatusCountEntry: MessageFns<Plan_PlanCheckRunStat
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): Plan_PlanCheckRunStatusCountEntry {
-    return {
-      key: isSet(object.key) ? globalThis.String(object.key) : "",
-      value: isSet(object.value) ? globalThis.Number(object.value) : 0,
-    };
   },
 
   toJSON(message: Plan_PlanCheckRunStatusCountEntry): unknown {
@@ -1960,19 +1858,6 @@ export const Plan_CreateDatabaseConfig: MessageFns<Plan_CreateDatabaseConfig> = 
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): Plan_CreateDatabaseConfig {
-    return {
-      target: isSet(object.target) ? globalThis.String(object.target) : "",
-      database: isSet(object.database) ? globalThis.String(object.database) : "",
-      table: isSet(object.table) ? globalThis.String(object.table) : "",
-      characterSet: isSet(object.characterSet) ? globalThis.String(object.characterSet) : "",
-      collation: isSet(object.collation) ? globalThis.String(object.collation) : "",
-      cluster: isSet(object.cluster) ? globalThis.String(object.cluster) : "",
-      owner: isSet(object.owner) ? globalThis.String(object.owner) : "",
-      environment: isSet(object.environment) ? globalThis.String(object.environment) : "",
-    };
   },
 
   toJSON(message: Plan_CreateDatabaseConfig): unknown {
@@ -2126,26 +2011,6 @@ export const Plan_ChangeDatabaseConfig: MessageFns<Plan_ChangeDatabaseConfig> = 
     return message;
   },
 
-  fromJSON(object: any): Plan_ChangeDatabaseConfig {
-    return {
-      target: isSet(object.target) ? globalThis.String(object.target) : "",
-      sheet: isSet(object.sheet) ? globalThis.String(object.sheet) : "",
-      type: isSet(object.type)
-        ? plan_ChangeDatabaseConfig_TypeFromJSON(object.type)
-        : Plan_ChangeDatabaseConfig_Type.TYPE_UNSPECIFIED,
-      schemaVersion: isSet(object.schemaVersion) ? globalThis.String(object.schemaVersion) : "",
-      ghostFlags: isObject(object.ghostFlags)
-        ? Object.entries(object.ghostFlags).reduce<{ [key: string]: string }>((acc, [key, value]) => {
-          acc[key] = String(value);
-          return acc;
-        }, {})
-        : {},
-      preUpdateBackupDetail: isSet(object.preUpdateBackupDetail)
-        ? Plan_ChangeDatabaseConfig_PreUpdateBackupDetail.fromJSON(object.preUpdateBackupDetail)
-        : undefined,
-    };
-  },
-
   toJSON(message: Plan_ChangeDatabaseConfig): unknown {
     const obj: any = {};
     if (message.target !== "") {
@@ -2248,13 +2113,6 @@ export const Plan_ChangeDatabaseConfig_GhostFlagsEntry: MessageFns<Plan_ChangeDa
     return message;
   },
 
-  fromJSON(object: any): Plan_ChangeDatabaseConfig_GhostFlagsEntry {
-    return {
-      key: isSet(object.key) ? globalThis.String(object.key) : "",
-      value: isSet(object.value) ? globalThis.String(object.value) : "",
-    };
-  },
-
   toJSON(message: Plan_ChangeDatabaseConfig_GhostFlagsEntry): unknown {
     const obj: any = {};
     if (message.key !== "") {
@@ -2318,10 +2176,6 @@ export const Plan_ChangeDatabaseConfig_PreUpdateBackupDetail: MessageFns<
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): Plan_ChangeDatabaseConfig_PreUpdateBackupDetail {
-    return { database: isSet(object.database) ? globalThis.String(object.database) : "" };
   },
 
   toJSON(message: Plan_ChangeDatabaseConfig_PreUpdateBackupDetail): unknown {
@@ -2415,15 +2269,6 @@ export const Plan_ExportDataConfig: MessageFns<Plan_ExportDataConfig> = {
     return message;
   },
 
-  fromJSON(object: any): Plan_ExportDataConfig {
-    return {
-      target: isSet(object.target) ? globalThis.String(object.target) : "",
-      sheet: isSet(object.sheet) ? globalThis.String(object.sheet) : "",
-      format: isSet(object.format) ? exportFormatFromJSON(object.format) : ExportFormat.FORMAT_UNSPECIFIED,
-      password: isSet(object.password) ? globalThis.String(object.password) : undefined,
-    };
-  },
-
   toJSON(message: Plan_ExportDataConfig): unknown {
     const obj: any = {};
     if (message.target !== "") {
@@ -2501,17 +2346,6 @@ export const Plan_Deployment: MessageFns<Plan_Deployment> = {
     return message;
   },
 
-  fromJSON(object: any): Plan_Deployment {
-    return {
-      environments: globalThis.Array.isArray(object?.environments)
-        ? object.environments.map((e: any) => globalThis.String(e))
-        : [],
-      databaseGroupMappings: globalThis.Array.isArray(object?.databaseGroupMappings)
-        ? object.databaseGroupMappings.map((e: any) => Plan_Deployment_DatabaseGroupMapping.fromJSON(e))
-        : [],
-    };
-  },
-
   toJSON(message: Plan_Deployment): unknown {
     const obj: any = {};
     if (message.environments?.length) {
@@ -2584,15 +2418,6 @@ export const Plan_Deployment_DatabaseGroupMapping: MessageFns<Plan_Deployment_Da
     return message;
   },
 
-  fromJSON(object: any): Plan_Deployment_DatabaseGroupMapping {
-    return {
-      databaseGroup: isSet(object.databaseGroup) ? globalThis.String(object.databaseGroup) : "",
-      databases: globalThis.Array.isArray(object?.databases)
-        ? object.databases.map((e: any) => globalThis.String(e))
-        : [],
-    };
-  },
-
   toJSON(message: Plan_Deployment_DatabaseGroupMapping): unknown {
     const obj: any = {};
     if (message.databaseGroup !== "") {
@@ -2651,10 +2476,6 @@ export const Plan_ReleaseSource: MessageFns<Plan_ReleaseSource> = {
     return message;
   },
 
-  fromJSON(object: any): Plan_ReleaseSource {
-    return { release: isSet(object.release) ? globalThis.String(object.release) : "" };
-  },
-
   toJSON(message: Plan_ReleaseSource): unknown {
     const obj: any = {};
     if (message.release !== "") {
@@ -2707,10 +2528,6 @@ export const Plan_SpecReleaseSource: MessageFns<Plan_SpecReleaseSource> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): Plan_SpecReleaseSource {
-    return { file: isSet(object.file) ? globalThis.String(object.file) : "" };
   },
 
   toJSON(message: Plan_SpecReleaseSource): unknown {
@@ -2800,15 +2617,6 @@ export const ListPlanCheckRunsRequest: MessageFns<ListPlanCheckRunsRequest> = {
     return message;
   },
 
-  fromJSON(object: any): ListPlanCheckRunsRequest {
-    return {
-      parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
-      pageSize: isSet(object.pageSize) ? globalThis.Number(object.pageSize) : 0,
-      pageToken: isSet(object.pageToken) ? globalThis.String(object.pageToken) : "",
-      latestOnly: isSet(object.latestOnly) ? globalThis.Boolean(object.latestOnly) : false,
-    };
-  },
-
   toJSON(message: ListPlanCheckRunsRequest): unknown {
     const obj: any = {};
     if (message.parent !== "") {
@@ -2886,15 +2694,6 @@ export const ListPlanCheckRunsResponse: MessageFns<ListPlanCheckRunsResponse> = 
     return message;
   },
 
-  fromJSON(object: any): ListPlanCheckRunsResponse {
-    return {
-      planCheckRuns: globalThis.Array.isArray(object?.planCheckRuns)
-        ? object.planCheckRuns.map((e: any) => PlanCheckRun.fromJSON(e))
-        : [],
-      nextPageToken: isSet(object.nextPageToken) ? globalThis.String(object.nextPageToken) : "",
-    };
-  },
-
   toJSON(message: ListPlanCheckRunsResponse): unknown {
     const obj: any = {};
     if (message.planCheckRuns?.length) {
@@ -2953,10 +2752,6 @@ export const RunPlanChecksRequest: MessageFns<RunPlanChecksRequest> = {
     return message;
   },
 
-  fromJSON(object: any): RunPlanChecksRequest {
-    return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
-  },
-
   toJSON(message: RunPlanChecksRequest): unknown {
     const obj: any = {};
     if (message.name !== "") {
@@ -2998,10 +2793,6 @@ export const RunPlanChecksResponse: MessageFns<RunPlanChecksResponse> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(_: any): RunPlanChecksResponse {
-    return {};
   },
 
   toJSON(_: RunPlanChecksResponse): unknown {
@@ -3065,15 +2856,6 @@ export const BatchCancelPlanCheckRunsRequest: MessageFns<BatchCancelPlanCheckRun
     return message;
   },
 
-  fromJSON(object: any): BatchCancelPlanCheckRunsRequest {
-    return {
-      parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
-      planCheckRuns: globalThis.Array.isArray(object?.planCheckRuns)
-        ? object.planCheckRuns.map((e: any) => globalThis.String(e))
-        : [],
-    };
-  },
-
   toJSON(message: BatchCancelPlanCheckRunsRequest): unknown {
     const obj: any = {};
     if (message.parent !== "") {
@@ -3119,10 +2901,6 @@ export const BatchCancelPlanCheckRunsResponse: MessageFns<BatchCancelPlanCheckRu
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(_: any): BatchCancelPlanCheckRunsResponse {
-    return {};
   },
 
   toJSON(_: BatchCancelPlanCheckRunsResponse): unknown {
@@ -3206,15 +2984,6 @@ export const PreviewPlanRequest: MessageFns<PreviewPlanRequest> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): PreviewPlanRequest {
-    return {
-      project: isSet(object.project) ? globalThis.String(object.project) : "",
-      release: isSet(object.release) ? globalThis.String(object.release) : "",
-      targets: globalThis.Array.isArray(object?.targets) ? object.targets.map((e: any) => globalThis.String(e)) : [],
-      allowOutOfOrder: isSet(object.allowOutOfOrder) ? globalThis.Boolean(object.allowOutOfOrder) : false,
-    };
   },
 
   toJSON(message: PreviewPlanRequest): unknown {
@@ -3305,18 +3074,6 @@ export const PreviewPlanResponse: MessageFns<PreviewPlanResponse> = {
     return message;
   },
 
-  fromJSON(object: any): PreviewPlanResponse {
-    return {
-      plan: isSet(object.plan) ? Plan.fromJSON(object.plan) : undefined,
-      outOfOrderFiles: globalThis.Array.isArray(object?.outOfOrderFiles)
-        ? object.outOfOrderFiles.map((e: any) => PreviewPlanResponse_DatabaseFiles.fromJSON(e))
-        : [],
-      appliedButModifiedFiles: globalThis.Array.isArray(object?.appliedButModifiedFiles)
-        ? object.appliedButModifiedFiles.map((e: any) => PreviewPlanResponse_DatabaseFiles.fromJSON(e))
-        : [],
-    };
-  },
-
   toJSON(message: PreviewPlanResponse): unknown {
     const obj: any = {};
     if (message.plan !== undefined) {
@@ -3392,13 +3149,6 @@ export const PreviewPlanResponse_DatabaseFiles: MessageFns<PreviewPlanResponse_D
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): PreviewPlanResponse_DatabaseFiles {
-    return {
-      database: isSet(object.database) ? globalThis.String(object.database) : "",
-      files: globalThis.Array.isArray(object?.files) ? object.files.map((e: any) => globalThis.String(e)) : [],
-    };
   },
 
   toJSON(message: PreviewPlanResponse_DatabaseFiles): unknown {
@@ -3543,23 +3293,6 @@ export const PlanCheckRun: MessageFns<PlanCheckRun> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): PlanCheckRun {
-    return {
-      name: isSet(object.name) ? globalThis.String(object.name) : "",
-      type: isSet(object.type) ? planCheckRun_TypeFromJSON(object.type) : PlanCheckRun_Type.TYPE_UNSPECIFIED,
-      status: isSet(object.status)
-        ? planCheckRun_StatusFromJSON(object.status)
-        : PlanCheckRun_Status.STATUS_UNSPECIFIED,
-      target: isSet(object.target) ? globalThis.String(object.target) : "",
-      sheet: isSet(object.sheet) ? globalThis.String(object.sheet) : "",
-      results: globalThis.Array.isArray(object?.results)
-        ? object.results.map((e: any) => PlanCheckRun_Result.fromJSON(e))
-        : [],
-      error: isSet(object.error) ? globalThis.String(object.error) : "",
-      createTime: isSet(object.createTime) ? fromJsonTimestamp(object.createTime) : undefined,
-    };
   },
 
   toJSON(message: PlanCheckRun): unknown {
@@ -3708,23 +3441,6 @@ export const PlanCheckRun_Result: MessageFns<PlanCheckRun_Result> = {
     return message;
   },
 
-  fromJSON(object: any): PlanCheckRun_Result {
-    return {
-      status: isSet(object.status)
-        ? planCheckRun_Result_StatusFromJSON(object.status)
-        : PlanCheckRun_Result_Status.STATUS_UNSPECIFIED,
-      title: isSet(object.title) ? globalThis.String(object.title) : "",
-      content: isSet(object.content) ? globalThis.String(object.content) : "",
-      code: isSet(object.code) ? globalThis.Number(object.code) : 0,
-      sqlSummaryReport: isSet(object.sqlSummaryReport)
-        ? PlanCheckRun_Result_SqlSummaryReport.fromJSON(object.sqlSummaryReport)
-        : undefined,
-      sqlReviewReport: isSet(object.sqlReviewReport)
-        ? PlanCheckRun_Result_SqlReviewReport.fromJSON(object.sqlReviewReport)
-        : undefined,
-    };
-  },
-
   toJSON(message: PlanCheckRun_Result): unknown {
     const obj: any = {};
     if (message.status !== PlanCheckRun_Result_Status.STATUS_UNSPECIFIED) {
@@ -3825,16 +3541,6 @@ export const PlanCheckRun_Result_SqlSummaryReport: MessageFns<PlanCheckRun_Resul
     return message;
   },
 
-  fromJSON(object: any): PlanCheckRun_Result_SqlSummaryReport {
-    return {
-      statementTypes: globalThis.Array.isArray(object?.statementTypes)
-        ? object.statementTypes.map((e: any) => globalThis.String(e))
-        : [],
-      affectedRows: isSet(object.affectedRows) ? globalThis.Number(object.affectedRows) : 0,
-      changedResources: isSet(object.changedResources) ? ChangedResources.fromJSON(object.changedResources) : undefined,
-    };
-  },
-
   toJSON(message: PlanCheckRun_Result_SqlSummaryReport): unknown {
     const obj: any = {};
     if (message.statementTypes?.length) {
@@ -3930,15 +3636,6 @@ export const PlanCheckRun_Result_SqlReviewReport: MessageFns<PlanCheckRun_Result
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): PlanCheckRun_Result_SqlReviewReport {
-    return {
-      line: isSet(object.line) ? globalThis.Number(object.line) : 0,
-      column: isSet(object.column) ? globalThis.Number(object.column) : 0,
-      startPosition: isSet(object.startPosition) ? Position.fromJSON(object.startPosition) : undefined,
-      endPosition: isSet(object.endPosition) ? Position.fromJSON(object.endPosition) : undefined,
-    };
   },
 
   toJSON(message: PlanCheckRun_Result_SqlReviewReport): unknown {
@@ -4621,44 +4318,15 @@ export type DeepPartial<T> = T extends Builtin ? T
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
 
-function toTimestamp(date: Date): Timestamp {
-  const seconds = numberToLong(Math.trunc(date.getTime() / 1_000));
-  const nanos = (date.getTime() % 1_000) * 1_000_000;
-  return { seconds, nanos };
-}
-
 function fromTimestamp(t: Timestamp): Date {
   let millis = (t.seconds.toNumber() || 0) * 1_000;
   millis += (t.nanos || 0) / 1_000_000;
   return new globalThis.Date(millis);
 }
 
-function fromJsonTimestamp(o: any): Timestamp {
-  if (o instanceof globalThis.Date) {
-    return toTimestamp(o);
-  } else if (typeof o === "string") {
-    return toTimestamp(new globalThis.Date(o));
-  } else {
-    return Timestamp.fromJSON(o);
-  }
-}
-
-function numberToLong(number: number) {
-  return Long.fromNumber(number);
-}
-
-function isObject(value: any): boolean {
-  return typeof value === "object" && value !== null;
-}
-
-function isSet(value: any): boolean {
-  return value !== null && value !== undefined;
-}
-
 export interface MessageFns<T> {
   encode(message: T, writer?: BinaryWriter): BinaryWriter;
   decode(input: BinaryReader | Uint8Array, length?: number): T;
-  fromJSON(object: any): T;
   toJSON(message: T): unknown;
   create(base?: DeepPartial<T>): T;
   fromPartial(object: DeepPartial<T>): T;

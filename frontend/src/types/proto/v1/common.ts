@@ -525,13 +525,6 @@ export const Position: MessageFns<Position> = {
     return message;
   },
 
-  fromJSON(object: any): Position {
-    return {
-      line: isSet(object.line) ? globalThis.Number(object.line) : 0,
-      column: isSet(object.column) ? globalThis.Number(object.column) : 0,
-    };
-  },
-
   toJSON(message: Position): unknown {
     const obj: any = {};
     if (message.line !== 0) {
@@ -601,13 +594,6 @@ export const Range: MessageFns<Range> = {
     return message;
   },
 
-  fromJSON(object: any): Range {
-    return {
-      start: isSet(object.start) ? globalThis.Number(object.start) : 0,
-      end: isSet(object.end) ? globalThis.Number(object.end) : 0,
-    };
-  },
-
   toJSON(message: Range): unknown {
     const obj: any = {};
     if (message.start !== 0) {
@@ -638,14 +624,9 @@ export type DeepPartial<T> = T extends Builtin ? T
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
 
-function isSet(value: any): boolean {
-  return value !== null && value !== undefined;
-}
-
 export interface MessageFns<T> {
   encode(message: T, writer?: BinaryWriter): BinaryWriter;
   decode(input: BinaryReader | Uint8Array, length?: number): T;
-  fromJSON(object: any): T;
   toJSON(message: T): unknown;
   create(base?: DeepPartial<T>): T;
   fromPartial(object: DeepPartial<T>): T;

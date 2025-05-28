@@ -689,14 +689,6 @@ export const CreatePolicyRequest: MessageFns<CreatePolicyRequest> = {
     return message;
   },
 
-  fromJSON(object: any): CreatePolicyRequest {
-    return {
-      parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
-      policy: isSet(object.policy) ? Policy.fromJSON(object.policy) : undefined,
-      type: isSet(object.type) ? policyTypeFromJSON(object.type) : PolicyType.POLICY_TYPE_UNSPECIFIED,
-    };
-  },
-
   toJSON(message: CreatePolicyRequest): unknown {
     const obj: any = {};
     if (message.parent !== "") {
@@ -783,14 +775,6 @@ export const UpdatePolicyRequest: MessageFns<UpdatePolicyRequest> = {
     return message;
   },
 
-  fromJSON(object: any): UpdatePolicyRequest {
-    return {
-      policy: isSet(object.policy) ? Policy.fromJSON(object.policy) : undefined,
-      updateMask: isSet(object.updateMask) ? FieldMask.unwrap(FieldMask.fromJSON(object.updateMask)) : undefined,
-      allowMissing: isSet(object.allowMissing) ? globalThis.Boolean(object.allowMissing) : false,
-    };
-  },
-
   toJSON(message: UpdatePolicyRequest): unknown {
     const obj: any = {};
     if (message.policy !== undefined) {
@@ -855,10 +839,6 @@ export const DeletePolicyRequest: MessageFns<DeletePolicyRequest> = {
     return message;
   },
 
-  fromJSON(object: any): DeletePolicyRequest {
-    return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
-  },
-
   toJSON(message: DeletePolicyRequest): unknown {
     const obj: any = {};
     if (message.name !== "") {
@@ -911,10 +891,6 @@ export const GetPolicyRequest: MessageFns<GetPolicyRequest> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): GetPolicyRequest {
-    return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
   },
 
   toJSON(message: GetPolicyRequest): unknown {
@@ -1015,16 +991,6 @@ export const ListPoliciesRequest: MessageFns<ListPoliciesRequest> = {
     return message;
   },
 
-  fromJSON(object: any): ListPoliciesRequest {
-    return {
-      parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
-      policyType: isSet(object.policyType) ? policyTypeFromJSON(object.policyType) : undefined,
-      pageSize: isSet(object.pageSize) ? globalThis.Number(object.pageSize) : 0,
-      pageToken: isSet(object.pageToken) ? globalThis.String(object.pageToken) : "",
-      showDeleted: isSet(object.showDeleted) ? globalThis.Boolean(object.showDeleted) : false,
-    };
-  },
-
   toJSON(message: ListPoliciesRequest): unknown {
     const obj: any = {};
     if (message.parent !== "") {
@@ -1104,13 +1070,6 @@ export const ListPoliciesResponse: MessageFns<ListPoliciesResponse> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): ListPoliciesResponse {
-    return {
-      policies: globalThis.Array.isArray(object?.policies) ? object.policies.map((e: any) => Policy.fromJSON(e)) : [],
-      nextPageToken: isSet(object.nextPageToken) ? globalThis.String(object.nextPageToken) : "",
-    };
   },
 
   toJSON(message: ListPoliciesResponse): unknown {
@@ -1335,37 +1294,6 @@ export const Policy: MessageFns<Policy> = {
     return message;
   },
 
-  fromJSON(object: any): Policy {
-    return {
-      name: isSet(object.name) ? globalThis.String(object.name) : "",
-      inheritFromParent: isSet(object.inheritFromParent) ? globalThis.Boolean(object.inheritFromParent) : false,
-      type: isSet(object.type) ? policyTypeFromJSON(object.type) : PolicyType.POLICY_TYPE_UNSPECIFIED,
-      rolloutPolicy: isSet(object.rolloutPolicy) ? RolloutPolicy.fromJSON(object.rolloutPolicy) : undefined,
-      disableCopyDataPolicy: isSet(object.disableCopyDataPolicy)
-        ? DisableCopyDataPolicy.fromJSON(object.disableCopyDataPolicy)
-        : undefined,
-      maskingRulePolicy: isSet(object.maskingRulePolicy)
-        ? MaskingRulePolicy.fromJSON(object.maskingRulePolicy)
-        : undefined,
-      maskingExceptionPolicy: isSet(object.maskingExceptionPolicy)
-        ? MaskingExceptionPolicy.fromJSON(object.maskingExceptionPolicy)
-        : undefined,
-      restrictIssueCreationForSqlReviewPolicy: isSet(object.restrictIssueCreationForSqlReviewPolicy)
-        ? RestrictIssueCreationForSQLReviewPolicy.fromJSON(object.restrictIssueCreationForSqlReviewPolicy)
-        : undefined,
-      tagPolicy: isSet(object.tagPolicy) ? TagPolicy.fromJSON(object.tagPolicy) : undefined,
-      dataSourceQueryPolicy: isSet(object.dataSourceQueryPolicy)
-        ? DataSourceQueryPolicy.fromJSON(object.dataSourceQueryPolicy)
-        : undefined,
-      exportDataPolicy: isSet(object.exportDataPolicy) ? ExportDataPolicy.fromJSON(object.exportDataPolicy) : undefined,
-      queryDataPolicy: isSet(object.queryDataPolicy) ? QueryDataPolicy.fromJSON(object.queryDataPolicy) : undefined,
-      enforce: isSet(object.enforce) ? globalThis.Boolean(object.enforce) : false,
-      resourceType: isSet(object.resourceType)
-        ? policyResourceTypeFromJSON(object.resourceType)
-        : PolicyResourceType.RESOURCE_TYPE_UNSPECIFIED,
-    };
-  },
-
   toJSON(message: Policy): unknown {
     const obj: any = {};
     if (message.name !== "") {
@@ -1519,16 +1447,6 @@ export const RolloutPolicy: MessageFns<RolloutPolicy> = {
     return message;
   },
 
-  fromJSON(object: any): RolloutPolicy {
-    return {
-      automatic: isSet(object.automatic) ? globalThis.Boolean(object.automatic) : false,
-      roles: globalThis.Array.isArray(object?.roles) ? object.roles.map((e: any) => globalThis.String(e)) : [],
-      issueRoles: globalThis.Array.isArray(object?.issueRoles)
-        ? object.issueRoles.map((e: any) => globalThis.String(e))
-        : [],
-    };
-  },
-
   toJSON(message: RolloutPolicy): unknown {
     const obj: any = {};
     if (message.automatic !== false) {
@@ -1591,10 +1509,6 @@ export const DisableCopyDataPolicy: MessageFns<DisableCopyDataPolicy> = {
     return message;
   },
 
-  fromJSON(object: any): DisableCopyDataPolicy {
-    return { active: isSet(object.active) ? globalThis.Boolean(object.active) : false };
-  },
-
   toJSON(message: DisableCopyDataPolicy): unknown {
     const obj: any = {};
     if (message.active !== false) {
@@ -1649,10 +1563,6 @@ export const ExportDataPolicy: MessageFns<ExportDataPolicy> = {
     return message;
   },
 
-  fromJSON(object: any): ExportDataPolicy {
-    return { disable: isSet(object.disable) ? globalThis.Boolean(object.disable) : false };
-  },
-
   toJSON(message: ExportDataPolicy): unknown {
     const obj: any = {};
     if (message.disable !== false) {
@@ -1705,10 +1615,6 @@ export const QueryDataPolicy: MessageFns<QueryDataPolicy> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): QueryDataPolicy {
-    return { timeout: isSet(object.timeout) ? Duration.fromJSON(object.timeout) : undefined };
   },
 
   toJSON(message: QueryDataPolicy): unknown {
@@ -1817,16 +1723,6 @@ export const SQLReviewRule: MessageFns<SQLReviewRule> = {
     return message;
   },
 
-  fromJSON(object: any): SQLReviewRule {
-    return {
-      type: isSet(object.type) ? globalThis.String(object.type) : "",
-      level: isSet(object.level) ? sQLReviewRuleLevelFromJSON(object.level) : SQLReviewRuleLevel.LEVEL_UNSPECIFIED,
-      payload: isSet(object.payload) ? globalThis.String(object.payload) : "",
-      engine: isSet(object.engine) ? engineFromJSON(object.engine) : Engine.ENGINE_UNSPECIFIED,
-      comment: isSet(object.comment) ? globalThis.String(object.comment) : "",
-    };
-  },
-
   toJSON(message: SQLReviewRule): unknown {
     const obj: any = {};
     if (message.type !== "") {
@@ -1895,14 +1791,6 @@ export const MaskingExceptionPolicy: MessageFns<MaskingExceptionPolicy> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): MaskingExceptionPolicy {
-    return {
-      maskingExceptions: globalThis.Array.isArray(object?.maskingExceptions)
-        ? object.maskingExceptions.map((e: any) => MaskingExceptionPolicy_MaskingException.fromJSON(e))
-        : [],
-    };
   },
 
   toJSON(message: MaskingExceptionPolicy): unknown {
@@ -1986,16 +1874,6 @@ export const MaskingExceptionPolicy_MaskingException: MessageFns<MaskingExceptio
     return message;
   },
 
-  fromJSON(object: any): MaskingExceptionPolicy_MaskingException {
-    return {
-      action: isSet(object.action)
-        ? maskingExceptionPolicy_MaskingException_ActionFromJSON(object.action)
-        : MaskingExceptionPolicy_MaskingException_Action.ACTION_UNSPECIFIED,
-      member: isSet(object.member) ? globalThis.String(object.member) : "",
-      condition: isSet(object.condition) ? Expr.fromJSON(object.condition) : undefined,
-    };
-  },
-
   toJSON(message: MaskingExceptionPolicy_MaskingException): unknown {
     const obj: any = {};
     if (message.action !== MaskingExceptionPolicy_MaskingException_Action.ACTION_UNSPECIFIED) {
@@ -2058,14 +1936,6 @@ export const MaskingRulePolicy: MessageFns<MaskingRulePolicy> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): MaskingRulePolicy {
-    return {
-      rules: globalThis.Array.isArray(object?.rules)
-        ? object.rules.map((e: any) => MaskingRulePolicy_MaskingRule.fromJSON(e))
-        : [],
-    };
   },
 
   toJSON(message: MaskingRulePolicy): unknown {
@@ -2144,14 +2014,6 @@ export const MaskingRulePolicy_MaskingRule: MessageFns<MaskingRulePolicy_Masking
     return message;
   },
 
-  fromJSON(object: any): MaskingRulePolicy_MaskingRule {
-    return {
-      id: isSet(object.id) ? globalThis.String(object.id) : "",
-      condition: isSet(object.condition) ? Expr.fromJSON(object.condition) : undefined,
-      semanticType: isSet(object.semanticType) ? globalThis.String(object.semanticType) : "",
-    };
-  },
-
   toJSON(message: MaskingRulePolicy_MaskingRule): unknown {
     const obj: any = {};
     if (message.id !== "") {
@@ -2216,10 +2078,6 @@ export const RestrictIssueCreationForSQLReviewPolicy: MessageFns<RestrictIssueCr
     return message;
   },
 
-  fromJSON(object: any): RestrictIssueCreationForSQLReviewPolicy {
-    return { disallow: isSet(object.disallow) ? globalThis.Boolean(object.disallow) : false };
-  },
-
   toJSON(message: RestrictIssueCreationForSQLReviewPolicy): unknown {
     const obj: any = {};
     if (message.disallow !== false) {
@@ -2275,17 +2133,6 @@ export const TagPolicy: MessageFns<TagPolicy> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): TagPolicy {
-    return {
-      tags: isObject(object.tags)
-        ? Object.entries(object.tags).reduce<{ [key: string]: string }>((acc, [key, value]) => {
-          acc[key] = String(value);
-          return acc;
-        }, {})
-        : {},
-    };
   },
 
   toJSON(message: TagPolicy): unknown {
@@ -2362,13 +2209,6 @@ export const TagPolicy_TagsEntry: MessageFns<TagPolicy_TagsEntry> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): TagPolicy_TagsEntry {
-    return {
-      key: isSet(object.key) ? globalThis.String(object.key) : "",
-      value: isSet(object.value) ? globalThis.String(object.value) : "",
-    };
   },
 
   toJSON(message: TagPolicy_TagsEntry): unknown {
@@ -2453,16 +2293,6 @@ export const DataSourceQueryPolicy: MessageFns<DataSourceQueryPolicy> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): DataSourceQueryPolicy {
-    return {
-      adminDataSourceRestriction: isSet(object.adminDataSourceRestriction)
-        ? dataSourceQueryPolicy_RestrictionFromJSON(object.adminDataSourceRestriction)
-        : DataSourceQueryPolicy_Restriction.RESTRICTION_UNSPECIFIED,
-      disallowDdl: isSet(object.disallowDdl) ? globalThis.Boolean(object.disallowDdl) : false,
-      disallowDml: isSet(object.disallowDml) ? globalThis.Boolean(object.disallowDml) : false,
-    };
   },
 
   toJSON(message: DataSourceQueryPolicy): unknown {
@@ -3641,18 +3471,9 @@ export type DeepPartial<T> = T extends Builtin ? T
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
 
-function isObject(value: any): boolean {
-  return typeof value === "object" && value !== null;
-}
-
-function isSet(value: any): boolean {
-  return value !== null && value !== undefined;
-}
-
 export interface MessageFns<T> {
   encode(message: T, writer?: BinaryWriter): BinaryWriter;
   decode(input: BinaryReader | Uint8Array, length?: number): T;
-  fromJSON(object: any): T;
   toJSON(message: T): unknown;
   create(base?: DeepPartial<T>): T;
   fromPartial(object: DeepPartial<T>): T;

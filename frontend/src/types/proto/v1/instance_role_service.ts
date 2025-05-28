@@ -122,10 +122,6 @@ export const GetInstanceRoleRequest: MessageFns<GetInstanceRoleRequest> = {
     return message;
   },
 
-  fromJSON(object: any): GetInstanceRoleRequest {
-    return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
-  },
-
   toJSON(message: GetInstanceRoleRequest): unknown {
     const obj: any = {};
     if (message.name !== "") {
@@ -213,15 +209,6 @@ export const ListInstanceRolesRequest: MessageFns<ListInstanceRolesRequest> = {
     return message;
   },
 
-  fromJSON(object: any): ListInstanceRolesRequest {
-    return {
-      parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
-      pageSize: isSet(object.pageSize) ? globalThis.Number(object.pageSize) : 0,
-      pageToken: isSet(object.pageToken) ? globalThis.String(object.pageToken) : "",
-      refresh: isSet(object.refresh) ? globalThis.Boolean(object.refresh) : false,
-    };
-  },
-
   toJSON(message: ListInstanceRolesRequest): unknown {
     const obj: any = {};
     if (message.parent !== "") {
@@ -297,13 +284,6 @@ export const ListInstanceRolesResponse: MessageFns<ListInstanceRolesResponse> = 
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): ListInstanceRolesResponse {
-    return {
-      roles: globalThis.Array.isArray(object?.roles) ? object.roles.map((e: any) => InstanceRole.fromJSON(e)) : [],
-      nextPageToken: isSet(object.nextPageToken) ? globalThis.String(object.nextPageToken) : "",
-    };
   },
 
   toJSON(message: ListInstanceRolesResponse): unknown {
@@ -424,17 +404,6 @@ export const InstanceRole: MessageFns<InstanceRole> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): InstanceRole {
-    return {
-      name: isSet(object.name) ? globalThis.String(object.name) : "",
-      roleName: isSet(object.roleName) ? globalThis.String(object.roleName) : "",
-      password: isSet(object.password) ? globalThis.String(object.password) : undefined,
-      connectionLimit: isSet(object.connectionLimit) ? globalThis.Number(object.connectionLimit) : undefined,
-      validUntil: isSet(object.validUntil) ? globalThis.String(object.validUntil) : undefined,
-      attribute: isSet(object.attribute) ? globalThis.String(object.attribute) : undefined,
-    };
   },
 
   toJSON(message: InstanceRole): unknown {
@@ -641,14 +610,9 @@ export type DeepPartial<T> = T extends Builtin ? T
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
 
-function isSet(value: any): boolean {
-  return value !== null && value !== undefined;
-}
-
 export interface MessageFns<T> {
   encode(message: T, writer?: BinaryWriter): BinaryWriter;
   decode(input: BinaryReader | Uint8Array, length?: number): T;
-  fromJSON(object: any): T;
   toJSON(message: T): unknown;
   create(base?: DeepPartial<T>): T;
   fromPartial(object: DeepPartial<T>): T;

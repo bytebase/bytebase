@@ -556,10 +556,6 @@ export const GetProjectRequest: MessageFns<GetProjectRequest> = {
     return message;
   },
 
-  fromJSON(object: any): GetProjectRequest {
-    return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
-  },
-
   toJSON(message: GetProjectRequest): unknown {
     const obj: any = {};
     if (message.name !== "") {
@@ -647,15 +643,6 @@ export const ListProjectsRequest: MessageFns<ListProjectsRequest> = {
     return message;
   },
 
-  fromJSON(object: any): ListProjectsRequest {
-    return {
-      pageSize: isSet(object.pageSize) ? globalThis.Number(object.pageSize) : 0,
-      pageToken: isSet(object.pageToken) ? globalThis.String(object.pageToken) : "",
-      showDeleted: isSet(object.showDeleted) ? globalThis.Boolean(object.showDeleted) : false,
-      filter: isSet(object.filter) ? globalThis.String(object.filter) : "",
-    };
-  },
-
   toJSON(message: ListProjectsRequest): unknown {
     const obj: any = {};
     if (message.pageSize !== 0) {
@@ -731,13 +718,6 @@ export const ListProjectsResponse: MessageFns<ListProjectsResponse> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): ListProjectsResponse {
-    return {
-      projects: globalThis.Array.isArray(object?.projects) ? object.projects.map((e: any) => Project.fromJSON(e)) : [],
-      nextPageToken: isSet(object.nextPageToken) ? globalThis.String(object.nextPageToken) : "",
-    };
   },
 
   toJSON(message: ListProjectsResponse): unknown {
@@ -831,15 +811,6 @@ export const SearchProjectsRequest: MessageFns<SearchProjectsRequest> = {
     return message;
   },
 
-  fromJSON(object: any): SearchProjectsRequest {
-    return {
-      showDeleted: isSet(object.showDeleted) ? globalThis.Boolean(object.showDeleted) : false,
-      filter: isSet(object.filter) ? globalThis.String(object.filter) : "",
-      pageSize: isSet(object.pageSize) ? globalThis.Number(object.pageSize) : 0,
-      pageToken: isSet(object.pageToken) ? globalThis.String(object.pageToken) : "",
-    };
-  },
-
   toJSON(message: SearchProjectsRequest): unknown {
     const obj: any = {};
     if (message.showDeleted !== false) {
@@ -917,13 +888,6 @@ export const SearchProjectsResponse: MessageFns<SearchProjectsResponse> = {
     return message;
   },
 
-  fromJSON(object: any): SearchProjectsResponse {
-    return {
-      projects: globalThis.Array.isArray(object?.projects) ? object.projects.map((e: any) => Project.fromJSON(e)) : [],
-      nextPageToken: isSet(object.nextPageToken) ? globalThis.String(object.nextPageToken) : "",
-    };
-  },
-
   toJSON(message: SearchProjectsResponse): unknown {
     const obj: any = {};
     if (message.projects?.length) {
@@ -991,13 +955,6 @@ export const CreateProjectRequest: MessageFns<CreateProjectRequest> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): CreateProjectRequest {
-    return {
-      project: isSet(object.project) ? Project.fromJSON(object.project) : undefined,
-      projectId: isSet(object.projectId) ? globalThis.String(object.projectId) : "",
-    };
   },
 
   toJSON(message: CreateProjectRequest): unknown {
@@ -1071,13 +1028,6 @@ export const UpdateProjectRequest: MessageFns<UpdateProjectRequest> = {
     return message;
   },
 
-  fromJSON(object: any): UpdateProjectRequest {
-    return {
-      project: isSet(object.project) ? Project.fromJSON(object.project) : undefined,
-      updateMask: isSet(object.updateMask) ? FieldMask.unwrap(FieldMask.fromJSON(object.updateMask)) : undefined,
-    };
-  },
-
   toJSON(message: UpdateProjectRequest): unknown {
     const obj: any = {};
     if (message.project !== undefined) {
@@ -1149,13 +1099,6 @@ export const DeleteProjectRequest: MessageFns<DeleteProjectRequest> = {
     return message;
   },
 
-  fromJSON(object: any): DeleteProjectRequest {
-    return {
-      name: isSet(object.name) ? globalThis.String(object.name) : "",
-      force: isSet(object.force) ? globalThis.Boolean(object.force) : false,
-    };
-  },
-
   toJSON(message: DeleteProjectRequest): unknown {
     const obj: any = {};
     if (message.name !== "") {
@@ -1212,10 +1155,6 @@ export const UndeleteProjectRequest: MessageFns<UndeleteProjectRequest> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): UndeleteProjectRequest {
-    return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
   },
 
   toJSON(message: UndeleteProjectRequest): unknown {
@@ -1283,13 +1222,6 @@ export const BatchGetIamPolicyRequest: MessageFns<BatchGetIamPolicyRequest> = {
     return message;
   },
 
-  fromJSON(object: any): BatchGetIamPolicyRequest {
-    return {
-      scope: isSet(object.scope) ? globalThis.String(object.scope) : "",
-      names: globalThis.Array.isArray(object?.names) ? object.names.map((e: any) => globalThis.String(e)) : [],
-    };
-  },
-
   toJSON(message: BatchGetIamPolicyRequest): unknown {
     const obj: any = {};
     if (message.scope !== "") {
@@ -1346,14 +1278,6 @@ export const BatchGetIamPolicyResponse: MessageFns<BatchGetIamPolicyResponse> = 
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): BatchGetIamPolicyResponse {
-    return {
-      policyResults: globalThis.Array.isArray(object?.policyResults)
-        ? object.policyResults.map((e: any) => BatchGetIamPolicyResponse_PolicyResult.fromJSON(e))
-        : [],
-    };
   },
 
   toJSON(message: BatchGetIamPolicyResponse): unknown {
@@ -1420,13 +1344,6 @@ export const BatchGetIamPolicyResponse_PolicyResult: MessageFns<BatchGetIamPolic
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): BatchGetIamPolicyResponse_PolicyResult {
-    return {
-      project: isSet(object.project) ? globalThis.String(object.project) : "",
-      policy: isSet(object.policy) ? IamPolicy.fromJSON(object.policy) : undefined,
-    };
   },
 
   toJSON(message: BatchGetIamPolicyResponse_PolicyResult): unknown {
@@ -1509,14 +1426,6 @@ export const Label: MessageFns<Label> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): Label {
-    return {
-      value: isSet(object.value) ? globalThis.String(object.value) : "",
-      color: isSet(object.color) ? globalThis.String(object.color) : "",
-      group: isSet(object.group) ? globalThis.String(object.group) : "",
-    };
   },
 
   toJSON(message: Label): unknown {
@@ -1775,40 +1684,6 @@ export const Project: MessageFns<Project> = {
     return message;
   },
 
-  fromJSON(object: any): Project {
-    return {
-      name: isSet(object.name) ? globalThis.String(object.name) : "",
-      state: isSet(object.state) ? stateFromJSON(object.state) : State.STATE_UNSPECIFIED,
-      title: isSet(object.title) ? globalThis.String(object.title) : "",
-      webhooks: globalThis.Array.isArray(object?.webhooks) ? object.webhooks.map((e: any) => Webhook.fromJSON(e)) : [],
-      dataClassificationConfigId: isSet(object.dataClassificationConfigId)
-        ? globalThis.String(object.dataClassificationConfigId)
-        : "",
-      issueLabels: globalThis.Array.isArray(object?.issueLabels)
-        ? object.issueLabels.map((e: any) => Label.fromJSON(e))
-        : [],
-      forceIssueLabels: isSet(object.forceIssueLabels) ? globalThis.Boolean(object.forceIssueLabels) : false,
-      allowModifyStatement: isSet(object.allowModifyStatement)
-        ? globalThis.Boolean(object.allowModifyStatement)
-        : false,
-      autoResolveIssue: isSet(object.autoResolveIssue) ? globalThis.Boolean(object.autoResolveIssue) : false,
-      enforceIssueTitle: isSet(object.enforceIssueTitle) ? globalThis.Boolean(object.enforceIssueTitle) : false,
-      autoEnableBackup: isSet(object.autoEnableBackup) ? globalThis.Boolean(object.autoEnableBackup) : false,
-      skipBackupErrors: isSet(object.skipBackupErrors) ? globalThis.Boolean(object.skipBackupErrors) : false,
-      postgresDatabaseTenantMode: isSet(object.postgresDatabaseTenantMode)
-        ? globalThis.Boolean(object.postgresDatabaseTenantMode)
-        : false,
-      allowSelfApproval: isSet(object.allowSelfApproval) ? globalThis.Boolean(object.allowSelfApproval) : false,
-      executionRetryPolicy: isSet(object.executionRetryPolicy)
-        ? Project_ExecutionRetryPolicy.fromJSON(object.executionRetryPolicy)
-        : undefined,
-      ciSamplingSize: isSet(object.ciSamplingSize) ? globalThis.Number(object.ciSamplingSize) : 0,
-      parallelTasksPerRollout: isSet(object.parallelTasksPerRollout)
-        ? globalThis.Number(object.parallelTasksPerRollout)
-        : 0,
-    };
-  },
-
   toJSON(message: Project): unknown {
     const obj: any = {};
     if (message.name !== "") {
@@ -1929,10 +1804,6 @@ export const Project_ExecutionRetryPolicy: MessageFns<Project_ExecutionRetryPoli
     return message;
   },
 
-  fromJSON(object: any): Project_ExecutionRetryPolicy {
-    return { maximumRetries: isSet(object.maximumRetries) ? globalThis.Number(object.maximumRetries) : 0 };
-  },
-
   toJSON(message: Project_ExecutionRetryPolicy): unknown {
     const obj: any = {};
     if (message.maximumRetries !== 0) {
@@ -1996,13 +1867,6 @@ export const AddWebhookRequest: MessageFns<AddWebhookRequest> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): AddWebhookRequest {
-    return {
-      project: isSet(object.project) ? globalThis.String(object.project) : "",
-      webhook: isSet(object.webhook) ? Webhook.fromJSON(object.webhook) : undefined,
-    };
   },
 
   toJSON(message: AddWebhookRequest): unknown {
@@ -2076,13 +1940,6 @@ export const UpdateWebhookRequest: MessageFns<UpdateWebhookRequest> = {
     return message;
   },
 
-  fromJSON(object: any): UpdateWebhookRequest {
-    return {
-      webhook: isSet(object.webhook) ? Webhook.fromJSON(object.webhook) : undefined,
-      updateMask: isSet(object.updateMask) ? FieldMask.unwrap(FieldMask.fromJSON(object.updateMask)) : undefined,
-    };
-  },
-
   toJSON(message: UpdateWebhookRequest): unknown {
     const obj: any = {};
     if (message.webhook !== undefined) {
@@ -2141,10 +1998,6 @@ export const RemoveWebhookRequest: MessageFns<RemoveWebhookRequest> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): RemoveWebhookRequest {
-    return { webhook: isSet(object.webhook) ? Webhook.fromJSON(object.webhook) : undefined };
   },
 
   toJSON(message: RemoveWebhookRequest): unknown {
@@ -2214,13 +2067,6 @@ export const TestWebhookRequest: MessageFns<TestWebhookRequest> = {
     return message;
   },
 
-  fromJSON(object: any): TestWebhookRequest {
-    return {
-      project: isSet(object.project) ? globalThis.String(object.project) : "",
-      webhook: isSet(object.webhook) ? Webhook.fromJSON(object.webhook) : undefined,
-    };
-  },
-
   toJSON(message: TestWebhookRequest): unknown {
     const obj: any = {};
     if (message.project !== "") {
@@ -2279,10 +2125,6 @@ export const TestWebhookResponse: MessageFns<TestWebhookResponse> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): TestWebhookResponse {
-    return { error: isSet(object.error) ? globalThis.String(object.error) : "" };
   },
 
   toJSON(message: TestWebhookResponse): unknown {
@@ -2413,19 +2255,6 @@ export const Webhook: MessageFns<Webhook> = {
     return message;
   },
 
-  fromJSON(object: any): Webhook {
-    return {
-      name: isSet(object.name) ? globalThis.String(object.name) : "",
-      type: isSet(object.type) ? webhook_TypeFromJSON(object.type) : Webhook_Type.TYPE_UNSPECIFIED,
-      title: isSet(object.title) ? globalThis.String(object.title) : "",
-      url: isSet(object.url) ? globalThis.String(object.url) : "",
-      directMessage: isSet(object.directMessage) ? globalThis.Boolean(object.directMessage) : false,
-      notificationTypes: globalThis.Array.isArray(object?.notificationTypes)
-        ? object.notificationTypes.map((e: any) => activity_TypeFromJSON(e))
-        : [],
-    };
-  },
-
   toJSON(message: Webhook): unknown {
     const obj: any = {};
     if (message.name !== "") {
@@ -2487,10 +2316,6 @@ export const Activity: MessageFns<Activity> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(_: any): Activity {
-    return {};
   },
 
   toJSON(_: Activity): unknown {
@@ -3435,14 +3260,9 @@ export type DeepPartial<T> = T extends Builtin ? T
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
 
-function isSet(value: any): boolean {
-  return value !== null && value !== undefined;
-}
-
 export interface MessageFns<T> {
   encode(message: T, writer?: BinaryWriter): BinaryWriter;
   decode(input: BinaryReader | Uint8Array, length?: number): T;
-  fromJSON(object: any): T;
   toJSON(message: T): unknown;
   create(base?: DeepPartial<T>): T;
   fromPartial(object: DeepPartial<T>): T;
