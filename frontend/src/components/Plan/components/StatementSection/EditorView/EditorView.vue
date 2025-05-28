@@ -520,9 +520,9 @@ const updateStatement = async (statement: string) => {
     return;
   }
 
-  const specsToPatch = planPatch.steps
-    .flatMap((step) => step.specs)
-    .filter((spec) => distinctSpecsIds.has(spec.id));
+  const specsToPatch = planPatch.specs.filter((spec) =>
+    distinctSpecsIds.has(spec.id)
+  );
   const sheet = Sheet.fromPartial({
     ...createEmptyLocalSheet(),
     title: plan.value.title,
