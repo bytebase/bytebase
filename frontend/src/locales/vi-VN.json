@@ -916,7 +916,6 @@
       "current-change-will-apply-to-all-tasks-in-batch-mode": "Trong chế độ hàng loạt, thay đổi hiện tại sẽ được áp dụng cho tất cả các tác vụ.",
       "current-change-will-apply-to-all-tasks": "Thay đổi hiện tại sẽ được áp dụng cho tất cả các tác vụ."
     },
-    "not-editable-legacy-issue": "Vấn đề này không thể chỉnh sửa vì nó được tạo trong phiên bản cũ của Bytebase",
     "action-anyway": "{action} bằng mọi cách",
     "sql-check": {
       "sql-checks": "Kiểm tra SQL",

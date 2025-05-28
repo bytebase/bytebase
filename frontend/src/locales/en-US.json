@@ -916,7 +916,6 @@
       "current-change-will-apply-to-all-tasks-in-batch-mode": "In batch mode, current change will be applied to all tasks.",
       "current-change-will-apply-to-all-tasks": "Current change will be applied to all tasks."
     },
-    "not-editable-legacy-issue": "This issue is not editable because it was created in an old version of Bytebase",
     "action-anyway": "{action} anyway",
     "sql-check": {
       "sql-checks": "SQL checks",
