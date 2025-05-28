@@ -55,7 +55,6 @@ import type { ComposedPlan } from "@/types/v1/issue/plan";
 import {
   extractProjectResourceName,
   extractSheetUID,
-  flattenSpecList,
   getSheetStatement,
   hasProjectPermissionV2,
   planV1Slug,
@@ -79,7 +78,7 @@ const planCreateErrorList = computed(() => {
   if (!plan.value.title.trim()) {
     errorList.push("Missing plan title");
   }
-  if (!flattenSpecList(plan.value).every((spec) => isValidSpec(spec))) {
+  if (!(plan.value?.specs || []).every((spec) => isValidSpec(spec))) {
     errorList.push("Missing SQL statement in some tasks");
   }
 

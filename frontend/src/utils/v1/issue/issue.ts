@@ -3,7 +3,6 @@ import slug from "slug";
 import { t } from "@/plugins/i18n";
 import { EMPTY_ID, UNKNOWN_ID, type ComposedIssue } from "@/types";
 import { Issue, Issue_Type } from "@/types/proto/v1/issue_service";
-import type { Plan } from "@/types/proto/v1/plan_service";
 import type { Rollout } from "@/types/proto/v1/rollout_service";
 import { Task_Type } from "@/types/proto/v1/rollout_service";
 

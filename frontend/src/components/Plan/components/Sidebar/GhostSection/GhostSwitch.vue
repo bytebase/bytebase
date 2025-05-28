@@ -24,7 +24,7 @@ import { planServiceClient } from "@/grpcweb";
 import { pushNotification } from "@/store";
 import { Engine } from "@/types/proto/v1/common";
 import { Plan_ChangeDatabaseConfig_Type } from "@/types/proto/v1/plan_service";
-import { engineNameV1, flattenSpecList } from "@/utils";
+import { engineNameV1 } from "@/utils";
 import {
   allowGhostForDatabase,
   MIN_GHOST_SUPPORT_MARIADB_VERSION,
@@ -88,7 +88,7 @@ const toggleChecked = async (on: boolean) => {
       : Plan_ChangeDatabaseConfig_Type.MIGRATE;
   } else {
     const planPatch = cloneDeep(plan.value);
-    const spec = flattenSpecList(planPatch).find((spec) => {
+    const spec = (planPatch?.specs || []).find((spec) => {
       return spec.id === selectedSpec.value?.id;
     });
     if (!planPatch || !spec || !spec.changeDatabaseConfig) {
