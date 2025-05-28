@@ -30,7 +30,7 @@ import { useIssueContext } from "../../logic";
 type ViewMode = "EDIT" | "VIEW";
 
 const { t } = useI18n();
-const { isCreating, issue, allowEditIssue } = useIssueContext();
+const { isCreating, issue, allowChange: allowEditIssue } = useIssueContext();
 
 const state = reactive({
   isEditing: false,

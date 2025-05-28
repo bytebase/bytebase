@@ -1,5 +1,6 @@
 <template>
   <NDataTable
+    v-bind="$attrs"
     size="small"
     :columns="columnList"
     :data="data"

@@ -205,7 +205,6 @@ import {
   stageForTask,
   isTaskEditable,
   specForTask,
-  notifyNotEditableLegacyIssue,
   isGroupingChangeTaskV1,
   databaseEngineForSpec,
 } from "@/components/IssueV1/logic";
@@ -217,7 +216,12 @@ import DownloadSheetButton from "@/components/Sheet/DownloadSheetButton.vue";
 import SQLUploadButton from "@/components/misc/SQLUploadButton.vue";
 import { planServiceClient } from "@/grpcweb";
 import { emitWindowEvent } from "@/plugins";
-import { hasFeature, pushNotification, useSheetV1Store, useCurrentProjectV1 } from "@/store";
+import {
+  hasFeature,
+  pushNotification,
+  useSheetV1Store,
+  useCurrentProjectV1,
+} from "@/store";
 import type { SQLDialect } from "@/types";
 import {
   EMPTY_ID,
@@ -590,8 +594,8 @@ const handleUpdateStatement = async (statement: string, filename: string) => {
 const updateStatement = async (statement: string) => {
   const planPatch = cloneDeep(issue.value.planEntity);
   if (!planPatch) {
-    notifyNotEditableLegacyIssue();
-    return;
+    // Should not reach here.
+    throw new Error("Plan is not defined. Cannot update statement.");
   }
 
   const specsIdList: string[] = [];
@@ -620,8 +624,8 @@ const updateStatement = async (statement: string) => {
     specsIdList.filter((id) => id && id !== String(EMPTY_ID))
   );
   if (distinctSpecsIds.size === 0) {
-    notifyNotEditableLegacyIssue();
-    return;
+    // Should not reach here.
+    throw new Error("No valid specs found for the selected task(s).");
   }
 
   const specsToPatch = planPatch.steps

@@ -16,7 +16,7 @@ import { specForTask, projectOfIssue } from ".";
 export const isGroupingChangeTaskV1 = (issue: ComposedIssue, task: Task) => {
   const spec = specForTask(issue.planEntity, task);
   if (!spec) {
-    return false; // Not sure actually, but doesn't matter.
+    return false;
   }
   const databaseGroup = extractDatabaseGroupName(
     spec.changeDatabaseConfig?.target ?? ""
