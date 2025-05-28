@@ -81,6 +81,9 @@ message ListDatabaseGroupsRequest {
   // When paginating, all other parameters provided to `ListDatabaseGroups` must match
   // the call that provided the page token.
   string page_token = 3;
+
+  // The view to return. Defaults to DATABASE_GROUP_VIEW_BASIC.
+  DatabaseGroupView view = 4;
 }
 
 message ListDatabaseGroupsResponse {
