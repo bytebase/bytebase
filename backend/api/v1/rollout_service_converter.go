@@ -68,7 +68,6 @@ func convertToPlan(ctx context.Context, s *store.Store, plan *store.PlanMessage)
 	return p, nil
 }
 
-
 func convertToPlanSpecs(specs []*storepb.PlanConfig_Spec) []*v1pb.Plan_Spec {
 	v1Specs := make([]*v1pb.Plan_Spec, len(specs))
 	for i := range specs {
@@ -238,7 +237,6 @@ func convertDatabaseGroupMapping(s *v1pb.Plan_Deployment_DatabaseGroupMapping) *
 		Databases:     s.Databases,
 	}
 }
-
 
 func convertPlanSpecs(specs []*v1pb.Plan_Spec) []*storepb.PlanConfig_Spec {
 	storeSpecs := make([]*storepb.PlanConfig_Spec, len(specs))

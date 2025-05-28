@@ -955,7 +955,6 @@ func isChangeDatabasePlan(specs []*storepb.PlanConfig_Spec) bool {
 
 // GetPipelineCreate gets a pipeline create message from a plan.
 func GetPipelineCreate(ctx context.Context, s *store.Store, sheetManager *sheet.Manager, dbFactory *dbfactory.DBFactory, rolloutTitle string, specs []*storepb.PlanConfig_Spec, deployment *storepb.PlanConfig_Deployment /* nullable */, project *store.ProjectMessage) (*store.PipelineMessage, error) {
-
 	// Step 1 - transform database group specs.
 	// Others are untouched.
 	transformSpecs, err := transformDatabaseGroupSpecs(ctx, s, project, specs, deployment)
