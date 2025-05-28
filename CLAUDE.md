@@ -12,7 +12,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Frontend type check: `pnpm --dir frontend type-check`
 - Frontend test: `pnpm --dir frontend test`
 - Proto lint: `cd proto && buf lint`
-- Go lint command: `g ./path/to/package/...` - This custom alias runs linting tools for Go code
+- Proto generate: `cd proto && buf generate`
+- Go lint command: `golangci-lint run --allow-parallel-runners` - This custom alias lints Go code, ensuring no errors or warnings are present after updates.
 - Connect to Postgres: `psql -U bbdev bbdev`
 
 ## Code Style
