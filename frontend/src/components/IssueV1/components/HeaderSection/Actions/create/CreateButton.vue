@@ -126,9 +126,7 @@ const issueCreateErrorList = computed(() => {
   } else {
     if (issue.value.planEntity) {
       if (
-        !issue.value.planEntity.steps.every((step) =>
-          step.specs.every((spec) => isValidSpec(spec))
-        )
+        !issue.value.planEntity.specs.every((spec) => isValidSpec(spec))
       ) {
         errorList.push("Missing SQL statement in some specs");
       }
@@ -193,10 +191,7 @@ const doCreateIssue = async () => {
 
 // Create sheets for spec configs and update their resource names.
 const createSheets = async () => {
-  const steps = issue.value.planEntity?.steps ?? [];
-  const flattenSpecList = steps.flatMap((step) => {
-    return step.specs;
-  });
+  const flattenSpecList = issue.value.planEntity?.specs ?? [];
 
   const configWithSheetList: (
     | Plan_ChangeDatabaseConfig

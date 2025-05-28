@@ -120,12 +120,12 @@ const doCreatePlan = async () => {
 
 // Create sheets for spec configs and update their resource names.
 const createSheets = async () => {
-  const flattenSpecList = plan.value.steps.flatMap((step) => step.specs);
+  const specs = plan.value.specs || [];
   const configWithSheetList: Plan_ChangeDatabaseConfig[] = [];
   const pendingCreateSheetMap = new Map<string, Sheet>();
 
-  for (let i = 0; i < flattenSpecList.length; i++) {
-    const spec = flattenSpecList[i];
+  for (let i = 0; i < specs.length; i++) {
+    const spec = specs[i];
     const config = spec.changeDatabaseConfig;
     if (!config) continue;
     configWithSheetList.push(config);

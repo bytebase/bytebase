@@ -627,8 +627,7 @@ const updateStatement = async (statement: string) => {
     throw new Error("No valid specs found for the selected task(s).");
   }
 
-  const specsToPatch = planPatch.steps
-    .flatMap((step) => step.specs)
+  const specsToPatch = (planPatch.specs || [])
     .filter((spec) => distinctSpecsIds.has(spec.id));
   const sheet = Sheet.fromPartial({
     ...createEmptyLocalSheet(),

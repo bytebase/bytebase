@@ -29,10 +29,6 @@ export const flattenTaskV1List = (rollout: Rollout | undefined) => {
   return rollout?.stages.flatMap((stage) => stage.tasks) || [];
 };
 
-export const flattenSpecList = (plan: Plan | undefined) => {
-  return plan?.steps.flatMap((step) => step.specs) || [];
-};
-
 const DATABASE_RELATED_TASK_TYPE_LIST = [
   Task_Type.DATABASE_CREATE,
   Task_Type.DATABASE_SCHEMA_UPDATE,
