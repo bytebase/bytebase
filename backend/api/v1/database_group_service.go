@@ -227,7 +227,7 @@ func (s *DatabaseGroupService) ListDatabaseGroups(ctx context.Context, request *
 		} else {
 			fullDatabaseGroup, err := s.convertStoreToAPIDatabaseGroupFull(ctx, databaseGroup, projectResourceID)
 			if err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to convert database group %q to API format, err: %v", databaseGroup.ResourceID, err)
+				return nil, status.Errorf(codes.Internal, "failed to convert database group %q to full view, err: %v", databaseGroup.ResourceID, err)
 			}
 			apiDatabaseGroups = append(apiDatabaseGroups, fullDatabaseGroup)
 		}
