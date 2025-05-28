@@ -244,7 +244,9 @@ func (s *PlanService) CreatePlan(ctx context.Context, request *v1pb.CreatePlanRe
 		return nil, status.Errorf(codes.NotFound, "project not found for id: %v", projectID)
 	}
 	// Convert steps to specs if needed for backward compatibility
+	//nolint:staticcheck // SA1019: deprecated field used for backward compatibility
 	if len(request.Plan.Specs) == 0 && len(request.Plan.Steps) > 0 {
+		//nolint:staticcheck // SA1019: deprecated field used for backward compatibility
 		for _, step := range request.Plan.Steps {
 			request.Plan.Specs = append(request.Plan.Specs, step.Specs...)
 		}
@@ -352,7 +354,9 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 	for _, path := range request.UpdateMask.Paths {
 		if path == "steps" {
 			// Convert steps to specs
+			//nolint:staticcheck // SA1019: deprecated field used for backward compatibility
 			if len(request.Plan.Specs) == 0 && len(request.Plan.Steps) > 0 {
+				//nolint:staticcheck // SA1019: deprecated field used for backward compatibility
 				for _, step := range request.Plan.Steps {
 					request.Plan.Specs = append(request.Plan.Specs, step.Specs...)
 				}
@@ -1280,62 +1284,6 @@ func validateSpecs(specs []*v1pb.Plan_Spec) error {
 	return nil
 }
 
-func validateSteps(steps []*v1pb.Plan_Step) error {
-	if len(steps) == 0 {
-		return errors.Errorf("the plan has zero step")
-	}
-	var databaseTarget, databaseGroupTarget int
-	configTypeCount := map[string]int{}
-	seenID := map[string]bool{}
-	for _, step := range steps {
-		if len(step.Specs) == 0 {
-			return errors.Errorf("the plan step has zero spec")
-		}
-		seenIDInStep := map[string]bool{}
-		for _, spec := range step.Specs {
-			id := spec.GetId()
-			if id == "" {
-				return errors.Errorf("spec id cannot be empty")
-			}
-			if seenID[id] {
-				return errors.Errorf("found duplicate spec id %q", spec.GetId())
-			}
-			seenID[id] = true
-			seenIDInStep[id] = true
-			switch config := spec.Config.(type) {
-			case *v1pb.Plan_Spec_ChangeDatabaseConfig:
-				configTypeCount["ChangeDatabaseConfig"]++
-				c := config.ChangeDatabaseConfig
-				if _, _, err := common.GetInstanceDatabaseID(c.Target); err == nil {
-					databaseTarget++
-				} else if _, _, err := common.GetProjectIDDatabaseGroupID(c.Target); err == nil {
-					databaseGroupTarget++
-				} else {
-					return errors.Errorf("unknown target %q", c.Target)
-				}
-			case *v1pb.Plan_Spec_CreateDatabaseConfig:
-				configTypeCount["CreateDatabaseConfig"]++
-			case *v1pb.Plan_Spec_ExportDataConfig:
-				configTypeCount["ExportDataConfig"]++
-			default:
-				return errors.Errorf("unexpected config type %T", spec.Config)
-			}
-		}
-	}
-
-	if len(configTypeCount) > 1 {
-		msg := "expect one kind of config, found"
-		for k, v := range configTypeCount {
-			msg += fmt.Sprintf(" %v %v", v, k)
-		}
-		return errors.New(msg)
-	}
-
-	if databaseGroupTarget > 0 && databaseTarget > 0 {
-		return errors.Errorf("found databaseGroupTarget and databaseTarget, expect only one kind")
-	}
-	return nil
-}
 
 func getPlanSpecDatabaseGroups(specs []*storepb.PlanConfig_Spec) []string {
 	var databaseGroups []string
