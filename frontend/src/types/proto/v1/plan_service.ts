@@ -144,7 +144,9 @@ export interface Plan {
   issue: string;
   title: string;
   description: string;
+  /** Deprecated: use specs instead. */
   steps: Plan_Step[];
+  specs: Plan_Spec[];
   /** Format: users/hello@world.com */
   creator: string;
   createTime: Timestamp | undefined;
@@ -1239,6 +1241,7 @@ function createBasePlan(): Plan {
     title: "",
     description: "",
     steps: [],
+    specs: [],
     creator: "",
     createTime: undefined,
     updateTime: undefined,
@@ -1264,6 +1267,9 @@ export const Plan: MessageFns<Plan> = {
     }
     for (const v of message.steps) {
       Plan_Step.encode(v!, writer.uint32(50).fork()).join();
+    }
+    for (const v of message.specs) {
+      Plan_Spec.encode(v!, writer.uint32(114).fork()).join();
     }
     if (message.creator !== "") {
       writer.uint32(66).string(message.creator);
@@ -1331,6 +1337,14 @@ export const Plan: MessageFns<Plan> = {
           }
 
           message.steps.push(Plan_Step.decode(reader, reader.uint32()));
+          continue;
+        }
+        case 14: {
+          if (tag !== 114) {
+            break;
+          }
+
+          message.specs.push(Plan_Spec.decode(reader, reader.uint32()));
           continue;
         }
         case 8: {
@@ -1410,6 +1424,9 @@ export const Plan: MessageFns<Plan> = {
     if (message.steps?.length) {
       obj.steps = message.steps.map((e) => Plan_Step.toJSON(e));
     }
+    if (message.specs?.length) {
+      obj.specs = message.specs.map((e) => Plan_Spec.toJSON(e));
+    }
     if (message.creator !== "") {
       obj.creator = message.creator;
     }
@@ -1447,6 +1464,7 @@ export const Plan: MessageFns<Plan> = {
     message.title = object.title ?? "";
     message.description = object.description ?? "";
     message.steps = object.steps?.map((e) => Plan_Step.fromPartial(e)) || [];
+    message.specs = object.specs?.map((e) => Plan_Spec.fromPartial(e)) || [];
     message.creator = object.creator ?? "";
     message.createTime = (object.createTime !== undefined && object.createTime !== null)
       ? Timestamp.fromPartial(object.createTime)
