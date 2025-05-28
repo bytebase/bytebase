@@ -22,7 +22,6 @@ import { Task, Task_Status, Task_Type } from "@/types/proto/v1/rollout_service";
 import {
   defer,
   extractDatabaseResourceName,
-  flattenSpecList,
   flattenTaskV1List,
   isValidIssueName,
 } from "@/utils";
@@ -130,7 +129,7 @@ export const extractCoreDatabaseInfoFromDatabaseCreateTask = (
 
 export const specForTask = (plan: Plan | undefined, task: Task) => {
   if (!plan) return undefined;
-  return flattenSpecList(plan).find((spec) => spec.id === task.specId);
+  return (plan.specs || []).find((spec) => spec.id === task.specId);
 };
 
 export const stageForTask = (issue: ComposedIssue, task: Task) => {

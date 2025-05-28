@@ -55,7 +55,6 @@ import type { ComposedPlan } from "@/types/v1/issue/plan";
 import {
   extractProjectResourceName,
   extractSheetUID,
-  flattenSpecList,
   getSheetStatement,
   hasProjectPermissionV2,
   planV1Slug,
@@ -79,7 +78,7 @@ const planCreateErrorList = computed(() => {
   if (!plan.value.title.trim()) {
     errorList.push("Missing plan title");
   }
-  if (!flattenSpecList(plan.value).every((spec) => isValidSpec(spec))) {
+  if (!(plan.value?.specs || []).every((spec) => isValidSpec(spec))) {
     errorList.push("Missing SQL statement in some tasks");
   }
 
@@ -120,12 +119,12 @@ const doCreatePlan = async () => {
 
 // Create sheets for spec configs and update their resource names.
 const createSheets = async () => {
-  const flattenSpecList = plan.value.steps.flatMap((step) => step.specs);
+  const specs = plan.value.specs || [];
   const configWithSheetList: Plan_ChangeDatabaseConfig[] = [];
   const pendingCreateSheetMap = new Map<string, Sheet>();
 
-  for (let i = 0; i < flattenSpecList.length; i++) {
-    const spec = flattenSpecList[i];
+  for (let i = 0; i < specs.length; i++) {
+    const spec = specs[i];
     const config = spec.changeDatabaseConfig;
     if (!config) continue;
     configWithSheetList.push(config);

@@ -145,11 +145,7 @@ const stepList = computed(() => [
 ]);
 
 const flattenSpecList = computed((): Plan_Spec[] => {
-  return (
-    state.previewPlanResult?.plan?.steps.flatMap((step) => {
-      return step.specs;
-    }) || []
-  );
+  return state.previewPlanResult?.plan?.specs || [];
 });
 
 const nextButtonErrors = computed(() => {
