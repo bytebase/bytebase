@@ -95,6 +95,8 @@ export interface ListDatabaseGroupsRequest {
    * the call that provided the page token.
    */
   pageToken: string;
+  /** The view to return. Defaults to DATABASE_GROUP_VIEW_BASIC. */
+  view: DatabaseGroupView;
 }
 
 export interface ListDatabaseGroupsResponse {
@@ -200,7 +202,7 @@ export interface DatabaseGroup_Database {
 }
 
 function createBaseListDatabaseGroupsRequest(): ListDatabaseGroupsRequest {
-  return { parent: "", pageSize: 0, pageToken: "" };
+  return { parent: "", pageSize: 0, pageToken: "", view: DatabaseGroupView.DATABASE_GROUP_VIEW_UNSPECIFIED };
 }
 
 export const ListDatabaseGroupsRequest: MessageFns<ListDatabaseGroupsRequest> = {
@@ -213,6 +215,9 @@ export const ListDatabaseGroupsRequest: MessageFns<ListDatabaseGroupsRequest> = 
     }
     if (message.pageToken !== "") {
       writer.uint32(26).string(message.pageToken);
+    }
+    if (message.view !== DatabaseGroupView.DATABASE_GROUP_VIEW_UNSPECIFIED) {
+      writer.uint32(32).int32(databaseGroupViewToNumber(message.view));
     }
     return writer;
   },
@@ -248,6 +253,14 @@ export const ListDatabaseGroupsRequest: MessageFns<ListDatabaseGroupsRequest> = 
           message.pageToken = reader.string();
           continue;
         }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.view = databaseGroupViewFromJSON(reader.int32());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -262,6 +275,9 @@ export const ListDatabaseGroupsRequest: MessageFns<ListDatabaseGroupsRequest> = 
       parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
       pageSize: isSet(object.pageSize) ? globalThis.Number(object.pageSize) : 0,
       pageToken: isSet(object.pageToken) ? globalThis.String(object.pageToken) : "",
+      view: isSet(object.view)
+        ? databaseGroupViewFromJSON(object.view)
+        : DatabaseGroupView.DATABASE_GROUP_VIEW_UNSPECIFIED,
     };
   },
 
@@ -276,6 +292,9 @@ export const ListDatabaseGroupsRequest: MessageFns<ListDatabaseGroupsRequest> = 
     if (message.pageToken !== "") {
       obj.pageToken = message.pageToken;
     }
+    if (message.view !== DatabaseGroupView.DATABASE_GROUP_VIEW_UNSPECIFIED) {
+      obj.view = databaseGroupViewToJSON(message.view);
+    }
     return obj;
   },
 
@@ -287,6 +306,7 @@ export const ListDatabaseGroupsRequest: MessageFns<ListDatabaseGroupsRequest> = 
     message.parent = object.parent ?? "";
     message.pageSize = object.pageSize ?? 0;
     message.pageToken = object.pageToken ?? "";
+    message.view = object.view ?? DatabaseGroupView.DATABASE_GROUP_VIEW_UNSPECIFIED;
     return message;
   },
 };
