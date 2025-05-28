@@ -136,7 +136,11 @@ providePlanSQLCheckContext({
   project,
   plan: computed(() => issue.value.planEntity as Plan),
   selectedSpec: computed(
-    () => specForTask(issue.value.planEntity, selectedTask.value) as Plan_Spec
+    () =>
+      specForTask(
+        issue.value.planEntity as Plan,
+        selectedTask.value
+      ) as Plan_Spec
   ),
   selectedTask: selectedTask,
 });

@@ -22,8 +22,7 @@ import { useCurrentUserV1, extractUserId, useCurrentProjectV1 } from "@/store";
 import { hasProjectPermissionV2, isValidTaskName } from "@/utils";
 
 const currentUser = useCurrentUserV1();
-const { issue, selectedTask, getPlanCheckRunsForTask } =
-  useIssueContext();
+const { issue, selectedTask, getPlanCheckRunsForTask } = useIssueContext();
 const { project } = useCurrentProjectV1();
 
 const show = computed(() => {

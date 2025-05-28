@@ -88,7 +88,7 @@ type LocalState = {
 };
 
 const { t } = useI18n();
-const { isCreating, issue, allowEditIssue } = useIssueContext();
+const { isCreating, issue, allowChange: allowEditIssue } = useIssueContext();
 const { project } = useCurrentProjectV1();
 const contentPreviewArea = ref<HTMLIFrameElement>();
 
