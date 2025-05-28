@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"slices"
 	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
@@ -45,7 +46,7 @@ const (
 type querySpanExtractor struct {
 	ctx             context.Context
 	defaultDatabase string
-	defaultSchema   string
+	searchPath      []string
 	// The metaCache serves as a lazy-load cache for the database metadata and should not be accessed directly.
 	// Instead, use querySpanExtractor.getDatabaseMetadata to access it.
 	metaCache map[string]*model.DatabaseMetadata
@@ -72,15 +73,13 @@ type querySpanExtractor struct {
 }
 
 // newQuerySpanExtractor creates a new query span extractor, the databaseMetadata and the ast are in the read guard.
-func newQuerySpanExtractor(defaultDatabase string, defaultSchema string, gCtx base.GetQuerySpanContext) *querySpanExtractor {
-	if defaultSchema == "" {
-		// Fall back to the default schema `public`.
-		// Reference: https://www.postgresql.org/docs/current/ddl-schemas.html#DDL-SCHEMAS-PUBLIC
-		defaultSchema = "public"
+func newQuerySpanExtractor(defaultDatabase string, searchPath []string, gCtx base.GetQuerySpanContext) *querySpanExtractor {
+	if len(searchPath) == 0 {
+		searchPath = []string{"public"}
 	}
 	return &querySpanExtractor{
 		defaultDatabase:         defaultDatabase,
-		defaultSchema:           defaultSchema,
+		searchPath:              searchPath,
 		metaCache:               make(map[string]*model.DatabaseMetadata),
 		gCtx:                    gCtx,
 		sourceColumnsInFunction: make(base.SourceColumnSet),
@@ -498,6 +497,11 @@ func (q *querySpanExtractor) extractTableSourceFromSystemFunction(node *pgquery.
 	}, nil
 }
 
+type functionDefinition struct {
+	schemaName string
+	metadata   *model.FunctionMetadata
+}
+
 func (q *querySpanExtractor) findFunctionDefine(schemaName, funcName string, argumentList []*pgquery.Node) (base.TableSource, error) {
 	dbSchema, err := q.getDatabaseMetadata(q.defaultDatabase)
 	if err != nil {
@@ -508,26 +512,20 @@ func (q *querySpanExtractor) findFunctionDefine(schemaName, funcName string, arg
 			Database: &q.defaultDatabase,
 		}
 	}
-	if schemaName == "" {
-		schemaName = q.defaultSchema
+	var funcs []*functionDefinition
+	searchPath := q.searchPath
+	if schemaName != "" {
+		searchPath = []string{schemaName}
 	}
-	schema := dbSchema.GetSchema(schemaName)
-	if schema == nil {
-		return nil, &parsererror.ResourceNotFoundError{
-			Database: &q.defaultDatabase,
-			Schema:   &schemaName,
-		}
-	}
-	functions := schema.ListFunctions()
-	if len(functions) == 0 {
-		return nil, &parsererror.ResourceNotFoundError{
-			Database: &q.defaultDatabase,
-			Schema:   &schemaName,
-			Function: &funcName,
-		}
+	schemas, functions := dbSchema.SearchFunctions(searchPath, funcName)
+	for i, fun := range functions {
+		funcs = append(funcs, &functionDefinition{
+			schemaName: schemas[i],
+			metadata:   fun,
+		})
 	}
 
-	candidates, err := getFunctionCandidates(functions, argumentList, funcName)
+	candidates, err := getFunctionCandidates(funcs, argumentList, funcName)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get function candidates")
 	}
@@ -539,13 +537,13 @@ func (q *querySpanExtractor) findFunctionDefine(schemaName, funcName string, arg
 		}
 	}
 
-	if len(candidates) > 1 {
+	if len(candidates) > 1 && candidates[0].schemaName == candidates[1].schemaName {
 		return nil, errors.Errorf("ambiguous function call: %s", funcName)
 	}
 
 	function := candidates[0]
-	functionName := fmt.Sprintf("%s.%s", schemaName, funcName)
-	columns, err := q.getColumnsForFunction(functionName, function.Definition)
+	functionName := fmt.Sprintf("%s.%s", function.schemaName, funcName)
+	columns, err := q.getColumnsForFunction(functionName, function.metadata.Definition)
 	if err != nil {
 		return nil, &parsererror.FunctionNotSupportedError{
 			Err:      err,
@@ -561,10 +559,11 @@ type functionDefinitionDetail struct {
 	nDefaultParam  int
 	nVariadicParam int
 	params         []*pgquery.FunctionParameter
-	function       *model.FunctionMetadata
+	function       *functionDefinition
 }
 
-func buildFunctionDefinitionDetail(function *model.FunctionMetadata) (*functionDefinitionDetail, error) {
+func buildFunctionDefinitionDetail(funcDef *functionDefinition) (*functionDefinitionDetail, error) {
+	function := funcDef.metadata
 	definition := function.GetProto().GetDefinition()
 	res, err := pgquery.Parse(definition)
 	if err != nil {
@@ -601,18 +600,18 @@ func buildFunctionDefinitionDetail(function *model.FunctionMetadata) (*functionD
 		nDefaultParam:  nDefaultParam,
 		nVariadicParam: nVariadicParam,
 		params:         params,
-		function:       function,
+		function:       funcDef,
 	}, nil
 }
 
 // getFunctionCandidates returns the function candidates for the function call.
-func getFunctionCandidates(functions []*model.FunctionMetadata, argumentList []*pgquery.Node, funcName string) ([]*model.FunctionMetadata, error) {
+func getFunctionCandidates(functions []*functionDefinition, argumentList []*pgquery.Node, funcName string) ([]*functionDefinition, error) {
 	nargument := len(argumentList)
 
 	// Filter by name only.
-	var nameFiltered []*model.FunctionMetadata
+	var nameFiltered []*functionDefinition
 	for _, function := range functions {
-		if function.GetProto().GetName() != funcName {
+		if function.metadata.GetProto().GetName() != funcName {
 			continue
 		}
 		nameFiltered = append(nameFiltered, function)
@@ -639,7 +638,7 @@ func getFunctionCandidates(functions []*model.FunctionMetadata, argumentList []*
 		detail = append(detail, d)
 	}
 
-	var candidates []*model.FunctionMetadata
+	var candidates []*functionDefinition
 	for _, d := range detail {
 		// If there are no default and variadic parameters, the number of arguments must match the number of parameters.
 		if d.nDefaultParam == 0 && d.nVariadicParam == 0 {
@@ -828,7 +827,7 @@ func (l *plpgSQLListener) EnterStmt_assign(ctx *pgparser.Stmt_assignContext) {
 	}
 	assignVar := names[0]
 
-	newQ := newQuerySpanExtractor(l.q.defaultDatabase, l.q.defaultSchema, l.q.gCtx)
+	newQ := newQuerySpanExtractor(l.q.defaultDatabase, l.q.searchPath, l.q.gCtx)
 	span, err := newQ.getQuerySpan(l.q.ctx, fmt.Sprintf("SELECT %s", ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.Sql_expression())))
 	if err != nil {
 		return
@@ -865,7 +864,7 @@ func (l *plpgSQLListener) EnterStmt_return(ctx *pgparser.Stmt_returnContext) {
 		return
 	}
 
-	newQ := newQuerySpanExtractor(l.q.defaultDatabase, l.q.defaultSchema, l.q.gCtx)
+	newQ := newQuerySpanExtractor(l.q.defaultDatabase, l.q.searchPath, l.q.gCtx)
 	newQ.variables = l.variables
 	l.span, l.err = newQ.getQuerySpan(l.q.ctx, ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.Selectstmt()))
 }
@@ -893,7 +892,7 @@ func (q *querySpanExtractor) extractTableSourceFromSimplePLPGSQL(name string, js
 	}
 
 	for _, sql := range sqlList {
-		newQ := newQuerySpanExtractor(q.defaultDatabase, q.defaultSchema, q.gCtx)
+		newQ := newQuerySpanExtractor(q.defaultDatabase, q.searchPath, q.gCtx)
 		span, err := newQ.getQuerySpan(q.ctx, sql)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get query span for function: %s", name)
@@ -965,7 +964,7 @@ func extractSQL(data any) string {
 }
 
 func (q *querySpanExtractor) extractTableSourceFromSQLFunction(createFunc *pgquery.Node_CreateFunctionStmt, name string, asBody string) ([]base.QuerySpanResult, error) {
-	newQ := newQuerySpanExtractor(q.defaultDatabase, q.defaultSchema, q.gCtx)
+	newQ := newQuerySpanExtractor(q.defaultDatabase, q.searchPath, q.gCtx)
 	span, err := newQ.getQuerySpan(q.ctx, asBody)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get query span for function: %s", name)
@@ -1488,9 +1487,6 @@ func (q *querySpanExtractor) extractSourceColumnSetFromUDF(node *pgquery.Node_Fu
 	if schemaName == "" && IsSystemFunction(funcName, "") {
 		return base.SourceColumnSet{}, nil
 	}
-	if schemaName == "" {
-		schemaName = q.defaultSchema
-	}
 	result := make(base.SourceColumnSet)
 	tableSource, err := q.findFunctionDefine(schemaName, funcName, node.FuncCall.Args)
 	if err != nil {
@@ -1614,7 +1610,7 @@ func (q *querySpanExtractor) extractSourceColumnSetFromExpressionNode(node *pgqu
 		subqueryExtractor := &querySpanExtractor{
 			ctx:               q.ctx,
 			defaultDatabase:   q.defaultDatabase,
-			defaultSchema:     q.defaultSchema,
+			searchPath:        q.searchPath,
 			metaCache:         q.metaCache,
 			gCtx:              q.gCtx,
 			ctes:              q.ctes,
@@ -1809,7 +1805,7 @@ func (q *querySpanExtractor) findTableInFrom(schemaName string, tableName string
 		if tableSource == nil {
 			continue
 		}
-		emptySchemaNameMatch := schemaName == "" && (tableSource.GetSchemaName() == "" || tableSource.GetSchemaName() == q.defaultSchema) && tableName == tableSource.GetTableName()
+		emptySchemaNameMatch := schemaName == "" && (tableSource.GetSchemaName() == "" || slices.Contains(q.searchPath, tableSource.GetSchemaName())) && tableName == tableSource.GetTableName()
 		nonEmptySchemaNameMatch := schemaName != "" && tableSource.GetSchemaName() == schemaName && tableName == tableSource.GetTableName()
 		if emptySchemaNameMatch || nonEmptySchemaNameMatch {
 			return tableSource, nil
@@ -1848,21 +1844,16 @@ func (q *querySpanExtractor) findTableSchema(schemaName string, tableName string
 			Database: &q.defaultDatabase,
 		}
 	}
-	if schemaName == "" {
-		schemaName = q.defaultSchema
+	searchPath := q.searchPath
+	if schemaName != "" {
+		searchPath = []string{schemaName}
 	}
-	schema := dbSchema.GetSchema(schemaName)
-	if schema == nil {
-		return nil, &parsererror.ResourceNotFoundError{
-			Database: &q.defaultDatabase,
-			Schema:   &schemaName,
-		}
-	}
-	table := schema.GetTable(tableName)
-	view := schema.GetView(tableName)
-	materializedView := schema.GetMaterializedView(tableName)
-	foreignTable := schema.GetExternalTable(tableName)
-	sequence := schema.GetSequence(tableName)
+	tableSchemaName, table := dbSchema.SearchTable(searchPath, tableName)
+	viewSchemaName, view := dbSchema.SearchView(searchPath, tableName)
+	materializedViewSchemaName, materializedView := dbSchema.SearchMaterializedView(searchPath, tableName)
+	foreignTableSchemaName, foreignTable := dbSchema.SearchExternalTable(searchPath, tableName)
+	sequenceSchemaName, sequence := dbSchema.SearchSequence(searchPath, tableName)
+
 	if table == nil && view == nil && foreignTable == nil && materializedView == nil && sequence == nil {
 		return nil, &parsererror.ResourceNotFoundError{
 			Database: &q.defaultDatabase,
@@ -1879,7 +1870,7 @@ func (q *querySpanExtractor) findTableSchema(schemaName string, tableName string
 		return &base.PhysicalTable{
 			Server:   "",
 			Database: q.defaultDatabase,
-			Schema:   schemaName,
+			Schema:   tableSchemaName,
 			Name:     tableName,
 			Columns:  columns,
 		}, nil
@@ -1893,7 +1884,7 @@ func (q *querySpanExtractor) findTableSchema(schemaName string, tableName string
 		return &base.PhysicalTable{
 			Server:   "",
 			Database: q.defaultDatabase,
-			Schema:   schemaName,
+			Schema:   foreignTableSchemaName,
 			Name:     tableName,
 			Columns:  columns,
 		}, nil
@@ -1907,7 +1898,7 @@ func (q *querySpanExtractor) findTableSchema(schemaName string, tableName string
 		return &base.PhysicalView{
 			Server:   "",
 			Database: q.defaultDatabase,
-			Schema:   schemaName,
+			Schema:   viewSchemaName,
 			Name:     tableName,
 			Columns:  columns,
 		}, nil
@@ -1921,7 +1912,7 @@ func (q *querySpanExtractor) findTableSchema(schemaName string, tableName string
 		return &base.PhysicalView{
 			Server:   "",
 			Database: q.defaultDatabase,
-			Schema:   schemaName,
+			Schema:   materializedViewSchemaName,
 			Name:     tableName,
 			Columns:  columns,
 		}, nil
@@ -1933,7 +1924,7 @@ func (q *querySpanExtractor) findTableSchema(schemaName string, tableName string
 		return &base.Sequence{
 			Server:   "",
 			Database: q.defaultDatabase,
-			Schema:   schemaName,
+			Schema:   sequenceSchemaName,
 			Name:     tableName,
 			Columns:  columns,
 		}, nil
@@ -2125,7 +2116,7 @@ func (q *querySpanExtractor) getAccessTables(sql string) (base.SourceColumnSet, 
 
 	accessesMap := make(base.SourceColumnSet)
 
-	result, err := q.getRangeVarsFromJSONRecursive(jsonData, q.defaultDatabase, q.defaultSchema)
+	result, err := q.getRangeVarsFromJSONRecursive(jsonData, q.defaultDatabase)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get range vars from json")
 	}
@@ -2136,7 +2127,7 @@ func (q *querySpanExtractor) getAccessTables(sql string) (base.SourceColumnSet, 
 	return accessesMap, nil
 }
 
-func (q *querySpanExtractor) getRangeVarsFromJSONRecursive(jsonData map[string]any, currentDatabase, currentSchema string) ([]base.ColumnResource, error) {
+func (q *querySpanExtractor) getRangeVarsFromJSONRecursive(jsonData map[string]any, currentDatabase string) ([]base.ColumnResource, error) {
 	var result []base.ColumnResource
 	if jsonData["RangeVar"] != nil {
 		resource := base.ColumnResource{
@@ -2175,8 +2166,9 @@ func (q *querySpanExtractor) getRangeVarsFromJSONRecursive(jsonData map[string]a
 
 		// Bytebase do not sync the system objects, so we skip finding for system objects in the metadata.
 		if !isSystemResource(resource) {
-			if resource.Schema == "" {
-				resource.Schema = currentSchema
+			searchPath := q.searchPath
+			if resource.Schema != "" {
+				searchPath = []string{resource.Schema}
 			}
 
 			databaseMetadata, err := q.getDatabaseMetadata(currentDatabase)
@@ -2187,13 +2179,11 @@ func (q *querySpanExtractor) getRangeVarsFromJSONRecursive(jsonData map[string]a
 			if databaseMetadata == nil {
 				return nil, nil
 			}
-			schema := databaseMetadata.GetSchema(resource.Schema)
-			if schema == nil {
+			schemaName, name := databaseMetadata.SearchObject(searchPath, resource.Table)
+			if schemaName == "" && name == "" {
 				return nil, nil
 			}
-			if schema.GetTable(resource.Table) == nil && schema.GetView(resource.Table) == nil && schema.GetMaterializedView(resource.Table) == nil && schema.GetExternalTable(resource.Table) == nil {
-				return nil, nil
-			}
+			resource.Schema = schemaName
 		}
 		result = append(result, resource)
 	}
@@ -2201,7 +2191,7 @@ func (q *querySpanExtractor) getRangeVarsFromJSONRecursive(jsonData map[string]a
 	for _, value := range jsonData {
 		switch v := value.(type) {
 		case map[string]any:
-			resources, err := q.getRangeVarsFromJSONRecursive(v, currentDatabase, currentSchema)
+			resources, err := q.getRangeVarsFromJSONRecursive(v, currentDatabase)
 			if err != nil {
 				return nil, err
 			}
@@ -2209,7 +2199,7 @@ func (q *querySpanExtractor) getRangeVarsFromJSONRecursive(jsonData map[string]a
 		case []any:
 			for _, item := range v {
 				if m, ok := item.(map[string]any); ok {
-					resources, err := q.getRangeVarsFromJSONRecursive(m, currentDatabase, currentSchema)
+					resources, err := q.getRangeVarsFromJSONRecursive(m, currentDatabase)
 					if err != nil {
 						return nil, err
 					}
@@ -2259,7 +2249,7 @@ func isSystemResource(resource base.ColumnResource) bool {
 }
 
 func (q *querySpanExtractor) getColumnsForView(definition string) ([]base.QuerySpanResult, error) {
-	newQ := newQuerySpanExtractor(q.defaultDatabase, q.defaultSchema, q.gCtx)
+	newQ := newQuerySpanExtractor(q.defaultDatabase, q.searchPath, q.gCtx)
 	span, err := newQ.getQuerySpan(q.ctx, definition)
 	if err != nil {
 		return nil, err
@@ -2271,7 +2261,7 @@ func (q *querySpanExtractor) getColumnsForView(definition string) ([]base.QueryS
 }
 
 func (q *querySpanExtractor) getColumnsForMaterializedView(definition string) ([]base.QuerySpanResult, error) {
-	newQ := newQuerySpanExtractor(q.defaultDatabase, q.defaultSchema, q.gCtx)
+	newQ := newQuerySpanExtractor(q.defaultDatabase, q.searchPath, q.gCtx)
 	span, err := newQ.getQuerySpan(q.ctx, definition)
 	if err != nil {
 		return nil, err
