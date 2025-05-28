@@ -23,6 +23,10 @@ func (t TaskType) ChangeDatabasePayload() bool {
 		TaskDatabaseSchemaUpdate,
 		TaskDatabaseSchemaUpdateGhost:
 		return true
+	case
+		TaskDatabaseCreate,
+		TaskDatabaseDataExport:
+		return false
 	default:
 		return false
 	}
@@ -35,6 +39,11 @@ func (t TaskType) Sequential() bool {
 		TaskDatabaseSchemaUpdate,
 		TaskDatabaseSchemaUpdateGhost:
 		return true
+	case
+		TaskDatabaseCreate,
+		TaskDatabaseDataUpdate,
+		TaskDatabaseDataExport:
+		return false
 	default:
 		return false
 	}
