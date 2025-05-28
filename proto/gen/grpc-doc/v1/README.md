@@ -6129,6 +6129,7 @@ For example: resource.environment_name == &#34;test&#34; &amp;&amp; resource.dat
 | page_token | [string](#string) |  | Not used. A page token, received from a previous `ListDatabaseGroups` call. Provide this to retrieve the subsequent page.
 
 When paginating, all other parameters provided to `ListDatabaseGroups` must match the call that provided the page token. |
+| view | [DatabaseGroupView](#bytebase-v1-DatabaseGroupView) |  | The view to return. Defaults to DATABASE_GROUP_VIEW_BASIC. |
 
 
 

@@ -3719,6 +3719,16 @@ paths:
                      the call that provided the page token.
                   schema:
                     type: string
+                - name: view
+                  in: query
+                  description: The view to return. Defaults to DATABASE_GROUP_VIEW_BASIC.
+                  schema:
+                    enum:
+                        - DATABASE_GROUP_VIEW_UNSPECIFIED
+                        - DATABASE_GROUP_VIEW_BASIC
+                        - DATABASE_GROUP_VIEW_FULL
+                    type: string
+                    format: enum
             responses:
                 "200":
                     description: OK
