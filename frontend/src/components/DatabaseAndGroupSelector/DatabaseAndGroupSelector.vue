@@ -1,5 +1,9 @@
 <template>
-  <NTabs v-model:value="databaseSelectState.changeSource" type="card">
+  <NTabs
+    v-model:value="databaseSelectState.changeSource"
+    type="card"
+    size="small"
+  >
     <NTabPane name="DATABASE" :tab="$t('common.databases')">
       <AdvancedSearch
         v-model:params="searchParams"
@@ -14,6 +18,7 @@
         :custom-click="true"
         :parent="project.name"
         :filter="filter"
+        :size="'small'"
         v-model:selected-database-names="
           databaseSelectState.selectedDatabaseNameList
         "

@@ -1,13 +1,10 @@
-import { cloneDeep, groupBy, orderBy } from "lodash-es";
+import { cloneDeep } from "lodash-es";
 import { v4 as uuidv4 } from "uuid";
 import { useRoute } from "vue-router";
 import {
   useChangelistStore,
-  useDatabaseV1Store,
-  useEnvironmentV1Store,
   useProjectV1Store,
   useSheetV1Store,
-  batchGetOrFetchDatabases,
 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { composePlan } from "@/store/modules/v1/plan";
@@ -35,8 +32,7 @@ export type InitialSQL = {
   sql?: string;
 };
 
-type CreatePlanParams = {
-  databaseNameList: string[];
+export type CreatePlanParams = {
   project: ComposedProject;
   query: Record<string, string>;
   initialSQL: InitialSQL;
@@ -57,9 +53,7 @@ export const createPlanSkeleton = async (
   const project = await useProjectV1Store().getOrFetchProjectByName(
     `${projectNamePrefix}${projectName}`
   );
-  const databaseNameList = (query.databaseList ?? "").split(",");
   const params: CreatePlanParams = {
-    databaseNameList,
     project,
     query,
     initialSQL: await extractInitialSQLFromQuery(query),
@@ -69,8 +63,8 @@ export const createPlanSkeleton = async (
 };
 
 export const buildPlan = async (params: CreatePlanParams) => {
-  const { databaseNameList, project, query } = params;
-
+  const { project, query } = params;
+  const databaseNameList = (query.databaseList ?? "").split(",");
   const plan = Plan.fromJSON({
     name: `${project.name}/plans/${nextUID()}`,
     title: query.name,
@@ -98,53 +92,23 @@ export const buildPlan = async (params: CreatePlanParams) => {
   return await composePlan(plan);
 };
 
-export const buildSteps = async (
+const buildSteps = async (
   databaseNameList: string[],
   params: CreatePlanParams,
   sheetUID?: string // if specified, all specs will share the same sheet
 ) => {
-  await batchGetOrFetchDatabases(databaseNameList);
-  const databaseStore = useDatabaseV1Store();
-  const databaseList = databaseNameList.map((name) =>
-    databaseStore.getDatabaseByName(name)
-  );
-
-  const databaseListGroupByEnvironment = groupBy(
-    databaseList,
-    (db) => db.effectiveEnvironment
-  );
-  const stepList = orderBy(
-    Object.keys(databaseListGroupByEnvironment).map((env) => {
-      const environment = useEnvironmentV1Store().getEnvironmentByName(env);
-      const databases = databaseListGroupByEnvironment[env];
-      return {
-        environment,
-        databases,
-      };
-    }),
-    [(step) => step.environment?.order],
-    ["asc"]
-  );
-
-  const steps: Plan_Step[] = [];
-  for (let i = 0; i < stepList.length; i++) {
-    const { environment, databases } = stepList[i];
-    const step = Plan_Step.fromJSON({
-      // Use environment title as step title.
-      title: environment?.title,
-    });
-    for (let j = 0; j < databases.length; j++) {
-      const db = databases[j];
-      const spec = await buildSpecForTarget(db.name, params, sheetUID);
-      step.specs.push(spec);
-      maybeSetInitialSQLForSpec(spec, db.name, params);
-    }
-    steps.push(step);
+  const step = Plan_Step.fromPartial({
+    specs: [],
+  });
+  for (const db of databaseNameList) {
+    const spec = await buildSpecForTarget(db, params, sheetUID);
+    step.specs.push(spec);
+    maybeSetInitialSQLForSpec(spec, db, params);
   }
-  return steps;
+  return [step];
 };
 
-export const buildStepsForDatabaseGroup = async (
+const buildStepsForDatabaseGroup = async (
   params: CreatePlanParams,
   databaseGroupName: string
 ) => {
@@ -172,7 +136,7 @@ export const buildStepsForDatabaseGroup = async (
   return [step];
 };
 
-export const buildStepsViaChangelist = async (
+const buildStepsViaChangelist = async (
   databaseNameList: string[],
   changelistResourceName: string,
   params: CreatePlanParams
@@ -181,59 +145,29 @@ export const buildStepsViaChangelist = async (
     changelistResourceName
   );
   const { changes } = changelist;
-
-  await batchGetOrFetchDatabases(databaseNameList);
-  const databaseStore = useDatabaseV1Store();
-  const databaseList = databaseNameList.map((name) =>
-    databaseStore.getDatabaseByName(name)
-  );
-
-  const databaseListGroupByEnvironment = groupBy(
-    databaseList,
-    (db) => db.effectiveEnvironment
-  );
-  const stepList = orderBy(
-    Object.keys(databaseListGroupByEnvironment).map((env) => {
-      const environment = useEnvironmentV1Store().getEnvironmentByName(env);
-      const databases = databaseListGroupByEnvironment[env];
-      return {
-        environment,
-        databases,
-      };
-    }),
-    [(step) => step.environment?.order],
-    ["asc"]
-  );
-
-  const steps: Plan_Step[] = [];
-  for (let i = 0; i < stepList.length; i++) {
-    const step = Plan_Step.fromJSON({});
-    const { databases } = stepList[i];
-    for (let j = 0; j < databases.length; j++) {
-      const db = databases[j];
-      for (let k = 0; k < changes.length; k++) {
-        const change = changes[k];
-        const statement = await generateSQLForChangeToDatabase(change, db);
-        const sheetUID = nextUID();
-        const sheetName = `${params.project.name}/sheets/${sheetUID}`;
-        const sheet = getLocalSheetByName(sheetName);
-        setSheetStatement(sheet, statement);
-        const spec = await buildSpecForTarget(
-          db.name,
-          params,
-          sheetUID,
-          change.version
-        );
-        step.specs.push(spec);
-      }
+  const step = Plan_Step.fromPartial({
+    specs: [],
+  });
+  for (const db of databaseNameList) {
+    for (const change of changes) {
+      const statement = await generateSQLForChangeToDatabase(change);
+      const sheetUID = nextUID();
+      const sheetName = `${params.project.name}/sheets/${sheetUID}`;
+      const sheet = getLocalSheetByName(sheetName);
+      setSheetStatement(sheet, statement);
+      const spec = await buildSpecForTarget(
+        db,
+        params,
+        sheetUID,
+        change.version
+      );
+      step.specs.push(spec);
     }
-    steps.push(step);
   }
-
-  return steps;
+  return [step];
 };
 
-export const buildSpecForTarget = async (
+const buildSpecForTarget = async (
   target: string,
   { project, query }: CreatePlanParams,
   sheetUID?: string,

@@ -21,7 +21,7 @@ import { issueServiceClient } from "@/grpcweb";
 import { pushNotification } from "@/store";
 import { Issue } from "@/types/proto/v1/issue_service";
 
-const { isCreating, issue, allowEditIssue } = useIssueContext();
+const { isCreating, issue, allowChange: allowEditIssue } = useIssueContext();
 const { t } = useI18n();
 
 const onLablesUpdate = async (labels: string[]) => {
