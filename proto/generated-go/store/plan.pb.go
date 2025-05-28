@@ -329,9 +329,6 @@ type PlanConfig_CreateDatabaseConfig struct {
 	Cluster string `protobuf:"bytes,6,opt,name=cluster,proto3" json:"cluster,omitempty"`
 	// owner is the owner of the database. This is only applicable to Postgres for "WITH OWNER <<owner>>".
 	Owner string `protobuf:"bytes,7,opt,name=owner,proto3" json:"owner,omitempty"`
-	// backup is the resource name of the backup.
-	// Format: instances/{instance}/databases/{database}/backups/{backup-name}
-	Backup string `protobuf:"bytes,8,opt,name=backup,proto3" json:"backup,omitempty"`
 	// The environment resource.
 	// Format: environments/prod where prod is the environment resource ID.
 	Environment   string `protobuf:"bytes,9,opt,name=environment,proto3" json:"environment,omitempty"`
@@ -414,13 +411,6 @@ func (x *PlanConfig_CreateDatabaseConfig) GetCluster() string {
 func (x *PlanConfig_CreateDatabaseConfig) GetOwner() string {
 	if x != nil {
 		return x.Owner
-	}
-	return ""
-}
-
-func (x *PlanConfig_CreateDatabaseConfig) GetBackup() string {
-	if x != nil {
-		return x.Backup
 	}
 	return ""
 }
@@ -802,7 +792,7 @@ var File_store_plan_proto protoreflect.FileDescriptor
 
 const file_store_plan_proto_rawDesc = "" +
 	"\n" +
-	"\x10store/plan.proto\x12\x0ebytebase.store\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x12store/common.proto\x1a\x1astore/plan_check_run.proto\"\x80\x11\n" +
+	"\x10store/plan.proto\x12\x0ebytebase.store\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x12store/common.proto\x1a\x1astore/plan_check_run.proto\"\xe2\x10\n" +
 	"\n" +
 	"PlanConfig\x125\n" +
 	"\x05steps\x18\x01 \x03(\v2\x1f.bytebase.store.PlanConfig.StepR\x05steps\x12O\n" +
@@ -819,7 +809,7 @@ const file_store_plan_proto_rawDesc = "" +
 	"\x16create_database_config\x18\x01 \x01(\v2/.bytebase.store.PlanConfig.CreateDatabaseConfigH\x00R\x14createDatabaseConfig\x12g\n" +
 	"\x16change_database_config\x18\x02 \x01(\v2/.bytebase.store.PlanConfig.ChangeDatabaseConfigH\x00R\x14changeDatabaseConfig\x12[\n" +
 	"\x12export_data_config\x18\a \x01(\v2+.bytebase.store.PlanConfig.ExportDataConfigH\x00R\x10exportDataConfigB\b\n" +
-	"\x06config\x1a\xc3\x02\n" +
+	"\x06config\x1a\xa5\x02\n" +
 	"\x14CreateDatabaseConfig\x12\x1c\n" +
 	"\x06target\x18\x01 \x01(\tB\x04\xe2A\x01\x02R\x06target\x12 \n" +
 	"\bdatabase\x18\x02 \x01(\tB\x04\xe2A\x01\x02R\bdatabase\x12\x1a\n" +
@@ -827,8 +817,7 @@ const file_store_plan_proto_rawDesc = "" +
 	"\rcharacter_set\x18\x04 \x01(\tB\x04\xe2A\x01\x01R\fcharacterSet\x12\"\n" +
 	"\tcollation\x18\x05 \x01(\tB\x04\xe2A\x01\x01R\tcollation\x12\x1e\n" +
 	"\acluster\x18\x06 \x01(\tB\x04\xe2A\x01\x01R\acluster\x12\x1a\n" +
-	"\x05owner\x18\a \x01(\tB\x04\xe2A\x01\x01R\x05owner\x12\x1c\n" +
-	"\x06backup\x18\b \x01(\tB\x04\xe2A\x01\x01R\x06backup\x12&\n" +
+	"\x05owner\x18\a \x01(\tB\x04\xe2A\x01\x01R\x05owner\x12&\n" +
 	"\venvironment\x18\t \x01(\tB\x04\xe2A\x01\x01R\venvironment\x1a\xbd\x04\n" +
 	"\x14ChangeDatabaseConfig\x12\x16\n" +
 	"\x06target\x18\x01 \x01(\tR\x06target\x12\x14\n" +
