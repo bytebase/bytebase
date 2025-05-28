@@ -100,7 +100,7 @@ const onBlur = async () => {
   }
   try {
     state.isUpdating = true;
-    const planPatch = Plan.fromJSON({
+    const planPatch = Plan.fromPartial({
       ...plan.value,
       title: state.title,
     });

@@ -277,7 +277,7 @@ const showDetail = (secret?: Secret) => {
     return;
   }
   detail.value = {
-    secret: secret ? cloneDeep(secret) : Secret.fromJSON({}),
+    secret: secret ? cloneDeep(secret) : Secret.fromPartial({}),
     mode: secret ? "UPDATE" : "CREATE",
     loading: false,
     dirty: false,

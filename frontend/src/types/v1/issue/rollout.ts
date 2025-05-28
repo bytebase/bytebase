@@ -16,36 +16,28 @@ export const EMPTY_STAGE_NAME = `${EMPTY_ROLLOUT_NAME}/stages/${EMPTY_ID}`;
 export const UNKNOWN_STAGE_NAME = `${UNKNOWN_ROLLOUT_NAME}/stages/${UNKNOWN_ID}`;
 
 export const emptyStage = () => {
-  return Stage.fromJSON({
+  return Stage.fromPartial({
     name: EMPTY_STAGE_NAME,
-    uid: String(EMPTY_ID),
     environment: EMPTY_ENVIRONMENT_NAME,
-    title: "",
   });
 };
 export const unknownStage = () => {
-  return Stage.fromJSON({
+  return Stage.fromPartial({
     name: UNKNOWN_STAGE_NAME,
-    uid: String(UNKNOWN_ID),
     environment: UNKNOWN_ENVIRONMENT_NAME,
-    title: "<<Unknown stage>>",
   });
 };
 
 export const EMPTY_TASK_NAME = `${EMPTY_STAGE_NAME}/tasks/${EMPTY_ID}`;
 export const UNKNOWN_TASK_NAME = `${UNKNOWN_STAGE_NAME}/tasks/${UNKNOWN_ID}`;
 export const emptyTask = () => {
-  return Task.fromJSON({
+  return Task.fromPartial({
     name: EMPTY_TASK_NAME,
-    uid: String(EMPTY_ID),
-    title: "",
   });
 };
 export const unknownTask = () => {
-  return Task.fromJSON({
+  return Task.fromPartial({
     name: UNKNOWN_TASK_NAME,
-    uid: String(UNKNOWN_ID),
-    title: "<<Unknown task>>",
   });
 };
 

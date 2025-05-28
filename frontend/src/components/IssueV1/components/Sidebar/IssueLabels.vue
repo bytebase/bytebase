@@ -28,7 +28,7 @@ const onLablesUpdate = async (labels: string[]) => {
   if (isCreating.value) {
     issue.value.labels = labels;
   } else {
-    const issuePatch = Issue.fromJSON({
+    const issuePatch = Issue.fromPartial({
       ...issue.value,
       labels,
     });

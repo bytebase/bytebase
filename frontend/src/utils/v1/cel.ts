@@ -18,7 +18,7 @@ export const batchConvertCELStringToParsedExpr = async (
   } catch (error) {
     console.error(error);
     return Array.from({ length: celList.length }).map((_) =>
-      Expr.fromJSON({})
+      Expr.fromPartial({})
     );
   }
 };

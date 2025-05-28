@@ -91,10 +91,8 @@ const onAdd = () => {
   state.semanticItemList.push({
     mode: "CREATE",
     dirty: false,
-    item: SemanticTypeSetting_SemanticType.fromJSON({
+    item: SemanticTypeSetting_SemanticType.fromPartial({
       id: uuidv4(),
-      fullMaskAlgorithmId: "",
-      partialMaskAlgorithmId: "",
     }),
   });
 };

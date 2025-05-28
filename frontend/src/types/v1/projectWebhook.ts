@@ -6,7 +6,7 @@ import {
 } from "../proto/v1/project_service";
 
 export const emptyProjectWebhook = () => {
-  return Webhook.fromJSON({
+  return Webhook.fromPartial({
     type: Webhook_Type.SLACK,
     notificationTypes: [Activity_Type.TYPE_ISSUE_STATUS_UPDATE],
   });

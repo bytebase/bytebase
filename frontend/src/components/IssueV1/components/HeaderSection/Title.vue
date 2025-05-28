@@ -76,8 +76,7 @@ const onBlur = async () => {
   }
   try {
     state.isUpdating = true;
-    // TODO update name
-    const issuePatch = Issue.fromJSON({
+    const issuePatch = Issue.fromPartial({
       ...issue.value,
       title: state.title,
     });

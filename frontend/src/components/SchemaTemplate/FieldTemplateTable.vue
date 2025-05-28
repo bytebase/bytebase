@@ -158,7 +158,7 @@ const deleteTemplate = async (id: string) => {
     "bb.workspace.schema-template"
   );
 
-  const settingValue = SchemaTemplateSetting.fromJSON({});
+  const settingValue = SchemaTemplateSetting.fromPartial({});
   if (setting?.value?.schemaTemplateSettingValue) {
     Object.assign(settingValue, setting.value.schemaTemplateSettingValue);
   }
