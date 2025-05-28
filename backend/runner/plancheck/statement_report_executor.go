@@ -204,7 +204,7 @@ func GetSQLSummaryReport(ctx context.Context, stores *store.Store, sheetManager 
 			return nil, err
 		}
 		defaultSchema = "public"
-	case storepb.Engine_MYSQL, storepb.Engine_OCEANBASE:
+	case storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 		md, ok := driver.(*mysqldriver.Driver)
 		if !ok {
 			return nil, errors.Errorf("invalid mysql driver type")
