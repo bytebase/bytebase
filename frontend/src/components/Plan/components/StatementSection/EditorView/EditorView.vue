@@ -229,7 +229,6 @@ import {
   setSheetStatement,
   useInstanceV1EditorLanguage,
   getStatementSize,
-  flattenSpecList,
 } from "@/utils";
 import { usePlanSQLCheckContext } from "../../SQLCheckSection/context";
 import { useSQLAdviceMarkers } from "../useSQLAdviceMarkers";
@@ -379,7 +378,7 @@ const chooseUpdateStatementTarget = () => {
   const targets: Record<Target, Plan_Spec[]> = {
     CANCELED: [],
     SPEC: [selectedSpec.value],
-    ALL: flattenSpecList(plan.value),
+    ALL: plan.value?.specs || [],
   };
 
   // If there is only one spec, we don't need to ask the user to choose.

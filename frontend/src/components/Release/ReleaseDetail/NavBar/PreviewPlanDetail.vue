@@ -149,11 +149,7 @@ const databaseStore = useDatabaseV1Store();
 const databaseGroupStore = useDBGroupStore();
 
 const flattenSpecList = computed((): Plan_Spec[] => {
-  return (
-    props.previewPlanResult.plan?.steps.flatMap((step) => {
-      return step.specs;
-    }) || []
-  );
+  return props.previewPlanResult.plan?.specs || [];
 });
 
 const targetDatabases = computed(() => {

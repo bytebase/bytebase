@@ -243,8 +243,12 @@ func (s *PlanService) CreatePlan(ctx context.Context, request *v1pb.CreatePlanRe
 	if project == nil {
 		return nil, status.Errorf(codes.NotFound, "project not found for id: %v", projectID)
 	}
-	if err := validateSteps(request.Plan.Steps); err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "failed to validate plan steps, error: %v", err)
+	// Convert steps to specs if needed for backward compatibility
+	convertStepsToSpecs(request.Plan)
+
+	// Validate plan specs
+	if err := validateSpecs(request.Plan.Specs); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "failed to validate plan specs, error: %v", err)
 	}
 
 	planMessage := &store.PlanMessage{
@@ -354,12 +358,9 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 		case "deployment":
 			convertedDeployment := convertPlanDeployment(request.Plan.Deployment)
 			planUpdate.Deployment = &convertedDeployment
-		case "steps":
-			// Convert steps to specs for internal storage
-			var allSpecs []*storepb.PlanConfig_Spec
-			for _, step := range request.GetPlan().GetSteps() {
-				allSpecs = append(allSpecs, convertPlanSpecs(step.Specs)...)
-			}
+		case "specs":
+			// Use specs directly for internal storage
+			allSpecs := convertPlanSpecs(request.GetPlan().GetSpecs())
 			planUpdate.Specs = &allSpecs
 
 			if _, err := GetPipelineCreate(ctx,
@@ -373,17 +374,10 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 				return nil, status.Errorf(codes.InvalidArgument, "failed to get pipeline from the plan, please check you request, error: %v", err)
 			}
 
-			// Convert old specs back to steps for comparison
-			oldSteps := []*v1pb.Plan_Step{{
-				Title: "",
-				Specs: convertToPlanSpecs(oldPlan.Config.Specs),
-			}}
-			issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{PlanUID: &oldPlan.UID})
-			if err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to get issue: %v", err)
-			}
+			// Compare specs directly
+			oldSpecs := convertToPlanSpecs(oldPlan.Config.Specs)
 
-			removed, added, updated := diffSpecs(oldSteps, request.Plan.Steps)
+			removed, added, updated := diffSpecsDirectly(oldSpecs, request.Plan.Specs)
 			if len(removed) > 0 {
 				return nil, status.Errorf(codes.InvalidArgument, "cannot remove specs from plan")
 			}
@@ -395,10 +389,8 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 			}
 
 			oldSpecsByID := make(map[string]*v1pb.Plan_Spec)
-			for _, step := range oldSteps {
-				for _, spec := range step.Specs {
-					oldSpecsByID[spec.Id] = spec
-				}
+			for _, spec := range oldSpecs {
+				oldSpecsByID[spec.Id] = spec
 			}
 
 			updatedByID := make(map[string]*v1pb.Plan_Spec)
@@ -406,9 +398,15 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 				updatedByID[spec.Id] = spec
 			}
 
+			// Handle task updates for specs
 			tasksMap := map[int]*store.TaskMessage{}
 			var taskPatchList []*store.TaskPatch
 			var issueCommentCreates []*store.IssueCommentMessage
+
+			issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{PlanUID: &oldPlan.UID})
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to get issue: %v", err)
+			}
 
 			if oldPlan.PipelineUID != nil {
 				tasks, err := s.store.ListTasks(ctx, &store.TaskFind{PipelineID: oldPlan.PipelineUID})
@@ -1186,98 +1184,75 @@ func convertReleaseFileChangeTypeToPlanSpecType(t storepb.ReleasePayload_File_Ch
 
 // diffSpecs check if there are any specs removed, added or updated in the new plan.
 // Only updating sheet is taken into account.
-func diffSpecs(oldSteps []*v1pb.Plan_Step, newSteps []*v1pb.Plan_Step) ([]*v1pb.Plan_Spec, []*v1pb.Plan_Spec, []*v1pb.Plan_Spec) {
-	oldSpecs := make(map[string]*v1pb.Plan_Spec)
-	newSpecs := make(map[string]*v1pb.Plan_Spec)
+func diffSpecsDirectly(oldSpecs []*v1pb.Plan_Spec, newSpecs []*v1pb.Plan_Spec) ([]*v1pb.Plan_Spec, []*v1pb.Plan_Spec, []*v1pb.Plan_Spec) {
+	oldSpecsMap := make(map[string]*v1pb.Plan_Spec)
+	newSpecsMap := make(map[string]*v1pb.Plan_Spec)
 	var removed, added, updated []*v1pb.Plan_Spec
-	for _, step := range oldSteps {
-		for _, spec := range step.Specs {
-			oldSpecs[spec.Id] = spec
+
+	for _, spec := range oldSpecs {
+		oldSpecsMap[spec.Id] = spec
+	}
+	for _, spec := range newSpecs {
+		newSpecsMap[spec.Id] = spec
+	}
+
+	for _, spec := range oldSpecs {
+		if _, ok := newSpecsMap[spec.Id]; !ok {
+			removed = append(removed, spec)
 		}
 	}
-	for _, step := range newSteps {
-		for _, spec := range step.Specs {
-			newSpecs[spec.Id] = spec
+
+	for _, spec := range newSpecs {
+		if oldSpec, ok := oldSpecsMap[spec.Id]; !ok {
+			added = append(added, spec)
+		} else if !cmp.Equal(oldSpec, spec, protocmp.Transform()) {
+			updated = append(updated, spec)
 		}
 	}
-	for _, step := range oldSteps {
-		for _, spec := range step.Specs {
-			if _, ok := newSpecs[spec.Id]; !ok {
-				removed = append(removed, spec)
-			}
-		}
-	}
-	for _, step := range newSteps {
-		for _, spec := range step.Specs {
-			if _, ok := oldSpecs[spec.Id]; !ok {
-				added = append(added, spec)
-			}
-		}
-	}
-	for _, step := range newSteps {
-		for _, spec := range step.Specs {
-			if oldSpec, ok := oldSpecs[spec.Id]; ok {
-				if !cmp.Equal(oldSpec, spec, protocmp.Transform()) {
-					updated = append(updated, spec)
-				}
-			}
-		}
-	}
+
 	return removed, added, updated
 }
 
-func validateSteps(steps []*v1pb.Plan_Step) error {
-	if len(steps) == 0 {
-		return errors.Errorf("the plan has zero step")
+func validateSpecs(specs []*v1pb.Plan_Spec) error {
+	if len(specs) == 0 {
+		return errors.Errorf("the plan has zero spec")
 	}
 	var databaseTarget, databaseGroupTarget int
 	configTypeCount := map[string]int{}
 	seenID := map[string]bool{}
-	for _, step := range steps {
-		if len(step.Specs) == 0 {
-			return errors.Errorf("the plan step has zero spec")
+
+	for _, spec := range specs {
+		id := spec.GetId()
+		if id == "" {
+			return errors.Errorf("spec id cannot be empty")
 		}
-		seenIDInStep := map[string]bool{}
-		for _, spec := range step.Specs {
-			id := spec.GetId()
-			if id == "" {
-				return errors.Errorf("spec id cannot be empty")
+		if seenID[id] {
+			return errors.Errorf("found duplicate spec id %v", id)
+		}
+		seenID[id] = true
+
+		switch config := spec.Config.(type) {
+		case *v1pb.Plan_Spec_CreateDatabaseConfig:
+			configTypeCount["create_database"]++
+		case *v1pb.Plan_Spec_ChangeDatabaseConfig:
+			target := config.ChangeDatabaseConfig.Target
+			if _, _, err := common.GetInstanceDatabaseID(target); err == nil {
+				databaseTarget++
+				configTypeCount["change_database"]++
+			} else if _, _, err := common.GetProjectIDDatabaseGroupID(target); err == nil {
+				databaseGroupTarget++
+				configTypeCount["change_database_group"]++
+			} else {
+				return errors.Errorf("invalid target %v", target)
 			}
-			if seenID[id] {
-				return errors.Errorf("found duplicate spec id %q", spec.GetId())
-			}
-			seenID[id] = true
-			seenIDInStep[id] = true
-			switch config := spec.Config.(type) {
-			case *v1pb.Plan_Spec_ChangeDatabaseConfig:
-				configTypeCount["ChangeDatabaseConfig"]++
-				c := config.ChangeDatabaseConfig
-				if _, _, err := common.GetInstanceDatabaseID(c.Target); err == nil {
-					databaseTarget++
-				} else if _, _, err := common.GetProjectIDDatabaseGroupID(c.Target); err == nil {
-					databaseGroupTarget++
-				} else {
-					return errors.Errorf("unknown target %q", c.Target)
-				}
-			case *v1pb.Plan_Spec_CreateDatabaseConfig:
-				configTypeCount["CreateDatabaseConfig"]++
-			case *v1pb.Plan_Spec_ExportDataConfig:
-				configTypeCount["ExportDataConfig"]++
-			default:
-				return errors.Errorf("unexpected config type %T", spec.Config)
-			}
+		case *v1pb.Plan_Spec_ExportDataConfig:
+			configTypeCount["export_data"]++
+		default:
+			return errors.Errorf("invalid spec type")
 		}
 	}
 
-	if len(configTypeCount) > 1 {
-		msg := "expect one kind of config, found"
-		for k, v := range configTypeCount {
-			msg += fmt.Sprintf(" %v %v", v, k)
-		}
-		return errors.New(msg)
-	}
-
-	if databaseGroupTarget > 0 && databaseTarget > 0 {
+	if databaseTarget > 0 && databaseGroupTarget > 0 {
 		return errors.Errorf("found databaseGroupTarget and databaseTarget, expect only one kind")
 	}
 	return nil
@@ -1369,4 +1344,16 @@ func getTaskTypeFromSpec(spec *v1pb.Plan_Spec) (base.TaskType, error) {
 		return base.TaskDatabaseDataExport, nil
 	}
 	return "", errors.Errorf("unknown spec config type")
+}
+
+// convertStepsToSpecs converts deprecated Plan.Steps to Plan.Specs for backward compatibility.
+//
+//nolint:staticcheck // SA1019: deprecated field used for backward compatibility
+func convertStepsToSpecs(plan *v1pb.Plan) {
+	if len(plan.Specs) == 0 && len(plan.Steps) > 0 {
+		//nolint:staticcheck // SA1019: deprecated field used for backward compatibility
+		for _, step := range plan.Steps {
+			plan.Specs = append(plan.Specs, step.Specs...)
+		}
+	}
 }
