@@ -14,7 +14,7 @@ import { emptyIssue, TaskTypeListWithStatement } from "@/types";
 import { IssueStatus, Issue_Type } from "@/types/proto/v1/issue_service";
 import { Plan } from "@/types/proto/v1/plan_service";
 import type { Stage } from "@/types/proto/v1/rollout_service";
-import { Rollout, Task_Type } from "@/types/proto/v1/rollout_service";
+import { Rollout } from "@/types/proto/v1/rollout_service";
 import {
   extractProjectResourceName,
   extractSheetUID,
@@ -108,10 +108,6 @@ const generateRolloutFromPlan = async (
 
 export const isValidStage = (stage: Stage): boolean => {
   for (const task of stage.tasks) {
-    if (task.type === Task_Type.DATABASE_SCHEMA_BASELINE) {
-      continue;
-    }
-
     if (TaskTypeListWithStatement.includes(task.type)) {
       const sheetName = sheetNameOfTaskV1(task);
       const uid = extractSheetUID(sheetName);

@@ -574,8 +574,6 @@ func convertTaskType(t base.TaskType) storepb.ChangelogPayload_Type {
 	switch t {
 	case base.TaskDatabaseDataUpdate:
 		return storepb.ChangelogPayload_DATA
-	case base.TaskDatabaseSchemaBaseline:
-		return storepb.ChangelogPayload_BASELINE
 	case base.TaskDatabaseSchemaUpdate:
 		return storepb.ChangelogPayload_MIGRATE
 	case base.TaskDatabaseSchemaUpdateGhost:

@@ -3162,7 +3162,6 @@ Type is the database change type.
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | TYPE_UNSPECIFIED | 0 |  |
-| BASELINE | 1 | Used for establishing schema baseline, this is used when 1. Onboard the database into Bytebase since Bytebase needs to know the current database schema. 2. Had schema drift and need to re-establish the baseline. |
 | MIGRATE | 2 | Used for DDL changes including CREATE DATABASE. |
 | MIGRATE_SDL | 3 | Used for schema changes via state-based schema migration including CREATE DATABASE. |
 | MIGRATE_GHOST | 4 | Used for DDL changes using gh-ost. |

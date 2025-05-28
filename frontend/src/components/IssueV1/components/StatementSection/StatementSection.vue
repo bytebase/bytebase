@@ -47,9 +47,6 @@ const viewMode = computed((): ViewMode => {
     if (type === Task_Type.DATABASE_SCHEMA_UPDATE_SDL) {
       return "SDL";
     }
-    if (type === Task_Type.DATABASE_SCHEMA_BASELINE) {
-      return isCreating.value ? "EDITOR" : "NONE";
-    }
     if (TaskTypeListWithStatement.includes(type)) {
       return "EDITOR";
     }

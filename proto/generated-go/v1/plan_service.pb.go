@@ -29,10 +29,6 @@ type Plan_ChangeDatabaseConfig_Type int32
 
 const (
 	Plan_ChangeDatabaseConfig_TYPE_UNSPECIFIED Plan_ChangeDatabaseConfig_Type = 0
-	// Used for establishing schema baseline, this is used when
-	// 1. Onboard the database into Bytebase since Bytebase needs to know the current database schema.
-	// 2. Had schema drift and need to re-establish the baseline.
-	Plan_ChangeDatabaseConfig_BASELINE Plan_ChangeDatabaseConfig_Type = 1
 	// Used for DDL changes including CREATE DATABASE.
 	Plan_ChangeDatabaseConfig_MIGRATE Plan_ChangeDatabaseConfig_Type = 2
 	// Used for schema changes via state-based schema migration including CREATE DATABASE.
@@ -47,7 +43,6 @@ const (
 var (
 	Plan_ChangeDatabaseConfig_Type_name = map[int32]string{
 		0: "TYPE_UNSPECIFIED",
-		1: "BASELINE",
 		2: "MIGRATE",
 		3: "MIGRATE_SDL",
 		4: "MIGRATE_GHOST",
@@ -55,7 +50,6 @@ var (
 	}
 	Plan_ChangeDatabaseConfig_Type_value = map[string]int32{
 		"TYPE_UNSPECIFIED": 0,
-		"BASELINE":         1,
 		"MIGRATE":          2,
 		"MIGRATE_SDL":      3,
 		"MIGRATE_GHOST":    4,
@@ -2399,7 +2393,7 @@ const file_v1_plan_service_proto_rawDesc = "" +
 	"\x11UpdatePlanRequest\x12+\n" +
 	"\x04plan\x18\x01 \x01(\v2\x11.bytebase.v1.PlanB\x04\xe2A\x01\x02R\x04plan\x12A\n" +
 	"\vupdate_mask\x18\x02 \x01(\v2\x1a.google.protobuf.FieldMaskB\x04\xe2A\x01\x02R\n" +
-	"updateMask\"\xd7\x14\n" +
+	"updateMask\"\xc9\x14\n" +
 	"\x04Plan\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x14\n" +
 	"\x05issue\x18\x03 \x01(\tR\x05issue\x12\x14\n" +
@@ -2438,7 +2432,7 @@ const file_v1_plan_service_proto_rawDesc = "" +
 	"\tcollation\x18\x05 \x01(\tB\x04\xe2A\x01\x01R\tcollation\x12\x1e\n" +
 	"\acluster\x18\x06 \x01(\tB\x04\xe2A\x01\x01R\acluster\x12\x1a\n" +
 	"\x05owner\x18\a \x01(\tB\x04\xe2A\x01\x01R\x05owner\x12&\n" +
-	"\venvironment\x18\t \x01(\tB\x04\xe2A\x01\x01R\venvironment\x1a\x85\x05\n" +
+	"\venvironment\x18\t \x01(\tB\x04\xe2A\x01\x01R\venvironment\x1a\xf7\x04\n" +
 	"\x14ChangeDatabaseConfig\x12\x16\n" +
 	"\x06target\x18\x01 \x01(\tR\x06target\x12\x14\n" +
 	"\x05sheet\x18\x02 \x01(\tR\x05sheet\x12?\n" +
@@ -2451,10 +2445,9 @@ const file_v1_plan_service_proto_rawDesc = "" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1a3\n" +
 	"\x15PreUpdateBackupDetail\x12\x1a\n" +
-	"\bdatabase\x18\x01 \x01(\tR\bdatabase\"e\n" +
+	"\bdatabase\x18\x01 \x01(\tR\bdatabase\"W\n" +
 	"\x04Type\x12\x14\n" +
-	"\x10TYPE_UNSPECIFIED\x10\x00\x12\f\n" +
-	"\bBASELINE\x10\x01\x12\v\n" +
+	"\x10TYPE_UNSPECIFIED\x10\x00\x12\v\n" +
 	"\aMIGRATE\x10\x02\x12\x0f\n" +
 	"\vMIGRATE_SDL\x10\x03\x12\x11\n" +
 	"\rMIGRATE_GHOST\x10\x04\x12\b\n" +

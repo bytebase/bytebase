@@ -340,22 +340,6 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s
 	}
 
 	switch c.Type {
-	case storepb.PlanConfig_ChangeDatabaseConfig_BASELINE:
-		taskCreate := &store.TaskMessage{
-			InstanceID:    database.InstanceID,
-			DatabaseName:  &database.DatabaseName,
-			EnvironmentID: database.EffectiveEnvironmentID,
-			Type:          base.TaskDatabaseSchemaBaseline,
-			Payload: &storepb.TaskPayload{
-				SpecId:        spec.Id,
-				SchemaVersion: c.SchemaVersion,
-				TaskReleaseSource: &storepb.TaskReleaseSource{
-					File: spec.SpecReleaseSource.GetFile(),
-				},
-			},
-		}
-		return []*store.TaskMessage{taskCreate}, nil
-
 	case storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE:
 		_, sheetUID, err := common.GetProjectResourceIDSheetUID(c.Sheet)
 		if err != nil {

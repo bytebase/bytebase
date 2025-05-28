@@ -73,10 +73,6 @@ message PlanConfig {
     // Type is the database change type.
     enum Type {
       TYPE_UNSPECIFIED = 0;
-      // Used for establishing schema baseline, this is used when
-      // 1. Onboard the database into Bytebase since Bytebase needs to know the current database schema.
-      // 2. Had schema drift and need to re-establish the baseline.
-      BASELINE = 1;
       // Used for DDL changes including CREATE DATABASE.
       MIGRATE = 2;
       // Used for schema changes via state-based schema migration including CREATE DATABASE.

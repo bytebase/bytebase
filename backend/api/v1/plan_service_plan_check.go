@@ -207,10 +207,6 @@ func getPlanCheckRunsFromChangeDatabaseConfigForDatabase(ctx context.Context, s 
 		},
 	})
 
-	if config.Type == storepb.PlanConfig_ChangeDatabaseConfig_BASELINE {
-		return planCheckRuns, nil
-	}
-
 	preUpdateBackupDetail := (*storepb.PreUpdateBackupDetail)(nil)
 	if config.PreUpdateBackupDetail != nil {
 		preUpdateBackupDetail = &storepb.PreUpdateBackupDetail{
