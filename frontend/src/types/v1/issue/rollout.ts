@@ -53,7 +53,6 @@ export const TaskTypeListWithStatement: Task_Type[] = [
   Task_Type.GENERAL,
   Task_Type.DATABASE_CREATE,
   Task_Type.DATABASE_DATA_UPDATE,
-  Task_Type.DATABASE_SCHEMA_BASELINE,
   Task_Type.DATABASE_SCHEMA_UPDATE,
   Task_Type.DATABASE_SCHEMA_UPDATE_SDL,
   Task_Type.DATABASE_SCHEMA_UPDATE_GHOST,

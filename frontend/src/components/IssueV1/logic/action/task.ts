@@ -33,7 +33,6 @@ export const PrimaryTaskRolloutActionList: TaskRolloutAction[] = [
 export const SecondaryTaskRolloutActionList: TaskRolloutAction[] = ["SKIP"];
 
 export const CancelableTaskTypeList: Task_Type[] = [
-  Task_Type.DATABASE_SCHEMA_BASELINE,
   Task_Type.DATABASE_DATA_UPDATE,
   Task_Type.DATABASE_SCHEMA_UPDATE,
   Task_Type.DATABASE_SCHEMA_UPDATE_SDL,

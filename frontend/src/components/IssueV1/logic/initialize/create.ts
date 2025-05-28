@@ -416,10 +416,6 @@ const hasInitialSQL = (initialSQL?: InitialSQL) => {
 
 export const isValidStage = (stage: Stage): boolean => {
   for (const task of stage.tasks) {
-    if (task.type === Task_Type.DATABASE_SCHEMA_BASELINE) {
-      continue;
-    }
-
     if (TaskTypeListWithStatement.includes(task.type)) {
       const sheetName = sheetNameOfTaskV1(task);
       const uid = extractSheetUID(sheetName);

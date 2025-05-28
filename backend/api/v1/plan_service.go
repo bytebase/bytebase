@@ -613,7 +613,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 					// version
 					if err := func() error {
 						switch newTaskType {
-						case base.TaskDatabaseSchemaBaseline, base.TaskDatabaseSchemaUpdate, base.TaskDatabaseSchemaUpdateGhost, base.TaskDatabaseDataUpdate:
+						case base.TaskDatabaseSchemaUpdate, base.TaskDatabaseSchemaUpdateGhost, base.TaskDatabaseDataUpdate:
 						default:
 							return nil
 						}
@@ -1352,8 +1352,6 @@ func getTaskTypeFromSpec(spec *v1pb.Plan_Spec) (base.TaskType, error) {
 		return base.TaskDatabaseCreate, nil
 	case *v1pb.Plan_Spec_ChangeDatabaseConfig:
 		switch s.ChangeDatabaseConfig.Type {
-		case v1pb.Plan_ChangeDatabaseConfig_BASELINE:
-			return base.TaskDatabaseSchemaBaseline, nil
 		case v1pb.Plan_ChangeDatabaseConfig_DATA:
 			return base.TaskDatabaseDataUpdate, nil
 		case v1pb.Plan_ChangeDatabaseConfig_MIGRATE:

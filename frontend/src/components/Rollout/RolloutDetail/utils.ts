@@ -14,7 +14,6 @@ export const databaseForTask = (project: ComposedProject, task: Task) => {
       // The database is not created yet.
       // extract database info from the task's and payload's properties.
       return extractCoreDatabaseInfoFromDatabaseCreateTask(project, task);
-    case Task_Type.DATABASE_SCHEMA_BASELINE:
     case Task_Type.DATABASE_SCHEMA_UPDATE:
     case Task_Type.DATABASE_SCHEMA_UPDATE_SDL:
     case Task_Type.DATABASE_SCHEMA_UPDATE_GHOST:

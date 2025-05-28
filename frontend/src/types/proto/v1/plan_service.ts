@@ -236,12 +236,6 @@ export interface Plan_ChangeDatabaseConfig {
 /** Type is the database change type. */
 export enum Plan_ChangeDatabaseConfig_Type {
   TYPE_UNSPECIFIED = "TYPE_UNSPECIFIED",
-  /**
-   * BASELINE - Used for establishing schema baseline, this is used when
-   * 1. Onboard the database into Bytebase since Bytebase needs to know the current database schema.
-   * 2. Had schema drift and need to re-establish the baseline.
-   */
-  BASELINE = "BASELINE",
   /** MIGRATE - Used for DDL changes including CREATE DATABASE. */
   MIGRATE = "MIGRATE",
   /** MIGRATE_SDL - Used for schema changes via state-based schema migration including CREATE DATABASE. */
@@ -258,9 +252,6 @@ export function plan_ChangeDatabaseConfig_TypeFromJSON(object: any): Plan_Change
     case 0:
     case "TYPE_UNSPECIFIED":
       return Plan_ChangeDatabaseConfig_Type.TYPE_UNSPECIFIED;
-    case 1:
-    case "BASELINE":
-      return Plan_ChangeDatabaseConfig_Type.BASELINE;
     case 2:
     case "MIGRATE":
       return Plan_ChangeDatabaseConfig_Type.MIGRATE;
@@ -284,8 +275,6 @@ export function plan_ChangeDatabaseConfig_TypeToJSON(object: Plan_ChangeDatabase
   switch (object) {
     case Plan_ChangeDatabaseConfig_Type.TYPE_UNSPECIFIED:
       return "TYPE_UNSPECIFIED";
-    case Plan_ChangeDatabaseConfig_Type.BASELINE:
-      return "BASELINE";
     case Plan_ChangeDatabaseConfig_Type.MIGRATE:
       return "MIGRATE";
     case Plan_ChangeDatabaseConfig_Type.MIGRATE_SDL:
@@ -304,8 +293,6 @@ export function plan_ChangeDatabaseConfig_TypeToNumber(object: Plan_ChangeDataba
   switch (object) {
     case Plan_ChangeDatabaseConfig_Type.TYPE_UNSPECIFIED:
       return 0;
-    case Plan_ChangeDatabaseConfig_Type.BASELINE:
-      return 1;
     case Plan_ChangeDatabaseConfig_Type.MIGRATE:
       return 2;
     case Plan_ChangeDatabaseConfig_Type.MIGRATE_SDL:
