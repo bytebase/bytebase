@@ -13,12 +13,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Frontend test: `pnpm --dir frontend test`
 - Proto lint: `cd proto && buf lint`
 - Go lint command: `g ./path/to/package/...` - This custom alias runs linting tools for Go code
+- Connect to Postgres: `psql -U bbdev bbdev`
 
 ## Code Style
 - **General**: Follow Google style guides for all languages
 - **Conciseness**: Write clean, minimal code; fewer lines is better
 - **Comments**: Only include comments that are essential to understanding functionality or convey non-obvious information
 - **Go**: Use standard Go error handling with detailed error messages
+- **API and Proto**: Follow AIPs in https://google.aip.dev/general
 - **Frontend**: Follow TypeScript style with strict type checking
 - **Naming**: Use American English, avoid plurals like "xxxList"
 - **Git**: Follow conventional commit format
