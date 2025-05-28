@@ -40,17 +40,15 @@ func getPlanCheckRunsFromPlanSpecs(ctx context.Context, s *store.Store, plan *st
 	}
 
 	var planCheckRuns []*store.PlanCheckRunMessage
-	for _, step := range plan.Config.Steps {
-		for _, spec := range step.Specs {
-			if _, ok := skippedSpecIDs[spec.Id]; ok {
-				continue
-			}
-			runs, err := getPlanCheckRunsFromSpec(ctx, s, plan, spec)
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to get plan check runs for plan")
-			}
-			planCheckRuns = append(planCheckRuns, runs...)
+	for _, spec := range plan.Config.Specs {
+		if _, ok := skippedSpecIDs[spec.Id]; ok {
+			continue
 		}
+		runs, err := getPlanCheckRunsFromSpec(ctx, s, plan, spec)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get plan check runs for plan")
+		}
+		planCheckRuns = append(planCheckRuns, runs...)
 	}
 	if project.Setting.GetCiSamplingSize() > 0 {
 		var updatedRuns []*store.PlanCheckRunMessage

@@ -405,7 +405,7 @@ func (r *Runner) getDatabaseGeneralIssueRisk(ctx context.Context, issue *store.I
 		return 0, store.RiskSourceUnknown, false, nil
 	}
 
-	pipelineCreate, err := apiv1.GetPipelineCreate(ctx, r.store, r.sheetManager, r.dbFactory, plan.Name, plan.Config.GetSteps(), plan.Config.GetDeployment(), issue.Project)
+	pipelineCreate, err := apiv1.GetPipelineCreate(ctx, r.store, r.sheetManager, r.dbFactory, plan.Name, plan.Config.GetSpecs(), plan.Config.GetDeployment(), issue.Project)
 	if err != nil {
 		return 0, store.RiskSourceUnknown, false, errors.Wrap(err, "failed to get pipeline create")
 	}
@@ -508,7 +508,7 @@ func (r *Runner) getDatabaseDataExportIssueRisk(ctx context.Context, issue *stor
 		return 0, store.RiskSourceUnknown, false, errors.Errorf("plan %v not found", *issue.PlanUID)
 	}
 
-	pipelineCreate, err := apiv1.GetPipelineCreate(ctx, r.store, r.sheetManager, r.dbFactory, plan.Name, plan.Config.GetSteps(), plan.Config.GetDeployment(), issue.Project)
+	pipelineCreate, err := apiv1.GetPipelineCreate(ctx, r.store, r.sheetManager, r.dbFactory, plan.Name, plan.Config.GetSpecs(), plan.Config.GetDeployment(), issue.Project)
 	if err != nil {
 		return 0, store.RiskSourceUnknown, false, errors.Wrap(err, "failed to get pipeline create")
 	}
@@ -735,18 +735,16 @@ func (r *Runner) getDatabaseMap(ctx context.Context, databases []string) (map[st
 }
 
 func getRiskSourceFromPlan(config *storepb.PlanConfig) store.RiskSource {
-	for _, step := range config.GetSteps() {
-		for _, spec := range step.GetSpecs() {
-			switch v := spec.Config.(type) {
-			case *storepb.PlanConfig_Spec_CreateDatabaseConfig:
-				return store.RiskSourceDatabaseCreate
-			case *storepb.PlanConfig_Spec_ChangeDatabaseConfig:
-				switch v.ChangeDatabaseConfig.Type {
-				case storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE, storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE_GHOST, storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE_SDL:
-					return store.RiskSourceDatabaseSchemaUpdate
-				case storepb.PlanConfig_ChangeDatabaseConfig_DATA:
-					return store.RiskSourceDatabaseDataUpdate
-				}
+	for _, spec := range config.GetSpecs() {
+		switch v := spec.Config.(type) {
+		case *storepb.PlanConfig_Spec_CreateDatabaseConfig:
+			return store.RiskSourceDatabaseCreate
+		case *storepb.PlanConfig_Spec_ChangeDatabaseConfig:
+			switch v.ChangeDatabaseConfig.Type {
+			case storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE, storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE_GHOST, storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE_SDL:
+				return store.RiskSourceDatabaseSchemaUpdate
+			case storepb.PlanConfig_ChangeDatabaseConfig_DATA:
+				return store.RiskSourceDatabaseDataUpdate
 			}
 		}
 	}

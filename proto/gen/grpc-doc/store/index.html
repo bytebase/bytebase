@@ -921,10 +921,6 @@
                   <a href="#bytebase.store.PlanConfig.SpecReleaseSource"><span class="badge">M</span>PlanConfig.SpecReleaseSource</a>
                 </li>
               
-                <li>
-                  <a href="#bytebase.store.PlanConfig.Step"><span class="badge">M</span>PlanConfig.Step</a>
-                </li>
-              
               
                 <li>
                   <a href="#bytebase.store.PlanConfig.ChangeDatabaseConfig.Type"><span class="badge">E</span>PlanConfig.ChangeDatabaseConfig.Type</a>
@@ -8314,8 +8310,8 @@ Format: instances/{instance}/databases/{database} </p></td>
             <tbody>
               
                 <tr>
-                  <td>steps</td>
-                  <td><a href="#bytebase.store.PlanConfig.Step">PlanConfig.Step</a></td>
+                  <td>specs</td>
+                  <td><a href="#bytebase.store.PlanConfig.Spec">PlanConfig.Spec</a></td>
                   <td>repeated</td>
                   <td><p> </p></td>
                 </tr>
@@ -8713,38 +8709,6 @@ Format: projects/{project}/releases/{release} </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>Format: projects/{project}/releases/{release}/files/{id} </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.store.PlanConfig.Step">PlanConfig.Step</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>title</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Use the title if set.
-Use a generated title if empty. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>specs</td>
-                  <td><a href="#bytebase.store.PlanConfig.Spec">PlanConfig.Spec</a></td>
-                  <td>repeated</td>
-                  <td><p> </p></td>
                 </tr>
               
             </tbody>

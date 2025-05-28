@@ -254,13 +254,13 @@ func (s *PlanService) CreatePlan(ctx context.Context, request *v1pb.CreatePlanRe
 		Description: request.Plan.Description,
 		Config:      convertPlan(request.Plan),
 	}
-	deployment, err := getPlanDeployment(ctx, s.store, planMessage.Config.GetSteps(), project)
+	deployment, err := getPlanDeployment(ctx, s.store, planMessage.Config.GetSpecs(), project)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get plan deployment snapshot, error: %v", err)
 	}
 	planMessage.Config.Deployment = deployment
 
-	if _, err := GetPipelineCreate(ctx, s.store, s.sheetManager, s.dbFactory, planMessage.Name, planMessage.Config.GetSteps(), deployment, project); err != nil {
+	if _, err := GetPipelineCreate(ctx, s.store, s.sheetManager, s.dbFactory, planMessage.Name, planMessage.Config.GetSpecs(), deployment, project); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to get pipeline from the plan, please check you request, error: %v", err)
 	}
 	plan, err := s.store.CreatePlan(ctx, planMessage, principalID)
@@ -355,21 +355,29 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 			convertedDeployment := convertPlanDeployment(request.Plan.Deployment)
 			planUpdate.Deployment = &convertedDeployment
 		case "steps":
-			convertedRequestSteps := convertPlanSteps(request.GetPlan().GetSteps())
-			planUpdate.Steps = &convertedRequestSteps
+			// Convert steps to specs for internal storage
+			var allSpecs []*storepb.PlanConfig_Spec
+			for _, step := range request.GetPlan().GetSteps() {
+				allSpecs = append(allSpecs, convertPlanSpecs(step.Specs)...)
+			}
+			planUpdate.Specs = &allSpecs
 
 			if _, err := GetPipelineCreate(ctx,
 				s.store,
 				s.sheetManager,
 				s.dbFactory,
 				oldPlan.Name,
-				convertedRequestSteps,
+				allSpecs,
 				oldPlan.Config.GetDeployment(),
 				project); err != nil {
 				return nil, status.Errorf(codes.InvalidArgument, "failed to get pipeline from the plan, please check you request, error: %v", err)
 			}
 
-			oldSteps := convertToPlanSteps(oldPlan.Config.Steps)
+			// Convert old specs back to steps for comparison
+			oldSteps := []*v1pb.Plan_Step{{
+				Title: "",
+				Specs: convertToPlanSpecs(oldPlan.Config.Specs),
+			}}
 			issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{PlanUID: &oldPlan.UID})
 			if err != nil {
 				return nil, status.Errorf(codes.Internal, "failed to get issue: %v", err)
@@ -1275,21 +1283,19 @@ func validateSteps(steps []*v1pb.Plan_Step) error {
 	return nil
 }
 
-func getPlanSpecDatabaseGroups(steps []*storepb.PlanConfig_Step) []string {
+func getPlanSpecDatabaseGroups(specs []*storepb.PlanConfig_Spec) []string {
 	var databaseGroups []string
-	for _, step := range steps {
-		for _, spec := range step.Specs {
-			if target := spec.GetChangeDatabaseConfig().GetTarget(); target != "" {
-				if _, _, err := common.GetProjectIDDatabaseGroupID(target); err == nil {
-					databaseGroups = append(databaseGroups, target)
-				}
+	for _, spec := range specs {
+		if target := spec.GetChangeDatabaseConfig().GetTarget(); target != "" {
+			if _, _, err := common.GetProjectIDDatabaseGroupID(target); err == nil {
+				databaseGroups = append(databaseGroups, target)
 			}
 		}
 	}
 	return databaseGroups
 }
 
-func getPlanDeployment(ctx context.Context, s *store.Store, steps []*storepb.PlanConfig_Step, project *store.ProjectMessage) (*storepb.PlanConfig_Deployment, error) {
+func getPlanDeployment(ctx context.Context, s *store.Store, specs []*storepb.PlanConfig_Spec, project *store.ProjectMessage) (*storepb.PlanConfig_Deployment, error) {
 	snapshot := &storepb.PlanConfig_Deployment{}
 
 	environments, err := s.GetEnvironmentSetting(ctx)
@@ -1300,7 +1306,7 @@ func getPlanDeployment(ctx context.Context, s *store.Store, steps []*storepb.Pla
 		snapshot.Environments = append(snapshot.Environments, e.Id)
 	}
 
-	databaseGroups := getPlanSpecDatabaseGroups(steps)
+	databaseGroups := getPlanSpecDatabaseGroups(specs)
 
 	allDatabases, err := s.ListDatabases(ctx, &store.FindDatabaseMessage{ProjectID: &project.ResourceID})
 	if err != nil {
