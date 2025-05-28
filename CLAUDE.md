@@ -34,7 +34,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Common Go Lint Rules
 Always follow these guidelines to avoid common linting errors:
 
-- **File Formatting**: Run `go fmt` on files before committing to ensure proper formatting
+- **File Formatting**: Run `gofmt -w` on files before committing to ensure proper formatting
 - **Unused Parameters**: Prefix unused parameters with underscore (e.g., `func foo(_ *Bar)`)
 - **Modern Go Conventions**: Use `any` instead of `interface{}` (since Go 1.18)
 - **Confusing Naming**: Avoid similar names that differ only by capitalization
