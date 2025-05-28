@@ -44,13 +44,13 @@ export type IssueContext = {
   ready: Ref<boolean>;
   issue: Ref<ComposedIssue>;
   phase: Ref<IssuePhase>;
-  // The release candidates of the issue.
-  // Format: users/{email}
-  releaserCandidates: Ref<string[]>;
-  allowEditIssue: ComputedRef<boolean>;
+  allowChange: ComputedRef<boolean>;
 
   // review status
   reviewContext: ReviewContext;
+  // The release candidates of the issue.
+  // Format: users/{email}
+  releaserCandidates: Ref<string[]>;
 
   // UI status
   selectedStage: Ref<Stage>;

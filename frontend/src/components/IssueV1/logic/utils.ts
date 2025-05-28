@@ -2,7 +2,6 @@ import { NButton } from "naive-ui";
 import { h } from "vue";
 import { t } from "@/plugins/i18n";
 import {
-  pushNotification,
   useDatabaseV1Store,
   useEnvironmentV1Store,
   useInstanceResourceByName,
@@ -140,14 +139,6 @@ export const stageForTask = (issue: ComposedIssue, task: Task) => {
   return rollout?.stages.find(
     (stage) => stage.tasks.findIndex((t) => t.name === task.name) >= 0
   );
-};
-
-export const notifyNotEditableLegacyIssue = () => {
-  pushNotification({
-    module: "bytebase",
-    style: "CRITICAL",
-    title: t("issue.not-editable-legacy-issue"),
-  });
 };
 
 export const chooseUpdateTarget = (

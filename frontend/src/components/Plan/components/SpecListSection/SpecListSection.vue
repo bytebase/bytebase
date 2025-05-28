@@ -66,7 +66,7 @@ import {
 } from "@/store";
 import { DEBOUNCE_SEARCH_DELAY } from "@/types";
 import type { Advice_Status } from "@/types/proto/v1/sql_service";
-import { isDev } from "@/utils";
+import { flattenSpecList, isDev } from "@/utils";
 import {
   databaseForSpec,
   isDatabaseChangeSpec,
@@ -106,7 +106,7 @@ const state = reactive<LocalState>({
 const specBar = ref<HTMLDivElement>();
 const specBarScrollState = useVerticalScrollState(specBar, MAX_LIST_HEIGHT);
 
-const specList = computed(() => plan.value.steps.flatMap((step) => step.specs));
+const specList = computed(() => flattenSpecList(plan.value));
 
 const filteredSpecList = computed(() => {
   return specList.value.filter((spec) => {

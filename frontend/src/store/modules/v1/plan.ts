@@ -1,5 +1,5 @@
 import dayjs from "dayjs";
-import { orderBy } from "lodash-es";
+import { orderBy, uniq } from "lodash-es";
 import { defineStore } from "pinia";
 import { planServiceClient } from "@/grpcweb";
 import { EMPTY_ID, UNKNOWN_ID } from "@/types";
@@ -16,6 +16,7 @@ import {
   hasProjectPermissionV2,
   type SearchParams,
 } from "@/utils";
+import { useUserStore } from "../user";
 import { useProjectV1Store } from "./project";
 
 export interface PlanFind {
@@ -107,6 +108,9 @@ export const usePlanStore = defineStore("plan", () => {
     const composedPlans = await Promise.all(
       resp.plans.map((plan) => composePlan(plan))
     );
+    // Preprare creator for the plans.
+    const users = uniq(composedPlans.map((plan) => plan.creator));
+    await useUserStore().batchGetUsers(users);
     return {
       nextPageToken: resp.nextPageToken,
       plans: composedPlans,

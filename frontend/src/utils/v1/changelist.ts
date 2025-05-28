@@ -1,5 +1,5 @@
 import { useSheetV1Store } from "@/store";
-import type { Changelist_Change_Source, ComposedDatabase } from "@/types";
+import type { Changelist_Change_Source } from "@/types";
 import type { Changelist_Change as Change } from "@/types/proto/v1/changelist_service";
 import { getSheetStatement } from "./sheet";
 
@@ -23,10 +23,7 @@ export const getChangelistChangeSourceType = (
   }
 };
 
-export const generateSQLForChangeToDatabase = async (
-  change: Change,
-  _database: ComposedDatabase
-) => {
+export const generateSQLForChangeToDatabase = async (change: Change) => {
   const sheet = await useSheetV1Store().getOrFetchSheetByName(
     change.sheet,
     "FULL"

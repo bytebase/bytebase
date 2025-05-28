@@ -90,7 +90,7 @@ export function useInitializeIssue(
     }
   };
 
-  const allowEditIssue = computed(() => {
+  const allowChange = computed(() => {
     if (isCreating.value) {
       return hasProjectPermissionV2(unref(project), "bb.issues.create");
     }
@@ -107,7 +107,7 @@ export function useInitializeIssue(
     return hasProjectPermissionV2(unref(project), "bb.issues.update");
   });
 
-  return { isCreating, issue, isInitializing, reInitialize, allowEditIssue };
+  return { isCreating, issue, isInitializing, reInitialize, allowChange };
 }
 
 export const convertRouterQuery = (query: LocationQuery) => {

@@ -916,7 +916,6 @@
       "current-change-will-apply-to-all-tasks-in-batch-mode": "バッチ モードでは、現在の変更がすべてのタスクに適用されます。",
       "current-change-will-apply-to-all-tasks": "現在の変更はすべてのタスクに適用されます。"
     },
-    "not-editable-legacy-issue": "このイシューは古いバージョンの Bytebase で作成されたため編集できません。",
     "action-anyway": "まだ {action} が必要です",
     "sql-check": {
       "sql-checks": "SQLチェック項目",
