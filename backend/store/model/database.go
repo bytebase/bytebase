@@ -456,6 +456,77 @@ func (d *DatabaseMetadata) SearchView(searchPath []string, name string) (string,
 	return "", nil
 }
 
+func (d *DatabaseMetadata) SearchExternalTable(searchPath []string, name string) (string, *ExternalTableMetadata) {
+	// Search in the search path first.
+	for _, schemaName := range searchPath {
+		schema := d.GetSchema(schemaName)
+		if schema == nil {
+			continue
+		}
+		externalTable := schema.GetExternalTable(name)
+		if externalTable != nil {
+			return schema.proto.Name, externalTable
+		}
+	}
+	return "", nil
+}
+
+func (d *DatabaseMetadata) SearchSequence(searchPath []string, name string) (string, *SequenceMetadata) {
+	// Search in the search path first.
+	for _, schemaName := range searchPath {
+		schema := d.GetSchema(schemaName)
+		if schema == nil {
+			continue
+		}
+		sequence := schema.GetSequence(name)
+		if sequence != nil {
+			return schema.proto.Name, sequence
+		}
+	}
+	return "", nil
+}
+
+func (d *DatabaseMetadata) SearchMaterializedView(searchPath []string, name string) (string, *MaterializedViewMetadata) {
+	// Search in the search path first.
+	for _, schemaName := range searchPath {
+		schema := d.GetSchema(schemaName)
+		if schema == nil {
+			continue
+		}
+		materializedView := schema.GetMaterializedView(name)
+		if materializedView != nil {
+			return schema.proto.Name, materializedView
+		}
+	}
+	return "", nil
+}
+
+func (d *DatabaseMetadata) SearchFunctions(searchPath []string, name string) ([]string, []*FunctionMetadata) {
+	var schemas []string
+	var funcs []*FunctionMetadata
+	// Search in the search path first.
+	for _, schemaName := range searchPath {
+		schema := d.GetSchema(schemaName)
+		if schema == nil {
+			continue
+		}
+		for _, function := range schema.ListFunctions() {
+			if d.isDetailCaseSensitive {
+				if function.proto.Name == name {
+					schemas = append(schemas, schema.proto.Name)
+					funcs = append(funcs, function)
+				}
+			} else {
+				if strings.EqualFold(function.proto.Name, name) {
+					schemas = append(schemas, schema.proto.Name)
+					funcs = append(funcs, function)
+				}
+			}
+		}
+	}
+	return schemas, funcs
+}
+
 func (d *DatabaseMetadata) SearchObject(searchPath []string, name string) (string, string) {
 	// Search in the search path first.
 	for _, schemaName := range searchPath {
@@ -463,7 +534,7 @@ func (d *DatabaseMetadata) SearchObject(searchPath []string, name string) (strin
 		if schema == nil {
 			continue
 		}
-		if schema.GetTable(name) != nil || schema.GetView(name) != nil || schema.GetMaterializedView(name) != nil || schema.GetFunction(name) != nil || schema.GetProcedure(name) != nil || schema.GetPackage(name) != nil || schema.GetSequence(name) != nil {
+		if schema.GetTable(name) != nil || schema.GetView(name) != nil || schema.GetMaterializedView(name) != nil || schema.GetFunction(name) != nil || schema.GetProcedure(name) != nil || schema.GetPackage(name) != nil || schema.GetSequence(name) != nil || schema.GetExternalTable(name) != nil {
 			return schema.proto.Name, name
 		}
 	}
