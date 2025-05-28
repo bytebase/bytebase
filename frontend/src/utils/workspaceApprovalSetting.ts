@@ -10,10 +10,7 @@ import {
 } from "@/plugins/cel";
 import { t } from "@/plugins/i18n";
 import type { ParsedApprovalRule, UnrecognizedApprovalRule } from "@/types";
-import {
-  DEFAULT_RISK_LEVEL,
-  PresetRoleType,
-} from "@/types";
+import { DEFAULT_RISK_LEVEL, PresetRoleType } from "@/types";
 import type { LocalApprovalConfig, LocalApprovalRule } from "@/types";
 import { PresetRiskLevelList, useSupportedSourceList } from "@/types";
 import { Expr as CELExpr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
@@ -78,7 +75,7 @@ export const resolveLocalApprovalConfig = async (
     const rule = config.rules[i];
     const localRule: LocalApprovalRule = {
       uid: uuidv4(),
-      expr: resolveCELExpr(CELExpr.fromJSON({})),
+      expr: resolveCELExpr(CELExpr.fromPartial({})),
       template: cloneDeep(rule.template!),
     };
     ruleMap.set(localRule.uid, localRule);
@@ -92,7 +89,7 @@ export const resolveLocalApprovalConfig = async (
   for (let i = 0; i < exprList.length; i++) {
     const ruleId = ruleIdList[i];
     ruleMap.get(ruleId)!.expr = resolveCELExpr(
-      exprList[i] ?? CELExpr.fromJSON({})
+      exprList[i] ?? CELExpr.fromPartial({})
     );
   }
 
@@ -183,7 +180,7 @@ export const buildWorkspaceApprovalSetting = async (
     const rule = rules[i];
     const { uid, template } = rule;
 
-    const approvalRule = ApprovalRule.fromJSON({
+    const approvalRule = ApprovalRule.fromPartial({
       template,
       condition: { expression: "" },
     });
@@ -200,12 +197,12 @@ export const buildWorkspaceApprovalSetting = async (
   const expressionList = await batchConvertParsedExprToCELString(exprList);
   for (let i = 0; i < expressionList.length; i++) {
     const ruleIndex = ruleIndexList[i];
-    approvalRuleMap.get(ruleIndex)!.condition = Expr.fromJSON({
+    approvalRuleMap.get(ruleIndex)!.condition = Expr.fromPartial({
       expression: expressionList[i],
     });
   }
 
-  return WorkspaceApprovalSetting.fromJSON({
+  return WorkspaceApprovalSetting.fromPartial({
     rules: [...approvalRuleMap.values()],
   });
 };

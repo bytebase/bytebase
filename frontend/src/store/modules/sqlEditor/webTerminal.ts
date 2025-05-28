@@ -145,7 +145,7 @@ const createStreamingQueryController = () => {
                 result.latency = parseDuration(result.latency);
               });
             }
-            const response = AdminExecuteResponse.fromJSON(data.result);
+            const response = AdminExecuteResponse.fromPartial(data.result);
             subscriber.next(response);
           } else if (data.error) {
             const err = new ClientError(

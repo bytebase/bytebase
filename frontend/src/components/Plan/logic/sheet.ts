@@ -4,7 +4,7 @@ import { Sheet } from "@/types/proto/v1/sheet_service";
 const sheetsByName = reactive(new Map<string, Sheet>());
 
 export const createEmptyLocalSheet = () => {
-  return reactive(Sheet.fromJSON({}));
+  return reactive(Sheet.fromPartial({}));
 };
 
 export const getLocalSheetByName = (name: string): Sheet => {

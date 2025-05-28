@@ -86,7 +86,7 @@ const update = (rp: RolloutPolicy) => {
 };
 const toggleAutomaticRollout = (selected: boolean) => {
   update(
-    RolloutPolicy.fromJSON({
+    RolloutPolicy.fromPartial({
       ...rolloutPolicy.value,
       automatic: selected,
     })

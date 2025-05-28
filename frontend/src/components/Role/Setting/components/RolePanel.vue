@@ -143,7 +143,7 @@ const roleStore = useRoleStore();
 const { hasCustomRoleFeature, showFeatureModal } =
   useCustomRoleSettingContext();
 const state = reactive<LocalState>({
-  role: Role.fromJSON({}),
+  role: Role.fromPartial({}),
   dirty: false,
   loading: false,
   showImportPermissionFromRoleModal: false,
