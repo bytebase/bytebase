@@ -76,14 +76,19 @@ func (s *RolloutService) PreviewRollout(ctx context.Context, request *v1pb.Previ
 		return nil, status.Errorf(codes.NotFound, "project %q not found", projectID)
 	}
 
-	if err := validateSteps(request.Plan.Steps); err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "failed to validate plan steps, error: %v", err)
+	// Convert steps to specs if needed for backward compatibility
+	if len(request.Plan.Specs) == 0 && len(request.Plan.Steps) > 0 {
+		for _, step := range request.Plan.Steps {
+			request.Plan.Specs = append(request.Plan.Specs, step.Specs...)
+		}
 	}
-	// Convert steps to specs
-	var specs []*storepb.PlanConfig_Spec
-	for _, step := range request.Plan.Steps {
-		specs = append(specs, convertPlanSpecs(step.Specs)...)
+	
+	// Validate plan specs
+	if err := validateSpecs(request.Plan.Specs); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "failed to validate plan specs, error: %v", err)
 	}
+	
+	specs := convertPlanSpecs(request.Plan.Specs)
 
 	rollout, err := GetPipelineCreate(ctx, s.store, s.sheetManager, s.dbFactory, request.GetPlan().GetName(), specs, nil /* snapshot */, project)
 	if err != nil {
