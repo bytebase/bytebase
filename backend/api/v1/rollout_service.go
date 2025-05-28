@@ -76,12 +76,7 @@ func (s *RolloutService) PreviewRollout(ctx context.Context, request *v1pb.Previ
 		return nil, status.Errorf(codes.NotFound, "project %q not found", projectID)
 	}
 
-	// Convert steps to specs if needed for backward compatibility
-	if len(request.Plan.Specs) == 0 && len(request.Plan.Steps) > 0 {
-		for _, step := range request.Plan.Steps {
-			request.Plan.Specs = append(request.Plan.Specs, step.Specs...)
-		}
-	}
+	convertStepsToSpecs(request.Plan)
 
 	// Validate plan specs
 	if err := validateSpecs(request.Plan.Specs); err != nil {

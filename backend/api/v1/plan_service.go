@@ -342,20 +342,6 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 		return nil, status.Errorf(codes.PermissionDenied, "permission denied to update plan")
 	}
 
-	// Convert steps to specs if needed for backward compatibility
-	// Also normalize the updateMask
-	normalizedUpdateMask := make([]string, 0, len(request.UpdateMask.Paths))
-	for _, path := range request.UpdateMask.Paths {
-		if path == "steps" {
-			// Convert steps to specs
-			convertStepsToSpecs(request.Plan)
-			normalizedUpdateMask = append(normalizedUpdateMask, "specs")
-		} else {
-			normalizedUpdateMask = append(normalizedUpdateMask, path)
-		}
-	}
-	request.UpdateMask.Paths = normalizedUpdateMask
-
 	planUpdate := &store.UpdatePlanMessage{
 		UID: oldPlan.UID,
 	}
