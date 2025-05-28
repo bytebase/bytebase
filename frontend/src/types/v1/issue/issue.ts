@@ -25,10 +25,9 @@ export const UNKNOWN_ISSUE_NAME = `projects/${UNKNOWN_ID}/issues/${UNKNOWN_ID}`;
 
 export const emptyIssue = (): ComposedIssue => {
   return {
-    ...Issue.fromJSON({
+    ...Issue.fromPartial({
       name: EMPTY_ISSUE_NAME,
       rollout: EMPTY_ROLLOUT_NAME,
-      uid: String(EMPTY_ID),
       type: Issue_Type.DATABASE_CHANGE,
     }),
     planEntity: undefined,
@@ -41,10 +40,9 @@ export const emptyIssue = (): ComposedIssue => {
 
 export const unknownIssue = (): ComposedIssue => {
   return {
-    ...Issue.fromJSON({
+    ...Issue.fromPartial({
       name: UNKNOWN_ISSUE_NAME,
       rollout: UNKNOWN_ROLLOUT_NAME,
-      uid: String(UNKNOWN_ID),
       type: Issue_Type.DATABASE_CHANGE,
     }),
     planEntity: undefined,

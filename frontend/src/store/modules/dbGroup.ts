@@ -269,7 +269,7 @@ export const useDBGroupStore = defineStore("db-group", () => {
       databaseGroup: DatabaseGroup.fromPartial({
         name: `${projectName}/${databaseGroupNamePrefix}${validateOnlyResourceId}`,
         title: validateOnlyResourceId,
-        databaseExpr: Expr.fromJSON({
+        databaseExpr: Expr.fromPartial({
           expression,
         }),
       }),

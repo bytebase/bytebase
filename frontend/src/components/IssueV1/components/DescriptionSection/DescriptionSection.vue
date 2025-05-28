@@ -123,7 +123,7 @@ const beginEdit = () => {
 const saveEdit = async () => {
   try {
     state.isUpdating = true;
-    const issuePatch = Issue.fromJSON({
+    const issuePatch = Issue.fromPartial({
       ...issue.value,
       description: state.description,
     });

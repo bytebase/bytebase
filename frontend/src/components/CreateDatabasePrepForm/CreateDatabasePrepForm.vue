@@ -365,7 +365,7 @@ const createV1 = async () => {
 
   state.creating = true;
   try {
-    const planCreate = Plan.fromJSON({
+    const planCreate = Plan.fromPartial({
       steps: [{ specs: [spec] }],
       creator: currentUserV1.value.name,
     });

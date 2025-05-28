@@ -65,7 +65,7 @@ export const createPlanSkeleton = async (
 export const buildPlan = async (params: CreatePlanParams) => {
   const { project, query } = params;
   const databaseNameList = (query.databaseList ?? "").split(",");
-  const plan = Plan.fromJSON({
+  const plan = Plan.fromPartial({
     name: `${project.name}/plans/${nextUID()}`,
     title: query.name,
     description: query.description,
@@ -130,7 +130,7 @@ const buildStepsForDatabaseGroup = async (
     params,
     extractSheetUID(sheet.name)
   );
-  const step = Plan_Step.fromJSON({
+  const step = Plan_Step.fromPartial({
     specs: [spec],
   });
   return [step];
@@ -175,11 +175,11 @@ const buildSpecForTarget = async (
 ) => {
   const sheet = `${project.name}/sheets/${sheetUID ?? nextUID()}`;
   const template = query.template as IssueType | undefined;
-  const spec = Plan_Spec.fromJSON({
+  const spec = Plan_Spec.fromPartial({
     id: uuidv4(),
   });
   if (template === "bb.issue.database.data.update") {
-    spec.changeDatabaseConfig = Plan_ChangeDatabaseConfig.fromJSON({
+    spec.changeDatabaseConfig = Plan_ChangeDatabaseConfig.fromPartial({
       target,
       type: Plan_ChangeDatabaseConfig_Type.DATA,
     });
@@ -201,7 +201,7 @@ const buildSpecForTarget = async (
   }
   if (template === "bb.issue.database.schema.update") {
     const type = Plan_ChangeDatabaseConfig_Type.MIGRATE;
-    spec.changeDatabaseConfig = Plan_ChangeDatabaseConfig.fromJSON({
+    spec.changeDatabaseConfig = Plan_ChangeDatabaseConfig.fromPartial({
       target,
       type,
       sheet,
