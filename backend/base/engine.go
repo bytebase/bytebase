@@ -220,6 +220,7 @@ func EngineSupportStatementReport(e storepb.Engine) bool {
 		storepb.Engine_ORACLE,
 		storepb.Engine_OCEANBASE_ORACLE,
 		storepb.Engine_MSSQL,
+		storepb.Engine_MARIADB,
 		storepb.Engine_REDSHIFT:
 		return true
 	case
@@ -233,7 +234,6 @@ func EngineSupportStatementReport(e storepb.Engine) bool {
 		storepb.Engine_CLICKHOUSE,
 		storepb.Engine_SPANNER,
 		storepb.Engine_BIGQUERY,
-		storepb.Engine_MARIADB,
 		storepb.Engine_STARROCKS,
 		storepb.Engine_RISINGWAVE,
 		storepb.Engine_HIVE,
