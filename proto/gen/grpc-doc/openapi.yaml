@@ -11182,7 +11182,6 @@ components:
                 type:
                     enum:
                         - TYPE_UNSPECIFIED
-                        - BASELINE
                         - MIGRATE
                         - MIGRATE_SDL
                         - MIGRATE_GHOST
@@ -13506,7 +13505,6 @@ components:
                         - TYPE_UNSPECIFIED
                         - GENERAL
                         - DATABASE_CREATE
-                        - DATABASE_SCHEMA_BASELINE
                         - DATABASE_SCHEMA_UPDATE
                         - DATABASE_SCHEMA_UPDATE_SDL
                         - DATABASE_SCHEMA_UPDATE_GHOST
@@ -13521,8 +13519,6 @@ components:
                          Format: instances/{instance}/databases/{database}
                 databaseCreate:
                     $ref: '#/components/schemas/Task_DatabaseCreate'
-                databaseSchemaBaseline:
-                    $ref: '#/components/schemas/Task_DatabaseSchemaBaseline'
                 databaseSchemaUpdate:
                     $ref: '#/components/schemas/Task_DatabaseSchemaUpdate'
                 databaseDataUpdate:
@@ -13835,11 +13831,6 @@ components:
                 sheet:
                     type: string
                     description: 'Format: projects/{project}/sheets/{sheet}'
-                schemaVersion:
-                    type: string
-        Task_DatabaseSchemaBaseline:
-            type: object
-            properties:
                 schemaVersion:
                     type: string
         Task_DatabaseSchemaUpdate:

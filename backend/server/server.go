@@ -229,7 +229,6 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 
 	s.taskSchedulerV2 = taskrun.NewSchedulerV2(stores, s.stateCfg, s.webhookManager, profile, s.licenseService)
 	s.taskSchedulerV2.Register(base.TaskDatabaseCreate, taskrun.NewDatabaseCreateExecutor(stores, s.dbFactory, s.schemaSyncer, s.stateCfg, profile))
-	s.taskSchedulerV2.Register(base.TaskDatabaseSchemaBaseline, taskrun.NewSchemaBaselineExecutor(stores, s.dbFactory, s.licenseService, s.stateCfg, s.schemaSyncer, profile))
 	s.taskSchedulerV2.Register(base.TaskDatabaseSchemaUpdate, taskrun.NewSchemaUpdateExecutor(stores, s.dbFactory, s.licenseService, s.stateCfg, s.schemaSyncer, profile))
 	s.taskSchedulerV2.Register(base.TaskDatabaseDataUpdate, taskrun.NewDataUpdateExecutor(stores, s.dbFactory, s.licenseService, s.stateCfg, s.schemaSyncer, profile))
 	s.taskSchedulerV2.Register(base.TaskDatabaseDataExport, taskrun.NewDataExportExecutor(stores, s.dbFactory, s.licenseService, s.stateCfg, s.schemaSyncer, profile))

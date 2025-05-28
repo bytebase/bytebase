@@ -2,8 +2,6 @@ import { computedAsync } from "@vueuse/core";
 import { computed, ref } from "vue";
 import { getLocalSheetByName } from "@/components/Plan";
 import { useSheetV1Store } from "@/store";
-import { ESTABLISH_BASELINE_SQL } from "@/types";
-import { Task_Type } from "@/types/proto/v1/rollout_service";
 import {
   extractSheetUID,
   getSheetStatement,
@@ -40,10 +38,6 @@ export const useTaskSheet = () => {
   );
   const sheetStatement = computed({
     get() {
-      if (selectedTask.value.type === Task_Type.DATABASE_SCHEMA_BASELINE) {
-        return ESTABLISH_BASELINE_SQL;
-      }
-
       if (!sheetReady.value || !sheet.value) return "";
       return getSheetStatement(sheet.value);
     },

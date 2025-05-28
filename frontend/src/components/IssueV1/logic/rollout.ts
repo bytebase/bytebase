@@ -106,8 +106,6 @@ export const semanticTaskType = (type: Task_Type) => {
       return t("db.create");
     case Task_Type.DATABASE_DATA_UPDATE:
       return "DML";
-    case Task_Type.DATABASE_SCHEMA_BASELINE:
-      return t("common.baseline");
     case Task_Type.DATABASE_SCHEMA_UPDATE:
     case Task_Type.DATABASE_SCHEMA_UPDATE_SDL:
       return "DDL";

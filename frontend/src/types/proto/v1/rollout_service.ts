@@ -251,7 +251,6 @@ export interface Task {
    */
   target: string;
   databaseCreate?: Task_DatabaseCreate | undefined;
-  databaseSchemaBaseline?: Task_DatabaseSchemaBaseline | undefined;
   databaseSchemaUpdate?: Task_DatabaseSchemaUpdate | undefined;
   databaseDataUpdate?: Task_DatabaseDataUpdate | undefined;
   databaseDataExport?: Task_DatabaseDataExport | undefined;
@@ -355,8 +354,6 @@ export enum Task_Type {
   GENERAL = "GENERAL",
   /** DATABASE_CREATE - use payload DatabaseCreate */
   DATABASE_CREATE = "DATABASE_CREATE",
-  /** DATABASE_SCHEMA_BASELINE - use payload DatabaseSchemaBaseline */
-  DATABASE_SCHEMA_BASELINE = "DATABASE_SCHEMA_BASELINE",
   /** DATABASE_SCHEMA_UPDATE - use payload DatabaseSchemaUpdate */
   DATABASE_SCHEMA_UPDATE = "DATABASE_SCHEMA_UPDATE",
   /** DATABASE_SCHEMA_UPDATE_SDL - use payload DatabaseSchemaUpdate */
@@ -381,9 +378,6 @@ export function task_TypeFromJSON(object: any): Task_Type {
     case 2:
     case "DATABASE_CREATE":
       return Task_Type.DATABASE_CREATE;
-    case 3:
-    case "DATABASE_SCHEMA_BASELINE":
-      return Task_Type.DATABASE_SCHEMA_BASELINE;
     case 4:
     case "DATABASE_SCHEMA_UPDATE":
       return Task_Type.DATABASE_SCHEMA_UPDATE;
@@ -414,8 +408,6 @@ export function task_TypeToJSON(object: Task_Type): string {
       return "GENERAL";
     case Task_Type.DATABASE_CREATE:
       return "DATABASE_CREATE";
-    case Task_Type.DATABASE_SCHEMA_BASELINE:
-      return "DATABASE_SCHEMA_BASELINE";
     case Task_Type.DATABASE_SCHEMA_UPDATE:
       return "DATABASE_SCHEMA_UPDATE";
     case Task_Type.DATABASE_SCHEMA_UPDATE_SDL:
@@ -440,8 +432,6 @@ export function task_TypeToNumber(object: Task_Type): number {
       return 1;
     case Task_Type.DATABASE_CREATE:
       return 2;
-    case Task_Type.DATABASE_SCHEMA_BASELINE:
-      return 3;
     case Task_Type.DATABASE_SCHEMA_UPDATE:
       return 4;
     case Task_Type.DATABASE_SCHEMA_UPDATE_SDL:
@@ -473,10 +463,6 @@ export interface Task_DatabaseCreate {
   characterSet: string;
   collation: string;
   environment: string;
-}
-
-export interface Task_DatabaseSchemaBaseline {
-  schemaVersion: string;
 }
 
 export interface Task_DatabaseSchemaUpdate {
@@ -2449,7 +2435,6 @@ function createBaseTask(): Task {
     type: Task_Type.TYPE_UNSPECIFIED,
     target: "",
     databaseCreate: undefined,
-    databaseSchemaBaseline: undefined,
     databaseSchemaUpdate: undefined,
     databaseDataUpdate: undefined,
     databaseDataExport: undefined,
@@ -2478,9 +2463,6 @@ export const Task: MessageFns<Task> = {
     }
     if (message.databaseCreate !== undefined) {
       Task_DatabaseCreate.encode(message.databaseCreate, writer.uint32(74).fork()).join();
-    }
-    if (message.databaseSchemaBaseline !== undefined) {
-      Task_DatabaseSchemaBaseline.encode(message.databaseSchemaBaseline, writer.uint32(82).fork()).join();
     }
     if (message.databaseSchemaUpdate !== undefined) {
       Task_DatabaseSchemaUpdate.encode(message.databaseSchemaUpdate, writer.uint32(90).fork()).join();
@@ -2557,14 +2539,6 @@ export const Task: MessageFns<Task> = {
           message.databaseCreate = Task_DatabaseCreate.decode(reader, reader.uint32());
           continue;
         }
-        case 10: {
-          if (tag !== 82) {
-            break;
-          }
-
-          message.databaseSchemaBaseline = Task_DatabaseSchemaBaseline.decode(reader, reader.uint32());
-          continue;
-        }
         case 11: {
           if (tag !== 90) {
             break;
@@ -2607,9 +2581,6 @@ export const Task: MessageFns<Task> = {
       type: isSet(object.type) ? task_TypeFromJSON(object.type) : Task_Type.TYPE_UNSPECIFIED,
       target: isSet(object.target) ? globalThis.String(object.target) : "",
       databaseCreate: isSet(object.databaseCreate) ? Task_DatabaseCreate.fromJSON(object.databaseCreate) : undefined,
-      databaseSchemaBaseline: isSet(object.databaseSchemaBaseline)
-        ? Task_DatabaseSchemaBaseline.fromJSON(object.databaseSchemaBaseline)
-        : undefined,
       databaseSchemaUpdate: isSet(object.databaseSchemaUpdate)
         ? Task_DatabaseSchemaUpdate.fromJSON(object.databaseSchemaUpdate)
         : undefined,
@@ -2645,9 +2616,6 @@ export const Task: MessageFns<Task> = {
     if (message.databaseCreate !== undefined) {
       obj.databaseCreate = Task_DatabaseCreate.toJSON(message.databaseCreate);
     }
-    if (message.databaseSchemaBaseline !== undefined) {
-      obj.databaseSchemaBaseline = Task_DatabaseSchemaBaseline.toJSON(message.databaseSchemaBaseline);
-    }
     if (message.databaseSchemaUpdate !== undefined) {
       obj.databaseSchemaUpdate = Task_DatabaseSchemaUpdate.toJSON(message.databaseSchemaUpdate);
     }
@@ -2674,10 +2642,6 @@ export const Task: MessageFns<Task> = {
     message.databaseCreate = (object.databaseCreate !== undefined && object.databaseCreate !== null)
       ? Task_DatabaseCreate.fromPartial(object.databaseCreate)
       : undefined;
-    message.databaseSchemaBaseline =
-      (object.databaseSchemaBaseline !== undefined && object.databaseSchemaBaseline !== null)
-        ? Task_DatabaseSchemaBaseline.fromPartial(object.databaseSchemaBaseline)
-        : undefined;
     message.databaseSchemaUpdate = (object.databaseSchemaUpdate !== undefined && object.databaseSchemaUpdate !== null)
       ? Task_DatabaseSchemaUpdate.fromPartial(object.databaseSchemaUpdate)
       : undefined;
@@ -2843,64 +2807,6 @@ export const Task_DatabaseCreate: MessageFns<Task_DatabaseCreate> = {
     message.characterSet = object.characterSet ?? "";
     message.collation = object.collation ?? "";
     message.environment = object.environment ?? "";
-    return message;
-  },
-};
-
-function createBaseTask_DatabaseSchemaBaseline(): Task_DatabaseSchemaBaseline {
-  return { schemaVersion: "" };
-}
-
-export const Task_DatabaseSchemaBaseline: MessageFns<Task_DatabaseSchemaBaseline> = {
-  encode(message: Task_DatabaseSchemaBaseline, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.schemaVersion !== "") {
-      writer.uint32(10).string(message.schemaVersion);
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): Task_DatabaseSchemaBaseline {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseTask_DatabaseSchemaBaseline();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.schemaVersion = reader.string();
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): Task_DatabaseSchemaBaseline {
-    return { schemaVersion: isSet(object.schemaVersion) ? globalThis.String(object.schemaVersion) : "" };
-  },
-
-  toJSON(message: Task_DatabaseSchemaBaseline): unknown {
-    const obj: any = {};
-    if (message.schemaVersion !== "") {
-      obj.schemaVersion = message.schemaVersion;
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<Task_DatabaseSchemaBaseline>): Task_DatabaseSchemaBaseline {
-    return Task_DatabaseSchemaBaseline.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<Task_DatabaseSchemaBaseline>): Task_DatabaseSchemaBaseline {
-    const message = createBaseTask_DatabaseSchemaBaseline();
-    message.schemaVersion = object.schemaVersion ?? "";
     return message;
   },
 };

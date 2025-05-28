@@ -35,7 +35,6 @@ export const flattenSpecList = (plan: Plan | undefined) => {
 
 const DATABASE_RELATED_TASK_TYPE_LIST = [
   Task_Type.DATABASE_CREATE,
-  Task_Type.DATABASE_SCHEMA_BASELINE,
   Task_Type.DATABASE_SCHEMA_UPDATE,
   Task_Type.DATABASE_SCHEMA_UPDATE_GHOST,
   Task_Type.DATABASE_SCHEMA_UPDATE_SDL,

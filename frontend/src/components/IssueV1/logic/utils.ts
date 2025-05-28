@@ -37,7 +37,6 @@ export const useInstanceForTask = (task: Task) => {
     case Task_Type.DATABASE_CREATE:
       instanceName = task.target;
       break;
-    case Task_Type.DATABASE_SCHEMA_BASELINE:
     case Task_Type.DATABASE_SCHEMA_UPDATE:
     case Task_Type.DATABASE_SCHEMA_UPDATE_SDL:
     case Task_Type.DATABASE_SCHEMA_UPDATE_GHOST:

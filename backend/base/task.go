@@ -6,8 +6,6 @@ type TaskType string
 const (
 	// TaskDatabaseCreate is the task type for creating databases.
 	TaskDatabaseCreate TaskType = "bb.task.database.create"
-	// TaskDatabaseSchemaBaseline is the task type for database schema baseline.
-	TaskDatabaseSchemaBaseline TaskType = "bb.task.database.schema.baseline"
 	// TaskDatabaseSchemaUpdate is the task type for updating database schemas.
 	TaskDatabaseSchemaUpdate TaskType = "bb.task.database.schema.update"
 	// TaskDatabaseSchemaUpdateGhost is the task type for updating database schemas using gh-ost.
@@ -23,8 +21,7 @@ func (t TaskType) ChangeDatabasePayload() bool {
 	case
 		TaskDatabaseDataUpdate,
 		TaskDatabaseSchemaUpdate,
-		TaskDatabaseSchemaUpdateGhost,
-		TaskDatabaseSchemaBaseline:
+		TaskDatabaseSchemaUpdateGhost:
 		return true
 	default:
 		return false
