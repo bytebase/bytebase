@@ -108,6 +108,8 @@ func buildCommentMessage(resp *v1pb.CheckReleaseResponse) string {
 				warningCount++
 			case v1pb.Advice_ERROR:
 				errorCount++
+			case v1pb.Advice_STATUS_UNSPECIFIED, v1pb.Advice_SUCCESS:
+				// No action needed
 			}
 		}
 	}
@@ -142,6 +144,8 @@ func buildCommentMessage(resp *v1pb.CheckReleaseResponse) string {
 				warningCount++
 			case v1pb.Advice_ERROR:
 				errorCount++
+			case v1pb.Advice_STATUS_UNSPECIFIED, v1pb.Advice_SUCCESS:
+				// No action needed
 			}
 		}
 		counts := []string{}
@@ -213,6 +217,8 @@ func formatRiskLevel(r v1pb.CheckReleaseResponse_RiskLevel) string {
 		return "🟡 Moderate"
 	case v1pb.CheckReleaseResponse_HIGH:
 		return "🔴 High"
+	case v1pb.CheckReleaseResponse_RISK_LEVEL_UNSPECIFIED:
+		return "⚪ None"
 	default:
 		return "⚪ None"
 	}

@@ -107,6 +107,8 @@ func (t MigrationType) NeedDump() bool {
 	switch t {
 	case Baseline, Migrate, MigrateSDL:
 		return true
+	case Data:
+		return false
 	default:
 		return false
 	}
