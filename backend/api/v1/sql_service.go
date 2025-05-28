@@ -180,7 +180,7 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 		}
 	}
 
-	dataSource, err := checkAndGetDataSourceQueriable(ctx, s.store, database, request.DataSourceId, false)
+	dataSource, err := checkAndGetDataSourceQueriable(ctx, s.store, database, request.DataSourceId)
 	if err != nil {
 		return nil, err
 	}
@@ -735,7 +735,11 @@ func (s *SQLService) Export(ctx context.Context, request *v1pb.ExportRequest) (*
 		}
 	}
 
-	bytes, duration, exportErr := DoExport(ctx, s.store, s.dbFactory, s.licenseService, request, user, instance, database, s.accessCheck, s.schemaSyncer, false /* not auto data source */)
+	dataSource, err := checkAndGetDataSourceQueriable(ctx, s.store, database, request.DataSourceId)
+	if err != nil {
+		return nil, err
+	}
+	bytes, duration, exportErr := DoExport(ctx, s.store, s.dbFactory, s.licenseService, request, user, instance, database, s.accessCheck, s.schemaSyncer, dataSource)
 
 	if err := s.createQueryHistory(ctx, database, store.QueryHistoryTypeExport, statement, user.ID, duration, exportErr); err != nil {
 		return nil, err
@@ -824,11 +828,10 @@ func DoExport(
 	database *store.DatabaseMessage,
 	optionalAccessCheck accessCheckFunc,
 	schemaSyncer *schemasync.Syncer,
-	autoDataSource bool,
+	dataSource *storepb.DataSource,
 ) ([]byte, time.Duration, error) {
-	dataSource, err := checkAndGetDataSourceQueriable(ctx, stores, database, request.DataSourceId, autoDataSource)
-	if err != nil {
-		return nil, 0, err
+	if dataSource == nil {
+		return nil, 0, status.Errorf(codes.NotFound, "cannot found valid data source")
 	}
 	driver, err := dbFactory.GetDataSourceDriver(ctx, instance, dataSource, db.ConnectionContext{
 		DatabaseName: database.DatabaseName,
@@ -1881,8 +1884,8 @@ func (*SQLService) Pretty(_ context.Context, request *v1pb.PrettyRequest) (*v1pb
 	}, nil
 }
 
-// getQueriableDataSource try to returns the RO data source, and will returns the admin data source if not exist the RO data source.
-func getQueriableDataSource(instance *store.InstanceMessage) *storepb.DataSource {
+// GetQueriableDataSource try to returns the RO data source, and will returns the admin data source if not exist the RO data source.
+func GetQueriableDataSource(instance *store.InstanceMessage) *storepb.DataSource {
 	var adminDataSource *storepb.DataSource
 	for _, ds := range instance.Metadata.GetDataSources() {
 		if ds.GetType() == storepb.DataSourceType_READ_ONLY {
@@ -1900,9 +1903,8 @@ func checkAndGetDataSourceQueriable(
 	storeInstance *store.Store,
 	database *store.DatabaseMessage,
 	dataSourceID string,
-	autoDataSource bool,
 ) (*storepb.DataSource, error) {
-	if dataSourceID == "" && !autoDataSource {
+	if dataSourceID == "" {
 		return nil, status.Errorf(codes.InvalidArgument, "data source id is required")
 	}
 
@@ -1914,9 +1916,6 @@ func checkAndGetDataSourceQueriable(
 		return nil, status.Errorf(codes.NotFound, "instance %q not found", database.InstanceID)
 	}
 	dataSource := func() *storepb.DataSource {
-		if dataSourceID == "" && autoDataSource {
-			return getQueriableDataSource(instance)
-		}
 		for _, ds := range instance.Metadata.GetDataSources() {
 			if ds.GetId() == dataSourceID {
 				return ds
@@ -1929,7 +1928,7 @@ func checkAndGetDataSourceQueriable(
 	}
 
 	// Always allow non-admin data source.
-	if dataSource.GetType() != storepb.DataSourceType_ADMIN || autoDataSource {
+	if dataSource.GetType() != storepb.DataSourceType_ADMIN {
 		return dataSource, nil
 	}
 
@@ -1983,7 +1982,7 @@ func checkAndGetDataSourceQueriable(
 		return nil, status.Errorf(codes.PermissionDenied, "data source %q is not queryable", dataSourceID)
 	} else if envAdminDataSourceRestriction == v1pb.DataSourceQueryPolicy_FALLBACK || projectAdminDataSourceRestriction == v1pb.DataSourceQueryPolicy_FALLBACK {
 		// If there is any read-only data source, then return false.
-		if ds := getQueriableDataSource(instance); ds != nil && ds.Type == storepb.DataSourceType_READ_ONLY {
+		if ds := GetQueriableDataSource(instance); ds != nil && ds.Type == storepb.DataSourceType_READ_ONLY {
 			return nil, status.Errorf(codes.PermissionDenied, "data source %q is not queryable", dataSourceID)
 		}
 	}
