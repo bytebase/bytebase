@@ -79,9 +79,13 @@ func (s *RolloutService) PreviewRollout(ctx context.Context, request *v1pb.Previ
 	if err := validateSteps(request.Plan.Steps); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to validate plan steps, error: %v", err)
 	}
-	steps := convertPlanSteps(request.Plan.Steps)
+	// Convert steps to specs
+	var specs []*storepb.PlanConfig_Spec
+	for _, step := range request.Plan.Steps {
+		specs = append(specs, convertPlanSpecs(step.Specs)...)
+	}
 
-	rollout, err := GetPipelineCreate(ctx, s.store, s.sheetManager, s.dbFactory, request.GetPlan().GetName(), steps, nil /* snapshot */, project)
+	rollout, err := GetPipelineCreate(ctx, s.store, s.sheetManager, s.dbFactory, request.GetPlan().GetName(), specs, nil /* snapshot */, project)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to get pipeline create, error: %v", err)
 	}
@@ -229,14 +233,14 @@ func (s *RolloutService) CreateRollout(ctx context.Context, request *v1pb.Create
 	if rolloutTitle == "" {
 		rolloutTitle = plan.Name
 	}
-	pipelineCreate, err := GetPipelineCreate(ctx, s.store, s.sheetManager, s.dbFactory, rolloutTitle, plan.Config.GetSteps(), plan.Config.GetDeployment(), project)
+	pipelineCreate, err := GetPipelineCreate(ctx, s.store, s.sheetManager, s.dbFactory, rolloutTitle, plan.Config.GetSpecs(), plan.Config.GetDeployment(), project)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to get pipeline create, error: %v", err)
 	}
 	if len(pipelineCreate.Stages) == 0 {
 		return nil, status.Errorf(codes.InvalidArgument, "no database matched for deployment, hint: check deployment config setting that the target database is in a stage")
 	}
-	if isChangeDatabasePlan(plan.Config.GetSteps()) {
+	if isChangeDatabasePlan(plan.Config.GetSpecs()) {
 		pipelineCreate, err = getPipelineCreateToTargetStage(ctx, s.store, plan.Config.GetDeployment().GetEnvironments(), pipelineCreate, request.Target)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to filter stages with stageId, error: %v", err)
@@ -940,25 +944,17 @@ func (s *RolloutService) PreviewTaskRunRollback(ctx context.Context, request *v1
 	}, nil
 }
 
-func isChangeDatabasePlan(steps []*storepb.PlanConfig_Step) bool {
-	for _, step := range steps {
-		for _, spec := range step.GetSpecs() {
-			if spec.GetChangeDatabaseConfig() != nil {
-				return true
-			}
+func isChangeDatabasePlan(specs []*storepb.PlanConfig_Spec) bool {
+	for _, spec := range specs {
+		if spec.GetChangeDatabaseConfig() != nil {
+			return true
 		}
 	}
 	return false
 }
 
 // GetPipelineCreate gets a pipeline create message from a plan.
-func GetPipelineCreate(ctx context.Context, s *store.Store, sheetManager *sheet.Manager, dbFactory *dbfactory.DBFactory, rolloutTitle string, steps []*storepb.PlanConfig_Step, deployment *storepb.PlanConfig_Deployment /* nullable */, project *store.ProjectMessage) (*store.PipelineMessage, error) {
-	// Flatten all specs from steps.
-	var specs []*storepb.PlanConfig_Spec
-	for _, step := range steps {
-		specs = append(specs, step.Specs...)
-	}
-
+func GetPipelineCreate(ctx context.Context, s *store.Store, sheetManager *sheet.Manager, dbFactory *dbfactory.DBFactory, rolloutTitle string, specs []*storepb.PlanConfig_Spec, deployment *storepb.PlanConfig_Deployment /* nullable */, project *store.ProjectMessage) (*store.PipelineMessage, error) {
 	// Step 1 - transform database group specs.
 	// Others are untouched.
 	transformSpecs, err := transformDatabaseGroupSpecs(ctx, s, project, specs, deployment)
