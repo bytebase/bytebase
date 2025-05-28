@@ -73,7 +73,7 @@ const { resultMap } = usePlanSQLCheckContext();
 
 const { plan } = planContext;
 
-const specList = computed(() => plan.value.steps.flatMap((step) => step.specs));
+const specList = computed(() => plan.value.specs);
 
 const getSpecCount = (adviceStatus?: Advice_Status) => {
   return specList.value.filter((spec) =>
