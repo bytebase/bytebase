@@ -124,10 +124,6 @@ export const GetResourcePackageRequest: MessageFns<GetResourcePackageRequest> = 
     return message;
   },
 
-  fromJSON(_: any): GetResourcePackageRequest {
-    return {};
-  },
-
   toJSON(_: GetResourcePackageRequest): unknown {
     const obj: any = {};
     return obj;
@@ -178,10 +174,6 @@ export const ResourcePackage: MessageFns<ResourcePackage> = {
     return message;
   },
 
-  fromJSON(object: any): ResourcePackage {
-    return { logo: isSet(object.logo) ? bytesFromBase64(object.logo) : new Uint8Array(0) };
-  },
-
   toJSON(message: ResourcePackage): unknown {
     const obj: any = {};
     if (message.logo.length !== 0) {
@@ -225,10 +217,6 @@ export const SetupSampleRequest: MessageFns<SetupSampleRequest> = {
     return message;
   },
 
-  fromJSON(_: any): SetupSampleRequest {
-    return {};
-  },
-
   toJSON(_: SetupSampleRequest): unknown {
     const obj: any = {};
     return obj;
@@ -266,10 +254,6 @@ export const GetActuatorInfoRequest: MessageFns<GetActuatorInfoRequest> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(_: any): GetActuatorInfoRequest {
-    return {};
   },
 
   toJSON(_: GetActuatorInfoRequest): unknown {
@@ -333,13 +317,6 @@ export const UpdateActuatorInfoRequest: MessageFns<UpdateActuatorInfoRequest> = 
     return message;
   },
 
-  fromJSON(object: any): UpdateActuatorInfoRequest {
-    return {
-      actuator: isSet(object.actuator) ? ActuatorInfo.fromJSON(object.actuator) : undefined,
-      updateMask: isSet(object.updateMask) ? FieldMask.unwrap(FieldMask.fromJSON(object.updateMask)) : undefined,
-    };
-  },
-
   toJSON(message: UpdateActuatorInfoRequest): unknown {
     const obj: any = {};
     if (message.actuator !== undefined) {
@@ -387,10 +364,6 @@ export const DeleteCacheRequest: MessageFns<DeleteCacheRequest> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(_: any): DeleteCacheRequest {
-    return {};
   },
 
   toJSON(_: DeleteCacheRequest): unknown {
@@ -697,43 +670,6 @@ export const ActuatorInfo: MessageFns<ActuatorInfo> = {
     return message;
   },
 
-  fromJSON(object: any): ActuatorInfo {
-    return {
-      version: isSet(object.version) ? globalThis.String(object.version) : "",
-      gitCommit: isSet(object.gitCommit) ? globalThis.String(object.gitCommit) : "",
-      readonly: isSet(object.readonly) ? globalThis.Boolean(object.readonly) : false,
-      saas: isSet(object.saas) ? globalThis.Boolean(object.saas) : false,
-      demo: isSet(object.demo) ? globalThis.Boolean(object.demo) : false,
-      host: isSet(object.host) ? globalThis.String(object.host) : "",
-      port: isSet(object.port) ? globalThis.String(object.port) : "",
-      externalUrl: isSet(object.externalUrl) ? globalThis.String(object.externalUrl) : "",
-      needAdminSetup: isSet(object.needAdminSetup) ? globalThis.Boolean(object.needAdminSetup) : false,
-      disallowSignup: isSet(object.disallowSignup) ? globalThis.Boolean(object.disallowSignup) : false,
-      lastActiveTime: isSet(object.lastActiveTime) ? fromJsonTimestamp(object.lastActiveTime) : undefined,
-      require2fa: isSet(object.require2fa) ? globalThis.Boolean(object.require2fa) : false,
-      workspaceId: isSet(object.workspaceId) ? globalThis.String(object.workspaceId) : "",
-      debug: isSet(object.debug) ? globalThis.Boolean(object.debug) : false,
-      unlicensedFeatures: globalThis.Array.isArray(object?.unlicensedFeatures)
-        ? object.unlicensedFeatures.map((e: any) => globalThis.String(e))
-        : [],
-      disallowPasswordSignin: isSet(object.disallowPasswordSignin)
-        ? globalThis.Boolean(object.disallowPasswordSignin)
-        : false,
-      passwordRestriction: isSet(object.passwordRestriction)
-        ? PasswordRestrictionSetting.fromJSON(object.passwordRestriction)
-        : undefined,
-      docker: isSet(object.docker) ? globalThis.Boolean(object.docker) : false,
-      userStats: globalThis.Array.isArray(object?.userStats)
-        ? object.userStats.map((e: any) => ActuatorInfo_StatUser.fromJSON(e))
-        : [],
-      activatedInstanceCount: isSet(object.activatedInstanceCount)
-        ? globalThis.Number(object.activatedInstanceCount)
-        : 0,
-      totalInstanceCount: isSet(object.totalInstanceCount) ? globalThis.Number(object.totalInstanceCount) : 0,
-      enableSample: isSet(object.enableSample) ? globalThis.Boolean(object.enableSample) : false,
-    };
-  },
-
   toJSON(message: ActuatorInfo): unknown {
     const obj: any = {};
     if (message.version !== "") {
@@ -896,14 +832,6 @@ export const ActuatorInfo_StatUser: MessageFns<ActuatorInfo_StatUser> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): ActuatorInfo_StatUser {
-    return {
-      userType: isSet(object.userType) ? userTypeFromJSON(object.userType) : UserType.USER_TYPE_UNSPECIFIED,
-      state: isSet(object.state) ? stateFromJSON(object.state) : State.STATE_UNSPECIFIED,
-      count: isSet(object.count) ? globalThis.Number(object.count) : 0,
-    };
   },
 
   toJSON(message: ActuatorInfo_StatUser): unknown {
@@ -1153,15 +1081,6 @@ export const ActuatorServiceDefinition = {
   },
 } as const;
 
-function bytesFromBase64(b64: string): Uint8Array {
-  const bin = globalThis.atob(b64);
-  const arr = new Uint8Array(bin.length);
-  for (let i = 0; i < bin.length; ++i) {
-    arr[i] = bin.charCodeAt(i);
-  }
-  return arr;
-}
-
 function base64FromBytes(arr: Uint8Array): string {
   const bin: string[] = [];
   arr.forEach((byte) => {
@@ -1178,40 +1097,15 @@ export type DeepPartial<T> = T extends Builtin ? T
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
 
-function toTimestamp(date: Date): Timestamp {
-  const seconds = numberToLong(Math.trunc(date.getTime() / 1_000));
-  const nanos = (date.getTime() % 1_000) * 1_000_000;
-  return { seconds, nanos };
-}
-
 function fromTimestamp(t: Timestamp): Date {
   let millis = (t.seconds.toNumber() || 0) * 1_000;
   millis += (t.nanos || 0) / 1_000_000;
   return new globalThis.Date(millis);
 }
 
-function fromJsonTimestamp(o: any): Timestamp {
-  if (o instanceof globalThis.Date) {
-    return toTimestamp(o);
-  } else if (typeof o === "string") {
-    return toTimestamp(new globalThis.Date(o));
-  } else {
-    return Timestamp.fromJSON(o);
-  }
-}
-
-function numberToLong(number: number) {
-  return Long.fromNumber(number);
-}
-
-function isSet(value: any): boolean {
-  return value !== null && value !== undefined;
-}
-
 export interface MessageFns<T> {
   encode(message: T, writer?: BinaryWriter): BinaryWriter;
   decode(input: BinaryReader | Uint8Array, length?: number): T;
-  fromJSON(object: any): T;
   toJSON(message: T): unknown;
   create(base?: DeepPartial<T>): T;
   fromPartial(object: DeepPartial<T>): T;

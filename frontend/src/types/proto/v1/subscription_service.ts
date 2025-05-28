@@ -138,10 +138,6 @@ export const GetSubscriptionRequest: MessageFns<GetSubscriptionRequest> = {
     return message;
   },
 
-  fromJSON(_: any): GetSubscriptionRequest {
-    return {};
-  },
-
   toJSON(_: GetSubscriptionRequest): unknown {
     const obj: any = {};
     return obj;
@@ -179,10 +175,6 @@ export const GetFeatureMatrixRequest: MessageFns<GetFeatureMatrixRequest> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(_: any): GetFeatureMatrixRequest {
-    return {};
   },
 
   toJSON(_: GetFeatureMatrixRequest): unknown {
@@ -233,10 +225,6 @@ export const UpdateSubscriptionRequest: MessageFns<UpdateSubscriptionRequest> = 
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): UpdateSubscriptionRequest {
-    return { patch: isSet(object.patch) ? PatchSubscription.fromJSON(object.patch) : undefined };
   },
 
   toJSON(message: UpdateSubscriptionRequest): unknown {
@@ -293,10 +281,6 @@ export const PatchSubscription: MessageFns<PatchSubscription> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): PatchSubscription {
-    return { license: isSet(object.license) ? globalThis.String(object.license) : "" };
   },
 
   toJSON(message: PatchSubscription): unknown {
@@ -439,19 +423,6 @@ export const Subscription: MessageFns<Subscription> = {
     return message;
   },
 
-  fromJSON(object: any): Subscription {
-    return {
-      seatCount: isSet(object.seatCount) ? globalThis.Number(object.seatCount) : 0,
-      instanceCount: isSet(object.instanceCount) ? globalThis.Number(object.instanceCount) : 0,
-      expiresTime: isSet(object.expiresTime) ? fromJsonTimestamp(object.expiresTime) : undefined,
-      startedTime: isSet(object.startedTime) ? fromJsonTimestamp(object.startedTime) : undefined,
-      plan: isSet(object.plan) ? planTypeFromJSON(object.plan) : PlanType.PLAN_TYPE_UNSPECIFIED,
-      trialing: isSet(object.trialing) ? globalThis.Boolean(object.trialing) : false,
-      orgId: isSet(object.orgId) ? globalThis.String(object.orgId) : "",
-      orgName: isSet(object.orgName) ? globalThis.String(object.orgName) : "",
-    };
-  },
-
   toJSON(message: Subscription): unknown {
     const obj: any = {};
     if (message.seatCount !== 0) {
@@ -538,12 +509,6 @@ export const FeatureMatrix: MessageFns<FeatureMatrix> = {
     return message;
   },
 
-  fromJSON(object: any): FeatureMatrix {
-    return {
-      features: globalThis.Array.isArray(object?.features) ? object.features.map((e: any) => Feature.fromJSON(e)) : [],
-    };
-  },
-
   toJSON(message: FeatureMatrix): unknown {
     const obj: any = {};
     if (message.features?.length) {
@@ -610,18 +575,6 @@ export const Feature: MessageFns<Feature> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): Feature {
-    return {
-      name: isSet(object.name) ? globalThis.String(object.name) : "",
-      matrix: isObject(object.matrix)
-        ? Object.entries(object.matrix).reduce<{ [key: string]: boolean }>((acc, [key, value]) => {
-          acc[key] = Boolean(value);
-          return acc;
-        }, {})
-        : {},
-    };
   },
 
   toJSON(message: Feature): unknown {
@@ -702,13 +655,6 @@ export const Feature_MatrixEntry: MessageFns<Feature_MatrixEntry> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): Feature_MatrixEntry {
-    return {
-      key: isSet(object.key) ? globalThis.String(object.key) : "",
-      value: isSet(object.value) ? globalThis.Boolean(object.value) : false,
-    };
   },
 
   toJSON(message: Feature_MatrixEntry): unknown {
@@ -823,44 +769,15 @@ export type DeepPartial<T> = T extends Builtin ? T
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
 
-function toTimestamp(date: Date): Timestamp {
-  const seconds = numberToLong(Math.trunc(date.getTime() / 1_000));
-  const nanos = (date.getTime() % 1_000) * 1_000_000;
-  return { seconds, nanos };
-}
-
 function fromTimestamp(t: Timestamp): Date {
   let millis = (t.seconds.toNumber() || 0) * 1_000;
   millis += (t.nanos || 0) / 1_000_000;
   return new globalThis.Date(millis);
 }
 
-function fromJsonTimestamp(o: any): Timestamp {
-  if (o instanceof globalThis.Date) {
-    return toTimestamp(o);
-  } else if (typeof o === "string") {
-    return toTimestamp(new globalThis.Date(o));
-  } else {
-    return Timestamp.fromJSON(o);
-  }
-}
-
-function numberToLong(number: number) {
-  return Long.fromNumber(number);
-}
-
-function isObject(value: any): boolean {
-  return typeof value === "object" && value !== null;
-}
-
-function isSet(value: any): boolean {
-  return value !== null && value !== undefined;
-}
-
 export interface MessageFns<T> {
   encode(message: T, writer?: BinaryWriter): BinaryWriter;
   decode(input: BinaryReader | Uint8Array, length?: number): T;
-  fromJSON(object: any): T;
   toJSON(message: T): unknown;
   create(base?: DeepPartial<T>): T;
   fromPartial(object: DeepPartial<T>): T;

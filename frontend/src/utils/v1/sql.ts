@@ -27,17 +27,17 @@ export const extractSQLRowValuePlain = (value: RowValue | undefined) => {
   if (keys.length > 1) {
     console.debug("mixed type in row value", value);
   }
-  
+
   // First check if there's a formatted stringValue which should take precedence
   if (value.stringValue) {
     return value.stringValue;
   }
-  
+
   // Handle binary data with auto-format detection
   if (value.bytesValue) {
     // Ensure bytesValue exists before converting to array
     const byteArray = Array.from(value.bytesValue);
-    
+
     // For single byte/bit values (could be boolean)
     if (byteArray.length === 1) {
       // If it's 0 or 1, display as boolean
@@ -45,9 +45,9 @@ export const extractSQLRowValuePlain = (value: RowValue | undefined) => {
         return byteArray[0] === 1 ? "true" : "false";
       }
     }
-    
+
     // Check if it's readable text
-    const isReadableText = byteArray.every(byte => byte >= 32 && byte <= 126);
+    const isReadableText = byteArray.every((byte) => byte >= 32 && byte <= 126);
     if (isReadableText) {
       try {
         return new TextDecoder().decode(new Uint8Array(byteArray));
@@ -55,14 +55,17 @@ export const extractSQLRowValuePlain = (value: RowValue | undefined) => {
         // If text decoding fails, fallback to hex
       }
     }
-    
+
     // The column type isn't available in this context
     // Default to HEX format for most binary data as it's more compact
-    return "0x" + byteArray
-      .map((byte) => byte.toString(16).toUpperCase().padStart(2, "0"))
-      .join("");
+    return (
+      "0x" +
+      byteArray
+        .map((byte) => byte.toString(16).toUpperCase().padStart(2, "0"))
+        .join("")
+    );
   }
-  
+
   if (value.timestampValue && value.timestampValue.googleTimestamp) {
     return formatTimestamp(value.timestampValue);
   }
@@ -78,8 +81,13 @@ export const extractSQLRowValuePlain = (value: RowValue | undefined) => {
 };
 
 const formatTimestamp = (timestamp: RowValue_Timestamp) => {
-  const fullDayjs = dayjs(getDateForPbTimestamp(timestamp.googleTimestamp)).utc();
-  const microseconds = Math.floor((timestamp.googleTimestamp?.nanos ?? 0) / Math.pow(10, 9 - timestamp.accuracy));
+  const fullDayjs = dayjs(
+    getDateForPbTimestamp(timestamp.googleTimestamp)
+  ).utc();
+  const microseconds = Math.floor(
+    (timestamp.googleTimestamp?.nanos ?? 0) /
+      Math.pow(10, 9 - timestamp.accuracy)
+  );
   const formattedTimestamp =
     microseconds > 0
       ? `${fullDayjs.format("YYYY-MM-DD HH:mm:ss")}.${microseconds.toString().padStart(timestamp.accuracy, "0")}`
@@ -88,7 +96,9 @@ const formatTimestamp = (timestamp: RowValue_Timestamp) => {
 };
 
 const formatTimestampWithTz = (timestampTzValue: RowValue_TimestampTZ) => {
-  const fullDayjs = dayjs(getDateForPbTimestamp(timestampTzValue.googleTimestamp))
+  const fullDayjs = dayjs(
+    getDateForPbTimestamp(timestampTzValue.googleTimestamp)
+  )
     .utc()
     .add(timestampTzValue.offset, "seconds");
 
@@ -98,9 +108,11 @@ const formatTimestampWithTz = (timestampTzValue: RowValue_TimestampTZ) => {
     hourOffset > 0
       ? `+${timezoneOffsetPrefix}${hourOffset}`
       : `-${timezoneOffsetPrefix}${Math.abs(hourOffset)}`;
-  timestampTzValue.accuracy = (timestampTzValue.accuracy === 0) ? 6 : timestampTzValue.accuracy;
+  timestampTzValue.accuracy =
+    timestampTzValue.accuracy === 0 ? 6 : timestampTzValue.accuracy;
   const microseconds = Math.floor(
-    (timestampTzValue.googleTimestamp?.nanos ?? 0) / Math.pow(10, 9 - timestampTzValue.accuracy) 
+    (timestampTzValue.googleTimestamp?.nanos ?? 0) /
+      Math.pow(10, 9 - timestampTzValue.accuracy)
   );
   const formattedTimestamp =
     microseconds > 0

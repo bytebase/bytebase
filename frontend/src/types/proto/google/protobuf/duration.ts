@@ -135,13 +135,6 @@ export const Duration: MessageFns<Duration> = {
     return message;
   },
 
-  fromJSON(object: any): Duration {
-    return {
-      seconds: isSet(object.seconds) ? Long.fromValue(object.seconds) : Long.ZERO,
-      nanos: isSet(object.nanos) ? globalThis.Number(object.nanos) : 0,
-    };
-  },
-
   toJSON(message: Duration): unknown {
     const obj: any = {};
     if (!message.seconds.equals(Long.ZERO)) {
@@ -174,14 +167,9 @@ export type DeepPartial<T> = T extends Builtin ? T
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
 
-function isSet(value: any): boolean {
-  return value !== null && value !== undefined;
-}
-
 export interface MessageFns<T> {
   encode(message: T, writer?: BinaryWriter): BinaryWriter;
   decode(input: BinaryReader | Uint8Array, length?: number): T;
-  fromJSON(object: any): T;
   toJSON(message: T): unknown;
   create(base?: DeepPartial<T>): T;
   fromPartial(object: DeepPartial<T>): T;

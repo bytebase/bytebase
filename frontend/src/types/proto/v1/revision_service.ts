@@ -205,15 +205,6 @@ export const ListRevisionsRequest: MessageFns<ListRevisionsRequest> = {
     return message;
   },
 
-  fromJSON(object: any): ListRevisionsRequest {
-    return {
-      parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
-      pageSize: isSet(object.pageSize) ? globalThis.Number(object.pageSize) : 0,
-      pageToken: isSet(object.pageToken) ? globalThis.String(object.pageToken) : "",
-      showDeleted: isSet(object.showDeleted) ? globalThis.Boolean(object.showDeleted) : false,
-    };
-  },
-
   toJSON(message: ListRevisionsRequest): unknown {
     const obj: any = {};
     if (message.parent !== "") {
@@ -291,15 +282,6 @@ export const ListRevisionsResponse: MessageFns<ListRevisionsResponse> = {
     return message;
   },
 
-  fromJSON(object: any): ListRevisionsResponse {
-    return {
-      revisions: globalThis.Array.isArray(object?.revisions)
-        ? object.revisions.map((e: any) => Revision.fromJSON(e))
-        : [],
-      nextPageToken: isSet(object.nextPageToken) ? globalThis.String(object.nextPageToken) : "",
-    };
-  },
-
   toJSON(message: ListRevisionsResponse): unknown {
     const obj: any = {};
     if (message.revisions?.length) {
@@ -367,13 +349,6 @@ export const CreateRevisionRequest: MessageFns<CreateRevisionRequest> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): CreateRevisionRequest {
-    return {
-      parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
-      revision: isSet(object.revision) ? Revision.fromJSON(object.revision) : undefined,
-    };
   },
 
   toJSON(message: CreateRevisionRequest): unknown {
@@ -447,15 +422,6 @@ export const BatchCreateRevisionsRequest: MessageFns<BatchCreateRevisionsRequest
     return message;
   },
 
-  fromJSON(object: any): BatchCreateRevisionsRequest {
-    return {
-      parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
-      requests: globalThis.Array.isArray(object?.requests)
-        ? object.requests.map((e: any) => CreateRevisionRequest.fromJSON(e))
-        : [],
-    };
-  },
-
   toJSON(message: BatchCreateRevisionsRequest): unknown {
     const obj: any = {};
     if (message.parent !== "") {
@@ -514,14 +480,6 @@ export const BatchCreateRevisionsResponse: MessageFns<BatchCreateRevisionsRespon
     return message;
   },
 
-  fromJSON(object: any): BatchCreateRevisionsResponse {
-    return {
-      revisions: globalThis.Array.isArray(object?.revisions)
-        ? object.revisions.map((e: any) => Revision.fromJSON(e))
-        : [],
-    };
-  },
-
   toJSON(message: BatchCreateRevisionsResponse): unknown {
     const obj: any = {};
     if (message.revisions?.length) {
@@ -576,10 +534,6 @@ export const GetRevisionRequest: MessageFns<GetRevisionRequest> = {
     return message;
   },
 
-  fromJSON(object: any): GetRevisionRequest {
-    return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
-  },
-
   toJSON(message: GetRevisionRequest): unknown {
     const obj: any = {};
     if (message.name !== "") {
@@ -632,10 +586,6 @@ export const DeleteRevisionRequest: MessageFns<DeleteRevisionRequest> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): DeleteRevisionRequest {
-    return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
   },
 
   toJSON(message: DeleteRevisionRequest): unknown {
@@ -836,24 +786,6 @@ export const Revision: MessageFns<Revision> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): Revision {
-    return {
-      name: isSet(object.name) ? globalThis.String(object.name) : "",
-      release: isSet(object.release) ? globalThis.String(object.release) : "",
-      createTime: isSet(object.createTime) ? fromJsonTimestamp(object.createTime) : undefined,
-      deleter: isSet(object.deleter) ? globalThis.String(object.deleter) : "",
-      deleteTime: isSet(object.deleteTime) ? fromJsonTimestamp(object.deleteTime) : undefined,
-      file: isSet(object.file) ? globalThis.String(object.file) : "",
-      version: isSet(object.version) ? globalThis.String(object.version) : "",
-      sheet: isSet(object.sheet) ? globalThis.String(object.sheet) : "",
-      sheetSha256: isSet(object.sheetSha256) ? globalThis.String(object.sheetSha256) : "",
-      statement: isSet(object.statement) ? globalThis.String(object.statement) : "",
-      statementSize: isSet(object.statementSize) ? Long.fromValue(object.statementSize) : Long.ZERO,
-      issue: isSet(object.issue) ? globalThis.String(object.issue) : "",
-      taskRun: isSet(object.taskRun) ? globalThis.String(object.taskRun) : "",
-    };
   },
 
   toJSON(message: Revision): unknown {
@@ -1373,40 +1305,15 @@ export type DeepPartial<T> = T extends Builtin ? T
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
 
-function toTimestamp(date: Date): Timestamp {
-  const seconds = numberToLong(Math.trunc(date.getTime() / 1_000));
-  const nanos = (date.getTime() % 1_000) * 1_000_000;
-  return { seconds, nanos };
-}
-
 function fromTimestamp(t: Timestamp): Date {
   let millis = (t.seconds.toNumber() || 0) * 1_000;
   millis += (t.nanos || 0) / 1_000_000;
   return new globalThis.Date(millis);
 }
 
-function fromJsonTimestamp(o: any): Timestamp {
-  if (o instanceof globalThis.Date) {
-    return toTimestamp(o);
-  } else if (typeof o === "string") {
-    return toTimestamp(new globalThis.Date(o));
-  } else {
-    return Timestamp.fromJSON(o);
-  }
-}
-
-function numberToLong(number: number) {
-  return Long.fromNumber(number);
-}
-
-function isSet(value: any): boolean {
-  return value !== null && value !== undefined;
-}
-
 export interface MessageFns<T> {
   encode(message: T, writer?: BinaryWriter): BinaryWriter;
   decode(input: BinaryReader | Uint8Array, length?: number): T;
-  fromJSON(object: any): T;
   toJSON(message: T): unknown;
   create(base?: DeepPartial<T>): T;
   fromPartial(object: DeepPartial<T>): T;
