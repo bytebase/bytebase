@@ -1272,7 +1272,6 @@ func validateSpecs(specs []*v1pb.Plan_Spec) error {
 	return nil
 }
 
-
 func getPlanSpecDatabaseGroups(specs []*storepb.PlanConfig_Spec) []string {
 	var databaseGroups []string
 	for _, spec := range specs {
