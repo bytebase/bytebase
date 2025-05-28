@@ -94,7 +94,7 @@ export const useProjectIamPolicyStore = defineStore(
     };
 
     const getProjectIamPolicy = (project: string) => {
-      return policyMap.value.get(project) ?? IamPolicy.fromJSON({});
+      return policyMap.value.get(project) ?? IamPolicy.fromPartial({});
     };
 
     const getOrFetchProjectIamPolicy = async (project: string) => {
@@ -147,7 +147,7 @@ export const useProjectIamPolicy = (project: MaybeRef<string>) => {
     { immediate: true }
   );
   const policy = computed(() => {
-    return store.policyMap.get(unref(project)) ?? IamPolicy.fromJSON({});
+    return store.policyMap.get(unref(project)) ?? IamPolicy.fromPartial({});
   });
   return { policy, ready };
 };

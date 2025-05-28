@@ -17,7 +17,7 @@ export type WrappedReviewStep = {
 
 export const emptyFlow = (): ReviewFlow => {
   return {
-    template: ApprovalTemplate.fromJSON({}),
+    template: ApprovalTemplate.fromPartial({}),
     approvers: [],
     currentStepIndex: -1,
   };

@@ -14,14 +14,12 @@ export interface ComposedProject extends Project {
 
 export const emptyProject = (): ComposedProject => {
   return {
-    ...Project.fromJSON({
+    ...Project.fromPartial({
       name: EMPTY_PROJECT_NAME,
-      uid: String(EMPTY_ID),
       title: "",
-      key: "",
       state: State.ACTIVE,
     }),
-    iamPolicy: IamPolicy.fromJSON({}),
+    iamPolicy: IamPolicy.fromPartial({}),
   };
 };
 

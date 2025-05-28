@@ -136,7 +136,7 @@ const applyTemplate = async (template: RuleTemplate) => {
   }
   const expressions = await batchConvertParsedExprToCELString([celexpr]);
   const overrides: Partial<Risk> = {
-    condition: Expr.fromJSON({ expression: expressions[0] }),
+    condition: Expr.fromPartial({ expression: expressions[0] }),
     level,
     title,
   };

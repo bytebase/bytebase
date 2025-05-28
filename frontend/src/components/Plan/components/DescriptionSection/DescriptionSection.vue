@@ -138,7 +138,7 @@ const beginEdit = () => {
 const saveEdit = async () => {
   try {
     state.isUpdating = true;
-    const planPatch = Plan.fromJSON({
+    const planPatch = Plan.fromPartial({
       ...plan.value,
       description: state.description,
     });
