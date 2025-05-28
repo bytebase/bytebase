@@ -244,13 +244,7 @@ func (s *PlanService) CreatePlan(ctx context.Context, request *v1pb.CreatePlanRe
 		return nil, status.Errorf(codes.NotFound, "project not found for id: %v", projectID)
 	}
 	// Convert steps to specs if needed for backward compatibility
-	//nolint:staticcheck // SA1019: deprecated field used for backward compatibility
-	if len(request.Plan.Specs) == 0 && len(request.Plan.Steps) > 0 {
-		//nolint:staticcheck // SA1019: deprecated field used for backward compatibility
-		for _, step := range request.Plan.Steps {
-			request.Plan.Specs = append(request.Plan.Specs, step.Specs...)
-		}
-	}
+	convertStepsToSpecs(request.Plan)
 
 	// Validate plan specs
 	if err := validateSpecs(request.Plan.Specs); err != nil {
@@ -354,13 +348,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 	for _, path := range request.UpdateMask.Paths {
 		if path == "steps" {
 			// Convert steps to specs
-			//nolint:staticcheck // SA1019: deprecated field used for backward compatibility
-			if len(request.Plan.Specs) == 0 && len(request.Plan.Steps) > 0 {
-				//nolint:staticcheck // SA1019: deprecated field used for backward compatibility
-				for _, step := range request.Plan.Steps {
-					request.Plan.Specs = append(request.Plan.Specs, step.Specs...)
-				}
-			}
+			convertStepsToSpecs(request.Plan)
 			normalizedUpdateMask = append(normalizedUpdateMask, "specs")
 		} else {
 			normalizedUpdateMask = append(normalizedUpdateMask, path)
