@@ -230,7 +230,6 @@ import {
 } from "@/types";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
 import type { Task } from "@/types/proto/v1/rollout_service";
-import { Task_Type } from "@/types/proto/v1/rollout_service";
 import { Sheet } from "@/types/proto/v1/sheet_service";
 import type { Advice } from "@/types/proto/v1/sql_service";
 import {

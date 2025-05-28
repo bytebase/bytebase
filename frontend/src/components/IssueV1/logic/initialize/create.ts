@@ -14,7 +14,7 @@ import { emptyIssue, TaskTypeListWithStatement } from "@/types";
 import { IssueStatus, Issue_Type } from "@/types/proto/v1/issue_service";
 import { Plan } from "@/types/proto/v1/plan_service";
 import type { Stage } from "@/types/proto/v1/rollout_service";
-import { Rollout, Task_Type } from "@/types/proto/v1/rollout_service";
+import { Rollout } from "@/types/proto/v1/rollout_service";
 import {
   extractProjectResourceName,
   extractSheetUID,
