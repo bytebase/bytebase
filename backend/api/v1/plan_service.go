@@ -1359,3 +1359,15 @@ func getTaskTypeFromSpec(spec *v1pb.Plan_Spec) (base.TaskType, error) {
 	}
 	return "", errors.Errorf("unknown spec config type")
 }
+
+// convertStepsToSpecs converts deprecated Plan.Steps to Plan.Specs for backward compatibility.
+//
+//nolint:staticcheck // SA1019: deprecated field used for backward compatibility
+func convertStepsToSpecs(plan *v1pb.Plan) {
+	if len(plan.Specs) == 0 && len(plan.Steps) > 0 {
+		//nolint:staticcheck // SA1019: deprecated field used for backward compatibility
+		for _, step := range plan.Steps {
+			plan.Specs = append(plan.Specs, step.Specs...)
+		}
+	}
+}
