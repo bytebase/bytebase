@@ -9,7 +9,7 @@
       {{ $t("release.tasks-to-apply") }}
     </p>
     <div
-      v-for="spec in flattenSpecList"
+      v-for="spec in specList"
       :key="spec.id"
       class="max-w-52 flex flex-row items-center flex-wrap border px-2 py-1 rounded-md"
     >
@@ -34,7 +34,7 @@
         </span>
       </div>
     </div>
-    <p v-if="flattenSpecList.length === 0" class="text-gray-400 italic">
+    <p v-if="specList.length === 0" class="text-gray-400 italic">
       {{ $t("release.no-tasks-to-apply.self") }}
     </p>
   </div>
@@ -148,7 +148,7 @@ const databaseStore = useDatabaseV1Store();
 
 const databaseGroupStore = useDBGroupStore();
 
-const flattenSpecList = computed((): Plan_Spec[] => {
+const specList = computed((): Plan_Spec[] => {
   return props.previewPlanResult.plan?.specs || [];
 });
 
@@ -173,7 +173,7 @@ const targetDatabases = computed(() => {
 const shouldShowAppliedAlert = computed(() => {
   return (
     props.release.files.length * targetDatabases.value.length >
-    flattenSpecList.value.length
+    specList.value.length
   );
 });
 
