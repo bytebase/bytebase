@@ -83,7 +83,22 @@ func writeTable(out *strings.Builder, schemaName string, table *storepb.TableMet
 	}
 }
 
-func writeIndex(out *strings.Builder, schemaName string, tableName string, index *storepb.IndexMetadata) {
+func writeClusteredColumnStoreIndex(out *strings.Builder, schemaName string, tableName string, index *storepb.IndexMetadata) {
+	_, _ = fmt.Fprintf(out, "CREATE CLUSTERED COLUMNSTORE INDEX [%s] ON [%s].[%s];\n\n", index.Name, schemaName, tableName)
+}
+
+func writeNonClusteredColumnStoreIndex(out *strings.Builder, schemaName string, tableName string, index *storepb.IndexMetadata) {
+	_, _ = fmt.Fprintf(out, "CREATE NONCLUSTERED COLUMNSTORE INDEX [%s] ON [%s].[%s] (\n", index.Name, schemaName, tableName)
+	for i, column := range index.Expressions {
+		if i != 0 {
+			_, _ = out.WriteString(",\n")
+		}
+		_, _ = fmt.Fprintf(out, "    [%s]", column)
+	}
+	_, _ = out.WriteString("\n);\n\n")
+}
+
+func writeNormalIndex(out *strings.Builder, schemaName string, tableName string, index *storepb.IndexMetadata) {
 	_, _ = out.WriteString("CREATE")
 	if index.Type != "" {
 		_, _ = fmt.Fprintf(out, " %s", index.Type)
@@ -101,6 +116,17 @@ func writeIndex(out *strings.Builder, schemaName string, tableName string, index
 		}
 	}
 	_, _ = out.WriteString("\n);\n\n")
+}
+
+func writeIndex(out *strings.Builder, schemaName string, tableName string, index *storepb.IndexMetadata) {
+	switch strings.ToUpper(index.Type) {
+	case "CLUSTERED COLUMNSTORE":
+		writeClusteredColumnStoreIndex(out, schemaName, tableName, index)
+	case "NONCLUSTERED COLUMNSTORE":
+		writeNonClusteredColumnStoreIndex(out, schemaName, tableName, index)
+	default:
+		writeNormalIndex(out, schemaName, tableName, index)
+	}
 }
 
 func writeCheck(out *strings.Builder, check *storepb.CheckConstraintMetadata) {
