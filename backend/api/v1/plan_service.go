@@ -963,6 +963,7 @@ func (s *PlanService) getUserByIdentifier(ctx context.Context, identifier string
 	return user, nil
 }
 
+// Deprecated.
 func (s *PlanService) PreviewPlan(ctx context.Context, request *v1pb.PreviewPlanRequest) (*v1pb.PreviewPlanResponse, error) {
 	projectID, err := common.GetProjectID(request.Project)
 	if err != nil {
