@@ -1,8 +1,5 @@
 <template>
-  <div class="w-full flex flex-col justify-start items-start pt-6 space-y-4">
-    <h3 class="text-lg font-medium leading-7 text-main">
-      {{ $t("settings.sidebar.security-and-policy") }}
-    </h3>
+  <div class="w-full flex flex-col justify-start items-start space-y-4">
     <SQLReviewForResource
       v-if="databaseChangeMode === DatabaseChangeMode.PIPELINE"
       ref="sqlReviewForResourceRef"

@@ -5,6 +5,7 @@
 <script setup lang="ts">
 import { computed, watchEffect } from "vue";
 import ProjectSettingPanel from "@/components/ProjectSettingPanel.vue";
+import { useBodyLayoutContext } from "@/layouts/common";
 import { usePolicyV1Store, useProjectByName } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { PolicyResourceType } from "@/types/proto/v1/org_policy_service";
@@ -27,4 +28,8 @@ const preparePolicies = () => {
 };
 
 watchEffect(preparePolicies);
+
+const { overrideMainContainerClass } = useBodyLayoutContext();
+
+overrideMainContainerClass("!py-0");
 </script>

@@ -1,32 +1,69 @@
 <template>
-  <div class="w-full space-y-6">
-    <div class="divide-y divide-block-border space-y-6">
-      <ProjectGeneralSettingPanel
-        ref="projectGeneralSettingPanelRef"
-        :project="project"
-        :allow-edit="allowEdit"
-      />
-      <ProjectSecuritySettingPanel
-        ref="projectSecuritySettingPanelRef"
-        :project="project"
-        :allow-edit="allowEdit"
-      />
-      <ProjectIssueRelatedSettingPanel
-        v-if="databaseChangeMode === DatabaseChangeMode.PIPELINE"
-        ref="projectIssueRelatedSettingPanelRef"
-        :project="project"
-        :allow-edit="allowEdit"
-      />
+  <div class="w-full space-y-0 pt-4">
+    <div class="divide-y divide-block-border">
+      <!-- General Settings Section -->
+      <div class="pb-6 lg:flex">
+        <div class="text-left lg:w-1/4">
+          <h1 class="text-2xl font-bold">
+            {{ $t("common.general") }}
+          </h1>
+        </div>
+        <div class="flex-1 mt-4 lg:px-4 lg:mt-0">
+          <ProjectGeneralSettingPanel
+            ref="projectGeneralSettingPanelRef"
+            :project="project"
+            :allow-edit="allowEdit"
+          />
+        </div>
+      </div>
+
+      <!-- Security Settings Section -->
+      <div class="py-6 lg:flex">
+        <div class="text-left lg:w-1/4">
+          <h1 class="text-2xl font-bold">
+            {{ $t("settings.sidebar.security-and-policy") }}
+          </h1>
+        </div>
+        <div class="flex-1 mt-4 lg:px-4 lg:mt-0">
+          <ProjectSecuritySettingPanel
+            ref="projectSecuritySettingPanelRef"
+            :project="project"
+            :allow-edit="allowEdit"
+          />
+        </div>
+      </div>
+
+      <!-- Issue Related Settings Section (Pipeline mode only) -->
       <div
         v-if="databaseChangeMode === DatabaseChangeMode.PIPELINE"
-        class="pt-4"
+        class="py-6 lg:flex"
+      >
+        <div class="text-left lg:w-1/4">
+          <h1 class="text-2xl font-bold">
+            {{ $t("project.settings.issue-related.self") }}
+          </h1>
+        </div>
+        <div class="flex-1 mt-4 lg:px-4 lg:mt-0">
+          <ProjectIssueRelatedSettingPanel
+            ref="projectIssueRelatedSettingPanelRef"
+            :project="project"
+            :allow-edit="allowEdit"
+          />
+        </div>
+      </div>
+
+      <!-- Archive/Restore Section (Pipeline mode only) -->
+      <div
+        v-if="databaseChangeMode === DatabaseChangeMode.PIPELINE"
+        class="py-6 lg:flex"
       >
         <ProjectArchiveRestoreButton :project="project" />
       </div>
 
+      <!-- Save/Cancel buttons -->
       <div v-if="allowEdit && isDirty" class="sticky bottom-0 z-10">
         <div
-          class="flex justify-between w-full pt-4 border-block-border bg-white"
+          class="flex justify-between w-full py-4 border-block-border bg-white"
         >
           <NButton @click.prevent="onRevert">
             {{ $t("common.cancel") }}
