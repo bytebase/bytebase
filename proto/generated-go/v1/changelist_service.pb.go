@@ -459,9 +459,7 @@ type Changelist_Change struct {
 	// The source of origin.
 	// 1) changelog: instances/{instance}/databases/{database}/changelogs/{changelog}.
 	// 2) raw SQL if empty.
-	Source string `protobuf:"bytes,2,opt,name=source,proto3" json:"source,omitempty"`
-	// The migration version for a change.
-	Version       string `protobuf:"bytes,3,opt,name=version,proto3" json:"version,omitempty"`
+	Source        string `protobuf:"bytes,2,opt,name=source,proto3" json:"source,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -510,13 +508,6 @@ func (x *Changelist_Change) GetSource() string {
 	return ""
 }
 
-func (x *Changelist_Change) GetVersion() string {
-	if x != nil {
-		return x.Version
-	}
-	return ""
-}
-
 var File_v1_changelist_service_proto protoreflect.FileDescriptor
 
 const file_v1_changelist_service_proto_rawDesc = "" +
@@ -549,7 +540,7 @@ const file_v1_changelist_service_proto_rawDesc = "" +
 	"updateMask\"O\n" +
 	"\x17DeleteChangelistRequest\x124\n" +
 	"\x04name\x18\x01 \x01(\tB \xe2A\x01\x02\xfaA\x19\n" +
-	"\x17bytebase.com/ChangelistR\x04name\"\x83\x03\n" +
+	"\x17bytebase.com/ChangelistR\x04name\"\xe9\x02\n" +
 	"\n" +
 	"Changelist\x12\x19\n" +
 	"\x04name\x18\x01 \x01(\tB\x05\xe2A\x02\x02\x05R\x04name\x12 \n" +
@@ -557,11 +548,10 @@ const file_v1_changelist_service_proto_rawDesc = "" +
 	"\acreator\x18\x03 \x01(\tB\x04\xe2A\x01\x03R\acreator\x12A\n" +
 	"\vupdate_time\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampB\x04\xe2A\x01\x03R\n" +
 	"updateTime\x128\n" +
-	"\achanges\x18\a \x03(\v2\x1e.bytebase.v1.Changelist.ChangeR\achanges\x1aP\n" +
+	"\achanges\x18\a \x03(\v2\x1e.bytebase.v1.Changelist.ChangeR\achanges\x1a6\n" +
 	"\x06Change\x12\x14\n" +
 	"\x05sheet\x18\x01 \x01(\tR\x05sheet\x12\x16\n" +
-	"\x06source\x18\x02 \x01(\tR\x06source\x12\x18\n" +
-	"\aversion\x18\x03 \x01(\tR\aversion:I\xeaAF\n" +
+	"\x06source\x18\x02 \x01(\tR\x06source:I\xeaAF\n" +
 	"\x17bytebase.com/Changelist\x12+projects/{project}/changelists/{changelist}2\x8f\a\n" +
 	"\x11ChangelistService\x12\xbb\x01\n" +
 	"\x10CreateChangelist\x12$.bytebase.v1.CreateChangelistRequest\x1a\x17.bytebase.v1.Changelist\"h\xdaA\x11parent,changelist\x8a\xea0\x15bb.changelists.create\x90\xea0\x01\x82\xd3\xe4\x93\x021:\n" +

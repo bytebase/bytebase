@@ -152,7 +152,6 @@ const doAddChange = async () => {
           ChangelogView.CHANGELOG_VIEW_FULL
         );
         setSheetStatement(sheet, changelog?.statement || "");
-        change.version = changelog?.version || "";
       }
       const created = await localSheetStore.saveLocalSheetToRemote(sheet);
       change.sheet = created.name;
@@ -160,10 +159,7 @@ const doAddChange = async () => {
 
     const sourceType = getChangelistChangeSourceType(change);
     if (sourceType === "CHANGELOG") {
-      const changelog = await useChangelogStore().getOrFetchChangelogByName(
-        change.source
-      );
-      change.version = changelog?.version || "";
+      await useChangelogStore().getOrFetchChangelogByName(change.source);
     }
     return change;
   };

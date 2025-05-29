@@ -8686,9 +8686,6 @@ components:
                         The source of origin.
                          1) changelog: instances/{instance}/databases/{database}/changelogs/{changelog}.
                          2) raw SQL if empty.
-                version:
-                    type: string
-                    description: The migration version for a change.
         Changelog:
             type: object
             properties:
