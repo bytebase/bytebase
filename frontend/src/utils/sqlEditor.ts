@@ -23,7 +23,6 @@ import {
 import {
   DataSourceType,
   type InstanceResource,
-  type DataSource,
 } from "@/types/proto/v1/instance_service";
 import {
   DataSourceQueryPolicy_Restriction,
@@ -196,22 +195,6 @@ export const getAdminDataSourceRestrictionOfDatabase = (
   };
 };
 
-const getDataSourceIdByType = (
-  dataSource: {
-    admin: DataSource;
-    readonly: DataSource[];
-  },
-  type?: QueryDataSourceType
-) => {
-  switch (type) {
-    case DataSourceType.ADMIN:
-      return dataSource.admin.id;
-    default:
-      // try to use read-only data source first.
-      return head(dataSource.readonly)?.id ?? dataSource.admin.id;
-  }
-};
-
 const getDataSourceBehavior = (database: ComposedDatabase) => {
   const restriction = getAdminDataSourceRestrictionOfDatabase(database);
   let behavior: "RO" | "FALLBACK" | "ALLOW_ADMIN";
@@ -233,8 +216,7 @@ const getDataSourceBehavior = (database: ComposedDatabase) => {
   return behavior;
 };
 
-export const ensureDataSourceSelection = (
-  current: string | undefined,
+export const getValidDataSourceByPolicy = (
   database: ComposedDatabase,
   type?: QueryDataSourceType
 ) => {
@@ -248,37 +230,20 @@ export const ensureDataSourceSelection = (
   const behavior = getDataSourceBehavior(database);
 
   switch (behavior) {
-    case "ALLOW_ADMIN": {
-      // ALLOW_ADMIN means no policy restriction.
-      if (current) {
-        return current;
-      }
-      return getDataSourceIdByType(
-        { admin: adminDataSource, readonly: readonlyDataSources },
-        type
-      );
-    }
+    case "ALLOW_ADMIN":
+    // ALLOW_ADMIN means no policy restriction.
     case "FALLBACK": {
       // FALLBACK means try to use read-only data source, it can also accept admin data source if no read-only data source exists.
-      if (
-        current &&
-        (current !== adminDataSource.id || readonlyDataSources.length === 0)
-      ) {
-        return current;
+      switch (type) {
+        case DataSourceType.ADMIN:
+          return adminDataSource.id;
+        default:
+          // try to use read-only data source first.
+          return head(readonlyDataSources)?.id ?? adminDataSource.id;
       }
-      return getDataSourceIdByType(
-        { admin: adminDataSource, readonly: readonlyDataSources },
-        type
-      );
     }
     case "RO": {
       // RO only accept the read-only data source.
-      if (
-        current &&
-        readonlyDataSources.findIndex((ds) => ds.id === current) >= 0
-      ) {
-        return current;
-      }
       return head(readonlyDataSources)?.id;
     }
   }
