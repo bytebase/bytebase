@@ -169,7 +169,7 @@
                 flw.GoodsGid DESC OFFSET @SkipCount ROWS FETCH NEXT @MaxResultCount ROWS ONLY;
     END;
     GO
-  description: Sanitize user script#2
+  description: Sanitized user script#2
   batches:
   - statements: USE [smp_inv]
     command: GO 1
@@ -404,7 +404,7 @@
       return 0
 
     GO
-  description: Sanitize user script#1
+  description: Sanitized user script#1
   batches:
   - statements: USE [run]
     command: GO 1

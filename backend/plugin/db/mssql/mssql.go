@@ -185,7 +185,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 
 	totalAffectRows := int64(0)
 
-	batch := NewBatch(statement)
+	batch := tsqlbatch.NewBatcher(statement)
 
 	for idx := 0; ; {
 		command, err := batch.Next()
@@ -279,7 +279,7 @@ func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string
 	// Special handling for EXPLAIN queries in MSSQL is now integrated into queryBatch
 
 	// Regular query processing (unchanged)
-	batch := NewBatch(statement)
+	batch := tsqlbatch.NewBatcher(statement)
 	var results []*v1pb.QueryResult
 	for {
 		command, err := batch.Next()
@@ -524,18 +524,4 @@ func getNextResultSetIdx(s []stmtType, beginIdx int) int {
 		}
 	}
 	return len(s)
-}
-
-func NewBatch(statement string) *tsqlbatch.Batcher {
-	// Split to batches to support some client commands like GO.
-	s := strings.Split(statement, "\n")
-	scanner := func() (string, error) {
-		if len(s) > 0 {
-			z := s[0]
-			s = s[1:]
-			return z, nil
-		}
-		return "", io.EOF
-	}
-	return tsqlbatch.NewBatcher(scanner)
 }

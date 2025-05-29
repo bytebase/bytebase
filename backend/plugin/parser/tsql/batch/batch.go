@@ -2,8 +2,10 @@ package batch
 
 import (
 	"fmt"
+	"io"
 	"regexp"
 	"strconv"
+	"strings"
 )
 
 /*
@@ -17,6 +19,15 @@ const (
 	// minCapIncrease is the minimum number of bytes to grow the buffer by.
 	minCapIncrease = 512
 )
+
+// Batch is a batch of Transact-SQL statements.
+type Batch struct {
+	Text string
+	// Inclusive start position of the batch in the original script, starting from 0 and calculated by byte offset.
+	Start int
+	// Exclusive end position of the batch in the original script, starting from 0 and calculated by byte offset.
+	End int
+}
 
 type Command interface {
 	// String returns the string representation of the command.
@@ -77,11 +88,29 @@ func buildGoCommand(input string) Command {
 	}
 }
 
-type Scan func() (string, error)
+type scan func() (string, error)
+
+func newDefaultScan(statement string) scan {
+	// Split the statement into lines to support some client commands like GO.
+	s := strings.Split(statement, "\n")
+	scanner := func() (string, error) {
+		if len(s) > 0 {
+			z := s[0]
+			s = s[1:]
+			// if len(s) > 0 {
+			// 	// Add "\n" back to the end of the line to preserve the original statement format.
+			// 	return z + "\n", nil
+			// }
+			return z, nil
+		}
+		return "", io.EOF
+	}
+	return scanner
+}
 
 type Batcher struct {
 	// read provides the next chunk of runes.
-	read Scan
+	read scan
 	// buffer is the current batch text.
 	buffer []rune
 	// length is the length of the statement.
@@ -97,9 +126,10 @@ type Batcher struct {
 }
 
 // NewBatcher returns a new Batch.
-func NewBatcher(read Scan) *Batcher {
+func NewBatcher(statement string) *Batcher {
+	scanner := newDefaultScan(statement)
 	return &Batcher{
-		read: read,
+		read: scanner,
 	}
 }
 
