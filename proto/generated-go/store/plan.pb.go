@@ -358,6 +358,10 @@ type PlanConfig_ChangeDatabaseConfig struct {
 	// Format: instances/{instance-id}/databases/{database-name}.
 	// Format: projects/{project}/databaseGroups/{databaseGroup}.
 	Target string `protobuf:"bytes,1,opt,name=target,proto3" json:"target,omitempty"`
+	// The list of targets.
+	// Multi-database format: [instances/{instance-id}/databases/{database-name}].
+	// Single database group format: [projects/{project}/databaseGroups/{databaseGroup}].
+	Targets []string `protobuf:"bytes,10,rep,name=targets,proto3" json:"targets,omitempty"`
 	// The resource name of the sheet.
 	// Format: projects/{project}/sheets/{sheet}
 	Sheet string `protobuf:"bytes,2,opt,name=sheet,proto3" json:"sheet,omitempty"`
@@ -407,6 +411,13 @@ func (x *PlanConfig_ChangeDatabaseConfig) GetTarget() string {
 		return x.Target
 	}
 	return ""
+}
+
+func (x *PlanConfig_ChangeDatabaseConfig) GetTargets() []string {
+	if x != nil {
+		return x.Targets
+	}
+	return nil
 }
 
 func (x *PlanConfig_ChangeDatabaseConfig) GetSheet() string {
@@ -631,7 +642,7 @@ var File_store_plan_proto protoreflect.FileDescriptor
 
 const file_store_plan_proto_rawDesc = "" +
 	"\n" +
-	"\x10store/plan.proto\x12\x0ebytebase.store\x1a\x1fgoogle/api/field_behavior.proto\x1a\x12store/common.proto\x1a\x1astore/plan_check_run.proto\"\xe2\r\n" +
+	"\x10store/plan.proto\x12\x0ebytebase.store\x1a\x1fgoogle/api/field_behavior.proto\x1a\x12store/common.proto\x1a\x1astore/plan_check_run.proto\"\xfc\r\n" +
 	"\n" +
 	"PlanConfig\x125\n" +
 	"\x05specs\x18\x01 \x03(\v2\x1f.bytebase.store.PlanConfig.SpecR\x05specs\x12E\n" +
@@ -652,9 +663,11 @@ const file_store_plan_proto_rawDesc = "" +
 	"\tcollation\x18\x05 \x01(\tB\x04\xe2A\x01\x01R\tcollation\x12\x1e\n" +
 	"\acluster\x18\x06 \x01(\tB\x04\xe2A\x01\x01R\acluster\x12\x1a\n" +
 	"\x05owner\x18\a \x01(\tB\x04\xe2A\x01\x01R\x05owner\x12&\n" +
-	"\venvironment\x18\t \x01(\tB\x04\xe2A\x01\x01R\venvironment\x1a\xb0\x04\n" +
+	"\venvironment\x18\t \x01(\tB\x04\xe2A\x01\x01R\venvironment\x1a\xca\x04\n" +
 	"\x14ChangeDatabaseConfig\x12\x16\n" +
-	"\x06target\x18\x01 \x01(\tR\x06target\x12\x14\n" +
+	"\x06target\x18\x01 \x01(\tR\x06target\x12\x18\n" +
+	"\atargets\x18\n" +
+	" \x03(\tR\atargets\x12\x14\n" +
 	"\x05sheet\x18\x02 \x01(\tR\x05sheet\x12\x18\n" +
 	"\arelease\x18\t \x01(\tR\arelease\x12H\n" +
 	"\x04type\x18\x03 \x01(\x0e24.bytebase.store.PlanConfig.ChangeDatabaseConfig.TypeR\x04type\x12`\n" +
