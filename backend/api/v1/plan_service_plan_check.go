@@ -72,12 +72,12 @@ func getPlanCheckRunsFromSpec(ctx context.Context, s *store.Store, plan *store.P
 		// TODO(p0ny): implement
 	case *storepb.PlanConfig_Spec_ChangeDatabaseConfig:
 		// Filtered using scheduledDatabase for ChangeDatabase specs.
-		if _, _, err := common.GetInstanceDatabaseID(config.ChangeDatabaseConfig.Target); err == nil {
-			return getPlanCheckRunsFromChangeDatabaseConfigDatabaseTarget(ctx, s, plan, config.ChangeDatabaseConfig)
+		if len(config.ChangeDatabaseConfig.Targets) == 1 {
+			if _, _, err := common.GetProjectIDDatabaseGroupID(config.ChangeDatabaseConfig.Targets[0]); err == nil {
+				return getPlanCheckRunsFromChangeDatabaseConfigDatabaseGroupTarget(ctx, s, plan, config.ChangeDatabaseConfig)
+			}
 		}
-		if _, _, err := common.GetProjectIDDatabaseGroupID(config.ChangeDatabaseConfig.Target); err == nil {
-			return getPlanCheckRunsFromChangeDatabaseConfigDatabaseGroupTarget(ctx, s, plan, config.ChangeDatabaseConfig)
-		}
+		return getPlanCheckRunsFromChangeDatabaseConfigDatabaseTarget(ctx, s, plan, config.ChangeDatabaseConfig)
 	case *storepb.PlanConfig_Spec_ExportDataConfig:
 		if _, _, err := common.GetInstanceDatabaseID(config.ExportDataConfig.Target); err == nil {
 			return getPlanCheckRunsFromExportDataConfigDatabaseTarget(ctx, s, plan, config.ExportDataConfig)
@@ -95,10 +95,13 @@ func getPlanCheckRunsFromChangeDatabaseConfigDatabaseGroupTarget(ctx context.Con
 	default:
 		return nil, errors.Errorf("unsupported change database config type %q for database group target", config.Type)
 	}
-
-	projectID, databaseGroupID, err := common.GetProjectIDDatabaseGroupID(config.Target)
+	if len(config.Targets) != 1 {
+		return nil, errors.Errorf("change database config with database group target must have exactly one target, but got %d targets", len(config.Targets))
+	}
+	target := config.Targets[0]
+	projectID, databaseGroupID, err := common.GetProjectIDDatabaseGroupID(target)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get project id and database group id from target %q", config.Target)
+		return nil, errors.Wrapf(err, "failed to get project id and database group id from target %q", target)
 	}
 
 	_, sheetUID, err := common.GetProjectResourceIDSheetUID(config.Sheet)
@@ -148,37 +151,44 @@ func getPlanCheckRunsFromChangeDatabaseConfigDatabaseGroupTarget(ctx context.Con
 }
 
 func getPlanCheckRunsFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s *store.Store, plan *store.PlanMessage, config *storepb.PlanConfig_ChangeDatabaseConfig) ([]*store.PlanCheckRunMessage, error) {
-	instanceID, databaseName, err := common.GetInstanceDatabaseID(config.Target)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get instance and database from target %q", config.Target)
-	}
-	instance, err := s.GetInstanceV2(ctx, &store.FindInstanceMessage{
-		ResourceID: &instanceID,
-	})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get instance %q", instanceID)
-	}
-	if instance == nil {
-		return nil, errors.Errorf("instance %q not found", instanceID)
-	}
-	database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-		InstanceID:      &instanceID,
-		DatabaseName:    &databaseName,
-		IsCaseSensitive: store.IsObjectCaseSensitive(instance),
-	})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get database %q", databaseName)
-	}
-	if database == nil {
-		return nil, errors.Errorf("database %q not found", databaseName)
-	}
-
 	_, sheetUID, err := common.GetProjectResourceIDSheetUID(config.Sheet)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get sheet id from sheet name %q", config.Sheet)
 	}
 
-	return getPlanCheckRunsFromChangeDatabaseConfigForDatabase(ctx, s, plan, config, sheetUID, database)
+	var checks []*store.PlanCheckRunMessage
+	for _, target := range config.Targets {
+		instanceID, databaseName, err := common.GetInstanceDatabaseID(target)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get instance and database from target %q", target)
+		}
+		instance, err := s.GetInstanceV2(ctx, &store.FindInstanceMessage{
+			ResourceID: &instanceID,
+		})
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get instance %q", instanceID)
+		}
+		if instance == nil {
+			return nil, errors.Errorf("instance %q not found", instanceID)
+		}
+		database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+			InstanceID:      &instanceID,
+			DatabaseName:    &databaseName,
+			IsCaseSensitive: store.IsObjectCaseSensitive(instance),
+		})
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get database %q", databaseName)
+		}
+		if database == nil {
+			return nil, errors.Errorf("database %q not found", databaseName)
+		}
+		v, err := getPlanCheckRunsFromChangeDatabaseConfigForDatabase(ctx, s, plan, config, sheetUID, database)
+		if err != nil {
+			return nil, err
+		}
+		checks = append(checks, v...)
+	}
+	return checks, nil
 }
 
 func getPlanCheckRunsFromChangeDatabaseConfigForDatabase(ctx context.Context, s *store.Store, plan *store.PlanMessage, config *storepb.PlanConfig_ChangeDatabaseConfig, sheetUID int, database *store.DatabaseMessage) ([]*store.PlanCheckRunMessage, error) {

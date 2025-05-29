@@ -957,9 +957,9 @@ func isChangeDatabasePlan(specs []*storepb.PlanConfig_Spec) bool {
 func GetPipelineCreate(ctx context.Context, s *store.Store, sheetManager *sheet.Manager, dbFactory *dbfactory.DBFactory, rolloutTitle string, specs []*storepb.PlanConfig_Spec, deployment *storepb.PlanConfig_Deployment /* nullable */, project *store.ProjectMessage) (*store.PipelineMessage, error) {
 	// Step 1 - transform database group specs.
 	// Others are untouched.
-	transformSpecs, err := transformDatabaseGroupSpecs(ctx, s, project, specs, deployment)
+	transformedSpecs, err := applyDatabaseGroupSpecTransformations(specs, deployment)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to transform database group specs")
+		return nil, errors.Wrap(err, "failed to apply database group spec transformations")
 	}
 
 	// Step 2 - list snapshot environments.
@@ -980,7 +980,7 @@ func GetPipelineCreate(ctx context.Context, s *store.Store, sheetManager *sheet.
 
 	// Step 3 - convert all task creates.
 	var taskCreates []*store.TaskMessage
-	for _, spec := range transformSpecs {
+	for _, spec := range transformedSpecs {
 		tcs, err := getTaskCreatesFromSpec(ctx, s, sheetManager, dbFactory, spec, project)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to get task creates from spec")
@@ -1000,7 +1000,7 @@ func GetPipelineCreate(ctx context.Context, s *store.Store, sheetManager *sheet.
 	}
 
 	// Step 5 - build tasks for each stage.
-	for _, spec := range transformSpecs {
+	for _, spec := range transformedSpecs {
 		tc, err := getTaskCreatesFromSpec(ctx, s, sheetManager, dbFactory, spec, project)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to get task creates from spec")
