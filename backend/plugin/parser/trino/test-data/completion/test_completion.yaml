@@ -1,267 +1,301 @@
-- input: |-
-    select count(1) from users where id 'invalid'; SELECT * FROM |
-    select * from orders where order_id like '%123';
+- description: Multiple statements
+  input: |-
+    select count(1) from t1 where id; SELECT * FROM |
+    select * from QRTZ_J0B_DETAILS qjd where J0B_NAME like '%gray';
   want:
-    - text: orders
-      type: TABLE
-      definition: catalog1.public.orders
+    - text: Company
+      type: DATABASE
+      definition: ""
       comment: ""
       priority: 0
-    - text: users
-      type: TABLE
-      definition: catalog1.public.users
+    - text: School
+      type: DATABASE
+      definition: ""
       comment: ""
       priority: 0
-    - text: active_users
-      type: VIEW
-      definition: catalog1.public.active_users
-      comment: ""
-      priority: 0
-- input: SELECT * FROM |
-  want:
-    - text: orders
-      type: TABLE
-      definition: catalog1.public.orders
-      comment: ""
-      priority: 0
-    - text: users
-      type: TABLE
-      definition: catalog1.public.users
-      comment: ""
-      priority: 0
-    - text: active_users
-      type: VIEW
-      definition: catalog1.public.active_users
-      comment: ""
-      priority: 0
-- input: SELECT | FROM users
-  want:
-    - text: '"timestamp"'
-      type: COLUMN
-      definition: catalog1.analytics.metrics | TIMESTAMP, NOT NULL
-      comment: ""
-      priority: 0
-    - text: '"value"'
-      type: COLUMN
-      definition: catalog1.analytics.metrics | DOUBLE, NOT NULL
-      comment: ""
-      priority: 0
-    - text: email
-      type: COLUMN
-      definition: catalog1.public.users | VARCHAR, NOT NULL
-      comment: ""
-      priority: 0
-    - text: id
-      type: COLUMN
-      definition: catalog1.public.orders | INT, NOT NULL
-      comment: ""
-      priority: 0
-    - text: id
-      type: COLUMN
-      definition: catalog1.public.users | INT, NOT NULL
-      comment: ""
-      priority: 0
-    - text: name
-      type: COLUMN
-      definition: catalog1.public.users | VARCHAR, NOT NULL
-      comment: ""
-      priority: 0
-    - text: total
-      type: COLUMN
-      definition: catalog1.public.orders | DECIMAL, NOT NULL
-      comment: ""
-      priority: 0
-    - text: user_id
-      type: COLUMN
-      definition: catalog1.analytics.metrics | INT, NOT NULL
-      comment: ""
-      priority: 0
-    - text: user_id
-      type: COLUMN
-      definition: catalog1.public.orders | INT, NOT NULL
-      comment: ""
-      priority: 0
-- input: SELECT * FROM catalog1.|
-  want:
-    - text: analytics
+    - text: MySchema
       type: SCHEMA
       definition: ""
       comment: ""
-    - text: public
+      priority: 0
+    - text: dbo
       type: SCHEMA
       definition: ""
       comment: ""
-- input: SELECT * FROM catalog1.public.|
-  want:
-    - text: orders
+      priority: 0
+    - text: Address
       type: TABLE
-      definition: catalog1.public.orders
+      definition: ""
       comment: ""
-    - text: users
+      priority: 0
+    - text: Employees
       type: TABLE
-      definition: catalog1.public.users
+      definition: ""
       comment: ""
-    - text: active_users
-      type: VIEW
-      definition: catalog1.public.active_users
-      comment: ""
-- input: SELECT * FROM analytics.|
+      priority: 0
+- description: Column alias can be used in order by clause
+  input: SELECT Id AS IdAlias, Name FROM Employees ORDER BY |;
   want:
-    - text: metrics
+    - text: EmployeeId
+      type: COLUMN
+      definition: Company.dbo.Address | int, NOT NULL
+      comment: ""
+      priority: 1
+    - text: Id
+      type: COLUMN
+      definition: Company.MySchema.SalaryLevel | int, NOT NULL
+      comment: ""
+      priority: 1
+    - text: Id
+      type: COLUMN
+      definition: Company.dbo.Employees | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: IdAlias
+      type: COLUMN
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: Name
+      type: COLUMN
+      definition: Company.dbo.Employees | varchar, NOT NULL
+      comment: ""
+      priority: 0
+    - text: SalaryUpBound
+      type: COLUMN
+      definition: Company.MySchema.SalaryLevel | int, NOT NULL
+      comment: ""
+      priority: 1
+    - text: Street
+      type: COLUMN
+      definition: Company.dbo.Address | varchar, NOT NULL
+      comment: ""
+      priority: 1
+    - text: Company
+      type: DATABASE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: School
+      type: DATABASE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: MySchema
+      type: SCHEMA
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: dbo
+      type: SCHEMA
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: Address
       type: TABLE
-      definition: catalog1.analytics.metrics
+      definition: ""
       comment: ""
-- input: SELECT * FROM catalog2.test.|
-  want:
-    - text: external_data
+      priority: 0
+    - text: Employees
       type: TABLE
-      definition: catalog2.test.external_data
-      comment: ""
-- input: SELECT u.| FROM users u
-  want:
-    - text: id
-      type: COLUMN
-      definition: catalog1.public.users | INT, NOT NULL
-      comment: ""
-    - text: name
-      type: COLUMN
-      definition: catalog1.public.users | VARCHAR, NOT NULL
-      comment: ""
-    - text: email
-      type: COLUMN
-      definition: catalog1.public.users | VARCHAR, NOT NULL
-      comment: ""
-- input: WITH x(x1, x2) AS (SELECT id, name FROM users) SELECT x.| FROM x;
-  want:
-    - text: x1
-      type: COLUMN
       definition: ""
       comment: ""
-    - text: x2
+      priority: 0
+- description: Table alias referenced by select item
+  input: SELECT tableAlias.| FROM Employees AS tableAlias;
+  want:
+    - text: Id
       type: COLUMN
+      definition: Company.dbo.Employees | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: Name
+      type: COLUMN
+      definition: Company.dbo.Employees | varchar, NOT NULL
+      comment: ""
+      priority: 0
+- description: Full column name
+  input: SELECT | FROM Employees;
+  want:
+    - text: EmployeeId
+      type: COLUMN
+      definition: Company.dbo.Address | int, NOT NULL
+      comment: ""
+      priority: 1
+    - text: Id
+      type: COLUMN
+      definition: Company.MySchema.SalaryLevel | int, NOT NULL
+      comment: ""
+      priority: 1
+    - text: Id
+      type: COLUMN
+      definition: Company.dbo.Employees | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: Name
+      type: COLUMN
+      definition: Company.dbo.Employees | varchar, NOT NULL
+      comment: ""
+      priority: 0
+    - text: SalaryUpBound
+      type: COLUMN
+      definition: Company.MySchema.SalaryLevel | int, NOT NULL
+      comment: ""
+      priority: 1
+    - text: Street
+      type: COLUMN
+      definition: Company.dbo.Address | varchar, NOT NULL
+      comment: ""
+      priority: 1
+    - text: Company
+      type: DATABASE
       definition: ""
       comment: ""
-- input: WITH x(x1, x2) AS (SELECT id, name FROM users) SELECT | FROM x;
-  want:
-    - text: '"timestamp"'
-      type: COLUMN
-      definition: catalog1.analytics.metrics | TIMESTAMP, NOT NULL
-      comment: ""
       priority: 0
-    - text: '"value"'
-      type: COLUMN
-      definition: catalog1.analytics.metrics | DOUBLE, NOT NULL
-      comment: ""
-      priority: 0
-    - text: email
-      type: COLUMN
-      definition: catalog1.public.users | VARCHAR, NOT NULL
-      comment: ""
-      priority: 0
-    - text: id
-      type: COLUMN
-      definition: catalog1.public.orders | INT, NOT NULL
-      comment: ""
-      priority: 0
-    - text: id
-      type: COLUMN
-      definition: catalog1.public.users | INT, NOT NULL
-      comment: ""
-      priority: 0
-    - text: name
-      type: COLUMN
-      definition: catalog1.public.users | VARCHAR, NOT NULL
-      comment: ""
-      priority: 0
-    - text: total
-      type: COLUMN
-      definition: catalog1.public.orders | DECIMAL, NOT NULL
-      comment: ""
-      priority: 0
-    - text: user_id
-      type: COLUMN
-      definition: catalog1.analytics.metrics | INT, NOT NULL
-      comment: ""
-      priority: 0
-    - text: user_id
-      type: COLUMN
-      definition: catalog1.public.orders | INT, NOT NULL
-      comment: ""
-      priority: 0
-- input: SELECT catalog1.public.users.|
-  want:
-    - text: id
-      type: COLUMN
-      definition: catalog1.public.users | INT, NOT NULL
-      comment: ""
-    - text: name
-      type: COLUMN
-      definition: catalog1.public.users | VARCHAR, NOT NULL
-      comment: ""
-    - text: email
-      type: COLUMN
-      definition: catalog1.public.users | VARCHAR, NOT NULL
-      comment: ""
-- input: SELECT id as user_id FROM users ORDER BY |
-  want:
-    - text: id
-      type: COLUMN
-      definition: catalog1.public.users | INT, NOT NULL
-      comment: ""
-    - text: name
-      type: COLUMN
-      definition: catalog1.public.users | VARCHAR, NOT NULL
-      comment: ""
-    - text: email
-      type: COLUMN
-      definition: catalog1.public.users | VARCHAR, NOT NULL
-      comment: ""
-    - text: user_id
-      type: COLUMN
+    - text: School
+      type: DATABASE
       definition: ""
       comment: ""
-- input: SELECT * FROM users JOIN |
-  want:
-    - text: orders
+      priority: 0
+    - text: MySchema
+      type: SCHEMA
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: dbo
+      type: SCHEMA
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: Address
       type: TABLE
-      definition: catalog1.public.orders
+      definition: ""
       comment: ""
       priority: 0
-    - text: users
+    - text: Employees
       type: TABLE
-      definition: catalog1.public.users
+      definition: ""
       comment: ""
       priority: 0
-    - text: active_users
-      type: VIEW
-      definition: catalog1.public.active_users
-      comment: ""
-      priority: 0
-- input: '|'
+- description: Asterisk appearred in select item list
+  input: WITH MyCTE_01 AS (SELECT * FROM dbo.Employees) SELECT |.* FROM MyCTE_01 JOIN dbo.Address ON MyCTE_01.EmployeeID = dbo.Address.EmployeeID
   want:
-    - text: ALTER
-      type: KEYWORD
+    - text: EmployeeId
+      type: COLUMN
+      definition: Company.dbo.Address | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: Id
+      type: COLUMN
+      definition: Company.MySchema.SalaryLevel | int, NOT NULL
+      comment: ""
+      priority: 1
+    - text: Id
+      type: COLUMN
+      definition: Company.dbo.Employees | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: Name
+      type: COLUMN
+      definition: Company.dbo.Employees | varchar, NOT NULL
+      comment: ""
+      priority: 0
+    - text: SalaryUpBound
+      type: COLUMN
+      definition: Company.MySchema.SalaryLevel | int, NOT NULL
+      comment: ""
+      priority: 1
+    - text: Street
+      type: COLUMN
+      definition: Company.dbo.Address | varchar, NOT NULL
+      comment: ""
+      priority: 0
+    - text: Company
+      type: DATABASE
       definition: ""
       comment: ""
       priority: 0
-    - text: CREATE
-      type: KEYWORD
+    - text: School
+      type: DATABASE
       definition: ""
       comment: ""
       priority: 0
-    - text: DROP
-      type: KEYWORD
+    - text: MySchema
+      type: SCHEMA
       definition: ""
       comment: ""
       priority: 0
-    - text: INSERT
-      type: KEYWORD
+    - text: dbo
+      type: SCHEMA
       definition: ""
       comment: ""
       priority: 0
-- input: SEL|
+    - text: Address
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: Employees
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: MyCTE_01
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+- description: Completion should not consider CTE if no schema specified
+  input: WITH MyCTE_01 AS (SELECT * FROM dbo.Employees) SELECT * FROM MySchema.|
   want:
-    - text: SELECT
-      type: KEYWORD
+    - text: SalaryLevel
+      type: TABLE
       definition: ""
       comment: ""
+      priority: 0
+- description: Completion table in specify schema
+  input: SELECT * FROM dbo.|
+  want:
+    - text: Address
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: Employees
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+- description: Completion table for simple select
+  input: SELECT * FROM |
+  want:
+    - text: Company
+      type: DATABASE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: School
+      type: DATABASE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: MySchema
+      type: SCHEMA
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: dbo
+      type: SCHEMA
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: Address
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: Employees
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0

@@ -25,69 +25,69 @@ var (
 
 	globalFellowSetsByState = base.NewFollowSetsByState()
 	ignoredTokens           = map[int]bool{
-		// // Common EOF
-		// trinoparser.TrinoParserEOF: true,
+		// Common EOF
+		trinoparser.TrinoParserEOF: true,
 
 		// // Whitespace and comments
 		// trinoparser.TrinoLexerWS_:                true,
 		// trinoparser.TrinoLexerSIMPLE_COMMENT_:    true,
 		// trinoparser.TrinoLexerBRACKETED_COMMENT_: true,
 
-		// // Identifiers and literals
-		// trinoparser.TrinoLexerIDENTIFIER_:            true,
-		// trinoparser.TrinoLexerQUOTED_IDENTIFIER_:     true,
-		// trinoparser.TrinoLexerDIGIT_IDENTIFIER_:      true,
-		// trinoparser.TrinoLexerBACKQUOTED_IDENTIFIER_: true,
-		// trinoparser.TrinoLexerSTRING_:                true,
-		// trinoparser.TrinoLexerUNICODE_STRING_:        true,
-		// trinoparser.TrinoLexerDECIMAL_VALUE_:         true,
-		// trinoparser.TrinoLexerDOUBLE_VALUE_:          true,
-		// trinoparser.TrinoLexerINTEGER_VALUE_:         true,
-		// trinoparser.TrinoLexerBINARY_LITERAL_:        true,
+		// Identifiers and literals
+		trinoparser.TrinoLexerIDENTIFIER_:            true,
+		trinoparser.TrinoLexerQUOTED_IDENTIFIER_:     true,
+		trinoparser.TrinoLexerDIGIT_IDENTIFIER_:      true,
+		trinoparser.TrinoLexerBACKQUOTED_IDENTIFIER_: true,
+		trinoparser.TrinoLexerSTRING_:                true,
+		trinoparser.TrinoLexerUNICODE_STRING_:        true,
+		trinoparser.TrinoLexerDECIMAL_VALUE_:         true,
+		trinoparser.TrinoLexerDOUBLE_VALUE_:          true,
+		trinoparser.TrinoLexerINTEGER_VALUE_:         true,
+		trinoparser.TrinoLexerBINARY_LITERAL_:        true,
 
 		// // Type related tokens
 		// trinoparser.TrinoLexerDOUBLE_:    true,
 		// trinoparser.TrinoLexerPRECISION_: true,
 
-		// // Parameter token
-		// trinoparser.TrinoLexerQUESTION_MARK_: true,
+		// Parameter token
+		trinoparser.TrinoLexerQUESTION_MARK_: true,
 
-		// // Operators and punctuation
-		// trinoparser.TrinoLexerEQ_:           true,
-		// trinoparser.TrinoLexerNEQ_:          true,
-		// trinoparser.TrinoLexerLT_:           true,
-		// trinoparser.TrinoLexerLTE_:          true,
-		// trinoparser.TrinoLexerGT_:           true,
-		// trinoparser.TrinoLexerGTE_:          true,
-		// trinoparser.TrinoLexerPLUS_:         true,
-		// trinoparser.TrinoLexerMINUS_:        true,
-		trinoparser.TrinoLexerASTERISK_: true,
-		// trinoparser.TrinoLexerSLASH_:        true,
-		// trinoparser.TrinoLexerPERCENT_:      true,
-		// trinoparser.TrinoLexerCONCAT_:       true,
-		// trinoparser.TrinoLexerDOT_:          true,
-		// trinoparser.TrinoLexerCOLON_:        true,
-		// trinoparser.TrinoLexerSEMICOLON_:    true,
-		// trinoparser.TrinoLexerCOMMA_:        true,
-		// trinoparser.TrinoLexerLPAREN_:       true,
-		// trinoparser.TrinoLexerRPAREN_:       true,
-		// trinoparser.TrinoLexerLSQUARE_:      true,
-		// trinoparser.TrinoLexerRSQUARE_:      true,
-		// trinoparser.TrinoLexerLCURLY_:       true,
-		// trinoparser.TrinoLexerRCURLY_:       true,
-		// trinoparser.TrinoLexerLCURLYHYPHEN_: true,
-		// trinoparser.TrinoLexerRCURLYHYPHEN_: true,
-		// trinoparser.TrinoLexerLARROW_:       true,
-		// trinoparser.TrinoLexerRARROW_:       true,
-		// trinoparser.TrinoLexerRDOUBLEARROW_: true,
-		// trinoparser.TrinoLexerVBAR_:         true,
-		// trinoparser.TrinoLexerDOLLAR_:       true,
-		// trinoparser.TrinoLexerCARET_:        true,
-		// trinoparser.TrinoLexerAT_:           true,
+		// Operators and punctuation
+		trinoparser.TrinoLexerEQ_:           true,
+		trinoparser.TrinoLexerNEQ_:          true,
+		trinoparser.TrinoLexerLT_:           true,
+		trinoparser.TrinoLexerLTE_:          true,
+		trinoparser.TrinoLexerGT_:           true,
+		trinoparser.TrinoLexerGTE_:          true,
+		trinoparser.TrinoLexerPLUS_:         true,
+		trinoparser.TrinoLexerMINUS_:        true,
+		trinoparser.TrinoLexerASTERISK_:     true,
+		trinoparser.TrinoLexerSLASH_:        true,
+		trinoparser.TrinoLexerPERCENT_:      true,
+		trinoparser.TrinoLexerCONCAT_:       true,
+		trinoparser.TrinoLexerDOT_:          true,
+		trinoparser.TrinoLexerCOLON_:        true,
+		trinoparser.TrinoLexerSEMICOLON_:    true,
+		trinoparser.TrinoLexerCOMMA_:        true,
+		trinoparser.TrinoLexerLPAREN_:       true,
+		trinoparser.TrinoLexerRPAREN_:       true,
+		trinoparser.TrinoLexerLSQUARE_:      true,
+		trinoparser.TrinoLexerRSQUARE_:      true,
+		trinoparser.TrinoLexerLCURLY_:       true,
+		trinoparser.TrinoLexerRCURLY_:       true,
+		trinoparser.TrinoLexerLCURLYHYPHEN_: true,
+		trinoparser.TrinoLexerRCURLYHYPHEN_: true,
+		trinoparser.TrinoLexerLARROW_:       true,
+		trinoparser.TrinoLexerRARROW_:       true,
+		trinoparser.TrinoLexerRDOUBLEARROW_: true,
+		trinoparser.TrinoLexerVBAR_:         true,
+		trinoparser.TrinoLexerDOLLAR_:       true,
+		trinoparser.TrinoLexerCARET_:        true,
+		trinoparser.TrinoLexerAT_:           true,
 	}
 	preferredRules = map[int]bool{
-		trinoparser.TrinoParserRULE_identifier:    true, // full_column_name
-		trinoparser.TrinoParserRULE_qualifiedName: true, // full_table_name
+		trinoparser.TrinoParserRULE_identifier:    true,
+		trinoparser.TrinoParserRULE_qualifiedName: true,
 	}
 )
 
@@ -110,16 +110,6 @@ func (m CompletionMap) toSlice() []base.Candidate {
 	})
 	return result
 }
-
-// // insertFunctions inserts the built-in functions into the completion map.
-// func (m CompletionMap) insertBuiltinFunctions() {
-// 	for key := range trinoBuiltinFunctionsMap {
-// 		m[key] = base.Candidate{
-// 			Type: base.CandidateTypeFunction,
-// 			Text: key + "()",
-// 		}
-// 	}
-// }
 
 func (m CompletionMap) insertMetadataCatalogs(c *Completer) {
 	if c.defaultCatalog != "" {
@@ -471,6 +461,7 @@ type Completer struct {
 }
 
 func Completion(ctx context.Context, cCtx base.CompletionContext, statement string, caretLine int, caretOffset int) ([]base.Candidate, error) {
+	// Try standard completer first
 	completer := NewStandardCompleter(ctx, cCtx, statement, caretLine, caretOffset)
 	completer.fetchCommonTableExpression(statement)
 	result, err := completer.complete()
@@ -482,6 +473,7 @@ func Completion(ctx context.Context, cCtx base.CompletionContext, statement stri
 		return result, nil
 	}
 
+	// If no results, try tricky completer with skipHeadingSQLWithoutSemicolon
 	trickyCompleter := NewTrickyCompleter(ctx, cCtx, statement, caretLine, caretOffset)
 	trickyCompleter.fetchCommonTableExpression(statement)
 	return trickyCompleter.complete()
@@ -496,27 +488,32 @@ func NewStandardCompleter(ctx context.Context, cCtx base.CompletionContext, stat
 		&globalFellowSetsByState,
 		trinoparser.TrinoParserRULE_queryNoWith,
 		trinoparser.TrinoParserRULE_query,
-		// trinoparser.TrinoParserRULE_query,
-		// trinoparser.TrinoParserRULE_queryNoWith,
 		trinoparser.TrinoParserRULE_as_column_alias,
-		// trinoparser.TrinoParserRULE_with,
 		-1,
 	)
 
 	return &Completer{
-		ctx:                 ctx,
-		core:                core,
-		scene:               cCtx.Scene,
-		parser:              parser,
-		lexer:               lexer,
-		scanner:             scanner,
-		instanceID:          cCtx.InstanceID,
-		defaultCatalog:      cCtx.DefaultDatabase,
-		defaultSchema:       "dbo",
-		metadataGetter:      cCtx.Metadata,
-		catalogNamesLister:  cCtx.ListDatabaseNames,
-		noSeparatorRequired: nil,
-		cteCache:            nil,
+		ctx:                ctx,
+		core:               core,
+		scene:              cCtx.Scene,
+		parser:             parser,
+		lexer:              lexer,
+		scanner:            scanner,
+		instanceID:         cCtx.InstanceID,
+		defaultCatalog:     cCtx.DefaultDatabase,
+		defaultSchema:      "dbo",
+		metadataGetter:     cCtx.Metadata,
+		catalogNamesLister: cCtx.ListDatabaseNames,
+		noSeparatorRequired: map[int]bool{
+			trinoparser.TrinoLexerCOMMA_:     true,
+			trinoparser.TrinoLexerSEMICOLON_: true,
+			trinoparser.TrinoLexerDOT_:       true,
+			trinoparser.TrinoLexerLPAREN_:    true,
+			trinoparser.TrinoLexerRPAREN_:    true,
+			trinoparser.TrinoLexerLSQUARE_:   true,
+			trinoparser.TrinoLexerRSQUARE_:   true,
+		},
+		cteCache: nil,
 	}
 }
 
@@ -530,24 +527,31 @@ func NewTrickyCompleter(ctx context.Context, cCtx base.CompletionContext, statem
 		trinoparser.TrinoParserRULE_queryNoWith,
 		trinoparser.TrinoParserRULE_query,
 		trinoparser.TrinoParserRULE_as_column_alias,
-		// trinoparser.TrinoParserRULE_with,
 		-1,
 	)
 
 	return &Completer{
-		ctx:                 ctx,
-		core:                core,
-		scene:               cCtx.Scene,
-		parser:              parser,
-		lexer:               lexer,
-		scanner:             scanner,
-		instanceID:          cCtx.InstanceID,
-		defaultCatalog:      cCtx.DefaultDatabase,
-		defaultSchema:       "dbo",
-		metadataGetter:      cCtx.Metadata,
-		catalogNamesLister:  cCtx.ListDatabaseNames,
-		noSeparatorRequired: nil,
-		cteCache:            nil,
+		ctx:                ctx,
+		core:               core,
+		scene:              cCtx.Scene,
+		parser:             parser,
+		lexer:              lexer,
+		scanner:            scanner,
+		instanceID:         cCtx.InstanceID,
+		defaultCatalog:     cCtx.DefaultDatabase,
+		defaultSchema:      "dbo",
+		metadataGetter:     cCtx.Metadata,
+		catalogNamesLister: cCtx.ListDatabaseNames,
+		noSeparatorRequired: map[int]bool{
+			trinoparser.TrinoLexerCOMMA_:     true,
+			trinoparser.TrinoLexerSEMICOLON_: true,
+			trinoparser.TrinoLexerDOT_:       true,
+			trinoparser.TrinoLexerLPAREN_:    true,
+			trinoparser.TrinoLexerRPAREN_:    true,
+			trinoparser.TrinoLexerLSQUARE_:   true,
+			trinoparser.TrinoLexerRSQUARE_:   true,
+		},
+		cteCache: nil,
 	}
 }
 
@@ -567,7 +571,7 @@ func prepareParserAndScanner(statement string, caretLine int, caretOffset int) (
 
 func prepareTrickyParserAndScanner(statement string, caretLine int, caretOffset int) (*trinoparser.TrinoParser, *trinoparser.TrinoLexer, *base.Scanner) {
 	statement, caretLine, caretOffset = skipHeadingSQLs(statement, caretLine, caretOffset)
-	// statement, caretLine, caretOffset = skipHeadingSQLWithoutSemicolon(statement, caretLine, caretOffset)
+	statement, caretLine, caretOffset = skipHeadingSQLWithoutSemicolon(statement, caretLine, caretOffset)
 	input := antlr.NewInputStream(statement)
 	lexer := trinoparser.NewTrinoLexer(input)
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
@@ -580,38 +584,6 @@ func prepareTrickyParserAndScanner(statement string, caretLine int, caretOffset 
 	return parser, lexer, scanner
 }
 
-// // caretLine is 1-based and caretOffset is 0-based.
-// func skipHeadingSQLWithoutSemicolon(statement string, caretLine int, caretOffset int) (string, int, int) {
-// 	input := antlr.NewInputStream(statement)
-// 	lexer := trinoparser.NewTrinoLexer(input)
-// 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
-// 	lexer.RemoveErrorListeners()
-// 	lexerErrorListener := &base.ParseErrorListener{
-// 		Statement: statement,
-// 	}
-// 	lexer.AddErrorListener(lexerErrorListener)
-
-// 	stream.Fill()
-// 	tokens := stream.GetAllTokens()
-// 	latestSelect := 0
-// 	newCaretLine, newCaretOffset := caretLine, caretOffset
-// 	for _, token := range tokens {
-// 		if token.GetLine() > caretLine || (token.GetLine() == caretLine && token.GetColumn() >= caretOffset) {
-// 			break
-// 		}
-// 		if token.GetTokenType() == trinoparser.TrinoParserSELECT_ && token.GetColumn() == 0 {
-// 			latestSelect = token.GetTokenIndex()
-// 			newCaretLine = caretLine - token.GetLine() + 1 // convert to 1-based.
-// 			newCaretOffset = caretOffset
-// 		}
-// 	}
-
-// 	if latestSelect == 0 {
-// 		return statement, caretLine, caretOffset
-// 	}
-// 	return stream.GetTextFromInterval(antlr.NewInterval(latestSelect, stream.Size())), newCaretLine, newCaretOffset
-// }
-
 func (c *Completer) complete() ([]base.Candidate, error) {
 	if c.scanner.IsTokenType(trinoparser.TrinoParserQUOTED_IDENTIFIER_) {
 		c.caretTokenIsQuoted = quotedTypeQuote
@@ -619,13 +591,10 @@ func (c *Completer) complete() ([]base.Candidate, error) {
 
 	caretIndex := c.scanner.GetIndex()
 
-	// Initialize noSeparatorRequired to avoid nil map issues
-	if c.noSeparatorRequired == nil {
-		c.noSeparatorRequired = make(map[int]bool)
-	}
-
+	// Check if we need to adjust the caret position based on the previous token
+	adjustedCaretIndex := caretIndex
 	if caretIndex > 0 && !c.noSeparatorRequired[c.scanner.GetPreviousTokenType(true)] {
-		caretIndex--
+		adjustedCaretIndex--
 	}
 
 	c.referencesStack = append([][]base.TableReference{{}}, c.referencesStack...)
@@ -638,11 +607,26 @@ func (c *Completer) complete() ([]base.Candidate, error) {
 		context = c.parser.Parse()
 	}
 
-	candidates := c.core.CollectCandidates(caretIndex+1, context)
+	// For Trino, we need special handling because whitespace tokens are included
+	// We add 1 in most cases, but not when:
+	// 1. We're at the very beginning (caretIndex == 0)
+	// 2. We're right after an identifier that could be a partial keyword
+	finalCaretIndex := adjustedCaretIndex + 1
+
+	// Special cases where we don't add 1
+	if caretIndex == 0 {
+		// At the very beginning
+		finalCaretIndex = adjustedCaretIndex
+	} else if c.scanner.GetTokenType() == antlr.TokenEOF && c.scanner.GetPreviousTokenType(true) == trinoparser.TrinoLexerIDENTIFIER_ {
+		// At EOF right after an identifier (potential partial keyword)
+		finalCaretIndex = adjustedCaretIndex
+	}
+
+	candidates := c.core.CollectCandidates(finalCaretIndex, context)
 
 	for ruleName := range candidates.Rules {
 		if ruleName == trinoparser.TrinoParserRULE_identifier {
-			c.collectLeadingTableReferences(caretIndex)
+			c.collectLeadingTableReferences(adjustedCaretIndex)
 			c.takeReferencesSnapshot()
 			c.collectRemainingTableReferences()
 			c.takeReferencesSnapshot()
@@ -669,11 +653,16 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 		}
 
 		candidateText := c.parser.SymbolicNames[tokenCandidate]
+		// Remove trailing underscore from keywords in Trino parser
+		candidateText = strings.TrimSuffix(candidateText, "_")
+
 		for _, continuous := range continuous {
 			if continuous < 0 || continuous >= len(c.parser.SymbolicNames) {
 				continue
 			}
 			continuousText := c.parser.SymbolicNames[continuous]
+			// Remove trailing underscore from continuous tokens as well
+			continuousText = strings.TrimSuffix(continuousText, "_")
 			candidateText += " " + continuousText
 		}
 		keywordEntries.Insert(base.Candidate{
@@ -687,12 +676,8 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 		c.scanner.Push()
 
 		switch ruleCandidate {
-		// Handle built-in functions when appropriate
-		// case trinoparser.TrinoParserRULE_qualifiedName:
-		// 	functionEntries.insertBuiltinFunctions()
-
 		case trinoparser.TrinoParserRULE_qualifiedName:
-			// identifier also appears in the qualifiedName rule, we would handle it in the identifier rule in this case.
+			// identifier also appears in the qualifiedName rule, handle it separately
 			if len(ruleStack) > 0 && ruleStack[len(ruleStack)-1].ID == trinoparser.TrinoParserRULE_identifier {
 				continue
 			}
@@ -856,6 +841,9 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 	result = append(result, tableEntries.toSlice()...)
 	result = append(result, columnEntries.toSlice()...)
 	result = append(result, viewEntries.toSlice()...)
+	if result == nil {
+		result = []base.Candidate{}
+	}
 	return result, nil
 }
 
@@ -1151,7 +1139,7 @@ func skipHeadingSQLs(statement string, caretLine int, caretOffset int) (string, 
 	var buf strings.Builder
 	for i := start; i < len(list); i++ {
 		if _, err := buf.WriteString(list[i].Text); err != nil {
-			return statement, caretLine, caretOffset
+			return statement, caretLine + 1, caretOffset // Convert back to 1-based on error
 		}
 	}
 
@@ -1667,4 +1655,52 @@ func normalizeQualifiedNameFallback(ctx *trinoparser.QualifiedNameContext, _ str
 	}
 
 	return catalog, schema, table
+}
+
+// skipHeadingSQLWithoutSemicolon skips the heading SQL statements that don't end with semicolon,
+// by detecting SELECT at column 0. This is similar to TSQL's implementation.
+func skipHeadingSQLWithoutSemicolon(statement string, caretLine int, caretOffset int) (string, int, int) {
+	input := antlr.NewInputStream(statement)
+	lexer := trinoparser.NewTrinoLexer(input)
+	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
+	lexer.RemoveErrorListeners()
+	lexerErrorListener := &base.ParseErrorListener{
+		Statement: statement,
+	}
+	lexer.AddErrorListener(lexerErrorListener)
+
+	stream.Fill()
+	tokens := stream.GetAllTokens()
+	latestSelect := 0
+	newCaretLine, newCaretOffset := caretLine, caretOffset
+
+	for _, token := range tokens {
+		// We want to find SELECT statements that come BEFORE the caret position
+		// but we should skip the one we're currently in
+		if token.GetLine() > caretLine || (token.GetLine() == caretLine && token.GetColumn() >= caretOffset) {
+			break
+		}
+
+		if token.GetTokenType() == trinoparser.TrinoParserSELECT_ && token.GetColumn() == 0 {
+			latestSelect = token.GetTokenIndex()
+			newCaretLine = caretLine - token.GetLine() + 1 // convert to 1-based
+			// When we're on the same line as the SELECT, we need to adjust the offset
+			// by the position where we start extracting the substring
+			if token.GetLine() == caretLine {
+				// The token's column is where the SELECT starts in the original string
+				// We need to subtract this from the caret offset since we're extracting from this position
+				newCaretOffset = caretOffset - token.GetColumn()
+			} else {
+				newCaretOffset = caretOffset
+			}
+		}
+	}
+
+	if latestSelect == 0 {
+		return statement, caretLine, caretOffset
+	}
+
+	// Extract the substring starting from the SELECT token
+	result := stream.GetTextFromInterval(antlr.NewInterval(latestSelect, stream.Size()))
+	return result, newCaretLine, newCaretOffset
 }
