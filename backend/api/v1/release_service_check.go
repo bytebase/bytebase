@@ -142,24 +142,38 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, request *v1pb.CheckRe
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to list risks: %v", err)
 		}
+
+		// Collect all versions for batch fetching
+		versions := make([]string, 0, len(request.Release.Files))
+		for _, file := range request.Release.Files {
+			versions = append(versions, file.Version)
+		}
+
+		// Batch fetch all revisions for this database
+		revisions, err := s.store.ListRevisions(ctx, &store.FindRevisionMessage{
+			InstanceID:   &database.InstanceID,
+			DatabaseName: &database.DatabaseName,
+			Versions:     &versions,
+			ShowDeleted:  false,
+		})
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to list revisions: %v", err)
+		}
+
+		// Create a map for quick lookup
+		revisionMap := make(map[string]*store.RevisionMessage)
+		for _, revision := range revisions {
+			revisionMap[revision.Version] = revision
+		}
+
 		for _, file := range request.Release.Files {
 			if stopChecking {
 				break
 			}
 
 			// Check if file has been applied to database.
-			revisions, err := s.store.ListRevisions(ctx, &store.FindRevisionMessage{
-				InstanceID:   &database.InstanceID,
-				DatabaseName: &database.DatabaseName,
-				Version:      &file.Version,
-				ShowDeleted:  false,
-			})
-			if err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to list revisions: %v", err)
-			}
-			if len(revisions) > 0 {
+			if appliedRevision, ok := revisionMap[file.Version]; ok {
 				// Check if the SHA256 matches
-				appliedRevision := revisions[0]
 				if appliedRevision.Payload.SheetSha256 != file.SheetSha256 {
 					// Add a warning advice if SHA256 mismatch
 					checkResult := &v1pb.CheckReleaseResponse_CheckResult{
