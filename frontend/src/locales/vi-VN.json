@@ -1804,7 +1804,14 @@
       "batch": "Hàng loạt",
       "select-database-group": "Bạn có thể {select-database-group} để truy vấn hàng loạt",
       "description": "Truy vấn hàng loạt {database} cơ sở dữ liệu bổ sung và {group} nhóm cơ sở dữ liệu trong {project}.",
-      "show-or-hide-empty-query-results": "Hiển thị / ẩn kết quả truy vấn trống"
+      "show-or-hide-empty-query-results": "Hiển thị / ẩn kết quả truy vấn trống",
+      "select-data-source": {
+        "self": "Chọn nguồn dữ liệu cho lô",
+        "tooltip": "Sẽ tìm các nguồn dữ liệu có sẵn với chính sách hạn chế, sau đó áp dụng lựa chọn.",
+        "admin": "Quản trị viên",
+        "readonly": "Chỉ đọc",
+        "not-match": "Nguồn dữ liệu không khớp, mong đợi {expect} nhưng lại nhận được {actual}."
+      }
     },
     "execute-query": "Thực hiện truy vấn",
     "pending-query": "Đang chờ truy vấn",

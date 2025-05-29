@@ -12,6 +12,7 @@ import type {
   CoreSQLEditorTab,
   SQLEditorConnection,
   SQLEditorTab,
+  QueryDataSourceType,
 } from "@/types";
 import {
   DEFAULT_SQL_EDITOR_TAB_MODE,
@@ -22,6 +23,7 @@ import {
 import {
   DataSourceType,
   type InstanceResource,
+  type DataSource,
 } from "@/types/proto/v1/instance_service";
 import {
   DataSourceQueryPolicy_Restriction,
@@ -194,18 +196,24 @@ export const getAdminDataSourceRestrictionOfDatabase = (
   };
 };
 
-export const ensureDataSourceSelection = (
-  current: string | undefined,
-  database: ComposedDatabase
+const getDataSourceIdByType = (
+  dataSource: {
+    admin: DataSource;
+    readonly: DataSource[];
+  },
+  type?: QueryDataSourceType
 ) => {
-  const restriction = getAdminDataSourceRestrictionOfDatabase(database);
-  const adminDataSource = database.instanceResource.dataSources.find(
-    (ds) => ds.type === DataSourceType.ADMIN
-  )!;
-  const readonlyDataSources = database.instanceResource.dataSources.filter(
-    (ds) => ds.type === DataSourceType.READ_ONLY
-  );
+  switch (type) {
+    case DataSourceType.ADMIN:
+      return dataSource.admin.id;
+    default:
+      // try to use read-only data source first.
+      return head(dataSource.readonly)?.id ?? dataSource.admin.id;
+  }
+};
 
+const getDataSourceBehavior = (database: ComposedDatabase) => {
+  const restriction = getAdminDataSourceRestrictionOfDatabase(database);
   let behavior: "RO" | "FALLBACK" | "ALLOW_ADMIN";
   if (
     restriction.environmentPolicy ===
@@ -222,39 +230,56 @@ export const ensureDataSourceSelection = (
   } else {
     behavior = "ALLOW_ADMIN";
   }
+  return behavior;
+};
 
-  if (behavior === "ALLOW_ADMIN") {
-    if (current) {
-      return current;
-    }
-    return head(readonlyDataSources)?.id ?? adminDataSource.id;
-  }
-
-  if (behavior === "FALLBACK") {
-    if (
-      current &&
-      (current !== adminDataSource.id || readonlyDataSources.length === 0)
-    ) {
-      return current;
-    }
-    return head(readonlyDataSources)?.id ?? adminDataSource.id;
-  }
-
-  if (behavior === "RO") {
-    if (
-      current &&
-      readonlyDataSources.findIndex((ds) => ds.id === current) >= 0
-    ) {
-      return current;
-    }
-    return head(readonlyDataSources)?.id;
-  }
-  console.warn(
-    "[SQL Editor] failed to ensureDataSourceSelection",
-    current,
-    behavior,
-    database,
-    restriction
+export const ensureDataSourceSelection = (
+  current: string | undefined,
+  database: ComposedDatabase,
+  type?: QueryDataSourceType
+) => {
+  const adminDataSource = database.instanceResource.dataSources.find(
+    (ds) => ds.type === DataSourceType.ADMIN
+  )!;
+  const readonlyDataSources = database.instanceResource.dataSources.filter(
+    (ds) => ds.type === DataSourceType.READ_ONLY
   );
-  return undefined;
+
+  const behavior = getDataSourceBehavior(database);
+
+  switch (behavior) {
+    case "ALLOW_ADMIN": {
+      // ALLOW_ADMIN means no policy restriction.
+      if (current) {
+        return current;
+      }
+      return getDataSourceIdByType(
+        { admin: adminDataSource, readonly: readonlyDataSources },
+        type
+      );
+    }
+    case "FALLBACK": {
+      // FALLBACK means try to use read-only data source, it can also accept admin data source if no read-only data source exists.
+      if (
+        current &&
+        (current !== adminDataSource.id || readonlyDataSources.length === 0)
+      ) {
+        return current;
+      }
+      return getDataSourceIdByType(
+        { admin: adminDataSource, readonly: readonlyDataSources },
+        type
+      );
+    }
+    case "RO": {
+      // RO only accept the read-only data source.
+      if (
+        current &&
+        readonlyDataSources.findIndex((ds) => ds.id === current) >= 0
+      ) {
+        return current;
+      }
+      return head(readonlyDataSources)?.id;
+    }
+  }
 };

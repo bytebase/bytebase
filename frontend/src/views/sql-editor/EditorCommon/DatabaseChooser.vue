@@ -21,7 +21,7 @@
       "
       class="flex flex-row items-center text-main"
     >
-      <NPopover v-if="isBatchRequest" placement="bottom">
+      <NPopover v-if="isInBatchMode" placement="bottom">
         <template #trigger>
           <SquareStackIcon class="w-4 h-4 mr-1 text-accent" />
         </template>
@@ -70,7 +70,7 @@ import {
 import { isValidDatabaseName, isValidInstanceName } from "@/types";
 import { useSQLEditorContext } from "../context";
 
-const { currentTab } = storeToRefs(useSQLEditorTabStore());
+const { currentTab, isInBatchMode } = storeToRefs(useSQLEditorTabStore());
 const { showConnectionPanel } = useSQLEditorContext();
 const { projectContextReady } = storeToRefs(useSQLEditorStore());
 
@@ -83,24 +83,6 @@ const changeConnection = () => {
 defineProps<{
   disabled?: boolean;
 }>();
-
-const isBatchRequest = computed(() => {
-  if (!currentTab.value) {
-    return false;
-  }
-  if (!hasFeature("bb.feature.batch-query")) {
-    return false;
-  }
-  const { batchQueryContext } = currentTab.value;
-  if (!batchQueryContext) {
-    return false;
-  }
-  const { databaseGroups = [], databases = [] } = batchQueryContext;
-  if (!hasFeature("bb.feature.database-grouping")) {
-    return databases.length > 1;
-  }
-  return databaseGroups.length > 0 || databases.length > 1;
-});
 </script>
 
 <style lang="postcss" scoped>
