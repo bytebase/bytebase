@@ -1648,6 +1648,10 @@ type Plan_ChangeDatabaseConfig struct {
 	// Format: instances/{instance-id}/databases/{database-name}.
 	// Format: projects/{project}/databaseGroups/{databaseGroup}.
 	Target string `protobuf:"bytes,1,opt,name=target,proto3" json:"target,omitempty"`
+	// The list of targets.
+	// Multi-database format: [instances/{instance-id}/databases/{database-name}].
+	// Single database group format: [projects/{project}/databaseGroups/{databaseGroup}].
+	Targets []string `protobuf:"bytes,10,rep,name=targets,proto3" json:"targets,omitempty"`
 	// The resource name of the sheet.
 	// Format: projects/{project}/sheets/{sheet}
 	Sheet string `protobuf:"bytes,2,opt,name=sheet,proto3" json:"sheet,omitempty"`
@@ -1697,6 +1701,13 @@ func (x *Plan_ChangeDatabaseConfig) GetTarget() string {
 		return x.Target
 	}
 	return ""
+}
+
+func (x *Plan_ChangeDatabaseConfig) GetTargets() []string {
+	if x != nil {
+		return x.Targets
+	}
+	return nil
 }
 
 func (x *Plan_ChangeDatabaseConfig) GetSheet() string {
@@ -2294,7 +2305,7 @@ const file_v1_plan_service_proto_rawDesc = "" +
 	"\x11UpdatePlanRequest\x12+\n" +
 	"\x04plan\x18\x01 \x01(\v2\x11.bytebase.v1.PlanB\x04\xe2A\x01\x02R\x04plan\x12A\n" +
 	"\vupdate_mask\x18\x02 \x01(\v2\x1a.google.protobuf.FieldMaskB\x04\xe2A\x01\x02R\n" +
-	"updateMask\"\xf9\x12\n" +
+	"updateMask\"\x93\x13\n" +
 	"\x04Plan\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x14\n" +
 	"\x05issue\x18\x03 \x01(\tR\x05issue\x12\x14\n" +
@@ -2332,9 +2343,11 @@ const file_v1_plan_service_proto_rawDesc = "" +
 	"\tcollation\x18\x05 \x01(\tB\x04\xe2A\x01\x01R\tcollation\x12\x1e\n" +
 	"\acluster\x18\x06 \x01(\tB\x04\xe2A\x01\x01R\acluster\x12\x1a\n" +
 	"\x05owner\x18\a \x01(\tB\x04\xe2A\x01\x01R\x05owner\x12&\n" +
-	"\venvironment\x18\t \x01(\tB\x04\xe2A\x01\x01R\venvironment\x1a\x85\x05\n" +
+	"\venvironment\x18\t \x01(\tB\x04\xe2A\x01\x01R\venvironment\x1a\x9f\x05\n" +
 	"\x14ChangeDatabaseConfig\x12\x16\n" +
-	"\x06target\x18\x01 \x01(\tR\x06target\x12\x14\n" +
+	"\x06target\x18\x01 \x01(\tR\x06target\x12\x18\n" +
+	"\atargets\x18\n" +
+	" \x03(\tR\atargets\x12\x14\n" +
 	"\x05sheet\x18\x02 \x01(\tR\x05sheet\x123\n" +
 	"\arelease\x18\t \x01(\tB\x19\xfaA\x16\n" +
 	"\x14bytebase.com/ReleaseR\arelease\x12?\n" +
