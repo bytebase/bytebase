@@ -243,12 +243,11 @@ func (s *PlanService) CreatePlan(ctx context.Context, request *v1pb.CreatePlanRe
 	if project == nil {
 		return nil, status.Errorf(codes.NotFound, "project not found for id: %v", projectID)
 	}
+
 	// Convert steps to specs if needed for backward compatibility
 	convertStepsToSpecs(request.Plan)
-
 	// Convert Target to Targets grouped by Sheet
 	convertTargetToTargets(request.Plan)
-
 	// Validate plan specs
 	if err := validateSpecs(request.Plan.Specs); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to validate plan specs, error: %v", err)
@@ -350,7 +349,19 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 	}
 
 	var planCheckRunsTrigger bool
-	for _, path := range request.UpdateMask.Paths {
+
+	// Update the deployment in the end because the specs might change.
+	paths := slices.Clone(request.UpdateMask.Paths)
+	slices.SortFunc(paths, func(a, b string) int {
+		if a == "deployment" {
+			return 1
+		}
+		if b == "deployment" {
+			return -1
+		}
+		return strings.Compare(a, b)
+	})
+	for _, path := range paths {
 		switch path {
 		case "title":
 			title := request.Plan.Title
@@ -359,8 +370,15 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 			description := request.Plan.Description
 			planUpdate.Description = &description
 		case "deployment":
-			convertedDeployment := convertPlanDeployment(request.Plan.Deployment)
-			planUpdate.Deployment = &convertedDeployment
+			specs := oldPlan.Config.GetSpecs()
+			if planUpdate.Specs != nil {
+				specs = *planUpdate.Specs
+			}
+			deployment, err := getPlanDeployment(ctx, s.store, specs, project)
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to get plan deployment snapshot, error: %v", err)
+			}
+			planUpdate.Deployment = &deployment
 		case "specs":
 			// Use specs directly for internal storage
 			allSpecs := convertPlanSpecs(request.GetPlan().GetSpecs())
@@ -1237,6 +1255,9 @@ func validateSpecs(specs []*v1pb.Plan_Spec) error {
 
 	if databaseTarget > 0 && databaseGroupTarget > 0 {
 		return errors.Errorf("found databaseGroupTarget and databaseTarget, expect only one kind")
+	}
+	if len(configTypeCount) > 1 {
+		return errors.Errorf("plan contains multiple types of spec configurations (%v), but each plan must contain only one type", len(configTypeCount))
 	}
 	return nil
 }

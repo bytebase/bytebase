@@ -78,10 +78,8 @@ func (s *RolloutService) PreviewRollout(ctx context.Context, request *v1pb.Previ
 
 	// Convert steps to specs if needed for backward compatibility
 	convertStepsToSpecs(request.Plan)
-
 	// Convert Target to Targets grouped by Sheet
 	convertTargetToTargets(request.Plan)
-
 	// Validate plan specs
 	if err := validateSpecs(request.Plan.Specs); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to validate plan specs, error: %v", err)
