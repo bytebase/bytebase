@@ -14,8 +14,6 @@ message Changelist {
     // 1) changes: instances/{instance}/databases/{database}/changelogs/{changelog}.
     // 2) raw SQL if empty.
     string source = 2;
-    // The migration version for a change.
-    string version = 3;
   }
   repeated Change changes = 2;
 }

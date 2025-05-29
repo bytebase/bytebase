@@ -809,7 +809,6 @@ Metadata about the request.
 | ----- | ---- | ----- | ----------- |
 | sheet | [string](#string) |  | The name of a sheet. |
 | source | [string](#string) |  | The source of origin. 1) changes: instances/{instance}/databases/{database}/changelogs/{changelog}. 2) raw SQL if empty. |
-| version | [string](#string) |  | The migration version for a change. |
 
 
 
