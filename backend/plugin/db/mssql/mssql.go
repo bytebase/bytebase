@@ -526,7 +526,7 @@ func getNextResultSetIdx(s []stmtType, beginIdx int) int {
 	return len(s)
 }
 
-func NewBatch(statement string) *tsqlbatch.Batch {
+func NewBatch(statement string) *tsqlbatch.Batcher {
 	// Split to batches to support some client commands like GO.
 	s := strings.Split(statement, "\n")
 	scanner := func() (string, error) {
@@ -537,5 +537,5 @@ func NewBatch(statement string) *tsqlbatch.Batch {
 		}
 		return "", io.EOF
 	}
-	return tsqlbatch.NewBatch(scanner)
+	return tsqlbatch.NewBatcher(scanner)
 }

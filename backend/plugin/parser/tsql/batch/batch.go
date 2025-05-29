@@ -79,7 +79,7 @@ func buildGoCommand(input string) Command {
 
 type Scan func() (string, error)
 
-type Batch struct {
+type Batcher struct {
 	// read provides the next chunk of runes.
 	read Scan
 	// buffer is the current batch text.
@@ -96,20 +96,20 @@ type Batch struct {
 	comment bool
 }
 
-// NewBatch returns a new Batch.
-func NewBatch(read Scan) *Batch {
-	return &Batch{
+// NewBatcher returns a new Batch.
+func NewBatcher(read Scan) *Batcher {
+	return &Batcher{
 		read: read,
 	}
 }
 
-// String returns the current SQL batch next.
-func (b *Batch) String() string {
+// String returns the current SQL batch text.
+func (b *Batcher) String() string {
 	return string(b.buffer)
 }
 
 // Next returns the next command in the batch.
-func (b *Batch) Next() (Command, error) {
+func (b *Batcher) Next() (Command, error) {
 	var i int
 
 	if b.rawLen == 0 {
@@ -196,7 +196,7 @@ parse:
 //
 // After a call to append, b.Len will be len(b.Buf)+len(sep)+len(r). Call Reset
 // to reset the Buf.
-func (b *Batch) append(r, sep []rune) {
+func (b *Batcher) append(r, sep []rune) {
 	rlen := len(r)
 	// initial
 	if b.buffer == nil {
@@ -223,7 +223,7 @@ func (b *Batch) append(r, sep []rune) {
 // or not the string's end was found.
 // If the string's terminator was not found, then the result will be the passed
 // end.
-func (*Batch) readString(r []rune, i, end int, quote rune) (int, bool) {
+func (*Batcher) readString(r []rune, i, end int, quote rune) (int, bool) {
 	var prev, c, next rune
 	for ; i < end; i++ {
 		c, next = r[i], grab(r, i+1, end)
@@ -243,7 +243,7 @@ func (*Batch) readString(r []rune, i, end int, quote rune) (int, bool) {
 }
 
 // Reset clears the current batch text and replaces it with new runes.
-func (b *Batch) Reset(r []rune) {
+func (b *Batcher) Reset(r []rune) {
 	b.buffer, b.length = nil, 0
 	b.quote = 0
 	b.comment = false
