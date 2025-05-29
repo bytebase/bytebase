@@ -51,7 +51,6 @@ export default defineConfig({
     }),
   ],
   build: {
-    target: "es2020",
     chunkSizeWarningLimit: 1000,
     rollupOptions: {
       input: {
@@ -71,10 +70,6 @@ export default defineConfig({
           // Protobuf - separate chunk
           if (id.includes("protobufjs")) {
             return "protobuf";
-          }
-          // Vue ecosystem
-          if (id.includes("vue") || id.includes("@vue")) {
-            return "vue-vendor";
           }
           // UI framework
           if (id.includes("naive-ui")) {
