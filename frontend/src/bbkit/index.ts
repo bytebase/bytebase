@@ -7,7 +7,6 @@ import BBButtonConfirm from "./BBButtonConfirm.vue";
 import { BBGrid } from "./BBGrid";
 import BBModal from "./BBModal.vue";
 import BBSpin from "./BBSpin.vue";
-import { BBTable, BBTableCell, BBTableHeaderCell } from "./BBTable";
 import BBTextField from "./BBTextField.vue";
 
 export * from "./types";
@@ -19,9 +18,6 @@ export {
   BBButtonConfirm,
   BBModal,
   BBSpin,
-  BBTable,
-  BBTableCell,
-  BBTableHeaderCell,
   BBGrid,
   BBTextField,
   BBBadge,

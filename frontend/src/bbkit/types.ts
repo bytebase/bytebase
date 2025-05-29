@@ -10,12 +10,6 @@ export type BBButtonType =
 
 export type BBButtonConfirmType = "NORMAL" | "DELETE" | "ARCHIVE" | "RESTORE";
 
-export type BBTableColumn = {
-  title: string;
-  center?: boolean;
-  nowrap?: boolean;
-};
-
 export type BBGridColumn = {
   title?: string;
   width: ColumnWidth;
@@ -25,12 +19,6 @@ export type BBGridColumn = {
 export type BBGridRow<T = any> = {
   item: T;
   row: number;
-};
-
-export type BBTableSectionDataSource<T> = {
-  title: string;
-  link?: string;
-  list: T[];
 };
 
 export type BBTabItem<T = any> = {
