@@ -125,6 +125,9 @@ func (s *DatabaseService) GetChangelog(ctx context.Context, request *v1pb.GetCha
 		DatabaseName:    &databaseName,
 		IsCaseSensitive: store.IsObjectCaseSensitive(instance),
 	})
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
 	if database == nil {
 		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
 	}
