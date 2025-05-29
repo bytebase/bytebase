@@ -1,8 +1,5 @@
 <template>
-  <form class="w-full space-y-4 mx-auto">
-    <p class="text-lg font-medium leading-7 text-main">
-      {{ $t("common.general") }}
-    </p>
+  <form class="w-full space-y-4">
     <div>
       <div class="font-medium">
         {{ $t("common.name") }} <span class="text-red-600">*</span>
