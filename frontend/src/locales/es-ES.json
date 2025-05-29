@@ -2542,10 +2542,6 @@
     "files": "Archivos",
     "create": "Crear lanzamiento",
     "select": "Seleccionar versión",
-    "tasks-to-apply": "Tareas a aplicar",
-    "out-of-order-files": "Archivos fuera de servicio",
-    "applied-but-modifed-files": "Archivos aplicados pero modificados",
-    "allow-out-of-order": "Permitir fuera de servicio",
     "archive-this-release": "Archivar este comunicado",
     "total-files": "Total de {count} archivos",
     "actions": {
@@ -2555,8 +2551,7 @@
     "messages": {
       "succeed-to-create-release": "Tener éxito en crear el lanzamiento",
       "files-will-always-be-sorted-and-executed-in-version-order": "Los archivos siempre se ordenarán y ejecutarán en orden de versión.",
-      "cannot-modify-files-after-created": "No es posible modificar archivos una vez creada la versión.",
-      "bytebase-will-skip-those-files-has-been-applied-on-target-database": "Bytebase omitirá automáticamente aquellos archivos que ya se hayan ejecutado en la base de datos de destino."
+      "cannot-modify-files-after-created": "No es posible modificar archivos una vez creada la versión."
     },
     "usage-description": "El lanzamiento solo se utiliza en GitOps personalizado con integración de API."
   },
