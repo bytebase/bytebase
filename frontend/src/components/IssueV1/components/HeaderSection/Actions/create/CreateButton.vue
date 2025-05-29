@@ -73,7 +73,11 @@ import {
 } from "@/grpcweb";
 import { emitWindowEvent } from "@/plugins";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
-import { useDatabaseV1Store, useSheetV1Store, useCurrentProjectV1 } from "@/store";
+import {
+  useDatabaseV1Store,
+  useSheetV1Store,
+  useCurrentProjectV1,
+} from "@/store";
 import { dialectOfEngineV1, languageOfEngineV1 } from "@/types";
 import { Issue, Issue_Type } from "@/types/proto/v1/issue_service";
 import type { Plan_ExportDataConfig } from "@/types/proto/v1/plan_service";
@@ -125,9 +129,7 @@ const issueCreateErrorList = computed(() => {
     }
   } else {
     if (issue.value.planEntity) {
-      if (
-        !issue.value.planEntity.specs.every((spec) => isValidSpec(spec))
-      ) {
+      if (!issue.value.planEntity.specs.every((spec) => isValidSpec(spec))) {
         errorList.push("Missing SQL statement in some specs");
       }
     }
@@ -191,16 +193,14 @@ const doCreateIssue = async () => {
 
 // Create sheets for spec configs and update their resource names.
 const createSheets = async () => {
-  const flattenSpecList = issue.value.planEntity?.specs ?? [];
-
   const configWithSheetList: (
     | Plan_ChangeDatabaseConfig
     | Plan_ExportDataConfig
   )[] = [];
   const pendingCreateSheetMap = new Map<string, Sheet>();
 
-  for (let i = 0; i < flattenSpecList.length; i++) {
-    const spec = flattenSpecList[i];
+  const specList = issue.value.planEntity?.specs ?? [];
+  for (const spec of specList) {
     const config = spec.changeDatabaseConfig || spec.exportDataConfig;
     if (!config) continue;
     configWithSheetList.push(config);
