@@ -77,88 +77,13 @@
                 </div>
               </NTooltip>
             </div>
-            <BBGrid
-              :column-list="getGridColumns(role.role)"
-              :row-clickable="false"
-              :data-source="role.singleBindingList"
-              class="border"
-            >
-              <template
-                #item="{ item, row }: { item: SingleBinding; row: number }"
-              >
-                <div class="bb-grid-cell">
-                  <span
-                    :class="[
-                      'text-blue-600 cursor-pointer hover:opacity-80',
-                      checkRoleExpired(item) ? 'line-through' : '',
-                    ]"
-                    @click="editingBinding = item.rawBinding"
-                  >
-                    {{
-                      item.rawBinding.condition?.title ||
-                      displayRoleTitle(item.rawBinding.role)
-                    }}
-                  </span>
-                </div>
-                <template
-                  v-if="isRoleShouldShowDatabaseRelatedColumns(role.role)"
-                >
-                  <div class="bb-grid-cell">
-                    <span class="shrink-0 mr-1">{{
-                      extractDatabaseName(item.databaseResource)
-                    }}</span>
-                    <template v-if="item.databaseResource">
-                      <InstanceV1Name
-                        class="text-gray-500"
-                        :instance="
-                          extractDatabase(item.databaseResource)
-                            .instanceResource
-                        "
-                        :link="false"
-                      />
-                    </template>
-                  </div>
-                  <div class="bb-grid-cell">
-                    {{ extractSchemaName(item.databaseResource) }}
-                  </div>
-                  <div class="bb-grid-cell">
-                    {{ extractTableName(item.databaseResource) }}
-                  </div>
-                </template>
-                <div class="bb-grid-cell flex items-center space-x-1">
-                  <span :class="checkRoleExpired(item) ? 'line-through' : ''">
-                    {{ extractExpiration(item.expiration) }}
-                  </span>
-                  <RoleExpiredTip v-if="checkRoleExpired(item)" />
-                </div>
-                <div class="bb-grid-cell">
-                  <RoleDescription :description="item.description || ''" />
-                </div>
-                <div class="bb-grid-cell space-x-1">
-                  <NTooltip trigger="hover">
-                    <template #trigger>
-                      <NButton
-                        tag="div"
-                        text
-                        class="cursor-pointer opacity-60 hover:opacity-100"
-                        :disabled="!allowDeleteCondition(item)"
-                        @click="handleDeleteCondition(role, row)"
-                      >
-                        <heroicons-outline:trash class="w-4 h-4" />
-                      </NButton>
-                    </template>
-                    <template #default>
-                      <template v-if="!allowDeleteCondition(item)">
-                        {{ $t("project.members.cannot-remove-last-owner") }}
-                      </template>
-                      <template v-else>
-                        {{ $t("common.delete") }}
-                      </template>
-                    </template>
-                  </NTooltip>
-                </div>
-              </template>
-            </BBGrid>
+            <NDataTable
+              size="small"
+              :columns="getDataTableColumns(role.role)"
+              :data="role.singleBindingList"
+              :striped="true"
+              :bordered="true"
+            />
           </template>
         </div>
       </template>
@@ -208,13 +133,14 @@
   />
 </template>
 
-<script lang="ts" setup>
+<script lang="tsx" setup>
 import { cloneDeep, isEqual } from "lodash-es";
-import { Building2Icon } from "lucide-vue-next";
-import { NButton, NTag, NTooltip, useDialog } from "naive-ui";
+import { Building2Icon, PenIcon, TrashIcon } from "lucide-vue-next";
+import { NButton, NTag, NTooltip, NDataTable, useDialog } from "naive-ui";
+import type { DataTableColumn } from "naive-ui";
 import { computed, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { BBButtonConfirm, BBGrid } from "@/bbkit";
+import { BBButtonConfirm } from "@/bbkit";
 import type { MemberBinding } from "@/components/Member/types";
 import GroupMemberNameCell from "@/components/User/Settings/UserDataTableByGroup/cells/GroupMemberNameCell.vue";
 import GroupNameCell from "@/components/User/Settings/UserDataTableByGroup/cells/GroupNameCell.vue";
@@ -312,48 +238,134 @@ const isRoleShouldShowDatabaseRelatedColumns = (role: string) => {
   );
 };
 
-const getGridColumns = (role: string) => {
-  const placeholder = {
-    title: "",
-    width: "2rem",
-  };
-  const conditionName = {
-    title: t("project.members.condition-name"),
-    width: "minmax(min-content, auto)",
-  };
-  const databaseRelatedColumns = [
+const getDataTableColumns = (
+  role: string
+): DataTableColumn<SingleBinding>[] => {
+  const columns: DataTableColumn<SingleBinding>[] = [
     {
-      title: t("common.database"),
-      width: "minmax(min-content, auto)",
-    },
-    {
-      title: t("common.schema"),
-      width: "minmax(min-content, auto)",
-    },
-    {
-      title: t("common.table"),
-      width: "minmax(min-content, auto)",
+      title: t("project.members.condition-name"),
+      key: "conditionName",
+      render: (singleBinding) => {
+        const conditionTitle = singleBinding.rawBinding.condition?.title;
+        const roleTitle = displayRoleTitle(singleBinding.rawBinding.role);
+        return conditionTitle || roleTitle;
+      },
     },
   ];
-  const expiration = {
-    title: t("common.expiration"),
-    width: "minmax(min-content, auto)",
-  };
-  const description = {
-    title: t("common.description"),
-    width: "minmax(min-content, auto)",
-  };
+
   if (isRoleShouldShowDatabaseRelatedColumns(role)) {
-    return [
-      conditionName,
-      ...databaseRelatedColumns,
-      expiration,
-      description,
-      placeholder,
-    ];
-  } else {
-    return [conditionName, expiration, description, placeholder];
+    columns.push(
+      {
+        title: t("common.database"),
+        key: "database",
+        render: (singleBinding) => {
+          const databaseName = extractDatabaseName(
+            singleBinding.databaseResource
+          );
+          if (singleBinding.databaseResource) {
+            const database = extractDatabase(singleBinding.databaseResource);
+            return (
+              <div class="flex items-center gap-x-1">
+                <InstanceV1Name
+                  instance={database.instanceResource}
+                  link={false}
+                />
+                <span>/</span>
+                <span>{databaseName}</span>
+              </div>
+            );
+          }
+          return databaseName;
+        },
+      },
+      {
+        title: t("common.schema"),
+        key: "schema",
+        render: (singleBinding) =>
+          extractSchemaName(singleBinding.databaseResource),
+      },
+      {
+        title: t("common.table"),
+        key: "table",
+        render: (singleBinding) =>
+          extractTableName(singleBinding.databaseResource),
+      }
+    );
   }
+
+  columns.push(
+    {
+      title: t("common.expiration"),
+      key: "expiration",
+      render: (singleBinding) => {
+        const content = extractExpiration(singleBinding.expiration);
+        if (checkRoleExpired(singleBinding)) {
+          return <RoleExpiredTip>{content}</RoleExpiredTip>;
+        }
+        return content;
+      },
+    },
+    {
+      title: t("common.description"),
+      key: "description",
+      render: (singleBinding) => (
+        <RoleDescription description={singleBinding.description || ""} />
+      ),
+    },
+    {
+      title: "",
+      key: "operations",
+      width: 32,
+      render: (singleBinding) => (
+        <div class="flex justify-end pr-2">
+          <NButton
+            text
+            class="cursor-pointer opacity-60 hover:opacity-100"
+            onClick={() => {
+              editingBinding.value = Binding.fromPartial({
+                role: role,
+                members: [props.binding.binding],
+                condition: singleBinding.rawBinding.condition,
+                parsedExpr: singleBinding.rawBinding.parsedExpr,
+              });
+            }}
+          >
+            <PenIcon class="w-4 h-4" />
+          </NButton>
+          {roleList.value.filter((r) => r.role === role)[0]?.singleBindingList
+            .length > 1 && (
+            <NTooltip
+              disabled={allowDeleteCondition(singleBinding)}
+              v-slots={{
+                trigger: () => (
+                  <NButton
+                    text
+                    class="cursor-pointer opacity-60 hover:opacity-100"
+                    disabled={!allowDeleteCondition(singleBinding)}
+                    onClick={() => {
+                      const item = roleList.value.find((r) => r.role === role);
+                      if (item) {
+                        const index =
+                          item.singleBindingList.indexOf(singleBinding);
+                        if (index >= 0) {
+                          handleDeleteCondition(item, index);
+                        }
+                      }
+                    }}
+                  >
+                    <TrashIcon class="w-4 h-4" />
+                  </NButton>
+                ),
+                default: () => t("project.members.cannot-remove-last-owner"),
+              }}
+            />
+          )}
+        </div>
+      ),
+    }
+  );
+
+  return columns;
 };
 
 // To prevent user accidentally removing roles and lock the project permanently, we take following measures:

@@ -1,48 +1,12 @@
 <template>
-  <BBGrid
-    class="border w-full"
-    :column-list="COLUMN_LIST"
-    :data-source="store.config.rules"
-    :row-clickable="false"
-    :show-placeholder="true"
-    row-key="uid"
-    v-bind="$attrs"
-  >
-    <template #item="{ item: rule }: { item: LocalApprovalRule }">
-      <div class="bb-grid-cell whitespace-nowrap">
-        {{ rule.template?.title }}
-      </div>
-      <div class="bb-grid-cell justify-center">
-        <NButton
-          quaternary
-          size="small"
-          type="info"
-          class="!rounded !w-[var(--n-height)] !p-0"
-          @click="state.viewFlow = rule.template.flow"
-        >
-          {{ rule.template.flow?.steps.length }}
-        </NButton>
-      </div>
-      <div class="bb-grid-cell">
-        {{ rule.template?.description }}
-      </div>
-      <div class="bb-grid-cell gap-x-2">
-        <template>
-          <NButton size="small" @click="editApprovalTemplate(rule)">
-            {{ allowAdmin ? $t("common.edit") : $t("common.view") }}
-          </NButton>
-          <SpinnerButton
-            size="small"
-            :tooltip="$t('custom-approval.approval-flow.delete')"
-            :disabled="!allowAdmin"
-            :on-confirm="() => deleteRule(rule)"
-          >
-            {{ $t("common.delete") }}
-          </SpinnerButton>
-        </template>
-      </div>
-    </template>
-  </BBGrid>
+  <NDataTable
+    size="small"
+    :columns="columns"
+    :data="store.config.rules"
+    :striped="true"
+    :bordered="true"
+    :row-key="(rule: LocalApprovalRule) => rule.uid"
+  />
 
   <BBModal
     v-if="state.viewFlow"
@@ -55,11 +19,12 @@
   </BBModal>
 </template>
 
-<script lang="ts" setup>
-import { NButton } from "naive-ui";
+<script lang="tsx" setup>
+import { NButton, NDataTable } from "naive-ui";
+import type { DataTableColumn } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
-import { BBGrid, BBModal, type BBGridColumn } from "@/bbkit";
+import { BBModal } from "@/bbkit";
 import { pushNotification, useWorkspaceApprovalSettingStore } from "@/store";
 import type { LocalApprovalRule } from "@/types";
 import type { ApprovalFlow } from "@/types/proto/v1/issue_service";
@@ -79,22 +44,58 @@ const store = useWorkspaceApprovalSettingStore();
 const context = useCustomApprovalContext();
 const { hasFeature, showFeatureModal, allowAdmin, dialog } = context;
 
-const COLUMN_LIST = computed(() => {
-  const columns: BBGridColumn[] = [
-    { title: t("common.name"), width: "1fr" },
+const columns = computed((): DataTableColumn<LocalApprovalRule>[] => {
+  return [
+    {
+      title: t("common.name"),
+      key: "name",
+      render: (rule) => (
+        <div class="whitespace-nowrap">{rule.template?.title}</div>
+      ),
+    },
     {
       title: t("custom-approval.approval-flow.approval-nodes"),
-      width: "6rem",
-      class: "justify-center text-center whitespace-pre-wrap capitalize",
+      key: "nodes",
+      width: 120,
+      align: "center",
+      render: (rule) => (
+        <NButton
+          quaternary
+          size="small"
+          type="info"
+          class="!rounded !w-[var(--n-height)] !p-0"
+          onClick={() => (state.viewFlow = rule.template.flow)}
+        >
+          {rule.template.flow?.steps.length}
+        </NButton>
+      ),
     },
-    { title: t("common.description"), width: "2fr" },
+    {
+      title: t("common.description"),
+      key: "description",
+      render: (rule) => rule.template?.description,
+    },
     {
       title: t("common.operations"),
-      width: "10rem",
+      key: "operations",
+      width: 200,
+      render: (rule) => (
+        <div class="flex gap-x-2">
+          <NButton size="small" onClick={() => editApprovalTemplate(rule)}>
+            {allowAdmin.value ? t("common.edit") : t("common.view")}
+          </NButton>
+          <SpinnerButton
+            size="small"
+            tooltip={t("custom-approval.approval-flow.delete")}
+            disabled={!allowAdmin.value}
+            onConfirm={() => deleteRule(rule)}
+          >
+            {t("common.delete")}
+          </SpinnerButton>
+        </div>
+      ),
     },
   ];
-
-  return columns;
 });
 
 const editApprovalTemplate = (rule: LocalApprovalRule) => {
