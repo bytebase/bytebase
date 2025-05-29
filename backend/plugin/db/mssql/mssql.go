@@ -185,18 +185,18 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 
 	totalAffectRows := int64(0)
 
-	batch := NewBatch(statement)
+	batch := tsqlbatch.NewBatcher(statement)
 
 	for idx := 0; ; {
 		command, err := batch.Next()
 		if err != nil {
 			if err == io.EOF {
 				// Try send the last batch to server.
-				v := batch.String()
-				if v != "" {
+				v := batch.Batch()
+				if v != nil && len(v.Text) > 0 {
 					indexes := []int32{int32(idx)}
 					opts.LogCommandExecute(indexes)
-					rowsAffected, err := execute(ctx, tx, v)
+					rowsAffected, err := execute(ctx, tx, v.Text)
 					if err != nil {
 						opts.LogCommandResponse(indexes, 0, nil, err.Error())
 						return 0, err
@@ -206,20 +206,20 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 				}
 				break
 			}
-			return 0, errors.Wrapf(err, "failed to get next batch for statement: %s", batch.String())
+			return 0, errors.Wrapf(err, "failed to get next batch for statement: %s", batch.Batch().Text)
 		}
 		if command == nil {
 			continue
 		}
 		switch v := command.(type) {
 		case *tsqlbatch.GoCommand:
-			stmt := batch.String()
+			b := batch.Batch()
 			// Try send the batch to server.
 			indexes := []int32{int32(idx)}
 			idx++
 			for i := uint(0); i < v.Count; i++ {
 				opts.LogCommandExecute(indexes)
-				rowsAffected, err := execute(ctx, tx, stmt)
+				rowsAffected, err := execute(ctx, tx, b.Text)
 				if err != nil {
 					opts.LogCommandResponse(indexes, 0, nil, err.Error())
 					return 0, err
@@ -279,16 +279,16 @@ func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string
 	// Special handling for EXPLAIN queries in MSSQL is now integrated into queryBatch
 
 	// Regular query processing (unchanged)
-	batch := NewBatch(statement)
+	batch := tsqlbatch.NewBatcher(statement)
 	var results []*v1pb.QueryResult
 	for {
 		command, err := batch.Next()
 		if err != nil {
 			if err == io.EOF {
-				v := batch.String()
-				if v != "" {
+				v := batch.Batch()
+				if v != nil && len(v.Text) > 0 {
 					// Query the last batch.
-					qr, err := d.queryBatch(ctx, conn, v, queryContext)
+					qr, err := d.queryBatch(ctx, conn, v.Text, queryContext)
 					results = append(results, qr...)
 					if err != nil {
 						return results, err
@@ -297,16 +297,16 @@ func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string
 				batch.Reset(nil)
 				break
 			}
-			return results, errors.Wrapf(err, "failed to get next batch for statement: %s", batch.String())
+			return results, errors.Wrapf(err, "failed to get next batch for statement: %s", batch.Batch().Text)
 		}
 		if command == nil {
 			continue
 		}
 		switch v := command.(type) {
 		case *tsqlbatch.GoCommand:
-			stmt := batch.String()
+			b := batch.Batch()
 			// Query the batch.
-			qr, err := d.queryBatch(ctx, conn, stmt, queryContext)
+			qr, err := d.queryBatch(ctx, conn, b.Text, queryContext)
 			results = append(results, qr...)
 			if err != nil {
 				return results, err
@@ -524,18 +524,4 @@ func getNextResultSetIdx(s []stmtType, beginIdx int) int {
 		}
 	}
 	return len(s)
-}
-
-func NewBatch(statement string) *tsqlbatch.Batch {
-	// Split to batches to support some client commands like GO.
-	s := strings.Split(statement, "\n")
-	scanner := func() (string, error) {
-		if len(s) > 0 {
-			z := s[0]
-			s = s[1:]
-			return z, nil
-		}
-		return "", io.EOF
-	}
-	return tsqlbatch.NewBatch(scanner)
 }
