@@ -125,7 +125,6 @@ const handleCreate = async () => {
       }
     ],
   };
-  console.log("Barny1: " + JSON.stringify(plan));
 
   const databaseList = state.targetSelectState.selectedDatabaseNameList.map(
     (name) => databaseStore.getDatabaseByName(name)
