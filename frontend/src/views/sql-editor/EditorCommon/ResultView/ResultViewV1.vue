@@ -260,6 +260,7 @@ const disallowCopyingData = computed(() => {
     return false;
   }
 
+  let environment = instance.value.environment;
   if (props.database) {
     const projectLevelPolicy = policyStore.getPolicyByParentAndType({
       parentPath: props.database?.project,
@@ -268,10 +269,13 @@ const disallowCopyingData = computed(() => {
     if (projectLevelPolicy?.disableCopyDataPolicy?.active) {
       return true;
     }
+    // If the database is provided, use its effective environment.
+    environment = props.database.effectiveEnvironment;
   }
 
+  // Check if the environment has a policy that disables copying data.
   const policy = policyStore.getPolicyByParentAndType({
-    parentPath: instance.value.environment,
+    parentPath: environment,
     policyType: PolicyType.DISABLE_COPY_DATA,
   });
   if (policy?.disableCopyDataPolicy?.active) {
