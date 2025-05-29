@@ -92,15 +92,11 @@ type scan func() (string, error)
 
 func newDefaultScan(statement string) scan {
 	// Split the statement into lines to support some client commands like GO.
-	s := strings.Split(statement, "\n")
+	s := strings.Split(statement, string(lineEnd))
 	scanner := func() (string, error) {
 		if len(s) > 0 {
 			z := s[0]
 			s = s[1:]
-			// if len(s) > 0 {
-			// 	// Add "\n" back to the end of the line to preserve the original statement format.
-			// 	return z + "\n", nil
-			// }
 			return z, nil
 		}
 		return "", io.EOF
