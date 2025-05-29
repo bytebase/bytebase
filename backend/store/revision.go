@@ -32,7 +32,8 @@ type FindRevisionMessage struct {
 	InstanceID   *string
 	DatabaseName *string
 
-	Version *string
+	Version  *string
+	Versions *[]string
 
 	Limit  *int
 	Offset *int
@@ -57,6 +58,10 @@ func (s *Store) ListRevisions(ctx context.Context, find *FindRevisionMessage) ([
 	}
 	if v := find.Version; v != nil {
 		where = append(where, fmt.Sprintf("version = $%d", len(args)+1))
+		args = append(args, *v)
+	}
+	if v := find.Versions; v != nil {
+		where = append(where, fmt.Sprintf("version = ANY($%d)", len(args)+1))
 		args = append(args, *v)
 	}
 	if !find.ShowDeleted {
