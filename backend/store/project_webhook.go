@@ -47,10 +47,10 @@ type UpdateProjectWebhookMessage struct {
 // FindProjectWebhookMessage is the message for finding project webhooks,
 // if all fields are nil, it will list all project webhooks.
 type FindProjectWebhookMessage struct {
-	ID           *int
-	ProjectID    *string
-	URL          *string
-	ActivityType *base.ActivityType
+	ID        *int
+	ProjectID *string
+	URL       *string
+	EventType *base.EventType
 }
 
 // CreateProjectWebhookV2 creates an instance of ProjectWebhook.
@@ -300,9 +300,9 @@ func (*Store) findProjectWebhookImplV2(ctx context.Context, txn *sql.Tx, find *F
 			return nil, errors.Wrapf(err, "failed to unmarshal")
 		}
 
-		if v := find.ActivityType; v != nil {
+		if v := find.EventType; v != nil {
 			for _, activity := range projectWebhook.ActivityList {
-				if base.ActivityType(activity) == *v {
+				if base.EventType(activity) == *v {
 					projectWebhooks = append(projectWebhooks, &projectWebhook)
 					break
 				}

@@ -43,33 +43,9 @@ func NewManager(store *store.Store, iamManager *iam.Manager) *Manager {
 }
 
 func (m *Manager) CreateEvent(ctx context.Context, e *Event) {
-	var activityType base.ActivityType
-	//exhaustive:enforce
-	switch e.Type {
-	case base.EventTypeIssueCreate:
-		activityType = base.ActivityIssueCreate
-	case base.EventTypeIssueUpdate:
-		activityType = base.ActivityIssueFieldUpdate
-	case base.EventTypeIssueStatusUpdate:
-		activityType = base.ActivityIssueStatusUpdate
-	case base.EventTypeIssueCommentCreate:
-		activityType = base.ActivityIssueCommentCreate
-	case base.EventTypeIssueApprovalCreate:
-		activityType = base.ActivityIssueApprovalNotify
-	case base.EventTypeIssueApprovalPass:
-		activityType = base.ActivityNotifyIssueApproved
-	case base.EventTypeIssueRolloutReady:
-		activityType = base.ActivityNotifyPipelineRollout
-	case base.EventTypeStageStatusUpdate:
-		activityType = base.ActivityPipelineStageStatusUpdate
-	case base.EventTypeTaskRunStatusUpdate:
-		activityType = base.ActivityPipelineTaskRunStatusUpdate
-	default:
-		return
-	}
 	webhookList, err := m.store.FindProjectWebhookV2(ctx, &store.FindProjectWebhookMessage{
-		ProjectID:    &e.Project.ResourceID,
-		ActivityType: &activityType,
+		ProjectID: &e.Project.ResourceID,
+		EventType: &e.Type,
 	})
 	if err != nil {
 		slog.Warn("failed to find project webhook", "issue_name", e.Issue.Title, log.BBError(err))
@@ -80,7 +56,7 @@ func (m *Manager) CreateEvent(ctx context.Context, e *Event) {
 		return
 	}
 
-	webhookCtx, err := m.getWebhookContextFromEvent(ctx, e, activityType)
+	webhookCtx, err := m.getWebhookContextFromEvent(ctx, e, e.Type)
 	if err != nil {
 		slog.Warn("failed to get webhook context",
 			slog.String("issue_name", e.Issue.Title),
@@ -91,7 +67,7 @@ func (m *Manager) CreateEvent(ctx context.Context, e *Event) {
 	go m.postWebhookList(ctx, webhookCtx, webhookList)
 }
 
-func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, activityType base.ActivityType) (*webhook.Context, error) {
+func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, eventType base.EventType) (*webhook.Context, error) {
 	var webhookCtx webhook.Context
 	var mentions []string
 	var mentionUsers []*store.UserMessage
@@ -296,7 +272,7 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, acti
 
 	webhookCtx = webhook.Context{
 		Level:        level,
-		ActivityType: string(activityType),
+		ActivityType: string(eventType),
 		Title:        title,
 		TitleZh:      titleZh,
 		Issue:        nil,
