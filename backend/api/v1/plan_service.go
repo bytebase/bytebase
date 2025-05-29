@@ -1213,15 +1213,16 @@ func validateSpecs(specs []*v1pb.Plan_Spec) error {
 		case *v1pb.Plan_Spec_CreateDatabaseConfig:
 			configTypeCount["create_database"]++
 		case *v1pb.Plan_Spec_ChangeDatabaseConfig:
-			target := config.ChangeDatabaseConfig.Target
-			if _, _, err := common.GetInstanceDatabaseID(target); err == nil {
-				databaseTarget++
-				configTypeCount["change_database"]++
-			} else if _, _, err := common.GetProjectIDDatabaseGroupID(target); err == nil {
-				databaseGroupTarget++
-				configTypeCount["change_database_group"]++
-			} else {
-				return errors.Errorf("invalid target %v", target)
+			for _, target := range config.ChangeDatabaseConfig.Targets {
+				if _, _, err := common.GetInstanceDatabaseID(target); err == nil {
+					databaseTarget++
+					configTypeCount["change_database"]++
+				} else if _, _, err := common.GetProjectIDDatabaseGroupID(target); err == nil {
+					databaseGroupTarget++
+					configTypeCount["change_database_group"]++
+				} else {
+					return errors.Errorf("invalid target %v", target)
+				}
 			}
 		case *v1pb.Plan_Spec_ExportDataConfig:
 			configTypeCount["export_data"]++
