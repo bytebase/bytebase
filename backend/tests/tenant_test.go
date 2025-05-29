@@ -206,15 +206,6 @@ func TestDatabaseGroup(t *testing.T) {
 	plan, err = ctl.planServiceClient.UpdatePlan(ctx, &v1pb.UpdatePlanRequest{
 		Plan: &v1pb.Plan{
 			Name: plan.Name,
-			Deployment: &v1pb.Plan_Deployment{
-				Environments: plan.GetDeployment().GetEnvironments(), // Keep the existing environments.
-				DatabaseGroupMappings: []*v1pb.Plan_Deployment_DatabaseGroupMapping{
-					{
-						DatabaseGroup: databaseGroup.Name,
-						Databases:     []string{testDatabases[0].Name, prodDatabases[0].Name, prodDatabases[1].Name},
-					},
-				},
-			},
 		},
 		UpdateMask: &fieldmaskpb.FieldMask{
 			Paths: []string{"deployment"},

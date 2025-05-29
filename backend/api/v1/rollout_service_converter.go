@@ -186,34 +186,6 @@ func convertPlan(plan *v1pb.Plan) *storepb.PlanConfig {
 	}
 }
 
-func convertPlanDeployment(s *v1pb.Plan_Deployment) *storepb.PlanConfig_Deployment {
-	if s == nil {
-		return nil
-	}
-	return &storepb.PlanConfig_Deployment{
-		Environments:          s.Environments,
-		DatabaseGroupMappings: convertDatabaseGroupMappings(s.DatabaseGroupMappings),
-	}
-}
-
-func convertDatabaseGroupMappings(s []*v1pb.Plan_Deployment_DatabaseGroupMapping) []*storepb.PlanConfig_Deployment_DatabaseGroupMapping {
-	storeMappings := make([]*storepb.PlanConfig_Deployment_DatabaseGroupMapping, len(s))
-	for i := range s {
-		storeMappings[i] = convertDatabaseGroupMapping(s[i])
-	}
-	return storeMappings
-}
-
-func convertDatabaseGroupMapping(s *v1pb.Plan_Deployment_DatabaseGroupMapping) *storepb.PlanConfig_Deployment_DatabaseGroupMapping {
-	if s == nil {
-		return nil
-	}
-	return &storepb.PlanConfig_Deployment_DatabaseGroupMapping{
-		DatabaseGroup: s.DatabaseGroup,
-		Databases:     s.Databases,
-	}
-}
-
 func convertPlanSpecs(specs []*v1pb.Plan_Spec) []*storepb.PlanConfig_Spec {
 	storeSpecs := make([]*storepb.PlanConfig_Spec, len(specs))
 	for i := range specs {
