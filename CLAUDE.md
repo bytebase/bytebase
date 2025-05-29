@@ -2,6 +2,11 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Project Architecture
+- The database schema is defined in `./backend/migrator/migration/LATEST.sql`
+- The database migration files are in `./backend/migrator/<<version>>/`
+- Files in `./backend/store` are mappings to the database tables.
+
 ## Build/Test Commands
 - Backend: `go build -ldflags "-w -s" -p=16 -o ./.air/bytebase ./backend/bin/server/main.go`
 - Start backend: `PG_URL=postgresql://bbdev@localhost/bbdev go run ./backend/bin/server/main.go --port 8080 --data . --debug`
@@ -44,3 +49,6 @@ Always follow these guidelines to avoid common linting errors:
 - **Proper Import Ordering**: Maintain correct grouping and ordering of imports
 - **Consistency**: Keep function signatures, naming, and patterns consistent with existing code
 - **Export Rules**: Only export (capitalize) functions and types that need to be used outside the package
+
+## Individual Preferences
+- @~/.claude/bytebase-instructions.md
