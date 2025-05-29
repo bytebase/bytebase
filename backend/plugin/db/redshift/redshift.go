@@ -81,7 +81,13 @@ func (d *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionC
 	}
 	pgxConnConfig.User = config.DataSource.Username
 	pgxConnConfig.Password = config.Password
-	pgxConnConfig.Database = config.ConnectionContext.DatabaseName
+	if config.ConnectionContext.DatabaseName != "" {
+		pgxConnConfig.Database = config.ConnectionContext.DatabaseName
+	} else if config.DataSource.GetDatabase() != "" {
+		pgxConnConfig.Database = config.DataSource.GetDatabase()
+	} else {
+		pgxConnConfig.Database = "dev"
+	}
 
 	if config.DataSource.GetSslCert() != "" {
 		tlscfg, err := util.GetTLSConfig(config.DataSource)
