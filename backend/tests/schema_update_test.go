@@ -404,9 +404,9 @@ func TestMarkTaskAsDone(t *testing.T) {
 							Id: uuid.NewString(),
 							Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
 								ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
-									Target: database.Name,
-									Sheet:  sheet.Name,
-									Type:   v1pb.Plan_ChangeDatabaseConfig_MIGRATE,
+									Targets: []string{database.Name},
+									Sheet:   sheet.Name,
+									Type:    v1pb.Plan_ChangeDatabaseConfig_MIGRATE,
 								},
 							},
 						},
