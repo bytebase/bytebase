@@ -131,7 +131,7 @@ import {
   PolicyType,
 } from "@/types/proto/v1/org_policy_service";
 import { QueryOption_RedisRunCommandsOn } from "@/types/proto/v1/sql_service";
-import { ensureDataSourceSelection, readableDataSourceType } from "@/utils";
+import { getValidDataSourceByPolicy, readableDataSourceType } from "@/utils";
 import { getAdminDataSourceRestrictionOfDatabase } from "@/utils";
 import ResultLimitSelect from "./ResultLimitSelect.vue";
 
@@ -227,11 +227,11 @@ const onDataSourceSelected = (dataSourceId?: string) => {
 };
 
 watch(
-  [selectedDataSourceId, database],
+  [() => selectedDataSourceId.value, () => database.value],
   ([current, database]) => {
     if (!isValidDatabaseName(database.name)) return;
-    const fixed = ensureDataSourceSelection(current, database);
-    if (fixed !== current) {
+    if (!current) {
+      const fixed = getValidDataSourceByPolicy(database);
       onDataSourceSelected(fixed);
     }
   },

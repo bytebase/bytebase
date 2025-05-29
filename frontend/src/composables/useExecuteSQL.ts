@@ -37,7 +37,7 @@ import {
   CheckRequest_ChangeType,
 } from "@/types/proto/v1/sql_service";
 import {
-  ensureDataSourceSelection,
+  getValidDataSourceByPolicy,
   hasPermissionToCreateChangeDatabaseIssue,
 } from "@/utils";
 import { extractGrpcErrorMessage } from "@/utils/grpcweb";
@@ -174,15 +174,14 @@ const useExecuteSQL = () => {
     connection: SQLEditorConnection,
     mode?: QueryDataSourceType
   ) => {
-    return (
-      ensureDataSourceSelection(
-        database.instance === connection.instance
-          ? connection.dataSourceId
-          : undefined,
-        database,
-        mode
-      ) ?? ""
-    );
+    if (
+      database.instance === connection.instance &&
+      !!connection.dataSourceId
+    ) {
+      return connection.dataSourceId;
+    }
+
+    return getValidDataSourceByPolicy(database, mode) ?? "";
   };
 
   const preExecute = async (params: SQLEditorQueryParams) => {
