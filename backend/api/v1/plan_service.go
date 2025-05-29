@@ -1374,13 +1374,12 @@ func convertTargetToTargets(plan *v1pb.Plan) {
 			if changeDatabaseConfig.Target != "" && len(changeDatabaseConfig.Targets) == 0 {
 				changeDatabaseConfig.Targets = []string{changeDatabaseConfig.Target}
 				changeDatabaseConfig.Target = "" // Clear the deprecated field
-    			sheetToSpecs[changeDatabaseConfig.Sheet] = append(sheetToSpecs[changeDatabaseConfig.Sheet], spec)
-                continue
-			} 
+				sheetToSpecs[changeDatabaseConfig.Sheet] = append(sheetToSpecs[changeDatabaseConfig.Sheet], spec)
+				continue
+			}
 		}
 		otherSpecs = append(otherSpecs, spec)
 	}
-
 
 	// Merge specs with the same sheet
 	var newSpecs []*v1pb.Plan_Spec
