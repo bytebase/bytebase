@@ -2,11 +2,7 @@
   <div ref="containerRef" class="h-full flex flex-col">
     <div class="border-b">
       <BannerSection v-if="!isCreating" />
-      <FeatureAttention
-        v-else-if="existedDeactivatedInstance"
-        type="warning"
-        feature="bb.feature.custom-approval"
-      />
+      <FeatureAttention feature="bb.feature.custom-approval" />
       <HeaderSection />
     </div>
 
@@ -135,7 +131,6 @@ import {
   DatabaseResourceTable,
   Sidebar,
 } from "./components";
-import { provideIssueIntanceContext } from "./components/Sidebar/ReviewSection/utils";
 import type { IssueReviewAction, IssueStatusAction } from "./logic";
 import { useIssueContext, usePollIssue } from "./logic";
 
@@ -187,6 +182,4 @@ const {
   desktopSidebarWidth,
   mobileSidebarOpen,
 } = provideSidebarContext(containerRef);
-
-const { existedDeactivatedInstance } = provideIssueIntanceContext();
 </script>

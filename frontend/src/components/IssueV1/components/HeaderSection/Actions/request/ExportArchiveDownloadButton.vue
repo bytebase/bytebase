@@ -55,7 +55,7 @@ const taskRun = computed(() => {
 const exportDataConfig = computed(() => {
   return (
     (
-      head(issue.value.planEntity?.steps.flatMap((step) => step.specs)) ||
+      head(issue.value.planEntity?.specs) ||
       Plan_Spec.fromPartial({})
     ).exportDataConfig || Plan_ExportDataConfig.fromPartial({})
   );

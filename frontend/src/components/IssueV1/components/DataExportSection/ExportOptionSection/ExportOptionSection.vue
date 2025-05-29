@@ -64,7 +64,6 @@ import { computed, watch, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import {
   allowUserToEditStatementForTask,
-  notifyNotEditableLegacyIssue,
   useIssueContext,
 } from "@/components/IssueV1/logic";
 import ErrorList from "@/components/misc/ErrorList.vue";
@@ -90,7 +89,7 @@ const refreshKey = ref(0);
 
 const spec = computed(
   () =>
-    head(issue.value.planEntity?.steps.flatMap((step) => step.specs)) ||
+    head(issue.value.planEntity?.specs) ||
     Plan_Spec.fromPartial({})
 );
 
@@ -127,13 +126,12 @@ const handleCancelEdit = () => {
 const handleSaveEdit = async () => {
   const planPatch = cloneDeep(issue.value.planEntity);
   if (!planPatch) {
-    notifyNotEditableLegacyIssue();
-    return;
+    // Should not reach here.
+    throw new Error("Plan is not defined. Cannot update export options.");
   }
 
   const distinctSpecIds = new Set([spec.value.id]);
-  const specsToPatch = planPatch.steps
-    .flatMap((step) => step.specs)
+  const specsToPatch = (planPatch.specs || [])
     .filter((spec) => distinctSpecIds.has(spec.id));
   for (let i = 0; i < specsToPatch.length; i++) {
     const spec = specsToPatch[i];

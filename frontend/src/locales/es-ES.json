@@ -231,6 +231,10 @@
   "error-page": {
     "go-back-home": "Volver al inicio"
   },
+  "refresh-remind": {
+    "title": "Versión obsoleta detectada",
+    "description": "Se ha detectado una versión obsoleta. Por favor, actualice la página."
+  },
   "task": {
     "current-task": "Tarea actual",
     "checking": "Comprobando...",
@@ -248,9 +252,6 @@
       },
       "summary-report": "Informe resumido"
     },
-    "earliest-allowed-time": "Tiempo de lanzamiento más temprano",
-    "earliest-allowed-time-hint": "@:{'task.earliest-allowed-time'} es el momento más temprano para implementar el problema, no se puede implementar antes de este momento; si no se especifica, se ejecuta cuando se cumplen todos los criterios.",
-    "earliest-allowed-time-unset": "No establecido",
     "comment": "Comentario",
     "started": "Iniciado",
     "view-change": "Ver cambio",
@@ -272,6 +273,12 @@
     "action-all-tasks-in-current-stage": "{action} todas las tareas en la etapa actual",
     "cancel-task": "Cancelar tarea | Cancelar tareas",
     "created": "Creado",
+    "run-immediately": "Ejecutar tarea inmediatamente",
+    "scheduled-time": "Hora programada",
+    "select-scheduled-time": "Seleccionar hora programada",
+    "error": {
+      "scheduled-time-must-be-in-the-future": "La hora programada debe ser en el futuro"
+    },
     "online-migration": {
       "self": "Migración en línea",
       "configure-ghost-parameters": "Configurar los parámetros de gh-ost",
@@ -508,7 +515,7 @@
         },
         "maximum-role-expiration": {
           "self": "Caducidad máxima del rol",
-          "description": "La caducidad máxima de la función es el período máximo que se puede otorgar una función a un usuario.",
+          "description": "La expiración máxima del rol es el período máximo durante el cual se puede otorgar un rol a un usuario y se aplicará a todos los roles del proyecto excepto al propietario del proyecto.",
           "days": "Días)",
           "never-expires": "Nunca expira"
         },
@@ -890,6 +897,7 @@
     "issue-name": "Nombre de la incidencia",
     "grant-request": {
       "export-rows": "número máximo de filas",
+      "select-export-rows": "Seleccionar el máximo de filas de exportación",
       "expired-at": "tiempo de caducidad",
       "all-databases": "todas las bases de datos",
       "all-databases-tip": "Todas las bases de datos actuales y futuras de este proyecto.",
@@ -908,15 +916,7 @@
       "current-change-will-apply-to-all-tasks-in-batch-mode": "En el modo por lotes, el cambio actual se aplicará a todas las tareas.",
       "current-change-will-apply-to-all-tasks": "El cambio actual se aplicará a todas las tareas."
     },
-    "not-editable-legacy-issue": "Este problema no es editable porque se creó en una versión anterior de Bytebase",
     "action-anyway": "{action} de todos modos",
-    "disallow-edit-reasons": {
-      "issue-is-done": "La cuestión está hecha",
-      "issue-is-canceled": "La emisión está cancelada.",
-      "task-is-x-status": "La tarea es {status}",
-      "task-is-running-cancel-first": "La tarea se está ejecutando, cancele la tarea antes de cambiar este valor"
-    },
-    "you-are-not-allowed-to-change-this-value": "No tienes permitido cambiar este valor.",
     "sql-check": {
       "sql-checks": "Comprobaciones SQL",
       "not-executed-yet": "Aún no ejecutado",
@@ -940,9 +940,6 @@
       "format": "Formato",
       "encrypt": "Cifrar",
       "file-downloaded": "Archivo Descargado"
-    },
-    "update-rollout-time": {
-      "self": "Hora de implementación de la actualización"
     },
     "task-run": {
       "logs": "Registros",
@@ -1484,6 +1481,7 @@
     "foreign-key": {
       "reference": "Referencia"
     },
+    "checks": "Cheques",
     "create-target-database-or-schema-for-backup": "Primero cree la base de datos o el esquema de destino para la copia de seguridad",
     "revision": {
       "self": "Revisión",
@@ -1806,7 +1804,14 @@
       "batch": "Lote",
       "select-database-group": "Puedes {select-database-group} realizar consultas por lotes",
       "description": "Consulta por lotes {database} bases de datos adicionales y {group} grupos de bases de datos bajo {project}.",
-      "show-or-hide-empty-query-results": "Mostrar/ocultar resultados de consulta vacíos"
+      "show-or-hide-empty-query-results": "Mostrar/ocultar resultados de consulta vacíos",
+      "select-data-source": {
+        "self": "Seleccionar la fuente de datos para el lote",
+        "tooltip": "Encontrará fuentes de datos disponibles con política de restricción y luego aplicará la selección.",
+        "admin": "Administración",
+        "readonly": "Sólo lectura",
+        "not-match": "La fuente de datos no coincide, se esperaba {expect} pero se obtuvo {actual}."
+      }
     },
     "execute-query": "Ejecutar consulta",
     "pending-query": "Consulta pendiente",

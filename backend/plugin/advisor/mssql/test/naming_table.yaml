@@ -1,7 +1,7 @@
 - statement: CREATE TABLE ALL_UPPERCASE(ID INT);
-  changeType: 0
+  changeType: 1
 - statement: CREATE TABLE [\\](ID INT);
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 301
@@ -12,7 +12,7 @@
         column: 0
       endposition: null
 - statement: CREATE TABLE all_lowercase(ID INT);
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 301
@@ -23,11 +23,11 @@
         column: 0
       endposition: null
 - statement: CREATE TABLE PascalCase(ID INT);
-  changeType: 0
+  changeType: 1
 - statement: execute sp_rename 'Sales.SalesTerritory', 'SALESTERR';
-  changeType: 0
+  changeType: 1
 - statement: execute sp_rename 'Sales.SalesTerritory', 'salesTerr';
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 301

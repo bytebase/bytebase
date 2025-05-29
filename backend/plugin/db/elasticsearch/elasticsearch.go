@@ -210,7 +210,8 @@ func (d *Driver) QueryConn(_ context.Context, _ *sql.Conn, statement string, _ d
 			var row v1pb.QueryRow
 
 			contentType := resp.Header.Get("Content-Type")
-			if strings.Contains(contentType, "application/json") {
+			switch {
+			case strings.Contains(contentType, "application/json"):
 				pairs := map[string]any{}
 				if err := json.Unmarshal(respBytes, &pairs); err != nil {
 					return errors.Wrapf(err, "failed to parse json body")
@@ -223,10 +224,10 @@ func (d *Driver) QueryConn(_ context.Context, _ *sql.Conn, statement string, _ d
 					}
 					row.Values = append(row.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: string(bytes)}})
 				}
-			} else if strings.Contains(contentType, "text/plain") {
+			case strings.Contains(contentType, "text/plain"):
 				result.ColumnNames = append(result.ColumnNames, "text/plain")
 				row.Values = append(row.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: string(respBytes)}})
-			} else {
+			default:
 				return errors.Errorf("Content-Type not supported: %s", contentType)
 			}
 			result.Rows = append(result.Rows, &row)

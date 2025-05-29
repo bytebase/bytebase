@@ -238,6 +238,7 @@ func (t *TableConfig) IsEmpty() bool {
 type DatabaseMetadata struct {
 	name                  string
 	owner                 string
+	searchPath            []string
 	isObjectCaseSensitive bool
 	isDetailCaseSensitive bool
 	internal              map[string]*SchemaMetadata
@@ -249,6 +250,7 @@ func NewDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata, isObjectCaseS
 	databaseMetadata := &DatabaseMetadata{
 		name:                  metadata.Name,
 		owner:                 metadata.Owner,
+		searchPath:            NormalizeSearchPath(metadata.SearchPath),
 		isObjectCaseSensitive: isObjectCaseSensitive,
 		isDetailCaseSensitive: isDetailCaseSensitive,
 		internal:              make(map[string]*SchemaMetadata),
@@ -408,6 +410,137 @@ func (d *DatabaseMetadata) GetSchema(name string) *SchemaMetadata {
 	return d.internal[schemaID]
 }
 
+func (d *DatabaseMetadata) SearchTable(searchPath []string, name string) (string, *TableMetadata) {
+	// Search in the search path first.
+	for _, schemaName := range searchPath {
+		schema := d.GetSchema(schemaName)
+		if schema == nil {
+			continue
+		}
+		table := schema.GetTable(name)
+		if table != nil {
+			return schema.proto.Name, table
+		}
+	}
+
+	return "", nil
+}
+
+func (d *DatabaseMetadata) SearchIndex(searchPath []string, name string) (string, *IndexMetadata) {
+	// Search in the search path first.
+	for _, schemaName := range searchPath {
+		schema := d.GetSchema(schemaName)
+		if schema == nil {
+			continue
+		}
+		indexes := schema.GetIndexes(name)
+		if len(indexes) > 0 {
+			return schema.proto.Name, indexes[0] // Return the first index found.
+		}
+	}
+	return "", nil
+}
+
+func (d *DatabaseMetadata) SearchView(searchPath []string, name string) (string, *ViewMetadata) {
+	// Search in the search path first.
+	for _, schemaName := range searchPath {
+		schema := d.GetSchema(schemaName)
+		if schema == nil {
+			continue
+		}
+		view := schema.GetView(name)
+		if view != nil {
+			return schema.proto.Name, view
+		}
+	}
+	return "", nil
+}
+
+func (d *DatabaseMetadata) SearchExternalTable(searchPath []string, name string) (string, *ExternalTableMetadata) {
+	// Search in the search path first.
+	for _, schemaName := range searchPath {
+		schema := d.GetSchema(schemaName)
+		if schema == nil {
+			continue
+		}
+		externalTable := schema.GetExternalTable(name)
+		if externalTable != nil {
+			return schema.proto.Name, externalTable
+		}
+	}
+	return "", nil
+}
+
+func (d *DatabaseMetadata) SearchSequence(searchPath []string, name string) (string, *SequenceMetadata) {
+	// Search in the search path first.
+	for _, schemaName := range searchPath {
+		schema := d.GetSchema(schemaName)
+		if schema == nil {
+			continue
+		}
+		sequence := schema.GetSequence(name)
+		if sequence != nil {
+			return schema.proto.Name, sequence
+		}
+	}
+	return "", nil
+}
+
+func (d *DatabaseMetadata) SearchMaterializedView(searchPath []string, name string) (string, *MaterializedViewMetadata) {
+	// Search in the search path first.
+	for _, schemaName := range searchPath {
+		schema := d.GetSchema(schemaName)
+		if schema == nil {
+			continue
+		}
+		materializedView := schema.GetMaterializedView(name)
+		if materializedView != nil {
+			return schema.proto.Name, materializedView
+		}
+	}
+	return "", nil
+}
+
+func (d *DatabaseMetadata) SearchFunctions(searchPath []string, name string) ([]string, []*FunctionMetadata) {
+	var schemas []string
+	var funcs []*FunctionMetadata
+	// Search in the search path first.
+	for _, schemaName := range searchPath {
+		schema := d.GetSchema(schemaName)
+		if schema == nil {
+			continue
+		}
+		for _, function := range schema.ListFunctions() {
+			if d.isDetailCaseSensitive {
+				if function.proto.Name == name {
+					schemas = append(schemas, schema.proto.Name)
+					funcs = append(funcs, function)
+				}
+			} else {
+				if strings.EqualFold(function.proto.Name, name) {
+					schemas = append(schemas, schema.proto.Name)
+					funcs = append(funcs, function)
+				}
+			}
+		}
+	}
+	return schemas, funcs
+}
+
+func (d *DatabaseMetadata) SearchObject(searchPath []string, name string) (string, string) {
+	// Search in the search path first.
+	for _, schemaName := range searchPath {
+		schema := d.GetSchema(schemaName)
+		if schema == nil {
+			continue
+		}
+		if schema.GetTable(name) != nil || schema.GetView(name) != nil || schema.GetMaterializedView(name) != nil || schema.GetFunction(name) != nil || schema.GetProcedure(name) != nil || schema.GetPackage(name) != nil || schema.GetSequence(name) != nil || schema.GetExternalTable(name) != nil {
+			return schema.proto.Name, name
+		}
+	}
+	return "", ""
+}
+
 // ListSchemaNames lists the schema names.
 func (d *DatabaseMetadata) ListSchemaNames() []string {
 	var result []string
@@ -429,6 +562,10 @@ func (d *DatabaseMetadata) GetLinkedDatabase(name string) *LinkedDatabaseMetadat
 
 func (d *DatabaseMetadata) GetOwner() string {
 	return d.owner
+}
+
+func (d *DatabaseMetadata) GetSearchPath() []string {
+	return d.searchPath
 }
 
 // LinkedDatabaseMetadata is the metadata for a linked database.
@@ -944,4 +1081,57 @@ func getIsDetailCaseSensitive(engine storepb.Engine) bool {
 	default:
 		return true
 	}
+}
+
+func IsSystemPath(path string) bool {
+	// PostgreSQL system schemas.
+	systemSchemas := []string{"pg_catalog", "information_schema", "pg_toast", "pg_temp_1", "pg_temp_2", "pg_global", "$user"}
+	for _, schema := range systemSchemas {
+		if strings.EqualFold(path, schema) {
+			return true
+		}
+	}
+	return false
+}
+
+// NormalizeSearchPath normalizes the search path string into a slice of strings.
+func NormalizeSearchPath(searchPath string) []string {
+	if searchPath == "" {
+		return []string{}
+	}
+
+	// Split the search path by comma and trim spaces.
+	parts := strings.Split(searchPath, ",")
+	for i, part := range parts {
+		parts[i] = strings.TrimSpace(part)
+	}
+
+	// Remove empty parts.
+	var result []string
+	for _, part := range parts {
+		schema := strings.TrimSpace(part)
+		if part == "\"$user\"" {
+			continue
+		}
+		if strings.HasPrefix(part, "\"") && strings.HasSuffix(part, "\"") {
+			// Remove the quotes from the schema name.
+			schema = strings.Trim(schema, "\"")
+		} else if strings.HasPrefix(part, "'") && strings.HasSuffix(part, "'") {
+			// Remove the single quotes from the schema name.
+			schema = strings.Trim(schema, "'")
+		} else {
+			// For non-quoted schema names, we just return the lower string for PostgreSQL.
+			schema = strings.ToLower(schema)
+		}
+		schema = strings.TrimSpace(schema)
+		if IsSystemPath(schema) {
+			// Skip system schemas.
+			continue
+		}
+		if schema != "" {
+			result = append(result, schema)
+		}
+	}
+
+	return result
 }

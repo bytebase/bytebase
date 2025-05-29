@@ -146,7 +146,6 @@ export const extractSchemaVersionFromTask = (task: Task): string => {
   // fallback to empty if we can't read the field.
   return (
     task.databaseDataUpdate?.schemaVersion ??
-    task.databaseSchemaBaseline?.schemaVersion ??
     task.databaseSchemaUpdate?.schemaVersion ??
     ""
   );

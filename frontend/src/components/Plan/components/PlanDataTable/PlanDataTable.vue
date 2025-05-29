@@ -17,9 +17,11 @@ import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBAvatar } from "@/bbkit";
+import { projectOfPlan } from "@/components/Plan/logic";
 import { ProjectNameCell } from "@/components/v2/Model/DatabaseV1Table/cells";
 import { PROJECT_V1_ROUTE_REVIEW_CENTER_DETAIL } from "@/router/dashboard/projectV1";
-import { getTimeForPbTimestamp } from "@/types";
+import { useUserStore } from "@/store";
+import { getTimeForPbTimestamp, unknownUser } from "@/types";
 import type { ComposedPlan } from "@/types/v1/issue/plan";
 import {
   extractPlanUID,
@@ -41,8 +43,9 @@ const props = withDefaults(
   }
 );
 
-const router = useRouter();
 const { t } = useI18n();
+const router = useRouter();
+const userStore = useUserStore();
 
 const columnList = computed((): DataTableColumn<ComposedPlan>[] => {
   const columns: (DataTableColumn<ComposedPlan> & { hide?: boolean })[] = [
@@ -85,7 +88,7 @@ const columnList = computed((): DataTableColumn<ComposedPlan>[] => {
       resizable: true,
       hide: !props.showProject,
       render: (plan) => (
-        <ProjectNameCell project={plan.projectEntity} mode={"ALL_SHORT"} />
+        <ProjectNameCell project={projectOfPlan(plan)} mode={"ALL_SHORT"} />
       ),
     },
     {
@@ -99,12 +102,16 @@ const columnList = computed((): DataTableColumn<ComposedPlan>[] => {
       key: "creator",
       width: 150,
       title: t("issue.table.creator"),
-      render: (plan) => (
-        <div class="flex flex-row items-center overflow-hidden gap-x-2">
-          <BBAvatar size="SMALL" username={plan.creatorEntity.title} />
-          <span class="truncate">{plan.creatorEntity.title}</span>
-        </div>
-      ),
+      render: (plan) => {
+        const creator =
+          userStore.getUserByIdentifier(plan.creator) || unknownUser();
+        return (
+          <div class="flex flex-row items-center overflow-hidden gap-x-2">
+            <BBAvatar size="SMALL" username={creator.title} />
+            <span class="truncate">{creator.title}</span>
+          </div>
+        );
+      },
     },
   ];
   return columns.filter((column) => !column.hide);

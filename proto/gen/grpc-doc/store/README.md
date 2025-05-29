@@ -187,7 +187,6 @@
     - [PlanConfig.ReleaseSource](#bytebase-store-PlanConfig-ReleaseSource)
     - [PlanConfig.Spec](#bytebase-store-PlanConfig-Spec)
     - [PlanConfig.SpecReleaseSource](#bytebase-store-PlanConfig-SpecReleaseSource)
-    - [PlanConfig.Step](#bytebase-store-PlanConfig-Step)
   
     - [PlanConfig.ChangeDatabaseConfig.Type](#bytebase-store-PlanConfig-ChangeDatabaseConfig-Type)
   
@@ -593,7 +592,6 @@ offset.
 | flow | [ApprovalFlow](#bytebase-store-ApprovalFlow) |  |  |
 | title | [string](#string) |  |  |
 | description | [string](#string) |  |  |
-| creator_id | [int32](#int32) |  |  |
 
 
 
@@ -1135,6 +1133,7 @@ DatabaseMetadata is the metadata for databases.
 | datashare | [bool](#bool) |  |  |
 | secrets | [Secret](#bytebase-store-Secret) | repeated |  |
 | drifted | [bool](#bool) |  | The schema is drifted from the source of truth. |
+| version | [string](#string) |  | The version of database schema. |
 
 
 
@@ -1174,6 +1173,7 @@ DatabaseSchemaMetadata is the schema metadata for databases.
 | service_name | [string](#string) |  | The service name of the database. It&#39;s the Oracle specific concept. |
 | linked_databases | [LinkedDatabaseMetadata](#bytebase-store-LinkedDatabaseMetadata) | repeated |  |
 | owner | [string](#string) |  |  |
+| search_path | [string](#string) |  | The search_path is the search path of a PostgreSQL database. |
 
 
 
@@ -1714,6 +1714,7 @@ TablePartitionMetadata is the metadata for table partitions.
 | use_default | [string](#string) |  | The use_default is whether the users use the default partition, it stores the different value for different database engines. For MySQL, it&#39;s [INT] type, 0 means not use default partition, otherwise, it&#39;s equals to number in syntax [SUB]PARTITION {number}. |
 | subpartitions | [TablePartitionMetadata](#bytebase-store-TablePartitionMetadata) | repeated | The subpartitions is the list of subpartitions in a table partition. |
 | indexes | [IndexMetadata](#bytebase-store-IndexMetadata) | repeated |  |
+| check_constraints | [CheckConstraintMetadata](#bytebase-store-CheckConstraintMetadata) | repeated |  |
 
 
 
@@ -2722,8 +2723,6 @@ InstanceRole is the API message for instance role.
 | tasks | [string](#string) | repeated |  |
 | from_sheet | [string](#string) | optional | Format: projects/{project}/sheets/{sheet} |
 | to_sheet | [string](#string) | optional | Format: projects/{project}/sheets/{sheet} |
-| from_earliest_allowed_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional |  |
-| to_earliest_allowed_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional |  |
 | to_status | [IssueCommentPayload.TaskUpdate.Status](#bytebase-store-IssueCommentPayload-TaskUpdate-Status) | optional |  |
 
 
@@ -2969,7 +2968,7 @@ InstanceRole is the API message for instance role.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| steps | [PlanConfig.Step](#bytebase-store-PlanConfig-Step) | repeated |  |
+| specs | [PlanConfig.Spec](#bytebase-store-PlanConfig-Spec) | repeated |  |
 | release_source | [PlanConfig.ReleaseSource](#bytebase-store-PlanConfig-ReleaseSource) |  |  |
 | deployment | [PlanConfig.Deployment](#bytebase-store-PlanConfig-Deployment) |  |  |
 
@@ -3029,7 +3028,6 @@ InstanceRole is the API message for instance role.
 | collation | [string](#string) |  | collation is the collation of the database. |
 | cluster | [string](#string) |  | cluster is the cluster of the database. This is only applicable to ClickHouse for &#34;ON CLUSTER &lt;&lt;cluster&gt;&gt;&#34;. |
 | owner | [string](#string) |  | owner is the owner of the database. This is only applicable to Postgres for &#34;WITH OWNER &lt;&lt;owner&gt;&gt;&#34;. |
-| backup | [string](#string) |  | backup is the resource name of the backup. Format: instances/{instance}/databases/{database}/backups/{backup-name} |
 | environment | [string](#string) |  | The environment resource. Format: environments/prod where prod is the environment resource ID. |
 
 
@@ -3110,7 +3108,6 @@ InstanceRole is the API message for instance role.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| earliest_allowed_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | earliest_allowed_time the earliest execution time of the change. |
 | id | [string](#string) |  | A UUID4 string that uniquely identifies the Spec. |
 | spec_release_source | [PlanConfig.SpecReleaseSource](#bytebase-store-PlanConfig-SpecReleaseSource) |  |  |
 | create_database_config | [PlanConfig.CreateDatabaseConfig](#bytebase-store-PlanConfig-CreateDatabaseConfig) |  |  |
@@ -3136,22 +3133,6 @@ InstanceRole is the API message for instance role.
 
 
 
-
-<a name="bytebase-store-PlanConfig-Step"></a>
-
-### PlanConfig.Step
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| title | [string](#string) |  | Use the title if set. Use a generated title if empty. |
-| specs | [PlanConfig.Spec](#bytebase-store-PlanConfig-Spec) | repeated |  |
-
-
-
-
-
  
 
 
@@ -3163,7 +3144,6 @@ Type is the database change type.
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | TYPE_UNSPECIFIED | 0 |  |
-| BASELINE | 1 | Used for establishing schema baseline, this is used when 1. Onboard the database into Bytebase since Bytebase needs to know the current database schema. 2. Had schema drift and need to re-establish the baseline. |
 | MIGRATE | 2 | Used for DDL changes including CREATE DATABASE. |
 | MIGRATE_SDL | 3 | Used for schema changes via state-based schema migration including CREATE DATABASE. |
 | MIGRATE_GHOST | 4 | Used for DDL changes using gh-ost. |

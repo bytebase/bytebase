@@ -74,7 +74,6 @@ export const instanceLimitFeature = new Set<FeatureType>([
   "bb.feature.database-grouping",
   // Policy Control
   "bb.feature.sensitive-data",
-  "bb.feature.custom-approval",
   "bb.feature.rollout-policy",
 ]);
 

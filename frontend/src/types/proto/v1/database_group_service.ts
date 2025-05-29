@@ -95,6 +95,8 @@ export interface ListDatabaseGroupsRequest {
    * the call that provided the page token.
    */
   pageToken: string;
+  /** The view to return. Defaults to DATABASE_GROUP_VIEW_BASIC. */
+  view: DatabaseGroupView;
 }
 
 export interface ListDatabaseGroupsResponse {
@@ -200,7 +202,7 @@ export interface DatabaseGroup_Database {
 }
 
 function createBaseListDatabaseGroupsRequest(): ListDatabaseGroupsRequest {
-  return { parent: "", pageSize: 0, pageToken: "" };
+  return { parent: "", pageSize: 0, pageToken: "", view: DatabaseGroupView.DATABASE_GROUP_VIEW_UNSPECIFIED };
 }
 
 export const ListDatabaseGroupsRequest: MessageFns<ListDatabaseGroupsRequest> = {
@@ -213,6 +215,9 @@ export const ListDatabaseGroupsRequest: MessageFns<ListDatabaseGroupsRequest> = 
     }
     if (message.pageToken !== "") {
       writer.uint32(26).string(message.pageToken);
+    }
+    if (message.view !== DatabaseGroupView.DATABASE_GROUP_VIEW_UNSPECIFIED) {
+      writer.uint32(32).int32(databaseGroupViewToNumber(message.view));
     }
     return writer;
   },
@@ -248,6 +253,14 @@ export const ListDatabaseGroupsRequest: MessageFns<ListDatabaseGroupsRequest> = 
           message.pageToken = reader.string();
           continue;
         }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.view = databaseGroupViewFromJSON(reader.int32());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -255,14 +268,6 @@ export const ListDatabaseGroupsRequest: MessageFns<ListDatabaseGroupsRequest> = 
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): ListDatabaseGroupsRequest {
-    return {
-      parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
-      pageSize: isSet(object.pageSize) ? globalThis.Number(object.pageSize) : 0,
-      pageToken: isSet(object.pageToken) ? globalThis.String(object.pageToken) : "",
-    };
   },
 
   toJSON(message: ListDatabaseGroupsRequest): unknown {
@@ -276,6 +281,9 @@ export const ListDatabaseGroupsRequest: MessageFns<ListDatabaseGroupsRequest> = 
     if (message.pageToken !== "") {
       obj.pageToken = message.pageToken;
     }
+    if (message.view !== DatabaseGroupView.DATABASE_GROUP_VIEW_UNSPECIFIED) {
+      obj.view = databaseGroupViewToJSON(message.view);
+    }
     return obj;
   },
 
@@ -287,6 +295,7 @@ export const ListDatabaseGroupsRequest: MessageFns<ListDatabaseGroupsRequest> = 
     message.parent = object.parent ?? "";
     message.pageSize = object.pageSize ?? 0;
     message.pageToken = object.pageToken ?? "";
+    message.view = object.view ?? DatabaseGroupView.DATABASE_GROUP_VIEW_UNSPECIFIED;
     return message;
   },
 };
@@ -336,15 +345,6 @@ export const ListDatabaseGroupsResponse: MessageFns<ListDatabaseGroupsResponse> 
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): ListDatabaseGroupsResponse {
-    return {
-      databaseGroups: globalThis.Array.isArray(object?.databaseGroups)
-        ? object.databaseGroups.map((e: any) => DatabaseGroup.fromJSON(e))
-        : [],
-      nextPageToken: isSet(object.nextPageToken) ? globalThis.String(object.nextPageToken) : "",
-    };
   },
 
   toJSON(message: ListDatabaseGroupsResponse): unknown {
@@ -414,15 +414,6 @@ export const GetDatabaseGroupRequest: MessageFns<GetDatabaseGroupRequest> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): GetDatabaseGroupRequest {
-    return {
-      name: isSet(object.name) ? globalThis.String(object.name) : "",
-      view: isSet(object.view)
-        ? databaseGroupViewFromJSON(object.view)
-        : DatabaseGroupView.DATABASE_GROUP_VIEW_UNSPECIFIED,
-    };
   },
 
   toJSON(message: GetDatabaseGroupRequest): unknown {
@@ -516,15 +507,6 @@ export const CreateDatabaseGroupRequest: MessageFns<CreateDatabaseGroupRequest> 
     return message;
   },
 
-  fromJSON(object: any): CreateDatabaseGroupRequest {
-    return {
-      parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
-      databaseGroup: isSet(object.databaseGroup) ? DatabaseGroup.fromJSON(object.databaseGroup) : undefined,
-      databaseGroupId: isSet(object.databaseGroupId) ? globalThis.String(object.databaseGroupId) : "",
-      validateOnly: isSet(object.validateOnly) ? globalThis.Boolean(object.validateOnly) : false,
-    };
-  },
-
   toJSON(message: CreateDatabaseGroupRequest): unknown {
     const obj: any = {};
     if (message.parent !== "") {
@@ -604,13 +586,6 @@ export const UpdateDatabaseGroupRequest: MessageFns<UpdateDatabaseGroupRequest> 
     return message;
   },
 
-  fromJSON(object: any): UpdateDatabaseGroupRequest {
-    return {
-      databaseGroup: isSet(object.databaseGroup) ? DatabaseGroup.fromJSON(object.databaseGroup) : undefined,
-      updateMask: isSet(object.updateMask) ? FieldMask.unwrap(FieldMask.fromJSON(object.updateMask)) : undefined,
-    };
-  },
-
   toJSON(message: UpdateDatabaseGroupRequest): unknown {
     const obj: any = {};
     if (message.databaseGroup !== undefined) {
@@ -669,10 +644,6 @@ export const DeleteDatabaseGroupRequest: MessageFns<DeleteDatabaseGroupRequest> 
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): DeleteDatabaseGroupRequest {
-    return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
   },
 
   toJSON(message: DeleteDatabaseGroupRequest): unknown {
@@ -773,20 +744,6 @@ export const DatabaseGroup: MessageFns<DatabaseGroup> = {
     return message;
   },
 
-  fromJSON(object: any): DatabaseGroup {
-    return {
-      name: isSet(object.name) ? globalThis.String(object.name) : "",
-      title: isSet(object.title) ? globalThis.String(object.title) : "",
-      databaseExpr: isSet(object.databaseExpr) ? Expr.fromJSON(object.databaseExpr) : undefined,
-      matchedDatabases: globalThis.Array.isArray(object?.matchedDatabases)
-        ? object.matchedDatabases.map((e: any) => DatabaseGroup_Database.fromJSON(e))
-        : [],
-      unmatchedDatabases: globalThis.Array.isArray(object?.unmatchedDatabases)
-        ? object.unmatchedDatabases.map((e: any) => DatabaseGroup_Database.fromJSON(e))
-        : [],
-    };
-  },
-
   toJSON(message: DatabaseGroup): unknown {
     const obj: any = {};
     if (message.name !== "") {
@@ -857,10 +814,6 @@ export const DatabaseGroup_Database: MessageFns<DatabaseGroup_Database> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): DatabaseGroup_Database {
-    return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
   },
 
   toJSON(message: DatabaseGroup_Database): unknown {
@@ -1302,14 +1255,9 @@ export type DeepPartial<T> = T extends Builtin ? T
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
 
-function isSet(value: any): boolean {
-  return value !== null && value !== undefined;
-}
-
 export interface MessageFns<T> {
   encode(message: T, writer?: BinaryWriter): BinaryWriter;
   decode(input: BinaryReader | Uint8Array, length?: number): T;
-  fromJSON(object: any): T;
   toJSON(message: T): unknown;
   create(base?: DeepPartial<T>): T;
   fromPartial(object: DeepPartial<T>): T;

@@ -848,16 +848,6 @@ export const AdminExecuteRequest: MessageFns<AdminExecuteRequest> = {
     return message;
   },
 
-  fromJSON(object: any): AdminExecuteRequest {
-    return {
-      name: isSet(object.name) ? globalThis.String(object.name) : "",
-      statement: isSet(object.statement) ? globalThis.String(object.statement) : "",
-      limit: isSet(object.limit) ? globalThis.Number(object.limit) : 0,
-      schema: isSet(object.schema) ? globalThis.String(object.schema) : undefined,
-      container: isSet(object.container) ? globalThis.String(object.container) : undefined,
-    };
-  },
-
   toJSON(message: AdminExecuteRequest): unknown {
     const obj: any = {};
     if (message.name !== "") {
@@ -926,12 +916,6 @@ export const AdminExecuteResponse: MessageFns<AdminExecuteResponse> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): AdminExecuteResponse {
-    return {
-      results: globalThis.Array.isArray(object?.results) ? object.results.map((e: any) => QueryResult.fromJSON(e)) : [],
-    };
   },
 
   toJSON(message: AdminExecuteResponse): unknown {
@@ -1074,19 +1058,6 @@ export const QueryRequest: MessageFns<QueryRequest> = {
     return message;
   },
 
-  fromJSON(object: any): QueryRequest {
-    return {
-      name: isSet(object.name) ? globalThis.String(object.name) : "",
-      statement: isSet(object.statement) ? globalThis.String(object.statement) : "",
-      limit: isSet(object.limit) ? globalThis.Number(object.limit) : 0,
-      dataSourceId: isSet(object.dataSourceId) ? globalThis.String(object.dataSourceId) : "",
-      explain: isSet(object.explain) ? globalThis.Boolean(object.explain) : false,
-      schema: isSet(object.schema) ? globalThis.String(object.schema) : undefined,
-      queryOption: isSet(object.queryOption) ? QueryOption.fromJSON(object.queryOption) : undefined,
-      container: isSet(object.container) ? globalThis.String(object.container) : undefined,
-    };
-  },
-
   toJSON(message: QueryRequest): unknown {
     const obj: any = {};
     if (message.name !== "") {
@@ -1171,12 +1142,6 @@ export const QueryResponse: MessageFns<QueryResponse> = {
     return message;
   },
 
-  fromJSON(object: any): QueryResponse {
-    return {
-      results: globalThis.Array.isArray(object?.results) ? object.results.map((e: any) => QueryResult.fromJSON(e)) : [],
-    };
-  },
-
   toJSON(message: QueryResponse): unknown {
     const obj: any = {};
     if (message.results?.length) {
@@ -1229,14 +1194,6 @@ export const QueryOption: MessageFns<QueryOption> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): QueryOption {
-    return {
-      redisRunCommandsOn: isSet(object.redisRunCommandsOn)
-        ? queryOption_RedisRunCommandsOnFromJSON(object.redisRunCommandsOn)
-        : QueryOption_RedisRunCommandsOn.REDIS_RUN_COMMANDS_ON_UNSPECIFIED,
-    };
   },
 
   toJSON(message: QueryOption): unknown {
@@ -1450,31 +1407,6 @@ export const QueryResult: MessageFns<QueryResult> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): QueryResult {
-    return {
-      columnNames: globalThis.Array.isArray(object?.columnNames)
-        ? object.columnNames.map((e: any) => globalThis.String(e))
-        : [],
-      columnTypeNames: globalThis.Array.isArray(object?.columnTypeNames)
-        ? object.columnTypeNames.map((e: any) => globalThis.String(e))
-        : [],
-      rows: globalThis.Array.isArray(object?.rows) ? object.rows.map((e: any) => QueryRow.fromJSON(e)) : [],
-      rowsCount: isSet(object.rowsCount) ? Long.fromValue(object.rowsCount) : Long.ZERO,
-      masked: globalThis.Array.isArray(object?.masked) ? object.masked.map((e: any) => globalThis.Boolean(e)) : [],
-      sensitive: globalThis.Array.isArray(object?.sensitive)
-        ? object.sensitive.map((e: any) => globalThis.Boolean(e))
-        : [],
-      error: isSet(object.error) ? globalThis.String(object.error) : "",
-      latency: isSet(object.latency) ? Duration.fromJSON(object.latency) : undefined,
-      statement: isSet(object.statement) ? globalThis.String(object.statement) : "",
-      postgresError: isSet(object.postgresError) ? QueryResult_PostgresError.fromJSON(object.postgresError) : undefined,
-      allowExport: isSet(object.allowExport) ? globalThis.Boolean(object.allowExport) : false,
-      messages: globalThis.Array.isArray(object?.messages)
-        ? object.messages.map((e: any) => QueryResult_Message.fromJSON(e))
-        : [],
-    };
   },
 
   toJSON(message: QueryResult): unknown {
@@ -1775,28 +1707,6 @@ export const QueryResult_PostgresError: MessageFns<QueryResult_PostgresError> = 
     return message;
   },
 
-  fromJSON(object: any): QueryResult_PostgresError {
-    return {
-      severity: isSet(object.severity) ? globalThis.String(object.severity) : "",
-      code: isSet(object.code) ? globalThis.String(object.code) : "",
-      message: isSet(object.message) ? globalThis.String(object.message) : "",
-      detail: isSet(object.detail) ? globalThis.String(object.detail) : "",
-      hint: isSet(object.hint) ? globalThis.String(object.hint) : "",
-      position: isSet(object.position) ? globalThis.Number(object.position) : 0,
-      internalPosition: isSet(object.internalPosition) ? globalThis.Number(object.internalPosition) : 0,
-      internalQuery: isSet(object.internalQuery) ? globalThis.String(object.internalQuery) : "",
-      where: isSet(object.where) ? globalThis.String(object.where) : "",
-      schemaName: isSet(object.schemaName) ? globalThis.String(object.schemaName) : "",
-      tableName: isSet(object.tableName) ? globalThis.String(object.tableName) : "",
-      columnName: isSet(object.columnName) ? globalThis.String(object.columnName) : "",
-      dataTypeName: isSet(object.dataTypeName) ? globalThis.String(object.dataTypeName) : "",
-      constraintName: isSet(object.constraintName) ? globalThis.String(object.constraintName) : "",
-      file: isSet(object.file) ? globalThis.String(object.file) : "",
-      line: isSet(object.line) ? globalThis.Number(object.line) : 0,
-      routine: isSet(object.routine) ? globalThis.String(object.routine) : "",
-    };
-  },
-
   toJSON(message: QueryResult_PostgresError): unknown {
     const obj: any = {};
     if (message.severity !== "") {
@@ -1926,15 +1836,6 @@ export const QueryResult_Message: MessageFns<QueryResult_Message> = {
     return message;
   },
 
-  fromJSON(object: any): QueryResult_Message {
-    return {
-      level: isSet(object.level)
-        ? queryResult_Message_LevelFromJSON(object.level)
-        : QueryResult_Message_Level.LEVEL_UNSPECIFIED,
-      content: isSet(object.content) ? globalThis.String(object.content) : "",
-    };
-  },
-
   toJSON(message: QueryResult_Message): unknown {
     const obj: any = {};
     if (message.level !== QueryResult_Message_Level.LEVEL_UNSPECIFIED) {
@@ -1991,12 +1892,6 @@ export const QueryRow: MessageFns<QueryRow> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): QueryRow {
-    return {
-      values: globalThis.Array.isArray(object?.values) ? object.values.map((e: any) => RowValue.fromJSON(e)) : [],
-    };
   },
 
   toJSON(message: QueryRow): unknown {
@@ -2199,26 +2094,6 @@ export const RowValue: MessageFns<RowValue> = {
     return message;
   },
 
-  fromJSON(object: any): RowValue {
-    return {
-      nullValue: isSet(object.nullValue) ? nullValueFromJSON(object.nullValue) : undefined,
-      boolValue: isSet(object.boolValue) ? globalThis.Boolean(object.boolValue) : undefined,
-      bytesValue: isSet(object.bytesValue) ? bytesFromBase64(object.bytesValue) : undefined,
-      doubleValue: isSet(object.doubleValue) ? globalThis.Number(object.doubleValue) : undefined,
-      floatValue: isSet(object.floatValue) ? globalThis.Number(object.floatValue) : undefined,
-      int32Value: isSet(object.int32Value) ? globalThis.Number(object.int32Value) : undefined,
-      int64Value: isSet(object.int64Value) ? Long.fromValue(object.int64Value) : undefined,
-      stringValue: isSet(object.stringValue) ? globalThis.String(object.stringValue) : undefined,
-      uint32Value: isSet(object.uint32Value) ? globalThis.Number(object.uint32Value) : undefined,
-      uint64Value: isSet(object.uint64Value) ? Long.fromValue(object.uint64Value) : undefined,
-      valueValue: isSet(object?.valueValue) ? object.valueValue : undefined,
-      timestampValue: isSet(object.timestampValue) ? RowValue_Timestamp.fromJSON(object.timestampValue) : undefined,
-      timestampTzValue: isSet(object.timestampTzValue)
-        ? RowValue_TimestampTZ.fromJSON(object.timestampTzValue)
-        : undefined,
-    };
-  },
-
   toJSON(message: RowValue): unknown {
     const obj: any = {};
     if (message.nullValue !== undefined) {
@@ -2340,13 +2215,6 @@ export const RowValue_Timestamp: MessageFns<RowValue_Timestamp> = {
     return message;
   },
 
-  fromJSON(object: any): RowValue_Timestamp {
-    return {
-      googleTimestamp: isSet(object.googleTimestamp) ? fromJsonTimestamp(object.googleTimestamp) : undefined,
-      accuracy: isSet(object.accuracy) ? globalThis.Number(object.accuracy) : 0,
-    };
-  },
-
   toJSON(message: RowValue_Timestamp): unknown {
     const obj: any = {};
     if (message.googleTimestamp !== undefined) {
@@ -2438,15 +2306,6 @@ export const RowValue_TimestampTZ: MessageFns<RowValue_TimestampTZ> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): RowValue_TimestampTZ {
-    return {
-      googleTimestamp: isSet(object.googleTimestamp) ? fromJsonTimestamp(object.googleTimestamp) : undefined,
-      zone: isSet(object.zone) ? globalThis.String(object.zone) : "",
-      offset: isSet(object.offset) ? globalThis.Number(object.offset) : 0,
-      accuracy: isSet(object.accuracy) ? globalThis.Number(object.accuracy) : 0,
-    };
   },
 
   toJSON(message: RowValue_TimestampTZ): unknown {
@@ -2577,17 +2436,6 @@ export const Advice: MessageFns<Advice> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): Advice {
-    return {
-      status: isSet(object.status) ? advice_StatusFromJSON(object.status) : Advice_Status.STATUS_UNSPECIFIED,
-      code: isSet(object.code) ? globalThis.Number(object.code) : 0,
-      title: isSet(object.title) ? globalThis.String(object.title) : "",
-      content: isSet(object.content) ? globalThis.String(object.content) : "",
-      startPosition: isSet(object.startPosition) ? Position.fromJSON(object.startPosition) : undefined,
-      endPosition: isSet(object.endPosition) ? Position.fromJSON(object.endPosition) : undefined,
-    };
   },
 
   toJSON(message: Advice): unknown {
@@ -2742,18 +2590,6 @@ export const ExportRequest: MessageFns<ExportRequest> = {
     return message;
   },
 
-  fromJSON(object: any): ExportRequest {
-    return {
-      name: isSet(object.name) ? globalThis.String(object.name) : "",
-      statement: isSet(object.statement) ? globalThis.String(object.statement) : "",
-      limit: isSet(object.limit) ? globalThis.Number(object.limit) : 0,
-      format: isSet(object.format) ? exportFormatFromJSON(object.format) : ExportFormat.FORMAT_UNSPECIFIED,
-      admin: isSet(object.admin) ? globalThis.Boolean(object.admin) : false,
-      password: isSet(object.password) ? globalThis.String(object.password) : "",
-      dataSourceId: isSet(object.dataSourceId) ? globalThis.String(object.dataSourceId) : "",
-    };
-  },
-
   toJSON(message: ExportRequest): unknown {
     const obj: any = {};
     if (message.name !== "") {
@@ -2832,10 +2668,6 @@ export const ExportResponse: MessageFns<ExportResponse> = {
     return message;
   },
 
-  fromJSON(object: any): ExportResponse {
-    return { content: isSet(object.content) ? bytesFromBase64(object.content) : new Uint8Array(0) };
-  },
-
   toJSON(message: ExportResponse): unknown {
     const obj: any = {};
     if (message.content.length !== 0) {
@@ -2912,14 +2744,6 @@ export const PrettyRequest: MessageFns<PrettyRequest> = {
     return message;
   },
 
-  fromJSON(object: any): PrettyRequest {
-    return {
-      engine: isSet(object.engine) ? engineFromJSON(object.engine) : Engine.ENGINE_UNSPECIFIED,
-      currentSchema: isSet(object.currentSchema) ? globalThis.String(object.currentSchema) : "",
-      expectedSchema: isSet(object.expectedSchema) ? globalThis.String(object.expectedSchema) : "",
-    };
-  },
-
   toJSON(message: PrettyRequest): unknown {
     const obj: any = {};
     if (message.engine !== Engine.ENGINE_UNSPECIFIED) {
@@ -2991,13 +2815,6 @@ export const PrettyResponse: MessageFns<PrettyResponse> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): PrettyResponse {
-    return {
-      currentSchema: isSet(object.currentSchema) ? globalThis.String(object.currentSchema) : "",
-      expectedSchema: isSet(object.expectedSchema) ? globalThis.String(object.expectedSchema) : "",
-    };
   },
 
   toJSON(message: PrettyResponse): unknown {
@@ -3080,16 +2897,6 @@ export const CheckRequest: MessageFns<CheckRequest> = {
     return message;
   },
 
-  fromJSON(object: any): CheckRequest {
-    return {
-      name: isSet(object.name) ? globalThis.String(object.name) : "",
-      statement: isSet(object.statement) ? globalThis.String(object.statement) : "",
-      changeType: isSet(object.changeType)
-        ? checkRequest_ChangeTypeFromJSON(object.changeType)
-        : CheckRequest_ChangeType.CHANGE_TYPE_UNSPECIFIED,
-    };
-  },
-
   toJSON(message: CheckRequest): unknown {
     const obj: any = {};
     if (message.name !== "") {
@@ -3163,13 +2970,6 @@ export const CheckResponse: MessageFns<CheckResponse> = {
     return message;
   },
 
-  fromJSON(object: any): CheckResponse {
-    return {
-      advices: globalThis.Array.isArray(object?.advices) ? object.advices.map((e: any) => Advice.fromJSON(e)) : [],
-      affectedRows: isSet(object.affectedRows) ? globalThis.Number(object.affectedRows) : 0,
-    };
-  },
-
   toJSON(message: CheckResponse): unknown {
     const obj: any = {};
     if (message.advices?.length) {
@@ -3228,10 +3028,6 @@ export const ParseMyBatisMapperRequest: MessageFns<ParseMyBatisMapperRequest> = 
     return message;
   },
 
-  fromJSON(object: any): ParseMyBatisMapperRequest {
-    return { content: isSet(object.content) ? bytesFromBase64(object.content) : new Uint8Array(0) };
-  },
-
   toJSON(message: ParseMyBatisMapperRequest): unknown {
     const obj: any = {};
     if (message.content.length !== 0) {
@@ -3284,14 +3080,6 @@ export const ParseMyBatisMapperResponse: MessageFns<ParseMyBatisMapperResponse> 
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): ParseMyBatisMapperResponse {
-    return {
-      statements: globalThis.Array.isArray(object?.statements)
-        ? object.statements.map((e: any) => globalThis.String(e))
-        : [],
-    };
   },
 
   toJSON(message: ParseMyBatisMapperResponse): unknown {
@@ -3410,19 +3198,6 @@ export const DiffMetadataRequest: MessageFns<DiffMetadataRequest> = {
     return message;
   },
 
-  fromJSON(object: any): DiffMetadataRequest {
-    return {
-      sourceMetadata: isSet(object.sourceMetadata) ? DatabaseMetadata.fromJSON(object.sourceMetadata) : undefined,
-      targetMetadata: isSet(object.targetMetadata) ? DatabaseMetadata.fromJSON(object.targetMetadata) : undefined,
-      sourceCatalog: isSet(object.sourceCatalog) ? DatabaseCatalog.fromJSON(object.sourceCatalog) : undefined,
-      targetCatalog: isSet(object.targetCatalog) ? DatabaseCatalog.fromJSON(object.targetCatalog) : undefined,
-      engine: isSet(object.engine) ? engineFromJSON(object.engine) : Engine.ENGINE_UNSPECIFIED,
-      classificationFromConfig: isSet(object.classificationFromConfig)
-        ? globalThis.Boolean(object.classificationFromConfig)
-        : false,
-    };
-  },
-
   toJSON(message: DiffMetadataRequest): unknown {
     const obj: any = {};
     if (message.sourceMetadata !== undefined) {
@@ -3505,10 +3280,6 @@ export const DiffMetadataResponse: MessageFns<DiffMetadataResponse> = {
     return message;
   },
 
-  fromJSON(object: any): DiffMetadataResponse {
-    return { diff: isSet(object.diff) ? globalThis.String(object.diff) : "" };
-  },
-
   toJSON(message: DiffMetadataResponse): unknown {
     const obj: any = {};
     if (message.diff !== "") {
@@ -3585,14 +3356,6 @@ export const SearchQueryHistoriesRequest: MessageFns<SearchQueryHistoriesRequest
     return message;
   },
 
-  fromJSON(object: any): SearchQueryHistoriesRequest {
-    return {
-      pageSize: isSet(object.pageSize) ? globalThis.Number(object.pageSize) : 0,
-      pageToken: isSet(object.pageToken) ? globalThis.String(object.pageToken) : "",
-      filter: isSet(object.filter) ? globalThis.String(object.filter) : "",
-    };
-  },
-
   toJSON(message: SearchQueryHistoriesRequest): unknown {
     const obj: any = {};
     if (message.pageSize !== 0) {
@@ -3664,15 +3427,6 @@ export const SearchQueryHistoriesResponse: MessageFns<SearchQueryHistoriesRespon
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): SearchQueryHistoriesResponse {
-    return {
-      queryHistories: globalThis.Array.isArray(object?.queryHistories)
-        ? object.queryHistories.map((e: any) => QueryHistory.fromJSON(e))
-        : [],
-      nextPageToken: isSet(object.nextPageToken) ? globalThis.String(object.nextPageToken) : "",
-    };
   },
 
   toJSON(message: SearchQueryHistoriesResponse): unknown {
@@ -3819,19 +3573,6 @@ export const QueryHistory: MessageFns<QueryHistory> = {
     return message;
   },
 
-  fromJSON(object: any): QueryHistory {
-    return {
-      name: isSet(object.name) ? globalThis.String(object.name) : "",
-      database: isSet(object.database) ? globalThis.String(object.database) : "",
-      creator: isSet(object.creator) ? globalThis.String(object.creator) : "",
-      createTime: isSet(object.createTime) ? fromJsonTimestamp(object.createTime) : undefined,
-      statement: isSet(object.statement) ? globalThis.String(object.statement) : "",
-      error: isSet(object.error) ? globalThis.String(object.error) : undefined,
-      duration: isSet(object.duration) ? Duration.fromJSON(object.duration) : undefined,
-      type: isSet(object.type) ? queryHistory_TypeFromJSON(object.type) : QueryHistory_Type.TYPE_UNSPECIFIED,
-    };
-  },
-
   toJSON(message: QueryHistory): unknown {
     const obj: any = {};
     if (message.name !== "") {
@@ -3918,14 +3659,6 @@ export const AICompletionRequest: MessageFns<AICompletionRequest> = {
     return message;
   },
 
-  fromJSON(object: any): AICompletionRequest {
-    return {
-      messages: globalThis.Array.isArray(object?.messages)
-        ? object.messages.map((e: any) => AICompletionRequest_Message.fromJSON(e))
-        : [],
-    };
-  },
-
   toJSON(message: AICompletionRequest): unknown {
     const obj: any = {};
     if (message.messages?.length) {
@@ -3991,13 +3724,6 @@ export const AICompletionRequest_Message: MessageFns<AICompletionRequest_Message
     return message;
   },
 
-  fromJSON(object: any): AICompletionRequest_Message {
-    return {
-      role: isSet(object.role) ? globalThis.String(object.role) : "",
-      content: isSet(object.content) ? globalThis.String(object.content) : "",
-    };
-  },
-
   toJSON(message: AICompletionRequest_Message): unknown {
     const obj: any = {};
     if (message.role !== "") {
@@ -4056,14 +3782,6 @@ export const AICompletionResponse: MessageFns<AICompletionResponse> = {
     return message;
   },
 
-  fromJSON(object: any): AICompletionResponse {
-    return {
-      candidates: globalThis.Array.isArray(object?.candidates)
-        ? object.candidates.map((e: any) => AICompletionResponse_Candidate.fromJSON(e))
-        : [],
-    };
-  },
-
   toJSON(message: AICompletionResponse): unknown {
     const obj: any = {};
     if (message.candidates?.length) {
@@ -4116,12 +3834,6 @@ export const AICompletionResponse_Candidate: MessageFns<AICompletionResponse_Can
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): AICompletionResponse_Candidate {
-    return {
-      content: isSet(object.content) ? AICompletionResponse_Candidate_Content.fromJSON(object.content) : undefined,
-    };
   },
 
   toJSON(message: AICompletionResponse_Candidate): unknown {
@@ -4180,14 +3892,6 @@ export const AICompletionResponse_Candidate_Content: MessageFns<AICompletionResp
     return message;
   },
 
-  fromJSON(object: any): AICompletionResponse_Candidate_Content {
-    return {
-      parts: globalThis.Array.isArray(object?.parts)
-        ? object.parts.map((e: any) => AICompletionResponse_Candidate_Content_Part.fromJSON(e))
-        : [],
-    };
-  },
-
   toJSON(message: AICompletionResponse_Candidate_Content): unknown {
     const obj: any = {};
     if (message.parts?.length) {
@@ -4243,10 +3947,6 @@ export const AICompletionResponse_Candidate_Content_Part: MessageFns<AICompletio
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): AICompletionResponse_Candidate_Content_Part {
-    return { text: isSet(object.text) ? globalThis.String(object.text) : "" };
   },
 
   toJSON(message: AICompletionResponse_Candidate_Content_Part): unknown {
@@ -4760,15 +4460,6 @@ export const SQLServiceDefinition = {
   },
 } as const;
 
-function bytesFromBase64(b64: string): Uint8Array {
-  const bin = globalThis.atob(b64);
-  const arr = new Uint8Array(bin.length);
-  for (let i = 0; i < bin.length; ++i) {
-    arr[i] = bin.charCodeAt(i);
-  }
-  return arr;
-}
-
 function base64FromBytes(arr: Uint8Array): string {
   const bin: string[] = [];
   arr.forEach((byte) => {
@@ -4785,40 +4476,15 @@ export type DeepPartial<T> = T extends Builtin ? T
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
 
-function toTimestamp(date: Date): Timestamp {
-  const seconds = numberToLong(Math.trunc(date.getTime() / 1_000));
-  const nanos = (date.getTime() % 1_000) * 1_000_000;
-  return { seconds, nanos };
-}
-
 function fromTimestamp(t: Timestamp): Date {
   let millis = (t.seconds.toNumber() || 0) * 1_000;
   millis += (t.nanos || 0) / 1_000_000;
   return new globalThis.Date(millis);
 }
 
-function fromJsonTimestamp(o: any): Timestamp {
-  if (o instanceof globalThis.Date) {
-    return toTimestamp(o);
-  } else if (typeof o === "string") {
-    return toTimestamp(new globalThis.Date(o));
-  } else {
-    return Timestamp.fromJSON(o);
-  }
-}
-
-function numberToLong(number: number) {
-  return Long.fromNumber(number);
-}
-
-function isSet(value: any): boolean {
-  return value !== null && value !== undefined;
-}
-
 export interface MessageFns<T> {
   encode(message: T, writer?: BinaryWriter): BinaryWriter;
   decode(input: BinaryReader | Uint8Array, length?: number): T;
-  fromJSON(object: any): T;
   toJSON(message: T): unknown;
   create(base?: DeepPartial<T>): T;
   fromPartial(object: DeepPartial<T>): T;

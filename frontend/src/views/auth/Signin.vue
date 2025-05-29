@@ -28,7 +28,7 @@
                       {{
                         $t("auth.sign-in.demo-note", {
                           username: "demo@example.com",
-                          password: "1024",
+                          password: "12345678",
                         })
                       }}
                     </span>

@@ -1,5 +1,5 @@
 - statement: CREATE TABLE book(id int)
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 401
@@ -16,11 +16,11 @@
                   created_ts timestamp,
                   updater_id int,
                   updated_ts timestamp)
-  changeType: 0
+  changeType: 1
 - statement: |-
     ALTER TABLE tech_book ADD COLUMN creator_id int;
     ALTER TABLE tech_book RENAME COLUMN creator_id TO creator;
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 401
@@ -33,7 +33,7 @@
 - statement: |-
     ALTER TABLE tech_book ADD COLUMN creator_id int;
     ALTER TABLE tech_book DROP COLUMN creator_id;
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 401

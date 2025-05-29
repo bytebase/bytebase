@@ -18,7 +18,20 @@ import (
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
-func (s *DatabaseService) ListRevisions(ctx context.Context, request *v1pb.ListRevisionsRequest) (*v1pb.ListRevisionsResponse, error) {
+// RevisionService implements the revision service.
+type RevisionService struct {
+	v1pb.UnimplementedRevisionServiceServer
+	store *store.Store
+}
+
+// NewRevisionService creates a new RevisionService.
+func NewRevisionService(store *store.Store) *RevisionService {
+	return &RevisionService{
+		store: store,
+	}
+}
+
+func (s *RevisionService) ListRevisions(ctx context.Context, request *v1pb.ListRevisionsRequest) (*v1pb.ListRevisionsResponse, error) {
 	instanceID, databaseName, err := common.GetInstanceDatabaseID(request.Parent)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to get instance and database from %v, err: %v", request.Parent, err)
@@ -85,7 +98,7 @@ func (s *DatabaseService) ListRevisions(ctx context.Context, request *v1pb.ListR
 	}, nil
 }
 
-func (s *DatabaseService) GetRevision(ctx context.Context, request *v1pb.GetRevisionRequest) (*v1pb.Revision, error) {
+func (s *RevisionService) GetRevision(ctx context.Context, request *v1pb.GetRevisionRequest) (*v1pb.Revision, error) {
 	instanceName, databaseName, revisionUID, err := common.GetInstanceDatabaseRevisionID(request.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to get revision UID from %v, err: %v", request.Name, err)
@@ -102,7 +115,7 @@ func (s *DatabaseService) GetRevision(ctx context.Context, request *v1pb.GetRevi
 	return converted, nil
 }
 
-func (s *DatabaseService) CreateRevision(ctx context.Context, request *v1pb.CreateRevisionRequest) (*v1pb.Revision, error) {
+func (s *RevisionService) CreateRevision(ctx context.Context, request *v1pb.CreateRevisionRequest) (*v1pb.Revision, error) {
 	instanceID, databaseID, err := common.GetInstanceDatabaseID(request.Parent)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to get instance and database from %v, err: %v", request.Parent, err)
@@ -205,7 +218,47 @@ func (s *DatabaseService) CreateRevision(ctx context.Context, request *v1pb.Crea
 	return converted, nil
 }
 
-func (s *DatabaseService) DeleteRevision(ctx context.Context, request *v1pb.DeleteRevisionRequest) (*emptypb.Empty, error) {
+func (s *RevisionService) BatchCreateRevisions(ctx context.Context, request *v1pb.BatchCreateRevisionsRequest) (*v1pb.BatchCreateRevisionsResponse, error) {
+	instanceID, databaseID, err := common.GetInstanceDatabaseID(request.Parent)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "failed to get instance and database from %v, err: %v", request.Parent, err)
+	}
+	if len(request.Requests) == 0 {
+		return nil, status.Errorf(codes.InvalidArgument, "requests is empty")
+	}
+
+	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+		InstanceID:   &instanceID,
+		DatabaseName: &databaseID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get database, err: %v", err)
+	}
+	if database == nil {
+		return nil, status.Errorf(codes.NotFound, "database %q not found", request.Parent)
+	}
+
+	var revisions []*v1pb.Revision
+	for _, req := range request.Requests {
+		// Validate parent matches
+		if req.Parent != request.Parent {
+			return nil, status.Errorf(codes.InvalidArgument, "request parent %q does not match batch parent %q", req.Parent, request.Parent)
+		}
+
+		// Reuse the CreateRevision logic by calling it directly
+		revision, err := s.CreateRevision(ctx, req)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to create revision for request: %v, err: %v", req, err)
+		}
+		revisions = append(revisions, revision)
+	}
+
+	return &v1pb.BatchCreateRevisionsResponse{
+		Revisions: revisions,
+	}, nil
+}
+
+func (s *RevisionService) DeleteRevision(ctx context.Context, request *v1pb.DeleteRevisionRequest) (*emptypb.Empty, error) {
 	_, _, revisionUID, err := common.GetInstanceDatabaseRevisionID(request.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to get revision UID from %v, err: %v", request.Name, err)

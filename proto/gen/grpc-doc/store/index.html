@@ -921,10 +921,6 @@
                   <a href="#bytebase.store.PlanConfig.SpecReleaseSource"><span class="badge">M</span>PlanConfig.SpecReleaseSource</a>
                 </li>
               
-                <li>
-                  <a href="#bytebase.store.PlanConfig.Step"><span class="badge">M</span>PlanConfig.Step</a>
-                </li>
-              
               
                 <li>
                   <a href="#bytebase.store.PlanConfig.ChangeDatabaseConfig.Type"><span class="badge">E</span>PlanConfig.ChangeDatabaseConfig.Type</a>
@@ -2144,13 +2140,6 @@ TODO: use range instead. </p></td>
                 <tr>
                   <td>description</td>
                   <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>creator_id</td>
-                  <td><a href="#int32">int32</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
@@ -3424,6 +3413,13 @@ classification and user_comment is parsed from the comment. </p></td>
                   <td><p>The schema is drifted from the source of truth. </p></td>
                 </tr>
               
+                <tr>
+                  <td>version</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The version of database schema. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -3533,6 +3529,13 @@ classification and user_comment is parsed from the comment. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>search_path</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The search_path is the search path of a PostgreSQL database. </p></td>
                 </tr>
               
             </tbody>
@@ -5154,6 +5157,13 @@ in syntax [SUB]PARTITION {number}. </p></td>
                 <tr>
                   <td>indexes</td>
                   <td><a href="#bytebase.store.IndexMetadata">IndexMetadata</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>check_constraints</td>
+                  <td><a href="#bytebase.store.CheckConstraintMetadata">CheckConstraintMetadata</a></td>
                   <td>repeated</td>
                   <td><p> </p></td>
                 </tr>
@@ -7726,20 +7736,6 @@ Format: users/{userUID}. </p></td>
                 </tr>
               
                 <tr>
-                  <td>from_earliest_allowed_time</td>
-                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
-                  <td>optional</td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>to_earliest_allowed_time</td>
-                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
-                  <td>optional</td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
                   <td>to_status</td>
                   <td><a href="#bytebase.store.IssueCommentPayload.TaskUpdate.Status">IssueCommentPayload.TaskUpdate.Status</a></td>
                   <td>optional</td>
@@ -8314,8 +8310,8 @@ Format: instances/{instance}/databases/{database} </p></td>
             <tbody>
               
                 <tr>
-                  <td>steps</td>
-                  <td><a href="#bytebase.store.PlanConfig.Step">PlanConfig.Step</a></td>
+                  <td>specs</td>
+                  <td><a href="#bytebase.store.PlanConfig.Spec">PlanConfig.Spec</a></td>
                   <td>repeated</td>
                   <td><p> </p></td>
                 </tr>
@@ -8497,14 +8493,6 @@ For example, in MongoDB, it only creates the database when we first store data i
                 </tr>
               
                 <tr>
-                  <td>backup</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>backup is the resource name of the backup.
-Format: instances/{instance}/databases/{database}/backups/{backup-name} </p></td>
-                </tr>
-              
-                <tr>
                   <td>environment</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
@@ -8665,13 +8653,6 @@ Format: projects/{project}/releases/{release} </p></td>
             <tbody>
               
                 <tr>
-                  <td>earliest_allowed_time</td>
-                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
-                  <td></td>
-                  <td><p>earliest_allowed_time the earliest execution time of the change. </p></td>
-                </tr>
-              
-                <tr>
                   <td>id</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
@@ -8737,38 +8718,6 @@ Format: projects/{project}/releases/{release} </p></td>
 
         
       
-        <h3 id="bytebase.store.PlanConfig.Step">PlanConfig.Step</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>title</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Use the title if set.
-Use a generated title if empty. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>specs</td>
-                  <td><a href="#bytebase.store.PlanConfig.Spec">PlanConfig.Spec</a></td>
-                  <td>repeated</td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
 
       
         <h3 id="bytebase.store.PlanConfig.ChangeDatabaseConfig.Type">PlanConfig.ChangeDatabaseConfig.Type</h3>
@@ -8783,14 +8732,6 @@ Use a generated title if empty. </p></td>
                 <td>TYPE_UNSPECIFIED</td>
                 <td>0</td>
                 <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>BASELINE</td>
-                <td>1</td>
-                <td><p>Used for establishing schema baseline, this is used when
-1. Onboard the database into Bytebase since Bytebase needs to know the current database schema.
-2. Had schema drift and need to re-establish the baseline.</p></td>
               </tr>
             
               <tr>

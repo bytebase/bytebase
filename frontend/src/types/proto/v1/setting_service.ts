@@ -877,13 +877,6 @@ export const ListSettingsRequest: MessageFns<ListSettingsRequest> = {
     return message;
   },
 
-  fromJSON(object: any): ListSettingsRequest {
-    return {
-      pageSize: isSet(object.pageSize) ? globalThis.Number(object.pageSize) : 0,
-      pageToken: isSet(object.pageToken) ? globalThis.String(object.pageToken) : "",
-    };
-  },
-
   toJSON(message: ListSettingsRequest): unknown {
     const obj: any = {};
     if (message.pageSize !== 0) {
@@ -953,13 +946,6 @@ export const ListSettingsResponse: MessageFns<ListSettingsResponse> = {
     return message;
   },
 
-  fromJSON(object: any): ListSettingsResponse {
-    return {
-      settings: globalThis.Array.isArray(object?.settings) ? object.settings.map((e: any) => Setting.fromJSON(e)) : [],
-      nextPageToken: isSet(object.nextPageToken) ? globalThis.String(object.nextPageToken) : "",
-    };
-  },
-
   toJSON(message: ListSettingsResponse): unknown {
     const obj: any = {};
     if (message.settings?.length) {
@@ -1018,10 +1004,6 @@ export const GetSettingRequest: MessageFns<GetSettingRequest> = {
     return message;
   },
 
-  fromJSON(object: any): GetSettingRequest {
-    return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
-  },
-
   toJSON(message: GetSettingRequest): unknown {
     const obj: any = {};
     if (message.name !== "") {
@@ -1074,10 +1056,6 @@ export const GetSettingResponse: MessageFns<GetSettingResponse> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): GetSettingResponse {
-    return { setting: isSet(object.setting) ? Setting.fromJSON(object.setting) : undefined };
   },
 
   toJSON(message: GetSettingResponse): unknown {
@@ -1169,15 +1147,6 @@ export const UpdateSettingRequest: MessageFns<UpdateSettingRequest> = {
     return message;
   },
 
-  fromJSON(object: any): UpdateSettingRequest {
-    return {
-      setting: isSet(object.setting) ? Setting.fromJSON(object.setting) : undefined,
-      validateOnly: isSet(object.validateOnly) ? globalThis.Boolean(object.validateOnly) : false,
-      allowMissing: isSet(object.allowMissing) ? globalThis.Boolean(object.allowMissing) : false,
-      updateMask: isSet(object.updateMask) ? FieldMask.unwrap(FieldMask.fromJSON(object.updateMask)) : undefined,
-    };
-  },
-
   toJSON(message: UpdateSettingRequest): unknown {
     const obj: any = {};
     if (message.setting !== undefined) {
@@ -1255,13 +1224,6 @@ export const Setting: MessageFns<Setting> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): Setting {
-    return {
-      name: isSet(object.name) ? globalThis.String(object.name) : "",
-      value: isSet(object.value) ? Value.fromJSON(object.value) : undefined,
-    };
   },
 
   toJSON(message: Setting): unknown {
@@ -1490,48 +1452,6 @@ export const Value: MessageFns<Value> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): Value {
-    return {
-      stringValue: isSet(object.stringValue) ? globalThis.String(object.stringValue) : undefined,
-      smtpMailDeliverySettingValue: isSet(object.smtpMailDeliverySettingValue)
-        ? SMTPMailDeliverySettingValue.fromJSON(object.smtpMailDeliverySettingValue)
-        : undefined,
-      appImSettingValue: isSet(object.appImSettingValue) ? AppIMSetting.fromJSON(object.appImSettingValue) : undefined,
-      agentPluginSettingValue: isSet(object.agentPluginSettingValue)
-        ? AgentPluginSetting.fromJSON(object.agentPluginSettingValue)
-        : undefined,
-      workspaceProfileSettingValue: isSet(object.workspaceProfileSettingValue)
-        ? WorkspaceProfileSetting.fromJSON(object.workspaceProfileSettingValue)
-        : undefined,
-      workspaceApprovalSettingValue: isSet(object.workspaceApprovalSettingValue)
-        ? WorkspaceApprovalSetting.fromJSON(object.workspaceApprovalSettingValue)
-        : undefined,
-      workspaceTrialSettingValue: isSet(object.workspaceTrialSettingValue)
-        ? WorkspaceTrialSetting.fromJSON(object.workspaceTrialSettingValue)
-        : undefined,
-      schemaTemplateSettingValue: isSet(object.schemaTemplateSettingValue)
-        ? SchemaTemplateSetting.fromJSON(object.schemaTemplateSettingValue)
-        : undefined,
-      dataClassificationSettingValue: isSet(object.dataClassificationSettingValue)
-        ? DataClassificationSetting.fromJSON(object.dataClassificationSettingValue)
-        : undefined,
-      semanticTypeSettingValue: isSet(object.semanticTypeSettingValue)
-        ? SemanticTypeSetting.fromJSON(object.semanticTypeSettingValue)
-        : undefined,
-      maximumSqlResultSizeSetting: isSet(object.maximumSqlResultSizeSetting)
-        ? MaximumSQLResultSizeSetting.fromJSON(object.maximumSqlResultSizeSetting)
-        : undefined,
-      scimSetting: isSet(object.scimSetting) ? SCIMSetting.fromJSON(object.scimSetting) : undefined,
-      passwordRestrictionSetting: isSet(object.passwordRestrictionSetting)
-        ? PasswordRestrictionSetting.fromJSON(object.passwordRestrictionSetting)
-        : undefined,
-      aiSetting: isSet(object.aiSetting) ? AISetting.fromJSON(object.aiSetting) : undefined,
-      environmentSetting: isSet(object.environmentSetting)
-        ? EnvironmentSetting.fromJSON(object.environmentSetting)
-        : undefined,
-    };
   },
 
   toJSON(message: Value): unknown {
@@ -1804,26 +1724,6 @@ export const SMTPMailDeliverySettingValue: MessageFns<SMTPMailDeliverySettingVal
     return message;
   },
 
-  fromJSON(object: any): SMTPMailDeliverySettingValue {
-    return {
-      server: isSet(object.server) ? globalThis.String(object.server) : "",
-      port: isSet(object.port) ? globalThis.Number(object.port) : 0,
-      encryption: isSet(object.encryption)
-        ? sMTPMailDeliverySettingValue_EncryptionFromJSON(object.encryption)
-        : SMTPMailDeliverySettingValue_Encryption.ENCRYPTION_UNSPECIFIED,
-      ca: isSet(object.ca) ? globalThis.String(object.ca) : undefined,
-      key: isSet(object.key) ? globalThis.String(object.key) : undefined,
-      cert: isSet(object.cert) ? globalThis.String(object.cert) : undefined,
-      authentication: isSet(object.authentication)
-        ? sMTPMailDeliverySettingValue_AuthenticationFromJSON(object.authentication)
-        : SMTPMailDeliverySettingValue_Authentication.AUTHENTICATION_UNSPECIFIED,
-      username: isSet(object.username) ? globalThis.String(object.username) : "",
-      password: isSet(object.password) ? globalThis.String(object.password) : undefined,
-      from: isSet(object.from) ? globalThis.String(object.from) : "",
-      to: isSet(object.to) ? globalThis.String(object.to) : "",
-    };
-  },
-
   toJSON(message: SMTPMailDeliverySettingValue): unknown {
     const obj: any = {};
     if (message.server !== "") {
@@ -1963,16 +1863,6 @@ export const AppIMSetting: MessageFns<AppIMSetting> = {
     return message;
   },
 
-  fromJSON(object: any): AppIMSetting {
-    return {
-      slack: isSet(object.slack) ? AppIMSetting_Slack.fromJSON(object.slack) : undefined,
-      feishu: isSet(object.feishu) ? AppIMSetting_Feishu.fromJSON(object.feishu) : undefined,
-      wecom: isSet(object.wecom) ? AppIMSetting_Wecom.fromJSON(object.wecom) : undefined,
-      lark: isSet(object.lark) ? AppIMSetting_Lark.fromJSON(object.lark) : undefined,
-      dingtalk: isSet(object.dingtalk) ? AppIMSetting_DingTalk.fromJSON(object.dingtalk) : undefined,
-    };
-  },
-
   toJSON(message: AppIMSetting): unknown {
     const obj: any = {};
     if (message.slack !== undefined) {
@@ -2064,13 +1954,6 @@ export const AppIMSetting_Slack: MessageFns<AppIMSetting_Slack> = {
     return message;
   },
 
-  fromJSON(object: any): AppIMSetting_Slack {
-    return {
-      enabled: isSet(object.enabled) ? globalThis.Boolean(object.enabled) : false,
-      token: isSet(object.token) ? globalThis.String(object.token) : "",
-    };
-  },
-
   toJSON(message: AppIMSetting_Slack): unknown {
     const obj: any = {};
     if (message.enabled !== false) {
@@ -2149,14 +2032,6 @@ export const AppIMSetting_Feishu: MessageFns<AppIMSetting_Feishu> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): AppIMSetting_Feishu {
-    return {
-      enabled: isSet(object.enabled) ? globalThis.Boolean(object.enabled) : false,
-      appId: isSet(object.appId) ? globalThis.String(object.appId) : "",
-      appSecret: isSet(object.appSecret) ? globalThis.String(object.appSecret) : "",
-    };
   },
 
   toJSON(message: AppIMSetting_Feishu): unknown {
@@ -2254,15 +2129,6 @@ export const AppIMSetting_Wecom: MessageFns<AppIMSetting_Wecom> = {
     return message;
   },
 
-  fromJSON(object: any): AppIMSetting_Wecom {
-    return {
-      enabled: isSet(object.enabled) ? globalThis.Boolean(object.enabled) : false,
-      corpId: isSet(object.corpId) ? globalThis.String(object.corpId) : "",
-      agentId: isSet(object.agentId) ? globalThis.String(object.agentId) : "",
-      secret: isSet(object.secret) ? globalThis.String(object.secret) : "",
-    };
-  },
-
   toJSON(message: AppIMSetting_Wecom): unknown {
     const obj: any = {};
     if (message.enabled !== false) {
@@ -2349,14 +2215,6 @@ export const AppIMSetting_Lark: MessageFns<AppIMSetting_Lark> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): AppIMSetting_Lark {
-    return {
-      enabled: isSet(object.enabled) ? globalThis.Boolean(object.enabled) : false,
-      appId: isSet(object.appId) ? globalThis.String(object.appId) : "",
-      appSecret: isSet(object.appSecret) ? globalThis.String(object.appSecret) : "",
-    };
   },
 
   toJSON(message: AppIMSetting_Lark): unknown {
@@ -2454,15 +2312,6 @@ export const AppIMSetting_DingTalk: MessageFns<AppIMSetting_DingTalk> = {
     return message;
   },
 
-  fromJSON(object: any): AppIMSetting_DingTalk {
-    return {
-      enabled: isSet(object.enabled) ? globalThis.Boolean(object.enabled) : false,
-      clientId: isSet(object.clientId) ? globalThis.String(object.clientId) : "",
-      clientSecret: isSet(object.clientSecret) ? globalThis.String(object.clientSecret) : "",
-      robotCode: isSet(object.robotCode) ? globalThis.String(object.robotCode) : "",
-    };
-  },
-
   toJSON(message: AppIMSetting_DingTalk): unknown {
     const obj: any = {};
     if (message.enabled !== false) {
@@ -2538,13 +2387,6 @@ export const AgentPluginSetting: MessageFns<AgentPluginSetting> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): AgentPluginSetting {
-    return {
-      url: isSet(object.url) ? globalThis.String(object.url) : "",
-      token: isSet(object.token) ? globalThis.String(object.token) : "",
-    };
   },
 
   toJSON(message: AgentPluginSetting): unknown {
@@ -2727,32 +2569,6 @@ export const WorkspaceProfileSetting: MessageFns<WorkspaceProfileSetting> = {
     return message;
   },
 
-  fromJSON(object: any): WorkspaceProfileSetting {
-    return {
-      externalUrl: isSet(object.externalUrl) ? globalThis.String(object.externalUrl) : "",
-      disallowSignup: isSet(object.disallowSignup) ? globalThis.Boolean(object.disallowSignup) : false,
-      require2fa: isSet(object.require2fa) ? globalThis.Boolean(object.require2fa) : false,
-      outboundIpList: globalThis.Array.isArray(object?.outboundIpList)
-        ? object.outboundIpList.map((e: any) => globalThis.String(e))
-        : [],
-      tokenDuration: isSet(object.tokenDuration) ? Duration.fromJSON(object.tokenDuration) : undefined,
-      announcement: isSet(object.announcement) ? Announcement.fromJSON(object.announcement) : undefined,
-      maximumRoleExpiration: isSet(object.maximumRoleExpiration)
-        ? Duration.fromJSON(object.maximumRoleExpiration)
-        : undefined,
-      domains: globalThis.Array.isArray(object?.domains) ? object.domains.map((e: any) => globalThis.String(e)) : [],
-      enforceIdentityDomain: isSet(object.enforceIdentityDomain)
-        ? globalThis.Boolean(object.enforceIdentityDomain)
-        : false,
-      databaseChangeMode: isSet(object.databaseChangeMode)
-        ? databaseChangeModeFromJSON(object.databaseChangeMode)
-        : DatabaseChangeMode.DATABASE_CHANGE_MODE_UNSPECIFIED,
-      disallowPasswordSignin: isSet(object.disallowPasswordSignin)
-        ? globalThis.Boolean(object.disallowPasswordSignin)
-        : false,
-    };
-  },
-
   toJSON(message: WorkspaceProfileSetting): unknown {
     const obj: any = {};
     if (message.externalUrl !== "") {
@@ -2876,16 +2692,6 @@ export const Announcement: MessageFns<Announcement> = {
     return message;
   },
 
-  fromJSON(object: any): Announcement {
-    return {
-      level: isSet(object.level)
-        ? announcement_AlertLevelFromJSON(object.level)
-        : Announcement_AlertLevel.ALERT_LEVEL_UNSPECIFIED,
-      text: isSet(object.text) ? globalThis.String(object.text) : "",
-      link: isSet(object.link) ? globalThis.String(object.link) : "",
-    };
-  },
-
   toJSON(message: Announcement): unknown {
     const obj: any = {};
     if (message.level !== Announcement_AlertLevel.ALERT_LEVEL_UNSPECIFIED) {
@@ -2946,14 +2752,6 @@ export const WorkspaceApprovalSetting: MessageFns<WorkspaceApprovalSetting> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): WorkspaceApprovalSetting {
-    return {
-      rules: globalThis.Array.isArray(object?.rules)
-        ? object.rules.map((e: any) => WorkspaceApprovalSetting_Rule.fromJSON(e))
-        : [],
-    };
   },
 
   toJSON(message: WorkspaceApprovalSetting): unknown {
@@ -3019,13 +2817,6 @@ export const WorkspaceApprovalSetting_Rule: MessageFns<WorkspaceApprovalSetting_
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): WorkspaceApprovalSetting_Rule {
-    return {
-      template: isSet(object.template) ? ApprovalTemplate.fromJSON(object.template) : undefined,
-      condition: isSet(object.condition) ? Expr.fromJSON(object.condition) : undefined,
-    };
   },
 
   toJSON(message: WorkspaceApprovalSetting_Rule): unknown {
@@ -3110,20 +2901,6 @@ export const SchemaTemplateSetting: MessageFns<SchemaTemplateSetting> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): SchemaTemplateSetting {
-    return {
-      fieldTemplates: globalThis.Array.isArray(object?.fieldTemplates)
-        ? object.fieldTemplates.map((e: any) => SchemaTemplateSetting_FieldTemplate.fromJSON(e))
-        : [],
-      columnTypes: globalThis.Array.isArray(object?.columnTypes)
-        ? object.columnTypes.map((e: any) => SchemaTemplateSetting_ColumnType.fromJSON(e))
-        : [],
-      tableTemplates: globalThis.Array.isArray(object?.tableTemplates)
-        ? object.tableTemplates.map((e: any) => SchemaTemplateSetting_TableTemplate.fromJSON(e))
-        : [],
-    };
   },
 
   toJSON(message: SchemaTemplateSetting): unknown {
@@ -3234,16 +3011,6 @@ export const SchemaTemplateSetting_FieldTemplate: MessageFns<SchemaTemplateSetti
     return message;
   },
 
-  fromJSON(object: any): SchemaTemplateSetting_FieldTemplate {
-    return {
-      id: isSet(object.id) ? globalThis.String(object.id) : "",
-      engine: isSet(object.engine) ? engineFromJSON(object.engine) : Engine.ENGINE_UNSPECIFIED,
-      category: isSet(object.category) ? globalThis.String(object.category) : "",
-      column: isSet(object.column) ? ColumnMetadata.fromJSON(object.column) : undefined,
-      catalog: isSet(object.catalog) ? ColumnCatalog.fromJSON(object.catalog) : undefined,
-    };
-  },
-
   toJSON(message: SchemaTemplateSetting_FieldTemplate): unknown {
     const obj: any = {};
     if (message.id !== "") {
@@ -3338,14 +3105,6 @@ export const SchemaTemplateSetting_ColumnType: MessageFns<SchemaTemplateSetting_
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): SchemaTemplateSetting_ColumnType {
-    return {
-      engine: isSet(object.engine) ? engineFromJSON(object.engine) : Engine.ENGINE_UNSPECIFIED,
-      enabled: isSet(object.enabled) ? globalThis.Boolean(object.enabled) : false,
-      types: globalThis.Array.isArray(object?.types) ? object.types.map((e: any) => globalThis.String(e)) : [],
-    };
   },
 
   toJSON(message: SchemaTemplateSetting_ColumnType): unknown {
@@ -3452,16 +3211,6 @@ export const SchemaTemplateSetting_TableTemplate: MessageFns<SchemaTemplateSetti
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): SchemaTemplateSetting_TableTemplate {
-    return {
-      id: isSet(object.id) ? globalThis.String(object.id) : "",
-      engine: isSet(object.engine) ? engineFromJSON(object.engine) : Engine.ENGINE_UNSPECIFIED,
-      category: isSet(object.category) ? globalThis.String(object.category) : "",
-      table: isSet(object.table) ? TableMetadata.fromJSON(object.table) : undefined,
-      catalog: isSet(object.catalog) ? TableCatalog.fromJSON(object.catalog) : undefined,
-    };
   },
 
   toJSON(message: SchemaTemplateSetting_TableTemplate): unknown {
@@ -3600,17 +3349,6 @@ export const WorkspaceTrialSetting: MessageFns<WorkspaceTrialSetting> = {
     return message;
   },
 
-  fromJSON(object: any): WorkspaceTrialSetting {
-    return {
-      instanceCount: isSet(object.instanceCount) ? globalThis.Number(object.instanceCount) : 0,
-      expireTime: isSet(object.expireTime) ? fromJsonTimestamp(object.expireTime) : undefined,
-      issuedTime: isSet(object.issuedTime) ? fromJsonTimestamp(object.issuedTime) : undefined,
-      subject: isSet(object.subject) ? globalThis.String(object.subject) : "",
-      orgName: isSet(object.orgName) ? globalThis.String(object.orgName) : "",
-      plan: isSet(object.plan) ? planTypeFromJSON(object.plan) : PlanType.PLAN_TYPE_UNSPECIFIED,
-    };
-  },
-
   toJSON(message: WorkspaceTrialSetting): unknown {
     const obj: any = {};
     if (message.instanceCount !== 0) {
@@ -3687,14 +3425,6 @@ export const DataClassificationSetting: MessageFns<DataClassificationSetting> = 
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): DataClassificationSetting {
-    return {
-      configs: globalThis.Array.isArray(object?.configs)
-        ? object.configs.map((e: any) => DataClassificationSetting_DataClassificationConfig.fromJSON(e))
-        : [],
-    };
   },
 
   toJSON(message: DataClassificationSetting): unknown {
@@ -3808,27 +3538,6 @@ export const DataClassificationSetting_DataClassificationConfig: MessageFns<
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): DataClassificationSetting_DataClassificationConfig {
-    return {
-      id: isSet(object.id) ? globalThis.String(object.id) : "",
-      title: isSet(object.title) ? globalThis.String(object.title) : "",
-      levels: globalThis.Array.isArray(object?.levels)
-        ? object.levels.map((e: any) => DataClassificationSetting_DataClassificationConfig_Level.fromJSON(e))
-        : [],
-      classification: isObject(object.classification)
-        ? Object.entries(object.classification).reduce<
-          { [key: string]: DataClassificationSetting_DataClassificationConfig_DataClassification }
-        >((acc, [key, value]) => {
-          acc[key] = DataClassificationSetting_DataClassificationConfig_DataClassification.fromJSON(value);
-          return acc;
-        }, {})
-        : {},
-      classificationFromConfig: isSet(object.classificationFromConfig)
-        ? globalThis.Boolean(object.classificationFromConfig)
-        : false,
-    };
   },
 
   toJSON(message: DataClassificationSetting_DataClassificationConfig): unknown {
@@ -3946,14 +3655,6 @@ export const DataClassificationSetting_DataClassificationConfig_Level: MessageFn
     return message;
   },
 
-  fromJSON(object: any): DataClassificationSetting_DataClassificationConfig_Level {
-    return {
-      id: isSet(object.id) ? globalThis.String(object.id) : "",
-      title: isSet(object.title) ? globalThis.String(object.title) : "",
-      description: isSet(object.description) ? globalThis.String(object.description) : "",
-    };
-  },
-
   toJSON(message: DataClassificationSetting_DataClassificationConfig_Level): unknown {
     const obj: any = {};
     if (message.id !== "") {
@@ -4061,15 +3762,6 @@ export const DataClassificationSetting_DataClassificationConfig_DataClassificati
     return message;
   },
 
-  fromJSON(object: any): DataClassificationSetting_DataClassificationConfig_DataClassification {
-    return {
-      id: isSet(object.id) ? globalThis.String(object.id) : "",
-      title: isSet(object.title) ? globalThis.String(object.title) : "",
-      description: isSet(object.description) ? globalThis.String(object.description) : "",
-      levelId: isSet(object.levelId) ? globalThis.String(object.levelId) : undefined,
-    };
-  },
-
   toJSON(message: DataClassificationSetting_DataClassificationConfig_DataClassification): unknown {
     const obj: any = {};
     if (message.id !== "") {
@@ -4165,15 +3857,6 @@ export const DataClassificationSetting_DataClassificationConfig_ClassificationEn
     return message;
   },
 
-  fromJSON(object: any): DataClassificationSetting_DataClassificationConfig_ClassificationEntry {
-    return {
-      key: isSet(object.key) ? globalThis.String(object.key) : "",
-      value: isSet(object.value)
-        ? DataClassificationSetting_DataClassificationConfig_DataClassification.fromJSON(object.value)
-        : undefined,
-    };
-  },
-
   toJSON(message: DataClassificationSetting_DataClassificationConfig_ClassificationEntry): unknown {
     const obj: any = {};
     if (message.key !== "") {
@@ -4236,14 +3919,6 @@ export const SemanticTypeSetting: MessageFns<SemanticTypeSetting> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): SemanticTypeSetting {
-    return {
-      types: globalThis.Array.isArray(object?.types)
-        ? object.types.map((e: any) => SemanticTypeSetting_SemanticType.fromJSON(e))
-        : [],
-    };
   },
 
   toJSON(message: SemanticTypeSetting): unknown {
@@ -4331,15 +4006,6 @@ export const SemanticTypeSetting_SemanticType: MessageFns<SemanticTypeSetting_Se
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): SemanticTypeSetting_SemanticType {
-    return {
-      id: isSet(object.id) ? globalThis.String(object.id) : "",
-      title: isSet(object.title) ? globalThis.String(object.title) : "",
-      description: isSet(object.description) ? globalThis.String(object.description) : "",
-      algorithm: isSet(object.algorithm) ? Algorithm.fromJSON(object.algorithm) : undefined,
-    };
   },
 
   toJSON(message: SemanticTypeSetting_SemanticType): unknown {
@@ -4443,17 +4109,6 @@ export const Algorithm: MessageFns<Algorithm> = {
     return message;
   },
 
-  fromJSON(object: any): Algorithm {
-    return {
-      fullMask: isSet(object.fullMask) ? Algorithm_FullMask.fromJSON(object.fullMask) : undefined,
-      rangeMask: isSet(object.rangeMask) ? Algorithm_RangeMask.fromJSON(object.rangeMask) : undefined,
-      md5Mask: isSet(object.md5Mask) ? Algorithm_MD5Mask.fromJSON(object.md5Mask) : undefined,
-      innerOuterMask: isSet(object.innerOuterMask)
-        ? Algorithm_InnerOuterMask.fromJSON(object.innerOuterMask)
-        : undefined,
-    };
-  },
-
   toJSON(message: Algorithm): unknown {
     const obj: any = {};
     if (message.fullMask !== undefined) {
@@ -4528,10 +4183,6 @@ export const Algorithm_FullMask: MessageFns<Algorithm_FullMask> = {
     return message;
   },
 
-  fromJSON(object: any): Algorithm_FullMask {
-    return { substitution: isSet(object.substitution) ? globalThis.String(object.substitution) : "" };
-  },
-
   toJSON(message: Algorithm_FullMask): unknown {
     const obj: any = {};
     if (message.substitution !== "") {
@@ -4584,14 +4235,6 @@ export const Algorithm_RangeMask: MessageFns<Algorithm_RangeMask> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): Algorithm_RangeMask {
-    return {
-      slices: globalThis.Array.isArray(object?.slices)
-        ? object.slices.map((e: any) => Algorithm_RangeMask_Slice.fromJSON(e))
-        : [],
-    };
   },
 
   toJSON(message: Algorithm_RangeMask): unknown {
@@ -4670,14 +4313,6 @@ export const Algorithm_RangeMask_Slice: MessageFns<Algorithm_RangeMask_Slice> = 
     return message;
   },
 
-  fromJSON(object: any): Algorithm_RangeMask_Slice {
-    return {
-      start: isSet(object.start) ? globalThis.Number(object.start) : 0,
-      end: isSet(object.end) ? globalThis.Number(object.end) : 0,
-      substitution: isSet(object.substitution) ? globalThis.String(object.substitution) : "",
-    };
-  },
-
   toJSON(message: Algorithm_RangeMask_Slice): unknown {
     const obj: any = {};
     if (message.start !== 0) {
@@ -4738,10 +4373,6 @@ export const Algorithm_MD5Mask: MessageFns<Algorithm_MD5Mask> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): Algorithm_MD5Mask {
-    return { salt: isSet(object.salt) ? globalThis.String(object.salt) : "" };
   },
 
   toJSON(message: Algorithm_MD5Mask): unknown {
@@ -4836,17 +4467,6 @@ export const Algorithm_InnerOuterMask: MessageFns<Algorithm_InnerOuterMask> = {
     return message;
   },
 
-  fromJSON(object: any): Algorithm_InnerOuterMask {
-    return {
-      prefixLen: isSet(object.prefixLen) ? globalThis.Number(object.prefixLen) : 0,
-      suffixLen: isSet(object.suffixLen) ? globalThis.Number(object.suffixLen) : 0,
-      type: isSet(object.type)
-        ? algorithm_InnerOuterMask_MaskTypeFromJSON(object.type)
-        : Algorithm_InnerOuterMask_MaskType.MASK_TYPE_UNSPECIFIED,
-      substitution: isSet(object.substitution) ? globalThis.String(object.substitution) : "",
-    };
-  },
-
   toJSON(message: Algorithm_InnerOuterMask): unknown {
     const obj: any = {};
     if (message.prefixLen !== 0) {
@@ -4913,10 +4533,6 @@ export const MaximumSQLResultSizeSetting: MessageFns<MaximumSQLResultSizeSetting
     return message;
   },
 
-  fromJSON(object: any): MaximumSQLResultSizeSetting {
-    return { limit: isSet(object.limit) ? Long.fromValue(object.limit) : Long.ZERO };
-  },
-
   toJSON(message: MaximumSQLResultSizeSetting): unknown {
     const obj: any = {};
     if (!message.limit.equals(Long.ZERO)) {
@@ -4969,10 +4585,6 @@ export const SCIMSetting: MessageFns<SCIMSetting> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): SCIMSetting {
-    return { token: isSet(object.token) ? globalThis.String(object.token) : "" };
   },
 
   toJSON(message: SCIMSetting): unknown {
@@ -5101,24 +4713,6 @@ export const PasswordRestrictionSetting: MessageFns<PasswordRestrictionSetting> 
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): PasswordRestrictionSetting {
-    return {
-      minLength: isSet(object.minLength) ? globalThis.Number(object.minLength) : 0,
-      requireNumber: isSet(object.requireNumber) ? globalThis.Boolean(object.requireNumber) : false,
-      requireLetter: isSet(object.requireLetter) ? globalThis.Boolean(object.requireLetter) : false,
-      requireUppercaseLetter: isSet(object.requireUppercaseLetter)
-        ? globalThis.Boolean(object.requireUppercaseLetter)
-        : false,
-      requireSpecialCharacter: isSet(object.requireSpecialCharacter)
-        ? globalThis.Boolean(object.requireSpecialCharacter)
-        : false,
-      requireResetPasswordForFirstLogin: isSet(object.requireResetPasswordForFirstLogin)
-        ? globalThis.Boolean(object.requireResetPasswordForFirstLogin)
-        : false,
-      passwordRotation: isSet(object.passwordRotation) ? Duration.fromJSON(object.passwordRotation) : undefined,
-    };
   },
 
   toJSON(message: PasswordRestrictionSetting): unknown {
@@ -5263,19 +4857,6 @@ export const AISetting: MessageFns<AISetting> = {
     return message;
   },
 
-  fromJSON(object: any): AISetting {
-    return {
-      enabled: isSet(object.enabled) ? globalThis.Boolean(object.enabled) : false,
-      provider: isSet(object.provider)
-        ? aISetting_ProviderFromJSON(object.provider)
-        : AISetting_Provider.PROVIDER_UNSPECIFIED,
-      endpoint: isSet(object.endpoint) ? globalThis.String(object.endpoint) : "",
-      apiKey: isSet(object.apiKey) ? globalThis.String(object.apiKey) : "",
-      model: isSet(object.model) ? globalThis.String(object.model) : "",
-      version: isSet(object.version) ? globalThis.String(object.version) : "",
-    };
-  },
-
   toJSON(message: AISetting): unknown {
     const obj: any = {};
     if (message.enabled !== false) {
@@ -5348,14 +4929,6 @@ export const EnvironmentSetting: MessageFns<EnvironmentSetting> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): EnvironmentSetting {
-    return {
-      environments: globalThis.Array.isArray(object?.environments)
-        ? object.environments.map((e: any) => EnvironmentSetting_Environment.fromJSON(e))
-        : [],
-    };
   },
 
   toJSON(message: EnvironmentSetting): unknown {
@@ -5459,21 +5032,6 @@ export const EnvironmentSetting_Environment: MessageFns<EnvironmentSetting_Envir
     return message;
   },
 
-  fromJSON(object: any): EnvironmentSetting_Environment {
-    return {
-      name: isSet(object.name) ? globalThis.String(object.name) : "",
-      id: isSet(object.id) ? globalThis.String(object.id) : "",
-      title: isSet(object.title) ? globalThis.String(object.title) : "",
-      tags: isObject(object.tags)
-        ? Object.entries(object.tags).reduce<{ [key: string]: string }>((acc, [key, value]) => {
-          acc[key] = String(value);
-          return acc;
-        }, {})
-        : {},
-      color: isSet(object.color) ? globalThis.String(object.color) : "",
-    };
-  },
-
   toJSON(message: EnvironmentSetting_Environment): unknown {
     const obj: any = {};
     if (message.name !== "") {
@@ -5564,13 +5122,6 @@ export const EnvironmentSetting_Environment_TagsEntry: MessageFns<EnvironmentSet
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): EnvironmentSetting_Environment_TagsEntry {
-    return {
-      key: isSet(object.key) ? globalThis.String(object.key) : "",
-      value: isSet(object.value) ? globalThis.String(object.value) : "",
-    };
   },
 
   toJSON(message: EnvironmentSetting_Environment_TagsEntry): unknown {
@@ -5727,44 +5278,15 @@ export type DeepPartial<T> = T extends Builtin ? T
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
 
-function toTimestamp(date: Date): Timestamp {
-  const seconds = numberToLong(Math.trunc(date.getTime() / 1_000));
-  const nanos = (date.getTime() % 1_000) * 1_000_000;
-  return { seconds, nanos };
-}
-
 function fromTimestamp(t: Timestamp): Date {
   let millis = (t.seconds.toNumber() || 0) * 1_000;
   millis += (t.nanos || 0) / 1_000_000;
   return new globalThis.Date(millis);
 }
 
-function fromJsonTimestamp(o: any): Timestamp {
-  if (o instanceof globalThis.Date) {
-    return toTimestamp(o);
-  } else if (typeof o === "string") {
-    return toTimestamp(new globalThis.Date(o));
-  } else {
-    return Timestamp.fromJSON(o);
-  }
-}
-
-function numberToLong(number: number) {
-  return Long.fromNumber(number);
-}
-
-function isObject(value: any): boolean {
-  return typeof value === "object" && value !== null;
-}
-
-function isSet(value: any): boolean {
-  return value !== null && value !== undefined;
-}
-
 export interface MessageFns<T> {
   encode(message: T, writer?: BinaryWriter): BinaryWriter;
   decode(input: BinaryReader | Uint8Array, length?: number): T;
-  fromJSON(object: any): T;
   toJSON(message: T): unknown;
   create(base?: DeepPartial<T>): T;
   fromPartial(object: DeepPartial<T>): T;

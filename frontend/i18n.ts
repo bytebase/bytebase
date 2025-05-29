@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import { config } from "dotenv";
 import { promises as fs } from "fs";
 
@@ -179,6 +180,7 @@ async function addMissingKeysFromSource(
 async function updateLocalizationFiles() {
   const folders = [
     "src/locales",
+    "src/locales/dynamic",
     "src/locales/sql-review",
     "src/locales/subscription",
   ];

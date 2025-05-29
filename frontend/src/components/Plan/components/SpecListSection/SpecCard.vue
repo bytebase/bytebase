@@ -35,12 +35,12 @@
       class="flex items-center gap-1 truncate"
     >
       <InstanceV1Name
-        :instance="databaseForSpec(plan.projectEntity, spec).instanceResource"
+        :instance="databaseForSpec(project, spec).instanceResource"
         :link="false"
         class="text-gray-500 text-sm"
       />
       <span class="truncate text-sm">{{
-        databaseForSpec(plan.projectEntity, spec).databaseName
+        databaseForSpec(project, spec).databaseName
       }}</span>
     </div>
     <div
@@ -68,7 +68,7 @@ import { computed } from "vue";
 import DatabaseGroupIcon from "@/components/DatabaseGroupIcon.vue";
 import { planCheckRunSummaryForCheckRunList } from "@/components/PlanCheckRun/common";
 import { InstanceV1Name } from "@/components/v2";
-import { useDBGroupStore } from "@/store";
+import { useCurrentProjectV1, useDBGroupStore } from "@/store";
 import {
   PlanCheckRun_Result_Status,
   type Plan_Spec,
@@ -85,6 +85,7 @@ const props = defineProps<{
   spec: Plan_Spec;
 }>();
 
+const { project } = useCurrentProjectV1();
 const { isCreating, plan, selectedSpec, events } = usePlanContext();
 const dbGroupStore = useDBGroupStore();
 

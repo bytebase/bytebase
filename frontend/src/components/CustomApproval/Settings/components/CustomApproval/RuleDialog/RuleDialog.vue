@@ -29,7 +29,7 @@ import { useI18n } from "vue-i18n";
 import { BBModal, BBSpin } from "@/bbkit";
 import { pushNotification, useWorkspaceApprovalSettingStore } from "@/store";
 import type { LocalApprovalRule } from "@/types";
-import { isReadonlyApprovalRule, defer } from "@/utils";
+import { defer } from "@/utils";
 import { useCustomApprovalContext } from "../context";
 import RuleForm from "./RuleForm.vue";
 
@@ -52,7 +52,7 @@ const allowEditRule = computed(() => {
   if (!allowAdmin.value) return false;
   const rule = dialog.value?.rule;
   if (!rule) return false;
-  return !isReadonlyApprovalRule(rule);
+  return true;
 });
 
 const title = computed(() => {

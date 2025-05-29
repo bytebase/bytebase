@@ -2,10 +2,10 @@ import { NButton } from "naive-ui";
 import { h } from "vue";
 import { t } from "@/plugins/i18n";
 import {
-  pushNotification,
   useDatabaseV1Store,
   useEnvironmentV1Store,
   useInstanceResourceByName,
+  useProjectV1Store,
 } from "@/store";
 import type { ComposedDatabase, ComposedIssue, ComposedProject } from "@/types";
 import {
@@ -22,11 +22,13 @@ import { Task, Task_Status, Task_Type } from "@/types/proto/v1/rollout_service";
 import {
   defer,
   extractDatabaseResourceName,
-  flattenSpecList,
   flattenTaskV1List,
   isValidIssueName,
 } from "@/utils";
 import type { IssueContext } from "./context";
+
+export const projectOfIssue = (issue: ComposedIssue): ComposedProject =>
+  useProjectV1Store().getProjectByName(issue.project);
 
 export const useInstanceForTask = (task: Task) => {
   let instanceName: string = "";
@@ -34,7 +36,6 @@ export const useInstanceForTask = (task: Task) => {
     case Task_Type.DATABASE_CREATE:
       instanceName = task.target;
       break;
-    case Task_Type.DATABASE_SCHEMA_BASELINE:
     case Task_Type.DATABASE_SCHEMA_UPDATE:
     case Task_Type.DATABASE_SCHEMA_UPDATE_SDL:
     case Task_Type.DATABASE_SCHEMA_UPDATE_GHOST:
@@ -66,7 +67,6 @@ export const mockDatabase = (
   // Mock a database using all known resources
   const db = unknownDatabase();
   db.project = projectEntity.name;
-  db.projectEntity = projectEntity;
 
   db.name = database;
   const { instance, databaseName } = extractDatabaseResourceName(db.name);
@@ -129,7 +129,7 @@ export const extractCoreDatabaseInfoFromDatabaseCreateTask = (
 
 export const specForTask = (plan: Plan | undefined, task: Task) => {
   if (!plan) return undefined;
-  return flattenSpecList(plan).find((spec) => spec.id === task.specId);
+  return (plan.specs || []).find((spec) => spec.id === task.specId);
 };
 
 export const stageForTask = (issue: ComposedIssue, task: Task) => {
@@ -137,14 +137,6 @@ export const stageForTask = (issue: ComposedIssue, task: Task) => {
   return rollout?.stages.find(
     (stage) => stage.tasks.findIndex((t) => t.name === task.name) >= 0
   );
-};
-
-export const notifyNotEditableLegacyIssue = () => {
-  pushNotification({
-    module: "bytebase",
-    style: "CRITICAL",
-    title: t("issue.not-editable-legacy-issue"),
-  });
 };
 
 export const chooseUpdateTarget = (

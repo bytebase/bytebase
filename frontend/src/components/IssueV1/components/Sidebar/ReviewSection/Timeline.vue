@@ -60,7 +60,7 @@
               </template>
             </i18n-t>
             <li
-              v-if="!issue.projectEntity.allowSelfApproval"
+              v-if="!projectOfIssue(issue).allowSelfApproval"
               class="whitespace-pre-wrap"
             >
               {{
@@ -102,7 +102,7 @@ import {
   NPopover,
   NPerformantEllipsis,
 } from "naive-ui";
-import { useIssueContext } from "@/components/IssueV1/logic";
+import { useIssueContext, projectOfIssue } from "@/components/IssueV1/logic";
 import type { WrappedReviewStep } from "@/types";
 import { type User } from "@/types/proto/v1/user_service";
 import { approvalNodeText } from "@/utils";

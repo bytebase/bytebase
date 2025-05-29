@@ -9,7 +9,6 @@ package store
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
@@ -519,12 +518,10 @@ type IssueCommentPayload_TaskUpdate struct {
 	// Format: projects/{project}/sheets/{sheet}
 	FromSheet *string `protobuf:"bytes,2,opt,name=from_sheet,json=fromSheet,proto3,oneof" json:"from_sheet,omitempty"`
 	// Format: projects/{project}/sheets/{sheet}
-	ToSheet                 *string                                `protobuf:"bytes,3,opt,name=to_sheet,json=toSheet,proto3,oneof" json:"to_sheet,omitempty"`
-	FromEarliestAllowedTime *timestamppb.Timestamp                 `protobuf:"bytes,4,opt,name=from_earliest_allowed_time,json=fromEarliestAllowedTime,proto3,oneof" json:"from_earliest_allowed_time,omitempty"`
-	ToEarliestAllowedTime   *timestamppb.Timestamp                 `protobuf:"bytes,5,opt,name=to_earliest_allowed_time,json=toEarliestAllowedTime,proto3,oneof" json:"to_earliest_allowed_time,omitempty"`
-	ToStatus                *IssueCommentPayload_TaskUpdate_Status `protobuf:"varint,6,opt,name=to_status,json=toStatus,proto3,enum=bytebase.store.IssueCommentPayload_TaskUpdate_Status,oneof" json:"to_status,omitempty"`
-	unknownFields           protoimpl.UnknownFields
-	sizeCache               protoimpl.SizeCache
+	ToSheet       *string                                `protobuf:"bytes,3,opt,name=to_sheet,json=toSheet,proto3,oneof" json:"to_sheet,omitempty"`
+	ToStatus      *IssueCommentPayload_TaskUpdate_Status `protobuf:"varint,6,opt,name=to_status,json=toStatus,proto3,enum=bytebase.store.IssueCommentPayload_TaskUpdate_Status,oneof" json:"to_status,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *IssueCommentPayload_TaskUpdate) Reset() {
@@ -576,20 +573,6 @@ func (x *IssueCommentPayload_TaskUpdate) GetToSheet() string {
 		return *x.ToSheet
 	}
 	return ""
-}
-
-func (x *IssueCommentPayload_TaskUpdate) GetFromEarliestAllowedTime() *timestamppb.Timestamp {
-	if x != nil {
-		return x.FromEarliestAllowedTime
-	}
-	return nil
-}
-
-func (x *IssueCommentPayload_TaskUpdate) GetToEarliestAllowedTime() *timestamppb.Timestamp {
-	if x != nil {
-		return x.ToEarliestAllowedTime
-	}
-	return nil
 }
 
 func (x *IssueCommentPayload_TaskUpdate) GetToStatus() IssueCommentPayload_TaskUpdate_Status {
@@ -731,7 +714,7 @@ var File_store_issue_comment_proto protoreflect.FileDescriptor
 
 const file_store_issue_comment_proto_rawDesc = "" +
 	"\n" +
-	"\x19store/issue_comment.proto\x12\x0ebytebase.store\x1a\x1fgoogle/protobuf/timestamp.proto\"\xf2\x10\n" +
+	"\x19store/issue_comment.proto\x12\x0ebytebase.store\"\xfe\x0e\n" +
 	"\x13IssueCommentPayload\x12\x18\n" +
 	"\acomment\x18\x01 \x01(\tR\acomment\x12J\n" +
 	"\bapproval\x18\x02 \x01(\v2,.bytebase.store.IssueCommentPayload.ApprovalH\x00R\bapproval\x12T\n" +
@@ -772,16 +755,14 @@ const file_store_issue_comment_proto_rawDesc = "" +
 	"\n" +
 	"_to_status\x1a \n" +
 	"\bStageEnd\x12\x14\n" +
-	"\x05stage\x18\x01 \x01(\tR\x05stage\x1a\xca\x04\n" +
+	"\x05stage\x18\x01 \x01(\tR\x05stage\x1a\xd6\x02\n" +
 	"\n" +
 	"TaskUpdate\x12\x14\n" +
 	"\x05tasks\x18\x01 \x03(\tR\x05tasks\x12\"\n" +
 	"\n" +
 	"from_sheet\x18\x02 \x01(\tH\x00R\tfromSheet\x88\x01\x01\x12\x1e\n" +
-	"\bto_sheet\x18\x03 \x01(\tH\x01R\atoSheet\x88\x01\x01\x12\\\n" +
-	"\x1afrom_earliest_allowed_time\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampH\x02R\x17fromEarliestAllowedTime\x88\x01\x01\x12X\n" +
-	"\x18to_earliest_allowed_time\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampH\x03R\x15toEarliestAllowedTime\x88\x01\x01\x12W\n" +
-	"\tto_status\x18\x06 \x01(\x0e25.bytebase.store.IssueCommentPayload.TaskUpdate.StatusH\x04R\btoStatus\x88\x01\x01\"k\n" +
+	"\bto_sheet\x18\x03 \x01(\tH\x01R\atoSheet\x88\x01\x01\x12W\n" +
+	"\tto_status\x18\x06 \x01(\x0e25.bytebase.store.IssueCommentPayload.TaskUpdate.StatusH\x02R\btoStatus\x88\x01\x01\"k\n" +
 	"\x06Status\x12\x16\n" +
 	"\x12STATUS_UNSPECIFIED\x10\x00\x12\v\n" +
 	"\aPENDING\x10\x01\x12\v\n" +
@@ -792,9 +773,7 @@ const file_store_issue_comment_proto_rawDesc = "" +
 	"\aSKIPPED\x10\x05\x12\f\n" +
 	"\bCANCELED\x10\x06B\r\n" +
 	"\v_from_sheetB\v\n" +
-	"\t_to_sheetB\x1d\n" +
-	"\x1b_from_earliest_allowed_timeB\x1b\n" +
-	"\x19_to_earliest_allowed_timeB\f\n" +
+	"\t_to_sheetB\f\n" +
 	"\n" +
 	"_to_status\x1a\x9d\x02\n" +
 	"\x0fTaskPriorBackup\x12\x12\n" +
@@ -834,7 +813,6 @@ var file_store_issue_comment_proto_goTypes = []any{
 	(*IssueCommentPayload_TaskUpdate)(nil),            // 7: bytebase.store.IssueCommentPayload.TaskUpdate
 	(*IssueCommentPayload_TaskPriorBackup)(nil),       // 8: bytebase.store.IssueCommentPayload.TaskPriorBackup
 	(*IssueCommentPayload_TaskPriorBackup_Table)(nil), // 9: bytebase.store.IssueCommentPayload.TaskPriorBackup.Table
-	(*timestamppb.Timestamp)(nil),                     // 10: google.protobuf.Timestamp
 }
 var file_store_issue_comment_proto_depIdxs = []int32{
 	4,  // 0: bytebase.store.IssueCommentPayload.approval:type_name -> bytebase.store.IssueCommentPayload.Approval
@@ -845,15 +823,13 @@ var file_store_issue_comment_proto_depIdxs = []int32{
 	0,  // 5: bytebase.store.IssueCommentPayload.Approval.status:type_name -> bytebase.store.IssueCommentPayload.Approval.Status
 	1,  // 6: bytebase.store.IssueCommentPayload.IssueUpdate.from_status:type_name -> bytebase.store.IssueCommentPayload.IssueUpdate.IssueStatus
 	1,  // 7: bytebase.store.IssueCommentPayload.IssueUpdate.to_status:type_name -> bytebase.store.IssueCommentPayload.IssueUpdate.IssueStatus
-	10, // 8: bytebase.store.IssueCommentPayload.TaskUpdate.from_earliest_allowed_time:type_name -> google.protobuf.Timestamp
-	10, // 9: bytebase.store.IssueCommentPayload.TaskUpdate.to_earliest_allowed_time:type_name -> google.protobuf.Timestamp
-	2,  // 10: bytebase.store.IssueCommentPayload.TaskUpdate.to_status:type_name -> bytebase.store.IssueCommentPayload.TaskUpdate.Status
-	9,  // 11: bytebase.store.IssueCommentPayload.TaskPriorBackup.tables:type_name -> bytebase.store.IssueCommentPayload.TaskPriorBackup.Table
-	12, // [12:12] is the sub-list for method output_type
-	12, // [12:12] is the sub-list for method input_type
-	12, // [12:12] is the sub-list for extension type_name
-	12, // [12:12] is the sub-list for extension extendee
-	0,  // [0:12] is the sub-list for field type_name
+	2,  // 8: bytebase.store.IssueCommentPayload.TaskUpdate.to_status:type_name -> bytebase.store.IssueCommentPayload.TaskUpdate.Status
+	9,  // 9: bytebase.store.IssueCommentPayload.TaskPriorBackup.tables:type_name -> bytebase.store.IssueCommentPayload.TaskPriorBackup.Table
+	10, // [10:10] is the sub-list for method output_type
+	10, // [10:10] is the sub-list for method input_type
+	10, // [10:10] is the sub-list for extension type_name
+	10, // [10:10] is the sub-list for extension extendee
+	0,  // [0:10] is the sub-list for field type_name
 }
 
 func init() { file_store_issue_comment_proto_init() }

@@ -1,6 +1,6 @@
 - statement: |
     DELETE FROM tech_book WHERE name like "%abc";
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 204
@@ -13,11 +13,11 @@
 - statement: |
     CREATE TABLE t (id INT);
     SELECT * FROM t WHERE a LIKE 'abc%';
-  changeType: 0
+  changeType: 1
 - statement: |
     CREATE TABLE t (id INT);
     SELECT * FROM t WHERE a LIKE '%abc';
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 204
@@ -30,7 +30,7 @@
 - statement: |
     CREATE TABLE t (id INT);
     SELECT * FROM t WHERE a LIKE 'abc' OR a LIKE '%abc';
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 204
@@ -46,7 +46,7 @@
     FROM t
     WHERE a LIKE '%acc'
       OR a LIKE '%abc';
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 204
@@ -80,7 +80,7 @@
       WHERE a LIKE '%acc'
         OR a LIKE '%abc'
       ) t1;
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 204

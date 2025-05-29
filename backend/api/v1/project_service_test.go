@@ -56,13 +56,13 @@ func TestValidateMembers(t *testing.T) {
 func TestValidateBindings(t *testing.T) {
 	tests := []struct {
 		bindings []*v1pb.Binding
-		roles    []*v1pb.Role
+		roles    []*store.RoleMessage
 		wantErr  bool
 	}{
 		// Empty binding list.
 		{
 			bindings: []*v1pb.Binding{},
-			wantErr:  true,
+			wantErr:  false,
 		},
 		// Invalid project role.
 		{
@@ -71,9 +71,9 @@ func TestValidateBindings(t *testing.T) {
 					Role: "roles/haha",
 				},
 			},
-			roles: []*v1pb.Role{
+			roles: []*store.RoleMessage{
 				{
-					Name: "roles/projectOwner",
+					ResourceID: "projectOwner",
 				},
 			},
 			wantErr: true,
@@ -86,37 +86,72 @@ func TestValidateBindings(t *testing.T) {
 					Members: []string{"user:bytebase"},
 				},
 				{
-					Role:    "role/projectDeveloper",
+					Role:    "roles/projectDeveloper",
 					Members: []string{},
 				},
 			},
-			roles: []*v1pb.Role{
+			roles: []*store.RoleMessage{
 				{
-					Name: "roles/projectOwner",
+					ResourceID: "projectOwner",
 				},
 				{
-					Name: "role/projectDeveloper",
+					ResourceID: "projectDeveloper",
 				},
 			},
 			wantErr: false,
+		},
+		{
+			bindings: []*v1pb.Binding{
+				{
+					Role:    "roles/projectOwner",
+					Members: []string{},
+				},
+			},
+			roles: []*store.RoleMessage{
+				{
+					ResourceID: "projectOwner",
+				},
+				{
+					ResourceID: "projectDeveloper",
+				},
+			},
+			wantErr: false,
+		},
+		// Invalid condition
+		{
+			bindings: []*v1pb.Binding{
+				{
+					Role:    "roles/projectOwner",
+					Members: []string{"user:bytebase"},
+					Condition: &expr.Expr{
+						Expression: `database == "employee" && environment_name == "test"`,
+					},
+				},
+			},
+			roles: []*store.RoleMessage{
+				{
+					ResourceID: "projectOwner",
+				},
+			},
+			wantErr: true,
 		},
 		// Must contain one owner binding.
 		{
 			bindings: []*v1pb.Binding{
 				{
-					Role:    "role/projectDeveloper",
+					Role:    "roles/projectDeveloper",
 					Members: []string{"user:bytebase"},
 				},
 			},
-			roles: []*v1pb.Role{
+			roles: []*store.RoleMessage{
 				{
-					Name: "roles/projectOwner",
+					ResourceID: "projectOwner",
 				},
 				{
-					Name: "role/projectDeveloper",
+					ResourceID: "projectDeveloper",
 				},
 			},
-			wantErr: true,
+			wantErr: false,
 		},
 		{
 			bindings: []*v1pb.Binding{
@@ -130,12 +165,12 @@ func TestValidateBindings(t *testing.T) {
 					Members: []string{"user:foo"},
 				},
 			},
-			roles: []*v1pb.Role{
+			roles: []*store.RoleMessage{
 				{
-					Name: "roles/projectOwner",
+					ResourceID: "projectOwner",
 				},
 				{
-					Name: "role/projectDeveloper",
+					ResourceID: "projectDeveloper",
 				},
 			},
 			wantErr: false,
@@ -148,12 +183,12 @@ func TestValidateBindings(t *testing.T) {
 					Members: []string{"user:bytebase"},
 				},
 			},
-			roles: []*v1pb.Role{
+			roles: []*store.RoleMessage{
 				{
-					Name: "roles/projectOwner",
+					ResourceID: "projectOwner",
 				},
 				{
-					Name: "role/projectDeveloper",
+					ResourceID: "projectDeveloper",
 				},
 			},
 			wantErr: false,
@@ -165,16 +200,16 @@ func TestValidateBindings(t *testing.T) {
 					Members: []string{"user:bytebase"},
 				},
 				{
-					Role:    "role/projectDeveloper",
+					Role:    "roles/projectDeveloper",
 					Members: []string{"user:foo"},
 				},
 			},
-			roles: []*v1pb.Role{
+			roles: []*store.RoleMessage{
 				{
-					Name: "roles/projectOwner",
+					ResourceID: "projectOwner",
 				},
 				{
-					Name: "role/projectDeveloper",
+					ResourceID: "projectDeveloper",
 				},
 			},
 			wantErr: false,
@@ -182,10 +217,8 @@ func TestValidateBindings(t *testing.T) {
 	}
 
 	a := require.New(t)
-	// Mock an empty project service to test the validateBindings function.
-	projectService := NewProjectService(nil, nil, nil, nil)
 	for _, tt := range tests {
-		err := projectService.validateBindings(tt.bindings, tt.roles, nil)
+		err := validateBindings(tt.bindings, tt.roles, nil)
 		if tt.wantErr {
 			a.Error(err)
 		} else {
@@ -213,7 +246,7 @@ func TestValidateIAMPolicyExpression(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		err := validateIAMPolicyExpression(tt.expr, tt.maximumRoleExpiration)
+		err := validateExpirationInExpression(tt.expr, tt.maximumRoleExpiration)
 		if tt.wantErr {
 			require.Error(t, err)
 		} else {

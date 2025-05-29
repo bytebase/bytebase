@@ -27,23 +27,17 @@
   />
 
   <SQLCheckPanel
-    v-if="
-      showSQLCheckResultPanel &&
-      databaseForTask(issue.projectEntity, selectedTask)
-    "
+    v-if="showSQLCheckResultPanel && databaseForTask(project, selectedTask)"
     :project="issue.project"
-    :database="databaseForTask(issue.projectEntity, selectedTask)"
+    :database="databaseForTask(project, selectedTask)"
     :advices="
-      checkResultMap[databaseForTask(issue.projectEntity, selectedTask).name]
-        .advices
+      checkResultMap[databaseForTask(project, selectedTask).name].advices
     "
     :affected-rows="
-      checkResultMap[databaseForTask(issue.projectEntity, selectedTask).name]
-        .affectedRows
+      checkResultMap[databaseForTask(project, selectedTask).name].affectedRows
     "
     :risk-level="
-      checkResultMap[databaseForTask(issue.projectEntity, selectedTask).name]
-        .riskLevel
+      checkResultMap[databaseForTask(project, selectedTask).name].riskLevel
     "
     :confirm="sqlCheckConfirmDialog"
     :override-title="$t('issue.sql-check.sql-review-violations')"
@@ -60,12 +54,14 @@ import { getValidIssueLabels } from "@/components/IssueV1/components/IssueLabelS
 import { ErrorList } from "@/components/IssueV1/components/common";
 import {
   databaseEngineForSpec,
-  getLocalSheetByName,
   isValidStage,
+  specForTask,
   useIssueContext,
 } from "@/components/IssueV1/logic";
 import formatSQL from "@/components/MonacoEditor/sqlFormatter";
-import { isValidSpec } from "@/components/Plan";
+import { getLocalSheetByName, isValidSpec } from "@/components/Plan";
+import { getSpecChangeType } from "@/components/Plan/components/SQLCheckSection/common";
+import { usePlanSQLCheckContext } from "@/components/Plan/components/SQLCheckSection/context";
 import { databaseForTask } from "@/components/Rollout/RolloutDetail";
 import { SQLCheckPanel } from "@/components/SQLCheck";
 import { STATEMENT_SKIP_CHECK_THRESHOLD } from "@/components/SQLCheck/common";
@@ -77,9 +73,13 @@ import {
 } from "@/grpcweb";
 import { emitWindowEvent } from "@/plugins";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
-import { useDatabaseV1Store, useSheetV1Store } from "@/store";
+import {
+  useDatabaseV1Store,
+  useSheetV1Store,
+  useCurrentProjectV1,
+} from "@/store";
 import { dialectOfEngineV1, languageOfEngineV1 } from "@/types";
-import { Issue } from "@/types/proto/v1/issue_service";
+import { Issue, Issue_Type } from "@/types/proto/v1/issue_service";
 import type { Plan_ExportDataConfig } from "@/types/proto/v1/plan_service";
 import { type Plan_ChangeDatabaseConfig } from "@/types/proto/v1/plan_service";
 import { ReleaseFileType } from "@/types/proto/v1/release_service";
@@ -98,19 +98,16 @@ import {
   sheetNameOfTaskV1,
   type Defer,
 } from "@/utils";
-import { getTaskChangeType } from "../../../SQLCheckSection/common";
-import { useIssueSQLCheckContext } from "../../../SQLCheckSection/context";
 
 const MAX_FORMATTABLE_STATEMENT_SIZE = 10000; // 10K characters
 
 const { t } = useI18n();
 const router = useRouter();
-const { issue, formatOnSave, events, selectedTask } = useIssueContext();
-const {
-  enabled: shouldRunSQLCheck,
-  resultMap: checkResultMap,
-  upsertResult: upsertCheckResult,
-} = useIssueSQLCheckContext();
+const { isCreating, issue, formatOnSave, events, selectedTask } =
+  useIssueContext();
+const { project } = useCurrentProjectV1();
+const { resultMap: checkResultMap, upsertResult: upsertCheckResult } =
+  usePlanSQLCheckContext();
 const sheetStore = useSheetV1Store();
 const loading = ref(false);
 const showSQLCheckResultPanel = ref(false);
@@ -118,11 +115,7 @@ const sqlCheckConfirmDialog = ref<Defer<boolean>>();
 
 const issueCreateErrorList = computed(() => {
   const errorList: string[] = [];
-  if (
-    !hasPermissionToCreateChangeDatabaseIssueInProject(
-      issue.value.projectEntity
-    )
-  ) {
+  if (!hasPermissionToCreateChangeDatabaseIssueInProject(project.value)) {
     errorList.push(t("common.missing-required-permission"));
   }
   if (!issue.value.title.trim()) {
@@ -136,21 +129,15 @@ const issueCreateErrorList = computed(() => {
     }
   } else {
     if (issue.value.planEntity) {
-      if (
-        !issue.value.planEntity.steps.every((step) =>
-          step.specs.every((spec) => isValidSpec(spec))
-        )
-      ) {
+      if (!issue.value.planEntity.specs.every((spec) => isValidSpec(spec))) {
         errorList.push("Missing SQL statement in some specs");
       }
     }
   }
   if (
-    issue.value.projectEntity.forceIssueLabels &&
-    getValidIssueLabels(
-      issue.value.labels,
-      issue.value.projectEntity.issueLabels
-    ).length === 0
+    project.value.forceIssueLabels &&
+    getValidIssueLabels(issue.value.labels, project.value.issueLabels)
+      .length === 0
   ) {
     errorList.push(
       t("project.settings.issue-related.labels.force-issue-labels.warning")
@@ -206,19 +193,14 @@ const doCreateIssue = async () => {
 
 // Create sheets for spec configs and update their resource names.
 const createSheets = async () => {
-  const steps = issue.value.planEntity?.steps ?? [];
-  const flattenSpecList = steps.flatMap((step) => {
-    return step.specs;
-  });
-
   const configWithSheetList: (
     | Plan_ChangeDatabaseConfig
     | Plan_ExportDataConfig
   )[] = [];
   const pendingCreateSheetMap = new Map<string, Sheet>();
 
-  for (let i = 0; i < flattenSpecList.length; i++) {
-    const spec = flattenSpecList[i];
+  const specList = issue.value.planEntity?.specs ?? [];
+  for (const spec of specList) {
     const config = spec.changeDatabaseConfig || spec.exportDataConfig;
     if (!config) continue;
     configWithSheetList.push(config);
@@ -299,8 +281,13 @@ const emitIssueCreateWindowEvent = (issue: Issue) => {
 };
 
 const runSQLCheckForIssue = async () => {
-  if (!shouldRunSQLCheck.value) {
-    return true;
+  if (
+    !isCreating.value ||
+    ![Issue_Type.DATABASE_CHANGE, Issue_Type.DATABASE_DATA_EXPORT].includes(
+      issue.value.type
+    )
+  ) {
+    return;
   }
 
   const flattenTasks = flattenTaskV1List(issue.value.rolloutEntity);
@@ -315,7 +302,7 @@ const runSQLCheckForIssue = async () => {
     }
     if (!sheet) continue;
     const statement = getSheetStatement(sheet);
-    const database = databaseForTask(issue.value.projectEntity, task);
+    const database = databaseForTask(project.value, task);
     if (!statement) {
       continue;
     }
@@ -339,7 +326,9 @@ const runSQLCheckForIssue = async () => {
             version: "0",
             type: ReleaseFileType.VERSIONED,
             statement: new TextEncoder().encode(statement),
-            changeType: getTaskChangeType(issue.value, flattenTasks[0]),
+            changeType: getSpecChangeType(
+              specForTask(issue.value.planEntity, selectedTask.value)
+            ),
           },
         ],
       },

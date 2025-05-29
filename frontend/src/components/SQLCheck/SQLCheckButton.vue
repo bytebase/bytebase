@@ -84,7 +84,6 @@ import {
 import { Advice, Advice_Status } from "@/types/proto/v1/sql_service";
 import type { Defer, VueStyle } from "@/utils";
 import { defer } from "@/utils";
-import { providePlanCheckRunContext } from "../PlanCheckRun/context";
 import ErrorList from "../misc/ErrorList.vue";
 import SQLCheckPanel from "./SQLCheckPanel.vue";
 import SQLCheckSummary from "./SQLCheckSummary.vue";
@@ -151,8 +150,6 @@ const statementErrors = asyncComputed(async () => {
   }
   return [];
 }, []);
-
-providePlanCheckRunContext({});
 
 const runCheckInternal = async (statement: string) => {
   const { database, changeType } = props;

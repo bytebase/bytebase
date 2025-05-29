@@ -5,7 +5,7 @@
     class="font-medium text-main hover:border-b hover:border-b-main"
     @click="toTop"
   >
-    <span>{{ databaseForTask(issue.projectEntity, task).databaseName }}</span>
+    <span>{{ databaseForTask(projectOfIssue(issue), task).databaseName }}</span>
     <template v-if="schemaVersion">
       <span class="ml-1 text-control-placeholder">(</span>
       <span class="lowercase text-control-placeholder">{{
@@ -20,7 +20,7 @@
 <script lang="ts" setup>
 import scrollIntoView from "scroll-into-view-if-needed";
 import { computed } from "vue";
-import { stageForTask } from "@/components/IssueV1/logic";
+import { stageForTask, projectOfIssue } from "@/components/IssueV1/logic";
 import { databaseForTask } from "@/components/Rollout/RolloutDetail";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import type { ComposedIssue } from "@/types";

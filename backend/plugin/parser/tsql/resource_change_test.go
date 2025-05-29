@@ -20,7 +20,7 @@ func TestExtractChangedResources(t *testing.T) {
 	changedResources := model.NewChangedResources(nil /* dbSchema */)
 	changedResources.AddTable(
 		"DB",
-		"DBO",
+		"dbo",
 		&storepb.ChangedResourceTable{
 			Name: "t1",
 			Ranges: []*storepb.Range{
@@ -44,7 +44,7 @@ func TestExtractChangedResources(t *testing.T) {
 
 	asts, err := ParseTSQL(statement)
 	require.NoError(t, err)
-	got, err := extractChangedResources("DB", "DBO", nil /* dbSchema */, asts.Tree, statement)
+	got, err := extractChangedResources("DB", "dbo", nil /* dbSchema */, asts.Tree, statement)
 	require.NoError(t, err)
 	require.Equal(t, want, got)
 }

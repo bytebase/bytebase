@@ -293,7 +293,6 @@ const props = defineProps<{
 
 const { t } = useI18n();
 const router = useRouter();
-const { events } = usePlanCheckRunContext();
 const hideDocLink = useAppFeature("bb.feature.sql-check.hide-doc-link");
 const state = reactive<LocalState>({
   activeRule: undefined,
@@ -533,6 +532,8 @@ const cancelPlanCheckRun = async () => {
     parent: `${projectNamePrefix}${projectName}/${planNamePrefix}${planId}`,
     planCheckRuns: [planCheckRunName],
   });
-  events.emit("status-changed");
+  if (usePlanCheckRunContext()) {
+    usePlanCheckRunContext().events.emit("status-changed");
+  }
 };
 </script>

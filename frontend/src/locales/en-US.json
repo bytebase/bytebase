@@ -231,6 +231,10 @@
   "error-page": {
     "go-back-home": "Go back home"
   },
+  "refresh-remind": {
+    "title": "Outdated version detected",
+    "description": "Detect outdated version. Please refresh the page."
+  },
   "task": {
     "current-task": "Current task",
     "checking": "Checking...",
@@ -248,9 +252,6 @@
       },
       "summary-report": "Summary report"
     },
-    "earliest-allowed-time": "Earliest rollout time",
-    "earliest-allowed-time-hint": "@:{'task.earliest-allowed-time'} is the earliest time to rollout the issue, you cannot rollout before this time; if unspecified, it runs when all criteria are met.",
-    "earliest-allowed-time-unset": "Unset",
     "comment": "Comment",
     "started": "Started",
     "view-change": "View change",
@@ -272,6 +273,12 @@
     "action-all-tasks-in-current-stage": "{action} all tasks in current stage",
     "cancel-task": "Cancel task | Cancel tasks",
     "created": "Created",
+    "run-immediately": "Run task immediately | Run tasks immediately",
+    "scheduled-time": "Scheduled time",
+    "select-scheduled-time": "Select scheduled time",
+    "error": {
+      "scheduled-time-must-be-in-the-future": "Scheduled time must be in the future"
+    },
     "online-migration": {
       "self": "Online migration",
       "configure-ghost-parameters": "Configure gh-ost parameters",
@@ -508,7 +515,7 @@
         },
         "maximum-role-expiration": {
           "self": "Maximum role expiration",
-          "description": "Maximum role expiration is the maximum period a role can be granted to a user. (Only for querier and exporter roles)",
+          "description": "Maximum role expiration is the maximum period a role can be granted to a user, will apply on all project roles expect the project owner.",
           "days": "Day(s)",
           "never-expires": "Never expires"
         },
@@ -890,6 +897,7 @@
     "issue-name": "Issue name",
     "grant-request": {
       "export-rows": "Max export rows",
+      "select-export-rows": "Select maximum export rows",
       "expired-at": "Expired at",
       "all-databases": "All",
       "all-databases-tip": "All current and future databases in this project.",
@@ -908,15 +916,7 @@
       "current-change-will-apply-to-all-tasks-in-batch-mode": "In batch mode, current change will be applied to all tasks.",
       "current-change-will-apply-to-all-tasks": "Current change will be applied to all tasks."
     },
-    "not-editable-legacy-issue": "This issue is not editable because it was created in an old version of Bytebase",
     "action-anyway": "{action} anyway",
-    "disallow-edit-reasons": {
-      "issue-is-done": "The issue is done",
-      "issue-is-canceled": "The issue is canceled",
-      "task-is-x-status": "The task is {status}",
-      "task-is-running-cancel-first": "The task is running, cancel task before changing this value"
-    },
-    "you-are-not-allowed-to-change-this-value": "You are not allowed to change this value",
     "sql-check": {
       "sql-checks": "SQL checks",
       "not-executed-yet": "Not executed yet",
@@ -940,9 +940,6 @@
       "format": "Format",
       "encrypt": "Encrypt",
       "file-downloaded": "File Downloaded"
-    },
-    "update-rollout-time": {
-      "self": "Update rollout time"
     },
     "task-run": {
       "logs": "Logs",
@@ -1484,6 +1481,7 @@
     "foreign-key": {
       "reference": "Reference"
     },
+    "checks": "Checks",
     "create-target-database-or-schema-for-backup": "Please create the target database or schema for the backup first",
     "revision": {
       "self": "Revision",
@@ -1806,7 +1804,14 @@
       "batch": "Batch",
       "select-database-group": "You can {select-database-group} to batch query",
       "description": "Batch query {database} additional databases and {group} database groups under {project}.",
-      "show-or-hide-empty-query-results": "Show / hide empty query results"
+      "show-or-hide-empty-query-results": "Show / hide empty query results",
+      "select-data-source": {
+        "self": "Select data source for batch",
+        "tooltip": "Will find available data sources with restriction policy, then apply the selection.",
+        "admin": "Admin",
+        "readonly": "Read-only",
+        "not-match": "Data source not match, expect {expect} but got {actual}."
+      }
     },
     "execute-query": "Execute query",
     "pending-query": "Pending query",

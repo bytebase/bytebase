@@ -1,7 +1,7 @@
 <template>
   <NSelect
     v-bind="$attrs"
-    :value="value"
+    :value="value ? value : undefined"
     :multiple="multiple"
     :disabled="disabled"
     :clearable="clearable"
@@ -132,7 +132,7 @@ const renderLabel = (option: SelectOption) => {
   }
 
   const icon = h(FeatureBadge, {
-    feature: "bb.feature.custom-approval",
+    feature: "bb.feature.custom-role",
     clickable: false,
   });
   return h(

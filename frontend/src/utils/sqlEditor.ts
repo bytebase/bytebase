@@ -12,6 +12,7 @@ import type {
   CoreSQLEditorTab,
   SQLEditorConnection,
   SQLEditorTab,
+  QueryDataSourceType,
 } from "@/types";
 import {
   DEFAULT_SQL_EDITOR_TAB_MODE,
@@ -194,18 +195,8 @@ export const getAdminDataSourceRestrictionOfDatabase = (
   };
 };
 
-export const ensureDataSourceSelection = (
-  current: string | undefined,
-  database: ComposedDatabase
-) => {
+const getDataSourceBehavior = (database: ComposedDatabase) => {
   const restriction = getAdminDataSourceRestrictionOfDatabase(database);
-  const adminDataSource = database.instanceResource.dataSources.find(
-    (ds) => ds.type === DataSourceType.ADMIN
-  )!;
-  const readonlyDataSources = database.instanceResource.dataSources.filter(
-    (ds) => ds.type === DataSourceType.READ_ONLY
-  );
-
   let behavior: "RO" | "FALLBACK" | "ALLOW_ADMIN";
   if (
     restriction.environmentPolicy ===
@@ -222,39 +213,38 @@ export const ensureDataSourceSelection = (
   } else {
     behavior = "ALLOW_ADMIN";
   }
+  return behavior;
+};
 
-  if (behavior === "ALLOW_ADMIN") {
-    if (current) {
-      return current;
-    }
-    return head(readonlyDataSources)?.id ?? adminDataSource.id;
-  }
-
-  if (behavior === "FALLBACK") {
-    if (
-      current &&
-      (current !== adminDataSource.id || readonlyDataSources.length === 0)
-    ) {
-      return current;
-    }
-    return head(readonlyDataSources)?.id ?? adminDataSource.id;
-  }
-
-  if (behavior === "RO") {
-    if (
-      current &&
-      readonlyDataSources.findIndex((ds) => ds.id === current) >= 0
-    ) {
-      return current;
-    }
-    return head(readonlyDataSources)?.id;
-  }
-  console.warn(
-    "[SQL Editor] failed to ensureDataSourceSelection",
-    current,
-    behavior,
-    database,
-    restriction
+export const getValidDataSourceByPolicy = (
+  database: ComposedDatabase,
+  type?: QueryDataSourceType
+) => {
+  const adminDataSource = database.instanceResource.dataSources.find(
+    (ds) => ds.type === DataSourceType.ADMIN
+  )!;
+  const readonlyDataSources = database.instanceResource.dataSources.filter(
+    (ds) => ds.type === DataSourceType.READ_ONLY
   );
-  return undefined;
+
+  const behavior = getDataSourceBehavior(database);
+
+  switch (behavior) {
+    case "ALLOW_ADMIN":
+    // ALLOW_ADMIN means no policy restriction.
+    case "FALLBACK": {
+      // FALLBACK means try to use read-only data source, it can also accept admin data source if no read-only data source exists.
+      switch (type) {
+        case DataSourceType.ADMIN:
+          return adminDataSource.id;
+        default:
+          // try to use read-only data source first.
+          return head(readonlyDataSources)?.id ?? adminDataSource.id;
+      }
+    }
+    case "RO": {
+      // RO only accept the read-only data source.
+      return head(readonlyDataSources)?.id;
+    }
+  }
 };

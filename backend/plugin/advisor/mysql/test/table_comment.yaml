@@ -1,7 +1,7 @@
 - statement: |-
     CREATE TABLE a(b INT) COMMENT 'table';
     CREATE TABLE t(a int) COMMENT 'some comments';
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 1301
@@ -14,7 +14,7 @@
 - statement: |-
     CREATE TABLE a(b INT) COMMENT 'table';
     CREATE TABLE t(a int);
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 1032
@@ -27,7 +27,7 @@
 - statement: |-
     CREATE TABLE a(b INT) COMMENT 'table';
     CREATE TABLE t(a int) COMMENT 'sdlfkjalkseblkjduafelbnlsdfkljayue';
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 1301

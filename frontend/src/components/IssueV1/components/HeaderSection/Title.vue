@@ -30,7 +30,7 @@ import { useIssueContext } from "../../logic";
 type ViewMode = "EDIT" | "VIEW";
 
 const { t } = useI18n();
-const { isCreating, issue, allowEditIssue } = useIssueContext();
+const { isCreating, issue, allowChange: allowEditIssue } = useIssueContext();
 
 const state = reactive({
   isEditing: false,
@@ -76,8 +76,7 @@ const onBlur = async () => {
   }
   try {
     state.isUpdating = true;
-    // TODO update name
-    const issuePatch = Issue.fromJSON({
+    const issuePatch = Issue.fromPartial({
       ...issue.value,
       title: state.title,
     });

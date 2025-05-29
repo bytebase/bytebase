@@ -145,9 +145,6 @@ export const useBaseIssueContext = (
     return reviewContext.done.value ? "ROLLOUT" : "REVIEW";
   });
 
-  const isLegacyIssue = computed(() => {
-    return !issue.value.plan && !issue.value.planEntity;
-  });
   const formatOnSave = computed({
     get: () => uiStateStore.editorFormatStatementOnSave,
     set: (value: boolean) => uiStateStore.setEditorFormatStatementOnSave(value),
@@ -178,7 +175,6 @@ export const useBaseIssueContext = (
 
   return {
     phase,
-    isLegacyIssue,
     events,
     releaserCandidates,
     reviewContext,

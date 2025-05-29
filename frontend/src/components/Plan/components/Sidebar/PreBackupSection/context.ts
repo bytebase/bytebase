@@ -26,7 +26,6 @@ import {
   type Rollout,
 } from "@/types/proto/v1/rollout_service";
 import {
-  flattenSpecList,
   flattenTaskV1List,
   hasProjectPermissionV2,
   isNullOrUndefined,
@@ -172,7 +171,7 @@ export const providePreBackupSettingContext = (refs: {
       }
     } else {
       const planPatch = cloneDeep(unref(plan));
-      const spec = flattenSpecList(planPatch).find((s) => {
+      const spec = (planPatch?.specs || []).find((s) => {
         return s.id === selectedSpec.value?.id;
       });
       if (!planPatch || !spec || !spec.changeDatabaseConfig) {

@@ -11,13 +11,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Frontend lint: `pnpm --dir frontend lint`
 - Frontend type check: `pnpm --dir frontend type-check`
 - Frontend test: `pnpm --dir frontend test`
-- Go lint command: `g ./path/to/package/...` - This custom alias runs linting tools for Go code
+- Proto lint: `cd proto && buf lint`
+- Proto generate: `cd proto && buf generate`
+- Go lint command: `golangci-lint run --allow-parallel-runners` - This custom alias lints Go code, ensuring no errors or warnings are present after updates.
+- Connect to Postgres: `psql -U bbdev bbdev`
 
 ## Code Style
 - **General**: Follow Google style guides for all languages
 - **Conciseness**: Write clean, minimal code; fewer lines is better
 - **Comments**: Only include comments that are essential to understanding functionality or convey non-obvious information
 - **Go**: Use standard Go error handling with detailed error messages
+- **API and Proto**: Follow AIPs in https://google.aip.dev/general
 - **Frontend**: Follow TypeScript style with strict type checking
 - **Naming**: Use American English, avoid plurals like "xxxList"
 - **Git**: Follow conventional commit format
@@ -30,7 +34,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Common Go Lint Rules
 Always follow these guidelines to avoid common linting errors:
 
-- **File Formatting**: Run `go fmt` on files before committing to ensure proper formatting
+- **File Formatting**: Run `gofmt -w` on files before committing to ensure proper formatting
 - **Unused Parameters**: Prefix unused parameters with underscore (e.g., `func foo(_ *Bar)`)
 - **Modern Go Conventions**: Use `any` instead of `interface{}` (since Go 1.18)
 - **Confusing Naming**: Avoid similar names that differ only by capitalization

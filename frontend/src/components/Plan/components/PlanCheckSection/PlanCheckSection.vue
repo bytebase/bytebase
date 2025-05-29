@@ -19,11 +19,12 @@ import {
   databaseForSpec,
 } from "@/components/Plan/logic";
 import PlanCheckRunBar from "@/components/PlanCheckRun/PlanCheckRunBar.vue";
-import { useCurrentUserV1, extractUserId } from "@/store";
+import { useCurrentUserV1, extractUserId, useCurrentProjectV1 } from "@/store";
 import { EMPTY_ID } from "@/types";
 import { hasProjectPermissionV2 } from "@/utils";
 
 const currentUser = useCurrentUserV1();
+const { project } = useCurrentProjectV1();
 const { plan, selectedSpec } = usePlanContext();
 
 const show = computed(() => {
@@ -34,7 +35,7 @@ const show = computed(() => {
 });
 
 const database = computed(() =>
-  databaseForSpec(plan.value.projectEntity, selectedSpec.value)
+  databaseForSpec(project.value, selectedSpec.value)
 );
 
 const allowRunChecks = computed(() => {
@@ -45,9 +46,7 @@ const allowRunChecks = computed(() => {
   if (extractUserId(plan.value.creator) === me.email) {
     return true;
   }
-  if (
-    hasProjectPermissionV2(plan.value.projectEntity, "bb.planCheckRuns.run")
-  ) {
+  if (hasProjectPermissionV2(project.value, "bb.planCheckRuns.run")) {
     return true;
   }
   return false;

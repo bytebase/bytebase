@@ -29,10 +29,6 @@ type Plan_ChangeDatabaseConfig_Type int32
 
 const (
 	Plan_ChangeDatabaseConfig_TYPE_UNSPECIFIED Plan_ChangeDatabaseConfig_Type = 0
-	// Used for establishing schema baseline, this is used when
-	// 1. Onboard the database into Bytebase since Bytebase needs to know the current database schema.
-	// 2. Had schema drift and need to re-establish the baseline.
-	Plan_ChangeDatabaseConfig_BASELINE Plan_ChangeDatabaseConfig_Type = 1
 	// Used for DDL changes including CREATE DATABASE.
 	Plan_ChangeDatabaseConfig_MIGRATE Plan_ChangeDatabaseConfig_Type = 2
 	// Used for schema changes via state-based schema migration including CREATE DATABASE.
@@ -47,7 +43,6 @@ const (
 var (
 	Plan_ChangeDatabaseConfig_Type_name = map[int32]string{
 		0: "TYPE_UNSPECIFIED",
-		1: "BASELINE",
 		2: "MIGRATE",
 		3: "MIGRATE_SDL",
 		4: "MIGRATE_GHOST",
@@ -55,7 +50,6 @@ var (
 	}
 	Plan_ChangeDatabaseConfig_Type_value = map[string]int32{
 		"TYPE_UNSPECIFIED": 0,
-		"BASELINE":         1,
 		"MIGRATE":          2,
 		"MIGRATE_SDL":      3,
 		"MIGRATE_GHOST":    4,
@@ -696,10 +690,12 @@ type Plan struct {
 	// The issue associated with the plan.
 	// Can be empty.
 	// Format: projects/{project}/issues/{issue}
-	Issue       string       `protobuf:"bytes,3,opt,name=issue,proto3" json:"issue,omitempty"`
-	Title       string       `protobuf:"bytes,4,opt,name=title,proto3" json:"title,omitempty"`
-	Description string       `protobuf:"bytes,5,opt,name=description,proto3" json:"description,omitempty"`
-	Steps       []*Plan_Step `protobuf:"bytes,6,rep,name=steps,proto3" json:"steps,omitempty"`
+	Issue       string `protobuf:"bytes,3,opt,name=issue,proto3" json:"issue,omitempty"`
+	Title       string `protobuf:"bytes,4,opt,name=title,proto3" json:"title,omitempty"`
+	Description string `protobuf:"bytes,5,opt,name=description,proto3" json:"description,omitempty"`
+	// Deprecated: use specs instead.
+	Steps []*Plan_Step `protobuf:"bytes,6,rep,name=steps,proto3" json:"steps,omitempty"`
+	Specs []*Plan_Spec `protobuf:"bytes,14,rep,name=specs,proto3" json:"specs,omitempty"`
 	// Format: users/hello@world.com
 	Creator    string                 `protobuf:"bytes,8,opt,name=creator,proto3" json:"creator,omitempty"`
 	CreateTime *timestamppb.Timestamp `protobuf:"bytes,9,opt,name=create_time,json=createTime,proto3" json:"create_time,omitempty"`
@@ -777,6 +773,13 @@ func (x *Plan) GetDescription() string {
 func (x *Plan) GetSteps() []*Plan_Step {
 	if x != nil {
 		return x.Steps
+	}
+	return nil
+}
+
+func (x *Plan) GetSpecs() []*Plan_Spec {
+	if x != nil {
+		return x.Specs
 	}
 	return nil
 }
@@ -1431,8 +1434,6 @@ func (x *Plan_Step) GetSpecs() []*Plan_Spec {
 
 type Plan_Spec struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// earliest_allowed_time the earliest execution time of the change.
-	EarliestAllowedTime *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=earliest_allowed_time,json=earliestAllowedTime,proto3" json:"earliest_allowed_time,omitempty"`
 	// A UUID4 string that uniquely identifies the Spec.
 	Id                string                  `protobuf:"bytes,5,opt,name=id,proto3" json:"id,omitempty"`
 	SpecReleaseSource *Plan_SpecReleaseSource `protobuf:"bytes,8,opt,name=spec_release_source,json=specReleaseSource,proto3" json:"spec_release_source,omitempty"`
@@ -1474,13 +1475,6 @@ func (x *Plan_Spec) ProtoReflect() protoreflect.Message {
 // Deprecated: Use Plan_Spec.ProtoReflect.Descriptor instead.
 func (*Plan_Spec) Descriptor() ([]byte, []int) {
 	return file_v1_plan_service_proto_rawDescGZIP(), []int{7, 1}
-}
-
-func (x *Plan_Spec) GetEarliestAllowedTime() *timestamppb.Timestamp {
-	if x != nil {
-		return x.EarliestAllowedTime
-	}
-	return nil
 }
 
 func (x *Plan_Spec) GetId() string {
@@ -2408,13 +2402,14 @@ const file_v1_plan_service_proto_rawDesc = "" +
 	"\x11UpdatePlanRequest\x12+\n" +
 	"\x04plan\x18\x01 \x01(\v2\x11.bytebase.v1.PlanB\x04\xe2A\x01\x02R\x04plan\x12A\n" +
 	"\vupdate_mask\x18\x02 \x01(\v2\x1a.google.protobuf.FieldMaskB\x04\xe2A\x01\x02R\n" +
-	"updateMask\"\xa7\x15\n" +
+	"updateMask\"\xf7\x14\n" +
 	"\x04Plan\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x14\n" +
 	"\x05issue\x18\x03 \x01(\tR\x05issue\x12\x14\n" +
 	"\x05title\x18\x04 \x01(\tR\x05title\x12 \n" +
 	"\vdescription\x18\x05 \x01(\tR\vdescription\x12,\n" +
-	"\x05steps\x18\x06 \x03(\v2\x16.bytebase.v1.Plan.StepR\x05steps\x12\x1e\n" +
+	"\x05steps\x18\x06 \x03(\v2\x16.bytebase.v1.Plan.StepR\x05steps\x12,\n" +
+	"\x05specs\x18\x0e \x03(\v2\x16.bytebase.v1.Plan.SpecR\x05specs\x12\x1e\n" +
 	"\acreator\x18\b \x01(\tB\x04\xe2A\x01\x03R\acreator\x12A\n" +
 	"\vcreate_time\x18\t \x01(\v2\x1a.google.protobuf.TimestampB\x04\xe2A\x01\x03R\n" +
 	"createTime\x12A\n" +
@@ -2428,9 +2423,8 @@ const file_v1_plan_service_proto_rawDesc = "" +
 	"deployment\x1aJ\n" +
 	"\x04Step\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12,\n" +
-	"\x05specs\x18\x01 \x03(\v2\x16.bytebase.v1.Plan.SpecR\x05specs\x1a\xd9\x03\n" +
-	"\x04Spec\x12N\n" +
-	"\x15earliest_allowed_time\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\x13earliestAllowedTime\x12\x0e\n" +
+	"\x05specs\x18\x01 \x03(\v2\x16.bytebase.v1.Plan.SpecR\x05specs\x1a\x89\x03\n" +
+	"\x04Spec\x12\x0e\n" +
 	"\x02id\x18\x05 \x01(\tR\x02id\x12S\n" +
 	"\x13spec_release_source\x18\b \x01(\v2#.bytebase.v1.Plan.SpecReleaseSourceR\x11specReleaseSource\x12^\n" +
 	"\x16create_database_config\x18\x01 \x01(\v2&.bytebase.v1.Plan.CreateDatabaseConfigH\x00R\x14createDatabaseConfig\x12^\n" +
@@ -2448,7 +2442,7 @@ const file_v1_plan_service_proto_rawDesc = "" +
 	"\tcollation\x18\x05 \x01(\tB\x04\xe2A\x01\x01R\tcollation\x12\x1e\n" +
 	"\acluster\x18\x06 \x01(\tB\x04\xe2A\x01\x01R\acluster\x12\x1a\n" +
 	"\x05owner\x18\a \x01(\tB\x04\xe2A\x01\x01R\x05owner\x12&\n" +
-	"\venvironment\x18\t \x01(\tB\x04\xe2A\x01\x01R\venvironment\x1a\x85\x05\n" +
+	"\venvironment\x18\t \x01(\tB\x04\xe2A\x01\x01R\venvironment\x1a\xf7\x04\n" +
 	"\x14ChangeDatabaseConfig\x12\x16\n" +
 	"\x06target\x18\x01 \x01(\tR\x06target\x12\x14\n" +
 	"\x05sheet\x18\x02 \x01(\tR\x05sheet\x12?\n" +
@@ -2461,10 +2455,9 @@ const file_v1_plan_service_proto_rawDesc = "" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1a3\n" +
 	"\x15PreUpdateBackupDetail\x12\x1a\n" +
-	"\bdatabase\x18\x01 \x01(\tR\bdatabase\"e\n" +
+	"\bdatabase\x18\x01 \x01(\tR\bdatabase\"W\n" +
 	"\x04Type\x12\x14\n" +
-	"\x10TYPE_UNSPECIFIED\x10\x00\x12\f\n" +
-	"\bBASELINE\x10\x01\x12\v\n" +
+	"\x10TYPE_UNSPECIFIED\x10\x00\x12\v\n" +
 	"\aMIGRATE\x10\x02\x12\x0f\n" +
 	"\vMIGRATE_SDL\x10\x03\x12\x11\n" +
 	"\rMIGRATE_GHOST\x10\x04\x12\b\n" +
@@ -2647,21 +2640,21 @@ var file_v1_plan_service_proto_depIdxs = []int32{
 	11, // 3: bytebase.v1.UpdatePlanRequest.plan:type_name -> bytebase.v1.Plan
 	37, // 4: bytebase.v1.UpdatePlanRequest.update_mask:type_name -> google.protobuf.FieldMask
 	21, // 5: bytebase.v1.Plan.steps:type_name -> bytebase.v1.Plan.Step
-	38, // 6: bytebase.v1.Plan.create_time:type_name -> google.protobuf.Timestamp
-	38, // 7: bytebase.v1.Plan.update_time:type_name -> google.protobuf.Timestamp
-	23, // 8: bytebase.v1.Plan.plan_check_run_status_count:type_name -> bytebase.v1.Plan.PlanCheckRunStatusCountEntry
-	28, // 9: bytebase.v1.Plan.release_source:type_name -> bytebase.v1.Plan.ReleaseSource
-	27, // 10: bytebase.v1.Plan.deployment:type_name -> bytebase.v1.Plan.Deployment
-	20, // 11: bytebase.v1.ListPlanCheckRunsResponse.plan_check_runs:type_name -> bytebase.v1.PlanCheckRun
-	11, // 12: bytebase.v1.PreviewPlanResponse.plan:type_name -> bytebase.v1.Plan
-	33, // 13: bytebase.v1.PreviewPlanResponse.out_of_order_files:type_name -> bytebase.v1.PreviewPlanResponse.DatabaseFiles
-	33, // 14: bytebase.v1.PreviewPlanResponse.applied_but_modified_files:type_name -> bytebase.v1.PreviewPlanResponse.DatabaseFiles
-	1,  // 15: bytebase.v1.PlanCheckRun.type:type_name -> bytebase.v1.PlanCheckRun.Type
-	2,  // 16: bytebase.v1.PlanCheckRun.status:type_name -> bytebase.v1.PlanCheckRun.Status
-	34, // 17: bytebase.v1.PlanCheckRun.results:type_name -> bytebase.v1.PlanCheckRun.Result
-	38, // 18: bytebase.v1.PlanCheckRun.create_time:type_name -> google.protobuf.Timestamp
-	22, // 19: bytebase.v1.Plan.Step.specs:type_name -> bytebase.v1.Plan.Spec
-	38, // 20: bytebase.v1.Plan.Spec.earliest_allowed_time:type_name -> google.protobuf.Timestamp
+	22, // 6: bytebase.v1.Plan.specs:type_name -> bytebase.v1.Plan.Spec
+	38, // 7: bytebase.v1.Plan.create_time:type_name -> google.protobuf.Timestamp
+	38, // 8: bytebase.v1.Plan.update_time:type_name -> google.protobuf.Timestamp
+	23, // 9: bytebase.v1.Plan.plan_check_run_status_count:type_name -> bytebase.v1.Plan.PlanCheckRunStatusCountEntry
+	28, // 10: bytebase.v1.Plan.release_source:type_name -> bytebase.v1.Plan.ReleaseSource
+	27, // 11: bytebase.v1.Plan.deployment:type_name -> bytebase.v1.Plan.Deployment
+	20, // 12: bytebase.v1.ListPlanCheckRunsResponse.plan_check_runs:type_name -> bytebase.v1.PlanCheckRun
+	11, // 13: bytebase.v1.PreviewPlanResponse.plan:type_name -> bytebase.v1.Plan
+	33, // 14: bytebase.v1.PreviewPlanResponse.out_of_order_files:type_name -> bytebase.v1.PreviewPlanResponse.DatabaseFiles
+	33, // 15: bytebase.v1.PreviewPlanResponse.applied_but_modified_files:type_name -> bytebase.v1.PreviewPlanResponse.DatabaseFiles
+	1,  // 16: bytebase.v1.PlanCheckRun.type:type_name -> bytebase.v1.PlanCheckRun.Type
+	2,  // 17: bytebase.v1.PlanCheckRun.status:type_name -> bytebase.v1.PlanCheckRun.Status
+	34, // 18: bytebase.v1.PlanCheckRun.results:type_name -> bytebase.v1.PlanCheckRun.Result
+	38, // 19: bytebase.v1.PlanCheckRun.create_time:type_name -> google.protobuf.Timestamp
+	22, // 20: bytebase.v1.Plan.Step.specs:type_name -> bytebase.v1.Plan.Spec
 	29, // 21: bytebase.v1.Plan.Spec.spec_release_source:type_name -> bytebase.v1.Plan.SpecReleaseSource
 	24, // 22: bytebase.v1.Plan.Spec.create_database_config:type_name -> bytebase.v1.Plan.CreateDatabaseConfig
 	25, // 23: bytebase.v1.Plan.Spec.change_database_config:type_name -> bytebase.v1.Plan.ChangeDatabaseConfig

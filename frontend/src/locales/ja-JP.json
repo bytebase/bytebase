@@ -231,6 +231,10 @@
   "error-page": {
     "go-back-home": "ホームページに戻る"
   },
+  "refresh-remind": {
+    "title": "古いバージョンが検出されました",
+    "description": "古いバージョンが検出されました。ページを更新してください。"
+  },
   "task": {
     "current-task": "現在のタスク",
     "checking": "検査中…",
@@ -248,9 +252,6 @@
       },
       "summary-report": "概略報告"
     },
-    "earliest-allowed-time": "最も早い展開時期",
-    "earliest-allowed-time-hint": "@:{'task.earliest-allowed-time'} は問題をロールアウトする最も早い時間です。この時間より前にロールアウトすることはできません。指定されていない場合は、すべての条件が満たされたときに実行されます。",
-    "earliest-allowed-time-unset": "設定されていません",
     "comment": "コメント",
     "started": "から始まりました",
     "view-change": "変更を表示する",
@@ -272,6 +273,12 @@
     "action-all-tasks-in-current-stage": "{action}現在のステージのすべてのタスク",
     "cancel-task": "タスクをキャンセルする",
     "created": "内蔵",
+    "run-immediately": "すぐに実行",
+    "scheduled-time": "予定時刻",
+    "select-scheduled-time": "予定時刻を選択してください",
+    "error": {
+      "scheduled-time-must-be-in-the-future": "スケジュール時間は将来の時間である必要があります"
+    },
     "online-migration": {
       "self": "オンラインでの大規模なテーブル変更",
       "configure-ghost-parameters": "gh-ost パラメータを設定する",
@@ -508,7 +515,7 @@
         },
         "maximum-role-expiration": {
           "self": "最大ロール有効期限",
-          "description": "最大ロール有効期限は、ユーザーにロールを付与できる最大期間です。",
+          "description": "最大ロール有効期限は、ロールをユーザーに付与できる最大期間であり、プロジェクト所有者を除くすべてのプロジェクト ロールに適用されます。",
           "days": "日",
           "never-expires": "期限切れなし"
         },
@@ -890,6 +897,7 @@
     "issue-name": "イシュー名",
     "grant-request": {
       "export-rows": "エクスポート行の最大数",
+      "select-export-rows": "最大エクスポート行数を選択",
       "expired-at": "有効期限",
       "all-databases": "すべてのデータベース",
       "all-databases-tip": "このプロジェクトに属する現在および将来のすべてのデータベース。",
@@ -908,15 +916,7 @@
       "current-change-will-apply-to-all-tasks-in-batch-mode": "バッチ モードでは、現在の変更がすべてのタスクに適用されます。",
       "current-change-will-apply-to-all-tasks": "現在の変更はすべてのタスクに適用されます。"
     },
-    "not-editable-legacy-issue": "このイシューは古いバージョンの Bytebase で作成されたため編集できません。",
     "action-anyway": "まだ {action} が必要です",
-    "disallow-edit-reasons": {
-      "issue-is-done": "イシューが完了しました",
-      "issue-is-canceled": "イシューがキャンセルされました",
-      "task-is-x-status": "タスクのステータスは {status} です",
-      "task-is-running-cancel-first": "タスクが実行中です。この値を変更するには、タスクをキャンセルする必要があります。"
-    },
-    "you-are-not-allowed-to-change-this-value": "この値を変更する権限がありません",
     "sql-check": {
       "sql-checks": "SQLチェック項目",
       "not-executed-yet": "まだ実行されていません",
@@ -940,9 +940,6 @@
       "format": "エクスポート形式",
       "encrypt": "暗号化",
       "file-downloaded": "ダウンロードされたファイル"
-    },
-    "update-rollout-time": {
-      "self": "更新のロールアウト時間"
     },
     "task-run": {
       "logs": "ログ",
@@ -1484,6 +1481,7 @@
     "foreign-key": {
       "reference": "参照"
     },
+    "checks": "チェック",
     "create-target-database-or-schema-for-backup": "まずバックアップのターゲットデータベースまたはスキーマを作成してください",
     "revision": {
       "self": "リビジョン",
@@ -1806,7 +1804,14 @@
       "batch": "バッチ",
       "select-database-group": "バッチクエリを実行するには{select-database-group}を使用します",
       "description": "{project} の下の {database} 個の追加データベースと {group} 個のデータベース グループに対してバッチ クエリを実行します。",
-      "show-or-hide-empty-query-results": "空のクエリ結果の表示/非表示"
+      "show-or-hide-empty-query-results": "空のクエリ結果の表示/非表示",
+      "select-data-source": {
+        "self": "バッチのデータソースを選択",
+        "tooltip": "制限ポリシーが設定された利用可能なデータ ソースを見つけて、選択を適用します。",
+        "admin": "管理者",
+        "readonly": "読み取り専用",
+        "not-match": "データ ソースが一致しません。{expect} を期待しましたが、{actual} を取得しました。"
+      }
     },
     "execute-query": "クエリを実行する",
     "pending-query": "保留中のクエリ",

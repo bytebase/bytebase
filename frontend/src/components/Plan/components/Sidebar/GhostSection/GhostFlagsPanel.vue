@@ -46,7 +46,6 @@ import ErrorList from "@/components/misc/ErrorList.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { planServiceClient } from "@/grpcweb";
 import { pushNotification } from "@/store";
-import { flattenSpecList } from "@/utils";
 import FlagsForm from "./FlagsForm";
 import { useGhostSettingContext } from "./context";
 
@@ -101,7 +100,7 @@ const trySave = async () => {
     selectedSpec.value.changeDatabaseConfig.ghostFlags = cloneDeep(flags.value);
   } else {
     const planPatch = cloneDeep(plan.value);
-    const spec = flattenSpecList(planPatch).find((spec) => {
+    const spec = (planPatch?.specs || []).find((spec) => {
       return spec.id === selectedSpec.value?.id;
     });
     if (!planPatch || !spec || !spec.changeDatabaseConfig) {

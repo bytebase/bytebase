@@ -103,20 +103,10 @@ export const RiskSourceFactorMap: Map<Risk_Source, string[]> = new Map([
       ...migrationFactorList,
     ],
   ],
-  [
-    Risk_Source.CREATE_DATABASE,
-    [
-      ...commonFactorList,
-      "database_name",
-    ],
-  ],
+  [Risk_Source.CREATE_DATABASE, [...commonFactorList, "database_name"]],
   [
     Risk_Source.DATA_EXPORT,
-    [
-      ...commonFactorList,
-      ...schemaObjectNameFactorList,
-      "export_rows",
-    ],
+    [...commonFactorList, ...schemaObjectNameFactorList, "export_rows"],
   ],
   [
     Risk_Source.REQUEST_ROLE,

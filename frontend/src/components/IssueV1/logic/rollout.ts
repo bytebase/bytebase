@@ -11,12 +11,12 @@ import {
   Task_Type,
 } from "@/types/proto/v1/rollout_service";
 import { extractDatabaseGroupName, hasProjectPermissionV2 } from "@/utils";
-import { specForTask } from ".";
+import { specForTask, projectOfIssue } from ".";
 
 export const isGroupingChangeTaskV1 = (issue: ComposedIssue, task: Task) => {
   const spec = specForTask(issue.planEntity, task);
   if (!spec) {
-    return false; // Not sure actually, but doesn't matter.
+    return false;
   }
   const databaseGroup = extractDatabaseGroupName(
     spec.changeDatabaseConfig?.target ?? ""
@@ -41,7 +41,8 @@ export const allowUserToEditStatementForTask = (
   if (issue.status !== IssueStatus.OPEN) {
     denyReasons.push("The issue is not open");
   }
-  if (!issue.projectEntity.allowModifyStatement) {
+  const project = projectOfIssue(issue);
+  if (!project.allowModifyStatement) {
     denyReasons.push("Cannot edit statement after issue created");
   }
 
@@ -57,7 +58,8 @@ export const allowUserToEditStatementForTask = (
   denyReasons.push(...isTaskEditable(task, planCheckRuns));
 
   if (extractUserId(issue.creator) !== user.value.email) {
-    if (!hasProjectPermissionV2(issue.projectEntity, "bb.plans.update")) {
+    const project = projectOfIssue(issue);
+    if (!hasProjectPermissionV2(project, "bb.plans.update")) {
       denyReasons.push(
         t("issue.error.you-don-have-privilege-to-edit-this-issue")
       );
@@ -104,8 +106,6 @@ export const semanticTaskType = (type: Task_Type) => {
       return t("db.create");
     case Task_Type.DATABASE_DATA_UPDATE:
       return "DML";
-    case Task_Type.DATABASE_SCHEMA_BASELINE:
-      return t("common.baseline");
     case Task_Type.DATABASE_SCHEMA_UPDATE:
     case Task_Type.DATABASE_SCHEMA_UPDATE_SDL:
       return "DDL";

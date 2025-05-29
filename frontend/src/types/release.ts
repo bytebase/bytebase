@@ -20,10 +20,8 @@ export const UNKNOWN_RELEASE_NAME = `${UNKNOWN_PROJECT_NAME}/releases/${UNKNOWN_
 
 export const unknownRelease = (): ComposedRelease => {
   const projectEntity = unknownProject();
-  const release = Release.fromJSON({
+  const release = Release.fromPartial({
     name: `${projectEntity.name}/releases/${UNKNOWN_ID}`,
-    uid: String(UNKNOWN_ID),
-    project: projectEntity.name,
   });
   return {
     ...release,

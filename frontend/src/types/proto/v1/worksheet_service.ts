@@ -280,10 +280,6 @@ export const CreateWorksheetRequest: MessageFns<CreateWorksheetRequest> = {
     return message;
   },
 
-  fromJSON(object: any): CreateWorksheetRequest {
-    return { worksheet: isSet(object.worksheet) ? Worksheet.fromJSON(object.worksheet) : undefined };
-  },
-
   toJSON(message: CreateWorksheetRequest): unknown {
     const obj: any = {};
     if (message.worksheet !== undefined) {
@@ -338,10 +334,6 @@ export const GetWorksheetRequest: MessageFns<GetWorksheetRequest> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): GetWorksheetRequest {
-    return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
   },
 
   toJSON(message: GetWorksheetRequest): unknown {
@@ -407,13 +399,6 @@ export const UpdateWorksheetRequest: MessageFns<UpdateWorksheetRequest> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): UpdateWorksheetRequest {
-    return {
-      worksheet: isSet(object.worksheet) ? Worksheet.fromJSON(object.worksheet) : undefined,
-      updateMask: isSet(object.updateMask) ? FieldMask.unwrap(FieldMask.fromJSON(object.updateMask)) : undefined,
-    };
   },
 
   toJSON(message: UpdateWorksheetRequest): unknown {
@@ -487,13 +472,6 @@ export const UpdateWorksheetOrganizerRequest: MessageFns<UpdateWorksheetOrganize
     return message;
   },
 
-  fromJSON(object: any): UpdateWorksheetOrganizerRequest {
-    return {
-      organizer: isSet(object.organizer) ? WorksheetOrganizer.fromJSON(object.organizer) : undefined,
-      updateMask: isSet(object.updateMask) ? FieldMask.unwrap(FieldMask.fromJSON(object.updateMask)) : undefined,
-    };
-  },
-
   toJSON(message: UpdateWorksheetOrganizerRequest): unknown {
     const obj: any = {};
     if (message.organizer !== undefined) {
@@ -565,13 +543,6 @@ export const WorksheetOrganizer: MessageFns<WorksheetOrganizer> = {
     return message;
   },
 
-  fromJSON(object: any): WorksheetOrganizer {
-    return {
-      worksheet: isSet(object.worksheet) ? globalThis.String(object.worksheet) : "",
-      starred: isSet(object.starred) ? globalThis.Boolean(object.starred) : false,
-    };
-  },
-
   toJSON(message: WorksheetOrganizer): unknown {
     const obj: any = {};
     if (message.worksheet !== "") {
@@ -628,10 +599,6 @@ export const DeleteWorksheetRequest: MessageFns<DeleteWorksheetRequest> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): DeleteWorksheetRequest {
-    return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
   },
 
   toJSON(message: DeleteWorksheetRequest): unknown {
@@ -710,14 +677,6 @@ export const SearchWorksheetsRequest: MessageFns<SearchWorksheetsRequest> = {
     return message;
   },
 
-  fromJSON(object: any): SearchWorksheetsRequest {
-    return {
-      filter: isSet(object.filter) ? globalThis.String(object.filter) : "",
-      pageSize: isSet(object.pageSize) ? globalThis.Number(object.pageSize) : 0,
-      pageToken: isSet(object.pageToken) ? globalThis.String(object.pageToken) : "",
-    };
-  },
-
   toJSON(message: SearchWorksheetsRequest): unknown {
     const obj: any = {};
     if (message.filter !== "") {
@@ -789,15 +748,6 @@ export const SearchWorksheetsResponse: MessageFns<SearchWorksheetsResponse> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): SearchWorksheetsResponse {
-    return {
-      worksheets: globalThis.Array.isArray(object?.worksheets)
-        ? object.worksheets.map((e: any) => Worksheet.fromJSON(e))
-        : [],
-      nextPageToken: isSet(object.nextPageToken) ? globalThis.String(object.nextPageToken) : "",
-    };
   },
 
   toJSON(message: SearchWorksheetsResponse): unknown {
@@ -978,24 +928,6 @@ export const Worksheet: MessageFns<Worksheet> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): Worksheet {
-    return {
-      name: isSet(object.name) ? globalThis.String(object.name) : "",
-      project: isSet(object.project) ? globalThis.String(object.project) : "",
-      database: isSet(object.database) ? globalThis.String(object.database) : "",
-      title: isSet(object.title) ? globalThis.String(object.title) : "",
-      creator: isSet(object.creator) ? globalThis.String(object.creator) : "",
-      createTime: isSet(object.createTime) ? fromJsonTimestamp(object.createTime) : undefined,
-      updateTime: isSet(object.updateTime) ? fromJsonTimestamp(object.updateTime) : undefined,
-      content: isSet(object.content) ? bytesFromBase64(object.content) : new Uint8Array(0),
-      contentSize: isSet(object.contentSize) ? Long.fromValue(object.contentSize) : Long.ZERO,
-      visibility: isSet(object.visibility)
-        ? worksheet_VisibilityFromJSON(object.visibility)
-        : Worksheet_Visibility.VISIBILITY_UNSPECIFIED,
-      starred: isSet(object.starred) ? globalThis.Boolean(object.starred) : false,
-    };
   },
 
   toJSON(message: Worksheet): unknown {
@@ -1465,15 +1397,6 @@ export const WorksheetServiceDefinition = {
   },
 } as const;
 
-function bytesFromBase64(b64: string): Uint8Array {
-  const bin = globalThis.atob(b64);
-  const arr = new Uint8Array(bin.length);
-  for (let i = 0; i < bin.length; ++i) {
-    arr[i] = bin.charCodeAt(i);
-  }
-  return arr;
-}
-
 function base64FromBytes(arr: Uint8Array): string {
   const bin: string[] = [];
   arr.forEach((byte) => {
@@ -1490,40 +1413,15 @@ export type DeepPartial<T> = T extends Builtin ? T
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
 
-function toTimestamp(date: Date): Timestamp {
-  const seconds = numberToLong(Math.trunc(date.getTime() / 1_000));
-  const nanos = (date.getTime() % 1_000) * 1_000_000;
-  return { seconds, nanos };
-}
-
 function fromTimestamp(t: Timestamp): Date {
   let millis = (t.seconds.toNumber() || 0) * 1_000;
   millis += (t.nanos || 0) / 1_000_000;
   return new globalThis.Date(millis);
 }
 
-function fromJsonTimestamp(o: any): Timestamp {
-  if (o instanceof globalThis.Date) {
-    return toTimestamp(o);
-  } else if (typeof o === "string") {
-    return toTimestamp(new globalThis.Date(o));
-  } else {
-    return Timestamp.fromJSON(o);
-  }
-}
-
-function numberToLong(number: number) {
-  return Long.fromNumber(number);
-}
-
-function isSet(value: any): boolean {
-  return value !== null && value !== undefined;
-}
-
 export interface MessageFns<T> {
   encode(message: T, writer?: BinaryWriter): BinaryWriter;
   decode(input: BinaryReader | Uint8Array, length?: number): T;
-  fromJSON(object: any): T;
   toJSON(message: T): unknown;
   create(base?: DeepPartial<T>): T;
   fromPartial(object: DeepPartial<T>): T;

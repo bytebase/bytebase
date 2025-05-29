@@ -217,7 +217,7 @@ const onConfirm = async () => {
   emit("confirm", {
     ...props.maskingRule,
     semanticType: state.semanticType!,
-    condition: Expr.fromJSON({
+    condition: Expr.fromPartial({
       expression: expressions[0],
       title: state.title,
     }),

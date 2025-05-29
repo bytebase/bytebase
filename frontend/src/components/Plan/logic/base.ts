@@ -7,7 +7,6 @@ import { PROJECT_V1_ROUTE_REVIEW_CENTER_DETAIL } from "@/router/dashboard/projec
 import { useUIStateStore } from "@/store";
 import type { Plan_Spec } from "@/types/proto/v1/plan_service";
 import { emptyPlanSpec } from "@/types/v1/issue/plan";
-import { flattenSpecList } from "@/utils";
 import type { PlanContext, PlanEvents } from "./context";
 
 export const useBasePlanContext = (
@@ -21,7 +20,7 @@ export const useBasePlanContext = (
 
   const events: PlanEvents = new Emittery();
 
-  const specs = computed(() => flattenSpecList(plan.value));
+  const specs = computed(() => plan.value?.specs || []);
 
   const selectedSpec = computed((): Plan_Spec => {
     // Check if spec is selected from URL.

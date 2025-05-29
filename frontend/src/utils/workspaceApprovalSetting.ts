@@ -9,16 +9,8 @@ import {
   resolveCELExpr,
 } from "@/plugins/cel";
 import { t } from "@/plugins/i18n";
-import { useUserStore } from "@/store";
-import { userNamePrefix } from "@/store/modules/v1/common";
-import { extractUserId } from "@/store/modules/v1/common";
 import type { ParsedApprovalRule, UnrecognizedApprovalRule } from "@/types";
-import {
-  DEFAULT_RISK_LEVEL,
-  UNKNOWN_USER_NAME,
-  SYSTEM_BOT_EMAIL,
-  PresetRoleType,
-} from "@/types";
+import { DEFAULT_RISK_LEVEL, PresetRoleType } from "@/types";
 import type { LocalApprovalConfig, LocalApprovalRule } from "@/types";
 import { PresetRiskLevelList, useSupportedSourceList } from "@/types";
 import { Expr as CELExpr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
@@ -83,7 +75,7 @@ export const resolveLocalApprovalConfig = async (
     const rule = config.rules[i];
     const localRule: LocalApprovalRule = {
       uid: uuidv4(),
-      expr: resolveCELExpr(CELExpr.fromJSON({})),
+      expr: resolveCELExpr(CELExpr.fromPartial({})),
       template: cloneDeep(rule.template!),
     };
     ruleMap.set(localRule.uid, localRule);
@@ -97,7 +89,7 @@ export const resolveLocalApprovalConfig = async (
   for (let i = 0; i < exprList.length; i++) {
     const ruleId = ruleIdList[i];
     ruleMap.get(ruleId)!.expr = resolveCELExpr(
-      exprList[i] ?? CELExpr.fromJSON({})
+      exprList[i] ?? CELExpr.fromPartial({})
     );
   }
 
@@ -188,7 +180,7 @@ export const buildWorkspaceApprovalSetting = async (
     const rule = rules[i];
     const { uid, template } = rule;
 
-    const approvalRule = ApprovalRule.fromJSON({
+    const approvalRule = ApprovalRule.fromPartial({
       template,
       condition: { expression: "" },
     });
@@ -205,12 +197,12 @@ export const buildWorkspaceApprovalSetting = async (
   const expressionList = await batchConvertParsedExprToCELString(exprList);
   for (let i = 0; i < expressionList.length; i++) {
     const ruleIndex = ruleIndexList[i];
-    approvalRuleMap.get(ruleIndex)!.condition = Expr.fromJSON({
+    approvalRuleMap.get(ruleIndex)!.condition = Expr.fromPartial({
       expression: expressionList[i],
     });
   }
 
-  return WorkspaceApprovalSetting.fromJSON({
+  return WorkspaceApprovalSetting.fromPartial({
     rules: [...approvalRuleMap.values()],
   });
 };
@@ -306,7 +298,6 @@ export const seedWorkspaceApprovalSetting = () => {
       template: {
         title,
         description,
-        creator: `${userNamePrefix}${useUserStore().systemBotUser?.email ?? SYSTEM_BOT_EMAIL}`,
         flow: {
           steps: roles.map(
             (role): ApprovalStep => ({
@@ -362,9 +353,4 @@ export const seedWorkspaceApprovalSetting = () => {
     const description = t(keypath);
     return generateRule(title, description, preset.roles);
   });
-};
-
-export const isReadonlyApprovalRule = (rule: LocalApprovalRule) => {
-  const creatorName = rule.template.creator ?? UNKNOWN_USER_NAME;
-  return extractUserId(creatorName) === SYSTEM_BOT_EMAIL;
 };

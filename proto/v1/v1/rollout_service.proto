@@ -133,6 +133,9 @@ message BatchRunTasksRequest {
   repeated string tasks = 2;
 
   string reason = 3;
+
+  // The task run should run after run_time.
+  optional google.protobuf.Timestamp run_time = 4;
 }
 
 message BatchRunTasksResponse {}
@@ -376,8 +379,6 @@ message Task {
     GENERAL = 1;
     // use payload DatabaseCreate
     DATABASE_CREATE = 2;
-    // use payload DatabaseSchemaBaseline
-    DATABASE_SCHEMA_BASELINE = 3;
     // use payload DatabaseSchemaUpdate
     DATABASE_SCHEMA_UPDATE = 4;
     // use payload DatabaseSchemaUpdate
@@ -397,7 +398,6 @@ message Task {
 
   oneof payload {
     DatabaseCreate database_create = 9;
-    DatabaseSchemaBaseline database_schema_baseline = 10;
     DatabaseSchemaUpdate database_schema_update = 11;
     DatabaseDataUpdate database_data_update = 12;
     DatabaseDataExport database_data_export = 16;
@@ -416,10 +416,6 @@ message Task {
     string character_set = 5;
     string collation = 6;
     string environment = 7;
-  }
-
-  message DatabaseSchemaBaseline {
-    string schema_version = 1;
   }
 
   message DatabaseSchemaUpdate {
@@ -536,6 +532,10 @@ message TaskRun {
 
   // Format: projects/{project}/sheets/{sheet}
   string sheet = 19 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The task run should run after run_time.
+  // This can only be set when creating the task run calling BatchRunTasks.
+  optional google.protobuf.Timestamp run_time = 21 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 message TaskRunLog {

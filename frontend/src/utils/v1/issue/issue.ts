@@ -3,7 +3,6 @@ import slug from "slug";
 import { t } from "@/plugins/i18n";
 import { EMPTY_ID, UNKNOWN_ID, type ComposedIssue } from "@/types";
 import { Issue, Issue_Type } from "@/types/proto/v1/issue_service";
-import type { Plan } from "@/types/proto/v1/plan_service";
 import type { Rollout } from "@/types/proto/v1/rollout_service";
 import { Task_Type } from "@/types/proto/v1/rollout_service";
 
@@ -29,13 +28,8 @@ export const flattenTaskV1List = (rollout: Rollout | undefined) => {
   return rollout?.stages.flatMap((stage) => stage.tasks) || [];
 };
 
-export const flattenSpecList = (plan: Plan | undefined) => {
-  return plan?.steps.flatMap((step) => step.specs) || [];
-};
-
 const DATABASE_RELATED_TASK_TYPE_LIST = [
   Task_Type.DATABASE_CREATE,
-  Task_Type.DATABASE_SCHEMA_BASELINE,
   Task_Type.DATABASE_SCHEMA_UPDATE,
   Task_Type.DATABASE_SCHEMA_UPDATE_GHOST,
   Task_Type.DATABASE_SCHEMA_UPDATE_SDL,

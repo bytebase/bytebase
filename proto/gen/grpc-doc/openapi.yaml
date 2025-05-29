@@ -1785,8 +1785,8 @@ paths:
     /v1/instances/{instance}/databases/{database}/revisions:
         get:
             tags:
-                - DatabaseService
-            operationId: DatabaseService_ListRevisions
+                - RevisionService
+            operationId: RevisionService_ListRevisions
             parameters:
                 - name: instance
                   in: path
@@ -1838,8 +1838,8 @@ paths:
                                 $ref: '#/components/schemas/Status'
         post:
             tags:
-                - DatabaseService
-            operationId: DatabaseService_CreateRevision
+                - RevisionService
+            operationId: RevisionService_CreateRevision
             parameters:
                 - name: instance
                   in: path
@@ -1875,8 +1875,8 @@ paths:
     /v1/instances/{instance}/databases/{database}/revisions/{revision}:
         get:
             tags:
-                - DatabaseService
-            operationId: DatabaseService_GetRevision
+                - RevisionService
+            operationId: RevisionService_GetRevision
             parameters:
                 - name: instance
                   in: path
@@ -1911,8 +1911,8 @@ paths:
                                 $ref: '#/components/schemas/Status'
         delete:
             tags:
-                - DatabaseService
-            operationId: DatabaseService_DeleteRevision
+                - RevisionService
+            operationId: RevisionService_DeleteRevision
             parameters:
                 - name: instance
                   in: path
@@ -1936,6 +1936,43 @@ paths:
                 "200":
                     description: OK
                     content: {}
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v1/instances/{instance}/databases/{database}/revisions:batchCreate:
+        post:
+            tags:
+                - RevisionService
+            operationId: RevisionService_BatchCreateRevisions
+            parameters:
+                - name: instance
+                  in: path
+                  description: The instance id.
+                  required: true
+                  schema:
+                    type: string
+                - name: database
+                  in: path
+                  description: The database id.
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/BatchCreateRevisionsRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/BatchCreateRevisionsResponse'
                 default:
                     description: Default error response
                     content:
@@ -2041,6 +2078,11 @@ paths:
                     type: string
                 - name: metadata.owner
                   in: query
+                  schema:
+                    type: string
+                - name: metadata.searchPath
+                  in: query
+                  description: The search_path is the search path of a PostgreSQL database.
                   schema:
                     type: string
             responses:
@@ -3677,6 +3719,16 @@ paths:
                      the call that provided the page token.
                   schema:
                     type: string
+                - name: view
+                  in: query
+                  description: The view to return. Defaults to DATABASE_GROUP_VIEW_BASIC.
+                  schema:
+                    enum:
+                        - DATABASE_GROUP_VIEW_UNSPECIFIED
+                        - DATABASE_GROUP_VIEW_BASIC
+                        - DATABASE_GROUP_VIEW_FULL
+                    type: string
+                    format: enum
             responses:
                 "200":
                     description: OK
@@ -5925,7 +5977,7 @@ paths:
         post:
             tags:
                 - SheetService
-            operationId: SheetService_BatchCreateSheet
+            operationId: SheetService_BatchCreateSheets
             parameters:
                 - name: project
                   in: path
@@ -5937,7 +5989,7 @@ paths:
                 content:
                     application/json:
                         schema:
-                            $ref: '#/components/schemas/BatchCreateSheetRequest'
+                            $ref: '#/components/schemas/BatchCreateSheetsRequest'
                 required: true
             responses:
                 "200":
@@ -5945,7 +5997,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/BatchCreateSheetResponse'
+                                $ref: '#/components/schemas/BatchCreateSheetsResponse'
                 default:
                     description: Default error response
                     content:
@@ -8123,11 +8175,6 @@ components:
                     type: string
                 description:
                     type: string
-                creator:
-                    type: string
-                    description: |-
-                        The name of the creator in users/{email} format.
-                         TODO: we should mark it as OUTPUT_ONLY, but currently the frontend will post the approval setting with creator.
         ApproveIssueRequest:
             required:
                 - name
@@ -8237,7 +8284,33 @@ components:
         BatchCancelTaskRunsResponse:
             type: object
             properties: {}
-        BatchCreateSheetRequest:
+        BatchCreateRevisionsRequest:
+            required:
+                - parent
+                - requests
+            type: object
+            properties:
+                parent:
+                    type: string
+                    description: |-
+                        The parent resource shared by all revisions being created.
+                         Format: instances/{instance}/databases/{database}
+                requests:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/CreateRevisionRequest'
+                    description: |-
+                        The request message specifying the revisions to create.
+                         A maximum of 100 revisions can be created in a batch.
+        BatchCreateRevisionsResponse:
+            type: object
+            properties:
+                revisions:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/Revision'
+                    description: The created revisions.
+        BatchCreateSheetsRequest:
             required:
                 - parent
                 - requests
@@ -8252,7 +8325,7 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/CreateSheetRequest'
-        BatchCreateSheetResponse:
+        BatchCreateSheetsResponse:
             type: object
             properties:
                 sheets:
@@ -8334,6 +8407,10 @@ components:
                          Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
                 reason:
                     type: string
+                runTime:
+                    type: string
+                    description: The task run should run after run_time.
+                    format: date-time
         BatchRunTasksResponse:
             type: object
             properties: {}
@@ -8878,6 +8955,19 @@ components:
             properties:
                 text:
                     type: string
+        CreateRevisionRequest:
+            required:
+                - parent
+                - revision
+            type: object
+            properties:
+                parent:
+                    type: string
+                    description: 'Format: instances/{instance}/databases/{database}'
+                revision:
+                    allOf:
+                        - $ref: '#/components/schemas/Revision'
+                    description: The revision to create.
         CreateSheetRequest:
             required:
                 - parent
@@ -9319,6 +9409,9 @@ components:
                 drifted:
                     type: boolean
                     description: The schema is drifted from the source of truth.
+                version:
+                    type: string
+                    description: The version of database schema.
             description: DatabaseMetadata is the metadata for databases.
         DatabaseSchema:
             type: object
@@ -10278,12 +10371,6 @@ components:
                 toSheet:
                     type: string
                     description: 'Format: projects/{project}/sheets/{sheet}'
-                fromEarliestAllowedTime:
-                    type: string
-                    format: date-time
-                toEarliestAllowedTime:
-                    type: string
-                    format: date-time
                 toStatus:
                     enum:
                         - STATUS_UNSPECIFIED
@@ -10996,6 +11083,11 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/Plan_Step'
+                    description: 'Deprecated: use specs instead.'
+                specs:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/Plan_Spec'
                 creator:
                     readOnly: true
                     type: string
@@ -11105,7 +11197,6 @@ components:
                 type:
                     enum:
                         - TYPE_UNSPECIFIED
-                        - BASELINE
                         - MIGRATE
                         - MIGRATE_SDL
                         - MIGRATE_GHOST
@@ -11213,10 +11304,6 @@ components:
         Plan_Spec:
             type: object
             properties:
-                earliestAllowedTime:
-                    type: string
-                    description: earliest_allowed_time the earliest execution time of the change.
-                    format: date-time
                 id:
                     type: string
                     description: A UUID4 string that uniquely identifies the Spec.
@@ -11627,6 +11714,7 @@ components:
         QueryRequest:
             required:
                 - name
+                - dataSourceId
             type: object
             properties:
                 name:
@@ -13386,6 +13474,10 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/IndexMetadata'
+                checkConstraints:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/CheckConstraintMetadata'
             description: TablePartitionMetadata is the metadata for table partitions.
         TagPolicy:
             type: object
@@ -13428,7 +13520,6 @@ components:
                         - TYPE_UNSPECIFIED
                         - GENERAL
                         - DATABASE_CREATE
-                        - DATABASE_SCHEMA_BASELINE
                         - DATABASE_SCHEMA_UPDATE
                         - DATABASE_SCHEMA_UPDATE_SDL
                         - DATABASE_SCHEMA_UPDATE_GHOST
@@ -13443,8 +13534,6 @@ components:
                          Format: instances/{instance}/databases/{database}
                 databaseCreate:
                     $ref: '#/components/schemas/Task_DatabaseCreate'
-                databaseSchemaBaseline:
-                    $ref: '#/components/schemas/Task_DatabaseSchemaBaseline'
                 databaseSchemaUpdate:
                     $ref: '#/components/schemas/Task_DatabaseSchemaUpdate'
                 databaseDataUpdate:
@@ -13519,6 +13608,13 @@ components:
                     readOnly: true
                     type: string
                     description: 'Format: projects/{project}/sheets/{sheet}'
+                runTime:
+                    readOnly: true
+                    type: string
+                    description: |-
+                        The task run should run after run_time.
+                         This can only be set when creating the task run calling BatchRunTasks.
+                    format: date-time
         TaskRunLog:
             type: object
             properties:
@@ -13750,11 +13846,6 @@ components:
                 sheet:
                     type: string
                     description: 'Format: projects/{project}/sheets/{sheet}'
-                schemaVersion:
-                    type: string
-        Task_DatabaseSchemaBaseline:
-            type: object
-            properties:
                 schemaVersion:
                     type: string
         Task_DatabaseSchemaUpdate:
@@ -14257,6 +14348,7 @@ tags:
     - name: ProjectService
     - name: ReleaseService
     - name: ReviewConfigService
+    - name: RevisionService
     - name: RiskService
     - name: RoleService
     - name: RolloutService

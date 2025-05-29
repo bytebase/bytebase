@@ -1,9 +1,9 @@
 - statement: |-
     CREATE TABLE t(a int);
     COMMENT ON TABLE t IS 'comments';
-  changeType: 0
+  changeType: 1
 - statement: CREATE TABLE t(a int);
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 1032
@@ -17,7 +17,7 @@
     CREATE TABLE t(a int);
     CREATE TABLE d(a int);
     COMMENT ON TABLE t IS 'comments';
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 1032
@@ -31,7 +31,7 @@
     CREATE TABLE t(a int);
     COMMENT ON TABLE t IS 'comments';
     COMMENT ON TABLE t IS '';
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 1032
@@ -45,7 +45,7 @@
     CREATE TABLE t(a int);
     COMMENT ON TABLE t IS 'comments';
     COMMENT ON TABLE t IS NULL;
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 1032
@@ -58,7 +58,7 @@
 - statement: |-
     CREATE TABLE t(a int);
     COMMENT ON TABLE t IS 'looooooong comments';
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 1301

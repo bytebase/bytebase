@@ -59,7 +59,11 @@ import { NButton } from "naive-ui";
 import { computed, reactive, ref, watch } from "vue";
 import { BBSpin } from "@/bbkit";
 import { useVerticalScrollState } from "@/composables/useScrollState";
-import { batchGetOrFetchDatabases, useDBGroupStore } from "@/store";
+import {
+  batchGetOrFetchDatabases,
+  useCurrentProjectV1,
+  useDBGroupStore,
+} from "@/store";
 import { DEBOUNCE_SEARCH_DELAY } from "@/types";
 import type { Advice_Status } from "@/types/proto/v1/sql_service";
 import { isDev } from "@/utils";
@@ -70,7 +74,7 @@ import {
   targetOfSpec,
   usePlanContext,
 } from "../../logic";
-import { usePlanSQLCheckContext } from "../SQLCheckSectionV1/context";
+import { usePlanSQLCheckContext } from "../SQLCheckSection/context";
 import CurrentSpecSection from "./CurrentSpecSection.vue";
 import SpecCard from "./SpecCard.vue";
 import SpecFilter from "./SpecFilter.vue";
@@ -89,8 +93,9 @@ const MAX_LIST_HEIGHT = 256;
 // This is set to 4 in development mode for easier testing.
 const SPEC_PER_PAGE = isDev() ? 4 : 20;
 
+const { project } = useCurrentProjectV1();
 const planContext = usePlanContext();
-const sqlCheckContext = usePlanSQLCheckContext();
+const { resultMap } = usePlanSQLCheckContext();
 const { plan, selectedSpec } = planContext;
 const dbGroupStore = useDBGroupStore();
 const state = reactive<LocalState>({
@@ -101,14 +106,14 @@ const state = reactive<LocalState>({
 const specBar = ref<HTMLDivElement>();
 const specBarScrollState = useVerticalScrollState(specBar, MAX_LIST_HEIGHT);
 
-const specList = computed(() => plan.value.steps.flatMap((step) => step.specs));
+const specList = computed(() => plan.value?.specs || []);
 
 const filteredSpecList = computed(() => {
   return specList.value.filter((spec) => {
     if (state.adviceStatusFilters.length > 0) {
       if (
         !state.adviceStatusFilters.some((status) =>
-          filterSpec(planContext, sqlCheckContext, spec, {
+          filterSpec(planContext, resultMap.value, spec, {
             adviceStatus: status,
           })
         )
@@ -158,7 +163,7 @@ const loadMore = useDebounceFn(async () => {
     const toIndex = fromIndex + SPEC_PER_PAGE;
     const databaseNames = filteredSpecList.value
       .slice(fromIndex, toIndex)
-      .map((spec) => databaseForSpec(plan.value.projectEntity, spec).name);
+      .map((spec) => databaseForSpec(project.value, spec).name);
 
     state.isRequesting = true;
     try {

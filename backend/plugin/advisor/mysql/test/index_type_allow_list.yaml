@@ -4,7 +4,7 @@
       email VARCHAR(100),
       INDEX idx_email (email)
     );
-  changeType: 0
+  changeType: 1
 - statement: |-
     CREATE TABLE orders (
         id INT PRIMARY KEY,
@@ -13,14 +13,14 @@
     );
     CREATE INDEX idx_customer ON orders (customer, (order_number * 2));
     CREATE INDEX idx_customer_duplicate ON orders (customer, (order_number * 2));
-  changeType: 0
+  changeType: 1
 - statement: |-
     CREATE TABLE locations (
       id INT AUTO_INCREMENT PRIMARY KEY,
       geom GEOMETRY NOT NULL
     );
     CREATE SPATIAL INDEX spatial_index_name ON locations(geom);
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 816
@@ -36,7 +36,7 @@
       description TEXT NOT NULL
     );
     CREATE FULLTEXT INDEX fulltext_index_name ON locations(description);
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 816

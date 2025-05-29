@@ -86,7 +86,11 @@ import {
   EnvironmentV1Name,
   InstanceV1Name,
 } from "@/components/v2";
-import { useDatabaseV1Store, useEnvironmentV1Store } from "@/store";
+import {
+  useDatabaseV1Store,
+  useEnvironmentV1Store,
+  useCurrentProjectV1,
+} from "@/store";
 import {
   formatEnvironmentName,
   isValidDatabaseName,
@@ -106,10 +110,11 @@ withDefaults(
   }
 );
 
-const { issue, selectedTask } = useIssueContext();
+const { selectedTask } = useIssueContext();
+const { project } = useCurrentProjectV1();
 
 const coreDatabaseInfo = computed(() => {
-  return databaseForTask(issue.value.projectEntity, selectedTask.value);
+  return databaseForTask(project.value, selectedTask.value);
 });
 
 const databaseCreationStatus = computed((): DatabaseCreationStatus => {

@@ -20,7 +20,6 @@
       </div>
 
       <div
-        v-if="selectedTask.type !== Task_Type.DATABASE_SCHEMA_BASELINE"
         class="flex items-center justify-end gap-x-2"
       >
         <template v-if="isCreating">
@@ -206,19 +205,23 @@ import {
   stageForTask,
   isTaskEditable,
   specForTask,
-  createEmptyLocalSheet,
-  notifyNotEditableLegacyIssue,
   isGroupingChangeTaskV1,
   databaseEngineForSpec,
 } from "@/components/IssueV1/logic";
 import { MonacoEditor } from "@/components/MonacoEditor";
 import { extensionNameOfLanguage } from "@/components/MonacoEditor/utils";
+import { createEmptyLocalSheet } from "@/components/Plan";
 import { databaseForTask } from "@/components/Rollout/RolloutDetail";
 import DownloadSheetButton from "@/components/Sheet/DownloadSheetButton.vue";
 import SQLUploadButton from "@/components/misc/SQLUploadButton.vue";
 import { planServiceClient } from "@/grpcweb";
 import { emitWindowEvent } from "@/plugins";
-import { hasFeature, pushNotification, useSheetV1Store } from "@/store";
+import {
+  hasFeature,
+  pushNotification,
+  useSheetV1Store,
+  useCurrentProjectV1,
+} from "@/store";
 import type { SQLDialect } from "@/types";
 import {
   EMPTY_ID,
@@ -227,7 +230,6 @@ import {
 } from "@/types";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
 import type { Task } from "@/types/proto/v1/rollout_service";
-import { Task_Type } from "@/types/proto/v1/rollout_service";
 import { Sheet } from "@/types/proto/v1/sheet_service";
 import type { Advice } from "@/types/proto/v1/sql_service";
 import {
@@ -260,6 +262,7 @@ const route = useRoute();
 const context = useIssueContext();
 const { events, isCreating, issue, selectedTask, getPlanCheckRunsForTask } =
   context;
+const { project } = useCurrentProjectV1();
 const dialog = useDialog();
 const editorContainerElRef = ref<HTMLElement>();
 const monacoEditorRef = ref<InstanceType<typeof MonacoEditor>>();
@@ -274,7 +277,7 @@ const state = reactive<LocalState>({
 });
 
 const database = computed(() => {
-  return databaseForTask(issue.value.projectEntity, selectedTask.value);
+  return databaseForTask(project.value, selectedTask.value);
 });
 
 const language = useInstanceV1EditorLanguage(
@@ -304,11 +307,6 @@ const allowEditStatementWhenCreating = computed(() => {
   if (issue.value.planEntity?.releaseSource?.release) {
     return false;
   }
-  if (selectedTask.value.type === Task_Type.DATABASE_SCHEMA_BASELINE) {
-    // A baseline issue has actually no SQL statement.
-    // "-- Establish baseline using current schema" is just a comment.
-    return false;
-  }
   return true;
 });
 
@@ -320,9 +318,6 @@ const allowEditStatementWhenCreating = computed(() => {
  * - Disallowed to edit statement
  */
 const isEditorReadonly = computed(() => {
-  if (selectedTask.value.type === Task_Type.DATABASE_SCHEMA_BASELINE) {
-    return true;
-  }
   if (isCreating.value) {
     return !allowEditStatementWhenCreating.value;
   }
@@ -598,8 +593,8 @@ const handleUpdateStatement = async (statement: string, filename: string) => {
 const updateStatement = async (statement: string) => {
   const planPatch = cloneDeep(issue.value.planEntity);
   if (!planPatch) {
-    notifyNotEditableLegacyIssue();
-    return;
+    // Should not reach here.
+    throw new Error("Plan is not defined. Cannot update statement.");
   }
 
   const specsIdList: string[] = [];
@@ -628,12 +623,11 @@ const updateStatement = async (statement: string) => {
     specsIdList.filter((id) => id && id !== String(EMPTY_ID))
   );
   if (distinctSpecsIds.size === 0) {
-    notifyNotEditableLegacyIssue();
-    return;
+    // Should not reach here.
+    throw new Error("No valid specs found for the selected task(s).");
   }
 
-  const specsToPatch = planPatch.steps
-    .flatMap((step) => step.specs)
+  const specsToPatch = (planPatch.specs || [])
     .filter((spec) => distinctSpecsIds.has(spec.id));
   const sheet = Sheet.fromPartial({
     ...createEmptyLocalSheet(),

@@ -56,9 +56,11 @@ import { computed } from "vue";
 import { useIssueContext } from "@/components/IssueV1/logic";
 import NoPermissionPlaceholder from "@/components/misc/NoPermissionPlaceholder.vue";
 import { hasProjectPermissionV2 } from "@/utils";
+import { useCurrentProjectV1 } from "@/store";
 import StageCard from "./StageCard.vue";
 
 const { isCreating, issue } = useIssueContext();
+const { project } = useCurrentProjectV1();
 
 const stageList = computed(() => {
   return issue.value.rolloutEntity?.stages || [];
@@ -67,7 +69,7 @@ const stageList = computed(() => {
 const placeholder = computed(() => {
   if (
     isCreating.value &&
-    !hasProjectPermissionV2(issue.value.projectEntity, "bb.rollouts.preview")
+    !hasProjectPermissionV2(project.value, "bb.rollouts.preview")
   ) {
     return "PERMISSION_DENIED";
   }

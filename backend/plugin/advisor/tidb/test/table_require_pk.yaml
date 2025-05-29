@@ -1,9 +1,32 @@
+- statement: |-
+    CREATE TABLE has_pk(id INT PRIMARY KEY);
+    CREATE TABLE no_pk(id INT);
+    CREATE TABLE has_pk_fork LIKE has_pk;
+    CREATE TABLE no_pk_fork LIKE no_pk;
+  changeType: 1
+  want:
+    - status: 2
+      code: 601
+      title: table.require-pk
+      content: Table `no_pk` requires PRIMARY KEY
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 601
+      title: table.require-pk
+      content: Table `no_pk_fork` requires PRIMARY KEY
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
 - statement: CREATE TABLE t(id INT PRIMARY KEY)
-  changeType: 0
+  changeType: 1
 - statement: CREATE TABLE t(id INT, PRIMARY KEY (id))
-  changeType: 0
+  changeType: 1
 - statement: CREATE TABLE t(id INT)
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 601
@@ -16,15 +39,15 @@
 - statement: |-
     CREATE TABLE t(id INT);
                 DROP TABLE t
-  changeType: 0
+  changeType: 1
 - statement: |-
     CREATE TABLE t(id INT);
                 ALTER TABLE t ADD CONSTRAINT PRIMARY KEY (id)
-  changeType: 0
+  changeType: 1
 - statement: |-
     CREATE TABLE t(id INT PRIMARY KEY);
                 ALTER TABLE t DROP PRIMARY KEY
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 601
@@ -37,7 +60,7 @@
 - statement: |-
     CREATE TABLE t(id INT PRIMARY KEY);
     ALTER TABLE t DROP INDEX `PRIMARY`
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 601
@@ -50,27 +73,27 @@
 - statement: |-
     CREATE TABLE t(id INT);
                 ALTER TABLE t ADD COLUMN name varchar(30) PRIMARY KEY
-  changeType: 0
+  changeType: 1
 - statement: |-
     CREATE TABLE t(id INT);
                 ALTER TABLE t CHANGE COLUMN id id INT PRIMARY KEY
-  changeType: 0
+  changeType: 1
 - statement: ALTER TABLE tech_book CHANGE COLUMN id uid INT
-  changeType: 0
+  changeType: 1
 - statement: |-
     CREATE TABLE t(id INT);
                 ALTER TABLE t MODIFY COLUMN id INT PRIMARY KEY
-  changeType: 0
+  changeType: 1
 - statement: ALTER TABLE tech_book MODIFY COLUMN id INT
-  changeType: 0
+  changeType: 1
 - statement: |-
     CREATE TABLE t(id INT, name varchar(30), PRIMARY KEY(id, name));
                 ALTER TABLE t DROP COLUMN id
-  changeType: 0
+  changeType: 1
 - statement: |-
     CREATE TABLE t(id INT, name varchar(30), comment varchar(255), PRIMARY KEY(id, name));
                 ALTER TABLE t DROP COLUMN id, DROP COLUMN name
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 601
@@ -81,7 +104,7 @@
         column: 0
       endposition: null
 - statement: ALTER TABLE tech_book ADD COLUMN a int, DROP COLUMN id, DROP COLUMN name
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 601
@@ -92,11 +115,11 @@
         column: 0
       endposition: null
 - statement: ALTER TABLE tech_book DROP COLUMN name
-  changeType: 0
+  changeType: 1
 - statement: |-
     ALTER TABLE tech_book CHANGE COLUMN id uid int;
                 ALTER TABLE tech_book ADD COLUMN a int, DROP COLUMN uid, DROP COLUMN name
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 601

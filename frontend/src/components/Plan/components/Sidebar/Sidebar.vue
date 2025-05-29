@@ -8,17 +8,19 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
+import { useCurrentProjectV1 } from "@/store";
 import { usePlanContext } from "../../logic";
 import GhostSection from "./GhostSection";
 import { provideGhostSettingContext } from "./GhostSection/context";
 import PreBackupSection from "./PreBackupSection";
 import { providePreBackupSettingContext } from "./PreBackupSection/context";
 
+const { project } = useCurrentProjectV1();
 const { isCreating, plan, selectedSpec, events } = usePlanContext();
 
 const { shouldShow: shouldShowGhostSection, events: ghostEvents } =
   provideGhostSettingContext({
-    project: computed(() => plan.value.projectEntity),
+    project,
     plan: plan,
     selectedSpec: selectedSpec,
     isCreating,
@@ -26,7 +28,7 @@ const { shouldShow: shouldShowGhostSection, events: ghostEvents } =
 
 const { shouldShow: shouldShowPreBackupSection, events: preBackupEvents } =
   providePreBackupSettingContext({
-    project: computed(() => plan.value.projectEntity),
+    project,
     plan: plan,
     selectedSpec: selectedSpec,
     isCreating,

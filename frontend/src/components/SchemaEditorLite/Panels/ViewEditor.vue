@@ -81,7 +81,7 @@ const mocked = computed(() => {
   const databaseCatalog = getDatabaseCatalog(database.name);
 
   const mockedView = cloneDeep(view);
-  const mockedDatabase = DatabaseMetadata.fromJSON({
+  const mockedDatabase = DatabaseMetadata.fromPartial({
     name: database.name,
     characterSet: database.characterSet,
     collation: database.collation,

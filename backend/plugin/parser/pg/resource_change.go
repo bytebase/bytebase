@@ -1,7 +1,12 @@
 package pg
 
 import (
+	"strings"
+
+	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
+
+	parser "github.com/bytebase/postgresql-parser"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
@@ -16,7 +21,7 @@ func init() {
 	base.RegisterExtractChangedResourcesFunc(storepb.Engine_REDSHIFT, extractChangedResources)
 }
 
-func extractChangedResources(database string, schema string, dbSchema *model.DatabaseSchema, asts any, statement string) (*base.ChangeSummary, error) {
+func extractChangedResources(database string, _ string, dbSchema *model.DatabaseSchema, asts any, statement string) (*base.ChangeSummary, error) {
 	nodes, ok := asts.([]ast.Node)
 	if !ok {
 		return nil, errors.Errorf("invalid ast type %T", asts)
@@ -26,9 +31,26 @@ func extractChangedResources(database string, schema string, dbSchema *model.Dat
 	dmlCount := 0
 	insertCount := 0
 	var sampleDMLs []string
+	searchPath := dbSchema.GetDatabaseMetadata().GetSearchPath()
+	if len(searchPath) == 0 {
+		searchPath = []string{"public"} // default search path for PostgreSQL
+	}
 	for _, node := range nodes {
+		if n, ok := node.(*ast.VariableSetStmt); ok {
+			if strings.EqualFold(n.Name, "search_path") {
+				var err error
+				searchPath, err = getSearchPathFromSQL(n.Text())
+				if err != nil {
+					return nil, errors.Wrapf(err, "failed to get search path from statement %q", n.Text())
+				}
+				if len(searchPath) == 0 {
+					searchPath = []string{"public"} // default search path for PostgreSQL
+				}
+			}
+		}
+
 		// schema is "public" by default.
-		err := getResourceChanges(database, schema, node, statement, changedResources, dbSchema.GetDatabaseMetadata())
+		err := getResourceChanges(database, searchPath, node, statement, changedResources, dbSchema.GetDatabaseMetadata())
 		if err != nil {
 			return nil, err
 		}
@@ -54,7 +76,7 @@ func extractChangedResources(database string, schema string, dbSchema *model.Dat
 	}, nil
 }
 
-func getResourceChanges(database, schema string, node ast.Node, statement string, changedResources *model.ChangedResources, databaseMetadata *model.DatabaseMetadata) error {
+func getResourceChanges(database string, searchPath []string, node ast.Node, statement string, changedResources *model.ChangedResources, databaseMetadata *model.DatabaseMetadata) error {
 	switch node := node.(type) {
 	case *ast.CreateTableStmt:
 		if node.Name.Type == ast.TableTypeBaseTable {
@@ -63,7 +85,7 @@ func getResourceChanges(database, schema string, node ast.Node, statement string
 				d = database
 			}
 			if s == "" {
-				s = schema
+				s = searchPath[0] // default schema for PostgreSQL
 			}
 			changedResources.AddTable(
 				d,
@@ -83,7 +105,12 @@ func getResourceChanges(database, schema string, node ast.Node, statement string
 					d = database
 				}
 				if s == "" {
-					s = schema
+					schemaName, _ := databaseMetadata.SearchObject(searchPath, v)
+					if schemaName == "" {
+						s = searchPath[0] // default schema for PostgreSQL
+					} else {
+						s = schemaName
+					}
 				}
 				changedResources.AddView(
 					d,
@@ -99,7 +126,12 @@ func getResourceChanges(database, schema string, node ast.Node, statement string
 					d = database
 				}
 				if s == "" {
-					s = schema
+					schemaName, _ := databaseMetadata.SearchObject(searchPath, table)
+					if schemaName == "" {
+						s = searchPath[0] // default schema for PostgreSQL
+					} else {
+						s = schemaName
+					}
 				}
 				changedResources.AddTable(
 					d,
@@ -119,7 +151,12 @@ func getResourceChanges(database, schema string, node ast.Node, statement string
 				d = database
 			}
 			if s == "" {
-				s = schema
+				schemaName, _ := databaseMetadata.SearchObject(searchPath, table)
+				if schemaName == "" {
+					s = searchPath[0] // default schema for PostgreSQL
+				} else {
+					s = schemaName
+				}
 			}
 			changedResources.AddTable(
 				d,
@@ -138,7 +175,12 @@ func getResourceChanges(database, schema string, node ast.Node, statement string
 						d = database
 					}
 					if s == "" {
-						s = schema
+						schemaName, _ := databaseMetadata.SearchObject(searchPath, table)
+						if schemaName == "" {
+							s = searchPath[0] // default schema for PostgreSQL
+						} else {
+							s = schemaName
+						}
 					}
 					changedResources.AddTable(
 						d,
@@ -160,7 +202,12 @@ func getResourceChanges(database, schema string, node ast.Node, statement string
 			d = database
 		}
 		if s == "" {
-			s = schema
+			schemaName, _ := databaseMetadata.SearchObject(searchPath, table)
+			if schemaName == "" {
+				s = searchPath[0] // default schema for PostgreSQL
+			} else {
+				s = schemaName
+			}
 		}
 		changedResources.AddTable(
 			d,
@@ -179,7 +226,12 @@ func getResourceChanges(database, schema string, node ast.Node, statement string
 					d = database
 				}
 				if s == "" {
-					s = schema
+					schemaName, _ := databaseMetadata.SearchObject(searchPath, table)
+					if schemaName == "" {
+						s = searchPath[0] // default schema for PostgreSQL
+					} else {
+						s = schemaName
+					}
 				}
 				changedResources.AddTable(
 					d,
@@ -191,15 +243,7 @@ func getResourceChanges(database, schema string, node ast.Node, statement string
 					false,
 				)
 			} else {
-				schemaMetadata := databaseMetadata.GetSchema(schema)
-				if schemaMetadata == nil {
-					continue
-				}
-				indexMetadataList := schemaMetadata.GetIndexes(index.Name)
-				if len(indexMetadataList) == 0 {
-					continue
-				}
-				indexMetadata := indexMetadataList[0]
+				schema, indexMetadata := databaseMetadata.SearchIndex(searchPath, index.Name)
 				tableMetadata := indexMetadata.GetTableProto()
 				if tableMetadata == nil {
 					continue
@@ -221,7 +265,7 @@ func getResourceChanges(database, schema string, node ast.Node, statement string
 			d = database
 		}
 		if s == "" {
-			s = schema
+			s = searchPath[0] // default schema for PostgreSQL
 		}
 		changedResources.AddView(
 			d,
@@ -234,7 +278,7 @@ func getResourceChanges(database, schema string, node ast.Node, statement string
 	case *ast.CreateFunctionStmt:
 		s, f := node.Function.Schema, node.Function.Name
 		if s == "" {
-			s = schema
+			s = searchPath[0] // default schema for PostgreSQL
 		}
 		changedResources.AddFunction(
 			database,
@@ -248,7 +292,12 @@ func getResourceChanges(database, schema string, node ast.Node, statement string
 		for _, ref := range node.FunctionList {
 			s, f := ref.Schema, ref.Name
 			if s == "" {
-				s = schema
+				schemaName, _ := databaseMetadata.SearchObject(searchPath, f)
+				if schemaName == "" {
+					s = searchPath[0] // default schema for PostgreSQL
+				} else {
+					s = schemaName
+				}
 			}
 			changedResources.AddFunction(
 				database,
@@ -262,7 +311,12 @@ func getResourceChanges(database, schema string, node ast.Node, statement string
 	case *ast.InsertStmt:
 		s := node.Table.Schema
 		if s == "" {
-			s = schema
+			schemaName, _ := databaseMetadata.SearchObject(searchPath, node.Table.Name)
+			if schemaName == "" {
+				s = searchPath[0] // default schema for PostgreSQL
+			} else {
+				s = schemaName
+			}
 		}
 		changedResources.AddTable(
 			database,
@@ -276,7 +330,12 @@ func getResourceChanges(database, schema string, node ast.Node, statement string
 	case *ast.UpdateStmt:
 		s := node.Table.Schema
 		if s == "" {
-			s = schema
+			schemaName, _ := databaseMetadata.SearchObject(searchPath, node.Table.Name)
+			if schemaName == "" {
+				s = searchPath[0] // default schema for PostgreSQL
+			} else {
+				s = schemaName
+			}
 		}
 		changedResources.AddTable(
 			database,
@@ -290,7 +349,12 @@ func getResourceChanges(database, schema string, node ast.Node, statement string
 	case *ast.DeleteStmt:
 		s := node.Table.Schema
 		if s == "" {
-			s = schema
+			schemaName, _ := databaseMetadata.SearchObject(searchPath, node.Table.Name)
+			if schemaName == "" {
+				s = searchPath[0] // default schema for PostgreSQL
+			} else {
+				s = schemaName
+			}
 		}
 		changedResources.AddTable(
 			database,
@@ -304,4 +368,70 @@ func getResourceChanges(database, schema string, node ast.Node, statement string
 	}
 
 	return nil
+}
+
+func getSearchPathFromSQL(statement string) ([]string, error) {
+	parseResult, err := ParsePostgreSQL(statement)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to parse statement %q", statement)
+	}
+
+	if parseResult == nil {
+		return nil, errors.Errorf("parse result is nil for statement %q", statement)
+	}
+
+	visitor := &searchPathVisitor{}
+	antlr.ParseTreeWalkerDefault.Walk(visitor, parseResult.Tree)
+	return visitor.searchPath, nil
+}
+
+type searchPathVisitor struct {
+	*parser.BasePostgreSQLParserListener
+	searchPath []string
+}
+
+func (v *searchPathVisitor) EnterVariablesetstmt(ctx *parser.VariablesetstmtContext) {
+	setRest := ctx.Set_rest()
+	if setRest == nil {
+		return
+	}
+	setRestMore := setRest.Set_rest_more()
+	if setRestMore == nil {
+		return
+	}
+	genericSet := setRestMore.Generic_set()
+	if genericSet == nil {
+		return
+	}
+	varName := genericSet.Var_name()
+	if varName == nil {
+		return
+	}
+	if len(varName.AllColid()) != 1 {
+		return
+	}
+	name := NormalizePostgreSQLColid(varName.Colid(0))
+	if !strings.EqualFold(name, "search_path") {
+		return
+	}
+	var searchPath []string
+	for _, value := range genericSet.Var_list().AllVar_value() {
+		valueText := value.GetText()
+		if strings.HasPrefix(valueText, "\"") && strings.HasSuffix(valueText, "\"") {
+			// Remove the quotes from the schema name.
+			valueText = strings.Trim(valueText, "\"")
+		} else if strings.HasPrefix(valueText, "'") && strings.HasSuffix(valueText, "'") {
+			// Remove the quotes from the schema name.
+			valueText = strings.Trim(valueText, "'")
+		} else {
+			// For non-quoted schema names, we just return the lower string for PostgreSQL.
+			valueText = strings.ToLower(valueText)
+		}
+		path := strings.TrimSpace(valueText)
+		if model.IsSystemPath(path) {
+			continue
+		}
+		searchPath = append(searchPath, path)
+	}
+	v.searchPath = searchPath
 }

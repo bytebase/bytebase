@@ -126,7 +126,7 @@ const reorder = (step: ApprovalStep, index: number, offset: -1 | 1) => {
 };
 const addStep = () => {
   steps.value.push(
-    ApprovalStep.fromJSON({
+    ApprovalStep.fromPartial({
       type: ApprovalStep_Type.ANY,
       nodes: [
         {

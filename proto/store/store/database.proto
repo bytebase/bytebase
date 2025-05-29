@@ -17,6 +17,8 @@ message DatabaseMetadata {
   repeated Secret secrets = 5;
   // The schema is drifted from the source of truth.
   bool drifted = 6;
+  // The version of database schema.
+  string version = 7;
 }
 
 // DatabaseSchemaMetadata is the schema metadata for databases.
@@ -44,6 +46,9 @@ message DatabaseSchemaMetadata {
   repeated LinkedDatabaseMetadata linked_databases = 8;
 
   string owner = 9;
+
+  // The search_path is the search path of a PostgreSQL database.
+  string search_path = 10;
 }
 
 message LinkedDatabaseMetadata {
@@ -422,6 +427,8 @@ message TablePartitionMetadata {
   repeated TablePartitionMetadata subpartitions = 6;
 
   repeated IndexMetadata indexes = 7;
+
+  repeated CheckConstraintMetadata check_constraints = 8;
 }
 
 // ColumnMetadata is the metadata for columns.

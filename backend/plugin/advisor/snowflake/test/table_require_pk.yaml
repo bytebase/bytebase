@@ -5,7 +5,7 @@
         FULL_NAME     VARCHAR(10),
         POSITION      VARCHAR(100)
     );
-  changeType: 0
+  changeType: 1
 - statement: |-
     CREATE TABLE CUSTOMER
     (
@@ -14,7 +14,7 @@
         POSITION      VARCHAR(100),
         CONSTRAINT    PK_CUSTOMER PRIMARY KEY (ID)
     );
-  changeType: 0
+  changeType: 1
 - statement: |-
     CREATE TABLE CUSTOMER
     (
@@ -22,7 +22,7 @@
         FULL_NAME     VARCHAR(10),
         POSITION      VARCHAR(100)
     );
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 601
@@ -40,7 +40,7 @@
         POSITION      VARCHAR(100)
     );
     ALTER TABLE CUSTOMER DROP PRIMARY KEY(ID);
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 601
@@ -58,7 +58,7 @@
         POSITION      VARCHAR(100)
     );
     ALTER TABLE CUSTOMER ADD CONSTRAINT PK_CUSTOMER PRIMARY KEY (ID);
-  changeType: 0
+  changeType: 1
 - statement: |-
     CREATE TABLE CUSTOMER
     (
@@ -67,7 +67,7 @@
         POSITION      VARCHAR(100)
     );
     ALTER TABLE "PUBLIC"."CUSTOMER" ADD CONSTRAINT PK_CUSTOMER PRIMARY KEY (ID);
-  changeType: 0
+  changeType: 1
 - statement: |-
     CREATE TABLE CUSTOMER
     (
@@ -83,7 +83,7 @@
         FULL_NAME     VARCHAR(10),
         POSITION      VARCHAR(100)
     );
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 601
@@ -119,7 +119,7 @@
     );
     ALTER TABLE CUSTOMER DROP PRIMARY KEY(ID);
     ALTER TABLE ORDERING DROP PRIMARY KEY(ORDER_ID);
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 601

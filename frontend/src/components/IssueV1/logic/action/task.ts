@@ -12,6 +12,7 @@ import {
   hasWorkspacePermissionV2,
   isUserIncludedInList,
 } from "@/utils";
+import { projectOfIssue } from "../utils";
 
 export type TaskRolloutAction =
   | "ROLLOUT" // NOT_STARTED -> PENDING
@@ -32,7 +33,6 @@ export const PrimaryTaskRolloutActionList: TaskRolloutAction[] = [
 export const SecondaryTaskRolloutActionList: TaskRolloutAction[] = ["SKIP"];
 
 export const CancelableTaskTypeList: Task_Type[] = [
-  Task_Type.DATABASE_SCHEMA_BASELINE,
   Task_Type.DATABASE_DATA_UPDATE,
   Task_Type.DATABASE_SCHEMA_UPDATE,
   Task_Type.DATABASE_SCHEMA_UPDATE_SDL,
@@ -143,7 +143,7 @@ export const allowUserToApplyTaskRolloutAction = (
   // Only for users with permission to create task runs.
   if (
     hasWorkspacePermissionV2("bb.taskRuns.create") ||
-    hasProjectPermissionV2(issue.projectEntity, "bb.taskRuns.create")
+    hasProjectPermissionV2(projectOfIssue(issue), "bb.taskRuns.create")
   ) {
     return true;
   }

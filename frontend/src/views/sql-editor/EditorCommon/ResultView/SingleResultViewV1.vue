@@ -1,4 +1,13 @@
 <template>
+  <template v-if="result.messages.length > 0">
+    <div
+      v-for="(message, i) in result.messages"
+      :key="`message-${i}`"
+      :class="'text-control-light'"
+    >
+      <div>{{ `[${message.level}] ${message.content}` }}</div>
+    </div>
+  </template>
   <template v-if="viewMode === 'RESULT'">
     <BBAttention v-if="result.error" class="w-full mb-2" :type="'error'">
       <ErrorView :error="result.error" />
@@ -249,7 +258,7 @@ const storedPageSize = useLocalStorage<number>(
 
 const props = defineProps<{
   params: SQLEditorQueryParams;
-  database?: ComposedDatabase;
+  database: ComposedDatabase;
   result: QueryResult;
   setIndex: number;
 }>();
@@ -439,7 +448,7 @@ const handleExportBtnClick = async (
   // the query is executed on database level
   // otherwise the query is executed on instance level, we should use the
   // `instanceId` from the tab's connection attributes
-  const database =
+  const databaseName =
     props.database && isValidDatabaseName(props.database.name)
       ? props.database.name
       : "";
@@ -451,9 +460,8 @@ const handleExportBtnClick = async (
 
   try {
     const content = await useSQLStore().exportData({
-      name: database,
-      // TODO(lj): support data source id similar to queries.
-      dataSourceId: "",
+      name: databaseName,
+      dataSourceId: props.params.connection.dataSourceId ?? "",
       format: options.format,
       statement,
       limit,

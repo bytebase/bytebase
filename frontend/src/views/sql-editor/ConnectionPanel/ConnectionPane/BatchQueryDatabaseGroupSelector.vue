@@ -130,11 +130,8 @@ const handleTriggerClick = () => {
 watch(
   () => state.selectedDatabaseGroupNames,
   () => {
-    tabStore.updateCurrentTab({
-      batchQueryContext: {
-        databases: tabStore.currentTab?.batchQueryContext?.databases ?? [],
-        databaseGroups: state.selectedDatabaseGroupNames,
-      },
+    tabStore.updateBatchQueryContext({
+      databaseGroups: state.selectedDatabaseGroupNames,
     });
   }
 );

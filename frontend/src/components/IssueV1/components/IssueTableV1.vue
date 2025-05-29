@@ -51,7 +51,12 @@ import CurrentApproverV1 from "@/components/IssueV1/components/CurrentApproverV1
 import { useElementVisibilityInScrollParent } from "@/composables/useElementVisibilityInScrollParent";
 import { emitWindowEvent } from "@/plugins";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
-import { getTimeForPbTimestamp, type ComposedIssue } from "@/types";
+import { useUserStore } from "@/store";
+import {
+  getTimeForPbTimestamp,
+  unknownUser,
+  type ComposedIssue,
+} from "@/types";
 import {
   getHighlightHTMLByRegExp,
   extractProjectResourceName,
@@ -59,124 +64,11 @@ import {
   issueV1Slug,
   extractIssueUID,
 } from "@/utils";
+import { projectOfIssue } from "../logic";
 import IssueLabelSelector, {
   getValidIssueLabels,
 } from "./IssueLabelSelector.vue";
 import IssueStatusIconWithTaskSummary from "./IssueStatusIconWithTaskSummary.vue";
-
-const { t } = useI18n();
-
-const columnList = computed((): DataTableColumn<ComposedIssue>[] => {
-  const columns: (DataTableColumn<ComposedIssue> & { hide?: boolean })[] = [
-    {
-      type: "selection",
-      width: 40,
-      cellProps: () => {
-        return {
-          onClick: (e: MouseEvent) => {
-            e.stopPropagation();
-          },
-        };
-      },
-      hide: !props.showSelection,
-    },
-    {
-      type: "expand",
-      width: 0,
-      expandable: (issue) => isIssueExpanded(issue),
-      hide: !props.highlightText,
-      renderExpand: (issue) => (
-        <div
-          class="max-h-[20rem] overflow-auto whitespace-pre-wrap break-words break-all"
-          innerHTML={highlight(issue.description)}
-        ></div>
-      ),
-    },
-    {
-      key: "title",
-      title: t("issue.table.name"),
-      ellipsis: true,
-      render: (issue) => {
-        const labels = getValidIssueLabels(
-          issue.labels,
-          issue.projectEntity.issueLabels
-        );
-        return (
-          <div class="flex items-center space-x-2">
-            <IssueStatusIconWithTaskSummary issue={issue} />
-            <a
-              href={issueUrl(issue)}
-              class="flex items-center space-x-2 select-none"
-              onClick={(e: MouseEvent) => {
-                e.stopPropagation();
-              }}
-            >
-              <div class="whitespace-nowrap text-control text-opacity-80">
-                {`#${extractIssueUID(issue.name)}  `}
-              </div>
-              <NPerformantEllipsis>
-                {{
-                  default: () => (
-                    <span
-                      class="min-w-32 shrink"
-                      innerHTML={highlight(issue.title)}
-                    ></span>
-                  ),
-                  tooltip: () => issue.title,
-                }}
-              </NPerformantEllipsis>
-            </a>
-            {labels.length > 0 && (
-              <IssueLabelSelector
-                class="!w-auto shrink-0"
-                size="small"
-                selected={labels}
-                maxTagCount={3}
-                project={issue.projectEntity}
-                disabled
-              />
-            )}
-          </div>
-        );
-      },
-    },
-    {
-      key: "project",
-      title: t("common.project"),
-      width: 150,
-      hide: !showExtendedColumns.value || !props.showProject,
-      render: (issue) => issue.projectEntity.title,
-    },
-    {
-      key: "updateTime",
-      title: t("issue.table.updated"),
-      width: 150,
-      hide: !showExtendedColumns.value,
-      render: (issue) =>
-        humanizeTs(getTimeForPbTimestamp(issue.updateTime, 0) / 1000),
-    },
-    {
-      key: "approver",
-      width: 150,
-      title: t("issue.table.current-approver"),
-      hide: !showExtendedColumns.value,
-      render: (issue) => <CurrentApproverV1 issue={issue} />,
-    },
-    {
-      key: "creator",
-      width: 150,
-      title: t("issue.table.creator"),
-      hide: !showExtendedColumns.value,
-      render: (issue) => (
-        <div class="flex flex-row items-center overflow-hidden gap-x-2">
-          <BBAvatar size="SMALL" username={issue.creatorEntity.title} />
-          <span class="truncate">{issue.creatorEntity.title}</span>
-        </div>
-      ),
-    },
-  ];
-  return columns.filter((column) => !column.hide);
-});
 
 interface LocalState {
   selectedIssueNameList: Set<string>;
@@ -201,8 +93,9 @@ const props = withDefaults(
   }
 );
 
+const { t } = useI18n();
 const router = useRouter();
-
+const userStore = useUserStore();
 const state = reactive<LocalState>({
   selectedIssueNameList: new Set(),
 });
@@ -236,6 +129,123 @@ const selectedIssueList = computed(() => {
   return props.issueList.filter((issue) =>
     state.selectedIssueNameList.has(issue.name)
   );
+});
+
+const columnList = computed((): DataTableColumn<ComposedIssue>[] => {
+  const columns: (DataTableColumn<ComposedIssue> & { hide?: boolean })[] = [
+    {
+      type: "selection",
+      width: 40,
+      cellProps: () => {
+        return {
+          onClick: (e: MouseEvent) => {
+            e.stopPropagation();
+          },
+        };
+      },
+      hide: !props.showSelection,
+    },
+    {
+      type: "expand",
+      width: 0,
+      expandable: (issue) => isIssueExpanded(issue),
+      hide: !props.highlightText,
+      renderExpand: (issue) => (
+        <div
+          class="max-h-[20rem] overflow-auto whitespace-pre-wrap break-words break-all"
+          innerHTML={highlight(issue.description)}
+        ></div>
+      ),
+    },
+    {
+      key: "title",
+      title: t("issue.table.name"),
+      ellipsis: true,
+      render: (issue) => {
+        const projectEntity = projectOfIssue(issue);
+        const labels = getValidIssueLabels(
+          issue.labels,
+          projectEntity.issueLabels
+        );
+        return (
+          <div class="flex items-center space-x-2">
+            <IssueStatusIconWithTaskSummary issue={issue} />
+            <a
+              href={issueUrl(issue)}
+              class="flex items-center space-x-2 select-none"
+              onClick={(e: MouseEvent) => {
+                e.stopPropagation();
+              }}
+            >
+              <div class="whitespace-nowrap text-control text-opacity-80">
+                {`#${extractIssueUID(issue.name)}  `}
+              </div>
+              <NPerformantEllipsis>
+                {{
+                  default: () => (
+                    <span
+                      class="min-w-32 shrink"
+                      innerHTML={highlight(issue.title)}
+                    ></span>
+                  ),
+                  tooltip: () => issue.title,
+                }}
+              </NPerformantEllipsis>
+            </a>
+            {labels.length > 0 && (
+              <IssueLabelSelector
+                class="!w-auto shrink-0"
+                size="small"
+                selected={labels}
+                maxTagCount={3}
+                project={projectOfIssue(issue)}
+                disabled
+              />
+            )}
+          </div>
+        );
+      },
+    },
+    {
+      key: "project",
+      title: t("common.project"),
+      width: 150,
+      hide: !showExtendedColumns.value || !props.showProject,
+      render: (issue) => projectOfIssue(issue).title,
+    },
+    {
+      key: "updateTime",
+      title: t("issue.table.updated"),
+      width: 150,
+      hide: !showExtendedColumns.value,
+      render: (issue) =>
+        humanizeTs(getTimeForPbTimestamp(issue.updateTime, 0) / 1000),
+    },
+    {
+      key: "approver",
+      width: 150,
+      title: t("issue.table.current-approver"),
+      hide: !showExtendedColumns.value,
+      render: (issue) => <CurrentApproverV1 issue={issue} />,
+    },
+    {
+      key: "creator",
+      width: 150,
+      title: t("issue.table.creator"),
+      hide: !showExtendedColumns.value,
+      render: (issue) => {
+        const creator =
+          userStore.getUserByIdentifier(issue.creator) || unknownUser();
+        return (
+          <div class="flex flex-row items-center overflow-hidden gap-x-2">
+            <BBAvatar size="SMALL" username={creator.title} />
+            <span class="truncate">{creator.title}</span>
+          </div>
+        );
+      },
+    },
+  ];
+  return columns.filter((column) => !column.hide);
 });
 
 const issueUrl = (issue: ComposedIssue) => {

@@ -37,9 +37,9 @@
           @click="$emit('update:selected-database', item.database)"
         >
           <RichDatabaseName :database="item.database" />
-          <InfoIcon
+          <CircleAlertIcon
             v-if="isDatabaseQueryFailed(item)"
-            class="ml-1 text-yellow-600 w-4 h-auto"
+            class="ml-1 text-red-600 w-4 h-auto"
           />
           <span
             v-if="isEmptyQueryItem(item)"
@@ -60,16 +60,12 @@
 <script setup lang="ts">
 import { useLocalStorage } from "@vueuse/core";
 import { head } from "lodash-es";
-import { EyeIcon, EyeOffIcon, InfoIcon, XIcon } from "lucide-vue-next";
+import { EyeIcon, EyeOffIcon, CircleAlertIcon, XIcon } from "lucide-vue-next";
 import { NButton, NTooltip, NScrollbar } from "naive-ui";
 import { storeToRefs } from "pinia";
-import { computed, watch, watchEffect } from "vue";
+import { computed, watch } from "vue";
 import { RichDatabaseName } from "@/components/v2";
-import {
-  useDatabaseV1Store,
-  useSQLEditorTabStore,
-  batchGetOrFetchDatabases,
-} from "@/store";
+import { useDatabaseV1Store, useSQLEditorTabStore } from "@/store";
 import type { ComposedDatabase, SQLEditorDatabaseQueryContext } from "@/types";
 import { hexToRgb } from "@/utils";
 
@@ -97,10 +93,6 @@ const showEmpty = useLocalStorage(
 const queriedDatabaseNames = computed(() =>
   Array.from(tab.value?.databaseQueryContexts?.keys() || [])
 );
-
-watchEffect(async () => {
-  await batchGetOrFetchDatabases(queriedDatabaseNames.value);
-});
 
 const items = computed(() => {
   return queriedDatabaseNames.value.map<BatchQueryItem>((name) => {

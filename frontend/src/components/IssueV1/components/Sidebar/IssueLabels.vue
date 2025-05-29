@@ -6,7 +6,7 @@
     <IssueLabelSelector
       :disabled="!allowEditIssue"
       :selected="issue.labels"
-      :project="issue.projectEntity"
+      :project="projectOfIssue(issue)"
       :size="'medium'"
       @update:selected="onLablesUpdate"
     />
@@ -16,19 +16,19 @@
 <script setup lang="ts">
 import { useI18n } from "vue-i18n";
 import IssueLabelSelector from "@/components/IssueV1/components/IssueLabelSelector.vue";
-import { useIssueContext } from "@/components/IssueV1/logic";
+import { useIssueContext, projectOfIssue } from "@/components/IssueV1/logic";
 import { issueServiceClient } from "@/grpcweb";
 import { pushNotification } from "@/store";
 import { Issue } from "@/types/proto/v1/issue_service";
 
-const { isCreating, issue, allowEditIssue } = useIssueContext();
+const { isCreating, issue, allowChange: allowEditIssue } = useIssueContext();
 const { t } = useI18n();
 
 const onLablesUpdate = async (labels: string[]) => {
   if (isCreating.value) {
     issue.value.labels = labels;
   } else {
-    const issuePatch = Issue.fromJSON({
+    const issuePatch = Issue.fromPartial({
       ...issue.value,
       labels,
     });

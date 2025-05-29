@@ -47,9 +47,13 @@ func (s *WorkspaceService) SetIamPolicy(ctx context.Context, request *v1pb.SetIa
 		return nil, status.Errorf(codes.Aborted, "there is concurrent update to the workspace iam policy, please refresh and try again.")
 	}
 
+	if _, err := validateIAMPolicy(ctx, s.store, s.iamManager, request.Policy, policyMessage); err != nil {
+		return nil, err
+	}
+
 	iamPolicy, err := convertToStoreIamPolicy(ctx, s.store, request.Policy)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to convert iam policy with error: %v", err.Error())
+		return nil, err
 	}
 	users := utils.GetUsersByRoleInIAMPolicy(ctx, s.store, base.WorkspaceAdmin, iamPolicy)
 	if !containsActiveEndUser(users) {

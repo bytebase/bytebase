@@ -41,7 +41,7 @@
             "
             :content="item.comment.comment"
             :issue-list="issueList"
-            :project="issue.projectEntity"
+            :project="project"
             @change="(val: string) => (state.editComment = val)"
             @submit="doUpdateComment"
             @cancel="cancelEditComment"
@@ -89,7 +89,7 @@
             mode="editor"
             :content="state.newComment"
             :issue-list="issueList"
-            :project="issue.projectEntity"
+            :project="project"
             @change="(val: string) => (state.newComment = val)"
             @submit="doCreateComment(state.newComment)"
           />
@@ -117,6 +117,7 @@ import {
   useCurrentUserV1,
   useIssueCommentStore,
   useIssueV1Store,
+  useCurrentProjectV1,
   type ComposedIssueComment,
   extractUserId,
 } from "@/store";
@@ -142,6 +143,7 @@ interface LocalState {
 
 const route = useRoute();
 
+const { project } = useCurrentProjectV1();
 const { issue } = useIssueContext();
 const issueList = ref<ComposedIssue[]>([]);
 
@@ -202,10 +204,7 @@ const issueComments = computed((): DistinctIssueComment[] => {
 });
 
 const allowCreateComment = computed(() => {
-  return hasProjectPermissionV2(
-    issue.value.projectEntity,
-    "bb.issueComments.create"
-  );
+  return hasProjectPermissionV2(project.value, "bb.issueComments.create");
 });
 
 const cancelEditComment = () => {
@@ -230,10 +229,7 @@ const allowEditIssueComment = (comment: ComposedIssueComment) => {
   if (currentUser.value.email === extractUserId(comment.creator)) {
     return true;
   }
-  return hasProjectPermissionV2(
-    issue.value.projectEntity,
-    "bb.issueComments.update"
-  );
+  return hasProjectPermissionV2(project.value, "bb.issueComments.update");
 };
 
 const onUpdateComment = (issueComment: ComposedIssueComment) => {

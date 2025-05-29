@@ -6,10 +6,7 @@
           <div>
             <div class="textlabel flex items-center gap-x-1">
               {{ $t("issue.approval-flow.self") }}
-              <FeatureBadge
-                feature="bb.feature.custom-approval"
-                :show-instance-missing-license="existedDeactivatedInstance"
-              />
+              <FeatureBadge feature="bb.feature.custom-approval" />
             </div>
           </div>
         </template>
@@ -65,10 +62,7 @@
   <div v-if="isCreating" class="flex flex-col gap-y-1">
     <div class="textlabel flex items-center gap-x-1">
       {{ $t("issue.approval-flow.self") }}
-      <FeatureBadge
-        feature="bb.feature.custom-approval"
-        :show-instance-missing-license="existedDeactivatedInstance"
-      />
+      <FeatureBadge feature="bb.feature.custom-approval" />
     </div>
     <div class="text-control-placeholder text-xs">
       {{ $t("issue.approval-flow.pre-issue-created-tips") }}
@@ -85,11 +79,9 @@ import { useIssueContext, useWrappedReviewStepsV1 } from "@/components/IssueV1";
 import { useIssueV1Store } from "@/store";
 import RiskLevelTag from "./RiskLevelTag.vue";
 import Timeline from "./Timeline.vue";
-import { useIssueIntanceContext } from "./utils";
 
 const { issue, events, isCreating, reviewContext } = useIssueContext();
 const { ready, error } = reviewContext;
-const { existedDeactivatedInstance } = useIssueIntanceContext();
 
 const wrappedSteps = useWrappedReviewStepsV1(issue, reviewContext);
 

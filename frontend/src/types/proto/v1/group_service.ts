@@ -203,10 +203,6 @@ export const GetGroupRequest: MessageFns<GetGroupRequest> = {
     return message;
   },
 
-  fromJSON(object: any): GetGroupRequest {
-    return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
-  },
-
   toJSON(message: GetGroupRequest): unknown {
     const obj: any = {};
     if (message.name !== "") {
@@ -270,13 +266,6 @@ export const ListGroupsRequest: MessageFns<ListGroupsRequest> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): ListGroupsRequest {
-    return {
-      pageSize: isSet(object.pageSize) ? globalThis.Number(object.pageSize) : 0,
-      pageToken: isSet(object.pageToken) ? globalThis.String(object.pageToken) : "",
-    };
   },
 
   toJSON(message: ListGroupsRequest): unknown {
@@ -348,13 +337,6 @@ export const ListGroupsResponse: MessageFns<ListGroupsResponse> = {
     return message;
   },
 
-  fromJSON(object: any): ListGroupsResponse {
-    return {
-      groups: globalThis.Array.isArray(object?.groups) ? object.groups.map((e: any) => Group.fromJSON(e)) : [],
-      nextPageToken: isSet(object.nextPageToken) ? globalThis.String(object.nextPageToken) : "",
-    };
-  },
-
   toJSON(message: ListGroupsResponse): unknown {
     const obj: any = {};
     if (message.groups?.length) {
@@ -422,13 +404,6 @@ export const CreateGroupRequest: MessageFns<CreateGroupRequest> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): CreateGroupRequest {
-    return {
-      group: isSet(object.group) ? Group.fromJSON(object.group) : undefined,
-      groupEmail: isSet(object.groupEmail) ? globalThis.String(object.groupEmail) : "",
-    };
   },
 
   toJSON(message: CreateGroupRequest): unknown {
@@ -511,14 +486,6 @@ export const UpdateGroupRequest: MessageFns<UpdateGroupRequest> = {
     return message;
   },
 
-  fromJSON(object: any): UpdateGroupRequest {
-    return {
-      group: isSet(object.group) ? Group.fromJSON(object.group) : undefined,
-      updateMask: isSet(object.updateMask) ? FieldMask.unwrap(FieldMask.fromJSON(object.updateMask)) : undefined,
-      allowMissing: isSet(object.allowMissing) ? globalThis.Boolean(object.allowMissing) : false,
-    };
-  },
-
   toJSON(message: UpdateGroupRequest): unknown {
     const obj: any = {};
     if (message.group !== undefined) {
@@ -579,10 +546,6 @@ export const DeleteGroupRequest: MessageFns<DeleteGroupRequest> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): DeleteGroupRequest {
-    return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
   },
 
   toJSON(message: DeleteGroupRequest): unknown {
@@ -648,13 +611,6 @@ export const GroupMember: MessageFns<GroupMember> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): GroupMember {
-    return {
-      member: isSet(object.member) ? globalThis.String(object.member) : "",
-      role: isSet(object.role) ? groupMember_RoleFromJSON(object.role) : GroupMember_Role.ROLE_UNSPECIFIED,
-    };
   },
 
   toJSON(message: GroupMember): unknown {
@@ -757,16 +713,6 @@ export const Group: MessageFns<Group> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): Group {
-    return {
-      name: isSet(object.name) ? globalThis.String(object.name) : "",
-      title: isSet(object.title) ? globalThis.String(object.title) : "",
-      description: isSet(object.description) ? globalThis.String(object.description) : "",
-      members: globalThis.Array.isArray(object?.members) ? object.members.map((e: any) => GroupMember.fromJSON(e)) : [],
-      source: isSet(object.source) ? globalThis.String(object.source) : "",
-    };
   },
 
   toJSON(message: Group): unknown {
@@ -991,14 +937,9 @@ export type DeepPartial<T> = T extends Builtin ? T
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
 
-function isSet(value: any): boolean {
-  return value !== null && value !== undefined;
-}
-
 export interface MessageFns<T> {
   encode(message: T, writer?: BinaryWriter): BinaryWriter;
   decode(input: BinaryReader | Uint8Array, length?: number): T;
-  fromJSON(object: any): T;
   toJSON(message: T): unknown;
   create(base?: DeepPartial<T>): T;
   fromPartial(object: DeepPartial<T>): T;

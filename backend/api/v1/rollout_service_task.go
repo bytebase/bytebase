@@ -238,10 +238,6 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 				SheetId:       int32(sheet.UID),
 			},
 		}
-		if spec.EarliestAllowedTime.GetSeconds() > 0 {
-			t := spec.EarliestAllowedTime.AsTime()
-			v.EarliestAllowedAt = &t
-		}
 		return []*store.TaskMessage{
 			v,
 		}, nil
@@ -313,10 +309,6 @@ func getTaskCreatesFromExportDataConfig(ctx context.Context, s *store.Store, spe
 		Type:          base.TaskDatabaseDataExport,
 		Payload:       payload,
 	}
-	if spec.EarliestAllowedTime.GetSeconds() > 0 {
-		t := spec.EarliestAllowedTime.AsTime()
-		taskCreate.EarliestAllowedAt = &t
-	}
 	return []*store.TaskMessage{taskCreate}, nil
 }
 
@@ -348,26 +340,6 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s
 	}
 
 	switch c.Type {
-	case storepb.PlanConfig_ChangeDatabaseConfig_BASELINE:
-		taskCreate := &store.TaskMessage{
-			InstanceID:    database.InstanceID,
-			DatabaseName:  &database.DatabaseName,
-			EnvironmentID: database.EffectiveEnvironmentID,
-			Type:          base.TaskDatabaseSchemaBaseline,
-			Payload: &storepb.TaskPayload{
-				SpecId:        spec.Id,
-				SchemaVersion: c.SchemaVersion,
-				TaskReleaseSource: &storepb.TaskReleaseSource{
-					File: spec.SpecReleaseSource.GetFile(),
-				},
-			},
-		}
-		if spec.EarliestAllowedTime.GetSeconds() > 0 {
-			t := spec.EarliestAllowedTime.AsTime()
-			taskCreate.EarliestAllowedAt = &t
-		}
-		return []*store.TaskMessage{taskCreate}, nil
-
 	case storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE:
 		_, sheetUID, err := common.GetProjectResourceIDSheetUID(c.Sheet)
 		if err != nil {
@@ -386,10 +358,6 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s
 					File: spec.SpecReleaseSource.GetFile(),
 				},
 			},
-		}
-		if spec.EarliestAllowedTime.GetSeconds() > 0 {
-			t := spec.EarliestAllowedTime.AsTime()
-			taskCreate.EarliestAllowedAt = &t
 		}
 		return []*store.TaskMessage{taskCreate}, nil
 
@@ -416,10 +384,6 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s
 				},
 			},
 		}
-		if spec.EarliestAllowedTime.GetSeconds() > 0 {
-			t := spec.EarliestAllowedTime.AsTime()
-			taskCreate.EarliestAllowedAt = &t
-		}
 		return []*store.TaskMessage{taskCreate}, nil
 
 	case storepb.PlanConfig_ChangeDatabaseConfig_DATA:
@@ -445,10 +409,6 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s
 					File: spec.SpecReleaseSource.GetFile(),
 				},
 			},
-		}
-		if spec.EarliestAllowedTime.GetSeconds() > 0 {
-			t := spec.EarliestAllowedTime.AsTime()
-			taskCreate.EarliestAllowedAt = &t
 		}
 		return []*store.TaskMessage{taskCreate}, nil
 	default:

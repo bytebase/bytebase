@@ -10,7 +10,7 @@ export const updateIssueSubscribers = async (
   subscribers: string[],
   silent?: boolean // If silent is true, no notification will be pushed
 ) => {
-  const issuePatch = Issue.fromJSON({
+  const issuePatch = Issue.fromPartial({
     ...issue,
     subscribers,
   });

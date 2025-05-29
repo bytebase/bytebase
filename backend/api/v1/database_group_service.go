@@ -222,7 +222,15 @@ func (s *DatabaseGroupService) ListDatabaseGroups(ctx context.Context, request *
 
 	var apiDatabaseGroups []*v1pb.DatabaseGroup
 	for _, databaseGroup := range databaseGroups {
-		apiDatabaseGroups = append(apiDatabaseGroups, convertStoreToAPIDatabaseGroupBasic(databaseGroup, project.ResourceID))
+		if request.View == v1pb.DatabaseGroupView_DATABASE_GROUP_VIEW_BASIC || request.View == v1pb.DatabaseGroupView_DATABASE_GROUP_VIEW_UNSPECIFIED {
+			apiDatabaseGroups = append(apiDatabaseGroups, convertStoreToAPIDatabaseGroupBasic(databaseGroup, project.ResourceID))
+		} else {
+			fullDatabaseGroup, err := s.convertStoreToAPIDatabaseGroupFull(ctx, databaseGroup, projectResourceID)
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to convert database group %q to full view, err: %v", databaseGroup.ResourceID, err)
+			}
+			apiDatabaseGroups = append(apiDatabaseGroups, fullDatabaseGroup)
+		}
 	}
 	return &v1pb.ListDatabaseGroupsResponse{
 		DatabaseGroups: apiDatabaseGroups,

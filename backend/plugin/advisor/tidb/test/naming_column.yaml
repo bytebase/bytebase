@@ -1,5 +1,5 @@
 - statement: CREATE TABLE book(id int, creatorId int)
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 302
@@ -10,7 +10,7 @@
         column: 0
       endposition: null
 - statement: CREATE TABLE book(id int, gbhzmtchhsjzyrhdroxmyouwloxqezowdvhcbqalqcgqhfbjnvmhwrbggezmzeusx int)
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 302
@@ -21,11 +21,11 @@
         column: 0
       endposition: null
 - statement: CREATE TABLE book(id int, creator_id int)
-  changeType: 0
+  changeType: 1
 - statement: |-
     CREATE TABLE book(id int, creator_id int);
                 ALTER TABLE book RENAME COLUMN creator_id TO creatorId
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 302
@@ -36,7 +36,7 @@
         column: 0
       endposition: null
 - statement: ALTER TABLE tech_book RENAME COLUMN id TO creator_id;
-  changeType: 0
+  changeType: 1
 - statement: |-
     CREATE TABLE book(
                   id int,
@@ -45,7 +45,7 @@
                   updater_id int,
                   updated_ts timestamp);
                 ALTER TABLE book CHANGE COLUMN creator_id creatorId int;
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 302
@@ -56,9 +56,9 @@
         column: 0
       endposition: null
 - statement: ALTER TABLE tech_book CHANGE COLUMN id creator_id int;
-  changeType: 0
+  changeType: 1
 - statement: ALTER TABLE tech_book DROP COLUMN id;
-  changeType: 0
+  changeType: 1
 - statement: |-
     CREATE TABLE book(
                   id int,
@@ -66,7 +66,7 @@
                   created_ts timestamp,
                   updated_ts timestamp);
                 ALTER TABLE book ADD COLUMN contentString varchar(255);
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 302
@@ -86,7 +86,7 @@
                   id int,
                   createdTs timestamp,
                   updatedTs timestamp);
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 302

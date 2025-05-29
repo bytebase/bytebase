@@ -213,7 +213,12 @@ import { usePlanContext } from "@/components/Plan/logic";
 import DownloadSheetButton from "@/components/Sheet/DownloadSheetButton.vue";
 import SQLUploadButton from "@/components/misc/SQLUploadButton.vue";
 import { planServiceClient } from "@/grpcweb";
-import { hasFeature, pushNotification, useSheetV1Store } from "@/store";
+import {
+  hasFeature,
+  pushNotification,
+  useCurrentProjectV1,
+  useSheetV1Store,
+} from "@/store";
 import type { SQLDialect } from "@/types";
 import { EMPTY_ID, dialectOfEngineV1 } from "@/types";
 import type { Plan_Spec } from "@/types/proto/v1/plan_service";
@@ -224,9 +229,8 @@ import {
   setSheetStatement,
   useInstanceV1EditorLanguage,
   getStatementSize,
-  flattenSpecList,
 } from "@/utils";
-import { usePlanSQLCheckContext } from "../../SQLCheckSectionV1/context";
+import { usePlanSQLCheckContext } from "../../SQLCheckSection/context";
 import { useSQLAdviceMarkers } from "../useSQLAdviceMarkers";
 import FormatOnSaveCheckbox from "./FormatOnSaveCheckbox.vue";
 import type { EditState } from "./useTempEditState";
@@ -241,6 +245,7 @@ type LocalState = EditState & {
 const { t } = useI18n();
 const dialog = useDialog();
 const context = usePlanContext();
+const { project } = useCurrentProjectV1();
 const { isCreating, plan, selectedSpec, formatOnSave, events } = context;
 const { resultMap } = usePlanSQLCheckContext();
 const editorContainerElRef = ref<HTMLElement>();
@@ -256,7 +261,7 @@ const state = reactive<LocalState>({
 });
 
 const database = computed(() => {
-  return databaseForSpec(plan.value.projectEntity, selectedSpec.value);
+  return databaseForSpec(project.value, selectedSpec.value);
 });
 
 const language = useInstanceV1EditorLanguage(
@@ -275,10 +280,7 @@ const statementTitle = computed(() => {
   return language.value === "sql" ? t("common.sql") : t("common.statement");
 });
 const advices = computed(() => {
-  const database = databaseForSpec(
-    plan.value.projectEntity,
-    selectedSpec.value
-  );
+  const database = databaseForSpec(project.value, selectedSpec.value);
   return resultMap.value[database.name]?.advices || [];
 });
 const { markers } = useSQLAdviceMarkers(context, advices);
@@ -376,7 +378,7 @@ const chooseUpdateStatementTarget = () => {
   const targets: Record<Target, Plan_Spec[]> = {
     CANCELED: [],
     SPEC: [selectedSpec.value],
-    ALL: flattenSpecList(plan.value),
+    ALL: plan.value?.specs || [],
   };
 
   // If there is only one spec, we don't need to ask the user to choose.
@@ -518,9 +520,9 @@ const updateStatement = async (statement: string) => {
     return;
   }
 
-  const specsToPatch = planPatch.steps
-    .flatMap((step) => step.specs)
-    .filter((spec) => distinctSpecsIds.has(spec.id));
+  const specsToPatch = planPatch.specs.filter((spec) =>
+    distinctSpecsIds.has(spec.id)
+  );
   const sheet = Sheet.fromPartial({
     ...createEmptyLocalSheet(),
     title: plan.value.title,

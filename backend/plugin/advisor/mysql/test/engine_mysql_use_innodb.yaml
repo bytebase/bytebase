@@ -11,7 +11,7 @@
       UNIQUE KEY uk1(id, name),
       FOREIGN KEY fk1(roomId) REFERENCES room(id),
       INDEX idx_userTable_content(content)) ENGINE = CSV COLLATE latin1_bin;
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 501
@@ -45,17 +45,17 @@
       INDEX idx_user_name(name),
       UNIQUE KEY uk_user_id_name(id, name)
     ) ENGINE = INNODB COMMENT 'comment';
-  changeType: 0
+  changeType: 1
 - statement: CREATE TABLE book(id int) ENGINE = INNODB;
-  changeType: 0
+  changeType: 1
 - statement: CREATE TABLE book(id int);
-  changeType: 0
+  changeType: 1
 - statement: |
     CREATE TABLE book(
       id INT,
       price INT
     ) ENGINE = CSV;
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 501
@@ -75,7 +75,7 @@
       id INT,
       price INT
     ) ENGINE = CSV;
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 501
@@ -90,12 +90,12 @@
         column: 0
       endposition: null
 - statement: ALTER TABLE tech_book ENGINE = INNODB;
-  changeType: 0
+  changeType: 1
 - statement: |
     CREATE TABLE teck_book(a INT);
     CREATE TABLE book(a INT);
     ALTER TABLE tech_book ENGINE = CSV;
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 501
@@ -106,11 +106,11 @@
         column: 0
       endposition: null
 - statement: SET default_storage_engine=INNODB;
-  changeType: 0
+  changeType: 1
 - statement: |
     CREATE TABLE book(a INT);
     SET default_storage_engine=CSV;
-  changeType: 0
+  changeType: 1
   want:
     - status: 2
       code: 501
@@ -122,4 +122,4 @@
       endposition: null
 - statement: |
     SET foreign_key_checks=0;
-  changeType: 0
+  changeType: 1

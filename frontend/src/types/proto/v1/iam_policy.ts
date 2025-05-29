@@ -200,10 +200,6 @@ export const GetIamPolicyRequest: MessageFns<GetIamPolicyRequest> = {
     return message;
   },
 
-  fromJSON(object: any): GetIamPolicyRequest {
-    return { resource: isSet(object.resource) ? globalThis.String(object.resource) : "" };
-  },
-
   toJSON(message: GetIamPolicyRequest): unknown {
     const obj: any = {};
     if (message.resource !== "") {
@@ -280,14 +276,6 @@ export const SetIamPolicyRequest: MessageFns<SetIamPolicyRequest> = {
     return message;
   },
 
-  fromJSON(object: any): SetIamPolicyRequest {
-    return {
-      resource: isSet(object.resource) ? globalThis.String(object.resource) : "",
-      policy: isSet(object.policy) ? IamPolicy.fromJSON(object.policy) : undefined,
-      etag: isSet(object.etag) ? globalThis.String(object.etag) : "",
-    };
-  },
-
   toJSON(message: SetIamPolicyRequest): unknown {
     const obj: any = {};
     if (message.resource !== "") {
@@ -361,13 +349,6 @@ export const IamPolicy: MessageFns<IamPolicy> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): IamPolicy {
-    return {
-      bindings: globalThis.Array.isArray(object?.bindings) ? object.bindings.map((e: any) => Binding.fromJSON(e)) : [],
-      etag: isSet(object.etag) ? globalThis.String(object.etag) : "",
-    };
   },
 
   toJSON(message: IamPolicy): unknown {
@@ -461,15 +442,6 @@ export const Binding: MessageFns<Binding> = {
     return message;
   },
 
-  fromJSON(object: any): Binding {
-    return {
-      role: isSet(object.role) ? globalThis.String(object.role) : "",
-      members: globalThis.Array.isArray(object?.members) ? object.members.map((e: any) => globalThis.String(e)) : [],
-      condition: isSet(object.condition) ? Expr.fromJSON(object.condition) : undefined,
-      parsedExpr: isSet(object.parsedExpr) ? Expr1.fromJSON(object.parsedExpr) : undefined,
-    };
-  },
-
   toJSON(message: Binding): unknown {
     const obj: any = {};
     if (message.role !== "") {
@@ -538,14 +510,6 @@ export const PolicyDelta: MessageFns<PolicyDelta> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): PolicyDelta {
-    return {
-      bindingDeltas: globalThis.Array.isArray(object?.bindingDeltas)
-        ? object.bindingDeltas.map((e: any) => BindingDelta.fromJSON(e))
-        : [],
-    };
   },
 
   toJSON(message: PolicyDelta): unknown {
@@ -635,17 +599,6 @@ export const BindingDelta: MessageFns<BindingDelta> = {
     return message;
   },
 
-  fromJSON(object: any): BindingDelta {
-    return {
-      action: isSet(object.action)
-        ? bindingDelta_ActionFromJSON(object.action)
-        : BindingDelta_Action.ACTION_UNSPECIFIED,
-      role: isSet(object.role) ? globalThis.String(object.role) : "",
-      member: isSet(object.member) ? globalThis.String(object.member) : "",
-      condition: isSet(object.condition) ? Expr.fromJSON(object.condition) : undefined,
-    };
-  },
-
   toJSON(message: BindingDelta): unknown {
     const obj: any = {};
     if (message.action !== BindingDelta_Action.ACTION_UNSPECIFIED) {
@@ -686,14 +639,9 @@ export type DeepPartial<T> = T extends Builtin ? T
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
 
-function isSet(value: any): boolean {
-  return value !== null && value !== undefined;
-}
-
 export interface MessageFns<T> {
   encode(message: T, writer?: BinaryWriter): BinaryWriter;
   decode(input: BinaryReader | Uint8Array, length?: number): T;
-  fromJSON(object: any): T;
   toJSON(message: T): unknown;
   create(base?: DeepPartial<T>): T;
   fromPartial(object: DeepPartial<T>): T;

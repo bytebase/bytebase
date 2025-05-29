@@ -43,7 +43,11 @@ import {
 import { usePlanContext } from "@/components/Plan/logic";
 import { planServiceClient } from "@/grpcweb";
 import { PROJECT_V1_ROUTE_REVIEW_CENTER_DETAIL } from "@/router/dashboard/projectV1";
-import { useDatabaseV1Store, useSheetV1Store } from "@/store";
+import {
+  useCurrentProjectV1,
+  useDatabaseV1Store,
+  useSheetV1Store,
+} from "@/store";
 import { dialectOfEngineV1, languageOfEngineV1 } from "@/types";
 import { type Plan_ChangeDatabaseConfig } from "@/types/proto/v1/plan_service";
 import type { Sheet } from "@/types/proto/v1/sheet_service";
@@ -51,7 +55,6 @@ import type { ComposedPlan } from "@/types/v1/issue/plan";
 import {
   extractProjectResourceName,
   extractSheetUID,
-  flattenSpecList,
   getSheetStatement,
   hasProjectPermissionV2,
   planV1Slug,
@@ -62,19 +65,20 @@ const MAX_FORMATTABLE_STATEMENT_SIZE = 10000; // 10K characters
 
 const { t } = useI18n();
 const router = useRouter();
+const { project } = useCurrentProjectV1();
 const { plan, formatOnSave } = usePlanContext();
 const sheetStore = useSheetV1Store();
 const loading = ref(false);
 
 const planCreateErrorList = computed(() => {
   const errorList: string[] = [];
-  if (!hasProjectPermissionV2(plan.value.projectEntity, "bb.plans.create")) {
+  if (!hasProjectPermissionV2(project.value, "bb.plans.create")) {
     errorList.push(t("common.missing-required-permission"));
   }
   if (!plan.value.title.trim()) {
     errorList.push("Missing plan title");
   }
-  if (!flattenSpecList(plan.value).every((spec) => isValidSpec(spec))) {
+  if (!(plan.value?.specs || []).every((spec) => isValidSpec(spec))) {
     errorList.push("Missing SQL statement in some tasks");
   }
 
@@ -115,12 +119,12 @@ const doCreatePlan = async () => {
 
 // Create sheets for spec configs and update their resource names.
 const createSheets = async () => {
-  const flattenSpecList = plan.value.steps.flatMap((step) => step.specs);
+  const specs = plan.value.specs || [];
   const configWithSheetList: Plan_ChangeDatabaseConfig[] = [];
   const pendingCreateSheetMap = new Map<string, Sheet>();
 
-  for (let i = 0; i < flattenSpecList.length; i++) {
-    const spec = flattenSpecList[i];
+  for (let i = 0; i < specs.length; i++) {
+    const spec = specs[i];
     const config = spec.changeDatabaseConfig;
     if (!config) continue;
     configWithSheetList.push(config);

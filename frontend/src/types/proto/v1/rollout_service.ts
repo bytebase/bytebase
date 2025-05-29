@@ -25,6 +25,8 @@ export interface BatchRunTasksRequest {
    */
   tasks: string[];
   reason: string;
+  /** The task run should run after run_time. */
+  runTime?: Timestamp | undefined;
 }
 
 export interface BatchRunTasksResponse {
@@ -249,7 +251,6 @@ export interface Task {
    */
   target: string;
   databaseCreate?: Task_DatabaseCreate | undefined;
-  databaseSchemaBaseline?: Task_DatabaseSchemaBaseline | undefined;
   databaseSchemaUpdate?: Task_DatabaseSchemaUpdate | undefined;
   databaseDataUpdate?: Task_DatabaseDataUpdate | undefined;
   databaseDataExport?: Task_DatabaseDataExport | undefined;
@@ -353,8 +354,6 @@ export enum Task_Type {
   GENERAL = "GENERAL",
   /** DATABASE_CREATE - use payload DatabaseCreate */
   DATABASE_CREATE = "DATABASE_CREATE",
-  /** DATABASE_SCHEMA_BASELINE - use payload DatabaseSchemaBaseline */
-  DATABASE_SCHEMA_BASELINE = "DATABASE_SCHEMA_BASELINE",
   /** DATABASE_SCHEMA_UPDATE - use payload DatabaseSchemaUpdate */
   DATABASE_SCHEMA_UPDATE = "DATABASE_SCHEMA_UPDATE",
   /** DATABASE_SCHEMA_UPDATE_SDL - use payload DatabaseSchemaUpdate */
@@ -379,9 +378,6 @@ export function task_TypeFromJSON(object: any): Task_Type {
     case 2:
     case "DATABASE_CREATE":
       return Task_Type.DATABASE_CREATE;
-    case 3:
-    case "DATABASE_SCHEMA_BASELINE":
-      return Task_Type.DATABASE_SCHEMA_BASELINE;
     case 4:
     case "DATABASE_SCHEMA_UPDATE":
       return Task_Type.DATABASE_SCHEMA_UPDATE;
@@ -412,8 +408,6 @@ export function task_TypeToJSON(object: Task_Type): string {
       return "GENERAL";
     case Task_Type.DATABASE_CREATE:
       return "DATABASE_CREATE";
-    case Task_Type.DATABASE_SCHEMA_BASELINE:
-      return "DATABASE_SCHEMA_BASELINE";
     case Task_Type.DATABASE_SCHEMA_UPDATE:
       return "DATABASE_SCHEMA_UPDATE";
     case Task_Type.DATABASE_SCHEMA_UPDATE_SDL:
@@ -438,8 +432,6 @@ export function task_TypeToNumber(object: Task_Type): number {
       return 1;
     case Task_Type.DATABASE_CREATE:
       return 2;
-    case Task_Type.DATABASE_SCHEMA_BASELINE:
-      return 3;
     case Task_Type.DATABASE_SCHEMA_UPDATE:
       return 4;
     case Task_Type.DATABASE_SCHEMA_UPDATE_SDL:
@@ -471,10 +463,6 @@ export interface Task_DatabaseCreate {
   characterSet: string;
   collation: string;
   environment: string;
-}
-
-export interface Task_DatabaseSchemaBaseline {
-  schemaVersion: string;
 }
 
 export interface Task_DatabaseSchemaUpdate {
@@ -534,6 +522,11 @@ export interface TaskRun {
     | undefined;
   /** Format: projects/{project}/sheets/{sheet} */
   sheet: string;
+  /**
+   * The task run should run after run_time.
+   * This can only be set when creating the task run calling BatchRunTasks.
+   */
+  runTime?: Timestamp | undefined;
 }
 
 export enum TaskRun_Status {
@@ -1049,7 +1042,7 @@ export interface PreviewTaskRunRollbackResponse {
 }
 
 function createBaseBatchRunTasksRequest(): BatchRunTasksRequest {
-  return { parent: "", tasks: [], reason: "" };
+  return { parent: "", tasks: [], reason: "", runTime: undefined };
 }
 
 export const BatchRunTasksRequest: MessageFns<BatchRunTasksRequest> = {
@@ -1062,6 +1055,9 @@ export const BatchRunTasksRequest: MessageFns<BatchRunTasksRequest> = {
     }
     if (message.reason !== "") {
       writer.uint32(26).string(message.reason);
+    }
+    if (message.runTime !== undefined) {
+      Timestamp.encode(message.runTime, writer.uint32(34).fork()).join();
     }
     return writer;
   },
@@ -1097,6 +1093,14 @@ export const BatchRunTasksRequest: MessageFns<BatchRunTasksRequest> = {
           message.reason = reader.string();
           continue;
         }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.runTime = Timestamp.decode(reader, reader.uint32());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1104,14 +1108,6 @@ export const BatchRunTasksRequest: MessageFns<BatchRunTasksRequest> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): BatchRunTasksRequest {
-    return {
-      parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
-      tasks: globalThis.Array.isArray(object?.tasks) ? object.tasks.map((e: any) => globalThis.String(e)) : [],
-      reason: isSet(object.reason) ? globalThis.String(object.reason) : "",
-    };
   },
 
   toJSON(message: BatchRunTasksRequest): unknown {
@@ -1125,6 +1121,9 @@ export const BatchRunTasksRequest: MessageFns<BatchRunTasksRequest> = {
     if (message.reason !== "") {
       obj.reason = message.reason;
     }
+    if (message.runTime !== undefined) {
+      obj.runTime = fromTimestamp(message.runTime).toISOString();
+    }
     return obj;
   },
 
@@ -1136,6 +1135,9 @@ export const BatchRunTasksRequest: MessageFns<BatchRunTasksRequest> = {
     message.parent = object.parent ?? "";
     message.tasks = object.tasks?.map((e) => e) || [];
     message.reason = object.reason ?? "";
+    message.runTime = (object.runTime !== undefined && object.runTime !== null)
+      ? Timestamp.fromPartial(object.runTime)
+      : undefined;
     return message;
   },
 };
@@ -1163,10 +1165,6 @@ export const BatchRunTasksResponse: MessageFns<BatchRunTasksResponse> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(_: any): BatchRunTasksResponse {
-    return {};
   },
 
   toJSON(_: BatchRunTasksResponse): unknown {
@@ -1241,14 +1239,6 @@ export const BatchSkipTasksRequest: MessageFns<BatchSkipTasksRequest> = {
     return message;
   },
 
-  fromJSON(object: any): BatchSkipTasksRequest {
-    return {
-      parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
-      tasks: globalThis.Array.isArray(object?.tasks) ? object.tasks.map((e: any) => globalThis.String(e)) : [],
-      reason: isSet(object.reason) ? globalThis.String(object.reason) : "",
-    };
-  },
-
   toJSON(message: BatchSkipTasksRequest): unknown {
     const obj: any = {};
     if (message.parent !== "") {
@@ -1298,10 +1288,6 @@ export const BatchSkipTasksResponse: MessageFns<BatchSkipTasksResponse> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(_: any): BatchSkipTasksResponse {
-    return {};
   },
 
   toJSON(_: BatchSkipTasksResponse): unknown {
@@ -1376,14 +1362,6 @@ export const BatchCancelTaskRunsRequest: MessageFns<BatchCancelTaskRunsRequest> 
     return message;
   },
 
-  fromJSON(object: any): BatchCancelTaskRunsRequest {
-    return {
-      parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
-      taskRuns: globalThis.Array.isArray(object?.taskRuns) ? object.taskRuns.map((e: any) => globalThis.String(e)) : [],
-      reason: isSet(object.reason) ? globalThis.String(object.reason) : "",
-    };
-  },
-
   toJSON(message: BatchCancelTaskRunsRequest): unknown {
     const obj: any = {};
     if (message.parent !== "") {
@@ -1435,10 +1413,6 @@ export const BatchCancelTaskRunsResponse: MessageFns<BatchCancelTaskRunsResponse
     return message;
   },
 
-  fromJSON(_: any): BatchCancelTaskRunsResponse {
-    return {};
-  },
-
   toJSON(_: BatchCancelTaskRunsResponse): unknown {
     const obj: any = {};
     return obj;
@@ -1487,10 +1461,6 @@ export const GetRolloutRequest: MessageFns<GetRolloutRequest> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): GetRolloutRequest {
-    return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
   },
 
   toJSON(message: GetRolloutRequest): unknown {
@@ -1569,14 +1539,6 @@ export const ListRolloutsRequest: MessageFns<ListRolloutsRequest> = {
     return message;
   },
 
-  fromJSON(object: any): ListRolloutsRequest {
-    return {
-      parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
-      pageSize: isSet(object.pageSize) ? globalThis.Number(object.pageSize) : 0,
-      pageToken: isSet(object.pageToken) ? globalThis.String(object.pageToken) : "",
-    };
-  },
-
   toJSON(message: ListRolloutsRequest): unknown {
     const obj: any = {};
     if (message.parent !== "") {
@@ -1648,13 +1610,6 @@ export const ListRolloutsResponse: MessageFns<ListRolloutsResponse> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): ListRolloutsResponse {
-    return {
-      rollouts: globalThis.Array.isArray(object?.rollouts) ? object.rollouts.map((e: any) => Rollout.fromJSON(e)) : [],
-      nextPageToken: isSet(object.nextPageToken) ? globalThis.String(object.nextPageToken) : "",
-    };
   },
 
   toJSON(message: ListRolloutsResponse): unknown {
@@ -1748,15 +1703,6 @@ export const CreateRolloutRequest: MessageFns<CreateRolloutRequest> = {
     return message;
   },
 
-  fromJSON(object: any): CreateRolloutRequest {
-    return {
-      parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
-      rollout: isSet(object.rollout) ? Rollout.fromJSON(object.rollout) : undefined,
-      target: isSet(object.target) ? globalThis.String(object.target) : undefined,
-      validateOnly: isSet(object.validateOnly) ? globalThis.Boolean(object.validateOnly) : false,
-    };
-  },
-
   toJSON(message: CreateRolloutRequest): unknown {
     const obj: any = {};
     if (message.parent !== "") {
@@ -1834,13 +1780,6 @@ export const PreviewRolloutRequest: MessageFns<PreviewRolloutRequest> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): PreviewRolloutRequest {
-    return {
-      project: isSet(object.project) ? globalThis.String(object.project) : "",
-      plan: isSet(object.plan) ? Plan.fromJSON(object.plan) : undefined,
-    };
   },
 
   toJSON(message: PreviewRolloutRequest): unknown {
@@ -1923,14 +1862,6 @@ export const ListTaskRunsRequest: MessageFns<ListTaskRunsRequest> = {
     return message;
   },
 
-  fromJSON(object: any): ListTaskRunsRequest {
-    return {
-      parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
-      pageSize: isSet(object.pageSize) ? globalThis.Number(object.pageSize) : 0,
-      pageToken: isSet(object.pageToken) ? globalThis.String(object.pageToken) : "",
-    };
-  },
-
   toJSON(message: ListTaskRunsRequest): unknown {
     const obj: any = {};
     if (message.parent !== "") {
@@ -2004,13 +1935,6 @@ export const ListTaskRunsResponse: MessageFns<ListTaskRunsResponse> = {
     return message;
   },
 
-  fromJSON(object: any): ListTaskRunsResponse {
-    return {
-      taskRuns: globalThis.Array.isArray(object?.taskRuns) ? object.taskRuns.map((e: any) => TaskRun.fromJSON(e)) : [],
-      nextPageToken: isSet(object.nextPageToken) ? globalThis.String(object.nextPageToken) : "",
-    };
-  },
-
   toJSON(message: ListTaskRunsResponse): unknown {
     const obj: any = {};
     if (message.taskRuns?.length) {
@@ -2069,10 +1993,6 @@ export const GetTaskRunRequest: MessageFns<GetTaskRunRequest> = {
     return message;
   },
 
-  fromJSON(object: any): GetTaskRunRequest {
-    return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
-  },
-
   toJSON(message: GetTaskRunRequest): unknown {
     const obj: any = {};
     if (message.name !== "") {
@@ -2125,10 +2045,6 @@ export const GetTaskRunLogRequest: MessageFns<GetTaskRunLogRequest> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): GetTaskRunLogRequest {
-    return { parent: isSet(object.parent) ? globalThis.String(object.parent) : "" };
   },
 
   toJSON(message: GetTaskRunLogRequest): unknown {
@@ -2251,18 +2167,6 @@ export const Rollout: MessageFns<Rollout> = {
     return message;
   },
 
-  fromJSON(object: any): Rollout {
-    return {
-      name: isSet(object.name) ? globalThis.String(object.name) : "",
-      plan: isSet(object.plan) ? globalThis.String(object.plan) : "",
-      title: isSet(object.title) ? globalThis.String(object.title) : "",
-      stages: globalThis.Array.isArray(object?.stages) ? object.stages.map((e: any) => Stage.fromJSON(e)) : [],
-      creator: isSet(object.creator) ? globalThis.String(object.creator) : "",
-      createTime: isSet(object.createTime) ? fromJsonTimestamp(object.createTime) : undefined,
-      issue: isSet(object.issue) ? globalThis.String(object.issue) : "",
-    };
-  },
-
   toJSON(message: Rollout): unknown {
     const obj: any = {};
     if (message.name !== "") {
@@ -2376,15 +2280,6 @@ export const Stage: MessageFns<Stage> = {
     return message;
   },
 
-  fromJSON(object: any): Stage {
-    return {
-      name: isSet(object.name) ? globalThis.String(object.name) : "",
-      id: isSet(object.id) ? globalThis.String(object.id) : "",
-      environment: isSet(object.environment) ? globalThis.String(object.environment) : "",
-      tasks: globalThis.Array.isArray(object?.tasks) ? object.tasks.map((e: any) => Task.fromJSON(e)) : [],
-    };
-  },
-
   toJSON(message: Stage): unknown {
     const obj: any = {};
     if (message.name !== "") {
@@ -2424,7 +2319,6 @@ function createBaseTask(): Task {
     type: Task_Type.TYPE_UNSPECIFIED,
     target: "",
     databaseCreate: undefined,
-    databaseSchemaBaseline: undefined,
     databaseSchemaUpdate: undefined,
     databaseDataUpdate: undefined,
     databaseDataExport: undefined,
@@ -2453,9 +2347,6 @@ export const Task: MessageFns<Task> = {
     }
     if (message.databaseCreate !== undefined) {
       Task_DatabaseCreate.encode(message.databaseCreate, writer.uint32(74).fork()).join();
-    }
-    if (message.databaseSchemaBaseline !== undefined) {
-      Task_DatabaseSchemaBaseline.encode(message.databaseSchemaBaseline, writer.uint32(82).fork()).join();
     }
     if (message.databaseSchemaUpdate !== undefined) {
       Task_DatabaseSchemaUpdate.encode(message.databaseSchemaUpdate, writer.uint32(90).fork()).join();
@@ -2532,14 +2423,6 @@ export const Task: MessageFns<Task> = {
           message.databaseCreate = Task_DatabaseCreate.decode(reader, reader.uint32());
           continue;
         }
-        case 10: {
-          if (tag !== 82) {
-            break;
-          }
-
-          message.databaseSchemaBaseline = Task_DatabaseSchemaBaseline.decode(reader, reader.uint32());
-          continue;
-        }
         case 11: {
           if (tag !== 90) {
             break;
@@ -2573,30 +2456,6 @@ export const Task: MessageFns<Task> = {
     return message;
   },
 
-  fromJSON(object: any): Task {
-    return {
-      name: isSet(object.name) ? globalThis.String(object.name) : "",
-      specId: isSet(object.specId) ? globalThis.String(object.specId) : "",
-      status: isSet(object.status) ? task_StatusFromJSON(object.status) : Task_Status.STATUS_UNSPECIFIED,
-      skippedReason: isSet(object.skippedReason) ? globalThis.String(object.skippedReason) : "",
-      type: isSet(object.type) ? task_TypeFromJSON(object.type) : Task_Type.TYPE_UNSPECIFIED,
-      target: isSet(object.target) ? globalThis.String(object.target) : "",
-      databaseCreate: isSet(object.databaseCreate) ? Task_DatabaseCreate.fromJSON(object.databaseCreate) : undefined,
-      databaseSchemaBaseline: isSet(object.databaseSchemaBaseline)
-        ? Task_DatabaseSchemaBaseline.fromJSON(object.databaseSchemaBaseline)
-        : undefined,
-      databaseSchemaUpdate: isSet(object.databaseSchemaUpdate)
-        ? Task_DatabaseSchemaUpdate.fromJSON(object.databaseSchemaUpdate)
-        : undefined,
-      databaseDataUpdate: isSet(object.databaseDataUpdate)
-        ? Task_DatabaseDataUpdate.fromJSON(object.databaseDataUpdate)
-        : undefined,
-      databaseDataExport: isSet(object.databaseDataExport)
-        ? Task_DatabaseDataExport.fromJSON(object.databaseDataExport)
-        : undefined,
-    };
-  },
-
   toJSON(message: Task): unknown {
     const obj: any = {};
     if (message.name !== "") {
@@ -2619,9 +2478,6 @@ export const Task: MessageFns<Task> = {
     }
     if (message.databaseCreate !== undefined) {
       obj.databaseCreate = Task_DatabaseCreate.toJSON(message.databaseCreate);
-    }
-    if (message.databaseSchemaBaseline !== undefined) {
-      obj.databaseSchemaBaseline = Task_DatabaseSchemaBaseline.toJSON(message.databaseSchemaBaseline);
     }
     if (message.databaseSchemaUpdate !== undefined) {
       obj.databaseSchemaUpdate = Task_DatabaseSchemaUpdate.toJSON(message.databaseSchemaUpdate);
@@ -2649,10 +2505,6 @@ export const Task: MessageFns<Task> = {
     message.databaseCreate = (object.databaseCreate !== undefined && object.databaseCreate !== null)
       ? Task_DatabaseCreate.fromPartial(object.databaseCreate)
       : undefined;
-    message.databaseSchemaBaseline =
-      (object.databaseSchemaBaseline !== undefined && object.databaseSchemaBaseline !== null)
-        ? Task_DatabaseSchemaBaseline.fromPartial(object.databaseSchemaBaseline)
-        : undefined;
     message.databaseSchemaUpdate = (object.databaseSchemaUpdate !== undefined && object.databaseSchemaUpdate !== null)
       ? Task_DatabaseSchemaUpdate.fromPartial(object.databaseSchemaUpdate)
       : undefined;
@@ -2768,18 +2620,6 @@ export const Task_DatabaseCreate: MessageFns<Task_DatabaseCreate> = {
     return message;
   },
 
-  fromJSON(object: any): Task_DatabaseCreate {
-    return {
-      project: isSet(object.project) ? globalThis.String(object.project) : "",
-      database: isSet(object.database) ? globalThis.String(object.database) : "",
-      table: isSet(object.table) ? globalThis.String(object.table) : "",
-      sheet: isSet(object.sheet) ? globalThis.String(object.sheet) : "",
-      characterSet: isSet(object.characterSet) ? globalThis.String(object.characterSet) : "",
-      collation: isSet(object.collation) ? globalThis.String(object.collation) : "",
-      environment: isSet(object.environment) ? globalThis.String(object.environment) : "",
-    };
-  },
-
   toJSON(message: Task_DatabaseCreate): unknown {
     const obj: any = {};
     if (message.project !== "") {
@@ -2818,64 +2658,6 @@ export const Task_DatabaseCreate: MessageFns<Task_DatabaseCreate> = {
     message.characterSet = object.characterSet ?? "";
     message.collation = object.collation ?? "";
     message.environment = object.environment ?? "";
-    return message;
-  },
-};
-
-function createBaseTask_DatabaseSchemaBaseline(): Task_DatabaseSchemaBaseline {
-  return { schemaVersion: "" };
-}
-
-export const Task_DatabaseSchemaBaseline: MessageFns<Task_DatabaseSchemaBaseline> = {
-  encode(message: Task_DatabaseSchemaBaseline, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.schemaVersion !== "") {
-      writer.uint32(10).string(message.schemaVersion);
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): Task_DatabaseSchemaBaseline {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseTask_DatabaseSchemaBaseline();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.schemaVersion = reader.string();
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): Task_DatabaseSchemaBaseline {
-    return { schemaVersion: isSet(object.schemaVersion) ? globalThis.String(object.schemaVersion) : "" };
-  },
-
-  toJSON(message: Task_DatabaseSchemaBaseline): unknown {
-    const obj: any = {};
-    if (message.schemaVersion !== "") {
-      obj.schemaVersion = message.schemaVersion;
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<Task_DatabaseSchemaBaseline>): Task_DatabaseSchemaBaseline {
-    return Task_DatabaseSchemaBaseline.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<Task_DatabaseSchemaBaseline>): Task_DatabaseSchemaBaseline {
-    const message = createBaseTask_DatabaseSchemaBaseline();
-    message.schemaVersion = object.schemaVersion ?? "";
     return message;
   },
 };
@@ -2925,13 +2707,6 @@ export const Task_DatabaseSchemaUpdate: MessageFns<Task_DatabaseSchemaUpdate> = 
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): Task_DatabaseSchemaUpdate {
-    return {
-      sheet: isSet(object.sheet) ? globalThis.String(object.sheet) : "",
-      schemaVersion: isSet(object.schemaVersion) ? globalThis.String(object.schemaVersion) : "",
-    };
   },
 
   toJSON(message: Task_DatabaseSchemaUpdate): unknown {
@@ -3001,13 +2776,6 @@ export const Task_DatabaseDataUpdate: MessageFns<Task_DatabaseDataUpdate> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): Task_DatabaseDataUpdate {
-    return {
-      sheet: isSet(object.sheet) ? globalThis.String(object.sheet) : "",
-      schemaVersion: isSet(object.schemaVersion) ? globalThis.String(object.schemaVersion) : "",
-    };
   },
 
   toJSON(message: Task_DatabaseDataUpdate): unknown {
@@ -3101,15 +2869,6 @@ export const Task_DatabaseDataExport: MessageFns<Task_DatabaseDataExport> = {
     return message;
   },
 
-  fromJSON(object: any): Task_DatabaseDataExport {
-    return {
-      target: isSet(object.target) ? globalThis.String(object.target) : "",
-      sheet: isSet(object.sheet) ? globalThis.String(object.sheet) : "",
-      format: isSet(object.format) ? exportFormatFromJSON(object.format) : ExportFormat.FORMAT_UNSPECIFIED,
-      password: isSet(object.password) ? globalThis.String(object.password) : undefined,
-    };
-  },
-
   toJSON(message: Task_DatabaseDataExport): unknown {
     const obj: any = {};
     if (message.target !== "") {
@@ -3155,6 +2914,7 @@ function createBaseTaskRun(): TaskRun {
     priorBackupDetail: undefined,
     schedulerInfo: undefined,
     sheet: "",
+    runTime: undefined,
   };
 }
 
@@ -3198,6 +2958,9 @@ export const TaskRun: MessageFns<TaskRun> = {
     }
     if (message.sheet !== "") {
       writer.uint32(154).string(message.sheet);
+    }
+    if (message.runTime !== undefined) {
+      Timestamp.encode(message.runTime, writer.uint32(170).fork()).join();
     }
     return writer;
   },
@@ -3313,6 +3076,14 @@ export const TaskRun: MessageFns<TaskRun> = {
           message.sheet = reader.string();
           continue;
         }
+        case 21: {
+          if (tag !== 170) {
+            break;
+          }
+
+          message.runTime = Timestamp.decode(reader, reader.uint32());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3320,28 +3091,6 @@ export const TaskRun: MessageFns<TaskRun> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): TaskRun {
-    return {
-      name: isSet(object.name) ? globalThis.String(object.name) : "",
-      creator: isSet(object.creator) ? globalThis.String(object.creator) : "",
-      createTime: isSet(object.createTime) ? fromJsonTimestamp(object.createTime) : undefined,
-      updateTime: isSet(object.updateTime) ? fromJsonTimestamp(object.updateTime) : undefined,
-      status: isSet(object.status) ? taskRun_StatusFromJSON(object.status) : TaskRun_Status.STATUS_UNSPECIFIED,
-      detail: isSet(object.detail) ? globalThis.String(object.detail) : "",
-      changelog: isSet(object.changelog) ? globalThis.String(object.changelog) : "",
-      schemaVersion: isSet(object.schemaVersion) ? globalThis.String(object.schemaVersion) : "",
-      startTime: isSet(object.startTime) ? fromJsonTimestamp(object.startTime) : undefined,
-      exportArchiveStatus: isSet(object.exportArchiveStatus)
-        ? taskRun_ExportArchiveStatusFromJSON(object.exportArchiveStatus)
-        : TaskRun_ExportArchiveStatus.EXPORT_ARCHIVE_STATUS_UNSPECIFIED,
-      priorBackupDetail: isSet(object.priorBackupDetail)
-        ? TaskRun_PriorBackupDetail.fromJSON(object.priorBackupDetail)
-        : undefined,
-      schedulerInfo: isSet(object.schedulerInfo) ? TaskRun_SchedulerInfo.fromJSON(object.schedulerInfo) : undefined,
-      sheet: isSet(object.sheet) ? globalThis.String(object.sheet) : "",
-    };
   },
 
   toJSON(message: TaskRun): unknown {
@@ -3385,6 +3134,9 @@ export const TaskRun: MessageFns<TaskRun> = {
     if (message.sheet !== "") {
       obj.sheet = message.sheet;
     }
+    if (message.runTime !== undefined) {
+      obj.runTime = fromTimestamp(message.runTime).toISOString();
+    }
     return obj;
   },
 
@@ -3417,6 +3169,9 @@ export const TaskRun: MessageFns<TaskRun> = {
       ? TaskRun_SchedulerInfo.fromPartial(object.schedulerInfo)
       : undefined;
     message.sheet = object.sheet ?? "";
+    message.runTime = (object.runTime !== undefined && object.runTime !== null)
+      ? Timestamp.fromPartial(object.runTime)
+      : undefined;
     return message;
   },
 };
@@ -3455,14 +3210,6 @@ export const TaskRun_PriorBackupDetail: MessageFns<TaskRun_PriorBackupDetail> = 
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): TaskRun_PriorBackupDetail {
-    return {
-      items: globalThis.Array.isArray(object?.items)
-        ? object.items.map((e: any) => TaskRun_PriorBackupDetail_Item.fromJSON(e))
-        : [],
-    };
   },
 
   toJSON(message: TaskRun_PriorBackupDetail): unknown {
@@ -3550,19 +3297,6 @@ export const TaskRun_PriorBackupDetail_Item: MessageFns<TaskRun_PriorBackupDetai
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): TaskRun_PriorBackupDetail_Item {
-    return {
-      sourceTable: isSet(object.sourceTable)
-        ? TaskRun_PriorBackupDetail_Item_Table.fromJSON(object.sourceTable)
-        : undefined,
-      targetTable: isSet(object.targetTable)
-        ? TaskRun_PriorBackupDetail_Item_Table.fromJSON(object.targetTable)
-        : undefined,
-      startPosition: isSet(object.startPosition) ? Position.fromJSON(object.startPosition) : undefined,
-      endPosition: isSet(object.endPosition) ? Position.fromJSON(object.endPosition) : undefined,
-    };
   },
 
   toJSON(message: TaskRun_PriorBackupDetail_Item): unknown {
@@ -3661,14 +3395,6 @@ export const TaskRun_PriorBackupDetail_Item_Table: MessageFns<TaskRun_PriorBacku
     return message;
   },
 
-  fromJSON(object: any): TaskRun_PriorBackupDetail_Item_Table {
-    return {
-      database: isSet(object.database) ? globalThis.String(object.database) : "",
-      schema: isSet(object.schema) ? globalThis.String(object.schema) : "",
-      table: isSet(object.table) ? globalThis.String(object.table) : "",
-    };
-  },
-
   toJSON(message: TaskRun_PriorBackupDetail_Item_Table): unknown {
     const obj: any = {};
     if (message.database !== "") {
@@ -3740,15 +3466,6 @@ export const TaskRun_SchedulerInfo: MessageFns<TaskRun_SchedulerInfo> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): TaskRun_SchedulerInfo {
-    return {
-      reportTime: isSet(object.reportTime) ? fromJsonTimestamp(object.reportTime) : undefined,
-      waitingCause: isSet(object.waitingCause)
-        ? TaskRun_SchedulerInfo_WaitingCause.fromJSON(object.waitingCause)
-        : undefined,
-    };
   },
 
   toJSON(message: TaskRun_SchedulerInfo): unknown {
@@ -3835,14 +3552,6 @@ export const TaskRun_SchedulerInfo_WaitingCause: MessageFns<TaskRun_SchedulerInf
     return message;
   },
 
-  fromJSON(object: any): TaskRun_SchedulerInfo_WaitingCause {
-    return {
-      connectionLimit: isSet(object.connectionLimit) ? globalThis.Boolean(object.connectionLimit) : undefined,
-      task: isSet(object.task) ? TaskRun_SchedulerInfo_WaitingCause_Task.fromJSON(object.task) : undefined,
-      parallelTasksLimit: isSet(object.parallelTasksLimit) ? globalThis.Boolean(object.parallelTasksLimit) : undefined,
-    };
-  },
-
   toJSON(message: TaskRun_SchedulerInfo_WaitingCause): unknown {
     const obj: any = {};
     if (message.connectionLimit !== undefined) {
@@ -3918,13 +3627,6 @@ export const TaskRun_SchedulerInfo_WaitingCause_Task: MessageFns<TaskRun_Schedul
     return message;
   },
 
-  fromJSON(object: any): TaskRun_SchedulerInfo_WaitingCause_Task {
-    return {
-      task: isSet(object.task) ? globalThis.String(object.task) : "",
-      issue: isSet(object.issue) ? globalThis.String(object.issue) : "",
-    };
-  },
-
   toJSON(message: TaskRun_SchedulerInfo_WaitingCause_Task): unknown {
     const obj: any = {};
     if (message.task !== "") {
@@ -3992,15 +3694,6 @@ export const TaskRunLog: MessageFns<TaskRunLog> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): TaskRunLog {
-    return {
-      name: isSet(object.name) ? globalThis.String(object.name) : "",
-      entries: globalThis.Array.isArray(object?.entries)
-        ? object.entries.map((e: any) => TaskRunLogEntry.fromJSON(e))
-        : [],
-    };
   },
 
   toJSON(message: TaskRunLog): unknown {
@@ -4171,27 +3864,6 @@ export const TaskRunLogEntry: MessageFns<TaskRunLogEntry> = {
     return message;
   },
 
-  fromJSON(object: any): TaskRunLogEntry {
-    return {
-      type: isSet(object.type) ? taskRunLogEntry_TypeFromJSON(object.type) : TaskRunLogEntry_Type.TYPE_UNSPECIFIED,
-      logTime: isSet(object.logTime) ? fromJsonTimestamp(object.logTime) : undefined,
-      deployId: isSet(object.deployId) ? globalThis.String(object.deployId) : "",
-      schemaDump: isSet(object.schemaDump) ? TaskRunLogEntry_SchemaDump.fromJSON(object.schemaDump) : undefined,
-      commandExecute: isSet(object.commandExecute)
-        ? TaskRunLogEntry_CommandExecute.fromJSON(object.commandExecute)
-        : undefined,
-      databaseSync: isSet(object.databaseSync) ? TaskRunLogEntry_DatabaseSync.fromJSON(object.databaseSync) : undefined,
-      taskRunStatusUpdate: isSet(object.taskRunStatusUpdate)
-        ? TaskRunLogEntry_TaskRunStatusUpdate.fromJSON(object.taskRunStatusUpdate)
-        : undefined,
-      transactionControl: isSet(object.transactionControl)
-        ? TaskRunLogEntry_TransactionControl.fromJSON(object.transactionControl)
-        : undefined,
-      priorBackup: isSet(object.priorBackup) ? TaskRunLogEntry_PriorBackup.fromJSON(object.priorBackup) : undefined,
-      retryInfo: isSet(object.retryInfo) ? TaskRunLogEntry_RetryInfo.fromJSON(object.retryInfo) : undefined,
-    };
-  },
-
   toJSON(message: TaskRunLogEntry): unknown {
     const obj: any = {};
     if (message.type !== TaskRunLogEntry_Type.TYPE_UNSPECIFIED) {
@@ -4320,14 +3992,6 @@ export const TaskRunLogEntry_SchemaDump: MessageFns<TaskRunLogEntry_SchemaDump> 
     return message;
   },
 
-  fromJSON(object: any): TaskRunLogEntry_SchemaDump {
-    return {
-      startTime: isSet(object.startTime) ? fromJsonTimestamp(object.startTime) : undefined,
-      endTime: isSet(object.endTime) ? fromJsonTimestamp(object.endTime) : undefined,
-      error: isSet(object.error) ? globalThis.String(object.error) : "",
-    };
-  },
-
   toJSON(message: TaskRunLogEntry_SchemaDump): unknown {
     const obj: any = {};
     if (message.startTime !== undefined) {
@@ -4426,18 +4090,6 @@ export const TaskRunLogEntry_CommandExecute: MessageFns<TaskRunLogEntry_CommandE
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): TaskRunLogEntry_CommandExecute {
-    return {
-      logTime: isSet(object.logTime) ? fromJsonTimestamp(object.logTime) : undefined,
-      commandIndexes: globalThis.Array.isArray(object?.commandIndexes)
-        ? object.commandIndexes.map((e: any) => globalThis.Number(e))
-        : [],
-      response: isSet(object.response)
-        ? TaskRunLogEntry_CommandExecute_CommandResponse.fromJSON(object.response)
-        : undefined,
-    };
   },
 
   toJSON(message: TaskRunLogEntry_CommandExecute): unknown {
@@ -4556,17 +4208,6 @@ export const TaskRunLogEntry_CommandExecute_CommandResponse: MessageFns<
     return message;
   },
 
-  fromJSON(object: any): TaskRunLogEntry_CommandExecute_CommandResponse {
-    return {
-      logTime: isSet(object.logTime) ? fromJsonTimestamp(object.logTime) : undefined,
-      error: isSet(object.error) ? globalThis.String(object.error) : "",
-      affectedRows: isSet(object.affectedRows) ? globalThis.Number(object.affectedRows) : 0,
-      allAffectedRows: globalThis.Array.isArray(object?.allAffectedRows)
-        ? object.allAffectedRows.map((e: any) => globalThis.Number(e))
-        : [],
-    };
-  },
-
   toJSON(message: TaskRunLogEntry_CommandExecute_CommandResponse): unknown {
     const obj: any = {};
     if (message.logTime !== undefined) {
@@ -4661,14 +4302,6 @@ export const TaskRunLogEntry_DatabaseSync: MessageFns<TaskRunLogEntry_DatabaseSy
     return message;
   },
 
-  fromJSON(object: any): TaskRunLogEntry_DatabaseSync {
-    return {
-      startTime: isSet(object.startTime) ? fromJsonTimestamp(object.startTime) : undefined,
-      endTime: isSet(object.endTime) ? fromJsonTimestamp(object.endTime) : undefined,
-      error: isSet(object.error) ? globalThis.String(object.error) : "",
-    };
-  },
-
   toJSON(message: TaskRunLogEntry_DatabaseSync): unknown {
     const obj: any = {};
     if (message.startTime !== undefined) {
@@ -4735,14 +4368,6 @@ export const TaskRunLogEntry_TaskRunStatusUpdate: MessageFns<TaskRunLogEntry_Tas
     return message;
   },
 
-  fromJSON(object: any): TaskRunLogEntry_TaskRunStatusUpdate {
-    return {
-      status: isSet(object.status)
-        ? taskRunLogEntry_TaskRunStatusUpdate_StatusFromJSON(object.status)
-        : TaskRunLogEntry_TaskRunStatusUpdate_Status.STATUS_UNSPECIFIED,
-    };
-  },
-
   toJSON(message: TaskRunLogEntry_TaskRunStatusUpdate): unknown {
     const obj: any = {};
     if (message.status !== TaskRunLogEntry_TaskRunStatusUpdate_Status.STATUS_UNSPECIFIED) {
@@ -4806,15 +4431,6 @@ export const TaskRunLogEntry_TransactionControl: MessageFns<TaskRunLogEntry_Tran
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): TaskRunLogEntry_TransactionControl {
-    return {
-      type: isSet(object.type)
-        ? taskRunLogEntry_TransactionControl_TypeFromJSON(object.type)
-        : TaskRunLogEntry_TransactionControl_Type.TYPE_UNSPECIFIED,
-      error: isSet(object.error) ? globalThis.String(object.error) : "",
-    };
   },
 
   toJSON(message: TaskRunLogEntry_TransactionControl): unknown {
@@ -4906,17 +4522,6 @@ export const TaskRunLogEntry_PriorBackup: MessageFns<TaskRunLogEntry_PriorBackup
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): TaskRunLogEntry_PriorBackup {
-    return {
-      startTime: isSet(object.startTime) ? fromJsonTimestamp(object.startTime) : undefined,
-      endTime: isSet(object.endTime) ? fromJsonTimestamp(object.endTime) : undefined,
-      priorBackupDetail: isSet(object.priorBackupDetail)
-        ? TaskRun_PriorBackupDetail.fromJSON(object.priorBackupDetail)
-        : undefined,
-      error: isSet(object.error) ? globalThis.String(object.error) : "",
-    };
   },
 
   toJSON(message: TaskRunLogEntry_PriorBackup): unknown {
@@ -5013,14 +4618,6 @@ export const TaskRunLogEntry_RetryInfo: MessageFns<TaskRunLogEntry_RetryInfo> = 
     return message;
   },
 
-  fromJSON(object: any): TaskRunLogEntry_RetryInfo {
-    return {
-      error: isSet(object.error) ? globalThis.String(object.error) : "",
-      retryCount: isSet(object.retryCount) ? globalThis.Number(object.retryCount) : 0,
-      maximumRetries: isSet(object.maximumRetries) ? globalThis.Number(object.maximumRetries) : 0,
-    };
-  },
-
   toJSON(message: TaskRunLogEntry_RetryInfo): unknown {
     const obj: any = {};
     if (message.error !== "") {
@@ -5081,10 +4678,6 @@ export const GetTaskRunSessionRequest: MessageFns<GetTaskRunSessionRequest> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): GetTaskRunSessionRequest {
-    return { parent: isSet(object.parent) ? globalThis.String(object.parent) : "" };
   },
 
   toJSON(message: GetTaskRunSessionRequest): unknown {
@@ -5150,13 +4743,6 @@ export const TaskRunSession: MessageFns<TaskRunSession> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): TaskRunSession {
-    return {
-      name: isSet(object.name) ? globalThis.String(object.name) : "",
-      postgres: isSet(object.postgres) ? TaskRunSession_Postgres.fromJSON(object.postgres) : undefined,
-    };
   },
 
   toJSON(message: TaskRunSession): unknown {
@@ -5239,18 +4825,6 @@ export const TaskRunSession_Postgres: MessageFns<TaskRunSession_Postgres> = {
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): TaskRunSession_Postgres {
-    return {
-      session: isSet(object.session) ? TaskRunSession_Postgres_Session.fromJSON(object.session) : undefined,
-      blockingSessions: globalThis.Array.isArray(object?.blockingSessions)
-        ? object.blockingSessions.map((e: any) => TaskRunSession_Postgres_Session.fromJSON(e))
-        : [],
-      blockedSessions: globalThis.Array.isArray(object?.blockedSessions)
-        ? object.blockedSessions.map((e: any) => TaskRunSession_Postgres_Session.fromJSON(e))
-        : [],
-    };
   },
 
   toJSON(message: TaskRunSession_Postgres): unknown {
@@ -5476,27 +5050,6 @@ export const TaskRunSession_Postgres_Session: MessageFns<TaskRunSession_Postgres
     return message;
   },
 
-  fromJSON(object: any): TaskRunSession_Postgres_Session {
-    return {
-      pid: isSet(object.pid) ? globalThis.String(object.pid) : "",
-      blockedByPids: globalThis.Array.isArray(object?.blockedByPids)
-        ? object.blockedByPids.map((e: any) => globalThis.String(e))
-        : [],
-      query: isSet(object.query) ? globalThis.String(object.query) : "",
-      state: isSet(object.state) ? globalThis.String(object.state) : undefined,
-      waitEventType: isSet(object.waitEventType) ? globalThis.String(object.waitEventType) : undefined,
-      waitEvent: isSet(object.waitEvent) ? globalThis.String(object.waitEvent) : undefined,
-      datname: isSet(object.datname) ? globalThis.String(object.datname) : undefined,
-      usename: isSet(object.usename) ? globalThis.String(object.usename) : undefined,
-      applicationName: isSet(object.applicationName) ? globalThis.String(object.applicationName) : "",
-      clientAddr: isSet(object.clientAddr) ? globalThis.String(object.clientAddr) : undefined,
-      clientPort: isSet(object.clientPort) ? globalThis.String(object.clientPort) : undefined,
-      backendStart: isSet(object.backendStart) ? fromJsonTimestamp(object.backendStart) : undefined,
-      xactStart: isSet(object.xactStart) ? fromJsonTimestamp(object.xactStart) : undefined,
-      queryStart: isSet(object.queryStart) ? fromJsonTimestamp(object.queryStart) : undefined,
-    };
-  },
-
   toJSON(message: TaskRunSession_Postgres_Session): unknown {
     const obj: any = {};
     if (message.pid !== "") {
@@ -5609,10 +5162,6 @@ export const PreviewTaskRunRollbackRequest: MessageFns<PreviewTaskRunRollbackReq
     return message;
   },
 
-  fromJSON(object: any): PreviewTaskRunRollbackRequest {
-    return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
-  },
-
   toJSON(message: PreviewTaskRunRollbackRequest): unknown {
     const obj: any = {};
     if (message.name !== "") {
@@ -5665,10 +5214,6 @@ export const PreviewTaskRunRollbackResponse: MessageFns<PreviewTaskRunRollbackRe
       reader.skip(tag & 7);
     }
     return message;
-  },
-
-  fromJSON(object: any): PreviewTaskRunRollbackResponse {
-    return { statement: isSet(object.statement) ? globalThis.String(object.statement) : "" };
   },
 
   toJSON(message: PreviewTaskRunRollbackResponse): unknown {
@@ -6675,40 +6220,15 @@ export type DeepPartial<T> = T extends Builtin ? T
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
 
-function toTimestamp(date: Date): Timestamp {
-  const seconds = numberToLong(Math.trunc(date.getTime() / 1_000));
-  const nanos = (date.getTime() % 1_000) * 1_000_000;
-  return { seconds, nanos };
-}
-
 function fromTimestamp(t: Timestamp): Date {
   let millis = (t.seconds.toNumber() || 0) * 1_000;
   millis += (t.nanos || 0) / 1_000_000;
   return new globalThis.Date(millis);
 }
 
-function fromJsonTimestamp(o: any): Timestamp {
-  if (o instanceof globalThis.Date) {
-    return toTimestamp(o);
-  } else if (typeof o === "string") {
-    return toTimestamp(new globalThis.Date(o));
-  } else {
-    return Timestamp.fromJSON(o);
-  }
-}
-
-function numberToLong(number: number) {
-  return Long.fromNumber(number);
-}
-
-function isSet(value: any): boolean {
-  return value !== null && value !== undefined;
-}
-
 export interface MessageFns<T> {
   encode(message: T, writer?: BinaryWriter): BinaryWriter;
   decode(input: BinaryReader | Uint8Array, length?: number): T;
-  fromJSON(object: any): T;
   toJSON(message: T): unknown;
   create(base?: DeepPartial<T>): T;
   fromPartial(object: DeepPartial<T>): T;

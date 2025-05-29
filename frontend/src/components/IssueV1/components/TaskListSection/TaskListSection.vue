@@ -64,15 +64,15 @@ import { useDebounceFn } from "@vueuse/core";
 import { NButton } from "naive-ui";
 import { computed, ref, reactive, watch } from "vue";
 import { BBSpin } from "@/bbkit";
+import { usePlanSQLCheckContext } from "@/components/Plan/components/SQLCheckSection/context";
 import { databaseForTask } from "@/components/Rollout/RolloutDetail";
 import { useVerticalScrollState } from "@/composables/useScrollState";
-import { batchGetOrFetchDatabases } from "@/store";
+import { batchGetOrFetchDatabases, useCurrentProjectV1 } from "@/store";
 import { DEBOUNCE_SEARCH_DELAY } from "@/types";
 import type { Task_Status } from "@/types/proto/v1/rollout_service";
 import type { Advice_Status } from "@/types/proto/v1/sql_service";
 import { isDev } from "@/utils";
 import { useIssueContext } from "../../logic";
-import { useIssueSQLCheckContext } from "../SQLCheckSection/context";
 import CurrentTaskSection from "./CurrentTaskSection.vue";
 import TaskCard from "./TaskCard.vue";
 import TaskFilter from "./TaskFilter.vue";
@@ -102,8 +102,9 @@ const state = reactive<LocalState>({
 });
 
 const issueContext = useIssueContext();
-const { selectedStage, issue, selectedTask } = issueContext;
-const sqlCheckContext = useIssueSQLCheckContext();
+const { selectedStage, selectedTask } = issueContext;
+const { project } = useCurrentProjectV1();
+const { resultMap } = usePlanSQLCheckContext();
 const taskBar = ref<HTMLDivElement>();
 const taskBarScrollState = useVerticalScrollState(taskBar, MAX_LIST_HEIGHT);
 
@@ -139,7 +140,7 @@ const filteredTaskList = computed(() => {
     if (stageState.value.adviceStatusFilters.length > 0) {
       if (
         !stageState.value.adviceStatusFilters.some((status) =>
-          filterTask(issueContext, sqlCheckContext, task, {
+          filterTask(issueContext, resultMap.value, task, {
             adviceStatus: status,
           })
         )
@@ -168,7 +169,7 @@ const loadMore = useDebounceFn(async () => {
 
   const databaseNames = filteredTaskList.value
     .slice(fromIndex, toIndex)
-    .map((task) => databaseForTask(issue.value.projectEntity, task).name);
+    .map((task) => databaseForTask(project.value, task).name);
 
   try {
     await batchGetOrFetchDatabases(databaseNames);

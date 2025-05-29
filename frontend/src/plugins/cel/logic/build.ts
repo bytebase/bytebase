@@ -127,7 +127,7 @@ export const buildCELExpr = async (
 };
 
 const wrapCELExpr = (object: any): CELExpr => {
-  return CELExpr.fromJSON({
+  return CELExpr.fromPartial({
     id: seq.next(),
     ...object,
   });

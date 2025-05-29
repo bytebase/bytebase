@@ -19,7 +19,7 @@ import {
 } from "@/components/IssueV1/logic";
 import { rolloutServiceClient } from "@/grpcweb";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
-import { pushNotification, useSheetV1Store, useStorageStore } from "@/store";
+import { pushNotification, useSheetV1Store, useStorageStore, useCurrentProjectV1 } from "@/store";
 import {
   extractIssueUID,
   extractProjectResourceName,
@@ -29,11 +29,12 @@ import {
 
 const router = useRouter();
 const { issue, selectedTask } = useIssueContext();
+const { project } = useCurrentProjectV1();
 
 const isLoading = ref(false);
 
 const allowRollback = computed((): boolean => {
-  return hasProjectPermissionV2(issue.value.projectEntity, "bb.issues.create");
+  return hasProjectPermissionV2(project.value, "bb.issues.create");
 });
 
 const latestTaskRun = computed(() =>

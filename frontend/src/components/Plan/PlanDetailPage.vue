@@ -8,7 +8,7 @@
         class="flex-1 flex flex-col hide-scrollbar divide-y overflow-x-hidden"
       >
         <SpecListSection />
-        <SQLCheckSectionV1 v-if="isCreating" />
+        <SQLCheckSection v-if="isCreating" />
         <PlanCheckSection v-else />
         <StatementSection />
         <DescriptionSection />
@@ -45,25 +45,31 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { Drawer } from "@/components/v2";
+import { useCurrentProjectV1 } from "@/store";
 import {
   HeaderSection,
   PlanCheckSection,
   StatementSection,
   DescriptionSection,
-  SQLCheckSectionV1,
+  SQLCheckSection,
   SpecListSection,
 } from "./components";
-import { providePlanSQLCheckContext } from "./components/SQLCheckSectionV1/context";
+import { providePlanSQLCheckContext } from "./components/SQLCheckSection";
 import Sidebar from "./components/Sidebar";
 import { usePlanContext, usePollPlan } from "./logic";
 import { provideSidebarContext } from "./logic";
 
+const { project } = useCurrentProjectV1();
+const { isCreating, plan, selectedSpec } = usePlanContext();
 const containerRef = ref<HTMLElement>();
-const { isCreating } = usePlanContext();
 
 usePollPlan();
 
-providePlanSQLCheckContext();
+providePlanSQLCheckContext({
+  project,
+  plan: plan,
+  selectedSpec: selectedSpec,
+});
 
 const {
   mode: sidebarMode,

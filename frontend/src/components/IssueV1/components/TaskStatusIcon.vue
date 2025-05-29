@@ -58,13 +58,14 @@
 import { CircleAlertIcon, TriangleAlertIcon } from "lucide-vue-next";
 import { computed } from "vue";
 import { SkipIcon } from "@/components/Icon";
+import { usePlanSQLCheckContext } from "@/components/Plan/components/SQLCheckSection/context";
 import { databaseForTask } from "@/components/Rollout/RolloutDetail";
+import { useCurrentProjectV1 } from "@/store";
 import { PlanCheckRun_Result_Status } from "@/types/proto/v1/plan_service";
 import type { Task } from "@/types/proto/v1/rollout_service";
 import { Task_Status } from "@/types/proto/v1/rollout_service";
 import { Advice_Status } from "@/types/proto/v1/sql_service";
 import { planCheckStatusForTask, useIssueContext } from "../logic";
-import { useIssueSQLCheckContext } from "./SQLCheckSection/context";
 
 const props = defineProps<{
   status: Task_Status;
@@ -72,17 +73,16 @@ const props = defineProps<{
   ignoreCheckStatus?: boolean;
 }>();
 
-const { issue, isCreating } = useIssueContext();
-const { resultMap } = useIssueSQLCheckContext();
+const { isCreating } = useIssueContext();
+const { project } = useCurrentProjectV1();
+const { resultMap } = usePlanSQLCheckContext();
 
 const checkStatus = computed(() => {
   if (props.ignoreCheckStatus) return undefined;
   if (!props.task) return undefined;
   if (isCreating.value) {
     const checkResult =
-      resultMap.value[
-        databaseForTask(issue.value.projectEntity, props.task).name
-      ];
+      resultMap.value[databaseForTask(project.value, props.task).name];
     if (!checkResult) return undefined;
 
     if (

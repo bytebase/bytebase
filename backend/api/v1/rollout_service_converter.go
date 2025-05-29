@@ -36,7 +36,7 @@ func convertToPlan(ctx context.Context, s *store.Store, plan *store.PlanMessage)
 		Issue:       "",
 		Title:       plan.Name,
 		Description: plan.Description,
-		Steps:       convertToPlanSteps(plan.Config.Steps),
+		Specs:       convertToPlanSpecs(plan.Config.Specs), // Use specs field for output
 		Deployment:  convertToPlanDeployment(plan.Config.Deployment),
 		ReleaseSource: &v1pb.Plan_ReleaseSource{
 			Release: plan.Config.GetReleaseSource().GetRelease(),
@@ -62,21 +62,6 @@ func convertToPlan(ctx context.Context, s *store.Store, plan *store.PlanMessage)
 	return p, nil
 }
 
-func convertToPlanSteps(steps []*storepb.PlanConfig_Step) []*v1pb.Plan_Step {
-	v1Steps := make([]*v1pb.Plan_Step, len(steps))
-	for i := range steps {
-		v1Steps[i] = convertToPlanStep(steps[i])
-	}
-	return v1Steps
-}
-
-func convertToPlanStep(step *storepb.PlanConfig_Step) *v1pb.Plan_Step {
-	return &v1pb.Plan_Step{
-		Title: step.Title,
-		Specs: convertToPlanSpecs(step.Specs),
-	}
-}
-
 func convertToPlanSpecs(specs []*storepb.PlanConfig_Spec) []*v1pb.Plan_Spec {
 	v1Specs := make([]*v1pb.Plan_Spec, len(specs))
 	for i := range specs {
@@ -87,8 +72,7 @@ func convertToPlanSpecs(specs []*storepb.PlanConfig_Spec) []*v1pb.Plan_Spec {
 
 func convertToPlanSpec(spec *storepb.PlanConfig_Spec) *v1pb.Plan_Spec {
 	v1Spec := &v1pb.Plan_Spec{
-		EarliestAllowedTime: spec.EarliestAllowedTime,
-		Id:                  spec.Id,
+		Id: spec.Id,
 		SpecReleaseSource: &v1pb.Plan_SpecReleaseSource{
 			File: spec.SpecReleaseSource.GetFile(),
 		},
@@ -142,8 +126,6 @@ func convertToPlanSpecChangeDatabaseConfigType(t storepb.PlanConfig_ChangeDataba
 	switch t {
 	case storepb.PlanConfig_ChangeDatabaseConfig_TYPE_UNSPECIFIED:
 		return v1pb.Plan_ChangeDatabaseConfig_TYPE_UNSPECIFIED
-	case storepb.PlanConfig_ChangeDatabaseConfig_BASELINE:
-		return v1pb.Plan_ChangeDatabaseConfig_BASELINE
 	case storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE:
 		return v1pb.Plan_ChangeDatabaseConfig_MIGRATE
 	case storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE_SDL:
@@ -201,8 +183,11 @@ func convertPlan(plan *v1pb.Plan) *storepb.PlanConfig {
 	if plan == nil {
 		return nil
 	}
+
+	// At this point, plan.Specs should always be populated
+	// (either originally or converted from steps at API entry point)
 	return &storepb.PlanConfig{
-		Steps:         convertPlanSteps(plan.Steps),
+		Specs:         convertPlanSpecs(plan.Specs),
 		ReleaseSource: convertPlanReleaseSource(plan.ReleaseSource),
 		Deployment:    nil,
 	}
@@ -245,21 +230,6 @@ func convertDatabaseGroupMapping(s *v1pb.Plan_Deployment_DatabaseGroupMapping) *
 	}
 }
 
-func convertPlanSteps(steps []*v1pb.Plan_Step) []*storepb.PlanConfig_Step {
-	storeSteps := make([]*storepb.PlanConfig_Step, len(steps))
-	for i := range steps {
-		storeSteps[i] = convertPlanStep(steps[i])
-	}
-	return storeSteps
-}
-
-func convertPlanStep(step *v1pb.Plan_Step) *storepb.PlanConfig_Step {
-	return &storepb.PlanConfig_Step{
-		Title: step.Title,
-		Specs: convertPlanSpecs(step.Specs),
-	}
-}
-
 func convertPlanSpecs(specs []*v1pb.Plan_Spec) []*storepb.PlanConfig_Spec {
 	storeSpecs := make([]*storepb.PlanConfig_Spec, len(specs))
 	for i := range specs {
@@ -270,8 +240,7 @@ func convertPlanSpecs(specs []*v1pb.Plan_Spec) []*storepb.PlanConfig_Spec {
 
 func convertPlanSpec(spec *v1pb.Plan_Spec) *storepb.PlanConfig_Spec {
 	storeSpec := &storepb.PlanConfig_Spec{
-		EarliestAllowedTime: spec.EarliestAllowedTime,
-		Id:                  spec.Id,
+		Id: spec.Id,
 		SpecReleaseSource: &storepb.PlanConfig_SpecReleaseSource{
 			File: spec.SpecReleaseSource.GetFile(),
 		},
@@ -487,6 +456,9 @@ func convertToTaskRun(ctx context.Context, s *store.Store, stateCfg *state.State
 	if taskRun.StartedAt != nil {
 		t.StartTime = timestamppb.New(*taskRun.StartedAt)
 	}
+	if taskRun.RunAt != nil {
+		t.RunTime = timestamppb.New(*taskRun.RunAt)
+	}
 
 	if taskRun.SheetUID != nil && *taskRun.SheetUID != 0 {
 		sheet, err := s.GetSheet(ctx, &store.FindSheetMessage{UID: taskRun.SheetUID})
@@ -698,8 +670,6 @@ func convertToTask(ctx context.Context, s *store.Store, project *store.ProjectMe
 	switch task.Type {
 	case base.TaskDatabaseCreate:
 		return convertToTaskFromDatabaseCreate(ctx, s, project, task)
-	case base.TaskDatabaseSchemaBaseline:
-		return convertToTaskFromSchemaBaseline(ctx, s, project, task)
 	case base.TaskDatabaseSchemaUpdate, base.TaskDatabaseSchemaUpdateGhost:
 		return convertToTaskFromSchemaUpdate(ctx, s, project, task)
 	case base.TaskDatabaseDataUpdate:
@@ -738,33 +708,6 @@ func convertToTaskFromDatabaseCreate(ctx context.Context, s *store.Store, projec
 		},
 	}
 
-	return v1pbTask, nil
-}
-
-func convertToTaskFromSchemaBaseline(ctx context.Context, s *store.Store, project *store.ProjectMessage, task *store.TaskMessage) (*v1pb.Task, error) {
-	if task.DatabaseName == nil {
-		return nil, errors.Errorf("baseline task database is nil")
-	}
-	database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &task.InstanceID, DatabaseName: task.DatabaseName, ShowDeleted: true})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get database")
-	}
-	if database == nil {
-		return nil, errors.Errorf("database not found")
-	}
-	v1pbTask := &v1pb.Task{
-		Name:          common.FormatTask(project.ResourceID, task.PipelineID, task.StageID, task.ID),
-		SpecId:        task.Payload.GetSpecId(),
-		Type:          convertToTaskType(task.Type),
-		Status:        convertToTaskStatus(task.LatestTaskRunStatus, task.Payload.GetSkipped()),
-		SkippedReason: task.Payload.GetSkippedReason(),
-		Target:        fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName),
-		Payload: &v1pb.Task_DatabaseSchemaBaseline_{
-			DatabaseSchemaBaseline: &v1pb.Task_DatabaseSchemaBaseline{
-				SchemaVersion: task.Payload.GetSchemaVersion(),
-			},
-		},
-	}
 	return v1pbTask, nil
 }
 
@@ -887,8 +830,6 @@ func convertToTaskType(taskType base.TaskType) v1pb.Task_Type {
 	switch taskType {
 	case base.TaskDatabaseCreate:
 		return v1pb.Task_DATABASE_CREATE
-	case base.TaskDatabaseSchemaBaseline:
-		return v1pb.Task_DATABASE_SCHEMA_BASELINE
 	case base.TaskDatabaseSchemaUpdate:
 		return v1pb.Task_DATABASE_SCHEMA_UPDATE
 	case base.TaskDatabaseSchemaUpdateGhost:

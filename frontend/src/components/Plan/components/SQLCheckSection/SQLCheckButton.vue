@@ -30,7 +30,7 @@
 
   <SQLCheckPanel
     v-if="checkResult && advices && showDetailPanel"
-    :project="issue.project"
+    :project="project.name"
     :database="database"
     :advices="advices"
     :affected-rows="checkResult.affectedRows"
@@ -50,10 +50,9 @@
 <script lang="ts" setup>
 import { asyncComputed } from "@vueuse/core";
 import { NButton, NPopover } from "naive-ui";
-import { computed, ref, watch } from "vue";
+import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBSpin } from "@/bbkit";
-import { databaseForTask } from "@/components/Rollout/RolloutDetail";
 import { SQLCheckPanel } from "@/components/SQLCheck";
 import { STATEMENT_SKIP_CHECK_THRESHOLD } from "@/components/SQLCheck/common";
 import ErrorList from "@/components/misc/ErrorList.vue";
@@ -65,10 +64,9 @@ import {
 import { Advice, Advice_Status } from "@/types/proto/v1/sql_service";
 import type { Defer, VueStyle } from "@/utils";
 import { defer } from "@/utils";
-import { useIssueContext } from "../../logic";
-import { useTaskSheet } from "../StatementSection/useTaskSheet";
-import { getTaskChangeType } from "./common";
-import { useIssueSQLCheckContext } from "./context";
+import { useSpecSheet } from "../StatementSection/useSpecSheet";
+import { getSpecChangeType } from "./common";
+import { usePlanSQLCheckContext } from "./context";
 
 withDefaults(
   defineProps<{
@@ -82,9 +80,9 @@ withDefaults(
 );
 
 const { t } = useI18n();
-const { issue, selectedTask } = useIssueContext();
-const { upsertResult } = useIssueSQLCheckContext();
-const { sheetStatement } = useTaskSheet();
+const { database, project, selectedSpec, upsertResult } =
+  usePlanSQLCheckContext();
+const { sheetStatement } = useSpecSheet(selectedSpec.value);
 
 const isRunning = ref(false);
 const showDetailPanel = ref(false);
@@ -96,21 +94,13 @@ const advices = computed(() => {
   return checkResult.value?.results.flatMap((r) => r.advices);
 });
 
-const database = computed(() =>
-  databaseForTask(issue.value.projectEntity, selectedTask.value)
-);
-
-const statement = computed(() => sheetStatement.value);
-
-const changeType = computed(() =>
-  getTaskChangeType(issue.value, selectedTask.value)
-);
+const changeType = computed(() => getSpecChangeType(selectedSpec.value));
 
 const statementErrors = asyncComputed(async () => {
-  if (statement.value.length === 0) {
+  if (sheetStatement.value.length === 0) {
     return [t("issue.sql-check.statement-is-required")];
   }
-  if (new Blob([statement.value]).size > STATEMENT_SKIP_CHECK_THRESHOLD) {
+  if (new Blob([sheetStatement.value]).size > STATEMENT_SKIP_CHECK_THRESHOLD) {
     return [t("issue.sql-check.statement-is-too-large")];
   }
   return [];
@@ -118,12 +108,12 @@ const statementErrors = asyncComputed(async () => {
 
 const runCheckInternal = async (statement: string) => {
   const result = await releaseServiceClient.checkRelease({
-    parent: database.value.project,
+    parent: project.value.name,
     release: {
       files: [
         {
-            // Use "0" for dummy version.
-            version: "0",
+          // Use "0" for dummy version.
+          version: "0",
           type: ReleaseFileType.VERSIONED,
           statement: new TextEncoder().encode(statement),
           changeType: changeType.value,
@@ -170,11 +160,16 @@ const runChecks = async () => {
   };
 
   isRunning.value = true;
-  if (new Blob([statement.value]).size > STATEMENT_SKIP_CHECK_THRESHOLD) {
+  if (new Blob([sheetStatement.value]).size > STATEMENT_SKIP_CHECK_THRESHOLD) {
     return handleErrors([t("issue.sql-check.statement-is-too-large")]);
   }
   try {
-    checkResult.value = await runCheckInternal(statement.value);
+    checkResult.value = await runCheckInternal(sheetStatement.value);
+    // Upsert the result to the map.
+    for (const r of checkResult.value.results || []) {
+      // target is the database name.
+      upsertResult(r.target, r);
+    }
   } finally {
     isRunning.value = false;
   }
@@ -191,11 +186,5 @@ const hasError = computed(() => {
       advice.status === Advice_Status.ERROR ||
       advice.status === Advice_Status.WARNING
   );
-});
-
-watch(checkResult, (result) => {
-  for (const r of result?.results || []) {
-    upsertResult(r.target, r);
-  }
 });
 </script>
