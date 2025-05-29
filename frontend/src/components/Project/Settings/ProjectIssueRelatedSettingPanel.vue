@@ -1,7 +1,7 @@
 <template>
-  <div class="w-full flex flex-col justify-start items-start pt-6 space-y-4">
-    <div class="space-y-2 mb-4">
-      <div class="text-lg font-medium text-main">
+  <div class="w-full flex flex-col justify-start items-start space-y-4">
+    <div class="space-y-2">
+      <div class="font-medium">
         {{ $t("project.settings.issue-related.labels.self") }}
         <div class="textinfolabel">
           {{ $t("project.settings.issue-related.labels.description") }}
@@ -20,14 +20,8 @@
         @update:value="onLabelsUpdate"
       />
     </div>
-    <h3 class="flex flex-row items-center gap-2">
-      <span class="text-lg font-medium text-main">{{
-        $t("project.settings.issue-related.self")
-      }}</span>
-      <FeatureBadge feature="bb.feature.issue-project-setting" />
-    </h3>
     <div class="w-full flex flex-col justify-start items-start gap-2">
-        <div>
+      <div>
         <div class="flex items-center gap-x-2">
           <Switch
             v-model:value="state.allowModifyStatement"
@@ -35,11 +29,17 @@
             :disabled="!allowUpdateIssueProjectSetting || loading"
           />
           <span class="textlabel">
-            {{$t('project.settings.issue-related.allow-modify-statement.self')}}
+            {{
+              $t("project.settings.issue-related.allow-modify-statement.self")
+            }}
           </span>
         </div>
         <div class="mt-1 mb-3 text-sm text-gray-400">
-          {{ $t("project.settings.issue-related.allow-modify-statement.description") }}
+          {{
+            $t(
+              "project.settings.issue-related.allow-modify-statement.description"
+            )
+          }}
         </div>
       </div>
       <div>
@@ -50,11 +50,13 @@
             :disabled="!allowUpdateIssueProjectSetting || loading"
           />
           <span class="textlabel">
-            {{$t('project.settings.issue-related.auto-resolve-issue.self')}}
+            {{ $t("project.settings.issue-related.auto-resolve-issue.self") }}
           </span>
         </div>
         <div class="mt-1 mb-3 text-sm text-gray-400">
-          {{ $t("project.settings.issue-related.auto-resolve-issue.description") }}
+          {{
+            $t("project.settings.issue-related.auto-resolve-issue.description")
+          }}
         </div>
       </div>
       <div>
@@ -63,29 +65,35 @@
             v-model:value="state.forceIssueLabels"
             :text="true"
             :disabled="
-            !allowUpdateIssueProjectSetting ||
-            state.issueLabels.length === 0 ||
-            loading
-          "
+              !allowUpdateIssueProjectSetting ||
+              state.issueLabels.length === 0 ||
+              loading
+            "
           />
           <div class="textlabel flex items-center gap-x-2">
+            {{
+              $t(
+                "project.settings.issue-related.labels.force-issue-labels.self"
+              )
+            }}
+            <NTooltip v-if="allowEdit && state.issueLabels.length === 0">
+              <template #trigger>
+                <TriangleAlertIcon class="w-4 text-warning" />
+              </template>
               {{
-                $t("project.settings.issue-related.labels.force-issue-labels.self")
+                $t(
+                  "project.settings.issue-related.labels.force-issue-labels.warning"
+                )
               }}
-              <NTooltip v-if="allowEdit && state.issueLabels.length === 0">
-                <template #trigger>
-                  <TriangleAlertIcon class="w-4 text-warning" />
-                </template>
-                {{
-                  $t(
-                    "project.settings.issue-related.labels.force-issue-labels.warning"
-                  )
-                }}
-              </NTooltip>
-            </div>
+            </NTooltip>
+          </div>
         </div>
         <div class="mt-1 mb-3 text-sm text-gray-400">
-          {{ $t("project.settings.issue-related.labels.force-issue-labels.description") }}
+          {{
+            $t(
+              "project.settings.issue-related.labels.force-issue-labels.description"
+            )
+          }}
         </div>
       </div>
       <div>
@@ -96,11 +104,13 @@
             :disabled="!allowUpdateIssueProjectSetting || loading"
           />
           <span class="textlabel">
-            {{$t('project.settings.issue-related.enforce-issue-title.self')}}
+            {{ $t("project.settings.issue-related.enforce-issue-title.self") }}
           </span>
         </div>
         <div class="mt-1 mb-3 text-sm text-gray-400">
-          {{ $t("project.settings.issue-related.enforce-issue-title.description") }}
+          {{
+            $t("project.settings.issue-related.enforce-issue-title.description")
+          }}
         </div>
       </div>
       <div>
@@ -111,11 +121,13 @@
             :disabled="!allowUpdateIssueProjectSetting || loading"
           />
           <span class="textlabel">
-            {{$t('project.settings.issue-related.allow-self-approval.self')}}
+            {{ $t("project.settings.issue-related.allow-self-approval.self") }}
           </span>
         </div>
         <div class="mt-1 mb-3 text-sm text-gray-400">
-          {{ $t("project.settings.issue-related.allow-self-approval.description") }}
+          {{
+            $t("project.settings.issue-related.allow-self-approval.description")
+          }}
         </div>
       </div>
       <div>
@@ -126,11 +138,13 @@
             :disabled="!allowUpdateIssueProjectSetting || loading"
           />
           <span class="textlabel">
-            {{$t('project.settings.issue-related.auto-enable-backup.self')}}
+            {{ $t("project.settings.issue-related.auto-enable-backup.self") }}
           </span>
         </div>
         <div class="mt-1 mb-3 text-sm text-gray-400">
-          {{ $t("project.settings.issue-related.auto-enable-backup.description") }}
+          {{
+            $t("project.settings.issue-related.auto-enable-backup.description")
+          }}
         </div>
       </div>
       <div>
@@ -141,11 +155,13 @@
             :disabled="!allowUpdateIssueProjectSetting || loading"
           />
           <span class="textlabel">
-            {{$t('project.settings.issue-related.skip-backup-errors.self')}}
+            {{ $t("project.settings.issue-related.skip-backup-errors.self") }}
           </span>
         </div>
         <div class="mt-1 mb-3 text-sm text-gray-400">
-          {{ $t("project.settings.issue-related.skip-backup-errors.description") }}
+          {{
+            $t("project.settings.issue-related.skip-backup-errors.description")
+          }}
         </div>
       </div>
       <div>
@@ -156,11 +172,19 @@
             :disabled="!allowUpdateIssueProjectSetting || loading"
           />
           <span class="textlabel">
-            {{$t('project.settings.issue-related.postgres-database-tenant-mode.self')}}
+            {{
+              $t(
+                "project.settings.issue-related.postgres-database-tenant-mode.self"
+              )
+            }}
           </span>
         </div>
         <div class="mt-1 mb-3 text-sm text-gray-400">
-          {{ $t("project.settings.issue-related.postgres-database-tenant-mode.description") }}
+          {{
+            $t(
+              "project.settings.issue-related.postgres-database-tenant-mode.description"
+            )
+          }}
         </div>
       </div>
       <div>
@@ -170,7 +194,7 @@
           </span>
         </p>
         <p class="mt-1 mb-3 text-sm text-gray-400">
-            {{ $t("project.settings.issue-related.max-retries.description") }}
+          {{ $t("project.settings.issue-related.max-retries.description") }}
         </p>
         <div class="mt-3 w-full flex flex-row justify-start items-center gap-4">
           <NInputNumber
@@ -192,7 +216,9 @@
           </span>
         </p>
         <p class="mt-1 mb-3 text-sm text-gray-400">
-            {{ $t("project.settings.issue-related.ci-sampling-size.description") }}
+          {{
+            $t("project.settings.issue-related.ci-sampling-size.description")
+          }}
         </p>
         <div class="mt-3 w-full flex flex-row justify-start items-center gap-4">
           <NInputNumber
@@ -209,11 +235,19 @@
       <div>
         <p class="">
           <span class="textlabel">
-            {{ $t("project.settings.issue-related.parallel_tasks_per_rollout.self") }}
+            {{
+              $t(
+                "project.settings.issue-related.parallel_tasks_per_rollout.self"
+              )
+            }}
           </span>
         </p>
         <p class="mt-1 mb-3 text-sm text-gray-400">
-            {{ $t("project.settings.issue-related.parallel_tasks_per_rollout.description") }}
+          {{
+            $t(
+              "project.settings.issue-related.parallel_tasks_per_rollout.description"
+            )
+          }}
         </p>
         <div class="mt-3 w-full flex flex-row justify-start items-center gap-4">
           <NInputNumber
@@ -242,11 +276,13 @@ import {
   NInputNumber,
 } from "naive-ui";
 import { computed, reactive, ref } from "vue";
-import { FeatureBadge } from "@/components/FeatureGuard";
+import { Switch } from "@/components/v2";
 import { hasFeature, useProjectV1Store } from "@/store";
 import type { ComposedProject } from "@/types";
-import { Label, Project_ExecutionRetryPolicy } from "@/types/proto/v1/project_service";
-import { Switch } from "@/components/v2";
+import {
+  Label,
+  Project_ExecutionRetryPolicy,
+} from "@/types/proto/v1/project_service";
 
 interface LocalState {
   issueLabels: Label[];
@@ -408,13 +444,23 @@ const updateMask = computed(() => {
   ) {
     mask.push("postgres_database_tenant_mode");
   }
-  if (!isEqual(state.executionRetryPolicy?.maximumRetries ?? 0, props.project.executionRetryPolicy?.maximumRetries ?? 0)) {
+  if (
+    !isEqual(
+      state.executionRetryPolicy?.maximumRetries ?? 0,
+      props.project.executionRetryPolicy?.maximumRetries ?? 0
+    )
+  ) {
     mask.push("execution_retry_policy");
   }
   if (!isEqual(state.ciSamplingSize, props.project.ciSamplingSize || 0)) {
     mask.push("ci_sampling_size");
   }
-  if (!isEqual(state.parallelTasksPerRollout, props.project.parallelTasksPerRollout || 0)) {
+  if (
+    !isEqual(
+      state.parallelTasksPerRollout,
+      props.project.parallelTasksPerRollout || 0
+    )
+  ) {
     mask.push("parallel_tasks_per_rollout");
   }
   return mask;
@@ -424,7 +470,7 @@ const handleInput = (value: number | null) => {
   if (value === null) return;
   if (value === undefined) return;
   state.executionRetryPolicy = Project_ExecutionRetryPolicy.create({
-      maximumRetries: value,
+    maximumRetries: value,
   });
 };
 
