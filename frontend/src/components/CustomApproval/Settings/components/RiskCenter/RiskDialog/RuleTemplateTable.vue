@@ -1,25 +1,11 @@
 <template>
-  <BBGrid
-    class="border"
-    :column-list="COLUMNS"
-    :data-source="filteredTemplateList"
-    :row-clickable="false"
-    row-key="key"
-  >
-    <template #item="{ item: tpl }: { item: RuleTemplate }">
-      <div class="bb-grid-cell !pl-2 !pr-1 break-normal">
-        {{ titleOfTemplate(tpl) }}
-      </div>
-      <div class="bb-grid-cell gap-x-1 !pl-1 !pr-2">
-        <NButton size="tiny" @click="applyTemplate(tpl)">
-          {{ $t("custom-approval.risk-rule.template.load") }}
-        </NButton>
-        <NButton size="tiny" @click="viewTemplate = tpl">
-          {{ $t("common.view") }}
-        </NButton>
-      </div>
-    </template>
-  </BBGrid>
+  <NDataTable
+    size="small"
+    :columns="columns"
+    :data="filteredTemplateList"
+    :striped="true"
+    :bordered="true"
+  />
 
   <BBModal
     v-if="viewTemplate"
@@ -41,11 +27,12 @@
   </BBModal>
 </template>
 
-<script lang="ts" setup>
-import { NButton, useDialog } from "naive-ui";
+<script lang="tsx" setup>
+import { NButton, NDataTable, useDialog } from "naive-ui";
+import type { DataTableColumn } from "naive-ui";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
-import { BBGrid, BBModal, type BBGridColumn } from "@/bbkit";
+import { BBModal } from "@/bbkit";
 import type { ConditionGroupExpr } from "@/plugins/cel";
 import { buildCELExpr } from "@/plugins/cel";
 import { Expr } from "@/types/proto/google/type/expr";
@@ -79,20 +66,29 @@ const templateList = useRuleTemplates();
 const viewTemplate = ref<RuleTemplate>();
 const nDialog = useDialog();
 
-const COLUMNS = computed(() => {
-  const columns: BBGridColumn[] = [
+const columns = computed((): DataTableColumn<RuleTemplate>[] => {
+  return [
     {
       title: t("custom-approval.risk-rule.rule-name"),
-      width: "1fr",
-      class: "!pl-2 !pr-1 !py-0.5",
+      key: "name",
+      render: (tpl) => titleOfTemplate(tpl),
     },
     {
       title: t("common.operations"),
-      width: "auto",
-      class: "!px-1",
+      key: "operations",
+      width: 200,
+      render: (tpl) => (
+        <div class="flex gap-x-1">
+          <NButton size="tiny" onClick={() => applyTemplate(tpl)}>
+            {t("custom-approval.risk-rule.template.load")}
+          </NButton>
+          <NButton size="tiny" onClick={() => (viewTemplate.value = tpl)}>
+            {t("common.view")}
+          </NButton>
+        </div>
+      ),
     },
   ];
-  return columns;
 });
 
 const filteredTemplateList = computed(() => {

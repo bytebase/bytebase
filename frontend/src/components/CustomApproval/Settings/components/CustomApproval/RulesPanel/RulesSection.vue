@@ -6,36 +6,23 @@
       </div>
     </div>
     <div>
-      <BBGrid
-        :column-list="COLUMNS"
-        :data-source="rows"
-        :row-clickable="false"
-        row-key="level"
-        class="border"
-      >
-        <template #item="{ item: row }: { item: Row }">
-          <div class="bb-grid-cell">
-            {{ levelText(row.level) }}
-          </div>
-          <div class="bb-grid-cell flex items-center space-x-2">
-            <RuleSelect
-              class="flex-1 max-w-md min-w-[10rem]"
-              :value="row.rule"
-              :link="true"
-              :on-update="(rule) => updateRow(row, rule)"
-            />
-            <RiskTips :level="row.level" :source="source" :rule="row.rule" />
-          </div>
-        </template>
-      </BBGrid>
+      <NDataTable
+        size="small"
+        :columns="columns"
+        :data="rows"
+        :striped="true"
+        :bordered="true"
+        :row-key="(row: Row) => String(row.level)"
+      />
     </div>
   </div>
 </template>
 
-<script lang="ts" setup>
+<script lang="tsx" setup>
+import { NDataTable } from "naive-ui";
+import type { DataTableColumn } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { BBGrid, type BBGridColumn } from "@/bbkit";
 import { pushNotification, useWorkspaceApprovalSettingStore } from "@/store";
 import type { ParsedApprovalRule } from "@/types";
 import { DEFAULT_RISK_LEVEL, PresetRiskLevelList } from "@/types";
@@ -58,18 +45,30 @@ const { t } = useI18n();
 const store = useWorkspaceApprovalSettingStore();
 const context = useCustomApprovalContext();
 
-const COLUMNS = computed(() => {
-  const columns: BBGridColumn[] = [
+const columns = computed((): DataTableColumn<Row>[] => {
+  return [
     {
       title: t("custom-approval.risk.self"),
-      width: "10rem",
+      key: "level",
+      width: 160,
+      render: (row) => levelText(row.level),
     },
     {
       title: t("custom-approval.approval-flow.self"),
-      width: "1fr",
+      key: "rule",
+      render: (row) => (
+        <div class="flex items-center space-x-2">
+          <RuleSelect
+            class="flex-1 max-w-md min-w-[10rem]"
+            value={row.rule}
+            link={true}
+            onUpdate={(rule: string | undefined) => updateRow(row, rule)}
+          />
+          <RiskTips level={row.level} source={props.source} rule={row.rule} />
+        </div>
+      ),
     },
   ];
-  return columns;
 });
 
 const filter = useRiskFilter();
