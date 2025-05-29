@@ -957,7 +957,7 @@ func isChangeDatabasePlan(specs []*storepb.PlanConfig_Spec) bool {
 func GetPipelineCreate(ctx context.Context, s *store.Store, sheetManager *sheet.Manager, dbFactory *dbfactory.DBFactory, rolloutTitle string, specs []*storepb.PlanConfig_Spec, deployment *storepb.PlanConfig_Deployment /* nullable */, project *store.ProjectMessage) (*store.PipelineMessage, error) {
 	// Step 1 - transform database group specs.
 	// Others are untouched.
-	transformDatabaseGroupSpecs(specs, deployment)
+	applyDatabaseGroupSpecTransformations(specs, deployment)
 
 	// Step 2 - list snapshot environments.
 	snapshotEnvironments := deployment.GetEnvironments()
