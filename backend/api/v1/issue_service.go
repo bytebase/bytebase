@@ -126,18 +126,11 @@ func (s *IssueService) getIssueFind(ctx context.Context, filter string, query st
 					}
 					issueFind.InstanceResourceID = &instanceResourceID
 				case "database":
-					instanceID, databaseName, err := common.GetInstanceDatabaseID(value.(string))
-					if err != nil {
-						return "", status.Error(codes.InvalidArgument, err.Error())
-					}
-					database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-						InstanceID:   &instanceID,
-						DatabaseName: &databaseName,
-					})
+					database, err := getDatabaseMessage(ctx, s.store, value.(string))
 					if err != nil {
 						return "", status.Error(codes.Internal, err.Error())
 					}
-					if database == nil {
+					if database == nil || database.Deleted {
 						return "", status.Errorf(codes.InvalidArgument, `database "%q" not found`, value)
 					}
 					issueFind.InstanceID = &database.InstanceID

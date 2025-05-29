@@ -18,29 +18,12 @@ import (
 )
 
 func (s *DatabaseService) ListChangelogs(ctx context.Context, request *v1pb.ListChangelogsRequest) (*v1pb.ListChangelogsResponse, error) {
-	instanceID, databaseName, err := common.GetInstanceDatabaseID(request.Parent)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
-		ResourceID: &instanceID,
-	})
+	database, err := getDatabaseMessage(ctx, s.store, request.Parent)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
-	if instance == nil {
-		return nil, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
-	}
-	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-		InstanceID:      &instanceID,
-		DatabaseName:    &databaseName,
-		IsCaseSensitive: store.IsObjectCaseSensitive(instance),
-	})
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-	if database == nil {
-		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
+	if database == nil || database.Deleted {
+		return nil, status.Errorf(codes.NotFound, "database %q not found", request.Parent)
 	}
 
 	offset, err := parseLimitAndOffset(&pageSize{
