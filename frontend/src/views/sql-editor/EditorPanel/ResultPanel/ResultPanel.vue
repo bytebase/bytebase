@@ -60,7 +60,7 @@
 <script lang="ts" setup>
 import dayjs from "dayjs";
 import { head } from "lodash-es";
-import { InfoIcon, CircleAlertIcon } from "lucide-vue-next";
+import { CircleAlertIcon } from "lucide-vue-next";
 import { NTabs, NTabPane, NTooltip } from "naive-ui";
 import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
