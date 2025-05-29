@@ -193,14 +193,13 @@ const doCreateIssue = async () => {
 
 // Create sheets for spec configs and update their resource names.
 const createSheets = async () => {
-  const specList = issue.value.planEntity?.specs ?? [];
-
   const configWithSheetList: (
     | Plan_ChangeDatabaseConfig
     | Plan_ExportDataConfig
   )[] = [];
   const pendingCreateSheetMap = new Map<string, Sheet>();
 
+  const specList = issue.value.planEntity?.specs ?? [];
   for (const spec of specList) {
     const config = spec.changeDatabaseConfig || spec.exportDataConfig;
     if (!config) continue;
