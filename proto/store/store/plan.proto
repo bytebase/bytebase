@@ -3,7 +3,6 @@ syntax = "proto3";
 package bytebase.store;
 
 import "google/api/field_behavior.proto";
-import "google/api/resource.proto";
 import "store/common.proto";
 import "store/plan_check_run.proto";
 
@@ -12,14 +11,10 @@ option go_package = "generated-go/store";
 message PlanConfig {
   repeated Spec specs = 1;
 
-  ReleaseSource release_source = 3;
-
   Deployment deployment = 4;
   message Spec {
     // A UUID4 string that uniquely identifies the Spec.
     string id = 5;
-
-    SpecReleaseSource spec_release_source = 8;
 
     oneof config {
       CreateDatabaseConfig create_database_config = 1;
@@ -60,6 +55,10 @@ message PlanConfig {
     // The resource name of the sheet.
     // Format: projects/{project}/sheets/{sheet}
     string sheet = 2;
+    // The resource name of the release.
+    // Format: projects/{project}/releases/{release}
+    string release = 9;
+
     // Type is the database change type.
     enum Type {
       TYPE_UNSPECIFIED = 0;
@@ -92,17 +91,6 @@ message PlanConfig {
     // The zip password provide by users.
     // Leave it empty if no needs to encrypt the zip file.
     optional string password = 4;
-  }
-
-  message ReleaseSource {
-    // The release.
-    // Format: projects/{project}/releases/{release}
-    string release = 1 [(google.api.resource_reference) = {type: "bytebase.com/Release"}];
-  }
-
-  message SpecReleaseSource {
-    // Format: projects/{project}/releases/{release}/files/{id}
-    string file = 1;
   }
 
   message Deployment {

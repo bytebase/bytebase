@@ -1903,15 +1903,7 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.Plan.ReleaseSource"><span class="badge">M</span>Plan.ReleaseSource</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.Plan.Spec"><span class="badge">M</span>Plan.Spec</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.Plan.SpecReleaseSource"><span class="badge">M</span>Plan.SpecReleaseSource</a>
                 </li>
               
                 <li>
@@ -20447,13 +20439,6 @@ Keys are:
                 </tr>
               
                 <tr>
-                  <td>release_source</td>
-                  <td><a href="#bytebase.v1.Plan.ReleaseSource">Plan.ReleaseSource</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
                   <td>deployment</td>
                   <td><a href="#bytebase.v1.Plan.Deployment">Plan.Deployment</a></td>
                   <td></td>
@@ -20492,6 +20477,14 @@ Format: projects/{project}/databaseGroups/{databaseGroup}. </p></td>
                   <td></td>
                   <td><p>The resource name of the sheet.
 Format: projects/{project}/sheets/{sheet} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>release</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The resource name of the release.
+Format: projects/{project}/releases/{release} </p></td>
                 </tr>
               
                 <tr>
@@ -20795,31 +20788,6 @@ Leave it empty if no needs to encrypt the zip file. </p></td>
 
         
       
-        <h3 id="bytebase.v1.Plan.ReleaseSource">Plan.ReleaseSource</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>release</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The release.
-Format: projects/{project}/releases/{release} </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.v1.Plan.Spec">Plan.Spec</h3>
         <p></p>
 
@@ -20835,13 +20803,6 @@ Format: projects/{project}/releases/{release} </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>A UUID4 string that uniquely identifies the Spec. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>spec_release_source</td>
-                  <td><a href="#bytebase.v1.Plan.SpecReleaseSource">Plan.SpecReleaseSource</a></td>
-                  <td></td>
-                  <td><p> </p></td>
                 </tr>
               
                 <tr>
@@ -20863,31 +20824,6 @@ Format: projects/{project}/releases/{release} </p></td>
                   <td><a href="#bytebase.v1.Plan.ExportDataConfig">Plan.ExportDataConfig</a></td>
                   <td></td>
                   <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.Plan.SpecReleaseSource">Plan.SpecReleaseSource</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>file</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Format: projects/{project}/releases/{release}/files/{file}
-{file} is URL path escaped. </p></td>
                 </tr>
               
             </tbody>

@@ -2549,9 +2549,6 @@
     "allow-out-of-order": "Allow out of order",
     "archive-this-release": "Archive this release",
     "total-files": "Total {count} files",
-    "no-tasks-to-apply": {
-      "self": "No tasks to apply"
-    },
     "actions": {
       "new-file": "New file",
       "import-from-release": "Import from release"

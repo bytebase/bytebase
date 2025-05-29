@@ -2549,9 +2549,6 @@
     "allow-out-of-order": "允许无序文件",
     "archive-this-release": "归档此发布",
     "total-files": "共 {count} 个文件",
-    "no-tasks-to-apply": {
-      "self": "没有可应用的任务"
-    },
     "actions": {
       "new-file": "新建文件",
       "import-from-release": "从发布导入"

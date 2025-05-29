@@ -84,7 +84,7 @@ const schemaVersion = computed(() => {
   }
 
   // Always show the schema version for tasks from a release source.
-  if (issue.value.planEntity?.releaseSource?.release) {
+  if ((issue.value.planEntity?.specs?.filter(spec => spec.changeDatabaseConfig?.release)??[]).length > 0) {
     return v;
   }
   if (isCreating.value) return "";

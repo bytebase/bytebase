@@ -11109,8 +11109,6 @@ components:
                          - SUCCESS
                          - WARNING
                          - ERROR
-                releaseSource:
-                    $ref: '#/components/schemas/Plan_ReleaseSource'
                 deployment:
                     $ref: '#/components/schemas/Plan_Deployment'
         PlanCheckRun:
@@ -11191,6 +11189,11 @@ components:
                     description: |-
                         The resource name of the sheet.
                          Format: projects/{project}/sheets/{sheet}
+                release:
+                    type: string
+                    description: |-
+                        The resource name of the release.
+                         Format: projects/{project}/releases/{release}
                 type:
                     enum:
                         - TYPE_UNSPECIFIED
@@ -11285,36 +11288,18 @@ components:
                     description: |-
                         The zip password provide by users.
                          Leave it empty if no needs to encrypt the zip file.
-        Plan_ReleaseSource:
-            type: object
-            properties:
-                release:
-                    type: string
-                    description: |-
-                        The release.
-                         Format: projects/{project}/releases/{release}
         Plan_Spec:
             type: object
             properties:
                 id:
                     type: string
                     description: A UUID4 string that uniquely identifies the Spec.
-                specReleaseSource:
-                    $ref: '#/components/schemas/Plan_SpecReleaseSource'
                 createDatabaseConfig:
                     $ref: '#/components/schemas/Plan_CreateDatabaseConfig'
                 changeDatabaseConfig:
                     $ref: '#/components/schemas/Plan_ChangeDatabaseConfig'
                 exportDataConfig:
                     $ref: '#/components/schemas/Plan_ExportDataConfig'
-        Plan_SpecReleaseSource:
-            type: object
-            properties:
-                file:
-                    type: string
-                    description: |-
-                        Format: projects/{project}/releases/{release}/files/{file}
-                         {file} is URL path escaped.
         Plan_Step:
             type: object
             properties:

@@ -83,10 +83,9 @@ func (PlanConfig_ChangeDatabaseConfig_Type) EnumDescriptor() ([]byte, []int) {
 }
 
 type PlanConfig struct {
-	state         protoimpl.MessageState    `protogen:"open.v1"`
-	Specs         []*PlanConfig_Spec        `protobuf:"bytes,1,rep,name=specs,proto3" json:"specs,omitempty"`
-	ReleaseSource *PlanConfig_ReleaseSource `protobuf:"bytes,3,opt,name=release_source,json=releaseSource,proto3" json:"release_source,omitempty"`
-	Deployment    *PlanConfig_Deployment    `protobuf:"bytes,4,opt,name=deployment,proto3" json:"deployment,omitempty"`
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Specs         []*PlanConfig_Spec     `protobuf:"bytes,1,rep,name=specs,proto3" json:"specs,omitempty"`
+	Deployment    *PlanConfig_Deployment `protobuf:"bytes,4,opt,name=deployment,proto3" json:"deployment,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -128,13 +127,6 @@ func (x *PlanConfig) GetSpecs() []*PlanConfig_Spec {
 	return nil
 }
 
-func (x *PlanConfig) GetReleaseSource() *PlanConfig_ReleaseSource {
-	if x != nil {
-		return x.ReleaseSource
-	}
-	return nil
-}
-
 func (x *PlanConfig) GetDeployment() *PlanConfig_Deployment {
 	if x != nil {
 		return x.Deployment
@@ -145,8 +137,7 @@ func (x *PlanConfig) GetDeployment() *PlanConfig_Deployment {
 type PlanConfig_Spec struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// A UUID4 string that uniquely identifies the Spec.
-	Id                string                        `protobuf:"bytes,5,opt,name=id,proto3" json:"id,omitempty"`
-	SpecReleaseSource *PlanConfig_SpecReleaseSource `protobuf:"bytes,8,opt,name=spec_release_source,json=specReleaseSource,proto3" json:"spec_release_source,omitempty"`
+	Id string `protobuf:"bytes,5,opt,name=id,proto3" json:"id,omitempty"`
 	// Types that are valid to be assigned to Config:
 	//
 	//	*PlanConfig_Spec_CreateDatabaseConfig
@@ -192,13 +183,6 @@ func (x *PlanConfig_Spec) GetId() string {
 		return x.Id
 	}
 	return ""
-}
-
-func (x *PlanConfig_Spec) GetSpecReleaseSource() *PlanConfig_SpecReleaseSource {
-	if x != nil {
-		return x.SpecReleaseSource
-	}
-	return nil
 }
 
 func (x *PlanConfig_Spec) GetConfig() isPlanConfig_Spec_Config {
@@ -376,7 +360,10 @@ type PlanConfig_ChangeDatabaseConfig struct {
 	Target string `protobuf:"bytes,1,opt,name=target,proto3" json:"target,omitempty"`
 	// The resource name of the sheet.
 	// Format: projects/{project}/sheets/{sheet}
-	Sheet      string                               `protobuf:"bytes,2,opt,name=sheet,proto3" json:"sheet,omitempty"`
+	Sheet string `protobuf:"bytes,2,opt,name=sheet,proto3" json:"sheet,omitempty"`
+	// The resource name of the release.
+	// Format: projects/{project}/releases/{release}
+	Release    string                               `protobuf:"bytes,9,opt,name=release,proto3" json:"release,omitempty"`
 	Type       PlanConfig_ChangeDatabaseConfig_Type `protobuf:"varint,3,opt,name=type,proto3,enum=bytebase.store.PlanConfig_ChangeDatabaseConfig_Type" json:"type,omitempty"`
 	GhostFlags map[string]string                    `protobuf:"bytes,7,rep,name=ghost_flags,json=ghostFlags,proto3" json:"ghost_flags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	// If set, a backup of the modified data will be created automatically before any changes are applied.
@@ -425,6 +412,13 @@ func (x *PlanConfig_ChangeDatabaseConfig) GetTarget() string {
 func (x *PlanConfig_ChangeDatabaseConfig) GetSheet() string {
 	if x != nil {
 		return x.Sheet
+	}
+	return ""
+}
+
+func (x *PlanConfig_ChangeDatabaseConfig) GetRelease() string {
+	if x != nil {
+		return x.Release
 	}
 	return ""
 }
@@ -525,97 +519,6 @@ func (x *PlanConfig_ExportDataConfig) GetPassword() string {
 	return ""
 }
 
-type PlanConfig_ReleaseSource struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// The release.
-	// Format: projects/{project}/releases/{release}
-	Release       string `protobuf:"bytes,1,opt,name=release,proto3" json:"release,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *PlanConfig_ReleaseSource) Reset() {
-	*x = PlanConfig_ReleaseSource{}
-	mi := &file_store_plan_proto_msgTypes[5]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *PlanConfig_ReleaseSource) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*PlanConfig_ReleaseSource) ProtoMessage() {}
-
-func (x *PlanConfig_ReleaseSource) ProtoReflect() protoreflect.Message {
-	mi := &file_store_plan_proto_msgTypes[5]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use PlanConfig_ReleaseSource.ProtoReflect.Descriptor instead.
-func (*PlanConfig_ReleaseSource) Descriptor() ([]byte, []int) {
-	return file_store_plan_proto_rawDescGZIP(), []int{0, 4}
-}
-
-func (x *PlanConfig_ReleaseSource) GetRelease() string {
-	if x != nil {
-		return x.Release
-	}
-	return ""
-}
-
-type PlanConfig_SpecReleaseSource struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// Format: projects/{project}/releases/{release}/files/{id}
-	File          string `protobuf:"bytes,1,opt,name=file,proto3" json:"file,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *PlanConfig_SpecReleaseSource) Reset() {
-	*x = PlanConfig_SpecReleaseSource{}
-	mi := &file_store_plan_proto_msgTypes[6]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *PlanConfig_SpecReleaseSource) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*PlanConfig_SpecReleaseSource) ProtoMessage() {}
-
-func (x *PlanConfig_SpecReleaseSource) ProtoReflect() protoreflect.Message {
-	mi := &file_store_plan_proto_msgTypes[6]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use PlanConfig_SpecReleaseSource.ProtoReflect.Descriptor instead.
-func (*PlanConfig_SpecReleaseSource) Descriptor() ([]byte, []int) {
-	return file_store_plan_proto_rawDescGZIP(), []int{0, 5}
-}
-
-func (x *PlanConfig_SpecReleaseSource) GetFile() string {
-	if x != nil {
-		return x.File
-	}
-	return ""
-}
-
 type PlanConfig_Deployment struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The environments deploy order.
@@ -628,7 +531,7 @@ type PlanConfig_Deployment struct {
 
 func (x *PlanConfig_Deployment) Reset() {
 	*x = PlanConfig_Deployment{}
-	mi := &file_store_plan_proto_msgTypes[7]
+	mi := &file_store_plan_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -640,7 +543,7 @@ func (x *PlanConfig_Deployment) String() string {
 func (*PlanConfig_Deployment) ProtoMessage() {}
 
 func (x *PlanConfig_Deployment) ProtoReflect() protoreflect.Message {
-	mi := &file_store_plan_proto_msgTypes[7]
+	mi := &file_store_plan_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -653,7 +556,7 @@ func (x *PlanConfig_Deployment) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PlanConfig_Deployment.ProtoReflect.Descriptor instead.
 func (*PlanConfig_Deployment) Descriptor() ([]byte, []int) {
-	return file_store_plan_proto_rawDescGZIP(), []int{0, 6}
+	return file_store_plan_proto_rawDescGZIP(), []int{0, 4}
 }
 
 func (x *PlanConfig_Deployment) GetEnvironments() []string {
@@ -682,7 +585,7 @@ type PlanConfig_Deployment_DatabaseGroupMapping struct {
 
 func (x *PlanConfig_Deployment_DatabaseGroupMapping) Reset() {
 	*x = PlanConfig_Deployment_DatabaseGroupMapping{}
-	mi := &file_store_plan_proto_msgTypes[9]
+	mi := &file_store_plan_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -694,7 +597,7 @@ func (x *PlanConfig_Deployment_DatabaseGroupMapping) String() string {
 func (*PlanConfig_Deployment_DatabaseGroupMapping) ProtoMessage() {}
 
 func (x *PlanConfig_Deployment_DatabaseGroupMapping) ProtoReflect() protoreflect.Message {
-	mi := &file_store_plan_proto_msgTypes[9]
+	mi := &file_store_plan_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -707,7 +610,7 @@ func (x *PlanConfig_Deployment_DatabaseGroupMapping) ProtoReflect() protoreflect
 
 // Deprecated: Use PlanConfig_Deployment_DatabaseGroupMapping.ProtoReflect.Descriptor instead.
 func (*PlanConfig_Deployment_DatabaseGroupMapping) Descriptor() ([]byte, []int) {
-	return file_store_plan_proto_rawDescGZIP(), []int{0, 6, 0}
+	return file_store_plan_proto_rawDescGZIP(), []int{0, 4, 0}
 }
 
 func (x *PlanConfig_Deployment_DatabaseGroupMapping) GetDatabaseGroup() string {
@@ -728,17 +631,15 @@ var File_store_plan_proto protoreflect.FileDescriptor
 
 const file_store_plan_proto_rawDesc = "" +
 	"\n" +
-	"\x10store/plan.proto\x12\x0ebytebase.store\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x12store/common.proto\x1a\x1astore/plan_check_run.proto\"\xe6\x0f\n" +
+	"\x10store/plan.proto\x12\x0ebytebase.store\x1a\x1fgoogle/api/field_behavior.proto\x1a\x12store/common.proto\x1a\x1astore/plan_check_run.proto\"\xe2\r\n" +
 	"\n" +
 	"PlanConfig\x125\n" +
-	"\x05specs\x18\x01 \x03(\v2\x1f.bytebase.store.PlanConfig.SpecR\x05specs\x12O\n" +
-	"\x0erelease_source\x18\x03 \x01(\v2(.bytebase.store.PlanConfig.ReleaseSourceR\rreleaseSource\x12E\n" +
+	"\x05specs\x18\x01 \x03(\v2\x1f.bytebase.store.PlanConfig.SpecR\x05specs\x12E\n" +
 	"\n" +
 	"deployment\x18\x04 \x01(\v2%.bytebase.store.PlanConfig.DeploymentR\n" +
-	"deployment\x1a\xad\x03\n" +
+	"deployment\x1a\xcf\x02\n" +
 	"\x04Spec\x12\x0e\n" +
-	"\x02id\x18\x05 \x01(\tR\x02id\x12\\\n" +
-	"\x13spec_release_source\x18\b \x01(\v2,.bytebase.store.PlanConfig.SpecReleaseSourceR\x11specReleaseSource\x12g\n" +
+	"\x02id\x18\x05 \x01(\tR\x02id\x12g\n" +
 	"\x16create_database_config\x18\x01 \x01(\v2/.bytebase.store.PlanConfig.CreateDatabaseConfigH\x00R\x14createDatabaseConfig\x12g\n" +
 	"\x16change_database_config\x18\x02 \x01(\v2/.bytebase.store.PlanConfig.ChangeDatabaseConfigH\x00R\x14changeDatabaseConfig\x12[\n" +
 	"\x12export_data_config\x18\a \x01(\v2+.bytebase.store.PlanConfig.ExportDataConfigH\x00R\x10exportDataConfigB\b\n" +
@@ -751,10 +652,11 @@ const file_store_plan_proto_rawDesc = "" +
 	"\tcollation\x18\x05 \x01(\tB\x04\xe2A\x01\x01R\tcollation\x12\x1e\n" +
 	"\acluster\x18\x06 \x01(\tB\x04\xe2A\x01\x01R\acluster\x12\x1a\n" +
 	"\x05owner\x18\a \x01(\tB\x04\xe2A\x01\x01R\x05owner\x12&\n" +
-	"\venvironment\x18\t \x01(\tB\x04\xe2A\x01\x01R\venvironment\x1a\x96\x04\n" +
+	"\venvironment\x18\t \x01(\tB\x04\xe2A\x01\x01R\venvironment\x1a\xb0\x04\n" +
 	"\x14ChangeDatabaseConfig\x12\x16\n" +
 	"\x06target\x18\x01 \x01(\tR\x06target\x12\x14\n" +
-	"\x05sheet\x18\x02 \x01(\tR\x05sheet\x12H\n" +
+	"\x05sheet\x18\x02 \x01(\tR\x05sheet\x12\x18\n" +
+	"\arelease\x18\t \x01(\tR\arelease\x12H\n" +
 	"\x04type\x18\x03 \x01(\x0e24.bytebase.store.PlanConfig.ChangeDatabaseConfig.TypeR\x04type\x12`\n" +
 	"\vghost_flags\x18\a \x03(\v2?.bytebase.store.PlanConfig.ChangeDatabaseConfig.GhostFlagsEntryR\n" +
 	"ghostFlags\x12c\n" +
@@ -774,12 +676,7 @@ const file_store_plan_proto_rawDesc = "" +
 	"\x05sheet\x18\x02 \x01(\tR\x05sheet\x124\n" +
 	"\x06format\x18\x03 \x01(\x0e2\x1c.bytebase.store.ExportFormatR\x06format\x12\x1f\n" +
 	"\bpassword\x18\x04 \x01(\tH\x00R\bpassword\x88\x01\x01B\v\n" +
-	"\t_password\x1aD\n" +
-	"\rReleaseSource\x123\n" +
-	"\arelease\x18\x01 \x01(\tB\x19\xfaA\x16\n" +
-	"\x14bytebase.com/ReleaseR\arelease\x1a'\n" +
-	"\x11SpecReleaseSource\x12\x12\n" +
-	"\x04file\x18\x01 \x01(\tR\x04file\x1a\x81\x02\n" +
+	"\t_password\x1a\x81\x02\n" +
 	"\n" +
 	"Deployment\x12\"\n" +
 	"\fenvironments\x18\x01 \x03(\tR\fenvironments\x12r\n" +
@@ -801,7 +698,7 @@ func file_store_plan_proto_rawDescGZIP() []byte {
 }
 
 var file_store_plan_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_store_plan_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
+var file_store_plan_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
 var file_store_plan_proto_goTypes = []any{
 	(PlanConfig_ChangeDatabaseConfig_Type)(0),          // 0: bytebase.store.PlanConfig.ChangeDatabaseConfig.Type
 	(*PlanConfig)(nil),                                 // 1: bytebase.store.PlanConfig
@@ -809,32 +706,28 @@ var file_store_plan_proto_goTypes = []any{
 	(*PlanConfig_CreateDatabaseConfig)(nil),            // 3: bytebase.store.PlanConfig.CreateDatabaseConfig
 	(*PlanConfig_ChangeDatabaseConfig)(nil),            // 4: bytebase.store.PlanConfig.ChangeDatabaseConfig
 	(*PlanConfig_ExportDataConfig)(nil),                // 5: bytebase.store.PlanConfig.ExportDataConfig
-	(*PlanConfig_ReleaseSource)(nil),                   // 6: bytebase.store.PlanConfig.ReleaseSource
-	(*PlanConfig_SpecReleaseSource)(nil),               // 7: bytebase.store.PlanConfig.SpecReleaseSource
-	(*PlanConfig_Deployment)(nil),                      // 8: bytebase.store.PlanConfig.Deployment
-	nil,                                                // 9: bytebase.store.PlanConfig.ChangeDatabaseConfig.GhostFlagsEntry
-	(*PlanConfig_Deployment_DatabaseGroupMapping)(nil), // 10: bytebase.store.PlanConfig.Deployment.DatabaseGroupMapping
-	(*PreUpdateBackupDetail)(nil),                      // 11: bytebase.store.PreUpdateBackupDetail
-	(ExportFormat)(0),                                  // 12: bytebase.store.ExportFormat
+	(*PlanConfig_Deployment)(nil),                      // 6: bytebase.store.PlanConfig.Deployment
+	nil,                                                // 7: bytebase.store.PlanConfig.ChangeDatabaseConfig.GhostFlagsEntry
+	(*PlanConfig_Deployment_DatabaseGroupMapping)(nil), // 8: bytebase.store.PlanConfig.Deployment.DatabaseGroupMapping
+	(*PreUpdateBackupDetail)(nil),                      // 9: bytebase.store.PreUpdateBackupDetail
+	(ExportFormat)(0),                                  // 10: bytebase.store.ExportFormat
 }
 var file_store_plan_proto_depIdxs = []int32{
 	2,  // 0: bytebase.store.PlanConfig.specs:type_name -> bytebase.store.PlanConfig.Spec
-	6,  // 1: bytebase.store.PlanConfig.release_source:type_name -> bytebase.store.PlanConfig.ReleaseSource
-	8,  // 2: bytebase.store.PlanConfig.deployment:type_name -> bytebase.store.PlanConfig.Deployment
-	7,  // 3: bytebase.store.PlanConfig.Spec.spec_release_source:type_name -> bytebase.store.PlanConfig.SpecReleaseSource
-	3,  // 4: bytebase.store.PlanConfig.Spec.create_database_config:type_name -> bytebase.store.PlanConfig.CreateDatabaseConfig
-	4,  // 5: bytebase.store.PlanConfig.Spec.change_database_config:type_name -> bytebase.store.PlanConfig.ChangeDatabaseConfig
-	5,  // 6: bytebase.store.PlanConfig.Spec.export_data_config:type_name -> bytebase.store.PlanConfig.ExportDataConfig
-	0,  // 7: bytebase.store.PlanConfig.ChangeDatabaseConfig.type:type_name -> bytebase.store.PlanConfig.ChangeDatabaseConfig.Type
-	9,  // 8: bytebase.store.PlanConfig.ChangeDatabaseConfig.ghost_flags:type_name -> bytebase.store.PlanConfig.ChangeDatabaseConfig.GhostFlagsEntry
-	11, // 9: bytebase.store.PlanConfig.ChangeDatabaseConfig.pre_update_backup_detail:type_name -> bytebase.store.PreUpdateBackupDetail
-	12, // 10: bytebase.store.PlanConfig.ExportDataConfig.format:type_name -> bytebase.store.ExportFormat
-	10, // 11: bytebase.store.PlanConfig.Deployment.database_group_mappings:type_name -> bytebase.store.PlanConfig.Deployment.DatabaseGroupMapping
-	12, // [12:12] is the sub-list for method output_type
-	12, // [12:12] is the sub-list for method input_type
-	12, // [12:12] is the sub-list for extension type_name
-	12, // [12:12] is the sub-list for extension extendee
-	0,  // [0:12] is the sub-list for field type_name
+	6,  // 1: bytebase.store.PlanConfig.deployment:type_name -> bytebase.store.PlanConfig.Deployment
+	3,  // 2: bytebase.store.PlanConfig.Spec.create_database_config:type_name -> bytebase.store.PlanConfig.CreateDatabaseConfig
+	4,  // 3: bytebase.store.PlanConfig.Spec.change_database_config:type_name -> bytebase.store.PlanConfig.ChangeDatabaseConfig
+	5,  // 4: bytebase.store.PlanConfig.Spec.export_data_config:type_name -> bytebase.store.PlanConfig.ExportDataConfig
+	0,  // 5: bytebase.store.PlanConfig.ChangeDatabaseConfig.type:type_name -> bytebase.store.PlanConfig.ChangeDatabaseConfig.Type
+	7,  // 6: bytebase.store.PlanConfig.ChangeDatabaseConfig.ghost_flags:type_name -> bytebase.store.PlanConfig.ChangeDatabaseConfig.GhostFlagsEntry
+	9,  // 7: bytebase.store.PlanConfig.ChangeDatabaseConfig.pre_update_backup_detail:type_name -> bytebase.store.PreUpdateBackupDetail
+	10, // 8: bytebase.store.PlanConfig.ExportDataConfig.format:type_name -> bytebase.store.ExportFormat
+	8,  // 9: bytebase.store.PlanConfig.Deployment.database_group_mappings:type_name -> bytebase.store.PlanConfig.Deployment.DatabaseGroupMapping
+	10, // [10:10] is the sub-list for method output_type
+	10, // [10:10] is the sub-list for method input_type
+	10, // [10:10] is the sub-list for extension type_name
+	10, // [10:10] is the sub-list for extension extendee
+	0,  // [0:10] is the sub-list for field type_name
 }
 
 func init() { file_store_plan_proto_init() }
@@ -857,7 +750,7 @@ func file_store_plan_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_store_plan_proto_rawDesc), len(file_store_plan_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   10,
+			NumMessages:   8,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
