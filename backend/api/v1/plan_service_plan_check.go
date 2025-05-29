@@ -95,8 +95,8 @@ func getPlanCheckRunsFromChangeDatabaseConfigDatabaseGroupTarget(ctx context.Con
 	default:
 		return nil, errors.Errorf("unsupported change database config type %q for database group target", config.Type)
 	}
-	if len(config.Targets) != 0 {
-		return nil, errors.Errorf("change database config with database group target should have exactly one target, got %d targets", len(config.Targets))
+	if len(config.Targets) != 1 {
+		return nil, errors.Errorf("change database config with database group target must have exactly one target, but got %d targets", len(config.Targets))
 	}
 	target := config.Targets[0]
 	projectID, databaseGroupID, err := common.GetProjectIDDatabaseGroupID(target)
