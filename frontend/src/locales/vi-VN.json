@@ -2549,9 +2549,6 @@
     "allow-out-of-order": "Cho phép không theo thứ tự",
     "archive-this-release": "Lưu trữ bản phát hành này",
     "total-files": "Tổng số {count} tệp",
-    "no-tasks-to-apply": {
-      "self": "Không có tác vụ nào để áp dụng"
-    },
     "actions": {
       "new-file": "Tệp mới",
       "import-from-release": "Nhập từ bản phát hành"

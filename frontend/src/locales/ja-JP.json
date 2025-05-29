@@ -2549,9 +2549,6 @@
     "allow-out-of-order": "順序外を許可する",
     "archive-this-release": "このリリースをアーカイブする",
     "total-files": "合計 {count} ファイル",
-    "no-tasks-to-apply": {
-      "self": "適用するタスクはありません"
-    },
     "actions": {
       "new-file": "新しいファイル",
       "import-from-release": "リリースからのインポート"

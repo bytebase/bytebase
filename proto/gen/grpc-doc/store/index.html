@@ -910,15 +910,7 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.store.PlanConfig.ReleaseSource"><span class="badge">M</span>PlanConfig.ReleaseSource</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.store.PlanConfig.Spec"><span class="badge">M</span>PlanConfig.Spec</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.PlanConfig.SpecReleaseSource"><span class="badge">M</span>PlanConfig.SpecReleaseSource</a>
                 </li>
               
               
@@ -8310,13 +8302,6 @@ Format: instances/{instance}/databases/{database} </p></td>
                 </tr>
               
                 <tr>
-                  <td>release_source</td>
-                  <td><a href="#bytebase.store.PlanConfig.ReleaseSource">PlanConfig.ReleaseSource</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
                   <td>deployment</td>
                   <td><a href="#bytebase.store.PlanConfig.Deployment">PlanConfig.Deployment</a></td>
                   <td></td>
@@ -8355,6 +8340,14 @@ Format: projects/{project}/databaseGroups/{databaseGroup}. </p></td>
                   <td></td>
                   <td><p>The resource name of the sheet.
 Format: projects/{project}/sheets/{sheet} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>release</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The resource name of the release.
+Format: projects/{project}/releases/{release} </p></td>
                 </tr>
               
                 <tr>
@@ -8602,31 +8595,6 @@ Leave it empty if no needs to encrypt the zip file. </p></td>
 
         
       
-        <h3 id="bytebase.store.PlanConfig.ReleaseSource">PlanConfig.ReleaseSource</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>release</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The release.
-Format: projects/{project}/releases/{release} </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.store.PlanConfig.Spec">PlanConfig.Spec</h3>
         <p></p>
 
@@ -8642,13 +8610,6 @@ Format: projects/{project}/releases/{release} </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>A UUID4 string that uniquely identifies the Spec. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>spec_release_source</td>
-                  <td><a href="#bytebase.store.PlanConfig.SpecReleaseSource">PlanConfig.SpecReleaseSource</a></td>
-                  <td></td>
-                  <td><p> </p></td>
                 </tr>
               
                 <tr>
@@ -8670,30 +8631,6 @@ Format: projects/{project}/releases/{release} </p></td>
                   <td><a href="#bytebase.store.PlanConfig.ExportDataConfig">PlanConfig.ExportDataConfig</a></td>
                   <td></td>
                   <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.store.PlanConfig.SpecReleaseSource">PlanConfig.SpecReleaseSource</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>file</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Format: projects/{project}/releases/{release}/files/{id} </p></td>
                 </tr>
               
             </tbody>
