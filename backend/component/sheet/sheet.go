@@ -154,16 +154,15 @@ func getSheetCommandsFromByteOffset(engine storepb.Engine, statement string) []*
 
 func getSheetCommandsForMSSQL(statement string) []*storepb.SheetCommand {
 	var sheetCommands []*storepb.SheetCommand
-	p := 0
 
 	batch := tsqlbatch.NewBatcher(statement)
 	for {
 		command, err := batch.Next()
 		if err == io.EOF {
-			np := p + len(batch.String())
+			b := batch.Batch()
 			sheetCommands = append(sheetCommands, &storepb.SheetCommand{
-				Start: int32(p),
-				End:   int32(np),
+				Start: int32(b.Start),
+				End:   int32(b.End),
 			})
 			batch.Reset(nil)
 			break
@@ -177,12 +176,11 @@ func getSheetCommandsForMSSQL(statement string) []*storepb.SheetCommand {
 		}
 		switch command.(type) {
 		case *tsqlbatch.GoCommand:
-			np := p + len(batch.String())
+			b := batch.Batch()
 			sheetCommands = append(sheetCommands, &storepb.SheetCommand{
-				Start: int32(p),
-				End:   int32(np),
+				Start: int32(b.Start),
+				End:   int32(b.End),
 			})
-			p = np
 			batch.Reset(nil)
 		default:
 		}

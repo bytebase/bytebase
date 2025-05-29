@@ -49,7 +49,7 @@ func TestBuildGoCommands(t *testing.T) {
 }
 
 type batchResult struct {
-	Statements string `yaml:"statements"`
+	Statements Batch  `yaml:"statements"`
 	Command    string `yaml:"command"`
 }
 
@@ -100,10 +100,10 @@ func getBatchResults(a *require.Assertions, input string) []batchResult {
 		command, err := batch.Next()
 		if err != nil {
 			if err == io.EOF {
-				if v := batch.String(); v != "" {
+				if v := batch.Batch(); v != nil && len(v.Text) > 0 {
 					// If meet the end of file, get the last batch.
 					batchResults = append(batchResults, batchResult{
-						Statements: batch.String(),
+						Statements: *v,
 					})
 				}
 				batch.Reset(nil)
@@ -113,7 +113,7 @@ func getBatchResults(a *require.Assertions, input string) []batchResult {
 		}
 		if command != nil {
 			batchResults = append(batchResults, batchResult{
-				Statements: batch.String(),
+				Statements: *batch.Batch(),
 				Command:    command.String(),
 			})
 			batch.Reset(nil)

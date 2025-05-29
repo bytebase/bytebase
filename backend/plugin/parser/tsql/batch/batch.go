@@ -22,11 +22,11 @@ const (
 
 // Batch is a batch of Transact-SQL statements.
 type Batch struct {
-	Text string
+	Text string `yaml:"text"`
 	// Inclusive start position of the batch in the original script, starting from 0 and calculated by byte offset.
-	Start int
+	Start int `yaml:"start"`
 	// Exclusive end position of the batch in the original script, starting from 0 and calculated by byte offset.
-	End int
+	End int `yaml:"end"`
 }
 
 type Command interface {
@@ -88,18 +88,24 @@ func buildGoCommand(input string) Command {
 	}
 }
 
-type scan func() (string, error)
+type scan func() (string, int, error)
 
 func newDefaultScan(statement string) scan {
 	// Split the statement into lines to support some client commands like GO.
 	s := strings.Split(statement, string(lineEnd))
-	scanner := func() (string, error) {
+	byteOffset := 0
+	scanner := func() (string, int, error) {
 		if len(s) > 0 {
 			z := s[0]
 			s = s[1:]
-			return z, nil
+			byteOffsetSnapshot := byteOffset
+			byteOffset += len(z)
+			if len(s) > 0 {
+				byteOffset += len(lineEnd)
+			}
+			return z, byteOffsetSnapshot, nil
 		}
-		return "", io.EOF
+		return "", byteOffset, io.EOF
 	}
 	return scanner
 }
@@ -107,6 +113,10 @@ func newDefaultScan(statement string) scan {
 type Batcher struct {
 	// read provides the next chunk of runes.
 	read scan
+	// beginByteOffset is the byte offset of the first byte of the current buffer in the original script.
+	beginByteOffset int
+	// firstByteOffset is the byte offset of the first byte of the current raw content in the original script.
+	firstByteOffset int
 	// buffer is the current batch text.
 	buffer []rune
 	// length is the length of the statement.
@@ -129,9 +139,13 @@ func NewBatcher(statement string) *Batcher {
 	}
 }
 
-// String returns the current SQL batch text.
-func (b *Batcher) String() string {
-	return string(b.buffer)
+// Batch returns the current SQL batch text.
+func (b *Batcher) Batch() *Batch {
+	return &Batch{
+		Text:  string(b.buffer),
+		Start: b.beginByteOffset,
+		End:   b.beginByteOffset + len(b.buffer),
+	}
 }
 
 // Next returns the next command in the batch.
@@ -139,10 +153,11 @@ func (b *Batcher) Next() (Command, error) {
 	var i int
 
 	if b.rawLen == 0 {
-		s, err := b.read()
+		s, firstByteOffset, err := b.read()
 		if err != nil {
 			return nil, err
 		}
+		b.firstByteOffset = firstByteOffset
 		b.raw = []rune(s)
 		b.rawLen = len(b.raw)
 	}
@@ -227,6 +242,7 @@ func (b *Batcher) append(r, sep []rune) {
 	// initial
 	if b.buffer == nil {
 		b.buffer, b.length = r, rlen
+		b.beginByteOffset = b.firstByteOffset
 		return
 	}
 	blen, seplen := b.length, len(sep)
