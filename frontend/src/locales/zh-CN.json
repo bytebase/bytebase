@@ -2542,10 +2542,6 @@
     "files": "文件",
     "create": "创建发布",
     "select": "选择发布",
-    "tasks-to-apply": "待应用的任务",
-    "out-of-order-files": "无序文件",
-    "applied-but-modifed-files": "已应用但已修改的文件",
-    "allow-out-of-order": "允许无序文件",
     "archive-this-release": "归档此发布",
     "total-files": "共 {count} 个文件",
     "actions": {
@@ -2555,8 +2551,7 @@
     "messages": {
       "succeed-to-create-release": "成功创建发布",
       "files-will-always-be-sorted-and-executed-in-version-order": "文件将始终按照版本顺序排序和执行。",
-      "cannot-modify-files-after-created": "发布创建后您无法修改文件。",
-      "bytebase-will-skip-those-files-has-been-applied-on-target-database": "Bytebase 将自动跳过那些已经在目标数据库上执行过的文件。"
+      "cannot-modify-files-after-created": "发布创建后您无法修改文件。"
     },
     "usage-description": "发布包仅用于自定义的 GitOps 与 Bytebase API 集成。"
   },

@@ -2542,10 +2542,6 @@
     "files": "ファイル",
     "create": "リリースを作成",
     "select": "リリースを選択",
-    "tasks-to-apply": "適用するタスク",
-    "out-of-order-files": "順序が間違っているファイル",
-    "applied-but-modifed-files": "適用済みだが変更されたファイル",
-    "allow-out-of-order": "順序外を許可する",
     "archive-this-release": "このリリースをアーカイブする",
     "total-files": "合計 {count} ファイル",
     "actions": {
@@ -2555,8 +2551,7 @@
     "messages": {
       "succeed-to-create-release": "リリースの作成に成功",
       "files-will-always-be-sorted-and-executed-in-version-order": "ファイルは常にバージョン順に並べ替えられ、実行されます。",
-      "cannot-modify-files-after-created": "リリースの作成後はファイルを変更できません。",
-      "bytebase-will-skip-those-files-has-been-applied-on-target-database": "Bytebase は、ターゲット データベースですでに実行されているファイルを自動的にスキップします。"
+      "cannot-modify-files-after-created": "リリースの作成後はファイルを変更できません。"
     },
     "usage-description": "このリリースは、API統合を使用したカスタムGitOpsでのみ使用されます。"
   },
