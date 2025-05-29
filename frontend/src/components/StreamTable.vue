@@ -1,41 +1,19 @@
 <template>
-  <BBTable
-    :column-list="columnList"
-    :data-source="streamList"
-    :show-header="true"
-    :left-bordered="true"
-    :right-bordered="true"
-    :row-clickable="true"
-    :custom-footer="true"
-  >
-    <template #body="{ rowData: stream }: { rowData: StreamMetadata }">
-      <BBTableCell :left-padding="4" class="w-24">
-        {{ schemaName }}
-      </BBTableCell>
-      <BBTableCell>
-        {{ stream.name }}
-      </BBTableCell>
-      <BBTableCell>
-        {{ stream.tableName }}
-      </BBTableCell>
-      <BBTableCell>
-        {{ stringifyStreamType(stream.type) }}
-      </BBTableCell>
-      <BBTableCell>
-        {{ stringifyStreamMode(stream.mode) }}
-      </BBTableCell>
-      <BBTableCell>
-        <DefinitionView :definition="stream.definition" />
-      </BBTableCell>
-    </template>
-  </BBTable>
+  <NDataTable
+    size="small"
+    :columns="columns"
+    :data="streamList"
+    :striped="true"
+    :bordered="true"
+  />
 </template>
 
 <script lang="ts" setup>
+import type { DataTableColumn } from "naive-ui";
+import { NDataTable } from "naive-ui";
 import type { PropType } from "vue";
-import { computed } from "vue";
+import { computed, h } from "vue";
 import { useI18n } from "vue-i18n";
-import { BBTable, BBTableCell } from "@/bbkit";
 import DefinitionView from "@/components/DefinitionView.vue";
 import type { ComposedDatabase } from "@/types";
 import type { StreamMetadata } from "@/types/proto/v1/database_service";
@@ -44,7 +22,7 @@ import {
   StreamMetadata_Type,
 } from "@/types/proto/v1/database_service";
 
-defineProps({
+const props = defineProps({
   database: {
     required: true,
     type: Object as PropType<ComposedDatabase>,
@@ -60,29 +38,6 @@ defineProps({
 });
 
 const { t } = useI18n();
-
-const columnList = computed(() => {
-  return [
-    {
-      title: t("common.schema"),
-    },
-    {
-      title: t("common.name"),
-    },
-    {
-      title: t("common.table"),
-    },
-    {
-      title: t("common.type"),
-    },
-    {
-      title: t("common.mode"),
-    },
-    {
-      title: t("common.definition"),
-    },
-  ];
-});
 
 const stringifyStreamType = (t: StreamMetadata_Type): string => {
   if (t === StreamMetadata_Type.TYPE_DELTA) {
@@ -101,4 +56,39 @@ const stringifyStreamMode = (mode: StreamMetadata_Mode): string => {
   }
   return "-";
 };
+
+const columns = computed((): DataTableColumn<StreamMetadata>[] => {
+  return [
+    {
+      title: t("common.schema"),
+      key: "schema",
+      render: () => props.schemaName,
+    },
+    {
+      title: t("common.name"),
+      key: "name",
+      render: (row) => row.name || "-",
+    },
+    {
+      title: t("common.table"),
+      key: "tableName",
+      render: (row) => row.tableName || "-",
+    },
+    {
+      title: t("common.type"),
+      key: "type",
+      render: (row) => stringifyStreamType(row.type),
+    },
+    {
+      title: t("common.mode"),
+      key: "mode",
+      render: (row) => stringifyStreamMode(row.mode),
+    },
+    {
+      title: t("common.definition"),
+      key: "definition",
+      render: (row) => h(DefinitionView, { definition: row.definition }),
+    },
+  ];
+});
 </script>
