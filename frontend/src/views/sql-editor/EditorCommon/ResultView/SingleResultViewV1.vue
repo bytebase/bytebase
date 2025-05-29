@@ -99,7 +99,7 @@
               ExportFormat.SQL,
               ExportFormat.XLSX,
             ]"
-            :allow-specify-row-count="true"
+            :view-mode="'DRAWER'"
             @export="handleExportBtnClick"
           />
           <NButton
