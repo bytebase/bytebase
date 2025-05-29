@@ -218,6 +218,12 @@ export interface Plan_ChangeDatabaseConfig {
    */
   target: string;
   /**
+   * The list of targets.
+   * Multi-database format: [instances/{instance-id}/databases/{database-name}].
+   * Single database group format: [projects/{project}/databaseGroups/{databaseGroup}].
+   */
+  targets: string[];
+  /**
    * The resource name of the sheet.
    * Format: projects/{project}/sheets/{sheet}
    */
@@ -1868,6 +1874,7 @@ export const Plan_CreateDatabaseConfig: MessageFns<Plan_CreateDatabaseConfig> = 
 function createBasePlan_ChangeDatabaseConfig(): Plan_ChangeDatabaseConfig {
   return {
     target: "",
+    targets: [],
     sheet: "",
     release: "",
     type: Plan_ChangeDatabaseConfig_Type.TYPE_UNSPECIFIED,
@@ -1880,6 +1887,9 @@ export const Plan_ChangeDatabaseConfig: MessageFns<Plan_ChangeDatabaseConfig> = 
   encode(message: Plan_ChangeDatabaseConfig, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.target !== "") {
       writer.uint32(10).string(message.target);
+    }
+    for (const v of message.targets) {
+      writer.uint32(82).string(v!);
     }
     if (message.sheet !== "") {
       writer.uint32(18).string(message.sheet);
@@ -1913,6 +1923,14 @@ export const Plan_ChangeDatabaseConfig: MessageFns<Plan_ChangeDatabaseConfig> = 
           }
 
           message.target = reader.string();
+          continue;
+        }
+        case 10: {
+          if (tag !== 82) {
+            break;
+          }
+
+          message.targets.push(reader.string());
           continue;
         }
         case 2: {
@@ -1975,6 +1993,9 @@ export const Plan_ChangeDatabaseConfig: MessageFns<Plan_ChangeDatabaseConfig> = 
     if (message.target !== "") {
       obj.target = message.target;
     }
+    if (message.targets?.length) {
+      obj.targets = message.targets;
+    }
     if (message.sheet !== "") {
       obj.sheet = message.sheet;
     }
@@ -2005,6 +2026,7 @@ export const Plan_ChangeDatabaseConfig: MessageFns<Plan_ChangeDatabaseConfig> = 
   fromPartial(object: DeepPartial<Plan_ChangeDatabaseConfig>): Plan_ChangeDatabaseConfig {
     const message = createBasePlan_ChangeDatabaseConfig();
     message.target = object.target ?? "";
+    message.targets = object.targets?.map((e) => e) || [];
     message.sheet = object.sheet ?? "";
     message.release = object.release ?? "";
     message.type = object.type ?? Plan_ChangeDatabaseConfig_Type.TYPE_UNSPECIFIED;
