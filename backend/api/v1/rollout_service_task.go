@@ -409,13 +409,9 @@ func getTaskCreatesFromChangeDatabaseConfigWithRelease(ctx context.Context, s *s
 
 		for _, file := range release.Payload.Files {
 			// Skip if this version has already been applied
-			if appliedSha256, exists := appliedVersions[file.Version]; exists {
+			if _, ok := appliedVersions[file.Version]; ok {
 				// Skip files that have been applied with the same content
-				if appliedSha256 == file.SheetSha256 {
-					continue
-				}
-				// If SHA256 differs, it means the file has been modified after being applied
-				// We still skip it but could potentially log a warning
+				// If SHA256 differs, it means the file has been modified after being applied. CheckRelease should have warned it.
 				continue
 			}
 
