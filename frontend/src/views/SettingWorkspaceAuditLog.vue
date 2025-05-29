@@ -12,6 +12,7 @@
             ExportFormat.XLSX,
           ]"
           :tooltip="disableExportTip"
+          :view-mode="'DROPDOWN'"
           :disabled="!hasAuditLogFeature || !!disableExportTip"
           @export="handleExport"
         />
@@ -68,9 +69,16 @@ interface LocalState {
 }
 
 const defaultSearchParams = () => {
+  const to = dayjs().endOf("day");
+  const from = to.add(-30, "day");
   const params: SearchParams = {
     query: "",
-    scopes: [],
+    scopes: [
+      {
+        id: "created",
+        value: `${from.valueOf()},${to.valueOf()}`,
+      },
+    ],
   };
   return params;
 };
