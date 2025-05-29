@@ -104,7 +104,7 @@ func getBatchResults(a *require.Assertions, input string) []batchResult {
 		}
 		return "", io.EOF
 	}
-	batch := NewBatch(scanner)
+	batch := NewBatcher(scanner)
 	var batchResults []batchResult
 	for {
 		command, err := batch.Next()
