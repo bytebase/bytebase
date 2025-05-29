@@ -19,6 +19,7 @@
 </template>
 
 <script lang="tsx" setup>
+import { ArrowUpIcon, ArrowDownIcon, TrashIcon } from "lucide-vue-next";
 import { NButton, NDataTable } from "naive-ui";
 import type { DataTableColumn } from "naive-ui";
 import { computed } from "vue";
@@ -96,14 +97,14 @@ const columns = computed((): DataTableColumn<ApprovalStep>[] => {
             size="tiny"
             onClick={() => reorder(step, index, -1)}
           >
-            <heroicons:arrow-up />
+            <ArrowUpIcon />
           </NButton>
           <NButton
             disabled={index === steps.value.length - 1 || !allowAdmin.value}
             size="tiny"
             onClick={() => reorder(step, index, 1)}
           >
-            <heroicons:arrow-down />
+            <ArrowDownIcon />
           </NButton>
           <SpinnerButton
             size="tiny"
@@ -111,7 +112,7 @@ const columns = computed((): DataTableColumn<ApprovalStep>[] => {
             disabled={!allowAdmin.value}
             onConfirm={() => removeStep(step, index)}
           >
-            <heroicons:trash />
+            <TrashIcon />
           </SpinnerButton>
         </div>
       ),
