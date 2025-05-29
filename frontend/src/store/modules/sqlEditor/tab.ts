@@ -8,8 +8,10 @@ import type {
   CoreSQLEditorTab,
   SQLEditorTab,
   SQLEditorDatabaseQueryContext,
+  BatchQueryContext,
 } from "@/types";
 import { DEFAULT_SQL_EDITOR_TAB_MODE, isValidDatabaseName } from "@/types";
+import { DataSourceType } from "@/types/proto/v1/instance_service";
 import {
   WebStorageHelper,
   defaultSQLEditorTab,
@@ -24,6 +26,7 @@ import {
   useDatabaseV1ByName,
   useEnvironmentV1Store,
   extractUserId,
+  hasFeature,
 } from "../v1";
 import { useSQLEditorStore } from "./editor";
 import {
@@ -198,6 +201,24 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
     return tabById(currId);
   });
 
+  const isInBatchMode = computed(() => {
+    if (!currentTab.value) {
+      return false;
+    }
+    if (!hasFeature("bb.feature.batch-query")) {
+      return false;
+    }
+    const { batchQueryContext } = currentTab.value;
+    if (!batchQueryContext) {
+      return false;
+    }
+    const { databaseGroups = [], databases = [] } = batchQueryContext;
+    if (!hasFeature("bb.feature.database-grouping")) {
+      return databases.length > 1;
+    }
+    return databaseGroups.length > 0 || databases.length > 1;
+  });
+
   // actions
   /**
    *
@@ -247,8 +268,23 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
     if (!id) return;
     updateTab(id, payload);
   };
+  const updateBatchQueryContext = (payload: Partial<BatchQueryContext>) => {
+    const tab = currentTab.value;
+    if (!tab) {
+      return;
+    }
+    updateTab(tab.id, {
+      batchQueryContext: {
+        databases: tab.batchQueryContext?.databases ?? [],
+        dataSourceType:
+          tab.batchQueryContext?.dataSourceType ?? DataSourceType.READ_ONLY,
+        ...tab.batchQueryContext,
+        ...payload,
+      },
+    });
+  };
 
-  const updateQueryContext = ({
+  const updateDatabaseQueryContext = ({
     database,
     contextId,
     context,
@@ -409,13 +445,15 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
     removeTab,
     updateTab,
     updateCurrentTab,
-    updateQueryContext,
+    updateBatchQueryContext,
+    updateDatabaseQueryContext,
     setCurrentTabId,
     selectOrAddSimilarNewTab,
     maybeInitProject,
     reset,
     isDisconnected,
     isSwitchingTab,
+    isInBatchMode,
   };
 });
 

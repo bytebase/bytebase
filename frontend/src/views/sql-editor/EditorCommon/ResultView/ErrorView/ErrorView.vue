@@ -1,6 +1,6 @@
 <template>
   <div
-    class="text-md font-normal flex flex-col gap-2 text-sm"
+    class="w-full text-md font-normal flex flex-col gap-2 text-sm"
     :class="[dark ? 'text-matrix-green-hover' : 'text-control-light']"
   >
     <template v-if="resultSet && resultSet.advices.length > 0">
@@ -11,14 +11,9 @@
         :execute-params="executeParams"
       />
     </template>
-    <template v-else>
-      <div class="flex items-center gap-2">
-        <div class="shrink-0 flex items-center h-6">
-          <CircleAlertIcon class="w-6 h-6 text-error" />
-        </div>
-        <span>{{ error }}</span>
-      </div>
-    </template>
+    <BBAttention v-else class="w-full" type="error">
+      {{ error }}
+    </BBAttention>
     <div v-if="$slots.suffix">
       <slot name="suffix" />
     </div>
@@ -32,11 +27,11 @@
 </template>
 
 <script lang="ts" setup>
-import { CircleAlertIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { Status } from "nice-grpc-common";
 import { storeToRefs } from "pinia";
 import { computed } from "vue";
+import { BBAttention } from "@/bbkit";
 import { useAppFeature, useSQLEditorTabStore } from "@/store";
 import type { SQLEditorQueryParams, SQLResultSetV1 } from "@/types";
 import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";

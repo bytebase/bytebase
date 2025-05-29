@@ -1804,7 +1804,14 @@
       "batch": "Batch",
       "select-database-group": "You can {select-database-group} to batch query",
       "description": "Batch query {database} additional databases and {group} database groups under {project}.",
-      "show-or-hide-empty-query-results": "Show / hide empty query results"
+      "show-or-hide-empty-query-results": "Show / hide empty query results",
+      "select-data-source": {
+        "self": "Select data source for batch",
+        "tooltip": "Will find available data sources with restriction policy, then apply the selection.",
+        "admin": "Admin",
+        "readonly": "Read-only",
+        "not-match": "Data source not match, expect {expect} but got {actual}."
+      }
     },
     "execute-query": "Execute query",
     "pending-query": "Pending query",

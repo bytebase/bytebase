@@ -235,7 +235,6 @@ import {
   hasPermissionToCreateRequestGrantIssue,
   instanceV1HasStructuredQueryResult,
   isNullOrUndefined,
-  ensureDataSourceSelection,
 } from "@/utils";
 import DataBlock from "./DataBlock.vue";
 import DataTable from "./DataTable";
@@ -459,18 +458,10 @@ const handleExportBtnClick = async (
   const admin = tabStore.currentTab?.mode === "ADMIN";
   const limit = options.limit ?? (admin ? 0 : editorStore.resultRowsLimit);
 
-  const dataSourceId =
-    ensureDataSourceSelection(
-      props.database?.instance === props.params.connection.instance
-        ? props.params.connection.dataSourceId
-        : undefined,
-      props.database
-    ) ?? "";
-
   try {
     const content = await useSQLStore().exportData({
       name: databaseName,
-      dataSourceId,
+      dataSourceId: props.params.connection.dataSourceId ?? "",
       format: options.format,
       statement,
       limit,
