@@ -144,7 +144,7 @@ func (b *Batcher) Batch() *Batch {
 	return &Batch{
 		Text:  string(b.buffer),
 		Start: b.beginByteOffset,
-		End:   b.beginByteOffset + len(b.buffer),
+		End:   b.beginByteOffset + len(string(b.buffer)),
 	}
 }
 
