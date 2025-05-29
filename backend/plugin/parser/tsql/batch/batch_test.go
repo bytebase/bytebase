@@ -3,7 +3,6 @@ package batch
 import (
 	"io"
 	"os"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -95,16 +94,7 @@ func TestBatch(t *testing.T) {
 }
 
 func getBatchResults(a *require.Assertions, input string) []batchResult {
-	s := strings.Split(input, "\n")
-	scanner := func() (string, error) {
-		if len(s) > 0 {
-			z := s[0]
-			s = s[1:]
-			return z, nil
-		}
-		return "", io.EOF
-	}
-	batch := NewBatcher(scanner)
+	batch := NewBatcher(input)
 	var batchResults []batchResult
 	for {
 		command, err := batch.Next()
