@@ -616,22 +616,6 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 						return nil, err
 					}
 
-					// version
-					if err := func() error {
-						switch newTaskType {
-						case base.TaskDatabaseSchemaUpdate, base.TaskDatabaseSchemaUpdateGhost, base.TaskDatabaseDataUpdate:
-						default:
-							return nil
-						}
-						if v := spec.GetChangeDatabaseConfig().GetSchemaVersion(); v != "" && v != task.Payload.GetSchemaVersion() {
-							taskPatch.SchemaVersion = &v
-							doUpdate = true
-						}
-						return nil
-					}(); err != nil {
-						return nil, err
-					}
-
 					if !doUpdate {
 						continue
 					}
@@ -1145,10 +1129,9 @@ func getSpecs(database *store.DatabaseMessage, revisions []*store.RevisionMessag
 			},
 			Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
 				ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
-					Type:          convertReleaseFileChangeTypeToPlanSpecType(file.ChangeType),
-					Target:        common.FormatDatabase(database.InstanceID, database.DatabaseName),
-					Sheet:         file.Sheet,
-					SchemaVersion: file.Version,
+					Type:   convertReleaseFileChangeTypeToPlanSpecType(file.ChangeType),
+					Target: common.FormatDatabase(database.InstanceID, database.DatabaseName),
+					Sheet:  file.Sheet,
 				},
 			},
 		}
