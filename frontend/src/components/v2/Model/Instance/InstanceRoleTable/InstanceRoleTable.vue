@@ -1,27 +1,19 @@
 <template>
-  <BBGrid
-    class="border"
-    :column-list="columnList"
-    :data-source="instanceRoleList"
-    :row-clickable="false"
+  <NDataTable
+    size="small"
+    :columns="columns"
+    :data="instanceRoleList"
+    :striped="true"
+    :bordered="true"
     v-bind="$attrs"
-  >
-    <template #item="{ item: instanceRole }: { item: InstanceRole }">
-      <div class="bb-grid-cell">
-        {{ instanceRole.roleName }}
-      </div>
-      <div class="bb-grid-cell whitespace-pre-wrap break-all">
-        {{ (instanceRole.attribute ?? "").replaceAll("\n", "\n\n") }}
-      </div>
-    </template>
-  </BBGrid>
+  />
 </template>
 
-<script lang="ts" setup>
+<script lang="tsx" setup>
+import { NDataTable } from "naive-ui";
+import type { DataTableColumn } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import type { BBGridColumn } from "@/bbkit";
-import { BBGrid } from "@/bbkit";
 import type { InstanceRole } from "@/types/proto/v1/instance_role_service";
 
 defineProps<{
@@ -29,14 +21,21 @@ defineProps<{
 }>();
 
 const { t } = useI18n();
-const columnList = computed((): BBGridColumn[] => [
+const columns = computed((): DataTableColumn<InstanceRole>[] => [
   {
     title: t("common.user"),
-    width: "minmax(auto, 12rem)",
+    key: "user",
+    width: 200,
+    render: (instanceRole) => instanceRole.roleName,
   },
   {
     title: t("instance.grants"),
-    width: "1fr",
+    key: "grants",
+    render: (instanceRole) => (
+      <div class="whitespace-pre-wrap break-all">
+        {(instanceRole.attribute ?? "").replaceAll("\n", "\n\n")}
+      </div>
+    ),
   },
 ]);
 </script>

@@ -1,43 +1,19 @@
 <template>
-  <BBGrid
-    :data-source="changes"
-    :column-list="columns"
-    :show-placeholder="true"
-    :row-clickable="true"
-    class="border"
-    @click-row="handleClickRow"
-  >
-    <template #item="{ item: change, row }: BBGridRow<Change>">
-      <div v-if="reorderMode" class="bb-grid-cell justify-center gap-x-1">
-        <ReorderButtons
-          v-if="reorderMode"
-          :row="row"
-          :changes="changes"
-          @move="$emit('reorder-move', row, $event)"
-        />
-      </div>
-      <div class="bb-grid-cell">
-        <Source :change="change" />
-      </div>
-
-      <div class="bb-grid-cell">
-        <DatabaseForChange :change="change" />
-      </div>
-      <div class="bb-grid-cell">
-        <SQL :change="change" />
-      </div>
-      <div class="bb-grid-cell">
-        <RemoveChangeButton @click="$emit('remove-change', change)" />
-      </div>
-    </template>
-  </BBGrid>
+  <NDataTable
+    size="small"
+    :columns="columns"
+    :data="changes"
+    :striped="true"
+    :bordered="true"
+    :row-props="getRowProps"
+  />
 </template>
 
-<script setup lang="ts">
+<script setup lang="tsx">
+import { NDataTable } from "naive-ui";
+import type { DataTableColumn } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import type { BBGridColumn, BBGridRow } from "@/bbkit";
-import { BBGrid } from "@/bbkit";
 import type { Changelist_Change as Change } from "@/types/proto/v1/changelist_service";
 import DatabaseForChange from "./DatabaseForChange.vue";
 import RemoveChangeButton from "./RemoveChangeButton.vue";
@@ -58,28 +34,63 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 
-const columns = computed((): BBGridColumn[] => {
-  const columns: BBGridColumn[] = [
-    { title: t("changelist.change-source.source"), width: "auto" },
-    { title: t("common.database"), width: "1fr" },
-    { title: t("common.sql"), width: "3fr" },
-    {
-      title: "",
-      width: "6rem",
-    },
-  ];
+const columns = computed((): DataTableColumn<Change>[] => {
+  const cols: DataTableColumn<Change>[] = [];
+
   if (props.reorderMode) {
-    columns.unshift({
+    cols.push({
       title: "",
-      width: "4rem",
-      class: "justify-center",
+      key: "reorder",
+      width: 64,
+      align: "center",
+      render: (change, index) => (
+        <div class="flex justify-center gap-x-1">
+          <ReorderButtons
+            row={index}
+            changes={props.changes}
+            onMove={(delta: -1 | 1) => emit("reorder-move", index, delta)}
+          />
+        </div>
+      ),
     });
   }
 
-  return columns;
+  cols.push(
+    {
+      title: t("changelist.change-source.source"),
+      key: "source",
+      width: 120,
+      render: (change) => <Source change={change} />,
+    },
+    {
+      title: t("common.database"),
+      key: "database",
+      render: (change) => <DatabaseForChange change={change} />,
+    },
+    {
+      title: t("common.sql"),
+      key: "sql",
+      render: (change) => <SQL change={change} />,
+    },
+    {
+      title: "",
+      key: "operations",
+      width: 96,
+      render: (change) => (
+        <RemoveChangeButton onClick={() => emit("remove-change", change)} />
+      ),
+    }
+  );
+
+  return cols;
 });
 
-const handleClickRow = (item: Change) => {
-  emit("select-change", item);
+const getRowProps = (change: Change) => {
+  return {
+    style: "cursor: pointer;",
+    onClick: () => {
+      emit("select-change", change);
+    },
+  };
 };
 </script>
