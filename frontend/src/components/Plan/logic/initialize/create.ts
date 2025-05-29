@@ -101,8 +101,7 @@ const buildSpecs = async (
 const buildSpecForTarget = async (
   target: string,
   { project, query }: CreatePlanParams,
-  sheetUID?: string,
-  version?: string
+  sheetUID?: string
 ) => {
   const sheet = `${project.name}/sheets/${sheetUID ?? nextUID()}`;
   const template = query.template as IssueType | undefined;
@@ -141,9 +140,6 @@ const buildSpecForTarget = async (
         spec.changeDatabaseConfig.sheet = remoteSheet.name;
       }
     }
-    if (version) {
-      spec.changeDatabaseConfig.schemaVersion = version;
-    }
   }
   return spec;
 };
@@ -165,12 +161,7 @@ const buildSpecsViaChangelist = async (
       const sheetName = `${params.project.name}/sheets/${sheetUID}`;
       const sheet = getLocalSheetByName(sheetName);
       setSheetStatement(sheet, statement);
-      const spec = await buildSpecForTarget(
-        db,
-        params,
-        sheetUID,
-        change.version
-      );
+      const spec = await buildSpecForTarget(db, params, sheetUID);
       specs.push(spec);
     }
   }

@@ -80,9 +80,7 @@ type Changelist_Change struct {
 	// The source of origin.
 	// 1) changes: instances/{instance}/databases/{database}/changelogs/{changelog}.
 	// 2) raw SQL if empty.
-	Source string `protobuf:"bytes,2,opt,name=source,proto3" json:"source,omitempty"`
-	// The migration version for a change.
-	Version       string `protobuf:"bytes,3,opt,name=version,proto3" json:"version,omitempty"`
+	Source        string `protobuf:"bytes,2,opt,name=source,proto3" json:"source,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -131,26 +129,18 @@ func (x *Changelist_Change) GetSource() string {
 	return ""
 }
 
-func (x *Changelist_Change) GetVersion() string {
-	if x != nil {
-		return x.Version
-	}
-	return ""
-}
-
 var File_store_changelist_proto protoreflect.FileDescriptor
 
 const file_store_changelist_proto_rawDesc = "" +
 	"\n" +
-	"\x16store/changelist.proto\x12\x0ebytebase.store\"\xbd\x01\n" +
+	"\x16store/changelist.proto\x12\x0ebytebase.store\"\xa3\x01\n" +
 	"\n" +
 	"Changelist\x12 \n" +
 	"\vdescription\x18\x01 \x01(\tR\vdescription\x12;\n" +
-	"\achanges\x18\x02 \x03(\v2!.bytebase.store.Changelist.ChangeR\achanges\x1aP\n" +
+	"\achanges\x18\x02 \x03(\v2!.bytebase.store.Changelist.ChangeR\achanges\x1a6\n" +
 	"\x06Change\x12\x14\n" +
 	"\x05sheet\x18\x01 \x01(\tR\x05sheet\x12\x16\n" +
-	"\x06source\x18\x02 \x01(\tR\x06source\x12\x18\n" +
-	"\aversion\x18\x03 \x01(\tR\aversionB\x14Z\x12generated-go/storeb\x06proto3"
+	"\x06source\x18\x02 \x01(\tR\x06sourceB\x14Z\x12generated-go/storeb\x06proto3"
 
 var (
 	file_store_changelist_proto_rawDescOnce sync.Once

@@ -5888,7 +5888,6 @@ For example: - filter = &#34;method == &#39;/bytebase.v1.SQLService/Query&#39;&#
 | ----- | ---- | ----- | ----------- |
 | sheet | [string](#string) |  | The name of a sheet. |
 | source | [string](#string) |  | The source of origin. 1) changelog: instances/{instance}/databases/{database}/changelogs/{changelog}. 2) raw SQL if empty. |
-| version | [string](#string) |  | The migration version for a change. |
 
 
 

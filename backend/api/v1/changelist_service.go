@@ -255,9 +255,8 @@ func convertV1ChangelistPayload(changelist *v1pb.Changelist) *storepb.Changelist
 	}
 	for _, change := range changelist.Changes {
 		storeChangelist.Changes = append(storeChangelist.Changes, &storepb.Changelist_Change{
-			Sheet:   change.Sheet,
-			Source:  change.Source,
-			Version: change.Version,
+			Sheet:  change.Sheet,
+			Source: change.Source,
 		})
 	}
 	return storeChangelist
@@ -280,9 +279,8 @@ func (s *ChangelistService) convertStoreChangelist(ctx context.Context, changeli
 	}
 	for _, change := range changelist.Payload.Changes {
 		v1Changelist.Changes = append(v1Changelist.Changes, &v1pb.Changelist_Change{
-			Sheet:   change.Sheet,
-			Source:  change.Source,
-			Version: change.Version,
+			Sheet:  change.Sheet,
+			Source: change.Source,
 		})
 	}
 	return v1Changelist, nil
