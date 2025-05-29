@@ -2,8 +2,10 @@ package batch
 
 import (
 	"fmt"
+	"io"
 	"regexp"
 	"strconv"
+	"strings"
 )
 
 /*
@@ -17,6 +19,15 @@ const (
 	// minCapIncrease is the minimum number of bytes to grow the buffer by.
 	minCapIncrease = 512
 )
+
+// Batch is a batch of Transact-SQL statements.
+type Batch struct {
+	Text string `yaml:"text"`
+	// Inclusive start position of the batch in the original script, starting from 0 and calculated by byte offset.
+	Start int `yaml:"start"`
+	// Exclusive end position of the batch in the original script, starting from 0 and calculated by byte offset.
+	End int `yaml:"end"`
+}
 
 type Command interface {
 	// String returns the string representation of the command.
@@ -77,11 +88,35 @@ func buildGoCommand(input string) Command {
 	}
 }
 
-type Scan func() (string, error)
+type scan func() (string, int, error)
 
-type Batch struct {
+func newDefaultScan(statement string) scan {
+	// Split the statement into lines to support some client commands like GO.
+	s := strings.Split(statement, string(lineEnd))
+	byteOffset := 0
+	scanner := func() (string, int, error) {
+		if len(s) > 0 {
+			z := s[0]
+			s = s[1:]
+			byteOffsetSnapshot := byteOffset
+			byteOffset += len(z)
+			if len(s) > 0 {
+				byteOffset += len(lineEnd)
+			}
+			return z, byteOffsetSnapshot, nil
+		}
+		return "", byteOffset, io.EOF
+	}
+	return scanner
+}
+
+type Batcher struct {
 	// read provides the next chunk of runes.
-	read Scan
+	read scan
+	// beginByteOffset is the byte offset of the first byte of the current buffer in the original script.
+	beginByteOffset int
+	// firstByteOffset is the byte offset of the first byte of the current raw content in the original script.
+	firstByteOffset int
 	// buffer is the current batch text.
 	buffer []rune
 	// length is the length of the statement.
@@ -96,27 +131,33 @@ type Batch struct {
 	comment bool
 }
 
-// NewBatch returns a new Batch.
-func NewBatch(read Scan) *Batch {
-	return &Batch{
-		read: read,
+// NewBatcher returns a new Batch.
+func NewBatcher(statement string) *Batcher {
+	scanner := newDefaultScan(statement)
+	return &Batcher{
+		read: scanner,
 	}
 }
 
-// String returns the current SQL batch next.
-func (b *Batch) String() string {
-	return string(b.buffer)
+// Batch returns the current SQL batch text.
+func (b *Batcher) Batch() *Batch {
+	return &Batch{
+		Text:  string(b.buffer),
+		Start: b.beginByteOffset,
+		End:   b.beginByteOffset + len(b.buffer),
+	}
 }
 
 // Next returns the next command in the batch.
-func (b *Batch) Next() (Command, error) {
+func (b *Batcher) Next() (Command, error) {
 	var i int
 
 	if b.rawLen == 0 {
-		s, err := b.read()
+		s, firstByteOffset, err := b.read()
 		if err != nil {
 			return nil, err
 		}
+		b.firstByteOffset = firstByteOffset
 		b.raw = []rune(s)
 		b.rawLen = len(b.raw)
 	}
@@ -196,11 +237,12 @@ parse:
 //
 // After a call to append, b.Len will be len(b.Buf)+len(sep)+len(r). Call Reset
 // to reset the Buf.
-func (b *Batch) append(r, sep []rune) {
+func (b *Batcher) append(r, sep []rune) {
 	rlen := len(r)
 	// initial
 	if b.buffer == nil {
 		b.buffer, b.length = r, rlen
+		b.beginByteOffset = b.firstByteOffset
 		return
 	}
 	blen, seplen := b.length, len(sep)
@@ -223,7 +265,7 @@ func (b *Batch) append(r, sep []rune) {
 // or not the string's end was found.
 // If the string's terminator was not found, then the result will be the passed
 // end.
-func (*Batch) readString(r []rune, i, end int, quote rune) (int, bool) {
+func (*Batcher) readString(r []rune, i, end int, quote rune) (int, bool) {
 	var prev, c, next rune
 	for ; i < end; i++ {
 		c, next = r[i], grab(r, i+1, end)
@@ -243,7 +285,7 @@ func (*Batch) readString(r []rune, i, end int, quote rune) (int, bool) {
 }
 
 // Reset clears the current batch text and replaces it with new runes.
-func (b *Batch) Reset(r []rune) {
+func (b *Batcher) Reset(r []rune) {
 	b.buffer, b.length = nil, 0
 	b.quote = 0
 	b.comment = false
