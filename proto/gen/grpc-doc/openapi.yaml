@@ -11200,11 +11200,6 @@ components:
                         - DATA
                     type: string
                     format: enum
-                schemaVersion:
-                    type: string
-                    description: |-
-                        schema_version is parsed from file name.
-                         It is automatically generated in the UI workflow.
                 ghostFlags:
                     type: object
                     additionalProperties:

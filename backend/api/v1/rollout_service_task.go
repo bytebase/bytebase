@@ -351,9 +351,8 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s
 			EnvironmentID: database.EffectiveEnvironmentID,
 			Type:          base.TaskDatabaseSchemaUpdate,
 			Payload: &storepb.TaskPayload{
-				SpecId:        spec.Id,
-				SheetId:       int32(sheetUID),
-				SchemaVersion: c.SchemaVersion,
+				SpecId:  spec.Id,
+				SheetId: int32(sheetUID),
 				TaskReleaseSource: &storepb.TaskReleaseSource{
 					File: spec.SpecReleaseSource.GetFile(),
 				},
@@ -375,10 +374,9 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s
 			EnvironmentID: database.EffectiveEnvironmentID,
 			Type:          base.TaskDatabaseSchemaUpdateGhost,
 			Payload: &storepb.TaskPayload{
-				SpecId:        spec.Id,
-				SheetId:       int32(sheetUID),
-				SchemaVersion: c.SchemaVersion,
-				Flags:         c.GhostFlags,
+				SpecId:  spec.Id,
+				SheetId: int32(sheetUID),
+				Flags:   c.GhostFlags,
 				TaskReleaseSource: &storepb.TaskReleaseSource{
 					File: spec.SpecReleaseSource.GetFile(),
 				},
@@ -403,7 +401,6 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s
 			Payload: &storepb.TaskPayload{
 				SpecId:                spec.Id,
 				SheetId:               int32(sheetUID),
-				SchemaVersion:         c.SchemaVersion,
 				PreUpdateBackupDetail: preUpdateBackupDetail,
 				TaskReleaseSource: &storepb.TaskReleaseSource{
 					File: spec.SpecReleaseSource.GetFile(),

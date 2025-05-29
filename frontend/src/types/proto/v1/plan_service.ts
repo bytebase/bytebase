@@ -225,11 +225,6 @@ export interface Plan_ChangeDatabaseConfig {
    */
   sheet: string;
   type: Plan_ChangeDatabaseConfig_Type;
-  /**
-   * schema_version is parsed from file name.
-   * It is automatically generated in the UI workflow.
-   */
-  schemaVersion: string;
   ghostFlags: { [key: string]: string };
   /** If set, a backup of the modified data will be created automatically before any changes are applied. */
   preUpdateBackupDetail?: Plan_ChangeDatabaseConfig_PreUpdateBackupDetail | undefined;
@@ -1929,7 +1924,6 @@ function createBasePlan_ChangeDatabaseConfig(): Plan_ChangeDatabaseConfig {
     target: "",
     sheet: "",
     type: Plan_ChangeDatabaseConfig_Type.TYPE_UNSPECIFIED,
-    schemaVersion: "",
     ghostFlags: {},
     preUpdateBackupDetail: undefined,
   };
@@ -1945,9 +1939,6 @@ export const Plan_ChangeDatabaseConfig: MessageFns<Plan_ChangeDatabaseConfig> = 
     }
     if (message.type !== Plan_ChangeDatabaseConfig_Type.TYPE_UNSPECIFIED) {
       writer.uint32(24).int32(plan_ChangeDatabaseConfig_TypeToNumber(message.type));
-    }
-    if (message.schemaVersion !== "") {
-      writer.uint32(34).string(message.schemaVersion);
     }
     Object.entries(message.ghostFlags).forEach(([key, value]) => {
       Plan_ChangeDatabaseConfig_GhostFlagsEntry.encode({ key: key as any, value }, writer.uint32(58).fork()).join();
@@ -1988,14 +1979,6 @@ export const Plan_ChangeDatabaseConfig: MessageFns<Plan_ChangeDatabaseConfig> = 
           }
 
           message.type = plan_ChangeDatabaseConfig_TypeFromJSON(reader.int32());
-          continue;
-        }
-        case 4: {
-          if (tag !== 34) {
-            break;
-          }
-
-          message.schemaVersion = reader.string();
           continue;
         }
         case 7: {
@@ -2040,9 +2023,6 @@ export const Plan_ChangeDatabaseConfig: MessageFns<Plan_ChangeDatabaseConfig> = 
     if (message.type !== Plan_ChangeDatabaseConfig_Type.TYPE_UNSPECIFIED) {
       obj.type = plan_ChangeDatabaseConfig_TypeToJSON(message.type);
     }
-    if (message.schemaVersion !== "") {
-      obj.schemaVersion = message.schemaVersion;
-    }
     if (message.ghostFlags) {
       const entries = Object.entries(message.ghostFlags);
       if (entries.length > 0) {
@@ -2066,7 +2046,6 @@ export const Plan_ChangeDatabaseConfig: MessageFns<Plan_ChangeDatabaseConfig> = 
     message.target = object.target ?? "";
     message.sheet = object.sheet ?? "";
     message.type = object.type ?? Plan_ChangeDatabaseConfig_Type.TYPE_UNSPECIFIED;
-    message.schemaVersion = object.schemaVersion ?? "";
     message.ghostFlags = Object.entries(object.ghostFlags ?? {}).reduce<{ [key: string]: string }>(
       (acc, [key, value]) => {
         if (value !== undefined) {

@@ -110,11 +110,10 @@ func convertToPlanSpecChangeDatabaseConfig(config *storepb.PlanConfig_Spec_Chang
 	c := config.ChangeDatabaseConfig
 	return &v1pb.Plan_Spec_ChangeDatabaseConfig{
 		ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
-			Target:        c.Target,
-			Sheet:         c.Sheet,
-			Type:          convertToPlanSpecChangeDatabaseConfigType(c.Type),
-			SchemaVersion: c.SchemaVersion,
-			GhostFlags:    c.GhostFlags,
+			Target:     c.Target,
+			Sheet:      c.Sheet,
+			Type:       convertToPlanSpecChangeDatabaseConfigType(c.Type),
+			GhostFlags: c.GhostFlags,
 			PreUpdateBackupDetail: &v1pb.Plan_ChangeDatabaseConfig_PreUpdateBackupDetail{
 				Database: c.PreUpdateBackupDetail.GetDatabase(),
 			},
@@ -290,7 +289,6 @@ func convertPlanSpecChangeDatabaseConfig(config *v1pb.Plan_Spec_ChangeDatabaseCo
 			Target:                c.Target,
 			Sheet:                 c.Sheet,
 			Type:                  storepb.PlanConfig_ChangeDatabaseConfig_Type(c.Type),
-			SchemaVersion:         c.SchemaVersion,
 			GhostFlags:            c.GhostFlags,
 			PreUpdateBackupDetail: preUpdateBackupDetail,
 		},
