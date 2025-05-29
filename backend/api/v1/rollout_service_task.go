@@ -21,7 +21,7 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-func transformDatabaseGroupSpecs(specs []*storepb.PlanConfig_Spec, deployment *storepb.PlanConfig_Deployment) {
+func applyDatabaseGroupSpecTransformations(specs []*storepb.PlanConfig_Spec, deployment *storepb.PlanConfig_Deployment) {
 	for _, spec := range specs {
 		if config := spec.GetChangeDatabaseConfig(); config != nil {
 			// transform database group.
