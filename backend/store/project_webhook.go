@@ -23,8 +23,8 @@ type ProjectWebhookMessage struct {
 	Title string
 	// URL is the webhook URL.
 	URL string
-	// ActivityList is the list of activities that the webhook is interested in.
-	ActivityList []string
+	// Events is the list of activities that the webhook is interested in.
+	Events []string
 	// Output only fields.
 	//
 	// ID is the unique identifier of the project webhook.
@@ -39,9 +39,9 @@ type UpdateProjectWebhookMessage struct {
 	Title *string
 	// URL is the webhook URL.
 	URL *string
-	// ActivityList is the list of activities that the webhook is interested in.
-	ActivityList []string
-	Payload      *storepb.ProjectWebhookPayload
+	// Events is the list of activities that the webhook is interested in.
+	Events  []string
+	Payload *storepb.ProjectWebhookPayload
 }
 
 // FindProjectWebhookMessage is the message for finding project webhooks,
@@ -77,12 +77,12 @@ func (s *Store) CreateProjectWebhookV2(ctx context.Context, projectID string, cr
 	}
 
 	projectWebhook := ProjectWebhookMessage{
-		Type:         create.Type,
-		Title:        create.Title,
-		URL:          create.URL,
-		ActivityList: create.ActivityList,
-		ProjectID:    create.ProjectID,
-		Payload:      create.Payload,
+		Type:      create.Type,
+		Title:     create.Title,
+		URL:       create.URL,
+		Events:    create.Events,
+		ProjectID: create.ProjectID,
+		Payload:   create.Payload,
 	}
 
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -95,7 +95,7 @@ func (s *Store) CreateProjectWebhookV2(ctx context.Context, projectID string, cr
 		create.Type,
 		create.Title,
 		create.URL,
-		create.ActivityList,
+		create.Events,
 		payload,
 	).Scan(
 		&projectWebhook.ID,
@@ -170,7 +170,7 @@ func (s *Store) UpdateProjectWebhookV2(ctx context.Context, projectResourceID st
 	if v := update.URL; v != nil {
 		set, args = append(set, fmt.Sprintf("url = $%d", len(args)+1)), append(args, *v)
 	}
-	if v := update.ActivityList; v != nil {
+	if v := update.Events; v != nil {
 		set, args = append(set, fmt.Sprintf("activity_list = $%d", len(args)+1)), append(args, v)
 	}
 	if v := update.Payload; v != nil {
@@ -210,7 +210,7 @@ func (s *Store) UpdateProjectWebhookV2(ctx context.Context, projectResourceID st
 		}
 		return nil, err
 	}
-	if err := txtArray.AssignTo(&projectWebhook.ActivityList); err != nil {
+	if err := txtArray.AssignTo(&projectWebhook.Events); err != nil {
 		return nil, err
 	}
 	if err := common.ProtojsonUnmarshaler.Unmarshal(payload, projectWebhook.Payload); err != nil {
@@ -293,7 +293,7 @@ func (*Store) findProjectWebhookImplV2(ctx context.Context, txn *sql.Tx, find *F
 			return nil, err
 		}
 
-		if err := txtArray.AssignTo(&projectWebhook.ActivityList); err != nil {
+		if err := txtArray.AssignTo(&projectWebhook.Events); err != nil {
 			return nil, err
 		}
 		if err := common.ProtojsonUnmarshaler.Unmarshal(payload, projectWebhook.Payload); err != nil {
@@ -301,7 +301,7 @@ func (*Store) findProjectWebhookImplV2(ctx context.Context, txn *sql.Tx, find *F
 		}
 
 		if v := find.EventType; v != nil {
-			for _, activity := range projectWebhook.ActivityList {
+			for _, activity := range projectWebhook.Events {
 				if base.EventType(activity) == *v {
 					projectWebhooks = append(projectWebhooks, &projectWebhook)
 					break
