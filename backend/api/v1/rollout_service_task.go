@@ -353,9 +353,6 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s
 			Payload: &storepb.TaskPayload{
 				SpecId:  spec.Id,
 				SheetId: int32(sheetUID),
-				TaskReleaseSource: &storepb.TaskReleaseSource{
-					File: spec.SpecReleaseSource.GetFile(),
-				},
 			},
 		}
 		return []*store.TaskMessage{taskCreate}, nil
@@ -377,9 +374,6 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s
 				SpecId:  spec.Id,
 				SheetId: int32(sheetUID),
 				Flags:   c.GhostFlags,
-				TaskReleaseSource: &storepb.TaskReleaseSource{
-					File: spec.SpecReleaseSource.GetFile(),
-				},
 			},
 		}
 		return []*store.TaskMessage{taskCreate}, nil
@@ -402,9 +396,6 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s
 				SpecId:                spec.Id,
 				SheetId:               int32(sheetUID),
 				PreUpdateBackupDetail: preUpdateBackupDetail,
-				TaskReleaseSource: &storepb.TaskReleaseSource{
-					File: spec.SpecReleaseSource.GetFile(),
-				},
 			},
 		}
 		return []*store.TaskMessage{taskCreate}, nil

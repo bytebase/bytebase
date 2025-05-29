@@ -27,6 +27,10 @@ import { State } from "@/types/proto/v1/common";
 const { issue } = useIssueContext();
 
 const { release, ready } = useReleaseByName(
-  issue.value.planEntity?.releaseSource?.release || ""
+  (() => {
+    return issue.value.planEntity?.specs.find(spec => 
+      spec.changeDatabaseConfig?.release
+    )?.changeDatabaseConfig?.release || "";
+  })()
 );
 </script>

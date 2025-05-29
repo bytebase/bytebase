@@ -304,7 +304,7 @@ const allowEditStatementWhenCreating = computed(() => {
     return false;
   }
   // Do not allow to edit statement for the plan with release source.
-  if (issue.value.planEntity?.releaseSource?.release) {
+  if ((issue.value.planEntity?.specs?.filter(spec => spec.changeDatabaseConfig?.release)??[]).length > 0) {
     return false;
   }
   return true;
@@ -360,7 +360,7 @@ const shouldShowEditButton = computed(() => {
     return false;
   }
   // Do not allow to edit statement for the plan with release source.
-  if (issue.value.planEntity?.releaseSource?.release) {
+  if ((issue.value.planEntity?.specs?.filter(spec => spec.changeDatabaseConfig?.release)??[]).length > 0) {
     return false;
   }
   // Will show another button group as [Upload][Cancel][Save]

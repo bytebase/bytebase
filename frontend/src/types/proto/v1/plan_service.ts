@@ -161,7 +161,6 @@ export interface Plan {
    * - ERROR
    */
   planCheckRunStatusCount: { [key: string]: number };
-  releaseSource: Plan_ReleaseSource | undefined;
   deployment: Plan_Deployment | undefined;
 }
 
@@ -173,7 +172,6 @@ export interface Plan_Step {
 export interface Plan_Spec {
   /** A UUID4 string that uniquely identifies the Spec. */
   id: string;
-  specReleaseSource: Plan_SpecReleaseSource | undefined;
   createDatabaseConfig?: Plan_CreateDatabaseConfig | undefined;
   changeDatabaseConfig?: Plan_ChangeDatabaseConfig | undefined;
   exportDataConfig?: Plan_ExportDataConfig | undefined;
@@ -224,6 +222,11 @@ export interface Plan_ChangeDatabaseConfig {
    * Format: projects/{project}/sheets/{sheet}
    */
   sheet: string;
+  /**
+   * The resource name of the release.
+   * Format: projects/{project}/releases/{release}
+   */
+  release: string;
   type: Plan_ChangeDatabaseConfig_Type;
   ghostFlags: { [key: string]: string };
   /** If set, a backup of the modified data will be created automatically before any changes are applied. */
@@ -349,22 +352,6 @@ export interface Plan_Deployment_DatabaseGroupMapping {
   databaseGroup: string;
   /** Format: instances/{instance-id}/databases/{database-name}. */
   databases: string[];
-}
-
-export interface Plan_ReleaseSource {
-  /**
-   * The release.
-   * Format: projects/{project}/releases/{release}
-   */
-  release: string;
-}
-
-export interface Plan_SpecReleaseSource {
-  /**
-   * Format: projects/{project}/releases/{release}/files/{file}
-   * {file} is URL path escaped.
-   */
-  file: string;
 }
 
 export interface ListPlanCheckRunsRequest {
@@ -1241,7 +1228,6 @@ function createBasePlan(): Plan {
     createTime: undefined,
     updateTime: undefined,
     planCheckRunStatusCount: {},
-    releaseSource: undefined,
     deployment: undefined,
   };
 }
@@ -1278,9 +1264,6 @@ export const Plan: MessageFns<Plan> = {
     Object.entries(message.planCheckRunStatusCount).forEach(([key, value]) => {
       Plan_PlanCheckRunStatusCountEntry.encode({ key: key as any, value }, writer.uint32(90).fork()).join();
     });
-    if (message.releaseSource !== undefined) {
-      Plan_ReleaseSource.encode(message.releaseSource, writer.uint32(98).fork()).join();
-    }
     if (message.deployment !== undefined) {
       Plan_Deployment.encode(message.deployment, writer.uint32(106).fork()).join();
     }
@@ -1377,14 +1360,6 @@ export const Plan: MessageFns<Plan> = {
           }
           continue;
         }
-        case 12: {
-          if (tag !== 98) {
-            break;
-          }
-
-          message.releaseSource = Plan_ReleaseSource.decode(reader, reader.uint32());
-          continue;
-        }
         case 13: {
           if (tag !== 106) {
             break;
@@ -1440,9 +1415,6 @@ export const Plan: MessageFns<Plan> = {
         });
       }
     }
-    if (message.releaseSource !== undefined) {
-      obj.releaseSource = Plan_ReleaseSource.toJSON(message.releaseSource);
-    }
     if (message.deployment !== undefined) {
       obj.deployment = Plan_Deployment.toJSON(message.deployment);
     }
@@ -1475,9 +1447,6 @@ export const Plan: MessageFns<Plan> = {
       }
       return acc;
     }, {});
-    message.releaseSource = (object.releaseSource !== undefined && object.releaseSource !== null)
-      ? Plan_ReleaseSource.fromPartial(object.releaseSource)
-      : undefined;
     message.deployment = (object.deployment !== undefined && object.deployment !== null)
       ? Plan_Deployment.fromPartial(object.deployment)
       : undefined;
@@ -1555,22 +1524,13 @@ export const Plan_Step: MessageFns<Plan_Step> = {
 };
 
 function createBasePlan_Spec(): Plan_Spec {
-  return {
-    id: "",
-    specReleaseSource: undefined,
-    createDatabaseConfig: undefined,
-    changeDatabaseConfig: undefined,
-    exportDataConfig: undefined,
-  };
+  return { id: "", createDatabaseConfig: undefined, changeDatabaseConfig: undefined, exportDataConfig: undefined };
 }
 
 export const Plan_Spec: MessageFns<Plan_Spec> = {
   encode(message: Plan_Spec, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.id !== "") {
       writer.uint32(42).string(message.id);
-    }
-    if (message.specReleaseSource !== undefined) {
-      Plan_SpecReleaseSource.encode(message.specReleaseSource, writer.uint32(66).fork()).join();
     }
     if (message.createDatabaseConfig !== undefined) {
       Plan_CreateDatabaseConfig.encode(message.createDatabaseConfig, writer.uint32(10).fork()).join();
@@ -1597,14 +1557,6 @@ export const Plan_Spec: MessageFns<Plan_Spec> = {
           }
 
           message.id = reader.string();
-          continue;
-        }
-        case 8: {
-          if (tag !== 66) {
-            break;
-          }
-
-          message.specReleaseSource = Plan_SpecReleaseSource.decode(reader, reader.uint32());
           continue;
         }
         case 1: {
@@ -1645,9 +1597,6 @@ export const Plan_Spec: MessageFns<Plan_Spec> = {
     if (message.id !== "") {
       obj.id = message.id;
     }
-    if (message.specReleaseSource !== undefined) {
-      obj.specReleaseSource = Plan_SpecReleaseSource.toJSON(message.specReleaseSource);
-    }
     if (message.createDatabaseConfig !== undefined) {
       obj.createDatabaseConfig = Plan_CreateDatabaseConfig.toJSON(message.createDatabaseConfig);
     }
@@ -1666,9 +1615,6 @@ export const Plan_Spec: MessageFns<Plan_Spec> = {
   fromPartial(object: DeepPartial<Plan_Spec>): Plan_Spec {
     const message = createBasePlan_Spec();
     message.id = object.id ?? "";
-    message.specReleaseSource = (object.specReleaseSource !== undefined && object.specReleaseSource !== null)
-      ? Plan_SpecReleaseSource.fromPartial(object.specReleaseSource)
-      : undefined;
     message.createDatabaseConfig = (object.createDatabaseConfig !== undefined && object.createDatabaseConfig !== null)
       ? Plan_CreateDatabaseConfig.fromPartial(object.createDatabaseConfig)
       : undefined;
@@ -1923,6 +1869,7 @@ function createBasePlan_ChangeDatabaseConfig(): Plan_ChangeDatabaseConfig {
   return {
     target: "",
     sheet: "",
+    release: "",
     type: Plan_ChangeDatabaseConfig_Type.TYPE_UNSPECIFIED,
     ghostFlags: {},
     preUpdateBackupDetail: undefined,
@@ -1936,6 +1883,9 @@ export const Plan_ChangeDatabaseConfig: MessageFns<Plan_ChangeDatabaseConfig> = 
     }
     if (message.sheet !== "") {
       writer.uint32(18).string(message.sheet);
+    }
+    if (message.release !== "") {
+      writer.uint32(74).string(message.release);
     }
     if (message.type !== Plan_ChangeDatabaseConfig_Type.TYPE_UNSPECIFIED) {
       writer.uint32(24).int32(plan_ChangeDatabaseConfig_TypeToNumber(message.type));
@@ -1971,6 +1921,14 @@ export const Plan_ChangeDatabaseConfig: MessageFns<Plan_ChangeDatabaseConfig> = 
           }
 
           message.sheet = reader.string();
+          continue;
+        }
+        case 9: {
+          if (tag !== 74) {
+            break;
+          }
+
+          message.release = reader.string();
           continue;
         }
         case 3: {
@@ -2020,6 +1978,9 @@ export const Plan_ChangeDatabaseConfig: MessageFns<Plan_ChangeDatabaseConfig> = 
     if (message.sheet !== "") {
       obj.sheet = message.sheet;
     }
+    if (message.release !== "") {
+      obj.release = message.release;
+    }
     if (message.type !== Plan_ChangeDatabaseConfig_Type.TYPE_UNSPECIFIED) {
       obj.type = plan_ChangeDatabaseConfig_TypeToJSON(message.type);
     }
@@ -2045,6 +2006,7 @@ export const Plan_ChangeDatabaseConfig: MessageFns<Plan_ChangeDatabaseConfig> = 
     const message = createBasePlan_ChangeDatabaseConfig();
     message.target = object.target ?? "";
     message.sheet = object.sheet ?? "";
+    message.release = object.release ?? "";
     message.type = object.type ?? Plan_ChangeDatabaseConfig_Type.TYPE_UNSPECIFIED;
     message.ghostFlags = Object.entries(object.ghostFlags ?? {}).reduce<{ [key: string]: string }>(
       (acc, [key, value]) => {
@@ -2433,114 +2395,6 @@ export const Plan_Deployment_DatabaseGroupMapping: MessageFns<Plan_Deployment_Da
     const message = createBasePlan_Deployment_DatabaseGroupMapping();
     message.databaseGroup = object.databaseGroup ?? "";
     message.databases = object.databases?.map((e) => e) || [];
-    return message;
-  },
-};
-
-function createBasePlan_ReleaseSource(): Plan_ReleaseSource {
-  return { release: "" };
-}
-
-export const Plan_ReleaseSource: MessageFns<Plan_ReleaseSource> = {
-  encode(message: Plan_ReleaseSource, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.release !== "") {
-      writer.uint32(10).string(message.release);
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): Plan_ReleaseSource {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBasePlan_ReleaseSource();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.release = reader.string();
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  toJSON(message: Plan_ReleaseSource): unknown {
-    const obj: any = {};
-    if (message.release !== "") {
-      obj.release = message.release;
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<Plan_ReleaseSource>): Plan_ReleaseSource {
-    return Plan_ReleaseSource.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<Plan_ReleaseSource>): Plan_ReleaseSource {
-    const message = createBasePlan_ReleaseSource();
-    message.release = object.release ?? "";
-    return message;
-  },
-};
-
-function createBasePlan_SpecReleaseSource(): Plan_SpecReleaseSource {
-  return { file: "" };
-}
-
-export const Plan_SpecReleaseSource: MessageFns<Plan_SpecReleaseSource> = {
-  encode(message: Plan_SpecReleaseSource, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.file !== "") {
-      writer.uint32(10).string(message.file);
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): Plan_SpecReleaseSource {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBasePlan_SpecReleaseSource();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.file = reader.string();
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  toJSON(message: Plan_SpecReleaseSource): unknown {
-    const obj: any = {};
-    if (message.file !== "") {
-      obj.file = message.file;
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<Plan_SpecReleaseSource>): Plan_SpecReleaseSource {
-    return Plan_SpecReleaseSource.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<Plan_SpecReleaseSource>): Plan_SpecReleaseSource {
-    const message = createBasePlan_SpecReleaseSource();
-    message.file = object.file ?? "";
     return message;
   },
 };

@@ -325,7 +325,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 		return nil, status.Errorf(codes.NotFound, "plan %q not found", request.Plan.Name)
 	}
 
-	if oldPlan.Config.GetReleaseSource().GetRelease() != "" && slices.Contains(request.UpdateMask.Paths, "steps") {
+	if storePlanConfigHasRelease(oldPlan.Config) && slices.Contains(request.UpdateMask.Paths, "specs") {
 		return nil, status.Errorf(codes.InvalidArgument, "disallowed to update the plan steps because the plan is created from a release")
 	}
 
@@ -1067,9 +1067,6 @@ func (s *PlanService) PreviewPlan(ctx context.Context, request *v1pb.PreviewPlan
 				Specs: allSpecs,
 			},
 		},
-		ReleaseSource: &v1pb.Plan_ReleaseSource{
-			Release: request.Release,
-		},
 	}
 
 	return response, nil
@@ -1124,14 +1121,12 @@ func getSpecs(database *store.DatabaseMessage, revisions []*store.RevisionMessag
 
 		spec := &v1pb.Plan_Spec{
 			Id: uuid.NewString(),
-			SpecReleaseSource: &v1pb.Plan_SpecReleaseSource{
-				File: common.FormatReleaseFile(releaseName, file.Id),
-			},
 			Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
 				ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
-					Type:   convertReleaseFileChangeTypeToPlanSpecType(file.ChangeType),
-					Target: common.FormatDatabase(database.InstanceID, database.DatabaseName),
-					Sheet:  file.Sheet,
+					Type:    convertReleaseFileChangeTypeToPlanSpecType(file.ChangeType),
+					Target:  common.FormatDatabase(database.InstanceID, database.DatabaseName),
+					Sheet:   file.Sheet,
+					Release: common.FormatReleaseName(release.ProjectID, release.UID),
 				},
 			},
 		}
@@ -1307,7 +1302,25 @@ func getPlanDeployment(ctx context.Context, s *store.Store, specs []*storepb.Pla
 }
 
 func planHasRelease(plan *v1pb.Plan) bool {
-	return plan.GetReleaseSource().GetRelease() != ""
+	for _, spec := range plan.GetSpecs() {
+		if c, ok := spec.Config.(*v1pb.Plan_Spec_ChangeDatabaseConfig); ok {
+			if c.ChangeDatabaseConfig.Release != "" {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func storePlanConfigHasRelease(plan *storepb.PlanConfig) bool {
+	for _, spec := range plan.GetSpecs() {
+		if c, ok := spec.Config.(*storepb.PlanConfig_Spec_ChangeDatabaseConfig); ok {
+			if c.ChangeDatabaseConfig.Release != "" {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func getTaskTypeFromSpec(spec *v1pb.Plan_Spec) (base.TaskType, error) {

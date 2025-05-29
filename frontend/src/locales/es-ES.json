@@ -2549,9 +2549,6 @@
     "allow-out-of-order": "Permitir fuera de servicio",
     "archive-this-release": "Archivar este comunicado",
     "total-files": "Total de {count} archivos",
-    "no-tasks-to-apply": {
-      "self": "No hay tareas para aplicar"
-    },
     "actions": {
       "new-file": "Nuevo archivo",
       "import-from-release": "Importar desde la versión"
