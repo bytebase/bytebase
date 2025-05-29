@@ -1,0 +1,1 @@
+ALTER TABLE project_webhook RENAME COLUMN activity_list TO event_list;

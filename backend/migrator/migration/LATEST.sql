@@ -88,7 +88,7 @@ CREATE TABLE project_webhook (
     type text NOT NULL CHECK (type LIKE 'bb.plugin.webhook.%'),
     name text NOT NULL,
     url text NOT NULL,
-    activity_list text ARRAY NOT NULL,
+    event_list text ARRAY NOT NULL,
     payload jsonb NOT NULL DEFAULT '{}'
 );
 

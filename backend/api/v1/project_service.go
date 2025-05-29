@@ -841,7 +841,7 @@ func (s *ProjectService) UpdateWebhook(ctx context.Context, request *v1pb.Update
 			if len(types) == 0 {
 				return nil, status.Errorf(codes.InvalidArgument, "notification types should not be empty")
 			}
-			update.ActivityList = types
+			update.Events = types
 		case "direct_message":
 			update.Payload = &storepb.ProjectWebhookPayload{
 				DirectMessage: request.Webhook.DirectMessage,
@@ -948,17 +948,17 @@ func (s *ProjectService) TestWebhook(ctx context.Context, request *v1pb.TestWebh
 	err = webhookplugin.Post(
 		webhook.Type,
 		webhookplugin.Context{
-			URL:          webhook.URL,
-			Level:        webhookplugin.WebhookInfo,
-			ActivityType: string(base.EventTypeIssueCreate),
-			Title:        fmt.Sprintf("Test webhook %q", webhook.Title),
-			TitleZh:      fmt.Sprintf("测试 webhook %q", webhook.Title),
-			Description:  "This is a test",
-			Link:         fmt.Sprintf("%s/projects/%s/webhooks/%s", setting.ExternalUrl, project.ResourceID, fmt.Sprintf("%s-%d", slug.Make(webhook.Title), webhook.ID)),
-			ActorID:      base.SystemBotID,
-			ActorName:    "Bytebase",
-			ActorEmail:   s.store.GetSystemBotUser(ctx).Email,
-			CreatedTS:    time.Now().Unix(),
+			URL:         webhook.URL,
+			Level:       webhookplugin.WebhookInfo,
+			EventType:   string(base.EventTypeIssueCreate),
+			Title:       fmt.Sprintf("Test webhook %q", webhook.Title),
+			TitleZh:     fmt.Sprintf("测试 webhook %q", webhook.Title),
+			Description: "This is a test",
+			Link:        fmt.Sprintf("%s/projects/%s/webhooks/%s", setting.ExternalUrl, project.ResourceID, fmt.Sprintf("%s-%d", slug.Make(webhook.Title), webhook.ID)),
+			ActorID:     base.SystemBotID,
+			ActorName:   "Bytebase",
+			ActorEmail:  s.store.GetSystemBotUser(ctx).Email,
+			CreatedTS:   time.Now().Unix(),
 			Issue: &webhookplugin.Issue{
 				ID:          1,
 				Name:        "Test issue",
@@ -991,10 +991,10 @@ func convertToStoreProjectWebhookMessage(webhook *v1pb.Webhook) (*store.ProjectW
 		return nil, err
 	}
 	return &store.ProjectWebhookMessage{
-		Type:         tp,
-		URL:          webhook.Url,
-		Title:        webhook.Title,
-		ActivityList: activityTypes,
+		Type:   tp,
+		URL:    webhook.Url,
+		Title:  webhook.Title,
+		Events: activityTypes,
 		Payload: &storepb.ProjectWebhookPayload{
 			DirectMessage: webhook.DirectMessage,
 		},
@@ -1266,7 +1266,7 @@ func convertToProject(projectMessage *store.ProjectMessage) *v1pb.Project {
 			Type:              convertWebhookTypeString(webhook.Type),
 			Title:             webhook.Title,
 			Url:               webhook.URL,
-			NotificationTypes: convertNotificationTypeStrings(webhook.ActivityList),
+			NotificationTypes: convertNotificationTypeStrings(webhook.Events),
 			DirectMessage:     webhook.Payload.GetDirectMessage(),
 		})
 	}
