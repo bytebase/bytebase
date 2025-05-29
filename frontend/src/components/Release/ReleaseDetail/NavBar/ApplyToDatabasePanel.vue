@@ -107,24 +107,6 @@ const handleCreate = async () => {
   if (!state.targetSelectState) {
     return;
   }
-  
-  // Create plan directly from release and targets
-  const plan = {
-    project: project.value.name,
-    title: `Release "${release.value.title}"`,
-    description: `Apply release "${release.value.title}" to selected databases.`,
-    specs: [
-      {
-        id: crypto.randomUUID(),
-        changeDatabaseConfig: {
-          targets: state.targetSelectState.changeSource === "DATABASE"
-            ? state.targetSelectState.selectedDatabaseNameList
-            : state.targetSelectState.selectedDatabaseGroup!,
-          release: release.value.name,
-        },
-      }
-    ],
-  };
 
   const databaseList = state.targetSelectState.selectedDatabaseNameList.map(
     (name) => databaseStore.getDatabaseByName(name)
@@ -136,7 +118,21 @@ const handleCreate = async () => {
   });
   const createdPlan = await planServiceClient.createPlan({
     parent: project.value.name,
-    plan: plan,
+    plan: {
+    title: `Release "${release.value.title}"`,
+    description: `Apply release "${release.value.title}" to selected databases.`,
+    specs: [
+      {
+        id: crypto.randomUUID(),
+        changeDatabaseConfig: {
+          targets: (state.targetSelectState.changeSource === "DATABASE"
+            ? state.targetSelectState.selectedDatabaseNameList
+            : [state.targetSelectState.selectedDatabaseGroup!]) || [],
+          release: release.value.name,
+        },
+      }
+    ],
+  },
   });
   const createdIssue = await createIssueFromPlan(project.value.name, {
     ...createdPlan,
