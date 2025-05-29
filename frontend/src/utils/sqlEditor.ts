@@ -23,7 +23,6 @@ import {
 import {
   DataSourceType,
   type InstanceResource,
-  type DataSource,
 } from "@/types/proto/v1/instance_service";
 import {
   DataSourceQueryPolicy_Restriction,
