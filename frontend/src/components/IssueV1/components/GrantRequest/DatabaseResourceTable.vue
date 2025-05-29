@@ -1,39 +1,19 @@
 <template>
-  <BBGrid
-    :column-list="COLUMN_LIST"
-    :data-source="databaseResourceList"
-    :row-clickable="true"
-    row-key="name"
-    class="border"
-  >
-    <template #item="{ item }">
-      <div class="bb-grid-cell">
-        {{ extractDatabaseName(item) }}
-      </div>
-      <div class="bb-grid-cell">
-        <span class="line-clamp-1">{{ extractTableName(item) }}</span>
-      </div>
-      <div class="bb-grid-cell">
-        <EnvironmentV1Name
-          :environment="
-            extractComposedDatabase(item).effectiveEnvironmentEntity
-          "
-        />
-      </div>
-      <div class="bb-grid-cell">
-        <InstanceV1Name
-          :instance="extractComposedDatabase(item).instanceResource"
-        />
-      </div>
-    </template>
-  </BBGrid>
+  <NDataTable
+    size="small"
+    :columns="columns"
+    :data="databaseResourceList"
+    :striped="true"
+    :bordered="true"
+  />
 </template>
 
-<script lang="ts" setup>
+<script lang="tsx" setup>
+import { NDataTable } from "naive-ui";
+import type { DataTableColumn } from "naive-ui";
 import { computed } from "vue";
 import { watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { BBGrid, type BBGridColumn } from "@/bbkit";
 import { EnvironmentV1Name, InstanceV1Name } from "@/components/v2";
 import { useDatabaseV1Store, batchGetOrFetchDatabases } from "@/store";
 import type { DatabaseResource } from "@/types";
@@ -90,17 +70,38 @@ watch(
   }
 );
 
-const COLUMN_LIST = computed(() => {
-  const columns: BBGridColumn[] = [
-    { title: t("common.database"), width: "1fr" },
-    { title: t("common.table"), width: "0.5fr" },
+const columns = computed((): DataTableColumn<DatabaseResource>[] => {
+  return [
+    {
+      title: t("common.database"),
+      key: "database",
+      render: (row) => extractDatabaseName(row),
+    },
+    {
+      title: t("common.table"),
+      key: "table",
+      render: (row) => (
+        <span class="line-clamp-1">{extractTableName(row)}</span>
+      ),
+    },
     {
       title: t("common.environment"),
-      width: "0.5fr",
+      key: "environment",
+      render: (row) => (
+        <EnvironmentV1Name
+          environment={extractComposedDatabase(row).effectiveEnvironmentEntity}
+        />
+      ),
     },
-    { title: t("common.instance"), width: "1fr" },
+    {
+      title: t("common.instance"),
+      key: "instance",
+      render: (row) => (
+        <InstanceV1Name
+          instance={extractComposedDatabase(row).instanceResource}
+        />
+      ),
+    },
   ];
-
-  return columns;
 });
 </script>

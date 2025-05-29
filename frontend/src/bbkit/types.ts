@@ -1,6 +1,3 @@
-import type { VueClass } from "@/utils";
-import type { ColumnWidth } from "./BBGrid";
-
 export type BBButtonType =
   | "NORMAL"
   | "PRIMARY"
@@ -9,17 +6,6 @@ export type BBButtonType =
   | "SUCCESS";
 
 export type BBButtonConfirmType = "NORMAL" | "DELETE" | "ARCHIVE" | "RESTORE";
-
-export type BBGridColumn = {
-  title?: string;
-  width: ColumnWidth;
-  class?: VueClass;
-};
-
-export type BBGridRow<T = any> = {
-  item: T;
-  row: number;
-};
 
 export type BBTabItem<T = any> = {
   title: string;
