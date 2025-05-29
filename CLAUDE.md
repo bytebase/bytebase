@@ -14,6 +14,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Frontend install: `pnpm --dir frontend i`
 - Frontend dev: `pnpm --dir frontend dev`
 - Frontend lint: `pnpm --dir frontend lint`
+- Frontend lint fix: `pnpm --dir frontend lint --fix` - Please run this before committing to ensure code quality if changes are made in the frontend code.
 - Frontend type check: `pnpm --dir frontend type-check`
 - Frontend test: `pnpm --dir frontend test`
 - Proto lint: `cd proto && buf lint`
