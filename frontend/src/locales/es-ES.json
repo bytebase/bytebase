@@ -1804,7 +1804,14 @@
       "batch": "Lote",
       "select-database-group": "Puedes {select-database-group} realizar consultas por lotes",
       "description": "Consulta por lotes {database} bases de datos adicionales y {group} grupos de bases de datos bajo {project}.",
-      "show-or-hide-empty-query-results": "Mostrar/ocultar resultados de consulta vacíos"
+      "show-or-hide-empty-query-results": "Mostrar/ocultar resultados de consulta vacíos",
+      "select-data-source": {
+        "self": "Seleccionar la fuente de datos para el lote",
+        "tooltip": "Encontrará fuentes de datos disponibles con política de restricción y luego aplicará la selección.",
+        "admin": "Administración",
+        "readonly": "Sólo lectura",
+        "not-match": "La fuente de datos no coincide, se esperaba {expect} pero se obtuvo {actual}."
+      }
     },
     "execute-query": "Ejecutar consulta",
     "pending-query": "Consulta pendiente",

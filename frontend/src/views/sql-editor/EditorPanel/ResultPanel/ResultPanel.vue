@@ -23,9 +23,9 @@
             <template #trigger>
               <div class="flex items-center space-x-2">
                 <span>{{ tabName(context) }}</span>
-                <Info
+                <CircleAlertIcon
                   v-if="context.resultSet?.error"
-                  class="text-yellow-600 w-4 h-auto"
+                  class="text-red-600 w-4 h-auto"
                 />
                 <BBSpin v-if="context.status === 'EXECUTING'" :size="10" />
               </div>
@@ -33,6 +33,20 @@
             {{ context.params.statement }}
           </NTooltip>
         </template>
+        <BBAttention
+          v-if="i === 0 && !isMatchedDataSource(context)"
+          type="warning"
+          class="mb-2"
+        >
+          {{
+            $t("sql-editor.batch-query.select-data-source.not-match", {
+              expect: getDataSourceTypeI18n(
+                tabStore.currentTab?.batchQueryContext?.dataSourceType
+              ),
+              actual: getDataSourceTypeI18n(dataSourceInContext(context)?.type),
+            })
+          }}
+        </BBAttention>
         <DatabaseQueryContext
           class="w-full h-auto grow"
           :database="selectedDatabase"
@@ -46,12 +60,14 @@
 <script lang="ts" setup>
 import dayjs from "dayjs";
 import { head } from "lodash-es";
-import { Info } from "lucide-vue-next";
+import { CircleAlertIcon } from "lucide-vue-next";
 import { NTabs, NTabPane, NTooltip } from "naive-ui";
 import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBSpin } from "@/bbkit";
+import { BBAttention } from "@/bbkit";
 import { useSQLEditorTabStore } from "@/store";
+import { getDataSourceTypeI18n } from "@/types";
 import type { ComposedDatabase, SQLEditorDatabaseQueryContext } from "@/types";
 import BatchQuerySelect from "./BatchQuerySelect.vue";
 import DatabaseQueryContext from "./DatabaseQueryContext.vue";
@@ -83,6 +99,29 @@ const tabName = (context: SQLEditorDatabaseQueryContext) => {
     default:
       return dayjs(context.beginTimestampMS).format("YYYY-MM-DD HH:mm:ss");
   }
+};
+
+const dataSourceInContext = (context: SQLEditorDatabaseQueryContext) => {
+  const dataSourceId = context.params.connection.dataSourceId;
+  return selectedDatabase.value?.instanceResource.dataSources.find(
+    (ds) => ds.id === dataSourceId
+  );
+};
+
+const isMatchedDataSource = (context: SQLEditorDatabaseQueryContext) => {
+  if (!tabStore.isInBatchMode) {
+    return true;
+  }
+  const mode = tabStore.currentTab?.batchQueryContext?.dataSourceType;
+  if (!mode) {
+    return true;
+  }
+  const dataSource = dataSourceInContext(context);
+  if (!dataSource) {
+    return true;
+  }
+
+  return dataSource.type === mode;
 };
 
 watch(

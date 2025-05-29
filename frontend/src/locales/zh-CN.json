@@ -1804,7 +1804,14 @@
       "batch": "批量",
       "select-database-group": "您可以{select-database-group}进行批量查询",
       "description": "批量查询 {project} 下的 {database} 个数据库和 {group} 个数据库组。",
-      "show-or-hide-empty-query-results": "显示/隐藏空查询结果"
+      "show-or-hide-empty-query-results": "显示/隐藏空查询结果",
+      "select-data-source": {
+        "self": "选择批量查询使用的数据源",
+        "tooltip": "将先根据限制策略寻找数据源，然后应用该选择。",
+        "admin": "主数据源",
+        "readonly": "只读数据源",
+        "not-match": "数据源不匹配，预期为 {expect}，但实际使用 {actual}。"
+      }
     },
     "execute-query": "执行查询",
     "pending-query": "待处理查询",
