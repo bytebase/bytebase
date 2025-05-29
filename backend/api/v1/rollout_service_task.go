@@ -205,30 +205,12 @@ func getTaskCreatesFromChangeDatabaseConfig(ctx context.Context, s *store.Store,
 }
 
 func getTaskCreatesFromExportDataConfig(ctx context.Context, s *store.Store, spec *storepb.PlanConfig_Spec, c *storepb.PlanConfig_ExportDataConfig, _ *store.ProjectMessage) ([]*store.TaskMessage, error) {
-	instanceID, databaseName, err := common.GetInstanceDatabaseID(c.Target)
+	database, err := getDatabaseMessage(ctx, s, c.Target)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get instance and database from target %q", c.Target)
+		return nil, err
 	}
-
-	instance, err := s.GetInstanceV2(ctx, &store.FindInstanceMessage{
-		ResourceID: &instanceID,
-	})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get instance %q", instanceID)
-	}
-	if instance == nil {
-		return nil, errors.Errorf("instance %q not found", instanceID)
-	}
-	database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-		InstanceID:      &instanceID,
-		DatabaseName:    &databaseName,
-		IsCaseSensitive: store.IsObjectCaseSensitive(instance),
-	})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get database %q", databaseName)
-	}
-	if database == nil {
-		return nil, errors.Errorf("database %q not found", databaseName)
+	if database == nil || database.Deleted {
+		return nil, errors.Errorf("database %q not found", c.Target)
 	}
 
 	_, sheetUID, err := common.GetProjectResourceIDSheetUID(c.Sheet)
@@ -254,30 +236,12 @@ func getTaskCreatesFromExportDataConfig(ctx context.Context, s *store.Store, spe
 }
 
 func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s *store.Store, spec *storepb.PlanConfig_Spec, c *storepb.PlanConfig_ChangeDatabaseConfig, target string) ([]*store.TaskMessage, error) {
-	instanceID, databaseName, err := common.GetInstanceDatabaseID(target)
+	database, err := getDatabaseMessage(ctx, s, target)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get instance and database from target %q", target)
+		return nil, err
 	}
-
-	instance, err := s.GetInstanceV2(ctx, &store.FindInstanceMessage{
-		ResourceID: &instanceID,
-	})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get instance %q", instanceID)
-	}
-	if instance == nil {
-		return nil, errors.Errorf("instance %q not found", instanceID)
-	}
-	database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-		InstanceID:      &instanceID,
-		DatabaseName:    &databaseName,
-		IsCaseSensitive: store.IsObjectCaseSensitive(instance),
-	})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get database %q", databaseName)
-	}
-	if database == nil {
-		return nil, errors.Errorf("database %q not found", databaseName)
+	if database == nil || database.Deleted {
+		return nil, errors.Errorf("database %q not found", target)
 	}
 
 	switch c.Type {
@@ -365,31 +329,12 @@ func getTaskCreatesFromChangeDatabaseConfigWithRelease(ctx context.Context, s *s
 	var taskCreates []*store.TaskMessage
 	for _, target := range c.Targets {
 		// Parse target to get instance and database
-		instanceID, databaseName, err := common.GetInstanceDatabaseID(target)
+		database, err := getDatabaseMessage(ctx, s, target)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get instance and database from target %q", target)
+			return nil, err
 		}
-
-		instance, err := s.GetInstanceV2(ctx, &store.FindInstanceMessage{
-			ResourceID: &instanceID,
-		})
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get instance %q", instanceID)
-		}
-		if instance == nil {
-			return nil, errors.Errorf("instance %q not found", instanceID)
-		}
-
-		database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-			InstanceID:      &instanceID,
-			DatabaseName:    &databaseName,
-			IsCaseSensitive: store.IsObjectCaseSensitive(instance),
-		})
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get database %q", databaseName)
-		}
-		if database == nil {
-			return nil, errors.Errorf("database %q not found", databaseName)
+		if database == nil || database.Deleted {
+			return nil, errors.Errorf("database %q not found", target)
 		}
 
 		// Get existing revisions for the database to check which files have already been applied
