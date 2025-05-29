@@ -1,5 +1,5 @@
 import Emittery from "emittery";
-import { head, isEmpty } from "lodash-es";
+import { head, isEmpty, cloneDeep } from "lodash-es";
 import { Status } from "nice-grpc-common";
 import { v4 as uuidv4 } from "uuid";
 import { markRaw, reactive } from "vue";
@@ -14,14 +14,18 @@ import {
   useSQLEditorQueryHistoryStore,
   useAppFeature,
   hasFeature,
+  batchGetOrFetchDatabases,
+  useDatabaseV1Store,
 } from "@/store";
 import type {
   ComposedDatabase,
   SQLResultSetV1,
   BBNotificationStyle,
   SQLEditorQueryParams,
+  SQLEditorConnection,
   SQLEditorTab,
   SQLEditorDatabaseQueryContext,
+  QueryDataSourceType,
 } from "@/types";
 import { isValidDatabaseName } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
@@ -59,6 +63,7 @@ const useExecuteSQL = () => {
     lastQueryTime?: number;
   }>({});
   const dbGroupStore = useDBGroupStore();
+  const dbStore = useDatabaseV1Store();
   const tabStore = useSQLEditorTabStore();
   const sqlEditorStore = useSQLEditorStore();
   const queryHistoryStore = useSQLEditorQueryHistoryStore();
@@ -164,6 +169,22 @@ const useExecuteSQL = () => {
     }
   };
 
+  const getDataSourceId = (
+    database: ComposedDatabase,
+    connection: SQLEditorConnection,
+    mode?: QueryDataSourceType
+  ) => {
+    return (
+      ensureDataSourceSelection(
+        database.instance === connection.instance
+          ? connection.dataSourceId
+          : undefined,
+        database,
+        mode
+      ) ?? ""
+    );
+  };
+
   const preExecute = async (params: SQLEditorQueryParams) => {
     const now = Date.now();
     if (
@@ -246,6 +267,9 @@ const useExecuteSQL = () => {
       }
     }
 
+    const isBatch = batchQueryDatabaseSet.size > 1;
+    await batchGetOrFetchDatabases([...batchQueryDatabaseSet.keys()]);
+
     for (const databaseName of batchQueryDatabaseSet.values()) {
       if (!databaseQueryContexts.has(databaseName)) {
         databaseQueryContexts.set(databaseName, []);
@@ -255,9 +279,20 @@ const useExecuteSQL = () => {
         databaseQueryContexts.get(databaseName)?.pop();
       }
 
+      const database = dbStore.getDatabaseByName(databaseName);
+
       databaseQueryContexts.get(databaseName)?.unshift({
         id: uuidv4(),
-        params,
+        params: Object.assign(cloneDeep(params), {
+          connection: {
+            ...params.connection,
+            dataSourceId: getDataSourceId(
+              database,
+              params.connection,
+              isBatch ? tab.batchQueryContext?.dataSourceType : undefined
+            ),
+          },
+        }),
         status: "PENDING",
       });
     }
@@ -335,17 +370,7 @@ const useExecuteSQL = () => {
       }
     }
 
-    const instance = isValidDatabaseName(database.name)
-      ? database.instance
-      : context.params.connection.instance;
-    const dataSourceId =
-      ensureDataSourceSelection(
-        instance === context.params.connection.instance
-          ? context.params.connection.dataSourceId
-          : undefined,
-        database
-      ) ?? "";
-
+    const dataSourceId = context.params.connection.dataSourceId;
     if (!dataSourceId) {
       return finish({
         advices: [],

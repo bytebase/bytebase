@@ -76,7 +76,7 @@ const queryElapsedTime = computed(() => {
 
 const cancelQuery = () => {
   props.context.abortController?.abort();
-  tabStore.updateQueryContext({
+  tabStore.updateDatabaseQueryContext({
     database: props.database.name,
     contextId: props.context.id,
     context: {
@@ -96,7 +96,7 @@ watch(
 );
 
 const execQuery = async (params: SQLEditorQueryParams) => {
-  const context = tabStore.updateQueryContext({
+  const context = tabStore.updateDatabaseQueryContext({
     database: props.database.name,
     contextId: props.context.id,
     context: {

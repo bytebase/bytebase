@@ -1804,7 +1804,14 @@
       "batch": "バッチ",
       "select-database-group": "バッチクエリを実行するには{select-database-group}を使用します",
       "description": "{project} の下の {database} 個の追加データベースと {group} 個のデータベース グループに対してバッチ クエリを実行します。",
-      "show-or-hide-empty-query-results": "空のクエリ結果の表示/非表示"
+      "show-or-hide-empty-query-results": "空のクエリ結果の表示/非表示",
+      "select-data-source": {
+        "self": "バッチのデータソースを選択",
+        "tooltip": "制限ポリシーが設定された利用可能なデータ ソースを見つけて、選択を適用します。",
+        "admin": "管理者",
+        "readonly": "読み取り専用",
+        "not-match": "データ ソースが一致しません。{expect} を期待しましたが、{actual} を取得しました。"
+      }
     },
     "execute-query": "クエリを実行する",
     "pending-query": "保留中のクエリ",

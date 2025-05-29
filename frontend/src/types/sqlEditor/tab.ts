@@ -2,6 +2,8 @@ import type {
   AdviceOption,
   Selection as MonacoSelection,
 } from "@/components/MonacoEditor";
+import { t } from "@/plugins/i18n";
+import { DataSourceType } from "@/types/proto/v1/instance_service";
 import type { SQLResultSetV1 } from "../v1/sql";
 import type { SQLEditorConnection, SQLEditorQueryParams } from "./editor";
 
@@ -12,6 +14,20 @@ export type SQLEditorTabStatus =
 
 export type SQLEditorTabMode = "WORKSHEET" | "ADMIN";
 export const DEFAULT_SQL_EDITOR_TAB_MODE: SQLEditorTabMode = "WORKSHEET";
+export type QueryDataSourceType =
+  | DataSourceType.ADMIN
+  | DataSourceType.READ_ONLY;
+
+export const getDataSourceTypeI18n = (dsType?: DataSourceType) => {
+  switch (dsType) {
+    case DataSourceType.ADMIN:
+      return t("sql-editor.batch-query.select-data-source.admin");
+    case DataSourceType.READ_ONLY:
+      return t("sql-editor.batch-query.select-data-source.readonly");
+    default:
+      return "Unknown";
+  }
+};
 
 export type BatchQueryContext = {
   // databases is used to store the selected database names.
@@ -21,6 +37,8 @@ export type BatchQueryContext = {
   // databaseGroups is used to store the selected database group names for batch request.
   // Format: projects/{project}/databaseGroups/{databaseGroup}
   databaseGroups?: string[];
+
+  dataSourceType?: QueryDataSourceType;
 };
 
 export type SQLEditorDatabaseQueryContext = {
