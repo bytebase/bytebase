@@ -8,35 +8,6 @@
     <p class="w-full">
       {{ $t("release.tasks-to-apply") }}
     </p>
-    <div
-      v-for="spec in specList"
-      :key="spec.id"
-      class="max-w-52 flex flex-row items-center flex-wrap border px-2 py-1 rounded-md"
-    >
-      <DatabaseView
-        class="text-sm"
-        :database="spec.changeDatabaseConfig!.target"
-        :link="false"
-        :show-not-found="true"
-      />
-      <div class="w-full truncate space-x-1">
-        <NTag round :size="'small'">
-          "TODO(d): version"
-        </NTag>
-        <span class="text-sm">
-          {{
-            spec.specReleaseSource?.file
-              ? getReleaseFileStatement(
-                  getFileByName(spec.specReleaseSource.file)!
-                )
-              : "-"
-          }}
-        </span>
-      </div>
-    </div>
-    <p v-if="specList.length === 0" class="text-gray-400 italic">
-      {{ $t("release.no-tasks-to-apply.self") }}
-    </p>
   </div>
   <div v-if="previewPlanResult.outOfOrderFiles.length > 0 && !allowOutOfOrder">
     <p>
@@ -135,7 +106,6 @@ import type {
   Plan_Spec,
   PreviewPlanResponse,
 } from "@/types/proto/v1/plan_service";
-import { getReleaseFileStatement } from "@/utils";
 
 const props = defineProps<{
   release: ComposedRelease;

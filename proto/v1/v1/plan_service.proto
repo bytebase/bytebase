@@ -243,8 +243,6 @@ message Plan {
     // A UUID4 string that uniquely identifies the Spec.
     string id = 5;
 
-    SpecReleaseSource spec_release_source = 8;
-
     oneof config {
       CreateDatabaseConfig create_database_config = 1;
       ChangeDatabaseConfig change_database_config = 2;
@@ -265,8 +263,6 @@ message Plan {
   // - WARNING
   // - ERROR
   map<string, int32> plan_check_run_status_count = 11 [(google.api.field_behavior) = OUTPUT_ONLY];
-
-  ReleaseSource release_source = 12;
 
   Deployment deployment = 13;
 
@@ -302,6 +298,11 @@ message Plan {
     // The resource name of the sheet.
     // Format: projects/{project}/sheets/{sheet}
     string sheet = 2;
+
+    // The resource name of the release.
+    // Format: projects/{project}/releases/{release}
+    string release = 9 [(google.api.resource_reference) = {type: "bytebase.com/Release"}];
+
     // Type is the database change type.
     enum Type {
       TYPE_UNSPECIFIED = 0;
@@ -353,18 +354,6 @@ message Plan {
       // Format: instances/{instance-id}/databases/{database-name}.
       repeated string databases = 2;
     }
-  }
-
-  message ReleaseSource {
-    // The release.
-    // Format: projects/{project}/releases/{release}
-    string release = 1 [(google.api.resource_reference) = {type: "bytebase.com/Release"}];
-  }
-
-  message SpecReleaseSource {
-    // Format: projects/{project}/releases/{release}/files/{file}
-    // {file} is URL path escaped.
-    string file = 1;
   }
 }
 

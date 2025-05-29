@@ -32,15 +32,12 @@ func convertToPlans(ctx context.Context, s *store.Store, plans []*store.PlanMess
 
 func convertToPlan(ctx context.Context, s *store.Store, plan *store.PlanMessage) (*v1pb.Plan, error) {
 	p := &v1pb.Plan{
-		Name:        common.FormatPlan(plan.ProjectID, plan.UID),
-		Issue:       "",
-		Title:       plan.Name,
-		Description: plan.Description,
-		Specs:       convertToPlanSpecs(plan.Config.Specs), // Use specs field for output
-		Deployment:  convertToPlanDeployment(plan.Config.Deployment),
-		ReleaseSource: &v1pb.Plan_ReleaseSource{
-			Release: plan.Config.GetReleaseSource().GetRelease(),
-		},
+		Name:                    common.FormatPlan(plan.ProjectID, plan.UID),
+		Issue:                   "",
+		Title:                   plan.Name,
+		Description:             plan.Description,
+		Specs:                   convertToPlanSpecs(plan.Config.Specs), // Use specs field for output
+		Deployment:              convertToPlanDeployment(plan.Config.Deployment),
 		CreateTime:              timestamppb.New(plan.CreatedAt),
 		UpdateTime:              timestamppb.New(plan.UpdatedAt),
 		PlanCheckRunStatusCount: plan.PlanCheckRunStatusCount,
@@ -73,9 +70,6 @@ func convertToPlanSpecs(specs []*storepb.PlanConfig_Spec) []*v1pb.Plan_Spec {
 func convertToPlanSpec(spec *storepb.PlanConfig_Spec) *v1pb.Plan_Spec {
 	v1Spec := &v1pb.Plan_Spec{
 		Id: spec.Id,
-		SpecReleaseSource: &v1pb.Plan_SpecReleaseSource{
-			File: spec.SpecReleaseSource.GetFile(),
-		},
 	}
 
 	switch v := spec.Config.(type) {
@@ -112,6 +106,7 @@ func convertToPlanSpecChangeDatabaseConfig(config *storepb.PlanConfig_Spec_Chang
 		ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
 			Target:     c.Target,
 			Sheet:      c.Sheet,
+			Release:    c.Release,
 			Type:       convertToPlanSpecChangeDatabaseConfigType(c.Type),
 			GhostFlags: c.GhostFlags,
 			PreUpdateBackupDetail: &v1pb.Plan_ChangeDatabaseConfig_PreUpdateBackupDetail{
@@ -186,18 +181,8 @@ func convertPlan(plan *v1pb.Plan) *storepb.PlanConfig {
 	// At this point, plan.Specs should always be populated
 	// (either originally or converted from steps at API entry point)
 	return &storepb.PlanConfig{
-		Specs:         convertPlanSpecs(plan.Specs),
-		ReleaseSource: convertPlanReleaseSource(plan.ReleaseSource),
-		Deployment:    nil,
-	}
-}
-
-func convertPlanReleaseSource(s *v1pb.Plan_ReleaseSource) *storepb.PlanConfig_ReleaseSource {
-	if s == nil {
-		return nil
-	}
-	return &storepb.PlanConfig_ReleaseSource{
-		Release: s.Release,
+		Specs:      convertPlanSpecs(plan.Specs),
+		Deployment: nil,
 	}
 }
 
@@ -240,9 +225,6 @@ func convertPlanSpecs(specs []*v1pb.Plan_Spec) []*storepb.PlanConfig_Spec {
 func convertPlanSpec(spec *v1pb.Plan_Spec) *storepb.PlanConfig_Spec {
 	storeSpec := &storepb.PlanConfig_Spec{
 		Id: spec.Id,
-		SpecReleaseSource: &storepb.PlanConfig_SpecReleaseSource{
-			File: spec.SpecReleaseSource.GetFile(),
-		},
 	}
 
 	switch v := spec.Config.(type) {
@@ -288,6 +270,7 @@ func convertPlanSpecChangeDatabaseConfig(config *v1pb.Plan_Spec_ChangeDatabaseCo
 		ChangeDatabaseConfig: &storepb.PlanConfig_ChangeDatabaseConfig{
 			Target:                c.Target,
 			Sheet:                 c.Sheet,
+			Release:               c.Release,
 			Type:                  storepb.PlanConfig_ChangeDatabaseConfig_Type(c.Type),
 			GhostFlags:            c.GhostFlags,
 			PreUpdateBackupDetail: preUpdateBackupDetail,
