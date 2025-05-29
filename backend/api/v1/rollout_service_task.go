@@ -8,6 +8,7 @@ import (
 	"log/slog"
 
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/proto"
 
 	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/common"
@@ -21,9 +22,16 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-func applyDatabaseGroupSpecTransformations(specs []*storepb.PlanConfig_Spec, deployment *storepb.PlanConfig_Deployment) {
+func applyDatabaseGroupSpecTransformations(specs []*storepb.PlanConfig_Spec, deployment *storepb.PlanConfig_Deployment) ([]*storepb.PlanConfig_Spec, error) {
+	var result []*storepb.PlanConfig_Spec
 	for _, spec := range specs {
-		if config := spec.GetChangeDatabaseConfig(); config != nil {
+		// Clone the spec to avoid modifying the original
+		clonedSpec, ok := proto.Clone(spec).(*storepb.PlanConfig_Spec)
+		if !ok {
+			return nil, errors.Errorf("failed to clone spec, got %T", clonedSpec)
+		}
+
+		if config := clonedSpec.GetChangeDatabaseConfig(); config != nil {
 			// transform database group.
 			if len(config.Targets) == 1 {
 				if _, _, err := common.GetProjectIDDatabaseGroupID(config.Targets[0]); err == nil {
@@ -36,7 +44,9 @@ func applyDatabaseGroupSpecTransformations(specs []*storepb.PlanConfig_Spec, dep
 				}
 			}
 		}
+		result = append(result, clonedSpec)
 	}
+	return result, nil
 }
 
 func getTaskCreatesFromSpec(ctx context.Context, s *store.Store, sheetManager *sheet.Manager, dbFactory *dbfactory.DBFactory, spec *storepb.PlanConfig_Spec, project *store.ProjectMessage) ([]*store.TaskMessage, error) {
