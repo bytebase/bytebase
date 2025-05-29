@@ -51,10 +51,44 @@ export default defineConfig({
     }),
   ],
   build: {
+    target: "es2020",
+    chunkSizeWarningLimit: 1000,
     rollupOptions: {
       input: {
         main: resolve(__dirname, "index.html"),
         "explain-visualizer": resolve(__dirname, "explain-visualizer.html"),
+      },
+      output: {
+        manualChunks: (id) => {
+          // Monaco Editor - separate chunk
+          if (id.includes("monaco-editor") || id.includes("monaco-vscode")) {
+            return "monaco-editor";
+          }
+          // SQL tools - separate chunk
+          if (id.includes("sql-formatter") || id.includes("antlr4")) {
+            return "sql-tools";
+          }
+          // Protobuf - separate chunk
+          if (id.includes("protobufjs")) {
+            return "protobuf";
+          }
+          // Vue ecosystem
+          if (id.includes("vue") || id.includes("@vue")) {
+            return "vue-vendor";
+          }
+          // UI framework
+          if (id.includes("naive-ui")) {
+            return "ui-framework";
+          }
+          // Utilities
+          if (
+            id.includes("lodash") ||
+            id.includes("dayjs") ||
+            id.includes("axios")
+          ) {
+            return "utils";
+          }
+        },
       },
     },
   },

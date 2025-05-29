@@ -1,5 +1,6 @@
-import * as monaco from "monaco-editor";
+import type * as MonacoType from "monaco-editor";
 import { defer } from "@/utils";
+import { loadMonacoEditor } from "./lazy-editor";
 import { initializeMonacoServices } from "./services";
 
 const state = {
@@ -23,9 +24,10 @@ const initialize = async () => {
 
 export const createMonacoEditor = async (config: {
   container: HTMLElement;
-  options?: monaco.editor.IStandaloneEditorConstructionOptions;
-}): Promise<monaco.editor.IStandaloneCodeEditor> => {
+  options?: MonacoType.editor.IStandaloneEditorConstructionOptions;
+}): Promise<MonacoType.editor.IStandaloneCodeEditor> => {
   await initialize();
+  const monaco = await loadMonacoEditor();
 
   // Create monaco editor.
   const editor = monaco.editor.create(config.container, {
@@ -44,9 +46,10 @@ export const createMonacoEditor = async (config: {
 
 export const createMonacoDiffEditor = async (config: {
   container: HTMLElement;
-  options?: monaco.editor.IStandaloneDiffEditorConstructionOptions;
-}): Promise<monaco.editor.IStandaloneDiffEditor> => {
+  options?: MonacoType.editor.IStandaloneDiffEditorConstructionOptions;
+}): Promise<MonacoType.editor.IStandaloneDiffEditor> => {
   await initialize();
+  const monaco = await loadMonacoEditor();
 
   // Create monaco diff editor.
   const editor = monaco.editor.createDiffEditor(config.container, {
@@ -64,7 +67,7 @@ export const createMonacoDiffEditor = async (config: {
 };
 
 export const defaultEditorOptions =
-  (): monaco.editor.IStandaloneEditorConstructionOptions => {
+  (): MonacoType.editor.IStandaloneEditorConstructionOptions => {
     return {
       // Learn more: https://github.com/microsoft/monaco-editor/issues/311
       renderValidationDecorations: "on",
@@ -106,7 +109,7 @@ export const defaultEditorOptions =
   };
 
 export const defaultDiffEditorOptions =
-  (): monaco.editor.IStandaloneDiffEditorConstructionOptions => {
+  (): MonacoType.editor.IStandaloneDiffEditorConstructionOptions => {
     return {
       // Learn more: https://github.com/microsoft/monaco-editor/issues/311
       enableSplitViewResizing: false,
