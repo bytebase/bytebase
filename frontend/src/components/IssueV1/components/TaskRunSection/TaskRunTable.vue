@@ -26,7 +26,6 @@ import { last } from "lodash-es";
 import { NButton, type DataTableColumn, NDataTable } from "naive-ui";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
-import type { BBGridRow } from "@/bbkit";
 import HumanizeDate from "@/components/misc/HumanizeDate.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { useSheetV1Store } from "@/store";
@@ -48,8 +47,6 @@ import TaskRunStatusIcon from "./TaskRunStatusIcon.vue";
 defineOptions({
   inheritAttrs: false,
 });
-
-export type TaskRunGridRow = BBGridRow<ComposedTaskRun>;
 
 defineProps<{
   taskRunList: ComposedTaskRun[];
@@ -145,15 +142,12 @@ const columnList = computed((): DataTableColumn<ComposedTaskRun>[] => {
       key: "actions",
       title: "",
       width: 60,
-      render: (taskRun: ComposedTaskRun) => (
-        <NButton
-          v-if={shouldShowDetailButton(taskRun)}
-          size="tiny"
-          onClick={() => showDetail(taskRun)}
-        >
-          {t("common.detail")}
-        </NButton>
-      ),
+      render: (taskRun: ComposedTaskRun) =>
+        shouldShowDetailButton(taskRun) ? (
+          <NButton size="tiny" onClick={() => showDetail(taskRun)}>
+            {t("common.detail")}
+          </NButton>
+        ) : null,
     },
   ];
 });

@@ -37,40 +37,14 @@
       :instance="database.instanceResource"
     />
     <div>
-      <BBGrid
-        :column-list="COLUMNS"
-        :row-clickable="false"
-        :ready="ready"
-        :show-placeholder="true"
-        :data-source="secretList"
-        class="border"
-      >
-        <template #item="{ item: secret }: SecretRow">
-          <div class="bb-grid-cell">
-            {{ extractSecretName(secret.name) }}
-          </div>
-          <div class="bb-grid-cell">
-            {{ secret.description }}
-          </div>
-          <div class="bb-grid-cell gap-x-1">
-            <NButton
-              size="tiny"
-              :disabled="!allowEdit"
-              @click="showDetail(secret)"
-            >
-              {{ $t("common.edit") }}
-            </NButton>
-            <SpinnerButton
-              size="tiny"
-              :disabled="!allowDelete"
-              :tooltip="$t('database.secret.delete-tips')"
-              :on-confirm="() => handleDelete(secret)"
-            >
-              {{ $t("common.delete") }}
-            </SpinnerButton>
-          </div>
-        </template>
-      </BBGrid>
+      <NDataTable
+        size="small"
+        :columns="columns"
+        :data="secretList"
+        :loading="!ready"
+        :striped="true"
+        :bordered="true"
+      />
     </div>
 
     <Drawer
@@ -192,12 +166,13 @@
   />
 </template>
 
-<script setup lang="ts">
+<script setup lang="tsx">
 import { cloneDeep } from "lodash-es";
-import { NButton, NInput } from "naive-ui";
+import { NButton, NInput, NDataTable } from "naive-ui";
+import type { DataTableColumn } from "naive-ui";
 import { computed, ref, watch, nextTick } from "vue";
 import { useI18n } from "vue-i18n";
-import { type BBGridColumn, type BBGridRow, BBGrid, BBSpin } from "@/bbkit";
+import { BBSpin } from "@/bbkit";
 import {
   FeatureAttention,
   FeatureBadge,
@@ -220,8 +195,6 @@ export type Detail = {
   errors: string[];
 };
 
-export type SecretRow = BBGridRow<Secret>;
-
 const props = defineProps<{
   database: ComposedDatabase;
   allowEdit: boolean;
@@ -239,22 +212,42 @@ const detail = ref<Detail>();
 const showFeatureModal = ref(false);
 const subscriptionV1Store = useSubscriptionV1Store();
 
-const COLUMNS = computed(() => {
-  const columns: BBGridColumn[] = [
+const columns = computed((): DataTableColumn<Secret>[] => {
+  return [
     {
       title: t("common.name"),
-      width: "minmax(12rem, 1fr)",
+      key: "name",
+      render: (secret) => extractSecretName(secret.name),
     },
     {
       title: t("common.description"),
-      width: "3fr",
+      key: "description",
     },
     {
       title: t("common.operations"),
-      width: "8rem",
+      key: "operations",
+      width: 200,
+      render: (secret) => (
+        <div class="flex gap-x-1">
+          <NButton
+            size="tiny"
+            disabled={!props.allowEdit}
+            onClick={() => showDetail(secret)}
+          >
+            {t("common.edit")}
+          </NButton>
+          <SpinnerButton
+            size="tiny"
+            disabled={!props.allowDelete}
+            tooltip={t("database.secret.delete-tips")}
+            onConfirm={() => handleDelete(secret)}
+          >
+            {t("common.delete")}
+          </SpinnerButton>
+        </div>
+      ),
     },
   ];
-  return columns;
 });
 
 const extractSecretName = (name: string) => {

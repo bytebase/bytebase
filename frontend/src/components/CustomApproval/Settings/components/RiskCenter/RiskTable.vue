@@ -1,49 +1,18 @@
 <template>
-  <BBGrid
-    :column-list="COLUMN_LIST"
-    :data-source="riskList"
-    :row-clickable="false"
-    :show-placeholder="true"
-    row-key="name"
-    class="border"
-  >
-    <template #item="{ item: risk }: { item: Risk }">
-      <div class="bb-grid-cell">
-        {{ levelText(risk.level) }}
-      </div>
-      <div class="bb-grid-cell">
-        {{ risk.title }}
-      </div>
-      <div class="bb-grid-cell justify-center">
-        <SpinnerSwitch
-          :value="risk.active"
-          :disabled="!allowUpdateRisk"
-          :on-toggle="(active) => toggleRisk(risk, active)"
-          size="small"
-        />
-      </div>
-      <div class="bb-grid-cell gap-x-2">
-        <NButton size="small" @click="editRisk(risk)">
-          {{ allowUpdateRisk ? $t("common.edit") : $t("common.view") }}
-        </NButton>
-        <SpinnerButton
-          size="small"
-          :tooltip="$t('custom-approval.risk-rule.delete')"
-          :disabled="!allowDeleteRisk"
-          :on-confirm="() => deleteRisk(risk)"
-        >
-          {{ $t("common.delete") }}
-        </SpinnerButton>
-      </div>
-    </template>
-  </BBGrid>
+  <NDataTable
+    size="small"
+    :columns="columns"
+    :data="riskList"
+    :striped="true"
+    :bordered="true"
+  />
 </template>
 
-<script lang="ts" setup>
-import { NButton } from "naive-ui";
+<script lang="tsx" setup>
+import { NButton, NDataTable } from "naive-ui";
+import type { DataTableColumn } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { BBGrid, type BBGridColumn } from "@/bbkit";
 import { pushNotification, useRiskStore } from "@/store";
 import type { Risk } from "@/types/proto/v1/risk_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
@@ -58,25 +27,53 @@ const { t } = useI18n();
 const context = useRiskCenterContext();
 const { hasFeature, showFeatureModal } = context;
 
-const COLUMN_LIST = computed(() => {
-  const columns: BBGridColumn[] = [
+const columns = computed((): DataTableColumn<Risk>[] => {
+  return [
     {
       title: t("custom-approval.risk-rule.risk.self"),
-      width: "6rem",
+      key: "level",
+      width: 120,
+      render: (risk) => levelText(risk.level),
     },
-    { title: t("common.name"), width: "1fr" },
+    {
+      title: t("common.name"),
+      key: "title",
+    },
     {
       title: t("custom-approval.risk-rule.active"),
-      width: "6rem",
-      class: "justify-center",
+      key: "active",
+      width: 120,
+      align: "center",
+      render: (risk) => (
+        <SpinnerSwitch
+          value={risk.active}
+          disabled={!allowUpdateRisk.value}
+          onToggle={(active: boolean) => toggleRisk(risk, active)}
+          size="small"
+        />
+      ),
     },
     {
       title: t("common.operations"),
-      width: "10rem",
+      key: "operations",
+      width: 200,
+      render: (risk) => (
+        <div class="flex gap-x-2">
+          <NButton size="small" onClick={() => editRisk(risk)}>
+            {allowUpdateRisk.value ? t("common.edit") : t("common.view")}
+          </NButton>
+          <SpinnerButton
+            size="small"
+            tooltip={t("custom-approval.risk-rule.delete")}
+            disabled={!allowDeleteRisk.value}
+            onConfirm={() => deleteRisk(risk)}
+          >
+            {t("common.delete")}
+          </SpinnerButton>
+        </div>
+      ),
     },
   ];
-
-  return columns;
 });
 
 const allowUpdateRisk = computed(() => {

@@ -1,75 +1,29 @@
 <template>
-  <BBGrid
-    :column-list="COLUMNS"
-    :data-source="steps"
-    :row-clickable="false"
-    class="border"
-  >
-    <template #item="{ item: step, row }: { item: ApprovalStep; row: number }">
-      <div class="bb-grid-cell justify-center text-center !pl-2">
-        {{ row + 1 }}
-      </div>
-      <div class="bb-grid-cell">
-        <RoleSelect
-          v-if="editable"
-          :suffix="''"
-          :value="step.nodes[0]?.role"
-          style="width: 80%"
-          @update:value="
-            (role) => {
-              step.nodes[0] = {
-                type: ApprovalNode_Type.ANY_IN_GROUP,
-                role: role as string,
-              };
-              $emit('update');
-            }
-          "
-        />
-        <template v-else>
-          {{ approvalNodeText(step.nodes[0]) }}
-        </template>
-      </div>
-      <div v-if="editable" class="bb-grid-cell gap-x-1">
-        <NButton
-          :disabled="row === 0 || !allowAdmin"
-          size="tiny"
-          @click="reorder(step, row, -1)"
-        >
-          <heroicons:arrow-up />
-        </NButton>
-        <NButton
-          :disabled="row === steps.length - 1 || !allowAdmin"
-          size="tiny"
-          @click="reorder(step, row, 1)"
-        >
-          <heroicons:arrow-down />
-        </NButton>
-        <SpinnerButton
-          size="tiny"
-          :tooltip="$t('custom-approval.approval-flow.node.delete')"
-          :disabled="!allowAdmin"
-          :on-confirm="() => removeStep(step, row)"
-        >
-          <heroicons:trash />
-        </SpinnerButton>
-      </div>
-    </template>
-    <template v-if="editable && allowAdmin" #footer>
+  <div>
+    <NDataTable
+      size="small"
+      :columns="columns"
+      :data="steps"
+      :striped="true"
+      :bordered="true"
+    />
+    <div v-if="editable && allowAdmin" class="mt-4">
       <NButton @click="addStep">
         <template #icon><heroicons:plus /></template>
         <span>
           {{ $t("custom-approval.approval-flow.node.add") }}
         </span>
       </NButton>
-    </template>
-  </BBGrid>
+    </div>
+  </div>
 </template>
 
-<script lang="ts" setup>
-import { NButton } from "naive-ui";
+<script lang="tsx" setup>
+import { ArrowUpIcon, ArrowDownIcon, TrashIcon } from "lucide-vue-next";
+import { NButton, NDataTable } from "naive-ui";
+import type { DataTableColumn } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { BBGrid, type BBGridColumn } from "@/bbkit";
 import { RoleSelect } from "@/components/v2";
 import { PresetRoleType } from "@/types";
 import type { ApprovalFlow } from "@/types/proto/v1/issue_service";
@@ -96,19 +50,76 @@ const { t } = useI18n();
 const context = useCustomApprovalContext();
 const { allowAdmin } = context;
 
-const COLUMNS = computed(() => {
-  const columns: BBGridColumn[] = [
+const columns = computed((): DataTableColumn<ApprovalStep>[] => {
+  const cols: DataTableColumn<ApprovalStep>[] = [
     {
       title: t("custom-approval.approval-flow.node.order"),
-      width: "4rem",
-      class: "justify-center !pl-2",
+      key: "order",
+      width: 80,
+      align: "center",
+      render: (_, index) => index + 1,
     },
-    { title: t("custom-approval.approval-flow.node.approver"), width: "1fr" },
+    {
+      title: t("custom-approval.approval-flow.node.approver"),
+      key: "approver",
+      render: (step) => {
+        if (props.editable) {
+          return (
+            <RoleSelect
+              suffix=""
+              value={step.nodes[0]?.role}
+              style="width: 80%"
+              onUpdate:value={(val: string | string[]) => {
+                const role = Array.isArray(val) ? val[0] : val;
+                step.nodes[0] = {
+                  type: ApprovalNode_Type.ANY_IN_GROUP,
+                  role: role,
+                };
+                emit("update");
+              }}
+            />
+          );
+        }
+        return approvalNodeText(step.nodes[0]);
+      },
+    },
   ];
+
   if (props.editable) {
-    columns.push({ title: t("common.operations"), width: "auto" });
+    cols.push({
+      title: t("common.operations"),
+      key: "operations",
+      width: 200,
+      render: (step, index) => (
+        <div class="flex gap-x-1">
+          <NButton
+            disabled={index === 0 || !allowAdmin.value}
+            size="tiny"
+            onClick={() => reorder(step, index, -1)}
+          >
+            <ArrowUpIcon />
+          </NButton>
+          <NButton
+            disabled={index === steps.value.length - 1 || !allowAdmin.value}
+            size="tiny"
+            onClick={() => reorder(step, index, 1)}
+          >
+            <ArrowDownIcon />
+          </NButton>
+          <SpinnerButton
+            size="tiny"
+            tooltip={t("custom-approval.approval-flow.node.delete")}
+            disabled={!allowAdmin.value}
+            onConfirm={() => removeStep(step, index)}
+          >
+            <TrashIcon />
+          </SpinnerButton>
+        </div>
+      ),
+    });
   }
-  return columns;
+
+  return cols;
 });
 
 const steps = computed(() => {

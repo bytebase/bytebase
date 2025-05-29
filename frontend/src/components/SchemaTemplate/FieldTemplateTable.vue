@@ -1,74 +1,21 @@
 <template>
-  <BBGrid
-    :column-list="columnList"
-    :data-source="templateList"
-    :is-row-clickable="isRowClickable"
-    class="border"
-    @click-row="clickRow"
-  >
-    <template #item="{ item }: { item: SchemaTemplateSetting_FieldTemplate }">
-      <div class="bb-grid-cell">
-        {{ item.category || "-" }}
-      </div>
-      <div class="bb-grid-cell flex justify-start items-center">
-        <EngineIcon :engine="item.engine" custom-class="ml-0 mr-1" />
-        {{ item.column?.name }}
-      </div>
-      <div class="bb-grid-cell flex gap-x-1">
-        <span v-if="getSemanticType(item.catalog?.semanticType)">
-          {{ getSemanticType(item.catalog?.semanticType)?.title }}
-        </span>
-        <span v-else class="text-control-placeholder italic"> N/A </span>
-      </div>
-      <div v-if="classificationConfig" class="bb-grid-cell flex gap-x-1">
-        <ClassificationLevelBadge
-          :classification="item.catalog?.classification"
-          :classification-config="classificationConfig"
-        />
-      </div>
-      <div class="bb-grid-cell">
-        {{ item.column?.type }}
-      </div>
-      <div class="bb-grid-cell">
-        {{ getColumnDefaultValuePlaceholder(item.column!) }}
-      </div>
-      <div class="bb-grid-cell">
-        {{ item.column?.userComment }}
-      </div>
-      <div class="bb-grid-cell">
-        <DatabaseLabelsCell
-          :labels="item.catalog?.labels ?? {}"
-          :show-count="2"
-        />
-      </div>
-      <div class="bb-grid-cell flex items-center justify-start gap-x-2">
-        <MiniActionButton @click.stop="$emit('view', item)">
-          <PencilIcon class="w-4 h-4" />
-        </MiniActionButton>
-        <NPopconfirm v-if="!readonly" @positive-click="deleteTemplate(item.id)">
-          <template #trigger>
-            <MiniActionButton tag="div" @click.stop>
-              <TrashIcon class="w-4 h-4" />
-            </MiniActionButton>
-          </template>
-          <div class="whitespace-nowrap">
-            {{ $t("common.delete") + ` '${item.column?.name}'?` }}
-          </div>
-        </NPopconfirm>
-      </div>
-    </template>
-  </BBGrid>
+  <NDataTable
+    size="small"
+    :columns="columns"
+    :data="templateList"
+    :striped="true"
+    :bordered="true"
+    :row-props="rowProps"
+  />
 </template>
 
-<script lang="ts" setup>
+<script lang="tsx" setup>
 import { pullAt } from "lodash-es";
-import { PencilIcon } from "lucide-vue-next";
-import { TrashIcon } from "lucide-vue-next";
-import { NPopconfirm } from "naive-ui";
+import { PencilIcon, TrashIcon } from "lucide-vue-next";
+import { NPopconfirm, NDataTable } from "naive-ui";
+import type { DataTableColumn } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import type { BBGridColumn } from "@/bbkit";
-import { BBGrid } from "@/bbkit";
 import { getColumnDefaultValuePlaceholder } from "@/components/SchemaEditorLite";
 import { MiniActionButton } from "@/components/v2";
 import { DatabaseLabelsCell } from "@/components/v2/Model/DatabaseV1Table/cells";
@@ -94,63 +41,127 @@ const emit = defineEmits<{
 const { t } = useI18n();
 const settingStore = useSettingV1Store();
 
-const columnList = computed((): BBGridColumn[] => {
-  return [
-    {
-      title: t("schema-template.form.category"),
-      width: "minmax(min-content, auto)",
-      class: "capitalize",
-    },
-    {
-      title: t("schema-template.form.column-name"),
-      width: "minmax(min-content, auto)",
-      class: "capitalize",
-    },
-    {
-      title: t("settings.sensitive-data.semantic-types.table.semantic-type"),
-      width: "minmax(min-content, auto)",
-      class: "capitalize",
-    },
-    {
-      title: t("schema-template.classification.self"),
-      width: "minmax(min-content, auto)",
-      class: "capitalize",
-      hide: !classificationConfig.value,
-    },
-    {
-      title: t("schema-template.form.column-type"),
-      width: "minmax(min-content, auto)",
-      class: "capitalize",
-    },
-    {
-      title: t("schema-template.form.default-value"),
-      width: "minmax(min-content, auto)",
-      class: "capitalize",
-    },
-    {
-      title: t("schema-template.form.comment"),
-      width: "minmax(min-content, auto)",
-      class: "capitalize",
-    },
-    {
-      title: t("common.labels"),
-      width: "minmax(min-content, auto)",
-      class: "capitalize",
-    },
-    {
-      title: t("common.operations"),
-      width: "minmax(min-content, auto)",
-      class: "capitalize",
-    },
-  ].filter((col) => !col.hide);
-});
+const columns = computed(
+  (): DataTableColumn<SchemaTemplateSetting_FieldTemplate>[] => {
+    const cols: DataTableColumn<SchemaTemplateSetting_FieldTemplate>[] = [
+      {
+        title: t("schema-template.form.category"),
+        key: "category",
+        render: (item) => item.category || "-",
+      },
+      {
+        title: t("schema-template.form.column-name"),
+        key: "name",
+        render: (item) => (
+          <div class="flex justify-start items-center">
+            <EngineIcon engine={item.engine} customClass="ml-0 mr-1" />
+            {item.column?.name ?? ""}
+          </div>
+        ),
+      },
+      {
+        title: t("settings.sensitive-data.semantic-types.table.semantic-type"),
+        key: "semanticType",
+        render: (item) => {
+          const semanticType = getSemanticType(item.catalog?.semanticType);
+          if (semanticType) {
+            return semanticType.title;
+          }
+          return <span class="text-control-placeholder italic">N/A</span>;
+        },
+      },
+    ];
 
-const clickRow = (template: SchemaTemplateSetting_FieldTemplate) => {
-  emit("apply", template);
-};
+    if (classificationConfig.value) {
+      cols.push({
+        title: t("schema-template.classification.self"),
+        key: "classification",
+        render: (item) => (
+          <ClassificationLevelBadge
+            classification={item.catalog?.classification}
+            classificationConfig={classificationConfig.value!}
+          />
+        ),
+      });
+    }
 
-const isRowClickable = (template: SchemaTemplateSetting_FieldTemplate) => {
-  return template.engine === props.engine;
+    cols.push(
+      {
+        title: t("schema-template.form.column-type"),
+        key: "type",
+        render: (item) => item.column?.type ?? "",
+      },
+      {
+        title: t("schema-template.form.default-value"),
+        key: "default",
+        render: (item) => getColumnDefaultValuePlaceholder(item.column!),
+      },
+      {
+        title: t("schema-template.form.comment"),
+        key: "comment",
+        render: (item) => item.column?.userComment ?? "",
+      },
+      {
+        title: t("common.labels"),
+        key: "labels",
+        render: (item) => (
+          <DatabaseLabelsCell
+            labels={item.catalog?.labels ?? {}}
+            showCount={2}
+          />
+        ),
+      },
+      {
+        title: t("common.operations"),
+        key: "operations",
+        width: 160,
+        render: (item) => (
+          <div class="flex items-center justify-start gap-x-2">
+            <MiniActionButton
+              onClick={(e: MouseEvent) => {
+                e.stopPropagation();
+                emit("view", item);
+              }}
+            >
+              <PencilIcon class="w-4 h-4" />
+            </MiniActionButton>
+            {!props.readonly && (
+              <NPopconfirm onPositiveClick={() => deleteTemplate(item.id)}>
+                {{
+                  trigger: () => (
+                    <MiniActionButton
+                      onClick={(e: MouseEvent) => e.stopPropagation()}
+                    >
+                      <TrashIcon class="w-4 h-4" />
+                    </MiniActionButton>
+                  ),
+                  default: () => (
+                    <div class="whitespace-nowrap">
+                      {t("common.delete")} '{item.column?.name}'?
+                    </div>
+                  ),
+                }}
+              </NPopconfirm>
+            )}
+          </div>
+        ),
+      }
+    );
+
+    return cols;
+  }
+);
+
+const rowProps = (row: SchemaTemplateSetting_FieldTemplate) => {
+  if (!props.readonly && row.engine === props.engine) {
+    return {
+      style: "cursor: pointer;",
+      onClick: () => {
+        emit("apply", row);
+      },
+    };
+  }
+  return {};
 };
 
 const deleteTemplate = async (id: string) => {

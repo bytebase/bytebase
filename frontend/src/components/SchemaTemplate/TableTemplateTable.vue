@@ -1,55 +1,21 @@
 <template>
-  <BBGrid
-    :column-list="columnList"
-    :data-source="templateList"
-    :is-row-clickable="isRowClickable"
-    class="border"
-    @click-row="clickRow"
-  >
-    <template #item="{ item }: { item: SchemaTemplateSetting_TableTemplate }">
-      <div class="bb-grid-cell">
-        {{ item.category || "-" }}
-      </div>
-      <div class="bb-grid-cell flex justify-start items-center">
-        <EngineIcon :engine="item.engine" custom-class="ml-0 mr-1" />
-        {{ item.table?.name }}
-      </div>
-      <div v-if="classificationConfig" class="bb-grid-cell flex gap-x-1">
-        <ClassificationLevelBadge
-          :classification="item.catalog?.classification"
-          :classification-config="classificationConfig"
-        />
-      </div>
-      <div class="bb-grid-cell">
-        {{ item.table?.userComment }}
-      </div>
-      <div class="bb-grid-cell flex items-center justify-start gap-x-2">
-        <MiniActionButton @click.stop="$emit('view', item)">
-          <PencilIcon class="w-4 h-4" />
-        </MiniActionButton>
-        <NPopconfirm v-if="!readonly" @positive-click="deleteTemplate(item.id)">
-          <template #trigger>
-            <MiniActionButton tag="div" @click.stop>
-              <TrashIcon class="w-4 h-4" />
-            </MiniActionButton>
-          </template>
-          <div class="whitespace-nowrap">
-            {{ $t("common.delete") + ` '${item.table?.name}'?` }}
-          </div>
-        </NPopconfirm>
-      </div>
-    </template>
-  </BBGrid>
+  <NDataTable
+    size="small"
+    :columns="columns"
+    :data="templateList"
+    :striped="true"
+    :bordered="true"
+    :row-props="rowProps"
+  />
 </template>
 
-<script lang="ts" setup>
+<script lang="tsx" setup>
 import { pullAt } from "lodash-es";
 import { PencilIcon, TrashIcon } from "lucide-vue-next";
-import { NPopconfirm } from "naive-ui";
+import { NPopconfirm, NDataTable } from "naive-ui";
+import type { DataTableColumn } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import type { BBGridColumn } from "@/bbkit";
-import { BBGrid } from "@/bbkit";
 import { MiniActionButton } from "@/components/v2";
 import { useSettingV1Store } from "@/store";
 import type { Engine } from "@/types/proto/v1/common";
@@ -73,43 +39,96 @@ const emit = defineEmits<{
 const { t } = useI18n();
 const settingStore = useSettingV1Store();
 
-const columnList = computed((): BBGridColumn[] => {
-  return [
-    {
-      title: t("schema-template.form.category"),
-      width: "minmax(min-content, auto)",
-      class: "capitalize",
-    },
-    {
-      title: t("schema-template.form.table-name"),
-      width: "minmax(min-content, auto)",
-      class: "capitalize",
-    },
-    {
-      title: t("schema-template.classification.self"),
-      width: "minmax(min-content, auto)",
-      class: "capitalize",
-      hide: !classificationConfig.value,
-    },
-    {
-      title: t("schema-template.form.comment"),
-      width: "minmax(min-content, auto)",
-      class: "capitalize",
-    },
-    {
-      title: t("common.operations"),
-      width: "minmax(min-content, auto)",
-      class: "capitalize",
-    },
-  ].filter((col) => !col.hide);
-});
+const columns = computed(
+  (): DataTableColumn<SchemaTemplateSetting_TableTemplate>[] => {
+    const cols: DataTableColumn<SchemaTemplateSetting_TableTemplate>[] = [
+      {
+        title: t("schema-template.form.category"),
+        key: "category",
+        render: (item) => item.category || "-",
+      },
+      {
+        title: t("schema-template.form.table-name"),
+        key: "name",
+        render: (item) => (
+          <div class="flex justify-start items-center">
+            <EngineIcon engine={item.engine} customClass="ml-0 mr-1" />
+            {item.table?.name ?? ""}
+          </div>
+        ),
+      },
+    ];
 
-const clickRow = (template: SchemaTemplateSetting_TableTemplate) => {
-  emit("apply", template);
-};
+    if (classificationConfig.value) {
+      cols.push({
+        title: t("schema-template.classification.self"),
+        key: "classification",
+        render: (item) => (
+          <ClassificationLevelBadge
+            classification={item.catalog?.classification}
+            classificationConfig={classificationConfig.value!}
+          />
+        ),
+      });
+    }
 
-const isRowClickable = (template: SchemaTemplateSetting_TableTemplate) => {
-  return template.engine === props.engine;
+    cols.push(
+      {
+        title: t("schema-template.form.comment"),
+        key: "comment",
+        render: (item) => item.table?.userComment ?? "",
+      },
+      {
+        title: t("common.operations"),
+        key: "operations",
+        width: 160,
+        render: (item) => (
+          <div class="flex items-center justify-start gap-x-2">
+            <MiniActionButton
+              onClick={(e: MouseEvent) => {
+                e.stopPropagation();
+                emit("view", item);
+              }}
+            >
+              <PencilIcon class="w-4 h-4" />
+            </MiniActionButton>
+            {!props.readonly && (
+              <NPopconfirm onPositiveClick={() => deleteTemplate(item.id)}>
+                {{
+                  trigger: () => (
+                    <MiniActionButton
+                      onClick={(e: MouseEvent) => e.stopPropagation()}
+                    >
+                      <TrashIcon class="w-4 h-4" />
+                    </MiniActionButton>
+                  ),
+                  default: () => (
+                    <div class="whitespace-nowrap">
+                      {t("common.delete")} '{item.table?.name}'?
+                    </div>
+                  ),
+                }}
+              </NPopconfirm>
+            )}
+          </div>
+        ),
+      }
+    );
+
+    return cols;
+  }
+);
+
+const rowProps = (row: SchemaTemplateSetting_TableTemplate) => {
+  if (!props.readonly && row.engine === props.engine) {
+    return {
+      style: "cursor: pointer;",
+      onClick: () => {
+        emit("apply", row);
+      },
+    };
+  }
+  return {};
 };
 
 const deleteTemplate = async (id: string) => {
