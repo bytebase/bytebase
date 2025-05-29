@@ -21,7 +21,7 @@
       />
       <div class="w-full truncate space-x-1">
         <NTag round :size="'small'">
-          {{ specReleaseVersion(spec) }}
+          "TODO(d): version"
         </NTag>
         <span class="text-sm">
           {{
@@ -176,10 +176,6 @@ const shouldShowAppliedAlert = computed(() => {
     specList.value.length
   );
 });
-
-const specReleaseVersion = (spec: Plan_Spec): string => {
-  return spec.changeDatabaseConfig!.schemaVersion;
-};
 
 const getFileByName = (name: string) => {
   return props.release.files.find((file) => name.endsWith(`files/${file.id}`));

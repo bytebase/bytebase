@@ -73,9 +73,6 @@ message PlanConfig {
       DATA = 6;
     }
     Type type = 3;
-    // schema_version is parsed from file name.
-    // It is automatically generated in the UI workflow.
-    string schema_version = 4;
 
     map<string, string> ghost_flags = 7;
 
