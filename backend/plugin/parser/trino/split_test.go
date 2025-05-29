@@ -33,82 +33,78 @@ func TestTrinoSplitMultiSQL(t *testing.T) {
 			want: resData{
 				res: []base.SingleSQL{
 					{
-						Text: "SELECT * FROM users;",
-						End:  &storepb.Position{Line: 0, Column: 19},
+						Text:  "SELECT * FROM users;",
+						Start: &storepb.Position{Line: 0, Column: 0},
+						End:   &storepb.Position{Line: 0, Column: 20},
 					},
 					{
-						Text:     " SELECT * FROM orders;",
+						Text:     "SELECT * FROM orders;",
 						BaseLine: 0,
 						Start:    &storepb.Position{Line: 0, Column: 21},
-						End:      &storepb.Position{Line: 0, Column: 41},
+						End:      &storepb.Position{Line: 0, Column: 42},
 					},
 				},
 			},
 		},
 		{
 			statement: `
-			-- This is a comment
-			SELECT 
-				id, 
-				name 
-			FROM users 
-			WHERE status = 'active';
-			
-			/* This is a multi-line
-			   comment */
-			SELECT * FROM orders;`,
+				-- This is a comment
+				SELECT 
+					id, 
+					name 
+				FROM users 
+				WHERE status = 'active';
+				
+				/* This is a multi-line
+				   comment */
+				SELECT * FROM orders;`,
 			want: resData{
 				res: []base.SingleSQL{
 					{
-						Text: `--
-			SELECT 
-				id, 
-				name 
-			FROM users 
-			WHERE status = 'active';`,
-						Start: &storepb.Position{Line: 2, Column: 3},
-						End:   &storepb.Position{Line: 6, Column: 26},
+						Text: `SELECT 
+					id, 
+					name 
+				FROM users 
+				WHERE status = 'active';`,
+						BaseLine: 2,
+						Start:    &storepb.Position{Line: 2, Column: 4},
+						End:      &storepb.Position{Line: 6, Column: 28},
 					},
 					{
-						Text: `
-			
-			/* This is a multi-line
-			   comment */
-			SELECT * FROM orders;`,
-						BaseLine: 6,
-						Start:    &storepb.Position{Line: 10, Column: 3},
-						End:      &storepb.Position{Line: 10, Column: 23},
+						Text:     `SELECT * FROM orders;`,
+						BaseLine: 10,
+						Start:    &storepb.Position{Line: 10, Column: 4},
+						End:      &storepb.Position{Line: 10, Column: 25},
 					},
 				},
 			},
 		},
 		{
 			statement: `WITH orders_cte AS (
-				SELECT * FROM orders
-			)
-			SELECT u.id, u.name, o.order_id 
-			FROM users u
-			JOIN orders_cte o ON u.id = o.user_id;
-			
-			SELECT * FROM products;`,
+					SELECT * FROM orders
+				)
+				SELECT u.id, u.name, o.order_id 
+				FROM users u
+				JOIN orders_cte o ON u.id = o.user_id;
+				
+				SELECT * FROM products;`,
 			want: resData{
 				res: []base.SingleSQL{
 					{
 						Text: `WITH orders_cte AS (
-				SELECT * FROM orders
-			)
-			SELECT u.id, u.name, o.order_id 
-			FROM users u
-			JOIN orders_cte o ON u.id = o.user_id;`,
-						End: &storepb.Position{Line: 5, Column: 41},
+					SELECT * FROM orders
+				)
+				SELECT u.id, u.name, o.order_id 
+				FROM users u
+				JOIN orders_cte o ON u.id = o.user_id;`,
+						Start: &storepb.Position{Line: 0, Column: 0},
+						End:   &storepb.Position{Line: 5, Column: 42},
 					},
 					{
-						Text: `
-			
-			SELECT * FROM products;`,
-						BaseLine: 5,
-						Start:    &storepb.Position{Line: 7, Column: 3},
-						End:      &storepb.Position{Line: 7, Column: 25},
+						Text:     `SELECT * FROM products;`,
+						BaseLine: 7,
+						Start:    &storepb.Position{Line: 7, Column: 4},
+						End:      &storepb.Position{Line: 7, Column: 27},
 					},
 				},
 			},
