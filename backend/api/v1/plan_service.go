@@ -963,6 +963,7 @@ func (s *PlanService) getUserByIdentifier(ctx context.Context, identifier string
 	return user, nil
 }
 
+// Deprecated.
 func (s *PlanService) PreviewPlan(ctx context.Context, request *v1pb.PreviewPlanRequest) (*v1pb.PreviewPlanResponse, error) {
 	projectID, err := common.GetProjectID(request.Project)
 	if err != nil {
@@ -1213,15 +1214,16 @@ func validateSpecs(specs []*v1pb.Plan_Spec) error {
 		case *v1pb.Plan_Spec_CreateDatabaseConfig:
 			configTypeCount["create_database"]++
 		case *v1pb.Plan_Spec_ChangeDatabaseConfig:
-			target := config.ChangeDatabaseConfig.Target
-			if _, _, err := common.GetInstanceDatabaseID(target); err == nil {
-				databaseTarget++
-				configTypeCount["change_database"]++
-			} else if _, _, err := common.GetProjectIDDatabaseGroupID(target); err == nil {
-				databaseGroupTarget++
-				configTypeCount["change_database_group"]++
-			} else {
-				return errors.Errorf("invalid target %v", target)
+			for _, target := range config.ChangeDatabaseConfig.Targets {
+				if _, _, err := common.GetInstanceDatabaseID(target); err == nil {
+					databaseTarget++
+					configTypeCount["change_database"]++
+				} else if _, _, err := common.GetProjectIDDatabaseGroupID(target); err == nil {
+					databaseGroupTarget++
+					configTypeCount["change_database_group"]++
+				} else {
+					return errors.Errorf("invalid target %v", target)
+				}
 			}
 		case *v1pb.Plan_Spec_ExportDataConfig:
 			configTypeCount["export_data"]++
@@ -1239,7 +1241,10 @@ func validateSpecs(specs []*v1pb.Plan_Spec) error {
 func getPlanSpecDatabaseGroups(specs []*storepb.PlanConfig_Spec) []string {
 	var databaseGroups []string
 	for _, spec := range specs {
-		if target := spec.GetChangeDatabaseConfig().GetTarget(); target != "" {
+		if _, ok := spec.Config.(*storepb.PlanConfig_Spec_ChangeDatabaseConfig); !ok {
+			continue
+		}
+		for _, target := range spec.GetChangeDatabaseConfig().GetTargets() {
 			if _, _, err := common.GetProjectIDDatabaseGroupID(target); err == nil {
 				databaseGroups = append(databaseGroups, target)
 			}

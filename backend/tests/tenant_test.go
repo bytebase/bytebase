@@ -153,9 +153,9 @@ func TestDatabaseGroup(t *testing.T) {
 				Id: uuid.NewString(),
 				Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
 					ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
-						Target: databaseGroup.Name,
-						Sheet:  sheet.Name,
-						Type:   v1pb.Plan_ChangeDatabaseConfig_MIGRATE,
+						Targets: []string{databaseGroup.Name},
+						Sheet:   sheet.Name,
+						Type:    v1pb.Plan_ChangeDatabaseConfig_MIGRATE,
 					},
 				},
 			},
