@@ -302,7 +302,7 @@ const allowEditStatementWhenCreating = computed(() => {
     // Not allowed to edit pre-generated sheets
     // E.g., rollback DML
     return false;
-  } 
+  }
   // Do not allow to edit statement for the plan with release source.
   if ((issue.value.planEntity?.specs?.filter(spec => spec.changeDatabaseConfig?.release)??[]).length > 0) {
     return false;
@@ -360,9 +360,7 @@ const shouldShowEditButton = computed(() => {
     return false;
   }
   // Do not allow to edit statement for the plan with release source.
-  if (issue.value.planEntity?.specs?.find(spec => 
-      spec.changeDatabaseConfig?.release
-    )?.changeDatabaseConfig?.release) {
+  if ((issue.value.planEntity?.specs?.filter(spec => spec.changeDatabaseConfig?.release)??[]).length > 0) {
     return false;
   }
   // Will show another button group as [Upload][Cancel][Save]
