@@ -18,6 +18,8 @@ import (
 	"github.com/spf13/cobra"
 	"go.uber.org/multierr"
 
+	"github.com/google/uuid"
+
 	"github.com/bytebase/bytebase/action/args"
 	"github.com/bytebase/bytebase/action/github"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -241,25 +243,20 @@ func runRollout(command *cobra.Command, _ []string) error {
 		}
 		outputMap["release"] = createReleaseResponse.Name
 
-		planPreview, err := client.previewPlan(Config.Project, &v1pb.PreviewPlanRequest{
-			Release:         createReleaseResponse.Name,
-			Targets:         Config.Targets,
-			AllowOutOfOrder: true,
+		planCreated, err := client.createPlan(Config.Project, &v1pb.Plan{
+			Title: Config.ReleaseTitle,
+			Specs: []*v1pb.Plan_Spec{
+				{
+					Id: uuid.New().String(),
+					Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
+						ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
+							Targets: Config.Targets,
+							Release: createReleaseResponse.Name,
+						},
+					},
+				},
+			},
 		})
-		if err != nil {
-			return errors.Wrapf(err, "failed to preview plan")
-		}
-
-		specCount := 0
-		for _, step := range planPreview.GetPlan().GetSteps() {
-			specCount += len(step.GetSpecs())
-		}
-		if specCount == 0 {
-			slog.Info("no change required. exiting...")
-			return nil
-		}
-
-		planCreated, err := client.createPlan(Config.Project, planPreview.Plan)
 		if err != nil {
 			return errors.Wrapf(err, "failed to create plan")
 		}
