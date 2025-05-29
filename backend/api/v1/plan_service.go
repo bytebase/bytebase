@@ -1239,7 +1239,10 @@ func validateSpecs(specs []*v1pb.Plan_Spec) error {
 func getPlanSpecDatabaseGroups(specs []*storepb.PlanConfig_Spec) []string {
 	var databaseGroups []string
 	for _, spec := range specs {
-		if target := spec.GetChangeDatabaseConfig().GetTarget(); target != "" {
+		if _, ok := spec.Config.(*storepb.PlanConfig_Spec_ChangeDatabaseConfig); !ok {
+			continue
+		}
+		for _, target := range spec.GetChangeDatabaseConfig().GetTargets() {
 			if _, _, err := common.GetProjectIDDatabaseGroupID(target); err == nil {
 				databaseGroups = append(databaseGroups, target)
 			}

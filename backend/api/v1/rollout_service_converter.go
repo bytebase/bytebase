@@ -104,7 +104,7 @@ func convertToPlanSpecChangeDatabaseConfig(config *storepb.PlanConfig_Spec_Chang
 	c := config.ChangeDatabaseConfig
 	return &v1pb.Plan_Spec_ChangeDatabaseConfig{
 		ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
-			Target:     c.Target,
+			Targets:    c.Targets,
 			Sheet:      c.Sheet,
 			Release:    c.Release,
 			Type:       convertToPlanSpecChangeDatabaseConfigType(c.Type),
@@ -268,7 +268,7 @@ func convertPlanSpecChangeDatabaseConfig(config *v1pb.Plan_Spec_ChangeDatabaseCo
 	}
 	return &storepb.PlanConfig_Spec_ChangeDatabaseConfig{
 		ChangeDatabaseConfig: &storepb.PlanConfig_ChangeDatabaseConfig{
-			Target:                c.Target,
+			Targets:               c.Targets,
 			Sheet:                 c.Sheet,
 			Release:               c.Release,
 			Type:                  storepb.PlanConfig_ChangeDatabaseConfig_Type(c.Type),
