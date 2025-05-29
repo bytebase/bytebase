@@ -2542,10 +2542,6 @@
     "files": "Files",
     "create": "Create release",
     "select": "Select release",
-    "tasks-to-apply": "Tasks to apply",
-    "out-of-order-files": "Out of order files",
-    "applied-but-modifed-files": "Applied but modified files",
-    "allow-out-of-order": "Allow out of order",
     "archive-this-release": "Archive this release",
     "total-files": "Total {count} files",
     "actions": {
@@ -2555,8 +2551,7 @@
     "messages": {
       "succeed-to-create-release": "Succeed to create release",
       "files-will-always-be-sorted-and-executed-in-version-order": "The files will always be sorted and executed in version order.",
-      "cannot-modify-files-after-created": "You cannot modify files after the release is created.",
-      "bytebase-will-skip-those-files-has-been-applied-on-target-database": "Bytebase will automatically skip those files that have already been executed on the target database."
+      "cannot-modify-files-after-created": "You cannot modify files after the release is created."
     },
     "usage-description": "The release is only used in custom GitOps with API integration."
   },

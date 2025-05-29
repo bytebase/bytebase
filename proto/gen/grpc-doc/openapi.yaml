@@ -6134,37 +6134,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
-    /v1/projects/{project}:previewPlan:
-        post:
-            tags:
-                - PlanService
-            operationId: PlanService_PreviewPlan
-            parameters:
-                - name: project
-                  in: path
-                  description: The project id.
-                  required: true
-                  schema:
-                    type: string
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/PreviewPlanRequest'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/PreviewPlanResponse'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
     /v1/projects/{project}:previewRollout:
         post:
             tags:
@@ -11484,58 +11453,6 @@ components:
                 expectedSchema:
                     type: string
                     description: The expected SDL schema after normalizing.
-        PreviewPlanRequest:
-            required:
-                - project
-                - release
-                - targets
-            type: object
-            properties:
-                project:
-                    type: string
-                    description: |-
-                        The name of the project.
-                         Format: projects/{project}
-                release:
-                    type: string
-                    description: The release used for preview.
-                targets:
-                    type: array
-                    items:
-                        type: string
-                    description: |-
-                        The targets to deploy.
-                         Can be database or databaseGroup.
-                         Format:
-                         projects/{project}/databaseGroups/{databaseGroup}
-                         instances/{instance}/databases/{database}
-                allowOutOfOrder:
-                    type: boolean
-        PreviewPlanResponse:
-            type: object
-            properties:
-                plan:
-                    $ref: '#/components/schemas/Plan'
-                outOfOrderFiles:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/PreviewPlanResponse_DatabaseFiles'
-                    description: The out of order files of each database.
-                appliedButModifiedFiles:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/PreviewPlanResponse_DatabaseFiles'
-                    description: The applied but modified files of each database.
-        PreviewPlanResponse_DatabaseFiles:
-            type: object
-            properties:
-                database:
-                    type: string
-                files:
-                    type: array
-                    items:
-                        type: string
-                    description: 'Format: projects/{project}/releases/{release}/files/{file_id}'
         PreviewRolloutRequest:
             required:
                 - project
