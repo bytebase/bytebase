@@ -12,6 +12,7 @@
             ExportFormat.XLSX,
           ]"
           :tooltip="disableExportTip"
+          :view-mode="'DROPDOWN'"
           :disabled="!hasAuditLogFeature || !!disableExportTip"
           @export="handleExport"
         />
@@ -76,9 +77,17 @@ const readonlyScopes = computed((): SearchScope[] => {
 });
 
 const defaultSearchParams = () => {
+  const to = dayjs().endOf("day");
+  const from = to.add(-30, "day");
   const params: SearchParams = {
     query: "",
-    scopes: [...readonlyScopes.value],
+    scopes: [
+      ...readonlyScopes.value,
+      {
+        id: "created",
+        value: `${from.valueOf()},${to.valueOf()}`,
+      },
+    ],
   };
   return params;
 };

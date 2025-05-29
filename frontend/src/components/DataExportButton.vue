@@ -151,14 +151,13 @@ const props = withDefaults(
     size?: "small" | "tiny" | "medium" | "large";
     disabled?: boolean;
     supportFormats: ExportFormat[];
-    allowSpecifyRowCount?: boolean;
+    viewMode: "DRAWER" | "DROPDOWN";
     fileType: "zip" | "raw";
     tooltip?: string;
   }>(),
   {
     size: "small",
     disabled: false,
-    allowSpecifyRowCount: false,
     tooltip: undefined,
   }
 );
@@ -185,10 +184,6 @@ const state = reactive<LocalState>({
 });
 const formRef = ref<FormInst>();
 const formData = ref<ExportOption>(defaultFormData());
-
-const viewMode = computed(() => {
-  return props.allowSpecifyRowCount ? "DRAWER" : "DROPDOWN";
-});
 
 const rules: FormRules = {
   limit: [
@@ -256,7 +251,7 @@ const formErrors = asyncComputed(() => {
 
 const handleClickExportButton = (e: MouseEvent) => {
   e.preventDefault();
-  if (viewMode.value === "DROPDOWN") return;
+  if (props.viewMode === "DROPDOWN") return;
 
   state.showDrawer = true;
 };
