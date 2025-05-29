@@ -246,6 +246,9 @@ func (s *PlanService) CreatePlan(ctx context.Context, request *v1pb.CreatePlanRe
 	// Convert steps to specs if needed for backward compatibility
 	convertStepsToSpecs(request.Plan)
 
+	// Convert Target to Targets grouped by Sheet
+	convertTargetToTargets(request.Plan)
+
 	// Validate plan specs
 	if err := validateSpecs(request.Plan.Specs); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to validate plan specs, error: %v", err)
@@ -1357,4 +1360,76 @@ func convertStepsToSpecs(plan *v1pb.Plan) {
 			plan.Specs = append(plan.Specs, step.Specs...)
 		}
 	}
+}
+
+// convertTargetToTargets converts deprecated Target field to Targets field grouped by Sheet.
+func convertTargetToTargets(plan *v1pb.Plan) {
+	// Group specs by sheet
+	sheetToSpecs := make(map[string][]*v1pb.Plan_Spec)
+	var otherSpecs []*v1pb.Plan_Spec
+
+	for _, spec := range plan.Specs {
+		if changeDatabaseConfig := spec.GetChangeDatabaseConfig(); changeDatabaseConfig != nil {
+			// Only process if Target is set and Targets is empty
+			if changeDatabaseConfig.Target != "" && len(changeDatabaseConfig.Targets) == 0 {
+				changeDatabaseConfig.Targets = []string{changeDatabaseConfig.Target}
+				changeDatabaseConfig.Target = "" // Clear the deprecated field
+				sheetToSpecs[changeDatabaseConfig.Sheet] = append(sheetToSpecs[changeDatabaseConfig.Sheet], spec)
+				continue
+			}
+		}
+		otherSpecs = append(otherSpecs, spec)
+	}
+
+	// Merge specs with the same sheet
+	var newSpecs []*v1pb.Plan_Spec
+	for sheet, specs := range sheetToSpecs {
+		if len(specs) == 1 {
+			newSpecs = append(newSpecs, specs[0])
+		} else {
+			// Merge multiple specs with the same sheet
+			var targets []string
+			var release string
+			var changeType v1pb.Plan_ChangeDatabaseConfig_Type
+			var ghostFlags map[string]string
+			var preUpdateBackupDetail *v1pb.Plan_ChangeDatabaseConfig_PreUpdateBackupDetail
+
+			for _, spec := range specs {
+				config := spec.GetChangeDatabaseConfig()
+				targets = append(targets, config.Targets...)
+				if release == "" {
+					release = config.Release
+				}
+				if changeType == v1pb.Plan_ChangeDatabaseConfig_TYPE_UNSPECIFIED {
+					changeType = config.Type
+				}
+				if len(ghostFlags) == 0 {
+					ghostFlags = config.GhostFlags
+				}
+				if preUpdateBackupDetail == nil {
+					preUpdateBackupDetail = config.PreUpdateBackupDetail
+				}
+			}
+
+			// Create merged spec
+			mergedSpec := &v1pb.Plan_Spec{
+				Id: specs[0].Id, // Use the first spec's ID
+				Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
+					ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
+						Targets:               targets,
+						Sheet:                 sheet,
+						Release:               release,
+						Type:                  changeType,
+						GhostFlags:            ghostFlags,
+						PreUpdateBackupDetail: preUpdateBackupDetail,
+					},
+				},
+			}
+			newSpecs = append(newSpecs, mergedSpec)
+		}
+	}
+
+	// Add back non-change database specs
+	newSpecs = append(newSpecs, otherSpecs...)
+	plan.Specs = newSpecs
 }
