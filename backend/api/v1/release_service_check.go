@@ -158,7 +158,26 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, request *v1pb.CheckRe
 				return nil, status.Errorf(codes.Internal, "failed to list revisions: %v", err)
 			}
 			if len(revisions) > 0 {
-				// Skip the file if it has been applied to the database.
+				// Check if the SHA256 matches
+				appliedRevision := revisions[0]
+				if appliedRevision.Payload.SheetSha256 != file.SheetSha256 {
+					// Add a warning advice if SHA256 mismatch
+					checkResult := &v1pb.CheckReleaseResponse_CheckResult{
+						File:   file.Path,
+						Target: fmt.Sprintf("instances/%s/databases/%s", instance.ResourceID, database.DatabaseName),
+						Advices: []*v1pb.Advice{
+							{
+								Status:  v1pb.Advice_WARNING,
+								Code:    advisor.Internal.Int32(),
+								Title:   "Applied file has been modified",
+								Content: fmt.Sprintf("The file %q with version %q has already been applied to the database, but its content has been modified. Applied SHA256: %s, Release SHA256: %s", file.Path, file.Version, appliedRevision.Payload.SheetSha256, file.SheetSha256),
+							},
+						},
+					}
+					response.Results = append(response.Results, checkResult)
+					warningAdviceCount++
+				}
+				// Skip the file since it has been applied to the database.
 				continue
 			}
 
