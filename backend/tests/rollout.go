@@ -19,9 +19,9 @@ func (ctl *controller) changeDatabase(ctx context.Context, project *v1pb.Project
 					Id: uuid.NewString(),
 					Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
 						ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
-							Target: database.Name,
-							Sheet:  sheet.Name,
-							Type:   changeType,
+							Targets: []string{database.Name},
+							Sheet:   sheet.Name,
+							Type:    changeType,
 						},
 					},
 				},
