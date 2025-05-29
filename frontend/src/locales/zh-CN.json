@@ -1380,7 +1380,6 @@
     "successfully-transferred-databases": "数据库转移完成",
     "nullable": "可为空",
     "expression": "表达式",
-    "position": "位置",
     "unique": "Unique",
     "visible": "Visible",
     "comment": "注释",

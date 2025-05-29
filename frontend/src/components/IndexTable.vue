@@ -1,59 +1,24 @@
 <template>
-  <BBTable
-    :column-list="columnList"
-    :section-data-source="sectionList"
-    :show-header="true"
-    :compact-section="false"
-  >
-    <template #header>
-      <BBTableHeaderCell
-        :left-padding="4"
-        class="w-16"
-        :title="columnList[0].title"
-      />
-      <BBTableHeaderCell
-        v-if="showPositionColumn"
-        class="w-4"
-        :title="columnList[1].title"
-      />
-      <BBTableHeaderCell class="w-4" :title="columnList[2].title" />
-      <BBTableHeaderCell
-        v-if="showVisibleColumn"
-        class="w-4"
-        :title="columnList[3].title"
-      />
-      <BBTableHeaderCell
-        v-if="showCommentColumn"
-        class="w-16"
-        :title="columnList[4].title"
-      />
-    </template>
-    <template #body="{ rowData: index }">
-      <BBTableCell :left-padding="4">
-        {{ index.expressions.join(",") }}
-      </BBTableCell>
-      <BBTableCell v-if="showPositionColumn">
-        {{ index.position }}
-      </BBTableCell>
-      <BBTableCell>
-        {{ index.unique }}
-      </BBTableCell>
-      <BBTableCell v-if="showVisibleColumn">
-        {{ index.visible }}
-      </BBTableCell>
-      <BBTableCell v-if="showCommentColumn">
-        {{ index.comment }}
-      </BBTableCell>
-    </template>
-  </BBTable>
+  <div v-for="(section, sectionIndex) in sectionList" :key="sectionIndex">
+    <h3 class="text-left pl-4 pt-4 pb-2 text-base font-medium text-gray-900">
+      {{ section.title }}
+    </h3>
+    <NDataTable
+      size="small"
+      :columns="columns"
+      :data="section.list"
+      :striped="true"
+      :bordered="true"
+    />
+  </div>
 </template>
 
 <script lang="ts" setup>
+import type { DataTableColumn } from "naive-ui";
+import { NDataTable } from "naive-ui";
 import type { PropType } from "vue";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { BBTable, BBTableCell, BBTableHeaderCell } from "@/bbkit";
-import type { BBTableSectionDataSource } from "@/bbkit/types";
 import type { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import type { IndexMetadata } from "@/types/proto/v1/database_service";
@@ -76,44 +41,58 @@ const showVisibleColumn = computed(() => {
     props.database.instanceResource.engine !== Engine.MONGODB
   );
 });
-const showPositionColumn = computed(() => {
-  return props.database.instanceResource.engine !== Engine.MONGODB;
-});
 const showCommentColumn = computed(() => {
   return props.database.instanceResource.engine !== Engine.MONGODB;
 });
-const columnList = computed(() => [
-  {
-    title: t("database.expression"),
-  },
-  {
-    title: t("database.position"),
-  },
-  {
+const columns = computed((): DataTableColumn<IndexMetadata>[] => {
+  const cols: DataTableColumn<IndexMetadata>[] = [
+    {
+      title: t("database.expression"),
+      key: "expressions",
+      render: (row) => row.expressions.join(","),
+    },
+  ];
+
+  cols.push({
     title: t("database.unique"),
-  },
-  {
-    title: t("database.visible"),
-  },
-  {
-    title: t("database.comment"),
-  },
-]);
+    key: "unique",
+    render: (row) => String(row.unique),
+  });
+
+  if (showVisibleColumn.value) {
+    cols.push({
+      title: t("database.visible"),
+      key: "visible",
+      render: (row) => String(row.visible),
+    });
+  }
+
+  if (showCommentColumn.value) {
+    cols.push({
+      title: t("database.comment"),
+      key: "comment",
+      render: (row) => row.comment || "-",
+    });
+  }
+
+  return cols;
+});
+
 const sectionList = computed(() => {
-  const sectionList: BBTableSectionDataSource<IndexMetadata>[] = [];
+  const sections: { title: string; list: IndexMetadata[] }[] = [];
 
   for (const index of props.indexList) {
-    const item = sectionList.find((item) => item.title == index.name);
+    const item = sections.find((item) => item.title == index.name);
     if (item) {
       item.list.push(index);
     } else {
-      sectionList.push({
+      sections.push({
         title: index.name,
         list: [index],
       });
     }
   }
 
-  return sectionList;
+  return sections;
 });
 </script>
