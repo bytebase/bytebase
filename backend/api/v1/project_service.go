@@ -950,7 +950,7 @@ func (s *ProjectService) TestWebhook(ctx context.Context, request *v1pb.TestWebh
 		webhookplugin.Context{
 			URL:          webhook.URL,
 			Level:        webhookplugin.WebhookInfo,
-			ActivityType: string(base.ActivityIssueCreate),
+			ActivityType: string(base.EventTypeIssueCreate),
 			Title:        fmt.Sprintf("Test webhook %q", webhook.Title),
 			TitleZh:      fmt.Sprintf("测试 webhook %q", webhook.Title),
 			Description:  "This is a test",
@@ -1008,23 +1008,23 @@ func convertToActivityTypeStrings(types []v1pb.Activity_Type) ([]string, error) 
 		case v1pb.Activity_TYPE_UNSPECIFIED:
 			return nil, common.Errorf(common.Invalid, "activity type must not be unspecified")
 		case v1pb.Activity_TYPE_ISSUE_CREATE:
-			result = append(result, string(base.ActivityIssueCreate))
+			result = append(result, string(base.EventTypeIssueCreate))
 		case v1pb.Activity_TYPE_ISSUE_COMMENT_CREATE:
-			result = append(result, string(base.ActivityIssueCommentCreate))
+			result = append(result, string(base.EventTypeIssueCommentCreate))
 		case v1pb.Activity_TYPE_ISSUE_FIELD_UPDATE:
-			result = append(result, string(base.ActivityIssueFieldUpdate))
+			result = append(result, string(base.EventTypeIssueUpdate))
 		case v1pb.Activity_TYPE_ISSUE_STATUS_UPDATE:
-			result = append(result, string(base.ActivityIssueStatusUpdate))
+			result = append(result, string(base.EventTypeIssueStatusUpdate))
 		case v1pb.Activity_TYPE_ISSUE_APPROVAL_NOTIFY:
-			result = append(result, string(base.ActivityIssueApprovalNotify))
+			result = append(result, string(base.EventTypeIssueApprovalCreate))
 		case v1pb.Activity_TYPE_ISSUE_PIPELINE_STAGE_STATUS_UPDATE:
-			result = append(result, string(base.ActivityPipelineStageStatusUpdate))
+			result = append(result, string(base.EventTypeStageStatusUpdate))
 		case v1pb.Activity_TYPE_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE:
-			result = append(result, string(base.ActivityPipelineTaskRunStatusUpdate))
+			result = append(result, string(base.EventTypeTaskRunStatusUpdate))
 		case v1pb.Activity_TYPE_NOTIFY_ISSUE_APPROVED:
-			result = append(result, string(base.ActivityNotifyIssueApproved))
+			result = append(result, string(base.EventTypeIssueApprovalPass))
 		case v1pb.Activity_TYPE_NOTIFY_PIPELINE_ROLLOUT:
-			result = append(result, string(base.ActivityNotifyPipelineRollout))
+			result = append(result, string(base.EventTypeIssueRolloutReady))
 		default:
 			return nil, common.Errorf(common.Invalid, "unsupported activity type: %v", tp)
 		}
@@ -1036,23 +1036,23 @@ func convertNotificationTypeStrings(types []string) []v1pb.Activity_Type {
 	var result []v1pb.Activity_Type
 	for _, tp := range types {
 		switch tp {
-		case string(base.ActivityIssueCreate):
+		case string(base.EventTypeIssueCreate):
 			result = append(result, v1pb.Activity_TYPE_ISSUE_CREATE)
-		case string(base.ActivityIssueCommentCreate):
+		case string(base.EventTypeIssueCommentCreate):
 			result = append(result, v1pb.Activity_TYPE_ISSUE_COMMENT_CREATE)
-		case string(base.ActivityIssueFieldUpdate):
+		case string(base.EventTypeIssueUpdate):
 			result = append(result, v1pb.Activity_TYPE_ISSUE_FIELD_UPDATE)
-		case string(base.ActivityIssueStatusUpdate):
+		case string(base.EventTypeIssueStatusUpdate):
 			result = append(result, v1pb.Activity_TYPE_ISSUE_STATUS_UPDATE)
-		case string(base.ActivityIssueApprovalNotify):
+		case string(base.EventTypeIssueApprovalCreate):
 			result = append(result, v1pb.Activity_TYPE_ISSUE_APPROVAL_NOTIFY)
-		case string(base.ActivityPipelineStageStatusUpdate):
+		case string(base.EventTypeStageStatusUpdate):
 			result = append(result, v1pb.Activity_TYPE_ISSUE_PIPELINE_STAGE_STATUS_UPDATE)
-		case string(base.ActivityPipelineTaskRunStatusUpdate):
+		case string(base.EventTypeTaskRunStatusUpdate):
 			result = append(result, v1pb.Activity_TYPE_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE)
-		case string(base.ActivityNotifyIssueApproved):
+		case string(base.EventTypeIssueApprovalPass):
 			result = append(result, v1pb.Activity_TYPE_NOTIFY_ISSUE_APPROVED)
-		case string(base.ActivityNotifyPipelineRollout):
+		case string(base.EventTypeIssueRolloutReady):
 			result = append(result, v1pb.Activity_TYPE_NOTIFY_PIPELINE_ROLLOUT)
 		default:
 			result = append(result, v1pb.Activity_TYPE_UNSPECIFIED)
