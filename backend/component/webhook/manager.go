@@ -271,12 +271,12 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, even
 	}
 
 	webhookCtx = webhook.Context{
-		Level:        level,
-		ActivityType: string(eventType),
-		Title:        title,
-		TitleZh:      titleZh,
-		Issue:        nil,
-		Rollout:      nil,
+		Level:     level,
+		EventType: string(eventType),
+		Title:     title,
+		TitleZh:   titleZh,
+		Issue:     nil,
+		Rollout:   nil,
 		Project: &webhook.Project{
 			Name:  common.FormatProject(e.Project.ResourceID),
 			Title: e.Project.Title,
@@ -346,7 +346,7 @@ func (m *Manager) postWebhookList(ctx context.Context, webhookCtx *webhook.Conte
 				slog.Warn("Failed to post webhook event on activity",
 					slog.String("webhook type", hook.Type),
 					slog.String("webhook name", hook.Title),
-					slog.String("activity type", webhookCtx.ActivityType),
+					slog.String("activity type", webhookCtx.EventType),
 					slog.String("title", webhookCtx.Title),
 					log.BBError(err))
 				return
