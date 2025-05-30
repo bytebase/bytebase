@@ -458,9 +458,6 @@
     - [PlanCheckRun.Result](#bytebase-v1-PlanCheckRun-Result)
     - [PlanCheckRun.Result.SqlReviewReport](#bytebase-v1-PlanCheckRun-Result-SqlReviewReport)
     - [PlanCheckRun.Result.SqlSummaryReport](#bytebase-v1-PlanCheckRun-Result-SqlSummaryReport)
-    - [PreviewPlanRequest](#bytebase-v1-PreviewPlanRequest)
-    - [PreviewPlanResponse](#bytebase-v1-PreviewPlanResponse)
-    - [PreviewPlanResponse.DatabaseFiles](#bytebase-v1-PreviewPlanResponse-DatabaseFiles)
     - [RunPlanChecksRequest](#bytebase-v1-RunPlanChecksRequest)
     - [RunPlanChecksResponse](#bytebase-v1-RunPlanChecksResponse)
     - [SearchPlansRequest](#bytebase-v1-SearchPlansRequest)
@@ -7574,57 +7571,6 @@ When paginating, all other parameters provided to `ListPlans` must match the cal
 
 
 
-<a name="bytebase-v1-PreviewPlanRequest"></a>
-
-### PreviewPlanRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| project | [string](#string) |  | The name of the project. Format: projects/{project} |
-| release | [string](#string) |  | The release used for preview. |
-| targets | [string](#string) | repeated | The targets to deploy. Can be database or databaseGroup. Format: projects/{project}/databaseGroups/{databaseGroup} instances/{instance}/databases/{database} |
-| allow_out_of_order | [bool](#bool) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-PreviewPlanResponse"></a>
-
-### PreviewPlanResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| plan | [Plan](#bytebase-v1-Plan) |  |  |
-| out_of_order_files | [PreviewPlanResponse.DatabaseFiles](#bytebase-v1-PreviewPlanResponse-DatabaseFiles) | repeated | The out of order files of each database. |
-| applied_but_modified_files | [PreviewPlanResponse.DatabaseFiles](#bytebase-v1-PreviewPlanResponse-DatabaseFiles) | repeated | The applied but modified files of each database. |
-
-
-
-
-
-
-<a name="bytebase-v1-PreviewPlanResponse-DatabaseFiles"></a>
-
-### PreviewPlanResponse.DatabaseFiles
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| database | [string](#string) |  |  |
-| files | [string](#string) | repeated | Format: projects/{project}/releases/{release}/files/{file_id} |
-
-
-
-
-
-
 <a name="bytebase-v1-RunPlanChecksRequest"></a>
 
 ### RunPlanChecksRequest
@@ -7789,7 +7735,6 @@ Type is the database change type.
 | ListPlanCheckRuns | [ListPlanCheckRunsRequest](#bytebase-v1-ListPlanCheckRunsRequest) | [ListPlanCheckRunsResponse](#bytebase-v1-ListPlanCheckRunsResponse) |  |
 | RunPlanChecks | [RunPlanChecksRequest](#bytebase-v1-RunPlanChecksRequest) | [RunPlanChecksResponse](#bytebase-v1-RunPlanChecksResponse) |  |
 | BatchCancelPlanCheckRuns | [BatchCancelPlanCheckRunsRequest](#bytebase-v1-BatchCancelPlanCheckRunsRequest) | [BatchCancelPlanCheckRunsResponse](#bytebase-v1-BatchCancelPlanCheckRunsResponse) |  |
-| PreviewPlan | [PreviewPlanRequest](#bytebase-v1-PreviewPlanRequest) | [PreviewPlanResponse](#bytebase-v1-PreviewPlanResponse) |  |
 
  
 

@@ -90,15 +90,6 @@ service PlanService {
     option (bytebase.v1.permission) = "bb.planCheckRuns.run";
     option (bytebase.v1.auth_method) = IAM;
   }
-
-  rpc PreviewPlan(PreviewPlanRequest) returns (PreviewPlanResponse) {
-    option (google.api.http) = {
-      post: "/v1/{project=projects/*}:previewPlan"
-      body: "*"
-    };
-    option (bytebase.v1.permission) = "bb.plans.preview";
-    option (bytebase.v1.auth_method) = IAM;
-  }
 }
 
 message GetPlanRequest {
@@ -422,45 +413,6 @@ message BatchCancelPlanCheckRunsRequest {
 }
 
 message BatchCancelPlanCheckRunsResponse {}
-
-message PreviewPlanRequest {
-  // The name of the project.
-  // Format: projects/{project}
-  string project = 1 [
-    (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference) = {type: "bytebase.com/Project"}
-  ];
-
-  // The release used for preview.
-  string release = 2 [
-    (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference) = {type: "bytebase.com/Release"}
-  ];
-
-  // The targets to deploy.
-  // Can be database or databaseGroup.
-  // Format:
-  // projects/{project}/databaseGroups/{databaseGroup}
-  // instances/{instance}/databases/{database}
-  repeated string targets = 3 [(google.api.field_behavior) = REQUIRED];
-
-  bool allow_out_of_order = 4;
-}
-
-message PreviewPlanResponse {
-  Plan plan = 1;
-
-  // The out of order files of each database.
-  repeated DatabaseFiles out_of_order_files = 2;
-  // The applied but modified files of each database.
-  repeated DatabaseFiles applied_but_modified_files = 3;
-
-  message DatabaseFiles {
-    string database = 1;
-    // Format: projects/{project}/releases/{release}/files/{file_id}
-    repeated string files = 2;
-  }
-}
 
 message PlanCheckRun {
   reserved 2;
