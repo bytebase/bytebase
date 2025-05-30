@@ -215,6 +215,7 @@ export interface Plan_ChangeDatabaseConfig {
    * The resource name of the target.
    * Format: instances/{instance-id}/databases/{database-name}.
    * Format: projects/{project}/databaseGroups/{databaseGroup}.
+   * Deprecated: use targets instead.
    */
   target: string;
   /**
@@ -330,6 +331,7 @@ export interface Plan_ExportDataConfig {
   /**
    * The resource name of the target.
    * Format: instances/{instance-id}/databases/{database-name}
+   * Deprecated: use targets instead.
    */
   target: string;
   /**

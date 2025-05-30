@@ -43,12 +43,9 @@ import {
 import { usePlanContext } from "@/components/Plan/logic";
 import { planServiceClient } from "@/grpcweb";
 import { PROJECT_V1_ROUTE_REVIEW_CENTER_DETAIL } from "@/router/dashboard/projectV1";
-import {
-  useCurrentProjectV1,
-  useDatabaseV1Store,
-  useSheetV1Store,
-} from "@/store";
+import { useCurrentProjectV1, useSheetV1Store } from "@/store";
 import { dialectOfEngineV1, languageOfEngineV1 } from "@/types";
+import type { Engine } from "@/types/proto/v1/common";
 import { type Plan_ChangeDatabaseConfig } from "@/types/proto/v1/plan_service";
 import type { Sheet } from "@/types/proto/v1/sheet_service";
 import type { ComposedPlan } from "@/types/v1/issue/plan";
@@ -136,8 +133,7 @@ const createSheets = async () => {
       const engine = await databaseEngineForSpec(spec);
       sheet.engine = engine;
       pendingCreateSheetMap.set(sheet.name, sheet);
-
-      await maybeFormatSQL(sheet, config.target);
+      await maybeFormatSQL(sheet, engine);
     }
   }
   const pendingCreateSheetList = Array.from(pendingCreateSheetMap.values());
@@ -159,20 +155,15 @@ const createSheets = async () => {
   });
 };
 
-const maybeFormatSQL = async (sheet: Sheet, target: string) => {
+const maybeFormatSQL = async (sheet: Sheet, engine: Engine) => {
   if (!formatOnSave.value) {
     return;
   }
-  const db = await useDatabaseV1Store().getOrFetchDatabaseByName(target);
-  if (!db) {
-    return;
-  }
-  const language = languageOfEngineV1(db.instanceResource.engine);
+  const language = languageOfEngineV1(engine);
   if (language !== "sql") {
     return;
   }
-
-  const dialect = dialectOfEngineV1(db.instanceResource.engine);
+  const dialect = dialectOfEngineV1(engine);
   const statement = getSheetStatement(sheet);
   if (statement.length > MAX_FORMATTABLE_STATEMENT_SIZE) {
     return;

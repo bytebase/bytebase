@@ -448,6 +448,7 @@ type PlanConfig_ExportDataConfig struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The resource name of the target.
 	// Format: instances/{instance-id}/databases/{database-name}
+	// Deprecated: Use `targets` instead.
 	Target string `protobuf:"bytes,1,opt,name=target,proto3" json:"target,omitempty"`
 	// The list of targets.
 	// Multi-database format: [instances/{instance-id}/databases/{database-name}].

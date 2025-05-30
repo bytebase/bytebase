@@ -1509,6 +1509,7 @@ type Plan_ChangeDatabaseConfig struct {
 	// The resource name of the target.
 	// Format: instances/{instance-id}/databases/{database-name}.
 	// Format: projects/{project}/databaseGroups/{databaseGroup}.
+	// Deprecated: use targets instead.
 	Target string `protobuf:"bytes,1,opt,name=target,proto3" json:"target,omitempty"`
 	// The list of targets.
 	// Multi-database format: [instances/{instance-id}/databases/{database-name}].
@@ -1611,6 +1612,7 @@ type Plan_ExportDataConfig struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The resource name of the target.
 	// Format: instances/{instance-id}/databases/{database-name}
+	// Deprecated: use targets instead.
 	Target string `protobuf:"bytes,1,opt,name=target,proto3" json:"target,omitempty"`
 	// The list of targets.
 	// Multi-database format: [instances/{instance-id}/databases/{database-name}].
