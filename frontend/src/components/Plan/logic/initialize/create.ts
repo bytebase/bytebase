@@ -149,6 +149,11 @@ const buildSpecForTarget = async (
       });
       break;
     }
+    case "bb.issue.database.data.export":
+      spec.exportDataConfig = Plan_ExportDataConfig.fromPartial({
+        sheet,
+        target,
+      });
   }
   return spec;
 };
