@@ -105,7 +105,13 @@ func (s *RoleService) CreateRole(ctx context.Context, request *v1pb.CreateRoleRe
 		Permissions: permissions,
 	}
 	if ok := iam.PermissionsExist(request.Role.Permissions...); !ok {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid permissions")
+		invalidPerms := []string{}
+		for _, p := range request.Role.Permissions {
+			if !iam.PermissionExist(p) {
+				invalidPerms = append(invalidPerms, p)
+			}
+		}
+		return nil, status.Errorf(codes.InvalidArgument, "invalid permissions: %v", invalidPerms)
 	}
 	roleMessage, err := s.store.CreateRole(ctx, create)
 	if err != nil {
@@ -161,7 +167,13 @@ func (s *RoleService) UpdateRole(ctx context.Context, request *v1pb.UpdateRoleRe
 			}
 			patch.Permissions = &permissions
 			if ok := iam.PermissionsExist(request.Role.Permissions...); !ok {
-				return nil, status.Errorf(codes.InvalidArgument, "invalid permissions")
+				invalidPerms := []string{}
+				for _, p := range request.Role.Permissions {
+					if !iam.PermissionExist(p) {
+						invalidPerms = append(invalidPerms, p)
+					}
+				}
+				return nil, status.Errorf(codes.InvalidArgument, "invalid permissions: %v", invalidPerms)
 			}
 		default:
 			return nil, status.Errorf(codes.InvalidArgument, "invalid update mask path: %s", path)
