@@ -11,25 +11,10 @@
     <div
       class="space-y-4 h-full w-[calc(100vw-8rem)] lg:w-[60rem] max-w-[calc(100vw-8rem)] overflow-x-auto"
     >
-      <div class="space-y-3">
-        <div class="w-full flex items-center space-x-2">
-          <AdvancedSearch
-            v-model:params="state.params"
-            :placeholder="$t('database.filter-database')"
-            :scope-options="scopeOptions"
-          />
-        </div>
-
-        <PagedDatabaseTable
-          mode="ALL_SHORT"
-          :single-selection="true"
-          :custom-click="true"
-          :filter="filter"
-          :parent="projectName"
-          :selected-database-names="[state.selectedDatabaseName]"
-          @update:selected-database-names="handleDatabasesSelectionChanged"
-        />
-      </div>
+      <DatabaseAndGroupSelector
+        :project="project"
+        v-model:value="state.targetSelectState"
+      />
     </div>
 
     <template #footer>
@@ -42,7 +27,7 @@
           </NButton>
           <NButton
             type="primary"
-            :disabled="!state.selectedDatabaseName"
+            :disabled="!validSelectState"
             @click="navigateToIssuePage"
           >
             {{ $t("common.next") }}
@@ -57,121 +42,61 @@
 import { NButton } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useRouter } from "vue-router";
-import AdvancedSearch from "@/components/AdvancedSearch";
-import { PagedDatabaseTable } from "@/components/v2/Model/DatabaseV1Table";
+import DatabaseAndGroupSelector, {
+  type DatabaseSelectState,
+} from "@/components/DatabaseAndGroupSelector/";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
-import { useDatabaseV1Store, useProjectByName } from "@/store";
-import {
-  instanceNamePrefix,
-  environmentNamePrefix,
-} from "@/store/modules/v1/common";
-import { isValidDatabaseName } from "@/types";
-import type { SearchParams, SearchScope } from "@/utils";
+import { useProjectByName } from "@/store";
 import { generateIssueTitle, extractProjectResourceName } from "@/utils";
-import { useCommonSearchScopeOptions } from "../AdvancedSearch/useCommonSearchScopeOptions";
 import { DrawerContent } from "../v2";
 
 type LocalState = {
-  selectedDatabaseName?: string;
-  params: SearchParams;
+  targetSelectState?: DatabaseSelectState;
 };
 
 const props = defineProps<{
   projectName: string;
 }>();
 
-useProjectByName(computed(() => props.projectName));
+const { project } = useProjectByName(computed(() => props.projectName));
 
 const emit = defineEmits(["dismiss"]);
 
 const router = useRouter();
-const databaseV1Store = useDatabaseV1Store();
+const state = reactive<LocalState>({});
 
-const readonlyScopes = computed((): SearchScope[] => [
-  {
-    id: "project",
-    value: extractProjectResourceName(props.projectName),
-    readonly: true,
-  },
-]);
-const state = reactive<LocalState>({
-  params: {
-    query: "",
-    scopes: [...readonlyScopes.value],
-  },
-});
-
-const scopeOptions = useCommonSearchScopeOptions([
-  "environment",
-  "instance",
-  "database-label",
-]);
-
-const selectedInstance = computed(() => {
-  const instanceId = state.params.scopes.find(
-    (scope) => scope.id === "instance"
-  )?.value;
-  if (!instanceId) {
-    return;
+const validSelectState = computed(() => {
+  if (!state.targetSelectState) {
+    return false;
   }
-  return `${instanceNamePrefix}${instanceId}`;
-});
-
-const selectedEnvironment = computed(() => {
-  const environmentId = state.params.scopes.find(
-    (scope) => scope.id === "environment"
-  )?.value;
-  if (!environmentId) {
-    return;
+  if (state.targetSelectState.changeSource === "DATABASE") {
+    return state.targetSelectState.selectedDatabaseNameList.length > 0;
   }
-  return `${environmentNamePrefix}${environmentId}`;
+  return !!state.targetSelectState.selectedDatabaseGroup;
 });
-
-const selectedLabels = computed(() => {
-  return state.params.scopes
-    .filter((scope) => scope.id === "database-label")
-    .map((scope) => scope.value);
-});
-
-const filter = computed(() => ({
-  instance: selectedInstance.value,
-  environment: selectedEnvironment.value,
-  query: state.params.query,
-  labels: selectedLabels.value,
-}));
-
-const handleDatabasesSelectionChanged = (
-  selectedDatabaseNameList: string[]
-): void => {
-  if (selectedDatabaseNameList.length !== 1) {
-    return;
-  }
-  state.selectedDatabaseName = selectedDatabaseNameList[0];
-};
 
 const navigateToIssuePage = async () => {
-  if (!state.selectedDatabaseName) {
+  if (!state.targetSelectState) {
     return;
   }
 
-  const selectedDatabase = databaseV1Store.getDatabaseByName(
-    state.selectedDatabaseName
-  );
-  if (!isValidDatabaseName(selectedDatabase.name)) {
-    return;
-  }
-
-  const project = selectedDatabase?.projectEntity;
   const issueType = "bb.issue.database.data.export";
   const query: Record<string, any> = {
     template: issueType,
-    name: generateIssueTitle(issueType, [selectedDatabase.databaseName]),
-    databaseList: selectedDatabase.name,
+    name: generateIssueTitle(issueType),
   };
+
+  if (state.targetSelectState.changeSource === "DATABASE") {
+    query["databaseList"] =
+      state.targetSelectState.selectedDatabaseNameList.join(",");
+  } else {
+    query["databaseGroupName"] = state.targetSelectState.selectedDatabaseGroup;
+  }
+
   router.push({
     name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
     params: {
-      projectId: extractProjectResourceName(project.name),
+      projectId: extractProjectResourceName(project.value.name),
       issueSlug: "create",
     },
     query,

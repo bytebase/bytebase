@@ -37,8 +37,12 @@ import {
   Plan_ExportDataConfig,
   Plan_Spec,
 } from "@/types/proto/v1/plan_service";
-import { TaskRun_ExportArchiveStatus } from "@/types/proto/v1/rollout_service";
+import {
+  TaskRun_ExportArchiveStatus,
+  Task_Status,
+} from "@/types/proto/v1/rollout_service";
 import { ExportRequest } from "@/types/proto/v1/sql_service";
+import { flattenTaskV1List } from "@/utils";
 
 interface LocalState {
   isExporting: boolean;
@@ -63,10 +67,9 @@ const exportDataConfig = computed(() => {
 watchEffect(async () => {
   if (issue.value.status === IssueStatus.OPEN) {
     if (
-      issue.value.rolloutTaskRunList.every(
-        (taskRun) =>
-          taskRun.exportArchiveStatus === TaskRun_ExportArchiveStatus.EXPORTED
-      )
+      flattenTaskV1List(issue.value.rolloutEntity).every((task) => {
+        return [Task_Status.DONE, Task_Status.SKIPPED].includes(task.status);
+      })
     ) {
       await issueServiceClient.batchUpdateIssuesStatus({
         parent: issue.value.project,
