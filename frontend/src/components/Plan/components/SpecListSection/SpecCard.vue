@@ -61,7 +61,7 @@
 </template>
 
 <script setup lang="ts">
-import { isEqual } from "lodash-es";
+import { head, isEqual } from "lodash-es";
 import { AlertCircleIcon } from "lucide-vue-next";
 import { NTooltip } from "naive-ui";
 import { computed } from "vue";
@@ -79,6 +79,7 @@ import {
   usePlanContext,
   isGroupingChangeSpec,
   planCheckRunListForSpec,
+  targetsForSpec,
 } from "../../logic";
 
 const props = defineProps<{
@@ -113,7 +114,12 @@ const relatedDatabaseGroup = computed(() => {
   if (!isGroupingChangeSpec(props.spec)) {
     return undefined;
   }
-  return dbGroupStore.getDBGroupByName(props.spec.changeDatabaseConfig!.target);
+  const targets = targetsForSpec(props.spec);
+  const maybeDBGroupName = head(targets);
+  if (!maybeDBGroupName) {
+    return undefined;
+  }
+  return dbGroupStore.getDBGroupByName(maybeDBGroupName);
 });
 
 const planCheckStatus = computed((): PlanCheckRun_Result_Status => {

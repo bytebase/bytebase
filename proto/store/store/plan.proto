@@ -80,6 +80,7 @@ message PlanConfig {
   message ExportDataConfig {
     // The resource name of the target.
     // Format: instances/{instance-id}/databases/{database-name}
+    // Deprecated: Use `targets` instead.
     string target = 1;
     // The list of targets.
     // Multi-database format: [instances/{instance-id}/databases/{database-name}].
