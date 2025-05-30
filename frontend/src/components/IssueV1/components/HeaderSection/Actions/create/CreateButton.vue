@@ -53,13 +53,16 @@ import { useRouter } from "vue-router";
 import { getValidIssueLabels } from "@/components/IssueV1/components/IssueLabelSelector.vue";
 import { ErrorList } from "@/components/IssueV1/components/common";
 import {
-  databaseEngineForSpec,
   isValidStage,
   specForTask,
   useIssueContext,
 } from "@/components/IssueV1/logic";
 import formatSQL from "@/components/MonacoEditor/sqlFormatter";
-import { getLocalSheetByName, isValidSpec } from "@/components/Plan";
+import {
+  databaseEngineForSpec,
+  getLocalSheetByName,
+  isValidSpec,
+} from "@/components/Plan";
 import { getSpecChangeType } from "@/components/Plan/components/SQLCheckSection/common";
 import { usePlanSQLCheckContext } from "@/components/Plan/components/SQLCheckSection/context";
 import { databaseForTask } from "@/components/Rollout/RolloutDetail";
@@ -73,12 +76,9 @@ import {
 } from "@/grpcweb";
 import { emitWindowEvent } from "@/plugins";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
-import {
-  useDatabaseV1Store,
-  useSheetV1Store,
-  useCurrentProjectV1,
-} from "@/store";
+import { useSheetV1Store, useCurrentProjectV1 } from "@/store";
 import { dialectOfEngineV1, languageOfEngineV1 } from "@/types";
+import type { Engine } from "@/types/proto/v1/common";
 import { Issue, Issue_Type } from "@/types/proto/v1/issue_service";
 import type { Plan_ExportDataConfig } from "@/types/proto/v1/plan_service";
 import { type Plan_ChangeDatabaseConfig } from "@/types/proto/v1/plan_service";
@@ -212,8 +212,7 @@ const createSheets = async () => {
       const engine = await databaseEngineForSpec(spec);
       sheet.engine = engine;
       pendingCreateSheetMap.set(sheet.name, sheet);
-
-      await maybeFormatSQL(sheet, config.target);
+      await maybeFormatSQL(sheet, engine);
     }
   }
   const pendingCreateSheetList = Array.from(pendingCreateSheetMap.values());
@@ -245,19 +244,15 @@ const createPlan = async () => {
   return createdPlan;
 };
 
-const maybeFormatSQL = async (sheet: Sheet, target: string) => {
+const maybeFormatSQL = async (sheet: Sheet, engine: Engine) => {
   if (!formatOnSave.value) {
     return;
   }
-  const db = await useDatabaseV1Store().getOrFetchDatabaseByName(target);
-  if (!db) {
-    return;
-  }
-  const language = languageOfEngineV1(db.instanceResource.engine);
+  const language = languageOfEngineV1(engine);
   if (language !== "sql") {
     return;
   }
-  const dialect = dialectOfEngineV1(db.instanceResource.engine);
+  const dialect = dialectOfEngineV1(engine);
 
   const statement = getSheetStatement(sheet);
   if (statement.length > MAX_FORMATTABLE_STATEMENT_SIZE) {

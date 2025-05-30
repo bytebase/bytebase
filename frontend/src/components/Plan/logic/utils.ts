@@ -1,20 +1,18 @@
+import { head } from "lodash-es";
 import { mockDatabase } from "@/components/IssueV1";
 import { useDatabaseV1Store, useProjectV1Store } from "@/store";
 import { isValidDatabaseName, unknownDatabase } from "@/types";
 import type { ComposedProject } from "@/types";
 import type { Plan_Spec } from "@/types/proto/v1/plan_service";
 import type { ComposedPlan } from "@/types/v1/issue/plan";
+import { targetsForSpec } from "./plan";
 
 export const projectOfPlan = (plan: ComposedPlan): ComposedProject =>
   useProjectV1Store().getProjectByName(plan.project);
 
 export const targetOfSpec = (spec: Plan_Spec) => {
-  if (spec.changeDatabaseConfig) {
-    return spec.changeDatabaseConfig.target;
-  } else if (spec.exportDataConfig) {
-    return spec.exportDataConfig.target;
-  }
-  return undefined;
+  const targets = targetsForSpec(spec);
+  return head(targets);
 };
 
 export const databaseOfSpec = (project: ComposedProject, spec: Plan_Spec) => {

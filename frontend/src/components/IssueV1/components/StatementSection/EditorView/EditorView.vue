@@ -19,9 +19,7 @@
         </div>
       </div>
 
-      <div
-        class="flex items-center justify-end gap-x-2"
-      >
+      <div class="flex items-center justify-end gap-x-2">
         <template v-if="isCreating">
           <template v-if="allowEditStatementWhenCreating">
             <EditorActionPopover />
@@ -206,11 +204,13 @@ import {
   isTaskEditable,
   specForTask,
   isGroupingChangeTaskV1,
-  databaseEngineForSpec,
 } from "@/components/IssueV1/logic";
 import { MonacoEditor } from "@/components/MonacoEditor";
 import { extensionNameOfLanguage } from "@/components/MonacoEditor/utils";
-import { createEmptyLocalSheet } from "@/components/Plan";
+import {
+  createEmptyLocalSheet,
+  databaseEngineForSpec,
+} from "@/components/Plan";
 import { databaseForTask } from "@/components/Rollout/RolloutDetail";
 import DownloadSheetButton from "@/components/Sheet/DownloadSheetButton.vue";
 import SQLUploadButton from "@/components/misc/SQLUploadButton.vue";
@@ -304,7 +304,13 @@ const allowEditStatementWhenCreating = computed(() => {
     return false;
   }
   // Do not allow to edit statement for the plan with release source.
-  if ((issue.value.planEntity?.specs?.filter(spec => spec.changeDatabaseConfig?.release)??[]).length > 0) {
+  if (
+    (
+      issue.value.planEntity?.specs?.filter(
+        (spec) => spec.changeDatabaseConfig?.release
+      ) ?? []
+    ).length > 0
+  ) {
     return false;
   }
   return true;
@@ -360,7 +366,13 @@ const shouldShowEditButton = computed(() => {
     return false;
   }
   // Do not allow to edit statement for the plan with release source.
-  if ((issue.value.planEntity?.specs?.filter(spec => spec.changeDatabaseConfig?.release)??[]).length > 0) {
+  if (
+    (
+      issue.value.planEntity?.specs?.filter(
+        (spec) => spec.changeDatabaseConfig?.release
+      ) ?? []
+    ).length > 0
+  ) {
     return false;
   }
   // Will show another button group as [Upload][Cancel][Save]
@@ -627,8 +639,9 @@ const updateStatement = async (statement: string) => {
     throw new Error("No valid specs found for the selected task(s).");
   }
 
-  const specsToPatch = (planPatch.specs || [])
-    .filter((spec) => distinctSpecsIds.has(spec.id));
+  const specsToPatch = (planPatch.specs || []).filter((spec) =>
+    distinctSpecsIds.has(spec.id)
+  );
   const sheet = Sheet.fromPartial({
     ...createEmptyLocalSheet(),
     title: issue.value.title,

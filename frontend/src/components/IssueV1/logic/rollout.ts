@@ -1,3 +1,4 @@
+import { head } from "lodash-es";
 import { planCheckRunSummaryForCheckRunList } from "@/components/PlanCheckRun/common";
 import { t } from "@/plugins/i18n";
 import { useCurrentUserV1, extractUserId } from "@/store";
@@ -18,9 +19,8 @@ export const isGroupingChangeTaskV1 = (issue: ComposedIssue, task: Task) => {
   if (!spec) {
     return false;
   }
-  const databaseGroup = extractDatabaseGroupName(
-    spec.changeDatabaseConfig?.target ?? ""
-  );
+  const target = head(spec.changeDatabaseConfig?.targets);
+  const databaseGroup = extractDatabaseGroupName(target ?? "");
   return databaseGroup !== "";
 };
 
