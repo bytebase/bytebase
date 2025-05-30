@@ -2,6 +2,7 @@ package v1
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"slices"
 	"strings"
@@ -514,7 +515,8 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 						if backupDatabaseName != nil {
 							if *backupDatabaseName != "" {
 								// If backup is enabled, we need to check if the backup is available for the source database. AKA, the task's target database.
-								sourceDatabaseName := config.ChangeDatabaseConfig.Target
+								// Construct the source database name from the task's instance and database
+								sourceDatabaseName := fmt.Sprintf("instances/%s/databases/%s", task.InstanceID, task.GetDatabaseName())
 								instanceID, databaseName, err := common.GetInstanceDatabaseID(sourceDatabaseName)
 								if err != nil {
 									return errors.Wrapf(err, "failed to get instance database id from %q", sourceDatabaseName)
@@ -1191,15 +1193,11 @@ func convertTargetToTargets(plan *v1pb.Plan) {
 
 	for _, spec := range plan.Specs {
 		if changeDatabaseConfig := spec.GetChangeDatabaseConfig(); changeDatabaseConfig != nil {
-			// Only process if Target is set and Targets is empty
-			if changeDatabaseConfig.Target != "" && len(changeDatabaseConfig.Targets) == 0 {
-				changeDatabaseConfig.Targets = []string{changeDatabaseConfig.Target}
-				changeDatabaseConfig.Target = "" // Clear the deprecated field
-				sheetToSpecs[changeDatabaseConfig.Sheet] = append(sheetToSpecs[changeDatabaseConfig.Sheet], spec)
-				continue
-			}
+			// Group specs by sheet for merging
+			sheetToSpecs[changeDatabaseConfig.Sheet] = append(sheetToSpecs[changeDatabaseConfig.Sheet], spec)
+		} else {
+			otherSpecs = append(otherSpecs, spec)
 		}
-		otherSpecs = append(otherSpecs, spec)
 	}
 
 	// Merge specs with the same sheet

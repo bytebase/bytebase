@@ -212,13 +212,6 @@ export interface Plan_CreateDatabaseConfig {
 
 export interface Plan_ChangeDatabaseConfig {
   /**
-   * The resource name of the target.
-   * Format: instances/{instance-id}/databases/{database-name}.
-   * Format: projects/{project}/databaseGroups/{databaseGroup}.
-   * Deprecated: use targets instead.
-   */
-  target: string;
-  /**
    * The list of targets.
    * Multi-database format: [instances/{instance-id}/databases/{database-name}].
    * Single database group format: [projects/{project}/databaseGroups/{databaseGroup}].
@@ -328,12 +321,6 @@ export interface Plan_ChangeDatabaseConfig_PreUpdateBackupDetail {
 }
 
 export interface Plan_ExportDataConfig {
-  /**
-   * The resource name of the target.
-   * Format: instances/{instance-id}/databases/{database-name}
-   * Deprecated: use targets instead.
-   */
-  target: string;
   /**
    * The list of targets.
    * Multi-database format: [instances/{instance-id}/databases/{database-name}].
@@ -1846,7 +1833,6 @@ export const Plan_CreateDatabaseConfig: MessageFns<Plan_CreateDatabaseConfig> = 
 
 function createBasePlan_ChangeDatabaseConfig(): Plan_ChangeDatabaseConfig {
   return {
-    target: "",
     targets: [],
     sheet: "",
     release: "",
@@ -1858,9 +1844,6 @@ function createBasePlan_ChangeDatabaseConfig(): Plan_ChangeDatabaseConfig {
 
 export const Plan_ChangeDatabaseConfig: MessageFns<Plan_ChangeDatabaseConfig> = {
   encode(message: Plan_ChangeDatabaseConfig, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.target !== "") {
-      writer.uint32(10).string(message.target);
-    }
     for (const v of message.targets) {
       writer.uint32(82).string(v!);
     }
@@ -1890,14 +1873,6 @@ export const Plan_ChangeDatabaseConfig: MessageFns<Plan_ChangeDatabaseConfig> = 
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.target = reader.string();
-          continue;
-        }
         case 10: {
           if (tag !== 82) {
             break;
@@ -1963,9 +1938,6 @@ export const Plan_ChangeDatabaseConfig: MessageFns<Plan_ChangeDatabaseConfig> = 
 
   toJSON(message: Plan_ChangeDatabaseConfig): unknown {
     const obj: any = {};
-    if (message.target !== "") {
-      obj.target = message.target;
-    }
     if (message.targets?.length) {
       obj.targets = message.targets;
     }
@@ -1998,7 +1970,6 @@ export const Plan_ChangeDatabaseConfig: MessageFns<Plan_ChangeDatabaseConfig> = 
   },
   fromPartial(object: DeepPartial<Plan_ChangeDatabaseConfig>): Plan_ChangeDatabaseConfig {
     const message = createBasePlan_ChangeDatabaseConfig();
-    message.target = object.target ?? "";
     message.targets = object.targets?.map((e) => e) || [];
     message.sheet = object.sheet ?? "";
     message.release = object.release ?? "";
@@ -2155,14 +2126,11 @@ export const Plan_ChangeDatabaseConfig_PreUpdateBackupDetail: MessageFns<
 };
 
 function createBasePlan_ExportDataConfig(): Plan_ExportDataConfig {
-  return { target: "", targets: [], sheet: "", format: ExportFormat.FORMAT_UNSPECIFIED, password: undefined };
+  return { targets: [], sheet: "", format: ExportFormat.FORMAT_UNSPECIFIED, password: undefined };
 }
 
 export const Plan_ExportDataConfig: MessageFns<Plan_ExportDataConfig> = {
   encode(message: Plan_ExportDataConfig, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.target !== "") {
-      writer.uint32(10).string(message.target);
-    }
     for (const v of message.targets) {
       writer.uint32(42).string(v!);
     }
@@ -2185,14 +2153,6 @@ export const Plan_ExportDataConfig: MessageFns<Plan_ExportDataConfig> = {
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.target = reader.string();
-          continue;
-        }
         case 5: {
           if (tag !== 42) {
             break;
@@ -2236,9 +2196,6 @@ export const Plan_ExportDataConfig: MessageFns<Plan_ExportDataConfig> = {
 
   toJSON(message: Plan_ExportDataConfig): unknown {
     const obj: any = {};
-    if (message.target !== "") {
-      obj.target = message.target;
-    }
     if (message.targets?.length) {
       obj.targets = message.targets;
     }
@@ -2259,7 +2216,6 @@ export const Plan_ExportDataConfig: MessageFns<Plan_ExportDataConfig> = {
   },
   fromPartial(object: DeepPartial<Plan_ExportDataConfig>): Plan_ExportDataConfig {
     const message = createBasePlan_ExportDataConfig();
-    message.target = object.target ?? "";
     message.targets = object.targets?.map((e) => e) || [];
     message.sheet = object.sheet ?? "";
     message.format = object.format ?? ExportFormat.FORMAT_UNSPECIFIED;

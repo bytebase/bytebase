@@ -1506,11 +1506,6 @@ func (x *Plan_CreateDatabaseConfig) GetEnvironment() string {
 
 type Plan_ChangeDatabaseConfig struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The resource name of the target.
-	// Format: instances/{instance-id}/databases/{database-name}.
-	// Format: projects/{project}/databaseGroups/{databaseGroup}.
-	// Deprecated: use targets instead.
-	Target string `protobuf:"bytes,1,opt,name=target,proto3" json:"target,omitempty"`
 	// The list of targets.
 	// Multi-database format: [instances/{instance-id}/databases/{database-name}].
 	// Single database group format: [projects/{project}/databaseGroups/{databaseGroup}].
@@ -1559,13 +1554,6 @@ func (*Plan_ChangeDatabaseConfig) Descriptor() ([]byte, []int) {
 	return file_v1_plan_service_proto_rawDescGZIP(), []int{7, 4}
 }
 
-func (x *Plan_ChangeDatabaseConfig) GetTarget() string {
-	if x != nil {
-		return x.Target
-	}
-	return ""
-}
-
 func (x *Plan_ChangeDatabaseConfig) GetTargets() []string {
 	if x != nil {
 		return x.Targets
@@ -1610,10 +1598,6 @@ func (x *Plan_ChangeDatabaseConfig) GetPreUpdateBackupDetail() *Plan_ChangeDatab
 
 type Plan_ExportDataConfig struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The resource name of the target.
-	// Format: instances/{instance-id}/databases/{database-name}
-	// Deprecated: use targets instead.
-	Target string `protobuf:"bytes,1,opt,name=target,proto3" json:"target,omitempty"`
 	// The list of targets.
 	// Multi-database format: [instances/{instance-id}/databases/{database-name}].
 	// Single database group format: [projects/{project}/databaseGroups/{databaseGroup}].
@@ -1658,13 +1642,6 @@ func (x *Plan_ExportDataConfig) ProtoReflect() protoreflect.Message {
 // Deprecated: Use Plan_ExportDataConfig.ProtoReflect.Descriptor instead.
 func (*Plan_ExportDataConfig) Descriptor() ([]byte, []int) {
 	return file_v1_plan_service_proto_rawDescGZIP(), []int{7, 5}
-}
-
-func (x *Plan_ExportDataConfig) GetTarget() string {
-	if x != nil {
-		return x.Target
-	}
-	return ""
 }
 
 func (x *Plan_ExportDataConfig) GetTargets() []string {
@@ -2127,7 +2104,7 @@ const file_v1_plan_service_proto_rawDesc = "" +
 	"\x11UpdatePlanRequest\x12+\n" +
 	"\x04plan\x18\x01 \x01(\v2\x11.bytebase.v1.PlanB\x04\xe2A\x01\x02R\x04plan\x12A\n" +
 	"\vupdate_mask\x18\x02 \x01(\v2\x1a.google.protobuf.FieldMaskB\x04\xe2A\x01\x02R\n" +
-	"updateMask\"\xad\x13\n" +
+	"updateMask\"\xfd\x12\n" +
 	"\x04Plan\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x14\n" +
 	"\x05issue\x18\x03 \x01(\tR\x05issue\x12\x14\n" +
@@ -2165,9 +2142,8 @@ const file_v1_plan_service_proto_rawDesc = "" +
 	"\tcollation\x18\x05 \x01(\tB\x04\xe2A\x01\x01R\tcollation\x12\x1e\n" +
 	"\acluster\x18\x06 \x01(\tB\x04\xe2A\x01\x01R\acluster\x12\x1a\n" +
 	"\x05owner\x18\a \x01(\tB\x04\xe2A\x01\x01R\x05owner\x12&\n" +
-	"\venvironment\x18\t \x01(\tB\x04\xe2A\x01\x01R\venvironment\x1a\x9f\x05\n" +
-	"\x14ChangeDatabaseConfig\x12\x16\n" +
-	"\x06target\x18\x01 \x01(\tR\x06target\x12\x18\n" +
+	"\venvironment\x18\t \x01(\tB\x04\xe2A\x01\x01R\venvironment\x1a\x87\x05\n" +
+	"\x14ChangeDatabaseConfig\x12\x18\n" +
 	"\atargets\x18\n" +
 	" \x03(\tR\atargets\x12\x14\n" +
 	"\x05sheet\x18\x02 \x01(\tR\x05sheet\x123\n" +
@@ -2188,9 +2164,8 @@ const file_v1_plan_service_proto_rawDesc = "" +
 	"\vMIGRATE_SDL\x10\x03\x12\x11\n" +
 	"\rMIGRATE_GHOST\x10\x04\x12\b\n" +
 	"\x04DATA\x10\x06B\x1b\n" +
-	"\x19_pre_update_backup_detailJ\x04\b\x05\x10\x06J\x04\b\x06\x10\a\x1a\xbb\x01\n" +
-	"\x10ExportDataConfig\x12\x16\n" +
-	"\x06target\x18\x01 \x01(\tR\x06target\x12\x18\n" +
+	"\x19_pre_update_backup_detailJ\x04\b\x05\x10\x06J\x04\b\x06\x10\a\x1a\xa3\x01\n" +
+	"\x10ExportDataConfig\x12\x18\n" +
 	"\atargets\x18\x05 \x03(\tR\atargets\x12\x14\n" +
 	"\x05sheet\x18\x02 \x01(\tR\x05sheet\x121\n" +
 	"\x06format\x18\x03 \x01(\x0e2\x19.bytebase.v1.ExportFormatR\x06format\x12\x1f\n" +
