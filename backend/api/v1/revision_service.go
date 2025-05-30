@@ -100,6 +100,9 @@ func (s *RevisionService) GetRevision(ctx context.Context, request *v1pb.GetRevi
 }
 
 func (s *RevisionService) CreateRevision(ctx context.Context, request *v1pb.CreateRevisionRequest) (*v1pb.Revision, error) {
+	if request.Revision == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "request.Revision is not set")
+	}
 	database, err := getDatabaseMessage(ctx, s.store, request.Parent)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to found database %v", request.Parent)
