@@ -13,6 +13,7 @@ import {
   Plan,
   Plan_ChangeDatabaseConfig,
   Plan_ChangeDatabaseConfig_Type,
+  Plan_ExportDataConfig,
   Plan_Spec,
 } from "@/types/proto/v1/plan_service";
 import {
@@ -109,37 +110,42 @@ const buildSpecForTarget = async (
     id: uuidv4(),
   });
 
-  if (
-    template === "bb.issue.database.data.update" ||
-    template === "bb.issue.database.schema.update"
-  ) {
-    const specType =
-      template === "bb.issue.database.data.update"
-        ? Plan_ChangeDatabaseConfig_Type.DATA
-        : Plan_ChangeDatabaseConfig_Type.MIGRATE;
-    spec.changeDatabaseConfig = Plan_ChangeDatabaseConfig.fromPartial({
-      target,
-      sheet,
-      type: specType,
-    });
-    if (query.sheetId) {
-      const remoteSheet = await useSheetV1Store().getOrFetchSheetByUID(
-        query.sheetId,
-        "FULL"
-      );
-      if (remoteSheet) {
-        // make a local copy for remote sheet for further editing
-        console.debug(
-          "copy remote sheet to local for further editing",
-          remoteSheet
+  switch (template) {
+    case "bb.issue.database.data.update":
+    case "bb.issue.database.schema.update": {
+      const specType =
+        template === "bb.issue.database.data.update"
+          ? Plan_ChangeDatabaseConfig_Type.DATA
+          : Plan_ChangeDatabaseConfig_Type.MIGRATE;
+      spec.changeDatabaseConfig = Plan_ChangeDatabaseConfig.fromPartial({
+        target,
+        sheet,
+        type: specType,
+      });
+      if (query.sheetId) {
+        const remoteSheet = await useSheetV1Store().getOrFetchSheetByUID(
+          query.sheetId,
+          "FULL"
         );
-        const localSheet = getLocalSheetByName(sheet);
-        localSheet.payload = cloneDeep(remoteSheet.payload);
-        const statement = getSheetStatement(remoteSheet);
-        setSheetStatement(localSheet, statement);
-        spec.changeDatabaseConfig.sheet = remoteSheet.name;
+        if (remoteSheet) {
+          // make a local copy for remote sheet for further editing
+          console.debug(
+            "copy remote sheet to local for further editing",
+            remoteSheet
+          );
+          const localSheet = getLocalSheetByName(sheet);
+          localSheet.payload = cloneDeep(remoteSheet.payload);
+          const statement = getSheetStatement(remoteSheet);
+          setSheetStatement(localSheet, statement);
+          spec.changeDatabaseConfig.sheet = remoteSheet.name;
+        }
       }
     }
+    case "bb.issue.database.data.export":
+      spec.exportDataConfig = Plan_ExportDataConfig.fromPartial({
+        sheet,
+        target,
+      });
   }
   return spec;
 };
