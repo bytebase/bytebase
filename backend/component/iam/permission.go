@@ -258,9 +258,14 @@ var allPermissionsMap = func() map[Permission]bool {
 
 func PermissionsExist(permissions ...string) bool {
 	for _, p := range permissions {
-		if !allPermissionsMap[p] {
+		if !PermissionExist(p) {
 			return false
 		}
 	}
 	return true
+}
+
+// PermissionExist checks if a single permission exists
+func PermissionExist(permission string) bool {
+	return allPermissionsMap[permission]
 }
