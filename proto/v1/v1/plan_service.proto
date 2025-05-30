@@ -285,6 +285,7 @@ message Plan {
     // The resource name of the target.
     // Format: instances/{instance-id}/databases/{database-name}.
     // Format: projects/{project}/databaseGroups/{databaseGroup}.
+    // Deprecated: use targets instead.
     string target = 1;
     // The list of targets.
     // Multi-database format: [instances/{instance-id}/databases/{database-name}].
@@ -326,6 +327,7 @@ message Plan {
   message ExportDataConfig {
     // The resource name of the target.
     // Format: instances/{instance-id}/databases/{database-name}
+    // Deprecated: use targets instead.
     string target = 1;
     // The list of targets.
     // Multi-database format: [instances/{instance-id}/databases/{database-name}].

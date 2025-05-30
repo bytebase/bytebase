@@ -32,14 +32,20 @@ export const createIssueSkeleton = async (
   const project = await useProjectV1Store().getOrFetchProjectByName(
     `${projectNamePrefix}${projectName}`
   );
+  const template = query.template as IssueType | undefined;
+  if (!template) {
+    throw new Error(
+      "Template is required to create a plan skeleton. Please provide a valid template."
+    );
+  }
   const params: CreatePlanParams = {
     project,
+    template,
     query,
     initialSQL: await extractInitialSQLFromQuery(query),
   };
 
   const issue = await buildIssue(params);
-
   const plan = await buildPlan(params);
   issue.plan = plan.name;
   issue.planEntity = plan;

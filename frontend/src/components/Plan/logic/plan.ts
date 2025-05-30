@@ -1,22 +1,26 @@
+import { head } from "lodash-es";
 import { mockDatabase } from "@/components/IssueV1/logic/utils";
-import { useDatabaseV1Store } from "@/store";
+import { useDatabaseV1Store, useDBGroupStore } from "@/store";
 import {
+  isValidDatabaseGroupName,
   isValidDatabaseName,
   unknownDatabase,
   type ComposedProject,
 } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import type { Plan_Spec } from "@/types/proto/v1/plan_service";
-import { extractDatabaseGroupName } from "@/utils";
 
 export const databaseForSpec = (project: ComposedProject, spec: Plan_Spec) => {
   // Now we only handle changeDatabaseConfig specs.
   const { changeDatabaseConfig } = spec;
   if (changeDatabaseConfig !== undefined) {
-    const target = changeDatabaseConfig.target;
-    const db = useDatabaseV1Store().getDatabaseByName(target);
+    const targets = targetsForSpec(spec);
+    if (targets.length === 0) {
+      return unknownDatabase();
+    }
+    const db = useDatabaseV1Store().getDatabaseByName(targets[0]);
     if (!isValidDatabaseName(db.name)) {
-      return mockDatabase(project, target);
+      return mockDatabase(project, targets[0]);
     }
     return db;
   }
@@ -28,7 +32,7 @@ export const databaseForSpec = (project: ComposedProject, spec: Plan_Spec) => {
  * @returns empty string if no sheet found
  */
 export const sheetNameForSpec = (spec: Plan_Spec): string => {
-  return spec.changeDatabaseConfig?.sheet ?? "";
+  return spec.changeDatabaseConfig?.sheet ?? spec.exportDataConfig?.sheet ?? "";
 };
 
 export const databaseEngineForSpec = async (
@@ -40,36 +44,62 @@ export const databaseEngineForSpec = async (
     if (typeof specOrTarget === "string") {
       return specOrTarget;
     }
-    const config = specOrTarget.changeDatabaseConfig;
-    if (!config) {
-      return Engine.ENGINE_UNSPECIFIED;
-    }
-    return config.target;
+    const targets = targetsForSpec(specOrTarget);
+    return head(targets);
   };
-  const target = getTarget(specOrTarget);
 
+  const target = getTarget(specOrTarget);
+  if (!target) return Engine.ENGINE_UNSPECIFIED;
   if (isValidDatabaseName(target)) {
     const db = await useDatabaseV1Store().getOrFetchDatabaseByName(
       target,
       true /* silent */
     );
-    if (isValidDatabaseName(db.name)) {
-      return db.instanceResource.engine;
+    return db.instanceResource.engine;
+  }
+  if (isValidDatabaseGroupName(target)) {
+    const dbGroupStore = useDBGroupStore();
+    const dbGroup = await dbGroupStore.getOrFetchDBGroupByName(target);
+    // Might be flaky: use the first database in the db group
+    const dbName = head(dbGroup.matchedDatabases)?.name;
+    if (dbName) {
+      const db = await useDatabaseV1Store().getOrFetchDatabaseByName(
+        dbName,
+        /* silent */ true
+      );
+      if (isValidDatabaseName(db.name)) {
+        return db.instanceResource.engine;
+      }
     }
   }
-
   return Engine.ENGINE_UNSPECIFIED;
 };
 
 export const isDatabaseChangeSpec = (spec?: Plan_Spec) => {
   if (!spec) return false;
-  return isValidDatabaseName(spec.changeDatabaseConfig?.target);
+  const config = spec.changeDatabaseConfig || spec.exportDataConfig;
+  if (config) {
+    return targetsForSpec(spec).every(isValidDatabaseName);
+  }
+  return false;
 };
 
 export const isGroupingChangeSpec = (spec?: Plan_Spec) => {
   if (!spec) return false;
-  const databaseGroup = extractDatabaseGroupName(
-    spec.changeDatabaseConfig?.target ?? ""
-  );
-  return databaseGroup !== "";
+  const config = spec.changeDatabaseConfig || spec.exportDataConfig;
+  if (config) {
+    return targetsForSpec(spec).every(isValidDatabaseGroupName);
+  }
+  return false;
+};
+
+export const targetsForSpec = (spec: Plan_Spec): string[] => {
+  const config = spec.changeDatabaseConfig || spec.exportDataConfig;
+  if (config) {
+    if (config.targets && config.targets.length > 0) {
+      return config.targets;
+    }
+    return [config.target];
+  }
+  return [];
 };
