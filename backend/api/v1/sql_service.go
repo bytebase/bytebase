@@ -772,7 +772,7 @@ func (s *SQLService) doExportFromIssue(ctx context.Context, requestName string) 
 		return nil, status.Errorf(codes.Internal, "failed to get tasks: %v", err)
 	}
 	if len(tasks) == 0 {
-		return nil, status.Errorf(codes.InvalidArgument, "rollout %s has no task", rollout.ID)
+		return nil, status.Errorf(codes.InvalidArgument, "rollout %d has no task", rollout.ID)
 	}
 
 	exportArchiveUIDs := []int{}

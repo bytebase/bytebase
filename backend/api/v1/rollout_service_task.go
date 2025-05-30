@@ -206,7 +206,7 @@ func getTaskCreatesFromChangeDatabaseConfig(
 	// Possible targets: list of instances/{instance}/databases/{database}.
 	var tasks []*store.TaskMessage
 	for _, database := range databases {
-		v, err := getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx, s, spec, c, database)
+		v, err := getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(spec, c, database)
 		if err != nil {
 			return nil, err
 		}
@@ -293,8 +293,6 @@ func getTaskCreatesFromExportDataConfig(
 }
 
 func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(
-	ctx context.Context,
-	s *store.Store,
 	spec *storepb.PlanConfig_Spec,
 	c *storepb.PlanConfig_ChangeDatabaseConfig,
 	database *store.DatabaseMessage,
