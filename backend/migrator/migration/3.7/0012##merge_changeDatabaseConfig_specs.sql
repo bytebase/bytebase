@@ -125,26 +125,3 @@ WHERE
         GROUP BY sws.plan_id, sws.sheet
         HAVING COUNT(*) > 1
     );
-
--- Optional: View the changes before executing the UPDATE
--- Comment out the UPDATE statement above and uncomment this SELECT to preview:
-/*
-SELECT 
-    p.id,
-    p.name,
-    p.project,
-    jsonb_array_length(p.config->'specs') AS original_spec_count,
-    jsonb_array_length(nsa.new_specs) AS new_spec_count,
-    p.config->'specs' AS original_specs,
-    nsa.new_specs AS merged_specs
-FROM 
-    plan p
-    JOIN new_specs_array nsa ON p.id = nsa.plan_id
-WHERE EXISTS (
-    SELECT 1
-    FROM specs_with_sheet sws
-    WHERE sws.plan_id = p.id
-    GROUP BY sws.plan_id, sws.sheet
-    HAVING COUNT(*) > 1
-);
-*/
