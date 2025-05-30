@@ -9,7 +9,7 @@ export interface ComposedDatabaseGroup extends DatabaseGroup {
   simpleExpr: ConditionGroupExpr;
 }
 
-export const isValidDatabaseGroupName = (name: any): boolean => {
+export const isValidDatabaseGroupName = (name: string): boolean => {
   if (typeof name !== "string") return false;
   const dbGroupName = extractDatabaseGroupName(name);
   return Boolean(dbGroupName) && dbGroupName !== String(UNKNOWN_ID);
