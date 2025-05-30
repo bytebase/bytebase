@@ -4,19 +4,21 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Architecture
 - The database schema is defined in `./backend/migrator/migration/LATEST.sql`
-- The database migration files are in `./backend/migrator/<<version>>/`
+- The database migration files are in `./backend/migrator/<<version>>/`. `TestLatestVersion` in `./backend/migrator/migrator_test.go` needs update after new migration files are added.
 - Files in `./backend/store` are mappings to the database tables.
 
 ## Build/Test Commands
 - Backend: `go build -ldflags "-w -s" -p=16 -o ./.air/bytebase ./backend/bin/server/main.go`
 - Start backend: `PG_URL=postgresql://bbdev@localhost/bbdev go run ./backend/bin/server/main.go --port 8080 --data . --debug`
-- Run single Go test: `go test -v github.com/bytebase/bytebase/backend/tests -run TestFunctionName`
+- Run a single Go test: `go test -v -count=1 github.com/bytebase/bytebase/backend/path/to/tests -run ^TestFunctionName$`
+- Run two Go tests: `go test -v -count=1 github.com/bytebase/bytebase/backend/path/to/tests -run ^(TestFunctionName|TestFunctionNameTwo)$`
 - Frontend install: `pnpm --dir frontend i`
 - Frontend dev: `pnpm --dir frontend dev`
 - Frontend lint: `pnpm --dir frontend lint`
 - Frontend lint fix: `pnpm --dir frontend lint --fix` - Please run this before committing to ensure code quality if changes are made in the frontend code.
 - Frontend type check: `pnpm --dir frontend type-check`
 - Frontend test: `pnpm --dir frontend test`
+- Proto format: `cd proto && buf format -w`
 - Proto lint: `cd proto && buf lint`
 - Proto generate: `cd proto && buf generate`
 - Go lint command: `golangci-lint run --allow-parallel-runners` - This custom alias lints Go code, ensuring no errors or warnings are present after updates.
