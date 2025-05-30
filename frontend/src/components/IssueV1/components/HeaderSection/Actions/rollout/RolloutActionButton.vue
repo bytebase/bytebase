@@ -93,6 +93,20 @@ const actionList = computed(() => {
     tag: "div",
     disabled: errors.value.length > 0,
   };
+  if (selectedTask.value.databaseDataExport) {
+    return [
+      {
+        key: `${action}-STAGE`,
+        text,
+        props: actionProps,
+        params: {
+          action,
+          target: "STAGE",
+        },
+      },
+    ];
+  }
+
   const actionList: RolloutButtonAction[] = [
     {
       key: `${action}-TASK`,

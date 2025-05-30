@@ -44,25 +44,13 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, request *v1pb.CheckRe
 	var targetDatabases []*store.DatabaseMessage
 	for _, target := range request.Targets {
 		// Handle database target.
-		if instanceID, databaseName, err := common.GetInstanceDatabaseID(target); err == nil {
-			instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
-				ResourceID: &instanceID,
-			})
+		if _, _, err := common.GetInstanceDatabaseID(target); err == nil {
+			database, err := getDatabaseMessage(ctx, s.store, target)
 			if err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to get instance, error: %v", err)
+				return nil, status.Errorf(codes.Internal, "failed to found database %v", target)
 			}
-			if instance == nil {
-				return nil, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
-			}
-			database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-				InstanceID:   &instanceID,
-				DatabaseName: &databaseName,
-			})
-			if err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to get database, error: %v", err)
-			}
-			if database == nil {
-				return nil, status.Errorf(codes.NotFound, "database %q not found", target)
+			if database == nil || database.Deleted {
+				return nil, status.Errorf(codes.NotFound, "database %v not found", target)
 			}
 			targetDatabases = append(targetDatabases, database)
 		}

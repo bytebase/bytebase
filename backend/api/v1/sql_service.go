@@ -754,65 +754,74 @@ func (s *SQLService) Export(ctx context.Context, request *v1pb.ExportRequest) (*
 	}, nil
 }
 
-func (s *SQLService) doExportFromIssue(ctx context.Context, issueName string) (*v1pb.ExportResponse, error) {
-	issueUID, err := common.GetIssueID(issueName)
+func (s *SQLService) doExportFromIssue(ctx context.Context, requestName string) (*v1pb.ExportResponse, error) {
+	_, rolloutID, stageID, err := common.GetProjectIDRolloutIDMaybeStageID(requestName)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "failed to get issue ID: %v", err)
+		return nil, status.Errorf(codes.InvalidArgument, "failed to parse rollout ID: %v", err)
 	}
-	issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{UID: &issueUID})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get issue: %v", err)
-	}
-	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
-	if !ok {
-		return nil, status.Errorf(codes.Internal, "user not found")
-	}
-	if user.ID != issue.Creator.ID {
-		return nil, status.Errorf(codes.PermissionDenied, "only the issue creator can download")
-	}
-	if issue.PipelineUID == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "issue %s has no pipeline", issueName)
-	}
-	rollout, err := s.store.GetRollout(ctx, *issue.PipelineUID)
+	rollout, err := s.store.GetRollout(ctx, rolloutID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get rollout: %v", err)
 	}
 	if rollout == nil {
-		return nil, status.Errorf(codes.NotFound, "rollout %d not found", *issue.PipelineUID)
+		return nil, status.Errorf(codes.NotFound, "rollout %d not found", rolloutID)
 	}
-	tasks, err := s.store.ListTasks(ctx, &store.TaskFind{PipelineID: &rollout.ID})
+
+	tasks, err := s.store.ListTasks(ctx, &store.TaskFind{PipelineID: &rollout.ID, StageID: stageID})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get tasks: %v", err)
 	}
-	if len(tasks) != 1 {
-		return nil, status.Errorf(codes.InvalidArgument, "issue %s has unmatched tasks", issueName)
+	if len(tasks) == 0 {
+		return nil, status.Errorf(codes.InvalidArgument, "rollout %d has no task", rollout.ID)
 	}
-	task := tasks[0]
-	taskRuns, err := s.store.ListTaskRunsV2(ctx, &store.FindTaskRunMessage{TaskUID: &task.ID})
+
+	exportArchiveUIDs := []int{}
+	contents := []*exportData{}
+
+	for _, task := range tasks {
+		taskRuns, err := s.store.ListTaskRunsV2(ctx, &store.FindTaskRunMessage{TaskUID: &task.ID})
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to get task run: %v", err)
+		}
+		if len(taskRuns) == 0 {
+			return nil, status.Errorf(codes.InvalidArgument, "rollout %v has no task run", requestName)
+		}
+		taskRun := taskRuns[0]
+		exportArchiveUID := int(taskRun.ResultProto.ExportArchiveUid)
+		if exportArchiveUID == 0 {
+			return nil, status.Errorf(codes.InvalidArgument, "issue %v has no export archive", requestName)
+		}
+		exportArchive, err := s.store.GetExportArchive(ctx, &store.FindExportArchiveMessage{UID: &exportArchiveUID})
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to get export archive: %v", err)
+		}
+		if exportArchive == nil {
+			return nil, status.Errorf(codes.NotFound, "export archive %d not found", exportArchiveUID)
+		}
+		exportArchiveUIDs = append(exportArchiveUIDs, exportArchiveUID)
+		contents = append(contents, &exportData{
+			Content:  exportArchive.Bytes,
+			Database: task.GetDatabaseName(),
+		})
+	}
+
+	encryptedBytes, err := doEncrypt(contents, &v1pb.ExportRequest{
+		Password: tasks[0].Payload.GetPassword(),
+		Format:   v1pb.ExportFormat(tasks[0].Payload.GetFormat()),
+	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get task run: %v", err)
+		return nil, status.Errorf(codes.Internal, "failed to encrypt data: %v", err)
 	}
-	if len(taskRuns) == 0 {
-		return nil, status.Errorf(codes.InvalidArgument, "issue %s has no task run", issueName)
+
+	for _, exportArchiveUID := range exportArchiveUIDs {
+		// Delete the export archive after it's fetched.
+		if err := s.store.DeleteExportArchive(ctx, exportArchiveUID); err != nil {
+			slog.Error("failed to delete export archive", log.BBError(err), slog.String("rollout", requestName), slog.Int("archive", exportArchiveUID))
+		}
 	}
-	taskRun := taskRuns[len(taskRuns)-1]
-	exportArchiveUID := int(taskRun.ResultProto.ExportArchiveUid)
-	if exportArchiveUID == 0 {
-		return nil, status.Errorf(codes.InvalidArgument, "issue %s has no export archive", issueName)
-	}
-	exportArchive, err := s.store.GetExportArchive(ctx, &store.FindExportArchiveMessage{UID: &exportArchiveUID})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get export archive: %v", err)
-	}
-	if exportArchive == nil {
-		return nil, status.Errorf(codes.NotFound, "export archive %d not found", exportArchiveUID)
-	}
-	// Delete the export archive after it's fetched.
-	if err := s.store.DeleteExportArchive(ctx, exportArchiveUID); err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to delete export archive: %v", err)
-	}
+
 	return &v1pb.ExportResponse{
-		Content: exportArchive.Bytes,
+		Content: encryptedBytes,
 	}, nil
 }
 
@@ -934,37 +943,51 @@ func DoExport(
 		return nil, duration, status.Errorf(codes.InvalidArgument, "unsupported export format: %s", request.Format.String())
 	}
 
-	encryptedBytes, err := doEncrypt(content, request)
+	if request.Password == "" {
+		return content, duration, nil
+	}
+	encryptedBytes, err := doEncrypt([]*exportData{
+		{
+			Database: database.DatabaseName,
+			Content:  content,
+		},
+	}, request)
 	if err != nil {
 		return nil, 0, errors.Wrap(err, "failed to encrypt data")
 	}
 	return encryptedBytes, duration, nil
 }
 
-func doEncrypt(data []byte, request *v1pb.ExportRequest) ([]byte, error) {
-	if request.Password == "" {
-		return data, nil
-	}
+type exportData struct {
+	Database string
+	Content  []byte
+}
+
+func doEncrypt(exports []*exportData, request *v1pb.ExportRequest) ([]byte, error) {
 	var b bytes.Buffer
 	fzip := io.Writer(&b)
 
 	zipw := zip.NewWriter(fzip)
 	defer zipw.Close()
 
-	fh := &zip.FileHeader{
-		Name:   fmt.Sprintf("export.%s", strings.ToLower(request.Format.String())),
-		Method: zip.Deflate,
-	}
-	fh.ModifiedDate, fh.ModifiedTime = timeToMsDosTime(time.Now())
-	fh.SetPassword(request.Password)
-	writer, err := zipw.CreateHeader(fh)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to create encrypt export file")
+	for i, export := range exports {
+		fh := &zip.FileHeader{
+			Name:   fmt.Sprintf("[%d] %s.%s", i, export.Database, strings.ToLower(request.Format.String())),
+			Method: zip.Deflate,
+		}
+		fh.ModifiedDate, fh.ModifiedTime = timeToMsDosTime(time.Now())
+		if request.Password != "" {
+			fh.SetPassword(request.Password)
+		}
+		writer, err := zipw.CreateHeader(fh)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to create encrypt export file")
+		}
+		if _, err := io.Copy(writer, bytes.NewReader(export.Content)); err != nil {
+			return nil, errors.Wrapf(err, "failed to write export file")
+		}
 	}
 
-	if _, err := io.Copy(writer, bytes.NewReader(data)); err != nil {
-		return nil, errors.Wrapf(err, "failed to write export file")
-	}
 	if err := zipw.Close(); err != nil {
 		return nil, errors.Wrap(err, "failed to close zip writer")
 	}

@@ -72,7 +72,7 @@ func (exec *DataExportExecutor) RunOnce(ctx context.Context, _ context.Context, 
 		Name:      common.FormatDatabase(instance.ResourceID, database.DatabaseName),
 		Statement: statement,
 		Format:    v1pb.ExportFormat(task.Payload.GetFormat()),
-		Password:  task.Payload.GetPassword(),
+		Password:  "", /* do not pass the password, we will encrypt the files will password when users download them */
 	}
 	bytes, _, exportErr := apiv1.DoExport(ctx, exec.store, exec.dbFactory, exec.license, exportRequest, issue.Creator /* user */, instance, database, nil, exec.schemaSyncer, dataSource)
 	if exportErr != nil {

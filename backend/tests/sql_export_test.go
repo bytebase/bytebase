@@ -216,7 +216,7 @@ func TestSQLExport(t *testing.T) {
 			a.NoError(err)
 			a.Equal(1, len(zipReader.File))
 
-			a.Equal(fmt.Sprintf("export.%s", strings.ToLower(request.Format.String())), zipReader.File[0].Name)
+			a.Equal(fmt.Sprintf("[0] %s.%s", tt.databaseName, strings.ToLower(request.Format.String())), zipReader.File[0].Name)
 			compressedFile := zipReader.File[0]
 			compressedFile.SetPassword(tt.password)
 			file, err := compressedFile.Open()

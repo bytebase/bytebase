@@ -449,6 +449,10 @@ type PlanConfig_ExportDataConfig struct {
 	// The resource name of the target.
 	// Format: instances/{instance-id}/databases/{database-name}
 	Target string `protobuf:"bytes,1,opt,name=target,proto3" json:"target,omitempty"`
+	// The list of targets.
+	// Multi-database format: [instances/{instance-id}/databases/{database-name}].
+	// Single database group format: [projects/{project}/databaseGroups/{databaseGroup}].
+	Targets []string `protobuf:"bytes,5,rep,name=targets,proto3" json:"targets,omitempty"`
 	// The resource name of the sheet.
 	// Format: projects/{project}/sheets/{sheet}
 	Sheet string `protobuf:"bytes,2,opt,name=sheet,proto3" json:"sheet,omitempty"`
@@ -496,6 +500,13 @@ func (x *PlanConfig_ExportDataConfig) GetTarget() string {
 		return x.Target
 	}
 	return ""
+}
+
+func (x *PlanConfig_ExportDataConfig) GetTargets() []string {
+	if x != nil {
+		return x.Targets
+	}
+	return nil
 }
 
 func (x *PlanConfig_ExportDataConfig) GetSheet() string {
@@ -631,7 +642,7 @@ var File_store_plan_proto protoreflect.FileDescriptor
 
 const file_store_plan_proto_rawDesc = "" +
 	"\n" +
-	"\x10store/plan.proto\x12\x0ebytebase.store\x1a\x1fgoogle/api/field_behavior.proto\x1a\x12store/common.proto\x1a\x1astore/plan_check_run.proto\"\xd8\r\n" +
+	"\x10store/plan.proto\x12\x0ebytebase.store\x1a\x1fgoogle/api/field_behavior.proto\x1a\x12store/common.proto\x1a\x1astore/plan_check_run.proto\"\xf2\r\n" +
 	"\n" +
 	"PlanConfig\x125\n" +
 	"\x05specs\x18\x01 \x03(\v2\x1f.bytebase.store.PlanConfig.SpecR\x05specs\x12E\n" +
@@ -671,9 +682,10 @@ const file_store_plan_proto_rawDesc = "" +
 	"\vMIGRATE_SDL\x10\x03\x12\x11\n" +
 	"\rMIGRATE_GHOST\x10\x04\x12\b\n" +
 	"\x04DATA\x10\x06B\x1b\n" +
-	"\x19_pre_update_backup_detail\x1a\xa4\x01\n" +
+	"\x19_pre_update_backup_detail\x1a\xbe\x01\n" +
 	"\x10ExportDataConfig\x12\x16\n" +
-	"\x06target\x18\x01 \x01(\tR\x06target\x12\x14\n" +
+	"\x06target\x18\x01 \x01(\tR\x06target\x12\x18\n" +
+	"\atargets\x18\x05 \x03(\tR\atargets\x12\x14\n" +
 	"\x05sheet\x18\x02 \x01(\tR\x05sheet\x124\n" +
 	"\x06format\x18\x03 \x01(\x0e2\x1c.bytebase.store.ExportFormatR\x06format\x12\x1f\n" +
 	"\bpassword\x18\x04 \x01(\tH\x00R\bpassword\x88\x01\x01B\v\n" +

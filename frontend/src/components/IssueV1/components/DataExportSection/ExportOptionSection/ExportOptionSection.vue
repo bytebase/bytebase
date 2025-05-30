@@ -88,9 +88,7 @@ const { issue, isCreating, selectedTask, events } = context;
 const refreshKey = ref(0);
 
 const spec = computed(
-  () =>
-    head(issue.value.planEntity?.specs) ||
-    Plan_Spec.fromPartial({})
+  () => head(issue.value.planEntity?.specs) || Plan_Spec.fromPartial({})
 );
 
 const state = reactive<LocalState>({
@@ -131,8 +129,9 @@ const handleSaveEdit = async () => {
   }
 
   const distinctSpecIds = new Set([spec.value.id]);
-  const specsToPatch = (planPatch.specs || [])
-    .filter((spec) => distinctSpecIds.has(spec.id));
+  const specsToPatch = (planPatch.specs || []).filter((spec) =>
+    distinctSpecIds.has(spec.id)
+  );
   for (let i = 0; i < specsToPatch.length; i++) {
     const spec = specsToPatch[i];
     const config = spec.exportDataConfig;
@@ -162,11 +161,13 @@ watch(
     if (!isCreating.value) {
       return;
     }
-    spec.value.exportDataConfig = Plan_ExportDataConfig.fromPartial({
-      ...spec.value.exportDataConfig,
-      format: state.config.format,
-      password: state.config.password,
-    });
+    for (const spec of issue.value.planEntity?.specs ?? []) {
+      spec.exportDataConfig = Plan_ExportDataConfig.fromPartial({
+        ...spec.exportDataConfig,
+        format: state.config.format,
+        password: state.config.password,
+      });
+    }
   },
   { deep: true }
 );

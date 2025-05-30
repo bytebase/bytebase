@@ -124,12 +124,7 @@ const performRolloutAction = async (params: RolloutAction) => {
     return performBatchTaskAction(action, [selectedTask.value]);
   }
   if (target === "STAGE") {
-    const actionItem = stageRolloutActionList.value.find(
-      (item) => item.action === action
-    );
-    if (actionItem) {
-      return performBatchTaskAction(action, actionItem.tasks);
-    }
+    return performBatchTaskAction(action, selectedStage.value.tasks);
   }
 };
 
