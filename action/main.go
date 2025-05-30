@@ -228,6 +228,7 @@ func runRollout(command *cobra.Command, _ []string) error {
 			return errors.Wrapf(err, "failed to get plan")
 		}
 		plan = planP
+		slog.Info("use the provided plan", "url", fmt.Sprintf("%s/%s", client.url, plan.Name))
 	} else {
 		releaseFiles, err := getReleaseFiles(Config.FilePattern)
 		if err != nil {
@@ -236,7 +237,7 @@ func runRollout(command *cobra.Command, _ []string) error {
 		createReleaseResponse, err := client.createRelease(Config.Project, &v1pb.Release{
 			Title:     Config.ReleaseTitle,
 			Files:     releaseFiles,
-			VcsSource: nil, // TODO(p0ny): impl
+			VcsSource: getVCSSource(),
 		})
 		if err != nil {
 			return errors.Wrapf(err, "failed to create release")
@@ -261,10 +262,9 @@ func runRollout(command *cobra.Command, _ []string) error {
 			return errors.Wrapf(err, "failed to create plan")
 		}
 		plan = planCreated
+		slog.Info("plan created", "url", fmt.Sprintf("%s/%s", client.url, plan.Name))
 	}
 	outputMap["plan"] = plan.Name
-
-	slog.Info("plan created", "url", fmt.Sprintf("%s/%s", client.url, plan.Name))
 
 	if err := runAndWaitForPlanChecks(ctx, client, plan.Name); err != nil {
 		return errors.Wrapf(err, "failed to run and wait for plan checks")
@@ -543,5 +543,32 @@ func main() {
 	if err := cmd.ExecuteContext(ctx); err != nil {
 		slog.Error("failed to execute command", log.BBError(err))
 		os.Exit(1)
+	}
+}
+
+func getVCSSource() *v1pb.Release_VCSSource {
+	switch getJobPlatform() {
+	case GitHub:
+		return &v1pb.Release_VCSSource{
+			VcsType: v1pb.VCSType_GITHUB,
+			Url:     os.Getenv("GITHUB_SERVER_URL") + "/" + os.Getenv("GITHUB_REPOSITORY") + "/commit/" + os.Getenv("GITHUB_SHA"),
+		}
+	case GitLab:
+		return &v1pb.Release_VCSSource{
+			VcsType: v1pb.VCSType_GITLAB,
+			Url:     os.Getenv("CI_PROJECT_URL") + "/-/commit/" + os.Getenv("CI_COMMIT_SHA"),
+		}
+	case Bitbucket:
+		return &v1pb.Release_VCSSource{
+			VcsType: v1pb.VCSType_BITBUCKET,
+			Url:     os.Getenv("BITBUCKET_GIT_HTTP_ORIGIN") + "/commits/" + os.Getenv("BITBUCKET_COMMIT"),
+		}
+	case AzureDevOps:
+		return &v1pb.Release_VCSSource{
+			VcsType: v1pb.VCSType_AZURE_DEVOPS,
+			Url:     os.Getenv("SYSTEM_COLLECTIONURI") + os.Getenv("SYSTEM_TEAMPROJECT") + "/_git/" + os.Getenv("BUILD_REPOSITORY_NAME") + "/commit/" + os.Getenv("BUILD_SOURCEVERSION"),
+		}
+	default:
+		return nil
 	}
 }
