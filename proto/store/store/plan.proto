@@ -81,6 +81,10 @@ message PlanConfig {
     // The resource name of the target.
     // Format: instances/{instance-id}/databases/{database-name}
     string target = 1;
+    // The list of targets.
+    // Multi-database format: [instances/{instance-id}/databases/{database-name}].
+    // Single database group format: [projects/{project}/databaseGroups/{databaseGroup}].
+    repeated string targets = 5;
     // The resource name of the sheet.
     // Format: projects/{project}/sheets/{sheet}
     string sheet = 2;

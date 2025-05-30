@@ -32,27 +32,11 @@ func NewRevisionService(store *store.Store) *RevisionService {
 }
 
 func (s *RevisionService) ListRevisions(ctx context.Context, request *v1pb.ListRevisionsRequest) (*v1pb.ListRevisionsResponse, error) {
-	instanceID, databaseName, err := common.GetInstanceDatabaseID(request.Parent)
+	database, err := getDatabaseMessage(ctx, s.store, request.Parent)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "failed to get instance and database from %v, err: %v", request.Parent, err)
+		return nil, status.Errorf(codes.Internal, "failed to found database %v", request.Parent)
 	}
-
-	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to find instance %v, err: %v", instanceID, err)
-	}
-	if instance == nil {
-		return nil, status.Errorf(codes.NotFound, "instance %v not found", instanceID)
-	}
-
-	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-		InstanceID:   &instanceID,
-		DatabaseName: &databaseName,
-	})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to find database %v, err: %v", request.Parent, err)
-	}
-	if database == nil {
+	if database == nil || database.Deleted {
 		return nil, status.Errorf(codes.NotFound, "database %v not found", request.Parent)
 	}
 
@@ -116,22 +100,15 @@ func (s *RevisionService) GetRevision(ctx context.Context, request *v1pb.GetRevi
 }
 
 func (s *RevisionService) CreateRevision(ctx context.Context, request *v1pb.CreateRevisionRequest) (*v1pb.Revision, error) {
-	instanceID, databaseID, err := common.GetInstanceDatabaseID(request.Parent)
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "failed to get instance and database from %v, err: %v", request.Parent, err)
-	}
 	if request.Revision == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "request.Revision is not set")
 	}
-	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-		InstanceID:   &instanceID,
-		DatabaseName: &databaseID,
-	})
+	database, err := getDatabaseMessage(ctx, s.store, request.Parent)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get database, err: %v", err)
+		return nil, status.Errorf(codes.Internal, "failed to found database %v", request.Parent)
 	}
-	if database == nil {
-		return nil, status.Errorf(codes.NotFound, "database %q not found", request.Parent)
+	if database == nil || database.Deleted {
+		return nil, status.Errorf(codes.NotFound, "database %v not found", request.Parent)
 	}
 	_, sheetUID, err := common.GetProjectResourceIDSheetUID(request.Revision.Sheet)
 	if err != nil {
@@ -219,23 +196,12 @@ func (s *RevisionService) CreateRevision(ctx context.Context, request *v1pb.Crea
 }
 
 func (s *RevisionService) BatchCreateRevisions(ctx context.Context, request *v1pb.BatchCreateRevisionsRequest) (*v1pb.BatchCreateRevisionsResponse, error) {
-	instanceID, databaseID, err := common.GetInstanceDatabaseID(request.Parent)
+	database, err := getDatabaseMessage(ctx, s.store, request.Parent)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "failed to get instance and database from %v, err: %v", request.Parent, err)
+		return nil, status.Errorf(codes.Internal, "failed to found database %v", request.Parent)
 	}
-	if len(request.Requests) == 0 {
-		return nil, status.Errorf(codes.InvalidArgument, "requests is empty")
-	}
-
-	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-		InstanceID:   &instanceID,
-		DatabaseName: &databaseID,
-	})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get database, err: %v", err)
-	}
-	if database == nil {
-		return nil, status.Errorf(codes.NotFound, "database %q not found", request.Parent)
+	if database == nil || database.Deleted {
+		return nil, status.Errorf(codes.NotFound, "database %v not found", request.Parent)
 	}
 
 	var revisions []*v1pb.Revision
