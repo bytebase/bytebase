@@ -15,7 +15,7 @@
             </div>
             <DatabaseAndGroupSelector
               :project="project"
-              @update="handleTargetChange"
+              v-model:value="state.targetSelectState"
             />
           </div>
           <div
@@ -119,10 +119,6 @@ const nextButtonErrors = computed(() => {
   }
   return errors;
 });
-
-const handleTargetChange = (databaseSelectState: DatabaseSelectState) => {
-  state.targetSelectState = databaseSelectState;
-};
 
 const handleClickNext = async () => {
   if (!state.targetSelectState) {

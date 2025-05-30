@@ -5,8 +5,7 @@
         <div class="w-[calc(100vw-8rem)] lg:w-[60rem] max-w-[calc(100vw-8rem)]">
           <DatabaseAndGroupSelector
             :project="project"
-            :database-select-state="state.targetSelectState"
-            @update="handleTargetChange"
+            v-model:value="state.targetSelectState"
           />
         </div>
       </template>
@@ -99,10 +98,6 @@ const createButtonErrors = computed(() => {
   return errors;
 });
 
-const handleTargetChange = (databaseSelectState: DatabaseSelectState) => {
-  state.targetSelectState = databaseSelectState;
-};
-
 const handleCreate = async () => {
   if (!state.targetSelectState) {
     return;
@@ -119,20 +114,21 @@ const handleCreate = async () => {
   const createdPlan = await planServiceClient.createPlan({
     parent: project.value.name,
     plan: {
-    title: `Release "${release.value.title}"`,
-    description: `Apply release "${release.value.title}" to selected databases.`,
-    specs: [
-      {
-        id: crypto.randomUUID(),
-        changeDatabaseConfig: {
-          targets: (state.targetSelectState.changeSource === "DATABASE"
-            ? state.targetSelectState.selectedDatabaseNameList
-            : [state.targetSelectState.selectedDatabaseGroup!]) || [],
-          release: release.value.name,
+      title: `Release "${release.value.title}"`,
+      description: `Apply release "${release.value.title}" to selected databases.`,
+      specs: [
+        {
+          id: crypto.randomUUID(),
+          changeDatabaseConfig: {
+            targets:
+              (state.targetSelectState.changeSource === "DATABASE"
+                ? state.targetSelectState.selectedDatabaseNameList
+                : [state.targetSelectState.selectedDatabaseGroup!]) || [],
+            release: release.value.name,
+          },
         },
-      }
-    ],
-  },
+      ],
+    },
   });
   const createdIssue = await createIssueFromPlan(project.value.name, {
     ...createdPlan,
@@ -153,5 +149,4 @@ const handleCreate = async () => {
     },
   });
 };
-
 </script>
