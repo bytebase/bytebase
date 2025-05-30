@@ -54,10 +54,8 @@ const taskRun = computed(() => {
 
 const exportDataConfig = computed(() => {
   return (
-    (
-      head(issue.value.planEntity?.specs) ||
-      Plan_Spec.fromPartial({})
-    ).exportDataConfig || Plan_ExportDataConfig.fromPartial({})
+    (head(issue.value.planEntity?.specs) || Plan_Spec.fromPartial({}))
+      .exportDataConfig || Plan_ExportDataConfig.fromPartial({})
   );
 });
 
@@ -80,7 +78,7 @@ const downloadExportArchive = async () => {
   const filename = `export-data-${formattedDateString}`;
   const link = document.createElement("a");
   const isZip = exportDataConfig.value.password;
-  link.download = `${filename}.${isZip ? "zip" : fileFormat}`;
+  link.download = `${filename}.zip`;
   link.href = url;
   link.click();
   await issueServiceClient.batchUpdateIssuesStatus({

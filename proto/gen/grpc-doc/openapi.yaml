@@ -11245,6 +11245,14 @@ components:
                     description: |-
                         The resource name of the target.
                          Format: instances/{instance-id}/databases/{database-name}
+                targets:
+                    type: array
+                    items:
+                        type: string
+                    description: |-
+                        The list of targets.
+                         Multi-database format: [instances/{instance-id}/databases/{database-name}].
+                         Single database group format: [projects/{project}/databaseGroups/{databaseGroup}].
                 sheet:
                     type: string
                     description: |-

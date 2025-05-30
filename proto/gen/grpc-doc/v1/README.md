@@ -7435,6 +7435,7 @@ When paginating, all other parameters provided to `ListPlans` must match the cal
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | target | [string](#string) |  | The resource name of the target. Format: instances/{instance-id}/databases/{database-name} |
+| targets | [string](#string) | repeated | The list of targets. Multi-database format: [instances/{instance-id}/databases/{database-name}]. Single database group format: [projects/{project}/databaseGroups/{databaseGroup}]. |
 | sheet | [string](#string) |  | The resource name of the sheet. Format: projects/{project}/sheets/{sheet} |
 | format | [ExportFormat](#bytebase-v1-ExportFormat) |  | The format of the exported file. |
 | password | [string](#string) | optional | The zip password provide by users. Leave it empty if no needs to encrypt the zip file. |

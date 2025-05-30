@@ -379,19 +379,12 @@ func (s *WorksheetService) UpdateWorksheet(ctx context.Context, request *v1pb.Up
 			stringVisibility := string(visibility)
 			worksheetPatch.Visibility = &stringVisibility
 		case "database":
-			instanceID, databaseName, err := common.GetInstanceDatabaseID(request.Worksheet.Database)
+			database, err := getDatabaseMessage(ctx, s.store, request.Worksheet.Database)
 			if err != nil {
-				return nil, status.Error(codes.InvalidArgument, err.Error())
+				return nil, status.Errorf(codes.Internal, "failed to found database %v", request.Worksheet.Database)
 			}
-			database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-				InstanceID:   &instanceID,
-				DatabaseName: &databaseName,
-			})
-			if err != nil {
-				return nil, status.Error(codes.Internal, err.Error())
-			}
-			if database == nil {
-				return nil, status.Errorf(codes.InvalidArgument, `database "%q" not found`, request.Worksheet.Database)
+			if database == nil || database.Deleted {
+				return nil, status.Errorf(codes.NotFound, "database %v not found", request.Worksheet.Database)
 			}
 			worksheetPatch.InstanceID, worksheetPatch.DatabaseName = &database.InstanceID, &database.DatabaseName
 		default:

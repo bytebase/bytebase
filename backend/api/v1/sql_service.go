@@ -784,35 +784,57 @@ func (s *SQLService) doExportFromIssue(ctx context.Context, issueName string) (*
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get tasks: %v", err)
 	}
-	if len(tasks) != 1 {
-		return nil, status.Errorf(codes.InvalidArgument, "issue %s has unmatched tasks", issueName)
+	if len(tasks) == 0 {
+		return nil, status.Errorf(codes.InvalidArgument, "issue %s has no task", issueName)
 	}
-	task := tasks[0]
-	taskRuns, err := s.store.ListTaskRunsV2(ctx, &store.FindTaskRunMessage{TaskUID: &task.ID})
+
+	exportArchiveUIDs := []int{}
+	contents := [][]byte{}
+
+	for _, task := range tasks {
+		taskRuns, err := s.store.ListTaskRunsV2(ctx, &store.FindTaskRunMessage{TaskUID: &task.ID})
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to get task run: %v", err)
+		}
+		if len(taskRuns) == 0 {
+			return nil, status.Errorf(codes.InvalidArgument, "issue %s has no task run", issueName)
+		}
+
+		for _, taskRun := range taskRuns {
+			exportArchiveUID := int(taskRun.ResultProto.ExportArchiveUid)
+			if exportArchiveUID == 0 {
+				return nil, status.Errorf(codes.InvalidArgument, "issue %s has no export archive", issueName)
+			}
+			exportArchive, err := s.store.GetExportArchive(ctx, &store.FindExportArchiveMessage{UID: &exportArchiveUID})
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to get export archive: %v", err)
+			}
+			if exportArchive == nil {
+				return nil, status.Errorf(codes.NotFound, "export archive %d not found", exportArchiveUID)
+			}
+			// response.Contents = append(response.Contents, exportArchive.Bytes)
+			exportArchiveUIDs = append(exportArchiveUIDs, exportArchiveUID)
+			contents = append(contents, exportArchive.Bytes)
+		}
+	}
+
+	encryptedBytes, err := doEncrypt(contents, &v1pb.ExportRequest{
+		Password: tasks[0].Payload.GetPassword(),
+		Format:   v1pb.ExportFormat(tasks[0].Payload.GetFormat()),
+	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get task run: %v", err)
+		return nil, status.Errorf(codes.Internal, "failed to encrypt data: %v", err)
 	}
-	if len(taskRuns) == 0 {
-		return nil, status.Errorf(codes.InvalidArgument, "issue %s has no task run", issueName)
+
+	for _, exportArchiveUID := range exportArchiveUIDs {
+		// Delete the export archive after it's fetched.
+		if err := s.store.DeleteExportArchive(ctx, exportArchiveUID); err != nil {
+			slog.Error("failed to delete export archive", log.BBError(err), slog.String("issue", issueName), slog.Int("archive", exportArchiveUID))
+		}
 	}
-	taskRun := taskRuns[len(taskRuns)-1]
-	exportArchiveUID := int(taskRun.ResultProto.ExportArchiveUid)
-	if exportArchiveUID == 0 {
-		return nil, status.Errorf(codes.InvalidArgument, "issue %s has no export archive", issueName)
-	}
-	exportArchive, err := s.store.GetExportArchive(ctx, &store.FindExportArchiveMessage{UID: &exportArchiveUID})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get export archive: %v", err)
-	}
-	if exportArchive == nil {
-		return nil, status.Errorf(codes.NotFound, "export archive %d not found", exportArchiveUID)
-	}
-	// Delete the export archive after it's fetched.
-	if err := s.store.DeleteExportArchive(ctx, exportArchiveUID); err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to delete export archive: %v", err)
-	}
+
 	return &v1pb.ExportResponse{
-		Content: exportArchive.Bytes,
+		Content: encryptedBytes,
 	}, nil
 }
 
@@ -934,17 +956,17 @@ func DoExport(
 		return nil, duration, status.Errorf(codes.InvalidArgument, "unsupported export format: %s", request.Format.String())
 	}
 
-	encryptedBytes, err := doEncrypt(content, request)
+	if request.Password == "" {
+		return content, duration, nil
+	}
+	encryptedBytes, err := doEncrypt([][]byte{content}, request)
 	if err != nil {
 		return nil, 0, errors.Wrap(err, "failed to encrypt data")
 	}
 	return encryptedBytes, duration, nil
 }
 
-func doEncrypt(data []byte, request *v1pb.ExportRequest) ([]byte, error) {
-	if request.Password == "" {
-		return data, nil
-	}
+func doEncrypt(contents [][]byte, request *v1pb.ExportRequest) ([]byte, error) {
 	var b bytes.Buffer
 	fzip := io.Writer(&b)
 
@@ -956,15 +978,20 @@ func doEncrypt(data []byte, request *v1pb.ExportRequest) ([]byte, error) {
 		Method: zip.Deflate,
 	}
 	fh.ModifiedDate, fh.ModifiedTime = timeToMsDosTime(time.Now())
-	fh.SetPassword(request.Password)
+	if request.Password != "" {
+		fh.SetPassword(request.Password)
+	}
 	writer, err := zipw.CreateHeader(fh)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create encrypt export file")
 	}
 
-	if _, err := io.Copy(writer, bytes.NewReader(data)); err != nil {
-		return nil, errors.Wrapf(err, "failed to write export file")
+	for _, content := range contents {
+		if _, err := io.Copy(writer, bytes.NewReader(content)); err != nil {
+			return nil, errors.Wrapf(err, "failed to write export file")
+		}
 	}
+
 	if err := zipw.Close(); err != nil {
 		return nil, errors.Wrap(err, "failed to close zip writer")
 	}

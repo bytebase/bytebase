@@ -1612,6 +1612,10 @@ type Plan_ExportDataConfig struct {
 	// The resource name of the target.
 	// Format: instances/{instance-id}/databases/{database-name}
 	Target string `protobuf:"bytes,1,opt,name=target,proto3" json:"target,omitempty"`
+	// The list of targets.
+	// Multi-database format: [instances/{instance-id}/databases/{database-name}].
+	// Single database group format: [projects/{project}/databaseGroups/{databaseGroup}].
+	Targets []string `protobuf:"bytes,5,rep,name=targets,proto3" json:"targets,omitempty"`
 	// The resource name of the sheet.
 	// Format: projects/{project}/sheets/{sheet}
 	Sheet string `protobuf:"bytes,2,opt,name=sheet,proto3" json:"sheet,omitempty"`
@@ -1659,6 +1663,13 @@ func (x *Plan_ExportDataConfig) GetTarget() string {
 		return x.Target
 	}
 	return ""
+}
+
+func (x *Plan_ExportDataConfig) GetTargets() []string {
+	if x != nil {
+		return x.Targets
+	}
+	return nil
 }
 
 func (x *Plan_ExportDataConfig) GetSheet() string {
@@ -2114,7 +2125,7 @@ const file_v1_plan_service_proto_rawDesc = "" +
 	"\x11UpdatePlanRequest\x12+\n" +
 	"\x04plan\x18\x01 \x01(\v2\x11.bytebase.v1.PlanB\x04\xe2A\x01\x02R\x04plan\x12A\n" +
 	"\vupdate_mask\x18\x02 \x01(\v2\x1a.google.protobuf.FieldMaskB\x04\xe2A\x01\x02R\n" +
-	"updateMask\"\x93\x13\n" +
+	"updateMask\"\xad\x13\n" +
 	"\x04Plan\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x14\n" +
 	"\x05issue\x18\x03 \x01(\tR\x05issue\x12\x14\n" +
@@ -2175,9 +2186,10 @@ const file_v1_plan_service_proto_rawDesc = "" +
 	"\vMIGRATE_SDL\x10\x03\x12\x11\n" +
 	"\rMIGRATE_GHOST\x10\x04\x12\b\n" +
 	"\x04DATA\x10\x06B\x1b\n" +
-	"\x19_pre_update_backup_detailJ\x04\b\x05\x10\x06J\x04\b\x06\x10\a\x1a\xa1\x01\n" +
+	"\x19_pre_update_backup_detailJ\x04\b\x05\x10\x06J\x04\b\x06\x10\a\x1a\xbb\x01\n" +
 	"\x10ExportDataConfig\x12\x16\n" +
-	"\x06target\x18\x01 \x01(\tR\x06target\x12\x14\n" +
+	"\x06target\x18\x01 \x01(\tR\x06target\x12\x18\n" +
+	"\atargets\x18\x05 \x03(\tR\atargets\x12\x14\n" +
 	"\x05sheet\x18\x02 \x01(\tR\x05sheet\x121\n" +
 	"\x06format\x18\x03 \x01(\x0e2\x19.bytebase.v1.ExportFormatR\x06format\x12\x1f\n" +
 	"\bpassword\x18\x04 \x01(\tH\x00R\bpassword\x88\x01\x01B\v\n" +
