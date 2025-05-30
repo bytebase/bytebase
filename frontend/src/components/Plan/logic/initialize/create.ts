@@ -144,7 +144,7 @@ const buildSpecForTarget = async (
     case "bb.issue.database.data.export":
       spec.exportDataConfig = Plan_ExportDataConfig.fromPartial({
         sheet,
-        targets: [target],
+        target,
       });
   }
   return spec;
