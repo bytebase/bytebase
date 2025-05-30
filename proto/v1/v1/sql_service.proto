@@ -58,7 +58,11 @@ service SQLService {
         body: "*"
       }
       additional_bindings: {
-        post: "/v1/{name=projects/*/issues/*}:export"
+        post: "/v1/{name=projects/*/rollouts/*}:export"
+        body: "*"
+      }
+      additional_bindings: {
+        post: "/v1/{name=projects/*/rollouts/*/stages/*}:export"
         body: "*"
       }
     };

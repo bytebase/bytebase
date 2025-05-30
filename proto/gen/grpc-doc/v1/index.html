@@ -20725,6 +20725,15 @@ Format: instances/{instance-id}/databases/{database-name} </p></td>
                 </tr>
               
                 <tr>
+                  <td>targets</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
+                  <td><p>The list of targets.
+Multi-database format: [instances/{instance-id}/databases/{database-name}].
+Single database group format: [projects/{project}/databaseGroups/{databaseGroup}]. </p></td>
+                </tr>
+              
+                <tr>
                   <td>sheet</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
@@ -24626,7 +24635,14 @@ Pass this value in the page_token field in the subsequent call to
               <tr>
                 <td>Export</td>
                 <td>POST</td>
-                <td>/v1/{name=projects/*/issues/*}:export</td>
+                <td>/v1/{name=projects/*/rollouts/*}:export</td>
+                <td>*</td>
+              </tr>
+              
+              <tr>
+                <td>Export</td>
+                <td>POST</td>
+                <td>/v1/{name=projects/*/rollouts/*/stages/*}:export</td>
                 <td>*</td>
               </tr>
               

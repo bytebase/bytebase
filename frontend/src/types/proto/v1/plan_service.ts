@@ -333,6 +333,12 @@ export interface Plan_ExportDataConfig {
    */
   target: string;
   /**
+   * The list of targets.
+   * Multi-database format: [instances/{instance-id}/databases/{database-name}].
+   * Single database group format: [projects/{project}/databaseGroups/{databaseGroup}].
+   */
+  targets: string[];
+  /**
    * The resource name of the sheet.
    * Format: projects/{project}/sheets/{sheet}
    */
@@ -2147,13 +2153,16 @@ export const Plan_ChangeDatabaseConfig_PreUpdateBackupDetail: MessageFns<
 };
 
 function createBasePlan_ExportDataConfig(): Plan_ExportDataConfig {
-  return { target: "", sheet: "", format: ExportFormat.FORMAT_UNSPECIFIED, password: undefined };
+  return { target: "", targets: [], sheet: "", format: ExportFormat.FORMAT_UNSPECIFIED, password: undefined };
 }
 
 export const Plan_ExportDataConfig: MessageFns<Plan_ExportDataConfig> = {
   encode(message: Plan_ExportDataConfig, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.target !== "") {
       writer.uint32(10).string(message.target);
+    }
+    for (const v of message.targets) {
+      writer.uint32(42).string(v!);
     }
     if (message.sheet !== "") {
       writer.uint32(18).string(message.sheet);
@@ -2180,6 +2189,14 @@ export const Plan_ExportDataConfig: MessageFns<Plan_ExportDataConfig> = {
           }
 
           message.target = reader.string();
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.targets.push(reader.string());
           continue;
         }
         case 2: {
@@ -2220,6 +2237,9 @@ export const Plan_ExportDataConfig: MessageFns<Plan_ExportDataConfig> = {
     if (message.target !== "") {
       obj.target = message.target;
     }
+    if (message.targets?.length) {
+      obj.targets = message.targets;
+    }
     if (message.sheet !== "") {
       obj.sheet = message.sheet;
     }
@@ -2238,6 +2258,7 @@ export const Plan_ExportDataConfig: MessageFns<Plan_ExportDataConfig> = {
   fromPartial(object: DeepPartial<Plan_ExportDataConfig>): Plan_ExportDataConfig {
     const message = createBasePlan_ExportDataConfig();
     message.target = object.target ?? "";
+    message.targets = object.targets?.map((e) => e) || [];
     message.sheet = object.sheet ?? "";
     message.format = object.format ?? ExportFormat.FORMAT_UNSPECIFIED;
     message.password = object.password ?? undefined;

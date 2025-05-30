@@ -4364,43 +4364,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
-    /v1/projects/{project}/issues/{issue}:export:
-        post:
-            tags:
-                - SQLService
-            operationId: SQLService_Export
-            parameters:
-                - name: project
-                  in: path
-                  description: The project id.
-                  required: true
-                  schema:
-                    type: string
-                - name: issue
-                  in: path
-                  description: The issue id.
-                  required: true
-                  schema:
-                    type: string
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/ExportRequest'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/ExportResponse'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
     /v1/projects/{project}/issues/{issue}:reject:
         post:
             tags:
@@ -5852,6 +5815,86 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/BatchSkipTasksResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v1/projects/{project}/rollouts/{rollout}/stages/{stage}:export:
+        post:
+            tags:
+                - SQLService
+            operationId: SQLService_Export
+            parameters:
+                - name: project
+                  in: path
+                  description: The project id.
+                  required: true
+                  schema:
+                    type: string
+                - name: rollout
+                  in: path
+                  description: The rollout id.
+                  required: true
+                  schema:
+                    type: string
+                - name: stage
+                  in: path
+                  description: The stage id.
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/ExportRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ExportResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v1/projects/{project}/rollouts/{rollout}:export:
+        post:
+            tags:
+                - SQLService
+            operationId: SQLService_Export
+            parameters:
+                - name: project
+                  in: path
+                  description: The project id.
+                  required: true
+                  schema:
+                    type: string
+                - name: rollout
+                  in: path
+                  description: The rollout id.
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/ExportRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ExportResponse'
                 default:
                     description: Default error response
                     content:
@@ -11245,6 +11288,14 @@ components:
                     description: |-
                         The resource name of the target.
                          Format: instances/{instance-id}/databases/{database-name}
+                targets:
+                    type: array
+                    items:
+                        type: string
+                    description: |-
+                        The list of targets.
+                         Multi-database format: [instances/{instance-id}/databases/{database-name}].
+                         Single database group format: [projects/{project}/databaseGroups/{databaseGroup}].
                 sheet:
                     type: string
                     description: |-
