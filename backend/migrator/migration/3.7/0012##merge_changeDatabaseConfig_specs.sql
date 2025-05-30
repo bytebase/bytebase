@@ -112,8 +112,7 @@ SET
         config,
         '{specs}',
         COALESCE(nsa.new_specs, '[]'::jsonb)
-    ),
-    updated_at = NOW()
+    )
 FROM new_specs_array nsa
 WHERE 
     plan.id = nsa.plan_id
