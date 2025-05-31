@@ -254,7 +254,6 @@ func convertPlanSpecExportDataConfig(config *v1pb.Plan_Spec_ExportDataConfig) *s
 	c := config.ExportDataConfig
 	return &storepb.PlanConfig_Spec_ExportDataConfig{
 		ExportDataConfig: &storepb.PlanConfig_ExportDataConfig{
-			Target:   "", // Target field is deprecated, use Targets instead
 			Targets:  c.Targets,
 			Sheet:    c.Sheet,
 			Format:   convertToExportFormat(c.Format),
