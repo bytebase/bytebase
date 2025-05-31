@@ -11088,11 +11088,6 @@ components:
                     type: string
                 description:
                     type: string
-                steps:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/Plan_Step'
-                    description: 'Deprecated: use specs instead.'
                 specs:
                     type: array
                     items:
@@ -11190,13 +11185,6 @@ components:
         Plan_ChangeDatabaseConfig:
             type: object
             properties:
-                target:
-                    type: string
-                    description: |-
-                        The resource name of the target.
-                         Format: instances/{instance-id}/databases/{database-name}.
-                         Format: projects/{project}/databaseGroups/{databaseGroup}.
-                         Deprecated: use targets instead.
                 targets:
                     type: array
                     items:
@@ -11284,12 +11272,6 @@ components:
         Plan_ExportDataConfig:
             type: object
             properties:
-                target:
-                    type: string
-                    description: |-
-                        The resource name of the target.
-                         Format: instances/{instance-id}/databases/{database-name}
-                         Deprecated: use targets instead.
                 targets:
                     type: array
                     items:
@@ -11330,15 +11312,6 @@ components:
                     $ref: '#/components/schemas/Plan_ChangeDatabaseConfig'
                 exportDataConfig:
                     $ref: '#/components/schemas/Plan_ExportDataConfig'
-        Plan_Step:
-            type: object
-            properties:
-                title:
-                    type: string
-                specs:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/Plan_Spec'
         Policy:
             type: object
             properties:

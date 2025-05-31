@@ -256,12 +256,7 @@ func getTaskCreatesFromExportDataConfig(
 	spec *storepb.PlanConfig_Spec,
 	c *storepb.PlanConfig_ExportDataConfig,
 ) ([]*store.TaskMessage, error) {
-	targets := c.Targets
-	if c.Target != "" {
-		targets = []string{c.Target}
-	}
-
-	databases, err := getDatabaseMessagesByTargets(ctx, s, targets)
+	databases, err := getDatabaseMessagesByTargets(ctx, s, c.Targets)
 	if err != nil {
 		return nil, err
 	}

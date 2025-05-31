@@ -2,6 +2,7 @@ package v1
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"slices"
 	"strings"
@@ -242,10 +243,6 @@ func (s *PlanService) CreatePlan(ctx context.Context, request *v1pb.CreatePlanRe
 		return nil, status.Errorf(codes.NotFound, "project not found for id: %v", projectID)
 	}
 
-	// Convert steps to specs if needed for backward compatibility
-	convertStepsToSpecs(request.Plan)
-	// Convert Target to Targets grouped by Sheet
-	convertTargetToTargets(request.Plan)
 	// Validate plan specs
 	if err := validateSpecs(request.Plan.Specs); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to validate plan specs, error: %v", err)
@@ -514,7 +511,8 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 						if backupDatabaseName != nil {
 							if *backupDatabaseName != "" {
 								// If backup is enabled, we need to check if the backup is available for the source database. AKA, the task's target database.
-								sourceDatabaseName := config.ChangeDatabaseConfig.Target
+								// Construct the source database name from the task's instance and database
+								sourceDatabaseName := fmt.Sprintf("instances/%s/databases/%s", task.InstanceID, task.GetDatabaseName())
 								instanceID, databaseName, err := common.GetInstanceDatabaseID(sourceDatabaseName)
 								if err != nil {
 									return errors.Wrapf(err, "failed to get instance database id from %q", sourceDatabaseName)
@@ -1169,88 +1167,4 @@ func getTaskTypeFromSpec(spec *v1pb.Plan_Spec) (base.TaskType, error) {
 		return base.TaskDatabaseDataExport, nil
 	}
 	return "", errors.Errorf("unknown spec config type")
-}
-
-// convertStepsToSpecs converts deprecated Plan.Steps to Plan.Specs for backward compatibility.
-//
-//nolint:staticcheck // SA1019: deprecated field used for backward compatibility
-func convertStepsToSpecs(plan *v1pb.Plan) {
-	if len(plan.Specs) == 0 && len(plan.Steps) > 0 {
-		//nolint:staticcheck // SA1019: deprecated field used for backward compatibility
-		for _, step := range plan.Steps {
-			plan.Specs = append(plan.Specs, step.Specs...)
-		}
-	}
-}
-
-// convertTargetToTargets converts deprecated Target field to Targets field grouped by Sheet.
-func convertTargetToTargets(plan *v1pb.Plan) {
-	// Group specs by sheet
-	sheetToSpecs := make(map[string][]*v1pb.Plan_Spec)
-	var otherSpecs []*v1pb.Plan_Spec
-
-	for _, spec := range plan.Specs {
-		if changeDatabaseConfig := spec.GetChangeDatabaseConfig(); changeDatabaseConfig != nil {
-			// Only process if Target is set and Targets is empty
-			if changeDatabaseConfig.Target != "" && len(changeDatabaseConfig.Targets) == 0 {
-				changeDatabaseConfig.Targets = []string{changeDatabaseConfig.Target}
-				changeDatabaseConfig.Target = "" // Clear the deprecated field
-				sheetToSpecs[changeDatabaseConfig.Sheet] = append(sheetToSpecs[changeDatabaseConfig.Sheet], spec)
-				continue
-			}
-		}
-		otherSpecs = append(otherSpecs, spec)
-	}
-
-	// Merge specs with the same sheet
-	var newSpecs []*v1pb.Plan_Spec
-	for sheet, specs := range sheetToSpecs {
-		if len(specs) == 1 {
-			newSpecs = append(newSpecs, specs[0])
-		} else {
-			// Merge multiple specs with the same sheet
-			var targets []string
-			var release string
-			var changeType v1pb.Plan_ChangeDatabaseConfig_Type
-			var ghostFlags map[string]string
-			var preUpdateBackupDetail *v1pb.Plan_ChangeDatabaseConfig_PreUpdateBackupDetail
-
-			for _, spec := range specs {
-				config := spec.GetChangeDatabaseConfig()
-				targets = append(targets, config.Targets...)
-				if release == "" {
-					release = config.Release
-				}
-				if changeType == v1pb.Plan_ChangeDatabaseConfig_TYPE_UNSPECIFIED {
-					changeType = config.Type
-				}
-				if len(ghostFlags) == 0 {
-					ghostFlags = config.GhostFlags
-				}
-				if preUpdateBackupDetail == nil {
-					preUpdateBackupDetail = config.PreUpdateBackupDetail
-				}
-			}
-
-			// Create merged spec
-			mergedSpec := &v1pb.Plan_Spec{
-				Id: specs[0].Id, // Use the first spec's ID
-				Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
-					ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
-						Targets:               targets,
-						Sheet:                 sheet,
-						Release:               release,
-						Type:                  changeType,
-						GhostFlags:            ghostFlags,
-						PreUpdateBackupDetail: preUpdateBackupDetail,
-					},
-				},
-			}
-			newSpecs = append(newSpecs, mergedSpec)
-		}
-	}
-
-	// Add back non-change database specs
-	newSpecs = append(newSpecs, otherSpecs...)
-	plan.Specs = newSpecs
 }

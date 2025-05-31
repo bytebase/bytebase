@@ -85,9 +85,6 @@ func getPlanCheckRunsFromSpec(ctx context.Context, s *store.Store, plan *store.P
 				return getPlanCheckRunsFromExportDataConfigDatabaseGroupTarget(ctx, s, plan, target, config.ExportDataConfig)
 			}
 		}
-		if _, _, err := common.GetInstanceDatabaseID(config.ExportDataConfig.Target); err == nil {
-			return getPlanCheckRunsFromExportDataConfigDatabaseTarget(ctx, s, plan, []string{config.ExportDataConfig.Target}, config.ExportDataConfig)
-		}
 		return getPlanCheckRunsFromExportDataConfigDatabaseTarget(ctx, s, plan, config.ExportDataConfig.Targets, config.ExportDataConfig)
 	default:
 		return nil, errors.Errorf("unknown spec config type %T", config)
