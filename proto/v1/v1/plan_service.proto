@@ -220,9 +220,6 @@ message Plan {
   string title = 4;
   string description = 5;
 
-  // Deprecated: use specs instead.
-  repeated Step steps = 6;
-
   repeated Spec specs = 14;
 
   message Step {
@@ -282,11 +279,6 @@ message Plan {
   message ChangeDatabaseConfig {
     reserved 5, 6;
 
-    // The resource name of the target.
-    // Format: instances/{instance-id}/databases/{database-name}.
-    // Format: projects/{project}/databaseGroups/{databaseGroup}.
-    // Deprecated: use targets instead.
-    string target = 1;
     // The list of targets.
     // Multi-database format: [instances/{instance-id}/databases/{database-name}].
     // Single database group format: [projects/{project}/databaseGroups/{databaseGroup}].
@@ -325,10 +317,6 @@ message Plan {
   }
 
   message ExportDataConfig {
-    // The resource name of the target.
-    // Format: instances/{instance-id}/databases/{database-name}
-    // Deprecated: use targets instead.
-    string target = 1;
     // The list of targets.
     // Multi-database format: [instances/{instance-id}/databases/{database-name}].
     // Single database group format: [projects/{project}/databaseGroups/{databaseGroup}].

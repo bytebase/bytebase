@@ -137,7 +137,6 @@ func convertToPlanSpecExportDataConfig(config *storepb.PlanConfig_Spec_ExportDat
 	c := config.ExportDataConfig
 	return &v1pb.Plan_Spec_ExportDataConfig{
 		ExportDataConfig: &v1pb.Plan_ExportDataConfig{
-			Target:   c.Target,
 			Targets:  c.Targets,
 			Sheet:    c.Sheet,
 			Format:   convertExportFormat(c.Format),
@@ -255,7 +254,6 @@ func convertPlanSpecExportDataConfig(config *v1pb.Plan_Spec_ExportDataConfig) *s
 	c := config.ExportDataConfig
 	return &storepb.PlanConfig_Spec_ExportDataConfig{
 		ExportDataConfig: &storepb.PlanConfig_ExportDataConfig{
-			Target:   c.Target,
 			Targets:  c.Targets,
 			Sheet:    c.Sheet,
 			Format:   convertToExportFormat(c.Format),

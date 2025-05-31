@@ -147,21 +147,17 @@ func TestDatabaseGroup(t *testing.T) {
 	a.NoError(err)
 
 	// Create an issue that updates database schema.
-	step := &v1pb.Plan_Step{
-		Specs: []*v1pb.Plan_Spec{
-			{
-				Id: uuid.NewString(),
-				Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
-					ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
-						Targets: []string{databaseGroup.Name},
-						Sheet:   sheet.Name,
-						Type:    v1pb.Plan_ChangeDatabaseConfig_MIGRATE,
-					},
-				},
+	spec := &v1pb.Plan_Spec{
+		Id: uuid.NewString(),
+		Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
+			ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
+				Targets: []string{databaseGroup.Name},
+				Sheet:   sheet.Name,
+				Type:    v1pb.Plan_ChangeDatabaseConfig_MIGRATE,
 			},
 		},
 	}
-	plan, rollout, issue, err := ctl.changeDatabaseWithConfig(ctx, project, []*v1pb.Plan_Step{step})
+	plan, rollout, issue, err := ctl.changeDatabaseWithConfig(ctx, project, spec)
 	a.NoError(err)
 
 	// Assert the plan deployment.
