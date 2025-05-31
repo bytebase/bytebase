@@ -366,7 +366,7 @@ const createV1 = async () => {
   state.creating = true;
   try {
     const planCreate = Plan.fromPartial({
-      steps: [{ specs: [spec] }],
+      specs: [spec],
       creator: currentUserV1.value.name,
     });
     const { createdIssue } = await experimentalCreateIssueByPlan(

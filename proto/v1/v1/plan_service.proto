@@ -220,9 +220,6 @@ message Plan {
   string title = 4;
   string description = 5;
 
-  // Deprecated: use specs instead.
-  repeated Step steps = 6;
-
   repeated Spec specs = 14;
 
   message Step {

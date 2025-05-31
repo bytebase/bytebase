@@ -48,12 +48,10 @@ export const planCheckStatusForTask = (task: Task) => {
 };
 
 export const planCheckRunSummaryForIssue = (issue: ComposedIssue) => {
-  const sheets = issue.planEntity?.steps.reduce((acc, step) => {
-    step.specs.forEach((spec) => {
-      if (spec.changeDatabaseConfig?.sheet) {
-        acc.add(spec.changeDatabaseConfig?.sheet);
-      }
-    });
+  const sheets = issue.planEntity?.specs.reduce((acc, spec) => {
+    if (spec.changeDatabaseConfig?.sheet) {
+      acc.add(spec.changeDatabaseConfig.sheet);
+    }
     return acc;
   }, new Set<string>());
   const planCheckRunList = issue.planCheckRunList.filter((check) => {

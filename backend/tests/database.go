@@ -23,21 +23,17 @@ func (ctl *controller) createDatabaseV2(ctx context.Context, project *v1pb.Proje
 	plan, err := ctl.planServiceClient.CreatePlan(ctx, &v1pb.CreatePlanRequest{
 		Parent: project.Name,
 		Plan: &v1pb.Plan{
-			Steps: []*v1pb.Plan_Step{
+			Specs: []*v1pb.Plan_Spec{
 				{
-					Specs: []*v1pb.Plan_Spec{
-						{
-							Id: uuid.NewString(),
-							Config: &v1pb.Plan_Spec_CreateDatabaseConfig{
-								CreateDatabaseConfig: &v1pb.Plan_CreateDatabaseConfig{
-									Target:       instance.Name,
-									Database:     databaseName,
-									CharacterSet: characterSet,
-									Collation:    collation,
-									Owner:        owner,
-									Environment:  environmentName,
-								},
-							},
+					Id: uuid.NewString(),
+					Config: &v1pb.Plan_Spec_CreateDatabaseConfig{
+						CreateDatabaseConfig: &v1pb.Plan_CreateDatabaseConfig{
+							Target:       instance.Name,
+							Database:     databaseName,
+							CharacterSet: characterSet,
+							Collation:    collation,
+							Owner:        owner,
+							Environment:  environmentName,
 						},
 					},
 				},

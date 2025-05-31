@@ -7307,7 +7307,6 @@ When paginating, all other parameters provided to `ListPlans` must match the cal
 | issue | [string](#string) |  | The issue associated with the plan. Can be empty. Format: projects/{project}/issues/{issue} |
 | title | [string](#string) |  |  |
 | description | [string](#string) |  |  |
-| steps | [Plan.Step](#bytebase-v1-Plan-Step) | repeated | Deprecated: use specs instead. |
 | specs | [Plan.Spec](#bytebase-v1-Plan-Spec) | repeated |  |
 | creator | [string](#string) |  | Format: users/hello@world.com |
 | create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |

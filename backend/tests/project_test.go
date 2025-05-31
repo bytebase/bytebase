@@ -51,17 +51,13 @@ func TestArchiveProject(t *testing.T) {
 		plan, err := ctl.planServiceClient.CreatePlan(ctx, &v1pb.CreatePlanRequest{
 			Parent: ctl.project.Name,
 			Plan: &v1pb.Plan{
-				Steps: []*v1pb.Plan_Step{
+				Specs: []*v1pb.Plan_Spec{
 					{
-						Specs: []*v1pb.Plan_Spec{
-							{
-								Id: uuid.NewString(),
-								Config: &v1pb.Plan_Spec_CreateDatabaseConfig{
-									CreateDatabaseConfig: &v1pb.Plan_CreateDatabaseConfig{
-										Target:   instance.Name,
-										Database: "fakedb",
-									},
-								},
+						Id: uuid.NewString(),
+						Config: &v1pb.Plan_Spec_CreateDatabaseConfig{
+							CreateDatabaseConfig: &v1pb.Plan_CreateDatabaseConfig{
+								Target:   instance.Name,
+								Database: "fakedb",
 							},
 						},
 					},

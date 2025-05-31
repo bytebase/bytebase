@@ -144,8 +144,6 @@ export interface Plan {
   issue: string;
   title: string;
   description: string;
-  /** Deprecated: use specs instead. */
-  steps: Plan_Step[];
   specs: Plan_Spec[];
   /** Format: users/hello@world.com */
   creator: string;
@@ -1188,7 +1186,6 @@ function createBasePlan(): Plan {
     issue: "",
     title: "",
     description: "",
-    steps: [],
     specs: [],
     creator: "",
     createTime: undefined,
@@ -1211,9 +1208,6 @@ export const Plan: MessageFns<Plan> = {
     }
     if (message.description !== "") {
       writer.uint32(42).string(message.description);
-    }
-    for (const v of message.steps) {
-      Plan_Step.encode(v!, writer.uint32(50).fork()).join();
     }
     for (const v of message.specs) {
       Plan_Spec.encode(v!, writer.uint32(114).fork()).join();
@@ -1273,14 +1267,6 @@ export const Plan: MessageFns<Plan> = {
           }
 
           message.description = reader.string();
-          continue;
-        }
-        case 6: {
-          if (tag !== 50) {
-            break;
-          }
-
-          message.steps.push(Plan_Step.decode(reader, reader.uint32()));
           continue;
         }
         case 14: {
@@ -1357,9 +1343,6 @@ export const Plan: MessageFns<Plan> = {
     if (message.description !== "") {
       obj.description = message.description;
     }
-    if (message.steps?.length) {
-      obj.steps = message.steps.map((e) => Plan_Step.toJSON(e));
-    }
     if (message.specs?.length) {
       obj.specs = message.specs.map((e) => Plan_Spec.toJSON(e));
     }
@@ -1396,7 +1379,6 @@ export const Plan: MessageFns<Plan> = {
     message.issue = object.issue ?? "";
     message.title = object.title ?? "";
     message.description = object.description ?? "";
-    message.steps = object.steps?.map((e) => Plan_Step.fromPartial(e)) || [];
     message.specs = object.specs?.map((e) => Plan_Spec.fromPartial(e)) || [];
     message.creator = object.creator ?? "";
     message.createTime = (object.createTime !== undefined && object.createTime !== null)
