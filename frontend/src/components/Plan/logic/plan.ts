@@ -96,10 +96,7 @@ export const isGroupingChangeSpec = (spec?: Plan_Spec) => {
 export const targetsForSpec = (spec: Plan_Spec): string[] => {
   const config = spec.changeDatabaseConfig || spec.exportDataConfig;
   if (config) {
-    if (config.targets && config.targets.length > 0) {
-      return config.targets;
-    }
-    return [config.target];
+    return config.targets || [];
   }
   return [];
 };

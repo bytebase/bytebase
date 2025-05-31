@@ -473,18 +473,14 @@ func createIssueAndReturnSQLReviewResult(ctx context.Context, a *require.Asserti
 	plan, err := ctl.planServiceClient.CreatePlan(ctx, &v1pb.CreatePlanRequest{
 		Parent: project.Name,
 		Plan: &v1pb.Plan{
-			Steps: []*v1pb.Plan_Step{
+			Specs: []*v1pb.Plan_Spec{
 				{
-					Specs: []*v1pb.Plan_Spec{
-						{
-							Id: uuid.NewString(),
-							Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
-								ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
-									Targets: []string{database.Name},
-									Sheet:   sheet.Name,
-									Type:    v1pb.Plan_ChangeDatabaseConfig_MIGRATE,
-								},
-							},
+					Id: uuid.NewString(),
+					Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
+						ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
+							Targets: []string{database.Name},
+							Sheet:   sheet.Name,
+							Type:    v1pb.Plan_ChangeDatabaseConfig_MIGRATE,
 						},
 					},
 				},
