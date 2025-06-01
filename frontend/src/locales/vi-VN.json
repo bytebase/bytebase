@@ -1812,6 +1812,11 @@
         "not-match": "Nguồn dữ liệu không khớp, mong đợi {expect} nhưng lại nhận được {actual}."
       }
     },
+    "batch-export": {
+      "self": "Xuất hàng loạt",
+      "tooltip": "Chọn tối đa {max} cơ sở dữ liệu để xuất hàng loạt kết quả truy vấn mới nhất",
+      "failed-for-db": "Không xuất được dữ liệu cho {db}"
+    },
     "execute-query": "Thực hiện truy vấn",
     "pending-query": "Đang chờ truy vấn",
     "executing-query": "Đang thực hiện truy vấn",

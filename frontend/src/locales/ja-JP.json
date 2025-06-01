@@ -1812,6 +1812,11 @@
         "not-match": "データ ソースが一致しません。{expect} を期待しましたが、{actual} を取得しました。"
       }
     },
+    "batch-export": {
+      "self": "一括エクスポート",
+      "tooltip": "最新のクエリ結果を一括エクスポートするには、最大 {max} 個のデータベースを選択してください",
+      "failed-for-db": "{db} のデータのエクスポートに失敗しました"
+    },
     "execute-query": "クエリを実行する",
     "pending-query": "保留中のクエリ",
     "executing-query": "クエリの実行",

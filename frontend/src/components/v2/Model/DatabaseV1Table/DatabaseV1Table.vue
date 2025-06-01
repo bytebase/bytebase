@@ -6,6 +6,7 @@
     :data="databaseList"
     :striped="true"
     :bordered="bordered"
+    :pagination="pagination"
     :loading="loading"
     :row-key="(data: ComposedDatabase) => data.name"
     :checked-row-keys="props.selectedDatabaseNames"
@@ -50,6 +51,12 @@ const props = withDefaults(
     selectedDatabaseNames?: string[];
     keyword?: string;
     rowClick?: (e: MouseEvent, val: ComposedDatabase) => void;
+    pagination?:
+      | false
+      | {
+          defaultPageSize: number;
+          disabled: boolean;
+        };
   }>(),
   {
     mode: "ALL",
@@ -58,6 +65,7 @@ const props = withDefaults(
     rowClickable: true,
     keyword: undefined,
     selectedDatabaseNames: () => [],
+    pagination: false,
   }
 );
 

@@ -1812,6 +1812,11 @@
         "not-match": "Data source not match, expect {expect} but got {actual}."
       }
     },
+    "batch-export": {
+      "self": "Batch export",
+      "tooltip": "Select at most {max} databases to batch export latest query results",
+      "failed-for-db": "Failed to export data for {db}"
+    },
     "execute-query": "Execute query",
     "pending-query": "Pending query",
     "executing-query": "Executing query",

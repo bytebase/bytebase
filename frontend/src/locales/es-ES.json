@@ -1812,6 +1812,11 @@
         "not-match": "La fuente de datos no coincide, se esperaba {expect} pero se obtuvo {actual}."
       }
     },
+    "batch-export": {
+      "self": "Exportación por lotes",
+      "tooltip": "Seleccione como máximo {max} bases de datos para exportar por lotes los resultados de las últimas consultas",
+      "failed-for-db": "No se pudieron exportar los datos de {db}"
+    },
     "execute-query": "Ejecutar consulta",
     "pending-query": "Consulta pendiente",
     "executing-query": "Ejecutando consulta",
