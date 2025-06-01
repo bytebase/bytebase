@@ -27,7 +27,7 @@ jobs:
           go-version: '1.24.2'
           cache: false # Caching is slow.
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v7
+        uses: golangci/golangci-lint-action@v8
         with:
           version: v2.1.2
           args: --verbose -j 8 --timeout 30m --max-same-issues=30 --allow-parallel-runners
