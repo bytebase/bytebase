@@ -1812,6 +1812,11 @@
         "not-match": "数据源不匹配，预期为 {expect}，但实际使用 {actual}。"
       }
     },
+    "batch-export": {
+      "self": "批量导出",
+      "tooltip": "最多选择 {max} 个数据库，批量导出最后一次执行的查询结果",
+      "failed-for-db": "无法导出 {db} 的数据"
+    },
     "execute-query": "执行查询",
     "pending-query": "待处理查询",
     "executing-query": "执行查询",

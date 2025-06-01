@@ -11,6 +11,7 @@
           :quaternary="size === 'tiny'"
           :size="size"
           type="primary"
+          v-bind="$attrs"
           :loading="state.isRequesting"
           :disabled="state.isRequesting || disabled"
           @click="handleClickExportButton"
@@ -19,7 +20,7 @@
             <DownloadIcon class="h-4 w-4" />
           </template>
           <span v-if="size !== 'tiny'">
-            {{ t("common.export") }}
+            {{ text }}
           </span>
         </NButton>
       </template>
@@ -30,7 +31,7 @@
   <Drawer v-if="viewMode === 'DRAWER'" v-model:show="state.showDrawer">
     <DrawerContent
       :title="$t('custom-approval.risk-rule.risk.namespace.data_export')"
-      class="w-[30rem] max-w-[100vw] relative"
+      class="w-[50rem] max-w-[100vw] relative"
     >
       <template #default>
         <NForm
@@ -39,6 +40,7 @@
           :rules="rules"
           label-placement="left"
         >
+          <slot name="form" />
           <NFormItem path="limit" :label="$t('export-data.export-rows')">
             <MaxRowCountSelect v-model:value="formData.limit" />
           </NFormItem>
@@ -54,6 +56,7 @@
             </NRadioGroup>
           </NFormItem>
           <NFormItem
+            v-if="supportPassword"
             path="password"
             :label="$t('export-data.password-optional')"
           >
@@ -74,7 +77,10 @@
             :button-props="{
               type: 'primary',
               loading: state.isRequesting,
-              disabled: formErrors.length > 0 || state.isRequesting,
+              disabled:
+                formErrors.length > 0 ||
+                state.isRequesting ||
+                !validate(formData),
             }"
             :errors="formErrors"
             @click="tryExportViaForm"
@@ -113,6 +119,9 @@
 
 <script lang="ts" setup>
 import { asyncComputed } from "@vueuse/core";
+import dayjs from "dayjs";
+import saveAs from "file-saver";
+import JSZip from "jszip";
 import { DownloadIcon } from "lucide-vue-next";
 import type { FormInst, FormRules } from "naive-ui";
 import {
@@ -126,8 +135,8 @@ import {
 } from "naive-ui";
 import type { BinaryLike } from "node:crypto";
 import { computed, reactive, ref, watch } from "vue";
-import { useI18n } from "vue-i18n";
 import { BBModal, BBTextField } from "@/bbkit";
+import { t } from "@/plugins/i18n";
 import { pushNotification } from "@/store";
 import { ExportFormat, exportFormatToJSON } from "@/types/proto/v1/common";
 import { isNullOrUndefined } from "@/utils";
@@ -140,6 +149,11 @@ interface LocalState {
   showModal: boolean;
 }
 
+export type DownloadContent = Array<{
+  content: BinaryLike | Blob;
+  filename: string;
+}>;
+
 export interface ExportOption {
   limit: number;
   format: ExportFormat;
@@ -151,14 +165,19 @@ const props = withDefaults(
     size?: "small" | "tiny" | "medium" | "large";
     disabled?: boolean;
     supportFormats: ExportFormat[];
+    supportPassword?: boolean;
     viewMode: "DRAWER" | "DROPDOWN";
-    fileType: "zip" | "raw";
     tooltip?: string;
+    text?: string;
+    validate?: (option: ExportOption) => boolean;
   }>(),
   {
     size: "small",
     disabled: false,
     tooltip: undefined,
+    supportPassword: false,
+    text: () => t("common.export"),
+    validate: (_: ExportOption) => true,
   }
 );
 
@@ -171,12 +190,14 @@ const defaultFormData = (): ExportOption => ({
 const emit = defineEmits<{
   (
     event: "export",
-    options: ExportOption,
-    download: (content: BinaryLike | Blob, filename: string) => void
+    option: {
+      resolve: (content: DownloadContent) => void;
+      reject: (reason?: any) => void;
+      options: ExportOption;
+    }
   ): Promise<void>;
 }>();
 
-const { t } = useI18n();
 const state = reactive<LocalState>({
   isRequesting: false,
   showDrawer: false,
@@ -201,6 +222,11 @@ const rules: FormRules = {
       trigger: ["input", "blur"],
     },
   ],
+  format: [
+    {
+      required: true,
+    },
+  ],
 };
 
 const exportDropdownOptions = computed(() => {
@@ -212,21 +238,21 @@ const exportDropdownOptions = computed(() => {
   }));
 });
 
-const tryExportViaDropdown = async (format: ExportFormat) => {
+const tryExportViaDropdown = (format: ExportFormat) => {
   formData.value.format = format;
-  if (props.fileType === "zip") {
+  if (props.supportPassword) {
     state.showModal = true;
   } else {
-    await doExport();
+    doExport();
   }
 };
 
-const exportViaDropdown = async () => {
+const exportViaDropdown = () => {
   state.showModal = false;
-  await doExport();
+  doExport();
 };
 
-const tryExportViaForm = async (e: MouseEvent) => {
+const tryExportViaForm = (e: MouseEvent) => {
   e.preventDefault();
   formRef.value?.validate((errors) => {
     if (errors) return;
@@ -256,36 +282,48 @@ const handleClickExportButton = (e: MouseEvent) => {
   state.showDrawer = true;
 };
 
-const doExport = async () => {
+const doExport = () => {
   if (state.isRequesting) {
     return;
   }
 
   state.isRequesting = true;
   const options = { ...formData.value };
-  try {
-    await emit(
-      "export",
+
+  new Promise<DownloadContent>((resolve, reject) => {
+    return emit("export", {
+      resolve,
+      reject,
       options,
-      (content: BinaryLike | Blob, filename: string) => {
-        doDownload(content, options, filename);
-      }
-    );
-  } catch (error) {
-    pushNotification({
-      module: "bytebase",
-      style: "CRITICAL",
-      title: `Failed to export data`,
-      description: JSON.stringify(error),
     });
-  } finally {
-    state.isRequesting = false;
-    state.showDrawer = false;
-  }
+  })
+    .then((content: DownloadContent) => {
+      return doDownload(content, options);
+    })
+    .then(() => {
+      pushNotification({
+        module: "bytebase",
+        style: "SUCCESS",
+        title: t("common.success"),
+        description: t("audit-log.export-finished"),
+      });
+    })
+    .catch((error) => {
+      pushNotification({
+        module: "bytebase",
+        style: "CRITICAL",
+        title: `Failed to export data`,
+        description: JSON.stringify(error),
+      });
+    })
+    .finally(() => {
+      state.isRequesting = false;
+      state.showDrawer = false;
+    });
 };
 
 const downloadFileAsZip = (options: ExportOption) => {
-  return props.fileType === "zip" && !!options.password;
+  return !!options.password;
 };
 
 const getExportFileType = (format: ExportFormat) => {
@@ -301,10 +339,9 @@ const getExportFileType = (format: ExportFormat) => {
   }
 };
 
-const doDownload = async (
+const cnovertSingleFile = async (
   content: BinaryLike | Blob,
-  options: ExportOption,
-  filename: string
+  options: ExportOption
 ) => {
   const isZip = downloadFileAsZip(options);
   const fileType = isZip
@@ -321,6 +358,21 @@ const doDownload = async (
       type: fileType,
     });
   }
+  return blob;
+};
+
+const doDownloadSingleFile = async (
+  {
+    content,
+    filename,
+  }: {
+    content: BinaryLike | Blob;
+    filename: string;
+  },
+  options: ExportOption
+) => {
+  const blob = await cnovertSingleFile(content, options);
+  const isZip = downloadFileAsZip(options);
   const url = window.URL.createObjectURL(blob);
 
   const fileFormat = exportFormatToJSON(options.format).toLowerCase();
@@ -328,6 +380,23 @@ const doDownload = async (
   link.download = `${filename}.${isZip ? "zip" : fileFormat}`;
   link.href = url;
   link.click();
+};
+
+const doDownload = async (content: DownloadContent, options: ExportOption) => {
+  if (content.length === 1) {
+    return doDownloadSingleFile(content[0], options);
+  }
+
+  const fileFormat = exportFormatToJSON(options.format).toLowerCase();
+  const zip = new JSZip();
+  for (const c of content) {
+    const blob = await cnovertSingleFile(c.content, options);
+    zip.file(`${c.filename}.${fileFormat}`, blob);
+  }
+
+  const zipFile = await zip.generateAsync({ type: "blob" });
+  const fileName = `download_${dayjs().format("YYYY-MM-DDTHH-mm-ss")}.zip`;
+  saveAs(zipFile, fileName);
 };
 
 watch(
