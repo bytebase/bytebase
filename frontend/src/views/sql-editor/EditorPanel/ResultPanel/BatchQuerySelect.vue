@@ -21,6 +21,49 @@
       </template>
     </NTooltip>
 
+    <DataExportButton
+      tertiary
+      size="small"
+      :support-formats="[
+        ExportFormat.CSV,
+        ExportFormat.JSON,
+        ExportFormat.SQL,
+        ExportFormat.XLSX,
+      ]"
+      style="margin-bottom: 0.5rem"
+      :view-mode="'DRAWER'"
+      :text="$t('sql-editor.batch-export.self')"
+      :tooltip="$t('sql-editor.batch-export.tooltip', { max: MAX_EXPORT })"
+      :validate="validateExport"
+      :support-password="true"
+      @export="handleExportBtnClick"
+    >
+      <template #form>
+        <div class="w-full mb-6 space-y-2">
+          <div>
+            <p class="textlabel">
+              {{ $t("database.select") }}
+              <RequiredStar />
+            </p>
+            <span class="textinfolabel">
+              {{ $t("sql-editor.batch-export.tooltip", { max: MAX_EXPORT }) }}
+            </span>
+          </div>
+          <DatabaseV1Table
+            :schemaless="true"
+            :mode="'PROJECT_SHORT'"
+            :database-list="databaseList"
+            :show-selection="true"
+            :pagination="{
+              defaultPageSize: MAX_EXPORT,
+              disabled: false,
+            }"
+            v-model:selected-database-names="selectedDatabaseNameList"
+          />
+        </div>
+      </template>
+    </DataExportButton>
+
     <NScrollbar x-scrollable class="pb-2">
       <div class="flex flex-row justify-start items-center gap-2">
         <NButton
@@ -59,15 +102,32 @@
 
 <script setup lang="ts">
 import { useLocalStorage } from "@vueuse/core";
+import dayjs from "dayjs";
 import { head } from "lodash-es";
 import { EyeIcon, EyeOffIcon, CircleAlertIcon, XIcon } from "lucide-vue-next";
 import { NButton, NTooltip, NScrollbar } from "naive-ui";
 import { storeToRefs } from "pinia";
-import { computed, watch } from "vue";
+import { computed, watch, ref } from "vue";
+import type {
+  ExportOption,
+  DownloadContent,
+} from "@/components/DataExportButton.vue";
+import DataExportButton from "@/components/DataExportButton.vue";
+import RequiredStar from "@/components/RequiredStar.vue";
 import { RichDatabaseName } from "@/components/v2";
-import { useDatabaseV1Store, useSQLEditorTabStore } from "@/store";
+import { DatabaseV1Table } from "@/components/v2/Model/DatabaseV1Table";
+import { t } from "@/plugins/i18n";
+import {
+  pushNotification,
+  useDatabaseV1Store,
+  useSQLEditorTabStore,
+  useSQLStore,
+} from "@/store";
 import type { ComposedDatabase, SQLEditorDatabaseQueryContext } from "@/types";
+import { ExportFormat } from "@/types/proto/v1/common";
 import { hexToRgb } from "@/utils";
+
+const MAX_EXPORT = 20;
 
 type BatchQueryItem = {
   database: ComposedDatabase;
@@ -85,14 +145,30 @@ const emit = defineEmits<{
 const tabStore = useSQLEditorTabStore();
 const { currentTab: tab } = storeToRefs(tabStore);
 const databaseStore = useDatabaseV1Store();
+const sqlStore = useSQLStore();
 const showEmpty = useLocalStorage(
   "bb.sql-editor.batch-query.show-empty-result-sets",
   true
 );
 
+const selectedDatabaseNameList = ref<string[]>([]);
+
 const queriedDatabaseNames = computed(() =>
   Array.from(tab.value?.databaseQueryContexts?.keys() || [])
 );
+
+const databaseList = computed(() => {
+  return queriedDatabaseNames.value.map((name) =>
+    databaseStore.getDatabaseByName(name)
+  );
+});
+
+const validateExport = () => {
+  return (
+    selectedDatabaseNameList.value.length > 0 &&
+    selectedDatabaseNameList.value.length <= MAX_EXPORT
+  );
+};
 
 const items = computed(() => {
   return queriedDatabaseNames.value.map<BatchQueryItem>((name) => {
@@ -177,5 +253,51 @@ const getBackgroundColorRgb = (database: ComposedDatabase) => {
     color: `rgb(${color})`,
     borderTop: "3px solid",
   };
+};
+
+const handleExportBtnClick = async ({
+  options,
+  resolve,
+}: {
+  options: ExportOption;
+  reject: (reason?: any) => void;
+  resolve: (content: DownloadContent) => void;
+}) => {
+  const contents: DownloadContent = [];
+  for (const databaseName of selectedDatabaseNameList.value) {
+    const database = databaseStore.getDatabaseByName(databaseName);
+    const context = head(tab.value?.databaseQueryContexts?.get(databaseName));
+    if (!context) {
+      continue;
+    }
+    try {
+      const content = await sqlStore.exportData({
+        name: databaseName,
+        dataSourceId: context.params.connection.dataSourceId ?? "",
+        format: options.format,
+        statement: context.params.statement,
+        limit: options.limit,
+        admin: tabStore.currentTab?.mode === "ADMIN",
+        password: options.password,
+      });
+
+      contents.push({
+        content,
+        filename: `${database.databaseName}.${dayjs(new Date()).format("YYYY-MM-DDTHH-mm-ss")}`,
+      });
+    } catch (e) {
+      pushNotification({
+        module: "bytebase",
+        style: "CRITICAL",
+        title: t("sql-editor.batch-export.failed-for-db", {
+          db: databaseName,
+        }),
+        description: String(e),
+      });
+    }
+  }
+
+  resolve(contents);
+  selectedDatabaseNameList.value = [];
 };
 </script>

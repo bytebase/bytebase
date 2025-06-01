@@ -49,10 +49,12 @@ export const useAuditLogStore = defineStore("audit_log", () => {
     search,
     format,
     pageSize,
+    pageToken,
   }: {
     search: SearchAuditLogsParams;
     format: ExportFormat;
     pageSize: number;
+    pageToken: string;
   }): Promise<{
     content: BinaryLike | Blob;
     nextPageToken: string;
@@ -63,6 +65,7 @@ export const useAuditLogStore = defineStore("audit_log", () => {
       orderBy: search.order ? `create_time ${search.order}` : undefined,
       format,
       pageSize,
+      pageToken,
     });
   };
 
