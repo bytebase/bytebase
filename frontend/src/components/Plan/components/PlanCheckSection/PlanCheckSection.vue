@@ -16,16 +16,20 @@ import {
   planCheckRunListForSpec,
   planSpecHasPlanChecks,
   usePlanContext,
-  databaseForSpec,
 } from "@/components/Plan/logic";
 import PlanCheckRunBar from "@/components/PlanCheckRun/PlanCheckRunBar.vue";
-import { useCurrentUserV1, extractUserId, useCurrentProjectV1 } from "@/store";
+import {
+  useCurrentUserV1,
+  extractUserId,
+  useCurrentProjectV1,
+  useDatabaseV1Store,
+} from "@/store";
 import { EMPTY_ID } from "@/types";
 import { hasProjectPermissionV2 } from "@/utils";
 
 const currentUser = useCurrentUserV1();
 const { project } = useCurrentProjectV1();
-const { plan, selectedSpec } = usePlanContext();
+const { plan, selectedSpec, selectedTarget } = usePlanContext();
 
 const show = computed(() => {
   if (selectedSpec.value.id === String(EMPTY_ID)) {
@@ -35,7 +39,7 @@ const show = computed(() => {
 });
 
 const database = computed(() =>
-  databaseForSpec(project.value, selectedSpec.value)
+  useDatabaseV1Store().getDatabaseByName(selectedTarget.value)
 );
 
 const allowRunChecks = computed(() => {
