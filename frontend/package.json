@@ -150,7 +150,7 @@
     "vscode-oniguruma": "^2.0.1",
     "vscode-textmate": "^9.2.0",
     "vue-component-type-helpers": "^2.2.8",
-    "vue-i18n": "10.0.6",
+    "vue-i18n": "11.1.5",
     "vue-router": "4.5.0",
     "vue-tsc": "2.1.10",
     "ws": "^8.18.1"
