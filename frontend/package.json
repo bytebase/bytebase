@@ -46,7 +46,7 @@
     "js-yaml": "4.1.0",
     "jszip": "^3.10.1",
     "lodash-es": "4.17.21",
-    "lucide-static": "^0.447.0",
+    "lucide-static": "^0.511.0",
     "lucide-vue-next": "^0.462.0",
     "markdown-it": "^14.1.0",
     "match-sorter": "6.3.4",
