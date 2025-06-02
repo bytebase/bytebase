@@ -1,7 +1,6 @@
 import type { Plan_Spec } from "@/types/proto/v1/plan_service";
 import type { ComposedPlan } from "@/types/v1/issue/plan";
-import { sheetNameForSpec } from "./plan";
-import { databaseOfSpec, projectOfPlan } from "./utils";
+import { sheetNameForSpec, targetsForSpec } from "./plan";
 
 export const planSpecHasPlanChecks = (spec: Plan_Spec) => {
   if (spec.changeDatabaseConfig !== undefined) {
@@ -14,13 +13,14 @@ export const planCheckRunListForSpec = (
   plan: ComposedPlan,
   spec: Plan_Spec
 ) => {
-  const target = databaseOfSpec(projectOfPlan(plan), spec).name;
+  const targets = targetsForSpec(spec);
   const sheet = spec ? sheetNameForSpec(spec) : "";
   return plan.planCheckRunList.filter((check) => {
-    if (sheet && check.sheet) {
-      return check.sheet === sheet && check.target === target;
+    if (!targets.includes(check.target)) {
+      return false;
     }
-    // Otherwise filter by target only
-    return check.target === target;
+    if (sheet && check.sheet) {
+      return check.sheet === sheet;
+    }
   });
 };

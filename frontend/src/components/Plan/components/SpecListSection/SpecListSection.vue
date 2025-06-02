@@ -54,24 +54,21 @@
 
 <script lang="ts" setup>
 import { useDebounceFn } from "@vueuse/core";
-import { head } from "lodash-es";
 import { NButton } from "naive-ui";
 import { computed, reactive, ref, watch } from "vue";
 import { BBSpin } from "@/bbkit";
 import { useVerticalScrollState } from "@/composables/useScrollState";
 import {
   batchGetOrFetchDatabases,
-  useCurrentProjectV1,
   useDBGroupStore,
 } from "@/store";
-import { DEBOUNCE_SEARCH_DELAY } from "@/types";
+import { DEBOUNCE_SEARCH_DELAY, isValidDatabaseName } from "@/types";
 import type { Advice_Status } from "@/types/proto/v1/sql_service";
 import { isDev } from "@/utils";
 import {
-  databaseForSpec,
   isDatabaseChangeSpec,
   isGroupingChangeSpec,
-  targetOfSpec,
+  targetsForSpec,
   usePlanContext,
 } from "../../logic";
 import { usePlanSQLCheckContext } from "../SQLCheckSection/context";
@@ -93,7 +90,6 @@ const MAX_LIST_HEIGHT = 256;
 // This is set to 4 in development mode for easier testing.
 const SPEC_PER_PAGE = isDev() ? 4 : 20;
 
-const { project } = useCurrentProjectV1();
 const planContext = usePlanContext();
 const { resultMap } = usePlanSQLCheckContext();
 const { plan, selectedSpec } = planContext;
@@ -136,9 +132,8 @@ const shouldShowSpecFilter = computed(() => {
 
 const shouldShowCurrentSpecView = computed(() => {
   // Only show the current spec view when the selected spec is not in the filtered list.
-  return !filteredSpecList.value
-    .slice(0, state.index)
-    .some((spec) => spec.id === selectedSpec.value.id);
+  const visibleSpecs = filteredSpecList.value.slice(0, state.index);
+  return !visibleSpecs.some((spec) => spec.id === selectedSpec.value.id);
 });
 
 const loadMore = useDebounceFn(async () => {
@@ -148,26 +143,38 @@ const loadMore = useDebounceFn(async () => {
     isGroupingChangeSpec(spec)
   );
   if (isGroupChangingPlan) {
-    // Should be only one database group in the plan.
-    const spec = head(specList.value);
-    if (!spec) {
-      throw new Error("No spec found in the plan");
+    // Fetch all database groups referenced in specs
+    const dbGroupNames = new Set<string>();
+    for (const spec of specList.value) {
+      const targets = targetsForSpec(spec);
+      targets.forEach((target) => dbGroupNames.add(target));
     }
-    const databaseGroupName = targetOfSpec(spec);
-    if (!databaseGroupName) {
-      throw new Error("No database group name found in the spec");
-    }
-    await dbGroupStore.getOrFetchDBGroupByName(databaseGroupName);
+    
+    await Promise.all(
+      Array.from(dbGroupNames).map((name) =>
+        dbGroupStore.getOrFetchDBGroupByName(name)
+      )
+    );
   } else {
     const fromIndex = state.index;
     const toIndex = fromIndex + SPEC_PER_PAGE;
-    const databaseNames = filteredSpecList.value
+    
+    // Collect all database names from all targets in the visible specs
+    const databaseNames = new Set<string>();
+    filteredSpecList.value
       .slice(fromIndex, toIndex)
-      .map((spec) => databaseForSpec(project.value, spec).name);
+      .forEach((spec) => {
+        const targets = targetsForSpec(spec);
+        targets.forEach((target) => {
+          if (isValidDatabaseName(target)) {
+            databaseNames.add(target);
+          }
+        });
+      });
 
     state.isRequesting = true;
     try {
-      await batchGetOrFetchDatabases(databaseNames);
+      await batchGetOrFetchDatabases(Array.from(databaseNames));
     } finally {
       state.index = toIndex;
       state.isRequesting = false;
