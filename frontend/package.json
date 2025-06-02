@@ -124,7 +124,7 @@
     "autoprefixer": "10.4.20",
     "code-inspector-plugin": "^0.20.1",
     "dotenv": "^16.4.7",
-    "eslint": "9.21.0",
+    "eslint": "9.28.0",
     "eslint-plugin-vue": "9.32.0",
     "events": "^3.3.0",
     "jquery": "3.7.1",
