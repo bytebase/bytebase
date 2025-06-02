@@ -9,6 +9,7 @@ import type { ComposedPlan } from "@/types/v1/issue/plan";
 export type PlanEvents = Emittery<{
   "status-changed": { eager: boolean };
   "select-spec": { spec: Plan_Spec };
+  "select-target": { target: string };
 }>;
 
 export type PlanContext = {
@@ -19,6 +20,7 @@ export type PlanContext = {
   // TODO(steven): save related issue/rollout for checking if the plan is changable.
 
   selectedSpec: Ref<Plan_Spec>;
+  selectedTarget: Ref<string>;
   formatOnSave: Ref<boolean>;
 
   // UI events

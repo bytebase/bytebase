@@ -11,20 +11,15 @@ import { Engine } from "@/types/proto/v1/common";
 import type { Plan_Spec } from "@/types/proto/v1/plan_service";
 
 export const databaseForSpec = (project: ComposedProject, spec: Plan_Spec) => {
-  // Now we only handle changeDatabaseConfig specs.
-  const { changeDatabaseConfig } = spec;
-  if (changeDatabaseConfig !== undefined) {
-    const targets = targetsForSpec(spec);
-    if (targets.length === 0) {
-      return unknownDatabase();
-    }
-    const db = useDatabaseV1Store().getDatabaseByName(targets[0]);
-    if (!isValidDatabaseName(db.name)) {
-      return mockDatabase(project, targets[0]);
-    }
-    return db;
+  const targets = targetsForSpec(spec);
+  if (targets.length === 0) {
+    return unknownDatabase();
   }
-  return unknownDatabase();
+  const db = useDatabaseV1Store().getDatabaseByName(targets[0]);
+  if (!isValidDatabaseName(db.name)) {
+    return mockDatabase(project, targets[0]);
+  }
+  return db;
 };
 
 /**

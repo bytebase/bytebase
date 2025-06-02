@@ -8,6 +8,7 @@ import { useUIStateStore } from "@/store";
 import type { Plan_Spec } from "@/types/proto/v1/plan_service";
 import { emptyPlanSpec } from "@/types/v1/issue/plan";
 import type { PlanContext, PlanEvents } from "./context";
+import { targetsForSpec } from "./plan";
 
 export const useBasePlanContext = (
   context: Pick<PlanContext, "isCreating" | "ready" | "plan">
@@ -36,6 +37,18 @@ export const useBasePlanContext = (
     return first(specs.value) || emptyPlanSpec();
   });
 
+  const selectedTarget = computed((): string => {
+    const specTargets = targetsForSpec(selectedSpec.value);
+    const target = route.query.target as string;
+    if (target) {
+      if (specTargets.includes(target)) {
+        return target;
+      }
+    }
+    // Fallback to first target.
+    return first(specTargets) || "";
+  });
+
   const formatOnSave = computed({
     get: () => uiStateStore.editorFormatStatementOnSave,
     set: (value: boolean) => uiStateStore.setEditorFormatStatementOnSave(value),
@@ -52,9 +65,21 @@ export const useBasePlanContext = (
     });
   });
 
+  events.on("select-target", ({ target }) => {
+    router.replace({
+      name: PROJECT_V1_ROUTE_REVIEW_CENTER_DETAIL,
+      query: {
+        ...route.query,
+        target: target,
+      },
+      hash: route.hash,
+    });
+  });
+
   return {
     events,
     selectedSpec,
+    selectedTarget,
     formatOnSave,
     dialog,
   };

@@ -27,7 +27,11 @@
       </InstanceV1Name>
       <span v-else>
         <!-- For creating database issues, we will only show the resource id of target instance. -->
-        {{ extractInstanceResourceName(targetOfSpec(selectedSpec) || "") }}
+        {{
+          extractInstanceResourceName(
+            selectedSpec.createDatabaseConfig?.target || ""
+          )
+        }}
       </span>
 
       <ChevronRightIcon class="text-control-light" :size="16" />
@@ -67,18 +71,14 @@ import {
   EnvironmentV1Name,
   InstanceV1Name,
 } from "@/components/v2";
-import {
-  useCurrentProjectV1,
-  useDatabaseV1Store,
-  useEnvironmentV1Store,
-} from "@/store";
+import { useDatabaseV1Store, useEnvironmentV1Store } from "@/store";
 import {
   formatEnvironmentName,
   isValidDatabaseName,
   unknownEnvironment,
 } from "@/types";
 import { extractInstanceResourceName, isNullOrUndefined } from "@/utils";
-import { databaseForSpec, targetOfSpec, usePlanContext } from "../../logic";
+import { usePlanContext } from "../../logic";
 
 withDefaults(
   defineProps<{
@@ -89,11 +89,10 @@ withDefaults(
   }
 );
 
-const { project } = useCurrentProjectV1();
-const { selectedSpec } = usePlanContext();
+const { selectedSpec, selectedTarget } = usePlanContext();
 
 const coreDatabaseInfo = computed(() => {
-  return databaseForSpec(project.value, selectedSpec.value);
+  return useDatabaseV1Store().getDatabaseByName(selectedTarget.value);
 });
 
 const isCreatingDatabaseSpec = computed(
