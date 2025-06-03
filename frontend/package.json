@@ -114,7 +114,7 @@
     "@types/splitpanes": "2.2.6",
     "@types/uuid": "10.0.0",
     "@vitejs/plugin-legacy": "^6.1.1",
-    "@vitejs/plugin-vue": "5.2.1",
+    "@vitejs/plugin-vue": "5.2.4",
     "@vitejs/plugin-vue-jsx": "4.1.2",
     "@vue/compiler-sfc": "3.5.13",
     "@vue/eslint-config-prettier": "10.2.0",
