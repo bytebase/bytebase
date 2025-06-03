@@ -1,8 +1,8 @@
 import type { TreeOption } from "naive-ui";
 import { t } from "@/plugins/i18n";
-import type { Environment } from "../v1/environment";
 import type { InstanceResource } from "../proto/v1/instance_service";
 import type { ComposedDatabase } from "../v1";
+import type { Environment } from "../v1/environment";
 
 export type SQLEditorTreeFactor =
   | "instance"
@@ -47,7 +47,6 @@ export type SQLEditorTreeNode<T extends SQLEditorTreeNodeType = any> =
   TreeOption & {
     meta: SQLEditorTreeNodeMeta<T>;
     key: string;
-    parent?: SQLEditorTreeNode;
     children?: SQLEditorTreeNode[];
   };
 

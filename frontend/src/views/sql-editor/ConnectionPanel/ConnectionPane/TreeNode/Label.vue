@@ -15,6 +15,8 @@
       :node="node"
       :factors="factors"
       :keyword="keyword"
+      :checked="checked"
+      :connected="connected"
     />
   </template>
   <template v-if="type === 'label'">
@@ -37,6 +39,8 @@ const props = defineProps<{
   node: TreeNode;
   factors: Factor[];
   keyword: string;
+  checked: boolean;
+  connected: boolean;
 }>();
 
 const type = computed(() => props.node.meta.type);
