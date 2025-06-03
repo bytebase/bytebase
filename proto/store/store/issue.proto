@@ -8,14 +8,14 @@ import "store/approval.proto";
 
 option go_package = "generated-go/store";
 
-enum IssueStatus {
-  ISSUE_STATUS_UNSPECIFIED = 0;
-  OPEN = 1;
-  DONE = 2;
-  CANCELED = 3;
-}
+message Issue {
+  enum Status {
+    ISSUE_STATUS_UNSPECIFIED = 0;
+    OPEN = 1;
+    DONE = 2;
+    CANCELED = 3;
+  }
 
-message IssuePayload {
   IssuePayloadApproval approval = 1;
   GrantRequest grant_request = 2;
   repeated string labels = 3;
