@@ -225,7 +225,6 @@
     "summary": "总结",
     "errors": "错误",
     "removed": "已移除",
-    "options": "配置项",
     "submit": "提交"
   },
   "error-page": {
@@ -987,6 +986,14 @@
     "schema-drift-detected": {
       "self": "检测到 Schema 偏差",
       "description": "所选数据库存在 Schema 偏差，请在变更前确保该偏差符合预期。"
+    }
+  },
+  "plan": {
+    "options": {
+      "self": "配置项",
+      "applies-to-all-tasks": "适用于所有任务",
+      "applies-to-some-tasks": "适用于某些任务 {count}/{total}",
+      "split-into-multiple-issues-tip": "如果您想为每个任务设置不同的配置项，请拆分成多个工单。"
     }
   },
   "quick-action": {

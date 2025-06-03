@@ -225,7 +225,6 @@
     "summary": "まとめ",
     "errors": "エラー",
     "removed": "削除されました",
-    "options": "オプション",
     "submit": "提出する"
   },
   "error-page": {
@@ -987,6 +986,14 @@
     "schema-drift-detected": {
       "self": "スキーマドリフトが検出されました",
       "description": "選択したデータベースにはスキーマドリフトがあります。ドリフトが想定どおりであり、適用しても安全であることを確認してください。"
+    }
+  },
+  "plan": {
+    "options": {
+      "self": "オプション",
+      "applies-to-all-tasks": "すべてのタスクに適用",
+      "applies-to-some-tasks": "一部のタスクに適用されます {count}/{total}",
+      "split-into-multiple-issues-tip": "タスクごとに異なるオプションを設定する場合は、複数の問題に分割してください。"
     }
   },
   "quick-action": {
