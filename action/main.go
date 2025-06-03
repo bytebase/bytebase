@@ -64,9 +64,9 @@ func init() {
 	// bytebase-action flags
 	cmd.PersistentFlags().StringVar(&Config.Output, "output", "", "Output file location. The output file is a JSON file with the created resource names")
 	cmd.PersistentFlags().StringVar(&Config.URL, "url", "https://demo.bytebase.com", "Bytebase URL")
-	cmd.PersistentFlags().StringVar(&Config.ServiceAccount, "service-account", "ci@service.bytebase.com", "Bytebase Service account")
+	cmd.PersistentFlags().StringVar(&Config.ServiceAccount, "service-account", "api@service.bytebase.com", "Bytebase Service account")
 	cmd.PersistentFlags().StringVar(&Config.ServiceAccountSecret, "service-account-secret", os.Getenv("BYTEBASE_SERVICE_ACCOUNT_SECRET"), "Bytebase Service account secret")
-	cmd.PersistentFlags().StringVar(&Config.Project, "project", "projects/project-sample", "Bytebase project")
+	cmd.PersistentFlags().StringVar(&Config.Project, "project", "projects/hr", "Bytebase project")
 	cmd.PersistentFlags().StringSliceVar(&Config.Targets, "targets", []string{"instances/test-sample-instance/databases/hr_test", "instances/prod-sample-instance/databases/hr_prod"}, "Bytebase targets")
 	cmd.PersistentFlags().StringVar(&Config.FilePattern, "file-pattern", "", "File pattern to glob migration files")
 
@@ -366,7 +366,7 @@ func runAndWaitForRollout(ctx context.Context, client *Client, planName string) 
 		}
 	}
 	if !targetStageFound {
-		slog.Info("the target stage is not found in the rollout preview. exiting...", "targetStage", Config.TargetStage, "rolloutStages", stages)
+		slog.Info("the target stage is not found in the rollout preview. exiting...", "targetStage", Config.TargetStage, "rolloutStages", stages, "hint", "make sure your target-stage input exists in the rollout stages")
 		return nil
 	}
 
