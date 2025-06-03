@@ -114,9 +114,9 @@ func (l *columnNoNullChecker) EnterTable_constraint(ctx *parser.Table_constraint
 		return
 	}
 	if ctx.PRIMARY() != nil {
-		allColumns := ctx.Column_name_list_with_order().AllId_()
+		allColumns := ctx.Column_name_list_with_order().AllColumn_name_with_order()
 		for _, column := range allColumns {
-			_, columnName := tsqlparser.NormalizeTSQLIdentifier(column)
+			_, columnName := tsqlparser.NormalizeTSQLIdentifier(column.Id_())
 			l.isCurrentTableColumnNullable[columnName] = false
 		}
 	}
