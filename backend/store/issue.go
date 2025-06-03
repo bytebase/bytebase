@@ -517,7 +517,11 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 		); err != nil {
 			return nil, err
 		}
-		issue.Status = storepb.IssueStatus(storepb.IssueStatus_value[statusString])
+		if statusValue, ok := storepb.IssueStatus_value[statusString]; ok {
+			issue.Status = storepb.IssueStatus(statusValue)
+		} else {
+			return nil, fmt.Errorf("invalid status string: %s", statusString)
+		}
 		if err := subscriberUIDs.AssignTo(&issue.subscriberUIDs); err != nil {
 			return nil, err
 		}
