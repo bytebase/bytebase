@@ -34,7 +34,7 @@ RUN CC=clang go build \
   -o bytebase ./backend/bin/server/main.go
 
 # Use debian because mysql requires glibc.
-FROM alpine:3.21 AS monolithic
+FROM alpine:3.22 AS monolithic
 ARG VERSION
 ARG GIT_COMMIT
 
